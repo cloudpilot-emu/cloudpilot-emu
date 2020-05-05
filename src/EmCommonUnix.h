@@ -71,7 +71,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>			// socklen_t
 
-#if !defined(HAVE_TYPE_SOCKLEN_T)
+
+#if defined(NO_TYPE_SOCKLEN_T)
 	typedef int			socklen_t;	// not defined in <sys/socket.h> on solaris or FreeBSD
 #endif
 

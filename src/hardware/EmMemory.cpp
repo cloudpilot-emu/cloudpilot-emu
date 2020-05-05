@@ -15,7 +15,7 @@
 
 #include "EmMemory.h"
 
-#ifdef 0 // CSTODO
+#if 0 // CSTODO
 #include "EmBankDRAM.h"			// EmBankDRAM::Initialize
 #include "EmBankDummy.h"		// EmBankDummy::Initialize
 #include "EmBankMapped.h"		// EmBankMapped::Initialize
@@ -337,7 +337,7 @@ void Memory::Initialize (	EmStream&		hROM,
 {
 	// Clear everything out.
 
-#ifdef 0 // CSTODO
+#if 0 // CSTODO
 	memset (gEmMemBanks, 0, sizeof (gEmMemBanks));
 
 	// Initialize the valid memory banks.
@@ -397,7 +397,7 @@ void Memory::Initialize (	EmStream&		hROM,
 
 void Memory::Reset (Bool hardwareReset)
 {
-#ifdef 0 // CSTODO
+#if 0 // CSTODO
 	EmBankDummy::Reset (hardwareReset);
 	EmBankRegs::Reset (hardwareReset);
 	EmBankSRAM::Reset (hardwareReset);
@@ -433,7 +433,7 @@ void Memory::Reset (Bool hardwareReset)
 
 void Memory::Save (SessionFile& f)
 {
-#ifdef 0 // CSTODO
+#if 0 // CSTODO
 	EmBankDummy::Save (f);
 	EmBankRegs::Save (f);
 	EmBankSRAM::Save (f);
@@ -465,7 +465,7 @@ void Memory::Save (SessionFile& f)
 
 void Memory::Load (SessionFile& f)
 {
-#ifdef 0 // CSTODO
+#if 0 // CSTODO
 	EmBankDummy::Load (f);
 	EmBankRegs::Load (f);
 	EmBankSRAM::Load (f);
@@ -502,7 +502,7 @@ void Memory::Load (SessionFile& f)
 
 void Memory::Dispose (void)
 {
-#ifdef 0 // CSTODO
+#if 0 // CSTODO
 	EmBankDummy::Dispose ();
 	EmBankRegs::Dispose ();
 	EmBankSRAM::Dispose ();
@@ -554,7 +554,7 @@ void Memory::InitializeBanks (	EmAddressBank&	iBankInitializer,
 
 void Memory::ResetBankHandlers (void)
 {
-#ifdef 0 // CSTODO
+#if 0 // CSTODO
 	EmBankDummy::SetBankHandlers ();
 	EmBankRegs::SetBankHandlers ();
 	EmBankSRAM::SetBankHandlers ();

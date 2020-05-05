@@ -2,7 +2,7 @@ CC_NATIVE = gcc
 CXX_NATIVE = g++
 LD_NATIVE = g++
 
-CFLAGS_NATIVE = -O0 -g -fsanitize=address,undefined
+CFLAGS_NATIVE = -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack -O0 -g -fsanitize=address,undefined
 CXXFLAGS_NATIVE = $(CFLAGS_NATIVE)
 LDFLAGS_NATIVE = -fsanitize=address,undefined
 
@@ -30,26 +30,29 @@ SOURCE_CPP = \
 	uae/readcpu.cpp \
 	hardware/EmMemory.cpp \
 	EmCommon.cpp \
+	stubs.cpp \
 	main.cpp
 
 BUILDDIR_NATIVE = .build
 
-OBJECTS_NATIVE = $(SOURCE_C:%:c=.$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
+OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 
 BINARY_NATIVE = cloudpilot
+
+MKDIR = mkdir -p $(dir $@)
 
 all: bin
 
 bin: $(BINARY_NATIVE)
 
 $(BINARY_NATIVE): $(OBJECTS_NATIVE)
-	$(LD_NATIVE) $(LD_NATIVE) -o $@ $^
+	$(LD_NATIVE) $(LDFLAGS_NATIVE) -o $@ $^
 
-$(SOURCE_C:%:c=.$(BUILDDIR_NATIVE)/%.o): .build/%.o : %.c
-	$(CC_NATIVE) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
+$(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.c
+	$(MKDIR) && $(CC_NATIVE) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o): .build/%.o : %.cpp
-	$(CXX_NATIVE) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
+$(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.cpp
+	$(MKDIR) && $(CXX_NATIVE) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
 clean:
 	-rm -fr $(BUILDDIR_NATIVE)
