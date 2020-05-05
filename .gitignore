@@ -1,2 +1,5 @@
 .build
+.build-emcc
 cloudpilot
+cloudpilot.js
+cloudpilot.wasm
