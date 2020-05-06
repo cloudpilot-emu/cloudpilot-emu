@@ -1,14 +1,14 @@
 /* -*- mode: C++; tab-width: 4 -*- */
 /* ===================================================================== *\
-	Copyright (c) 1999-2001 Palm, Inc. or its subsidiaries.
-	All rights reserved.
+        Copyright (c) 1999-2001 Palm, Inc. or its subsidiaries.
+        All rights reserved.
 
-	This file is part of the Palm OS Emulator.
+        This file is part of the Palm OS Emulator.
 
-	This program is free software; you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation; either version 2 of the License, or
-	(at your option) any later version.
+        This program is free software; you can redistribute it and/or modify
+        it under the terms of the GNU General Public License as published by
+        the Free Software Foundation; either version 2 of the License, or
+        (at your option) any later version.
 \* ===================================================================== */
 
 #ifndef EmUnixCommon_h
@@ -25,11 +25,9 @@
 
 #define __STL_USE_SGI_ALLOCATORS
 
-
 // Palm headers
 
 #include "Palm.h"
-
 
 // Std C/C++ Library stuff
 
@@ -60,32 +58,29 @@
 //#include <vector>
 //#include <map>
 
-
-#define down fl_down	// "down" defined both in WindowNew.h and Fl/Enumerations.h
-
+#define down fl_down  // "down" defined both in WindowNew.h and Fl/Enumerations.h
 
 // ============================================
 // ========== Windows socket mapping ==========
 // ============================================
 
+#include <sys/socket.h>  // socklen_t
 #include <sys/types.h>
-#include <sys/socket.h>			// socklen_t
-
 
 #if defined(NO_TYPE_SOCKLEN_T)
-	typedef int			socklen_t;	// not defined in <sys/socket.h> on solaris or FreeBSD
+typedef int socklen_t;  // not defined in <sys/socket.h> on solaris or FreeBSD
 #endif
 
-typedef int				SOCKET;
+typedef int SOCKET;
 
-#define WSAEINVAL		EINVAL
-#define INVALID_SOCKET	((SOCKET) (~0))
-#define SOCKET_ERROR	(-1)
-#define closesocket		close
-#define ioctlsocket		ioctl
+#define WSAEINVAL EINVAL
+#define INVALID_SOCKET ((SOCKET)(~0))
+#define SOCKET_ERROR (-1)
+#define closesocket close
+#define ioctlsocket ioctl
 
 #ifndef INADDR_LOOPBACK
-#define INADDR_LOOPBACK	0x7f000001
+    #define INADDR_LOOPBACK 0x7f000001
 #endif
 
-#endif	/* EmUnixCommon_h */
+#endif /* EmUnixCommon_h */

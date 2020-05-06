@@ -1,5 +1,11 @@
 {
     "files.associations": {
         "readcpu.h": "c"
+    },
+    "[c]": {
+        "editor.formatOnSave": true
+    },
+    "[cpp]": {
+        "editor.formatOnSave": true
     }
 }
