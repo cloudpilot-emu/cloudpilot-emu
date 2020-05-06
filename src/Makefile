@@ -52,7 +52,9 @@ SOURCE_C = \
 SOURCE_CPP = \
 	uae/readcpu.cpp \
 	hardware/EmMemory.cpp \
+	hardware/EmHAL.cpp \
 	EmCommon.cpp \
+	logging.cpp \
 	stubs.cpp \
 	main.cpp
 

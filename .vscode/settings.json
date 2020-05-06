@@ -1,6 +1,11 @@
 {
     "files.associations": {
-        "readcpu.h": "c"
+        "readcpu.h": "c",
+        "vector": "cpp",
+        "iosfwd": "cpp",
+        "iterator": "cpp",
+        "string": "cpp",
+        "filesystem": "cpp"
     },
     "[c]": {
         "editor.formatOnSave": true
