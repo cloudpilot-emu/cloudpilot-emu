@@ -14,28 +14,25 @@
 #ifndef EmTypes_h
 #define EmTypes_h
 
+#include <stdint.h>
+
 // =====================================
 // ========== SIMPLE TYPEDEFS ==========
 // =====================================
 
 // Standard integral types
 
-	typedef	signed char			int8;
-	typedef	unsigned char		uint8;
+	typedef	int8_t			int8;
+	typedef	uint8_t		uint8;
 
-	typedef signed short		int16;
-	typedef unsigned short		uint16;
+	typedef int16_t		int16;
+	typedef uint16_t		uint16;
 
-	typedef signed long			int32;
-	typedef unsigned long		uint32;
+	typedef int32_t			int32;
+	typedef uint32_t		uint32;
 
-#ifdef _MSC_VER
-	typedef signed __int64		int64;
-	typedef unsigned __int64	uint64;
-#else
-	typedef signed long long	int64;
-	typedef unsigned long long	uint64;
-#endif
+	typedef int64_t	int64;
+	typedef uint64_t	uint64;
 
 typedef uint32				emuptr;
 

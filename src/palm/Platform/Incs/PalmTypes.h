@@ -20,6 +20,8 @@
 #ifndef __PALMTYPES_H__
 #define __PALMTYPES_H__
 
+#include "stdint.h"
+
 
 /************************************************************
  * Environment configuration
@@ -36,7 +38,7 @@
 
 
 /************************************************************
- * Useful Macros 
+ * Useful Macros
  *************************************************************/
 #if defined(__GNUC__) && defined(__UNIX__)		// used to be in <BuildRules.h>
 	// Ensure that structure elements are 16-bit aligned
@@ -60,19 +62,19 @@
 
 
 // Fixed size data types
-typedef signed char		Int8;
-typedef signed short		Int16;	
-typedef signed long		Int32;
+typedef int8_t		Int8;
+typedef int16_t		Int16;
+typedef int32_t		Int32;
 
 #if __DEFINE_TYPES_
-typedef unsigned char	UInt8;
-typedef unsigned short  UInt16;
-typedef unsigned long   UInt32;
+typedef uint8_t	UInt8;
+typedef uint16_t  UInt16;
+typedef uint32_t   UInt32;
 #endif
 
 
 // Logical data types
-#if __DEFINE_TYPES_						 
+#if __DEFINE_TYPES_
 typedef unsigned char	Boolean;
 #endif
 
@@ -90,13 +92,13 @@ typedef void *				MemPtr;		// global pointer
 typedef struct _opaque *MemHandle;	// global handle
 
 
-#if __DEFINE_TYPES_						 
+#if __DEFINE_TYPES_
 typedef Int32 (*ProcPtr)();
 #endif
 
 
 /************************************************************
- * Useful Macros 
+ * Useful Macros
  *************************************************************/
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 #define max(a, b) (((a) > (b)) ? (a) : (b))
@@ -162,7 +164,7 @@ typedef Int32 (*ProcPtr)();
  * Metrowerks will substitute strlen and strcpy with inline
  * 68K assembly code.  Prevent this.
  *************************************************************/
- 
+
 #ifdef __MC68K__
 #define _NO_FAST_STRING_INLINES_ 0
 #endif
@@ -174,14 +176,14 @@ typedef Int32 (*ProcPtr)();
  *
  * When eumulating we use directy linking.
  * When running under native mode, we use traps EXCEPT for the
- *   modules that actually install the routines into the trap table. 
+ *   modules that actually install the routines into the trap table.
  *   These modules will set the DIRECT_LINK define to 1
  *************************************************************/
 #ifndef EMULATION_LEVEL
 #error "This should not happen!"
 #endif
 
-#ifndef USE_TRAPS 
+#ifndef USE_TRAPS
 	#if EMULATION_LEVEL == EMULATION_NONE
 		#define	USE_TRAPS 1						// use Pilot traps
 	#else
@@ -285,8 +287,8 @@ typedef Int32 (*ProcPtr)();
 /************************************************************
  * Palm specific TRAP instruction numbers
  *************************************************************/
-#define sysDbgBreakpointTrapNum		0		// For soft breakpoints		
-#define sysDbgTrapNum					8		// For compiled breakpoints			
+#define sysDbgBreakpointTrapNum		0		// For soft breakpoints
+#define sysDbgTrapNum					8		// For compiled breakpoints
 #define sysDispatchTrapNum				15		// Trap dispatcher
 
 #ifndef PUBLIC_STUFF_STRIPPED
@@ -294,10 +296,10 @@ typedef Int32 (*ProcPtr)();
 #endif // PUBLIC_STUFF_STRIPPED
 
 #define SYS_TRAP(trapNum)  _SYSTEM_API(_CALL)(_SYSTEM_TABLE, trapNum)
-	
+
 #define ASM_SYS_TRAP(trapNum)	\
 			DC.W	m68kTrapInstr+sysDispatchTrapNum; \
 			DC.W	trapNum
-	
+
 
 #endif //__PALMTYPES_H__
