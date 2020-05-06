@@ -15,6 +15,19 @@ LDFLAGS_NATIVE = -fsanitize=address,undefined
 
 CFLAGS_EMCC =  $(CFLAGS_COMMON) -O2
 CXXFLAGS_EMCC= $(CFLAGS_EMCC) $(CXXFLAGS_COMMON)
+LDFLAGS_EMCC = -Wno-version-check
+
+BUILDDIR_NATIVE = .build
+DEPDIR_NATIVE = .deps
+
+BUILDDIR_EMCC = .build-emcc
+DEPDIR_EMCC = .deps-emcc
+
+DEPFLAGS_NATIVE = -MT $@ -MMD -MP -MF $(DEPDIR_NATIVE)/$*.d
+DEPFLAGS_EMCC = -MT $@ -MMD -MP -MF $(DEPDIR_EMCC)/$*.d
+
+MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
+MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 
 INCLUDE = \
 	-I./hardware \
@@ -43,17 +56,12 @@ SOURCE_CPP = \
 	stubs.cpp \
 	main.cpp
 
-BUILDDIR_NATIVE = .build
-BUILDDIR_EMCC = .build-emcc
-
 OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)
 
 BINARY_NATIVE = cloudpilot
 BINARY_EMCC = cloudpilot.js
 OTHER_EMCC = cloudpilot.wasm
-
-MKDIR = mkdir -p $(dir $@)
 
 all: bin emscripten
 
@@ -64,23 +72,25 @@ emscripten: $(BINARY_EMCC)
 $(BINARY_NATIVE): $(OBJECTS_NATIVE)
 	$(LD_NATIVE) $(LDFLAGS_NATIVE) -o $@ $^
 
-$(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.c
-	$(MKDIR) && $(CC_NATIVE) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
-
-$(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.cpp
-	$(MKDIR) && $(CXX_NATIVE) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
-
 $(BINARY_EMCC): $(OBJECTS_EMCC)
 	$(LD_EMCC) $(LDFLAGS_EMCC) -o $@ $^
 
+$(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.c
+	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
+
+$(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.cpp
+	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
+
 $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.c
-	$(MKDIR) && $(CC_EMCC) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
+	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
 $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
-	$(MKDIR) && $(CXX_EMCC) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
-
+	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
 clean:
-	-rm -fr $(BUILDDIR_NATIVE) $(BUILDDIR_EMCC) $(BINARY_EMCC) $(BINARY_NATIVE) $(OTHER_EMCC)
+	-rm -fr $(BUILDDIR_NATIVE) $(BUILDDIR_EMCC) $(BINARY_EMCC) $(BINARY_NATIVE) $(OTHER_EMCC) $(DEPDIR_NATIVE) $(DEPDIR_EMCC)
 
 .PHONY: clean all bin emscripten
+
+include $(shell test -e $(DEPDIR_NATIVE) && find $(DEPDIR_NATIVE) -type f)
+include $(shell test -e $(DEPDIR_EMCC) && find $(DEPDIR_EMCC) -type f)
