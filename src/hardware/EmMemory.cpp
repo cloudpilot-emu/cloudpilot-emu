@@ -233,94 +233,6 @@ MemAccessFlags	gMemAccessFlags =
 
 MemAccessFlags	kZeroMemAccessFlags;
 
-
-#if PROFILE_MEMORY
-/*
-	After 12 Million instructions executed...
-
-	kDRAMLongRead,		// 2,797,111
-	kDRAMLongRead2,		//
-	kDRAMWordRead,		// 1,334,295
-	kDRAMByteRead,		//   427,936
-
-	kDRAMLongWrite,		// 1,960,933
-	kDRAMLongWrite2,	//
-	kDRAMWordWrite,		//   800,780
-	kDRAMByteWrite,		//   213,029
-
-	kSRAMLongRead,		//     4,167
-	kSRAMLongRead2,		//     4,167
-	kSRAMWordRead,		//    10,768
-	kSRAMByteRead,		//     6,295 (jumped WAY up (5-fold) after playing with Address Book / 20 Million instructions)
-
-	kSRAMLongWrite,		//   516,246 (stable after boot?)
-	kSRAMLongWrite2,	//
-	kSRAMWordWrite,		//     5,112
-	kSRAMByteWrite,		//     2,183
-
-	kROMLongRead,		//    10,156
-	kROMLongRead2,		//
-	kROMWordRead,		//   557,062
-	kROMByteRead,		//    15,516
-
-	kROMLongWrite,		//         0
-	kROMLongWrite2,		//
-	kROMWordWrite,		//         0
-	kROMByteWrite,		//         0
-
-	kREGLongRead,		//     16,638
-	kREGLongRead2,		//
-	kREGWordRead,		//     30,477
-	kREGByteRead,		//      3,553
-
-	kREGLongWrite,		//      9,472
-	kREGLongWrite2,		//
-	kREGWordWrite,		//     20,709
-	kREGByteWrite,		//     12,656
-
-
-	After 32,439,154 instructions:
-
-	kDRAMLongRead,		// 6,466,064
-	kDRAMWordRead,		// 3,342,826
-	kDRAMByteRead,		//   940,345
-
-	kDRAMLongWrite,		// 4,136,635
-	kDRAMWordWrite,		// 1,462,995
-	kDRAMByteWrite,		//   509,189
-
-	kSRAMLongRead,		//    24,355
-	kSRAMWordRead,		//    32,190
-	kSRAMByteRead,		//    75,917
-
-	kSRAMLongWrite,		// 2,074,137 (8-Meg ROM)
-	kSRAMWordWrite,		//    42,050
-	kSRAMByteWrite,		//    11,292
-
-	kROMLongRead,		//    25,806
-	kROMWordRead,		// 1,302,897
-	kROMByteRead,		//    63,590
-
-	kROMLongWrite,		//         0
-	kROMWordWrite,		//         0
-	kROMByteWrite,		//         0
-
-	kREGLongRead,		//    32,037
-	kREGWordRead,		//    74,299
-	kREGByteRead,		//    91,930
-
-	kREGLongWrite,		//    20,358
-	kREGWordWrite,		//    57,879
-	kREGByteWrite,		//    22,592
-*/
-
-long	gMemoryAccess[kLastEnum];
-#endif
-
-
-#pragma mark -
-
-
 // ===========================================================================
 //		� Memory
 // ===========================================================================
@@ -639,15 +551,8 @@ long	CEnableFullAccess::fgAccessCount = 0;
 
 CEnableFullAccess::CEnableFullAccess (void) :
 	fOldMemAccessFlags (gMemAccessFlags)
-#if HAS_PROFILING
-	, fOldProfilingCounted (gProfilingCounted)
-#endif
 {
 	gMemAccessFlags = kZeroMemAccessFlags;
-
-#if HAS_PROFILING
-	gProfilingCounted = false;
-#endif
 
 	++fgAccessCount;
 }
@@ -660,10 +565,6 @@ CEnableFullAccess::CEnableFullAccess (void) :
 CEnableFullAccess::~CEnableFullAccess (void)
 {
 	gMemAccessFlags = fOldMemAccessFlags;
-
-#if HAS_PROFILING
-	gProfilingCounted = fOldProfilingCounted;
-#endif
 
 	--fgAccessCount;
 }

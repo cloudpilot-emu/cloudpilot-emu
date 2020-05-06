@@ -388,10 +388,6 @@ class CEnableFullAccess
 	private:
 		MemAccessFlags			fOldMemAccessFlags;
 
-#if HAS_PROFILING
-		Bool					fOldProfilingCounted;
-#endif
-
 		static long				fgAccessCount;
 };
 
