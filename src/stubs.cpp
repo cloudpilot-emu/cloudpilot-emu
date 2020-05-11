@@ -2,30 +2,6 @@
 #include "UAE.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-// EmCPU68k
-int areg_byteinc[] = {1, 1, 1, 1, 1, 1, 1, 2};  // (normally in newcpu.c)
-int imm8_table[] = {8, 1, 2, 3, 4, 5, 6, 7};    // (normally in newcpu.c)
-
-int movem_index1[256];  // (normally in newcpu.c)
-int movem_index2[256];  // (normally in newcpu.c)
-int movem_next[256];    // (normally in newcpu.c)
-
-cpuop_func* cpufunctbl[65536];  // (normally in newcpu.c)
-
-uint16 last_op_for_exception_3;    /* Opcode of faulting instruction */
-emuptr last_addr_for_exception_3;  /* PC at fault time */
-emuptr last_fault_for_exception_3; /* Address that generated the exception */
-
-struct regstruct regs;        // (normally in newcpu.c)
-struct flag_struct regflags;  // (normally in support.c),
-
-uae_u32 gStackHigh;
-uae_u32 gStackLowWarn;
-uae_u32 gStackLow;
-uae_u32 gKernelStackOverflowed;
-///////////////////////////////////////////////////////////////////////////////
-
-///////////////////////////////////////////////////////////////////////////////
 // EmUAEGlue
 void customreset(void) {}
 

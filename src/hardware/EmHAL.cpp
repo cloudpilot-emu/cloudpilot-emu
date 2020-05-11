@@ -14,7 +14,7 @@
 #include "EmHAL.h"
 
 #include "EmCommon.h"
-#include "logging.h"
+#include "Logging.h"
 
 #if 0                               // CSTODO
     #include "EmTransportSerial.h"  // EmTransportSerial

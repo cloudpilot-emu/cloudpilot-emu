@@ -5,7 +5,8 @@
         "iosfwd": "cpp",
         "iterator": "cpp",
         "string": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "algorithm": "cpp"
     },
     "[c]": {
         "editor.formatOnSave": true

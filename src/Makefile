@@ -54,8 +54,13 @@ SOURCE_CPP = \
 	hardware/EmMemory.cpp \
 	hardware/EmHAL.cpp \
 	hardware/EmCPU.cpp \
+	hardware/EmCPU68K.cpp \
+	DebugMgr.cpp \
+	EmSession.cpp \
 	EmCommon.cpp \
-	logging.cpp \
+	StringData.cpp \
+	Byteswapping.cpp \
+	Logging.cpp \
 	stubs.cpp \
 	main.cpp
 
