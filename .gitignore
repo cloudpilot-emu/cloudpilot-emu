@@ -5,3 +5,4 @@
 cloudpilot
 cloudpilot.js
 cloudpilot.wasm
+.vscode/c_cpp_properties.json
