@@ -520,35 +520,35 @@ class PAS {
 
 // Macro that creates the implementation for an assignment operator for simple types.
 
-#define MAKE_ONE_SCALAR_ALIAS_ASSIGNMENT_OPERATOR(type, asType, rhs_type)          \
-                                                                                   \
-    template <class A>                                                             \
-    INLINE_ EmAlias##type<A>& EmAlias##type<A>::operator=(rhs_type val) {          \
-        if (sizeof(asType) == 1)                                                   \
-            A::PutByte(this->GetPtr(), (unsigned char)(asType)((long)val & 0xff)); \
-        else if (sizeof(asType) == 2)                                              \
-            A::PutWord(this->GetPtr(), (UInt16)(asType)((long)val & 0xffff));      \
-        else if (sizeof(asType) == 4)                                              \
-            A::PutLong(this->GetPtr(), (UInt32)(asType)((long)val & 0xffffffff));  \
-        else                                                                       \
-            BadSetter();                                                           \
-                                                                                   \
-        return *this;                                                              \
+#define MAKE_ONE_SCALAR_ALIAS_ASSIGNMENT_OPERATOR(type, asType, rhs_type) \
+                                                                          \
+    template <class A>                                                    \
+    INLINE_ EmAlias##type<A>& EmAlias##type<A>::operator=(rhs_type val) { \
+        if (sizeof(asType) == 1)                                          \
+            A::PutByte(this->GetPtr(), (unsigned char)(asType)(long)val); \
+        else if (sizeof(asType) == 2)                                     \
+            A::PutWord(this->GetPtr(), (UInt16)(asType)(long)val);        \
+        else if (sizeof(asType) == 4)                                     \
+            A::PutLong(this->GetPtr(), (UInt32)(asType)(long)val);        \
+        else                                                              \
+            BadSetter();                                                  \
+                                                                          \
+        return *this;                                                     \
     }
 
-#define MAKE_ONE_SCALAR_PROXY_ASSIGNMENT_OPERATOR(type, asType, rhs_type)            \
-                                                                                     \
-    INLINE_ EmProxy##type& EmProxy##type::operator=(rhs_type val) {                  \
-        if (sizeof(asType) == 1)                                                     \
-            LAS::PutByte(this->GetPtr(), (unsigned char)(asType)((long)val & 0xff)); \
-        else if (sizeof(asType) == 2)                                                \
-            LAS::PutWord(this->GetPtr(), (UInt16)(asType)((long)val & 0xffff));      \
-        else if (sizeof(asType) == 4)                                                \
-            LAS::PutLong(this->GetPtr(), (UInt32)(asType)((long)val & 0xffffffff));  \
-        else                                                                         \
-            BadSetter();                                                             \
-                                                                                     \
-        return *this;                                                                \
+#define MAKE_ONE_SCALAR_PROXY_ASSIGNMENT_OPERATOR(type, asType, rhs_type)   \
+                                                                            \
+    INLINE_ EmProxy##type& EmProxy##type::operator=(rhs_type val) {         \
+        if (sizeof(asType) == 1)                                            \
+            LAS::PutByte(this->GetPtr(), (unsigned char)(asType)(long)val); \
+        else if (sizeof(asType) == 2)                                       \
+            LAS::PutWord(this->GetPtr(), (UInt16)(asType)(long)val);        \
+        else if (sizeof(asType) == 4)                                       \
+            LAS::PutLong(this->GetPtr(), (UInt32)(asType)(long)val);        \
+        else                                                                \
+            BadSetter();                                                    \
+                                                                            \
+        return *this;                                                       \
     }
 
 // ======================================================================
