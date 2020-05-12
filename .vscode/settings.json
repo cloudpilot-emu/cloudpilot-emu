@@ -6,7 +6,9 @@
         "iterator": "cpp",
         "string": "cpp",
         "filesystem": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "__locale": "cpp",
+        "functional": "cpp"
     },
     "[c]": {
         "editor.formatOnSave": true

@@ -23,68 +23,24 @@
 // BYTESWAP is used by Byteswapping.h/.cpp to determine if
 // byteswapping should actually occur.  If not, it's a NOP.
 
-#if PLATFORM_WINDOWS || defined(HAVE_ENDIAN_H)
+// #error "You need to define __BYTE_ORDER for this platform."
 
-    #include <endian.h>
+// You can either define __BYTE_ORDER here, or you can provide
+// a file called endian.h.  If you take the latter course, rerun
+// the configure script so that it can rebuild the makefile with
+// HAVE_ENDIAN_H defined.
 
-#elif PLATFORM_MAC || defined(HAVE_MACHINE_ENDIAN_H)
-
-    #include <machine/endian.h>
-
-#elif defined(HAVE_SYS_ISA_DEFS_H)
-
-    // This should handle both Solaris/Sparc and Solaris/Intel
-    #include <sys/isa_defs.h>  // Defines either _BIG_ENDIAN or _LITTLE_ENDIAN
-
-#else
-
-    // #error "You need to define __BYTE_ORDER for this platform."
-
-    // You can either define __BYTE_ORDER here, or you can provide
-    // a file called endian.h.  If you take the latter course, rerun
-    // the configure script so that it can rebuild the makefile with
-    // HAVE_ENDIAN_H defined.
-
-    #define __LITTLE_ENDIAN 1234
-    #define __BIG_ENDIAN 4321
-    #define __PDP_ENDIAN 3412
-    #define __BYTE_ORDER __LITTLE_ENDIAN
-
-#endif
+#define __LITTLE_ENDIAN 1234
+#define __BIG_ENDIAN 4321
+#define __PDP_ENDIAN 3412
+#define __BYTE_ORDER __LITTLE_ENDIAN
 
 // Settle on a canonical name.
 
-#if defined(__BYTE_ORDER)
-
-    #define EM_LITTLE_ENDIAN __LITTLE_ENDIAN
-    #define EM_BIG_ENDIAN __BIG_ENDIAN
-    #define EM_PDP_ENDIAN __PDP_ENDIAN
-    #define EM_HOST_BYTE_ORDER __BYTE_ORDER
-
-#elif defined(BYTE_ORDER)
-
-    #define EM_LITTLE_ENDIAN LITTLE_ENDIAN
-    #define EM_BIG_ENDIAN BIG_ENDIAN
-    #define EM_PDP_ENDIAN PDP_ENDIAN
-    #define EM_HOST_BYTE_ORDER BYTE_ORDER
-
-#elif defined(_BIG_ENDIAN) || defined(_LITTLE_ENDIAN)
-
-    #define EM_LITTLE_ENDIAN 1234
-    #define EM_BIG_ENDIAN 4321
-    #define EM_PDP_ENDIAN 3412
-
-    #if defined(_BIG_ENDIAN)
-        #define EM_HOST_BYTE_ORDER EM_BIG_ENDIAN
-    #else
-        #define EM_HOST_BYTE_ORDER EM_LITTLE_ENDIAN
-    #endif
-
-#else
-
-    #error "Neither BYTE_ORDER nor __BYTE_ORDER defined for this platform."
-
-#endif
+#define EM_LITTLE_ENDIAN __LITTLE_ENDIAN
+#define EM_BIG_ENDIAN __BIG_ENDIAN
+#define EM_PDP_ENDIAN __PDP_ENDIAN
+#define EM_HOST_BYTE_ORDER __BYTE_ORDER
 
 #if (EM_HOST_BYTE_ORDER == EM_LITTLE_ENDIAN)
     #define BYTESWAP 1
@@ -171,22 +127,9 @@
 
 #define NATIVE_DISPATCHING 1
 
-// Define HAS_TRACER to 1 to include Tracer facility.
+#define HAS_TRACER 0
 
-#if PLATFORM_MAC || PLATFORM_WINDOWS
-    #define HAS_TRACER 1
-#else
-    #define HAS_TRACER 0
-#endif
-
-// Define HAS_OMNI_THREAD 1 to if this platform uses that facility
-// for multi-threading.
-
-#if PLATFORM_UNIX || PLATFORM_WINDOWS
-    #define HAS_OMNI_THREAD 1
-#else
-    #define HAS_OMNI_THREAD 0
-#endif
+#define HAS_OMNI_THREAD 0
 
 // Define sub-flags for specific internal features.
 

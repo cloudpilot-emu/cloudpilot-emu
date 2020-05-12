@@ -47,6 +47,8 @@
 
 #define EMULATION_LEVEL EMULATION_UNIX
 
+#define CPU_TYPE CPU_x86
+
 #include "PalmTypes.h"
 //	#include <SystemPublic.h>
 //	#include <UIPublic.h>
