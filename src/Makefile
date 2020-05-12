@@ -55,11 +55,12 @@ SOURCE_CPP = \
 	hardware/EmHAL.cpp \
 	hardware/EmCPU.cpp \
 	hardware/EmCPU68K.cpp \
+	Byteswapping.cpp \
 	DebugMgr.cpp \
 	EmSession.cpp \
+	EmPalmStructs.cpp \
 	EmCommon.cpp \
 	StringData.cpp \
-	Byteswapping.cpp \
 	Logging.cpp \
 	stubs.cpp \
 	main.cpp

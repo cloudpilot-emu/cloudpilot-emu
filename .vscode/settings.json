@@ -8,7 +8,23 @@
         "filesystem": "cpp",
         "algorithm": "cpp",
         "__locale": "cpp",
-        "functional": "cpp"
+        "functional": "cpp",
+        "__functional_base": "cpp",
+        "__functional_base_03": "cpp",
+        "__hash_table": "cpp",
+        "__tree": "cpp",
+        "__tuple": "cpp",
+        "array": "cpp",
+        "chrono": "cpp",
+        "type_traits": "cpp",
+        "limits": "cpp",
+        "memory": "cpp",
+        "random": "cpp",
+        "ratio": "cpp",
+        "tuple": "cpp",
+        "utility": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp"
     },
     "[c]": {
         "editor.formatOnSave": true
