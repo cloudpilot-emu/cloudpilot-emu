@@ -15,7 +15,7 @@ LDFLAGS_NATIVE = -fsanitize=address,undefined
 
 CFLAGS_EMCC =  $(CFLAGS_COMMON) -O2
 CXXFLAGS_EMCC= $(CFLAGS_EMCC) $(CXXFLAGS_COMMON)
-LDFLAGS_EMCC = -Wno-version-check
+LDFLAGS_EMCC = -Wno-version-check -s EXIT_RUNTIME=1 -s NODERAWFS=1
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps
@@ -59,6 +59,7 @@ SOURCE_CPP = \
 	DebugMgr.cpp \
 	EmSession.cpp \
 	EmPalmStructs.cpp \
+	EmROMReader.cpp \
 	EmCommon.cpp \
 	StringData.cpp \
 	Logging.cpp \

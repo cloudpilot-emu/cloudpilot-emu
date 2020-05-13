@@ -24,7 +24,8 @@
         "tuple": "cpp",
         "utility": "cpp",
         "istream": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "ios": "cpp"
     },
     "[c]": {
         "editor.formatOnSave": true
