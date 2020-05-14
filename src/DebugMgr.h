@@ -132,6 +132,11 @@ extern emuptr gExceptionAddress;
 extern int gExceptionSize;
 extern Bool gExceptionForRead;
 
+class Debug {
+   public:
+    static void CheckStepSpy(emuptr writeAddress, int writeBytes);
+};
+
 #if 0  // CSTODO
 
 class Debug {

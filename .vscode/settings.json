@@ -25,7 +25,8 @@
         "utility": "cpp",
         "istream": "cpp",
         "ostream": "cpp",
-        "ios": "cpp"
+        "ios": "cpp",
+        "iostream": "cpp"
     },
     "[c]": {
         "editor.formatOnSave": true

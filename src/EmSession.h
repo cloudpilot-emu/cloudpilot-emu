@@ -12,4 +12,6 @@ class EmSession {
     Bool CheckForBreak(void);
 };
 
+extern EmSession* gSession;
+
 #endif  // _EM_SESSION_H

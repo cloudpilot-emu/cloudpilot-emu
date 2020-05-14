@@ -55,6 +55,9 @@ SOURCE_CPP = \
 	hardware/EmHAL.cpp \
 	hardware/EmCPU.cpp \
 	hardware/EmCPU68K.cpp \
+	hardware/EmRegs.cpp \
+	hardware/EmBankRegs.cpp \
+	MetaMemory.cpp \
 	Byteswapping.cpp \
 	DebugMgr.cpp \
 	EmSession.cpp \
