@@ -3,6 +3,8 @@
 
 #include "EmCommon.h"
 
+class EmCPU;
+
 class EmSession {
    public:
     Bool IsNested();
@@ -10,6 +12,13 @@ class EmSession {
     Bool ExecuteSpecial(Bool checkForResetOnly);
 
     Bool CheckForBreak(void);
+
+    void ScheduleResetBanks(void);
+
+   private:
+    bool bankResetScheduled{false};
+
+    EmCPU* cpuInstance{nullptr};
 };
 
 extern EmSession* gSession;

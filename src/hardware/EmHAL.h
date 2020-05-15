@@ -18,7 +18,7 @@
 
 class EmHAL;
 class EmPixMap;
-class Frame;
+struct Frame;
 
 enum { kLEDOff = 0x00, kLEDGreen = 0x01, kLEDRed = 0x02 };
 
