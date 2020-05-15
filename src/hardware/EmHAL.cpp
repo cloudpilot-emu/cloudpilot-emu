@@ -254,15 +254,9 @@ void EmHAL::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
     EmHAL::GetRootHandler()->GetLCDBeginEnd(begin, end);
 }
 
-// ---------------------------------------------------------------------------
-//		� EmHAL::GetLCDScanlines
-// ---------------------------------------------------------------------------
-// Fill in the output fields of EmScreenUpdateInfo.  Typically implemented in
-// the EmRegs<Processor> or EmRegs<LCDDriver> subclass.
-
-void EmHAL::GetLCDScanlines(EmScreenUpdateInfo& info) {
+void EmHAL::CopyLCDFrame(Frame& frame) {
     EmAssert(EmHAL::GetRootHandler());
-    EmHAL::GetRootHandler()->GetLCDScanlines(info);
+    EmHAL::GetRootHandler()->CopyLCDFrame(frame);
 }
 
 // ---------------------------------------------------------------------------
@@ -620,9 +614,9 @@ void EmHALHandler::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 //		� EmHALHandler::GetLCDScanlines
 // ---------------------------------------------------------------------------
 
-void EmHALHandler::GetLCDScanlines(EmScreenUpdateInfo& info) {
+void EmHALHandler::CopyLCDFrame(Frame& frame) {
     EmAssert(this->GetNextHandler());
-    this->GetNextHandler()->GetLCDScanlines(info);
+    this->GetNextHandler()->CopyLCDFrame(frame);
 }
 
 // ---------------------------------------------------------------------------

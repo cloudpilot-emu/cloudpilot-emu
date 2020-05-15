@@ -18,7 +18,7 @@
 
 class EmHAL;
 class EmPixMap;
-class EmScreenUpdateInfo;
+class Frame;
 
 enum { kLEDOff = 0x00, kLEDGreen = 0x01, kLEDRed = 0x02 };
 
@@ -56,7 +56,7 @@ class EmHALHandler {
     virtual Bool GetLCDBacklightOn(void);
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr&, emuptr&);
-    virtual void GetLCDScanlines(EmScreenUpdateInfo& info);
+    virtual void CopyLCDFrame(Frame& frame);
 
     virtual int32 GetDynamicHeapSize(void);
     virtual int32 GetROMSize(void);
@@ -110,7 +110,7 @@ class EmHAL {
     static Bool GetLCDBacklightOn(void);
     static Bool GetLCDHasFrame(void);
     static void GetLCDBeginEnd(emuptr&, emuptr&);
-    static void GetLCDScanlines(EmScreenUpdateInfo& info);
+    static void CopyLCDFrame(Frame& frame);
 
     static int32 GetDynamicHeapSize(void);
     static int32 GetROMSize(void);
