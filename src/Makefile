@@ -58,7 +58,9 @@ SOURCE_CPP = \
 	hardware/EmRegs.cpp \
 	hardware/EmBankRegs.cpp \
 	hardware/EmSPISlave.cpp \
+	hardware/EmUARTDragonball.cpp \
 	EmThreadSafeQueue.cpp \
+	EmTransport.cpp \
 	MetaMemory.cpp \
 	Byteswapping.cpp \
 	DebugMgr.cpp \

@@ -14,6 +14,16 @@
 #ifndef _SWITCHES_H_
 #define _SWITCHES_H_
 
+#ifdef __EMSCRIPTEN__
+    #ifdef __EMSCRIPTEN_PTHREADS__
+        #define EM_THREADS 1
+    #else
+        #define EM_THREADS 0
+    #endif
+#else
+    #define EM_THREADS 1
+#endif
+
 // Use convention: for the preprocessor symbols in this file used to
 // turn features on and off, we follow the "if 0 or not 0" convention,
 // not the "if defined or not defined" convention.  Thus, to turn
