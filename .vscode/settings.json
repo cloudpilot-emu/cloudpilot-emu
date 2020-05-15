@@ -26,7 +26,16 @@
         "istream": "cpp",
         "ostream": "cpp",
         "ios": "cpp",
-        "iostream": "cpp"
+        "iostream": "cpp",
+        "__bit_reference": "cpp",
+        "__node_handle": "cpp",
+        "atomic": "cpp",
+        "bitset": "cpp",
+        "deque": "cpp",
+        "__memory": "cpp",
+        "locale": "cpp",
+        "optional": "cpp",
+        "system_error": "cpp"
     },
     "[c]": {
         "editor.formatOnSave": true
