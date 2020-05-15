@@ -57,6 +57,8 @@ SOURCE_CPP = \
 	hardware/EmCPU68K.cpp \
 	hardware/EmRegs.cpp \
 	hardware/EmBankRegs.cpp \
+	hardware/EmSPISlave.cpp \
+	EmThreadSafeQueue.cpp \
 	MetaMemory.cpp \
 	Byteswapping.cpp \
 	DebugMgr.cpp \
@@ -98,7 +100,7 @@ $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.c
 	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
 $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
-	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
+	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
 clean:
 	-rm -fr $(BUILDDIR_NATIVE) $(BUILDDIR_EMCC) $(BINARY_EMCC) $(BINARY_NATIVE) $(OTHER_EMCC) $(DEPDIR_NATIVE) $(DEPDIR_EMCC)
