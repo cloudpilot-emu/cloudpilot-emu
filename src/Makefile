@@ -60,7 +60,10 @@ SOURCE_CPP = \
 	hardware/EmSPISlave.cpp \
 	hardware/EmUARTDragonball.cpp \
 	hardware/EmRegsEZ.cpp \
+	hardware/EmSPISlaveADS784x.cpp \
+	hardware/EmRegsEZPalmV.cpp \
 	Platform.cpp \
+	EmLowMem.cpp \
 	Frame.cpp \
 	EmPoint.cpp \
 	EmThreadSafeQueue.cpp \
