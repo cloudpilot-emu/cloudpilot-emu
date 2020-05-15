@@ -63,6 +63,7 @@ SOURCE_CPP = \
 	hardware/EmSPISlaveADS784x.cpp \
 	hardware/EmRegsEZPalmV.cpp \
 	Platform.cpp \
+	EmDevice.cpp \
 	EmLowMem.cpp \
 	Frame.cpp \
 	EmPoint.cpp \
