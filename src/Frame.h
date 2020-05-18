@@ -1,13 +1,12 @@
 #ifndef _FRAME_H_
 #define _FRAME_H_
 
+#include <memory>
+
 #include "EmCommon.h"
 
 struct Frame {
     Frame(size_t bufferSize);
-    ~Frame();
-
-    bool lcdOn{false};
 
     uint8 bpp{0};
 
@@ -16,10 +15,13 @@ struct Frame {
     uint32 margin{0};
     uint32 bytesPerLine{0};
 
-    uint8* buffer{nullptr};
-    const size_t bufferSize;
+    uint8* GetBuffer();
+    size_t GetBufferSize() const;
 
    private:
+    const unique_ptr<uint8[]> buffer;
+    const size_t bufferSize;
+
     Frame(const Frame&) = delete;
     Frame(Frame&&) = delete;
 

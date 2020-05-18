@@ -18,10 +18,6 @@
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
 #include "EmSession.h"          // GetDevice
 
-#if 0                      // CSTODO
-    #include "EmDevice.h"  // HardwareSubID
-#endif
-
 // clang-format false
 #include "PalmPack.h"
 #define NON_PORTABLE
@@ -94,11 +90,7 @@ uint8 EmRegsEZPalmV::GetPortInputValue(int port) {
         // Return the hardware sub-ID.
 
         EmAssert(gSession);
-
-#if 0  // CSTODO
-        EmDevice device = gSession->GetDevice();
-        result |= ~device.HardwareSubID();
-#endif
+        result |= ~gSession->GetDevice().HardwareSubID();
     }
 
     return result;

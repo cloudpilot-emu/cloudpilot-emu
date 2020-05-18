@@ -977,7 +977,7 @@ void EmRegsEZ::CopyLCDFrame(Frame& frame) {
     const long hwrEZ328LcdPageSize = 0x00020000;  // 128K
     const long hwrEZ328LcdPageMask = 0xFFFE0000;
 
-    uint8* dst = frame.buffer;
+    uint8* dst = frame.GetBuffer();
     emuptr boundaryAddr = ((baseAddr & hwrEZ328LcdPageMask) + hwrEZ328LcdPageSize);
 
     if (lastLineAddr <= boundaryAddr) {
@@ -998,7 +998,7 @@ void EmRegsEZ::CopyLCDFrame(Frame& frame) {
         lastLineAddr -= hwrEZ328LcdPageSize;  // wrap around
     }
 
-    EmASSERT(frame.bufferSize >= hwrEZ328LcdPageSize);
+    EmASSERT(frame.GetBufferSize() >= hwrEZ328LcdPageSize);
     EmMem_memcpy((void*)dst, firstLineAddr, lastLineAddr - firstLineAddr);
 }
 
@@ -2206,10 +2206,7 @@ UInt8 EmRegsEZ::GetHardwareID(void) {
 
     EmAssert(gSession);
 
-    return 0;
-#if 0  // CSTODO
-    EmDevice device = gSession->GetDevice();
-    long miscFlags = device.HardwareID();
+    long miscFlags = gSession->GetDevice().HardwareID();
 
     // Reverse map the following:
 
@@ -2227,7 +2224,6 @@ UInt8 EmRegsEZ::GetHardwareID(void) {
     if ((miscFlags & hwrMiscFlagID4) != 0) keyState &= ~hwrEZPortDKbdCol3;
 
     return keyState;
-#endif
 }
 
 // ---------------------------------------------------------------------------

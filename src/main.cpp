@@ -2,13 +2,14 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <string>
 
 #include "EmROMReader.h"
 
 using namespace std;
 
-bool readFile(string file, uint8_t*& buffer, long& len) {
+bool readFile(string file, unique_ptr<uint8[]>& buffer, long& len) {
     fstream stream(file, ios_base::in);
     if (stream.fail()) return false;
 
@@ -16,16 +17,16 @@ bool readFile(string file, uint8_t*& buffer, long& len) {
     len = stream.tellg();
 
     stream.seekg(0, ios_base::beg);
-    buffer = (uint8_t*)malloc(len);
+    buffer = make_unique<uint8[]>(len);
 
-    stream.read((char*)buffer, len);
+    stream.read((char*)buffer.get(), len);
     if (stream.gcount() != len) return false;
 
     return true;
 }
 
 void analyzeRom(string file) {
-    uint8_t* buffer;
+    unique_ptr<uint8[]> buffer;
     long len;
 
     if (!readFile(file, buffer, len)) {
@@ -34,11 +35,10 @@ void analyzeRom(string file) {
         exit(1);
     }
 
-    EmROMReader reader(buffer, len);
+    EmROMReader reader(buffer.get(), len);
 
     if (!reader.AcquireCardHeader() || !reader.AcquireROMHeap() || !reader.AcquireDatabases()) {
         cerr << "unable to read ROM --- not a valid ROM image?" << endl;
-        free(buffer);
 
         exit(1);
     }
@@ -70,8 +70,6 @@ void analyzeRom(string file) {
 
     cout << "================================================================================"
          << endl;
-
-    free(buffer);
 }
 
 int main(int argc, const char** argv) {

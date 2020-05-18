@@ -7,7 +7,7 @@ CXX_EMCC  = emcc
 LD_EMCC = emcc
 
 CFLAGS_COMMON = -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack
-CXXFLAGS_COMMON = -std=c++11 -fno-exceptions
+CXXFLAGS_COMMON = -std=c++14 -fno-exceptions
 
 CFLAGS_NATIVE =  $(CFLAGS_COMMON) -O0 -g -fsanitize=address,undefined
 CXXFLAGS_NATIVE = $(CFLAGS_NATIVE) $(CXXFLAGS_COMMON)

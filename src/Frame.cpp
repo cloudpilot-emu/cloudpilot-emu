@@ -1,5 +1,8 @@
 #include "Frame.h"
 
-Frame::Frame(size_t bufferSize) : bufferSize(bufferSize) { buffer = new uint8[bufferSize]; }
+Frame::Frame(size_t bufferSize)
+    : buffer(make_unique<uint8[]>(bufferSize)), bufferSize(bufferSize) {}
 
-Frame::~Frame() { delete[] buffer; }
+uint8* Frame::GetBuffer() { return buffer.get(); }
+
+size_t Frame::GetBufferSize() const { return bufferSize; }

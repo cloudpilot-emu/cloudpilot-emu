@@ -20,3 +20,5 @@ void EmSession::ScheduleResetBanks(void) {
     EmASSERT(cpuInstance);
     cpuInstance->CheckAfterCycle();
 }
+
+EmDevice& EmSession::GetDevice() { return *device; }
