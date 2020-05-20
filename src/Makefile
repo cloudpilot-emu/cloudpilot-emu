@@ -55,6 +55,9 @@ SOURCE_CPP = \
 	hardware/EmHAL.cpp \
 	hardware/EmCPU.cpp \
 	hardware/EmCPU68K.cpp \
+	hardware/EmBankSRAM.cpp \
+	hardware/EmBankDRAM.cpp \
+	hardware/EmBankDummy.cpp \
 	hardware/EmRegs.cpp \
 	hardware/EmBankRegs.cpp \
 	hardware/EmSPISlave.cpp \

@@ -19,3 +19,5 @@ void Platform::getTime(uint32& hour, uint32& month, uint32& day) {
     month = t.tm_mon;
     day = t.tm_mday;
 }
+
+void* Platform::AllocateMemoryClear(size_t count) { return calloc(count, 1); }

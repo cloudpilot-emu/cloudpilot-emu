@@ -7,7 +7,9 @@
 
 namespace Platform {
     template <class T>
-    static void DisposeMemory(T*& p);
+    void DisposeMemory(T*& p);
+
+    void* AllocateMemoryClear(size_t count);
 
     long getMilliseconds();
 
@@ -19,7 +21,7 @@ namespace Platform {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-static void Platform::DisposeMemory(T*& p) {
+void Platform::DisposeMemory(T*& p) {
     if (p) {
         free((void*)p);
 
