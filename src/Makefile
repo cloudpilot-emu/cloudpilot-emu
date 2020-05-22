@@ -6,7 +6,8 @@ CC_EMCC = emcc
 CXX_EMCC  = emcc
 LD_EMCC = emcc
 
-CFLAGS_COMMON = -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack
+CFLAGS_COMMON = -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
+	-DEMULATION_LEVEL=EMULATION_UNIX
 CXXFLAGS_COMMON = -std=c++14 -fno-exceptions
 
 CFLAGS_NATIVE =  $(CFLAGS_COMMON) -O0 -g -fsanitize=address,undefined
@@ -47,7 +48,8 @@ INCLUDE = \
 SOURCE_C = \
 	uae/cpudefs.c \
 	uae/cpuemu.c \
-	uae/cpustbl.c
+	uae/cpustbl.c \
+	palm/Platform/Core/System/Src/Crc.c
 
 SOURCE_CPP = \
 	uae/readcpu.cpp \
@@ -58,6 +60,7 @@ SOURCE_CPP = \
 	hardware/EmBankSRAM.cpp \
 	hardware/EmBankDRAM.cpp \
 	hardware/EmBankDummy.cpp \
+	hardware/EmBankMapped.cpp \
 	hardware/EmRegs.cpp \
 	hardware/EmBankRegs.cpp \
 	hardware/EmSPISlave.cpp \
@@ -65,6 +68,8 @@ SOURCE_CPP = \
 	hardware/EmRegsEZ.cpp \
 	hardware/EmSPISlaveADS784x.cpp \
 	hardware/EmRegsEZPalmV.cpp \
+	hardware/EmBankROM.cpp \
+	Miscellaneous.cpp \
 	Platform.cpp \
 	EmDevice.cpp \
 	EmLowMem.cpp \
