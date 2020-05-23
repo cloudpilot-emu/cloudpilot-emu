@@ -13,14 +13,18 @@ class EmSession {
 
     Bool ExecuteSpecial(Bool checkForResetOnly);
 
-    Bool CheckForBreak(void);
+    Bool CheckForBreak();
 
-    void ScheduleResetBanks(void);
+    void ScheduleResetBanks();
+
+    void ScheduleReset(EmResetType resetType);
 
     EmDevice& GetDevice();
 
    private:
     bool bankResetScheduled{false};
+    bool resetScheduled{false};
+    EmResetType resetType;
 
     unique_ptr<EmDevice> device{nullptr};
 

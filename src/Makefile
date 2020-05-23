@@ -69,6 +69,7 @@ SOURCE_CPP = \
 	hardware/EmSPISlaveADS784x.cpp \
 	hardware/EmRegsEZPalmV.cpp \
 	hardware/EmBankROM.cpp \
+	hardware/EmUAEGlue.cpp \
 	Miscellaneous.cpp \
 	Platform.cpp \
 	EmDevice.cpp \

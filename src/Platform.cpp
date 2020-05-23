@@ -1,6 +1,7 @@
 #include "Platform.h"
 
 #include <chrono>
+#include <cstring>
 #include <ctime>
 
 long Platform::getMilliseconds() {
@@ -20,4 +21,15 @@ void Platform::getTime(uint32& hour, uint32& month, uint32& day) {
     day = t.tm_mday;
 }
 
-void* Platform::AllocateMemoryClear(size_t count) { return calloc(count, 1); }
+void* Platform::AllocateMemory(size_t count) {
+    void* mem = new uint8[count];
+
+    return mem;
+}
+
+void* Platform::AllocateMemoryClear(size_t count) {
+    void* mem = Platform::AllocateMemory(count);
+    memset(mem, 0, count);
+
+    return mem;
+}

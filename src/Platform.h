@@ -9,6 +9,8 @@ namespace Platform {
     template <class T>
     void DisposeMemory(T*& p);
 
+    void* AllocateMemory(size_t count);
+
     void* AllocateMemoryClear(size_t count);
 
     long getMilliseconds();
@@ -23,7 +25,7 @@ namespace Platform {
 template <class T>
 void Platform::DisposeMemory(T*& p) {
     if (p) {
-        free((void*)p);
+        delete[] p;
 
         p = nullptr;
     }
