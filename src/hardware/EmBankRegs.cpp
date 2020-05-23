@@ -97,9 +97,7 @@ static void PrvSwitchBanks(EmRegsList& fromList, EmRegsList& toList, emuptr addr
 
 void EmBankRegs::Initialize(void) {
     EmAssert(gSession);
-#if 0  // CSTODO
     gSession->GetDevice().CreateRegs();
-#endif
 
     EmRegsList::iterator iter = fgSubBanks.begin();
     while (iter != fgSubBanks.end()) {

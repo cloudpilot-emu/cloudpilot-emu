@@ -13,18 +13,15 @@
 
 #include "EmMemory.h"
 
+#include "EmBankDRAM.h"    // EmBankDRAM::Initialize
+#include "EmBankDummy.h"   // EmBankDummy::Initialize
+#include "EmBankMapped.h"  // EmBankMapped::Initialize
+#include "EmBankROM.h"     // EmBankROM::Initialize
+#include "EmBankRegs.h"    // EmBankRegs::Initialize
+#include "EmBankSRAM.h"    // EmBankSRAM::Initialize
 #include "EmCommon.h"
-
-#if 0                          // CSTODO
-    #include "EmBankDRAM.h"    // EmBankDRAM::Initialize
-    #include "EmBankDummy.h"   // EmBankDummy::Initialize
-    #include "EmBankMapped.h"  // EmBankMapped::Initialize
-    #include "EmBankROM.h"     // EmBankROM::Initialize
-    #include "EmBankRegs.h"    // EmBankRegs::Initialize
-    #include "EmBankSRAM.h"    // EmBankSRAM::Initialize
-    #include "EmSession.h"     // gSession, GetDevice
-    #include "MetaMemory.h"    // MetaMemory::Initialize
-#endif
+#include "EmSession.h"   // gSession, GetDevice
+#include "MetaMemory.h"  // MetaMemory::Initialize
 
 /*
         Hitchhiker's Guide To Accessing Memory
@@ -241,47 +238,44 @@ MemAccessFlags kZeroMemAccessFlags;
 // Initializes the RAM, ROM, and special memory areas of the emulator. Takes
 // a stream handle to the ROM.
 
-void Memory::Initialize(EmStream& hROM, RAMSizeType ramSize) {
+void Memory::Initialize(const uint8* romBuffer, size_t romSize, RAMSizeType ramSize) {
     // Clear everything out.
 
-#if 0  // CSTODO
-	memset (gEmMemBanks, 0, sizeof (gEmMemBanks));
+    memset(gEmMemBanks, 0, sizeof(gEmMemBanks));
 
-	// Initialize the valid memory banks.
+    // Initialize the valid memory banks.
 
-	EmBankDummy::Initialize ();
+    EmBankDummy::Initialize();
 
-	// Initialize the Hardware registers memory bank.  Do this
-	// *before* initializing the other RAM banks so that we
-	// know how memory is laid out from the chip selects.
+    // Initialize the Hardware registers memory bank.  Do this
+    // *before* initializing the other RAM banks so that we
+    // know how memory is laid out from the chip selects.
 
-	EmBankRegs::Initialize ();
+    EmBankRegs::Initialize();
 
-	// Initialize EmBankDRAM after initializing the EmBankSRAM. The order is
-	// important for DragonballEZ. On Dragonball devices, DRAM is
-	// at 0x00000000, and SRAM is at 0x10000000. But on EZ devices,
-	// both start at 0x00000000. By calling EmBankDRAM::Initialize
-	// second, we allow it to overwrite the EmAddressBank handlers
-	// for the part of memory where they overlap.
+    // Initialize EmBankDRAM after initializing the EmBankSRAM. The order is
+    // important for DragonballEZ. On Dragonball devices, DRAM is
+    // at 0x00000000, and SRAM is at 0x10000000. But on EZ devices,
+    // both start at 0x00000000. By calling EmBankDRAM::Initialize
+    // second, we allow it to overwrite the EmAddressBank handlers
+    // for the part of memory where they overlap.
 
-	EmBankSRAM::Initialize (ramSize);
-	EmBankDRAM::Initialize ();
+    EmBankSRAM::Initialize(ramSize);
+    EmBankDRAM::Initialize();
 
-	EmBankROM::Initialize (hROM);
+    EmBankROM::Initialize(romSize, romBuffer);
 
-	EmBankMapped::Initialize ();
+    EmBankMapped::Initialize();
 
-	EmAssert (gSession);
-	if (gSession->GetDevice ().HasFlash ())
-		EmBankFlash::Initialize ();
+    EmAssert(gSession);
+    if (gSession->GetDevice().HasFlash()) EmBankFlash::Initialize();
 
-	MetaMemory::Initialize ();
+    MetaMemory::Initialize();
 
-//	Memory::ResetBankHandlers ();	// Can't do this yet.  We can't set the
-									// bank handlers until we know how memory
-									// is laid out, and that information isn't
-									// determined until reset.
-#endif
+    //	Memory::ResetBankHandlers ();	// Can't do this yet.  We can't set the
+    // bank handlers until we know how memory
+    // is laid out, and that information isn't
+    // determined until reset.
 }
 
 /***********************************************************************
@@ -302,22 +296,19 @@ void Memory::Initialize(EmStream& hROM, RAMSizeType ramSize) {
  ***********************************************************************/
 
 void Memory::Reset(Bool hardwareReset) {
-#if 0  // CSTODO
-	EmBankDummy::Reset (hardwareReset);
-	EmBankRegs::Reset (hardwareReset);
-	EmBankSRAM::Reset (hardwareReset);
-	EmBankDRAM::Reset (hardwareReset);
-	EmBankROM::Reset (hardwareReset);
-	EmBankMapped::Reset (hardwareReset);
+    EmBankDummy::Reset(hardwareReset);
+    EmBankRegs::Reset(hardwareReset);
+    EmBankSRAM::Reset(hardwareReset);
+    EmBankDRAM::Reset(hardwareReset);
+    EmBankROM::Reset(hardwareReset);
+    EmBankMapped::Reset(hardwareReset);
 
-	EmAssert (gSession);
-	if (gSession->GetDevice ().HasFlash ())
-		EmBankFlash::Reset (hardwareReset);
+    EmAssert(gSession);
+    if (gSession->GetDevice().HasFlash()) EmBankFlash::Reset(hardwareReset);
 
-	Memory::ResetBankHandlers ();
+    Memory::ResetBankHandlers();
 
-	MetaMemory::Reset ();
-#endif
+    MetaMemory::Reset();
 
     Memory::ResetBankHandlers();
 }
@@ -401,28 +392,26 @@ void Memory::Load(SessionFile& f) {
  ***********************************************************************/
 
 void Memory::Dispose(void) {
-#if 0  // CSTODO
-	EmBankDummy::Dispose ();
-	EmBankRegs::Dispose ();
-	EmBankSRAM::Dispose ();
-	EmBankDRAM::Dispose ();
-	EmBankROM::Dispose ();
-	EmBankMapped::Dispose ();
+    EmBankDummy::Dispose();
+    EmBankRegs::Dispose();
+    EmBankSRAM::Dispose();
+    EmBankDRAM::Dispose();
+    EmBankROM::Dispose();
+    EmBankMapped::Dispose();
 
-	// We can't reliably call GetDevice here.  That's because the
-	// session may not have been initialized (we could be disposing
-	// of everything because an error condition occurred), and so
-	// there may be no assigned device yet.  So we can't ask that
-	// device if there's flash.  However, EmBankFlash::Dispose
-	// doesn't do anything, so we don'thave to worry about it
-	// being called.
+    // We can't reliably call GetDevice here.  That's because the
+    // session may not have been initialized (we could be disposing
+    // of everything because an error condition occurred), and so
+    // there may be no assigned device yet.  So we can't ask that
+    // device if there's flash.  However, EmBankFlash::Dispose
+    // doesn't do anything, so we don'thave to worry about it
+    // being called.
 
-//	EmAssert (gSession);
-//	if (gSession->GetDevice ().HasFlash ())
-//		EmBankFlash::Dispose ();
+    //	EmAssert (gSession);
+    //	if (gSession->GetDevice ().HasFlash ())
+    //		EmBankFlash::Dispose ();
 
-	MetaMemory::Dispose ();
-#endif
+    MetaMemory::Dispose();
 }
 
 // ---------------------------------------------------------------------------
@@ -446,28 +435,24 @@ void Memory::InitializeBanks(EmAddressBank& iBankInitializer, int32 iStartingBan
 // nailed down.
 
 void Memory::ResetBankHandlers(void) {
-#if 0  // CSTODO
-	EmBankDummy::SetBankHandlers ();
-	EmBankRegs::SetBankHandlers ();
-	EmBankSRAM::SetBankHandlers ();
-	EmBankDRAM::SetBankHandlers ();
-	EmBankROM::SetBankHandlers ();
-	EmBankMapped::SetBankHandlers ();
+    EmBankDummy::SetBankHandlers();
+    EmBankRegs::SetBankHandlers();
+    EmBankSRAM::SetBankHandlers();
+    EmBankDRAM::SetBankHandlers();
+    EmBankROM::SetBankHandlers();
+    EmBankMapped::SetBankHandlers();
 
-	if (gSession->GetDevice ().HardwareID () == 0x0a /*halModelIDVisorPrism*/)
-	{
-		// Run this one again.  Visor Prism has this thing where the USB
-		// controller is at 0x10800000, but it sets up the ROM chip select
-		// for 0x10000000 to 0x10FFFFFF.  In order to not have EmBankROM
-		// take control over the USB chip, have EmBankRegs install *after*
-		// EmBankROM.
-		EmBankRegs::SetBankHandlers ();
-	}
+    if (gSession->GetDevice().HardwareID() == 0x0a /*halModelIDVisorPrism*/) {
+        // Run this one again.  Visor Prism has this thing where the USB
+        // controller is at 0x10800000, but it sets up the ROM chip select
+        // for 0x10000000 to 0x10FFFFFF.  In order to not have EmBankROM
+        // take control over the USB chip, have EmBankRegs install *after*
+        // EmBankROM.
+        EmBankRegs::SetBankHandlers();
+    }
 
-	EmAssert (gSession);
-	if (gSession->GetDevice ().HasFlash ())
-		EmBankFlash::SetBankHandlers ();
-#endif
+    EmAssert(gSession);
+    if (gSession->GetDevice().HasFlash()) EmBankFlash::SetBankHandlers();
 }
 
 // ---------------------------------------------------------------------------
@@ -477,7 +462,7 @@ void Memory::ResetBankHandlers(void) {
 // emulated Palm OS's virtual memory.
 
 void Memory::MapPhysicalMemory(const void* addr, uint32 size) {
-    // CSTODO EmBankMapped::MapPhysicalMemory (addr, size);
+    EmBankMapped::MapPhysicalMemory(addr, size);
 }
 
 // ---------------------------------------------------------------------------
@@ -486,16 +471,14 @@ void Memory::MapPhysicalMemory(const void* addr, uint32 size) {
 // Unmaps a range of physical memory from appearing at the same location of
 // the emulated Palm OS's virtual memory.
 
-void Memory::UnmapPhysicalMemory(const void* addr) {
-    // CSTODO EmBankMapped::UnmapPhysicalMemory (addr);
-}
+void Memory::UnmapPhysicalMemory(const void* addr) { EmBankMapped::UnmapPhysicalMemory(addr); }
 
 // ---------------------------------------------------------------------------
 //		� Memory::GetMappingInfo
 // ---------------------------------------------------------------------------
 
 void Memory::GetMappingInfo(emuptr addr, void** start, uint32* len) {
-    // CSTODO EmBankMapped::GetMappingInfo (addr, start, len);
+    EmBankMapped::GetMappingInfo(addr, start, len);
 }
 
 // ---------------------------------------------------------------------------

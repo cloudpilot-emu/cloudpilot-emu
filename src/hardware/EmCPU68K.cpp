@@ -17,6 +17,7 @@
 
 #include "Byteswapping.h"  // Canonical
 #include "DebugMgr.h"      // gExceptionAddress, gExceptionSize, gExceptionForRead
+#include "EmBankROM.h"     // EmBankROM::GetMemoryStart
 #include "EmCommon.h"
 #include "EmHAL.h"      // EmHAL::GetInterruptLevel
 #include "EmMemory.h"   // CEnableFullAccess
@@ -26,7 +27,6 @@
 #include "UAE.h"         // cpuop_func, etc.
 
 #if 0                         // CSTODO
-    #include "EmBankROM.h"    // EmBankROM::GetMemoryStart
     #include "MetaMemory.h"   // IsCPUBreak
     #include "SessionFile.h"  // WriteDBallRegs, etc.
 #endif
@@ -187,11 +187,9 @@ void EmCPU68K::Reset(Bool hardwareReset) {
         // !!! I think that we really need to emulate ROM appearing at NULL.
         // That would break our dependency on EmBankROM.
 
-#if 0  // CSTODO
         emuptr romStart = EmBankROM::GetMemoryStart();
         m68k_areg(regs, 7) = EmMemGet32(romStart);
         m68k_setpc(EmMemGet32(romStart + 4));
-#endif
 
         // Note, on the 68K, the t0 and m flags must always be zero.
 

@@ -295,7 +295,7 @@ class SessionFile;
 
 class Memory {
    public:
-    static void Initialize(EmStream& hROM, RAMSizeType ramSize);
+    static void Initialize(const uint8* romBuffer, size_t romSize, RAMSizeType ramSize);
     static void Reset(Bool hardwareReset);
     static void Save(SessionFile&);
     static void Load(SessionFile&);
