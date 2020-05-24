@@ -35,7 +35,8 @@
         "__memory": "cpp",
         "locale": "cpp",
         "optional": "cpp",
-        "system_error": "cpp"
+        "system_error": "cpp",
+        "complex": "cpp"
     },
     "[c]": {
         "editor.formatOnSave": true

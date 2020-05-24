@@ -5,7 +5,9 @@
 #include <memory>
 #include <string>
 
+#include "EmDevice.h"
 #include "EmROMReader.h"
+#include "EmSession.h"
 
 using namespace std;
 
@@ -25,24 +27,7 @@ bool readFile(string file, unique_ptr<uint8[]>& buffer, long& len) {
     return true;
 }
 
-void analyzeRom(string file) {
-    unique_ptr<uint8[]> buffer;
-    long len;
-
-    if (!readFile(file, buffer, len)) {
-        cerr << "unable to open " << file << endl;
-
-        exit(1);
-    }
-
-    EmROMReader reader(buffer.get(), len);
-
-    if (!reader.AcquireCardHeader() || !reader.AcquireROMHeap() || !reader.AcquireDatabases()) {
-        cerr << "unable to read ROM --- not a valid ROM image?" << endl;
-
-        exit(1);
-    }
-
+void analyzeRom(EmROMReader& reader) {
     cout << "ROM info" << endl;
     cout << "================================================================================"
          << endl;
@@ -79,5 +64,38 @@ int main(int argc, const char** argv) {
         exit(1);
     }
 
-    analyzeRom(argv[1]);
+    string file = argv[1];
+    unique_ptr<uint8[]> buffer;
+    long len;
+
+    if (!readFile(file, buffer, len)) {
+        cerr << "unable to open " << file << endl;
+
+        exit(1);
+    }
+
+    EmROMReader reader(buffer.get(), len);
+
+    if (!reader.AcquireCardHeader() || !reader.AcquireROMHeap() || !reader.AcquireDatabases() ||
+        !reader.AcquireFeatures()) {
+        cerr << "unable to read ROM --- not a valid ROM image?" << endl;
+
+        exit(1);
+    }
+
+    analyzeRom(reader);
+
+    EmDevice* device = new EmDevice("PalmV");
+
+    if (!device->SupportsROM(reader)) {
+        cerr << "ROM not supported by Palm V" << endl;
+
+        exit(1);
+    }
+
+    if (!gSession->Initialize(device, buffer.get(), len)) {
+        cerr << "Session failed to initialize" << endl;
+
+        exit(1);
+    }
 }

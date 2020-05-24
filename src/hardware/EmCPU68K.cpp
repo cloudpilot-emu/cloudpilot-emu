@@ -710,30 +710,6 @@ void EmCPU68K::ProcessException(ExceptionNumber exception) {
     fExceptionHistory[index].sp = m68k_areg(regs, 7);
 #endif
 
-#if HAS_PROFILING
-    // Don't count cycles spent in exception handlers against functions.
-
-    // Get and remember the current PC here.  This is important to make the
-    // profiling routines come out right.  If Poser decides to completely
-    // handle the exception and profiling is on, then the handler will return
-    // true (setting "handled" to true), and adjust the program counter.
-    // Since "handled" is true, Poser calls ProfileInterruptExit, this time
-    // with the current PC.  ProfileInterruptExit sees the adjusted PC, and
-    // determines that the funky TRAP $F thing is going on, resulting in it
-    // pushing a new function-call record on its stack.  However, since Poser
-    // has completely handled the interrupt, we don't want that to happen.
-    // All we want is to remove the entry recorded by ProfileInterruptEnter.
-    // By saving the current PC value here and passing it to ProfileInterruptExit
-    // later, we achieve that affect.  ProfileInterruptExit will record an
-    // "interrupt mismatch", but I can live with that...
-
-    emuptr curpc = m68k_getpc();
-
-    if (gProfilingEnabled) {
-        ProfileInterruptEnter(exception, curpc);
-    }
-#endif
-
     // Let any custom exception handler have a go at it.  If it returns
     // true, it handled it completely, and we don't have anything else to do.
     //
@@ -757,11 +733,6 @@ void EmCPU68K::ProcessException(ExceptionNumber exception) {
     }
 
     if (handled) {
-#if HAS_PROFILING
-        if (gProfilingEnabled) {
-            ProfileInterruptExit(curpc);
-        }
-#endif
         return;
     }
 

@@ -23,7 +23,7 @@ const emuptr kDefaultROMMemoryStart = 0x10C00000;
 
 class EmBankROM {
    public:
-    static void Initialize(size_t len, const uint8* buffer);
+    static bool Initialize(size_t len, const uint8* buffer);
     static void Reset(Bool hardwareReset);
     static void Save(SessionFile&);
     static void Load(SessionFile&);

@@ -238,7 +238,9 @@ MemAccessFlags kZeroMemAccessFlags;
 // Initializes the RAM, ROM, and special memory areas of the emulator. Takes
 // a stream handle to the ROM.
 
-void Memory::Initialize(const uint8* romBuffer, size_t romSize, RAMSizeType ramSize) {
+bool Memory::Initialize(const uint8* romBuffer, size_t romSize, RAMSizeType ramSize) {
+    bool success = true;
+
     // Clear everything out.
 
     memset(gEmMemBanks, 0, sizeof(gEmMemBanks));
@@ -263,7 +265,7 @@ void Memory::Initialize(const uint8* romBuffer, size_t romSize, RAMSizeType ramS
     EmBankSRAM::Initialize(ramSize);
     EmBankDRAM::Initialize();
 
-    EmBankROM::Initialize(romSize, romBuffer);
+    success = success && EmBankROM::Initialize(romSize, romBuffer);
 
     EmBankMapped::Initialize();
 
@@ -272,10 +274,7 @@ void Memory::Initialize(const uint8* romBuffer, size_t romSize, RAMSizeType ramS
 
     MetaMemory::Initialize();
 
-    //	Memory::ResetBankHandlers ();	// Can't do this yet.  We can't set the
-    // bank handlers until we know how memory
-    // is laid out, and that information isn't
-    // determined until reset.
+    return success;
 }
 
 /***********************************************************************

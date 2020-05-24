@@ -75,7 +75,7 @@ static uint8* gROM_MetaMemory;
  *
  ***********************************************************************/
 
-void EmBankROM::Initialize(size_t len, const uint8* buffer) {
+bool EmBankROM::Initialize(size_t len, const uint8* buffer) {
     // When creating a new session, Initialize is called followed by
     // Reset.  When loading a session, Initialize is called by Load.
     // So it makes sense to load the ROM image here.  However, when
@@ -83,7 +83,7 @@ void EmBankROM::Initialize(size_t len, const uint8* buffer) {
     // called, so it is critical that all parts of a horde use the
     // same ROM image.
 
-    EmBankROM::LoadROM(len, buffer);
+    return EmBankROM::LoadROM(len, buffer);
 }
 
 /***********************************************************************

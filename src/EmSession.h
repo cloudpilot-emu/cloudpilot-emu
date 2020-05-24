@@ -9,6 +9,8 @@
 
 class EmSession {
    public:
+    Bool Initialize(EmDevice* device, const uint8* romImage, size_t romLength);
+
     Bool IsNested();
 
     Bool ExecuteSpecial(Bool checkForResetOnly);
@@ -22,13 +24,15 @@ class EmSession {
     EmDevice& GetDevice();
 
    private:
+    void Reset(EmResetType);
+
+   private:
     bool bankResetScheduled{false};
     bool resetScheduled{false};
     EmResetType resetType;
 
-    unique_ptr<EmDevice> device{nullptr};
-
-    unique_ptr<EmCPU> cpuInstance{nullptr};
+    shared_ptr<EmDevice> device{nullptr};
+    unique_ptr<EmCPU> cpu{nullptr};
 };
 
 extern EmSession* gSession;

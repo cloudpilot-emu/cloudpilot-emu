@@ -2032,10 +2032,10 @@ void EmRegsEZ::UpdateInterrupts(void) {
     f68EZ328Regs.intStatusHi = f68EZ328Regs.intPendingHi & ~f68EZ328Regs.intMaskHi;
     f68EZ328Regs.intStatusLo = f68EZ328Regs.intPendingLo & ~f68EZ328Regs.intMaskLo;
 
-    PRINTF("EmRegsEZ::UpdateInterrupts: intMask    = 0x%04lX %04lX", (uint32)f68EZ328Regs.intMaskHi,
-           (uint32)f68EZ328Regs.intMaskLo);
+    PRINTF("EmRegsEZ::UpdateInterrupts: intMask    = 0x%04lX %04lX\n",
+           (uint32)f68EZ328Regs.intMaskHi, (uint32)f68EZ328Regs.intMaskLo);
 
-    PRINTF("EmRegsEZ::UpdateInterrupts: intPending = 0x%04lX %04lX",
+    PRINTF("EmRegsEZ::UpdateInterrupts: intPending = 0x%04lX %04lX\n",
            (uint32)f68EZ328Regs.intPendingHi, (uint32)f68EZ328Regs.intPendingLo);
 
     // If the Interrupt Status Register isn't clear, flag an interrupt.
@@ -2043,7 +2043,7 @@ void EmRegsEZ::UpdateInterrupts(void) {
     if (f68EZ328Regs.intStatusHi || f68EZ328Regs.intStatusLo) {
         regs.spcflags |= SPCFLAG_INT;
 
-        PRINTF("EmRegsEZ::UpdateInterrupts: intStatus  = 0x%04lX %04lX",
+        PRINTF("EmRegsEZ::UpdateInterrupts: intStatus  = 0x%04lX %04lX\n",
                (uint32)f68EZ328Regs.intStatusHi, (uint32)f68EZ328Regs.intStatusLo);
     }
 }

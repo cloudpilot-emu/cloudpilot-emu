@@ -755,8 +755,8 @@ static void handle_merges (long int opcode)
 	for (dstreg=0; dstreg < dstend; dstreg++) {
 	    uae_u16 code = opcode;
 
-	    code = (code & ~smsk) | (srcreg << table68k[opcode].spos);
-	    code = (code & ~dmsk) | (dstreg << table68k[opcode].dpos);
+	    code = (code & ~smsk) | (srcreg == 0 ? 0 : srcreg << table68k[opcode].spos);
+	    code = (code & ~dmsk) | (dstreg == 0 ? 0 : dstreg << table68k[opcode].dpos);
 
 	    /* Check whether this is in fact the same instruction.
 	     * The instructions should never differ, except for the
