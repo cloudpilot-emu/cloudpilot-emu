@@ -36,6 +36,7 @@
 // and avoid using the high bit just for safety.
 
 #define SPCFLAG_END_OF_CYCLE (0x40000000)
+#define SLEEP_TICK_CYCLES 1000
 
 // Data needed by UAE.
 
@@ -252,12 +253,14 @@ void EmCPU68K::Load(SessionFile& f) {
 //		� EmCPU68K::Execute
 // ---------------------------------------------------------------------------
 
-void EmCPU68K::Execute(void) {
+uint32 EmCPU68K::Execute(uint32 maxCycles) {
     // This function is the bottleneck for all 68K emulation.  It's
     // important that it run as quickly as possible.  To that end,
     // fine tune register allocation as much as we can by hand.
 
     int counter = 0;
+    uint32 cycles;
+    fCurrentCycles = 0;
     cpuop_func** functable = cpufunctbl;
 
 #define pc_p (regs.pc_p)
@@ -310,7 +313,9 @@ void EmCPU68K::Execute(void) {
         EmOpcode68K opcode;
 
         opcode = do_get_mem_word(pc_p);
-        fCycleCount += (functable[opcode])(opcode);
+        cycles = (functable[opcode])(opcode);
+        fCycleCount += cycles;
+        fCurrentCycles += cycles;
         // =======================================================================
 
         // Perform periodic tasks.
@@ -327,8 +332,10 @@ void EmCPU68K::Execute(void) {
         // -----------------------------------------------------------------------
 
         if (spcflags) {
-            if (this->ExecuteSpecial()) break;
+            if (this->ExecuteSpecial(maxCycles)) break;
         }
+
+        if (fCurrentCycles > maxCycles) break;
 
     }  // while (1)
 
@@ -337,13 +344,15 @@ void EmCPU68K::Execute(void) {
 #undef pc_oldp
 #undef spcflags
 #undef session
+
+    return fCurrentCycles;
 }
 
 // ---------------------------------------------------------------------------
 //		� EmCPU68K::ExecuteSpecial
 // ---------------------------------------------------------------------------
 
-Bool EmCPU68K::ExecuteSpecial(void) {
+Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
     // If we're making subroutine calls, then all we process are requests
     // to break from the CPU loop.  We don't want interrupts, tracing, etc.
     // getting in the way.
@@ -372,7 +381,7 @@ Bool EmCPU68K::ExecuteSpecial(void) {
     }
 
     if (regs.spcflags & SPCFLAG_STOP) {
-        if (this->ExecuteStoppedLoop()) {
+        if (this->ExecuteStoppedLoop(maxCycles)) {
             regs.spcflags &= ~SPCFLAG_BRK;
             return true;
         }
@@ -420,7 +429,7 @@ Bool EmCPU68K::ExecuteSpecial(void) {
 //		� EmCPU68K::ExecuteStoppedLoop
 // ---------------------------------------------------------------------------
 
-Bool EmCPU68K::ExecuteStoppedLoop(void) {
+Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
     EmSession* session = fSession;
 
     EmAssert(session);
@@ -458,7 +467,9 @@ Bool EmCPU68K::ExecuteStoppedLoop(void) {
             }
         }
 
-        if (this->CheckForBreak()) {
+        fCurrentCycles += SLEEP_TICK_CYCLES;
+
+        if (this->CheckForBreak() || fCurrentCycles > maxCycles) {
             return true;
         }
     } while (regs.spcflags & SPCFLAG_STOP);

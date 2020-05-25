@@ -6,8 +6,10 @@
 #include <string>
 
 #include "EmDevice.h"
+#include "EmHAL.h"
 #include "EmROMReader.h"
 #include "EmSession.h"
+#include "Frame.h"
 
 using namespace std;
 
@@ -99,5 +101,11 @@ int main(int argc, const char** argv) {
         exit(1);
     }
 
-    gSession->RunEmulation();
+    Frame frame(1024 * 1024);
+    while (true) {
+        gSession->RunEmulation();
+        EmHAL::CopyLCDFrame(frame);
+
+        cout << frame.lineWidth << "x" << frame.lineWidth << "@" << (int)frame.bpp << endl;
+    }
 }

@@ -23,7 +23,7 @@ class EmSession {
 
     EmDevice& GetDevice();
 
-    void RunEmulation();
+    void RunEmulation(uint32 maxCycles = 10000);
 
    private:
     void Reset(EmResetType);

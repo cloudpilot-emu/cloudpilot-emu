@@ -48,7 +48,7 @@ class EmCPU {
 
     // Execute the main CPU loop until asked to stop.
 
-    virtual void Execute(void) = 0;
+    virtual uint32 Execute(uint32 maxCycles) = 0;
     virtual void CheckAfterCycle(void) = 0;
 
     // Low-level access to CPU state.

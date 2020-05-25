@@ -1687,7 +1687,7 @@ void EmRegsEZ::spiMasterControlWrite(emuptr address, int size, uint32 value) {
 
             uint16 numBits = (spiMasterControl & hwrEZ328SPIMControlBitsMask) + 1;
 
-            uint16 oldBitsMask = ~0 << numBits;
+            uint16 oldBitsMask = ~0u << numBits;
             uint16 newBitsMask = ~oldBitsMask;
 
             spiMasterData = /*((spiMasterData << numBits) & oldBitsMask) | */

@@ -222,7 +222,7 @@ class EmCPU68K : public EmCPU {
 
     // Execute the main CPU loop until asked to stop.
 
-    virtual void Execute(void);
+    virtual uint32 Execute(uint32 maxCycles);
     virtual void CheckAfterCycle(void);
 
     // Low-level access to CPU state.
@@ -287,8 +287,8 @@ class EmCPU68K : public EmCPU {
     void AddressError(emuptr address, long size, Bool forRead);
 
    private:
-    Bool ExecuteSpecial(void);
-    Bool ExecuteStoppedLoop(void);
+    Bool ExecuteSpecial(uint32 maxCycles);
+    Bool ExecuteStoppedLoop(uint32 maxCycles);
 
     void CycleSlowly(Bool sleeping);
     Bool CheckForBreak(void);
@@ -308,6 +308,7 @@ class EmCPU68K : public EmCPU {
     Hook68KRTSList fHookRTS;
     Hook68KNewPCList fHookNewPC;
     Hook68KNewSPList fHookNewSP;
+    uint32 fCurrentCycles;
 
 #if REGISTER_HISTORY
     #define kRegHistorySize 512
