@@ -23,6 +23,8 @@ class EmSession {
 
     EmDevice& GetDevice();
 
+    void RunEmulation();
+
    private:
     void Reset(EmResetType);
 

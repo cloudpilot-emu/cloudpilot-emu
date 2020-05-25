@@ -98,4 +98,6 @@ int main(int argc, const char** argv) {
 
         exit(1);
     }
+
+    gSession->RunEmulation();
 }

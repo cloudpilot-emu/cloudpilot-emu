@@ -7,5 +7,8 @@ int log::printf(const char* format, ...) {
     va_list args;
     va_start(args, format);
 
-    return vfprintf(stderr, format, args);
+    int res = vfprintf(stderr, format, args);
+    fprintf(stderr, "\n");
+
+    return res;
 }

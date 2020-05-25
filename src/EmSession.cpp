@@ -70,3 +70,9 @@ void EmSession::Reset(EmResetType resetType) {
     bankResetScheduled = false;
     resetScheduled = false;
 }
+
+void EmSession::RunEmulation() {
+    EmAssert(cpu);
+
+    cpu->Execute();
+}
