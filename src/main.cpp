@@ -10,6 +10,7 @@
 #include "EmROMReader.h"
 #include "EmSession.h"
 #include "Frame.h"
+#include "SDL2/SDL.h"
 
 using namespace std;
 
@@ -59,14 +60,7 @@ void analyzeRom(EmROMReader& reader) {
          << endl;
 }
 
-int main(int argc, const char** argv) {
-    if (argc != 2) {
-        cerr << "usage: cloudpalm <romimage.rom>" << endl;
-
-        exit(1);
-    }
-
-    string file = argv[1];
+void initializeSession(string file) {
     unique_ptr<uint8[]> buffer;
     long len;
 
@@ -100,12 +94,70 @@ int main(int argc, const char** argv) {
 
         exit(1);
     }
+}
+
+int main(int argc, const char** argv) {
+    if (argc != 2) {
+        cerr << "usage: cloudpalm <romimage.rom>" << endl;
+
+        exit(1);
+    }
+
+    initializeSession(argv[1]);
+
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+
+    if (SDL_CreateWindowAndRenderer(480, 480, 0, &window, &renderer) != 0) {
+        cerr << "unable to create SDL window: " << SDL_GetError() << endl;
+        exit(1);
+    }
+
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
+                                             SDL_TEXTUREACCESS_STREAMING, 160, 160);
 
     Frame frame(1024 * 1024);
-    while (true) {
-        gSession->RunEmulation();
+    bool running = true;
+
+    while (running) {
+        uint32 cycles = gSession->RunEmulation(100000);
         EmHAL::CopyLCDFrame(frame);
 
-        cout << frame.lineWidth << "x" << frame.lineWidth << "@" << (int)frame.bpp << endl;
+        cerr << "ran for " << cycles << " cycles" << endl;
+
+        if (frame.lineWidth == 160 && frame.lines == 160 && frame.bpp) {
+            uint32* pixels;
+            int pitch;
+            uint8* buffer = frame.GetBuffer();
+
+            SDL_LockTexture(texture, nullptr, (void**)&pixels, &pitch);
+
+            for (int x = 0; x < 160; x++)
+                for (int y = 0; y < 160; y++)
+                    pixels[y * pitch / 4 + x] =
+                        ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
+                          (0x80 >> ((x + frame.margin) % 8))) == 0
+                             ? 0xffffffff
+                             : 0x000000ff);
+
+            SDL_UnlockTexture(texture);
+
+            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+            SDL_RenderPresent(renderer);
+        }
+
+        SDL_Event event;
+
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) running = false;
+        }
     }
+
+    SDL_Quit();
 }

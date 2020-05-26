@@ -71,8 +71,8 @@ void EmSession::Reset(EmResetType resetType) {
     resetScheduled = false;
 }
 
-void EmSession::RunEmulation(uint32 maxCycles) {
+uint32 EmSession::RunEmulation(uint32 maxCycles) {
     EmAssert(cpu);
 
-    cpu->Execute(maxCycles);
+    return cpu->Execute(maxCycles);
 }
