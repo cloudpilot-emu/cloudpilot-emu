@@ -54,7 +54,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDBacklightOn(void) = 0;
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr&, emuptr&);
-    virtual void CopyLCDFrame(Frame& frame);
+    virtual bool CopyLCDFrame(Frame& frame);
 
     virtual EmUARTDeviceType GetUARTDevice(int uartNum);
     virtual int32 GetDynamicHeapSize(void);

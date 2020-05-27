@@ -254,9 +254,9 @@ void EmHAL::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
     EmHAL::GetRootHandler()->GetLCDBeginEnd(begin, end);
 }
 
-void EmHAL::CopyLCDFrame(Frame& frame) {
+bool EmHAL::CopyLCDFrame(Frame& frame) {
     EmAssert(EmHAL::GetRootHandler());
-    EmHAL::GetRootHandler()->CopyLCDFrame(frame);
+    return EmHAL::GetRootHandler()->CopyLCDFrame(frame);
 }
 
 // ---------------------------------------------------------------------------
@@ -614,9 +614,9 @@ void EmHALHandler::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 //		� EmHALHandler::GetLCDScanlines
 // ---------------------------------------------------------------------------
 
-void EmHALHandler::CopyLCDFrame(Frame& frame) {
+bool EmHALHandler::CopyLCDFrame(Frame& frame) {
     EmAssert(this->GetNextHandler());
-    this->GetNextHandler()->CopyLCDFrame(frame);
+    return this->GetNextHandler()->CopyLCDFrame(frame);
 }
 
 // ---------------------------------------------------------------------------

@@ -959,7 +959,7 @@ void EmRegsEZ::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 //		� EmRegsEZ::GetLCDScanlines
 // ---------------------------------------------------------------------------
 
-void EmRegsEZ::CopyLCDFrame(Frame& frame) {
+bool EmRegsEZ::CopyLCDFrame(Frame& frame) {
     // Get the screen metrics.
 
     frame.bpp = 1 << (READ_REGISTER(lcdPanelControl) & 0x03);
@@ -976,6 +976,8 @@ void EmRegsEZ::CopyLCDFrame(Frame& frame) {
     // TODO: probably move to <M68EZ328Hwr.h>
     const long hwrEZ328LcdPageSize = 0x00020000;  // 128K
     const long hwrEZ328LcdPageMask = 0xFFFE0000;
+
+    if (frame.lines * frame.bytesPerLine > hwrEZ328LcdPageSize) return false;
 
     uint8* dst = frame.GetBuffer();
     emuptr boundaryAddr = ((baseAddr & hwrEZ328LcdPageMask) + hwrEZ328LcdPageSize);
@@ -1000,6 +1002,8 @@ void EmRegsEZ::CopyLCDFrame(Frame& frame) {
 
     EmASSERT(frame.GetBufferSize() >= hwrEZ328LcdPageSize);
     EmMem_memcpy((void*)dst, firstLineAddr, lastLineAddr - firstLineAddr);
+
+    return true;
 }
 
 // ---------------------------------------------------------------------------

@@ -122,16 +122,16 @@ int main(int argc, const char** argv) {
     SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
                                              SDL_TEXTUREACCESS_STREAMING, 160, 160);
 
-    Frame frame(1024 * 1024);
+    Frame frame(1024 * 128);
     bool running = true;
 
     while (running) {
         uint32 cycles = gSession->RunEmulation(100000);
-        EmHAL::CopyLCDFrame(frame);
+        bool updateScreen = EmHAL::CopyLCDFrame(frame);
 
         cerr << "ran for " << cycles << " cycles" << endl;
 
-        if (frame.lineWidth == 160 && frame.lines == 160 && frame.bpp) {
+        if (updateScreen && frame.lineWidth == 160 && frame.lines == 160 && frame.bpp) {
             uint32* pixels;
             int pitch;
             uint8* buffer = frame.GetBuffer();
