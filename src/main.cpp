@@ -10,6 +10,7 @@
 #include "EmROMReader.h"
 #include "EmSession.h"
 #include "Frame.h"
+#include "Platform.h"
 #include "SDL2/SDL.h"
 
 using namespace std;
@@ -124,14 +125,24 @@ int main(int argc, const char** argv) {
 
     Frame frame(1024 * 128);
     bool running = true;
+    const long millisOffset = Platform::getMilliseconds() - 10;
+    long clockEmu = 0;
+
+    constexpr int mhz = 4;
 
     while (running) {
-        uint32 cycles = gSession->RunEmulation(100000);
+        const long millis = Platform::getMilliseconds();
+        if (millis - millisOffset - clockEmu > 500) clockEmu = millis - millisOffset - 10;
+
+        const uint32 cycles = (millis - millisOffset - clockEmu) * 1000 * mhz;
+        uint32 cyclesPassed = 0;
+
+        while (cyclesPassed < cycles) cyclesPassed += gSession->RunEmulation(cycles);
+        clockEmu += cyclesPassed / 1000 / mhz;
+
         bool updateScreen = EmHAL::CopyLCDFrame(frame);
 
-        cerr << "ran for " << cycles << " cycles" << endl;
-
-        if (updateScreen && frame.lineWidth == 160 && frame.lines == 160 && frame.bpp) {
+        if (updateScreen && frame.lineWidth == 160 && frame.lines == 160 && frame.bpp == 1) {
             uint32* pixels;
             int pitch;
             uint8* buffer = frame.GetBuffer();
