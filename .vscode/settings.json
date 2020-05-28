@@ -36,12 +36,16 @@
         "locale": "cpp",
         "optional": "cpp",
         "system_error": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "*.tcc": "cpp"
     },
     "[c]": {
         "editor.formatOnSave": true
     },
     "[cpp]": {
+        "editor.formatOnSave": true
+    },
+    "[html]": {
         "editor.formatOnSave": true
     }
 }

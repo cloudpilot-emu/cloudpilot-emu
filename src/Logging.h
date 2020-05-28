@@ -3,6 +3,10 @@
 
 namespace log {
     int printf(const char* format, ...);
+
+    void enable();
+
+    void disable();
 }  // namespace log
 
 #endif  // _LOGGING_H

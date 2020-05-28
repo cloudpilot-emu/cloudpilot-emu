@@ -14,9 +14,15 @@ CFLAGS_NATIVE = $(CFLAGS_COMMON) -O0 -g -fsanitize=address,undefined $(shell sdl
 CXXFLAGS_NATIVE = $(CFLAGS_NATIVE) $(CXXFLAGS_COMMON)
 LDFLAGS_NATIVE = -fsanitize=address,undefined $(shell sdl2-config --libs)
 
-CFLAGS_EMCC =  $(CFLAGS_COMMON) -O2 -s USE_SDL=2
+CFLAGS_EMCC =  $(CFLAGS_COMMON) -Os -s USE_SDL=2
 CXXFLAGS_EMCC= $(CFLAGS_EMCC) $(CXXFLAGS_COMMON)
-LDFLAGS_EMCC = -Wno-version-check -s EXIT_RUNTIME=1 -s NODERAWFS=1 -s USE_SDL=2
+LDFLAGS_EMCC = -Wno-version-check \
+	-s EXIT_RUNTIME=1 \
+	-s USE_SDL=2 \
+	-s MODULARIZE=1 \
+	-s EXPORT_NAME=createModule \
+	-s EXPORTED_RUNTIME_METHODS=["FS"] \
+	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain"]
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps

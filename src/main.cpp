@@ -9,13 +9,15 @@
     #include <emscripten.h>
 #endif
 
+#include <SDL2/SDL.h>
+
 #include "EmDevice.h"
 #include "EmHAL.h"
 #include "EmROMReader.h"
 #include "EmSession.h"
 #include "Frame.h"
+#include "Logging.h"
 #include "Platform.h"
-#include "SDL2/SDL.h"
 
 using namespace std;
 
@@ -178,6 +180,7 @@ int main(int argc, const char** argv) {
     MainLoopContext ctx(renderer, texture);
 
 #ifdef __EMSCRIPTEN__
+    log::disable();
     emscripten_set_main_loop_arg((em_arg_callback_func)mainLoop, &ctx, 0, true);
 #else
     bool running = true;

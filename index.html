@@ -1,0 +1,93 @@
+<html>
+
+<head>
+    <title>Cloudpilot</title>
+    <style>
+        #rom-name {
+            margin-bottom: 1rem;
+        }
+
+        #canvas {
+            width: 480px;
+            height: 480px;
+            display: block;
+            margin-top: 1rem;
+            border: 1px solid black;
+        }
+
+        #rom-upload {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="rom-name">&nbsp;</div>
+    <label>
+        <input type="file" id="rom-upload"></input>
+        <button type="button" id="rom-upload-button">Select ROM</button>
+    </label>
+    <canvas id="canvas" width="160" height="160"></canvas>
+    <script src="src/cloudpilot.js"></script>
+    <script>
+        (function () {
+            const romUploadButton = document.getElementById('rom-upload-button');
+            const romUpload = document.getElementById('rom-upload');
+            const romName = document.getElementById('rom-name');
+
+            const KEY_ROM_NAME = 'romName';
+            const KEY_ROM_IMAGE = 'romImage';
+
+            let running = false;
+
+            async function main(module) {
+                function launch() {
+                    romName.innerText = `ROM: ${localStorage.getItem(KEY_ROM_NAME)}`;
+                    running = true;
+
+                    module.FS.writeFile('/palm.rom', Uint8Array.from(atob(localStorage.getItem(KEY_ROM_IMAGE)), c => c.charCodeAt(0)));
+                    module.callMain(['/palm.rom']);
+                }
+
+                async function onRomFileSelect(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const content = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+
+                        reader.addEventListener('load', () => resolve(new Uint8Array(reader.result)));
+                        reader.addEventListener('error', () => reject(reader.error));
+
+                        reader.readAsArrayBuffer(file);
+                    });
+
+                    let str = '';
+                    for (let x of content) str += String.fromCharCode(x);
+
+                    localStorage.setItem(KEY_ROM_NAME, file.name);
+                    localStorage.setItem(KEY_ROM_IMAGE, btoa(str));
+
+                    if (!running) launch();
+                }
+
+                romUploadButton.addEventListener('click', () => romUpload.click());
+                romUpload.addEventListener('change', onRomFileSelect);
+
+                if (localStorage.getItem(KEY_ROM_NAME) && localStorage.getItem(KEY_ROM_IMAGE)) {
+                    launch();
+                } else {
+                    romName.innerText = 'No ROM image selected';
+                }
+            }
+
+            createModule({
+                noInitialRun: true,
+                canvas: document.getElementById('canvas')
+            })
+                .then(main);
+        })()
+    </script>
+</body>
+
+</html>
