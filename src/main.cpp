@@ -5,6 +5,10 @@
 #include <memory>
 #include <string>
 
+#ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+#endif
+
 #include "EmDevice.h"
 #include "EmHAL.h"
 #include "EmROMReader.h"
@@ -97,6 +101,54 @@ void initializeSession(string file) {
     }
 }
 
+struct MainLoopContext {
+    MainLoopContext(SDL_Renderer* renderer, SDL_Texture* texture)
+        : renderer(renderer), texture(texture) {}
+
+    SDL_Renderer* renderer{nullptr};
+    SDL_Texture* texture{nullptr};
+};
+
+void mainLoop(MainLoopContext* ctx) {
+    static Frame frame(1024 * 128);
+    static const long millisOffset = Platform::getMilliseconds() - 10;
+    static long clockEmu = 0;
+
+    constexpr int mhz = 4;
+
+    const long millis = Platform::getMilliseconds();
+    if (millis - millisOffset - clockEmu > 500) clockEmu = millis - millisOffset - 10;
+
+    const uint32 cycles = (millis - millisOffset - clockEmu) * 1000 * mhz;
+    uint32 cyclesPassed = 0;
+
+    while (cyclesPassed < cycles) cyclesPassed += gSession->RunEmulation(cycles);
+    clockEmu += cyclesPassed / 1000 / mhz;
+
+    bool updateScreen = EmHAL::CopyLCDFrame(frame);
+
+    if (updateScreen && frame.lineWidth == 160 && frame.lines == 160 && frame.bpp == 1) {
+        uint32* pixels;
+        int pitch;
+        uint8* buffer = frame.GetBuffer();
+
+        SDL_LockTexture(ctx->texture, nullptr, (void**)&pixels, &pitch);
+
+        for (int x = 0; x < 160; x++)
+            for (int y = 0; y < 160; y++)
+                pixels[y * pitch / 4 + x] =
+                    ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
+                      (0x80 >> ((x + frame.margin) % 8))) == 0
+                         ? 0xffffffff
+                         : 0x000000ff);
+
+        SDL_UnlockTexture(ctx->texture);
+
+        SDL_RenderCopy(ctx->renderer, ctx->texture, nullptr, nullptr);
+        SDL_RenderPresent(ctx->renderer);
+    }
+}
+
 int main(int argc, const char** argv) {
     if (argc != 2) {
         cerr << "usage: cloudpalm <romimage.rom>" << endl;
@@ -123,45 +175,15 @@ int main(int argc, const char** argv) {
     SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
                                              SDL_TEXTUREACCESS_STREAMING, 160, 160);
 
-    Frame frame(1024 * 128);
-    bool running = true;
-    const long millisOffset = Platform::getMilliseconds() - 10;
-    long clockEmu = 0;
+    MainLoopContext ctx(renderer, texture);
 
-    constexpr int mhz = 4;
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop_arg((em_arg_callback_func)mainLoop, &ctx, 0, true);
+#else
+    bool running = true;
 
     while (running) {
-        const long millis = Platform::getMilliseconds();
-        if (millis - millisOffset - clockEmu > 500) clockEmu = millis - millisOffset - 10;
-
-        const uint32 cycles = (millis - millisOffset - clockEmu) * 1000 * mhz;
-        uint32 cyclesPassed = 0;
-
-        while (cyclesPassed < cycles) cyclesPassed += gSession->RunEmulation(cycles);
-        clockEmu += cyclesPassed / 1000 / mhz;
-
-        bool updateScreen = EmHAL::CopyLCDFrame(frame);
-
-        if (updateScreen && frame.lineWidth == 160 && frame.lines == 160 && frame.bpp == 1) {
-            uint32* pixels;
-            int pitch;
-            uint8* buffer = frame.GetBuffer();
-
-            SDL_LockTexture(texture, nullptr, (void**)&pixels, &pitch);
-
-            for (int x = 0; x < 160; x++)
-                for (int y = 0; y < 160; y++)
-                    pixels[y * pitch / 4 + x] =
-                        ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
-                          (0x80 >> ((x + frame.margin) % 8))) == 0
-                             ? 0xffffffff
-                             : 0x000000ff);
-
-            SDL_UnlockTexture(texture);
-
-            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-            SDL_RenderPresent(renderer);
-        }
+        mainLoop(&ctx);
 
         SDL_Event event;
 
@@ -171,4 +193,5 @@ int main(int argc, const char** argv) {
     }
 
     SDL_Quit();
+#endif
 }
