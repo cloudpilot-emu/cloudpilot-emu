@@ -18,6 +18,12 @@
         #rom-upload {
             display: none;
         }
+
+        #console {
+            margin-top: 1rem;
+            width: 100%;
+            word-wrap: break-word;
+        }
     </style>
 </head>
 
@@ -28,12 +34,14 @@
         <button type="button" id="rom-upload-button">Select ROM</button>
     </label>
     <canvas id="canvas" width="160" height="160"></canvas>
+    <pre id="console"></pre>
     <script src="src/cloudpilot.js"></script>
     <script>
         (function () {
             const romUploadButton = document.getElementById('rom-upload-button');
             const romUpload = document.getElementById('rom-upload');
             const romName = document.getElementById('rom-name');
+            const consoleElt = document.getElementById('console');
 
             const KEY_ROM_NAME = 'romName';
             const KEY_ROM_IMAGE = 'romImage';
@@ -68,7 +76,11 @@
                     localStorage.setItem(KEY_ROM_NAME, file.name);
                     localStorage.setItem(KEY_ROM_IMAGE, btoa(str));
 
-                    if (!running) launch();
+                    if (!running) {
+                        launch();
+                    } else {
+                        window.location.reload();
+                    }
                 }
 
                 romUploadButton.addEventListener('click', () => romUpload.click());
@@ -83,7 +95,9 @@
 
             createModule({
                 noInitialRun: true,
-                canvas: document.getElementById('canvas')
+                canvas: document.getElementById('canvas'),
+                print: x => { consoleElt.innerText += x; consoleElt.innerHTML += '<br/>'; },
+                printErr: x => { consoleElt.innerText += x; consoleElt.innerHTML += '<br/>'; }
             })
                 .then(main);
         })()
