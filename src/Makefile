@@ -80,6 +80,7 @@ SOURCE_CPP = \
 	Platform.cpp \
 	EmDevice.cpp \
 	EmLowMem.cpp \
+	EmPalmOS.cpp \
 	Frame.cpp \
 	EmPoint.cpp \
 	EmThreadSafeQueue.cpp \

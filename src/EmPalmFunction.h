@@ -22,7 +22,17 @@
 
 inline uint16 SysTrapIndex(uint16 trapWord) { return (uint16)(trapWord & ~0xF000); }
 
-#if 0                   // CSTODO
+inline uint16 LibTrapIndex(uint16 trapWord) {
+    return (uint16)(SysTrapIndex(trapWord) - SysTrapIndex(sysLibTrapBase));
+}
+
+inline Bool IsSystemTrap(uint16 trapWord) {
+    return SysTrapIndex(trapWord) < SysTrapIndex(sysLibTrapBase);
+}
+
+inline Bool IsLibraryTrap(uint16 trapWord) { return !IsSystemTrap(trapWord); }
+
+#if 0                   // CSDUBIOUS
     #include "EmCPU.h"  // GetPC
 
 struct SystemCallContext;
@@ -97,31 +107,6 @@ void	EmPalmFunctionInit					(void);
 FOR_EACH_FUNCTION(DECLARE_FUNCTION)
 
     #undef DECLARE_FUNCTION
-
-
-// Inline function to turn a trap word (0xA###) into an index into the
-// trap table.  The method used here (masking off the uppermost nybble
-// instead of, say, subtracting sysTrapBase) matches the ROM.
-
-inline uint16 SysTrapIndex (uint16 trapWord)
-{
-	return (uint16) (trapWord & ~0xF000);
-}
-
-inline uint16 LibTrapIndex (uint16 trapWord)
-{
-	return (uint16) (SysTrapIndex (trapWord) - SysTrapIndex (sysLibTrapBase));
-}
-
-inline Bool IsSystemTrap (uint16 trapWord)
-{
-	return SysTrapIndex (trapWord) < SysTrapIndex (sysLibTrapBase);
-}
-
-inline Bool IsLibraryTrap (uint16 trapWord)
-{
-	return !IsSystemTrap (trapWord);
-}
 
     #define kProscribedDocumentedSystemUseOnly 1
     #define kProscribedUndocumentedSystemUseOnly 2

@@ -31,47 +31,6 @@
 
 EmAliasLowMemHdrType<PAS> EmLowMem::fgLowMem(EmMemNULL);
 
-#pragma mark -
-
-// ===========================================================================
-//		� EmLowMem
-// ===========================================================================
-
-static uint16 gSysDispatchTableSize;
-
-/***********************************************************************
- *
- * FUNCTION:	EmLowMem::Initialize
- *
- * DESCRIPTION: Standard initialization function.  Responsible for
- *				initializing this sub-system when a new session is
- *				created.  Will be followed by at least one call to
- *				Reset or Load.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmLowMem::Initialize(void) { gSysDispatchTableSize = 0; }
-
-/***********************************************************************
- *
- * FUNCTION:	EmLowMem::Dispose
- *
- * DESCRIPTION: Standard dispose function.	Completely release any
- *				resources acquired or allocated in Initialize and/or
- *				Load.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmLowMem::Dispose(void) {}
-
 /***********************************************************************
  *
  * FUNCTION:	EmLowMem::GetEvtMgrIdle
@@ -134,29 +93,10 @@ uint8 EmLowMem::GetEvtMgrIdle(void) {
  ***********************************************************************/
 
 Bool EmLowMem::TrapExists(uint16 iATrap) {
-#if 0
-	// No longer cache the dispatch table size.  Handspring changes the
-	// size of the dispatch table after the first system call, resulting
-	// in Poser caching the old table size, and thus complaining that
-	// some functions are not implemented when in fact they are.
-
-	// If we haven't already, get the number of traps in this system.
-
-	if (gSysDispatchTableSize == 0)
-	{
-		CEnableFullAccess	munge;	// Remove blocks on memory access.
-
-		gSysDispatchTableSize = EmLowMem_GetGlobal (sysDispatchTableSize);
-	}
-
-	return (::SysTrapIndex (iATrap) == ::SysTrapIndex (sysTrapHostControl)) ||
-			::SysTrapIndex (iATrap) < gSysDispatchTableSize;
-#else
     CEnableFullAccess munge;  // Remove blocks on memory access.
     uint16 sysDispatchTableSize = EmLowMem_GetGlobal(sysDispatchTableSize);
     return (::SysTrapIndex(iATrap) == ::SysTrapIndex(sysTrapHostControl)) ||
            ::SysTrapIndex(iATrap) < sysDispatchTableSize;
-#endif
 }
 
 /***********************************************************************

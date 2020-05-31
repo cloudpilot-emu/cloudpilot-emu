@@ -20,9 +20,6 @@ class SessionFile;
 
 class EmLowMem {
    public:
-    static void Initialize(void);
-    static void Dispose(void);
-
     static uint8 GetEvtMgrIdle(void);
     static Bool TrapExists(uint16 iATrap);
     static emuptr GetTrapAddress(uint16 iATrap);

@@ -64,7 +64,7 @@
 // ========== Windows socket mapping ==========
 // ============================================
 
-#include <sys/socket.h>  // socklen_t
+// #include <sys/socket.h>  // socklen_t
 #include <sys/types.h>
 
 #if defined(NO_TYPE_SOCKLEN_T)

@@ -2,6 +2,7 @@
 
 #include "EmCPU.h"
 #include "EmMemory.h"
+#include "EmPalmOS.h"
 
 namespace {
     EmSession _gSession;
@@ -15,6 +16,7 @@ Bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     cpu.reset(device->CreateCPU(this));
 
     if (!Memory::Initialize(romImage, romLength, device->MinRAMSize())) return false;
+    EmPalmOS::Initialize();
 
     Reset(EmResetType::kResetSoft);
 
@@ -66,6 +68,7 @@ void EmSession::Reset(EmResetType resetType) {
 
     Memory::Reset((resetType & kResetTypeMask) != kResetSys);
     cpu->Reset((resetType & kResetTypeMask) != kResetSys);
+    EmPalmOS::Reset();
 
     bankResetScheduled = false;
     resetScheduled = false;

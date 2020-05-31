@@ -60,8 +60,6 @@ typedef vector<RGBType> RGBList;
 struct SystemCallContext {
     emuptr fPC;         // PC at which the system call was made.
     emuptr fNextPC;     // PC of instruction after system call.
-    emuptr fDestPC1;    // Address of system function (in the trap table).
-    emuptr fDestPC2;    // Address of system function (if subdispatching is involved).
     uint16 fTrapWord;   // Trapword, even for SYSTRAP_FAST calls.
     uint16 fTrapIndex;  // Trapword with the high 4 bits removed.
     emuptr fExtra;      // RefNum for library calls, D2 for "dispatch" calls.

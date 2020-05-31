@@ -191,10 +191,12 @@ extern EmCPU68K* gCPU68K;
 //
 // Similar comments for the CheckKernelStack function.
 
+#if 0  // CSDUBIOUS
 extern "C" uint32 gStackHigh;
 extern "C" uint32 gStackLowWarn;
 extern "C" uint32 gStackLow;
 extern "C" uint32 gKernelStackOverflowed;
+#endif
 
 class EmCPU68K : public EmCPU {
    public:
