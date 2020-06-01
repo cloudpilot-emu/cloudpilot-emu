@@ -49,6 +49,14 @@
 
             let running = false;
 
+            function escape(text) {
+                const node = document.createElement('div');
+
+                node.innerText = text;
+
+                return node.innerHTML;
+            }
+
             async function main(module) {
                 function launch() {
                     romName.innerText = `ROM: ${localStorage.getItem(KEY_ROM_NAME)}`;
@@ -97,8 +105,8 @@
             createModule({
                 noInitialRun: true,
                 canvas: document.getElementById('canvas'),
-                print: x => { consoleElt.innerText += x; consoleElt.innerHTML += '<br/>'; },
-                printErr: x => { consoleElt.innerText += x; consoleElt.innerHTML += '<br/>'; }
+                print: x => consoleElt.innerHTML += (escape(x) + '<br/>'),
+                printErr: x => consoleElt.innerHTML += (escape(x) + '<br />')
             })
                 .then(main);
         })()
