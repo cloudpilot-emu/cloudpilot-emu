@@ -81,6 +81,7 @@ SOURCE_CPP = \
 	EmDevice.cpp \
 	EmLowMem.cpp \
 	EmPalmOS.cpp \
+	EmPatchModule.cpp \
 	Frame.cpp \
 	EmPoint.cpp \
 	EmThreadSafeQueue.cpp \
