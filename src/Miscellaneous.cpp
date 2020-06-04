@@ -94,3 +94,62 @@ Bool GetSystemCallContext(emuptr pc, SystemCallContext& context) {
 
     return true;
 }
+
+/***********************************************************************
+ *
+ * FUNCTION:    SeparateList
+ *
+ * DESCRIPTION: Break up a comma-delimited list of items, returning the
+ *				pieces in a StringList.
+ *
+ * PARAMETERS:  stringList - the StringList to receive the broken-up
+ *					pieces of the comma-delimited list.  This collection
+ *					is *not* first cleared out, so it's possible to add
+ *					to the collection with this function.
+ *
+ *				str - the string containing the comma-delimited items.
+ *
+ * RETURNED:    Nothing
+ *
+ ***********************************************************************/
+
+void SeparateList(StringList& stringList, string str, char delimiter) {
+    string::size_type offset;
+
+    while ((offset = str.find(delimiter)) != string::npos) {
+        string nextElement = str.substr(0, offset);
+        str = str.substr(offset + 1);
+        stringList.push_back(nextElement);
+    }
+
+    stringList.push_back(str);
+}
+
+/***********************************************************************
+ *
+ * FUNCTION:	EndsWith
+ *
+ * DESCRIPTION:	Determine if a string end with the given pattern.
+ *
+ * PARAMETERS:	s - string to test.
+ *
+ *				p - pattern to test with.
+ *
+ * RETURNED:	True if "s" ends with "p".
+ *
+ ***********************************************************************/
+
+Bool EndsWith(const char* s, const char* p) {
+    if (strlen(s) < strlen(p)) return false;
+
+    const char* buffer = s + strlen(s) - strlen(p);
+    return (strcasecmp(buffer, p) == 0);
+}
+
+StMemoryMapper::StMemoryMapper(const void* memory, long size) : fMemory(memory) {
+    if (fMemory) Memory::MapPhysicalMemory(fMemory, size);
+}
+
+StMemoryMapper::~StMemoryMapper(void) {
+    if (fMemory) Memory::UnmapPhysicalMemory(fMemory);
+}

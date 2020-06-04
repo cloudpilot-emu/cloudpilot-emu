@@ -21,9 +21,13 @@ class EmSession {
 
     void ScheduleReset(EmResetType resetType);
 
+    void ScheduleSubroutineReturn();
+
     EmDevice& GetDevice();
 
     uint32 RunEmulation(uint32 maxCycles = 10000);
+
+    void ExecuteSubroutine();
 
    private:
     void Reset(EmResetType);
@@ -32,6 +36,9 @@ class EmSession {
     bool bankResetScheduled{false};
     bool resetScheduled{false};
     EmResetType resetType;
+
+    int nestLevel{0};
+    bool suspendCpuSubroutineReturn{false};
 
     shared_ptr<EmDevice> device{nullptr};
     unique_ptr<EmCPU> cpu{nullptr};

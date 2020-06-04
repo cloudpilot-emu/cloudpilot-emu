@@ -5,6 +5,7 @@
 cloudpilot
 cloudpilot.js
 cloudpilot.wasm
+*.rom
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/tasks.json

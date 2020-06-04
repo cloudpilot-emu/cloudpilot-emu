@@ -3,6 +3,7 @@
 #include "EmCPU.h"
 #include "EmMemory.h"
 #include "EmPalmOS.h"
+#include "Miscellaneous.h"
 
 namespace {
     EmSession _gSession;
@@ -23,7 +24,10 @@ Bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     return true;
 }
 
-Bool EmSession::IsNested() { return false; }
+Bool EmSession::IsNested() {
+    EmAssert(nestLevel >= 0);
+    return nestLevel > 0;
+}
 
 Bool EmSession::ExecuteSpecial(Bool checkForResetOnly) {
     if (resetScheduled) {
@@ -61,6 +65,13 @@ void EmSession::ScheduleReset(EmResetType resetType) {
     cpu->CheckAfterCycle();
 }
 
+void EmSession::ScheduleSubroutineReturn() {
+    suspendCpuSubroutineReturn = true;
+
+    EmAssert(cpu);
+    cpu->CheckAfterCycle();
+}
+
 EmDevice& EmSession::GetDevice() { return *device; }
 
 void EmSession::Reset(EmResetType resetType) {
@@ -78,4 +89,16 @@ uint32 EmSession::RunEmulation(uint32 maxCycles) {
     EmAssert(cpu);
 
     return cpu->Execute(maxCycles);
+}
+
+void EmSession::ExecuteSubroutine() {
+    EmAssert(cpu);
+    EmAssert(nestLevel >= 0);
+
+    EmValueChanger<bool> clearSuspendCpuSubroutineReturn(suspendCpuSubroutineReturn, false);
+    EmValueChanger<int> increaseNestLevel(nestLevel, nestLevel + 1);
+
+    while (!suspendCpuSubroutineReturn) {
+        cpu->Execute(0);
+    }
 }

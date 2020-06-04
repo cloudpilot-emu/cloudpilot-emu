@@ -22,6 +22,7 @@
 #include "EmHAL.h"      // EmHAL::GetInterruptLevel
 #include "EmMemory.h"   // CEnableFullAccess
 #include "EmSession.h"  // HandleInstructionBreak
+#include "Miscellaneous.h"
 #include "Platform.h"
 #include "StringData.h"  // kExceptionNames
 #include "UAE.h"         // cpuop_func, etc.
@@ -258,9 +259,10 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
     // important that it run as quickly as possible.  To that end,
     // fine tune register allocation as much as we can by hand.
 
+    EmValueChanger<uint32> resetCurrentCycles(fCurrentCycles, 0);
+
     int counter = 0;
     uint32 cycles;
-    fCurrentCycles = 0;
     cpuop_func** functable = cpufunctbl;
 
 #define pc_p (regs.pc_p)
@@ -335,7 +337,7 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
             if (this->ExecuteSpecial(maxCycles)) break;
         }
 
-        if (fCurrentCycles > maxCycles) break;
+        if (maxCycles && fCurrentCycles > maxCycles) break;
 
     }  // while (1)
 
@@ -358,7 +360,7 @@ Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
     // getting in the way.
 
     EmAssert(fSession);
-    if (fSession->IsNested() != 0) {
+    if (fSession->IsNested()) {
         return this->CheckForBreak();
     }
 
@@ -469,7 +471,7 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
 
         fCurrentCycles += SLEEP_TICK_CYCLES;
 
-        if (this->CheckForBreak() || fCurrentCycles > maxCycles) {
+        if (this->CheckForBreak() || (maxCycles && fCurrentCycles > maxCycles)) {
             return true;
         }
     } while (regs.spcflags & SPCFLAG_STOP);
