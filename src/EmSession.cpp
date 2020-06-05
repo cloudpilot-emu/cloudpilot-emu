@@ -29,6 +29,8 @@ Bool EmSession::IsNested() {
     return nestLevel > 0;
 }
 
+void EmSession::ReleaseBootKeys() {}
+
 Bool EmSession::ExecuteSpecial(Bool checkForResetOnly) {
     if (resetScheduled) {
         resetScheduled = false;

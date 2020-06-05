@@ -82,6 +82,7 @@ SOURCE_CPP = \
 	EmLowMem.cpp \
 	EmPalmOS.cpp \
 	EmPatchModule.cpp \
+	EmPatchModuleSys.cpp \
 	EmSubroutine.cpp \
 	Frame.cpp \
 	EmPoint.cpp \

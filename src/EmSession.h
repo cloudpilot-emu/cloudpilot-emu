@@ -13,6 +13,8 @@ class EmSession {
 
     Bool IsNested();
 
+    void ReleaseBootKeys();
+
     Bool ExecuteSpecial(Bool checkForResetOnly);
 
     Bool CheckForBreak();
