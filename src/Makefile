@@ -39,6 +39,7 @@ MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 INCLUDE = \
 	-I./hardware \
 	-I./uae \
+	-I./patch \
 	-I./palm/Device \
 	-I./palm/Platform \
 	-I./palm/Platform/Core/Hardware/IncsPrv \
@@ -76,13 +77,13 @@ SOURCE_CPP = \
 	hardware/EmRegsEZPalmV.cpp \
 	hardware/EmBankROM.cpp \
 	hardware/EmUAEGlue.cpp \
+	patch/EmPatchModule.cpp \
+	patch/EmPatchModuleSys.cpp \
 	Miscellaneous.cpp \
 	Platform.cpp \
 	EmDevice.cpp \
 	EmLowMem.cpp \
 	EmPalmOS.cpp \
-	EmPatchModule.cpp \
-	EmPatchModuleSys.cpp \
 	EmSubroutine.cpp \
 	Frame.cpp \
 	EmPoint.cpp \
