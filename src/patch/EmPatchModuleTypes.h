@@ -17,6 +17,8 @@
 
 #include "EmStructs.h"  // SystemCallContext
 
+class EmPatchModule;
+
 enum { kPatchErrNone, kPatchErrNotImplemented, kPatchErrInvalidIndex };
 
 enum CallROMType { kExecuteROM, kSkipROM };
@@ -39,6 +41,30 @@ struct ProtoPatchTableEntry {
     HeadpatchProc fHeadpatch;
     TailpatchProc fTailpatch;
 };
+
+// ===========================================================================
+//		InstalledLibPatchEntry
+// ===========================================================================
+// Structure used to hold tail-patch information.
+
+class InstalledLibPatchEntry {
+   public:
+    InstalledLibPatchEntry(void) : fIsDirty(true), fTableP(NULL) {}
+
+    bool IsDirty(void) const { return fIsDirty; }
+
+    void SetDirty(bool dirty = true) { fIsDirty = dirty; }
+
+    EmPatchModule* GetPatchTableP(void) const { return fTableP; }
+
+    void SetPatchTableP(EmPatchModule* tableP) { fTableP = tableP; }
+
+   private:
+    bool fIsDirty;
+    EmPatchModule* fTableP;
+};
+
+typedef vector<InstalledLibPatchEntry> PatchedLibIndex;
 
 // ===========================================================================
 //		� TailpatchType

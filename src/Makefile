@@ -79,6 +79,7 @@ SOURCE_CPP = \
 	hardware/EmUAEGlue.cpp \
 	patch/EmPatchModule.cpp \
 	patch/EmPatchModuleSys.cpp \
+	patch/EmPatchMgr.cpp \
 	Miscellaneous.cpp \
 	Platform.cpp \
 	EmDevice.cpp \

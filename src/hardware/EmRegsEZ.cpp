@@ -55,7 +55,12 @@ static const uint16 EN = 0x0001;     // Mask to get the enable bit from csASelec
 
 static const uint16 gBaseAddressShift = 13;  // Shift to get base address from CSGBx register value
 
-#define PRINTF log::printf
+// #define LOGGING 1
+#ifdef LOGGING
+    #define PRINTF log::printf
+#else
+    #define PRINTF(...) ;
+#endif
 
 // Values used to initialize the DragonBallEZ registers.
 
@@ -1946,6 +1951,7 @@ uint8 EmRegsEZ::GetKeyBits(void) {
         }
     }
 
+#ifdef LOGGING
     UInt8 portFDir = READ_REGISTER(portFDir);
     UInt8 portFData = READ_REGISTER(portFData);
 
@@ -1962,6 +1968,7 @@ uint8 EmRegsEZ::GetKeyBits(void) {
     // = %2d, [E] = %2d, [F] = %2d", keyMap[12], keyMap[13], keyMap[14], keyMap[15]);
     PRINTF("EmRegsEZ::GetKeyBits: fKeyBits = 0x%04lX", (uint32)fKeyBits);
     PRINTF("EmRegsEZ::GetKeyBits: keyData = 0x%02lX", (uint32)keyData);
+#endif
 
     return keyData;
 }

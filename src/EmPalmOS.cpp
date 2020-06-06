@@ -21,6 +21,7 @@
 #include "EmCommon.h"
 #include "EmMemory.h"       // CEnableFullAccess
 #include "EmPalmStructs.h"  // EmAliasCardHeaderType
+#include "EmPatchMgr.h"     // EmPatchMgr
 #include "EmSession.h"      // gSession->Reset
 #include "Logging.h"
 #include "Miscellaneous.h"  // GetSystemCallContext
@@ -38,8 +39,6 @@
 
 #if 0                             // CSTODO
     #include "EmErrCodes.h"       // kError_UnimplementedTrap, kError_InvalidLibraryRefNum
-    #include "EmPatchMgr.h"       // EmPatchMgr
-    #include "EmPatchMgr.h"       // EmPatchMgr::Initialize ();
     #include "EmPatchState.h"     // EmPatchState
     #include "ErrorHandling.h"    // Errors::ReportInvalidPC
     #include "Platform_NetLib.h"  // Platform_NetLib::Initialize();
@@ -112,8 +111,9 @@ void EmPalmOS::Initialize(void) {
     EmPalmFunctionInit();
 #endif
 
-#if 0  // CSTODO
     EmPatchMgr::Initialize();
+
+#if 0  // CSTODO
     Platform_NetLib::Initialize();
 #endif
 }
@@ -149,8 +149,9 @@ void EmPalmOS::Reset(void) {
     EmPalmHeap::Reset();
 #endif
 
-#if 0  // CSTODO
     EmPatchMgr::Reset();
+
+#if 0  // CSTODO
     Platform_NetLib::Reset();
     EmLowMem::Reset();
 #endif
@@ -287,11 +288,12 @@ void EmPalmOS::Load(SessionFile& f) {
  ***********************************************************************/
 
 void EmPalmOS::Dispose(void) {
+    EmPatchMgr::Dispose();
+
 #if 0  // CSTODO
     EmLowMem::Dispose();
     EmPalmHeap::Dispose();
     Platform_NetLib::Dispose();
-    EmPatchMgr::Dispose();
     EmEventPlayback::Dispose();
     Hordes::Dispose();
 #endif
@@ -522,14 +524,11 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
         EmAssert(false);
     }
 
-#if 0  // CSTODO
-
     // ======================================================================
     // If this trap is patched, let the patch handler handle the patch.
     // ======================================================================
 
     CallROMType result = EmPatchMgr::HandleSystemCall(context);
-
 
     // ======================================================================
     //	If we completely handled the function in head and tail patches, tell
@@ -542,7 +541,6 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
         // Return true to say that everything has been handled.
         return true;
     }
-#endif
 
     return false;
 }

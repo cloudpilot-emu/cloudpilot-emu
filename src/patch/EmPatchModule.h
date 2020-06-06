@@ -26,6 +26,9 @@
 const uint16 kMaxProtoTables = 5;
 
 class EmPatchModule {
+   public:
+    virtual ~EmPatchModule();
+
     virtual Err GetHeadpatch(uint16 index, HeadpatchProc &procP);
     virtual Err GetTailpatch(uint16 index, TailpatchProc &procP);
 

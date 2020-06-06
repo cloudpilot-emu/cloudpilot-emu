@@ -12,6 +12,8 @@ void SeparateList(StringList& stringList, string str, char delimiter);
 
 Bool EndsWith(const char* s, const char* pattern);
 
+string GetLibraryName(uint16 refNum);
+
 class StMemoryMapper {
    public:
     StMemoryMapper(const void* memory, long size);

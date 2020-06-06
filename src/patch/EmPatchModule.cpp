@@ -17,6 +17,8 @@
 
 #include "EmPalmFunction.h"  // SysTrapIndex, IsLibraryTrap
 
+EmPatchModule::~EmPatchModule() {}
+
 void EmPatchModule::LoadProtoPatchTable(ProtoPatchTableEntry *protoPatchTable) {
     // Create a fast dispatch table for the managed module.  A "fast
     // dispatch table" is a table with a headpatch and tailpatch entry

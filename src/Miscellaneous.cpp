@@ -1,5 +1,6 @@
 #include "Miscellaneous.h"
 
+#include "EmLowMem.h"
 #include "EmMemory.h"
 #include "EmPalmFunction.h"
 #include "UAE.h"
@@ -152,4 +153,95 @@ StMemoryMapper::StMemoryMapper(const void* memory, long size) : fMemory(memory) 
 
 StMemoryMapper::~StMemoryMapper(void) {
     if (fMemory) Memory::UnmapPhysicalMemory(fMemory);
+}
+
+/***********************************************************************
+ *
+ * FUNCTION:	GetLibraryName
+ *
+ * DESCRIPTION:
+ *
+ * PARAMETERS:	none
+ *
+ * RETURNED:	The libraries name, or an empty string if the library
+ *				could not be found.
+ *
+ ***********************************************************************/
+
+string GetLibraryName(uint16 refNum) {
+    if (refNum == sysInvalidRefNum) return string();
+
+    CEnableFullAccess munge;  // Remove blocks on memory access.
+
+    /*
+            The System Library Table (sysLibTableP) is an array of
+            sysLibTableEntries entries.  Each entry has the following
+            format:
+
+                    Ptr*		dispatchTblP;	// pointer to library dispatch table
+                    void*		globalsP;		// Library globals
+                    LocalID 	dbID;			// database id of the library
+                    MemPtr	 	codeRscH;		// library code resource handle for
+       RAM-based libraries
+
+            The latter two fields are present only in Palm OS 2.0 and
+            later.	So our first steps are to (a) get the pointer to
+            the array, (b) make sure that the index into the array (the
+            refNum passed as the first parameter to all library calls)
+            is within range, (c) get a pointer to the right entry,
+            taking into account the Palm OS version, and (d) getting the
+            dispatchTblP field.
+
+            The "library dispatch table" is an array of 16-bit offsets.  The
+            values are all relative to the beginning of the table (dispatchTblP).
+            The first entry in the array corresponds to the library name.  All
+            subsequent entries are offsets to the various library functions,
+            starting with the required four: sysLibTrapOpen, sysLibTrapClose,
+            sysLibTrapSleep, and sysLibTrapWake.
+    */
+
+    emuptr sysLibTableP = EmLowMem_GetGlobal(sysLibTableP);
+    UInt16 sysLibTableEntries = EmLowMem_GetGlobal(sysLibTableEntries);
+
+    if (sysLibTableP == EmMemNULL) {
+        // !!! No library table!
+        EmAssert(false);
+        return string();
+    }
+
+    if (refNum >= sysLibTableEntries) {
+        if (refNum != 0x0666) {
+            // !!! RefNum out of range!
+            EmAssert(false);
+        }
+
+        return string();
+    }
+
+    emuptr libEntry;
+    emuptr dispatchTblP;
+
+    libEntry = sysLibTableP + refNum * sizeof(SysLibTblEntryType);
+    dispatchTblP = EmMemGet32(libEntry + offsetof(SysLibTblEntryType, dispatchTblP));
+#if 0  // CSTODO
+    if (EmPatchState::OSMajorVersion() > 1) {
+        libEntry = sysLibTableP + refNum * sizeof(SysLibTblEntryType);
+        dispatchTblP = EmMemGet32(libEntry + offsetof(SysLibTblEntryType, dispatchTblP));
+    } else {
+        libEntry = sysLibTableP + refNum * sizeof(SysLibTblEntryTypeV10);
+        dispatchTblP = EmMemGet32(libEntry + offsetof(SysLibTblEntryTypeV10, dispatchTblP));
+    }
+#endif
+
+    // The first entry in the table is always the offset from the
+    // start of the table to the library name.	Use this information
+    // get the library name.
+
+    int16 offset = EmMemGet16(dispatchTblP + LibTrapIndex(sysLibTrapName) * 2);
+    emuptr libNameP = dispatchTblP + offset;
+
+    char libName[256];
+    EmMem_strcpy(libName, libNameP);
+
+    return string(libName);
 }

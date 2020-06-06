@@ -19,7 +19,12 @@
 #include "EmPalmStructs.h"  // EmAliasSysBatteryDataStruct
 #include "Logging.h"
 
-#define PRINTF log::printf
+// #define LOGGING 1
+#ifdef LOGGING
+    #define PRINTF log::printf
+#else
+    #define PRINTF(...) ;
+#endif
 
 /********************************************************************
  * Single-Ended Mode Channel Constants (adcSERDFR = 1)
