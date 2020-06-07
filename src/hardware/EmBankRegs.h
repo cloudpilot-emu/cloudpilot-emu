@@ -44,7 +44,6 @@ class EmBankRegs {
     static EmRegs* GetSubBank(emuptr address, long size);
     static void AddressError(emuptr address, long size, Bool forRead);
     static void InvalidAccess(emuptr address, long size, Bool forRead);
-    static void PreventedAccess(emuptr address, long size, Bool forRead);
 
     static EmRegsList fgSubBanks;
     static EmRegsList fgDisabledSubBanks;

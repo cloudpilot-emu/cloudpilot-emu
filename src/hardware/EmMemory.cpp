@@ -272,8 +272,6 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, RAMSizeType ramS
     EmAssert(gSession);
     if (gSession->GetDevice().HasFlash()) EmBankFlash::Initialize();
 
-    MetaMemory::Initialize();
-
     return success;
 }
 
@@ -304,10 +302,6 @@ void Memory::Reset(Bool hardwareReset) {
 
     EmAssert(gSession);
     if (gSession->GetDevice().HasFlash()) EmBankFlash::Reset(hardwareReset);
-
-    Memory::ResetBankHandlers();
-
-    MetaMemory::Reset();
 
     Memory::ResetBankHandlers();
 }
@@ -409,8 +403,6 @@ void Memory::Dispose(void) {
     //	EmAssert (gSession);
     //	if (gSession->GetDevice ().HasFlash ())
     //		EmBankFlash::Dispose ();
-
-    MetaMemory::Dispose();
 }
 
 // ---------------------------------------------------------------------------

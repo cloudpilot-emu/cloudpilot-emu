@@ -17,9 +17,8 @@
 #include "EmCPU.h"     // GetPC
 #include "EmCPU68K.h"  // gCPU68K
 #include "EmCommon.h"
-#include "EmMemory.h"    // gMemAccessFlags, EmMemory::IsPCInRAM
-#include "EmSession.h"   // GetDevice, ScheduleDeferredError
-#include "MetaMemory.h"  // MetaMemory::InRAMOSComponent
+#include "EmMemory.h"   // gMemAccessFlags, EmMemory::IsPCInRAM
+#include "EmSession.h"  // GetDevice, ScheduleDeferredError
 
 /*
         When emulating memory, UAE divides up the 4GB address space into
@@ -241,13 +240,6 @@ uint32 EmBankRegs::GetLong(emuptr address) {
     }
 #endif
 
-#if (PREVENT_USER_REGISTER_GET)
-    if (gMemAccessFlags.fProtect_RegisterGet && EmMemory::IsPCInRAM() &&
-        !MetaMemory::InRAMOSComponent(gCPU->GetPC())) {
-        EmBankRegs::PreventedAccess(address, sizeof(uint32), true);
-    }
-#endif
-
 #if (VALIDATE_REGISTER_GET)
     if (gMemAccessFlags.fValidate_RegisterGet && !ValidAddress(address, sizeof(uint32))) {
         EmBankRegs::InvalidAccess(address, sizeof(uint32), true);
@@ -275,13 +267,6 @@ uint32 EmBankRegs::GetWord(emuptr address) {
     }
 #endif
 
-#if (PREVENT_USER_REGISTER_GET)
-    if (gMemAccessFlags.fProtect_RegisterGet && EmMemory::IsPCInRAM() &&
-        !MetaMemory::InRAMOSComponent(gCPU->GetPC())) {
-        EmBankRegs::PreventedAccess(address, sizeof(uint16), true);
-    }
-#endif
-
 #if (VALIDATE_REGISTER_GET)
     if (gMemAccessFlags.fValidate_RegisterGet && !ValidAddress(address, sizeof(uint16))) {
         EmBankRegs::InvalidAccess(address, sizeof(uint16), true);
@@ -303,13 +288,6 @@ uint32 EmBankRegs::GetWord(emuptr address) {
 // ---------------------------------------------------------------------------
 
 uint32 EmBankRegs::GetByte(emuptr address) {
-#if (PREVENT_USER_REGISTER_GET)
-    if (gMemAccessFlags.fProtect_RegisterGet && EmMemory::IsPCInRAM() &&
-        !MetaMemory::InRAMOSComponent(gCPU->GetPC())) {
-        EmBankRegs::PreventedAccess(address, sizeof(uint8), true);
-    }
-#endif
-
 #if (VALIDATE_REGISTER_GET)
     if (gMemAccessFlags.fValidate_RegisterGet && !ValidAddress(address, sizeof(uint8))) {
         EmBankRegs::InvalidAccess(address, sizeof(uint8), true);
@@ -334,13 +312,6 @@ void EmBankRegs::SetLong(emuptr address, uint32 value) {
 #if (CHECK_FOR_ADDRESS_ERROR)
     if ((address & 1) != 0) {
         AddressError(address, sizeof(uint32), false);
-    }
-#endif
-
-#if (PREVENT_USER_REGISTER_SET)
-    if (gMemAccessFlags.fProtect_RegisterSet && EmMemory::IsPCInRAM() &&
-        !MetaMemory::InRAMOSComponent(gCPU->GetPC())) {
-        EmBankRegs::PreventedAccess(address, sizeof(uint32), false);
     }
 #endif
 
@@ -377,13 +348,6 @@ void EmBankRegs::SetWord(emuptr address, uint32 value) {
     }
 #endif
 
-#if (PREVENT_USER_REGISTER_SET)
-    if (gMemAccessFlags.fProtect_RegisterSet && EmMemory::IsPCInRAM() &&
-        !MetaMemory::InRAMOSComponent(gCPU->GetPC())) {
-        EmBankRegs::PreventedAccess(address, sizeof(uint16), false);
-    }
-#endif
-
 #if (VALIDATE_REGISTER_SET)
     if (gMemAccessFlags.fValidate_RegisterSet && !ValidAddress(address, sizeof(uint16))) {
         EmBankRegs::InvalidAccess(address, sizeof(uint16), false);
@@ -411,13 +375,6 @@ void EmBankRegs::SetWord(emuptr address, uint32 value) {
 // ---------------------------------------------------------------------------
 
 void EmBankRegs::SetByte(emuptr address, uint32 value) {
-#if (PREVENT_USER_REGISTER_SET)
-    if (gMemAccessFlags.fProtect_RegisterSet && EmMemory::IsPCInRAM() &&
-        !MetaMemory::InRAMOSComponent(gCPU->GetPC())) {
-        EmBankRegs::PreventedAccess(address, sizeof(uint8), false);
-    }
-#endif
-
 #if (VALIDATE_REGISTER_SET)
     if (gMemAccessFlags.fValidate_RegisterSet && !ValidAddress(address, sizeof(uint8))) {
         EmBankRegs::InvalidAccess(address, sizeof(uint8), false);
@@ -548,17 +505,6 @@ void EmBankRegs::AddressError(emuptr address, long size, Bool forRead) {
 void EmBankRegs::InvalidAccess(emuptr address, long size, Bool forRead) {
     EmAssert(gCPU68K);
     gCPU68K->BusError(address, size, forRead);
-}
-
-// ---------------------------------------------------------------------------
-//		� EmBankRegs::PreventedAccess
-// ---------------------------------------------------------------------------
-
-void EmBankRegs::PreventedAccess(emuptr address, long size, Bool forRead) {
-#if 0  // CSTODO
-    EmAssert(gSession);
-    gSession->ScheduleDeferredError(new EmDeferredErrHardwareRegisters(address, size, forRead));
-#endif
 }
 
 // ---------------------------------------------------------------------------

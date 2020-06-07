@@ -281,25 +281,13 @@ void EmRegs::SetHandler(ReadFunction read, WriteFunction write, uint32 start, in
 //		� EmRegs::UnsupportedRead
 // ---------------------------------------------------------------------------
 
-uint32 EmRegs::UnsupportedRead(emuptr address, int size) {
-    if (!CEnableFullAccess::AccessOK()) {
-        EmBankRegs::PreventedAccess(address, size, true);
-    }
-
-    return ~0;
-}
+uint32 EmRegs::UnsupportedRead(emuptr address, int size) { return ~0; }
 
 // ---------------------------------------------------------------------------
 //		� EmRegs::UnsupportedWrite
 // ---------------------------------------------------------------------------
 
-void EmRegs::UnsupportedWrite(emuptr address, int size, uint32 value) {
-    UNUSED_PARAM(value)
-
-    if (!CEnableFullAccess::AccessOK()) {
-        EmBankRegs::PreventedAccess(address, size, false);
-    }
-}
+void EmRegs::UnsupportedWrite(emuptr address, int size, uint32 value) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegs::StdReadBE
