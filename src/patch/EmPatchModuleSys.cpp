@@ -20,7 +20,10 @@ namespace {
         return kExecuteROM;
     }
 
+    void TailpatchFtrInit(void) { PRINTF("syscall: FtrInit"); }
+
     ProtoPatchTableEntry protoPatchTable[] = {{sysTrapDmInit, HeadpatchDmInit, NULL},
+                                              {sysTrapFtrInit, NULL, TailpatchFtrInit},
                                               {0, NULL, NULL}};
 }  // namespace
 

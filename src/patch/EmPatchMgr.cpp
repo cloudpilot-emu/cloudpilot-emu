@@ -82,9 +82,6 @@ void EmPatchMgr::Initialize(void) {
     }
 
 #if 0  // CSTODO
-    gSession->AddInstructionBreakHandlers(InstallInstructionBreaks, RemoveInstructionBreaks,
-                                          HandleInstructionBreak);
-
     EmPatchState::Initialize();
 #endif
 }
@@ -557,14 +554,12 @@ void EmPatchMgr::HandleInstructionBreak(void) {
  ***********************************************************************/
 
 void EmPatchMgr::InstallInstructionBreaks(void) {
-#if 0  // CSTODO
     TailPatchIndex::iterator iter = gInstalledTailpatches.begin();
 
     while (iter != gInstalledTailpatches.end()) {
         MetaMemory::MarkInstructionBreak(iter->fContext.fNextPC);
         ++iter;
     }
-#endif
 }
 
 /***********************************************************************
@@ -581,14 +576,12 @@ void EmPatchMgr::InstallInstructionBreaks(void) {
  ***********************************************************************/
 
 void EmPatchMgr::RemoveInstructionBreaks(void) {
-#if 0  // CSTODO
     TailPatchIndex::iterator iter = gInstalledTailpatches.begin();
 
     while (iter != gInstalledTailpatches.end()) {
         MetaMemory::UnmarkInstructionBreak(iter->fContext.fNextPC);
         ++iter;
     }
-#endif
 }
 
 /***********************************************************************
@@ -604,7 +597,6 @@ void EmPatchMgr::RemoveInstructionBreaks(void) {
  ***********************************************************************/
 
 void EmPatchMgr::SetupForTailpatch(TailpatchProc tp, const SystemCallContext& context) {
-#if 0  // CSTODO
     // See if this function is already tailpatched.  If so, merely increment
     // the use-count field.
 
@@ -623,7 +615,7 @@ void EmPatchMgr::SetupForTailpatch(TailpatchProc tp, const SystemCallContext& co
     // for the the PC/opcode we want to save.
 
     EmAssert(gSession);
-    gSession->RemoveInstructionBreaks();
+    RemoveInstructionBreaks();
 
     TailpatchType newTailpatch;
 
@@ -633,8 +625,7 @@ void EmPatchMgr::SetupForTailpatch(TailpatchProc tp, const SystemCallContext& co
 
     gInstalledTailpatches.push_back(newTailpatch);
 
-    gSession->InstallInstructionBreaks();
-#endif
+    InstallInstructionBreaks();
 }
 
 /***********************************************************************
@@ -650,7 +641,6 @@ void EmPatchMgr::SetupForTailpatch(TailpatchProc tp, const SystemCallContext& co
  ***********************************************************************/
 
 TailpatchProc EmPatchMgr::RecoverFromTailpatch(emuptr startPC) {
-#if 0  // CSTODO
     // Get the current PC so that we can find the record for this tailpatch.
 
     emuptr patchPC = startPC;
@@ -668,11 +658,11 @@ TailpatchProc EmPatchMgr::RecoverFromTailpatch(emuptr startPC) {
 
             if (--(iter->fCount) == 0) {
                 EmAssert(gSession);
-                gSession->RemoveInstructionBreaks();
+                RemoveInstructionBreaks();
 
                 gInstalledTailpatches.erase(iter);
 
-                gSession->InstallInstructionBreaks();
+                InstallInstructionBreaks();
             }
 
             return result;
@@ -680,7 +670,6 @@ TailpatchProc EmPatchMgr::RecoverFromTailpatch(emuptr startPC) {
 
         ++iter;
     }
-#endif
 
     return NULL;
 }

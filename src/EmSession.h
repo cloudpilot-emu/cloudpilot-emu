@@ -31,6 +31,8 @@ class EmSession {
 
     void ExecuteSubroutine();
 
+    void HandleInstructionBreak();
+
    private:
     void Reset(EmResetType);
 

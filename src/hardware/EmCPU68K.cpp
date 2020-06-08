@@ -22,13 +22,13 @@
 #include "EmHAL.h"      // EmHAL::GetInterruptLevel
 #include "EmMemory.h"   // CEnableFullAccess
 #include "EmSession.h"  // HandleInstructionBreak
+#include "MetaMemory.h"
 #include "Miscellaneous.h"
 #include "Platform.h"
 #include "StringData.h"  // kExceptionNames
 #include "UAE.h"         // cpuop_func, etc.
 
 #if 0                         // CSTODO
-    #include "MetaMemory.h"   // IsCPUBreak
     #include "SessionFile.h"  // WriteDBallRegs, etc.
 #endif
 
@@ -301,12 +301,10 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
         // needing to execute tailpatches.
         // -----------------------------------------------------------------------
 
-#if 0  // CSTODO
         if (MetaMemory::IsCPUBreak(pc_meta_oldp + (pc_p - pc_oldp))) {
             EmAssert(session);
             session->HandleInstructionBreak();
         }
-#endif
 
         // =======================================================================
         // Execute the opcode.

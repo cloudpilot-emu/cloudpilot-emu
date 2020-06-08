@@ -3,6 +3,7 @@
 #include "EmCPU.h"
 #include "EmMemory.h"
 #include "EmPalmOS.h"
+#include "EmPatchMgr.h"
 #include "Miscellaneous.h"
 
 namespace {
@@ -104,3 +105,5 @@ void EmSession::ExecuteSubroutine() {
         cpu->Execute(0);
     }
 }
+
+void EmSession::HandleInstructionBreak() { EmPatchMgr::HandleInstructionBreak(); }

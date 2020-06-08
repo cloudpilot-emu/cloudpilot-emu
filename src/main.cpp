@@ -180,7 +180,6 @@ int main(int argc, const char** argv) {
     MainLoopContext ctx(renderer, texture);
 
 #ifdef __EMSCRIPTEN__
-    log::disable();
     emscripten_set_main_loop_arg((em_arg_callback_func)mainLoop, &ctx, 0, true);
 #else
     bool running = true;
