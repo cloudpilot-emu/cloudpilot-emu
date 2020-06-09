@@ -24,19 +24,17 @@ namespace {
     void TailpatchFtrInit(void) {
         PRINTF("syscall: FtrInit");
 
-        /*
-                UInt32 value;
+        UInt32 value;
 
-                Err err = ::FtrGet(sysFtrCreator, sysFtrNumROMVersion, &value);
+        Err err = ::FtrGet(sysFtrCreator, sysFtrNumROMVersion, &value);
 
-                if (err == errNone) {
-                    // EmPatchState::SetOSVersion(value);
-                    PRINTF("ROM version: %u", value);
-                } else {
-                    // EmPatchState::SetOSVersion(kOSUndeterminedVersion);
-                    PRINTF("vailed to determine ROM version");
-                }
-                */
+        if (err == errNone) {
+            // EmPatchState::SetOSVersion(value);
+            PRINTF("ROM version: %u", value);
+        } else {
+            // EmPatchState::SetOSVersion(kOSUndeterminedVersion);
+            PRINTF("vailed to determine ROM version");
+        }
     }
 
     ProtoPatchTableEntry protoPatchTable[] = {{sysTrapDmInit, HeadpatchDmInit, NULL},
