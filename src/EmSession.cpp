@@ -1,5 +1,7 @@
 #include "EmSession.h"
 
+#include <iostream>
+
 #include "EmCPU.h"
 #include "EmMemory.h"
 #include "EmPalmOS.h"

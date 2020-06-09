@@ -15,8 +15,11 @@
 
 #include <ctype.h>  // isspace
 
+#include <iostream>
+
 #include "Byteswapping.h"  // Canonical
 #include "EmBankMapped.h"  // EmBankMapped::GetEmulatedAddress
+#include "EmCPU68K.h"
 #include "EmCommon.h"
 #include "EmMemory.h"       // EmMemPut8, etc.
 #include "EmPalmStructs.h"  // EmAlias
@@ -164,7 +167,7 @@ class EmSubroutineCPU68K : public EmSubroutineCPU {
     Err DoCall(uint16 trapWord);
     char* GetStackBase(void);
 
-    static Bool HandleTrap12(void);
+    static Bool HandleTrap12(ExceptionNumber);
 
     enum { kStackSize = 4096 };
     char fStack[kStackSize + 3];
@@ -2245,7 +2248,7 @@ Err EmSubroutineCPU68K::DoCall(uint16 trapWord) {
     // Prepare to handle the TRAP 12 exception.
 
     EmAssert(gCPU68K);
-    gCPU68K->InstallHookException(kException_ATrapReturn, (Hook68KException)HandleTrap12);
+    gCPU68K->InstallHookException(kException_ATrapReturn, HandleTrap12);
 
     // Point the PC to our code.
 
@@ -2260,7 +2263,7 @@ Err EmSubroutineCPU68K::DoCall(uint16 trapWord) {
     // Remove the TRAP 12 exception handler.
 
     EmAssert(gCPU68K);
-    gCPU68K->RemoveHookException(kException_ATrapReturn, (Hook68KException)HandleTrap12);
+    gCPU68K->RemoveHookException(kException_ATrapReturn, HandleTrap12);
 
     return err;
 }
@@ -2271,7 +2274,7 @@ Err EmSubroutineCPU68K::DoCall(uint16 trapWord) {
 // This function really takes an ExceptionNumber as a parameter.  However,
 // we don't use/need it, and omitting it helps our forward declarations.
 
-Bool EmSubroutineCPU68K::HandleTrap12(void) {
+Bool EmSubroutineCPU68K::HandleTrap12(ExceptionNumber) {
     EmAssert(gSession);
     gSession->ScheduleSubroutineReturn();
 

@@ -22,7 +22,7 @@ void Platform::getTime(uint32& hour, uint32& month, uint32& day) {
 }
 
 void* Platform::AllocateMemory(size_t count) {
-    void* mem = new uint8[count];
+    void* mem = malloc(count);
 
     return mem;
 }

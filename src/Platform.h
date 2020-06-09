@@ -25,7 +25,7 @@ namespace Platform {
 template <class T>
 void Platform::DisposeMemory(T*& p) {
     if (p) {
-        delete[] p;
+        free(p);
 
         p = nullptr;
     }

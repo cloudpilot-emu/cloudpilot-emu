@@ -98,6 +98,7 @@ SOURCE_CPP = \
 	EmROMReader.cpp \
 	EmCommon.cpp \
 	StringData.cpp \
+	ROMStubs.cpp \
 	Logging.cpp \
 	stubs.cpp \
 	main.cpp
