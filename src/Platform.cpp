@@ -10,13 +10,24 @@ long Platform::getMilliseconds() {
         .count();
 }
 
-void Platform::getTime(uint32& hour, uint32& month, uint32& day) {
+void Platform::getTime(uint32& hour, uint32& min, uint32& sec) {
     time_t time = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
     tm t;
     localtime_r(&time, &t);
 
     hour = t.tm_hour;
+    min = t.tm_min;
+    sec = t.tm_sec;
+}
+
+void Platform::getDate(uint32& year, uint32& month, uint32& day) {
+    time_t time = chrono::system_clock::to_time_t(chrono::system_clock::now());
+
+    tm t;
+    localtime_r(&time, &t);
+
+    year = t.tm_year;
     month = t.tm_mon;
     day = t.tm_mday;
 }

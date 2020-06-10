@@ -3,20 +3,20 @@
 
 #include "EmCommon.h"
 
-const UInt32 kOSUndeterminedVersion = ~0;
+const uint32 kOSUndeterminedVersion = ~0;
 
 class EmPatchState {
    public:
     EmPatchState() = default;
 
-    void SetOSVersion(UInt32 version);
-    UInt32 OSVersion(void);
-    UInt32 OSMajorMinorVersion(void);
-    UInt32 OSMajorVersion(void);
-    UInt32 OSMinorVersion(void);
+    void SetOSVersion(uint32 version);
+    uint32 OSVersion(void);
+    uint32 OSMajorMinorVersion(void);
+    uint32 OSMajorVersion(void);
+    uint32 OSMinorVersion(void);
 
    private:
-    UInt32 osVersion{kOSUndeterminedVersion};
+    uint32 osVersion{kOSUndeterminedVersion};
 };
 
 extern EmPatchState gPatchState;

@@ -17,5 +17,7 @@
 #include "EmCommon.h"
 
 Err FtrGet(UInt32 creator, UInt16 featureNum, UInt32* valueP);
+Err FtrSet(UInt32 creator, UInt16 featureNum, UInt32 newValue);
+UInt16 SysSetAutoOffTime(UInt16 seconds);
 
 #endif /* _ROMSTUBS_H_ */

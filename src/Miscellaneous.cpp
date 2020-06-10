@@ -257,3 +257,48 @@ string GetLibraryName(uint16 refNum) {
 
     return string(libName);
 }
+
+/***********************************************************************
+ *
+ * FUNCTION:	DateToDays
+ *
+ * DESCRIPTION: Convert a year, month, and day into the number of days
+ *				since 1/1/1904.
+ *
+ *				Parameters are not checked for valid dates, so it's
+ *				possible to feed in things like March 35, 1958.  This
+ *				function also assumes that year is at least 1904, and
+ *				will only work up until 2040 or so.
+ *
+ * PARAMETERS:	year - full year
+ *
+ *				month - 1..12
+ *
+ *				day - 1..31
+ *
+ * RETURNED:	Number of days since 1/1/1904.
+ *
+ ***********************************************************************/
+
+uint32 DateToDays(uint32 year, uint32 month, uint32 day) {
+    static const int month2days[] = {0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334};
+
+    // Normalize the values.
+
+    year -= 1904;
+    month -= 1;
+    day -= 1;
+
+    // Not counting any possible leap-day in the current year, figure out
+    // the number of days between now and 1/1/1904.
+
+    const uint32 kNumDaysInLeapCycle = 4 * 365 + 1;
+
+    uint32 days = day + month2days[month] + (year * kNumDaysInLeapCycle + 3) / 4;
+
+    // Now add in this year's leap-day, if there is one.
+
+    if ((month >= 2) && ((year & 3) == 0)) days++;
+
+    return days;
+}

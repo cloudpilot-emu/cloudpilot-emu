@@ -1,9 +1,13 @@
 #include "EmPatchModuleSys.h"
 
 #include "EmCommon.h"
+#include "EmLowMem.h"
 #include "EmPatchState.h"
 #include "EmSession.h"
 #include "Logging.h"
+#include "Marshal.h"
+#include "Miscellaneous.h"
+#include "Platform.h"
 #include "ROMStubs.h"
 
 #define LOGGING 1
@@ -14,6 +18,26 @@
 #endif
 
 namespace {
+    void PrvSetCurrentDate(void) {
+        CEnableFullAccess munge;
+
+        // Get the current date.
+
+        uint32 year, month, day;
+        Platform::getDate(year, month, day);
+
+        // Convert it to days -- and then hourse -- since 1/1/1904
+
+        uint32 rtcHours = ::DateToDays(year, month, day) * 24;
+
+        // Update the "hours adjustment" value to contain the current date.
+
+        emuptr timGlobalsP = EmLowMem_GetGlobal(timGlobalsP);
+        EmAliasTimGlobalsType<PAS> timGlobals(timGlobalsP);
+
+        timGlobals.rtcHours = rtcHours;
+    }
+
     CallROMType HeadpatchDmInit(void) {
         gSession->ReleaseBootKeys();
 
@@ -25,7 +49,7 @@ namespace {
     void TailpatchFtrInit(void) {
         PRINTF("syscall: FtrInit");
 
-        UInt32 value;
+        uint32 value;
 
         Err err = ::FtrGet(sysFtrCreator, sysFtrNumROMVersion, &value);
 
@@ -40,9 +64,69 @@ namespace {
         }
     }
 
-    ProtoPatchTableEntry protoPatchTable[] = {{sysTrapDmInit, HeadpatchDmInit, NULL},
-                                              {sysTrapFtrInit, NULL, TailpatchFtrInit},
-                                              {0, NULL, NULL}};
+    void TailpatchHwrMemReadable(void) {
+        CALLED_SETUP("UInt32", "MemPtr address");
+
+        CALLED_GET_PARAM_VAL(emuptr, address);
+        GET_RESULT_VAL(uint32);
+
+        if (result == 0) {
+            void* addrStart;
+            uint32 addrLen;
+
+            Memory::GetMappingInfo(address, &addrStart, &addrLen);
+
+            PUT_RESULT_VAL(uint32, addrLen);
+        }
+
+        PRINTF("syscall: HwrMemReadable for 0x%08x", address);
+    }
+
+    void TailpatchTimInit(void) {
+        // Turn off the RTC bug workaround flag.
+
+        CEnableFullAccess munge;
+
+        emuptr timGlobalsP = EmLowMem_GetGlobal(timGlobalsP);
+        EmAliasTimGlobalsType<PAS> timGlobals(timGlobalsP);
+
+        if (timGlobals.rtcBugWorkaround == 0x01) {
+            timGlobals.rtcBugWorkaround = 0;
+        }
+
+        // Set the current date.
+
+        ::PrvSetCurrentDate();
+
+        PRINTF("syscall: TimInit");
+    }
+
+    void TailpatchUIInitialize(void) {
+        ::SysSetAutoOffTime(0);
+
+#if ß  // CSTODO
+       // Can't call PrefSetPreference on 1.0 devices....
+        if (EmLowMem::TrapExists(sysTrapPrefSetPreference)) {
+            ::PrefSetPreference(prefAutoOffDuration, 0);
+        }
+#endif
+        ::FtrSet('pose', 0, 0);
+
+#if 0  // CSTODO
+        Preference<string> userName(kPrefKeyUserName);
+        ::SetHotSyncUserName(userName->c_str());
+#endif
+
+        PRINTF("syscall: UIInitialize");
+    }
+
+    ProtoPatchTableEntry protoPatchTable[] = {
+        {sysTrapDmInit, HeadpatchDmInit, NULL},
+        {sysTrapFtrInit, NULL, TailpatchFtrInit},
+        {sysTrapHwrMemReadable, NULL, TailpatchHwrMemReadable},
+        {sysTrapTimInit, NULL, TailpatchTimInit},
+        {sysTrapUIInitialize, NULL, TailpatchUIInitialize},
+        {0, NULL, NULL}};
 }  // namespace
 
 EmPatchModuleSys::EmPatchModuleSys() { LoadProtoPatchTable(protoPatchTable); }

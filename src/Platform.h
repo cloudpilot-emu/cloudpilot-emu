@@ -15,7 +15,9 @@ namespace Platform {
 
     long getMilliseconds();
 
-    void getTime(uint32& hour, uint32& month, uint32& day);
+    void getTime(uint32& hour, uint32& min, uint32& sec);
+
+    void getDate(uint32& year, uint32& month, uint32& day);
 }  // namespace Platform
 
 ///////////////////////////////////////////////////////////////////////////////

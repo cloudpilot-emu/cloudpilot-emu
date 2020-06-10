@@ -14,6 +14,8 @@ Bool EndsWith(const char* s, const char* pattern);
 
 string GetLibraryName(uint16 refNum);
 
+uint32 DateToDays(uint32 year, uint32 month, uint32 day);
+
 class StMemoryMapper {
    public:
     StMemoryMapper(const void* memory, long size);
