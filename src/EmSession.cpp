@@ -4,6 +4,7 @@
 #include "EmMemory.h"
 #include "EmPalmOS.h"
 #include "EmPatchMgr.h"
+#include "EmPatchState.h"
 #include "Miscellaneous.h"
 
 namespace {
@@ -21,6 +22,7 @@ Bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     EmPalmOS::Initialize();
 
     Reset(EmResetType::kResetSoft);
+    gPatchState = EmPatchState();
 
     return true;
 }

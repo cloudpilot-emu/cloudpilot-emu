@@ -80,6 +80,7 @@ SOURCE_CPP = \
 	patch/EmPatchModule.cpp \
 	patch/EmPatchModuleSys.cpp \
 	patch/EmPatchMgr.cpp \
+	patch/EmPatchState.cpp \
 	Miscellaneous.cpp \
 	Platform.cpp \
 	EmDevice.cpp \

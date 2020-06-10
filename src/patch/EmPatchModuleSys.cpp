@@ -1,6 +1,7 @@
 #include "EmPatchModuleSys.h"
 
 #include "EmCommon.h"
+#include "EmPatchState.h"
 #include "EmSession.h"
 #include "Logging.h"
 #include "ROMStubs.h"
@@ -29,11 +30,13 @@ namespace {
         Err err = ::FtrGet(sysFtrCreator, sysFtrNumROMVersion, &value);
 
         if (err == errNone) {
-            // EmPatchState::SetOSVersion(value);
-            PRINTF("ROM version: %u", value);
+            gPatchState.SetOSVersion(value);
+
+            PRINTF("PalmOS version: %u.%u", gPatchState.OSMajorVersion(),
+                   gPatchState.OSMinorVersion());
         } else {
             // EmPatchState::SetOSVersion(kOSUndeterminedVersion);
-            PRINTF("vailed to determine ROM version");
+            PRINTF("vailed to determine PalmOS version");
         }
     }
 
