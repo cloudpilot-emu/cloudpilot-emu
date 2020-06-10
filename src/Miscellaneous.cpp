@@ -3,7 +3,16 @@
 #include "EmLowMem.h"
 #include "EmMemory.h"
 #include "EmPalmFunction.h"
+#include "EmPalmStructs.h"
+#include "Logging.h"
 #include "UAE.h"
+
+#define LOGGING 1
+#ifdef LOGGING
+    #define PRINTF log::printf
+#else
+    #define PRINTF(...) ;
+#endif
 
 uint32 NextPowerOf2(uint32 n) {
     // Smear down the upper 1 bit to all bits lower than it.
@@ -218,11 +227,12 @@ string GetLibraryName(uint16 refNum) {
         return string();
     }
 
-    emuptr libEntry;
+    // emuptr libEntry;
     emuptr dispatchTblP;
 
-    libEntry = sysLibTableP + refNum * sizeof(SysLibTblEntryType);
-    dispatchTblP = EmMemGet32(libEntry + offsetof(SysLibTblEntryType, dispatchTblP));
+    EmAliasSysLibTblEntryType<PAS> libEntries(sysLibTableP);
+    dispatchTblP = libEntries[refNum].dispatchTblP;
+
 #if 0  // CSTODO
     if (EmPatchState::OSMajorVersion() > 1) {
         libEntry = sysLibTableP + refNum * sizeof(SysLibTblEntryType);
@@ -242,6 +252,8 @@ string GetLibraryName(uint16 refNum) {
 
     char libName[256];
     EmMem_strcpy(libName, libNameP);
+
+    PRINTF("library %u = %s", refNum, libName);
 
     return string(libName);
 }

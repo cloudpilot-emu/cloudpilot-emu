@@ -27,7 +27,7 @@
 #include "SysEvtPrv.h"  // SysEvtMgrGlobalsType
 #undef NON_PORTABLE
 #include "PalmPackPop.h"
-// clang-format ons
+// clang-format on
 
 EmAliasLowMemHdrType<PAS> EmLowMem::fgLowMem(EmMemNULL);
 
@@ -62,6 +62,7 @@ uint8 EmLowMem::GetEvtMgrIdle(void) {
     **	};
     */
 
+    EmAssert(false);  // CSTODO not 64 bit safe!
     size_t idleOffset = offsetof(SysEvtMgrGlobalsType, idle);
 
     // Under Palm OS 1.0, there was an extra 4-byte value at the
@@ -69,7 +70,7 @@ uint8 EmLowMem::GetEvtMgrIdle(void) {
     // the "idle" field.  Under that version of the OS, we therefore
     // have to add 4 to get the right offset.
 
-#if 0 // CSTODO
+#if 0  // CSTODO
     if (EmPatchState::OSMajorVersion() == 1) {
         idleOffset += sizeof(Int32);
     }

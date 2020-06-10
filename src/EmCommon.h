@@ -21,6 +21,8 @@
 //		HAS_PROFILING (0 or 1)
 //		INCLUDE_SECRET_STUFF (0 or 1)
 
+#include <iostream>
+
 #include "Switches.h"
 
 // ==================================================================================

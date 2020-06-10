@@ -15,8 +15,6 @@
 
 #include <ctype.h>  // isspace
 
-#include <iostream>
-
 #include "Byteswapping.h"  // Canonical
 #include "EmBankMapped.h"  // EmBankMapped::GetEmulatedAddress
 #include "EmCPU68K.h"
