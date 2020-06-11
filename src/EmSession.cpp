@@ -53,7 +53,7 @@ Bool EmSession::ExecuteSpecial(Bool checkForResetOnly) {
     return false;
 }
 
-Bool EmSession::CheckForBreak() { return false; }
+Bool EmSession::CheckForBreak() { return suspendCpuSubroutineReturn; }
 
 void EmSession::ScheduleResetBanks() {
     bankResetScheduled = true;

@@ -335,7 +335,7 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
             if (this->ExecuteSpecial(maxCycles)) break;
         }
 
-        if (maxCycles == 0 || fCurrentCycles > maxCycles) break;
+        if (maxCycles && fCurrentCycles >= maxCycles) break;
 
     }  // while (1)
 
@@ -469,7 +469,7 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
 
         fCurrentCycles += SLEEP_TICK_CYCLES;
 
-        if (this->CheckForBreak() || ((maxCycles == 0) || fCurrentCycles > maxCycles)) {
+        if (this->CheckForBreak() || (maxCycles && fCurrentCycles >= maxCycles)) {
             return true;
         }
     } while (regs.spcflags & SPCFLAG_STOP);
