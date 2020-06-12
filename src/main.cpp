@@ -21,6 +21,161 @@
 
 using namespace std;
 
+constexpr int SCALE = 3;
+constexpr int MHZ = 4;
+constexpr int MOUSE_MOVE_THROTTLE = 100;
+
+class MainLoop {
+   public:
+    MainLoop(SDL_Window* window, SDL_Renderer* renderer) : renderer(renderer) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderClear(renderer);
+        drawSilkscreen(renderer);
+
+        SDL_RenderPresent(renderer);
+
+        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
+                                    160, 160);
+    }
+
+    bool isRunning() const { return running; }
+
+    void cycle() {
+        const long millis = Platform::getMilliseconds();
+        if (millis - millisOffset - clockEmu > 500) clockEmu = millis - millisOffset - 10;
+
+        const uint32 cycles = (millis - millisOffset - clockEmu) * 1000 * MHZ;
+        uint32 cyclesPassed = 0;
+
+        while (cyclesPassed < cycles) cyclesPassed += gSession->RunEmulation(cycles);
+        clockEmu += cyclesPassed / 1000 / MHZ;
+
+        updateScreen();
+        handleEvents(millis);
+    }
+
+    static void cycleStatic(MainLoop* self) { self->cycle(); }
+
+   private:
+    void drawSilkscreen(SDL_Renderer* renderer) {
+        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+
+        SDL_Rect rect = {.x = 0, .y = SCALE * 160, .w = SCALE * 160, .h = SCALE * 60};
+        SDL_RenderFillRect(renderer, &rect);
+    }
+
+    void updateScreen() {
+        if (!EmHAL::CopyLCDFrame(frame)) return;
+        if (frame.lineWidth != 160 || frame.lines != 160 || frame.bpp != 1) return;
+
+        uint32* pixels;
+        int pitch;
+        uint8* buffer = frame.GetBuffer();
+
+        SDL_LockTexture(texture, nullptr, (void**)&pixels, &pitch);
+
+        for (int x = 0; x < 160; x++)
+            for (int y = 0; y < 160; y++)
+                pixels[y * pitch / 4 + x] =
+                    ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
+                      (0x80 >> ((x + frame.margin) % 8))) == 0
+                         ? 0xffffffff
+                         : 0x000000ff);
+
+        SDL_UnlockTexture(texture);
+
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_RenderClear(renderer);
+        drawSilkscreen(renderer);
+
+        SDL_Rect dest = {.x = 0, .y = 0, .w = SCALE * 160, .h = SCALE * 160};
+        SDL_RenderCopy(renderer, texture, nullptr, &dest);
+
+        SDL_RenderPresent(renderer);
+    }
+
+    void handleEvents(long millis) {
+        SDL_Event event;
+
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+                case SDL_QUIT:
+                    running = false;
+                    break;
+
+                case SDL_MOUSEBUTTONDOWN:
+                    if (event.button.button == SDL_BUTTON_LEFT) {
+                        mouseDown = true;
+                        lastMouseMove = millis;
+                        updatePenPosition();
+
+                        handlePenDown();
+                    }
+
+                    break;
+
+                case SDL_MOUSEBUTTONUP:
+                    if (event.button.button == SDL_BUTTON_LEFT) {
+                        mouseDown = false;
+                        lastMouseMove = millis;
+                        updatePenPosition();
+
+                        handlePenUp();
+                    }
+
+                    break;
+
+                case SDL_MOUSEMOTION:
+                    if (mouseDown && (millis - lastMouseMove > MOUSE_MOVE_THROTTLE) &&
+                        updatePenPosition()) {
+                        lastMouseMove = millis;
+
+                        handlePenMove();
+                    }
+
+                    break;
+            }
+            if (event.type == SDL_QUIT) running = false;
+        }
+    }
+
+    bool updatePenPosition() {
+        int x, y;
+        SDL_GetMouseState(&x, &y);
+
+        x /= SCALE;
+        y /= SCALE;
+
+        bool changed = x != penX || y != penY;
+
+        penX = x;
+        penY = y;
+
+        return changed;
+    }
+
+    void handlePenDown() { cerr << "pen down: (" << penX << ", " << penY << ")" << endl << flush; }
+
+    void handlePenMove() { cerr << "pen move: (" << penX << ", " << penY << ")" << endl << flush; }
+
+    void handlePenUp() { cerr << "pen up: (" << penX << ", " << penY << ")" << endl << flush; }
+
+   private:
+    SDL_Renderer* renderer{nullptr};
+    SDL_Texture* texture{nullptr};
+
+    Frame frame{1024 * 128};
+
+    const long millisOffset{Platform::getMilliseconds() - 10};
+    long clockEmu{0};
+
+    bool mouseDown{false};
+    long lastMouseMove{millisOffset};
+    int penX{0}, penY{0};
+
+    long running{true};
+};
+
 bool readFile(string file, unique_ptr<uint8[]>& buffer, long& len) {
     fstream stream(file, ios_base::in);
     if (stream.fail()) return false;
@@ -103,54 +258,6 @@ void initializeSession(string file) {
     }
 }
 
-struct MainLoopContext {
-    MainLoopContext(SDL_Renderer* renderer, SDL_Texture* texture)
-        : renderer(renderer), texture(texture) {}
-
-    SDL_Renderer* renderer{nullptr};
-    SDL_Texture* texture{nullptr};
-};
-
-void mainLoop(MainLoopContext* ctx) {
-    static Frame frame(1024 * 128);
-    static const long millisOffset = Platform::getMilliseconds() - 10;
-    static long clockEmu = 0;
-
-    constexpr int mhz = 4;
-
-    const long millis = Platform::getMilliseconds();
-    if (millis - millisOffset - clockEmu > 500) clockEmu = millis - millisOffset - 10;
-
-    const uint32 cycles = (millis - millisOffset - clockEmu) * 1000 * mhz;
-    uint32 cyclesPassed = 0;
-
-    while (cyclesPassed < cycles) cyclesPassed += gSession->RunEmulation(cycles);
-    clockEmu += cyclesPassed / 1000 / mhz;
-
-    bool updateScreen = EmHAL::CopyLCDFrame(frame);
-
-    if (updateScreen && frame.lineWidth == 160 && frame.lines == 160 && frame.bpp == 1) {
-        uint32* pixels;
-        int pitch;
-        uint8* buffer = frame.GetBuffer();
-
-        SDL_LockTexture(ctx->texture, nullptr, (void**)&pixels, &pitch);
-
-        for (int x = 0; x < 160; x++)
-            for (int y = 0; y < 160; y++)
-                pixels[y * pitch / 4 + x] =
-                    ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
-                      (0x80 >> ((x + frame.margin) % 8))) == 0
-                         ? 0xffffffff
-                         : 0x000000ff);
-
-        SDL_UnlockTexture(ctx->texture);
-
-        SDL_RenderCopy(ctx->renderer, ctx->texture, nullptr, nullptr);
-        SDL_RenderPresent(ctx->renderer);
-    }
-}
-
 int main(int argc, const char** argv) {
     if (argc != 2) {
         cerr << "usage: cloudpalm <romimage.rom>" << endl;
@@ -165,34 +272,19 @@ int main(int argc, const char** argv) {
     SDL_Window* window;
     SDL_Renderer* renderer;
 
-    if (SDL_CreateWindowAndRenderer(480, 480, 0, &window, &renderer) != 0) {
+    if (SDL_CreateWindowAndRenderer(160 * SCALE, 220 * SCALE, 0, &window, &renderer) != 0) {
         cerr << "unable to create SDL window: " << SDL_GetError() << endl;
         exit(1);
     }
 
-    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
-
-    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
-                                             SDL_TEXTUREACCESS_STREAMING, 160, 160);
-
-    MainLoopContext ctx(renderer, texture);
+    MainLoop mainLoop(window, renderer);
 
 #ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop_arg((em_arg_callback_func)mainLoop, &ctx, 0, true);
+    emscripten_set_main_loop_arg((em_arg_callback_func)MainLoop::cycleStatic, &mainLoop, 0, true);
 #else
-    bool running = true;
-
-    while (running) {
-        mainLoop(&ctx);
-
-        SDL_Event event;
-
-        while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_QUIT) running = false;
-        }
-    }
+    while (mainLoop.isRunning()) {
+        mainLoop.cycle();
+    };
 
     SDL_Quit();
 #endif

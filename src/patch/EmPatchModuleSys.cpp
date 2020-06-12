@@ -46,6 +46,42 @@ namespace {
         return kExecuteROM;
     }
 
+    CallROMType HeadpatchSysEvGroupWait(void) {
+        // Only do this under 2.0 and later.  Under Palm OS 1.0, EvtGetSysEvent
+        // called SysSemaphoreWait instead.  See our headpatch of that function
+        // for a chunk of pretty similar code.
+
+        if (gPatchState.OSMajorVersion() == 1) {
+            return kExecuteROM;
+        }
+
+        // Err SysEvGroupWait(UInt32 evID, UInt32 mask, UInt32 value, Int32 matchType,
+        //						 Int32 timeout)
+
+        CALLED_SETUP("Err",
+                     "UInt32 evID, UInt32 mask, UInt32 value, Int32 matchType,"
+                     "Int32 timeout");
+
+        CALLED_GET_PARAM_VAL(Int32, timeout);
+
+        CallROMType result = kExecuteROM;
+
+#if 0  // CSTODO
+        Bool clearTimeout;
+
+        EmPatchMgr::PuppetString(result, clearTimeout);
+
+        // If timeout is infinite, the kernel wants 0.
+        // If timeout is none, the kernel wants -1.
+
+        if (clearTimeout && timeout == 0) {
+            sub.SetParamVal("timeout", (Int32)-1);
+        }
+#endif
+
+        return result;
+    }
+
     void TailpatchFtrInit(void) {
         PRINTF("syscall: FtrInit");
 
@@ -122,6 +158,7 @@ namespace {
 
     ProtoPatchTableEntry protoPatchTable[] = {
         {sysTrapDmInit, HeadpatchDmInit, NULL},
+        {sysTrapSysEvGroupWait, HeadpatchSysEvGroupWait, NULL},
         {sysTrapFtrInit, NULL, TailpatchFtrInit},
         {sysTrapHwrMemReadable, NULL, TailpatchHwrMemReadable},
         {sysTrapTimInit, NULL, TailpatchTimInit},
