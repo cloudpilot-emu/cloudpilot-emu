@@ -14,6 +14,7 @@
 #include "EmThreadSafeQueue.h"
 
 #include "EmCommon.h"
+#include "PenEvent.h"
 
 #ifdef EM_THREADS
     #define LOCK() unique_lock<mutex> lock(fMutex);
@@ -130,11 +131,4 @@ int EmThreadSafeQueue<T>::GetMaxSize(void) {
 // Instantiate the ones we want.
 
 template class EmThreadSafeQueue<uint8>;
-
-#if 0                       // CSTODO
-    #include "EmSession.h"  // uint8 (Byte), EmButtonEvent, EmKeyEvent, EmPenEvent
-
-template class EmThreadSafeQueue<EmButtonEvent>;
-template class EmThreadSafeQueue<EmKeyEvent>;
-template class EmThreadSafeQueue<EmPenEvent>;
-#endif
+template class EmThreadSafeQueue<PenEvent>;

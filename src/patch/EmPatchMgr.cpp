@@ -24,11 +24,12 @@
 #include "Logging.h"     // LogEvtAddEventToQueue, etc.
 #include "MetaMemory.h"  // MetaMemory mark functions
 #include "Miscellaneous.h"
-#include "UAE.h"  // gRegs, m68k_dreg, etc.
+#include "PenEvent.h"
+#include "ROMStubs.h"  // FtrSet, FtrUnregister, EvtWakeup, ...
+#include "UAE.h"       // gRegs, m68k_dreg, etc.
 
 #if 0  // CSTODO
     #include "EmPatchState.h"
-    #include "ROMStubs.h"     // FtrSet, FtrUnregister, EvtWakeup, ...
     #include "SessionFile.h"  // SessionFile
 #endif
 
@@ -751,7 +752,6 @@ void EmPatchMgr::CallTailpatch(TailpatchProc tp) {
  *
  ***********************************************************************/
 
-#if 0  // CSTODO
 static void PrvForceNilEvent(void) {
     // No event was posted.  What we'd like right now is to force
     // EvtGetEvent to return a nil event.  We can do that by returning
@@ -764,12 +764,9 @@ static void PrvForceNilEvent(void) {
 
     m68k_dreg(gRegs, 0) = 4;
 }
-#endif
 
-void EmPatchMgr::PuppetString(CallROMType& callROM, Bool& clearTimeout) {
-#if 0  // CSTODO
+void EmPatchMgr::PuppetString(CallROMType& callROM) {
     callROM = kExecuteROM;
-    clearTimeout = false;
 
     // Set the return value (Err) to zero in case we return
     // "true" (saying that we handled the trap).
@@ -781,13 +778,6 @@ void EmPatchMgr::PuppetString(CallROMType& callROM, Bool& clearTimeout) {
     // need to check if we need to post some events.
 
     if (EmLowMem::GetEvtMgrIdle()) {
-        // If there's an RPC request waiting for a nilEvent,
-        // let it know that it happened.
-
-        if (EmPatchState::GetLastEvtTrap() == sysTrapEvtGetEvent) {
-            RPC::SignalWaiters(hostSignalIdle);
-        }
-
         // If we're in the middle of calling a Palm OS function ourself,
         // and we are somehow at the point where the system is about to
         // doze, then just return now.  Don't let it doze!  Interrupts are
@@ -801,60 +791,7 @@ void EmPatchMgr::PuppetString(CallROMType& callROM, Bool& clearTimeout) {
 
         EmAssert(gSession);
 
-        // Check if Minimization is going on.
-
-        if (EmEventPlayback::ReplayingEvents()) {
-            if (EmPatchState::GetLastEvtTrap() == sysTrapEvtGetEvent) {
-                if (!EmEventPlayback::ReplayGetEvent()) {
-                    ::PrvForceNilEvent();
-                    callROM = kSkipROM;
-                    return;
-                }
-            } else if (EmPatchState::GetLastEvtTrap() == sysTrapEvtGetPen) {
-                EmEventPlayback::ReplayGetPen();
-            }
-
-            // Never let the timeout be infinite.  If the above event-posting
-            // attempts failed (which could happen, for instance, if we attempted
-            // to post a pen event with the same coordinates as the previous
-            // pen event), we'd end up waiting forever.
-
-            clearTimeout = true;
-        }
-
-        // Check if Hords is going on.
-
-        else if (Hordes::IsOn()) {
-            if (EmPatchState::GetLastEvtTrap() == sysTrapEvtGetEvent) {
-                if (!Hordes::PostFakeEvent()) {
-                    if (LogEnqueuedEvents()) {
-                        LogAppendMsg("Hordes::PostFakeEvent did not post an event.");
-                    }
-
-                    ::PrvForceNilEvent();
-                    callROM = kSkipROM;
-                    return;
-                }
-            } else if (EmPatchState::GetLastEvtTrap() == sysTrapEvtGetPen) {
-                Hordes::PostFakePenEvent();
-            } else {
-                if (LogEnqueuedEvents()) {
-                    LogAppendMsg("Last event was 0x%04X, so not posting event.",
-                                 EmPatchState::GetLastEvtTrap());
-                }
-            }
-
-            // Never let the timeout be infinite.  If the above event-posting
-            // attempts failed (which could happen, for instance, if we attempted
-            // to post a pen event with the same coordinates as the previous
-            // pen event), we'd end up waiting forever.
-
-            clearTimeout = true;
-        }
-
-        // Gremlins aren't on; let's see if the user has typed some
-        // keys that we need to pass on to the Palm device.
-
+#if 0  // CSTODO
         else if (gSession->HasKeyEvent()) {
             EmKeyEvent event = gSession->GetKeyEvent();
 
@@ -881,38 +818,26 @@ void EmPatchMgr::PuppetString(CallROMType& callROM, Bool& clearTimeout) {
 
             ::StubAppEnqueueKey(event.fKey, 0, modifiers);
         }
+#endif
 
         // No key events, let's see if there are pen events.
 
-        else if (gSession->HasPenEvent()) {
-            EmPoint pen(-1, -1);
-            EmPenEvent event = gSession->GetPenEvent();
-            if (event.fPenIsDown) {
-                pen = event.fPenPoint;
+        if (gSession->HasPenEvent()) {
+            PenEvent evt = gSession->NextPenEvent();
+            PointType point;
+
+            if (evt.isPenDown()) {
+                point.x = evt.getX();
+                point.y = evt.getY();
+
+                PenScreenToRaw(&point);
+            } else {
+                point.x = point.y = -1;
             }
 
-            PointType palmPen = pen;
-            StubAppEnqueuePt(&palmPen);
-        }
-
-        // E. None of the above.  Let's see if there's an app
-        //	  we're itching to switch to.
-
-        else if (EmPatchState::GetNextAppDbID() != 0) {
-            /*Err err =*/SwitchToApp(EmPatchState::GetNextAppCardNo(),
-                                     EmPatchState::GetNextAppDbID());
-
-            EmPatchState::SetNextAppCardNo(0);
-            EmPatchState::SetNextAppDbID(0);
-
-            clearTimeout = true;
-        }
-    } else {
-        if (Hordes::IsOn() && LogEnqueuedEvents()) {
-            LogAppendMsg("Event Manager not idle, so not posting an event.");
+            EvtEnqueuePenPoint(&point);
         }
     }
-#endif
 }
 
 /***********************************************************************

@@ -62,8 +62,7 @@ uint8 EmLowMem::GetEvtMgrIdle(void) {
     **	};
     */
 
-    EmAssert(false);  // CSTODO not 64 bit safe!
-    size_t idleOffset = offsetof(SysEvtMgrGlobalsType, idle);
+    size_t idleOffset = 37;
 
     // Under Palm OS 1.0, there was an extra 4-byte value at the
     // location currently holding "gremlinsFlag", which is before

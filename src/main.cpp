@@ -17,6 +17,7 @@
 #include "EmSession.h"
 #include "Frame.h"
 #include "Logging.h"
+#include "PenEvent.h"
 #include "Platform.h"
 
 using namespace std;
@@ -154,11 +155,11 @@ class MainLoop {
         return changed;
     }
 
-    void handlePenDown() { cerr << "pen down: (" << penX << ", " << penY << ")" << endl << flush; }
+    void handlePenDown() { gSession->QueuePenEvent(PenEvent::down(penX, penY)); }
 
-    void handlePenMove() { cerr << "pen move: (" << penX << ", " << penY << ")" << endl << flush; }
+    void handlePenMove() { gSession->QueuePenEvent(PenEvent::down(penX, penY)); }
 
-    void handlePenUp() { cerr << "pen up: (" << penX << ", " << penY << ")" << endl << flush; }
+    void handlePenUp() { gSession->QueuePenEvent(PenEvent::up()); }
 
    private:
     SDL_Renderer* renderer{nullptr};

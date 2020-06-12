@@ -6,6 +6,8 @@
 #include "EmCPU.h"
 #include "EmCommon.h"
 #include "EmDevice.h"
+#include "EmThreadSafeQueue.h"
+#include "PenEvent.h"
 
 class EmSession {
    public:
@@ -23,15 +25,18 @@ class EmSession {
 
     void ScheduleReset(EmResetType resetType);
 
-    void ScheduleSubroutineReturn();
-
     EmDevice& GetDevice();
 
     uint32 RunEmulation(uint32 maxCycles = 10000);
 
     void ExecuteSubroutine();
+    void ScheduleSubroutineReturn();
 
     void HandleInstructionBreak();
+
+    void QueuePenEvent(PenEvent evt);
+    bool HasPenEvent();
+    PenEvent NextPenEvent();
 
    private:
     void Reset(EmResetType);
@@ -46,6 +51,8 @@ class EmSession {
 
     shared_ptr<EmDevice> device{nullptr};
     unique_ptr<EmCPU> cpu{nullptr};
+
+    EmThreadSafeQueue<PenEvent> penEventQueue{50};
 };
 
 extern EmSession* gSession;

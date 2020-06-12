@@ -2,6 +2,7 @@
 
 #include "EmCommon.h"
 #include "EmLowMem.h"
+#include "EmPatchMgr.h"
 #include "EmPatchState.h"
 #include "EmSession.h"
 #include "Logging.h"
@@ -66,18 +67,7 @@ namespace {
 
         CallROMType result = kExecuteROM;
 
-#if 0  // CSTODO
-        Bool clearTimeout;
-
-        EmPatchMgr::PuppetString(result, clearTimeout);
-
-        // If timeout is infinite, the kernel wants 0.
-        // If timeout is none, the kernel wants -1.
-
-        if (clearTimeout && timeout == 0) {
-            sub.SetParamVal("timeout", (Int32)-1);
-        }
-#endif
+        EmPatchMgr::PuppetString(result);
 
         return result;
     }

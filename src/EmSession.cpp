@@ -6,6 +6,7 @@
 #include "EmPatchMgr.h"
 #include "EmPatchState.h"
 #include "Miscellaneous.h"
+#include "ROMStubs.h"
 
 namespace {
     EmSession _gSession;
@@ -109,3 +110,12 @@ void EmSession::ExecuteSubroutine() {
 }
 
 void EmSession::HandleInstructionBreak() { EmPatchMgr::HandleInstructionBreak(); }
+
+void EmSession::QueuePenEvent(PenEvent evt) {
+    penEventQueue.Put(evt);
+    EvtWakeup();
+}
+
+bool EmSession::HasPenEvent() { return penEventQueue.GetUsed() > 0; }
+
+PenEvent EmSession::NextPenEvent() { return HasPenEvent() ? penEventQueue.Get() : PenEvent(); }

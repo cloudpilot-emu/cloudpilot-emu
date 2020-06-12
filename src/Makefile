@@ -82,6 +82,7 @@ SOURCE_CPP = \
 	patch/EmPatchMgr.cpp \
 	patch/EmPatchState.cpp \
 	Miscellaneous.cpp \
+	Marshall.cpp \
 	Platform.cpp \
 	EmDevice.cpp \
 	EmLowMem.cpp \
