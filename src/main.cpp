@@ -10,6 +10,7 @@
 #endif
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 
 #include "EmDevice.h"
 #include "EmHAL.h"
@@ -19,6 +20,7 @@
 #include "Logging.h"
 #include "PenEvent.h"
 #include "Platform.h"
+#include "Silkscreen.h"
 
 using namespace std;
 
@@ -29,14 +31,16 @@ constexpr int MOUSE_MOVE_THROTTLE = 25;
 class MainLoop {
    public:
     MainLoop(SDL_Window* window, SDL_Renderer* renderer) : renderer(renderer) {
+        loadSilkscreen();
+
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
         drawSilkscreen(renderer);
 
         SDL_RenderPresent(renderer);
 
-        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
-                                    160, 160);
+        lcdTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
+                                       SDL_TEXTUREACCESS_STREAMING, 160, 160);
     }
 
     bool isRunning() const { return running; }
@@ -62,11 +66,23 @@ class MainLoop {
     static void cycleStatic(MainLoop* self) { self->cycle(); }
 
    private:
+    void loadSilkscreen() {
+        SDL_RWops* rwops = SDL_RWFromConstMem((const void*)silkscreenPng_data, silkscreenPng_len);
+        SDL_Surface* surface = IMG_LoadPNG_RW(rwops);
+        SDL_RWclose(rwops);
+
+        silkscreenTexture = SDL_CreateTextureFromSurface(renderer, surface);
+
+        SDL_FreeSurface(surface);
+    }
+
     void drawSilkscreen(SDL_Renderer* renderer) {
-        SDL_SetRenderDrawColor(renderer, 200, 200, 200, 255);
+        SDL_SetRenderDrawColor(renderer, 0xbb, 0xbb, 0xbb, 0xff);
 
         SDL_Rect rect = {.x = 0, .y = SCALE * 160, .w = SCALE * 160, .h = SCALE * 60};
+
         SDL_RenderFillRect(renderer, &rect);
+        SDL_RenderCopy(renderer, silkscreenTexture, nullptr, &rect);
     }
 
     void updateScreen() {
@@ -77,24 +93,24 @@ class MainLoop {
         int pitch;
         uint8* buffer = frame.GetBuffer();
 
-        SDL_LockTexture(texture, nullptr, (void**)&pixels, &pitch);
+        SDL_LockTexture(lcdTexture, nullptr, (void**)&pixels, &pitch);
 
         for (int x = 0; x < 160; x++)
             for (int y = 0; y < 160; y++)
                 pixels[y * pitch / 4 + x] =
                     ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
                       (0x80 >> ((x + frame.margin) % 8))) == 0
-                         ? 0xffffffff
+                         ? 0xddddddff
                          : 0x000000ff);
 
-        SDL_UnlockTexture(texture);
+        SDL_UnlockTexture(lcdTexture);
 
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
         drawSilkscreen(renderer);
 
         SDL_Rect dest = {.x = 0, .y = 0, .w = SCALE * 160, .h = SCALE * 160};
-        SDL_RenderCopy(renderer, texture, nullptr, &dest);
+        SDL_RenderCopy(renderer, lcdTexture, nullptr, &dest);
 
         SDL_RenderPresent(renderer);
     }
@@ -170,7 +186,8 @@ class MainLoop {
 
    private:
     SDL_Renderer* renderer{nullptr};
-    SDL_Texture* texture{nullptr};
+    SDL_Texture* lcdTexture{nullptr};
+    SDL_Texture* silkscreenTexture{nullptr};
 
     Frame frame{1024 * 128};
 
@@ -276,6 +293,7 @@ int main(int argc, const char** argv) {
     initializeSession(argv[1]);
 
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
+    IMG_Init(IMG_INIT_PNG);
 
     SDL_Window* window;
     SDL_Renderer* renderer;
@@ -296,5 +314,6 @@ int main(int argc, const char** argv) {
     };
 
     SDL_Quit();
+    IMG_Quit();
 #endif
 }

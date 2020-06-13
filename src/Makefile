@@ -12,13 +12,15 @@ CXXFLAGS_COMMON = -std=c++14 -fno-exceptions
 
 CFLAGS_NATIVE = $(CFLAGS_COMMON) -O0 -g -fsanitize=address,undefined $(shell sdl2-config --cflags)
 CXXFLAGS_NATIVE = $(CFLAGS_NATIVE) $(CXXFLAGS_COMMON)
-LDFLAGS_NATIVE = -fsanitize=address,undefined $(shell sdl2-config --libs)
+LDFLAGS_NATIVE = -fsanitize=address,undefined $(shell sdl2-config --libs) -lSDL2_image
 
-CFLAGS_EMCC =  $(CFLAGS_COMMON) -Os -s USE_SDL=2
+CFLAGS_EMCC =  $(CFLAGS_COMMON) -Os -s USE_SDL=2 -s USE_SDL_IMAGE=2
 CXXFLAGS_EMCC= $(CFLAGS_EMCC) $(CXXFLAGS_COMMON)
 LDFLAGS_EMCC = -Wno-version-check \
 	-s EXIT_RUNTIME=1 \
+	-s SDL2_IMAGE_FORMATS='["png"]' \
 	-s USE_SDL=2 \
+	-s USE_SDL_IMAGE=2 \
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME=createModule \
 	-s EXPORTED_RUNTIME_METHODS=["FS"] \
@@ -103,6 +105,7 @@ SOURCE_CPP = \
 	ROMStubs.cpp \
 	Logging.cpp \
 	stubs.cpp \
+	Silkscreen.cpp \
 	main.cpp
 
 OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
