@@ -3,8 +3,8 @@
 #include "EmCommon.h"
 #include "EmLowMem.h"
 #include "EmPatchMgr.h"
-#include "EmPatchState.h"
 #include "EmSession.h"
+#include "EmSystemState.h"
 #include "Logging.h"
 #include "Marshal.h"
 #include "Miscellaneous.h"
@@ -52,7 +52,7 @@ namespace {
         // called SysSemaphoreWait instead.  See our headpatch of that function
         // for a chunk of pretty similar code.
 
-        if (gPatchState.OSMajorVersion() == 1) {
+        if (gSystemState.OSMajorVersion() == 1) {
             return kExecuteROM;
         }
 
@@ -80,12 +80,12 @@ namespace {
         Err err = ::FtrGet(sysFtrCreator, sysFtrNumROMVersion, &value);
 
         if (err == errNone) {
-            gPatchState.SetOSVersion(value);
+            gSystemState.SetOSVersion(value);
 
-            PRINTF("PalmOS version: %u.%u", gPatchState.OSMajorVersion(),
-                   gPatchState.OSMinorVersion());
+            PRINTF("PalmOS version: %u.%u", gSystemState.OSMajorVersion(),
+                   gSystemState.OSMinorVersion());
         } else {
-            // EmPatchState::SetOSVersion(kOSUndeterminedVersion);
+            // EmSystemState::SetOSVersion(kOSUndeterminedVersion);
             PRINTF("vailed to determine PalmOS version");
         }
     }
@@ -142,6 +142,8 @@ namespace {
         Preference<string> userName(kPrefKeyUserName);
         ::SetHotSyncUserName(userName->c_str());
 #endif
+
+        gSystemState.SetUIInitialized();
 
         PRINTF("syscall: UIInitialize");
     }

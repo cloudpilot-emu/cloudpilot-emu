@@ -18,7 +18,7 @@
 #include "EmPalmFunction.h"  // SysTrapIndex
 
 #if 0                          // CSTODO
-    #include "EmPatchState.h"  // EmPatchState::OSMajorVersion
+    #include "EmSystemState.h"  // EmSystemState::OSMajorVersion
 #endif
 
 // clang-format off
@@ -70,7 +70,7 @@ uint8 EmLowMem::GetEvtMgrIdle(void) {
     // have to add 4 to get the right offset.
 
 #if 0  // CSTODO
-    if (EmPatchState::OSMajorVersion() == 1) {
+    if (EmSystemState::OSMajorVersion() == 1) {
         idleOffset += sizeof(Int32);
     }
 #endif

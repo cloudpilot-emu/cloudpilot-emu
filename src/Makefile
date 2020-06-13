@@ -82,7 +82,7 @@ SOURCE_CPP = \
 	patch/EmPatchModule.cpp \
 	patch/EmPatchModuleSys.cpp \
 	patch/EmPatchMgr.cpp \
-	patch/EmPatchState.cpp \
+	EmSystemState.cpp \
 	Miscellaneous.cpp \
 	Marshall.cpp \
 	Platform.cpp \

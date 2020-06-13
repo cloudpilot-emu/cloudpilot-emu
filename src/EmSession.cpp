@@ -4,7 +4,7 @@
 #include "EmMemory.h"
 #include "EmPalmOS.h"
 #include "EmPatchMgr.h"
-#include "EmPatchState.h"
+#include "EmSystemState.h"
 #include "Miscellaneous.h"
 #include "ROMStubs.h"
 
@@ -23,7 +23,8 @@ Bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     EmPalmOS::Initialize();
 
     Reset(EmResetType::kResetSoft);
-    gPatchState = EmPatchState();
+
+    gSystemState.Reset();
 
     return true;
 }
@@ -112,7 +113,11 @@ void EmSession::ExecuteSubroutine() {
 void EmSession::HandleInstructionBreak() { EmPatchMgr::HandleInstructionBreak(); }
 
 void EmSession::QueuePenEvent(PenEvent evt) {
+    if (!gSystemState.IsUIInitialized()) return;
+    if (penEventQueue.GetFree() == 0) penEventQueue.Get();
+
     penEventQueue.Put(evt);
+
     EvtWakeup();
 }
 

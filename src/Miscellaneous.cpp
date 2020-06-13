@@ -234,7 +234,7 @@ string GetLibraryName(uint16 refNum) {
     dispatchTblP = libEntries[refNum].dispatchTblP;
 
 #if 0  // CSTODO
-    if (EmPatchState::OSMajorVersion() > 1) {
+    if (EmSystemState::OSMajorVersion() > 1) {
         libEntry = sysLibTableP + refNum * sizeof(SysLibTblEntryType);
         dispatchTblP = EmMemGet32(libEntry + offsetof(SysLibTblEntryType, dispatchTblP));
     } else {

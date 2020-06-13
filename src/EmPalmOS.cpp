@@ -39,7 +39,7 @@
 
 #if 0                             // CSTODO
     #include "EmErrCodes.h"       // kError_UnimplementedTrap, kError_InvalidLibraryRefNum
-    #include "EmPatchState.h"     // EmPatchState
+    #include "EmSystemState.h"     // EmSystemState
     #include "ErrorHandling.h"    // Errors::ReportInvalidPC
     #include "Platform_NetLib.h"  // Platform_NetLib::Initialize();
     #include "ROMStubs.h"         // IntlSetStrictChecks
@@ -1097,7 +1097,7 @@ void EmPalmOS::GenerateStackCrawl(EmStackFrameList& frameList) {
 // Respond to a preference change.
 
 static void PrvRespondToPrefsChange(PrefKeyType prefKey) {
-    if (EmPatchState::UIInitialized()) {
+    if (EmSystemState::UIInitialized()) {
         if (::PrefKeysEqual(prefKey, kPrefKeyReportStrictIntlChecks) &&
             EmPatchMgr::IntlMgrAvailable()) {
             Preference<Bool> pref(kPrefKeyReportStrictIntlChecks, false);
@@ -1147,7 +1147,7 @@ void EmPalmOS::HandleNewPC(emuptr dest) {
 
     if ((dest & 1) != 0) Errors::ReportErrInvalidPC(dest, kOddAddress);
 
-    //	if (!EmPatchState::UIInitialized ())
+    //	if (!EmSystemState::UIInitialized ())
     //		return;
 
     // Ensure that the PC is in ROM or RAM.

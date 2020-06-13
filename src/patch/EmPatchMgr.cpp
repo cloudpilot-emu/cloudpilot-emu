@@ -29,7 +29,7 @@
 #include "UAE.h"       // gRegs, m68k_dreg, etc.
 
 #if 0  // CSTODO
-    #include "EmPatchState.h"
+    #include "EmSystemState.h"
     #include "SessionFile.h"  // SessionFile
 #endif
 
@@ -83,7 +83,7 @@ void EmPatchMgr::Initialize(void) {
     }
 
 #if 0  // CSTODO
-    EmPatchState::Initialize();
+    EmSystemState::Initialize();
 #endif
 }
 
@@ -112,7 +112,7 @@ void EmPatchMgr::Reset(void) {
     gPatchedLibs.clear();
 
 #if 0  // CSTODO
-    EmPatchState::Reset();
+    EmSystemState::Reset();
 #endif
 }
 
@@ -138,7 +138,7 @@ void EmPatchMgr::Save(SessionFile& f) {
 
     s << kCurrentVersion;
 
-    EmPatchState::Save(s, kCurrentVersion, EmPatchState::PSPersistStep1);
+    EmSystemState::Save(s, kCurrentVersion, EmSystemState::PSPersistStep1);
 
     //	s << gSysPatchModule;
     //	s << gNetLibPatchModule;
@@ -159,7 +159,7 @@ void EmPatchMgr::Save(SessionFile& f) {
         //		s << iter2->fTailpatch; // Patched up in ::Load
     }
 
-    EmPatchState::Save(s, kCurrentVersion, EmPatchState::PSPersistStep2);
+    EmSystemState::Save(s, kCurrentVersion, EmSystemState::PSPersistStep2);
 
     f.WritePatchInfo(chunk);
 #endif
@@ -188,7 +188,7 @@ void EmPatchMgr::Load(SessionFile& f) {
         s >> version;
 
         if (version >= 1) {
-            EmPatchState::Load(s, version, EmPatchState::PSPersistStep1);
+            EmSystemState::Load(s, version, EmSystemState::PSPersistStep1);
 
             gPatchedLibs.clear();
             gInstalledTailpatches.clear();
@@ -220,7 +220,7 @@ void EmPatchMgr::Load(SessionFile& f) {
             }
         }
 
-        EmPatchState::Load(s, version, EmPatchState::PSPersistStep2);
+        EmSystemState::Load(s, version, EmSystemState::PSPersistStep2);
     } else {
         f.SetCanReload(false);
     }
@@ -268,7 +268,7 @@ void EmPatchMgr::Dispose(void) {
 
 void EmPatchMgr::PostLoad(void) {
 #if 0  // CSTODO
-    if (EmPatchState::UIInitialized()) {
+    if (EmSystemState::UIInitialized()) {
         // If we're listening on a socket, install the 'gdbS' feature.	The
         // existance of this feature causes programs written with the prc tools
         // to enter the debugger when they're launched.
