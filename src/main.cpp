@@ -164,7 +164,7 @@ class MainLoop {
     void handlePenMove() { gSession->QueuePenEvent(PenEvent::down(penX, penY)); }
 
     void handlePenUp() {
-        gSession->QueuePenEvent(PenEvent::down(penX, penY));
+        // gSession->QueuePenEvent(PenEvent::down(penX, penY));
         gSession->QueuePenEvent(PenEvent::up());
     }
 
