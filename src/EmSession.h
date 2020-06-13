@@ -52,7 +52,7 @@ class EmSession {
     shared_ptr<EmDevice> device{nullptr};
     unique_ptr<EmCPU> cpu{nullptr};
 
-    EmThreadSafeQueue<PenEvent> penEventQueue{50};
+    EmThreadSafeQueue<PenEvent> penEventQueue{100};
 };
 
 extern EmSession* gSession;

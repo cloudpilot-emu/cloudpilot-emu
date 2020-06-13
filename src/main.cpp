@@ -23,8 +23,8 @@
 using namespace std;
 
 constexpr int SCALE = 3;
-constexpr int MHZ = 4;
-constexpr int MOUSE_MOVE_THROTTLE = 100;
+constexpr int CLOCK_DIV = 4;
+constexpr int MOUSE_MOVE_THROTTLE = 25;
 
 class MainLoop {
    public:
@@ -42,14 +42,18 @@ class MainLoop {
     bool isRunning() const { return running; }
 
     void cycle() {
+        const long hz = EmHAL::GetSystemClockFrequency();
         const long millis = Platform::getMilliseconds();
         if (millis - millisOffset - clockEmu > 500) clockEmu = millis - millisOffset - 10;
 
-        const uint32 cycles = (millis - millisOffset - clockEmu) * 1000 * MHZ;
-        uint32 cyclesPassed = 0;
+        const long cycles = (millis - millisOffset - clockEmu) * (hz / 1000 / CLOCK_DIV);
 
-        while (cyclesPassed < cycles) cyclesPassed += gSession->RunEmulation(cycles);
-        clockEmu += cyclesPassed / 1000 / MHZ;
+        if (cycles > 0) {
+            long cyclesPassed = 0;
+
+            while (cyclesPassed < cycles) cyclesPassed += gSession->RunEmulation(cycles);
+            clockEmu += cyclesPassed / (hz / 1000 / CLOCK_DIV);
+        }
 
         updateScreen();
         handleEvents(millis);
@@ -159,7 +163,10 @@ class MainLoop {
 
     void handlePenMove() { gSession->QueuePenEvent(PenEvent::down(penX, penY)); }
 
-    void handlePenUp() { gSession->QueuePenEvent(PenEvent::up()); }
+    void handlePenUp() {
+        gSession->QueuePenEvent(PenEvent::down(penX, penY));
+        gSession->QueuePenEvent(PenEvent::up());
+    }
 
    private:
     SDL_Renderer* renderer{nullptr};
@@ -283,6 +290,7 @@ int main(int argc, const char** argv) {
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg((em_arg_callback_func)MainLoop::cycleStatic, &mainLoop, 0, true);
 #else
+
     while (mainLoop.isRunning()) {
         mainLoop.cycle();
     };

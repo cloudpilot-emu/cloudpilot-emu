@@ -37,7 +37,7 @@
 // and avoid using the high bit just for safety.
 
 #define SPCFLAG_END_OF_CYCLE (0x40000000)
-#define SLEEP_TICK_CYCLES 1000
+#define SLEEP_TICK_CYCLES 20000
 
 // Data needed by UAE.
 
