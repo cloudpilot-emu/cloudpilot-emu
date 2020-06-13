@@ -28,7 +28,7 @@ void Platform::getDate(uint32& year, uint32& month, uint32& day) {
     localtime_r(&time, &t);
 
     year = t.tm_year + 1900;
-    month = t.tm_mon;
+    month = t.tm_mon + 1;
     day = t.tm_mday;
 }
 
