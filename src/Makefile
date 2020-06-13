@@ -114,6 +114,7 @@ OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDI
 BINARY_NATIVE = cloudpilot
 BINARY_EMCC = cloudpilot.js
 BINARY_WASM = cloudpilot.wasm
+WASM_OPT_STAMP = wasm-opt.stamp
 
 all: bin emscripten
 
@@ -121,8 +122,12 @@ bin: $(BINARY_NATIVE)
 
 emscripten: $(BINARY_EMCC)
 
-wasm-opt: $(BINARY_EMCC)
+wasm-opt: $(WASM_OPT_STAMP)
+
+$(WASM_OPT_STAMP): $(BINARY_EMCC)
 	wasm-opt -O4 --post-emscripten -o $(BINARY_WASM) $(BINARY_WASM)
+	terser -c -o $(BINARY_EMCC) < $(BINARY_EMCC)
+	touch $@
 
 $(BINARY_NATIVE): $(OBJECTS_NATIVE)
 	$(LD_NATIVE) $(LDFLAGS_NATIVE) -o $@ $^
@@ -143,7 +148,7 @@ $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
 	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
 clean:
-	-rm -fr $(BUILDDIR_NATIVE) $(BUILDDIR_EMCC) $(BINARY_EMCC) $(BINARY_NATIVE) $(BINARY_WASM) $(DEPDIR_NATIVE) $(DEPDIR_EMCC)
+	-rm -fr $(BUILDDIR_NATIVE) $(BUILDDIR_EMCC) $(BINARY_EMCC) $(BINARY_NATIVE) $(BINARY_WASM) $(DEPDIR_NATIVE) $(DEPDIR_EMCC) $(WASM_OPT_STAMP)
 
 .PHONY: clean all bin emscripten
 
