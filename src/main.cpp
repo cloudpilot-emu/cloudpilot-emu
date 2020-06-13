@@ -27,13 +27,16 @@ using namespace std;
 constexpr int SCALE = 3;
 constexpr int CLOCK_DIV = 4;
 constexpr int MOUSE_MOVE_THROTTLE = 25;
+constexpr uint8 SILKSCREEN_BACKGROUND_HUE = 0xbb;
+constexpr uint32 FOREGROUND_COLOR = 0x000000ff;
+constexpr uint32 BACKGROUND_COLOR = 0xddddddff;
 
 class MainLoop {
    public:
     MainLoop(SDL_Window* window, SDL_Renderer* renderer) : renderer(renderer) {
         loadSilkscreen();
 
-        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+        SDL_SetRenderDrawColor(renderer, 0xdd, 0xdd, 0xdd, 0xff);
         SDL_RenderClear(renderer);
         drawSilkscreen(renderer);
 
@@ -77,7 +80,8 @@ class MainLoop {
     }
 
     void drawSilkscreen(SDL_Renderer* renderer) {
-        SDL_SetRenderDrawColor(renderer, 0xbb, 0xbb, 0xbb, 0xff);
+        SDL_SetRenderDrawColor(renderer, SILKSCREEN_BACKGROUND_HUE, SILKSCREEN_BACKGROUND_HUE,
+                               SILKSCREEN_BACKGROUND_HUE, 0xff);
 
         SDL_Rect rect = {.x = 0, .y = SCALE * 160, .w = SCALE * 160, .h = SCALE * 60};
 
@@ -100,8 +104,8 @@ class MainLoop {
                 pixels[y * pitch / 4 + x] =
                     ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
                       (0x80 >> ((x + frame.margin) % 8))) == 0
-                         ? 0xddddddff
-                         : 0x000000ff);
+                         ? BACKGROUND_COLOR
+                         : FOREGROUND_COLOR);
 
         SDL_UnlockTexture(lcdTexture);
 
