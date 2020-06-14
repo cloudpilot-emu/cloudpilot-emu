@@ -124,3 +124,18 @@ void EmSession::QueuePenEvent(PenEvent evt) {
 bool EmSession::HasPenEvent() { return penEventQueue.GetUsed() > 0; }
 
 PenEvent EmSession::NextPenEvent() { return HasPenEvent() ? penEventQueue.Get() : PenEvent(); }
+
+void EmSession::QueueKeyboardEvent(KeyboardEvent evt) {
+    if (!gSystemState.IsUIInitialized()) return;
+    if (keyboardEventQueue.GetFree() == 0) keyboardEventQueue.Get();
+
+    keyboardEventQueue.Put(evt);
+
+    EvtWakeup();
+}
+
+bool EmSession::HasKeyboardEvent() { return keyboardEventQueue.GetUsed() > 0; }
+
+KeyboardEvent EmSession::NextKeyboardEvent() {
+    return HasKeyboardEvent() ? keyboardEventQueue.Get() : KeyboardEvent('.');
+}

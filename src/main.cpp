@@ -17,6 +17,7 @@
 #include "EmROMReader.h"
 #include "EmSession.h"
 #include "Frame.h"
+#include "KeyboardEvent.h"
 #include "Logging.h"
 #include "PenEvent.h"
 #include "Platform.h"
@@ -159,6 +160,15 @@ class MainLoop {
                     }
 
                     break;
+
+                case SDL_TEXTINPUT:
+                    gSession->QueueKeyboardEvent(translateTextInput(event.text.text));
+
+                    break;
+
+                case SDL_KEYDOWN:
+                    handleKeyDown(event);
+                    break;
             }
             if (event.type == SDL_QUIT) running = false;
         }
@@ -186,6 +196,42 @@ class MainLoop {
     void handlePenUp() {
         // gSession->QueuePenEvent(PenEvent::down(penX, penY));
         gSession->QueuePenEvent(PenEvent::up());
+    }
+
+    void handleKeyDown(SDL_Event event) {
+        switch (event.key.keysym.sym) {
+            case SDLK_RETURN:
+                gSession->QueueKeyboardEvent('\n');
+                break;
+
+            case SDLK_LEFT:
+                gSession->QueueKeyboardEvent(chrLeftArrow);
+                break;
+
+            case SDLK_RIGHT:
+                gSession->QueueKeyboardEvent(chrRightArrow);
+                break;
+
+            case SDLK_UP:
+                gSession->QueueKeyboardEvent(chrUpArrow);
+                break;
+
+            case SDLK_DOWN:
+                gSession->QueueKeyboardEvent(chrDownArrow);
+                break;
+
+            case SDLK_BACKSPACE:
+                gSession->QueueKeyboardEvent(chrBackspace);
+                break;
+
+            case SDLK_TAB:
+                gSession->QueueKeyboardEvent(chrHorizontalTabulation);
+                break;
+        }
+    }
+
+    char translateTextInput(char* input) {
+        return (input[0] == (char)0xc3) ? (input[1] + 64) & 0xff : input[0];
     }
 
    private:
@@ -298,6 +344,7 @@ int main(int argc, const char** argv) {
 
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     IMG_Init(IMG_INIT_PNG);
+    SDL_StartTextInput();
 
     SDL_Window* window;
     SDL_Renderer* renderer;

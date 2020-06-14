@@ -7,6 +7,7 @@
 #include "EmCommon.h"
 #include "EmDevice.h"
 #include "EmThreadSafeQueue.h"
+#include "KeyboardEvent.h"
 #include "PenEvent.h"
 
 class EmSession {
@@ -38,6 +39,10 @@ class EmSession {
     bool HasPenEvent();
     PenEvent NextPenEvent();
 
+    void QueueKeyboardEvent(KeyboardEvent evt);
+    bool HasKeyboardEvent();
+    KeyboardEvent NextKeyboardEvent();
+
    private:
     void Reset(EmResetType);
 
@@ -53,6 +58,7 @@ class EmSession {
     unique_ptr<EmCPU> cpu{nullptr};
 
     EmThreadSafeQueue<PenEvent> penEventQueue{100};
+    EmThreadSafeQueue<KeyboardEvent> keyboardEventQueue{100};
 };
 
 extern EmSession* gSession;

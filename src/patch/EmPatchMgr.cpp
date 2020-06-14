@@ -20,7 +20,8 @@
 #include "EmPalmFunction.h"  // IsSystemTrap
 #include "EmPatchModule.h"
 #include "EmPatchModuleSys.h"
-#include "EmSession.h"   // GetDevice
+#include "EmSession.h"  // GetDevice
+#include "KeyboardEvent.h"
 #include "Logging.h"     // LogEvtAddEventToQueue, etc.
 #include "MetaMemory.h"  // MetaMemory mark functions
 #include "Miscellaneous.h"
@@ -791,38 +792,11 @@ void EmPatchMgr::PuppetString(CallROMType& callROM) {
 
         EmAssert(gSession);
 
-#if 0  // CSTODO
-        else if (gSession->HasKeyEvent()) {
-            EmKeyEvent event = gSession->GetKeyEvent();
+        if (gSession->HasKeyboardEvent()) {
+            KeyboardEvent evt = gSession->NextKeyboardEvent();
 
-            UInt16 modifiers = 0;
-
-            if (event.fShiftDown) modifiers |= shiftKeyMask;
-
-            if (event.fCapsLockDown) modifiers |= capsLockMask;
-
-            if (event.fNumLockDown) modifiers |= numLockMask;
-
-            // We don't really want to set this one.  commandKeyMask
-            // means something special in Palm OS
-            //			if (event.fCommandDown)
-            //				modifiers |= commandKeyMask;
-
-            if (event.fOptionDown) modifiers |= optionKeyMask;
-
-            if (event.fControlDown) modifiers |= controlKeyMask;
-
-            if (event.fAltDown) modifiers |= 0;  // no bit defined for this
-
-            if (event.fWindowsDown) modifiers |= 0;  // no bit defined for this
-
-            ::StubAppEnqueueKey(event.fKey, 0, modifiers);
-        }
-#endif
-
-        // No key events, let's see if there are pen events.
-
-        if (gSession->HasPenEvent()) {
+            if (evt.GetKey() != 0) EvtEnqueueKey(evt.GetKey(), 0, 0);
+        } else if (gSession->HasPenEvent()) {
             PenEvent evt = gSession->NextPenEvent();
             PointType point;
 

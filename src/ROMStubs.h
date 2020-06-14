@@ -27,4 +27,6 @@ Err EvtEnqueuePenPoint(PointType* ptP);
 
 Err EvtWakeup(void);
 
+Err EvtEnqueueKey(UInt16 ascii, UInt16 keycode, UInt16 modifiers);
+
 #endif /* _ROMSTUBS_H_ */
