@@ -52,6 +52,18 @@
 
             let running = false;
 
+            // Work around missing SDL_TEXTINPUT for option-X key combos on MacOS
+            window.addEventListener(
+                'keydown',
+                e => {
+                    if (e.altKey && e.key.length === 1) {
+                        e.stopPropagation();
+                        window.dispatchEvent(new KeyboardEvent('keydown', { altKey: false, key: e.key }));
+                    }
+                },
+                true
+            );
+
             function escape(text) {
                 const node = document.createElement('div');
 

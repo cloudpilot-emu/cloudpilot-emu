@@ -162,8 +162,7 @@ class MainLoop {
                     break;
 
                 case SDL_TEXTINPUT:
-                    gSession->QueueKeyboardEvent(translateTextInput(event.text.text));
-
+                    handleTextInput(event);
                     break;
 
                 case SDL_KEYDOWN:
@@ -230,8 +229,19 @@ class MainLoop {
         }
     }
 
-    char translateTextInput(char* input) {
-        return (input[0] == (char)0xc3) ? (input[1] + 64) & 0xff : input[0];
+    void handleTextInput(SDL_Event event) {
+        const char* text = event.text.text;
+        char c = 0;
+
+        if ((text[0] & 0x80) == 0) {
+            // U+0000 -- U+007F: ASCII
+            c = text[0];
+        } else if ((text[0] & 0xfc) == 0xc0) {
+            // U+0080 -- U+00FF: LATIN-1
+            c = ((text[0] & 0x03) << 6) | (text[1] & 0x3f);
+        }
+
+        if (c) gSession->QueueKeyboardEvent(c);
     }
 
    private:
