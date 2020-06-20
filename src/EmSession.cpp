@@ -12,7 +12,7 @@ namespace {
     EmSession _gSession;
 }
 
-constexpr int MIN_CYCLES_BETWEEN_EVENTS = 4000;
+constexpr int MIN_CYCLES_BETWEEN_EVENTS = 10000;
 
 EmSession* gSession = &_gSession;
 

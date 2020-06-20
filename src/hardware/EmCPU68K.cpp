@@ -353,14 +353,13 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
 // ---------------------------------------------------------------------------
 
 Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
-    // If we're making subroutine calls, then all we process are requests
-    // to break from the CPU loop.  We don't want interrupts, tracing, etc.
-    // getting in the way.
-
     EmAssert(fSession);
+
+    /*
     if (fSession->IsNested()) {
         return this->CheckForBreak();
     }
+    */
 
     // Check for Reset first.  If this is set, don't do anything else.
 

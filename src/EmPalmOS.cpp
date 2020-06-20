@@ -362,54 +362,10 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
         EmAliascj_xsmb<PAS> memSemaphoreID(memSemaphoreIDP);
 
         if (memSemaphoreID.xsmuse == 0) {
-            // Check the current task.  We don't want to break on a system
-            // call if we're in the background.  If we're breaking on a
-            // system call, it's likely because some other part of Poser
-            // wants to make OS calls.  Occassionally, those OS calls result
-            // in trying to switch to the UI task (see, for example,
-            // PrvEditCardOptionsOK).  If we're already in the UI task, then
-            // that's OK, but if we're in a background task, an attempted
-            // switch to the UI task will fail, due to Poser turning off
-            // interrupts when it makes OS calls.
+            gCPU->SetPC(gCPU->GetPC() - pcAdjust);
+            gSession->NotifySyscallDispatched();
 
-            SysKernelInfoType taskInfo;
-            taskInfo.selector = sysKernelInfoSelCurTaskInfo;
-
-            Err err = ::SysKernelInfo(&taskInfo);
-            if (err == errNone) {
-                if (taskInfo.param.task.tag == 'psys') {
-                    gCPU->SetPC(gCPU->GetPC() - pcAdjust);
-                    gSession->NotifySyscallDispatched();
-
-                    // Return true to say that everything has been handled.
-
-                    return true;
-                }
-
-                // If we took a stab at this and didn't find that we were
-                // in the UI task, then call EvtWakeup.  If our context is
-                // one where an application has called EvtGetEvent with a
-                // "sleep forever" timeout, then the current task will be
-                // 'AMX ', and will stay that way.  Calling EvtWakeup will
-                // force an eventual switch to the UI task.
-                //
-                // Note that we wake-up the UI thread only if we're in the
-                // root AMX thread.  This prevents us from trying to call
-                // it when the Palm context is one where a background task
-                // is the current task.  It's possible for that task to be
-                // sleeping or something (the example we ran into was with
-                // a background task calling SysDelay).  EvtWakeup will try
-                // to switch to the UI task, but will not return until the
-                // UI task switches back to the background task.  That will
-                // never happen because interrupts are turned off during
-                // all Poser calls into the OS (such as the call to
-                // EvtWakeup).  Thus, the only safe places to call
-                // EvtWakeup are in the UI or AMX tasks.
-
-                else if (taskInfo.param.task.tag == 0x414d5800) {
-                    ::EvtWakeup();
-                }
-            }
+            return true;
         }
     }
 
