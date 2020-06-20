@@ -12,6 +12,8 @@ namespace {
     EmSession _gSession;
 }
 
+constexpr int MIN_CYCLES_BETWEEN_EVENTS = 4000;
+
 EmSession* gSession = &_gSession;
 
 Bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLength) {
@@ -43,6 +45,13 @@ void EmSession::Reset(EmResetType resetType) {
     syscallDispatched = false;
 
     additionalCycles = 0;
+    systemCycles = 0;
+
+    penEventQueue.Clear();
+    keyboardEventQueue.Clear();
+    penEventQueueIncoming.Clear();
+    keyboardEventQueueIncoming.Clear();
+    lastEventPromotedAt = 0;
 }
 
 Bool EmSession::IsNested() {
@@ -100,10 +109,15 @@ EmDevice& EmSession::GetDevice() { return *device; }
 uint32 EmSession::RunEmulation(uint32 maxCycles) {
     EmAssert(cpu);
 
-    uint32 cyclesExecuted = cpu->Execute(maxCycles) + additionalCycles;
+    PumpEvents();
+
+    uint32 cycles = cpu->Execute(maxCycles);
+    systemCycles += cycles;
+
+    cycles += additionalCycles;
     additionalCycles = 0;
 
-    return cyclesExecuted;
+    return cycles;
 }
 
 void EmSession::ExecuteSubroutine() {
@@ -125,7 +139,10 @@ void EmSession::RunToSyscall() {
     EmAssert(gCPU);
 
     while (!syscallDispatched) {
-        additionalCycles += cpu->Execute(0);
+        uint32 cycles = cpu->Execute(0);
+
+        systemCycles += cycles;
+        additionalCycles += cycles;
     }
 }
 
@@ -141,13 +158,9 @@ bool EmSession::WaitingForSyscall() { return waitingForSyscall; }
 void EmSession::HandleInstructionBreak() { EmPatchMgr::HandleInstructionBreak(); }
 
 void EmSession::QueuePenEvent(PenEvent evt) {
-    if (!gSystemState.IsUIInitialized()) return;
-    if (penEventQueue.GetFree() == 0) penEventQueue.Get();
+    if (penEventQueueIncoming.GetFree() == 0) penEventQueueIncoming.Get();
 
-    penEventQueue.Put(evt);
-
-    RunToSyscall();
-    EvtWakeup();
+    penEventQueueIncoming.Put(evt);
 }
 
 bool EmSession::HasPenEvent() { return penEventQueue.GetUsed() > 0; }
@@ -155,17 +168,48 @@ bool EmSession::HasPenEvent() { return penEventQueue.GetUsed() > 0; }
 PenEvent EmSession::NextPenEvent() { return HasPenEvent() ? penEventQueue.Get() : PenEvent(); }
 
 void EmSession::QueueKeyboardEvent(KeyboardEvent evt) {
-    if (!gSystemState.IsUIInitialized()) return;
-    if (keyboardEventQueue.GetFree() == 0) keyboardEventQueue.Get();
+    if (keyboardEventQueueIncoming.GetFree() == 0) keyboardEventQueueIncoming.Get();
 
-    keyboardEventQueue.Put(evt);
-
-    RunToSyscall();
-    EvtWakeup();
+    keyboardEventQueueIncoming.Put(evt);
 }
 
 bool EmSession::HasKeyboardEvent() { return keyboardEventQueue.GetUsed() > 0; }
 
 KeyboardEvent EmSession::NextKeyboardEvent() {
     return HasKeyboardEvent() ? keyboardEventQueue.Get() : KeyboardEvent('.');
+}
+
+void EmSession::Wakeup() {
+    RunToSyscall();
+    EvtWakeup();
+}
+
+void EmSession::PumpEvents() {
+    if (systemCycles - lastEventPromotedAt < MIN_CYCLES_BETWEEN_EVENTS ||
+        !gSystemState.IsUIInitialized())
+        return;
+
+    if (PromoteKeyboardEvent() || PromotePenEvent()) lastEventPromotedAt = systemCycles;
+}
+
+bool EmSession::PromoteKeyboardEvent() {
+    if (keyboardEventQueueIncoming.GetUsed() == 0) return false;
+
+    if (keyboardEventQueue.GetFree() == 0) keyboardEventQueue.Get();
+    keyboardEventQueue.Put(keyboardEventQueueIncoming.Get());
+
+    Wakeup();
+
+    return true;
+}
+
+bool EmSession::PromotePenEvent() {
+    if (penEventQueueIncoming.GetUsed() == 0) return false;
+
+    if (penEventQueue.GetFree() == 0) penEventQueue.Get();
+    penEventQueue.Put(penEventQueueIncoming.Get());
+
+    Wakeup();
+
+    return true;
 }

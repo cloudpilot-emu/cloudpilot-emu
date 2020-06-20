@@ -50,6 +50,12 @@ class EmSession {
    private:
     void Reset(EmResetType);
 
+    void Wakeup();
+
+    void PumpEvents();
+    bool PromoteKeyboardEvent();
+    bool PromotePenEvent();
+
    private:
     bool bankResetScheduled{false};
     bool resetScheduled{false};
@@ -64,10 +70,15 @@ class EmSession {
     shared_ptr<EmDevice> device{nullptr};
     unique_ptr<EmCPU> cpu{nullptr};
 
-    EmThreadSafeQueue<PenEvent> penEventQueue{100};
-    EmThreadSafeQueue<KeyboardEvent> keyboardEventQueue{100};
+    EmThreadSafeQueue<PenEvent> penEventQueue{20};
+    EmThreadSafeQueue<KeyboardEvent> keyboardEventQueue{20};
+
+    EmThreadSafeQueue<PenEvent> penEventQueueIncoming{20};
+    EmThreadSafeQueue<KeyboardEvent> keyboardEventQueueIncoming{20};
+    uint64 lastEventPromotedAt{0};
 
     uint32 additionalCycles{0};
+    uint64 systemCycles{0};
 };
 
 extern EmSession* gSession;
