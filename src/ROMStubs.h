@@ -29,4 +29,6 @@ Err EvtWakeup(void);
 
 Err EvtEnqueueKey(UInt16 ascii, UInt16 keycode, UInt16 modifiers);
 
+Err SysKernelInfo(MemPtr p);
+
 #endif /* _ROMSTUBS_H_ */

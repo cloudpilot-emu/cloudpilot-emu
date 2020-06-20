@@ -123,3 +123,20 @@ Err EvtEnqueueKey(UInt16 ascii, UInt16 keycode, UInt16 modifiers) {
     // Return the result.
     RETURN_RESULT_VAL(Err);
 }
+
+Err SysKernelInfo(MemPtr p) {
+    // Prepare the stack.
+    CALLER_SETUP("Err", "SysKernelInfoPtr p");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_REF(SysKernelInfoType, p, Marshal::kInOut);
+
+    // Call the function.
+    sub.Call(sysTrapSysKernelInfo);
+
+    // Write back any "by ref" parameters.
+    CALLER_GET_PARAM_REF(p);
+
+    // Return the result.
+    RETURN_RESULT_VAL(Err);
+}

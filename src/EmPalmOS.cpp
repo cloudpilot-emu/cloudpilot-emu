@@ -13,19 +13,22 @@
 
 #include "EmPalmOS.h"
 
+#include "Byteswapping.h"
 #include "EmBankDRAM.h"    // EmBankDRAM::SetLong
 #include "EmBankMapped.h"  // EmBankMapped::SetLong
 #include "EmBankROM.h"     // EmBankROM::SetLong
 #include "EmBankSRAM.h"    // EmBankSRAM::SetLong
 #include "EmCPU68K.h"      // gCPU68K, gStackHigh, etc.
 #include "EmCommon.h"
+#include "EmLowMem.h"
 #include "EmMemory.h"       // CEnableFullAccess
 #include "EmPalmStructs.h"  // EmAliasCardHeaderType
 #include "EmPatchMgr.h"     // EmPatchMgr
 #include "EmSession.h"      // gSession->Reset
 #include "Logging.h"
 #include "Miscellaneous.h"  // GetSystemCallContext
-#include "UAE.h"            // CHECK_STACK_POINTER_DECREMENT
+#include "ROMStubs.h"
+#include "UAE.h"  // CHECK_STACK_POINTER_DECREMENT
 
 #if 0                             // CSTODO
     #include "EmErrCodes.h"       // kError_UnimplementedTrap, kError_InvalidLibraryRefNum
@@ -347,9 +350,7 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
 
     int pcAdjust = fromTrap ? 2 : 0;
 
-#if 0  // CSTODO
-
-    if (!gSession->IsNested() && gSession->GetBreakOnSysCall()) {
+    if (!gSession->IsNested() && gSession->WaitingForSyscall()) {
         CEnableFullAccess munge;
 
         // Check the memory manager semaphore.  If we're stopping on a
@@ -378,7 +379,7 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
             if (err == errNone) {
                 if (taskInfo.param.task.tag == 'psys') {
                     gCPU->SetPC(gCPU->GetPC() - pcAdjust);
-                    gSession->ScheduleSuspendSysCall();
+                    gSession->NotifySyscallDispatched();
 
                     // Return true to say that everything has been handled.
 
@@ -411,8 +412,6 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
             }
         }
     }
-
-#endif
 
     // ======================================================================
     //	Determine what ROM function is about to be called, and determine

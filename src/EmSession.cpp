@@ -29,6 +29,22 @@ Bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     return true;
 }
 
+void EmSession::Reset(EmResetType resetType) {
+    EmAssert(cpu);
+
+    Memory::Reset((resetType & kResetTypeMask) != kResetSys);
+    cpu->Reset((resetType & kResetTypeMask) != kResetSys);
+    EmPalmOS::Reset();
+
+    bankResetScheduled = false;
+    resetScheduled = false;
+
+    waitingForSyscall = false;
+    syscallDispatched = false;
+
+    additionalCycles = 0;
+}
+
 Bool EmSession::IsNested() {
     EmAssert(nestLevel >= 0);
     return nestLevel > 0;
@@ -55,7 +71,7 @@ Bool EmSession::ExecuteSpecial(Bool checkForResetOnly) {
     return false;
 }
 
-Bool EmSession::CheckForBreak() { return suspendCpuSubroutineReturn; }
+Bool EmSession::CheckForBreak() { return suspendCpuSubroutineReturn || syscallDispatched; }
 
 void EmSession::ScheduleResetBanks() {
     bankResetScheduled = true;
@@ -81,21 +97,13 @@ void EmSession::ScheduleSubroutineReturn() {
 
 EmDevice& EmSession::GetDevice() { return *device; }
 
-void EmSession::Reset(EmResetType resetType) {
-    EmAssert(cpu);
-
-    Memory::Reset((resetType & kResetTypeMask) != kResetSys);
-    cpu->Reset((resetType & kResetTypeMask) != kResetSys);
-    EmPalmOS::Reset();
-
-    bankResetScheduled = false;
-    resetScheduled = false;
-}
-
 uint32 EmSession::RunEmulation(uint32 maxCycles) {
     EmAssert(cpu);
 
-    return cpu->Execute(maxCycles);
+    uint32 cyclesExecuted = cpu->Execute(maxCycles) + additionalCycles;
+    additionalCycles = 0;
+
+    return cyclesExecuted;
 }
 
 void EmSession::ExecuteSubroutine() {
@@ -110,6 +118,26 @@ void EmSession::ExecuteSubroutine() {
     }
 }
 
+void EmSession::RunToSyscall() {
+    EmValueChanger<bool> startRunToSyscall(waitingForSyscall, true);
+    EmValueChanger<bool> resetSyscallDispatched(syscallDispatched, false);
+
+    EmAssert(gCPU);
+
+    while (!syscallDispatched) {
+        additionalCycles += cpu->Execute(0);
+    }
+}
+
+void EmSession::NotifySyscallDispatched() {
+    syscallDispatched = true;
+
+    EmAssert(gCPU);
+    cpu->CheckAfterCycle();
+}
+
+bool EmSession::WaitingForSyscall() { return waitingForSyscall; }
+
 void EmSession::HandleInstructionBreak() { EmPatchMgr::HandleInstructionBreak(); }
 
 void EmSession::QueuePenEvent(PenEvent evt) {
@@ -118,6 +146,7 @@ void EmSession::QueuePenEvent(PenEvent evt) {
 
     penEventQueue.Put(evt);
 
+    RunToSyscall();
     EvtWakeup();
 }
 
@@ -131,6 +160,7 @@ void EmSession::QueueKeyboardEvent(KeyboardEvent evt) {
 
     keyboardEventQueue.Put(evt);
 
+    RunToSyscall();
     EvtWakeup();
 }
 

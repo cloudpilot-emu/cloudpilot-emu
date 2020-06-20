@@ -33,6 +33,10 @@ class EmSession {
     void ExecuteSubroutine();
     void ScheduleSubroutineReturn();
 
+    void RunToSyscall();
+    bool WaitingForSyscall();
+    void NotifySyscallDispatched();
+
     void HandleInstructionBreak();
 
     void QueuePenEvent(PenEvent evt);
@@ -54,11 +58,16 @@ class EmSession {
     int nestLevel{0};
     bool suspendCpuSubroutineReturn{false};
 
+    bool waitingForSyscall{false};
+    bool syscallDispatched{false};
+
     shared_ptr<EmDevice> device{nullptr};
     unique_ptr<EmCPU> cpu{nullptr};
 
     EmThreadSafeQueue<PenEvent> penEventQueue{100};
     EmThreadSafeQueue<KeyboardEvent> keyboardEventQueue{100};
+
+    uint32 additionalCycles{0};
 };
 
 extern EmSession* gSession;
