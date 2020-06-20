@@ -14,7 +14,7 @@ CFLAGS_NATIVE = $(CFLAGS_COMMON) -O0 -g -fsanitize=address,undefined $(shell sdl
 CXXFLAGS_NATIVE = $(CFLAGS_NATIVE) $(CXXFLAGS_COMMON)
 LDFLAGS_NATIVE = -fsanitize=address,undefined $(shell sdl2-config --libs) -lSDL2_image
 
-CFLAGS_EMCC =  $(CFLAGS_COMMON) -Os -s USE_SDL=2 -s USE_SDL_IMAGE=2
+CFLAGS_EMCC =  $(CFLAGS_COMMON) -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2
 CXXFLAGS_EMCC= $(CFLAGS_EMCC) $(CXXFLAGS_COMMON)
 LDFLAGS_EMCC = -Wno-version-check \
 	-s EXIT_RUNTIME=1 \

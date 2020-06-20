@@ -362,10 +362,18 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
         EmAliascj_xsmb<PAS> memSemaphoreID(memSemaphoreIDP);
 
         if (memSemaphoreID.xsmuse == 0) {
-            gCPU->SetPC(gCPU->GetPC() - pcAdjust);
-            gSession->NotifySyscallDispatched();
+            SysKernelInfoType taskInfo;
+            taskInfo.selector = sysKernelInfoSelCurTaskInfo;
 
-            return true;
+            Err err = ::SysKernelInfo(&taskInfo);
+
+            if (err == errNone &&
+                (taskInfo.param.task.tag == 'psys' || taskInfo.param.task.tag == 0x414d5800)) {
+                gCPU->SetPC(gCPU->GetPC() - pcAdjust);
+                gSession->NotifySyscallDispatched();
+
+                return true;
+            }
         }
     }
 

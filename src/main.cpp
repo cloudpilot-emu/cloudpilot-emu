@@ -192,10 +192,7 @@ class MainLoop {
 
     void handlePenMove() { gSession->QueuePenEvent(PenEvent::down(penX, penY)); }
 
-    void handlePenUp() {
-        gSession->QueuePenEvent(PenEvent::down(penX, penY));
-        gSession->QueuePenEvent(PenEvent::up());
-    }
+    void handlePenUp() { gSession->QueuePenEvent(PenEvent::up()); }
 
     void handleKeyDown(SDL_Event event) {
         switch (event.key.keysym.sym) {
