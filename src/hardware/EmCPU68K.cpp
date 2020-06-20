@@ -355,11 +355,9 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
 Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
     EmAssert(fSession);
 
-    /*
     if (fSession->IsNested()) {
         return this->CheckForBreak();
     }
-    */
 
     // Check for Reset first.  If this is set, don't do anything else.
 
