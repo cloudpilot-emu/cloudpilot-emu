@@ -12,6 +12,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+#include "ButtonEvent.h"
 #include "EmDevice.h"
 #include "EmHAL.h"
 #include "EmROMReader.h"
@@ -168,6 +169,11 @@ class MainLoop {
                 case SDL_KEYDOWN:
                     handleKeyDown(event);
                     break;
+
+                case SDL_KEYUP:
+                    if ((event.key.keysym.mod & KMOD_SHIFT) && (event.key.keysym.mod & KMOD_ALT))
+                        handleButtonKey(event, ButtonEvent::Type::release);
+                    break;
             }
             if (event.type == SDL_QUIT) running = false;
         }
@@ -195,6 +201,10 @@ class MainLoop {
     void handlePenUp() { gSession->QueuePenEvent(PenEvent::up()); }
 
     void handleKeyDown(SDL_Event event) {
+        if ((event.key.keysym.mod & KMOD_SHIFT) && (event.key.keysym.mod & KMOD_ALT) &&
+            (!event.key.repeat))
+            return handleButtonKey(event, ButtonEvent::Type::press);
+
         switch (event.key.keysym.sym) {
             case SDLK_RETURN:
                 gSession->QueueKeyboardEvent('\n');
@@ -222,6 +232,46 @@ class MainLoop {
 
             case SDLK_TAB:
                 gSession->QueueKeyboardEvent(chrHorizontalTabulation);
+                break;
+        }
+    }
+
+    void handleButtonKey(SDL_Event event, ButtonEvent::Type type) {
+        switch (event.key.keysym.sym) {
+            case SDLK_u:
+                gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::app1, type));
+                break;
+
+            case SDLK_i:
+                gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::app2, type));
+                break;
+
+            case SDLK_o:
+                gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::app3, type));
+                break;
+
+            case SDLK_p:
+                gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::app4, type));
+                break;
+
+            case SDLK_UP:
+                gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::rockerUp, type));
+                break;
+
+            case SDLK_DOWN:
+                gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::rockerDown, type));
+                break;
+
+            case SDLK_j:
+                // gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::power, type));
+                break;
+
+            case SDLK_k:
+                gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::contrast, type));
+                break;
+
+            case SDLK_l:
+                gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::antenna, type));
                 break;
         }
     }

@@ -13,6 +13,7 @@
 
 #include "EmThreadSafeQueue.h"
 
+#include "ButtonEvent.h"
 #include "EmCommon.h"
 #include "KeyboardEvent.h"
 #include "PenEvent.h"
@@ -134,3 +135,4 @@ int EmThreadSafeQueue<T>::GetMaxSize(void) {
 template class EmThreadSafeQueue<uint8>;
 template class EmThreadSafeQueue<PenEvent>;
 template class EmThreadSafeQueue<KeyboardEvent>;
+template class EmThreadSafeQueue<ButtonEvent>;

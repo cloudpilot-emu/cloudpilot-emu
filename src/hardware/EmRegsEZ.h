@@ -14,6 +14,7 @@
 #ifndef EmRegsEZ_h
 #define EmRegsEZ_h
 
+#include "ButtonEvent.h"
 #include "EmHAL.h"             // EmHALHandler
 #include "EmRegs.h"            // EmRegs
 #include "EmUARTDragonball.h"  // EmUARTDragonball::State
@@ -22,6 +23,8 @@ class EmScreenUpdateInfo;
 class EmSPISlave;
 
 class EmRegsEZ : public EmRegs, public EmHALHandler {
+    using ButtonEventT = class ButtonEvent;
+
    public:
     EmRegsEZ(void);
     virtual ~EmRegsEZ(void);
@@ -42,7 +45,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual void Cycle(Bool sleeping);
     virtual void CycleSlowly(Bool sleeping);
 
-    virtual void ButtonEvent(SkinElementType, Bool buttonIsDown);
+    virtual void ButtonEvent(ButtonEventT evt);
     virtual void TurnSoundOff(void);
     virtual void ResetTimer(void);
     virtual void ResetRTC(void);
@@ -96,7 +99,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     void HotSyncEvent(Bool buttonIsDown);
 
     virtual uint8 GetKeyBits(void);
-    virtual uint16 ButtonToBits(SkinElementType);
+    virtual uint16 ButtonToBits(ButtonEventT::Button btn);
     virtual EmSPISlave* GetSPISlave(void);
 
    protected:

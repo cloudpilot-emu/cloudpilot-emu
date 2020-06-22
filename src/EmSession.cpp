@@ -13,6 +13,7 @@ namespace {
 }
 
 constexpr int MIN_CYCLES_BETWEEN_EVENTS = 10000;
+constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
 
 EmSession* gSession = &_gSession;
 
@@ -52,9 +53,12 @@ void EmSession::Reset(EmResetType resetType) {
     penEventQueueIncoming.Clear();
     keyboardEventQueueIncoming.Clear();
     lastEventPromotedAt = 0;
+
+    buttonEventQueue.Clear();
+    lastButtonEventReadAt = 0;
 }
 
-Bool EmSession::IsNested() {
+Bool EmSession::IsNested() const {
     EmAssert(nestLevel >= 0);
     return nestLevel > 0;
 }
@@ -80,7 +84,7 @@ Bool EmSession::ExecuteSpecial(Bool checkForResetOnly) {
     return false;
 }
 
-Bool EmSession::CheckForBreak() { return suspendCpuSubroutineReturn || syscallDispatched; }
+Bool EmSession::CheckForBreak() const { return suspendCpuSubroutineReturn || syscallDispatched; }
 
 void EmSession::ScheduleResetBanks() {
     bankResetScheduled = true;
@@ -153,7 +157,7 @@ void EmSession::NotifySyscallDispatched() {
     cpu->CheckAfterCycle();
 }
 
-bool EmSession::WaitingForSyscall() { return waitingForSyscall; }
+bool EmSession::WaitingForSyscall() const { return waitingForSyscall; }
 
 void EmSession::HandleInstructionBreak() { EmPatchMgr::HandleInstructionBreak(); }
 
@@ -212,4 +216,23 @@ bool EmSession::PromotePenEvent() {
     Wakeup();
 
     return true;
+}
+
+void EmSession::QueueButtonEvent(ButtonEvent evt) {
+    if (buttonEventQueue.GetFree() == 0) buttonEventQueue.Get();
+
+    buttonEventQueue.Put(evt);
+}
+
+bool EmSession::HasButtonEvent() {
+    return (systemCycles - lastButtonEventReadAt) < MIN_CYCLES_BETWEEN_BUTTON_EVENTS
+               ? false
+               : buttonEventQueue.GetUsed() != 0;
+}
+ButtonEvent EmSession::NextButtonEvent() {
+    lastButtonEventReadAt = systemCycles;
+
+    return buttonEventQueue.GetUsed() > 0
+               ? buttonEventQueue.Get()
+               : ButtonEvent(ButtonEvent::Button::power, ButtonEvent::Type::press);
 }

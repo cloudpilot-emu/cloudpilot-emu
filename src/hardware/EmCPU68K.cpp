@@ -112,7 +112,7 @@ EmCPU68K* gCPU68K;
                                                                                    \
             /* Perform expensive operations. */                                    \
                                                                                    \
-            if (sleeping || ((++counter & 0x7FFF) == 0)) {                         \
+            if (sleeping || ((counter++ & 0x7FFF) == 0)) {                         \
                 this->CycleSlowly(sleeping);                                       \
             }                                                                      \
         }                                                                          \

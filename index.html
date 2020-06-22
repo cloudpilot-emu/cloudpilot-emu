@@ -56,7 +56,7 @@
             window.addEventListener(
                 'keydown',
                 e => {
-                    if (e.altKey && e.key.length === 1) {
+                    if (e.altKey && !e.shiftKey && e.key.length === 1) {
                         e.stopPropagation();
                         window.dispatchEvent(new KeyboardEvent('keydown', { altKey: false, key: e.key }));
                     }

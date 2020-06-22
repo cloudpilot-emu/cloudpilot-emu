@@ -14,7 +14,8 @@
 #ifndef EmHAL_h
 #define EmHAL_h
 
-#include "Skins.h"  // SkinElementType
+#include "ButtonEvent.h"
+#include "EmCommon.h"
 
 class EmHAL;
 class EmPixMap;
@@ -37,6 +38,8 @@ enum EmUARTDeviceType {
 DEFINE_SCALAR_MODIFIERS(EmUARTDeviceType)
 
 class EmHALHandler {
+    using ButtonEventT = ButtonEvent;
+
    public:
     EmHALHandler(void);
     virtual ~EmHALHandler(void);
@@ -44,7 +47,7 @@ class EmHALHandler {
     virtual void Cycle(Bool sleeping);
     virtual void CycleSlowly(Bool sleeping);
 
-    virtual void ButtonEvent(SkinElementType, Bool buttonIsDown);
+    virtual void ButtonEvent(ButtonEventT evt);
     virtual void TurnSoundOff(void);
     virtual void ResetTimer(void);
     virtual void ResetRTC(void);
@@ -90,6 +93,8 @@ class EmHALHandler {
 };
 
 class EmHAL {
+    using ButtonEventT = ButtonEvent;
+
    public:
     static void AddHandler(EmHALHandler*);
     static void RemoveHandler(EmHALHandler*);
@@ -98,7 +103,7 @@ class EmHAL {
     static void Cycle(Bool sleeping);
     static void CycleSlowly(Bool sleeping);
 
-    static void ButtonEvent(SkinElementType, Bool buttonIsDown);
+    static void ButtonEvent(ButtonEventT evt);
     static void TurnSoundOff(void);
     static void ResetTimer(void);
     static void ResetRTC(void);

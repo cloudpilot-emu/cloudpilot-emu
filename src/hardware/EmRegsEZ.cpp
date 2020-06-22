@@ -395,6 +395,8 @@ static const HwrM68EZ328Type kInitial68EZ328RegisterValues = {
                  // Emulation Status Register
 };
 
+using ButtonEventT = ButtonEvent;
+
 // ---------------------------------------------------------------------------
 //		� EmRegsEZ::EmRegsEZ
 // ---------------------------------------------------------------------------
@@ -822,17 +824,15 @@ void EmRegsEZ::CycleSlowly(Bool sleeping) {
 
     // See if a hard button is pressed.
 
-#if 0  // CSTODO
     EmAssert(gSession);
+
     if (gSession->HasButtonEvent()) {
-        EmButtonEvent event = gSession->GetButtonEvent();
-        if (event.fButton == kElement_CradleButton) {
-            EmRegsEZ::HotSyncEvent(event.fButtonIsDown);
-        } else {
-            EmRegsEZ::ButtonEvent(event.fButton, event.fButtonIsDown);
-        }
+        ButtonEventT event = gSession->NextButtonEvent();
+        if (event.GetButton() == ButtonEventT::Button::cradle)
+            EmRegsEZ::HotSyncEvent(event.GetType() == ButtonEventT::Type::press);
+        else
+            EmRegsEZ::ButtonEvent(event);
     }
-#endif
 
     // See if there's anything new ("Put the data on the bus")
 
@@ -1851,8 +1851,8 @@ void EmRegsEZ::rtcIntEnableWrite(emuptr address, int size, uint32 value) {
 // ---------------------------------------------------------------------------
 // Handles a Palm device button event by updating the appropriate registers.
 
-void EmRegsEZ::ButtonEvent(SkinElementType button, Bool buttonIsDown) {
-    uint16 bitNumber = this->ButtonToBits(button);
+void EmRegsEZ::ButtonEvent(ButtonEventT event) {
+    uint16 bitNumber = this->ButtonToBits(event.GetButton());
 
     // Get the bits that should have been set with the previous set
     // of pressed keys.  We use this old value to update the port D interrupts.
@@ -1861,7 +1861,7 @@ void EmRegsEZ::ButtonEvent(SkinElementType button, Bool buttonIsDown) {
 
     // Update the set of keys that are currently pressed.
 
-    if (buttonIsDown) {
+    if (event.GetType() == ButtonEventT::Type::press) {
         fKeyBits |= bitNumber;  // Remember the key bit
     } else {
         fKeyBits &= ~bitNumber;  // Forget the key bit
@@ -1977,40 +1977,37 @@ uint8 EmRegsEZ::GetKeyBits(void) {
 //		� EmRegsEZ::ButtonToBits
 // ---------------------------------------------------------------------------
 
-uint16 EmRegsEZ::ButtonToBits(SkinElementType button) {
+uint16 EmRegsEZ::ButtonToBits(ButtonEventT::Button button) {
     uint16 bitNumber = 0;
     switch (button) {
-        case kElement_None:
-            break;
-
-        case kElement_PowerButton:
+        case ButtonEventT::Button::power:
             bitNumber = keyBitPower;
             break;
-        case kElement_UpButton:
+        case ButtonEventT::Button::rockerUp:
             bitNumber = keyBitPageUp;
             break;
-        case kElement_DownButton:
+        case ButtonEventT::Button::rockerDown:
             bitNumber = keyBitPageDown;
             break;
-        case kElement_App1Button:
+        case ButtonEventT::Button::app1:
             bitNumber = keyBitHard1;
             break;
-        case kElement_App2Button:
+        case ButtonEventT::Button::app2:
             bitNumber = keyBitHard2;
             break;
-        case kElement_App3Button:
+        case ButtonEventT::Button::app3:
             bitNumber = keyBitHard3;
             break;
-        case kElement_App4Button:
+        case ButtonEventT::Button::app4:
             bitNumber = keyBitHard4;
             break;
-        case kElement_CradleButton:
+        case ButtonEventT::Button::cradle:
             bitNumber = keyBitCradle;
             break;
-        case kElement_Antenna:
+        case ButtonEventT::Button::antenna:
             bitNumber = keyBitAntenna;
             break;
-        case kElement_ContrastButton:
+        case ButtonEventT::Button::contrast:
             bitNumber = keyBitContrast;
             break;
 

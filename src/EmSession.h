@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "ButtonEvent.h"
 #include "EmCPU.h"
 #include "EmCommon.h"
 #include "EmDevice.h"
@@ -14,13 +15,13 @@ class EmSession {
    public:
     Bool Initialize(EmDevice* device, const uint8* romImage, size_t romLength);
 
-    Bool IsNested();
+    Bool IsNested() const;
 
     void ReleaseBootKeys();
 
     Bool ExecuteSpecial(Bool checkForResetOnly);
 
-    Bool CheckForBreak();
+    Bool CheckForBreak() const;
 
     void ScheduleResetBanks();
 
@@ -34,7 +35,7 @@ class EmSession {
     void ScheduleSubroutineReturn();
 
     void RunToSyscall();
-    bool WaitingForSyscall();
+    bool WaitingForSyscall() const;
     void NotifySyscallDispatched();
 
     void HandleInstructionBreak();
@@ -46,6 +47,10 @@ class EmSession {
     void QueueKeyboardEvent(KeyboardEvent evt);
     bool HasKeyboardEvent();
     KeyboardEvent NextKeyboardEvent();
+
+    void QueueButtonEvent(ButtonEvent evt);
+    bool HasButtonEvent();
+    ButtonEvent NextButtonEvent();
 
    private:
     void Reset(EmResetType);
@@ -76,6 +81,9 @@ class EmSession {
     EmThreadSafeQueue<PenEvent> penEventQueueIncoming{20};
     EmThreadSafeQueue<KeyboardEvent> keyboardEventQueueIncoming{20};
     uint64 lastEventPromotedAt{0};
+
+    EmThreadSafeQueue<ButtonEvent> buttonEventQueue{20};
+    uint64 lastButtonEventReadAt{0};
 
     uint32 additionalCycles{0};
     uint64 systemCycles{0};
