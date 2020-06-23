@@ -183,8 +183,6 @@ STATIC_INLINE uaecptr m68k_getpc_p (uae_u8 *p)
 STATIC_INLINE void m68k_setstopped (int stop)
 {
     regs.stopped = stop;
-    if (stop)
-	regs.spcflags |= SPCFLAG_STOP;
 }
 
 extern uae_u32 get_disp_ea_020 (uae_u32 base, uae_u32 dp);

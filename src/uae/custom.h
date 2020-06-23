@@ -12,7 +12,6 @@ extern "C" {
 
 extern void customreset (void);
 
-#define SPCFLAG_STOP 2
 #define SPCFLAG_DISK 4
 #define SPCFLAG_INT  8
 #define SPCFLAG_BRK  16

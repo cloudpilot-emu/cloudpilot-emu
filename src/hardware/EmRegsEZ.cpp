@@ -55,7 +55,7 @@ static const uint16 EN = 0x0001;     // Mask to get the enable bit from csASelec
 
 static const uint16 gBaseAddressShift = 13;  // Shift to get base address from CSGBx register value
 
-// #define LOGGING 1
+// #define LOGGING 0
 #ifdef LOGGING
     #define PRINTF log::printf
 #else
@@ -760,6 +760,8 @@ void EmRegsEZ::Cycle(Bool sleeping) {
 #else
     #define increment 4
 #endif
+
+    if (GetAsleep()) return;
 
     // Determine whether timer is enabled.
 

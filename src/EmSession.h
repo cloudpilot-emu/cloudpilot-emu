@@ -13,15 +13,17 @@
 
 class EmSession {
    public:
-    Bool Initialize(EmDevice* device, const uint8* romImage, size_t romLength);
+    bool Initialize(EmDevice* device, const uint8* romImage, size_t romLength);
 
-    Bool IsNested() const;
+    bool IsNested() const;
+    bool IsExecutingSync() const;
+    bool IsPowerOn();
 
     void ReleaseBootKeys();
 
-    Bool ExecuteSpecial(Bool checkForResetOnly);
+    bool ExecuteSpecial(bool checkForResetOnly);
 
-    Bool CheckForBreak() const;
+    bool CheckForBreak() const;
 
     void ScheduleResetBanks();
 
@@ -34,7 +36,7 @@ class EmSession {
     void ExecuteSubroutine();
     void ScheduleSubroutineReturn();
 
-    void RunToSyscall();
+    bool RunToSyscall();
     bool WaitingForSyscall() const;
     void NotifySyscallDispatched();
 
@@ -55,7 +57,7 @@ class EmSession {
    private:
     void Reset(EmResetType);
 
-    void Wakeup();
+    bool Wakeup();
 
     void PumpEvents();
     bool PromoteKeyboardEvent();
@@ -67,7 +69,7 @@ class EmSession {
     EmResetType resetType;
 
     int nestLevel{0};
-    bool suspendCpuSubroutineReturn{false};
+    bool subroutineReturn{false};
 
     bool waitingForSyscall{false};
     bool syscallDispatched{false};

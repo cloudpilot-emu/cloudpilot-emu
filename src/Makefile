@@ -10,9 +10,9 @@ CFLAGS_COMMON = -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
 	-DEMULATION_LEVEL=EMULATION_UNIX
 CXXFLAGS_COMMON = -std=c++14 -fno-exceptions
 
-CFLAGS_NATIVE = $(CFLAGS_COMMON) -O0 -g $(shell sdl2-config --cflags)
+CFLAGS_NATIVE = $(CFLAGS_COMMON) -O0 -fsanitize=address,undefined -g $(shell sdl2-config --cflags)
 CXXFLAGS_NATIVE = $(CFLAGS_NATIVE) $(CXXFLAGS_COMMON)
-LDFLAGS_NATIVE =  $(shell sdl2-config --libs) -lSDL2_image
+LDFLAGS_NATIVE =  -fsanitize=address,undefined $(shell sdl2-config --libs) -lSDL2_image
 
 CFLAGS_EMCC =  $(CFLAGS_COMMON) -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2
 CXXFLAGS_EMCC= $(CFLAGS_EMCC) $(CXXFLAGS_COMMON)

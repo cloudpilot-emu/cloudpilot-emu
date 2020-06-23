@@ -1,6 +1,7 @@
 #include "EmSession.h"
 
 #include "EmCPU.h"
+#include "EmHAL.h"
 #include "EmMemory.h"
 #include "EmPalmOS.h"
 #include "EmPatchMgr.h"
@@ -17,7 +18,7 @@ constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
 
 EmSession* gSession = &_gSession;
 
-Bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLength) {
+bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLength) {
     this->device.reset(device);
 
     cpu.reset(device->CreateCPU(this));
@@ -58,14 +59,18 @@ void EmSession::Reset(EmResetType resetType) {
     lastButtonEventReadAt = 0;
 }
 
-Bool EmSession::IsNested() const {
+bool EmSession::IsNested() const {
     EmAssert(nestLevel >= 0);
     return nestLevel > 0;
 }
 
+bool EmSession::IsExecutingSync() const { return IsNested() || waitingForSyscall; }
+
+bool EmSession::IsPowerOn() { return !EmHAL::GetAsleep(); }
+
 void EmSession::ReleaseBootKeys() {}
 
-Bool EmSession::ExecuteSpecial(Bool checkForResetOnly) {
+bool EmSession::ExecuteSpecial(bool checkForResetOnly) {
     if (resetScheduled) {
         resetScheduled = false;
         bankResetScheduled = false;
@@ -84,7 +89,7 @@ Bool EmSession::ExecuteSpecial(Bool checkForResetOnly) {
     return false;
 }
 
-Bool EmSession::CheckForBreak() const { return suspendCpuSubroutineReturn || syscallDispatched; }
+bool EmSession::CheckForBreak() const { return subroutineReturn || syscallDispatched; }
 
 void EmSession::ScheduleResetBanks() {
     bankResetScheduled = true;
@@ -102,7 +107,7 @@ void EmSession::ScheduleReset(EmResetType resetType) {
 }
 
 void EmSession::ScheduleSubroutineReturn() {
-    suspendCpuSubroutineReturn = true;
+    subroutineReturn = true;
 
     EmAssert(cpu);
     cpu->CheckAfterCycle();
@@ -128,15 +133,15 @@ void EmSession::ExecuteSubroutine() {
     EmAssert(cpu);
     EmAssert(nestLevel >= 0);
 
-    EmValueChanger<bool> clearSuspendCpuSubroutineReturn(suspendCpuSubroutineReturn, false);
+    EmValueChanger<bool> clearSubroutineReturn(subroutineReturn, false);
     EmValueChanger<int> increaseNestLevel(nestLevel, nestLevel + 1);
 
-    while (!suspendCpuSubroutineReturn) {
+    while (!subroutineReturn) {
         cpu->Execute(0);
     }
 }
 
-void EmSession::RunToSyscall() {
+bool EmSession::RunToSyscall() {
     EmValueChanger<bool> startRunToSyscall(waitingForSyscall, true);
     EmValueChanger<bool> resetSyscallDispatched(syscallDispatched, false);
 
@@ -147,7 +152,11 @@ void EmSession::RunToSyscall() {
 
         systemCycles += cycles;
         additionalCycles += cycles;
+
+        if (cpu->Stopped()) return false;
     }
+
+    return true;
 }
 
 void EmSession::NotifySyscallDispatched() {
@@ -162,6 +171,8 @@ bool EmSession::WaitingForSyscall() const { return waitingForSyscall; }
 void EmSession::HandleInstructionBreak() { EmPatchMgr::HandleInstructionBreak(); }
 
 void EmSession::QueuePenEvent(PenEvent evt) {
+    if (!IsPowerOn()) return;
+
     if (penEventQueueIncoming.GetFree() == 0) penEventQueueIncoming.Get();
 
     penEventQueueIncoming.Put(evt);
@@ -172,6 +183,8 @@ bool EmSession::HasPenEvent() { return penEventQueue.GetUsed() > 0; }
 PenEvent EmSession::NextPenEvent() { return HasPenEvent() ? penEventQueue.Get() : PenEvent(); }
 
 void EmSession::QueueKeyboardEvent(KeyboardEvent evt) {
+    if (!IsPowerOn()) return;
+
     if (keyboardEventQueueIncoming.GetFree() == 0) keyboardEventQueueIncoming.Get();
 
     keyboardEventQueueIncoming.Put(evt);
@@ -183,9 +196,12 @@ KeyboardEvent EmSession::NextKeyboardEvent() {
     return HasKeyboardEvent() ? keyboardEventQueue.Get() : KeyboardEvent('.');
 }
 
-void EmSession::Wakeup() {
-    RunToSyscall();
-    EvtWakeup();
+bool EmSession::Wakeup() {
+    bool isSafeToWakeup = RunToSyscall();
+
+    if (isSafeToWakeup) EvtWakeup();
+
+    return isSafeToWakeup;
 }
 
 void EmSession::PumpEvents() {
@@ -199,10 +215,10 @@ void EmSession::PumpEvents() {
 bool EmSession::PromoteKeyboardEvent() {
     if (keyboardEventQueueIncoming.GetUsed() == 0) return false;
 
+    if (!Wakeup()) return false;
+
     if (keyboardEventQueue.GetFree() == 0) keyboardEventQueue.Get();
     keyboardEventQueue.Put(keyboardEventQueueIncoming.Get());
-
-    Wakeup();
 
     return true;
 }
@@ -210,10 +226,10 @@ bool EmSession::PromoteKeyboardEvent() {
 bool EmSession::PromotePenEvent() {
     if (penEventQueueIncoming.GetUsed() == 0) return false;
 
+    if (!Wakeup()) return false;
+
     if (penEventQueue.GetFree() == 0) penEventQueue.Get();
     penEventQueue.Put(penEventQueueIncoming.Get());
-
-    Wakeup();
 
     return true;
 }

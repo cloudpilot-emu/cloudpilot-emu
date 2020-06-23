@@ -30,8 +30,10 @@ constexpr int SCALE = 3;
 constexpr int CLOCK_DIV = 4;
 constexpr int MOUSE_MOVE_THROTTLE = 25;
 constexpr uint8 SILKSCREEN_BACKGROUND_HUE = 0xbb;
+constexpr uint32 BACKGROUND_HUE = 0xdd;
 constexpr uint32 FOREGROUND_COLOR = 0x000000ff;
-constexpr uint32 BACKGROUND_COLOR = 0xddddddff;
+constexpr uint32 BACKGROUND_COLOR =
+    0xff | (BACKGROUND_HUE << 8) | (BACKGROUND_HUE << 16) | (BACKGROUND_HUE << 24);
 
 class MainLoop {
    public:
@@ -92,31 +94,37 @@ class MainLoop {
     }
 
     void updateScreen() {
-        if (!EmHAL::CopyLCDFrame(frame)) return;
-        if (frame.lineWidth != 160 || frame.lines != 160 || frame.bpp != 1) return;
-
-        uint32* pixels;
-        int pitch;
-        uint8* buffer = frame.GetBuffer();
-
-        SDL_LockTexture(lcdTexture, nullptr, (void**)&pixels, &pitch);
-
-        for (int x = 0; x < 160; x++)
-            for (int y = 0; y < 160; y++)
-                pixels[y * pitch / 4 + x] =
-                    ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
-                      (0x80 >> ((x + frame.margin) % 8))) == 0
-                         ? BACKGROUND_COLOR
-                         : FOREGROUND_COLOR);
-
-        SDL_UnlockTexture(lcdTexture);
-
         SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
         SDL_RenderClear(renderer);
-        drawSilkscreen(renderer);
 
         SDL_Rect dest = {.x = 0, .y = 0, .w = SCALE * 160, .h = SCALE * 160};
-        SDL_RenderCopy(renderer, lcdTexture, nullptr, &dest);
+
+        if (gSession->IsPowerOn() && EmHAL::CopyLCDFrame(frame)) {
+            if (frame.lineWidth != 160 || frame.lines != 160 || frame.bpp != 1) return;
+
+            uint32* pixels;
+            int pitch;
+            uint8* buffer = frame.GetBuffer();
+
+            SDL_LockTexture(lcdTexture, nullptr, (void**)&pixels, &pitch);
+
+            for (int x = 0; x < 160; x++)
+                for (int y = 0; y < 160; y++)
+                    pixels[y * pitch / 4 + x] =
+                        ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
+                          (0x80 >> ((x + frame.margin) % 8))) == 0
+                             ? BACKGROUND_COLOR
+                             : FOREGROUND_COLOR);
+
+            SDL_UnlockTexture(lcdTexture);
+
+            SDL_RenderCopy(renderer, lcdTexture, nullptr, &dest);
+        } else {
+            SDL_SetRenderDrawColor(renderer, BACKGROUND_HUE, BACKGROUND_HUE, BACKGROUND_HUE, 0xff);
+            SDL_RenderFillRect(renderer, &dest);
+        }
+
+        drawSilkscreen(renderer);
 
         SDL_RenderPresent(renderer);
     }
@@ -272,6 +280,10 @@ class MainLoop {
 
             case SDLK_l:
                 gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::antenna, type));
+                break;
+
+            case SDLK_m:
+                gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::power, type));
                 break;
         }
     }

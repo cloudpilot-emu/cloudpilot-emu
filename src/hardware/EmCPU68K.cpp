@@ -277,7 +277,7 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
     // mode, and we need to wind our way back down to that spot.
     // -----------------------------------------------------------------------
 
-    if ((spcflags & SPCFLAG_STOP) != 0) goto StoppedLoop;
+    if (regs.stopped) goto StoppedLoop;
 
     while (1) {
 #if REGISTER_HISTORY
@@ -331,7 +331,7 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
         // sped up the CPU loop by 9%!
         // -----------------------------------------------------------------------
 
-        if (spcflags) {
+        if (spcflags || regs.stopped) {
             if (this->ExecuteSpecial(maxCycles)) break;
         }
 
@@ -373,11 +373,11 @@ Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
     // if we're re-entering ExecuteStopped loop on the Mac after
     // exiting in order to handle events.
 
-    if ((regs.spcflags & SPCFLAG_DOTRACE) && !(regs.spcflags & SPCFLAG_STOP)) {
+    if ((regs.spcflags & SPCFLAG_DOTRACE) && !(regs.stopped)) {
         this->ProcessException(kException_Trace);
     }
 
-    if (regs.spcflags & SPCFLAG_STOP) {
+    if (regs.stopped) {
         if (this->ExecuteStoppedLoop(maxCycles)) {
             regs.spcflags &= ~SPCFLAG_BRK;
             return true;
@@ -401,7 +401,7 @@ Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
                                           // but the latest UAE has this
         if ((interruptLevel != -1) && (interruptLevel > regs.intmask)) {
             this->ProcessInterrupt(interruptLevel);
-            regs.stopped = 0;
+            m68k_setstopped(0);
         }
     }
 
@@ -430,7 +430,6 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
     EmSession* session = fSession;
 
     EmAssert(session);
-    EmAssert(!session->IsNested());
     EmAssert(regs.intmask < 7);
 
     int counter = 0;
@@ -443,8 +442,6 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
         // Slow down processing so that the timer used
         // to increment the tickcount doesn't run too quickly.
         // -----------------------------------------------------------------------
-
-        // CSTODO Platform::Delay();
 
         // Perform periodic tasks.
 
@@ -459,17 +456,17 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
 
             if ((interruptLevel != -1) && (interruptLevel > regs.intmask)) {
                 this->ProcessInterrupt(interruptLevel);
-                regs.stopped = 0;
-                regs.spcflags &= ~SPCFLAG_STOP;
+                m68k_setstopped(0);
             }
         }
 
         fCurrentCycles += SLEEP_TICK_CYCLES;
 
-        if (this->CheckForBreak() || (maxCycles && fCurrentCycles >= maxCycles)) {
+        if (this->CheckForBreak() || gSession->IsExecutingSync() ||
+            (maxCycles && fCurrentCycles >= maxCycles)) {
             return true;
         }
-    } while (regs.spcflags & SPCFLAG_STOP);
+    } while (regs.stopped);
 
     return false;
 }
