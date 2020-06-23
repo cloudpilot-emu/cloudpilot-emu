@@ -171,7 +171,7 @@ class MainLoop {
                     break;
 
                 case SDL_KEYUP:
-                    if ((event.key.keysym.mod & KMOD_SHIFT) && (event.key.keysym.mod & KMOD_ALT))
+                    if ((event.key.keysym.mod & KMOD_SHIFT) && (event.key.keysym.mod & KMOD_CTRL))
                         handleButtonKey(event, ButtonEvent::Type::release);
                     break;
             }
@@ -201,7 +201,7 @@ class MainLoop {
     void handlePenUp() { gSession->QueuePenEvent(PenEvent::up()); }
 
     void handleKeyDown(SDL_Event event) {
-        if ((event.key.keysym.mod & KMOD_SHIFT) && (event.key.keysym.mod & KMOD_ALT) &&
+        if ((event.key.keysym.mod & KMOD_SHIFT) && (event.key.keysym.mod & KMOD_CTRL) &&
             (!event.key.repeat))
             return handleButtonKey(event, ButtonEvent::Type::press);
 
@@ -263,7 +263,7 @@ class MainLoop {
                 break;
 
             case SDLK_j:
-                // gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::power, type));
+                gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::cradle, type));
                 break;
 
             case SDLK_k:
