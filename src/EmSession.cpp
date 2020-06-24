@@ -250,5 +250,5 @@ ButtonEvent EmSession::NextButtonEvent() {
 
     return buttonEventQueue.GetUsed() > 0
                ? buttonEventQueue.Get()
-               : ButtonEvent(ButtonEvent::Button::power, ButtonEvent::Type::press);
+               : ButtonEvent(ButtonEvent::Button::invalid, ButtonEvent::Type::press);
 }

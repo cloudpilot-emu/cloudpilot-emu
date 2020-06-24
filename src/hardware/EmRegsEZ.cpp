@@ -1980,44 +1980,40 @@ uint8 EmRegsEZ::GetKeyBits(void) {
 // ---------------------------------------------------------------------------
 
 uint16 EmRegsEZ::ButtonToBits(ButtonEventT::Button button) {
-    uint16 bitNumber = 0;
     switch (button) {
         case ButtonEventT::Button::power:
-            bitNumber = keyBitPower;
-            break;
+            return keyBitPower;
+
         case ButtonEventT::Button::rockerUp:
-            bitNumber = keyBitPageUp;
-            break;
+            return keyBitPageUp;
+
         case ButtonEventT::Button::rockerDown:
-            bitNumber = keyBitPageDown;
-            break;
+            return keyBitPageDown;
+
         case ButtonEventT::Button::app1:
-            bitNumber = keyBitHard1;
-            break;
+            return keyBitHard1;
+
         case ButtonEventT::Button::app2:
-            bitNumber = keyBitHard2;
-            break;
+            return keyBitHard2;
+
         case ButtonEventT::Button::app3:
-            bitNumber = keyBitHard3;
-            break;
+            return keyBitHard3;
+
         case ButtonEventT::Button::app4:
-            bitNumber = keyBitHard4;
-            break;
+            return keyBitHard4;
+
         case ButtonEventT::Button::cradle:
-            bitNumber = keyBitCradle;
-            break;
+            return keyBitCradle;
+
         case ButtonEventT::Button::antenna:
-            bitNumber = keyBitAntenna;
-            break;
+            return keyBitAntenna;
+
         case ButtonEventT::Button::contrast:
-            bitNumber = keyBitContrast;
-            break;
+            return keyBitContrast;
 
         default:
-            EmAssert(false);
+            return 0;
     }
-
-    return bitNumber;
 }
 
 // ---------------------------------------------------------------------------

@@ -28,6 +28,27 @@
             word-wrap: break-word;
             white-space: pre-line;
         }
+
+        #buttons {
+            margin-top: 1em;
+        }
+
+        .palm-button {
+            display: inline-block;
+            height: 3em;
+            width: 52px;
+            height: 52px;
+            margin: 0 6px 0 0;
+            padding: 0;
+            border: none;
+            display: inline-block;
+        }
+
+        .palm-button:hover,
+        .palm-button:focus {
+            border: none;
+            outline: none;
+        }
     </style>
 </head>
 
@@ -38,7 +59,20 @@
         <button type="button" id="rom-upload-button">Select ROM</button>
     </label>
     <canvas id="canvas" width="160" height="220"></canvas>
+
+    <div id="buttons">
+        <button class="palm-button" type="button" data-id="app1">Cal</button>
+        <button class="palm-button" type="button" data-id="app2">Phone</button>
+        <button class="palm-button" type="button" data-id="app3">Todo</button>
+        <button class="palm-button" type="button" data-id="app4">Notes</button>
+        <button class="palm-button" type="button" data-id="rockerUp">Up</button>
+        <button class="palm-button" type="button" data-id="rockerDown">Down</button>
+        <button class="palm-button" type="button" data-id="cradle">Sync</button>
+        <button class="palm-button" type="button" data-id="power">Power</button>
+    </div>
+
     <pre id="console"></pre>
+
     <script src="src/cloudpilot.js"></script>
     <script>
         (function () {
@@ -52,18 +86,6 @@
 
             let running = false;
 
-            // Work around missing SDL_TEXTINPUT for option-X key combos on MacOS
-            window.addEventListener(
-                'keydown',
-                e => {
-                    if (e.altKey && e.key.length === 1) {
-                        e.stopPropagation();
-                        window.dispatchEvent(new KeyboardEvent('keydown', { altKey: false, key: e.key }));
-                    }
-                },
-                true
-            );
-
             function escape(text) {
                 const node = document.createElement('div');
 
@@ -75,6 +97,39 @@
             function appendLog(msg) {
                 consoleElt.innerHTML += (escape(msg) + '<br/>');
                 consoleElt.scrollTop = consoleElt.scrollHeight;
+            }
+
+            function onSessionReady() {
+                const nativeButtonDown = this.cwrap('buttonDown', null, ['string']);
+                const nativeButtonUp = this.cwrap('buttonUp', null, ['string']);
+
+                let currentButton = null;
+
+                Array.from(document.querySelectorAll('.palm-button')).forEach(btn => btn.addEventListener('mousedown', evt => {
+                    currentButton = evt.target;
+
+                    nativeButtonDown(currentButton.dataset.id);
+                }));
+
+                window.addEventListener('mouseup', () => {
+                    if (currentButton) {
+                        nativeButtonUp(currentButton.dataset.id);
+
+                        currentButton = null;
+                    }
+                });
+
+                // Work around missing SDL_TEXTINPUT for option-X key combos on MacOS
+                window.addEventListener(
+                    'keydown',
+                    e => {
+                        if (e.altKey && e.key.length === 1) {
+                            e.stopPropagation();
+                            window.dispatchEvent(new KeyboardEvent('keydown', { altKey: false, key: e.key }));
+                        }
+                    },
+                    true
+                );
             }
 
             async function main(module) {
@@ -112,6 +167,8 @@
                     }
                 }
 
+                window.module = module;
+
                 romUploadButton.addEventListener('click', () => romUpload.click());
                 romUpload.addEventListener('change', onRomFileSelect);
 
@@ -126,7 +183,8 @@
                 noInitialRun: true,
                 canvas: document.getElementById('canvas'),
                 print: appendLog,
-                printErr: appendLog
+                printErr: appendLog,
+                sessionReady: onSessionReady
             })
                 .then(main);
         })()

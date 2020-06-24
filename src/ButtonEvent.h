@@ -13,7 +13,8 @@ class ButtonEvent {
         power,
         cradle,
         contrast,
-        antenna
+        antenna,
+        invalid
     };
 
     enum class Type { press, release };
@@ -26,7 +27,7 @@ class ButtonEvent {
     Type GetType() const { return type; }
 
    private:
-    Button button{Button::power};
+    Button button{Button::invalid};
 
     Type type{Type::press};
 };

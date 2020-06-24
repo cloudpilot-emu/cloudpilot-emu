@@ -24,7 +24,7 @@ LDFLAGS_EMCC = -Wno-version-check \
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME=createModule \
 	-s EXPORTED_RUNTIME_METHODS=["FS"] \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain"]
+	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap"]
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps

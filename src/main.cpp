@@ -411,6 +411,10 @@ int main(int argc, const char** argv) {
 
     initializeSession(argv[1]);
 
+#ifdef __EMSCRIPTEN__
+    EM_ASM({ module.sessionReady(); });
+#endif
+
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     IMG_Init(IMG_INIT_PNG);
     SDL_StartTextInput();
@@ -437,3 +441,26 @@ int main(int argc, const char** argv) {
     IMG_Quit();
 #endif
 }
+
+#ifdef __EMSCRIPTEN__
+ButtonEvent::Button buttonFromId(string id) {
+    if (id == "app1") return ButtonEvent::Button::app1;
+    if (id == "app2") return ButtonEvent::Button::app2;
+    if (id == "app3") return ButtonEvent::Button::app3;
+    if (id == "app4") return ButtonEvent::Button::app4;
+    if (id == "rockerUp") return ButtonEvent::Button::rockerUp;
+    if (id == "rockerDown") return ButtonEvent::Button::rockerDown;
+    if (id == "cradle") return ButtonEvent::Button::cradle;
+    if (id == "power") return ButtonEvent::Button::power;
+
+    return ButtonEvent::Button::invalid;
+}
+
+extern "C" void EMSCRIPTEN_KEEPALIVE buttonDown(const char* id) {
+    gSession->QueueButtonEvent(ButtonEvent(buttonFromId(id), ButtonEvent::Type::press));
+}
+
+extern "C" void EMSCRIPTEN_KEEPALIVE buttonUp(const char* id) {
+    gSession->QueueButtonEvent(ButtonEvent(buttonFromId(id), ButtonEvent::Type::release));
+}
+#endif
