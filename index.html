@@ -42,6 +42,9 @@
             padding: 0;
             border: none;
             display: inline-block;
+            touch-action: manipulation;
+            background: #bbb;
+            -webkit-touch-callout: none;
         }
 
         .palm-button:hover,
@@ -109,13 +112,17 @@
                     currentButton = evt.target;
 
                     nativeButtonDown(currentButton.dataset.id);
+
+                    evt.preventDefault();
                 }));
 
-                window.addEventListener('mouseup', () => {
+                window.addEventListener('mouseup', evt => {
                     if (currentButton) {
                         nativeButtonUp(currentButton.dataset.id);
 
                         currentButton = null;
+
+                        evt.preventDefault();
                     }
                 });
 
