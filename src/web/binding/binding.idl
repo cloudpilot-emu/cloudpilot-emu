@@ -1,5 +1,6 @@
 interface Cloudpilot {
     void Cloudpilot();
 
-    DOMString hello();
+    VoidPtr malloc(long size);
+    void free(VoidPtr buffer);
 };

@@ -1390,11 +1390,11 @@ function updateGlobalBufferAndViews(buf) {
 }
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 5267312,
+    STACK_BASE = 5267280,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 24432,
-    DYNAMIC_BASE = 5267312,
-    DYNAMICTOP_PTR = 24272;
+    STACK_MAX = 24400,
+    DYNAMIC_BASE = 5267280,
+    DYNAMICTOP_PTR = 24240;
 
 assert(STACK_BASE % 16 === 0, 'stack must start aligned');
 assert(DYNAMIC_BASE % 16 === 0, 'heap must start aligned');
@@ -1955,7 +1955,7 @@ function array_bounds_check_error(idx,size){ throw 'Array index ' + idx + ' out 
 
 
 
-// STATICTOP = STATIC_BASE + 23408;
+// STATICTOP = STATIC_BASE + 23376;
 /* global initializers */  __ATINIT__.push({ func: function() { ___wasm_call_ctors() } });
 
 
@@ -4444,7 +4444,7 @@ function array_bounds_check_error(idx,size){ throw 'Array index ' + idx + ' out 
     }
 
   function _emscripten_get_sbrk_ptr() {
-      return 24272;
+      return 24240;
     }
 
   function _emscripten_memcpy_big(dest, src, num) {
@@ -5042,7 +5042,10 @@ var _emscripten_bind_VoidPtr___destroy___0 = Module["_emscripten_bind_VoidPtr___
 var _emscripten_bind_Cloudpilot_Cloudpilot_0 = Module["_emscripten_bind_Cloudpilot_Cloudpilot_0"] = createExportWrapper("emscripten_bind_Cloudpilot_Cloudpilot_0");
 
 /** @type {function(...*):?} */
-var _emscripten_bind_Cloudpilot_hello_0 = Module["_emscripten_bind_Cloudpilot_hello_0"] = createExportWrapper("emscripten_bind_Cloudpilot_hello_0");
+var _emscripten_bind_Cloudpilot_malloc_1 = Module["_emscripten_bind_Cloudpilot_malloc_1"] = createExportWrapper("emscripten_bind_Cloudpilot_malloc_1");
+
+/** @type {function(...*):?} */
+var _emscripten_bind_Cloudpilot_free_1 = Module["_emscripten_bind_Cloudpilot_free_1"] = createExportWrapper("emscripten_bind_Cloudpilot_free_1");
 
 /** @type {function(...*):?} */
 var _emscripten_bind_Cloudpilot___destroy___0 = Module["_emscripten_bind_Cloudpilot___destroy___0"] = createExportWrapper("emscripten_bind_Cloudpilot___destroy___0");
@@ -5711,9 +5714,16 @@ Cloudpilot.prototype.__class__ = Cloudpilot;
 Cloudpilot.__cache__ = {};
 Module['Cloudpilot'] = Cloudpilot;
 
-Cloudpilot.prototype['hello'] = Cloudpilot.prototype.hello = /** @suppress {undefinedVars, duplicate} @this{Object} */function() {
+Cloudpilot.prototype['malloc'] = Cloudpilot.prototype.malloc = /** @suppress {undefinedVars, duplicate} @this{Object} */function(size) {
   var self = this.ptr;
-  return UTF8ToString(_emscripten_bind_Cloudpilot_hello_0(self));
+  if (size && typeof size === 'object') size = size.ptr;
+  return wrapPointer(_emscripten_bind_Cloudpilot_malloc_1(self, size), VoidPtr);
+};;
+
+Cloudpilot.prototype['free'] = Cloudpilot.prototype.free = /** @suppress {undefinedVars, duplicate} @this{Object} */function(buffer) {
+  var self = this.ptr;
+  if (buffer && typeof buffer === 'object') buffer = buffer.ptr;
+  _emscripten_bind_Cloudpilot_free_1(self, buffer);
 };;
 
   Cloudpilot.prototype['__destroy__'] = Cloudpilot.prototype.__destroy__ = /** @suppress {undefinedVars, duplicate} @this{Object} */function() {

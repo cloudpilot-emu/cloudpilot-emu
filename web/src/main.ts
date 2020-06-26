@@ -1,4 +1,4 @@
-import createModule, { CloudpilotNative } from 'native';
+import createModule, { CloudpilotNative, VoidPtr } from 'native';
 
 async function main() {
     const module = await createModule({
@@ -7,7 +7,13 @@ async function main() {
     });
 
     const cloudpilot: CloudpilotNative = new module.Cloudpilot();
-    console.log(cloudpilot.hello());
+
+    const buffer: VoidPtr = cloudpilot.malloc(1024);
+
+    console.log(buffer);
+    console.log(module.getPointer(buffer));
+
+    cloudpilot.free(buffer);
 }
 
 main();

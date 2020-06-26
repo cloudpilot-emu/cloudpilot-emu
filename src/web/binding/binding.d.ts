@@ -1,3 +1,10 @@
+declare const __void_ptr_tag__: unique symbol;
+
+export interface VoidPtr {
+    [__void_ptr_tag__]: null;
+}
+
 export interface CloudpilotNative {
-    hello(): string;
+    malloc(size: number): VoidPtr;
+    free(buffer: VoidPtr): void;
 }

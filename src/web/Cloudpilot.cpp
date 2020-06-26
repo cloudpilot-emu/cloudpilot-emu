@@ -1,5 +1,7 @@
 #include "Cloudpilot.h"
 
-#pragma GCC diagnostic ignored "-Wwritable-strings"
+#include <cstdlib>
 
-char* Cloudpilot::hello() { return "Hello world from Cloudpilot"; }
+void* Cloudpilot::malloc(long size) { return ::malloc(size); }
+
+void Cloudpilot::free(void* buffer) { ::free(buffer); }

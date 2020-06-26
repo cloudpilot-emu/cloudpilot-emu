@@ -3,7 +3,8 @@
 
 class Cloudpilot {
    public:
-    char* hello();
+    void* malloc(long size);
+    void free(void* buffer);
 };
 
 #endif  // _CLOUDPILOT_H_
