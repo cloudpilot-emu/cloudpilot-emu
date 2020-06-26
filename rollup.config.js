@@ -11,7 +11,7 @@ export default [
     {
         input: 'web/src/main.ts',
         output: {
-            file: 'main.js',
+            file: 'dist/main.js',
             format: 'iife',
             sourcemap: 'true',
             name: '$cloudpilot',

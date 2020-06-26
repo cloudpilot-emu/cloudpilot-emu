@@ -1,9 +1,12 @@
 import 'emscripten';
 
+export { CloudpilotNative } from './web/binding/binding';
+
 export interface Module extends EmscriptenModule {
     ccall: typeof ccall;
+    Cloudpilot: { new (): CloudpilotNative };
 }
 
-const createModule: EmscriptenModuleFactory<Module>;
+declare const createModule: EmscriptenModuleFactory<Module>;
 
 export default createModule;

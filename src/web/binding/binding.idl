@@ -1,0 +1,5 @@
+interface Cloudpilot {
+    void Cloudpilot();
+
+    DOMString hello();
+};

@@ -3,8 +3,10 @@ CXX_NATIVE = g++
 LD_NATIVE = g++
 
 CC_EMCC = emcc
-CXX_EMCC  = emcc
+CXX_EMCC = emcc
 LD_EMCC = emcc
+
+WEBIDL_BINDER = webidl_binder
 
 CFLAGS_COMMON = -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
 	-DEMULATION_LEVEL=EMULATION_UNIX
@@ -15,7 +17,12 @@ CXXFLAGS_NATIVE = $(CFLAGS_NATIVE) $(CXXFLAGS_COMMON)
 LDFLAGS_NATIVE =  -fsanitize=address,undefined $(shell sdl2-config --libs) -lSDL2_image
 
 CFLAGS_EMCC =  $(CFLAGS_COMMON) -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2
-CXXFLAGS_EMCC= $(CFLAGS_EMCC) $(CXXFLAGS_COMMON)
+CXXFLAGS_EMCC = $(CFLAGS_EMCC) $(CXXFLAGS_COMMON)
+
+WEBIDL_BINDING_DIR = web/binding
+WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
+WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/binding.idl
+WEBIDL_BINDING_CXX = web/binding.cpp
 
 LDFLAGS_EMCC_SDL = -Wno-version-check \
 	-s EXIT_RUNTIME=1 \
@@ -28,7 +35,8 @@ LDFLAGS_EMCC_SDL = -Wno-version-check \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap"]
 
 LDFLAGS_EMCC_WEB = -Wno-version-check \
-	-s EXIT_RUNTIME=1 \
+	--post-js $(WEBIDL_BINDING_JS) \
+	-s NO_EXIT_RUNTIME=1 \
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME=createModule \
 	-s EXPORT_ES6=1 \
@@ -121,7 +129,9 @@ SOURCE_SDL = \
 	sdl/EventHandler.cpp
 
 SOURCE_WEB = \
-	web/main.cpp
+	web/main.cpp \
+	web/Cloudpilot.cpp \
+	$(WEBIDL_BINDING_CXX)
 
 OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)
@@ -150,7 +160,11 @@ GARBAGE = \
 	$(BINARY_WEB_WASM) \
 	$(DEPDIR_NATIVE) \
 	$(DEPDIR_EMCC) \
-	$(WASM_OPT_STAMP)
+	$(WASM_OPT_STAMP) \
+	$(WEBIDL_BINDING_JS) \
+	$(WEBIDL_BINDING_JS:%.js=%.cpp) \
+	parser.out \
+	WebIDLGrammar.pkl
 
 all: bin emscripten
 
@@ -185,6 +199,11 @@ $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.c
 
 $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o) $(SOURCE_SDL:%.cpp=$(BUILDDIR_EMCC)/%.o) $(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
 	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
+
+$(BUILDDIR_EMCC)/$(WEBIDL_BINDING_CXX:%.cpp=%.o): $(WEBIDL_BINDING_JS)
+
+$(WEBIDL_BINDING_JS): $(WEBIDL_BINDING_SRC)
+	$(WEBIDL_BINDER) $(WEBIDL_BINDING_SRC) $(WEBIDL_BINDING_JS:.js=)
 
 clean:
 	-rm -fr $(GARBAGE)

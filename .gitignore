@@ -15,3 +15,5 @@ node_modules
 ts-compiled
 dist
 yarn-error.log
+parser.out
+WebIDLGrammar.pkl

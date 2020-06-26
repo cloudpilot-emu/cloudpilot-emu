@@ -1,13 +1,13 @@
-import createModule from 'native';
+import createModule, { CloudpilotNative } from 'native';
 
 async function main() {
     const module = await createModule({
         print: (x: string) => console.log(x),
         printErr: (x: string) => console.log(x),
-        noInitialRun: true,
     });
 
-    module.ccall('main', 'number', [], []);
+    const cloudpilot: CloudpilotNative = new module.Cloudpilot();
+    console.log(cloudpilot.hello());
 }
 
 main();
