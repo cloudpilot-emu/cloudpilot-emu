@@ -4,6 +4,7 @@
 #include <SDL2/SDL.h>
 
 #include "ButtonEvent.h"
+#include "EventHandler.h"
 #include "Frame.h"
 #include "Platform.h"
 
@@ -11,34 +12,18 @@ class MainLoop {
    public:
     MainLoop(SDL_Window* window, SDL_Renderer* renderer);
 
-    bool isRunning() const;
+    bool IsRunning() const;
 
-    void cycle();
+    void Cycle();
 
-    static void cycleStatic(MainLoop* self);
+    static void CycleStatic(MainLoop* self);
 
    private:
-    void loadSilkscreen();
+    void LoadSilkscreen();
 
-    void drawSilkscreen(SDL_Renderer* renderer);
+    void DrawSilkscreen(SDL_Renderer* renderer);
 
-    void updateScreen();
-
-    void handleEvents(long millis);
-
-    bool updatePenPosition();
-
-    void handlePenDown();
-
-    void handlePenMove();
-
-    void handlePenUp();
-
-    void handleKeyDown(SDL_Event event);
-
-    void handleButtonKey(SDL_Event event, ButtonEvent::Type type);
-
-    void handleTextInput(SDL_Event event);
+    void UpdateScreen();
 
    private:
     SDL_Renderer* renderer{nullptr};
@@ -47,14 +32,12 @@ class MainLoop {
 
     Frame frame{1024 * 128};
 
+    // Give the real clock a head start and force the emulator to fast forward 10 milliseconds at
+    // start while the display has not initialized yet.
     const long millisOffset{Platform::getMilliseconds() - 10};
     long clockEmu{0};
 
-    bool mouseDown{false};
-    long lastMouseMove{millisOffset};
-    int penX{0}, penY{0};
-
-    long running{true};
+    EventHandler eventHandler;
 };
 
 #endif  // _MAIN_LOOP_H_

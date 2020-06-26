@@ -109,7 +109,8 @@ SOURCE_CPP = \
 SOURCE_SDL = \
 	sdl/main.cpp \
 	sdl/MainLoop.cpp \
-	sdl/Silkscreen.cpp
+	sdl/Silkscreen.cpp \
+	sdl/EventHandler.cpp
 
 OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)

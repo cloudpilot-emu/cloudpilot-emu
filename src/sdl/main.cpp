@@ -132,11 +132,11 @@ int main(int argc, const char** argv) {
     MainLoop mainLoop(window, renderer);
 
 #ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop_arg((em_arg_callback_func)MainLoop::cycleStatic, &mainLoop, 0, true);
+    emscripten_set_main_loop_arg((em_arg_callback_func)MainLoop::CycleStatic, &mainLoop, 0, true);
 #else
 
-    while (mainLoop.isRunning()) {
-        mainLoop.cycle();
+    while (mainLoop.IsRunning()) {
+        mainLoop.Cycle();
     };
 
     SDL_Quit();
