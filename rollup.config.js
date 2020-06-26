@@ -3,7 +3,6 @@
 import alias from '@rollup/plugin-alias';
 import commonjs from '@rollup/plugin-commonjs';
 import copy from 'rollup-plugin-copy';
-import { eslint } from 'rollup-plugin-eslint';
 import html from '@rollup/plugin-html';
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
@@ -21,7 +20,6 @@ export default [
                 resolve: ['.ts', '.tsx'],
                 entries: [{ find: 'native', replacement: '../../src' }],
             }),
-            eslint({ include: 'web/src/**' }),
             resolve({ browser: true }),
             commonjs(),
             typescript({ noEmitOnError: false }),

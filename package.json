@@ -49,13 +49,14 @@
     "prettier-plugin-import-sort": "^0.0.4",
     "rollup": "^2.18.0",
     "rollup-plugin-copy": "^3.3.0",
-    "rollup-plugin-eslint": "^7.0.0",
     "tslib": "^2.0.0",
-    "typescript": "^3.9.5"
+    "typescript": "^3.9.5",
+    "whatwg-fetch": "^3.0.0"
   },
   "dependencies": {},
   "scripts": {
-    "build": "rollup -c",
+    "lint": "eslint web/src/**/*",
+    "build": "eslint web/src/**/* && rollup -c",
     "rollup-watch": "rollup -c -w",
     "launch-server": "live-server dist",
     "watch": "run-p launch-server rollup-watch"

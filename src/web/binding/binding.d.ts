@@ -4,7 +4,16 @@ export interface VoidPtr {
     [__void_ptr_tag__]: null;
 }
 
+export interface RomInfoNative {
+    CardVersion(): number;
+    CardName(): string;
+    RomVersion(): number;
+    RomVersionString(): string;
+}
+
 export interface CloudpilotNative {
-    malloc(size: number): VoidPtr;
-    free(buffer: VoidPtr): void;
+    Malloc(size: number): VoidPtr;
+    Free(buffer: VoidPtr): void;
+
+    GetRomInfo(buffer: VoidPtr, size: number, romInfo: RomInfo): bool;
 }

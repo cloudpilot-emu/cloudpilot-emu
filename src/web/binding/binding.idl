@@ -1,6 +1,17 @@
 interface Cloudpilot {
     void Cloudpilot();
 
-    VoidPtr malloc(long size);
-    void free(VoidPtr buffer);
+    VoidPtr Malloc(long size);
+    void Free(VoidPtr buffer);
+
+    boolean GetRomInfo(VoidPtr buffer, long size, [Ref] RomInfo romInfo);
+};
+
+interface RomInfo {
+    void RomInfo();
+
+    long CardVersion();
+    [Const] DOMString CardName();
+    long RomVersion();
+    [Const] DOMString RomVersionString();
 };

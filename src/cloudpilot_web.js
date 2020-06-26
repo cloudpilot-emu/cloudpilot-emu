@@ -1390,11 +1390,11 @@ function updateGlobalBufferAndViews(buf) {
 }
 
 var STATIC_BASE = 1024,
-    STACK_BASE = 5267280,
+    STACK_BASE = 5267328,
     STACKTOP = STACK_BASE,
-    STACK_MAX = 24400,
-    DYNAMIC_BASE = 5267280,
-    DYNAMICTOP_PTR = 24240;
+    STACK_MAX = 24448,
+    DYNAMIC_BASE = 5267328,
+    DYNAMICTOP_PTR = 24288;
 
 assert(STACK_BASE % 16 === 0, 'stack must start aligned');
 assert(DYNAMIC_BASE % 16 === 0, 'heap must start aligned');
@@ -1955,7 +1955,7 @@ function array_bounds_check_error(idx,size){ throw 'Array index ' + idx + ' out 
 
 
 
-// STATICTOP = STATIC_BASE + 23376;
+// STATICTOP = STATIC_BASE + 23424;
 /* global initializers */  __ATINIT__.push({ func: function() { ___wasm_call_ctors() } });
 
 
@@ -4444,7 +4444,7 @@ function array_bounds_check_error(idx,size){ throw 'Array index ' + idx + ' out 
     }
 
   function _emscripten_get_sbrk_ptr() {
-      return 24240;
+      return 24288;
     }
 
   function _emscripten_memcpy_big(dest, src, num) {
@@ -5036,16 +5036,37 @@ var _main = Module["_main"] = createExportWrapper("main");
 var ___em_js__array_bounds_check_error = Module["___em_js__array_bounds_check_error"] = createExportWrapper("__em_js__array_bounds_check_error");
 
 /** @type {function(...*):?} */
+var _emscripten_bind_RomInfo_RomInfo_0 = Module["_emscripten_bind_RomInfo_RomInfo_0"] = createExportWrapper("emscripten_bind_RomInfo_RomInfo_0");
+
+/** @type {function(...*):?} */
+var _emscripten_bind_RomInfo_CardVersion_0 = Module["_emscripten_bind_RomInfo_CardVersion_0"] = createExportWrapper("emscripten_bind_RomInfo_CardVersion_0");
+
+/** @type {function(...*):?} */
+var _emscripten_bind_RomInfo_CardName_0 = Module["_emscripten_bind_RomInfo_CardName_0"] = createExportWrapper("emscripten_bind_RomInfo_CardName_0");
+
+/** @type {function(...*):?} */
+var _emscripten_bind_RomInfo_RomVersion_0 = Module["_emscripten_bind_RomInfo_RomVersion_0"] = createExportWrapper("emscripten_bind_RomInfo_RomVersion_0");
+
+/** @type {function(...*):?} */
+var _emscripten_bind_RomInfo_RomVersionString_0 = Module["_emscripten_bind_RomInfo_RomVersionString_0"] = createExportWrapper("emscripten_bind_RomInfo_RomVersionString_0");
+
+/** @type {function(...*):?} */
+var _emscripten_bind_RomInfo___destroy___0 = Module["_emscripten_bind_RomInfo___destroy___0"] = createExportWrapper("emscripten_bind_RomInfo___destroy___0");
+
+/** @type {function(...*):?} */
 var _emscripten_bind_VoidPtr___destroy___0 = Module["_emscripten_bind_VoidPtr___destroy___0"] = createExportWrapper("emscripten_bind_VoidPtr___destroy___0");
 
 /** @type {function(...*):?} */
 var _emscripten_bind_Cloudpilot_Cloudpilot_0 = Module["_emscripten_bind_Cloudpilot_Cloudpilot_0"] = createExportWrapper("emscripten_bind_Cloudpilot_Cloudpilot_0");
 
 /** @type {function(...*):?} */
-var _emscripten_bind_Cloudpilot_malloc_1 = Module["_emscripten_bind_Cloudpilot_malloc_1"] = createExportWrapper("emscripten_bind_Cloudpilot_malloc_1");
+var _emscripten_bind_Cloudpilot_Malloc_1 = Module["_emscripten_bind_Cloudpilot_Malloc_1"] = createExportWrapper("emscripten_bind_Cloudpilot_Malloc_1");
 
 /** @type {function(...*):?} */
-var _emscripten_bind_Cloudpilot_free_1 = Module["_emscripten_bind_Cloudpilot_free_1"] = createExportWrapper("emscripten_bind_Cloudpilot_free_1");
+var _emscripten_bind_Cloudpilot_Free_1 = Module["_emscripten_bind_Cloudpilot_Free_1"] = createExportWrapper("emscripten_bind_Cloudpilot_Free_1");
+
+/** @type {function(...*):?} */
+var _emscripten_bind_Cloudpilot_GetRomInfo_3 = Module["_emscripten_bind_Cloudpilot_GetRomInfo_3"] = createExportWrapper("emscripten_bind_Cloudpilot_GetRomInfo_3");
 
 /** @type {function(...*):?} */
 var _emscripten_bind_Cloudpilot___destroy___0 = Module["_emscripten_bind_Cloudpilot___destroy___0"] = createExportWrapper("emscripten_bind_Cloudpilot___destroy___0");
@@ -5691,6 +5712,41 @@ function ensureFloat64(value) {
 }
 
 
+// RomInfo
+/** @suppress {undefinedVars, duplicate} @this{Object} */function RomInfo() {
+  this.ptr = _emscripten_bind_RomInfo_RomInfo_0();
+  getCache(RomInfo)[this.ptr] = this;
+};;
+RomInfo.prototype = Object.create(WrapperObject.prototype);
+RomInfo.prototype.constructor = RomInfo;
+RomInfo.prototype.__class__ = RomInfo;
+RomInfo.__cache__ = {};
+Module['RomInfo'] = RomInfo;
+
+RomInfo.prototype['CardVersion'] = RomInfo.prototype.CardVersion = /** @suppress {undefinedVars, duplicate} @this{Object} */function() {
+  var self = this.ptr;
+  return _emscripten_bind_RomInfo_CardVersion_0(self);
+};;
+
+RomInfo.prototype['CardName'] = RomInfo.prototype.CardName = /** @suppress {undefinedVars, duplicate} @this{Object} */function() {
+  var self = this.ptr;
+  return UTF8ToString(_emscripten_bind_RomInfo_CardName_0(self));
+};;
+
+RomInfo.prototype['RomVersion'] = RomInfo.prototype.RomVersion = /** @suppress {undefinedVars, duplicate} @this{Object} */function() {
+  var self = this.ptr;
+  return _emscripten_bind_RomInfo_RomVersion_0(self);
+};;
+
+RomInfo.prototype['RomVersionString'] = RomInfo.prototype.RomVersionString = /** @suppress {undefinedVars, duplicate} @this{Object} */function() {
+  var self = this.ptr;
+  return UTF8ToString(_emscripten_bind_RomInfo_RomVersionString_0(self));
+};;
+
+  RomInfo.prototype['__destroy__'] = RomInfo.prototype.__destroy__ = /** @suppress {undefinedVars, duplicate} @this{Object} */function() {
+  var self = this.ptr;
+  _emscripten_bind_RomInfo___destroy___0(self);
+};
 // VoidPtr
 /** @suppress {undefinedVars, duplicate} @this{Object} */function VoidPtr() { throw "cannot construct a VoidPtr, no constructor in IDL" }
 VoidPtr.prototype = Object.create(WrapperObject.prototype);
@@ -5714,16 +5770,24 @@ Cloudpilot.prototype.__class__ = Cloudpilot;
 Cloudpilot.__cache__ = {};
 Module['Cloudpilot'] = Cloudpilot;
 
-Cloudpilot.prototype['malloc'] = Cloudpilot.prototype.malloc = /** @suppress {undefinedVars, duplicate} @this{Object} */function(size) {
+Cloudpilot.prototype['Malloc'] = Cloudpilot.prototype.Malloc = /** @suppress {undefinedVars, duplicate} @this{Object} */function(size) {
   var self = this.ptr;
   if (size && typeof size === 'object') size = size.ptr;
-  return wrapPointer(_emscripten_bind_Cloudpilot_malloc_1(self, size), VoidPtr);
+  return wrapPointer(_emscripten_bind_Cloudpilot_Malloc_1(self, size), VoidPtr);
 };;
 
-Cloudpilot.prototype['free'] = Cloudpilot.prototype.free = /** @suppress {undefinedVars, duplicate} @this{Object} */function(buffer) {
+Cloudpilot.prototype['Free'] = Cloudpilot.prototype.Free = /** @suppress {undefinedVars, duplicate} @this{Object} */function(buffer) {
   var self = this.ptr;
   if (buffer && typeof buffer === 'object') buffer = buffer.ptr;
-  _emscripten_bind_Cloudpilot_free_1(self, buffer);
+  _emscripten_bind_Cloudpilot_Free_1(self, buffer);
+};;
+
+Cloudpilot.prototype['GetRomInfo'] = Cloudpilot.prototype.GetRomInfo = /** @suppress {undefinedVars, duplicate} @this{Object} */function(buffer, size, romInfo) {
+  var self = this.ptr;
+  if (buffer && typeof buffer === 'object') buffer = buffer.ptr;
+  if (size && typeof size === 'object') size = size.ptr;
+  if (romInfo && typeof romInfo === 'object') romInfo = romInfo.ptr;
+  return !!(_emscripten_bind_Cloudpilot_GetRomInfo_3(self, buffer, size, romInfo));
 };;
 
   Cloudpilot.prototype['__destroy__'] = Cloudpilot.prototype.__destroy__ = /** @suppress {undefinedVars, duplicate} @this{Object} */function() {

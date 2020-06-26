@@ -1,19 +1,11 @@
-import createModule, { CloudpilotNative, VoidPtr } from 'native';
+import Cloudpilot from './Cloudpilot';
 
 async function main() {
-    const module = await createModule({
-        print: (x: string) => console.log(x),
-        printErr: (x: string) => console.log(x),
-    });
+    const cloudpilot = await Cloudpilot.create();
+    const rom = new Uint8Array(await (await fetch('./test.rom')).arrayBuffer());
+    const romInfo = cloudpilot.getRomInfo(rom);
 
-    const cloudpilot: CloudpilotNative = new module.Cloudpilot();
-
-    const buffer: VoidPtr = cloudpilot.malloc(1024);
-
-    console.log(buffer);
-    console.log(module.getPointer(buffer));
-
-    cloudpilot.free(buffer);
+    console.log(romInfo);
 }
 
 main();
