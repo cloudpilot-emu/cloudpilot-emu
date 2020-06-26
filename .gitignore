@@ -11,3 +11,7 @@ cloudpilot.wasm
 .vscode/launch.json
 .vscode/tasks.json
 gh-pages
+node_modules
+ts-compiled
+dist
+yarn-error.log
