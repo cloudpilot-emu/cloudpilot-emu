@@ -1,26 +1,32 @@
 'use strict';
 
+import alias from '@rollup/plugin-alias';
+import commonjs from '@rollup/plugin-commonjs';
+import copy from 'rollup-plugin-copy';
+import { eslint } from 'rollup-plugin-eslint';
+import html from '@rollup/plugin-html';
 import resolve from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
-import commonjs from '@rollup/plugin-commonjs';
-import html from '@rollup/plugin-html';
-import { eslint } from 'rollup-plugin-eslint';
-
 export default [
     {
-        input: 'web/src/index.ts',
+        input: 'web/src/main.ts',
         output: {
-            file: 'dist/main.js',
+            file: 'main.js',
             format: 'iife',
             sourcemap: 'true',
             name: '$cloudpilot',
         },
         plugins: [
+            alias({
+                resolve: ['.ts', '.tsx'],
+                entries: [{ find: 'native', replacement: '../../src' }],
+            }),
             eslint({ include: 'web/src/**' }),
-            html({ title: 'Cloudpilot' }),
             resolve({ browser: true }),
-            typescript({ noEmitOnError: false }),
             commonjs(),
+            typescript({ noEmitOnError: false }),
+            copy({ targets: [{ src: 'src/cloudpilot_web.wasm', dest: 'dist' }] }),
+            html({ title: 'Cloudpilot' }),
         ],
     },
 ];

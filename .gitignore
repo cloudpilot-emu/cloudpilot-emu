@@ -2,9 +2,9 @@
 .build-emcc
 .deps
 .deps-emcc
-cloudpilot
-cloudpilot.js
-cloudpilot.wasm
+src/cloudpilot
+src/*.js
+src/*.wasm
 *.rom
 *.stamp
 .vscode/c_cpp_properties.json
