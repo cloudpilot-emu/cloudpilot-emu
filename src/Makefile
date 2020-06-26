@@ -16,7 +16,8 @@ LDFLAGS_NATIVE =  -fsanitize=address,undefined $(shell sdl2-config --libs) -lSDL
 
 CFLAGS_EMCC =  $(CFLAGS_COMMON) -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2
 CXXFLAGS_EMCC= $(CFLAGS_EMCC) $(CXXFLAGS_COMMON)
-LDFLAGS_EMCC = -Wno-version-check \
+
+LDFLAGS_EMCC_SDL = -Wno-version-check \
 	-s EXIT_RUNTIME=1 \
 	-s SDL2_IMAGE_FORMATS='["png"]' \
 	-s USE_SDL=2 \
@@ -24,6 +25,12 @@ LDFLAGS_EMCC = -Wno-version-check \
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME=createModule \
 	-s EXPORTED_RUNTIME_METHODS=["FS"] \
+	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap"]
+
+LDFLAGS_EMCC_WEB = -Wno-version-check \
+	-s EXIT_RUNTIME=1 \
+	-s MODULARIZE=1 \
+	-s EXPORT_NAME=createModule \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap"]
 
 BUILDDIR_NATIVE = .build
@@ -112,15 +119,24 @@ SOURCE_SDL = \
 	sdl/Silkscreen.cpp \
 	sdl/EventHandler.cpp
 
+SOURCE_WEB = \
+	web/main.cpp
+
 OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)
 
 OBJECTS_SDL_NATIVE = $(SOURCE_SDL:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_SDL_EMCC = $(SOURCE_SDL:%.cpp=$(BUILDDIR_EMCC)/%.o)
 
+OBJECTS_SDL_EMCC = $(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o)
+
 BINARY_SDL_NATIVE = cloudpilot
 BINARY_SDL_EMCC = cloudpilot.js
 BINARY_SDL_WASM = cloudpilot.wasm
+
+BINARY_WEB_EMCC = cloudpilot_web.js
+BINARY_WEB_WASM = cloudpilot_web.wasm
+
 WASM_OPT_STAMP = wasm-opt.stamp
 
 GARBAGE = \
@@ -129,6 +145,8 @@ GARBAGE = \
 	$(BINARY_SDL_EMCC) \
 	$(BINARY_SDL_NATIVE) \
 	$(BINARY_SDL_WASM) \
+	$(BINARY_WEB_NATIVE) \
+	$(BINARY_WEB_WASM) \
 	$(DEPDIR_NATIVE) \
 	$(DEPDIR_EMCC) \
 	$(WASM_OPT_STAMP)
@@ -137,20 +155,23 @@ all: bin emscripten
 
 bin: $(BINARY_SDL_NATIVE)
 
-emscripten: $(BINARY_SDL_EMCC)
+emscripten: $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC)
 
 wasm-opt: $(WASM_OPT_STAMP)
 
-$(WASM_OPT_STAMP): $(BINARY_SDL_EMCC)
-	wasm-opt -O4 --post-emscripten -o $(BINARY_SDL_WASM) $(BINARY_SDL_WASM)
-	terser -c -o $(BINARY_SDL_EMCC) < $(BINARY_SDL_EMCC)
+$(WASM_OPT_STAMP): $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC)
+	for i in $(BINARY_SDL_WASM) $(BINARY_WEB_WASM); do wasm-opt -O4 --post-emscripten -o $$i $$i; done
+	for i in $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC); do terser -c -o $$i < $$i; done
 	touch $@
 
 $(BINARY_SDL_NATIVE): $(OBJECTS_NATIVE) $(OBJECTS_SDL_NATIVE)
 	$(LD_NATIVE) $(LDFLAGS_NATIVE) -o $@ $^
 
 $(BINARY_SDL_EMCC): $(OBJECTS_EMCC) $(OBJECTS_SDL_EMCC)
-	$(LD_EMCC) $(LDFLAGS_EMCC) -o $@ $^
+	$(LD_EMCC) $(LDFLAGS_EMCC_SDL) -o $@ $^
+
+$(BINARY_WEB_EMCC): $(OBJECTS_EMCC) $(OBJECTS_WEB_EMCC)
+	$(LD_EMCC) $(LDFLAGS_EMCC_WEB) -o $@ $^
 
 $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
@@ -161,7 +182,7 @@ $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_SDL:%.cpp=$(BUILDDIR_NATIVE)
 $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.c
 	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o) $(SOURCE_SDL:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
+$(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o) $(SOURCE_SDL:%.cpp=$(BUILDDIR_EMCC)/%.o) $(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
 	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
 clean:
