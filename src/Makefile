@@ -39,116 +39,132 @@ MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
 MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 
 INCLUDE = \
-	-I./hardware \
-	-I./uae \
-	-I./patch \
-	-I./palm/Device \
-	-I./palm/Platform \
-	-I./palm/Platform/Core/Hardware/IncsPrv \
-	-I./palm/Platform/Core/System/IncsPrv \
-	-I./palm/Platform/Incs \
-	-I./palm/Platform/Incs/Core \
-	-I./palm/Platform/Incs/Core/Hardware \
-	-I./palm/Platform/Incs/Core/System \
-	-I./palm/Platform/Incs/Core/UI \
-	-I./palm/Platform/Incs/Libraries \
-	-I.
+	-I./emulator/hardware \
+	-I./emulator/uae \
+	-I./emulator/patch \
+	-I./emulator/palm/Device \
+	-I./emulator/palm/Platform \
+	-I./emulator/palm/Platform/Core/Hardware/IncsPrv \
+	-I./emulator/palm/Platform/Core/System/IncsPrv \
+	-I./emulator/palm/Platform/Incs \
+	-I./emulator/palm/Platform/Incs/Core \
+	-I./emulator/palm/Platform/Incs/Core/Hardware \
+	-I./emulator/palm/Platform/Incs/Core/System \
+	-I./emulator/palm/Platform/Incs/Core/UI \
+	-I./emulator/palm/Platform/Incs/Libraries \
+	-I./emulator
 
 SOURCE_C = \
-	uae/cpudefs.c \
-	uae/cpuemu.c \
-	uae/cpustbl.c \
-	palm/Platform/Core/System/Src/Crc.c
+	emulator/uae/cpudefs.c \
+	emulator/uae/cpuemu.c \
+	emulator/uae/cpustbl.c \
+	emulator/palm/Platform/Core/System/Src/Crc.c
 
 SOURCE_CPP = \
-	uae/readcpu.cpp \
-	hardware/EmMemory.cpp \
-	hardware/EmHAL.cpp \
-	hardware/EmCPU.cpp \
-	hardware/EmCPU68K.cpp \
-	hardware/EmBankSRAM.cpp \
-	hardware/EmBankDRAM.cpp \
-	hardware/EmBankDummy.cpp \
-	hardware/EmBankMapped.cpp \
-	hardware/EmRegs.cpp \
-	hardware/EmBankRegs.cpp \
-	hardware/EmSPISlave.cpp \
-	hardware/EmUARTDragonball.cpp \
-	hardware/EmRegsEZ.cpp \
-	hardware/EmSPISlaveADS784x.cpp \
-	hardware/EmRegsEZPalmV.cpp \
-	hardware/EmBankROM.cpp \
-	hardware/EmUAEGlue.cpp \
-	patch/EmPatchModule.cpp \
-	patch/EmPatchModuleSys.cpp \
-	patch/EmPatchMgr.cpp \
-	EmSystemState.cpp \
-	Miscellaneous.cpp \
-	Marshall.cpp \
-	Platform.cpp \
-	EmDevice.cpp \
-	EmLowMem.cpp \
-	EmPalmOS.cpp \
-	EmSubroutine.cpp \
-	Frame.cpp \
-	EmPoint.cpp \
-	EmThreadSafeQueue.cpp \
-	EmTransport.cpp \
-	MetaMemory.cpp \
-	Byteswapping.cpp \
-	DebugMgr.cpp \
-	EmSession.cpp \
-	EmPalmStructs.cpp \
-	EmROMReader.cpp \
-	EmCommon.cpp \
-	StringData.cpp \
-	ROMStubs.cpp \
-	Logging.cpp \
-	stubs.cpp \
-	Silkscreen.cpp \
-	main.cpp
+	emulator/uae/readcpu.cpp \
+	emulator/hardware/EmMemory.cpp \
+	emulator/hardware/EmHAL.cpp \
+	emulator/hardware/EmCPU.cpp \
+	emulator/hardware/EmCPU68K.cpp \
+	emulator/hardware/EmBankSRAM.cpp \
+	emulator/hardware/EmBankDRAM.cpp \
+	emulator/hardware/EmBankDummy.cpp \
+	emulator/hardware/EmBankMapped.cpp \
+	emulator/hardware/EmRegs.cpp \
+	emulator/hardware/EmBankRegs.cpp \
+	emulator/hardware/EmSPISlave.cpp \
+	emulator/hardware/EmUARTDragonball.cpp \
+	emulator/hardware/EmRegsEZ.cpp \
+	emulator/hardware/EmSPISlaveADS784x.cpp \
+	emulator/hardware/EmRegsEZPalmV.cpp \
+	emulator/hardware/EmBankROM.cpp \
+	emulator/hardware/EmUAEGlue.cpp \
+	emulator/patch/EmPatchModule.cpp \
+	emulator/patch/EmPatchModuleSys.cpp \
+	emulator/patch/EmPatchMgr.cpp \
+	emulator/EmSystemState.cpp \
+	emulator/Miscellaneous.cpp \
+	emulator/Marshall.cpp \
+	emulator/Platform.cpp \
+	emulator/EmDevice.cpp \
+	emulator/EmLowMem.cpp \
+	emulator/EmPalmOS.cpp \
+	emulator/EmSubroutine.cpp \
+	emulator/Frame.cpp \
+	emulator/EmPoint.cpp \
+	emulator/EmThreadSafeQueue.cpp \
+	emulator/EmTransport.cpp \
+	emulator/MetaMemory.cpp \
+	emulator/Byteswapping.cpp \
+	emulator/DebugMgr.cpp \
+	emulator/EmSession.cpp \
+	emulator/EmPalmStructs.cpp \
+	emulator/EmROMReader.cpp \
+	emulator/EmCommon.cpp \
+	emulator/StringData.cpp \
+	emulator/ROMStubs.cpp \
+	emulator/Logging.cpp \
+	emulator/stubs.cpp
+
+SOURCE_SDL = \
+	sdl/main.cpp \
+	sdl/MainLoop.cpp \
+	sdl/Silkscreen.cpp
 
 OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)
 
-BINARY_NATIVE = cloudpilot
-BINARY_EMCC = cloudpilot.js
-BINARY_WASM = cloudpilot.wasm
+OBJECTS_SDL_NATIVE = $(SOURCE_SDL:%.cpp=$(BUILDDIR_NATIVE)/%.o)
+OBJECTS_SDL_EMCC = $(SOURCE_SDL:%.cpp=$(BUILDDIR_EMCC)/%.o)
+
+BINARY_SDL_NATIVE = cloudpilot
+BINARY_SDL_EMCC = cloudpilot.js
+BINARY_SDL_WASM = cloudpilot.wasm
 WASM_OPT_STAMP = wasm-opt.stamp
+
+GARBAGE = \
+	$(BUILDDIR_NATIVE) \
+	$(BUILDDIR_EMCC) \
+	$(BINARY_SDL_EMCC) \
+	$(BINARY_SDL_NATIVE) \
+	$(BINARY_SDL_WASM) \
+	$(DEPDIR_NATIVE) \
+	$(DEPDIR_EMCC) \
+	$(WASM_OPT_STAMP)
 
 all: bin emscripten
 
-bin: $(BINARY_NATIVE)
+bin: $(BINARY_SDL_NATIVE)
 
-emscripten: $(BINARY_EMCC)
+emscripten: $(BINARY_SDL_EMCC)
 
 wasm-opt: $(WASM_OPT_STAMP)
 
-$(WASM_OPT_STAMP): $(BINARY_EMCC)
-	wasm-opt -O4 --post-emscripten -o $(BINARY_WASM) $(BINARY_WASM)
-	terser -c -o $(BINARY_EMCC) < $(BINARY_EMCC)
+$(WASM_OPT_STAMP): $(BINARY_SDL_EMCC)
+	wasm-opt -O4 --post-emscripten -o $(BINARY_SDL_WASM) $(BINARY_SDL_WASM)
+	terser -c -o $(BINARY_SDL_EMCC) < $(BINARY_SDL_EMCC)
 	touch $@
 
-$(BINARY_NATIVE): $(OBJECTS_NATIVE)
+$(BINARY_SDL_NATIVE): $(OBJECTS_NATIVE) $(OBJECTS_SDL_NATIVE)
 	$(LD_NATIVE) $(LDFLAGS_NATIVE) -o $@ $^
 
-$(BINARY_EMCC): $(OBJECTS_EMCC)
+$(BINARY_SDL_EMCC): $(OBJECTS_EMCC) $(OBJECTS_SDL_EMCC)
 	$(LD_EMCC) $(LDFLAGS_EMCC) -o $@ $^
 
 $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.cpp
+$(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_SDL:%.cpp=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.cpp
 	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
 $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.c
 	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
+$(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o) $(SOURCE_SDL:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
 	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
 clean:
-	-rm -fr $(BUILDDIR_NATIVE) $(BUILDDIR_EMCC) $(BINARY_EMCC) $(BINARY_NATIVE) $(BINARY_WASM) $(DEPDIR_NATIVE) $(DEPDIR_EMCC) $(WASM_OPT_STAMP)
+	-rm -fr $(GARBAGE)
 
 .PHONY: clean all bin emscripten
 
