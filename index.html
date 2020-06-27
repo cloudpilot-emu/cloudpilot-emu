@@ -1,12 +1,200 @@
+<html>
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
+<head>
     <title>Cloudpilot</title>
-    
-  </head>
-  <body>
-    <script src="main.js"></script>
-  </body>
+    <style>
+        #rom-name {
+            margin-bottom: 1rem;
+        }
+
+        #canvas {
+            width: 480px;
+            height: 660px;
+            display: block;
+            margin-top: 1rem;
+            border: 1px solid black;
+        }
+
+        #rom-upload {
+            display: none;
+        }
+
+        #console {
+            margin-top: 1rem;
+            width: 100%;
+            height: 15em;
+            overflow-y: scroll;
+            -webkit-overflow-scrolling: touch;
+            word-wrap: break-word;
+            white-space: pre-line;
+        }
+
+        #buttons {
+            margin-top: 1em;
+        }
+
+        .palm-button {
+            display: inline-block;
+            height: 3em;
+            width: 52px;
+            height: 52px;
+            margin: 0 6px 0 0;
+            padding: 0;
+            border: none;
+            display: inline-block;
+            touch-action: manipulation;
+            background: #bbb;
+        }
+
+        .palm-button:hover,
+        .palm-button:focus {
+            border: none;
+            outline: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="rom-name">&nbsp;</div>
+    <label>
+        <input type="file" id="rom-upload"></input>
+        <button type="button" id="rom-upload-button">Select ROM</button>
+    </label>
+    <canvas id="canvas" width="160" height="220"></canvas>
+
+    <div id="buttons">
+        <button class="palm-button" type="button" data-id="app1">Cal</button>
+        <button class="palm-button" type="button" data-id="app2">Phone</button>
+        <button class="palm-button" type="button" data-id="app3">Todo</button>
+        <button class="palm-button" type="button" data-id="app4">Notes</button>
+        <button class="palm-button" type="button" data-id="rockerUp">Up</button>
+        <button class="palm-button" type="button" data-id="rockerDown">Down</button>
+        <button class="palm-button" type="button" data-id="cradle">Sync</button>
+        <button class="palm-button" type="button" data-id="power">Power</button>
+    </div>
+
+    <pre id="console"></pre>
+
+    <script src="src/cloudpilot.js"></script>
+    <script>
+        (function () {
+            const romUploadButton = document.getElementById('rom-upload-button');
+            const romUpload = document.getElementById('rom-upload');
+            const romName = document.getElementById('rom-name');
+            const consoleElt = document.getElementById('console');
+
+            const KEY_ROM_NAME = 'romName';
+            const KEY_ROM_IMAGE = 'romImage';
+
+            let running = false;
+
+            function escape(text) {
+                const node = document.createElement('div');
+
+                node.innerText = text;
+
+                return node.innerHTML;
+            }
+
+            function appendLog(msg) {
+                consoleElt.innerHTML += (escape(msg) + '<br/>');
+                consoleElt.scrollTop = consoleElt.scrollHeight;
+            }
+
+            function onSessionReady() {
+                const nativeButtonDown = this.cwrap('buttonDown', null, ['string']);
+                const nativeButtonUp = this.cwrap('buttonUp', null, ['string']);
+
+                let currentButton = null;
+
+                Array.from(document.querySelectorAll('.palm-button')).forEach(btn => btn.addEventListener('mousedown', evt => {
+                    currentButton = evt.target;
+
+                    nativeButtonDown(currentButton.dataset.id);
+
+                    evt.preventDefault();
+                }));
+
+                window.addEventListener('mouseup', evt => {
+                    if (currentButton) {
+                        nativeButtonUp(currentButton.dataset.id);
+
+                        currentButton = null;
+
+                        evt.preventDefault();
+                    }
+                });
+
+                // Work around missing SDL_TEXTINPUT for option-X key combos on MacOS
+                window.addEventListener(
+                    'keydown',
+                    e => {
+                        if (e.altKey && e.key.length === 1) {
+                            e.stopPropagation();
+                            window.dispatchEvent(new KeyboardEvent('keydown', { altKey: false, key: e.key }));
+                        }
+                    },
+                    true
+                );
+            }
+
+            async function main(module) {
+                function launch() {
+                    romName.innerText = `ROM: ${localStorage.getItem(KEY_ROM_NAME)}`;
+                    running = true;
+
+                    module.FS.writeFile('/palm.rom', Uint8Array.from(atob(localStorage.getItem(KEY_ROM_IMAGE)), c => c.charCodeAt(0)));
+                    module.callMain(['/palm.rom']);
+                }
+
+                async function onRomFileSelect(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const content = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+
+                        reader.addEventListener('load', () => resolve(new Uint8Array(reader.result)));
+                        reader.addEventListener('error', () => reject(reader.error));
+
+                        reader.readAsArrayBuffer(file);
+                    });
+
+                    let str = '';
+                    for (let x of content) str += String.fromCharCode(x);
+
+                    localStorage.setItem(KEY_ROM_NAME, file.name);
+                    localStorage.setItem(KEY_ROM_IMAGE, btoa(str));
+
+                    if (!running) {
+                        launch();
+                    } else {
+                        window.location.reload();
+                    }
+                }
+
+                window.module = module;
+
+                romUploadButton.addEventListener('click', () => romUpload.click());
+                romUpload.addEventListener('change', onRomFileSelect);
+
+                if (localStorage.getItem(KEY_ROM_NAME) && localStorage.getItem(KEY_ROM_IMAGE)) {
+                    launch();
+                } else {
+                    romName.innerText = 'No ROM image selected';
+                }
+            }
+
+            createModule({
+                noInitialRun: true,
+                canvas: document.getElementById('canvas'),
+                print: appendLog,
+                printErr: appendLog,
+                sessionReady: onSessionReady
+            })
+                .then(main);
+        })()
+    </script>
+</body>
+
 </html>
