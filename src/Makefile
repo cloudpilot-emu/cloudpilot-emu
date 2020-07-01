@@ -1,23 +1,33 @@
-CC_NATIVE = gcc
-CXX_NATIVE = g++
-LD_NATIVE = g++
+-include Makefile.local
 
-CC_EMCC = emcc
-CXX_EMCC = emcc
-LD_EMCC = emcc
+CC_NATIVE ?= gcc
+CXX_NATIVE ?= g++
+LD_NATIVE ?= g++
 
-WEBIDL_BINDER = webidl_binder
+CC_EMCC ?= emcc
+CXX_EMCC ?= emcc
+LD_EMCC ?= emcc
+
+PYTHON ?= python
+
+WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
+
+CFLAGS_NATIVE ?= \
+	-O2  -g \
+	$(shell sdl2-config --cflags)
+
+CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
+
+LDFLAGS_NATIVE ?=  \
+	$(shell sdl2-config --libs) -lSDL2_image \
+	-lreadline
 
 CFLAGS_COMMON = -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
 	-DEMULATION_LEVEL=EMULATION_UNIX
-CXXFLAGS_COMMON = -std=c++14 -fno-exceptions
+CXXFLAGS_COMMON = $(CFLAGS_COMMON) -std=c++14 -fno-exceptions
 
-CFLAGS_NATIVE = $(CFLAGS_COMMON) -O0 -fsanitize=address,undefined -g $(shell sdl2-config --cflags)
-CXXFLAGS_NATIVE = $(CFLAGS_NATIVE) $(CXXFLAGS_COMMON)
-LDFLAGS_NATIVE =  -fsanitize=address,undefined $(shell sdl2-config --libs) -lSDL2_image
-
-CFLAGS_EMCC =  $(CFLAGS_COMMON) -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2
-CXXFLAGS_EMCC = $(CFLAGS_EMCC) $(CXXFLAGS_COMMON)
+CFLAGS_EMCC = -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2
+CXXFLAGS_EMCC = $(CFLAGS_EMCC)
 
 WEBIDL_BINDING_DIR = web/binding
 WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
@@ -128,6 +138,8 @@ SOURCE_SDL = \
 	sdl/Silkscreen.cpp \
 	sdl/EventHandler.cpp
 
+SOURCE_SDL_NATIVE = $(SOURCE_SDL) sdl/Cli.cpp
+
 SOURCE_WEB = \
 	web/main.cpp \
 	web/Cloudpilot.cpp \
@@ -136,7 +148,7 @@ SOURCE_WEB = \
 OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)
 
-OBJECTS_SDL_NATIVE = $(SOURCE_SDL:%.cpp=$(BUILDDIR_NATIVE)/%.o)
+OBJECTS_SDL_NATIVE = $(SOURCE_SDL_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_SDL_EMCC = $(SOURCE_SDL:%.cpp=$(BUILDDIR_EMCC)/%.o)
 
 OBJECTS_WEB_EMCC = $(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o)
@@ -189,16 +201,16 @@ $(BINARY_WEB_EMCC): $(OBJECTS_EMCC) $(OBJECTS_WEB_EMCC)
 	$(LD_EMCC) $(LDFLAGS_EMCC_WEB) -o $@ $^
 
 $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.c
-	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
+	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_SDL:%.cpp=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.cpp
-	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
+$(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_SDL_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.cpp
+	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
 $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.c
-	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
+	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(CFLAGS_COMMON) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
 $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o) $(SOURCE_SDL:%.cpp=$(BUILDDIR_EMCC)/%.o) $(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
-	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
+	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_COMMON) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
 $(BUILDDIR_EMCC)/$(WEBIDL_BINDING_CXX:%.cpp=%.o): $(WEBIDL_BINDING_JS)
 

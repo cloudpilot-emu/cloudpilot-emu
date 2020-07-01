@@ -20,6 +20,10 @@
 #include "MainLoop.h"
 #include "common.h"
 
+#ifndef __EMSCRIPTEN__
+    #include "Cli.h"
+#endif
+
 using namespace std;
 
 bool readFile(string file, unique_ptr<uint8[]>& buffer, long& len) {
@@ -134,10 +138,14 @@ int main(int argc, const char** argv) {
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg((em_arg_callback_func)MainLoop::CycleStatic, &mainLoop, 0, true);
 #else
+    Cli::Start();
 
     while (mainLoop.IsRunning()) {
         mainLoop.Cycle();
+        Cli::Execute();
     };
+
+    Cli::Stop();
 
     SDL_Quit();
     IMG_Quit();

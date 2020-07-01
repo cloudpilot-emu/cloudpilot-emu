@@ -1,5 +1,5 @@
-#ifndef _MAIN_LOOP_H_
-#define _MAIN_LOOP_H_
+#ifndef _SDL_MAIN_LOOP_H_
+#define _SDL_MAIN_LOOP_H_
 
 #include <SDL2/SDL.h>
 
@@ -40,4 +40,4 @@ class MainLoop {
     EventHandler eventHandler;
 };
 
-#endif  // _MAIN_LOOP_H_
+#endif  // _SDL_MAIN_LOOP_H_

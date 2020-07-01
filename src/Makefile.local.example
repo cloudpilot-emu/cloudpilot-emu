@@ -1,0 +1,24 @@
+# CC_NATIVE ?= gcc
+# CXX_NATIVE ?= g++
+# LD_NATIVE ?= g++
+
+# CC_EMCC ?= emcc
+# CXX_EMCC ?= emcc
+# LD_EMCC ?= emcc
+
+# PYTHON ?= python
+
+# WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
+
+CFLAGS_NATIVE = \
+	-O0 -fsanitize=address,undefined -g \
+	$(shell sdl2-config --cflags) \
+	-I/usr/local/opt/readline/include
+
+# CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
+
+LDFLAGS_NATIVE =  \
+	-fsanitize=address,undefined \
+	$(shell sdl2-config --libs) -lSDL2_image \
+	-L/usr/local/opt/readline/lib \
+	-lreadline
