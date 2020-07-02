@@ -165,7 +165,6 @@ namespace Cli {
             unique_lock<mutex> lock(dispatchMutex);
 
             stop = true;
-            task = Task();
         }
 
         cvExecuteTask.notify_one();
