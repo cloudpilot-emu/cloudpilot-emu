@@ -27,7 +27,7 @@ namespace {
     thread cliThread;
 
     Task task;
-    mutex taskMutex;
+    mutex dispatchMutex;
     condition_variable cvExecuteTask;
 
     bool CmdQuit(vector<string> args) { return true; }
@@ -102,7 +102,8 @@ namespace {
     }
 
     void Dispatch(Task t) {
-        unique_lock<mutex> lock(taskMutex);
+        unique_lock<mutex> lock(dispatchMutex);
+        if (stop) return;
 
         task = t;
 
@@ -160,10 +161,10 @@ namespace Cli {
     void Stop() {
         if (!cliThread.joinable()) return;
 
-        stop = true;
-
         {
-            unique_lock<mutex> lock(taskMutex);
+            unique_lock<mutex> lock(dispatchMutex);
+
+            stop = true;
             task = Task();
         }
 
@@ -178,7 +179,7 @@ namespace Cli {
         bool result = false;
 
         {
-            unique_lock<mutex> lock(taskMutex);
+            unique_lock<mutex> lock(dispatchMutex);
 
             if (task) result = task();
 
