@@ -142,7 +142,7 @@ int main(int argc, const char** argv) {
 
     while (mainLoop.IsRunning()) {
         mainLoop.Cycle();
-        Cli::Execute();
+        if (Cli::Execute()) break;
     };
 
     Cli::Stop();

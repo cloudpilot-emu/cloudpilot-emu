@@ -6,7 +6,7 @@ namespace Cli {
 
     void Stop();
 
-    void Execute();
+    bool Execute();
 };  // namespace Cli
 
 #endif  // _SDL_CLI_H_
