@@ -101,21 +101,34 @@ namespace {
         return 0;
     }
 
+    void Dispatch(Task t) {
+        unique_lock<mutex> lock(taskMutex);
+
+        task = t;
+
+        while (task) cvExecuteTask.wait(lock);
+    }
+
     void ThreadMain() {
         rl_event_hook = ReadlineEventHook;
         rl_completion_entry_function = RlCompletionFunction;
 
         while (!stop) {
             char* lineBuffer = readline("> ");
-            if (!lineBuffer) continue;
+
+            if (!lineBuffer) {
+                cout << endl << flush;
+
+                Dispatch(bind(CmdQuit, vector<string>()));
+
+                continue;
+            }
 
             add_history(lineBuffer);
 
             vector<string> words = Split(lineBuffer);
 
             if (!words.empty() && !stop) {
-                unique_lock<mutex> lock(taskMutex);
-
                 vector<string> args(words.begin() + 1, words.end());
                 Cmd cmd = CmdInvalidCommand;
 
@@ -125,9 +138,7 @@ namespace {
                         break;
                     }
 
-                task = bind(cmd, args);
-
-                while (task) cvExecuteTask.wait(lock);
+                Dispatch(bind(cmd, args));
             }
 
             free(lineBuffer);
