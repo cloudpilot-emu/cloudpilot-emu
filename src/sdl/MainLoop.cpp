@@ -7,12 +7,16 @@
 #include "Silkscreen.h"
 #include "common.h"
 
-constexpr int CLOCK_DIV = 4;
+constexpr int CLOCK_DIV = 3;
 constexpr uint8 SILKSCREEN_BACKGROUND_HUE = 0xbb;
 constexpr uint32 BACKGROUND_HUE = 0xdd;
 constexpr uint32 FOREGROUND_COLOR = 0x000000ff;
 constexpr uint32 BACKGROUND_COLOR =
     0xff | (BACKGROUND_HUE << 8) | (BACKGROUND_HUE << 16) | (BACKGROUND_HUE << 24);
+
+constexpr uint32 PALETTE_GRAYSCALE[] = {
+    0xd2d2d2ff, 0xc4c4c4ff, 0xb6b6b6ff, 0xa8a8a8ff, 0x9a9a9aff, 0x8c8c8cff, 0x7e7e7eff, 0x707070ff,
+    0x626262ff, 0x545454ff, 0x464646ff, 0x383838ff, 0x2a2a2aff, 0x1c1c1cff, 0x0e0e0eff, 0x000000ff};
 
 MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer) : renderer(renderer) {
     LoadSilkscreen();
@@ -76,7 +80,7 @@ void MainLoop::UpdateScreen() {
     SDL_Rect dest = {.x = 0, .y = 0, .w = SCALE * 160, .h = SCALE * 160};
 
     if (gSession->IsPowerOn() && EmHAL::CopyLCDFrame(frame)) {
-        if (frame.lineWidth != 160 || frame.lines != 160 || frame.bpp != 1) return;
+        if (frame.lineWidth != 160 || frame.lines != 160) return;
 
         uint32* pixels;
         int pitch;
@@ -84,13 +88,27 @@ void MainLoop::UpdateScreen() {
 
         SDL_LockTexture(lcdTexture, nullptr, (void**)&pixels, &pitch);
 
-        for (int x = 0; x < 160; x++)
-            for (int y = 0; y < 160; y++)
-                pixels[y * pitch / 4 + x] =
-                    ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
-                      (0x80 >> ((x + frame.margin) % 8))) == 0
-                         ? BACKGROUND_COLOR
-                         : FOREGROUND_COLOR);
+        switch (frame.bpp) {
+            case 1:
+                for (int x = 0; x < 160; x++)
+                    for (int y = 0; y < 160; y++)
+                        pixels[y * pitch / 4 + x] =
+                            ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
+                              (0x80 >> ((x + frame.margin) % 8))) == 0
+                                 ? BACKGROUND_COLOR
+                                 : FOREGROUND_COLOR);
+                break;
+
+            case 4:
+                for (int x = 0; x < 160; x++)
+                    for (int y = 0; y < 160; y++)
+                        pixels[y * pitch / 4 + x] =
+                            PALETTE_GRAYSCALE[((buffer[y * frame.bytesPerLine +
+                                                       (x + frame.margin) / 2]) >>
+                                               (x % 2 ? 0 : 4)) &
+                                              0xf];
+                break;
+        }
 
         SDL_UnlockTexture(lcdTexture);
 
