@@ -15,7 +15,8 @@
             border: 1px solid black;
         }
 
-        #rom-upload {
+        #rom-upload,
+        #file-upload {
             display: none;
         }
 
@@ -60,6 +61,10 @@
         <input type="file" id="rom-upload"></input>
         <button type="button" id="rom-upload-button">Select ROM</button>
     </label>
+    <label>
+        <input type="file" id="file-upload"></input>
+        <button type="button" id="file-upload-button">Install file</button>
+    </label>
     <canvas id="canvas" width="160" height="220"></canvas>
 
     <div id="buttons">
@@ -80,6 +85,10 @@
         (function () {
             const romUploadButton = document.getElementById('rom-upload-button');
             const romUpload = document.getElementById('rom-upload');
+
+            const fileUploadButton = document.getElementById('file-upload-button');
+            const fileUpload = document.getElementById('file-upload');
+
             const romName = document.getElementById('rom-name');
             const consoleElt = document.getElementById('console');
 
@@ -147,18 +156,22 @@
                     module.callMain(['/palm.rom']);
                 }
 
-                async function onRomFileSelect(e) {
-                    const file = e.target.files[0];
-                    if (!file) return;
+                async function processUpload(e) {
+                    return new Promise((resolve, reject) => {
+                        const file = e.target.files[0];
+                        if (!file) reject(new Error('new file selected'));
 
-                    const content = await new Promise((resolve, reject) => {
                         const reader = new FileReader();
 
-                        reader.addEventListener('load', () => resolve(new Uint8Array(reader.result)));
+                        reader.addEventListener('load', () => resolve([new Uint8Array(reader.result), file]));
                         reader.addEventListener('error', () => reject(reader.error));
 
                         reader.readAsArrayBuffer(file);
                     });
+                }
+
+                async function onRomFileSelect(e) {
+                    const [content, file] = await processUpload(e);
 
                     let str = '';
                     for (let x of content) str += String.fromCharCode(x);
@@ -173,10 +186,24 @@
                     }
                 }
 
+                async function onFileUpload(e) {
+                    const [content] = await processUpload(e);
+
+                    const bufferPtr = module._malloc(content.length);
+                    module.HEAP8.subarray(bufferPtr, bufferPtr + content.length).set(content);
+
+                    module.ccall('installFile', null, ['number', 'number'], [bufferPtr, content.length]);
+
+                    module._free(bufferPtr);
+                }
+
                 window.module = module;
 
                 romUploadButton.addEventListener('click', () => romUpload.click());
                 romUpload.addEventListener('change', onRomFileSelect);
+
+                fileUploadButton.addEventListener('click', () => fileUpload.click());
+                fileUpload.addEventListener('change', onFileUpload);
 
                 if (localStorage.getItem(KEY_ROM_NAME) && localStorage.getItem(KEY_ROM_IMAGE)) {
                     launch();

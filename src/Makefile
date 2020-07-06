@@ -41,8 +41,9 @@ LDFLAGS_EMCC_SDL = -Wno-version-check \
 	-s USE_SDL_IMAGE=2 \
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME=createModule \
+	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
 	-s EXPORTED_RUNTIME_METHODS=["FS"] \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap"]
+	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall"]
 
 LDFLAGS_EMCC_WEB = -Wno-version-check \
 	--post-js $(WEBIDL_BINDING_JS) \
