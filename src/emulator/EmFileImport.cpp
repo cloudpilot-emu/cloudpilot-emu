@@ -488,8 +488,6 @@ void EmFileImport::HomeBrewInstallStart(void) {
     // Get the file and read it into memory.
     // Set up a proxy to get to the header contents.
 
-    EmAssert(fFileBuffer == NULL);
-
     EmAliasDatabaseHdrType<LAS> hdr(fFileBuffer);
 
     // See if there's already a database with this name.

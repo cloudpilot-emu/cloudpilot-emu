@@ -15,9 +15,12 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <fstream>
 #include <cstring>
 
 #include "EmCommon.h"
+#include "EmFileImport.h"
+#include "EmErrCodes.h"
 
 namespace {
     using Task = function<bool()>;
@@ -30,6 +33,32 @@ namespace {
     mutex dispatchMutex;
     condition_variable cvExecuteTask;
 
+    void InstallFile(string path) {
+        fstream stream(path, ios_base::in);
+        if (stream.fail()) {
+            cout << "failed to open " << path << endl << flush;
+            return;
+        }
+
+        stream.seekg(0, ios_base::end);
+        long len = stream.tellg();
+
+        stream.seekg(0, ios_base::beg);
+        unique_ptr<uint8[]> buffer = make_unique<uint8[]>(len);
+
+        stream.read((char*)buffer.get(), len);
+        if (stream.gcount() != len) {
+            cout << "I/O error reading " << path << endl << flush;
+            return;
+        }
+
+        Err err = EmFileImport::LoadPalmFile(buffer.get(), len, kMethodHomebrew);
+
+        if (err != kError_NoError) {
+            cout << "import failed with code " << err << endl << flush;
+        }
+    }
+
     bool CmdQuit(vector<string> args) { return true; }
 
     bool CmdInstallFile(vector<string> args) {
@@ -38,7 +67,10 @@ namespace {
             return false;
         }
 
-        for (auto file : args) cout << "installing '" << file << "'..." << endl << flush;
+        for (auto file : args) {
+            cout << "installing '" << file << "'..." << endl << flush;
+            InstallFile(file);
+        }
 
         return false;
     }
