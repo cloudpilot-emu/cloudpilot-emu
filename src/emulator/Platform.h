@@ -13,11 +13,11 @@ namespace Platform {
 
     void* AllocateMemoryClear(size_t count);
 
-    long getMilliseconds();
+    long GetMilliseconds();
 
-    void getTime(uint32& hour, uint32& min, uint32& sec);
+    void GetTime(uint32& hour, uint32& min, uint32& sec);
 
-    void getDate(uint32& year, uint32& month, uint32& day);
+    void GetDate(uint32& year, uint32& month, uint32& day);
 }  // namespace Platform
 
 ///////////////////////////////////////////////////////////////////////////////

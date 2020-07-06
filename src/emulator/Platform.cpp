@@ -4,13 +4,13 @@
 #include <cstring>
 #include <ctime>
 
-long Platform::getMilliseconds() {
+long Platform::GetMilliseconds() {
     return chrono::duration_cast<chrono::milliseconds>(
                chrono::system_clock::now().time_since_epoch())
         .count();
 }
 
-void Platform::getTime(uint32& hour, uint32& min, uint32& sec) {
+void Platform::GetTime(uint32& hour, uint32& min, uint32& sec) {
     time_t time = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
     tm t;
@@ -21,7 +21,7 @@ void Platform::getTime(uint32& hour, uint32& min, uint32& sec) {
     sec = t.tm_sec;
 }
 
-void Platform::getDate(uint32& year, uint32& month, uint32& day) {
+void Platform::GetDate(uint32& year, uint32& month, uint32& day) {
     time_t time = chrono::system_clock::to_time_t(chrono::system_clock::now());
 
     tm t;

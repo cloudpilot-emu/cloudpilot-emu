@@ -25,7 +25,7 @@ namespace {
         // Get the current date.
 
         uint32 year, month, day;
-        Platform::getDate(year, month, day);
+        Platform::GetDate(year, month, day);
 
         // Convert it to days -- and then hourse -- since 1/1/1904
 

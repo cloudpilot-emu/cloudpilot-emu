@@ -29,7 +29,7 @@ class EventHandler {
 
    private:
     bool mouseDown{false};
-    long lastMouseMove{Platform::getMilliseconds()};
+    long lastMouseMove{Platform::GetMilliseconds()};
     int penX{0}, penY{0};
     bool quit{false};
 };

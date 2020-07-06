@@ -31,7 +31,7 @@ bool MainLoop::IsRunning() const { return !eventHandler.IsQuit(); }
 
 void MainLoop::Cycle() {
     const long hz = EmHAL::GetSystemClockFrequency();
-    const long millis = Platform::getMilliseconds();
+    const long millis = Platform::GetMilliseconds();
     if (millis - millisOffset - clockEmu > 500) clockEmu = millis - millisOffset - 10;
 
     const long cycles = (millis - millisOffset - clockEmu) * (hz / 1000 / CLOCK_DIV);

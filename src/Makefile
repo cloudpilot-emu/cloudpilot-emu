@@ -128,6 +128,7 @@ SOURCE_CPP = \
 	emulator/EmROMReader.cpp \
 	emulator/EmCommon.cpp \
 	emulator/StringData.cpp \
+	emulator/EmFileImport.cpp \
 	emulator/ROMStubs.cpp \
 	emulator/Logging.cpp \
 	emulator/stubs.cpp

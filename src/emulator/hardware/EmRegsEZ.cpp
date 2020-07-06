@@ -853,7 +853,7 @@ void EmRegsEZ::CycleSlowly(Bool sleeping) {
         long almSec = (rtcAlarm & hwrEZ328RTCAlarmSecondsMask) >> hwrEZ328RTCAlarmSecondsOffset;
         long almInSeconds = (almHour * 60 * 60) + (almMin * 60) + almSec;
 
-        long nowInSeconds = Platform::getMilliseconds() / 1000;
+        long nowInSeconds = Platform::GetMilliseconds() / 1000;
 
         if (almInSeconds <= nowInSeconds) {
             WRITE_REGISTER(rtcIntStatus, READ_REGISTER(rtcIntStatus) | hwrEZ328RTCIntStatusAlarm);
@@ -1429,7 +1429,7 @@ uint32 EmRegsEZ::rtcHourMinSecRead(emuptr address, int size) {
     // Get the desktop machine's time.
 
     uint32 hour, min, sec;
-    Platform::getTime(hour, min, sec);
+    Platform::GetTime(hour, min, sec);
 
     // Update the register.
 

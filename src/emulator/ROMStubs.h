@@ -31,4 +31,27 @@ Err EvtEnqueueKey(UInt16 ascii, UInt16 keycode, UInt16 modifiers);
 
 Err SysKernelInfo(MemPtr p);
 
+LocalID DmFindDatabase(UInt16 cardNo, const Char* nameP);
+Err DmDeleteDatabase(UInt16 cardNo, LocalID dbID);
+Err DmCreateDatabase(UInt16 cardNo, const Char* const nameP, UInt32 creator, UInt32 type,
+                     Boolean resDB);
+Err DmGetLastErr(void);
+Err DmSetDatabaseInfo(UInt16 cardNo, LocalID dbID, const Char* nameP, UInt16* attributesP,
+                      UInt16* versionP, UInt32* crDateP, UInt32* modDateP, UInt32* bckUpDateP,
+                      UInt32* modNumP, LocalID* appInfoIDP, LocalID* sortInfoIDP, UInt32* typeP,
+                      UInt32* creatorP);
+emuptr DmOpenDatabase(UInt16 cardNo, LocalID dbID, UInt16 mode);
+emuptr DmNewHandle(emuptr dbR, UInt32 size);
+Err DmWrite(emuptr recordP, UInt32 offset, const void* const srcP, UInt32 bytes);
+emuptr DmNewResource(emuptr dbR, DmResType resType, DmResID resID, UInt32 size);
+Err DmReleaseResource(emuptr resourceH);
+emuptr DmNewRecord(emuptr dbR, UInt16* atP, UInt32 size);
+Err DmSetRecordInfo(emuptr dbR, UInt16 index, UInt16* attrP, UInt32* uniqueIDP);
+Err DmReleaseRecord(emuptr dbR, UInt16 index, Boolean dirty);
+Err DmCloseDatabase(emuptr dbR);
+
+emuptr MemHandleLock(emuptr h);
+Err MemHandleUnlock(emuptr h);
+LocalID MemHandleToLocalID(emuptr h);
+
 #endif /* _ROMSTUBS_H_ */
