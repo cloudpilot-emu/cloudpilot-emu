@@ -9,14 +9,16 @@
 
 constexpr int CLOCK_DIV = 3;
 constexpr uint8 SILKSCREEN_BACKGROUND_HUE = 0xbb;
-constexpr uint32 BACKGROUND_HUE = 0xdd;
+constexpr uint32 BACKGROUND_HUE = 0xd2;
 constexpr uint32 FOREGROUND_COLOR = 0x000000ff;
 constexpr uint32 BACKGROUND_COLOR =
     0xff | (BACKGROUND_HUE << 8) | (BACKGROUND_HUE << 16) | (BACKGROUND_HUE << 24);
 
-constexpr uint32 PALETTE_GRAYSCALE[] = {
+constexpr uint32 PALETTE_GRAYSCALE_16[] = {
     0xd2d2d2ff, 0xc4c4c4ff, 0xb6b6b6ff, 0xa8a8a8ff, 0x9a9a9aff, 0x8c8c8cff, 0x7e7e7eff, 0x707070ff,
     0x626262ff, 0x545454ff, 0x464646ff, 0x383838ff, 0x2a2a2aff, 0x1c1c1cff, 0x0e0e0eff, 0x000000ff};
+
+constexpr uint32 PALETTE_GRAYSCALE_4[] = {0xd2d2d2ff, 0x8c8c8cff, 0x464646ff, 0x000000ff};
 
 MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer) : renderer(renderer) {
     LoadSilkscreen();
@@ -103,10 +105,20 @@ void MainLoop::UpdateScreen() {
                 for (int x = 0; x < 160; x++)
                     for (int y = 0; y < 160; y++)
                         pixels[y * pitch / 4 + x] =
-                            PALETTE_GRAYSCALE[((buffer[y * frame.bytesPerLine +
-                                                       (x + frame.margin) / 2]) >>
-                                               (x % 2 ? 0 : 4)) &
-                                              0xf];
+                            PALETTE_GRAYSCALE_16[((buffer[y * frame.bytesPerLine +
+                                                          (x + frame.margin) / 2]) >>
+                                                  (x % 2 ? 0 : 4)) &
+                                                 0xf];
+                break;
+
+            case 2:
+                for (int x = 0; x < 160; x++)
+                    for (int y = 0; y < 160; y++)
+                        pixels[y * pitch / 4 + x] =
+                            PALETTE_GRAYSCALE_4[((buffer[y * frame.bytesPerLine +
+                                                         (x + frame.margin) / 4]) >>
+                                                 (6 - (x % 4) * 2)) &
+                                                0x3];
                 break;
         }
 
