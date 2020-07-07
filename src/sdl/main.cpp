@@ -14,6 +14,7 @@
 
 #include "EmCommon.h"
 #include "EmDevice.h"
+#include "EmErrCodes.h"
 #include "EmFileImport.h"
 #include "EmROMReader.h"
 #include "EmSession.h"
@@ -175,7 +176,15 @@ extern "C" void EMSCRIPTEN_KEEPALIVE buttonUp(const char* id) {
     gSession->QueueButtonEvent(ButtonEvent(buttonFromId(id), ButtonEvent::Type::release));
 }
 
-extern "C" void EMSCRIPTEN_KEEPALIVE installFile(uint8* buffer, size_t len) {
-    EmFileImport::LoadPalmFile(buffer, len, kMethodHomebrew);
+extern "C" void EMSCRIPTEN_KEEPALIVE installFile(uint8* buffer, size_t len, const char* name) {
+    log::printf("installing %s...", name);
+
+    Err err = EmFileImport::LoadPalmFile(buffer, len, kMethodHomebrew);
+
+    if (err != kError_NoError) {
+        log::printf("installation failed with code x%04x", err);
+    } else {
+        log::printf("installion successful");
+    }
 }
 #endif

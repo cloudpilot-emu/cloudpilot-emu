@@ -62,7 +62,7 @@
         <button type="button" id="rom-upload-button">Select ROM</button>
     </label>
     <label>
-        <input type="file" id="file-upload"></input>
+        <input type="file" id="file-upload" multiple accept=".prc,.pdb"></input>
         <button type="button" id="file-upload-button">Install file</button>
     </label>
     <canvas id="canvas" width="160" height="220"></canvas>
@@ -156,14 +156,11 @@
                     module.callMain(['/palm.rom']);
                 }
 
-                async function processUpload(e) {
+                async function processUpload(file) {
                     return new Promise((resolve, reject) => {
-                        const file = e.target.files[0];
-                        if (!file) reject(new Error('new file selected'));
-
                         const reader = new FileReader();
 
-                        reader.addEventListener('load', () => resolve([new Uint8Array(reader.result), file]));
+                        reader.addEventListener('load', () => resolve(new Uint8Array(reader.result)));
                         reader.addEventListener('error', () => reject(reader.error));
 
                         reader.readAsArrayBuffer(file);
@@ -171,7 +168,10 @@
                 }
 
                 async function onRomFileSelect(e) {
-                    const [content, file] = await processUpload(e);
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const content = await processUpload(file);
 
                     let str = '';
                     for (let x of content) str += String.fromCharCode(x);
@@ -187,14 +187,16 @@
                 }
 
                 async function onFileUpload(e) {
-                    const [content] = await processUpload(e);
+                    for (const file of e.target.files) {
+                        const content = await processUpload(file);
 
-                    const bufferPtr = module._malloc(content.length);
-                    module.HEAP8.subarray(bufferPtr, bufferPtr + content.length).set(content);
+                        const bufferPtr = module._malloc(content.length);
+                        module.HEAP8.subarray(bufferPtr, bufferPtr + content.length).set(content);
 
-                    module.ccall('installFile', null, ['number', 'number'], [bufferPtr, content.length]);
+                        module.ccall('installFile', null, ['number', 'number', 'string'], [bufferPtr, content.length, file.name]);
 
-                    module._free(bufferPtr);
+                        module._free(bufferPtr);
+                    }
                 }
 
                 window.module = module;
