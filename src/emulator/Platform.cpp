@@ -44,3 +44,5 @@ void* Platform::AllocateMemoryClear(size_t count) {
 
     return mem;
 }
+
+uint32 Platform::Random() { return rand(); }

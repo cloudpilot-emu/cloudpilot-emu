@@ -18,6 +18,8 @@ namespace Platform {
     void GetTime(uint32& hour, uint32& min, uint32& sec);
 
     void GetDate(uint32& year, uint32& month, uint32& day);
+
+    uint32 Random();
 }  // namespace Platform
 
 ///////////////////////////////////////////////////////////////////////////////

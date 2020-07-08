@@ -110,14 +110,40 @@ void initializeSession(string file) {
     }
 }
 
+void loadMemoryImage(string file) {
+    unique_ptr<uint8[]> buffer;
+    long len;
+
+    if (!readFile(file, buffer, len)) {
+        cerr << "failed to read memory dump '" << file << "'" << endl << flush;
+        return;
+    }
+
+    if (len != gSession->GetMemorySize()) {
+        cerr << "memory image size mismatch: expected " << gSession->GetMemorySize() << " , got "
+             << len << endl
+             << flush;
+    }
+
+    memcpy(gSession->GetMemoryPtr(), buffer.get(), len);
+
+    cout << "loaded memory image from '" << file << "'" << endl << flush;
+}
+
 int main(int argc, const char** argv) {
-    if (argc != 2) {
-        cerr << "usage: cloudpalm <romimage.rom>" << endl;
+    if (argc != 2 && argc != 3) {
+        cerr << "usage: cloudpalm <romimage.rom> [memory.img]" << endl;
 
         exit(1);
     }
 
     initializeSession(argv[1]);
+
+    if (argv[2]) {
+        loadMemoryImage(argv[2]);
+    }
+
+    srand(time(nullptr));
 
 #ifdef __EMSCRIPTEN__
     EM_ASM({ module.sessionReady(); });

@@ -1,6 +1,7 @@
 #ifndef _EM_SESSION_H_
 #define _EM_SESSION_H_
 
+#include <cstddef>
 #include <memory>
 
 #include "ButtonEvent.h"
@@ -53,6 +54,11 @@ class EmSession {
     void QueueButtonEvent(ButtonEvent evt);
     bool HasButtonEvent();
     ButtonEvent NextButtonEvent();
+
+    uint32 GetMemorySize() const;
+    uint8* GetMemoryPtr() const;
+
+    uint32 GetRandomSeed() const;
 
    private:
     void Reset(EmResetType);

@@ -122,21 +122,22 @@ namespace {
 
         // Set the current date.
 
-        ::PrvSetCurrentDate();
+        PrvSetCurrentDate();
 
         PRINTF("syscall: TimInit");
     }
 
     void TailpatchUIInitialize(void) {
         ::SysSetAutoOffTime(0);
+        EmLowMem::fgLowMem.globals.sysRandomSeed = Platform::Random();
+        ::FtrSet('pose', 0, 0);
 
-#if ß  // CSTODO
+#if 0  // CSTODO
        // Can't call PrefSetPreference on 1.0 devices....
         if (EmLowMem::TrapExists(sysTrapPrefSetPreference)) {
             ::PrefSetPreference(prefAutoOffDuration, 0);
         }
 #endif
-        ::FtrSet('pose', 0, 0);
 
 #if 0  // CSTODO
         Preference<string> userName(kPrefKeyUserName);

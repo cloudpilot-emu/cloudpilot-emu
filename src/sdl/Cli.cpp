@@ -21,6 +21,7 @@
 #include "EmCommon.h"
 #include "EmFileImport.h"
 #include "EmErrCodes.h"
+#include "EmSession.h"
 
 namespace {
     using Task = function<bool()>;
@@ -59,6 +60,23 @@ namespace {
         }
     }
 
+    void DumpMemory(string file) {
+        fstream stream(file, ios_base::out);
+
+        if (stream.fail()) {
+            cout << "failed to open " << file << endl << flush;
+            return;
+        }
+
+        EmAssert(gSession);
+
+        stream.write((const char*)gSession->GetMemoryPtr(), gSession->GetMemorySize());
+
+        if (stream.fail()) {
+            cout << "I/O error writing " << file << endl << flush;
+        }
+    }
+
     bool CmdQuit(vector<string> args) { return true; }
 
     bool CmdInstallFile(vector<string> args) {
@@ -75,6 +93,30 @@ namespace {
         return false;
     }
 
+    bool CmdDumpMemory(vector<string> args) {
+        if (args.size() != 1) {
+            cout << "usage: dump-memory <file>" << endl << flush;
+            return false;
+        }
+
+        cout << "dumping memory to '" << args[0] << "'" << endl << flush;
+
+        DumpMemory(args[0]);
+
+        return false;
+    }
+
+    bool CmdRandomSeed(vector<string> args) {
+        if (args.size() > 0) {
+            cout << "usage: random-seed" << endl << flush;
+            return false;
+        }
+
+        cout << "current random seed: " << gSession->GetRandomSeed() << endl << flush;
+
+        return false;
+    }
+
     bool CmdInvalidCommand(vector<string> args) {
         cout << "invalid command" << endl << flush;
         return false;
@@ -87,7 +129,9 @@ namespace {
 
     Command commands[] = {{.name = "quit", .cmd = CmdQuit},
                           {.name = "exit", .cmd = CmdQuit},
-                          {.name = "install", .cmd = CmdInstallFile}};
+                          {.name = "install", .cmd = CmdInstallFile},
+                          {.name = "dump-memory", .cmd = CmdDumpMemory},
+                          {.name = "random-seed", .cmd = CmdRandomSeed}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);

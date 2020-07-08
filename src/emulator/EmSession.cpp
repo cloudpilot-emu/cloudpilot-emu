@@ -1,7 +1,9 @@
 #include "EmSession.h"
 
+#include "EmBankSRAM.h"
 #include "EmCPU.h"
 #include "EmHAL.h"
+#include "EmLowMem.h"
 #include "EmMemory.h"
 #include "EmPalmOS.h"
 #include "EmPatchMgr.h"
@@ -245,6 +247,7 @@ bool EmSession::HasButtonEvent() {
                ? false
                : buttonEventQueue.GetUsed() != 0;
 }
+
 ButtonEvent EmSession::NextButtonEvent() {
     lastButtonEventReadAt = systemCycles;
 
@@ -252,3 +255,9 @@ ButtonEvent EmSession::NextButtonEvent() {
                ? buttonEventQueue.Get()
                : ButtonEvent(ButtonEvent::Button::invalid, ButtonEvent::Type::press);
 }
+
+uint32 EmSession::GetMemorySize() const { return gRAMBank_Size; }
+
+uint8* EmSession::GetMemoryPtr() const { return gRAM_Memory; };
+
+uint32 EmSession::GetRandomSeed() const { return EmLowMem::fgLowMem.globals.sysRandomSeed; }
