@@ -76,6 +76,10 @@ static inline uint8* InlineGetMetaAddress(emuptr address) {
     return (uint8*)&(gRAM_MetaMemory[address]);
 }
 
+static inline void markDirty(emuptr address) {
+    gRAM_DirtyPages[address >> 13] |= (1 << ((address >> 10) & 0x07));
+}
+
 // ===========================================================================
 //		� DRAM Bank Accessors
 // ===========================================================================
@@ -264,10 +268,10 @@ void EmBankDRAM::SetLong(emuptr address, uint32 value) {
 
     EmMemDoPut32(gRAM_Memory + address, value);
 
-    // See if any interesting memory locations have changed.  If so,
-    // CheckStepSpy will report it.
+    // Debug::CheckStepSpy(address, sizeof(uint32));
 
-    Debug::CheckStepSpy(address, sizeof(uint32));
+    markDirty(address);
+    markDirty(address + 2);
 }
 
 // ---------------------------------------------------------------------------
@@ -291,10 +295,9 @@ void EmBankDRAM::SetWord(emuptr address, uint32 value) {
 
     EmMemDoPut16(gRAM_Memory + address, value);
 
-    // See if any interesting memory locations have changed.  If so,
-    // CheckStepSpy will report it.
+    // Debug::CheckStepSpy(address, sizeof(uint16));
 
-    Debug::CheckStepSpy(address, sizeof(uint16));
+    markDirty(address);
 }
 
 // ---------------------------------------------------------------------------
@@ -313,10 +316,10 @@ void EmBankDRAM::SetByte(emuptr address, uint32 value) {
     }
 
     EmMemDoPut8(gRAM_Memory + address, value);
-    // See if any interesting memory locations have changed.  If so,
-    // CheckStepSpy will report it.
 
-    Debug::CheckStepSpy(address, sizeof(uint8));
+    // Debug::CheckStepSpy(address, sizeof(uint8));
+
+    markDirty(address);
 }
 
 // ---------------------------------------------------------------------------

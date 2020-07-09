@@ -89,6 +89,7 @@
 
             const KEY_ROM_NAME = 'romName';
             const KEY_ROM_IMAGE = 'romImage';
+            const KEY_ROM_MEMORY_SIZE = "memorySize";
 
             class Kvs {
                 constructor(db) {
@@ -116,6 +117,74 @@
                 }
             }
 
+            class MemoryPersistence {
+                constructor(db, size, module) {
+                    this.db = db;
+                    this.size = size;
+                    this.module = module;
+
+                    this.dirtyPages = new Uint8Array(size >>> 13 + (size % 8192 ? 1 : 0));
+                    this.snapshotInProgress = false;
+
+                    this.dirtyPagesPtr = module.cwrap('dirtyPagesPtr', 'number', []);
+                    this.memoryPtr = module.cwrap('memoryPtr', 'number', []);
+
+                    setInterval(() => this.snapshot(), 1000);
+                }
+
+                snapshot() {
+                    if (this.snapshotInProgress) return;
+
+                    this.snapshotInProgress = true;
+
+                    let iPage = 0;
+                    const dirtyPages = this.getDirtyPages();
+                    const memory = this.getMemory();
+                    const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
+                    const objectStore = transaction.objectStore(OBJECT_STORE_MEMORY);
+
+                    for (let i = 0; i < dirtyPages.length; i++) {
+                        this.dirtyPages[i] |= dirtyPages[i];
+                        dirtyPages[i] = 0;
+
+                        if (this.dirtyPages[i] == 0) {
+                            iPage += 8;
+                            continue;
+                        }
+
+                        for (let j = 0; j < 8; j++) {
+                            if (this.dirtyPages[i] & (1 << j)) {
+                                objectStore.put(memory.slice(iPage * 1024, (iPage + 1) * 1024), iPage);
+                            }
+
+                            iPage++;
+                        }
+                    }
+
+                    transaction.oncomplete = () => {
+                        this.dirtyPages.fill(0);
+                        this.snapshotInProgress = false;
+                    }
+
+                    transaction.onerror = () => {
+                        console.error('failed to save page dump');
+                        this.snapshotInProgress = false;
+                    }
+                }
+
+                getDirtyPages() {
+                    const dirtyPagesPtr = this.dirtyPagesPtr();
+
+                    return this.module.HEAP8.subarray(dirtyPagesPtr, dirtyPagesPtr + this.dirtyPages.length);
+                }
+
+                getMemory() {
+                    const memoryPtr = this.memoryPtr();
+
+                    return this.module.HEAP8.subarray(memoryPtr, memoryPtr + this.size);
+                }
+            }
+
             const romUploadButton = document.getElementById('rom-upload-button');
             const romUpload = document.getElementById('rom-upload');
 
@@ -124,6 +193,10 @@
 
             const romName = document.getElementById('rom-name');
             const consoleElt = document.getElementById('console');
+
+            const db = await openDb();
+            const kvs = new Kvs(db);
+            let memoryPersistence;
 
             let running = false;
 
@@ -140,7 +213,7 @@
                 consoleElt.scrollTop = consoleElt.scrollHeight;
             }
 
-            function onSessionReady() {
+            async function onSessionReady() {
                 const nativeButtonDown = this.cwrap('buttonDown', null, ['string']);
                 const nativeButtonUp = this.cwrap('buttonUp', null, ['string']);
 
@@ -175,6 +248,14 @@
                     },
                     true
                 );
+
+                const memorySize = this.ccall('memorySize', 'number', [], []);
+
+                if (!memoryPersistence) {
+                    memoryPersistence = new MemoryPersistence(db, memorySize, this);
+                }
+
+                await kvs.put(KEY_ROM_MEMORY_SIZE, memorySize);
             }
 
             function openDb() {
@@ -192,9 +273,6 @@
             }
 
             async function main(module) {
-                const db = await openDb();
-                const kvs = new Kvs(db);
-
                 async function launch() {
                     romName.innerText = `ROM: ${await (kvs.get(KEY_ROM_NAME))}`;
                     running = true;

@@ -368,8 +368,8 @@ void EmBankSRAM::SetLong(emuptr address, uint32 value) {
 
     EmMemDoPut32(gRAM_Memory + phyAddress, value);
 
-    markDirty(address);
-    markDirty(address + 2);
+    markDirty(phyAddress);
+    markDirty(phyAddress + 2);
 
     // Debug::CheckStepSpy(address, sizeof(uint16));
 }
@@ -405,7 +405,7 @@ void EmBankSRAM::SetWord(emuptr address, uint32 value) {
 
     EmMemDoPut16(gRAM_Memory + phyAddress, value);
 
-    markDirty(address);
+    markDirty(phyAddress);
 
     // Debug::CheckStepSpy(address, sizeof(uint16));
 }
@@ -435,7 +435,7 @@ void EmBankSRAM::SetByte(emuptr address, uint32 value) {
 
     EmMemDoPut8(gRAM_Memory + phyAddress, value);
 
-    markDirty(address);
+    markDirty(phyAddress);
 
     // Debug::CheckStepSpy(address, sizeof(uint8));
 }

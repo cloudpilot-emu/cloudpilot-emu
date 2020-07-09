@@ -214,7 +214,7 @@ extern "C" void EMSCRIPTEN_KEEPALIVE installFile(uint8* buffer, size_t len, cons
     }
 }
 
-extern "C" long int EMSCRIPTEN_KEEPALIVE memorySize() { return (int)gSession->GetMemorySize(); }
+extern "C" int EMSCRIPTEN_KEEPALIVE memorySize() { return (int)gSession->GetMemorySize(); }
 
 extern "C" uint8* EMSCRIPTEN_KEEPALIVE memoryPtr() { return gSession->GetMemoryPtr(); }
 
