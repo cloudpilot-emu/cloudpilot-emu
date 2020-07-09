@@ -57,6 +57,7 @@ class EmSession {
 
     uint32 GetMemorySize() const;
     uint8* GetMemoryPtr() const;
+    uint8* GetDirtyPagesPtr() const;
 
     uint32 GetRandomSeed() const;
 

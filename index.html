@@ -82,7 +82,40 @@
 
     <script src="src/cloudpilot.js"></script>
     <script>
-        (function () {
+        (async function () {
+            const DB_NAME = 'cloudpilot-sdl';
+            const OBJECT_STORE_KVS = 'kvs';
+            const OBJECT_STORE_MEMORY = 'memory';
+
+            const KEY_ROM_NAME = 'romName';
+            const KEY_ROM_IMAGE = 'romImage';
+
+            class Kvs {
+                constructor(db) {
+                    this.db = db;
+                }
+
+                get(key) {
+                    const transaction = this.db.transaction(OBJECT_STORE_KVS, 'readonly');
+                    const request = transaction.objectStore(OBJECT_STORE_KVS).get(key);
+
+                    return new Promise((resolve, reject) => {
+                        request.onerror = () => reject(new Error('error reading from KVS'));
+                        request.onsuccess = () => resolve(request.result);
+                    })
+                }
+
+                put(key, value) {
+                    const transaction = this.db.transaction(OBJECT_STORE_KVS, 'readwrite');
+                    const request = transaction.objectStore(OBJECT_STORE_KVS).put(value, key);
+
+                    return new Promise((resolve, reject) => {
+                        request.onerror = () => reject(new Error('error writing to KVS'));
+                        request.onsuccess = () => resolve();
+                    });
+                }
+            }
+
             const romUploadButton = document.getElementById('rom-upload-button');
             const romUpload = document.getElementById('rom-upload');
 
@@ -91,9 +124,6 @@
 
             const romName = document.getElementById('rom-name');
             const consoleElt = document.getElementById('console');
-
-            const KEY_ROM_NAME = 'romName';
-            const KEY_ROM_IMAGE = 'romImage';
 
             let running = false;
 
@@ -147,12 +177,29 @@
                 );
             }
 
+            function openDb() {
+                return new Promise((resolve, reject) => {
+                    const request = window.indexedDB.open(DB_NAME, 1);
+
+                    request.onerror = e => reject(new Error('failed to open DB'));
+                    request.onsuccess = () => resolve(request.result);
+
+                    request.onupgradeneeded = () => {
+                        request.result.createObjectStore(OBJECT_STORE_KVS);
+                        request.result.createObjectStore(OBJECT_STORE_MEMORY);
+                    }
+                });
+            }
+
             async function main(module) {
-                function launch() {
-                    romName.innerText = `ROM: ${localStorage.getItem(KEY_ROM_NAME)}`;
+                const db = await openDb();
+                const kvs = new Kvs(db);
+
+                async function launch() {
+                    romName.innerText = `ROM: ${await (kvs.get(KEY_ROM_NAME))}`;
                     running = true;
 
-                    module.FS.writeFile('/palm.rom', Uint8Array.from(atob(localStorage.getItem(KEY_ROM_IMAGE)), c => c.charCodeAt(0)));
+                    module.FS.writeFile('/palm.rom', await kvs.get(KEY_ROM_IMAGE));
                     module.callMain(['/palm.rom']);
                 }
 
@@ -173,14 +220,11 @@
 
                     const content = await processUpload(file);
 
-                    let str = '';
-                    for (let x of content) str += String.fromCharCode(x);
-
-                    localStorage.setItem(KEY_ROM_NAME, file.name);
-                    localStorage.setItem(KEY_ROM_IMAGE, btoa(str));
+                    await kvs.put(KEY_ROM_NAME, file.name);
+                    await kvs.put(KEY_ROM_IMAGE, content);
 
                     if (!running) {
-                        launch();
+                        await launch();
                     } else {
                         window.location.reload();
                     }
@@ -207,21 +251,22 @@
                 fileUploadButton.addEventListener('click', () => fileUpload.click());
                 fileUpload.addEventListener('change', onFileUpload);
 
-                if (localStorage.getItem(KEY_ROM_NAME) && localStorage.getItem(KEY_ROM_IMAGE)) {
-                    launch();
+                if (await kvs.get(KEY_ROM_NAME) && await kvs.get(KEY_ROM_IMAGE)) {
+                    await launch();
                 } else {
                     romName.innerText = 'No ROM image selected';
                 }
             }
 
-            createModule({
+            const module = await createModule({
                 noInitialRun: true,
                 canvas: document.getElementById('canvas'),
                 print: appendLog,
                 printErr: appendLog,
                 sessionReady: onSessionReady
-            })
-                .then(main);
+            });
+
+            main(module);
         })()
     </script>
 </body>

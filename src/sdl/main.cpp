@@ -119,7 +119,7 @@ void loadMemoryImage(string file) {
         return;
     }
 
-    if (len != gSession->GetMemorySize()) {
+    if ((uint32)len != gSession->GetMemorySize()) {
         cerr << "memory image size mismatch: expected " << gSession->GetMemorySize() << " , got "
              << len << endl
              << flush;
@@ -213,4 +213,11 @@ extern "C" void EMSCRIPTEN_KEEPALIVE installFile(uint8* buffer, size_t len, cons
         log::printf("installion successful");
     }
 }
+
+extern "C" long int EMSCRIPTEN_KEEPALIVE memorySize() { return (int)gSession->GetMemorySize(); }
+
+extern "C" uint8* EMSCRIPTEN_KEEPALIVE memoryPtr() { return gSession->GetMemoryPtr(); }
+
+extern "C" uint8* EMSCRIPTEN_KEEPALIVE dirtyPagesPtr() { return gSession->GetDirtyPagesPtr(); }
+
 #endif

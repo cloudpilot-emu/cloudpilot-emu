@@ -54,6 +54,8 @@ uint32 gRAMBank_Mask;
 uint8* gRAM_Memory;
 uint8* gRAM_MetaMemory;
 
+uint8* gRAM_DirtyPages;
+
 #if defined(_DEBUG)
 
 // In debug mode, define a global variable that points to the
@@ -72,6 +74,10 @@ static inline uint8* InlineGetMetaAddress(emuptr address) {
     return (uint8*)&(gRAM_MetaMemory[address]);
 }
 */
+
+static inline void markDirty(emuptr address) {
+    gRAM_DirtyPages[address >> 13] |= (1 << ((address >> 10) & 0x07));
+}
 
 /***********************************************************************
  *
@@ -97,6 +103,8 @@ void EmBankSRAM::Initialize(RAMSizeType ramSize) {
         gRAMBank_Mask = gRAMBank_Size - 1;
         gRAM_Memory = (uint8*)Platform::AllocateMemoryClear(gRAMBank_Size);
         gRAM_MetaMemory = (uint8*)Platform::AllocateMemoryClear(gRAMBank_Size);
+        gRAM_DirtyPages = (uint8*)Platform::AllocateMemoryClear(gRAMBank_Size / 8192 +
+                                                                (gRAMBank_Size % 8192 ? 1 : 0));
 
 #if defined(_DEBUG)
         // In debug mode, define a global variable that points to the
@@ -209,6 +217,7 @@ void EmBankSRAM::Load(SessionFile& f) {
 void EmBankSRAM::Dispose(void) {
     Platform::DisposeMemory(gRAM_Memory);
     Platform::DisposeMemory(gRAM_MetaMemory);
+    Platform::DisposeMemory(gRAM_DirtyPages);
 }
 
 /***********************************************************************
@@ -359,10 +368,10 @@ void EmBankSRAM::SetLong(emuptr address, uint32 value) {
 
     EmMemDoPut32(gRAM_Memory + phyAddress, value);
 
-    // See if any interesting memory locations have changed.  If so,
-    // CheckStepSpy will report it.
+    markDirty(address);
+    markDirty(address + 2);
 
-    Debug::CheckStepSpy(address, sizeof(uint32));
+    // Debug::CheckStepSpy(address, sizeof(uint16));
 }
 
 // ---------------------------------------------------------------------------
@@ -396,10 +405,9 @@ void EmBankSRAM::SetWord(emuptr address, uint32 value) {
 
     EmMemDoPut16(gRAM_Memory + phyAddress, value);
 
-    // See if any interesting memory locations have changed.  If so,
-    // CheckStepSpy will report it.
+    markDirty(address);
 
-    Debug::CheckStepSpy(address, sizeof(uint16));
+    // Debug::CheckStepSpy(address, sizeof(uint16));
 }
 
 // ---------------------------------------------------------------------------
@@ -427,10 +435,9 @@ void EmBankSRAM::SetByte(emuptr address, uint32 value) {
 
     EmMemDoPut8(gRAM_Memory + phyAddress, value);
 
-    // See if any interesting memory locations have changed.  If so,
-    // CheckStepSpy will report it.
+    markDirty(address);
 
-    Debug::CheckStepSpy(address, sizeof(uint8));
+    // Debug::CheckStepSpy(address, sizeof(uint8));
 }
 
 // ---------------------------------------------------------------------------

@@ -261,3 +261,5 @@ uint32 EmSession::GetMemorySize() const { return gRAMBank_Size; }
 uint8* EmSession::GetMemoryPtr() const { return gRAM_Memory; };
 
 uint32 EmSession::GetRandomSeed() const { return EmLowMem::fgLowMem.globals.sysRandomSeed; }
+
+uint8* EmSession::GetDirtyPagesPtr() const { return gRAM_DirtyPages; }
