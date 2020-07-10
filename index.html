@@ -62,7 +62,7 @@
         <button type="button" id="rom-upload-button">Select ROM</button>
     </label>
     <label>
-        <input type="file" id="file-upload" multiple accept=".prc,.pdb"></input>
+        <input type="file" id="file-upload" multiple></input>
         <button type="button" id="file-upload-button">Install file</button>
     </label>
     <canvas id="canvas" width="160" height="220"></canvas>
@@ -115,6 +115,16 @@
                         request.onsuccess = () => resolve();
                     });
                 }
+
+                delete(key) {
+                    const transaction = this.db.transaction(OBJECT_STORE_KVS, 'readwrite');
+                    const request = transaction.objectStore(OBJECT_STORE_KVS).delete(key);
+
+                    return new Promise((resolve, reject) => {
+                        request.onerror = () => reject(new Error('error deleting from KVS'));
+                        request.onsuccess = () => resolve();
+                    });
+                }
             }
 
             class MemoryPersistence {
@@ -123,25 +133,35 @@
                     this.size = size;
                     this.module = module;
 
-                    this.dirtyPages = new Uint8Array(size >>> 13 + (size % 8192 ? 1 : 0));
-                    this.snapshotInProgress = false;
+                    const pageCount = (size >>> 10) + (size % 1024 ? 1 : 0);
+                    this.dirtyPages = new Uint8Array((pageCount >> 3) + (pageCount % 8 ? 1 : 0));
+
+                    this.pages = new Array(pageCount);
+                    for (let i = 0; i < pageCount; i++) this.pages[i] = new Int8Array(1024);
+
+                    this.transaction = null;
 
                     this.dirtyPagesPtr = module.cwrap('dirtyPagesPtr', 'number', []);
                     this.memoryPtr = module.cwrap('memoryPtr', 'number', []);
 
-                    setInterval(() => this.snapshot(), 1000);
+                    this.intervalHandle = null;
+                }
+
+                start() {
+                    if (this.intervalHandle !== null) return;
+
+                    this.intervalHandle = setInterval(() => this.snapshot(), 1000);
                 }
 
                 snapshot() {
-                    if (this.snapshotInProgress) return;
-
-                    this.snapshotInProgress = true;
+                    if (this.transaction) return;
 
                     let iPage = 0;
                     const dirtyPages = this.getDirtyPages();
                     const memory = this.getMemory();
-                    const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
-                    const objectStore = transaction.objectStore(OBJECT_STORE_MEMORY);
+
+                    this.transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
+                    const objectStore = this.transaction.objectStore(OBJECT_STORE_MEMORY);
 
                     for (let i = 0; i < dirtyPages.length; i++) {
                         this.dirtyPages[i] |= dirtyPages[i];
@@ -154,22 +174,76 @@
 
                         for (let j = 0; j < 8; j++) {
                             if (this.dirtyPages[i] & (1 << j)) {
-                                objectStore.put(memory.slice(iPage * 1024, (iPage + 1) * 1024), iPage);
+                                this.pages[iPage].set(memory.subarray(iPage * 1024, (iPage + 1) * 1024));
+
+                                objectStore.put(this.pages[iPage], iPage);
                             }
 
                             iPage++;
                         }
                     }
 
-                    transaction.oncomplete = () => {
+                    this.transaction.oncomplete = () => {
                         this.dirtyPages.fill(0);
-                        this.snapshotInProgress = false;
+                        this.transaction = null;
                     }
 
-                    transaction.onerror = () => {
+                    this.transaction.onerror = () => {
                         console.error('failed to save page dump');
-                        this.snapshotInProgress = false;
+                        this.transaction = null;
                     }
+                }
+
+                stop() {
+                    if (this.transaction) {
+                        this.transaction.abort();
+                        this.transaction = null;
+                    }
+
+                    if (this.intervalHandle !== null) {
+                        clearInterval(this.intervalHandle);
+                        this.intervalHandle = null
+                    }
+                }
+
+                loadMemoryImage() {
+                    return new Promise((resolve, reject) => {
+                        const image = new Int8Array(this.size);
+
+                        const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readonly');
+                        const request = transaction.objectStore(OBJECT_STORE_MEMORY).openCursor();
+
+                        request.onsuccess = () => {
+                            const cursor = request.result;
+
+                            if (!cursor) return resolve(image);
+
+                            const page = request.result.value;
+                            const iPage = request.result.key;
+
+                            if (iPage * 1024 < this.size) {
+                                image.subarray(iPage * 1024, Math.min((iPage + 1) * 1024, this.size)).set(page);
+                            }
+
+                            cursor.continue();
+                        }
+
+                        request.onerror = () => reject(new Error("failed to load memory image"));
+                    })
+                }
+
+                reset() {
+                    if (this.intervalHandle) {
+                        throw new Error("reset called on running MemoryPersistence instance");
+                    }
+
+                    const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
+                    transaction.objectStore(OBJECT_STORE_MEMORY).clear();
+
+                    return new Promise((resolve, reject) => {
+                        transaction.oncomplete = () => resolve();
+                        transaction.onerror = () => reject(new Error('failed to clear stored memory'));
+                    })
                 }
 
                 getDirtyPages() {
@@ -197,8 +271,6 @@
             const db = await openDb();
             const kvs = new Kvs(db);
             let memoryPersistence;
-
-            let running = false;
 
             function escape(text) {
                 const node = document.createElement('div');
@@ -254,6 +326,7 @@
                 if (!memoryPersistence) {
                     memoryPersistence = new MemoryPersistence(db, memorySize, this);
                 }
+                memoryPersistence.start();
 
                 await kvs.put(KEY_ROM_MEMORY_SIZE, memorySize);
             }
@@ -275,10 +348,17 @@
             async function main(module) {
                 async function launch() {
                     romName.innerText = `ROM: ${await (kvs.get(KEY_ROM_NAME))}`;
-                    running = true;
 
                     module.FS.writeFile('/palm.rom', await kvs.get(KEY_ROM_IMAGE));
-                    module.callMain(['/palm.rom']);
+                    const args = ['/palm.rom'];
+
+                    if (memoryPersistence) {
+                        const memoryImage = await memoryPersistence.loadMemoryImage()
+                        module.FS.writeFile('/memory.bin', memoryImage);
+                        args.push('/memory.bin');
+                    }
+
+                    module.callMain(args);
                 }
 
                 async function processUpload(file) {
@@ -300,16 +380,20 @@
 
                     await kvs.put(KEY_ROM_NAME, file.name);
                     await kvs.put(KEY_ROM_IMAGE, content);
+                    await kvs.delete(KEY_ROM_MEMORY_SIZE);
 
-                    if (!running) {
-                        await launch();
-                    } else {
-                        window.location.reload();
+                    if (memoryPersistence) {
+                        memoryPersistence.stop();
+                        await memoryPersistence.reset();
                     }
+
+                    window.location.reload();
                 }
 
                 async function onFileUpload(e) {
                     for (const file of e.target.files) {
+                        if (!file.name.match(/\.(prc|pdb)$/i)) continue;
+
                         const content = await processUpload(file);
 
                         const bufferPtr = module._malloc(content.length);
@@ -322,6 +406,11 @@
                 }
 
                 window.module = module;
+
+                const memorySize = await (kvs.get(KEY_ROM_MEMORY_SIZE));
+                if (memorySize) {
+                    memoryPersistence = new MemoryPersistence(db, memorySize, module);
+                }
 
                 romUploadButton.addEventListener('click', () => romUpload.click());
                 romUpload.addEventListener('change', onRomFileSelect);
