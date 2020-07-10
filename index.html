@@ -218,8 +218,8 @@
 
                             if (!cursor) return resolve(image);
 
-                            const page = request.result.value;
-                            const iPage = request.result.key;
+                            const page = cursor.value;
+                            const iPage = cursor.key;
 
                             if (iPage * 1024 < this.size) {
                                 image.subarray(iPage * 1024, Math.min((iPage + 1) * 1024, this.size)).set(page);
