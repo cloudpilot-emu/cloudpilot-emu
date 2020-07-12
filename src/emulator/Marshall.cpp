@@ -128,3 +128,91 @@ void Marshal::PutSysKernelInfoType(emuptr p, const SysKernelInfoType& src) {
         }
     }
 }
+
+#if 0
+void Marshal::GetDlkServerSessionType(emuptr p, DlkServerSessionType& dest) {
+    memset(&dest, 0, sizeof(DlkServerSessionType));
+
+    if (p) {
+        EmAliasDlkServerSessionType<PAS> src(p);
+
+        dest.htalLibRefNum = src.htalLibRefNum;
+        dest.maxHtalXferSize = src.maxHtalXferSize;
+        dest.eventProcP = (DlkEventProcPtr)(emuptr)src.eventProcP;
+        dest.eventRef = src.eventRef;
+        dest.canProcP = (DlkUserCanProcPtr)(emuptr)src.canProcP;
+        dest.canRef = src.canRef;
+        dest.condFilterH = (MemHandle)(emuptr)src.condFilterH;
+        dest.dlkDBID = src.dlkDBID;
+        dest.reserved1 = src.reserved1;
+        dest.dbR = (DmOpenRef)(emuptr)src.dbR;
+        dest.cardNo = src.cardNo;
+        dest.dbCreator = src.dbCreator;
+        //	dest.dbName				= src.dbName;
+        dest.dbOpenMode = src.dbOpenMode;
+        dest.created = src.created;
+        dest.isResDB = src.isResDB;
+        dest.ramBased = src.ramBased;
+        dest.readOnly = src.readOnly;
+        dest.dbLocalID = src.dbLocalID;
+        dest.initialModNum = src.initialModNum;
+        dest.curRecIndex = src.curRecIndex;
+        //	dest.creatorList		= src.creatorList;
+        dest.syncState = src.syncState;
+        dest.complete = src.complete;
+        dest.conduitOpened = src.conduitOpened;
+        dest.logCleared = src.logCleared;
+        dest.resetPending = src.resetPending;
+        dest.gotCommand = src.gotCommand;
+        dest.cmdTID = src.cmdTID;
+        dest.reserved2 = src.reserved2;
+        dest.cmdLen = src.cmdLen;
+        dest.cmdP = (void*)(emuptr)src.cmdP;
+        dest.cmdH = (MemHandle)(emuptr)src.cmdH;
+        dest.wStateFlags = src.wStateFlags;
+        //	dest.dbSearchState		= src.dbSearchState;
+    }
+}
+#endif
+
+void Marshal::PutDlkServerSessionType(emuptr p, const DlkServerSessionType& src) {
+    if (p) {
+        EmAliasDlkServerSessionType<PAS> dest(p);
+
+        dest.htalLibRefNum = src.htalLibRefNum;
+        dest.maxHtalXferSize = src.maxHtalXferSize;
+        dest.eventProcP = (emuptr)(long)src.eventProcP;
+        dest.eventRef = src.eventRef;
+        dest.canProcP = (emuptr)(long)src.canProcP;
+        dest.canRef = src.canRef;
+        dest.condFilterH = (emuptr)(long)src.condFilterH;
+        dest.dlkDBID = src.dlkDBID;
+        dest.reserved1 = src.reserved1;
+        dest.dbR = (emuptr)(long)src.dbR;
+        dest.cardNo = src.cardNo;
+        dest.dbCreator = src.dbCreator;
+        //	dest.dbName				= src.dbName;
+        dest.dbOpenMode = src.dbOpenMode;
+        dest.created = src.created;
+        dest.isResDB = src.isResDB;
+        dest.ramBased = src.ramBased;
+        dest.readOnly = src.readOnly;
+        dest.dbLocalID = src.dbLocalID;
+        dest.initialModNum = src.initialModNum;
+        dest.curRecIndex = src.curRecIndex;
+        //	dest.creatorList		= src.creatorList;
+        dest.syncState = src.syncState;
+        dest.complete = src.complete;
+        dest.conduitOpened = src.conduitOpened;
+        dest.logCleared = src.logCleared;
+        dest.resetPending = src.resetPending;
+        dest.gotCommand = src.gotCommand;
+        dest.cmdTID = src.cmdTID;
+        dest.reserved2 = src.reserved2;
+        dest.cmdLen = src.cmdLen;
+        dest.cmdP = (emuptr)(long)src.cmdP;
+        dest.cmdH = (emuptr)(long)src.cmdH;
+        dest.wStateFlags = src.wStateFlags;
+        //	dest.dbSearchState		= src.dbSearchState;
+    }
+}

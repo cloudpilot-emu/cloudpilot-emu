@@ -19,6 +19,7 @@
 #include "EmLowMem.h"  // EmLowMem::GetEvtMgrIdle, EmLowMem::TrapExists, EmLowMem_SetGlobal, EmLowMem_GetGlobal
 #include "EmPalmFunction.h"  // IsSystemTrap
 #include "EmPatchModule.h"
+#include "EmPatchModuleHtal.h"
 #include "EmPatchModuleSys.h"
 #include "EmSession.h"  // GetDevice
 #include "KeyboardEvent.h"
@@ -60,6 +61,7 @@ void PrvSetCurrentDate(void);
 #endif
 
 EmPatchModule* EmPatchMgr::patchModuleSys = nullptr;
+EmPatchModule* EmPatchMgr::patchModuleHtal = nullptr;
 
 /***********************************************************************
  *
@@ -81,6 +83,10 @@ void EmPatchMgr::Initialize(void) {
 
     if (!patchModuleSys) {
         patchModuleSys = new EmPatchModuleSys();
+    }
+
+    if (!patchModuleHtal) {
+        patchModuleHtal = new EmPatchModuleHtal();
     }
 
 #if 0  // CSTODO
@@ -249,6 +255,11 @@ void EmPatchMgr::Dispose(void) {
     if (patchModuleSys) {
         delete patchModuleSys;
         patchModuleSys = nullptr;
+    }
+
+    if (patchModuleHtal) {
+        delete patchModuleHtal;
+        patchModuleHtal = nullptr;
     }
 }
 
@@ -445,19 +456,11 @@ void EmPatchMgr::GetPatches(const SystemCallContext& context, HeadpatchProc& hp,
 
     if (::IsSystemTrap(context.fTrapWord)) {
         patchModule = patchModuleSys;
-    }
-#if 0  // CSTODO
-    else if (context.fExtra == kMagicRefNum)  // See comments in HtalLibSendReply.
+    } else if (context.fExtra ==
+               EmPatchModuleHtal::kMagicRefNum)  // See comments in HtalLibSendReply.
     {
-        static IEmPatchModule* htalPatchModuleIP = NULL;
-
-        if (htalPatchModuleIP == NULL && gPatchMapIP != NULL) {
-            gPatchMapIP->GetModuleByName(string("~Htal"), htalPatchModuleIP);
-        }
-
-        patchModuleIP = htalPatchModuleIP;
+        patchModule = patchModuleHtal;
     }
-#endif
 
     // Otherwise, see if this is a call to a patched library
     else {

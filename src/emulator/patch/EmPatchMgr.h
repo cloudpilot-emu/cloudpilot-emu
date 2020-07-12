@@ -57,6 +57,7 @@ class EmPatchMgr {
     static TailpatchProc RecoverFromTailpatch(emuptr oldpc);
 
     static EmPatchModule* patchModuleSys;
+    static EmPatchModule* patchModuleHtal;
 
    private:
 };

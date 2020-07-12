@@ -54,4 +54,6 @@ emuptr MemHandleLock(emuptr h);
 Err MemHandleUnlock(emuptr h);
 LocalID MemHandleToLocalID(emuptr h);
 
+Err DlkDispatchRequest(DlkServerSessionPtr sessP);
+
 #endif /* _ROMSTUBS_H_ */

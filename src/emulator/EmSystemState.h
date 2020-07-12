@@ -20,9 +20,13 @@ class EmSystemState {
     void SetUIInitialized();
     bool IsUIInitialized() const;
 
+    void SetHotsyncUserName(string hotsyncUserName);
+    string GetHotsyncUserName() const;
+
    private:
     uint32 osVersion{kOSUndeterminedVersion};
     bool uiInitialized{false};
+    string hotsyncUserName;
 };
 
 extern EmSystemState gSystemState;

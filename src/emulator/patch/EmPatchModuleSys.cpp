@@ -139,10 +139,7 @@ namespace {
         }
 #endif
 
-#if 0  // CSTODO
-        Preference<string> userName(kPrefKeyUserName);
-        ::SetHotSyncUserName(userName->c_str());
-#endif
+        SetHotSyncUserName(gSystemState.GetHotsyncUserName().c_str());
 
         gSystemState.SetUIInitialized();
 

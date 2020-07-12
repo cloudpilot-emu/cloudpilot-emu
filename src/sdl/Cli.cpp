@@ -117,6 +117,24 @@ namespace {
         return false;
     }
 
+    bool CmdSetUserName(vector<string> args) {
+        if (args.size() == 0) {
+            cout << "usage: set-user-name <hotsync user name>";
+            return false;
+        }
+
+        string username;
+
+        for (size_t i = 0; i < args.size(); i++) {
+            username += args[i];
+            if (i < args.size() - 1) username += " ";
+        }
+
+        gSession->SetHotsyncUserName(username);
+
+        return false;
+    }
+
     bool CmdInvalidCommand(vector<string> args) {
         cout << "invalid command" << endl << flush;
         return false;
@@ -131,7 +149,8 @@ namespace {
                           {.name = "exit", .cmd = CmdQuit},
                           {.name = "install", .cmd = CmdInstallFile},
                           {.name = "dump-memory", .cmd = CmdDumpMemory},
-                          {.name = "random-seed", .cmd = CmdRandomSeed}};
+                          {.name = "random-seed", .cmd = CmdRandomSeed},
+                          {.name = "set-user-name", .cmd = CmdSetUserName}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);

@@ -31,3 +31,8 @@ uint32 EmSystemState::OSMinorVersion(void) const {
 void EmSystemState::SetUIInitialized() { uiInitialized = true; }
 
 bool EmSystemState::IsUIInitialized() const { return uiInitialized; }
+
+void EmSystemState::SetHotsyncUserName(string hotsyncUserName) {
+    this->hotsyncUserName = hotsyncUserName;
+}
+string EmSystemState::GetHotsyncUserName() const { return hotsyncUserName; };

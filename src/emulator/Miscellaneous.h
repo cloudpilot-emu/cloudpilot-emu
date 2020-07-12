@@ -16,6 +16,8 @@ string GetLibraryName(uint16 refNum);
 
 uint32 DateToDays(uint32 year, uint32 month, uint32 day);
 
+void SetHotSyncUserName(const char*);
+
 class StMemoryMapper {
    public:
     StMemoryMapper(const void* memory, long size);

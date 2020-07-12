@@ -110,6 +110,7 @@ SOURCE_CPP = \
 	emulator/hardware/EmUAEGlue.cpp \
 	emulator/patch/EmPatchModule.cpp \
 	emulator/patch/EmPatchModuleSys.cpp \
+	emulator/patch/EmPatchModuleHtal.cpp \
 	emulator/patch/EmPatchMgr.cpp \
 	emulator/EmSystemState.cpp \
 	emulator/Miscellaneous.cpp \

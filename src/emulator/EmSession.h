@@ -61,6 +61,8 @@ class EmSession {
 
     uint32 GetRandomSeed() const;
 
+    void SetHotsyncUserName(string hotsyncUserName) const;
+
    private:
     void Reset(EmResetType);
 

@@ -458,3 +458,19 @@ Err DmCloseDatabase(emuptr dbR) {
     // Return the result.
     RETURN_RESULT_VAL(Err);
 }
+
+Err DlkDispatchRequest(DlkServerSessionPtr sessP) {
+    // Prepare the stack.
+    CALLER_SETUP("Err", "DlkServerSessionType* sessP");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_REF(DlkServerSessionType, sessP, Marshal::kInput);
+
+    // Call the function.
+    sub.Call(sysTrapDlkDispatchRequest);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_VAL(Err);
+}

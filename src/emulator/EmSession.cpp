@@ -263,3 +263,11 @@ uint8* EmSession::GetMemoryPtr() const { return gRAM_Memory; };
 uint32 EmSession::GetRandomSeed() const { return EmLowMem::fgLowMem.globals.sysRandomSeed; }
 
 uint8* EmSession::GetDirtyPagesPtr() const { return gRAM_DirtyPages; }
+
+void EmSession::SetHotsyncUserName(string hotsyncUserName) const {
+    gSystemState.SetHotsyncUserName(hotsyncUserName);
+
+    if (gSystemState.IsUIInitialized()) {
+        SetHotSyncUserName(hotsyncUserName.c_str());
+    }
+}

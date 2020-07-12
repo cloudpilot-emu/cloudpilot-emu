@@ -1,10 +1,14 @@
 #include "Miscellaneous.h"
 
+#include "Byteswapping.h"
+#include "EmBankMapped.h"
 #include "EmLowMem.h"
 #include "EmMemory.h"
 #include "EmPalmFunction.h"
 #include "EmPalmStructs.h"
+#include "EmPatchModuleHtal.h"
 #include "Logging.h"
+#include "ROMStubs.h"
 #include "UAE.h"
 
 #define LOGGING 1
@@ -301,4 +305,96 @@ uint32 DateToDays(uint32 year, uint32 month, uint32 day) {
     if ((month >= 2) && ((year & 3) == 0)) days++;
 
     return days;
+}
+
+void SetHotSyncUserName(const char* userNameP) {
+    if (EmLowMem::GetTrapAddress(sysTrapDlkDispatchRequest) == EmMemNULL) return;
+
+    if (!userNameP) return;
+
+    size_t userNameLen = strlen(userNameP) + 1;
+
+    // If the name is too long, just return.  This should really only
+    // happen if the user hand-edits the preference file to contain
+    // a name that's too long.  The Preferences dialog box handler
+    // checks as well, so the name shouldn't get too long from that path.
+
+    if (userNameLen > dlkMaxUserNameLength + 1) return;
+
+    // We need to prepare a command block for the DataLink Manager.
+    // Define one large enough to hold all the data we'll pass in.
+    //
+    // The format of the data block is as follows:
+    //
+    //		[byte] DlpReqHeaderType.id			: Command request number (==
+    // dlpWriteUserInfo) 		[byte] DlpReqHeaderType.argc		: # of arguments for
+    // this command
+    //(== 1)
+    //
+    //		[byte] DlpTinyArgWrapperType.bID	: ID of first argument (==
+    // dlpWriteUserInfoReqArgID) 		[byte] DlpTinyArgWrapperType.bSize	: Size in
+    // bytes of first argument (== whatever)
+    //
+    //		[long] DlpWriteUserInfoReqHdrType.userID		: Not used here - set to
+    // zero 		[long] DlpWriteUserInfoReqHdrType.viewerID		: Not used here -
+    // set to zero [long] DlpWriteUserInfoReqHdrType.lastSyncPC	: Not used here - set to zero [8byt]
+    // DlpWriteUserInfoReqHdrType.lastSyncDate	: Not used here - set to zero 		[long]
+    // DlpWriteUserInfoReqHdrType.modFlags		: Bits saying what values are being set
+    //		[byte] DlpWriteUserInfoReqHdrType.userNameLen	: Length of user name + NULL
+    //
+    //		[str ] userName
+
+    char buffer[sizeof(DlpReqHeaderType) + sizeof(DlpTinyArgWrapperType) +
+                sizeof(DlpWriteUserInfoReqHdrType) + dlpMaxUserNameSize];
+
+    // Get handy pointers to all of the above.
+    DlpReqHeaderType* reqHdr = (DlpReqHeaderType*)buffer;
+    DlpTinyArgWrapperType* reqWrapper =
+        (DlpTinyArgWrapperType*)(((char*)reqHdr) + sizeof(DlpReqHeaderType));
+    DlpWriteUserInfoReqHdrType* reqArgHdr =
+        (DlpWriteUserInfoReqHdrType*)(((char*)reqWrapper) + sizeof(DlpTinyArgWrapperType));
+    char* reqName = ((char*)reqArgHdr) + sizeof(DlpWriteUserInfoReqHdrType);
+
+    // Fill in request header
+    reqHdr->id = dlpWriteUserInfo;
+    reqHdr->argc = 1;
+
+    // Fill in the request arg wrapper
+    reqWrapper->bID = (UInt8)dlpWriteUserInfoReqArgID;
+    reqWrapper->bSize = (UInt8)(sizeof(*reqArgHdr) + userNameLen);
+
+    // Fill in request arg header
+    reqArgHdr->modFlags = dlpUserInfoModName;
+    reqArgHdr->userNameLen = userNameLen;
+
+    // Copy in the user name.
+    strcpy(reqName, userNameP);
+
+    // Build up a session block to hold the command block.
+    DlkServerSessionType session;
+    memset(&session, 0, sizeof(session));
+    session.htalLibRefNum = EmPatchModuleHtal::kMagicRefNum;  // See comments in HtalLibSendReply.
+    session.gotCommand = true;
+    session.cmdLen = sizeof(buffer);
+    session.cmdP = buffer;
+
+    // For simplicity, byteswap here so that we don't have to reparse all
+    // that above data in DlkDispatchRequest.
+
+    Canonical(reqHdr->id);
+    Canonical(reqHdr->argc);
+
+    Canonical(reqWrapper->bID);
+    Canonical(reqWrapper->bSize);
+
+    Canonical(reqArgHdr->modFlags);
+    Canonical(reqArgHdr->userNameLen);
+
+    // Patch up cmdP and map in the buffer it points to.
+
+    StMemoryMapper mapper(session.cmdP, session.cmdLen);
+    session.cmdP = (void*)(long)EmBankMapped::GetEmulatedAddress(session.cmdP);
+
+    // Finally, install the name.
+    DlkDispatchRequest(&session);
 }
