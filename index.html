@@ -425,7 +425,7 @@
 
                 async function onRomFileSelect(e) {
                     const file = e.target.files[0];
-                    if (!file) return;
+                    if (!file || !file.name.match(/\.rom$/i)) return;
 
                     const content = await processUpload(file);
 
