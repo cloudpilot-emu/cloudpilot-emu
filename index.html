@@ -52,6 +52,9 @@
             display: inline-block;
             touch-action: manipulation;
             background: #bbb;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: nones;
         }
 
         .palm-button:hover,
@@ -306,15 +309,31 @@
                 const nativeButtonUp = this.cwrap('buttonUp', null, ['string']);
                 const nativeSetUserName = this.cwrap('setUserName', null, ['string']);
 
-                let currentButton = null;
+                let currentButtons = new Set();
 
-                Array.from(document.querySelectorAll('.palm-button')).forEach(btn => btn.addEventListener('mousedown', evt => {
-                    currentButton = evt.target;
+                Array.from(document.querySelectorAll('.palm-button'))
+                    .forEach(btn =>
+                        ['mousedown', 'touchstart'].forEach(
+                            event => btn.addEventListener(event, evt => {
+                                currentButtons.add(evt.target);
 
-                    nativeButtonDown(currentButton.dataset.id);
+                                nativeButtonDown(evt.target.dataset.id);
 
-                    evt.preventDefault();
-                }));
+                                evt.preventDefault();
+                            })));
+
+
+                ['mouseup', 'touchend'].forEach(
+                    event => window.addEventListener(event, evt => {
+                        if (currentButtons.size > 0) {
+                            currentButtons.forEach(btn => nativeButtonUp(btn.dataset.id));
+
+                            currentButtons.clear();
+
+                            evt.preventDefault();
+                        }
+                    }));
+
 
                 usernameInput.addEventListener('change', e => {
                     if (setUsernameTimeoutHandle !== null) clearTimeout(setUsernameTimeoutHandle);
@@ -326,16 +345,6 @@
                         nativeSetUserName(e.target.value);
                     })
                 })
-
-                window.addEventListener('mouseup', evt => {
-                    if (currentButton) {
-                        nativeButtonUp(currentButton.dataset.id);
-
-                        currentButton = null;
-
-                        evt.preventDefault();
-                    }
-                });
 
                 // Work around missing SDL_TEXTINPUT for option-X key combos on MacOS
                 window.addEventListener(

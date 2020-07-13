@@ -7,7 +7,7 @@
 #include "Silkscreen.h"
 #include "common.h"
 
-constexpr int CLOCK_DIV = 2;
+constexpr int CLOCK_DIV = 3;
 constexpr uint8 SILKSCREEN_BACKGROUND_HUE = 0xbb;
 constexpr uint32 BACKGROUND_HUE = 0xd2;
 constexpr uint32 FOREGROUND_COLOR = 0x000000ff;
