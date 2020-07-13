@@ -63,6 +63,9 @@ class EmSession {
 
     void SetHotsyncUserName(string hotsyncUserName) const;
 
+    void SetClockDiv(uint32 clockDiv);
+    uint32 GetClocksPerSecond() const;
+
    private:
     void Reset(EmResetType);
 
@@ -98,6 +101,7 @@ class EmSession {
 
     uint32 additionalCycles{0};
     uint64 systemCycles{0};
+    uint32 clockDiv{1};
 };
 
 extern EmSession* gSession;

@@ -37,7 +37,6 @@
 // and avoid using the high bit just for safety.
 
 #define SPCFLAG_END_OF_CYCLE (0x40000000)
-#define SLEEP_TICK_CYCLES 28000
 
 // Data needed by UAE.
 
@@ -460,7 +459,7 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
             }
         }
 
-        fCurrentCycles += SLEEP_TICK_CYCLES;
+        fCurrentCycles += session->GetClocksPerSecond() / 100;
 
         if (this->CheckForBreak() || gSession->IsExecutingSync() ||
             (maxCycles && fCurrentCycles >= maxCycles)) {

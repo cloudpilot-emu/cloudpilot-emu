@@ -7,7 +7,7 @@
 #include "Silkscreen.h"
 #include "common.h"
 
-constexpr int CLOCK_DIV = 3;
+constexpr int CLOCK_DIV = 2;
 constexpr uint8 SILKSCREEN_BACKGROUND_HUE = 0xbb;
 constexpr uint32 BACKGROUND_HUE = 0xd2;
 constexpr uint32 FOREGROUND_COLOR = 0x000000ff;
@@ -31,22 +31,25 @@ MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer) : renderer(render
 
     lcdTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
                                    160, 160);
+
+    gSession->SetClockDiv(CLOCK_DIV);
 }
 
 bool MainLoop::IsRunning() const { return !eventHandler.IsQuit(); }
 
 void MainLoop::Cycle() {
-    const long hz = EmHAL::GetSystemClockFrequency();
     const long millis = Platform::GetMilliseconds();
+    const uint32 clocksPerSecond = gSession->GetClocksPerSecond();
+
     if (millis - millisOffset - clockEmu > 500) clockEmu = millis - millisOffset - 10;
 
-    const long cycles = (millis - millisOffset - clockEmu) * (hz / 1000 / CLOCK_DIV);
+    const long cycles = (millis - millisOffset - clockEmu) * clocksPerSecond / 1000;
 
     if (cycles > 0) {
         long cyclesPassed = 0;
 
         while (cyclesPassed < cycles) cyclesPassed += gSession->RunEmulation(cycles);
-        clockEmu += cyclesPassed / (hz / 1000 / CLOCK_DIV);
+        clockEmu += cyclesPassed / (clocksPerSecond / 1000);
     }
 
     UpdateScreen();

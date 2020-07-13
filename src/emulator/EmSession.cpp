@@ -271,3 +271,7 @@ void EmSession::SetHotsyncUserName(string hotsyncUserName) const {
         SetHotSyncUserName(hotsyncUserName.c_str());
     }
 }
+
+void EmSession::SetClockDiv(uint32 clockDiv) { this->clockDiv = clockDiv; }
+
+uint32 EmSession::GetClocksPerSecond() const { return EmHAL::GetSystemClockFrequency() / clockDiv; }
