@@ -147,6 +147,8 @@ int main(int argc, const char** argv) {
 
 #ifdef __EMSCRIPTEN__
     EM_ASM({ module.sessionReady(); });
+
+    SDL_setenv("SDL_EMSCRIPTEN_KEYBOARD_ELEMENT", "canvas", 1);
 #endif
 
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
@@ -219,5 +221,9 @@ extern "C" int EMSCRIPTEN_KEEPALIVE memorySize() { return (int)gSession->GetMemo
 extern "C" uint8* EMSCRIPTEN_KEEPALIVE memoryPtr() { return gSession->GetMemoryPtr(); }
 
 extern "C" uint8* EMSCRIPTEN_KEEPALIVE dirtyPagesPtr() { return gSession->GetDirtyPagesPtr(); }
+
+extern "C" void EMSCRIPTEN_KEEPALIVE setUserName(const char* username) {
+    gSession->SetHotsyncUserName(username);
+}
 
 #endif

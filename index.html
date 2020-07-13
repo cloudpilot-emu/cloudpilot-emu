@@ -1,6 +1,8 @@
 <html>
 
 <head>
+    <meta name="viewport" content="width=520,user-scalable=no" />
+
     <title>Cloudpilot</title>
     <style>
         #rom-name {
@@ -12,6 +14,11 @@
             height: 660px;
             display: block;
             margin-top: 1rem;
+            border: 1px solid black;
+        }
+
+        #canvas:focus {
+            outline: none;
             border: 1px solid black;
         }
 
@@ -65,7 +72,11 @@
         <input type="file" id="file-upload" multiple></input>
         <button type="button" id="file-upload-button">Install file</button>
     </label>
-    <canvas id="canvas" width="160" height="220"></canvas>
+    <label>
+        Username:
+        <input type="text" id="input-username"></label>
+    </label>
+    <canvas id="canvas" width="160" height="220" tabindex="1"></canvas>
 
     <div id="buttons">
         <button class="palm-button" type="button" data-id="app1">Cal</button>
@@ -89,7 +100,8 @@
 
             const KEY_ROM_NAME = 'romName';
             const KEY_ROM_IMAGE = 'romImage';
-            const KEY_ROM_MEMORY_SIZE = "memorySize";
+            const KEY_ROM_MEMORY_SIZE = 'memorySize';
+            const KEY_USERNAME = 'username';
 
             class Kvs {
                 constructor(db) {
@@ -264,13 +276,17 @@
 
             const fileUploadButton = document.getElementById('file-upload-button');
             const fileUpload = document.getElementById('file-upload');
+            const usernameInput = document.getElementById('input-username');
 
             const romName = document.getElementById('rom-name');
             const consoleElt = document.getElementById('console');
+            const canvasElt = document.getElementById('canvas');
 
             const db = await openDb();
             const kvs = new Kvs(db);
             let memoryPersistence;
+
+            let setUsernameTimeoutHandle = null;
 
             function escape(text) {
                 const node = document.createElement('div');
@@ -288,6 +304,7 @@
             async function onSessionReady() {
                 const nativeButtonDown = this.cwrap('buttonDown', null, ['string']);
                 const nativeButtonUp = this.cwrap('buttonUp', null, ['string']);
+                const nativeSetUserName = this.cwrap('setUserName', null, ['string']);
 
                 let currentButton = null;
 
@@ -298,6 +315,17 @@
 
                     evt.preventDefault();
                 }));
+
+                usernameInput.addEventListener('change', e => {
+                    if (setUsernameTimeoutHandle !== null) clearTimeout(setUsernameTimeoutHandle);
+
+                    setUsernameTimeoutHandle = setTimeout(() => {
+                        setUsernameTimeoutHandle = null;
+
+                        kvs.put(KEY_USERNAME, e.target.value);
+                        nativeSetUserName(e.target.value);
+                    })
+                })
 
                 window.addEventListener('mouseup', evt => {
                     if (currentButton) {
@@ -321,6 +349,18 @@
                     true
                 );
 
+                // Hack to enable focus on the canvas element
+                window.addEventListener('mousedown',
+                    e => {
+                        if (e.target === canvasElt) {
+                            const scrollX = window.scrollX, scrollY = window.scrollY;
+
+                            canvasElt.focus({ preventScroll: true });
+
+                            setTimeout(() => window.scrollTo(scrollX, scrollY), 0);
+                        }
+                    }, true);
+
                 const memorySize = this.ccall('memorySize', 'number', [], []);
 
                 if (!memoryPersistence) {
@@ -329,6 +369,8 @@
                 memoryPersistence.start();
 
                 await kvs.put(KEY_ROM_MEMORY_SIZE, memorySize);
+
+                nativeSetUserName((await kvs.get(KEY_USERNAME)) || '');
             }
 
             function openDb() {
@@ -424,6 +466,8 @@
                     romName.innerText = 'No ROM image selected';
                 }
             }
+
+            usernameInput.value = (await kvs.get(KEY_USERNAME)) || '';
 
             const module = await createModule({
                 noInitialRun: true,
