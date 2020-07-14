@@ -62,6 +62,10 @@
             border: none;
             outline: none;
         }
+
+        #snapshot-indicator {
+            margin-top: 1em;
+        }
     </style>
 </head>
 
@@ -79,6 +83,7 @@
         Username:
         <input type="text" id="input-username"></label>
     </label>
+    <div id="snapshot-indicator">No snapshot saved yet</div>
     <canvas id="canvas" width="160" height="220" tabindex="1"></canvas>
 
     <div id="buttons">
@@ -105,6 +110,32 @@
             const KEY_ROM_IMAGE = 'romImage';
             const KEY_ROM_MEMORY_SIZE = 'memorySize';
             const KEY_USERNAME = 'username';
+
+            const romUploadButton = document.getElementById('rom-upload-button');
+            const romUpload = document.getElementById('rom-upload');
+
+            const fileUploadButton = document.getElementById('file-upload-button');
+            const fileUpload = document.getElementById('file-upload');
+            const usernameInput = document.getElementById('input-username');
+
+            const romName = document.getElementById('rom-name');
+            const consoleElt = document.getElementById('console');
+            const canvasElt = document.getElementById('canvas');
+
+            const snapshotIndicator = document.getElementById('snapshot-indicator');
+
+            function escape(text) {
+                const node = document.createElement('div');
+
+                node.innerText = text;
+
+                return node.innerHTML;
+            }
+
+            function appendLog(msg) {
+                consoleElt.innerHTML += (escape(msg) + '<br/>');
+                consoleElt.scrollTop = consoleElt.scrollHeight;
+            }
 
             class Kvs {
                 constructor(db) {
@@ -166,48 +197,74 @@
                 start() {
                     if (this.intervalHandle !== null) return;
 
-                    this.intervalHandle = setInterval(() => this.snapshot(), 1000);
+                    this.intervalHandle = setInterval(() => this.snapshotTask(), 1000);
+                }
+
+                async snapshotTask() {
+                    if (this.transaction || !this.uiInitialized()) return;
+
+                    try {
+                        await this.snapshot();
+
+                        const now = new Date();
+                        snapshotIndicator.innerText = `last snapshot saved on ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+                    } catch (e) {
+                        appendLog(`failed to save memory snapshot: ${(e && e.message) ? e.message : 'failed'}`);
+
+                        snapshotIndicator.style.color = 'red';
+                    }
+                    finally {
+                        this.transaction = null;
+                    }
                 }
 
                 snapshot() {
-                    if (this.transaction || !this.uiInitialized()) return;
+                    return new Promise((resolve, reject) => {
+                        let iPage = 0;
+                        const dirtyPages = this.getDirtyPages();
+                        const memory = this.getMemory();
 
-                    let iPage = 0;
-                    const dirtyPages = this.getDirtyPages();
-                    const memory = this.getMemory();
+                        this.transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
+                        const objectStore = this.transaction.objectStore(OBJECT_STORE_MEMORY);
 
-                    this.transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
-                    const objectStore = this.transaction.objectStore(OBJECT_STORE_MEMORY);
+                        for (let i = 0; i < dirtyPages.length; i++) {
+                            this.dirtyPages[i] |= dirtyPages[i];
+                            dirtyPages[i] = 0;
 
-                    for (let i = 0; i < dirtyPages.length; i++) {
-                        this.dirtyPages[i] |= dirtyPages[i];
-                        dirtyPages[i] = 0;
-
-                        if (this.dirtyPages[i] == 0) {
-                            iPage += 8;
-                            continue;
-                        }
-
-                        for (let j = 0; j < 8; j++) {
-                            if (this.dirtyPages[i] & (1 << j)) {
-                                this.pages[iPage].set(memory.subarray(iPage * 1024, (iPage + 1) * 1024));
-
-                                objectStore.put(this.pages[iPage], iPage);
+                            if (this.dirtyPages[i] == 0) {
+                                iPage += 8;
+                                continue;
                             }
 
-                            iPage++;
+                            for (let j = 0; j < 8; j++) {
+                                if (this.dirtyPages[i] & (1 << j)) {
+                                    this.pages[iPage].set(memory.subarray(iPage * 1024, (iPage + 1) * 1024));
+
+                                    objectStore.put(this.pages[iPage], iPage);
+                                }
+
+                                iPage++;
+                            }
                         }
-                    }
 
-                    this.transaction.oncomplete = () => {
-                        this.dirtyPages.fill(0);
-                        this.transaction = null;
-                    }
+                        this.transaction.oncomplete = () => {
+                            this.dirtyPages.fill(0);
 
-                    this.transaction.onerror = () => {
-                        console.error('failed to save page dump');
-                        this.transaction = null;
-                    }
+                            resolve();
+                        }
+
+                        this.transaction.onerror = (evt) => {
+                            let msg = 'unknown error';
+
+                            if (evt.error && evt.error.message) {
+                                msg = evt.error.message;
+                            } else if (event.message) {
+                                msg = event.message;
+                            }
+
+                            reject(new Error(msg));
+                        }
+                    });
                 }
 
                 stop() {
@@ -275,35 +332,11 @@
                 }
             }
 
-            const romUploadButton = document.getElementById('rom-upload-button');
-            const romUpload = document.getElementById('rom-upload');
-
-            const fileUploadButton = document.getElementById('file-upload-button');
-            const fileUpload = document.getElementById('file-upload');
-            const usernameInput = document.getElementById('input-username');
-
-            const romName = document.getElementById('rom-name');
-            const consoleElt = document.getElementById('console');
-            const canvasElt = document.getElementById('canvas');
-
             const db = await openDb();
             const kvs = new Kvs(db);
             let memoryPersistence;
 
             let setUsernameTimeoutHandle = null;
-
-            function escape(text) {
-                const node = document.createElement('div');
-
-                node.innerText = text;
-
-                return node.innerHTML;
-            }
-
-            function appendLog(msg) {
-                consoleElt.innerHTML += (escape(msg) + '<br/>');
-                consoleElt.scrollTop = consoleElt.scrollHeight;
-            }
 
             async function onSessionReady() {
                 const nativeButtonDown = this.cwrap('buttonDown', null, ['string']);
