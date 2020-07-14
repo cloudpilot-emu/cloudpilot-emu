@@ -158,6 +158,7 @@
 
                     this.dirtyPagesPtr = module.cwrap('dirtyPagesPtr', 'number', []);
                     this.memoryPtr = module.cwrap('memoryPtr', 'number', []);
+                    this.uiInitialized = module.cwrap('uiInitialized', 'number', []);
 
                     this.intervalHandle = null;
                 }
@@ -169,7 +170,7 @@
                 }
 
                 snapshot() {
-                    if (this.transaction) return;
+                    if (this.transaction || !this.uiInitialized()) return;
 
                     let iPage = 0;
                     const dirtyPages = this.getDirtyPages();
