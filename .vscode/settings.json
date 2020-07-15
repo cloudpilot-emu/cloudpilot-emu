@@ -82,7 +82,8 @@
         "stack": "cpp",
         "thread": "cpp",
         "cinttypes": "cpp",
-        "cstdbool": "cpp"
+        "cstdbool": "cpp",
+        "__split_buffer": "cpp"
     },
     "editor.formatOnSave": true
 }

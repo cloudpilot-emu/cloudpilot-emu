@@ -124,6 +124,11 @@
 
             const snapshotIndicator = document.getElementById('snapshot-indicator');
 
+            const KEY_PAGE_LOCK = "cloudpilot-sdl-lock";
+            const PAGE_LOCK_ERROR = new Error('page opened in another tab');
+            const pageLockValue = Date.now().toString() + Math.random().toString();
+            localStorage.setItem(KEY_PAGE_LOCK, pageLockValue);
+
             function escape(text) {
                 const node = document.createElement('div');
 
@@ -209,6 +214,13 @@
                         const now = new Date();
                         snapshotIndicator.innerText = `last snapshot saved on ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
                     } catch (e) {
+                        if (e === PAGE_LOCK_ERROR) {
+                            this.transaction = null;
+                            this.stop();
+
+                            alert('Page opened in another tab. State in this tab will not be saved anymore.');
+                        }
+
                         appendLog(`failed to save memory snapshot: ${(e && e.message) ? e.message : 'failed'}`);
 
                         snapshotIndicator.style.color = 'red';
@@ -220,6 +232,10 @@
 
                 snapshot() {
                     return new Promise((resolve, reject) => {
+                        if (localStorage.getItem(KEY_PAGE_LOCK) !== pageLockValue) {
+                            throw PAGE_LOCK_ERROR;
+                        }
+
                         let iPage = 0;
                         const dirtyPages = this.getDirtyPages();
                         const memory = this.getMemory();
