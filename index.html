@@ -126,8 +126,25 @@
 
             const KEY_PAGE_LOCK = "cloudpilot-sdl-lock";
             const PAGE_LOCK_ERROR = new Error('page opened in another tab');
+
+            /**
+             * No more memory dump transactions on other tabs that are already running will start
+             * beyond this point. Per IDB spec, any dump transactions that have already started will
+             * complete before we access the memory store for either writing or reading memory.
+             *
+             * This ensures consistency by making sure that
+             *
+             * 1. No existing tab will save data after we read the memory image
+             *    (relevant if we started with an existing image).
+             *
+             * 2. No existing tab will save data after we write for the memory image for the first
+             *    time (relevant if we started with a fresh rom).
+             */
+
+            // ====================================================================================
             const pageLockValue = Date.now().toString() + Math.random().toString();
             localStorage.setItem(KEY_PAGE_LOCK, pageLockValue);
+            // ====================================================================================
 
             function escape(text) {
                 const node = document.createElement('div');
@@ -215,7 +232,6 @@
                         snapshotIndicator.innerText = `last snapshot saved on ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
                     } catch (e) {
                         if (e === PAGE_LOCK_ERROR) {
-                            this.transaction = null;
                             this.stop();
 
                             alert('Page opened in another tab. State in this tab will not be saved anymore.');
@@ -230,57 +246,74 @@
                     }
                 }
 
-                snapshot() {
-                    return new Promise((resolve, reject) => {
-                        if (localStorage.getItem(KEY_PAGE_LOCK) !== pageLockValue) {
-                            throw PAGE_LOCK_ERROR;
-                        }
+                async snapshot() {
+                    const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
+                    this.transaction = transaction;
 
-                        let iPage = 0;
-                        const dirtyPages = this.getDirtyPages();
-                        const memory = this.getMemory();
+                    // Make sure that the transaction has started by performing a dummy read on
+                    // the store.
+                    await new Promise((resolve, reject) => {
+                        const lock = transaction.objectStore(OBJECT_STORE_MEMORY).get(-1);
 
-                        this.transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
-                        const objectStore = this.transaction.objectStore(OBJECT_STORE_MEMORY);
-
-                        for (let i = 0; i < dirtyPages.length; i++) {
-                            this.dirtyPages[i] |= dirtyPages[i];
-                            dirtyPages[i] = 0;
-
-                            if (this.dirtyPages[i] == 0) {
-                                iPage += 8;
-                                continue;
-                            }
-
-                            for (let j = 0; j < 8; j++) {
-                                if (this.dirtyPages[i] & (1 << j)) {
-                                    this.pages[iPage].set(memory.subarray(iPage * 1024, (iPage + 1) * 1024));
-
-                                    objectStore.put(this.pages[iPage], iPage);
-                                }
-
-                                iPage++;
-                            }
-                        }
-
-                        this.transaction.oncomplete = () => {
-                            this.dirtyPages.fill(0);
-
-                            resolve();
-                        }
-
-                        this.transaction.onerror = (evt) => {
-                            let msg = 'unknown error';
-
-                            if (evt.error && evt.error.message) {
-                                msg = evt.error.message;
-                            } else if (event.message) {
-                                msg = event.message;
-                            }
-
-                            reject(new Error(msg));
-                        }
+                        lock.onsuccess = resolve;
+                        lock.onerror = evt => reject(this.errorFromEvent(evt));
                     });
+
+                    // On the running transaction, check whether another tab has claimed the storage.
+                    if (localStorage.getItem(KEY_PAGE_LOCK) !== pageLockValue) {
+                        throw PAGE_LOCK_ERROR;
+                    }
+
+                    // From now on, we can be sure that no other tab will start to write or read from the
+                    // storage before this transaction completes.
+
+                    this.saveDirtyPages(transaction);
+
+                    await new Promise((resolve, reject) => {
+                        transaction.oncomplete = resolve;
+                        transaction.onerror = evt => reject(this.errorFromEvent(evt));
+                    });
+
+                    this.dirtyPages.fill(0);
+                }
+
+                saveDirtyPages(transaction) {
+                    let iPage = 0;
+                    const dirtyPages = this.getDirtyPages();
+                    const memory = this.getMemory();
+                    const objectStore = transaction.objectStore(OBJECT_STORE_MEMORY);
+
+                    for (let i = 0; i < dirtyPages.length; i++) {
+                        this.dirtyPages[i] |= dirtyPages[i];
+                        dirtyPages[i] = 0;
+
+                        if (this.dirtyPages[i] == 0) {
+                            iPage += 8;
+                            continue;
+                        }
+
+                        for (let j = 0; j < 8; j++) {
+                            if (this.dirtyPages[i] & (1 << j)) {
+                                this.pages[iPage].set(memory.subarray(iPage * 1024, (iPage + 1) * 1024));
+
+                                objectStore.put(this.pages[iPage], iPage);
+                            }
+
+                            iPage++;
+                        }
+                    }
+                }
+
+                errorFromEvent(evt) {
+                    let msg = 'unknown error';
+
+                    if (evt.error && evt.error.message) {
+                        msg = evt.error.message;
+                    } else if (event.message) {
+                        msg = event.message;
+                    }
+
+                    return new Error(evt);
                 }
 
                 stop() {
@@ -299,7 +332,9 @@
                     return new Promise((resolve, reject) => {
                         const image = new Int8Array(this.size);
 
-                        const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readonly');
+                        // Use 'readwrite' in order to ensure that any write transaction from another tab
+                        // will complete before we start reading.
+                        const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
                         const request = transaction.objectStore(OBJECT_STORE_MEMORY).openCursor();
 
                         request.onsuccess = () => {
