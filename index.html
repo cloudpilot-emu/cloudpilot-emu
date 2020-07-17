@@ -331,7 +331,13 @@
                             reject(errorFromEvent(evt));
 
                             clearTimeout(watchdog);
-                        }
+                        };
+
+                        transaction.onabort = () => {
+                            reject(new Error('transaction aborted'));
+
+                            clearTimeout(watchdog);
+                        };
                     });
                 }
 
@@ -428,13 +434,17 @@
                         db.close();
                     } catch (e) { }
 
-                    await new Promise(r => setTimeout(r, DB_GRACE_TIME_MS));
-                    await setupDb();
+                    try {
+                        await new Promise(r => setTimeout(r, DB_GRACE_TIME_MS));
+                        await setupDb();
 
-                    this.db = db;
-                    this.start();
+                        this.db = db;
+                        this.start();
 
-                    appendLog('indexeddb recovery complete');
+                        appendLog('indexeddb recovery complete');
+                    } catch (e) {
+                        appendLog(`indexeddb recovery failed: ${e.message || 'unknown error'}`);
+                    }
                 }
 
                 getDirtyPages() {
