@@ -111,6 +111,8 @@
             const KEY_ROM_MEMORY_SIZE = 'memorySize';
             const KEY_USERNAME = 'username';
 
+            const DB_GRACE_TIME_MS = 3000;
+
             const romUploadButton = document.getElementById('rom-upload-button');
             const romUpload = document.getElementById('rom-upload');
 
@@ -126,6 +128,10 @@
 
             const KEY_PAGE_LOCK = "cloudpilot-sdl-lock";
             const PAGE_LOCK_ERROR = new Error('page opened in another tab');
+
+            let kvs;
+            let memoryPersistence;
+            let db;
 
             /**
              * No more memory dump transactions on other tabs that are already running will start
@@ -157,6 +163,39 @@
             function appendLog(msg) {
                 consoleElt.innerHTML += (escape(msg) + '<br/>');
                 consoleElt.scrollTop = consoleElt.scrollHeight;
+            }
+
+            function errorFromEvent(evt) {
+                let msg = 'unknown error';
+
+                let error = evt.error;
+                if (!error && evt.target) error = evt.target.error;
+
+                if (error && error.message) {
+                    msg = error.message;
+                } else if (event.message) {
+                    msg = event.message;
+                }
+
+                return new Error(msg);
+            }
+
+            async function setupDb() {
+                db = await new Promise((resolve, reject) => {
+                    const request = window.indexedDB.open(DB_NAME, 1);
+
+                    request.onerror = e => reject(new Error('failed to open DB'));
+                    request.onsuccess = () => resolve(request.result);
+
+                    request.onupgradeneeded = () => {
+                        request.result.createObjectStore(OBJECT_STORE_KVS);
+                        request.result.createObjectStore(OBJECT_STORE_MEMORY);
+                    }
+                });
+
+                db.onerror = evt => appendLog(`indexeddb error: ${errorFromEvent(evt)}`);
+
+                kvs = new Kvs(db);
             }
 
             class Kvs {
@@ -202,7 +241,7 @@
                     this.module = module;
 
                     const pageCount = (size >>> 10) + (size % 1024 ? 1 : 0);
-                    this.dirtyPages = new Uint8Array((pageCount >> 3) + (pageCount % 8 ? 1 : 0));
+                    this.dirtyPages = new Uint8Array((pageCount >>> 3) + (pageCount % 8 ? 1 : 0));
 
                     this.pages = new Array(pageCount);
                     for (let i = 0; i < pageCount; i++) this.pages[i] = new Int8Array(1024);
@@ -214,6 +253,7 @@
                     this.uiInitialized = module.cwrap('uiInitialized', 'number', []);
 
                     this.intervalHandle = null;
+                    this.consecutiveErrorCount = 0;
                 }
 
                 start() {
@@ -230,14 +270,18 @@
 
                         const now = new Date();
                         snapshotIndicator.innerText = `last snapshot saved on ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+
+                        this.consecutiveErrorCount = 0;
                     } catch (e) {
+                        appendLog(`failed to save memory snapshot: ${(e && e.message) ? e.message : 'failed'}`);
+
                         if (e === PAGE_LOCK_ERROR) {
                             this.stop();
 
                             alert('Page opened in another tab. State in this tab will not be saved anymore.');
+                        } else if (++this.consecutiveErrorCount > 3) {
+                            this.recover();
                         }
-
-                        appendLog(`failed to save memory snapshot: ${(e && e.message) ? e.message : 'failed'}`);
 
                         snapshotIndicator.style.color = 'red';
                     }
@@ -256,7 +300,7 @@
                         const lock = transaction.objectStore(OBJECT_STORE_MEMORY).get(-1);
 
                         lock.onsuccess = resolve;
-                        lock.onerror = evt => reject(this.errorFromEvent(evt));
+                        lock.onerror = evt => reject(errorFromEvent(evt));
                     });
 
                     // On the running transaction, check whether another tab has claimed the storage.
@@ -264,17 +308,31 @@
                         throw PAGE_LOCK_ERROR;
                     }
 
-                    // From now on, we can be sure that no other tab will start to write or read from the
-                    // storage before this transaction completes.
+                    // From now on, we can be sure that no other tab has interacted with the storage
+                    // before this transaction completes.
 
                     this.saveDirtyPages(transaction);
 
                     await new Promise((resolve, reject) => {
-                        transaction.oncomplete = resolve;
-                        transaction.onerror = evt => reject(this.errorFromEvent(evt));
-                    });
+                        const watchdog = setTimeout(() => {
+                            reject(new Error('transaction timed out'));
 
-                    this.dirtyPages.fill(0);
+                            transaction.abort();
+                        }, DB_GRACE_TIME_MS);
+
+                        transaction.oncomplete = () => {
+                            resolve();
+
+                            clearTimeout(watchdog);
+                            this.dirtyPages.fill(0);
+                        };
+
+                        transaction.onerror = evt => {
+                            reject(errorFromEvent(evt));
+
+                            clearTimeout(watchdog);
+                        }
+                    });
                 }
 
                 saveDirtyPages(transaction) {
@@ -304,21 +362,12 @@
                     }
                 }
 
-                errorFromEvent(evt) {
-                    let msg = 'unknown error';
-
-                    if (evt.error && evt.error.message) {
-                        msg = evt.error.message;
-                    } else if (event.message) {
-                        msg = event.message;
-                    }
-
-                    return new Error(evt);
-                }
-
                 stop() {
                     if (this.transaction) {
-                        this.transaction.abort();
+                        try {
+                            this.transaction.abort();
+                        } catch (e) { }
+
                         this.transaction = null;
                     }
 
@@ -370,6 +419,24 @@
                     })
                 }
 
+                async recover() {
+                    appendLog('too many indexeddb errors, starting recovery');
+
+                    this.stop();
+
+                    try {
+                        db.close();
+                    } catch (e) { }
+
+                    await new Promise(r => setTimeout(r, DB_GRACE_TIME_MS));
+                    await setupDb();
+
+                    this.db = db;
+                    this.start();
+
+                    appendLog('indexeddb recovery complete');
+                }
+
                 getDirtyPages() {
                     const dirtyPagesPtr = this.dirtyPagesPtr();
 
@@ -382,10 +449,6 @@
                     return this.module.HEAP8.subarray(memoryPtr, memoryPtr + this.size);
                 }
             }
-
-            const db = await openDb();
-            const kvs = new Kvs(db);
-            let memoryPersistence;
 
             let setUsernameTimeoutHandle = null;
 
@@ -467,20 +530,6 @@
                 nativeSetUserName((await kvs.get(KEY_USERNAME)) || '');
             }
 
-            function openDb() {
-                return new Promise((resolve, reject) => {
-                    const request = window.indexedDB.open(DB_NAME, 1);
-
-                    request.onerror = e => reject(new Error('failed to open DB'));
-                    request.onsuccess = () => resolve(request.result);
-
-                    request.onupgradeneeded = () => {
-                        request.result.createObjectStore(OBJECT_STORE_KVS);
-                        request.result.createObjectStore(OBJECT_STORE_MEMORY);
-                    }
-                });
-            }
-
             async function main(module) {
                 async function launch() {
                     romName.innerText = `ROM: ${await (kvs.get(KEY_ROM_NAME))}`;
@@ -560,6 +609,8 @@
                     romName.innerText = 'No ROM image selected';
                 }
             }
+
+            await setupDb();
 
             usernameInput.value = (await kvs.get(KEY_USERNAME)) || '';
 
