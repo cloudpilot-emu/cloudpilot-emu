@@ -77,7 +77,7 @@ void MetaMemory::MarkRange(emuptr start, emuptr end, uint8 v) {
         while (p < end4P)  // while there are middle longs
         {
             *(uint32*)p |= longValue;
-            p += sizeof(uint32);
+            p += 4;
         }
 
         while (p < endP)  // while there are trailing bytes
@@ -148,7 +148,7 @@ void MetaMemory::UnmarkRange(emuptr start, emuptr end, uint8 v) {
         while (p < end4P)  // while there are middle longs
         {
             *(uint32*)p &= longValue;
-            p += sizeof(uint32);
+            p += 4;
         }
 
         while (p < endP)  // while there are trailing bytes
@@ -213,7 +213,7 @@ void MetaMemory::MarkUnmarkRange(emuptr start, emuptr end, uint8 andValue, uint8
             while (p < endP)  // while there are trailing bytes
             {
                 *p = (*p & andValue) | orValue;
-                p += sizeof(char);
+                p++;
             }
         } else {
             uint32 longAnd = andValue;
@@ -227,19 +227,19 @@ void MetaMemory::MarkUnmarkRange(emuptr start, emuptr end, uint8 andValue, uint8
             while (((long)p) & 3)  // while there are leading bytes
             {
                 *p = (*p & andValue) | orValue;
-                p += sizeof(char);
+                p++;
             }
 
             while (p < end4P)  // while there are middle longs
             {
                 *(uint32*)p = ((*(uint32*)p) & longAnd) | longOr;
-                p += sizeof(long);
+                p += 4;
             }
 
             while (p < endP)  // while there are trailing bytes
             {
                 *p = (*p & andValue) | orValue;
-                p += sizeof(char);
+                p++;
             }
         }
 #else

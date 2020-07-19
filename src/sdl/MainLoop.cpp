@@ -55,6 +55,10 @@ void MainLoop::Cycle() {
         UpdateScreen();
         gSystemState.MarkScreenClean();
     }
+#ifndef __EMSCRIPTEN__
+    else
+        SDL_Delay(16);
+#endif
 
     eventHandler.HandleEvents(millis);
 }
@@ -113,7 +117,7 @@ void MainLoop::UpdateScreen() {
                         pixels[y * pitch / 4 + x] =
                             PALETTE_GRAYSCALE_16[((buffer[y * frame.bytesPerLine +
                                                           (x + frame.margin) / 2]) >>
-                                                  (x % 2 ? 0 : 4)) &
+                                                  ((x + frame.margin) % 2 ? 0 : 4)) &
                                                  0xf];
             } break;
 
@@ -129,7 +133,7 @@ void MainLoop::UpdateScreen() {
                     for (int y = 0; y < 160; y++)
                         pixels[y * pitch / 4 + x] =
                             palette[((buffer[y * frame.bytesPerLine + (x + frame.margin) / 4]) >>
-                                     (6 - (x % 4) * 2)) &
+                                     (6 - ((x + frame.margin) % 4) * 2)) &
                                     0x3];
             } break;
         }

@@ -370,7 +370,8 @@ void EmBankSRAM::SetLong(emuptr address, uint32 value) {
     markDirty(phyAddress);
     markDirty(phyAddress + 2);
 
-    if (MetaMemory::IsScreenBuffer32(InlineGetMetaAddress(address))) gSystemState.MarkScreenDirty();
+    if (MetaMemory::IsScreenBuffer32(InlineGetMetaAddress(phyAddress)))
+        gSystemState.MarkScreenDirty();
 
     // Debug::CheckStepSpy(address, sizeof(uint16));
 }
@@ -408,7 +409,8 @@ void EmBankSRAM::SetWord(emuptr address, uint32 value) {
 
     markDirty(phyAddress);
 
-    if (MetaMemory::IsScreenBuffer16(InlineGetMetaAddress(address))) gSystemState.MarkScreenDirty();
+    if (MetaMemory::IsScreenBuffer16(InlineGetMetaAddress(phyAddress)))
+        gSystemState.MarkScreenDirty();
 
     // Debug::CheckStepSpy(address, sizeof(uint16));
 }
@@ -440,7 +442,8 @@ void EmBankSRAM::SetByte(emuptr address, uint32 value) {
 
     markDirty(phyAddress);
 
-    if (MetaMemory::IsScreenBuffer8(InlineGetMetaAddress(address))) gSystemState.MarkScreenDirty();
+    if (MetaMemory::IsScreenBuffer8(InlineGetMetaAddress(phyAddress)))
+        gSystemState.MarkScreenDirty();
 
     // Debug::CheckStepSpy(address, sizeof(uint8));
 }

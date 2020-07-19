@@ -12,7 +12,7 @@ struct Frame {
 
     uint32 lineWidth{0};
     uint32 lines{0};
-    uint32 margin{0};
+    uint8 margin{0};
     uint32 bytesPerLine{0};
 
     uint8* GetBuffer();
