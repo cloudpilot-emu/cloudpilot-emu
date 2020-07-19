@@ -78,7 +78,8 @@ extern EmAddressBank** gDynEmMemBanksP;
 
     #define EmMemBankIndex(addr) (((emuptr)(addr)) >> 16)
 
-    #define EmMemGetBank(addr) (*gEmMemBanks[EmMemBankIndex(addr)])
+    #define EmMemGetBankPtr(addr) (gEmMemBanks[EmMemBankIndex(addr)])
+    #define EmMemGetBank(addr) (*EmMemGetBankPtr(addr))
     #define EmMemPutBank(addr, b) (gEmMemBanks[EmMemBankIndex(addr)] = (b))
 
 #else  // ECM_DYNAMIC_PATCH

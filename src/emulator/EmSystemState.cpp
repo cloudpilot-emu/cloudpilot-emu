@@ -2,7 +2,10 @@
 
 EmSystemState gSystemState;
 
-void EmSystemState::Reset() { uiInitialized = false; }
+void EmSystemState::Reset() {
+    uiInitialized = false;
+    screenDirty = true;
+}
 
 void EmSystemState::SetOSVersion(uint32 version) { osVersion = version; }
 
@@ -36,3 +39,10 @@ void EmSystemState::SetHotsyncUserName(string hotsyncUserName) {
     this->hotsyncUserName = hotsyncUserName;
 }
 string EmSystemState::GetHotsyncUserName() const { return hotsyncUserName; };
+
+bool EmSystemState::IsScreenDirty() const { return screenDirty; }
+
+void EmSystemState::MarkScreenClean() {
+    screenDirty = false;
+    onMarkScreenClean.Dispatch();
+}

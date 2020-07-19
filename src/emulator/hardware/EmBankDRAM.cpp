@@ -26,7 +26,8 @@
 #include "EmMemory.h"        // Memory::InitializeBanks, IsPCInRAM (implicitly, through META_CHECK)
 #include "EmPalmFunction.h"  // InSysLaunch
 #include "EmSession.h"       // gSession
-#include "MetaMemory.h"      // MetaMemory
+#include "EmSystemState.h"
+#include "MetaMemory.h"  // MetaMemory
 
 // ---------------------------------------------------------------------------
 #pragma mark ===== Types
@@ -272,6 +273,8 @@ void EmBankDRAM::SetLong(emuptr address, uint32 value) {
 
     markDirty(address);
     markDirty(address + 2);
+
+    if (MetaMemory::IsScreenBuffer32(InlineGetMetaAddress(address))) gSystemState.MarkScreenDirty();
 }
 
 // ---------------------------------------------------------------------------
@@ -298,6 +301,8 @@ void EmBankDRAM::SetWord(emuptr address, uint32 value) {
     // Debug::CheckStepSpy(address, sizeof(uint16));
 
     markDirty(address);
+
+    if (MetaMemory::IsScreenBuffer16(InlineGetMetaAddress(address))) gSystemState.MarkScreenDirty();
 }
 
 // ---------------------------------------------------------------------------
@@ -320,6 +325,8 @@ void EmBankDRAM::SetByte(emuptr address, uint32 value) {
     // Debug::CheckStepSpy(address, sizeof(uint8));
 
     markDirty(address);
+
+    if (MetaMemory::IsScreenBuffer8(InlineGetMetaAddress(address))) gSystemState.MarkScreenDirty();
 }
 
 // ---------------------------------------------------------------------------

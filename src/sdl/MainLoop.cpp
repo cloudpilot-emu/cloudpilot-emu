@@ -4,6 +4,7 @@
 
 #include "EmHAL.h"
 #include "EmSession.h"
+#include "EmSystemState.h"
 #include "Silkscreen.h"
 #include "common.h"
 
@@ -52,7 +53,11 @@ void MainLoop::Cycle() {
         clockEmu += cyclesPassed / (clocksPerSecond / 1000);
     }
 
-    UpdateScreen();
+    if (gSystemState.IsScreenDirty()) {
+        UpdateScreen();
+        gSystemState.MarkScreenClean();
+    }
+
     eventHandler.HandleEvents(millis);
 }
 

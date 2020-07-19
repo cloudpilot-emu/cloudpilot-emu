@@ -13,6 +13,8 @@
 
 #include "EmRegsEZ.h"
 
+#include <functional>
+
 #include "Byteswapping.h"  // Canonical
 #include "EmCommon.h"
 #include "EmHAL.h"     // EmHAL
@@ -20,8 +22,10 @@
 #include "EmRegsEZPrv.h"
 #include "EmSPISlave.h"  // DoExchange
 #include "EmSession.h"   // GetDevice
+#include "EmSystemState.h"
 #include "Frame.h"
 #include "Logging.h"  // LogAppendMsg
+#include "MetaMemory.h"
 #include "Platform.h"
 #include "UAE.h"  // regs, SPCFLAG_INT
 
@@ -49,12 +53,6 @@
 #undef NON_PORTABLE
 #include "PalmPackPop.h"
 
-static const uint16 UPSIZ = 0x1800;  // Mask to get the unprotected memory size from csDSelect.
-static const uint16 SIZ = 0x000E;    // Mask to get the memory size from csASelect.
-static const uint16 EN = 0x0001;     // Mask to get the enable bit from csASelect.
-
-static const uint16 gBaseAddressShift = 13;  // Shift to get base address from CSGBx register value
-
 // #define LOGGING 0
 #ifdef LOGGING
     #define PRINTF log::printf
@@ -62,338 +60,366 @@ static const uint16 gBaseAddressShift = 13;  // Shift to get base address from C
     #define PRINTF(...) ;
 #endif
 
-// Values used to initialize the DragonBallEZ registers.
+namespace {
 
-static const HwrM68EZ328Type kInitial68EZ328RegisterValues = {
-    0x1C,                 // Byte		scr;							// $000:
-                          // System Control Register
-    {},                   // Byte
-                          // ___filler0[0x004-0x001];
-    hwrEZ328chipIDEZ,     // Byte		chipID;							//
-                          // $004: Chip ID Register
-    hwrEZ328maskID1J83G,  // Byte		maskID; // $005: Mask ID Register
-    0x00,                 // Word		swID;							// $006:
-                          // Software ID Register
-    {},                   // Byte
-                          // ___filler1[0x100-0x008];
+    constexpr uint16 UPSIZ = 0x1800;  // Mask to get the unprotected memory size from csDSelect.
+    constexpr uint16 SIZ = 0x000E;    // Mask to get the memory size from csASelect.
+    constexpr uint16 EN = 0x0001;     // Mask to get the enable bit from csASelect.
 
-    0x0000,  // Word		csAGroupBase;					// $100: Chip Select
-             // Group A Base Register
-    0x0000,  // Word		csBGroupBase;					// $102: Chip Select
-             // Group B Base Register
-    0x0000,  // Word		csCGroupBase;					// $104: Chip Select
-             // Group C Base Register
-    0x0000,  // Word		csDGroupBase;					// $106: Chip Select
-             // Group D Base Register
+    // Shift to get base address from CSGBx register value
+    constexpr uint16 gBaseAddressShift = 13;
 
-    {},  // Byte
-         // ___filler6[0x110-0x108];
+    constexpr long hwrEZ328LcdPageSize = 0x00020000;  // 128K
+    constexpr long hwrEZ328LcdPageMask = 0xFFFE0000;
 
-    0x00E0,  // Word		csASelect;						// $110:
-             // Group A Chip Select Register
-    0x0000,  // Word		csBSelect;						// $112:
-             // Group B Chip Select Register
-    0x0000,  // Word		csCSelect;						// $114:
-             // Group C Chip Select Register
-    0x0000,  // Word		csDSelect;						// $116:
-             // Group D Chip Select Register
+    // Values used to initialize the DragonBallEZ registers.
 
-    0x0060,  // Word		emuCS;							// $118: EMU
-             // Chip Select Register
+    const HwrM68EZ328Type kInitial68EZ328RegisterValues = {
+        0x1C,                 // Byte		scr;							// $000:
+                              // System Control Register
+        {},                   // Byte
+                              // ___filler0[0x004-0x001];
+        hwrEZ328chipIDEZ,     // Byte		chipID; // $004: Chip ID Register
+        hwrEZ328maskID1J83G,  // Byte		maskID; // $005: Mask ID Register
+        0x00,                 // Word		swID;							// $006:
+                              // Software ID Register
+        {},                   // Byte
+                              // ___filler1[0x100-0x008];
 
-    {},  // Byte
-         // ___filler2[0x200-0x11A];
+        0x0000,  // Word		csAGroupBase;					// $100:
+                 // Chip Select Group A Base Register
+        0x0000,  // Word		csBGroupBase;					// $102:
+                 // Chip Select Group B Base Register
+        0x0000,  // Word		csCGroupBase;					// $104:
+                 // Chip Select Group C Base Register
+        0x0000,  // Word		csDGroupBase;					// $106:
+                 // Chip Select Group D Base Register
 
-    0x2430,  // Word		pllControl;						// $200: PLL
-             // Control Register
-    0x0123,  // Word		pllFreqSel;						// $202: PLL
-             // Frequency Select Register
-    0,       // !!! ---> Marked as reserved in 1.4 Word		pllTest;
-        // // $204: PLL Test Register (do not access)
-    0,     // Byte
-           // ___filler44;
-    0x1F,  // Byte		pwrControl;						// $207:
-           // Power Control Register
+        {},  // Byte
+             // ___filler6[0x110-0x108];
 
-    {},  // Byte
-         // ___filler3[0x300-0x208];
+        0x00E0,  // Word		csASelect;						//
+                 // $110: Group A Chip Select Register
+        0x0000,  // Word		csBSelect;						//
+                 // $112: Group B Chip Select Register
+        0x0000,  // Word		csCSelect;						//
+                 // $114: Group C Chip Select Register
+        0x0000,  // Word		csDSelect;						//
+                 // $116: Group D Chip Select Register
 
-    0x00,    // Byte		intVector;						// $300:
-             // Interrupt Vector Register
-    0,       // Byte
-             // ___filler4;
-    0x0000,  // Word		intControl;						// $302:
-             // Interrupt Control Register
-    0x00FF,  // Word		intMaskHi;						// $304:
-             // Interrupt Mask Register/HIGH word
-    0xFFFF,  // Word		intMaskLo;						// $306:
-             // Interrupt Mask Register/LOW word
-    {},      // Byte
-             // ___filler7[0x30c-0x308];
-    0x0000,  // Word		intStatusHi;					// $30C: Interrupt
-             // Status Register/HIGH word
-    0x0000,  // Word		intStatusLo;					// $30E: Interrupt
-             // Status Register/LOW word
-    0x0000,  // Word		intPendingHi;					// $310: Interrupt
-             // Pending Register
-    0x0000,  // Word		intPendingLo;					// $312: Interrupt
-             // Pending Register
+        0x0060,  // Word		emuCS;							//
+                 // $118: EMU Chip Select Register
 
-    {},  // Byte
-         // ___filler4a[0x400-0x314];
+        {},  // Byte
+             // ___filler2[0x200-0x11A];
 
-    0x00,  // Byte		portADir;						// $400:
-           // Port A Direction Register
-    0x00,  // Byte		portAData;						// $401:
-           // Port A Data Register
-    0xFF,  // Byte		portAPullupEn;					// $402: Port A
-           // Pullup Enable (similar to Select on DB)
-    {},    // Byte
-           // ___filler8[5];
+        0x2430,  // Word		pllControl;						//
+                 // $200: PLL Control Register
+        0x0123,  // Word		pllFreqSel;						//
+                 // $202: PLL Frequency Select Register
+        0,       // !!! ---> Marked as reserved in 1.4 Word		pllTest;
+            // // $204: PLL Test Register (do not access)
+        0,     // Byte
+               // ___filler44;
+        0x1F,  // Byte		pwrControl;						// $207:
+               // Power Control Register
 
-    0x00,  // Byte		portBDir;						// $408:
-           // Port B Direction Register
-    0x00,  // Byte		portBData;						// $409:
-           // Port B Data Register
-    0xFF,  // Byte		portBPullupEn;					// $40A: Port B
-           // Pullup Enable
-    0xFF,  // Byte		portBSelect;					// $40B: Port B
-           // Select Register
+        {},  // Byte
+             // ___filler3[0x300-0x208];
 
-    {},  // Byte
-         // ___filler9[4];
+        0x00,    // Byte		intVector;						// $300:
+                 // Interrupt Vector Register
+        0,       // Byte
+                 // ___filler4;
+        0x0000,  // Word		intControl;						//
+                 // $302: Interrupt Control Register
+        0x00FF,  // Word		intMaskHi;						//
+                 // $304: Interrupt Mask Register/HIGH word
+        0xFFFF,  // Word		intMaskLo;						//
+                 // $306: Interrupt Mask Register/LOW word
+        {},      // Byte
+                 // ___filler7[0x30c-0x308];
+        0x0000,  // Word		intStatusHi;					// $30C:
+                 // Interrupt Status Register/HIGH word
+        0x0000,  // Word		intStatusLo;					// $30E:
+                 // Interrupt Status Register/LOW word
+        0x0000,  // Word		intPendingHi;					// $310:
+                 // Interrupt Pending Register
+        0x0000,  // Word		intPendingLo;					// $312:
+                 // Interrupt Pending Register
 
-    0x00,  // Byte		portCDir;						// $410:
-           // Port C Direction Register
-    0x00,  // Byte		portCData;						// $411:
-           // Port C Data Register
-    0xFF,  // Byte		portCPulldnEn;					// $412: Port C
-           // Pulldown Enable
-    0xFF,  // Byte		portCSelect;					// $413: Port C
-           // Select Register
+        {},  // Byte
+             // ___filler4a[0x400-0x314];
 
-    {},  // Byte
-         // ___filler10[4];
+        0x00,  // Byte		portADir;						// $400:
+               // Port A Direction Register
+        0x00,  // Byte		portAData;						// $401:
+               // Port A Data Register
+        0xFF,  // Byte		portAPullupEn;					// $402: Port A
+               // Pullup Enable (similar to Select on DB)
+        {},    // Byte
+               // ___filler8[5];
 
-    0x00,  // Byte		portDDir;						// $418:
-           // Port D Direction Register
-    0x00,  // Byte		portDData;						// $419:
-           // Port D Data Register
-    0xFF,  // Byte		portDPullupEn;					// $41A: Port D
-           // Pull-up Enable
-    0xF0,  // Byte		portDSelect;					// $41B: Port D
-           // Select Register
-    0x00,  // Byte		portDPolarity;					// $41C: Port D
-           // Polarity Register
-    0x00,  // Byte		portDIntReqEn;					// $41D: Port D
-           // Interrupt Request Enable
-    0x00,  // Byte		portDKbdIntEn;					// $41E: Port D
-           // Keyboard Interrupt Enable
-    0x00,  // Byte		portDIntEdge;					// $41F: Port D IRQ
-           // Edge Register
+        0x00,  // Byte		portBDir;						// $408:
+               // Port B Direction Register
+        0x00,  // Byte		portBData;						// $409:
+               // Port B Data Register
+        0xFF,  // Byte		portBPullupEn;					// $40A: Port B
+               // Pullup Enable
+        0xFF,  // Byte		portBSelect;					// $40B: Port B
+               // Select Register
 
-    0x00,  // Byte		portEDir;						// $420:
-           // Port E Direction Register
-    0x00,  // Byte		portEData;						// $421:
-           // Port E Data Register
-    0xFF,  // Byte		portEPullupEn;					// $422: Port E
-           // Pull-up Enable
-    0xFF,  // Byte		portESelect;					// $423: Port E
-           // Select Register
+        {},  // Byte
+             // ___filler9[4];
 
-    {},  // Byte
-         // ___filler14[4];
+        0x00,  // Byte		portCDir;						// $410:
+               // Port C Direction Register
+        0x00,  // Byte		portCData;						// $411:
+               // Port C Data Register
+        0xFF,  // Byte		portCPulldnEn;					// $412: Port C
+               // Pulldown Enable
+        0xFF,  // Byte		portCSelect;					// $413: Port C
+               // Select Register
 
-    0x00,  // Byte		portFDir;						// $428:
-           // Port F Direction Register
-    0x00,  // Byte		portFData;						// $429:
-           // Port F Data Register
-    0xFF,  // Byte		portFPullupdnEn;				// $42A: Port F
-           // Pull-up/down Enable
-    0x00,  // Byte		portFSelect;					// $42B: Port F
-           // Select Register
+        {},  // Byte
+             // ___filler10[4];
 
-    {},  // Byte
-         // ___filler16[4];
+        0x00,  // Byte		portDDir;						// $418:
+               // Port D Direction Register
+        0x00,  // Byte		portDData;						// $419:
+               // Port D Data Register
+        0xFF,  // Byte		portDPullupEn;					// $41A: Port D
+               // Pull-up Enable
+        0xF0,  // Byte		portDSelect;					// $41B: Port D
+               // Select Register
+        0x00,  // Byte		portDPolarity;					// $41C: Port D
+               // Polarity Register
+        0x00,  // Byte		portDIntReqEn;					// $41D: Port D
+               // Interrupt Request Enable
+        0x00,  // Byte		portDKbdIntEn;					// $41E: Port D
+               // Keyboard Interrupt Enable
+        0x00,  // Byte		portDIntEdge;					// $41F: Port D IRQ
+               // Edge Register
 
-    0x00,  // Byte		portGDir;						// $430:
-           // Port G Direction Register
-    0x00,  // Byte		portGData;						// $431:
-           // Port G Data Register
-    0x3D,  // Byte		portGPullupEn;					// $432: Port G
-           // Pull-up Enable
-    0x08,  // Byte		portGSelect;					// $433: Port G
-           // Select Register
+        0x00,  // Byte		portEDir;						// $420:
+               // Port E Direction Register
+        0x00,  // Byte		portEData;						// $421:
+               // Port E Data Register
+        0xFF,  // Byte		portEPullupEn;					// $422: Port E
+               // Pull-up Enable
+        0xFF,  // Byte		portESelect;					// $423: Port E
+               // Select Register
 
-    {},  // Byte
-         // ___filler2000[0x500-0x434];
+        {},  // Byte
+             // ___filler14[4];
 
-    0x0020,  // Word		pwmControl;						// $500: PWM
-             // Control Register
-    0x00,    // Byte		pwmSampleHi;					// $502: PWM Sample
-             // - high byte
-    0x00,    // Byte		pwmSampleLo;					// $503: PWM Sample
-             // - low byte
-    0xFE,    // Byte		pwmPeriod;						// $504: PWM
-             // Period
-    0x00,    // Byte		pwmCounter;						// $505: PWM
-             // Counter
+        0x00,  // Byte		portFDir;						// $428:
+               // Port F Direction Register
+        0x00,  // Byte		portFData;						// $429:
+               // Port F Data Register
+        0xFF,  // Byte		portFPullupdnEn;				// $42A: Port F
+               // Pull-up/down Enable
+        0x00,  // Byte		portFSelect;					// $42B: Port F
+               // Select Register
 
-    {},  // Byte
-         // ___filler24[0x600-0x506];
+        {},  // Byte
+             // ___filler16[4];
 
-    0x0000,  // Word		tmr1Control;					// $600: Timer 1
-             // Control Register
-    0x0000,  // Word		tmr1Prescaler;					// $602: Timer 1
-             // Prescaler Register
-    0xFFFF,  // Word		tmr1Compare;					// $604: Timer 1
-             // Compare Register
-    0x0000,  // Word		tmr1Capture;					// $606: Timer 1
-             // Capture Register
-    0x0000,  // Word		tmr1Counter;					// $608: Timer 1
-             // Counter Register
-    0x0000,  // Word		tmr1Status;						// $60A:
-             // Timer 1 Status Register
+        0x00,  // Byte		portGDir;						// $430:
+               // Port G Direction Register
+        0x00,  // Byte		portGData;						// $431:
+               // Port G Data Register
+        0x3D,  // Byte		portGPullupEn;					// $432: Port G
+               // Pull-up Enable
+        0x08,  // Byte		portGSelect;					// $433: Port G
+               // Select Register
 
-    {},  // Byte
-         // ___filler25[0x800-0x61E];
+        {},  // Byte
+             // ___filler2000[0x500-0x434];
 
-    0x0000,  // Word		spiMasterData;					// $800: SPI Master
-             // Data Register
-    0x0000,  // Word		spiMasterControl;				// $802: SPI Master
-             // Control Register
+        0x0020,  // Word		pwmControl;						//
+                 // $500: PWM Control Register
+        0x00,    // Byte		pwmSampleHi;					// $502: PWM Sample
+                 // - high byte
+        0x00,    // Byte		pwmSampleLo;					// $503: PWM Sample
+                 // - low byte
+        0xFE,    // Byte		pwmPeriod;						// $504: PWM
+                 // Period
+        0x00,    // Byte		pwmCounter;						// $505: PWM
+                 // Counter
 
-    {},  // Byte
-         // ___filler27[0x900-0x804];
+        {},  // Byte
+             // ___filler24[0x600-0x506];
 
-    0x0000,  // Word		uControl;						// $900:
-             // Uart Control Register
-    0x003F,  // Word		uBaud;							// $902:
-             // Uart Baud Control Register
-    0x0000,  // Word		uReceive;						// $904:
-             // Uart Receive Register
-    0x0000,  // Word		uTransmit;						// $906:
-             // Uart Transmit Register
-    0x0000,  // Word		uMisc;							// $908:
-             // Uart Miscellaneous Register
-    0x0000,  // Word		uNonIntPresc;					// $90A: Uart IRDA
-             // Non-Integer Prescaler
+        0x0000,  // Word		tmr1Control;					// $600:
+                 // Timer 1 Control Register
+        0x0000,  // Word		tmr1Prescaler;					// $602:
+                 // Timer 1 Prescaler Register
+        0xFFFF,  // Word		tmr1Compare;					// $604:
+                 // Timer 1 Compare Register
+        0x0000,  // Word		tmr1Capture;					// $606:
+                 // Timer 1 Capture Register
+        0x0000,  // Word		tmr1Counter;					// $608:
+                 // Timer 1 Counter Register
+        0x0000,  // Word		tmr1Status;						//
+                 // $60A: Timer 1 Status Register
 
-    {},  // Byte
-         // ___filler28[0xA00-0x90C];
+        {},  // Byte
+             // ___filler25[0x800-0x61E];
 
-    0x00000000,  // DWord	lcdStartAddr;					// $A00: Screen
-                 // Starting Address Register
-    0,           // Byte
-                 // ___filler29;
-    0xFF,        // Byte		lcdPageWidth;					// $A05: Virtual
-                 // Page Width Register
-    {},          // Byte
-                 // ___filler30[2];
-    0x03FF,      // Word		lcdScreenWidth;					// $A08: Screen
-                 // Width Register
-    0x01FF,      // Word		lcdScreenHeight;				// $A0A: Screen
-                 // Height Register
-    {},          // Byte
-                 // ___filler31[0xA18-0xA0C];
-    0x0000,      // Word		lcdCursorXPos;					// $A18: Cursor X
-                 // Position
-    0x0000,      // Word		lcdCursorYPos;					// $A1A:
-                 // Cursor Y Position
-    0x0101,      // Word		lcdCursorWidthHeight;			// $A1C: Cursor Width and
-                 // Height
-    0,           // Byte
-                 // ___filler32;
-    0x7F,        // Byte		lcdBlinkControl;				// $A1F: Blink
-                 // Control Register
-    0x00,        // Byte		lcdPanelControl;				// $A20: Panel
-                 // Interface Control Register
-    0x00,        // Byte		lcdPolarity;					// $A21: Polarity
-                 // Config Register
-    0,           // Byte
-                 // ___filler33;
-    0x00,        // Byte		lcdACDRate;						// $A23: ACD
-                 // (M) Rate Control Register
-    0,           // Byte
-                 // ___filler34;
-    0x00,        // Byte		lcdPixelClock;					// $A25: Pixel Clock
-                 // Divider Register
-    0,           // Byte
-                 // ___filler35;
-    0x40,        // Byte		lcdClockControl;				// $A27: Clocking
-                 // Control Register
-    0,           // Byte
-                 // ___filler36;
-    0xFF,        // Byte		lcdRefreshRateAdj;				// $A29: Refresh
-                 // Rate Adjustment Register
-    {},          // Byte
-                 // ___filler2003[0xA2D-0xA2A];
-    0x00,        // Byte		lcdPanningOffset;				// $A2D: Panning
-                 // Offset Register
+        0x0000,  // Word		spiMasterData;					// $800: SPI
+                 // Master Data Register
+        0x0000,  // Word		spiMasterControl;				// $802: SPI
+                 // Master Control Register
 
-    {},  // Byte
-         // ___filler37[0xA31-0xA2E];
+        {},  // Byte
+             // ___filler27[0x900-0x804];
 
-    0xB9,    // Byte		lcdFrameRate;					// $A31: Frame Rate
-             // Control Modulation Register
-    0,       // Byte
-             // ___filler2004;
-    0x84,    // Byte		lcdGrayPalette;					// $A33: Gray
-             // Palette Mapping Register
-    0x00,    // Byte		lcdReserved;					// $A34: Reserved
-    0,       // Byte
-             // ___filler2005;
-    0x0000,  // Word		lcdContrastControlPWM;			// $A36: Contrast Control
+        0x0000,  // Word		uControl;						//
+                 // $900: Uart Control Register
+        0x003F,  // Word		uBaud;							//
+                 // $902: Uart Baud Control Register
+        0x0000,  // Word		uReceive;						//
+                 // $904: Uart Receive Register
+        0x0000,  // Word		uTransmit;						//
+                 // $906: Uart Transmit Register
+        0x0000,  // Word		uMisc;							//
+                 // $908: Uart Miscellaneous Register
+        0x0000,  // Word		uNonIntPresc;					// $90A:
+                 // Uart IRDA Non-Integer Prescaler
 
-    {},  // Byte
-         // ___filler40[0xB00-0xA38];
+        {},  // Byte
+             // ___filler28[0xA00-0x90C];
 
-    0x00000000,  // DWord	rtcHourMinSec;					// $B00: RTC Hours,
-                 // Minutes, Seconds Register
-    0x00000000,  // DWord	rtcAlarm;						// $B04: RTC
-                 // Alarm Register
-    {},          // Byte
-                 // ___filler2001[0xB0A-0xB08];
-    0x0001,      // Word		rtcWatchDog;					// $B0A: RTC
-                 // Watchdog Timer
-    0x00,        // Word		rtcControl;						// $B0C: RTC
-                 // Control Register
-    0x00,        // Word		rtcIntStatus;					// $B0E: RTC
-                 // Interrupt Status Register
-    0x00,        // Word		rtcIntEnable;					// $B10: RTC
-                 // Interrupt Enable Register
-    0x00,        // Word		stopWatch;						// $B12:
-                 // Stopwatch Minutes
-    {},          // Byte
-                 // ___filler2002[0xB1A-0xB14];
-    0x0000,      // Word		rtcDay; // $B1A: RTC Day
-    0x0000,      // Word		rtcDayAlarm;					// $B1C: RTC Day
-                 // Alarm
+        0x00000000,  // DWord	lcdStartAddr;					// $A00: Screen
+                     // Starting Address Register
+        0,           // Byte
+                     // ___filler29;
+        0xFF,        // Byte		lcdPageWidth;					// $A05: Virtual
+                     // Page Width Register
+        {},          // Byte
+                     // ___filler30[2];
+        0x03FF,      // Word		lcdScreenWidth;					// $A08:
+                     // Screen Width Register
+        0x01FF,      // Word		lcdScreenHeight;				// $A0A:
+                     // Screen Height Register
+        {},          // Byte
+                     // ___filler31[0xA18-0xA0C];
+        0x0000,      // Word		lcdCursorXPos;					// $A18:
+                     // Cursor X Position
+        0x0000,      // Word		lcdCursorYPos;					// $A1A:
+                     // Cursor Y Position
+        0x0101,      // Word		lcdCursorWidthHeight;			// $A1C: Cursor
+                     // Width and Height
+        0,           // Byte
+                     // ___filler32;
+        0x7F,        // Byte		lcdBlinkControl;				// $A1F: Blink
+                     // Control Register
+        0x00,        // Byte		lcdPanelControl;				// $A20: Panel
+                     // Interface Control Register
+        0x00,        // Byte		lcdPolarity;					// $A21: Polarity
+                     // Config Register
+        0,           // Byte
+                     // ___filler33;
+        0x00,        // Byte		lcdACDRate;						// $A23: ACD
+                     // (M) Rate Control Register
+        0,           // Byte
+                     // ___filler34;
+        0x00,        // Byte		lcdPixelClock;					// $A25: Pixel Clock
+                     // Divider Register
+        0,           // Byte
+                     // ___filler35;
+        0x40,        // Byte		lcdClockControl;				// $A27: Clocking
+                     // Control Register
+        0,           // Byte
+                     // ___filler36;
+        0xFF,        // Byte		lcdRefreshRateAdj;				// $A29: Refresh
+                     // Rate Adjustment Register
+        {},          // Byte
+                     // ___filler2003[0xA2D-0xA2A];
+        0x00,        // Byte		lcdPanningOffset;				// $A2D: Panning
+                     // Offset Register
 
-    {},  // Byte
-         // ___filler41[0xC00-0xB1E];
+        {},  // Byte
+             // ___filler37[0xA31-0xA2E];
 
-    0x0000,  // Word		dramConfig;						// $C00:
-             // DRAM Memory Config Register
-    0x0000,  // Word		dramControl;					// $C02: DRAM
-             // Control Register
+        0xB9,    // Byte		lcdFrameRate;					// $A31: Frame Rate
+                 // Control Modulation Register
+        0,       // Byte
+                 // ___filler2004;
+        0x84,    // Byte		lcdGrayPalette;					// $A33: Gray
+                 // Palette Mapping Register
+        0x00,    // Byte		lcdReserved;					// $A34: Reserved
+        0,       // Byte
+                 // ___filler2005;
+        0x0000,  // Word		lcdContrastControlPWM;			// $A36: Contrast
+                 // Control
 
-    {},  // Byte
-         // ___filler42[0xD00-0xC04];
+        {},  // Byte
+             // ___filler40[0xB00-0xA38];
 
-    0x00000000,  // DWord	emuAddrCompare;					// $D00: Emulation
-                 // Address Compare Register
-    0x00000000,  // DWord	emuAddrMask;					// $D04: Emulation
-                 // Address Mask Register
-    0x0000,      // Word		emuControlCompare;				// $D08: Emulation
-                 // Control Compare Register
-    0x0000,      // Word		emuControlMask;					// $D0A: Emulation
-                 // Control Mask Register
-    0x0000,      // Word		emuControl;						// $DOC:
-                 // Emulation Control Register
-    0x0000       // Word		emuStatus;						// $D0E:
-                 // Emulation Status Register
-};
+        0x00000000,  // DWord	rtcHourMinSec;					// $B00: RTC Hours,
+                     // Minutes, Seconds Register
+        0x00000000,  // DWord	rtcAlarm;						// $B04: RTC
+                     // Alarm Register
+        {},          // Byte
+                     // ___filler2001[0xB0A-0xB08];
+        0x0001,      // Word		rtcWatchDog;					// $B0A: RTC
+                     // Watchdog Timer
+        0x00,        // Word		rtcControl;						// $B0C: RTC
+                     // Control Register
+        0x00,        // Word		rtcIntStatus;					// $B0E: RTC
+                     // Interrupt Status Register
+        0x00,        // Word		rtcIntEnable;					// $B10: RTC
+                     // Interrupt Enable Register
+        0x00,        // Word		stopWatch;						// $B12:
+                     // Stopwatch Minutes
+        {},          // Byte
+                     // ___filler2002[0xB1A-0xB14];
+        0x0000,      // Word		rtcDay; // $B1A: RTC Day
+        0x0000,      // Word		rtcDayAlarm;					// $B1C: RTC
+                     // Day Alarm
+
+        {},  // Byte
+             // ___filler41[0xC00-0xB1E];
+
+        0x0000,  // Word		dramConfig;						//
+                 // $C00: DRAM Memory Config Register
+        0x0000,  // Word		dramControl;					// $C02:
+                 // DRAM Control Register
+
+        {},  // Byte
+             // ___filler42[0xD00-0xC04];
+
+        0x00000000,  // DWord	emuAddrCompare;					// $D00: Emulation
+                     // Address Compare Register
+        0x00000000,  // DWord	emuAddrMask;					// $D04: Emulation
+                     // Address Mask Register
+        0x0000,      // Word		emuControlCompare;				// $D08:
+                     // Emulation Control Compare Register
+        0x0000,      // Word		emuControlMask;					// $D0A:
+                     // Emulation Control Mask Register
+        0x0000,      // Word		emuControl;						//
+                     // $DOC: Emulation Control Register
+        0x0000       // Word		emuStatus;						// $D0E:
+                     // Emulation Status Register
+    };
+
+    template <class T>
+    void markScreenWith(T marker, HwrM68EZ328Type& f68EZ328Regs) {
+        emuptr firstLineAddr = READ_REGISTER(lcdStartAddr);
+        emuptr lastLineAddr =
+            firstLineAddr + (READ_REGISTER(lcdScreenHeight) + 1) * READ_REGISTER(lcdPageWidth) * 2;
+        emuptr pageBoundary = (firstLineAddr & hwrEZ328LcdPageMask) + hwrEZ328LcdPageSize;
+
+        if (EmMemGetBankPtr(firstLineAddr) == nullptr) return;
+
+        marker(firstLineAddr, min(lastLineAddr, pageBoundary));
+
+        if (lastLineAddr > pageBoundary)
+            marker(pageBoundary - hwrEZ328LcdPageSize, lastLineAddr - hwrEZ328LcdPageSize);
+    }
+}  // namespace
 
 using ButtonEventT = ButtonEvent;
 
@@ -430,6 +456,9 @@ void EmRegsEZ::Initialize(void) {
     EmRegs::Initialize();
 
     fUART = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballEZ, 0);
+
+    onMarkScreenCleanHandle =
+        gSystemState.onMarkScreenClean.AddHandler(bind(&EmRegsEZ::MarkScreen, this));
 }
 
 // ---------------------------------------------------------------------------
@@ -438,6 +467,7 @@ void EmRegsEZ::Initialize(void) {
 
 void EmRegsEZ::Reset(Bool hardwareReset) {
     EmRegs::Reset(hardwareReset);
+    UnmarkScreen();
 
     if (hardwareReset) {
         f68EZ328Regs = kInitial68EZ328RegisterValues;
@@ -578,6 +608,8 @@ void EmRegsEZ::Dispose(void) {
     fUART = NULL;
 
     EmRegs::Dispose();
+
+    gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
 }
 
 // ---------------------------------------------------------------------------
@@ -699,8 +731,8 @@ void EmRegsEZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, lcdClockControl);
     INSTALL_HANDLER(StdRead, StdWrite, lcdRefreshRateAdj);
     INSTALL_HANDLER(StdRead, StdWrite, lcdPanningOffset);
-    INSTALL_HANDLER(StdRead, StdWrite, lcdFrameRate);
-    INSTALL_HANDLER(StdRead, StdWrite, lcdGrayPalette);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdFrameRate);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdGrayPalette);
     INSTALL_HANDLER(StdRead, StdWrite, lcdContrastControlPWM);
     INSTALL_HANDLER(rtcHourMinSecRead, StdWrite, rtcHourMinSec);
 
@@ -980,10 +1012,6 @@ bool EmRegsEZ::CopyLCDFrame(Frame& frame) {
     emuptr firstLineAddr = baseAddr;
     emuptr lastLineAddr = baseAddr + frame.lines * frame.bytesPerLine;
 
-    // TODO: probably move to <M68EZ328Hwr.h>
-    const long hwrEZ328LcdPageSize = 0x00020000;  // 128K
-    const long hwrEZ328LcdPageMask = 0xFFFE0000;
-
     if (frame.lines * frame.bytesPerLine > hwrEZ328LcdPageSize) return false;
 
     uint8* dst = frame.GetBuffer();
@@ -991,11 +1019,6 @@ bool EmRegsEZ::CopyLCDFrame(Frame& frame) {
 
     if (lastLineAddr <= boundaryAddr) {
         // Bits don't cross the 128K boundary
-    } else if (firstLineAddr >= boundaryAddr) {
-        // Bits are all beyond the 128K boundary
-
-        firstLineAddr -= hwrEZ328LcdPageSize;  // wrap around
-        lastLineAddr -= hwrEZ328LcdPageSize;
     } else {
         // Bits straddle the 128K boundary;
         // copy the first part here, the wrapped part below
@@ -1011,6 +1034,20 @@ bool EmRegsEZ::CopyLCDFrame(Frame& frame) {
     EmMem_memcpy((void*)dst, firstLineAddr, lastLineAddr - firstLineAddr);
 
     return true;
+}
+
+void EmRegsEZ::MarkScreen() {
+    if (!markScreen) return;
+
+    markScreenWith(MetaMemory::MarkScreen, f68EZ328Regs);
+
+    markScreen = false;
+}
+
+void EmRegsEZ::UnmarkScreen() {
+    markScreenWith(MetaMemory::UnmarkScreen, f68EZ328Regs);
+
+    markScreen = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -1752,41 +1789,29 @@ void EmRegsEZ::uartWrite(emuptr address, int size, uint32 value) {
 void EmRegsEZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
     // First, get the old value in case we need to see what changed.
 
-    uint32 oldValue = EmRegsEZ::StdRead(address, size);
-
     // Do a standard update of the register.
+
+    switch (address) {
+        case addressof(lcdStartAddr):
+            // Make sure the low-bit is always zero.
+            // Make sure bits 31-29 are always zero.
+            value &= 0x1FFFFFFE;
+
+            UnmarkScreen();
+
+            break;
+
+        case addressof(lcdPageWidth):
+        case addressof(lcdScreenWidth):
+        case addressof(lcdScreenHeight):
+            UnmarkScreen();
+
+            break;
+    }
 
     EmRegsEZ::StdWrite(address, size, value);
 
-    // Note what changed.
-
-    if (address == addressof(lcdScreenWidth)) {
-        // CSTODO EmScreen::InvalidateAll();
-    } else if (address == addressof(lcdScreenHeight)) {
-        // CSTODO EmScreen::InvalidateAll();
-    } else if (address == addressof(lcdPanelControl)) {
-        // hwrEZ328LcdPanelControlGrayScale is incorrectly defined as 0x01,
-        // so use the hard-coded value of 0x03 here.
-
-        //		if (((value ^ oldValue) & hwrEZ328LcdPanelControlGrayScale) != 0)
-#if 0  // CSTODO
-        if (((value ^ oldValue) & 0x03) != 0) {
-            EmScreen::InvalidateAll();
-        }
-#endif
-    } else if (address == addressof(lcdStartAddr)) {
-        // Make sure the low-bit is always zero.
-        // Make sure bits 31-29 are always zero.
-
-        uint32 lcdStartAddr = READ_REGISTER(lcdStartAddr) & 0x1FFFFFFE;
-        WRITE_REGISTER(lcdStartAddr, lcdStartAddr);
-
-        // CSTODO EmScreen::InvalidateAll();
-    } else if (address == addressof(lcdPageWidth)) {
-        if (value != oldValue) {
-            // CSTODO EmScreen::InvalidateAll();
-        }
-    }
+    gSystemState.MarkScreenDirty();
 }
 
 // ---------------------------------------------------------------------------

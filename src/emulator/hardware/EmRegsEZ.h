@@ -15,6 +15,7 @@
 #define EmRegsEZ_h
 
 #include "ButtonEvent.h"
+#include "EmEvent.h"
 #include "EmHAL.h"             // EmHALHandler
 #include "EmRegs.h"            // EmRegs
 #include "EmUARTDragonball.h"  // EmUARTDragonball::State
@@ -121,6 +122,10 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
    protected:
     int GetPort(emuptr address);
 
+   private:
+    void MarkScreen();
+    void UnmarkScreen();
+
    protected:
     HwrM68EZ328Type f68EZ328Regs;
     bool fHotSyncButtonDown;
@@ -134,6 +139,9 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     uint32 fSec;
     uint32 fTick;
     uint32 fCycle;
+
+    bool markScreen{true};
+    EmEvent<>::HandleT onMarkScreenCleanHandle;
 
     EmUARTDragonball* fUART;
 };

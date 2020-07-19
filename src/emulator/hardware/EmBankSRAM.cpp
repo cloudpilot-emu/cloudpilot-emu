@@ -17,8 +17,9 @@
 #include "DebugMgr.h"      // Debug::CheckStepSpy
 #include "EmCPU68K.h"      // gCPU68K
 #include "EmCommon.h"
-#include "EmMemory.h"    // gRAMBank_Size, gRAM_Memory, gMemoryAccess
-#include "EmSession.h"   // GetDevice
+#include "EmMemory.h"   // gRAMBank_Size, gRAM_Memory, gMemoryAccess
+#include "EmSession.h"  // GetDevice
+#include "EmSystemState.h"
 #include "MetaMemory.h"  // MetaMemory::
 #include "Platform.h"
 
@@ -69,11 +70,9 @@ LowMemHdrType* gLowMemory;
 
 #endif
 
-/*
 static inline uint8* InlineGetMetaAddress(emuptr address) {
     return (uint8*)&(gRAM_MetaMemory[address]);
 }
-*/
 
 static inline void markDirty(emuptr address) {
     gRAM_DirtyPages[address >> 13] |= (1 << ((address >> 10) & 0x07));
@@ -371,6 +370,8 @@ void EmBankSRAM::SetLong(emuptr address, uint32 value) {
     markDirty(phyAddress);
     markDirty(phyAddress + 2);
 
+    if (MetaMemory::IsScreenBuffer32(InlineGetMetaAddress(address))) gSystemState.MarkScreenDirty();
+
     // Debug::CheckStepSpy(address, sizeof(uint16));
 }
 
@@ -407,6 +408,8 @@ void EmBankSRAM::SetWord(emuptr address, uint32 value) {
 
     markDirty(phyAddress);
 
+    if (MetaMemory::IsScreenBuffer16(InlineGetMetaAddress(address))) gSystemState.MarkScreenDirty();
+
     // Debug::CheckStepSpy(address, sizeof(uint16));
 }
 
@@ -436,6 +439,8 @@ void EmBankSRAM::SetByte(emuptr address, uint32 value) {
     EmMemDoPut8(gRAM_Memory + phyAddress, value);
 
     markDirty(phyAddress);
+
+    if (MetaMemory::IsScreenBuffer8(InlineGetMetaAddress(address))) gSystemState.MarkScreenDirty();
 
     // Debug::CheckStepSpy(address, sizeof(uint8));
 }
