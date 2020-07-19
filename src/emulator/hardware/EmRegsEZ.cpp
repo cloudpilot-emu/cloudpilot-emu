@@ -1036,6 +1036,11 @@ bool EmRegsEZ::CopyLCDFrame(Frame& frame) {
     return true;
 }
 
+uint16 EmRegsEZ::GetLCD2bitMapping() {
+    uint8 lgpmr = READ_REGISTER(lcdGrayPalette);
+    return ((lgpmr & 0x0f) << 4) | ((lgpmr & 0xf0) << 4) | 0xf000;
+}
+
 void EmRegsEZ::MarkScreen() {
     if (!markScreen) return;
 

@@ -60,6 +60,7 @@ class EmHALHandler {
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr&, emuptr&);
     virtual bool CopyLCDFrame(Frame& frame);
+    virtual uint16 GetLCD2bitMapping();
 
     virtual int32 GetDynamicHeapSize(void);
     virtual int32 GetROMSize(void);
@@ -116,6 +117,7 @@ class EmHAL {
     static Bool GetLCDHasFrame(void);
     static void GetLCDBeginEnd(emuptr&, emuptr&);
     static bool CopyLCDFrame(Frame& frame);
+    static uint16 GetLCD2bitMapping();
 
     static int32 GetDynamicHeapSize(void);
     static int32 GetROMSize(void);

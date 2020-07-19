@@ -261,6 +261,11 @@ bool EmHAL::CopyLCDFrame(Frame& frame) {
     return EmHAL::GetRootHandler()->CopyLCDFrame(frame);
 }
 
+uint16 EmHAL::GetLCD2bitMapping() {
+    EmAssert(EmHAL::GetRootHandler());
+    return EmHAL::GetRootHandler()->GetLCD2bitMapping();
+}
+
 // ---------------------------------------------------------------------------
 //		� EmHAL::GetDynamicHeapSize
 // ---------------------------------------------------------------------------
@@ -619,6 +624,11 @@ void EmHALHandler::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 bool EmHALHandler::CopyLCDFrame(Frame& frame) {
     EmAssert(this->GetNextHandler());
     return this->GetNextHandler()->CopyLCDFrame(frame);
+}
+
+uint16 EmHALHandler::GetLCD2bitMapping() {
+    EmAssert(this->GetNextHandler());
+    return this->GetNextHandler()->GetLCD2bitMapping();
 }
 
 // ---------------------------------------------------------------------------
