@@ -1819,6 +1819,7 @@ void EmRegsEZ::pllRegisterWrite(emuptr address, int size, uint32 value) {
     EmRegsEZ::StdWrite(address, size, value);
 
     UpdateTimerTicksPerSecond();
+    gSystemState.MarkScreenDirty();
 
     EmHAL::onSystemClockChange.Dispatch();
 }

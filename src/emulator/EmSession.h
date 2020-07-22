@@ -61,7 +61,7 @@ class EmSession {
 
     uint32 GetRandomSeed() const;
 
-    void SetHotsyncUserName(string hotsyncUserName) const;
+    void SetHotsyncUserName(string hotsyncUserName);
 
     void SetClockDiv(uint32 clockDiv);
     uint32 GetClocksPerSecond() const { return clocksPerSecond; }

@@ -20,7 +20,8 @@
 
 #include "EmCPU.h"  // Emulator::ExecuteUntilIdle
 #include "EmCommon.h"
-#include "EmErrCodes.h"     // kError_OutOfMemory, ConvertFromPalmError, etc.
+#include "EmErrCodes.h"  // kError_OutOfMemory, ConvertFromPalmError, etc.
+#include "EmHAL.h"
 #include "EmLowMem.h"       // TrapExists
 #include "EmPalmStructs.h"  // SysLibTblEntryType, RecordEntryType, RsrcEntryType, etc.
 #include "EmSession.h"      // ExecuteUntilIdle, gSession
@@ -165,6 +166,8 @@ EmFileImport::~EmFileImport(void) {
  ***********************************************************************/
 
 ErrCode EmFileImport::LoadPalmFile(const uint8* buffer, size_t len, EmFileImportMethod method) {
+    if (EmHAL::GetAsleep()) return kError_PowerOff;
+
     ErrCode err = errNone;
     EmFileImport importer(buffer, len, method);
 

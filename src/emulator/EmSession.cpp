@@ -268,10 +268,10 @@ uint32 EmSession::GetRandomSeed() const { return EmLowMem::fgLowMem.globals.sysR
 
 uint8* EmSession::GetDirtyPagesPtr() const { return gRAM_DirtyPages; }
 
-void EmSession::SetHotsyncUserName(string hotsyncUserName) const {
+void EmSession::SetHotsyncUserName(string hotsyncUserName) {
     gSystemState.SetHotsyncUserName(hotsyncUserName);
 
-    if (gSystemState.IsUIInitialized()) {
+    if (gSystemState.IsUIInitialized() && IsPowerOn()) {
         SetHotSyncUserName(hotsyncUserName.c_str());
     }
 }

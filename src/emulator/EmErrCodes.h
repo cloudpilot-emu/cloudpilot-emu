@@ -81,6 +81,8 @@ const ErrCode kError_CorruptedHeap_HOffsetNotInMPT = kError_EmuErrBase + 53;
 const ErrCode kError_CorruptedHeap_HOffsetNotBackPointing = kError_EmuErrBase + 54;
 const ErrCode kError_CorruptedHeap_InvalidLockCount = kError_EmuErrBase + 55;
 
+const ErrCode kError_PowerOff = kError_EmuErrBase + 56;
+
 const ErrCode kError_PalmOSErrBase = 0xFFFC0000;  // arbitrary value
 const ErrCode kError_PalmOSErrRange = (1 << (sizeof(Err) * 8));
 
