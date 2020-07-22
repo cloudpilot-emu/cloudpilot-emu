@@ -83,6 +83,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     uint32 tmr1StatusRead(emuptr address, int size);
     uint32 uartRead(emuptr address, int size);
     uint32 rtcHourMinSecRead(emuptr address, int size);
+    uint32 rtcDayRead(emuptr address, int size);
 
     void csASelectWrite(emuptr address, int size, uint32 value);
     void csDSelectWrite(emuptr address, int size, uint32 value);
@@ -100,6 +101,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     void rtcControlWrite(emuptr address, int size, uint32 value);
     void rtcIntStatusWrite(emuptr address, int size, uint32 value);
     void rtcIntEnableWrite(emuptr address, int size, uint32 value);
+    void rtcDayWrite(emuptr address, int size, uint32 value);
 
    protected:
     void HotSyncEvent(Bool buttonIsDown);
@@ -142,6 +144,8 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
 
     double lastProcessedSystemCycles;
     double timerTicksPerSecond;
+
+    uint32 rtcDayAtWrite;
 
     bool markScreen{true};
     EmEvent<>::HandleT onMarkScreenCleanHandle;

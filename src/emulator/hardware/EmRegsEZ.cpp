@@ -436,6 +436,7 @@ EmRegsEZ::EmRegsEZ(void)
       fLastTmr1Status(0),
       fPortDEdge(0),
       fPortDDataCount(0),
+      rtcDayAtWrite(0),
       fUART(NULL) {}
 
 // ---------------------------------------------------------------------------
@@ -450,6 +451,7 @@ EmRegsEZ::~EmRegsEZ(void) {}
 
 void EmRegsEZ::Initialize(void) {
     EmRegs::Initialize();
+    rtcDayAtWrite = 0;
 
     fUART = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballEZ, 0);
 
@@ -729,7 +731,7 @@ void EmRegsEZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, rtcIntStatusWrite, rtcIntStatus);
     INSTALL_HANDLER(StdRead, rtcIntEnableWrite, rtcIntEnable);
     INSTALL_HANDLER(StdRead, StdWrite, stopWatch);
-    INSTALL_HANDLER(StdRead, StdWrite, rtcDay);
+    INSTALL_HANDLER(rtcDayRead, rtcDayWrite, rtcDay);
     INSTALL_HANDLER(StdRead, StdWrite, rtcDayAlarm);
 
     INSTALL_HANDLER(StdRead, StdWrite, dramConfig);
@@ -1462,6 +1464,18 @@ uint32 EmRegsEZ::rtcHourMinSecRead(emuptr address, int size) {
                                       (sec << hwrEZ328RTCHourMinSecSecondsOffset));
 
     // Finish up by doing a standard read.
+
+    return EmRegsEZ::StdRead(address, size);
+}
+
+void EmRegsEZ::rtcDayWrite(emuptr address, int size, uint32 value) {
+    EmRegsEZ::StdWrite(address, size, value);
+
+    rtcDayAtWrite = Platform::GetMilliseconds() / (3600 * 24 * 1000);
+}
+
+uint32 EmRegsEZ::rtcDayRead(emuptr address, int size) {
+    WRITE_REGISTER(rtcDay, (rtcDayAtWrite + Platform::GetMilliseconds() / (1000)) & 0x01ff);
 
     return EmRegsEZ::StdRead(address, size);
 }
