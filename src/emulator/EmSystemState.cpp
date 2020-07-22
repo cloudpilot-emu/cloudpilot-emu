@@ -9,27 +9,15 @@ void EmSystemState::Reset() {
 
 void EmSystemState::SetOSVersion(uint32 version) { osVersion = version; }
 
-uint32 EmSystemState::OSVersion(void) const {
-    EmAssert(osVersion != kOSUndeterminedVersion);
-
-    return osVersion;
-}
+uint32 EmSystemState::OSVersion(void) const { return osVersion; }
 
 uint32 EmSystemState::OSMajorMinorVersion(void) const {
     return OSMajorVersion() * 10 + OSMinorVersion();
 }
 
-uint32 EmSystemState::OSMajorVersion(void) const {
-    EmAssert(osVersion != kOSUndeterminedVersion);
+uint32 EmSystemState::OSMajorVersion(void) const { return sysGetROMVerMajor(osVersion); }
 
-    return sysGetROMVerMajor(osVersion);
-}
-
-uint32 EmSystemState::OSMinorVersion(void) const {
-    EmAssert(osVersion != kOSUndeterminedVersion);
-
-    return sysGetROMVerMinor(osVersion);
-}
+uint32 EmSystemState::OSMinorVersion(void) const { return sysGetROMVerMinor(osVersion); }
 
 void EmSystemState::SetUIInitialized() { uiInitialized = true; }
 

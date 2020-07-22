@@ -4,8 +4,6 @@
 #include "EmCommon.h"
 #include "EmEvent.h"
 
-const uint32 kOSUndeterminedVersion = ~0;
-
 class EmSystemState {
    public:
     EmSystemState() = default;
@@ -32,7 +30,7 @@ class EmSystemState {
     EmEvent<> onMarkScreenClean;
 
    private:
-    uint32 osVersion{kOSUndeterminedVersion};
+    uint32 osVersion{0};
 
     bool uiInitialized{false};
 

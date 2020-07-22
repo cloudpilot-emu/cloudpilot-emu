@@ -106,6 +106,21 @@ Err EvtWakeup(void) {
     RETURN_RESULT_VAL(Err);
 }
 
+Err EvtWakeupWithoutNilEvent(void) {
+    // Prepare the stack.
+    CALLER_SETUP("Err", "void");
+
+    // Set the parameters.
+
+    // Call the function.
+    sub.Call(sysTrapEvtWakeupWithoutNilEvent);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_VAL(Err);
+}
+
 Err EvtEnqueueKey(UInt16 ascii, UInt16 keycode, UInt16 modifiers) {
     // Prepare the stack.
     CALLER_SETUP("Err", "UInt16 ascii, UInt16 keycode, UInt16 modifiers");

@@ -26,6 +26,7 @@ Err PenScreenToRaw(PointType* penP);
 Err EvtEnqueuePenPoint(PointType* ptP);
 
 Err EvtWakeup(void);
+Err EvtWakeupWithoutNilEvent(void);
 
 Err EvtEnqueueKey(UInt16 ascii, UInt16 keycode, UInt16 modifiers);
 

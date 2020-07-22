@@ -204,7 +204,8 @@ KeyboardEvent EmSession::NextKeyboardEvent() {
 bool EmSession::Wakeup() {
     bool isSafeToWakeup = RunToSyscall();
 
-    if (isSafeToWakeup) EvtWakeup();
+    if (isSafeToWakeup)
+        gSystemState.OSMajorVersion() >= 4 ? EvtWakeupWithoutNilEvent() : EvtWakeup();
 
     return isSafeToWakeup;
 }
