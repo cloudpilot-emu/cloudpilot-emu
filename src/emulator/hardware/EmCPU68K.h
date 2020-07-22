@@ -283,8 +283,6 @@ class EmCPU68K : public EmCPU {
     void UpdateSRFromRegisters(void);
     void UpdateRegistersFromSR(void);
 
-    uint32 GetCycleCount(void);
-
     void BusError(emuptr address, long size, Bool forRead);
     void AddressError(emuptr address, long size, Bool forRead);
 
@@ -301,7 +299,6 @@ class EmCPU68K : public EmCPU {
 
    private:
     emuptr fLastTraceAddress;
-    uint32 fCycleCount;
     Hook68KExceptionList fExceptionHandlers[kException_LastException];
     Hook68KJSRList fHookJSR;
     Hook68KJSR_IndList fHookJSR_Ind;

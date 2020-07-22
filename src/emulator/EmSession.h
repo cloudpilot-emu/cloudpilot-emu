@@ -64,7 +64,9 @@ class EmSession {
     void SetHotsyncUserName(string hotsyncUserName) const;
 
     void SetClockDiv(uint32 clockDiv);
-    uint32 GetClocksPerSecond() const;
+    uint32 GetClocksPerSecond() const { return clocksPerSecond; }
+
+    uint64 GetSystemCycles() const { return systemCycles; }
 
    private:
     void Reset(EmResetType);
@@ -74,6 +76,8 @@ class EmSession {
     void PumpEvents();
     bool PromoteKeyboardEvent();
     bool PromotePenEvent();
+
+    void RecalculateClocksPerSecond();
 
    private:
     bool bankResetScheduled{false};
@@ -99,9 +103,10 @@ class EmSession {
     EmThreadSafeQueue<ButtonEvent> buttonEventQueue{20};
     uint64 lastButtonEventReadAt{0};
 
-    uint32 additionalCycles{0};
     uint64 systemCycles{0};
     uint32 clockDiv{1};
+
+    uint32 clocksPerSecond;
 };
 
 extern EmSession* gSession;

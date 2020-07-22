@@ -62,6 +62,8 @@ namespace {
 }
 #endif
 
+EmEvent<> EmHAL::onSystemClockChange{};
+
 // ---------------------------------------------------------------------------
 //		� EmHAL::AddHandler
 // ---------------------------------------------------------------------------
@@ -493,6 +495,11 @@ uint16 EmHAL::GetLEDState(void) {
     return EmHAL::GetRootHandler()->GetLEDState();
 }
 
+uint32 EmHAL::CyclesToNextInterrupt() {
+    EmAssert(EmHAL::GetRootHandler());
+    return EmHAL::GetRootHandler()->CyclesToNextInterrupt();
+}
+
 #pragma mark -
 
 // ---------------------------------------------------------------------------
@@ -513,9 +520,9 @@ EmHALHandler::~EmHALHandler(void) { EmHAL::RemoveHandler(this); }
 //		� EmHALHandler::Cycle
 // ---------------------------------------------------------------------------
 
-void EmHALHandler::Cycle(Bool sleeping) {
+void EmHALHandler::Cycle(uint64 systemCycles, Bool sleeping) {
     EmAssert(this->GetNextHandler());
-    this->GetNextHandler()->Cycle(sleeping);
+    this->GetNextHandler()->Cycle(systemCycles, sleeping);
 }
 
 // ---------------------------------------------------------------------------
@@ -793,4 +800,11 @@ uint16 EmHALHandler::GetLEDState(void) {
 
     EmAssert(this->GetNextHandler());
     return this->GetNextHandler()->GetLEDState();
+}
+
+uint32 EmHALHandler::CyclesToNextInterrupt() {
+    if (!this->GetNextHandler()) return 0;
+
+    EmAssert(this->GetNextHandler());
+    return this->GetNextHandler()->CyclesToNextInterrupt();
 }

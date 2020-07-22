@@ -13,6 +13,7 @@
 
 #include "EmRegsEZ.h"
 
+#include <cmath>
 #include <functional>
 
 #include "Byteswapping.h"  // Canonical
@@ -435,11 +436,6 @@ EmRegsEZ::EmRegsEZ(void)
       fLastTmr1Status(0),
       fPortDEdge(0),
       fPortDDataCount(0),
-      fHour(0),
-      fMin(0),
-      fSec(0),
-      fTick(0),
-      fCycle(0),
       fUART(NULL) {}
 
 // ---------------------------------------------------------------------------
@@ -459,6 +455,9 @@ void EmRegsEZ::Initialize(void) {
 
     onMarkScreenCleanHandle =
         gSystemState.onMarkScreenClean.AddHandler(bind(&EmRegsEZ::MarkScreen, this));
+
+    lastProcessedSystemCycles = gSession->GetSystemCycles();
+    UpdateTimerTicksPerSecond();
 }
 
 // ---------------------------------------------------------------------------
@@ -468,6 +467,8 @@ void EmRegsEZ::Initialize(void) {
 void EmRegsEZ::Reset(Bool hardwareReset) {
     EmRegs::Reset(hardwareReset);
     UnmarkScreen();
+
+    lastProcessedSystemCycles = gSession->GetSystemCycles();
 
     if (hardwareReset) {
         f68EZ328Regs = kInitial68EZ328RegisterValues;
@@ -487,6 +488,8 @@ void EmRegsEZ::Reset(Bool hardwareReset) {
         Bool sendTxData = false;
         EmRegsEZ::UARTStateChanged(sendTxData);
     }
+
+    UpdateTimerTicksPerSecond();
 }
 
 // ---------------------------------------------------------------------------
@@ -514,14 +517,6 @@ void EmRegsEZ::Save(SessionFile& f) {
     s << fKeyBits;
     s << fLastTmr1Status;
     s << fPortDEdge;
-
-    // Added in version 2.
-
-    s << fHour;
-    s << fMin;
-    s << fSec;
-    s << fTick;
-    s << fCycle;
 
     // Added in version 3.
 
@@ -582,14 +577,6 @@ void EmRegsEZ::Load(SessionFile& f) {
             s >> fPortDEdge;
         }
 
-        if (version >= 2) {
-            s >> fHour;
-            s >> fMin;
-            s >> fSec;
-            s >> fTick;
-            s >> fCycle;
-        }
-
         if (version >= 3) {
             s >> fPortDDataCount;
         }
@@ -641,8 +628,8 @@ void EmRegsEZ::SetSubBankHandlers(void) {
 
     INSTALL_HANDLER(StdRead, StdWrite, emuCS);
 
-    INSTALL_HANDLER(StdRead, StdWrite, pllControl);
-    INSTALL_HANDLER(pllFreqSelRead, StdWrite, pllFreqSel);
+    INSTALL_HANDLER(StdRead, pllRegisterWrite, pllControl);
+    INSTALL_HANDLER(pllFreqSelRead, pllRegisterWrite, pllFreqSel);
     INSTALL_HANDLER(StdRead, StdWrite, pllTest);
     INSTALL_HANDLER(StdRead, StdWrite, pwrControl);
 
@@ -699,8 +686,8 @@ void EmRegsEZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, pwmPeriod);
     INSTALL_HANDLER(StdRead, NullWrite, pwmCounter);
 
-    INSTALL_HANDLER(StdRead, StdWrite, tmr1Control);
-    INSTALL_HANDLER(StdRead, StdWrite, tmr1Prescaler);
+    INSTALL_HANDLER(StdRead, tmr1RegisterWrite, tmr1Control);
+    INSTALL_HANDLER(StdRead, tmr1RegisterWrite, tmr1Prescaler);
     INSTALL_HANDLER(StdRead, StdWrite, tmr1Compare);
     INSTALL_HANDLER(StdRead, StdWrite, tmr1Capture);
     INSTALL_HANDLER(StdRead, NullWrite, tmr1Counter);
@@ -786,25 +773,34 @@ uint32 EmRegsEZ::GetAddressRange(void) { return kMemorySize; }
 // Emulator::Execute.  Interestingly, the loop runs 3% FASTER if this function
 // is in its own separate function instead of being inline.
 
-void EmRegsEZ::Cycle(Bool sleeping) {
+void EmRegsEZ::Cycle(uint64 systemCycles, Bool sleeping) {
 #if _DEBUG
     #define increment 20
 #else
     #define increment 4
 #endif
-
     if (GetAsleep()) return;
 
     // Determine whether timer is enabled.
 
-    if ((READ_REGISTER(tmr1Control) & hwrEZ328TmrControlEnable) != 0) {
+    if (((READ_REGISTER(tmr1Control) & hwrEZ328TmrControlEnable) != 0) && timerTicksPerSecond > 0) {
         // If so, increment the timer.
 
-        WRITE_REGISTER(tmr1Counter, READ_REGISTER(tmr1Counter) + (sleeping ? 1 : increment));
+        double clocksPerSecond = gSession->GetClocksPerSecond();
+
+        uint32 ticks = ((double)systemCycles - lastProcessedSystemCycles) / clocksPerSecond *
+                       timerTicksPerSecond;
+
+        lastProcessedSystemCycles += (double)ticks / timerTicksPerSecond * clocksPerSecond;
+
+        WRITE_REGISTER(tmr1Counter, READ_REGISTER(tmr1Counter) + ticks);
 
         // Determine whether the timer has reached the specified count.
 
-        if (sleeping || READ_REGISTER(tmr1Counter) > READ_REGISTER(tmr1Compare)) {
+        uint16 tcmp = READ_REGISTER(tmr1Compare);
+        uint16 tcn = READ_REGISTER(tmr1Counter);
+
+        if (tcn >= tcmp) {
             // Flag the occurrence of the successful comparison.
 
             WRITE_REGISTER(tmr1Status, READ_REGISTER(tmr1Status) | hwrEZ328TmrStatusCompare);
@@ -812,7 +808,7 @@ void EmRegsEZ::Cycle(Bool sleeping) {
             // If the Free Run/Restart flag is not set, clear the counter.
 
             if ((READ_REGISTER(tmr1Control) & hwrEZ328TmrControlFreeRun) == 0) {
-                WRITE_REGISTER(tmr1Counter, 0);
+                WRITE_REGISTER(tmr1Counter, tcn - tcmp);
             }
 
             // If the timer interrupt is enabled, post an interrupt.
@@ -820,26 +816,6 @@ void EmRegsEZ::Cycle(Bool sleeping) {
             if ((READ_REGISTER(tmr1Control) & hwrEZ328TmrControlEnInterrupt) != 0) {
                 WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrEZ328IntLoTimer);
                 EmRegsEZ::UpdateInterrupts();
-            }
-        }
-    }
-
-    if ((fCycle += increment) > READ_REGISTER(tmr1Compare)) {
-        fCycle = 0;
-
-        if (++fTick >= 100) {
-            fTick = 0;
-
-            if (++fSec >= 60) {
-                fSec = 0;
-
-                if (++fMin >= 60) {
-                    fMin = 0;
-
-                    if (++fHour >= 24) {
-                        fHour = 0;
-                    }
-                }
             }
         }
     }
@@ -913,13 +889,7 @@ void EmRegsEZ::ResetTimer(void) { WRITE_REGISTER(tmr1Counter, 0); }
 //		� EmRegsEZ::ResetRTC
 // ---------------------------------------------------------------------------
 
-void EmRegsEZ::ResetRTC(void) {
-    fHour = 15;
-    fMin = 0;
-    fSec = 0;
-    fTick = 0;
-    fCycle = 0;
-}
+void EmRegsEZ::ResetRTC(void) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsEZ::GetInterruptLevel
@@ -1068,6 +1038,26 @@ void EmRegsEZ::UnmarkScreen() {
     markScreenWith(MetaMemory::UnmarkScreen, f68EZ328Regs);
 
     markScreen = true;
+}
+
+void EmRegsEZ::UpdateTimerTicksPerSecond() {
+    uint8 clksource = (READ_REGISTER(tmr1Control) >> 1) & 0x7;
+    double prescaler = ((READ_REGISTER(tmr1Prescaler) & 0xff) + 1);
+
+    switch (clksource) {
+        case 0x1:
+            timerTicksPerSecond = (double)GetSystemClockFrequency() / prescaler;
+            break;
+
+        case 0x2:
+            timerTicksPerSecond = (double)GetSystemClockFrequency() / prescaler / 16.;
+
+            break;
+
+        default:
+            timerTicksPerSecond = (clksource & 0x4) ? 32000. / prescaler : 0;
+            break;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1428,29 +1418,6 @@ uint32 EmRegsEZ::portXDataRead(emuptr address, int) {
 // ---------------------------------------------------------------------------
 
 uint32 EmRegsEZ::tmr1StatusRead(emuptr address, int size) {
-    uint16 tmr1Counter = READ_REGISTER(tmr1Counter) + 16;
-    uint16 tmr1Compare = READ_REGISTER(tmr1Compare);
-    uint16 tmr1Control = READ_REGISTER(tmr1Control);
-
-    // Increment the timer.
-
-    WRITE_REGISTER(tmr1Counter, tmr1Counter);
-
-    // If the timer has passed the specified value...
-
-    if ((tmr1Counter - tmr1Compare) < 16) {
-        // Set the flag saying the timer timed out.
-
-        uint16 tmr1Status = READ_REGISTER(tmr1Status) | hwrEZ328TmrStatusCompare;
-        WRITE_REGISTER(tmr1Status, tmr1Status);
-
-        // If it's not a free-running timer, reset it to zero.
-
-        if ((tmr1Control & hwrEZ328TmrControlFreeRun) == 0) {
-            WRITE_REGISTER(tmr1Counter, 0);
-        }
-    }
-
     // Remember this guy for later (see EmRegsEZ::tmr1StatusWrite())
 
     fLastTmr1Status |= READ_REGISTER(tmr1Status);
@@ -1832,6 +1799,20 @@ void EmRegsEZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
     EmRegsEZ::StdWrite(address, size, value);
 
     gSystemState.MarkScreenDirty();
+}
+
+void EmRegsEZ::pllRegisterWrite(emuptr address, int size, uint32 value) {
+    EmRegsEZ::StdWrite(address, size, value);
+
+    UpdateTimerTicksPerSecond();
+
+    EmHAL::onSystemClockChange.Dispatch();
+}
+
+void EmRegsEZ::tmr1RegisterWrite(emuptr address, int size, uint32 value) {
+    EmRegsEZ::StdWrite(address, size, value);
+
+    UpdateTimerTicksPerSecond();
 }
 
 // ---------------------------------------------------------------------------
@@ -2542,4 +2523,14 @@ int EmRegsEZ::GetPort(emuptr address) {
 
     EmAssert(false);
     return 0;
+}
+
+uint32 EmRegsEZ::CyclesToNextInterrupt() {
+    if (timerTicksPerSecond <= 0) return 0;
+
+    uint16 tcmp = READ_REGISTER(tmr1Compare);
+    uint16 tcn = READ_REGISTER(tmr1Counter);
+    uint32 delta = tcmp >= tcn ? tcmp - tcn : tcmp + 0x10000 - tcn;
+
+    return ceil((double)delta / timerTicksPerSecond * (double)gSession->GetClocksPerSecond());
 }

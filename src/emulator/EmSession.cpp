@@ -1,5 +1,7 @@
 #include "EmSession.h"
 
+#include <functional>
+
 #include "EmBankSRAM.h"
 #include "EmCPU.h"
 #include "EmHAL.h"
@@ -21,6 +23,8 @@ constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
 EmSession* gSession = &_gSession;
 
 bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLength) {
+    EmHAL::onSystemClockChange.AddHandler(bind(&EmSession::RecalculateClocksPerSecond, this));
+
     this->device.reset(device);
 
     cpu.reset(device->CreateCPU(this));
@@ -31,6 +35,8 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     Reset(EmResetType::kResetSoft);
 
     gSystemState.Reset();
+
+    RecalculateClocksPerSecond();
 
     return true;
 }
@@ -48,7 +54,6 @@ void EmSession::Reset(EmResetType resetType) {
     waitingForSyscall = false;
     syscallDispatched = false;
 
-    additionalCycles = 0;
     systemCycles = 0;
 
     penEventQueue.Clear();
@@ -120,15 +125,14 @@ EmDevice& EmSession::GetDevice() { return *device; }
 uint32 EmSession::RunEmulation(uint32 maxCycles) {
     EmAssert(cpu);
 
+    uint64 cyclesBefore = systemCycles;
+
     PumpEvents();
 
     uint32 cycles = cpu->Execute(maxCycles);
     systemCycles += cycles;
 
-    cycles += additionalCycles;
-    additionalCycles = 0;
-
-    return cycles;
+    return systemCycles - cyclesBefore;
 }
 
 void EmSession::ExecuteSubroutine() {
@@ -153,7 +157,6 @@ bool EmSession::RunToSyscall() {
         uint32 cycles = cpu->Execute(0);
 
         systemCycles += cycles;
-        additionalCycles += cycles;
 
         if (cpu->Stopped()) return false;
     }
@@ -274,4 +277,6 @@ void EmSession::SetHotsyncUserName(string hotsyncUserName) const {
 
 void EmSession::SetClockDiv(uint32 clockDiv) { this->clockDiv = clockDiv; }
 
-uint32 EmSession::GetClocksPerSecond() const { return EmHAL::GetSystemClockFrequency() / clockDiv; }
+void EmSession::RecalculateClocksPerSecond() {
+    clocksPerSecond = EmHAL::GetSystemClockFrequency() / clockDiv;
+}

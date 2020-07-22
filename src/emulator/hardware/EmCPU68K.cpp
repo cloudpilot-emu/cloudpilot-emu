@@ -107,7 +107,7 @@ EmCPU68K* gCPU68K;
         if (!session->IsNested()) {                                                \
             /* Perform CPU-specific idling. */                                     \
                                                                                    \
-            EmHAL::Cycle(sleeping);                                                \
+            EmHAL::Cycle(session->GetSystemCycles() + fCurrentCycles, sleeping);   \
                                                                                    \
             /* Perform expensive operations. */                                    \
                                                                                    \
@@ -124,7 +124,6 @@ EmCPU68K* gCPU68K;
 EmCPU68K::EmCPU68K(EmSession* session)
     : EmCPU(session),
       fLastTraceAddress(EmMemNULL),
-      fCycleCount(0),
       //	fExceptionHandlers (),
       fHookJSR(),
       fHookJSR_Ind(),
@@ -167,8 +166,6 @@ EmCPU68K::~EmCPU68K(void) {
 
 void EmCPU68K::Reset(Bool hardwareReset) {
     fLastTraceAddress = EmMemNULL;
-    fCycleCount = 0;
-
 #if REGISTER_HISTORY
     fRegHistoryIndex = 0;
 #endif
@@ -313,7 +310,6 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
 
         opcode = do_get_mem_word(pc_p);
         cycles = (functable[opcode])(opcode);
-        fCycleCount += cycles;
         fCurrentCycles += cycles;
         // =======================================================================
 
@@ -444,6 +440,9 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
 
         // Perform periodic tasks.
 
+        uint32 cyclesToNextInterrupt = EmHAL::CyclesToNextInterrupt();
+        fCurrentCycles += (cyclesToNextInterrupt > 0 ? cyclesToNextInterrupt : 10000);
+
         CYCLE(true);
 
         // Process an interrupt (see if it's time to wake up).
@@ -458,8 +457,6 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
                 m68k_setstopped(0);
             }
         }
-
-        fCurrentCycles += session->GetClocksPerSecond() / 100;
 
         if (this->CheckForBreak() || gSession->IsExecutingSync() ||
             (maxCycles && fCurrentCycles >= maxCycles)) {
@@ -1162,12 +1159,6 @@ void EmCPU68K::UpdateRegistersFromSR(void) {
         regs.spcflags &= ~(SPCFLAG_TRACE | SPCFLAG_DOTRACE);
     }
 }
-
-// ---------------------------------------------------------------------------
-//		� EmCPU68K::GetCycleCount
-// ---------------------------------------------------------------------------
-
-uint32 EmCPU68K::GetCycleCount(void) { return fCycleCount; }
 
 // ---------------------------------------------------------------------------
 //		� EmCPU68K::BusError

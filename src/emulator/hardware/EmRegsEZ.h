@@ -43,7 +43,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual uint32 GetAddressRange(void);
 
     // EmHALHandler overrides
-    virtual void Cycle(Bool sleeping);
+    virtual void Cycle(uint64 systemCycles, Bool sleeping);
     virtual void CycleSlowly(Bool sleeping);
 
     virtual void ButtonEvent(ButtonEventT evt);
@@ -75,6 +75,8 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual void PortDataChanged(int, uint8, uint8);
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) = 0;
 
+    virtual uint32 CyclesToNextInterrupt();
+
    protected:
     uint32 pllFreqSelRead(emuptr address, int size);
     uint32 portXDataRead(emuptr address, int size);
@@ -93,6 +95,8 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     void spiMasterControlWrite(emuptr address, int size, uint32 value);
     void uartWrite(emuptr address, int size, uint32 value);
     void lcdRegisterWrite(emuptr address, int size, uint32 value);
+    void pllRegisterWrite(emuptr address, int size, uint32 value);
+    void tmr1RegisterWrite(emuptr address, int size, uint32 value);
     void rtcControlWrite(emuptr address, int size, uint32 value);
     void rtcIntStatusWrite(emuptr address, int size, uint32 value);
     void rtcIntEnableWrite(emuptr address, int size, uint32 value);
@@ -126,6 +130,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
    private:
     void MarkScreen();
     void UnmarkScreen();
+    void UpdateTimerTicksPerSecond();
 
    protected:
     HwrM68EZ328Type f68EZ328Regs;
@@ -135,11 +140,8 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     uint8 fPortDEdge;
     uint32 fPortDDataCount;
 
-    uint32 fHour;
-    uint32 fMin;
-    uint32 fSec;
-    uint32 fTick;
-    uint32 fCycle;
+    double lastProcessedSystemCycles;
+    double timerTicksPerSecond;
 
     bool markScreen{true};
     EmEvent<>::HandleT onMarkScreenCleanHandle;

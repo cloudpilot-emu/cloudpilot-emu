@@ -16,6 +16,7 @@
 
 #include "ButtonEvent.h"
 #include "EmCommon.h"
+#include "EmEvent.h"
 
 class EmHAL;
 class EmPixMap;
@@ -44,7 +45,7 @@ class EmHALHandler {
     EmHALHandler(void);
     virtual ~EmHALHandler(void);
 
-    virtual void Cycle(Bool sleeping);
+    virtual void Cycle(uint64 sytemCycles, Bool sleeping);
     virtual void CycleSlowly(Bool sleeping);
 
     virtual void ButtonEvent(ButtonEventT evt);
@@ -83,6 +84,8 @@ class EmHALHandler {
     virtual Bool GetVibrateOn(void);
     virtual uint16 GetLEDState(void);
 
+    virtual uint32 CyclesToNextInterrupt();
+
    protected:
     EmHALHandler* GetNextHandler(void) { return fNextHandler; }
 
@@ -101,7 +104,7 @@ class EmHAL {
     static void RemoveHandler(EmHALHandler*);
     static void EnsureCoverage(void);
 
-    static void Cycle(Bool sleeping);
+    static void Cycle(uint64 systemCycles, Bool sleeping);
     static void CycleSlowly(Bool sleeping);
 
     static void ButtonEvent(ButtonEventT evt);
@@ -145,14 +148,18 @@ class EmHAL {
     static Bool GetVibrateOn(void);
     static uint16 GetLEDState(void);
 
+    static uint32 CyclesToNextInterrupt();
+
+    static EmEvent<> onSystemClockChange;
+
    private:
     static EmHALHandler* GetRootHandler(void) { return fgRootHandler; }
     static EmHALHandler* fgRootHandler;
 };
 
-inline void EmHAL::Cycle(Bool sleeping) {
+inline void EmHAL::Cycle(uint64 systemCycles, Bool sleeping) {
     EmAssert(EmHAL::GetRootHandler());
-    EmHAL::GetRootHandler()->Cycle(sleeping);
+    EmHAL::GetRootHandler()->Cycle(systemCycles, sleeping);
 }
 
 #endif /* EmHAL_h */
