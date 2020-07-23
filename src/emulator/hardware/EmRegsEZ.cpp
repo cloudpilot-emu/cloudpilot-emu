@@ -858,12 +858,14 @@ void EmRegsEZ::CycleSlowly(Bool sleeping) {
         (READ_REGISTER(rtcIntStatus) & hwrEZ328RTCIntStatusAlarm) == 0) {
         uint32 rtcAlarm = READ_REGISTER(rtcAlarm);
 
-        long almHour = (rtcAlarm & hwrEZ328RTCAlarmHoursMask) >> hwrEZ328RTCAlarmHoursOffset;
-        long almMin = (rtcAlarm & hwrEZ328RTCAlarmMinutesMask) >> hwrEZ328RTCAlarmMinutesOffset;
-        long almSec = (rtcAlarm & hwrEZ328RTCAlarmSecondsMask) >> hwrEZ328RTCAlarmSecondsOffset;
-        long almInSeconds = (almHour * 60 * 60) + (almMin * 60) + almSec;
+        uint32 almHour = (rtcAlarm & hwrEZ328RTCAlarmHoursMask) >> hwrEZ328RTCAlarmHoursOffset;
+        uint32 almMin = (rtcAlarm & hwrEZ328RTCAlarmMinutesMask) >> hwrEZ328RTCAlarmMinutesOffset;
+        uint32 almSec = (rtcAlarm & hwrEZ328RTCAlarmSecondsMask) >> hwrEZ328RTCAlarmSecondsOffset;
+        uint32 almInSeconds = (almHour * 60 * 60) + (almMin * 60) + almSec;
 
-        long nowInSeconds = Platform::GetMilliseconds() / 1000;
+        uint32 hour, min, sec;
+        Platform::GetTime(hour, min, sec);
+        uint32 nowInSeconds = hour * 3600 + min * 60 + sec;
 
         if (almInSeconds <= nowInSeconds) {
             WRITE_REGISTER(rtcIntStatus, READ_REGISTER(rtcIntStatus) | hwrEZ328RTCIntStatusAlarm);
