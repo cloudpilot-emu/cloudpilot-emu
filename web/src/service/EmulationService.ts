@@ -72,7 +72,10 @@ class EmulationService {
             const cycles = this.cloudpilot.runEmulation(Math.round((timeToRun / 1000) * cyclesPerSecond));
             this.emulatedTime += (cycles / cyclesPerSecond) * 1000;
 
-            this.drawFrame();
+            if (this.cloudpilot.isScreenDirty()) {
+                this.drawFrame();
+                this.cloudpilot.markScreenClean();
+            }
 
             this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame.bind(this));
         }

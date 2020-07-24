@@ -20,7 +20,10 @@ export interface CloudpilotNative {
 
     GetCyclesPerSecond(): number;
     RunEmulation(cycles: long): number;
+
     CopyFrame(): Frame;
+    IsScreenDirty(): boolean;
+    MarkScreenClean();
 }
 
 export interface Frame {

@@ -91,6 +91,14 @@ class Cloudpilot {
             : null;
     }
 
+    isScreenDirty(): boolean {
+        return this.cloudpilot.IsScreenDirty();
+    }
+
+    markScreenClean(): void {
+        this.cloudpilot.MarkScreenClean();
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);

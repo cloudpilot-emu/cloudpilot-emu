@@ -9,7 +9,10 @@ interface Cloudpilot {
 
     long GetCyclesPerSecond();
     long RunEmulation(long cycles);
+
     [Ref] Frame CopyFrame();
+    boolean IsScreenDirty();
+    void MarkScreenClean();
 };
 
 interface RomInfo {

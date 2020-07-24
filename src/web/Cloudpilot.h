@@ -18,7 +18,10 @@ class Cloudpilot {
 
     long GetCyclesPerSecond();
     long RunEmulation(long cycles);
+
     Frame& CopyFrame();
+    bool IsScreenDirty();
+    void MarkScreenClean();
 
    private:
     unique_ptr<EmDevice> device;

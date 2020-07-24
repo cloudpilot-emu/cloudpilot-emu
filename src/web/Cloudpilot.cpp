@@ -5,6 +5,7 @@
 #include "EmHAL.h"
 #include "EmROMReader.h"
 #include "EmSession.h"
+#include "EmSystemState.h"
 
 namespace {
     unique_ptr<EmROMReader> createReader(void* buffer, long size) {
@@ -95,3 +96,7 @@ Frame& Cloudpilot::CopyFrame() {
 
     return frame;
 }
+
+bool Cloudpilot::IsScreenDirty() { return gSystemState.IsScreenDirty(); }
+
+void Cloudpilot::MarkScreenClean() { gSystemState.MarkScreenClean(); }
