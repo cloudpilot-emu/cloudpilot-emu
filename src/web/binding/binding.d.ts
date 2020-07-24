@@ -16,4 +16,6 @@ export interface CloudpilotNative {
     Free(buffer: VoidPtr): void;
 
     GetRomInfo(buffer: VoidPtr, size: number, romInfo: RomInfo): bool;
+
+    InitializeSession(buffer: VoidPtr, size: number, deviceType: string): boolean;
 }

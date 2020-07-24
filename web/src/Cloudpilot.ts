@@ -42,6 +42,16 @@ class Cloudpilot {
         return romInfo;
     }
 
+    initializeSession(rom: Uint8Array, deviceType: string): boolean {
+        const buffer = this.copyIn(rom);
+
+        const result = this.cloudpilot.InitializeSession(buffer, rom.length, deviceType);
+
+        this.cloudpilot.Free(buffer);
+
+        return result;
+    }
+
     destroy(): void {
         this.module.destroy(this.cloudpilot);
     }

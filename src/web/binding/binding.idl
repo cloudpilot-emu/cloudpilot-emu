@@ -5,6 +5,8 @@ interface Cloudpilot {
     void Free(VoidPtr buffer);
 
     boolean GetRomInfo(VoidPtr buffer, long size, [Ref] RomInfo romInfo);
+
+    boolean InitializeSession(VoidPtr buffer, long size, [Const] DOMString deviceType);
 };
 
 interface RomInfo {
