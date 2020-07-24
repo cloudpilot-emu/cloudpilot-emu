@@ -5,8 +5,11 @@ interface Cloudpilot {
     void Free(VoidPtr buffer);
 
     boolean GetRomInfo(VoidPtr buffer, long size, [Ref] RomInfo romInfo);
-
     boolean InitializeSession(VoidPtr buffer, long size, [Const] DOMString deviceType);
+
+    long GetCyclesPerSecond();
+    long RunEmulation(long cycles);
+    [Ref] Frame CopyFrame();
 };
 
 interface RomInfo {
@@ -16,4 +19,15 @@ interface RomInfo {
     [Const] DOMString CardName();
     long RomVersion();
     [Const] DOMString RomVersionString();
+};
+
+interface Frame {
+    attribute long bpp;
+    attribute long lineWidth;
+    attribute long lines;
+    attribute long margin;
+    attribute long bytesPerLine;
+
+    VoidPtr GetBuffer();
+    long GetBufferSize();
 };

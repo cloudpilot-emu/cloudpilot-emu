@@ -6,6 +6,7 @@
     "jsx": "react",
     "allowJs": false,
     "sourceMap": true,
+    "inlineSources": true,
     "rootDir": "./",
     "importHelpers": true,
     "strict": true,

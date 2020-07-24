@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 
+#include "EmHAL.h"
 #include "EmROMReader.h"
 #include "EmSession.h"
 
@@ -83,4 +84,14 @@ bool Cloudpilot::InitializeSession(void* buffer, long size, const char* deviceTy
     }
 
     return true;
+}
+
+long Cloudpilot::GetCyclesPerSecond() { return gSession->GetClocksPerSecond(); }
+
+long Cloudpilot::RunEmulation(long cycles) { return gSession->RunEmulation(cycles); }
+
+Frame& Cloudpilot::CopyFrame() {
+    EmHAL::CopyLCDFrame(frame);
+
+    return frame;
 }

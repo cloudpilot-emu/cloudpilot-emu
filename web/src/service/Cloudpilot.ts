@@ -7,6 +7,16 @@ export interface RomInfo {
     romVersionString: string;
 }
 
+export interface Frame {
+    bpp: number;
+    lineWidth: number;
+    lines: number;
+    margin: number;
+    bytesPerLine: number;
+
+    buffer: Int8Array;
+}
+
 class Cloudpilot {
     private constructor(private module: Module) {
         this.cloudpilot = new module.Cloudpilot();
@@ -54,6 +64,31 @@ class Cloudpilot {
 
     destroy(): void {
         this.module.destroy(this.cloudpilot);
+    }
+
+    cyclesPerSecond(): number {
+        return this.cloudpilot.GetCyclesPerSecond();
+    }
+
+    runEmulation(cycles: number): number {
+        return this.cloudpilot.RunEmulation(cycles);
+    }
+
+    getFrame(): Frame | null {
+        const nativeFrame = this.cloudpilot.CopyFrame();
+
+        const bufferPtr = this.module.getPointer(nativeFrame.GetBuffer());
+
+        return nativeFrame.lineWidth === 160 && nativeFrame.lines === 160
+            ? {
+                  bpp: nativeFrame.bpp,
+                  bytesPerLine: nativeFrame.bytesPerLine,
+                  lines: nativeFrame.lines,
+                  lineWidth: nativeFrame.lineWidth,
+                  margin: nativeFrame.margin,
+                  buffer: this.module.HEAP8.subarray(bufferPtr, bufferPtr + nativeFrame.GetBufferSize()),
+              }
+            : null;
     }
 
     private copyIn(data: Uint8Array): VoidPtr {

@@ -16,6 +16,20 @@ export interface CloudpilotNative {
     Free(buffer: VoidPtr): void;
 
     GetRomInfo(buffer: VoidPtr, size: number, romInfo: RomInfo): bool;
-
     InitializeSession(buffer: VoidPtr, size: number, deviceType: string): boolean;
+
+    GetCyclesPerSecond(): number;
+    RunEmulation(cycles: long): number;
+    CopyFrame(): Frame;
+}
+
+export interface Frame {
+    bpp: number;
+    lineWidth: number;
+    lines: number;
+    margin: number;
+    bytesPerLine: number;
+
+    GetBuffer(): VoidPtr;
+    GetBufferSize(): number;
 }

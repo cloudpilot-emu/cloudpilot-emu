@@ -22,13 +22,14 @@ export default [
         output: {
             file: 'dist/main.js',
             format: 'iife',
-            sourcemap: 'true',
+            sourcemap: true,
+            sourcemapExcludeSources: false,
             name: '$cloudpilot',
         },
         plugins: [
             alias({
                 resolve: ['.ts', '.tsx'],
-                entries: [{ find: 'native', replacement: '../../src' }],
+                entries: [{ find: 'native', replacement: '../../../src' }],
             }),
             resolve({ browser: true }),
             commonjs(),

@@ -5,6 +5,7 @@
 #include <string>
 
 #include "EmDevice.h"
+#include "Frame.h"
 #include "RomInfo.h"
 
 class Cloudpilot {
@@ -13,11 +14,15 @@ class Cloudpilot {
     void Free(void* buffer);
 
     bool GetRomInfo(void* buffer, long size, RomInfo& romInfo);
-
     bool InitializeSession(void* buffer, long size, const char* deviceType);
+
+    long GetCyclesPerSecond();
+    long RunEmulation(long cycles);
+    Frame& CopyFrame();
 
    private:
     unique_ptr<EmDevice> device;
+    Frame frame{1024 * 128};
 };
 
 #endif  // _CLOUDPILOT_H_
