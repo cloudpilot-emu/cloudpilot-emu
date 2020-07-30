@@ -135,6 +135,17 @@ namespace {
         return false;
     }
 
+    bool CmdResetSoft(vector<string> args) {
+        if (args.size() > 0) {
+            cout << "usage: reset-soft" << endl << flush;
+            return false;
+        }
+
+        gSession->Reset(EmSession::ResetType::soft);
+
+        return false;
+    }
+
     bool CmdInvalidCommand(vector<string> args) {
         cout << "invalid command" << endl << flush;
         return false;
@@ -150,7 +161,8 @@ namespace {
                           {.name = "install", .cmd = CmdInstallFile},
                           {.name = "dump-memory", .cmd = CmdDumpMemory},
                           {.name = "random-seed", .cmd = CmdRandomSeed},
-                          {.name = "set-user-name", .cmd = CmdSetUserName}};
+                          {.name = "set-user-name", .cmd = CmdSetUserName},
+                          {.name = "reset-soft", .cmd = CmdResetSoft}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);

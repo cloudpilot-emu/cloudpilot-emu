@@ -20,7 +20,7 @@ const Canvas: FunctionComponent = () => {
             throw new Error('no canvas element');
         }
 
-        emulationService?.setCanvas(canvasRef.current);
+        emulationService.setCanvas(canvasRef.current);
     }, []);
 
     return (

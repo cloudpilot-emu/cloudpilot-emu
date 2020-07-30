@@ -32,7 +32,8 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     if (!Memory::Initialize(romImage, romLength, device->MinRAMSize())) return false;
     EmPalmOS::Initialize();
 
-    Reset(EmResetType::kResetSoft);
+    systemCycles = 0;
+    Reset(ResetType::soft);
 
     gSystemState.Reset();
 
@@ -41,12 +42,22 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     return true;
 }
 
-void EmSession::Reset(EmResetType resetType) {
-    EmAssert(cpu);
+void EmSession::ScheduleReset(ResetType resetType) {
+    resetScheduled = true;
+    this->resetType = resetType;
 
-    Memory::Reset((resetType & kResetTypeMask) != kResetSys);
-    cpu->Reset((resetType & kResetTypeMask) != kResetSys);
+    EmASSERT(cpu);
+    cpu->CheckAfterCycle();
+}
+
+void EmSession::Reset(ResetType resetType) {
+    EmAssert(cpu);
+    EmAssert(nestLevel == 0);
+
+    Memory::Reset(resetType != ResetType::sys);
+    cpu->Reset(resetType != ResetType::sys);
     EmPalmOS::Reset();
+    gSystemState.Reset();
 
     bankResetScheduled = false;
     resetScheduled = false;
@@ -54,16 +65,17 @@ void EmSession::Reset(EmResetType resetType) {
     waitingForSyscall = false;
     syscallDispatched = false;
 
-    systemCycles = 0;
-
     penEventQueue.Clear();
     keyboardEventQueue.Clear();
     penEventQueueIncoming.Clear();
     keyboardEventQueueIncoming.Clear();
     lastEventPromotedAt = 0;
 
-    buttonEventQueue.Clear();
-    lastButtonEventReadAt = 0;
+    if (resetType != ResetType::sys) {
+        buttonEventQueue.Clear();
+        lastButtonEventReadAt = 0;
+        systemCycles = 0;
+    }
 }
 
 bool EmSession::IsNested() const {
@@ -100,14 +112,6 @@ bool EmSession::CheckForBreak() const { return subroutineReturn || syscallDispat
 
 void EmSession::ScheduleResetBanks() {
     bankResetScheduled = true;
-
-    EmASSERT(cpu);
-    cpu->CheckAfterCycle();
-}
-
-void EmSession::ScheduleReset(EmResetType resetType) {
-    resetScheduled = true;
-    this->resetType = resetType;
 
     EmASSERT(cpu);
     cpu->CheckAfterCycle();

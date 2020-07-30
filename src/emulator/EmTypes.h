@@ -48,32 +48,4 @@ typedef int32 EmCoord;
 #define EmMemNULL ((emuptr)0)
 #define EmMemEOM ((emuptr)0xFFFFFFFF)
 
-// Enumerated types
-
-enum CloseActionType { kSaveAlways, kSaveAsk, kSaveNever };
-
-enum LoggingType {
-    kNormalLogging = 0x01,
-    kGremlinLogging = 0x02,
-    kAllLogging = kNormalLogging | kGremlinLogging
-};
-
-enum EmResetType {
-    kResetSys,    // Triggered by calling SysReset
-    kResetSoft,   // Same as sticking pin in Reset hole
-    kResetHard,   // Same as Soft Reset with Power key down
-    kResetDebug,  // Same as Soft Reset with Page Down key down
-
-    kResetTypeMask = 0x07,
-    kResetExtMask = 0x08,
-    kResetNoExt = 0x08,
-
-    kResetSysNoExt = kResetNoExt | kResetSys,     // Same as kResetSys with Page Up key down.
-    kResetSoftNoExt = kResetNoExt | kResetSoft,   // Same as kResetSoft with Page Up key down.
-    kResetHardNoExt = kResetNoExt | kResetHard,   // Same as kResetHard with Page Up key down.
-    kResetDebugNoExt = kResetNoExt | kResetDebug  // Same as kResetDebug with Page Up key down.
-};
-
-enum EmErrorHandlingOption { kShow, kContinue, kQuit, kSwitch };
-
 #endif  // EmTypes_h

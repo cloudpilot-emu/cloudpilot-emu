@@ -30,10 +30,6 @@ typedef vector<RAMSizeType> RAMSizeList;
 typedef vector<uint8> ByteList;
 typedef vector<string> StringList;
 
-typedef map<string, string> StringStringMap;
-typedef vector<CloseActionType> CloseActionList;
-typedef vector<LoggingType> LoggingList;
-
 #if 0  // CSTODO
 // ---------- RGBType ----------
 

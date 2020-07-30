@@ -27,7 +27,7 @@
 void customreset(void) {
     EmAssert(gSession);
 
-    gSession->ScheduleReset(kResetSoft);
+    gSession->ScheduleReset(EmSession::ResetType::soft);
 }
 
 void Exception(int nr, emuptr /*oldpc*/) {

@@ -14,6 +14,9 @@
 
 class EmSession {
    public:
+    enum class ResetType { sys, soft, noext, hard };
+
+   public:
     bool Initialize(EmDevice* device, const uint8* romImage, size_t romLength);
 
     bool IsNested() const;
@@ -28,7 +31,8 @@ class EmSession {
 
     void ScheduleResetBanks();
 
-    void ScheduleReset(EmResetType resetType);
+    void ScheduleReset(ResetType resetType);
+    void Reset(ResetType);
 
     EmDevice& GetDevice();
 
@@ -69,8 +73,6 @@ class EmSession {
     uint64 GetSystemCycles() const { return systemCycles; }
 
    private:
-    void Reset(EmResetType);
-
     bool Wakeup();
 
     void PumpEvents();
@@ -82,7 +84,7 @@ class EmSession {
    private:
     bool bankResetScheduled{false};
     bool resetScheduled{false};
-    EmResetType resetType;
+    ResetType resetType;
 
     int nestLevel{0};
     bool subroutineReturn{false};

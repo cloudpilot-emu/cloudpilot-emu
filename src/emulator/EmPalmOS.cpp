@@ -314,7 +314,7 @@ Bool EmPalmOS::HandleJSR_Ind(emuptr oldpc, emuptr dest) {
 
         if (dest == gBigROMEntry) {
             EmAssert(gSession);
-            gSession->ScheduleReset(kResetSys);
+            gSession->ScheduleReset(EmSession::ResetType::sys);
         }
     }
 
