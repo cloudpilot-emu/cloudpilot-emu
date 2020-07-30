@@ -70,11 +70,32 @@ void EmSession::Reset(ResetType resetType) {
     penEventQueueIncoming.Clear();
     keyboardEventQueueIncoming.Clear();
     lastEventPromotedAt = 0;
+    bootKeysType = resetType;
+    holdingBootKeys = false;
 
     if (resetType != ResetType::sys) {
         buttonEventQueue.Clear();
         lastButtonEventReadAt = 0;
         systemCycles = 0;
+
+        switch (resetType) {
+            case ResetType::hard:
+                holdingBootKeys = true;
+                EmHAL::ButtonEvent(
+                    ButtonEvent(ButtonEvent::Button::power, ButtonEvent::Type::press));
+
+                break;
+
+            case ResetType::noext:
+                holdingBootKeys = true;
+                EmHAL::ButtonEvent(
+                    ButtonEvent(ButtonEvent::Button::rockerUp, ButtonEvent::Type::press));
+
+                break;
+
+            default:
+                break;
+        }
     }
 }
 
@@ -87,7 +108,27 @@ bool EmSession::IsExecutingSync() const { return IsNested() || waitingForSyscall
 
 bool EmSession::IsPowerOn() { return !EmHAL::GetAsleep(); }
 
-void EmSession::ReleaseBootKeys() {}
+void EmSession::ReleaseBootKeys() {
+    if (!holdingBootKeys) return;
+
+    switch (bootKeysType) {
+        case ResetType::hard:
+            EmHAL::ButtonEvent(ButtonEvent(ButtonEvent::Button::power, ButtonEvent::Type::release));
+
+            break;
+
+        case ResetType::noext:
+            EmHAL::ButtonEvent(
+                ButtonEvent(ButtonEvent::Button::rockerUp, ButtonEvent::Type::release));
+
+            break;
+
+        default:
+            break;
+    }
+
+    holdingBootKeys = false;
+}
 
 bool EmSession::ExecuteSpecial(bool checkForResetOnly) {
     if (resetScheduled) {
@@ -251,9 +292,11 @@ void EmSession::QueueButtonEvent(ButtonEvent evt) {
 }
 
 bool EmSession::HasButtonEvent() {
-    return (systemCycles - lastButtonEventReadAt) < MIN_CYCLES_BETWEEN_BUTTON_EVENTS
-               ? false
-               : buttonEventQueue.GetUsed() != 0;
+    if (holdingBootKeys) return false;
+
+    if ((systemCycles - lastButtonEventReadAt) < MIN_CYCLES_BETWEEN_BUTTON_EVENTS) return false;
+
+    return buttonEventQueue.GetUsed() != 0;
 }
 
 ButtonEvent EmSession::NextButtonEvent() {

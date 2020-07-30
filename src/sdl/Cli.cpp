@@ -146,6 +146,28 @@ namespace {
         return false;
     }
 
+    bool CmdResetHard(vector<string> args) {
+        if (args.size() > 0) {
+            cout << "usage: reset-hard" << endl << flush;
+            return false;
+        }
+
+        gSession->Reset(EmSession::ResetType::hard);
+
+        return false;
+    }
+
+    bool CmdResetNoext(vector<string> args) {
+        if (args.size() > 0) {
+            cout << "usage: reset-noext" << endl << flush;
+            return false;
+        }
+
+        gSession->Reset(EmSession::ResetType::noext);
+
+        return false;
+    }
+
     bool CmdInvalidCommand(vector<string> args) {
         cout << "invalid command" << endl << flush;
         return false;
@@ -162,7 +184,9 @@ namespace {
                           {.name = "dump-memory", .cmd = CmdDumpMemory},
                           {.name = "random-seed", .cmd = CmdRandomSeed},
                           {.name = "set-user-name", .cmd = CmdSetUserName},
-                          {.name = "reset-soft", .cmd = CmdResetSoft}};
+                          {.name = "reset-soft", .cmd = CmdResetSoft},
+                          {.name = "reset-hard", .cmd = CmdResetHard},
+                          {.name = "reset-noext", .cmd = CmdResetNoext}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);

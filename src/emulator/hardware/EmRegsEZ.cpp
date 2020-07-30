@@ -1374,9 +1374,7 @@ uint32 EmRegsEZ::portXDataRead(emuptr address, int) {
 
         if (fPortDDataCount != 0xFFFFFFFF && ++fPortDDataCount >= 18 * 2) {
             fPortDDataCount = 0xFFFFFFFF;
-#if 0  // CSTODO
             gSession->ReleaseBootKeys();
-#endif
         }
     }
 

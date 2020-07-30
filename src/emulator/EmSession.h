@@ -109,6 +109,9 @@ class EmSession {
     uint32 clockDiv{1};
 
     uint32 clocksPerSecond;
+
+    bool holdingBootKeys;
+    ResetType bootKeysType;
 };
 
 extern EmSession* gSession;
