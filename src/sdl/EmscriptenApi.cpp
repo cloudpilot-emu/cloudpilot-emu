@@ -52,3 +52,11 @@ extern "C" void EMSCRIPTEN_KEEPALIVE setUserName(const char* username) {
 }
 
 extern "C" int EMSCRIPTEN_KEEPALIVE uiInitialized() { return gSystemState.IsUIInitialized(); }
+
+extern "C" void EMSCRIPTEN_KEEPALIVE reset(const char* _name) {
+    string name(_name);
+
+    if (name == "soft") gSession->Reset(EmSession::ResetType::soft);
+    if (name == "noext") gSession->Reset(EmSession::ResetType::noext);
+    if (name == "hard") gSession->Reset(EmSession::ResetType::hard);
+}

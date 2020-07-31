@@ -27,6 +27,10 @@
             display: none;
         }
 
+        #reset-control {
+            margin-top: 1em;
+        }
+
         #console {
             margin-top: 1rem;
             width: 100%;
@@ -83,6 +87,15 @@
         Username:
         <input type="text" id="input-username"></label>
     </label>
+    <div id="reset-control">
+        <select name="reset-type" id="reset-type-select">
+            <option value="soft" selected>Soft reset</option>
+            <option value="noext">Reset w/o extensions</option>
+            <option value="hard">Hard reset</option>
+        </select>
+        <button id="reset-button" type="button">Reset!</button>
+    </div>
+
     <div id="snapshot-indicator">No snapshot saved yet</div>
     <canvas id="canvas" width="160" height="220" tabindex="1"></canvas>
 
@@ -119,6 +132,8 @@
             const fileUploadButton = document.getElementById('file-upload-button');
             const fileUpload = document.getElementById('file-upload');
             const usernameInput = document.getElementById('input-username');
+            const resetTypeSelect = document.getElementById('reset-type-select');
+            const resetButton = document.getElementById('reset-button');
 
             const romName = document.getElementById('rom-name');
             const consoleElt = document.getElementById('console');
@@ -466,6 +481,7 @@
                 const nativeButtonDown = this.cwrap('buttonDown', null, ['string']);
                 const nativeButtonUp = this.cwrap('buttonUp', null, ['string']);
                 const nativeSetUserName = this.cwrap('setUserName', null, ['string']);
+                const nativeReset = this.cwrap('reset', null, ['string']);
 
                 let currentButtons = new Set();
 
@@ -529,6 +545,8 @@
                     }, true);
 
                 const memorySize = this.ccall('memorySize', 'number', [], []);
+
+                resetButton.addEventListener('click', () => nativeReset(resetTypeSelect.value));
 
                 if (!memoryPersistence) {
                     memoryPersistence = new MemoryPersistence(db, memorySize, this);
