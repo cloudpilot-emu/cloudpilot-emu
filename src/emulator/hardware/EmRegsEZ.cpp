@@ -437,6 +437,7 @@ EmRegsEZ::EmRegsEZ(void)
       fPortDEdge(0),
       fPortDDataCount(0),
       rtcDayAtWrite(0),
+      lastRtcAlarmCheck(-1),
       fUART(NULL) {}
 
 // ---------------------------------------------------------------------------
@@ -452,6 +453,7 @@ EmRegsEZ::~EmRegsEZ(void) {}
 void EmRegsEZ::Initialize(void) {
     EmRegs::Initialize();
     rtcDayAtWrite = 0;
+    lastRtcAlarmCheck = -1;
 
     fUART = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballEZ, 0);
 
@@ -861,16 +863,18 @@ void EmRegsEZ::CycleSlowly(Bool sleeping) {
         uint32 almHour = (rtcAlarm & hwrEZ328RTCAlarmHoursMask) >> hwrEZ328RTCAlarmHoursOffset;
         uint32 almMin = (rtcAlarm & hwrEZ328RTCAlarmMinutesMask) >> hwrEZ328RTCAlarmMinutesOffset;
         uint32 almSec = (rtcAlarm & hwrEZ328RTCAlarmSecondsMask) >> hwrEZ328RTCAlarmSecondsOffset;
-        uint32 almInSeconds = (almHour * 60 * 60) + (almMin * 60) + almSec;
+        int32 almInSeconds = (almHour * 60 * 60) + (almMin * 60) + almSec;
 
         uint32 hour, min, sec;
         Platform::GetTime(hour, min, sec);
-        uint32 nowInSeconds = hour * 3600 + min * 60 + sec;
+        int32 nowInSeconds = hour * 3600 + min * 60 + sec;
 
-        if (almInSeconds <= nowInSeconds) {
+        if (lastRtcAlarmCheck < almInSeconds && almInSeconds <= nowInSeconds) {
             WRITE_REGISTER(rtcIntStatus, READ_REGISTER(rtcIntStatus) | hwrEZ328RTCIntStatusAlarm);
             EmRegsEZ::UpdateRTCInterrupts();
         }
+
+        lastRtcAlarmCheck = nowInSeconds;
     }
 }
 

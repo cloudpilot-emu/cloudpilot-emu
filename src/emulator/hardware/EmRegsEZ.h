@@ -146,6 +146,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     double timerTicksPerSecond;
 
     uint32 rtcDayAtWrite;
+    int32 lastRtcAlarmCheck;
 
     bool markScreen{true};
     EmEvent<>::HandleT onMarkScreenCleanHandle;
