@@ -5,8 +5,27 @@
 
     <title>Cloudpilot</title>
     <style>
+        html {
+            padding: 0;
+            margin: 0;
+        }
+
+        body {
+            min-width: 480px;
+            margin: 0;
+            padding: 8px 16px;
+        }
+
         #rom-name {
             margin-bottom: 1rem;
+        }
+
+        #control-buttons {
+            margin-bottom: 0.5em;
+        }
+
+        #control-username {
+            margin-bottom: 0.5em;
         }
 
         #canvas {
@@ -22,7 +41,7 @@
             border: 1px solid black;
         }
 
-        #rom-upload,
+        #image-upload,
         #file-upload {
             display: none;
         }
@@ -42,15 +61,16 @@
         }
 
         #buttons {
-            margin-top: 1em;
+            display: flex;
+            flex-direction: row;
         }
 
         .palm-button {
-            display: inline-block;
+            display: block;
             height: 3em;
             width: 52px;
             height: 52px;
-            margin: 0 6px 0 0;
+            margin: 10px 0 0 0;
             padding: 0;
             border: none;
             display: inline-block;
@@ -59,6 +79,10 @@
             user-select: none;
             -webkit-user-select: none;
             -moz-user-select: nones;
+        }
+
+        .palm-button:not(:last-child) {
+            margin-right: 9px;
         }
 
         .palm-button:hover,
@@ -75,19 +99,26 @@
 
 <body>
     <div id="rom-name">&nbsp;</div>
-    <label>
-        <input type="file" id="rom-upload"></input>
-        <button type="button" id="rom-upload-button">Select ROM</button>
-    </label>
-    <label>
-        <input type="file" id="file-upload" multiple></input>
-        <button type="button" id="file-upload-button">Install file</button>
-    </label>
-    <label>
-        Username:
-        <input type="text" id="input-username"></label>
-    </label>
-    <div id="reset-control">
+    <div id="control-buttons">
+        <label>
+            <input type="file" id="image-upload"></input>
+            <button type="button" id="image-upload-button">Load ROM or Image</button>
+        </label>
+        <label>
+            <button type="button" disabled id="image-download-button">Save Image</button>
+        </label>
+        <label>
+            <input type="file" id="file-upload" multiple></input>
+            <button type="button" disabled id="file-upload-button">Install file</button>
+        </label>
+    </div>
+    <div id="control-username">
+        <label>
+            Username:
+            <input type="text" id="input-username"></label>
+        </label>
+    </div>
+    <div id="control-reset">
         <select name="reset-type" id="reset-type-select">
             <option value="soft" selected>Soft reset</option>
             <option value="noext">Reset w/o extensions</option>
@@ -125,12 +156,14 @@
             const KEY_USERNAME = 'username';
 
             const DB_GRACE_TIME_MS = 3000;
+            const IMAGE_MAGIC = 0x20150103;
 
-            const romUploadButton = document.getElementById('rom-upload-button');
-            const romUpload = document.getElementById('rom-upload');
+            const imageUploadButton = document.getElementById('image-upload-button');
+            const imageUpload = document.getElementById('image-upload');
 
             const fileUploadButton = document.getElementById('file-upload-button');
             const fileUpload = document.getElementById('file-upload');
+            const imageDownloadButton = document.getElementById('image-download-button');
             const usernameInput = document.getElementById('input-username');
             const resetTypeSelect = document.getElementById('reset-type-select');
             const resetButton = document.getElementById('reset-button');
@@ -167,6 +200,14 @@
             localStorage.setItem(KEY_PAGE_LOCK, pageLockValue);
             // ====================================================================================
 
+            // ####################################################################################
+            // Helpers
+            // ####################################################################################
+
+            function pageLockLost() {
+                return localStorage.getItem(KEY_PAGE_LOCK) !== pageLockValue;
+            }
+
             function escape(text) {
                 const node = document.createElement('div');
 
@@ -195,6 +236,17 @@
                 return new Error(msg);
             }
 
+            function write32LE(value, target, i) {
+                target[i] = value & 0xff;
+                target[i + 1] = (value >>> 8) & 0xff;
+                target[i + 2] = (value >>> 16) & 0xff;
+                target[i + 3] = (value >>> 24) & 0xff;
+            }
+
+            function read32LE(target, i) {
+                return target[i] | (target[i + 1] << 8) | (target[i + 2] << 16) | (target[i + 3] << 24);
+            }
+
             async function setupDb() {
                 db = await new Promise((resolve, reject) => {
                     const request = window.indexedDB.open(DB_NAME, 1);
@@ -212,6 +264,11 @@
 
                 kvs = new Kvs(db);
             }
+
+
+            // ####################################################################################
+            // KVS
+            // ####################################################################################
 
             class Kvs {
                 constructor(db) {
@@ -233,8 +290,8 @@
                     const request = transaction.objectStore(OBJECT_STORE_KVS).put(value, key);
 
                     return new Promise((resolve, reject) => {
-                        request.onerror = () => reject(new Error('error writing to KVS'));
-                        request.onsuccess = () => resolve();
+                        transaction.onerror = () => reject(new Error('error writing to KVS'));
+                        transaction.oncomplete = () => resolve();
                     });
                 }
 
@@ -243,11 +300,16 @@
                     const request = transaction.objectStore(OBJECT_STORE_KVS).delete(key);
 
                     return new Promise((resolve, reject) => {
-                        request.onerror = () => reject(new Error('error deleting from KVS'));
-                        request.onsuccess = () => resolve();
+                        transaction.onerror = () => reject(new Error('error deleting from KVS'));
+                        transaction.oncomplete = () => resolve();
                     });
                 }
             }
+
+
+            // ####################################################################################
+            // Memory Persistence
+            // ####################################################################################
 
             class MemoryPersistence {
                 constructor(db, size, module) {
@@ -319,7 +381,7 @@
                     });
 
                     // On the running transaction, check whether another tab has claimed the storage.
-                    if (localStorage.getItem(KEY_PAGE_LOCK) !== pageLockValue) {
+                    if (pageLockLost()) {
                         throw PAGE_LOCK_ERROR;
                     }
 
@@ -356,10 +418,10 @@
                     });
                 }
 
-                saveDirtyPages(transaction) {
+                saveDirtyPages(transaction, memory, dirtyPages) {
                     let iPage = 0;
-                    const dirtyPages = this.getDirtyPages();
-                    const memory = this.getMemory();
+                    dirtyPages = dirtyPages || this.getDirtyPages();
+                    memory = memory || this.getMemory();
                     const objectStore = transaction.objectStore(OBJECT_STORE_MEMORY);
 
                     for (let i = 0; i < dirtyPages.length; i++) {
@@ -432,12 +494,17 @@
                     }
 
                     const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
+
+                    if (pageLockLost()) {
+                        throw PAGE_LOCK_ERROR;
+                    }
+
                     transaction.objectStore(OBJECT_STORE_MEMORY).clear();
 
                     return new Promise((resolve, reject) => {
                         transaction.oncomplete = () => resolve();
                         transaction.onerror = () => reject(new Error('failed to clear stored memory'));
-                    })
+                    });
                 }
 
                 async recover() {
@@ -473,9 +540,108 @@
 
                     return this.module.HEAP8.subarray(memoryPtr, memoryPtr + this.size);
                 }
+
+                saveMemoryImage(buffer) {
+                    if (buffer.length !== this.size) throw new Error('size mismatch');
+
+                    const isEmpty = buf => {
+                        for (let i = 0; i < buf.length; i++) if (buf[i] !== 0) return false;
+                        return true;
+                    }
+
+                    const dirtyPages = new Uint8Array(this.dirtyPages.length);
+
+                    for (let i = 0; i < dirtyPages.length; i++) {
+                        dirtyPages[i] = 0;
+
+                        for (let j = 0; j < 8; j++) {
+                            const offset = (i * 8 + j) * 1024;
+                            dirtyPages[i] |= ((isEmpty(buffer.subarray(offset, offset + 1024)) ? 0 : 1) << j);
+                        }
+                    }
+
+                    const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
+
+                    if (pageLockLost()) {
+                        throw PAGE_LOCK_ERROR;
+                    }
+
+                    this.dirtyPages.fill(0)
+                    transaction.objectStore(OBJECT_STORE_MEMORY).clear();
+                    this.saveDirtyPages(transaction, buffer, dirtyPages);
+
+                    return new Promise((resolve, reject) => {
+                        transaction.oncomplete = () => resolve();
+                        transaction.onerror = () => reject(new Error('failed to clear stored memory'));
+                    });
+                }
+            }
+
+            // ####################################################################################
+            // Image file handling
+            // ####################################################################################
+
+            function imageFileName(romName) {
+                const now = new Date();
+
+                const year = now.getFullYear();
+                const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                const day = now.getDate().toString().padStart(2, '0');
+                const hour = now.getHours().toString().padStart(2, '0');
+                const minute = now.getMinutes().toString().padStart(2, '0');
+                const second = now.getSeconds().toString().padStart(2, '0');
+
+                return `${romName.replace(/\..*?$/, '')}_${year}${month}${day}-${hour}${minute}${second}.bin`;
+            }
+
+            async function saveImage() {
+                const romName = await kvs.get(KEY_ROM_NAME);
+                const encodedRomName = new TextEncoder().encode(romName);
+                const rom = await kvs.get(KEY_ROM_IMAGE);
+                const memory = memoryPersistence.getMemory();
+
+                const serializedImage = new Uint8Array(16 + encodedRomName.length + memory.length + rom.length);
+
+                write32LE(IMAGE_MAGIC, serializedImage, 0);
+                write32LE(encodedRomName.length, serializedImage, 4);
+                write32LE(rom.length, serializedImage, 8);
+                write32LE(memory.length, serializedImage, 12);
+
+                serializedImage.set(encodedRomName, 16);
+                serializedImage.set(rom, 16 + encodedRomName.length);
+                serializedImage.set(memory, 16 + encodedRomName.length + rom.length);
+
+                const file = new Blob([serializedImage], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(file);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = imageFileName(romName);
+                a.click();
+            }
+
+            function loadImage(buffer) {
+                if (buffer.length < 16) return undefined;
+                if (read32LE(buffer, 0) !== IMAGE_MAGIC) return undefined;
+
+                const romNameSize = read32LE(buffer, 4);
+                const romSize = read32LE(buffer, 8);
+                const memorySize = read32LE(buffer, 12);
+
+                if ((romNameSize + romSize + memorySize + 16) !== buffer.length) return undefined;
+
+                return {
+                    romName: new TextDecoder().decode(buffer.subarray(16, 16 + romNameSize)),
+                    rom: buffer.subarray(16 + romNameSize, 16 + romNameSize + romSize),
+                    memory: buffer.subarray(16 + romNameSize + romSize)
+                };
             }
 
             let setUsernameTimeoutHandle = null;
+
+            // ####################################################################################
+            // Session ready
+            // ####################################################################################
 
             async function onSessionReady() {
                 const nativeButtonDown = this.cwrap('buttonDown', null, ['string']);
@@ -547,6 +713,8 @@
                 const memorySize = this.ccall('memorySize', 'number', [], []);
 
                 resetButton.addEventListener('click', () => nativeReset(resetTypeSelect.value));
+                fileUploadButton.disabled = false;
+                imageDownloadButton.disabled = false;
 
                 if (!memoryPersistence) {
                     memoryPersistence = new MemoryPersistence(db, memorySize, this);
@@ -557,6 +725,10 @@
 
                 nativeSetUserName((await kvs.get(KEY_USERNAME)) || '');
             }
+
+            // ####################################################################################
+            // Main (after WASM load)
+            // ####################################################################################
 
             async function main(module) {
                 async function launch() {
@@ -585,14 +757,34 @@
                     });
                 }
 
-                async function onRomFileSelect(e) {
-                    const file = e.target.files[0];
-                    if (!file || !file.name.match(/\.rom$/i)) return;
+                async function tryHandleImage(buffer) {
+                    const loaded = loadImage(buffer);
+                    if (!loaded) return false;
 
-                    const content = await processUpload(file);
+                    const { romName, rom, memory } = loaded;
 
-                    await kvs.put(KEY_ROM_NAME, file.name);
-                    await kvs.put(KEY_ROM_IMAGE, content);
+                    await kvs.delete(KEY_ROM_IMAGE);
+                    await kvs.delete(KEY_ROM_NAME);
+                    await kvs.delete(KEY_ROM_MEMORY_SIZE);
+
+                    if (memoryPersistence) {
+                        memoryPersistence.stop();
+                    }
+
+                    memoryPersistence = new MemoryPersistence(db, memory.length, module);
+                    await memoryPersistence.saveMemoryImage(memory);
+
+                    await kvs.put(KEY_ROM_NAME, romName);
+                    await kvs.put(KEY_ROM_IMAGE, rom);
+                    await kvs.put(KEY_ROM_MEMORY_SIZE, memory.length);
+
+                    window.location.reload();
+                    return true;
+                }
+
+                async function handleRom(buffer, name) {
+                    await kvs.put(KEY_ROM_NAME, name);
+                    await kvs.put(KEY_ROM_IMAGE, buffer);
                     await kvs.delete(KEY_ROM_MEMORY_SIZE);
 
                     if (memoryPersistence) {
@@ -601,6 +793,16 @@
                     }
 
                     window.location.reload();
+                }
+
+                async function onImageFileSelect(e) {
+                    const file = e.target.files[0];
+                    if (!file || !file.name.match(/\.(rom|bin|img)$/i)) return;
+
+                    const content = await processUpload(file);
+
+                    if (!(file.name.match(/\.(img|bin)$/i) && await tryHandleImage(content)))
+                        handleRom(content, file.name);
                 }
 
                 async function onFileUpload(e) {
@@ -625,11 +827,13 @@
                     memoryPersistence = new MemoryPersistence(db, memorySize, module);
                 }
 
-                romUploadButton.addEventListener('click', () => romUpload.click());
-                romUpload.addEventListener('change', onRomFileSelect);
+                imageUploadButton.addEventListener('click', () => imageUpload.click());
+                imageUpload.addEventListener('change', onImageFileSelect);
 
                 fileUploadButton.addEventListener('click', () => fileUpload.click());
                 fileUpload.addEventListener('change', onFileUpload);
+
+                imageDownloadButton.addEventListener('click', saveImage);
 
                 if (await kvs.get(KEY_ROM_NAME) && await kvs.get(KEY_ROM_IMAGE)) {
                     await launch();
@@ -637,6 +841,10 @@
                     romName.innerText = 'No ROM image selected';
                 }
             }
+
+            // ####################################################################################
+            // Bootstrap
+            // ####################################################################################
 
             await setupDb();
 

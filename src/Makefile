@@ -8,7 +8,7 @@ CC_EMCC ?= emcc
 CXX_EMCC ?= emcc
 LD_EMCC ?= emcc
 
-PYTHON ?= python
+PYTHON ?= python3
 
 WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
 
