@@ -157,6 +157,7 @@
 
             const DB_GRACE_TIME_MS = 3000;
             const IMAGE_MAGIC = 0x20150103;
+            const UPDATE_MEMORY_IMAGE_INTERVAL = 0;
 
             const imageUploadButton = document.getElementById('image-upload-button');
             const imageUpload = document.getElementById('image-upload');
@@ -316,6 +317,8 @@
                     this.db = db;
                     this.size = size;
                     this.module = module;
+                    this.lastUpdateAt = 0;
+                    this.active = false;
 
                     const pageCount = (size >>> 10) + (size % 1024 ? 1 : 0);
                     this.dirtyPages = new Uint8Array((pageCount >>> 3) + (pageCount % 8 ? 1 : 0));
@@ -334,21 +337,32 @@
                 }
 
                 start() {
-                    if (this.intervalHandle !== null) return;
+                    this.active = true;
+                }
 
-                    this.intervalHandle = setInterval(() => this.snapshotTask(), 1000);
+                onCycle() {
+                    if (!this.active) return;
+
+                    const now = performance.now();
+
+                    if ((now - this.lastUpdateAt) >= UPDATE_MEMORY_IMAGE_INTERVAL) {
+                        this.snapshotTask();
+                        this.lastUpdateAt = now;
+                    }
                 }
 
                 async snapshotTask() {
                     if (this.transaction || !this.uiInitialized()) return;
 
                     try {
-                        await this.snapshot();
+                        if (await this.snapshot()) {
+                            const now = new Date();
+                            snapshotIndicator.innerText = `last snapshot saved on ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
 
-                        const now = new Date();
-                        snapshotIndicator.innerText = `last snapshot saved on ${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+                            this.consecutiveErrorCount = 0;
 
-                        this.consecutiveErrorCount = 0;
+                            this.transaction = null;
+                        }
                     } catch (e) {
                         appendLog(`failed to save memory snapshot: ${(e && e.message) ? e.message : 'failed'}`);
 
@@ -361,13 +375,14 @@
                         }
 
                         snapshotIndicator.style.color = 'red';
-                    }
-                    finally {
+
                         this.transaction = null;
                     }
                 }
 
                 async snapshot() {
+                    if (this.transaction) return false;
+
                     const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
                     this.transaction = transaction;
 
@@ -416,6 +431,8 @@
                             clearTimeout(watchdog);
                         };
                     });
+
+                    return true;
                 }
 
                 saveDirtyPages(transaction, memory, dirtyPages) {
@@ -454,10 +471,7 @@
                         this.transaction = null;
                     }
 
-                    if (this.intervalHandle !== null) {
-                        clearInterval(this.intervalHandle);
-                        this.intervalHandle = null
-                    }
+                    this.active = false;
                 }
 
                 loadMemoryImage() {
@@ -855,7 +869,8 @@
                 canvas: document.getElementById('canvas'),
                 print: appendLog,
                 printErr: appendLog,
-                sessionReady: onSessionReady
+                sessionReady: onSessionReady,
+                onCycle: () => memoryPersistence && memoryPersistence.onCycle()
             });
 
             main(module);

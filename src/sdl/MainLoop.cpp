@@ -2,6 +2,10 @@
 
 #include <SDL2/SDL_image.h>
 
+#ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+#endif
+
 #include "EmHAL.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
@@ -58,6 +62,10 @@ void MainLoop::Cycle() {
 #ifndef __EMSCRIPTEN__
     else
         SDL_Delay(16);
+#endif
+
+#ifdef __EMSCRIPTEN__
+    EM_ASM({ module.onCycle&& module.onCycle(); });
 #endif
 
     eventHandler.HandleEvents(millis);
