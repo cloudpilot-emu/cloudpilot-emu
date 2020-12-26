@@ -14,7 +14,6 @@ extern void customreset (void);
 
 #define SPCFLAG_DISK 4
 #define SPCFLAG_INT  8
-#define SPCFLAG_BRK  16
 #define SPCFLAG_EXTRA_CYCLES 32
 #define SPCFLAG_TRACE 64
 #define SPCFLAG_DOTRACE 128

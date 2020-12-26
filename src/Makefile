@@ -193,7 +193,6 @@ emscripten: $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC)
 wasm-opt: $(WASM_OPT_STAMP)
 
 $(WASM_OPT_STAMP): $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC)
-	for i in $(BINARY_SDL_WASM) $(BINARY_WEB_WASM); do wasm-opt -O4 --post-emscripten -o $$i $$i; done
 	for i in $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC); do terser -c -o $$i < $$i; done
 	touch $@
 

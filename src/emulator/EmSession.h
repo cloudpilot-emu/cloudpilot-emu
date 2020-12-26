@@ -20,7 +20,6 @@ class EmSession {
     bool Initialize(EmDevice* device, const uint8* romImage, size_t romLength);
 
     bool IsNested() const;
-    bool IsExecutingSync() const;
     bool IsPowerOn();
 
     void ReleaseBootKeys();

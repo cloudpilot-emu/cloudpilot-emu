@@ -372,12 +372,7 @@ Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
         this->ProcessException(kException_Trace);
     }
 
-    if (regs.stopped) {
-        if (this->ExecuteStoppedLoop(maxCycles)) {
-            regs.spcflags &= ~SPCFLAG_BRK;
-            return true;
-        }
-    }
+    if (regs.stopped && this->ExecuteStoppedLoop(maxCycles)) return true;
 
     // Do trace-mode stuff (do_trace from newcpu.c does more,
     // but it's only needed for CPU_LEVEL > 0)
@@ -404,9 +399,6 @@ Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
         regs.spcflags &= ~SPCFLAG_INT;
         regs.spcflags |= SPCFLAG_DOINT;
     }
-
-    // Check for Poser end-of-cycle operations.  This is inserted
-    // before the standard UAE check of the SPCFLAG_BRK flag.
 
     if ((regs.spcflags & SPCFLAG_END_OF_CYCLE)) {
         regs.spcflags &= ~SPCFLAG_END_OF_CYCLE;
@@ -458,8 +450,7 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
             }
         }
 
-        if (this->CheckForBreak() || gSession->IsExecutingSync() ||
-            (maxCycles && fCurrentCycles >= maxCycles)) {
+        if (this->CheckForBreak() || (maxCycles && fCurrentCycles >= maxCycles)) {
             return true;
         }
     } while (regs.stopped);
@@ -668,11 +659,6 @@ Bool EmCPU68K::Stopped(void) { return regs.stopped; }
 // Check to see if the conditions tell us to break from the CPU Execute loop.
 
 Bool EmCPU68K::CheckForBreak(void) {
-    if ((regs.spcflags & SPCFLAG_BRK) != 0) {
-        regs.spcflags &= ~SPCFLAG_BRK;
-        return true;
-    }
-
     EmAssert(fSession);
     return fSession->CheckForBreak();
 }

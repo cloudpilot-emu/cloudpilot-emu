@@ -104,8 +104,6 @@ bool EmSession::IsNested() const {
     return nestLevel > 0;
 }
 
-bool EmSession::IsExecutingSync() const { return IsNested() || waitingForSyscall; }
-
 bool EmSession::IsPowerOn() { return !EmHAL::GetAsleep(); }
 
 void EmSession::ReleaseBootKeys() {
@@ -149,7 +147,9 @@ bool EmSession::ExecuteSpecial(bool checkForResetOnly) {
     return false;
 }
 
-bool EmSession::CheckForBreak() const { return subroutineReturn || syscallDispatched; }
+bool EmSession::CheckForBreak() const {
+    return (IsNested() && subroutineReturn) || (waitingForSyscall && syscallDispatched);
+}
 
 void EmSession::ScheduleResetBanks() {
     bankResetScheduled = true;
