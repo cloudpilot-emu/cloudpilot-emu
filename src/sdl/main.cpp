@@ -25,7 +25,21 @@
 
 using namespace std;
 
-bool readFile(string file, unique_ptr<uint8[]>& buffer, long& len) {
+constexpr uint32 IMAGE_FILE_MAGIC = 0x20150103;
+
+struct Buffer {
+    Buffer() = default;
+    Buffer(uint8* buffer, size_t len) : len(len), buffer(buffer) {}
+
+    size_t len{0};
+    uint8* buffer{nullptr};
+};
+
+uint32 read32LE(const uint8* buffer, size_t i) {
+    return buffer[i] | (buffer[i + 1] << 8) | (buffer[i + 2] << 16) | (buffer[i + 3] << 24);
+}
+
+bool readFile(string file, unique_ptr<uint8[]>& buffer, size_t& len) {
     fstream stream(file, ios_base::in);
     if (stream.fail()) return false;
 
@@ -36,7 +50,7 @@ bool readFile(string file, unique_ptr<uint8[]>& buffer, long& len) {
     buffer = make_unique<uint8[]>(len);
 
     stream.read((char*)buffer.get(), len);
-    if (stream.gcount() != len) return false;
+    if (static_cast<size_t>(stream.gcount()) != len) return false;
 
     return true;
 }
@@ -71,17 +85,56 @@ void analyzeRom(EmROMReader& reader) {
          << endl;
 }
 
-void initializeSession(string file) {
-    unique_ptr<uint8[]> buffer;
-    long len;
+bool tryToParseImage(uint8* buffer, size_t len, Buffer& romImage, Buffer& memoryImage) {
+    if (len < 16) return false;
 
-    if (!readFile(file, buffer, len)) {
+    if (read32LE(buffer, 0) != IMAGE_FILE_MAGIC) return false;
+
+    uint32 romNameSize = read32LE(buffer, 4);
+    uint32 romSize = read32LE(buffer, 8);
+    uint32 memorySize = read32LE(buffer, 12);
+
+    if ((romNameSize + romSize + memorySize + 16) != len) return false;
+
+    romImage.len = romSize;
+    romImage.buffer = buffer + 16 + romNameSize;
+
+    memoryImage.len = memorySize;
+    memoryImage.buffer = romImage.buffer + romSize;
+
+    return true;
+}
+
+void setupMemoryImage(Buffer image) {
+    if ((uint32)image.len != gSession->GetMemorySize()) {
+        cerr << "memory image size mismatch: expected " << gSession->GetMemorySize() << " , got "
+             << image.len << endl
+             << flush;
+    }
+
+    memcpy(gSession->GetMemoryPtr(), image.buffer, image.len);
+
+    cout << "loaded memory image" << endl << flush;
+}
+
+void initializeSession(string file) {
+    unique_ptr<uint8[]> fileBuffer;
+    size_t fileSize;
+
+    if (!readFile(file, fileBuffer, fileSize)) {
         cerr << "unable to open " << file << endl;
 
         exit(1);
     }
 
-    EmROMReader reader(buffer.get(), len);
+    Buffer romImage, memoryImage;
+
+    if (!tryToParseImage(fileBuffer.get(), fileSize, romImage, memoryImage)) {
+        romImage.buffer = fileBuffer.get();
+        romImage.len = fileSize;
+    }
+
+    EmROMReader reader(romImage.buffer, romImage.len);
 
     if (!reader.AcquireCardHeader() || !reader.AcquireROMHeap() || !reader.AcquireDatabases() ||
         !reader.AcquireFeatures()) {
@@ -100,29 +153,27 @@ void initializeSession(string file) {
         exit(1);
     }
 
-    if (!gSession->Initialize(device, buffer.get(), len)) {
+    if (!gSession->Initialize(device, romImage.buffer, romImage.len)) {
         cerr << "Session failed to initialize" << endl;
 
         exit(1);
+    }
+
+    if (memoryImage.buffer) {
+        setupMemoryImage(memoryImage);
     }
 }
 
 void loadMemoryImage(string file) {
     unique_ptr<uint8[]> buffer;
-    long len;
+    size_t len;
 
     if (!readFile(file, buffer, len)) {
         cerr << "failed to read memory dump '" << file << "'" << endl << flush;
         return;
     }
 
-    if ((uint32)len != gSession->GetMemorySize()) {
-        cerr << "memory image size mismatch: expected " << gSession->GetMemorySize() << " , got "
-             << len << endl
-             << flush;
-    }
-
-    memcpy(gSession->GetMemoryPtr(), buffer.get(), len);
+    setupMemoryImage(Buffer(buffer.get(), len));
 
     cout << "loaded memory image from '" << file << "'" << endl << flush;
 }
