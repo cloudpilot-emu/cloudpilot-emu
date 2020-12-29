@@ -608,11 +608,15 @@
                 return `${romName.replace(/\.[^\.]*$/, '')}_${year}${month}${day}-${hour}${minute}${second}.bin`;
             }
 
-            async function saveImage() {
+            async function saveImage(module) {
                 const romName = await kvs.get(KEY_ROM_NAME);
                 const encodedRomName = new TextEncoder().encode(romName);
+
                 const rom = await kvs.get(KEY_ROM_IMAGE);
-                const memory = memoryPersistence.getMemory();
+
+                const memoryPtr = module.ccall('memoryPtr', 'number', []);
+                const memorySize = module.ccall('memorySize', 'number', [], []);
+                const memory = module.HEAP8.subarray(memoryPtr, memoryPtr + memorySize);
 
                 const serializedImage = new Uint8Array(16 + encodedRomName.length + memory.length + rom.length);
 
@@ -727,6 +731,7 @@
                 const memorySize = this.ccall('memorySize', 'number', [], []);
 
                 resetButton.addEventListener('click', () => nativeReset(resetTypeSelect.value));
+                imageDownloadButton.addEventListener('click', () => saveImage(this));
                 fileUploadButton.disabled = false;
                 imageDownloadButton.disabled = false;
 
@@ -846,8 +851,6 @@
 
                 fileUploadButton.addEventListener('click', () => fileUpload.click());
                 fileUpload.addEventListener('change', onFileUpload);
-
-                imageDownloadButton.addEventListener('click', saveImage);
 
                 if (await kvs.get(KEY_ROM_NAME) && await kvs.get(KEY_ROM_IMAGE)) {
                     await launch();
