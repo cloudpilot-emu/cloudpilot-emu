@@ -31,10 +31,9 @@ void Chunk::Put16(uint16 value) { Put32(value); }
 void Chunk::Put32(uint32 value) {
     if (!AssertOkForSize(4)) return;
 
-    uint32 v = value;
-    SWAP_IF_REQUIRED(v);
+    SWAP_IF_REQUIRED(value);
 
-    *static_cast<uint32*>(next) = v;
+    *static_cast<uint32*>(next) = value;
 
     next = static_cast<uint8*>(next) + 4;
 }
