@@ -1440,7 +1440,7 @@ uint32 EmRegsEZ::tmr1StatusRead(emuptr address, int size) {
 uint32 EmRegsEZ::uartRead(emuptr address, int size) {
     // If this is a full read, get the next byte from the FIFO.
 
-    Bool refreshRxData = (address == addressof(uReceive)) && (size == 2);
+    Bool refreshRxData = (address == db_addressof(uReceive)) && (size == 2);
 
     // See if there's anything new ("Put the data on the bus")
 
@@ -1580,7 +1580,7 @@ void EmRegsEZ::intStatusHiWrite(emuptr address, int size, uint32 value) {
     // accessing the upper byte, just return. If we're accessing the lower
     // byte, we can treat it as a 2-byte access.
 
-    else if (size == 1 && address == addressof(intStatusHi))
+    else if (size == 1 && address == db_addressof(intStatusHi))
         return;
 
     // Now we can treat the rest of this function as a word-write to intStatusHi.
@@ -1779,8 +1779,8 @@ void EmRegsEZ::uartWrite(emuptr address, int size, uint32 value) {
     // If this write included the TX_DATA field, signal that it needs to
     // be transmitted.
 
-    Bool sendTxData = ((address == addressof(uTransmit)) && (size == 2)) ||
-                      ((address == addressof(uTransmit) + 1) && (size == 1));
+    Bool sendTxData = ((address == db_addressof(uTransmit)) && (size == 2)) ||
+                      ((address == db_addressof(uTransmit) + 1) && (size == 1));
 
     // React to any changes.
 
@@ -1797,7 +1797,7 @@ void EmRegsEZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
     // Do a standard update of the register.
 
     switch (address) {
-        case addressof(lcdStartAddr):
+        case db_addressof(lcdStartAddr):
             // Make sure the low-bit is always zero.
             // Make sure bits 31-29 are always zero.
             value &= 0x1FFFFFFE;
@@ -1806,9 +1806,9 @@ void EmRegsEZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
 
             break;
 
-        case addressof(lcdPageWidth):
-        case addressof(lcdScreenWidth):
-        case addressof(lcdScreenHeight):
+        case db_addressof(lcdPageWidth):
+        case db_addressof(lcdScreenWidth):
+        case db_addressof(lcdScreenHeight):
             UnmarkScreen();
 
             break;
@@ -1860,7 +1860,7 @@ void EmRegsEZ::rtcIntStatusWrite(emuptr address, int size, uint32 value) {
     // doing a byte-write to the lower byte, this extension will happen
     // automatically.
 
-    if (address == addressof(rtcIntStatus) && size == 1) value <<= 8;
+    if (address == db_addressof(rtcIntStatus) && size == 1) value <<= 8;
 
     // Get the current value.
 

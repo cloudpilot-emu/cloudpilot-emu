@@ -24,7 +24,7 @@ LDFLAGS_NATIVE ?=  \
 
 CFLAGS_COMMON = -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
 	-DEMULATION_LEVEL=EMULATION_UNIX
-CXXFLAGS_COMMON = $(CFLAGS_COMMON) -std=c++14 -fno-exceptions
+CXXFLAGS_COMMON = $(CFLAGS_COMMON) -std=c++17 -fno-exceptions
 
 CFLAGS_EMCC = -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)
@@ -71,6 +71,7 @@ INCLUDE = \
 	-I./emulator/hardware \
 	-I./emulator/uae \
 	-I./emulator/patch \
+	-I./emulator/savestate \
 	-I./emulator/palm/Device \
 	-I./emulator/palm/Platform \
 	-I./emulator/palm/Platform/Core/Hardware/IncsPrv \
@@ -112,6 +113,12 @@ SOURCE_CPP = \
 	emulator/patch/EmPatchModuleSys.cpp \
 	emulator/patch/EmPatchModuleHtal.cpp \
 	emulator/patch/EmPatchMgr.cpp \
+	emulator/savestate/Chunk.cpp \
+	emulator/savestate/ChunkProbe.cpp \
+	emulator/savestate/SavestateProbe.cpp \
+	emulator/savestate/ChunkHelper.cpp \
+	emulator/savestate/SavestateLoader.cpp \
+	emulator/savestate/Savestate.cpp \
 	emulator/EmSystemState.cpp \
 	emulator/Miscellaneous.cpp \
 	emulator/Marshall.cpp \

@@ -41,14 +41,8 @@ EmCPU::~EmCPU(void) {
 
 void EmCPU::Reset(Bool /*hardwareReset*/) {}
 
-// ---------------------------------------------------------------------------
-//		� EmCPU::Save
-// ---------------------------------------------------------------------------
+void EmCPU::Save(Savestate&) {}
 
-void EmCPU::Save(SessionFile&) {}
+void EmCPU::Save(SavestateProbe&) {}
 
-// ---------------------------------------------------------------------------
-//		� EmCPU::Load
-// ---------------------------------------------------------------------------
-
-void EmCPU::Load(SessionFile&) {}
+void EmCPU::Load(SavestateLoader&) {}

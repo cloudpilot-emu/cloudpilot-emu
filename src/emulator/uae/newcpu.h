@@ -58,7 +58,7 @@ struct cputbl {
 
 extern unsigned long op_illg (uae_u32) REGPARAM;
 
-typedef char flagtype;
+typedef uae_u8 flagtype;
 
 typedef struct regstruct
 {

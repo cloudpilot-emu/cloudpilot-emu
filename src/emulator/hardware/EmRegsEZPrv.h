@@ -24,7 +24,7 @@ const uint32 kMemorySize = sizeof(HwrM68EZ328Type);
 
 // Macro to return the DragonballEZ address of the specified register
 
-#define addressof(x) (kMemoryStart + offsetof(HwrM68EZ328Type, x))
+#define db_addressof(x) (kMemoryStart + offsetof(HwrM68EZ328Type, x))
 
 // Macros for reading/writing DragonballEZ registers.
 
@@ -36,6 +36,6 @@ const uint32 kMemorySize = sizeof(HwrM68EZ328Type);
 
 #define INSTALL_HANDLER(read, write, reg)                                            \
     this->SetHandler((ReadFunction)&EmRegsEZ::read, (WriteFunction)&EmRegsEZ::write, \
-                     addressof(reg), sizeof(f68EZ328Regs.reg))
+                     db_addressof(reg), sizeof(f68EZ328Regs.reg))
 
 #endif /* EmRegsEZPrv_h */

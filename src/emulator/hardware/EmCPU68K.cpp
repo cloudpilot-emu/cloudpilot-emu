@@ -16,21 +16,21 @@
 #include <algorithm>  // find
 
 #include "Byteswapping.h"  // Canonical
-#include "DebugMgr.h"      // gExceptionAddress, gExceptionSize, gExceptionForRead
-#include "EmBankROM.h"     // EmBankROM::GetMemoryStart
+#include "ChunkHelper.h"
+#include "DebugMgr.h"   // gExceptionAddress, gExceptionSize, gExceptionForRead
+#include "EmBankROM.h"  // EmBankROM::GetMemoryStart
 #include "EmCommon.h"
 #include "EmHAL.h"      // EmHAL::GetInterruptLevel
 #include "EmMemory.h"   // CEnableFullAccess
 #include "EmSession.h"  // HandleInstructionBreak
+#include "Logging.h"
 #include "MetaMemory.h"
 #include "Miscellaneous.h"
 #include "Platform.h"
 #include "StringData.h"  // kExceptionNames
 #include "UAE.h"         // cpuop_func, etc.
 
-#if 0                         // CSTODO
-    #include "SessionFile.h"  // WriteDBallRegs, etc.
-#endif
+constexpr uint32 SAVESTATE_VERSION = 1;
 
 // Define our own flags for regs.spcflag.  Please do not let these
 // overlap with UAE-defined flags (should not fall below 0x0002000)
@@ -216,32 +216,69 @@ void EmCPU68K::Reset(Bool hardwareReset) {
 //		� EmCPU68K::Save
 // ---------------------------------------------------------------------------
 
-void EmCPU68K::Save(SessionFile& f) {
-    // Write out the CPU Registers
+void EmCPU68K::Save(Savestate& savestate) { DoSave(savestate); }
 
-#if 0  // CSTODO
-    regstruct tempRegs;
-    this->GetRegisters(tempRegs);
+void EmCPU68K::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
-    Canonical(tempRegs);
-    f.WriteDBallRegs(tempRegs);
-#endif
+void EmCPU68K::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::cpu68k);
+    if (!chunk) return;
+
+    if (chunk->Get32() != SAVESTATE_VERSION) {
+        log::printf("error restoring cpu68k: savestate version mismatch\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    regstruct regs;
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper, regs);
+
+    SetRegisters(regs);
 }
 
-// ---------------------------------------------------------------------------
-//		� EmCPU68K::Load
-// ---------------------------------------------------------------------------
+template <typename T>
+void EmCPU68K::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::cpu68k);
+    if (!chunk) return;
 
-void EmCPU68K::Load(SessionFile& f) {
-    // Read in the CPU Registers.
+    chunk->Put32(SAVESTATE_VERSION);
 
-#if 0  // CSTODO
-    regstruct tempRegs;
-    f.ReadDBallRegs(tempRegs);
+    regstruct regs;
+    GetRegisters(regs);
 
-    Canonical(tempRegs);
-    this->SetRegisters(tempRegs);
-#endif
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper, regs);
+}
+
+template <typename T>
+void EmCPU68K::DoSaveLoad(T& helper, regstruct& regs) {
+    uint8 padding8 = 0;
+
+    for (uint8 i = 0; i < 16; i++) helper.Do32(regs.regs[i]);
+
+    helper.Do32(regs.usp)
+        .Do32(regs.isp)
+        .Do32(regs.msp)
+        .Do16(regs.sr)
+        .Do8(regs.t1, regs.t0, padding8, padding8)
+        .Do8(regs.s, regs.m, regs.x, regs.stopped)
+        .Do32(regs.intmask)
+        .Do32(regs.pc)
+        .Do32(regs.vbr)
+        .Do32(regs.sfc)
+        .Do32(regs.dfc);
+
+    for (uint8 i = 0; i < 8; i++) helper.DoDouble(regs.fp[i]);
+
+    helper.Do32(regs.fpcr)
+        .Do32(regs.fpsr)
+        .Do32(regs.fpiar)
+        .Do32(regs.spcflags)
+        .Do32(regs.kick_mask)
+        .Do32(regs.prefetch);
 }
 
 #pragma mark -

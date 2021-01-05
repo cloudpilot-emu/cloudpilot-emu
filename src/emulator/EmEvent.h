@@ -1,5 +1,5 @@
-#ifndef _EM_VENT_H_
-#define _EM_VENT_H_
+#ifndef _EM_EVENT_H_
+#define _EM_EVENT_H_
 
 #include <functional>
 #include <vector>

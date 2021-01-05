@@ -83,7 +83,9 @@
         "thread": "cpp",
         "cinttypes": "cpp",
         "cstdbool": "cpp",
-        "__split_buffer": "cpp"
+        "__split_buffer": "cpp",
+        "*.idl": "cpp",
+        "__functional_03": "cpp"
     },
     "editor.formatOnSave": true
 }

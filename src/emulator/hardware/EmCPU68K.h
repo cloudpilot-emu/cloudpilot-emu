@@ -219,8 +219,9 @@ class EmCPU68K : public EmCPU {
     //				Reset has been called first.
 
     virtual void Reset(Bool hardwareReset);
-    virtual void Save(SessionFile&);
-    virtual void Load(SessionFile&);
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
 
     // Execute the main CPU loop until asked to stop.
 
@@ -296,6 +297,12 @@ class EmCPU68K : public EmCPU {
     void ProcessInterrupt(int32 interrupt);
 
     void InitializeUAETables(void);
+
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper, regstruct& regs);
 
    private:
     emuptr fLastTraceAddress;

@@ -15,9 +15,10 @@
 #define EmCPU_h
 
 #include "EmCommon.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
 
 class EmSession;
-class SessionFile;
 
 class EmCPU;
 extern EmCPU* gCPU;
@@ -43,8 +44,9 @@ class EmCPU {
     //				Reset has been called first.
 
     virtual void Reset(Bool hardwareReset);
-    virtual void Save(SessionFile&);
-    virtual void Load(SessionFile&);
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
 
     // Execute the main CPU loop until asked to stop.
 
