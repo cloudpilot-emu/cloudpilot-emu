@@ -15,6 +15,9 @@
 #define EmBankMapped_h
 
 #include "EmCommon.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 class SessionFile;
 

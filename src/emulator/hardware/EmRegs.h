@@ -17,8 +17,10 @@
 #include <vector>
 
 #include "EmCommon.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
-class SessionFile;
 struct EmAddressBank;
 
 class EmRegs {
@@ -28,8 +30,9 @@ class EmRegs {
 
     virtual void Initialize(void);
     virtual void Reset(Bool hardwareReset);
-    virtual void Save(SessionFile&);
-    virtual void Load(SessionFile&);
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
     virtual void Dispose(void);
 
     void SetBankHandlers(EmAddressBank&);

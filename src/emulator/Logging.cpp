@@ -7,7 +7,7 @@ namespace {
     bool loggingEnabled = true;
 }
 
-int log::printf(const char* format, ...) {
+int logging::printf(const char* format, ...) {
     if (!loggingEnabled) return 0;
 
     va_list args;
@@ -19,6 +19,6 @@ int log::printf(const char* format, ...) {
     return res;
 }
 
-void log::enable() { loggingEnabled = true; }
+void logging::enable() { loggingEnabled = true; }
 
-void log::disable() { loggingEnabled = false; }
+void logging::disable() { loggingEnabled = false; }

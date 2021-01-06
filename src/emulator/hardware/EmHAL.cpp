@@ -28,7 +28,7 @@ EmHALHandler* EmHAL::fgRootHandler;
     if (!0)    \
         ;      \
     else       \
-        log::printf
+        logging::printf
 
 using ButtonEventT = ButtonEvent;
 

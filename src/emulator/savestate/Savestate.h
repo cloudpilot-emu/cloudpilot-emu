@@ -76,7 +76,7 @@ bool Savestate::AllocateBuffer(T& target) {
     target.save(probe);
 
     if (error) {
-        log::printf("failed to determine savestate layout\n");
+        logging::printf("failed to determine savestate layout\n");
         return false;
     }
 

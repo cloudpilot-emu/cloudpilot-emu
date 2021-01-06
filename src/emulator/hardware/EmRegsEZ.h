@@ -33,8 +33,9 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     // EmRegs overrides
     virtual void Initialize(void);
     virtual void Reset(Bool hardwareReset);
-    virtual void Save(SessionFile&);
-    virtual void Load(SessionFile&);
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
     virtual void Dispose(void);
 
     virtual void SetSubBankHandlers(void);
@@ -133,6 +134,12 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     void MarkScreen();
     void UnmarkScreen();
     void UpdateTimerTicksPerSecond();
+
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
 
    protected:
     HwrM68EZ328Type f68EZ328Regs;

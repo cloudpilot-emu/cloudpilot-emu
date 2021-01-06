@@ -17,6 +17,7 @@
 #include <functional>
 
 #include "Byteswapping.h"  // Canonical
+#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmHAL.h"     // EmHAL
 #include "EmMemory.h"  // gMemAccessFlags, EmMem_memcpy
@@ -28,6 +29,7 @@
 #include "Logging.h"  // LogAppendMsg
 #include "MetaMemory.h"
 #include "Platform.h"
+#include "SavestateStructures.h"
 #include "UAE.h"  // regs, SPCFLAG_INT
 
 #if 0                         // CSTODO
@@ -56,12 +58,13 @@
 
 // #define LOGGING 0
 #ifdef LOGGING
-    #define PRINTF log::printf
+    #define PRINTF logging::printf
 #else
     #define PRINTF(...) ;
 #endif
 
 namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
 
     constexpr uint16 UPSIZ = 0x1800;  // Mask to get the unprotected memory size from csDSelect.
     constexpr uint16 SIZ = 0x000E;    // Mask to get the memory size from csASelect.
@@ -500,94 +503,55 @@ void EmRegsEZ::Reset(Bool hardwareReset) {
 //		� EmRegsEZ::Save
 // ---------------------------------------------------------------------------
 
-void EmRegsEZ::Save(SessionFile& f) {
-    EmRegs::Save(f);
+void EmRegsEZ::Save(Savestate& savestate) { DoSave(savestate); }
 
-#if 0  // CSTODO
+void EmRegsEZ::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
-    StWordSwapper swapper1(&f68EZ328Regs, sizeof(f68EZ328Regs));
-    //	StCanonical<HwrM68EZ328Type>	swapper2 (f68EZ328Regs);
-    f.WriteHwrDBallEZType(f68EZ328Regs);
-    f.FixBug(SessionFile::kBugByteswappedStructs);
+void EmRegsEZ::Load(SavestateLoader& savestate) {
+    Chunk* chunk = savestate.GetChunk(ChunkType::regsEZ);
+    if (!chunk) return;
 
-    const long kCurrentVersion = 3;
+    if (chunk->Get32() != SAVESTATE_VERSION) {
+        logging::printf("unable to restore RegsEZ: unsupported savestate version\n");
+        savestate.NotifyError();
 
-    Chunk chunk;
-    EmStreamChunk s(chunk);
+        return;
+    }
 
-    s << kCurrentVersion;
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
 
-    s << fHotSyncButtonDown;
-    s << fKeyBits;
-    s << fLastTmr1Status;
-    s << fPortDEdge;
+    Bool sendTxData = false;
+    EmRegsEZ::UARTStateChanged(sendTxData);
 
-    // Added in version 3.
-
-    s << fPortDDataCount;
-
-    f.WriteDBallEZState(chunk);
-#endif
+    gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csDSelect) & 0x2000) != 0;
+    markScreen = true;
 }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsEZ::Load
-// ---------------------------------------------------------------------------
+template <typename T>
+void EmRegsEZ::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsEZ);
+    if (!chunk) return;
 
-void EmRegsEZ::Load(SessionFile& f) {
-#if 0  // CSTODO
-    EmRegs::Load(f);
+    chunk->Put32(SAVESTATE_VERSION);
 
-    if (f.ReadHwrDBallEZType(f68EZ328Regs)) {
-        // The Windows version of Poser 2.1d29 and earlier did not write
-        // out structs in the correct format.  The fields of the struct
-        // were written out in Little-Endian format, not Big-Endian.  To
-        // address this problem, the bug has been fixed, and a new field
-        // is added to the file format indicating that the bug has been
-        // fixed.  With the new field (the "bug bit"), Poser can identify
-        // old files from new files and read them in accordingly.
-        //
-        // With the bug fixed, the .psf files should now be interchangeable
-        // across platforms (modulo other bugs...).
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
 
-        if (!f.IncludesBugFix(SessionFile::kBugByteswappedStructs)) {
-            Canonical(f68EZ328Regs);
-        }
-        ByteswapWords(&f68EZ328Regs, sizeof(f68EZ328Regs));
+template <typename T>
+void EmRegsEZ::DoSaveLoad(T& helper) {
+    ::DoSaveLoad(helper, f68EZ328Regs);
 
-        // React to the new data in the UART registers.
-
-        Bool sendTxData = false;
-        EmRegsEZ::UARTStateChanged(sendTxData);
-
-        // Reset gMemAccessFlags.fProtect_SRAMSet
-
-        gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csDSelect) & 0x2000) != 0;
-    } else {
-        f.SetCanReload(false);
-    }
-
-    Chunk chunk;
-    if (f.ReadDBallEZState(chunk)) {
-        long version;
-        EmStreamChunk s(chunk);
-
-        s >> version;
-
-        if (version >= 1) {
-            s >> fHotSyncButtonDown;
-            s >> fKeyBits;
-            s >> fLastTmr1Status;
-            s >> fPortDEdge;
-        }
-
-        if (version >= 3) {
-            s >> fPortDDataCount;
-        }
-    } else {
-        f.SetCanReload(false);
-    }
-#endif
+    helper.DoBool(fHotSyncButtonDown)
+        .Do16(fKeyBits)
+        .Do16(fLastTmr1Status)
+        .Do8(fPortDEdge)
+        .Do32(fPortDDataCount)
+        .DoDouble(lastProcessedSystemCycles)
+        .DoDouble(timerTicksPerSecond)
+        .Do32(rtcDayAtWrite)
+        .Do32(lastRtcAlarmCheck);
 }
 
 // ---------------------------------------------------------------------------

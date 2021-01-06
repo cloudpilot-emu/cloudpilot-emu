@@ -20,8 +20,9 @@ class EmBankRegs {
    public:
     static void Initialize(void);
     static void Reset(Bool hardwareReset);
-    static void Save(SessionFile&);
-    static void Load(SessionFile&);
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
     static void Dispose(void);
 
     static void SetBankHandlers(void);

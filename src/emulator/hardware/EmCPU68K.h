@@ -301,9 +301,6 @@ class EmCPU68K : public EmCPU {
     template <typename T>
     void DoSave(T& savestate);
 
-    template <typename T>
-    void DoSaveLoad(T& helper, regstruct& regs);
-
    private:
     emuptr fLastTraceAddress;
     Hook68KExceptionList fExceptionHandlers[kException_LastException];

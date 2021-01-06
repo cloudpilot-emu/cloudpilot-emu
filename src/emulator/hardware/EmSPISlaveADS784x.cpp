@@ -21,7 +21,7 @@
 
 // #define LOGGING 1
 #ifdef LOGGING
-    #define PRINTF log::printf
+    #define PRINTF logging::printf
 #else
     #define PRINTF(...) ;
 #endif

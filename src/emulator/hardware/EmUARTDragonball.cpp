@@ -66,7 +66,7 @@ static Bool PrvPinBaud(EmTransportSerial::Baud& newBaud);
 static Bool PrvPinBaud(EmTransportSerial::Baud& newBaud, EmTransportSerial::Baud testBaud);
 #endif
 
-#define PRINTF log::printf
+#define PRINTF logging::printf
 
 /***********************************************************************
  *

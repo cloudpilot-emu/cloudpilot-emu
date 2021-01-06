@@ -147,7 +147,7 @@ void EmBankRegs::Reset(Bool hardwareReset) {
  *
  ***********************************************************************/
 
-void EmBankRegs::Save(SessionFile& f) {
+void EmBankRegs::Save(Savestate& f) {
     EmRegsList::iterator iter = fgSubBanks.begin();
     while (iter != fgSubBanks.end()) {
         (*iter)->Save(f);
@@ -155,20 +155,15 @@ void EmBankRegs::Save(SessionFile& f) {
     }
 }
 
-/***********************************************************************
- *
- * FUNCTION:	EmBankRegs::Load
- *
- * DESCRIPTION: Standard load function.  Loads any sub-system state
- *				from the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
+void EmBankRegs::Save(SavestateProbe& f) {
+    EmRegsList::iterator iter = fgSubBanks.begin();
+    while (iter != fgSubBanks.end()) {
+        (*iter)->Save(f);
+        ++iter;
+    }
+}
 
-void EmBankRegs::Load(SessionFile& f) {
+void EmBankRegs::Load(SavestateLoader& f) {
     EmRegsList::iterator iter = fgSubBanks.begin();
     while (iter != fgSubBanks.end()) {
         (*iter)->Load(f);

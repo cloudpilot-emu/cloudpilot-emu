@@ -103,13 +103,9 @@ void EmRegs::Reset(Bool /*hardwareReset*/) {}
 //		� EmRegs::Save
 // ---------------------------------------------------------------------------
 
-void EmRegs::Save(SessionFile&) {}
-
-// ---------------------------------------------------------------------------
-//		� EmRegs::Load
-// ---------------------------------------------------------------------------
-
-void EmRegs::Load(SessionFile&) {}
+void EmRegs::Save(Savestate&) {}
+void EmRegs::Save(SavestateProbe&) {}
+void EmRegs::Load(SavestateLoader&) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegs::Dispose
