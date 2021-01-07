@@ -18,8 +18,7 @@ void Chunk::Reset() {
 bool Chunk::AssertOkForSize(size_t size) {
     if (error) return false;
 
-    error =
-        (static_cast<uint8*>(next) - static_cast<uint8*>(buffer)) < static_cast<ssize_t>(chunkSize);
+    error = chunkSize - (static_cast<uint8*>(next) - static_cast<uint8*>(buffer)) < size;
 
     return !error;
 }
