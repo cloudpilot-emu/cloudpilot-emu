@@ -29,6 +29,10 @@ CXXFLAGS_COMMON = $(CFLAGS_COMMON) -std=c++17 -fno-exceptions
 CFLAGS_EMCC = -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)
 
+CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined
+CXXFLAGS_TEST ?= $(CFLAGS_TEST)
+LDFLAGS_TEST ?= -fsanitize=address,undefined -lgtest_main -lgtest -lgmock
+
 WEBIDL_BINDING_DIR = web/binding
 WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
 WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/binding.idl
@@ -61,11 +65,16 @@ DEPDIR_NATIVE = .deps
 BUILDDIR_EMCC = .build-emcc
 DEPDIR_EMCC = .deps-emcc
 
+BUILDDIR_TEST = .build-test
+DEPDIR_TEST = .deps-test
+
 DEPFLAGS_NATIVE = -MT $@ -MMD -MP -MF $(DEPDIR_NATIVE)/$*.d
 DEPFLAGS_EMCC = -MT $@ -MMD -MP -MF $(DEPDIR_EMCC)/$*.d
+DEPFLAGS_TEST = -MT $@ -MMD -MP -MF $(DEPDIR_TEST)/$*.d
 
 MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
 MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
+MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
 INCLUDE = \
 	-I./emulator/hardware \
@@ -91,6 +100,10 @@ SOURCE_C = \
 	emulator/palm/Platform/Core/System/Src/Crc.c
 
 SOURCE_CPP = \
+	$(shell find . -type f -name '*.cpp' -and -not -name $(notdir $(WEBIDL_BINDING_CXX)) | sed 's/^\.\///g') \
+	$(WEBIDL_BINDING_CXX)
+
+SOURCE_EMU = \
 	emulator/uae/readcpu.cpp \
 	emulator/hardware/EmMemory.cpp \
 	emulator/hardware/EmHAL.cpp \
@@ -144,7 +157,12 @@ SOURCE_CPP = \
 	emulator/Logging.cpp \
 	emulator/stubs.cpp
 
+SOURCE_TEST = \
+	$(SOURCE_EMU) \
+	test/SavestateChunk.cpp
+
 SOURCE_SDL = \
+	$(SOURCE_EMU) \
 	sdl/main.cpp \
 	sdl/MainLoop.cpp \
 	sdl/Silkscreen.cpp \
@@ -154,17 +172,15 @@ SOURCE_SDL_NATIVE = $(SOURCE_SDL) sdl/Cli.cpp
 SOURCE_SDL_EMCC = $(SOURCE_SDL) sdl/EmscriptenApi.cpp
 
 SOURCE_WEB = \
+	$(SOURCE_EMU) \
 	web/main.cpp \
 	web/Cloudpilot.cpp \
 	$(WEBIDL_BINDING_CXX)
 
-OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
-OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)
-
-OBJECTS_SDL_NATIVE = $(SOURCE_SDL_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)
-OBJECTS_SDL_EMCC = $(SOURCE_SDL_EMCC:%.cpp=$(BUILDDIR_EMCC)/%.o)
-
-OBJECTS_WEB_EMCC = $(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o)
+OBJECTS_TEST = $(SOURCE_C:%.c=$(BUILDDIR_TEST)/%.o) $(SOURCE_TEST:%.cpp=$(BUILDDIR_TEST)/%.o)
+OBJECTS_SDL_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_SDL_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)
+OBJECTS_SDL_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_SDL_EMCC:%.cpp=$(BUILDDIR_EMCC)/%.o)
+OBJECTS_WEB_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o)
 
 BINARY_SDL_NATIVE = cloudpilot
 BINARY_SDL_EMCC = cloudpilot.js
@@ -172,19 +188,23 @@ BINARY_SDL_WASM = cloudpilot.wasm
 
 BINARY_WEB_EMCC = cloudpilot_web.js
 BINARY_WEB_WASM = cloudpilot_web.wasm
+BINARY_TEST = test/test
 
 WASM_OPT_STAMP = wasm-opt.stamp
 
 GARBAGE = \
 	$(BUILDDIR_NATIVE) \
 	$(BUILDDIR_EMCC) \
+	$(BUILDDIR_TEST) \
 	$(BINARY_SDL_EMCC) \
 	$(BINARY_SDL_NATIVE) \
 	$(BINARY_SDL_WASM) \
 	$(BINARY_WEB_EMCC) \
 	$(BINARY_WEB_WASM) \
+	$(BINARY_TEST) \
 	$(DEPDIR_NATIVE) \
 	$(DEPDIR_EMCC) \
+	$(DEPDIR_TEST) \
 	$(WASM_OPT_STAMP) \
 	$(WEBIDL_BINDING_JS) \
 	$(WEBIDL_BINDING_JS:%.js=%.cpp) \
@@ -199,30 +219,42 @@ emscripten: $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC)
 
 wasm-opt: $(WASM_OPT_STAMP)
 
+test: $(BINARY_TEST)
+	$(BINARY_TEST)
+
 $(WASM_OPT_STAMP): $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC)
 	for i in $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC); do terser -c -o $$i < $$i; done
 	touch $@
 
-$(BINARY_SDL_NATIVE): $(OBJECTS_NATIVE) $(OBJECTS_SDL_NATIVE)
+$(BINARY_SDL_NATIVE): $(OBJECTS_SDL_NATIVE)
 	$(LD_NATIVE) $(LDFLAGS_NATIVE) -o $@ $^
 
-$(BINARY_SDL_EMCC): $(OBJECTS_EMCC) $(OBJECTS_SDL_EMCC)
+$(BINARY_SDL_EMCC): $(OBJECTS_SDL_EMCC)
 	$(LD_EMCC) $(LDFLAGS_EMCC_SDL) -o $@ $^
 
-$(BINARY_WEB_EMCC): $(OBJECTS_EMCC) $(OBJECTS_WEB_EMCC)
+$(BINARY_WEB_EMCC): $(OBJECTS_WEB_EMCC)
 	$(LD_EMCC) $(LDFLAGS_EMCC_WEB) -o $@ $^
+
+$(BINARY_TEST) : $(OBJECTS_TEST)
+	$(LD_NATIVE) $(LDFLAGS_TEST) -o $@ $^
 
 $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_SDL_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.cpp
-	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
-
 $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.c
 	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(CFLAGS_COMMON) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o) $(SOURCE_SDL_EMCC:%.cpp=$(BUILDDIR_EMCC)/%.o) $(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
+$(SOURCE_C:%.c=$(BUILDDIR_TEST)/%.o): $(BUILDDIR_TEST)/%.o : %.c
+	$(MKDIR_TEST) && $(CC_NATIVE) $(DEPFLAGS_TEST) $(CFLAGS_COMMON) $(CFLAGS_TEST) $(INCLUDE) -c -o $@ $<
+
+$(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.cpp
+	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
+
+$(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
 	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_COMMON) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
+
+$(SOURCE_CPP:%.cpp=$(BUILDDIR_TEST)/%.o): $(BUILDDIR_TEST)/%.o : %.cpp
+	$(MKDIR_TEST) && $(CXX_NATIVE) $(DEPFLAGS_TEST) $(CXXFLAGS_COMMON) $(CXXFLAGS_TEST) $(INCLUDE) -c -o $@ $<
 
 $(BUILDDIR_EMCC)/$(WEBIDL_BINDING_CXX:%.cpp=%.o): $(WEBIDL_BINDING_JS)
 
@@ -232,7 +264,7 @@ $(WEBIDL_BINDING_JS): $(WEBIDL_BINDING_SRC)
 clean:
 	-rm -fr $(GARBAGE)
 
-.PHONY: clean all bin emscripten
+.PHONY: clean all bin emscripten test
 
 include $(shell test -e $(DEPDIR_NATIVE) && find $(DEPDIR_NATIVE) -type f)
 include $(shell test -e $(DEPDIR_EMCC) && find $(DEPDIR_EMCC) -type f)

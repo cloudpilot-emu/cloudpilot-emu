@@ -1,7 +1,9 @@
 .build
 .build-emcc
+.build-test
 .deps
 .deps-emcc
+.deps-test
 src/cloudpilot
 src/*.js
 src/*.wasm
