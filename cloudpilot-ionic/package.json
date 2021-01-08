@@ -6,7 +6,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng run app:build:production",
+    "build": "ng run app:build:production --base-href /cloudpilot/app/",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"
