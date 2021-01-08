@@ -271,3 +271,5 @@ clean:
 
 include $(shell test -e $(DEPDIR_NATIVE) && find $(DEPDIR_NATIVE) -type f)
 include $(shell test -e $(DEPDIR_EMCC) && find $(DEPDIR_EMCC) -type f)
+include $(shell test -e $(DEPDIR_TEST) && find $(DEPDIR_TEST) -type f)
+
