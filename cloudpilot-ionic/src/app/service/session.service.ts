@@ -1,4 +1,4 @@
-import { Observable, of } from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 
 import { Cloudpilot } from './Cloudpilot';
 import { Device } from '../model/Device';
@@ -7,25 +7,29 @@ import { Session } from '../model/Session';
 
 const SESSIONS: Array<Session> = [
     {
+        id: '1',
         name: 'Palm V, default',
         device: Device.palmV,
         ram: 2,
         osVersion: '3.5',
     },
     {
+        id: '2',
         name: 'Palm V, Lemmings',
         device: Device.palmV,
         ram: 2,
         osVersion: '4',
-        description: 'Palm V with OS4 for better compatibility with Lemmings',
+        description: 'Palm V with OS4 for better compatibility with Lemmings.',
     },
     {
+        id: '3',
         name: 'Palm m515',
         device: Device.m515,
         ram: 8,
         osVersion: '4.0',
     },
     {
+        id: '4',
         name: 'Palm m515, unbooted',
         device: Device.m515,
         ram: 8,
@@ -36,7 +40,9 @@ const SESSIONS: Array<Session> = [
     providedIn: 'root',
 })
 export class SessionService {
-    constructor() {}
+    constructor() {
+        this.sessions$.next(this.sessions);
+    }
 
     newSession(): void {
         this.input = document.createElement('input');
@@ -48,9 +54,18 @@ export class SessionService {
     }
 
     getSessions$(): Observable<Array<Session>> {
-        return of(SESSIONS);
+        return this.sessions$;
+    }
+
+    deleteSession(session: Session): void {
+        this.sessions = this.sessions.filter((s) => s.id !== session.id);
+
+        this.sessions$.next(this.sessions);
     }
 
     private input: HTMLInputElement = null;
     private cloudpilotInstance: Promise<Cloudpilot> = Cloudpilot.create();
+
+    private sessions$ = new BehaviorSubject<Array<Session>>([]);
+    private sessions = SESSIONS;
 }

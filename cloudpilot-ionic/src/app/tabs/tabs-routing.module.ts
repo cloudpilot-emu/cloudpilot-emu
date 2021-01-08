@@ -29,7 +29,7 @@ const routes: Routes = [
     },
     {
         path: '',
-        redirectTo: '/tab/emulation',
+        redirectTo: '/tab/sessions',
         pathMatch: 'full',
     },
 ];

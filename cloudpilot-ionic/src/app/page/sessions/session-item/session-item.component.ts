@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 
 import { Session } from './../../../model/Session';
 
@@ -12,4 +12,7 @@ export class SessionItemComponent {
 
     @Input()
     session: Session;
+
+    @Output()
+    onDelete = new EventEmitter<void>();
 }

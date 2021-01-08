@@ -18,7 +18,8 @@
   </ion-header>
 
   <ion-list>
-    <app-session-item *ngFor="let session of (sessionService.getSessions$() | async)" [session]="session">
+    <app-session-item *ngFor="let session of (sessionService.getSessions$() | async)" [session]="session"
+      (onDelete)="requestDeleteSession(session)">
     </app-session-item>
   </ion-list>
 
