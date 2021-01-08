@@ -12,8 +12,8 @@ void ChunkProbe::PutBool(bool value) { size += 4; }
 
 void ChunkProbe::PutDouble(double value) { size += 8; }
 
-void ChunkProbe::PutBuffer(void* buffer, size_t _size) {
-    this->size += (size & 0x03) ? ((size & ~0x03) + 4) : size;
+void ChunkProbe::PutBuffer(void* buffer, size_t size) {
+    this->size = this->size + ((size & 0x03) ? ((size & ~0x03) + 4) : size);
 }
 
 bool ChunkProbe::HasError() const { return false; }
