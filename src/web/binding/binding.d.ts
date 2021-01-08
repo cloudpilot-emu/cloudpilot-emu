@@ -4,22 +4,22 @@ export interface VoidPtr {
     [__void_ptr_tag__]: null;
 }
 
-export interface RomInfoNative {
+export interface RomInfo {
     CardVersion(): number;
     CardName(): string;
     RomVersion(): number;
     RomVersionString(): string;
 }
 
-export interface CloudpilotNative {
+export interface Cloudpilot {
     Malloc(size: number): VoidPtr;
     Free(buffer: VoidPtr): void;
 
-    GetRomInfo(buffer: VoidPtr, size: number, romInfo: RomInfo): bool;
+    GetRomInfo(buffer: VoidPtr, size: number, romInfo: RomInfo): boolean;
     InitializeSession(buffer: VoidPtr, size: number, deviceType: string): boolean;
 
     GetCyclesPerSecond(): number;
-    RunEmulation(cycles: long): number;
+    RunEmulation(cycles: number): number;
 
     CopyFrame(): Frame;
     IsScreenDirty(): boolean;

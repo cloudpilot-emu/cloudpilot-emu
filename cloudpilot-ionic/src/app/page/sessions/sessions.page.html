@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-title>Sessions</ion-title>
     <ion-buttons slot="primary">
-      <ion-button>
+      <ion-button (click)="sessionService.newSession()">
         <ion-icon name="add-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
