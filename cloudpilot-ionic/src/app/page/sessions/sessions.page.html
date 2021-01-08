@@ -10,10 +10,16 @@
 </ion-header>
 
 <ion-content>
+
   <ion-header collapse="condense">
     <ion-toolbar>
       <ion-title size="large">Sessions</ion-title>
     </ion-toolbar>
   </ion-header>
+
+  <ion-list>
+    <app-session-item *ngFor="let session of (sessionService.getSessions$() | async)" [session]="session">
+    </app-session-item>
+  </ion-list>
 
 </ion-content>
