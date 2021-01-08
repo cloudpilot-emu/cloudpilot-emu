@@ -25,7 +25,7 @@ class Savestate {
 
     void NotifyError();
 
-    const void* GetBuffer() const { return buffer; }
+    void* GetBuffer() { return buffer; }
     size_t GetSize() const { return size; }
 
    private:
@@ -61,11 +61,11 @@ bool Savestate::Save(T& target) {
     error = false;
     for (auto& [chunkType, chunk] : chunkMap) chunk.Reset();
 
-    target.save(*this);
+    target.Save(*this);
 
-    for (auto& [chunkType, chunk] : chunkMap) error = error || chunk.HasError();
+    // for (auto& [chunkType, chunk] : chunkMap) error = error || chunk.HasError();
 
-    return error;
+    return !error;
 }
 
 template <typename T>
@@ -73,7 +73,7 @@ bool Savestate::AllocateBuffer(T& target) {
     SavestateProbe probe;
 
     error = false;
-    target.save(probe);
+    target.Save(probe);
 
     if (error) {
         logging::printf("failed to determine savestate layout\n");
@@ -107,6 +107,8 @@ bool Savestate::AllocateBuffer(T& target) {
         chunkMap.emplace(chunkType, Chunk(chunk.GetSize(), static_cast<void*>(nextChunk)));
         nextChunk += chunk.GetSize();
     }
+
+    return true;
 }
 
 #endif  // _SAVESTATE_H_

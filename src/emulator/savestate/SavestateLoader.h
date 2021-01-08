@@ -47,11 +47,11 @@ bool SavestateLoader::Load(void* buffer, size_t size, T& target) {
     error = false;
     for (auto& [chunkType, chunk] : chunkMap) chunk.Reset();
 
-    target.load(*this);
+    target.Load(*this);
 
     for (auto& [chunkType, chunk] : chunkMap) error = error || chunk.HasError();
 
-    return error;
+    return !error;
 }
 
 #endif  // _SAVESTATE_LOADER_H_

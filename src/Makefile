@@ -161,7 +161,8 @@ SOURCE_TEST = \
 	$(SOURCE_EMU) \
 	test/SavestateChunk.cpp \
 	test/SavestateChunkProbe.cpp \
-	test/SavestateProbe.cpp
+	test/SavestateProbe.cpp \
+	test/Savestate.cpp
 
 SOURCE_SDL = \
 	$(SOURCE_EMU) \

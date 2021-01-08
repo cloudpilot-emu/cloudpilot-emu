@@ -38,13 +38,8 @@ void Chunk::Put32(uint32 value) {
 }
 
 void Chunk::Put64(uint64 value) {
-    if (!AssertOkForSize(8)) return;
-
-    SWAP_IF_REQUIRED(value);
-
-    *static_cast<uint64*>(next) = value;
-
-    next = static_cast<uint8*>(next) + 8;
+    Put32(value & 0xffffffff);
+    Put32((value >> 32) & 0xffffffff);
 }
 
 void Chunk::PutBool(bool value) { Put32(static_cast<uint32>(value)); }
@@ -84,16 +79,7 @@ uint32 Chunk::Get32() {
     return value;
 }
 
-uint64 Chunk::Get64() {
-    if (!AssertOkForSize(8)) return 0;
-
-    uint64 value = *static_cast<uint64*>(next);
-    SWAP_IF_REQUIRED(value);
-
-    next = static_cast<uint8*>(next) + 8;
-
-    return value;
-}
+uint64 Chunk::Get64() { return Get32() | (static_cast<uint64>(Get32()) << 32); }
 
 bool Chunk::GetBool() { return Get32(); }
 
