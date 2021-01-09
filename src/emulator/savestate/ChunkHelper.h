@@ -22,9 +22,10 @@ class SaveChunkHelper {
     T& t;
 };
 
+template <typename T>
 class LoadChunkHelper {
    public:
-    LoadChunkHelper(Chunk& t);
+    LoadChunkHelper(T& t);
 
     LoadChunkHelper& Do8(uint8& value);
     LoadChunkHelper& Do8(uint8& v1, uint8& v2, uint8& v3, uint8& v4);
@@ -43,7 +44,7 @@ class LoadChunkHelper {
     LoadChunkHelper& DoBuffer(void* buffer, size_t size);
 
    private:
-    Chunk& t;
+    T& t;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,6 +113,130 @@ SaveChunkHelper<T>& SaveChunkHelper<T>::DoDouble(double value) {
 template <typename T>
 SaveChunkHelper<T>& SaveChunkHelper<T>::DoBuffer(void* buffer, size_t size) {
     t.PutBuffer(buffer, size);
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>::LoadChunkHelper(T& t) : t(t) {}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do8(uint8& value) {
+    value = t.Get8();
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do8(uint8& v1, uint8& v2, uint8& v3, uint8& v4) {
+    uint32 v = t.Get32();
+
+    v1 = v & 0xff;
+    v2 = (v >> 8) & 0xff;
+    v3 = (v >> 16) & 0xff;
+    v4 = (v >> 24) & 0xff;
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do16(uint16& value) {
+    value = t.Get16();
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do16(uint16& v1, uint16& v2) {
+    uint32 v = t.Get32();
+
+    v1 = v & 0xffff;
+    v2 = (v >> 16) & 0xffff;
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do32(uint32& value) {
+    value = t.Get32();
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do64(uint64& value) {
+    value = t.Get64();
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do8(int8& value) {
+    value = t.Get8();
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do8(int8& v1, int8& v2, int8& v3, int8& v4) {
+    uint32 v = t.Get32();
+
+    v1 = v & 0xff;
+    v2 = (v >> 8) & 0xff;
+    v3 = (v >> 16) & 0xff;
+    v4 = (v >> 24) & 0xff;
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do16(int16& value) {
+    value = t.Get16();
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do16(int16& v1, int16& v2) {
+    uint32 v = t.Get32();
+
+    v1 = v & 0xffff;
+    v2 = (v >> 16) & 0xffff;
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do32(int32& value) {
+    value = t.Get32();
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do64(int64& value) {
+    value = t.Get64();
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::DoBool(bool& value) {
+    value = t.GetBool();
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::DoDouble(double& value) {
+    value = t.GetDouble();
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::DoBuffer(void* buffer, size_t size) {
+    t.GetBuffer(buffer, size);
 
     return *this;
 }

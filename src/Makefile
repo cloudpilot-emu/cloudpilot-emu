@@ -129,7 +129,6 @@ SOURCE_EMU = \
 	emulator/savestate/Chunk.cpp \
 	emulator/savestate/ChunkProbe.cpp \
 	emulator/savestate/SavestateProbe.cpp \
-	emulator/savestate/ChunkHelper.cpp \
 	emulator/savestate/SavestateLoader.cpp \
 	emulator/savestate/Savestate.cpp \
 	emulator/EmSystemState.cpp \
@@ -165,6 +164,7 @@ SOURCE_TEST = \
 	test/Savestate.cpp \
 	test/SavestateLoader.cpp \
 	test/SaveChunkHelper.cpp \
+	test/LoadChunkHelper.cpp \
 	test/main.cpp
 
 SOURCE_SDL = \

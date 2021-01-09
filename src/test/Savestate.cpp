@@ -61,7 +61,7 @@ namespace {
                 if (!chunk) return;
 
                 LoadChunkHelper helper(*chunk);
-                DoSaveLoad<LoadChunkHelper>(helper);
+                DoSaveLoad(helper);
             }
 
             template <typename T>

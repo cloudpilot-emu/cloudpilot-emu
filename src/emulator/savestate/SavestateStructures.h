@@ -11,7 +11,9 @@ void DoSaveLoad(T& helper, regstruct& regs);
 
 template <typename T>
 void DoSaveLoad(SaveChunkHelper<T>& helper, HwrM68EZ328Type& regs);
-inline void DoSaveLoad(LoadChunkHelper& helper, HwrM68EZ328Type& regs);
+
+template <typename T>
+inline void DoSaveLoad(LoadChunkHelper<T>& helper, HwrM68EZ328Type& regs);
 
 ///////////////////////////////////////////////////////////////////////////////
 // IMPLEMENTATION
@@ -57,7 +59,8 @@ void DoSaveLoad(SaveChunkHelper<T>& helper, HwrM68EZ328Type& regs) {
 #endif
 }
 
-void DoSaveLoad(LoadChunkHelper& helper, HwrM68EZ328Type& regs) {
+template <typename T>
+void DoSaveLoad(LoadChunkHelper<T>& helper, HwrM68EZ328Type& regs) {
     helper.DoBuffer(static_cast<void*>(&regs), sizeof(regs));
 
 #if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)
