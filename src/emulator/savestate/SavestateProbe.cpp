@@ -18,3 +18,5 @@ ChunkProbe* SavestateProbe::GetChunk(ChunkType type) {
 bool SavestateProbe::HasError() const { return error; }
 
 const SavestateProbe::chunkMapT& SavestateProbe::GetChunkMap() const { return chunkMap; }
+
+void SavestateProbe::NotifyError() { error = true; }

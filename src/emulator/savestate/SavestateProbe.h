@@ -21,6 +21,8 @@ class SavestateProbe {
 
     bool HasError() const;
 
+    void NotifyError();
+
    private:
     chunkMapT chunkMap;
     bool error{false};

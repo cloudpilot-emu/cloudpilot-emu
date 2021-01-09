@@ -44,4 +44,12 @@ namespace {
         ASSERT_TRUE(probe.HasError());
     }
 
+    TEST(SavestateProbe, NotifyErrorGeneratesAnError) {
+        SavestateProbe probe;
+
+        probe.NotifyError();
+
+        ASSERT_TRUE(probe.HasError());
+    }
+
 }  // namespace

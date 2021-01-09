@@ -63,7 +63,7 @@ bool Savestate::Save(T& target) {
 
     target.Save(*this);
 
-    // for (auto& [chunkType, chunk] : chunkMap) error = error || chunk.HasError();
+    for (auto& [chunkType, chunk] : chunkMap) error = error || chunk.HasError();
 
     return !error;
 }

@@ -176,42 +176,42 @@ namespace {
         ASSERT_TRUE(chunk.HasError());
     }
 
-    struct AddsPaddingForBufferParams {
-        const char* fixture;
-        size_t paddingSize;
-    };
+    namespace AddsPaddingForBuffer {
+        struct Params {
+            const char* fixture;
+            size_t paddingSize;
+        };
 
-    class AddsPaddingForBuffer : public testing::TestWithParam<AddsPaddingForBufferParams> {};
+        class AddsPaddingForBuffer : public testing::TestWithParam<Params> {};
 
-    TEST_P(AddsPaddingForBuffer, AddsPaddingAndDeserializesCorrectly) {
-        uint8 buffer[20];
-        Chunk chunk(20, buffer);
-        memset(buffer, 0, 20);
+        TEST_P(AddsPaddingForBuffer, AddsPaddingAndDeserializesCorrectly) {
+            uint8 buffer[20];
+            Chunk chunk(20, buffer);
+            memset(buffer, 0, 20);
 
-        AddsPaddingForBufferParams params = GetParam();
-        size_t fixtureLen = strlen(params.fixture) + 1;
+            Params params = GetParam();
+            size_t fixtureLen = strlen(params.fixture) + 1;
 
-        chunk.PutBuffer(const_cast<char*>(params.fixture), fixtureLen);
-        chunk.Put32(0x12345678);
+            chunk.PutBuffer(const_cast<char*>(params.fixture), fixtureLen);
+            chunk.Put32(0x12345678);
 
-        ASSERT_FALSE(chunk.HasError());
-        ASSERT_EQ(*reinterpret_cast<uint32*>(buffer + params.paddingSize), 0x12345678u);
+            ASSERT_FALSE(chunk.HasError());
+            ASSERT_EQ(*reinterpret_cast<uint32*>(buffer + params.paddingSize), 0x12345678u);
 
-        chunk.Reset();
+            chunk.Reset();
 
-        char retrieved[20];
-        chunk.GetBuffer(retrieved, fixtureLen);
-        ASSERT_STREQ(retrieved, params.fixture);
-        ASSERT_EQ(chunk.Get32(), 0x12345678u);
-        ASSERT_FALSE(chunk.HasError());
-    }
+            char retrieved[20];
+            chunk.GetBuffer(retrieved, fixtureLen);
+            ASSERT_STREQ(retrieved, params.fixture);
+            ASSERT_EQ(chunk.Get32(), 0x12345678u);
+            ASSERT_FALSE(chunk.HasError());
+        }
 
-    INSTANTIATE_TEST_SUITE_P(ParameterRun, AddsPaddingForBuffer,
-                             testing::Values(AddsPaddingForBufferParams{"1234567", 8},
-                                             AddsPaddingForBufferParams{"12345678", 12},
-                                             AddsPaddingForBufferParams{"123456789", 12},
-                                             AddsPaddingForBufferParams{"123456789a", 12},
-                                             AddsPaddingForBufferParams{"123456789ab", 12},
-                                             AddsPaddingForBufferParams{"123456789abc", 16}));
+        INSTANTIATE_TEST_SUITE_P(ParameterRun, AddsPaddingForBuffer,
+                                 testing::Values(Params{"1234567", 8}, Params{"12345678", 12},
+                                                 Params{"123456789", 12}, Params{"123456789a", 12},
+                                                 Params{"123456789ab", 12},
+                                                 Params{"123456789abc", 16}));
+    }  // namespace AddsPaddingForBuffer
 
 }  // namespace
