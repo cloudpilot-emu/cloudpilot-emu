@@ -72,11 +72,10 @@ template <typename T>
 bool Savestate::AllocateBuffer(T& target) {
     SavestateProbe probe;
 
-    error = false;
     target.Save(probe);
 
-    if (error) {
-        logging::printf("failed to determine savestate layout\n");
+    if (probe.HasError()) {
+        logging::printf("failed to determine savestate layout");
         return false;
     }
 

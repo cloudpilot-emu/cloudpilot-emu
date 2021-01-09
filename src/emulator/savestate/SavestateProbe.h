@@ -19,8 +19,11 @@ class SavestateProbe {
 
     const chunkMapT& GetChunkMap() const;
 
+    bool HasError() const;
+
    private:
     chunkMapT chunkMap;
+    bool error{false};
 };
 
 #endif  // _SAVESTATE_PROBE_H_

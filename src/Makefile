@@ -31,7 +31,7 @@ CXXFLAGS_EMCC = $(CFLAGS_EMCC)
 
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined
 CXXFLAGS_TEST ?= $(CFLAGS_TEST)
-LDFLAGS_TEST ?= -fsanitize=address,undefined -lgtest_main -lgtest -lgmock
+LDFLAGS_TEST ?= -fsanitize=address,undefined -lgtest -lgmock
 
 WEBIDL_BINDING_DIR = web/binding
 WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
@@ -162,7 +162,8 @@ SOURCE_TEST = \
 	test/SavestateChunk.cpp \
 	test/SavestateChunkProbe.cpp \
 	test/SavestateProbe.cpp \
-	test/Savestate.cpp
+	test/Savestate.cpp \
+	test/main.cpp
 
 SOURCE_SDL = \
 	$(SOURCE_EMU) \

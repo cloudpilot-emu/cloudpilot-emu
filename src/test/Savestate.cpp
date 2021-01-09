@@ -3,8 +3,10 @@
 // clang-format on
 
 #include "Savestate.h"
-#include "SavestateLoader.h"
+
 #include "ChunkHelper.h"
+#include "Logging.h"
+#include "SavestateLoader.h"
 
 namespace {
     struct MockCpu68k {
@@ -106,4 +108,20 @@ namespace {
         ASSERT_EQ(loadRoot.cpu68k, cpu68k);
         ASSERT_EQ(loadRoot.regsEZ, regsEZ);
     }
+
+    struct MockCallsGetChunkTwice {
+        template <typename T>
+        void Save(T& savestate) {
+            savestate.GetChunk(ChunkType::cpu68k);
+            savestate.GetChunk(ChunkType::cpu68k);
+        }
+    };
+
+    TEST(SavestateSave, RequestingAChunkTwiceDuringSaveGeneratesAnError) {
+        Savestate savestate;
+        MockCallsGetChunkTwice mock;
+
+        ASSERT_FALSE(savestate.Save(mock));
+    };
+
 }  // namespace

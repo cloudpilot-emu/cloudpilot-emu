@@ -7,7 +7,7 @@ bool SavestateLoader::ParseSavestate(void* buffer, size_t size) {
     chunkMap.clear();
 
     if (size < 4) {
-        logging::printf("buffer is not a valid savestate: too small for header\n");
+        logging::printf("buffer is not a valid savestate: too small for header");
         return false;
     }
 
@@ -15,7 +15,7 @@ bool SavestateLoader::ParseSavestate(void* buffer, size_t size) {
     size_t chunkCount = *(nextTocEntry++);
 
     if (size < 4 + chunkCount * 8) {
-        logging::printf("buffer is not a valid savestate: too small for TOC\n");
+        logging::printf("buffer is not a valid savestate: too small for TOC");
         return false;
     }
 
@@ -33,7 +33,7 @@ bool SavestateLoader::ParseSavestate(void* buffer, size_t size) {
         nextTocEntry += 2;
 
         if (size - (nextChunk - static_cast<uint8*>(buffer)) < chunkSize) {
-            logging::printf("buffer is not a valid savestate: too small for chunk %ul of %ul\n", i,
+            logging::printf("buffer is not a valid savestate: too small for chunk %ul of %ul", i,
                             chunkCount);
             return false;
         }
@@ -44,7 +44,7 @@ bool SavestateLoader::ParseSavestate(void* buffer, size_t size) {
     }
 
     if ((nextChunk - static_cast<uint8*>(buffer)) != static_cast<ssize_t>(size)) {
-        logging::printf("buffer is not a valid savestate: too large\n");
+        logging::printf("buffer is not a valid savestate: too large");
         return false;
     }
 
@@ -53,7 +53,7 @@ bool SavestateLoader::ParseSavestate(void* buffer, size_t size) {
 
 Chunk* SavestateLoader::GetChunk(ChunkType type) {
     if (chunkMap.find(type) == chunkMap.end()) {
-        logging::printf("chunk type 0x%04x not in map\n", type);
+        logging::printf("chunk type 0x%04x not in map", type);
         return nullptr;
     }
 
