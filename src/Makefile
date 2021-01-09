@@ -164,6 +164,7 @@ SOURCE_TEST = \
 	test/SavestateProbe.cpp \
 	test/Savestate.cpp \
 	test/SavestateLoader.cpp \
+	test/SaveChunkHelper.cpp \
 	test/main.cpp
 
 SOURCE_SDL = \
