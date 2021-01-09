@@ -33,7 +33,7 @@ bool SavestateLoader::ParseSavestate(void* buffer, size_t size) {
         nextTocEntry += 2;
 
         if (size - (nextChunk - static_cast<uint8*>(buffer)) < chunkSize) {
-            logging::printf("buffer is not a valid savestate: too small for chunk %ul of %ul", i,
+            logging::printf("buffer is not a valid savestate: too small for chunk %lu of %lu", i,
                             chunkCount);
             return false;
         }

@@ -5,7 +5,6 @@
 #include "Savestate.h"
 
 #include "ChunkHelper.h"
-#include "Logging.h"
 #include "SavestateLoader.h"
 
 namespace {
@@ -160,6 +159,7 @@ namespace {
             template <typename T>
             void Save(T& savestate) {
                 typename T::chunkT* chunk = savestate.GetChunk(ChunkType::cpu68k);
+                if (!chunk) return;
 
                 chunk->Put32(0);
             }
@@ -169,6 +169,7 @@ namespace {
             template <typename T>
             void Save(T& savestate) {
                 typename T::chunkT* chunk = savestate.GetChunk(ChunkType::cpu68k);
+                if (!chunk) return;
 
                 chunk->Put64(0);
             }
