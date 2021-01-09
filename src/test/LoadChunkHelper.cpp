@@ -3,7 +3,7 @@
 
 #include "ChunkHelper.h"
 
-using ::testing::Return;
+using testing::Return;
 
 namespace {
     class ChunkMock {
@@ -24,7 +24,7 @@ namespace {
     };
 
     TEST_F(LoadChunkHelperTest, DoU8) {
-        EXPECT_CALL(mock, Get8()).Times(1).WillOnce(testing::Return(22));
+        EXPECT_CALL(mock, Get8()).Times(1).WillOnce(Return(22));
         uint8 x;
 
         helper.Do8(x);
@@ -33,7 +33,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoS8) {
-        EXPECT_CALL(mock, Get8()).Times(1).WillOnce(testing::Return(-22));
+        EXPECT_CALL(mock, Get8()).Times(1).WillOnce(Return(-22));
         int8 x;
 
         helper.Do8(x);
@@ -42,7 +42,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoU8Packed) {
-        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(testing::Return(0x12345678));
+        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x12345678));
         uint8 x1, x2, x3, x4;
 
         helper.Do8(x1, x2, x3, x4);
@@ -54,7 +54,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoS8Packed) {
-        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(testing::Return(0x12fff078));
+        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x12fff078));
         int8 x1, x2, x3, x4;
 
         helper.Do8(x1, x2, x3, x4);
@@ -66,7 +66,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoU16) {
-        EXPECT_CALL(mock, Get16()).Times(1).WillOnce(testing::Return(0x1234));
+        EXPECT_CALL(mock, Get16()).Times(1).WillOnce(Return(0x1234));
         uint16 x;
 
         helper.Do16(x);
@@ -75,7 +75,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoS16) {
-        EXPECT_CALL(mock, Get16()).Times(1).WillOnce(testing::Return(0xf0ff));
+        EXPECT_CALL(mock, Get16()).Times(1).WillOnce(Return(0xf0ff));
         int16 x;
 
         helper.Do16(x);
@@ -84,7 +84,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoU16Packed) {
-        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(testing::Return(0x12345678));
+        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x12345678));
         uint16 x1, x2;
 
         helper.Do16(x1, x2);
@@ -94,7 +94,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoS16Packed) {
-        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(testing::Return(0x1234f0ff));
+        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x1234f0ff));
         int16 x1, x2;
 
         helper.Do16(x1, x2);
@@ -104,7 +104,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoU32) {
-        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(testing::Return(0x12345678));
+        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x12345678));
         uint32 x;
 
         helper.Do32(x);
@@ -113,7 +113,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoS32) {
-        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(testing::Return(0xf0ffffff));
+        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0xf0ffffff));
         int32 x;
 
         helper.Do32(x);
@@ -122,7 +122,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoU64) {
-        EXPECT_CALL(mock, Get64()).Times(1).WillOnce(testing::Return(0x1234567890abcdef));
+        EXPECT_CALL(mock, Get64()).Times(1).WillOnce(Return(0x1234567890abcdef));
         uint64 x;
 
         helper.Do64(x);
@@ -131,7 +131,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoS64) {
-        EXPECT_CALL(mock, Get64()).Times(1).WillOnce(testing::Return(0xf0ffffffffffffff));
+        EXPECT_CALL(mock, Get64()).Times(1).WillOnce(Return(0xf0ffffffffffffff));
         int64 x;
 
         helper.Do64(x);
@@ -140,7 +140,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoBool) {
-        EXPECT_CALL(mock, GetBool()).Times(1).WillOnce(testing::Return(false));
+        EXPECT_CALL(mock, GetBool()).Times(1).WillOnce(Return(false));
         bool x;
 
         helper.DoBool(x);
@@ -149,7 +149,7 @@ namespace {
     }
 
     TEST_F(LoadChunkHelperTest, DoDouble) {
-        EXPECT_CALL(mock, GetDouble()).Times(1).WillOnce(testing::Return(1.234));
+        EXPECT_CALL(mock, GetDouble()).Times(1).WillOnce(Return(1.234));
         double x;
 
         helper.DoDouble(x);
