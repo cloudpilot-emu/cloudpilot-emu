@@ -118,6 +118,7 @@ namespace {
         chunk.Reset();
 
         ASSERT_FALSE(chunk.GetBool());
+        ASSERT_FALSE(chunk.HasError());
     }
 
     TEST(SavestateChunk, DeSerializationDouble) {
@@ -130,6 +131,7 @@ namespace {
         chunk.Reset();
 
         ASSERT_EQ(chunk.GetDouble(), 1.25);
+        ASSERT_FALSE(chunk.HasError());
     }
 
     TEST(SavestateChunk, DeSerializationBuffer) {
@@ -145,6 +147,7 @@ namespace {
         char retrieved[11];
         chunk.GetBuffer(retrieved, 11);
         ASSERT_STREQ(retrieved, fixture);
+        ASSERT_FALSE(chunk.HasError());
     }
 
     TEST(SavestateChunk, ItDeSerializesMutlipleValuesCorrectly) {
@@ -163,6 +166,43 @@ namespace {
         ASSERT_EQ(chunk.Get8(), 2);
         ASSERT_EQ(chunk.Get8(), 3);
         ASSERT_EQ(chunk.Get8(), 4);
+        ASSERT_FALSE(chunk.HasError());
+    }
+
+    TEST(SavestateChunk, DeSerializationString) {
+        uint8 buffer[16];
+        Chunk chunk(16, buffer);
+
+        chunk.PutString("Hulpe", 15);
+        ASSERT_FALSE(chunk.HasError());
+
+        chunk.Reset();
+
+        ASSERT_EQ(chunk.GetString(15), "Hulpe");
+        ASSERT_FALSE(chunk.HasError());
+    }
+
+    TEST(SavestateChunk, ItPadsStringToMaxLengthAndAlignment) {
+        uint8 buffer[32];
+        memset(buffer, 0, 32);
+        Chunk chunk(32, buffer);
+
+        chunk.PutString("Hulpe", 15);
+        chunk.Put32(0x12345678);
+
+        chunk.Reset();
+
+        ASSERT_EQ(*reinterpret_cast<uint32*>(buffer + 16), 0x12345678u);
+        ASSERT_EQ(chunk.GetString(15), "Hulpe");
+        ASSERT_EQ(chunk.Get32(), 0x12345678u);
+    }
+
+    TEST(SavestateChunk, ItErrorsIfStringExceedsMaxLength) {
+        uint8 buffer[16];
+        Chunk chunk(16, buffer);
+
+        chunk.PutString("Hulpe", 4);
+        ASSERT_TRUE(chunk.HasError());
     }
 
     TEST(SavestateChunk, ItErrorsIfTheBufferOverflows) {

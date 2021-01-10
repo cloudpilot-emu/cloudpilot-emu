@@ -17,6 +17,7 @@ class Chunk {
     void PutBool(bool value);
     void PutDouble(double value);
     void PutBuffer(void* buffer, size_t size);
+    void PutString(const string& str, size_t maxLength);
 
     uint8 Get8();
     uint16 Get16();
@@ -25,6 +26,7 @@ class Chunk {
     bool GetBool();
     double GetDouble();
     void GetBuffer(void* buffer, size_t size);
+    string GetString(size_t maxLength);
 
     bool HasError() const;
 

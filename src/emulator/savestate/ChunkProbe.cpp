@@ -19,3 +19,7 @@ void ChunkProbe::PutBuffer(void* buffer, size_t size) {
 bool ChunkProbe::HasError() const { return false; }
 
 size_t ChunkProbe::GetSize() const { return size; }
+
+void ChunkProbe::PutString(const string& str, size_t maxLength) {
+    PutBuffer(nullptr, maxLength + 1);
+}

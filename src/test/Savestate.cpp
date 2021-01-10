@@ -13,6 +13,7 @@ namespace {
             uint32 x{0};
             int16 y{0};
             double z{0};
+            string str{"hello world"};
 
             template <typename T>
             void Save(T& savestate) {
@@ -33,11 +34,11 @@ namespace {
 
             template <typename T>
             void DoSaveLoad(T& helper) {
-                helper.Do32(x).Do16(y).DoDouble(z);
+                helper.Do32(x).Do16(y).DoString(str, 15).DoDouble(z);
             }
 
             bool operator==(const MockCpu68k other) const {
-                return (x == other.x) && (y == other.y) && (z == other.z);
+                return (x == other.x) && (y == other.y) && (z == other.z) && (str == other.str);
             }
         };
 
@@ -99,7 +100,7 @@ namespace {
 
             Savestate savestate;
             ASSERT_TRUE(savestate.Save(root));
-            ASSERT_EQ(savestate.GetSize(), 44u);
+            ASSERT_EQ(savestate.GetSize(), 60u);
 
             MockRoot loadRoot;
             SavestateLoader loader;
@@ -116,7 +117,7 @@ namespace {
 
             Savestate savestate;
             ASSERT_TRUE(savestate.Save(root));
-            ASSERT_EQ(savestate.GetSize(), 44u);
+            ASSERT_EQ(savestate.GetSize(), 60u);
 
             MockRoot loadRoot;
             SavestateLoader loader;

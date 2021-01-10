@@ -68,4 +68,17 @@ namespace {
         ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(72));
     }
 
+    TEST(SavestateChunkProbe, StringIsBufferWithMaxlengthPlusOne) {
+        ChunkProbe chunk;
+
+        chunk.PutString("abc", 15);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(16));
+
+        chunk.PutString("abce", 15);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(32));
+
+        chunk.PutString("abce", 16);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(52));
+    }
+
 }  // namespace

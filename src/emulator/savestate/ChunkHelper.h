@@ -17,6 +17,7 @@ class SaveChunkHelper {
     inline SaveChunkHelper<T>& DoBool(bool value);
     inline SaveChunkHelper<T>& DoDouble(double value);
     inline SaveChunkHelper<T>& DoBuffer(void* buffer, size_t size);
+    inline SaveChunkHelper<T>& DoString(const string& str, size_t maxLength);
 
    private:
     T& t;
@@ -27,21 +28,22 @@ class LoadChunkHelper {
    public:
     LoadChunkHelper(T& t);
 
-    LoadChunkHelper& Do8(uint8& value);
-    LoadChunkHelper& Do8(uint8& v1, uint8& v2, uint8& v3, uint8& v4);
-    LoadChunkHelper& Do16(uint16& value);
-    LoadChunkHelper& Do16(uint16& v1, uint16& v2);
-    LoadChunkHelper& Do32(uint32& value);
-    LoadChunkHelper& Do64(uint64& value);
-    LoadChunkHelper& Do8(int8& value);
-    LoadChunkHelper& Do8(int8& v1, int8& v2, int8& v3, int8& v4);
-    LoadChunkHelper& Do16(int16& value);
-    LoadChunkHelper& Do16(int16& v1, int16& v2);
-    LoadChunkHelper& Do32(int32& value);
-    LoadChunkHelper& Do64(int64& value);
-    LoadChunkHelper& DoBool(bool& value);
-    LoadChunkHelper& DoDouble(double& value);
-    LoadChunkHelper& DoBuffer(void* buffer, size_t size);
+    inline LoadChunkHelper& Do8(uint8& value);
+    inline LoadChunkHelper& Do8(uint8& v1, uint8& v2, uint8& v3, uint8& v4);
+    inline LoadChunkHelper& Do16(uint16& value);
+    inline LoadChunkHelper& Do16(uint16& v1, uint16& v2);
+    inline LoadChunkHelper& Do32(uint32& value);
+    inline LoadChunkHelper& Do64(uint64& value);
+    inline LoadChunkHelper& Do8(int8& value);
+    inline LoadChunkHelper& Do8(int8& v1, int8& v2, int8& v3, int8& v4);
+    inline LoadChunkHelper& Do16(int16& value);
+    inline LoadChunkHelper& Do16(int16& v1, int16& v2);
+    inline LoadChunkHelper& Do32(int32& value);
+    inline LoadChunkHelper& Do64(int64& value);
+    inline LoadChunkHelper& DoBool(bool& value);
+    inline LoadChunkHelper& DoDouble(double& value);
+    inline LoadChunkHelper& DoBuffer(void* buffer, size_t size);
+    inline LoadChunkHelper<T>& DoString(string& str, size_t maxLength);
 
    private:
     T& t;
@@ -113,6 +115,13 @@ SaveChunkHelper<T>& SaveChunkHelper<T>::DoDouble(double value) {
 template <typename T>
 SaveChunkHelper<T>& SaveChunkHelper<T>::DoBuffer(void* buffer, size_t size) {
     t.PutBuffer(buffer, size);
+
+    return *this;
+}
+
+template <typename T>
+SaveChunkHelper<T>& SaveChunkHelper<T>::DoString(const string& str, size_t maxLength) {
+    t.PutString(str, maxLength);
 
     return *this;
 }
@@ -237,6 +246,13 @@ LoadChunkHelper<T>& LoadChunkHelper<T>::DoDouble(double& value) {
 template <typename T>
 LoadChunkHelper<T>& LoadChunkHelper<T>::DoBuffer(void* buffer, size_t size) {
     t.GetBuffer(buffer, size);
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::DoString(string& str, size_t maxLength) {
+    str = std::move(t.GetString(maxLength));
 
     return *this;
 }

@@ -1,6 +1,9 @@
 #include "Chunk.h"
 
+#include <cstring>
+
 #include "Byteswapping.h"
+#include "Logging.h"
 
 #if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)
     #define SWAP_IF_REQUIRED(x) Byteswap(x);
@@ -64,6 +67,21 @@ void Chunk::PutBuffer(void* buffer, size_t size) {
     next = static_cast<uint8*>(next) + paddedSize;
 }
 
+void Chunk::PutString(const string& str, size_t maxLength) {
+    if (str.size() > maxLength) {
+        logging::printf("string %s exceeds length", str.c_str());
+        error = true;
+
+        return;
+    }
+
+    char buffer[maxLength + 1];
+    memset(buffer, 0, maxLength + 1);
+    strcpy(buffer, str.c_str());
+
+    PutBuffer(buffer, maxLength + 1);
+}
+
 uint8 Chunk::Get8() { return Get32() & 0xff; }
 
 uint16 Chunk::Get16() { return Get32() & 0xffff; }
@@ -102,6 +120,13 @@ double Chunk::GetDouble() {
     loc.ival = Get64();
 
     return loc.dval;
+}
+
+string Chunk::GetString(size_t maxLength) {
+    char buffer[maxLength + 1];
+    GetBuffer(buffer, maxLength + 1);
+
+    return buffer;
 }
 
 bool Chunk::HasError() const { return error; }
