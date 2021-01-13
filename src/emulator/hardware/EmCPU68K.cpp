@@ -27,6 +27,8 @@
 #include "MetaMemory.h"
 #include "Miscellaneous.h"
 #include "Platform.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
 #include "SavestateStructures.h"
 #include "StringData.h"  // kExceptionNames
 #include "UAE.h"         // cpuop_func, etc.

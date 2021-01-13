@@ -17,9 +17,10 @@
 #include <vector>
 
 #include "EmCommon.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+
+class Savestate;
+class SavestateProbe;
+class SavestateLoader;
 
 struct EmAddressBank;
 

@@ -15,8 +15,10 @@
 #define EmCPU_h
 
 #include "EmCommon.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
+
+class SavestateProbe;
+class Savestate;
+class SavestateLoader;
 
 class EmSession;
 

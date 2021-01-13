@@ -29,12 +29,11 @@
 #include "Logging.h"  // LogAppendMsg
 #include "MetaMemory.h"
 #include "Platform.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 #include "SavestateStructures.h"
 #include "UAE.h"  // regs, SPCFLAG_INT
-
-#if 0                         // CSTODO
-    #include "SessionFile.h"  // WriteHwrDBallEZType, etc.
-#endif
 
 // clang-format off
 #include "PalmPack.h"
