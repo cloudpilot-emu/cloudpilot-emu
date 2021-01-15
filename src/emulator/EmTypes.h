@@ -36,7 +36,7 @@ typedef uint64_t uint64;
 
 typedef uint32 emuptr;
 
-typedef int Bool;
+typedef bool Bool;
 
 typedef int32 ErrCode;
 typedef int32 StrCode;

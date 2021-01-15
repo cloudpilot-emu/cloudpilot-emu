@@ -22,9 +22,10 @@ LDFLAGS_NATIVE ?=  \
 	$(shell sdl2-config --libs) -lSDL2_image \
 	-lreadline
 
-CFLAGS_COMMON = -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
+CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
 	-DEMULATION_LEVEL=EMULATION_UNIX
-CXXFLAGS_COMMON = $(CFLAGS_COMMON) -std=c++17 -fno-exceptions
+CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17 -fno-exceptions
+CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
 
 CFLAGS_EMCC = -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)

@@ -46,7 +46,7 @@ namespace {
             uint8 x{0};
             uint8 y{0};
             uint8 z{0};
-            bool b{false};
+            bool b1{false}, b2{true};
 
             template <typename T>
             void Save(T& savestate) {
@@ -69,11 +69,12 @@ namespace {
             void DoSaveLoad(T& helper) {
                 uint8 padding = 0;
 
-                helper.Do8(x, y, z, padding).DoBool(b);
+                helper.Do8(x, y, z, padding).Do(typename T::BoolPack() << b1 << b2);
             }
 
             bool operator==(const MockRegsEZ other) const {
-                return (x == other.x) && (y == other.y) && (z == other.z) && (b == other.b);
+                return (x == other.x) && (y == other.y) && (z == other.z) && (b1 == other.b1) &&
+                       (b2 == other.b2);
             }
         };
 

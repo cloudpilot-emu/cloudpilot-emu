@@ -19,8 +19,10 @@ namespace {
 
     class LoadChunkHelperTest : public ::testing::Test {
        protected:
+        using helperT = LoadChunkHelper<ChunkMock>;
+
         ChunkMock mock;
-        LoadChunkHelper<ChunkMock> helper{mock};
+        helperT helper{mock};
     };
 
     TEST_F(LoadChunkHelperTest, DoU8) {
@@ -161,5 +163,12 @@ namespace {
         EXPECT_CALL(mock, GetBuffer(&mock, 666)).Times(1);
 
         helper.DoBuffer(&mock, 666);
+    }
+
+    TEST_F(LoadChunkHelperTest, DoBoolPack) {
+        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0b100110));
+
+        bool b1, b2, b3, b4, b5, b6;
+        helper.Do(helperT::BoolPack() << b1 << b2 << b3 << b4 << b5 << b6);
     }
 }  // namespace

@@ -69,8 +69,7 @@ namespace {
             .Do32(ctx.fNextPC)
             .Do16(ctx.fTrapWord, ctx.fTrapIndex)
             .Do32(ctx.fExtra)
-            .Do32(ctx.fViaTrap)
-            .Do32(ctx.fViaJsrA1);
+            .Do(typename T::BoolPack() << ctx.fViaTrap << ctx.fViaJsrA1);
     }
 
     template <typename T>

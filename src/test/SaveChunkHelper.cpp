@@ -17,8 +17,10 @@ namespace {
 
     class SaveChunkHelperTest : public ::testing::Test {
        protected:
+        using helperT = SaveChunkHelper<ChunkMock>;
+
         ChunkMock mock;
-        SaveChunkHelper<ChunkMock> helper{mock};
+        helperT helper{mock};
     };
 
     TEST_F(SaveChunkHelperTest, Do8) {
@@ -64,5 +66,10 @@ namespace {
     TEST_F(SaveChunkHelperTest, DoBuffer) {
         EXPECT_CALL(mock, PutBuffer(&mock, 66)).Times(1);
         helper.DoBuffer(&mock, 66);
+    }
+
+    TEST_F(SaveChunkHelperTest, DoBoolPack) {
+        EXPECT_CALL(mock, Put32(0b11010));
+        helper.Do(SaveChunkHelper<ChunkMock>::BoolPack() << true << true << false << true << false);
     }
 }  // namespace
