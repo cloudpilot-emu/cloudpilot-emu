@@ -61,10 +61,6 @@ struct SystemCallContext {
     emuptr fExtra;      // RefNum for library calls, D2 for "dispatch" calls.
     Bool fViaTrap;      // True if called via TRAP $F.
     Bool fViaJsrA1;     // True if called via SYSTRAP_FASTER.
-
-    long fError;      // If an error occurred getting the context, error is here
-    long fLibIndex;   // Resource base number for function name
-    long fMaxRefNum;  // If the refNum was too big, this is the max value it could be.
 };
 typedef vector<SystemCallContext> SystemCallContextList;
 

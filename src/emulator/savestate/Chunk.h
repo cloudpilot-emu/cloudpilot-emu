@@ -5,6 +5,9 @@
 
 class Chunk {
    public:
+    static constexpr bool isProbe{false};
+
+   public:
     Chunk(size_t size, void* buffer);
     Chunk(Chunk&&) = default;
 

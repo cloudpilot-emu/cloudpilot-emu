@@ -14,6 +14,7 @@
 
 #include "EmPatchMgr.h"
 
+#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmHAL.h"  // EmHAL::GetLineDriverState
 #include "EmLowMem.h"  // EmLowMem::GetEvtMgrIdle, EmLowMem::TrapExists, EmLowMem_SetGlobal, EmLowMem_GetGlobal
@@ -28,12 +29,10 @@
 #include "Miscellaneous.h"
 #include "PenEvent.h"
 #include "ROMStubs.h"  // FtrSet, FtrUnregister, EvtWakeup, ...
-#include "UAE.h"       // gRegs, m68k_dreg, etc.
-
-#if 0  // CSTODO
-    #include "EmSystemState.h"
-    #include "SessionFile.h"  // SessionFile
-#endif
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
+#include "UAE.h"  // gRegs, m68k_dreg, etc.
 
 // ======================================================================
 //	Private globals and constants
@@ -59,6 +58,28 @@ static TailPatchIndex gInstalledTailpatches;
 #if 0  // CSTODO
 void PrvSetCurrentDate(void);
 #endif
+
+namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+    constexpr int MAX_INSTALLED_TAILPATCHES = 16;
+
+    template <typename T>
+    void DoSaveLoad(T& helper, SystemCallContext& ctx) {
+        helper.Do32(ctx.fPC)
+            .Do32(ctx.fNextPC)
+            .Do16(ctx.fTrapWord, ctx.fTrapIndex)
+            .Do32(ctx.fExtra)
+            .Do32(ctx.fViaTrap)
+            .Do32(ctx.fViaJsrA1);
+    }
+
+    template <typename T>
+    void DoSaveLoad(T& helper, TailpatchType& patch) {
+        helper.Do32(patch.fCount);
+
+        DoSaveLoad(helper, patch.fContext);
+    }
+}  // namespace
 
 EmPatchModule* EmPatchMgr::patchModuleSys = nullptr;
 EmPatchModule* EmPatchMgr::patchModuleHtal = nullptr;
@@ -136,102 +157,62 @@ void EmPatchMgr::Reset(void) {
  *
  ***********************************************************************/
 
-void EmPatchMgr::Save(SessionFile& f) {
-#if 0  // CSTODO
-    const long kCurrentVersion = 5;
+template <typename T>
+void EmPatchMgr::Save(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::patchMgr);
+    if (!chunk) return;
 
-    Chunk chunk;
-    EmStreamChunk s(chunk);
+    chunk->Put32(SAVESTATE_VERSION);
 
-    s << kCurrentVersion;
+    if (gInstalledTailpatches.size() > MAX_INSTALLED_TAILPATCHES) {
+        logging::printf("failed to save session in EmPatchMgr: too many installed tailpatches");
 
-    EmSystemState::Save(s, kCurrentVersion, EmSystemState::PSPersistStep1);
-
-    //	s << gSysPatchModule;
-    //	s << gNetLibPatchModule;
-    //	s << gPatchedLibs;
-
-    s << (long)gInstalledTailpatches.size();
-
-    TailPatchIndex::iterator iter2;
-    for (iter2 = gInstalledTailpatches.begin(); iter2 != gInstalledTailpatches.end(); ++iter2) {
-        s << iter2->fContext.fDestPC1;  // !!! Need to support fDestPC2, too.  But since only
-                                        // fNextPC seems to be used, it doesn't really matter.
-        s << iter2->fContext.fExtra;
-        s << iter2->fContext.fNextPC;
-        s << iter2->fContext.fPC;
-        s << iter2->fContext.fTrapIndex;
-        s << iter2->fContext.fTrapWord;
-        s << iter2->fCount;
-        //		s << iter2->fTailpatch; // Patched up in ::Load
+        savestate.NotifyError();
+        return;
     }
 
-    EmSystemState::Save(s, kCurrentVersion, EmSystemState::PSPersistStep2);
+    chunk->Put32(gInstalledTailpatches.size());
+    SaveChunkHelper helper(*chunk);
 
-    f.WritePatchInfo(chunk);
-#endif
+    for (auto& tailpatch : gInstalledTailpatches) DoSaveLoad(helper, tailpatch);
+
+    if constexpr (T::chunkT::isProbe) {
+        TailpatchType filler;
+
+        for (size_t i = 0; i < MAX_INSTALLED_TAILPATCHES - gInstalledTailpatches.size(); i++)
+            DoSaveLoad(helper, filler);
+    }
 }
 
-/***********************************************************************
- *
- * FUNCTION:	EmPatchMgr::Load
- *
- * DESCRIPTION:	Standard load function.  Loads any sub-system state
- *				from the given session file.
- *
- * PARAMETERS:	none
- *
- * RETURNED:	nothing
- *
- ***********************************************************************/
+template void EmPatchMgr::Save<Savestate>(Savestate& savestate);
+template void EmPatchMgr::Save<SavestateProbe>(SavestateProbe& savestate);
 
-void EmPatchMgr::Load(SessionFile& f) {
-#if 0  // CSTODO
-    Chunk chunk;
-    if (f.ReadPatchInfo(chunk)) {
-        long version;
-        EmStreamChunk s(chunk);
+void EmPatchMgr::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::patchMgr);
+    if (!chunk) return;
 
-        s >> version;
+    if (chunk->Get32() != SAVESTATE_VERSION) {
+        logging::printf("error restoring PatchMgr: savestate version mismatch");
+        loader.NotifyError();
 
-        if (version >= 1) {
-            EmSystemState::Load(s, version, EmSystemState::PSPersistStep1);
-
-            gPatchedLibs.clear();
-            gInstalledTailpatches.clear();
-
-            long numTailpatches;
-            s >> numTailpatches;
-
-            int ii;
-            for (ii = 0; ii < numTailpatches; ++ii) {
-                TailpatchType patch;
-
-                s >>
-                    patch.fContext.fDestPC1;  // !!! Need to support fDestPC2, too.  But since only
-                                              // fNextPC seems to be used, it doesn't really matter.
-                patch.fContext.fDestPC2 = patch.fContext.fDestPC1;
-                s >> patch.fContext.fExtra;
-                s >> patch.fContext.fNextPC;
-                s >> patch.fContext.fPC;
-                s >> patch.fContext.fTrapIndex;
-                s >> patch.fContext.fTrapWord;
-                s >> patch.fCount;
-
-                // Patch up the tailpatch proc.
-
-                HeadpatchProc dummy;
-                GetPatches(patch.fContext, dummy, patch.fTailpatch);
-
-                gInstalledTailpatches.push_back(patch);
-            }
-        }
-
-        EmSystemState::Load(s, version, EmSystemState::PSPersistStep2);
-    } else {
-        f.SetCanReload(false);
+        return;
     }
-#endif
+
+    gPatchedLibs.clear();
+    gInstalledTailpatches.clear();
+    RemoveInstructionBreaks();
+
+    uint32 tailpatchCount = chunk->Get32();
+    LoadChunkHelper helper(*chunk);
+
+    for (size_t i = 0; i < tailpatchCount; i++) {
+        TailpatchType patch;
+        DoSaveLoad(helper, patch);
+
+        gInstalledTailpatches.push_back(patch);
+    }
+
+    InstallInstructionBreaks();
 }
 
 /***********************************************************************

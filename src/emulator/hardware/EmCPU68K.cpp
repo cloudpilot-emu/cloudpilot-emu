@@ -228,7 +228,7 @@ void EmCPU68K::Load(SavestateLoader& loader) {
     if (!chunk) return;
 
     if (chunk->Get32() != SAVESTATE_VERSION) {
-        logging::printf("error restoring cpu68k: savestate version mismatch\n");
+        logging::printf("error restoring cpu68k: savestate version mismatch");
         loader.NotifyError();
 
         return;

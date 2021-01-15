@@ -22,14 +22,18 @@
 class SessionFile;
 struct SystemCallContext;
 class EmPatchModule;
+class SavestateLoader;
 
 class EmPatchMgr {
    public:
     static void Initialize(void);
     static void Reset(void);
-    static void Save(SessionFile&);
-    static void Load(SessionFile&);
     static void Dispose(void);
+
+    template <typename T>
+    static void Save(T& savestate);
+
+    static void Load(SavestateLoader& loader);
 
     static void PostLoad(void);
 

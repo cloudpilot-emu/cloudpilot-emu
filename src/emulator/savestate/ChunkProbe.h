@@ -5,6 +5,9 @@
 
 class ChunkProbe {
    public:
+    static constexpr bool isProbe{true};
+
+   public:
     ChunkProbe() = default;
 
     void Put8(uint8 value);
