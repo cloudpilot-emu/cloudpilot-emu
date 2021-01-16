@@ -12,12 +12,19 @@
 #include "KeyboardEvent.h"
 #include "PenEvent.h"
 
+class SavestateLoader;
+
 class EmSession {
    public:
-    enum class ResetType { sys, soft, noext, hard };
+    enum class ResetType : uint8 { sys = 0x01, soft = 0x02, noext = 0x03, hard = 0x04 };
 
    public:
     bool Initialize(EmDevice* device, const uint8* romImage, size_t romLength);
+
+    template <typename T>
+    void Save(T& savestate);
+
+    void Load(SavestateLoader& loader);
 
     bool IsNested() const;
     bool IsPowerOn();
@@ -72,6 +79,9 @@ class EmSession {
     uint64 GetSystemCycles() const { return systemCycles; }
 
    private:
+    template <typename T>
+    void DoSaveLoad(T& helper);
+
     bool Wakeup();
 
     void PumpEvents();

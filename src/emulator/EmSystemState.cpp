@@ -44,6 +44,8 @@ void EmSystemState::Load(SavestateLoader& loader) {
 
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper);
+
+    screenDirty = false;
 }
 
 template <typename T>

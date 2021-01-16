@@ -2,6 +2,7 @@
 
 #include <functional>
 
+#include "ChunkHelper.h"
 #include "EmBankSRAM.h"
 #include "EmCPU.h"
 #include "EmHAL.h"
@@ -10,15 +11,21 @@
 #include "EmPalmOS.h"
 #include "EmPatchMgr.h"
 #include "EmSystemState.h"
+#include "Logging.h"
 #include "Miscellaneous.h"
 #include "ROMStubs.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 namespace {
-    EmSession _gSession;
-}
+    constexpr uint32 SAVESTATE_VERSION = 1;
 
-constexpr int MIN_CYCLES_BETWEEN_EVENTS = 10000;
-constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
+    constexpr int MIN_CYCLES_BETWEEN_EVENTS = 10000;
+    constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
+
+    EmSession _gSession;
+}  // namespace
 
 EmSession* gSession = &_gSession;
 
@@ -40,6 +47,81 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     RecalculateClocksPerSecond();
 
     return true;
+}
+
+template <typename T>
+void EmSession::Save(T& savestate) {
+    EmAssert(nestLevel == 0);
+    EmAssert(device);
+    EmAssert(cpu);
+    EmAssert(!subroutineReturn);
+    EmAssert(!waitingForSyscall);
+    EmAssert(!syscallDispatched);
+
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::session);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+    chunk->PutString(device->GetIDString(), 16);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+
+    cpu->Save(savestate);
+    EmPatchMgr::Save(savestate);
+    gSystemState.Save(savestate);
+}
+
+template void EmSession::Save(Savestate& savestate);
+template void EmSession::Save(SavestateProbe& savestate);
+
+void EmSession::Load(SavestateLoader& loader) {
+    EmAssert(device);
+    EmAssert(cpu);
+
+    Chunk* chunk = loader.GetChunk(ChunkType::session);
+    if (!chunk) return;
+
+    if (chunk->Get32() != SAVESTATE_VERSION) {
+        logging::printf("unable to restore session: savestate version mismatch");
+        loader.NotifyError();
+
+        return;
+    }
+
+    if (chunk->GetString(16) != device->GetIDString()) {
+        logging::printf("unable to restore session: device ID does not match savestate");
+    }
+
+    nestLevel = 0;
+    subroutineReturn = false;
+    waitingForSyscall = false;
+    syscallDispatched = false;
+
+    penEventQueue.Clear();
+    keyboardEventQueue.Clear();
+    penEventQueueIncoming.Clear();
+    keyboardEventQueueIncoming.Clear();
+    buttonEventQueue.Clear();
+
+    lastEventPromotedAt = 0;
+    lastButtonEventReadAt = 0;
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+
+    cpu->Load(loader);
+    EmPatchMgr::Load(loader);
+    gSystemState.Load(loader);
+}
+
+template <typename T>
+void EmSession::DoSaveLoad(T& helper) {
+    helper.Do(typename T::BoolPack() << bankResetScheduled << resetScheduled << holdingBootKeys)
+        .Do(typename T::Pack8() << *reinterpret_cast<uint8*>(&resetType)
+                                << *reinterpret_cast<uint8*>(&bootKeysType))
+        .Do64(systemCycles)
+        .Do32(clockDiv);
 }
 
 void EmSession::ScheduleReset(ResetType resetType) {
