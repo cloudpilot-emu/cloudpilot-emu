@@ -24,13 +24,30 @@ class SaveChunkHelper {
 
        private:
         uint32 value{0};
-        uint8 size{0};
+        size_t size{0};
+    };
+
+    class Pack8 {
+        friend SaveChunkHelper<T>;
+
+       public:
+        Pack8() = default;
+
+        friend Pack8 operator<<(Pack8 pack, uint8 value) {
+            if (pack.size++ > 0) pack.value <<= 8;
+            pack.value = (pack.value & ~0xff) | value;
+
+            return pack;
+        }
+
+       private:
+        uint32 value{0};
+        size_t size{0};
     };
 
    public:
     SaveChunkHelper(T& t);
     inline SaveChunkHelper<T>& Do8(uint8 value);
-    inline SaveChunkHelper<T>& Do8(uint8 v1, uint8 v2, uint8 v3, uint8 v4);
     inline SaveChunkHelper<T>& Do16(uint16 value);
     inline SaveChunkHelper<T>& Do16(uint16 v1, uint16 v2);
     inline SaveChunkHelper<T>& Do32(uint32 value);
@@ -40,6 +57,7 @@ class SaveChunkHelper {
     inline SaveChunkHelper<T>& DoBuffer(void* buffer, size_t size);
     inline SaveChunkHelper<T>& DoString(const string& str, size_t maxLength);
     inline SaveChunkHelper<T>& Do(BoolPack pack);
+    inline SaveChunkHelper<T>& Do(Pack8 pack);
 
    private:
     T& t;
@@ -64,11 +82,32 @@ class LoadChunkHelper {
         std::vector<bool*> values;
     };
 
+    class Pack8 {
+        friend LoadChunkHelper<T>;
+
+       public:
+        Pack8() { values.reserve(4); }
+
+        friend Pack8 operator<<(Pack8 pack, uint8& ref) {
+            pack.values.push_back(&ref);
+
+            return pack;
+        }
+
+        friend Pack8 operator<<(Pack8 pack, int8& ref) {
+            pack.values.push_back(reinterpret_cast<uint8*>(&ref));
+
+            return pack;
+        }
+
+       private:
+        std::vector<uint8*> values;
+    };
+
    public:
     LoadChunkHelper(T& t);
 
     inline LoadChunkHelper& Do8(uint8& value);
-    inline LoadChunkHelper& Do8(uint8& v1, uint8& v2, uint8& v3, uint8& v4);
     inline LoadChunkHelper& Do16(uint16& value);
     inline LoadChunkHelper& Do16(uint16& v1, uint16& v2);
     inline LoadChunkHelper& Do32(uint32& value);
@@ -84,6 +123,7 @@ class LoadChunkHelper {
     inline LoadChunkHelper& DoBuffer(void* buffer, size_t size);
     inline LoadChunkHelper<T>& DoString(string& str, size_t maxLength);
     inline LoadChunkHelper<T>& Do(BoolPack pack);
+    inline LoadChunkHelper<T>& Do(Pack8 pack);
 
    private:
     T& t;
@@ -99,13 +139,6 @@ SaveChunkHelper<T>::SaveChunkHelper(T& t) : t(t) {}
 template <typename T>
 SaveChunkHelper<T>& SaveChunkHelper<T>::Do8(uint8 value) {
     t.Put8(value);
-
-    return *this;
-}
-
-template <typename T>
-SaveChunkHelper<T>& SaveChunkHelper<T>::Do8(uint8 v1, uint8 v2, uint8 v3, uint8 v4) {
-    t.Put32(v1 | (v2 << 8) | (v3 << 16) | (v4 << 24));
 
     return *this;
 }
@@ -172,23 +205,16 @@ SaveChunkHelper<T>& SaveChunkHelper<T>::Do(typename SaveChunkHelper<T>::BoolPack
 }
 
 template <typename T>
+SaveChunkHelper<T>& SaveChunkHelper<T>::Do(typename SaveChunkHelper<T>::Pack8 pack) {
+    return Do32(pack.value);
+}
+
+template <typename T>
 LoadChunkHelper<T>::LoadChunkHelper(T& t) : t(t) {}
 
 template <typename T>
 LoadChunkHelper<T>& LoadChunkHelper<T>::Do8(uint8& value) {
     value = t.Get8();
-
-    return *this;
-}
-
-template <typename T>
-LoadChunkHelper<T>& LoadChunkHelper<T>::Do8(uint8& v1, uint8& v2, uint8& v3, uint8& v4) {
-    uint32 v = t.Get32();
-
-    v1 = v & 0xff;
-    v2 = (v >> 8) & 0xff;
-    v3 = (v >> 16) & 0xff;
-    v4 = (v >> 24) & 0xff;
 
     return *this;
 }
@@ -298,6 +324,19 @@ LoadChunkHelper<T>& LoadChunkHelper<T>::DoBuffer(void* buffer, size_t size) {
 template <typename T>
 LoadChunkHelper<T>& LoadChunkHelper<T>::DoString(string& str, size_t maxLength) {
     str = std::move(t.GetString(maxLength));
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do(typename LoadChunkHelper<T>::Pack8 pack) {
+    uint32 value;
+    Do32(value);
+
+    for (ssize_t i = pack.values.size() - 1; i >= 0; i--) {
+        *pack.values[i] = value & 0xff;
+        value >>= 8;
+    }
 
     return *this;
 }

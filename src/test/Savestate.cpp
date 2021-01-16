@@ -67,9 +67,8 @@ namespace {
 
             template <typename T>
             void DoSaveLoad(T& helper) {
-                uint8 padding = 0;
-
-                helper.Do8(x, y, z, padding).Do(typename T::BoolPack() << b1 << b2);
+                helper.Do(typename T::Pack8() << x << y << z)
+                    .Do(typename T::BoolPack() << b1 << b2);
             }
 
             bool operator==(const MockRegsEZ other) const {

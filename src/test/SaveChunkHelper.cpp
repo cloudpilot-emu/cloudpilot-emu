@@ -28,11 +28,6 @@ namespace {
         helper.Do8(22);
     }
 
-    TEST_F(SaveChunkHelperTest, Do8Pack) {
-        EXPECT_CALL(mock, Put32(0x12345678)).Times(1);
-        helper.Do8(0x78, 0x56, 0x34, 0x12);
-    }
-
     TEST_F(SaveChunkHelperTest, Do16) {
         EXPECT_CALL(mock, Put16(0x1234)).Times(1);
         helper.Do16(0x1234);
@@ -68,8 +63,13 @@ namespace {
         helper.DoBuffer(&mock, 66);
     }
 
+    TEST_F(SaveChunkHelperTest, Do8Pack) {
+        EXPECT_CALL(mock, Put32(0x12345678)).Times(1);
+        helper.Do(helperT::Pack8() << 0x12 << 0x34 << 0x56 << 0x78);
+    }
+
     TEST_F(SaveChunkHelperTest, DoBoolPack) {
         EXPECT_CALL(mock, Put32(0b11010));
-        helper.Do(SaveChunkHelper<ChunkMock>::BoolPack() << true << true << false << true << false);
+        helper.Do(helperT::BoolPack() << true << true << false << true << false);
     }
 }  // namespace

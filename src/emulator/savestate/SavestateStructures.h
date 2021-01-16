@@ -21,16 +21,14 @@ inline void DoSaveLoad(LoadChunkHelper<T>& helper, HwrM68EZ328Type& regs);
 
 template <typename T>
 void DoSaveLoad(T& helper, regstruct& regs) {
-    uint8 padding = 0;
-
     for (uint8 i = 0; i < 16; i++) helper.Do32(regs.regs[i]);
 
     helper.Do32(regs.usp)
         .Do32(regs.isp)
         .Do32(regs.msp)
         .Do16(regs.sr)
-        .Do8(regs.t1, regs.t0, padding, padding)
-        .Do8(regs.s, regs.m, regs.x, regs.stopped)
+        .Do(typename T::Pack8() << regs.t1 << regs.t0)
+        .Do(typename T::Pack8() << regs.s << regs.m << regs.x << regs.stopped)
         .Do32(regs.intmask)
         .Do32(regs.pc)
         .Do32(regs.vbr)
