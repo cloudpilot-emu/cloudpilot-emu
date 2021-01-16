@@ -4,11 +4,18 @@
 #include "EmCommon.h"
 #include "EmEvent.h"
 
+class SavestateLoader;
+
 class EmSystemState {
    public:
     EmSystemState() = default;
 
     void Reset();
+
+    template <typename T>
+    void Save(T& savestate);
+
+    void Load(SavestateLoader& loader);
 
     void SetOSVersion(uint32 version);
     uint32 OSVersion(void) const;
@@ -28,6 +35,10 @@ class EmSystemState {
 
    public:
     EmEvent<> onMarkScreenClean;
+
+   private:
+    template <typename T>
+    void DoSaveLoad(T& helper);
 
    private:
     uint32 osVersion{0};
