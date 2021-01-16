@@ -67,7 +67,7 @@ namespace {
     void DoSaveLoad(T& helper, SystemCallContext& ctx) {
         helper.Do32(ctx.fPC)
             .Do32(ctx.fNextPC)
-            .Do16(ctx.fTrapWord, ctx.fTrapIndex)
+            .Do(typename T::Pack16() << ctx.fTrapWord << ctx.fTrapIndex)
             .Do32(ctx.fExtra)
             .Do(typename T::BoolPack() << ctx.fViaTrap << ctx.fViaJsrA1);
     }

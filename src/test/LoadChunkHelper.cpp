@@ -61,26 +61,6 @@ namespace {
         ASSERT_EQ(x, -0x0f01);
     }
 
-    TEST_F(LoadChunkHelperTest, DoU16Packed) {
-        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x12345678));
-        uint16 x1, x2;
-
-        helper.Do16(x1, x2);
-
-        ASSERT_EQ(x1, 0x5678);
-        ASSERT_EQ(x2, 0x1234);
-    }
-
-    TEST_F(LoadChunkHelperTest, DoS16Packed) {
-        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x1234f0ff));
-        int16 x1, x2;
-
-        helper.Do16(x1, x2);
-
-        ASSERT_EQ(x1, -0x0f01);
-        ASSERT_EQ(x2, 0x1234);
-    }
-
     TEST_F(LoadChunkHelperTest, DoU32) {
         EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x12345678));
         uint32 x;
@@ -163,6 +143,26 @@ namespace {
         ASSERT_EQ(x3, -16);
         ASSERT_EQ(x2, -1);
         ASSERT_EQ(x1, 0x12);
+    }
+
+    TEST_F(LoadChunkHelperTest, DoU16Pack) {
+        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x12345678));
+        uint16 x1, x2;
+
+        helper.Do(helperT::Pack16() << x1 << x2);
+
+        ASSERT_EQ(x2, 0x5678);
+        ASSERT_EQ(x1, 0x1234);
+    }
+
+    TEST_F(LoadChunkHelperTest, DoS16Pack) {
+        EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x1234f0ff));
+        int16 x1, x2;
+
+        helper.Do(helperT::Pack16() << x1 << x2);
+
+        ASSERT_EQ(x2, -0x0f01);
+        ASSERT_EQ(x1, 0x1234);
     }
 
     TEST_F(LoadChunkHelperTest, DoBoolPack) {

@@ -45,11 +45,28 @@ class SaveChunkHelper {
         size_t size{0};
     };
 
+    class Pack16 {
+        friend SaveChunkHelper<T>;
+
+       public:
+        Pack16() = default;
+
+        friend Pack16 operator<<(Pack16 pack, uint16 value) {
+            if (pack.size++ > 0) pack.value <<= 16;
+            pack.value = (pack.value & ~0xffff) | value;
+
+            return pack;
+        }
+
+       private:
+        uint32 value{0};
+        size_t size{0};
+    };
+
    public:
     SaveChunkHelper(T& t);
     inline SaveChunkHelper<T>& Do8(uint8 value);
     inline SaveChunkHelper<T>& Do16(uint16 value);
-    inline SaveChunkHelper<T>& Do16(uint16 v1, uint16 v2);
     inline SaveChunkHelper<T>& Do32(uint32 value);
     inline SaveChunkHelper<T>& Do64(uint64 value);
     inline SaveChunkHelper<T>& DoBool(bool value);
@@ -58,6 +75,7 @@ class SaveChunkHelper {
     inline SaveChunkHelper<T>& DoString(const string& str, size_t maxLength);
     inline SaveChunkHelper<T>& Do(BoolPack pack);
     inline SaveChunkHelper<T>& Do(Pack8 pack);
+    inline SaveChunkHelper<T>& Do(Pack16 pack);
 
    private:
     T& t;
@@ -104,16 +122,36 @@ class LoadChunkHelper {
         std::vector<uint8*> values;
     };
 
+    class Pack16 {
+        friend LoadChunkHelper<T>;
+
+       public:
+        Pack16() { values.reserve(2); }
+
+        friend Pack16 operator<<(Pack16 pack, uint16& ref) {
+            pack.values.push_back(&ref);
+
+            return pack;
+        }
+
+        friend Pack16 operator<<(Pack16 pack, int16& ref) {
+            pack.values.push_back(reinterpret_cast<uint16*>(&ref));
+
+            return pack;
+        }
+
+       private:
+        std::vector<uint16*> values;
+    };
+
    public:
     LoadChunkHelper(T& t);
 
     inline LoadChunkHelper& Do8(uint8& value);
     inline LoadChunkHelper& Do16(uint16& value);
-    inline LoadChunkHelper& Do16(uint16& v1, uint16& v2);
     inline LoadChunkHelper& Do32(uint32& value);
     inline LoadChunkHelper& Do64(uint64& value);
     inline LoadChunkHelper& Do8(int8& value);
-    inline LoadChunkHelper& Do8(int8& v1, int8& v2, int8& v3, int8& v4);
     inline LoadChunkHelper& Do16(int16& value);
     inline LoadChunkHelper& Do16(int16& v1, int16& v2);
     inline LoadChunkHelper& Do32(int32& value);
@@ -124,6 +162,7 @@ class LoadChunkHelper {
     inline LoadChunkHelper<T>& DoString(string& str, size_t maxLength);
     inline LoadChunkHelper<T>& Do(BoolPack pack);
     inline LoadChunkHelper<T>& Do(Pack8 pack);
+    inline LoadChunkHelper<T>& Do(Pack16 pack);
 
    private:
     T& t;
@@ -146,13 +185,6 @@ SaveChunkHelper<T>& SaveChunkHelper<T>::Do8(uint8 value) {
 template <typename T>
 SaveChunkHelper<T>& SaveChunkHelper<T>::Do16(uint16 value) {
     t.Put16(value);
-
-    return *this;
-}
-
-template <typename T>
-SaveChunkHelper<T>& SaveChunkHelper<T>::Do16(uint16 v1, uint16 v2) {
-    t.Put32(v1 | (v2 << 16));
 
     return *this;
 }
@@ -210,6 +242,11 @@ SaveChunkHelper<T>& SaveChunkHelper<T>::Do(typename SaveChunkHelper<T>::Pack8 pa
 }
 
 template <typename T>
+SaveChunkHelper<T>& SaveChunkHelper<T>::Do(typename SaveChunkHelper<T>::Pack16 pack) {
+    return Do32(pack.value);
+}
+
+template <typename T>
 LoadChunkHelper<T>::LoadChunkHelper(T& t) : t(t) {}
 
 template <typename T>
@@ -222,16 +259,6 @@ LoadChunkHelper<T>& LoadChunkHelper<T>::Do8(uint8& value) {
 template <typename T>
 LoadChunkHelper<T>& LoadChunkHelper<T>::Do16(uint16& value) {
     value = t.Get16();
-
-    return *this;
-}
-
-template <typename T>
-LoadChunkHelper<T>& LoadChunkHelper<T>::Do16(uint16& v1, uint16& v2) {
-    uint32 v = t.Get32();
-
-    v1 = v & 0xffff;
-    v2 = (v >> 16) & 0xffff;
 
     return *this;
 }
@@ -253,18 +280,6 @@ LoadChunkHelper<T>& LoadChunkHelper<T>::Do64(uint64& value) {
 template <typename T>
 LoadChunkHelper<T>& LoadChunkHelper<T>::Do8(int8& value) {
     value = t.Get8();
-
-    return *this;
-}
-
-template <typename T>
-LoadChunkHelper<T>& LoadChunkHelper<T>::Do8(int8& v1, int8& v2, int8& v3, int8& v4) {
-    uint32 v = t.Get32();
-
-    v1 = v & 0xff;
-    v2 = (v >> 8) & 0xff;
-    v3 = (v >> 16) & 0xff;
-    v4 = (v >> 24) & 0xff;
 
     return *this;
 }
@@ -336,6 +351,19 @@ LoadChunkHelper<T>& LoadChunkHelper<T>::Do(typename LoadChunkHelper<T>::Pack8 pa
     for (ssize_t i = pack.values.size() - 1; i >= 0; i--) {
         *pack.values[i] = value & 0xff;
         value >>= 8;
+    }
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::Do(typename LoadChunkHelper<T>::Pack16 pack) {
+    uint32 value;
+    Do32(value);
+
+    for (ssize_t i = pack.values.size() - 1; i >= 0; i--) {
+        *pack.values[i] = value & 0xffff;
+        value >>= 16;
     }
 
     return *this;
