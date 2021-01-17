@@ -19,14 +19,6 @@
 #include "EmCommon.h"
 #include "EmMemory.h"
 
-void MetaMemory::Save(SessionFile&) {
-    // CSTODO
-}
-
-void MetaMemory::Load(SessionFile&) {
-    // CSTODO
-}
-
 void MetaMemory::MarkRange(emuptr start, emuptr end, uint8 v) {
     // If there's no meta-memory (not needed for dedicated framebuffers)
     // just leave.

@@ -16,8 +16,6 @@
 
 #include "EmCommon.h"
 
-class SessionFile;
-
 extern emuptr gMemoryStart;
 
 // These are also accessed by the DRAMBank functions.
@@ -31,8 +29,6 @@ class EmBankSRAM {
    public:
     static void Initialize(RAMSizeType ramSize);
     static void Reset(Bool hardwareReset);
-    static void Save(SessionFile&);
-    static void Load(SessionFile&);
     static void Dispose(void);
 
     static void SetBankHandlers(void);

@@ -290,7 +290,7 @@ extern Bool gPCInRAM;
 extern Bool gPCInROM;
 
 struct EmAddressBank;
-class SessionFile;
+class SavestateLoader;
 
 // Function prototypes.
 
@@ -298,8 +298,11 @@ class Memory {
    public:
     static bool Initialize(const uint8* romBuffer, size_t romSize, RAMSizeType ramSize);
     static void Reset(Bool hardwareReset);
-    static void Save(SessionFile&);
-    static void Load(SessionFile&);
+
+    template <typename T>
+    static void Save(T& savestate);
+    static void Load(SavestateLoader& loader);
+
     static void Dispose(void);
 
     static void InitializeBanks(EmAddressBank& iBankInitializer, int32 iStartingBankIndex,

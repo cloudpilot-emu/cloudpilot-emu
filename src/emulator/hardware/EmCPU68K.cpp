@@ -237,7 +237,8 @@ void EmCPU68K::Load(SavestateLoader& loader) {
     regstruct regs;
 
     LoadChunkHelper helper(*chunk);
-    DoSaveLoad(helper, regs);
+    ::DoSaveLoad(helper, regs);
+    DoSaveLoad(helper);
 
     SetRegisters(regs);
 }
@@ -253,7 +254,13 @@ void EmCPU68K::DoSave(T& savestate) {
     GetRegisters(regs);
 
     SaveChunkHelper helper(*chunk);
-    DoSaveLoad(helper, regs);
+    ::DoSaveLoad(helper, regs);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmCPU68K::DoSaveLoad(T& helper) {
+    helper.Do32(fLastTraceAddress);
 }
 
 #pragma mark -

@@ -70,6 +70,7 @@ void EmSession::Save(T& savestate) {
     cpu->Save(savestate);
     EmPatchMgr::Save(savestate);
     gSystemState.Save(savestate);
+    Memory::Save(savestate);
 }
 
 template void EmSession::Save(Savestate& savestate);
@@ -104,15 +105,16 @@ void EmSession::Load(SavestateLoader& loader) {
     keyboardEventQueueIncoming.Clear();
     buttonEventQueue.Clear();
 
-    lastEventPromotedAt = 0;
-    lastButtonEventReadAt = 0;
-
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper);
+
+    lastEventPromotedAt = systemCycles;
+    lastButtonEventReadAt = systemCycles;
 
     cpu->Load(loader);
     EmPatchMgr::Load(loader);
     gSystemState.Load(loader);
+    Memory::Load(loader);
 }
 
 template <typename T>
@@ -121,7 +123,8 @@ void EmSession::DoSaveLoad(T& helper) {
         .Do(typename T::Pack8() << *reinterpret_cast<uint8*>(&resetType)
                                 << *reinterpret_cast<uint8*>(&bootKeysType))
         .Do64(systemCycles)
-        .Do32(clockDiv);
+        .Do32(clockDiv)
+        .Do32(clocksPerSecond);
 }
 
 void EmSession::ScheduleReset(ResetType resetType) {

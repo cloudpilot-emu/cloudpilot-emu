@@ -16,13 +16,16 @@
 
 #include "EmRegs.h"  // EmRegsList
 
+class SavestateLoader;
+
 class EmBankRegs {
    public:
     static void Initialize(void);
     static void Reset(Bool hardwareReset);
-    virtual void Save(Savestate&);
-    virtual void Save(SavestateProbe&);
-    virtual void Load(SavestateLoader&);
+
+    template <typename T>
+    static void Save(T& savestate);
+    static void Load(SavestateLoader& loader);
     static void Dispose(void);
 
     static void SetBankHandlers(void);

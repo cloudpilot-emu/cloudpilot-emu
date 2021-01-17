@@ -127,48 +127,6 @@ void EmBankMapped::Reset(Bool /*hardwareReset*/) {
 
 /***********************************************************************
  *
- * FUNCTION:	EmBankMapped::Save
- *
- * DESCRIPTION:	Standard save function.  Saves any sub-system state to
- *				the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankMapped::Save(SessionFile&) {
-    // The only state we have to save is in gMappedRanges.  We shouldn't
-    // have to actually save this because there shouldn't be anything in
-    // there at the moment when we save files.  We map in memory ranges
-    // at the following times:
-    //
-    //		* Calling system functions
-    //		* Loading .prc, etc., files
-    //		* Mapping in environment strings
-    //
-    // The first two should not be in "effect" at the time we save a file.
-    // The last one we'll leave up to the HostControl system to re-establish.
-}
-
-/***********************************************************************
- *
- * FUNCTION:	EmBankMapped::Load
- *
- * DESCRIPTION:	Standard load function.  Loads any sub-system state
- *				from the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankMapped::Load(SessionFile&) {}
-
-/***********************************************************************
- *
  * FUNCTION:	EmBankMapped::Dispose
  *
  * DESCRIPTION:	Standard dispose function.  Completely release any

@@ -107,59 +107,6 @@ void EmBankROM::Reset(Bool /*hardwareReset*/) { memset(gROM_MetaMemory, 0, gROMI
 
 /***********************************************************************
  *
- * FUNCTION:	EmBankROM::Save
- *
- * DESCRIPTION: Standard save function.  Saves any sub-system state to
- *				the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankROM::Save(SessionFile& f) {
-#if 0  // CSTODO
-    EmAssert(gSession);
-    Configuration cfg = gSession->GetConfiguration();
-    f.WriteROMFileReference(cfg.fROMFile);
-
-    StWordSwapper swapper1(gROM_MetaMemory, gROMImage_Size);
-    f.WriteMetaROMImage(gROM_MetaMemory, gROMImage_Size);
-#endif
-}
-
-/***********************************************************************
- *
- * FUNCTION:	EmBankROM::Load
- *
- * DESCRIPTION: Standard load function.  Loads any sub-system state
- *				from the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankROM::Load(SessionFile& f) {
-#if 0  // CSTODO
-    // ROM reference was read when the basic configuration was read
-    // and passed to EmSession::Initialize, which then called
-    // EmBankROM::Initialize, which then called EmBankROM::LoadROM.
-
-    EmAssert(gROM_MetaMemory != NULL);
-
-    if (f.ReadMetaROMImage(gROM_MetaMemory)) {
-        ByteswapWords(gROM_MetaMemory, gROMImage_Size);
-    } else {
-        f.SetCanReload(false);
-    }
-#endif
-}
-
-/***********************************************************************
- *
  * FUNCTION:	EmBankROM::Dispose
  *
  * DESCRIPTION: Standard dispose function.	Completely release any
@@ -814,40 +761,6 @@ void EmBankFlash::Reset(Bool hardwareReset) {
     if (hardwareReset) {
         gState = kAMDState_Normal;
     }
-}
-
-/***********************************************************************
- *
- * FUNCTION:	EmBankFlash::Save
- *
- * DESCRIPTION: Standard save function.  Saves any sub-system state to
- *				the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankFlash::Save(SessionFile&) {
-    // !!! Save gState && gEraseIsSetup?
-}
-
-/***********************************************************************
- *
- * FUNCTION:	EmBankFlash::Load
- *
- * DESCRIPTION: Standard load function.  Loads any sub-system state
- *				from the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankFlash::Load(SessionFile&) {
-    // !!! Load gState && gEraseIsSetup?
 }
 
 /***********************************************************************

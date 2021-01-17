@@ -19,7 +19,6 @@
 
 #include "EmPatchModuleTypes.h"
 
-class SessionFile;
 struct SystemCallContext;
 class EmPatchModule;
 class SavestateLoader;

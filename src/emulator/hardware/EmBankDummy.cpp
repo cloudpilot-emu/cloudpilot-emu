@@ -76,36 +76,6 @@ void EmBankDummy::Reset(Bool /*hardwareReset*/) {}
 
 /***********************************************************************
  *
- * FUNCTION:	EmBankDummy::Save
- *
- * DESCRIPTION:	Standard save function.  Saves any sub-system state to
- *				the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankDummy::Save(SessionFile&) {}
-
-/***********************************************************************
- *
- * FUNCTION:	EmBankDummy::Load
- *
- * DESCRIPTION:	Standard load function.  Loads any sub-system state
- *				from the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankDummy::Load(SessionFile&) {}
-
-/***********************************************************************
- *
  * FUNCTION:	EmBankDummy::Dispose
  *
  * DESCRIPTION:	Standard dispose function.  Completely release any

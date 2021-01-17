@@ -15,15 +15,10 @@
 #define EmBankDRAM_h
 
 #include "EmCommon.h"
-
-class SessionFile;
-
 class EmBankDRAM {
    public:
     static void Initialize(void);
     static void Reset(Bool hardwareReset);
-    static void Save(SessionFile&);
-    static void Load(SessionFile&);
     static void Dispose(void);
 
     static void SetBankHandlers(void);

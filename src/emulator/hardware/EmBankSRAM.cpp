@@ -25,7 +25,6 @@
 
 #if 0                           //  CSTODO
     #include "Miscellaneous.h"  // StWordSwapper
-    #include "SessionFile.h"    // WriteRAMImage
 #endif
 
 // ===========================================================================
@@ -143,61 +142,6 @@ void EmBankSRAM::Initialize(RAMSizeType ramSize) {
  ***********************************************************************/
 
 void EmBankSRAM::Reset(Bool /*hardwareReset*/) { memset(gRAM_MetaMemory, 0, gRAMBank_Size); }
-
-/***********************************************************************
- *
- * FUNCTION:	EmBankSRAM::Save
- *
- * DESCRIPTION: Standard save function.  Saves any sub-system state to
- *				the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankSRAM::Save(SessionFile& f) {
-#if 0  // CSTODO
-    StWordSwapper swapper1(gRAM_Memory, gRAMBank_Size);
-    f.WriteRAMImage(gRAM_Memory, gRAMBank_Size);
-
-    StWordSwapper swapper2(gRAM_MetaMemory, gRAMBank_Size);
-    f.WriteMetaRAMImage(gRAM_MetaMemory, gRAMBank_Size);
-#endif
-}
-
-/***********************************************************************
- *
- * FUNCTION:	EmBankSRAM::Load
- *
- * DESCRIPTION: Standard load function.  Loads any sub-system state
- *				from the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankSRAM::Load(SessionFile& f) {
-#if 0  // CSTODO
-    EmAssert(gRAM_Memory);
-    EmAssert(gRAM_MetaMemory);
-
-    if (f.ReadRAMImage(gRAM_Memory)) {
-        ByteswapWords(gRAM_Memory, gRAMBank_Size);
-    } else {
-        f.SetCanReload(false);
-    }
-
-    if (f.ReadMetaRAMImage(gRAM_MetaMemory)) {
-        ByteswapWords(gRAM_MetaMemory, gRAMBank_Size);
-    } else {
-        f.SetCanReload(false);
-    }
-#endif
-}
 
 /***********************************************************************
  *

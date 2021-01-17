@@ -301,6 +301,9 @@ class EmCPU68K : public EmCPU {
     template <typename T>
     void DoSave(T& savestate);
 
+    template <typename T>
+    void DoSaveLoad(T& helper);
+
    private:
     emuptr fLastTraceAddress;
     Hook68KExceptionList fExceptionHandlers[kException_LastException];
@@ -311,7 +314,7 @@ class EmCPU68K : public EmCPU {
     Hook68KRTSList fHookRTS;
     Hook68KNewPCList fHookNewPC;
     Hook68KNewSPList fHookNewSP;
-    uint32 fCurrentCycles;
+    uint32 fCurrentCycles{0};
 
 #if REGISTER_HISTORY
     #define kRegHistorySize 512

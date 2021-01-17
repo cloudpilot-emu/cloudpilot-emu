@@ -17,16 +17,12 @@
 #include "EmCommon.h"
 
 class EmStream;
-class SessionFile;
-
 const emuptr kDefaultROMMemoryStart = 0x10C00000;
 
 class EmBankROM {
    public:
     static bool Initialize(size_t len, const uint8* buffer);
     static void Reset(Bool hardwareReset);
-    static void Save(SessionFile&);
-    static void Load(SessionFile&);
     static void Dispose(void);
 
     static void SetBankHandlers(void);
@@ -56,8 +52,6 @@ class EmBankFlash {
    public:
     static void Initialize(void);
     static void Reset(Bool hardwareReset);
-    static void Save(SessionFile&);
-    static void Load(SessionFile&);
     static void Dispose(void);
 
     static void SetBankHandlers(void);

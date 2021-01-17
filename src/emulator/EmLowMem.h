@@ -16,8 +16,6 @@
 
 #include "EmPalmStructs.h"
 
-class SessionFile;
-
 class EmLowMem {
    public:
     static uint8 GetEvtMgrIdle(void);

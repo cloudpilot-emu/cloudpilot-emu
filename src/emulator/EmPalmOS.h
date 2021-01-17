@@ -17,14 +17,10 @@
 #include "EmCPU68K.h"   // ExceptionNumber
 #include "EmStructs.h"  // EmStackFrameList
 
-class SessionFile;
-
 class EmPalmOS {
    public:
     static void Initialize(void);
     static void Reset(void);
-    static void Save(SessionFile&);
-    static void Load(SessionFile&);
     static void Dispose(void);
 
    protected:

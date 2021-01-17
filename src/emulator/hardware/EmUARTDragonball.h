@@ -16,7 +16,6 @@
 
 #include "EmThreadSafeQueue.h"  // EmByteQueue
 
-class SessionFile;
 class EmTransport;
 
 class EmUARTDragonball {

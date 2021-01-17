@@ -22,6 +22,9 @@
 #include "EmCommon.h"
 #include "EmSession.h"   // gSession, GetDevice
 #include "MetaMemory.h"  // MetaMemory::Initialize
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 /*
         Hitchhiker's Guide To Accessing Memory
@@ -306,66 +309,16 @@ void Memory::Reset(Bool hardwareReset) {
     Memory::ResetBankHandlers();
 }
 
-/***********************************************************************
- *
- * FUNCTION:	Memory::Save
- *
- * DESCRIPTION:	Standard save function.  Saves any sub-system state to
- *				the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void Memory::Save(SessionFile& f) {
-#if 0  // CSTODO
-	EmBankDummy::Save (f);
-	EmBankRegs::Save (f);
-	EmBankSRAM::Save (f);
-	EmBankDRAM::Save (f);
-	EmBankROM::Save (f);
-	EmBankMapped::Save (f);
-
-	EmAssert (gSession);
-	if (gSession->GetDevice ().HasFlash ())
-		EmBankFlash::Save (f);
-
-	MetaMemory::Save (f);
-#endif
+template <typename T>
+void Memory::Save(T& savestate) {
+    EmBankRegs::Save(savestate);
 }
 
-/***********************************************************************
- *
- * FUNCTION:	Memory::Load
- *
- * DESCRIPTION:	Standard load function.  Loads any sub-system state
- *				from the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
+template void Memory::Save(Savestate& savestate);
+template void Memory::Save(SavestateProbe& savestate);
 
-void Memory::Load(SessionFile& f) {
-#if 0  // CSTODO
-	EmBankDummy::Load (f);
-	EmBankRegs::Load (f);
-	EmBankSRAM::Load (f);
-	EmBankDRAM::Load (f);
-	EmBankROM::Load (f);
-	EmBankMapped::Load (f);
-
-	EmAssert (gSession);
-	if (gSession->GetDevice ().HasFlash ())
-		EmBankFlash::Load (f);
-
-	MetaMemory::Load (f);
-
-	Memory::ResetBankHandlers ();
-#endif
+void Memory::Load(SavestateLoader& loader) {
+    EmBankRegs::Load(loader);
 
     Memory::ResetBankHandlers();
 }

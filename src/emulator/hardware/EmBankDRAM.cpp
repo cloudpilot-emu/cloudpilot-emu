@@ -125,36 +125,6 @@ void EmBankDRAM::Reset(Bool /*hardwareReset*/) {}
 
 /***********************************************************************
  *
- * FUNCTION:	EmBankDRAM::Save
- *
- * DESCRIPTION:	Standard save function.  Saves any sub-system state to
- *				the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankDRAM::Save(SessionFile&) {}
-
-/***********************************************************************
- *
- * FUNCTION:	EmBankDRAM::Load
- *
- * DESCRIPTION:	Standard load function.  Loads any sub-system state
- *				from the given session file.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-void EmBankDRAM::Load(SessionFile&) {}
-
-/***********************************************************************
- *
  * FUNCTION:	EmBankDRAM::Dispose
  *
  * DESCRIPTION:	Standard dispose function.  Completely release any
