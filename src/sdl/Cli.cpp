@@ -77,6 +77,25 @@ namespace {
         }
     }
 
+    void SaveImage(string file) {
+        fstream stream(file, ios_base::out);
+
+        if (stream.fail()) {
+            cout << "failed to open " << file << endl << flush;
+            return;
+        }
+
+        EmAssert(gSession);
+
+        auto [imageSize, image] = gSession->SaveImage();
+
+        stream.write((const char*)image.get(), imageSize);
+
+        if (stream.fail()) {
+            cout << "I/O error writing " << file << endl << flush;
+        }
+    }
+
     bool CmdQuit(vector<string> args) { return true; }
 
     bool CmdInstallFile(vector<string> args) {
@@ -102,6 +121,19 @@ namespace {
         cout << "dumping memory to '" << args[0] << "'" << endl << flush;
 
         DumpMemory(args[0]);
+
+        return false;
+    }
+
+    bool CmdSaveImage(vector<string> args) {
+        if (args.size() != 1) {
+            cout << "usage: save-image <file>" << endl << flush;
+            return false;
+        }
+
+        cout << "saving session image to '" << args[0] << "'" << endl << flush;
+
+        SaveImage(args[0]);
 
         return false;
     }
@@ -186,7 +218,8 @@ namespace {
                           {.name = "set-user-name", .cmd = CmdSetUserName},
                           {.name = "reset-soft", .cmd = CmdResetSoft},
                           {.name = "reset-hard", .cmd = CmdResetHard},
-                          {.name = "reset-noext", .cmd = CmdResetNoext}};
+                          {.name = "reset-noext", .cmd = CmdResetNoext},
+                          {.name = "save-image", .cmd = CmdSaveImage}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);
