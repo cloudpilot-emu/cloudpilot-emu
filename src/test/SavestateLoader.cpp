@@ -48,7 +48,10 @@ namespace {
     }
 
     TEST_F(SavestateLoaderTest, ItFailsIfBufferIsTooLarge) {
-        ASSERT_FALSE(loader.Load(savestate.GetBuffer(), 33, mock));
+        uint8 buffer[33];
+        memcpy(buffer, savestate.GetBuffer(), savestate.GetSize());
+
+        ASSERT_FALSE(loader.Load(buffer, 33, mock));
     }
 
     TEST_F(SavestateLoaderTest, ItSucceedsOtherwise) {

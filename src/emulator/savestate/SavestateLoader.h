@@ -43,7 +43,7 @@ class SavestateLoader {
 
 template <typename T>
 bool SavestateLoader::Load(void* buffer, size_t size, T& target) {
-    auto alignedBuffer = make_unique<uint32[]>((size & ~0x03) + ((size & 0x03) ? 1 : 0));
+    auto alignedBuffer = make_unique<uint32[]>(size / 4 + ((size % 4) ? 1 : 0));
     memcpy(alignedBuffer.get(), buffer, size);
 
     if (!ParseSavestate(alignedBuffer.get(), size)) return false;
