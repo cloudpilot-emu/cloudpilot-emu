@@ -17,6 +17,7 @@
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
+#include "SessionImage.h"
 
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 1;
@@ -30,6 +31,10 @@ namespace {
 EmSession* gSession = &_gSession;
 
 bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLength) {
+    this->romImage = make_unique<uint8[]>(romLength);
+    romSize = romLength;
+    memcpy(this->romImage.get(), romImage, romSize);
+
     EmHAL::onSystemClockChange.AddHandler(bind(&EmSession::RecalculateClocksPerSecond, this));
 
     this->device.reset(device);
@@ -45,6 +50,61 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     gSystemState.Reset();
 
     RecalculateClocksPerSecond();
+
+    return true;
+}
+
+pair<size_t, unique_ptr<uint8[]>> EmSession::SaveImage() {
+    EmAssert(romImage);
+
+    SessionImageSerializer image;
+
+    image.SetRomImage(romSize, romImage.get()).SetRamImage(GetMemorySize(), GetMemoryPtr());
+
+    if (savestate.Save(*this)) {
+        image.SetSavestate(savestate.GetSize(), savestate.GetBuffer());
+    } else {
+        logging::printf("failed to save savestate");
+    }
+
+    return image.Serialize(device->GetIDString());
+}
+
+bool EmSession::LoadImage(size_t size, uint8* buffer) {
+    EmAssert(!romImage);
+
+    SessionImage image = SessionImage::Deserialize(size, buffer);
+    if (!image.IsValid()) return false;
+
+    EmDevice* device = new EmDevice(image.GetDeviceId());
+    if (device->GetIDString() != device->GetIDString()) {
+        logging::printf("device id mismatch");
+        return false;
+    }
+
+    auto [romSize, romImage] = image.GetRomImage();
+    if (!Initialize(device, static_cast<uint8*>(romImage), romSize)) {
+        logging::printf("failed to initialize session");
+        return false;
+    }
+
+    auto [ramSize, ramImage] = image.GetRamImage();
+    if (ramSize != GetMemorySize()) {
+        logging::printf("memory size mismatch, not restoring RAM");
+
+        return true;
+    } else
+        memcpy(this->GetMemoryPtr(), ramImage, ramSize);
+
+    auto [savestateSize, savestateImage] = image.GetSavestate();
+    if (savestateSize == 0) return true;
+
+    SavestateLoader loader;
+    if (!loader.Load(savestateImage, savestateSize, *this)) {
+        logging::printf("failed to restore savestate");
+
+        Reset(ResetType::hard);
+    }
 
     return true;
 }

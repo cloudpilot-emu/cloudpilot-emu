@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <utility>
 
 #include "ButtonEvent.h"
 #include "EmCPU.h"
@@ -11,6 +12,7 @@
 #include "EmThreadSafeQueue.h"
 #include "KeyboardEvent.h"
 #include "PenEvent.h"
+#include "Savestate.h"
 
 class SavestateLoader;
 
@@ -20,6 +22,9 @@ class EmSession {
 
    public:
     bool Initialize(EmDevice* device, const uint8* romImage, size_t romLength);
+
+    pair<size_t, unique_ptr<uint8[]>> SaveImage();
+    bool LoadImage(size_t size, uint8* buffer);
 
     template <typename T>
     void Save(T& savestate);
@@ -121,6 +126,10 @@ class EmSession {
 
     bool holdingBootKeys;
     ResetType bootKeysType;
+
+    unique_ptr<uint8[]> romImage;
+    size_t romSize{0};
+    Savestate savestate;
 };
 
 extern EmSession* gSession;
