@@ -17,6 +17,7 @@
 #include "EmROMReader.h"
 #include "EmSession.h"
 #include "MainLoop.h"
+#include "SessionImage.h"
 #include "common.h"
 
 #ifndef __EMSCRIPTEN__
@@ -125,6 +126,18 @@ void initializeSession(string file) {
         cerr << "unable to open " << file << endl;
 
         exit(1);
+    }
+
+    SessionImage sessionImage = SessionImage::Deserialize(fileSize, fileBuffer.get());
+    if (sessionImage.IsValid()) {
+        cout << "restoring session image" << endl << flush;
+
+        if (!gSession->LoadImage(sessionImage)) {
+            cerr << "failed to restore image" << endl << flush;
+            exit(1);
+        }
+
+        return;
     }
 
     Buffer romImage, memoryImage;

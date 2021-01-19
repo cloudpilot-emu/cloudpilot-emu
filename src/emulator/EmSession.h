@@ -15,6 +15,7 @@
 #include "Savestate.h"
 
 class SavestateLoader;
+class SessionImage;
 
 class EmSession {
    public:
@@ -24,7 +25,7 @@ class EmSession {
     bool Initialize(EmDevice* device, const uint8* romImage, size_t romLength);
 
     pair<size_t, unique_ptr<uint8[]>> SaveImage();
-    bool LoadImage(size_t size, uint8* buffer);
+    bool LoadImage(SessionImage& image);
 
     template <typename T>
     void Save(T& savestate);

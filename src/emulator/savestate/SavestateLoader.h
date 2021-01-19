@@ -2,6 +2,7 @@
 #define _SAVESTATE_LOADER_H_
 
 #include <map>
+#include <memory>
 
 #include "Chunk.h"
 #include "ChunkType.h"
@@ -42,7 +43,10 @@ class SavestateLoader {
 
 template <typename T>
 bool SavestateLoader::Load(void* buffer, size_t size, T& target) {
-    if (!ParseSavestate(buffer, size)) return false;
+    auto alignedBuffer = make_unique<uint32[]>((size & ~0x03) + ((size & 0x03) ? 1 : 0));
+    memcpy(alignedBuffer.get(), buffer, size);
+
+    if (!ParseSavestate(alignedBuffer.get(), size)) return false;
 
     error = false;
     for (auto& [chunkType, chunk] : chunkMap) chunk.Reset();

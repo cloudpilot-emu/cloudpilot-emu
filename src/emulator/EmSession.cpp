@@ -70,10 +70,9 @@ pair<size_t, unique_ptr<uint8[]>> EmSession::SaveImage() {
     return image.Serialize(device->GetIDString());
 }
 
-bool EmSession::LoadImage(size_t size, uint8* buffer) {
+bool EmSession::LoadImage(SessionImage& image) {
     EmAssert(!romImage);
 
-    SessionImage image = SessionImage::Deserialize(size, buffer);
     if (!image.IsValid()) return false;
 
     EmDevice* device = new EmDevice(image.GetDeviceId());
