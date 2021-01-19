@@ -1,7 +1,7 @@
 #include "SessionImage.h"
 
 namespace {
-    constexpr uint32 MAGIC = 0x03012015;
+    constexpr uint32 MAGIC = 0x20150103;
     constexpr uint32 VERSION = 0x01;
     constexpr uint32 VERSION_MASK = 0x80000000;
 
