@@ -40,10 +40,13 @@ class SessionImage {
    private:
     SessionImage() = default;
 
-    void *buffer{nullptr}, *romImage{nullptr}, *ramImage{nullptr}, *savestate{nullptr},
-        *metadata{nullptr};
+    static SessionImage DeserializeLegacyImage(size_t size, uint8* buffer);
+
+    void *romImage{nullptr}, *ramImage{nullptr}, *savestate{nullptr}, *metadata{nullptr};
     size_t romSize{0}, ramSize{0}, savestateSize{0}, metadataSize{0};
     string deviceId;
+
+    bool valid{false};
 };
 
 #endif  // _SESSION_IMAGE_

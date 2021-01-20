@@ -26,20 +26,6 @@
 
 using namespace std;
 
-constexpr uint32 IMAGE_FILE_MAGIC = 0x20150103;
-
-struct Buffer {
-    Buffer() = default;
-    Buffer(uint8* buffer, size_t len) : len(len), buffer(buffer) {}
-
-    size_t len{0};
-    uint8* buffer{nullptr};
-};
-
-uint32 read32LE(const uint8* buffer, size_t i) {
-    return buffer[i] | (buffer[i + 1] << 8) | (buffer[i + 2] << 16) | (buffer[i + 3] << 24);
-}
-
 bool readFile(string file, unique_ptr<uint8[]>& buffer, size_t& len) {
     fstream stream(file, ios_base::in);
     if (stream.fail()) return false;
@@ -86,34 +72,14 @@ void analyzeRom(EmROMReader& reader) {
          << endl;
 }
 
-bool tryToParseImage(uint8* buffer, size_t len, Buffer& romImage, Buffer& memoryImage) {
-    if (len < 16) return false;
-
-    if (read32LE(buffer, 0) != IMAGE_FILE_MAGIC) return false;
-
-    uint32 romNameSize = read32LE(buffer, 4);
-    uint32 romSize = read32LE(buffer, 8);
-    uint32 memorySize = read32LE(buffer, 12);
-
-    if ((romNameSize + romSize + memorySize + 16) != len) return false;
-
-    romImage.len = romSize;
-    romImage.buffer = buffer + 16 + romNameSize;
-
-    memoryImage.len = memorySize;
-    memoryImage.buffer = romImage.buffer + romSize;
-
-    return true;
-}
-
-void setupMemoryImage(Buffer image) {
-    if ((uint32)image.len != gSession->GetMemorySize()) {
+void setupMemoryImage(void* image, size_t size) {
+    if (size != static_cast<size_t>(gSession->GetMemorySize())) {
         cerr << "memory image size mismatch: expected " << gSession->GetMemorySize() << " , got "
-             << image.len << endl
+             << size << endl
              << flush;
     }
 
-    memcpy(gSession->GetMemoryPtr(), image.buffer, image.len);
+    memcpy(gSession->GetMemoryPtr(), image, size);
 
     cout << "loaded memory image" << endl << flush;
 }
@@ -140,14 +106,7 @@ void initializeSession(string file) {
         return;
     }
 
-    Buffer romImage, memoryImage;
-
-    if (!tryToParseImage(fileBuffer.get(), fileSize, romImage, memoryImage)) {
-        romImage.buffer = fileBuffer.get();
-        romImage.len = fileSize;
-    }
-
-    EmROMReader reader(romImage.buffer, romImage.len);
+    EmROMReader reader(fileBuffer.get(), fileSize);
 
     if (!reader.AcquireCardHeader() || !reader.AcquireROMHeap() || !reader.AcquireDatabases() ||
         !reader.AcquireFeatures()) {
@@ -166,14 +125,10 @@ void initializeSession(string file) {
         exit(1);
     }
 
-    if (!gSession->Initialize(device, romImage.buffer, romImage.len)) {
+    if (!gSession->Initialize(device, fileBuffer.get(), fileSize)) {
         cerr << "Session failed to initialize" << endl;
 
         exit(1);
-    }
-
-    if (memoryImage.buffer) {
-        setupMemoryImage(memoryImage);
     }
 }
 
@@ -186,7 +141,7 @@ void loadMemoryImage(string file) {
         return;
     }
 
-    setupMemoryImage(Buffer(buffer.get(), len));
+    setupMemoryImage(buffer.get(), len);
 
     cout << "loaded memory image from '" << file << "'" << endl << flush;
 }

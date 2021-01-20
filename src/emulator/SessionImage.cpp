@@ -76,12 +76,16 @@ pair<size_t, unique_ptr<uint8[]>> SessionImageSerializer::Serialize(string devic
     return pair(size, std::move(image));
 }
 
-bool SessionImage::IsValid() const { return buffer != nullptr; }
+bool SessionImage::IsValid() const { return valid; }
 
 SessionImage SessionImage::Deserialize(size_t size, uint8* buffer) {
-    if (size < 28) return SessionImage();
-
+    if (size < 16) return SessionImage();
     if (get32(buffer) != MAGIC) return SessionImage();
+
+    uint32 version = get32(buffer + 4);
+
+    if (!(version & VERSION_MASK)) return DeserializeLegacyImage(size, buffer);
+    if (size < 28) return SessionImage();
     if (get32(buffer + 4) != (VERSION | VERSION_MASK)) return SessionImage();
 
     size_t deviceIdSize = get32(buffer + 8);
@@ -104,7 +108,6 @@ SessionImage SessionImage::Deserialize(size_t size, uint8* buffer) {
     buffer += deviceIdSize;
 
     image.deviceId = deviceId;
-    image.buffer = buffer;
 
     image.metadataSize = metadataSize;
     if (metadataSize > 0) image.metadata = buffer;
@@ -121,6 +124,33 @@ SessionImage SessionImage::Deserialize(size_t size, uint8* buffer) {
     image.savestateSize = savestateSize;
     if (savestateSize > 0) image.savestate = buffer;
 
+    image.valid = true;
+    return image;
+}
+
+SessionImage SessionImage::DeserializeLegacyImage(size_t size, uint8* buffer) {
+    size_t romNameSize = get32(buffer + 4);
+    size_t romSize = get32(buffer + 8);
+    size_t ramSize = get32(buffer + 12);
+
+    buffer += 16;
+
+    if (size != (16 + romNameSize + romSize + ramSize)) return SessionImage();
+
+    SessionImage image;
+
+    buffer += romNameSize;
+    image.deviceId = "PalmV";
+
+    image.romSize = romSize;
+    if (romSize > 0) image.romImage = buffer;
+    buffer += romSize;
+
+    image.ramSize = ramSize;
+    if (ramSize > 0) image.ramImage = buffer;
+    buffer += ramSize;
+
+    image.valid = true;
     return image;
 }
 
