@@ -8,6 +8,7 @@
 #include "EmPalmStructs.h"
 #include "EmPatchModuleHtal.h"
 #include "Logging.h"
+#include "Platform.h"
 #include "ROMStubs.h"
 #include "UAE.h"
 
@@ -397,4 +398,24 @@ void SetHotSyncUserName(const char* userNameP) {
 
     // Finally, install the name.
     DlkDispatchRequest(&session);
+}
+
+void SetCurrentDate(void) {
+    CEnableFullAccess munge;
+
+    // Get the current date.
+
+    uint32 year, month, day;
+    Platform::GetDate(year, month, day);
+
+    // Convert it to days -- and then hourse -- since 1/1/1904
+
+    uint32 rtcHours = ::DateToDays(year, month, day) * 24;
+
+    // Update the "hours adjustment" value to contain the current date.
+
+    emuptr timGlobalsP = EmLowMem_GetGlobal(timGlobalsP);
+    EmAliasTimGlobalsType<PAS> timGlobals(timGlobalsP);
+
+    timGlobals.rtcHours = rtcHours;
 }

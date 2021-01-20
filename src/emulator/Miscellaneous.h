@@ -18,6 +18,8 @@ uint32 DateToDays(uint32 year, uint32 month, uint32 day);
 
 void SetHotSyncUserName(const char*);
 
+void SetCurrentDate();
+
 class StMemoryMapper {
    public:
     StMemoryMapper(const void* memory, long size);

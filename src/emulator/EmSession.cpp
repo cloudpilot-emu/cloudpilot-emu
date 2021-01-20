@@ -98,12 +98,8 @@ bool EmSession::LoadImage(SessionImage& image) {
     auto [savestateSize, savestateImage] = image.GetSavestate();
     if (savestateSize == 0) return true;
 
-    SavestateLoader loader;
-    if (!loader.Load(savestateImage, savestateSize, *this)) {
+    if (!Load(savestateSize, static_cast<uint8*>(savestateImage)))
         logging::printf("failed to restore savestate");
-
-        Reset(ResetType::hard);
-    }
 
     return true;
 }
@@ -181,7 +177,17 @@ bool EmSession::Save() { return savestate.Save(*this); }
 bool EmSession::Load(size_t size, uint8* buffer) {
     SavestateLoader loader;
 
-    return loader.Load(buffer, size, *this);
+    if (!loader.Load(buffer, size, *this)) {
+        Reset(ResetType::hard);
+
+        return false;
+    }
+
+    if (gSystemState.IsUIInitialized()) {
+        SetCurrentDate();
+    }
+
+    return true;
 }
 
 Savestate& EmSession::GetSavestate() { return savestate; }
