@@ -30,8 +30,8 @@ namespace {
         ASSERT_TRUE(map.find(ChunkType::cpu68k) != map.end());
         ASSERT_TRUE(map.find(ChunkType::regsEZ) != map.end());
 
-        ASSERT_EQ(map.at(ChunkType::cpu68k).GetSize(), 8u);
-        ASSERT_EQ(map.at(ChunkType::regsEZ).GetSize(), 12u);
+        ASSERT_EQ(map.at(ChunkType::cpu68k).GetSize(), 2u);
+        ASSERT_EQ(map.at(ChunkType::regsEZ).GetSize(), 3u);
     }
 
     TEST(SavestateProbe, RequestingAChunkTwiceGeneratesAnError) {

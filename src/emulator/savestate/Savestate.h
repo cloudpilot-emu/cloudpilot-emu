@@ -1,6 +1,8 @@
 #ifndef _SAVESTATE_H_
 #define _SAVESTATE_H_
 
+#include <memory>
+
 #include "Byteswapping.h"
 #include "Chunk.h"
 #include "ChunkType.h"
@@ -16,7 +18,6 @@ class Savestate {
 
    public:
     Savestate() = default;
-    ~Savestate();
 
     template <typename T>
     bool Save(T& t);
@@ -25,7 +26,7 @@ class Savestate {
 
     void NotifyError();
 
-    void* GetBuffer() { return buffer; }
+    void* GetBuffer() { return buffer.get(); }
     size_t GetSize() const { return size; }
 
    private:
@@ -33,7 +34,7 @@ class Savestate {
     bool AllocateBuffer(T& t);
 
    private:
-    void* buffer{nullptr};
+    unique_ptr<uint32[]> buffer;
     size_t size{0};
 
     bool error{false};
@@ -83,14 +84,14 @@ bool Savestate::AllocateBuffer(T& target) {
     size_t chunkCount = probeMap.size();
     size = 4;
 
-    for (auto& [chunkType, chunk] : probeMap) size = size + chunk.GetSize() + 8;
+    for (auto& [chunkType, chunk] : probeMap) size = size + chunk.GetSize() * 4 + 8;
 
-    buffer = Platform::AllocateMemory(size);
+    buffer = make_unique<uint32[]>(size);
 
-    uint32* nextTocEntry = static_cast<uint32*>(buffer);
+    uint32* nextTocEntry = buffer.get();
     *(nextTocEntry++) = chunkCount;
 
-    uint8* nextChunk = static_cast<uint8*>(buffer) + 4 + 8 * chunkCount;
+    uint32* nextChunk = buffer.get() + 1 + 2 * chunkCount;
 
     for (auto& [chunkType, chunk] : probeMap) {
         *nextTocEntry = static_cast<uint32>(chunkType);
@@ -103,7 +104,7 @@ bool Savestate::AllocateBuffer(T& target) {
 
         nextTocEntry += 2;
 
-        chunkMap.emplace(chunkType, Chunk(chunk.GetSize(), static_cast<void*>(nextChunk)));
+        chunkMap.emplace(chunkType, Chunk(chunk.GetSize(), nextChunk));
         nextChunk += chunk.GetSize();
     }
 

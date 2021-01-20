@@ -1,9 +1,5 @@
 #include "Savestate.h"
 
-Savestate::~Savestate() {
-    if (buffer) Platform::DisposeMemory(buffer);
-}
-
 Chunk* Savestate::GetChunk(ChunkType type) {
     if (!buffer) {
         logging::printf("tried to request chunk before probing layout");

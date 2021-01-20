@@ -3,7 +3,7 @@
 #include "Byteswapping.h"
 #include "Logging.h"
 
-bool SavestateLoader::ParseSavestate(void* buffer, size_t size) {
+bool SavestateLoader::ParseSavestate(uint32* buffer, size_t size) {
     chunkMap.clear();
 
     if (size < 4) {
@@ -11,39 +11,46 @@ bool SavestateLoader::ParseSavestate(void* buffer, size_t size) {
         return false;
     }
 
-    uint32* nextTocEntry = static_cast<uint32*>(buffer);
+    if (size % 4) {
+        logging::printf("buffer size is not a multiple of four");
+        return false;
+    }
+
+    size /= 4;
+
+    uint32* nextTocEntry = buffer;
     size_t chunkCount = *(nextTocEntry++);
 
-    if (size < 4 + chunkCount * 8) {
+    if (size < 4 + chunkCount * 2) {
         logging::printf("buffer is not a valid savestate: too small for TOC");
         return false;
     }
 
-    uint8* nextChunk = static_cast<uint8*>(buffer) + 4 + 8 * chunkCount;
+    uint32* nextChunk = buffer + 1 + 2 * chunkCount;
 
     for (size_t i = 0; i < chunkCount; i++) {
-        ChunkType type = static_cast<ChunkType>(*nextTocEntry);
-        size_t chunkSize = *(nextTocEntry + 1);
-
 #if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)
         Byteswap(*nextTocEntry);
         Byteswap(*nextTocEntry + 1);
 #endif
 
+        ChunkType type = static_cast<ChunkType>(*nextTocEntry);
+        size_t chunkSize = *(nextTocEntry + 1);
+
         nextTocEntry += 2;
 
-        if (size - (nextChunk - static_cast<uint8*>(buffer)) < chunkSize) {
+        if (size - (nextChunk - buffer) < chunkSize) {
             logging::printf("buffer is not a valid savestate: too small for chunk %lu of %lu", i,
                             chunkCount);
             return false;
         }
 
-        chunkMap.emplace(type, Chunk(chunkSize, static_cast<void*>(nextChunk)));
+        chunkMap.emplace(type, Chunk(chunkSize, nextChunk));
 
         nextChunk += chunkSize;
     }
 
-    if ((nextChunk - static_cast<uint8*>(buffer)) != static_cast<ssize_t>(size)) {
+    if ((nextChunk - buffer) != static_cast<ssize_t>(size)) {
         logging::printf("buffer is not a valid savestate: too large");
         return false;
     }

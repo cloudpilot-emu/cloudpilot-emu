@@ -8,7 +8,7 @@ class Chunk {
     static constexpr bool isProbe{false};
 
    public:
-    Chunk(size_t size, void* buffer);
+    Chunk(size_t size, uint32* buffer);
     Chunk(Chunk&&) = default;
 
     void Reset();
@@ -40,8 +40,8 @@ class Chunk {
     size_t chunkSize{0};
     bool error{false};
 
-    void* buffer{nullptr};
-    void* next{nullptr};
+    uint32* buffer{nullptr};
+    uint32* next{nullptr};
 
    private:
     Chunk() = delete;

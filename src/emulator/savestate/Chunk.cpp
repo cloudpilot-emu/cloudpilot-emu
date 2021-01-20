@@ -11,7 +11,7 @@
     #define SWAP_IF_REQUIRED(x) ;
 #endif
 
-Chunk::Chunk(size_t size, void* buffer) : chunkSize(size), buffer(buffer), next(buffer) {}
+Chunk::Chunk(size_t size, uint32* buffer) : chunkSize(size), buffer(buffer), next(buffer) {}
 
 void Chunk::Reset() {
     next = buffer;
@@ -21,7 +21,7 @@ void Chunk::Reset() {
 bool Chunk::AssertOkForSize(size_t size) {
     if (error) return false;
 
-    error = chunkSize - (static_cast<uint8*>(next) - static_cast<uint8*>(buffer)) < size;
+    error = chunkSize - (next - buffer) < size;
 
     return !error;
 }
@@ -31,13 +31,11 @@ void Chunk::Put8(uint8 value) { Put32(value); }
 void Chunk::Put16(uint16 value) { Put32(value); }
 
 void Chunk::Put32(uint32 value) {
-    if (!AssertOkForSize(4)) return;
+    if (!AssertOkForSize(1)) return;
 
     SWAP_IF_REQUIRED(value);
 
-    *static_cast<uint32*>(next) = value;
-
-    next = static_cast<uint8*>(next) + 4;
+    *(next++) = value;
 }
 
 void Chunk::Put64(uint64 value) {
@@ -58,13 +56,13 @@ void Chunk::PutDouble(double value) {
 }
 
 void Chunk::PutBuffer(void* buffer, size_t size) {
-    size_t paddedSize = (size & 0x03) ? ((size & ~0x03) + 4) : size;
+    size_t wordSize = size / 4 + ((size % 4) ? 1 : 0);
 
-    if (!AssertOkForSize(paddedSize)) return;
+    if (!AssertOkForSize(wordSize)) return;
 
     std::memcpy(next, buffer, size);
 
-    next = static_cast<uint8*>(next) + paddedSize;
+    next += wordSize;
 }
 
 void Chunk::PutString(const string& str, size_t maxLength) {
@@ -87,12 +85,10 @@ uint8 Chunk::Get8() { return Get32() & 0xff; }
 uint16 Chunk::Get16() { return Get32() & 0xffff; }
 
 uint32 Chunk::Get32() {
-    if (!AssertOkForSize(4)) return 0;
+    if (!AssertOkForSize(1)) return 0;
 
-    uint32 value = *static_cast<uint32*>(next);
+    uint32 value = *(next++);
     SWAP_IF_REQUIRED(value);
-
-    next = static_cast<uint8*>(next) + 4;
 
     return value;
 }
@@ -102,13 +98,13 @@ uint64 Chunk::Get64() { return Get32() | (static_cast<uint64>(Get32()) << 32); }
 bool Chunk::GetBool() { return Get32(); }
 
 void Chunk::GetBuffer(void* buffer, size_t size) {
-    size_t paddedSize = (size & 0x03) ? ((size & ~0x03) + 4) : size;
+    size_t wordSize = size / 4 + ((size % 4) ? 1 : 0);
 
-    if (!AssertOkForSize(paddedSize)) return;
+    if (!AssertOkForSize(wordSize)) return;
 
     std::memcpy(buffer, next, size);
 
-    next = static_cast<uint8*>(next) + paddedSize;
+    next += wordSize;
 }
 
 double Chunk::GetDouble() {

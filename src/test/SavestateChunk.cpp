@@ -5,8 +5,8 @@
 namespace {
 
     TEST(SavestateChunk, DeSerializationU8) {
-        uint8 buffer[4];
-        Chunk chunk(4, buffer);
+        uint32 buffer[1];
+        Chunk chunk(1, buffer);
 
         chunk.Put8(66);
         ASSERT_FALSE(chunk.HasError());
@@ -18,8 +18,8 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationS8) {
-        uint8 buffer[4];
-        Chunk chunk(4, buffer);
+        uint32 buffer[1];
+        Chunk chunk(1, buffer);
 
         chunk.Put8(static_cast<int8>(-66));
         ASSERT_FALSE(chunk.HasError());
@@ -31,8 +31,8 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationU16) {
-        uint8 buffer[4];
-        Chunk chunk(4, buffer);
+        uint32 buffer[1];
+        Chunk chunk(1, buffer);
 
         chunk.Put16(0xfa4e);
         ASSERT_FALSE(chunk.HasError());
@@ -44,8 +44,8 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationS16) {
-        uint8 buffer[4];
-        Chunk chunk(4, buffer);
+        uint32 buffer[1];
+        Chunk chunk(1, buffer);
 
         chunk.Put16(static_cast<int16>(-0x0fae));
         ASSERT_FALSE(chunk.HasError());
@@ -57,8 +57,8 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationU32) {
-        uint8 buffer[4];
-        Chunk chunk(4, buffer);
+        uint32 buffer[1];
+        Chunk chunk(1, buffer);
 
         chunk.Put32(0x0fab1234);
         ASSERT_FALSE(chunk.HasError());
@@ -70,8 +70,8 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationS32) {
-        uint8 buffer[4];
-        Chunk chunk(4, buffer);
+        uint32 buffer[1];
+        Chunk chunk(1, buffer);
 
         chunk.Put32(static_cast<int32>(-0x0fab1234));
         ASSERT_FALSE(chunk.HasError());
@@ -83,8 +83,8 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationU64) {
-        uint8 buffer[8];
-        Chunk chunk(8, buffer);
+        uint32 buffer[2];
+        Chunk chunk(2, buffer);
 
         chunk.Put64(0x0fab12340fab1234);
         ASSERT_FALSE(chunk.HasError());
@@ -96,8 +96,8 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationS64) {
-        uint8 buffer[8];
-        Chunk chunk(8, buffer);
+        uint32 buffer[2];
+        Chunk chunk(2, buffer);
 
         chunk.Put64(static_cast<int64>(-0x0fab12340fab1234));
         ASSERT_FALSE(chunk.HasError());
@@ -109,8 +109,8 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationBool) {
-        uint8 buffer[4];
-        Chunk chunk(4, buffer);
+        uint32 buffer[2];
+        Chunk chunk(2, buffer);
 
         chunk.PutBool(false);
         ASSERT_FALSE(chunk.HasError());
@@ -122,8 +122,8 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationDouble) {
-        uint8 buffer[8];
-        Chunk chunk(8, buffer);
+        uint32 buffer[2];
+        Chunk chunk(2, buffer);
 
         chunk.PutDouble(1.25);
         ASSERT_FALSE(chunk.HasError());
@@ -135,8 +135,8 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationBuffer) {
-        uint8 buffer[12];
-        Chunk chunk(12, buffer);
+        uint32 buffer[3];
+        Chunk chunk(3, buffer);
         const char* fixture = "12345abcde";
 
         chunk.PutBuffer(const_cast<char*>(fixture), 11);
@@ -151,8 +151,8 @@ namespace {
     }
 
     TEST(SavestateChunk, ItDeSerializesMutlipleValuesCorrectly) {
-        uint8 buffer[16];
-        Chunk chunk(16, buffer);
+        uint32 buffer[4];
+        Chunk chunk(4, buffer);
 
         chunk.Put8(1);
         chunk.Put8(2);
@@ -170,8 +170,8 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationString) {
-        uint8 buffer[16];
-        Chunk chunk(16, buffer);
+        uint32 buffer[4];
+        Chunk chunk(4, buffer);
 
         chunk.PutString("Hulpe", 15);
         ASSERT_FALSE(chunk.HasError());
@@ -183,31 +183,31 @@ namespace {
     }
 
     TEST(SavestateChunk, ItPadsStringToMaxLengthAndAlignment) {
-        uint8 buffer[32];
+        uint32 buffer[8];
         memset(buffer, 0, 32);
-        Chunk chunk(32, buffer);
+        Chunk chunk(8, buffer);
 
         chunk.PutString("Hulpe", 15);
         chunk.Put32(0x12345678);
 
         chunk.Reset();
 
-        ASSERT_EQ(*reinterpret_cast<uint32*>(buffer + 16), 0x12345678u);
+        ASSERT_EQ(*(buffer + 4), 0x12345678u);
         ASSERT_EQ(chunk.GetString(15), "Hulpe");
         ASSERT_EQ(chunk.Get32(), 0x12345678u);
     }
 
     TEST(SavestateChunk, ItErrorsIfStringExceedsMaxLength) {
-        uint8 buffer[16];
-        Chunk chunk(16, buffer);
+        uint32 buffer[4];
+        Chunk chunk(4, buffer);
 
         chunk.PutString("Hulpe", 4);
         ASSERT_TRUE(chunk.HasError());
     }
 
     TEST(SavestateChunk, ItErrorsIfTheBufferOverflows) {
-        uint8 buffer[8];
-        Chunk chunk(8, buffer);
+        uint32 buffer[2];
+        Chunk chunk(2, buffer);
 
         chunk.Put8(1);
         chunk.Put8(2);
@@ -225,8 +225,8 @@ namespace {
         class AddsPaddingForBuffer : public testing::TestWithParam<Params> {};
 
         TEST_P(AddsPaddingForBuffer, AddsPaddingAndDeserializesCorrectly) {
-            uint8 buffer[20];
-            Chunk chunk(20, buffer);
+            uint32 buffer[5];
+            Chunk chunk(5, buffer);
             memset(buffer, 0, 20);
 
             Params params = GetParam();
@@ -236,7 +236,7 @@ namespace {
             chunk.Put32(0x12345678);
 
             ASSERT_FALSE(chunk.HasError());
-            ASSERT_EQ(*reinterpret_cast<uint32*>(buffer + params.paddingSize), 0x12345678u);
+            ASSERT_EQ(*(buffer + params.paddingSize), 0x12345678u);
 
             chunk.Reset();
 
@@ -248,10 +248,10 @@ namespace {
         }
 
         INSTANTIATE_TEST_SUITE_P(ParameterRun, AddsPaddingForBuffer,
-                                 testing::Values(Params{"1234567", 8}, Params{"12345678", 12},
-                                                 Params{"123456789", 12}, Params{"123456789a", 12},
-                                                 Params{"123456789ab", 12},
-                                                 Params{"123456789abc", 16}));
+                                 testing::Values(Params{"1234567", 2}, Params{"12345678", 3},
+                                                 Params{"123456789", 3}, Params{"123456789a", 3},
+                                                 Params{"123456789ab", 3},
+                                                 Params{"123456789abc", 4}));
     }  // namespace AddsPaddingForBuffer
 
 }  // namespace

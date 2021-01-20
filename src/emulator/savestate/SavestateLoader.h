@@ -23,7 +23,7 @@ class SavestateLoader {
     void NotifyError();
 
    private:
-    bool ParseSavestate(void* buffer, size_t size);
+    bool ParseSavestate(uint32* buffer, size_t size);
 
    private:
     bool error{false};
