@@ -150,6 +150,7 @@
             const DB_NAME = 'cloudpilot-sdl';
             const OBJECT_STORE_KVS = 'kvs';
             const OBJECT_STORE_MEMORY = 'memory';
+            const OBJECT_STORE_STATE = 'state';
 
             const KEY_ROM_NAME = 'romName';
             const KEY_ROM_IMAGE = 'romImage';
@@ -251,14 +252,20 @@
 
             async function setupDb() {
                 db = await new Promise((resolve, reject) => {
-                    const request = window.indexedDB.open(DB_NAME, 1);
+                    const request = window.indexedDB.open(DB_NAME, 2);
 
                     request.onerror = e => reject(new Error('failed to open DB'));
                     request.onsuccess = () => resolve(request.result);
 
-                    request.onupgradeneeded = () => {
-                        request.result.createObjectStore(OBJECT_STORE_KVS);
-                        request.result.createObjectStore(OBJECT_STORE_MEMORY);
+                    request.onupgradeneeded = (event) => {
+                        if (event.oldVersion < 1) {
+                            request.result.createObjectStore(OBJECT_STORE_KVS);
+                            request.result.createObjectStore(OBJECT_STORE_MEMORY);
+                        }
+
+                        if (event.oldVersion < 2) {
+                            request.result.createObjectStore(OBJECT_STORE_STATE);
+                        }
                     }
                 });
 
@@ -332,6 +339,9 @@
                     this.dirtyPagesPtr = module.cwrap('dirtyPagesPtr', 'number', []);
                     this.memoryPtr = module.cwrap('memoryPtr', 'number', []);
                     this.uiInitialized = module.cwrap('uiInitialized', 'number', []);
+                    this.saveStateNative = module.cwrap('saveState', 'number', []);
+                    this.getSavestateSize = module.cwrap('getSavestateSize', 'number', []);
+                    this.getSavestatePtr = module.cwrap('getSavestatePtr', 'number', []);
 
                     this.intervalHandle = null;
                     this.consecutiveErrorCount = 0;
@@ -384,7 +394,7 @@
                 async snapshot() {
                     if (this.transaction) return false;
 
-                    const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
+                    const transaction = this.db.transaction([OBJECT_STORE_MEMORY, OBJECT_STORE_STATE], 'readwrite');
                     this.transaction = transaction;
 
                     // Make sure that the transaction has started by performing a dummy read on
@@ -405,6 +415,7 @@
                     // before this transaction completes.
 
                     this.saveDirtyPages(transaction);
+                    this.saveState(transaction);
 
                     await new Promise((resolve, reject) => {
                         const watchdog = setTimeout(() => {
@@ -434,6 +445,21 @@
                     });
 
                     return true;
+                }
+
+                saveState(transaction) {
+                    const objectStore = transaction.objectStore(OBJECT_STORE_STATE);
+
+                    const savestate = this.getSavestate();
+                    if (!savestate) {
+                        objectStore.clear();
+                        return;
+                    }
+
+                    const copy = new Uint8Array(savestate.length);
+                    copy.set(savestate);
+
+                    objectStore.put(copy, 0);
                 }
 
                 saveDirtyPages(transaction, memory, dirtyPages) {
@@ -475,13 +501,21 @@
                     this.active = false;
                 }
 
-                loadMemoryImage() {
-                    return new Promise((resolve, reject) => {
-                        const image = new Int8Array(this.size);
+                async load() {
+                    const image = new Int8Array(this.size);
 
-                        // Use 'readwrite' in order to ensure that any write transaction from another tab
-                        // will complete before we start reading.
-                        const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
+                    // Use 'readwrite' in order to ensure that any write transaction from another tab
+                    // will complete before we start reading.
+                    const transaction = this.db.transaction([OBJECT_STORE_MEMORY, OBJECT_STORE_STATE], 'readwrite');
+
+                    const savestate = await new Promise((resolve, reject) => {
+                        const request = transaction.objectStore(OBJECT_STORE_STATE).get(0);
+
+                        request.onerror = () => reject(new Error('error reading from state store'));
+                        request.onsuccess = () => resolve(request.result);
+                    });
+
+                    const memoryImage = await new Promise((resolve, reject) => {
                         const request = transaction.objectStore(OBJECT_STORE_MEMORY).openCursor();
 
                         request.onsuccess = () => {
@@ -500,7 +534,9 @@
                         }
 
                         request.onerror = () => reject(new Error("failed to load memory image"));
-                    })
+                    });
+
+                    return [memoryImage, savestate];
                 }
 
                 reset() {
@@ -554,6 +590,13 @@
                     const memoryPtr = this.memoryPtr();
 
                     return this.module.HEAP8.subarray(memoryPtr, memoryPtr + this.size);
+                }
+
+                getSavestate() {
+                    if (!this.saveStateNative()) return null;
+
+                    const savestatePtr = this.getSavestatePtr();
+                    return this.module.HEAP8.subarray(savestatePtr, savestatePtr + this.getSavestateSize());
                 }
 
                 saveMemoryImage(buffer) {
@@ -613,7 +656,9 @@
                 const romName = await kvs.get(KEY_ROM_NAME);
                 const encodedRomName = new TextEncoder().encode(romName);
 
-                const rom = await kvs.get(KEY_ROM_IMAGE);
+                const romPtr = module.ccall('getRomPtr', 'number', []);
+                const romSize = module.ccall('getRomSize', 'number', []);
+                const rom = module.HEAP8.subarray(romPtr, romPtr + romSize);
 
                 const memoryPtr = module.ccall('memoryPtr', 'number', []);
                 const memorySize = module.ccall('memorySize', 'number', [], []);
@@ -758,9 +803,15 @@
                     const args = ['/palm.rom'];
 
                     if (memoryPersistence) {
-                        const memoryImage = await memoryPersistence.loadMemoryImage()
+                        const [memoryImage, savestate] = await memoryPersistence.load()
+
                         module.FS.writeFile('/memory.bin', memoryImage);
                         args.push('/memory.bin');
+
+                        if (savestate) {
+                            module.FS.writeFile('/savestate.bin', savestate);
+                            args.push('/savestate.bin');
+                        }
                     }
 
                     module.callMain(args);

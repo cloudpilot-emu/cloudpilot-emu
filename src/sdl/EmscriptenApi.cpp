@@ -7,6 +7,7 @@
 #include "EmSession.h"
 #include "EmSystemState.h"
 #include "Logging.h"
+#include "Savestate.h"
 
 ButtonEvent::Button buttonFromId(string id) {
     if (id == "app1") return ButtonEvent::Button::app1;
@@ -59,4 +60,26 @@ extern "C" void EMSCRIPTEN_KEEPALIVE reset(const char* _name) {
     if (name == "soft") gSession->Reset(EmSession::ResetType::soft);
     if (name == "noext") gSession->Reset(EmSession::ResetType::noext);
     if (name == "hard") gSession->Reset(EmSession::ResetType::hard);
+}
+
+extern "C" int EMSCRIPTEN_KEEPALIVE saveState() { return gSession->Save(); }
+
+extern "C" void* EMSCRIPTEN_KEEPALIVE getSavestatePtr() {
+    return gSession->GetSavestate().GetBuffer();
+}
+
+extern "C" size_t EMSCRIPTEN_KEEPALIVE getSavestateSize() {
+    return gSession->GetSavestate().GetSize();
+}
+
+extern "C" uint8* EMSCRIPTEN_KEEPALIVE getRomPtr() {
+    auto [size, image] = gSession->GetRomImage();
+
+    return image;
+}
+
+extern "C" size_t EMSCRIPTEN_KEEPALIVE getRomSize() {
+    auto [size, image] = gSession->GetRomImage();
+
+    return size;
 }

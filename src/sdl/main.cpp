@@ -80,8 +80,6 @@ void setupMemoryImage(void* image, size_t size) {
     }
 
     memcpy(gSession->GetMemoryPtr(), image, size);
-
-    cout << "loaded memory image" << endl << flush;
 }
 
 void initializeSession(string file) {
@@ -146,17 +144,37 @@ void loadMemoryImage(string file) {
     cout << "loaded memory image from '" << file << "'" << endl << flush;
 }
 
+void loadSavestate(string file) {
+    unique_ptr<uint8[]> buffer;
+    size_t len;
+
+    if (!readFile(file, buffer, len)) {
+        cerr << "failed to read savestate '" << file << "'" << endl << flush;
+        return;
+    }
+
+    if (gSession->Load(len, buffer.get())) {
+        cout << "loaded savestate from '" << file << "'" << endl << flush;
+    } else {
+        cerr << "failed to load savestate from '" << file << "'" << endl << flush;
+    }
+}
+
 int main(int argc, const char** argv) {
-    if (argc != 2 && argc != 3) {
-        cerr << "usage: cloudpalm <romimage.rom> [memory.img]" << endl;
+    if (argc != 2 && argc != 3 && argc != 4) {
+        cerr << "usage: cloudpalm <romimage.rom> [memory.img] [savestate.bin]" << endl;
 
         exit(1);
     }
 
     initializeSession(argv[1]);
 
-    if (argv[2]) {
+    if (argc > 2) {
         loadMemoryImage(argv[2]);
+    }
+
+    if (argc > 3) {
+        loadSavestate(argv[3]);
     }
 
     srand(time(nullptr));

@@ -176,6 +176,22 @@ void EmSession::Load(SavestateLoader& loader) {
     Memory::Load(loader);
 }
 
+bool EmSession::Save() { return savestate.Save(*this); }
+
+bool EmSession::Load(size_t size, uint8* buffer) {
+    SavestateLoader loader;
+
+    return loader.Load(buffer, size, *this);
+}
+
+Savestate& EmSession::GetSavestate() { return savestate; }
+
+pair<size_t, uint8*> EmSession::GetRomImage() {
+    EmAssert(romImage);
+
+    return pair(romSize, romImage.get());
+}
+
 template <typename T>
 void EmSession::DoSaveLoad(T& helper) {
     helper.Do(typename T::BoolPack() << bankResetScheduled << resetScheduled << holdingBootKeys)

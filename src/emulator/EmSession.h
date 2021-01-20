@@ -32,6 +32,11 @@ class EmSession {
 
     void Load(SavestateLoader& loader);
 
+    bool Save();
+    bool Load(size_t size, uint8* buffer);
+    Savestate& GetSavestate();
+    pair<size_t, uint8*> GetRomImage();
+
     bool IsNested() const;
     bool IsPowerOn();
 
