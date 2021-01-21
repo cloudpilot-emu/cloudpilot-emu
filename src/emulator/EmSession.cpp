@@ -178,7 +178,7 @@ bool EmSession::Load(size_t size, uint8* buffer) {
     SavestateLoader loader;
 
     if (!loader.Load(buffer, size, *this)) {
-        Reset(ResetType::hard);
+        Reset(ResetType::soft);
 
         return false;
     }

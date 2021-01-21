@@ -158,7 +158,8 @@
             const KEY_USERNAME = 'username';
 
             const DB_GRACE_TIME_MS = 3000;
-            const IMAGE_MAGIC = 0x20150103;
+            const IMAGE_MAGIC = 0x20150103 | 0;
+            const IMAGE_VERSION = 0x80000001 | 0;
             const UPDATE_MEMORY_IMAGE_INTERVAL = 0;
 
             const imageUploadButton = document.getElementById('image-upload-button');
@@ -600,7 +601,7 @@
                     return this.module.HEAP8.subarray(savestatePtr, savestatePtr + this.getSavestateSize());
                 }
 
-                saveMemoryImage(buffer) {
+                saveMemoryImageAndState(buffer, savestate) {
                     if (buffer.length !== this.size) throw new Error('size mismatch');
 
                     const isEmpty = buf => {
@@ -619,7 +620,7 @@
                         }
                     }
 
-                    const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
+                    const transaction = this.db.transaction([OBJECT_STORE_MEMORY, OBJECT_STORE_STATE], 'readwrite');
 
                     if (pageLockLost()) {
                         throw PAGE_LOCK_ERROR;
@@ -628,6 +629,12 @@
                     this.dirtyPages.fill(0)
                     transaction.objectStore(OBJECT_STORE_MEMORY).clear();
                     this.saveDirtyPages(transaction, buffer, dirtyPages);
+
+                    if (savestate.length > 0) {
+                        transaction.objectStore(OBJECT_STORE_STATE).put(savestate, 0);
+                    } else {
+                        transaction.objectStore(OBJECT_STORE_STATE).clear();
+                    }
 
                     return new Promise((resolve, reject) => {
                         transaction.oncomplete = () => resolve();
@@ -655,7 +662,8 @@
 
             async function saveImage(module) {
                 const romName = await kvs.get(KEY_ROM_NAME);
-                const encodedRomName = new TextEncoder().encode(romName);
+                const metadata = new TextEncoder().encode(JSON.stringify({ romName }));
+                const deviceId = new TextEncoder().encode('PalmV');
 
                 const romPtr = module.ccall('getRomPtr', 'number', []);
                 const romSize = module.ccall('getRomSize', 'number', []);
@@ -665,16 +673,31 @@
                 const memorySize = module.ccall('memorySize', 'number', [], []);
                 const memory = module.HEAP8.subarray(memoryPtr, memoryPtr + memorySize);
 
-                const serializedImage = new Uint8Array(16 + encodedRomName.length + memory.length + rom.length);
+                let savestate = new Uint8Array(0);
+                if (module.ccall('saveState', 'number', [])) {
+                    const savestatePtr = module.ccall('getSavestatePtr', 'number', []);
+                    const savestateSize = module.ccall('getSavestateSize', 'number', []);
+
+                    savestate = module.HEAP8.subarray(savestatePtr, savestatePtr + savestateSize);
+                }
+
+                const serializedImage = new Uint8Array(
+                    28 + deviceId.length + metadata.length + rom.length + memory.length + savestate.length
+                );
 
                 write32LE(IMAGE_MAGIC, serializedImage, 0);
-                write32LE(encodedRomName.length, serializedImage, 4);
-                write32LE(rom.length, serializedImage, 8);
-                write32LE(memory.length, serializedImage, 12);
+                write32LE(IMAGE_VERSION, serializedImage, 4);
+                write32LE(deviceId.length, serializedImage, 8);
+                write32LE(metadata.length, serializedImage, 12);
+                write32LE(rom.length, serializedImage, 16);
+                write32LE(memory.length, serializedImage, 20);
+                write32LE(savestate.length, serializedImage, 24);
 
-                serializedImage.set(encodedRomName, 16);
-                serializedImage.set(rom, 16 + encodedRomName.length);
-                serializedImage.set(memory, 16 + encodedRomName.length + rom.length);
+                serializedImage.set(deviceId, 28);
+                serializedImage.set(metadata, 28 + deviceId.length);
+                serializedImage.set(rom, 28 + deviceId.length + metadata.length);
+                serializedImage.set(memory, 28 + deviceId.length + metadata.length + rom.length);
+                serializedImage.set(savestate, 28 + deviceId.length + metadata.length + rom.length + memory.length);
 
                 const file = new Blob([serializedImage], { type: 'application/octet-stream' });
                 const url = URL.createObjectURL(file);
@@ -688,7 +711,34 @@
             function loadImage(buffer) {
                 if (buffer.length < 16) return undefined;
                 if (read32LE(buffer, 0) !== IMAGE_MAGIC) return undefined;
+                if ((read32LE(buffer, 4) & 0x80000000) === 0) return loadLegacyImage(buffer);
+                if (read32LE(buffer, 4) !== IMAGE_VERSION) return undefined;
+                if (buffer.length < 28) return undefined;
 
+                const deviceIdSize = read32LE(buffer, 8);
+                const metadataSize = read32LE(buffer, 12);
+                const romSize = read32LE(buffer, 16);
+                const memorySize = read32LE(buffer, 20);
+                const savestateSize = read32LE(buffer, 24);
+
+                if ((28 + deviceIdSize + metadataSize + romSize + memorySize + savestateSize) !== buffer.length)
+                    return undefined;
+
+                let romName = "[unknown]";
+                try {
+                    const metadata = JSON.parse(new TextDecoder().decode(buffer.subarray(28 + deviceIdSize, 28 + deviceIdSize + metadataSize)));
+                    romName = metadata.romName ? metadata.romName : romName;
+                } catch (e) { }
+
+                return {
+                    romName,
+                    rom: buffer.subarray(28 + deviceIdSize + metadataSize, 28 + deviceIdSize + metadataSize + romSize),
+                    memory: buffer.subarray(28 + deviceIdSize + metadataSize + romSize, 28 + deviceIdSize + metadataSize + romSize + memorySize),
+                    savestate: buffer.subarray(28 + deviceIdSize + metadataSize + romSize + memorySize)
+                }
+            }
+
+            function loadLegacyImage(buffer) {
                 const romNameSize = read32LE(buffer, 4);
                 const romSize = read32LE(buffer, 8);
                 const memorySize = read32LE(buffer, 12);
@@ -698,7 +748,8 @@
                 return {
                     romName: new TextDecoder().decode(buffer.subarray(16, 16 + romNameSize)),
                     rom: buffer.subarray(16 + romNameSize, 16 + romNameSize + romSize),
-                    memory: buffer.subarray(16 + romNameSize + romSize)
+                    memory: buffer.subarray(16 + romNameSize + romSize),
+                    savestate: new Uint8Array(0)
                 };
             }
 
@@ -833,7 +884,7 @@
                     const loaded = loadImage(buffer);
                     if (!loaded) return false;
 
-                    const { romName, rom, memory } = loaded;
+                    const { romName, rom, memory, savestate } = loaded;
 
                     await kvs.delete(KEY_ROM_IMAGE);
                     await kvs.delete(KEY_ROM_NAME);
@@ -846,7 +897,7 @@
 
                     memoryPersistence = new MemoryPersistence(db, memory.length, module);
 
-                    await memoryPersistence.saveMemoryImage(memory);
+                    await memoryPersistence.saveMemoryImageAndState(memory, savestate);
 
                     await kvs.put(KEY_ROM_NAME, romName);
                     await kvs.put(KEY_ROM_IMAGE, rom);
