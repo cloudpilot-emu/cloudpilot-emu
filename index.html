@@ -544,17 +544,18 @@
                         throw new Error("reset called on running MemoryPersistence instance");
                     }
 
-                    const transaction = this.db.transaction(OBJECT_STORE_MEMORY, 'readwrite');
+                    const transaction = this.db.transaction([OBJECT_STORE_MEMORY, OBJECT_STORE_STATE], 'readwrite');
 
                     if (pageLockLost()) {
                         throw PAGE_LOCK_ERROR;
                     }
 
                     transaction.objectStore(OBJECT_STORE_MEMORY).clear();
+                    transaction.objectStore(OBJECT_STORE_STATE).clear();
 
                     return new Promise((resolve, reject) => {
                         transaction.oncomplete = () => resolve();
-                        transaction.onerror = () => reject(new Error('failed to clear stored memory'));
+                        transaction.onerror = () => reject(new Error('failed to clear stored state'));
                     });
                 }
 
@@ -840,9 +841,11 @@
 
                     if (memoryPersistence) {
                         memoryPersistence.stop();
+                        await memoryPersistence.reset();
                     }
 
                     memoryPersistence = new MemoryPersistence(db, memory.length, module);
+
                     await memoryPersistence.saveMemoryImage(memory);
 
                     await kvs.put(KEY_ROM_NAME, romName);
