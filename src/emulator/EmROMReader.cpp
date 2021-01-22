@@ -733,3 +733,14 @@ int EmROMReader::IsBitmapColor(ChunkType& chunk, bool bootScreen) {
 
     return 0;
 }
+
+bool EmROMReader::Read() {
+    if (!AcquireCardHeader()) return false;
+
+    if (GetCardVersion() < 5) {
+        AcquireSplashDB();
+        return AcquireROMHeap() && AcquireDatabases() && AcquireFeatures();
+    }
+
+    return true;
+}

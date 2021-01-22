@@ -1,9 +1,9 @@
-import { Device } from './Device';
+import { DeviceId } from './DeviceId';
 
 export interface Session {
     id: string;
     name: string;
-    device: Device;
+    device: DeviceId;
     ram: number;
     osVersion?: string;
 }

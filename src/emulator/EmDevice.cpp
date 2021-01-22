@@ -106,36 +106,38 @@
 // clang-format true
 
 enum  // DeviceType
-{ kDeviceUnspecified = 0,
-  kDevicePilot,
-  kDevicePalmPilot,
-  kDevicePalmIII,
-  kDevicePalmIIIc,
-  kDevicePalmIIIe,
-  kDevicePalmIIIx,
-  kDevicePalmV,
-  kDevicePalmVx,
-  kDevicePalmVII,
-  kDevicePalmVIIEZ,
-  kDevicePalmVIIx,
-  kDevicePalmM100,
-  kDevicePalmM125,
-  kDevicePalmM130,
-  kDevicePalmM500,
-  kDevicePalmM505,
-  kDevicePalmM515,
-  kDevicePalmI705,
-  kDeviceARMRef,
-  kDeviceSymbol1500,
-  kDeviceSymbol1700,
-  kDeviceSymbol1740,
-  kDeviceTRGpro,
-  kDeviceHandEra330,
-  kDeviceVisor,
-  kDeviceVisorPrism,
-  kDeviceVisorPlatinum,
-  kDeviceVisorEdge,
-  kDeviceLast };
+{
+    kDeviceUnspecified = 0,
+    kDevicePilot,
+    kDevicePalmPilot,
+    kDevicePalmIII,
+    kDevicePalmIIIc,
+    kDevicePalmIIIe,
+    kDevicePalmIIIx,
+    kDevicePalmV,
+    kDevicePalmVx,
+    kDevicePalmVII,
+    kDevicePalmVIIEZ,
+    kDevicePalmVIIx,
+    kDevicePalmM100,
+    kDevicePalmM125,
+    kDevicePalmM130,
+    kDevicePalmM500,
+    kDevicePalmM505,
+    kDevicePalmM515,
+    kDevicePalmI705,
+    kDeviceARMRef,
+    kDeviceSymbol1500,
+    kDeviceSymbol1700,
+    kDeviceSymbol1740,
+    kDeviceTRGpro,
+    kDeviceHandEra330,
+    kDeviceVisor,
+    kDeviceVisorPrism,
+    kDeviceVisorPlatinum,
+    kDeviceVisorEdge,
+    kDeviceLast
+};
 
 struct DeviceInfo {
     int fDeviceID;
@@ -637,15 +639,6 @@ Bool EmDevice::EdgeHack(void) const { return fDeviceID == kDeviceVisorEdge; }
  ***********************************************************************/
 
 Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
-    /*
-      if (version < 5) {
-        reader.AcquireROMHeap();
-        reader.AcquireDatabases();
-        reader.AcquireFeatures();
-        reader.AcquireSplashDB();
-    }
-        */
-
     /* If the ROM is recent enough, use the embedded hardware ID information
        to determine whether it will work with this device */
 
@@ -1243,3 +1236,5 @@ int EmDevice::GetDeviceID(const char* s) const {
 
     return kDeviceUnspecified;
 }
+
+bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }

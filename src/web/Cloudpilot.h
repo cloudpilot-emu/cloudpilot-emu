@@ -13,7 +13,6 @@ class Cloudpilot {
     void* Malloc(long size);
     void Free(void* buffer);
 
-    bool GetRomInfo(void* buffer, long size, RomInfo& romInfo);
     bool InitializeSession(void* buffer, long size, const char* deviceType);
 
     long GetCyclesPerSecond();
@@ -22,6 +21,8 @@ class Cloudpilot {
     Frame& CopyFrame();
     bool IsScreenDirty();
     void MarkScreenClean();
+
+    long MinMemoryForDevice(string id);
 
    private:
     unique_ptr<EmDevice> device;

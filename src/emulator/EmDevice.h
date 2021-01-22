@@ -67,6 +67,8 @@ class EmDevice {
     string GetIDString(void) const;
     vector<string> GetIDStrings(void) const;
 
+    bool IsValid() const;
+
    public:
     static EmDeviceList GetDeviceList(void);
 

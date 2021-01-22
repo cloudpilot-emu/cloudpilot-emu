@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 
+#include "EmDevice.h"
 #include "EmHAL.h"
 #include "EmROMReader.h"
 #include "EmSession.h"
@@ -11,8 +12,7 @@ namespace {
     unique_ptr<EmROMReader> createReader(void* buffer, long size) {
         auto reader = make_unique<EmROMReader>(buffer, size);
 
-        if (!reader->AcquireCardHeader() || !reader->AcquireROMHeap() ||
-            !reader->AcquireDatabases() || !reader->AcquireFeatures()) {
+        if (!reader->Read()) {
             cerr << "unable to read ROM --- not a valid ROM image?" << endl;
 
             return nullptr;
@@ -25,23 +25,6 @@ namespace {
 void* Cloudpilot::Malloc(long size) { return ::malloc(size); }
 
 void Cloudpilot::Free(void* buffer) { ::free(buffer); }
-
-bool Cloudpilot::GetRomInfo(void* buffer, long size, RomInfo& romInfo) {
-    auto reader = createReader(buffer, size);
-
-    if (!reader) {
-        cerr << "unable to read ROM --- not a valid ROM image?" << endl << flush;
-
-        return false;
-    }
-
-    romInfo = {.cardVersion = (int)reader->GetCardVersion(),
-               .cardName = reader->GetCardName(),
-               .romVersion = (int)reader->GetRomVersion(),
-               .romVersionString = reader->GetRomVersionString()};
-
-    return true;
-}
 
 bool Cloudpilot::InitializeSession(void* buffer, long size, const char* deviceType) {
     if (device) {
@@ -100,3 +83,9 @@ Frame& Cloudpilot::CopyFrame() {
 bool Cloudpilot::IsScreenDirty() { return gSystemState.IsScreenDirty(); }
 
 void Cloudpilot::MarkScreenClean() { gSystemState.MarkScreenClean(); }
+
+long Cloudpilot::MinMemoryForDevice(string id) {
+    EmDevice device(id);
+
+    return device.IsValid() ? device.MinRAMSize() : -1;
+}

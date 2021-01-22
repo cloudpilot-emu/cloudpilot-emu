@@ -4,7 +4,6 @@ interface Cloudpilot {
     VoidPtr Malloc(long size);
     void Free(VoidPtr buffer);
 
-    boolean GetRomInfo(VoidPtr buffer, long size, [Ref] RomInfo romInfo);
     boolean InitializeSession(VoidPtr buffer, long size, [Const] DOMString deviceType);
 
     long GetCyclesPerSecond();
@@ -13,15 +12,21 @@ interface Cloudpilot {
     [Ref] Frame CopyFrame();
     boolean IsScreenDirty();
     void MarkScreenClean();
+
+    long MinMemoryForDevice([Const] DOMString deviceId);
 };
 
 interface RomInfo {
-    void RomInfo();
+    void RomInfo(VoidPtr buffer, long size);
+
+    boolean IsValid();
 
     long CardVersion();
     [Const] DOMString CardName();
     long RomVersion();
     [Const] DOMString RomVersionString();
+
+    boolean Supports([Const] DOMString deviceId);
 };
 
 interface Frame {

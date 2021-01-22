@@ -58,9 +58,10 @@ LDFLAGS_EMCC_WEB = -Wno-version-check \
 	-s EXPORT_NAME=createModule \
 	-s EXPORT_ES6=1 \
 	-s USE_ES6_IMPORT_META=0 \
-	-s ENVIRONMENT="web,worker"
+	-s ENVIRONMENT="web,worker" \
 	-s ALLOW_MEMORY_GROWTH=1 \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS=["ccall"]
+	-s EXTRA_EXPORTED_RUNTIME_METHODS=["ccall"] \
+	-s LLD_REPORT_UNDEFINED
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps
@@ -185,6 +186,7 @@ SOURCE_WEB = \
 	$(SOURCE_EMU) \
 	web/main.cpp \
 	web/Cloudpilot.cpp \
+	web/RomInfo.cpp \
 	$(WEBIDL_BINDING_CXX)
 
 OBJECTS_TEST = $(SOURCE_C:%.c=$(BUILDDIR_TEST)/%.o) $(SOURCE_TEST:%.cpp=$(BUILDDIR_TEST)/%.o)

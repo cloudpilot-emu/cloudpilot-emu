@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 
+import { DeviceId } from 'src/app/model/DeviceId';
 import { Session } from './../../../model/Session';
 
 @Component({
@@ -14,11 +15,24 @@ export class SessionItemComponent {
     session: Session;
 
     @Output()
-    onDelete = new EventEmitter<Session>();
+    delete = new EventEmitter<Session>();
 
     @Output()
-    onEdit = new EventEmitter<Session>();
+    edit = new EventEmitter<Session>();
 
     @Output()
-    onSave = new EventEmitter<Session>();
+    save = new EventEmitter<Session>();
+
+    get device(): string {
+        switch (this.session.device) {
+            case DeviceId.m515:
+                return 'Palm m515';
+
+            case DeviceId.palmV:
+                return 'Palm V';
+
+            default:
+                throw new Error('bad device ID');
+        }
+    }
 }

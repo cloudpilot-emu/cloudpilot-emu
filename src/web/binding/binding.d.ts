@@ -9,13 +9,14 @@ export interface RomInfo {
     CardName(): string;
     RomVersion(): number;
     RomVersionString(): string;
+    IsValid(): boolean;
+    Supports(deviceId: string): boolean;
 }
 
 export interface Cloudpilot {
     Malloc(size: number): VoidPtr;
     Free(buffer: VoidPtr): void;
 
-    GetRomInfo(buffer: VoidPtr, size: number, romInfo: RomInfo): boolean;
     InitializeSession(buffer: VoidPtr, size: number, deviceType: string): boolean;
 
     GetCyclesPerSecond(): number;
@@ -24,6 +25,8 @@ export interface Cloudpilot {
     CopyFrame(): Frame;
     IsScreenDirty(): boolean;
     MarkScreenClean();
+
+    MinMemoryForDevice(id: string);
 }
 
 export interface Frame {

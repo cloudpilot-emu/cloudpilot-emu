@@ -167,6 +167,8 @@ class EmROMReader {
     EmROMReader(ptr_type arenaPtr, size_t arenaSize);
     ~EmROMReader(void);
 
+    bool Read();
+
     bool AcquireCardHeader(void);
     UInt32 GuessCardAddress(void);
     void SetCardAddress(UInt32 address);

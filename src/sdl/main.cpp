@@ -106,8 +106,7 @@ void initializeSession(string file) {
 
     EmROMReader reader(fileBuffer.get(), fileSize);
 
-    if (!reader.AcquireCardHeader() || !reader.AcquireROMHeap() || !reader.AcquireDatabases() ||
-        !reader.AcquireFeatures()) {
+    if (!reader.Read()) {
         cerr << "unable to read ROM --- not a valid ROM image?" << endl;
 
         exit(1);

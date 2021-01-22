@@ -2,7 +2,7 @@
   <ion-toolbar>
     <ion-title>Sessions</ion-title>
     <ion-buttons slot="primary">
-      <ion-button (click)="sessionService.newSession()">
+      <ion-button (click)="loadFile()">
         <ion-icon name="add-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -18,8 +18,8 @@
   </ion-header>
 
   <ion-list>
-    <app-session-item *ngFor="let session of sessions" [session]="session" (onDelete)="deleteSession(session)"
-      (onEdit)="editSession(session)">
+    <app-session-item *ngFor="let session of sessions" [session]="session" (delete)="deleteSession(session)"
+      (edit)="editSession(session)">
     </app-session-item>
   </ion-list>
 

@@ -6,11 +6,14 @@
 
 import createModule, { Cloudpilot as CloudpilotNative, Module, VoidPtr } from '../../../../src';
 
+import { DeviceId } from '../model/DeviceId';
+
 export interface RomInfo {
     cardVersion: number;
     cardName: string;
     romVersion: number;
     romVersionString: string;
+    supportedDevices: Array<DeviceId>;
 }
 
 export interface Frame {
@@ -40,15 +43,16 @@ export class Cloudpilot {
     getRomInfo(rom: Uint8Array): RomInfo | undefined {
         const buffer = this.copyIn(rom);
 
-        const romInfoNative = new this.module.RomInfo();
+        const romInfoNative = new this.module.RomInfo(buffer, rom.length);
         let romInfo: RomInfo | undefined;
 
-        if (this.cloudpilot.GetRomInfo(buffer, rom.length, romInfoNative)) {
+        if (romInfoNative.IsValid()) {
             romInfo = {
                 cardVersion: romInfoNative.CardVersion(),
                 cardName: romInfoNative.CardName(),
                 romVersion: romInfoNative.RomVersion(),
                 romVersionString: romInfoNative.RomVersionString(),
+                supportedDevices: [DeviceId.palmV].filter(romInfoNative.Supports.bind(romInfoNative)),
             };
         }
 
@@ -103,6 +107,10 @@ export class Cloudpilot {
 
     markScreenClean(): void {
         this.cloudpilot.MarkScreenClean();
+    }
+
+    minRamForDevice(id: DeviceId): number {
+        return this.cloudpilot.MinMemoryForDevice(id) * 1024;
     }
 
     private copyIn(data: Uint8Array): VoidPtr {

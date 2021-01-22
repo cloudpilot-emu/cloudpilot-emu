@@ -9,7 +9,7 @@ export interface Module extends EmscriptenModule {
     getPointer(ptr: VoidPtr): number;
 
     Cloudpilot: { new (): Cloudpilot };
-    RomInfo: { new (): RomInfo };
+    RomInfo: { new (buffer: VoidPtr, size: number): RomInfo };
 
     destroy(cloudpilot: Cloudpilot);
     destroy(romInfo: RomInfo);
