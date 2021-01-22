@@ -52,6 +52,10 @@ extern "C" void EMSCRIPTEN_KEEPALIVE setUserName(const char* username) {
     gSession->SetHotsyncUserName(username);
 }
 
+extern "C" const char* EMSCRIPTEN_KEEPALIVE getUserName() {
+    return gSystemState.GetHotsyncUserName().c_str();
+}
+
 extern "C" int EMSCRIPTEN_KEEPALIVE uiInitialized() { return gSystemState.IsUIInitialized(); }
 
 extern "C" void EMSCRIPTEN_KEEPALIVE reset(const char* _name) {

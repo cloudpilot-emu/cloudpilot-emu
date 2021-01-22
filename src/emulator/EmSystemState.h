@@ -27,7 +27,7 @@ class EmSystemState {
     bool IsUIInitialized() const;
 
     void SetHotsyncUserName(string hotsyncUserName);
-    string GetHotsyncUserName() const;
+    const string& GetHotsyncUserName() const;
 
     bool IsScreenDirty() const;
     inline void MarkScreenDirty() { screenDirty = true; }

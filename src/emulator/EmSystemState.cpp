@@ -74,7 +74,7 @@ void EmSystemState::SetHotsyncUserName(string hotsyncUserName) {
 
     this->hotsyncUserName = hotsyncUserName;
 }
-string EmSystemState::GetHotsyncUserName() const { return hotsyncUserName; };
+const string& EmSystemState::GetHotsyncUserName() const { return hotsyncUserName; };
 
 bool EmSystemState::IsScreenDirty() const { return screenDirty; }
 

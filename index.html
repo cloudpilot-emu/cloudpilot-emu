@@ -116,7 +116,7 @@
     <div id="control-username">
         <label>
             Username:
-            <input type="text" id="input-username"></label>
+            <input type="text" id="input-username" maxlength="30"></label>
         </label>
     </div>
     <div id="control-reset">
@@ -155,7 +155,6 @@
             const KEY_ROM_NAME = 'romName';
             const KEY_ROM_IMAGE = 'romImage';
             const KEY_ROM_MEMORY_SIZE = 'memorySize';
-            const KEY_USERNAME = 'username';
 
             const DB_GRACE_TIME_MS = 3000;
             const IMAGE_MAGIC = 0x20150103 | 0;
@@ -797,7 +796,6 @@
                     setUsernameTimeoutHandle = setTimeout(() => {
                         setUsernameTimeoutHandle = null;
 
-                        kvs.put(KEY_USERNAME, e.target.value);
                         nativeSetUserName(e.target.value);
                     })
                 })
@@ -837,6 +835,8 @@
                     memoryPersistence = new MemoryPersistence(db, memorySize, this);
                 }
                 memoryPersistence.start();
+
+                usernameInput.value = module.ccall('getUserName', 'string', []);
 
                 await kvs.put(KEY_ROM_MEMORY_SIZE, memorySize);
             }
@@ -909,7 +909,6 @@
                     await kvs.put(KEY_ROM_NAME, name);
                     await kvs.put(KEY_ROM_IMAGE, buffer);
                     await kvs.delete(KEY_ROM_MEMORY_SIZE);
-                    await kvs.delete(KEY_USERNAME);
 
                     if (memoryPersistence) {
                         memoryPersistence.stop();
@@ -969,8 +968,6 @@
             // ####################################################################################
 
             await setupDb();
-
-            usernameInput.value = (await kvs.get(KEY_USERNAME)) || '';
 
             const module = await createModule({
                 noInitialRun: true,
