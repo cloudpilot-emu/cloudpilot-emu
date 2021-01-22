@@ -1,6 +1,6 @@
 import 'emscripten';
 
-import { CloudpilotNative, RomInfoNative, VoidPtr } from './web/binding/binding';
+import { Cloudpilot, RomInfo, VoidPtr } from './web/binding/binding';
 
 export * from './web/binding/binding';
 
@@ -8,11 +8,11 @@ export interface Module extends EmscriptenModule {
     ccall: typeof ccall;
     getPointer(ptr: VoidPtr): number;
 
-    Cloudpilot: { new (): CloudpilotNative };
-    RomInfo: { new (): RomInfoNative };
+    Cloudpilot: { new (): Cloudpilot };
+    RomInfo: { new (): RomInfo };
 
-    destroy(cloudpilot: CloudpilotNative);
-    destroy(romInfo: RomInfoNative);
+    destroy(cloudpilot: Cloudpilot);
+    destroy(romInfo: RomInfo);
 }
 
 declare const createModule: EmscriptenModuleFactory<Module>;

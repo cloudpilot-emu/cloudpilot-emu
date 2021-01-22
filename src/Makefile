@@ -57,6 +57,8 @@ LDFLAGS_EMCC_WEB = -Wno-version-check \
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME=createModule \
 	-s EXPORT_ES6=1 \
+	-s USE_ES6_IMPORT_META=0 \
+	-s ENVIRONMENT="web,worker"
 	-s ALLOW_MEMORY_GROWTH=1 \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["ccall"]
 

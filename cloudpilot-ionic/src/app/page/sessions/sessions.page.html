@@ -1,0 +1,26 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Sessions</ion-title>
+    <ion-buttons slot="primary">
+      <ion-button (click)="sessionService.newSession()">
+        <ion-icon name="add-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Sessions</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <ion-list>
+    <app-session-item *ngFor="let session of (sessionService.getSessions$() | async)" [session]="session"
+      (onDelete)="requestDeleteSession(session)">
+    </app-session-item>
+  </ion-list>
+
+</ion-content>
