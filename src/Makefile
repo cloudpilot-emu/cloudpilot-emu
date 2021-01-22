@@ -158,11 +158,11 @@ SOURCE_EMU = \
 	emulator/EmFileImport.cpp \
 	emulator/ROMStubs.cpp \
 	emulator/Logging.cpp \
-	emulator/stubs.cpp \
 	emulator/SessionImage.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \
+	emulator/assert_native.cpp \
 	test/SavestateChunk.cpp \
 	test/SavestateChunkProbe.cpp \
 	test/SavestateProbe.cpp \
@@ -179,11 +179,12 @@ SOURCE_SDL = \
 	sdl/Silkscreen.cpp \
 	sdl/EventHandler.cpp
 
-SOURCE_SDL_NATIVE = $(SOURCE_SDL) sdl/Cli.cpp
-SOURCE_SDL_EMCC = $(SOURCE_SDL) sdl/EmscriptenApi.cpp
+SOURCE_SDL_NATIVE = $(SOURCE_SDL) sdl/Cli.cpp emulator/assert_native.cpp
+SOURCE_SDL_EMCC = $(SOURCE_SDL) sdl/EmscriptenApi.cpp emulator/assert_emscripten.cpp
 
 SOURCE_WEB = \
 	$(SOURCE_EMU) \
+	emulator/assert_native.cpp \
 	web/main.cpp \
 	web/Cloudpilot.cpp \
 	web/RomInfo.cpp \
