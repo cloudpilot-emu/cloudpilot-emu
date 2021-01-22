@@ -6,13 +6,15 @@ const IMAGE_MAGIC = 0x20150103 | 0;
 const IMAGE_VERSION = 0x00000001 | 0;
 const IMAGE_VERSION_MASK = 0x80000000 | 0;
 
+export interface SessionMetadata {}
+
 export interface FileDescriptor {
     name: string;
     content: Uint8Array;
 }
 
 export interface SessionImage {
-    romName: string;
+    metadata?: SessionMetadata;
     deviceId: string;
     rom: Uint8Array;
     memory: Uint8Array;
@@ -78,18 +80,17 @@ export class FileService {
 
         if (28 + deviceIdSize + metadataSize + romSize + memorySize + savestateSize !== buffer.length) return undefined;
 
-        let romName = '[unknown]';
+        let metadata: SessionMetadata;
         try {
-            const metadata = JSON.parse(
+            metadata = JSON.parse(
                 new TextDecoder().decode(buffer.subarray(28 + deviceIdSize, 28 + deviceIdSize + metadataSize))
             );
-            romName = metadata.romName ? metadata.romName : romName;
         } catch (e) {
             console.warn('metadata is not valid JSON');
         }
 
         return {
-            romName,
+            metadata,
             deviceId: new TextDecoder().decode(buffer.subarray(28, 28 + deviceIdSize)),
             rom: buffer.subarray(28 + deviceIdSize + metadataSize, 28 + deviceIdSize + metadataSize + romSize),
             memory: buffer.subarray(
@@ -108,7 +109,6 @@ export class FileService {
         if (romNameSize + romSize + memorySize + 16 !== buffer.length) return undefined;
 
         return {
-            romName: new TextDecoder().decode(buffer.subarray(16, 16 + romNameSize)),
             deviceId: 'PalmV',
             rom: buffer.subarray(16 + romNameSize, 16 + romNameSize + romSize),
             memory: buffer.subarray(16 + romNameSize + romSize),
