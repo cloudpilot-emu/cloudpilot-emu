@@ -839,8 +839,6 @@
                 memoryPersistence.start();
 
                 await kvs.put(KEY_ROM_MEMORY_SIZE, memorySize);
-
-                nativeSetUserName((await kvs.get(KEY_USERNAME)) || '');
             }
 
             // ####################################################################################
@@ -911,6 +909,7 @@
                     await kvs.put(KEY_ROM_NAME, name);
                     await kvs.put(KEY_ROM_IMAGE, buffer);
                     await kvs.delete(KEY_ROM_MEMORY_SIZE);
+                    await kvs.delete(KEY_USERNAME);
 
                     if (memoryPersistence) {
                         memoryPersistence.stop();

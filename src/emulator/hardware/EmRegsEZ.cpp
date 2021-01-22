@@ -474,9 +474,9 @@ void EmRegsEZ::Reset(Bool hardwareReset) {
     EmRegs::Reset(hardwareReset);
     UnmarkScreen();
 
-    lastProcessedSystemCycles = gSession->GetSystemCycles();
-
     if (hardwareReset) {
+        lastProcessedSystemCycles = gSession->GetSystemCycles();
+
         f68EZ328Regs = kInitial68EZ328RegisterValues;
 
         // Byteswap all the words in the DragonballEZ registers (if necessary).

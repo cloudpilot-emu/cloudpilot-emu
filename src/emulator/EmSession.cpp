@@ -220,6 +220,8 @@ void EmSession::Reset(ResetType resetType) {
     EmAssert(cpu);
     EmAssert(nestLevel == 0);
 
+    if (resetType != ResetType::sys) systemCycles = 0;
+
     Memory::Reset(resetType != ResetType::sys);
     cpu->Reset(resetType != ResetType::sys);
     EmPalmOS::Reset();
@@ -242,7 +244,6 @@ void EmSession::Reset(ResetType resetType) {
     if (resetType != ResetType::sys) {
         buttonEventQueue.Clear();
         lastButtonEventReadAt = 0;
-        systemCycles = 0;
 
         switch (resetType) {
             case ResetType::hard:
