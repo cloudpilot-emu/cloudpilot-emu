@@ -14,5 +14,11 @@ export class SessionItemComponent {
     session: Session;
 
     @Output()
-    onDelete = new EventEmitter<void>();
+    onDelete = new EventEmitter<Session>();
+
+    @Output()
+    onEdit = new EventEmitter<Session>();
+
+    @Output()
+    onSave = new EventEmitter<Session>();
 }

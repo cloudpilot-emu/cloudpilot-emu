@@ -6,5 +6,4 @@ export interface Session {
     device: Device;
     ram: number;
     osVersion?: string;
-    description?: string;
 }
