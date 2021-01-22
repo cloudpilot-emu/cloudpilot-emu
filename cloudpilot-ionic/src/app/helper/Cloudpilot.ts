@@ -1,3 +1,9 @@
+// I am not sure why the ambient import is required here --- tsc does fine without it, but
+// the webpack build is unable to resolve emscripten with a simple ES6 style import.
+//
+// tslint:disable-next-line: no-reference
+/// <reference path="../../../node_modules/@types/emscripten/index.d.ts"/>
+
 import createModule, { Cloudpilot as CloudpilotNative, Module, VoidPtr } from '../../../../src';
 
 export interface RomInfo {

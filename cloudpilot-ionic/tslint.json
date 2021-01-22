@@ -9,7 +9,7 @@
     },
     "array-type": false,
     "arrow-return-shorthand": true,
-    "curly": true,
+    "curly": [true, "ignore-same-line"],
     "deprecation": {
       "severity": "warning"
     },

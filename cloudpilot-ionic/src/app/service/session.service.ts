@@ -1,7 +1,6 @@
-import { BehaviorSubject, Observable, of } from 'rxjs';
-
-import { Cloudpilot } from './Cloudpilot';
+import { Cloudpilot } from '../helper/Cloudpilot';
 import { Device } from '../model/Device';
+import { FileService } from './file.service';
 import { Injectable } from '@angular/core';
 import { Session } from '../model/Session';
 
@@ -39,13 +38,12 @@ const SESSIONS: Array<Session> = [
     providedIn: 'root',
 })
 export class SessionService {
+    constructor(private fileService: FileService) {}
+
     newSession(): void {
-        this.input = document.createElement('input');
-
-        this.input.type = 'file';
-        this.input.accept = '.bin, .rom, .img';
-
-        this.input.click();
+        this.fileService.openFile('.bin, .img, .rom', (f) =>
+            console.log(this.fileService.parseSessionImage(f.content))
+        );
     }
 
     getSessions(): Array<Session> {
@@ -60,7 +58,6 @@ export class SessionService {
         this.sessions = this.sessions.map((s) => (s.id == session.id ? session : s));
     }
 
-    private input: HTMLInputElement = null;
     private cloudpilotInstance: Promise<Cloudpilot> = Cloudpilot.create();
 
     private sessions = SESSIONS;
