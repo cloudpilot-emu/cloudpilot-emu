@@ -14,8 +14,7 @@ https://dirtyhairy.github.io/cloudpilot/
 The interface is currently very basic. At some point there will be a more fancy
 UI that mimics a native applicaton.
 
-![Emulator Screenshot]
-(/doc/screenshot.jpeg)
+![Emulator Screenshot](/doc/screenshot.jpeg)
 
 ## Loading a ROM and starting the emulator
 
