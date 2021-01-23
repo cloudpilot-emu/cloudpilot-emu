@@ -48,8 +48,8 @@ i.e. when switching tabs.
 If the counter turns red and stops a fatal DB error has occurred, and no state
 is being saved anymore. You should reload the page at this point. If you have
 unsaved data in the emulator you can save a session image (see below) before
-reloading. Note that such a condition shouldn't happen and usually signfies a
-browser bug, but I have seen it ocassionally on iOS
+reloading. Note that this shouldn't happen and signifies a browser bug, but I
+have seen it ocassionally on iOS
 
 ## Saving a session image
 
