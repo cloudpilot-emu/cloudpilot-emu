@@ -32,10 +32,8 @@ class MainLoop {
 
     Frame frame{1024 * 128};
 
-    // Give the real clock a head start and force the emulator to fast forward 10 milliseconds at
-    // start while the display has not initialized yet.
-    const long millisOffset{Platform::GetMilliseconds() - 10};
-    long clockEmu{0};
+    const long millisOffset{Platform::GetMilliseconds()};
+    double clockEmu{0};
 
     EventHandler eventHandler;
 };

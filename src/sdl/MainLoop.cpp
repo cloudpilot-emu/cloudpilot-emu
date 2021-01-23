@@ -44,15 +44,18 @@ void MainLoop::Cycle() {
     const long millis = Platform::GetMilliseconds();
     const uint32 clocksPerSecond = gSession->GetClocksPerSecond();
 
-    if (millis - millisOffset - clockEmu > 500) clockEmu = millis - millisOffset - 10;
+    if (millis - millisOffset - static_cast<long>(clockEmu) > 500)
+        clockEmu = millis - millisOffset - 10;
 
-    const long cycles = (millis - millisOffset - clockEmu) * clocksPerSecond / 1000;
+    const long cycles = static_cast<long>((static_cast<double>(millis - millisOffset) - clockEmu) *
+                                          clocksPerSecond / 1000.);
 
     if (cycles > 0) {
         long cyclesPassed = 0;
 
         while (cyclesPassed < cycles) cyclesPassed += gSession->RunEmulation(cycles);
-        clockEmu += cyclesPassed / (clocksPerSecond / 1000);
+        clockEmu +=
+            static_cast<double>(cyclesPassed) / (static_cast<double>(clocksPerSecond) / 1000.);
     }
 
     if (gSystemState.IsScreenDirty()) {
