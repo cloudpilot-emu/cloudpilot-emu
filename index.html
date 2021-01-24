@@ -285,7 +285,8 @@
                 }
 
                 get(key) {
-                    const transaction = this.db.transaction(OBJECT_STORE_KVS, 'readonly');
+                    // Using a RW transaction here grants us an exlusive lock
+                    const transaction = this.db.transaction(OBJECT_STORE_KVS, 'readwrite');
                     const request = transaction.objectStore(OBJECT_STORE_KVS).get(key);
 
                     return new Promise((resolve, reject) => {
