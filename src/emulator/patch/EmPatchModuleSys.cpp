@@ -8,6 +8,7 @@
 #include "Logging.h"
 #include "Marshal.h"
 #include "Miscellaneous.h"
+#include "PenEvent.h"
 #include "Platform.h"
 #include "ROMStubs.h"
 
@@ -126,6 +127,26 @@ namespace {
         PRINTF("syscall: UIInitialize");
     }
 
+    void TailpatchEvtSysEventAvail(void) {
+        // Boolean EvtSysEventAvail(Boolean ignorePenUps)
+
+        CALLED_SETUP("Boolean", "Boolean ignorePenUps");
+
+        CALLED_GET_PARAM_VAL(Boolean, ignorePenUps);
+        GET_RESULT_VAL(Boolean);
+
+        if (result == 0) {
+            EmAssert(gSession);
+            if (gSession->HasPenEvent()) {
+                PenEvent event = gSession->PeekPenEvent();
+
+                if (event.isPenDown() || !ignorePenUps) {
+                    PUT_RESULT_VAL(Boolean, true);
+                }
+            }
+        }
+    }
+
     ProtoPatchTableEntry protoPatchTable[] = {
         {sysTrapDmInit, HeadpatchDmInit, NULL},
         {sysTrapSysEvGroupWait, HeadpatchSysEvGroupWait, NULL},
@@ -133,6 +154,7 @@ namespace {
         {sysTrapHwrMemReadable, NULL, TailpatchHwrMemReadable},
         {sysTrapTimInit, NULL, TailpatchTimInit},
         {sysTrapUIInitialize, NULL, TailpatchUIInitialize},
+        {sysTrapEvtSysEventAvail, NULL, TailpatchEvtSysEventAvail},
         {0, NULL, NULL}};
 }  // namespace
 

@@ -67,6 +67,7 @@ class EmSession {
     void QueuePenEvent(PenEvent evt);
     bool HasPenEvent();
     PenEvent NextPenEvent();
+    PenEvent PeekPenEvent();
 
     void QueueKeyboardEvent(KeyboardEvent evt);
     bool HasKeyboardEvent();

@@ -399,6 +399,8 @@ bool EmSession::HasPenEvent() { return penEventQueue.GetUsed() > 0; }
 
 PenEvent EmSession::NextPenEvent() { return HasPenEvent() ? penEventQueue.Get() : PenEvent(); }
 
+PenEvent EmSession::PeekPenEvent() { return HasPenEvent() ? penEventQueue.Peek() : PenEvent(); }
+
 void EmSession::QueueKeyboardEvent(KeyboardEvent evt) {
     if (!IsPowerOn()) return;
 
