@@ -294,8 +294,10 @@
                     })
                 }
 
-                put(key, value) {
+                async put(key, value) {
                     const transaction = this.db.transaction(OBJECT_STORE_KVS, 'readwrite');
+                    await this.waitForTransactionLock(transaction);
+
                     const request = transaction.objectStore(OBJECT_STORE_KVS).put(value, key);
 
                     return new Promise((resolve, reject) => {
@@ -304,14 +306,33 @@
                     });
                 }
 
-                delete(key) {
+                async delete(key) {
                     const transaction = this.db.transaction(OBJECT_STORE_KVS, 'readwrite');
+                    await this.waitForTransactionLock(transaction);
+
                     const request = transaction.objectStore(OBJECT_STORE_KVS).delete(key);
 
                     return new Promise((resolve, reject) => {
                         transaction.onerror = () => reject(new Error('error deleting from KVS'));
                         transaction.oncomplete = () => resolve();
                     });
+                }
+
+                async waitForTransactionLock(transaction) {
+                    // Make sure that the transaction has started by performing a dummy read on
+                    // the store.
+
+                    await new Promise((resolve, reject) => {
+                        const lock = transaction.objectStore(OBJECT_STORE_KVS).get(-1);
+
+                        lock.onsuccess = resolve;
+                        lock.onerror = evt => reject(errorFromEvent(evt));
+                    });
+
+                    // On the running transaction, check whether another tab has claimed the storage.
+                    if (pageLockLost()) {
+                        throw PAGE_LOCK_ERROR;
+                    }
                 }
             }
 
@@ -391,14 +412,10 @@
                     }
                 }
 
-                async snapshot() {
-                    if (this.transaction) return false;
-
-                    const transaction = this.db.transaction([OBJECT_STORE_MEMORY, OBJECT_STORE_STATE], 'readwrite');
-                    this.transaction = transaction;
-
+                async waitForTransactionLock(transaction) {
                     // Make sure that the transaction has started by performing a dummy read on
                     // the store.
+
                     await new Promise((resolve, reject) => {
                         const lock = transaction.objectStore(OBJECT_STORE_MEMORY).get(-1);
 
@@ -410,6 +427,15 @@
                     if (pageLockLost()) {
                         throw PAGE_LOCK_ERROR;
                     }
+                }
+
+                async snapshot() {
+                    if (this.transaction) return false;
+
+                    const transaction = this.db.transaction([OBJECT_STORE_MEMORY, OBJECT_STORE_STATE], 'readwrite');
+                    this.transaction = transaction;
+
+                    await this.waitForTransactionLock(transaction);
 
                     // From now on, we can be sure that no other tab has interacted with the storage
                     // before this transaction completes.
@@ -539,16 +565,14 @@
                     return [memoryImage, savestate];
                 }
 
-                reset() {
+                async reset() {
                     if (this.intervalHandle) {
                         throw new Error("reset called on running MemoryPersistence instance");
                     }
 
                     const transaction = this.db.transaction([OBJECT_STORE_MEMORY, OBJECT_STORE_STATE], 'readwrite');
 
-                    if (pageLockLost()) {
-                        throw PAGE_LOCK_ERROR;
-                    }
+                    await this.waitForTransactionLock(transaction);
 
                     transaction.objectStore(OBJECT_STORE_MEMORY).clear();
                     transaction.objectStore(OBJECT_STORE_STATE).clear();
@@ -600,7 +624,7 @@
                     return this.module.HEAP8.subarray(savestatePtr, savestatePtr + this.getSavestateSize());
                 }
 
-                saveMemoryImageAndState(buffer, savestate) {
+                async saveMemoryImageAndState(buffer, savestate) {
                     if (buffer.length !== this.size) throw new Error('size mismatch');
 
                     const isEmpty = buf => {
@@ -621,9 +645,7 @@
 
                     const transaction = this.db.transaction([OBJECT_STORE_MEMORY, OBJECT_STORE_STATE], 'readwrite');
 
-                    if (pageLockLost()) {
-                        throw PAGE_LOCK_ERROR;
-                    }
+                    await this.waitForTransactionLock(transaction);
 
                     this.dirtyPages.fill(0)
                     transaction.objectStore(OBJECT_STORE_MEMORY).clear();
