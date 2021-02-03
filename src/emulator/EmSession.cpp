@@ -175,6 +175,8 @@ void EmSession::Load(SavestateLoader& loader) {
 bool EmSession::Save() { return savestate.Save(*this); }
 
 bool EmSession::Load(size_t size, uint8* buffer) {
+    cout << "load" << endl << flush;
+
     SavestateLoader loader;
 
     if (!loader.Load(buffer, size, *this)) {
@@ -492,8 +494,12 @@ void EmSession::SetHotsyncUserName(string hotsyncUserName) {
     }
 }
 
-void EmSession::SetClockDiv(uint32 clockDiv) { this->clockDiv = clockDiv; }
+void EmSession::SetClockDiv(uint32 clockDiv) {
+    this->clockDiv = clockDiv;
+    cout << clockDiv << endl << flush;
+}
 
 void EmSession::RecalculateClocksPerSecond() {
     clocksPerSecond = EmHAL::GetSystemClockFrequency() / clockDiv;
+    cout << clocksPerSecond << " " << EmHAL::GetSystemClockFrequency() << endl << flush;
 }
