@@ -13,26 +13,27 @@
 
 #include "EmRegsVZ.h"
 
+#include <algorithm>
+
 #include "Byteswapping.h"  // Canonical
 #include "EmCommon.h"
 #include "EmDevice.h"
 #include "EmHAL.h"     // EmHAL
 #include "EmMemory.h"  // gMemAccessFlags, EmMem_memcpy
-// #include "EmPixMap.h"  // SetSize, SetRowBytes, etc.
 #include "EmRegsVZPrv.h"
 #include "EmSPISlave.h"  // DoExchange
-// #include "EmScreen.h"       // EmScreenUpdateInfo
-#include "EmSession.h"  // gSession
-// #include "Hordes.h"         // Hordes::IsOn
+#include "EmSession.h"   // gSession
+#include "EmSystemState.h"
 #include "Logging.h"        // LogAppendMsg
 #include "Miscellaneous.h"  // GetHostTime
-// #include "PreferenceMgr.h"  // Preference
-// #include "SessionFile.h"    // WriteHwrDBallVZType, etc.
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 #include "UAE.h"  // regs, SPCFLAG_INT
 
 // clang-format off
 #include "PalmPack.h"
-// clang-formatt on
+// clang-format on
 
 #define NON_PORTABLE
 #include "HwrMiscFlags.h"  // hwrMiscFlagID1
@@ -55,16 +56,11 @@ static const uint16 ENMask = 0x0001;   // Mask to get the enable bit from csASel
 
 static const int UPSIZShift = 11;
 static const int SIZShift = 1;
-static const int ENShift = 0;
 
-static const uint16 BUPS2Mask = 0x0001;
-static const uint16 CUPS2Mask = 0x0004;
 static const uint16 DUPS2Mask = 0x0010;
 static const uint16 DSIZ3Mask = 0x0040;
 static const uint16 EUPENMask = 0x4000;
 
-static const int BUPS2Shift = 0;
-static const int CUPS2Shift = 2;
 static const int DUPS2Shift = 4;
 
 static const int kBaseAddressShift = 13;  // Shift to get base address from CSGBx register value
@@ -75,6 +71,24 @@ static const int kBaseAddressShift = 13;  // Shift to get base address from CSGB
 #else
     #define PRINTF(...) ;
 #endif
+
+namespace {
+    double TimerTicksPerSecond(uint16 tmrControl, uint16 tmrPrescaler, int32 systemClockFrequency) {
+        uint8 clksource = (tmrControl >> 1) & 0x7;
+        double prescaler = ((tmrPrescaler & 0xff) + 1);
+
+        switch (clksource) {
+            case 0x1:
+                return (double)systemClockFrequency / prescaler;
+
+            case 0x2:
+                return (double)systemClockFrequency / prescaler / 16.;
+
+            default:
+                return (clksource & 0x4) ? 32000. / prescaler : 0;
+        }
+    }
+}  // namespace
 
 // Values used to initialize the DragonBallVZ registers.
 
@@ -373,46 +387,46 @@ static const HwrM68VZ328Type kInitial68VZ328RegisterValues = {
 
     0x00000000,  // UInt32	lcdStartAddr;				// $A00: Screen Starting
                  // Address Register
-    {0},     // UInt8									___filler29;
-    0xFF,    // UInt8	lcdPageWidth;				// $A05: Virtual Page Width Register
-    {0},     // UInt8 ___filler30[2];
-    0x03F0,  // UInt16	lcdScreenWidth;				// $A08: Screen Width Register
-    0x01FF,  // UInt16	lcdScreenHeight;			// $A0A: Screen Height Register
-    {0},     // UInt8
-             // ___filler31[0xA18-0xA0C];
-    0x0000,  // UInt16	lcdCursorXPos;				// $A18: Cursor X Position
-    0x0000,  // UInt16	lcdCursorYPos;				// $A1A: Cursor Y Position
-    0x0101,  // UInt16	lcdCursorWidthHeight;		// $A1C: Cursor Width and Height
-    {0},     // UInt8									___filler32;
-    0x7F,    // UInt8	lcdBlinkControl;			// $A1F: Blink Control Register
-    0x00,    // UInt8	lcdPanelControl;			// $A20: Panel Interface
-           // Configuration Register
-    0x00,  // UInt8	lcdPolarity;				// $A21: Polarity Config Register
-    {0},   // UInt8									___filler33;
-    0x00,  // UInt8	lcdACDRate;					// $A23: ACD (M) Rate
-           // Control Register
-    {0},     // UInt8									___filler34;
-    0x00,    // UInt8	lcdPixelClock;				// $A25: Pixel Clock Divider
-             // Register
-    {0},     // UInt8									___filler35;
-    0x00,    // UInt8	lcdClockControl;			// $A27: Clocking Control Register
-    0x00FF,  // UInt16	lcdRefreshRateAdj;			// $A28: Refresh Rate Adjustment
-             // Register
-    {0},     // UInt8									___filler37;
-    0x00,    // UInt8	lcdReserved1;				// $A2B: Reserved
-    {0},     // UInt8									___filler38;
-    0x00,    // UInt8    lcdPanningOffset;			// $A2D: Panning Offset Register
+    0,           // UInt8									___filler29;
+    0xFF,        // UInt8	lcdPageWidth;				// $A05: Virtual Page Width Register
+    {0},         // UInt8 ___filler30[2];
+    0x03F0,      // UInt16	lcdScreenWidth;				// $A08: Screen Width Register
+    0x01FF,      // UInt16	lcdScreenHeight;			// $A0A: Screen Height Register
+    {0},         // UInt8
+                 // ___filler31[0xA18-0xA0C];
+    0x0000,      // UInt16	lcdCursorXPos;				// $A18: Cursor X Position
+    0x0000,      // UInt16	lcdCursorYPos;				// $A1A: Cursor Y Position
+    0x0101,      // UInt16	lcdCursorWidthHeight;		// $A1C: Cursor Width and Height
+    0,           // UInt8									___filler32;
+    0x7F,        // UInt8	lcdBlinkControl;			// $A1F: Blink Control Register
+    0x00,        // UInt8	lcdPanelControl;			// $A20: Panel Interface
+                 // Configuration Register
+    0x00,        // UInt8	lcdPolarity;				// $A21: Polarity Config Register
+    0,           // UInt8									___filler33;
+    0x00,        // UInt8	lcdACDRate;					// $A23: ACD (M) Rate
+                 // Control Register
+    0,           // UInt8									___filler34;
+    0x00,        // UInt8	lcdPixelClock;				// $A25: Pixel Clock Divider
+                 // Register
+    0,           // UInt8									___filler35;
+    0x00,        // UInt8	lcdClockControl;			// $A27: Clocking Control Register
+    0x00FF,      // UInt16	lcdRefreshRateAdj;			// $A28: Refresh Rate Adjustment
+                 // Register
+    0,           // UInt8									___filler37;
+    0x00,        // UInt8	lcdReserved1;				// $A2B: Reserved
+    0,           // UInt8									___filler38;
+    0x00,        // UInt8    lcdPanningOffset;			// $A2D: Panning Offset Register
 
     {0},  // UInt8
           // ___filler39[0xA31-0xA2E];
 
-    0x00,  // UInt8	lcdFrameRate;				// $A31: Frame Rate Control
-           // Modulation Register
-    {0},     // UInt8 ___filler2004;
+    0x00,    // UInt8	lcdFrameRate;				// $A31: Frame Rate Control
+             // Modulation Register
+    0,       // UInt8 ___filler2004;
     0x84,    // UInt8	lcdGrayPalette;				// $A33: Gray Palette Mapping
              // Register
     0x00,    // UInt8	lcdReserved2;				// $A34: Reserved
-    {0},     // UInt8 ___filler2005;
+    0,       // UInt8 ___filler2005;
     0x0000,  // UInt16	lcdContrastControlPWM;		// $A36: Contrast Control
     0x00,    // UInt8	lcdRefreshModeControl;		// $A38: Refresh Mode Control Register
     0x62,    // UInt8	lcdDMAControl;				// $A39: DMA Control Register
@@ -455,14 +469,14 @@ static const HwrM68VZ328Type kInitial68VZ328RegisterValues = {
                  // Compare Register
     0x00000000,  // UInt32	emuAddrMask;				// $D04: Emulation Address
                  // Mask Register
-    0x0000,  // UInt16	emuControlCompare;			// $D08: Emulation Control Compare
-             // Register
-    0x0000,  // UInt16	emuControlMask;				// $D0A: Emulation Control Mask
-             // Register
-    0x0000,  // UInt16	emuControl;					// $DOC: Emulation Control
-             // Register
-    0x0000   // UInt16	emuStatus;					// $D0E: Emulation Status
-             // Register
+    0x0000,      // UInt16	emuControlCompare;			// $D08: Emulation Control Compare
+                 // Register
+    0x0000,      // UInt16	emuControlMask;				// $D0A: Emulation Control Mask
+                 // Register
+    0x0000,      // UInt16	emuControl;					// $DOC: Emulation Control
+                 // Register
+    0x0000       // UInt16	emuStatus;					// $D0E: Emulation Status
+                 // Register
 };
 
 // ---------------------------------------------------------------------------
@@ -477,12 +491,7 @@ EmRegsVZ::EmRegsVZ(void)
       fLastTmr1Status(0),
       fLastTmr2Status(0),
       fPortDEdge(0),
-      fPortDDataCount(0),
-      fHour(0),
-      fMin(0),
-      fSec(0),
-      fTick(0),
-      fCycle(0) {
+      fPortDDataCount(0) {
     fUART[0] = NULL;
     fUART[1] = NULL;
 }
@@ -499,6 +508,12 @@ EmRegsVZ::~EmRegsVZ(void) {}
 
 void EmRegsVZ::Initialize(void) {
     EmRegs::Initialize();
+    rtcDayAtWrite = 0;
+    lastRtcAlarmCheck = -1;
+
+    tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
+    tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();
+    UpdateTimerTicksPerSecond();
 
     fUART[0] = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballVZ, 0);
     fUART[1] = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballVZ, 1);
@@ -511,6 +526,9 @@ void EmRegsVZ::Initialize(void) {
 void EmRegsVZ::Reset(Bool hardwareReset) {
     EmRegs::Reset(hardwareReset);
     if (hardwareReset) {
+        tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
+        tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();
+
         f68VZ328Regs = kInitial68VZ328RegisterValues;
 
         // Byteswap all the words in the DragonballVZ registers (if necessary).
@@ -530,6 +548,8 @@ void EmRegsVZ::Reset(Bool hardwareReset) {
         EmRegsVZ::UARTStateChanged(sendTxData, 0);
         EmRegsVZ::UARTStateChanged(sendTxData, 1);
     }
+
+    UpdateTimerTicksPerSecond();
 }
 
 #if 0
@@ -643,6 +663,12 @@ void EmRegsVZ::Load(SessionFile& f) {
 
 #endif
 
+void EmRegsVZ::Save(Savestate& savestate) { savestate.NotifyError(); }
+
+void EmRegsVZ::Save(SavestateProbe& savestate) {}
+
+void EmRegsVZ::Load(SavestateLoader& loader) {}
+
 // ---------------------------------------------------------------------------
 //		� EmRegsVZ::Dispose
 // ---------------------------------------------------------------------------
@@ -693,8 +719,8 @@ void EmRegsVZ::SetSubBankHandlers(void) {
 
     INSTALL_HANDLER(StdRead, StdWrite, emuCS);
 
-    INSTALL_HANDLER(StdRead, StdWrite, pllControl);
-    INSTALL_HANDLER(pllFreqSelRead, StdWrite, pllFreqSel);
+    INSTALL_HANDLER(StdRead, pllRegisterWrite, pllControl);
+    INSTALL_HANDLER(pllFreqSelRead, pllRegisterWrite, pllFreqSel);
     INSTALL_HANDLER(StdRead, StdWrite, pwrControl);
 
     INSTALL_HANDLER(StdRead, StdWrite, intVector);
@@ -771,8 +797,8 @@ void EmRegsVZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, pwm2Width);
     INSTALL_HANDLER(StdRead, NullWrite, pwm2Counter);
 
-    INSTALL_HANDLER(StdRead, StdWrite, tmr1Control);
-    INSTALL_HANDLER(StdRead, StdWrite, tmr1Prescaler);
+    INSTALL_HANDLER(StdRead, tmr1RegisterWrite, tmr1Control);
+    INSTALL_HANDLER(StdRead, tmr1RegisterWrite, tmr1Prescaler);
     INSTALL_HANDLER(StdRead, StdWrite, tmr1Compare);
     INSTALL_HANDLER(StdRead, StdWrite, tmr1Capture);
     INSTALL_HANDLER(StdRead, NullWrite, tmr1Counter);
@@ -838,7 +864,7 @@ void EmRegsVZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, rtcIntStatusWrite, rtcIntStatus);
     INSTALL_HANDLER(StdRead, rtcIntEnableWrite, rtcIntEnable);
     INSTALL_HANDLER(StdRead, StdWrite, stopWatch);
-    INSTALL_HANDLER(StdRead, StdWrite, rtcDay);
+    INSTALL_HANDLER(rtcDayRead, rtcDayWrite, rtcDay);
     INSTALL_HANDLER(StdRead, StdWrite, rtcDayAlarm);
 
     INSTALL_HANDLER(StdRead, StdWrite, dramConfig);
@@ -884,25 +910,26 @@ uint32 EmRegsVZ::GetAddressRange(void) { return kMemorySize; }
 // Emulator::Execute.  Interestingly, the loop runs 3% FASTER if this function
 // is in its own separate function instead of being inline.
 
-void EmRegsVZ::Cycle(Bool sleeping) {
-#if _DEBUG
-    #define increment 20
-#else
-    #define increment 4
-#endif
+void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
+    double clocksPerSecond = gSession->GetClocksPerSecond();
 
-    // ===== Handle Timer 1 =====
-
-    // Determine whether timer is enabled.
-
-    if ((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) != 0) {
+    if (((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) != 0) &&
+        timer1TicksPerSecond > 0) {
         // If so, increment the timer.
 
-        WRITE_REGISTER(tmr1Counter, READ_REGISTER(tmr1Counter) + (sleeping ? 1 : increment));
+        uint32 ticks = ((double)systemCycles - tmr1LastProcessedSystemCycles) / clocksPerSecond *
+                       timer1TicksPerSecond;
+
+        tmr1LastProcessedSystemCycles += (double)ticks / timer1TicksPerSecond * clocksPerSecond;
+
+        WRITE_REGISTER(tmr1Counter, READ_REGISTER(tmr1Counter) + ticks);
 
         // Determine whether the timer has reached the specified count.
 
-        if (sleeping || READ_REGISTER(tmr1Counter) > READ_REGISTER(tmr1Compare)) {
+        uint16 tcmp = READ_REGISTER(tmr1Compare);
+        uint16 tcn = READ_REGISTER(tmr1Counter);
+
+        if (tcn >= tcmp) {
             // Flag the occurrence of the successful comparison.
 
             WRITE_REGISTER(tmr1Status, READ_REGISTER(tmr1Status) | hwrVZ328TmrStatusCompare);
@@ -910,7 +937,7 @@ void EmRegsVZ::Cycle(Bool sleeping) {
             // If the Free Run/Restart flag is not set, clear the counter.
 
             if ((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlFreeRun) == 0) {
-                WRITE_REGISTER(tmr1Counter, 0);
+                WRITE_REGISTER(tmr1Counter, tcn - tcmp);
             }
 
             // If the timer interrupt is enabled, post an interrupt.
@@ -922,68 +949,38 @@ void EmRegsVZ::Cycle(Bool sleeping) {
         }
     }
 
-    // ===== Handle Timer 2 =====
-    // ===== (Same code, just the name have been changed) =====
+    if (((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnable) != 0) &&
+        timer2TicksPerSecond > 0) {
+        // If so, increment the timer.
 
-    // Determine whether timer is enabled.
+        uint32 ticks = ((double)systemCycles - tmr2LastProcessedSystemCycles) / clocksPerSecond *
+                       timer2TicksPerSecond;
 
-#if 1
-    if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnable) != 0) {
-        // Divide by the prescale amount.  We do this by decrementing
-        // a prescaler counter.  Only when this counter reaches zero
-        // do we increment the timer counter.
+        tmr2LastProcessedSystemCycles += (double)ticks / timer2TicksPerSecond * clocksPerSecond;
 
-        static int prescaleCounter;
+        WRITE_REGISTER(tmr2Counter, READ_REGISTER(tmr2Counter) + ticks);
 
-        if ((prescaleCounter -= (sleeping ? (increment * 1024) : increment)) <= 0) {
-            prescaleCounter = READ_REGISTER(tmr2Prescaler) * 1024;
+        // Determine whether the timer has reached the specified count.
 
-            // If so, increment the timer.
+        uint16 tcmp = READ_REGISTER(tmr2Compare);
+        uint16 tcn = READ_REGISTER(tmr2Counter);
 
-            WRITE_REGISTER(tmr2Counter, READ_REGISTER(tmr2Counter) + (sleeping ? 1 : increment));
+        if (tcn >= tcmp) {
+            // Flag the occurrence of the successful comparison.
 
-            // Determine whether the timer has reached the specified count.
+            WRITE_REGISTER(tmr2Status, READ_REGISTER(tmr2Status) | hwrVZ328TmrStatusCompare);
 
-            if (sleeping || READ_REGISTER(tmr2Counter) > READ_REGISTER(tmr2Compare)) {
-                // Flag the occurrence of the successful comparison.
+            // If the Free Run/Restart flag is not set, clear the counter.
 
-                WRITE_REGISTER(tmr2Status, READ_REGISTER(tmr2Status) | hwrVZ328TmrStatusCompare);
-
-                // If the Free Run/Restart flag is not set, clear the counter.
-
-                if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlFreeRun) == 0) {
-                    WRITE_REGISTER(tmr2Counter, 0);
-                }
-
-                // If the timer interrupt is enabled, post an interrupt.
-
-                if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnInterrupt) != 0) {
-                    WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrVZ328IntLoTimer2);
-                    EmRegsVZ::UpdateInterrupts();
-                }
+            if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlFreeRun) == 0) {
+                WRITE_REGISTER(tmr2Counter, tcn - tcmp);
             }
-        }
-    }
-#endif
 
-    // ===== Handle time increment (used when running Gremlins) =====
+            // If the timer interrupt is enabled, post an interrupt.
 
-    if ((fCycle += increment) > READ_REGISTER(tmr1Compare)) {
-        fCycle = 0;
-
-        if (++fTick >= 100) {
-            fTick = 0;
-
-            if (++fSec >= 60) {
-                fSec = 0;
-
-                if (++fMin >= 60) {
-                    fMin = 0;
-
-                    if (++fHour >= 24) {
-                        fHour = 0;
-                    }
-                }
+            if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnInterrupt) != 0) {
+                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrVZ328IntLoTimer);
+                EmRegsVZ::UpdateInterrupts();
             }
         }
     }
@@ -1003,13 +1000,13 @@ void EmRegsVZ::CycleSlowly(Bool sleeping) {
     // See if a hard button is pressed.
 
     EmAssert(gSession);
+
     if (gSession->HasButtonEvent()) {
-        EmButtonEvent event = gSession->GetButtonEvent();
-        if (event.fButton == kElement_CradleButton) {
-            EmRegsVZ::HotSyncEvent(event.fButtonIsDown);
-        } else {
-            EmRegsVZ::ButtonEvent(event.fButton, event.fButtonIsDown);
-        }
+        ButtonEventT event = gSession->NextButtonEvent();
+        if (event.GetButton() == ButtonEventT::Button::cradle)
+            EmRegsVZ::HotSyncEvent(event.GetType() == ButtonEventT::Type::press);
+        else
+            EmRegsVZ::ButtonEvent(event);
     }
 
     // See if there's anything new ("Put the data on the bus")
@@ -1025,18 +1022,16 @@ void EmRegsVZ::CycleSlowly(Bool sleeping) {
         (READ_REGISTER(rtcIntStatus) & hwrVZ328RTCIntStatusAlarm) == 0) {
         uint32 rtcAlarm = READ_REGISTER(rtcAlarm);
 
-        long almHour = (rtcAlarm & hwrVZ328RTCAlarmHoursMask) >> hwrVZ328RTCAlarmHoursOffset;
-        long almMin = (rtcAlarm & hwrVZ328RTCAlarmMinutesMask) >> hwrVZ328RTCAlarmMinutesOffset;
-        long almSec = (rtcAlarm & hwrVZ328RTCAlarmSecondsMask) >> hwrVZ328RTCAlarmSecondsOffset;
-        long almInSeconds = (almHour * 60 * 60) + (almMin * 60) + almSec;
+        uint32 almHour = (rtcAlarm & hwrVZ328RTCAlarmHoursMask) >> hwrVZ328RTCAlarmHoursOffset;
+        uint32 almMin = (rtcAlarm & hwrVZ328RTCAlarmMinutesMask) >> hwrVZ328RTCAlarmMinutesOffset;
+        uint32 almSec = (rtcAlarm & hwrVZ328RTCAlarmSecondsMask) >> hwrVZ328RTCAlarmSecondsOffset;
+        int32 almInSeconds = (almHour * 60 * 60) + (almMin * 60) + almSec;
 
-        long nowHour;
-        long nowMin;
-        long nowSec;
-        ::GetHostTime(&nowHour, &nowMin, &nowSec);
-        long nowInSeconds = (nowHour * 60 * 60) + (nowMin * 60) + nowSec;
+        uint32 hour, min, sec;
+        Platform::GetTime(hour, min, sec);
+        int32 nowInSeconds = hour * 3600 + min * 60 + sec;
 
-        if (almInSeconds <= nowInSeconds) {
+        if (lastRtcAlarmCheck < almInSeconds && almInSeconds <= nowInSeconds) {
             WRITE_REGISTER(rtcIntStatus, READ_REGISTER(rtcIntStatus) | hwrVZ328RTCIntStatusAlarm);
             EmRegsVZ::UpdateRTCInterrupts();
         }
@@ -1065,13 +1060,7 @@ void EmRegsVZ::ResetTimer(void) {
 //		� EmRegsVZ::ResetRTC
 // ---------------------------------------------------------------------------
 
-void EmRegsVZ::ResetRTC(void) {
-    fHour = 15;
-    fMin = 0;
-    fSec = 0;
-    fTick = 0;
-    fCycle = 0;
-}
+void EmRegsVZ::ResetRTC(void) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZ::GetInterruptLevel
@@ -1216,6 +1205,15 @@ void EmRegsVZ::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 
     begin = baseAddr;
     end = baseAddr + rowBytes * height;
+}
+
+void EmRegsVZ::UpdateTimerTicksPerSecond() {
+    int32 systemClockFrequency = GetSystemClockFrequency();
+
+    timer1TicksPerSecond = TimerTicksPerSecond(READ_REGISTER(tmr1Control),
+                                               READ_REGISTER(tmr1Prescaler), systemClockFrequency);
+    timer2TicksPerSecond = TimerTicksPerSecond(READ_REGISTER(tmr2Control),
+                                               READ_REGISTER(tmr2Prescaler), systemClockFrequency);
 }
 
 // ---------------------------------------------------------------------------
@@ -1555,30 +1553,7 @@ uint32 EmRegsVZ::portXDataRead(emuptr address, int) {
 // ---------------------------------------------------------------------------
 
 uint32 EmRegsVZ::tmr1StatusRead(emuptr address, int size) {
-    uint16 tmr1Counter = READ_REGISTER(tmr1Counter) + 16;
-    uint16 tmr1Compare = READ_REGISTER(tmr1Compare);
-    uint16 tmr1Control = READ_REGISTER(tmr1Control);
-
-    // Increment the timer.
-
-    WRITE_REGISTER(tmr1Counter, tmr1Counter);
-
-    // If the timer has passed the specified value...
-
-    if ((tmr1Counter - tmr1Compare) < 16) {
-        // Set the flag saying the timer timed out.
-
-        uint16 tmr1Status = READ_REGISTER(tmr1Status) | hwrVZ328TmrStatusCompare;
-        WRITE_REGISTER(tmr1Status, tmr1Status);
-
-        // If it's not a free-running timer, reset it to zero.
-
-        if ((tmr1Control & hwrVZ328TmrControlFreeRun) == 0) {
-            WRITE_REGISTER(tmr1Counter, 0);
-        }
-    }
-
-    // Remember this guy for later (see EmRegsVZ::tmr1StatusWrite())
+    // Remember this guy for later (see EmRegsVZ::tmr2StatusWrite())
 
     fLastTmr1Status |= READ_REGISTER(tmr1Status);
 
@@ -1592,29 +1567,6 @@ uint32 EmRegsVZ::tmr1StatusRead(emuptr address, int size) {
 // ---------------------------------------------------------------------------
 
 uint32 EmRegsVZ::tmr2StatusRead(emuptr address, int size) {
-    uint16 tmr2Counter = READ_REGISTER(tmr2Counter) + 16;
-    uint16 tmr2Compare = READ_REGISTER(tmr2Compare);
-    uint16 tmr2Control = READ_REGISTER(tmr2Control);
-
-    // Increment the timer.
-
-    WRITE_REGISTER(tmr2Counter, tmr2Counter);
-
-    // If the timer has passed the specified value...
-
-    if ((tmr2Counter - tmr2Compare) < 16) {
-        // Set the flag saying the timer timed out.
-
-        uint16 tmr2Status = READ_REGISTER(tmr2Status) | hwrVZ328TmrStatusCompare;
-        WRITE_REGISTER(tmr2Status, tmr2Status);
-
-        // If it's not a free-running timer, reset it to zero.
-
-        if ((tmr2Control & hwrVZ328TmrControlFreeRun) == 0) {
-            WRITE_REGISTER(tmr2Counter, 0);
-        }
-    }
-
     // Remember this guy for later (see EmRegsVZ::tmr2StatusWrite())
 
     fLastTmr2Status |= READ_REGISTER(tmr2Status);
@@ -1667,15 +1619,8 @@ uint32 EmRegsVZ::uart2Read(emuptr address, int size) {
 uint32 EmRegsVZ::rtcHourMinSecRead(emuptr address, int size) {
     // Get the desktop machine's time.
 
-    long hour, min, sec;
-
-    if (Hordes::IsOn()) {
-        hour = fHour;
-        min = fMin;
-        sec = fSec;
-    } else {
-        ::GetHostTime(&hour, &min, &sec);
-    }
+    uint32 hour, min, sec;
+    Platform::GetTime(hour, min, sec);
 
     // Update the register.
 
@@ -1684,6 +1629,18 @@ uint32 EmRegsVZ::rtcHourMinSecRead(emuptr address, int size) {
                                       (sec << hwrVZ328RTCHourMinSecSecondsOffset));
 
     // Finish up by doing a standard read.
+
+    return EmRegsVZ::StdRead(address, size);
+}
+
+void EmRegsVZ::rtcDayWrite(emuptr address, int size, uint32 value) {
+    EmRegsVZ::StdWrite(address, size, value);
+
+    rtcDayAtWrite = Platform::GetMilliseconds() / (3600 * 24 * 1000);
+}
+
+uint32 EmRegsVZ::rtcDayRead(emuptr address, int size) {
+    WRITE_REGISTER(rtcDay, (rtcDayAtWrite + Platform::GetMilliseconds() / (1000)) & 0x01ff);
 
     return EmRegsVZ::StdRead(address, size);
 }
@@ -2112,41 +2069,38 @@ void EmRegsVZ::uart2Write(emuptr address, int size, uint32 value) {
 // ---------------------------------------------------------------------------
 
 void EmRegsVZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
-    // First, get the old value in case we need to see what changed.
-
-    uint32 oldValue = EmRegsVZ::StdRead(address, size);
-
-    // Do a standard update of the register.
-
-    EmRegsVZ::StdWrite(address, size, value);
-
-    // Note what changed.
-
-    if (address == db_addressof(lcdScreenWidth)) {
-        EmScreen::InvalidateAll();
-    } else if (address == db_addressof(lcdScreenHeight)) {
-        EmScreen::InvalidateAll();
-    } else if (address == db_address(lcdPanelControl)) {
-        // hwrVZ328LcdPanelControlGrayScale is incorrectly defined as 0x01,
-        // so use the hard-coded value of 0x03 here.
-
-        //		if (((value ^ oldValue) & hwrVZ328LcdPanelControlGrayScale) != 0)
-        if (((value ^ oldValue) & 0x03) != 0) {
-            EmScreen::InvalidateAll();
-        }
-    } else if (address == db_addressof(lcdStartAddr)) {
+    if (address == db_addressof(lcdStartAddr)) {
         // Make sure the low-bit is always zero.
         // Make sure bits 31-29 are always zero.
 
-        uint32 lcdStartAddr = READ_REGISTER(lcdStartAddr) & 0x1FFFFFFE;
-        WRITE_REGISTER(lcdStartAddr, lcdStartAddr);
-
-        EmScreen::InvalidateAll();
-    } else if (address == db_addressof(lcdPageWidth)) {
-        if (value != oldValue) {
-            EmScreen::InvalidateAll();
-        }
+        value &= 0x1FFFFFFE;
     }
+
+    EmRegsVZ::StdWrite(address, size, value);
+}
+
+void EmRegsVZ::pllRegisterWrite(emuptr address, int size, uint32 value) {
+    EmRegsVZ::StdWrite(address, size, value);
+
+    UpdateTimerTicksPerSecond();
+
+    gSystemState.MarkScreenDirty();
+
+    EmHAL::onSystemClockChange.Dispatch();
+}
+
+void EmRegsVZ::tmr1RegisterWrite(emuptr address, int size, uint32 value) {
+    EmRegsVZ::StdWrite(address, size, value);
+
+    timer1TicksPerSecond = TimerTicksPerSecond(
+        READ_REGISTER(tmr1Control), READ_REGISTER(tmr1Prescaler), GetSystemClockFrequency());
+}
+
+void EmRegsVZ::tmr2RegisterWrite(emuptr address, int size, uint32 value) {
+    EmRegsVZ::StdWrite(address, size, value);
+
+    timer1TicksPerSecond = TimerTicksPerSecond(
+        READ_REGISTER(tmr1Control), READ_REGISTER(tmr1Prescaler), GetSystemClockFrequency());
 }
 
 // ---------------------------------------------------------------------------
@@ -2213,8 +2167,8 @@ void EmRegsVZ::rtcIntEnableWrite(emuptr address, int size, uint32 value) {
 // ---------------------------------------------------------------------------
 // Handles a Palm device button event by updating the appropriate registers.
 
-void EmRegsVZ::ButtonEvent(SkinElementType button, Bool buttonIsDown) {
-    uint16 bitNumber = this->ButtonToBits(button);
+void EmRegsVZ::ButtonEvent(ButtonEventT event) {
+    uint16 bitNumber = this->ButtonToBits(event.GetButton());
 
     // Get the bits that should have been set with the previous set
     // of pressed keys.  We use this old value to update the port D interrupts.
@@ -2223,7 +2177,7 @@ void EmRegsVZ::ButtonEvent(SkinElementType button, Bool buttonIsDown) {
 
     // Update the set of keys that are currently pressed.
 
-    if (buttonIsDown) {
+    if (event.GetType() == ButtonEventT::Type::press) {
         fKeyBits |= bitNumber;  // Remember the key bit
     } else {
         fKeyBits &= ~bitNumber;  // Forget the key bit
@@ -2320,48 +2274,41 @@ uint8 EmRegsVZ::GetKeyBits(void) {
 //		� EmRegsVZ::ButtonToBits
 // ---------------------------------------------------------------------------
 
-uint16 EmRegsVZ::ButtonToBits(SkinElementType button) {
-    uint16 bitNumber = 0;
+uint16 EmRegsVZ::ButtonToBits(ButtonEventT::Button button) {
     switch (button) {
-        case kElement_None:
-            break;
+        case ButtonEventT::Button::power:
+            return keyBitPower;
 
-        case kElement_PowerButton:
-            bitNumber = keyBitPower;
-            break;
-        case kElement_UpButton:
-            bitNumber = keyBitPageUp;
-            break;
-        case kElement_DownButton:
-            bitNumber = keyBitPageDown;
-            break;
-        case kElement_App1Button:
-            bitNumber = keyBitHard1;
-            break;
-        case kElement_App2Button:
-            bitNumber = keyBitHard2;
-            break;
-        case kElement_App3Button:
-            bitNumber = keyBitHard3;
-            break;
-        case kElement_App4Button:
-            bitNumber = keyBitHard4;
-            break;
-        case kElement_CradleButton:
-            bitNumber = keyBitCradle;
-            break;
-        case kElement_Antenna:
-            bitNumber = keyBitAntenna;
-            break;
-        case kElement_ContrastButton:
-            bitNumber = keyBitContrast;
-            break;
+        case ButtonEventT::Button::rockerUp:
+            return keyBitPageUp;
+
+        case ButtonEventT::Button::rockerDown:
+            return keyBitPageDown;
+
+        case ButtonEventT::Button::app1:
+            return keyBitHard1;
+
+        case ButtonEventT::Button::app2:
+            return keyBitHard2;
+
+        case ButtonEventT::Button::app3:
+            return keyBitHard3;
+
+        case ButtonEventT::Button::app4:
+            return keyBitHard4;
+
+        case ButtonEventT::Button::cradle:
+            return keyBitCradle;
+
+        case ButtonEventT::Button::antenna:
+            return keyBitAntenna;
+
+        case ButtonEventT::Button::contrast:
+            return keyBitContrast;
 
         default:
-            EmAssert(false);
+            return 0;
     }
-
-    return bitNumber;
 }
 
 // ---------------------------------------------------------------------------
@@ -2446,8 +2393,6 @@ void EmRegsVZ::UpdatePortDInterrupts(void) {
     // look for them, so it's OK for now.
     //
     // Edge interrupts on INT[3:0] should not wake up a sleeping device.
-
-    uint16 pllControl = READ_REGISTER(pllControl);
 
 #if 0
 	if ((pllControl & hwrVZ328PLLControlDisable) && !(gSession->GetDevice ().EdgeHack ()))
@@ -2608,9 +2553,10 @@ void EmRegsVZ::UpdateUARTInterrupts(const EmUARTDragonball::State& state, int ua
 	}
 #endif
 
-    if (state.RX_FULL_ENABLE && state.RX_FIFO_FULL || state.RX_HALF_ENABLE && state.RX_FIFO_HALF ||
-        state.RX_RDY_ENABLE && state.DATA_READY || state.TX_EMPTY_ENABLE && state.TX_FIFO_EMPTY ||
-        state.TX_HALF_ENABLE && state.TX_FIFO_HALF || state.TX_AVAIL_ENABLE && state.TX_AVAIL) {
+    if ((state.RX_FULL_ENABLE && state.RX_FIFO_FULL) ||
+        (state.RX_HALF_ENABLE && state.RX_FIFO_HALF) || (state.RX_RDY_ENABLE && state.DATA_READY) ||
+        (state.TX_EMPTY_ENABLE && state.TX_FIFO_EMPTY) ||
+        (state.TX_HALF_ENABLE && state.TX_FIFO_HALF) || (state.TX_AVAIL_ENABLE && state.TX_AVAIL)) {
         // Set the UART interrupt.
 
         WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | whichBit);
@@ -2704,11 +2650,13 @@ void EmRegsVZ::MarshalUARTState(EmUARTDragonball::State& state, int uartNum) {
     // These are all values the user sets; we just look at them.
 
     //	state.GPIO_DELTA		= (uBaud & hwr328UBaudGPIODelta) != 0;			//
-    //68328 only 	state.GPIO				= (uBaud & hwr328UBaudGPIOData) != 0;
+    // 68328 only 	state.GPIO				= (uBaud & hwr328UBaudGPIOData) !=
+    // 0;
     //// 68328 only
     //	state.GPIO_DIR			= (uBaud & hwr328UBaudGPIODirOut) != 0;			//
-    //68328 only 	state.GPIO_SRC			= (uBaud & hwrVZ328UBaudGPIOSrcBaudGen) != 0; //
-    //68328 only
+    // 68328 only 	state.GPIO_SRC			= (uBaud & hwrVZ328UBaudGPIOSrcBaudGen) !=
+    // 0;
+    // // 68328 only
     state.UCLK_DIR = (uBaud & hwrVZ328UBaudUCLKDirOut) != 0;  // 68VZ328 only
     state.BAUD_SRC = (uBaud & hwrVZ328UBaudBaudSrcUCLK) != 0;
     state.DIVIDE = (uBaud & hwrVZ328UBaudDivider) >> hwrVZ328UBaudDivideBitOffset;
@@ -2909,45 +2857,26 @@ int EmRegsVZ::GetPort(emuptr address) {
     return 0;
 }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsVZ::PrvGetPalette
-// ---------------------------------------------------------------------------
+uint32 EmRegsVZ::Tmr1CyclesToNextInterrupt() {
+    if (timer1TicksPerSecond <= 0) return 0;
 
-void EmRegsVZ::PrvGetPalette(RGBList& thePalette) {
-    // !!! TBD
-    Preference<RGBType> pref1(kPrefKeyBackgroundColor);
-    Preference<RGBType> pref2(kPrefKeyHighlightColor);
+    uint16 tcmp = READ_REGISTER(tmr1Compare);
+    uint16 tcn = READ_REGISTER(tmr1Counter);
+    uint32 delta = tcmp >= tcn ? tcmp - tcn : tcmp + 0x10000 - tcn;
 
-    RGBType foreground(0, 0, 0);
-    RGBType background;
+    return ceil((double)delta / timer1TicksPerSecond * (double)gSession->GetClocksPerSecond());
+}
 
-    if (this->GetLCDBacklightOn()) {
-        if (pref2.Loaded())
-            background = *pref2;
-        else
-            background = ::SkinGetHighlightColor();
-    } else {
-        if (pref1.Loaded())
-            background = *pref1;
-        else
-            background = ::SkinGetBackgroundColor();
-    }
+uint32 EmRegsVZ::Tmr2CyclesToNextInterrupt() {
+    if (timer2TicksPerSecond <= 0) return 0;
 
-    long br = ((long)background.fRed);
-    long bg = ((long)background.fGreen);
-    long bb = ((long)background.fBlue);
+    uint16 tcmp = READ_REGISTER(tmr2Compare);
+    uint16 tcn = READ_REGISTER(tmr2Counter);
+    uint32 delta = tcmp >= tcn ? tcmp - tcn : tcmp + 0x10000 - tcn;
 
-    long dr = ((long)foreground.fRed) - ((long)background.fRed);
-    long dg = ((long)foreground.fGreen) - ((long)background.fGreen);
-    long db = ((long)foreground.fBlue) - ((long)background.fBlue);
+    return ceil((double)delta / timer2TicksPerSecond * (double)gSession->GetClocksPerSecond());
+}
 
-    int32 bpp = 1 << (READ_REGISTER(lcdPanelControl) & 0x03);
-    int32 numColors = 1 << bpp;
-    thePalette.resize(numColors);
-
-    for (int color = 0; color < numColors; ++color) {
-        thePalette[color].fRed = (UInt8)(br + dr * color / (numColors - 1));
-        thePalette[color].fGreen = (UInt8)(bg + dg * color / (numColors - 1));
-        thePalette[color].fBlue = (UInt8)(bb + db * color / (numColors - 1));
-    }
+uint32 EmRegsVZ::CyclesToNextInterrupt() {
+    return min(Tmr1CyclesToNextInterrupt(), Tmr2CyclesToNextInterrupt());
 }

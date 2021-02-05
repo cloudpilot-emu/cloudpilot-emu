@@ -741,11 +741,6 @@ uint32 EmRegsEZ::GetAddressRange(void) { return kMemorySize; }
 // is in its own separate function instead of being inline.
 
 void EmRegsEZ::Cycle(uint64 systemCycles, Bool sleeping) {
-#if _DEBUG
-    #define increment 20
-#else
-    #define increment 4
-#endif
     if (GetAsleep()) return;
 
     // Determine whether timer is enabled.

@@ -20,7 +20,6 @@
 #include "EmRegs.h"            // EmRegs
 #include "EmUARTDragonball.h"  // EmUARTDragonball::State
 
-class EmScreenUpdateInfo;
 class EmSPISlave;
 
 class EmRegsEZ : public EmRegs, public EmHALHandler {
@@ -59,6 +58,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDBacklightOn(void) = 0;
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr&, emuptr&);
+    virtual bool CopyLCDFrame(Frame& frame);
     virtual uint16 GetLCD2bitMapping();
 
     virtual EmUARTDeviceType GetUARTDevice(int uartNum);

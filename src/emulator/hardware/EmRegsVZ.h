@@ -14,13 +14,12 @@
 #ifndef EmRegsVZ_h
 #define EmRegsVZ_h
 
+#include "ButtonEvent.h"
 #include "EmEvent.h"
 #include "EmHAL.h"             // EmHALHandler
 #include "EmRegs.h"            // EmRegs
-#include "EmStructs.h"         // RGBList
 #include "EmUARTDragonball.h"  // EmUARTDragonball::State
 
-class EmScreenUpdateInfo;
 class EmSPISlave;
 
 class EmRegsVZ : public EmRegs, public EmHALHandler {
@@ -36,13 +35,17 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual void Reset(Bool hardwareReset);
     virtual void Dispose(void);
 
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
+
     virtual void SetSubBankHandlers(void);
     virtual uint8* GetRealAddress(emuptr address);
     virtual emuptr GetAddressStart(void);
     virtual uint32 GetAddressRange(void);
 
     // EmHALHandler overrides
-    virtual void Cycle(Bool sleeping);
+    virtual void Cycle(uint64 systemCycles, Bool sleeping);
     virtual void CycleSlowly(Bool sleeping);
 
     virtual void ButtonEvent(ButtonEventT evt);
@@ -57,7 +60,6 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDBacklightOn(void) = 0;
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr&, emuptr&);
-    virtual void GetLCDScanlines(EmScreenUpdateInfo& info);
 
     virtual int32 GetDynamicHeapSize(void);
     virtual int32 GetROMSize(void);
@@ -72,6 +74,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual void PortDataChanged(int, uint8, uint8);
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) = 0;
 
+    virtual uint32 CyclesToNextInterrupt();
+
    private:
     uint32 pllFreqSelRead(emuptr address, int size);
     uint32 portXDataRead(emuptr address, int size);
@@ -80,6 +84,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     uint32 uart1Read(emuptr address, int size);
     uint32 uart2Read(emuptr address, int size);
     uint32 rtcHourMinSecRead(emuptr address, int size);
+    uint32 rtcDayRead(emuptr address, int size);
 
     void csControl1Write(emuptr address, int size, uint32 value);
     void csASelectWrite(emuptr address, int size, uint32 value);
@@ -89,8 +94,11 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     void intStatusHiWrite(emuptr address, int size, uint32 value);
     void portXDataWrite(emuptr address, int size, uint32 value);
     void portDIntReqEnWrite(emuptr address, int size, uint32 value);
+    void pllRegisterWrite(emuptr address, int size, uint32 value);
     void tmr1StatusWrite(emuptr address, int size, uint32 value);
     void tmr2StatusWrite(emuptr address, int size, uint32 value);
+    void tmr1RegisterWrite(emuptr address, int size, uint32 value);
+    void tmr2RegisterWrite(emuptr address, int size, uint32 value);
     void spiCont1Write(emuptr address, int size, uint32 value);
     void spiMasterControlWrite(emuptr address, int size, uint32 value);
     void uart1Write(emuptr address, int size, uint32 value);
@@ -99,12 +107,13 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     void rtcControlWrite(emuptr address, int size, uint32 value);
     void rtcIntStatusWrite(emuptr address, int size, uint32 value);
     void rtcIntEnableWrite(emuptr address, int size, uint32 value);
+    void rtcDayWrite(emuptr address, int size, uint32 value);
 
    protected:
     void HotSyncEvent(Bool buttonIsDown);
 
     virtual uint8 GetKeyBits(void);
-    virtual uint16 ButtonToBits(ButtonEventT evt);
+    virtual uint16 ButtonToBits(ButtonEventT::Button btn);
     virtual EmSPISlave* GetSPISlave(void);
 
    protected:
@@ -121,7 +130,11 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
 
    protected:
     int GetPort(emuptr address);
-    // CSTODO void PrvGetPalette(RGBList& thePalette);
+
+   private:
+    void UpdateTimerTicksPerSecond();
+    uint32 Tmr1CyclesToNextInterrupt();
+    uint32 Tmr2CyclesToNextInterrupt();
 
    protected:
     HwrM68VZ328Type f68VZ328Regs;
@@ -132,13 +145,15 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     uint8 fPortDEdge;
     uint32 fPortDDataCount;
 
-    uint32 fHour;
-    uint32 fMin;
-    uint32 fSec;
-    uint32 fTick;
-    uint32 fCycle;
-
     EmUARTDragonball* fUART[2];
+
+    double tmr1LastProcessedSystemCycles;
+    double tmr2LastProcessedSystemCycles;
+    double timer1TicksPerSecond;
+    double timer2TicksPerSecond;
+
+    uint32 rtcDayAtWrite{0};
+    int32 lastRtcAlarmCheck{-1};
 };
 
 #endif /* EmRegsVZ_h */

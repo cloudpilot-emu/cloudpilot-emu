@@ -122,6 +122,7 @@ SOURCE_EMU = \
 	emulator/hardware/EmSPISlave.cpp \
 	emulator/hardware/EmUARTDragonball.cpp \
 	emulator/hardware/EmRegsEZ.cpp \
+	emulator/hardware/EmRegsVZ.cpp \
 	emulator/hardware/EmSPISlaveADS784x.cpp \
 	emulator/hardware/EmRegsEZPalmV.cpp \
 	emulator/hardware/EmBankROM.cpp \
