@@ -14,6 +14,9 @@
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
 
 #include "EmCommon.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 // Given a register (specified by its field name), return its address
 // in emulated space.
@@ -59,17 +62,11 @@ void EmRegsUSBPhilipsPDIUSBD12::Reset(Bool hardwareReset) {
     }
 }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsUSBPhilipsPDIUSBD12::Save
-// ---------------------------------------------------------------------------
+void EmRegsUSBPhilipsPDIUSBD12::Save(Savestate& savestate) { savestate.NotifyError(); }
 
-void EmRegsUSBPhilipsPDIUSBD12::Save(SessionFile& f) { EmRegs::Save(f); }
+void EmRegsUSBPhilipsPDIUSBD12::Save(SavestateProbe& savestate) {}
 
-// ---------------------------------------------------------------------------
-//		� EmRegsUSBPhilipsPDIUSBD12::Load
-// ---------------------------------------------------------------------------
-
-void EmRegsUSBPhilipsPDIUSBD12::Load(SessionFile& f) { EmRegs::Load(f); }
+void EmRegsUSBPhilipsPDIUSBD12::Load(SavestateLoader& loader) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsUSBPhilipsPDIUSBD12::Dispose
