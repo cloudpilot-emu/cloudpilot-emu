@@ -125,6 +125,7 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsVZ.cpp \
 	emulator/hardware/EmSPISlaveADS784x.cpp \
 	emulator/hardware/EmRegsUSBPhilipsPDIUSBD12.cpp \
+	emulator/hardware/EmRegsFrameBuffer.cpp \
 	emulator/hardware/EmRegsEZPalmV.cpp \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \

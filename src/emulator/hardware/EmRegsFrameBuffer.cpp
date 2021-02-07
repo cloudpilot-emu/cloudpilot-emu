@@ -15,11 +15,13 @@
 
 #include "Byteswapping.h"  // ByteswapWords
 #include "EmCommon.h"
-#include "EmMemory.h"       // EmMemDoGet32
-#include "EmScreen.h"       // EmScreen::MarkDirty
+#include "EmMemory.h"  // EmMemDoGet32
+#include "EmSystemState.h"
 #include "Miscellaneous.h"  // StWordSwapper
 #include "Platform.h"       // Platform::AllocateMemoryClear
-#include "SessionFile.h"    // SessionFile
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 // ---------------------------------------------------------------------------
 //		� EmRegsFrameBuffer::EmRegsFrameBuffer
@@ -54,20 +56,14 @@ void EmRegsFrameBuffer::Initialize(void) {
 
 void EmRegsFrameBuffer::Reset(Bool hardwareReset) { EmRegs::Reset(hardwareReset); }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsFrameBuffer::Save
-// ---------------------------------------------------------------------------
+#if 0
 
-void EmRegsFrameBuffer::Save(SessionFile& f) {
+void c::Save(SessionFile& f) {
     EmRegs::Save(f);
 
     StWordSwapper swapper(fVideoMem, fSize);
     f.WriteSED1375Image(fVideoMem, fSize);
 }
-
-// ---------------------------------------------------------------------------
-//		� EmRegsFrameBuffer::Load
-// ---------------------------------------------------------------------------
 
 void EmRegsFrameBuffer::Load(SessionFile& f) {
     EmRegs::Load(f);
@@ -80,6 +76,14 @@ void EmRegsFrameBuffer::Load(SessionFile& f) {
         f.SetCanReload(false);
     }
 }
+
+#endif
+
+void EmRegsFrameBuffer::Save(Savestate& savestate) { savestate.NotifyError(); }
+
+void EmRegsFrameBuffer::Save(SavestateProbe& savestate) {}
+
+void EmRegsFrameBuffer::Load(SavestateLoader& loader) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsFrameBuffer::Dispose
@@ -125,7 +129,8 @@ uint32 EmRegsFrameBuffer::GetByte(emuptr address) {
 void EmRegsFrameBuffer::SetLong(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
     EmMemDoPut32(((uint8*)fVideoMem) + offset, value);
-    EmScreen::MarkDirty(address, 4);
+
+    gSystemState.MarkScreenDirty();
 }
 
 // ---------------------------------------------------------------------------
@@ -135,7 +140,8 @@ void EmRegsFrameBuffer::SetLong(emuptr address, uint32 value) {
 void EmRegsFrameBuffer::SetWord(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
     EmMemDoPut16(((uint8*)fVideoMem) + offset, value);
-    EmScreen::MarkDirty(address, 2);
+
+    gSystemState.MarkScreenDirty();
 }
 
 // ---------------------------------------------------------------------------
@@ -145,7 +151,8 @@ void EmRegsFrameBuffer::SetWord(emuptr address, uint32 value) {
 void EmRegsFrameBuffer::SetByte(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
     EmMemDoPut8(((uint8*)fVideoMem) + offset, value);
-    EmScreen::MarkDirty(address, 1);
+
+    gSystemState.MarkScreenDirty();
 }
 
 // ---------------------------------------------------------------------------

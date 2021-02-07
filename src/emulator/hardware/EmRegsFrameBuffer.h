@@ -25,8 +25,9 @@ class EmRegsFrameBuffer : public EmRegs {
 
     virtual void Initialize(void);
     virtual void Reset(Bool hardwareReset);
-    virtual void Save(SessionFile&);
-    virtual void Load(SessionFile&);
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
     virtual void Dispose(void);
 
     virtual uint32 GetLong(emuptr address);
