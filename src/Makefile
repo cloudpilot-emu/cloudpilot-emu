@@ -127,6 +127,8 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsUSBPhilipsPDIUSBD12.cpp \
 	emulator/hardware/EmRegsSED1376.cpp \
 	emulator/hardware/EmRegsFrameBuffer.cpp \
+	emulator/hardware/EmRegsVZPalmM500.cpp \
+	emulator/hardware/EmRegsVZPalmM505.cpp \
 	emulator/hardware/EmRegsEZPalmV.cpp \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
