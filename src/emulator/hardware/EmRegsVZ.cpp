@@ -2858,7 +2858,8 @@ int EmRegsVZ::GetPort(emuptr address) {
 }
 
 uint32 EmRegsVZ::Tmr1CyclesToNextInterrupt() {
-    if (timer1TicksPerSecond <= 0) return 0;
+    if (!(READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) || timer1TicksPerSecond <= 0)
+        return 0xffffffff;
 
     uint16 tcmp = READ_REGISTER(tmr1Compare);
     uint16 tcn = READ_REGISTER(tmr1Counter);
@@ -2868,7 +2869,8 @@ uint32 EmRegsVZ::Tmr1CyclesToNextInterrupt() {
 }
 
 uint32 EmRegsVZ::Tmr2CyclesToNextInterrupt() {
-    if (timer2TicksPerSecond <= 0) return 0;
+    if (!(READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnable) || timer2TicksPerSecond <= 0)
+        return 0xffffffff;
 
     uint16 tcmp = READ_REGISTER(tmr2Compare);
     uint16 tcn = READ_REGISTER(tmr2Counter);
