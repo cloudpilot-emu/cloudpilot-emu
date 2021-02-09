@@ -646,14 +646,13 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
     frame.lines = height;
     frame.margin = 0;
     frame.bytesPerLine = width * 3;
-
-    if (3 * width * height < static_cast<ssize_t>(frame.GetBufferSize())) return false;
+    if (3 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
     uint8* buffer = frame.GetBuffer();
 
     switch (bpp) {
         case 1:
-            for (int32 x = 0; x < width; x++)
-                for (int32 y = 0; y < height; y++) {
+            for (int32 y = 0; y < height; y++)
+                for (int32 x = 0; x < width; x++) {
                     SetFromPalette(
                         buffer,
                         (EmMemGet8(baseAddr + y * rowBytes + x / 8) >> (7 - (x % 8))) & 0x01, mono);
@@ -664,8 +663,8 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
             break;
 
         case 2:
-            for (int32 x = 0; x < width; x++)
-                for (int32 y = 0; y < height; y++) {
+            for (int32 y = 0; y < height; y++)
+                for (int32 x = 0; x < width; x++) {
                     SetFromPalette(
                         buffer,
                         (EmMemGet8(baseAddr + y * rowBytes + x / 4) >> 2 * (3 - (x % 4))) & 0x03,
@@ -677,8 +676,8 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
             break;
 
         case 4:
-            for (int32 x = 0; x < width; x++)
-                for (int32 y = 0; y < height; y++) {
+            for (int32 y = 0; y < height; y++)
+                for (int32 x = 0; x < width; x++) {
                     SetFromPalette(
                         buffer,
                         (EmMemGet8(baseAddr + y * rowBytes + x / 2) >> 4 * (1 - (x % 2))) & 0x0f,
@@ -690,8 +689,8 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
             break;
 
         case 8:
-            for (int32 x = 0; x < width; x++)
-                for (int32 y = 0; y < height; y++) {
+            for (int32 y = 0; y < height; y++)
+                for (int32 x = 0; x < width; x++) {
                     SetFromPalette(buffer, EmMemGet8(baseAddr + y * rowBytes + x), mono);
 
                     buffer += 3;
@@ -700,8 +699,8 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
             break;
 
         default:
-            for (int32 x = 0; x < width; x++)
-                for (int32 y = 0; y < height; y++) {
+            for (int32 y = 0; y < height; y++)
+                for (int32 x = 0; x < width; x++) {
                     uint8 p1 = EmMemGet8(baseAddr++);  // GGGBBBBB
                     uint8 p2 = EmMemGet8(baseAddr++);  // RRRRRGGG
 

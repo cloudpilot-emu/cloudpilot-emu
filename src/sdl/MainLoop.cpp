@@ -63,8 +63,7 @@ void MainLoop::Cycle() {
         gSystemState.MarkScreenClean();
     }
 #ifndef __EMSCRIPTEN__
-    else
-        SDL_Delay(16);
+    // else SDL_Delay(16);
 #endif
 
 #ifdef __EMSCRIPTEN__
@@ -146,6 +145,17 @@ void MainLoop::UpdateScreen() {
                             palette[((buffer[y * frame.bytesPerLine + (x + frame.margin) / 4]) >>
                                      (6 - ((x + frame.margin) % 4) * 2)) &
                                     0x3];
+            } break;
+
+            case 24: {
+                for (int x = 0; x < 160; x++)
+                    for (int y = 0; y < 160; y++) {
+                        int idx = 3 * (x + frame.margin + (y * frame.lineWidth));
+
+                        pixels[y * pitch / 4 + x] = 0x000000ff | (buffer[idx] << 24) |
+                                                    (buffer[idx + 1] << 16) |
+                                                    (buffer[idx + 2] << 8);
+                    }
             } break;
         }
 
