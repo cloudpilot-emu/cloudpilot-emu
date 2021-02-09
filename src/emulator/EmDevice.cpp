@@ -51,6 +51,10 @@
 #include "EmCommon.h"
 #include "EmROMReader.h"  // EmROMReader
 #include "EmRegsEZPalmV.h"
+#include "EmRegsFrameBuffer.h"
+#include "EmRegsSED1376.h"
+#include "EmRegsUSBPhilipsPDIUSBD12.h"
+#include "EmRegsVZPalmM505.h"
 #include "EmStructs.h"
 #include "Platform.h"  // _stricmp
 
@@ -70,16 +74,12 @@
     #include "EmRegsEZPalmVx.h"
     #include "EmRegsEZTemp.h"
     #include "EmRegsEZVisor.h"
-    #include "EmRegsFrameBuffer.h"
     #include "EmRegsMediaQ11xx.h"
     #include "EmRegsPLDPalmVIIEZ.h"
     #include "EmRegsSED1375.h"
-    #include "EmRegsSED1376.h"
     #include "EmRegsSZTemp.h"
-    #include "EmRegsUSBPhilipsPDIUSBD12.h"
     #include "EmRegsUSBVisor.h"
     #include "EmRegsVZPalmM500.h"
-    #include "EmRegsVZPalmM505.h"
     #include "EmRegsVZTemp.h"
     #include "EmRegsVZVisorEdge.h"
     #include "EmRegsVZVisorPlatinum.h"
@@ -935,6 +935,8 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x10400000));
             break;
 
+#endif
+
         case kDevicePalmM515:
             EmBankRegs::AddSubBank(new EmRegsVZPalmM505);
             EmBankRegs::AddSubBank(
@@ -943,6 +945,8 @@ void EmDevice::CreateRegs(void) const {
                 new EmRegsFrameBuffer(sed1376VideoMemStart, sed1376VideoMemSize));
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x10400000));
             break;
+
+#if 0
 
         case kDevicePalmI705:
             EmBankRegs::AddSubBank(new EmRegsVZPalmI705);
