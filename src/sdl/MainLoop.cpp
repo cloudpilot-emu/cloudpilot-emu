@@ -63,7 +63,8 @@ void MainLoop::Cycle() {
         gSystemState.MarkScreenClean();
     }
 #ifndef __EMSCRIPTEN__
-    // else SDL_Delay(16);
+    else
+        SDL_Delay(16);
 #endif
 
 #ifdef __EMSCRIPTEN__
