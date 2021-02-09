@@ -14,10 +14,12 @@
 #include "EmRegsSED1376.h"
 
 #include "EmCommon.h"
-#include "EmMemory.h"     // EmMem_memcpy
-#include "EmPixMap.h"     // EmPixMap::GetLCDScanlines
-#include "EmScreen.h"     // EmScreen::InvalidateAll
-#include "SessionFile.h"  // WriteSED1376RegsType
+#include "EmMemory.h"  // EmMem_memcpy
+#include "EmSystemState.h"
+#include "Frame.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 // Given a register (specified by its field name), return its address
 // in emulated space.
@@ -105,27 +107,27 @@ void EmRegsSED1376::Reset(Bool hardwareReset) {
         memset(fRegs.GetPtr(), 0, fRegs.GetSize());
 
         //		EmAssert ((sed1376ProductCodeExpected | sed1376RevisionCodeExpected) ==
-        //0x28);
+        // 0x28);
         fRegs.productRevisionCode = 0x28;
         fRegs.displayBufferSize = 20;  // 80K / 4K
         fRegs.configurationReadback = 0;
     }
 }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsSED1376::Save
-// ---------------------------------------------------------------------------
+void EmRegsSED1376::Save(Savestate& savestate) { savestate.NotifyError(); }
 
-void EmRegsSED1376::Save(SessionFile& f) {
+void EmRegsSED1376::Save(SavestateProbe& prove) {}
+
+void EmRegsSED1376::Load(SavestateLoader& loader) {}
+
+#if 0
+
+void void::Save(SessionFile& f) {
     EmRegs::Save(f);
 
     f.WriteSED1376RegsType(*(SED1376RegsType*)fRegs.GetPtr());
     f.WriteSED1376Palette(fClutData);
 }
-
-// ---------------------------------------------------------------------------
-//		� EmRegsSED1376::Load
-// ---------------------------------------------------------------------------
 
 void EmRegsSED1376::Load(SessionFile& f) {
     EmRegs::Load(f);
@@ -142,6 +144,8 @@ void EmRegsSED1376::Load(SessionFile& f) {
         f.SetCanReload(false);
     }
 }
+
+#endif
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSED1376::Dispose
@@ -276,7 +280,7 @@ Bool EmRegsSED1376::GetLCDHasFrame(void) { return true; }
 
 void EmRegsSED1376::invalidateWrite(emuptr address, int size, uint32 value) {
     this->StdWriteBE(address, size, value);
-    EmScreen::InvalidateAll();
+    gSystemState.MarkScreenDirty();
 }
 
 // ---------------------------------------------------------------------------
@@ -311,7 +315,7 @@ void EmRegsSED1376::lutWriteAddressWrite(emuptr address, int size, uint32 value)
     fClutData[value] = RGBType((red & 0xFC) | (red >> 6), (green & 0xFC) | (green >> 6),
                                (blue & 0xFC) | (blue >> 6));
 
-    EmScreen::InvalidateAll();
+    gSystemState.MarkScreenDirty();
 }
 
 // ---------------------------------------------------------------------------
@@ -331,30 +335,19 @@ void EmRegsSED1376::lutReadAddressWrite(emuptr address, int size, uint32 value) 
     fRegs.lutReadBlue = rgb.fBlue & 0xFC;
 }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsSED1376::PrvGetPalette
-// ---------------------------------------------------------------------------
+inline void EmRegsSED1376::SetFromPalette(uint8* target, uint16 index, bool mono) {
+    RGBType entry = fClutData[index];
 
-void EmRegsSED1376::PrvGetPalette(RGBList& thePalette) {
-    Bool mono = (fRegs.displayMode & sed1376MonoMask) != 0;
-    int32 bpp = 1 << ((fRegs.displayMode & sed1376BPPMask) >> sed1376BPPShift);
-    int32 numColors = 1 << bpp;
-
-    thePalette.resize(numColors);
-
-    for (int ii = 0; ii < numColors; ++ii) {
-        if (mono) {
-            uint8 green = fClutData[ii].fGreen;
-            thePalette[ii].fRed = green;
-            thePalette[ii].fGreen = green;
-            thePalette[ii].fBlue = green;
-        } else {
-            thePalette[ii] = fClutData[ii];
-        }
+    if (mono)
+        target[0] = target[1] = target[2] = entry.fGreen;
+    else {
+        target[0] = entry.fRed;
+        target[1] = entry.fGreen;
+        target[2] = entry.fBlue;
     }
 }
 
-#pragma mark -
+#if 0
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSED1376VisorPrism::EmRegsSED1376VisorPrism
@@ -380,11 +373,11 @@ void EmRegsSED1376VisorPrism::SetSubBankHandlers(void) {
 
     // Now add standard/specialized handers for the defined registers.
 
-#undef INSTALL_HANDLER
-#define INSTALL_HANDLER(read, write, reg)                                            \
-    this->SetHandler((ReadFunction)&EmRegsSED1376VisorPrism::read,                   \
-                     (WriteFunction)&EmRegsSED1376VisorPrism::write, addressof(reg), \
-                     fRegs.reg.GetSize())
+    #undef INSTALL_HANDLER
+    #define INSTALL_HANDLER(read, write, reg)                                            \
+        this->SetHandler((ReadFunction)&EmRegsSED1376VisorPrism::read,                   \
+                         (WriteFunction)&EmRegsSED1376VisorPrism::write, addressof(reg), \
+                         fRegs.reg.GetSize())
 
     INSTALL_HANDLER(StdReadBE, reservedWrite, reserved);
 }
@@ -563,7 +556,7 @@ void EmRegsSED1376VisorPrism::reservedWrite(emuptr address, int size, uint32 val
     UNUSED_PARAM(value);
 }
 
-#pragma mark -
+#endif
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSED1376PalmGeneric::EmRegsSED1376PalmGeneric
@@ -588,7 +581,7 @@ void EmRegsSED1376PalmGeneric::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 //	Bool	wordSwapped	= (fRegs.specialEffects & sed1376WordSwapMask) != 0;
 //	Bool	byteSwapped	= (fRegs.specialEffects & sed1376ByteSwapMask) != 0;
 //	int32	bpp			= 1 << ((fRegs.displayMode & sed1376BPPMask) >>
-//sed1376BPPShift);
+// sed1376BPPShift);
 #if !OVERLAY_IS_MAIN
     //	int32	width		= ((fRegs.horizontalPeriod + 1) * 8);
     int32 height = ((fRegs.verticalPeriod1 << 8) | fRegs.verticalPeriod0) + 1;
@@ -596,9 +589,10 @@ void EmRegsSED1376PalmGeneric::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
     uint32 offset = (fRegs.mainStartAddress2 << 18) | (fRegs.mainStartAddress1 << 10) |
                     (fRegs.mainStartAddress0 << 2);
 #else
-    //	int32	left		= ((fRegs.ovlyStartXPosition1	<< 8) | fRegs.ovlyStartXPosition0)	* 32 /
-    //bpp; 	int32	right		= ((fRegs.ovlyEndXPosition1		<< 8) |
-    //fRegs.ovlyEndXPosition0)	* 32 / bpp;
+    //	int32	left		= ((fRegs.ovlyStartXPosition1	<< 8) | fRegs.ovlyStartXPosition0)
+    //* 32
+    /// bpp; 	int32	right		= ((fRegs.ovlyEndXPosition1		<< 8) |
+    // fRegs.ovlyEndXPosition0)	* 32 / bpp;
     int32 top = ((fRegs.ovlyStartYPosition1 << 8) | fRegs.ovlyStartYPosition0);
     int32 bottom = ((fRegs.ovlyEndYPosition1 << 8) | fRegs.ovlyEndYPosition0);
 
@@ -618,7 +612,7 @@ void EmRegsSED1376PalmGeneric::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 //		� EmRegsSED1376PalmGeneric::GetLCDScanlines
 // ---------------------------------------------------------------------------
 
-void EmRegsSED1376PalmGeneric::GetLCDScanlines(EmScreenUpdateInfo& info) {
+bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
     // Get the screen metrics.
 
     //	Bool	wordSwapped	= (fRegs.specialEffects & sed1376WordSwapMask) != 0;
@@ -643,107 +637,107 @@ void EmRegsSED1376PalmGeneric::GetLCDScanlines(EmScreenUpdateInfo& info) {
     uint32 offset = (fRegs.ovlyStartAddress2 << 18) | (fRegs.ovlyStartAddress1 << 10) |
                     (fRegs.ovlyStartAddress0 << 2);
 #endif
+    if (width != 160 || height != 160) return false;
+
     emuptr baseAddr = fBaseVideoAddr + offset;
 
-    info.fLeftMargin = 0;
+    frame.bpp = 24;
+    frame.lineWidth = width;
+    frame.lines = height;
+    frame.margin = 0;
+    frame.bytesPerLine = width * 3;
 
-    if (bpp <= 8) {
-        EmPixMapFormat format = bpp == 1   ? kPixMapFormat1
-                                : bpp == 2 ? kPixMapFormat2
-                                : bpp == 4 ? kPixMapFormat4
-                                           : kPixMapFormat8;
+    if (3 * width * height < static_cast<ssize_t>(frame.GetBufferSize())) return false;
+    uint8* buffer = frame.GetBuffer();
 
-        RGBList colorTable;
-        this->PrvGetPalette(colorTable);
+    switch (bpp) {
+        case 1:
+            for (int32 x = 0; x < width; x++)
+                for (int32 y = 0; y < height; y++) {
+                    SetFromPalette(
+                        buffer,
+                        (EmMemGet8(baseAddr + y * rowBytes + x / 8) >> (7 - (x % 8))) & 0x01, mono);
 
-        // Set format, size, and color table of EmPixMap.
-
-        info.fImage.SetSize(EmPoint(width, height));
-        info.fImage.SetFormat(format);
-        info.fImage.SetRowBytes(rowBytes);
-        info.fImage.SetColorTable(colorTable);
-
-        // Determine first and last scanlines to fetch, and fetch them.
-
-        info.fFirstLine = (info.fScreenLow - baseAddr) / rowBytes;
-        info.fLastLine = (info.fScreenHigh - baseAddr - 1) / rowBytes + 1;
-
-        long firstLineOffset = info.fFirstLine * rowBytes;
-        long lastLineOffset = info.fLastLine * rowBytes;
-
-        EmMem_memcpy((void*)((uint8*)info.fImage.GetBits() + firstLineOffset),
-                     baseAddr + firstLineOffset, lastLineOffset - firstLineOffset);
-    } else {
-        // Set depth, size, and color table of EmPixMap.
-
-        info.fImage.SetSize(EmPoint(width, height));
-        info.fImage.SetFormat(kPixMapFormat24RGB);
-
-        // Determine first and last scanlines to fetch.
-
-        info.fFirstLine = (info.fScreenLow - baseAddr) / rowBytes;
-        info.fLastLine = (info.fScreenHigh - baseAddr - 1) / rowBytes + 1;
-
-        // Get location and rowBytes of source bytes.
-
-        uint8* srcStart = EmMemGetRealAddress(baseAddr);
-        int32 srcRowBytes = rowBytes;
-        uint8* srcPtr = srcStart + srcRowBytes * info.fFirstLine;
-        uint8* srcPtr0 = srcPtr;
-
-        // Get location and rowBytes of destination bytes.
-
-        uint8* destStart = (uint8*)info.fImage.GetBits();
-        int32 destRowBytes = info.fImage.GetRowBytes();
-        uint8* destPtr = destStart + destRowBytes * info.fFirstLine;
-        uint8* destPtr0 = destPtr;
-
-        // Get height of range to copy.
-
-        int32 height = info.fLastLine - info.fFirstLine;
-
-        // Copy the pixels from source to dest.
-
-        for (int yy = 0; yy < height; ++yy) {
-            for (int xx = 0; xx < width; ++xx) {
-                uint8 p1 = EmMemDoGet8(srcPtr++);  // GGGBBBBB
-                uint8 p2 = EmMemDoGet8(srcPtr++);  // RRRRRGGG
-
-                // Merge the two together so that we get RRRRRGGG GGGBBBBB
-
-                uint16 p;
-
-                if (!byteSwapped)
-                    p = (p2 << 8) | p1;
-                else
-                    p = (p1 << 8) | p2;
-
-                // Shift the bits around, forming RRRRRrrr, GGGGGGgg, and
-                // BBBBBbbb values, where the lower-case bits are copies of
-                // the least significant bits in the upper-case bits.
-                //
-                // Note that all of this could also be done with three 64K
-                // lookup tables.  If speed is an issue, we might want to
-                // investigate that.
-
-                if (mono) {
-                    uint8 green = ((p >> 3) & 0xFC) | ((p >> 5) & 0x03);
-                    *destPtr++ = green;
-                    *destPtr++ = green;
-                    *destPtr++ = green;
-                } else {
-                    *destPtr++ = ((p >> 8) & 0xF8) | ((p >> 11) & 0x07);
-                    *destPtr++ = ((p >> 3) & 0xFC) | ((p >> 5) & 0x03);
-                    *destPtr++ = ((p << 3) & 0xF8) | ((p >> 0) & 0x07);
+                    buffer += 3;
                 }
-            }
 
-            srcPtr = srcPtr0 += srcRowBytes;
-            destPtr = destPtr0 += destRowBytes;
-        }
+            break;
+
+        case 2:
+            for (int32 x = 0; x < width; x++)
+                for (int32 y = 0; y < height; y++) {
+                    SetFromPalette(
+                        buffer,
+                        (EmMemGet8(baseAddr + y * rowBytes + x / 4) >> 2 * (3 - (x % 4))) & 0x03,
+                        mono);
+
+                    buffer += 3;
+                }
+
+            break;
+
+        case 4:
+            for (int32 x = 0; x < width; x++)
+                for (int32 y = 0; y < height; y++) {
+                    SetFromPalette(
+                        buffer,
+                        (EmMemGet8(baseAddr + y * rowBytes + x / 2) >> 4 * (1 - (x % 2))) & 0x0f,
+                        mono);
+
+                    buffer += 3;
+                }
+
+            break;
+
+        case 8:
+            for (int32 x = 0; x < width; x++)
+                for (int32 y = 0; y < height; y++) {
+                    SetFromPalette(buffer, EmMemGet8(baseAddr + y * rowBytes + x), mono);
+
+                    buffer += 3;
+                }
+
+            break;
+
+        default:
+            for (int32 x = 0; x < width; x++)
+                for (int32 y = 0; y < height; y++) {
+                    uint8 p1 = EmMemGet8(baseAddr++);  // GGGBBBBB
+                    uint8 p2 = EmMemGet8(baseAddr++);  // RRRRRGGG
+
+                    // Merge the two together so that we get RRRRRGGG GGGBBBBB
+
+                    uint16 p;
+
+                    if (!byteSwapped)
+                        p = (p2 << 8) | p1;
+                    else
+                        p = (p1 << 8) | p2;
+
+                    // Shift the bits around, forming RRRRRrrr, GGGGGGgg, and
+                    // BBBBBbbb values, where the lower-case bits are copies of
+                    // the least significant bits in the upper-case bits.
+                    //
+                    // Note that all of this could also be done with three 64K
+                    // lookup tables.  If speed is an issue, we might want to
+                    // investigate that.
+
+                    if (mono) {
+                        uint8 green = ((p >> 3) & 0xFC) | ((p >> 5) & 0x03);
+                        *buffer++ = green;
+                        *buffer++ = green;
+                        *buffer++ = green;
+                    } else {
+                        *buffer++ = ((p >> 8) & 0xF8) | ((p >> 11) & 0x07);
+                        *buffer++ = ((p >> 3) & 0xFC) | ((p >> 5) & 0x03);
+                        *buffer++ = ((p << 3) & 0xF8) | ((p >> 0) & 0x07);
+                    }
+                }
+
+            break;
     }
 
-    if (!this->GetLCDBacklightOn()) {
-        info.fImage.ChangeTone(-10, info.fFirstLine, info.fLastLine);
-    }
+    return true;
 }
+
+uint16 EmRegsSED1376PalmGeneric::GetLCD2bitMapping() { return 0xfa50; }

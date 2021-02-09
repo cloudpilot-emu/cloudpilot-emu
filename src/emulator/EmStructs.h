@@ -30,9 +30,7 @@ typedef vector<RAMSizeType> RAMSizeList;
 typedef vector<uint8> ByteList;
 typedef vector<string> StringList;
 
-#if 0  // CSTODO
 // ---------- RGBType ----------
-
 struct RGBType {
     RGBType(void) {}
     RGBType(uint8 red, uint8 green, uint8 blue) : fRed(red), fGreen(green), fBlue(blue) {}
@@ -49,7 +47,6 @@ struct RGBType {
     uint8 fFiller;  // Pad this out to 4 bytes to make array lookups more efficient.
 };
 typedef vector<RGBType> RGBList;
-#endif
 
 // ---------- SystemCallContext ----------
 

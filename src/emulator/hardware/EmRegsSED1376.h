@@ -19,8 +19,7 @@
 #include "EmRegs.h"
 #include "EmStructs.h"  // RGBList
 
-class SessionFile;
-class EmScreenUpdateInfo;
+struct Frame;
 
 #define sed1376RegsAddr (0x1FF80000)
 #define sed1376VideoMemStart (0x1FFA0000)
@@ -34,8 +33,9 @@ class EmRegsSED1376 : public EmRegs, public EmHALHandler {
     // EmRegs overrides
     virtual void Initialize(void);
     virtual void Reset(Bool hardwareReset);
-    virtual void Save(SessionFile&);
-    virtual void Load(SessionFile&);
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
     virtual void Dispose(void);
 
     virtual void SetSubBankHandlers(void);
@@ -48,7 +48,6 @@ class EmRegsSED1376 : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDBacklightOn(void);
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end) = 0;
-    virtual void GetLCDScanlines(EmScreenUpdateInfo& info) = 0;
 
    private:
     uint32 powerSaveConfigurationRead(emuptr address, int size);
@@ -58,7 +57,7 @@ class EmRegsSED1376 : public EmRegs, public EmHALHandler {
     void lutReadAddressWrite(emuptr address, int size, uint32 value);
 
    protected:
-    void PrvGetPalette(RGBList& thePalette);
+    void SetFromPalette(uint8* target, uint16 index, bool mono);
 
    protected:
     emuptr fBaseRegsAddr;
@@ -66,6 +65,8 @@ class EmRegsSED1376 : public EmRegs, public EmHALHandler {
     EmProxySED1376RegsType fRegs;
     RGBType fClutData[256];
 };
+
+#if 0
 
 class EmRegsSED1376VisorPrism : public EmRegsSED1376 {
    public:
@@ -84,13 +85,16 @@ class EmRegsSED1376VisorPrism : public EmRegsSED1376 {
     int32 PrvGetLCDDepth(void);
 };
 
+#endif
+
 class EmRegsSED1376PalmGeneric : public EmRegsSED1376 {
    public:
     EmRegsSED1376PalmGeneric(emuptr baseRegsAddr, emuptr baseVideoAddr);
     virtual ~EmRegsSED1376PalmGeneric(void);
 
     virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
-    virtual void GetLCDScanlines(EmScreenUpdateInfo& info);
+    virtual bool CopyLCDFrame(Frame& frame);
+    virtual uint16 GetLCD2bitMapping();
 };
 
 #endif /* EmRegsSED1376_h */
