@@ -1040,6 +1040,8 @@ void EmRegsVZ::CycleSlowly(Bool sleeping) {
             WRITE_REGISTER(rtcIntStatus, READ_REGISTER(rtcIntStatus) | hwrVZ328RTCIntStatusAlarm);
             EmRegsVZ::UpdateRTCInterrupts();
         }
+
+        lastRtcAlarmCheck = nowInSeconds;
     }
 }
 
