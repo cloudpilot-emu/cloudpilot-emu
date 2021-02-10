@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include "Byteswapping.h"  // Canonical
+#include "EmBankSRAM.h"
 #include "EmCommon.h"
 #include "EmDevice.h"
 #include "EmHAL.h"     // EmHAL
@@ -517,6 +518,8 @@ void EmRegsVZ::Initialize(void) {
 
     fUART[0] = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballVZ, 0);
     fUART[1] = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballVZ, 1);
+
+    ApplySdctl();
 }
 
 // ---------------------------------------------------------------------------
@@ -547,6 +550,8 @@ void EmRegsVZ::Reset(Bool hardwareReset) {
         Bool sendTxData = false;
         EmRegsVZ::UARTStateChanged(sendTxData, 0);
         EmRegsVZ::UARTStateChanged(sendTxData, 1);
+
+        ApplySdctl();
     }
 
     UpdateTimerTicksPerSecond();
@@ -869,7 +874,7 @@ void EmRegsVZ::SetSubBankHandlers(void) {
 
     INSTALL_HANDLER(StdRead, StdWrite, dramConfig);
     INSTALL_HANDLER(StdRead, StdWrite, dramControl);
-    INSTALL_HANDLER(StdRead, StdWrite, sdramControl);
+    INSTALL_HANDLER(StdRead, sdctlWrite, sdramControl);
     INSTALL_HANDLER(StdRead, StdWrite, sdramPwDn);
 
     INSTALL_HANDLER(StdRead, StdWrite, emuAddrCompare);
@@ -1637,6 +1642,26 @@ void EmRegsVZ::rtcDayWrite(emuptr address, int size, uint32 value) {
     EmRegsVZ::StdWrite(address, size, value);
 
     rtcDayAtWrite = Platform::GetMilliseconds() / (3600 * 24 * 1000);
+}
+
+void EmRegsVZ::sdctlWrite(emuptr address, int size, uint32 value) {
+    EmRegsVZ::StdWrite(address, size, value);
+
+    ApplySdctl();
+}
+
+void EmRegsVZ::ApplySdctl() {
+    if (gRAMBank_Size != 16 * 1024 * 1024) return;
+
+    // We emulate just what is required for PalmOS to detect the full 16MB
+    // of RAM on the m515. Credits for this go to Cuttlefish and Mu.
+
+    uint16 sdctl = READ_REGISTER(sdramControl);
+
+    gRAMBank_Mask = 0x003fffff;
+
+    if ((sdctl & 0x0c) == 0x08) gRAMBank_Mask |= 0x00800000;
+    if ((sdctl & 0x30) == 0x10) gRAMBank_Mask |= 0x00400000;
 }
 
 uint32 EmRegsVZ::rtcDayRead(emuptr address, int size) {

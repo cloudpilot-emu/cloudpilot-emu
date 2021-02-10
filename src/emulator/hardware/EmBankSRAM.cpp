@@ -179,9 +179,15 @@ void EmBankSRAM::Dispose(void) {
 void EmBankSRAM::SetBankHandlers(void) {
     // Memory banks 0x1000 to <mumble> are managed by the functions
     // in EmBankSRAM.  <mumble> is based on the amount of RAM being emulated.
-
     long numBanks =
         EmMemBankIndex(gMemoryStart + gRAMBank_Size - 1) - EmMemBankIndex(gMemoryStart) + 1;
+
+    // On the m515 PalmOS plays with the memory layout while it is detecting
+    // memory size. We need to claim 32MB of the address space for this to work,
+    // and the layout set up by writing to SDCTL will take care that only the
+    // physical memory is actually accessed.
+    if (gRAMBank_Size == 16 * 1024 * 1024) numBanks *= 2;
+
     Memory::InitializeBanks(gAddressBank, EmMemBankIndex(gMemoryStart), numBanks);
 }
 

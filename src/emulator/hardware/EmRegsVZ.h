@@ -86,6 +86,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     uint32 rtcHourMinSecRead(emuptr address, int size);
     uint32 rtcDayRead(emuptr address, int size);
 
+    void sdctlWrite(emuptr address, int size, uint32 value);
     void csControl1Write(emuptr address, int size, uint32 value);
     void csASelectWrite(emuptr address, int size, uint32 value);
     void csDSelectWrite(emuptr address, int size, uint32 value);
@@ -115,6 +116,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual uint8 GetKeyBits(void);
     virtual uint16 ButtonToBits(ButtonEventT::Button btn);
     virtual EmSPISlave* GetSPISlave(void);
+
+    virtual void ApplySdctl();
 
    protected:
     void UpdateInterrupts(void);
