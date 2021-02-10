@@ -452,7 +452,9 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
         // Perform periodic tasks.
 
         uint32 cyclesToNextInterrupt = EmHAL::CyclesToNextInterrupt();
-        fCurrentCycles += (cyclesToNextInterrupt > 0 ? cyclesToNextInterrupt : 10000);
+        fCurrentCycles += ((cyclesToNextInterrupt > 0 && cyclesToNextInterrupt != 0xffffffff)
+                               ? cyclesToNextInterrupt
+                               : 10000);
 
         CYCLE(true);
 

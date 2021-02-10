@@ -20,6 +20,7 @@
 #include "EmStructs.h"  // RGBList
 
 struct Frame;
+class EmRegsFrameBuffer;
 
 #define sed1376RegsAddr (0x1FF80000)
 #define sed1376VideoMemStart (0x1FFA0000)
@@ -27,7 +28,7 @@ struct Frame;
 
 class EmRegsSED1376 : public EmRegs, public EmHALHandler {
    public:
-    EmRegsSED1376(emuptr baseRegsAddr, emuptr baseVideoAddr);
+    EmRegsSED1376(emuptr baseRegsAddr, emuptr baseVideoAddr, EmRegsFrameBuffer& framebuffer);
     virtual ~EmRegsSED1376(void);
 
     // EmRegs overrides
@@ -64,6 +65,7 @@ class EmRegsSED1376 : public EmRegs, public EmHALHandler {
     emuptr fBaseVideoAddr;
     EmProxySED1376RegsType fRegs;
     RGBType fClutData[256];
+    EmRegsFrameBuffer& framebuffer;
 };
 
 #if 0
@@ -89,7 +91,8 @@ class EmRegsSED1376VisorPrism : public EmRegsSED1376 {
 
 class EmRegsSED1376PalmGeneric : public EmRegsSED1376 {
    public:
-    EmRegsSED1376PalmGeneric(emuptr baseRegsAddr, emuptr baseVideoAddr);
+    EmRegsSED1376PalmGeneric(emuptr baseRegsAddr, emuptr baseVideoAddr,
+                             EmRegsFrameBuffer& framebuffer);
     virtual ~EmRegsSED1376PalmGeneric(void);
 
     virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
