@@ -1177,8 +1177,7 @@ void EmCPU68K::BusError(emuptr address, long size, Bool forRead) {
     gExceptionForRead = forRead;
 
     this->ProcessException(kException_BusErr);
-
-    EmAssert(false);  // Should never get this far.
+    return;
 }
 
 // ---------------------------------------------------------------------------
@@ -1191,8 +1190,7 @@ void EmCPU68K::AddressError(emuptr address, long size, Bool forRead) {
     gExceptionForRead = forRead;
 
     this->ProcessException(kException_AddressErr);
-
-    EmAssert(false);  // Should never get this far.
+    return;
 }
 
 #pragma mark -
