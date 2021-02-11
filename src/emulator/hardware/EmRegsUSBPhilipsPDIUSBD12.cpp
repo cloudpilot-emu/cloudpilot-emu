@@ -62,12 +62,6 @@ void EmRegsUSBPhilipsPDIUSBD12::Reset(Bool hardwareReset) {
     }
 }
 
-void EmRegsUSBPhilipsPDIUSBD12::Save(Savestate& savestate) { savestate.NotifyError(); }
-
-void EmRegsUSBPhilipsPDIUSBD12::Save(SavestateProbe& savestate) {}
-
-void EmRegsUSBPhilipsPDIUSBD12::Load(SavestateLoader& loader) {}
-
 // ---------------------------------------------------------------------------
 //		� EmRegsUSBPhilipsPDIUSBD12::Dispose
 // ---------------------------------------------------------------------------

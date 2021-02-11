@@ -685,7 +685,7 @@
             async function saveImage(module) {
                 const romName = await kvs.get(KEY_ROM_NAME);
                 const metadata = new TextEncoder().encode(JSON.stringify({ romName }));
-                const deviceId = new TextEncoder().encode('PalmV');
+                const deviceId = new TextEncoder().encode(module.ccall('getDeviceId', 'string', []));
 
                 const romPtr = module.ccall('getRomPtr', 'number', []);
                 const romSize = module.ccall('getRomSize', 'number', []);

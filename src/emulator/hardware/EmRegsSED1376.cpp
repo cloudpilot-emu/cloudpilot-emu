@@ -13,6 +13,7 @@
 
 #include "EmRegsSED1376.h"
 
+#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmMemory.h"  // EmMem_memcpy
 #include "EmRegsFrameBuffer.h"
@@ -78,6 +79,10 @@
 
 #define OVERLAY_IS_MAIN 1
 
+namespace {
+    constexpr int SAVESTATE_VERSION = 1;
+}
+
 // ---------------------------------------------------------------------------
 //		� EmRegsSED1376::EmRegsSED1376
 // ---------------------------------------------------------------------------
@@ -119,11 +124,44 @@ void EmRegsSED1376::Reset(Bool hardwareReset) {
     }
 }
 
-void EmRegsSED1376::Save(Savestate& savestate) { savestate.NotifyError(); }
+void EmRegsSED1376::Save(Savestate& savestate) { DoSave(savestate); }
 
-void EmRegsSED1376::Save(SavestateProbe& prove) {}
+void EmRegsSED1376::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
-void EmRegsSED1376::Load(SavestateLoader& loader) {}
+void EmRegsSED1376::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::regsSED1376);
+    if (!chunk) return;
+
+    if (chunk->Get32() != SAVESTATE_VERSION) {
+        logging::printf("unable to restore RegsSED1376: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegsSED1376::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsSED1376);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegsSED1376::DoSaveLoad(T& helper) {
+    for (auto& rgb : fClutData) {
+        helper.Do(typename T::Pack8() << rgb.fRed << rgb.fGreen << rgb.fBlue << rgb.fFiller);
+    }
+
+    helper.DoBuffer(fRegs.GetPtr(), fRegs.GetSize());
+}
 
 #if 0
 

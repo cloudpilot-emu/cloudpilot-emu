@@ -43,6 +43,10 @@ class EmRegsFrameBuffer : public EmRegs {
     virtual uint32 GetAddressRange(void);
 
    private:
+    template <typename T>
+    void DoSave(T& savestate);
+
+   private:
     emuptr fBaseAddr;
     int32 fSize;
     void* fVideoMem;

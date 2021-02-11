@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include "Byteswapping.h"  // Canonical
+#include "ChunkHelper.h"
 #include "EmBankSRAM.h"
 #include "EmCommon.h"
 #include "EmDevice.h"
@@ -30,6 +31,7 @@
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
+#include "SavestateStructures.h"
 #include "UAE.h"  // regs, SPCFLAG_INT
 
 // clang-format off
@@ -74,6 +76,8 @@ static const int kBaseAddressShift = 13;  // Shift to get base address from CSGB
 #endif
 
 namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+
     double TimerTicksPerSecond(uint16 tmrControl, uint16 tmrPrescaler, int32 systemClockFrequency) {
         uint8 clksource = (tmrControl >> 1) & 0x7;
         double prescaler = ((tmrPrescaler & 0xff) + 1);
@@ -557,122 +561,61 @@ void EmRegsVZ::Reset(Bool hardwareReset) {
     UpdateTimerTicksPerSecond();
 }
 
-#if 0
-// CSTODO
-// ---------------------------------------------------------------------------
-//		� EmRegsVZ::Save
-// ---------------------------------------------------------------------------
+void EmRegsVZ::Save(Savestate& savestate) { DoSave(savestate); }
 
-void EmRegsVZ::Save(SessionFile& f) {
-    EmRegs::Save(f);
+void EmRegsVZ::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
-    StWordSwapper swapper(&f68VZ328Regs, sizeof(f68VZ328Regs));
-    f.WriteHwrDBallVZType(f68VZ328Regs);
-    f.FixBug(SessionFile::kBugByteswappedStructs);
+void EmRegsVZ::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::regsVZ);
+    if (!chunk) return;
 
-    const long kCurrentVersion = 3;
+    if (chunk->Get32() != SAVESTATE_VERSION) {
+        logging::printf("unable to restore RegsVZ: unsupported savestate version\n");
+        loader.NotifyError();
 
-    Chunk chunk;
-    EmStreamChunk s(chunk);
-
-    s << kCurrentVersion;
-
-    s << fHotSyncButtonDown;
-    s << fKeyBits;
-    s << fLastTmr1Status;
-    s << fLastTmr2Status;
-    s << fPortDEdge;
-
-    // Added in version 2.
-
-    s << fHour;
-    s << fMin;
-    s << fSec;
-    s << fTick;
-    s << fCycle;
-
-    // Added in version 3.
-
-    s << fPortDDataCount;
-
-    f.WriteDBallVZState(chunk);
-}
-
-// ---------------------------------------------------------------------------
-//		� EmRegsVZ::Load
-// ---------------------------------------------------------------------------
-
-void EmRegsVZ::Load(SessionFile& f) {
-    EmRegs::Load(f);
-
-    if (f.ReadHwrDBallVZType(f68VZ328Regs)) {
-        // The Windows version of Poser 2.1d29 and earlier did not write
-        // out structs in the correct format.  The fields of the struct
-        // were written out in Little-Endian format, not Big-Endian.  To
-        // address this problem, the bug has been fixed, and a new field
-        // is added to the file format indicating that the bug has been
-        // fixed.  With the new field (the "bug bit"), Poser can identify
-        // old files from new files and read them in accordingly.
-        //
-        // With the bug fixed, the .psf files should now be interchangeable
-        // across platforms (modulo other bugs...).
-
-        if (!f.IncludesBugFix(SessionFile::kBugByteswappedStructs)) {
-            Canonical(f68VZ328Regs);
-        }
-        ByteswapWords(&f68VZ328Regs, sizeof(f68VZ328Regs));
-
-        // React to the new data in the UART registers.
-
-        Bool sendTxData = false;
-        EmRegsVZ::UARTStateChanged(sendTxData, 0);
-        EmRegsVZ::UARTStateChanged(sendTxData, 1);
-
-        // Reset gMemAccessFlags.fProtect_SRAMSet
-
-        gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csDSelect) & 0x2000) != 0;
-    } else {
-        f.SetCanReload(false);
+        return;
     }
 
-    Chunk chunk;
-    if (f.ReadDBallVZState(chunk)) {
-        long version;
-        EmStreamChunk s(chunk);
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
 
-        s >> version;
+    Bool sendTxData = false;
+    EmRegsVZ::UARTStateChanged(sendTxData, 0);
+    EmRegsVZ::UARTStateChanged(sendTxData, 1);
 
-        if (version >= 1) {
-            s >> fHotSyncButtonDown;
-            s >> fKeyBits;
-            s >> fLastTmr1Status;
-            s >> fLastTmr2Status;
-            s >> fPortDEdge;
-        }
+    gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csDSelect) & 0x2000) != 0;
 
-        if (version >= 2) {
-            s >> fHour;
-            s >> fMin;
-            s >> fSec;
-            s >> fTick;
-            s >> fCycle;
-        }
-
-        if (version >= 3) {
-            s >> fPortDDataCount;
-        }
-    } else {
-        f.SetCanReload(false);
-    }
+    ApplySdctl();
 }
 
-#endif
+template <typename T>
+void EmRegsVZ::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsVZ);
+    if (!chunk) return;
 
-void EmRegsVZ::Save(Savestate& savestate) { savestate.NotifyError(); }
+    chunk->Put32(SAVESTATE_VERSION);
 
-void EmRegsVZ::Save(SavestateProbe& savestate) {}
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
 
-void EmRegsVZ::Load(SavestateLoader& loader) {}
+template <typename T>
+void EmRegsVZ::DoSaveLoad(T& helper) {
+    ::DoSaveLoad(helper, f68VZ328Regs);
+
+    helper.DoBool(fHotSyncButtonDown)
+        .Do16(fKeyBits)
+        .Do16(fLastTmr1Status)
+        .Do16(fLastTmr2Status)
+        .Do8(fPortDEdge)
+        .Do32(fPortDDataCount)
+        .DoDouble(tmr1LastProcessedSystemCycles)
+        .DoDouble(tmr2LastProcessedSystemCycles)
+        .DoDouble(timer1TicksPerSecond)
+        .DoDouble(timer2TicksPerSecond)
+        .Do32(rtcDayAtWrite)
+        .Do32(lastRtcAlarmCheck);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZ::Dispose

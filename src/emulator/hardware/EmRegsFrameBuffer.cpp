@@ -23,6 +23,10 @@
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
 
+namespace {
+    constexpr int SAVESTATE_VERSION = 1;
+}
+
 // ---------------------------------------------------------------------------
 //		� EmRegsFrameBuffer::EmRegsFrameBuffer
 // ---------------------------------------------------------------------------
@@ -56,34 +60,37 @@ void EmRegsFrameBuffer::Initialize(void) {
 
 void EmRegsFrameBuffer::Reset(Bool hardwareReset) { EmRegs::Reset(hardwareReset); }
 
-#if 0
+void EmRegsFrameBuffer::Save(Savestate& savestate) { DoSave(savestate); }
 
-void c::Save(SessionFile& f) {
-    EmRegs::Save(f);
+void EmRegsFrameBuffer::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
-    StWordSwapper swapper(fVideoMem, fSize);
-    f.WriteSED1375Image(fVideoMem, fSize);
-}
+void EmRegsFrameBuffer::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::regsFrameBuffer);
+    if (!chunk) return;
 
-void EmRegsFrameBuffer::Load(SessionFile& f) {
-    EmRegs::Load(f);
+    if (chunk->Get32() != SAVESTATE_VERSION) {
+        logging::printf("unable to restore regsFrameBuffer: unsupported savestate version\n");
+        loader.NotifyError();
 
-    // Read in the LCD image, and then byteswap it.
-
-    if (f.ReadSED1375Image(fVideoMem)) {
-        ByteswapWords(fVideoMem, fSize);
-    } else {
-        f.SetCanReload(false);
+        return;
     }
+
+    // NOT ENDIANESS SAFE
+
+    chunk->GetBuffer(fVideoMem, fSize);
 }
 
-#endif
+template <typename T>
+void EmRegsFrameBuffer::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsFrameBuffer);
+    if (!chunk) return;
 
-void EmRegsFrameBuffer::Save(Savestate& savestate) { savestate.NotifyError(); }
+    chunk->Put32(SAVESTATE_VERSION);
 
-void EmRegsFrameBuffer::Save(SavestateProbe& savestate) {}
+    // NOT ENDIANESS SAFE
 
-void EmRegsFrameBuffer::Load(SavestateLoader& loader) {}
+    chunk->PutBuffer(fVideoMem, fSize);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsFrameBuffer::Dispose

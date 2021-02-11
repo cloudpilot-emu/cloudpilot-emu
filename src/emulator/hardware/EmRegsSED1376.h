@@ -57,6 +57,12 @@ class EmRegsSED1376 : public EmRegs, public EmHALHandler {
     void lutWriteAddressWrite(emuptr address, int size, uint32 value);
     void lutReadAddressWrite(emuptr address, int size, uint32 value);
 
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
+
    protected:
     void SetFromPalette(uint8* target, uint16 index, bool mono);
 

@@ -139,6 +139,12 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     uint32 Tmr1CyclesToNextInterrupt();
     uint32 Tmr2CyclesToNextInterrupt();
 
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
+
    protected:
     HwrM68VZ328Type f68VZ328Regs;
     bool fHotSyncButtonDown;
