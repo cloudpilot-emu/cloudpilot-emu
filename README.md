@@ -2,8 +2,8 @@
 
 This is an emulator for Dragonball-based PalmOS devices that runs in a web
 browser. In particular, the emulator works on iOS. The emulator is derived from
-the original POSE emulator. At the moment, a Palm V device is emulated, but
-support for more devices supported by POSE will follow in the future.
+the original POSE emulator. At the moment, Palm V amd Palm m515 devices are
+emulated. Support for more devices may follow in the future.
 
 # The emulator
 
@@ -19,9 +19,9 @@ UI that mimics a native applicaton.
 ## Loading a ROM and starting the emulator
 
 In order to start the emulator you need to load a ROM file by clicking or
-tapping the "Load ROM or Image" button. You need a ROM file that supports the
-Palm V. After you select the ROM file the emulator will reload and start running
-PalmOS.
+tapping the "Load ROM or Image" button. You need a ROM file from either a
+Palm V or a Palm m515. After you select the ROM file the emulator will
+reload and start running PalmOS.
 
 ## Keyboard input
 
@@ -136,6 +136,7 @@ bug fixes new features. In particular:
 -   Dispatch and timing have been partly rewritten, timing should now be pretty
     close to the original device.
 -   Adjusting the grayscale in 2bpp mode works.
+-   All 16MB of the Palm m515 are usable.
 -   A few conditions that can cause interrupt storms have been fixed.
 -   Savestate code has been rewritten to work with a fixed buffer without
     allocations.

@@ -21,3 +21,6 @@ yarn-error.log
 parser.out
 WebIDLGrammar.pkl
 Makefile.local
+*.bin
+*.img
+*.rom

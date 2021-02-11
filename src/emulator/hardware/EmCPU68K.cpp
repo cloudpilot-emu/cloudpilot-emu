@@ -452,7 +452,9 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
         // Perform periodic tasks.
 
         uint32 cyclesToNextInterrupt = EmHAL::CyclesToNextInterrupt();
-        fCurrentCycles += (cyclesToNextInterrupt > 0 ? cyclesToNextInterrupt : 10000);
+        fCurrentCycles += ((cyclesToNextInterrupt > 0 && cyclesToNextInterrupt != 0xffffffff)
+                               ? cyclesToNextInterrupt
+                               : 10000);
 
         CYCLE(true);
 
@@ -1175,8 +1177,7 @@ void EmCPU68K::BusError(emuptr address, long size, Bool forRead) {
     gExceptionForRead = forRead;
 
     this->ProcessException(kException_BusErr);
-
-    EmAssert(false);  // Should never get this far.
+    return;
 }
 
 // ---------------------------------------------------------------------------
@@ -1189,8 +1190,7 @@ void EmCPU68K::AddressError(emuptr address, long size, Bool forRead) {
     gExceptionForRead = forRead;
 
     this->ProcessException(kException_AddressErr);
-
-    EmAssert(false);  // Should never get this far.
+    return;
 }
 
 #pragma mark -

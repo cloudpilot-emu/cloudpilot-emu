@@ -117,7 +117,12 @@ void initializeSession(string file) {
     EmDevice* device = new EmDevice("PalmV");
 
     if (!device->SupportsROM(reader)) {
-        cerr << "ROM not supported by Palm V" << endl;
+        delete device;
+        device = new EmDevice("m515");
+    }
+
+    if (!device->SupportsROM(reader)) {
+        cerr << "ROM not supported by Palm V or Palm m515" << endl;
 
         exit(1);
     }
