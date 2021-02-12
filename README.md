@@ -119,6 +119,7 @@ will notify you that no more changes will be saved.
     issue.
 -   The date is not updated at midnight. It is updated from the system clock
     when the page reloads or the device resets, though.
+-   The web UI does not currently allow pressing multiple hardware buttons at once.
 
 # Source code and relationship to POSE
 

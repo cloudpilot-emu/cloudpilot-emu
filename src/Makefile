@@ -27,7 +27,7 @@ CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17 -fno-exceptions
 CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
 
-CFLAGS_EMCC = -O2 -s USE_SDL=2 -s USE_SDL_IMAGE=2
+CFLAGS_EMCC = -O3 -s USE_SDL=2 -s USE_SDL_IMAGE=2
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)
 
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined
@@ -39,7 +39,7 @@ WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
 WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/binding.idl
 WEBIDL_BINDING_CXX = web/binding.cpp
 
-LDFLAGS_EMCC_SDL = -Wno-version-check \
+LDFLAGS_EMCC_SDL = -O3 -Wno-version-check \
 	-s EXIT_RUNTIME=1 \
 	-s SDL2_IMAGE_FORMATS='["png"]' \
 	-s USE_SDL=2 \
