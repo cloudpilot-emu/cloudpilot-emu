@@ -416,7 +416,7 @@ int EmBankSRAM::ValidAddress(emuptr address, uint32 size) {
 uint8* EmBankSRAM::GetRealAddress(emuptr address) {
     // Strip the uppermost bit of the address.
 
-    address &= gRAMBank_Mask;
+    address &= (gRAMBank_Size - 1);
 
     return (uint8*)&(gRAM_Memory[address]);
 }
@@ -428,7 +428,7 @@ uint8* EmBankSRAM::GetRealAddress(emuptr address) {
 uint8* EmBankSRAM::GetMetaAddress(emuptr address) {
     // Strip the uppermost bit of the address.
 
-    address &= gRAMBank_Mask;
+    address &= (gRAMBank_Size - 1);
 
     return (uint8*)&(gRAM_MetaMemory[address]);
 }
