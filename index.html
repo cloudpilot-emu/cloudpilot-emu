@@ -152,6 +152,7 @@
             const OBJECT_STORE_MEMORY = 'memory';
             const OBJECT_STORE_STATE = 'state';
 
+            const KEY_MEMORY_FILLER = 'memoryFiller';
             const KEY_ROM_NAME = 'romName';
             const KEY_ROM_IMAGE = 'romImage';
             const KEY_ROM_MEMORY_SIZE = 'memorySize';
@@ -343,12 +344,13 @@
             // ####################################################################################
 
             class MemoryPersistence {
-                constructor(db, size, module) {
+                constructor(db, size, memoryFiller, module) {
                     this.db = db;
                     this.size = size;
                     this.module = module;
                     this.lastUpdateAt = 0;
                     this.active = false;
+                    this.memoryFiller = memoryFiller || 0;
 
                     const pageCount = (size >>> 10) + (size % 1024 ? 1 : 0);
                     this.dirtyPages = new Uint8Array((pageCount >>> 3) + (pageCount % 8 ? 1 : 0));
@@ -530,6 +532,7 @@
 
                 async load() {
                     const image = new Int8Array(this.size);
+                    image.fill(this.memoryFiller);
 
                     // Use 'readwrite' in order to ensure that any write transaction from another tab
                     // will complete before we start reading.
@@ -629,7 +632,7 @@
                     if (buffer.length !== this.size) throw new Error('size mismatch');
 
                     const isEmpty = buf => {
-                        for (let i = 0; i < buf.length; i++) if (buf[i] !== 0) return false;
+                        for (let i = 0; i < buf.length; i++) if (buf[i] !== this.memoryFiller) return false;
                         return true;
                     }
 
@@ -855,7 +858,7 @@
                 imageDownloadButton.disabled = false;
 
                 if (!memoryPersistence) {
-                    memoryPersistence = new MemoryPersistence(db, memorySize, this);
+                    memoryPersistence = new MemoryPersistence(db, memorySize, await kvs.get(KEY_MEMORY_FILLER), this);
                 }
                 memoryPersistence.start();
 
@@ -869,6 +872,8 @@
             // ####################################################################################
 
             async function main(module) {
+                const getMemoryFiller = module.cwrap('getMemoryFiller', 'number', []);
+
                 async function launch() {
                     romName.innerText = `ROM: ${await (kvs.get(KEY_ROM_NAME))}`;
 
@@ -916,13 +921,14 @@
                         await memoryPersistence.reset();
                     }
 
-                    memoryPersistence = new MemoryPersistence(db, memory.length, module);
+                    memoryPersistence = new MemoryPersistence(db, memory.length, getMemoryFiller(), module);
 
                     await memoryPersistence.saveMemoryImageAndState(memory, savestate);
 
                     await kvs.put(KEY_ROM_NAME, romName);
                     await kvs.put(KEY_ROM_IMAGE, rom);
                     await kvs.put(KEY_ROM_MEMORY_SIZE, memory.length);
+                    await kvs.put(KEY_MEMORY_FILLER, getMemoryFiller());
 
                     window.location.reload();
                     return true;
@@ -931,6 +937,7 @@
                 async function handleRom(buffer, name) {
                     await kvs.put(KEY_ROM_NAME, name);
                     await kvs.put(KEY_ROM_IMAGE, buffer);
+                    await kvs.put(KEY_MEMORY_FILLER, getMemoryFiller());
                     await kvs.delete(KEY_ROM_MEMORY_SIZE);
 
                     if (memoryPersistence) {
@@ -970,7 +977,7 @@
 
                 const memorySize = await (kvs.get(KEY_ROM_MEMORY_SIZE));
                 if (memorySize) {
-                    memoryPersistence = new MemoryPersistence(db, memorySize, module);
+                    memoryPersistence = new MemoryPersistence(db, memorySize, await kvs.get(KEY_MEMORY_FILLER), module);
                 }
 
                 imageUploadButton.addEventListener('click', () => imageUpload.click());

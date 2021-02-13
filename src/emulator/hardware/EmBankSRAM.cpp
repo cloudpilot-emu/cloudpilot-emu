@@ -104,6 +104,8 @@ void EmBankSRAM::Initialize(RAMSizeType ramSize) {
         gRAM_DirtyPages = (uint8*)Platform::AllocateMemoryClear(gRAMBank_Size / 8192 +
                                                                 (gRAMBank_Size % 8192 ? 1 : 0));
 
+        memset(gRAM_Memory, MEMORY_FILLER, gRAMBank_Size);
+
 #if defined(_DEBUG)
         // In debug mode, define a global variable that points to the
         // Palm ROM's low-memory globals.  That makes it easier to find
@@ -315,6 +317,7 @@ void EmBankSRAM::SetLong(emuptr address, uint32 value) {
     // uint8* metaAddress = InlineGetMetaAddress(phyAddress);
     //	META_CHECK (metaAddress, address, SetLong, uint32, false);
 
+    if (EmMemDoGet32(gRAM_Memory + phyAddress) == value) return;
     EmMemDoPut32(gRAM_Memory + phyAddress, value);
 
     markDirty(phyAddress);
@@ -355,6 +358,7 @@ void EmBankSRAM::SetWord(emuptr address, uint32 value) {
     // uint8* metaAddress = InlineGetMetaAddress(phyAddress);
     //	META_CHECK (metaAddress, address, SetLong, uint16, false);
 
+    if (EmMemDoGet16(gRAM_Memory + phyAddress) == value) return;
     EmMemDoPut16(gRAM_Memory + phyAddress, value);
 
     markDirty(phyAddress);
@@ -388,6 +392,7 @@ void EmBankSRAM::SetByte(emuptr address, uint32 value) {
     // uint8* metaAddress = InlineGetMetaAddress(phyAddress);
     //	META_CHECK (metaAddress, address, SetLong, uint8, false);
 
+    if (EmMemDoGet8(gRAM_Memory + phyAddress) == value) return;
     EmMemDoPut8(gRAM_Memory + phyAddress, value);
 
     markDirty(phyAddress);
