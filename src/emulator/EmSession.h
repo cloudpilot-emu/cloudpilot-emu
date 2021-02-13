@@ -89,7 +89,6 @@ class EmSession {
     uint32 GetClocksPerSecond() const { return clocksPerSecond; }
 
     uint64 GetSystemCycles() const { return systemCycles; }
-    uint8 GetMemoryFiller() const;
 
    private:
     template <typename T>

@@ -16,8 +16,6 @@
 
 #include "EmCommon.h"
 
-constexpr uint8 MEMORY_FILLER = 0x55;
-
 extern emuptr gMemoryStart;
 
 // These are also accessed by the DRAMBank functions.

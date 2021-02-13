@@ -497,5 +497,3 @@ void EmSession::SetClockDiv(uint32 clockDiv) { this->clockDiv = clockDiv; }
 void EmSession::RecalculateClocksPerSecond() {
     clocksPerSecond = EmHAL::GetSystemClockFrequency() / clockDiv;
 }
-
-uint8 EmSession::GetMemoryFiller() const { return MEMORY_FILLER; }

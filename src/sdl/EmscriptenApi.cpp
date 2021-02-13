@@ -93,5 +93,3 @@ extern "C" const char* EMSCRIPTEN_KEEPALIVE getDeviceId() {
 
     return id.c_str();
 }
-
-extern "C" uint8 EMSCRIPTEN_KEEPALIVE getMemoryFiller() { return gSession->GetMemoryFiller(); }

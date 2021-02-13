@@ -237,7 +237,6 @@ void EmBankDRAM::SetLong(emuptr address, uint32 value) {
         InvalidAccess(address, sizeof(uint32), false);
     }
 
-    if (EmMemDoGet32(gRAM_Memory + address) == value) return;
     EmMemDoPut32(gRAM_Memory + address, value);
 
     // Debug::CheckStepSpy(address, sizeof(uint32));
@@ -267,7 +266,6 @@ void EmBankDRAM::SetWord(emuptr address, uint32 value) {
         InvalidAccess(address, sizeof(uint16), false);
     }
 
-    if (EmMemDoGet16(gRAM_Memory + address) == value) return;
     EmMemDoPut16(gRAM_Memory + address, value);
 
     // Debug::CheckStepSpy(address, sizeof(uint16));
@@ -292,7 +290,6 @@ void EmBankDRAM::SetByte(emuptr address, uint32 value) {
         InvalidAccess(address, sizeof(uint8), false);
     }
 
-    if (EmMemDoGet8(gRAM_Memory + address) == value) return;
     EmMemDoPut8(gRAM_Memory + address, value);
 
     // Debug::CheckStepSpy(address, sizeof(uint8));
