@@ -29,6 +29,8 @@ class Savestate {
     void* GetBuffer() { return buffer.get(); }
     size_t GetSize() const { return size; }
 
+    void Reset();
+
    private:
     template <typename T>
     bool AllocateBuffer(T& t);

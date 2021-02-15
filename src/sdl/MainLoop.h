@@ -1,7 +1,7 @@
 #ifndef _SDL_MAIN_LOOP_H_
 #define _SDL_MAIN_LOOP_H_
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #include "ButtonEvent.h"
 #include "EventHandler.h"

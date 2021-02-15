@@ -9,6 +9,7 @@
 #include "EmCPU.h"
 #include "EmCommon.h"
 #include "EmDevice.h"
+#include "EmEvent.h"
 #include "EmThreadSafeQueue.h"
 #include "KeyboardEvent.h"
 #include "PenEvent.h"
@@ -29,31 +30,50 @@ class EmSession {
 
     template <typename T>
     void Save(T& savestate);
-
     void Load(SavestateLoader& loader);
 
     bool Save();
     bool Load(size_t size, uint8* buffer);
+
+    void Reset(ResetType);
+
     Savestate& GetSavestate();
     pair<size_t, uint8*> GetRomImage();
 
-    bool IsNested() const;
+    uint32 RunEmulation(uint32 maxCycles = 10000);
+
     bool IsPowerOn();
+    EmDevice& GetDevice();
+    uint32 GetRandomSeed() const;
+
+    uint32 GetMemorySize() const;
+    uint8* GetMemoryPtr() const;
+    uint8* GetDirtyPagesPtr() const;
+
+    void QueuePenEvent(PenEvent evt);
+    void QueueKeyboardEvent(KeyboardEvent evt);
+    void QueueButtonEvent(ButtonEvent evt);
+
+    void SetHotsyncUserName(string hotsyncUserName);
+
+    void SetClockDiv(uint32 clockDiv);
+    uint32 GetClocksPerSecond() const { return clocksPerSecond; }
+    uint64 GetSystemCycles() const { return systemCycles; }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Internal stuff
+    ///////////////////////////////////////////////////////////////////////////
+
+    void Deinitialize();
+
+    bool IsNested() const;
 
     void ReleaseBootKeys();
 
     bool ExecuteSpecial(bool checkForResetOnly);
-
     bool CheckForBreak() const;
-
     void ScheduleResetBanks();
-
     void ScheduleReset(ResetType resetType);
-    void Reset(ResetType);
-
-    EmDevice& GetDevice();
-
-    uint32 RunEmulation(uint32 maxCycles = 10000);
 
     void ExecuteSubroutine();
     void ScheduleSubroutineReturn();
@@ -64,31 +84,15 @@ class EmSession {
 
     void HandleInstructionBreak();
 
-    void QueuePenEvent(PenEvent evt);
     bool HasPenEvent();
     PenEvent NextPenEvent();
     PenEvent PeekPenEvent();
 
-    void QueueKeyboardEvent(KeyboardEvent evt);
     bool HasKeyboardEvent();
     KeyboardEvent NextKeyboardEvent();
 
-    void QueueButtonEvent(ButtonEvent evt);
     bool HasButtonEvent();
     ButtonEvent NextButtonEvent();
-
-    uint32 GetMemorySize() const;
-    uint8* GetMemoryPtr() const;
-    uint8* GetDirtyPagesPtr() const;
-
-    uint32 GetRandomSeed() const;
-
-    void SetHotsyncUserName(string hotsyncUserName);
-
-    void SetClockDiv(uint32 clockDiv);
-    uint32 GetClocksPerSecond() const { return clocksPerSecond; }
-
-    uint64 GetSystemCycles() const { return systemCycles; }
 
    private:
     template <typename T>
@@ -113,8 +117,10 @@ class EmSession {
     bool waitingForSyscall{false};
     bool syscallDispatched{false};
 
+    bool isInitialized{false};
     shared_ptr<EmDevice> device{nullptr};
     unique_ptr<EmCPU> cpu{nullptr};
+    typename EmEvent<>::HandleT onSystemClockChangeHandle;
 
     EmThreadSafeQueue<PenEvent> penEventQueue{20};
     EmThreadSafeQueue<KeyboardEvent> keyboardEventQueue{20};
@@ -127,7 +133,7 @@ class EmSession {
     uint64 lastButtonEventReadAt{0};
 
     uint64 systemCycles{0};
-    uint32 clockDiv{1};
+    uint32 clockDiv{2};
 
     uint32 clocksPerSecond;
 

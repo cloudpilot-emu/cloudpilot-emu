@@ -20,3 +20,10 @@ Chunk* Savestate::GetChunk(ChunkType type) {
 }
 
 void Savestate::NotifyError() { error = true; }
+
+void Savestate::Reset() {
+    buffer.reset();
+    size = 0;
+    error = false;
+    chunkMap.clear();
+}

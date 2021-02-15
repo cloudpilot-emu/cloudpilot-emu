@@ -1,6 +1,6 @@
 #include "MainLoop.h"
 
-#include <SDL2/SDL_image.h>
+#include <SDL_image.h>
 
 #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
@@ -12,7 +12,6 @@
 #include "Silkscreen.h"
 #include "common.h"
 
-constexpr int CLOCK_DIV = 2;
 constexpr uint8 SILKSCREEN_BACKGROUND_HUE = 0xbb;
 constexpr uint32 BACKGROUND_HUE = 0xd2;
 constexpr uint32 FOREGROUND_COLOR = 0x000000ff;
@@ -34,8 +33,6 @@ MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer) : renderer(render
 
     lcdTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
                                    160, 160);
-
-    gSession->SetClockDiv(CLOCK_DIV);
 }
 
 bool MainLoop::IsRunning() const { return !eventHandler.IsQuit(); }

@@ -14,6 +14,7 @@
 #include "EmRegsVZ.h"
 
 #include <algorithm>
+#include <cmath>
 
 #include "Byteswapping.h"  // Canonical
 #include "ChunkHelper.h"

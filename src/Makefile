@@ -183,6 +183,7 @@ SOURCE_SDL = \
 	sdl/main.cpp \
 	sdl/MainLoop.cpp \
 	sdl/Silkscreen.cpp \
+	sdl/util.cpp \
 	sdl/EventHandler.cpp
 
 SOURCE_SDL_NATIVE = $(SOURCE_SDL) sdl/Cli.cpp emulator/assert_native.cpp

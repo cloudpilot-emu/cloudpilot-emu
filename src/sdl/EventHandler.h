@@ -1,7 +1,7 @@
 #ifndef _SDL_EVENT_HANDLER_H_
 #define _SDL_EVENT_HANDLER_H_
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #include "ButtonEvent.h"
 #include "Platform.h"

@@ -31,11 +31,16 @@ namespace {
 EmSession* gSession = &_gSession;
 
 bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLength) {
+    if (isInitialized) {
+        Deinitialize();
+    }
+
     this->romImage = make_unique<uint8[]>(romLength);
     romSize = romLength;
     memcpy(this->romImage.get(), romImage, romSize);
 
-    EmHAL::onSystemClockChange.AddHandler(bind(&EmSession::RecalculateClocksPerSecond, this));
+    onSystemClockChangeHandle =
+        EmHAL::onSystemClockChange.AddHandler(bind(&EmSession::RecalculateClocksPerSecond, this));
 
     this->device.reset(device);
 
@@ -51,7 +56,38 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
 
     RecalculateClocksPerSecond();
 
+    isInitialized = true;
     return true;
+}
+
+void EmSession::Deinitialize() {
+    if (!isInitialized) return;
+
+    EmPalmOS::Dispose();
+    Memory::Dispose();
+
+    cpu.reset();
+    device.reset();
+
+    EmHAL::onSystemClockChange.RemoveHandler(onSystemClockChangeHandle);
+    gSystemState.Reset();
+
+    bankResetScheduled = false;
+    resetScheduled = false;
+    waitingForSyscall = false;
+    syscallDispatched = false;
+
+    nestLevel = 0;
+    subroutineReturn = false;
+
+    systemCycles = 0;
+    holdingBootKeys = false;
+
+    romSize = 0;
+    romImage.reset();
+    savestate.Reset();
+
+    isInitialized = false;
 }
 
 pair<size_t, unique_ptr<uint8[]>> EmSession::SaveImage() {
@@ -71,8 +107,6 @@ pair<size_t, unique_ptr<uint8[]>> EmSession::SaveImage() {
 }
 
 bool EmSession::LoadImage(SessionImage& image) {
-    EmAssert(!romImage);
-
     if (!image.IsValid()) return false;
 
     EmDevice* device = new EmDevice(image.GetDeviceId());

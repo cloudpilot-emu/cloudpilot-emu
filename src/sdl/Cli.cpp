@@ -22,6 +22,7 @@
 #include "EmFileImport.h"
 #include "EmErrCodes.h"
 #include "EmSession.h"
+#include "util.h"
 
 namespace {
     using Task = function<bool()>;
@@ -205,6 +206,17 @@ namespace {
         return false;
     }
 
+    bool CmdSwitchImage(vector<string> args) {
+        if (args.size() != 1) {
+            cout << "usage: switch-image <file>" << endl << flush;
+            return false;
+        }
+
+        util::initializeSession(args[0]);
+
+        return false;
+    }
+
     struct Command {
         string name;
         Cmd cmd;
@@ -219,7 +231,8 @@ namespace {
                           {.name = "reset-soft", .cmd = CmdResetSoft},
                           {.name = "reset-hard", .cmd = CmdResetHard},
                           {.name = "reset-noext", .cmd = CmdResetNoext},
-                          {.name = "save-image", .cmd = CmdSaveImage}};
+                          {.name = "save-image", .cmd = CmdSaveImage},
+                          {.name = "switch-image", .cmd = CmdSwitchImage}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);
