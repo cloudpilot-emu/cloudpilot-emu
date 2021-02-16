@@ -1,6 +1,4 @@
-<ion-item-sliding>
-
-
+<ion-item-sliding (contextmenu)="onContextmenu($event)">
   <ion-item-options side="start">
     <ion-item-option color="primary" icon-only (click)="edit.emit(session)">
       <ion-icon name="create-outline"></ion-icon>

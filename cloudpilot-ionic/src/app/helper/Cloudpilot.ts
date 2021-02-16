@@ -26,6 +26,8 @@ export interface Frame {
     buffer: Int8Array;
 }
 
+const SUPPORTED_DEVICES = [DeviceId.palmV, DeviceId.m515];
+
 export class Cloudpilot {
     private constructor(private module: Module) {
         this.cloudpilot = new module.Cloudpilot();
@@ -52,7 +54,7 @@ export class Cloudpilot {
                 cardName: romInfoNative.CardName(),
                 romVersion: romInfoNative.RomVersion(),
                 romVersionString: romInfoNative.RomVersionString(),
-                supportedDevices: [DeviceId.palmV].filter(romInfoNative.Supports.bind(romInfoNative)),
+                supportedDevices: SUPPORTED_DEVICES.filter(romInfoNative.Supports.bind(romInfoNative)),
             };
         }
 
