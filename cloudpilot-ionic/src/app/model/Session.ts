@@ -1,7 +1,8 @@
 import { DeviceId } from './DeviceId';
 
 export interface Session {
-    id: string;
+    id: number;
+    rom: string;
     name: string;
     device: DeviceId;
     ram: number;

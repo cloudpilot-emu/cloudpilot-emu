@@ -8,6 +8,7 @@ import { PageLockService } from './service/page-lock.service';
 import { RouteReuseStrategy } from '@angular/router';
 import { SplashScreen } from '@ionic-native/splash-screen/ngx';
 import { StatusBar } from '@ionic-native/status-bar/ngx';
+import { StorageService } from './service/storage.service';
 
 @NgModule({
     declarations: [AppComponent],
@@ -17,5 +18,5 @@ import { StatusBar } from '@ionic-native/status-bar/ngx';
     bootstrap: [AppComponent],
 })
 export class AppModule {
-    constructor(private pageLockService: PageLockService) {}
+    constructor(private pageLockService: PageLockService, private storageService: StorageService) {}
 }
