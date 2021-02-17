@@ -9,6 +9,24 @@ import { migrate0to1 } from './storage/migrations';
 
 const E_LOCK_LOST = new Error('page lock lost');
 
+function isTransaction(requestOrTransaction: IDBRequest | IDBTransaction): requestOrTransaction is IDBTransaction {
+    return !!(requestOrTransaction as IDBTransaction).abort;
+}
+
+function complete(transaction: IDBTransaction): Promise<void>;
+function complete<T>(request: IDBRequest<T>): Promise<T>;
+function complete(requestOrTransaction: IDBRequest | IDBTransaction): Promise<unknown> {
+    return new Promise<unknown>((resolve, reject) => {
+        if (isTransaction(requestOrTransaction)) {
+            requestOrTransaction.oncomplete = () => resolve(undefined);
+        } else {
+            requestOrTransaction.onsuccess = () => resolve(requestOrTransaction.result);
+        }
+
+        requestOrTransaction.onerror = () => reject();
+    });
+}
+
 @Injectable({
     providedIn: 'root',
 })
@@ -19,31 +37,74 @@ export class StorageService {
 
     public async addSession(session: Session, rom: Uint8Array): Promise<Session> {
         const hash = md5(rom);
-        const tx = (await this.db).transaction([OBJECT_STORE_SESSION, OBJECT_STORE_ROM], 'readwrite');
-        let storedSession: Session;
 
-        return new Promise<Session>(async (resolve, reject) => {
-            tx.oncomplete = () => resolve(storedSession);
-            tx.onabort = () => reject();
+        const tx = await this.newTransaction(OBJECT_STORE_SESSION, OBJECT_STORE_ROM);
+        const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
+        const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
 
-            await this.acquireLock(tx, OBJECT_STORE_SESSION, -1);
+        await this.acquireLock(objectStoreSession, -1);
 
-            const recordRom = await this.getOne<RecordRom>(tx, OBJECT_STORE_ROM, hash);
-            if (!recordRom) {
-                tx.objectStore(OBJECT_STORE_ROM).put({ hash, data: rom } as RecordRom);
-            }
+        const recordRom = await complete(objectStoreRom.get(hash));
+        if (!recordRom) {
+            objectStoreRom.put({ hash, data: rom } as RecordRom);
+        }
 
-            const { id, ...sessionSansId } = session;
-            // tslint:disable-next-line: no-shadowed-variable
-            const key = await new Promise<number>((resolve, reject) => {
-                const request = tx.objectStore(OBJECT_STORE_SESSION).add({ ...sessionSansId, rom: hash });
+        const { id, ...sessionSansId } = session;
+        const key = await complete(objectStoreSession.add({ ...sessionSansId, rom: hash }));
 
-                request.onsuccess = () => resolve(request.result as number);
-                request.onerror = () => reject();
-            });
+        const storedSession = await complete(objectStoreSession.get(key));
 
-            storedSession = await this.getOne<Session>(tx, OBJECT_STORE_SESSION, key);
-        });
+        await complete(tx);
+
+        return storedSession;
+    }
+
+    public async getAllSessions(): Promise<Array<Session>> {
+        const tx = await this.newTransaction(OBJECT_STORE_SESSION);
+        const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
+
+        await this.acquireLock(objectStoreSession, -1);
+
+        const sessions = await complete(objectStoreSession.getAll());
+
+        return sessions;
+    }
+
+    public async deleteSession(session: Session): Promise<void> {
+        const tx = await this.newTransaction(OBJECT_STORE_SESSION, OBJECT_STORE_ROM);
+        const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
+        const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
+
+        await this.acquireLock(objectStoreSession, -1);
+
+        session = await complete(objectStoreSession.get(session.id));
+        if (!session) return;
+
+        objectStoreSession.delete(session.id);
+
+        const sessionsUsingRom = await complete(objectStoreSession.index('rom').getAll(session.rom));
+
+        if (sessionsUsingRom.length === 0) objectStoreRom.delete(session.rom);
+
+        await complete(tx);
+    }
+
+    public async updateSession(session: Session): Promise<void> {
+        const tx = await this.newTransaction(OBJECT_STORE_SESSION);
+        const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
+
+        await this.acquireLock(objectStoreSession, -1);
+
+        const persistentSession = await complete<Session>(objectStoreSession.get(session.id));
+
+        if (!persistentSession) throw new Error(`no session with id ${session.id}`);
+        if (persistentSession.rom !== session.rom) throw new Error('attempt to change ROM reference');
+        if (persistentSession.ram !== session.ram) throw new Error('attempt to change RAM size');
+        if (persistentSession.device !== session.device) throw new Error('attempt to change device type');
+
+        objectStoreSession.put(session);
+
+        await complete(tx);
     }
 
     private setupDb() {
@@ -60,19 +121,14 @@ export class StorageService {
         });
     }
 
-    private getOne<T>(tx: IDBTransaction, store: string, key: string | number): Promise<T | undefined> {
-        return new Promise<T>((resolve, reject) => {
-            const request = tx.objectStore(store).get(key);
-
-            request.onsuccess = (e) => resolve(request.result);
-            request.onerror = () => reject();
-        });
-    }
-
-    private async acquireLock(tx: IDBTransaction, store: string, key: string | number): Promise<void> {
-        await this.getOne(tx, store, key);
+    private async acquireLock(store: IDBObjectStore, key: string | number): Promise<void> {
+        await complete(store.get(key));
 
         if (this.pageLockService.lockLost()) throw E_LOCK_LOST;
+    }
+
+    private async newTransaction(...stores: Array<string>): Promise<IDBTransaction> {
+        return (await this.db).transaction(stores, 'readwrite');
     }
 
     private db: Promise<IDBDatabase>;

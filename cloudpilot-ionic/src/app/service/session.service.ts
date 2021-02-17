@@ -4,83 +4,62 @@ import { Injectable } from '@angular/core';
 import { Session } from '../model/Session';
 import { SessionImage } from './file.service';
 import { StorageService } from './storage.service';
-import { v4 as uuidv4 } from 'uuid';
-
-const SESSIONS: Array<Session> = [
-    {
-        id: -1,
-        name: 'Palm V, default',
-        device: DeviceId.palmV,
-        ram: 2,
-        osVersion: '3.5',
-        rom: '213',
-    },
-    {
-        id: -2,
-        name: 'Palm V, Lemmings',
-        device: DeviceId.palmV,
-        ram: 2,
-        osVersion: '4',
-        rom: '213',
-    },
-    {
-        id: -3,
-        name: 'Palm m515',
-        device: DeviceId.m515,
-        ram: 8,
-        osVersion: '4.0',
-        rom: '213',
-    },
-    {
-        id: -4,
-        name: 'Palm m515, unbooted',
-        device: DeviceId.m515,
-        ram: 8,
-        rom: '213',
-    },
-];
 
 @Injectable({
     providedIn: 'root',
 })
 export class SessionService {
-    constructor(private emulationService: EmulationService, private storageService: StorageService) {}
+    constructor(private emulationService: EmulationService, private storageService: StorageService) {
+        this.updateSessionsFromStorage();
+    }
 
     async addSessionFromImage(image: SessionImage, name: string) {
         const session: Session = {
-            id: Math.max(...SESSIONS.map((s) => s.id)) + 1,
+            id: -1,
             name,
             device: image.deviceId as DeviceId,
             ram: image.memory.length / 1024 / 1024,
             rom: '',
         };
 
-        SESSIONS.push(await this.storageService.addSession(session, image.rom));
+        await this.storageService.addSession(session, image.rom);
+
+        this.updateSessionsFromStorage();
     }
 
     async addSessionFromRom(rom: Uint8Array, name: string, device: DeviceId) {
         const session: Session = {
-            id: Math.max(...SESSIONS.map((s) => s.id)) + 1,
+            id: -1,
             name,
             device,
             ram: (await this.emulationService.cloudpilot).minRamForDevice(device) / 1024 / 1024,
             rom: '',
         };
 
-        SESSIONS.push(await this.storageService.addSession(session, rom));
+        await this.storageService.addSession(session, rom);
+
+        this.updateSessionsFromStorage();
     }
 
     getSessions(): Array<Session> {
         return this.sessions;
     }
 
-    deleteSession(session: Session): void {
-        this.sessions = this.sessions.filter((s) => s.id !== session.id);
+    async deleteSession(session: Session): Promise<void> {
+        await this.storageService.deleteSession(session);
+
+        this.updateSessionsFromStorage();
     }
 
-    updateSession(session: Session): void {
-        this.sessions = this.sessions.map((s) => (s.id == session.id ? session : s));
+    async updateSession(session: Session): Promise<void> {
+        await this.storageService.updateSession(session);
+
+        this.updateSessionsFromStorage();
     }
 
-    private sessions = SESSIONS;
+    private async updateSessionsFromStorage(): Promise<void> {
+        this.sessions = (await this.storageService.getAllSessions()).sort((x, y) => x.name.localeCompare(y.name));
+    }
+
+    private sessions: Array<Session> = [];
 }
