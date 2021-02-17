@@ -14,7 +14,7 @@ export class SessionItemComponent {
     constructor(private popoverController: PopoverController) {}
 
     get device(): string {
-        switch (this.session.device) {
+        switch (this.session?.device) {
             case DeviceId.m515:
                 return 'Palm m515';
 
@@ -55,7 +55,7 @@ export class SessionItemComponent {
     }
 
     @Input()
-    session: Session;
+    session: Session | undefined;
 
     @Output()
     delete = new EventEmitter<Session>();

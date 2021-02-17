@@ -44,8 +44,10 @@ export class FileService {
         input.onchange = async (e) => {
             const target = e.target as HTMLInputElement;
 
-            if (target.files.length === 0) return;
+            if (!target?.files?.length) return;
             const file = target.files.item(0);
+
+            if (!file) return;
 
             const content = await new Promise<Uint8Array>((resolve, reject) => {
                 const reader = new FileReader();
@@ -80,7 +82,7 @@ export class FileService {
 
         if (28 + deviceIdSize + metadataSize + romSize + memorySize + savestateSize !== buffer.length) return undefined;
 
-        let metadata: SessionMetadata;
+        let metadata: SessionMetadata | undefined;
         try {
             metadata = JSON.parse(
                 new TextDecoder().decode(buffer.subarray(28 + deviceIdSize, 28 + deviceIdSize + metadataSize))
@@ -101,7 +103,7 @@ export class FileService {
         };
     }
 
-    private parseSessionImageLegacy(buffer: Uint8Array): SessionImage {
+    private parseSessionImageLegacy(buffer: Uint8Array): SessionImage | undefined {
         const romNameSize = read32LE(buffer, 4);
         const romSize = read32LE(buffer, 8);
         const memorySize = read32LE(buffer, 12);

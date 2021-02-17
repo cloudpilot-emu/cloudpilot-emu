@@ -20,8 +20,8 @@
 
   <ion-item>
     <ion-label>
-      <h2>{{session.name}}</h2>
-      <p>{{device}} {{session.ram}}MB RAM<span *ngIf="session.osVersion">, OS {{session.osVersion}}</span>
+      <h2>{{session?.name}}</h2>
+      <p>{{device}} {{session?.ram}}MB RAM<span *ngIf="session?.osVersion">, OS {{session?.osVersion}}</span>
       </p>
     </ion-label>
   </ion-item>

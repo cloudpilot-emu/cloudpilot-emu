@@ -131,5 +131,5 @@ export class StorageService {
         return (await this.db).transaction(stores, 'readwrite');
     }
 
-    private db: Promise<IDBDatabase>;
+    private db!: Promise<IDBDatabase>;
 }

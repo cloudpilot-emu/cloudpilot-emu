@@ -24,9 +24,9 @@ export interface Cloudpilot {
 
     CopyFrame(): Frame;
     IsScreenDirty(): boolean;
-    MarkScreenClean();
+    MarkScreenClean(): void;
 
-    MinMemoryForDevice(id: string);
+    MinMemoryForDevice(id: string): number;
 }
 
 export interface Frame {

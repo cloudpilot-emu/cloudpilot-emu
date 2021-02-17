@@ -11,8 +11,8 @@ export interface Module extends EmscriptenModule {
     Cloudpilot: { new (): Cloudpilot };
     RomInfo: { new (buffer: VoidPtr, size: number): RomInfo };
 
-    destroy(cloudpilot: Cloudpilot);
-    destroy(romInfo: RomInfo);
+    destroy(cloudpilot: Cloudpilot): void;
+    destroy(romInfo: RomInfo): void;
 }
 
 declare const createModule: EmscriptenModuleFactory<Module>;
