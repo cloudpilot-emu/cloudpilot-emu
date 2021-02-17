@@ -3,11 +3,12 @@ import { EmulationService } from './emulation.service';
 import { Injectable } from '@angular/core';
 import { Session } from '../model/Session';
 import { SessionImage } from './file.service';
+import { StorageService } from './storage.service';
 import { v4 as uuidv4 } from 'uuid';
 
 const SESSIONS: Array<Session> = [
     {
-        id: 1,
+        id: -1,
         name: 'Palm V, default',
         device: DeviceId.palmV,
         ram: 2,
@@ -15,7 +16,7 @@ const SESSIONS: Array<Session> = [
         rom: '213',
     },
     {
-        id: 2,
+        id: -2,
         name: 'Palm V, Lemmings',
         device: DeviceId.palmV,
         ram: 2,
@@ -23,7 +24,7 @@ const SESSIONS: Array<Session> = [
         rom: '213',
     },
     {
-        id: 3,
+        id: -3,
         name: 'Palm m515',
         device: DeviceId.m515,
         ram: 8,
@@ -31,7 +32,7 @@ const SESSIONS: Array<Session> = [
         rom: '213',
     },
     {
-        id: 4,
+        id: -4,
         name: 'Palm m515, unbooted',
         device: DeviceId.m515,
         ram: 8,
@@ -43,7 +44,7 @@ const SESSIONS: Array<Session> = [
     providedIn: 'root',
 })
 export class SessionService {
-    constructor(private emulationService: EmulationService) {}
+    constructor(private emulationService: EmulationService, private storageService: StorageService) {}
 
     async addSessionFromImage(image: SessionImage, name: string) {
         const session: Session = {
@@ -51,10 +52,10 @@ export class SessionService {
             name,
             device: image.deviceId as DeviceId,
             ram: image.memory.length / 1024 / 1024,
-            rom: '213',
+            rom: '',
         };
 
-        SESSIONS.push(session);
+        SESSIONS.push(await this.storageService.addSession(session, image.rom));
     }
 
     async addSessionFromRom(rom: Uint8Array, name: string, device: DeviceId) {
@@ -63,10 +64,10 @@ export class SessionService {
             name,
             device,
             ram: (await this.emulationService.cloudpilot).minRamForDevice(device) / 1024 / 1024,
-            rom: '213',
+            rom: '',
         };
 
-        SESSIONS.push(session);
+        SESSIONS.push(await this.storageService.addSession(session, rom));
     }
 
     getSessions(): Array<Session> {

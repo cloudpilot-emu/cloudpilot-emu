@@ -7,4 +7,5 @@ export interface Session {
     device: DeviceId;
     ram: number;
     osVersion?: string;
+    hotsyncName?: string;
 }
