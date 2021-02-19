@@ -24,3 +24,4 @@ Makefile.local
 *.bin
 *.img
 *.rom
+*.log
