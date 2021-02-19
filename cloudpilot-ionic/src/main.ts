@@ -16,7 +16,7 @@ platformBrowserDynamic()
 window.addEventListener('orientationchange', () =>
     setTimeout(() => {
         document.body.style.height = window.innerHeight + 'px';
-    }, 50)
+    }, 100)
 );
 
 window.addEventListener('scroll', () => window.scrollTo(0, 0));

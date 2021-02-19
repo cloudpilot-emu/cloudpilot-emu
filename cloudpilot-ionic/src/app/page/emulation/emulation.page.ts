@@ -2,8 +2,15 @@ import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewCh
 
 import { EmulationService } from './../../service/emulation.service';
 
-const SCALE = 3;
+const SCALE = 3 * devicePixelRatio;
 const SILKSCREEN_URL = 'assets/silkscreen.png';
+
+function textCenteredAt(ctx: CanvasRenderingContext2D, x: number, y: number, text: string): void {
+    const metrics = ctx.measureText(text);
+
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x - metrics.width / 2, y);
+}
 
 @Component({
     selector: 'app-emulation',
@@ -18,13 +25,15 @@ export class EmulationPage implements AfterViewInit {
         // tslint:disable-next-line: no-non-null-assertion
         const ctx = canvasElt.getContext('2d')!;
 
-        ctx.fillStyle = '#aaa';
-        ctx.rect(0, 0, this.canvasWidth, this.canvasHeight);
-        ctx.fill();
-
         ctx.imageSmoothingEnabled = false;
 
+        ctx.beginPath();
+        ctx.rect(0, 0, 160 * SCALE, 160 * SCALE);
+        ctx.fillStyle = '#ccc';
+        ctx.fill();
+
         this.drawSilkscreen();
+        this.drawButtons();
 
         this.ngZone.runOutsideAngular(() => {
             canvasElt.addEventListener('mousedown', this.handeMouseEvent);
@@ -99,12 +108,51 @@ export class EmulationPage implements AfterViewInit {
         // tslint:disable-next-line: no-non-null-assertion
         const ctx = this.canvasRef.nativeElement.getContext('2d')!;
 
+        ctx.beginPath();
+        ctx.rect(0, 160 * SCALE, 160 * SCALE, 60 * SCALE);
+        ctx.fillStyle = '#eee';
+        ctx.fill();
+
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
 
         ctx.drawImage(image, 0, 160 * SCALE, 160 * SCALE, 60 * SCALE);
 
         ctx.imageSmoothingEnabled = false;
+    }
+
+    private drawButtons(): void {
+        // tslint:disable-next-line: no-non-null-assertion
+        const ctx = this.canvasRef.nativeElement.getContext('2d')!;
+
+        ctx.beginPath();
+        ctx.rect(0, 220 * SCALE, 160 * SCALE, 30 * SCALE);
+        ctx.fillStyle = 'white';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'black';
+        ctx.moveTo(0, 220 * SCALE);
+        ctx.lineTo(160 * SCALE, 220 * SCALE);
+        ctx.moveTo(30 * SCALE, 220 * SCALE);
+        ctx.lineTo(30 * SCALE, 250 * SCALE);
+        ctx.moveTo(60 * SCALE, 220 * SCALE);
+        ctx.lineTo(60 * SCALE, 250 * SCALE);
+        ctx.moveTo(130 * SCALE, 220 * SCALE);
+        ctx.lineTo(130 * SCALE, 250 * SCALE);
+        ctx.moveTo(100 * SCALE, 220 * SCALE);
+        ctx.lineTo(100 * SCALE, 250 * SCALE);
+        ctx.moveTo(60 * SCALE, 235 * SCALE);
+        ctx.lineTo(100 * SCALE, 235 * SCALE);
+        ctx.stroke();
+
+        ctx.font = `${10 * SCALE}px sans`;
+        ctx.fillStyle = 'black';
+        textCenteredAt(ctx, 15 * SCALE, 235 * SCALE, 'D');
+        textCenteredAt(ctx, 45 * SCALE, 235 * SCALE, 'P');
+        textCenteredAt(ctx, 115 * SCALE, 235 * SCALE, 'T');
+        textCenteredAt(ctx, 145 * SCALE, 235 * SCALE, 'N');
     }
 
     private eventToPalmCoordinates(e: MouseEvent | Touch): [number, number] | undefined {
