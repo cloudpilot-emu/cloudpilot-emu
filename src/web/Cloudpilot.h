@@ -25,7 +25,6 @@ class Cloudpilot {
     long MinMemoryForDevice(string id);
 
    private:
-    unique_ptr<EmDevice> device;
     Frame frame{1024 * 128};
 };
 

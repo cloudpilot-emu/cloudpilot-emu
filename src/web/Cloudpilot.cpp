@@ -49,15 +49,11 @@ bool Cloudpilot::InitializeSession(void* buffer, long size, const char* deviceTy
         return false;
     }
 
-    if (!gSession->Initialize(device.get(), (uint8*)buffer, size)) {
+    if (!gSession->Initialize(device.release(), (uint8*)buffer, size)) {
         cerr << "Session failed to initialize" << endl << flush;
-
-        this->device.release();
 
         return false;
     }
-
-    this->device.swap(device);
 
     return true;
 }
