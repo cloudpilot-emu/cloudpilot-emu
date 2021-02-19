@@ -1262,27 +1262,6 @@
     lodash "^4.17.19"
     to-fast-properties "^2.0.0"
 
-"@ionic-native/core@^5.31.1":
-  version "5.31.1"
-  resolved "https://registry.yarnpkg.com/@ionic-native/core/-/core-5.31.1.tgz#189d67f20b46cfe7930091fa382539efafa8d03b"
-  integrity sha512-dbJHezSuY8OqyFwyQiS+5QscA/BONhWitXgniljEblC5kQeLOCe+8p30JYHXj9xDciYzfqFP8ICmyaGOqUHJYw==
-  dependencies:
-    "@types/cordova" latest
-
-"@ionic-native/splash-screen@^5.31.1":
-  version "5.31.1"
-  resolved "https://registry.yarnpkg.com/@ionic-native/splash-screen/-/splash-screen-5.31.1.tgz#323d984cb951b9b56d07439754abfca0ce43966c"
-  integrity sha512-Hcy1cMjWLnFE0TrIhpcNwld39dFipOQE63XpKuEhSJXfix1hibrC+0Nc3jEn0zBJUbbAHVJph6s9dohUxRycqg==
-  dependencies:
-    "@types/cordova" latest
-
-"@ionic-native/status-bar@^5.31.1":
-  version "5.31.1"
-  resolved "https://registry.yarnpkg.com/@ionic-native/status-bar/-/status-bar-5.31.1.tgz#8e45830a52262927e0389479d221a389cd973e0f"
-  integrity sha512-o5gugiuyYjWqQqzajbfqYKvuWX0BSTppwoLXU0PidgvBWtw3yBb7z4FZoo6JQSkUVn2AWYD1XEj/4KKh9D4Pkg==
-  dependencies:
-    "@types/cordova" latest
-
 "@ionic/angular-toolkit@^3.0.0":
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/@ionic/angular-toolkit/-/angular-toolkit-3.0.0.tgz#9ac1b971ae967a8b4a226daf951c7ed2fbd5b529"
@@ -1457,11 +1436,6 @@
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/@types/cookie/-/cookie-0.4.0.tgz#14f854c0f93d326e39da6e3b6f34f7d37513d108"
   integrity sha512-y7mImlc/rNkvCRmg8gC3/lj87S7pTUIJ6QGjwHR9WQJcFs+ZMTOaoPrkdFA/YdbuqVEmEbb5RdhVxMkAcgOnpg==
-
-"@types/cordova@latest":
-  version "0.0.34"
-  resolved "https://registry.yarnpkg.com/@types/cordova/-/cordova-0.0.34.tgz#ea7addf74ecec3d7629827a0c39e2c9addc73d04"
-  integrity sha1-6nrd907Ow9dimCegw54smt3HPQQ=
 
 "@types/cors@^2.8.8":
   version "2.8.9"
