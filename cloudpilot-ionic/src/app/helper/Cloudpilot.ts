@@ -23,7 +23,7 @@ export interface Frame {
     margin: number;
     bytesPerLine: number;
 
-    buffer: Int8Array;
+    buffer: Uint8Array;
 }
 
 const SUPPORTED_DEVICES = [DeviceId.palmV, DeviceId.m515];
@@ -86,21 +86,19 @@ export class Cloudpilot {
         return this.cloudpilot.RunEmulation(cycles);
     }
 
-    getFrame(): Frame | null {
+    getFrame(): Frame {
         const nativeFrame = this.cloudpilot.CopyFrame();
 
         const bufferPtr = this.module.getPointer(nativeFrame.GetBuffer());
 
-        return nativeFrame.lineWidth === 160 && nativeFrame.lines === 160
-            ? {
-                  bpp: nativeFrame.bpp,
-                  bytesPerLine: nativeFrame.bytesPerLine,
-                  lines: nativeFrame.lines,
-                  lineWidth: nativeFrame.lineWidth,
-                  margin: nativeFrame.margin,
-                  buffer: this.module.HEAP8.subarray(bufferPtr, bufferPtr + nativeFrame.GetBufferSize()),
-              }
-            : null;
+        return {
+            bpp: nativeFrame.bpp,
+            bytesPerLine: nativeFrame.bytesPerLine,
+            lines: nativeFrame.lines,
+            lineWidth: nativeFrame.lineWidth,
+            margin: nativeFrame.margin,
+            buffer: this.module.HEAPU8.subarray(bufferPtr, bufferPtr + nativeFrame.GetBufferSize()),
+        };
     }
 
     isScreenDirty(): boolean {

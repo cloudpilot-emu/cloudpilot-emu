@@ -24,6 +24,7 @@
     "@types/uuid": "^8.3.0",
     "async-mutex": "^0.3.0",
     "md5": "^2.3.0",
+    "microevent.ts": "^0.2.1",
     "rxjs": "~6.6.3",
     "tslib": "^2.0.0",
     "uuid": "^8.3.2",
