@@ -18,7 +18,7 @@
 
   </ion-item-options>
 
-  <ion-item>
+  <ion-item [color]="selected ? 'primary' : undefined">
     <ion-label>
       <h2>{{session?.name}}</h2>
       <p>{{device}} {{session?.ram}}MB RAM<span *ngIf="session?.osVersion">, OS {{session?.osVersion}}</span>

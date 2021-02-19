@@ -55,14 +55,17 @@ export class SessionItemComponent {
     }
 
     @Input()
-    session: Session | undefined;
+    private session: Session | undefined;
 
     @Output()
-    delete = new EventEmitter<Session>();
+    private delete = new EventEmitter<Session>();
 
     @Output()
-    edit = new EventEmitter<Session>();
+    private edit = new EventEmitter<Session>();
+
+    @Input()
+    selected = false;
 
     @Output()
-    save = new EventEmitter<Session>();
+    private save = new EventEmitter<Session>();
 }

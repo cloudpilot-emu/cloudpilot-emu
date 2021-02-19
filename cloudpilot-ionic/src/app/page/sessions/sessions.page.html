@@ -19,7 +19,8 @@
 
   <ion-list>
     <app-session-item *ngFor="let session of sessions" [session]="session" (delete)="deleteSession(session)"
-      (edit)="editSession(session)">
+      (click)="launchSession(session)" (edit)="editSession(session)"
+      [selected]="emulationService.getCurrentSession()===session.id">
     </app-session-item>
   </ion-list>
 

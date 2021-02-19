@@ -3,6 +3,7 @@ import { FileDescriptor, FileService } from './../../service/file.service';
 import { AlertController } from '@ionic/angular';
 import { Component } from '@angular/core';
 import { EmulationService } from './../../service/emulation.service';
+import { Router } from '@angular/router';
 import { Session } from 'src/app/model/Session';
 import { SessionService } from 'src/app/service/session.service';
 
@@ -16,7 +17,8 @@ export class SessionsPage {
         public sessionService: SessionService,
         private fileService: FileService,
         private alertController: AlertController,
-        private emulationService: EmulationService
+        private emulationService: EmulationService,
+        private router: Router
     ) {}
 
     get sessions(): Array<Session> {
@@ -46,6 +48,11 @@ export class SessionsPage {
 
     loadFile(): void {
         this.fileService.openFile('.img, .rom, .bin', this.processFile.bind(this));
+    }
+
+    launchSession(session: Session) {
+        this.emulationService.switchSession(session.id);
+        this.router.navigateByUrl('/tab/emulation');
     }
 
     private async processFile(file: FileDescriptor): Promise<void> {
