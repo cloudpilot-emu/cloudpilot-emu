@@ -51,7 +51,7 @@ LDFLAGS_EMCC_SDL = -O3 -Wno-version-check \
 	-s EXPORTED_RUNTIME_METHODS=["FS"] \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall"]
 
-LDFLAGS_EMCC_WEB = -Wno-version-check \
+LDFLAGS_EMCC_WEB = -O3 -Wno-version-check \
 	--post-js $(WEBIDL_BINDING_JS) \
 	-s NO_EXIT_RUNTIME=1 \
 	-s MODULARIZE=1 \
@@ -59,7 +59,8 @@ LDFLAGS_EMCC_WEB = -Wno-version-check \
 	-s EXPORT_ES6=1 \
 	-s USE_ES6_IMPORT_META=0 \
 	-s ENVIRONMENT="web,worker" \
-	-s ALLOW_MEMORY_GROWTH=1 \
+	-s ALLOW_MEMORY_GROWTH=0 \
+	-s INITIAL_MEMORY=67108864 \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["ccall"] \
 	-s LLD_REPORT_UNDEFINED
 

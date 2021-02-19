@@ -33,11 +33,11 @@ export interface Cloudpilot {
 }
 
 export interface Frame {
-    bpp: number;
-    lineWidth: number;
-    lines: number;
-    margin: number;
-    bytesPerLine: number;
+    GetLineWidth(): number;
+    GetBpp(): number;
+    GetLines(): number;
+    GetMargin(): number;
+    GetBytesPerLine(): number;
 
     GetBuffer(): VoidPtr;
     GetBufferSize(): number;

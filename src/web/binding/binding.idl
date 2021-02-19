@@ -33,11 +33,11 @@ interface RomInfo {
 };
 
 interface Frame {
-    attribute long bpp;
-    attribute long lineWidth;
-    attribute long lines;
-    attribute long margin;
-    attribute long bytesPerLine;
+    long GetLineWidth();
+    long GetBpp();
+    long GetLines();
+    long GetMargin();
+    long GetBytesPerLine();
 
     VoidPtr GetBuffer();
     long GetBufferSize();

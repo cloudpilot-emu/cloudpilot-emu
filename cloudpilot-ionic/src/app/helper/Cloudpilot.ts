@@ -92,11 +92,11 @@ export class Cloudpilot {
         const bufferPtr = this.module.getPointer(nativeFrame.GetBuffer());
 
         return {
-            bpp: nativeFrame.bpp,
-            bytesPerLine: nativeFrame.bytesPerLine,
-            lines: nativeFrame.lines,
-            lineWidth: nativeFrame.lineWidth,
-            margin: nativeFrame.margin,
+            bpp: nativeFrame.GetBpp(),
+            bytesPerLine: nativeFrame.GetBytesPerLine(),
+            lines: nativeFrame.GetLines(),
+            lineWidth: nativeFrame.GetLineWidth(),
+            margin: nativeFrame.GetMargin(),
             buffer: this.module.HEAPU8.subarray(bufferPtr, bufferPtr + nativeFrame.GetBufferSize()),
         };
     }
