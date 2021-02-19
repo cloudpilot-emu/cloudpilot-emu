@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 
 import { EmulationService } from './../../service/emulation.service';
 
@@ -11,7 +11,7 @@ const SILKSCREEN_URL = 'assets/silkscreen.png';
     styleUrls: ['./emulation.page.scss'],
 })
 export class EmulationPage implements AfterViewInit {
-    constructor(private emulationService: EmulationService) {}
+    constructor(private emulationService: EmulationService, private ngZone: NgZone) {}
 
     ngAfterViewInit(): void {
         const canvasElt = this.canvasRef.nativeElement;
@@ -25,6 +25,16 @@ export class EmulationPage implements AfterViewInit {
         ctx.imageSmoothingEnabled = false;
 
         this.drawSilkscreen();
+
+        this.ngZone.runOutsideAngular(() => {
+            canvasElt.addEventListener('mousedown', this.handeMouseEvent);
+            canvasElt.addEventListener('mouseup', this.handeMouseEvent);
+            canvasElt.addEventListener('mousemove', this.handeMouseEvent);
+            canvasElt.addEventListener('touchstart', this.handleTouchEvent);
+            canvasElt.addEventListener('touchmove', this.handleTouchEvent);
+            canvasElt.addEventListener('touchend', this.handleTouchEvent);
+            canvasElt.addEventListener('touchcancel', this.handleTouchEvent);
+        });
     }
 
     get canvasWidth(): number {
@@ -35,7 +45,7 @@ export class EmulationPage implements AfterViewInit {
         return SCALE * 250;
     }
 
-    handeMouseEvent(e: MouseEvent): void {
+    handeMouseEvent = (e: MouseEvent): void => {
         const coords = this.eventToPalmCoordinates(e);
 
         // tslint:disable-next-line: no-bitwise
@@ -44,9 +54,9 @@ export class EmulationPage implements AfterViewInit {
         } else {
             this.emulationService.handlePointerUp();
         }
-    }
+    };
 
-    handleTouchEvent(e: TouchEvent): void {
+    handleTouchEvent = (e: TouchEvent): void => {
         if (e.touches.length > 0) {
             // tslint:disable-next-line: no-non-null-assertion
             const coords = this.eventToPalmCoordinates(e.touches.item(0)!);
@@ -57,7 +67,7 @@ export class EmulationPage implements AfterViewInit {
         }
 
         e.preventDefault();
-    }
+    };
 
     private ionViewDidEnter() {
         this.emulationService.newFrame.addHandler(this.onNewFrame);
