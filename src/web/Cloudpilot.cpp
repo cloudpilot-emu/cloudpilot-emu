@@ -77,3 +77,7 @@ long Cloudpilot::MinMemoryForDevice(string id) {
 
     return device.IsValid() ? device.MinRAMSize() : -1;
 }
+
+void Cloudpilot::QueuePenMove(int x, int y) { gSession->QueuePenEvent(PenEvent::down(x, y)); }
+
+void Cloudpilot::QueuePenUp() { gSession->QueuePenEvent(PenEvent::up()); }

@@ -24,6 +24,9 @@ class Cloudpilot {
 
     long MinMemoryForDevice(string id);
 
+    void QueuePenMove(int x, int y);
+    void QueuePenUp();
+
    private:
     Frame frame{1024 * 128};
 };

@@ -27,6 +27,9 @@ export interface Cloudpilot {
     MarkScreenClean(): void;
 
     MinMemoryForDevice(id: string): number;
+
+    QueuePenMove(x: number, y: number): void;
+    QueuePenUp(): void;
 }
 
 export interface Frame {

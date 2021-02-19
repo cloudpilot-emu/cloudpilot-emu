@@ -5,6 +5,8 @@ import { Mutex } from 'async-mutex';
 import { Session } from '../model/Session';
 import { StorageService } from './storage.service';
 
+const PEN_MOVE_THROTTLE = 25;
+
 @Injectable({
     providedIn: 'root',
 })
@@ -68,6 +70,23 @@ export class EmulationService {
             }
         });
 
+    handlePointerMove(x: number, y: number): void {
+        const ts = performance.now();
+        this.penDown = true;
+
+        if (ts - this.lastPenUpdate < PEN_MOVE_THROTTLE || !this.cloudpilotInstance) return;
+
+        this.cloudpilotInstance.queuePenMove(x, y);
+        this.lastPenUpdate = ts;
+    }
+
+    handlePointerUp(): void {
+        if (this.cloudpilotInstance && this.penDown) this.cloudpilotInstance.queuePenUp();
+
+        this.lastPenUpdate = 0;
+        this.penDown = false;
+    }
+
     private onAnimationFrame = (timestamp: number): void => {
         if (timestamp - this.clockEmulator > 500) this.clockEmulator = timestamp - 10;
 
@@ -129,4 +148,7 @@ export class EmulationService {
     private canvas: HTMLCanvasElement = document.createElement('canvas');
     private context!: CanvasRenderingContext2D;
     private imageData = new ImageData(160, 160);
+
+    private lastPenUpdate = 0;
+    private penDown = false;
 }

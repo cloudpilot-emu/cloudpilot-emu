@@ -25,7 +25,10 @@
 <ion-content>
 
   <div class="container">
-    <canvas #canvas [width]="canvasWidth" [height]="canvasHeight"></canvas>
+    <canvas #canvas [width]="canvasWidth" [height]="canvasHeight" (mousedown)="handeMouseEvent($event)"
+      (mouseup)="handeMouseEvent($event)" (mousemove)="handeMouseEvent($event)" (touchstart)="handleTouchEvent($event)"
+      (touchmove)="handleTouchEvent($event)" (touchend)="handleTouchEvent($event)"
+      (touchcancel)="handleTouchEvent($event)"></canvas>
   </div>
 
 </ion-content>

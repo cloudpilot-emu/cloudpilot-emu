@@ -113,6 +113,14 @@ export class Cloudpilot {
         return this.cloudpilot.MinMemoryForDevice(id) * 1024;
     }
 
+    queuePenMove(x: number, y: number): void {
+        this.cloudpilot.QueuePenMove(x, y);
+    }
+
+    queuePenUp(): void {
+        this.cloudpilot.QueuePenUp();
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);
