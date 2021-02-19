@@ -40,7 +40,6 @@ export class FileService {
         const input = document.createElement('input');
 
         input.type = 'file';
-        input.accept = accept;
         input.onchange = async (e) => {
             const target = e.target as HTMLInputElement;
 
@@ -48,6 +47,15 @@ export class FileService {
             const file = target.files.item(0);
 
             if (!file) return;
+
+            if (
+                !accept
+                    .replace(/\s+/g, '')
+                    .split(',')
+                    .some((x) => file.name.endsWith(x))
+            ) {
+                return;
+            }
 
             const content = await new Promise<Uint8Array>((resolve, reject) => {
                 const reader = new FileReader();

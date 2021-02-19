@@ -68,4 +68,7 @@ export class SessionItemComponent {
 
     @Output()
     save = new EventEmitter<Session>();
+
+    @Output()
+    selectItem = new EventEmitter<Session>();
 }
