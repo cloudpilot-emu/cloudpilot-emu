@@ -1,12 +1,14 @@
 import { AfterViewInit, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 
+import { EmulationService } from './../../service/emulation.service';
+
 @Component({
     selector: 'app-emulation',
     templateUrl: './emulation.page.html',
     styleUrls: ['./emulation.page.scss'],
 })
 export class EmulationPage implements AfterViewInit {
-    constructor() {}
+    constructor(private emulationService: EmulationService) {}
 
     ngAfterViewInit(): void {
         // tslint:disable-next-line: no-non-null-assertion
@@ -17,12 +19,20 @@ export class EmulationPage implements AfterViewInit {
         ctx.fill();
     }
 
-    private get canvasWidth(): number {
+    get canvasWidth(): number {
         return 3 * 160;
     }
 
-    private get canvasHeight(): number {
+    get canvasHeight(): number {
         return 3 * 250;
+    }
+
+    private ionViewDidEnter() {
+        this.emulationService.resume();
+    }
+
+    private ionViewWillLeave() {
+        this.emulationService.pause();
     }
 
     @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;

@@ -70,6 +70,15 @@ export class StorageService {
         return sessions;
     }
 
+    public async getSession(id: number): Promise<Session | undefined> {
+        const tx = await this.newTransaction(OBJECT_STORE_SESSION);
+        const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
+
+        await this.acquireLock(objectStoreSession, -1);
+
+        return await complete(objectStoreSession.get(id));
+    }
+
     public async deleteSession(session: Session): Promise<void> {
         const tx = await this.newTransaction(OBJECT_STORE_SESSION, OBJECT_STORE_ROM);
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
@@ -105,6 +114,17 @@ export class StorageService {
         objectStoreSession.put(session);
 
         await complete(tx);
+    }
+
+    public async loadSession(session: Session): Promise<[Uint8Array | undefined, Uint8Array, Uint8Array]> {
+        const tx = await this.newTransaction(OBJECT_STORE_ROM);
+        const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
+
+        await this.acquireLock(objectStoreRom, -1);
+
+        const rom = await complete<RecordRom>(objectStoreRom.get(session.rom));
+
+        return [rom?.data, new Uint8Array(), new Uint8Array()];
     }
 
     private setupDb() {

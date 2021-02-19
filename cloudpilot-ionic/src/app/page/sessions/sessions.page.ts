@@ -17,7 +17,7 @@ export class SessionsPage {
         public sessionService: SessionService,
         private fileService: FileService,
         private alertController: AlertController,
-        private emulationService: EmulationService,
+        public emulationService: EmulationService,
         private router: Router
     ) {}
 

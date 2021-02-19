@@ -371,6 +371,8 @@ EmDevice& EmSession::GetDevice() { return *device; }
 uint32 EmSession::RunEmulation(uint32 maxCycles) {
     EmAssert(cpu);
 
+    if (maxCycles == 0) return 0;
+
     uint64 cyclesBefore = systemCycles;
 
     PumpEvents();

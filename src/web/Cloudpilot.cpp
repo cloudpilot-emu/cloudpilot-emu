@@ -27,12 +27,6 @@ void* Cloudpilot::Malloc(long size) { return ::malloc(size); }
 void Cloudpilot::Free(void* buffer) { ::free(buffer); }
 
 bool Cloudpilot::InitializeSession(void* buffer, long size, const char* deviceType) {
-    if (device) {
-        cerr << "session already initialized" << endl << flush;
-
-        return false;
-    }
-
     auto reader = createReader(buffer, size);
 
     if (!reader) {
@@ -41,12 +35,10 @@ bool Cloudpilot::InitializeSession(void* buffer, long size, const char* deviceTy
         return false;
     }
 
-    device = make_unique<EmDevice>(deviceType);
+    unique_ptr<EmDevice> device = make_unique<EmDevice>(deviceType);
 
     if (!device->Supported()) {
         cerr << "unsupported device type " << deviceType << endl << flush;
-
-        device.release();
 
         return false;
     }
@@ -54,18 +46,18 @@ bool Cloudpilot::InitializeSession(void* buffer, long size, const char* deviceTy
     if (!device->SupportsROM(*reader)) {
         cerr << "ROM not supported for device " << deviceType << endl << flush;
 
-        device.release();
-
         return false;
     }
 
     if (!gSession->Initialize(device.get(), (uint8*)buffer, size)) {
         cerr << "Session failed to initialize" << endl << flush;
 
-        device.release();
+        this->device.release();
 
         return false;
     }
+
+    this->device.swap(device);
 
     return true;
 }
