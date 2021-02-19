@@ -10,3 +10,11 @@ if (environment.production) {
 platformBrowserDynamic()
     .bootstrapModule(AppModule)
     .catch((err) => console.log(err));
+
+// work around status bar overlapping the viewport after rotation on iOS
+window.addEventListener('orientationchange', () =>
+    setTimeout(() => {
+        document.body.style.height = window.innerHeight + 'px';
+        document.body.style.marginTop = window.outerHeight - window.innerHeight + 'px';
+    }, 50)
+);
