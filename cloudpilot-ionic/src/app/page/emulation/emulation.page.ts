@@ -10,12 +10,8 @@ import { PalmButton } from '../../../../../src';
     templateUrl: './emulation.page.html',
     styleUrls: ['./emulation.page.scss'],
 })
-export class EmulationPage implements AfterViewInit, OnDestroy {
+export class EmulationPage implements AfterViewInit {
     constructor(private emulationService: EmulationService, private ngZone: NgZone) {}
-
-    ngOnDestroy(): void {
-        if (this.eventHandler) this.eventHandler.release();
-    }
 
     ngAfterViewInit(): void {
         const canvasElt = this.canvasRef.nativeElement;
@@ -23,8 +19,6 @@ export class EmulationPage implements AfterViewInit, OnDestroy {
         this.eventHandler = new EventHandler(canvasElt, this.emulationService, this.canvasHelper);
 
         this.canvasHelper.clear();
-
-        this.ngZone.runOutsideAngular(() => this.eventHandler.bind());
     }
 
     get canvasWidth(): number {
@@ -47,12 +41,16 @@ export class EmulationPage implements AfterViewInit, OnDestroy {
         this.emulationService.newFrame.addHandler(this.onNewFrame);
 
         this.emulationService.resume();
+
+        this.ngZone.runOutsideAngular(() => this.eventHandler.bind());
     }
 
     ionViewWillLeave() {
         this.emulationService.pause();
 
         this.emulationService.newFrame.removeHandler(this.onNewFrame);
+
+        this.eventHandler.release();
     }
 
     private onNewFrame = (canvas: HTMLCanvasElement): void => {

@@ -31,25 +31,33 @@ export class EventHandler {
     ) {}
 
     bind(): void {
+        if (this.bound) return;
+
         this.canvas.addEventListener('mousedown', this.handleMouseDown);
         this.canvas.addEventListener('mouseup', this.handeMouseUp);
-        this.canvas.addEventListener('mousemove', this.handleMouseMove);
+        window.addEventListener('mousemove', this.handleMouseMove);
 
         this.canvas.addEventListener('touchstart', this.handleTouchStart);
         this.canvas.addEventListener('touchmove', this.handleTouchMove);
         this.canvas.addEventListener('touchend', this.handleTouchEnd);
         this.canvas.addEventListener('touchcancel', this.handleTouchEnd);
+
+        this.bound = true;
     }
 
     release(): void {
+        if (!this.bound) return;
+
         this.canvas.removeEventListener('mousedown', this.handleMouseDown);
         this.canvas.removeEventListener('mouseup', this.handeMouseUp);
-        this.canvas.removeEventListener('mousemove', this.handleMouseMove);
+        window.removeEventListener('mousemove', this.handleMouseMove);
 
         this.canvas.removeEventListener('touchstart', this.handleTouchStart);
         this.canvas.removeEventListener('touchmove', this.handleTouchMove);
         this.canvas.removeEventListener('touchend', this.handleTouchEnd);
         this.canvas.removeEventListener('touchcancel', this.handleTouchEnd);
+
+        this.bound = false;
     }
 
     handleMouseDown = (e: MouseEvent): void => {
@@ -77,7 +85,7 @@ export class EventHandler {
         // tslint:disable-next-line: no-bitwise
         if (!(e.buttons & 0x01) || this.interactionMouse?.area !== Area.silkscreen) return;
 
-        const coords = this.eventToPalmCoordinates(e);
+        const coords = this.eventToPalmCoordinates(e, true);
         if (!coords) return;
 
         this.emulationService.handlePointerMove(...coords);
@@ -126,7 +134,7 @@ export class EventHandler {
             }
         }
 
-        e.preventDefault();
+        if (e.cancelable !== false) e.preventDefault();
     };
 
     handleTouchMove = (e: TouchEvent): void => {
@@ -135,14 +143,14 @@ export class EventHandler {
             if (!touch) continue;
 
             if (this.interactionsTouch.get(touch.identifier)?.area === Area.silkscreen) {
-                const coords = this.eventToPalmCoordinates(touch);
+                const coords = this.eventToPalmCoordinates(touch, true);
                 if (!coords) continue;
 
                 this.emulationService.handlePointerMove(...coords);
             }
         }
 
-        e.preventDefault();
+        if (e.cancelable !== false) e.preventDefault();
     };
 
     handleTouchEnd = (e: TouchEvent): void => {
@@ -168,10 +176,10 @@ export class EventHandler {
             }
         }
 
-        e.preventDefault();
+        if (e.cancelable !== false) e.preventDefault();
     };
 
-    private eventToPalmCoordinates(e: MouseEvent | Touch): [number, number] | undefined {
+    private eventToPalmCoordinates(e: MouseEvent | Touch, clip = false): [number, number] | undefined {
         const bb = this.canvas.getBoundingClientRect();
 
         let contentX: number;
@@ -193,10 +201,17 @@ export class EventHandler {
             contentY = bb.top + (bb.height - contentHeight) / 2;
         }
 
-        const x = Math.floor(((e.clientX - contentX) / contentWidth) * 160);
-        const y = Math.floor(((e.clientY - contentY) / contentHeight) * 250);
+        let x = Math.floor(((e.clientX - contentX) / contentWidth) * 160);
+        let y = Math.floor(((e.clientY - contentY) / contentHeight) * 250);
 
-        if (x < 0 || x >= 160 || y < 0 || y >= 250) return undefined;
+        if (clip) {
+            if (x < 0) x = 0;
+            if (x > 159) x = 158;
+            if (y < 0) y = 0;
+            if (y > 249) y = 249;
+        } else {
+            if (x < 0 || x >= 160 || y < 0 || y >= 250) return undefined;
+        }
 
         return [x, y];
     }
@@ -226,4 +241,5 @@ export class EventHandler {
 
     private interactionMouse: Interaction | undefined;
     private interactionsTouch = new Map<number, Interaction>();
+    private bound = false;
 }
