@@ -206,7 +206,7 @@ export class EventHandler {
 
         if (clip) {
             if (x < 0) x = 0;
-            if (x > 159) x = 158;
+            if (x > 159) x = 159;
             if (y < 0) y = 0;
             if (y > 249) y = 249;
         } else {
