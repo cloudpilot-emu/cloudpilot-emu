@@ -157,10 +157,29 @@ export class EmulationPage implements AfterViewInit {
 
     private eventToPalmCoordinates(e: MouseEvent | Touch): [number, number] | undefined {
         const canvasElt = this.canvasRef.nativeElement;
-        const boundingBox = canvasElt.getBoundingClientRect();
+        const bb = canvasElt.getBoundingClientRect();
 
-        const x = Math.floor(((e.clientX - boundingBox.left - 5) / (boundingBox.width - 10)) * 160);
-        const y = Math.floor(((e.clientY - boundingBox.top - 5) / (boundingBox.height - 10)) * 250);
+        let contentX: number;
+        let contentY: number;
+        let contentWidth: number;
+        let contentHeight: number;
+
+        // CSS object-fit keeps the aspect ratio of the canvas content, but the canvas itself
+        // looses aspect and fills the container -> manually calculate the metrics for the content
+        if (bb.width / bb.height > 160 / 250) {
+            contentHeight = bb.height;
+            contentWidth = (160 / 250) * bb.height;
+            contentY = bb.top;
+            contentX = bb.left + (bb.width - contentWidth) / 2;
+        } else {
+            contentWidth = bb.width;
+            contentHeight = (250 / 160) * bb.width;
+            contentX = bb.left;
+            contentY = bb.top + (bb.height - contentHeight) / 2;
+        }
+
+        const x = Math.floor(((e.clientX - contentX) / contentWidth) * 160);
+        const y = Math.floor(((e.clientY - contentY) / contentHeight) * 250);
 
         if (x < 0 || x >= 160 || y < 0 || y >= 220) return undefined;
 
