@@ -34,7 +34,7 @@ export class EventHandler {
         if (this.bound) return;
 
         this.canvas.addEventListener('mousedown', this.handleMouseDown);
-        this.canvas.addEventListener('mouseup', this.handeMouseUp);
+        window.addEventListener('mouseup', this.handeMouseUp);
         window.addEventListener('mousemove', this.handleMouseMove);
 
         this.canvas.addEventListener('touchstart', this.handleTouchStart);
