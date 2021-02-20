@@ -4,6 +4,17 @@ export interface VoidPtr {
     [__void_ptr_tag__]: null;
 }
 
+export const enum PalmButton {
+    cal = 0,
+    phone = 1,
+    todo = 2,
+    notes = 3,
+    up = 4,
+    down = 5,
+    power = 6,
+    cradle = 7,
+}
+
 export interface RomInfo {
     CardVersion(): number;
     CardName(): string;
@@ -30,6 +41,11 @@ export interface Cloudpilot {
 
     QueuePenMove(x: number, y: number): void;
     QueuePenUp(): void;
+
+    QueueButtonDown(button: PalmButton): void;
+    QueueButtonUp(button: PalmButton): void;
+
+    IsPowerOff(): boolean;
 }
 
 export interface Frame {

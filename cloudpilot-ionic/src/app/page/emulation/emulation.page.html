@@ -3,7 +3,7 @@
     <ion-title>Emulator</ion-title>
 
     <ion-buttons slot="end">
-      <ion-button>
+      <ion-button (mousedown)="powerButtonDown()" (mouseup)="powerButtonUp()">
         <ion-icon name="power-outline"></ion-icon>
       </ion-button>
       <ion-button>

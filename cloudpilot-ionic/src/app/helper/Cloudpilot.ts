@@ -4,9 +4,11 @@
 // tslint:disable-next-line: no-reference
 /// <reference path="../../../node_modules/@types/emscripten/index.d.ts"/>
 
-import createModule, { Cloudpilot as CloudpilotNative, Module, VoidPtr } from '../../../../src';
+import createModule, { Cloudpilot as CloudpilotNative, Module, PalmButton, VoidPtr } from '../../../../src';
 
 import { DeviceId } from '../model/DeviceId';
+
+export { PalmButton } from '../../../../src';
 
 export interface RomInfo {
     cardVersion: number;
@@ -119,6 +121,18 @@ export class Cloudpilot {
 
     queuePenUp(): void {
         this.cloudpilot.QueuePenUp();
+    }
+
+    queueButtonDown(button: PalmButton): void {
+        this.cloudpilot.QueueButtonDown(button);
+    }
+
+    queueButtonUp(button: PalmButton): void {
+        this.cloudpilot.QueueButtonUp(button);
+    }
+
+    isPowerOff(): boolean {
+        return this.cloudpilot.IsPowerOff();
     }
 
     private copyIn(data: Uint8Array): VoidPtr {

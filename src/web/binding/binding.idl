@@ -17,6 +17,11 @@ interface Cloudpilot {
 
     void QueuePenMove(long x, long y);
     void QueuePenUp();
+
+    void QueueButtonDown(long id);
+    void QueueButtonUp(long id);
+
+    boolean IsPowerOff();
 };
 
 interface RomInfo {

@@ -1,6 +1,7 @@
 import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 
 import { EmulationService } from './../../service/emulation.service';
+import { PalmButton } from '../../../../../src';
 
 const SCALE = 3 * devicePixelRatio;
 const SILKSCREEN_URL = 'assets/silkscreen.png';
@@ -29,7 +30,7 @@ export class EmulationPage implements AfterViewInit {
 
         ctx.beginPath();
         ctx.rect(0, 0, 160 * SCALE, 160 * SCALE);
-        ctx.fillStyle = '#ccc';
+        ctx.fillStyle = '#d2d2d2';
         ctx.fill();
 
         this.drawSilkscreen();
@@ -78,6 +79,14 @@ export class EmulationPage implements AfterViewInit {
         e.preventDefault();
     };
 
+    async powerButtonDown(): Promise<void> {
+        this.emulationService.handleButtonDown(PalmButton.power);
+    }
+
+    async powerButtonUp(): Promise<void> {
+        this.emulationService.handleButtonUp(PalmButton.power);
+    }
+
     private ionViewDidEnter() {
         this.emulationService.newFrame.addHandler(this.onNewFrame);
 
@@ -110,7 +119,7 @@ export class EmulationPage implements AfterViewInit {
 
         ctx.beginPath();
         ctx.rect(0, 160 * SCALE, 160 * SCALE, 60 * SCALE);
-        ctx.fillStyle = '#eee';
+        ctx.fillStyle = '#bbb';
         ctx.fill();
 
         ctx.imageSmoothingEnabled = true;
@@ -127,11 +136,11 @@ export class EmulationPage implements AfterViewInit {
 
         ctx.beginPath();
         ctx.rect(0, 220 * SCALE, 160 * SCALE, 30 * SCALE);
-        ctx.fillStyle = 'white';
+        ctx.fillStyle = '#d2d2d2';
         ctx.fill();
 
         ctx.beginPath();
-        ctx.lineWidth = 3;
+        ctx.lineWidth = Math.round(0.5 * SCALE);
         ctx.strokeStyle = 'black';
         ctx.moveTo(0, 220 * SCALE);
         ctx.lineTo(160 * SCALE, 220 * SCALE);

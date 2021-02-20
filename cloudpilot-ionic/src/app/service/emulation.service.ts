@@ -1,9 +1,11 @@
-import { Cloudpilot } from '../helper/Cloudpilot';
+import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
+
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
 import { Mutex } from 'async-mutex';
 import { Session } from '../model/Session';
 import { StorageService } from './storage.service';
+import { ThisReceiver } from '@angular/compiler';
 
 const PEN_MOVE_THROTTLE = 25;
 
@@ -87,6 +89,14 @@ export class EmulationService {
         this.penDown = false;
     }
 
+    handleButtonDown(button: PalmButton) {
+        if (this.cloudpilotInstance) this.cloudpilotInstance.queueButtonDown(button);
+    }
+
+    handleButtonUp(button: PalmButton) {
+        if (this.cloudpilotInstance) this.cloudpilotInstance.queueButtonUp(button);
+    }
+
     private onAnimationFrame = (timestamp: number): void => {
         if (timestamp - this.clockEmulator > 500) this.clockEmulator = timestamp - 10;
 
@@ -109,6 +119,17 @@ export class EmulationService {
 
     private updateScreen(): void {
         const frame = this.cloudpilotInstance.getFrame();
+
+        if (this.cloudpilotInstance.isPowerOff()) {
+            this.context.beginPath();
+            this.context.rect(0, 0, 160, 160);
+            this.context.fillStyle = '#d2d2d2';
+            this.context.fill();
+
+            this.newFrame.dispatch(this.canvas);
+
+            return;
+        }
 
         if (frame.lines === this.imageData.height && frame.lineWidth === this.imageData.width) {
             switch (frame.bpp) {

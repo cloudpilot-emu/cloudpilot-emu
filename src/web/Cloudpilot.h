@@ -27,6 +27,11 @@ class Cloudpilot {
     void QueuePenMove(int x, int y);
     void QueuePenUp();
 
+    void QueueButtonDown(int id);
+    void QueueButtonUp(int id);
+
+    bool IsPowerOff();
+
    private:
     Frame frame{1024 * 128};
 };

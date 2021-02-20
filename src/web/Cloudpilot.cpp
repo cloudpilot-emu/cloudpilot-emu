@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 
+#include "ButtonEvent.h"
 #include "EmDevice.h"
 #include "EmHAL.h"
 #include "EmROMReader.h"
@@ -19,6 +20,37 @@ namespace {
         }
 
         return reader;
+    }
+
+    ButtonEvent::Button buttonFromId(int id) {
+        switch (id) {
+            case 0:
+                return ButtonEvent::Button::app1;
+
+            case 1:
+                return ButtonEvent::Button::app2;
+
+            case 2:
+                return ButtonEvent::Button::app3;
+
+            case 3:
+                return ButtonEvent::Button::app4;
+
+            case 4:
+                return ButtonEvent::Button::rockerUp;
+
+            case 5:
+                return ButtonEvent::Button::rockerDown;
+
+            case 6:
+                return ButtonEvent::Button::power;
+
+            case 7:
+                return ButtonEvent::Button::cradle;
+
+            default:
+                return ButtonEvent::Button::invalid;
+        }
     }
 }  // namespace
 
@@ -81,3 +113,13 @@ long Cloudpilot::MinMemoryForDevice(string id) {
 void Cloudpilot::QueuePenMove(int x, int y) { gSession->QueuePenEvent(PenEvent::down(x, y)); }
 
 void Cloudpilot::QueuePenUp() { gSession->QueuePenEvent(PenEvent::up()); }
+
+void Cloudpilot::QueueButtonDown(int id) {
+    gSession->QueueButtonEvent(ButtonEvent(buttonFromId(id), ButtonEvent::Type::press));
+}
+
+void Cloudpilot::QueueButtonUp(int id) {
+    gSession->QueueButtonEvent(ButtonEvent(buttonFromId(id), ButtonEvent::Type::release));
+}
+
+bool Cloudpilot::IsPowerOff() { return !gSession->IsPowerOn(); }
