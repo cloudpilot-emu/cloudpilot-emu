@@ -1,7 +1,7 @@
 import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
+import { Injectable, NgZone } from '@angular/core';
 
 import { Event } from 'microevent.ts';
-import { Injectable } from '@angular/core';
 import { Mutex } from 'async-mutex';
 import { Session } from '../model/Session';
 import { StorageService } from './storage.service';
@@ -13,7 +13,7 @@ const PEN_MOVE_THROTTLE = 25;
     providedIn: 'root',
 })
 export class EmulationService {
-    constructor(private storageService: StorageService) {
+    constructor(private storageService: StorageService, private ngZone: NgZone) {
         this.canvas.width = 160;
         this.canvas.height = 160;
 
@@ -54,22 +54,30 @@ export class EmulationService {
         this.mutex.runExclusive(async () => {
             console.log('resume');
 
-            if (!this.currentSession) return;
+            if (!this.currentSession || this.running) return;
             this.cloudpilotInstance = await this.cloudpilot;
 
             this.clockEmulator = performance.now();
 
-            this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+            this.ngZone.runOutsideAngular(
+                () => (this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame))
+            );
+
+            this.running = true;
         });
 
     pause = (): Promise<void> =>
         this.mutex.runExclusive(() => {
             console.log('pause');
 
+            if (!this.running) return;
+
             if (this.animationFrameHandle > 0) {
                 cancelAnimationFrame(this.animationFrameHandle);
                 this.animationFrameHandle = -1;
             }
+
+            this.running = false;
         });
 
     handlePointerMove(x: number, y: number): void {
@@ -89,12 +97,32 @@ export class EmulationService {
         this.penDown = false;
     }
 
-    handleButtonDown(button: PalmButton) {
+    handleButtonDown(button: PalmButton): void {
         if (this.cloudpilotInstance) this.cloudpilotInstance.queueButtonDown(button);
     }
 
-    handleButtonUp(button: PalmButton) {
+    handleButtonUp(button: PalmButton): void {
         if (this.cloudpilotInstance) this.cloudpilotInstance.queueButtonUp(button);
+    }
+
+    reset(): void {
+        if (this.cloudpilotInstance) this.cloudpilotInstance.reset();
+    }
+
+    resetNoExtensions(): void {
+        if (this.cloudpilotInstance) this.cloudpilotInstance.resetNoExtensions();
+    }
+
+    resetHard(): void {
+        if (this.cloudpilotInstance) this.cloudpilotInstance.resetHard();
+    }
+
+    isRunning(): boolean {
+        return this.running;
+    }
+
+    isPowerOff(): boolean {
+        return this.powerOff;
     }
 
     private onAnimationFrame = (timestamp: number): void => {
@@ -112,6 +140,11 @@ export class EmulationService {
         if (this.cloudpilotInstance.isScreenDirty()) {
             this.updateScreen();
             this.cloudpilotInstance.markScreenClean();
+        }
+
+        const poweroff = this.cloudpilotInstance.isPowerOff();
+        if (poweroff !== this.powerOff) {
+            this.ngZone.run(() => (this.powerOff = poweroff));
         }
 
         this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
@@ -172,4 +205,7 @@ export class EmulationService {
 
     private lastPenUpdate = 0;
     private penDown = false;
+
+    private running = false;
+    private powerOff = false;
 }

@@ -3,16 +3,17 @@
     <ion-title>Emulator</ion-title>
 
     <ion-buttons slot="end">
-      <ion-button (mousedown)="powerButtonDown()" (mouseup)="powerButtonUp()">
+      <ion-button (mousedown)="powerButtonDown()" (mouseup)="powerButtonUp()"
+        [disabled]="!emulationService.isRunning()">
         <ion-icon name="power-outline"></ion-icon>
       </ion-button>
-      <ion-button>
+      <ion-button [disabled]="!emulationService.isRunning() || emulationService.isPowerOff()">
         <ion-icon name="add-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
 
     <ion-buttons slot="start">
-      <ion-button>
+      <ion-button (click)="openContextMenu($event)">
         <ion-icon name="ellipsis-vertical-outline"></ion-icon>
       </ion-button>
       <ion-button>

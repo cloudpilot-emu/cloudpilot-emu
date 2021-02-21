@@ -1,9 +1,11 @@
 import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CanvasHelper, SCALE } from './helper/CanvasHelper';
 
+import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
 import { EventHandler } from './helper/EventHandler';
 import { PalmButton } from '../../../../../src';
+import { PopoverController } from '@ionic/angular';
 
 @Component({
     selector: 'app-emulation',
@@ -11,7 +13,11 @@ import { PalmButton } from '../../../../../src';
     styleUrls: ['./emulation.page.scss'],
 })
 export class EmulationPage implements AfterViewInit {
-    constructor(private emulationService: EmulationService, private ngZone: NgZone) {}
+    constructor(
+        public emulationService: EmulationService,
+        private popoverController: PopoverController,
+        private ngZone: NgZone
+    ) {}
 
     ngAfterViewInit(): void {
         const canvasElt = this.canvasRef.nativeElement;
@@ -51,6 +57,20 @@ export class EmulationPage implements AfterViewInit {
         this.emulationService.newFrame.removeHandler(this.onNewFrame);
 
         this.eventHandler.release();
+    }
+
+    async openContextMenu(e: MouseEvent): Promise<void> {
+        const popover = await this.popoverController.create({
+            component: ContextMenuComponent,
+            event: e,
+            backdropDismiss: true,
+            showBackdrop: false,
+            componentProps: {
+                onClick: () => popover.dismiss(),
+            },
+        });
+
+        popover.present();
     }
 
     private onNewFrame = (canvas: HTMLCanvasElement): void => {

@@ -1,0 +1,11 @@
+<ion-list>
+  <ion-item button [detail]="false" (click)="reset()" [disabled]="!emulationService.isRunning()">
+    Reset
+  </ion-item>
+  <ion-item button [detail]="false" (click)="resetNoExtensions()" [disabled]="!emulationService.isRunning()">
+    Reset (no extensions)
+  </ion-item>
+  <ion-item button [detail]="false" (click)="resetHard()" [disabled]="!emulationService.isRunning()">
+    Hard reset
+  </ion-item>
+</ion-list>

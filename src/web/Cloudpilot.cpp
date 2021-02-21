@@ -123,3 +123,9 @@ void Cloudpilot::QueueButtonUp(int id) {
 }
 
 bool Cloudpilot::IsPowerOff() { return !gSession->IsPowerOn(); }
+
+void Cloudpilot::Reset() { gSession->Reset(EmSession::ResetType::soft); }
+
+void Cloudpilot::ResetNoExtensions() { gSession->Reset(EmSession::ResetType::noext); }
+
+void Cloudpilot::ResetHard() { gSession->Reset(EmSession::ResetType::hard); }

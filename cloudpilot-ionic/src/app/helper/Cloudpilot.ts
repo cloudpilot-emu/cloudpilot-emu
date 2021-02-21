@@ -135,6 +135,18 @@ export class Cloudpilot {
         return this.cloudpilot.IsPowerOff();
     }
 
+    reset(): void {
+        this.cloudpilot.Reset();
+    }
+
+    resetNoExtensions(): void {
+        this.cloudpilot.ResetNoExtensions();
+    }
+
+    resetHard(): void {
+        this.cloudpilot.ResetHard();
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);

@@ -46,6 +46,10 @@ export interface Cloudpilot {
     QueueButtonUp(button: PalmButton): void;
 
     IsPowerOff(): boolean;
+
+    Reset(): void;
+    ResetNoExtensions(): void;
+    ResetHard(): void;
 }
 
 export interface Frame {

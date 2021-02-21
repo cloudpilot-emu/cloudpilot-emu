@@ -22,6 +22,10 @@ interface Cloudpilot {
     void QueueButtonUp(long id);
 
     boolean IsPowerOff();
+
+    void Reset();
+    void ResetNoExtensions();
+    void ResetHard();
 };
 
 interface RomInfo {

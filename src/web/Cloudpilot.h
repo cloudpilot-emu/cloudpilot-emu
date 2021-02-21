@@ -32,6 +32,10 @@ class Cloudpilot {
 
     bool IsPowerOff();
 
+    void Reset();
+    void ResetNoExtensions();
+    void ResetHard();
+
    private:
     Frame frame{1024 * 128};
 };
