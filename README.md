@@ -105,6 +105,10 @@ another instance of Cloudpilot in another tab or window, the instance in the
 other tab will stop saving its state in order not avoid corruption. An alert
 will notify you that no more changes will be saved.
 
+# Reporrting issues
+
+Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloudpilot/issues).
+
 # Known issues
 
 -   Audio is not emulated yet.
