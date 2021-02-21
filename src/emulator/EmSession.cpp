@@ -272,8 +272,6 @@ void EmSession::Reset(ResetType resetType) {
     penEventQueueIncoming.Clear();
     keyboardEventQueueIncoming.Clear();
     lastEventPromotedAt = 0;
-    bootKeysType = resetType;
-    holdingBootKeys = false;
 
     if (resetType != ResetType::sys) {
         buttonEventQueue.Clear();
@@ -282,6 +280,8 @@ void EmSession::Reset(ResetType resetType) {
         switch (resetType) {
             case ResetType::hard:
                 holdingBootKeys = true;
+                bootKeysType = ResetType::hard;
+
                 EmHAL::ButtonEvent(
                     ButtonEvent(ButtonEvent::Button::power, ButtonEvent::Type::press));
 
@@ -289,6 +289,8 @@ void EmSession::Reset(ResetType resetType) {
 
             case ResetType::noext:
                 holdingBootKeys = true;
+                bootKeysType = ResetType::noext;
+
                 EmHAL::ButtonEvent(
                     ButtonEvent(ButtonEvent::Button::rockerUp, ButtonEvent::Type::press));
 
