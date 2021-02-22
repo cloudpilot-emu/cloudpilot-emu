@@ -135,6 +135,10 @@ export class Cloudpilot {
         return this.cloudpilot.IsPowerOff();
     }
 
+    isUiInitialized(): boolean {
+        return this.cloudpilot.IsUIInitialized();
+    }
+
     reset(): void {
         this.cloudpilot.Reset();
     }
@@ -145,6 +149,16 @@ export class Cloudpilot {
 
     resetHard(): void {
         this.cloudpilot.ResetHard();
+    }
+
+    installFile(data: Uint8Array): number {
+        const buffer = this.copyIn(data);
+
+        const result = this.cloudpilot.InstallFile(buffer, data.length);
+
+        this.cloudpilot.Free(buffer);
+
+        return result;
     }
 
     private copyIn(data: Uint8Array): VoidPtr {

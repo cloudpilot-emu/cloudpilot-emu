@@ -31,10 +31,13 @@ class Cloudpilot {
     void QueueButtonUp(int id);
 
     bool IsPowerOff();
+    bool IsUIInitialized();
 
     void Reset();
     void ResetNoExtensions();
     void ResetHard();
+
+    int InstallFile(void* buffer, size_t len);
 
    private:
     Frame frame{1024 * 128};

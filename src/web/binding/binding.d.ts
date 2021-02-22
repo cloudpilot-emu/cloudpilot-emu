@@ -46,10 +46,13 @@ export interface Cloudpilot {
     QueueButtonUp(button: PalmButton): void;
 
     IsPowerOff(): boolean;
+    IsUIInitialized(): boolean;
 
     Reset(): void;
     ResetNoExtensions(): void;
     ResetHard(): void;
+
+    InstallFile(buffer: VoidPtr, len: number): number;
 }
 
 export interface Frame {

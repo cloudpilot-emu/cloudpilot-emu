@@ -1,9 +1,9 @@
 import { FileDescriptor, FileService } from './../../service/file.service';
 
 import { AlertController } from '@ionic/angular';
+import { AlertService } from './../../service/alert.service';
 import { Component } from '@angular/core';
 import { EmulationService } from './../../service/emulation.service';
-import { LEADING_TRIVIA_CHARS } from '@angular/compiler/src/render3/view/template';
 import { Router } from '@angular/router';
 import { Session } from 'src/app/model/Session';
 import { SessionService } from 'src/app/service/session.service';
@@ -18,6 +18,7 @@ export class SessionsPage {
         public sessionService: SessionService,
         private fileService: FileService,
         private alertController: AlertController,
+        private alertService: AlertService,
         public emulationService: EmulationService,
         private router: Router
     ) {}
@@ -57,8 +58,8 @@ export class SessionsPage {
     }
 
     private async processFile(file: FileDescriptor): Promise<void> {
-        if (!/\.(img|rom|bin)$/.test(file.name)) {
-            this.errorMessage('Unsupported file suffix. Supported suffixes are .bin, .img and .rom.');
+        if (!/\.(img|rom|bin)$/i.test(file.name)) {
+            this.alertService.errorMessage('Unsupported file suffix. Supported suffixes are .bin, .img and .rom.');
 
             return;
         }
@@ -73,12 +74,12 @@ export class SessionsPage {
             const romInfo = (await this.emulationService.cloudpilot).getRomInfo(file.content);
 
             if (!romInfo) {
-                this.errorMessage(`Not a valid session file or ROM image.`);
+                this.alertService.errorMessage(`Not a valid session file or ROM image.`);
                 return;
             }
 
             if (romInfo.supportedDevices.length === 0) {
-                this.errorMessage(`No supported device for this ROM.`);
+                this.alertService.errorMessage(`No supported device for this ROM.`);
                 return;
             }
 
@@ -114,15 +115,5 @@ export class SessionsPage {
 
             alert.present();
         });
-    }
-
-    private async errorMessage(message: string) {
-        const alert = await this.alertController.create({
-            header: 'Error',
-            message,
-            buttons: [{ text: 'Close', role: 'cancel' }],
-        });
-
-        await alert.present();
     }
 }

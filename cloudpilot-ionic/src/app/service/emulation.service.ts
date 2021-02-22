@@ -5,7 +5,6 @@ import { Event } from 'microevent.ts';
 import { Mutex } from 'async-mutex';
 import { Session } from '../model/Session';
 import { StorageService } from './storage.service';
-import { ThisReceiver } from '@angular/compiler';
 
 const PEN_MOVE_THROTTLE = 25;
 
@@ -125,6 +124,14 @@ export class EmulationService {
         return this.powerOff;
     }
 
+    isUiInitialized(): boolean {
+        return this.uiInitialized;
+    }
+
+    installFile(data: Uint8Array): Promise<number> {
+        return this.cloudpilot.then((c) => c.installFile(data));
+    }
+
     private onAnimationFrame = (timestamp: number): void => {
         if (timestamp - this.clockEmulator > 500) this.clockEmulator = timestamp - 10;
 
@@ -143,8 +150,13 @@ export class EmulationService {
         }
 
         const poweroff = this.cloudpilotInstance.isPowerOff();
-        if (poweroff !== this.powerOff) {
-            this.ngZone.run(() => (this.powerOff = poweroff));
+        const uiInitialized = this.cloudpilotInstance.isUiInitialized();
+
+        if (poweroff !== this.powerOff || uiInitialized !== this.uiInitialized) {
+            this.ngZone.run(() => {
+                this.powerOff = poweroff;
+                this.uiInitialized = uiInitialized;
+            });
         }
 
         this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
@@ -208,4 +220,5 @@ export class EmulationService {
 
     private running = false;
     private powerOff = false;
+    private uiInitialized = false;
 }

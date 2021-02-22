@@ -4,6 +4,7 @@
 
 #include "ButtonEvent.h"
 #include "EmDevice.h"
+#include "EmFileImport.h"
 #include "EmHAL.h"
 #include "EmROMReader.h"
 #include "EmSession.h"
@@ -102,6 +103,8 @@ Frame& Cloudpilot::CopyFrame() {
 
 bool Cloudpilot::IsScreenDirty() { return gSystemState.IsScreenDirty(); }
 
+bool Cloudpilot::IsUIInitialized() { return gSystemState.IsUIInitialized(); }
+
 void Cloudpilot::MarkScreenClean() { gSystemState.MarkScreenClean(); }
 
 long Cloudpilot::MinMemoryForDevice(string id) {
@@ -129,3 +132,7 @@ void Cloudpilot::Reset() { gSession->Reset(EmSession::ResetType::soft); }
 void Cloudpilot::ResetNoExtensions() { gSession->Reset(EmSession::ResetType::noext); }
 
 void Cloudpilot::ResetHard() { gSession->Reset(EmSession::ResetType::hard); }
+
+int Cloudpilot::InstallFile(void* buffer, size_t len) {
+    return EmFileImport::LoadPalmFile(static_cast<uint8*>(buffer), len, kMethodHomebrew);
+}
