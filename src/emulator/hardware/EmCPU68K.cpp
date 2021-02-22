@@ -349,7 +349,7 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
             if (this->ExecuteSpecial(maxCycles)) break;
         }
 
-        if (maxCycles && fCurrentCycles >= maxCycles) break;
+        if (fCurrentCycles >= maxCycles) break;
 
     }  // while (1)
 
@@ -471,7 +471,7 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
             }
         }
 
-        if (this->CheckForBreak() || (maxCycles && fCurrentCycles >= maxCycles)) {
+        if (this->CheckForBreak() || (fCurrentCycles >= maxCycles)) {
             return true;
         }
     } while (regs.stopped);

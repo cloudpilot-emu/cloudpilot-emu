@@ -25,6 +25,9 @@ namespace {
     constexpr int MIN_CYCLES_BETWEEN_EVENTS = 10000;
     constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
 
+    constexpr uint32 RUN_TO_SYSCALL_LIMIT = 10000000;
+    constexpr uint32 EXECUTE_SUBROUTINE_LIMIT = 50000000;
+
     EmSession _gSession;
 }  // namespace
 
@@ -392,8 +395,12 @@ void EmSession::ExecuteSubroutine() {
     EmValueChanger<bool> clearSubroutineReturn(subroutineReturn, false);
     EmValueChanger<int> increaseNestLevel(nestLevel, nestLevel + 1);
 
+    uint32 cycles = 0;
+
     while (!subroutineReturn) {
-        cpu->Execute(0);
+        cycles += cpu->Execute(EXECUTE_SUBROUTINE_LIMIT);
+
+        EmAssert(cycles < EXECUTE_SUBROUTINE_LIMIT);
     }
 }
 
@@ -403,15 +410,14 @@ bool EmSession::RunToSyscall() {
 
     EmAssert(gCPU);
 
-    while (!syscallDispatched) {
-        uint32 cycles = cpu->Execute(0);
+    uint32 cycles = 0;
 
-        systemCycles += cycles;
+    while (!syscallDispatched && cycles < RUN_TO_SYSCALL_LIMIT && !cpu->Stopped())
+        cycles += cpu->Execute(RUN_TO_SYSCALL_LIMIT);
 
-        if (cpu->Stopped()) return false;
-    }
+    systemCycles += cycles;
 
-    return true;
+    return syscallDispatched;
 }
 
 void EmSession::NotifySyscallDispatched() {
