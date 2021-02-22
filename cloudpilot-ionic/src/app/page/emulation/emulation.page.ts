@@ -1,13 +1,13 @@
 import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CanvasHelper, SCALE } from './helper/CanvasHelper';
 import { FileDescriptor, FileService } from 'src/app/service/file.service';
+import { LoadingController, PopoverController } from '@ionic/angular';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
 import { EventHandler } from './helper/EventHandler';
 import { PalmButton } from '../../../../../src';
-import { PopoverController } from '@ionic/angular';
 
 @Component({
     selector: 'app-emulation',
@@ -20,6 +20,7 @@ export class EmulationPage implements AfterViewInit {
         private popoverController: PopoverController,
         private alertService: AlertService,
         private fileService: FileService,
+        private loadingController: LoadingController,
         private ngZone: NgZone
     ) {}
 
@@ -94,21 +95,32 @@ export class EmulationPage implements AfterViewInit {
     };
 
     private async processFilesForInstallation(files: Array<FileDescriptor>): Promise<void> {
+        const loader = await this.loadingController.create({
+            message: 'Installing...',
+        });
+        loader.present();
+
+        await new Promise((r) => setTimeout(r, 0));
+
         const filesSuccess: Array<string> = [];
         const filesFail: Array<string> = [];
 
-        for (const file of files) {
-            if (!/\.(prc|pdb)$/i.test(file.name)) {
-                filesFail.push(file.name);
+        try {
+            for (const file of files) {
+                if (!/\.(prc|pdb)$/i.test(file.name)) {
+                    filesFail.push(file.name);
 
-                continue;
-            }
+                    continue;
+                }
 
-            if ((await this.emulationService.installFile(file.content)) == 0) {
-                filesSuccess.push(file.name);
-            } else {
-                filesFail.push(file.name);
+                if ((await this.emulationService.installFile(file.content)) == 0) {
+                    filesSuccess.push(file.name);
+                } else {
+                    filesFail.push(file.name);
+                }
             }
+        } finally {
+            loader.dismiss();
         }
 
         let message: string;
@@ -127,7 +139,7 @@ export class EmulationPage implements AfterViewInit {
                 break;
         }
 
-        if (filesFail.length > 0) message += ' ';
+        if (filesFail.length > 0) message += '<br/><br/>';
 
         switch (filesFail.length) {
             case 0:
@@ -138,9 +150,12 @@ export class EmulationPage implements AfterViewInit {
                 break;
 
             default:
-                message += `Installation of ${filesFail.slice(0, filesFail.length - 1).join(', ')} and ${
-                    filesFail[filesFail.length - 1]
+                message += `Installation of ${filesFail
+                    .slice(0, filesFail.length > 3 ? 3 : filesFail.length - 1)
+                    .join(', ')} and ${
+                    filesFail.length > 3 ? filesFail.length - 3 + ' more files' : filesFail[filesFail.length - 1]
                 } failed.`;
+
                 break;
         }
 
