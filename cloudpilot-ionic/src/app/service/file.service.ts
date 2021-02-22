@@ -1,6 +1,7 @@
 // tslint:disable: no-bitwise
 
 import { Injectable } from '@angular/core';
+import { fileURLToPath } from 'url';
 
 const IMAGE_MAGIC = 0x20150103 | 0;
 const IMAGE_VERSION = 0x00000001 | 0;
@@ -36,43 +37,14 @@ function read32LE(target: Uint8Array, i: number): number {
     providedIn: 'root',
 })
 export class FileService {
-    openFile(accept: string, handler: (file: FileDescriptor) => void): void {
-        const input = document.createElement('input');
+    openFile(handler: (file: FileDescriptor) => void): void {
+        return this.openFilesImpl(false, (files) => {
+            if (files.length > 0) handler(files[0]);
+        });
+    }
 
-        input.type = 'file';
-        input.onchange = async (e) => {
-            const target = e.target as HTMLInputElement;
-
-            if (!target?.files?.length) return;
-            const file = target.files.item(0);
-
-            if (!file) return;
-
-            if (
-                !accept
-                    .replace(/\s+/g, '')
-                    .split(',')
-                    .some((x) => file.name.endsWith(x))
-            ) {
-                return;
-            }
-
-            const content = await new Promise<Uint8Array>((resolve, reject) => {
-                const reader = new FileReader();
-
-                reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
-                reader.onerror = () => reject(reader.error);
-
-                reader.readAsArrayBuffer(file);
-            });
-
-            handler({
-                name: file.name,
-                content,
-            });
-        };
-
-        input.click();
+    openFiles(handler: (files: Array<FileDescriptor>) => void): void {
+        return this.openFilesImpl(true, handler);
     }
 
     parseSessionImage(buffer: Uint8Array): SessionImage | undefined {
@@ -124,5 +96,41 @@ export class FileService {
             memory: buffer.subarray(16 + romNameSize + romSize),
             savestate: new Uint8Array(0),
         };
+    }
+
+    private openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): void {
+        const input: HTMLInputElement = document.createElement('input');
+
+        input.type = 'file';
+        input.multiple = multiple;
+        input.onchange = async (e) => {
+            const target = e.target as HTMLInputElement;
+
+            if (!target?.files?.length) return [];
+
+            const result: Array<Promise<FileDescriptor>> = [];
+
+            for (let i = 0; i < target.files?.length; i++) {
+                const file = target.files.item(i);
+
+                if (!file) continue;
+
+                const content = new Promise<FileDescriptor>((resolve, reject) => {
+                    const reader = new FileReader();
+
+                    reader.onload = () =>
+                        resolve({ content: new Uint8Array(reader.result as ArrayBuffer), name: file.name });
+                    reader.onerror = () => reject(reader.error);
+
+                    reader.readAsArrayBuffer(file);
+                });
+
+                result.push(content);
+            }
+
+            handler(await Promise.all(result));
+        };
+
+        input.click();
     }
 }

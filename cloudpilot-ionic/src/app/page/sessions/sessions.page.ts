@@ -3,6 +3,7 @@ import { FileDescriptor, FileService } from './../../service/file.service';
 import { AlertController } from '@ionic/angular';
 import { Component } from '@angular/core';
 import { EmulationService } from './../../service/emulation.service';
+import { LEADING_TRIVIA_CHARS } from '@angular/compiler/src/render3/view/template';
 import { Router } from '@angular/router';
 import { Session } from 'src/app/model/Session';
 import { SessionService } from 'src/app/service/session.service';
@@ -47,7 +48,7 @@ export class SessionsPage {
     }
 
     loadFile(): void {
-        this.fileService.openFile('.img, .rom, .bin', this.processFile.bind(this));
+        this.fileService.openFile(this.processFile.bind(this));
     }
 
     launchSession(session: Session) {
@@ -56,6 +57,12 @@ export class SessionsPage {
     }
 
     private async processFile(file: FileDescriptor): Promise<void> {
+        if (!/\.(img|rom|bin)$/.test(file.name)) {
+            this.errorMessage('Unsupported file suffix. Supported suffixes are .bin, .img and .rom.');
+
+            return;
+        }
+
         const sessionImage = this.fileService.parseSessionImage(file.content);
 
         if (sessionImage) {
