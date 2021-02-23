@@ -180,6 +180,10 @@ and you will up with a `src/cloudpilot` binary. The binary takes a ROM file or
 session image as an argument. There is a rudemtary readline CLI with tab
 completion that allows you to save session images and reset the virtual device.
 
+# Credits
+
+Artwork for Cloudpilot was done by Paolo Lazatin.
+
 # LICENSE
 
 This program is free software: you can redistribute it and/or modify it under
