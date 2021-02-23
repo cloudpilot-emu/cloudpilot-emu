@@ -1,11 +1,20 @@
 import { PalmButton } from '../../../../../../src';
 
-const SILKSCREEN_URL = 'assets/silkscreen.png';
+const SILKSCREEN_URL = 'assets/silkscreen.svg';
 const BACKGROUND_COLOR_SILKSCREEN = '#bbb';
 const BACKGROUND_COLOR = '#d2d2d2';
 const BACKGROUND_ACTIVE_BUTTON = '#777';
 
 export const SCALE = 3 * devicePixelRatio;
+
+const IMAGE_SILKSCREEN = new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+
+    image.onload = () => resolve(image);
+    image.onerror = () => reject();
+
+    image.src = SILKSCREEN_URL;
+});
 
 export class CanvasHelper {
     constructor(private canvas: HTMLCanvasElement) {
@@ -15,21 +24,16 @@ export class CanvasHelper {
         this.ctx = ctx;
     }
 
-    clear(): void {
+    async clear(): Promise<void> {
         this.fillRect(0, 0, 160, 250, BACKGROUND_COLOR);
-        this.drawSilkscreen();
+
+        await this.drawSilkscreen();
+
         this.drawButtons();
     }
 
     async drawSilkscreen(): Promise<void> {
-        const image = new Image();
-
-        await new Promise<void>((resolve, reject) => {
-            image.onload = () => resolve();
-            image.onerror = () => reject();
-
-            image.src = SILKSCREEN_URL;
-        });
+        const image = await IMAGE_SILKSCREEN;
 
         this.fillRect(0, 160, 160, 60, BACKGROUND_COLOR_SILKSCREEN);
 
