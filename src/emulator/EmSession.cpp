@@ -412,8 +412,11 @@ bool EmSession::RunToSyscall() {
 
     uint32 cycles = 0;
 
-    while (!syscallDispatched && cycles < RUN_TO_SYSCALL_LIMIT && !cpu->Stopped())
+    while (!syscallDispatched && cycles < RUN_TO_SYSCALL_LIMIT) {
         cycles += cpu->Execute(RUN_TO_SYSCALL_LIMIT);
+
+        if (cpu->Stopped()) break;
+    }
 
     systemCycles += cycles;
 

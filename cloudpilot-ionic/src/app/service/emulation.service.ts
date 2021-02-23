@@ -6,6 +6,25 @@ import { Mutex } from 'async-mutex';
 import { Session } from '../model/Session';
 import { StorageService } from './storage.service';
 
+const GRAYSCALE_PALETTE = [
+    0xffd2d2d2,
+    0xffc4c4c4,
+    0xffb6b6b6,
+    0xffa8a8a8,
+    0xff9a9a9a,
+    0xff8c8c8c,
+    0xff7e7e7e,
+    0xff707070,
+    0xff626262,
+    0xff545454,
+    0xff464646,
+    0xff383838,
+    0xff2a2a2a,
+    0xff1c1c1c,
+    0xff0e0e0e,
+    0xff000000,
+];
+
 const PEN_MOVE_THROTTLE = 25;
 
 @Injectable({
@@ -178,11 +197,67 @@ export class EmulationService {
 
         if (frame.lines === this.imageData.height && frame.lineWidth === this.imageData.width) {
             switch (frame.bpp) {
+                case 1: {
+                    const fg = GRAYSCALE_PALETTE[15];
+                    const bg = GRAYSCALE_PALETTE[0];
+
+                    for (let y = 0; y < 160; y++) {
+                        for (let x = 0; x < 160; x++) {
+                            this.imageData32[y * 160 + x + frame.margin] =
+                                frame.buffer[y * frame.bytesPerLine + ((x + frame.margin) >>> 3)] &
+                                (0x80 >>> ((x + frame.margin) & 0x07))
+                                    ? fg
+                                    : bg;
+                        }
+                    }
+
+                    break;
+                }
+
+                case 2: {
+                    const mapping = this.cloudpilotInstance.getPalette2bitMapping();
+
+                    const palette = [
+                        GRAYSCALE_PALETTE[mapping & 0x000f],
+                        GRAYSCALE_PALETTE[(mapping >>> 4) & 0x000f],
+                        GRAYSCALE_PALETTE[(mapping >>> 8) & 0x000f],
+                        GRAYSCALE_PALETTE[(mapping >>> 12) & 0x000f],
+                    ];
+
+                    for (let y = 0; y < 160; y++) {
+                        for (let x = 0; x < 160; x++) {
+                            this.imageData32[y * 160 + x + frame.margin] =
+                                palette[
+                                    (frame.buffer[y * frame.bytesPerLine + ((x + frame.margin) >>> 2)] >>
+                                        (6 - 2 * ((x + frame.margin) & 0x03))) &
+                                        0x03
+                                ];
+                        }
+                    }
+
+                    break;
+                }
+
+                case 4: {
+                    for (let y = 0; y < 160; y++) {
+                        for (let x = 0; x < 160; x++) {
+                            this.imageData32[y * 160 + x + frame.margin] =
+                                GRAYSCALE_PALETTE[
+                                    (frame.buffer[y * frame.bytesPerLine + ((x + frame.margin) >>> 1)] >>>
+                                        (4 - 4 * ((x + frame.margin) & 0x01))) &
+                                        0x0f
+                                ];
+                        }
+                    }
+
+                    break;
+                }
+
                 case 24:
-                    for (let x = 0; x < 160; x++) {
-                        for (let y = 0; y < 160; y++) {
-                            const imageDataBase = 4 * (y * 160 + x);
-                            const frameBufferBase = 3 * (y * 160 + x);
+                    for (let y = 0; y < 160; y++) {
+                        for (let x = 0; x < 160; x++) {
+                            const imageDataBase = 4 * (y * 160 + x + frame.margin);
+                            const frameBufferBase = 3 * (y * 160 + x + frame.margin);
 
                             this.imageData.data[imageDataBase] = frame.buffer[frameBufferBase];
                             this.imageData.data[imageDataBase + 1] = frame.buffer[frameBufferBase + 1];
@@ -214,6 +289,7 @@ export class EmulationService {
     private canvas: HTMLCanvasElement = document.createElement('canvas');
     private context!: CanvasRenderingContext2D;
     private imageData = new ImageData(160, 160);
+    private imageData32 = new Uint32Array(this.imageData.data.buffer);
 
     private lastPenUpdate = 0;
     private penDown = false;

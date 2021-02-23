@@ -29,6 +29,8 @@ interface Cloudpilot {
     void ResetHard();
 
     long InstallFile(VoidPtr buffer, long len);
+
+    long GetPalette2bitMapping();
 };
 
 interface RomInfo {

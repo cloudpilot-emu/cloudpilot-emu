@@ -53,6 +53,8 @@ export interface Cloudpilot {
     ResetHard(): void;
 
     InstallFile(buffer: VoidPtr, len: number): number;
+
+    GetPalette2bitMapping(): number;
 }
 
 export interface Frame {

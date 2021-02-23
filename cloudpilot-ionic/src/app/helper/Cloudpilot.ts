@@ -161,6 +161,10 @@ export class Cloudpilot {
         return result;
     }
 
+    getPalette2bitMapping(): number {
+        return this.cloudpilot.GetPalette2bitMapping();
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);

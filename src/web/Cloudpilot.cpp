@@ -136,3 +136,5 @@ void Cloudpilot::ResetHard() { gSession->Reset(EmSession::ResetType::hard); }
 int Cloudpilot::InstallFile(void* buffer, size_t len) {
     return EmFileImport::LoadPalmFile(static_cast<uint8*>(buffer), len, kMethodHomebrew);
 }
+
+int Cloudpilot::GetPalette2bitMapping() { return EmHAL::GetLCD2bitMapping(); }

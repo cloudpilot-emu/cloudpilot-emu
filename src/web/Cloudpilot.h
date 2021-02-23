@@ -39,6 +39,8 @@ class Cloudpilot {
 
     int InstallFile(void* buffer, size_t len);
 
+    int GetPalette2bitMapping();
+
    private:
     Frame frame{1024 * 128};
 };
