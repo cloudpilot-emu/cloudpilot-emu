@@ -2834,9 +2834,15 @@ uint32 EmRegsVZ::Tmr1CyclesToNextInterrupt() {
 
     uint16 tcmp = READ_REGISTER(tmr1Compare);
     uint16 tcn = READ_REGISTER(tmr1Counter);
-    uint32 delta = tcmp >= tcn ? tcmp - tcn : tcmp + 0x10000 - tcn;
+    uint16 delta = tcmp - tcn;
 
-    return ceil((double)delta / timer1TicksPerSecond * (double)gSession->GetClocksPerSecond());
+    double clocksPerSecond = gSession->GetClocksPerSecond();
+
+    uint32 cycles = ceil((double)delta / timer1TicksPerSecond * clocksPerSecond);
+
+    while ((uint32)((double)cycles / clocksPerSecond * timer1TicksPerSecond) < delta) cycles++;
+
+    return cycles;
 }
 
 uint32 EmRegsVZ::Tmr2CyclesToNextInterrupt() {
@@ -2845,9 +2851,15 @@ uint32 EmRegsVZ::Tmr2CyclesToNextInterrupt() {
 
     uint16 tcmp = READ_REGISTER(tmr2Compare);
     uint16 tcn = READ_REGISTER(tmr2Counter);
-    uint32 delta = tcmp >= tcn ? tcmp - tcn : tcmp + 0x10000 - tcn;
+    uint16 delta = tcmp - tcn;
 
-    return ceil((double)delta / timer2TicksPerSecond * (double)gSession->GetClocksPerSecond());
+    double clocksPerSecond = gSession->GetClocksPerSecond();
+
+    uint32 cycles = ceil((double)delta / timer2TicksPerSecond * clocksPerSecond);
+
+    while ((uint32)((double)cycles / clocksPerSecond * timer2TicksPerSecond) < delta) cycles++;
+
+    return cycles;
 }
 
 uint32 EmRegsVZ::CyclesToNextInterrupt() {

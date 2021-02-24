@@ -312,6 +312,12 @@ bool EmSession::IsNested() const {
 
 bool EmSession::IsPowerOn() { return !EmHAL::GetAsleep(); }
 
+bool EmSession::IsCpuStopped() {
+    EmAssert(cpu);
+
+    return cpu->Stopped();
+}
+
 void EmSession::ReleaseBootKeys() {
     if (!holdingBootKeys) return;
 
@@ -384,6 +390,9 @@ uint32 EmSession::RunEmulation(uint32 maxCycles) {
 
     uint32 cycles = cpu->Execute(maxCycles);
     systemCycles += cycles;
+
+    if (cpu->Stopped() && IsPowerOn())
+        logging::printf("WARNING: CPU in stopped state after RunEmulation");
 
     return systemCycles - cyclesBefore;
 }
@@ -533,6 +542,12 @@ uint8* EmSession::GetDirtyPagesPtr() const { return gRAM_DirtyPages; }
 
 void EmSession::SetHotsyncUserName(string hotsyncUserName) {
     gSystemState.SetHotsyncUserName(hotsyncUserName);
+
+    if (IsCpuStopped()) {
+        logging::printf("WARNING: attempt to set hotsync name with stopped CPU");
+
+        return;
+    }
 
     if (gSystemState.IsUIInitialized() && IsPowerOn()) {
         SetHotSyncUserName(hotsyncUserName.c_str());

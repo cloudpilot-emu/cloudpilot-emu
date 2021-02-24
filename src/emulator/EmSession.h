@@ -43,6 +43,8 @@ class EmSession {
     uint32 RunEmulation(uint32 maxCycles = 10000);
 
     bool IsPowerOn();
+    bool IsCpuStopped();
+
     EmDevice& GetDevice();
     uint32 GetRandomSeed() const;
 

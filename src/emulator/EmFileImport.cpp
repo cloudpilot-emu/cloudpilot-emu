@@ -168,6 +168,12 @@ EmFileImport::~EmFileImport(void) {
 ErrCode EmFileImport::LoadPalmFile(const uint8* buffer, size_t len, EmFileImportMethod method) {
     if (EmHAL::GetAsleep()) return kError_PowerOff;
 
+    if (gSession->IsCpuStopped()) {
+        logging::printf("WARNING: attempt to install files with stopped CPU");
+
+        return kError_PowerOff;
+    }
+
     ErrCode err = errNone;
     EmFileImport importer(buffer, len, method);
 
