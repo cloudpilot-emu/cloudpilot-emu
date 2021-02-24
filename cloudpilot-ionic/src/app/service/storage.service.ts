@@ -1,11 +1,10 @@
 import { DB_NAME, DB_VERSION, OBJECT_STORE_ROM, OBJECT_STORE_SESSION } from './storage/constants';
+import { migrate0to1, migrate1to2 } from './storage/migrations';
 
 import { Injectable } from '@angular/core';
 import { PageLockService } from './page-lock.service';
-import { RecordRom } from './storage/RecordRom';
 import { Session } from 'src/app/model/Session';
 import md5 from 'md5';
-import { migrate0to1 } from './storage/migrations';
 
 const E_LOCK_LOST = new Error('page lock lost');
 
@@ -46,7 +45,7 @@ export class StorageService {
 
         const recordRom = await complete(objectStoreRom.get(hash));
         if (!recordRom) {
-            objectStoreRom.put({ hash, data: rom } as RecordRom);
+            objectStoreRom.put(rom, hash);
         }
 
         const { id, ...sessionSansId } = session;
@@ -122,9 +121,9 @@ export class StorageService {
 
         await this.acquireLock(objectStoreRom, -1);
 
-        const rom = await complete<RecordRom>(objectStoreRom.get(session.rom));
+        const rom = await complete<Uint8Array>(objectStoreRom.get(session.rom));
 
-        return [rom?.data, new Uint8Array(), new Uint8Array()];
+        return [rom, new Uint8Array(), new Uint8Array()];
     }
 
     private setupDb() {
@@ -136,6 +135,10 @@ export class StorageService {
             request.onupgradeneeded = (e) => {
                 if (e.oldVersion < 1) {
                     migrate0to1(request.result);
+                }
+
+                if (e.oldVersion < 2) {
+                    migrate1to2(request.result, request.transaction);
                 }
             };
         });
