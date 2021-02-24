@@ -138,3 +138,19 @@ int Cloudpilot::InstallFile(void* buffer, size_t len) {
 }
 
 int Cloudpilot::GetPalette2bitMapping() { return EmHAL::GetLCD2bitMapping(); }
+
+void* Cloudpilot::GetMemoryPtr() { return gSession->GetMemoryPtr(); }
+
+void* Cloudpilot::GetDirtyPagesPtr() { return gSession->GetDirtyPagesPtr(); }
+
+int Cloudpilot::GetMemorySize() { return gSession->GetMemorySize(); }
+
+void* Cloudpilot::GetSavestatePtr() { return gSession->GetSavestate().GetBuffer(); }
+
+int Cloudpilot::GetSavestateSize() { return gSession->GetSavestate().GetSize(); }
+
+bool Cloudpilot::SaveState() { return gSession->Save(); }
+
+bool Cloudpilot::LoadState(void* buffer, int len) {
+    return gSession->Load(len, reinterpret_cast<uint8*>(buffer));
+}

@@ -19,7 +19,7 @@ export interface SessionImage {
     deviceId: string;
     rom: Uint8Array;
     memory: Uint8Array;
-    savestate: Uint8Array;
+    savestate?: Uint8Array;
 }
 
 function write32LE(value: number, target: Uint8Array, i: number): void {
@@ -79,7 +79,10 @@ export class FileService {
                 28 + deviceIdSize + metadataSize + romSize,
                 28 + deviceIdSize + metadataSize + romSize + memorySize
             ),
-            savestate: buffer.subarray(28 + deviceIdSize + metadataSize + romSize + memorySize),
+            savestate:
+                savestateSize > 0
+                    ? buffer.subarray(28 + deviceIdSize + metadataSize + romSize + memorySize)
+                    : undefined,
         };
     }
 

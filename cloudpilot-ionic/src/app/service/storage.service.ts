@@ -1,43 +1,40 @@
-import { DB_NAME, DB_VERSION, OBJECT_STORE_ROM, OBJECT_STORE_SESSION } from './storage/constants';
+import {
+    DB_NAME,
+    DB_VERSION,
+    OBJECT_STORE_MEMORY,
+    OBJECT_STORE_ROM,
+    OBJECT_STORE_SESSION,
+    OBJECT_STORE_STATE,
+} from './storage/constants';
 import { migrate0to1, migrate1to2 } from './storage/migrations';
 
 import { Injectable } from '@angular/core';
 import { PageLockService } from './page-lock.service';
 import { Session } from 'src/app/model/Session';
+import { StateStorageService } from './state-storage.service';
+import { complete } from './storage/util';
 import md5 from 'md5';
 
 const E_LOCK_LOST = new Error('page lock lost');
-
-function isTransaction(requestOrTransaction: IDBRequest | IDBTransaction): requestOrTransaction is IDBTransaction {
-    return !!(requestOrTransaction as IDBTransaction).abort;
-}
-
-function complete(transaction: IDBTransaction): Promise<void>;
-function complete<T>(request: IDBRequest<T>): Promise<T>;
-function complete(requestOrTransaction: IDBRequest | IDBTransaction): Promise<unknown> {
-    return new Promise<unknown>((resolve, reject) => {
-        if (isTransaction(requestOrTransaction)) {
-            requestOrTransaction.oncomplete = () => resolve(undefined);
-        } else {
-            requestOrTransaction.onsuccess = () => resolve(requestOrTransaction.result);
-        }
-
-        requestOrTransaction.onerror = () => reject();
-    });
-}
 
 @Injectable({
     providedIn: 'root',
 })
 export class StorageService {
-    constructor(private pageLockService: PageLockService) {
+    constructor(private pageLockService: PageLockService, private stateStorageService: StateStorageService) {
         this.setupDb();
+        this.stateStorageService.setStorageService(this);
     }
 
-    public async addSession(session: Session, rom: Uint8Array): Promise<Session> {
+    public async addSession(session: Session, rom: Uint8Array, ram?: Uint8Array, state?: Uint8Array): Promise<Session> {
         const hash = md5(rom);
 
-        const tx = await this.newTransaction(OBJECT_STORE_SESSION, OBJECT_STORE_ROM);
+        const tx = await this.newTransaction(
+            OBJECT_STORE_SESSION,
+            OBJECT_STORE_ROM,
+            OBJECT_STORE_STATE,
+            OBJECT_STORE_MEMORY
+        );
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
 
@@ -51,7 +48,15 @@ export class StorageService {
         const { id, ...sessionSansId } = session;
         const key = await complete(objectStoreSession.add({ ...sessionSansId, rom: hash }));
 
-        const storedSession = await complete(objectStoreSession.get(key));
+        const storedSession = await complete<Session>(objectStoreSession.get(key));
+
+        if (ram) {
+            this.stateStorageService.saveMemory(tx, storedSession.id, ram);
+        }
+
+        if (state) {
+            this.stateStorageService.saveState(tx, storedSession.id, state);
+        }
 
         await complete(tx);
 
@@ -79,7 +84,12 @@ export class StorageService {
     }
 
     public async deleteSession(session: Session): Promise<void> {
-        const tx = await this.newTransaction(OBJECT_STORE_SESSION, OBJECT_STORE_ROM);
+        const tx = await this.newTransaction(
+            OBJECT_STORE_SESSION,
+            OBJECT_STORE_ROM,
+            OBJECT_STORE_STATE,
+            OBJECT_STORE_MEMORY
+        );
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
 
@@ -93,6 +103,9 @@ export class StorageService {
         const sessionsUsingRom = await complete(objectStoreSession.index('rom').getAll(session.rom));
 
         if (sessionsUsingRom.length === 0) objectStoreRom.delete(session.rom);
+
+        this.stateStorageService.deleteMemory(tx, session.id);
+        this.stateStorageService.deleteState(tx, session.id);
 
         await complete(tx);
     }
@@ -115,15 +128,27 @@ export class StorageService {
         await complete(tx);
     }
 
-    public async loadSession(session: Session): Promise<[Uint8Array | undefined, Uint8Array, Uint8Array]> {
-        const tx = await this.newTransaction(OBJECT_STORE_ROM);
+    public async loadSession(session: Session): Promise<[Uint8Array, Uint8Array | undefined, Uint8Array | undefined]> {
+        const tx = await this.newTransaction(OBJECT_STORE_ROM, OBJECT_STORE_STATE, OBJECT_STORE_MEMORY);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
 
         await this.acquireLock(objectStoreRom, -1);
 
-        const rom = await complete<Uint8Array>(objectStoreRom.get(session.rom));
+        return [
+            await complete<Uint8Array>(objectStoreRom.get(session.rom)),
+            await this.stateStorageService.loadMemory(tx, session.id, session.ram * 1024 * 1024),
+            await this.stateStorageService.loadState(tx, session.id),
+        ];
+    }
 
-        return [rom, new Uint8Array(), new Uint8Array()];
+    public async acquireLock(store: IDBObjectStore, key: string | number): Promise<void> {
+        await complete(store.get(key));
+
+        if (this.pageLockService.lockLost()) throw E_LOCK_LOST;
+    }
+
+    public async newTransaction(...stores: Array<string>): Promise<IDBTransaction> {
+        return (await this.db).transaction(stores, 'readwrite');
     }
 
     private setupDb() {
@@ -142,16 +167,6 @@ export class StorageService {
                 }
             };
         });
-    }
-
-    private async acquireLock(store: IDBObjectStore, key: string | number): Promise<void> {
-        await complete(store.get(key));
-
-        if (this.pageLockService.lockLost()) throw E_LOCK_LOST;
-    }
-
-    private async newTransaction(...stores: Array<string>): Promise<IDBTransaction> {
-        return (await this.db).transaction(stores, 'readwrite');
     }
 
     private db!: Promise<IDBDatabase>;

@@ -22,7 +22,7 @@ export class SessionService {
             rom: '',
         };
 
-        await this.storageService.addSession(session, image.rom);
+        await this.storageService.addSession(session, image.rom, image.memory, image.savestate);
 
         this.updateSessionsFromStorage();
     }

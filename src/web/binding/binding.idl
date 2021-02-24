@@ -31,6 +31,16 @@ interface Cloudpilot {
     long InstallFile(VoidPtr buffer, long len);
 
     long GetPalette2bitMapping();
+
+    VoidPtr GetMemoryPtr();
+    VoidPtr GetDirtyPagesPtr();
+    long GetMemorySize();
+
+    VoidPtr GetSavestatePtr();
+    long GetSavestateSize();
+
+    boolean SaveState();
+    boolean LoadState(VoidPtr buffer, long len);
 };
 
 interface RomInfo {

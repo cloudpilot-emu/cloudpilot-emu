@@ -56,12 +56,32 @@ export class EmulationService {
                 throw new Error(`invalid session ${id}`);
             }
 
-            const [rom] = await this.storageService.loadSession(this.currentSession);
+            const [rom, memory, state] = await this.storageService.loadSession(this.currentSession);
             if (!rom) {
                 throw new Error(`invalid ROM ${this.currentSession.rom}`);
             }
 
-            (await this.cloudpilot).initializeSession(rom, this.currentSession.device);
+            const cloudpilot = await this.cloudpilot;
+            let memoryLoaded = false;
+
+            cloudpilot.initializeSession(rom, this.currentSession.device);
+
+            if (memory) {
+                const emulatedMemory = cloudpilot.getMemory();
+
+                if (emulatedMemory.length === memory.length) {
+                    emulatedMemory.set(memory);
+                    memoryLoaded = true;
+                } else {
+                    console.error(
+                        `memory size mismatcH; ${emulatedMemory.length} vs. ${memory.length} - ignoring image`
+                    );
+                }
+            }
+
+            if (memoryLoaded && state) {
+                cloudpilot.loadState(state);
+            }
         });
 
     getCurrentSession(): Session | undefined {

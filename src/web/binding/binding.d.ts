@@ -55,6 +55,16 @@ export interface Cloudpilot {
     InstallFile(buffer: VoidPtr, len: number): number;
 
     GetPalette2bitMapping(): number;
+
+    GetMemoryPtr(): VoidPtr;
+    GetDirtyPagesPtr(): VoidPtr;
+    GetMemorySize(): number;
+
+    GetSavestatePtr(): VoidPtr;
+    GetSavestateSize(): number;
+
+    SaveState(): boolean;
+    LoadState(buffer: VoidPtr, len: number): boolean;
 }
 
 export interface Frame {

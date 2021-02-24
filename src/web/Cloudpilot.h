@@ -41,6 +41,16 @@ class Cloudpilot {
 
     int GetPalette2bitMapping();
 
+    void* GetMemoryPtr();
+    void* GetDirtyPagesPtr();
+    int GetMemorySize();
+
+    void* GetSavestatePtr();
+    int GetSavestateSize();
+
+    bool SaveState();
+    bool LoadState(void* buffer, int len);
+
    private:
     Frame frame{1024 * 128};
 };

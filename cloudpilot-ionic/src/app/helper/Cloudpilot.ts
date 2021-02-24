@@ -7,6 +7,7 @@
 import createModule, { Cloudpilot as CloudpilotNative, Module, PalmButton, VoidPtr } from '../../../../src';
 
 import { DeviceId } from '../model/DeviceId';
+import { ThisReceiver } from '@angular/compiler';
 
 export { PalmButton } from '../../../../src';
 
@@ -132,11 +133,11 @@ export class Cloudpilot {
     }
 
     isPowerOff(): boolean {
-        return this.cloudpilot.IsPowerOff();
+        return !!this.cloudpilot.IsPowerOff();
     }
 
     isUiInitialized(): boolean {
-        return this.cloudpilot.IsUIInitialized();
+        return !!this.cloudpilot.IsUIInitialized();
     }
 
     reset(): void {
@@ -163,6 +164,40 @@ export class Cloudpilot {
 
     getPalette2bitMapping(): number {
         return this.cloudpilot.GetPalette2bitMapping();
+    }
+
+    getMemory(): Uint8Array {
+        const ptr = this.module.getPointer(this.cloudpilot.GetMemoryPtr());
+
+        return this.module.HEAPU8.subarray(ptr, ptr + this.cloudpilot.GetMemorySize());
+    }
+
+    getDirtyPages(): Uint8Array {
+        const ptr = this.module.getPointer(this.cloudpilot.GetDirtyPagesPtr());
+        const memorySize = this.cloudpilot.GetMemorySize();
+        const pages = (memorySize >>> 10) + (memorySize % 1024 ? 1 : 0);
+
+        return this.module.HEAPU8.subarray(ptr, ptr + pages);
+    }
+
+    getSavestate(): Uint8Array {
+        const ptr = this.module.getPointer(this.cloudpilot.GetSavestatePtr());
+
+        return this.module.HEAPU8.subarray(ptr, ptr + this.cloudpilot.GetSavestateSize());
+    }
+
+    saveState(): boolean {
+        return !!this.cloudpilot.SaveState();
+    }
+
+    loadState(state: Uint8Array): boolean {
+        const ptr = this.copyIn(state);
+
+        const result = this.cloudpilot.LoadState(ptr, state.length);
+
+        this.cloudpilot.Free(ptr);
+
+        return result;
     }
 
     private copyIn(data: Uint8Array): VoidPtr {
