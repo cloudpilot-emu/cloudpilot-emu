@@ -1,6 +1,7 @@
 import { DeviceId } from './../model/DeviceId';
 import { EmulationService } from './emulation.service';
 import { Injectable } from '@angular/core';
+import { LoadingController } from '@ionic/angular';
 import { Session } from '../model/Session';
 import { SessionImage } from './file.service';
 import { StorageService } from './storage.service';
@@ -9,7 +10,11 @@ import { StorageService } from './storage.service';
     providedIn: 'root',
 })
 export class SessionService {
-    constructor(private emulationService: EmulationService, private storageService: StorageService) {
+    constructor(
+        private emulationService: EmulationService,
+        private storageService: StorageService,
+        private loadingController: LoadingController
+    ) {
         this.updateSessionsFromStorage();
     }
 
@@ -22,9 +27,13 @@ export class SessionService {
             rom: '',
         };
 
+        const loader = await this.loadingController.create({ message: 'Importing...' });
+        await loader.present();
+
         await this.storageService.addSession(session, image.rom, image.memory, image.savestate);
 
-        this.updateSessionsFromStorage();
+        await this.updateSessionsFromStorage();
+        await loader.dismiss();
     }
 
     async addSessionFromRom(rom: Uint8Array, name: string, device: DeviceId) {
@@ -36,9 +45,13 @@ export class SessionService {
             rom: '',
         };
 
+        const loader = await this.loadingController.create({ message: 'Importing...' });
+        await loader.present();
+
         await this.storageService.addSession(session, rom);
 
-        this.updateSessionsFromStorage();
+        await this.updateSessionsFromStorage();
+        await loader.dismiss();
     }
 
     getSessions(): Array<Session> {

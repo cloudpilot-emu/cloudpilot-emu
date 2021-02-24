@@ -2,6 +2,7 @@ import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
 import { Injectable, NgZone } from '@angular/core';
 
 import { Event } from 'microevent.ts';
+import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { Session } from '../model/Session';
 import { StorageService } from './storage.service';
@@ -31,7 +32,11 @@ const PEN_MOVE_THROTTLE = 25;
     providedIn: 'root',
 })
 export class EmulationService {
-    constructor(private storageService: StorageService, private ngZone: NgZone) {
+    constructor(
+        private storageService: StorageService,
+        private ngZone: NgZone,
+        private loadingController: LoadingController
+    ) {
         this.canvas.width = 160;
         this.canvas.height = 160;
 
@@ -51,36 +56,43 @@ export class EmulationService {
                 return;
             }
 
-            this.currentSession = await this.storageService.getSession(id);
-            if (!this.currentSession) {
-                throw new Error(`invalid session ${id}`);
-            }
+            const loader = await this.loadingController.create({ message: 'Loading...' });
+            await loader.present();
 
-            const [rom, memory, state] = await this.storageService.loadSession(this.currentSession);
-            if (!rom) {
-                throw new Error(`invalid ROM ${this.currentSession.rom}`);
-            }
-
-            const cloudpilot = await this.cloudpilot;
-            let memoryLoaded = false;
-
-            cloudpilot.initializeSession(rom, this.currentSession.device);
-
-            if (memory) {
-                const emulatedMemory = cloudpilot.getMemory();
-
-                if (emulatedMemory.length === memory.length) {
-                    emulatedMemory.set(memory);
-                    memoryLoaded = true;
-                } else {
-                    console.error(
-                        `memory size mismatcH; ${emulatedMemory.length} vs. ${memory.length} - ignoring image`
-                    );
+            try {
+                this.currentSession = await this.storageService.getSession(id);
+                if (!this.currentSession) {
+                    throw new Error(`invalid session ${id}`);
                 }
-            }
 
-            if (memoryLoaded && state) {
-                cloudpilot.loadState(state);
+                const [rom, memory, state] = await this.storageService.loadSession(this.currentSession);
+                if (!rom) {
+                    throw new Error(`invalid ROM ${this.currentSession.rom}`);
+                }
+
+                const cloudpilot = await this.cloudpilot;
+                let memoryLoaded = false;
+
+                cloudpilot.initializeSession(rom, this.currentSession.device);
+
+                if (memory) {
+                    const emulatedMemory = cloudpilot.getMemory();
+
+                    if (emulatedMemory.length === memory.length) {
+                        emulatedMemory.set(memory);
+                        memoryLoaded = true;
+                    } else {
+                        console.error(
+                            `memory size mismatcH; ${emulatedMemory.length} vs. ${memory.length} - ignoring image`
+                        );
+                    }
+                }
+
+                if (memoryLoaded && state) {
+                    cloudpilot.loadState(state);
+                }
+            } finally {
+                await loader.dismiss();
             }
         });
 

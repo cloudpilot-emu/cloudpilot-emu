@@ -52,9 +52,18 @@ export class SessionsPage {
         this.fileService.openFile(this.processFile.bind(this));
     }
 
-    launchSession(session: Session) {
-        this.emulationService.switchSession(session.id);
+    async launchSession(session: Session) {
+        this.currentSessionOverride = session.id;
+
+        await this.emulationService.switchSession(session.id);
+
+        this.currentSessionOverride = undefined;
+
         this.router.navigateByUrl('/tab/emulation');
+    }
+
+    get currentSessionId(): number | undefined {
+        return this.currentSessionOverride ?? this.emulationService.getCurrentSession()?.id;
     }
 
     private async processFile(file: FileDescriptor): Promise<void> {
@@ -116,4 +125,6 @@ export class SessionsPage {
             alert.present();
         });
     }
+
+    private currentSessionOverride: number | undefined;
 }

@@ -3,6 +3,7 @@ import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { BrowserModule } from '@angular/platform-browser';
+import { EmulationService } from './service/emulation.service';
 import { NgModule } from '@angular/core';
 import { PageLockService } from './service/page-lock.service';
 import { RouteReuseStrategy } from '@angular/router';

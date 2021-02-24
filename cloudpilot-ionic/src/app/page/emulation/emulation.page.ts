@@ -48,7 +48,12 @@ export class EmulationPage implements AfterViewInit {
         this.emulationService.handleButtonUp(PalmButton.power);
     }
 
-    ionViewDidEnter() {
+    async ionViewDidEnter(): Promise<void> {
+        if (this.currentSession !== this.emulationService.getCurrentSession()?.id) {
+            await this.canvasHelper.clear();
+        }
+        this.currentSession = this.emulationService.getCurrentSession()?.id;
+
         this.emulationService.newFrame.addHandler(this.onNewFrame);
 
         this.emulationService.resume();
@@ -98,9 +103,7 @@ export class EmulationPage implements AfterViewInit {
         const loader = await this.loadingController.create({
             message: 'Installing...',
         });
-        loader.present();
-
-        await new Promise((r) => setTimeout(r, 0));
+        await loader.present();
 
         const filesSuccess: Array<string> = [];
         const filesFail: Array<string> = [];
@@ -175,4 +178,6 @@ export class EmulationPage implements AfterViewInit {
     @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
     private canvasHelper!: CanvasHelper;
     private eventHandler!: EventHandler;
+
+    private currentSession: number | undefined;
 }
