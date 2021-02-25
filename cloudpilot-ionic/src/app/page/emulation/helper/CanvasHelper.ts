@@ -1,23 +1,31 @@
+import { DeviceId } from 'src/app/model/DeviceId';
+import { EmulationService } from './../../../service/emulation.service';
 import { PalmButton } from '../../../../../../src';
 
-const SILKSCREEN_URL = 'assets/silkscreen.svg';
+const URL_SILKSCREEN_DEFAULT = 'assets/silkscreen-default.svg';
+const URL_SILKSCREEN_M515 = 'assets/silkscreen-m515.svg';
 const BACKGROUND_COLOR_SILKSCREEN = '#bbb';
 const BACKGROUND_COLOR = '#d2d2d2';
 const BACKGROUND_ACTIVE_BUTTON = '#777';
 
 export const SCALE = 3 * devicePixelRatio;
 
-const IMAGE_SILKSCREEN = new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
+function loadImage(url: string): Promise<HTMLImageElement> {
+    return new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
 
-    image.onload = () => resolve(image);
-    image.onerror = () => reject();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject();
 
-    image.src = SILKSCREEN_URL;
-});
+        image.src = url;
+    });
+}
+
+const IMAGE_SILKSCREEN_DEFAULT = loadImage(URL_SILKSCREEN_DEFAULT);
+const IMAGE_SILKSCREEN_M515 = loadImage(URL_SILKSCREEN_M515);
 
 export class CanvasHelper {
-    constructor(private canvas: HTMLCanvasElement) {
+    constructor(private canvas: HTMLCanvasElement, private emulationService: EmulationService) {
         const ctx = canvas.getContext('2d');
         if (!ctx) throw new Error('get a new browser');
 
@@ -33,7 +41,7 @@ export class CanvasHelper {
     }
 
     async drawSilkscreen(): Promise<void> {
-        const image = await IMAGE_SILKSCREEN;
+        const image = await this.silkscreenImage();
 
         this.fillRect(0, 160, 160, 60, BACKGROUND_COLOR_SILKSCREEN);
 
@@ -95,6 +103,16 @@ export class CanvasHelper {
 
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText(text, x - metrics.width / 2, y);
+    }
+
+    private silkscreenImage(): Promise<HTMLImageElement> {
+        switch (this.emulationService.getCurrentSession()?.device) {
+            case DeviceId.m515:
+                return IMAGE_SILKSCREEN_M515;
+
+            default:
+                return IMAGE_SILKSCREEN_DEFAULT;
+        }
     }
 
     private ctx: CanvasRenderingContext2D;

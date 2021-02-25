@@ -26,7 +26,7 @@ export class EmulationPage implements AfterViewInit {
 
     ngAfterViewInit(): void {
         const canvasElt = this.canvasRef.nativeElement;
-        this.canvasHelper = new CanvasHelper(canvasElt);
+        this.canvasHelper = new CanvasHelper(canvasElt, this.emulationService);
         this.eventHandler = new EventHandler(canvasElt, this.emulationService, this.canvasHelper);
 
         this.canvasHelper.clear();
