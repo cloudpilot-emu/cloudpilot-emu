@@ -209,7 +209,7 @@ export class EventHandler {
         // * 221        : separator
         // * 222 .. 251 : buttons
         //
-        // we map this top 160x250 lines by mapping the separators to silkscreen and button area
+        // we map this to 160x250 lines by mapping the separators to silkscreen and button area
 
         if (y >= 222) y -= 2;
         else if (y >= 161) y -= 1;
