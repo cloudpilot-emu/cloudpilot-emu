@@ -3,10 +3,12 @@ import { Injectable, NgZone } from '@angular/core';
 
 import { DeviceId } from '../model/DeviceId';
 import { Event } from 'microevent.ts';
+import { LEADING_TRIVIA_CHARS } from '@angular/compiler/src/render3/view/template';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { Session } from '../model/Session';
 import { StorageService } from './storage.service';
+import { threadId } from 'worker_threads';
 
 export const GRAYSCALE_PALETTE_RGBA = [
     0xffd2d2d2,
@@ -125,14 +127,16 @@ export class EmulationService {
         this.mutex.runExclusive(() => {
             console.log('pause');
 
-            if (!this.running) return;
+            this._pause();
+        });
 
-            if (this.animationFrameHandle > 0) {
-                cancelAnimationFrame(this.animationFrameHandle);
-                this.animationFrameHandle = -1;
-            }
+    stop = (): Promise<void> =>
+        this.mutex.runExclusive(() => {
+            console.log('stop');
 
-            this.running = false;
+            this._pause();
+
+            this.currentSession = undefined;
         });
 
     handlePointerMove(x: number, y: number): void {
@@ -186,6 +190,17 @@ export class EmulationService {
 
     installFile(data: Uint8Array): Promise<number> {
         return this.cloudpilot.then((c) => c.installFile(data));
+    }
+
+    private _pause(): void {
+        if (!this.running) return;
+
+        if (this.animationFrameHandle > 0) {
+            cancelAnimationFrame(this.animationFrameHandle);
+            this.animationFrameHandle = -1;
+        }
+
+        this.running = false;
     }
 
     private onAnimationFrame = (timestamp: number): void => {
