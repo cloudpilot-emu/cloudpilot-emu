@@ -1,14 +1,19 @@
+import { EmulationService, GRAYSCALE_PALETTE_HEX } from './../../../service/emulation.service';
+
 import { DeviceId } from 'src/app/model/DeviceId';
-import { EmulationService } from './../../../service/emulation.service';
 import { PalmButton } from '../../../../../../src';
 
 const URL_SILKSCREEN_DEFAULT = 'assets/silkscreen-default.svg';
 const URL_SILKSCREEN_M515 = 'assets/silkscreen-m515.svg';
-const BACKGROUND_COLOR_SILKSCREEN = '#bbb';
-const BACKGROUND_COLOR = '#d2d2d2';
-const BACKGROUND_ACTIVE_BUTTON = '#777';
+const BACKGROUND_COLOR_SILKSCREEN = GRAYSCALE_PALETTE_HEX[2];
+const BACKGROUND_COLOR_DEFAULT = GRAYSCALE_PALETTE_HEX[0];
+const BACKGROUND_COLOR_M515 = 'white';
+const BACKGROUND_ACTIVE_BUTTON = GRAYSCALE_PALETTE_HEX[6];
 
 export const SCALE = 3 * devicePixelRatio;
+export const BORDER = Math.round(1 * SCALE);
+export const WIDTH = SCALE * 160 + 2 * BORDER;
+export const HEIGHT = SCALE * 251 + 2 * BORDER;
 
 function loadImage(url: string): Promise<HTMLImageElement> {
     return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -33,7 +38,7 @@ export class CanvasHelper {
     }
 
     async clear(): Promise<void> {
-        this.fillRect(0, 0, 160, 250, BACKGROUND_COLOR);
+        this.fillCanvasRect(0, 0, WIDTH, HEIGHT, this.backgroundColor());
 
         await this.drawSilkscreen();
 
@@ -48,52 +53,58 @@ export class CanvasHelper {
         this.ctx.imageSmoothingEnabled = true;
         this.ctx.imageSmoothingQuality = 'high';
 
-        this.ctx.drawImage(image, 0, 160 * SCALE, 160 * SCALE, 60 * SCALE);
+        this.ctx.drawImage(image, BORDER, BORDER + 160 * SCALE, 160 * SCALE, 60 * SCALE);
     }
 
     drawButtons(activeButtons: Array<PalmButton> = []): void {
-        this.fillRect(0, 220, 160, 30, BACKGROUND_COLOR);
+        this.fillRect(0, 221, 160, 30, this.backgroundColor());
 
-        if (activeButtons.includes(PalmButton.cal)) this.fillRect(0, 220, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.phone)) this.fillRect(30, 220, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.todo)) this.fillRect(100, 220, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.notes)) this.fillRect(130, 220, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.up)) this.fillRect(60, 220, 40, 15, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.down)) this.fillRect(60, 235, 40, 15, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.cal)) this.fillRect(0, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.phone)) this.fillRect(30, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.todo)) this.fillRect(100, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.notes)) this.fillRect(130, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.up)) this.fillRect(60, 221, 40, 15, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.down)) this.fillRect(60, 236, 40, 15, BACKGROUND_ACTIVE_BUTTON);
 
         this.ctx.beginPath();
         this.ctx.lineWidth = Math.round(0.5 * SCALE);
-        this.ctx.strokeStyle = 'black';
+        this.ctx.strokeStyle = BACKGROUND_ACTIVE_BUTTON;
         [
-            [0, 220, 160, 220],
-            [30, 220, 30, 250],
-            [60, 220, 60, 250],
-            [130, 220, 130, 250],
-            [100, 220, 100, 250],
-            [60, 235, 100, 235],
+            [30, 221, 30, 251],
+            [60, 221, 60, 251],
+            [130, 221, 130, 251],
+            [100, 221, 100, 251],
+            [60, 236, 100, 236],
         ].forEach(([x0, y0, x1, y1]) => {
-            this.ctx.moveTo(SCALE * x0, SCALE * y0);
-            this.ctx.lineTo(SCALE * x1, SCALE * y1);
+            this.ctx.moveTo(BORDER + SCALE * x0, BORDER + SCALE * y0);
+            this.ctx.lineTo(BORDER + SCALE * x1, BORDER + SCALE * y1);
         });
         this.ctx.stroke();
 
         this.ctx.font = `${10 * SCALE}px sans`;
         this.ctx.fillStyle = 'black';
 
-        this.textCenteredAt(15 * SCALE, 235 * SCALE, 'D');
-        this.textCenteredAt(45 * SCALE, 235 * SCALE, 'P');
-        this.textCenteredAt(115 * SCALE, 235 * SCALE, 'T');
-        this.textCenteredAt(145 * SCALE, 235 * SCALE, 'N');
+        this.textCenteredAt(15, 236, 'D');
+        this.textCenteredAt(45, 236, 'P');
+        this.textCenteredAt(115, 236, 'T');
+        this.textCenteredAt(145, 236, 'N');
     }
 
     drawEmulationCanvas(canvas: HTMLCanvasElement): void {
         this.ctx.imageSmoothingEnabled = false;
-        this.ctx.drawImage(canvas, 0, 0, SCALE * 160, SCALE * 160);
+        this.ctx.drawImage(canvas, BORDER, BORDER, SCALE * 160, SCALE * 160);
     }
 
     private fillRect(x: number, y: number, width: number, height: number, style: string): void {
         this.ctx.beginPath();
-        this.ctx.rect(SCALE * x, SCALE * y, SCALE * width, SCALE * height);
+        this.ctx.rect(BORDER + SCALE * x, BORDER + SCALE * y, SCALE * width, SCALE * height);
+        this.ctx.fillStyle = style;
+        this.ctx.fill();
+    }
+
+    private fillCanvasRect(x: number, y: number, width: number, height: number, style: string): void {
+        this.ctx.beginPath();
+        this.ctx.rect(x, y, width, height);
         this.ctx.fillStyle = style;
         this.ctx.fill();
     }
@@ -102,7 +113,7 @@ export class CanvasHelper {
         const metrics = this.ctx.measureText(text);
 
         this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(text, x - metrics.width / 2, y);
+        this.ctx.fillText(text, BORDER + SCALE * x - metrics.width / 2, BORDER + SCALE * y);
     }
 
     private silkscreenImage(): Promise<HTMLImageElement> {
@@ -112,6 +123,16 @@ export class CanvasHelper {
 
             default:
                 return IMAGE_SILKSCREEN_DEFAULT;
+        }
+    }
+
+    private backgroundColor(): string {
+        switch (this.emulationService.getCurrentSession()?.device) {
+            case DeviceId.m515:
+                return BACKGROUND_COLOR_M515;
+
+            default:
+                return BACKGROUND_COLOR_DEFAULT;
         }
     }
 

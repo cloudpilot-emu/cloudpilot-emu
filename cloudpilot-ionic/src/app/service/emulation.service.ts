@@ -1,13 +1,14 @@
 import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
 import { Injectable, NgZone } from '@angular/core';
 
+import { DeviceId } from '../model/DeviceId';
 import { Event } from 'microevent.ts';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { Session } from '../model/Session';
 import { StorageService } from './storage.service';
 
-const GRAYSCALE_PALETTE = [
+export const GRAYSCALE_PALETTE_RGBA = [
     0xffd2d2d2,
     0xffc4c4c4,
     0xffb6b6b6,
@@ -25,6 +26,10 @@ const GRAYSCALE_PALETTE = [
     0xff0e0e0e,
     0xff000000,
 ];
+
+export const GRAYSCALE_PALETTE_HEX = GRAYSCALE_PALETTE_RGBA.map(
+    (x) => '#' + (x & 0xffffff).toString(16).padStart(6, '0')
+);
 
 const PEN_MOVE_THROTTLE = 25;
 
@@ -219,7 +224,7 @@ export class EmulationService {
         if (this.cloudpilotInstance.isPowerOff()) {
             this.context.beginPath();
             this.context.rect(0, 0, 160, 160);
-            this.context.fillStyle = '#d2d2d2';
+            this.context.fillStyle = this.currentSession?.device === DeviceId.m515 ? 'white' : GRAYSCALE_PALETTE_HEX[0];
             this.context.fill();
 
             this.newFrame.dispatch(this.canvas);
@@ -230,8 +235,8 @@ export class EmulationService {
         if (frame.lines === this.imageData.height && frame.lineWidth === this.imageData.width) {
             switch (frame.bpp) {
                 case 1: {
-                    const fg = GRAYSCALE_PALETTE[15];
-                    const bg = GRAYSCALE_PALETTE[0];
+                    const fg = GRAYSCALE_PALETTE_RGBA[15];
+                    const bg = GRAYSCALE_PALETTE_RGBA[0];
 
                     for (let y = 0; y < 160; y++) {
                         for (let x = 0; x < 160; x++) {
@@ -250,10 +255,10 @@ export class EmulationService {
                     const mapping = this.cloudpilotInstance.getPalette2bitMapping();
 
                     const palette = [
-                        GRAYSCALE_PALETTE[mapping & 0x000f],
-                        GRAYSCALE_PALETTE[(mapping >>> 4) & 0x000f],
-                        GRAYSCALE_PALETTE[(mapping >>> 8) & 0x000f],
-                        GRAYSCALE_PALETTE[(mapping >>> 12) & 0x000f],
+                        GRAYSCALE_PALETTE_RGBA[mapping & 0x000f],
+                        GRAYSCALE_PALETTE_RGBA[(mapping >>> 4) & 0x000f],
+                        GRAYSCALE_PALETTE_RGBA[(mapping >>> 8) & 0x000f],
+                        GRAYSCALE_PALETTE_RGBA[(mapping >>> 12) & 0x000f],
                     ];
 
                     for (let y = 0; y < 160; y++) {
@@ -274,7 +279,7 @@ export class EmulationService {
                     for (let y = 0; y < 160; y++) {
                         for (let x = 0; x < 160; x++) {
                             this.imageData32[y * 160 + x + frame.margin] =
-                                GRAYSCALE_PALETTE[
+                                GRAYSCALE_PALETTE_RGBA[
                                     (frame.buffer[y * frame.bytesPerLine + ((x + frame.margin) >>> 1)] >>>
                                         (4 - 4 * ((x + frame.margin) & 0x01))) &
                                         0x0f

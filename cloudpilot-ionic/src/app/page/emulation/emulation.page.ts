@@ -1,5 +1,5 @@
 import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CanvasHelper, SCALE } from './helper/CanvasHelper';
+import { CanvasHelper, HEIGHT, WIDTH } from './helper/CanvasHelper';
 import { FileDescriptor, FileService } from 'src/app/service/file.service';
 import { LoadingController, PopoverController } from '@ionic/angular';
 
@@ -33,11 +33,19 @@ export class EmulationPage implements AfterViewInit {
     }
 
     get canvasWidth(): number {
-        return SCALE * 160;
+        return WIDTH;
     }
 
     get canvasHeight(): number {
-        return SCALE * 250;
+        return HEIGHT;
+    }
+
+    get cssWidth(): string {
+        return this.canvasWidth / devicePixelRatio + 'px';
+    }
+
+    get cssHeight(): string {
+        return this.canvasHeight / devicePixelRatio + 'px';
     }
 
     async powerButtonDown(): Promise<void> {

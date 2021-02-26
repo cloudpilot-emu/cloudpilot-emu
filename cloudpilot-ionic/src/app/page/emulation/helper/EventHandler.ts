@@ -1,9 +1,5 @@
-import { ArrayType, BuiltinType } from '@angular/compiler';
+import { BORDER, CanvasHelper, HEIGHT, SCALE, WIDTH } from './CanvasHelper';
 
-import { ArgumentOutOfRangeError } from 'rxjs';
-import { BrowserStack } from 'protractor/built/driverProviders';
-import { Button } from 'protractor';
-import { CanvasHelper } from './CanvasHelper';
 import { EmulationService } from './../../../service/emulation.service';
 import { PalmButton } from '../../../../../../src';
 
@@ -189,20 +185,21 @@ export class EventHandler {
 
         // CSS object-fit keeps the aspect ratio of the canvas content, but the canvas itself
         // looses aspect and fills the container -> manually calculate the metrics for the content
-        if (bb.width / bb.height > 160 / 250) {
+        if (bb.width / bb.height > WIDTH / HEIGHT) {
             contentHeight = bb.height;
-            contentWidth = (160 / 250) * bb.height;
+            contentWidth = (WIDTH / HEIGHT) * bb.height;
             contentY = bb.top;
             contentX = bb.left + (bb.width - contentWidth) / 2;
         } else {
             contentWidth = bb.width;
-            contentHeight = (250 / 160) * bb.width;
+            contentHeight = (HEIGHT / WIDTH) * bb.width;
             contentX = bb.left;
             contentY = bb.top + (bb.height - contentHeight) / 2;
         }
 
-        let x = Math.floor(((e.clientX - contentX) / contentWidth) * 160);
-        let y = Math.floor(((e.clientY - contentY) / contentHeight) * 250);
+        // Compensate for the border
+        let x = Math.floor((((e.clientX - contentX) / contentWidth) * WIDTH) / SCALE) - BORDER / SCALE;
+        let y = Math.floor((((e.clientY - contentY) / contentHeight) * HEIGHT) / SCALE) - BORDER / SCALE;
 
         if (clip) {
             if (x < 0) x = 0;
@@ -223,7 +220,7 @@ export class EventHandler {
     private determineButton([x, y]: [number, number]): PalmButton {
         if (x >= 130) return PalmButton.notes;
         if (x >= 100) return PalmButton.todo;
-        if (x >= 60) return y >= 235 ? PalmButton.down : PalmButton.up;
+        if (x >= 60) return y >= 236 ? PalmButton.down : PalmButton.up;
         if (x >= 30) return PalmButton.phone;
 
         return PalmButton.cal;
