@@ -201,6 +201,19 @@ export class EventHandler {
         let x = Math.floor((((e.clientX - contentX) / contentWidth) * WIDTH) / SCALE) - BORDER / SCALE;
         let y = Math.floor((((e.clientY - contentY) / contentHeight) * HEIGHT) / SCALE) - BORDER / SCALE;
 
+        // The canvas layout inside the border is as follows:
+        //
+        // * 0 .. 159   : LCD
+        // * 160        : separator
+        // * 161 .. 220 : silkscreen
+        // * 221        : separator
+        // * 222 .. 251 : buttons
+        //
+        // we map this top 160x250 lines by mapping the separators to silkscreen and button area
+
+        if (y >= 222) y -= 2;
+        else if (y >= 161) y -= 1;
+
         if (clip) {
             if (x < 0) x = 0;
             if (x > 159) x = 159;

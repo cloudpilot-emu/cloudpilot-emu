@@ -13,7 +13,7 @@ const BACKGROUND_ACTIVE_BUTTON = GRAYSCALE_PALETTE_HEX[6];
 export const SCALE = 3 * devicePixelRatio;
 export const BORDER = Math.round(1 * SCALE);
 export const WIDTH = SCALE * 160 + 2 * BORDER;
-export const HEIGHT = SCALE * 251 + 2 * BORDER;
+export const HEIGHT = SCALE * 252 + 2 * BORDER;
 
 function loadImage(url: string): Promise<HTMLImageElement> {
     return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -48,33 +48,33 @@ export class CanvasHelper {
     async drawSilkscreen(): Promise<void> {
         const image = await this.silkscreenImage();
 
-        this.fillRect(0, 160, 160, 60, BACKGROUND_COLOR_SILKSCREEN);
+        this.fillRect(0, 161, 160, 60, BACKGROUND_COLOR_SILKSCREEN);
 
         this.ctx.imageSmoothingEnabled = true;
         this.ctx.imageSmoothingQuality = 'high';
 
-        this.ctx.drawImage(image, BORDER, BORDER + 160 * SCALE, 160 * SCALE, 60 * SCALE);
+        this.ctx.drawImage(image, BORDER, BORDER + 161 * SCALE, 160 * SCALE, 60 * SCALE);
     }
 
     drawButtons(activeButtons: Array<PalmButton> = []): void {
-        this.fillRect(0, 221, 160, 30, this.backgroundColor());
+        this.fillRect(0, 222, 160, 30, this.backgroundColor());
 
-        if (activeButtons.includes(PalmButton.cal)) this.fillRect(0, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.phone)) this.fillRect(30, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.todo)) this.fillRect(100, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.notes)) this.fillRect(130, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.up)) this.fillRect(60, 221, 40, 15, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.down)) this.fillRect(60, 236, 40, 15, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.cal)) this.fillRect(0, 222, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.phone)) this.fillRect(30, 222, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.todo)) this.fillRect(100, 222, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.notes)) this.fillRect(130, 222, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.up)) this.fillRect(60, 222, 40, 15, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.down)) this.fillRect(60, 237, 40, 15, BACKGROUND_ACTIVE_BUTTON);
 
         this.ctx.beginPath();
         this.ctx.lineWidth = Math.round(0.5 * SCALE);
         this.ctx.strokeStyle = BACKGROUND_ACTIVE_BUTTON;
         [
-            [30, 221, 30, 251],
-            [60, 221, 60, 251],
-            [130, 221, 130, 251],
-            [100, 221, 100, 251],
-            [60, 236, 100, 236],
+            [30, 222, 30, 252],
+            [60, 222, 60, 252],
+            [130, 222, 130, 252],
+            [100, 222, 100, 252],
+            [60, 237, 100, 237],
         ].forEach(([x0, y0, x1, y1]) => {
             this.ctx.moveTo(BORDER + SCALE * x0, BORDER + SCALE * y0);
             this.ctx.lineTo(BORDER + SCALE * x1, BORDER + SCALE * y1);
@@ -84,10 +84,10 @@ export class CanvasHelper {
         this.ctx.font = `${10 * SCALE}px sans`;
         this.ctx.fillStyle = 'black';
 
-        this.textCenteredAt(15, 236, 'D');
-        this.textCenteredAt(45, 236, 'P');
-        this.textCenteredAt(115, 236, 'T');
-        this.textCenteredAt(145, 236, 'N');
+        this.textCenteredAt(15, 237, 'D');
+        this.textCenteredAt(45, 237, 'P');
+        this.textCenteredAt(115, 237, 'T');
+        this.textCenteredAt(145, 237, 'N');
     }
 
     drawEmulationCanvas(canvas: HTMLCanvasElement): void {
