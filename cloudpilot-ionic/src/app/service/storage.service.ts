@@ -110,7 +110,7 @@ export class StorageService {
 
         await complete(tx);
 
-        this.sessionChange.dispatch(session.id);
+        this.sessionChangeEvent.dispatch(session.id);
     }
 
     public async updateSession(session: Session): Promise<void> {
@@ -130,7 +130,7 @@ export class StorageService {
 
         await complete(tx);
 
-        this.sessionChange.dispatch(session.id);
+        this.sessionChangeEvent.dispatch(session.id);
     }
 
     public async loadSession(session: Session): Promise<[Uint8Array, Uint8Array | undefined, Uint8Array | undefined]> {
@@ -174,7 +174,7 @@ export class StorageService {
         });
     }
 
-    public sessionChange = new Event<number>();
+    public sessionChangeEvent = new Event<number>();
 
     private db!: Promise<IDBDatabase>;
 }

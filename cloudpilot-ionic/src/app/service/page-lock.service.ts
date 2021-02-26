@@ -1,31 +1,28 @@
-import { EventEmitter, Injectable } from '@angular/core';
-
-import { v4 as uuid } from 'uuid';
-
-const KEY = 'cloudpilot-lock';
+import { AlertService } from './alert.service';
+import { Event } from 'microevent.ts';
+import { Injectable } from '@angular/core';
+import { pageLockIntact } from '../helper/pagelock';
 
 @Injectable({
     providedIn: 'root',
 })
 export class PageLockService {
-    constructor() {
-        localStorage.setItem(KEY, this.token);
-    }
+    constructor(private alertService: AlertService) {}
 
     lockLost(): boolean {
-        if (localStorage.getItem(KEY) !== this.token) {
-            if (!this.lockLostFired) this.lockLostDetected.emit();
+        if (this.wasLockLost) return true;
 
-            this.lockLostFired = true;
+        this.wasLockLost = !pageLockIntact();
 
-            return true;
+        if (this.wasLockLost) {
+            this.alertService.lockLost();
+            this.lockLostEvent.dispatch();
         }
 
-        return false;
+        return this.wasLockLost;
     }
 
-    lockLostDetected = new EventEmitter<void>();
+    lockLostEvent = new Event<void>();
 
-    private token = uuid();
-    private lockLostFired = false;
+    private wasLockLost = false;
 }

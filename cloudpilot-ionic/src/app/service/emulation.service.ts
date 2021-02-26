@@ -1,14 +1,14 @@
 import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
 import { Injectable, NgZone, OnDestroy } from '@angular/core';
 
+import { AlertService } from 'src/app/service/alert.service';
 import { DeviceId } from '../model/DeviceId';
 import { Event } from 'microevent.ts';
-import { LEADING_TRIVIA_CHARS } from '@angular/compiler/src/render3/view/template';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
+import { PageLockService } from './page-lock.service';
 import { Session } from '../model/Session';
 import { StorageService } from './storage.service';
-import { threadId } from 'worker_threads';
 
 export const GRAYSCALE_PALETTE_RGBA = [
     0xffd2d2d2,
@@ -38,11 +38,13 @@ const PEN_MOVE_THROTTLE = 25;
 @Injectable({
     providedIn: 'root',
 })
-export class EmulationService implements OnDestroy {
+export class EmulationService {
     constructor(
         private storageService: StorageService,
         private ngZone: NgZone,
-        private loadingController: LoadingController
+        private loadingController: LoadingController,
+        alertService: AlertService,
+        pageLockService: PageLockService
     ) {
         this.canvas.width = 160;
         this.canvas.height = 160;
@@ -56,11 +58,10 @@ export class EmulationService implements OnDestroy {
 
         this.context = context;
 
-        storageService.sessionChange.addHandler(this.onSessionChange);
-    }
+        storageService.sessionChangeEvent.addHandler(this.onSessionChange);
+        pageLockService.lockLostEvent.addHandler(this.pause);
 
-    ngOnDestroy(): void {
-        this.storageService.sessionChange.removeHandler(this.onSessionChange);
+        alertService.setEmulationService(this);
     }
 
     switchSession = (id: number): Promise<void> =>
