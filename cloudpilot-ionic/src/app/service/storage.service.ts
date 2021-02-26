@@ -8,6 +8,7 @@ import {
 } from './storage/constants';
 import { migrate0to1, migrate1to2 } from './storage/migrations';
 
+import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
 import { PageLockService } from './page-lock.service';
 import { Session } from 'src/app/model/Session';
@@ -108,6 +109,8 @@ export class StorageService {
         this.stateStorageService.deleteState(tx, session.id);
 
         await complete(tx);
+
+        this.sessionChange.dispatch(session.id);
     }
 
     public async updateSession(session: Session): Promise<void> {
@@ -126,6 +129,8 @@ export class StorageService {
         objectStoreSession.put(session);
 
         await complete(tx);
+
+        this.sessionChange.dispatch(session.id);
     }
 
     public async loadSession(session: Session): Promise<[Uint8Array, Uint8Array | undefined, Uint8Array | undefined]> {
@@ -141,13 +146,13 @@ export class StorageService {
         ];
     }
 
-    public async acquireLock(store: IDBObjectStore, key: string | number): Promise<void> {
+    private async acquireLock(store: IDBObjectStore, key: string | number): Promise<void> {
         await complete(store.get(key));
 
         if (this.pageLockService.lockLost()) throw E_LOCK_LOST;
     }
 
-    public async newTransaction(...stores: Array<string>): Promise<IDBTransaction> {
+    private async newTransaction(...stores: Array<string>): Promise<IDBTransaction> {
         return (await this.db).transaction(stores, 'readwrite');
     }
 
@@ -168,6 +173,8 @@ export class StorageService {
             };
         });
     }
+
+    public sessionChange = new Event<number>();
 
     private db!: Promise<IDBDatabase>;
 }

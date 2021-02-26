@@ -1,5 +1,5 @@
 import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
-import { Injectable, NgZone } from '@angular/core';
+import { Injectable, NgZone, OnDestroy } from '@angular/core';
 
 import { DeviceId } from '../model/DeviceId';
 import { Event } from 'microevent.ts';
@@ -38,7 +38,7 @@ const PEN_MOVE_THROTTLE = 25;
 @Injectable({
     providedIn: 'root',
 })
-export class EmulationService {
+export class EmulationService implements OnDestroy {
     constructor(
         private storageService: StorageService,
         private ngZone: NgZone,
@@ -55,6 +55,12 @@ export class EmulationService {
         }
 
         this.context = context;
+
+        storageService.sessionChange.addHandler(this.onSessionChange);
+    }
+
+    ngOnDestroy(): void {
+        this.storageService.sessionChange.removeHandler(this.onSessionChange);
     }
 
     switchSession = (id: number): Promise<void> =>
@@ -124,19 +130,10 @@ export class EmulationService {
         });
 
     pause = (): Promise<void> =>
-        this.mutex.runExclusive(() => {
+        this.mutex.runExclusive(async () => {
             console.log('pause');
 
-            this._pause();
-        });
-
-    stop = (): Promise<void> =>
-        this.mutex.runExclusive(() => {
-            console.log('stop');
-
-            this._pause();
-
-            this.currentSession = undefined;
+            await this._pause();
         });
 
     handlePointerMove(x: number, y: number): void {
@@ -191,6 +188,15 @@ export class EmulationService {
     installFile(data: Uint8Array): Promise<number> {
         return this.cloudpilot.then((c) => c.installFile(data));
     }
+
+    private onSessionChange = (sessionId: number): Promise<void> =>
+        this.mutex.runExclusive(async () => {
+            if (sessionId !== this.currentSession?.id) return;
+
+            this.currentSession = await this.storageService.getSession(sessionId);
+
+            if (!this.currentSession) await this._pause();
+        });
 
     private _pause(): void {
         if (!this.running) return;

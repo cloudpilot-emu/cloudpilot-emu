@@ -59,10 +59,6 @@ export class SessionService {
     }
 
     async deleteSession(session: Session): Promise<void> {
-        if (this.emulationService.getCurrentSession()?.id === session.id) {
-            await this.emulationService.stop();
-        }
-
         await this.storageService.deleteSession(session);
 
         this.updateSessionsFromStorage();
