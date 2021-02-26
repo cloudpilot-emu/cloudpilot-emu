@@ -9,7 +9,13 @@ ion-title {
     justify-content: center;
     align-items: center;
     padding: 5px;
-    background: black;
+    background: #a8a8a8;
+}
+
+@media (prefers-color-scheme: dark) {
+    .container {
+        background: black;
+    }
 }
 
 canvas {
