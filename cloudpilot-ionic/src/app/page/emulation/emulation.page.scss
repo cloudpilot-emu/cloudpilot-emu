@@ -8,13 +8,12 @@ ion-title {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 5px;
-    background: #a8a8a8;
+    padding: 3px;
 }
 
-@media (prefers-color-scheme: dark) {
-    .container {
-        background: black;
+@media (prefers-color-scheme: light) {
+    .container.running-session {
+        background: #a8a8a8;
     }
 }
 
