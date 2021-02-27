@@ -6,6 +6,7 @@ import { LoadingController, PopoverController } from '@ionic/angular';
 import { AlertService } from 'src/app/service/alert.service';
 import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
+import { EmulationStateService } from './../../service/emulation-state.service';
 import { EventHandler } from './helper/EventHandler';
 import { PalmButton } from '../../../../../src';
 
@@ -17,6 +18,7 @@ import { PalmButton } from '../../../../../src';
 export class EmulationPage implements AfterViewInit {
     constructor(
         public emulationService: EmulationService,
+        public emulationState: EmulationStateService,
         private popoverController: PopoverController,
         private alertService: AlertService,
         private fileService: FileService,
@@ -26,7 +28,7 @@ export class EmulationPage implements AfterViewInit {
 
     ngAfterViewInit(): void {
         const canvasElt = this.canvasRef.nativeElement;
-        this.canvasHelper = new CanvasHelper(canvasElt, this.emulationService);
+        this.canvasHelper = new CanvasHelper(canvasElt, this.emulationState);
         this.eventHandler = new EventHandler(canvasElt, this.emulationService, this.canvasHelper);
 
         this.canvasHelper.clear();
@@ -57,10 +59,10 @@ export class EmulationPage implements AfterViewInit {
     }
 
     async ionViewDidEnter(): Promise<void> {
-        if (this.currentSession !== this.emulationService.getCurrentSession()?.id) {
+        if (this.currentSession !== this.emulationState.getCurrentSession()?.id) {
             await this.canvasHelper.clear();
         }
-        this.currentSession = this.emulationService.getCurrentSession()?.id;
+        this.currentSession = this.emulationState.getCurrentSession()?.id;
 
         this.emulationService.newFrame.addHandler(this.onNewFrame);
 
@@ -104,7 +106,7 @@ export class EmulationPage implements AfterViewInit {
     }
 
     get title(): string {
-        return this.emulationService.getCurrentSession()?.name || 'Emulation';
+        return this.emulationState.getCurrentSession()?.name || 'Emulation';
     }
 
     private onNewFrame = (canvas: HTMLCanvasElement): void => {

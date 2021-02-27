@@ -4,6 +4,7 @@ import { AlertController } from '@ionic/angular';
 import { AlertService } from './../../service/alert.service';
 import { Component } from '@angular/core';
 import { EmulationService } from './../../service/emulation.service';
+import { EmulationStateService } from './../../service/emulation-state.service';
 import { Router } from '@angular/router';
 import { Session } from 'src/app/model/Session';
 import { SessionService } from 'src/app/service/session.service';
@@ -20,6 +21,7 @@ export class SessionsPage {
         private alertController: AlertController,
         private alertService: AlertService,
         public emulationService: EmulationService,
+        public emulationState: EmulationStateService,
         private router: Router
     ) {}
 
@@ -63,7 +65,7 @@ export class SessionsPage {
     }
 
     get currentSessionId(): number | undefined {
-        return this.currentSessionOverride ?? this.emulationService.getCurrentSession()?.id;
+        return this.currentSessionOverride ?? this.emulationState.getCurrentSession()?.id;
     }
 
     private async processFile(file: FileDescriptor): Promise<void> {

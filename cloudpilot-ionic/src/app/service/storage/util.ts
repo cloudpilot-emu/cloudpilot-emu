@@ -15,3 +15,11 @@ export function complete(requestOrTransaction: IDBRequest | IDBTransaction): Pro
         requestOrTransaction.onerror = () => reject();
     });
 }
+
+export function compressPage(page: Uint8Array): Uint8Array | number {
+    for (let i = 1; i < 1024; i++) {
+        if (page[i] !== page[0]) return page;
+    }
+
+    return page[0];
+}

@@ -25,12 +25,12 @@
 
 <ion-content>
 
-  <div class="container running-session" [style.display]="emulationService.getCurrentSession() ? undefined : 'none'">
+  <div class="container running-session" [style.display]="emulationState.getCurrentSession() ? undefined : 'none'">
     <canvas #canvas [width]="canvasWidth" [height]="canvasHeight" [style.width]="cssWidth" [style.height]="cssHeight"
-      [style.display]="emulationService.getCurrentSession() ? 'block' : 'none'"></canvas>
+      [style.display]="emulationState.getCurrentSession() ? 'block' : 'none'"></canvas>
   </div>
 
-  <div class="container no-session" *ngIf=" !emulationService.getCurrentSession()">
+  <div class="container no-session" *ngIf=" !emulationState.getCurrentSession()">
     <div>No session selected</div>
   </div>
 

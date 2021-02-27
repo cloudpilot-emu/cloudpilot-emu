@@ -6,14 +6,13 @@ import {
     OBJECT_STORE_SESSION,
     OBJECT_STORE_STATE,
 } from './storage/constants';
+import { Injectable, NgZone } from '@angular/core';
+import { complete, compressPage } from './storage/util';
 import { migrate0to1, migrate1to2 } from './storage/migrations';
 
 import { Event } from 'microevent.ts';
-import { Injectable } from '@angular/core';
 import { PageLockService } from './page-lock.service';
 import { Session } from 'src/app/model/Session';
-import { StateStorageService } from './state-storage.service';
-import { complete } from './storage/util';
 import md5 from 'md5';
 
 const E_LOCK_LOST = new Error('page lock lost');
@@ -22,9 +21,8 @@ const E_LOCK_LOST = new Error('page lock lost');
     providedIn: 'root',
 })
 export class StorageService {
-    constructor(private pageLockService: PageLockService, private stateStorageService: StateStorageService) {
+    constructor(private pageLockService: PageLockService, private ngZone: NgZone) {
         this.setupDb();
-        this.stateStorageService.setStorageService(this);
     }
 
     public async addSession(session: Session, rom: Uint8Array, ram?: Uint8Array, state?: Uint8Array): Promise<Session> {
@@ -52,11 +50,11 @@ export class StorageService {
         const storedSession = await complete<Session>(objectStoreSession.get(key));
 
         if (ram) {
-            this.stateStorageService.saveMemory(tx, storedSession.id, ram);
+            this.saveMemory(tx, storedSession.id, ram);
         }
 
         if (state) {
-            this.stateStorageService.saveState(tx, storedSession.id, state);
+            this.saveState(tx, storedSession.id, state);
         }
 
         await complete(tx);
@@ -105,8 +103,8 @@ export class StorageService {
 
         if (sessionsUsingRom.length === 0) objectStoreRom.delete(session.rom);
 
-        this.stateStorageService.deleteMemory(tx, session.id);
-        this.stateStorageService.deleteState(tx, session.id);
+        this.deleteMemory(tx, session.id);
+        this.deleteState(tx, session.id);
 
         await complete(tx);
 
@@ -141,10 +139,91 @@ export class StorageService {
 
         return [
             await complete<Uint8Array>(objectStoreRom.get(session.rom)),
-            await this.stateStorageService.loadMemory(tx, session.id, session.ram * 1024 * 1024),
-            await this.stateStorageService.loadState(tx, session.id),
+            await this.loadMemory(tx, session.id, session.ram * 1024 * 1024),
+            await this.loadState(tx, session.id),
         ];
     }
+
+    private saveState(tx: IDBTransaction, sessionId: number, state: Uint8Array | undefined): void {
+        const objectStore = tx.objectStore(OBJECT_STORE_STATE);
+
+        if (state) {
+            objectStore.put(state, sessionId);
+        } else {
+            objectStore.delete(sessionId);
+        }
+    }
+
+    private deleteState(tx: IDBTransaction, sessionId: number): void {
+        const objectStore = tx.objectStore(OBJECT_STORE_STATE);
+
+        objectStore.delete(sessionId);
+    }
+
+    private loadState(tx: IDBTransaction, sessionId: number): Promise<Uint8Array | undefined> {
+        const objectStore = tx.objectStore(OBJECT_STORE_STATE);
+
+        return complete(objectStore.get(sessionId));
+    }
+
+    private saveMemory = (tx: IDBTransaction, sessionId: number, memory: Uint8Array): void =>
+        this.ngZone.runOutsideAngular(() => {
+            const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
+
+            objectStore.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
+
+            const pageCount = memory.length >>> 10;
+
+            for (let i = 0; i < pageCount; i++) {
+                const compressedPage = compressPage(memory.subarray(i * 1024, (i + 1) * 1024));
+
+                if (typeof compressedPage === 'number') {
+                    objectStore.put(compressedPage, [sessionId, i]);
+                } else {
+                    const page = new Uint8Array(1024);
+                    page.set(compressedPage);
+
+                    objectStore.put(page, [sessionId, i]);
+                }
+            }
+        });
+
+    private deleteMemory(tx: IDBTransaction, sessionId: number): void {
+        const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
+
+        objectStore.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
+    }
+
+    private loadMemory = (tx: IDBTransaction, sessionId: number, size: number): Promise<Uint8Array> =>
+        this.ngZone.runOutsideAngular(() => {
+            return new Promise((resolve, reject) => {
+                const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
+                const memory = new Uint8Array(size);
+
+                const request = objectStore.openCursor(
+                    IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true)
+                );
+
+                request.onsuccess = () => {
+                    const cursor = request.result;
+
+                    if (!cursor) return resolve(memory);
+
+                    const compressedPage = cursor.value;
+                    const [, iPage] = cursor.key as [number, number];
+
+                    if (typeof compressedPage === 'number') {
+                        memory.subarray(iPage * 1024, (iPage + 1) * 1024).fill(compressedPage);
+                    } else {
+                        memory.subarray(iPage * 1024, (iPage + 1) * 1024).set(compressedPage);
+                    }
+
+                    cursor.continue();
+                };
+
+                request.onerror = () => reject(new Error('failed to load memory image'));
+            });
+        });
 
     private async acquireLock(store: IDBObjectStore, key: string | number): Promise<void> {
         await complete(store.get(key));

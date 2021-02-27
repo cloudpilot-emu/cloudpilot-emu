@@ -1,16 +1,13 @@
 import { AlertController } from '@ionic/angular';
 import { EmulationService } from './emulation.service';
+import { EmulationStateService } from './emulation-state.service';
 import { Injectable } from '@angular/core';
 
 @Injectable({
     providedIn: 'root',
 })
 export class AlertService {
-    constructor(private alertController: AlertController) {}
-
-    setEmulationService(emulationService: EmulationService): void {
-        this.emulationService = emulationService;
-    }
+    constructor(private alertController: AlertController, private emulationState: EmulationStateService) {}
 
     async errorMessage(message: string) {
         const alert = await this.alertController.create({
@@ -41,13 +38,11 @@ export class AlertService {
                 Please close or reload this window. Any changes that you make in this window will be lost.
             `,
             backdropDismiss: false,
-            buttons: this.emulationService?.getCurrentSession()
+            buttons: this.emulationState.getCurrentSession()
                 ? [{ text: 'Save current session', handler: () => false }]
                 : [],
         });
 
         await alert.present();
     }
-
-    private emulationService: EmulationService | undefined;
 }

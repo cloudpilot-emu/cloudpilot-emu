@@ -3,6 +3,7 @@ import { Injectable, NgZone, OnDestroy } from '@angular/core';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { DeviceId } from '../model/DeviceId';
+import { EmulationStateService } from './emulation-state.service';
 import { Event } from 'microevent.ts';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
@@ -43,6 +44,7 @@ export class EmulationService {
         private storageService: StorageService,
         private ngZone: NgZone,
         private loadingController: LoadingController,
+        private emulationState: EmulationStateService,
         alertService: AlertService,
         pageLockService: PageLockService
     ) {
@@ -60,13 +62,11 @@ export class EmulationService {
 
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
         pageLockService.lockLostEvent.addHandler(this.pause);
-
-        alertService.setEmulationService(this);
     }
 
     switchSession = (id: number): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            if (id === this.currentSession?.id) {
+            if (id === this.emulationState.getCurrentSession()?.id) {
                 return;
             }
 
@@ -74,20 +74,22 @@ export class EmulationService {
             await loader.present();
 
             try {
-                this.currentSession = await this.storageService.getSession(id);
-                if (!this.currentSession) {
+                const session = await this.storageService.getSession(id);
+                this.emulationState.setCurrentSession(session);
+
+                if (!session) {
                     throw new Error(`invalid session ${id}`);
                 }
 
-                const [rom, memory, state] = await this.storageService.loadSession(this.currentSession);
+                const [rom, memory, state] = await this.storageService.loadSession(session);
                 if (!rom) {
-                    throw new Error(`invalid ROM ${this.currentSession.rom}`);
+                    throw new Error(`invalid ROM ${session.rom}`);
                 }
 
                 const cloudpilot = await this.cloudpilot;
                 let memoryLoaded = false;
 
-                cloudpilot.initializeSession(rom, this.currentSession.device);
+                cloudpilot.initializeSession(rom, session.device);
 
                 if (memory) {
                     const emulatedMemory = cloudpilot.getMemory();
@@ -110,15 +112,11 @@ export class EmulationService {
             }
         });
 
-    getCurrentSession(): Session | undefined {
-        return this.currentSession;
-    }
-
     resume = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
             console.log('resume');
 
-            if (!this.currentSession || this.running) return;
+            if (!this.emulationState.getCurrentSession() || this.running) return;
             this.cloudpilotInstance = await this.cloudpilot;
 
             this.clockEmulator = performance.now();
@@ -192,11 +190,11 @@ export class EmulationService {
 
     private onSessionChange = (sessionId: number): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            if (sessionId !== this.currentSession?.id) return;
+            if (sessionId !== this.emulationState.getCurrentSession()?.id) return;
 
-            this.currentSession = await this.storageService.getSession(sessionId);
+            this.emulationState.setCurrentSession(await this.storageService.getSession(sessionId));
 
-            if (!this.currentSession) await this._pause();
+            if (!this.emulationState.getCurrentSession()) await this._pause();
         });
 
     private _pause(): void {
@@ -246,7 +244,8 @@ export class EmulationService {
         if (this.cloudpilotInstance.isPowerOff()) {
             this.context.beginPath();
             this.context.rect(0, 0, 160, 160);
-            this.context.fillStyle = this.currentSession?.device === DeviceId.m515 ? 'white' : GRAYSCALE_PALETTE_HEX[0];
+            this.context.fillStyle =
+                this.emulationState.getCurrentSession()?.device === DeviceId.m515 ? 'white' : GRAYSCALE_PALETTE_HEX[0];
             this.context.fill();
 
             this.newFrame.dispatch(this.canvas);
@@ -337,8 +336,6 @@ export class EmulationService {
     newFrame = new Event<HTMLCanvasElement>();
 
     private cloudpilotInstance!: Cloudpilot;
-
-    private currentSession: Session | undefined;
 
     private clockEmulator = 0;
     private animationFrameHandle = -1;
