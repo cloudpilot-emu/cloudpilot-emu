@@ -175,9 +175,8 @@ export class Cloudpilot {
     getDirtyPages(): Uint8Array {
         const ptr = this.module.getPointer(this.cloudpilot.GetDirtyPagesPtr());
         const memorySize = this.cloudpilot.GetMemorySize();
-        const pages = (memorySize >>> 10) + (memorySize % 1024 ? 1 : 0);
 
-        return this.module.HEAPU8.subarray(ptr, ptr + pages);
+        return this.module.HEAPU8.subarray(ptr, ptr + (memorySize >>> 13));
     }
 
     getSavestate(): Uint8Array {

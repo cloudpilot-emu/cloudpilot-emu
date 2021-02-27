@@ -12,7 +12,7 @@ export function complete(requestOrTransaction: IDBRequest | IDBTransaction): Pro
             requestOrTransaction.onsuccess = () => resolve(requestOrTransaction.result);
         }
 
-        requestOrTransaction.onerror = () => reject();
+        requestOrTransaction.onerror = () => reject(new Error(requestOrTransaction.error?.message));
     });
 }
 

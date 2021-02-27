@@ -15,7 +15,7 @@ import { PageLockService } from './page-lock.service';
 import { Session } from 'src/app/model/Session';
 import md5 from 'md5';
 
-const E_LOCK_LOST = new Error('page lock lost');
+export const E_LOCK_LOST = new Error('page lock lost');
 
 @Injectable({
     providedIn: 'root',
@@ -25,7 +25,7 @@ export class StorageService {
         this.setupDb();
     }
 
-    public async addSession(session: Session, rom: Uint8Array, ram?: Uint8Array, state?: Uint8Array): Promise<Session> {
+    async addSession(session: Session, rom: Uint8Array, ram?: Uint8Array, state?: Uint8Array): Promise<Session> {
         const hash = md5(rom);
 
         const tx = await this.newTransaction(
@@ -62,7 +62,7 @@ export class StorageService {
         return storedSession;
     }
 
-    public async getAllSessions(): Promise<Array<Session>> {
+    async getAllSessions(): Promise<Array<Session>> {
         const tx = await this.newTransaction(OBJECT_STORE_SESSION);
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
 
@@ -73,7 +73,7 @@ export class StorageService {
         return sessions;
     }
 
-    public async getSession(id: number): Promise<Session | undefined> {
+    async getSession(id: number): Promise<Session | undefined> {
         const tx = await this.newTransaction(OBJECT_STORE_SESSION);
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
 
@@ -82,7 +82,7 @@ export class StorageService {
         return await complete(objectStoreSession.get(id));
     }
 
-    public async deleteSession(session: Session): Promise<void> {
+    async deleteSession(session: Session): Promise<void> {
         const tx = await this.newTransaction(
             OBJECT_STORE_SESSION,
             OBJECT_STORE_ROM,
@@ -111,7 +111,7 @@ export class StorageService {
         this.sessionChangeEvent.dispatch(session.id);
     }
 
-    public async updateSession(session: Session): Promise<void> {
+    async updateSession(session: Session): Promise<void> {
         const tx = await this.newTransaction(OBJECT_STORE_SESSION);
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
 
@@ -131,7 +131,7 @@ export class StorageService {
         this.sessionChangeEvent.dispatch(session.id);
     }
 
-    public async loadSession(session: Session): Promise<[Uint8Array, Uint8Array | undefined, Uint8Array | undefined]> {
+    async loadSession(session: Session): Promise<[Uint8Array, Uint8Array | undefined, Uint8Array | undefined]> {
         const tx = await this.newTransaction(OBJECT_STORE_ROM, OBJECT_STORE_STATE, OBJECT_STORE_MEMORY);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
 
@@ -142,6 +142,22 @@ export class StorageService {
             await this.loadMemory(tx, session.id, session.ram * 1024 * 1024),
             await this.loadState(tx, session.id),
         ];
+    }
+
+    getDb(): Promise<IDBDatabase> {
+        return this.db;
+    }
+
+    async acquireLock(store: IDBObjectStore, key: string | number): Promise<void> {
+        await complete(store.get(key));
+
+        if (this.pageLockService.lockLost()) {
+            throw E_LOCK_LOST;
+        }
+    }
+
+    async newTransaction(...stores: Array<string>): Promise<IDBTransaction> {
+        return (await this.db).transaction(stores, 'readwrite');
     }
 
     private saveState(tx: IDBTransaction, sessionId: number, state: Uint8Array | undefined): void {
@@ -224,16 +240,6 @@ export class StorageService {
                 request.onerror = () => reject(new Error('failed to load memory image'));
             });
         });
-
-    private async acquireLock(store: IDBObjectStore, key: string | number): Promise<void> {
-        await complete(store.get(key));
-
-        if (this.pageLockService.lockLost()) throw E_LOCK_LOST;
-    }
-
-    private async newTransaction(...stores: Array<string>): Promise<IDBTransaction> {
-        return (await this.db).transaction(stores, 'readwrite');
-    }
 
     private setupDb() {
         this.db = new Promise((resolve, reject) => {

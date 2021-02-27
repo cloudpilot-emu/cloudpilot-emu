@@ -1,14 +1,13 @@
 import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
-import { Injectable, NgZone, OnDestroy } from '@angular/core';
+import { Health, SnapshotService } from './snapshot.service';
+import { Injectable, NgZone } from '@angular/core';
 
-import { AlertService } from 'src/app/service/alert.service';
 import { DeviceId } from '../model/DeviceId';
 import { EmulationStateService } from './emulation-state.service';
 import { Event } from 'microevent.ts';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { PageLockService } from './page-lock.service';
-import { Session } from '../model/Session';
 import { StorageService } from './storage.service';
 
 export const GRAYSCALE_PALETTE_RGBA = [
@@ -35,6 +34,7 @@ export const GRAYSCALE_PALETTE_HEX = GRAYSCALE_PALETTE_RGBA.map(
 );
 
 const PEN_MOVE_THROTTLE = 25;
+const SNAPSHOT_INTERVAL = 1000;
 
 @Injectable({
     providedIn: 'root',
@@ -45,7 +45,7 @@ export class EmulationService {
         private ngZone: NgZone,
         private loadingController: LoadingController,
         private emulationState: EmulationStateService,
-        alertService: AlertService,
+        private snapshotService: SnapshotService,
         pageLockService: PageLockService
     ) {
         this.canvas.width = 160;
@@ -99,7 +99,7 @@ export class EmulationService {
                         memoryLoaded = true;
                     } else {
                         console.error(
-                            `memory size mismatcH; ${emulatedMemory.length} vs. ${memory.length} - ignoring image`
+                            `memory size mismatch; ${emulatedMemory.length} vs. ${memory.length} - ignoring image`
                         );
                     }
                 }
@@ -107,6 +107,8 @@ export class EmulationService {
                 if (memoryLoaded && state) {
                     cloudpilot.loadState(state);
                 }
+
+                await this.snapshotService.initialize(session, await this.cloudpilot);
             } finally {
                 await loader.dismiss();
             }
@@ -125,6 +127,7 @@ export class EmulationService {
                 () => (this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame))
             );
 
+            this.lastSnapshotAt = performance.now();
             this.running = true;
         });
 
@@ -132,7 +135,12 @@ export class EmulationService {
         this.mutex.runExclusive(async () => {
             console.log('pause');
 
-            await this._pause();
+            await this.stopLoop();
+
+            if (this.snapshotService.getHealth() !== Health.defunct) {
+                await this.snapshotService.waitForPendingSnapshot();
+                await this.snapshotService.triggerSnapshot();
+            }
         });
 
     handlePointerMove(x: number, y: number): void {
@@ -194,10 +202,10 @@ export class EmulationService {
 
             this.emulationState.setCurrentSession(await this.storageService.getSession(sessionId));
 
-            if (!this.emulationState.getCurrentSession()) await this._pause();
+            if (!this.emulationState.getCurrentSession()) await this.stopLoop();
         });
 
-    private _pause(): void {
+    private stopLoop(): void {
         if (!this.running) return;
 
         if (this.animationFrameHandle > 0) {
@@ -235,7 +243,15 @@ export class EmulationService {
             });
         }
 
-        this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+        if (timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL) {
+            this.snapshotService.triggerSnapshot();
+
+            this.lastSnapshotAt = timestamp;
+        }
+
+        if (this.snapshotService.getHealth() !== Health.defunct) {
+            this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+        }
     };
 
     private updateScreen(): void {
@@ -353,4 +369,6 @@ export class EmulationService {
     private running = false;
     private powerOff = false;
     private uiInitialized = false;
+
+    private lastSnapshotAt = 0;
 }

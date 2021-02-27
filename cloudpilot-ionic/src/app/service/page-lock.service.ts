@@ -15,7 +15,7 @@ export class PageLockService {
         this.wasLockLost = !pageLockIntact();
 
         if (this.wasLockLost) {
-            this.alertService.lockLost();
+            this.alertService.fatalError('Cloudpilot was opened in another tab or windoow.');
             this.lockLostEvent.dispatch();
         }
 

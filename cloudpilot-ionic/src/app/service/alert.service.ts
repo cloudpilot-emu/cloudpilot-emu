@@ -29,18 +29,22 @@ export class AlertService {
         await alert.present();
     }
 
-    async lockLost() {
+    async fatalError(reason: string) {
+        const haveCurrentSession = !!this.emulationState.getCurrentSession();
+
         const alert = await this.alertController.create({
             header: 'Error',
             message: `
-                Cloudpilot was opened in another tab or windoow.
+                ${reason}
                 <br/><br/>
-                Please close or reload this window. Any changes that you make in this window will be lost.
+                Please close or reload this window.
+                ${haveCurrentSession ? ' You may save an image of your current session before reloading.' : ''}
             `,
             backdropDismiss: false,
-            buttons: this.emulationState.getCurrentSession()
-                ? [{ text: 'Save current session', handler: () => false }]
-                : [],
+            buttons: [
+                ...(haveCurrentSession ? [{ text: 'Save image', handler: () => false }] : []),
+                { text: 'Reload', handler: () => window.location.reload() },
+            ],
         });
 
         await alert.present();
