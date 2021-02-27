@@ -60,9 +60,10 @@ export class SnapshotService {
 
     triggerSnapshot(): Promise<void> {
         if (this.sessionId < 0) return Promise.resolve();
-        if (this.defunct) return Promise.reject();
 
         if (this.snapshotInProgress) return this.pendingSnapshotPromise;
+        if (this.defunct) return Promise.reject();
+
         this.snapshotInProgress = true;
 
         this.pendingSnapshotPromise = (async () => {
@@ -77,9 +78,10 @@ export class SnapshotService {
     }
 
     waitForPendingSnapshot(): Promise<void> {
+        if (this.snapshotInProgress) return this.pendingSnapshotPromise;
         if (this.defunct) return Promise.reject();
 
-        return this.pendingSnapshotPromise;
+        return Promise.resolve();
     }
 
     private async triggerSnapshotUnguarded(): Promise<void> {
@@ -93,12 +95,12 @@ export class SnapshotService {
             } catch (e) {
                 console.error('snapshot error', e);
 
-                if (e === E_SESSION_MISMATCH) return;
+                if (e === E_SESSION_MISMATCH) throw e;
 
                 if (e === E_LOCK_LOST) {
                     this.ngZone.run(() => (this.defunct = true));
 
-                    return;
+                    throw e;
                 }
 
                 if (++this.consecutiveErrorCount > MAX_CONSECUTIVE_ERRORS) {
@@ -106,7 +108,7 @@ export class SnapshotService {
 
                     await this.alertService.fatalError('IndexedDB access lost. This is most likely a browser bug.');
 
-                    return;
+                    throw e;
                 }
             }
         }

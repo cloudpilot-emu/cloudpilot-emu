@@ -108,6 +108,8 @@ export class EmulationService {
                     cloudpilot.loadState(state);
                 }
 
+                this.clearCanvas();
+
                 await this.snapshotService.initialize(session, await this.cloudpilot);
             } finally {
                 await loader.dismiss();
@@ -118,7 +120,14 @@ export class EmulationService {
         this.mutex.runExclusive(async () => {
             console.log('resume');
 
-            if (!this.emulationState.getCurrentSession() || this.running) return;
+            if (
+                !this.emulationState.getCurrentSession() ||
+                this.running ||
+                this.snapshotService.getHealth() === Health.defunct
+            ) {
+                return;
+            }
+
             this.cloudpilotInstance = await this.cloudpilot;
 
             this.clockEmulator = performance.now();
@@ -196,6 +205,10 @@ export class EmulationService {
         return this.cloudpilot.then((c) => c.installFile(data));
     }
 
+    getCanvas(): HTMLCanvasElement {
+        return this.canvas;
+    }
+
     private onSessionChange = (sessionId: number): Promise<void> =>
         this.mutex.runExclusive(async () => {
             if (sessionId !== this.emulationState.getCurrentSession()?.id) return;
@@ -214,6 +227,14 @@ export class EmulationService {
         }
 
         this.running = false;
+    }
+
+    private clearCanvas(): void {
+        this.context.beginPath();
+        this.context.rect(0, 0, 160, 160);
+        this.context.fillStyle =
+            this.emulationState.getCurrentSession()?.device === DeviceId.m515 ? 'white' : GRAYSCALE_PALETTE_HEX[0];
+        this.context.fill();
     }
 
     private onAnimationFrame = (timestamp: number): void => {
@@ -258,11 +279,7 @@ export class EmulationService {
         const frame = this.cloudpilotInstance.getFrame();
 
         if (this.cloudpilotInstance.isPowerOff()) {
-            this.context.beginPath();
-            this.context.rect(0, 0, 160, 160);
-            this.context.fillStyle =
-                this.emulationState.getCurrentSession()?.device === DeviceId.m515 ? 'white' : GRAYSCALE_PALETTE_HEX[0];
-            this.context.fill();
+            this.clearCanvas();
 
             this.newFrame.dispatch(this.canvas);
 

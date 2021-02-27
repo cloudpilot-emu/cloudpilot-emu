@@ -59,10 +59,8 @@ export class EmulationPage implements AfterViewInit {
     }
 
     async ionViewDidEnter(): Promise<void> {
-        if (this.currentSession !== this.emulationState.getCurrentSession()?.id) {
-            await this.canvasHelper.clear();
-        }
-        this.currentSession = this.emulationState.getCurrentSession()?.id;
+        await this.canvasHelper.clear();
+        this.onNewFrame(this.emulationService.getCanvas());
 
         this.emulationService.newFrame.addHandler(this.onNewFrame);
 
@@ -192,6 +190,4 @@ export class EmulationPage implements AfterViewInit {
     @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
     private canvasHelper!: CanvasHelper;
     private eventHandler!: EventHandler;
-
-    private currentSession: number | undefined;
 }
