@@ -1,13 +1,14 @@
 import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
-import { Health, SnapshotService } from './snapshot.service';
 import { Injectable, NgZone } from '@angular/core';
 
 import { DeviceId } from '../model/DeviceId';
 import { EmulationStateService } from './emulation-state.service';
+import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { PageLockService } from './page-lock.service';
+import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
 
 export const GRAYSCALE_PALETTE_RGBA = [
@@ -46,7 +47,7 @@ export class EmulationService {
         private loadingController: LoadingController,
         private emulationState: EmulationStateService,
         private snapshotService: SnapshotService,
-        pageLockService: PageLockService
+        private errorService: ErrorService
     ) {
         this.canvas.width = 160;
         this.canvas.height = 160;
@@ -61,7 +62,7 @@ export class EmulationService {
         this.context = context;
 
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
-        pageLockService.lockLostEvent.addHandler(this.pause);
+        errorService.fatalErrorEvent.addHandler(this.pause);
     }
 
     switchSession = (id: number): Promise<void> =>
@@ -120,11 +121,7 @@ export class EmulationService {
         this.mutex.runExclusive(async () => {
             console.log('resume');
 
-            if (
-                !this.emulationState.getCurrentSession() ||
-                this.running ||
-                this.snapshotService.getHealth() === Health.defunct
-            ) {
+            if (!this.emulationState.getCurrentSession() || this.running || this.errorService.hasFatalError()) {
                 return;
             }
 
@@ -146,7 +143,7 @@ export class EmulationService {
 
             await this.stopLoop();
 
-            if (this.snapshotService.getHealth() !== Health.defunct) {
+            if (!this.errorService.hasFatalError()) {
                 await this.snapshotService.waitForPendingSnapshot();
                 await this.snapshotService.triggerSnapshot();
             }
@@ -238,6 +235,10 @@ export class EmulationService {
     }
 
     private onAnimationFrame = (timestamp: number): void => {
+        this.animationFrameHandle = -1;
+
+        if (this.errorService.hasFatalError()) return;
+
         if (timestamp - this.clockEmulator > 500) this.clockEmulator = timestamp - 10;
 
         const cyclesToRun = ((timestamp - this.clockEmulator) / 1000) * this.cloudpilotInstance.cyclesPerSecond();
@@ -270,9 +271,7 @@ export class EmulationService {
             this.lastSnapshotAt = timestamp;
         }
 
-        if (this.snapshotService.getHealth() !== Health.defunct) {
-            this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
-        }
+        this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
     };
 
     private updateScreen(): void {

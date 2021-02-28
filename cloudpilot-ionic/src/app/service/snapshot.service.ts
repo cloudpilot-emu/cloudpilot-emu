@@ -2,9 +2,9 @@ import { E_LOCK_LOST, StorageService } from './storage.service';
 import { Injectable, NgZone } from '@angular/core';
 import { OBJECT_STORE_MEMORY, OBJECT_STORE_STATE } from './storage/constants';
 
-import { AlertService } from 'src/app/service/alert.service';
 import { Cloudpilot } from './../helper/Cloudpilot';
 import { EmulationStateService } from './emulation-state.service';
+import { ErrorService } from './error.service';
 import { PageLockService } from './page-lock.service';
 import { Session } from './../model/Session';
 import { compressPage } from './storage/util';
@@ -14,27 +14,18 @@ const MAX_CONSECUTIVE_ERRORS = 3;
 
 const E_TIMEOUT = new Error('transaction timeout');
 const E_SESSION_MISMATCH = new Error('session does not match emulation');
-
-export const enum Health {
-    healthy,
-    errors,
-    defunct,
-}
-
 @Injectable({
     providedIn: 'root',
 })
 export class SnapshotService {
     constructor(
         private storageService: StorageService,
-        private pageLockService: PageLockService,
         private emulationState: EmulationStateService,
-        private alertService: AlertService,
-        private ngZone: NgZone
+        private errorService: ErrorService
     ) {}
 
     async initialize(session: Session, cloudpilot: Cloudpilot): Promise<void> {
-        if (this.defunct || this.pageLockService.lockLost()) return;
+        if (this.errorService.hasFatalError()) return;
 
         const pageCount = session.ram * 1024;
 
@@ -51,18 +42,11 @@ export class SnapshotService {
         this.cloudpilot = cloudpilot;
     }
 
-    getHealth(): Health {
-        if (this.defunct) return Health.defunct;
-        if (this.consecutiveErrorCount > 0) return Health.errors;
-
-        return Health.healthy;
-    }
-
     triggerSnapshot(): Promise<void> {
         if (this.sessionId < 0) return Promise.resolve();
 
         if (this.snapshotInProgress) return this.pendingSnapshotPromise;
-        if (this.defunct) return Promise.reject();
+        if (this.errorService.hasFatalError()) return Promise.reject();
 
         this.snapshotInProgress = true;
 
@@ -79,7 +63,7 @@ export class SnapshotService {
 
     waitForPendingSnapshot(): Promise<void> {
         if (this.snapshotInProgress) return this.pendingSnapshotPromise;
-        if (this.defunct) return Promise.reject();
+        if (this.errorService.hasFatalError()) return Promise.reject();
 
         return Promise.resolve();
     }
@@ -88,25 +72,22 @@ export class SnapshotService {
         while (true) {
             try {
                 await this.triggerSnapshotOnce();
-
-                if (this.consecutiveErrorCount !== 0) this.ngZone.run(() => (this.consecutiveErrorCount = 0));
+                this.consecutiveErrorCount = 0;
 
                 return;
             } catch (e) {
                 console.error('snapshot error', e);
 
-                if (e === E_SESSION_MISMATCH) throw e;
-
-                if (e === E_LOCK_LOST) {
-                    this.ngZone.run(() => (this.defunct = true));
+                if (e === E_SESSION_MISMATCH) {
+                    this.errorService.fatalBug('attempting to snapshot a session that is not currently running');
 
                     throw e;
                 }
 
-                if (++this.consecutiveErrorCount > MAX_CONSECUTIVE_ERRORS) {
-                    this.ngZone.run(() => (this.defunct = true));
+                if (e === E_LOCK_LOST) throw e;
 
-                    await this.alertService.fatalError('IndexedDB access lost. This is most likely a browser bug.');
+                if (++this.consecutiveErrorCount > MAX_CONSECUTIVE_ERRORS) {
+                    this.errorService.fatalIDBDead();
 
                     throw e;
                 }
@@ -209,7 +190,6 @@ export class SnapshotService {
         }
     }
 
-    private defunct = false;
     private sessionId = -1;
     private consecutiveErrorCount = 0;
     private snapshotInProgress = false;

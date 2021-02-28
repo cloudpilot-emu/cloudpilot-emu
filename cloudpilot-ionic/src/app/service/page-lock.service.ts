@@ -1,4 +1,4 @@
-import { AlertService } from './alert.service';
+import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
 import { pageLockIntact } from '../helper/pagelock';
@@ -7,7 +7,7 @@ import { pageLockIntact } from '../helper/pagelock';
     providedIn: 'root',
 })
 export class PageLockService {
-    constructor(private alertService: AlertService) {}
+    constructor(private errorService: ErrorService) {}
 
     lockLost(): boolean {
         if (this.wasLockLost) return true;
@@ -15,14 +15,11 @@ export class PageLockService {
         this.wasLockLost = !pageLockIntact();
 
         if (this.wasLockLost) {
-            this.alertService.fatalError('Cloudpilot was opened in another tab or windoow.');
-            this.lockLostEvent.dispatch();
+            this.errorService.fatalPageLockLost();
         }
 
         return this.wasLockLost;
     }
-
-    lockLostEvent = new Event<void>();
 
     private wasLockLost = false;
 }
