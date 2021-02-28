@@ -3,15 +3,20 @@ import './app/helper/pagelock';
 import { AppModule } from './app/app.module';
 import { enableProdMode } from '@angular/core';
 import { environment } from './environments/environment';
+import { hasStoredSession } from './app/helper/storedSession';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+
+if (hasStoredSession()) {
+    const url = new URL(location.toString());
+
+    location.replace(`${location.origin}${location.pathname}#/tab/emulation`);
+} else {
+    location.replace(`${location.origin}${location.pathname}#/tab/sessions`);
+}
 
 if (environment.production) {
     enableProdMode();
 }
-
-platformBrowserDynamic()
-    .bootstrapModule(AppModule)
-    .catch((err) => console.log(err));
 
 // work around status bar overlapping the viewport after rotation on iOS
 
@@ -22,3 +27,7 @@ window.addEventListener('orientationchange', () =>
 );
 
 window.addEventListener('scroll', () => window.scrollTo(0, 0));
+
+platformBrowserDynamic()
+    .bootstrapModule(AppModule)
+    .catch((err) => console.log(err));

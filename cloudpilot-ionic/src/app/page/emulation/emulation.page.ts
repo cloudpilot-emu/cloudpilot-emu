@@ -2,6 +2,7 @@ import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewCh
 import { CanvasHelper, HEIGHT, WIDTH } from './helper/CanvasHelper';
 import { FileDescriptor, FileService } from 'src/app/service/file.service';
 import { LoadingController, PopoverController } from '@ionic/angular';
+import { getStoredSession, hasStoredSession } from 'src/app/helper/storedSession';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { ContextMenuComponent } from './context-menu/context-menu.component';
@@ -9,6 +10,7 @@ import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
 import { EventHandler } from './helper/EventHandler';
 import { PalmButton } from '../../../../../src';
+import { StorageService } from './../../service/storage.service';
 
 @Component({
     selector: 'app-emulation',
@@ -19,6 +21,7 @@ export class EmulationPage implements AfterViewInit {
     constructor(
         public emulationService: EmulationService,
         public emulationState: EmulationStateService,
+        private storageService: StorageService,
         private popoverController: PopoverController,
         private alertService: AlertService,
         private fileService: FileService,
@@ -28,10 +31,8 @@ export class EmulationPage implements AfterViewInit {
 
     ngAfterViewInit(): void {
         const canvasElt = this.canvasRef.nativeElement;
-        this.canvasHelper = new CanvasHelper(canvasElt, this.emulationState);
+        this.canvasHelper = new CanvasHelper(canvasElt);
         this.eventHandler = new EventHandler(canvasElt, this.emulationService, this.canvasHelper);
-
-        this.canvasHelper.clear();
     }
 
     get canvasWidth(): number {
@@ -59,7 +60,13 @@ export class EmulationPage implements AfterViewInit {
     }
 
     async ionViewDidEnter(): Promise<void> {
-        await this.canvasHelper.clear();
+        let session = this.emulationState.getCurrentSession();
+        const storedSession = getStoredSession();
+
+        if (!session && storedSession !== undefined) {
+            session = await this.storageService.getSession(storedSession);
+        }
+        await this.canvasHelper.clear(session);
         this.onNewFrame(this.emulationService.getCanvas());
 
         this.emulationService.newFrame.addHandler(this.onNewFrame);

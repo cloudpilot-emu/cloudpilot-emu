@@ -1,5 +1,6 @@
 import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
 import { Injectable, NgZone } from '@angular/core';
+import { clearStoredSession, getStoredSession, hasStoredSession, setStoredSession } from '../helper/storedSession';
 
 import { DeviceId } from '../model/DeviceId';
 import { EmulationStateService } from './emulation-state.service';
@@ -64,6 +65,11 @@ export class EmulationService {
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
         errorService.fatalErrorEvent.addHandler(this.pause);
         this.cloudpilot.then((instance) => instance.fatalErrorEvent.addHandler(this.errorService.fatalInNativeCode));
+
+        const storedSession = getStoredSession();
+        if (storedSession !== undefined) {
+            this.switchSession(storedSession);
+        }
     }
 
     switchSession = (id: number): Promise<void> =>
@@ -111,6 +117,7 @@ export class EmulationService {
                 }
 
                 this.clearCanvas();
+                setStoredSession(id);
 
                 await this.snapshotService.initialize(session, await this.cloudpilot);
             } finally {
@@ -213,7 +220,11 @@ export class EmulationService {
 
             this.emulationState.setCurrentSession(await this.storageService.getSession(sessionId));
 
-            if (!this.emulationState.getCurrentSession()) await this.stopLoop();
+            if (!this.emulationState.getCurrentSession()) {
+                clearStoredSession();
+
+                this.stopLoop();
+            }
         });
 
     private stopLoop(): void {

@@ -2,6 +2,7 @@ import { Injectable, NgZone } from '@angular/core';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { Event } from 'microevent.ts';
+import { clearStoredSession } from '../helper/storedSession';
 
 @Injectable({
     providedIn: 'root',
@@ -38,6 +39,8 @@ export class ErrorService {
             if (this.fatalErrorTriggered) return;
             this.fatalErrorTriggered = true;
 
+            clearStoredSession();
+
             this.fatalErrorEvent.dispatch();
 
             this.alertService.fatalError(`You encountered a bug in cloudpilot:<br/><br/>${reason}.`);
@@ -47,6 +50,8 @@ export class ErrorService {
         this.ngZone.run(() => {
             if (this.fatalErrorTriggered) return;
             this.fatalErrorTriggered = true;
+
+            clearStoredSession();
 
             this.fatalErrorEvent.dispatch();
 

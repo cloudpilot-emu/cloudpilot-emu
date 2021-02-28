@@ -2,6 +2,7 @@ import { DeviceId } from 'src/app/model/DeviceId';
 import { EmulationStateService } from 'src/app/service/emulation-state.service';
 import { GRAYSCALE_PALETTE_HEX } from './../../../service/emulation.service';
 import { PalmButton } from '../../../../../../src';
+import { Session } from './../../../model/Session';
 
 const URL_SILKSCREEN_DEFAULT = 'assets/silkscreen-default.svg';
 const URL_SILKSCREEN_M515 = 'assets/silkscreen-m515.svg';
@@ -30,14 +31,15 @@ const IMAGE_SILKSCREEN_DEFAULT = loadImage(URL_SILKSCREEN_DEFAULT);
 const IMAGE_SILKSCREEN_M515 = loadImage(URL_SILKSCREEN_M515);
 
 export class CanvasHelper {
-    constructor(private canvas: HTMLCanvasElement, private emulationState: EmulationStateService) {
+    constructor(private canvas: HTMLCanvasElement) {
         const ctx = canvas.getContext('2d');
         if (!ctx) throw new Error('get a new browser');
 
         this.ctx = ctx;
     }
 
-    async clear(): Promise<void> {
+    async clear(session: Session | undefined): Promise<void> {
+        this.session = session;
         this.fillCanvasRect(0, 0, WIDTH, HEIGHT, this.backgroundColor());
 
         await this.drawSilkscreen();
@@ -117,7 +119,7 @@ export class CanvasHelper {
     }
 
     private silkscreenImage(): Promise<HTMLImageElement> {
-        switch (this.emulationState.getCurrentSession()?.device) {
+        switch (this.session?.device) {
             case DeviceId.m515:
                 return IMAGE_SILKSCREEN_M515;
 
@@ -127,7 +129,7 @@ export class CanvasHelper {
     }
 
     private backgroundColor(): string {
-        switch (this.emulationState.getCurrentSession()?.device) {
+        switch (this.session?.device) {
             case DeviceId.m515:
                 return BACKGROUND_COLOR_M515;
 
@@ -137,4 +139,5 @@ export class CanvasHelper {
     }
 
     private ctx: CanvasRenderingContext2D;
+    private session: Session | undefined;
 }

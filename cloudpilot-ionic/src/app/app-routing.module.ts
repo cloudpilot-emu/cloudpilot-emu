@@ -1,6 +1,13 @@
+import { HashLocationStrategy, LocationStrategy } from '@angular/common';
+import { Injectable, NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 
-import { NgModule } from '@angular/core';
+@Injectable()
+class ReplaceLocationStrategy extends HashLocationStrategy {
+    pushState(state: any, title: string, url: string, query: string): void {
+        this.replaceState(state, title, url, query);
+    }
+}
 
 const routes: Routes = [
     {
@@ -11,5 +18,6 @@ const routes: Routes = [
 @NgModule({
     imports: [RouterModule.forRoot(routes, { preloadingStrategy: PreloadAllModules, useHash: true })],
     exports: [RouterModule],
+    providers: [{ provide: LocationStrategy, useClass: ReplaceLocationStrategy }],
 })
 export class AppRoutingModule {}
