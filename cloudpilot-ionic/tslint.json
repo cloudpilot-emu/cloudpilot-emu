@@ -82,14 +82,7 @@
       "single"
     ],
     "semicolon": false,
-    "space-before-function-paren": {
-      "options": {
-        "anonymous": "never",
-        "asyncArrow": "always",
-        "constructor": "never",
-        "method": "never",
-        "named": "never"
-      }
+    "space-before-function-paren": false,
     },
     "typedef-whitespace": {
       "options": [

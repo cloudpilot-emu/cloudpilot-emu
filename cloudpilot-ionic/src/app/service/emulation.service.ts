@@ -63,6 +63,7 @@ export class EmulationService {
 
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
         errorService.fatalErrorEvent.addHandler(this.pause);
+        this.cloudpilot.then((instance) => instance.fatalErrorEvent.addHandler(this.errorService.fatalInNativeCode));
     }
 
     switchSession = (id: number): Promise<void> =>

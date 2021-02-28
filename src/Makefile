@@ -192,7 +192,7 @@ SOURCE_SDL_EMCC = $(SOURCE_SDL) sdl/EmscriptenApi.cpp emulator/assert_emscripten
 
 SOURCE_WEB = \
 	$(SOURCE_EMU) \
-	emulator/assert_native.cpp \
+	emulator/assert_emscripten.cpp \
 	web/main.cpp \
 	web/Cloudpilot.cpp \
 	web/RomInfo.cpp \

@@ -40,7 +40,17 @@ export class ErrorService {
 
             this.fatalErrorEvent.dispatch();
 
-            this.alertService.fatalError(`You encountered a bug in cloudpilot: ${reason}.`);
+            this.alertService.fatalError(`You encountered a bug in cloudpilot:<br/><br/>${reason}.`);
+        });
+
+    fatalInNativeCode = (e: Error) =>
+        this.ngZone.run(() => {
+            if (this.fatalErrorTriggered) return;
+            this.fatalErrorTriggered = true;
+
+            this.fatalErrorEvent.dispatch();
+
+            this.alertService.errorInNativeCode(e.message);
         });
 
     fatalErrorEvent = new Event<void>();

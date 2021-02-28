@@ -7,7 +7,7 @@
 import createModule, { Cloudpilot as CloudpilotNative, Module, PalmButton, VoidPtr } from '../../../../src';
 
 import { DeviceId } from '../model/DeviceId';
-import { ThisReceiver } from '@angular/compiler';
+import { Event } from 'microevent.ts';
 
 export { PalmButton } from '../../../../src';
 
@@ -31,6 +31,18 @@ export interface Frame {
 
 const SUPPORTED_DEVICES = [DeviceId.palmV, DeviceId.m515];
 
+function guard(): any {
+    return (target: any, propertyKey: string, desc: PropertyDescriptor) => {
+        const oldMethod = desc.value;
+
+        desc.value = function (this: any, p1: any, p2: any) {
+            return this.guard(() => oldMethod.call(this, p1, p2));
+        };
+
+        return desc;
+    };
+}
+
 export class Cloudpilot {
     private constructor(private module: Module) {
         this.cloudpilot = new module.Cloudpilot();
@@ -45,6 +57,11 @@ export class Cloudpilot {
         );
     }
 
+    destroy(): void {
+        this.module.destroy(this.cloudpilot);
+    }
+
+    @guard()
     getRomInfo(rom: Uint8Array): RomInfo | undefined {
         const buffer = this.copyIn(rom);
 
@@ -67,6 +84,7 @@ export class Cloudpilot {
         return romInfo;
     }
 
+    @guard()
     initializeSession(rom: Uint8Array, deviceType: string): boolean {
         const buffer = this.copyIn(rom);
 
@@ -77,18 +95,17 @@ export class Cloudpilot {
         return result;
     }
 
-    destroy(): void {
-        this.module.destroy(this.cloudpilot);
-    }
-
+    @guard()
     cyclesPerSecond(): number {
         return this.cloudpilot.GetCyclesPerSecond();
     }
 
+    @guard()
     runEmulation(cycles: number): number {
         return this.cloudpilot.RunEmulation(cycles);
     }
 
+    @guard()
     getFrame(): Frame {
         const nativeFrame = this.cloudpilot.CopyFrame();
 
@@ -104,54 +121,67 @@ export class Cloudpilot {
         };
     }
 
+    @guard()
     isScreenDirty(): boolean {
         return this.cloudpilot.IsScreenDirty();
     }
 
+    @guard()
     markScreenClean(): void {
         this.cloudpilot.MarkScreenClean();
     }
 
+    @guard()
     minRamForDevice(id: DeviceId): number {
         return this.cloudpilot.MinMemoryForDevice(id) * 1024;
     }
 
+    @guard()
     queuePenMove(x: number, y: number): void {
         this.cloudpilot.QueuePenMove(x, y);
     }
 
+    @guard()
     queuePenUp(): void {
         this.cloudpilot.QueuePenUp();
     }
 
+    @guard()
     queueButtonDown(button: PalmButton): void {
         this.cloudpilot.QueueButtonDown(button);
     }
 
+    @guard()
     queueButtonUp(button: PalmButton): void {
         this.cloudpilot.QueueButtonUp(button);
     }
 
+    @guard()
     isPowerOff(): boolean {
         return !!this.cloudpilot.IsPowerOff();
     }
 
+    @guard()
     isUiInitialized(): boolean {
         return !!this.cloudpilot.IsUIInitialized();
     }
 
+    @guard()
     reset(): void {
         this.cloudpilot.Reset();
     }
 
+    @guard()
     resetNoExtensions(): void {
         this.cloudpilot.ResetNoExtensions();
     }
 
+    @guard()
     resetHard(): void {
         this.cloudpilot.ResetHard();
     }
 
+    @guard()
     installFile(data: Uint8Array): number {
         const buffer = this.copyIn(data);
 
@@ -162,16 +192,19 @@ export class Cloudpilot {
         return result;
     }
 
+    @guard()
     getPalette2bitMapping(): number {
         return this.cloudpilot.GetPalette2bitMapping();
     }
 
+    @guard()
     getMemory(): Uint8Array {
         const ptr = this.module.getPointer(this.cloudpilot.GetMemoryPtr());
 
         return this.module.HEAPU8.subarray(ptr, ptr + this.cloudpilot.GetMemorySize());
     }
 
+    @guard()
     getDirtyPages(): Uint8Array {
         const ptr = this.module.getPointer(this.cloudpilot.GetDirtyPagesPtr());
         const memorySize = this.cloudpilot.GetMemorySize();
@@ -179,16 +212,19 @@ export class Cloudpilot {
         return this.module.HEAPU8.subarray(ptr, ptr + (memorySize >>> 13));
     }
 
+    @guard()
     getSavestate(): Uint8Array {
         const ptr = this.module.getPointer(this.cloudpilot.GetSavestatePtr());
 
         return this.module.HEAPU8.subarray(ptr, ptr + this.cloudpilot.GetSavestateSize());
     }
 
+    @guard()
     saveState(): boolean {
         return !!this.cloudpilot.SaveState();
     }
 
+    @guard()
     loadState(state: Uint8Array): boolean {
         const ptr = this.copyIn(state);
 
@@ -208,5 +244,23 @@ export class Cloudpilot {
         return buffer;
     }
 
-    private readonly cloudpilot: CloudpilotNative;
+    private guard<T>(fn: () => T) {
+        if (this.amIdead) throw new Error('cloudpilot instance is dead');
+
+        try {
+            return fn();
+        } catch (e) {
+            this.amIdead = true;
+            this.cloudpilot = undefined as any;
+
+            this.fatalErrorEvent.dispatch(e instanceof Error ? e : new Error('unknown error'));
+
+            throw e;
+        }
+    }
+
+    fatalErrorEvent = new Event<Error>();
+
+    private cloudpilot: CloudpilotNative;
+    private amIdead = false;
 }

@@ -17,5 +17,9 @@ import { StorageService } from './service/storage.service';
     bootstrap: [AppComponent],
 })
 export class AppModule {
-    constructor(private pageLockService: PageLockService, private storageService: StorageService) {}
+    constructor(
+        private pageLockService: PageLockService,
+        private storageService: StorageService,
+        private emulationService: EmulationService
+    ) {}
 }

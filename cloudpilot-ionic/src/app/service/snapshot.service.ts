@@ -107,7 +107,10 @@ export class SnapshotService {
 
             const timeout = setTimeout(() => {
                 isTimeout = true;
-                tx.abort();
+
+                try {
+                    tx.abort();
+                } catch (e) {}
 
                 reject(E_TIMEOUT);
             }, TIMEOUT_MSEC);
@@ -131,6 +134,7 @@ export class SnapshotService {
             } catch (e) {
                 if (!isTimeout) {
                     clearTimeout(timeout);
+
                     tx.abort();
                 }
 

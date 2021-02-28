@@ -49,4 +49,23 @@ export class AlertService {
 
         await alert.present();
     }
+
+    async errorInNativeCode(reason: string) {
+        const haveCurrentSession = !!this.emulationState.getCurrentSession();
+
+        const alert = await this.alertController.create({
+            header: 'Error',
+            message: `
+                You encountered a bug in cloudpilot:
+                <br/><br/>
+                ${reason}.
+                <br/><br/>
+                Please close or reload this window.
+            `,
+            backdropDismiss: false,
+            buttons: [{ text: 'Reload', handler: () => window.location.reload() }],
+        });
+
+        await alert.present();
+    }
 }
