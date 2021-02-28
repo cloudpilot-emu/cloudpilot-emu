@@ -106,6 +106,7 @@ export class SessionsPage {
         return new Promise(async (resolve) => {
             const alert = await this.alertController.create({
                 header: 'Session Name',
+                backdropDismiss: false,
                 inputs: [
                     {
                         type: 'textarea',
