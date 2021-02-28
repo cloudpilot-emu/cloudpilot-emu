@@ -111,7 +111,7 @@ export class EmulationPage implements AfterViewInit {
     }
 
     get title(): string {
-        return this.emulationState.getCurrentSession()?.name || 'Emulation';
+        return this.emulationState.getCurrentSession()?.name || '';
     }
 
     private onNewFrame = (canvas: HTMLCanvasElement): void => {
