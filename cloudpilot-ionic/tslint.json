@@ -83,7 +83,7 @@
     ],
     "semicolon": false,
     "space-before-function-paren": false,
-    },
+
     "typedef-whitespace": {
       "options": [
         {
