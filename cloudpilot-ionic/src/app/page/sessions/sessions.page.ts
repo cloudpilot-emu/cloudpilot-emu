@@ -8,6 +8,7 @@ import { EmulationStateService } from './../../service/emulation-state.service';
 import { Router } from '@angular/router';
 import { Session } from 'src/app/model/Session';
 import { SessionService } from 'src/app/service/session.service';
+import { deserializeSessionImage } from 'src/app/helper/sessionFile';
 
 @Component({
     selector: 'app-sessions',
@@ -54,6 +55,10 @@ export class SessionsPage {
         this.fileService.openFile(this.processFile.bind(this));
     }
 
+    saveSession(session: Session): void {
+        this.fileService.saveSession(session);
+    }
+
     async launchSession(session: Session) {
         this.currentSessionOverride = session.id;
 
@@ -75,10 +80,10 @@ export class SessionsPage {
             return;
         }
 
-        const sessionImage = this.fileService.parseSessionImage(file.content);
+        const sessionImage = deserializeSessionImage(file.content);
 
         if (sessionImage) {
-            const name = await this.queryName(file.name);
+            const name = await this.queryName(this.disambiguateSessionName(sessionImage.metadata?.name ?? file.name));
 
             if (name !== undefined) this.sessionService.addSessionFromImage(sessionImage, name);
         } else {
@@ -94,7 +99,7 @@ export class SessionsPage {
                 return;
             }
 
-            const name = await this.queryName(file.name);
+            const name = await this.queryName(this.disambiguateSessionName(file.name));
 
             if (name !== undefined) {
                 this.sessionService.addSessionFromRom(file.content, name, romInfo.supportedDevices[0]);
@@ -127,6 +132,18 @@ export class SessionsPage {
 
             alert.present();
         });
+    }
+
+    private disambiguateSessionName(originalName: string) {
+        const sessions = this.sessionService.getSessions();
+        let name = originalName;
+
+        let i = 1;
+        while (sessions.some((s) => s.name === name)) {
+            name = `${originalName} (${i++})`;
+        }
+
+        return name;
     }
 
     private currentSessionOverride: number | undefined;

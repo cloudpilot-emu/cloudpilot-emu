@@ -131,7 +131,7 @@ export class StorageService {
         this.sessionChangeEvent.dispatch(session.id);
     }
 
-    async loadSession(session: Session): Promise<[Uint8Array, Uint8Array | undefined, Uint8Array | undefined]> {
+    async loadSession(session: Session): Promise<[Uint8Array | undefined, Uint8Array, Uint8Array | undefined]> {
         const tx = await this.newTransaction(OBJECT_STORE_ROM, OBJECT_STORE_STATE, OBJECT_STORE_MEMORY);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
 

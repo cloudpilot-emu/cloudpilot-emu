@@ -1,42 +1,36 @@
-// tslint:disable: no-bitwise
+import { metadataForSession, serializeSessionImage } from '../helper/sessionFile';
 
 import { Injectable } from '@angular/core';
-import { fileURLToPath } from 'url';
+import { Session } from './../model/Session';
+import { SessionImage } from './../model/SessionImage';
+import { StorageService } from './storage.service';
 
-const IMAGE_MAGIC = 0x20150103 | 0;
-const IMAGE_VERSION = 0x00000001 | 0;
-const IMAGE_VERSION_MASK = 0x80000000 | 0;
-
-export interface SessionMetadata {}
+// tslint:disable: no-bitwise
 
 export interface FileDescriptor {
     name: string;
     content: Uint8Array;
 }
 
-export interface SessionImage {
-    metadata?: SessionMetadata;
-    deviceId: string;
-    rom: Uint8Array;
-    memory: Uint8Array;
-    savestate?: Uint8Array;
-}
+function fileNameForSession(session: Session): string {
+    const now = new Date();
 
-function write32LE(value: number, target: Uint8Array, i: number): void {
-    target[i] = value & 0xff;
-    target[i + 1] = (value >>> 8) & 0xff;
-    target[i + 2] = (value >>> 16) & 0xff;
-    target[i + 3] = (value >>> 24) & 0xff;
-}
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const hour = now.getHours().toString().padStart(2, '0');
+    const minute = now.getMinutes().toString().padStart(2, '0');
+    const second = now.getSeconds().toString().padStart(2, '0');
 
-function read32LE(target: Uint8Array, i: number): number {
-    return target[i] | (target[i + 1] << 8) | (target[i + 2] << 16) | (target[i + 3] << 24);
+    return `${session.name}_${year}${month}${day}-${hour}${minute}${second}.bin`;
 }
 
 @Injectable({
     providedIn: 'root',
 })
 export class FileService {
+    constructor(private storageService: StorageService) {}
+
     openFile(handler: (file: FileDescriptor) => void): void {
         return this.openFilesImpl(false, (files) => {
             if (files.length > 0) handler(files[0]);
@@ -47,58 +41,32 @@ export class FileService {
         return this.openFilesImpl(true, handler);
     }
 
-    parseSessionImage(buffer: Uint8Array): SessionImage | undefined {
-        if (buffer.length < 16) return undefined;
-        if (read32LE(buffer, 0) !== IMAGE_MAGIC) return undefined;
-        if ((read32LE(buffer, 4) & IMAGE_VERSION_MASK) === 0) return this.parseSessionImageLegacy(buffer);
-        if (read32LE(buffer, 4) !== (IMAGE_VERSION | IMAGE_VERSION_MASK)) return undefined;
-        if (buffer.length < 28) return undefined;
+    async saveSession(session: Session): Promise<void> {
+        const [rom, memory, savestate] = await this.storageService.loadSession(session);
 
-        const deviceIdSize = read32LE(buffer, 8);
-        const metadataSize = read32LE(buffer, 12);
-        const romSize = read32LE(buffer, 16);
-        const memorySize = read32LE(buffer, 20);
-        const savestateSize = read32LE(buffer, 24);
-
-        if (28 + deviceIdSize + metadataSize + romSize + memorySize + savestateSize !== buffer.length) return undefined;
-
-        let metadata: SessionMetadata | undefined;
-        try {
-            metadata = JSON.parse(
-                new TextDecoder().decode(buffer.subarray(28 + deviceIdSize, 28 + deviceIdSize + metadataSize))
-            );
-        } catch (e) {
-            console.warn('metadata is not valid JSON');
+        if (!rom) {
+            throw new Error(`invalid ROM ${session.rom}`);
         }
 
-        return {
-            metadata,
-            deviceId: new TextDecoder().decode(buffer.subarray(28, 28 + deviceIdSize)),
-            rom: buffer.subarray(28 + deviceIdSize + metadataSize, 28 + deviceIdSize + metadataSize + romSize),
-            memory: buffer.subarray(
-                28 + deviceIdSize + metadataSize + romSize,
-                28 + deviceIdSize + metadataSize + romSize + memorySize
-            ),
-            savestate:
-                savestateSize > 0
-                    ? buffer.subarray(28 + deviceIdSize + metadataSize + romSize + memorySize)
-                    : undefined,
+        const sessionImage: SessionImage = {
+            deviceId: session.device,
+            metadata: metadataForSession(session),
+            rom,
+            memory,
+            savestate,
         };
+
+        this.saveFile(fileNameForSession(session), serializeSessionImage(sessionImage));
     }
 
-    private parseSessionImageLegacy(buffer: Uint8Array): SessionImage | undefined {
-        const romNameSize = read32LE(buffer, 4);
-        const romSize = read32LE(buffer, 8);
-        const memorySize = read32LE(buffer, 12);
+    saveFile(name: string, content: Uint8Array): void {
+        const file = new Blob([content], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(file);
 
-        if (romNameSize + romSize + memorySize + 16 !== buffer.length) return undefined;
-
-        return {
-            deviceId: 'PalmV',
-            rom: buffer.subarray(16 + romNameSize, 16 + romNameSize + romSize),
-            memory: buffer.subarray(16 + romNameSize + romSize),
-            savestate: new Uint8Array(0),
-        };
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        a.click();
     }
 
     private openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): void {

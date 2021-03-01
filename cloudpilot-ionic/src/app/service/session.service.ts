@@ -1,9 +1,11 @@
+import {} from './file.service';
+
 import { DeviceId } from './../model/DeviceId';
 import { EmulationService } from './emulation.service';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Session } from '../model/Session';
-import { SessionImage } from './file.service';
+import { SessionImage } from '../model/SessionImage';
 import { StorageService } from './storage.service';
 
 @Injectable({
