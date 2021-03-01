@@ -206,10 +206,9 @@ export class EventHandler {
         // * 0 .. 159   : LCD
         // * 160        : separator
         // * 161 .. 220 : silkscreen
-        // * 221        : separator
-        // * 222 .. 251 : buttons
+        // * 221 .. 250 : buttons
         //
-        // we map this to 160x250 lines by mapping the separators to silkscreen and button area
+        // we map this to 160x250 lines by mapping the separator to the silkscreen
 
         if (y >= 161) y -= 1;
 
