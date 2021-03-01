@@ -66,7 +66,7 @@ export class EmulationPage implements AfterViewInit {
         if (!session && storedSession !== undefined) {
             session = await this.storageService.getSession(storedSession);
         }
-        await this.canvasHelper.clear(session);
+        this.canvasHelper.clear(session);
         this.onNewFrame(this.emulationService.getCanvas());
 
         this.emulationService.newFrame.addHandler(this.onNewFrame);

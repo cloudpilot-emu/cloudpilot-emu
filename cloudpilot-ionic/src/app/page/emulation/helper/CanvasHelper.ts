@@ -6,15 +6,18 @@ import { Session } from './../../../model/Session';
 
 const URL_SILKSCREEN_DEFAULT = 'assets/silkscreen-default.svg';
 const URL_SILKSCREEN_M515 = 'assets/silkscreen-m515.svg';
+const URL_BUTTONS_DEFAULT = 'assets/hard-buttons-default.svg';
+const URL_BUTTONS_M515 = 'assets/hard-buttons-m515.svg';
+
 const BACKGROUND_COLOR_SILKSCREEN = GRAYSCALE_PALETTE_HEX[2];
 const BACKGROUND_COLOR_DEFAULT = GRAYSCALE_PALETTE_HEX[0];
 const BACKGROUND_COLOR_M515 = 'white';
-const BACKGROUND_ACTIVE_BUTTON = GRAYSCALE_PALETTE_HEX[6];
+const BACKGROUND_ACTIVE_BUTTON = 'rgba(0,0,0,0.2)';
 
 export const SCALE = 3 * devicePixelRatio;
 export const BORDER = Math.round(1 * SCALE);
 export const WIDTH = SCALE * 160 + 2 * BORDER;
-export const HEIGHT = SCALE * 252 + 2 * BORDER;
+export const HEIGHT = SCALE * 251 + 2 * BORDER;
 
 function loadImage(url: string): Promise<HTMLImageElement> {
     return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -27,8 +30,23 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     });
 }
 
+async function prerenderButtons(url: string): Promise<HTMLCanvasElement> {
+    const canvas = document.createElement('canvas');
+    canvas.width = 160 * SCALE;
+    canvas.height = 30 * SCALE;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('get a new browser');
+
+    ctx.drawImage(await loadImage(url), 0, 0, SCALE * 160, SCALE * 30);
+
+    return canvas;
+}
+
 const IMAGE_SILKSCREEN_DEFAULT = loadImage(URL_SILKSCREEN_DEFAULT);
 const IMAGE_SILKSCREEN_M515 = loadImage(URL_SILKSCREEN_M515);
+const IMAGE_BUTTONS_DEFAULT = prerenderButtons(URL_BUTTONS_DEFAULT);
+const IMAGE_BUTTONS_M515 = prerenderButtons(URL_BUTTONS_M515);
 
 export class CanvasHelper {
     constructor(private canvas: HTMLCanvasElement) {
@@ -43,8 +61,7 @@ export class CanvasHelper {
         this.fillCanvasRect(0, 0, WIDTH, HEIGHT, this.backgroundColor());
 
         await this.drawSilkscreen();
-
-        this.drawButtons();
+        await this.drawButtons();
     }
 
     async drawSilkscreen(): Promise<void> {
@@ -58,38 +75,15 @@ export class CanvasHelper {
         this.ctx.drawImage(image, BORDER, BORDER + 161 * SCALE, 160 * SCALE, 60 * SCALE);
     }
 
-    drawButtons(activeButtons: Array<PalmButton> = []): void {
-        this.fillRect(0, 222, 160, 30, this.backgroundColor());
+    async drawButtons(activeButtons: Array<PalmButton> = []): Promise<void> {
+        this.ctx.drawImage(await this.buttonsImage(), BORDER, BORDER + 221 * SCALE, 160 * SCALE, 30 * SCALE);
 
-        if (activeButtons.includes(PalmButton.cal)) this.fillRect(0, 222, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.phone)) this.fillRect(30, 222, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.todo)) this.fillRect(100, 222, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.notes)) this.fillRect(130, 222, 30, 30, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.up)) this.fillRect(60, 222, 40, 15, BACKGROUND_ACTIVE_BUTTON);
-        if (activeButtons.includes(PalmButton.down)) this.fillRect(60, 237, 40, 15, BACKGROUND_ACTIVE_BUTTON);
-
-        this.ctx.beginPath();
-        this.ctx.lineWidth = Math.round(0.5 * SCALE);
-        this.ctx.strokeStyle = BACKGROUND_ACTIVE_BUTTON;
-        [
-            [30, 222, 30, 252],
-            [60, 222, 60, 252],
-            [130, 222, 130, 252],
-            [100, 222, 100, 252],
-            [60, 237, 100, 237],
-        ].forEach(([x0, y0, x1, y1]) => {
-            this.ctx.moveTo(BORDER + SCALE * x0, BORDER + SCALE * y0);
-            this.ctx.lineTo(BORDER + SCALE * x1, BORDER + SCALE * y1);
-        });
-        this.ctx.stroke();
-
-        this.ctx.font = `${10 * SCALE}px sans`;
-        this.ctx.fillStyle = 'black';
-
-        this.textCenteredAt(15, 237, 'D');
-        this.textCenteredAt(45, 237, 'P');
-        this.textCenteredAt(115, 237, 'T');
-        this.textCenteredAt(145, 237, 'N');
+        if (activeButtons.includes(PalmButton.cal)) this.fillRect(0, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.phone)) this.fillRect(30, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.todo)) this.fillRect(100, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.notes)) this.fillRect(130, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.up)) this.fillRect(60, 221, 40, 15, BACKGROUND_ACTIVE_BUTTON);
+        if (activeButtons.includes(PalmButton.down)) this.fillRect(60, 236, 40, 15, BACKGROUND_ACTIVE_BUTTON);
     }
 
     drawEmulationCanvas(canvas: HTMLCanvasElement): void {
@@ -125,6 +119,16 @@ export class CanvasHelper {
 
             default:
                 return IMAGE_SILKSCREEN_DEFAULT;
+        }
+    }
+
+    private buttonsImage(): Promise<HTMLCanvasElement> {
+        switch (this.session?.device) {
+            case DeviceId.m515:
+                return IMAGE_BUTTONS_M515;
+
+            default:
+                return IMAGE_BUTTONS_DEFAULT;
         }
     }
 

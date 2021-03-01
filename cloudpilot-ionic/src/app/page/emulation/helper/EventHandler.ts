@@ -211,8 +211,7 @@ export class EventHandler {
         //
         // we map this to 160x250 lines by mapping the separators to silkscreen and button area
 
-        if (y >= 222) y -= 2;
-        else if (y >= 161) y -= 1;
+        if (y >= 161) y -= 1;
 
         if (clip) {
             if (x < 0) x = 0;
