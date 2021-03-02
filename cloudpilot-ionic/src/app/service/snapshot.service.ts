@@ -9,7 +9,7 @@ import { PageLockService } from './page-lock.service';
 import { Session } from './../model/Session';
 import { compressPage } from './storage/util';
 
-const TIMEOUT_MSEC = 1000;
+const TIMEOUT_MSEC = 5000;
 const MAX_CONSECUTIVE_ERRORS = 3;
 
 const E_TIMEOUT = new Error('transaction timeout');
