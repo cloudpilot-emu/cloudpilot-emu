@@ -74,7 +74,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual void PortDataChanged(int, uint8, uint8);
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) = 0;
 
-    virtual uint32 CyclesToNextInterrupt();
+    virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
 
    private:
     uint32 pllFreqSelRead(emuptr address, int size);
@@ -136,8 +136,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
 
    private:
     void UpdateTimerTicksPerSecond();
-    uint32 Tmr1CyclesToNextInterrupt();
-    uint32 Tmr2CyclesToNextInterrupt();
+    uint32 Tmr1CyclesToNextInterrupt(uint64 systemCycles);
+    uint32 Tmr2CyclesToNextInterrupt(uint64 systemCycles);
 
     template <typename T>
     void DoSave(T& savestate);

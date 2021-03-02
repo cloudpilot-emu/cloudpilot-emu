@@ -2828,7 +2828,7 @@ int EmRegsVZ::GetPort(emuptr address) {
     return 0;
 }
 
-uint32 EmRegsVZ::Tmr1CyclesToNextInterrupt() {
+uint32 EmRegsVZ::Tmr1CyclesToNextInterrupt(uint64 systemCycles) {
     if (!(READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) || timer1TicksPerSecond <= 0)
         return 0xffffffff;
 
@@ -2840,12 +2840,14 @@ uint32 EmRegsVZ::Tmr1CyclesToNextInterrupt() {
 
     uint32 cycles = ceil((double)delta / timer1TicksPerSecond * clocksPerSecond);
 
-    while ((uint32)((double)cycles / clocksPerSecond * timer1TicksPerSecond) < delta) cycles++;
+    while ((uint32)(((double)(cycles + systemCycles) - tmr1LastProcessedSystemCycles) /
+                    clocksPerSecond * timer1TicksPerSecond) < delta)
+        cycles++;
 
     return cycles;
 }
 
-uint32 EmRegsVZ::Tmr2CyclesToNextInterrupt() {
+uint32 EmRegsVZ::Tmr2CyclesToNextInterrupt(uint64 systemCycles) {
     if (!(READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnable) || timer2TicksPerSecond <= 0)
         return 0xffffffff;
 
@@ -2857,11 +2859,13 @@ uint32 EmRegsVZ::Tmr2CyclesToNextInterrupt() {
 
     uint32 cycles = ceil((double)delta / timer2TicksPerSecond * clocksPerSecond);
 
-    while ((uint32)((double)cycles / clocksPerSecond * timer2TicksPerSecond) < delta) cycles++;
+    while ((uint32)(((double)(cycles + systemCycles) - tmr2LastProcessedSystemCycles) /
+                    clocksPerSecond * timer2TicksPerSecond) < delta)
+        cycles++;
 
     return cycles;
 }
 
-uint32 EmRegsVZ::CyclesToNextInterrupt() {
-    return min(Tmr1CyclesToNextInterrupt(), Tmr2CyclesToNextInterrupt());
+uint32 EmRegsVZ::CyclesToNextInterrupt(uint64 systemCycles) {
+    return min(Tmr1CyclesToNextInterrupt(systemCycles), Tmr2CyclesToNextInterrupt(systemCycles));
 }

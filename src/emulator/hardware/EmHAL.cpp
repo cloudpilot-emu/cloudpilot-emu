@@ -495,9 +495,9 @@ uint16 EmHAL::GetLEDState(void) {
     return EmHAL::GetRootHandler()->GetLEDState();
 }
 
-uint32 EmHAL::CyclesToNextInterrupt() {
+uint32 EmHAL::CyclesToNextInterrupt(uint64 systemCycles) {
     EmAssert(EmHAL::GetRootHandler());
-    return EmHAL::GetRootHandler()->CyclesToNextInterrupt();
+    return EmHAL::GetRootHandler()->CyclesToNextInterrupt(systemCycles);
 }
 
 #pragma mark -
@@ -802,9 +802,9 @@ uint16 EmHALHandler::GetLEDState(void) {
     return this->GetNextHandler()->GetLEDState();
 }
 
-uint32 EmHALHandler::CyclesToNextInterrupt() {
+uint32 EmHALHandler::CyclesToNextInterrupt(uint64 systemCycles) {
     if (!this->GetNextHandler()) return 0;
 
     EmAssert(this->GetNextHandler());
-    return this->GetNextHandler()->CyclesToNextInterrupt();
+    return this->GetNextHandler()->CyclesToNextInterrupt(systemCycles);
 }

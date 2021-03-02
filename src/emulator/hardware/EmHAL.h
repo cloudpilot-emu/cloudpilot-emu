@@ -84,7 +84,7 @@ class EmHALHandler {
     virtual Bool GetVibrateOn(void);
     virtual uint16 GetLEDState(void);
 
-    virtual uint32 CyclesToNextInterrupt();
+    virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
 
    protected:
     EmHALHandler* GetNextHandler(void) { return fNextHandler; }
@@ -148,7 +148,7 @@ class EmHAL {
     static Bool GetVibrateOn(void);
     static uint16 GetLEDState(void);
 
-    static uint32 CyclesToNextInterrupt();
+    static uint32 CyclesToNextInterrupt(uint64 systemCycles);
 
     static EmEvent<> onSystemClockChange;
 

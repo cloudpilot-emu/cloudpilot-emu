@@ -2502,7 +2502,7 @@ int EmRegsEZ::GetPort(emuptr address) {
     return 0;
 }
 
-uint32 EmRegsEZ::CyclesToNextInterrupt() {
+uint32 EmRegsEZ::CyclesToNextInterrupt(uint64 systemCycles) {
     if (!(READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) || timerTicksPerSecond <= 0)
         return 0xffffffff;
 
@@ -2514,7 +2514,9 @@ uint32 EmRegsEZ::CyclesToNextInterrupt() {
 
     uint32 cycles = ceil((double)delta / timerTicksPerSecond * clocksPerSecond);
 
-    while ((uint32)((double)cycles / clocksPerSecond * timerTicksPerSecond) < delta) cycles++;
+    while ((uint32)(((double)(cycles + systemCycles) - lastProcessedSystemCycles) /
+                    clocksPerSecond * timerTicksPerSecond) < delta)
+        cycles++;
 
     return cycles;
 }
