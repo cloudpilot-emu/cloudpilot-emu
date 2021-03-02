@@ -684,7 +684,7 @@ TailpatchProc EmPatchMgr::RecoverFromTailpatch(emuptr startPC) {
  ***********************************************************************/
 
 CallROMType EmPatchMgr::CallHeadpatch(HeadpatchProc hp) {
-    EmValueChanger<bool>(executingPatch, true);
+    EmValueChanger<bool> trackExecution(executingPatch, true);
 
     CallROMType handled = kExecuteROM;
 
@@ -707,7 +707,7 @@ CallROMType EmPatchMgr::CallHeadpatch(HeadpatchProc hp) {
  ***********************************************************************/
 
 void EmPatchMgr::CallTailpatch(TailpatchProc tp) {
-    EmValueChanger<bool>(executingPatch, true);
+    EmValueChanger<bool> trackExecution(executingPatch, true);
 
     if (tp) tp();
 }
