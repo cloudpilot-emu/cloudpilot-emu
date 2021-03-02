@@ -84,6 +84,8 @@ class EmSession {
     bool WaitingForSyscall() const;
     void NotifySyscallDispatched();
 
+    void YieldMemoryMgr();
+
     void HandleInstructionBreak();
 
     bool HasPenEvent();
@@ -135,6 +137,7 @@ class EmSession {
     uint64 lastButtonEventReadAt{0};
 
     uint64 systemCycles{0};
+    uint32 extraCycles{0};
     uint32 clockDiv{2};
 
     uint32 clocksPerSecond;

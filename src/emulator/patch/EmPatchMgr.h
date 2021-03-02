@@ -55,6 +55,8 @@ class EmPatchMgr {
 
     static Bool IntlMgrAvailable(void);
 
+    static bool IsExecutingPatch();
+
    private:
     static void SetupForTailpatch(TailpatchProc tp, const SystemCallContext&);
     static TailpatchProc RecoverFromTailpatch(emuptr oldpc);

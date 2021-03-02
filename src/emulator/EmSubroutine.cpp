@@ -2069,6 +2069,8 @@ Err EmSubroutineCPU68K::PrepareStack(emuptr stackAddr) {
 // ---------------------------------------------------------------------------
 
 Err EmSubroutineCPU68K::Call(uint16 trapWord) {
+    gSession->YieldMemoryMgr();
+
     Err err = errNone;
 
     // Save the current state.

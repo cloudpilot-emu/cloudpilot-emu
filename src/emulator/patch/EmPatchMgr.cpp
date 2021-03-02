@@ -78,6 +78,8 @@ namespace {
 
         DoSaveLoad(helper, patch.fContext);
     }
+
+    bool executingPatch = false;
 }  // namespace
 
 EmPatchModule* EmPatchMgr::patchModuleSys = nullptr;
@@ -109,6 +111,8 @@ void EmPatchMgr::Initialize(void) {
         patchModuleHtal = new EmPatchModuleHtal();
     }
 
+    executingPatch = false;
+
 #if 0  // CSTODO
     EmSystemState::Initialize();
 #endif
@@ -137,6 +141,8 @@ void EmPatchMgr::Reset(void) {
     // Clear the installed lib patches (for "loaded" libraries)
     //
     gPatchedLibs.clear();
+
+    executingPatch = false;
 
 #if 0  // CSTODO
     EmSystemState::Reset();
@@ -202,6 +208,8 @@ void EmPatchMgr::Load(SavestateLoader& loader) {
     gPatchedLibs.clear();
     gInstalledTailpatches.clear();
     RemoveInstructionBreaks();
+
+    executingPatch = false;
 
     uint32 tailpatchCount = chunk->Get32();
     LoadChunkHelper helper(*chunk);
@@ -676,6 +684,8 @@ TailpatchProc EmPatchMgr::RecoverFromTailpatch(emuptr startPC) {
  ***********************************************************************/
 
 CallROMType EmPatchMgr::CallHeadpatch(HeadpatchProc hp) {
+    EmValueChanger<bool>(executingPatch, true);
+
     CallROMType handled = kExecuteROM;
 
     if (hp) handled = hp();
@@ -697,6 +707,8 @@ CallROMType EmPatchMgr::CallHeadpatch(HeadpatchProc hp) {
  ***********************************************************************/
 
 void EmPatchMgr::CallTailpatch(TailpatchProc tp) {
+    EmValueChanger<bool>(executingPatch, true);
+
     if (tp) tp();
 }
 
@@ -821,3 +833,5 @@ Bool EmPatchMgr::IntlMgrAvailable(void) {
 #endif
     return false;
 }
+
+bool EmPatchMgr::IsExecutingPatch() { return executingPatch; }

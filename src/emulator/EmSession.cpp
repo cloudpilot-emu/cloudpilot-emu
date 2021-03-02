@@ -26,6 +26,7 @@ namespace {
     constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
 
     constexpr uint32 RUN_TO_SYSCALL_LIMIT = 10000000;
+    constexpr uint32 YIELD_MEMMGR_LIMIT = 10000000;
     constexpr uint32 EXECUTE_SUBROUTINE_LIMIT = 50000000;
 
     EmSession _gSession;
@@ -53,6 +54,7 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     EmPalmOS::Initialize();
 
     systemCycles = 0;
+    extraCycles = 0;
     Reset(ResetType::soft);
 
     gSystemState.Reset();
@@ -84,6 +86,7 @@ void EmSession::Deinitialize() {
     subroutineReturn = false;
 
     systemCycles = 0;
+    extraCycles = 0;
     holdingBootKeys = false;
 
     romSize = 0;
@@ -187,6 +190,7 @@ void EmSession::Load(SavestateLoader& loader) {
     }
 
     nestLevel = 0;
+    extraCycles = 0;
     subroutineReturn = false;
     waitingForSyscall = false;
     syscallDispatched = false;
@@ -384,7 +388,11 @@ uint32 EmSession::RunEmulation(uint32 maxCycles) {
 
     if (maxCycles == 0) return 0;
 
-    uint64 cyclesBefore = systemCycles;
+    // ExtraCycles are cycles that have been executed between two calls to RunEmulation.
+    // They are already accounted for in systemCycles, but the main loop needs to
+    // take them into accout as well, so correct systemCycles back to the last value
+    // known to the main loop here.
+    uint64 cyclesBefore = systemCycles - extraCycles;
 
     PumpEvents();
 
@@ -393,6 +401,8 @@ uint32 EmSession::RunEmulation(uint32 maxCycles) {
 
     if (cpu->Stopped() && IsPowerOn())
         logging::printf("WARNING: CPU in stopped state after RunEmulation");
+
+    extraCycles = 0;
 
     return systemCycles - cyclesBefore;
 }
@@ -440,6 +450,27 @@ void EmSession::NotifySyscallDispatched() {
 }
 
 bool EmSession::WaitingForSyscall() const { return waitingForSyscall; }
+
+void EmSession::YieldMemoryMgr() {
+    EmAssert(gCPU);
+
+    UInt32 memSemaphoreIDP = EmLowMem_GetGlobal(memSemaphoreID);
+    EmAliascj_xsmb<PAS> memSemaphoreID(memSemaphoreIDP);
+
+    uint32 cycles = 0;
+
+    while (memSemaphoreID.xsmuse != 0) {
+        EmAssert(!EmPatchMgr::IsExecutingPatch());
+        EmAssert(cycles < YIELD_MEMMGR_LIMIT);
+
+        cycles += gCPU68K->Execute(0);
+    }
+
+    if (!IsNested()) {
+        extraCycles += cycles;
+        systemCycles += cycles;
+    }
+}
 
 void EmSession::HandleInstructionBreak() { EmPatchMgr::HandleInstructionBreak(); }
 

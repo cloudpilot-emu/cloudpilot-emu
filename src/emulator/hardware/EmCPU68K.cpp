@@ -276,7 +276,9 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
 
     EmValueChanger<uint32> resetCurrentCycles(fCurrentCycles, 0);
 
-    int counter = 0;
+    // Do not run cycleSlowly on each call if single stepping
+    int counter = maxCycles ? 0 : 1;
+
     uint32 cycles;
     cpuop_func** functable = cpufunctbl;
 
@@ -438,7 +440,8 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
     EmAssert(session);
     EmAssert(regs.intmask < 7);
 
-    int counter = 0;
+    // Do not run cycleSlowly on each call if single stepping
+    int counter = maxCycles ? 0 : 1;
 
     // While the CPU is stopped (because a STOP instruction was
     // executed) do some idle tasks.
