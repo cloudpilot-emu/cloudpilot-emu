@@ -1,5 +1,6 @@
 import { metadataForSession, serializeSessionImage } from '../helper/sessionFile';
 
+import { Cloudpilot } from '../helper/Cloudpilot';
 import { Injectable } from '@angular/core';
 import { Session } from './../model/Session';
 import { SessionImage } from './../model/SessionImage';
@@ -47,6 +48,22 @@ export class FileService {
         if (!rom) {
             throw new Error(`invalid ROM ${session.rom}`);
         }
+
+        const sessionImage: SessionImage = {
+            deviceId: session.device,
+            metadata: metadataForSession(session),
+            rom,
+            memory,
+            savestate,
+        };
+
+        this.saveFile(fileNameForSession(session), serializeSessionImage(sessionImage));
+    }
+
+    emergencySaveSession(session: Session, cloudpilot: Cloudpilot): void {
+        const rom = cloudpilot.getRomImage();
+        const memory = cloudpilot.getMemory();
+        const savestate = cloudpilot.saveState() ? cloudpilot.getSavestate() : undefined;
 
         const sessionImage: SessionImage = {
             deviceId: session.device,

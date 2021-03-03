@@ -36,6 +36,9 @@ interface Cloudpilot {
     VoidPtr GetDirtyPagesPtr();
     long GetMemorySize();
 
+    VoidPtr GetRomPtr();
+    long GetRomSize();
+
     VoidPtr GetSavestatePtr();
     long GetSavestateSize();
 

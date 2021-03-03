@@ -2,10 +2,12 @@ import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
 import { Injectable, NgZone } from '@angular/core';
 import { clearStoredSession, getStoredSession, hasStoredSession, setStoredSession } from '../helper/storedSession';
 
+import { AlertService } from 'src/app/service/alert.service';
 import { DeviceId } from '../model/DeviceId';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
+import { FileService } from 'src/app/service/file.service';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { PageLockService } from './page-lock.service';
@@ -48,7 +50,9 @@ export class EmulationService {
         private loadingController: LoadingController,
         private emulationState: EmulationStateService,
         private snapshotService: SnapshotService,
-        private errorService: ErrorService
+        private errorService: ErrorService,
+        private fileService: FileService,
+        private alertService: AlertService
     ) {
         this.canvas.width = 160;
         this.canvas.height = 160;
@@ -65,6 +69,7 @@ export class EmulationService {
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
         errorService.fatalErrorEvent.addHandler(this.pause);
         this.cloudpilot.then((instance) => instance.fatalErrorEvent.addHandler(this.errorService.fatalInNativeCode));
+        this.alertService.emergencySaveEvent.addHandler(this.onEmergencySave);
 
         const storedSession = getStoredSession();
         if (storedSession !== undefined) {
@@ -224,6 +229,15 @@ export class EmulationService {
                 clearStoredSession();
 
                 this.stopLoop();
+            }
+        });
+
+    private onEmergencySave = (): Promise<void> =>
+        this.mutex.runExclusive(async () => {
+            const session = this.emulationState.getCurrentSession();
+
+            if (session) {
+                this.fileService.emergencySaveSession(session, await this.cloudpilot);
             }
         });
 

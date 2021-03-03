@@ -1,6 +1,7 @@
 import { AlertController } from '@ionic/angular';
 import { EmulationService } from './emulation.service';
 import { EmulationStateService } from './emulation-state.service';
+import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
 
 @Injectable({
@@ -42,7 +43,17 @@ export class AlertService {
             `,
             backdropDismiss: false,
             buttons: [
-                ...(haveCurrentSession ? [{ text: 'Save image', handler: () => false }] : []),
+                ...(haveCurrentSession
+                    ? [
+                          {
+                              text: 'Save image',
+                              handler: () => {
+                                  this.emergencySaveEvent.dispatch();
+                                  return false;
+                              },
+                          },
+                      ]
+                    : []),
                 { text: 'Reload', handler: () => window.location.reload() },
             ],
         });
@@ -68,4 +79,6 @@ export class AlertService {
 
         await alert.present();
     }
+
+    emergencySaveEvent = new Event<void>();
 }

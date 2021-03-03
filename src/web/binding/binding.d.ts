@@ -60,6 +60,9 @@ export interface Cloudpilot {
     GetDirtyPagesPtr(): VoidPtr;
     GetMemorySize(): number;
 
+    GetRomPtr(): VoidPtr;
+    GetRomSize(): number;
+
     GetSavestatePtr(): VoidPtr;
     GetSavestateSize(): number;
 

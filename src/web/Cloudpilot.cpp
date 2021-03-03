@@ -145,6 +145,15 @@ void* Cloudpilot::GetDirtyPagesPtr() { return gSession->GetDirtyPagesPtr(); }
 
 int Cloudpilot::GetMemorySize() { return gSession->GetMemorySize(); }
 
+void* Cloudpilot::GetRomPtr() {
+    auto [romSize, romPtr] = gSession->GetRomImage();
+    return romPtr;
+}
+int Cloudpilot::GetRomSize() {
+    auto [romSize, romPtr] = gSession->GetRomImage();
+    return romSize;
+}
+
 void* Cloudpilot::GetSavestatePtr() { return gSession->GetSavestate().GetBuffer(); }
 
 int Cloudpilot::GetSavestateSize() { return gSession->GetSavestate().GetSize(); }

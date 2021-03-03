@@ -213,6 +213,13 @@ export class Cloudpilot {
     }
 
     @guard()
+    getRomImage(): Uint8Array {
+        const ptr = this.module.getPointer(this.cloudpilot.GetRomPtr());
+
+        return this.module.HEAPU8.subarray(ptr, ptr + this.cloudpilot.GetRomSize());
+    }
+
+    @guard()
     getSavestate(): Uint8Array {
         const ptr = this.module.getPointer(this.cloudpilot.GetSavestatePtr());
 

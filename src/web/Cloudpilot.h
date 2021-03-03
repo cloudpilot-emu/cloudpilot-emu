@@ -45,6 +45,9 @@ class Cloudpilot {
     void* GetDirtyPagesPtr();
     int GetMemorySize();
 
+    void* GetRomPtr();
+    int GetRomSize();
+
     void* GetSavestatePtr();
     int GetSavestateSize();
 
