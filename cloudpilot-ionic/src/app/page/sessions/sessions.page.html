@@ -20,7 +20,7 @@
   <ion-list>
     <app-session-item *ngFor="let session of sessions" [session]="session" (delete)="deleteSession(session)"
       (selectItem)="launchSession(session)" (edit)="editSession(session)" (save)="saveSession(session)"
-      [selected]="currentSessionId===session.id">
+      (reset)="resetSession(session)" [selected]="currentSessionId===session.id">
     </app-session-item>
   </ion-list>
 

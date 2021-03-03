@@ -8,6 +8,7 @@ import { EmulationStateService } from './../../service/emulation-state.service';
 import { Router } from '@angular/router';
 import { Session } from 'src/app/model/Session';
 import { SessionService } from 'src/app/service/session.service';
+import { StorageService } from './../../service/storage.service';
 import { deserializeSessionImage } from 'src/app/helper/sessionFile';
 
 @Component({
@@ -23,6 +24,7 @@ export class SessionsPage {
         private alertService: AlertService,
         public emulationService: EmulationService,
         public emulationState: EmulationStateService,
+        private storageService: StorageService,
         private router: Router
     ) {}
 
@@ -67,6 +69,24 @@ export class SessionsPage {
         this.currentSessionOverride = undefined;
 
         this.router.navigateByUrl('/tab/emulation');
+    }
+
+    async resetSession(session: Session) {
+        const running = session.id === this.emulationState.getCurrentSession()?.id;
+
+        if (running) await this.emulationService.stop();
+
+        await this.storageService.deleteStateForSession(session);
+
+        if (running) await this.emulationService.switchSession(session.id);
+
+        const alert = await this.alertController.create({
+            header: 'Done',
+            message: `State for session ${session.name} has been reset.`,
+            buttons: [{ text: 'Close', role: 'cancel' }],
+        });
+
+        await alert.present();
     }
 
     get currentSessionId(): number | undefined {

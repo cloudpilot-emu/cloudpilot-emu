@@ -48,6 +48,10 @@ export class SessionItemComponent {
                     popover.dismiss();
                     this.delete.emit();
                 },
+                onReset: () => {
+                    popover.dismiss();
+                    this.reset.emit();
+                },
             },
         });
 
@@ -62,6 +66,9 @@ export class SessionItemComponent {
 
     @Output()
     delete = new EventEmitter<Session>();
+
+    @Output()
+    reset = new EventEmitter<Session>();
 
     @Output()
     edit = new EventEmitter<Session>();

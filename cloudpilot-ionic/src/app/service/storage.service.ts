@@ -144,6 +144,15 @@ export class StorageService {
         ];
     }
 
+    async deleteStateForSession(session: Session): Promise<void> {
+        const tx = await this.newTransaction(OBJECT_STORE_STATE);
+        const objectStoreState = tx.objectStore(OBJECT_STORE_STATE);
+
+        await this.acquireLock(objectStoreState, -1);
+
+        await complete(objectStoreState.delete(session.id));
+    }
+
     getDb(): Promise<IDBDatabase> {
         return this.db;
     }

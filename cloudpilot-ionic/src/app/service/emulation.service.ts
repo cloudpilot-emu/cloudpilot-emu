@@ -1,6 +1,6 @@
 import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
 import { Injectable, NgZone } from '@angular/core';
-import { clearStoredSession, getStoredSession, hasStoredSession, setStoredSession } from '../helper/storedSession';
+import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { DeviceId } from '../model/DeviceId';
@@ -160,6 +160,15 @@ export class EmulationService {
                 await this.snapshotService.waitForPendingSnapshot();
                 await this.snapshotService.triggerSnapshot();
             }
+        });
+
+    stop = (): Promise<void> =>
+        this.mutex.runExclusive(async () => {
+            console.log('stop');
+
+            this.stopLoop();
+
+            this.emulationState.setCurrentSession(undefined);
         });
 
     handlePointerMove(x: number, y: number): void {

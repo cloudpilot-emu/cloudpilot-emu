@@ -11,6 +11,9 @@
   </ion-item-options>
 
   <ion-item-options side="end">
+    <ion-item-option color="tertiary" icon-only (click)="reset.emit(session)">
+      <ion-icon name="attach-outline"></ion-icon>
+    </ion-item-option>
 
     <ion-item-option color="danger" icon-only (click)="delete.emit(session)">
       <ion-icon name="trash-outline"></ion-icon>

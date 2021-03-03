@@ -15,6 +15,9 @@ export class ContextMenuComponent implements OnInit {
     @Input()
     public onDelete: () => void = () => undefined;
 
+    @Input()
+    public onReset: () => void = () => undefined;
+
     constructor() {}
 
     ngOnInit() {}
