@@ -110,6 +110,8 @@ class EmSession {
 
     void RecalculateClocksPerSecond();
 
+    void CheckDayForRollover();
+
    private:
     bool bankResetScheduled{false};
     bool resetScheduled{false};
@@ -139,6 +141,9 @@ class EmSession {
     uint64 systemCycles{0};
     uint32 extraCycles{0};
     uint32 clockDiv{2};
+
+    uint64 dayCheckedAt{0};
+    uint32 dayAtLastClockSync{0};
 
     uint32 clocksPerSecond;
 

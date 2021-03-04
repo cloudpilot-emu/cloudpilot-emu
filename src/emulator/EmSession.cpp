@@ -30,6 +30,14 @@ namespace {
     constexpr uint32 EXECUTE_SUBROUTINE_LIMIT = 50000000;
 
     EmSession _gSession;
+
+    uint32 CurrentDay() {
+        uint32 year, month, day;
+
+        Platform::GetDate(year, month, day);
+
+        return day;
+    }
 }  // namespace
 
 EmSession* gSession = &_gSession;
@@ -61,6 +69,9 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
 
     RecalculateClocksPerSecond();
 
+    dayCheckedAt = 0;
+    dayAtLastClockSync = CurrentDay();
+
     isInitialized = true;
     return true;
 }
@@ -88,6 +99,9 @@ void EmSession::Deinitialize() {
     systemCycles = 0;
     extraCycles = 0;
     holdingBootKeys = false;
+
+    dayCheckedAt = 0;
+    dayAtLastClockSync = 0;
 
     romSize = 0;
     romImage.reset();
@@ -211,6 +225,13 @@ void EmSession::Load(SavestateLoader& loader) {
     EmPatchMgr::Load(loader);
     gSystemState.Load(loader);
     Memory::Load(loader);
+
+    if (gSystemState.IsUIInitialized()) {
+        SetCurrentDate();
+    }
+
+    dayCheckedAt = systemCycles;
+    dayAtLastClockSync = CurrentDay();
 }
 
 bool EmSession::Save() { return savestate.Save(*this); }
@@ -222,10 +243,6 @@ bool EmSession::Load(size_t size, uint8* buffer) {
         Reset(ResetType::soft);
 
         return false;
-    }
-
-    if (gSystemState.IsUIInitialized()) {
-        SetCurrentDate();
     }
 
     return true;
@@ -402,6 +419,8 @@ uint32 EmSession::RunEmulation(uint32 maxCycles) {
     if (cpu->Stopped() && IsPowerOn())
         logging::printf("WARNING: CPU in stopped state after RunEmulation");
 
+    CheckDayForRollover();
+
     extraCycles = 0;
 
     return systemCycles - cyclesBefore;
@@ -453,6 +472,8 @@ bool EmSession::WaitingForSyscall() const { return waitingForSyscall; }
 
 void EmSession::YieldMemoryMgr() {
     EmAssert(gCPU);
+
+    CEnableFullAccess munge;
 
     UInt32 memSemaphoreIDP = EmLowMem_GetGlobal(memSemaphoreID);
     EmAliascj_xsmb<PAS> memSemaphoreID(memSemaphoreIDP);
@@ -588,4 +609,15 @@ void EmSession::SetClockDiv(uint32 clockDiv) { this->clockDiv = clockDiv; }
 
 void EmSession::RecalculateClocksPerSecond() {
     clocksPerSecond = EmHAL::GetSystemClockFrequency() / clockDiv;
+}
+
+void EmSession::CheckDayForRollover() {
+    if (gSystemState.IsUIInitialized() && systemCycles - dayCheckedAt > clocksPerSecond) {
+        uint32 currentDay = CurrentDay();
+
+        if (currentDay != dayAtLastClockSync) SetCurrentDate();
+
+        dayAtLastClockSync = currentDay;
+        dayCheckedAt = systemCycles;
+    }
 }
