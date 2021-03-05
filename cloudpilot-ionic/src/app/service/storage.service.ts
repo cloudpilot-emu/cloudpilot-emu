@@ -1,6 +1,7 @@
 import {
     DB_NAME,
     DB_VERSION,
+    OBJECT_STORE_KVS,
     OBJECT_STORE_MEMORY,
     OBJECT_STORE_ROM,
     OBJECT_STORE_SESSION,
@@ -16,6 +17,10 @@ import { Session } from 'src/app/model/Session';
 import md5 from 'md5';
 
 export const E_LOCK_LOST = new Error('page lock lost');
+
+export const enum keyKvs {
+    version = 'version',
+}
 
 @Injectable({
     providedIn: 'root',
@@ -63,23 +68,15 @@ export class StorageService {
     }
 
     async getAllSessions(): Promise<Array<Session>> {
-        const tx = await this.newTransaction(OBJECT_STORE_SESSION);
-        const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
+        const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
 
-        await this.acquireLock(objectStoreSession, -1);
-
-        const sessions = await complete(objectStoreSession.getAll());
-
-        return sessions;
+        return await complete(objectStore.getAll());
     }
 
     async getSession(id: number): Promise<Session | undefined> {
-        const tx = await this.newTransaction(OBJECT_STORE_SESSION);
-        const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
+        const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
 
-        await this.acquireLock(objectStoreSession, -1);
-
-        return await complete(objectStoreSession.get(id));
+        return await complete(objectStore.get(id));
     }
 
     async deleteSession(session: Session): Promise<void> {
@@ -112,19 +109,16 @@ export class StorageService {
     }
 
     async updateSession(session: Session): Promise<void> {
-        const tx = await this.newTransaction(OBJECT_STORE_SESSION);
-        const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
+        const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
 
-        await this.acquireLock(objectStoreSession, -1);
-
-        const persistentSession = await complete<Session>(objectStoreSession.get(session.id));
+        const persistentSession = await complete<Session>(objectStore.get(session.id));
 
         if (!persistentSession) throw new Error(`no session with id ${session.id}`);
         if (persistentSession.rom !== session.rom) throw new Error('attempt to change ROM reference');
         if (persistentSession.ram !== session.ram) throw new Error('attempt to change RAM size');
         if (persistentSession.device !== session.device) throw new Error('attempt to change device type');
 
-        objectStoreSession.put(session);
+        objectStore.put(session);
 
         await complete(tx);
 
@@ -145,12 +139,33 @@ export class StorageService {
     }
 
     async deleteStateForSession(session: Session): Promise<void> {
-        const tx = await this.newTransaction(OBJECT_STORE_STATE);
-        const objectStoreState = tx.objectStore(OBJECT_STORE_STATE);
+        const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_STATE);
 
-        await this.acquireLock(objectStoreState, -1);
+        objectStore.delete(session.id);
 
-        await complete(objectStoreState.delete(session.id));
+        await complete(tx);
+    }
+
+    async kvsGet<T>(key: keyKvs): Promise<T | undefined> {
+        const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_KVS);
+
+        return complete<T>(objectStore.get(key));
+    }
+
+    async kvsSet<T>(key: keyKvs, value: T): Promise<void> {
+        const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_KVS);
+
+        objectStore.put(value, key);
+
+        await complete(tx);
+    }
+
+    async kvsDelete(key: keyKvs): Promise<void> {
+        const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_KVS);
+
+        objectStore.delete(key);
+
+        await complete(tx);
     }
 
     getDb(): Promise<IDBDatabase> {
@@ -167,6 +182,15 @@ export class StorageService {
 
     async newTransaction(...stores: Array<string>): Promise<IDBTransaction> {
         return (await this.db).transaction(stores, 'readwrite');
+    }
+
+    async prepareObjectStore(name: string): Promise<[IDBObjectStore, IDBTransaction]> {
+        const tx = await this.newTransaction(name);
+        const objectStore = tx.objectStore(name);
+
+        await this.acquireLock(objectStore, -1);
+
+        return [objectStore, tx];
     }
 
     private saveState(tx: IDBTransaction, sessionId: number, state: Uint8Array | undefined): void {

@@ -13,6 +13,7 @@ export class AlertService {
     async errorMessage(message: string) {
         const alert = await this.alertController.create({
             header: 'Error',
+            backdropDismiss: false,
             message,
             buttons: [{ text: 'Close', role: 'cancel' }],
         });
@@ -24,6 +25,7 @@ export class AlertService {
         const alert = await this.alertController.create({
             header,
             message,
+            backdropDismiss: false,
             buttons: [{ text: 'Close', role: 'cancel' }],
         });
 

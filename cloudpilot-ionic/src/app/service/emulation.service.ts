@@ -73,8 +73,14 @@ export class EmulationService {
 
         const storedSession = getStoredSession();
         if (storedSession !== undefined) {
-            this.switchSession(storedSession);
+            this.bootstrapCompletePromise = this.switchSession(storedSession);
+        } else {
+            this.bootstrapCompletePromise = Promise.resolve();
         }
+    }
+
+    bootstrapComplete(): Promise<void> {
+        return this.bootstrapCompletePromise;
     }
 
     switchSession = (id: number): Promise<void> =>
@@ -403,6 +409,7 @@ export class EmulationService {
     newFrame = new Event<HTMLCanvasElement>();
 
     private cloudpilotInstance!: Cloudpilot;
+    private bootstrapCompletePromise: Promise<void>;
 
     private clockEmulator = 0;
     private animationFrameHandle = -1;
