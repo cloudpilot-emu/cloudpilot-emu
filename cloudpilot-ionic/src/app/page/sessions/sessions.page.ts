@@ -1,5 +1,6 @@
 import { AlertController, ModalController } from '@ionic/angular';
 import { FileDescriptor, FileService } from './../../service/file.service';
+import { SessionSettings, SessionSettingsComponent } from './settings/settings/settings.component';
 
 import { AlertService } from './../../service/alert.service';
 import { Component } from '@angular/core';
@@ -8,7 +9,6 @@ import { EmulationStateService } from './../../service/emulation-state.service';
 import { Router } from '@angular/router';
 import { Session } from './../../model/Session';
 import { SessionService } from 'src/app/service/session.service';
-import { SessionSettingsComponent } from './settings/settings/settings.component';
 import { StorageService } from './../../service/storage.service';
 import deepEqual from 'deep-equal';
 import { deserializeSessionImage } from 'src/app/helper/sessionFile';
@@ -50,18 +50,8 @@ export class SessionsPage {
 
     async editSession(session: Session): Promise<void> {
         const oldSession = { ...session };
-        const settingsModal = await this.modalController.create({
-            component: SessionSettingsComponent,
-            backdropDismiss: false,
-            componentProps: {
-                session,
-            },
-        });
 
-        await settingsModal.present();
-        await settingsModal.onDidDismiss();
-
-        if (!deepEqual(session, oldSession)) {
+        if ((await this.editSettings(session)) && !deepEqual(session, oldSession)) {
             this.sessionService.updateSession(session);
         }
     }
@@ -116,9 +106,14 @@ export class SessionsPage {
         const sessionImage = deserializeSessionImage(file.content);
 
         if (sessionImage) {
-            const name = await this.queryName(this.disambiguateSessionName(sessionImage.metadata?.name ?? file.name));
+            const settings: SessionSettings = {
+                name: this.disambiguateSessionName(sessionImage.metadata?.name ?? file.name),
+                hotsyncName: sessionImage.metadata?.hotsyncName,
+            };
 
-            if (name !== undefined) this.sessionService.addSessionFromImage(sessionImage, name);
+            if (await this.editSettings(settings)) {
+                this.sessionService.addSessionFromImage(sessionImage, settings.name, settings);
+            }
         } else {
             const romInfo = (await this.emulationService.cloudpilot).getRomInfo(file.content);
 
@@ -132,38 +127,43 @@ export class SessionsPage {
                 return;
             }
 
-            const name = await this.queryName(this.disambiguateSessionName(file.name));
+            const settings: SessionSettings = { name: this.disambiguateSessionName(file.name) };
 
-            if (name !== undefined) {
-                this.sessionService.addSessionFromRom(file.content, name, romInfo.supportedDevices[0]);
+            if (await this.editSettings(settings)) {
+                this.sessionService.addSessionFromRom(
+                    file.content,
+                    settings.name,
+                    romInfo.supportedDevices[0],
+                    settings
+                );
             }
         }
     }
 
-    private queryName(current?: string): Promise<string | undefined> {
-        return new Promise(async (resolve) => {
-            const alert = await this.alertController.create({
-                header: 'Session Name',
-                backdropDismiss: false,
-                inputs: [
-                    {
-                        type: 'textarea',
-                        name: 'name',
-                        placeholder: 'Session name',
-                        value: current,
-                        label: 'Name',
-                    },
-                ],
-                buttons: [
-                    { text: 'Cancel', role: 'cancel', handler: () => resolve(undefined) },
-                    {
-                        text: 'Continue',
-                        handler: (data) => resolve(data.name),
-                    },
-                ],
-            });
+    private editSettings(session: SessionSettings): Promise<boolean> {
+        return new Promise((resolve) => {
+            let modal: HTMLIonModalElement;
 
-            alert.present();
+            this.modalController
+                .create({
+                    component: SessionSettingsComponent,
+                    backdropDismiss: false,
+                    componentProps: {
+                        session,
+                        onSave: () => {
+                            modal.dismiss();
+                            resolve(true);
+                        },
+                        onCancel: () => {
+                            modal.dismiss();
+                            resolve(false);
+                        },
+                    },
+                })
+                .then((m) => {
+                    modal = m;
+                    modal.present();
+                });
         });
     }
 

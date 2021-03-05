@@ -22,8 +22,9 @@ export class SessionService {
         this.storageService.sessionChangeEvent.addHandler(this.updateSessionsFromStorage.bind(this));
     }
 
-    async addSessionFromImage(image: SessionImage, name: string) {
+    async addSessionFromImage(image: SessionImage, name: string, presets: Partial<Session> = {}) {
         const session: Session = {
+            ...presets,
             id: -1,
             name,
             device: image.deviceId as DeviceId,
@@ -41,8 +42,9 @@ export class SessionService {
         await loader.dismiss();
     }
 
-    async addSessionFromRom(rom: Uint8Array, name: string, device: DeviceId) {
+    async addSessionFromRom(rom: Uint8Array, name: string, device: DeviceId, presets: Partial<Session> = {}) {
         const session: Session = {
+            ...presets,
             id: -1,
             name,
             device,

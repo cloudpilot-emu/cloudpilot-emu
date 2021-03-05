@@ -1,8 +1,14 @@
-import { AbstractControl, FormControl, FormGroup, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
 
 import { ModalController } from '@ionic/angular';
 import { Session } from './../../../../model/Session';
+import { SessionService } from './../../../../service/session.service';
+
+export interface SessionSettings {
+    name: string;
+    hotsyncName?: string;
+}
 
 @Component({
     selector: 'app-session-settings',
@@ -10,17 +16,15 @@ import { Session } from './../../../../model/Session';
     styleUrls: ['./settings.component.scss'],
 })
 export class SessionSettingsComponent implements OnInit {
-    constructor(public modalControler: ModalController) {}
-
-    ngOnInit() {
-        this.createFormGroup();
-    }
+    constructor(private sessionService: SessionService) {}
 
     get formControlName(): AbstractControl {
+        // tslint:disable-next-line: no-non-null-assertion
         return this.formGroup.get('name')!;
     }
 
     get formControlHotsyncName(): AbstractControl {
+        // tslint:disable-next-line: no-non-null-assertion
         return this.formGroup.get('hotsyncName')!;
     }
 
@@ -28,6 +32,10 @@ export class SessionSettingsComponent implements OnInit {
         if (this.formControlHotsyncName.value) return this.formControlName.value;
 
         return this.session.hotsyncName === undefined ? 'use setting from device' : '';
+    }
+
+    ngOnInit() {
+        this.createFormGroup();
     }
 
     save(): void {
@@ -41,7 +49,7 @@ export class SessionSettingsComponent implements OnInit {
             this.session.hotsyncName = this.session.hotsyncName === undefined ? undefined : '';
         }
 
-        this.modalControler.dismiss();
+        this.onSave();
     }
 
     formKeyDown(e: KeyboardEvent): void {
@@ -51,14 +59,27 @@ export class SessionSettingsComponent implements OnInit {
     private createFormGroup() {
         this.formGroup = new FormGroup({
             name: new FormControl(this.session.name, {
-                validators: [Validators.required],
+                validators: [Validators.required, this.validateNameUnique],
             }),
             hotsyncName: new FormControl(this.session.hotsyncName || ''),
         });
     }
 
+    private validateNameUnique = (control: AbstractControl): ValidationErrors | null => {
+        return control.value !== this.session.name &&
+            this.sessionService.getSessions().some((s) => s.name === control.value)
+            ? { name: 'already taken' }
+            : null;
+    };
+
     @Input()
-    session!: Session;
+    onSave: () => void = () => undefined;
+
+    @Input()
+    onCancel: () => void = () => undefined;
+
+    @Input()
+    session!: SessionSettings;
 
     formGroup!: FormGroup;
 }
