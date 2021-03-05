@@ -43,11 +43,13 @@ export class SessionSettingsComponent implements OnInit {
 
         this.session.name = this.formControlName.value;
 
+        /*
         if (this.formControlHotsyncName.value) {
             this.session.hotsyncName = this.formControlHotsyncName.value;
         } else {
             this.session.hotsyncName = this.session.hotsyncName === undefined ? undefined : '';
         }
+        */
 
         this.onSave();
     }
