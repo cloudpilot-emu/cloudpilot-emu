@@ -6,7 +6,9 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng run app:build:production --base-href /cloudpilot/app/",
+    "build": "yarn run gen-revision && ng run app:build:production --base-href /cloudpilot/app/",
+    "build-local": "yarn run gen-revision && ng run app:build:production",
+    "gen-revision": "echo \"export const REVISION = '`git rev-parse --short HEAD`';\" > src/revision.gen.ts",
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e"

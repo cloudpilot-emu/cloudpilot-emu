@@ -52,6 +52,9 @@
                 {
                   "replace": "src/environments/environment.ts",
                   "with": "src/environments/environment.prod.ts"
+                }, {
+                  "replace": "src/revision.ts",
+                  "with": "src/revision.gen.ts"
                 }
               ],
               "optimization": true,
