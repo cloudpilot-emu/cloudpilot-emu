@@ -5,7 +5,7 @@ import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { IonicModule } from '@ionic/angular';
 import { NgModule } from '@angular/core';
 import { SessionItemComponent } from './session-item/session-item.component';
-import { SessionSettingsComponent } from './settings/settings/settings.component';
+import { SessionSettingsComponent } from './settings/settings.component';
 import { SessionsPage } from './sessions.page';
 import { SessionsPageRoutingModule } from './sessions-routing.module';
 

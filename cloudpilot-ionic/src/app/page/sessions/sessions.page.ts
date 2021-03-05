@@ -1,6 +1,6 @@
 import { AlertController, ModalController } from '@ionic/angular';
 import { FileDescriptor, FileService } from './../../service/file.service';
-import { SessionSettings, SessionSettingsComponent } from './settings/settings/settings.component';
+import { SessionSettings, SessionSettingsComponent } from './settings/settings.component';
 
 import { AlertService } from './../../service/alert.service';
 import { Component } from '@angular/core';

@@ -2,8 +2,8 @@ import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators }
 import { Component, Input, OnInit } from '@angular/core';
 
 import { ModalController } from '@ionic/angular';
-import { Session } from './../../../../model/Session';
-import { SessionService } from './../../../../service/session.service';
+import { Session } from '../../../model/Session';
+import { SessionService } from '../../../service/session.service';
 
 export interface SessionSettings {
     name: string;
