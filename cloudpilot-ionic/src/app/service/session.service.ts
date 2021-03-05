@@ -29,6 +29,7 @@ export class SessionService {
             device: image.deviceId as DeviceId,
             ram: image.memory.length / 1024 / 1024,
             rom: '',
+            osVersion: image?.metadata?.osVersion,
         };
 
         const loader = await this.loadingController.create({ message: 'Importing...' });

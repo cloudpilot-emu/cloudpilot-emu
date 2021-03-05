@@ -44,7 +44,9 @@ export function deserializeSessionImage(buffer: Uint8Array): SessionImage | unde
 }
 
 export function metadataForSession(session: Session): SessionMetadata {
-    return { name: session.name, hotsyncName: session.hotsyncName };
+    const { name, hotsyncName, osVersion } = session;
+
+    return { name, hotsyncName, osVersion };
 }
 
 export function serializeSessionImage(sessionImage: SessionImage): Uint8Array {
