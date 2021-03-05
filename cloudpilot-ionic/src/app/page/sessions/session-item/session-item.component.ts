@@ -1,8 +1,8 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { IonItemSliding, PopoverController } from '@ionic/angular';
 
 import { ContextMenuComponent } from './../context-menu/context-menu.component';
 import { DeviceId } from 'src/app/model/DeviceId';
-import { PopoverController } from '@ionic/angular';
 import { Session } from './../../../model/Session';
 import { decodeVersion } from 'src/app/model/OSVersion';
 
@@ -102,4 +102,7 @@ export class SessionItemComponent {
 
     @Output()
     interaction = new EventEmitter<Session>();
+
+    @ViewChild('slidingItem')
+    slidingItem!: IonItemSliding;
 }
