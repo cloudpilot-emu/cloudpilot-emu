@@ -5,6 +5,7 @@
     {
       "name": "app",
       "installMode": "prefetch",
+      "updateMode": "prefetch",
       "resources": {
         "files": [
           "/favicon.ico",
@@ -18,11 +19,22 @@
     },
     {
       "name": "assets",
-      "installMode": "lazy",
+      "installMode": "prefetch",
       "updateMode": "prefetch",
       "resources": {
         "files": [
-          "/svg/**",
+          "/svg/phone-portrait-outline.svg",
+          "/svg/albums-outline.svg",
+          "/svg/cog-outline.svg",
+          "/svg/power-outline.svg",
+          "/svg/download-outline.svg",
+          "/svg/ellipsis-vertical-outline.svg",
+          "/svg/add-outline.svg",
+          "/svg/chevron-back.svg",
+          "/svg/create-outline.svg",
+          "/svg/save-outline.svg",
+          "/svg/attach-outline.svg",
+          "/svg/trash-outline.svg",
           "/assets/**",
           "/*.(eot|svg|cur|jpg|png|webp|gif|otf|ttf|woff|woff2|ani)"
         ]
