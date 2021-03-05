@@ -59,7 +59,9 @@ export class SessionItemComponent {
         popover.present();
     }
 
-    decodeVersion(v: number): string {
+    decodeVersion(v: number | undefined): string {
+        if (v === undefined) return '';
+
         const version = decodeVersion(v);
 
         return `${version.major}.${version.minor}`;

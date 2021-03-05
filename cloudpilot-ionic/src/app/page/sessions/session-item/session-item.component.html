@@ -25,7 +25,7 @@
     <ion-label>
       <h2>{{session?.name}}</h2>
       <p>{{device}} {{session?.ram}}MB RAM<span *ngIf="session?.osVersion">, OS
-          {{decodeVersion(session.osVersion)}}</span>
+          {{decodeVersion(session?.osVersion)}}</span>
       </p>
     </ion-label>
   </ion-item>
