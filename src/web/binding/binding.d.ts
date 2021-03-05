@@ -49,6 +49,7 @@ export interface Cloudpilot {
 
     IsPowerOff(): boolean;
     IsUIInitialized(): boolean;
+    GetOSVersion(): number;
 
     Reset(): void;
     ResetNoExtensions(): void;

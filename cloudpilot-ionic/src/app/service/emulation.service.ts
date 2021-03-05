@@ -10,7 +10,7 @@ import { Event } from 'microevent.ts';
 import { FileService } from 'src/app/service/file.service';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
-import { PageLockService } from './page-lock.service';
+import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
 
@@ -302,6 +302,15 @@ export class EmulationService {
                 this.powerOff = poweroff;
                 this.uiInitialized = uiInitialized;
             });
+        }
+
+        const currentSession = this.emulationState.getCurrentSession();
+        if (uiInitialized && currentSession && currentSession.osVersion === undefined) {
+            const session: Session = { ...currentSession, osVersion: this.cloudpilotInstance.getOSVersion() };
+
+            this.emulationState.setCurrentSession(session);
+
+            this.storageService.updateSession(session);
         }
 
         if (timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL) {

@@ -4,6 +4,7 @@ import { ContextMenuComponent } from './../context-menu/context-menu.component';
 import { DeviceId } from 'src/app/model/DeviceId';
 import { PopoverController } from '@ionic/angular';
 import { Session } from './../../../model/Session';
+import { decodeVersion } from 'src/app/model/OSVersion';
 
 @Component({
     selector: 'app-session-item',
@@ -56,6 +57,12 @@ export class SessionItemComponent {
         });
 
         popover.present();
+    }
+
+    decodeVersion(v: number): string {
+        const version = decodeVersion(v);
+
+        return `${version.major}.${version.minor}`;
     }
 
     @Input()

@@ -25,6 +25,7 @@ interface Cloudpilot {
 
     boolean IsPowerOff();
     boolean IsUIInitialized();
+    long GetOSVersion();
 
     void Reset();
     void ResetNoExtensions();

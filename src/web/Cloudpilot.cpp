@@ -105,6 +105,8 @@ bool Cloudpilot::IsScreenDirty() { return gSystemState.IsScreenDirty(); }
 
 bool Cloudpilot::IsUIInitialized() { return gSystemState.IsUIInitialized(); }
 
+int Cloudpilot::GetOSVersion() { return gSystemState.OSVersion(); }
+
 void Cloudpilot::MarkScreenClean() { gSystemState.MarkScreenClean(); }
 
 long Cloudpilot::MinMemoryForDevice(string id) {

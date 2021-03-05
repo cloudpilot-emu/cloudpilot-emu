@@ -34,6 +34,7 @@ class Cloudpilot {
 
     bool IsPowerOff();
     bool IsUIInitialized();
+    int GetOSVersion();
 
     void Reset();
     void ResetNoExtensions();

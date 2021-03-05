@@ -172,6 +172,11 @@ export class Cloudpilot {
     }
 
     @guard()
+    getOSVersion(): number {
+        return this.cloudpilot.GetOSVersion();
+    }
+
+    @guard()
     reset(): void {
         this.cloudpilot.Reset();
     }

@@ -18,6 +18,8 @@ export class SessionService {
         private loadingController: LoadingController
     ) {
         this.updateSessionsFromStorage();
+
+        this.storageService.sessionChangeEvent.addHandler(this.updateSessionsFromStorage.bind(this));
     }
 
     async addSessionFromImage(image: SessionImage, name: string) {
@@ -62,14 +64,10 @@ export class SessionService {
 
     async deleteSession(session: Session): Promise<void> {
         await this.storageService.deleteSession(session);
-
-        this.updateSessionsFromStorage();
     }
 
     async updateSession(session: Session): Promise<void> {
         await this.storageService.updateSession(session);
-
-        this.updateSessionsFromStorage();
     }
 
     private async updateSessionsFromStorage(): Promise<void> {
