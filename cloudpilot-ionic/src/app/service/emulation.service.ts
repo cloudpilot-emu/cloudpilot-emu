@@ -138,8 +138,6 @@ export class EmulationService {
 
     resume = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            console.log('resume');
-
             if (!this.emulationState.getCurrentSession() || this.running || this.errorService.hasFatalError()) {
                 return;
             }
@@ -158,8 +156,6 @@ export class EmulationService {
 
     pause = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            console.log('pause');
-
             await this.stopLoop();
 
             if (!this.errorService.hasFatalError()) {
@@ -170,8 +166,6 @@ export class EmulationService {
 
     stop = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            console.log('stop');
-
             this.stopLoop();
 
             this.emulationState.setCurrentSession(undefined);
@@ -200,6 +194,10 @@ export class EmulationService {
 
     handleButtonUp(button: PalmButton): void {
         if (this.cloudpilotInstance) this.cloudpilotInstance.queueButtonUp(button);
+    }
+
+    handleKeyDown(key: number, ctrl = false) {
+        if (this.cloudpilotInstance) this.cloudpilotInstance.queueKeyboardEvent(key, ctrl);
     }
 
     reset(): void {

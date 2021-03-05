@@ -157,6 +157,11 @@ export class Cloudpilot {
     }
 
     @guard()
+    queueKeyboardEvent(char: number, ctrl: boolean): void {
+        this.cloudpilot.QueueKeyboardEvent(char, ctrl);
+    }
+
+    @guard()
     isPowerOff(): boolean {
         return !!this.cloudpilot.IsPowerOff();
     }

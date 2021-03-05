@@ -19,6 +19,36 @@ interface InteractionButton {
 
 type Interaction = InteractionSilkscreen | InteractionButton;
 
+function keyToCode(key: string): number | undefined {
+    if (key.length === 1 && key.charCodeAt(0) <= 255) return key.charCodeAt(0);
+
+    switch (key) {
+        case 'ArrowLeft':
+            return 0x1c;
+
+        case 'ArrowRight':
+            return 0x1d;
+
+        case 'ArrowUp':
+            return 0x1e;
+
+        case 'ArrowDown':
+            return 0x1f;
+
+        case 'Backspace':
+            return 0x08;
+
+        case 'Tab':
+            return 0x09;
+
+        case 'Enter':
+            return 0x0a;
+
+        default:
+            return undefined;
+    }
+}
+
 export class EventHandler {
     constructor(
         private canvas: HTMLCanvasElement,
@@ -38,6 +68,8 @@ export class EventHandler {
         this.canvas.addEventListener('touchend', this.handleTouchEnd);
         this.canvas.addEventListener('touchcancel', this.handleTouchEnd);
 
+        window.addEventListener('keydown', this.handleKeyDown);
+
         this.bound = true;
     }
 
@@ -45,7 +77,7 @@ export class EventHandler {
         if (!this.bound) return;
 
         this.canvas.removeEventListener('mousedown', this.handleMouseDown);
-        this.canvas.removeEventListener('mouseup', this.handeMouseUp);
+        window.removeEventListener('mouseup', this.handeMouseUp);
         window.removeEventListener('mousemove', this.handleMouseMove);
 
         this.canvas.removeEventListener('touchstart', this.handleTouchStart);
@@ -53,10 +85,12 @@ export class EventHandler {
         this.canvas.removeEventListener('touchend', this.handleTouchEnd);
         this.canvas.removeEventListener('touchcancel', this.handleTouchEnd);
 
+        window.removeEventListener('keydown', this.handleKeyDown);
+
         this.bound = false;
     }
 
-    handleMouseDown = (e: MouseEvent): void => {
+    private handleMouseDown = (e: MouseEvent): void => {
         if (e.button !== 0) return;
 
         const coords = this.eventToPalmCoordinates(e);
@@ -77,7 +111,7 @@ export class EventHandler {
         }
     };
 
-    handleMouseMove = (e: MouseEvent): void => {
+    private handleMouseMove = (e: MouseEvent): void => {
         // tslint:disable-next-line: no-bitwise
         if (!(e.buttons & 0x01) || this.interactionMouse?.area !== Area.silkscreen) return;
 
@@ -87,7 +121,7 @@ export class EventHandler {
         this.emulationService.handlePointerMove(...coords);
     };
 
-    handeMouseUp = (e: MouseEvent): void => {
+    private handeMouseUp = (e: MouseEvent): void => {
         if (e.button !== 0) return;
 
         const interaction = this.interactionMouse;
@@ -108,7 +142,7 @@ export class EventHandler {
         }
     };
 
-    handleTouchStart = (e: TouchEvent): void => {
+    private handleTouchStart = (e: TouchEvent): void => {
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches.item(i);
             if (!touch) continue;
@@ -133,7 +167,7 @@ export class EventHandler {
         if (e.cancelable !== false) e.preventDefault();
     };
 
-    handleTouchMove = (e: TouchEvent): void => {
+    private handleTouchMove = (e: TouchEvent): void => {
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches.item(i);
             if (!touch) continue;
@@ -149,7 +183,7 @@ export class EventHandler {
         if (e.cancelable !== false) e.preventDefault();
     };
 
-    handleTouchEnd = (e: TouchEvent): void => {
+    private handleTouchEnd = (e: TouchEvent): void => {
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches.item(i);
             if (!touch) continue;
@@ -173,6 +207,15 @@ export class EventHandler {
         }
 
         if (e.cancelable !== false) e.preventDefault();
+    };
+
+    private handleKeyDown = (e: KeyboardEvent): void => {
+        const keyCode = keyToCode(e.key);
+
+        if (keyCode !== undefined) {
+            this.emulationService.handleKeyDown(keyCode, e.ctrlKey);
+            e.preventDefault();
+        }
     };
 
     private eventToPalmCoordinates(e: MouseEvent | Touch, clip = false): [number, number] | undefined {

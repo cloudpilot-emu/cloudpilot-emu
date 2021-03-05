@@ -45,6 +45,8 @@ export interface Cloudpilot {
     QueueButtonDown(button: PalmButton): void;
     QueueButtonUp(button: PalmButton): void;
 
+    QueueKeyboardEvent(c: number, ctrl: boolean): void;
+
     IsPowerOff(): boolean;
     IsUIInitialized(): boolean;
 

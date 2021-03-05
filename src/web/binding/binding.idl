@@ -21,6 +21,8 @@ interface Cloudpilot {
     void QueueButtonDown(long id);
     void QueueButtonUp(long id);
 
+    void QueueKeyboardEvent(long c, boolean ctrl);
+
     boolean IsPowerOff();
     boolean IsUIInitialized();
 
