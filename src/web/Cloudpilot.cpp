@@ -133,6 +133,8 @@ void Cloudpilot::QueueKeyboardEvent(char c, bool ctrl) {
 
 bool Cloudpilot::IsPowerOff() { return !gSession->IsPowerOn(); }
 
+bool Cloudpilot::IsSetupComplete() { return gSystemState.IsSetupComplete(); }
+
 void Cloudpilot::Reset() { gSession->Reset(EmSession::ResetType::soft); }
 
 void Cloudpilot::ResetNoExtensions() { gSession->Reset(EmSession::ResetType::noext); }
@@ -169,3 +171,11 @@ bool Cloudpilot::SaveState() { return gSession->Save(); }
 bool Cloudpilot::LoadState(void* buffer, int len) {
     return gSession->Load(len, reinterpret_cast<uint8*>(buffer));
 }
+
+const char* Cloudpilot::GetHotsyncName() {
+    static string name;
+    name = gSystemState.GetHotsyncUserName();
+
+    return name.c_str();
+}
+void Cloudpilot::SetHotsyncName(const char* name) { gSession->SetHotsyncUserName(name); }

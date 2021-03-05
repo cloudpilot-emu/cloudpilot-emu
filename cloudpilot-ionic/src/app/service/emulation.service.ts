@@ -13,6 +13,7 @@ import { Mutex } from 'async-mutex';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
+import { ThrowStmt } from '@angular/compiler';
 
 export const GRAYSCALE_PALETTE_RGBA = [
     0xffd2d2d2,
@@ -131,6 +132,8 @@ export class EmulationService {
                 setStoredSession(id);
 
                 await this.snapshotService.initialize(session, await this.cloudpilot);
+
+                this.deviceHotsyncName = undefined;
             } finally {
                 await loader.dismiss();
             }
@@ -156,9 +159,9 @@ export class EmulationService {
 
     pause = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            await this.stopLoop();
+            this.stopLoop();
 
-            if (!this.errorService.hasFatalError()) {
+            if (!this.errorService.hasFatalError() && this.emulationState.getCurrentSession()) {
                 await this.snapshotService.waitForPendingSnapshot();
                 await this.snapshotService.triggerSnapshot();
             }
@@ -296,6 +299,7 @@ export class EmulationService {
 
         const poweroff = this.cloudpilotInstance.isPowerOff();
         const uiInitialized = this.cloudpilotInstance.isUiInitialized();
+        const currentSession = this.emulationState.getCurrentSession();
 
         if (poweroff !== this.powerOff || uiInitialized !== this.uiInitialized) {
             this.ngZone.run(() => {
@@ -304,13 +308,31 @@ export class EmulationService {
             });
         }
 
-        const currentSession = this.emulationState.getCurrentSession();
         if (uiInitialized && currentSession && currentSession.osVersion === undefined) {
             const session: Session = { ...currentSession, osVersion: this.cloudpilotInstance.getOSVersion() };
 
             this.emulationState.setCurrentSession(session);
-
             this.storageService.updateSession(session);
+        }
+
+        if (uiInitialized && !poweroff && currentSession) {
+            if (this.deviceHotsyncName === undefined) {
+                this.deviceHotsyncName = this.cloudpilotInstance.getHotsyncName();
+            }
+
+            if (currentSession.hotsyncName === undefined) {
+                const session: Session = { ...currentSession, hotsyncName: this.deviceHotsyncName };
+
+                this.emulationState.setCurrentSession(session);
+                this.storageService.updateSession(session);
+            } else if (
+                currentSession.hotsyncName !== this.deviceHotsyncName &&
+                currentSession.hotsyncName.length <= 40 &&
+                this.cloudpilotInstance.isSetupComplete()
+            ) {
+                this.cloudpilotInstance.setHotsyncName(currentSession.hotsyncName);
+                this.deviceHotsyncName = currentSession.hotsyncName;
+            }
         }
 
         if (timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL) {
@@ -436,4 +458,5 @@ export class EmulationService {
     private uiInitialized = false;
 
     private lastSnapshotAt = 0;
+    private deviceHotsyncName: string | undefined;
 }

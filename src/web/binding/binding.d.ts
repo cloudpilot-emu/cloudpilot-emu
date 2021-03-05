@@ -36,6 +36,7 @@ export interface Cloudpilot {
     CopyFrame(): Frame;
     IsScreenDirty(): boolean;
     MarkScreenClean(): void;
+    IsSetupComplete(): boolean;
 
     MinMemoryForDevice(id: string): number;
 
@@ -71,6 +72,9 @@ export interface Cloudpilot {
 
     SaveState(): boolean;
     LoadState(buffer: VoidPtr, len: number): boolean;
+
+    GetHotsyncName(): string;
+    SetHotsyncName(name: string): void;
 }
 
 export interface Frame {

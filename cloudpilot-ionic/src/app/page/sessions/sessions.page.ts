@@ -130,7 +130,7 @@ export class SessionsPage {
                 return;
             }
 
-            const settings: SessionSettings = { name: this.disambiguateSessionName(file.name) };
+            const settings: SessionSettings = { name: this.disambiguateSessionName(file.name), hotsyncName: '' };
 
             if (await this.editSettings(settings)) {
                 const session = await this.sessionService.addSessionFromRom(

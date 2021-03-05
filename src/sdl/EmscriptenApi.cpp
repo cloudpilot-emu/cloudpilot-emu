@@ -89,7 +89,8 @@ extern "C" size_t EMSCRIPTEN_KEEPALIVE getRomSize() {
 }
 
 extern "C" const char* EMSCRIPTEN_KEEPALIVE getDeviceId() {
-    static string id = gSession->GetDevice().GetIDString();
+    static string id;
+    id = gSession->GetDevice().GetIDString();
 
     return id.c_str();
 }

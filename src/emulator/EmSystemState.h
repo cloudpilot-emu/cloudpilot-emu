@@ -26,6 +26,9 @@ class EmSystemState {
     void SetUIInitialized();
     bool IsUIInitialized() const;
 
+    void SetSetupComplete();
+    bool IsSetupComplete() const;
+
     void SetHotsyncUserName(string hotsyncUserName);
     const string& GetHotsyncUserName() const;
 
@@ -38,12 +41,13 @@ class EmSystemState {
 
    private:
     template <typename T>
-    void DoSaveLoad(T& helper);
+    void DoSaveLoad(T& helper, uint32 version);
 
    private:
     uint32 osVersion{0};
 
     bool uiInitialized{false};
+    bool setupComplete{false};
 
     string hotsyncUserName;
 

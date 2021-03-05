@@ -9,12 +9,14 @@
 EmSystemState gSystemState;
 
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 1;
+    constexpr uint32 SAVESTATE_VERSION = 2;
 }
 
 void EmSystemState::Reset() {
     uiInitialized = false;
     screenDirty = true;
+    setupComplete = false;
+    hotsyncUserName = "";
 }
 
 template <typename T>
@@ -25,7 +27,7 @@ void EmSystemState::Save(T& savestate) {
     chunk->Put32(SAVESTATE_VERSION);
 
     SaveChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
 template void EmSystemState::Save(Savestate& savestate);
@@ -35,22 +37,29 @@ void EmSystemState::Load(SavestateLoader& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::systemState);
     if (!chunk) return;
 
-    if (chunk->Get32() != SAVESTATE_VERSION) {
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
         logging::printf("error restoring SystemState: savestate version mismatch");
         loader.NotifyError();
 
         return;
     }
 
+    setupComplete = true;
+
     LoadChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, version);
 
     screenDirty = true;
 }
 
 template <typename T>
-void EmSystemState::DoSaveLoad(T& helper) {
+void EmSystemState::DoSaveLoad(T& helper, uint32 version) {
     helper.Do32(osVersion).DoBool(uiInitialized).DoString(hotsyncUserName, dlkMaxUserNameLength);
+
+    if (version > 1) {
+        helper.DoBool(setupComplete);
+    }
 }
 
 void EmSystemState::SetOSVersion(uint32 version) { osVersion = version; }
@@ -68,6 +77,10 @@ uint32 EmSystemState::OSMinorVersion(void) const { return sysGetROMVerMinor(osVe
 void EmSystemState::SetUIInitialized() { uiInitialized = true; }
 
 bool EmSystemState::IsUIInitialized() const { return uiInitialized; }
+
+void EmSystemState::SetSetupComplete() { setupComplete = true; }
+
+bool EmSystemState::IsSetupComplete() const { return setupComplete; }
 
 void EmSystemState::SetHotsyncUserName(string hotsyncUserName) {
     if (hotsyncUserName.size() > dlkMaxUserNameLength) return;

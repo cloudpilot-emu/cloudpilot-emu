@@ -31,7 +31,7 @@ export class SessionSettingsComponent implements OnInit {
     get placeholder(): string {
         if (this.formControlHotsyncName.value) return this.formControlName.value;
 
-        return this.session.hotsyncName === undefined ? 'use setting from device' : '';
+        return this.session.hotsyncName === undefined ? 'use setting from device' : 'Enter hotsync name';
     }
 
     ngOnInit() {
@@ -43,13 +43,11 @@ export class SessionSettingsComponent implements OnInit {
 
         this.session.name = this.formControlName.value;
 
-        /*
         if (this.formControlHotsyncName.value) {
             this.session.hotsyncName = this.formControlHotsyncName.value;
         } else {
             this.session.hotsyncName = this.session.hotsyncName === undefined ? undefined : '';
         }
-        */
 
         this.onSave();
     }

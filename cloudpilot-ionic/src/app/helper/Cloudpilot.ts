@@ -172,6 +172,11 @@ export class Cloudpilot {
     }
 
     @guard()
+    isSetupComplete(): boolean {
+        return !!this.cloudpilot.IsSetupComplete();
+    }
+
+    @guard()
     getOSVersion(): number {
         return this.cloudpilot.GetOSVersion();
     }
@@ -250,6 +255,16 @@ export class Cloudpilot {
         this.cloudpilot.Free(ptr);
 
         return result;
+    }
+
+    @guard()
+    getHotsyncName(): string {
+        return this.cloudpilot.GetHotsyncName();
+    }
+
+    @guard()
+    setHotsyncName(name: string): void {
+        this.cloudpilot.SetHotsyncName(name);
     }
 
     private copyIn(data: Uint8Array): VoidPtr {

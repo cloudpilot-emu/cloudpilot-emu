@@ -53,6 +53,12 @@ namespace {
         return result;
     }
 
+    CallROMType HeadpatchSysUIAppSwitch() {
+        gSystemState.SetSetupComplete();
+
+        return kExecuteROM;
+    }
+
     void TailpatchFtrInit(void) {
         PRINTF("syscall: FtrInit");
 
@@ -149,6 +155,7 @@ namespace {
 
     ProtoPatchTableEntry protoPatchTable[] = {
         {sysTrapDmInit, HeadpatchDmInit, NULL},
+        {sysTrapSysUIAppSwitch, HeadpatchSysUIAppSwitch, NULL},
         {sysTrapSysEvGroupWait, HeadpatchSysEvGroupWait, NULL},
         {sysTrapFtrInit, NULL, TailpatchFtrInit},
         {sysTrapHwrMemReadable, NULL, TailpatchHwrMemReadable},

@@ -26,6 +26,7 @@ interface Cloudpilot {
     boolean IsPowerOff();
     boolean IsUIInitialized();
     long GetOSVersion();
+    boolean IsSetupComplete();
 
     void Reset();
     void ResetNoExtensions();
@@ -47,6 +48,9 @@ interface Cloudpilot {
 
     boolean SaveState();
     boolean LoadState(VoidPtr buffer, long len);
+
+    [Const] DOMString GetHotsyncName();
+    void SetHotsyncName([Const] DOMString name);
 };
 
 interface RomInfo {

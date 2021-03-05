@@ -34,6 +34,7 @@ class Cloudpilot {
 
     bool IsPowerOff();
     bool IsUIInitialized();
+    bool IsSetupComplete();
     int GetOSVersion();
 
     void Reset();
@@ -56,6 +57,9 @@ class Cloudpilot {
 
     bool SaveState();
     bool LoadState(void* buffer, int len);
+
+    const char* GetHotsyncName();
+    void SetHotsyncName(const char* name);
 
    private:
     Frame frame{1024 * 128};
