@@ -34,7 +34,8 @@
                 "glob": "cloudpilot_web.wasm",
                 "input": "../src",
                 "output": "."
-              }
+              },
+              "src/manifest.webmanifest"
             ],
             "styles": [
               {
@@ -71,7 +72,9 @@
                   "maximumWarning": "2mb",
                   "maximumError": "5mb"
                 }
-              ]
+              ],
+              "serviceWorker": true,
+              "ngswConfigPath": "ngsw-config.json"
             },
             "ci": {
               "progress": false
@@ -117,7 +120,8 @@
                 "glob": "**/*",
                 "input": "src/assets",
                 "output": "/assets"
-              }
+              },
+              "src/manifest.webmanifest"
             ]
           },
           "configurations": {

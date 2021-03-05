@@ -21,6 +21,7 @@
     "@angular/platform-browser": "~11.1.2",
     "@angular/platform-browser-dynamic": "~11.1.2",
     "@angular/router": "~11.1.2",
+    "@angular/service-worker": "~11.1.2",
     "@ionic/angular": "^5.5.4",
     "@types/md5": "^2.3.0",
     "@types/uuid": "^8.3.0",
