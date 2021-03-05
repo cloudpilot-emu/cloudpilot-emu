@@ -6,6 +6,9 @@ import { environment } from './environments/environment';
 import { hasStoredSession } from './app/helper/storedSession';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
+// Work around issue with webpack and deep-equal
+(window as any).global = window;
+
 if (hasStoredSession()) {
     const url = new URL(location.toString());
 

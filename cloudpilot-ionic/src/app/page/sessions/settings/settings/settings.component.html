@@ -1,0 +1,27 @@
+<ion-header translucent>
+    <ion-toolbar>
+        <ion-title>Session settings</ion-title>
+
+        <ion-buttons slot="primary">
+            <ion-button (click)="save()" [disabled]="formGroup.invalid">Save</ion-button>
+        </ion-buttons>
+
+        <ion-buttons slot="secondary">
+            <ion-button (click)="modalControler.dismiss()">Cancel</ion-button>
+        </ion-buttons>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content fullscreen>
+    <form [formGroup]="formGroup" (keydown)="formKeyDown($event)">
+        <ion-item lines="inset">
+            <ion-label position="stacked">Session name</ion-label>
+            <ion-input placeholder="Enter session name" formControlName="name"></ion-input>
+        </ion-item>
+
+        <ion-item lines="inset">
+            <ion-label position="stacked">Hotsync name</ion-label>
+            <ion-input [placeholder]="placeholder" formControlName="hotsyncName"></ion-input>
+        </ion-item>
+    </form>
+</ion-content>

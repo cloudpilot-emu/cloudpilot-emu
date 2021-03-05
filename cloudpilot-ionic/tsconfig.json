@@ -12,6 +12,7 @@
     "importHelpers": true,
     "target": "es2015",
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "strict": true,
     "lib": [
       "es2018",

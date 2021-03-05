@@ -1,14 +1,16 @@
+import { AlertController, ModalController } from '@ionic/angular';
 import { FileDescriptor, FileService } from './../../service/file.service';
 
-import { AlertController } from '@ionic/angular';
 import { AlertService } from './../../service/alert.service';
 import { Component } from '@angular/core';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
 import { Router } from '@angular/router';
-import { Session } from 'src/app/model/Session';
+import { Session } from './../../model/Session';
 import { SessionService } from 'src/app/service/session.service';
+import { SessionSettingsComponent } from './settings/settings/settings.component';
 import { StorageService } from './../../service/storage.service';
+import deepEqual from 'deep-equal';
 import { deserializeSessionImage } from 'src/app/helper/sessionFile';
 
 @Component({
@@ -25,6 +27,7 @@ export class SessionsPage {
         public emulationService: EmulationService,
         public emulationState: EmulationStateService,
         private storageService: StorageService,
+        private modalController: ModalController,
         private router: Router
     ) {}
 
@@ -46,10 +49,20 @@ export class SessionsPage {
     }
 
     async editSession(session: Session): Promise<void> {
-        const newName = await this.queryName(session.name);
+        const oldSession = { ...session };
+        const settingsModal = await this.modalController.create({
+            component: SessionSettingsComponent,
+            backdropDismiss: false,
+            componentProps: {
+                session,
+            },
+        });
 
-        if (newName !== undefined) {
-            this.sessionService.updateSession({ ...session, name: newName });
+        await settingsModal.present();
+        await settingsModal.onDidDismiss();
+
+        if (!deepEqual(session, oldSession)) {
+            this.sessionService.updateSession(session);
         }
     }
 
