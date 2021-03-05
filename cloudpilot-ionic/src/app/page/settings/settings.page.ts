@@ -1,12 +1,15 @@
-import { Component, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
+import { REVISION } from './../../../revision.gen';
 
 @Component({
     selector: 'app-settings',
     templateUrl: './settings.page.html',
     styleUrls: ['./settings.page.scss'],
 })
-export class SettingsPage implements OnInit {
+export class SettingsPage {
     constructor() {}
 
-    ngOnInit() {}
+    get version(): string {
+        return REVISION;
+    }
 }
