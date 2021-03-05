@@ -65,6 +65,7 @@ export class SessionsPage {
     }
 
     async launchSession(session: Session) {
+        this.lastSessionTouched = session.id;
         this.currentSessionOverride = session.id;
 
         await this.emulationService.switchSession(session.id);
@@ -112,7 +113,9 @@ export class SessionsPage {
             };
 
             if (await this.editSettings(settings)) {
-                this.sessionService.addSessionFromImage(sessionImage, settings.name, settings);
+                const session = await this.sessionService.addSessionFromImage(sessionImage, settings.name, settings);
+
+                this.lastSessionTouched = session.id;
             }
         } else {
             const romInfo = (await this.emulationService.cloudpilot).getRomInfo(file.content);
@@ -130,12 +133,14 @@ export class SessionsPage {
             const settings: SessionSettings = { name: this.disambiguateSessionName(file.name) };
 
             if (await this.editSettings(settings)) {
-                this.sessionService.addSessionFromRom(
+                const session = await this.sessionService.addSessionFromRom(
                     file.content,
                     settings.name,
                     romInfo.supportedDevices[0],
                     settings
                 );
+
+                this.lastSessionTouched = session.id;
             }
         }
     }
@@ -180,4 +185,5 @@ export class SessionsPage {
     }
 
     private currentSessionOverride: number | undefined;
+    lastSessionTouched = -1;
 }

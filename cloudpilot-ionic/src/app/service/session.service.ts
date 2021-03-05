@@ -22,7 +22,7 @@ export class SessionService {
         this.storageService.sessionChangeEvent.addHandler(this.updateSessionsFromStorage.bind(this));
     }
 
-    async addSessionFromImage(image: SessionImage, name: string, presets: Partial<Session> = {}) {
+    async addSessionFromImage(image: SessionImage, name: string, presets: Partial<Session> = {}): Promise<Session> {
         const session: Session = {
             ...presets,
             id: -1,
@@ -36,13 +36,20 @@ export class SessionService {
         const loader = await this.loadingController.create({ message: 'Importing...' });
         await loader.present();
 
-        await this.storageService.addSession(session, image.rom, image.memory, image.savestate);
+        const savedSession = await this.storageService.addSession(session, image.rom, image.memory, image.savestate);
 
         await this.updateSessionsFromStorage();
         await loader.dismiss();
+
+        return savedSession;
     }
 
-    async addSessionFromRom(rom: Uint8Array, name: string, device: DeviceId, presets: Partial<Session> = {}) {
+    async addSessionFromRom(
+        rom: Uint8Array,
+        name: string,
+        device: DeviceId,
+        presets: Partial<Session> = {}
+    ): Promise<Session> {
         const session: Session = {
             ...presets,
             id: -1,
@@ -55,10 +62,12 @@ export class SessionService {
         const loader = await this.loadingController.create({ message: 'Importing...' });
         await loader.present();
 
-        await this.storageService.addSession(session, rom);
+        const savedSession = await this.storageService.addSession(session, rom);
 
         await this.updateSessionsFromStorage();
         await loader.dismiss();
+
+        return savedSession;
     }
 
     getSessions(): Array<Session> {

@@ -31,6 +31,8 @@ export class SessionItemComponent {
         e.stopPropagation();
         e.preventDefault();
 
+        this.interaction.emit();
+
         const popover = await this.popoverController.create({
             component: ContextMenuComponent,
             event: e,
@@ -67,11 +69,21 @@ export class SessionItemComponent {
         return `${version.major}.${version.minor}`;
     }
 
+    get color(): string | undefined {
+        if (this.selected) return 'primary';
+        if (this.touched) return 'light';
+
+        return undefined;
+    }
+
     @Input()
     session: Session | undefined;
 
     @Input()
     selected = false;
+
+    @Input()
+    touched = false;
 
     @Output()
     delete = new EventEmitter<Session>();
@@ -87,4 +99,7 @@ export class SessionItemComponent {
 
     @Output()
     selectItem = new EventEmitter<Session>();
+
+    @Output()
+    interaction = new EventEmitter<Session>();
 }

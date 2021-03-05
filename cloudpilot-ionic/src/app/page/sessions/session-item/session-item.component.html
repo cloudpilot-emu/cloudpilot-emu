@@ -1,4 +1,4 @@
-<ion-item-sliding (contextmenu)="onContextmenu($event)">
+<ion-item-sliding (contextmenu)="onContextmenu($event)" (ionDrag)="interaction.emit()">
   <ion-item-options side="start">
     <ion-item-option color="primary" icon-only (click)="edit.emit(session)">
       <ion-icon name="create-outline"></ion-icon>
@@ -21,7 +21,7 @@
 
   </ion-item-options>
 
-  <ion-item [color]="selected ? 'primary' : undefined" (click)="selectItem.emit()">
+  <ion-item [color]="color" (click)="selectItem.emit()">
     <ion-label>
       <h2>{{session?.name}}</h2>
       <p>{{device}} {{session?.ram}}MB RAM<span *ngIf="session?.osVersion">, OS
