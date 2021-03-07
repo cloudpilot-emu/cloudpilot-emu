@@ -11,9 +11,13 @@ ion-title {
     padding: 3px;
 }
 
-@media (prefers-color-scheme: light) {
+.container.running-session {
+    background: radial-gradient(circle, #ccc 0%, #eee 100%);
+}
+
+@media (prefers-color-scheme: dark) {
     .container.running-session {
-        background: #a8a8a8;
+        background: none;
     }
 }
 
