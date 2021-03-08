@@ -10,22 +10,28 @@ import { EmulationService } from './../../../service/emulation.service';
 export class ContextMenuComponent implements OnInit {
     constructor(public emulationService: EmulationService) {}
 
-    ngOnInit() {}
+    ngOnInit(): void {}
 
-    reset() {
+    reset(): void {
         this.emulationService.reset();
 
         this.onClick();
     }
 
-    resetNoExtensions() {
+    resetNoExtensions(): void {
         this.emulationService.resetNoExtensions();
 
         this.onClick();
     }
 
-    resetHard() {
+    resetHard(): void {
         this.emulationService.resetHard();
+
+        this.onClick();
+    }
+
+    power(): void {
+        this.emulationService.engagePower();
 
         this.onClick();
     }

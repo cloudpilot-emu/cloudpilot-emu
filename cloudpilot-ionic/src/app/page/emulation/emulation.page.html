@@ -3,10 +3,6 @@
     <ion-title>{{title}}</ion-title>
 
     <ion-buttons slot="end">
-      <ion-button (mousedown)="powerButtonDown()" (mouseup)="powerButtonUp()"
-        [disabled]="!emulationService.isRunning()">
-        <ion-icon name="power-outline"></ion-icon>
-      </ion-button>
       <ion-button [disabled]="installFileDisabled" (click)="installFiles()">
         <ion-icon name="download-outline"></ion-icon>
       </ion-button>

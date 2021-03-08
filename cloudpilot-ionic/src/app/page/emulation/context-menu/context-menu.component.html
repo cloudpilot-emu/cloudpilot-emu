@@ -1,4 +1,7 @@
 <ion-list>
+  <ion-item button [detail]="false" (click)="power()" [disabled]="!emulationService.isRunning()">
+    Power
+  </ion-item>
   <ion-item button [detail]="false" (click)="reset()" [disabled]="!emulationService.isRunning()">
     Reset
   </ion-item>

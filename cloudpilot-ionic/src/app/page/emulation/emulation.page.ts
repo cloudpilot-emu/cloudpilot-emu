@@ -51,14 +51,6 @@ export class EmulationPage implements AfterViewInit {
         return this.canvasHeight / devicePixelRatio + 'px';
     }
 
-    async powerButtonDown(): Promise<void> {
-        this.emulationService.handleButtonDown(PalmButton.power);
-    }
-
-    async powerButtonUp(): Promise<void> {
-        this.emulationService.handleButtonUp(PalmButton.power);
-    }
-
     async ionViewDidEnter(): Promise<void> {
         let session = this.emulationState.getCurrentSession();
         const storedSession = getStoredSession();

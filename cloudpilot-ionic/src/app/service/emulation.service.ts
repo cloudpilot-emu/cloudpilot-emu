@@ -40,6 +40,7 @@ export const GRAYSCALE_PALETTE_HEX = GRAYSCALE_PALETTE_RGBA.map(
 
 const PEN_MOVE_THROTTLE = 25;
 const SNAPSHOT_INTERVAL = 1000;
+const ENGAGE_POWER_BUTTON_DURAtION = 250;
 
 @Injectable({
     providedIn: 'root',
@@ -128,6 +129,9 @@ export class EmulationService {
                     cloudpilot.loadState(state);
                 }
 
+                this.powerButtonEngaged = false;
+                (await this.cloudpilot).queueButtonUp(PalmButton.power);
+
                 this.clearCanvas();
                 setStoredSession(id);
 
@@ -173,6 +177,15 @@ export class EmulationService {
 
             this.emulationState.setCurrentSession(undefined);
         });
+
+    engagePower(): void {
+        if (!this.cloudpilotInstance) return;
+
+        this.powerButtonEngaged = true;
+        this.powerButtonDuration = 0;
+
+        this.cloudpilotInstance.queueButtonDown(PalmButton.power);
+    }
 
     handlePointerMove(x: number, y: number): void {
         const ts = performance.now();
@@ -335,6 +348,16 @@ export class EmulationService {
             }
         }
 
+        if (this.powerButtonEngaged) {
+            this.powerButtonDuration += cycles / this.cloudpilotInstance.cyclesPerSecond();
+
+            if (this.powerButtonDuration * 1000 >= ENGAGE_POWER_BUTTON_DURAtION) {
+                this.powerButtonEngaged = false;
+
+                this.cloudpilotInstance.queueButtonUp(PalmButton.power);
+            }
+        }
+
         if (timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL) {
             this.snapshotService.triggerSnapshot();
 
@@ -459,4 +482,7 @@ export class EmulationService {
 
     private lastSnapshotAt = 0;
     private deviceHotsyncName: string | undefined;
+
+    private powerButtonEngaged = false;
+    private powerButtonDuration = 0;
 }
