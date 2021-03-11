@@ -30,6 +30,7 @@
     "deep-equal": "^2.0.5",
     "md5": "^2.3.0",
     "microevent.ts": "^0.2.1",
+    "ngx-markdown": "^11.1.2",
     "rxjs": "~6.6.3",
     "tslib": "^2.0.0",
     "uuid": "^8.3.2",

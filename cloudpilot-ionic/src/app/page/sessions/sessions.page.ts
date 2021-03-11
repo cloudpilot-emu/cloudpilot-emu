@@ -6,6 +6,7 @@ import { AlertService } from './../../service/alert.service';
 import { Component } from '@angular/core';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
+import { HelpComponent } from './help/help.component';
 import { Router } from '@angular/router';
 import { Session } from './../../model/Session';
 import { SessionService } from 'src/app/service/session.service';
@@ -95,6 +96,11 @@ export class SessionsPage {
 
     get currentSessionId(): number | undefined {
         return this.currentSessionOverride ?? this.emulationState.getCurrentSession()?.id;
+    }
+
+    async showHelp(): Promise<void> {
+        const modal = await this.modalController.create({ component: HelpComponent });
+        await modal.present();
     }
 
     private async processFile(file: FileDescriptor): Promise<void> {
