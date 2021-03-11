@@ -31,7 +31,7 @@ export class ErrorService {
 
             this.fatalErrorEvent.dispatch();
 
-            this.alertService.fatalError('IndexedDB access lost. This is most likely a browser bug.');
+            this.alertService.fatalError('IndexedDB access failed. This is most likely a browser bug.');
         });
 
     fatalBug = (reason: string) =>

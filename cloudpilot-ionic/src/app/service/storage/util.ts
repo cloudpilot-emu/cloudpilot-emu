@@ -1,3 +1,5 @@
+import { StorageError } from './StorageError';
+
 function isTransaction(requestOrTransaction: IDBRequest | IDBTransaction): requestOrTransaction is IDBTransaction {
     return !!(requestOrTransaction as IDBTransaction).abort;
 }
@@ -12,7 +14,7 @@ export function complete(requestOrTransaction: IDBRequest | IDBTransaction): Pro
             requestOrTransaction.onsuccess = () => resolve(requestOrTransaction.result);
         }
 
-        requestOrTransaction.onerror = () => reject(new Error(requestOrTransaction.error?.message));
+        requestOrTransaction.onerror = () => reject(new StorageError(requestOrTransaction.error?.message));
     });
 }
 

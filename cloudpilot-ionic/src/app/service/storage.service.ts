@@ -11,9 +11,11 @@ import { Injectable, NgZone } from '@angular/core';
 import { complete, compressPage } from './storage/util';
 import { migrate0to1, migrate1to2 } from './storage/migrations';
 
+import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { PageLockService } from './page-lock.service';
 import { Session } from 'src/app/model/Session';
+import { StorageError } from './storage/StorageError';
 import md5 from 'md5';
 
 export const E_LOCK_LOST = new Error('page lock lost');
@@ -22,14 +24,41 @@ export const enum keyKvs {
     version = 'version',
 }
 
+function guard(): any {
+    return (target: any, propertyKey: string, desc: PropertyDescriptor) => {
+        const oldMethod = desc.value;
+
+        desc.value = async function (this: any) {
+            const errorService: ErrorService = this.errorService;
+
+            try {
+                return await oldMethod.apply(this, arguments);
+            } catch (e) {
+                if (e instanceof StorageError) {
+                    errorService.fatalIDBDead();
+                } else {
+                    errorService.fatalBug(e.message);
+                }
+            }
+        };
+
+        return desc;
+    };
+}
+
 @Injectable({
     providedIn: 'root',
 })
 export class StorageService {
-    constructor(private pageLockService: PageLockService, private ngZone: NgZone) {
+    constructor(private pageLockService: PageLockService, private ngZone: NgZone, private errorService: ErrorService) {
         this.setupDb();
     }
 
+    getDb(): Promise<IDBDatabase> {
+        return this.db;
+    }
+
+    @guard()
     async addSession(session: Session, rom: Uint8Array, ram?: Uint8Array, state?: Uint8Array): Promise<Session> {
         const hash = md5(rom);
 
@@ -67,18 +96,21 @@ export class StorageService {
         return storedSession;
     }
 
+    @guard()
     async getAllSessions(): Promise<Array<Session>> {
         const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
 
         return await complete(objectStore.getAll());
     }
 
+    @guard()
     async getSession(id: number): Promise<Session | undefined> {
         const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
 
         return await complete(objectStore.get(id));
     }
 
+    @guard()
     async deleteSession(session: Session): Promise<void> {
         const tx = await this.newTransaction(
             OBJECT_STORE_SESSION,
@@ -108,6 +140,7 @@ export class StorageService {
         this.sessionChangeEvent.dispatch(session.id);
     }
 
+    @guard()
     async updateSession(session: Session): Promise<void> {
         const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
 
@@ -125,6 +158,7 @@ export class StorageService {
         this.sessionChangeEvent.dispatch(session.id);
     }
 
+    @guard()
     async loadSession(session: Session): Promise<[Uint8Array | undefined, Uint8Array, Uint8Array | undefined]> {
         const tx = await this.newTransaction(OBJECT_STORE_ROM, OBJECT_STORE_STATE, OBJECT_STORE_MEMORY);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
@@ -138,6 +172,7 @@ export class StorageService {
         ];
     }
 
+    @guard()
     async deleteStateForSession(session: Session): Promise<void> {
         const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_STATE);
 
@@ -146,12 +181,14 @@ export class StorageService {
         await complete(tx);
     }
 
+    @guard()
     async kvsGet<T>(key: keyKvs): Promise<T | undefined> {
         const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_KVS);
 
         return complete<T>(objectStore.get(key));
     }
 
+    @guard()
     async kvsSet<T>(key: keyKvs, value: T): Promise<void> {
         const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_KVS);
 
@@ -160,6 +197,7 @@ export class StorageService {
         await complete(tx);
     }
 
+    @guard()
     async kvsDelete(key: keyKvs): Promise<void> {
         const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_KVS);
 
@@ -168,10 +206,7 @@ export class StorageService {
         await complete(tx);
     }
 
-    getDb(): Promise<IDBDatabase> {
-        return this.db;
-    }
-
+    @guard()
     async acquireLock(store: IDBObjectStore, key: string | number): Promise<void> {
         await complete(store.get(key));
 
@@ -180,10 +215,12 @@ export class StorageService {
         }
     }
 
+    @guard()
     async newTransaction(...stores: Array<string>): Promise<IDBTransaction> {
         return (await this.db).transaction(stores, 'readwrite');
     }
 
+    @guard()
     async prepareObjectStore(name: string): Promise<[IDBObjectStore, IDBTransaction]> {
         const tx = await this.newTransaction(name);
         const objectStore = tx.objectStore(name);
@@ -270,7 +307,7 @@ export class StorageService {
                     cursor.continue();
                 };
 
-                request.onerror = () => reject(new Error('failed to load memory image'));
+                request.onerror = () => reject(new StorageError('failed to load memory image'));
             });
         });
 
@@ -278,7 +315,7 @@ export class StorageService {
         this.db = new Promise((resolve, reject) => {
             const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-            request.onerror = () => reject(new Error('failed to open DB'));
+            request.onerror = () => reject(new StorageError('failed to open DB'));
             request.onsuccess = () => resolve(request.result);
             request.onupgradeneeded = (e) => {
                 if (e.oldVersion < 1) {
