@@ -17,7 +17,12 @@
     </ion-toolbar>
   </ion-header>
 
-  <ion-list>
+  <div *ngIf="sessions.length === 0" class="placeholder">
+    No sessions. Select the &bdquo;+&ldquo; icon in the upper right corner in order to import
+    a ROM file or a session image.
+  </div>
+
+  <ion-list *ngIf="sessions.length > 0">
     <app-session-item *ngFor="let session of sessions" [session]="session" (delete)="deleteSession(session)"
       (selectItem)="launchSession(session)" (edit)="editSession(session)" (save)="saveSession(session)"
       (reset)="resetSession(session)" (interaction)="lastSessionTouched = session.id"
