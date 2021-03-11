@@ -13,7 +13,6 @@ import { Mutex } from 'async-mutex';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
-import { ThrowStmt } from '@angular/compiler';
 
 export const GRAYSCALE_PALETTE_RGBA = [
     0xffd2d2d2,
@@ -324,7 +323,6 @@ export class EmulationService {
         if (uiInitialized && currentSession && currentSession.osVersion === undefined) {
             const session: Session = { ...currentSession, osVersion: this.cloudpilotInstance.getOSVersion() };
 
-            this.emulationState.setCurrentSession(session);
             this.storageService.updateSession(session);
         }
 
@@ -336,7 +334,6 @@ export class EmulationService {
             if (currentSession.hotsyncName === undefined) {
                 const session: Session = { ...currentSession, hotsyncName: this.deviceHotsyncName };
 
-                this.emulationState.setCurrentSession(session);
                 this.storageService.updateSession(session);
             } else if (
                 currentSession.hotsyncName !== this.deviceHotsyncName &&

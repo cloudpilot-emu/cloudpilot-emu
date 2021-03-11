@@ -21,7 +21,8 @@ export class SnapshotService {
     constructor(
         private storageService: StorageService,
         private emulationState: EmulationStateService,
-        private errorService: ErrorService
+        private errorService: ErrorService,
+        private ngZone: NgZone
     ) {}
 
     async initialize(session: Session, cloudpilot: Cloudpilot): Promise<void> {
@@ -42,24 +43,25 @@ export class SnapshotService {
         this.cloudpilot = cloudpilot;
     }
 
-    triggerSnapshot(): Promise<void> {
-        if (this.sessionId < 0) return Promise.resolve();
+    triggerSnapshot = (): Promise<void> =>
+        this.ngZone.runOutsideAngular(() => {
+            if (this.sessionId < 0) return Promise.resolve();
 
-        if (this.snapshotInProgress) return this.pendingSnapshotPromise;
-        if (this.errorService.hasFatalError()) return Promise.reject();
+            if (this.snapshotInProgress) return this.pendingSnapshotPromise;
+            if (this.errorService.hasFatalError()) return Promise.reject();
 
-        this.snapshotInProgress = true;
+            this.snapshotInProgress = true;
 
-        this.pendingSnapshotPromise = (async () => {
-            try {
-                await this.triggerSnapshotUnguarded();
-            } finally {
-                this.snapshotInProgress = false;
-            }
-        })();
+            this.pendingSnapshotPromise = (async () => {
+                try {
+                    await this.triggerSnapshotUnguarded();
+                } finally {
+                    this.snapshotInProgress = false;
+                }
+            })();
 
-        return this.pendingSnapshotPromise;
-    }
+            return this.pendingSnapshotPromise;
+        });
 
     waitForPendingSnapshot(): Promise<void> {
         if (this.snapshotInProgress) return this.pendingSnapshotPromise;
