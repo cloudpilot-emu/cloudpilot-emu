@@ -35,6 +35,7 @@
           "/svg/save-outline.svg",
           "/svg/attach-outline.svg",
           "/svg/trash-outline.svg",
+          "/svg/help-outline.svg",
           "/assets/**",
           "/*.(eot|svg|cur|jpg|png|webp|gif|otf|ttf|woff|woff2|ani)"
         ]
