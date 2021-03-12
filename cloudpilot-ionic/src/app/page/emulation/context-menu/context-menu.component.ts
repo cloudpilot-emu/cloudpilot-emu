@@ -36,6 +36,15 @@ export class ContextMenuComponent implements OnInit {
         this.onClick();
     }
 
+    help(): void {
+        this.showHelp();
+
+        this.onClick();
+    }
+
     @Input()
     onClick: () => void = () => undefined;
+
+    @Input()
+    showHelp: () => void = () => undefined;
 }

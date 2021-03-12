@@ -2,7 +2,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { CommonModule } from '@angular/common';
 import { ContextMenuComponent } from './context-menu/context-menu.component';
-import { HelpComponent } from './help/help.component';
+import { HelpComponent } from '../../component/help/help.component';
 import { IonicModule } from '@ionic/angular';
 import { MarkdownModule } from 'ngx-markdown';
 import { NgModule } from '@angular/core';

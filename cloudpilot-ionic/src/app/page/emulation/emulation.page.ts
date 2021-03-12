@@ -1,7 +1,7 @@
 import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CanvasHelper, HEIGHT, WIDTH } from './helper/CanvasHelper';
 import { FileDescriptor, FileService } from 'src/app/service/file.service';
-import { LoadingController, PopoverController } from '@ionic/angular';
+import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
 import { getStoredSession, hasStoredSession } from 'src/app/helper/storedSession';
 
 import { AlertService } from 'src/app/service/alert.service';
@@ -9,6 +9,7 @@ import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
 import { EventHandler } from './helper/EventHandler';
+import { HelpComponent } from 'src/app/component/help/help.component';
 import { PalmButton } from '../../../../../src';
 import { StorageService } from './../../service/storage.service';
 
@@ -23,6 +24,7 @@ export class EmulationPage implements AfterViewInit {
         public emulationState: EmulationStateService,
         private storageService: StorageService,
         private popoverController: PopoverController,
+        private modalController: ModalController,
         private alertService: AlertService,
         private fileService: FileService,
         private loadingController: LoadingController,
@@ -84,6 +86,7 @@ export class EmulationPage implements AfterViewInit {
             showBackdrop: false,
             componentProps: {
                 onClick: () => popover.dismiss(),
+                showHelp: () => this.showHelp(),
             },
         });
 
@@ -92,6 +95,16 @@ export class EmulationPage implements AfterViewInit {
 
     installFiles(): void {
         this.fileService.openFiles(this.processFilesForInstallation.bind(this));
+    }
+
+    async showHelp(): Promise<void> {
+        const modal = await this.modalController.create({
+            component: HelpComponent,
+            componentProps: {
+                url: 'assets/doc/emulation.md',
+            },
+        });
+        await modal.present();
     }
 
     get installFileDisabled(): boolean {
