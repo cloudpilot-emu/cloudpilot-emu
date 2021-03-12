@@ -6,9 +6,10 @@ import { FormsModule } from '@angular/forms';
 import { HelpComponent } from './../../component/help/help.component';
 import { IonicModule } from '@ionic/angular';
 import { NgModule } from '@angular/core';
+import { SharedComponentModule } from './../../component/shared-component.module';
 
 @NgModule({
-    imports: [CommonModule, FormsModule, IonicModule, EmulationPageRoutingModule],
-    declarations: [EmulationPage, ContextMenuComponent, HelpComponent],
+    imports: [CommonModule, FormsModule, IonicModule, EmulationPageRoutingModule, SharedComponentModule],
+    declarations: [EmulationPage, ContextMenuComponent],
 })
 export class EmulationPageModule {}
