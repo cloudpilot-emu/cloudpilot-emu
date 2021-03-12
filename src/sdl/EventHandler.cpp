@@ -180,5 +180,5 @@ void EventHandler::HandleTextInput(SDL_Event event) {
         c = ((text[0] & 0x03) << 6) | (text[1] & 0x3f);
     }
 
-    if (c) gSession->QueueKeyboardEvent(c);
+    if (c) gSession->QueueKeyboardEvent(c & 0xff);
 }
