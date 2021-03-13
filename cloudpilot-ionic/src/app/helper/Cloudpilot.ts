@@ -29,6 +29,11 @@ export interface Frame {
     buffer: Uint8Array;
 }
 
+export interface PwmUpdate {
+    frequency: number;
+    dutyCycle: number;
+}
+
 const SUPPORTED_DEVICES = [DeviceId.palmV, DeviceId.m515];
 
 function guard(): any {
@@ -46,6 +51,13 @@ function guard(): any {
 export class Cloudpilot {
     private constructor(private module: Module) {
         this.cloudpilot = new module.Cloudpilot();
+
+        this.cloudpilot.RegisterPwmHandler(
+            module.addFunction(
+                (frequency: number, dutyCycle: number) => this.pwmUpdateEvent.dispatch({ frequency, dutyCycle }),
+                'vdd'
+            )
+        );
     }
 
     static async create(): Promise<Cloudpilot> {
@@ -292,6 +304,7 @@ export class Cloudpilot {
     }
 
     fatalErrorEvent = new Event<Error>();
+    pwmUpdateEvent = new Event<PwmUpdate>();
 
     private cloudpilot: CloudpilotNative;
     private amIdead = false;

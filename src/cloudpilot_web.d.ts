@@ -6,6 +6,7 @@ export * from './web/binding/binding';
 
 export interface Module extends EmscriptenModule {
     ccall: typeof ccall;
+    addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;
 
     Cloudpilot: { new (): Cloudpilot };

@@ -178,4 +178,11 @@ const char* Cloudpilot::GetHotsyncName() {
 
     return name.c_str();
 }
+
 void Cloudpilot::SetHotsyncName(const char* name) { gSession->SetHotsyncUserName(name); }
+
+void Cloudpilot::RegisterPwmHandler(uint32 handlerPtr) {
+    typedef void (*handler_ptr)(double, double);
+
+    EmHAL::onPwmChange.AddHandler(reinterpret_cast<handler_ptr>(handlerPtr));
+}

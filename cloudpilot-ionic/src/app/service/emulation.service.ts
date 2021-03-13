@@ -378,7 +378,7 @@ export class EmulationService {
         if (this.cloudpilotInstance.isPowerOff()) {
             this.clearCanvas();
 
-            this.newFrame.dispatch(this.canvas);
+            this.newFrameEvent.dispatch(this.canvas);
 
             return;
         }
@@ -459,11 +459,11 @@ export class EmulationService {
 
         this.context.putImageData(this.imageData, 0, 0);
 
-        this.newFrame.dispatch(this.canvas);
+        this.newFrameEvent.dispatch(this.canvas);
     }
 
     readonly cloudpilot = Cloudpilot.create();
-    newFrame = new Event<HTMLCanvasElement>();
+    newFrameEvent = new Event<HTMLCanvasElement>();
 
     private cloudpilotInstance!: Cloudpilot;
     private bootstrapCompletePromise: Promise<void>;

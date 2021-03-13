@@ -75,6 +75,8 @@ export interface Cloudpilot {
 
     GetHotsyncName(): string;
     SetHotsyncName(name: string): void;
+
+    RegisterPwmHandler(handlerPtr: number): void;
 }
 
 export interface Frame {

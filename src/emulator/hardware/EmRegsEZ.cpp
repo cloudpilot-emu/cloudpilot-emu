@@ -2566,7 +2566,8 @@ void EmRegsEZ::DispatchPwmChange() {
     uint8 pwmp1 = READ_REGISTER(pwmPeriod);
 
     if (!pwmActive) {
-        cout << "PWM stop" << endl << flush;
+        EmHAL::onPwmChange.Dispatch(-1, -1);
+
         return;
     }
 
@@ -2579,5 +2580,5 @@ void EmRegsEZ::DispatchPwmChange() {
 
     double dutyCycle = static_cast<double>(pwms1) / pwmp1;
 
-    cout << "PWM at " << freq << " Hz , duty cycle " << dutyCycle << endl << flush;
+    if (freq < 20000) EmHAL::onPwmChange.Dispatch(freq, dutyCycle);
 }

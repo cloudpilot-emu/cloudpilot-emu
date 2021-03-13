@@ -51,6 +51,8 @@ interface Cloudpilot {
 
     [Const] DOMString GetHotsyncName();
     void SetHotsyncName([Const] DOMString name);
+
+    void RegisterPwmHandler(long handlerPtr);
 };
 
 interface RomInfo {

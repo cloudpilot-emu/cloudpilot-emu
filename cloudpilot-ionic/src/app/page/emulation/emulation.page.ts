@@ -63,7 +63,7 @@ export class EmulationPage implements AfterViewInit {
         this.canvasHelper.clear(session);
         this.onNewFrame(this.emulationService.getCanvas());
 
-        this.emulationService.newFrame.addHandler(this.onNewFrame);
+        this.emulationService.newFrameEvent.addHandler(this.onNewFrame);
 
         this.emulationService.resume();
 
@@ -73,7 +73,7 @@ export class EmulationPage implements AfterViewInit {
     ionViewWillLeave() {
         this.emulationService.pause();
 
-        this.emulationService.newFrame.removeHandler(this.onNewFrame);
+        this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
 
         this.eventHandler.release();
     }

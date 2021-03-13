@@ -2920,7 +2920,6 @@ void EmRegsVZ::DispatchPwmChange() {
     if (!pwmActive) {
         EmHAL::onPwmChange.Dispatch(-1, -1);
 
-        cout << "PWM stop" << endl << flush;
         return;
     }
 
@@ -2933,7 +2932,5 @@ void EmRegsVZ::DispatchPwmChange() {
 
     double dutyCycle = static_cast<double>(pwms1) / pwmp1;
 
-    EmHAL::onPwmChange.Dispatch(freq, dutyCycle);
-
-    cout << "PWM at " << freq << " Hz , duty cycle " << dutyCycle << endl << flush;
+    if (freq <= 20000) EmHAL::onPwmChange.Dispatch(freq, dutyCycle);
 }

@@ -3,6 +3,7 @@ import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
+import { AudioService } from './service/audio.service';
 import { BrowserModule } from '@angular/platform-browser';
 import { EmulationService } from './service/emulation.service';
 import { MarkdownModule } from 'ngx-markdown';
@@ -29,8 +30,9 @@ import { environment } from '../environments/environment';
 })
 export class AppModule {
     constructor(
-        private pageLockService: PageLockService,
-        private storageService: StorageService,
-        private emulationService: EmulationService
+        pageLockService: PageLockService,
+        storageService: StorageService,
+        emulationService: EmulationService,
+        audioService: AudioService
     ) {}
 }

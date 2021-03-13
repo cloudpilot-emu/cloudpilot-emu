@@ -61,6 +61,8 @@ class Cloudpilot {
     const char* GetHotsyncName();
     void SetHotsyncName(const char* name);
 
+    void RegisterPwmHandler(uint32 handlerPtr);
+
    private:
     Frame frame{1024 * 128};
 };
