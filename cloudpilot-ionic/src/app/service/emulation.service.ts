@@ -1,3 +1,4 @@
+import { AlertController, LoadingController, ModalController } from '@ionic/angular';
 import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
 import { Injectable, NgZone } from '@angular/core';
 import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
@@ -8,7 +9,7 @@ import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { FileService } from 'src/app/service/file.service';
-import { LoadingController } from '@ionic/angular';
+import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
@@ -53,7 +54,8 @@ export class EmulationService {
         private snapshotService: SnapshotService,
         private errorService: ErrorService,
         private fileService: FileService,
-        private alertService: AlertService
+        private alertService: AlertService,
+        private modalWatcher: ModalWatcherService
     ) {
         this.canvas.width = 160;
         this.canvas.height = 160;
@@ -293,6 +295,14 @@ export class EmulationService {
 
         if (this.errorService.hasFatalError()) return;
 
+        if (!this.modalWatcher.isModalActive()) {
+            this.spinMainLoop(timestamp);
+        }
+
+        this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+    };
+
+    private spinMainLoop(timestamp: number): void {
         if (timestamp - this.clockEmulator > 500) this.clockEmulator = timestamp - 10;
 
         const cyclesToRun = ((timestamp - this.clockEmulator) / 1000) * this.cloudpilotInstance.cyclesPerSecond();
@@ -360,9 +370,7 @@ export class EmulationService {
 
             this.lastSnapshotAt = timestamp;
         }
-
-        this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
-    };
+    }
 
     private updateScreen(): void {
         const frame = this.cloudpilotInstance.getFrame();
