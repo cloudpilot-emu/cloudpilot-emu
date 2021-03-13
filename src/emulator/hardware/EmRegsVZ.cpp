@@ -77,7 +77,7 @@ static const int kBaseAddressShift = 13;  // Shift to get base address from CSGB
 #endif
 
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 1;
+    constexpr uint32 SAVESTATE_VERSION = 2;
 
     double TimerTicksPerSecond(uint16 tmrControl, uint16 tmrPrescaler, int32 systemClockFrequency) {
         uint8 clksource = (tmrControl >> 1) & 0x7;
@@ -516,6 +516,8 @@ void EmRegsVZ::Initialize(void) {
     EmRegs::Initialize();
     rtcDayAtWrite = 0;
     lastRtcAlarmCheck = -1;
+    pwmActive = false;
+    afterLoad = false;
 
     tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
     tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();
@@ -550,6 +552,8 @@ void EmRegsVZ::Reset(Bool hardwareReset) {
         fPortDEdge = 0;
         fPortDDataCount = 0;
 
+        pwmActive = false;
+
         // React to the new data in the UART registers.
 
         Bool sendTxData = false;
@@ -570,15 +574,18 @@ void EmRegsVZ::Load(SavestateLoader& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regsVZ);
     if (!chunk) return;
 
-    if (chunk->Get32() != SAVESTATE_VERSION) {
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
         logging::printf("unable to restore RegsVZ: unsupported savestate version\n");
         loader.NotifyError();
 
         return;
     }
 
+    pwmActive = false;
+
     LoadChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, version);
 
     Bool sendTxData = false;
     EmRegsVZ::UARTStateChanged(sendTxData, 0);
@@ -587,6 +594,8 @@ void EmRegsVZ::Load(SavestateLoader& loader) {
     gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csDSelect) & 0x2000) != 0;
 
     ApplySdctl();
+
+    afterLoad = true;
 }
 
 template <typename T>
@@ -597,11 +606,11 @@ void EmRegsVZ::DoSave(T& savestate) {
     chunk->Put32(SAVESTATE_VERSION);
 
     SaveChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
 template <typename T>
-void EmRegsVZ::DoSaveLoad(T& helper) {
+void EmRegsVZ::DoSaveLoad(T& helper, uint32 version) {
     ::DoSaveLoad(helper, f68VZ328Regs);
 
     helper.DoBool(fHotSyncButtonDown)
@@ -616,6 +625,8 @@ void EmRegsVZ::DoSaveLoad(T& helper) {
         .DoDouble(timer2TicksPerSecond)
         .Do32(rtcDayAtWrite)
         .Do32(lastRtcAlarmCheck);
+
+    if (version > 1) helper.DoBool(pwmActive);
 }
 
 // ---------------------------------------------------------------------------
@@ -735,10 +746,10 @@ void EmRegsVZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, portMPullupdnEn);
     INSTALL_HANDLER(StdRead, StdWrite, portMSelect);
 
-    INSTALL_HANDLER(StdRead, StdWrite, pwmControl);
-    INSTALL_HANDLER(StdRead, StdWrite, pwmSampleHi);
-    INSTALL_HANDLER(StdRead, StdWrite, pwmSampleLo);
-    INSTALL_HANDLER(StdRead, StdWrite, pwmPeriod);
+    INSTALL_HANDLER(StdRead, pwmc1Write, pwmControl);
+    INSTALL_HANDLER(StdRead, pwms1Write, pwmSampleHi);
+    INSTALL_HANDLER(StdRead, pwms1Write, pwmSampleLo);
+    INSTALL_HANDLER(StdRead, pwmp1Write, pwmPeriod);
     INSTALL_HANDLER(StdRead, NullWrite, pwmCounter);
 
     INSTALL_HANDLER(StdRead, StdWrite, pwm2Control);
@@ -860,6 +871,13 @@ uint32 EmRegsVZ::GetAddressRange(void) { return kMemorySize; }
 // is in its own separate function instead of being inline.
 
 void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
+    if (afterLoad) {
+        DispatchPwmChange();
+        afterLoad = false;
+    }
+
+    if (GetAsleep()) return;
+
     double clocksPerSecond = gSession->GetClocksPerSecond();
 
     if (((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) != 0) &&
@@ -2868,4 +2886,54 @@ uint32 EmRegsVZ::Tmr2CyclesToNextInterrupt(uint64 systemCycles) {
 
 uint32 EmRegsVZ::CyclesToNextInterrupt(uint64 systemCycles) {
     return min(Tmr1CyclesToNextInterrupt(systemCycles), Tmr2CyclesToNextInterrupt(systemCycles));
+}
+
+void EmRegsVZ::pwmc1Write(emuptr address, int size, uint32 value) {
+    EmRegsVZ::StdWrite(address, size, value);
+
+    if (pwmActive && !(value & 0x10)) {
+        pwmActive = false;
+        DispatchPwmChange();
+    }
+}
+
+void EmRegsVZ::pwms1Write(emuptr address, int size, uint32 value) {
+    EmRegsVZ::StdWrite(address, size, value);
+
+    if (size == 1 && READ_REGISTER(pwmControl) & 0x10) {
+        pwmActive = true;
+        DispatchPwmChange();
+    }
+}
+
+void EmRegsVZ::pwmp1Write(emuptr address, int size, uint32 value) {
+    EmRegsVZ::StdWrite(address, size, value);
+
+    if (pwmActive) DispatchPwmChange();
+}
+
+void EmRegsVZ::DispatchPwmChange() {
+    uint16 pwmc1 = READ_REGISTER(pwmControl);
+    uint8 pwms1 = READ_REGISTER(pwmSampleLo);
+    uint8 pwmp1 = READ_REGISTER(pwmPeriod);
+
+    if (!pwmActive) {
+        EmHAL::onPwmChange.Dispatch(-1, -1);
+
+        cout << "PWM stop" << endl << flush;
+        return;
+    }
+
+    uint8 prescaler = (pwmc1 >> 8) & 0x7f;
+    uint8 clksel = pwmc1 & 0x03;
+    uint32 baseFreq = (pwmc1 & 0x8000) ? 32768 : GetSystemClockFrequency();
+
+    double freq =
+        static_cast<double>(baseFreq) / (prescaler + 1) / (2 << clksel) / min(256, pwmp1 + 2);
+
+    double dutyCycle = static_cast<double>(pwms1) / pwmp1;
+
+    EmHAL::onPwmChange.Dispatch(freq, dutyCycle);
+
+    cout << "PWM at " << freq << " Hz , duty cycle " << dutyCycle << endl << flush;
 }

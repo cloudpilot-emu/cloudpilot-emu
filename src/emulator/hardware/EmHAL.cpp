@@ -63,6 +63,7 @@ namespace {
 #endif
 
 EmEvent<> EmHAL::onSystemClockChange{};
+EmEvent<double, double> EmHAL::onPwmChange{};
 
 // ---------------------------------------------------------------------------
 //		� EmHAL::AddHandler

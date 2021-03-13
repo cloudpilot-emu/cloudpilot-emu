@@ -151,6 +151,7 @@ class EmHAL {
     static uint32 CyclesToNextInterrupt(uint64 systemCycles);
 
     static EmEvent<> onSystemClockChange;
+    static EmEvent<double, double> onPwmChange;
 
    private:
     static EmHALHandler* GetRootHandler(void) { return fgRootHandler; }

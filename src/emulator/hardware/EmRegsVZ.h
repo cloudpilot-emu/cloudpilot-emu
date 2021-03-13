@@ -109,6 +109,9 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     void rtcIntStatusWrite(emuptr address, int size, uint32 value);
     void rtcIntEnableWrite(emuptr address, int size, uint32 value);
     void rtcDayWrite(emuptr address, int size, uint32 value);
+    void pwmc1Write(emuptr address, int size, uint32 value);
+    void pwms1Write(emuptr address, int size, uint32 value);
+    void pwmp1Write(emuptr address, int size, uint32 value);
 
    protected:
     void HotSyncEvent(Bool buttonIsDown);
@@ -139,11 +142,13 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     uint32 Tmr1CyclesToNextInterrupt(uint64 systemCycles);
     uint32 Tmr2CyclesToNextInterrupt(uint64 systemCycles);
 
+    void DispatchPwmChange();
+
     template <typename T>
     void DoSave(T& savestate);
 
     template <typename T>
-    void DoSaveLoad(T& helper);
+    void DoSaveLoad(T& helper, uint32 version);
 
    protected:
     HwrM68VZ328Type f68VZ328Regs;
@@ -163,6 +168,9 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
 
     uint32 rtcDayAtWrite{0};
     int32 lastRtcAlarmCheck{-1};
+
+    bool pwmActive{false};
+    bool afterLoad{false};
 };
 
 #endif /* EmRegsVZ_h */

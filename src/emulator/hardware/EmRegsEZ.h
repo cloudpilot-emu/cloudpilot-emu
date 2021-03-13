@@ -102,6 +102,9 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     void rtcIntStatusWrite(emuptr address, int size, uint32 value);
     void rtcIntEnableWrite(emuptr address, int size, uint32 value);
     void rtcDayWrite(emuptr address, int size, uint32 value);
+    void pwmcWrite(emuptr address, int size, uint32 value);
+    void pwmsWrite(emuptr address, int size, uint32 value);
+    void pwmpWrite(emuptr address, int size, uint32 value);
 
    protected:
     void HotSyncEvent(Bool buttonIsDown);
@@ -134,11 +137,13 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     void UnmarkScreen();
     void UpdateTimerTicksPerSecond();
 
+    void DispatchPwmChange();
+
     template <typename T>
     void DoSave(T& savestate);
 
     template <typename T>
-    void DoSaveLoad(T& helper);
+    void DoSaveLoad(T& helper, uint32 version);
 
    protected:
     HwrM68EZ328Type f68EZ328Regs;
@@ -158,6 +163,9 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     EmEvent<>::HandleT onMarkScreenCleanHandle;
 
     EmUARTDragonball* fUART;
+
+    bool pwmActive{false};
+    bool afterLoad{false};
 };
 
 #endif /* EmRegsEZ_h */
