@@ -2575,8 +2575,8 @@ void EmRegsEZ::DispatchPwmChange() {
     uint8 clksel = pwmc1 & 0x03;
     uint32 baseFreq = (pwmc1 & 0x8000) ? 32768 : GetSystemClockFrequency();
 
-    double freq =
-        static_cast<double>(baseFreq) / (prescaler + 1) / (2 << clksel) / min(256, pwmp1 + 2);
+    double freq = static_cast<double>(baseFreq) / (prescaler + 1) / (2 << clksel) /
+                  min(256u, static_cast<uint32>(pwmp1) + 2);
 
     double dutyCycle = static_cast<double>(pwms1) / pwmp1;
 
