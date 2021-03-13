@@ -1,4 +1,4 @@
-The emulation tab displays hosts your emulated device. The device is running as
+The emulation tab displays your emulated device. The device is running as
 long as the tab is visible. Once the tab is switched (or Cloudpilot goes into
 the background) the emulation pauses. Date and time are read from the host
 system, so the clock is not affected by the emulator pausing and resuming.
@@ -9,7 +9,7 @@ You can interact with the emulator by touching or clicking the screen and the
 hardware buttons below. The power button is located in the menu on the top
 lefft.
 
-A connected keyboard can be used to type directly in the emulator.
+A hardware keyboard can be used to type directly in the emulator.
 
 # Installing program and database files
 
@@ -17,9 +17,9 @@ Select the "Install file" button on the top right in order to install `.prc` and
 `.pdb` files into the emulator. You can select and install multiple files at
 once.
 
-Please note that the launcher needs to be restartet by switching to another
+Please note that the launcher needs to be restarted by switching to another
 program and back to the launcher in order for newly installed programs to become
-visible. On Palm OS 3.3 and above it is sufficient to switch the launcher
+visible. On Palm OS 3.5 and above it is sufficient to switch the launcher
 category.
 
 # State saves
@@ -41,11 +41,11 @@ No key held. This causes a plain reset.
 
 ### Reset (no extensions)
 
-This corresponds to holding "up" while resetting
-the devie and will disable the loading of system extensions during startup.
+This corresponds to holding "down" while resetting
+the deviCe and will disable the loading of system extensions during startup.
 This is very useful to recover from a bad hack or system extension.
 
 ### Hard reset
 
-Corresponds to "down" being held during reset. This will
+Corresponds to "power" being held during reset. This will
 trigger a prompt that will allow you to factory reset the device.
