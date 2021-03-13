@@ -87,11 +87,17 @@ export class FileService {
     }
 
     private openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): void {
-        const input: HTMLInputElement = document.createElement('input');
+        if (this.input) {
+            document.body.removeChild(this.input);
+        }
 
-        input.type = 'file';
-        input.multiple = multiple;
-        input.onchange = async (e) => {
+        this.input = document.createElement('input');
+
+        this.input.style.display = 'none';
+        this.input.multiple = multiple;
+        this.input.type = 'file';
+
+        this.input.addEventListener('change', async (e) => {
             const target = e.target as HTMLInputElement;
 
             if (!target?.files?.length) return [];
@@ -117,8 +123,12 @@ export class FileService {
             }
 
             handler(await Promise.all(result));
-        };
+        });
 
-        input.click();
+        document.body.appendChild(this.input);
+
+        this.input.click();
     }
+
+    private input: HTMLInputElement | undefined;
 }
