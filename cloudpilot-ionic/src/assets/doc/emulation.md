@@ -1,4 +1,4 @@
-The emulation tab displays your emulated device. The device is running as
+The "Emulation" tab displays your emulated device. The device is running as
 long as the tab is visible. Once the tab is switched (or Cloudpilot goes into
 the background) the emulation pauses. Date and time are read from the host
 system, so the clock is not affected by the emulator pausing and resuming.

@@ -1,4 +1,4 @@
-On the "sessions" tab you can manage your emulation sessions. Each session
+On the "Sessions" tab you can manage your emulation sessions. Each session
 corresponds to a virtual device and its state.
 
 # Adding new sessions
