@@ -8,6 +8,7 @@ import { DeviceId } from '../model/DeviceId';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
+import { Fifo } from './../helper/Fifo';
 import { FileService } from 'src/app/service/file.service';
 import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
@@ -42,6 +43,7 @@ export const GRAYSCALE_PALETTE_HEX = GRAYSCALE_PALETTE_RGBA.map(
 const PEN_MOVE_THROTTLE = 25;
 const SNAPSHOT_INTERVAL = 1000;
 const ENGAGE_POWER_BUTTON_DURATION = 250;
+const PWM_FIFO_SIZE = 10;
 
 @Injectable({
     providedIn: 'root',
@@ -78,10 +80,11 @@ export class EmulationService {
             instance.fatalErrorEvent.addHandler(this.errorService.fatalInNativeCode);
             instance.pwmUpdateEvent.addHandler((pwmUpdate) => {
                 if (
-                    this.pendingPwmUpdates.length > 0 &&
-                    this.pendingPwmUpdates[this.pendingPwmUpdates.length - 1].frequency < 0
+                    this.pendingPwmUpdates.count() > 0 &&
+                    // tslint:disable-next-line: no-non-null-assertion
+                    this.pendingPwmUpdates.peekLast()!.frequency < 0
                 ) {
-                    this.pendingPwmUpdates[this.pendingPwmUpdates.length - 1] = pwmUpdate;
+                    this.pendingPwmUpdates.replaceLast(pwmUpdate);
                 } else {
                     this.pendingPwmUpdates.push(pwmUpdate);
                 }
@@ -146,6 +149,8 @@ export class EmulationService {
 
                 this.powerButtonEngaged = false;
                 (await this.cloudpilot).queueButtonUp(PalmButton.power);
+
+                this.pendingPwmUpdates.flush();
 
                 this.clearCanvas();
                 setStoredSession(id);
@@ -385,8 +390,9 @@ export class EmulationService {
             this.lastSnapshotAt = timestamp;
         }
 
-        if (this.pendingPwmUpdates.length > 0) {
-            this.pwmUpdateEvent.dispatch(this.pendingPwmUpdates.shift()!);
+        if (this.pendingPwmUpdates.count() > 0) {
+            // tslint:disable-next-line: no-non-null-assertion
+            this.pwmUpdateEvent.dispatch(this.pendingPwmUpdates.pop()!);
         }
     }
 
@@ -511,5 +517,5 @@ export class EmulationService {
     private powerButtonEngaged = false;
     private powerButtonDuration = 0;
 
-    private pendingPwmUpdates = new Array<PwmUpdate>();
+    private pendingPwmUpdates = new Fifo<PwmUpdate>(PWM_FIFO_SIZE);
 }
