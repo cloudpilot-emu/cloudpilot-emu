@@ -11,6 +11,7 @@ import { Event } from 'microevent.ts';
 import { FileService } from 'src/app/service/file.service';
 import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
+import { PwmUpdate } from './../helper/Cloudpilot';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
@@ -40,7 +41,7 @@ export const GRAYSCALE_PALETTE_HEX = GRAYSCALE_PALETTE_RGBA.map(
 
 const PEN_MOVE_THROTTLE = 25;
 const SNAPSHOT_INTERVAL = 1000;
-const ENGAGE_POWER_BUTTON_DURAtION = 250;
+const ENGAGE_POWER_BUTTON_DURATION = 250;
 
 @Injectable({
     providedIn: 'root',
@@ -71,8 +72,21 @@ export class EmulationService {
 
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
         errorService.fatalErrorEvent.addHandler(this.pause);
-        this.cloudpilot.then((instance) => instance.fatalErrorEvent.addHandler(this.errorService.fatalInNativeCode));
         this.alertService.emergencySaveEvent.addHandler(this.onEmergencySave);
+
+        this.cloudpilot.then((instance) => {
+            instance.fatalErrorEvent.addHandler(this.errorService.fatalInNativeCode);
+            instance.pwmUpdateEvent.addHandler((pwmUpdate) => {
+                if (
+                    this.pendingPwmUpdates.length > 0 &&
+                    this.pendingPwmUpdates[this.pendingPwmUpdates.length - 1].frequency < 0
+                ) {
+                    this.pendingPwmUpdates[this.pendingPwmUpdates.length - 1] = pwmUpdate;
+                } else {
+                    this.pendingPwmUpdates.push(pwmUpdate);
+                }
+            });
+        });
 
         const storedSession = getStoredSession();
         if (storedSession !== undefined) {
@@ -358,7 +372,7 @@ export class EmulationService {
         if (this.powerButtonEngaged) {
             this.powerButtonDuration += cycles / this.cloudpilotInstance.cyclesPerSecond();
 
-            if (this.powerButtonDuration * 1000 >= ENGAGE_POWER_BUTTON_DURAtION) {
+            if (this.powerButtonDuration * 1000 >= ENGAGE_POWER_BUTTON_DURATION) {
                 this.powerButtonEngaged = false;
 
                 this.cloudpilotInstance.queueButtonUp(PalmButton.power);
@@ -369,6 +383,10 @@ export class EmulationService {
             this.snapshotService.triggerSnapshot();
 
             this.lastSnapshotAt = timestamp;
+        }
+
+        if (this.pendingPwmUpdates.length > 0) {
+            this.pwmUpdateEvent.dispatch(this.pendingPwmUpdates.shift()!);
         }
     }
 
@@ -463,7 +481,9 @@ export class EmulationService {
     }
 
     readonly cloudpilot = Cloudpilot.create();
+
     newFrameEvent = new Event<HTMLCanvasElement>();
+    pwmUpdateEvent = new Event<PwmUpdate>();
 
     private cloudpilotInstance!: Cloudpilot;
     private bootstrapCompletePromise: Promise<void>;
@@ -490,4 +510,6 @@ export class EmulationService {
 
     private powerButtonEngaged = false;
     private powerButtonDuration = 0;
+
+    private pendingPwmUpdates = new Array<PwmUpdate>();
 }

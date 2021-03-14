@@ -12,6 +12,13 @@
       <ion-button (click)="openContextMenu($event)">
         <ion-icon name="ellipsis-vertical-outline"></ion-icon>
       </ion-button>
+
+      <ion-button *ngIf="!audioService.isInitialized()" (click)="audioService.initialize()">
+        <ion-icon name="volume-mute-outline"></ion-icon>
+      </ion-button>
+      <ion-button *ngIf="audioService.isInitialized()" (click)="audioService.initialize()">
+        <ion-icon name="volume-high-outline"></ion-icon>
+      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>

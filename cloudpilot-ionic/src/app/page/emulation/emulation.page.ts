@@ -5,6 +5,7 @@ import { LoadingController, ModalController, PopoverController } from '@ionic/an
 import { getStoredSession, hasStoredSession } from 'src/app/helper/storedSession';
 
 import { AlertService } from 'src/app/service/alert.service';
+import { AudioService } from './../../service/audio.service';
 import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
@@ -23,6 +24,7 @@ export class EmulationPage implements AfterViewInit {
         public emulationService: EmulationService,
         public emulationState: EmulationStateService,
         private storageService: StorageService,
+        public audioService: AudioService,
         private popoverController: PopoverController,
         private modalController: ModalController,
         private alertService: AlertService,
