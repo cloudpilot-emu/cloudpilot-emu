@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
 import { PwmUpdate } from './../helper/Cloudpilot';
+import { isIOS } from './../helper/browser';
 
 type AudioContextType = typeof AudioContext;
 
@@ -35,7 +36,7 @@ export class AudioService {
         this.emulationService.powerOffChangeEvent.addHandler(this.updateState);
         this.modalWatcher.modalVisibilityChangeEvent.addHandler(this.updateState);
 
-        document.addEventListener('visibilitychange', this.updateState);
+        if (!isIOS) document.addEventListener('visibilitychange', this.updateState);
     }
 
     initialize = (): Promise<void> =>
@@ -111,7 +112,7 @@ export class AudioService {
                 this.emulationService.isPowerOff() ||
                 this.modalWatcher.isModalActive() ||
                 this.muted ||
-                document.visibilityState === 'hidden'
+                (document.visibilityState === 'hidden' && !isIOS)
             ) {
                 if (!this.suspended) await this.context.suspend();
                 this.suspended = true;
