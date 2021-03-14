@@ -36,6 +36,8 @@
           "/svg/attach-outline.svg",
           "/svg/trash-outline.svg",
           "/svg/help-outline.svg",
+          "/svg/volume-mute-outline.svg",
+          "/svg/volume-high-outline.svg",
           "/assets/**",
           "/*.(eot|svg|cur|jpg|png|webp|gif|otf|ttf|woff|woff2|ani)"
         ]
