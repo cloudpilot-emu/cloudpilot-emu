@@ -1,5 +1,6 @@
 import { EmulationService } from './emulation.service';
 import { Injectable } from '@angular/core';
+import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
 import { PwmUpdate } from './../helper/Cloudpilot';
 
@@ -28,8 +29,13 @@ function withTimeout<T>(v: Promise<T>, timeout = 100): Promise<T> {
     providedIn: 'root',
 })
 export class AudioService {
-    constructor(private emulationService: EmulationService) {
+    constructor(private emulationService: EmulationService, private modalWatcher: ModalWatcherService) {
         this.emulationService.pwmUpdateEvent.addHandler(this.onPwmUpdate);
+        this.emulationService.emulationStateChangeEvent.addHandler(this.updateState);
+        this.emulationService.powerOffChangeEvent.addHandler(this.updateState);
+        this.modalWatcher.modalVisibilityChangeEvent.addHandler(this.updateState);
+
+        document.addEventListener('visibilitychange', this.updateState);
     }
 
     initialize = (): Promise<void> =>
@@ -76,15 +82,48 @@ export class AudioService {
         return this.initialized;
     }
 
+    mute(muted: boolean): void {
+        this.muted = muted;
+
+        this.updateState();
+    }
+
+    isMuted(): boolean {
+        return this.muted;
+    }
+
     private async start(): Promise<void> {
         if (!this.context) return;
 
         await withTimeout(this.context.resume());
         // await this.context.suspend();
 
-        this.suspended = true;
+        this.updateState();
         console.log('audio context initialized');
     }
+
+    private updateState = () =>
+        this.mutex.runExclusive(async () => {
+            if (!this.context) return;
+
+            if (
+                !this.emulationService.isRunning() ||
+                this.emulationService.isPowerOff() ||
+                this.modalWatcher.isModalActive() ||
+                this.muted ||
+                document.visibilityState === 'hidden'
+            ) {
+                if (!this.suspended) await this.context.suspend();
+                this.suspended = true;
+
+                console.log('suspend audio');
+            } else {
+                if (this.suspended) await this.context.resume();
+                this.suspended = false;
+
+                console.log('resume audio');
+            }
+        });
 
     private onPwmUpdate = async (pwmUpdate: PwmUpdate): Promise<void> => {
         this.pendingPwmUpdate = pwmUpdate;
@@ -138,8 +177,10 @@ export class AudioService {
     private bufferSourceNode: AudioBufferSourceNode | undefined;
     private gainNode!: GainNode;
 
-    private suspended = true;
+    private suspended = false;
     private initialized = false;
+    private muted = false;
+    private pageVisible = true;
 
     private pendingPwmUpdate: PwmUpdate | undefined;
 }

@@ -24,7 +24,7 @@ export class EmulationPage implements AfterViewInit {
         public emulationService: EmulationService,
         public emulationState: EmulationStateService,
         private storageService: StorageService,
-        public audioService: AudioService,
+        private audioService: AudioService,
         private popoverController: PopoverController,
         private modalController: ModalController,
         private alertService: AlertService,
@@ -119,6 +119,22 @@ export class EmulationPage implements AfterViewInit {
 
     get title(): string {
         return this.emulationState.getCurrentSession()?.name || '';
+    }
+
+    get isMuted(): boolean {
+        return !this.audioService.isInitialized() || this.audioService.isMuted();
+    }
+
+    mute(muted: boolean): void {
+        if (muted) {
+            this.audioService.mute(true);
+        } else {
+            if (this.audioService.isInitialized()) {
+                this.audioService.mute(false);
+            } else {
+                this.audioService.initialize();
+            }
+        }
     }
 
     private onNewFrame = (canvas: HTMLCanvasElement): void => {

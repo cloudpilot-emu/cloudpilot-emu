@@ -78,17 +78,7 @@ export class EmulationService {
 
         this.cloudpilot.then((instance) => {
             instance.fatalErrorEvent.addHandler(this.errorService.fatalInNativeCode);
-            instance.pwmUpdateEvent.addHandler((pwmUpdate) => {
-                if (
-                    this.pendingPwmUpdates.count() > 0 &&
-                    // tslint:disable-next-line: no-non-null-assertion
-                    this.pendingPwmUpdates.peekLast()!.frequency < 0
-                ) {
-                    this.pendingPwmUpdates.replaceLast(pwmUpdate);
-                } else {
-                    this.pendingPwmUpdates.push(pwmUpdate);
-                }
-            });
+            instance.pwmUpdateEvent.addHandler(this.onPwmUpdate);
         });
 
         const storedSession = getStoredSession();
@@ -178,7 +168,7 @@ export class EmulationService {
             );
 
             this.lastSnapshotAt = performance.now();
-            this.running = true;
+            this.setRunning(true);
         });
 
     pause = (): Promise<void> =>
@@ -281,6 +271,25 @@ export class EmulationService {
             }
         });
 
+    private onPwmUpdate = (pwmUpdate: PwmUpdate) => {
+        if (
+            this.pendingPwmUpdates.count() > 0 &&
+            // tslint:disable-next-line: no-non-null-assertion
+            this.pendingPwmUpdates.peekLast()!.frequency < 0
+        ) {
+            this.pendingPwmUpdates.replaceLast(pwmUpdate);
+        } else {
+            this.pendingPwmUpdates.push(pwmUpdate);
+        }
+    };
+
+    private setRunning(running: boolean): void {
+        if (running === this.running) return;
+
+        this.running = running;
+        this.emulationStateChangeEvent.dispatch(running);
+    }
+
     private onEmergencySave = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
             const session = this.emulationState.getCurrentSession();
@@ -298,7 +307,7 @@ export class EmulationService {
             this.animationFrameHandle = -1;
         }
 
-        this.running = false;
+        this.setRunning(false);
     }
 
     private clearCanvas(): void {
@@ -338,14 +347,18 @@ export class EmulationService {
             this.cloudpilotInstance.markScreenClean();
         }
 
-        const poweroff = this.cloudpilotInstance.isPowerOff();
+        const powerOff = this.cloudpilotInstance.isPowerOff();
         const uiInitialized = this.cloudpilotInstance.isUiInitialized();
         const currentSession = this.emulationState.getCurrentSession();
 
-        if (poweroff !== this.powerOff || uiInitialized !== this.uiInitialized) {
+        if (powerOff !== this.powerOff || uiInitialized !== this.uiInitialized) {
             this.ngZone.run(() => {
-                this.powerOff = poweroff;
+                const oldPowerOff = this.powerOff;
+
+                this.powerOff = powerOff;
                 this.uiInitialized = uiInitialized;
+
+                if (oldPowerOff !== this.powerOff) this.powerOffChangeEvent.dispatch(this.powerOff);
             });
         }
 
@@ -355,7 +368,7 @@ export class EmulationService {
             this.storageService.updateSession(session);
         }
 
-        if (uiInitialized && !poweroff && currentSession) {
+        if (uiInitialized && !powerOff && currentSession) {
             if (this.deviceHotsyncName === undefined) {
                 this.deviceHotsyncName = this.cloudpilotInstance.getHotsyncName();
             }
@@ -490,6 +503,8 @@ export class EmulationService {
 
     newFrameEvent = new Event<HTMLCanvasElement>();
     pwmUpdateEvent = new Event<PwmUpdate>();
+    emulationStateChangeEvent = new Event<boolean>();
+    powerOffChangeEvent = new Event<boolean>();
 
     private cloudpilotInstance!: Cloudpilot;
     private bootstrapCompletePromise: Promise<void>;

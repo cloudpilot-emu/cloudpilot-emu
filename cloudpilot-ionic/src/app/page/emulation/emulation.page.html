@@ -13,10 +13,10 @@
         <ion-icon name="ellipsis-vertical-outline"></ion-icon>
       </ion-button>
 
-      <ion-button *ngIf="!audioService.isInitialized()" (click)="audioService.initialize()">
+      <ion-button *ngIf="isMuted" (click)="mute(false)">
         <ion-icon name="volume-mute-outline"></ion-icon>
       </ion-button>
-      <ion-button *ngIf="audioService.isInitialized()" (click)="audioService.initialize()">
+      <ion-button *ngIf="!isMuted" (click)="mute(true)">
         <ion-icon name="volume-high-outline"></ion-icon>
       </ion-button>
     </ion-buttons>

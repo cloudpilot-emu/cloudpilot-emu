@@ -747,7 +747,7 @@ void EmRegsVZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, portMSelect);
 
     INSTALL_HANDLER(StdRead, pwmc1Write, pwmControl);
-    INSTALL_HANDLER(StdRead, pwms1Write, pwmSampleHi);
+    INSTALL_HANDLER(StdRead, StdWrite, pwmSampleHi);
     INSTALL_HANDLER(StdRead, pwms1Write, pwmSampleLo);
     INSTALL_HANDLER(StdRead, pwmp1Write, pwmPeriod);
     INSTALL_HANDLER(StdRead, NullWrite, pwmCounter);
@@ -2900,7 +2900,7 @@ void EmRegsVZ::pwmc1Write(emuptr address, int size, uint32 value) {
 void EmRegsVZ::pwms1Write(emuptr address, int size, uint32 value) {
     EmRegsVZ::StdWrite(address, size, value);
 
-    if (size == 1 && READ_REGISTER(pwmControl) & 0x10) {
+    if (READ_REGISTER(pwmControl) & 0x10) {
         pwmActive = true;
         DispatchPwmChange();
     }
