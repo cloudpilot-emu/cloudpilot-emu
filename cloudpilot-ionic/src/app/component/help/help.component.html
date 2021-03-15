@@ -9,5 +9,8 @@
 </ion-header>
 
 <ion-content fullscreen>
-    <markdown [src]="url"></markdown>
+    <div class="loader" *ngIf="loading">
+        <ion-spinner></ion-spinner>
+    </div>
+    <markdown [src]="url" (load)="loading = false"></markdown>
 </ion-content>

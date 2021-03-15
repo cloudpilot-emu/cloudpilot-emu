@@ -11,5 +11,7 @@ export class HelpComponent {
     @Input()
     public url!: string;
 
+    public loading = true;
+
     constructor(public modalController: ModalController) {}
 }
