@@ -16,8 +16,6 @@ declare global {
 
 const audioContextCtor = window.AudioContext || window.webkitAudioContext;
 
-const INTERACTION_EVENTS = ['touchstart', 'click', 'keydown'];
-
 function withTimeout<T>(v: Promise<T>, timeout = 100): Promise<T> {
     return new Promise((resolve, reject) => {
         setTimeout(() => reject(new Error('timeout')), timeout);
@@ -32,6 +30,7 @@ function withTimeout<T>(v: Promise<T>, timeout = 100): Promise<T> {
 export class AudioService {
     constructor(private emulationService: EmulationService, private modalWatcher: ModalWatcherService) {
         this.emulationService.pwmUpdateEvent.addHandler(this.onPwmUpdate);
+
         this.emulationService.emulationStateChangeEvent.addHandler(this.updateState);
         this.emulationService.powerOffChangeEvent.addHandler(this.updateState);
         this.modalWatcher.modalVisibilityChangeEvent.addHandler(this.updateState);
@@ -67,6 +66,10 @@ export class AudioService {
                 return;
             }
 
+            this.context.addEventListener('statechange', () => {
+                if ((this.context?.state as string) === 'interrupted') this.updateState();
+            });
+
             this.gainNode = this.context.createGain();
             this.gainNode.channelCount = 1;
             this.gainNode.channelInterpretation = 'speakers';
@@ -97,9 +100,8 @@ export class AudioService {
         if (!this.context) return;
 
         await withTimeout(this.context.resume());
-        // await this.context.suspend();
-
         this.updateState();
+
         console.log('audio context initialized');
     }
 
@@ -107,24 +109,44 @@ export class AudioService {
         this.mutex.runExclusive(async () => {
             if (!this.context) return;
 
-            if (
-                !this.emulationService.isRunning() ||
-                this.emulationService.isPowerOff() ||
-                this.modalWatcher.isModalActive() ||
-                this.muted ||
-                (document.visibilityState === 'hidden' && !isIOS)
-            ) {
-                if (!this.suspended) await this.context.suspend();
-                this.suspended = true;
+            if (this.isRunning() === this.shouldRun()) return;
 
-                console.log('suspend audio');
+            const oldState = this.context.state;
+
+            if (this.shouldRun()) {
+                try {
+                    await withTimeout(this.context.resume());
+
+                    console.log('resume audio context');
+                } catch (e) {
+                    console.error(`failed to resume audio from state ${oldState}`);
+                }
             } else {
-                if (this.suspended) await this.context.resume();
-                this.suspended = false;
+                try {
+                    await withTimeout(this.context.suspend());
 
-                console.log('resume audio');
+                    console.log('suspend audio context');
+                } catch (e) {
+                    console.error(`failed to suspend audio from state ${oldState}`);
+                }
             }
+
+            console.log(`audio context state change ${oldState} -> ${this.context.state}`);
         });
+
+    private shouldRun(): boolean {
+        return (
+            this.emulationService.isRunning() &&
+            !this.emulationService.isPowerOff() &&
+            !this.modalWatcher.isModalActive() &&
+            !this.muted &&
+            (document.visibilityState !== 'hidden' || isIOS)
+        );
+    }
+
+    private isRunning(): boolean {
+        return this.context?.state === 'running';
+    }
 
     private onPwmUpdate = async (pwmUpdate: PwmUpdate): Promise<void> => {
         this.pendingPwmUpdate = pwmUpdate;
@@ -137,20 +159,18 @@ export class AudioService {
     private applyPwmUpdate(): void {
         if (!this.context || !this.pendingPwmUpdate) return;
 
-        if (this.bufferSourceNode) {
-            this.bufferSourceNode.stop();
-            this.bufferSourceNode.disconnect();
-            this.bufferSourceNode = undefined;
-        }
+        if (this.shouldRun() !== this.isRunning()) this.updateState();
 
         const { frequency, dutyCycle } = this.pendingPwmUpdate;
+        const sampleRate = this.context.sampleRate;
+
         this.pendingPwmUpdate = undefined;
 
-        if (frequency <= 0 && dutyCycle <= 0) {
+        if (frequency <= 0 || dutyCycle <= 0 || frequency >= sampleRate) {
+            this.disconnectSource();
+
             return;
         }
-
-        const sampleRate = this.context.sampleRate;
 
         const buffer = this.context.createBuffer(1, Math.round(sampleRate / frequency), sampleRate);
         const data = buffer.getChannelData(0);
@@ -159,17 +179,27 @@ export class AudioService {
             data[i] = i / data.length < dutyCycle ? 1 : 0;
         }
 
-        this.bufferSourceNode = this.context.createBufferSource();
-        this.bufferSourceNode.channelCount = 1;
-        this.bufferSourceNode.channelInterpretation = 'speakers';
-        this.bufferSourceNode.loop = true;
-        this.bufferSourceNode.buffer = null;
-        this.bufferSourceNode.buffer = buffer;
+        const bufferSourceNode = this.context.createBufferSource();
+        bufferSourceNode.channelCount = 1;
+        bufferSourceNode.channelInterpretation = 'speakers';
+        bufferSourceNode.loop = true;
+        bufferSourceNode.buffer = buffer;
 
-        this.bufferSourceNode.connect(this.gainNode);
-        this.bufferSourceNode.start();
+        this.disconnectSource();
+
+        bufferSourceNode.connect(this.gainNode);
+        bufferSourceNode.start();
+        this.bufferSourceNode = bufferSourceNode;
 
         this.pendingPwmUpdate = undefined;
+    }
+
+    private disconnectSource(): void {
+        if (this.bufferSourceNode) {
+            this.bufferSourceNode.stop();
+            this.bufferSourceNode.disconnect();
+            this.bufferSourceNode = undefined;
+        }
     }
 
     private mutex = new Mutex();
@@ -178,10 +208,8 @@ export class AudioService {
     private bufferSourceNode: AudioBufferSourceNode | undefined;
     private gainNode!: GainNode;
 
-    private suspended = false;
     private initialized = false;
     private muted = false;
-    private pageVisible = true;
 
     private pendingPwmUpdate: PwmUpdate | undefined;
 }

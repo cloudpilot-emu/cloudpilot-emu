@@ -272,11 +272,7 @@ export class EmulationService {
         });
 
     private onPwmUpdate = (pwmUpdate: PwmUpdate) => {
-        if (
-            this.pendingPwmUpdates.count() > 0 &&
-            // tslint:disable-next-line: no-non-null-assertion
-            this.pendingPwmUpdates.peekLast()!.frequency < 0
-        ) {
+        if (this.pendingPwmUpdates.count() > 0 && this.pendingPwmUpdates.peekLast()!.frequency < 0) {
             this.pendingPwmUpdates.replaceLast(pwmUpdate);
         } else {
             this.pendingPwmUpdates.push(pwmUpdate);
@@ -404,7 +400,6 @@ export class EmulationService {
         }
 
         if (this.pendingPwmUpdates.count() > 0) {
-            // tslint:disable-next-line: no-non-null-assertion
             this.pwmUpdateEvent.dispatch(this.pendingPwmUpdates.pop()!);
         }
     }

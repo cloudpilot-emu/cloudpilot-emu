@@ -19,12 +19,10 @@ export class SessionSettingsComponent implements OnInit {
     constructor(private sessionService: SessionService) {}
 
     get formControlName(): AbstractControl {
-        // tslint:disable-next-line: no-non-null-assertion
         return this.formGroup.get('name')!;
     }
 
     get formControlHotsyncName(): AbstractControl {
-        // tslint:disable-next-line: no-non-null-assertion
         return this.formGroup.get('hotsyncName')!;
     }
 
