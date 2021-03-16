@@ -31,11 +31,11 @@ export class AudioService {
     constructor(private emulationService: EmulationService, private modalWatcher: ModalWatcherService) {
         this.emulationService.pwmUpdateEvent.addHandler(this.onPwmUpdate);
 
-        this.emulationService.emulationStateChangeEvent.addHandler(this.updateState);
-        this.emulationService.powerOffChangeEvent.addHandler(this.updateState);
-        this.modalWatcher.modalVisibilityChangeEvent.addHandler(this.updateState);
+        this.emulationService.emulationStateChangeEvent.addHandler(() => this.updateState());
+        this.emulationService.powerOffChangeEvent.addHandler(() => this.updateState());
+        this.modalWatcher.modalVisibilityChangeEvent.addHandler(() => this.updateState());
 
-        if (!isIOS) document.addEventListener('visibilitychange', this.updateState);
+        if (!isIOS) document.addEventListener('visibilitychange', () => this.updateState());
     }
 
     initialize = (): Promise<void> =>
@@ -105,11 +105,12 @@ export class AudioService {
         console.log('audio context initialized');
     }
 
-    private updateState = () =>
+    private updateState = (skipPwmUpdate = false) =>
         this.mutex.runExclusive(async () => {
             if (!this.context) return;
 
             if (this.isRunning() === this.shouldRun()) return;
+            if (!skipPwmUpdate && !this.isRunning() && this.shouldRun()) this.applyPwmUpdate();
 
             const oldState = this.context.state;
 
@@ -153,13 +154,15 @@ export class AudioService {
 
         if (!this.initialized) return;
 
+        if (this.shouldRun() !== this.isRunning()) this.updateState(true);
+
+        if (!this.shouldRun()) return;
+
         this.applyPwmUpdate();
     };
 
     private applyPwmUpdate(): void {
         if (!this.context || !this.pendingPwmUpdate) return;
-
-        if (this.shouldRun() !== this.isRunning()) this.updateState();
 
         const { frequency, dutyCycle } = this.pendingPwmUpdate;
         const sampleRate = this.context.sampleRate;
