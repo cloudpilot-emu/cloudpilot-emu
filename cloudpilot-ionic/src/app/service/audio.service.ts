@@ -121,11 +121,11 @@ export class AudioService {
 
             if (this.shouldRun()) {
                 try {
-                    await withTimeout(this.context.resume());
-
                     if (this.gainNode) {
                         this.gainNode.gain.value = this.gain();
                     }
+
+                    await withTimeout(this.context.resume());
 
                     console.log('resume audio context');
                 } catch (e) {

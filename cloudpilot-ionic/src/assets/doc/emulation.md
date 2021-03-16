@@ -44,6 +44,8 @@ it.
 The volume can be changed on the settings tab. The speaker button is not shown if the
 volume is set to zero.
 
+On iOS, muting the phone also mutes audio from the emulator.
+
 ### Reset
 
 No key held. This causes a plain reset.
