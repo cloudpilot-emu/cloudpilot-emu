@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { StorageService, keyKvs } from './service/storage.service';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { EmulationService } from './service/emulation.service';
+import { KvsService } from './service/kvs.service';
 import { REVISION } from './../revision';
 import { SwUpdate } from '@angular/service-worker';
 
@@ -13,7 +13,7 @@ import { SwUpdate } from '@angular/service-worker';
 })
 export class AppComponent implements OnInit {
     constructor(
-        private storageService: StorageService,
+        private kvsService: KvsService,
         private alertService: AlertService,
         private emulationService: EmulationService,
         private updates: SwUpdate
@@ -25,17 +25,17 @@ export class AppComponent implements OnInit {
     }
 
     private async checkForUpdate(): Promise<void> {
-        const storedVersion = await this.storageService.kvsGet(keyKvs.version);
+        const storedVersion = this.kvsService.kvs.version;
 
         if (storedVersion === undefined) {
-            await this.storageService.kvsSet(keyKvs.version, REVISION);
+            this.kvsService.kvs.version = REVISION;
 
             return;
         }
 
         if (storedVersion === REVISION) return;
 
-        await this.storageService.kvsSet(keyKvs.version, REVISION);
+        this.kvsService.kvs.version = REVISION;
 
         // wait for a possible loader to disappear
         await this.emulationService.bootstrapComplete();

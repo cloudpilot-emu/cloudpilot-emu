@@ -35,6 +35,15 @@ the top left. This is equivalent to pushing a pin into the reset hole on a real
 device The different options correspond to different key combination held while
 the device resets.
 
+# Audio
+
+The speaker button in the upper right corner allows to toggle audio emulation on / off.
+Cloudpilot always starts with audio disabled, and the icon must be tapped to enable
+it.
+
+The volume can be changed on the settings tab. The speaker button is not shown if the
+volume is set to zero.
+
 ### Reset
 
 No key held. This causes a plain reset.

@@ -1,3 +1,4 @@
+import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 
@@ -6,8 +7,8 @@ import { AppRoutingModule } from './app-routing.module';
 import { AudioService } from './service/audio.service';
 import { BrowserModule } from '@angular/platform-browser';
 import { EmulationService } from './service/emulation.service';
+import { KvsService } from './service/kvs.service';
 import { MarkdownModule } from 'ngx-markdown';
-import { NgModule } from '@angular/core';
 import { PageLockService } from './service/page-lock.service';
 import { RouteReuseStrategy } from '@angular/router';
 import { ServiceWorkerModule } from '@angular/service-worker';
@@ -25,7 +26,15 @@ import { environment } from '../environments/environment';
         MarkdownModule.forRoot({ loader: HttpClient }),
         HttpClientModule,
     ],
-    providers: [{ provide: RouteReuseStrategy, useClass: IonicRouteStrategy }],
+    providers: [
+        { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
+        {
+            provide: APP_INITIALIZER,
+            multi: true,
+            useFactory: (kvsService: KvsService) => kvsService.initialize.bind(kvsService),
+            deps: [KvsService],
+        },
+    ],
     bootstrap: [AppComponent],
 })
 export class AppModule {

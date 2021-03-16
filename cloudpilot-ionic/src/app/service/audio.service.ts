@@ -1,5 +1,6 @@
 import { EmulationService } from './emulation.service';
 import { Injectable } from '@angular/core';
+import { KvsService } from './kvs.service';
 import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
 import { PwmUpdate } from './../helper/Cloudpilot';
@@ -28,7 +29,11 @@ function withTimeout<T>(v: Promise<T>, timeout = 100): Promise<T> {
     providedIn: 'root',
 })
 export class AudioService {
-    constructor(private emulationService: EmulationService, private modalWatcher: ModalWatcherService) {
+    constructor(
+        private emulationService: EmulationService,
+        private modalWatcher: ModalWatcherService,
+        private kvsService: KvsService
+    ) {
         this.emulationService.pwmUpdateEvent.addHandler(this.onPwmUpdate);
 
         this.emulationService.emulationStateChangeEvent.addHandler(() => this.updateState());
@@ -73,7 +78,7 @@ export class AudioService {
             this.gainNode = this.context.createGain();
             this.gainNode.channelCount = 1;
             this.gainNode.channelInterpretation = 'speakers';
-            this.gainNode.gain.value = 0.25;
+            this.gainNode.gain.value = this.gain();
 
             this.gainNode.connect(this.context.destination);
 
@@ -118,6 +123,10 @@ export class AudioService {
                 try {
                     await withTimeout(this.context.resume());
 
+                    if (this.gainNode) {
+                        this.gainNode.gain.value = this.gain();
+                    }
+
                     console.log('resume audio context');
                 } catch (e) {
                     console.error(`failed to resume audio from state ${oldState}`);
@@ -141,6 +150,7 @@ export class AudioService {
             !this.emulationService.isPowerOff() &&
             !this.modalWatcher.isModalActive() &&
             !this.muted &&
+            this.gain() > 0 &&
             (document.visibilityState !== 'hidden' || isIOS)
         );
     }
@@ -203,6 +213,10 @@ export class AudioService {
             this.bufferSourceNode.disconnect();
             this.bufferSourceNode = undefined;
         }
+    }
+
+    private gain(): number {
+        return this.kvsService.kvs.volume / 2;
     }
 
     private mutex = new Mutex();

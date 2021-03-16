@@ -11,6 +11,7 @@ import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
 import { EventHandler } from './helper/EventHandler';
 import { HelpComponent } from 'src/app/component/help/help.component';
+import { KvsService } from './../../service/kvs.service';
 import { PalmButton } from '../../../../../src';
 import { StorageService } from './../../service/storage.service';
 
@@ -24,6 +25,7 @@ export class EmulationPage implements AfterViewInit {
         public emulationService: EmulationService,
         public emulationState: EmulationStateService,
         private storageService: StorageService,
+        private kvsService: KvsService,
         private audioService: AudioService,
         private popoverController: PopoverController,
         private modalController: ModalController,
@@ -123,6 +125,10 @@ export class EmulationPage implements AfterViewInit {
 
     get isMuted(): boolean {
         return !this.audioService.isInitialized() || this.audioService.isMuted();
+    }
+
+    get isAudioOff(): boolean {
+        return this.kvsService.kvs.volume <= 0;
     }
 
     mute(muted: boolean): void {

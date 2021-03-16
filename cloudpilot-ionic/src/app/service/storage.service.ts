@@ -13,16 +13,13 @@ import { migrate0to1, migrate1to2 } from './storage/migrations';
 
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
+import { Kvs } from './../model/Kvs';
 import { PageLockService } from './page-lock.service';
 import { Session } from 'src/app/model/Session';
 import { StorageError } from './storage/StorageError';
 import md5 from 'md5';
 
 export const E_LOCK_LOST = new Error('page lock lost');
-
-export const enum keyKvs {
-    version = 'version',
-}
 
 function guard(): any {
     return (target: any, propertyKey: string, desc: PropertyDescriptor) => {
@@ -182,14 +179,14 @@ export class StorageService {
     }
 
     @guard()
-    async kvsGet<T>(key: keyKvs): Promise<T | undefined> {
+    async kvsGet<T extends keyof Kvs>(key: T): Promise<Kvs[T] | undefined> {
         const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_KVS);
 
-        return complete<T>(objectStore.get(key));
+        return complete(objectStore.get(key));
     }
 
     @guard()
-    async kvsSet<T>(key: keyKvs, value: T): Promise<void> {
+    async kvsSet<T extends keyof Kvs>(key: T, value: Kvs[T]): Promise<void> {
         const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_KVS);
 
         objectStore.put(value, key);
@@ -197,8 +194,28 @@ export class StorageService {
         await complete(tx);
     }
 
+    async kvsLoad(): Promise<Partial<Kvs>> {
+        const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_KVS);
+
+        return new Promise((resolve, reject) => {
+            const kvs: Partial<Kvs> = {};
+            const request = objectStore.openCursor();
+
+            request.onsuccess = () => {
+                const cursor = request.result;
+                if (!cursor) return resolve(kvs);
+
+                kvs[cursor.key as keyof Kvs] = cursor.value;
+
+                cursor.continue();
+            };
+
+            request.onerror = () => reject(new StorageError(request.error?.message));
+        });
+    }
+
     @guard()
-    async kvsDelete(key: keyKvs): Promise<void> {
+    async kvsDelete(key: keyof Kvs): Promise<void> {
         const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_KVS);
 
         objectStore.delete(key);
@@ -307,7 +324,7 @@ export class StorageService {
                     cursor.continue();
                 };
 
-                request.onerror = () => reject(new StorageError('failed to load memory image'));
+                request.onerror = () => reject(new StorageError(request.error?.message));
             });
         });
 
