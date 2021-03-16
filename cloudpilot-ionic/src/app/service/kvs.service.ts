@@ -37,6 +37,8 @@ export class KvsService {
         } catch (e) {
             console.error('failed to load KVS');
             console.error(e);
+
+            this.kvsProxy = { ...DEFAULTS };
         }
     }
 
