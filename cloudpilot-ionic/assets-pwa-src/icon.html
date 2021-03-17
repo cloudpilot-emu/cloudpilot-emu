@@ -1,20 +1,30 @@
 <html>
-    <head>
-        <style>
+
+<head>
+    <style>
+        img {
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            background: transparent;
+        }
+
+        @media (width: 180px) {
             img {
-                width: 100%;
-                height: 100%;
                 filter: invert() drop-shadow(0 0 20px #888);
             }
 
             body {
-                /* background: radial-gradient(#222, #000) */
                 background: black;
             }
+        }
+    </style>
+</head>
 
-        </style>
-    </head>
-    <body>
-        <img src="icon.svg"></img>
-    </body>
+<body>
+    <img src="icon.svg"></img>
+</body>
+
 </html>

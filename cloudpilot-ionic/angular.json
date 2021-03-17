@@ -126,6 +126,11 @@
                 "input": "src/assets",
                 "output": "/assets"
               },
+              {
+                "glob": "**/*",
+                "input": "src/assets-pwa",
+                "output": "/assets-pwa"
+              },
               "src/manifest.webmanifest"
             ]
           },
