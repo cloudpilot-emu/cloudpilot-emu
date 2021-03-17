@@ -11,7 +11,11 @@
     "gen-revision": "echo \"export const REVISION = '`git rev-parse --short HEAD`';\" > src/revision.gen.ts",
     "test": "ng test",
     "lint": "ng lint",
-    "e2e": "ng e2e"
+    "e2e": "ng e2e",
+    "pwa-icons": "pwa-asset-generator --scrape --favicon --icon-only -m src/manifest.webmanifest -i src/index.html assets-pwa-src/icon.html src/assets-pwa",
+    "pwa-splash": "pwa-asset-generator --scrape --splash-only -m src/manifest.webmanifest -i src/index.html assets-pwa-src/splashscreen.html src/assets-pwa",
+    "pwa-splash-dark": "pwa-asset-generator --scrape --splash-only --dark-mode -m src/manifest.webmanifest -i src/index.html assets-pwa-src/splashscreen.html src/assets-pwa",
+    "pwa-assets": "yarn pwa-icons && yarn pwa-splash && yarn pwa-splash-dark"
   },
   "private": true,
   "dependencies": {
@@ -59,6 +63,7 @@
     "prettier": "^2.2.1",
     "prettier-plugin-import-sort": "^0.0.6",
     "protractor": "~7.0.0",
+    "pwa-asset-generator": "^4.1.1",
     "ts-node": "~9.1.1",
     "tslint": "~6.1.0",
     "typescript": "~4.1.0"
