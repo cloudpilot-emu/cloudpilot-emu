@@ -12,11 +12,10 @@
     "test": "ng test",
     "lint": "ng lint",
     "e2e": "ng e2e",
-    "favicon": "pwa-asset-generator --background '#fff' --scrape --favicon --icon-only -m src/manifest.webmanifest -i src/index.html assets-pwa-src/icon.html src/assets-pwa",
-    "pwa-icons": "pwa-asset-generator --opaque false --scrape --icon-only -m src/manifest.webmanifest -i src/index.html assets-pwa-src/icon.html src/assets-pwa",
+    "pwa-icons": "pwa-asset-generator --favicon --scrape --icon-only -m src/manifest.webmanifest -i src/index.html assets-pwa-src/icon.html src/assets-pwa",
     "pwa-splash": "pwa-asset-generator --scrape --splash-only -m src/manifest.webmanifest -i src/index.html assets-pwa-src/splashscreen.html src/assets-pwa",
     "pwa-splash-dark": "pwa-asset-generator --scrape --splash-only --dark-mode -m src/manifest.webmanifest -i src/index.html assets-pwa-src/splashscreen.html src/assets-pwa",
-    "pwa-assets": "yarn favicon && yarn pwa-icons && yarn pwa-splash && yarn pwa-splash-dark && prettier -w --parser html src/index.html"
+    "pwa-assets": "yarn pwa-icons && yarn pwa-splash && yarn pwa-splash-dark && prettier -w --parser html src/index.html"
   },
   "private": true,
   "dependencies": {
