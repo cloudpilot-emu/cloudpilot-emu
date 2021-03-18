@@ -2,30 +2,55 @@
 
 <head>
     <style>
-        img {
+        html,
+        body {
+            background: none;
+            margin: 0;
+        }
+
+        .container {
             width: 100%;
             height: 100%;
+            box-sizing: border-box;
+            border-radius: 20vw;
+            background: white;
+            border-width: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        img {
+            width: 90%;
+            height: 90%;
             filter: drop-shadow(0 0 20px #aaa);
         }
 
-        body {
-            background: white;
-        }
-
+        /* iOS */
         @media (width: 180px) {
             img {
                 filter: invert() drop-shadow(0 0 20px #888);
             }
 
-            body {
+            .container {
                 background: black;
+                border-radius: 0;
+            }
+        }
+
+        /* Favicon */
+        @media (width: 196px) {
+            img {
+                filter: none;
             }
         }
     </style>
 </head>
 
 <body>
-    <img src="icon.svg"></img>
+    <div class="container">
+        <img src="icon.svg"></img>
+    </div>
 </body>
 
 </html>
