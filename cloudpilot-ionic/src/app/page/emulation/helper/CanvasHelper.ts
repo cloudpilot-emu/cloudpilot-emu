@@ -1,5 +1,4 @@
 import { DeviceId } from 'src/app/model/DeviceId';
-import { EmulationStateService } from 'src/app/service/emulation-state.service';
 import { GRAYSCALE_PALETTE_HEX } from './../../../service/emulation.service';
 import { PalmButton } from '../../../../../../src';
 import { Session } from './../../../model/Session';
@@ -103,13 +102,6 @@ export class CanvasHelper {
         this.ctx.rect(x, y, width, height);
         this.ctx.fillStyle = style;
         this.ctx.fill();
-    }
-
-    private textCenteredAt(x: number, y: number, text: string): void {
-        const metrics = this.ctx.measureText(text);
-
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillText(text, BORDER + SCALE * x - metrics.width / 2, BORDER + SCALE * y);
     }
 
     private silkscreenImage(): Promise<HTMLImageElement> {
