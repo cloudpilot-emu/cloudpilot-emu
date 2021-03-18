@@ -474,14 +474,26 @@ export class EmulationService {
                 }
 
                 case 24:
-                    for (let y = 0; y < 160; y++) {
-                        for (let x = 0; x < 160; x++) {
-                            const imageDataBase = 4 * (y * 160 + x + frame.margin);
-                            const frameBufferBase = 3 * (y * 160 + x + frame.margin);
+                    {
+                        const imageData32 = new Uint32Array(
+                            this.imageData.data.buffer,
+                            this.imageData.data.byteOffset,
+                            this.imageData.data.byteLength >> 2
+                        );
+                        const buffer32 = new Uint32Array(
+                            frame.buffer.buffer,
+                            frame.buffer.byteOffset,
+                            frame.buffer.byteLength >> 2
+                        );
 
-                            this.imageData.data[imageDataBase] = frame.buffer[frameBufferBase];
-                            this.imageData.data[imageDataBase + 1] = frame.buffer[frameBufferBase + 1];
-                            this.imageData.data[imageDataBase + 2] = frame.buffer[frameBufferBase + 2];
+                        if (frame.margin === 0) {
+                            imageData32.subarray(0, 160 * 160).set(buffer32.subarray(0, 160 * 160));
+                        } else {
+                            for (let y = 0; y < 160; y++) {
+                                for (let x = 0; x < 160; x++) {
+                                    imageData32[y * 160 + x] = buffer32[y * 160 + x + frame.margin];
+                                }
+                            }
                         }
                     }
 

@@ -61,16 +61,16 @@ class EmRegsSED1376 : public EmRegs, public EmHALHandler {
     void DoSave(T& savestate);
 
     template <typename T>
-    void DoSaveLoad(T& helper);
+    void DoSaveLoad(T& helper, uint32 version);
 
    protected:
-    void SetFromPalette(uint8* target, uint16 index, bool mono);
+    void SetFromPalette(uint32* target, uint16 index, bool mono);
 
    protected:
     emuptr fBaseRegsAddr;
     emuptr fBaseVideoAddr;
     EmProxySED1376RegsType fRegs;
-    RGBType fClutData[256];
+    uint32 fClutData[256];
     EmRegsFrameBuffer& framebuffer;
 };
 

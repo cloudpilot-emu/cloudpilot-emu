@@ -80,7 +80,7 @@
 #define OVERLAY_IS_MAIN 1
 
 namespace {
-    constexpr int SAVESTATE_VERSION = 1;
+    constexpr int SAVESTATE_VERSION = 2;
 }
 
 // ---------------------------------------------------------------------------
@@ -132,7 +132,8 @@ void EmRegsSED1376::Load(SavestateLoader& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regsSED1376);
     if (!chunk) return;
 
-    if (chunk->Get32() != SAVESTATE_VERSION) {
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
         logging::printf("unable to restore RegsSED1376: unsupported savestate version\n");
         loader.NotifyError();
 
@@ -140,7 +141,7 @@ void EmRegsSED1376::Load(SavestateLoader& loader) {
     }
 
     LoadChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, version);
 }
 
 template <typename T>
@@ -151,13 +152,21 @@ void EmRegsSED1376::DoSave(T& savestate) {
     chunk->Put32(SAVESTATE_VERSION);
 
     SaveChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
 template <typename T>
-void EmRegsSED1376::DoSaveLoad(T& helper) {
-    for (auto& rgb : fClutData) {
-        helper.Do(typename T::Pack8() << rgb.fRed << rgb.fGreen << rgb.fBlue << rgb.fFiller);
+void EmRegsSED1376::DoSaveLoad(T& helper, uint32 version) {
+    if (version == 1) {
+        RGBType rgb;
+
+        for (uint32 i = 0; i < 256; i++) {
+            helper.Do(typename T::Pack8() << rgb.fRed << rgb.fGreen << rgb.fBlue << rgb.fFiller);
+
+            fClutData[i] = 0xff000000 | (rgb.fBlue << 16) | (rgb.fGreen << 8) | rgb.fRed;
+        }
+    } else {
+        helper.DoBuffer(fClutData, sizeof(fClutData));
     }
 
     helper.DoBuffer(fRegs.GetPtr(), fRegs.GetSize());
@@ -355,8 +364,8 @@ void EmRegsSED1376::lutWriteAddressWrite(emuptr address, int size, uint32 value)
     uint8 green = fRegs.lutWriteGreen;
     uint8 blue = fRegs.lutWriteBlue;
 
-    fClutData[value] = RGBType((red & 0xFC) | (red >> 6), (green & 0xFC) | (green >> 6),
-                               (blue & 0xFC) | (blue >> 6));
+    fClutData[value] = 0xff000000 | (((blue & 0xFC) | (blue >> 6)) << 16) |
+                       (((green & 0xFC) | (green >> 6)) << 8) | ((red & 0xFC) | (red >> 6));
 
     gSystemState.MarkScreenDirty();
 }
@@ -371,22 +380,19 @@ void EmRegsSED1376::lutReadAddressWrite(emuptr address, int size, uint32 value) 
 
     value &= 0x0FF;
 
-    RGBType rgb = fClutData[value];
+    uint32 rgba = fClutData[value];
 
-    fRegs.lutReadRed = rgb.fRed & 0xFC;
-    fRegs.lutReadGreen = rgb.fGreen & 0xFC;
-    fRegs.lutReadBlue = rgb.fBlue & 0xFC;
+    fRegs.lutReadRed = rgba & 0xfc;
+    fRegs.lutReadGreen = (rgba >> 8) & 0xfc;
+    fRegs.lutReadBlue = (rgba >> 16) & 0xfc;
 }
 
-inline void EmRegsSED1376::SetFromPalette(uint8* target, uint16 index, bool mono) {
-    RGBType entry = fClutData[index];
-
-    if (mono)
-        target[0] = target[1] = target[2] = entry.fGreen;
-    else {
-        target[0] = entry.fRed;
-        target[1] = entry.fGreen;
-        target[2] = entry.fBlue;
+inline void EmRegsSED1376::SetFromPalette(uint32* target, uint16 index, bool mono) {
+    if (mono) {
+        const uint8 green = (fClutData[index] >> 8) & 0xff;
+        *target = 0xff000000 | (green << 16) | (green << 8) | green;
+    } else {
+        *target = fClutData[index];
     }
 }
 
@@ -691,19 +697,17 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
     frame.margin = 0;
     frame.bytesPerLine = width * 3;
     if (3 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
-    uint8* buffer = frame.GetBuffer();
+    uint32* buffer = reinterpret_cast<uint32*>(frame.GetBuffer());
 
     switch (bpp) {
         case 1:
             for (int32 y = 0; y < height; y++)
                 for (int32 x = 0; x < width; x++) {
                     SetFromPalette(
-                        buffer,
+                        buffer++,
                         (framebuffer.GetByte(baseAddr + y * rowBytes + x / 8) >> (7 - (x % 8))) &
                             0x01,
                         mono);
-
-                    buffer += 3;
                 }
 
             break;
@@ -711,13 +715,11 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
         case 2:
             for (int32 y = 0; y < height; y++)
                 for (int32 x = 0; x < width; x++) {
-                    SetFromPalette(buffer,
+                    SetFromPalette(buffer++,
                                    (framebuffer.GetByte(baseAddr + y * rowBytes + x / 4) >>
                                     2 * (3 - (x % 4))) &
                                        0x03,
                                    mono);
-
-                    buffer += 3;
                 }
 
             break;
@@ -725,13 +727,11 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
         case 4:
             for (int32 y = 0; y < height; y++)
                 for (int32 x = 0; x < width; x++) {
-                    SetFromPalette(buffer,
+                    SetFromPalette(buffer++,
                                    (framebuffer.GetByte(baseAddr + y * rowBytes + x / 2) >>
                                     4 * (1 - (x % 2))) &
                                        0x0f,
                                    mono);
-
-                    buffer += 3;
                 }
 
             break;
@@ -739,9 +739,8 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
         case 8:
             for (int32 y = 0; y < height; y++)
                 for (int32 x = 0; x < width; x++) {
-                    SetFromPalette(buffer, framebuffer.GetByte(baseAddr + y * rowBytes + x), mono);
-
-                    buffer += 3;
+                    SetFromPalette(buffer++, framebuffer.GetByte(baseAddr + y * rowBytes + x),
+                                   mono);
                 }
 
             break;
@@ -771,13 +770,11 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
 
                     if (mono) {
                         uint8 green = ((p >> 3) & 0xFC) | ((p >> 5) & 0x03);
-                        *buffer++ = green;
-                        *buffer++ = green;
-                        *buffer++ = green;
+                        *buffer++ = 0xff000000 | (green << 16) | (green << 8) | green;
                     } else {
-                        *buffer++ = ((p >> 8) & 0xF8) | ((p >> 11) & 0x07);
-                        *buffer++ = ((p >> 3) & 0xFC) | ((p >> 5) & 0x03);
-                        *buffer++ = ((p << 3) & 0xF8) | ((p >> 0) & 0x07);
+                        *buffer++ = 0xff000000 | ((((p << 3) & 0xF8) | ((p >> 0) & 0x07)) << 16) |
+                                    ((((p >> 3) & 0xFC) | ((p >> 5) & 0x03)) << 8) |
+                                    (((p >> 8) & 0xF8) | ((p >> 11) & 0x07));
                     }
                 }
 

@@ -14,13 +14,13 @@
 
 constexpr uint8 SILKSCREEN_BACKGROUND_HUE = 0xbb;
 constexpr uint32 BACKGROUND_HUE = 0xd2;
-constexpr uint32 FOREGROUND_COLOR = 0x000000ff;
+constexpr uint32 FOREGROUND_COLOR = 0xff000000;
 constexpr uint32 BACKGROUND_COLOR =
-    0xff | (BACKGROUND_HUE << 8) | (BACKGROUND_HUE << 16) | (BACKGROUND_HUE << 24);
+    0xff000000 | BACKGROUND_HUE | (BACKGROUND_HUE << 8) | (BACKGROUND_HUE << 16);
 
 constexpr uint32 PALETTE_GRAYSCALE_16[] = {
-    0xd2d2d2ff, 0xc4c4c4ff, 0xb6b6b6ff, 0xa8a8a8ff, 0x9a9a9aff, 0x8c8c8cff, 0x7e7e7eff, 0x707070ff,
-    0x626262ff, 0x545454ff, 0x464646ff, 0x383838ff, 0x2a2a2aff, 0x1c1c1cff, 0x0e0e0eff, 0x000000ff};
+    0xffd2d2d2, 0xffc4c4c4, 0xffb6b6b6, 0xffa8a8a8, 0xff9a9a9a, 0xff8c8c8c, 0xff7e7e7e, 0xff707070,
+    0xff626262, 0xff545454, 0xff464646, 0xff383838, 0xff2a2a2a, 0xff1c1c1c, 0xff0e0e0e, 0xff000000};
 
 MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer) : renderer(renderer) {
     LoadSilkscreen();
@@ -31,7 +31,7 @@ MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer) : renderer(render
 
     SDL_RenderPresent(renderer);
 
-    lcdTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
+    lcdTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING,
                                    160, 160);
 }
 
@@ -148,11 +148,10 @@ void MainLoop::UpdateScreen() {
             case 24: {
                 for (int x = 0; x < 160; x++)
                     for (int y = 0; y < 160; y++) {
-                        int idx = 3 * (x + frame.margin + (y * frame.lineWidth));
+                        uint32* buffer32 = reinterpret_cast<uint32*>(buffer);
 
-                        pixels[y * pitch / 4 + x] = 0x000000ff | (buffer[idx] << 24) |
-                                                    (buffer[idx + 1] << 16) |
-                                                    (buffer[idx + 2] << 8);
+                        pixels[y * pitch / 4 + x] =
+                            buffer32[x + frame.margin + (y * frame.lineWidth)];
                     }
             } break;
         }
