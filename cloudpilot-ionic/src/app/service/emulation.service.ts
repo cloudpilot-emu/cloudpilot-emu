@@ -350,8 +350,9 @@ export class EmulationService {
 
         const timestamp = performance.now();
 
+        // Limit the time that we try to catch up. This is relevant if there was no animation
+        // frame for an extended period of time.
         if (timestamp - this.clockEmulator > 500) this.clockEmulator = timestamp - 10;
-
         const cyclesToRun = ((timestamp - this.clockEmulator) / 1000) * this.cloudpilotInstance.cyclesPerSecond();
 
         let cycles = 0;
@@ -359,7 +360,12 @@ export class EmulationService {
             cycles += this.cloudpilotInstance.runEmulation(Math.ceil(cyclesToRun - cycles));
         }
 
-        this.clockEmulator += (cycles / this.cloudpilotInstance.cyclesPerSecond()) * 1000;
+        const virtualTimePassed = (cycles / this.cloudpilotInstance.cyclesPerSecond()) * 1000;
+        // If the emulation runs too slowly the amount of real time that passed will exceed the
+        // emulated time difference. In this case we compensate by advancing the emulated clock
+        // by the actual time difference; otherwise, the differences will pile up until we hit
+        // the 500msec limit above, resulting in jerky emulation.
+        this.clockEmulator += Math.max(virtualTimePassed, performance.now() - timestamp);
 
         const powerOff = this.cloudpilotInstance.isPowerOff();
         const uiInitialized = this.cloudpilotInstance.isUiInitialized();

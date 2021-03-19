@@ -27,28 +27,11 @@ extern uae_u32	gStackLowWarn;
 extern uae_u32	gStackLow;
 extern uae_u32	gKernelStackOverflowed;
 
-#define CHECK_STACK_POINTER_ASSIGNMENT()		\
-do {											\
-	Software_CheckStackPointerAssignment ();	\
-	if (gKernelStackOverflowed)					\
-		Software_CheckKernelStack ();			\
-} while (0)
+#define CHECK_STACK_POINTER_ASSIGNMENT() {}
 
-#define CHECK_STACK_POINTER_DECREMENT()			\
-do {											\
-	if (m68k_areg (regs, 7) < gStackLowWarn)	\
-		Software_CheckStackPointerDecrement ();	\
-	if (gKernelStackOverflowed)					\
-		Software_CheckKernelStack ();			\
-} while (0)
+#define CHECK_STACK_POINTER_DECREMENT()	{}
 
-#define CHECK_STACK_POINTER_INCREMENT()			\
-do {											\
-	if (m68k_areg (regs, 7) > gStackHigh)		\
-		Software_CheckStackPointerIncrement ();	\
-	if (gKernelStackOverflowed)					\
-		Software_CheckKernelStack ();			\
-} while (0)
+#define CHECK_STACK_POINTER_INCREMENT()	{}
 
 // Called in RTD handler
 #define compiler_flush_jsr_stack() do { ; } while (0)
@@ -84,7 +67,6 @@ STATIC_INLINE void m68k_do_bsr(uaecptr oldpc, uae_s32 offset)
 		return;
 
     m68k_areg(regs, 7) -= 4;
-	Software_CheckStackPointerDecrement ();
     put_long(m68k_areg(regs, 7), oldpc);
     m68k_incpc(offset);
 }
@@ -95,7 +77,6 @@ STATIC_INLINE void m68k_do_jsr(uaecptr oldpc, uaecptr dest)
 		return;
 
     m68k_areg(regs, 7) -= 4;
-	Software_CheckStackPointerDecrement ();
     put_long(m68k_areg(regs, 7), oldpc);
     m68k_setpc(dest);
 }
