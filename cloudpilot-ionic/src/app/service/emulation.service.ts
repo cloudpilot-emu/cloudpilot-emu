@@ -303,6 +303,12 @@ export class EmulationService {
             this.animationFrameHandle = -1;
         }
 
+        if (this.advanceEmulationHandle !== undefined) {
+            window.clearTimeout(this.advanceEmulationHandle);
+
+            this.advanceEmulationHandle = undefined;
+        }
+
         this.setRunning(false);
     }
 
@@ -314,19 +320,36 @@ export class EmulationService {
         this.context.fill();
     }
 
-    private onAnimationFrame = (timestamp: number): void => {
+    private onAnimationFrame = (): void => {
         this.animationFrameHandle = -1;
 
         if (this.errorService.hasFatalError()) return;
 
         if (!this.modalWatcher.isModalActive()) {
-            this.spinMainLoop(timestamp);
+            this.performScreenUpdate();
+
+            if (this.advanceEmulationHandle === undefined) {
+                this.advanceEmulationHandle = window.setTimeout(this.advanceEmulation, 0);
+            }
         }
 
         this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
     };
 
-    private spinMainLoop(timestamp: number): void {
+    private performScreenUpdate(): void {
+        if (this.cloudpilotInstance.isScreenDirty()) {
+            this.updateScreen();
+            this.cloudpilotInstance.markScreenClean();
+        }
+    }
+
+    private advanceEmulation = (): void => {
+        this.advanceEmulationHandle = undefined;
+
+        if (this.errorService.hasFatalError()) return;
+
+        const timestamp = performance.now();
+
         if (timestamp - this.clockEmulator > 500) this.clockEmulator = timestamp - 10;
 
         const cyclesToRun = ((timestamp - this.clockEmulator) / 1000) * this.cloudpilotInstance.cyclesPerSecond();
@@ -337,11 +360,6 @@ export class EmulationService {
         }
 
         this.clockEmulator += (cycles / this.cloudpilotInstance.cyclesPerSecond()) * 1000;
-
-        if (this.cloudpilotInstance.isScreenDirty()) {
-            this.updateScreen();
-            this.cloudpilotInstance.markScreenClean();
-        }
 
         const powerOff = this.cloudpilotInstance.isPowerOff();
         const uiInitialized = this.cloudpilotInstance.isUiInitialized();
@@ -402,7 +420,7 @@ export class EmulationService {
         if (this.pendingPwmUpdates.count() > 0) {
             this.pwmUpdateEvent.dispatch(this.pendingPwmUpdates.pop()!);
         }
-    }
+    };
 
     private updateScreen(): void {
         const frame = this.cloudpilotInstance.getFrame();
@@ -540,4 +558,6 @@ export class EmulationService {
     private powerButtonDuration = 0;
 
     private pendingPwmUpdates = new Fifo<PwmUpdate>(PWM_FIFO_SIZE);
+
+    private advanceEmulationHandle: number | undefined;
 }
