@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { AfterViewInit, Component, OnInit } from '@angular/core';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { EmulationService } from './service/emulation.service';
 import { KvsService } from './service/kvs.service';
+import { PwaService } from './service/pwa.service';
 import { REVISION } from './../revision';
 import { SwUpdate } from '@angular/service-worker';
 
@@ -11,15 +12,18 @@ import { SwUpdate } from '@angular/service-worker';
     templateUrl: 'app.component.html',
     styleUrls: ['app.component.scss'],
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements AfterViewInit {
     constructor(
         private kvsService: KvsService,
         private alertService: AlertService,
         private emulationService: EmulationService,
+        private pwaService: PwaService,
         private updates: SwUpdate
     ) {}
 
-    ngOnInit(): void {
+    ngAfterViewInit(): void {
+        this.pwaService.invite();
+
         this.registerForUpdates();
         this.checkForUpdate();
     }
