@@ -78,7 +78,7 @@ export class PwaService {
     }
 
     invite(): void {
-        if (!this.promptForInstall) return;
+        if (!this.promptForInstall()) return;
 
         if (this.kvsService.kvs.didShowInvitation) return;
         this.kvsService.kvs.didShowInvitation = true;
