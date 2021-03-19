@@ -11,17 +11,6 @@ declare global {
     }
 }
 
-interface BeforeInstallPromptEvent extends Event {
-    readonly platforms: Array<string>;
-
-    readonly userChoice: Promise<{
-        outcome: 'accepted' | 'dismissed';
-        platform: string;
-    }>;
-
-    prompt(): Promise<void>;
-}
-
 const INSTRUCTIONS_ANDROID = `
     Open your browser's menu and tap "Add to Home screen" in order to
     install Cloudpilot as an app.
@@ -70,16 +59,11 @@ const INVITATION_IOS = `
     This removes the browser UI and gives you a native app experience.
 `;
 
-const INSTALL_PROMPT = `
-`;
-
 @Injectable({
     providedIn: 'root',
 })
 export class PwaService {
-    constructor(private kvsService: KvsService, private alertService: AlertService) {
-        window.addEventListener('beforeinstallprompt', this.onBeforeInstallPrompt as EventListener);
-    }
+    constructor(private kvsService: KvsService, private alertService: AlertService) {}
 
     promptForInstall(): boolean {
         return (isIOS || isAndroid) && this.installationMode === InstallationMode.web;
@@ -90,15 +74,11 @@ export class PwaService {
     }
 
     install(): void {
-        if (this.beforeInstallPromptEvent) {
-            this.triggerInstallation();
-        } else {
-            this.alertService.message('Install app', this.getInstallMessage());
-        }
+        this.alertService.message('Install app', this.getInstallMessage());
     }
 
     invite(): void {
-        if (!this.promptForInstall || window.hasOwnProperty('onbeforeinstallprompt')) return;
+        if (!this.promptForInstall) return;
 
         if (this.kvsService.kvs.didShowInvitation) return;
         this.kvsService.kvs.didShowInvitation = true;
@@ -130,32 +110,5 @@ export class PwaService {
         return InstallationMode.web;
     }
 
-    private onBeforeInstallPrompt = (e: BeforeInstallPromptEvent): void => {
-        if (!isAndroid) return;
-
-        e.preventDefault();
-
-        this.beforeInstallPromptEvent = e;
-
-        if (this.kvsService.kvs.didShowInvitation) return;
-        this.kvsService.kvs.didShowInvitation = true;
-
-        this.triggerInstallation();
-    };
-
-    private triggerInstallation(): void {
-        if (!this.beforeInstallPromptEvent) return;
-
-        this.alertService.installPrompt(() => {
-            if (!this.beforeInstallPromptEvent) return;
-
-            const evt = this.beforeInstallPromptEvent;
-            this.beforeInstallPromptEvent = undefined;
-
-            evt.prompt();
-        });
-    }
-
     private installationMode: InstallationMode = this.determineInstallationMode();
-    private beforeInstallPromptEvent: BeforeInstallPromptEvent | undefined;
 }
