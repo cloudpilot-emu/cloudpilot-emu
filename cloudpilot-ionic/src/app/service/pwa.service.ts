@@ -83,7 +83,9 @@ export class PwaService {
         if (this.kvsService.kvs.didShowInvitation) return;
         this.kvsService.kvs.didShowInvitation = true;
 
-        this.alertService.message('App availabe', this.getInviteMessage());
+        if (!window.hasOwnProperty('onbeforeinstallprompt')) {
+            this.alertService.message('App available', this.getInviteMessage());
+        }
     }
 
     private getInstallMessage(): string {
