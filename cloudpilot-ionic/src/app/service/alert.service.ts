@@ -32,6 +32,31 @@ export class AlertService {
         await alert.present();
     }
 
+    async installPrompt(installHandler: () => void): Promise<void> {
+        const message = `
+            Do you want to install Cloudpilot as an app on your homescreen?
+            This will remove the browser UI and provide you with a native app experience.
+        `;
+
+        const alert = await this.alertController.create({
+            header: 'Install app',
+            message,
+            backdropDismiss: false,
+            buttons: [
+                {
+                    text: 'Install',
+                    handler: () => {
+                        alert.dismiss();
+                        installHandler();
+                    },
+                },
+                { text: 'Close', role: 'cancel' },
+            ],
+        });
+
+        await alert.present();
+    }
+
     async updateAvailable() {
         const alert = await this.alertController.create({
             header: 'Update available',
