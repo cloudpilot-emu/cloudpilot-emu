@@ -52,14 +52,6 @@ const INVITATION_ANDROID = `
     This removes the browser UI and gives you a native app experience.
 `;
 
-const INVITATION_ANDROID_NATIVE_INSTALL = `
-    Howdy! It seems that you are using Cloudpilot on an Android device. You can
-    install Cloudpilot as an app by tapping the playstore icon in the top right
-    of the screen".
-    <br/><br/>
-    This removes the browser UI and gives you a native app experience.
-`;
-
 const INVITATION_SAFARI_IOS = `
     Howdy! It seems that you are using Cloudpilot on an iPhone or iPad. You can
     install Cloudpilot as an app by tapping the "Share" icon
@@ -87,11 +79,10 @@ const INSTALL_PROMPT = `
 export class PwaService {
     constructor(private kvsService: KvsService, private alertService: AlertService) {
         window.addEventListener('beforeinstallprompt', this.onBeforeInstallPrompt as EventListener);
-        window.addEventListener('appinstalled', () => (this.installationComplete = true));
     }
 
     promptForInstall(): boolean {
-        return (isIOS || isAndroid) && this.installationMode === InstallationMode.web && !this.installationComplete;
+        return (isIOS || isAndroid) && this.installationMode === InstallationMode.web;
     }
 
     getInstallationMode(): InstallationMode {
@@ -107,7 +98,7 @@ export class PwaService {
     }
 
     invite(): void {
-        if (!this.promptForInstall) return;
+        if (!this.promptForInstall || window.hasOwnProperty('onbeforeinstallprompt')) return;
 
         if (this.kvsService.kvs.didShowInvitation) return;
         this.kvsService.kvs.didShowInvitation = true;
@@ -125,7 +116,6 @@ export class PwaService {
     private getInviteMessage(): string {
         if (isIOS && isIOSSafari) return INVITATION_SAFARI_IOS;
         if (isIOS) return INVITATION_IOS;
-        if (window.hasOwnProperty('onbeforeinstallprompt')) return INVITATION_ANDROID_NATIVE_INSTALL;
 
         return INVITATION_ANDROID;
     }
@@ -146,6 +136,11 @@ export class PwaService {
         e.preventDefault();
 
         this.beforeInstallPromptEvent = e;
+
+        if (this.kvsService.kvs.didShowInvitation) return;
+        this.kvsService.kvs.didShowInvitation = true;
+
+        this.triggerInstallation();
     };
 
     private triggerInstallation(): void {
@@ -163,5 +158,4 @@ export class PwaService {
 
     private installationMode: InstallationMode = this.determineInstallationMode();
     private beforeInstallPromptEvent: BeforeInstallPromptEvent | undefined;
-    private installationComplete = false;
 }
