@@ -22,7 +22,10 @@ import { environment } from '../environments/environment';
         BrowserModule,
         IonicModule.forRoot(),
         AppRoutingModule,
-        ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production }),
+        ServiceWorkerModule.register('ngsw-worker.js', {
+            enabled: environment.production,
+            registrationStrategy: 'registerImmediately',
+        }),
         MarkdownModule.forRoot({ loader: HttpClient }),
         HttpClientModule,
     ],
