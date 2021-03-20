@@ -513,14 +513,13 @@ EmRegsVZ::~EmRegsVZ(void) {}
 // ---------------------------------------------------------------------------
 
 void EmRegsVZ::Initialize(void) {
-    using namespace std::placeholders;
-
     EmRegs::Initialize();
     rtcDayAtWrite = 0;
     lastRtcAlarmCheck = -1;
     pwmActive = false;
     afterLoad = false;
-    onCycleHandle = EmHAL::onCycle.AddHandler(bind(&EmRegsVZ::Cycle, this, _1, _2));
+    onCycleHandle = EmHAL::onCycle.AddHandler(
+        [&](uint64 systemCycles, bool sleeping) { this->Cycle(systemCycles, sleeping); });
 
     tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
     tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();

@@ -244,36 +244,18 @@ class EmCPU68K : public EmCPU {
 
     void ProcessException(ExceptionNumber);
     void ProcessIllegalInstruction(EmOpcode68K opcode);
-    int ProcessJSR(emuptr oldPC, emuptr dest);
     int ProcessJSR_Ind(emuptr oldPC, emuptr dest);
-    void ProcessLINK(int linkSize);
-    int ProcessRTE(emuptr dest);
-    int ProcessRTS(emuptr dest);
-    void CheckNewPC(emuptr dest);
-    void CheckNewSP(EmStackChangeType);
 
     // Called by CPU clients who need to be notified when certain
     // actions occur.
 
     void InstallHookException(ExceptionNumber, Hook68KException);
 
-    void InstallHookJSR(Hook68KJSR);
     void InstallHookJSR_Ind(Hook68KJSR_Ind);
-    void InstallHookLINK(Hook68KLINK);
-    void InstallHookRTS(Hook68KRTE);
-    void InstallHookRTE(Hook68KRTS);
-    void InstallHookNewPC(Hook68KNewPC);
-    void InstallHookNewSP(Hook68KNewSP);
 
     void RemoveHookException(ExceptionNumber, Hook68KException);
 
-    void RemoveHookJSR(Hook68KJSR);
     void RemoveHookJSR_Ind(Hook68KJSR_Ind);
-    void RemoveHookLINK(Hook68KLINK);
-    void RemoveHookRTS(Hook68KRTE);
-    void RemoveHookRTE(Hook68KRTS);
-    void RemoveHookNewPC(Hook68KNewPC);
-    void RemoveHookNewSP(Hook68KNewSP);
 
     // Register management.  Clients should call Get/SetRegisters for
     // the most part.  UpdateXFromY are here so that MakeSR and
@@ -307,13 +289,7 @@ class EmCPU68K : public EmCPU {
    private:
     emuptr fLastTraceAddress;
     Hook68KExceptionList fExceptionHandlers[kException_LastException];
-    Hook68KJSRList fHookJSR;
     Hook68KJSR_IndList fHookJSR_Ind;
-    Hook68KLINKList fHookLINK;
-    Hook68KRTEList fHookRTE;
-    Hook68KRTSList fHookRTS;
-    Hook68KNewPCList fHookNewPC;
-    Hook68KNewSPList fHookNewSP;
     uint32 fCurrentCycles{0};
 
 #if REGISTER_HISTORY

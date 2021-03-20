@@ -43,67 +43,10 @@ unsigned long op_illg(uint32 iOpcode) {
     return 0;
 }
 
-void Software_ProcessLINK(int32 linkSize) {
-    EmAssert(gCPU68K);
-
-    gCPU68K->ProcessLINK(linkSize);
-}
-
-int Software_ProcessRTS(emuptr dest) {
-    EmAssert(gCPU68K);
-
-    gCPU68K->CheckNewPC(dest);
-    return gCPU68K->ProcessRTS(dest);
-}
-
-int Software_ProcessRTE(emuptr dest) {
-    EmAssert(gCPU68K);
-
-    gCPU68K->CheckNewPC(dest);
-    return gCPU68K->ProcessRTE(dest);
-}
-
-int Software_ProcessJSR(emuptr oldpc, emuptr dest) {
-    EmAssert(gCPU68K);
-
-    gCPU68K->CheckNewPC(dest);
-    return gCPU68K->ProcessJSR(oldpc, dest);
-}
-
 int Software_ProcessJSR_Ind(emuptr oldpc, emuptr dest) {
     EmAssert(gCPU68K);
 
     return gCPU68K->ProcessJSR_Ind(oldpc, dest);
-}
-
-void Software_CheckNewPC(emuptr dest) {
-    EmAssert(gCPU68K);
-
-    gCPU68K->CheckNewPC(dest);
-}
-
-void Software_CheckStackPointerAssignment() {
-    EmAssert(gCPU68K);
-
-    gCPU68K->CheckNewSP(kStackPointerChanged);
-}
-
-void Software_CheckStackPointerDecrement() {
-    EmAssert(gCPU68K);
-
-    gCPU68K->CheckNewSP(kStackPointerDecremented);
-}
-
-void Software_CheckStackPointerIncrement() {
-    EmAssert(gCPU68K);
-
-    gCPU68K->CheckNewSP(kStackPointerIncremented);
-}
-
-void Software_CheckKernelStack() {
-    EmAssert(gCPU68K);
-
-    gCPU68K->CheckNewSP(kStackPointerKernelStackHack);
 }
 
 void MakeSR(void) {

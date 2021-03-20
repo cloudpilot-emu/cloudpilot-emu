@@ -152,12 +152,8 @@ extern regstruct *gDynRegsP;
 
 #define m68k_incpc(o) (regs.pc_p += (o))
 
-extern void Software_CheckNewPC (uaecptr newPC);
-
 STATIC_INLINE void m68k_setpc (uaecptr newpc)
 {
-	Software_CheckNewPC (newpc);
-
 	{
 	addrbank*	bank = &(get_mem_bank(newpc));
     regs.pc_p = regs.pc_oldp = (bank->xlateaddr)(newpc);

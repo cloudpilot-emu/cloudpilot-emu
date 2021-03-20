@@ -127,13 +127,7 @@ EmCPU68K::EmCPU68K(EmSession* session)
     : EmCPU(session),
       fLastTraceAddress(EmMemNULL),
       //	fExceptionHandlers (),
-      fHookJSR(),
-      fHookJSR_Ind(),
-      fHookLINK(),
-      fHookRTE(),
-      fHookRTS(),
-      fHookNewPC(),
-      fHookNewSP()
+      fHookJSR_Ind()
 #if REGISTER_HISTORY
       ,
       fRegHistoryIndex(0)
@@ -799,7 +793,6 @@ void EmCPU68K::ProcessException(ExceptionNumber exception) {
 
     // Check the exception handler address and jam it into the PC.
 
-    this->CheckNewPC(newpc);
     m68k_setpc(newpc);
 
     // Turn tracing off.
@@ -835,25 +828,6 @@ void EmCPU68K::ProcessIllegalInstruction(EmOpcode68K opcode) {
 }
 
 // ---------------------------------------------------------------------------
-//		� EmCPU68K::ProcessJSR
-// ---------------------------------------------------------------------------
-
-int EmCPU68K::ProcessJSR(emuptr oldPC, emuptr dest) {
-    int handled = false;
-
-    Hook68KJSRList::iterator iter = fHookJSR.begin();
-    while (iter != fHookJSR.end()) {
-        if ((*iter)(oldPC, dest)) {
-            handled = true;
-        }
-
-        ++iter;
-    }
-
-    return handled;
-}
-
-// ---------------------------------------------------------------------------
 //		� EmCPU68K::ProcessJSR_Ind
 // ---------------------------------------------------------------------------
 
@@ -870,85 +844,6 @@ int EmCPU68K::ProcessJSR_Ind(emuptr oldPC, emuptr dest) {
     }
 
     return handled;
-}
-
-// ---------------------------------------------------------------------------
-//		� EmCPU68K::ProcessLINK
-// ---------------------------------------------------------------------------
-
-void EmCPU68K::ProcessLINK(int linkSize) {
-    Hook68KLINKList::iterator iter = fHookLINK.begin();
-    while (iter != fHookLINK.end()) {
-        (*iter)(linkSize);
-
-        ++iter;
-    }
-}
-
-// ---------------------------------------------------------------------------
-//		� EmCPU68K::ProcessRTE
-// ---------------------------------------------------------------------------
-
-int EmCPU68K::ProcessRTE(emuptr dest) {
-    int handled = false;
-
-    Hook68KRTEList::iterator iter = fHookRTE.begin();
-    while (iter != fHookRTE.end()) {
-        if ((*iter)(dest)) {
-            handled = true;
-        }
-
-        ++iter;
-    }
-
-    return handled;
-}
-
-// ---------------------------------------------------------------------------
-//		� EmCPU68K::ProcessRTS
-// ---------------------------------------------------------------------------
-
-int EmCPU68K::ProcessRTS(emuptr dest) {
-    int handled = false;
-
-    Hook68KRTSList::iterator iter = fHookRTS.begin();
-    while (iter != fHookRTS.end()) {
-        if ((*iter)(dest)) {
-            handled = true;
-        }
-
-        ++iter;
-    }
-
-    return handled;
-}
-
-// ---------------------------------------------------------------------------
-//		� EmCPU68K::CheckNewPC
-// ---------------------------------------------------------------------------
-
-void EmCPU68K::CheckNewPC(emuptr dest) {
-    Hook68KNewPCList::iterator iter = fHookNewPC.begin();
-    while (iter != fHookNewPC.end()) {
-        (*iter)(dest);
-
-        ++iter;
-    }
-
-    EmMemory::CheckNewPC(dest);
-}
-
-// ---------------------------------------------------------------------------
-//		� EmCPU68K::CheckNewSP
-// ---------------------------------------------------------------------------
-
-void EmCPU68K::CheckNewSP(EmStackChangeType type) {
-    Hook68KNewSPList::iterator iter = fHookNewSP.begin();
-    while (iter != fHookNewSP.end()) {
-        (*iter)(type);
-
-        ++iter;
-    }
 }
 
 #pragma mark -
@@ -968,19 +863,7 @@ void EmCPU68K::InstallHookException(ExceptionNumber exceptionNumber, Hook68KExce
     fExceptionHandlers[exceptionNumber].push_back(fn);
 }
 
-void EmCPU68K::InstallHookJSR(Hook68KJSR fn) { fHookJSR.push_back(fn); }
-
 void EmCPU68K::InstallHookJSR_Ind(Hook68KJSR_Ind fn) { fHookJSR_Ind.push_back(fn); }
-
-void EmCPU68K::InstallHookLINK(Hook68KLINK fn) { fHookLINK.push_back(fn); }
-
-void EmCPU68K::InstallHookRTE(Hook68KRTE fn) { fHookRTE.push_back(fn); }
-
-void EmCPU68K::InstallHookRTS(Hook68KRTS fn) { fHookRTS.push_back(fn); }
-
-void EmCPU68K::InstallHookNewPC(Hook68KNewPC fn) { fHookNewPC.push_back(fn); }
-
-void EmCPU68K::InstallHookNewSP(Hook68KNewSP fn) { fHookNewSP.push_back(fn); }
 
 // ---------------------------------------------------------------------------
 //		� EmCPU68K::RemoveHookException
@@ -1002,59 +885,11 @@ void EmCPU68K::RemoveHookException(ExceptionNumber exceptionNumber, Hook68KExcep
     }
 }
 
-void EmCPU68K::RemoveHookJSR(Hook68KJSR fn) {
-    Hook68KJSRList::iterator iter = find(fHookJSR.begin(), fHookJSR.end(), fn);
-
-    if (iter != fHookJSR.end()) {
-        fHookJSR.erase(iter);
-    }
-}
-
 void EmCPU68K::RemoveHookJSR_Ind(Hook68KJSR_Ind fn) {
     Hook68KJSR_IndList::iterator iter = find(fHookJSR_Ind.begin(), fHookJSR_Ind.end(), fn);
 
     if (iter != fHookJSR_Ind.end()) {
         fHookJSR_Ind.erase(iter);
-    }
-}
-
-void EmCPU68K::RemoveHookLINK(Hook68KLINK fn) {
-    Hook68KLINKList::iterator iter = find(fHookLINK.begin(), fHookLINK.end(), fn);
-
-    if (iter != fHookLINK.end()) {
-        fHookLINK.erase(iter);
-    }
-}
-
-void EmCPU68K::RemoveHookRTE(Hook68KRTE fn) {
-    Hook68KRTEList::iterator iter = find(fHookRTE.begin(), fHookRTE.end(), fn);
-
-    if (iter != fHookRTE.end()) {
-        fHookRTE.erase(iter);
-    }
-}
-
-void EmCPU68K::RemoveHookRTS(Hook68KRTS fn) {
-    Hook68KRTSList::iterator iter = find(fHookRTS.begin(), fHookRTS.end(), fn);
-
-    if (iter != fHookRTS.end()) {
-        fHookRTS.erase(iter);
-    }
-}
-
-void EmCPU68K::RemoveHookNewPC(Hook68KNewPC fn) {
-    Hook68KNewPCList::iterator iter = find(fHookNewPC.begin(), fHookNewPC.end(), fn);
-
-    if (iter != fHookNewPC.end()) {
-        fHookNewPC.erase(iter);
-    }
-}
-
-void EmCPU68K::RemoveHookNewSP(Hook68KNewSP fn) {
-    Hook68KNewSPList::iterator iter = find(fHookNewSP.begin(), fHookNewSP.end(), fn);
-
-    if (iter != fHookNewSP.end()) {
-        fHookNewSP.erase(iter);
     }
 }
 
@@ -1080,8 +915,6 @@ void EmCPU68K::SetRegisters(regstruct& registers) {
     this->UpdateRegistersFromSR();
 
     m68k_setpc(registers.pc);
-
-    this->CheckNewSP(kStackPointerChanged);
 }
 
 // ---------------------------------------------------------------------------

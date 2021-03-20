@@ -453,8 +453,6 @@ EmRegsEZ::~EmRegsEZ(void) {}
 // ---------------------------------------------------------------------------
 
 void EmRegsEZ::Initialize(void) {
-    using namespace std::placeholders;
-
     EmRegs::Initialize();
     rtcDayAtWrite = 0;
     lastRtcAlarmCheck = -1;
@@ -466,7 +464,8 @@ void EmRegsEZ::Initialize(void) {
     onMarkScreenCleanHandle =
         gSystemState.onMarkScreenClean.AddHandler(bind(&EmRegsEZ::MarkScreen, this));
 
-    onCycleHandle = EmHAL::onCycle.AddHandler(bind(&EmRegsEZ::Cycle, this, _1, _2));
+    onCycleHandle = EmHAL::onCycle.AddHandler(
+        [&](uint64 systemCycles, bool sleeping) { this->Cycle(systemCycles, sleeping); });
 
     lastProcessedSystemCycles = gSession->GetSystemCycles();
     UpdateTimerTicksPerSecond();
