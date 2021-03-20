@@ -8,6 +8,7 @@ interface Cloudpilot {
 
     long GetCyclesPerSecond();
     long RunEmulation(long cycles);
+    void SetClockFactor(double clockFactor);
 
     [Ref] Frame CopyFrame();
     boolean IsScreenDirty();

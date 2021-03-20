@@ -58,7 +58,7 @@ class EmSession {
 
     void SetHotsyncUserName(string hotsyncUserName);
 
-    void SetClockDiv(uint32 clockDiv);
+    void SetClockFactor(double clockFactor);
     uint32 GetClocksPerSecond() const { return clocksPerSecond; }
     uint64 GetSystemCycles() const { return systemCycles; }
 
@@ -140,7 +140,7 @@ class EmSession {
 
     uint64 systemCycles{0};
     uint32 extraCycles{0};
-    uint32 clockDiv{2};
+    double clockFactor{1};
 
     uint64 dayCheckedAt{0};
     uint32 dayAtLastClockSync{0};

@@ -275,6 +275,11 @@ export class Cloudpilot {
     }
 
     @guard()
+    setClockFactor(factor: number): void {
+        this.cloudpilot.SetClockFactor(factor);
+    }
+
+    @guard()
     setHotsyncName(name: string): void {
         this.cloudpilot.SetHotsyncName(name);
     }

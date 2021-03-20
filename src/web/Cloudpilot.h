@@ -17,6 +17,7 @@ class Cloudpilot {
 
     long GetCyclesPerSecond();
     long RunEmulation(long cycles);
+    void SetClockFactor(double clockFactor);
 
     Frame& CopyFrame();
     bool IsScreenDirty();

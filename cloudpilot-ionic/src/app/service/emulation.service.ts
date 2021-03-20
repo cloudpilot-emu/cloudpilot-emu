@@ -4,6 +4,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
 
 import { AlertService } from 'src/app/service/alert.service';
+import { Average } from './../helper/Average';
 import { DeviceId } from '../model/DeviceId';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
@@ -44,6 +45,8 @@ const PEN_MOVE_THROTTLE = 25;
 const SNAPSHOT_INTERVAL = 1000;
 const ENGAGE_POWER_BUTTON_DURATION = 250;
 const PWM_FIFO_SIZE = 10;
+const SPEED_AVERAGE_N = 20;
+const MIN_FPS = 30;
 
 @Injectable({
     providedIn: 'root',
@@ -148,6 +151,8 @@ export class EmulationService {
                 await this.snapshotService.initialize(session, await this.cloudpilot);
 
                 this.deviceHotsyncName = undefined;
+                this.emulationSpeed = 1;
+                this.speedAverage.reset(1);
             } finally {
                 await loader.dismiss();
             }
@@ -320,6 +325,21 @@ export class EmulationService {
         this.context.fill();
     }
 
+    private updateEmulationSpeed(currentSpeed: number) {
+        if (currentSpeed >= 1 && this.emulationSpeed >= 1) return;
+
+        // Speed < 1 ? -> bin it in 0.1 .. 0.9
+        const normalizedSpeed = Math.min(Math.max(Math.floor(currentSpeed * 10) / 10, 0.1), 1);
+
+        if (normalizedSpeed <= this.emulationSpeed) {
+            // speed decline is accepted directly
+            this.emulationSpeed = normalizedSpeed;
+        } else {
+            // speed increase is subject to 5% hysteresis
+            this.emulationSpeed = currentSpeed - normalizedSpeed >= 0.05 ? normalizedSpeed : this.emulationSpeed;
+        }
+    }
+
     private onAnimationFrame = (): void => {
         this.animationFrameHandle = -1;
 
@@ -327,6 +347,10 @@ export class EmulationService {
 
         if (!this.modalWatcher.isModalActive()) {
             this.performScreenUpdate();
+
+            if (this.pendingPwmUpdates.count() > 0) {
+                this.pwmUpdateEvent.dispatch(this.pendingPwmUpdates.pop()!);
+            }
 
             if (this.advanceEmulationHandle === undefined) {
                 this.advanceEmulationHandle = window.setTimeout(this.advanceEmulation, 0);
@@ -350,9 +374,13 @@ export class EmulationService {
 
         const timestamp = performance.now();
 
-        // Limit the time that we try to catch up. This is relevant if there was no animation
-        // frame for an extended period of time.
-        if (timestamp - this.clockEmulator > 500) this.clockEmulator = timestamp - 10;
+        // Scale the clock by the calculated emulation speed
+        this.cloudpilotInstance.setClockFactor(this.emulationSpeed);
+
+        // Limit the time that we try to catch up. This will avoid that we lock onto a low
+        // FPS if the emulation cannot run at full speed
+        if (timestamp - this.clockEmulator > 1000 / MIN_FPS) this.clockEmulator = timestamp - 1000 / MIN_FPS;
+
         const cyclesToRun = ((timestamp - this.clockEmulator) / 1000) * this.cloudpilotInstance.cyclesPerSecond();
 
         let cycles = 0;
@@ -361,11 +389,22 @@ export class EmulationService {
         }
 
         const virtualTimePassed = (cycles / this.cloudpilotInstance.cyclesPerSecond()) * 1000;
+        const realTimePassed = performance.now() - timestamp;
+
         // If the emulation runs too slowly the amount of real time that passed will exceed the
         // emulated time difference. In this case we compensate by advancing the emulated clock
-        // by the actual time difference; otherwise, the differences will pile up until we hit
-        // the 500msec limit above, resulting in jerky emulation.
-        this.clockEmulator += Math.max(virtualTimePassed, performance.now() - timestamp);
+        // by the actual time difference; otherwise, the differences will pile up,
+        // resulting in jerky emulation. Our dynamic speed correction will make sure that
+        // this does not happen too often.
+        this.clockEmulator += Math.max(virtualTimePassed, realTimePassed);
+
+        // Update the speed average. Note that we need to compensate this for the factor
+        // by which we scaled the clock --- the factor represents the ratio for a device
+        // running at ful speed
+        this.speedAverage.push((virtualTimePassed / realTimePassed) * this.emulationSpeed);
+
+        // Normalize the speed an apply hysteresis
+        this.updateEmulationSpeed(this.speedAverage.calculateAverage());
 
         const powerOff = this.cloudpilotInstance.isPowerOff();
         const uiInitialized = this.cloudpilotInstance.isUiInitialized();
@@ -421,10 +460,6 @@ export class EmulationService {
             this.snapshotService.triggerSnapshot();
 
             this.lastSnapshotAt = timestamp;
-        }
-
-        if (this.pendingPwmUpdates.count() > 0) {
-            this.pwmUpdateEvent.dispatch(this.pendingPwmUpdates.pop()!);
         }
     };
 
@@ -566,4 +601,7 @@ export class EmulationService {
     private pendingPwmUpdates = new Fifo<PwmUpdate>(PWM_FIFO_SIZE);
 
     private advanceEmulationHandle: number | undefined;
+
+    private emulationSpeed = 1;
+    private speedAverage = new Average(SPEED_AVERAGE_N);
 }

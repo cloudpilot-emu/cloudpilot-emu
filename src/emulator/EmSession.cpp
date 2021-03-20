@@ -20,7 +20,7 @@
 #include "SessionImage.h"
 
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 1;
+    constexpr uint32 SAVESTATE_VERSION = 2;
 
     constexpr int MIN_CYCLES_BETWEEN_EVENTS = 10000;
     constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
@@ -28,6 +28,8 @@ namespace {
     constexpr uint32 RUN_TO_SYSCALL_LIMIT = 10000000;
     constexpr uint32 YIELD_MEMMGR_LIMIT = 10000000;
     constexpr uint32 EXECUTE_SUBROUTINE_LIMIT = 50000000;
+
+    constexpr double DEFAULT_CLOCK_FACTOR = 0.5;
 
     EmSession _gSession;
 
@@ -192,7 +194,7 @@ void EmSession::Load(SavestateLoader& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::session);
     if (!chunk) return;
 
-    if (chunk->Get32() != SAVESTATE_VERSION) {
+    if (chunk->Get32() > SAVESTATE_VERSION) {
         logging::printf("unable to restore session: savestate version mismatch");
         loader.NotifyError();
 
@@ -232,6 +234,8 @@ void EmSession::Load(SavestateLoader& loader) {
 
     dayCheckedAt = systemCycles;
     dayAtLastClockSync = CurrentDay();
+
+    RecalculateClocksPerSecond();
 }
 
 bool EmSession::Save() { return savestate.Save(*this); }
@@ -261,9 +265,7 @@ void EmSession::DoSaveLoad(T& helper) {
     helper.Do(typename T::BoolPack() << bankResetScheduled << resetScheduled << holdingBootKeys)
         .Do(typename T::Pack8() << *reinterpret_cast<uint8*>(&resetType)
                                 << *reinterpret_cast<uint8*>(&bootKeysType))
-        .Do64(systemCycles)
-        .Do32(clockDiv)
-        .Do32(clocksPerSecond);
+        .Do64(systemCycles);
 }
 
 void EmSession::ScheduleReset(ResetType resetType) {
@@ -605,10 +607,13 @@ void EmSession::SetHotsyncUserName(string hotsyncUserName) {
     }
 }
 
-void EmSession::SetClockDiv(uint32 clockDiv) { this->clockDiv = clockDiv; }
+void EmSession::SetClockFactor(double clockFactor) {
+    this->clockFactor = clockFactor;
+    RecalculateClocksPerSecond();
+}
 
 void EmSession::RecalculateClocksPerSecond() {
-    clocksPerSecond = EmHAL::GetSystemClockFrequency() / clockDiv;
+    clocksPerSecond = EmHAL::GetSystemClockFrequency() * (clockFactor * DEFAULT_CLOCK_FACTOR);
 }
 
 void EmSession::CheckDayForRollover() {

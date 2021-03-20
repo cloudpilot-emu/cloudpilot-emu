@@ -95,6 +95,8 @@ long Cloudpilot::GetCyclesPerSecond() { return gSession->GetClocksPerSecond(); }
 
 long Cloudpilot::RunEmulation(long cycles) { return gSession->RunEmulation(cycles); }
 
+void Cloudpilot::SetClockFactor(double clockFactor) { gSession->SetClockFactor(clockFactor); }
+
 Frame& Cloudpilot::CopyFrame() {
     EmHAL::CopyLCDFrame(frame);
 

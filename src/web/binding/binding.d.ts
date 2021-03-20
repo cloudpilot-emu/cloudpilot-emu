@@ -32,6 +32,7 @@ export interface Cloudpilot {
 
     GetCyclesPerSecond(): number;
     RunEmulation(cycles: number): number;
+    SetClockFactor(clockFactor: number): number;
 
     CopyFrame(): Frame;
     IsScreenDirty(): boolean;
