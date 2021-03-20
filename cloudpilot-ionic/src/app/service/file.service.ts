@@ -2,6 +2,7 @@ import { metadataForSession, serializeSessionImage } from '../helper/sessionFile
 
 import { Cloudpilot } from '../helper/Cloudpilot';
 import { Injectable } from '@angular/core';
+import { LoadingController } from '@ionic/angular';
 import { Session } from './../model/Session';
 import { SessionImage } from './../model/SessionImage';
 import { StorageService } from './storage.service';
@@ -30,7 +31,7 @@ function fileNameForSession(session: Session): string {
     providedIn: 'root',
 })
 export class FileService {
-    constructor(private storageService: StorageService) {}
+    constructor(private storageService: StorageService, private loadingController: LoadingController) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {
         return this.openFilesImpl(false, (files) => {
@@ -43,21 +44,28 @@ export class FileService {
     }
 
     async saveSession(session: Session): Promise<void> {
-        const [rom, memory, savestate] = await this.storageService.loadSession(session);
+        const loader = await this.loadingController.create();
+        await loader.present();
 
-        if (!rom) {
-            throw new Error(`invalid ROM ${session.rom}`);
+        try {
+            const [rom, memory, savestate] = await this.storageService.loadSession(session);
+
+            if (!rom) {
+                throw new Error(`invalid ROM ${session.rom}`);
+            }
+
+            const sessionImage: SessionImage = {
+                deviceId: session.device,
+                metadata: metadataForSession(session),
+                rom,
+                memory,
+                savestate,
+            };
+
+            this.saveFile(fileNameForSession(session), serializeSessionImage(sessionImage));
+        } finally {
+            loader.dismiss();
         }
-
-        const sessionImage: SessionImage = {
-            deviceId: session.device,
-            metadata: metadataForSession(session),
-            rom,
-            memory,
-            savestate,
-        };
-
-        this.saveFile(fileNameForSession(session), serializeSessionImage(sessionImage));
     }
 
     emergencySaveSession(session: Session, cloudpilot: Cloudpilot): void {
