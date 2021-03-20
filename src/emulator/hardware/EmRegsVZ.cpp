@@ -513,11 +513,14 @@ EmRegsVZ::~EmRegsVZ(void) {}
 // ---------------------------------------------------------------------------
 
 void EmRegsVZ::Initialize(void) {
+    using namespace std::placeholders;
+
     EmRegs::Initialize();
     rtcDayAtWrite = 0;
     lastRtcAlarmCheck = -1;
     pwmActive = false;
     afterLoad = false;
+    onCycleHandle = EmHAL::onCycle.AddHandler(bind(&EmRegsVZ::Cycle, this, _1, _2));
 
     tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
     tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();
@@ -640,6 +643,8 @@ void EmRegsVZ::Dispose(void) {
     fUART[1] = NULL;
 
     EmRegs::Dispose();
+
+    EmHAL::onCycle.RemoveHandler(onCycleHandle);
 }
 
 // ---------------------------------------------------------------------------

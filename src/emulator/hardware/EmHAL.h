@@ -45,7 +45,6 @@ class EmHALHandler {
     EmHALHandler(void);
     virtual ~EmHALHandler(void);
 
-    virtual void Cycle(uint64 sytemCycles, Bool sleeping);
     virtual void CycleSlowly(Bool sleeping);
 
     virtual void ButtonEvent(ButtonEventT evt);
@@ -104,7 +103,6 @@ class EmHAL {
     static void RemoveHandler(EmHALHandler*);
     static void EnsureCoverage(void);
 
-    static void Cycle(uint64 systemCycles, Bool sleeping);
     static void CycleSlowly(Bool sleeping);
 
     static void ButtonEvent(ButtonEventT evt);
@@ -152,15 +150,11 @@ class EmHAL {
 
     static EmEvent<> onSystemClockChange;
     static EmEvent<double, double> onPwmChange;
+    static EmEvent<uint64, bool> onCycle;
 
    private:
     static EmHALHandler* GetRootHandler(void) { return fgRootHandler; }
     static EmHALHandler* fgRootHandler;
 };
-
-inline void EmHAL::Cycle(uint64 systemCycles, Bool sleeping) {
-    EmAssert(EmHAL::GetRootHandler());
-    EmHAL::GetRootHandler()->Cycle(systemCycles, sleeping);
-}
 
 #endif /* EmHAL_h */

@@ -101,23 +101,22 @@ EmCPU68K* gCPU68K;
 // code can be more efficient if "counter" can be cached in a register
 // instead of being a static or global variable.
 
-#define CYCLE(sleeping)                                                            \
-    {                                                                              \
-        /* Don't do anything if we're in the middle of an ATrap call.  We don't */ \
-        /* need interrupts firing or tmr counters incrementing. */                 \
-                                                                                   \
-        EmAssert(session);                                                         \
-        if (!session->IsNested()) {                                                \
-            /* Perform CPU-specific idling. */                                     \
-                                                                                   \
-            EmHAL::Cycle(session->GetSystemCycles() + fCurrentCycles, sleeping);   \
-                                                                                   \
-            /* Perform expensive operations. */                                    \
-                                                                                   \
-            if (sleeping || ((counter++ & 0x7FFF) == 0)) {                         \
-                this->CycleSlowly(sleeping);                                       \
-            }                                                                      \
-        }                                                                          \
+#define CYCLE(sleeping)                                                                     \
+    {                                                                                       \
+        /* Don't do anything if we're in the middle of an ATrap call.  We don't */          \
+        /* need interrupts firing or tmr counters incrementing. */                          \
+                                                                                            \
+        EmAssert(session);                                                                  \
+        if (!session->IsNested()) {                                                         \
+            /* Perform CPU-specific idling. */                                              \
+            EmHAL::onCycle.Dispatch(session->GetSystemCycles() + fCurrentCycles, sleeping); \
+                                                                                            \
+            /* Perform expensive operations. */                                             \
+                                                                                            \
+            if (sleeping || ((counter++ & 0x7FFF) == 0)) {                                  \
+                this->CycleSlowly(sleeping);                                                \
+            }                                                                               \
+        }                                                                                   \
     }
 
 // ---------------------------------------------------------------------------

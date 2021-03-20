@@ -64,6 +64,7 @@ namespace {
 
 EmEvent<> EmHAL::onSystemClockChange{};
 EmEvent<double, double> EmHAL::onPwmChange{};
+EmEvent<uint64, bool> EmHAL::onCycle{};
 
 // ---------------------------------------------------------------------------
 //		� EmHAL::AddHandler
@@ -141,14 +142,6 @@ void EmHAL::EnsureCoverage(void) {
 // ---------------------------------------------------------------------------
 //		� EmHAL::Cycle
 // ---------------------------------------------------------------------------
-
-#if 0  // It's inline
-void EmHAL::Cycle (Bool sleeping)
-{
-	EmAssert (EmHAL::GetRootHandler());
-	EmHAL::GetRootHandler()->Cycle (sleeping);
-}
-#endif
 
 // ---------------------------------------------------------------------------
 //		� EmHAL::CycleSlowly
@@ -520,11 +513,6 @@ EmHALHandler::~EmHALHandler(void) { EmHAL::RemoveHandler(this); }
 // ---------------------------------------------------------------------------
 //		� EmHALHandler::Cycle
 // ---------------------------------------------------------------------------
-
-void EmHALHandler::Cycle(uint64 systemCycles, Bool sleeping) {
-    EmAssert(this->GetNextHandler());
-    this->GetNextHandler()->Cycle(systemCycles, sleeping);
-}
 
 // ---------------------------------------------------------------------------
 //		� EmHALHandler::CycleSlowly

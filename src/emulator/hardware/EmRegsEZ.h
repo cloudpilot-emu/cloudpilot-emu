@@ -43,7 +43,6 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual uint32 GetAddressRange(void);
 
     // EmHALHandler overrides
-    virtual void Cycle(uint64 systemCycles, Bool sleeping);
     virtual void CycleSlowly(Bool sleeping);
 
     virtual void ButtonEvent(ButtonEventT evt);
@@ -133,6 +132,8 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     int GetPort(emuptr address);
 
    private:
+    void Cycle(uint64 systemCycles, Bool sleeping);
+
     void MarkScreen();
     void UnmarkScreen();
     void UpdateTimerTicksPerSecond();
@@ -161,6 +162,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
 
     bool markScreen{true};
     EmEvent<>::HandleT onMarkScreenCleanHandle;
+    EmEvent<uint64, bool>::HandleT onCycleHandle;
 
     EmUARTDragonball* fUART;
 

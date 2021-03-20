@@ -45,7 +45,6 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual uint32 GetAddressRange(void);
 
     // EmHALHandler overrides
-    virtual void Cycle(uint64 systemCycles, Bool sleeping);
     virtual void CycleSlowly(Bool sleeping);
 
     virtual void ButtonEvent(ButtonEventT evt);
@@ -138,6 +137,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     int GetPort(emuptr address);
 
    private:
+    void Cycle(uint64 systemCycles, Bool sleeping);
     void UpdateTimerTicksPerSecond();
     uint32 Tmr1CyclesToNextInterrupt(uint64 systemCycles);
     uint32 Tmr2CyclesToNextInterrupt(uint64 systemCycles);
@@ -171,6 +171,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
 
     bool pwmActive{false};
     bool afterLoad{false};
+
+    EmEvent<uint64, bool>::HandleT onCycleHandle;
 };
 
 #endif /* EmRegsVZ_h */
