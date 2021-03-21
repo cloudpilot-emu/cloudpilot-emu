@@ -4,7 +4,7 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { KvsService } from './../../service/kvs.service';
 import { ModalController } from '@ionic/angular';
-import { REVISION } from './../../../revision.gen';
+import { REVISION } from './../../../revision';
 
 @Component({
     selector: 'app-settings',
