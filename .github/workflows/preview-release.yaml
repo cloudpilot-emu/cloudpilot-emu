@@ -1,7 +1,7 @@
 name: Build preview release
 on: workflow_dispatch
 env:
-  EM_VERSION: 2.0.15
+  EM_VERSION: 2.0.14
   EM_CACHE_FOLDER: emsdk-cache
 jobs:
   build_and_release:
@@ -20,6 +20,16 @@ jobs:
         with:
           version: ${{env.EM_VERSION}}
           actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
-      - name: Build emscripten
+      - name: Build wasm
         run: make -Csrc -j2 emscripten
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - name: Install node deps
+        working-directory: cloudpilot-ionic
+        run: yarn install
+      - name: Build PWA
+        working-directory: cloudpilot-ionic
+        run: yarn build
 
