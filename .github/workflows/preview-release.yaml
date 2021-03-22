@@ -1,0 +1,25 @@
+name: Build preview release
+on: workflow_dispatch
+env:
+  EM_VERSION: 2.0.15
+  EM_CACHE_FOLDER: emsdk-cache
+jobs:
+  build_and_release:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup cache
+        id: cache-system-libraries
+        uses: actions/cache@v2
+        with:
+          path: ${{env.EM_CACHE_FOLDER}}
+          key: ${{env.EM_VERSION}}-${{ runner.os }}
+      - name: Setup emscripten
+        uses: mymindstorm/setup-emsdk@v7
+        with:
+          version: ${{env.EM_VERSION}}
+          actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+      - name: Build emscripten
+        run: make -Csrc -j2 emscripten
+
