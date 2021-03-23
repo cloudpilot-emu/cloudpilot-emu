@@ -33,7 +33,7 @@ jobs:
         run: yarn install
       - name: Build PWA
         working-directory: cloudpilot-ionic
-        run: yarn build --configuration production,preview,ci --base-href /app-preview
+        run: yarn build --configuration production,preview,ci --base-href /app-preview/
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.5.1
         with:
