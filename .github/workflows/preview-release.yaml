@@ -16,7 +16,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{env.EM_CACHE_FOLDER}}
-          key: ${{env.EM_VERSION}}-${{ runner.os }}-2
+          key: ${{env.EM_VERSION}}-${{ runner.os }}
       - name: Setup emscripten
         uses: mymindstorm/setup-emsdk@v7
         with:
