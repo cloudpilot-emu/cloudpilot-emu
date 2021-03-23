@@ -3,7 +3,7 @@ on: workflow_dispatch
 env:
   EM_VERSION: 2.0.14
   NODE_VERSION: 14
-  EM_CACHE_FOLDER: emsdk-cache
+  EM_CACHE_FOLDER: emsdk
   PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git
 jobs:
   build_and_release:
@@ -16,7 +16,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{env.EM_CACHE_FOLDER}}
-          key: ${{env.EM_VERSION}}-${{ runner.os }}
+          key: ${{env.EM_VERSION}}-${{ runner.os }}-2
       - name: Setup emscripten
         uses: mymindstorm/setup-emsdk@v7
         with:
