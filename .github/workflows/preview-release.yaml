@@ -3,33 +3,49 @@ on: workflow_dispatch
 env:
   EM_VERSION: 2.0.14
   EM_CACHE_FOLDER: emsdk-cache
+  PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git
 jobs:
   build_and_release:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup cache
-        id: cache-system-libraries
-        uses: actions/cache@v2
+      # - name: Setup cache
+      #   id: cache-system-libraries
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: ${{env.EM_CACHE_FOLDER}}
+      #     key: ${{env.EM_VERSION}}-${{ runner.os }}
+      # - name: Setup emscripten
+      #   uses: mymindstorm/setup-emsdk@v7
+      #   with:
+      #     version: ${{env.EM_VERSION}}
+      #     actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+      # - name: Build wasm
+      #   run: make -Csrc -j2 emscripten
+      # - name: Setup node
+      #   uses: actions/setup-node@v2
+      #   with:
+      #     node-version: '14'
+      # - name: Install node deps
+      #   working-directory: cloudpilot-ionic
+      #   run: yarn install
+      # - name: Build PWA
+      #   working-directory: cloudpilot-ionic
+      #   run: yarn build --configuration production,preview,ci
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.5.1
         with:
-          path: ${{env.EM_CACHE_FOLDER}}
-          key: ${{env.EM_VERSION}}-${{ runner.os }}
-      - name: Setup emscripten
-        uses: mymindstorm/setup-emsdk@v7
-        with:
-          version: ${{env.EM_VERSION}}
-          actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
-      - name: Build wasm
-        run: make -Csrc -j2 emscripten
-      - name: Setup node
-        uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-      - name: Install node deps
-        working-directory: cloudpilot-ionic
-        run: yarn install
-      - name: Build PWA
-        working-directory: cloudpilot-ionic
-        run: yarn build --configuration production,preview,ci
-
+            ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Checkout pages source
+        run: git clone ${{env.PAGES_REPO_URL}}
+      - name: Deploy application
+        working-directory: cloudpilot-emu.github.io
+        run: |
+          test -x test && rm -fr test
+          mkdir test
+          false
+          echo hello deploy > test/foo
+          git add .
+          git commit -m "Bump."
+          git push
