@@ -46,5 +46,7 @@ jobs:
           mkdir test
           echo hello deploy > test/foo
           git add .
+          git config --global user.email "golem@nowhere.org"
+          git config --global user.name "The Golem"
           git commit -m "Bump."
           git push
