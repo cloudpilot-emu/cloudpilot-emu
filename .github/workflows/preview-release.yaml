@@ -44,7 +44,6 @@ jobs:
         run: |
           test -x test && rm -fr test
           mkdir test
-          false
           echo hello deploy > test/foo
           git add .
           git commit -m "Bump."
