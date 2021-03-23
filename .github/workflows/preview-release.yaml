@@ -33,10 +33,10 @@ jobs:
       # - name: Build PWA
       #   working-directory: cloudpilot-ionic
       #   run: yarn build --configuration production,preview,ci
-      - name: Setup SSH key
+      - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.5.1
         with:
-            ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+            ssh-private-key: ${{ secrets.SSH_DEPLOY_KEY }}
       - name: Checkout pages source
         run: git clone ${{env.PAGES_REPO_URL}}
       - name: Deploy application
