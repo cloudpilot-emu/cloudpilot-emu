@@ -4,8 +4,8 @@ import { AlertService } from 'src/app/service/alert.service';
 import { EmulationService } from './service/emulation.service';
 import { KvsService } from './service/kvs.service';
 import { PwaService } from './service/pwa.service';
-import { REVISION } from './../revision';
 import { SwUpdate } from '@angular/service-worker';
+import { VERSION } from './helper/version';
 
 @Component({
     selector: 'app-root',
@@ -32,19 +32,19 @@ export class AppComponent implements AfterViewInit {
         const storedVersion = this.kvsService.kvs.version;
 
         if (storedVersion === undefined) {
-            this.kvsService.kvs.version = REVISION;
+            this.kvsService.kvs.version = VERSION;
 
             return;
         }
 
-        if (storedVersion === REVISION) return;
+        if (storedVersion === VERSION) return;
 
-        this.kvsService.kvs.version = REVISION;
+        this.kvsService.kvs.version = VERSION;
 
         // wait for a possible loader to disappear
         await this.emulationService.bootstrapComplete();
 
-        this.alertService.message('Update complete', `Cloudpilot was updated to revision ${REVISION}.`);
+        this.alertService.message('Update complete', `Cloudpilot was updated to version ${VERSION}.`);
     }
 
     private registerForUpdates(): void {

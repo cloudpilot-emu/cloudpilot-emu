@@ -1,5 +1,4 @@
 import {
-    DB_NAME,
     DB_VERSION,
     OBJECT_STORE_KVS,
     OBJECT_STORE_MEMORY,
@@ -17,6 +16,7 @@ import { Kvs } from './../model/Kvs';
 import { PageLockService } from './page-lock.service';
 import { Session } from 'src/app/model/Session';
 import { StorageError } from './storage/StorageError';
+import { environment } from '../../environments/environment';
 import md5 from 'md5';
 
 export const E_LOCK_LOST = new Error('page lock lost');
@@ -330,7 +330,7 @@ export class StorageService {
 
     private setupDb() {
         this.db = new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            const request = indexedDB.open(environment.dbName, DB_VERSION);
 
             request.onerror = () => reject(new StorageError('failed to open DB'));
             request.onsuccess = () => resolve(request.result);

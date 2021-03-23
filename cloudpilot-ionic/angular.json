@@ -81,6 +81,14 @@
               "serviceWorker": true,
               "ngswConfigPath": "ngsw-config.json"
             },
+            "preview": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.preview.ts"
+                }
+              ]
+            },
             "ci": {
               "progress": false
             }

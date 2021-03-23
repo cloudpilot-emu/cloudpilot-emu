@@ -31,5 +31,5 @@ jobs:
         run: yarn install
       - name: Build PWA
         working-directory: cloudpilot-ionic
-        run: yarn build
+        run: yarn build --configuration production,preview,ci
 

@@ -1,13 +1,12 @@
 {
   "name": "cloudpilot-ionic",
-  "version": "0.0.1",
-  "author": "Ionic Framework",
-  "homepage": "https://ionicframework.com/",
+  "version": "1.0.0-beta1",
+  "author": "Christian Speckner",
+  "homepage": "https://cloudpilot-emu.github.io/",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "yarn run gen-revision && ng run app:build:production --base-href /cloudpilot/app/",
-    "build-local": "yarn run gen-revision && ng run app:build:production",
+    "build": "yarn run gen-revision && ng run app:build",
     "gen-revision": "echo \"export const REVISION = '`git rev-parse --short HEAD`';\" > src/revision.gen.ts",
     "test": "ng test",
     "lint": "ng lint",
@@ -68,7 +67,7 @@
     "tslint": "~6.1.0",
     "typescript": "~4.1.0"
   },
-  "description": "An Ionic project",
+  "description": "Cloudpilot PWA",
   "prettier": {
     "printWidth": 120,
     "tabWidth": 4,

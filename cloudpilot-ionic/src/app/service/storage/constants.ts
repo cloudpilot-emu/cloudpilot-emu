@@ -1,4 +1,3 @@
-export const DB_NAME = 'cloudpilot';
 export const DB_VERSION = 2;
 
 export const OBJECT_STORE_SESSION = 'session';

@@ -1,4 +1,6 @@
-const KEY = 'cloudpilot-session';
+import { environment } from 'src/environments/environment';
+
+const KEY = 'cloudpilot-session' + (environment.localStorageSuffix ? `-${environment.localStorageSuffix}` : '');
 
 export function hasStoredSession(): boolean {
     return !!localStorage.getItem(KEY);
