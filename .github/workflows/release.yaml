@@ -19,9 +19,10 @@ jobs:
         with:
           node-version: ${{env.NODE_VERSION}}
       - name: Get version
+        id: version
         run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
       - name: Validate package.json version
-        run: echo 'if (require("./cloudpilot-ionic/package.json").version !== "${{VERSION}}") process.exit(1)' | node
+        run: echo 'if (require("./cloudpilot-ionic/package.json").version !== "${{steps.version.outputs.VERSION}}") process.exit(1)' | node
       - name: Setup cache
         id: cache-system-libraries
         uses: actions/cache@v2
