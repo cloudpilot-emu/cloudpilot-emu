@@ -1,0 +1,63 @@
+name: Build release
+on:
+  push:
+    tags:
+      - '*'
+env:
+  EM_VERSION: 2.0.14
+  NODE_VERSION: 14
+  EM_CACHE_FOLDER: emsdk-cache
+  PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git
+jobs:
+  build_and_release:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{env.NODE_VERSION}}
+      - name: Get version
+        run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
+      - name: Validate package.json version
+        run: echo 'if (require("./cloudpilot-ionic/package.json").version !== "${{VERSION}}") process.exit(1)' | node
+      - name: Setup cache
+        id: cache-system-libraries
+        uses: actions/cache@v2
+        with:
+          path: ${{env.EM_CACHE_FOLDER}}
+          key: ${{env.EM_VERSION}}-${{ runner.os }}
+      - name: Setup emscripten
+        uses: mymindstorm/setup-emsdk@v7
+        with:
+          version: ${{env.EM_VERSION}}
+          actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
+      - name: Build wasm
+        run: make -Csrc -j2 emscripten
+      - name: Install node deps
+        working-directory: cloudpilot-ionic
+        run: yarn install
+      - name: Build PWA
+        working-directory: cloudpilot-ionic
+        run: yarn build --configuration production,ci --base-href /app/
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.5.1
+        with:
+            ssh-private-key: ${{ secrets.SSH_DEPLOY_KEY }}
+      - name: Checkout pages source
+        run: git clone ${{env.PAGES_REPO_URL}}
+      - name: Copy and deploy
+        working-directory: cloudpilot-emu.github.io
+        run: |
+          test -x app-preview && rm -fr app
+          cp -r ../cloudpilot-ionic/www ./app
+          test -x sdl-preview && rm -fr sdl
+          mkdir -p sdl/src
+          cp ../index.html sdl
+          cp ../src/cloudpilot.js ../src/cloudpilot.wasm sdl/src
+          git add .
+          git config --global user.email "golem@nowhere.org"
+          git config --global user.name "The Golem"
+          git commit -m "Bump."
+          git push
