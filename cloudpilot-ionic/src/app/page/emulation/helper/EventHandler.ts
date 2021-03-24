@@ -212,8 +212,8 @@ export class EventHandler {
     private handleKeyDown = (e: KeyboardEvent): void => {
         const keyCode = keyToCode(e.key);
 
-        if (keyCode !== undefined) {
-            this.emulationService.handleKeyDown(keyCode, e.ctrlKey);
+        if (!e.ctrlKey && keyCode !== undefined) {
+            this.emulationService.handleKeyDown(keyCode);
             e.preventDefault();
         }
     };
