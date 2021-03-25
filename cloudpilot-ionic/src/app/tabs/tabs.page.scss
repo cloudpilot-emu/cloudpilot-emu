@@ -6,6 +6,10 @@ ion-tab-bar {
 
         ion-icon {
             height: 21px;
+
+            &.md {
+                margin-top: 3px;
+            }
         }
 
         ion-label {
