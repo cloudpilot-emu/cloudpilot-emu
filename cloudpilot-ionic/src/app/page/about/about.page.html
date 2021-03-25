@@ -19,7 +19,9 @@
     <ion-spinner></ion-spinner>
   </div>
 
-  <markdown src="assets/doc/about.md" (load)="loading = false"></markdown>
+  <div class="markdown-container">
+    <markdown src="assets/doc/about.md" (load)="loading = false"></markdown>
+  </div>
 
   <div class="version">cloudpilot version {{version}}</div>
 
