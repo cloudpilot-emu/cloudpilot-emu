@@ -12,8 +12,8 @@ declare global {
 }
 
 const INSTRUCTIONS_ANDROID = `
-    Open your browser's menu and tap "Add to Home screen" in order to
-    install Cloudpilot as an app.
+    Open your browser's menu and tap "Add to Home screen" or "Install App"
+    in order to install Cloudpilot as an app.
     <br/><br/>
     This removes the browser UI and gives you a native app experience.
 `;

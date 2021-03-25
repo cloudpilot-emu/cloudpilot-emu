@@ -12,4 +12,6 @@ export class AboutPage {
     get version(): string {
         return VERSION;
     }
+
+    loading = true;
 }

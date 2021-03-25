@@ -15,6 +15,12 @@
     </ion-toolbar>
   </ion-header>
 
-</ion-content>
+  <div class="loader" *ngIf="loading">
+    <ion-spinner></ion-spinner>
+  </div>
 
-<div class="version">cloudpilot version {{version}}</div>
+  <markdown src="assets/doc/about.md" (load)="loading = false"></markdown>
+
+  <div class="version">cloudpilot version {{version}}</div>
+
+</ion-content>

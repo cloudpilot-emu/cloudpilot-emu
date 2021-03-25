@@ -1,6 +1,8 @@
 On the "Sessions" tab you can manage your emulation sessions. Each session
 corresponds to a virtual device and its state.
 
+Tap a session in order to launch it in the emulator.
+
 # Adding new sessions
 
 Select the "+" icon in the upper right corner in order to import a ROM or a
