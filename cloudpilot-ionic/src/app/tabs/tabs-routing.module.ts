@@ -21,8 +21,12 @@ const routes: Routes = [
                 loadChildren: () => import('../page/settings/settings.module').then((m) => m.SettingsPageModule),
             },
             {
+                path: 'about',
+                loadChildren: () => import('../page/about/about.module').then((m) => m.AboutPageModule),
+            },
+            {
                 path: '',
-                redirectTo: '/tab/emulation',
+                redirectTo: '/tab/sessions',
                 pathMatch: 'full',
             },
         ],

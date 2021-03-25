@@ -4,7 +4,6 @@ import { FormControl, FormGroup } from '@angular/forms';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { KvsService } from './../../service/kvs.service';
 import { ModalController } from '@ionic/angular';
-import { VERSION } from './../../helper/version';
 
 @Component({
     selector: 'app-settings',
@@ -26,10 +25,6 @@ export class SettingsPage implements OnInit {
             },
         });
         await modal.present();
-    }
-
-    get version(): string {
-        return VERSION;
     }
 
     ionViewWillLeave(): void {

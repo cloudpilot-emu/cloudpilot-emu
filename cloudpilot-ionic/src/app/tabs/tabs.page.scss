@@ -1,12 +1,21 @@
 
-ion-tab-bar.small-ui {
-    height: 25px;
 
-    ion-icon {
-        height: 21px;
+ion-tab-bar {
+    &.small-ui {
+        height: 25px;
+
+        ion-icon {
+            height: 21px;
+        }
+
+        ion-label {
+            display: none;
+        }
     }
 
-    ion-label {
-        display: none;
-    }
+    min-width: 280px;
+}
+
+.overflow-wrapper {
+    overflow-x: auto;
 }
