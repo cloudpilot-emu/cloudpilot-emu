@@ -38,9 +38,14 @@ export class TabsPage {
     }
 
     private updateUseSmallUI = (): void => {
+        const isMD = !!document.querySelector('html.md');
+        const headerHeight = isMD ? 56 : 44;
+        const tabbarHeight = isMD ? 57 : 51;
+        const canvasPadding = 6;
+
         this.useSmallUI =
-            canvasArea(window.innerHeight - 44 - 50 - 6, window.innerWidth - 6) <
-            canvasArea(window.innerHeight - 44 - 25 - 6, window.innerWidth - 6);
+            canvasArea(window.innerHeight - headerHeight - tabbarHeight - canvasPadding, window.innerWidth - 6) <
+            canvasArea(window.innerHeight - headerHeight - 25 - canvasPadding, window.innerWidth - 6);
     };
 
     private useSmallUI = false;
