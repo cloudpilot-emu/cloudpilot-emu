@@ -24,7 +24,9 @@ taken.
 Changes to the image format are backwards compatible, which means that a newer
 version of Cloudpilot can always import a session image written by an older
 version. However, the opposite is not true, and importing an image created by a
-newer version of Cloudpilot may fail.
+newer version of Cloudpilot may cause the state to be lost during import. The
+contents of RAM are still preserved, so loading an incompatible image will
+cause a reboot but will preserve all data.
 
 # The sessions list
 
