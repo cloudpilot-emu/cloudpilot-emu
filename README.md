@@ -5,124 +5,41 @@ browser. In particular, the emulator works on iOS. The emulator is derived from
 the original POSE emulator. At the moment, Palm V amd Palm m515 devices are
 emulated. Support for more devices may follow in the future.
 
+<img src="doc/m515.jpeg" width="310" height="552" alt="Palm m515 emulation"></img>
+&nbsp;
+<img src="doc/palmv.jpeg" width="310" height="552" alt="Palm V emulation"></img>
+
 # The emulator
 
 The current version of the emulator can be found at
 
-https://dirtyhairy.github.io/cloudpilot/
+https://cloudpilot-emu.github.io/app
 
-The interface is currently very basic. At some point there will be a more fancy
-UI that mimics a native applicaton.
+The emulator can be added as an app to the homescreen of iOS and Android devices.
+Please check out the documentation in the app.
 
-<img src="doc/screenshot.jpeg" width="310" height="552" alt="Emulator Screenshot"></img>
+## Other versions
 
-## Loading a ROM and starting the emulator
+A preview build of the next version of Cloudpilot is available
+[here](https://cloudpilot-emu.github.io/app).
 
-In order to start the emulator you need to load a ROM file by clicking or
-tapping the "Load ROM or Image" button. You need a ROM file from either a
-Palm V or a Palm m515. After you select the ROM file the emulator will
-reload and start running PalmOS.
+There also is a web build of the native SDL version of cloudpilot
+[here](https://cloudpilot-emu.github.io/sdl)
+([preview build here](https://cloudpilot-emu.github.io/sdl-preview)).
+This has only a very basic interface and offers less features than the full
+web app --- it is mainly a debugging tool.
 
-## Keyboard input
-
-In addition to touching or clicking the device screen you can use the keyboard
-in order to enter text in the emulator.
-
-## Installing PRC and PDB files
-
-By clicking the "Install file" button you can select and install PRC and PDB
-files into the emulated system, Note that you will have to switch launcher
-categories once for a newly installed program to show up.
-
-## Device state and page reloads
-
-Every second the device state is saved by the emulator in the browser's
-IndexedDB. When the page reloads the saved state is restored.
-
-The timer above the emulated screen shows the time when state was last saved. As
-long as the counter is black and counting everything is fine. If it turns red
-but keeps counting a temporary IndexedDB error has occurred, but state is still
-being saved. This is part of regular operation and can happen from time to time
-i.e. when switching tabs.
-
-If the counter turns red and stops a fatal DB error has occurred, and no state
-is being saved anymore. You should reload the page at this point. If you have
-unsaved data in the emulator you can save a session image (see below) before
-reloading. Note that this shouldn't happen and signifies a browser bug, but I
-have seen it ocassionally on iOS
-
-## Saving a session image
-
-By clicking "Save Image" you can save a session image. This contains all data
-and state and can be restored at any later point via "Load ROM or Image". The
-session image contains the ROM, so no separate ROM file is needed in order to
-restore an image.
-
-## Changing the hotsync user name
-
-While the emulated device can hnot hotsync, the user name was commonly used in
-order to register shareware. You can change the hotsync name by entering your
-name into the "Username" field.
-
-## Resetting the device
-
-By clicking the "Reset!" button you can reset the device. The dropdown allows
-you to choose between different reset modes:
-
--   **Soft reset:** corresponds to pressing the reset button on a real device
--   **Reset w/o extensions:** corresponds to holding "down" while pressing the
-    reset button
--   **Hard reset:** corresponds to holding "up" while pressing the reset button
-
-## Browser compatibility
-
-The emulator runs fine in Firefox, Chrome and in Safari, including their moble
-variants. I have not tested other browsers.
-
-**WARNING:** Since version 14 Safari has a feature that deletes all data stored
-by a web page if the page isn't opened for 7 consecutive days. On iOS, you can
-circumvent this by adding the page to the homescreen (see below).
-
-## Adding the emulator to the homescreen on iOS
-
-On iOS you can add the emulator to the honme screen. This will make sure that
-your data is not discarded by the browser and removes the browser toolbar when
-using the emulator.
-
-In order to do so, tap the "Share" icon at the bottom of the browser and tap
-"Add to homescreen".
-
-Since iOS 14, saving session images from the emulator running on the home screen
-works, too. After selecting "Save image" you are prompted to open the file. At
-the bottom of the screen there is a "Share" icon. Tapping this allows you to
-save the file instead. This does not work on iOS 13 and earlier.
-
-## Opening a second instance in another tab
-
-In order to preserve the integrity of the device state, only one instance of
-Cloudpilot may be running with persistent state at any given time. If you start
-another instance of Cloudpilot in another tab or window, the instance in the
-other tab will stop saving its state in order not avoid corruption. An alert
-will notify you that no more changes will be saved.
-
-# Reporrting issues
+# Reporting issues
 
 Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloudpilot/issues).
 
 # Known issues
 
--   Audio is not emulated yet.
--   Attempting to install files while the virtual device is turned off will
-    fail.
--   Changes to the hotsync name made while the virtual device is turned off will
-    not apply.
 -   The method that POSE uses to inject events into the virtual device can mess
     up the timing of games on PalmOS 3 and earlier. In particular, Lemmings is
     affected by this and runs too fast while the screen is touched. On PalmOS 4
     the emulator uses a slightly different method that does not cause this
     issue.
--   The date is not updated at midnight. It is updated from the system clock
-    when the page reloads or the device resets, though.
 -   The web UI does not currently allow pressing multiple hardware buttons at once.
 
 # Source code and relationship to POSE
@@ -153,6 +70,8 @@ options by copying `Makefile.local.example` to `Makefile.local` and editing it.
 
 The following instructions apply to Linux and MacOS.
 
+## Web app
+
 ### Emulator
 
 The emulator is written in C++ and compiled to Web Assembly using emscripten. In
@@ -163,8 +82,21 @@ emscripten toolchain. With that in place you can build the source via
     $ make -Csrc emscripten
 ```
 
-The frontend currently is a single `index.html`. You can serve it directly from
-the git repository and the compiled WASM code is loaded from `src`.
+### Javascript
+
+The web app is written in Typescript using [Angular](https://angular.io) and
+[Ionic].(https://ionicframework.com). In order to build
+you need [NodeJS](https://nodejs.org/en/) and [yarn](https://yarnpkg.com)
+installed. Go to the `cloudpilot-ionic" directory and do
+
+```
+    $ yarn install
+    $ yarn build
+```
+
+The result will be in the `www` subdir.
+Note that you need to build the WASM binary (see above) before building the web
+app.
 
 ## Native build
 
@@ -179,6 +111,12 @@ with
 and you will up with a `src/cloudpilot` binary. The binary takes a ROM file or
 session image as an argument. There is a rudemtary readline CLI with tab
 completion that allows you to save session images and reset the virtual device.
+
+## Web SDL build
+
+The web frontend for the SDL build currently is a single `index.html`. You can serve
+it directly from the git repository and the compiled WASM code is loaded from `src`.
+Unsurprisingly, the WASM code needs to compiled first (see above.)
 
 # Credits
 
