@@ -35,17 +35,6 @@ the top left. This is equivalent to pushing a pin into the reset hole on a real
 device The different options correspond to different key combination held while
 the device resets.
 
-# Audio
-
-The speaker button in the upper right corner allows to toggle audio emulation on / off.
-Cloudpilot always starts with audio disabled, and the icon must be tapped to enable
-it.
-
-The volume can be changed on the settings tab. The speaker button is not shown if the
-volume is set to zero.
-
-On iOS, muting the phone also mutes audio from the emulator.
-
 ### Reset
 
 No key held. This causes a plain reset.
@@ -60,3 +49,14 @@ This is very useful to recover from a bad hack or system extension.
 
 Corresponds to "power" being held during reset. This will
 trigger a prompt that will allow you to factory reset the device.
+
+# Audio
+
+The speaker button in the upper right corner allows to toggle audio emulation on / off.
+Cloudpilot always starts with audio disabled, and the icon must be tapped to enable
+it.
+
+The volume can be changed on the settings tab. The speaker button is not shown if the
+volume is set to zero.
+
+On iOS, muting the phone also mutes audio from the emulator.

@@ -2,43 +2,43 @@ Cloudpilot is a web-based emulator for PalmOS. It emulates dragonball based devi
 and supports PalmOS up to version 4.x. Cloudpilot is based on the original POSE
 emulator and currently emulates Palm V and Palm m515 devices.
 
-## Usage
+# Usage
 
 Cloudpilot's interface is divided in tabs.
 Each tab has a dedicated help page that can be accessed by tapping the "?" in
 the toolbar (or selecting "Help" from the menu on the emulation page).
 
-#### Sessions tab
+### Sessions tab
 
 Navigate to the sessions tab in order to create, manage and launch emulation sessions.
 New emulation sessions are created either by loading a ROM or a by loading a
 previously saved session snapshot.
 
-#### Emulation tab
+### Emulation tab
 
 The emulator tab hosts the emulated device.
 
-#### Settings tab
+### Settings tab
 
 The settings tab allows you to adjust the emulator settings.
 
-## Reloads and emulation state
+# Reloads and emulation state
 
 Cloutpilot automatically saves the state of the emulated device every second while
 the while the emulation is running. If Cloudpilot terminates and restart the emulation
 will resume exaclty where you left off.
 
-## Installing programs and databases
+# Installing programs and databases
 
 Cloudpilot cannot hotsync, but program (.prc) and database (.pdb)
 files can be installed directly into the emulated device.
 
-## Backing up your virtual devices
+# Backing up your virtual devices
 
 Saving a session snapshot on the Sessions tab every now and then will protect
 your data in case anything goes wrong.
 
-## Requirements and browser support
+# Requirements and browser support
 
 Cloudpilot runs on all reasonable recent browsers and can be added to the homescreen
 of Android and iOS devices as a mobile app. For iPhones and iPads this is highly
@@ -57,7 +57,7 @@ core [geekbench benchmark](https://browser.geekbench.com/android-benchmarks) is
 enough to run Cloudpilot smoothly with minor slowdowns, and 500
 or more will give smooth emulation without slowdowns.
 
-## Updates
+# Updates
 
 Cloudpilot caches all its files locally and does not require a network connection
 to run once the caching is complete.
@@ -68,12 +68,12 @@ reloading Cloudpilot will apply the update.
 
 In order to force check for an update terminate and restart the app.
 
-## Cloudpilot on the web
+# Cloudpilot on the web
 
  * [Source code](https://github.com/cloudpilot-emu/cloudpilot)
  * [Webpage](https://cloudpilot-emu.github.io)
 
-## License
+# License
 
 Cloudpilot program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
