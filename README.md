@@ -40,7 +40,16 @@ Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloud
     affected by this and runs too fast while the screen is touched. On PalmOS 4
     the emulator uses a slightly different method that does not cause this
     issue.
--   The web UI does not currently allow pressing multiple hardware buttons at once.
+-   iOS: changing device orientation between portrait and landscape may mess
+    up the layout of the app. This is an iOS bug that can be worked around by
+    rotating the device by 180° in portrait and rotating back.
+    \_ Audio timing is not perfect and processed at the refresh rate of the emulator
+    (usually the same as the screen refresh rate of the host device). Sound
+    effects that rely on quickly modulating the audio signal may not be
+    reproduced correctly.
+-   Savestates are not endian safe and can not be exchanged between big and
+    little endian systems. As long as there are not big endian system that run
+    Cloudpilot that issue is probably academical :)
 
 # Source code and relationship to POSE
 
@@ -62,9 +71,6 @@ bug fixes new features. In particular:
 -   A few conditions that can cause interrupt storms have been fixed.
 -   Savestate code has been rewritten to work with a fixed buffer without
     allocations.
--   Savestates are not endian safe and can not be exchanged between big and
-    little endian systems. As long as there are not big endian system that run
-    Cloudpilot that issue is probably void :)
 
 # Building
 
