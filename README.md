@@ -50,7 +50,7 @@ rewritten to fit well with a browser environment. In addition, it contains a few
 bug fixes new features. In particular:
 
 -   The codebase has been updated to build and run on both 32bit and 64bit
-    little endian systems. Big endian systems should work, but I have not tested
+    little endian systems. Big endian systems should work, but I cannot test
     this (are there even any relevant big endian systems left?).
 -   POSE was built as a tool for debugging and profiling PalmOS applications.
     Most of this functionality has been removed in Cloudpilot.
@@ -62,6 +62,9 @@ bug fixes new features. In particular:
 -   A few conditions that can cause interrupt storms have been fixed.
 -   Savestate code has been rewritten to work with a fixed buffer without
     allocations.
+-   Savestates are not endian safe and can not be exchanged between big and
+    little endian systems. As long as there are not big endian system that run
+    Cloudpilot that issue is probably void :)
 
 # Building
 
