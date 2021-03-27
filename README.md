@@ -75,8 +75,11 @@ The following instructions apply to Linux and MacOS.
 ### Emulator
 
 The emulator is written in C++ and compiled to Web Assembly using emscripten. In
-order to build the WASM binary you need to install the latest version of the
-emscripten toolchain. With that in place you can build the source via
+order to build the WASM binary you need to install a recent version of the
+emscripten toolchain. Cloudpilot currently builds with 2.0.14, the latest version
+(2.0.15) breaks LTO optimization.
+
+With the SDK properly set up you can build the source via
 
 ```
     $ make -Csrc emscripten
@@ -85,16 +88,19 @@ emscripten toolchain. With that in place you can build the source via
 ### Javascript
 
 The web app is written in Typescript using [Angular](https://angular.io) and
-[Ionic].(https://ionicframework.com). In order to build
+[Ionic](https://ionicframework.com). In order to build
 you need [NodeJS](https://nodejs.org/en/) and [yarn](https://yarnpkg.com)
 installed. Go to the `cloudpilot-ionic" directory and do
 
 ```
     $ yarn install
-    $ yarn build
+    $ yarn build --configuration production
 ```
 
-The result will be in the `www` subdir.
+The result will be in the `www` subdir. The build includes a service worker for
+offline operation. If you don't want the service worker you'll have to delete
+`ngsw-worker.js` from the generated bundle before serving it.
+
 Note that you need to build the WASM binary (see above) before building the web
 app.
 
@@ -114,9 +120,9 @@ completion that allows you to save session images and reset the virtual device.
 
 ## Web SDL build
 
-The web frontend for the SDL build currently is a single `index.html`. You can serve
-it directly from the git repository and the compiled WASM code is loaded from `src`.
-Unsurprisingly, the WASM code needs to compiled first (see above.)
+The web frontend for the SDL build consists of a single `index.html`. You can serve
+it directly from the git repository and the compiled WASM code is loaded from `src`
+(see above).
 
 # Credits
 
