@@ -49,6 +49,33 @@ function keyToCode(key: string): number | undefined {
     }
 }
 
+function buttonFromEvent(evt: KeyboardEvent): PalmButton | undefined {
+    if (!evt.ctrlKey) return undefined;
+
+    switch (evt.key) {
+        case 'o':
+            return PalmButton.up;
+
+        case 'l':
+            return PalmButton.down;
+
+        case 'y':
+        case 'z':
+            return PalmButton.cal;
+
+        case 'x':
+            return PalmButton.phone;
+
+        case 'c':
+            return PalmButton.todo;
+
+        case 'v':
+            return PalmButton.notes;
+    }
+
+    return undefined;
+}
+
 export class EventHandler {
     constructor(
         private canvas: HTMLCanvasElement,
@@ -69,6 +96,7 @@ export class EventHandler {
         this.canvas.addEventListener('touchcancel', this.handleTouchEnd);
 
         window.addEventListener('keydown', this.handleKeyDown);
+        window.addEventListener('keyup', this.handleKeyUp);
 
         this.bound = true;
     }
@@ -86,6 +114,15 @@ export class EventHandler {
         this.canvas.removeEventListener('touchcancel', this.handleTouchEnd);
 
         window.removeEventListener('keydown', this.handleKeyDown);
+        window.removeEventListener('keyup', this.handleKeyUp);
+
+        for (const button of this.activeButtons) {
+            this.handleButtonUp(button);
+        }
+
+        this.activeButtons.clear();
+        this.interactionsTouch.clear();
+        this.interactionMouse = undefined;
 
         this.bound = false;
     }
@@ -105,9 +142,7 @@ export class EventHandler {
             const button = this.determineButton(coords);
             this.interactionMouse = { area, button };
 
-            this.emulationService.handleButtonDown(button);
-
-            this.canvasHelper.drawButtons(this.activeButtons());
+            this.handleButtonDown(button);
         }
     };
 
@@ -129,9 +164,7 @@ export class EventHandler {
 
         switch (interaction?.area) {
             case Area.buttons:
-                this.emulationService.handleButtonUp(interaction.button);
-
-                this.canvasHelper.drawButtons(this.activeButtons());
+                this.handleButtonUp(interaction.button);
 
                 break;
 
@@ -158,9 +191,7 @@ export class EventHandler {
                 const button = this.determineButton(coords);
                 this.interactionsTouch.set(touch.identifier, { area, button });
 
-                this.emulationService.handleButtonDown(button);
-
-                this.canvasHelper.drawButtons(this.activeButtons());
+                this.handleButtonDown(button);
             }
         }
 
@@ -193,9 +224,7 @@ export class EventHandler {
 
             switch (interaction?.area) {
                 case Area.buttons:
-                    this.emulationService.handleButtonUp(interaction.button);
-
-                    this.canvasHelper.drawButtons(this.activeButtons());
+                    this.handleButtonUp(interaction.button);
 
                     break;
 
@@ -210,11 +239,37 @@ export class EventHandler {
     };
 
     private handleKeyDown = (e: KeyboardEvent): void => {
-        const keyCode = keyToCode(e.key);
+        const button = buttonFromEvent(e);
+        if (button !== undefined) {
+            this.handleButtonDown(button);
+            e.preventDefault();
 
+            return;
+        }
+
+        const keyCode = keyToCode(e.key);
         if (!e.ctrlKey && keyCode !== undefined) {
             this.emulationService.handleKeyDown(keyCode);
             e.preventDefault();
+        }
+    };
+
+    private handleKeyUp = (e: KeyboardEvent): void => {
+        const button = buttonFromEvent(e);
+        if (button !== undefined) {
+            this.handleButtonUp(button);
+            e.preventDefault();
+
+            return;
+        }
+
+        if (e.key === 'Control') {
+            for (const btn of this.activeButtons) {
+                this.emulationService.handleButtonUp(btn);
+            }
+
+            this.activeButtons.clear();
+            this.canvasHelper.drawButtons([]);
         }
     };
 
@@ -280,17 +335,24 @@ export class EventHandler {
         return PalmButton.cal;
     }
 
-    private activeButtons(): Array<PalmButton> {
-        const buttons = Array.from(this.interactionsTouch.values())
-            .filter((i) => i.area === Area.buttons)
-            .map((i) => (i as InteractionButton).button);
+    private handleButtonDown(button: PalmButton): void {
+        if (this.activeButtons.has(button)) return;
 
-        if (this.interactionMouse?.area === Area.buttons) buttons.push(this.interactionMouse.button);
+        this.activeButtons.add(button);
+        this.emulationService.handleButtonDown(button);
+        this.canvasHelper.drawButtons(Array.from(this.activeButtons.values()));
+    }
 
-        return buttons;
+    private handleButtonUp(button: PalmButton): void {
+        if (!this.activeButtons.has(button)) return;
+
+        this.activeButtons.delete(button);
+        this.emulationService.handleButtonUp(button);
+        this.canvasHelper.drawButtons(Array.from(this.activeButtons.values()));
     }
 
     private interactionMouse: Interaction | undefined;
     private interactionsTouch = new Map<number, Interaction>();
     private bound = false;
+    private activeButtons = new Set<PalmButton>();
 }
