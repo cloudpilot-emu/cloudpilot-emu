@@ -1,7 +1,8 @@
-import { BORDER, CanvasHelper, HEIGHT, SCALE, WIDTH } from './CanvasHelper';
+import { BORDER, CanvasDisplayService, HEIGHT, SCALE, WIDTH } from './canvas-display.service';
+import { Injectable, NgZone } from '@angular/core';
 
-import { EmulationService } from './../../../service/emulation.service';
-import { PalmButton } from '../../../../../../src';
+import { EmulationService } from './emulation.service';
+import { PalmButton } from '../helper/Cloudpilot';
 
 const enum Area {
     silkscreen,
@@ -76,33 +77,40 @@ function buttonFromEvent(evt: KeyboardEvent): PalmButton | undefined {
     return undefined;
 }
 
-export class EventHandler {
+@Injectable({
+    providedIn: 'root',
+})
+export class EventHandlingService {
     constructor(
-        private canvas: HTMLCanvasElement,
         private emulationService: EmulationService,
-        private canvasHelper: CanvasHelper
+        private canvasDisplayService: CanvasDisplayService,
+        private ngZone: NgZone
     ) {}
 
-    bind(): void {
-        if (this.bound) return;
+    bind(canvas: HTMLCanvasElement): void {
+        if (this.canvas) {
+            this.release();
+        }
 
-        this.canvas.addEventListener('mousedown', this.handleMouseDown);
-        window.addEventListener('mouseup', this.handeMouseUp);
-        window.addEventListener('mousemove', this.handleMouseMove);
+        this.canvas = canvas;
 
-        this.canvas.addEventListener('touchstart', this.handleTouchStart);
-        this.canvas.addEventListener('touchmove', this.handleTouchMove);
-        this.canvas.addEventListener('touchend', this.handleTouchEnd);
-        this.canvas.addEventListener('touchcancel', this.handleTouchEnd);
+        this.ngZone.runOutsideAngular(() => {
+            canvas.addEventListener('mousedown', this.handleMouseDown);
+            window.addEventListener('mouseup', this.handeMouseUp);
+            window.addEventListener('mousemove', this.handleMouseMove);
 
-        window.addEventListener('keydown', this.handleKeyDown);
-        window.addEventListener('keyup', this.handleKeyUp);
+            canvas.addEventListener('touchstart', this.handleTouchStart);
+            canvas.addEventListener('touchmove', this.handleTouchMove);
+            canvas.addEventListener('touchend', this.handleTouchEnd);
+            canvas.addEventListener('touchcancel', this.handleTouchEnd);
 
-        this.bound = true;
+            window.addEventListener('keydown', this.handleKeyDown);
+            window.addEventListener('keyup', this.handleKeyUp);
+        });
     }
 
     release(): void {
-        if (!this.bound) return;
+        if (!this.canvas) return;
 
         this.canvas.removeEventListener('mousedown', this.handleMouseDown);
         window.removeEventListener('mouseup', this.handeMouseUp);
@@ -124,7 +132,7 @@ export class EventHandler {
         this.interactionsTouch.clear();
         this.interactionMouse = undefined;
 
-        this.bound = false;
+        this.canvas = undefined;
     }
 
     private handleMouseDown = (e: MouseEvent): void => {
@@ -269,11 +277,13 @@ export class EventHandler {
             }
 
             this.activeButtons.clear();
-            this.canvasHelper.drawButtons([]);
+            this.canvasDisplayService.drawButtons([]);
         }
     };
 
     private eventToPalmCoordinates(e: MouseEvent | Touch, clip = false): [number, number] | undefined {
+        if (!this.canvas) return;
+
         const bb = this.canvas.getBoundingClientRect();
 
         let contentX: number;
@@ -340,7 +350,7 @@ export class EventHandler {
 
         this.activeButtons.add(button);
         this.emulationService.handleButtonDown(button);
-        this.canvasHelper.drawButtons(Array.from(this.activeButtons.values()));
+        this.canvasDisplayService.drawButtons(Array.from(this.activeButtons.values()));
     }
 
     private handleButtonUp(button: PalmButton): void {
@@ -348,11 +358,11 @@ export class EventHandler {
 
         this.activeButtons.delete(button);
         this.emulationService.handleButtonUp(button);
-        this.canvasHelper.drawButtons(Array.from(this.activeButtons.values()));
+        this.canvasDisplayService.drawButtons(Array.from(this.activeButtons.values()));
     }
 
+    private canvas: HTMLCanvasElement | undefined;
     private interactionMouse: Interaction | undefined;
     private interactionsTouch = new Map<number, Interaction>();
-    private bound = false;
     private activeButtons = new Set<PalmButton>();
 }

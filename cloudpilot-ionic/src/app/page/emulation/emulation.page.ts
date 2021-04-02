@@ -1,19 +1,18 @@
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { CanvasHelper, HEIGHT, WIDTH } from './helper/CanvasHelper';
+import { AfterViewInit, Component, ElementRef, NgZone, ViewChild } from '@angular/core';
+import { CanvasDisplayService, HEIGHT, WIDTH } from './../../service/canvas-display.service';
 import { FileDescriptor, FileService } from 'src/app/service/file.service';
 import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
-import { getStoredSession, hasStoredSession } from 'src/app/helper/storedSession';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { AudioService } from './../../service/audio.service';
 import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
-import { EventHandler } from './helper/EventHandler';
+import { EventHandlingService } from './../../service/event-handling.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { KvsService } from './../../service/kvs.service';
-import { PalmButton } from '../../../../../src';
 import { StorageService } from './../../service/storage.service';
+import { getStoredSession } from 'src/app/helper/storedSession';
 
 @Component({
     selector: 'app-emulation',
@@ -25,6 +24,8 @@ export class EmulationPage implements AfterViewInit {
         public emulationService: EmulationService,
         public emulationState: EmulationStateService,
         private storageService: StorageService,
+        private eventHandlingService: EventHandlingService,
+        private canvasDisplayService: CanvasDisplayService,
         private kvsService: KvsService,
         private audioService: AudioService,
         private popoverController: PopoverController,
@@ -35,11 +36,7 @@ export class EmulationPage implements AfterViewInit {
         private ngZone: NgZone
     ) {}
 
-    ngAfterViewInit(): void {
-        const canvasElt = this.canvasRef.nativeElement;
-        this.canvasHelper = new CanvasHelper(canvasElt);
-        this.eventHandler = new EventHandler(canvasElt, this.emulationService, this.canvasHelper);
-    }
+    ngAfterViewInit(): void {}
 
     get canvasWidth(): number {
         return WIDTH;
@@ -64,14 +61,14 @@ export class EmulationPage implements AfterViewInit {
         if (!session && storedSession !== undefined) {
             session = await this.storageService.getSession(storedSession);
         }
-        this.canvasHelper.clear(session);
+        this.canvasDisplayService.initialize(this.canvasRef.nativeElement, session);
         this.onNewFrame(this.emulationService.getCanvas());
 
         this.emulationService.newFrameEvent.addHandler(this.onNewFrame);
 
         this.emulationService.resume();
 
-        this.ngZone.runOutsideAngular(() => this.eventHandler.bind());
+        this.ngZone.runOutsideAngular(() => this.eventHandlingService.bind(this.canvasRef.nativeElement));
     }
 
     ionViewWillLeave() {
@@ -79,7 +76,7 @@ export class EmulationPage implements AfterViewInit {
 
         this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
 
-        this.eventHandler.release();
+        this.eventHandlingService.release();
     }
 
     async openContextMenu(e: MouseEvent): Promise<void> {
@@ -144,7 +141,7 @@ export class EmulationPage implements AfterViewInit {
     }
 
     private onNewFrame = (canvas: HTMLCanvasElement): void => {
-        this.canvasHelper.drawEmulationCanvas(canvas);
+        this.canvasDisplayService.drawEmulationCanvas(canvas);
     };
 
     private async processFilesForInstallation(files: Array<FileDescriptor>): Promise<void> {
@@ -224,6 +221,4 @@ export class EmulationPage implements AfterViewInit {
     }
 
     @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
-    private canvasHelper!: CanvasHelper;
-    private eventHandler!: EventHandler;
 }

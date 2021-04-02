@@ -1,7 +1,8 @@
-import { DeviceId } from 'src/app/model/DeviceId';
-import { GRAYSCALE_PALETTE_HEX } from './../../../service/emulation.service';
-import { PalmButton } from '../../../../../../src';
-import { Session } from './../../../model/Session';
+import { DeviceId } from '../model/DeviceId';
+import { GRAYSCALE_PALETTE_HEX } from './emulation.service';
+import { Injectable } from '@angular/core';
+import { PalmButton } from '../helper/Cloudpilot';
+import { Session } from '../model/Session';
 
 const URL_SILKSCREEN_DEFAULT = 'assets/silkscreen-default.svg';
 const URL_SILKSCREEN_M515 = 'assets/silkscreen-m515.svg';
@@ -47,15 +48,20 @@ const IMAGE_SILKSCREEN_M515 = loadImage(URL_SILKSCREEN_M515);
 const IMAGE_BUTTONS_DEFAULT = prerenderButtons(URL_BUTTONS_DEFAULT);
 const IMAGE_BUTTONS_M515 = prerenderButtons(URL_BUTTONS_M515);
 
-export class CanvasHelper {
-    constructor(private canvas: HTMLCanvasElement) {
+@Injectable({
+    providedIn: 'root',
+})
+export class CanvasDisplayService {
+    constructor() {}
+
+    async initialize(canvas: HTMLCanvasElement, session: Session | undefined): Promise<void> {
         const ctx = canvas.getContext('2d');
-        if (!ctx) throw new Error('get a new browser');
+        if (!ctx) {
+            throw new Error('canvas not supported - get a new browser');
+        }
 
         this.ctx = ctx;
-    }
 
-    async clear(session: Session | undefined): Promise<void> {
         this.session = session;
         this.fillCanvasRect(0, 0, WIDTH, HEIGHT, this.backgroundColor());
 
@@ -64,6 +70,8 @@ export class CanvasHelper {
     }
 
     async drawSilkscreen(): Promise<void> {
+        if (!this.ctx) return;
+
         const image = await this.silkscreenImage();
 
         this.fillRect(0, 161, 160, 60, BACKGROUND_COLOR_SILKSCREEN);
@@ -75,6 +83,8 @@ export class CanvasHelper {
     }
 
     async drawButtons(activeButtons: Array<PalmButton> = []): Promise<void> {
+        if (!this.ctx) return;
+
         this.ctx.drawImage(await this.buttonsImage(), BORDER, BORDER + 221 * SCALE, 160 * SCALE, 30 * SCALE);
 
         if (activeButtons.includes(PalmButton.cal)) this.fillRect(0, 221, 30, 30, BACKGROUND_ACTIVE_BUTTON);
@@ -86,11 +96,15 @@ export class CanvasHelper {
     }
 
     drawEmulationCanvas(canvas: HTMLCanvasElement): void {
+        if (!this.ctx) return;
+
         this.ctx.imageSmoothingEnabled = false;
         this.ctx.drawImage(canvas, BORDER, BORDER, SCALE * 160, SCALE * 160);
     }
 
     private fillRect(x: number, y: number, width: number, height: number, style: string): void {
+        if (!this.ctx) return;
+
         this.ctx.beginPath();
         this.ctx.rect(BORDER + SCALE * x, BORDER + SCALE * y, SCALE * width, SCALE * height);
         this.ctx.fillStyle = style;
@@ -98,6 +112,8 @@ export class CanvasHelper {
     }
 
     private fillCanvasRect(x: number, y: number, width: number, height: number, style: string): void {
+        if (!this.ctx) return;
+
         this.ctx.beginPath();
         this.ctx.rect(x, y, width, height);
         this.ctx.fillStyle = style;
@@ -134,6 +150,6 @@ export class CanvasHelper {
         }
     }
 
-    private ctx: CanvasRenderingContext2D;
+    private ctx: CanvasRenderingContext2D | undefined;
     private session: Session | undefined;
 }

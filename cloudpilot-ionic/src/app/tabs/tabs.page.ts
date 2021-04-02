@@ -1,4 +1,4 @@
-import { HEIGHT, SCALE, WIDTH } from './../page/emulation/helper/CanvasHelper';
+import { HEIGHT, WIDTH } from '../service/canvas-display.service';
 
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
