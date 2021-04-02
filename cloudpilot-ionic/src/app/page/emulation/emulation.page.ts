@@ -24,7 +24,7 @@ export class EmulationPage implements AfterViewInit {
         public emulationService: EmulationService,
         public emulationState: EmulationStateService,
         private storageService: StorageService,
-        private eventHandlingService: EventHandlingService,
+        public eventHandlingService: EventHandlingService,
         private canvasDisplayService: CanvasDisplayService,
         private kvsService: KvsService,
         private audioService: AudioService,
@@ -106,6 +106,18 @@ export class EmulationPage implements AfterViewInit {
             },
         });
         await modal.present();
+    }
+
+    async showGameModeHint(): Promise<void> {
+        await this.alertService.message(
+            'Game mode',
+            `
+                The keyboard is in game mode and controls the hardware buttons.
+                Press ctrl-shift in order to exit game mode.
+                <br/><br/>
+                Check the help page for a description of the different keyboard mappings.
+            `
+        );
     }
 
     get installFileDisabled(): boolean {

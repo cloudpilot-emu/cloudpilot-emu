@@ -19,6 +19,9 @@
       <ion-button *ngIf="!isMuted && !isAudioOff" (click)="mute(true)">
         <ion-icon name="volume-high-outline"></ion-icon>
       </ion-button>
+      <ion-button *ngIf="eventHandlingService.isGameMode()" (click)="showGameModeHint()">
+        <ion-icon name="game-controller-outline"></ion-icon>
+      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>

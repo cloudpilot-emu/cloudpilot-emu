@@ -20,63 +20,6 @@ interface InteractionButton {
 
 type Interaction = InteractionSilkscreen | InteractionButton;
 
-function keyToCode(key: string): number | undefined {
-    if (key.length === 1 && key.charCodeAt(0) <= 255) return key.charCodeAt(0);
-
-    switch (key) {
-        case 'ArrowLeft':
-            return 0x1c;
-
-        case 'ArrowRight':
-            return 0x1d;
-
-        case 'ArrowUp':
-            return 0x1e;
-
-        case 'ArrowDown':
-            return 0x1f;
-
-        case 'Backspace':
-            return 0x08;
-
-        case 'Tab':
-            return 0x09;
-
-        case 'Enter':
-            return 0x0a;
-
-        default:
-            return undefined;
-    }
-}
-
-function buttonFromEvent(evt: KeyboardEvent): PalmButton | undefined {
-    if (!evt.ctrlKey) return undefined;
-
-    switch (evt.key) {
-        case 'o':
-            return PalmButton.up;
-
-        case 'l':
-            return PalmButton.down;
-
-        case 'y':
-        case 'z':
-            return PalmButton.cal;
-
-        case 'x':
-            return PalmButton.phone;
-
-        case 'c':
-            return PalmButton.todo;
-
-        case 'v':
-            return PalmButton.notes;
-    }
-
-    return undefined;
-}
-
 @Injectable({
     providedIn: 'root',
 })
@@ -133,6 +76,10 @@ export class EventHandlingService {
         this.interactionMouse = undefined;
 
         this.canvas = undefined;
+    }
+
+    isGameMode(): boolean {
+        return this.gameMode;
     }
 
     private handleMouseDown = (e: MouseEvent): void => {
@@ -247,7 +194,15 @@ export class EventHandlingService {
     };
 
     private handleKeyDown = (e: KeyboardEvent): void => {
-        const button = buttonFromEvent(e);
+        if (this.isToggleGameMode(e)) {
+            e.preventDefault();
+
+            this.ngZone.run(() => (this.gameMode = !this.gameMode));
+
+            return;
+        }
+
+        const button = this.buttonFromEvent(e);
         if (button !== undefined) {
             this.handleButtonDown(button);
             e.preventDefault();
@@ -255,15 +210,15 @@ export class EventHandlingService {
             return;
         }
 
-        const keyCode = keyToCode(e.key);
-        if (!e.ctrlKey && keyCode !== undefined) {
+        const keyCode = this.keyCodeFromEvent(e);
+        if (keyCode !== undefined) {
             this.emulationService.handleKeyDown(keyCode);
             e.preventDefault();
         }
     };
 
     private handleKeyUp = (e: KeyboardEvent): void => {
-        const button = buttonFromEvent(e);
+        const button = this.buttonFromEvent(e);
         if (button !== undefined) {
             this.handleButtonUp(button);
             e.preventDefault();
@@ -361,8 +316,98 @@ export class EventHandlingService {
         this.canvasDisplayService.drawButtons(Array.from(this.activeButtons.values()));
     }
 
+    private isToggleGameMode(e: KeyboardEvent): boolean {
+        return (e.key === 'Shift' && e.ctrlKey) || (e.key === 'Control' && e.shiftKey);
+    }
+
+    private isGameModeActive(e: KeyboardEvent): boolean {
+        return (!this.gameMode && e.ctrlKey) || (this.gameMode && !e.ctrlKey);
+    }
+
+    private buttonFromEvent(e: KeyboardEvent): PalmButton | undefined {
+        switch (e.key) {
+            case 'PageUp':
+                return PalmButton.up;
+
+            case 'PageDown':
+                return PalmButton.down;
+        }
+
+        if (!this.isGameModeActive(e)) return;
+
+        switch (e.key) {
+            case 'w':
+            case 'i':
+            case 'ArrowUp':
+                return PalmButton.up;
+
+            case 's':
+            case 'k':
+            case 'ArrowDown':
+                return PalmButton.down;
+
+            case 'a':
+            case 'j':
+            case 'y':
+            case 'z':
+            case 'ArrowLeft':
+                return PalmButton.cal;
+
+            case 'q':
+            case 'u':
+            case 'x':
+                return PalmButton.phone;
+
+            case 'e':
+            case 'o':
+            case 'c':
+                return PalmButton.todo;
+
+            case 'd':
+            case 'l':
+            case 'v':
+            case 'ArrowRight':
+                return PalmButton.notes;
+        }
+
+        return undefined;
+    }
+
+    private keyCodeFromEvent(e: KeyboardEvent): number | undefined {
+        if (this.isGameModeActive(e)) return;
+
+        if (e.key.length === 1 && e.key.charCodeAt(0) <= 255) return e.key.charCodeAt(0);
+
+        switch (e.key) {
+            case 'ArrowLeft':
+                return 0x1c;
+
+            case 'ArrowRight':
+                return 0x1d;
+
+            case 'ArrowUp':
+                return 0x1e;
+
+            case 'ArrowDown':
+                return 0x1f;
+
+            case 'Backspace':
+                return 0x08;
+
+            case 'Tab':
+                return 0x09;
+
+            case 'Enter':
+                return 0x0a;
+
+            default:
+                return undefined;
+        }
+    }
+
     private canvas: HTMLCanvasElement | undefined;
     private interactionMouse: Interaction | undefined;
     private interactionsTouch = new Map<number, Interaction>();
     private activeButtons = new Set<PalmButton>();
+    private gameMode = false;
 }

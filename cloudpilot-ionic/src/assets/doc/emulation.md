@@ -30,9 +30,9 @@ state is preserved and restored.
 
 # Device reset
 
-The device can be reset by selecting one of the reset options from the menu on
-the top left. This is equivalent to pushing a pin into the reset hole on a real
-device The different options correspond to different key combination held while
+The device can be reset by selecting one of the reset options from the menu.
+This is equivalent to pushing a pin into the reset hole on a real
+device. The different options correspond to different key combinations held while
 the device resets.
 
 ### Reset
@@ -50,9 +50,13 @@ This is very useful to recover from a bad hack or system extension.
 Corresponds to "power" being held during reset. This will
 trigger a prompt that will allow you to factory reset the device.
 
+# The power button
+
+The power button can be pressed by selecting the "Power" entry in the menu.
+
 # Audio
 
-The speaker button in the upper right corner allows to toggle audio emulation on / off.
+The speaker button at the top allows to toggle audio emulation on / off.
 Cloudpilot always starts with audio disabled, and the icon must be tapped to enable
 it.
 
@@ -60,3 +64,33 @@ The volume can be changed on the settings tab. The speaker button is not shown i
 volume is set to zero.
 
 On iOS, muting the phone also mutes audio from the emulator.
+
+# Keyboard input
+
+If you are using Cloudpilot on a device with a keyboard you can use the keyboard to
+control the emulator. There are two different modes of keyboard input, game mode
+and normal mode. In normal mode the keyboard can be used to enter text on
+the Palm, and in game mode it controls the hardware buttons.
+
+Game mode can be toggled by pressing `shift-ctrl`. A gamepad icon will appear at the top
+while game mode is active. In normal mode the game mode mappings are accessible by holding `ctrl`.
+
+In both modes `page up` and `page down` control the up / down buttons of the device.
+
+## Game mode mappings
+
+In game mode there are several blocks on the keyboard that correspond to the
+hardware buttons
+
+* **wasd/qe:**
+  The w/a/s/d buttons control up/cal/down/notes and the q/e buttons control
+  contacs/todo.
+* **uhjk/uo:**
+  The same as wasd/qe, but shifted to the right of the keyboard.
+* **up/down/left/right**:
+  These buttons control up/down/cal/notes.
+* **zxcv/yxcv**:
+  z/x/c/v (or y/x/c/v) control cal/contacs/todo/notes.
+
+If unsure take a look at the buttons on the silkscreen --- their background will change
+while the corresponding button is pressed.
