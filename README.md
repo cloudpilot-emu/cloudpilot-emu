@@ -137,6 +137,9 @@ it directly from the git repository and the compiled WASM code is loaded from `s
 
 Artwork for Cloudpilot was done by Paolo Lazatin.
 
+SDCTL emulation to enable the full 16MB of RAM on the m515 is taken from
+[Mu](https://github.com/meepingsnesroms/Mu).
+
 # LICENSE
 
 This program is free software: you can redistribute it and/or modify it under
