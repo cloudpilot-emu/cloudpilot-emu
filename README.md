@@ -18,6 +18,11 @@ https://cloudpilot-emu.github.io/app
 The emulator can be added as an app to the homescreen of iOS and Android devices.
 Please check out the documentation in the app.
 
+## ROM files
+
+In order to use the emulator you need to provide a ROM file for the device you
+want to emulate. You can find a collection of ROMs [on PalmDB](https://palmdb.net/app/palm-roms-complete).
+
 ## Other versions
 
 A preview build of the next version of Cloudpilot is available
