@@ -40,6 +40,11 @@
                 "input": "../src",
                 "output": "."
               },
+              {
+                "glob": "CHANGELOG.md",
+                "input": "..",
+                "output": "assets/doc"
+              },
               "src/manifest.webmanifest"
             ],
             "styles": [
