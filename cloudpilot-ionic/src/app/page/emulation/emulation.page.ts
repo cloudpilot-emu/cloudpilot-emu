@@ -11,6 +11,7 @@ import { EmulationStateService } from './../../service/emulation-state.service';
 import { EventHandlingService } from './../../service/event-handling.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { KvsService } from './../../service/kvs.service';
+import { SnapshotService } from './../../service/snapshot.service';
 import { StorageService } from './../../service/storage.service';
 import { getStoredSession } from 'src/app/helper/storedSession';
 
@@ -33,6 +34,7 @@ export class EmulationPage implements AfterViewInit {
         private alertService: AlertService,
         private fileService: FileService,
         private loadingController: LoadingController,
+        private snapshotService: SnapshotService,
         private ngZone: NgZone
     ) {}
 
@@ -164,6 +166,8 @@ export class EmulationPage implements AfterViewInit {
             message: 'Installing...',
         });
         await loader.present();
+        await this.emulationService.pause();
+        await this.snapshotService.waitForPendingSnapshot();
 
         const filesSuccess: Array<string> = [];
         const filesFail: Array<string> = [];
@@ -176,14 +180,18 @@ export class EmulationPage implements AfterViewInit {
                     continue;
                 }
 
-                if ((await this.emulationService.installFile(file.content)) == 0) {
+                if ((await this.emulationService.installFile(file.content)) === 0) {
                     filesSuccess.push(file.name);
                 } else {
                     filesFail.push(file.name);
                 }
+
+                await new Promise((r) => setTimeout(r, 0));
             }
         } finally {
             loader.dismiss();
+
+            this.emulationService.resume();
         }
 
         let message: string;
