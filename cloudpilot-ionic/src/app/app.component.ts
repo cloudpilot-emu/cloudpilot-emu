@@ -40,7 +40,7 @@ export class AppComponent implements AfterViewInit {
             return;
         }
 
-        if (storedVersion !== VERSION) return;
+        if (storedVersion === VERSION) return;
 
         this.kvsService.kvs.version = VERSION;
 
