@@ -116,7 +116,10 @@ export class EmulationPage implements AfterViewInit {
                 Press ctrl-shift in order to exit game mode.
                 <br/><br/>
                 Check the help page for a description of the different keyboard mappings.
-            `
+            `,
+            {
+                Help: () => this.showHelp(),
+            }
         );
     }
 
