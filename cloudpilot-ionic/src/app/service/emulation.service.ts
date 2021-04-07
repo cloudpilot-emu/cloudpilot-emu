@@ -48,6 +48,7 @@ const ENGAGE_POWER_BUTTON_DURATION = 250;
 const PWM_FIFO_SIZE = 10;
 const SPEED_AVERAGE_N = 20;
 const MIN_FPS = 30;
+const DUMMY_SPEED = 1000;
 
 @Injectable({
     providedIn: 'root',
@@ -409,7 +410,10 @@ export class EmulationService {
         // Update the speed average. Note that we need to compensate this for the factor
         // by which we scaled the clock --- the factor represents the ratio for a device
         // running at ful speed
-        this.speedAverage.push((virtualTimePassed / realTimePassed) * this.emulationSpeed);
+        this.speedAverage.push(
+            (virtualTimePassed / (realTimePassed > 0 ? realTimePassed : virtualTimePassed / DUMMY_SPEED)) *
+                this.emulationSpeed
+        );
 
         // Normalize the speed an apply hysteresis
         this.updateEmulationSpeed(this.speedAverage.calculateAverage());
