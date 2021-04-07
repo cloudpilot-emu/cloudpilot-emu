@@ -5,11 +5,10 @@ import { OBJECT_STORE_MEMORY, OBJECT_STORE_STATE } from './storage/constants';
 import { Cloudpilot } from './../helper/Cloudpilot';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
-import { PageLockService } from './page-lock.service';
 import { Session } from './../model/Session';
 import { compressPage } from './storage/util';
 
-const TIMEOUT_MSEC = 3000;
+const TIMEOUT_MSEC = 7000;
 const MAX_CONSECUTIVE_ERRORS = 3;
 
 const E_TIMEOUT = new Error('transaction timeout');
