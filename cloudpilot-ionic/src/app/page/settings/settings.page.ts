@@ -29,11 +29,13 @@ export class SettingsPage implements OnInit {
 
     ionViewWillLeave(): void {
         this.kvsService.kvs.volume = this.formGroup.get('volume')!.value;
+        this.kvsService.kvs.showStatistics = this.formGroup.get('showStatistics')!.value;
     }
 
     private createFormGroup() {
         this.formGroup = new FormGroup({
             volume: new FormControl(this.kvsService.kvs.volume),
+            showStatistics: new FormControl(this.kvsService.kvs.showStatistics),
         });
     }
 

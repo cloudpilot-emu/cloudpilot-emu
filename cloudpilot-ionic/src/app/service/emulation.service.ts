@@ -7,6 +7,7 @@ import { AlertService } from 'src/app/service/alert.service';
 import { Average } from './../helper/Average';
 import { DeviceId } from '../model/DeviceId';
 import { EmulationStateService } from './emulation-state.service';
+import { EmulationStatistics } from './../model/EmulationStatistics';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { Fifo } from './../helper/Fifo';
@@ -261,6 +262,13 @@ export class EmulationService {
 
     getCanvas(): HTMLCanvasElement {
         return this.canvas;
+    }
+
+    getStatistics(): EmulationStatistics {
+        return {
+            hostSpeed: this.speedAverage.calculateAverage(),
+            emulationSpeed: this.emulationSpeed,
+        };
     }
 
     private onSessionChange = (sessionId: number): Promise<void> =>

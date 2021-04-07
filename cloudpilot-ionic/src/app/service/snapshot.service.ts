@@ -5,7 +5,9 @@ import { OBJECT_STORE_MEMORY, OBJECT_STORE_STATE } from './storage/constants';
 import { Cloudpilot } from './../helper/Cloudpilot';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
+import { Event } from 'microevent.ts';
 import { Session } from './../model/Session';
+import { SnapshotStatistics } from './../model/SnapshotStatistics';
 import { compressPage } from './storage/util';
 
 const TIMEOUT_MSEC = 5000;
@@ -103,8 +105,13 @@ export class SnapshotService {
 
         if (this.emulationState.getCurrentSession()?.id !== this.sessionId) throw E_SESSION_MISMATCH;
 
-        await new Promise<void>((resolve, reject) => {
+        const statistics: SnapshotStatistics = await new Promise((resolve, reject) => {
             let isTimeout = false;
+
+            const timestampStart = performance.now();
+            let timestampBlockingStart = 0;
+            let timestampBlockingEnd = 0;
+            let pages = 0;
 
             const timeout = setTimeout(() => {
                 isTimeout = true;
@@ -120,7 +127,12 @@ export class SnapshotService {
                 clearTimeout(timeout);
                 this.dirtyPages.fill(0);
 
-                resolve();
+                resolve({
+                    timestamp: Date.now(),
+                    pages,
+                    timeBlocking: timestampBlockingEnd - timestampBlockingStart,
+                    timeTotal: performance.now() - timestampStart,
+                });
             };
 
             tx.onerror = () => {
@@ -130,8 +142,12 @@ export class SnapshotService {
             };
 
             try {
-                this.saveDirtyMemory(tx);
+                timestampBlockingStart = performance.now();
+
+                pages = this.saveDirtyMemory(tx);
                 this.saveSession(tx);
+
+                timestampBlockingEnd = performance.now();
             } catch (e) {
                 if (!isTimeout) {
                     clearTimeout(timeout);
@@ -142,14 +158,17 @@ export class SnapshotService {
                 throw e;
             }
         });
+
+        this.snapshotEvent.dispatch(statistics);
     }
 
-    private saveDirtyMemory(tx: IDBTransaction): void {
+    private saveDirtyMemory(tx: IDBTransaction): number {
         let iPage = 0;
         const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
 
         const dirtyPages = this.cloudpilot.getDirtyPages();
         const memory = this.cloudpilot.getMemory32();
+        let pagesSaved = 0;
 
         for (let i = 0; i < dirtyPages.length; i++) {
             this.dirtyPages[i] |= dirtyPages[i];
@@ -171,11 +190,15 @@ export class SnapshotService {
 
                         objectStore.put(this.pages[iPage], [this.sessionId, iPage]);
                     }
+
+                    pagesSaved++;
                 }
 
                 iPage++;
             }
         }
+
+        return pagesSaved;
     }
 
     private saveSession(tx: IDBTransaction) {
@@ -194,6 +217,8 @@ export class SnapshotService {
             objectStore.delete(this.sessionId);
         }
     }
+
+    snapshotEvent = new Event<SnapshotStatistics>();
 
     private sessionId = -1;
     private consecutiveErrorCount = 0;

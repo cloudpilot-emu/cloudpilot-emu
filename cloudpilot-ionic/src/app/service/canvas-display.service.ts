@@ -1,8 +1,10 @@
 import { DeviceId } from '../model/DeviceId';
+import { EmulationStatistics } from './../model/EmulationStatistics';
 import { GRAYSCALE_PALETTE_HEX } from './emulation.service';
 import { Injectable } from '@angular/core';
 import { PalmButton } from '../helper/Cloudpilot';
 import { Session } from '../model/Session';
+import { SnapshotStatistics } from './../model/SnapshotStatistics';
 
 const URL_SILKSCREEN_DEFAULT = 'assets/silkscreen-default.svg';
 const URL_SILKSCREEN_M515 = 'assets/silkscreen-m515.svg';
@@ -80,6 +82,39 @@ export class CanvasDisplayService {
         this.ctx.imageSmoothingQuality = 'high';
 
         this.ctx.drawImage(image, BORDER, BORDER + 161 * SCALE, 160 * SCALE, 60 * SCALE);
+    }
+
+    async drawStatistics(
+        snapshotStatistics?: SnapshotStatistics,
+        emulationStatistics?: EmulationStatistics
+    ): Promise<void> {
+        if (!this.ctx) return;
+
+        await this.drawSilkscreen();
+
+        this.ctx.beginPath();
+        this.fillRect(0, 161, 160, 60, 'rgba(255,255,255,0.6)');
+
+        this.ctx.font = `${SCALE * 6}px monospace`;
+        this.ctx.fillStyle = 'black';
+        [
+            'Statistics',
+            '==========',
+            ...(snapshotStatistics
+                ? [
+                      `last snapshot          : ${new Date(snapshotStatistics.timestamp).toLocaleTimeString()}`,
+                      `snapshot pages         : ${snapshotStatistics.pages}`,
+                      `snapshot time total    : ${snapshotStatistics.timeTotal.toFixed(2)} msec`,
+                      `snapshot time blocking : ${snapshotStatistics.timeBlocking.toFixed(2)} msec`,
+                  ]
+                : []),
+            ...(emulationStatistics
+                ? [
+                      `host speed             : ${emulationStatistics.hostSpeed.toFixed(2)}x`,
+                      `emulation speed        : ${emulationStatistics.emulationSpeed.toFixed(2)}x`,
+                  ]
+                : []),
+        ].forEach((line, i) => this.ctx!.fillText(line, BORDER + 1 * SCALE, BORDER + (168 + i * 6) * SCALE));
     }
 
     async drawButtons(activeButtons: Array<PalmButton> = []): Promise<void> {

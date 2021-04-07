@@ -12,6 +12,7 @@ import { EventHandlingService } from './../../service/event-handling.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { KvsService } from './../../service/kvs.service';
 import { SnapshotService } from './../../service/snapshot.service';
+import { SnapshotStatistics } from './../../model/SnapshotStatistics';
 import { StorageService } from './../../service/storage.service';
 import { getStoredSession } from 'src/app/helper/storedSession';
 
@@ -63,20 +64,24 @@ export class EmulationPage implements AfterViewInit {
         if (!session && storedSession !== undefined) {
             session = await this.storageService.getSession(storedSession);
         }
-        this.canvasDisplayService.initialize(this.canvasRef.nativeElement, session);
+        this.canvasDisplayService.initialize(this.canvasRef.nativeElement, session).then(() => {
+            if (this.kvsService.kvs.showStatistics) this.canvasDisplayService.drawStatistics();
+        });
         this.onNewFrame(this.emulationService.getCanvas());
 
         this.emulationService.newFrameEvent.addHandler(this.onNewFrame);
+        this.snapshotService.snapshotEvent.addHandler(this.onSnapshot);
 
         this.emulationService.resume();
 
-        this.ngZone.runOutsideAngular(() => this.eventHandlingService.bind(this.canvasRef.nativeElement));
+        this.eventHandlingService.bind(this.canvasRef.nativeElement);
     }
 
     ionViewWillLeave() {
         this.emulationService.pause();
 
         this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
+        this.snapshotService.snapshotEvent.removeHandler(this.onSnapshot);
 
         this.eventHandlingService.release();
     }
@@ -156,6 +161,12 @@ export class EmulationPage implements AfterViewInit {
             }
         }
     }
+
+    private onSnapshot = (statistics: SnapshotStatistics): void => {
+        if (this.kvsService.kvs.showStatistics) {
+            this.canvasDisplayService.drawStatistics(statistics, this.emulationService.getStatistics());
+        }
+    };
 
     private onNewFrame = (canvas: HTMLCanvasElement): void => {
         this.canvasDisplayService.drawEmulationCanvas(canvas);
