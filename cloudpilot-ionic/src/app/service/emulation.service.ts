@@ -383,6 +383,8 @@ export class EmulationService {
 
         const timestamp = performance.now();
 
+        if (timestamp < this.clockEmulator) return;
+
         // Scale the clock by the calculated emulation speed
         this.cloudpilotInstance.setClockFactor(this.emulationSpeed);
 
