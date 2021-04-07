@@ -269,21 +269,22 @@ export class StorageService {
         return complete(objectStore.get(sessionId));
     }
 
-    private saveMemory = (tx: IDBTransaction, sessionId: number, memory: Uint8Array): void =>
+    private saveMemory = (tx: IDBTransaction, sessionId: number, memory8: Uint8Array): void =>
         this.ngZone.runOutsideAngular(() => {
+            const memory32 = new Uint32Array(memory8.buffer, memory8.byteOffset, memory8.length >> 2);
             const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
 
             objectStore.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
 
-            const pageCount = memory.length >>> 10;
+            const pageCount = memory32.length >>> 8;
 
             for (let i = 0; i < pageCount; i++) {
-                const compressedPage = compressPage(memory.subarray(i * 1024, (i + 1) * 1024));
+                const compressedPage = compressPage(memory32.subarray(i * 256, (i + 1) * 256));
 
                 if (typeof compressedPage === 'number') {
                     objectStore.put(compressedPage, [sessionId, i]);
                 } else {
-                    const page = new Uint8Array(1024);
+                    const page = new Uint32Array(256);
                     page.set(compressedPage);
 
                     objectStore.put(page, [sessionId, i]);
@@ -301,7 +302,7 @@ export class StorageService {
         this.ngZone.runOutsideAngular(() => {
             return new Promise((resolve, reject) => {
                 const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
-                const memory = new Uint8Array(size);
+                const memory = new Uint32Array(size >> 2);
 
                 const request = objectStore.openCursor(
                     IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true)
@@ -310,15 +311,23 @@ export class StorageService {
                 request.onsuccess = () => {
                     const cursor = request.result;
 
-                    if (!cursor) return resolve(memory);
+                    if (!cursor) return resolve(new Uint8Array(memory.buffer));
 
-                    const compressedPage = cursor.value;
+                    const compressedPage: number | Uint8Array | Uint32Array = cursor.value;
                     const [, iPage] = cursor.key as [number, number];
 
                     if (typeof compressedPage === 'number') {
-                        memory.subarray(iPage * 1024, (iPage + 1) * 1024).fill(compressedPage);
+                        memory
+                            .subarray(iPage * 256, (iPage + 1) * 256)
+                            .fill(
+                                compressedPage | (compressedPage << 8) | (compressedPage << 16) | (compressedPage << 24)
+                            );
                     } else {
-                        memory.subarray(iPage * 1024, (iPage + 1) * 1024).set(compressedPage);
+                        memory
+                            .subarray(iPage * 256, (iPage + 1) * 256)
+                            .set(
+                                compressedPage.length === 1024 ? new Uint32Array(compressedPage.buffer) : compressedPage
+                            );
                     }
 
                     cursor.continue();

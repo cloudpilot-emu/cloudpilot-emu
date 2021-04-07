@@ -8,7 +8,7 @@ import { ErrorService } from './error.service';
 import { Session } from './../model/Session';
 import { compressPage } from './storage/util';
 
-const TIMEOUT_MSEC = 7000;
+const TIMEOUT_MSEC = 5000;
 const MAX_CONSECUTIVE_ERRORS = 3;
 
 const E_TIMEOUT = new Error('transaction timeout');
@@ -31,11 +31,11 @@ export class SnapshotService {
 
         this.sessionId = session.id;
         this.dirtyPages = new Uint8Array(pageCount >> 3);
-        this.pages = new Array<Uint8Array>(pageCount);
+        this.pages = new Array<Uint32Array>(pageCount);
         this.state = undefined;
 
         for (let i = 0; i < pageCount; i++) {
-            this.pages[i] = new Uint8Array(1024);
+            this.pages[i] = new Uint32Array(256);
         }
 
         this.db = await this.storageService.getDb();
@@ -149,7 +149,7 @@ export class SnapshotService {
         const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
 
         const dirtyPages = this.cloudpilot.getDirtyPages();
-        const memory = this.cloudpilot.getMemory();
+        const memory = this.cloudpilot.getMemory32();
 
         for (let i = 0; i < dirtyPages.length; i++) {
             this.dirtyPages[i] |= dirtyPages[i];
@@ -162,7 +162,7 @@ export class SnapshotService {
 
             for (let j = 0; j < 8; j++) {
                 if (this.dirtyPages[i] & (1 << j)) {
-                    const compressedPage = compressPage(memory.subarray(iPage * 1024, (iPage + 1) * 1024));
+                    const compressedPage = compressPage(memory.subarray(iPage * 256, (iPage + 1) * 256));
 
                     if (typeof compressedPage === 'number') {
                         objectStore.put(compressedPage, [this.sessionId, iPage]);
@@ -201,7 +201,7 @@ export class SnapshotService {
     private pendingSnapshotPromise = Promise.resolve<void>(undefined);
 
     private dirtyPages!: Uint8Array;
-    private pages!: Array<Uint8Array>;
+    private pages!: Array<Uint32Array>;
     private cloudpilot!: Cloudpilot;
     private state: Uint8Array | undefined;
 

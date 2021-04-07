@@ -1,3 +1,7 @@
+# Next version
+
+-   Operate on 32bit view for snapshots for better performance.
+
 # Version 1.0.2
 
 -   Increase IndexedDB timeout in order to avoid IDB timeouts when

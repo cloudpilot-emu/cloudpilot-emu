@@ -232,6 +232,19 @@ export class Cloudpilot {
     }
 
     @guard()
+    getMemory32(): Uint32Array {
+        let ptr = this.module.getPointer(this.cloudpilot.GetMemoryPtr());
+
+        if (ptr & 0x03) {
+            throw new Error('unaligned pointer');
+        }
+
+        ptr >>= 2;
+
+        return this.module.HEAPU32.subarray(ptr, ptr + (this.cloudpilot.GetMemorySize() >> 2));
+    }
+
+    @guard()
     getDirtyPages(): Uint8Array {
         const ptr = this.module.getPointer(this.cloudpilot.GetDirtyPagesPtr());
         const memorySize = this.cloudpilot.GetMemorySize();

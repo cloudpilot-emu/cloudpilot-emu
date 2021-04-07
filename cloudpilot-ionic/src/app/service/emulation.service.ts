@@ -124,14 +124,14 @@ export class EmulationService {
                 cloudpilot.initializeSession(rom, session.device);
 
                 if (memory) {
-                    const emulatedMemory = cloudpilot.getMemory();
+                    const emulatedMemory = cloudpilot.getMemory32();
 
-                    if (emulatedMemory.length === memory.length) {
-                        emulatedMemory.set(memory);
+                    if (emulatedMemory.length * 4 === memory.length) {
+                        emulatedMemory.set(new Uint32Array(memory.buffer, memory.byteOffset, emulatedMemory.length));
                         memoryLoaded = true;
                     } else {
                         console.error(
-                            `memory size mismatch; ${emulatedMemory.length} vs. ${memory.length} - ignoring image`
+                            `memory size mismatch; ${emulatedMemory.length * 4} vs. ${memory.length} - ignoring image`
                         );
                     }
                 }
@@ -456,7 +456,7 @@ export class EmulationService {
             }
         }
 
-        if (timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL) {
+        if (timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL && this.isUiInitialized) {
             this.snapshotService.triggerSnapshot();
 
             this.lastSnapshotAt = timestamp;

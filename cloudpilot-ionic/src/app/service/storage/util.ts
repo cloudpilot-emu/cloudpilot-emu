@@ -18,10 +18,14 @@ export function complete(requestOrTransaction: IDBRequest | IDBTransaction): Pro
     });
 }
 
-export function compressPage(page: Uint8Array): Uint8Array | number {
-    for (let i = 1; i < 1024; i++) {
-        if (page[i] !== page[0]) return page;
+export function compressPage(page: Uint32Array): Uint32Array | number {
+    let probe = page[0] & 0xff;
+    probe |= probe << 8;
+    probe |= probe << 16;
+
+    for (let i = 1; i < 256; i++) {
+        if (page[i] !== probe) return page;
     }
 
-    return page[0];
+    return page[0] & 0xff;
 }
