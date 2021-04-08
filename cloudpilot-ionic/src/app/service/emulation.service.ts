@@ -379,11 +379,11 @@ export class EmulationService {
 
             if (this.advanceEmulationHandle === undefined) {
                 this.advanceEmulationHandle = window.setTimeout(() => this.advanceEmulation(timestamp), 0);
+
+                this.timePerFrameAverage.push(Math.max(0, timestamp - this.timestampLastFrame));
+                this.timestampLastFrame = timestamp;
             }
         }
-
-        this.timePerFrameAverage.push(Math.max(0, timestamp - this.timestampLastFrame));
-        this.timestampLastFrame = timestamp;
 
         this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
     };
