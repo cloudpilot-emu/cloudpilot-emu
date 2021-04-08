@@ -398,9 +398,7 @@ export class EmulationService {
     private advanceEmulation = (timestamp: number): void => {
         this.advanceEmulationHandle = undefined;
 
-        if (this.errorService.hasFatalError()) return;
-
-        if (timestamp < this.clockEmulator) return;
+        if (this.errorService.hasFatalError() || timestamp < this.clockEmulator) return;
 
         // Scale the clock by the calculated emulation speed
         this.cloudpilotInstance.setClockFactor(this.emulationSpeed);
