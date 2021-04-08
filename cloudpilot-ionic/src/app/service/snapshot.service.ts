@@ -32,7 +32,7 @@ export class SnapshotService {
         const pageCount = session.ram * 1024;
 
         this.sessionId = session.id;
-        this.dirtyPages = new Uint8Array(pageCount >> 3);
+        this.dirtyPages = new Uint8Array(pageCount >>> 3);
         this.pages = new Array<Uint32Array>(pageCount);
         this.state = undefined;
 

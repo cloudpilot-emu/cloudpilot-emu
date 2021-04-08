@@ -271,7 +271,7 @@ export class StorageService {
 
     private saveMemory = (tx: IDBTransaction, sessionId: number, memory8: Uint8Array): void =>
         this.ngZone.runOutsideAngular(() => {
-            const memory32 = new Uint32Array(memory8.buffer, memory8.byteOffset, memory8.length >> 2);
+            const memory32 = new Uint32Array(memory8.buffer, memory8.byteOffset, memory8.length >>> 2);
             const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
 
             objectStore.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
@@ -302,7 +302,7 @@ export class StorageService {
         this.ngZone.runOutsideAngular(() => {
             return new Promise((resolve, reject) => {
                 const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
-                const memory = new Uint32Array(size >> 2);
+                const memory = new Uint32Array(size >>> 2);
 
                 const request = objectStore.openCursor(
                     IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true)

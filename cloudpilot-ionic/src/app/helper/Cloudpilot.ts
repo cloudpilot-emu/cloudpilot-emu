@@ -239,9 +239,9 @@ export class Cloudpilot {
             throw new Error('unaligned pointer');
         }
 
-        ptr >>= 2;
+        ptr >>>= 2;
 
-        return this.module.HEAPU32.subarray(ptr, ptr + (this.cloudpilot.GetMemorySize() >> 2));
+        return this.module.HEAPU32.subarray(ptr, ptr + (this.cloudpilot.GetMemorySize() >>> 2));
     }
 
     @guard()

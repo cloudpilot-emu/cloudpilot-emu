@@ -551,12 +551,12 @@ export class EmulationService {
                         const imageData32 = new Uint32Array(
                             this.imageData.data.buffer,
                             this.imageData.data.byteOffset,
-                            this.imageData.data.byteLength >> 2
+                            this.imageData.data.byteLength >>> 2
                         );
                         const buffer32 = new Uint32Array(
                             frame.buffer.buffer,
                             frame.buffer.byteOffset,
-                            frame.buffer.byteLength >> 2
+                            frame.buffer.byteLength >>> 2
                         );
 
                         if (frame.margin === 0) {
