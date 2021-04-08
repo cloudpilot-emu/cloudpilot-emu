@@ -98,8 +98,7 @@ export class CanvasDisplayService {
         this.ctx.font = `${SCALE * 6}px monospace`;
         this.ctx.fillStyle = 'black';
         [
-            'Statistics',
-            '==========',
+            ...(!snapshotStatistics && !emulationStatistics ? ['collecting statistics...'] : []),
             ...(snapshotStatistics
                 ? [
                       `last snapshot          : ${new Date(snapshotStatistics.timestamp).toLocaleTimeString()}`,
@@ -112,6 +111,7 @@ export class CanvasDisplayService {
                 ? [
                       `host speed             : ${emulationStatistics.hostSpeed.toFixed(2)}x`,
                       `emulation speed        : ${emulationStatistics.emulationSpeed.toFixed(2)}x`,
+                      `average FPS            : ${emulationStatistics.averageFPS.toFixed(2)}`,
                   ]
                 : []),
         ].forEach((line, i) => this.ctx!.fillText(line, BORDER + 1 * SCALE, BORDER + (168 + i * 6) * SCALE));

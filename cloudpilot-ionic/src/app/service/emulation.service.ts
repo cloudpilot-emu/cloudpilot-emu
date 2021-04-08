@@ -47,6 +47,7 @@ const SNAPSHOT_INTERVAL = 1000;
 const ENGAGE_POWER_BUTTON_DURATION = 250;
 const PWM_FIFO_SIZE = 10;
 const SPEED_AVERAGE_N = 20;
+const TIME_PER_FRAME_AVERAGE_N = 60;
 const MIN_FPS = 30;
 const DUMMY_SPEED = 1000;
 
@@ -176,6 +177,7 @@ export class EmulationService {
 
             this.lastSnapshotAt = performance.now();
             this.setRunning(true);
+            this.resetFPS();
         });
 
     pause = (): Promise<void> =>
@@ -266,9 +268,12 @@ export class EmulationService {
     }
 
     getStatistics(): EmulationStatistics {
+        const timePerFrame = this.timePerFrameAverage.calculateAverage();
+
         return {
             hostSpeed: this.speedAverage.calculateAverage(),
             emulationSpeed: this.emulationSpeed,
+            averageFPS: this.calculateFPS(),
         };
     }
 
@@ -292,6 +297,17 @@ export class EmulationService {
             this.pendingPwmUpdates.push(pwmUpdate);
         }
     };
+
+    private resetFPS(): void {
+        this.timePerFrameAverage.reset();
+        this.timestampLastFrame = performance.now();
+    }
+
+    private calculateFPS(): number {
+        const timePerFrame = this.timePerFrameAverage.calculateAverage();
+
+        return timePerFrame && 1000 / timePerFrame;
+    }
 
     private setRunning(running: boolean): void {
         if (running === this.running) return;
@@ -349,7 +365,7 @@ export class EmulationService {
         }
     }
 
-    private onAnimationFrame = (): void => {
+    private onAnimationFrame = (timestamp: number): void => {
         this.animationFrameHandle = -1;
 
         if (this.errorService.hasFatalError()) return;
@@ -362,9 +378,12 @@ export class EmulationService {
             }
 
             if (this.advanceEmulationHandle === undefined) {
-                this.advanceEmulationHandle = window.setTimeout(this.advanceEmulation, 0);
+                this.advanceEmulationHandle = window.setTimeout(() => this.advanceEmulation(timestamp), 0);
             }
         }
+
+        this.timePerFrameAverage.push(Math.max(0, timestamp - this.timestampLastFrame));
+        this.timestampLastFrame = timestamp;
 
         this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
     };
@@ -376,12 +395,10 @@ export class EmulationService {
         }
     }
 
-    private advanceEmulation = (): void => {
+    private advanceEmulation = (timestamp: number): void => {
         this.advanceEmulationHandle = undefined;
 
         if (this.errorService.hasFatalError()) return;
-
-        const timestamp = performance.now();
 
         if (timestamp < this.clockEmulator) return;
 
@@ -394,13 +411,15 @@ export class EmulationService {
 
         const cyclesToRun = ((timestamp - this.clockEmulator) / 1000) * this.cloudpilotInstance.cyclesPerSecond();
 
+        const timestampBeforeCycle = performance.now();
+
         let cycles = 0;
         while (cycles < cyclesToRun) {
             cycles += this.cloudpilotInstance.runEmulation(Math.ceil(cyclesToRun - cycles));
         }
 
         const virtualTimePassed = (cycles / this.cloudpilotInstance.cyclesPerSecond()) * 1000;
-        const realTimePassed = performance.now() - timestamp;
+        const realTimePassed = performance.now() - timestampBeforeCycle;
 
         // If the emulation runs too slowly the amount of real time that passed will exceed the
         // emulated time difference. In this case we compensate by advancing the emulated clock
@@ -618,4 +637,7 @@ export class EmulationService {
 
     private emulationSpeed = 1;
     private speedAverage = new Average(SPEED_AVERAGE_N);
+
+    private timePerFrameAverage = new Average(TIME_PER_FRAME_AVERAGE_N);
+    private timestampLastFrame = 0;
 }
