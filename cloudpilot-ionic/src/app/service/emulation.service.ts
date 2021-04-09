@@ -1,11 +1,11 @@
 import { AlertController, LoadingController, ModalController } from '@ionic/angular';
 import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
+import { DeviceId, isColor } from '../model/DeviceId';
 import { Injectable, NgZone } from '@angular/core';
 import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { Average } from './../helper/Average';
-import { DeviceId } from '../model/DeviceId';
 import { EmulationStateService } from './emulation-state.service';
 import { EmulationStatistics } from './../model/EmulationStatistics';
 import { ErrorService } from './error.service';
@@ -345,8 +345,9 @@ export class EmulationService {
     private clearCanvas(): void {
         this.context.beginPath();
         this.context.rect(0, 0, 160, 160);
-        this.context.fillStyle =
-            this.emulationState.getCurrentSession()?.device === DeviceId.m515 ? 'white' : GRAYSCALE_PALETTE_HEX[0];
+        this.context.fillStyle = isColor(this.emulationState.getCurrentSession()?.device)
+            ? 'white'
+            : GRAYSCALE_PALETTE_HEX[0];
         this.context.fill();
     }
 

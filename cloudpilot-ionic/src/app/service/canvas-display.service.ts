@@ -1,4 +1,5 @@
-import { DeviceId } from '../model/DeviceId';
+import { DeviceId, isColor } from '../model/DeviceId';
+
 import { EmulationStatistics } from './../model/EmulationStatistics';
 import { GRAYSCALE_PALETTE_HEX } from './emulation.service';
 import { Injectable } from '@angular/core';
@@ -8,12 +9,14 @@ import { SnapshotStatistics } from './../model/SnapshotStatistics';
 
 const URL_SILKSCREEN_DEFAULT = 'assets/silkscreen-default.svg';
 const URL_SILKSCREEN_M515 = 'assets/silkscreen-m515.svg';
+const URL_SILKSCREEN_IIIC = 'assets/silkscreen-palmiiic.svg';
 const URL_BUTTONS_DEFAULT = 'assets/hard-buttons-default.svg';
 const URL_BUTTONS_M515 = 'assets/hard-buttons-m515.svg';
+const URL_BUTTONS_IIIC = 'assets/hard-buttons-palmiiic.svg';
 
 const BACKGROUND_COLOR_SILKSCREEN = GRAYSCALE_PALETTE_HEX[2];
-const BACKGROUND_COLOR_DEFAULT = GRAYSCALE_PALETTE_HEX[0];
-const BACKGROUND_COLOR_M515 = 'white';
+const BACKGROUND_COLOR_GRAYSCALE_DEVICE = GRAYSCALE_PALETTE_HEX[0];
+const BACKGROUND_COLOR_COLOR_DEVICE = 'white';
 const BACKGROUND_ACTIVE_BUTTON = 'rgba(0,0,0,0.2)';
 
 export const SCALE = 3 * devicePixelRatio;
@@ -47,8 +50,10 @@ async function prerenderButtons(url: string): Promise<HTMLCanvasElement> {
 
 const IMAGE_SILKSCREEN_DEFAULT = loadImage(URL_SILKSCREEN_DEFAULT);
 const IMAGE_SILKSCREEN_M515 = loadImage(URL_SILKSCREEN_M515);
+const IMAGE_SILKSCREEN_IIIC = loadImage(URL_SILKSCREEN_IIIC);
 const IMAGE_BUTTONS_DEFAULT = prerenderButtons(URL_BUTTONS_DEFAULT);
 const IMAGE_BUTTONS_M515 = prerenderButtons(URL_BUTTONS_M515);
+const IMAGE_BUTTONS_IIIC = prerenderButtons(URL_BUTTONS_IIIC);
 
 @Injectable({
     providedIn: 'root',
@@ -160,6 +165,9 @@ export class CanvasDisplayService {
             case DeviceId.m515:
                 return IMAGE_SILKSCREEN_M515;
 
+            case DeviceId.iiic:
+                return IMAGE_SILKSCREEN_IIIC;
+
             default:
                 return IMAGE_SILKSCREEN_DEFAULT;
         }
@@ -170,19 +178,16 @@ export class CanvasDisplayService {
             case DeviceId.m515:
                 return IMAGE_BUTTONS_M515;
 
+            case DeviceId.iiic:
+                return IMAGE_BUTTONS_IIIC;
+
             default:
                 return IMAGE_BUTTONS_DEFAULT;
         }
     }
 
     private backgroundColor(): string {
-        switch (this.session?.device) {
-            case DeviceId.m515:
-                return BACKGROUND_COLOR_M515;
-
-            default:
-                return BACKGROUND_COLOR_DEFAULT;
-        }
+        return isColor(this.session?.device) ? BACKGROUND_COLOR_COLOR_DEVICE : BACKGROUND_COLOR_GRAYSCALE_DEVICE;
     }
 
     private ctx: CanvasRenderingContext2D | undefined;
