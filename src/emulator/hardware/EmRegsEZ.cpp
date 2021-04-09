@@ -1040,7 +1040,7 @@ void EmRegsEZ::UpdateTimerTicksPerSecond() {
             break;
 
         default:
-            timerTicksPerSecond = (clksource & 0x4) ? 32000. / prescaler : 0;
+            timerTicksPerSecond = (clksource & 0x4) ? 32768. / prescaler : 0;
             break;
     }
 }

@@ -91,7 +91,7 @@ namespace {
                 return (double)systemClockFrequency / prescaler / 16.;
 
             default:
-                return (clksource & 0x4) ? 32000. / prescaler : 0;
+                return (clksource & 0x4) ? 32768. / prescaler : 0;
         }
     }
 }  // namespace
