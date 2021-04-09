@@ -64,14 +64,17 @@ class EmRegsSED1376 : public EmRegs, public EmHALHandler {
     void DoSaveLoad(T& helper, uint32 version);
 
    protected:
-    void SetFromPalette(uint32* target, uint16 index, bool mono);
+    uint32* GetLUT(bool mono);
 
    protected:
     emuptr fBaseRegsAddr;
     emuptr fBaseVideoAddr;
     EmProxySED1376RegsType fRegs;
-    uint32 fClutData[256];
     EmRegsFrameBuffer& framebuffer;
+
+    uint32 fClutData[256];
+    uint32 fClutDataMono[256];
+    Bool lutDirty{true};
 };
 
 #if 0

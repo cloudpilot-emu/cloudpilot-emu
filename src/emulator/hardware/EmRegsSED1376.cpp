@@ -121,6 +121,8 @@ void EmRegsSED1376::Reset(Bool hardwareReset) {
         fRegs.productRevisionCode = 0x28;
         fRegs.displayBufferSize = 20;  // 80K / 4K
         fRegs.configurationReadback = 0;
+
+        lutDirty = true;
     }
 }
 
@@ -142,6 +144,8 @@ void EmRegsSED1376::Load(SavestateLoader& loader) {
 
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper, version);
+
+    lutDirty = true;
 }
 
 template <typename T>
@@ -368,6 +372,7 @@ void EmRegsSED1376::lutWriteAddressWrite(emuptr address, int size, uint32 value)
                        (((green & 0xFC) | (green >> 6)) << 8) | ((red & 0xFC) | (red >> 6));
 
     gSystemState.MarkScreenDirty();
+    lutDirty = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -387,13 +392,20 @@ void EmRegsSED1376::lutReadAddressWrite(emuptr address, int size, uint32 value) 
     fRegs.lutReadBlue = (rgba >> 16) & 0xfc;
 }
 
-inline void EmRegsSED1376::SetFromPalette(uint32* target, uint16 index, bool mono) {
-    if (mono) {
-        const uint8 green = (fClutData[index] >> 8) & 0xff;
-        *target = 0xff000000 | (green << 16) | (green << 8) | green;
-    } else {
-        *target = fClutData[index];
+inline uint32* EmRegsSED1376::GetLUT(bool mono) {
+    if (!mono) return fClutData;
+
+    if (lutDirty) {
+        for (int32 i = 0; i < 256; i++) {
+            const uint8 green = (fClutData[i] >> 8) & 0xff;
+
+            fClutDataMono[i] = 0xff000000 | (green << 16) | (green << 8) | green;
+        }
+
+        lutDirty = false;
     }
+
+    return fClutDataMono;
 }
 
 #if 0
@@ -699,15 +711,15 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
     if (3 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
     uint32* buffer = reinterpret_cast<uint32*>(frame.GetBuffer());
 
+    uint32* lut = GetLUT(mono);
+
     switch (bpp) {
         case 1:
             for (int32 y = 0; y < height; y++)
                 for (int32 x = 0; x < width; x++) {
-                    SetFromPalette(
-                        buffer++,
-                        (framebuffer.GetByte(baseAddr + y * rowBytes + x / 8) >> (7 - (x % 8))) &
-                            0x01,
-                        mono);
+                    *(buffer++) = lut[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 8) >>
+                                       (7 - (x % 8))) &
+                                      0x01];
                 }
 
             break;
@@ -715,11 +727,9 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
         case 2:
             for (int32 y = 0; y < height; y++)
                 for (int32 x = 0; x < width; x++) {
-                    SetFromPalette(buffer++,
-                                   (framebuffer.GetByte(baseAddr + y * rowBytes + x / 4) >>
-                                    2 * (3 - (x % 4))) &
-                                       0x03,
-                                   mono);
+                    *(buffer++) = lut[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 4) >>
+                                       2 * (3 - (x % 4))) &
+                                      0x03];
                 }
 
             break;
@@ -727,11 +737,9 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
         case 4:
             for (int32 y = 0; y < height; y++)
                 for (int32 x = 0; x < width; x++) {
-                    SetFromPalette(buffer++,
-                                   (framebuffer.GetByte(baseAddr + y * rowBytes + x / 2) >>
-                                    4 * (1 - (x % 2))) &
-                                       0x0f,
-                                   mono);
+                    *(buffer++) = lut[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 2) >>
+                                       4 * (1 - (x % 2))) &
+                                      0x0f];
                 }
 
             break;
@@ -739,8 +747,7 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
         case 8:
             for (int32 y = 0; y < height; y++)
                 for (int32 x = 0; x < width; x++) {
-                    SetFromPalette(buffer++, framebuffer.GetByte(baseAddr + y * rowBytes + x),
-                                   mono);
+                    *(buffer++) = lut[framebuffer.GetByte(baseAddr + y * rowBytes + x)];
                 }
 
             break;
