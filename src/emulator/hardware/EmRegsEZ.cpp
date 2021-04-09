@@ -14,7 +14,6 @@
 #include "EmRegsEZ.h"
 
 #include <cmath>
-#include <functional>
 
 #include "Byteswapping.h"  // Canonical
 #include "ChunkHelper.h"
@@ -461,8 +460,7 @@ void EmRegsEZ::Initialize(void) {
 
     fUART = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballEZ, 0);
 
-    onMarkScreenCleanHandle =
-        gSystemState.onMarkScreenClean.AddHandler(bind(&EmRegsEZ::MarkScreen, this));
+    onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
 
     onCycleHandle = EmHAL::onCycle.AddHandler(
         [&](uint64 systemCycles, bool sleeping) { this->Cycle(systemCycles, sleeping); });

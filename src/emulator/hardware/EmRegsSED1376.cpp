@@ -15,7 +15,6 @@
 
 #include "ChunkHelper.h"
 #include "EmCommon.h"
-#include "EmMemory.h"  // EmMem_memcpy
 #include "EmRegsFrameBuffer.h"
 #include "EmSystemState.h"
 #include "Frame.h"
@@ -175,33 +174,6 @@ void EmRegsSED1376::DoSaveLoad(T& helper, uint32 version) {
 
     helper.DoBuffer(fRegs.GetPtr(), fRegs.GetSize());
 }
-
-#if 0
-
-void void::Save(SessionFile& f) {
-    EmRegs::Save(f);
-
-    f.WriteSED1376RegsType(*(SED1376RegsType*)fRegs.GetPtr());
-    f.WriteSED1376Palette(fClutData);
-}
-
-void EmRegsSED1376::Load(SessionFile& f) {
-    EmRegs::Load(f);
-
-    // Read in the SED registers.
-
-    if (!f.ReadSED1376RegsType(*(SED1376RegsType*)fRegs.GetPtr())) {
-        f.SetCanReload(false);
-    }
-
-    // Read in the LCD palette.
-
-    if (!f.ReadSED1376Palette(fClutData)) {
-        f.SetCanReload(false);
-    }
-}
-
-#endif
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSED1376::Dispose

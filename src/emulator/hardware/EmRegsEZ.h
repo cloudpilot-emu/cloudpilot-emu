@@ -112,6 +112,9 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual uint16 ButtonToBits(ButtonEventT::Button btn);
     virtual EmSPISlave* GetSPISlave(void);
 
+    virtual void MarkScreen();
+    virtual void UnmarkScreen();
+
    protected:
     void UpdateInterrupts(void);
     void UpdatePortDInterrupts(void);
@@ -134,8 +137,6 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
    private:
     void Cycle(uint64 systemCycles, Bool sleeping);
 
-    void MarkScreen();
-    void UnmarkScreen();
     void UpdateTimerTicksPerSecond();
 
     void DispatchPwmChange();

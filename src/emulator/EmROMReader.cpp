@@ -738,8 +738,9 @@ bool EmROMReader::Read() {
     if (!AcquireCardHeader()) return false;
 
     if (GetCardVersion() < 5) {
+        if (!(AcquireROMHeap() && AcquireDatabases() && AcquireFeatures())) return false;
+
         AcquireSplashDB();
-        return AcquireROMHeap() && AcquireDatabases() && AcquireFeatures();
     }
 
     return true;

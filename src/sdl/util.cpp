@@ -83,7 +83,12 @@ bool util::initializeSession(string file) {
 
     util::analyzeRom(reader);
 
-    EmDevice* device = new EmDevice("PalmV");
+    EmDevice* device = new EmDevice("PalmIIIc");
+
+    if (!device->SupportsROM(reader)) {
+        delete device;
+        device = new EmDevice("PalmV");
+    }
 
     if (!device->SupportsROM(reader)) {
         delete device;
@@ -91,10 +96,12 @@ bool util::initializeSession(string file) {
     }
 
     if (!device->SupportsROM(reader)) {
-        cerr << "ROM not supported by Palm V or Palm m515" << endl;
+        cerr << "ROM not supported by Palm IIIc, Palm V or Palm m515" << endl;
 
         return false;
     }
+
+    cout << "using device: " << device->GetIDString() << endl;
 
     if (!gSession->Initialize(device, fileBuffer.get(), fileSize)) {
         cerr << "Session failed to initialize" << endl;

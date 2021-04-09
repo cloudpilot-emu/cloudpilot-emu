@@ -50,8 +50,10 @@
 #include "EmCPU68K.h"
 #include "EmCommon.h"
 #include "EmROMReader.h"  // EmROMReader
+#include "EmRegsEZPalmIIIc.h"
 #include "EmRegsEZPalmV.h"
 #include "EmRegsFrameBuffer.h"
+#include "EmRegsSED1375.h"
 #include "EmRegsSED1376.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
 #include "EmRegsVZPalmM505.h"
@@ -65,7 +67,6 @@
     #include "EmRegs328Pilot.h"
     #include "EmRegs328Symbol1700.h"
     #include "EmRegsASICSymbol1700.h"
-    #include "EmRegsEZPalmIIIc.h"
     #include "EmRegsEZPalmIIIe.h"
     #include "EmRegsEZPalmIIIx.h"
     #include "EmRegsEZPalmM100.h"
@@ -76,7 +77,6 @@
     #include "EmRegsEZVisor.h"
     #include "EmRegsMediaQ11xx.h"
     #include "EmRegsPLDPalmVIIEZ.h"
-    #include "EmRegsSED1375.h"
     #include "EmRegsSZTemp.h"
     #include "EmRegsUSBVisor.h"
     #include "EmRegsVZPalmM500.h"
@@ -699,6 +699,7 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
                 !ROM.ContainsDB(SYMBOL_DB) && !is7)
                 return true;
             break;
+#endif
 
         case kDevicePalmIIIc:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && !ROM.ContainsDB(PALM_m100_DB) &&
@@ -706,6 +707,7 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
                 return true;
             break;
 
+#if 0
         case kDevicePalmIIIe:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && !ROM.ContainsDB(PALM_m100_DB) &&
                 !is7 && !isColor && (ROM.Version() == 0x030100))
@@ -867,13 +869,20 @@ void EmDevice::CreateRegs(void) const {
         case kDevicePalmIII:
             EmBankRegs::AddSubBank(new EmRegs328PalmIII);
             break;
+#endif
 
-        case kDevicePalmIIIc:
+        case kDevicePalmIIIc: {
+            EmRegsFrameBuffer* framebuffer =
+                new EmRegsFrameBuffer(sed1375BaseAddress, sed1375VideoMemSize);
+
             EmBankRegs::AddSubBank(new EmRegsEZPalmIIIc);
-            EmBankRegs::AddSubBank(new EmRegsSED1375((emuptr)sed1375RegsAddr, sed1375BaseAddress));
-            EmBankRegs::AddSubBank(new EmRegsFrameBuffer(sed1375BaseAddress, sed1375VideoMemSize));
+            EmBankRegs::AddSubBank(
+                new EmRegsSED1375(sed1375RegsAddr, sed1375BaseAddress, *framebuffer));
+            EmBankRegs::AddSubBank(framebuffer);
             break;
+        }
 
+#if 0
         case kDevicePalmIIIe:
             EmBankRegs::AddSubBank(new EmRegsEZPalmIIIe);
             break;

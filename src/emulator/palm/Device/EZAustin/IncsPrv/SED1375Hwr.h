@@ -20,46 +20,46 @@
 typedef struct SED1375RegsType {
 	UInt8 productRevisionCode;				// 0x00
 	UInt8 mode0;								// 0x01
-	
+
 	UInt8 mode1;								// 0x02
 	UInt8 mode2;								// 0x03
-	
+
 	UInt8 horizontalPanelSize;				// 0x04
 	UInt8 verticalPanelSizeLSB;			// 0x05
-	
+
 	UInt8 verticalPanelSizeMSB;			// 0x06
 	UInt8 FPLineStartPosition;				// 0x07
-	
+
 	UInt8 horizontalNonDisplayPeriod;	// 0x08
 	UInt8 FPFRAMEStartPosition;			// 0x09
-		
+
 	UInt8 verticalNonDisplayPeriod;		// 0x0A
 	UInt8 MODRate;								// 0x0B
-	
+
 	UInt8 screen1StartAddressLSB;			// 0x0C
 	UInt8 screen1StartAddressMSB;			// 0x0D
-	
+
 	UInt8 screen2StartAddressLSB;			// 0x0E
 	UInt8 screen2StartAddressMSB;			// 0x0F
 
 	UInt8 screen1StartAddressMSBit;		// 0x10	!!! YES, screen1MSBit in a weird place. Send complaints to Epson.
 	UInt8 memoryAddressOffset;				// 0x11
-	
+
 	UInt8 screen1VerticalSizeLSB;			// 0x12
 	UInt8 screen1VerticalSizeMSB;			// 0x13
-	
+
 	UInt8 unused1;								// 0x14
 	UInt8 lookUpTableAddress;				// 0x15
-		
+
 	UInt8 unused2;								// 0x16
 	UInt8 lookUpTableData;					// 0x17
-	
+
 	UInt8 GPIOConfigurationControl;		// 0x18
 	UInt8 GPIOStatusControl;				// 0x19
-	
-	UInt8 scratchPad;							// 0x1A	
+
+	UInt8 scratchPad;							// 0x1A
 	UInt8 portraitMode;						// 0x1B
-	
+
 	UInt8 lineByteCountRegister;			// 0x1C, for portrait mode only
 	UInt8 unused3;								// 0x01D not used
 
@@ -75,7 +75,8 @@ typedef volatile SED1375RegsType *SED1375RegsPtr;
 //-----------------------------------------------------------------------
 #define sed1375BaseAddress								0x1F000000
 #define sed1375RegisterOffset 						0x1FFE0
-#define sed1375RegsAddr									((UInt8 *)sed1375BaseAddress + sed1375RegisterOffset)
+// #define sed1375RegsAddr									((UInt8 *)sed1375BaseAddress + sed1375RegisterOffset)
+#define sed1375RegsAddr									0x1F01FFE0
 
 #define sed1375VideoMemStart							sed1375BaseAddress
 #define sed1375VideoMemSize							81920		// 80K of memory for VRAM and CLUT's
@@ -95,7 +96,7 @@ typedef volatile SED1375RegsType *SED1375RegsPtr;
 #define sed1375ModeRegister0							0x01
 #define sed1375ModeTFT									0x80		// bit 7
 #define sed1375ModeDual									0x40		// bit 6
-#define sed1375ModeColor								0x20		// bit 5								
+#define sed1375ModeColor								0x20		// bit 5
 #define sed1375FPLineActiveHigh						0x10		// bit 4
 #define sed1375FPFramePolarityActiveHigh			0x07		// bit 3
 #define sed1375FPShiftMasked							0x04		// bit 2
@@ -106,7 +107,7 @@ typedef volatile SED1375RegsType *SED1375RegsPtr;
 #define sed1375BPPMask									0xC0		// bits 7,6
 #define sed1375BPPShift									6
 #define sed1375BPP(n)									((((n) - 1) & 0x04) << sed1375BPPShift)
-#define sed13758bpp										0xC0	
+#define sed13758bpp										0xC0
 #define sed13754bpp										0x80
 #define sed13752bpp										0x40
 #define sed13751bpp										0x00
