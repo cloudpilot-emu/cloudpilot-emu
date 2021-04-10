@@ -699,8 +699,11 @@ void EmCPU68K::ProcessInterrupt(int32 interrupt) {
 // ---------------------------------------------------------------------------
 
 void EmCPU68K::ProcessException(ExceptionNumber exception) {
-    // Make sure the Status Register is up-to-date.
+    // make sure that we don't enter an endless loop if setting up the stack
+    // frame triggers a bus error
+    EmAssert(!isHandlingException);
 
+    // Make sure the Status Register is up-to-date.
     this->UpdateSRFromRegisters();
 
 #if EXCEPTION_HISTORY
@@ -757,6 +760,8 @@ void EmCPU68K::ProcessException(ExceptionNumber exception) {
     // !!! If we're handling a trace exception, I think that fLastTraceAddress
     // comes into play here instead of m68k_getpc.
     // !!! Manage this with EmPalmStructs...
+
+    EmValueChanger trackHandleException(isHandlingException, true);
 
     if (exception == kException_BusErr || exception == kException_AddressErr) {
         COMPILE_TIME_ASSERT(sizeof(ExceptionStackFrame2) == 14);
