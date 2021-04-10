@@ -2,8 +2,8 @@
 
 This is an emulator for Dragonball-based PalmOS devices that runs in a web
 browser. In particular, the emulator works on iOS. The emulator is derived from
-the original POSE emulator. At the moment, Palm V amd Palm m515 devices are
-emulated. Support for more devices may follow in the future.
+the original POSE emulator. At the moment, Palm IIIc, Palm V amd Palm m515 devices
+are emulated. Support for more devices may follow in the future.
 
 <img src="doc/m515.jpeg" width="310" height="552" alt="Palm m515 emulation"></img>
 &nbsp;
@@ -48,13 +48,17 @@ Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloud
 -   iOS: changing device orientation between portrait and landscape may mess
     up the layout of the app. This is an iOS bug that can be worked around by
     rotating the device by 180° in portrait and rotating back.
-    \_ Audio timing is not perfect and processed at the refresh rate of the emulator
+-   Audio timing is not perfect and processed at the refresh rate of the emulator
     (usually the same as the screen refresh rate of the host device). Sound
     effects that rely on quickly modulating the audio signal may not be
     reproduced correctly.
 -   Savestates are not endian safe and can not be exchanged between big and
     little endian systems. As long as there are not big endian system that run
     Cloudpilot that issue is probably academical :)
+-   On rare ocassions installing a prc or pdb can catch PalmOS on the wrong
+    foot and crashes the emulator. This is particularly true if a file is installed
+    on a virtual Palm IIIc with PalmOS 3.5 while the launcher is active and the
+    category menu is open.
 
 # Source code and relationship to POSE
 

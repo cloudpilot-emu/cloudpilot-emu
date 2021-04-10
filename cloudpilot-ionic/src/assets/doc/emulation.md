@@ -22,6 +22,10 @@ program and back to the launcher in order for newly installed programs to become
 visible. On Palm OS 3.5 and above it is sufficient to switch the launcher
 category.
 
+On rare ocassions the installation catches PalmOS on the wrong foot and
+crashes the emulator. In this case you can simply resume the session and
+retry the installation.
+
 # State saves
 
 Cloudpilot automatically saves the emulator state every second while the
@@ -98,7 +102,8 @@ while the corresponding button is pressed.
 # Statistics
 
 **WARNING** Technical details ahead. This is a technical diagnostics feature and not
-required for normal operation. Continue reading at your own risk.
+required for normal operation. You can skip the remainder of this documentation page unless
+you want to interpret the statistics overlay.
 
 If "Show Statistics" is enabled (on the settings tab) Cloudpilot displays an overlay with
 performance statistics above the grafitti silkscreen. The statistics are updated
@@ -117,7 +122,7 @@ and only the pages that have been modfied are saved.
  * **snapshot time total**: The total amount of time the snapshot took to complete.
    Most of this time is spent by the browser on a separate thread and does not block
    emulation, so this number does not have a direct impact on performance.
- * **snapshot time blocking**: The amount of time that was spent blocking the main
+ * **snapshot time blocking**: The amount of time that was spent blocking on the main
    thread. During this time the emulator cannot execute. If this value is higher than
    the time for a single frame (typically 1/60th second) the snapshot will cause a
    slight frame drop when it executes.

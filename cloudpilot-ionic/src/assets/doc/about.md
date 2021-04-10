@@ -1,6 +1,6 @@
 Cloudpilot is a web-based emulator for PalmOS. It emulates dragonball based devices
 and supports PalmOS up to version 4.x. Cloudpilot is based on the original POSE
-emulator and currently emulates Palm V and Palm m515 devices.
+emulator and currently emulates Palm IIIc, Palm V and Palm m515 devices.
 
 # Usage
 
@@ -68,6 +68,25 @@ reloading Cloudpilot will apply the update.
 
 In order to force check for an update terminate and restart the app.
 
+# Known issues
+
+-   The method that POSE uses to inject events into the virtual device can mess
+    up the timing of games on PalmOS 3 and earlier. In particular, Lemmings is
+    affected by this and runs too fast while the screen is touched. On PalmOS 4
+    the emulator uses a slightly different method that does not cause this
+    issue.
+-   iOS: changing device orientation between portrait and landscape may mess
+    up the layout of the app. This is an iOS bug that can be worked around by
+    rotating the device by 180° in portrait and rotating back.
+-   Audio timing is not perfect and processed at the refresh rate of the emulator
+    (usually the same as the screen refresh rate of the host device). Sound
+    effects that rely on quickly modulating the audio signal may not be
+    reproduced correctly.
+-   On rare ocassions installing a prc or pdb can catch PalmOS on the wrong
+    foot and crash the emulator. This is particularly true if a file is installed
+    on a virtual Palm IIIc with PalmOS 3.5 while the launcher is active and the
+    category menu is open.
+
 # Cloudpilot on the web
 
  * [Source code](https://github.com/cloudpilot-emu/cloudpilot)
@@ -75,7 +94,7 @@ In order to force check for an update terminate and restart the app.
 
 # License
 
-Cloudpilot program is free software: you can redistribute it and/or modify it under
+Cloudpilot is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
 Foundation, either version 3 of the License, or (at your option) any later
 version.
