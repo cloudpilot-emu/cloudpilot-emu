@@ -1,4 +1,4 @@
-# Next version
+# Version 1.1.0
 
 -   Add statistics display.
 -   Palm IIIc support.
