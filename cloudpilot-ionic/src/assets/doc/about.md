@@ -38,6 +38,26 @@ files can be installed directly into the emulated device.
 Saving a session snapshot on the Sessions tab every now and then will protect
 your data in case anything goes wrong.
 
+# Handling fatal errors
+
+The emulator is pretty stable, but you may encounter situations in which
+it crashes. This may be due to a bug in the emulator, or due to the way
+POSE and Cloudpilot interact with PalmOS for installing software,
+setting the hotsync name and similar tasks.
+
+If the emulator crashes Cloudpilot will stop immediatelly and show you a dialog
+that allows you to restart the emulator. Upon restart Cloudpilot will not
+automatically resume your session but will instead start up with the session
+page. You can resume your session from there.
+
+### Escaping a crash loop
+
+In the unlikely event that the emulated device keeps on
+crashing the emulator you can reset the device directly on the
+sessions page (see the help page there for more info). This will remove the
+hardware state but preserve the RAM, resulting in a reboot when you resume your
+session. This allows you to break the crash loop.
+
 # Requirements and browser support
 
 Cloudpilot runs on all reasonable recent browsers and can be added to the homescreen
@@ -77,10 +97,10 @@ In order to force check for an update terminate and restart the app.
     (usually the same as the screen refresh rate of the host device). Sound
     effects that rely on quickly modulating the audio signal may not be
     reproduced correctly.
--   On rare ocassions installing a prc or pdb can catch PalmOS on the wrong
-    foot and crash the emulator. In particular, this happens if a file is installed
-    on a virtual Palm IIIc with PalmOS 3.5 while the launcher is active and the
-    category menu is open.
+-   On rare ocassions installing files or changing the hotsync name can catch
+    PalmOS on the wrong foot and crash the emulator. In particular, this happens
+    if a file is installed on a virtual Palm IIIc with PalmOS 3.5 while the
+    launcher is active and the category menu is open.
 
 # Cloudpilot on the web
 

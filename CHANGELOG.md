@@ -1,3 +1,7 @@
+# Version 1.1.1
+
+-   Add a note on handling fatal errors to the "About" tab.
+
 # Version 1.1.0
 
 -   Add statistics display.
