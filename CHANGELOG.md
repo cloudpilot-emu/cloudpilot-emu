@@ -1,7 +1,9 @@
 # Next version
 
--   Operate on 32bit view for snapshots for better performance.
 -   Add statistics display.
+-   Palm IIIc support.
+-   Improved event injection -> no more timing glitches when injecting
+    touch events on PalmOS 3.x
 
 # Version 1.0.2
 
