@@ -112,10 +112,9 @@ whenever a new state snapshot is taken.
 ### Snapshot statistics
 
 State snapshots are taken every second while the emulator is running and preserve
-the current state of the emulator in the browser's IndexedDB. The snapshot consists
-of the device RAM and of a representation of the current hardware state. In order to
-reduce the amount of data saved memory is divided into pages of 1k, writes are tracked
-and only the pages that have been modfied are saved.
+the current state of the emulator in the browser's IndexedDB. In order to
+reduce the amount of data saved memory is divided into pages of 1k, and only the
+pages that have been modfied are saved.
 
  * **last snapshot**: This is the time at wbich the last snapshot was taken.
  * **snapshot pages**: The number of pages updated in this snapshot.
@@ -138,7 +137,7 @@ While all supported iOS devices are fast enough to execute the emulator at full
 speed at all times, some (in particular older) Android devices are not able to
 keep up all the time. Cloudpilot compensates this by monitoring the "host speed"
 (the ratio between the real time required to emulate a chunk of m68k code relative
-to the corresponding time in the frame of the virtual device). If this drops below ome
+to the corresponding time in the frame of the virtual device). If this drops below one
 Cloudpilot will reduce the clock of the emulated device accordingly while keeping the
 timers in sync with real time.
 
