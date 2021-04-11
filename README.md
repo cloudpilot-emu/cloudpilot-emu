@@ -40,11 +40,6 @@ Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloud
 
 # Known issues
 
--   The method that POSE uses to inject events into the virtual device can mess
-    up the timing of games on PalmOS 3 and earlier. In particular, Lemmings is
-    affected by this and runs too fast while the screen is touched. On PalmOS 4
-    the emulator uses a slightly different method that does not cause this
-    issue.
 -   iOS: changing device orientation between portrait and landscape may mess
     up the layout of the app. This is an iOS bug that can be worked around by
     rotating the device by 180° in portrait and rotating back.
@@ -80,6 +75,7 @@ bug fixes new features. In particular:
 -   A few conditions that can cause interrupt storms have been fixed.
 -   Savestate code has been rewritten to work with a fixed buffer without
     allocations.
+-   Event injection works without generating null events.
 
 # Building
 

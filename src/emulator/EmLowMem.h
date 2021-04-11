@@ -19,6 +19,7 @@
 class EmLowMem {
    public:
     static uint8 GetEvtMgrIdle(void);
+    static void ClearNilEvent(void);
     static Bool TrapExists(uint16 iATrap);
     static emuptr GetTrapAddress(uint16 iATrap);
 

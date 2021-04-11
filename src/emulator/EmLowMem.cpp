@@ -17,7 +17,7 @@
 #include "EmMemory.h"        // CEnableFullAccess
 #include "EmPalmFunction.h"  // SysTrapIndex
 
-#if 0                          // CSTODO
+#if 0                           // CSTODO
     #include "EmSystemState.h"  // EmSystemState::OSMajorVersion
 #endif
 
@@ -78,6 +78,14 @@ uint8 EmLowMem::GetEvtMgrIdle(void) {
     uint8 idle = EmMemGet8(sysEvtMgrGlobalsP + idleOffset);
 
     return idle;
+}
+
+void EmLowMem::ClearNilEvent(void) {
+    CEnableFullAccess munge;
+
+    emuptr sysEvtMgrGlobalsP = EmLowMem_GetGlobal(sysEvtMgrGlobalsP);
+
+    EmMemPut8(sysEvtMgrGlobalsP, 0);
 }
 
 /***********************************************************************

@@ -70,11 +70,6 @@ In order to force check for an update terminate and restart the app.
 
 # Known issues
 
--   The method that POSE uses to inject events into the virtual device can mess
-    up the timing of games on PalmOS 3 and earlier. In particular, Lemmings is
-    affected by this and runs too fast while the screen is touched. On PalmOS 4
-    the emulator uses a slightly different method that does not cause this
-    issue.
 -   iOS: changing device orientation between portrait and landscape may mess
     up the layout of the app. This is an iOS bug that can be worked around by
     rotating the device by 180° in portrait and rotating back.
@@ -83,7 +78,7 @@ In order to force check for an update terminate and restart the app.
     effects that rely on quickly modulating the audio signal may not be
     reproduced correctly.
 -   On rare ocassions installing a prc or pdb can catch PalmOS on the wrong
-    foot and crash the emulator. This is particularly true if a file is installed
+    foot and crash the emulator. In particular, this happens if a file is installed
     on a virtual Palm IIIc with PalmOS 3.5 while the launcher is active and the
     category menu is open.
 

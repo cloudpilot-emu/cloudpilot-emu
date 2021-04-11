@@ -527,8 +527,14 @@ KeyboardEvent EmSession::NextKeyboardEvent() {
 bool EmSession::Wakeup() {
     bool isSafeToWakeup = RunToSyscall();
 
-    if (isSafeToWakeup)
-        gSystemState.OSMajorVersion() >= 4 ? EvtWakeupWithoutNilEvent() : EvtWakeup();
+    if (isSafeToWakeup && EmLowMem::GetEvtMgrIdle()) {
+        if (gSystemState.OSMajorVersion() >= 4) {
+            EvtWakeupWithoutNilEvent();
+        } else {
+            EvtWakeup();
+            EmLowMem::ClearNilEvent();
+        }
+    }
 
     return isSafeToWakeup;
 }
