@@ -19,7 +19,14 @@ import { StorageError } from './storage/StorageError';
 import { environment } from '../../environments/environment';
 import md5 from 'md5';
 
+declare global {
+    interface IDBFactory {
+        databases?(): Promise<Array<{ name: string; version: number }>>;
+    }
+}
+
 export const E_LOCK_LOST = new Error('page lock lost');
+const E_VERSION_MISMATCH = new Error('version mismatch');
 
 function guard(): any {
     return (target: any, propertyKey: string, desc: PropertyDescriptor) => {
@@ -33,6 +40,8 @@ function guard(): any {
             } catch (e) {
                 if (e instanceof StorageError) {
                     errorService.fatalIDBDead();
+                } else if (e === E_VERSION_MISMATCH) {
+                    errorService.fatalVersionMismatch();
                 } else {
                     errorService.fatalBug(e.message);
                 }
@@ -48,7 +57,7 @@ function guard(): any {
 })
 export class StorageService {
     constructor(private pageLockService: PageLockService, private ngZone: NgZone, private errorService: ErrorService) {
-        this.setupDb();
+        this.db = this.setupDb();
     }
 
     getDb(): Promise<IDBDatabase> {
@@ -337,8 +346,17 @@ export class StorageService {
             });
         });
 
-    private setupDb() {
-        this.db = new Promise((resolve, reject) => {
+    @guard()
+    private async setupDb(): Promise<IDBDatabase> {
+        if (indexedDB.databases) {
+            const databaseEntry = (await indexedDB.databases()).find((x) => x.name === environment.dbName);
+
+            if (databaseEntry && databaseEntry.version > DB_VERSION) {
+                throw E_VERSION_MISMATCH;
+            }
+        }
+
+        return new Promise((resolve, reject) => {
             const request = indexedDB.open(environment.dbName, DB_VERSION);
 
             request.onerror = () => reject(new StorageError('failed to open DB'));

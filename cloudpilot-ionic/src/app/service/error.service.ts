@@ -14,48 +14,33 @@ export class ErrorService {
         return this.fatalErrorTriggered;
     }
 
-    fatalPageLockLost = () =>
+    fatalPageLockLost = () => this.fatalWithMessage('Cloudpilot was opened in another tab or windoow.', false);
+
+    fatalIDBDead = () => this.fatalWithMessage('IndexedDB access failed. This is most likely a browser bug.', false);
+
+    fatalVersionMismatch = () =>
+        this.fatalWithMessage(
+            `
+        Database was written by a newer version of Cloudpilot. Please wait for a few seconds before reloading
+        while the latest version downloads in the background.
+    `,
+            false
+        );
+
+    fatalBug = (reason: string) => this.fatalWithMessage(`You encountered a bug in cloudpilot:<br/><br/>${reason}.`);
+
+    fatalInNativeCode = (e: Error) => this.fatalWithMessage(e.message);
+
+    private fatalWithMessage = (message: string, clearSession = true) =>
         this.ngZone.run(() => {
             if (this.fatalErrorTriggered) return;
             this.fatalErrorTriggered = true;
 
-            this.fatalErrorEvent.dispatch();
-
-            this.alertService.fatalError('Cloudpilot was opened in another tab or windoow.');
-        });
-
-    fatalIDBDead = () =>
-        this.ngZone.run(() => {
-            if (this.fatalErrorTriggered) return;
-            this.fatalErrorTriggered = true;
+            if (clearSession) clearStoredSession();
 
             this.fatalErrorEvent.dispatch();
 
-            this.alertService.fatalError('IndexedDB access failed. This is most likely a browser bug.');
-        });
-
-    fatalBug = (reason: string) =>
-        this.ngZone.run(() => {
-            if (this.fatalErrorTriggered) return;
-            this.fatalErrorTriggered = true;
-
-            clearStoredSession();
-
-            this.fatalErrorEvent.dispatch();
-
-            this.alertService.fatalError(`You encountered a bug in cloudpilot:<br/><br/>${reason}.`);
-        });
-
-    fatalInNativeCode = (e: Error) =>
-        this.ngZone.run(() => {
-            if (this.fatalErrorTriggered) return;
-            this.fatalErrorTriggered = true;
-
-            clearStoredSession();
-
-            this.fatalErrorEvent.dispatch();
-
-            this.alertService.errorInNativeCode(e.message);
+            this.alertService.fatalError(message);
         });
 
     fatalErrorEvent = new Event<void>();
