@@ -221,7 +221,7 @@ export class EmulationPage implements AfterViewInit {
                 break;
         }
 
-        if (filesFail.length > 0) message += '<br/><br/>';
+        if (filesFail.length > 0 && message.length > 0) message += '<br/><br/>';
 
         switch (filesFail.length) {
             case 0:
