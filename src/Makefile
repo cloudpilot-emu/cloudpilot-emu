@@ -168,7 +168,8 @@ SOURCE_EMU = \
 	emulator/EmFileImport.cpp \
 	emulator/ROMStubs.cpp \
 	emulator/Logging.cpp \
-	emulator/SessionImage.cpp
+	emulator/SessionImage.cpp \
+	emulator/DbBackup.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \

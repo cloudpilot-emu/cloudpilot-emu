@@ -50,11 +50,22 @@ emuptr DmNewRecord(emuptr dbR, UInt16* atP, UInt32 size);
 Err DmSetRecordInfo(emuptr dbR, UInt16 index, UInt16* attrP, UInt32* uniqueIDP);
 Err DmReleaseRecord(emuptr dbR, UInt16 index, Boolean dirty);
 Err DmCloseDatabase(emuptr dbR);
+UInt16 DmNumDatabases(UInt16 cardNo);
+LocalID DmGetDatabase(UInt16 cardNo, UInt16 index);
+Err DmDatabaseInfo(UInt16 cardNo, LocalID dbID, Char* nameP, UInt16* attributesP, UInt16* versionP,
+                   UInt32* crDateP, UInt32* modDateP, UInt32* bckUpDateP, UInt32* modNumP,
+                   LocalID* appInfoIDP, LocalID* sortInfoIDP, UInt32* typeP, UInt32* creatorP);
+emuptr DmGet1Resource(DmResType type, DmResID id);
 
 emuptr MemHandleLock(emuptr h);
 Err MemHandleUnlock(emuptr h);
 LocalID MemHandleToLocalID(emuptr h);
 
 Err DlkDispatchRequest(DlkServerSessionPtr sessP);
+
+UInt16 MemNumCards(void);
+LocalIDKind MemLocalIDKind(LocalID local);
+emuptr MemLocalIDToGlobal(LocalID local, UInt16 cardNo);
+UInt32 MemPtrSize(emuptr p);
 
 #endif /* _ROMSTUBS_H_ */

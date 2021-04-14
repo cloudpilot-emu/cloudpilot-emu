@@ -85,7 +85,14 @@
     "cstdbool": "cpp",
     "__split_buffer": "cpp",
     "*.idl": "cpp",
-    "__functional_03": "cpp"
+    "__functional_03": "cpp",
+    "cfenv": "cpp",
+    "ciso646": "cpp",
+    "compare": "cpp",
+    "concepts": "cpp",
+    "ranges": "cpp",
+    "stop_token": "cpp",
+    "version": "cpp"
   },
   "editor.formatOnSave": true
 }

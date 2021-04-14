@@ -19,6 +19,199 @@
     #define PRINTF(...) ;
 #endif
 
+#define dataAppInfoVersionSize 16
+#define dataAppInfoSignature 'lnch'
+#define dataAppInfoVersion 3
+
+namespace {
+    bool AppCompareDataBaseNames(const DatabaseInfo& a, const DatabaseInfo& b) {
+        return strcasecmp(a.name, b.name) < 0;
+    }
+    struct DataAppInfoType {
+        UInt32 signature;    // must be 'lnch' (0x6C6E6338)
+        UInt16 hdrVersion;   // version of this header - must be 3
+        UInt16 encVersion;   // encoder version
+        UInt16 verStrWords;  // length of version string array that
+                             //	follows in 16-bit words.
+        // UInt8			verStr[verStrWords];		// 0 terminated version
+        // string with 	possible extra NULL byte at end for 	padding
+
+        //--- The title is only present in version 2 or later
+        UInt16 titleWords;  // length of title string array that follows
+                            //	 in 16-bit words.
+        // UInt8			title[titleWords];			// 0 terminated
+        // title string with possible 	extra NULL at end for padding.
+
+        UInt16 iconWords;  // length of icon data that follows in 16-bit
+                           //	 words.
+        // UInt8			icon[iconWords];			// icon in
+        // "BitmapType" format with possible NULL 	byte at end for even UInt16 padding
+        UInt16 smIconWords;  // length of small icon data that follows in
+                             //	 16-bit words
+                             // UInt8			smIcon[smIconWords];		// small
+                             // icon in "BitmapType" format
+        // with
+        // possible NULL byte at end for even UInt16
+        //	padding
+        //--------- Version 2 Fields ------------
+    };
+
+    Bool IsVisible(UInt32 dbType, UInt32 dbCreator, UInt16 dbAttrs) {
+        UNUSED_PARAM(dbCreator)
+
+        // Don't show anything concerning the Launcher
+        // (That comment and the following commented out code was from the
+        // Launcher application. I've take it out so that we can run
+        // Gremlins over the Launcher).
+        //	if (dbCreator == sysFileCLauncher)
+        //		return false;
+
+        // The following test can come and go.	Currently, it's here
+        // so that things like Clipper don't show up in the list (just
+        // as it doesn't show up in the Launcher).	However, there may
+        // be time when we want to show it.  An example would be in
+        // an experiemental version of the New Gremlin dialog that
+        // separated apps and documents.  Selecting an app in one list
+        // would display a list of its documents in the other list.  In
+        // that case, we'd need to show clipper in order to be able to
+        // display its documents.
+
+        // OK, the test is now gone.  From Scott Johnson:
+        //
+        //		The New Gremlin list doesn't show apps with the dmHdrAttrHidden attribute.
+        //		This is a problem for mine, which is a sort of runtime forms engine.  The
+        //		runtime is a hidden app and the user-built apps are visible.  The user app
+        //		launches by just doing an app switch to the runtime.  (Sort of a launchable
+        //		database concept for pre-3.2 systems.)  To Gremlin this, both apps need to
+        //		be selected in the New Gremlin list.  But the hidden one isn't shown.  Oops.
+
+        //	if (dbAttrs & dmHdrAttrHidden)
+        //		return false;
+
+        if (dbAttrs & dmHdrAttrLaunchableData) return true;
+
+        if (dbType == sysFileTApplication) return true;
+
+        if (dbType == sysFileTPanel) return true;
+
+        return false;
+    }
+
+    Bool IsExecutable(UInt32 dbType, UInt32 dbCreator, UInt16 dbAttrs) {
+        UNUSED_PARAM(dbCreator)
+        UNUSED_PARAM(dbAttrs)
+
+        if (dbType == sysFileTApplication) return true;
+
+        if (dbType == sysFileTPanel) return true;
+
+        return false;
+    }
+
+    static Err AppGetExtraInfo(DatabaseInfo* infoP) {
+        Err err = errNone;
+
+        infoP->name[0] = 0;
+
+        //====================================================================
+        // If it's a resource database, we must open it to get the appName
+        //====================================================================
+        if (infoP->dbAttrs & dmHdrAttrResDB) {
+            emuptr appDB = 0;
+            emuptr strH;
+
+            // Open database
+            appDB = DmOpenDatabase(infoP->cardNo, infoP->dbID, dmModeReadOnly);
+            if (appDB == 0) {
+                err = DmGetLastErr();
+                goto Exit;
+            }
+
+            //...............................
+            // Get app name if we don't already have it.
+            //...............................
+            strH = DmGet1Resource(ainRsc, ainID);
+
+            // copy launcher name, if present
+            if (strH != 0) {
+                emuptr strP = (emuptr)MemHandleLock(strH);
+                EmMem_strcpy(infoP->name, strP);
+                MemHandleUnlock(strH);
+                DmReleaseResource(strH);
+            }
+
+            ::DmCloseDatabase(appDB);
+        }  // if resource database
+
+        //====================================================================
+        // If it's a record database, we look in the appInfo block.
+        //====================================================================
+        else {
+            LocalID appInfoID;
+            emuptr appInfoH = 0;
+            emuptr appInfoP = 0;
+            emuptr specialInfoP;
+            emuptr bP;
+            UInt16 verStrWords, titleWords;
+
+            // Look for app info
+            err = DmDatabaseInfo(infoP->cardNo, infoP->dbID, 0, 0, 0, 0, 0, 0, 0, &appInfoID, 0, 0,
+                                 0);
+
+            if (!err && appInfoID) {
+                // Get handle (if RAM based) and ptr to app Info
+                if (MemLocalIDKind(appInfoID) == memIDHandle) {
+                    appInfoH = MemLocalIDToGlobal(appInfoID, infoP->cardNo);
+                    appInfoP = MemHandleLock(appInfoH);
+                } else {
+                    appInfoP = MemLocalIDToGlobal(appInfoID, infoP->cardNo);
+                }
+
+                // See if this is the special launcher info and if so, get the icons
+                //	out of that.
+                specialInfoP = (emuptr)appInfoP;
+                DataAppInfoType specialInfo;
+
+                specialInfo.signature = EmMemGet32(specialInfoP);
+                specialInfo.hdrVersion = EmMemGet16(specialInfoP + 4);
+                specialInfo.encVersion = EmMemGet16(specialInfoP + 6);
+
+                if (MemPtrSize(appInfoP) >= dataAppInfoVersionSize &&
+                    specialInfo.signature == dataAppInfoSignature &&
+                    specialInfo.hdrVersion >= dataAppInfoVersion) {
+                    // Get ptr to version string
+                    bP = specialInfoP + 8;
+                    verStrWords = EmMemGet16(bP);
+                    bP += 2;
+                    bP += verStrWords * 2;
+
+                    // Get ptr to name string
+                    titleWords = EmMemGet16(bP);
+                    bP += 2;
+                    if (titleWords) {
+                        EmMem_strcpy(infoP->name, bP);
+                    }
+                }  // If valid appInfo
+
+                if (appInfoH) {
+                    MemHandleUnlock(appInfoH);
+                }
+            }  // if (!err && appInfoID)
+        }      // Record Database.
+
+    Exit:
+
+        // If no luck getting the visible name, put in default
+        if (infoP->name[0] == 0) {
+            // Get DB name
+            strcpy(infoP->name, infoP->dbName);
+        }
+
+        return err;
+    }
+
+}  // namespace
+
 uint32 NextPowerOf2(uint32 n) {
     // Smear down the upper 1 bit to all bits lower than it.
 
@@ -418,4 +611,99 @@ void SetCurrentDate(void) {
     EmAliasTimGlobalsType<PAS> timGlobals(timGlobalsP);
 
     timGlobals.rtcHours = rtcHours;
+}
+
+bool GetDatabases(DatabaseInfoList& dbList, Bool applicationsOnly) {
+    UInt16 cardNo;
+    UInt16 numCards;
+    UInt16 numDBs;
+    Int16 dbIndex;  // UInt16 results in a bug
+    LocalID dbID;
+    Err err = errNone;
+    DatabaseInfo dbInfo;
+    Boolean needToAddNewEntry;
+
+    //=======================================================================
+    // Cycle through all databases in the ROM and RAM and place them into our list.
+    //=======================================================================
+    numCards = ::MemNumCards();
+    for (cardNo = 0; cardNo < numCards; ++cardNo) {
+        numDBs = ::DmNumDatabases(cardNo);
+
+        //---------------------------------------------------------------
+        // Loop through databases on this card, DmGetDatabase() returns ROM
+        // databases first, followed by RAM databases.
+        //---------------------------------------------------------------
+        for (dbIndex = 0; dbIndex < numDBs; ++dbIndex) {
+            //--------------------------------------------------------
+            // Get info on the next database and see if it should be visible.
+            //--------------------------------------------------------
+            dbID = ::DmGetDatabase(cardNo, dbIndex);
+            err = ::DmDatabaseInfo(cardNo, dbID, dbInfo.dbName,            /*nameP*/
+                                   &dbInfo.dbAttrs, &dbInfo.version, NULL, /*create date*/
+                                   &dbInfo.modDate, NULL,                  /*backup date*/
+                                   NULL,                                   /*modNum*/
+                                   NULL,                                   /*appInfoID*/
+                                   NULL,                                   /*sortInfoID*/
+                                   &dbInfo.type, &dbInfo.creator);
+
+            if (err) return false;
+
+            // If it's not supposed to be visible, skip it
+            if (applicationsOnly && !::IsVisible(dbInfo.type, dbInfo.creator, dbInfo.dbAttrs)) {
+                continue;
+            }
+
+            //--------------------------------------------------------------
+            // Save info on this database
+            //--------------------------------------------------------------
+            dbInfo.dbID = dbID;
+            dbInfo.cardNo = cardNo;
+
+            //--------------------------------------------------------------
+            // If it's an executable, make sure it's the most recent version in our
+            // list
+            //--------------------------------------------------------------
+            needToAddNewEntry = true;
+            if (applicationsOnly && ::IsExecutable(dbInfo.type, dbInfo.creator, dbInfo.dbAttrs)) {
+                // Search for database of same type and creator and check version
+                DatabaseInfoList::iterator thisIter = dbList.begin();
+                while (thisIter != dbList.end()) {
+                    if ((*thisIter).type == dbInfo.type && (*thisIter).creator == dbInfo.creator) {
+                        // If this new one is a newer or same version than the previous one,
+                        // replace the previous entry. Checking for == version allows RAM
+                        // executables to override ROM ones.
+                        if (dbInfo.version >= (*thisIter).version) {
+                            ::AppGetExtraInfo(&dbInfo);
+                            *thisIter = dbInfo;
+                        }
+
+                        // Since there's already an item with this type/creator
+                        // already in the list, there's no need to add another one.
+                        needToAddNewEntry = false;
+
+                        break;
+                    }
+
+                    ++thisIter;
+                }
+            }
+
+            //--------------------------------------------------------------
+            // If we still need to add this entry, do so now.
+            //--------------------------------------------------------------
+            if (needToAddNewEntry) {
+                ::AppGetExtraInfo(&dbInfo);
+                dbList.push_back(dbInfo);
+            }
+        }  // for (dbIndex = 0; dbIndex < numDBs; dbIndex++)
+    }      // for (cardNo = 0; cardNo < MemNumCards(); cardNo++)
+
+    //===========================================================================
+    // Sort the list by name
+    //===========================================================================
+    // Sort the databases by their name.
+    sort(dbList.begin(), dbList.end(), AppCompareDataBaseNames);
+
+    return true;
 }

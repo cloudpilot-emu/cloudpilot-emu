@@ -23,6 +23,7 @@
 #include "EmErrCodes.h"
 #include "EmSession.h"
 #include "util.h"
+#include "DbBackup.h"
 
 namespace {
     using Task = function<bool()>;
@@ -95,6 +96,12 @@ namespace {
         if (stream.fail()) {
             cout << "I/O error writing " << file << endl << flush;
         }
+    }
+
+    void SaveBackup() {
+        DbBackup backup;
+
+        backup.init();
     }
 
     bool CmdQuit(vector<string> args) { return true; }
@@ -217,6 +224,17 @@ namespace {
         return false;
     }
 
+    bool CmdSaveBackup(vector<string> args) {
+        if (args.size() != 1) {
+            cout << "usage: save-backup <file>" << endl << flush;
+            return false;
+        }
+
+        SaveBackup();
+
+        return false;
+    }
+
     struct Command {
         string name;
         Cmd cmd;
@@ -232,7 +250,8 @@ namespace {
                           {.name = "reset-hard", .cmd = CmdResetHard},
                           {.name = "reset-noext", .cmd = CmdResetNoext},
                           {.name = "save-image", .cmd = CmdSaveImage},
-                          {.name = "switch-image", .cmd = CmdSwitchImage}};
+                          {.name = "switch-image", .cmd = CmdSwitchImage},
+                          {.name = "save-backup", .cmd = CmdSaveBackup}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);

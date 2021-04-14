@@ -20,6 +20,8 @@ void SetHotSyncUserName(const char*);
 
 void SetCurrentDate();
 
+bool GetDatabases(DatabaseInfoList& appList, Bool applicationsOnly);
+
 class StMemoryMapper {
    public:
     StMemoryMapper(const void* memory, long size);

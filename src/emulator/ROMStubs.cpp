@@ -489,3 +489,163 @@ Err DlkDispatchRequest(DlkServerSessionPtr sessP) {
     // Return the result.
     RETURN_RESULT_VAL(Err);
 }
+
+UInt16 MemNumCards(void) {
+    // Prepare the stack.
+    CALLER_SETUP("UInt16", "void");
+
+    // Set the parameters.
+
+    // Call the function.
+    sub.Call(sysTrapMemNumCards);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_VAL(UInt16);
+}
+
+UInt16 DmNumDatabases(UInt16 cardNo) {
+    // Prepare the stack.
+    CALLER_SETUP("UInt16", "UInt16 cardNo");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(UInt16, cardNo);
+
+    // Call the function.
+    sub.Call(sysTrapDmNumDatabases);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_VAL(UInt16);
+}
+
+LocalID DmGetDatabase(UInt16 cardNo, UInt16 index) {
+    // Prepare the stack.
+    CALLER_SETUP("LocalID", "UInt16 cardNo, UInt16 index");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(UInt16, cardNo);
+    CALLER_PUT_PARAM_VAL(UInt16, index);
+
+    // Call the function.
+    sub.Call(sysTrapDmGetDatabase);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_VAL(LocalID);
+}
+
+emuptr DmGet1Resource(DmResType type, DmResID id) {
+    // Prepare the stack.
+    CALLER_SETUP("MemHandle", "DmResType type, DmResID id");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(DmResType, type);
+    CALLER_PUT_PARAM_VAL(DmResID, id);
+
+    // Call the function.
+    sub.Call(sysTrapDmGet1Resource);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_PTR(emuptr);
+}
+
+LocalIDKind MemLocalIDKind(LocalID local) {
+    // Prepare the stack.
+    CALLER_SETUP("LocalIDKind", "LocalID local");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(LocalID, local);
+
+    // Call the function.
+    sub.Call(sysTrapMemLocalIDKind);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_VAL(LocalIDKind);
+}
+
+emuptr MemLocalIDToGlobal(LocalID local, UInt16 cardNo) {
+    // Prepare the stack.
+    CALLER_SETUP("MemPtr", "LocalID local, UInt16 cardNo");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(LocalID, local);
+    CALLER_PUT_PARAM_VAL(UInt16, cardNo);
+
+    // Call the function.
+    sub.Call(sysTrapMemLocalIDToGlobal);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_PTR(emuptr);
+}
+
+emuptr MemPtrSize(emuptr p) {
+    // Prepare the stack.
+    CALLER_SETUP("UInt32", "MemPtr p");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(emuptr, p);
+
+    // Call the function.
+    sub.Call(sysTrapMemPtrSize);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_VAL(emuptr);
+}
+
+Err DmDatabaseInfo(UInt16 cardNo, LocalID dbID, Char* nameP, UInt16* attributesP, UInt16* versionP,
+                   UInt32* crDateP, UInt32* modDateP, UInt32* bckUpDateP, UInt32* modNumP,
+                   LocalID* appInfoIDP, LocalID* sortInfoIDP, UInt32* typeP, UInt32* creatorP) {
+    // Prepare the stack.
+    CALLER_SETUP("Err",
+                 "UInt16 cardNo, LocalID	dbID, Char* nameP,"
+                 "UInt16* attributesP, UInt16* versionP, UInt32* crDateP,"
+                 "UInt32* modDateP, UInt32* bckUpDateP,"
+                 "UInt32* modNumP, LocalID* appInfoIDP,"
+                 "LocalID* sortInfoIDP, UInt32* typeP,"
+                 "UInt32* creatorP");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(UInt16, cardNo);
+    CALLER_PUT_PARAM_VAL(LocalID, dbID);
+    CALLER_PUT_PARAM_PTR(Char, nameP, dmDBNameLength, Marshal::kInOut);
+    CALLER_PUT_PARAM_REF(UInt16, attributesP, Marshal::kInOut);
+    CALLER_PUT_PARAM_REF(UInt16, versionP, Marshal::kInOut);
+    CALLER_PUT_PARAM_REF(UInt32, crDateP, Marshal::kInOut);
+    CALLER_PUT_PARAM_REF(UInt32, modDateP, Marshal::kInOut);
+    CALLER_PUT_PARAM_REF(UInt32, bckUpDateP, Marshal::kInOut);
+    CALLER_PUT_PARAM_REF(UInt32, modNumP, Marshal::kInOut);
+    CALLER_PUT_PARAM_REF(LocalID, appInfoIDP, Marshal::kInOut);
+    CALLER_PUT_PARAM_REF(LocalID, sortInfoIDP, Marshal::kInOut);
+    CALLER_PUT_PARAM_REF(UInt32, typeP, Marshal::kInOut);
+    CALLER_PUT_PARAM_REF(UInt32, creatorP, Marshal::kInOut);
+
+    // Call the function.
+    sub.Call(sysTrapDmDatabaseInfo);
+
+    // Write back any "by ref" parameters.
+    CALLER_GET_PARAM_REF(attributesP);
+    CALLER_GET_PARAM_REF(versionP);
+    CALLER_GET_PARAM_REF(crDateP);
+    CALLER_GET_PARAM_REF(modDateP);
+    CALLER_GET_PARAM_REF(bckUpDateP);
+    CALLER_GET_PARAM_REF(modNumP);
+    CALLER_GET_PARAM_REF(appInfoIDP);
+    CALLER_GET_PARAM_REF(sortInfoIDP);
+    CALLER_GET_PARAM_REF(typeP);
+    CALLER_GET_PARAM_REF(creatorP);
+
+    // Return the result.
+    RETURN_RESULT_VAL(Err);
+}
