@@ -4,6 +4,12 @@
 #include "EmCommon.h"
 #include "EmStructs.h"
 
+enum GetDatabaseFlags : uint32 {
+    kApplicationsOnly = 0x01,
+    kOnlyRamDatabases = 0x02,
+    kGetExtraInfo = 0x04
+};
+
 uint32 NextPowerOf2(uint32 x);
 
 Bool GetSystemCallContext(emuptr, SystemCallContext&);
@@ -20,7 +26,9 @@ void SetHotSyncUserName(const char*);
 
 void SetCurrentDate();
 
-bool GetDatabases(DatabaseInfoList& appList, Bool applicationsOnly);
+bool GetDatabases(DatabaseInfoList& appList, uint32 flags);
+
+bool IsExecutable(const DatabaseInfo& dbInfo);
 
 class StMemoryMapper {
    public:

@@ -25,7 +25,7 @@
 
 namespace {
     bool AppCompareDataBaseNames(const DatabaseInfo& a, const DatabaseInfo& b) {
-        return strcasecmp(a.name, b.name) < 0;
+        return strcasecmp(a.dbName, b.dbName) < 0;
     }
     struct DataAppInfoType {
         UInt32 signature;    // must be 'lnch' (0x6C6E6338)
@@ -613,7 +613,7 @@ void SetCurrentDate(void) {
     timGlobals.rtcHours = rtcHours;
 }
 
-bool GetDatabases(DatabaseInfoList& dbList, Bool applicationsOnly) {
+bool GetDatabases(DatabaseInfoList& dbList, uint32 flags) {
     UInt16 cardNo;
     UInt16 numCards;
     UInt16 numDBs;
@@ -650,9 +650,14 @@ bool GetDatabases(DatabaseInfoList& dbList, Bool applicationsOnly) {
             if (err) return false;
 
             // If it's not supposed to be visible, skip it
-            if (applicationsOnly && !::IsVisible(dbInfo.type, dbInfo.creator, dbInfo.dbAttrs)) {
+            if ((flags & GetDatabaseFlags::kApplicationsOnly) &&
+                !::IsVisible(dbInfo.type, dbInfo.creator, dbInfo.dbAttrs)) {
                 continue;
             }
+
+            if ((flags & GetDatabaseFlags::kOnlyRamDatabases) &&
+                (dbInfo.dbAttrs & dmHdrAttrReadOnly))
+                continue;
 
             //--------------------------------------------------------------
             // Save info on this database
@@ -665,7 +670,8 @@ bool GetDatabases(DatabaseInfoList& dbList, Bool applicationsOnly) {
             // list
             //--------------------------------------------------------------
             needToAddNewEntry = true;
-            if (applicationsOnly && ::IsExecutable(dbInfo.type, dbInfo.creator, dbInfo.dbAttrs)) {
+            if ((flags & GetDatabaseFlags::kApplicationsOnly) &&
+                IsExecutable(dbInfo.type, dbInfo.creator, dbInfo.dbAttrs)) {
                 // Search for database of same type and creator and check version
                 DatabaseInfoList::iterator thisIter = dbList.begin();
                 while (thisIter != dbList.end()) {
@@ -674,7 +680,11 @@ bool GetDatabases(DatabaseInfoList& dbList, Bool applicationsOnly) {
                         // replace the previous entry. Checking for == version allows RAM
                         // executables to override ROM ones.
                         if (dbInfo.version >= (*thisIter).version) {
-                            ::AppGetExtraInfo(&dbInfo);
+                            if (flags & GetDatabaseFlags::kGetExtraInfo)
+                                ::AppGetExtraInfo(&dbInfo);
+                            else
+                                strcpy(dbInfo.name, dbInfo.dbName);
+
                             *thisIter = dbInfo;
                         }
 
@@ -693,7 +703,11 @@ bool GetDatabases(DatabaseInfoList& dbList, Bool applicationsOnly) {
             // If we still need to add this entry, do so now.
             //--------------------------------------------------------------
             if (needToAddNewEntry) {
-                ::AppGetExtraInfo(&dbInfo);
+                if (flags & GetDatabaseFlags::kGetExtraInfo)
+                    ::AppGetExtraInfo(&dbInfo);
+                else
+                    strcpy(dbInfo.name, dbInfo.dbName);
+
                 dbList.push_back(dbInfo);
             }
         }  // for (dbIndex = 0; dbIndex < numDBs; dbIndex++)
@@ -706,4 +720,8 @@ bool GetDatabases(DatabaseInfoList& dbList, Bool applicationsOnly) {
     sort(dbList.begin(), dbList.end(), AppCompareDataBaseNames);
 
     return true;
+}
+
+bool IsExecutable(const DatabaseInfo& dbInfo) {
+    return IsExecutable(dbInfo.type, dbInfo.creator, dbInfo.dbAttrs);
 }

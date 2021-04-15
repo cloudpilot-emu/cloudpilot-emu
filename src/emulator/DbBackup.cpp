@@ -5,14 +5,12 @@
 void DbBackup::init() {
     DatabaseInfoList databases;
 
-    if (!GetDatabases(databases, false)) {
+    if (!GetDatabases(databases, GetDatabaseFlags::kOnlyRamDatabases)) {
         cout << "unable to retrieve database list" << endl;
         return;
     }
 
     for (auto& dbInfo : databases) {
-        if (dbInfo.dbAttrs & dmHdrAttrReadOnly) continue;
-
-        cout << dbInfo.dbName << endl;
+        cout << dbInfo.dbName << (IsExecutable(dbInfo) ? ".prc" : ".pdb") << endl;
     }
 }
