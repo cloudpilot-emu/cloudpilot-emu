@@ -139,6 +139,7 @@ SOURCE_EMU = \
 	emulator/patch/EmPatchModule.cpp \
 	emulator/patch/EmPatchModuleSys.cpp \
 	emulator/patch/EmPatchModuleHtal.cpp \
+	emulator/patch/PatchModuleNetlib.cpp \
 	emulator/patch/EmPatchMgr.cpp \
 	emulator/savestate/Chunk.cpp \
 	emulator/savestate/ChunkProbe.cpp \

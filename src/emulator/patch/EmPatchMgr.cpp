@@ -27,6 +27,7 @@
 #include "Logging.h"     // LogEvtAddEventToQueue, etc.
 #include "MetaMemory.h"  // MetaMemory mark functions
 #include "Miscellaneous.h"
+#include "PatchModuleNetlib.h"
 #include "PenEvent.h"
 #include "ROMStubs.h"  // FtrSet, FtrUnregister, EvtWakeup, ...
 #include "Savestate.h"
@@ -84,6 +85,7 @@ namespace {
 
 EmPatchModule* EmPatchMgr::patchModuleSys = nullptr;
 EmPatchModule* EmPatchMgr::patchModuleHtal = nullptr;
+EmPatchModule* EmPatchMgr::patchModuleNetlib = nullptr;
 
 /***********************************************************************
  *
@@ -109,6 +111,10 @@ void EmPatchMgr::Initialize(void) {
 
     if (!patchModuleHtal) {
         patchModuleHtal = new EmPatchModuleHtal();
+    }
+
+    if (!patchModuleNetlib) {
+        patchModuleNetlib = new PatchModuleNetlib();
     }
 
     executingPatch = false;
@@ -251,6 +257,11 @@ void EmPatchMgr::Dispose(void) {
         delete patchModuleHtal;
         patchModuleHtal = nullptr;
     }
+
+    if (patchModuleNetlib) {
+        delete patchModuleNetlib;
+        patchModuleNetlib = nullptr;
+    }
 }
 
 /***********************************************************************
@@ -384,7 +395,9 @@ EmPatchModule* EmPatchMgr::GetLibPatchTable(uint16 refNum) {
 
         EmPatchModule* patchModuleIP = NULL;
 
-        // CSTODO
+        if (libName == string(PatchModuleNetlib::LIBNAME)) {
+            patchModuleIP = patchModuleNetlib;
+        }
 
         libPtchEntry.SetPatchTableP(patchModuleIP);
         libPtchEntry.SetDirty(false);

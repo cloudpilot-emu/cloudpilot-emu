@@ -63,8 +63,7 @@ class EmPatchMgr {
 
     static EmPatchModule* patchModuleSys;
     static EmPatchModule* patchModuleHtal;
-
-   private:
+    static EmPatchModule* patchModuleNetlib;
 };
 
 #endif /* EmPatchMgr_h */
