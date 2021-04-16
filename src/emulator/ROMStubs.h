@@ -68,4 +68,16 @@ LocalIDKind MemLocalIDKind(LocalID local);
 emuptr MemLocalIDToGlobal(LocalID local, UInt16 cardNo);
 UInt32 MemPtrSize(emuptr p);
 
+// convert host Int16 to network Int16
+#define NetHToNS(x) (x)
+
+// convert host long to network long
+#define NetHToNL(x) (x)
+
+// convert network Int16 to host Int16
+#define NetNToHS(x) (x)
+
+// convert network long to host long
+#define NetNToHL(x) (x)
+
 #endif /* _ROMSTUBS_H_ */
