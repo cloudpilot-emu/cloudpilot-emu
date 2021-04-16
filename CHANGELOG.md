@@ -1,3 +1,7 @@
+# Version 1.1.2
+
+-   Fix a potential lockup condition in touch handling.
+
 # Version 1.1.1
 
 -   Add a note on handling fatal errors to the "About" tab.
