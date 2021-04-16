@@ -92,7 +92,12 @@
     "concepts": "cpp",
     "ranges": "cpp",
     "stop_token": "cpp",
-    "version": "cpp"
+    "version": "cpp",
+    "__errc": "cpp",
+    "__mutex_base": "cpp",
+    "__nullptr": "cpp",
+    "__string": "cpp",
+    "__threading_support": "cpp"
   },
   "editor.formatOnSave": true
 }

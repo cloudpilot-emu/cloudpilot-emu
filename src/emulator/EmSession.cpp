@@ -2,6 +2,7 @@
 
 #include <functional>
 
+#include "CallbackManager.h"
 #include "ChunkHelper.h"
 #include "EmBankSRAM.h"
 #include "EmCPU.h"
@@ -83,6 +84,7 @@ void EmSession::Deinitialize() {
 
     EmPalmOS::Dispose();
     Memory::Dispose();
+    CallbackManager::Reset();
 
     cpu.reset();
     device.reset();
@@ -494,7 +496,10 @@ void EmSession::YieldMemoryMgr() {
     }
 }
 
-void EmSession::HandleInstructionBreak() { EmPatchMgr::HandleInstructionBreak(); }
+void EmSession::HandleInstructionBreak() {
+    EmPatchMgr::HandleInstructionBreak();
+    CallbackManager::HandleBreakpoint();
+}
 
 void EmSession::QueuePenEvent(PenEvent evt) {
     if (!IsPowerOn()) return;
