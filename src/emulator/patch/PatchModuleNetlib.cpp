@@ -142,6 +142,18 @@ namespace {
         return buf;
     }
 
+    void Hexdump(const uint8* buf, size_t bufSize) {
+        printf("===BEGIN OF HEXDUMP===\n\n");
+
+        for (size_t i = 0; i < bufSize; i++) {
+            printf("%02x ", buf[i]);
+
+            if (i > 0 && i % 16 == 0) putchar('\n');
+        }
+
+        printf("\n\n====END OF HEXDUMP====\n");
+    }
+
     CallROMType HeadpatchNetLibOpen(void) {
         PRINTF("\nNetLibOpen");
 
@@ -237,8 +249,6 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSocketOptionSet(void) {
-        PRINTF("\nNetLibSocketOptionSet");
-
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
                      "UInt16 level, UInt16 option, "
@@ -252,8 +262,18 @@ namespace {
         CALLED_GET_PARAM_VAL(UInt16, optValueLen);
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
-
         CALLED_GET_PARAM_PTR(void, optValueP, optValueLen, Marshal::kInput);
+
+        PRINTF("\nNetLibSocketOptionSet, option = 0x%04x", option);
+
+        if (option == netSocketOptSockRequireErrClear) {
+            *errP = 0;
+            CALLED_PUT_PARAM_REF(errP);
+
+            PUT_RESULT_VAL(Int16, 0);
+
+            return kSkipROM;
+        }
 
         return kExecuteROM;
     }
@@ -295,7 +315,12 @@ namespace {
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
-        return kExecuteROM;
+        *errP = 0;
+        CALLED_PUT_PARAM_REF(errP);
+
+        PUT_RESULT_VAL(Int16, 0);
+
+        return kSkipROM;
     }
 
     CallROMType HeadpatchNetLibSocketConnect(void) {
@@ -384,8 +409,6 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSend(void) {
-        PRINTF("\nNetLibSend");
-
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
                      "void *bufP, UInt16 bufLen, UInt16 flags,"
@@ -399,10 +422,17 @@ namespace {
         CALLED_GET_PARAM_VAL(UInt16, toLen);
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+        CALLED_GET_PARAM_PTR(uint8, bufP, bufLen, Marshal::kInput);
 
-        CALLED_GET_PARAM_PTR(void, bufP, bufLen, Marshal::kInput);
+        PRINTF("\nNetLibSend, bufLen = %u", bufLen);
+        Hexdump(bufP, bufLen);
 
-        return kExecuteROM;
+        *errP = 0;
+        CALLED_PUT_PARAM_REF(errP);
+
+        PUT_RESULT_VAL(Int16, bufLen);
+
+        return kSkipROM;
     }
 
     CallROMType HeadpatchNetLibReceivePB(void) {
@@ -423,7 +453,12 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibReceive(void) {
-        PRINTF("\nNetLibReceive");
+        const uint8 response[] = {0x45, 0x00, 0x00, 0x3c, 0xa7, 0x57, 0x00, 0x00, 0x17, 0x01,
+                                  0xec, 0x5a, 0x08, 0x08, 0x08, 0x08, 0x00, 0x00, 0x00, 0x00,
+                                  0x00, 0x00, 0x3f, 0x37, 0x01, 0x00, 0x07, 0x00, 0x61, 0x62,
+                                  0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c,
+                                  0x6d, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76,
+                                  0x77, 0x78, 0x79, 0x7a, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66};
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -438,8 +473,21 @@ namespace {
         CALLED_GET_PARAM_REF(UInt16, fromLenP, Marshal::kInOut);
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
-
         CALLED_GET_PARAM_PTR(void, bufP, bufLen, Marshal::kInOut);
+
+        PRINTF("\nNetLibReceive, bufLen = %u", bufLen);
+
+        if (bufLen >= 60) {
+            memmove(bufP, response, 60);
+            CALLED_PUT_PARAM_REF(bufP);
+
+            *errP = 0;
+            CALLED_PUT_PARAM_REF(errP);
+
+            PUT_RESULT_VAL(Int16, 60);
+
+            return kSkipROM;
+        }
 
         return kExecuteROM;
     }
@@ -583,11 +631,38 @@ namespace {
 
         CALLED_GET_PARAM_VAL(UInt16, ifInstance);
         CALLED_GET_PARAM_VAL(UInt16, setting);
+        CALLED_GET_PARAM_VAL(UInt32, ifCreator);
+        CALLED_GET_PARAM_REF(UInt16, valueLenP, Marshal::kInOut);
+        CALLED_GET_PARAM_VAL(UInt32, valueP);
 
-        PRINTF("\nNetLibIFSettingGet, instance = %u, setting = %s", ifInstance,
-               DecodeIfSetting(setting));
+        PRINTF("\nNetLibIFSettingGet, instance = %u, creator = %s, setting = %s, valueLenP = %u",
+               ifInstance, decodeCreator(ifCreator), DecodeIfSetting(setting), *valueLenP);
+
+        if (setting == netIFSettingUp && *valueLenP > 0) {
+            EmMemPut8(valueP, 1);
+            *valueLenP = 1;
+
+            CALLED_PUT_PARAM_REF(valueLenP);
+            PUT_RESULT_VAL(Err, 0);
+
+            return kSkipROM;
+        }
 
         return kExecuteROM;
+    }
+
+    void TailpatchNetLibIFSettingGet(void) {
+        CALLED_SETUP("Err",
+                     "UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance,"
+                     "UInt16 setting, void *valueP, UInt16 *valueLenP");
+
+        CALLED_GET_PARAM_VAL(UInt16, setting);
+        CALLED_GET_PARAM_VAL(UInt32, valueP);
+        CALLED_GET_PARAM_REF(UInt16, valueLenP, Marshal::kInOut);
+
+        if (setting == netIFSettingUp && *valueLenP > 0) {
+            PRINTF("\n->NetLibIFSettingGet, netIFSettingUp = %u", (uint32)EmMemGet8(valueP));
+        }
     }
 
     CallROMType HeadpatchNetLibIFSettingSet(void) {
@@ -879,7 +954,7 @@ namespace {
         {netLibTrapIFAttach, HeadpatchNetLibIFAttach, NULL},
         {netLibTrapIFDetach, HeadpatchNetLibIFDetach, NULL},
         {netLibTrapIFGet, HeadpatchNetLibIFGet, TailpatchNetLibIFGet},
-        {netLibTrapIFSettingGet, HeadpatchNetLibIFSettingGet, NULL},
+        {netLibTrapIFSettingGet, HeadpatchNetLibIFSettingGet, TailpatchNetLibIFSettingGet},
         {netLibTrapIFSettingSet, HeadpatchNetLibIFSettingSet, NULL},
         {netLibTrapIFUp, HeadpatchNetLibIFUp, TailpatchNetLibIFUp},
         {netLibTrapIFDown, HeadpatchNetLibIFDown, NULL},
