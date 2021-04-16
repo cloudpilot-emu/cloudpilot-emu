@@ -19,6 +19,8 @@
 #include "EmCommon.h"
 #include "EmMemory.h"
 
+set<emuptr> MetaMemory::breakpoints;
+
 void MetaMemory::MarkRange(emuptr start, emuptr end, uint8 v) {
     // If there's no meta-memory (not needed for dedicated framebuffers)
     // just leave.

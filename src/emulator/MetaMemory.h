@@ -14,6 +14,8 @@
 #ifndef _METAMEMORY_H_
 #define _METAMEMORY_H_
 
+#include <set>
+
 #include "EmMemory.h"  // EmMemGetMetaAddress
 
 class MetaMemory {
@@ -27,7 +29,6 @@ class MetaMemory {
     static void MarkInstructionBreak(emuptr opcodeLocation);
     static void UnmarkInstructionBreak(emuptr opcodeLocation);
     static Bool IsCPUBreak(emuptr opcodeLocation);
-    static Bool IsCPUBreak(uint8* metaLocation);
 
     static Bool IsScreenBuffer8(uint8* metaAddress);   // Inlined, defined below
     static Bool IsScreenBuffer16(uint8* metaAddress);  // Inlined, defined below
@@ -38,6 +39,8 @@ class MetaMemory {
     static void MarkRange(emuptr start, emuptr end, uint8 v);
     static void UnmarkRange(emuptr start, emuptr end, uint8 v);
     static void MarkUnmarkRange(emuptr start, emuptr end, uint8 andValue, uint8 orValue);
+
+    static std::set<emuptr> breakpoints;
 
     enum {
         kNoAppAccess = 0x0001,
@@ -135,12 +138,7 @@ inline Bool MetaMemory::IsScreenBuffer32(uint8* metaAddress) {
 }
 
 inline Bool MetaMemory::IsCPUBreak(emuptr opcodeLocation) {
-    EmAssert((opcodeLocation & 1) == 0);
-    return IsCPUBreak(EmMemGetMetaAddress(opcodeLocation));
-}
-
-inline Bool MetaMemory::IsCPUBreak(uint8* metaLocation) {
-    return ((*metaLocation) & kInstructionBreak) != 0;
+    return breakpoints.find(opcodeLocation) != breakpoints.end();
 }
 
 // ---------------------------------------------------------------------------
@@ -175,11 +173,7 @@ inline void MetaMemory::UnmarkScreen(emuptr begin, emuptr end) {
 // ---------------------------------------------------------------------------
 
 inline void MetaMemory::MarkInstructionBreak(emuptr opcodeLocation) {
-    EmAssert((opcodeLocation & 1) == 0);
-
-    uint8* ptr = EmMemGetMetaAddress(opcodeLocation);
-
-    *ptr |= kInstructionBreak;
+    breakpoints.insert(opcodeLocation);
 }
 
 // ---------------------------------------------------------------------------
@@ -187,11 +181,7 @@ inline void MetaMemory::MarkInstructionBreak(emuptr opcodeLocation) {
 // ---------------------------------------------------------------------------
 
 inline void MetaMemory::UnmarkInstructionBreak(emuptr opcodeLocation) {
-    EmAssert((opcodeLocation & 1) == 0);
-
-    uint8* ptr = EmMemGetMetaAddress(opcodeLocation);
-
-    *ptr &= ~kInstructionBreak;
+    breakpoints.erase(opcodeLocation);
 }
 
 #endif  // _METAMEMORY_H_

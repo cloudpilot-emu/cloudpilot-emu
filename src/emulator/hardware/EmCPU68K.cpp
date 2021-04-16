@@ -311,7 +311,7 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
         // needing to execute tailpatches.
         // -----------------------------------------------------------------------
 
-        if (MetaMemory::IsCPUBreak(pc_meta_oldp + (pc_p - pc_oldp))) {
+        if (MetaMemory::IsCPUBreak(m68k_getpc())) {
             EmAssert(session);
             session->HandleInstructionBreak();
         }
