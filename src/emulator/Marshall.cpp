@@ -552,3 +552,17 @@ void* Marshal::GetBuffer(emuptr p, long len) {
 
     return result;
 }
+
+void Marshal::GetNetHostInfoBufType(emuptr p, NetHostInfoBufType& netHostInfoBufType) {
+    memset(&netHostInfoBufType, 0, sizeof(NetHostInfoBufType));
+
+    if (p) {
+    }
+}
+
+void Marshal::GetNetServInfoBufType(emuptr p, NetServInfoBufType& netServInfoBuf) {
+    memset(&netServInfoBuf, 0, sizeof(NetServInfoBufType));
+
+    if (p) {
+    }
+}

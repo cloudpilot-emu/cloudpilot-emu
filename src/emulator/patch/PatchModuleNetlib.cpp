@@ -13,10 +13,137 @@
 #endif
 
 namespace {
-    CallROMType HeadpatchNetLibOpen(void) {
-        PRINTF("NetLibOpen");
+    const char* DecodeIfSetting(uint16 setting) {
+        switch (setting) {
+            case netIFSettingResetAll:
+                return "netIFSettingResetAll";
+            case netIFSettingUp:
+                return "netIFSettingUp";
+            case netIFSettingName:
+                return "netIFSettingName";
+            case netIFSettingReqIPAddr:
+                return "netIFSettingReqIPAddr";
+            case netIFSettingSubnetMask:
+                return "netIFSettingSubnetMask";
+            case netIFSettingBroadcast:
+                return "netIFSettingBroadcast";
+            case netIFSettingUsername:
+                return "netIFSettingUsername";
+            case netIFSettingPassword:
+                return "netIFSettingPassword";
+            case netIFSettingDialbackUsername:
+                return "netIFSettingDialbackUsername";
+            case netIFSettingDialbackPassword:
+                return "netIFSettingDialbackPassword";
+            case netIFSettingAuthUsername:
+                return "netIFSettingAuthUsername";
+            case netIFSettingAuthPassword:
+                return "netIFSettingAuthPassword";
+            case netIFSettingServiceName:
+                return "netIFSettingServiceName";
+            case netIFSettingLoginScript:
+                return "netIFSettingLoginScript";
+            case netIFSettingConnectLog:
+                return "netIFSettingConnectLog";
+            case netIFSettingInactivityTimeout:
+                return "netIFSettingInactivityTimeout";
+            case netIFSettingEstablishmentTimeout:
+                return "netIFSettingEstablishmentTimeout";
+            case netIFSettingDynamicIP:
+                return "netIFSettingDynamicIP";
+            case netIFSettingVJCompEnable:
+                return "netIFSettingVJCompEnable";
+            case netIFSettingVJCompSlots:
+                return "netIFSettingVJCompSlots";
+            case netIFSettingMTU:
+                return "netIFSettingMTU";
+            case netIFSettingAsyncCtlMap:
+                return "netIFSettingAsyncCtlMap";
+            case netIFSettingPortNum:
+                return "netIFSettingPortNum";
+            case netIFSettingBaudRate:
+                return "netIFSettingBaudRate";
+            case netIFSettingFlowControl:
+                return "netIFSettingFlowControl";
+            case netIFSettingStopBits:
+                return "netIFSettingStopBits";
+            case netIFSettingParityOn:
+                return "netIFSettingParityOn";
+            case netIFSettingParityEven:
+                return "netIFSettingParityEven";
+            case netIFSettingUseModem:
+                return "netIFSettingUseModem";
+            case netIFSettingPulseDial:
+                return "netIFSettingPulseDial";
+            case netIFSettingModemInit:
+                return "netIFSettingModemInit";
+            case netIFSettingModemPhone:
+                return "netIFSettingModemPhone";
+            case netIFSettingRedialCount:
+                return "netIFSettingRedialCount";
+            case netIFSettingPowerUp:
+                return "netIFSettingPowerUp";
+            case netIFSettingWireless:
+                return "netIFSettingWireless";
+            case netIFSettingDNSQuery:
+                return "netIFSettingDNSQuery";
+            case netIFSettingQuitOnTxFail:
+                return "netIFSettingQuitOnTxFail";
+            case netIFSettingQueueSize:
+                return "netIFSettingQueueSize";
+            case netIFSettingTxInQueue:
+                return "netIFSettingTxInQueue";
+            case netIFSettingTxSent:
+                return "netIFSettingTxSent";
+            case netIFSettingTxDiscard:
+                return "netIFSettingTxDiscard";
+            case netIFSettingRssi:
+                return "netIFSettingRssi";
+            case netIFSettingRssiAsPercent:
+                return "netIFSettingRssiAsPercent";
+            case netIFSettingRadioState:
+                return "netIFSettingRadioState";
+            case netIFSettingBase:
+                return "netIFSettingBase";
+            case netIFSettingRadioID:
+                return "netIFSettingRadioID";
+            case netIFSettingBattery:
+                return "netIFSettingBattery";
+            case netIFSettingNetworkLoad:
+                return "netIFSettingNetworkLoad";
+            case netIFSettingConnectionName:
+                return "netIFSettingConnectionName";
+            case netIFSettingTraceBits:
+                return "netIFSettingTraceBits";
+            case netIFSettingGlobalsPtr:
+                return "netIFSettingGlobalsPtr";
+            case netIFSettingActualIPAddr:
+                return "netIFSettingActualIPAddr";
+            case netIFSettingServerIPAddr:
+                return "netIFSettingServerIPAddr";
+            case netIFSettingBringDownOnPowerDown:
+                return "netIFSettingBringDownOnPowerDown";
+            case netIFSettingRawMode:
+                return "netIFSettingRawMode";
+        }
 
-        //	Err	NetLibOpen (UInt16 libRefNum, UInt16 *netIFErrsP)
+        return "unknown";
+    }
+
+    const char* decodeCreator(uint32 creator) {
+        static char buf[5];
+
+        buf[0] = creator >> 24;
+        buf[1] = (creator >> 16) & 0xff;
+        buf[2] = (creator >> 8) & 0xff;
+        buf[3] = creator & 0xff;
+        buf[4] = 0;
+
+        return buf;
+    }
+
+    CallROMType HeadpatchNetLibOpen(void) {
+        PRINTF("\nNetLibOpen");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 *netIFErrsP");
 
@@ -27,9 +154,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibClose(void) {
-        PRINTF("NetLibClose");
-
-        //	Err NetLibClose (UInt16 libRefNum, UInt16 immediate)
+        PRINTF("\nNetLibClose");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 immediate");
 
@@ -40,9 +165,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSleep(void) {
-        PRINTF("NetLibSleep");
-
-        //	Err NetLibSleep (UInt16 libRefNum)
+        PRINTF("\nNetLibSleep");
 
         CALLED_SETUP("Err", "UInt16 libRefNum");
 
@@ -52,9 +175,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibWake(void) {
-        PRINTF("NetLibWake");
-
-        //	Err NetLibWake (UInt16 libRefNum)
+        PRINTF("\nNetLibWake");
 
         CALLED_SETUP("Err", "UInt16 libRefNum");
 
@@ -64,9 +185,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibAddrINToA(void) {
-        PRINTF("NetLibAddrINToA");
-
-        //	Char * NetLibAddrINToA(UInt16 libRefNum, NetIPAddr inet, Char *spaceP)
+        PRINTF("\nNetLibAddrINToA");
 
         CALLED_SETUP("Char*", "UInt16 libRefNum, NetIPAddr inet, Char *spaceP");
 
@@ -74,9 +193,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibAddrAToIN(void) {
-        PRINTF("NetLibAddrAToIN");
-
-        //	NetIPAddr NetLibAddrAToIN(UInt16 libRefNum, Char *a)
+        PRINTF("\nNetLibAddrAToIN");
 
         CALLED_SETUP("NetIPAddr", "UInt16 libRefNum, Char *a");
 
@@ -84,11 +201,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSocketOpen(void) {
-        PRINTF("NetLibSocketOpen");
-
-        //	NetSocketRef	NetLibSocketOpen(UInt16 libRefNum, NetSocketAddrEnum domain,
-        //						NetSocketTypeEnum type, Int16 protocol,
-        // Int32 timeout, 						Err *errP)
+        PRINTF("\nNetLibSocketOpen");
 
         CALLED_SETUP("NetSocketRef",
                      "UInt16 libRefNum, NetSocketAddrEnum domain, "
@@ -102,14 +215,16 @@ namespace {
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
-        return kExecuteROM;
+        *errP = 0;
+
+        PUT_RESULT_VAL(Int16, 42);
+        CALLED_PUT_PARAM_REF(errP);
+
+        return kSkipROM;
     }
 
     CallROMType HeadpatchNetLibSocketClose(void) {
-        PRINTF("NetLibSocketClose");
-
-        //	Int16 NetLibSocketClose(UInt16 libRefNum, NetSocketRef socket, Int32 timeout,
-        //						Err *errP)
+        PRINTF("\nNetLibSocketClose");
 
         CALLED_SETUP("Int16", "UInt16 libRefNum, NetSocketRef socket, Int32 timeout, Err *errP");
 
@@ -122,14 +237,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSocketOptionSet(void) {
-        PRINTF("NetLibSocketOptionSet");
-
-        //	Int16 NetLibSocketOptionSet(UInt16 libRefNum, NetSocketRef socket,
-        //						UInt16 /*NetSocketOptLevelEnum*/ level,
-        // UInt16
-        ///*NetSocketOptEnum*/ option, 						void *optValueP,
-        /// UInt16 optValueLen, 						Int32 timeout, Err
-        //*errP)
+        PRINTF("\nNetLibSocketOptionSet");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -151,14 +259,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSocketOptionGet(void) {
-        PRINTF("NetLibSocketOptionGet");
-
-        //	Int16 NetLibSocketOptionGet(UInt16 libRefNum, NetSocketRef socket,
-        //						UInt16 /*NetSocketOptLevelEnum*/ level,
-        // UInt16
-        ///*NetSocketOptEnum*/ option, 						void *optValueP,
-        /// UInt16 *optValueLenP, 						Int32 timeout, Err
-        //*errP)
+        PRINTF("\nNetLibSocketOptionGet");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -180,11 +281,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSocketBind(void) {
-        PRINTF("NetLibSocketBind");
-
-        //	Int16 NetLibSocketBind(UInt16 libRefNum, NetSocketRef socket,
-        //						NetSocketAddrType *sockAddrP, Int16 addrLen,
-        // Int32 timeout, 						Err *errP)
+        PRINTF("\nNetLibSocketBind");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -202,11 +299,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSocketConnect(void) {
-        PRINTF("NetLibSocketConnect");
-
-        //	Int16 NetLibSocketConnect(UInt16 libRefNum, NetSocketRef socket,
-        //						NetSocketAddrType *sockAddrP, Int16 addrLen,
-        // Int32 timeout, 						Err *errP)
+        PRINTF("\nNetLibSocketConnect");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -224,10 +317,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSocketListen(void) {
-        PRINTF("NetLibSocketListen");
-
-        //	Int16 NetLibSocketListen(UInt16 libRefNum, NetSocketRef socket,
-        //						UInt16	queueLen, Int32 timeout, Err *errP)
+        PRINTF("\nNetLibSocketListen");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -243,11 +333,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSocketAccept(void) {
-        PRINTF("NetLibSocketAccept");
-
-        //	Int16 NetLibSocketAccept(UInt16 libRefNum, NetSocketRef socket,
-        //						NetSocketAddrType *sockAddrP, Int16
-        //*addrLenP, Int32 timeout, 						Err *errP)
+        PRINTF("\nNetLibSocketAccept");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -265,11 +351,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSocketShutdown(void) {
-        PRINTF("NetLibSocketShutdown");
-
-        //	Int16 NetLibSocketShutdown(UInt16 libRefNum, NetSocketRef socket,
-        //						Int16 /*NetSocketDirEnum*/ direction, Int32
-        // timeout, Err *errP)
+        PRINTF("\nNetLibSocketShutdown");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket, "
@@ -285,11 +367,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSendPB(void) {
-        PRINTF("NetLibSendPB");
-
-        // Int16 NetLibSendPB(UInt16 libRefNum, NetSocketRef socket,
-        //						NetIOParamType *pbP, UInt16 flags, Int32
-        // timeout, Err *errP)
+        PRINTF("\nNetLibSendPB");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -306,12 +384,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSend(void) {
-        PRINTF("NetLibSend");
-
-        //	Int16 NetLibSend(UInt16 libRefNum, NetSocketRef socket,
-        //						void *bufP, UInt16 bufLen, UInt16 flags,
-        //						void *toAddrP, UInt16 toLen, Int32 timeout,
-        // Err *errP)
+        PRINTF("\nNetLibSend");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -333,11 +406,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibReceivePB(void) {
-        PRINTF("NetLibReceivePB");
-
-        //	Int16 NetLibReceivePB(UInt16 libRefNum, NetSocketRef socket,
-        //						NetIOParamType *pbP, UInt16 flags, Int32
-        // timeout, Err *errP)
+        PRINTF("\nNetLibReceivePB");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -354,12 +423,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibReceive(void) {
-        PRINTF("NetLibReceive");
-
-        //	Int16 NetLibReceive(UInt16 libRefNum, NetSocketRef socket,
-        //						void *bufP, UInt16 bufLen, UInt16 flags,
-        //						void *fromAddrP, UInt16 *fromLenP, Int32
-        // timeout, Err *errP)
+        PRINTF("\nNetLibReceive");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -381,13 +445,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibDmReceive(void) {
-        PRINTF("NetLibDmReceive");
-
-        //	Int16 NetLibDmReceive(UInt16 libRefNum, NetSocketRef socket,
-        //						void *recordP, UInt32 recordOffset, UInt16
-        // rcvLen,
-        // UInt16 flags, 						void *fromAddrP, UInt16
-        // *fromLenP, Int32 timeout, Err *errP)
+        PRINTF("\nNetLibDmReceive");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -410,11 +468,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSelect(void) {
-        PRINTF("NetLibSelect");
-
-        //	Int16 NetLibSelect(UInt16 libRefNum, UInt16 width, NetFDSetType *readFDs,
-        //						NetFDSetType *writeFDs, NetFDSetType
-        //*exceptFDs, 						Int32	timeout, Err *errP)
+        PRINTF("\nNetLibSelect");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, UInt16 width, NetFDSetType *readFDs, "
@@ -433,10 +487,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibMaster(void) {
-        PRINTF("NetLibMaster");
-
-        //	Err NetLibMaster(UInt16 libRefNum, UInt16 cmd, NetMasterPBPtr pbP,
-        //					Int32 timeout)
+        PRINTF("\nNetLibMaster");
 
         CALLED_SETUP("Err",
                      "UInt16 libRefNum, UInt16 cmd, NetMasterPBPtr pbP,"
@@ -446,11 +497,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibGetHostByName(void) {
-        PRINTF("NetLibGetHostByName");
-
-        //	NetHostInfoPtr NetLibGetHostByName(UInt16 libRefNum, Char *nameP,
-        //						NetHostInfoBufPtr bufP, Int32	timeout, Err
-        //*errP)
+        PRINTF("\nNetLibGetHostByName");
 
         CALLED_SETUP("NetHostInfoPtr",
                      "UInt16 libRefNum, Char *nameP, "
@@ -466,11 +513,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSettingGet(void) {
-        PRINTF("NetLibSettingGet");
-
-        //	Err NetLibSettingGet(UInt16 libRefNum,
-        //						UInt16 /*NetSettingEnum*/ setting, void
-        //*valueP, UInt16 *valueLenP)
+        PRINTF("\nNetLibSettingGet");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 setting, void *valueP, UInt16 *valueLenP");
 
@@ -478,11 +521,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSettingSet(void) {
-        PRINTF("NetLibSettingSet");
-
-        //	Err NetLibSettingSet(UInt16 libRefNum,
-        //						UInt16 /*NetSettingEnum*/ setting, void
-        //*valueP, UInt16 valueLen)
+        PRINTF("\nNetLibSettingSet");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 setting, void *valueP, UInt16 valueLen");
 
@@ -490,21 +529,20 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibIFAttach(void) {
-        PRINTF("NetLibIFAttach");
-
-        //	Err NetLibIFAttach(UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance,
-        //						Int32 timeout)
-
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance, Int32 timeout");
+
+        CALLED_GET_PARAM_VAL(UInt16, ifInstance);
+        CALLED_GET_PARAM_VAL(Int32, timeout);
+        CALLED_GET_PARAM_VAL(UInt32, ifCreator);
+
+        PRINTF("\nNetLibIFAttach, instance = %u, creator = %s, timeout = %i", ifInstance,
+               decodeCreator(ifCreator), timeout);
 
         return kExecuteROM;
     }
 
     CallROMType HeadpatchNetLibIFDetach(void) {
-        PRINTF("NetLibIFDetach");
-
-        //	Err NetLibIFDetach(UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance,
-        //						Int32 timeout)
+        PRINTF("\nNetLibIFDetach");
 
         CALLED_SETUP("Err",
                      "UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance,"
@@ -514,38 +552,46 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibIFGet(void) {
-        PRINTF("NetLibIFGet");
-
-        //	Err NetLibIFGet(UInt16 libRefNum, UInt16 index, UInt32 *ifCreatorP,
-        //							UInt16 *ifInstanceP)
-
         CALLED_SETUP("Err",
                      "UInt16 libRefNum, UInt16 index, UInt32 *ifCreatorP, "
                      "UInt16 *ifInstanceP");
 
+        CALLED_GET_PARAM_VAL(UInt16, index);
+
+        PRINTF("\nNetLibIFGet, index = %u", index);
+
         return kExecuteROM;
     }
 
+    void TailpatchNetLibIFGet(void) {
+        CALLED_SETUP("Err",
+                     "UInt16 libRefNum, UInt16 index, UInt32 *ifCreatorP, "
+                     "UInt16 *ifInstanceP");
+
+        CALLED_GET_PARAM_REF(UInt16, ifInstanceP, Marshal::kInput);
+        CALLED_GET_PARAM_REF(UInt32, ifCreatorP, Marshal::kInput);
+        GET_RESULT_VAL(Err);
+
+        PRINTF("\n-> NetLibIFGet, result = %u, instance = %u, creator = %s", result, *ifInstanceP,
+               decodeCreator(*ifCreatorP));
+    }
+
     CallROMType HeadpatchNetLibIFSettingGet(void) {
-        PRINTF("NetLibIFSettingGet");
-
-        //	Err NetLibIFSettingGet(UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance,
-        //						UInt16 /*NetIFSettingEnum*/ setting, void
-        //*valueP, UInt16 *valueLenP)
-
         CALLED_SETUP("Err",
                      "UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance,"
                      "UInt16 setting, void *valueP, UInt16 *valueLenP");
+
+        CALLED_GET_PARAM_VAL(UInt16, ifInstance);
+        CALLED_GET_PARAM_VAL(UInt16, setting);
+
+        PRINTF("\nNetLibIFSettingGet, instance = %u, setting = %s", ifInstance,
+               DecodeIfSetting(setting));
 
         return kExecuteROM;
     }
 
     CallROMType HeadpatchNetLibIFSettingSet(void) {
-        PRINTF("NetLibIFSettingSet");
-
-        //	Err NetLibIFSettingSet(UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance,
-        //						UInt16 /*NetIFSettingEnum*/ setting, void
-        //*valueP, UInt16 valueLen)
+        PRINTF("\nNetLibIFSettingSet");
 
         CALLED_SETUP("Err",
                      "UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance,"
@@ -555,20 +601,28 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibIFUp(void) {
-        PRINTF("NetLibIFUp");
-
-        //	Err NetLibIFUp(UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance)
-
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance");
 
-        return kExecuteROM;
+        CALLED_GET_PARAM_VAL(UInt16, ifInstance);
+        CALLED_GET_PARAM_VAL(UInt32, ifCreator);
+
+        PRINTF("\nNetLibIFUp, instance = %u, creator = %s", ifInstance, decodeCreator(ifCreator));
+
+        PUT_RESULT_VAL(Err, 0);
+
+        return kSkipROM;
+    }
+
+    void TailpatchNetLibIFUp(void) {
+        CALLED_SETUP("Err", "UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance");
+
+        GET_RESULT_VAL(Err);
+
+        PRINTF("\n-> NetLibIFUp, res = %u", result & 0xff);
     }
 
     CallROMType HeadpatchNetLibIFDown(void) {
-        PRINTF("NetLibIFDown");
-
-        //	Err NetLibIFDown(UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance,
-        //						Int32 timeout)
+        PRINTF("\nNetLibIFDown");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt32 ifCreator, UInt16 ifInstance, Int32 timeout");
 
@@ -576,11 +630,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibGetHostByAddr(void) {
-        PRINTF("NetLibGetHostByAddr");
-
-        //	NetHostInfoPtr NetLibGetHostByAddr(UInt16 libRefNum, UInt8 *addrP, UInt16 len,
-        // UInt16 type, 						NetHostInfoBufPtr bufP,
-        // Int32 timeout, Err *errP)
+        PRINTF("\nNetLibGetHostByAddr");
 
         CALLED_SETUP("NetHostInfoPtr",
                      "UInt16 libRefNum, UInt8 *addrP, UInt16 len, UInt16 type,"
@@ -598,11 +648,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibGetServByName(void) {
-        PRINTF("NetLibGetServByName");
-
-        //	NetServInfoPtr	NetLibGetServByName(UInt16 libRefNum, const Char *servNameP,
-        //						const Char *protoNameP,  NetServInfoBufPtr
-        // bufP, 						Int32	timeout, Err *errP)
+        PRINTF("\nNetLibGetServByName");
 
         CALLED_SETUP("NetServInfoPtr",
                      "UInt16 libRefNum, const Char *servNameP, "
@@ -620,12 +666,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibSocketAddr(void) {
-        PRINTF("NetLibSocketAddr");
-
-        //	Int16 NetLibSocketAddr(UInt16 libRefNum, NetSocketRef socket,
-        //						NetSocketAddrType *locAddrP, Int16
-        //*locAddrLenP, 						NetSocketAddrType *remAddrP,
-        // Int16 *remAddrLenP, 						Int32 timeout, Err *errP)
+        PRINTF("\nNetLibSocketAddr");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
@@ -646,9 +687,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibFinishCloseWait(void) {
-        PRINTF("NetLibFinishCloseWait");
-
-        //	Err NetLibFinishCloseWait(UInt16 libRefNum)
+        PRINTF("\nNetLibFinishCloseWait");
 
         CALLED_SETUP("Err", "UInt16 libRefNum");
 
@@ -657,13 +696,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibGetMailExchangeByName(void) {
-        PRINTF("NetLibGetMailExchangeByName");
-
-        //	Int16 NetLibGetMailExchangeByName(UInt16 libRefNum, Char *mailNameP,
-        //						UInt16 maxEntries,
-        //						Char hostNames[][netDNSMaxDomainName+1],
-        // UInt16 priorities[], 						Int32	timeout, Err
-        // *errP)
+        PRINTF("\nNetLibGetMailExchangeByName");
 
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, Char *mailNameP, "
@@ -675,9 +708,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibOpenCount(void) {
-        PRINTF("NetLibOpenCount");
-
-        //	Err NetLibOpenCount (UInt16 libRefNum, UInt16 *countP)
+        PRINTF("\nNetLibOpenCount");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 *countP");
 
@@ -687,9 +718,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibTracePrintF(void) {
-        PRINTF("NetLibTracePrintF");
-
-        //	Err NetLibTracePrintF(UInt16 libRefNum, Char *formatStr, ...)
+        PRINTF("\nNetLibTracePrintF");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, Char *formatStr");
 
@@ -697,9 +726,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibTracePutS(void) {
-        PRINTF("NetLibTracePutS");
-
-        // Err NetLibTracePutS(UInt16 libRefNum, Char *strP)
+        PRINTF("\nNetLibTracePutS");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, Char *strP");
 
@@ -707,9 +734,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibOpenIfCloseWait(void) {
-        PRINTF("NetLibOpenIfCloseWait");
-
-        //	Err NetLibOpenIfCloseWait(UInt16 libRefNum)
+        PRINTF("\nNetLibOpenIfCloseWait");
 
         CALLED_SETUP("Err", "UInt16 libRefNum");
 
@@ -718,9 +743,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibHandlePowerOff(void) {
-        PRINTF("NetLibHandlePowerOff");
-
-        //	Err NetLibHandlePowerOff (UInt16 libRefNum, SysEventType *eventP)
+        PRINTF("\nNetLibHandlePowerOff");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, SysEventType *eventP");
 
@@ -730,11 +753,6 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibConnectionRefresh(void) {
-        PRINTF("NetLibConnectionRefresh");
-
-        //	Err NetLibConnectionRefresh(UInt16 libRefNum, Boolean refresh,
-        //						UInt8 *allInterfacesUpP, UInt16 *netIFErrP)
-
         CALLED_SETUP("Err",
                      "UInt16 libRefNum, Boolean refresh, "
                      "UInt8 *allInterfacesUpP, UInt16 *netIFErrP");
@@ -744,15 +762,12 @@ namespace {
         CALLED_GET_PARAM_REF(Boolean, allInterfacesUpP, Marshal::kOutput);
         CALLED_GET_PARAM_REF(UInt16, netIFErrP, Marshal::kOutput);
 
+        PRINTF("\nNetLibConnectionRefresh, refresh = %u", (uint16)refresh);
+
         return kExecuteROM;
     }
 
     CallROMType HeadpatchNetLibOpenConfig(void) {
-        PRINTF("NetLibOpenConfig");
-
-        //	Err NetLibOpenConfig( UInt16 libRefNum, UInt16 configIndex, UInt32 openFlags,
-        //						UInt16 *netIFErrP)
-
         CALLED_SETUP("Err",
                      "UInt16 libRefNum, UInt16 configIndex, UInt32 openFlags,"
                      "UInt16 *netIFErrP");
@@ -762,13 +777,13 @@ namespace {
         CALLED_GET_PARAM_VAL(UInt32, openFlags);
         CALLED_GET_PARAM_REF(UInt16, netIFErrP, Marshal::kOutput);
 
+        PRINTF("\nNetLibOpenConfig, configIndex = %u", configIndex);
+
         return kExecuteROM;
     }
 
     CallROMType HeadpatchNetLibConfigMakeActive(void) {
-        PRINTF("NetLibConfigMakeActive");
-
-        //	Err NetLibConfigMakeActive( UInt16 libRefNum, UInt16 configIndex)
+        PRINTF("\nNetLibConfigMakeActive");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 configIndex");
 
@@ -776,10 +791,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibConfigList(void) {
-        PRINTF("NetLibConfigList");
-
-        //	Err NetLibConfigList( UInt16 libRefNum, NetConfigNameType nameArray[],
-        //						UInt16 *arrayEntriesP)
+        PRINTF("\nNetLibConfigList");
 
         CALLED_SETUP("Err",
                      "UInt16 libRefNum, NetConfigNameType* nameArray,"
@@ -789,10 +801,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibConfigIndexFromName(void) {
-        PRINTF("NetLibConfigIndexFromName");
-
-        //	Err NetLibConfigIndexFromName( UInt16 libRefNum, NetConfigNamePtr nameP,
-        //						UInt16 *indexP)
+        PRINTF("\nNetLibConfigIndexFromName");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, NetConfigNamePtr nameP, UInt16 *indexP");
 
@@ -800,9 +809,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibConfigDelete(void) {
-        PRINTF("NetLibConfigDelete");
-
-        //	Err NetLibConfigDelete( UInt16 libRefNum, UInt16 index)
+        PRINTF("\nNetLibConfigDelete");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 index");
 
@@ -810,9 +817,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibConfigSaveAs(void) {
-        PRINTF("NetLibConfigSaveAs");
-
-        //	Err NetLibConfigSaveAs( UInt16 libRefNum, NetConfigNamePtr nameP)
+        PRINTF("\nNetLibConfigSaveAs");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, NetConfigNamePtr nameP");
 
@@ -820,10 +825,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibConfigRename(void) {
-        PRINTF("NetLibConfigRename");
-
-        //	Err NetLibConfigRename( UInt16 libRefNum, UInt16 index,
-        //						NetConfigNamePtr newNameP)
+        PRINTF("\nNetLibConfigRename");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 index, NetConfigNamePtr newNameP");
 
@@ -831,10 +833,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibConfigAliasSet(void) {
-        PRINTF("NetLibConfigAliasSet");
-
-        //	Err NetLibConfigAliasSet( UInt16 libRefNum, UInt16 configIndex,
-        //						UInt16 aliasToIndex)
+        PRINTF("\nNetLibConfigAliasSet");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 configIndex, UInt16 aliasToIndex");
 
@@ -842,10 +841,7 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibConfigAliasGet(void) {
-        PRINTF("NetLibConfigAliasGet");
-
-        //	Err NetLibConfigAliasGet( UInt16 libRefNum, UInt16 aliasIndex,
-        //						UInt16 *indexP, Boolean *isAnotherAliasP)
+        PRINTF("\nNetLibConfigAliasGet");
 
         CALLED_SETUP(
             "Err", "UInt16 libRefNum, UInt16 aliasIndex, UInt16 *indexP, Boolean *isAnotherAliasP");
@@ -882,10 +878,10 @@ namespace {
         {netLibTrapSettingSet, HeadpatchNetLibSettingSet, NULL},
         {netLibTrapIFAttach, HeadpatchNetLibIFAttach, NULL},
         {netLibTrapIFDetach, HeadpatchNetLibIFDetach, NULL},
-        {netLibTrapIFGet, HeadpatchNetLibIFGet, NULL},
+        {netLibTrapIFGet, HeadpatchNetLibIFGet, TailpatchNetLibIFGet},
         {netLibTrapIFSettingGet, HeadpatchNetLibIFSettingGet, NULL},
         {netLibTrapIFSettingSet, HeadpatchNetLibIFSettingSet, NULL},
-        {netLibTrapIFUp, HeadpatchNetLibIFUp, NULL},
+        {netLibTrapIFUp, HeadpatchNetLibIFUp, TailpatchNetLibIFUp},
         {netLibTrapIFDown, HeadpatchNetLibIFDown, NULL},
         {netLibTrapGetHostByAddr, HeadpatchNetLibGetHostByAddr, NULL},
         {netLibTrapGetServByName, HeadpatchNetLibGetServByName, NULL},
