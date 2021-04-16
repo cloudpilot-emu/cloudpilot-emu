@@ -13,6 +13,12 @@
 #endif
 
 namespace {
+    constexpr size_t PACKAGE_BUF_SIZE = 256;
+
+    uint8 packageBuf[PACKAGE_BUF_SIZE];
+    size_t packageBufLen = 0;
+    bool packagePending = false;
+
     const char* DecodeIfSetting(uint16 setting) {
         switch (setting) {
             case netIFSettingResetAll:
@@ -427,12 +433,20 @@ namespace {
         PRINTF("\nNetLibSend, bufLen = %u", bufLen);
         Hexdump(bufP, bufLen);
 
-        *errP = 0;
-        CALLED_PUT_PARAM_REF(errP);
+        if (bufLen <= PACKAGE_BUF_SIZE) {
+            memmove(packageBuf, bufP, bufLen);
+            packageBufLen = bufLen;
+            packagePending = true;
 
-        PUT_RESULT_VAL(Int16, bufLen);
+            *errP = 0;
+            CALLED_PUT_PARAM_REF(errP);
 
-        return kSkipROM;
+            PUT_RESULT_VAL(Int16, bufLen);
+
+            return kSkipROM;
+        }
+
+        return kExecuteROM;
     }
 
     CallROMType HeadpatchNetLibReceivePB(void) {
@@ -453,13 +467,6 @@ namespace {
     }
 
     CallROMType HeadpatchNetLibReceive(void) {
-        const uint8 response[] = {0x45, 0x00, 0x00, 0x3c, 0xa7, 0x57, 0x00, 0x00, 0x17, 0x01,
-                                  0xec, 0x5a, 0x08, 0x08, 0x08, 0x08, 0x00, 0x00, 0x00, 0x00,
-                                  0x00, 0x00, 0x3f, 0x37, 0x01, 0x00, 0x07, 0x00, 0x61, 0x62,
-                                  0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6a, 0x6b, 0x6c,
-                                  0x6d, 0x6e, 0x6f, 0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76,
-                                  0x77, 0x78, 0x79, 0x7a, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66};
-
         CALLED_SETUP("Int16",
                      "UInt16 libRefNum, NetSocketRef socket,"
                      "void *bufP, UInt16 bufLen, UInt16 flags, "
@@ -473,18 +480,32 @@ namespace {
         CALLED_GET_PARAM_REF(UInt16, fromLenP, Marshal::kInOut);
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
-        CALLED_GET_PARAM_PTR(void, bufP, bufLen, Marshal::kInOut);
+        CALLED_GET_PARAM_PTR(UInt8, bufP, bufLen, Marshal::kInOut);
 
         PRINTF("\nNetLibReceive, bufLen = %u", bufLen);
 
-        if (bufLen >= 60) {
-            memmove(bufP, response, 60);
+        if (packagePending && packageBufLen <= bufLen) {
+            memmove(bufP, packageBuf, packageBufLen);
+            memmove((uint8*)bufP + 12, packageBuf + 16, 4);
+            memmove((uint8*)bufP + 16, packageBuf + 12, 4);
+
+            ((uint8*)bufP)[20] = 0x00;
+
+            uint16 checksum = packageBuf[22] | (packageBuf[23] << 8);
+            checksum += 8;
+            ((uint8*)bufP)[22] = checksum & 0xff;
+            ((uint8*)bufP)[23] = (checksum >> 8) & 0xff;
+
+            packagePending = false;
+
             CALLED_PUT_PARAM_REF(bufP);
 
             *errP = 0;
             CALLED_PUT_PARAM_REF(errP);
 
-            PUT_RESULT_VAL(Int16, 60);
+            PUT_RESULT_VAL(Int16, packageBufLen);
+
+            Hexdump((uint8*)bufP, packageBufLen);
 
             return kSkipROM;
         }
