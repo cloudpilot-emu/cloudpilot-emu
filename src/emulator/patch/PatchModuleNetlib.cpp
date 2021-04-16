@@ -149,15 +149,15 @@ namespace {
     }
 
     void Hexdump(const uint8* buf, size_t bufSize) {
-        printf("===BEGIN OF HEXDUMP===\n\n");
+        printf("===BEGIN OF HEXDUMP===");
 
         for (size_t i = 0; i < bufSize; i++) {
-            printf("%02x ", buf[i]);
+            if (i % 16 == 0) putchar('\n');
 
-            if (i > 0 && i % 16 == 0) putchar('\n');
+            printf("%02x ", buf[i]);
         }
 
-        printf("\n\n====END OF HEXDUMP====\n");
+        printf("\n====END OF HEXDUMP====\n");
     }
 
     CallROMType HeadpatchNetLibOpen(void) {
