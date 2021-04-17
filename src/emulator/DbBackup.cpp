@@ -3,13 +3,9 @@
 #include <functional>
 
 #include "CallbackManager.h"
-#include "EmCPU68K.h"
 #include "Marshal.h"
 #include "Miscellaneous.h"
 #include "ROMStubs.h"
-#include "UAE.h"
-
-// extern struct regstruct regs;
 
 DbBackup::~DbBackup() {
     if (callbackPtr) CallbackManager::ReleaseCallback(callbackPtr);
