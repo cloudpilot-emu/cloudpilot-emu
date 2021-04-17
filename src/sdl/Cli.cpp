@@ -101,7 +101,17 @@ namespace {
     void SaveBackup() {
         DbBackup backup;
 
-        backup.init();
+        backup.Init();
+
+        while (backup.GetState() == DbBackup::State::inProgress) {
+            cout << "backing up " << backup.GetCurentDatabase() << " ... " << endl;
+
+            if (backup.Save()) {
+                cout << "success" << endl << flush;
+            } else {
+                cout << "failed" << endl << flush;
+            }
+        }
     }
 
     bool CmdQuit(vector<string> args) { return true; }

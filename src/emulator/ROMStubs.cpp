@@ -649,3 +649,20 @@ Err DmDatabaseInfo(UInt16 cardNo, LocalID dbID, Char* nameP, UInt16* attributesP
     // Return the result.
     RETURN_RESULT_VAL(Err);
 }
+
+Err ExgDBWrite(emuptr writeProcP, emuptr userDataP, const Char* nameP, LocalID dbID,
+               UInt16 cardNo) {
+    CALLER_SETUP("Err",
+                 "ExgDBWriteProcPtr writeProcP, void* userDataP, const char* nameP, LocalID dbID, "
+                 "UInt16 cardNo");
+
+    CALLER_PUT_PARAM_VAL(emuptr, writeProcP);
+    CALLER_PUT_PARAM_VAL(emuptr, userDataP);
+    CALLER_PUT_PARAM_STR(Char, nameP);
+    CALLER_PUT_PARAM_VAL(LocalID, dbID);
+    CALLER_PUT_PARAM_VAL(UInt16, cardNo);
+
+    sub.Call(sysTrapExgDBWrite);
+
+    RETURN_RESULT_VAL(Err);
+}

@@ -2021,7 +2021,7 @@ long EmSubroutineCPU68K::FormatStack(EmParamList& params) {
 //		� EmSubroutineCPU68K::PrepareStack
 // ---------------------------------------------------------------------------
 
-Err EmSubroutineCPU68K::PrepareStack(Bool forCalling, Bool /*forStdArg*/, long stackSize) {
+Err EmSubroutineCPU68K::PrepareStack(Bool forCalling, Bool forStdArg, long stackSize) {
     if (forCalling) {
         // Give ourselves our own private stack.  We'll want this in case
         // we're in the debugger and the stack pointer is hosed.
@@ -2035,6 +2035,11 @@ Err EmSubroutineCPU68K::PrepareStack(Bool forCalling, Bool /*forStdArg*/, long s
         fStackPtr = eStackTop - stackSize;
     } else {
         fStackPtr = m68k_areg(regs, 7);
+
+        // If POSE intercepts a syscall the JSR / TRAP has not executed, so the
+        // stack frame starts with the last argument. If this was a regular JSR
+        // the stack frame has been set up properly, and we need to compensate.
+        if (forStdArg) fStackPtr += 4;
 
         // Get these values, in case the EmSubroutine object is used
         // when tailpatching a function and we need to examine the
