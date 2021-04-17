@@ -27,7 +27,7 @@ emuptr CallbackManager::RegisterCallback(CallbackT callback) {
     uint16* stub = static_cast<uint16*>(malloc(2));
     *stub = 20085;  // RTS
 
-    EmBankMapped::MapPhysicalMemory(stub, 2);
+    EmBankMapped::MapPhysicalMemory(stub, 4);
     emuptr callbackPtr = EmBankMapped::GetEmulatedAddress(stub);
     MetaMemory::MarkInstructionBreak(callbackPtr);
 
