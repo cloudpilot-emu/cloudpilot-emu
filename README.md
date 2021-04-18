@@ -145,6 +145,8 @@ Artwork for Cloudpilot was done by Paolo Lazatin.
 SDCTL emulation to enable the full 16MB of RAM on the m515 is taken from
 [Mu](https://github.com/meepingsnesroms/Mu).
 
+Zipfile I/O uses the [zip library](https://github.com/kuba--/zip).
+
 # LICENSE
 
 This program is free software: you can redistribute it and/or modify it under

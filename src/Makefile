@@ -97,13 +97,15 @@ INCLUDE = \
 	-I./emulator/palm/Platform/Incs/Core/System \
 	-I./emulator/palm/Platform/Incs/Core/UI \
 	-I./emulator/palm/Platform/Incs/Libraries \
-	-I./emulator
+	-I./emulator \
+	-I./zip
 
 SOURCE_C = \
 	emulator/uae/cpudefs.c \
 	emulator/uae/cpuemu.c \
 	emulator/uae/cpustbl.c \
-	emulator/palm/Platform/Core/System/Src/Crc.c
+	emulator/palm/Platform/Core/System/Src/Crc.c \
+	zip/zip.c
 
 SOURCE_CPP = \
 	$(shell find . -type f -name '*.cpp' -and -not -name $(notdir $(WEBIDL_BINDING_CXX)) | sed 's/^\.\///g') \

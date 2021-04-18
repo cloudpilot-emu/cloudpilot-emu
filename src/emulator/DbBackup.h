@@ -4,6 +4,8 @@
 #include "EmCommon.h"
 #include "Miscellaneous.h"
 
+struct zip_t;
+
 class DbBackup {
    public:
     enum class State { created, inProgress, done };
@@ -22,6 +24,8 @@ class DbBackup {
     bool Save();
     void Skip();
 
+    pair<ssize_t, uint8*> GetArchive();
+
    private:
     void Callback();
 
@@ -32,6 +36,11 @@ class DbBackup {
     emuptr callbackPtr{0};
 
     DatabaseInfoList::iterator currentDb;
+
+    zip_t* zip{nullptr};
+
+    uint8* archive{nullptr};
+    ssize_t archiveSize{0};
 
    private:
     DbBackup(const DbBackup&) = delete;

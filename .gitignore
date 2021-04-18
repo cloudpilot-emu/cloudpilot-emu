@@ -26,3 +26,6 @@ Makefile.local
 *.rom
 *.log
 *.map
+*.zip
+*.prc
+*.pdb

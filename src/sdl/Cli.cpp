@@ -98,19 +98,38 @@ namespace {
         }
     }
 
-    void SaveBackup() {
+    void SaveBackup(string file) {
         DbBackup backup;
 
         backup.Init();
 
         while (backup.GetState() == DbBackup::State::inProgress) {
-            cout << "backing up " << backup.GetCurentDatabase() << " ... " << endl;
+            cout << "backing up " << backup.GetCurentDatabase() << " ... ";
 
             if (backup.Save()) {
                 cout << "success" << endl << flush;
             } else {
                 cout << "failed" << endl << flush;
             }
+        }
+
+        auto [archiveSize, archive] = backup.GetArchive();
+
+        if (archiveSize <= 0) return;
+
+        cout << "saving backup to " << file << endl << flush;
+
+        fstream stream(file, ios_base::out);
+
+        if (stream.fail()) {
+            cout << "failed to open " << file << endl << flush;
+            return;
+        }
+
+        stream.write((const char*)archive, archiveSize);
+
+        if (stream.fail()) {
+            cout << "I/O error writing " << file << endl << flush;
         }
     }
 
@@ -240,7 +259,7 @@ namespace {
             return false;
         }
 
-        SaveBackup();
+        SaveBackup(args[0]);
 
         return false;
     }
