@@ -21,6 +21,8 @@
 
 set<emuptr> MetaMemory::breakpoints;
 
+void MetaMemory::Clear() { EmAssert(breakpoints.size() == 0); }
+
 void MetaMemory::MarkRange(emuptr start, emuptr end, uint8 v) {
     // If there's no meta-memory (not needed for dedicated framebuffers)
     // just leave.

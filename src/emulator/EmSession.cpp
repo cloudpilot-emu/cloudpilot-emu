@@ -13,6 +13,7 @@
 #include "EmPatchMgr.h"
 #include "EmSystemState.h"
 #include "Logging.h"
+#include "MetaMemory.h"
 #include "Miscellaneous.h"
 #include "ROMStubs.h"
 #include "Savestate.h"
@@ -83,8 +84,9 @@ void EmSession::Deinitialize() {
     if (!isInitialized) return;
 
     EmPalmOS::Dispose();
+    CallbackManager::Clear();
     Memory::Dispose();
-    CallbackManager::Reset();
+    MetaMemory::Clear();
 
     cpu.reset();
     device.reset();

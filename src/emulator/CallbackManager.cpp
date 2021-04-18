@@ -19,7 +19,7 @@ namespace {
     map<emuptr, RegisteredCallback> registeredCallbacks;
 }  // namespace
 
-void CallbackManager::Reset() {
+void CallbackManager::Clear() {
     for (auto& elt : registeredCallbacks) ReleaseCallback(elt.first);
 }
 
@@ -58,3 +58,11 @@ void CallbackManager::HandleBreakpoint() {
         entry->second.callback();
     }
 }
+
+CallbackWrapper::CallbackWrapper(CallbackManager::CallbackT callback) {
+    callbackPtr = CallbackManager::RegisterCallback(callback);
+}
+
+CallbackWrapper::~CallbackWrapper() { CallbackManager::ReleaseCallback(callbackPtr); }
+
+CallbackWrapper::operator emuptr() const { return callbackPtr; }

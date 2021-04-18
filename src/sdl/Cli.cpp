@@ -103,7 +103,7 @@ namespace {
 
         backup.Init();
 
-        while (backup.GetState() == DbBackup::State::inProgress) {
+        while (backup.IsInProgress()) {
             cout << "backing up " << backup.GetCurentDatabase() << " ... ";
 
             if (backup.Save()) {

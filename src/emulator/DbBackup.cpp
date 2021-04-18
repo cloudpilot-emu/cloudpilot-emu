@@ -12,8 +12,9 @@ namespace {
     constexpr int COMPRESSION_LEVEL = 1;
 }
 
+DbBackup::DbBackup() : callback(bind(&DbBackup::Callback, this)) {}
+
 DbBackup::~DbBackup() {
-    if (callbackPtr) CallbackManager::ReleaseCallback(callbackPtr);
     if (zip) zip_stream_close(zip);
     if (archive) free(archive);
 }
@@ -25,8 +26,6 @@ bool DbBackup::Init() {
         return false;
     }
 
-    callbackPtr = CallbackManager::RegisterCallback(bind(&DbBackup::Callback, this));
-
     currentDb = databases.begin();
 
     state = currentDb == databases.end() ? State::done : State::inProgress;
@@ -36,13 +35,17 @@ bool DbBackup::Init() {
     return true;
 }
 
-DbBackup::State DbBackup::GetState() const { return state; }
+bool DbBackup::IsInProgress() const { return state == State::inProgress; }
 
-string DbBackup::GetCurentDatabase() const {
+bool DbBackup::IsDone() const { return state == State::done; }
+
+const char* DbBackup::GetCurentDatabase() {
     EmAssert(state == State::inProgress);
     EmAssert(currentDb != databases.end());
 
-    return string(currentDb->dbName) + (IsExecutable(*currentDb) ? ".prc" : ".pdb");
+    currentDatabase = string(currentDb->dbName) + (IsExecutable(*currentDb) ? ".prc" : ".pdb");
+
+    return currentDatabase.c_str();
 }
 
 bool DbBackup::Save() {
@@ -50,15 +53,14 @@ bool DbBackup::Save() {
     EmAssert(currentDb != databases.end());
     EmAssert(zip);
 
-    zip_entry_open(zip, GetCurentDatabase().c_str());
+    zip_entry_open(zip, GetCurentDatabase());
 
     bool success =
-        ExgDBWrite(callbackPtr, 0, currentDb->dbName, currentDb->dbID, currentDb->cardNo) == 0;
+        ExgDBWrite(callback, 0, currentDb->dbName, currentDb->dbID, currentDb->cardNo) == 0;
 
     zip_entry_close(zip);
 
     currentDb++;
-
     if (currentDb == databases.end()) state = State::done;
 
     return success;
@@ -69,7 +71,6 @@ void DbBackup::Skip() {
     EmAssert(currentDb != databases.end());
 
     currentDb++;
-
     if (currentDb == databases.end()) state = State::done;
 }
 
@@ -78,6 +79,10 @@ pair<ssize_t, uint8*> DbBackup::GetArchive() {
 
     return pair(archiveSize, archive);
 }
+
+uint8* DbBackup::GetArchivePtr() { return GetArchive().second; }
+
+ssize_t DbBackup::GetArchiveSize() { return GetArchive().first; }
 
 void DbBackup::Callback() {
     CALLED_SETUP_STDARG("Err", "const void* dataP, UInt32* sizeP, void* userDataP");

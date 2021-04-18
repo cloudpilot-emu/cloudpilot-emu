@@ -10,13 +10,25 @@ class CallbackManager {
     using CallbackT = function<void()>;
 
    public:
-    static void Reset();
+    static void Clear();
 
     static emuptr RegisterCallback(CallbackT callback);
 
     static void ReleaseCallback(emuptr callbackPtr);
 
     static void HandleBreakpoint();
+};
+
+class CallbackWrapper {
+   public:
+    CallbackWrapper(CallbackManager::CallbackT callback);
+
+    ~CallbackWrapper();
+
+    operator emuptr() const;
+
+   private:
+    emuptr callbackPtr{0};
 };
 
 #endif  // _CALLBACK_MANAGER_H_

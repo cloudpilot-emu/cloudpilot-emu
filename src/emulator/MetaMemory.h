@@ -20,6 +20,8 @@
 
 class MetaMemory {
    public:
+    static void Clear();
+
     static void MarkTotalAccess(emuptr begin, emuptr end);
     static void SetAccess(emuptr begin, emuptr end, uint8 bits);
 
