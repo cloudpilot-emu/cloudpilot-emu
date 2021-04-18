@@ -18,7 +18,7 @@ class DbBackup {
     bool IsInProgress() const;
     bool IsDone() const;
 
-    const char* GetCurentDatabase();
+    const char* GetCurrentDatabase();
 
     bool Save();
     void Skip();

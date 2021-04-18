@@ -39,7 +39,7 @@ bool DbBackup::IsInProgress() const { return state == State::inProgress; }
 
 bool DbBackup::IsDone() const { return state == State::done; }
 
-const char* DbBackup::GetCurentDatabase() {
+const char* DbBackup::GetCurrentDatabase() {
     EmAssert(state == State::inProgress);
     EmAssert(currentDb != databases.end());
 
@@ -53,7 +53,7 @@ bool DbBackup::Save() {
     EmAssert(currentDb != databases.end());
     EmAssert(zip);
 
-    zip_entry_open(zip, GetCurentDatabase());
+    zip_entry_open(zip, GetCurrentDatabase());
 
     bool success =
         ExgDBWrite(callback, 0, currentDb->dbName, currentDb->dbID, currentDb->cardNo) == 0;

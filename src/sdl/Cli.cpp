@@ -104,7 +104,7 @@ namespace {
         backup.Init();
 
         while (backup.IsInProgress()) {
-            cout << "backing up " << backup.GetCurentDatabase() << " ... ";
+            cout << "backing up " << backup.GetCurrentDatabase() << " ... ";
 
             if (backup.Save()) {
                 cout << "success" << endl << flush;

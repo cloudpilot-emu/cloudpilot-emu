@@ -27,7 +27,7 @@ CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17 -fno-exceptions
 CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
 
-CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions -s USE_SDL=2 -s USE_SDL_IMAGE=2
+CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions -s USE_SDL=2 -s USE_SDL_IMAGE=2 -D_POSIX_SOURCE
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)
 
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined

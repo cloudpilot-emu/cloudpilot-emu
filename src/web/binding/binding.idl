@@ -79,3 +79,18 @@ interface Frame {
     VoidPtr GetBuffer();
     long GetBufferSize();
 };
+
+interface DbBackup {
+    boolean Init();
+
+    boolean IsInProgress();
+    boolean IsDone();
+
+    [Const] DOMString GetCurrentDatabase();
+
+    boolean Save();
+    void Skip();
+
+    VoidPtr GetArchivePtr();
+    long GetArchiveSize();
+};

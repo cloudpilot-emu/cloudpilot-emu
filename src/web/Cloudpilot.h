@@ -4,9 +4,9 @@
 #include <memory>
 #include <string>
 
+#include "DbBackup.h"
 #include "EmDevice.h"
 #include "Frame.h"
-#include "RomInfo.h"
 
 class Cloudpilot {
    public:
@@ -63,6 +63,8 @@ class Cloudpilot {
     void SetHotsyncName(const char* name);
 
     void RegisterPwmHandler(uint32 handlerPtr);
+
+    DbBackup* StartBackup();
 
    private:
     Frame frame{1024 * 128};

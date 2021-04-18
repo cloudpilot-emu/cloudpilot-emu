@@ -78,6 +78,8 @@ export interface Cloudpilot {
     SetHotsyncName(name: string): void;
 
     RegisterPwmHandler(handlerPtr: number): void;
+
+    StartBackup(): DbBackup;
 }
 
 export interface Frame {
@@ -89,4 +91,19 @@ export interface Frame {
 
     GetBuffer(): VoidPtr;
     GetBufferSize(): number;
+}
+
+export interface DbBackup {
+    Init(): boolean;
+
+    IsInProgress(): boolean;
+    IsDone(): boolean;
+
+    GetCurrentDatabase(): string;
+
+    Save(): boolean;
+    Skip(): void;
+
+    GetArchivePtr(): boolean;
+    GetArchiveSize(): boolean;
 }
