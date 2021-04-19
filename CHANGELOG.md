@@ -1,3 +1,8 @@
+# Next version
+
+-   Backup: export all applications and DBs on a device as a
+    zip archive.
+
 # Version 1.1.2
 
 -   Fix a potential lockup condition in touch handling.
