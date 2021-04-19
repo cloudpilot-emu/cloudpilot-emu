@@ -104,6 +104,6 @@ export interface DbBackup {
     Save(): boolean;
     Skip(): void;
 
-    GetArchivePtr(): boolean;
-    GetArchiveSize(): boolean;
+    GetArchivePtr(): VoidPtr;
+    GetArchiveSize(): number;
 }

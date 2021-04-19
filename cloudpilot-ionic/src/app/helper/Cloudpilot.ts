@@ -4,12 +4,13 @@
 // tslint:disable-next-line: no-reference
 /// <reference path="../../../node_modules/@types/emscripten/index.d.ts"/>
 
-import createModule, { Cloudpilot as CloudpilotNative, Module, PalmButton, VoidPtr } from '../../../../src';
+import createModule, { Cloudpilot as CloudpilotNative, DbBackup, Module, PalmButton, VoidPtr } from '../../../../src';
 
 import { DeviceId } from '../model/DeviceId';
 import { Event } from 'microevent.ts';
 
 export { PalmButton } from '../../../../src';
+export { DbBackup } from '../../../../src';
 
 export interface RomInfo {
     cardVersion: number;
@@ -297,6 +298,26 @@ export class Cloudpilot {
         this.cloudpilot.SetHotsyncName(name);
     }
 
+    async backup<T>(worker: (dbBackup: DbBackup) => Promise<T>): Promise<T> {
+        const dbBackup = this.guard(() => this.cloudpilot.StartBackup());
+
+        try {
+            return await worker(this.wrap(dbBackup));
+        } finally {
+            this.module.destroy(dbBackup);
+        }
+    }
+
+    getArchive(dbBackup: DbBackup): Uint8Array | undefined {
+        const size = dbBackup.GetArchiveSize();
+
+        if (size <= 0) return undefined;
+
+        const ptr = this.module.getPointer(dbBackup.GetArchivePtr());
+
+        return this.module.HEAPU8.subarray(ptr, ptr + size).slice();
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);
@@ -304,6 +325,20 @@ export class Cloudpilot {
         this.module.HEAP8.subarray(bufferPtr, bufferPtr + data.length).set(data);
 
         return buffer;
+    }
+
+    private wrap<T extends object>(unguarded: T): T {
+        return new Proxy<T>(unguarded, {
+            get: (target: T, p: string) => {
+                const val = target[p as keyof T];
+
+                if (typeof val !== 'function') {
+                    return val;
+                }
+
+                return (...args: Array<any>) => this.guard(() => val.apply(target, args));
+            },
+        });
     }
 
     private guard<T>(fn: () => T) {

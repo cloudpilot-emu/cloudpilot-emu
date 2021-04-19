@@ -21,7 +21,12 @@ export class AlertService {
         await alert.present();
     }
 
-    async message(header: string, message: string, extraButtons: Record<string, () => void> = {}) {
+    async message(
+        header: string,
+        message: string,
+        extraButtons: Record<string, () => void> = {},
+        closeButtonLabel = 'Close'
+    ) {
         const alert = await this.alertController.create({
             header,
             message,
@@ -34,7 +39,7 @@ export class AlertService {
                         extraButtons[text]();
                     },
                 })),
-                { text: 'Close', role: 'cancel' },
+                { text: closeButtonLabel, role: 'cancel' },
             ],
         });
 

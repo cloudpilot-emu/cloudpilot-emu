@@ -1,5 +1,6 @@
 import { Component, Input, OnInit } from '@angular/core';
 
+import { BackupService } from './../../../service/backup.service';
 import { EmulationService } from './../../../service/emulation.service';
 
 @Component({
@@ -8,7 +9,7 @@ import { EmulationService } from './../../../service/emulation.service';
     styleUrls: ['./context-menu.component.scss'],
 })
 export class ContextMenuComponent implements OnInit {
-    constructor(public emulationService: EmulationService) {}
+    constructor(public emulationService: EmulationService, private backupService: BackupService) {}
 
     ngOnInit(): void {}
 
@@ -40,6 +41,20 @@ export class ContextMenuComponent implements OnInit {
         this.showHelp();
 
         this.onClick();
+    }
+
+    backup(): void {
+        this.backupService.saveBackup();
+
+        this.onClick();
+    }
+
+    get backupDisabled(): boolean {
+        return (
+            !this.emulationService.isRunning() ||
+            this.emulationService.isPowerOff() ||
+            !this.emulationService.isUiInitialized()
+        );
     }
 
     @Input()

@@ -1,3 +1,4 @@
+import { DbBackup } from './web/binding/binding.d';
 import 'emscripten';
 
 import { Cloudpilot, RomInfo, VoidPtr } from './web/binding/binding';
@@ -14,6 +15,7 @@ export interface Module extends EmscriptenModule {
 
     destroy(cloudpilot: Cloudpilot): void;
     destroy(romInfo: RomInfo): void;
+    destroy(dbBackup: DbBackup): void;
 }
 
 declare const createModule: EmscriptenModuleFactory<Module>;

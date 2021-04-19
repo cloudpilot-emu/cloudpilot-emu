@@ -14,6 +14,7 @@ import { KvsService } from './../../service/kvs.service';
 import { SnapshotService } from './../../service/snapshot.service';
 import { SnapshotStatistics } from './../../model/SnapshotStatistics';
 import { StorageService } from './../../service/storage.service';
+import { concatFilenames } from 'src/app/helper/filename';
 import { getStoredSession } from 'src/app/helper/storedSession';
 
 @Component({
@@ -222,24 +223,7 @@ export class EmulationPage implements AfterViewInit {
         }
 
         if (filesFail.length > 0 && message.length > 0) message += '<br/><br/>';
-
-        switch (filesFail.length) {
-            case 0:
-                break;
-
-            case 1:
-                message += `Installation of ${filesFail[0]} failed.`;
-                break;
-
-            default:
-                message += `Installation of ${filesFail
-                    .slice(0, filesFail.length > 3 ? 3 : filesFail.length - 1)
-                    .join(', ')} and ${
-                    filesFail.length > 3 ? filesFail.length - 3 + ' more files' : filesFail[filesFail.length - 1]
-                } failed.`;
-
-                break;
-        }
+        if (filesFail.length > 0) message += `Installation of  ${concatFilenames(filesFail)} failed.`;
 
         let header;
 

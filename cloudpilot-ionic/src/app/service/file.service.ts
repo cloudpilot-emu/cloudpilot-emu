@@ -6,25 +6,13 @@ import { LoadingController } from '@ionic/angular';
 import { Session } from './../model/Session';
 import { SessionImage } from './../model/SessionImage';
 import { StorageService } from './storage.service';
+import { filenameForSession } from '../helper/filename';
 
 // tslint:disable: no-bitwise
 
 export interface FileDescriptor {
     name: string;
     content: Uint8Array;
-}
-
-function fileNameForSession(session: Session): string {
-    const now = new Date();
-
-    const year = now.getFullYear();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    const hour = now.getHours().toString().padStart(2, '0');
-    const minute = now.getMinutes().toString().padStart(2, '0');
-    const second = now.getSeconds().toString().padStart(2, '0');
-
-    return `${session.name}_${year}${month}${day}-${hour}${minute}${second}.bin`;
 }
 
 @Injectable({
@@ -62,7 +50,7 @@ export class FileService {
                 savestate,
             };
 
-            this.saveFile(fileNameForSession(session), serializeSessionImage(sessionImage));
+            this.saveFile(filenameForSession(session), serializeSessionImage(sessionImage));
         } finally {
             loader.dismiss();
         }
@@ -81,7 +69,7 @@ export class FileService {
             savestate,
         };
 
-        this.saveFile(fileNameForSession(session), serializeSessionImage(sessionImage));
+        this.saveFile(filenameForSession(session), serializeSessionImage(sessionImage));
     }
 
     saveFile(name: string, content: Uint8Array): void {

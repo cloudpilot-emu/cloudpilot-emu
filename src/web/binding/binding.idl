@@ -54,6 +54,8 @@ interface Cloudpilot {
     void SetHotsyncName([Const] DOMString name);
 
     void RegisterPwmHandler(long handlerPtr);
+
+    DbBackup StartBackup();
 };
 
 interface RomInfo {
