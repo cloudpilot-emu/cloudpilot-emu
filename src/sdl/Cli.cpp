@@ -6,24 +6,24 @@
 #include <readline/history.h>
 // clang-format on
 
+#include <algorithm>
 #include <atomic>
+#include <cstring>
 #include <deque>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 #include <thread>
 #include <vector>
-#include <sstream>
-#include <algorithm>
-#include <fstream>
-#include <cstring>
 
+#include "DbBackup.h"
+#include "DbInstaller.h"
 #include "EmCommon.h"
-#include "EmFileImport.h"
 #include "EmErrCodes.h"
 #include "EmSession.h"
 #include "util.h"
-#include "DbBackup.h"
 
 namespace {
     using Task = function<bool()>;
@@ -37,28 +37,26 @@ namespace {
     condition_variable cvExecuteTask;
 
     void InstallFile(string path) {
-        fstream stream(path, ios_base::in);
-        if (stream.fail()) {
-            cout << "failed to open " << path << endl << flush;
+        unique_ptr<uint8[]> buffer;
+        size_t len;
+
+        if (!util::readFile(path, buffer, len)) {
+            cout << "failed to read " << path << endl << flush;
             return;
         }
 
-        stream.seekg(0, ios_base::end);
-        long len = stream.tellg();
+        switch (DbInstaller::Install(len, buffer.get())) {
+            case DbInstaller::Result::needsReboot:
+                cout << "installation successful; device requires reset" << endl << flush;
+                break;
 
-        stream.seekg(0, ios_base::beg);
-        unique_ptr<uint8[]> buffer = make_unique<uint8[]>(len);
+            case DbInstaller::Result::success:
+                cout << "installation successful" << endl << flush;
+                break;
 
-        stream.read((char*)buffer.get(), len);
-        if (stream.gcount() != len) {
-            cout << "I/O error reading " << path << endl << flush;
-            return;
-        }
-
-        Err err = EmFileImport::LoadPalmFile(buffer.get(), len, kMethodHomebrew);
-
-        if (err != kError_NoError) {
-            cout << "import failed with code " << err << endl << flush;
+            default:
+                cout << "installation failed" << endl << flush;
+                break;
         }
     }
 

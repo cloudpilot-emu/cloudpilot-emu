@@ -666,3 +666,26 @@ Err ExgDBWrite(emuptr writeProcP, emuptr userDataP, const Char* nameP, LocalID d
 
     RETURN_RESULT_VAL(Err);
 }
+
+Err ExgDBRead(emuptr readProcP, emuptr deleteProcP, emuptr userDataP, LocalID* dbIDP, UInt16 cardNo,
+              Boolean* needResetP, Boolean keepDates) {
+    CALLER_SETUP(
+        "Err",
+        "ExgDBReadProcPtr readProcP, ExgDBDeleteProcPtr deleteProcP, void* userDataP, LocalID* "
+        "dbIDP, UInt16 cardNo, Boolean* needResetP, Boolean keepDates");
+
+    CALLER_PUT_PARAM_VAL(emuptr, readProcP);
+    CALLER_PUT_PARAM_VAL(emuptr, deleteProcP);
+    CALLER_PUT_PARAM_VAL(emuptr, userDataP);
+    CALLER_PUT_PARAM_REF(LocalID, dbIDP, Marshal::kOutput);
+    CALLER_PUT_PARAM_VAL(UInt16, cardNo);
+    CALLER_PUT_PARAM_REF(Boolean, needResetP, Marshal::kOutput);
+    CALLER_PUT_PARAM_VAL(Boolean, keepDates);
+
+    sub.Call(sysTrapExgDBRead);
+
+    CALLER_GET_PARAM_REF(dbIDP);
+    CALLER_GET_PARAM_REF(needResetP);
+
+    RETURN_RESULT_VAL(Err);
+}

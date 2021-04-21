@@ -69,5 +69,7 @@ emuptr MemLocalIDToGlobal(LocalID local, UInt16 cardNo);
 UInt32 MemPtrSize(emuptr p);
 
 Err ExgDBWrite(emuptr writeProcP, emuptr userDataP, const Char* nameP, LocalID dbID, UInt16 cardNo);
+Err ExgDBRead(emuptr readProcP, emuptr deleteProcP, emuptr userDataP, LocalID* dbIDP, UInt16 cardNo,
+              Boolean* needResetP, Boolean keepDates);
 
 #endif /* _ROMSTUBS_H_ */
