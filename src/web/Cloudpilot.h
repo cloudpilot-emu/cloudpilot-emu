@@ -42,7 +42,7 @@ class Cloudpilot {
     void ResetNoExtensions();
     void ResetHard();
 
-    int InstallFile(void* buffer, size_t len);
+    int InstallDb(void* buffer, size_t len);
 
     int GetPalette2bitMapping();
 

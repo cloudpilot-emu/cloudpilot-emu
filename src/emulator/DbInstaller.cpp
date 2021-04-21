@@ -1,12 +1,21 @@
 #include "DbInstaller.h"
 
 #include "CallbackManager.h"
+#include "EmFileImport.h"
 #include "EmHAL.h"
 #include "EmMemory.h"
+#include "EmSession.h"
+#include "EmSystemState.h"
 #include "Marshal.h"
 #include "ROMStubs.h"
 
 DbInstaller::Result DbInstaller::Install(size_t bufferSize, uint8* buffer) {
+    if (gSystemState.OSMajorVersion() < 3) {
+        return EmFileImport::LoadPalmFile(buffer, bufferSize, kMethodHomebrew) == kError_NoError
+                   ? Result::success
+                   : Result::failure;
+    }
+
     if (EmHAL::GetAsleep()) return Result::failure;
 
     size_t bytesRead = 0;
@@ -31,6 +40,8 @@ DbInstaller::Result DbInstaller::Install(size_t bufferSize, uint8* buffer) {
         CALLED_PUT_PARAM_REF(sizeP);
 
         PUT_RESULT_VAL(Err, 0);
+
+        gSession->TriggerDeadMansSwitch();
     });
 
     CallbackWrapper deleteProcP([&]() {

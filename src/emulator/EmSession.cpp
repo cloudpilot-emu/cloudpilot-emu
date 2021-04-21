@@ -438,11 +438,17 @@ void EmSession::ExecuteSubroutine() {
 
     EmValueChanger<bool> clearSubroutineReturn(subroutineReturn, false);
     EmValueChanger<int> increaseNestLevel(nestLevel, nestLevel + 1);
+    EmValueChanger<bool> resetDeadMansSwitch(deadMansSwitch, false);
 
     uint32 cycles = 0;
 
     while (!subroutineReturn) {
         cycles += cpu->Execute(EXECUTE_SUBROUTINE_LIMIT);
+
+        if (deadMansSwitch) {
+            cycles = 0;
+            deadMansSwitch = false;
+        }
 
         EmAssert(cycles < EXECUTE_SUBROUTINE_LIMIT);
     }
@@ -639,3 +645,5 @@ void EmSession::CheckDayForRollover() {
         dayCheckedAt = systemCycles;
     }
 }
+
+void EmSession::TriggerDeadMansSwitch() { deadMansSwitch = true; }

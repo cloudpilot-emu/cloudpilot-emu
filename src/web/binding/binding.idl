@@ -33,7 +33,7 @@ interface Cloudpilot {
     void ResetNoExtensions();
     void ResetHard();
 
-    long InstallFile(VoidPtr buffer, long len);
+    long InstallDb(VoidPtr buffer, long len);
 
     long GetPalette2bitMapping();
 

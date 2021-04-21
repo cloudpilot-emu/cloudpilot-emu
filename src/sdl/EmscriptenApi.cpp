@@ -1,9 +1,9 @@
 #include <emscripten.h>
 
 #include "ButtonEvent.h"
+#include "DbInstaller.h"
 #include "EmCommon.h"
 #include "EmErrCodes.h"
-#include "EmFileImport.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
 #include "Logging.h"
@@ -33,10 +33,8 @@ extern "C" void EMSCRIPTEN_KEEPALIVE buttonUp(const char* id) {
 extern "C" void EMSCRIPTEN_KEEPALIVE installFile(uint8* buffer, size_t len, const char* name) {
     logging::printf("installing %s...", name);
 
-    Err err = EmFileImport::LoadPalmFile(buffer, len, kMethodHomebrew);
-
-    if (err != kError_NoError) {
-        logging::printf("installation failed with code x%04x", err);
+    if (DbInstaller::Install(len, buffer) == DbInstaller::Result::failure) {
+        logging::printf("installation failed");
     } else {
         logging::printf("installion successful");
     }

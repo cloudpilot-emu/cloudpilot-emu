@@ -4,13 +4,19 @@
 // tslint:disable-next-line: no-reference
 /// <reference path="../../../node_modules/@types/emscripten/index.d.ts"/>
 
-import createModule, { Cloudpilot as CloudpilotNative, DbBackup, Module, PalmButton, VoidPtr } from '../../../../src';
+import createModule, {
+    Cloudpilot as CloudpilotNative,
+    DbBackup,
+    DbInstallResult,
+    Module,
+    PalmButton,
+    VoidPtr,
+} from '../../../../src';
 
 import { DeviceId } from '../model/DeviceId';
 import { Event } from 'microevent.ts';
 
-export { PalmButton } from '../../../../src';
-export { DbBackup } from '../../../../src';
+export { PalmButton, DbBackup, DbInstallResult } from '../../../../src';
 
 export interface RomInfo {
     cardVersion: number;
@@ -210,10 +216,10 @@ export class Cloudpilot {
     }
 
     @guard()
-    installFile(data: Uint8Array): number {
+    installDb(data: Uint8Array): DbInstallResult {
         const buffer = this.copyIn(data);
 
-        const result = this.cloudpilot.InstallFile(buffer, data.length);
+        const result = this.cloudpilot.InstallDb(buffer, data.length);
 
         this.cloudpilot.Free(buffer);
 

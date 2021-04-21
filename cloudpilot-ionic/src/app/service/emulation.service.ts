@@ -1,6 +1,4 @@
-import { AlertController, LoadingController, ModalController } from '@ionic/angular';
-import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
-import { DeviceId, isColor } from '../model/DeviceId';
+import { Cloudpilot, DbInstallResult, PalmButton } from '../helper/Cloudpilot';
 import { Injectable, NgZone } from '@angular/core';
 import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
 
@@ -12,12 +10,14 @@ import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { Fifo } from './../helper/Fifo';
 import { FileService } from 'src/app/service/file.service';
+import { LoadingController } from '@ionic/angular';
 import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
 import { PwmUpdate } from './../helper/Cloudpilot';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
+import { isColor } from '../model/DeviceId';
 
 export const GRAYSCALE_PALETTE_RGBA = [
     0xffd2d2d2,
@@ -259,8 +259,8 @@ export class EmulationService {
         return this.uiInitialized;
     }
 
-    installFile(data: Uint8Array): Promise<number> {
-        return this.cloudpilot.then((c) => c.installFile(data));
+    installDb(data: Uint8Array): Promise<DbInstallResult> {
+        return this.cloudpilot.then((c) => c.installDb(data));
     }
 
     getCanvas(): HTMLCanvasElement {

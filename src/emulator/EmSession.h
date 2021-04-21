@@ -98,6 +98,8 @@ class EmSession {
     bool HasButtonEvent();
     ButtonEvent NextButtonEvent();
 
+    void TriggerDeadMansSwitch();
+
    private:
     template <typename T>
     void DoSaveLoad(T& helper);
@@ -153,6 +155,8 @@ class EmSession {
     unique_ptr<uint8[]> romImage;
     size_t romSize{0};
     Savestate savestate;
+
+    bool deadMansSwitch{false};
 };
 
 extern EmSession* gSession;

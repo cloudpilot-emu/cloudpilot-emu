@@ -3,6 +3,7 @@
 #include <cstdlib>
 
 #include "ButtonEvent.h"
+#include "DbInstaller.h"
 #include "EmDevice.h"
 #include "EmFileImport.h"
 #include "EmHAL.h"
@@ -143,8 +144,8 @@ void Cloudpilot::ResetNoExtensions() { gSession->Reset(EmSession::ResetType::noe
 
 void Cloudpilot::ResetHard() { gSession->Reset(EmSession::ResetType::hard); }
 
-int Cloudpilot::InstallFile(void* buffer, size_t len) {
-    return EmFileImport::LoadPalmFile(static_cast<uint8*>(buffer), len, kMethodHomebrew);
+int Cloudpilot::InstallDb(void* buffer, size_t len) {
+    return static_cast<int>(DbInstaller::Install(len, static_cast<uint8*>(buffer)));
 }
 
 int Cloudpilot::GetPalette2bitMapping() { return EmHAL::GetLCD2bitMapping(); }

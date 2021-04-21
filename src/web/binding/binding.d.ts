@@ -15,6 +15,12 @@ export const enum PalmButton {
     cradle = 7,
 }
 
+export const enum DbInstallResult {
+    failure = -1,
+    success = 1,
+    needsReboot = 2,
+}
+
 export interface RomInfo {
     CardVersion(): number;
     CardName(): string;
@@ -57,7 +63,7 @@ export interface Cloudpilot {
     ResetNoExtensions(): void;
     ResetHard(): void;
 
-    InstallFile(buffer: VoidPtr, len: number): number;
+    InstallDb(buffer: VoidPtr, len: number): DbInstallResult;
 
     GetPalette2bitMapping(): number;
 

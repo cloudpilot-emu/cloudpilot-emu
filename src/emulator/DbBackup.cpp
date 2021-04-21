@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "CallbackManager.h"
+#include "EmSession.h"
 #include "Marshal.h"
 #include "Miscellaneous.h"
 #include "ROMStubs.h"
@@ -97,4 +98,6 @@ void DbBackup::Callback() {
     }
 
     PUT_RESULT_VAL(Err, 0);
+
+    gSession->TriggerDeadMansSwitch();
 }
