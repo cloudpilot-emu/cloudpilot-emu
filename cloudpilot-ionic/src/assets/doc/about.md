@@ -35,15 +35,27 @@ files can be installed directly into the emulated device.
 
 # Backing up your virtual devices
 
+Virtual devices can be backed up by creating either session snapshots
+or DB backups.
+
+### Device snapshots
+
 Saving a session snapshot on the Sessions tab every now and then will protect
-your data in case anything goes wrong.
+your data in case anything goes wrong. Re-importing a session snapshot
+will create a clone of the device at the moment where it was backed up.
+
+### DB backups
+
+In addition to full device snapshots you can export a zip archive on the
+emulation tab. This archive contains all databases and applications in device RAM
+as portable .prc and .pdb files.
 
 # Handling fatal errors
 
 The emulator is pretty stable, but you may encounter situations in which
 it crashes. This may be due to a bug in the emulator, or due to the way
 POSE and Cloudpilot interact with PalmOS for installing software,
-setting the hotsync name and similar tasks.
+backing up databases, setting the hotsync name and similar tasks.
 
 If the emulator crashes Cloudpilot will stop immediatelly and show you a dialog
 that allows you to restart the emulator. Upon restart Cloudpilot will not

@@ -1,7 +1,9 @@
-# Next version
+# Version 1.2.0
 
--   Backup: export all applications and DBs on a device as a
-    zip archive.
+-   Backup: export all applications and DBs on a device as
+    .prc and .pdb files in a zip archive.
+-   Rework file installation, notify if an installed database
+    demands for a reset.
 
 # Version 1.1.2
 
