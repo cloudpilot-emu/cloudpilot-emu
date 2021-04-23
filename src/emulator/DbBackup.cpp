@@ -11,7 +11,14 @@
 
 namespace {
     constexpr int COMPRESSION_LEVEL = 1;
-}
+
+    string Suffix(DatabaseInfo& dbInfo) {
+        if (dbInfo.creator == sysFileCClipper) return ".pqa";
+        if (IsExecutable(dbInfo)) return ".prc";
+
+        return ".pdb";
+    }
+}  // namespace
 
 DbBackup::DbBackup() : callback(bind(&DbBackup::Callback, this)) {}
 
@@ -44,7 +51,7 @@ const char* DbBackup::GetCurrentDatabase() {
     EmAssert(state == State::inProgress);
     EmAssert(currentDb != databases.end());
 
-    currentDatabase = string(currentDb->dbName) + (IsExecutable(*currentDb) ? ".prc" : ".pdb");
+    currentDatabase = string(currentDb->dbName) + Suffix(*currentDb);
 
     return currentDatabase.c_str();
 }

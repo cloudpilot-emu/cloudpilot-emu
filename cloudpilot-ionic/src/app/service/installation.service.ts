@@ -33,7 +33,7 @@ export class InstallationService {
 
         try {
             for (const file of files) {
-                if (!/\.(prc|pdb)$/i.test(file.name)) {
+                if (!/\.(prc|pdb|pqa)$/i.test(file.name)) {
                     filesFail.push(file.name);
 
                     continue;
