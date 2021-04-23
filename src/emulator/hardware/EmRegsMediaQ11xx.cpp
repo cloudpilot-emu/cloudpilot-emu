@@ -3816,7 +3816,7 @@ void EmRegsMediaQ11xx::PrvIncBlitterInit(void) {
 void EmRegsMediaQ11xx::PrvIncBlitterRun(void) {
     if (!fBlitInProgress) return;
 
-#ifdef LOGGGING
+#ifdef LOGGING
     static long counter = 0;
 #endif
 

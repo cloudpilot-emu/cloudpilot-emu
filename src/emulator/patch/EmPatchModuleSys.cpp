@@ -59,6 +59,42 @@ namespace {
         return kExecuteROM;
     }
 
+    CallROMType HeadpatchHwrDockStatus(void) {
+        // On non-328 devices, we emulate the hardware that returns this
+        // information, so we don't need to patch this function.
+
+        EmAssert(gSession);
+
+        if (gSession->GetDevice().EmulatesDockStatus()) {
+            return kExecuteROM;
+        }
+
+        // hwrDockStatusState HwrDockStatus(void)
+        //
+        //	(added in Palm OS 3.1)
+        //	(changed later to return UInt16)
+
+        CALLED_SETUP("UInt16", "void");
+
+        // Old enumerated values from Hardware.h:
+        //
+        //		DockStatusNotDocked = 0,
+        //		DockStatusInModem,
+        //		DockStatusInCharger,
+        //		DockStatusUnknown = 0xFF
+
+        // New defines from HwrDock.h
+#define hwrDockStatusUndocked 0x0000            // nothing is attached
+#define hwrDockStatusModemAttached 0x0001       // some type of modem is attached
+#define hwrDockStatusDockAttached 0x0002        // some type of dock is attached
+#define hwrDockStatusUsingExternalPower 0x0004  // using some type of external power source
+#define hwrDockStatusCharging 0x0008            // internal power cells are recharging
+
+        PUT_RESULT_VAL(UInt16, hwrDockStatusUsingExternalPower);
+
+        return kSkipROM;
+    }
+
     void TailpatchFtrInit(void) {
         PRINTF("syscall: FtrInit");
 
@@ -162,6 +198,7 @@ namespace {
         {sysTrapTimInit, NULL, TailpatchTimInit},
         {sysTrapUIInitialize, NULL, TailpatchUIInitialize},
         {sysTrapEvtSysEventAvail, NULL, TailpatchEvtSysEventAvail},
+        {sysTrapHwrDockStatus, HeadpatchHwrDockStatus, NULL},
         {0, NULL, NULL}};
 }  // namespace
 

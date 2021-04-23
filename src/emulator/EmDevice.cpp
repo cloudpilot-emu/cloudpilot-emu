@@ -53,9 +53,11 @@
 #include "EmRegsEZPalmIIIc.h"
 #include "EmRegsEZPalmV.h"
 #include "EmRegsFrameBuffer.h"
+#include "EmRegsMediaQ11xx.h"
 #include "EmRegsSED1375.h"
 #include "EmRegsSED1376.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
+#include "EmRegsVZM1xx.h"
 #include "EmRegsVZPalmM505.h"
 #include "EmStructs.h"
 #include "Platform.h"  // _stricmp
@@ -75,7 +77,6 @@
     #include "EmRegsEZPalmVx.h"
     #include "EmRegsEZTemp.h"
     #include "EmRegsEZVisor.h"
-    #include "EmRegsMediaQ11xx.h"
     #include "EmRegsPLDPalmVIIEZ.h"
     #include "EmRegsSZTemp.h"
     #include "EmRegsUSBVisor.h"
@@ -923,12 +924,16 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM125);
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x1F000000));
             break;
+#endif
 
-        case kDevicePalmM130:
+        case kDevicePalmM130: {
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET);
             EmBankRegs::AddSubBank(new EmRegsVZPalmM130);
-            EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(MMIO_BASE, T_BASE));
-            EmBankRegs::AddSubBank(new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET));
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
+            EmBankRegs::AddSubBank(framebuffer);
             break;
+        }
+#if 0
 
         case kDevicePalmM500:
             EmBankRegs::AddSubBank(new EmRegsVZPalmM500);
@@ -1253,3 +1258,7 @@ int EmDevice::GetDeviceID(const char* s) const {
 }
 
 bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }
+
+bool EmDevice::EmulatesDockStatus() const {
+    return !Supports68328() && fDeviceID != kDevicePalmM130;
+}

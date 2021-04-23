@@ -96,6 +96,11 @@ bool util::initializeSession(string file) {
     }
 
     if (!device->SupportsROM(reader)) {
+        delete device;
+        device = new EmDevice("PalmM130");
+    }
+
+    if (!device->SupportsROM(reader)) {
         cerr << "ROM not supported by Palm IIIc, Palm V or Palm m515" << endl;
 
         return false;
