@@ -136,6 +136,7 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsVZPalmM505.cpp \
 	emulator/hardware/EmRegsEZPalmV.cpp \
 	emulator/hardware/EmRegsEZPalmIIIc.cpp \
+	emulator/hardware/EmRegsMediaQ11xx.cpp \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
 	emulator/patch/EmPatchModule.cpp \
