@@ -17,6 +17,8 @@
 #include "EmPalmStructs.h"  // EmProxyHwrPalmI705PLDType
 #include "EmRegsVZ.h"
 
+#if 0
+
 class EmRegsVZPalmI705 : public EmRegsVZ {
    public:
     EmRegsVZPalmI705(void);
@@ -38,6 +40,8 @@ class EmRegsVZPalmI705 : public EmRegsVZ {
    private:
     EmSPISlave* fSPISlaveADC;
 };
+
+#endif
 
 class EmRegsVZPalmM125 : public EmRegsVZ {
    public:

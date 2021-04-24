@@ -873,10 +873,11 @@ void EmDevice::CreateRegs(void) const {
 #endif
 
         case kDevicePalmIIIc: {
+            EmBankRegs::AddSubBank(new EmRegsEZPalmIIIc);
+
             EmRegsFrameBuffer* framebuffer =
                 new EmRegsFrameBuffer(sed1375BaseAddress, sed1375VideoMemSize);
 
-            EmBankRegs::AddSubBank(new EmRegsEZPalmIIIc);
             EmBankRegs::AddSubBank(
                 new EmRegsSED1375(sed1375RegsAddr, sed1375BaseAddress, *framebuffer));
             EmBankRegs::AddSubBank(framebuffer);
@@ -927,8 +928,10 @@ void EmDevice::CreateRegs(void) const {
 #endif
 
         case kDevicePalmM130: {
-            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET);
             EmBankRegs::AddSubBank(new EmRegsVZPalmM130);
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET);
+
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
             break;
@@ -952,10 +955,11 @@ void EmDevice::CreateRegs(void) const {
 #endif
 
         case kDevicePalmM515: {
+            EmBankRegs::AddSubBank(new EmRegsVZPalmM505);
+
             EmRegsFrameBuffer* framebuffer =
                 new EmRegsFrameBuffer(sed1376VideoMemStart, sed1376VideoMemSize);
 
-            EmBankRegs::AddSubBank(new EmRegsVZPalmM505);
             EmBankRegs::AddSubBank(
                 new EmRegsSED1376PalmGeneric(sed1376RegsAddr, sed1376VideoMemStart, *framebuffer));
             EmBankRegs::AddSubBank(framebuffer);
