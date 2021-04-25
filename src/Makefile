@@ -188,6 +188,7 @@ SOURCE_TEST = \
 	test/SavestateLoader.cpp \
 	test/SaveChunkHelper.cpp \
 	test/LoadChunkHelper.cpp \
+	test/Fifo.cpp \
 	test/main.cpp
 
 SOURCE_SDL = \
