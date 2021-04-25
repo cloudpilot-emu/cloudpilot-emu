@@ -5,6 +5,10 @@
 #include "EmSession.h"
 #include "SessionImage.h"
 
+namespace {
+    constexpr const char* SUPPORTED_DEVICES[] = {"PalmIIIc", "PalmV", "m515", "PalmM130"};
+}
+
 bool util::readFile(string file, unique_ptr<uint8[]>& buffer, size_t& len) {
     fstream stream(file, ios_base::in);
     if (stream.fail()) return false;
@@ -83,25 +87,21 @@ bool util::initializeSession(string file) {
 
     util::analyzeRom(reader);
 
-    EmDevice* device = new EmDevice("PalmIIIc");
+    EmDevice* device = nullptr;
 
-    if (!device->SupportsROM(reader)) {
-        delete device;
-        device = new EmDevice("PalmV");
+    for (auto id : SUPPORTED_DEVICES) {
+        EmDevice* d = new EmDevice(id);
+
+        if (d->SupportsROM(reader)) {
+            device = d;
+            break;
+        }
+
+        delete d;
     }
 
-    if (!device->SupportsROM(reader)) {
-        delete device;
-        device = new EmDevice("m515");
-    }
-
-    if (!device->SupportsROM(reader)) {
-        delete device;
-        device = new EmDevice("PalmM130");
-    }
-
-    if (!device->SupportsROM(reader)) {
-        cerr << "ROM not supported by Palm IIIc, Palm V or Palm m515" << endl;
+    if (!device) {
+        cerr << "ROM not supported by Palm IIIc, Palm V, Palm m515 or Palm m130" << endl;
 
         return false;
     }

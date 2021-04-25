@@ -25,6 +25,9 @@ export class SessionItemComponent {
             case DeviceId.iiic:
                 return 'Palm IIIc';
 
+            case DeviceId.m130:
+                return 'Palm m130';
+
             default:
                 throw new Error('bad device ID');
         }
