@@ -15,6 +15,7 @@
 
 #include <algorithm>  // swap
 
+#include "ChunkHelper.h"
 #include "EmCPU68K.h"  // gCPU68K
 #include "EmCommon.h"
 #include "EmRegsFrameBuffer.h"
@@ -39,6 +40,8 @@
 #endif
 
 namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+
     template <typename T>
     bool IsEven(T t) {
         return ((t & 0x01) == 0);
@@ -1118,7 +1121,6 @@ EmRegsMediaQ11xx::EmRegsMediaQ11xx(EmRegsFrameBuffer& framebuffer, emuptr baseRe
       /*	fByteLanes (), */
       fLastAddress(EmMemNULL),
       fLastSize(0),
-      fSourceFifo(),
       fBlitInProgress(false),
       fCurXOffset(0),
       fCurYOffset(0),
@@ -1324,15 +1326,54 @@ void EmRegsMediaQ11xx::Save(Savestate& savestate) { DoSave(savestate); }
 
 void EmRegsMediaQ11xx::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
-void EmRegsMediaQ11xx::Load(SavestateLoader& loader) { loader.NotifyError(); }
+void EmRegsMediaQ11xx::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::regsMQ1xx);
+    if (!chunk) return;
 
-template <typename T>
-void EmRegsMediaQ11xx::DoSave(T& savestate) {
-    savestate.NotifyError();
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore RegsMediaQ11xx: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+
+    this->PrvUpdateByteLanes();
+    this->PrvGetGEState(kAllRegisters);
 }
 
 template <typename T>
-void EmRegsMediaQ11xx::DoSaveLoad(T& helper, uint32 version) {}
+void EmRegsMediaQ11xx::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsMQ1xx);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegsMediaQ11xx::DoSaveLoad(T& helper) {
+    helper.DoBuffer(fRegs.GetPtr(), fRegs.GetSize())
+        .Do32(fLastAddress)
+        .Do32(fLastSize)
+        .Do(typename T::Pack16() << fCurXOffset << fCurYOffset)
+        .Do(typename T::Pack16() << fLeadingSourcePixels << fTrailingSourcePixels)
+        .DoBuffer(fPatternPipe, 64 * sizeof(uint16))
+        .Do(typename T::Pack16() << fXPattern << fYPattern)
+        .DoBuffer(fSourcePipe, 64 * sizeof(uint16))
+        .Do(typename T::Pack16() << fSourcePipeIndex << fSourcePipeMax)
+        .Do16(fSourcePipeSkip)
+        .Do(typename T::Pack16() << fXSrc << fYSrc)
+        .Do(typename T::Pack16() << fXDest << fYDest)
+        .Do(typename T::BoolPack() << fBlitInProgress << fUsesPattern << fUsesSource);
+
+    fSourceFifo.DoSaveLoad(helper);
+}
 
 #if 0
 
@@ -2162,11 +2203,13 @@ void EmRegsMediaQ11xx::SourceFifoWrite(emuptr address, int size, uint32 value) {
 
     if (size == 4) {
         value = READ_REGISTER(sfREG[(address >> 2) & 0x0FF]);
-        fSourceFifo.push_back(value);
+        fSourceFifo.Push(value);
+
         this->PrvIncBlitterRun();
     } else if (size == 2 && lastSize == 2 && address == (lastAddress + 2)) {
         value = READ_REGISTER(sfREG[(address >> 2) & 0x0FF]);
-        fSourceFifo.push_back(value);
+        fSourceFifo.Push(value);
+
         this->PrvIncBlitterRun();
     }
 }
@@ -3002,18 +3045,15 @@ void EmRegsMediaQ11xx::PrvIllegalCommand(void) {}
 //		� EmRegsMediaQ11xx::PrvSrcFifoFilledSlots
 // ---------------------------------------------------------------------------
 
-int EmRegsMediaQ11xx::PrvSrcFifoFilledSlots(void) { return fSourceFifo.size() / 2; }
+int EmRegsMediaQ11xx::PrvSrcFifoFilledSlots(void) { return fSourceFifo.Size() / 2; }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::PrvGetSrcFifoSlot
 // ---------------------------------------------------------------------------
 
 void EmRegsMediaQ11xx::PrvGetSrcFifoSlot(uint32& a, uint32& b) {
-    a = fSourceFifo[0];
-    fSourceFifo.erase(fSourceFifo.begin());
-
-    b = fSourceFifo[0];
-    fSourceFifo.erase(fSourceFifo.begin());
+    a = fSourceFifo.Pop();
+    b = fSourceFifo.Pop();
 }
 
 // ---------------------------------------------------------------------------

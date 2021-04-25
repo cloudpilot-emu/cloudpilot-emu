@@ -175,7 +175,8 @@ SOURCE_EMU = \
 	emulator/SessionImage.cpp \
 	emulator/DbBackup.cpp \
 	emulator/CallbackManager.cpp \
-	emulator/DbInstaller.cpp
+	emulator/DbInstaller.cpp \
+	emulator/Fifo.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \

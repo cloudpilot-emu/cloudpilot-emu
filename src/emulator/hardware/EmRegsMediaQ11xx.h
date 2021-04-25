@@ -20,6 +20,7 @@
 #include "EmPalmStructs.h"  // EmProxyHwrMediaQ11xType
 #include "EmRegs.h"         // EmRegs
 #include "EmStructs.h"
+#include "Fifo.h"
 
 #define T_BASE 0x1F000000L   // 68KVZ for Palm platform
 #define MMIO_OFFSET 0x40000  // starts at 256K address
@@ -229,7 +230,7 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     void DoSave(T& savestate);
 
     template <typename T>
-    void DoSaveLoad(T& helper, uint32 version);
+    void DoSaveLoad(T& helper);
 
     void AddressError(emuptr address, long size, Bool forRead);
     void PrvUpdatePalette();
@@ -300,11 +301,11 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     EmProxyHwrMediaQ11xxType fRegs;
     GEState fState;
 
-    int fBytelanes[4];
+    int32 fBytelanes[4];
     emuptr fLastAddress;
-    int fLastSize;
+    int32 fLastSize;
 
-    vector<uint32> fSourceFifo;
+    Fifo fSourceFifo{32};
 
     // Values used while incrementally blitting.
 
