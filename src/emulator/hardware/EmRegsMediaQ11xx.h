@@ -224,6 +224,7 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     void GE02Write(emuptr address, int size, uint32 value);
     void SourceFifoWrite(emuptr address, int size, uint32 value);
     void invalidateWrite(emuptr address, int size, uint32 value);
+    void CPWrite(emuptr address, int size, uint32 value);
 
    private:
     template <typename T>
@@ -347,6 +348,7 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     uint16 fYDest;
 
     uint32 palette[256];
+    bool paletteDirty{true};
     EmRegsFrameBuffer& framebuffer;
 };
 

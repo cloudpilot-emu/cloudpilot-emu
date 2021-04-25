@@ -1160,7 +1160,10 @@ EmRegsMediaQ11xx::~EmRegsMediaQ11xx(void) {}
 //		� EmRegsMediaQ11xx::Initialize
 // ---------------------------------------------------------------------------
 
-void EmRegsMediaQ11xx::Initialize(void) { EmRegs::Initialize(); }
+void EmRegsMediaQ11xx::Initialize(void) {
+    EmRegs::Initialize();
+    paletteDirty = true;
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::Reset
@@ -1317,6 +1320,7 @@ void EmRegsMediaQ11xx::Reset(Bool hardwareReset) {
         fLastSize = 0;
 
         fBlitInProgress = false;
+        paletteDirty = true;
 
         this->PrvGetGEState(kAllRegisters);
     }
@@ -1343,6 +1347,8 @@ void EmRegsMediaQ11xx::Load(SavestateLoader& loader) {
 
     this->PrvUpdateByteLanes();
     this->PrvGetGEState(kAllRegisters);
+
+    paletteDirty = true;
 }
 
 template <typename T>
@@ -1587,8 +1593,7 @@ void EmRegsMediaQ11xx::SetSubBankHandlers(void) {
     INSTALL_HANDLER(MQRead, MQWrite, fpREG[0x37]);
 
     this->SetHandler((ReadFunction)&EmRegsMediaQ11xx::MQRead,
-                     (WriteFunction)&EmRegsMediaQ11xx::invalidateWrite, mq_addressof(cpREG),
-                     0x0400);
+                     (WriteFunction)&EmRegsMediaQ11xx::CPWrite, mq_addressof(cpREG), 0x0400);
 
     this->SetHandler((ReadFunction)&EmRegsMediaQ11xx::MQRead,
                      (WriteFunction)&EmRegsMediaQ11xx::SourceFifoWrite, mq_addressof(sfREG),
@@ -2053,6 +2058,13 @@ void EmRegsMediaQ11xx::invalidateWrite(emuptr address, int size, uint32 value) {
     gSystemState.MarkScreenDirty();
 }
 
+void EmRegsMediaQ11xx::CPWrite(emuptr address, int size, uint32 value) {
+    this->MQWrite(address, size, value);
+
+    gSystemState.MarkScreenDirty();
+    paletteDirty = true;
+}
+
 // ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::AddressError
 // ---------------------------------------------------------------------------
@@ -2068,10 +2080,7 @@ void EmRegsMediaQ11xx::AddressError(emuptr address, long size, Bool forRead) {
 // ---------------------------------------------------------------------------
 
 void EmRegsMediaQ11xx::PrvUpdatePalette() {
-    int32 bpp = this->PrvGetBPP();
-    int32 numColors = 1 << bpp;
-
-    for (int ii = 0; ii < numColors; ++ii) {
+    for (int ii = 0; ii < 256; ++ii) {
         uint32 reg = READ_REGISTER(cpREG[ii]);
 
         palette[ii] = 0xff000000 | (reg & (RED_MASK | GREEN_MASK | BLUE_MASK));
