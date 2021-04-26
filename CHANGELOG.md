@@ -1,3 +1,9 @@
+# Next version
+
+-   Handle pqa files in installation and backup.
+-   Palm m130 support.
+-   Workaround for dying service worker on Safari desktop.
+
 # Version 1.2.0
 
 -   Backup: export all applications and DBs on a device as
