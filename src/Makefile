@@ -148,6 +148,10 @@ SOURCE_EMU = \
 	emulator/savestate/SavestateProbe.cpp \
 	emulator/savestate/SavestateLoader.cpp \
 	emulator/savestate/Savestate.cpp \
+	emulator/suspend/SuspendManager.cpp \
+	emulator/suspend/SuspendContext.cpp \
+	emulator/suspend/SuspendContextClipboardPaste.cpp \
+	emulator/suspend/SuspendContextClipboardCopy.cpp \
 	emulator/EmSystemState.cpp \
 	emulator/Miscellaneous.cpp \
 	emulator/Marshall.cpp \
