@@ -20,6 +20,7 @@
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
 #include "SessionImage.h"
+#include "SuspendManager.h"
 
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 2;
@@ -412,15 +413,16 @@ uint32 EmSession::RunEmulation(uint32 maxCycles) {
     // known to the main loop here.
     uint64 cyclesBefore = systemCycles - extraCycles;
 
-    PumpEvents();
+    if (SuspendManager::IsSuspended()) {
+        systemCycles += maxCycles;
+    } else {
+        PumpEvents();
 
-    uint32 cycles = cpu->Execute(maxCycles);
-    systemCycles += cycles;
+        uint32 cycles = cpu->Execute(maxCycles);
+        systemCycles += cycles;
 
-    if (cpu->Stopped() && IsPowerOn())
-        logging::printf("WARNING: CPU in stopped state after RunEmulation");
-
-    CheckDayForRollover();
+        CheckDayForRollover();
+    }
 
     extraCycles = 0;
 

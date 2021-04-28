@@ -96,6 +96,7 @@ INCLUDE = \
 	-I./emulator/palm/Platform/Incs/Core/System \
 	-I./emulator/palm/Platform/Incs/Core/UI \
 	-I./emulator/palm/Platform/Incs/Libraries \
+	-I./emulator/suspend \
 	-I./emulator \
 	-I./zip
 
@@ -179,7 +180,8 @@ SOURCE_EMU = \
 	emulator/DbBackup.cpp \
 	emulator/CallbackManager.cpp \
 	emulator/DbInstaller.cpp \
-	emulator/Fifo.cpp
+	emulator/Fifo.cpp \
+	emulator/Feature.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \
