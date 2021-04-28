@@ -689,3 +689,38 @@ Err ExgDBRead(emuptr readProcP, emuptr deleteProcP, emuptr userDataP, LocalID* d
 
     RETURN_RESULT_VAL(Err);
 }
+
+void ClipboardAddItem(const ClipboardFormatType format, const void* ptr, UInt16 length) {
+    // Prepare the stack.
+    CALLER_SETUP("void", "const ClipboardFormatType format, const void* ptr, UInt16 length");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(ClipboardFormatType, format);
+    CALLER_PUT_PARAM_PTR(void, ptr, length, Marshal::kInput);
+    CALLER_PUT_PARAM_VAL(UInt16, length);
+
+    // Call the function.
+    sub.Call(sysTrapClipboardAddItem);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+}
+
+emuptr ClipboardGetItem(const ClipboardFormatType format, UInt16* length) {
+    // Prepare the stack.
+    CALLER_SETUP("emuptr", "const ClipboardFormatType format, UInt16* length");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(ClipboardFormatType, format);
+    CALLER_PUT_PARAM_REF(UInt16, length, Marshal::kInOut);
+
+    // Call the function.
+    sub.Call(sysTrapClipboardGetItem);
+
+    // Write back any "by ref" parameters.
+    CALLER_GET_PARAM_REF(length);
+
+    // Return the result.
+    RETURN_RESULT_VAL(emuptr);
+}

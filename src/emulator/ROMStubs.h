@@ -72,4 +72,7 @@ Err ExgDBWrite(emuptr writeProcP, emuptr userDataP, const Char* nameP, LocalID d
 Err ExgDBRead(emuptr readProcP, emuptr deleteProcP, emuptr userDataP, LocalID* dbIDP, UInt16 cardNo,
               Boolean* needResetP, Boolean keepDates);
 
+void ClipboardAddItem(const ClipboardFormatType format, const void* ptr, UInt16 length);
+emuptr ClipboardGetItem(const ClipboardFormatType format, UInt16* length);
+
 #endif /* _ROMSTUBS_H_ */

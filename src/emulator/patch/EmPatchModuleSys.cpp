@@ -5,12 +5,16 @@
 #include "EmPatchMgr.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
+#include "Feature.h"
 #include "Logging.h"
 #include "Marshal.h"
 #include "Miscellaneous.h"
 #include "PenEvent.h"
 #include "Platform.h"
 #include "ROMStubs.h"
+#include "SuspendContextClipboardCopy.h"
+#include "SuspendContextClipboardPaste.h"
+#include "SuspendManager.h"
 
 #define LOGGING 1
 #ifdef LOGGING
@@ -95,6 +99,16 @@ namespace {
         return kSkipROM;
     }
 
+    CallROMType HeadpatchClipboardGetItem() {
+        EmAssert(gSession);
+
+        if (Feature::GetClipboardIntegration() && !gSession->IsNested()) {
+            SuspendManager::Suspend<SuspendContextClipboardPaste>();
+        }
+
+        return kExecuteROM;
+    }
+
     void TailpatchFtrInit(void) {
         PRINTF("syscall: FtrInit");
 
@@ -169,7 +183,7 @@ namespace {
         PRINTF("syscall: UIInitialize");
     }
 
-    void TailpatchEvtSysEventAvail(void) {
+    void TailpatchEvtSysEventAvail() {
         // Boolean EvtSysEventAvail(Boolean ignorePenUps)
 
         CALLED_SETUP("Boolean", "Boolean ignorePenUps");
@@ -189,6 +203,40 @@ namespace {
         }
     }
 
+    void DispatchCopyClipboard() {
+        UInt16 length;
+        emuptr dataHdl = ClipboardGetItem(clipboardText, &length);
+
+        if (length > 0) {
+            emuptr dataPtr = MemHandleLock(dataHdl);
+
+            if (dataPtr) {
+                char dataCopy[length + 1];
+                memset(dataCopy, 0, length + 1);
+
+                EmMem_memcpy(static_cast<void*>(dataCopy), dataPtr, length);
+
+                SuspendManager::Suspend<SuspendContextClipboardCopy>(dataCopy);
+
+                MemHandleUnlock(dataHdl);
+            }
+        } else {
+            SuspendManager::Suspend<SuspendContextClipboardCopy>("");
+        }
+    }
+
+    void TailpatchClipboardAddItem() {
+        EmAssert(gSession);
+
+        if (Feature::GetClipboardIntegration() && !gSession->IsNested()) DispatchCopyClipboard();
+    }
+
+    void TailpatchClipboardAppendItem() {
+        EmAssert(gSession);
+
+        if (Feature::GetClipboardIntegration() && !gSession->IsNested()) DispatchCopyClipboard();
+    }
+
     ProtoPatchTableEntry protoPatchTable[] = {
         {sysTrapDmInit, HeadpatchDmInit, NULL},
         {sysTrapSysUIAppSwitch, HeadpatchSysUIAppSwitch, NULL},
@@ -199,6 +247,9 @@ namespace {
         {sysTrapUIInitialize, NULL, TailpatchUIInitialize},
         {sysTrapEvtSysEventAvail, NULL, TailpatchEvtSysEventAvail},
         {sysTrapHwrDockStatus, HeadpatchHwrDockStatus, NULL},
+        {sysTrapClipboardGetItem, HeadpatchClipboardGetItem, NULL},
+        {sysTrapClipboardAddItem, NULL, TailpatchClipboardAddItem},
+        {sysTrapClipboardAppendItem, NULL, TailpatchClipboardAppendItem},
         {0, NULL, NULL}};
 }  // namespace
 
