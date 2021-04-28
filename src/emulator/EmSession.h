@@ -68,7 +68,7 @@ class EmSession {
 
     void Deinitialize();
 
-    bool IsNested() const;
+    inline bool IsNested() const;
 
     void ReleaseBootKeys();
 
@@ -160,5 +160,14 @@ class EmSession {
 };
 
 extern EmSession* gSession;
+
+///////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////////
+
+bool EmSession::IsNested() const {
+    EmAssert(nestLevel >= 0);
+    return nestLevel > 0;
+}
 
 #endif  // _EM_SESSION_H

@@ -332,11 +332,6 @@ void EmSession::Reset(ResetType resetType) {
     }
 }
 
-bool EmSession::IsNested() const {
-    EmAssert(nestLevel >= 0);
-    return nestLevel > 0;
-}
-
 bool EmSession::IsPowerOn() { return !EmHAL::GetAsleep(); }
 
 bool EmSession::IsCpuStopped() {

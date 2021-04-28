@@ -9,7 +9,7 @@ class SuspendManager {
     friend SuspendContext;
 
    public:
-    static bool IsSuspended();
+    static inline bool IsSuspended();
 
     static SuspendContext& GetContext();
 
@@ -35,5 +35,7 @@ void SuspendManager::Suspend(Us... args) {
 
     context = new T(args...);
 }
+
+bool SuspendManager::IsSuspended() { return context != nullptr; }
 
 #endif  // _SUSPEND_MANAGER_H_

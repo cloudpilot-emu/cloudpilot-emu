@@ -4,8 +4,6 @@
 
 SuspendContext* SuspendManager::context{nullptr};
 
-bool SuspendManager::IsSuspended() { return context != nullptr; }
-
 SuspendContext& SuspendManager::GetContext() { return *context; }
 
 void SuspendManager::Resume() {
