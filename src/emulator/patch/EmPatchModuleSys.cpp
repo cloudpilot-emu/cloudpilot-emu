@@ -212,11 +212,11 @@ namespace {
 
             if (dataPtr) {
                 char dataCopy[length + 1];
-                memset(dataCopy, 0, length + 1);
+                dataCopy[length] = 0;
 
                 EmMem_memcpy(static_cast<void*>(dataCopy), dataPtr, length);
 
-                SuspendManager::Suspend<SuspendContextClipboardCopy>(dataCopy);
+                SuspendManager::Suspend<SuspendContextClipboardCopy>(Isolatin1ToUtf8(dataCopy));
 
                 MemHandleUnlock(dataHdl);
             }
