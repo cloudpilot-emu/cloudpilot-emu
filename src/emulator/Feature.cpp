@@ -1,7 +1,7 @@
 #include "Feature.h"
 
+#include "SuspendContext.h"
 #include "SuspendManager.h"
-#include "SuspentContext.h"
 
 bool Feature::clipboardIntegration{false};
 

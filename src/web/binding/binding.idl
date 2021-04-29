@@ -56,6 +56,11 @@ interface Cloudpilot {
     void RegisterPwmHandler(long handlerPtr);
 
     DbBackup StartBackup();
+
+    void SetClipboardIntegration(boolean toggle);
+
+    boolean IsSuspended();
+    [Ref] SuspendContext GetSuspendContext();
 };
 
 interface RomInfo {
@@ -95,4 +100,24 @@ interface DbBackup {
 
     VoidPtr GetArchivePtr();
     long GetArchiveSize();
+};
+
+interface SuspendContextClipboardCopy {
+    void Cancel();
+    void Resume();
+
+    [Const] DOMString GetClipboardContent();
+};
+
+interface SuspendContextClipboardPaste {
+    void Cancel();
+    void Resume([Const] DOMString clipboardContent);
+};
+
+interface SuspendContext {
+    long GetKind();
+    void Cancel();
+
+    [Ref] SuspendContextClipboardCopy AsContextClipboardCopy();
+    [Ref] SuspendContextClipboardPaste AsContextClipboardPaste();
 };

@@ -5,7 +5,7 @@
 
 SuspendContext::Kind SuspendContextClipboardPaste::GetKind() const { return Kind::clipboardPaste; }
 
-void SuspendContextClipboardPaste::Cancel() { Resume(""); }
+void SuspendContextClipboardPaste::Cancel() { TriggerResume(); }
 
 void SuspendContextClipboardPaste::Resume(const string clipboardContent) {
     string contentIsolatin1 = Utf8ToIsolatin1(clipboardContent, cbdMaxTextLength);

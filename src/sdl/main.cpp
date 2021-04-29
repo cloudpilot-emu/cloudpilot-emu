@@ -78,8 +78,7 @@ void handleSuspend() {
 
         switch (context.GetKind()) {
             case SuspendContext::Kind::clipboardCopy:
-                SDL_SetClipboardText(
-                    context.AsContextClipboardCopy().GetClipboardContent().c_str());
+                SDL_SetClipboardText(context.AsContextClipboardCopy().GetClipboardContent());
 
                 context.AsContextClipboardCopy().Resume();
 

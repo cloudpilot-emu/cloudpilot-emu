@@ -10,6 +10,8 @@
 #include "EmROMReader.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
+#include "Feature.h"
+#include "SuspendManager.h"
 
 namespace {
     unique_ptr<EmROMReader> createReader(void* buffer, long size) {
@@ -191,3 +193,9 @@ void Cloudpilot::RegisterPwmHandler(uint32 handlerPtr) {
 }
 
 DbBackup* Cloudpilot::StartBackup() { return new DbBackup(); }
+
+void Cloudpilot::SetClipboardIntegration(bool toggle) { Feature::SetClipboardIntegration(toggle); }
+
+bool Cloudpilot::IsSuspended() { return SuspendManager::IsSuspended(); }
+
+SuspendContext& Cloudpilot::GetSuspendContext() { return SuspendManager::GetContext(); }

@@ -9,4 +9,4 @@ void SuspendContextClipboardCopy::Cancel() { Resume(); }
 
 void SuspendContextClipboardCopy::Resume() { TriggerResume(); }
 
-string SuspendContextClipboardCopy::GetClipboardContent() { return clipboardContent; }
+const char* SuspendContextClipboardCopy::GetClipboardContent() { return clipboardContent.c_str(); }

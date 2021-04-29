@@ -1,8 +1,9 @@
+#include "SuspendContext.h"
+
 #include "EmCommon.h"
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendManager.h"
-#include "SuspentContext.h"
 
 SuspendContextClipboardCopy& SuspendContext::AsContextClipboardCopy() {
     EmAssert(GetKind() == Kind::clipboardCopy);

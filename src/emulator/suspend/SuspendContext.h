@@ -6,7 +6,7 @@ class SuspendContextClipboardPaste;
 
 class SuspendContext {
    public:
-    enum class Kind { clipboardCopy = 1, clipboardPaste = 2 };
+    enum Kind : int { clipboardCopy = 1, clipboardPaste = 2 };
 
    public:
     SuspendContext() = default;

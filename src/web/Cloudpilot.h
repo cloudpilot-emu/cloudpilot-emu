@@ -7,6 +7,7 @@
 #include "DbBackup.h"
 #include "EmDevice.h"
 #include "Frame.h"
+#include "SuspendContext.h"
 
 class Cloudpilot {
    public:
@@ -65,6 +66,11 @@ class Cloudpilot {
     void RegisterPwmHandler(uint32 handlerPtr);
 
     DbBackup* StartBackup();
+
+    void SetClipboardIntegration(bool toggle);
+
+    bool IsSuspended();
+    SuspendContext& GetSuspendContext();
 
    private:
     Frame frame{1024 * 128};

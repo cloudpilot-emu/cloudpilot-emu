@@ -21,6 +21,11 @@ export const enum DbInstallResult {
     needsReboot = 2,
 }
 
+export const enum SuspendKind {
+    clipboardCopy = 1,
+    clipboardPaste = 2,
+}
+
 export interface RomInfo {
     CardVersion(): number;
     CardName(): string;
@@ -86,6 +91,11 @@ export interface Cloudpilot {
     RegisterPwmHandler(handlerPtr: number): void;
 
     StartBackup(): DbBackup;
+
+    SetClipboardIntegration(toggle: boolean): void;
+
+    IsSuspended(): boolean;
+    GetSuspendContext(): SuspendContext;
 }
 
 export interface Frame {
@@ -112,4 +122,24 @@ export interface DbBackup {
 
     GetArchivePtr(): VoidPtr;
     GetArchiveSize(): number;
+}
+
+interface SuspendContextClipboardCopy {
+    Cancel(): void;
+    Resume(): void;
+
+    GetClipboardContent(): string;
+}
+
+interface SuspendContextClipboardPaste {
+    Cancel(): void;
+    Resume(clipboardContent: string);
+}
+
+interface SuspendContext {
+    GetKind(): SuspendKind;
+    Cancel(): void;
+
+    AsContextClipboardCopy(): SuspendContextClipboardCopy;
+    AsContextClipboardPaste(): SuspendContextClipboardPaste;
 }

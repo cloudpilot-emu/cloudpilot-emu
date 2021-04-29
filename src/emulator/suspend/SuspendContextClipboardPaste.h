@@ -2,7 +2,7 @@
 #define _SUSPEND_CONTEXT_CLIPBOARD_PASTE_H_
 
 #include "EmCommon.h"
-#include "SuspentContext.h"
+#include "SuspendContext.h"
 
 class SuspendContextClipboardPaste : public SuspendContext {
    public:

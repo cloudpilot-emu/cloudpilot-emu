@@ -2,7 +2,7 @@
 #define _SUSPEND_CONTEXT_CLIPBOARD_COPY_H_
 
 #include "EmCommon.h"
-#include "SuspentContext.h"
+#include "SuspendContext.h"
 
 class SuspendContextClipboardCopy : public SuspendContext {
    public:
@@ -14,7 +14,7 @@ class SuspendContextClipboardCopy : public SuspendContext {
 
     void Resume();
 
-    string GetClipboardContent();
+    const char* GetClipboardContent();
 
    private:
     const string clipboardContent;
