@@ -133,7 +133,7 @@ interface SuspendContextClipboardCopy {
 
 interface SuspendContextClipboardPaste {
     Cancel(): void;
-    Resume(clipboardContent: string);
+    Resume(clipboardContent: string): void;
 }
 
 interface SuspendContext {

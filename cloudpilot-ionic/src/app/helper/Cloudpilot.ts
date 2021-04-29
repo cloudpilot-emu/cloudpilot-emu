@@ -10,13 +10,23 @@ import createModule, {
     DbInstallResult,
     Module,
     PalmButton,
+    SuspendContextClipboardCopy,
+    SuspendContextClipboardPaste,
+    SuspendKind,
     VoidPtr,
 } from '../../../../src';
 
 import { DeviceId } from '../model/DeviceId';
 import { Event } from 'microevent.ts';
 
-export { PalmButton, DbBackup, DbInstallResult } from '../../../../src';
+export {
+    PalmButton,
+    DbBackup,
+    DbInstallResult,
+    SuspendKind,
+    SuspendContextClipboardCopy,
+    SuspendContextClipboardPaste,
+} from '../../../../src';
 
 export interface RomInfo {
     cardVersion: number;
@@ -322,6 +332,36 @@ export class Cloudpilot {
         const ptr = this.module.getPointer(dbBackup.GetArchivePtr());
 
         return this.module.HEAPU8.subarray(ptr, ptr + size).slice();
+    }
+
+    @guard()
+    setClipboardIntegration(toggle: boolean): void {
+        this.cloudpilot.SetClipboardIntegration(toggle);
+    }
+
+    @guard()
+    isSuspended(): boolean {
+        return this.cloudpilot.IsSuspended();
+    }
+
+    @guard()
+    getSuspendKind(): SuspendKind {
+        return this.cloudpilot.GetSuspendContext().GetKind();
+    }
+
+    @guard()
+    cancelSuspend(): void {
+        this.cloudpilot.GetSuspendContext().Cancel();
+    }
+
+    @guard()
+    getSuspendContextClipboardCopy(): SuspendContextClipboardCopy {
+        return this.wrap(this.cloudpilot.GetSuspendContext().AsContextClipboardCopy());
+    }
+
+    @guard()
+    getSuspendContextClipboardPaste(): SuspendContextClipboardPaste {
+        return this.wrap(this.cloudpilot.GetSuspendContext().AsContextClipboardPaste());
     }
 
     private copyIn(data: Uint8Array): VoidPtr {

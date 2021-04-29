@@ -243,7 +243,11 @@ void EmSession::Load(SavestateLoader& loader) {
     RecalculateClocksPerSecond();
 }
 
-bool EmSession::Save() { return savestate.Save(*this); }
+bool EmSession::Save() {
+    if (SuspendManager::IsSuspended()) return false;
+
+    return savestate.Save(*this);
+}
 
 bool EmSession::Load(size_t size, uint8* buffer) {
     SavestateLoader loader;

@@ -4,12 +4,14 @@ import { clearStoredSession, getStoredSession, setStoredSession } from '../helpe
 
 import { AlertService } from 'src/app/service/alert.service';
 import { Average } from './../helper/Average';
+import { ClipboardService } from './clipboard.service';
 import { EmulationStateService } from './emulation-state.service';
 import { EmulationStatistics } from './../model/EmulationStatistics';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { Fifo } from './../helper/Fifo';
 import { FileService } from 'src/app/service/file.service';
+import { KvsService } from './kvs.service';
 import { LoadingController } from '@ionic/angular';
 import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
@@ -64,7 +66,9 @@ export class EmulationService {
         private errorService: ErrorService,
         private fileService: FileService,
         private alertService: AlertService,
-        private modalWatcher: ModalWatcherService
+        private modalWatcher: ModalWatcherService,
+        private clipboardService: ClipboardService,
+        private kvsService: KvsService
     ) {
         this.canvas.width = 160;
         this.canvas.height = 160;
@@ -168,6 +172,10 @@ export class EmulationService {
             }
 
             this.cloudpilotInstance = await this.cloudpilot;
+
+            this.cloudpilotInstance.setClipboardIntegration(
+                this.kvsService.kvs.clipboardIntegration && this.clipboardService.isSupported()
+            );
 
             this.clockEmulator = performance.now();
 
@@ -401,6 +409,9 @@ export class EmulationService {
 
         if (this.errorService.hasFatalError() || timestamp < this.clockEmulator) return;
 
+        const wasSuspended = this.cloudpilotInstance.isSuspended();
+        let isSuspended = false;
+
         // Scale the clock by the calculated emulation speed
         this.cloudpilotInstance.setClockFactor(this.emulationSpeed);
 
@@ -415,6 +426,12 @@ export class EmulationService {
         let cycles = 0;
         while (cycles < cyclesToRun) {
             cycles += this.cloudpilotInstance.runEmulation(Math.ceil(cyclesToRun - cycles));
+
+            if (this.cloudpilotInstance.isSuspended()) {
+                isSuspended = true;
+
+                break;
+            }
         }
 
         const virtualTimePassed = (cycles / this.cloudpilotInstance.cyclesPerSecond()) * 1000;
@@ -437,6 +454,11 @@ export class EmulationService {
 
         // Normalize the speed an apply hysteresis
         this.updateEmulationSpeed(this.speedAverage.calculateAverage());
+
+        if (isSuspended && !wasSuspended) {
+            this.clipboardService.handleSuspend(this.cloudpilotInstance);
+            return;
+        }
 
         const powerOff = this.cloudpilotInstance.isPowerOff();
         const uiInitialized = this.cloudpilotInstance.isUiInitialized();

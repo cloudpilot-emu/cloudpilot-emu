@@ -26,8 +26,13 @@
     </ion-item>
 
     <ion-item lines="inset">
-      <ion-label>Show Statistics</ion-label>
+      <ion-label>Show statistics</ion-label>
       <ion-toggle formControlName="showStatistics"></ion-toggle>
+    </ion-item>
+
+    <ion-item lines="inset" *ngIf="clipboardService.isSupported()">
+      <ion-label>Clipboard integration</ion-label>
+      <ion-toggle formControlName="clipboardIntegration"></ion-toggle>
     </ion-item>
   </form>
 

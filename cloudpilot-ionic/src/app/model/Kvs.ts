@@ -3,4 +3,5 @@ export interface Kvs {
     volume: number;
     didShowInvitation?: boolean;
     showStatistics: boolean;
+    clipboardIntegration: boolean;
 }
