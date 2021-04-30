@@ -5,6 +5,8 @@ import { Injectable } from '@angular/core';
 import { InstallationMode } from '../model/InstallationMode';
 import { KvsService } from './kvs.service';
 
+const SERVICE_WORKER_KEEPALIVE_INTERVAL = 15 * 60 * 1000;
+
 declare global {
     interface Navigator {
         standalone?: boolean;
@@ -63,7 +65,9 @@ const INVITATION_IOS = `
     providedIn: 'root',
 })
 export class PwaService {
-    constructor(private kvsService: KvsService, private alertService: AlertService) {}
+    constructor(private kvsService: KvsService, private alertService: AlertService) {
+        this.serviceWorkerKeepalive();
+    }
 
     promptForInstall(): boolean {
         return (isIOS || isAndroid) && this.installationMode === InstallationMode.web;
@@ -111,6 +115,20 @@ export class PwaService {
 
         return InstallationMode.web;
     }
+
+    private serviceWorkerKeepalive = async () => {
+        if (navigator.serviceWorker) {
+            try {
+                const registration = await navigator.serviceWorker.getRegistration();
+
+                if (registration?.active?.postMessage) {
+                    registration.active.postMessage({});
+                }
+            } catch (e) {}
+        }
+
+        setTimeout(this.serviceWorkerKeepalive, SERVICE_WORKER_KEEPALIVE_INTERVAL);
+    };
 
     private installationMode: InstallationMode = this.determineInstallationMode();
 }

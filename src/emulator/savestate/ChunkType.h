@@ -12,7 +12,8 @@ enum class ChunkType : uint32 {
     regsVZ = 0x0090,
     regsFrameBuffer = 0x00a0,
     regsSED1376 = 0x00b0,
-    regsSED1375 = 0x00c0
+    regsSED1375 = 0x00c0,
+    regsMQ1xx = 0x00d0
 };
 
 #endif  // _CHUNK_TYPE_H_

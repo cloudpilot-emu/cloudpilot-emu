@@ -16,6 +16,18 @@
 
 #include "EmCommon.h"
 
+// convert host Int16 to network Int16
+#define NetHToNS(x) (x)
+
+// convert host long to network long
+#define NetHToNL(x) (x)
+
+// convert network Int16 to host Int16
+#define NetNToHS(x) (x)
+
+// convert network long to host long
+#define NetNToHL(x) (x)
+
 Err FtrGet(UInt32 creator, UInt16 featureNum, UInt32* valueP);
 Err FtrSet(UInt32 creator, UInt16 featureNum, UInt32 newValue);
 
@@ -68,16 +80,11 @@ LocalIDKind MemLocalIDKind(LocalID local);
 emuptr MemLocalIDToGlobal(LocalID local, UInt16 cardNo);
 UInt32 MemPtrSize(emuptr p);
 
-// convert host Int16 to network Int16
-#define NetHToNS(x) (x)
+Err ExgDBWrite(emuptr writeProcP, emuptr userDataP, const Char* nameP, LocalID dbID, UInt16 cardNo);
+Err ExgDBRead(emuptr readProcP, emuptr deleteProcP, emuptr userDataP, LocalID* dbIDP, UInt16 cardNo,
+              Boolean* needResetP, Boolean keepDates);
 
-// convert host long to network long
-#define NetHToNL(x) (x)
-
-// convert network Int16 to host Int16
-#define NetNToHS(x) (x)
-
-// convert network long to host long
-#define NetNToHL(x) (x)
+void ClipboardAddItem(const ClipboardFormatType format, const void* ptr, UInt16 length);
+emuptr ClipboardGetItem(const ClipboardFormatType format, UInt16* length);
 
 #endif /* _ROMSTUBS_H_ */

@@ -68,7 +68,7 @@ class EmSession {
 
     void Deinitialize();
 
-    bool IsNested() const;
+    inline bool IsNested() const;
 
     void ReleaseBootKeys();
 
@@ -97,6 +97,8 @@ class EmSession {
 
     bool HasButtonEvent();
     ButtonEvent NextButtonEvent();
+
+    void TriggerDeadMansSwitch();
 
    private:
     template <typename T>
@@ -153,8 +155,19 @@ class EmSession {
     unique_ptr<uint8[]> romImage;
     size_t romSize{0};
     Savestate savestate;
+
+    bool deadMansSwitch{false};
 };
 
 extern EmSession* gSession;
+
+///////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////////
+
+bool EmSession::IsNested() const {
+    EmAssert(nestLevel >= 0);
+    return nestLevel > 0;
+}
 
 #endif  // _EM_SESSION_H

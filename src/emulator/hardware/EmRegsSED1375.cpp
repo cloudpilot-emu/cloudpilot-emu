@@ -324,7 +324,7 @@ bool EmRegsSED1375::CopyLCDFrame(Frame& frame) {
     frame.margin = 0;
     frame.bytesPerLine = width * 3;
 
-    if (3 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
+    if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
     uint32* buffer = reinterpret_cast<uint32*>(frame.GetBuffer());
 
     switch (bpp) {

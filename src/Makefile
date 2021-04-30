@@ -27,7 +27,7 @@ CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17 -fno-exceptions
 CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
 
-CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions -s USE_SDL=2 -s USE_SDL_IMAGE=2
+CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions -s USE_SDL=2 -s USE_SDL_IMAGE=2 -D_POSIX_SOURCE
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)
 
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined
@@ -62,8 +62,7 @@ LDFLAGS_EMCC_WEB = -O3 -Wno-version-check -flto \
 	-s ALLOW_MEMORY_GROWTH=1 \
 	-s INITIAL_MEMORY=67108864 \
 	-s ALLOW_TABLE_GROWTH=1 \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS=["ccall","addFunction"] \
-	-s LLD_REPORT_UNDEFINED
+	-s EXTRA_EXPORTED_RUNTIME_METHODS=["ccall","addFunction"]
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps
@@ -97,13 +96,16 @@ INCLUDE = \
 	-I./emulator/palm/Platform/Incs/Core/System \
 	-I./emulator/palm/Platform/Incs/Core/UI \
 	-I./emulator/palm/Platform/Incs/Libraries \
-	-I./emulator
+	-I./emulator/suspend \
+	-I./emulator \
+	-I./zip
 
 SOURCE_C = \
 	emulator/uae/cpudefs.c \
 	emulator/uae/cpuemu.c \
 	emulator/uae/cpustbl.c \
-	emulator/palm/Platform/Core/System/Src/Crc.c
+	emulator/palm/Platform/Core/System/Src/Crc.c \
+	zip/zip.c
 
 SOURCE_CPP = \
 	$(shell find . -type f -name '*.cpp' -and -not -name $(notdir $(WEBIDL_BINDING_CXX)) | sed 's/^\.\///g') \
@@ -134,6 +136,8 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsVZPalmM505.cpp \
 	emulator/hardware/EmRegsEZPalmV.cpp \
 	emulator/hardware/EmRegsEZPalmIIIc.cpp \
+	emulator/hardware/EmRegsMediaQ11xx.cpp \
+	emulator/hardware/EmRegsVZM1xx.cpp \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
 	emulator/patch/EmPatchModule.cpp \
@@ -146,6 +150,10 @@ SOURCE_EMU = \
 	emulator/savestate/SavestateProbe.cpp \
 	emulator/savestate/SavestateLoader.cpp \
 	emulator/savestate/Savestate.cpp \
+	emulator/suspend/SuspendManager.cpp \
+	emulator/suspend/SuspendContext.cpp \
+	emulator/suspend/SuspendContextClipboardPaste.cpp \
+	emulator/suspend/SuspendContextClipboardCopy.cpp \
 	emulator/EmSystemState.cpp \
 	emulator/Miscellaneous.cpp \
 	emulator/Marshall.cpp \
@@ -170,7 +178,11 @@ SOURCE_EMU = \
 	emulator/ROMStubs.cpp \
 	emulator/Logging.cpp \
 	emulator/SessionImage.cpp \
-	emulator/DbBackup.cpp
+	emulator/DbBackup.cpp \
+	emulator/CallbackManager.cpp \
+	emulator/DbInstaller.cpp \
+	emulator/Fifo.cpp \
+	emulator/Feature.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \
@@ -182,6 +194,7 @@ SOURCE_TEST = \
 	test/SavestateLoader.cpp \
 	test/SaveChunkHelper.cpp \
 	test/LoadChunkHelper.cpp \
+	test/Fifo.cpp \
 	test/main.cpp
 
 SOURCE_SDL = \

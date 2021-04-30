@@ -6,6 +6,7 @@ import { StorageService } from './storage.service';
 const DEFAULTS: Kvs = {
     volume: 0.5,
     showStatistics: false,
+    clipboardIntegration: false,
 };
 
 @Injectable({

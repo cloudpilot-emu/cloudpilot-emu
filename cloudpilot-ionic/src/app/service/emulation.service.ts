@@ -1,23 +1,25 @@
-import { AlertController, LoadingController, ModalController } from '@ionic/angular';
-import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
-import { DeviceId, isColor } from '../model/DeviceId';
+import { Cloudpilot, DbInstallResult, PalmButton } from '../helper/Cloudpilot';
 import { Injectable, NgZone } from '@angular/core';
 import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { Average } from './../helper/Average';
+import { ClipboardService } from './clipboard.service';
 import { EmulationStateService } from './emulation-state.service';
 import { EmulationStatistics } from './../model/EmulationStatistics';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { Fifo } from './../helper/Fifo';
 import { FileService } from 'src/app/service/file.service';
+import { KvsService } from './kvs.service';
+import { LoadingController } from '@ionic/angular';
 import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
 import { PwmUpdate } from './../helper/Cloudpilot';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
+import { isColor } from '../model/DeviceId';
 
 export const GRAYSCALE_PALETTE_RGBA = [
     0xffd2d2d2,
@@ -64,7 +66,9 @@ export class EmulationService {
         private errorService: ErrorService,
         private fileService: FileService,
         private alertService: AlertService,
-        private modalWatcher: ModalWatcherService
+        private modalWatcher: ModalWatcherService,
+        private clipboardService: ClipboardService,
+        private kvsService: KvsService
     ) {
         this.canvas.width = 160;
         this.canvas.height = 160;
@@ -169,6 +173,10 @@ export class EmulationService {
 
             this.cloudpilotInstance = await this.cloudpilot;
 
+            this.cloudpilotInstance.setClipboardIntegration(
+                this.kvsService.kvs.clipboardIntegration && this.clipboardService.isSupported()
+            );
+
             this.clockEmulator = performance.now();
 
             this.ngZone.runOutsideAngular(
@@ -259,8 +267,8 @@ export class EmulationService {
         return this.uiInitialized;
     }
 
-    installFile(data: Uint8Array): Promise<number> {
-        return this.cloudpilot.then((c) => c.installFile(data));
+    installDb(data: Uint8Array): Promise<DbInstallResult> {
+        return this.cloudpilot.then((c) => c.installDb(data));
     }
 
     getCanvas(): HTMLCanvasElement {
@@ -401,6 +409,9 @@ export class EmulationService {
 
         if (this.errorService.hasFatalError() || timestamp < this.clockEmulator) return;
 
+        const wasSuspended = this.cloudpilotInstance.isSuspended();
+        let isSuspended = false;
+
         // Scale the clock by the calculated emulation speed
         this.cloudpilotInstance.setClockFactor(this.emulationSpeed);
 
@@ -415,6 +426,12 @@ export class EmulationService {
         let cycles = 0;
         while (cycles < cyclesToRun) {
             cycles += this.cloudpilotInstance.runEmulation(Math.ceil(cyclesToRun - cycles));
+
+            if (this.cloudpilotInstance.isSuspended()) {
+                isSuspended = true;
+
+                break;
+            }
         }
 
         const virtualTimePassed = (cycles / this.cloudpilotInstance.cyclesPerSecond()) * 1000;
@@ -437,6 +454,11 @@ export class EmulationService {
 
         // Normalize the speed an apply hysteresis
         this.updateEmulationSpeed(this.speedAverage.calculateAverage());
+
+        if (isSuspended && !wasSuspended) {
+            this.clipboardService.handleSuspend(this.cloudpilotInstance);
+            return;
+        }
 
         const powerOff = this.cloudpilotInstance.isPowerOff();
         const uiInitialized = this.cloudpilotInstance.isUiInitialized();

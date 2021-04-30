@@ -16,8 +16,12 @@
 #include "EmDevice.h"
 #include "EmROMReader.h"
 #include "EmSession.h"
+#include "Feature.h"
 #include "MainLoop.h"
 #include "SessionImage.h"
+#include "SuspendContextClipboardCopy.h"
+#include "SuspendContextClipboardPaste.h"
+#include "SuspendManager.h"
 #include "common.h"
 #include "util.h"
 
@@ -67,6 +71,31 @@ void loadSavestate(string file) {
     }
 }
 
+#ifndef __EMSCRIPTEN__
+void handleSuspend() {
+    if (SuspendManager::IsSuspended()) {
+        SuspendContext& context = SuspendManager::GetContext();
+
+        switch (context.GetKind()) {
+            case SuspendContext::Kind::clipboardCopy:
+                SDL_SetClipboardText(context.AsContextClipboardCopy().GetClipboardContent());
+
+                context.AsContextClipboardCopy().Resume();
+
+                break;
+
+            case SuspendContext::Kind::clipboardPaste: {
+                const char* clipboardContent = SDL_GetClipboardText();
+
+                context.AsContextClipboardPaste().Resume(clipboardContent ? clipboardContent : "");
+
+                break;
+            }
+        }
+    }
+}
+#endif
+
 int main(int argc, const char** argv) {
     if (argc != 2 && argc != 3 && argc != 4) {
         cerr << "usage: cloudpalm <romimage.rom> [memory.img] [savestate.bin]" << endl;
@@ -111,9 +140,14 @@ int main(int argc, const char** argv) {
 #else
     Cli::Start();
 
+    Feature::SetClipboardIntegration(true);
+
     while (mainLoop.IsRunning()) {
         mainLoop.Cycle();
+
         if (Cli::Execute()) break;
+
+        handleSuspend();
     };
 
     Cli::Stop();

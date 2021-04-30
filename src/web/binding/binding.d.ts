@@ -15,6 +15,17 @@ export const enum PalmButton {
     cradle = 7,
 }
 
+export const enum DbInstallResult {
+    failure = -1,
+    success = 1,
+    needsReboot = 2,
+}
+
+export const enum SuspendKind {
+    clipboardCopy = 1,
+    clipboardPaste = 2,
+}
+
 export interface RomInfo {
     CardVersion(): number;
     CardName(): string;
@@ -57,7 +68,7 @@ export interface Cloudpilot {
     ResetNoExtensions(): void;
     ResetHard(): void;
 
-    InstallFile(buffer: VoidPtr, len: number): number;
+    InstallDb(buffer: VoidPtr, len: number): DbInstallResult;
 
     GetPalette2bitMapping(): number;
 
@@ -78,6 +89,13 @@ export interface Cloudpilot {
     SetHotsyncName(name: string): void;
 
     RegisterPwmHandler(handlerPtr: number): void;
+
+    StartBackup(): DbBackup;
+
+    SetClipboardIntegration(toggle: boolean): void;
+
+    IsSuspended(): boolean;
+    GetSuspendContext(): SuspendContext;
 }
 
 export interface Frame {
@@ -89,4 +107,39 @@ export interface Frame {
 
     GetBuffer(): VoidPtr;
     GetBufferSize(): number;
+}
+
+export interface DbBackup {
+    Init(): boolean;
+
+    IsInProgress(): boolean;
+    IsDone(): boolean;
+
+    GetCurrentDatabase(): string;
+
+    Save(): boolean;
+    Skip(): void;
+
+    GetArchivePtr(): VoidPtr;
+    GetArchiveSize(): number;
+}
+
+interface SuspendContextClipboardCopy {
+    Cancel(): void;
+    Resume(): void;
+
+    GetClipboardContent(): string;
+}
+
+interface SuspendContextClipboardPaste {
+    Cancel(): void;
+    Resume(clipboardContent: string): void;
+}
+
+interface SuspendContext {
+    GetKind(): SuspendKind;
+    Cancel(): void;
+
+    AsContextClipboardCopy(): SuspendContextClipboardCopy;
+    AsContextClipboardPaste(): SuspendContextClipboardPaste;
 }

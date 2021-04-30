@@ -4,12 +4,29 @@
 // tslint:disable-next-line: no-reference
 /// <reference path="../../../node_modules/@types/emscripten/index.d.ts"/>
 
-import createModule, { Cloudpilot as CloudpilotNative, Module, PalmButton, VoidPtr } from '../../../../src';
+import createModule, {
+    Cloudpilot as CloudpilotNative,
+    DbBackup,
+    DbInstallResult,
+    Module,
+    PalmButton,
+    SuspendContextClipboardCopy,
+    SuspendContextClipboardPaste,
+    SuspendKind,
+    VoidPtr,
+} from '../../../../src';
 
 import { DeviceId } from '../model/DeviceId';
 import { Event } from 'microevent.ts';
 
-export { PalmButton } from '../../../../src';
+export {
+    PalmButton,
+    DbBackup,
+    DbInstallResult,
+    SuspendKind,
+    SuspendContextClipboardCopy,
+    SuspendContextClipboardPaste,
+} from '../../../../src';
 
 export interface RomInfo {
     cardVersion: number;
@@ -34,7 +51,7 @@ export interface PwmUpdate {
     dutyCycle: number;
 }
 
-const SUPPORTED_DEVICES = [DeviceId.palmV, DeviceId.m515, DeviceId.iiic];
+const SUPPORTED_DEVICES = [DeviceId.palmV, DeviceId.m515, DeviceId.iiic, DeviceId.m130];
 
 function guard(): any {
     return (target: any, propertyKey: string, desc: PropertyDescriptor) => {
@@ -209,10 +226,10 @@ export class Cloudpilot {
     }
 
     @guard()
-    installFile(data: Uint8Array): number {
+    installDb(data: Uint8Array): DbInstallResult {
         const buffer = this.copyIn(data);
 
-        const result = this.cloudpilot.InstallFile(buffer, data.length);
+        const result = this.cloudpilot.InstallDb(buffer, data.length);
 
         this.cloudpilot.Free(buffer);
 
@@ -297,6 +314,56 @@ export class Cloudpilot {
         this.cloudpilot.SetHotsyncName(name);
     }
 
+    async backup<T>(worker: (dbBackup: DbBackup) => Promise<T>): Promise<T> {
+        const dbBackup = this.guard(() => this.cloudpilot.StartBackup());
+
+        try {
+            return await worker(this.wrap(dbBackup));
+        } finally {
+            this.module.destroy(dbBackup);
+        }
+    }
+
+    getArchive(dbBackup: DbBackup): Uint8Array | undefined {
+        const size = dbBackup.GetArchiveSize();
+
+        if (size <= 0) return undefined;
+
+        const ptr = this.module.getPointer(dbBackup.GetArchivePtr());
+
+        return this.module.HEAPU8.subarray(ptr, ptr + size).slice();
+    }
+
+    @guard()
+    setClipboardIntegration(toggle: boolean): void {
+        this.cloudpilot.SetClipboardIntegration(toggle);
+    }
+
+    @guard()
+    isSuspended(): boolean {
+        return this.cloudpilot.IsSuspended();
+    }
+
+    @guard()
+    getSuspendKind(): SuspendKind {
+        return this.cloudpilot.GetSuspendContext().GetKind();
+    }
+
+    @guard()
+    cancelSuspend(): void {
+        this.cloudpilot.GetSuspendContext().Cancel();
+    }
+
+    @guard()
+    getSuspendContextClipboardCopy(): SuspendContextClipboardCopy {
+        return this.wrap(this.cloudpilot.GetSuspendContext().AsContextClipboardCopy());
+    }
+
+    @guard()
+    getSuspendContextClipboardPaste(): SuspendContextClipboardPaste {
+        return this.wrap(this.cloudpilot.GetSuspendContext().AsContextClipboardPaste());
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);
@@ -304,6 +371,20 @@ export class Cloudpilot {
         this.module.HEAP8.subarray(bufferPtr, bufferPtr + data.length).set(data);
 
         return buffer;
+    }
+
+    private wrap<T extends object>(unguarded: T): T {
+        return new Proxy<T>(unguarded, {
+            get: (target: T, p: string) => {
+                const val = target[p as keyof T];
+
+                if (typeof val !== 'function') {
+                    return val;
+                }
+
+                return (...args: Array<any>) => this.guard(() => val.apply(target, args));
+            },
+        });
     }
 
     private guard<T>(fn: () => T) {

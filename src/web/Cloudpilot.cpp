@@ -3,12 +3,15 @@
 #include <cstdlib>
 
 #include "ButtonEvent.h"
+#include "DbInstaller.h"
 #include "EmDevice.h"
 #include "EmFileImport.h"
 #include "EmHAL.h"
 #include "EmROMReader.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
+#include "Feature.h"
+#include "SuspendManager.h"
 
 namespace {
     unique_ptr<EmROMReader> createReader(void* buffer, long size) {
@@ -143,8 +146,8 @@ void Cloudpilot::ResetNoExtensions() { gSession->Reset(EmSession::ResetType::noe
 
 void Cloudpilot::ResetHard() { gSession->Reset(EmSession::ResetType::hard); }
 
-int Cloudpilot::InstallFile(void* buffer, size_t len) {
-    return EmFileImport::LoadPalmFile(static_cast<uint8*>(buffer), len, kMethodHomebrew);
+int Cloudpilot::InstallDb(void* buffer, size_t len) {
+    return static_cast<int>(DbInstaller::Install(len, static_cast<uint8*>(buffer)));
 }
 
 int Cloudpilot::GetPalette2bitMapping() { return EmHAL::GetLCD2bitMapping(); }
@@ -188,3 +191,11 @@ void Cloudpilot::RegisterPwmHandler(uint32 handlerPtr) {
 
     EmHAL::onPwmChange.AddHandler(reinterpret_cast<handler_ptr>(handlerPtr));
 }
+
+DbBackup* Cloudpilot::StartBackup() { return new DbBackup(); }
+
+void Cloudpilot::SetClipboardIntegration(bool toggle) { Feature::SetClipboardIntegration(toggle); }
+
+bool Cloudpilot::IsSuspended() { return SuspendManager::IsSuspended(); }
+
+SuspendContext& Cloudpilot::GetSuspendContext() { return SuspendManager::GetContext(); }

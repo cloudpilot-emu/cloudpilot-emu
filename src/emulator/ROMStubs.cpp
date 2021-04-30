@@ -649,3 +649,78 @@ Err DmDatabaseInfo(UInt16 cardNo, LocalID dbID, Char* nameP, UInt16* attributesP
     // Return the result.
     RETURN_RESULT_VAL(Err);
 }
+
+Err ExgDBWrite(emuptr writeProcP, emuptr userDataP, const Char* nameP, LocalID dbID,
+               UInt16 cardNo) {
+    CALLER_SETUP("Err",
+                 "ExgDBWriteProcPtr writeProcP, void* userDataP, const char* nameP, LocalID dbID, "
+                 "UInt16 cardNo");
+
+    CALLER_PUT_PARAM_VAL(emuptr, writeProcP);
+    CALLER_PUT_PARAM_VAL(emuptr, userDataP);
+    CALLER_PUT_PARAM_STR(Char, nameP);
+    CALLER_PUT_PARAM_VAL(LocalID, dbID);
+    CALLER_PUT_PARAM_VAL(UInt16, cardNo);
+
+    sub.Call(sysTrapExgDBWrite);
+
+    RETURN_RESULT_VAL(Err);
+}
+
+Err ExgDBRead(emuptr readProcP, emuptr deleteProcP, emuptr userDataP, LocalID* dbIDP, UInt16 cardNo,
+              Boolean* needResetP, Boolean keepDates) {
+    CALLER_SETUP(
+        "Err",
+        "ExgDBReadProcPtr readProcP, ExgDBDeleteProcPtr deleteProcP, void* userDataP, LocalID* "
+        "dbIDP, UInt16 cardNo, Boolean* needResetP, Boolean keepDates");
+
+    CALLER_PUT_PARAM_VAL(emuptr, readProcP);
+    CALLER_PUT_PARAM_VAL(emuptr, deleteProcP);
+    CALLER_PUT_PARAM_VAL(emuptr, userDataP);
+    CALLER_PUT_PARAM_REF(LocalID, dbIDP, Marshal::kOutput);
+    CALLER_PUT_PARAM_VAL(UInt16, cardNo);
+    CALLER_PUT_PARAM_REF(Boolean, needResetP, Marshal::kOutput);
+    CALLER_PUT_PARAM_VAL(Boolean, keepDates);
+
+    sub.Call(sysTrapExgDBRead);
+
+    CALLER_GET_PARAM_REF(dbIDP);
+    CALLER_GET_PARAM_REF(needResetP);
+
+    RETURN_RESULT_VAL(Err);
+}
+
+void ClipboardAddItem(const ClipboardFormatType format, const void* ptr, UInt16 length) {
+    // Prepare the stack.
+    CALLER_SETUP("void", "const ClipboardFormatType format, const void* ptr, UInt16 length");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(ClipboardFormatType, format);
+    CALLER_PUT_PARAM_PTR(void, ptr, length, Marshal::kInput);
+    CALLER_PUT_PARAM_VAL(UInt16, length);
+
+    // Call the function.
+    sub.Call(sysTrapClipboardAddItem);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+}
+
+emuptr ClipboardGetItem(const ClipboardFormatType format, UInt16* length) {
+    // Prepare the stack.
+    CALLER_SETUP("emuptr", "const ClipboardFormatType format, UInt16* length");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(ClipboardFormatType, format);
+    CALLER_PUT_PARAM_REF(UInt16, length, Marshal::kInOut);
+
+    // Call the function.
+    sub.Call(sysTrapClipboardGetItem);
+
+    // Write back any "by ref" parameters.
+    CALLER_GET_PARAM_REF(length);
+
+    // Return the result.
+    RETURN_RESULT_VAL(emuptr);
+}

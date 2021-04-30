@@ -33,7 +33,7 @@ interface Cloudpilot {
     void ResetNoExtensions();
     void ResetHard();
 
-    long InstallFile(VoidPtr buffer, long len);
+    long InstallDb(VoidPtr buffer, long len);
 
     long GetPalette2bitMapping();
 
@@ -54,6 +54,13 @@ interface Cloudpilot {
     void SetHotsyncName([Const] DOMString name);
 
     void RegisterPwmHandler(long handlerPtr);
+
+    DbBackup StartBackup();
+
+    void SetClipboardIntegration(boolean toggle);
+
+    boolean IsSuspended();
+    [Ref] SuspendContext GetSuspendContext();
 };
 
 interface RomInfo {
@@ -78,4 +85,39 @@ interface Frame {
 
     VoidPtr GetBuffer();
     long GetBufferSize();
+};
+
+interface DbBackup {
+    boolean Init();
+
+    boolean IsInProgress();
+    boolean IsDone();
+
+    [Const] DOMString GetCurrentDatabase();
+
+    boolean Save();
+    void Skip();
+
+    VoidPtr GetArchivePtr();
+    long GetArchiveSize();
+};
+
+interface SuspendContextClipboardCopy {
+    void Cancel();
+    void Resume();
+
+    [Const] DOMString GetClipboardContent();
+};
+
+interface SuspendContextClipboardPaste {
+    void Cancel();
+    void Resume([Const] DOMString clipboardContent);
+};
+
+interface SuspendContext {
+    long GetKind();
+    void Cancel();
+
+    [Ref] SuspendContextClipboardCopy AsContextClipboardCopy();
+    [Ref] SuspendContextClipboardPaste AsContextClipboardPaste();
 };

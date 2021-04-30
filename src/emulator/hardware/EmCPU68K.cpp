@@ -31,7 +31,8 @@
 #include "SavestateLoader.h"
 #include "SavestateStructures.h"
 #include "StringData.h"  // kExceptionNames
-#include "UAE.h"         // cpuop_func, etc.
+#include "SuspendManager.h"
+#include "UAE.h"  // cpuop_func, etc.
 
 constexpr uint32 SAVESTATE_VERSION = 1;
 
@@ -281,6 +282,8 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
 #define spcflags (regs.spcflags)
 #define session (fSession)
 
+    EmAssert(session);
+
     // -----------------------------------------------------------------------
     // Check for the stopped flag before entering the "execute an opcode"
     // section.  It could be that we last exited the loop while still in stop
@@ -311,10 +314,11 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
         // needing to execute tailpatches.
         // -----------------------------------------------------------------------
 
-        if (MetaMemory::IsCPUBreak(pc_meta_oldp + (pc_p - pc_oldp))) {
-            EmAssert(session);
+        if (MetaMemory::IsCPUBreak(m68k_getpc())) {
             session->HandleInstructionBreak();
         }
+
+        if (SuspendManager::IsSuspended() && !gSession->IsNested()) break;
 
         // =======================================================================
         // Execute the opcode.

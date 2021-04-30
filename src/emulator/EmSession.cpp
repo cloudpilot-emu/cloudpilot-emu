@@ -2,6 +2,7 @@
 
 #include <functional>
 
+#include "CallbackManager.h"
 #include "ChunkHelper.h"
 #include "EmBankSRAM.h"
 #include "EmCPU.h"
@@ -12,12 +13,14 @@
 #include "EmPatchMgr.h"
 #include "EmSystemState.h"
 #include "Logging.h"
+#include "MetaMemory.h"
 #include "Miscellaneous.h"
 #include "ROMStubs.h"
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
 #include "SessionImage.h"
+#include "SuspendManager.h"
 
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 2;
@@ -82,7 +85,9 @@ void EmSession::Deinitialize() {
     if (!isInitialized) return;
 
     EmPalmOS::Dispose();
+    CallbackManager::Clear();
     Memory::Dispose();
+    MetaMemory::Clear();
 
     cpu.reset();
     device.reset();
@@ -238,7 +243,11 @@ void EmSession::Load(SavestateLoader& loader) {
     RecalculateClocksPerSecond();
 }
 
-bool EmSession::Save() { return savestate.Save(*this); }
+bool EmSession::Save() {
+    if (SuspendManager::IsSuspended()) return false;
+
+    return savestate.Save(*this);
+}
 
 bool EmSession::Load(size_t size, uint8* buffer) {
     SavestateLoader loader;
@@ -328,11 +337,6 @@ void EmSession::Reset(ResetType resetType) {
     }
 }
 
-bool EmSession::IsNested() const {
-    EmAssert(nestLevel >= 0);
-    return nestLevel > 0;
-}
-
 bool EmSession::IsPowerOn() { return !EmHAL::GetAsleep(); }
 
 bool EmSession::IsCpuStopped() {
@@ -413,15 +417,16 @@ uint32 EmSession::RunEmulation(uint32 maxCycles) {
     // known to the main loop here.
     uint64 cyclesBefore = systemCycles - extraCycles;
 
-    PumpEvents();
+    if (SuspendManager::IsSuspended()) {
+        systemCycles += maxCycles;
+    } else {
+        PumpEvents();
 
-    uint32 cycles = cpu->Execute(maxCycles);
-    systemCycles += cycles;
+        uint32 cycles = cpu->Execute(maxCycles);
+        systemCycles += cycles;
 
-    if (cpu->Stopped() && IsPowerOn())
-        logging::printf("WARNING: CPU in stopped state after RunEmulation");
-
-    CheckDayForRollover();
+        CheckDayForRollover();
+    }
 
     extraCycles = 0;
 
@@ -434,11 +439,17 @@ void EmSession::ExecuteSubroutine() {
 
     EmValueChanger<bool> clearSubroutineReturn(subroutineReturn, false);
     EmValueChanger<int> increaseNestLevel(nestLevel, nestLevel + 1);
+    EmValueChanger<bool> resetDeadMansSwitch(deadMansSwitch, false);
 
     uint32 cycles = 0;
 
     while (!subroutineReturn) {
         cycles += cpu->Execute(EXECUTE_SUBROUTINE_LIMIT);
+
+        if (deadMansSwitch) {
+            cycles = 0;
+            deadMansSwitch = false;
+        }
 
         EmAssert(cycles < EXECUTE_SUBROUTINE_LIMIT);
     }
@@ -494,7 +505,10 @@ void EmSession::YieldMemoryMgr() {
     }
 }
 
-void EmSession::HandleInstructionBreak() { EmPatchMgr::HandleInstructionBreak(); }
+void EmSession::HandleInstructionBreak() {
+    EmPatchMgr::HandleInstructionBreak();
+    CallbackManager::HandleBreakpoint();
+}
 
 void EmSession::QueuePenEvent(PenEvent evt) {
     if (!IsPowerOn()) return;
@@ -527,7 +541,7 @@ KeyboardEvent EmSession::NextKeyboardEvent() {
 bool EmSession::Wakeup() {
     bool isSafeToWakeup = RunToSyscall();
 
-    if (isSafeToWakeup && EmLowMem::GetEvtMgrIdle()) {
+    if (isSafeToWakeup) {
         if (gSystemState.OSMajorVersion() >= 4) {
             EvtWakeupWithoutNilEvent();
         } else {
@@ -632,3 +646,5 @@ void EmSession::CheckDayForRollover() {
         dayCheckedAt = systemCycles;
     }
 }
+
+void EmSession::TriggerDeadMansSwitch() { deadMansSwitch = true; }

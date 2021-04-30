@@ -4,9 +4,10 @@
 #include <memory>
 #include <string>
 
+#include "DbBackup.h"
 #include "EmDevice.h"
 #include "Frame.h"
-#include "RomInfo.h"
+#include "SuspendContext.h"
 
 class Cloudpilot {
    public:
@@ -42,7 +43,7 @@ class Cloudpilot {
     void ResetNoExtensions();
     void ResetHard();
 
-    int InstallFile(void* buffer, size_t len);
+    int InstallDb(void* buffer, size_t len);
 
     int GetPalette2bitMapping();
 
@@ -63,6 +64,13 @@ class Cloudpilot {
     void SetHotsyncName(const char* name);
 
     void RegisterPwmHandler(uint32 handlerPtr);
+
+    DbBackup* StartBackup();
+
+    void SetClipboardIntegration(bool toggle);
+
+    bool IsSuspended();
+    SuspendContext& GetSuspendContext();
 
    private:
     Frame frame{1024 * 128};

@@ -7,13 +7,6 @@ import { PalmButton } from '../helper/Cloudpilot';
 import { Session } from '../model/Session';
 import { SnapshotStatistics } from './../model/SnapshotStatistics';
 
-const URL_SILKSCREEN_DEFAULT = 'assets/silkscreen-default.svg';
-const URL_SILKSCREEN_M515 = 'assets/silkscreen-m515.svg';
-const URL_SILKSCREEN_IIIC = 'assets/silkscreen-palmiiic.svg';
-const URL_BUTTONS_DEFAULT = 'assets/hard-buttons-default.svg';
-const URL_BUTTONS_M515 = 'assets/hard-buttons-m515.svg';
-const URL_BUTTONS_IIIC = 'assets/hard-buttons-palmiiic.svg';
-
 const BACKGROUND_COLOR_SILKSCREEN = GRAYSCALE_PALETTE_HEX[2];
 const BACKGROUND_COLOR_GRAYSCALE_DEVICE = GRAYSCALE_PALETTE_HEX[0];
 const BACKGROUND_COLOR_COLOR_DEVICE = 'white';
@@ -48,12 +41,15 @@ async function prerenderButtons(url: string): Promise<HTMLCanvasElement> {
     return canvas;
 }
 
-const IMAGE_SILKSCREEN_DEFAULT = loadImage(URL_SILKSCREEN_DEFAULT);
-const IMAGE_SILKSCREEN_M515 = loadImage(URL_SILKSCREEN_M515);
-const IMAGE_SILKSCREEN_IIIC = loadImage(URL_SILKSCREEN_IIIC);
-const IMAGE_BUTTONS_DEFAULT = prerenderButtons(URL_BUTTONS_DEFAULT);
-const IMAGE_BUTTONS_M515 = prerenderButtons(URL_BUTTONS_M515);
-const IMAGE_BUTTONS_IIIC = prerenderButtons(URL_BUTTONS_IIIC);
+const IMAGE_SILKSCREEN_V = loadImage('assets/skin/silkscreen/v.svg');
+const IMAGE_SILKSCREEN_M515 = loadImage('assets/skin/silkscreen/m515.svg');
+const IMAGE_SILKSCREEN_IIIC = loadImage('assets/skin/silkscreen/iiic.svg');
+const IMAGE_SILKSCREEN_M130 = loadImage('assets/skin/silkscreen/m130.svg');
+
+const IMAGE_BUTTONS_V = prerenderButtons('assets/skin/hard-buttons/v.svg');
+const IMAGE_BUTTONS_M515 = prerenderButtons('assets/skin/hard-buttons/m515.svg');
+const IMAGE_BUTTONS_IIIC = prerenderButtons('assets/skin/hard-buttons/iiic.svg');
+const IMAGE_BUTTONS_M130 = prerenderButtons('assets/skin/hard-buttons/m130.svg');
 
 @Injectable({
     providedIn: 'root',
@@ -168,8 +164,12 @@ export class CanvasDisplayService {
             case DeviceId.iiic:
                 return IMAGE_SILKSCREEN_IIIC;
 
+            case DeviceId.m130:
+                return IMAGE_SILKSCREEN_M130;
+
+            case DeviceId.palmV:
             default:
-                return IMAGE_SILKSCREEN_DEFAULT;
+                return IMAGE_SILKSCREEN_V;
         }
     }
 
@@ -181,8 +181,12 @@ export class CanvasDisplayService {
             case DeviceId.iiic:
                 return IMAGE_BUTTONS_IIIC;
 
+            case DeviceId.m130:
+                return IMAGE_BUTTONS_M130;
+
+            case DeviceId.palmV:
             default:
-                return IMAGE_BUTTONS_DEFAULT;
+                return IMAGE_BUTTONS_V;
         }
     }
 

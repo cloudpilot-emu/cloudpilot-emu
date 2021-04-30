@@ -1,6 +1,5 @@
-import { AfterViewInit, Component, ElementRef, NgZone, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import { CanvasDisplayService, HEIGHT, WIDTH } from './../../service/canvas-display.service';
-import { FileDescriptor, FileService } from 'src/app/service/file.service';
 import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
 
 import { AlertService } from 'src/app/service/alert.service';
@@ -9,7 +8,9 @@ import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
 import { EventHandlingService } from './../../service/event-handling.service';
+import { FileService } from 'src/app/service/file.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
+import { InstallationService } from './../../service/installation.service';
 import { KvsService } from './../../service/kvs.service';
 import { SnapshotService } from './../../service/snapshot.service';
 import { SnapshotStatistics } from './../../model/SnapshotStatistics';
@@ -36,7 +37,7 @@ export class EmulationPage implements AfterViewInit {
         private fileService: FileService,
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
-        private ngZone: NgZone
+        private installlationService: InstallationService
     ) {}
 
     ngAfterViewInit(): void {}
@@ -102,7 +103,7 @@ export class EmulationPage implements AfterViewInit {
     }
 
     installFiles(): void {
-        this.fileService.openFiles(this.processFilesForInstallation.bind(this));
+        this.fileService.openFiles(this.installlationService.installFiles.bind(this.installlationService));
     }
 
     async showHelp(): Promise<void> {
@@ -171,88 +172,6 @@ export class EmulationPage implements AfterViewInit {
     private onNewFrame = (canvas: HTMLCanvasElement): void => {
         this.canvasDisplayService.drawEmulationCanvas(canvas);
     };
-
-    private async processFilesForInstallation(files: Array<FileDescriptor>): Promise<void> {
-        const loader = await this.loadingController.create({
-            message: 'Installing...',
-        });
-        await loader.present();
-        await this.emulationService.pause();
-        await this.snapshotService.waitForPendingSnapshot();
-
-        const filesSuccess: Array<string> = [];
-        const filesFail: Array<string> = [];
-
-        try {
-            for (const file of files) {
-                if (!/\.(prc|pdb)$/i.test(file.name)) {
-                    filesFail.push(file.name);
-
-                    continue;
-                }
-
-                if ((await this.emulationService.installFile(file.content)) === 0) {
-                    filesSuccess.push(file.name);
-                } else {
-                    filesFail.push(file.name);
-                }
-
-                await new Promise((r) => setTimeout(r, 0));
-            }
-        } finally {
-            loader.dismiss();
-
-            this.emulationService.resume();
-        }
-
-        let message: string;
-
-        switch (filesSuccess.length) {
-            case 0:
-                message = '';
-                break;
-
-            case 1:
-                message = `Installation of ${filesSuccess[0]} successful.`;
-                break;
-
-            default:
-                message = `Installation of ${filesSuccess.length} files successful.`;
-                break;
-        }
-
-        if (filesFail.length > 0 && message.length > 0) message += '<br/><br/>';
-
-        switch (filesFail.length) {
-            case 0:
-                break;
-
-            case 1:
-                message += `Installation of ${filesFail[0]} failed.`;
-                break;
-
-            default:
-                message += `Installation of ${filesFail
-                    .slice(0, filesFail.length > 3 ? 3 : filesFail.length - 1)
-                    .join(', ')} and ${
-                    filesFail.length > 3 ? filesFail.length - 3 + ' more files' : filesFail[filesFail.length - 1]
-                } failed.`;
-
-                break;
-        }
-
-        let header;
-
-        if (filesFail.length === 0) {
-            header = 'Installation successful';
-        } else if (filesSuccess.length === 0) {
-            header = 'Installation failed';
-        } else {
-            header = 'Installation errors';
-        }
-
-        this.alertService.message(header, message);
-    }
 
     @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
 }

@@ -68,6 +68,7 @@ class EmDevice {
     vector<string> GetIDStrings(void) const;
 
     bool IsValid() const;
+    bool EmulatesDockStatus() const;
 
    public:
     static EmDeviceList GetDeviceList(void);

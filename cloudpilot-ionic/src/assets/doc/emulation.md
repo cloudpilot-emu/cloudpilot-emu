@@ -9,7 +9,8 @@ You can interact with the emulator by touching or clicking the screen and the
 hardware buttons below. The power button is located in the menu on the top
 lefft.
 
-A hardware keyboard can be used to type directly in the emulator.
+A hardware keyboard can be used to type directly in the emulator (see "Keyboard
+mappings" at the end of this page).
 
 # Installing program and database files
 
@@ -31,6 +32,20 @@ retry the installation.
 Cloudpilot automatically saves the emulator state every second while the
 emulator is running. If Cloudpilot is reloaded (or the session is switched) the
 state is preserved and restored.
+
+# Saving a backup
+
+You can save a backup of all databases in the device RAM by selecting "Save Backup"
+from the menu. This will create and save a zip archive with .prc and .pdb
+files that can be installed again on any PalmOS device at a later point.
+
+Databases must be closed in order to back up, so if you are backing up while
+an application is opened, the corresponding DB files will not be included
+in the backup. Cloudpilot will notify you if this happens.
+
+Backing up databases interacts with PalmOS, and there is a (very) slim chance of crashing
+the emulator, depending on the state of the virtual device when the backup is
+run. In general it is best to run the backup while the launcher is open.
 
 # Device reset
 
