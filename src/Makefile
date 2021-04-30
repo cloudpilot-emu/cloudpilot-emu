@@ -203,7 +203,8 @@ SOURCE_SDL = \
 	sdl/MainLoop.cpp \
 	sdl/Silkscreen.cpp \
 	sdl/util.cpp \
-	sdl/EventHandler.cpp
+	sdl/EventHandler.cpp \
+	sdl/WebsocketClient.cpp
 
 SOURCE_SDL_NATIVE = $(SOURCE_SDL) sdl/Cli.cpp emulator/assert_native.cpp
 SOURCE_SDL_EMCC = $(SOURCE_SDL) sdl/EmscriptenApi.cpp emulator/assert_emscripten.cpp

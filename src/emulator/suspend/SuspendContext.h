@@ -3,10 +3,11 @@
 
 class SuspendContextClipboardCopy;
 class SuspendContextClipboardPaste;
+class SuspendContextNetworkRpc;
 
 class SuspendContext {
    public:
-    enum Kind : int { clipboardCopy = 1, clipboardPaste = 2 };
+    enum Kind : int { clipboardCopy = 1, clipboardPaste = 2, networkRpc = 3 };
 
    public:
     SuspendContext() = default;
@@ -19,6 +20,7 @@ class SuspendContext {
 
     SuspendContextClipboardCopy& AsContextClipboardCopy();
     SuspendContextClipboardPaste& AsContextClipboardPaste();
+    SuspendContextNetworkRpc& AsContextNetworkRpc();
 
    protected:
     void TriggerResume();

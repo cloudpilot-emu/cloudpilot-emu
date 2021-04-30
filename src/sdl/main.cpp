@@ -91,6 +91,12 @@ void handleSuspend() {
 
                 break;
             }
+
+            case SuspendContext::Kind::networkRpc: {
+                // ...
+
+                break;
+            }
         }
     }
 }
