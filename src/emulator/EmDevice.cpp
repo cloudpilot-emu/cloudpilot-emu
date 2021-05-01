@@ -127,6 +127,7 @@ enum  // DeviceType
     kDevicePalmM505,
     kDevicePalmM515,
     kDevicePalmI705,
+    kDevicePalmI710,
     kDeviceARMRef,
     kDeviceSymbol1500,
     kDeviceSymbol1700,
@@ -369,6 +370,14 @@ static const DeviceInfo kDeviceInfo[] = {
      hwrMiscFlagIDNone,
      hwrMiscFlagExtSubIDNone,
      {{'palm', 'skyw'}}},
+    {kDevicePalmI710,
+     "Palm i710",
+     {"PalmI710", "i705", "AtlantiC"},
+     kSupports68VZ328 + kHasFlash,
+     16384,
+     hwrMiscFlagIDNone,
+     hwrMiscFlagExtSubIDNone,
+     {{'palm', 'atlc'}}},
     // ===== Symbol devices =====
     {kDeviceSymbol1500,
      "Symbol 1500",
@@ -934,6 +943,19 @@ void EmDevice::CreateRegs(void) const {
 
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
+            break;
+        }
+
+        case kDevicePalmI710: {
+            EmBankRegs::AddSubBank(new EmRegsVZPalmM130);
+            // EmBankRegs::AddSubBank(new EmRegsVZPalmAtlantiC);
+            // EmBankRegs::AddSubBank(new EmRegsPLDAtlantiC(0x10800000))
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET);
+
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
+            EmBankRegs::AddSubBank(framebuffer);
+
             break;
         }
 #if 0
