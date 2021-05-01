@@ -1682,7 +1682,10 @@ bool EmRegsMediaQ11xx::CopyLCDFrame(Frame& frame) {
     int32 rowBytes = this->PrvGetRowBytes();
     emuptr baseAddr = this->PrvGetFrameBuffer();
 
-    if (width != 160 || height != 160) return false;
+    if (width != 160 || height != 160) {
+        cout << width << " " << height << endl << flush;
+        return false;
+    }
 
     frame.bpp = 24;
     frame.lineWidth = width;

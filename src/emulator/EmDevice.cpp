@@ -54,6 +54,7 @@
 #include "EmRegsEZPalmV.h"
 #include "EmRegsFrameBuffer.h"
 #include "EmRegsMediaQ11xx.h"
+#include "EmRegsPLDAtlantiC.h"
 #include "EmRegsSED1375.h"
 #include "EmRegsSED1376.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
@@ -949,7 +950,7 @@ void EmDevice::CreateRegs(void) const {
         case kDevicePalmI710: {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM130);
             // EmBankRegs::AddSubBank(new EmRegsVZPalmAtlantiC);
-            // EmBankRegs::AddSubBank(new EmRegsPLDAtlantiC(0x10800000))
+            EmBankRegs::AddSubBank(new EmRegsPLDAtlantiC(0x10800000));
 
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET);
 
