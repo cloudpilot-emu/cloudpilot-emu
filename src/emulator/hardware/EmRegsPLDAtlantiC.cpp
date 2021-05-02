@@ -13,24 +13,24 @@ void EmRegsPLDAtlantiC::SetSubBankHandlers() {
         switch (i * 2) {
             case 0x06:
                 SetHandler((ReadFunction)&EmRegsPLDAtlantiC::ReadReg_0x06,
-                           (WriteFunction)&EmRegsPLDAtlantiC::StdWrite, baseAddress + 2 * i, 2);
+                           (WriteFunction)&EmRegsPLDAtlantiC::StdWriteBE, baseAddress + 2 * i, 2);
                 break;
 
             case 0x2e:
                 SetHandler((ReadFunction)&EmRegsPLDAtlantiC::ReadReg_0x2e,
-                           (WriteFunction)&EmRegsPLDAtlantiC::StdWrite, baseAddress + 2 * i, 2);
+                           (WriteFunction)&EmRegsPLDAtlantiC::StdWriteBE, baseAddress + 2 * i, 2);
 
                 break;
 
             case 0x50:
                 SetHandler((ReadFunction)&EmRegsPLDAtlantiC::ReadReg_0x50,
-                           (WriteFunction)&EmRegsPLDAtlantiC::StdWrite, baseAddress + 2 * i, 2);
+                           (WriteFunction)&EmRegsPLDAtlantiC::StdWriteBE, baseAddress + 2 * i, 2);
 
                 break;
 
             default:
-                SetHandler((ReadFunction)&EmRegsPLDAtlantiC::StdRead,
-                           (WriteFunction)&EmRegsPLDAtlantiC::StdWrite, baseAddress + 2 * i, 2);
+                SetHandler((ReadFunction)&EmRegsPLDAtlantiC::StdReadBE,
+                           (WriteFunction)&EmRegsPLDAtlantiC::StdWriteBE, baseAddress + 2 * i, 2);
         }
     }
 }
@@ -46,7 +46,7 @@ uint32 EmRegsPLDAtlantiC::GetAddressRange() { return sizeof(regs); }
 uint32 EmRegsPLDAtlantiC::ReadReg_0x06(emuptr address, int size) { return 0xffffffff; }
 
 uint32 EmRegsPLDAtlantiC::ReadReg_0x2e(emuptr address, int size) {
-    uint8 result = EmRegs::StdRead(address, size);
+    uint8 result = EmRegs::StdReadBE(address, size);
 
     if ((size == 2) || (size == 1 && (address & 0x01))) result |= 0x80;
 

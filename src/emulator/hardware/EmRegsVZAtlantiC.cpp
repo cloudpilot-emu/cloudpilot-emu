@@ -11,6 +11,7 @@ namespace {
     constexpr int hwrVZPalmI710PortKKbdRow2 = 0x04;
     constexpr int hwrVZPalmI710PortG232_SHDN_N = 0x08;
     constexpr int hwrVZPalmI710PortMIR_SD = 0x20;
+    constexpr int hwrVZPalmM130PortGADC_CS_N = 0x20;
 
     constexpr uint16 kButtonMapPalmI710[kNumButtonRows][kNumButtonCols] = {
         {keyBitHard1, keyBitHard2, keyBitHard3, keyBitHard4},
@@ -98,4 +99,10 @@ Bool EmRegsVZAtlantiC::GetDTR(int uartNum) {
 
 Bool EmRegsVZAtlantiC::GetVibrateOn(void) { return (READ_REGISTER(portFData) & 0x01) != 0; }
 
-EmSPISlave* EmRegsVZAtlantiC::GetSPISlave(void) { return fSPISlaveADC; }
+EmSPISlave* EmRegsVZAtlantiC::GetSPISlave(void) {
+    if ((READ_REGISTER(portGData) & hwrVZPalmM130PortGADC_CS_N) == 0) {
+        return fSPISlaveADC;
+    }
+
+    return NULL;
+}
