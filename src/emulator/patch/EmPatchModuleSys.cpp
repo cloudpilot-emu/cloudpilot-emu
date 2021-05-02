@@ -66,6 +66,7 @@ namespace {
         (*point).y = 500 - (*point).y;
 
         CALLED_PUT_PARAM_REF(point);
+        PUT_RESULT_VAL(Err, 0);
 
         return kSkipROM;
     }
