@@ -1691,7 +1691,6 @@ bool EmRegsMediaQ11xx::CopyLCDFrame(Frame& frame) {
 
     if (width != static_cast<int32>(screenDimensions.Width()) ||
         height != static_cast<int32>(screenDimensions.Height())) {
-        cout << width << " " << height << endl << flush;
         return false;
     }
 

@@ -16,7 +16,7 @@
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendManager.h"
 
-#define LOGGING 1
+// #define LOGGING
 #ifdef LOGGING
     #define PRINTF logging::printf
 #else
@@ -55,6 +55,19 @@ namespace {
         EmPatchMgr::PuppetString(result);
 
         return result;
+    }
+
+    CallROMType HeadpatchPenScreenToRaw_RawToScreen(void) {
+        CALLED_SETUP("Err", "PointType* point");
+
+        CALLED_GET_PARAM_REF(PointType, point, Marshal::kInOut);
+
+        (*point).x = 500 - (*point).x;
+        (*point).y = 500 - (*point).y;
+
+        CALLED_PUT_PARAM_REF(point);
+
+        return kSkipROM;
     }
 
     CallROMType HeadpatchSysUIAppSwitch() {
@@ -247,6 +260,8 @@ namespace {
         {sysTrapUIInitialize, NULL, TailpatchUIInitialize},
         {sysTrapEvtSysEventAvail, NULL, TailpatchEvtSysEventAvail},
         {sysTrapHwrDockStatus, HeadpatchHwrDockStatus, NULL},
+        {sysTrapPenScreenToRaw, HeadpatchPenScreenToRaw_RawToScreen, NULL},
+        {sysTrapPenRawToScreen, HeadpatchPenScreenToRaw_RawToScreen, NULL},
         {sysTrapClipboardGetItem, HeadpatchClipboardGetItem, NULL},
         {sysTrapClipboardAddItem, NULL, TailpatchClipboardAddItem},
         {sysTrapClipboardAppendItem, NULL, TailpatchClipboardAppendItem},
