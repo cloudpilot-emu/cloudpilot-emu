@@ -10,7 +10,6 @@
 #include "EmSession.h"
 #include "EmSystemState.h"
 #include "Silkscreen.h"
-#include "common.h"
 
 constexpr uint8 SILKSCREEN_BACKGROUND_HUE = 0xbb;
 constexpr uint32 BACKGROUND_HUE = 0xd2;
@@ -22,7 +21,11 @@ constexpr uint32 PALETTE_GRAYSCALE_16[] = {
     0xffd2d2d2, 0xffc4c4c4, 0xffb6b6b6, 0xffa8a8a8, 0xff9a9a9a, 0xff8c8c8c, 0xff7e7e7e, 0xff707070,
     0xff626262, 0xff545454, 0xff464646, 0xff383838, 0xff2a2a2a, 0xff1c1c1c, 0xff0e0e0e, 0xff000000};
 
-MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer) : renderer(renderer) {
+MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer, int scale)
+    : renderer(renderer),
+      scale(scale),
+      screenDimensions(gSession->GetDevice().GetScreenDimensions()),
+      eventHandler(scale) {
     LoadSilkscreen();
 
     SDL_SetRenderDrawColor(renderer, 0xdd, 0xdd, 0xdd, 0xff);
@@ -32,7 +35,7 @@ MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer) : renderer(render
     SDL_RenderPresent(renderer);
 
     lcdTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING,
-                                   160, 160);
+                                   screenDimensions.Width(), screenDimensions.Height());
 }
 
 bool MainLoop::IsRunning() const { return !eventHandler.IsQuit(); }
@@ -87,7 +90,10 @@ void MainLoop::DrawSilkscreen(SDL_Renderer* renderer) {
     SDL_SetRenderDrawColor(renderer, SILKSCREEN_BACKGROUND_HUE, SILKSCREEN_BACKGROUND_HUE,
                            SILKSCREEN_BACKGROUND_HUE, 0xff);
 
-    SDL_Rect rect = {.x = 0, .y = SCALE * 160, .w = SCALE * 160, .h = SCALE * 60};
+    SDL_Rect rect = {.x = 0,
+                     .y = static_cast<int32>(scale * screenDimensions.Height()),
+                     .w = static_cast<int32>(scale * screenDimensions.Width()),
+                     .h = static_cast<int32>(scale * screenDimensions.SilkscreenHeight())};
 
     SDL_RenderFillRect(renderer, &rect);
     SDL_RenderCopy(renderer, silkscreenTexture, nullptr, &rect);
@@ -97,10 +103,14 @@ void MainLoop::UpdateScreen() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
 
-    SDL_Rect dest = {.x = 0, .y = 0, .w = SCALE * 160, .h = SCALE * 160};
+    SDL_Rect dest = {.x = 0,
+                     .y = 0,
+                     .w = static_cast<int32>(scale * screenDimensions.Width()),
+                     .h = static_cast<int32>(scale * screenDimensions.Height())};
 
     if (gSession->IsPowerOn() && EmHAL::CopyLCDFrame(frame)) {
-        if (frame.lineWidth != 160 || frame.lines != 160) return;
+        if (frame.lineWidth != screenDimensions.Width() || frame.lines != screenDimensions.Height())
+            return;
 
         uint32* pixels;
         int pitch;
@@ -110,8 +120,8 @@ void MainLoop::UpdateScreen() {
 
         switch (frame.bpp) {
             case 1: {
-                for (int x = 0; x < 160; x++)
-                    for (int y = 0; y < 160; y++)
+                for (uint32 x = 0; x < frame.lineWidth; x++)
+                    for (uint32 y = 0; y < frame.lines; y++)
                         pixels[y * pitch / 4 + x] =
                             ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
                               (0x80 >> ((x + frame.margin) % 8))) == 0
@@ -120,8 +130,8 @@ void MainLoop::UpdateScreen() {
             } break;
 
             case 4: {
-                for (int x = 0; x < 160; x++)
-                    for (int y = 0; y < 160; y++)
+                for (uint32 x = 0; x < frame.lineWidth; x++)
+                    for (uint32 y = 0; y < frame.lines; y++)
                         pixels[y * pitch / 4 + x] =
                             PALETTE_GRAYSCALE_16[((buffer[y * frame.bytesPerLine +
                                                           (x + frame.margin) / 2]) >>
@@ -137,8 +147,8 @@ void MainLoop::UpdateScreen() {
                                      PALETTE_GRAYSCALE_16[(mapping >> 8) & 0x000f],
                                      PALETTE_GRAYSCALE_16[(mapping >> 12) & 0x000f]};
 
-                for (int x = 0; x < 160; x++)
-                    for (int y = 0; y < 160; y++)
+                for (uint32 x = 0; x < frame.lineWidth; x++)
+                    for (uint32 y = 0; y < frame.lines; y++)
                         pixels[y * pitch / 4 + x] =
                             palette[((buffer[y * frame.bytesPerLine + (x + frame.margin) / 4]) >>
                                      (6 - ((x + frame.margin) % 4) * 2)) &
@@ -146,8 +156,8 @@ void MainLoop::UpdateScreen() {
             } break;
 
             case 24: {
-                for (int x = 0; x < 160; x++)
-                    for (int y = 0; y < 160; y++) {
+                for (uint32 x = 0; x < frame.lineWidth; x++)
+                    for (uint32 y = 0; y < frame.lines; y++) {
                         uint32* buffer32 = reinterpret_cast<uint32*>(buffer);
 
                         pixels[y * pitch / 4 + x] =

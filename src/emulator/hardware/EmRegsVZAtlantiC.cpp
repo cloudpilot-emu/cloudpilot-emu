@@ -50,15 +50,15 @@ void EmRegsVZAtlantiC::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bo
 
     // Determine what row is being asked for.
 
-    UInt8 portDDir = READ_REGISTER(portDDir);
-    UInt8 portDData = READ_REGISTER(portDData);
+    UInt8 portCDir = READ_REGISTER(portCDir);
+    UInt8 portCData = READ_REGISTER(portCData);
 
     rows[0] =
-        (portDDir & hwrVZPalmI710PortKKbdRow0) != 0 && (portDData & hwrVZPalmI710PortKKbdRow0) == 0;
+        (portCDir & hwrVZPalmI710PortKKbdRow0) != 0 && (portCData & hwrVZPalmI710PortKKbdRow0) == 0;
     rows[1] =
-        (portDDir & hwrVZPalmI710PortKKbdRow1) != 0 && (portDData & hwrVZPalmI710PortKKbdRow1) == 0;
+        (portCDir & hwrVZPalmI710PortKKbdRow1) != 0 && (portCData & hwrVZPalmI710PortKKbdRow1) == 0;
     rows[2] =
-        (portDDir & hwrVZPalmI710PortKKbdRow2) != 0 && (portDData & hwrVZPalmI710PortKKbdRow2) == 0;
+        (portCDir & hwrVZPalmI710PortKKbdRow2) != 0 && (portCData & hwrVZPalmI710PortKKbdRow2) == 0;
 }
 
 Bool EmRegsVZAtlantiC::GetLineDriverState(EmUARTDeviceType type) {

@@ -8,6 +8,8 @@
 
 class EventHandler {
    public:
+    EventHandler(int scale);
+
     void HandleEvents(long millis);
 
     bool IsQuit() const;
@@ -32,6 +34,8 @@ class EventHandler {
     long lastMouseMove{Platform::GetMilliseconds()};
     int penX{0}, penY{0};
     bool quit{false};
+
+    int scale;
 };
 
 #endif  // _SDL_EVENT_HANDLER_H_

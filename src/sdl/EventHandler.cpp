@@ -4,9 +4,10 @@
 #include "EmSession.h"
 #include "KeyboardEvent.h"
 #include "PenEvent.h"
-#include "common.h"
 
 constexpr int MOUSE_MOVE_THROTTLE = 25;
+
+EventHandler::EventHandler(int scale) : scale(scale) {}
 
 bool EventHandler::IsQuit() const { return quit; }
 
@@ -71,8 +72,8 @@ bool EventHandler::UpdatePenPosition() {
     int x, y;
     SDL_GetMouseState(&x, &y);
 
-    x /= SCALE;
-    y /= SCALE;
+    x /= scale;
+    y /= scale;
 
     bool changed = x != penX || y != penY;
 

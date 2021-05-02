@@ -1287,5 +1287,17 @@ int EmDevice::GetDeviceID(const char* s) const {
 bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }
 
 bool EmDevice::EmulatesDockStatus() const {
-    return !Supports68328() && fDeviceID != kDevicePalmM130;
+    return !Supports68328() && fDeviceID != kDevicePalmM130 && fDeviceID != kDevicePalmI710;
+}
+
+bool EmDevice::NeedsSDCTLHack() const { return fDeviceID == kDevicePalmM515; }
+
+ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
+    switch (fDeviceID) {
+        case kDevicePalmI710:
+            return ScreenDimensions::screen320x320;
+
+        default:
+            return ScreenDimensions::screen160x160;
+    }
 }

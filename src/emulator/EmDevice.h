@@ -19,6 +19,7 @@
 #include <vector>   // vector
 
 #include "EmCommon.h"
+#include "ScreenDimensions.h"
 
 class EmCPU;
 class EmRegs;
@@ -69,6 +70,9 @@ class EmDevice {
 
     bool IsValid() const;
     bool EmulatesDockStatus() const;
+    bool NeedsSDCTLHack() const;
+
+    ScreenDimensions::Kind GetScreenDimensions() const;
 
    public:
     static EmDeviceList GetDeviceList(void);

@@ -1619,7 +1619,8 @@ void EmRegsVZ::sdctlWrite(emuptr address, int size, uint32 value) {
 }
 
 void EmRegsVZ::ApplySdctl() {
-    if (gRAMBank_Size != 16 * 1024 * 1024) return;
+    EmAssert(gSession);
+    if (!gSession->GetDevice().NeedsSDCTLHack()) return;
 
     // We emulate just what is required for PalmOS to detect the full 16MB
     // of RAM on the m515. Credits for this go to Cuttlefish and Mu.

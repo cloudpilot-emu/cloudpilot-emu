@@ -18,11 +18,11 @@
 #include "EmSession.h"
 #include "Feature.h"
 #include "MainLoop.h"
+#include "ScreenDimensions.h"
 #include "SessionImage.h"
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendManager.h"
-#include "common.h"
 #include "util.h"
 
 #ifndef __EMSCRIPTEN__
@@ -128,12 +128,19 @@ int main(int argc, const char** argv) {
     SDL_Window* window;
     SDL_Renderer* renderer;
 
-    if (SDL_CreateWindowAndRenderer(160 * SCALE, 220 * SCALE, 0, &window, &renderer) != 0) {
+    ScreenDimensions::Kind screenDimensionsKind = gSession->GetDevice().GetScreenDimensions();
+    ScreenDimensions screenDimensions(screenDimensionsKind);
+    int scale = screenDimensionsKind == ScreenDimensions::screen320x320 ? 2 : 3;
+
+    if (SDL_CreateWindowAndRenderer(
+            screenDimensions.Width() * scale,
+            (screenDimensions.Height() + screenDimensions.SilkscreenHeight()) * scale, 0, &window,
+            &renderer) != 0) {
         cerr << "unable to create SDL window: " << SDL_GetError() << endl;
         exit(1);
     }
 
-    MainLoop mainLoop(window, renderer);
+    MainLoop mainLoop(window, renderer, scale);
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg((em_arg_callback_func)MainLoop::CycleStatic, &mainLoop, 0, true);

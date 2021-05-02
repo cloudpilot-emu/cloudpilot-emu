@@ -19,12 +19,14 @@
 #include "EmCPU68K.h"  // gCPU68K
 #include "EmCommon.h"
 #include "EmRegsFrameBuffer.h"
+#include "EmSession.h"
 #include "EmSystemState.h"
 #include "Frame.h"
 #include "Logging.h"  // LogAppendMsg
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
+#include "ScreenDimensions.h"
 
 #define LogAppendMsg PRINTF
 
@@ -1322,6 +1324,8 @@ void EmRegsMediaQ11xx::Reset(Bool hardwareReset) {
         fBlitInProgress = false;
         paletteDirty = true;
 
+        fSourceFifo.Clear();
+
         this->PrvGetGEState(kAllRegisters);
     }
 }
@@ -1682,7 +1686,11 @@ bool EmRegsMediaQ11xx::CopyLCDFrame(Frame& frame) {
     int32 rowBytes = this->PrvGetRowBytes();
     emuptr baseAddr = this->PrvGetFrameBuffer();
 
-    if (width != 160 || height != 160) {
+    EmAssert(gSession);
+    const ScreenDimensions screenDimensions(gSession->GetDevice().GetScreenDimensions());
+
+    if (width != static_cast<int32>(screenDimensions.Width()) ||
+        height != static_cast<int32>(screenDimensions.Height())) {
         cout << width << " " << height << endl << flush;
         return false;
     }

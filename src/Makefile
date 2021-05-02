@@ -183,7 +183,8 @@ SOURCE_EMU = \
 	emulator/CallbackManager.cpp \
 	emulator/DbInstaller.cpp \
 	emulator/Fifo.cpp \
-	emulator/Feature.cpp
+	emulator/Feature.cpp \
+	emulator/ScreenDimensions.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \
