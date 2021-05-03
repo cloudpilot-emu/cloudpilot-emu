@@ -59,6 +59,11 @@ static TailPatchIndex gInstalledTailpatches;
 void PrvSetCurrentDate(void);
 #endif
 
+// #define LOG_SYSCALLS
+#ifdef LOG_SYSCALLS
+    #include "DecodeSyscalls.h"
+#endif
+
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 1;
     constexpr int MAX_INSTALLED_TAILPATCHES = 16;
@@ -419,6 +424,10 @@ CallROMType EmPatchMgr::HandleSystemCall(const SystemCallContext& context) {
     HeadpatchProc hp;
     TailpatchProc tp;
     EmPatchMgr::GetPatches(context, hp, tp);
+
+#ifdef LOG_SYSCALLS
+    cout << trapWordToString(context.fTrapWord) << endl << flush;
+#endif
 
     CallROMType handled = EmPatchMgr::HandlePatches(context, hp, tp);
 
