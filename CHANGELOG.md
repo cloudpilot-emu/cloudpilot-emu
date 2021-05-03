@@ -3,6 +3,7 @@
 -   Handle pqa files in installation and backup.
 -   Palm m130 support.
 -   Workaround for dying service worker on Safari desktop.
+-   Support for Tungsten W.
 
 # Version 1.2.0
 
