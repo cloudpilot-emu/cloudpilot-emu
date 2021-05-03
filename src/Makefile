@@ -140,6 +140,8 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsVZM1xx.cpp \
 	emulator/hardware/EmRegsPLDAtlantiC.cpp \
 	emulator/hardware/EmRegsVZAtlantiC.cpp \
+	emulator/hardware/EmRegsPLDPacifiC.cpp \
+	emulator/hardware/EmRegsMediaQ11xxPacifiC.cpp \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
 	emulator/patch/EmPatchModule.cpp \

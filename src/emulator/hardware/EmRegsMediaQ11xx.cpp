@@ -1116,9 +1116,9 @@ inline Bool EmRegsMediaQ11xx::PrvGetYDoubling(void) {
 
 EmRegsMediaQ11xx::EmRegsMediaQ11xx(EmRegsFrameBuffer& framebuffer, emuptr baseRegsAddr,
                                    emuptr baseVideoAddr)
-    : fBaseRegsAddr(baseRegsAddr),
+    : fRegs(),
+      fBaseRegsAddr(baseRegsAddr),
       fBaseVideoAddr(baseVideoAddr),
-      fRegs(),
       /*	fState (), */
       /*	fByteLanes (), */
       fLastAddress(EmMemNULL),

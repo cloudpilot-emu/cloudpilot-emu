@@ -54,7 +54,9 @@
 #include "EmRegsEZPalmV.h"
 #include "EmRegsFrameBuffer.h"
 #include "EmRegsMediaQ11xx.h"
+#include "EmRegsMediaQ11xxPacifiC.h"
 #include "EmRegsPLDAtlantiC.h"
+#include "EmRegsPLDPacifiC.h"
 #include "EmRegsSED1375.h"
 #include "EmRegsSED1376.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
@@ -130,6 +132,7 @@ enum  // DeviceType
     kDevicePalmM515,
     kDevicePalmI705,
     kDevicePalmI710,
+    kDevicePalmPacifiC,
     kDeviceARMRef,
     kDeviceSymbol1500,
     kDeviceSymbol1700,
@@ -374,7 +377,15 @@ static const DeviceInfo kDeviceInfo[] = {
      {{'palm', 'skyw'}}},
     {kDevicePalmI710,
      "Palm i710",
-     {"PalmI710", "i705", "AtlantiC"},
+     {"PalmI710", "i710", "AtlantiC"},
+     kSupports68VZ328 + kHasFlash,
+     16384,
+     hwrMiscFlagIDNone,
+     hwrMiscFlagExtSubIDNone,
+     {{'palm', 'atlc'}}},
+    {kDevicePalmPacifiC,
+     "PalmPacifiC",
+     {"PalmPacifiC", "i710", "PacifiC"},
      kSupports68VZ328 + kHasFlash,
      16384,
      hwrMiscFlagIDNone,
@@ -959,6 +970,18 @@ void EmDevice::CreateRegs(void) const {
 
             break;
         }
+
+        case kDevicePalmPacifiC: {
+            EmBankRegs::AddSubBank(new EmRegsVZAtlantiC());
+            EmBankRegs::AddSubBank(new EmRegsPLDPacifiC(0x10800000));
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET);
+
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xxPacifiC(*framebuffer, MMIO_BASE, T_BASE));
+            EmBankRegs::AddSubBank(framebuffer);
+
+            break;
+        }
 #if 0
 
         case kDevicePalmM500:
@@ -1287,7 +1310,8 @@ int EmDevice::GetDeviceID(const char* s) const {
 bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }
 
 bool EmDevice::EmulatesDockStatus() const {
-    return !Supports68328() && fDeviceID != kDevicePalmM130 && fDeviceID != kDevicePalmI710;
+    return !Supports68328() && fDeviceID != kDevicePalmM130 && fDeviceID != kDevicePalmI710 &&
+           fDeviceID != kDevicePalmPacifiC;
 }
 
 bool EmDevice::NeedsSDCTLHack() const { return fDeviceID == kDevicePalmM515; }
@@ -1295,6 +1319,7 @@ bool EmDevice::NeedsSDCTLHack() const { return fDeviceID == kDevicePalmM515; }
 ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
     switch (fDeviceID) {
         case kDevicePalmI710:
+        case kDevicePalmPacifiC:
             return ScreenDimensions::screen320x320;
 
         default:

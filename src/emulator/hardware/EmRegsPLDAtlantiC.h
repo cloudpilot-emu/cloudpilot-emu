@@ -31,7 +31,7 @@ class EmRegsPLDAtlantiC : public EmRegs, EmHALHandler {
     template <typename T>
     void DoSaveLoad(T& helper);
 
-   private:
+   protected:
     uint32 regs[0x15];
     emuptr baseAddress;
 };
