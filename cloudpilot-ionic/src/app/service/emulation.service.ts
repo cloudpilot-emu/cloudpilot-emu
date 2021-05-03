@@ -19,6 +19,7 @@ import { PwmUpdate } from './../helper/Cloudpilot';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
+import { deviceDimensions } from '../helper/deviceProperties';
 import { isColor } from '../model/DeviceId';
 
 export const GRAYSCALE_PALETTE_RGBA = [
@@ -70,18 +71,6 @@ export class EmulationService {
         private clipboardService: ClipboardService,
         private kvsService: KvsService
     ) {
-        this.canvas.width = 160;
-        this.canvas.height = 160;
-
-        this.imageData.data.fill(255);
-
-        const context = this.canvas.getContext('2d');
-        if (!context) {
-            throw new Error('get a new browser');
-        }
-
-        this.context = context;
-
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
         errorService.fatalErrorEvent.addHandler(this.pause);
         this.alertService.emergencySaveEvent.addHandler(this.onEmergencySave);
@@ -119,6 +108,22 @@ export class EmulationService {
                 if (!session) {
                     throw new Error(`invalid session ${id}`);
                 }
+
+                const dimensions = deviceDimensions(session?.device);
+
+                this.canvas.width = dimensions.width;
+                this.canvas.height = dimensions.height;
+
+                this.imageData = new ImageData(dimensions.width, dimensions.height);
+
+                this.imageData.data.fill(255);
+
+                const context = this.canvas.getContext('2d');
+                if (!context) {
+                    throw new Error('get a new browser');
+                }
+
+                this.context = context;
 
                 const [rom, memory, state] = await this.storageService.loadSession(session);
                 if (!rom) {
@@ -529,14 +534,17 @@ export class EmulationService {
         }
 
         if (frame.lines === this.imageData.height && frame.lineWidth === this.imageData.width) {
+            const width = frame.lineWidth;
+            const height = frame.lines;
+
             switch (frame.bpp) {
                 case 1: {
                     const fg = GRAYSCALE_PALETTE_RGBA[15];
                     const bg = GRAYSCALE_PALETTE_RGBA[0];
 
-                    for (let y = 0; y < 160; y++) {
-                        for (let x = 0; x < 160; x++) {
-                            this.imageData32[y * 160 + x + frame.margin] =
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            this.imageData32[y * width + x + frame.margin] =
                                 frame.buffer[y * frame.bytesPerLine + ((x + frame.margin) >>> 3)] &
                                 (0x80 >>> ((x + frame.margin) & 0x07))
                                     ? fg
@@ -557,9 +565,9 @@ export class EmulationService {
                         GRAYSCALE_PALETTE_RGBA[(mapping >>> 12) & 0x000f],
                     ];
 
-                    for (let y = 0; y < 160; y++) {
-                        for (let x = 0; x < 160; x++) {
-                            this.imageData32[y * 160 + x + frame.margin] =
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            this.imageData32[y * width + x + frame.margin] =
                                 palette[
                                     (frame.buffer[y * frame.bytesPerLine + ((x + frame.margin) >>> 2)] >>
                                         (6 - 2 * ((x + frame.margin) & 0x03))) &
@@ -572,9 +580,9 @@ export class EmulationService {
                 }
 
                 case 4: {
-                    for (let y = 0; y < 160; y++) {
-                        for (let x = 0; x < 160; x++) {
-                            this.imageData32[y * 160 + x + frame.margin] =
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            this.imageData32[y * width + x + frame.margin] =
                                 GRAYSCALE_PALETTE_RGBA[
                                     (frame.buffer[y * frame.bytesPerLine + ((x + frame.margin) >>> 1)] >>>
                                         (4 - 4 * ((x + frame.margin) & 0x01))) &
@@ -600,11 +608,11 @@ export class EmulationService {
                         );
 
                         if (frame.margin === 0) {
-                            imageData32.subarray(0, 160 * 160).set(buffer32.subarray(0, 160 * 160));
+                            imageData32.subarray(0, width * height).set(buffer32.subarray(0, width * height));
                         } else {
-                            for (let y = 0; y < 160; y++) {
-                                for (let x = 0; x < 160; x++) {
-                                    imageData32[y * 160 + x] = buffer32[y * 160 + x + frame.margin];
+                            for (let y = 0; y < height; y++) {
+                                for (let x = 0; x < width; x++) {
+                                    imageData32[y * width + x] = buffer32[y * frame.bytesPerLine + x + frame.margin];
                                 }
                             }
                         }

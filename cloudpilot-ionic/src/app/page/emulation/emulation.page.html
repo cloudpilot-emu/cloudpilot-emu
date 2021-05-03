@@ -29,7 +29,7 @@
 <ion-content>
 
   <div class="container running-session" [style.display]="emulationState.getCurrentSession() ? undefined : 'none'">
-    <canvas #canvas [width]="canvasWidth" [height]="canvasHeight" [style.width]="cssWidth" [style.height]="cssHeight"
+    <canvas #canvas [style.width]="cssWidth" [style.height]="cssHeight"
       [style.display]="emulationState.getCurrentSession() ? 'block' : 'none'"></canvas>
   </div>
 

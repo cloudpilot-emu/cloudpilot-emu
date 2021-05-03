@@ -1,25 +1,6 @@
-import { HEIGHT, WIDTH } from '../service/canvas-display.service';
-
+import { CanvasDisplayService } from './../service/canvas-display.service';
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-
-function canvasArea(availableHeight: number, availableWidth: number): number {
-    availableHeight = Math.min(availableHeight, HEIGHT / devicePixelRatio);
-    availableWidth = Math.min(availableWidth, WIDTH / devicePixelRatio);
-
-    let scaledWidth: number;
-    let scaledHeight: number;
-
-    if (availableWidth / availableHeight > WIDTH / HEIGHT) {
-        scaledHeight = availableHeight;
-        scaledWidth = (availableHeight / HEIGHT) * WIDTH;
-    } else {
-        scaledWidth = availableWidth;
-        scaledHeight = (availableWidth / WIDTH) * HEIGHT;
-    }
-
-    return scaledWidth * scaledHeight;
-}
 
 @Component({
     selector: 'app-tabs',
@@ -27,7 +8,7 @@ function canvasArea(availableHeight: number, availableWidth: number): number {
     styleUrls: ['tabs.page.scss'],
 })
 export class TabsPage {
-    constructor(private router: Router) {
+    constructor(private router: Router, private canvasDisplayService: CanvasDisplayService) {
         window.addEventListener('resize', this.updateUseSmallUI);
 
         this.updateUseSmallUI();
@@ -44,9 +25,27 @@ export class TabsPage {
         const canvasPadding = 6;
 
         this.useSmallUI =
-            canvasArea(window.innerHeight - headerHeight - tabbarHeight - canvasPadding, window.innerWidth - 6) <
-            canvasArea(window.innerHeight - headerHeight - 25 - canvasPadding, window.innerWidth - 6);
+            this.canvasArea(window.innerHeight - headerHeight - tabbarHeight - canvasPadding, window.innerWidth - 6) <
+            this.canvasArea(window.innerHeight - headerHeight - 25 - canvasPadding, window.innerWidth - 6);
     };
+
+    private canvasArea(availableHeight: number, availableWidth: number): number {
+        availableHeight = Math.min(availableHeight, this.canvasDisplayService.height / devicePixelRatio);
+        availableWidth = Math.min(availableWidth, this.canvasDisplayService.width / devicePixelRatio);
+
+        let scaledWidth: number;
+        let scaledHeight: number;
+
+        if (availableWidth / availableHeight > this.canvasDisplayService.width / this.canvasDisplayService.height) {
+            scaledHeight = availableHeight;
+            scaledWidth = (availableHeight / this.canvasDisplayService.height) * this.canvasDisplayService.width;
+        } else {
+            scaledWidth = availableWidth;
+            scaledHeight = (availableWidth / this.canvasDisplayService.width) * this.canvasDisplayService.height;
+        }
+
+        return scaledWidth * scaledHeight;
+    }
 
     private useSmallUI = false;
 }

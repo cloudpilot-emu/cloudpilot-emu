@@ -28,6 +28,9 @@ export class SessionItemComponent {
             case DeviceId.m130:
                 return 'Palm m130';
 
+            case DeviceId.i710:
+                return 'Tungsten W';
+
             default:
                 throw new Error('bad device ID');
         }
