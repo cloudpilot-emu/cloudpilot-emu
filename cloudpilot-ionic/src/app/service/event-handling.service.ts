@@ -237,7 +237,6 @@ export class EventHandlingService {
     };
 
     private determineArea(coords: [number, number]): Area {
-        console.log(coords);
         return this.canvasDisplayService.isButtons(coords) ? Area.buttons : Area.screen;
     }
 
