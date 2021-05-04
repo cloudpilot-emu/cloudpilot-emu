@@ -1,3 +1,7 @@
+# Version 1.2.1
+
+-   Fix alignment error when restoring images with odd size.
+
 # Version 1.2.0
 
 -   Backup: export all applications and DBs on a device as
