@@ -26,8 +26,6 @@ function prerender(image: Promise<HTMLImageElement>): PrerenderedImage {
             return canvas;
         }
 
-        console.log(`render ${width} ${height}`);
-
         canvas.width = width;
         canvas.height = height;
 
