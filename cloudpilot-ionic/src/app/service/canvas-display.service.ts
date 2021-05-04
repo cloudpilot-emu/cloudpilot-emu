@@ -14,6 +14,35 @@ const BACKGROUND_COLOR_GRAYSCALE_DEVICE = GRAYSCALE_PALETTE_HEX[0];
 const BACKGROUND_COLOR_COLOR_DEVICE = 'white';
 const BACKGROUND_ACTIVE_BUTTON = 'rgba(0,0,0,0.2)';
 
+type PrerenderedImage = (width: number, height: number) => Promise<HTMLCanvasElement>;
+
+function prerender(image: Promise<HTMLImageElement>): PrerenderedImage {
+    let cachedWidth: number;
+    let cachedHeight: number;
+    const canvas = document.createElement('canvas');
+
+    return async (width: number, height: number) => {
+        if (cachedWidth === width && cachedHeight === height) {
+            return canvas;
+        }
+
+        console.log(`render ${width} ${height}`);
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('get a new browser');
+
+        ctx.drawImage(await image, 0, 0, canvas.width, canvas.height);
+
+        cachedWidth = width;
+        cachedHeight = height;
+
+        return canvas;
+    };
+}
+
 function loadImage(url: string): Promise<HTMLImageElement> {
     return new Promise<HTMLImageElement>((resolve, reject) => {
         const image = new Image();
@@ -25,45 +54,17 @@ function loadImage(url: string): Promise<HTMLImageElement> {
     });
 }
 
-async function prerenderedButton(url: string, screenSize: ScreenSize): Promise<HTMLCanvasElement> {
-    const canvas = document.createElement('canvas');
-    canvas.width = (screenSize === ScreenSize.screen320x320 ? 640 : 480) * devicePixelRatio;
-    canvas.height = (screenSize === ScreenSize.screen320x320 ? 120 : 90) * devicePixelRatio;
+const IMAGE_SILKSCREEN_V = prerender(loadImage('assets/skin/silkscreen/v.svg'));
+const IMAGE_SILKSCREEN_M515 = prerender(loadImage('assets/skin/silkscreen/m515.svg'));
+const IMAGE_SILKSCREEN_IIIC = prerender(loadImage('assets/skin/silkscreen/iiic.svg'));
+const IMAGE_SILKSCREEN_M130 = prerender(loadImage('assets/skin/silkscreen/m130.svg'));
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('get a new browser');
-
-    ctx.drawImage(await loadImage(url), 0, 0, canvas.width, canvas.height);
-
-    return canvas;
-}
-
-function prerenderedButtonFactor(url: string) {
-    const sizes = new Map<ScreenSize, Promise<HTMLCanvasElement>>();
-
-    return (screenSize: ScreenSize): Promise<HTMLCanvasElement> => {
-        if (!sizes.has(screenSize)) sizes.set(screenSize, prerenderedButton(url, screenSize));
-
-        return sizes.get(screenSize)!;
-    };
-}
-
-const IMAGE_SILKSCREEN_V = loadImage('assets/skin/silkscreen/v.svg');
-const IMAGE_SILKSCREEN_M515 = loadImage('assets/skin/silkscreen/m515.svg');
-const IMAGE_SILKSCREEN_IIIC = loadImage('assets/skin/silkscreen/iiic.svg');
-const IMAGE_SILKSCREEN_M130 = loadImage('assets/skin/silkscreen/m130.svg');
-
-const IMAGE_BUTTONS_V = prerenderedButtonFactor('assets/skin/hard-buttons/v.svg');
-const IMAGE_BUTTONS_M515 = prerenderedButtonFactor('assets/skin/hard-buttons/m515.svg');
-const IMAGE_BUTTONS_IIIC = prerenderedButtonFactor('assets/skin/hard-buttons/iiic.svg');
-const IMAGE_BUTTONS_M130 = prerenderedButtonFactor('assets/skin/hard-buttons/m130.svg');
+const IMAGE_BUTTONS_V = prerender(loadImage('assets/skin/hard-buttons/v.svg'));
+const IMAGE_BUTTONS_M515 = prerender(loadImage('assets/skin/hard-buttons/m515.svg'));
+const IMAGE_BUTTONS_IIIC = prerender(loadImage('assets/skin/hard-buttons/iiic.svg'));
+const IMAGE_BUTTONS_M130 = prerender(loadImage('assets/skin/hard-buttons/m130.svg'));
 
 const DEFAULT_DIMENSIONS = deviceDimensions(DeviceId.m515);
-
-[IMAGE_BUTTONS_IIIC, IMAGE_BUTTONS_V, IMAGE_BUTTONS_M130, IMAGE_BUTTONS_M515].forEach((prerender) => {
-    prerender(ScreenSize.screen160x160);
-    prerender(ScreenSize.screen320x320);
-});
 
 @Injectable({
     providedIn: 'root',
@@ -84,7 +85,7 @@ export class CanvasDisplayService {
     }
 
     get separator(): number {
-        return this.dimensions.screenSize === ScreenSize.screen320x320 ? 2 : 1;
+        return this.border / this.scale;
     }
 
     get buttonsHeight(): number {
@@ -122,8 +123,6 @@ export class CanvasDisplayService {
     async drawSilkscreen(): Promise<void> {
         if (!this.ctx) return;
 
-        const image = await this.silkscreenImage();
-
         this.fillRect(
             0,
             this.dimensions.height + this.separator,
@@ -136,7 +135,10 @@ export class CanvasDisplayService {
         this.ctx.imageSmoothingQuality = 'high';
 
         this.ctx.drawImage(
-            image,
+            await this.silkscreenImage()(
+                this.dimensions.width * this.scale,
+                this.dimensions.silkscreenHeight * this.scale
+            ),
             this.border,
             this.border + (this.dimensions.height + this.separator) * this.scale,
             this.dimensions.width * this.scale,
@@ -198,7 +200,7 @@ export class CanvasDisplayService {
         const buttonWidth = this.dimensions.screenSize === ScreenSize.screen320x320 ? 60 : 30;
 
         this.ctx.drawImage(
-            await this.buttonsImage(),
+            await this.buttonsImage()(this.scale * this.dimensions.width, this.buttonsHeight * this.scale),
             this.border,
             this.border + this.scale * ystart,
             this.dimensions.width * this.scale,
@@ -365,7 +367,7 @@ export class CanvasDisplayService {
         this.ctx.fill();
     }
 
-    private silkscreenImage(): Promise<HTMLImageElement> {
+    private silkscreenImage(): PrerenderedImage {
         switch (this.session?.device) {
             case DeviceId.m515:
                 return IMAGE_SILKSCREEN_M515;
@@ -383,21 +385,21 @@ export class CanvasDisplayService {
         }
     }
 
-    private buttonsImage(): Promise<HTMLCanvasElement> {
+    private buttonsImage(): PrerenderedImage {
         switch (this.session?.device) {
             case DeviceId.m515:
             case DeviceId.i710:
-                return IMAGE_BUTTONS_M515(this.dimensions.screenSize);
+                return IMAGE_BUTTONS_M515;
 
             case DeviceId.iiic:
-                return IMAGE_BUTTONS_IIIC(this.dimensions.screenSize);
+                return IMAGE_BUTTONS_IIIC;
 
             case DeviceId.m130:
-                return IMAGE_BUTTONS_M130(this.dimensions.screenSize);
+                return IMAGE_BUTTONS_M130;
 
             case DeviceId.palmV:
             default:
-                return IMAGE_BUTTONS_V(this.dimensions.screenSize);
+                return IMAGE_BUTTONS_V;
         }
     }
 
