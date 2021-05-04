@@ -60,6 +60,11 @@ const IMAGE_BUTTONS_M130 = prerenderedButtonFactor('assets/skin/hard-buttons/m13
 
 const DEFAULT_DIMENSIONS = deviceDimensions(DeviceId.m515);
 
+[IMAGE_BUTTONS_IIIC, IMAGE_BUTTONS_V, IMAGE_BUTTONS_M130, IMAGE_BUTTONS_M515].forEach((prerender) => {
+    prerender(ScreenSize.screen160x160);
+    prerender(ScreenSize.screen320x320);
+});
+
 @Injectable({
     providedIn: 'root',
 })
@@ -99,8 +104,6 @@ export class CanvasDisplayService {
 
         canvas.width = this.width;
         canvas.height = this.height;
-
-        console.log(this.scale, this.width, this.height);
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
