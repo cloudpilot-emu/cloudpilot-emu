@@ -280,15 +280,17 @@ export class StorageService {
 
     private saveMemory = (tx: IDBTransaction, sessionId: number, memory8: Uint8Array): void =>
         this.ngZone.runOutsideAngular(() => {
-            const memory32 = new Uint32Array(memory8.buffer, memory8.byteOffset, memory8.length >>> 2);
             const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
+            const page32 = new Uint32Array(256);
+            const page8 = new Uint8Array(page32.buffer);
 
             objectStore.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
 
-            const pageCount = memory32.length >>> 8;
+            const pageCount = memory8.length >>> 10;
 
             for (let i = 0; i < pageCount; i++) {
-                const compressedPage = compressPage(memory32.subarray(i * 256, (i + 1) * 256));
+                page8.set(memory8.subarray(i * 1024, (i + 1) * 1024));
+                const compressedPage = compressPage(page32);
 
                 if (typeof compressedPage === 'number') {
                     objectStore.put(compressedPage, [sessionId, i]);
