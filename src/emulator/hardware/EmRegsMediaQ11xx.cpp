@@ -3639,6 +3639,7 @@ void EmRegsMediaQ11xx::PrvIncBlitterInit(void) {
     this->PrvLogGEState();
 #endif
 
+    fSourceFifo.Clear();
     fBlitInProgress = true;
 
     fCurXOffset = 0;
