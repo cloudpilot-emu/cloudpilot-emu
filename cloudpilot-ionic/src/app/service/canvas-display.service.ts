@@ -56,11 +56,13 @@ const IMAGE_SILKSCREEN_V = prerender(loadImage('assets/skin/silkscreen/v.svg'));
 const IMAGE_SILKSCREEN_M515 = prerender(loadImage('assets/skin/silkscreen/m515.svg'));
 const IMAGE_SILKSCREEN_IIIC = prerender(loadImage('assets/skin/silkscreen/iiic.svg'));
 const IMAGE_SILKSCREEN_M130 = prerender(loadImage('assets/skin/silkscreen/m130.svg'));
+const IMAGE_SILKSCREEN_TUNGSTENW = prerender(loadImage('assets/skin/silkscreen/tungstenw.svg'));
 
 const IMAGE_BUTTONS_V = prerender(loadImage('assets/skin/hard-buttons/v.svg'));
 const IMAGE_BUTTONS_M515 = prerender(loadImage('assets/skin/hard-buttons/m515.svg'));
 const IMAGE_BUTTONS_IIIC = prerender(loadImage('assets/skin/hard-buttons/iiic.svg'));
 const IMAGE_BUTTONS_M130 = prerender(loadImage('assets/skin/hard-buttons/m130.svg'));
+const IMAGE_BUTTONS_TUNGSTENW = prerender(loadImage('assets/skin/hard-buttons/tungstenw.svg'));
 
 const DEFAULT_DIMENSIONS = deviceDimensions(DeviceId.m515);
 
@@ -373,9 +375,11 @@ export class CanvasDisplayService {
             case DeviceId.iiic:
                 return IMAGE_SILKSCREEN_IIIC;
 
-            case DeviceId.i710:
             case DeviceId.m130:
                 return IMAGE_SILKSCREEN_M130;
+
+            case DeviceId.i710:
+                return IMAGE_SILKSCREEN_TUNGSTENW;
 
             case DeviceId.palmV:
             default:
@@ -386,7 +390,6 @@ export class CanvasDisplayService {
     private buttonsImage(): PrerenderedImage {
         switch (this.session?.device) {
             case DeviceId.m515:
-            case DeviceId.i710:
                 return IMAGE_BUTTONS_M515;
 
             case DeviceId.iiic:
@@ -394,6 +397,9 @@ export class CanvasDisplayService {
 
             case DeviceId.m130:
                 return IMAGE_BUTTONS_M130;
+
+            case DeviceId.i710:
+                return IMAGE_BUTTONS_TUNGSTENW;
 
             case DeviceId.palmV:
             default:
