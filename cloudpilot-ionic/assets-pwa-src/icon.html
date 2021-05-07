@@ -23,17 +23,11 @@
         img {
             width: 75%;
             height: 75%;
-            filter: drop-shadow(0 0 20px #aaa);
         }
 
         /* iOS */
         @media (width: 180px) {
-            img {
-                filter: invert() drop-shadow(0 0 20px #888);
-            }
-
             .container {
-                background: black;
                 border-radius: 0;
             }
         }
@@ -42,6 +36,8 @@
         @media (width: 196px) {
             img {
                 filter: none;
+                width: 85%;
+                height: 85%;
             }
         }
     </style>
@@ -49,7 +45,7 @@
 
 <body>
     <div class="container">
-        <img src="icon.svg"></img>
+        <img src="cp-palmblue-001.svg"></img>
     </div>
 </body>
 
