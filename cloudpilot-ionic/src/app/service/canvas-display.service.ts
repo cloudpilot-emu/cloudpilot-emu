@@ -9,10 +9,76 @@ import { Session } from '../model/Session';
 import { SnapshotStatistics } from './../model/SnapshotStatistics';
 import { deviceDimensions } from '../helper/deviceProperties';
 
+const DEFAULT_DEVICE = DeviceId.m515;
 const BACKGROUND_COLOR_SILKSCREEN = GRAYSCALE_PALETTE_HEX[2];
 const BACKGROUND_COLOR_GRAYSCALE_DEVICE = GRAYSCALE_PALETTE_HEX[0];
 const BACKGROUND_COLOR_COLOR_DEVICE = 'white';
 const BACKGROUND_ACTIVE_BUTTON = 'rgba(0,0,0,0.2)';
+
+interface FrameDependent {
+    frameDevice: number;
+    frameCanvas: number;
+}
+
+interface Layout {
+    scale: number;
+    borderWidth: FrameDependent;
+    width: FrameDependent;
+    height: FrameDependent;
+    screenHeight: FrameDependent;
+    screenWidth: FrameDependent;
+    screenLeft: FrameDependent;
+    screenTop: FrameDependent;
+    screenBottom: FrameDependent;
+    separatorHeight: FrameDependent;
+    silkscreenHeight: FrameDependent;
+    silkscreenTop: FrameDependent;
+    silkscreenBottom: FrameDependent;
+    buttonHeight: FrameDependent;
+    buttonWidth: FrameDependent;
+    buttonTop: FrameDependent;
+    buttonBottom: FrameDependent;
+}
+
+function calculateLayout(device: DeviceId): Layout {
+    const dimensions = deviceDimensions(device);
+    const scale = (dimensions.screenSize === ScreenSize.screen320x320 ? 2 : 3) * devicePixelRatio;
+    const borderWidth: FrameDependent = { frameDevice: 1, frameCanvas: scale };
+
+    const dist = (x: number): FrameDependent => ({ frameDevice: x, frameCanvas: x * scale });
+    const coord = (x: number): FrameDependent => ({ frameDevice: x, frameCanvas: borderWidth.frameCanvas + x * scale });
+
+    const separatorHeight = dist(dimensions.screenSize === ScreenSize.screen320x320 ? 1 : 2);
+    const buttonHeight = dist(dimensions.screenSize === ScreenSize.screen320x320 ? 60 : 30);
+
+    return {
+        scale,
+        borderWidth,
+        height: dist(
+            2 * borderWidth.frameDevice +
+                dimensions.height +
+                separatorHeight.frameDevice +
+                dimensions.silkscreenHeight +
+                buttonHeight.frameDevice
+        ),
+        width: dist(2 * borderWidth.frameDevice + dimensions.width),
+        screenHeight: dist(dimensions.height),
+        screenWidth: dist(dimensions.width),
+        screenLeft: coord(0),
+        screenTop: coord(0),
+        screenBottom: coord(dimensions.height),
+        separatorHeight,
+        silkscreenHeight: dist(dimensions.silkscreenHeight),
+        silkscreenTop: coord(dimensions.height + separatorHeight.frameDevice),
+        silkscreenBottom: coord(dimensions.height + separatorHeight.frameDevice + dimensions.silkscreenHeight),
+        buttonHeight,
+        buttonWidth: buttonHeight,
+        buttonTop: coord(dimensions.height + separatorHeight.frameDevice + dimensions.silkscreenHeight),
+        buttonBottom: coord(
+            dimensions.height + separatorHeight.frameDevice + dimensions.silkscreenHeight + buttonHeight.frameDevice
+        ),
+    };
+}
 
 type PrerenderedImage = (width: number, height: number) => Promise<HTMLCanvasElement>;
 
@@ -64,44 +130,22 @@ const IMAGE_BUTTONS_IIIC = prerender(loadImage('assets/skin/hard-buttons/iiic.sv
 const IMAGE_BUTTONS_M130 = prerender(loadImage('assets/skin/hard-buttons/m130.svg'));
 const IMAGE_BUTTONS_TUNGSTENW = prerender(loadImage('assets/skin/hard-buttons/tungstenw.svg'));
 
-const DEFAULT_DIMENSIONS = deviceDimensions(DeviceId.m515);
-
 @Injectable({
     providedIn: 'root',
 })
 export class CanvasDisplayService {
     constructor() {}
 
-    get scale(): number {
-        return (this.dimensions.screenSize === ScreenSize.screen320x320 ? 2 : 3) * devicePixelRatio;
-    }
-
-    get border(): number {
-        return 1 * this.scale;
-    }
-
     get width(): number {
-        return this.scale * this.dimensions.width + 2 * this.border;
-    }
-
-    get separator(): number {
-        return this.border / this.scale;
-    }
-
-    get buttonsHeight(): number {
-        return this.dimensions.screenSize === ScreenSize.screen320x320 ? 60 : 30;
+        return this.layout.width.frameCanvas;
     }
 
     get height(): number {
-        return (
-            this.scale *
-                (this.dimensions.height + this.dimensions.silkscreenHeight + this.separator + this.buttonsHeight) +
-            2 * this.border
-        );
+        return this.layout.height.frameCanvas;
     }
 
     async initialize(canvas: HTMLCanvasElement, session: Session | undefined): Promise<void> {
-        this.dimensions = session ? deviceDimensions(session.device) : DEFAULT_DIMENSIONS;
+        this.layout = calculateLayout(session?.device ?? DeviceId.m515);
 
         canvas.width = this.width;
         canvas.height = this.height;
@@ -124,10 +168,10 @@ export class CanvasDisplayService {
         if (!this.ctx) return;
 
         this.fillRect(
-            0,
-            this.dimensions.height + this.separator,
-            this.dimensions.width,
-            this.dimensions.silkscreenHeight,
+            this.layout.screenLeft.frameDevice,
+            this.layout.silkscreenTop.frameDevice,
+            this.layout.screenWidth.frameDevice,
+            this.layout.silkscreenHeight.frameDevice,
             BACKGROUND_COLOR_SILKSCREEN
         );
 
@@ -135,14 +179,11 @@ export class CanvasDisplayService {
         this.ctx.imageSmoothingQuality = 'high';
 
         this.ctx.drawImage(
-            await this.silkscreenImage()(
-                this.dimensions.width * this.scale,
-                this.dimensions.silkscreenHeight * this.scale
-            ),
-            this.border,
-            this.border + (this.dimensions.height + this.separator) * this.scale,
-            this.dimensions.width * this.scale,
-            this.dimensions.silkscreenHeight * this.scale
+            await this.silkscreenImage()(this.layout.screenWidth.frameCanvas, this.layout.silkscreenHeight.frameCanvas),
+            this.layout.borderWidth.frameCanvas,
+            this.layout.silkscreenTop.frameCanvas,
+            this.layout.screenWidth.frameCanvas,
+            this.layout.silkscreenHeight.frameCanvas
         );
     }
 
@@ -156,16 +197,17 @@ export class CanvasDisplayService {
 
         this.ctx.beginPath();
         this.fillRect(
-            0,
-            this.dimensions.height + this.separator,
-            this.dimensions.width,
-            this.dimensions.silkscreenHeight,
+            this.layout.screenLeft.frameDevice,
+            this.layout.silkscreenTop.frameDevice,
+            this.layout.screenWidth.frameDevice,
+            this.layout.silkscreenHeight.frameDevice,
             'rgba(255,255,255,0.6)'
         );
 
-        const fontFactor = this.dimensions.screenSize === ScreenSize.screen320x320 ? 2 : 1;
+        const screenSize = deviceDimensions(this.session?.device ?? DEFAULT_DEVICE).screenSize;
+        const fontScale = screenSize === ScreenSize.screen320x320 ? 2 : 1;
 
-        this.ctx.font = `${this.scale * 6 * fontFactor}px monospace`;
+        this.ctx.font = `${this.layout.scale * 6 * fontScale}px monospace`;
         this.ctx.fillStyle = 'black';
         [
             ...(!snapshotStatistics && !emulationStatistics ? ['collecting statistics...'] : []),
@@ -187,8 +229,8 @@ export class CanvasDisplayService {
         ].forEach((line, i) =>
             this.ctx!.fillText(
                 line,
-                this.border + fontFactor * this.scale,
-                this.border + (this.dimensions.height + fontFactor * (8 + i * 6)) * this.scale
+                this.layout.screenLeft.frameCanvas + fontScale * this.layout.scale,
+                this.layout.silkscreenTop.frameCanvas + fontScale * this.layout.scale * (8 + i * 6)
             )
         );
     }
@@ -196,56 +238,65 @@ export class CanvasDisplayService {
     async drawButtons(activeButtons: Array<PalmButton> = []): Promise<void> {
         if (!this.ctx) return;
 
-        const ystart = this.dimensions.height + this.dimensions.silkscreenHeight + this.separator;
-        const buttonWidth = this.dimensions.screenSize === ScreenSize.screen320x320 ? 60 : 30;
-
         this.ctx.drawImage(
-            await this.buttonsImage()(this.scale * this.dimensions.width, this.buttonsHeight * this.scale),
-            this.border,
-            this.border + this.scale * ystart,
-            this.dimensions.width * this.scale,
-            this.buttonsHeight * this.scale
+            await this.buttonsImage()(this.layout.screenWidth.frameCanvas, this.layout.buttonHeight.frameCanvas),
+            this.layout.screenLeft.frameCanvas,
+            this.layout.buttonTop.frameCanvas,
+            this.layout.screenWidth.frameCanvas,
+            this.layout.buttonHeight.frameCanvas
         );
 
         if (activeButtons.includes(PalmButton.cal)) {
-            this.fillRect(0, ystart, buttonWidth, this.buttonsHeight, BACKGROUND_ACTIVE_BUTTON);
+            this.fillRect(
+                0,
+                this.layout.buttonTop.frameDevice,
+                this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice,
+                BACKGROUND_ACTIVE_BUTTON
+            );
         }
         if (activeButtons.includes(PalmButton.phone)) {
-            this.fillRect(buttonWidth, ystart, buttonWidth, this.buttonsHeight, BACKGROUND_ACTIVE_BUTTON);
+            this.fillRect(
+                this.layout.buttonWidth.frameDevice,
+                this.layout.buttonTop.frameDevice,
+                this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice,
+                BACKGROUND_ACTIVE_BUTTON
+            );
         }
         if (activeButtons.includes(PalmButton.todo)) {
             this.fillRect(
-                this.dimensions.width - 2 * buttonWidth,
-                ystart,
-                buttonWidth,
-                this.buttonsHeight,
+                this.layout.screenWidth.frameDevice - 2 * this.layout.buttonWidth.frameDevice,
+                this.layout.buttonTop.frameDevice,
+                this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice,
                 BACKGROUND_ACTIVE_BUTTON
             );
         }
         if (activeButtons.includes(PalmButton.notes)) {
             this.fillRect(
-                this.dimensions.width - buttonWidth,
-                ystart,
-                buttonWidth,
-                this.buttonsHeight,
+                this.layout.screenWidth.frameDevice - this.layout.buttonWidth.frameDevice,
+                this.layout.buttonTop.frameDevice,
+                this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice,
                 BACKGROUND_ACTIVE_BUTTON
             );
         }
         if (activeButtons.includes(PalmButton.up)) {
             this.fillRect(
-                2 * buttonWidth,
-                ystart,
-                this.dimensions.width - 4 * buttonWidth,
-                this.buttonsHeight / 2,
+                2 * this.layout.buttonWidth.frameDevice,
+                this.layout.buttonTop.frameDevice,
+                this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice / 2,
                 BACKGROUND_ACTIVE_BUTTON
             );
         }
         if (activeButtons.includes(PalmButton.down)) {
             this.fillRect(
-                2 * buttonWidth,
-                ystart + this.buttonsHeight / 2,
-                this.dimensions.width - 4 * buttonWidth,
-                this.buttonsHeight / 2,
+                2 * this.layout.buttonWidth.frameDevice,
+                this.layout.buttonTop.frameDevice + this.layout.buttonHeight.frameDevice / 2,
+                this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice / 2,
                 BACKGROUND_ACTIVE_BUTTON
             );
         }
@@ -257,10 +308,10 @@ export class CanvasDisplayService {
         this.ctx.imageSmoothingEnabled = false;
         this.ctx.drawImage(
             canvas,
-            this.border,
-            this.border,
-            this.scale * this.dimensions.width,
-            this.scale * this.dimensions.height
+            this.layout.screenLeft.frameCanvas,
+            this.layout.screenTop.frameCanvas,
+            this.layout.screenWidth.frameCanvas,
+            this.layout.screenHeight.frameCanvas
         );
     }
 
@@ -290,10 +341,11 @@ export class CanvasDisplayService {
 
         // Compensate for the border
         let x =
-            Math.floor((((e.clientX - contentX) / contentWidth) * this.width) / this.scale) - this.border / this.scale;
+            Math.floor((((e.clientX - contentX) / contentWidth) * this.width) / this.layout.scale) -
+            this.layout.borderWidth.frameDevice;
         let y =
-            Math.floor((((e.clientY - contentY) / contentHeight) * this.height) / this.scale) -
-            this.border / this.scale;
+            Math.floor((((e.clientY - contentY) / contentHeight) * this.height) / this.layout.scale) -
+            this.layout.borderWidth.frameDevice;
 
         // The canvas layout inside the border is as follows:
         //
@@ -304,42 +356,45 @@ export class CanvasDisplayService {
         //
         // we map this to 160x250 lines by mapping the separator to the silkscreen
 
-        if (y >= this.dimensions.height + this.separator) y -= 1;
+        if (y >= this.layout.screenHeight.frameDevice + this.layout.separatorHeight.frameDevice) y -= 1;
 
-        const totalHeight = this.dimensions.height + this.dimensions.silkscreenHeight + this.buttonsHeight;
+        const totalHeight =
+            this.layout.screenHeight.frameDevice +
+            this.layout.silkscreenHeight.frameDevice +
+            this.layout.buttonHeight.frameDevice;
 
         if (clip) {
             if (x < 0) x = 0;
-            if (x >= this.dimensions.width) x = this.dimensions.width - 1;
+            if (x >= this.layout.screenWidth.frameDevice) x = this.layout.screenWidth.frameDevice - 1;
             if (y < 0) y = 0;
-            if (y >= totalHeight) {
-                y = this.dimensions.height + this.dimensions.silkscreenHeight - 1;
-            }
+            if (y >= totalHeight) y = totalHeight - 1;
         } else {
-            if (x < 0 || x >= this.dimensions.width || y < 0 || y >= totalHeight) {
+            if (x < 0 || x >= this.layout.screenWidth.frameDevice || y < 0 || y >= totalHeight) {
                 return undefined;
             }
         }
+
+        console.log(x, y);
 
         return [x, y];
     }
 
     isButtons([, y]: [number, number]): boolean {
-        return y >= this.dimensions.height + this.dimensions.silkscreenHeight;
+        return y >= this.layout.screenHeight.frameDevice + this.layout.silkscreenHeight.frameDevice;
     }
 
     determineButton([x, y]: [number, number]): PalmButton {
-        const buttonWidth = this.dimensions.screenSize === ScreenSize.screen320x320 ? 60 : 30;
-
-        if (x >= this.dimensions.width - buttonWidth) return PalmButton.notes;
-        if (x >= this.dimensions.width - 2 * buttonWidth) return PalmButton.todo;
-        if (x >= 2 * buttonWidth) {
+        if (x >= this.layout.screenWidth.frameDevice - this.layout.buttonWidth.frameDevice) return PalmButton.notes;
+        if (x >= this.layout.screenWidth.frameDevice - 2 * this.layout.buttonWidth.frameDevice) return PalmButton.todo;
+        if (x >= 2 * this.layout.buttonWidth.frameDevice) {
             return y >=
-                this.dimensions.height + this.dimensions.silkscreenHeight + this.separator + this.buttonsHeight / 2
+                this.layout.screenHeight.frameDevice +
+                    this.layout.silkscreenHeight.frameDevice +
+                    this.layout.buttonHeight.frameDevice / 2
                 ? PalmButton.down
                 : PalmButton.up;
         }
-        if (x >= buttonWidth) return PalmButton.phone;
+        if (x >= this.layout.buttonWidth.frameDevice) return PalmButton.phone;
 
         return PalmButton.cal;
     }
@@ -349,10 +404,10 @@ export class CanvasDisplayService {
 
         this.ctx.beginPath();
         this.ctx.rect(
-            this.border + this.scale * x,
-            this.border + this.scale * y,
-            this.scale * width,
-            this.scale * height
+            this.layout.borderWidth.frameCanvas + this.layout.scale * x,
+            this.layout.borderWidth.frameCanvas + this.layout.scale * y,
+            this.layout.scale * width,
+            this.layout.scale * height
         );
         this.ctx.fillStyle = style;
         this.ctx.fill();
@@ -413,6 +468,7 @@ export class CanvasDisplayService {
 
     private ctx: CanvasRenderingContext2D | undefined;
     private session: Session | undefined;
+    private layout = calculateLayout(DEFAULT_DEVICE);
 
-    private dimensions = DEFAULT_DIMENSIONS;
+    // private dimensions = DEFAULT_DIMENSIONS;
 }
