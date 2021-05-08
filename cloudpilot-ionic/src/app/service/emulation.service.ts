@@ -115,8 +115,9 @@ export class EmulationService {
                 this.canvas.height = dimensions.height;
 
                 this.imageData = new ImageData(dimensions.width, dimensions.height);
+                this.imageData32 = new Uint32Array(this.imageData.data.buffer);
 
-                this.imageData.data.fill(255);
+                this.imageData32.fill(0xfffffffff);
 
                 const context = this.canvas.getContext('2d');
                 if (!context) {
