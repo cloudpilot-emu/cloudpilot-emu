@@ -28,3 +28,16 @@ markdown {
     align-items: center;
     justify-content: center;
 }
+
+.logo {
+    width: 10em;
+    height: 10em;
+    margin: 1em auto;
+    display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+    .logo {
+        filter: invert(100%);
+    }
+}
