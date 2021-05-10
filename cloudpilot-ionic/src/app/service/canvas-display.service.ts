@@ -374,8 +374,6 @@ export class CanvasDisplayService {
             }
         }
 
-        console.log(x, y);
-
         return [x, y];
     }
 
