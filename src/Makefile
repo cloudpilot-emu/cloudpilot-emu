@@ -62,6 +62,7 @@ LDFLAGS_EMCC_WEB = -O3 -Wno-version-check -flto \
 	-s ALLOW_MEMORY_GROWTH=1 \
 	-s INITIAL_MEMORY=67108864 \
 	-s ALLOW_TABLE_GROWTH=1 \
+	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["ccall","addFunction"]
 
 BUILDDIR_NATIVE = .build
