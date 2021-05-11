@@ -4,6 +4,7 @@
 -   Palm m130 support.
 -   Workaround for dying service worker on Safari desktop.
 -   Support for Tungsten W.
+-   Clipboard integration on browser that support it.
 
 # Version 1.2.1
 
