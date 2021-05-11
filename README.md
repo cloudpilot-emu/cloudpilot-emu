@@ -2,12 +2,14 @@
 
 This is an emulator for Dragonball-based PalmOS devices that runs in a web
 browser. In particular, the emulator works on iOS. The emulator is derived from
-the original POSE emulator. At the moment, Palm IIIc, Palm V amd Palm m515 devices
-are emulated. Support for more devices may follow in the future.
+the original POSE emulator. Please see below for the list of currently supported
+devices.
 
 <img src="doc/m515.jpeg" width="310" height="552" alt="Palm m515 emulation"></img>
 &nbsp;
 <img src="doc/palmv.jpeg" width="310" height="552" alt="Palm V emulation"></img>
+&nbsp;
+<img src="doc/tungstenw.jpeg" width="310" height="552" alt="Tungsten W emulation"></img>
 
 # The emulator
 
@@ -22,6 +24,16 @@ Please check out the documentation in the app.
 
 In order to use the emulator you need to provide a ROM file for the device you
 want to emulate. You can find a collection of ROMs [on PalmDB](https://palmdb.net/app/palm-roms-complete).
+
+## Supported devices
+
+The following devices are currently supported:
+
+-   Palm IIIcc
+-   Palm V
+-   Palm m515
+-   Palm m130
+-   Tungsten W (silkscreen version)
 
 ## Other versions
 
@@ -54,6 +66,7 @@ Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloud
     foot and crashes the emulator. This is particularly true if a file is installed
     on a virtual Palm IIIc with PalmOS 3.5 while the launcher is active and the
     category menu is open.
+-   Trying to enable mobile on Tungsten W will crash the emulated device.
 
 # Source code and relationship to POSE
 
