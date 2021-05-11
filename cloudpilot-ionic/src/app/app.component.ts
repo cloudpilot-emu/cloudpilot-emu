@@ -33,6 +33,7 @@ export class AppComponent implements AfterViewInit {
 
     private async checkForUpdate(): Promise<void> {
         const storedVersion = this.kvsService.kvs.version;
+        const previousVersion = this.kvsService.kvs.previousVersion;
 
         if (storedVersion === undefined) {
             this.kvsService.kvs.version = VERSION;
@@ -42,7 +43,21 @@ export class AppComponent implements AfterViewInit {
 
         if (storedVersion === VERSION) return;
 
+        if (previousVersion === VERSION) {
+            await this.emulationService.bootstrapComplete();
+
+            this.alertService.message(
+                'Version mismatch',
+                `Cloudpilot has reverted to an old version. This indicates a browser bug.
+                Please wait a few seconds for the browser to update Cloudpilot in the background,
+                then reload to switch back to the current version.
+                `,
+                { Reload: () => window.location.reload() }
+            );
+        }
+
         this.kvsService.kvs.version = VERSION;
+        this.kvsService.kvs.previousVersion = storedVersion;
 
         // wait for a possible loader to disappear
         await this.emulationService.bootstrapComplete();
