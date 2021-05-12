@@ -200,6 +200,7 @@ SOURCE_TEST = \
 	test/SaveChunkHelper.cpp \
 	test/LoadChunkHelper.cpp \
 	test/Fifo.cpp \
+	test/Miscellaneous.cpp \
 	test/main.cpp
 
 SOURCE_SDL = \
