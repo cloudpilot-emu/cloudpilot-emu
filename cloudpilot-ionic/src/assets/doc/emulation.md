@@ -12,6 +12,9 @@ lefft.
 A hardware keyboard can be used to type directly in the emulator (see "Keyboard
 mappings" at the end of this page).
 
+On browsers that support the necessary APIs the clipboard can be shared with
+the host. Check "Clipboard integration" below for more details.
+
 # Installing program and database files
 
 Select the "Install file" button on the top right in order to install `.prc` and
@@ -113,6 +116,23 @@ hardware buttons
 
 If unsure take a look at the buttons on the silkscreen --- their background will change
 while the corresponding button is pressed.
+
+# Clipboard integration
+
+On browsers that support it the clipboard can be shared with the host. This is disabled
+by default and needs to be turned on the settings page. Note that the option is not
+available on browsers that do not support it (i.e. Firefox).
+
+Once the setting is turned on copy and paste operations will access the host clipboard.
+Accessing the clipboard is a sensitive operation, and browsers implement security
+mechanisms around it.
+
+On most webkit-based browsers (including Chrome) a popup asking for permission must be
+confirmed the first time Cloudpilot pastes from the host clipboard. On other browsers
+(notably Safari) Cloudpilot shows a dialog asking to confirm the operation on every
+clipboard access. This is necessary because those browsers require clipboard access to
+be the direct consequence of an user interaction. When pasting Safari will show
+an additionl "Paste" widget that needs to be tapped in order to paste.
 
 # Statistics
 

@@ -1,6 +1,12 @@
 Cloudpilot is a web-based emulator for PalmOS. It emulates dragonball based devices
-and supports PalmOS up to version 4.x. Cloudpilot is based on the original POSE
-emulator and currently emulates Palm IIIc, Palm V and Palm m515 devices.
+and supports PalmOS up to version 4.x. Cloudpilot is based on the original POSE.
+Currently, the following devices are emulated:
+
+-   Palm IIIcc
+-   Palm V
+-   Palm m515
+-   Palm m130
+-   Tungsten W (silkscreen version)
 
 # Usage
 
@@ -113,6 +119,7 @@ In order to force check for an update terminate and restart the app.
     PalmOS on the wrong foot and crash the emulator. In particular, this happens
     if a file is installed on a virtual Palm IIIc with PalmOS 3.5 while the
     launcher is active and the category menu is open.
+-   Tungsten W requires a reset if accidentially turned off.
 
 # Cloudpilot on the web
 
