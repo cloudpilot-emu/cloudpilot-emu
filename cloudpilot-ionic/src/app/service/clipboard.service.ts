@@ -114,13 +114,15 @@ export class ClipboardService {
         const clipboardContent = await this.tryPaste();
 
         const ctx = cloudpilot.getSuspendContextClipboardPaste();
-        ctx.Resume(clipboardContent);
+        ctx.Resume(clipboardContent ?? '');
 
-        this.clipboardContent = clipboardContent;
-        this.lastClipboardReadAt = performance.now();
+        if (clipboardContent !== undefined) {
+            this.clipboardContent = clipboardContent;
+            this.lastClipboardReadAt = performance.now();
+        }
     }
 
-    private async tryPaste(): Promise<string> {
+    private async tryPaste(): Promise<string | undefined> {
         if (performance.now() - this.lastClipboardReadAt < READ_CLIPBOARD_TTL) {
             return this.clipboardContent;
         }
@@ -131,7 +133,7 @@ export class ClipboardService {
             if (e === E_PERMISSION_DENIED) {
                 await this.msgPermissionDenied();
 
-                return '';
+                return undefined;
             }
         }
 
@@ -140,7 +142,7 @@ export class ClipboardService {
         } catch (e) {
             await this.msgPasteFailed();
 
-            return '';
+            return undefined;
         }
     }
 
@@ -154,7 +156,7 @@ export class ClipboardService {
         }
     }
 
-    private tryPasteWithInteraction(): Promise<string> {
+    private tryPasteWithInteraction(): Promise<string | undefined> {
         return new Promise(async (resolve, reject) => {
             try {
                 const alert = await this.alertController.create({
@@ -179,7 +181,7 @@ export class ClipboardService {
                             handler: () => {
                                 alert.dismiss();
 
-                                resolve('');
+                                resolve(undefined);
                             },
                         },
                     ],
