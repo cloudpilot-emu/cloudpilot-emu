@@ -48,7 +48,7 @@ function calculateLayout(device: DeviceId): Layout {
     const dist = (x: number): FrameDependent => ({ frameDevice: x, frameCanvas: x * scale });
     const coord = (x: number): FrameDependent => ({ frameDevice: x, frameCanvas: borderWidth.frameCanvas + x * scale });
 
-    const separatorHeight = dist(dimensions.screenSize === ScreenSize.screen320x320 ? 1 : 2);
+    const separatorHeight = dist(1);
     const buttonHeight = dist(dimensions.screenSize === ScreenSize.screen320x320 ? 60 : 30);
 
     return {
@@ -356,7 +356,13 @@ export class CanvasDisplayService {
         //
         // we map this to 160x250 lines by mapping the separator to the silkscreen
 
-        if (y >= this.layout.screenHeight.frameDevice + this.layout.separatorHeight.frameDevice) y -= 1;
+        if (y >= this.layout.screenHeight.frameDevice) {
+            if (y <= this.layout.screenHeight.frameDevice + this.layout.separatorHeight.frameDevice) {
+                y = this.layout.screenHeight.frameDevice;
+            } else {
+                y -= this.layout.separatorHeight.frameDevice;
+            }
+        }
 
         const totalHeight =
             this.layout.screenHeight.frameDevice +

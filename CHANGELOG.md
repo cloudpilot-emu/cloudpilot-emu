@@ -1,3 +1,7 @@
+# Version 1.3.1
+
+-   Fix separator height at 160x160
+
 # Version 1.3.0
 
 -   Handle pqa files in installation and backup.
