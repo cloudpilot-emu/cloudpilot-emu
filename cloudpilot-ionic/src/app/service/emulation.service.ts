@@ -1,4 +1,5 @@
 import { Cloudpilot, DbInstallResult, PalmButton } from '../helper/Cloudpilot';
+import { GRAYSCALE_PALETTE_HEX, GRAYSCALE_PALETTE_RGBA } from '../helper/palette';
 import { Injectable, NgZone } from '@angular/core';
 import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
 
@@ -21,29 +22,6 @@ import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
 import { deviceDimensions } from '../helper/deviceProperties';
 import { isColor } from '../model/DeviceId';
-
-export const GRAYSCALE_PALETTE_RGBA = [
-    0xffd2d2d2,
-    0xffc4c4c4,
-    0xffb6b6b6,
-    0xffa8a8a8,
-    0xff9a9a9a,
-    0xff8c8c8c,
-    0xff7e7e7e,
-    0xff707070,
-    0xff626262,
-    0xff545454,
-    0xff464646,
-    0xff383838,
-    0xff2a2a2a,
-    0xff1c1c1c,
-    0xff0e0e0e,
-    0xff000000,
-];
-
-export const GRAYSCALE_PALETTE_HEX = GRAYSCALE_PALETTE_RGBA.map(
-    (x) => '#' + (x & 0xffffff).toString(16).padStart(6, '0')
-);
 
 const PEN_MOVE_THROTTLE = 25;
 const SNAPSHOT_INTERVAL = 1000;

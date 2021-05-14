@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg width="480px" height="180px" viewBox="0 0 480 180" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
-    <g id="silkscreen-palmv-bw">
+    <g id="silkscreen-palmv">
+        <g id="bg-color" transform="matrix(5.33333,0,0,2.68657,-592,-67.1642)">
+            <rect x="111" y="25" width="90" height="67" style="fill:rgb(139,176,157);"/>
+        </g>
         <g id="write-area">
             <path id="border" d="M399,10.8C399,7.047 395.953,4 392.2,4L87.8,4C84.047,4 81,7.047 81,10.8L81,167.2C81,170.953 84.047,174 87.8,174L392.2,174C395.953,174 399,170.953 399,167.2L399,10.8ZM275,7L270,15L265,7L87.8,7C85.758,7 84,8.758 84,10.8C84,10.8 84,167.2 84,167.2C84,169.242 85.758,171 87.8,171L265,171L270,163L275,171L392.2,171C394.242,171 396,169.242 396,167.2L396,10.8C396,8.758 394.242,7 392.2,7L275,7Z"/>
             <g id="abc-board" transform="matrix(1,0,0,1,0.107304,-3.05658)">
