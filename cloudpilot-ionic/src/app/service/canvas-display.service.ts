@@ -14,7 +14,7 @@ const BACKGROUND_COLOR_SILKSCREEN = GRAYSCALE_PALETTE_HEX[2];
 const BACKGROUND_COLOR_GRAYSCALE_DEVICE = GRAYSCALE_PALETTE_HEX[0];
 const BACKGROUND_COLOR_COLOR_DEVICE = 'white';
 const FRAME_COLOR_COLOR_DEVICE = 'white';
-const FRRAME_COLOR_GRAYSCALE_DEVICE = GRAYSCALE_PALETTE_HEX[6];
+const FRAME_COLOR_GRAYSCALE_DEVICE = GRAYSCALE_PALETTE_HEX[2];
 const BACKGROUND_ACTIVE_BUTTON = 'rgba(0,0,0,0.2)';
 
 interface FrameDependent {
@@ -166,10 +166,7 @@ export class CanvasDisplayService {
             0,
             0,
             this.layout.screenWidth.frameDevice,
-            this.layout.screenHeight.frameDevice +
-                this.layout.silkscreenHeight.frameDevice +
-                this.layout.separatorHeight.frameDevice +
-                this.layout.buttonHeight.frameDevice,
+            this.layout.screenHeight.frameDevice,
             this.backgroundColor()
         );
 
@@ -484,7 +481,7 @@ export class CanvasDisplayService {
     }
 
     private frameColor(): string {
-        return isColor(this.session?.device) ? FRAME_COLOR_COLOR_DEVICE : FRRAME_COLOR_GRAYSCALE_DEVICE;
+        return isColor(this.session?.device) ? FRAME_COLOR_COLOR_DEVICE : FRAME_COLOR_GRAYSCALE_DEVICE;
     }
 
     private ctx: CanvasRenderingContext2D | undefined;
