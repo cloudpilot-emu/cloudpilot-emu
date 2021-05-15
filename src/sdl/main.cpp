@@ -41,36 +41,6 @@ void setupMemoryImage(void* image, size_t size) {
     memcpy(gSession->GetMemoryPtr(), image, size);
 }
 
-void loadMemoryImage(string file) {
-    unique_ptr<uint8[]> buffer;
-    size_t len;
-
-    if (!util::readFile(file, buffer, len)) {
-        cerr << "failed to read memory dump '" << file << "'" << endl << flush;
-        return;
-    }
-
-    setupMemoryImage(buffer.get(), len);
-
-    cout << "loaded memory image from '" << file << "'" << endl << flush;
-}
-
-void loadSavestate(string file) {
-    unique_ptr<uint8[]> buffer;
-    size_t len;
-
-    if (!util::readFile(file, buffer, len)) {
-        cerr << "failed to read savestate '" << file << "'" << endl << flush;
-        return;
-    }
-
-    if (gSession->Load(len, buffer.get())) {
-        cout << "loaded savestate from '" << file << "'" << endl << flush;
-    } else {
-        cerr << "failed to load savestate from '" << file << "'" << endl << flush;
-    }
-}
-
 #ifndef __EMSCRIPTEN__
 void handleSuspend() {
     if (SuspendManager::IsSuspended()) {
@@ -97,20 +67,18 @@ void handleSuspend() {
 #endif
 
 int main(int argc, const char** argv) {
-    if (argc != 2 && argc != 3 && argc != 4) {
-        cerr << "usage: cloudpalm <romimage.rom> [memory.img] [savestate.bin]" << endl;
+    switch (argc) {
+        case 2:
+            if (!util::initializeSession(argv[1])) exit(1);
+            break;
 
-        exit(1);
-    }
+        case 3:
+            if (!util::initializeSession(argv[2], argv[1])) exit(1);
+            break;
 
-    if (!util::initializeSession(argv[1])) exit(1);
-
-    if (argc > 2) {
-        loadMemoryImage(argv[2]);
-    }
-
-    if (argc > 3) {
-        loadSavestate(argv[3]);
+        default:
+            cerr << "usage: cloudpalm [deviceId] <romimage.rom>" << endl;
+            exit(1);
     }
 
     srand(time(nullptr));

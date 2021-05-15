@@ -6,8 +6,8 @@
 #include "SessionImage.h"
 
 namespace {
-    constexpr const char* SUPPORTED_DEVICES[] = {"PalmIIIc", "PalmV", "m515", "PalmM130",
-                                                 "PalmI710"};
+    constexpr const char* SUPPORTED_DEVICES[] = {"PalmIIIc", "PalmV", "PalmIIIe", "PalmIIIx",
+                                                 "PalmVx",   "m515",  "PalmM130", "PalmI710"};
 }
 
 bool util::readFile(string file, unique_ptr<uint8[]>& buffer, size_t& len) {
@@ -56,7 +56,7 @@ void util::analyzeRom(EmROMReader& reader) {
          << endl;
 }
 
-bool util::initializeSession(string file) {
+bool util::initializeSession(string file, string deviceId) {
     unique_ptr<uint8[]> fileBuffer;
     size_t fileSize;
 
@@ -91,6 +91,8 @@ bool util::initializeSession(string file) {
     EmDevice* device = nullptr;
 
     for (auto id : SUPPORTED_DEVICES) {
+        if (deviceId != "" && id != deviceId) continue;
+
         EmDevice* d = new EmDevice(id);
 
         if (d->SupportsROM(reader)) {
@@ -102,7 +104,7 @@ bool util::initializeSession(string file) {
     }
 
     if (!device) {
-        cerr << "ROM not supported by Palm IIIc, Palm V, Palm m515 or Palm m130" << endl;
+        cerr << (deviceId != "" ? "deviceId not supported by ROM" : "unsupported ROM") << endl;
 
         return false;
     }
