@@ -1,7 +1,7 @@
 import { DeviceId, isColor } from '../model/DeviceId';
 
 import { EmulationStatistics } from './../model/EmulationStatistics';
-import { GRAYSCALE_PALETTE_HEX } from '../helper/palette';
+import { GRAYSCALE_PALETTE_HEX } from './../helper/palette';
 import { Injectable } from '@angular/core';
 import { PalmButton } from '../helper/Cloudpilot';
 import { ScreenSize } from '../model/Dimensions';
@@ -14,7 +14,7 @@ const BACKGROUND_COLOR_SILKSCREEN = GRAYSCALE_PALETTE_HEX[2];
 const BACKGROUND_COLOR_GRAYSCALE_DEVICE = GRAYSCALE_PALETTE_HEX[0];
 const BACKGROUND_COLOR_COLOR_DEVICE = 'white';
 const FRAME_COLOR_COLOR_DEVICE = 'white';
-const FRAME_COLOR_GRAYSCALE_DEVICE = GRAYSCALE_PALETTE_HEX[2];
+const FRAME_COLOR_GRAYSCALE_DEVICE = '#ccc';
 const BACKGROUND_ACTIVE_BUTTON = 'rgba(0,0,0,0.2)';
 
 interface FrameDependent {
@@ -166,7 +166,10 @@ export class CanvasDisplayService {
             0,
             0,
             this.layout.screenWidth.frameDevice,
-            this.layout.screenHeight.frameDevice,
+            this.layout.screenHeight.frameDevice +
+                this.layout.silkscreenHeight.frameDevice +
+                this.layout.separatorHeight.frameDevice +
+                this.layout.buttonHeight.frameDevice,
             this.backgroundColor()
         );
 
