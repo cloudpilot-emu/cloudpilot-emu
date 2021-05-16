@@ -21,3 +21,47 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
             };
     }
 }
+
+export function isColor(deviceId: DeviceId | undefined): boolean {
+    switch (deviceId) {
+        case DeviceId.palmV:
+        case DeviceId.palmVx:
+        case DeviceId.iiix:
+        case DeviceId.iiie:
+            return false;
+
+        default:
+            return true;
+    }
+}
+
+export function deviceName(deviceId: DeviceId): string {
+    switch (deviceId) {
+        case DeviceId.m515:
+            return 'Palm m515';
+
+        case DeviceId.palmVx:
+            return 'Palm Vx';
+
+        case DeviceId.iiix:
+            return 'Palm IIIx';
+
+        case DeviceId.iiie:
+            return 'Palm IIIe';
+
+        case DeviceId.palmV:
+            return 'Palm V';
+
+        case DeviceId.iiic:
+            return 'Palm IIIc';
+
+        case DeviceId.m130:
+            return 'Palm m130';
+
+        case DeviceId.i710:
+            return 'Tungsten W';
+
+        default:
+            throw new Error('bad device ID');
+    }
+}

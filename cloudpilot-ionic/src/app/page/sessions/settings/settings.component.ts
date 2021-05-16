@@ -1,12 +1,13 @@
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
 
-import { ModalController } from '@ionic/angular';
-import { Session } from '../../../model/Session';
+import { DeviceId } from 'src/app/model/DeviceId';
 import { SessionService } from '../../../service/session.service';
+import { deviceName } from 'src/app/helper/deviceProperties';
 
 export interface SessionSettings {
     name: string;
+    device: DeviceId;
     hotsyncName?: string;
 }
 
@@ -26,10 +27,18 @@ export class SessionSettingsComponent implements OnInit {
         return this.formGroup.get('hotsyncName')!;
     }
 
+    get forControlDevice(): AbstractControl {
+        return this.formGroup.get('device')!;
+    }
+
     get placeholder(): string {
         if (this.formControlHotsyncName.value) return this.formControlName.value;
 
         return this.session.hotsyncName === undefined ? 'use setting from device' : 'Enter hotsync name';
+    }
+
+    get deviceList(): Array<[DeviceId, string]> {
+        return this.availableDevices.map((device) => [device, deviceName(device)]);
     }
 
     ngOnInit() {
@@ -47,6 +56,8 @@ export class SessionSettingsComponent implements OnInit {
             this.session.hotsyncName = this.session.hotsyncName === undefined ? undefined : '';
         }
 
+        this.session.device = this.forControlDevice.value;
+
         this.onSave();
     }
 
@@ -60,6 +71,7 @@ export class SessionSettingsComponent implements OnInit {
                 validators: [Validators.required, this.validateNameUnique],
             }),
             hotsyncName: new FormControl(this.session.hotsyncName || ''),
+            device: new FormControl({ value: this.session.device, disabled: this.availableDevices.length === 1 }),
         });
     }
 
@@ -78,6 +90,9 @@ export class SessionSettingsComponent implements OnInit {
 
     @Input()
     session!: SessionSettings;
+
+    @Input()
+    availableDevices!: Array<DeviceId>;
 
     formGroup!: FormGroup;
 }

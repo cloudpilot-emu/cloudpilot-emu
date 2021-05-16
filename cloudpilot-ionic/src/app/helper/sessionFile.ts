@@ -1,3 +1,5 @@
+import { DeviceId } from 'src/app/model/DeviceId';
+import { SUPPORTED_DEVICES } from './Cloudpilot';
 import { Session } from './../model/Session';
 import { SessionImage } from '../model/SessionImage';
 import { SessionMetadata } from '../model/SessionMetadata';
@@ -21,6 +23,11 @@ export function deserializeSessionImage(buffer: Uint8Array): SessionImage | unde
 
     if (28 + deviceIdSize + metadataSize + romSize + memorySize + savestateSize !== buffer.length) return undefined;
 
+    const deviceId = new TextDecoder().decode(buffer.subarray(28, 28 + deviceIdSize)) as DeviceId;
+    if (!SUPPORTED_DEVICES.includes(deviceId)) {
+        return undefined;
+    }
+
     let metadata: SessionMetadata | undefined;
     try {
         metadata = JSON.parse(
@@ -32,7 +39,7 @@ export function deserializeSessionImage(buffer: Uint8Array): SessionImage | unde
 
     return {
         metadata,
-        deviceId: new TextDecoder().decode(buffer.subarray(28, 28 + deviceIdSize)),
+        deviceId,
         rom: buffer.subarray(28 + deviceIdSize + metadataSize, 28 + deviceIdSize + metadataSize + romSize),
         memory: buffer.subarray(
             28 + deviceIdSize + metadataSize + romSize,
@@ -104,7 +111,7 @@ function parseSessionImageLegacy(buffer: Uint8Array): SessionImage | undefined {
     if (romNameSize + romSize + memorySize + 16 !== buffer.length) return undefined;
 
     return {
-        deviceId: 'PalmV',
+        deviceId: DeviceId.palmV,
         rom: buffer.subarray(16 + romNameSize, 16 + romNameSize + romSize),
         memory: buffer.subarray(16 + romNameSize + romSize),
         savestate: new Uint8Array(0),

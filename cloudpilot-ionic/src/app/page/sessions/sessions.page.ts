@@ -121,6 +121,7 @@ export class SessionsPage {
             const settings: SessionSettings = {
                 name: this.disambiguateSessionName(sessionImage.metadata?.name ?? file.name),
                 hotsyncName: sessionImage.metadata?.hotsyncName,
+                device: sessionImage.deviceId,
             };
 
             if (await this.editSettings(settings)) {
@@ -141,13 +142,17 @@ export class SessionsPage {
                 return;
             }
 
-            const settings: SessionSettings = { name: this.disambiguateSessionName(file.name), hotsyncName: '' };
+            const settings: SessionSettings = {
+                name: this.disambiguateSessionName(file.name),
+                hotsyncName: '',
+                device: romInfo.supportedDevices[0],
+            };
 
-            if (await this.editSettings(settings)) {
+            if (await this.editSettings(settings, romInfo.supportedDevices)) {
                 const session = await this.sessionService.addSessionFromRom(
                     file.content,
                     settings.name,
-                    romInfo.supportedDevices[0],
+                    settings.device,
                     settings
                 );
 
@@ -156,7 +161,7 @@ export class SessionsPage {
         }
     }
 
-    private editSettings(session: SessionSettings): Promise<boolean> {
+    private editSettings(session: SessionSettings, availableDevices = [session.device]): Promise<boolean> {
         return new Promise((resolve) => {
             let modal: HTMLIonModalElement;
 
@@ -166,6 +171,7 @@ export class SessionsPage {
                     backdropDismiss: false,
                     componentProps: {
                         session,
+                        availableDevices,
                         onSave: () => {
                             modal.dismiss();
                             resolve(true);

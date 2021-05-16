@@ -2,6 +2,7 @@ import { Cloudpilot, DbInstallResult, PalmButton } from '../helper/Cloudpilot';
 import { GRAYSCALE_PALETTE_HEX, GRAYSCALE_PALETTE_RGBA } from '../helper/palette';
 import { Injectable, NgZone } from '@angular/core';
 import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
+import { deviceDimensions, isColor } from '../helper/deviceProperties';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { Average } from './../helper/Average';
@@ -20,8 +21,6 @@ import { PwmUpdate } from './../helper/Cloudpilot';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
-import { deviceDimensions } from '../helper/deviceProperties';
-import { isColor } from '../model/DeviceId';
 
 const PEN_MOVE_THROTTLE = 25;
 const SNAPSHOT_INTERVAL = 1000;

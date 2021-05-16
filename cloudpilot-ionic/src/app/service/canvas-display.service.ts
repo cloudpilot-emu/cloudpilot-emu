@@ -1,5 +1,6 @@
-import { DeviceId, isColor } from '../model/DeviceId';
+import { deviceDimensions, isColor } from '../helper/deviceProperties';
 
+import { DeviceId } from '../model/DeviceId';
 import { EmulationStatistics } from './../model/EmulationStatistics';
 import { GRAYSCALE_PALETTE_HEX } from './../helper/palette';
 import { Injectable } from '@angular/core';
@@ -7,7 +8,6 @@ import { PalmButton } from '../helper/Cloudpilot';
 import { ScreenSize } from '../model/Dimensions';
 import { Session } from '../model/Session';
 import { SnapshotStatistics } from './../model/SnapshotStatistics';
-import { deviceDimensions } from '../helper/deviceProperties';
 
 const DEFAULT_DEVICE = DeviceId.m515;
 const BACKGROUND_COLOR_SILKSCREEN = GRAYSCALE_PALETTE_HEX[2];
@@ -129,6 +129,8 @@ const IMAGE_SILKSCREEN_TUNGSTENW = prerender(loadImage('assets/skin/silkscreen/t
 const IMAGE_BUTTONS_V = prerender(loadImage('assets/skin/hard-buttons/v.svg'));
 const IMAGE_BUTTONS_M515 = prerender(loadImage('assets/skin/hard-buttons/m515.svg'));
 const IMAGE_BUTTONS_IIIC = prerender(loadImage('assets/skin/hard-buttons/iiic.svg'));
+const IMAGE_BUTTONS_IIIX = prerender(loadImage('assets/skin/hard-buttons/iiix.svg'));
+const IMAGE_BUTTONS_IIIE = prerender(loadImage('assets/skin/hard-buttons/iiie.svg'));
 const IMAGE_BUTTONS_M130 = prerender(loadImage('assets/skin/hard-buttons/m130.svg'));
 const IMAGE_BUTTONS_TUNGSTENW = prerender(loadImage('assets/skin/hard-buttons/tungstenw.svg'));
 
@@ -453,6 +455,9 @@ export class CanvasDisplayService {
             case DeviceId.i710:
                 return IMAGE_SILKSCREEN_TUNGSTENW;
 
+            case DeviceId.iiic:
+            case DeviceId.iiix:
+            case DeviceId.palmVx:
             case DeviceId.palmV:
             default:
                 return IMAGE_SILKSCREEN_V;
@@ -473,6 +478,13 @@ export class CanvasDisplayService {
             case DeviceId.i710:
                 return IMAGE_BUTTONS_TUNGSTENW;
 
+            case DeviceId.iiix:
+                return IMAGE_BUTTONS_IIIX;
+
+            case DeviceId.iiie:
+                return IMAGE_BUTTONS_IIIE;
+
+            case DeviceId.palmVx:
             case DeviceId.palmV:
             default:
                 return IMAGE_BUTTONS_V;
