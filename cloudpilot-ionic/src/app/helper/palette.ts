@@ -1,4 +1,4 @@
-const BACKGROUND = [0x95, 0xa0, 0x95];
+const BACKGROUND = [135, 135, 105];
 const FOREGROUND = [0x0, 0x0, 0x0];
 
 export const GRAYSCALE_PALETTE_RGBA = new Array(16)
