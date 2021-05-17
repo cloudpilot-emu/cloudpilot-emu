@@ -53,6 +53,7 @@
 #include "EmRegsEZPalmIIIc.h"
 #include "EmRegsEZPalmIIIe.h"
 #include "EmRegsEZPalmIIIx.h"
+#include "EmRegsEZPalmM100.h"
 #include "EmRegsEZPalmV.h"
 #include "EmRegsEZPalmVx.h"
 #include "EmRegsFrameBuffer.h"
@@ -76,13 +77,8 @@
     #include "EmRegs328Pilot.h"
     #include "EmRegs328Symbol1700.h"
     #include "EmRegsASICSymbol1700.h"
-    #include "EmRegsEZPalmIIIe.h"
-    #include "EmRegsEZPalmIIIx.h"
-    #include "EmRegsEZPalmM100.h"
     #include "EmRegsEZPalmVII.h"
     #include "EmRegsEZPalmVIIx.h"
-    #include "EmRegsEZPalmVx.h"
-    #include "EmRegsEZTemp.h"
     #include "EmRegsEZVisor.h"
     #include "EmRegsPLDPalmVIIEZ.h"
     #include "EmRegsSZTemp.h"
@@ -778,9 +774,13 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
                 return true;
             break;
 
+#endif
+
         case kDevicePalmM100:
             if (ROM.ContainsDB(PALM_m100_DB)) return true;
             break;
+
+#if 0
 
         case kDeviceSymbol1500:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && (ROM.Version() < 0x030500) &&
@@ -943,9 +943,13 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsPLDPalmVIIEZ);
             break;
 
+#endif
+
         case kDevicePalmM100:
             EmBankRegs::AddSubBank(new EmRegsEZPalmM100);
             break;
+
+#if 0
 
         case kDevicePalmM125:
             EmBankRegs::AddSubBank(new EmRegsVZPalmM125);

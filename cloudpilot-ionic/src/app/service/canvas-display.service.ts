@@ -123,6 +123,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 const IMAGE_SILKSCREEN_V = prerender(loadImage('assets/skin/silkscreen/v.svg'));
 const IMAGE_SILKSCREEN_M515 = prerender(loadImage('assets/skin/silkscreen/m515.svg'));
 const IMAGE_SILKSCREEN_IIIC = prerender(loadImage('assets/skin/silkscreen/iiic.svg'));
+const IMAGE_SILKSCREEN_M100 = prerender(loadImage('assets/skin/silkscreen/m100.svg'));
 const IMAGE_SILKSCREEN_M130 = prerender(loadImage('assets/skin/silkscreen/m130.svg'));
 const IMAGE_SILKSCREEN_TUNGSTENW = prerender(loadImage('assets/skin/silkscreen/tungstenw.svg'));
 
@@ -131,6 +132,7 @@ const IMAGE_BUTTONS_M515 = prerender(loadImage('assets/skin/hard-buttons/m515.sv
 const IMAGE_BUTTONS_IIIC = prerender(loadImage('assets/skin/hard-buttons/iiic.svg'));
 const IMAGE_BUTTONS_IIIX = prerender(loadImage('assets/skin/hard-buttons/iiix.svg'));
 const IMAGE_BUTTONS_IIIE = prerender(loadImage('assets/skin/hard-buttons/iiie.svg'));
+const IMAGE_BUTTONS_M100 = prerender(loadImage('assets/skin/hard-buttons/m100.svg'));
 const IMAGE_BUTTONS_M130 = prerender(loadImage('assets/skin/hard-buttons/m130.svg'));
 const IMAGE_BUTTONS_TUNGSTENW = prerender(loadImage('assets/skin/hard-buttons/tungstenw.svg'));
 
@@ -449,6 +451,9 @@ export class CanvasDisplayService {
             case DeviceId.iiic:
                 return IMAGE_SILKSCREEN_IIIC;
 
+            case DeviceId.m100:
+                return IMAGE_SILKSCREEN_M100;
+
             case DeviceId.m130:
                 return IMAGE_SILKSCREEN_M130;
 
@@ -471,6 +476,9 @@ export class CanvasDisplayService {
 
             case DeviceId.iiic:
                 return IMAGE_BUTTONS_IIIC;
+
+            case DeviceId.m100:
+                return IMAGE_BUTTONS_M100;
 
             case DeviceId.m130:
                 return IMAGE_BUTTONS_M130;
