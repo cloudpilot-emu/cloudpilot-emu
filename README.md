@@ -29,7 +29,7 @@ want to emulate. You can find a collection of ROMs [on PalmDB](https://palmdb.ne
 
 The following devices are currently supported:
 
--   Palm IIIcc
+-   Palm IIIc
 -   Palm V
 -   Palm m515
 -   Palm m130
@@ -38,7 +38,7 @@ The following devices are currently supported:
 ## Other versions
 
 A preview build of the next version of Cloudpilot is available
-[here](https://cloudpilot-emu.github.io/app).
+[here](https://cloudpilot-emu.github.io/app-preview).
 
 There also is a web build of the native SDL version of cloudpilot
 [here](https://cloudpilot-emu.github.io/sdl)
