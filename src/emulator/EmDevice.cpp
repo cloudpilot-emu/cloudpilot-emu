@@ -124,6 +124,7 @@ enum  // DeviceType
     kDevicePalmVIIEZ,
     kDevicePalmVIIx,
     kDevicePalmM100,
+    kDevicePalmM105,
     kDevicePalmM125,
     kDevicePalmM130,
     kDevicePalmM500,
@@ -323,6 +324,14 @@ static const DeviceInfo kDeviceInfo[] = {
      {"PalmM100", "m100", "Calvin"},
      kSupports68EZ328,
      2048,
+     hwrMiscFlagIDm100,
+     hwrMiscFlagExtSubIDBrad,
+     {{'palm', 'clvn'}}},
+    {kDevicePalmM105,
+     "Palm m105",
+     {"PalmM105", "m105"},
+     kSupports68EZ328,
+     8192,
      hwrMiscFlagIDm100,
      hwrMiscFlagExtSubIDBrad,
      {{'palm', 'clvn'}}},
@@ -776,6 +785,7 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
 
 #endif
 
+        case kDevicePalmM105:
         case kDevicePalmM100:
             if (ROM.ContainsDB(PALM_m100_DB)) return true;
             break;
@@ -945,6 +955,7 @@ void EmDevice::CreateRegs(void) const {
 
 #endif
 
+        case kDevicePalmM105:
         case kDevicePalmM100:
             EmBankRegs::AddSubBank(new EmRegsEZPalmM100);
             break;

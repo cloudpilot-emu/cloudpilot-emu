@@ -452,6 +452,7 @@ export class CanvasDisplayService {
                 return IMAGE_SILKSCREEN_IIIC;
 
             case DeviceId.m100:
+            case DeviceId.m105:
                 return IMAGE_SILKSCREEN_M100;
 
             case DeviceId.m130:
@@ -478,6 +479,7 @@ export class CanvasDisplayService {
                 return IMAGE_BUTTONS_IIIC;
 
             case DeviceId.m100:
+            case DeviceId.m105:
                 return IMAGE_BUTTONS_M100;
 
             case DeviceId.m130:
