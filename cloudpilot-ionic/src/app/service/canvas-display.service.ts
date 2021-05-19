@@ -121,6 +121,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 }
 
 const IMAGE_SILKSCREEN_V = prerender(loadImage('assets/skin/silkscreen/v.svg'));
+const IMAGE_SILKSCREEN_M500 = prerender(loadImage('assets/skin/silkscreen/m500.svg'));
 const IMAGE_SILKSCREEN_M515 = prerender(loadImage('assets/skin/silkscreen/m515.svg'));
 const IMAGE_SILKSCREEN_IIIC = prerender(loadImage('assets/skin/silkscreen/iiic.svg'));
 const IMAGE_SILKSCREEN_M100 = prerender(loadImage('assets/skin/silkscreen/m100.svg'));
@@ -133,6 +134,7 @@ const IMAGE_BUTTONS_IIIC = prerender(loadImage('assets/skin/hard-buttons/iiic.sv
 const IMAGE_BUTTONS_IIIX = prerender(loadImage('assets/skin/hard-buttons/iiix.svg'));
 const IMAGE_BUTTONS_IIIE = prerender(loadImage('assets/skin/hard-buttons/iiie.svg'));
 const IMAGE_BUTTONS_M100 = prerender(loadImage('assets/skin/hard-buttons/m100.svg'));
+const IMAGE_BUTTONS_M125 = prerender(loadImage('assets/skin/hard-buttons/m125.svg'));
 const IMAGE_BUTTONS_M130 = prerender(loadImage('assets/skin/hard-buttons/m130.svg'));
 const IMAGE_BUTTONS_TUNGSTENW = prerender(loadImage('assets/skin/hard-buttons/tungstenw.svg'));
 
@@ -445,6 +447,10 @@ export class CanvasDisplayService {
 
     private silkscreenImage(): PrerenderedImage {
         switch (this.session?.device) {
+            case DeviceId.m500:
+                return IMAGE_SILKSCREEN_M500;
+
+            case DeviceId.m505:
             case DeviceId.m515:
                 return IMAGE_SILKSCREEN_M515;
 
@@ -453,6 +459,7 @@ export class CanvasDisplayService {
 
             case DeviceId.m100:
             case DeviceId.m105:
+            case DeviceId.m125:
                 return IMAGE_SILKSCREEN_M100;
 
             case DeviceId.m130:
@@ -472,6 +479,8 @@ export class CanvasDisplayService {
 
     private buttonsImage(): PrerenderedImage {
         switch (this.session?.device) {
+            case DeviceId.m505:
+            case DeviceId.m505:
             case DeviceId.m515:
                 return IMAGE_BUTTONS_M515;
 
@@ -481,6 +490,9 @@ export class CanvasDisplayService {
             case DeviceId.m100:
             case DeviceId.m105:
                 return IMAGE_BUTTONS_M100;
+
+            case DeviceId.m125:
+                return IMAGE_BUTTONS_M125;
 
             case DeviceId.m130:
                 return IMAGE_BUTTONS_M130;

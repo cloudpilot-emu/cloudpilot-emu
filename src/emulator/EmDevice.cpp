@@ -339,7 +339,7 @@ static const DeviceInfo kDeviceInfo[] = {
      "Palm m125",
      {"PalmM125", "m120", "m125", "m110", "m115", "JV", "Stu"},
      kSupports68VZ328 + kHasFlash,
-     2048,
+     8192,
      hwrMiscFlagIDNone,
      hwrMiscFlagExtSubIDNone,
      {{'palm', 'vstu'}}},

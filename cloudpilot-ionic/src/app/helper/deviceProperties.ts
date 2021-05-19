@@ -30,6 +30,8 @@ export function isColor(deviceId: DeviceId | undefined): boolean {
         case DeviceId.iiie:
         case DeviceId.m100:
         case DeviceId.m105:
+        case DeviceId.m125:
+        case DeviceId.m500:
             return false;
 
         default:
@@ -39,6 +41,12 @@ export function isColor(deviceId: DeviceId | undefined): boolean {
 
 export function deviceName(deviceId: DeviceId): string {
     switch (deviceId) {
+        case DeviceId.m500:
+            return 'Palm m500';
+
+        case DeviceId.m505:
+            return 'Palm m505';
+
         case DeviceId.m515:
             return 'Palm m515';
 
@@ -62,6 +70,9 @@ export function deviceName(deviceId: DeviceId): string {
 
         case DeviceId.m105:
             return 'Palm m105';
+
+        case DeviceId.m125:
+            return 'Palm m125';
 
         case DeviceId.m130:
             return 'Palm m130';
