@@ -59,6 +59,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDBacklightOn(void) = 0;
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr&, emuptr&);
+    virtual bool CopyLCDFrame(Frame& frame);
+    virtual uint16 GetLCD2bitMapping();
 
     virtual int32 GetDynamicHeapSize(void);
     virtual int32 GetROMSize(void);
@@ -119,6 +121,10 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual uint16 ButtonToBits(ButtonEventT::Button btn);
     virtual EmSPISlave* GetSPISlave(void);
 
+    virtual void MarkScreen();
+    virtual void UnmarkScreen();
+    virtual void MarkScreenDirty();
+
     virtual void ApplySdctl();
 
    protected:
@@ -159,6 +165,9 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     uint8 fPortDEdge;
     uint32 fPortDDataCount;
 
+    bool markScreen{true};
+    EmEvent<>::HandleT onMarkScreenCleanHandle;
+
     EmUARTDragonball* fUART[2];
 
     double tmr1LastProcessedSystemCycles;
@@ -173,6 +182,19 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     bool afterLoad{false};
 
     EmEvent<uint64, bool>::HandleT onCycleHandle;
+};
+
+class EmRegsVZNoScreen : public EmRegsVZ {
+   public:
+    EmRegsVZNoScreen() = default;
+
+    virtual bool CopyLCDFrame(Frame& frame);
+    virtual uint16 GetLCD2bitMapping();
+
+   protected:
+    virtual void MarkScreen();
+    virtual void UnmarkScreen();
+    virtual void MarkScreenDirty();
 };
 
 #endif /* EmRegsVZ_h */

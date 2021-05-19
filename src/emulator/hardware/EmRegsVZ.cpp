@@ -27,7 +27,9 @@
 #include "EmSPISlave.h"  // DoExchange
 #include "EmSession.h"   // gSession
 #include "EmSystemState.h"
-#include "Logging.h"        // LogAppendMsg
+#include "Frame.h"
+#include "Logging.h"  // LogAppendMsg
+#include "MetaMemory.h"
 #include "Miscellaneous.h"  // GetHostTime
 #include "Savestate.h"
 #include "SavestateLoader.h"
@@ -93,6 +95,17 @@ namespace {
             default:
                 return (clksource & 0x4) ? 32768. / prescaler : 0;
         }
+    }
+
+    template <class T>
+    void markScreenWith(T marker, HwrM68VZ328Type& f68VZ328Regs) {
+        emuptr firstLineAddr = READ_REGISTER(lcdStartAddr);
+        emuptr lastLineAddr =
+            firstLineAddr + (READ_REGISTER(lcdScreenHeight) + 1) * READ_REGISTER(lcdPageWidth) * 2;
+
+        if (EmMemGetBankPtr(firstLineAddr) == nullptr) return;
+
+        marker(firstLineAddr, lastLineAddr);
     }
 }  // namespace
 
@@ -528,6 +541,8 @@ void EmRegsVZ::Initialize(void) {
     fUART[0] = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballVZ, 0);
     fUART[1] = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballVZ, 1);
 
+    onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
+
     ApplySdctl();
 }
 
@@ -537,6 +552,8 @@ void EmRegsVZ::Initialize(void) {
 
 void EmRegsVZ::Reset(Bool hardwareReset) {
     EmRegs::Reset(hardwareReset);
+    UnmarkScreen();
+
     if (hardwareReset) {
         tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
         tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();
@@ -597,6 +614,7 @@ void EmRegsVZ::Load(SavestateLoader& loader) {
 
     ApplySdctl();
 
+    markScreen = true;
     afterLoad = true;
 }
 
@@ -642,6 +660,8 @@ void EmRegsVZ::Dispose(void) {
     fUART[1] = NULL;
 
     EmRegs::Dispose();
+
+    gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
 
     EmHAL::onCycle.RemoveHandler(onCycleHandle);
 }
@@ -1179,6 +1199,64 @@ void EmRegsVZ::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
     begin = baseAddr;
     end = baseAddr + rowBytes * height;
 }
+
+bool EmRegsVZ::CopyLCDFrame(Frame& frame) {
+    // Get the screen metrics.
+
+    frame.bpp = 1 << (READ_REGISTER(lcdPanelControl) & 0x03);
+    frame.lineWidth = READ_REGISTER(lcdScreenWidth);
+    frame.lines = READ_REGISTER(lcdScreenHeight) + 1;
+    frame.bytesPerLine = READ_REGISTER(lcdPageWidth) * 2;
+    frame.margin = READ_REGISTER(lcdPanningOffset);
+    emuptr baseAddr = READ_REGISTER(lcdStartAddr);
+
+    switch (frame.bpp) {
+        case 1:
+            frame.margin &= 0x0f;
+            break;
+
+        case 2:
+            frame.margin &= 0x07;
+            break;
+
+        case 4:
+            frame.margin &= 0x03;
+            break;
+    }
+
+    // Determine first and last scanlines to fetch, and fetch them.
+
+    emuptr firstLineAddr = baseAddr;
+    emuptr lastLineAddr = baseAddr + frame.lines * frame.bytesPerLine;
+
+    uint8* dst = frame.GetBuffer();
+
+    EmASSERT(frame.GetBufferSize() >= lastLineAddr - firstLineAddr);
+    EmMem_memcpy((void*)dst, firstLineAddr, lastLineAddr - firstLineAddr);
+
+    return true;
+}
+
+uint16 EmRegsVZ::GetLCD2bitMapping() {
+    uint8 lgpmr = READ_REGISTER(lcdGrayPalette);
+    return ((lgpmr & 0x0f) << 4) | ((lgpmr & 0xf0) << 4) | 0xf000;
+}
+
+void EmRegsVZ::MarkScreen() {
+    if (!markScreen) return;
+
+    markScreenWith(MetaMemory::MarkScreen, f68VZ328Regs);
+
+    markScreen = false;
+}
+
+void EmRegsVZ::UnmarkScreen() {
+    markScreenWith(MetaMemory::UnmarkScreen, f68VZ328Regs);
+
+    markScreen = true;
+}
+
+void EmRegsVZ::MarkScreenDirty() { gSystemState.MarkScreenDirty(); }
 
 void EmRegsVZ::UpdateTimerTicksPerSecond() {
     int32 systemClockFrequency = GetSystemClockFrequency();
@@ -2063,14 +2141,27 @@ void EmRegsVZ::uart2Write(emuptr address, int size, uint32 value) {
 // ---------------------------------------------------------------------------
 
 void EmRegsVZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
-    if (address == db_addressof(lcdStartAddr)) {
-        // Make sure the low-bit is always zero.
-        // Make sure bits 31-29 are always zero.
+    switch (address) {
+        case db_addressof(lcdStartAddr):
+            // Make sure the low-bit is always zero.
+            // Make sure bits 31-29 are always zero.
+            value &= 0x1FFFFFFE;
 
-        value &= 0x1FFFFFFE;
+            UnmarkScreen();
+
+            break;
+
+        case db_addressof(lcdPageWidth):
+        case db_addressof(lcdScreenWidth):
+        case db_addressof(lcdScreenHeight):
+            UnmarkScreen();
+
+            break;
     }
 
     EmRegsVZ::StdWrite(address, size, value);
+
+    MarkScreenDirty();
 }
 
 void EmRegsVZ::pllRegisterWrite(emuptr address, int size, uint32 value) {
@@ -2939,3 +3030,13 @@ void EmRegsVZ::DispatchPwmChange() {
 
     if (freq <= 20000) EmHAL::onPwmChange.Dispatch(freq, dutyCycle);
 }
+
+bool EmRegsVZNoScreen::CopyLCDFrame(Frame& frame) { return EmHALHandler::CopyLCDFrame(frame); }
+
+uint16 EmRegsVZNoScreen::GetLCD2bitMapping() { return EmHALHandler::GetLCD2bitMapping(); }
+
+void EmRegsVZNoScreen::MarkScreen() { return; }
+
+void EmRegsVZNoScreen::UnmarkScreen() { return; }
+
+void EmRegsVZNoScreen::MarkScreenDirty() { return; }

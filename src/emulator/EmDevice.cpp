@@ -960,13 +960,10 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsEZPalmM100);
             break;
 
-#if 0
-
         case kDevicePalmM125:
             EmBankRegs::AddSubBank(new EmRegsVZPalmM125);
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x1F000000));
             break;
-#endif
 
         case kDevicePalmM130: {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM130);
@@ -1001,23 +998,23 @@ void EmDevice::CreateRegs(void) const {
 
             break;
         }
-#if 0
 
         case kDevicePalmM500:
             EmBankRegs::AddSubBank(new EmRegsVZPalmM500);
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x10400000));
             break;
 
-        case kDevicePalmM505:
+        case kDevicePalmM505: {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM505);
-            EmBankRegs::AddSubBank(
-                new EmRegsSED1376PalmGeneric(sed1376RegsAddr, sed1376VideoMemStart));
-            EmBankRegs::AddSubBank(
-                new EmRegsFrameBuffer(sed1376VideoMemStart, sed1376VideoMemSize));
-            EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x10400000));
-            break;
 
-#endif
+            EmRegsFrameBuffer* framebuffer =
+                new EmRegsFrameBuffer(sed1376VideoMemStart, sed1376VideoMemSize);
+
+            EmBankRegs::AddSubBank(
+                new EmRegsSED1376PalmGeneric(sed1376RegsAddr, sed1376VideoMemStart, *framebuffer));
+            EmBankRegs::AddSubBank(framebuffer);
+            EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x10400000));
+        } break;
 
         case kDevicePalmM515: {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM505);

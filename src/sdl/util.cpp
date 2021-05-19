@@ -6,9 +6,9 @@
 #include "SessionImage.h"
 
 namespace {
-    constexpr const char* SUPPORTED_DEVICES[] = {"PalmIIIc", "PalmV",   "PalmIIIe", "PalmIIIx",
-                                                 "PalmVx",   "m515",    "PalmM105", "PalmM100",
-                                                 "PalmM130", "PalmI710"};
+    constexpr const char* SUPPORTED_DEVICES[] = {
+        "PalmIIIc", "PalmV",    "PalmIIIe", "PalmIIIx", "PalmVx",   "m500",    "m505",
+        "m515",     "PalmM105", "PalmM100", "PalmM125", "PalmM130", "PalmI710"};
 }
 
 bool util::readFile(string file, unique_ptr<uint8[]>& buffer, size_t& len) {

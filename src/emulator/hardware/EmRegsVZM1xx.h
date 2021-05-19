@@ -64,7 +64,7 @@ class EmRegsVZPalmM125 : public EmRegsVZ {
     EmSPISlave* fSPISlaveADC;
 };
 
-class EmRegsVZPalmM130 : public EmRegsVZ {
+class EmRegsVZPalmM130 : public EmRegsVZNoScreen {
    public:
     EmRegsVZPalmM130(void);
     virtual ~EmRegsVZPalmM130(void);

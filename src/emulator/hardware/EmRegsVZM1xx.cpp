@@ -198,7 +198,7 @@ const uint16 kButtonMapPalmM130[kNumButtonRows][kNumButtonCols] = {
 // ---------------------------------------------------------------------------
 
 EmRegsVZPalmM130::EmRegsVZPalmM130(void)
-    : EmRegsVZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet1)) {}
+    : EmRegsVZNoScreen(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet1)) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmM130::~EmRegsVZPalmM130

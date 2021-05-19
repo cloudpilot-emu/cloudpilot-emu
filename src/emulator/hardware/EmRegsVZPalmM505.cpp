@@ -111,3 +111,13 @@ void EmRegsVZPalmM505::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 
     EmHALHandler::GetLCDBeginEnd(begin, end);
 }
+
+bool EmRegsVZPalmM505::CopyLCDFrame(Frame& frame) { return EmHALHandler::CopyLCDFrame(frame); }
+
+uint16 EmRegsVZPalmM505::GetLCD2bitMapping() { return EmHALHandler::GetLCD2bitMapping(); }
+
+void EmRegsVZPalmM505::MarkScreen() { return; }
+
+void EmRegsVZPalmM505::UnmarkScreen() { return; }
+
+void EmRegsVZPalmM505::MarkScreenDirty() { return; }

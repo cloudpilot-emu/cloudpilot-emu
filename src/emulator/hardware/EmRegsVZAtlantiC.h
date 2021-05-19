@@ -4,7 +4,7 @@
 #include "EmCommon.h"
 #include "EmRegsVZ.h"
 
-class EmRegsVZAtlantiC : public EmRegsVZ {
+class EmRegsVZAtlantiC : public EmRegsVZNoScreen {
    public:
     EmRegsVZAtlantiC();
     ~EmRegsVZAtlantiC();
