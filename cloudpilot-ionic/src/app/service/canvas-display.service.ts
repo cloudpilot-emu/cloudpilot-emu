@@ -479,7 +479,7 @@ export class CanvasDisplayService {
 
     private buttonsImage(): PrerenderedImage {
         switch (this.session?.device) {
-            case DeviceId.m505:
+            case DeviceId.m500:
             case DeviceId.m505:
             case DeviceId.m515:
                 return IMAGE_BUTTONS_M515;
