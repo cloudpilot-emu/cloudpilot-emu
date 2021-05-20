@@ -697,7 +697,7 @@ void EmRegsEZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, lcdClockControl);
     INSTALL_HANDLER(StdRead, StdWrite, lcdRefreshRateAdj);
     INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdPanningOffset);
-    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdFrameRate);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdFrameRate);
     INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdGrayPalette);
     INSTALL_HANDLER(StdRead, StdWrite, lcdContrastControlPWM);
     INSTALL_HANDLER(rtcHourMinSecRead, StdWrite, rtcHourMinSec);
