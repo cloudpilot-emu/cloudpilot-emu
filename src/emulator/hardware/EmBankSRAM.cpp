@@ -23,10 +23,6 @@
 #include "MetaMemory.h"  // MetaMemory::
 #include "Platform.h"
 
-#if 0                           //  CSTODO
-    #include "Miscellaneous.h"  // StWordSwapper
-#endif
-
 // ===========================================================================
 //		� SRAM Bank Accessors
 // ===========================================================================

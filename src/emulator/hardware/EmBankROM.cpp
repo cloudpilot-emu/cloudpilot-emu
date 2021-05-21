@@ -393,12 +393,7 @@ void EmBankROM::AddressError(emuptr address, long size, Bool forRead) {
 //		� EmBankROM::InvalidAccess
 // ---------------------------------------------------------------------------
 
-void EmBankROM::InvalidAccess(emuptr address, long size, Bool forRead) {
-#if 0  // CSTODO
-    EmAssert(gSession);
-    gSession->ScheduleDeferredError(new EmDeferredErrROM(address, size, forRead));
-#endif
-}
+void EmBankROM::InvalidAccess(emuptr address, long size, Bool forRead) {}
 
 /***********************************************************************
  *

@@ -30,15 +30,6 @@
 #include "ROMStubs.h"
 #include "UAE.h"  // CHECK_STACK_POINTER_DECREMENT
 
-#if 0                             // CSTODO
-    #include "EmErrCodes.h"       // kError_UnimplementedTrap, kError_InvalidLibraryRefNum
-    #include "EmSystemState.h"    // EmSystemState
-    #include "ErrorHandling.h"    // Errors::ReportInvalidPC
-    #include "Platform_NetLib.h"  // Platform_NetLib::Initialize();
-    #include "ROMStubs.h"         // IntlSetStrictChecks
-
-#endif
-
 #define LOG_FUNCTION_CALLS 0
 
 static emuptr gBigROMEntry;
@@ -67,10 +58,6 @@ void EmPalmOS::Initialize(void) {
     gBigROMEntry = EmMemNULL;
 
     EmPatchMgr::Initialize();
-
-#if 0  // CSTODO
-    Platform_NetLib::Initialize();
-#endif
 }
 
 /***********************************************************************
@@ -90,14 +77,7 @@ void EmPalmOS::Initialize(void) {
  *
  ***********************************************************************/
 
-void EmPalmOS::Reset(void) {
-    EmPatchMgr::Reset();
-
-#if 0  // CSTODO
-    Platform_NetLib::Reset();
-    EmLowMem::Reset();
-#endif
-}
+void EmPalmOS::Reset(void) { EmPatchMgr::Reset(); }
 
 /***********************************************************************
  *
@@ -113,17 +93,7 @@ void EmPalmOS::Reset(void) {
  *
  ***********************************************************************/
 
-void EmPalmOS::Dispose(void) {
-    EmPatchMgr::Dispose();
-
-#if 0  // CSTODO
-    EmLowMem::Dispose();
-    EmPalmHeap::Dispose();
-    Platform_NetLib::Dispose();
-    EmEventPlayback::Dispose();
-    Hordes::Dispose();
-#endif
-}
+void EmPalmOS::Dispose(void) { EmPatchMgr::Dispose(); }
 
 /***********************************************************************
  *

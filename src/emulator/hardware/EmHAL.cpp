@@ -16,12 +16,6 @@
 #include "EmCommon.h"
 #include "Logging.h"
 
-#if 0                               // CSTODO
-    #include "EmTransportSerial.h"  // EmTransportSerial
-    #include "ErrorHandling.h"      // Errors::ReportErrCommPort
-    #include "PreferenceMgr.h"      // gEmuPrefs
-#endif
-
 EmHALHandler* EmHAL::fgRootHandler;
 
 #define PRINTF \

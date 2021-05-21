@@ -16,10 +16,7 @@
 #include "EmCommon.h"
 #include "EmMemory.h"        // CEnableFullAccess
 #include "EmPalmFunction.h"  // SysTrapIndex
-
-#if 0                           // CSTODO
-    #include "EmSystemState.h"  // EmSystemState::OSMajorVersion
-#endif
+#include "EmSystemState.h"
 
 // clang-format off
 #include "PalmPack.h"
@@ -69,11 +66,9 @@ uint8 EmLowMem::GetEvtMgrIdle(void) {
     // the "idle" field.  Under that version of the OS, we therefore
     // have to add 4 to get the right offset.
 
-#if 0  // CSTODO
-    if (EmSystemState::OSMajorVersion() == 1) {
-        idleOffset += sizeof(Int32);
+    if (gSystemState.OSMajorVersion() == 1) {
+        idleOffset += 4;
     }
-#endif
 
     uint8 idle = EmMemGet8(sysEvtMgrGlobalsP + idleOffset);
 

@@ -46,18 +46,9 @@ static PatchedLibIndex gPatchedLibs;
 //
 static TailPatchIndex gInstalledTailpatches;
 
-// Magic number used to identify Htal patch
-//	See comments in HtalLibSendReply.
-//
-// CSTODO const UInt16 kMagicRefNum = 0x666;
-
 // ======================================================================
 //	Private functions
 // ======================================================================
-
-#if 0  // CSTODO
-void PrvSetCurrentDate(void);
-#endif
 
 // #define LOG_SYSCALLS
 #ifdef LOG_SYSCALLS
@@ -117,10 +108,6 @@ void EmPatchMgr::Initialize(void) {
     }
 
     executingPatch = false;
-
-#if 0  // CSTODO
-    EmSystemState::Initialize();
-#endif
 }
 
 /***********************************************************************
@@ -148,10 +135,6 @@ void EmPatchMgr::Reset(void) {
     gPatchedLibs.clear();
 
     executingPatch = false;
-
-#if 0  // CSTODO
-    EmSystemState::Reset();
-#endif
 }
 
 /***********************************************************************
