@@ -970,7 +970,7 @@ void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
             // If the timer interrupt is enabled, post an interrupt.
 
             if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnInterrupt) != 0) {
-                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrVZ328IntLoTimer);
+                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrVZ328IntLoTimer2);
                 EmRegsVZ::UpdateInterrupts();
             }
         }
@@ -2943,7 +2943,8 @@ int EmRegsVZ::GetPort(emuptr address) {
 }
 
 uint32 EmRegsVZ::Tmr1CyclesToNextInterrupt(uint64 systemCycles) {
-    if (!(READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) || timer1TicksPerSecond <= 0)
+    if ((READ_REGISTER(intMaskLo) & hwrVZ328IntLoTimer) ||
+        !(READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) || timer1TicksPerSecond <= 0)
         return 0xffffffff;
 
     uint16 tcmp = READ_REGISTER(tmr1Compare);
@@ -2962,7 +2963,8 @@ uint32 EmRegsVZ::Tmr1CyclesToNextInterrupt(uint64 systemCycles) {
 }
 
 uint32 EmRegsVZ::Tmr2CyclesToNextInterrupt(uint64 systemCycles) {
-    if (!(READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnable) || timer2TicksPerSecond <= 0)
+    if ((READ_REGISTER(intMaskLo) & hwrVZ328IntLoTimer2) ||
+        !(READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnable) || timer2TicksPerSecond <= 0)
         return 0xffffffff;
 
     uint16 tcmp = READ_REGISTER(tmr2Compare);

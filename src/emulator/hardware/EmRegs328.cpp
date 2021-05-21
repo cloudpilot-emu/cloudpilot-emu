@@ -1019,8 +1019,7 @@ void EmRegs328::Cycle(uint64 systemCycles, Bool sleeping) {
 
     double clocksPerSecond = gSession->GetClocksPerSecond();
 
-    if (((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) != 0) &&
-        timer1TicksPerSecond > 0) {
+    if (((READ_REGISTER(tmr1Control) & hwr328TmrControlEnable) != 0) && timer1TicksPerSecond > 0) {
         // If so, increment the timer.
 
         uint32 ticks = ((double)systemCycles - tmr1LastProcessedSystemCycles) / clocksPerSecond *
@@ -1038,25 +1037,24 @@ void EmRegs328::Cycle(uint64 systemCycles, Bool sleeping) {
         if (tcn >= tcmp) {
             // Flag the occurrence of the successful comparison.
 
-            WRITE_REGISTER(tmr1Status, READ_REGISTER(tmr1Status) | hwrVZ328TmrStatusCompare);
+            WRITE_REGISTER(tmr1Status, READ_REGISTER(tmr1Status) | hwr328TmrStatusCompare);
 
             // If the Free Run/Restart flag is not set, clear the counter.
 
-            if ((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlFreeRun) == 0) {
+            if ((READ_REGISTER(tmr1Control) & hwr328TmrControlFreeRun) == 0) {
                 WRITE_REGISTER(tmr1Counter, tcn - tcmp);
             }
 
             // If the timer interrupt is enabled, post an interrupt.
 
-            if ((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnInterrupt) != 0) {
-                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrVZ328IntLoTimer);
+            if ((READ_REGISTER(tmr1Control) & hwr328TmrControlEnInterrupt) != 0) {
+                WRITE_REGISTER(intPendingHi, READ_REGISTER(intPendingHi) | hwr328IntHiTimer1);
                 EmRegs328::UpdateInterrupts();
             }
         }
     }
 
-    if (((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnable) != 0) &&
-        timer2TicksPerSecond > 0) {
+    if (((READ_REGISTER(tmr2Control) & hwr328TmrControlEnable) != 0) && timer2TicksPerSecond > 0) {
         // If so, increment the timer.
 
         uint32 ticks = ((double)systemCycles - tmr2LastProcessedSystemCycles) / clocksPerSecond *
@@ -1074,18 +1072,18 @@ void EmRegs328::Cycle(uint64 systemCycles, Bool sleeping) {
         if (tcn >= tcmp) {
             // Flag the occurrence of the successful comparison.
 
-            WRITE_REGISTER(tmr2Status, READ_REGISTER(tmr2Status) | hwrVZ328TmrStatusCompare);
+            WRITE_REGISTER(tmr2Status, READ_REGISTER(tmr2Status) | hwr328TmrStatusCompare);
 
             // If the Free Run/Restart flag is not set, clear the counter.
 
-            if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlFreeRun) == 0) {
+            if ((READ_REGISTER(tmr2Control) & hwr328TmrControlFreeRun) == 0) {
                 WRITE_REGISTER(tmr2Counter, tcn - tcmp);
             }
 
             // If the timer interrupt is enabled, post an interrupt.
 
-            if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnInterrupt) != 0) {
-                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrVZ328IntLoTimer);
+            if ((READ_REGISTER(tmr2Control) & hwr328TmrControlEnInterrupt) != 0) {
+                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwr328IntLoTimer2);
                 EmRegs328::UpdateInterrupts();
             }
         }
@@ -2738,7 +2736,8 @@ int EmRegs328::GetPort(emuptr address) {
 }
 
 uint32 EmRegs328::Tmr1CyclesToNextInterrupt(uint64 systemCycles) {
-    if (!(READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) || timer1TicksPerSecond <= 0)
+    if ((READ_REGISTER(intMaskHi) & hwr328IntHiTimer1) ||
+        !(READ_REGISTER(tmr1Control) & hwr328TmrControlEnable) || timer1TicksPerSecond <= 0)
         return 0xffffffff;
 
     uint16 tcmp = READ_REGISTER(tmr1Compare);
@@ -2757,7 +2756,8 @@ uint32 EmRegs328::Tmr1CyclesToNextInterrupt(uint64 systemCycles) {
 }
 
 uint32 EmRegs328::Tmr2CyclesToNextInterrupt(uint64 systemCycles) {
-    if (!(READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnable) || timer2TicksPerSecond <= 0)
+    if ((READ_REGISTER(intMaskLo) & hwr328IntLoTimer2) ||
+        !(READ_REGISTER(tmr2Control) & hwr328TmrControlEnable) || timer2TicksPerSecond <= 0)
         return 0xffffffff;
 
     uint16 tcmp = READ_REGISTER(tmr2Compare);

@@ -51,6 +51,7 @@
 #include "EmCommon.h"
 #include "EmROMReader.h"  // EmROMReader
 #include "EmRegs328PalmIII.h"
+#include "EmRegs328Pilot.h"
 #include "EmRegsEZPalmIIIc.h"
 #include "EmRegsEZPalmIIIe.h"
 #include "EmRegsEZPalmIIIx.h"
@@ -75,7 +76,6 @@
     #include "EmRegs328PalmIII.h"
     #include "EmRegs328PalmPilot.h"
     #include "EmRegs328PalmVII.h"
-    #include "EmRegs328Pilot.h"
     #include "EmRegs328Symbol1700.h"
     #include "EmRegsASICSymbol1700.h"
     #include "EmRegsEZPalmVII.h"
@@ -710,7 +710,6 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
     }
 
     switch (fDeviceID) {
-#if 0  // CSTODO
         case kDeviceUnspecified:
             return false;
             break;
@@ -725,7 +724,7 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
                 (ROM.Version() < 0x030000))
                 return true;
             break;
-#endif
+
         case kDevicePalmIII:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && (ROM.Version() >= 0x030000) &&
                 !ROM.ContainsDB(SYMBOL_DB) && !is7)
@@ -894,7 +893,6 @@ EmCPU* EmDevice::CreateCPU(EmSession* session) const {
 
 void EmDevice::CreateRegs(void) const {
     switch (fDeviceID) {
-#if 0  // CSTODO
         case kDevicePilot:
             EmBankRegs::AddSubBank(new EmRegs328Pilot);
             break;
@@ -902,8 +900,6 @@ void EmDevice::CreateRegs(void) const {
         case kDevicePalmPilot:
             EmBankRegs::AddSubBank(new EmRegs328PalmPilot);
             break;
-
-#endif
 
         case kDevicePalmIII:
             EmBankRegs::AddSubBank(new EmRegs328PalmIII);

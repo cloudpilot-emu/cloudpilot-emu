@@ -705,9 +705,6 @@ void EmCPU68K::ProcessInterrupt(int32 interrupt) {
 void EmCPU68K::ProcessException(ExceptionNumber exception) {
     // make sure that we don't enter an endless loop if setting up the stack
     // frame triggers a bus error
-    if (isHandlingException) {
-        cout << "blubb";
-    }
     EmAssert(!isHandlingException);
 
     // Make sure the Status Register is up-to-date.

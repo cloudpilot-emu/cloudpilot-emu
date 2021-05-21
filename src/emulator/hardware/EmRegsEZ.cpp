@@ -2520,7 +2520,8 @@ int EmRegsEZ::GetPort(emuptr address) {
 }
 
 uint32 EmRegsEZ::CyclesToNextInterrupt(uint64 systemCycles) {
-    if (!(READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) || timerTicksPerSecond <= 0)
+    if ((READ_REGISTER(intMaskLo) & hwrEZ328IntLoTimer) ||
+        !(READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) || timerTicksPerSecond <= 0)
         return 0xffffffff;
 
     uint16 tcmp = READ_REGISTER(tmr1Compare);
