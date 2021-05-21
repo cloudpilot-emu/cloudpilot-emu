@@ -50,6 +50,7 @@
 #include "EmCPU68K.h"
 #include "EmCommon.h"
 #include "EmROMReader.h"  // EmROMReader
+#include "EmRegs328PalmIII.h"
 #include "EmRegsEZPalmIIIc.h"
 #include "EmRegsEZPalmIIIe.h"
 #include "EmRegsEZPalmIIIx.h"
@@ -724,13 +725,12 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
                 (ROM.Version() < 0x030000))
                 return true;
             break;
-
+#endif
         case kDevicePalmIII:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && (ROM.Version() >= 0x030000) &&
                 !ROM.ContainsDB(SYMBOL_DB) && !is7)
                 return true;
             break;
-#endif
 
         case kDevicePalmIIIc:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && !ROM.ContainsDB(PALM_m100_DB) &&
@@ -903,10 +903,11 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegs328PalmPilot);
             break;
 
+#endif
+
         case kDevicePalmIII:
             EmBankRegs::AddSubBank(new EmRegs328PalmIII);
             break;
-#endif
 
         case kDevicePalmIIIc: {
             EmBankRegs::AddSubBank(new EmRegsEZPalmIIIc);

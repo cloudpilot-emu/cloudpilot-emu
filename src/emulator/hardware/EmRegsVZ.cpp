@@ -2184,7 +2184,7 @@ void EmRegsVZ::tmr1RegisterWrite(emuptr address, int size, uint32 value) {
 void EmRegsVZ::tmr2RegisterWrite(emuptr address, int size, uint32 value) {
     EmRegsVZ::StdWrite(address, size, value);
 
-    timer1TicksPerSecond = TimerTicksPerSecond(
+    timer2TicksPerSecond = TimerTicksPerSecond(
         READ_REGISTER(tmr2Control), READ_REGISTER(tmr2Prescaler), GetSystemClockFrequency());
 }
 

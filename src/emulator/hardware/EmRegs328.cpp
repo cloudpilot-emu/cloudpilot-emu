@@ -1239,12 +1239,14 @@ void EmRegs328::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 bool EmRegs328::CopyLCDFrame(Frame& frame) {
     // Get the screen metrics.
 
-    frame.bpp = 1 << (READ_REGISTER(lcdPanelControl) & 0x03);
-    frame.lineWidth = READ_REGISTER(lcdScreenWidth);
+    frame.bpp = 1 << (READ_REGISTER(lcdPanelControl) & 0x01);
+    frame.lineWidth = READ_REGISTER(lcdScreenWidth) + 1;
     frame.lines = READ_REGISTER(lcdScreenHeight) + 1;
     frame.bytesPerLine = READ_REGISTER(lcdPageWidth) * 2;
     frame.margin = READ_REGISTER(lcdPanningOffset) & 0x0f;
     emuptr baseAddr = READ_REGISTER(lcdStartAddr);
+
+    if (baseAddr == 0) return false;
 
     switch (frame.bpp) {
         case 1:
@@ -2074,8 +2076,8 @@ void EmRegs328::tmr1RegisterWrite(emuptr address, int size, uint32 value) {
 void EmRegs328::tmr2RegisterWrite(emuptr address, int size, uint32 value) {
     EmRegs328::StdWrite(address, size, value);
 
-    timer1TicksPerSecond = TimerTicksPerSecond(
-        READ_REGISTER(tmr1Control), READ_REGISTER(tmr1Prescaler), GetSystemClockFrequency());
+    timer2TicksPerSecond = TimerTicksPerSecond(
+        READ_REGISTER(tmr2Control), READ_REGISTER(tmr2Prescaler), GetSystemClockFrequency());
 }
 
 // ---------------------------------------------------------------------------
