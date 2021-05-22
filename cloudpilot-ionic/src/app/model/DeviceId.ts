@@ -1,4 +1,7 @@
 export enum DeviceId {
+    palmPilot = 'PalmPilot',
+    pilot = 'Pilot',
+    iii = 'PalmIII',
     palmVx = 'PalmVx',
     palmV = 'PalmV',
     iiic = 'PalmIIIc',

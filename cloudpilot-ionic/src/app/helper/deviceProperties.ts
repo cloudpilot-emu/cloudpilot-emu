@@ -24,6 +24,9 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
 
 export function isColor(deviceId: DeviceId | undefined): boolean {
     switch (deviceId) {
+        case DeviceId.pilot:
+        case DeviceId.palmPilot:
+        case DeviceId.iii:
         case DeviceId.palmV:
         case DeviceId.palmVx:
         case DeviceId.iiix:
@@ -41,6 +44,15 @@ export function isColor(deviceId: DeviceId | undefined): boolean {
 
 export function deviceName(deviceId: DeviceId): string {
     switch (deviceId) {
+        case DeviceId.pilot:
+            return 'Pilot';
+
+        case DeviceId.palmPilot:
+            return 'Palm Pilot';
+
+        case DeviceId.iii:
+            return 'Palm III';
+
         case DeviceId.m500:
             return 'Palm m500';
 

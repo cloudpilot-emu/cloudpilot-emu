@@ -52,6 +52,9 @@ export interface PwmUpdate {
 }
 
 export const SUPPORTED_DEVICES = [
+    DeviceId.palmPilot,
+    DeviceId.pilot,
+    DeviceId.iii,
     DeviceId.palmVx,
     DeviceId.palmV,
     DeviceId.iiix,

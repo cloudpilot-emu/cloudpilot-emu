@@ -2800,8 +2800,8 @@ void EmRegs328::pwmpWrite(emuptr address, int size, uint32 value) {
 
 void EmRegs328::DispatchPwmChange() {
     uint16 pwmc = READ_REGISTER(pwmControl);
-    uint8 pwmw = READ_REGISTER(pwmWidth);
-    uint8 pwmp = READ_REGISTER(pwmPeriod);
+    uint16 pwmw = READ_REGISTER(pwmWidth);
+    uint16 pwmp = READ_REGISTER(pwmPeriod);
 
     if (!pwmActive) {
         EmHAL::onPwmChange.Dispatch(-1, -1);
@@ -2809,11 +2809,10 @@ void EmRegs328::DispatchPwmChange() {
         return;
     }
 
-    const uint16 divider = 1 << (pwmc & 0x07 + 2);
+    const uint16 divider = 1 << ((pwmc & 0x07) + 2);
     const uint32 baseFreq = GetSystemClockFrequency();
 
-    double freq =
-        static_cast<double>(baseFreq) / divider / min(256u, static_cast<uint32>(pwmp) + 2);
+    double freq = static_cast<double>(baseFreq) / divider / (static_cast<uint32>(pwmp) + 1);
 
     double dutyCycle = static_cast<double>(pwmw) / pwmp;
 
