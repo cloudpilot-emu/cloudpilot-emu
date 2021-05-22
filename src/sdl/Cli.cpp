@@ -82,7 +82,11 @@ namespace {
     void SaveBackup(string file) {
         DbBackup backup;
 
-        backup.Init();
+        if (!backup.Init()) {
+            cout << "backup failed" << endl << flush;
+
+            return;
+        }
 
         while (backup.IsInProgress()) {
             cout << "backing up " << backup.GetCurrentDatabase() << " ... ";
