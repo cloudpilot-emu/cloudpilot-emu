@@ -444,18 +444,12 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
     // executed) do some idle tasks.
 
     do {
-        // -----------------------------------------------------------------------
-        // Slow down processing so that the timer used
-        // to increment the tickcount doesn't run too quickly.
-        // -----------------------------------------------------------------------
-
-        // Perform periodic tasks.
-
         uint32 cyclesToNextInterrupt =
             EmHAL::CyclesToNextInterrupt(session->GetSystemCycles() + fCurrentCycles);
-        fCurrentCycles += ((cyclesToNextInterrupt > 0 && cyclesToNextInterrupt != 0xffffffff)
+        fCurrentCycles += ((gSession->IsPowerOn() && cyclesToNextInterrupt > 0 &&
+                            cyclesToNextInterrupt != 0xffffffff)
                                ? cyclesToNextInterrupt
-                               : 10000);
+                               : (maxCycles > 0 ? maxCycles : 1));
 
         CYCLE(true);
 
@@ -472,8 +466,8 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
             }
         }
 
-        if (regs.stopped)
-            logging::printf("WARNING: CPU failed to wake up after 0x%08 cycles",
+        if (regs.stopped && gSession->IsPowerOn())
+            logging::printf("WARNING: CPU failed to wake up after %u cycles",
                             cyclesToNextInterrupt);
 
         if (this->CheckForBreak() || (fCurrentCycles >= maxCycles)) {
