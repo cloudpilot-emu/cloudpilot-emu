@@ -226,30 +226,10 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
     int pcAdjust = fromTrap ? 2 : 0;
 
     if (!gSession->IsNested() && gSession->WaitingForSyscall()) {
-        CEnableFullAccess munge;
+        gCPU->SetPC(gCPU->GetPC() - pcAdjust);
+        gSession->NotifySyscallDispatched();
 
-        // Check the memory manager semaphore.  If we're stopping on a
-        // system call, it's most likely that we want to make some nested
-        // Palm OS calls.  Some of those calls may try to acquire the
-        // memory manager semaphore.  Therefore, make sure it's available.
-
-        UInt32 memSemaphoreIDP = EmLowMem_GetGlobal(memSemaphoreID);
-        EmAliascj_xsmb<PAS> memSemaphoreID(memSemaphoreIDP);
-
-        if (memSemaphoreID.xsmuse == 0) {
-            SysKernelInfoType taskInfo;
-            taskInfo.selector = sysKernelInfoSelCurTaskInfo;
-
-            Err err = ::SysKernelInfo(&taskInfo);
-
-            if (err == errNone &&
-                (taskInfo.param.task.tag == 'psys' || taskInfo.param.task.tag == 0x414d5800)) {
-                gCPU->SetPC(gCPU->GetPC() - pcAdjust);
-                gSession->NotifySyscallDispatched();
-
-                return true;
-            }
-        }
+        return true;
     }
 
     // ======================================================================

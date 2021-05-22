@@ -539,16 +539,18 @@ KeyboardEvent EmSession::NextKeyboardEvent() {
 }
 
 bool EmSession::Wakeup() {
-    if (IsCpuStopped()) return false;
+    bool isSafeToWakeup = RunToSyscall();
 
-    if (gSystemState.OSMajorVersion() >= 4) {
-        EvtWakeupWithoutNilEvent();
-    } else {
-        EvtWakeup();
-        EmLowMem::ClearNilEvent();
+    if (isSafeToWakeup) {
+        if (gSystemState.OSMajorVersion() >= 4) {
+            EvtWakeupWithoutNilEvent();
+        } else {
+            EvtWakeup();
+            EmLowMem::ClearNilEvent();
+        }
     }
 
-    return true;
+    return isSafeToWakeup;
 }
 
 void EmSession::PumpEvents() {
