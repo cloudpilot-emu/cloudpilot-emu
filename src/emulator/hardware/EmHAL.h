@@ -67,7 +67,6 @@ class EmHALHandler {
     virtual emuptr GetROMBaseAddress(void);
     virtual Bool ChipSelectsConfigured(void);
     virtual int32 GetSystemClockFrequency(void);
-    virtual Bool GetCanStop(void);
     virtual Bool GetAsleep(void);
 
     virtual uint8 GetPortInputValue(int);
@@ -125,7 +124,6 @@ class EmHAL {
     static emuptr GetROMBaseAddress(void);
     static Bool ChipSelectsConfigured(void);
     static int32 GetSystemClockFrequency(void);
-    static Bool GetCanStop(void);
     static Bool GetAsleep(void);
 
     static uint8 GetPortInputValue(int);

@@ -64,7 +64,6 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     virtual emuptr GetROMBaseAddress(void);
     virtual Bool ChipSelectsConfigured(void);
     virtual int32 GetSystemClockFrequency(void);
-    virtual Bool GetCanStop(void);
     virtual Bool GetAsleep(void);
 
     virtual uint8 GetPortInputValue(int);

@@ -136,6 +136,12 @@ namespace {
         marker(firstLineAddr, lastLineAddr);
     }
 
+    uint8 mapGrayscale(uint8 bitstream) {
+        static constexpr uint8 mapping[] = {0, 3, 5, 7, 10, 12, 15, 15};
+
+        return mapping[bitstream & 0x07];
+    }
+
     // Values used to initialize the DragonBall registers.
     const HwrM68328Type kInitial68328RegisterValues = {
         0x0C,  //	Byte		scr;						// $000:
@@ -1273,7 +1279,11 @@ bool EmRegs328::CopyLCDFrame(Frame& frame) {
     return true;
 }
 
-uint16 EmRegs328::GetLCD2bitMapping() { return READ_REGISTER(lcdGrayPalette) & 0xffff; }
+uint16 EmRegs328::GetLCD2bitMapping() {
+    uint16 lgpmr = READ_REGISTER(lcdGrayPalette);
+    return mapGrayscale((lgpmr >> 8) & 0x07) | (mapGrayscale((lgpmr >> 12) & 0x07) << 4) |
+           (mapGrayscale(lgpmr & 0x07) << 8) | (mapGrayscale((lgpmr >> 4) & 0x07) << 12);
+}
 
 void EmRegs328::MarkScreen() {
     if (!markScreen) return;
@@ -1418,20 +1428,6 @@ int32 EmRegs328::GetSystemClockFrequency(void) {
     }
 
     return result;
-}
-
-// ---------------------------------------------------------------------------
-//		� EmRegs328::GetCanStop
-// ---------------------------------------------------------------------------
-
-Bool EmRegs328::GetCanStop(void) {
-    // Make sure Timer 2 is enabled or the RTC interrupt is enabled.
-
-    if ((READ_REGISTER(tmr2Control) & hwr328TmrControlEnable) != 0) return true;
-
-    if ((READ_REGISTER(rtcIntEnable) & hwr328RTCIntEnableAlarm) != 0) return true;
-
-    return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -2782,8 +2778,10 @@ uint32 EmRegs328::CyclesToNextInterrupt(uint64 systemCycles) {
 void EmRegs328::pwmcWrite(emuptr address, int size, uint32 value) {
     EmRegs328::StdWrite(address, size, value);
 
-    if (pwmActive && !(value & 0x10)) {
-        pwmActive = false;
+    bool newState = value & 0x10;
+
+    if (newState != pwmActive) {
+        pwmActive = newState;
         DispatchPwmChange();
     }
 }
@@ -2791,10 +2789,7 @@ void EmRegs328::pwmcWrite(emuptr address, int size, uint32 value) {
 void EmRegs328::pwmwWrite(emuptr address, int size, uint32 value) {
     EmRegs328::StdWrite(address, size, value);
 
-    if (READ_REGISTER(pwmControl) & 0x10) {
-        pwmActive = true;
-        DispatchPwmChange();
-    }
+    if (pwmActive) DispatchPwmChange();
 }
 
 void EmRegs328::pwmpWrite(emuptr address, int size, uint32 value) {

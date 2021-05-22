@@ -302,15 +302,6 @@ int32 EmHAL::GetSystemClockFrequency(void) {
 }
 
 // ---------------------------------------------------------------------------
-//		� EmHAL::GetCanStop
-// ---------------------------------------------------------------------------
-
-Bool EmHAL::GetCanStop(void) {
-    EmAssert(EmHAL::GetRootHandler());
-    return EmHAL::GetRootHandler()->GetCanStop();
-}
-
-// ---------------------------------------------------------------------------
 //		� EmHAL::GetAsleep
 // ---------------------------------------------------------------------------
 
@@ -664,15 +655,6 @@ Bool EmHALHandler::ChipSelectsConfigured(void) {
 int32 EmHALHandler::GetSystemClockFrequency(void) {
     EmAssert(this->GetNextHandler());
     return this->GetNextHandler()->GetSystemClockFrequency();
-}
-
-// ---------------------------------------------------------------------------
-//		� EmHALHandler::GetCanStop
-// ---------------------------------------------------------------------------
-
-Bool EmHALHandler::GetCanStop(void) {
-    EmAssert(this->GetNextHandler());
-    return this->GetNextHandler()->GetCanStop();
 }
 
 // ---------------------------------------------------------------------------

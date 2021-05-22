@@ -961,6 +961,8 @@ bool EmRegsEZ::CopyLCDFrame(Frame& frame) {
     frame.margin = READ_REGISTER(lcdPanningOffset);
     emuptr baseAddr = READ_REGISTER(lcdStartAddr);
 
+    if (baseAddr == 0) return false;
+
     switch (frame.bpp) {
         case 1:
             frame.margin &= 0x0f;
@@ -1207,20 +1209,6 @@ int32 EmRegsEZ::GetSystemClockFrequency(void) {
     }
 
     return result;
-}
-
-// ---------------------------------------------------------------------------
-//		� EmRegsEZ::GetCanStop
-// ---------------------------------------------------------------------------
-
-Bool EmRegsEZ::GetCanStop(void) {
-    // Make sure Timer is enabled or the RTC interrupt is enabled.
-
-    if ((READ_REGISTER(tmr1Control) & hwrEZ328TmrControlEnable) != 0) return true;
-
-    if ((READ_REGISTER(rtcIntEnable) & hwrEZ328RTCIntEnableAlarm) != 0) return true;
-
-    return false;
 }
 
 // ---------------------------------------------------------------------------
