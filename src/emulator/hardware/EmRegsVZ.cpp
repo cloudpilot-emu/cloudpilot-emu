@@ -1224,6 +1224,9 @@ bool EmRegsVZ::CopyLCDFrame(Frame& frame) {
         case 4:
             frame.margin &= 0x03;
             break;
+
+        default:
+            return false;
     }
 
     // Determine first and last scanlines to fetch, and fetch them.

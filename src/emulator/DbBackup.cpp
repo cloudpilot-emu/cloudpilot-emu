@@ -32,8 +32,6 @@ bool DbBackup::Init() {
     EmAssert(state == State::created);
 
     if (gSession->IsCpuStopped()) {
-        logging::printf("WARNING: attempt to install files with stopped CPU");
-
         return false;
     }
 

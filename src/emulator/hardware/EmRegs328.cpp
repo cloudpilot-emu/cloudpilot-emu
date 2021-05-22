@@ -1261,9 +1261,8 @@ bool EmRegs328::CopyLCDFrame(Frame& frame) {
             frame.margin &= 0x07;
             break;
 
-        case 4:
-            frame.margin &= 0x03;
-            break;
+        default:
+            return false;
     }
 
     // Determine first and last scanlines to fetch, and fetch them.
