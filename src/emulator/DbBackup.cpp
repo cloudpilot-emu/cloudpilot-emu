@@ -4,6 +4,7 @@
 
 #include "CallbackManager.h"
 #include "EmSession.h"
+#include "EmSystemState.h"
 #include "Marshal.h"
 #include "Miscellaneous.h"
 #include "ROMStubs.h"
@@ -29,6 +30,14 @@ DbBackup::~DbBackup() {
 
 bool DbBackup::Init() {
     EmAssert(state == State::created);
+
+    if (gSession->IsCpuStopped()) {
+        logging::printf("WARNING: attempt to install files with stopped CPU");
+
+        return false;
+    }
+
+    if (gSystemState.OSMajorVersion() < 3) return false;
 
     if (!GetDatabases(databases, GetDatabaseFlags::kOnlyRamDatabases)) {
         return false;
