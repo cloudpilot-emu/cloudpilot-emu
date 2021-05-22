@@ -472,6 +472,10 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
             }
         }
 
+        if (regs.stopped)
+            logging::printf("WARNING: CPU failed to wake up after 0x%08 cycles",
+                            cyclesToNextInterrupt);
+
         if (this->CheckForBreak() || (fCurrentCycles >= maxCycles)) {
             return true;
         }
