@@ -25,7 +25,6 @@
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 2;
 
-    constexpr int MIN_CYCLES_BETWEEN_EVENTS = 10000;
     constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
 
     constexpr uint32 RUN_TO_SYSCALL_LIMIT = 10000000;
@@ -216,16 +215,11 @@ void EmSession::Load(SavestateLoader& loader) {
     waitingForSyscall = false;
     syscallDispatched = false;
 
-    penEventQueue.Clear();
-    keyboardEventQueue.Clear();
-    penEventQueueIncoming.Clear();
-    keyboardEventQueueIncoming.Clear();
     buttonEventQueue.Clear();
 
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper);
 
-    lastEventPromotedAt = systemCycles;
     lastButtonEventReadAt = systemCycles;
 
     cpu->Load(loader);
@@ -301,12 +295,6 @@ void EmSession::Reset(ResetType resetType) {
 
     waitingForSyscall = false;
     syscallDispatched = false;
-
-    penEventQueue.Clear();
-    keyboardEventQueue.Clear();
-    penEventQueueIncoming.Clear();
-    keyboardEventQueueIncoming.Clear();
-    lastEventPromotedAt = 0;
 
     if (resetType != ResetType::sys) {
         buttonEventQueue.Clear();
@@ -420,8 +408,6 @@ uint32 EmSession::RunEmulation(uint32 maxCycles) {
     if (SuspendManager::IsSuspended()) {
         systemCycles += maxCycles;
     } else {
-        PumpEvents();
-
         uint32 cycles = cpu->Execute(maxCycles);
         systemCycles += cycles;
 
@@ -510,78 +496,9 @@ void EmSession::HandleInstructionBreak() {
     CallbackManager::HandleBreakpoint();
 }
 
-void EmSession::QueuePenEvent(PenEvent evt) {
-    if (!IsPowerOn()) return;
+void EmSession::QueuePenEvent(PenEvent evt) { EmPalmOS::QueuePenEvent(evt); }
 
-    if (penEventQueueIncoming.GetFree() == 0) penEventQueueIncoming.Get();
-
-    penEventQueueIncoming.Put(evt);
-}
-
-bool EmSession::HasPenEvent() { return penEventQueue.GetUsed() > 0; }
-
-PenEvent EmSession::NextPenEvent() { return HasPenEvent() ? penEventQueue.Get() : PenEvent(); }
-
-PenEvent EmSession::PeekPenEvent() { return HasPenEvent() ? penEventQueue.Peek() : PenEvent(); }
-
-void EmSession::QueueKeyboardEvent(KeyboardEvent evt) {
-    if (!IsPowerOn()) return;
-
-    if (keyboardEventQueueIncoming.GetFree() == 0) keyboardEventQueueIncoming.Get();
-
-    keyboardEventQueueIncoming.Put(evt);
-}
-
-bool EmSession::HasKeyboardEvent() { return keyboardEventQueue.GetUsed() > 0; }
-
-KeyboardEvent EmSession::NextKeyboardEvent() {
-    return HasKeyboardEvent() ? keyboardEventQueue.Get() : KeyboardEvent('.');
-}
-
-bool EmSession::Wakeup() {
-    bool isSafeToWakeup = RunToSyscall();
-
-    if (isSafeToWakeup) {
-        if (gSystemState.OSMajorVersion() >= 4) {
-            EvtWakeupWithoutNilEvent();
-        } else {
-            EvtWakeup();
-            EmLowMem::ClearNilEvent();
-        }
-    }
-
-    return isSafeToWakeup;
-}
-
-void EmSession::PumpEvents() {
-    if (systemCycles - lastEventPromotedAt < MIN_CYCLES_BETWEEN_EVENTS ||
-        !gSystemState.IsUIInitialized())
-        return;
-
-    if (PromoteKeyboardEvent() || PromotePenEvent()) lastEventPromotedAt = systemCycles;
-}
-
-bool EmSession::PromoteKeyboardEvent() {
-    if (keyboardEventQueueIncoming.GetUsed() == 0) return false;
-
-    if (!Wakeup()) return false;
-
-    if (keyboardEventQueue.GetFree() == 0) keyboardEventQueue.Get();
-    keyboardEventQueue.Put(keyboardEventQueueIncoming.Get());
-
-    return true;
-}
-
-bool EmSession::PromotePenEvent() {
-    if (penEventQueueIncoming.GetUsed() == 0) return false;
-
-    if (!Wakeup()) return false;
-
-    if (penEventQueue.GetFree() == 0) penEventQueue.Get();
-    penEventQueue.Put(penEventQueueIncoming.Get());
-
-    return true;
-}
+void EmSession::QueueKeyboardEvent(KeyboardEvent evt) { EmPalmOS::QueueKeyboardEvent(evt); }
 
 void EmSession::QueueButtonEvent(ButtonEvent evt) {
     if (buttonEventQueue.GetFree() == 0) buttonEventQueue.Get();

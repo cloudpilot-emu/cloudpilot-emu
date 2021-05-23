@@ -772,3 +772,8 @@ string Isolatin1ToUtf8(const string& input) {
 
     return result;
 }
+
+void TransformPenCoordinates(int16& x, int16& y) {
+    x = 500 - x;
+    y = 500 - y;
+}

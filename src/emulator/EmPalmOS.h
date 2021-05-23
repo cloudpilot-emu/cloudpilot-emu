@@ -14,8 +14,12 @@
 #ifndef EmPalmOS_h
 #define EmPalmOS_h
 
-#include "EmCPU68K.h"   // ExceptionNumber
+#include "EmCPU68K.h"  // ExceptionNumber
+#include "EmPatchModuleTypes.h"
 #include "EmStructs.h"  // EmStackFrameList
+#include "EmThreadSafeQueue.h"
+#include "KeyboardEvent.h"
+#include "PenEvent.h"
 
 class EmPalmOS {
    public:
@@ -23,12 +27,35 @@ class EmPalmOS {
     static void Reset(void);
     static void Dispose(void);
 
+    static void QueuePenEvent(PenEvent evt);
+    static void QueueKeyboardEvent(KeyboardEvent evt);
+
+    static bool HasPenEvent();
+    static bool HasKeyboardEvent();
+    static PenEvent PeekPenEvent();
+
+    static void InjectEvent(CallROMType& callROM);
+
    protected:
-    static Bool HandleTrap15(ExceptionNumber);
-    static Bool HandleJSR_Ind(emuptr oldPC, emuptr dest);
+    static bool HandleTrap15(ExceptionNumber);
+    static bool HandleJSR_Ind(emuptr oldPC, emuptr dest);
 
    private:
-    static Bool HandleSystemCall(Bool fromTrap);
+    static bool HandleSystemCall(Bool fromTrap);
+
+    static bool DispatchNextEvent();
+    static bool DispatchKeyboardEvent();
+    static bool DispatchPenEvent();
+    static void Wakeup();
+
+    static void ClearQueues();
+
+    static EmThreadSafeQueue<PenEvent> penEventQueue;
+    static EmThreadSafeQueue<KeyboardEvent> keyboardEventQueue;
+
+    static EmThreadSafeQueue<PenEvent> penEventQueueIncoming;
+    static EmThreadSafeQueue<KeyboardEvent> keyboardEventQueueIncoming;
+    static uint64 lastEventPromotedAt;
 };
 
 #endif /* EmPalmOS_h */

@@ -2,6 +2,7 @@
 
 #include "EmCommon.h"
 #include "EmLowMem.h"
+#include "EmPalmOS.h"
 #include "EmPatchMgr.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
@@ -52,7 +53,7 @@ namespace {
 
         CallROMType result = kExecuteROM;
 
-        EmPatchMgr::PuppetString(result);
+        EmPalmOS::InjectEvent(result);
 
         return result;
     }
@@ -74,7 +75,7 @@ namespace {
 
         CallROMType result;
 
-        EmPatchMgr::PuppetString(result);
+        EmPalmOS::InjectEvent(result);
 
         return result;
     }
@@ -84,8 +85,7 @@ namespace {
 
         CALLED_GET_PARAM_REF(PointType, point, Marshal::kInOut);
 
-        (*point).x = 500 - (*point).x;
-        (*point).y = 500 - (*point).y;
+        TransformPenCoordinates((*point).x, (*point).y);
 
         CALLED_PUT_PARAM_REF(point);
         PUT_RESULT_VAL(Err, 0);
@@ -228,9 +228,8 @@ namespace {
         GET_RESULT_VAL(Boolean);
 
         if (result == 0) {
-            EmAssert(gSession);
-            if (gSession->HasPenEvent()) {
-                PenEvent event = gSession->PeekPenEvent();
+            if (EmPalmOS::HasPenEvent()) {
+                PenEvent event = EmPalmOS::PeekPenEvent();
 
                 if (event.isPenDown() || !ignorePenUps) {
                     PUT_RESULT_VAL(Boolean, true);
