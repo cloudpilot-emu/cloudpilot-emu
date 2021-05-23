@@ -57,6 +57,28 @@ namespace {
         return result;
     }
 
+    CallROMType HeadpatchSysSemaphoreWait(void) {
+        // Only do this under 1.0.	Under Palm OS 2.0 and later, EvtGetSysEvent
+        // calls SysEvGroupWait instead.  See our headpatch of that function
+        // for a chunk of pretty similar code.
+
+        if (gSystemState.OSMajorVersion() != 1) {
+            return kExecuteROM;
+        }
+
+        // Err SysSemaphoreWait(UInt32 smID, UInt32 priority, Int32 timeout)
+
+        CALLED_SETUP("Err", "UInt32 smID, UInt32 priority, Int32 timeout");
+
+        CALLED_GET_PARAM_VAL(Int32, timeout);
+
+        CallROMType result;
+
+        EmPatchMgr::PuppetString(result);
+
+        return result;
+    }
+
     CallROMType HeadpatchPenScreenToRaw_RawToScreen(void) {
         CALLED_SETUP("Err", "PointType* point");
 
@@ -266,6 +288,7 @@ namespace {
         {sysTrapClipboardGetItem, HeadpatchClipboardGetItem, NULL},
         {sysTrapClipboardAddItem, NULL, TailpatchClipboardAddItem},
         {sysTrapClipboardAppendItem, NULL, TailpatchClipboardAppendItem},
+        {sysTrapSysSemaphoreWait, HeadpatchSysSemaphoreWait, NULL},
         {0, NULL, NULL}};
 }  // namespace
 
