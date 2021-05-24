@@ -51,6 +51,7 @@
 #include "EmCommon.h"
 #include "EmROMReader.h"  // EmROMReader
 #include "EmRegs328PalmIII.h"
+#include "EmRegs328PalmVII.h"
 #include "EmRegs328Pilot.h"
 #include "EmRegsEZPalmIIIc.h"
 #include "EmRegsEZPalmIIIe.h"
@@ -75,7 +76,6 @@
 #if 0  // CSTODO
     #include "EmRegs328PalmIII.h"
     #include "EmRegs328PalmPilot.h"
-    #include "EmRegs328PalmVII.h"
     #include "EmRegs328Symbol1700.h"
     #include "EmRegsASICSymbol1700.h"
     #include "EmRegsEZPalmVII.h"
@@ -119,6 +119,7 @@ enum  // DeviceType
     kDevicePalmIIIc,
     kDevicePalmIIIe,
     kDevicePalmIIIx,
+    kDevicePalmIIIxe,
     kDevicePalmV,
     kDevicePalmVx,
     kDevicePalmVII,
@@ -267,6 +268,14 @@ static const DeviceInfo kDeviceInfo[] = {
      {"PalmIIIx", "Brad"},
      kSupports68EZ328 + kHasFlash,
      4096,
+     hwrMiscFlagIDBrad,
+     hwrMiscFlagExtSubIDBrad,
+     {{'palm', 'sumo'}}},
+    {kDevicePalmIIIxe,
+     "Palm IIIxe",
+     {"PalmIIIxe"},
+     kSupports68EZ328 + kHasFlash,
+     8192,
      hwrMiscFlagIDBrad,
      hwrMiscFlagExtSubIDBrad,
      {{'palm', 'sumo'}}},
@@ -744,6 +753,7 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
             break;
 
         case kDevicePalmIIIx:
+        case kDevicePalmIIIxe:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && !ROM.ContainsDB(PALM_m100_DB) &&
                 !is7 && !isColor)
                 return true;
@@ -761,14 +771,13 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
                 return true;
             break;
 
-#if 0  // CSTODO
-
-
         case kDevicePalmVII:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && (ROM.Version() >= 0x030000) &&
                 !ROM.ContainsDB(SYMBOL_DB) && is7)
                 return true;
             break;
+
+#if 0  // CSTODO
 
         case kDevicePalmVIIEZ:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && is7 &&
@@ -922,6 +931,7 @@ void EmDevice::CreateRegs(void) const {
             break;
 
         case kDevicePalmIIIx:
+        case kDevicePalmIIIxe:
             EmBankRegs::AddSubBank(new EmRegsEZPalmIIIx);
             break;
 
@@ -933,12 +943,12 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsEZPalmVx);
             break;
 
-#if 0  // CSTODO
-
-
         case kDevicePalmVII:
             EmBankRegs::AddSubBank(new EmRegs328PalmVII);
             break;
+
+#if 0  // CSTODO
+
 
         case kDevicePalmVIIEZ:
             EmBankRegs::AddSubBank(new EmRegsEZPalmVII);

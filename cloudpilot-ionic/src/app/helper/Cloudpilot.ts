@@ -57,6 +57,8 @@ export const SUPPORTED_DEVICES = [
     DeviceId.iii,
     DeviceId.palmVx,
     DeviceId.palmV,
+    DeviceId.palmVII,
+    DeviceId.iiixe,
     DeviceId.iiix,
     DeviceId.iiie,
     DeviceId.m500,

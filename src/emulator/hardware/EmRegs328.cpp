@@ -106,7 +106,7 @@
 
 namespace {
 
-    constexpr uint32 SAVESTATE_VERSION = 1;
+    constexpr uint32 SAVESTATE_VERSION = 2;
     static const uint32 ADDRESS_MASK = 0x0000FFF0;
 
     double TimerTicksPerSecond(uint16 tmrControl, uint16 tmrPrescaler, int32 systemClockFrequency) {
@@ -757,6 +757,10 @@ void EmRegs328::Load(SavestateLoader& savestate) {
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper, version);
 
+    if (version == 1) {
+        fLastTmr2Status = 0;
+    }
+
     Bool sendTxData = false;
     EmRegs328::UARTStateChanged(sendTxData);
 
@@ -792,6 +796,8 @@ void EmRegs328::DoSaveLoad(T& helper, uint32 version) {
         .DoDouble(timer2TicksPerSecond)
         .Do32(lastRtcAlarmCheck)
         .DoBool(pwmActive);
+
+    if (version > 1) helper.Do16(fLastTmr2Status);
 }
 
 // ---------------------------------------------------------------------------
