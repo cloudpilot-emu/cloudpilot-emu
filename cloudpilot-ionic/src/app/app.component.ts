@@ -54,6 +54,8 @@ export class AppComponent implements AfterViewInit {
                 `,
                 { Reload: () => window.location.reload() }
             );
+
+            return;
         }
 
         this.kvsService.kvs.version = VERSION;
