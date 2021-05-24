@@ -494,7 +494,7 @@ export class CanvasDisplayService {
 
             case DeviceId.iiic:
             case DeviceId.iiix:
-            case DeviceId.iiix:
+            case DeviceId.iiixe:
             case DeviceId.palmVx:
             case DeviceId.palmV:
             default:
