@@ -1,4 +1,4 @@
-# Version 1.4.0
+# Next version
 
 -   Imitate LCD screen for grayscale devices
 -   Support for PalmPilot, Palm III, Palm IIIx, Palm IIIxe, Palm IIie, Palm Vx,
