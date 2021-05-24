@@ -34,6 +34,7 @@ export class AppComponent implements AfterViewInit {
     private async checkForUpdate(): Promise<void> {
         const storedVersion = this.kvsService.kvs.version;
         const previousVersion = this.kvsService.kvs.previousVersion;
+        const latestVersion = this.kvsService.kvs.latestVersion;
 
         if (storedVersion === undefined) {
             this.kvsService.kvs.version = VERSION;
@@ -43,7 +44,7 @@ export class AppComponent implements AfterViewInit {
 
         if (storedVersion === VERSION) return;
 
-        if (previousVersion === VERSION) {
+        if (previousVersion === VERSION && latestVersion !== VERSION) {
             await this.emulationService.bootstrapComplete();
 
             this.alertService.message(
@@ -60,6 +61,7 @@ export class AppComponent implements AfterViewInit {
 
         this.kvsService.kvs.version = VERSION;
         this.kvsService.kvs.previousVersion = storedVersion;
+        this.kvsService.kvs.latestVersion = VERSION;
 
         // wait for a possible loader to disappear
         await this.emulationService.bootstrapComplete();
