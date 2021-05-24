@@ -1,9 +1,9 @@
+import { Injectable, defineInjectable } from '@angular/core';
 import { deviceDimensions, isColor } from '../helper/deviceProperties';
 
 import { DeviceId } from '../model/DeviceId';
 import { EmulationStatistics } from './../model/EmulationStatistics';
 import { GRAYSCALE_PALETTE_HEX } from './../helper/palette';
-import { Injectable } from '@angular/core';
 import { PalmButton } from '../helper/Cloudpilot';
 import { ScreenSize } from '../model/Dimensions';
 import { Session } from '../model/Session';
@@ -85,8 +85,10 @@ function calculateLayout(device: DeviceId): Layout {
 }
 
 type PrerenderedImage = (width: number, height: number) => Promise<HTMLCanvasElement>;
+type LazyLoadingImage = () => Promise<HTMLImageElement>;
+type SkinImageType = keyof typeof import('../skin');
 
-function prerender(image: Promise<HTMLImageElement>): PrerenderedImage {
+function prerender(image: LazyLoadingImage): PrerenderedImage {
     let cachedWidth: number;
     let cachedHeight: number;
     const canvas = document.createElement('canvas');
@@ -102,7 +104,7 @@ function prerender(image: Promise<HTMLImageElement>): PrerenderedImage {
         const ctx = canvas.getContext('2d');
         if (!ctx) throw new Error('get a new browser');
 
-        ctx.drawImage(await image, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(await image(), 0, 0, canvas.width, canvas.height);
 
         cachedWidth = width;
         cachedHeight = height;
@@ -111,39 +113,49 @@ function prerender(image: Promise<HTMLImageElement>): PrerenderedImage {
     };
 }
 
-async function loadImage(key: keyof typeof import('../skin')): Promise<HTMLImageElement> {
-    const svg = (await skin)[key];
+function loadImage(key: SkinImageType): LazyLoadingImage {
+    let deferredImage: Promise<HTMLImageElement> | undefined;
 
-    return new Promise<HTMLImageElement>((resolve, reject) => {
-        const image = new Image();
+    return async () => {
+        if (!deferredImage) {
+            const svg = (await skin)[key];
 
-        image.onload = () => resolve(image);
-        image.onerror = () => reject();
+            deferredImage = new Promise<HTMLImageElement>((resolve, reject) => {
+                const image = new Image();
 
-        image.src = `data:image/svg+xml;base64,${btoa(svg)}`;
-    });
+                image.onload = () => resolve(image);
+                image.onerror = () => reject();
+
+                image.src = `data:image/svg+xml;base64,${btoa(svg)}`;
+            });
+        }
+
+        return deferredImage;
+    };
 }
 
-const IMAGE_SILKSCREEN_V = prerender(loadImage('SILKSCREEN_V'));
-const IMAGE_SILKSCREEN_M500 = prerender(loadImage('SILKSCREEN_M500'));
-const IMAGE_SILKSCREEN_M515 = prerender(loadImage('SILKSCREEN_M515'));
-const IMAGE_SILKSCREEN_IIIC = prerender(loadImage('SILKSCREEN_IIIC'));
-const IMAGE_SILKSCREEN_M100 = prerender(loadImage('SILKSCREEN_M100'));
-const IMAGE_SILKSCREEN_M130 = prerender(loadImage('SILKSCREEN_M130'));
-const IMAGE_SILKSCREEN_TUNGSTENW = prerender(loadImage('SILKSCREEN_TUNGSTEN_W'));
-const IMAGE_SILKSCREEN_PILOT = prerender(loadImage('SILKSCREEN_PILOT'));
+const prepareImage = (key: SkinImageType) => prerender(loadImage(key));
 
-const IMAGE_BUTTONS_V = prerender(loadImage('HARD_BUTTONS_PALM_V'));
-const IMAGE_BUTTONS_M515 = prerender(loadImage('HARD_BUTTONS_M515'));
-const IMAGE_BUTTONS_M500 = prerender(loadImage('HARD_BUTTONS_M500'));
-const IMAGE_BUTTONS_IIIC = prerender(loadImage('HARD_BUTTONS_IIIC'));
-const IMAGE_BUTTONS_IIIX = prerender(loadImage('HARD_BUTTONS_IIIX'));
-const IMAGE_BUTTONS_IIIE = prerender(loadImage('HARD_BUTTONS_IIIE'));
-const IMAGE_BUTTONS_M100 = prerender(loadImage('HARD_BUTTONS_M100'));
-const IMAGE_BUTTONS_M125 = prerender(loadImage('HARD_BUTTONS_M125'));
-const IMAGE_BUTTONS_M130 = prerender(loadImage('HARD_BUTTONS_M130'));
-const IMAGE_BUTTONS_TUNGSTENW = prerender(loadImage('HARD_BUTTONS_TUNGSTEN_W'));
-const IMAGE_BUTTONS_PILOT = prerender(loadImage('HARD_BUTTONS_PILOT'));
+const IMAGE_SILKSCREEN_V = prepareImage('SILKSCREEN_V');
+const IMAGE_SILKSCREEN_M500 = prepareImage('SILKSCREEN_M500');
+const IMAGE_SILKSCREEN_M515 = prepareImage('SILKSCREEN_M515');
+const IMAGE_SILKSCREEN_IIIC = prepareImage('SILKSCREEN_IIIC');
+const IMAGE_SILKSCREEN_M100 = prepareImage('SILKSCREEN_M100');
+const IMAGE_SILKSCREEN_M130 = prepareImage('SILKSCREEN_M130');
+const IMAGE_SILKSCREEN_TUNGSTENW = prepareImage('SILKSCREEN_TUNGSTEN_W');
+const IMAGE_SILKSCREEN_PILOT = prepareImage('SILKSCREEN_PILOT');
+
+const IMAGE_BUTTONS_V = prepareImage('HARD_BUTTONS_PALM_V');
+const IMAGE_BUTTONS_M515 = prepareImage('HARD_BUTTONS_M515');
+const IMAGE_BUTTONS_M500 = prepareImage('HARD_BUTTONS_M500');
+const IMAGE_BUTTONS_IIIC = prepareImage('HARD_BUTTONS_IIIC');
+const IMAGE_BUTTONS_IIIX = prepareImage('HARD_BUTTONS_IIIX');
+const IMAGE_BUTTONS_IIIE = prepareImage('HARD_BUTTONS_IIIE');
+const IMAGE_BUTTONS_M100 = prepareImage('HARD_BUTTONS_M100');
+const IMAGE_BUTTONS_M125 = prepareImage('HARD_BUTTONS_M125');
+const IMAGE_BUTTONS_M130 = prepareImage('HARD_BUTTONS_M130');
+const IMAGE_BUTTONS_TUNGSTENW = prepareImage('HARD_BUTTONS_TUNGSTEN_W');
+const IMAGE_BUTTONS_PILOT = prepareImage('HARD_BUTTONS_PILOT');
 
 @Injectable({
     providedIn: 'root',
@@ -186,8 +198,7 @@ export class CanvasDisplayService {
             this.backgroundColor()
         );
 
-        await this.drawSilkscreen();
-        await this.drawButtons();
+        await Promise.all([this.drawSilkscreen(), this.drawButtons()]);
     }
 
     async drawSilkscreen(): Promise<void> {
