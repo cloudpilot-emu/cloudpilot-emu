@@ -9,6 +9,8 @@ import { ScreenSize } from '../model/Dimensions';
 import { Session } from '../model/Session';
 import { SnapshotStatistics } from './../model/SnapshotStatistics';
 
+const skin = import('../skin');
+
 const DEFAULT_DEVICE = DeviceId.m515;
 const BACKGROUND_COLOR_SILKSCREEN = GRAYSCALE_PALETTE_HEX[2];
 const BACKGROUND_COLOR_GRAYSCALE_DEVICE = GRAYSCALE_PALETTE_HEX[0];
@@ -109,37 +111,39 @@ function prerender(image: Promise<HTMLImageElement>): PrerenderedImage {
     };
 }
 
-function loadImage(url: string): Promise<HTMLImageElement> {
+async function loadImage(key: keyof typeof import('../skin')): Promise<HTMLImageElement> {
+    const svg = (await skin)[key];
+
     return new Promise<HTMLImageElement>((resolve, reject) => {
         const image = new Image();
 
         image.onload = () => resolve(image);
         image.onerror = () => reject();
 
-        image.src = url;
+        image.src = `data:image/svg+xml;base64,${btoa(svg)}`;
     });
 }
 
-const IMAGE_SILKSCREEN_V = prerender(loadImage('assets/skin/silkscreen/v.svg'));
-const IMAGE_SILKSCREEN_M500 = prerender(loadImage('assets/skin/silkscreen/m500.svg'));
-const IMAGE_SILKSCREEN_M515 = prerender(loadImage('assets/skin/silkscreen/m515.svg'));
-const IMAGE_SILKSCREEN_IIIC = prerender(loadImage('assets/skin/silkscreen/iiic.svg'));
-const IMAGE_SILKSCREEN_M100 = prerender(loadImage('assets/skin/silkscreen/m100.svg'));
-const IMAGE_SILKSCREEN_M130 = prerender(loadImage('assets/skin/silkscreen/m130.svg'));
-const IMAGE_SILKSCREEN_TUNGSTENW = prerender(loadImage('assets/skin/silkscreen/tungstenw.svg'));
-const IMAGE_SILKSCREEN_PILOT = prerender(loadImage('assets/skin/silkscreen/pilot.svg'));
+const IMAGE_SILKSCREEN_V = prerender(loadImage('SILKSCREEN_V'));
+const IMAGE_SILKSCREEN_M500 = prerender(loadImage('SILKSCREEN_M500'));
+const IMAGE_SILKSCREEN_M515 = prerender(loadImage('SILKSCREEN_M515'));
+const IMAGE_SILKSCREEN_IIIC = prerender(loadImage('SILKSCREEN_IIIC'));
+const IMAGE_SILKSCREEN_M100 = prerender(loadImage('SILKSCREEN_M100'));
+const IMAGE_SILKSCREEN_M130 = prerender(loadImage('SILKSCREEN_M130'));
+const IMAGE_SILKSCREEN_TUNGSTENW = prerender(loadImage('SILKSCREEN_TUNGSTEN_W'));
+const IMAGE_SILKSCREEN_PILOT = prerender(loadImage('SILKSCREEN_PILOT'));
 
-const IMAGE_BUTTONS_V = prerender(loadImage('assets/skin/hard-buttons/v.svg'));
-const IMAGE_BUTTONS_M515 = prerender(loadImage('assets/skin/hard-buttons/m515.svg'));
-const IMAGE_BUTTONS_M500 = prerender(loadImage('assets/skin/hard-buttons/m500.svg'));
-const IMAGE_BUTTONS_IIIC = prerender(loadImage('assets/skin/hard-buttons/iiic.svg'));
-const IMAGE_BUTTONS_IIIX = prerender(loadImage('assets/skin/hard-buttons/iiix.svg'));
-const IMAGE_BUTTONS_IIIE = prerender(loadImage('assets/skin/hard-buttons/iiie.svg'));
-const IMAGE_BUTTONS_M100 = prerender(loadImage('assets/skin/hard-buttons/m100.svg'));
-const IMAGE_BUTTONS_M125 = prerender(loadImage('assets/skin/hard-buttons/m125.svg'));
-const IMAGE_BUTTONS_M130 = prerender(loadImage('assets/skin/hard-buttons/m130.svg'));
-const IMAGE_BUTTONS_TUNGSTENW = prerender(loadImage('assets/skin/hard-buttons/tungstenw.svg'));
-const IMAGE_BUTTONS_PILOT = prerender(loadImage('assets/skin/hard-buttons/pilot.svg'));
+const IMAGE_BUTTONS_V = prerender(loadImage('HARD_BUTTONS_PALM_V'));
+const IMAGE_BUTTONS_M515 = prerender(loadImage('HARD_BUTTONS_M515'));
+const IMAGE_BUTTONS_M500 = prerender(loadImage('HARD_BUTTONS_M500'));
+const IMAGE_BUTTONS_IIIC = prerender(loadImage('HARD_BUTTONS_IIIC'));
+const IMAGE_BUTTONS_IIIX = prerender(loadImage('HARD_BUTTONS_IIIX'));
+const IMAGE_BUTTONS_IIIE = prerender(loadImage('HARD_BUTTONS_IIIE'));
+const IMAGE_BUTTONS_M100 = prerender(loadImage('HARD_BUTTONS_M100'));
+const IMAGE_BUTTONS_M125 = prerender(loadImage('HARD_BUTTONS_M125'));
+const IMAGE_BUTTONS_M130 = prerender(loadImage('HARD_BUTTONS_M130'));
+const IMAGE_BUTTONS_TUNGSTENW = prerender(loadImage('HARD_BUTTONS_TUNGSTEN_W'));
+const IMAGE_BUTTONS_PILOT = prerender(loadImage('HARD_BUTTONS_PILOT'));
 
 @Injectable({
     providedIn: 'root',
