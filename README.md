@@ -7,9 +7,11 @@ devices.
 
 <img src="doc/m515.jpeg" width="310" height="552" alt="Palm m515 emulation"></img>
 &nbsp;
-<img src="doc/palmv.jpeg" width="310" height="552" alt="Palm V emulation"></img>
+<img src="doc/palmvx.jpeg" width="310" height="552" alt="Palm Vx emulation"></img>
 &nbsp;
 <img src="doc/tungstenw.jpeg" width="310" height="552" alt="Tungsten W emulation"></img>
+&nbsp;
+<img src="doc/palmpilot.jpeg" width="310" height="552" alt="Palm Pilot emulation"></img>
 
 # The emulator
 
@@ -23,16 +25,20 @@ Please check out the documentation in the app.
 ## ROM files
 
 In order to use the emulator you need to provide a ROM file for the device you
-want to emulate. You can find a collection of ROMs [on PalmDB](https://palmdb.net/app/palm-roms-complete).
+want to emulate. You can find a collection of ROMs
+[on PalmDB](https://palmdb.net/app/palm-roms-complete).
 
-## Supported devices
+## Emulated devices
 
-The following devices are currently supported:
+The following devices are currently emulated:
 
--   Palm IIIc
--   Palm V
--   Palm m515
--   Palm m130
+-   Pilot, Palm Pilot
+-   Palm III
+-   Palm IIIxe, Palm IIIx, Palm IIIe
+-   Palm Vx, Palm V
+-   Palm VII
+-   Palm m500, Palm m505, Palm m515
+-   Palm m100, Palm m105, Palm m125, Palm m130
 -   Tungsten W (silkscreen version)
 
 ## Other versions
