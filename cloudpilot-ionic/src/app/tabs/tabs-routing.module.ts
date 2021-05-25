@@ -1,6 +1,10 @@
 import { RouterModule, Routes } from '@angular/router';
 
+import { AboutPage } from './../page/about/about.page';
+import { EmulationPage } from './../page/emulation/emulation.page';
 import { NgModule } from '@angular/core';
+import { SessionsPage } from './../page/sessions/sessions.page';
+import { SettingsPage } from './../page/settings/settings.page';
 import { TabsPage } from './tabs.page';
 
 const routes: Routes = [
@@ -10,19 +14,19 @@ const routes: Routes = [
         children: [
             {
                 path: 'emulation',
-                loadChildren: () => import('../page/emulation/emulation.module').then((m) => m.EmulationPageModule),
+                component: EmulationPage,
             },
             {
                 path: 'sessions',
-                loadChildren: () => import('../page/sessions/sessions.module').then((m) => m.SessionsPageModule),
+                component: SessionsPage,
             },
             {
                 path: 'settings',
-                loadChildren: () => import('../page/settings/settings.module').then((m) => m.SettingsPageModule),
+                component: SettingsPage,
             },
             {
                 path: 'about',
-                loadChildren: () => import('../page/about/about.module').then((m) => m.AboutPageModule),
+                component: AboutPage,
             },
             {
                 path: '',
