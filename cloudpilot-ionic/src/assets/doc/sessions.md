@@ -10,8 +10,9 @@ session image. The file suffix should be either `.rom`, `.img` or `.bin`.
 
 ### ROM files
 
-Cloudpilot currently supports ROM files for Palm IIIc, Palm V, Palm m515 and
-Palm m130 devices. The device is selected automatically based on the ROM.
+The emulated device is selected automatically based on the ROM. If the ROM supports
+multiple devices Cloudpilot will allow you to choose between them. Please check
+the "About" tab for a list of supported devices.
 
 You can find a collection of suitable ROM files
 [on PalmDB](https://palmdb.net/app/palm-roms-complete).

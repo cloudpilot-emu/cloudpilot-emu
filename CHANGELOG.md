@@ -1,8 +1,9 @@
-# Next version
+# Version 1.4.0
 
--   Imitate LCD screen for grayscale devices
+-   Imitate greenish LCD screen for grayscale devices
 -   Support for PalmPilot, Palm III, Palm IIIx, Palm IIIxe, Palm IIie, Palm Vx,
     Palm m500, Palm m505, Palm m100, Palm m105, Palm m125
+-   Minor UI improvements
 
 # Version 1.3.1
 

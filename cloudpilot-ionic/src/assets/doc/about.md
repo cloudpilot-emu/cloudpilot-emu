@@ -2,13 +2,20 @@ Cloudpilot is a web-based emulator for PalmOS. It emulates dragonball based devi
 and supports PalmOS up to version 4.x. Cloudpilot is based on the original POSE.
 Currently, the following devices are emulated:
 
--   Palm IIIcc
--   Palm V
--   Palm m515
--   Palm m130
+-   Pilot, Palm Pilot
+-   Palm III
+-   Palm IIIxe, Palm IIIx, Palm IIIe
+-   Palm Vx, Palm V
+-   Palm VII
+-   Palm m500, Palm m505, Palm m515
+-   Palm m100, Palm m105, Palm m125, Palm m130
 -   Tungsten W (silkscreen version)
 
-# Usage
+The coorrect device type is automatically determined from the ROM you load. If
+there are multiple possible devices Cloudpilot will let you choose when you
+create the session.
+
+# Tabs
 
 Cloudpilot's interface is divided in tabs.
 Each tab has a dedicated help page that can be accessed by tapping the "?" in
@@ -31,7 +38,7 @@ The settings tab allows you to adjust the emulator settings.
 # Reloads and emulation state
 
 Cloutpilot automatically saves the state of the emulated device every second while
-the while the emulation is running. If Cloudpilot terminates and restart the emulation
+the while the emulation is running. If Cloudpilot terminates and restarts the emulation
 will resume exaclty where you left off.
 
 # Installing programs and databases
@@ -42,7 +49,7 @@ files can be installed directly into the emulated device.
 # Backing up your virtual devices
 
 Virtual devices can be backed up by creating either session snapshots
-or DB backups.
+or DB backups. This feature is not available on PalmOS 2 and earlier.
 
 ### Device snapshots
 
@@ -119,7 +126,9 @@ In order to force check for an update terminate and restart the app.
     PalmOS on the wrong foot and crash the emulator. In particular, this happens
     if a file is installed on a virtual Palm IIIc with PalmOS 3.5 while the
     launcher is active and the category menu is open.
--   Tungsten W requires a reset if accidentially turned off.
+-   The power switch on the Tungsten W does not operate correctly and
+    is disabled. You'll have to do a reset in order to wake up the device if you
+    acidentially power off the device.
 
 # Cloudpilot on the web
 

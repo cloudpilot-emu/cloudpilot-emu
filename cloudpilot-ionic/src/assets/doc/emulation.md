@@ -1,13 +1,13 @@
 The "Emulation" tab displays your emulated device. The device is running as
 long as the tab is visible. Once the tab is switched (or Cloudpilot goes into
-the background) the emulation pauses. Date and time are read from the host
+the background) the emulation pauses. Date and time are synced to the host
 system, so the clock is not affected by the emulator pausing and resuming.
 
 # Interacting with the emulator
 
 You can interact with the emulator by touching or clicking the screen and the
 hardware buttons below. The power button is located in the menu on the top
-lefft.
+left.
 
 A hardware keyboard can be used to type directly in the emulator (see "Keyboard
 mappings" at the end of this page).
@@ -50,6 +50,8 @@ Backing up databases interacts with PalmOS, and there is a (very) slim chance of
 the emulator, depending on the state of the virtual device when the backup is
 run. In general it is best to run the backup while the launcher is open.
 
+This feature only is available on PalmOS 3 and later.
+
 # Device reset
 
 The device can be reset by selecting one of the reset options from the menu.
@@ -85,7 +87,9 @@ it.
 The volume can be changed on the settings tab. The speaker button is not shown if the
 volume is set to zero.
 
-On iOS, muting the phone also mutes audio from the emulator.
+On iOS, muting the phone also mutes audio from the emulator. Ocassionally the audio
+may glitch and stay off after resuming Cloudpilot from the background due to browser
+bugs. You can reenable audio by turning it off and on again.
 
 # Keyboard input
 
