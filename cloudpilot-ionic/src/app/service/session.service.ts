@@ -17,9 +17,13 @@ export class SessionService {
         private storageService: StorageService,
         private loadingController: LoadingController
     ) {
-        this.updateSessionsFromStorage();
+        this.updateSessionsFromStorage().then(() => (this.loading = false));
 
         this.storageService.sessionChangeEvent.addHandler(this.updateSessionsFromStorage.bind(this));
+    }
+
+    isLoading(): boolean {
+        return this.loading;
     }
 
     async addSessionFromImage(image: SessionImage, name: string, presets: Partial<Session> = {}): Promise<Session> {
@@ -89,4 +93,5 @@ export class SessionService {
     }
 
     private sessions: Array<Session> = [];
+    private loading = true;
 }
