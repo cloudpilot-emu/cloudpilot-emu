@@ -104,3 +104,18 @@ export function deviceName(deviceId: DeviceId): string {
             throw new Error('bad device ID');
     }
 }
+
+export function quirkNoPoweroff(deviceId: DeviceId) {
+    return deviceId === DeviceId.i710;
+}
+
+export function supportsDBExport(deviceId: DeviceId) {
+    switch (deviceId) {
+        case DeviceId.pilot:
+        case DeviceId.palmPilot:
+            return false;
+
+        default:
+            return true;
+    }
+}
