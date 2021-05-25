@@ -75,7 +75,11 @@ export class AppComponent implements AfterViewInit {
         this.updates.available.subscribe(async () => {
             await this.emulationService.bootstrapComplete();
 
-            this.alertService.updateAvailable();
+            if (this.updateReverted) {
+                this.alertService.updateComplete();
+            } else {
+                this.alertService.updateAvailable();
+            }
         });
     }
 
@@ -90,4 +94,6 @@ export class AppComponent implements AfterViewInit {
 
         await modal.present();
     }
+
+    private updateReverted = false;
 }
