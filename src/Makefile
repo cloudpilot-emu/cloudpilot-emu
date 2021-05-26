@@ -138,7 +138,10 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsEZPalmV.cpp \
 	emulator/hardware/EmRegsEZPalmIIIc.cpp \
 	emulator/hardware/EmRegsMediaQ11xx.cpp \
-	emulator/hardware/EmRegsVZM1xx.cpp \
+	emulator/hardware/EmRegsVZPalmM125.cpp \
+	emulator/hardware/EmRegsVZPalmM130.cpp \
+	emulator/hardware/EmRegsVZPalmI705.cpp \
+	emulator/hardware/EmRegsPLDPalmI705.cpp \
 	emulator/hardware/EmRegsEZPalmM100.cpp \
 	emulator/hardware/EmRegsPLDAtlantiC.cpp \
 	emulator/hardware/EmRegsVZAtlantiC.cpp \

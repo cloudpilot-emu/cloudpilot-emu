@@ -66,12 +66,15 @@
 #include "EmRegsMediaQ11xxPacifiC.h"
 #include "EmRegsPLDAtlantiC.h"
 #include "EmRegsPLDPacifiC.h"
+#include "EmRegsPLDPalmI705.h"
 #include "EmRegsPLDPalmVIIEZ.h"
 #include "EmRegsSED1375.h"
 #include "EmRegsSED1376.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
 #include "EmRegsVZAtlantiC.h"
-#include "EmRegsVZM1xx.h"
+#include "EmRegsVZPalmI705.h"
+#include "EmRegsVZPalmM125.h"
+#include "EmRegsVZPalmM130.h"
 #include "EmRegsVZPalmM505.h"
 #include "EmStructs.h"
 #include "Platform.h"  // _stricmp
@@ -1026,13 +1029,13 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x10400000));
         } break;
 
-#if 0
-
         case kDevicePalmI705:
             EmBankRegs::AddSubBank(new EmRegsVZPalmI705);
             EmBankRegs::AddSubBank(new EmRegsPLDPalmI705(0x11000000));
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x1F000000));
             break;
+
+#if 0
 
         case kDeviceARMRef:
             break;
@@ -1324,8 +1327,18 @@ int EmDevice::GetDeviceID(const char* s) const {
 bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }
 
 bool EmDevice::EmulatesDockStatus() const {
-    return !Supports68328() && fDeviceID != kDevicePalmM130 && fDeviceID != kDevicePalmI710 &&
-           fDeviceID != kDevicePalmPacifiC;
+    if (Supports68328()) return false;
+
+    switch (fDeviceID) {
+        case kDevicePalmM130:
+        case kDevicePalmI705:
+        case kDevicePalmI710:
+        case kDevicePalmPacifiC:
+            return false;
+
+        default:
+            return true;
+    }
 }
 
 bool EmDevice::NeedsSDCTLHack() const { return fDeviceID == kDevicePalmM515; }
