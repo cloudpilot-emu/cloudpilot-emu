@@ -1,9 +1,9 @@
 import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
-import { CanvasDisplayService, HEIGHT, WIDTH } from './../../service/canvas-display.service';
-import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
+import { ModalController, PopoverController } from '@ionic/angular';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { AudioService } from './../../service/audio.service';
+import { CanvasDisplayService } from './../../service/canvas-display.service';
 import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
@@ -35,27 +35,18 @@ export class EmulationPage implements AfterViewInit {
         private modalController: ModalController,
         private alertService: AlertService,
         private fileService: FileService,
-        private loadingController: LoadingController,
         private snapshotService: SnapshotService,
         private installlationService: InstallationService
     ) {}
 
     ngAfterViewInit(): void {}
 
-    get canvasWidth(): number {
-        return WIDTH;
-    }
-
-    get canvasHeight(): number {
-        return HEIGHT;
-    }
-
     get cssWidth(): string {
-        return this.canvasWidth / devicePixelRatio + 'px';
+        return this.canvasDisplayService.width / devicePixelRatio + 'px';
     }
 
     get cssHeight(): string {
-        return this.canvasHeight / devicePixelRatio + 'px';
+        return this.canvasDisplayService.height / devicePixelRatio + 'px';
     }
 
     async ionViewDidEnter(): Promise<void> {

@@ -88,13 +88,6 @@ class EmSession {
 
     void HandleInstructionBreak();
 
-    bool HasPenEvent();
-    PenEvent NextPenEvent();
-    PenEvent PeekPenEvent();
-
-    bool HasKeyboardEvent();
-    KeyboardEvent NextKeyboardEvent();
-
     bool HasButtonEvent();
     ButtonEvent NextButtonEvent();
 
@@ -104,9 +97,6 @@ class EmSession {
     template <typename T>
     void DoSaveLoad(T& helper);
 
-    bool Wakeup();
-
-    void PumpEvents();
     bool PromoteKeyboardEvent();
     bool PromotePenEvent();
 
@@ -129,13 +119,6 @@ class EmSession {
     shared_ptr<EmDevice> device{nullptr};
     unique_ptr<EmCPU> cpu{nullptr};
     typename EmEvent<>::HandleT onSystemClockChangeHandle;
-
-    EmThreadSafeQueue<PenEvent> penEventQueue{20};
-    EmThreadSafeQueue<KeyboardEvent> keyboardEventQueue{20};
-
-    EmThreadSafeQueue<PenEvent> penEventQueueIncoming{20};
-    EmThreadSafeQueue<KeyboardEvent> keyboardEventQueueIncoming{20};
-    uint64 lastEventPromotedAt{0};
 
     EmThreadSafeQueue<ButtonEvent> buttonEventQueue{20};
     uint64 lastButtonEventReadAt{0};

@@ -27,8 +27,15 @@ class EmRegsVZPalmM505 : public EmRegsVZPalmM500 {
     virtual Bool GetLCDBacklightOn(void);
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
+    virtual bool CopyLCDFrame(Frame& frame);
+    virtual uint16 GetLCD2bitMapping();
 
     void portFSelectWrite(emuptr address, int size, uint32 value);
+
+   protected:
+    virtual void MarkScreen();
+    virtual void UnmarkScreen();
+    virtual void MarkScreenDirty();
 };
 
 #endif /* EmRegsVZPalmM505_h */

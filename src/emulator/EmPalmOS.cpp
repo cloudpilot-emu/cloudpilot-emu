@@ -25,23 +25,27 @@
 #include "EmPalmStructs.h"  // EmAliasCardHeaderType
 #include "EmPatchMgr.h"     // EmPatchMgr
 #include "EmSession.h"      // gSession->Reset
+#include "EmSystemState.h"
 #include "Logging.h"
+#include "Miscellaneous.h"
 #include "Miscellaneous.h"  // GetSystemCallContext
 #include "ROMStubs.h"
 #include "UAE.h"  // CHECK_STACK_POINTER_DECREMENT
 
-#if 0                             // CSTODO
-    #include "EmErrCodes.h"       // kError_UnimplementedTrap, kError_InvalidLibraryRefNum
-    #include "EmSystemState.h"    // EmSystemState
-    #include "ErrorHandling.h"    // Errors::ReportInvalidPC
-    #include "Platform_NetLib.h"  // Platform_NetLib::Initialize();
-    #include "ROMStubs.h"         // IntlSetStrictChecks
-
-#endif
-
 #define LOG_FUNCTION_CALLS 0
 
+namespace {
+    constexpr int MIN_CYCLES_BETWEEN_EVENTS = 10000;
+    constexpr int EVENT_QUEUE_SIZE = 20;
+}  // namespace
+
 static emuptr gBigROMEntry;
+
+EmThreadSafeQueue<PenEvent> EmPalmOS::penEventQueue{EVENT_QUEUE_SIZE};
+EmThreadSafeQueue<KeyboardEvent> EmPalmOS::keyboardEventQueue{EVENT_QUEUE_SIZE};
+EmThreadSafeQueue<PenEvent> EmPalmOS::penEventQueueIncoming{EVENT_QUEUE_SIZE};
+EmThreadSafeQueue<KeyboardEvent> EmPalmOS::keyboardEventQueueIncoming{EVENT_QUEUE_SIZE};
+uint64 EmPalmOS::lastEventPromotedAt{0};
 
 /***********************************************************************
  *
@@ -66,11 +70,9 @@ void EmPalmOS::Initialize(void) {
 
     gBigROMEntry = EmMemNULL;
 
-    EmPatchMgr::Initialize();
+    ClearQueues();
 
-#if 0  // CSTODO
-    Platform_NetLib::Initialize();
-#endif
+    EmPatchMgr::Initialize();
 }
 
 /***********************************************************************
@@ -93,10 +95,7 @@ void EmPalmOS::Initialize(void) {
 void EmPalmOS::Reset(void) {
     EmPatchMgr::Reset();
 
-#if 0  // CSTODO
-    Platform_NetLib::Reset();
-    EmLowMem::Reset();
-#endif
+    ClearQueues();
 }
 
 /***********************************************************************
@@ -116,13 +115,7 @@ void EmPalmOS::Reset(void) {
 void EmPalmOS::Dispose(void) {
     EmPatchMgr::Dispose();
 
-#if 0  // CSTODO
-    EmLowMem::Dispose();
-    EmPalmHeap::Dispose();
-    Platform_NetLib::Dispose();
-    EmEventPlayback::Dispose();
-    Hordes::Dispose();
-#endif
+    ClearQueues();
 }
 
 /***********************************************************************
@@ -255,30 +248,19 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
 
     int pcAdjust = fromTrap ? 2 : 0;
 
-    if (!gSession->IsNested() && gSession->WaitingForSyscall()) {
-        CEnableFullAccess munge;
+    CEnableFullAccess munge;
 
-        // Check the memory manager semaphore.  If we're stopping on a
-        // system call, it's most likely that we want to make some nested
-        // Palm OS calls.  Some of those calls may try to acquire the
-        // memory manager semaphore.  Therefore, make sure it's available.
+    UInt32 memSemaphoreIDP = EmLowMem_GetGlobal(memSemaphoreID);
+    EmAliascj_xsmb<PAS> memSemaphoreID(memSemaphoreIDP);
 
-        UInt32 memSemaphoreIDP = EmLowMem_GetGlobal(memSemaphoreID);
-        EmAliascj_xsmb<PAS> memSemaphoreID(memSemaphoreIDP);
+    if (!gSession->IsNested() && memSemaphoreID.xsmuse == 0) {
+        DispatchNextEvent();
 
-        if (memSemaphoreID.xsmuse == 0) {
-            SysKernelInfoType taskInfo;
-            taskInfo.selector = sysKernelInfoSelCurTaskInfo;
+        if (gSession->WaitingForSyscall()) {
+            gCPU->SetPC(gCPU->GetPC() - pcAdjust);
+            gSession->NotifySyscallDispatched();
 
-            Err err = ::SysKernelInfo(&taskInfo);
-
-            if (err == errNone &&
-                (taskInfo.param.task.tag == 'psys' || taskInfo.param.task.tag == 0x414d5800)) {
-                gCPU->SetPC(gCPU->GetPC() - pcAdjust);
-                gSession->NotifySyscallDispatched();
-
-                return true;
-            }
+            return true;
         }
     }
 
@@ -321,4 +303,127 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
     }
 
     return false;
+}
+
+void EmPalmOS::QueuePenEvent(PenEvent evt) {
+    if (!gSession->IsPowerOn()) return;
+
+    if (penEventQueueIncoming.GetFree() == 0) penEventQueueIncoming.Get();
+
+    penEventQueueIncoming.Put(evt);
+}
+
+void EmPalmOS::QueueKeyboardEvent(KeyboardEvent evt) {
+    if (!gSession->IsPowerOn()) return;
+
+    if (keyboardEventQueueIncoming.GetFree() == 0) keyboardEventQueueIncoming.Get();
+
+    keyboardEventQueueIncoming.Put(evt);
+}
+
+bool EmPalmOS::HasPenEvent() { return penEventQueue.GetUsed() != 0; }
+
+bool EmPalmOS::HasKeyboardEvent() { return keyboardEventQueue.GetUsed() != 0; }
+
+PenEvent EmPalmOS::PeekPenEvent() { return HasPenEvent() ? penEventQueue.Peek() : PenEvent(); }
+
+bool EmPalmOS::DispatchNextEvent() {
+    uint64 systemCycles = gSession->GetSystemCycles();
+
+    if (systemCycles - lastEventPromotedAt < MIN_CYCLES_BETWEEN_EVENTS ||
+        !gSystemState.IsUIInitialized())
+        return false;
+
+    if (DispatchPenEvent() || DispatchKeyboardEvent()) {
+        lastEventPromotedAt = systemCycles;
+        Wakeup();
+
+        return true;
+    }
+
+    return false;
+}
+
+bool EmPalmOS::DispatchKeyboardEvent() {
+    if (keyboardEventQueueIncoming.GetUsed() == 0) return false;
+
+    if (keyboardEventQueue.GetFree() == 0) keyboardEventQueue.Get();
+    keyboardEventQueue.Put(keyboardEventQueueIncoming.Get());
+
+    return true;
+}
+
+bool EmPalmOS::DispatchPenEvent() {
+    if (penEventQueueIncoming.GetUsed() == 0) return false;
+
+    if (penEventQueue.GetFree() == 0) penEventQueue.Get();
+    penEventQueue.Put(penEventQueueIncoming.Get());
+
+    return true;
+}
+
+void EmPalmOS::Wakeup() {
+    if (gSystemState.OSMajorVersion() >= 4) {
+        EvtWakeupWithoutNilEvent();
+    } else {
+        EvtWakeup();
+        EmLowMem::ClearNilEvent();
+    }
+}
+
+void EmPalmOS::ClearQueues() {
+    penEventQueue.Clear();
+    keyboardEventQueue.Clear();
+    penEventQueueIncoming.Clear();
+    keyboardEventQueueIncoming.Clear();
+
+    lastEventPromotedAt = gSession->GetSystemCycles();
+}
+
+void EmPalmOS::InjectEvent(CallROMType& callROM) {
+    callROM = kExecuteROM;
+
+    // Set the return value (Err) to zero in case we return
+    // "true" (saying that we handled the trap).
+
+    m68k_dreg(gRegs, 0) = 0;
+
+    // If the low-memory global "idle" is true, then we're being
+    // called from EvtGetEvent or EvtGetPen, in which case we
+    // need to check if we need to post some events.
+
+    if (EmLowMem::GetEvtMgrIdle()) {
+        // If we're in the middle of calling a Palm OS function ourself,
+        // and we are somehow at the point where the system is about to
+        // doze, then just return now.  Don't let it doze!  Interrupts are
+        // off, and HwrDoze will never return!
+
+        if (gSession->IsNested()) {
+            m68k_dreg(gRegs, 0) = 4;
+            callROM = kSkipROM;
+            return;
+        }
+
+        EmAssert(gSession);
+
+        if (HasKeyboardEvent()) {
+            KeyboardEvent evt = keyboardEventQueue.Get();
+
+            if (evt.GetKey() != 0) EvtEnqueueKey(evt.GetKey(), 0, 0);
+        } else if (HasPenEvent()) {
+            PenEvent evt = penEventQueue.Get();
+            PointType point;
+
+            if (evt.isPenDown()) {
+                point.x = evt.getX();
+                point.y = evt.getY();
+
+                TransformPenCoordinates(point.x, point.y);
+            } else {
+                point.x = point.y = -1;
+            }
+
+            EvtEnqueuePenPoint(&point);
+        }
+    }
 }

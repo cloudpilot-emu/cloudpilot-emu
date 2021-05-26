@@ -2178,6 +2178,13 @@
     DO_TO_FIELD(8, LocalID, dbID)                  \
     DO_TO_FIELD(12, emuptr, codeRscH)
 
+#define FOR_SysLibTblEntryTypeV10_STRUCT(DO_TO_STRUCT) \
+    DO_TO_STRUCT(SysLibTblEntryTypeV10, 8, FOR_SysLibTblEntryTypeV10_FIELDS)
+
+#define FOR_SysLibTblEntryTypeV10_FIELDS(DO_TO_FIELD) \
+    DO_TO_FIELD(0, emuptr, dispatchTblP)              \
+    DO_TO_FIELD(4, emuptr, globalsP)
+
 // ========================================
 // ===== SysKernelInfoType =====
 // ========================================

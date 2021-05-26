@@ -51,7 +51,26 @@ export interface PwmUpdate {
     dutyCycle: number;
 }
 
-const SUPPORTED_DEVICES = [DeviceId.palmV, DeviceId.m515, DeviceId.iiic, DeviceId.m130];
+export const SUPPORTED_DEVICES = [
+    DeviceId.palmPilot,
+    DeviceId.pilot,
+    DeviceId.iii,
+    DeviceId.palmVx,
+    DeviceId.palmV,
+    DeviceId.palmVII,
+    DeviceId.iiixe,
+    DeviceId.iiix,
+    DeviceId.iiie,
+    DeviceId.m500,
+    DeviceId.m505,
+    DeviceId.m515,
+    DeviceId.iiic,
+    DeviceId.m100,
+    DeviceId.m105,
+    DeviceId.m125,
+    DeviceId.m130,
+    DeviceId.i710,
+];
 
 function guard(): any {
     return (target: any, propertyKey: string, desc: PropertyDescriptor) => {

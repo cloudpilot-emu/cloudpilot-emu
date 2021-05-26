@@ -19,11 +19,6 @@
 #include "EmErrCodes.h"
 #include "EmTypes.h"  // ErrCode
 
-#if 0  // CSTODO
-class EmExgMgr;
-class EmExgMgrImportWrapper;
-#endif
-
 enum EmFileImportMethod { kMethodBest, kMethodHomebrew, kMethodExgMgr };
 
 class EmFileImport {
@@ -65,13 +60,6 @@ class EmFileImport {
     Bool fUsingExgMgr{false};
     long fState;
     ErrCode fError{errNone};
-
-#if 0  // CSTODO
-    // Fields for ExgMgr installer
-    EmExgMgr* fExgMgrStream;
-    EmExgMgrImportWrapper* fExgMgrImport;
-    Bool fOldAcceptBeamState;
-#endif
 
     // Fields for homebrew installer
     void* fFileBuffer{nullptr};

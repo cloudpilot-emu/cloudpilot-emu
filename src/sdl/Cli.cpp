@@ -60,23 +60,6 @@ namespace {
         }
     }
 
-    void DumpMemory(string file) {
-        fstream stream(file, ios_base::out);
-
-        if (stream.fail()) {
-            cout << "failed to open " << file << endl << flush;
-            return;
-        }
-
-        EmAssert(gSession);
-
-        stream.write((const char*)gSession->GetMemoryPtr(), gSession->GetMemorySize());
-
-        if (stream.fail()) {
-            cout << "I/O error writing " << file << endl << flush;
-        }
-    }
-
     void SaveImage(string file) {
         fstream stream(file, ios_base::out);
 
@@ -99,7 +82,11 @@ namespace {
     void SaveBackup(string file) {
         DbBackup backup;
 
-        backup.Init();
+        if (!backup.Init()) {
+            cout << "backup failed" << endl << flush;
+
+            return;
+        }
 
         while (backup.IsInProgress()) {
             cout << "backing up " << backup.GetCurrentDatabase() << " ... ";
@@ -143,19 +130,6 @@ namespace {
             cout << "installing '" << file << "'..." << endl << flush;
             InstallFile(file);
         }
-
-        return false;
-    }
-
-    bool CmdDumpMemory(vector<string> args) {
-        if (args.size() != 1) {
-            cout << "usage: dump-memory <file>" << endl << flush;
-            return false;
-        }
-
-        cout << "dumping memory to '" << args[0] << "'" << endl << flush;
-
-        DumpMemory(args[0]);
 
         return false;
     }
@@ -270,7 +244,6 @@ namespace {
     Command commands[] = {{.name = "quit", .cmd = CmdQuit},
                           {.name = "exit", .cmd = CmdQuit},
                           {.name = "install", .cmd = CmdInstallFile},
-                          {.name = "dump-memory", .cmd = CmdDumpMemory},
                           {.name = "random-seed", .cmd = CmdRandomSeed},
                           {.name = "set-user-name", .cmd = CmdSetUserName},
                           {.name = "reset-soft", .cmd = CmdResetSoft},

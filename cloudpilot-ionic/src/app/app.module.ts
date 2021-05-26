@@ -12,6 +12,7 @@ import { KvsService } from './service/kvs.service';
 import { PageLockService } from './service/page-lock.service';
 import { RouteReuseStrategy } from '@angular/router';
 import { ServiceWorkerModule } from '@angular/service-worker';
+import { SessionService } from 'src/app/service/session.service';
 import { StorageService } from './service/storage.service';
 import { environment } from '../environments/environment';
 
@@ -60,6 +61,7 @@ export class AppModule {
         pageLockService: PageLockService,
         storageService: StorageService,
         emulationService: EmulationService,
-        audioService: AudioService
+        audioService: AudioService,
+        sessionService: SessionService
     ) {}
 }

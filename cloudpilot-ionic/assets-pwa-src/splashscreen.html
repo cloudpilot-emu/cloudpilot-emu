@@ -2,6 +2,10 @@
 
 <head>
     <style>
+        img.dark {
+            display: none;
+        }
+
         .container {
             display: flex;
             width: 100%;
@@ -12,7 +16,6 @@
         }
 
         img {
-            filter: drop-shadow(0 0 20px #aaa);
             display: block;
             margin-left: auto;
             margin-right: auto;
@@ -20,13 +23,13 @@
 
         @media (max-aspect-ratio: 4/3) {
             img {
-                width: 50vw;
+                width: 70vw;
             }
         }
 
         @media (min-aspect-ratio: 4/3) {
             img {
-                height: 50vh;
+                height: 70vh;
             }
         }
 
@@ -35,12 +38,17 @@
         }
 
         @media (prefers-color-scheme:dark) {
-            img {
-                filter: invert() drop-shadow(0 0 20px #888);
-            }
-
             body {
                 background: black;
+            }
+
+            img.light {
+                display: none;
+            }
+
+            img.dark {
+                display: block;
+                filter: invert();
             }
         }
     </style>
@@ -48,7 +56,8 @@
 
 <body>
     <div class="container">
-        <img src="icon.svg"></img>
+        <img class="light" src="cp-palmblue-splash-002.svg"></img>
+        <img class="dark" src="cp-palmblue-splash-002-bw.svg"></img>
     </div>
 </body>
 

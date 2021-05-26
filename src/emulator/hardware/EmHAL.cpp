@@ -16,12 +16,6 @@
 #include "EmCommon.h"
 #include "Logging.h"
 
-#if 0                               // CSTODO
-    #include "EmTransportSerial.h"  // EmTransportSerial
-    #include "ErrorHandling.h"      // Errors::ReportErrCommPort
-    #include "PreferenceMgr.h"      // gEmuPrefs
-#endif
-
 EmHALHandler* EmHAL::fgRootHandler;
 
 #define PRINTF \
@@ -305,15 +299,6 @@ Bool EmHAL::ChipSelectsConfigured(void) {
 int32 EmHAL::GetSystemClockFrequency(void) {
     EmAssert(EmHAL::GetRootHandler());
     return EmHAL::GetRootHandler()->GetSystemClockFrequency();
-}
-
-// ---------------------------------------------------------------------------
-//		� EmHAL::GetCanStop
-// ---------------------------------------------------------------------------
-
-Bool EmHAL::GetCanStop(void) {
-    EmAssert(EmHAL::GetRootHandler());
-    return EmHAL::GetRootHandler()->GetCanStop();
 }
 
 // ---------------------------------------------------------------------------
@@ -670,15 +655,6 @@ Bool EmHALHandler::ChipSelectsConfigured(void) {
 int32 EmHALHandler::GetSystemClockFrequency(void) {
     EmAssert(this->GetNextHandler());
     return this->GetNextHandler()->GetSystemClockFrequency();
-}
-
-// ---------------------------------------------------------------------------
-//		� EmHALHandler::GetCanStop
-// ---------------------------------------------------------------------------
-
-Bool EmHALHandler::GetCanStop(void) {
-    EmAssert(this->GetNextHandler());
-    return this->GetNextHandler()->GetCanStop();
 }
 
 // ---------------------------------------------------------------------------

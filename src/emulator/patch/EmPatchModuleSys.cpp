@@ -2,6 +2,7 @@
 
 #include "EmCommon.h"
 #include "EmLowMem.h"
+#include "EmPalmOS.h"
 #include "EmPatchMgr.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
@@ -16,7 +17,7 @@
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendManager.h"
 
-#define LOGGING 1
+// #define LOGGING
 #ifdef LOGGING
     #define PRINTF logging::printf
 #else
@@ -52,9 +53,44 @@ namespace {
 
         CallROMType result = kExecuteROM;
 
-        EmPatchMgr::PuppetString(result);
+        EmPalmOS::InjectEvent(result);
 
         return result;
+    }
+
+    CallROMType HeadpatchSysSemaphoreWait(void) {
+        // Only do this under 1.0.	Under Palm OS 2.0 and later, EvtGetSysEvent
+        // calls SysEvGroupWait instead.  See our headpatch of that function
+        // for a chunk of pretty similar code.
+
+        if (gSystemState.OSMajorVersion() != 1) {
+            return kExecuteROM;
+        }
+
+        // Err SysSemaphoreWait(UInt32 smID, UInt32 priority, Int32 timeout)
+
+        CALLED_SETUP("Err", "UInt32 smID, UInt32 priority, Int32 timeout");
+
+        CALLED_GET_PARAM_VAL(Int32, timeout);
+
+        CallROMType result;
+
+        EmPalmOS::InjectEvent(result);
+
+        return result;
+    }
+
+    CallROMType HeadpatchPenScreenToRaw_RawToScreen(void) {
+        CALLED_SETUP("Err", "PointType* point");
+
+        CALLED_GET_PARAM_REF(PointType, point, Marshal::kInOut);
+
+        TransformPenCoordinates((*point).x, (*point).y);
+
+        CALLED_PUT_PARAM_REF(point);
+        PUT_RESULT_VAL(Err, 0);
+
+        return kSkipROM;
     }
 
     CallROMType HeadpatchSysUIAppSwitch() {
@@ -192,9 +228,8 @@ namespace {
         GET_RESULT_VAL(Boolean);
 
         if (result == 0) {
-            EmAssert(gSession);
-            if (gSession->HasPenEvent()) {
-                PenEvent event = gSession->PeekPenEvent();
+            if (EmPalmOS::HasPenEvent()) {
+                PenEvent event = EmPalmOS::PeekPenEvent();
 
                 if (event.isPenDown() || !ignorePenUps) {
                     PUT_RESULT_VAL(Boolean, true);
@@ -247,9 +282,12 @@ namespace {
         {sysTrapUIInitialize, NULL, TailpatchUIInitialize},
         {sysTrapEvtSysEventAvail, NULL, TailpatchEvtSysEventAvail},
         {sysTrapHwrDockStatus, HeadpatchHwrDockStatus, NULL},
+        {sysTrapPenScreenToRaw, HeadpatchPenScreenToRaw_RawToScreen, NULL},
+        {sysTrapPenRawToScreen, HeadpatchPenScreenToRaw_RawToScreen, NULL},
         {sysTrapClipboardGetItem, HeadpatchClipboardGetItem, NULL},
         {sysTrapClipboardAddItem, NULL, TailpatchClipboardAddItem},
         {sysTrapClipboardAppendItem, NULL, TailpatchClipboardAppendItem},
+        {sysTrapSysSemaphoreWait, HeadpatchSysSemaphoreWait, NULL},
         {0, NULL, NULL}};
 }  // namespace
 

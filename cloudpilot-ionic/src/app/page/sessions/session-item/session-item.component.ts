@@ -5,6 +5,7 @@ import { ContextMenuComponent } from './../context-menu/context-menu.component';
 import { DeviceId } from 'src/app/model/DeviceId';
 import { Session } from './../../../model/Session';
 import { decodeVersion } from 'src/app/model/OSVersion';
+import { deviceName } from 'src/app/helper/deviceProperties';
 
 @Component({
     selector: 'app-session-item',
@@ -15,22 +16,7 @@ export class SessionItemComponent {
     constructor(private popoverController: PopoverController) {}
 
     get device(): string {
-        switch (this.session?.device) {
-            case DeviceId.m515:
-                return 'Palm m515';
-
-            case DeviceId.palmV:
-                return 'Palm V';
-
-            case DeviceId.iiic:
-                return 'Palm IIIc';
-
-            case DeviceId.m130:
-                return 'Palm m130';
-
-            default:
-                throw new Error('bad device ID');
-        }
+        return this.session ? deviceName(this.session.device) : '';
     }
 
     async onContextmenu(e: MouseEvent): Promise<void> {

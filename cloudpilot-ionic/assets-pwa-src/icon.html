@@ -21,27 +21,31 @@
         }
 
         img {
-            width: 75%;
-            height: 75%;
-            filter: drop-shadow(0 0 20px #aaa);
+            width: 80%;
+            height: 80%;
         }
 
         /* iOS */
         @media (width: 180px) {
-            img {
-                filter: invert() drop-shadow(0 0 20px #888);
+            .container {
+                border-radius: 0;
             }
 
-            .container {
-                background: black;
-                border-radius: 0;
+            img {
+                width: 85%;
+                height: 85%;
             }
         }
 
         /* Favicon */
         @media (width: 196px) {
+            .container {
+                background: none;
+            }
+
             img {
-                filter: none;
+                width: 100%;
+                height: 100%;
             }
         }
     </style>
@@ -49,7 +53,7 @@
 
 <body>
     <div class="container">
-        <img src="icon.svg"></img>
+        <img src="cp-palmblue-001.svg"></img>
     </div>
 </body>
 

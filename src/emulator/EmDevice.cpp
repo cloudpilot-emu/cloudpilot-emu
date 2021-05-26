@@ -50,14 +50,31 @@
 #include "EmCPU68K.h"
 #include "EmCommon.h"
 #include "EmROMReader.h"  // EmROMReader
+#include "EmRegs328PalmIII.h"
+#include "EmRegs328PalmVII.h"
+#include "EmRegs328Pilot.h"
 #include "EmRegsEZPalmIIIc.h"
+#include "EmRegsEZPalmIIIe.h"
+#include "EmRegsEZPalmIIIx.h"
+#include "EmRegsEZPalmM100.h"
 #include "EmRegsEZPalmV.h"
+#include "EmRegsEZPalmVII.h"
+#include "EmRegsEZPalmVIIx.h"
+#include "EmRegsEZPalmVx.h"
 #include "EmRegsFrameBuffer.h"
 #include "EmRegsMediaQ11xx.h"
+#include "EmRegsMediaQ11xxPacifiC.h"
+#include "EmRegsPLDAtlantiC.h"
+#include "EmRegsPLDPacifiC.h"
+#include "EmRegsPLDPalmI705.h"
+#include "EmRegsPLDPalmVIIEZ.h"
 #include "EmRegsSED1375.h"
 #include "EmRegsSED1376.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
-#include "EmRegsVZM1xx.h"
+#include "EmRegsVZAtlantiC.h"
+#include "EmRegsVZPalmI705.h"
+#include "EmRegsVZPalmM125.h"
+#include "EmRegsVZPalmM130.h"
 #include "EmRegsVZPalmM505.h"
 #include "EmStructs.h"
 #include "Platform.h"  // _stricmp
@@ -65,19 +82,9 @@
 #if 0  // CSTODO
     #include "EmRegs328PalmIII.h"
     #include "EmRegs328PalmPilot.h"
-    #include "EmRegs328PalmVII.h"
-    #include "EmRegs328Pilot.h"
     #include "EmRegs328Symbol1700.h"
     #include "EmRegsASICSymbol1700.h"
-    #include "EmRegsEZPalmIIIe.h"
-    #include "EmRegsEZPalmIIIx.h"
-    #include "EmRegsEZPalmM100.h"
-    #include "EmRegsEZPalmVII.h"
-    #include "EmRegsEZPalmVIIx.h"
-    #include "EmRegsEZPalmVx.h"
-    #include "EmRegsEZTemp.h"
     #include "EmRegsEZVisor.h"
-    #include "EmRegsPLDPalmVIIEZ.h"
     #include "EmRegsSZTemp.h"
     #include "EmRegsUSBVisor.h"
     #include "EmRegsVZPalmM500.h"
@@ -115,18 +122,22 @@ enum  // DeviceType
     kDevicePalmIIIc,
     kDevicePalmIIIe,
     kDevicePalmIIIx,
+    kDevicePalmIIIxe,
     kDevicePalmV,
     kDevicePalmVx,
     kDevicePalmVII,
     kDevicePalmVIIEZ,
     kDevicePalmVIIx,
     kDevicePalmM100,
+    kDevicePalmM105,
     kDevicePalmM125,
     kDevicePalmM130,
     kDevicePalmM500,
     kDevicePalmM505,
     kDevicePalmM515,
     kDevicePalmI705,
+    kDevicePalmI710,
+    kDevicePalmPacifiC,
     kDeviceARMRef,
     kDeviceSymbol1500,
     kDeviceSymbol1700,
@@ -219,7 +230,7 @@ static const DeviceInfo kDeviceInfo[] = {
      "Pilot",
      {"Pilot", "Pilot1000", "Pilot5000", "TD", "Touchdown"},
      kSupports68328,
-     128,
+     1024,
      hwrMiscFlagIDTouchdown,
      hwrMiscFlagExtSubIDNone,
      {}},
@@ -227,7 +238,7 @@ static const DeviceInfo kDeviceInfo[] = {
      "PalmPilot",
      {"PalmPilot", "PalmPilotPersonal", "PalmPilotProfessional", "Striker"},
      kSupports68328,
-     128,
+     1024,
      hwrMiscFlagIDPalmPilot,
      hwrMiscFlagExtSubIDNone,
      {}},
@@ -235,7 +246,7 @@ static const DeviceInfo kDeviceInfo[] = {
      "Palm III",
      {"PalmIII", "Rocky"},
      kSupports68328 + kHasFlash,
-     512,
+     2048,
      hwrMiscFlagIDRocky,
      hwrMiscFlagExtSubIDNone,
      {{'palm', 'rcky'}}},
@@ -260,6 +271,14 @@ static const DeviceInfo kDeviceInfo[] = {
      {"PalmIIIx", "Brad"},
      kSupports68EZ328 + kHasFlash,
      4096,
+     hwrMiscFlagIDBrad,
+     hwrMiscFlagExtSubIDBrad,
+     {{'palm', 'sumo'}}},
+    {kDevicePalmIIIxe,
+     "Palm IIIxe",
+     {"PalmIIIxe"},
+     kSupports68EZ328 + kHasFlash,
+     8192,
      hwrMiscFlagIDBrad,
      hwrMiscFlagExtSubIDBrad,
      {{'palm', 'sumo'}}},
@@ -321,11 +340,19 @@ static const DeviceInfo kDeviceInfo[] = {
      hwrMiscFlagIDm100,
      hwrMiscFlagExtSubIDBrad,
      {{'palm', 'clvn'}}},
+    {kDevicePalmM105,
+     "Palm m105",
+     {"PalmM105", "m105"},
+     kSupports68EZ328,
+     8192,
+     hwrMiscFlagIDm100,
+     hwrMiscFlagExtSubIDBrad,
+     {{'palm', 'clvn'}}},
     {kDevicePalmM125,
      "Palm m125",
      {"PalmM125", "m120", "m125", "m110", "m115", "JV", "Stu"},
      kSupports68VZ328 + kHasFlash,
-     2048,
+     8192,
      hwrMiscFlagIDNone,
      hwrMiscFlagExtSubIDNone,
      {{'palm', 'vstu'}}},
@@ -369,6 +396,22 @@ static const DeviceInfo kDeviceInfo[] = {
      hwrMiscFlagIDNone,
      hwrMiscFlagExtSubIDNone,
      {{'palm', 'skyw'}}},
+    {kDevicePalmI710,
+     "Palm i710",
+     {"PalmI710", "i710", "AtlantiC"},
+     kSupports68VZ328 + kHasFlash,
+     16384,
+     hwrMiscFlagIDNone,
+     hwrMiscFlagExtSubIDNone,
+     {{'palm', 'atlc'}}},
+    {kDevicePalmPacifiC,
+     "PalmPacifiC",
+     {"PalmPacifiC", "i710", "PacifiC"},
+     kSupports68VZ328 + kHasFlash,
+     16384,
+     hwrMiscFlagIDNone,
+     hwrMiscFlagExtSubIDNone,
+     {{'palm', 'atlc'}}},
     // ===== Symbol devices =====
     {kDeviceSymbol1500,
      "Symbol 1500",
@@ -679,7 +722,6 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
     }
 
     switch (fDeviceID) {
-#if 0  // CSTODO
         case kDeviceUnspecified:
             return false;
             break;
@@ -700,7 +742,6 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
                 !ROM.ContainsDB(SYMBOL_DB) && !is7)
                 return true;
             break;
-#endif
 
         case kDevicePalmIIIc:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && !ROM.ContainsDB(PALM_m100_DB) &&
@@ -708,7 +749,6 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
                 return true;
             break;
 
-#if 0
         case kDevicePalmIIIe:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && !ROM.ContainsDB(PALM_m100_DB) &&
                 !is7 && !isColor && (ROM.Version() == 0x030100))
@@ -716,17 +756,17 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
             break;
 
         case kDevicePalmIIIx:
+        case kDevicePalmIIIxe:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && !ROM.ContainsDB(PALM_m100_DB) &&
                 !is7 && !isColor)
                 return true;
             break;
-#endif
+
         case kDevicePalmV:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && !ROM.ContainsDB(PALM_m100_DB) &&
                 !is7 && !isColor)
                 return true;
             break;
-#if 0  // CSTODO
 
         case kDevicePalmVx:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && !ROM.ContainsDB(PALM_m100_DB) &&
@@ -752,9 +792,12 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
                 return true;
             break;
 
+        case kDevicePalmM105:
         case kDevicePalmM100:
             if (ROM.ContainsDB(PALM_m100_DB)) return true;
             break;
+
+#if 0
 
         case kDeviceSymbol1500:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && (ROM.Version() < 0x030500) &&
@@ -858,7 +901,6 @@ EmCPU* EmDevice::CreateCPU(EmSession* session) const {
 
 void EmDevice::CreateRegs(void) const {
     switch (fDeviceID) {
-#if 0  // CSTODO
         case kDevicePilot:
             EmBankRegs::AddSubBank(new EmRegs328Pilot);
             break;
@@ -870,7 +912,6 @@ void EmDevice::CreateRegs(void) const {
         case kDevicePalmIII:
             EmBankRegs::AddSubBank(new EmRegs328PalmIII);
             break;
-#endif
 
         case kDevicePalmIIIc: {
             EmBankRegs::AddSubBank(new EmRegsEZPalmIIIc);
@@ -884,20 +925,18 @@ void EmDevice::CreateRegs(void) const {
             break;
         }
 
-#if 0
         case kDevicePalmIIIe:
             EmBankRegs::AddSubBank(new EmRegsEZPalmIIIe);
             break;
 
         case kDevicePalmIIIx:
+        case kDevicePalmIIIxe:
             EmBankRegs::AddSubBank(new EmRegsEZPalmIIIx);
             break;
-#endif
+
         case kDevicePalmV:
             EmBankRegs::AddSubBank(new EmRegsEZPalmV);
             break;
-
-#if 0  // CSTODO
 
         case kDevicePalmVx:
             EmBankRegs::AddSubBank(new EmRegsEZPalmVx);
@@ -917,6 +956,7 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsPLDPalmVIIEZ);
             break;
 
+        case kDevicePalmM105:
         case kDevicePalmM100:
             EmBankRegs::AddSubBank(new EmRegsEZPalmM100);
             break;
@@ -925,7 +965,6 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM125);
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x1F000000));
             break;
-#endif
 
         case kDevicePalmM130: {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM130);
@@ -936,23 +975,47 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(framebuffer);
             break;
         }
-#if 0
+
+        case kDevicePalmI710: {
+            EmBankRegs::AddSubBank(new EmRegsVZAtlantiC());
+            EmBankRegs::AddSubBank(new EmRegsPLDAtlantiC(0x10800000));
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET);
+
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
+            EmBankRegs::AddSubBank(framebuffer);
+
+            break;
+        }
+
+        case kDevicePalmPacifiC: {
+            EmBankRegs::AddSubBank(new EmRegsVZAtlantiC());
+            EmBankRegs::AddSubBank(new EmRegsPLDPacifiC(0x10800000));
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET);
+
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xxPacifiC(*framebuffer, MMIO_BASE, T_BASE));
+            EmBankRegs::AddSubBank(framebuffer);
+
+            break;
+        }
 
         case kDevicePalmM500:
             EmBankRegs::AddSubBank(new EmRegsVZPalmM500);
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x10400000));
             break;
 
-        case kDevicePalmM505:
+        case kDevicePalmM505: {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM505);
-            EmBankRegs::AddSubBank(
-                new EmRegsSED1376PalmGeneric(sed1376RegsAddr, sed1376VideoMemStart));
-            EmBankRegs::AddSubBank(
-                new EmRegsFrameBuffer(sed1376VideoMemStart, sed1376VideoMemSize));
-            EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x10400000));
-            break;
 
-#endif
+            EmRegsFrameBuffer* framebuffer =
+                new EmRegsFrameBuffer(sed1376VideoMemStart, sed1376VideoMemSize);
+
+            EmBankRegs::AddSubBank(
+                new EmRegsSED1376PalmGeneric(sed1376RegsAddr, sed1376VideoMemStart, *framebuffer));
+            EmBankRegs::AddSubBank(framebuffer);
+            EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x10400000));
+        } break;
 
         case kDevicePalmM515: {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM505);
@@ -966,13 +1029,13 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x10400000));
         } break;
 
-#if 0
-
         case kDevicePalmI705:
             EmBankRegs::AddSubBank(new EmRegsVZPalmI705);
             EmBankRegs::AddSubBank(new EmRegsPLDPalmI705(0x11000000));
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x1F000000));
             break;
+
+#if 0
 
         case kDeviceARMRef:
             break;
@@ -1264,5 +1327,29 @@ int EmDevice::GetDeviceID(const char* s) const {
 bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }
 
 bool EmDevice::EmulatesDockStatus() const {
-    return !Supports68328() && fDeviceID != kDevicePalmM130;
+    if (Supports68328()) return false;
+
+    switch (fDeviceID) {
+        case kDevicePalmM130:
+        case kDevicePalmI705:
+        case kDevicePalmI710:
+        case kDevicePalmPacifiC:
+            return false;
+
+        default:
+            return true;
+    }
+}
+
+bool EmDevice::NeedsSDCTLHack() const { return fDeviceID == kDevicePalmM515; }
+
+ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
+    switch (fDeviceID) {
+        case kDevicePalmI710:
+        case kDevicePalmPacifiC:
+            return ScreenDimensions::screen320x320;
+
+        default:
+            return ScreenDimensions::screen160x160;
+    }
 }

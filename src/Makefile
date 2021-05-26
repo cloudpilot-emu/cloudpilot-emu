@@ -56,12 +56,11 @@ LDFLAGS_EMCC_WEB = -O3 -Wno-version-check -flto \
 	-s NO_EXIT_RUNTIME=1 \
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME=createModule \
-	-s EXPORT_ES6=1 \
-	-s USE_ES6_IMPORT_META=0 \
 	-s ENVIRONMENT="web,worker" \
 	-s ALLOW_MEMORY_GROWTH=1 \
 	-s INITIAL_MEMORY=67108864 \
 	-s ALLOW_TABLE_GROWTH=1 \
+	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["ccall","addFunction"]
 
 BUILDDIR_NATIVE = .build
@@ -137,7 +136,20 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsEZPalmV.cpp \
 	emulator/hardware/EmRegsEZPalmIIIc.cpp \
 	emulator/hardware/EmRegsMediaQ11xx.cpp \
-	emulator/hardware/EmRegsVZM1xx.cpp \
+	emulator/hardware/EmRegsVZPalmM125.cpp \
+	emulator/hardware/EmRegsVZPalmM130.cpp \
+	emulator/hardware/EmRegsVZPalmI705.cpp \
+	emulator/hardware/EmRegsPLDPalmI705.cpp \
+	emulator/hardware/EmRegsEZPalmM100.cpp \
+	emulator/hardware/EmRegsPLDAtlantiC.cpp \
+	emulator/hardware/EmRegsVZAtlantiC.cpp \
+	emulator/hardware/EmRegsPLDPacifiC.cpp \
+	emulator/hardware/EmRegsMediaQ11xxPacifiC.cpp \
+	emulator/hardware/EmRegs328.cpp \
+	emulator/hardware/EmRegs328PalmPilot.cpp \
+	emulator/hardware/EmRegsEZPalmVIIx.cpp \
+	emulator/hardware/EmRegsEZPalmVII.cpp \
+	emulator/hardware/EmRegsPLDPalmVIIEZ.cpp \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
 	emulator/patch/EmPatchModule.cpp \
@@ -182,7 +194,8 @@ SOURCE_EMU = \
 	emulator/CallbackManager.cpp \
 	emulator/DbInstaller.cpp \
 	emulator/Fifo.cpp \
-	emulator/Feature.cpp
+	emulator/Feature.cpp \
+	emulator/ScreenDimensions.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \
@@ -195,6 +208,7 @@ SOURCE_TEST = \
 	test/SaveChunkHelper.cpp \
 	test/LoadChunkHelper.cpp \
 	test/Fifo.cpp \
+	test/Miscellaneous.cpp \
 	test/main.cpp
 
 SOURCE_SDL = \

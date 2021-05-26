@@ -51,8 +51,6 @@ class EmPatchMgr {
     static CallROMType CallHeadpatch(HeadpatchProc);
     static void CallTailpatch(TailpatchProc);
 
-    static void PuppetString(CallROMType& callROM);
-
     static Bool IntlMgrAvailable(void);
 
     static bool IsExecutingPatch();

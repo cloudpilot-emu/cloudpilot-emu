@@ -7,18 +7,10 @@ import { NgModule } from '@angular/core';
 import { SessionItemComponent } from './session-item/session-item.component';
 import { SessionSettingsComponent } from './settings/settings.component';
 import { SessionsPage } from './sessions.page';
-import { SessionsPageRoutingModule } from './sessions-routing.module';
 import { SharedComponentModule } from './../../component/shared-component.module';
 
 @NgModule({
-    imports: [
-        CommonModule,
-        FormsModule,
-        IonicModule,
-        SessionsPageRoutingModule,
-        ReactiveFormsModule,
-        SharedComponentModule,
-    ],
+    imports: [CommonModule, FormsModule, IonicModule, ReactiveFormsModule, SharedComponentModule],
     declarations: [SessionsPage, SessionItemComponent, ContextMenuComponent, SessionSettingsComponent],
 })
 export class SessionsPageModule {}

@@ -79,7 +79,28 @@ void DoSaveLoad(SaveChunkHelper<T>& helper, HwrM68VZ328Type& regs) {
 }
 
 template <typename T>
+void DoSaveLoad(SaveChunkHelper<T>& helper, HwrM68328Type& regs) {
+#if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)
+    HwrM68EV328Type regsCopy = regs;
+    Byteswap(regs);
+
+    helper.DoBuffer(static_cast<void*>(&regsCopy), sizeof(regsCopy));
+#else
+    helper.DoBuffer(static_cast<void*>(&regs), sizeof(regs));
+#endif
+}
+
+template <typename T>
 void DoSaveLoad(LoadChunkHelper<T>& helper, HwrM68VZ328Type& regs) {
+    helper.DoBuffer(static_cast<void*>(&regs), sizeof(regs));
+
+#if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)
+    Byteswap(regs);
+#endif
+}
+
+template <typename T>
+void DoSaveLoad(LoadChunkHelper<T>& helper, HwrM68328Type& regs) {
     helper.DoBuffer(static_cast<void*>(&regs), sizeof(regs));
 
 #if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)

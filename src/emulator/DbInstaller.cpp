@@ -2,7 +2,6 @@
 
 #include "CallbackManager.h"
 #include "EmFileImport.h"
-#include "EmHAL.h"
 #include "EmMemory.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
@@ -16,7 +15,7 @@ DbInstaller::Result DbInstaller::Install(size_t bufferSize, uint8* buffer) {
                    : Result::failure;
     }
 
-    if (EmHAL::GetAsleep()) return Result::failure;
+    if (gSession->IsCpuStopped()) return Result::failure;
 
     size_t bytesRead = 0;
     bool failedToOverwrite = false;

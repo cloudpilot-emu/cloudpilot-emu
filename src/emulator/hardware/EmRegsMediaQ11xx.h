@@ -296,10 +296,12 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     void PrvExpandMono8(uint8 bits, uint16* results, uint16 fgColor, uint16 bgColor);
     void PrvExpandMono32(uint32 bits, uint16* results, uint16 fgColor, uint16 bgColor);
 
+   protected:
+    EmProxyHwrMediaQ11xxType fRegs;
+
    private:
     emuptr fBaseRegsAddr;
     emuptr fBaseVideoAddr;
-    EmProxyHwrMediaQ11xxType fRegs;
     GEState fState;
 
     int32 fBytelanes[4];

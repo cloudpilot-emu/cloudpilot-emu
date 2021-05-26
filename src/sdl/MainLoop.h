@@ -7,10 +7,11 @@
 #include "EventHandler.h"
 #include "Frame.h"
 #include "Platform.h"
+#include "ScreenDimensions.h"
 
 class MainLoop {
    public:
-    MainLoop(SDL_Window* window, SDL_Renderer* renderer);
+    MainLoop(SDL_Window* window, SDL_Renderer* renderer, int scale);
 
     bool IsRunning() const;
 
@@ -30,7 +31,9 @@ class MainLoop {
     SDL_Texture* lcdTexture{nullptr};
     SDL_Texture* silkscreenTexture{nullptr};
 
-    Frame frame{1024 * 128};
+    int scale{1};
+    ScreenDimensions screenDimensions;
+    Frame frame{320 * 320 * 4};
 
     const long millisOffset{Platform::GetMilliseconds()};
     double clockEmu{0};

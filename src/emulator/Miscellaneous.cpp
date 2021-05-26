@@ -7,6 +7,7 @@
 #include "EmPalmFunction.h"
 #include "EmPalmStructs.h"
 #include "EmPatchModuleHtal.h"
+#include "EmSystemState.h"
 #include "Logging.h"
 #include "Platform.h"
 #include "ROMStubs.h"
@@ -428,18 +429,13 @@ string GetLibraryName(uint16 refNum) {
     // emuptr libEntry;
     emuptr dispatchTblP;
 
-    EmAliasSysLibTblEntryType<PAS> libEntries(sysLibTableP);
-    dispatchTblP = libEntries[refNum].dispatchTblP;
-
-#if 0  // CSTODO
-    if (EmSystemState::OSMajorVersion() > 1) {
-        libEntry = sysLibTableP + refNum * sizeof(SysLibTblEntryType);
-        dispatchTblP = EmMemGet32(libEntry + offsetof(SysLibTblEntryType, dispatchTblP));
+    if (gSystemState.OSMajorVersion() > 1) {
+        EmAliasSysLibTblEntryType<PAS> libEntries(sysLibTableP);
+        dispatchTblP = libEntries[refNum].dispatchTblP;
     } else {
-        libEntry = sysLibTableP + refNum * sizeof(SysLibTblEntryTypeV10);
-        dispatchTblP = EmMemGet32(libEntry + offsetof(SysLibTblEntryTypeV10, dispatchTblP));
+        EmAliasSysLibTblEntryTypeV10<PAS> libEntries(sysLibTableP);
+        dispatchTblP = libEntries[refNum].dispatchTblP;
     }
-#endif
 
     // The first entry in the table is always the offset from the
     // start of the table to the library name.	Use this information
@@ -775,4 +771,9 @@ string Isolatin1ToUtf8(const string& input) {
     delete[] output;
 
     return result;
+}
+
+void TransformPenCoordinates(int16& x, int16& y) {
+    x = 500 - x;
+    y = 500 - y;
 }

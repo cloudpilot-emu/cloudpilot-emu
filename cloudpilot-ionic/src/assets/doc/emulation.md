@@ -1,16 +1,19 @@
 The "Emulation" tab displays your emulated device. The device is running as
 long as the tab is visible. Once the tab is switched (or Cloudpilot goes into
-the background) the emulation pauses. Date and time are read from the host
+the background) the emulation pauses. Date and time are synced to the host
 system, so the clock is not affected by the emulator pausing and resuming.
 
 # Interacting with the emulator
 
 You can interact with the emulator by touching or clicking the screen and the
 hardware buttons below. The power button is located in the menu on the top
-lefft.
+left.
 
 A hardware keyboard can be used to type directly in the emulator (see "Keyboard
 mappings" at the end of this page).
+
+On browsers that support the necessary APIs the clipboard can be shared with
+the host. Check "Clipboard integration" below for more details.
 
 # Installing program and database files
 
@@ -47,6 +50,8 @@ Backing up databases interacts with PalmOS, and there is a (very) slim chance of
 the emulator, depending on the state of the virtual device when the backup is
 run. In general it is best to run the backup while the launcher is open.
 
+This feature only is available on PalmOS 3 and later.
+
 # Device reset
 
 The device can be reset by selecting one of the reset options from the menu.
@@ -82,7 +87,9 @@ it.
 The volume can be changed on the settings tab. The speaker button is not shown if the
 volume is set to zero.
 
-On iOS, muting the phone also mutes audio from the emulator.
+On iOS, muting the phone also mutes audio from the emulator. Ocassionally the audio
+may glitch and stay off after resuming Cloudpilot from the background due to browser
+bugs. You can reenable audio by turning it off and on again.
 
 # Keyboard input
 
@@ -113,6 +120,23 @@ hardware buttons
 
 If unsure take a look at the buttons on the silkscreen --- their background will change
 while the corresponding button is pressed.
+
+# Clipboard integration
+
+On browsers that support it the clipboard can be shared with the host. This is disabled
+by default and needs to be turned on the settings page. Note that the option is not
+available on browsers that do not support it (i.e. Firefox).
+
+Once the setting is turned on copy and paste operations will access the host clipboard.
+Accessing the clipboard is a sensitive operation, and browsers implement security
+mechanisms around it.
+
+On most webkit-based browsers (including Chrome) a popup asking for permission must be
+confirmed the first time Cloudpilot pastes from the host clipboard. On other browsers
+(notably Safari) Cloudpilot shows a dialog asking to confirm the operation on every
+clipboard access. This is necessary because those browsers require clipboard access to
+be the direct consequence of an user interaction. When pasting Safari will show
+an additionl "Paste" widget that needs to be tapped in order to paste.
 
 # Statistics
 

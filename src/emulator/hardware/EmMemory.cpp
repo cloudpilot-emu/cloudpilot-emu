@@ -429,10 +429,7 @@ void Memory::GetMappingInfo(emuptr addr, void** start, uint32* len) {
 //		� Memory::CheckNewPC
 // ---------------------------------------------------------------------------
 
-void Memory::CheckNewPC(emuptr newPC) {
-    // CSTODO gPCInRAM = newPC < EmBankROM::GetMemoryStart ();
-    // CSTODO gPCInROM = newPC >= EmBankROM::GetMemoryStart ();
-}
+void Memory::CheckNewPC(emuptr newPC) {}
 
 #pragma mark -
 

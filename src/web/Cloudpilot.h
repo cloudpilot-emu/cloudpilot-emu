@@ -73,7 +73,7 @@ class Cloudpilot {
     SuspendContext& GetSuspendContext();
 
    private:
-    Frame frame{1024 * 128};
+    Frame frame{320 * 320 * 4};
 };
 
 #endif  // _CLOUDPILOT_H_

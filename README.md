@@ -2,12 +2,16 @@
 
 This is an emulator for Dragonball-based PalmOS devices that runs in a web
 browser. In particular, the emulator works on iOS. The emulator is derived from
-the original POSE emulator. At the moment, Palm IIIc, Palm V amd Palm m515 devices
-are emulated. Support for more devices may follow in the future.
+the original POSE emulator. Please see below for the list of currently supported
+devices.
 
 <img src="doc/m515.jpeg" width="310" height="552" alt="Palm m515 emulation"></img>
 &nbsp;
-<img src="doc/palmv.jpeg" width="310" height="552" alt="Palm V emulation"></img>
+<img src="doc/palmvx.jpeg" width="310" height="552" alt="Palm Vx emulation"></img>
+&nbsp;
+<img src="doc/tungstenw.jpeg" width="310" height="552" alt="Tungsten W emulation"></img>
+&nbsp;
+<img src="doc/palmpilot.jpeg" width="310" height="552" alt="Palm Pilot emulation"></img>
 
 # The emulator
 
@@ -21,12 +25,26 @@ Please check out the documentation in the app.
 ## ROM files
 
 In order to use the emulator you need to provide a ROM file for the device you
-want to emulate. You can find a collection of ROMs [on PalmDB](https://palmdb.net/app/palm-roms-complete).
+want to emulate. You can find a collection of ROMs
+[on PalmDB](https://palmdb.net/app/palm-roms-complete).
+
+## Emulated devices
+
+The following devices are currently emulated:
+
+-   Pilot, Palm Pilot
+-   Palm III
+-   Palm IIIxe, Palm IIIx, Palm IIIe
+-   Palm Vx, Palm V
+-   Palm VII
+-   Palm m500, Palm m505, Palm m515
+-   Palm m100, Palm m105, Palm m125, Palm m130
+-   Tungsten W (silkscreen version)
 
 ## Other versions
 
 A preview build of the next version of Cloudpilot is available
-[here](https://cloudpilot-emu.github.io/app).
+[here](https://cloudpilot-emu.github.io/app-preview).
 
 There also is a web build of the native SDL version of cloudpilot
 [here](https://cloudpilot-emu.github.io/sdl)
@@ -54,6 +72,7 @@ Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloud
     foot and crashes the emulator. This is particularly true if a file is installed
     on a virtual Palm IIIc with PalmOS 3.5 while the launcher is active and the
     category menu is open.
+-   Trying to enable mobile on Tungsten W will crash the emulated device.
 
 # Source code and relationship to POSE
 

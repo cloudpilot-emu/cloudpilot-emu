@@ -100,13 +100,6 @@ static void PrvSetResourceTypeIDParameters(UInt32 resType, UInt16 resID);
 
 static ErrCode PrvValidateDatabase(const EmAliasDatabaseHdrType<LAS>& hdr, UInt32 size);
 
-#if 0  // CSTODO
-static Bool PrvDetermineMethod(EmFileImportMethod method);
-const UInt32 kHostExgLibCreator = 'HExg';
-static void PrvSetExgMgr(void* mgr);
-static UInt16 gHostExgLibRefNum;
-#endif
-
 /***********************************************************************
  *
  * FUNCTION:	EmFileImport::EmFileImport
@@ -123,10 +116,7 @@ static UInt16 gHostExgLibRefNum;
  ***********************************************************************/
 
 EmFileImport::EmFileImport(const uint8* buffer, size_t len, EmFileImportMethod method)
-    : fState(kInstallStart),
-      // CSTODO      fOldAcceptBeamState(EmPatchState::AutoAcceptBeamDialogs(true)),
-      fFileBuffer((void*)buffer),
-      fFileBufferSize(len) {}
+    : fState(kInstallStart), fFileBuffer((void*)buffer), fFileBufferSize(len) {}
 
 /***********************************************************************
  *
@@ -140,16 +130,7 @@ EmFileImport::EmFileImport(const uint8* buffer, size_t len, EmFileImportMethod m
  *
  ***********************************************************************/
 
-EmFileImport::~EmFileImport(void) {
-#if 0  // CSTODO
-    ::PrvSetExgMgr(NULL);
-
-    delete fExgMgrStream;
-    delete fExgMgrImport;
-
-    EmPatchState::AutoAcceptBeamDialogs(fOldAcceptBeamState);
-#endif
-}
+EmFileImport::~EmFileImport(void) {}
 
 /***********************************************************************
  *
@@ -374,38 +355,7 @@ void EmFileImport::IncrementalInstall(void) {
  *
  ***********************************************************************/
 
-void EmFileImport::ExgMgrInstallStart(void) {
-#if 0  // CSTODO
-    this->ValidateStream();
-    if (fError) return;
-
-    // Create the stub ExgMgr driver callback object.
-
-    EmAssert(gHostExgLibRefNum != 0);
-    EmAssert(fExgMgrStream == NULL);
-    EmAssert(fExgMgrImport == NULL);
-
-    fStream.SetMarker(0, kStreamFromStart);
-    fExgMgrStream = new EmExgMgrStream(fStream);
-    fExgMgrImport = new EmExgMgrImportWrapper(*fExgMgrStream, *this);
-
-    // Tell the library what host-based driver to use.
-
-    ::PrvSetExgMgr(fExgMgrImport);
-
-    if (!fError) {
-        // Kick off the install process.
-
-        Err err = ::EvtEnqueueKey(irGotDataChr, gHostExgLibRefNum, libEvtHookKeyMask);
-        this->SetResult(err);
-
-        err = ::EvtWakeup();
-    }
-
-#endif
-
-    fState = kInstallMiddle;
-}
+void EmFileImport::ExgMgrInstallStart(void) { fState = kInstallMiddle; }
 
 /***********************************************************************
  *
@@ -458,11 +408,7 @@ void EmFileImport::ExgMgrInstallEnd(void) {}
  *
  ***********************************************************************/
 
-void EmFileImport::ExgMgrInstallCancel(void) {
-    // Tell the library to stop.
-
-    // CSTODO fExgMgrImport->Cancel();
-}
+void EmFileImport::ExgMgrInstallCancel(void) {}
 
 #pragma mark -
 
@@ -875,30 +821,6 @@ void EmFileImport::DeleteCurrentDatabase(void) {
 
 /***********************************************************************
  *
- * FUNCTION:	PrvDetermineMethod
- *
- * DESCRIPTION:	Return whether or not we should use the Exchange
- *				Manager for installing the file.  Right now, we check
- *				only for existance of the Exchange Manager and whether
- *				or not our library is installed.  In the future, we may
- *				also check for valid file types and user preference
- *				settings.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	True if we'll be using the ExgMgr.
- *
- ***********************************************************************/
-
-#if 0  // CSTODO
-Bool PrvDetermineMethod(EmFileImportMethod method) {
-    return (method == kMethodExgMgr) ? true
-                                     : (method == kMethodHomebrew) ? false : ::PrvCanUseExgMgr();
-}
-#endif
-
-/***********************************************************************
- *
  * FUNCTION:	PrvCanUseExgMgr
  *
  * DESCRIPTION:	Return whether or not we should use the Exchange
@@ -914,13 +836,7 @@ Bool PrvDetermineMethod(EmFileImportMethod method) {
  *
  ***********************************************************************/
 
-Bool PrvCanUseExgMgr(void) {
-#if 0  // CSTODO
-	return ::PrvHasExgMgr () && ::PrvHostExgLibLoaded ();
-#else
-    return false;
-#endif
-}
+Bool PrvCanUseExgMgr(void) { return false; }
 
 /***********************************************************************
  *
@@ -935,39 +851,6 @@ Bool PrvCanUseExgMgr(void) {
  ***********************************************************************/
 
 Bool PrvHasExgMgr(void) { return EmLowMem::TrapExists(sysTrapExgInit); }
-
-/***********************************************************************
- *
- * FUNCTION:	PrvHostExgLibLoaded
- *
- * DESCRIPTION:	.
- *
- * PARAMETERS:	None.
- *
- * RETURNED:	Nothing.
- *
- ***********************************************************************/
-
-#if 0  // CSTODO
-Bool PrvHostExgLibLoaded (void)
-{
-	// Try finding the library.
-	UInt16	libRefNum;
-	Err		err = ::SysLibFind (kHostExgLibName, &libRefNum);
-
-	// If we can't find it, try loading it.
-	if (err == sysErrLibNotFound)
-        err = ::SysLibLoad (sysFileTExgLib, kHostExgLibCreator, &libRefNum);
-
-	if (!err)
-	{
-		gHostExgLibRefNum = libRefNum;
-		return true;
-	}
-
-	return false;
-}
-#endif
 
 /***********************************************************************
  *
@@ -1230,18 +1113,6 @@ Exit:
 
     return err;
 }
-
-#if 0  // CSTODO
-void PrvSetExgMgr(void* mgr) {
-    if (gHostExgLibRefNum) {
-        emuptr tblP = (emuptr)::SysLibTblEntry(gHostExgLibRefNum);
-        if (tblP) {
-            EmAliasSysLibTblEntryType<PAS> tbl(tblP);
-            tbl.globalsP = (emuptr)mgr;
-        }
-    }
-}
-#endif
 
 const uint8 kHostExgLib[] = {
     0x48, 0x6F, 0x73, 0x74, 0x45, 0x78, 0x67, 0x4C, 0x69, 0x62, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,

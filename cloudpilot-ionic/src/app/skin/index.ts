@@ -1,0 +1,20 @@
+export { default as HARD_BUTTONS_IIIC } from '!raw-loader!./hard-buttons/iiic.svg';
+export { default as HARD_BUTTONS_IIIE } from '!raw-loader!./hard-buttons/iiie.svg';
+export { default as HARD_BUTTONS_IIIX } from '!raw-loader!./hard-buttons/iiix.svg';
+export { default as HARD_BUTTONS_M100 } from '!raw-loader!./hard-buttons/m100.svg';
+export { default as HARD_BUTTONS_M125 } from '!raw-loader!./hard-buttons/m125.svg';
+export { default as HARD_BUTTONS_M130 } from '!raw-loader!./hard-buttons/m130.svg';
+export { default as HARD_BUTTONS_M500 } from '!raw-loader!./hard-buttons/m500.svg';
+export { default as HARD_BUTTONS_M515 } from '!raw-loader!./hard-buttons/m515.svg';
+export { default as HARD_BUTTONS_PILOT } from '!raw-loader!./hard-buttons/pilot.svg';
+export { default as HARD_BUTTONS_TUNGSTEN_W } from '!raw-loader!./hard-buttons/tungstenw.svg';
+export { default as HARD_BUTTONS_PALM_V } from '!raw-loader!./hard-buttons/v.svg';
+
+export { default as SILKSCREEN_IIIC } from '!raw-loader!./silkscreen/iiic.svg';
+export { default as SILKSCREEN_M100 } from '!raw-loader!./silkscreen/m100.svg';
+export { default as SILKSCREEN_M130 } from '!raw-loader!./silkscreen/m130.svg';
+export { default as SILKSCREEN_M500 } from '!raw-loader!./silkscreen/m500.svg';
+export { default as SILKSCREEN_M515 } from '!raw-loader!./silkscreen/m515.svg';
+export { default as SILKSCREEN_PILOT } from '!raw-loader!./silkscreen/pilot.svg';
+export { default as SILKSCREEN_TUNGSTEN_W } from '!raw-loader!./silkscreen/tungstenw.svg';
+export { default as SILKSCREEN_V } from '!raw-loader!./silkscreen/v.svg';

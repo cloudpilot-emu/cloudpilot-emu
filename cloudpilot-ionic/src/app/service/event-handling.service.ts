@@ -1,16 +1,16 @@
-import { BORDER, CanvasDisplayService, HEIGHT, SCALE, WIDTH } from './canvas-display.service';
 import { Injectable, NgZone } from '@angular/core';
 
+import { CanvasDisplayService } from './canvas-display.service';
 import { EmulationService } from './emulation.service';
 import { PalmButton } from '../helper/Cloudpilot';
 
 const enum Area {
-    silkscreen,
+    screen,
     buttons,
 }
 
 interface InteractionSilkscreen {
-    area: Area.silkscreen;
+    area: Area.screen;
 }
 
 interface InteractionButton {
@@ -85,16 +85,16 @@ export class EventHandlingService {
     private handleMouseDown = (e: MouseEvent): void => {
         if (e.button !== 0) return;
 
-        const coords = this.eventToPalmCoordinates(e);
+        const coords = this.canvasDisplayService.eventToPalmCoordinates(e);
         if (!coords) return;
 
         const area = this.determineArea(coords);
 
-        if (area === Area.silkscreen) {
+        if (area === Area.screen) {
             this.interactionMouse = { area };
             this.emulationService.handlePointerMove(...coords);
         } else {
-            const button = this.determineButton(coords);
+            const button = this.canvasDisplayService.determineButton(coords);
             this.interactionMouse = { area, button };
 
             this.handleButtonDown(button);
@@ -103,9 +103,9 @@ export class EventHandlingService {
 
     private handleMouseMove = (e: MouseEvent): void => {
         // tslint:disable-next-line: no-bitwise
-        if (!(e.buttons & 0x01) || this.interactionMouse?.area !== Area.silkscreen) return;
+        if (!(e.buttons & 0x01) || this.interactionMouse?.area !== Area.screen) return;
 
-        const coords = this.eventToPalmCoordinates(e, true);
+        const coords = this.canvasDisplayService.eventToPalmCoordinates(e, true);
         if (!coords) return;
 
         this.emulationService.handlePointerMove(...coords);
@@ -123,7 +123,7 @@ export class EventHandlingService {
 
                 break;
 
-            case Area.silkscreen:
+            case Area.screen:
                 this.emulationService.handlePointerUp();
 
                 break;
@@ -135,15 +135,15 @@ export class EventHandlingService {
             const touch = e.changedTouches.item(i);
             if (!touch) continue;
 
-            const coords = this.eventToPalmCoordinates(touch);
+            const coords = this.canvasDisplayService.eventToPalmCoordinates(touch);
             if (!coords) continue;
 
             const area = this.determineArea(coords);
-            if (area === Area.silkscreen) {
+            if (area === Area.screen) {
                 this.interactionsTouch.set(touch.identifier, { area });
                 this.emulationService.handlePointerMove(...coords);
             } else {
-                const button = this.determineButton(coords);
+                const button = this.canvasDisplayService.determineButton(coords);
                 this.interactionsTouch.set(touch.identifier, { area, button });
 
                 this.handleButtonDown(button);
@@ -158,8 +158,8 @@ export class EventHandlingService {
             const touch = e.changedTouches.item(i);
             if (!touch) continue;
 
-            if (this.interactionsTouch.get(touch.identifier)?.area === Area.silkscreen) {
-                const coords = this.eventToPalmCoordinates(touch, true);
+            if (this.interactionsTouch.get(touch.identifier)?.area === Area.screen) {
+                const coords = this.canvasDisplayService.eventToPalmCoordinates(touch, true);
                 if (!coords) continue;
 
                 this.emulationService.handlePointerMove(...coords);
@@ -183,7 +183,7 @@ export class EventHandlingService {
 
                     break;
 
-                case Area.silkscreen:
+                case Area.screen:
                     this.emulationService.handlePointerUp();
 
                     break;
@@ -236,68 +236,8 @@ export class EventHandlingService {
         }
     };
 
-    private eventToPalmCoordinates(e: MouseEvent | Touch, clip = false): [number, number] | undefined {
-        if (!this.canvas) return;
-
-        const bb = this.canvas.getBoundingClientRect();
-
-        let contentX: number;
-        let contentY: number;
-        let contentWidth: number;
-        let contentHeight: number;
-
-        // CSS object-fit keeps the aspect ratio of the canvas content, but the canvas itself
-        // looses aspect and fills the container -> manually calculate the metrics for the content
-        if (bb.width / bb.height > WIDTH / HEIGHT) {
-            contentHeight = bb.height;
-            contentWidth = (WIDTH / HEIGHT) * bb.height;
-            contentY = bb.top;
-            contentX = bb.left + (bb.width - contentWidth) / 2;
-        } else {
-            contentWidth = bb.width;
-            contentHeight = (HEIGHT / WIDTH) * bb.width;
-            contentX = bb.left;
-            contentY = bb.top + (bb.height - contentHeight) / 2;
-        }
-
-        // Compensate for the border
-        let x = Math.floor((((e.clientX - contentX) / contentWidth) * WIDTH) / SCALE) - BORDER / SCALE;
-        let y = Math.floor((((e.clientY - contentY) / contentHeight) * HEIGHT) / SCALE) - BORDER / SCALE;
-
-        // The canvas layout inside the border is as follows:
-        //
-        // * 0 .. 159   : LCD
-        // * 160        : separator
-        // * 161 .. 220 : silkscreen
-        // * 221 .. 250 : buttons
-        //
-        // we map this to 160x250 lines by mapping the separator to the silkscreen
-
-        if (y >= 161) y -= 1;
-
-        if (clip) {
-            if (x < 0) x = 0;
-            if (x > 159) x = 159;
-            if (y < 0) y = 0;
-            if (y > 249) y = 249;
-        } else {
-            if (x < 0 || x >= 160 || y < 0 || y >= 250) return undefined;
-        }
-
-        return [x, y];
-    }
-
-    private determineArea([, y]: [number, number]): Area {
-        return y >= 220 ? Area.buttons : Area.silkscreen;
-    }
-
-    private determineButton([x, y]: [number, number]): PalmButton {
-        if (x >= 130) return PalmButton.notes;
-        if (x >= 100) return PalmButton.todo;
-        if (x >= 60) return y >= 236 ? PalmButton.down : PalmButton.up;
-        if (x >= 30) return PalmButton.phone;
-
-        return PalmButton.cal;
+    private determineArea(coords: [number, number]): Area {
+        return this.canvasDisplayService.isButtons(coords) ? Area.buttons : Area.screen;
     }
 
     private handleButtonDown(button: PalmButton): void {

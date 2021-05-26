@@ -60,6 +60,20 @@ export class AlertService {
         await alert.present();
     }
 
+    async updateComplete() {
+        const alert = await this.alertController.create({
+            header: 'Update has downloaded',
+            message: 'The update has been downloaded. Please close cloudpilot and reload in order to apply it.',
+            backdropDismiss: false,
+            buttons: [
+                { text: 'Reload', handler: () => window.location.reload() },
+                { text: 'Close', role: 'cancel' },
+            ],
+        });
+
+        await alert.present();
+    }
+
     async fatalError(reason: string) {
         const haveCurrentSession = !!this.emulationState.getCurrentSession();
 

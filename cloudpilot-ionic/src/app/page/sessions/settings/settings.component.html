@@ -23,5 +23,13 @@
             <ion-label position="stacked">Hotsync name</ion-label>
             <ion-input [placeholder]="placeholder" formControlName="hotsyncName" maxlength="40"></ion-input>
         </ion-item>
+
+        <ion-item lines="inset">
+            <ion-label position="stacked">Device</ion-label>
+            <ion-select formControlName="device">
+                <ion-select-option *ngFor="let device of deviceList" [value]="device[0]">{{device[1]}}
+                </ion-select-option>
+            </ion-select>
+        </ion-item>
     </form>
 </ion-content>

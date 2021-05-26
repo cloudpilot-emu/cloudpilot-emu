@@ -783,11 +783,12 @@ typedef uint8 ScrOperation;
         FOR_LowMemHdrType_STRUCT(DO_TO_STRUCT) FOR_SysAppInfoType_STRUCT(DO_TO_STRUCT)          \
             FOR_SysLibTblEntryType_STRUCT(DO_TO_STRUCT) FOR_PenBtnInfoType_STRUCT(DO_TO_STRUCT) \
                 FOR_SndCommandType_STRUCT(DO_TO_STRUCT)                                         \
+                    FOR_SysLibTblEntryTypeV10_STRUCT(DO_TO_STRUCT)                              \
                                                                                                 \
-                    FOR_kernel_info_task_STRUCT(DO_TO_STRUCT)                                   \
-                        FOR_kernel_info_semaphore_STRUCT(DO_TO_STRUCT)                          \
-                            FOR_kernel_info_timer_STRUCT(DO_TO_STRUCT)                          \
-                                FOR_SysKernelInfoType_STRUCT(DO_TO_STRUCT)
+                        FOR_kernel_info_task_STRUCT(DO_TO_STRUCT)                               \
+                            FOR_kernel_info_semaphore_STRUCT(DO_TO_STRUCT)                      \
+                                FOR_kernel_info_timer_STRUCT(DO_TO_STRUCT)                      \
+                                    FOR_SysKernelInfoType_STRUCT(DO_TO_STRUCT)
 
 #define FOR_EACH_STRUCT_6(DO_TO_STRUCT)                                                            \
     FOR_SlkPktFooterType_STRUCT(DO_TO_STRUCT) FOR_SlkPktHeaderType_STRUCT(DO_TO_STRUCT)            \
