@@ -4,7 +4,7 @@ on:
     tags:
       - '*'
 env:
-  EM_VERSION: 2.0.21
+  EM_VERSION: 2.0.20
   NODE_VERSION: 14
   EM_CACHE_FOLDER: emsdk-cache
   PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git
