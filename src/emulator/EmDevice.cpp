@@ -58,12 +58,15 @@
 #include "EmRegsEZPalmIIIx.h"
 #include "EmRegsEZPalmM100.h"
 #include "EmRegsEZPalmV.h"
+#include "EmRegsEZPalmVII.h"
+#include "EmRegsEZPalmVIIx.h"
 #include "EmRegsEZPalmVx.h"
 #include "EmRegsFrameBuffer.h"
 #include "EmRegsMediaQ11xx.h"
 #include "EmRegsMediaQ11xxPacifiC.h"
 #include "EmRegsPLDAtlantiC.h"
 #include "EmRegsPLDPacifiC.h"
+#include "EmRegsPLDPalmVIIEZ.h"
 #include "EmRegsSED1375.h"
 #include "EmRegsSED1376.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
@@ -78,10 +81,7 @@
     #include "EmRegs328PalmPilot.h"
     #include "EmRegs328Symbol1700.h"
     #include "EmRegsASICSymbol1700.h"
-    #include "EmRegsEZPalmVII.h"
-    #include "EmRegsEZPalmVIIx.h"
     #include "EmRegsEZVisor.h"
-    #include "EmRegsPLDPalmVIIEZ.h"
     #include "EmRegsSZTemp.h"
     #include "EmRegsUSBVisor.h"
     #include "EmRegsVZPalmM500.h"
@@ -777,8 +777,6 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
                 return true;
             break;
 
-#if 0  // CSTODO
-
         case kDevicePalmVIIEZ:
             if ((ROM.GetCardManufacturer() == PALM_MANUF) && is7 &&
                 (!ROM.ContainsDB(PALM_VIIX_DB) || ROM.ContainsDB(PALM_VII_EZ_NEW_DB)) && !isColor)
@@ -790,8 +788,6 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
                 !ROM.ContainsDB(PALM_VII_EZ_NEW_DB) && !isColor)
                 return true;
             break;
-
-#endif
 
         case kDevicePalmM105:
         case kDevicePalmM100:
@@ -947,9 +943,6 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegs328PalmVII);
             break;
 
-#if 0  // CSTODO
-
-
         case kDevicePalmVIIEZ:
             EmBankRegs::AddSubBank(new EmRegsEZPalmVII);
             EmBankRegs::AddSubBank(new EmRegsPLDPalmVIIEZ);
@@ -959,8 +952,6 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsEZPalmVIIx);
             EmBankRegs::AddSubBank(new EmRegsPLDPalmVIIEZ);
             break;
-
-#endif
 
         case kDevicePalmM105:
         case kDevicePalmM100:

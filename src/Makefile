@@ -146,6 +146,9 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsMediaQ11xxPacifiC.cpp \
 	emulator/hardware/EmRegs328.cpp \
 	emulator/hardware/EmRegs328PalmPilot.cpp \
+	emulator/hardware/EmRegsEZPalmVIIx.cpp \
+	emulator/hardware/EmRegsEZPalmVII.cpp \
+	emulator/hardware/EmRegsPLDPalmVIIEZ.cpp \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
 	emulator/patch/EmPatchModule.cpp \
