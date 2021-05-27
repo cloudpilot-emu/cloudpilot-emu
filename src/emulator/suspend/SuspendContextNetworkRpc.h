@@ -12,7 +12,9 @@ class SuspendContextNetworkRpc : public SuspendContext {
 
     void Cancel() override;
 
-    void ProcessMessage(void* message, size_t size);
+    const void* GetRequest();
+
+    void ReceiveResponse(const void* message, size_t size);
 };
 
 #endif  // _SUSPEND_CONTEXT_NETWORK_RPC_H_

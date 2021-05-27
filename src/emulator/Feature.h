@@ -7,8 +7,13 @@ class Feature {
 
     static bool GetClipboardIntegration();
 
+    static void SetNetworkRedirection(bool toggle);
+
+    static bool GetNetworkRedirection();
+
    private:
     static bool clipboardIntegration;
+    static bool networkRedirection;
 };
 
 #endif  // _FEATURE_H_

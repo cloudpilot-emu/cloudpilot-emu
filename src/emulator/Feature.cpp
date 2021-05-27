@@ -4,6 +4,7 @@
 #include "SuspendManager.h"
 
 bool Feature::clipboardIntegration{false};
+bool Feature::networkRedirection{false};
 
 void Feature::SetClipboardIntegration(bool toggle) {
     clipboardIntegration = toggle;
@@ -16,3 +17,7 @@ void Feature::SetClipboardIntegration(bool toggle) {
 }
 
 bool Feature::GetClipboardIntegration() { return clipboardIntegration; }
+
+void Feature::SetNetworkRedirection(bool toggle) { networkRedirection = toggle; }
+
+bool Feature::GetNetworkRedirection() { return networkRedirection; }

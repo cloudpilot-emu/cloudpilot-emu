@@ -195,7 +195,8 @@ SOURCE_EMU = \
 	emulator/DbInstaller.cpp \
 	emulator/Fifo.cpp \
 	emulator/Feature.cpp \
-	emulator/ScreenDimensions.cpp
+	emulator/ScreenDimensions.cpp \
+	emulator/NetworkProxy.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \

@@ -122,6 +122,7 @@ int main(int argc, const char** argv) {
     Cli::Start();
 
     Feature::SetClipboardIntegration(true);
+    Feature::SetNetworkRedirection(true);
 
     while (mainLoop.IsRunning()) {
         mainLoop.Cycle();

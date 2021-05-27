@@ -1,8 +1,10 @@
 #include "PatchModuleNetlib.h"
 
 #include "EmCommon.h"
+#include "Feature.h"
 #include "Logging.h"
 #include "Marshal.h"
+#include "NetworkProxy.h"
 
 #define LOGGING 1
 
@@ -165,6 +167,12 @@ namespace {
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 *netIFErrsP");
 
+        if (Feature::GetNetworkRedirection()) {
+            PUT_RESULT_VAL(Err, gNetworkProxy.Open());
+
+            return kSkipROM;
+        }
+
         CALLED_GET_PARAM_VAL(UInt16, libRefNum);
         CALLED_GET_PARAM_REF(UInt16, netIFErrsP, Marshal::kOutput);
 
@@ -175,6 +183,12 @@ namespace {
         PRINTF("\nNetLibClose");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 immediate");
+
+        if (Feature::GetNetworkRedirection()) {
+            PUT_RESULT_VAL(Err, gNetworkProxy.Close());
+
+            return kSkipROM;
+        }
 
         CALLED_GET_PARAM_VAL(UInt16, libRefNum);
         CALLED_GET_PARAM_VAL(UInt16, immediate);
@@ -808,9 +822,31 @@ namespace {
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 *countP");
 
+        if (Feature::GetNetworkRedirection()) {
+            CALLED_GET_PARAM_REF(UInt16, countP, Marshal::kOutput);
+
+            *countP = gNetworkProxy.OpenCount();
+
+            CALLED_PUT_PARAM_REF(countP);
+
+            cout << "put: " << *countP << endl << flush;
+
+            PUT_RESULT_VAL(Err, 0);
+
+            return kSkipROM;
+        }
+
         CALLED_GET_PARAM_VAL(UInt16, libRefNum);
         CALLED_GET_PARAM_REF(UInt16, countP, Marshal::kOutput);
         return kExecuteROM;
+    }
+
+    void TailpatchNetLibOpenCount() {
+        CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 *countP");
+
+        CALLED_GET_PARAM_REF(UInt16, countP, Marshal::kInput);
+
+        PRINTF("-> NetLibOpenCount, countP = %d", *countP);
     }
 
     CallROMType HeadpatchNetLibTracePrintF(void) {
@@ -835,6 +871,13 @@ namespace {
         CALLED_SETUP("Err", "UInt16 libRefNum");
 
         CALLED_GET_PARAM_VAL(UInt16, libRefNum);
+
+        if (Feature::GetNetworkRedirection()) {
+            PUT_RESULT_VAL(Err, netErrNotOpen);
+
+            return kSkipROM;
+        }
+
         return kExecuteROM;
     }
 
@@ -874,6 +917,15 @@ namespace {
         CALLED_GET_PARAM_REF(UInt16, netIFErrP, Marshal::kOutput);
 
         PRINTF("\nNetLibOpenConfig, configIndex = %u", configIndex);
+
+        if (Feature::GetNetworkRedirection()) {
+            PUT_RESULT_VAL(Err, gNetworkProxy.Open());
+
+            *netIFErrP = 0;
+            CALLED_PUT_PARAM_REF(netIFErrP);
+
+            return kSkipROM;
+        }
 
         return kExecuteROM;
     }
@@ -984,7 +1036,7 @@ namespace {
         {netLibTrapSocketAddr, HeadpatchNetLibSocketAddr, NULL},
         {netLibTrapFinishCloseWait, HeadpatchNetLibFinishCloseWait, NULL},
         {netLibTrapGetMailExchangeByName, HeadpatchNetLibGetMailExchangeByName, NULL},
-        {netLibTrapOpenCount, HeadpatchNetLibOpenCount, NULL},
+        {netLibTrapOpenCount, HeadpatchNetLibOpenCount, TailpatchNetLibOpenCount},
         {netLibTrapTracePrintF, HeadpatchNetLibTracePrintF, NULL},
         {netLibTrapTracePutS, HeadpatchNetLibTracePutS, NULL},
         {netLibTrapOpenIfCloseWait, HeadpatchNetLibOpenIfCloseWait, NULL},
