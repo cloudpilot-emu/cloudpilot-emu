@@ -97,13 +97,17 @@ INCLUDE = \
 	-I./emulator/palm/Platform/Incs/Libraries \
 	-I./emulator/suspend \
 	-I./emulator \
-	-I./zip
+	-I./zip \
+	-I./nanopb
 
 SOURCE_C = \
 	emulator/uae/cpudefs.c \
 	emulator/uae/cpuemu.c \
 	emulator/uae/cpustbl.c \
 	emulator/palm/Platform/Core/System/Src/Crc.c \
+	nanopb/pb_common.c \
+	nanopb/pb_encode.c \
+	nanopb/pb_decode.c \
 	zip/zip.c
 
 SOURCE_CPP = \
@@ -219,10 +223,9 @@ SOURCE_SDL = \
 	sdl/MainLoop.cpp \
 	sdl/Silkscreen.cpp \
 	sdl/util.cpp \
-	sdl/EventHandler.cpp \
-	sdl/WebsocketClient.cpp
+	sdl/EventHandler.cpp
 
-SOURCE_SDL_NATIVE = $(SOURCE_SDL) sdl/Cli.cpp emulator/assert_native.cpp
+SOURCE_SDL_NATIVE = $(SOURCE_SDL) sdl/Cli.cpp emulator/assert_native.cpp sdl/WebsocketClient.cpp
 SOURCE_SDL_EMCC = $(SOURCE_SDL) sdl/EmscriptenApi.cpp emulator/assert_emscripten.cpp
 
 SOURCE_WEB = \
@@ -294,22 +297,22 @@ $(BINARY_WEB_EMCC): $(OBJECTS_WEB_EMCC)
 $(BINARY_TEST) : $(OBJECTS_TEST)
 	$(LD_NATIVE) $(LDFLAGS_TEST) -o $@ $^
 
-$(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.c
+$(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.c
+$(BUILDDIR_EMCC)/%.o : %.c
 	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(CFLAGS_COMMON) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_C:%.c=$(BUILDDIR_TEST)/%.o): $(BUILDDIR_TEST)/%.o : %.c
+$(BUILDDIR_TEST)/%.o : %.c
 	$(MKDIR_TEST) && $(CC_NATIVE) $(DEPFLAGS_TEST) $(CFLAGS_COMMON) $(CFLAGS_TEST) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o): $(BUILDDIR_NATIVE)/%.o : %.cpp
+$(BUILDDIR_NATIVE)/%.o : %.cpp
 	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o): $(BUILDDIR_EMCC)/%.o : %.cpp
+$(BUILDDIR_EMCC)/%.o : %.cpp
 	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_COMMON) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
-$(SOURCE_CPP:%.cpp=$(BUILDDIR_TEST)/%.o): $(BUILDDIR_TEST)/%.o : %.cpp
+$(BUILDDIR_TEST)/%.o : %.cpp
 	$(MKDIR_TEST) && $(CXX_NATIVE) $(DEPFLAGS_TEST) $(CXXFLAGS_COMMON) $(CXXFLAGS_TEST) $(INCLUDE) -c -o $@ $<
 
 $(BUILDDIR_EMCC)/$(WEBIDL_BINDING_CXX:%.cpp=%.o): $(WEBIDL_BINDING_JS)

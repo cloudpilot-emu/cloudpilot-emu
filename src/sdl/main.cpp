@@ -33,8 +33,6 @@
 
 using namespace std;
 
-static WebsocketClient websocketClient("localhost", "6666");
-
 void setupMemoryImage(void* image, size_t size) {
     if (size != static_cast<size_t>(gSession->GetMemorySize())) {
         cerr << "memory image size mismatch: expected " << gSession->GetMemorySize() << " , got "
@@ -46,6 +44,8 @@ void setupMemoryImage(void* image, size_t size) {
 }
 
 #ifndef __EMSCRIPTEN__
+static WebsocketClient websocketClient("localhost", "6666");
+
 void handleSuspend() {
     if (SuspendManager::IsSuspended()) {
         SuspendContext& context = SuspendManager::GetContext();
