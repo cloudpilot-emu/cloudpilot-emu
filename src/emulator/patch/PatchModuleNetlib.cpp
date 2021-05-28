@@ -247,12 +247,13 @@ namespace {
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
-        *errP = 0;
+        if (Feature::GetNetworkRedirection()) {
+            gNetworkProxy.SocketOpen(domain, type, protocol);
 
-        PUT_RESULT_VAL(Int16, 42);
-        CALLED_PUT_PARAM_REF(errP);
+            return kSkipROM;
+        }
 
-        return kSkipROM;
+        return kExecuteROM;
     }
 
     CallROMType HeadpatchNetLibSocketClose(void) {

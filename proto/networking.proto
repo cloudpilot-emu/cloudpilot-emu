@@ -1,0 +1,23 @@
+syntax = "proto2";
+
+message MsgSocketOpenRequest {
+    required uint32 domain = 1;
+    required uint32 type = 2;
+    required uint32 protocol = 3;
+}
+
+message MsgSocketOpenResponse {
+    required int32 handle = 1;
+}
+
+message MsgRequest {
+    oneof payload {
+        MsgSocketOpenRequest socketOpenRequest = 1;
+    }
+}
+
+message MsgResponse {
+    oneof payload {
+        MsgSocketOpenResponse socketOpenResponse = 1;
+    }
+}

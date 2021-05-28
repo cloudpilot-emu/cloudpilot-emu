@@ -23,6 +23,7 @@
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendContextNetworkConnect.h"
+#include "SuspendContextNetworkRpc.h"
 #include "SuspendManager.h"
 #include "WebsocketClient.h"
 #include "util.h"
@@ -73,9 +74,15 @@ void handleSuspend() {
                 break;
 
             case SuspendContext::Kind::networkRpc: {
-                // ...
+                {
+                    auto [request, size] = context.AsContextNetworkRpc().GetRequest();
 
-                break;
+                    websocketClient.Send(request, size);
+
+                    context.Cancel();
+
+                    break;
+                }
             }
         }
     }

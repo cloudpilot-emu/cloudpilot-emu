@@ -98,7 +98,8 @@ INCLUDE = \
 	-I./emulator/suspend \
 	-I./emulator \
 	-I./zip \
-	-I./nanopb
+	-I./nanopb \
+	-I./proto
 
 SOURCE_C = \
 	emulator/uae/cpudefs.c \
@@ -108,6 +109,7 @@ SOURCE_C = \
 	nanopb/pb_common.c \
 	nanopb/pb_encode.c \
 	nanopb/pb_decode.c \
+	proto/networking.pb.c \
 	zip/zip.c
 
 SOURCE_CPP = \
@@ -171,6 +173,7 @@ SOURCE_EMU = \
 	emulator/suspend/SuspendContextClipboardPaste.cpp \
 	emulator/suspend/SuspendContextClipboardCopy.cpp \
 	emulator/suspend/SuspendContextNetworkConnect.cpp \
+	emulator/suspend/SuspendContextNetworkRpc.cpp \
 	emulator/EmSystemState.cpp \
 	emulator/Miscellaneous.cpp \
 	emulator/Marshall.cpp \

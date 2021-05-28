@@ -70,12 +70,12 @@ class WebsocketClientImpl {
 
     void Join() { t.join(); }
 
-    void Send(const string& message) {
+    void Send(const uint8* message, size_t size) {
         if (!running) return;
 
         boost::system::error_code err;
         ws.binary(true);
-        ws.write(net::buffer(message), err);
+        ws.write(net::buffer(message, size), err);
     }
 
    private:
@@ -128,6 +128,6 @@ bool WebsocketClient::IsRunning() const { return impl->IsRunning(); }
 
 void WebsocketClient::Join() { return impl->Join(); }
 
-void WebsocketClient::Send(const string& message) { return impl->Send(message); }
+void WebsocketClient::Send(const uint8* message, size_t size) { return impl->Send(message, size); }
 
 void WebsocketClient::Stop() { impl->Stop(); }

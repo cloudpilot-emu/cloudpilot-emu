@@ -1,24 +1,31 @@
 import asyncio
 import websockets
-import message_pb2
+import proto.networking_pb2 as proto
 
 
 async def handle(socket, path):
     print("connection to %s" % path)
 
-    await socket.send("hulpewulpe")
-
     try:
         while True:
             message = await socket.recv()
-            deserializedMessage = message_pb2.ContainerMessage()
 
-            deserializedMessage.ParseFromString(message)
-            print(deserializedMessage.IsInitialized())
+            msgRequest = proto.MsgRequest()
+            msgRequest.ParseFromString(message)
 
-            print(deserializedMessage)
+            print(msgRequest)
 
-            await socket.send("holpewolpe")
+            requestType = msgRequest.WhichOneof("payload")
+
+            if requestType == "socketOpenRequest":
+                socketOpenRequest = msgRequest.socketOpenRequest
+
+                print(
+                    f'socketOpenRequest: domain={socketOpenRequest.domain} type={socketOpenRequest.type} protocol={socketOpenRequest.protocol}')
+
+            else:
+                print(f'unknown message {requestType}')
+
     except websockets.exceptions.ConnectionClosedError:
         print("connection closed")
         pass

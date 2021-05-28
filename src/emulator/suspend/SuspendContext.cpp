@@ -4,6 +4,7 @@
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendContextNetworkConnect.h"
+#include "SuspendContextNetworkRpc.h"
 #include "SuspendManager.h"
 
 SuspendContextClipboardCopy& SuspendContext::AsContextClipboardCopy() {
@@ -16,6 +17,12 @@ SuspendContextClipboardPaste& SuspendContext::AsContextClipboardPaste() {
     EmAssert(GetKind() == Kind::clipboardPaste);
 
     return static_cast<SuspendContextClipboardPaste&>(*this);
+}
+
+SuspendContextNetworkRpc& SuspendContext::AsContextNetworkRpc() {
+    EmAssert(GetKind() == Kind::networkRpc);
+
+    return static_cast<SuspendContextNetworkRpc&>(*this);
 }
 
 SuspendContextNetworkConnect& SuspendContext::AsContextNetworkConnect() {

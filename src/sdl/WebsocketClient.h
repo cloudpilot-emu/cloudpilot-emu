@@ -15,7 +15,7 @@ class WebsocketClient {
 
     bool IsRunning() const;
     void Join();
-    void Send(const string& message);
+    void Send(const uint8* message, size_t size);
 
    private:
     WebsocketClientImpl* impl{nullptr};

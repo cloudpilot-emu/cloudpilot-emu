@@ -13,9 +13,14 @@ class NetworkProxy {
 
     int OpenCount();
 
+    void SocketOpen(uint8 domain, uint8 type, uint16 protocol);
+
    private:
     void ConnectSuccess();
     void ConnectAbort();
+
+    void SocketOpenSuccess(uint8* response, size_t size);
+    void SocketOpenFail();
 
    private:
     int openCount{0};
