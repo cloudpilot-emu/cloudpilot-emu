@@ -1,3 +1,7 @@
+# Version 1.4.2
+
+-   Fix skin for VII EZ / VIIx
+
 # Version 1.4.1
 
 -   Support for i705, VIIx and VII EZ

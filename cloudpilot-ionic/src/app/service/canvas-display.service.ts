@@ -471,8 +471,6 @@ export class CanvasDisplayService {
             case DeviceId.pilot:
             case DeviceId.iii:
             case DeviceId.palmVII:
-            case DeviceId.palmVIIEZ:
-            case DeviceId.palmVIIx:
                 return IMAGE_SILKSCREEN_PILOT;
 
             case DeviceId.m500:
@@ -504,6 +502,8 @@ export class CanvasDisplayService {
             case DeviceId.iiixe:
             case DeviceId.palmVx:
             case DeviceId.palmV:
+            case DeviceId.palmVIIEZ:
+            case DeviceId.palmVIIx:
             default:
                 return IMAGE_SILKSCREEN_V;
         }
@@ -542,6 +542,8 @@ export class CanvasDisplayService {
             case DeviceId.iiix:
             case DeviceId.iiixe:
             case DeviceId.palmVII:
+            case DeviceId.palmVIIEZ:
+            case DeviceId.palmVIIx:
                 return IMAGE_BUTTONS_IIIX;
 
             case DeviceId.iiie:
