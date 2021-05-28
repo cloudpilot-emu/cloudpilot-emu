@@ -1,3 +1,7 @@
+# Version 1.4.1
+
+-   Support for i705, VIIx and VII EZ
+
 # Version 1.4.0
 
 -   Imitate greenish LCD screen for grayscale devices
