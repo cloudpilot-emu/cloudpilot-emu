@@ -6,7 +6,7 @@ Currently, the following devices are emulated:
 -   Palm III
 -   Palm IIIxe, Palm IIIx, Palm IIIe
 -   Palm Vx, Palm V
--   Palm VII
+-   Palm VII, Palm VII EZ, Palm VIIx
 -   Palm m500, Palm m505, Palm m515
 -   Palm m100, Palm m105, Palm m125, Palm m130
 -   Tungsten W (silkscreen version)
@@ -126,7 +126,7 @@ In order to force check for an update terminate and restart the app.
     PalmOS on the wrong foot and crash the emulator. In particular, this happens
     if a file is installed on a virtual Palm IIIc with PalmOS 3.5 while the
     launcher is active and the category menu is open.
--   The power switch on the Tungsten W does not operate correctly and
+-   The power switch on the Tungsten W andd i705 does not operate correctly and
     is disabled. You'll have to do a reset in order to wake up the device if you
     acidentially power off the device.
 

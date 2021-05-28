@@ -9,6 +9,7 @@ export { default as HARD_BUTTONS_M515 } from '!raw-loader!./hard-buttons/m515.sv
 export { default as HARD_BUTTONS_PILOT } from '!raw-loader!./hard-buttons/pilot.svg';
 export { default as HARD_BUTTONS_TUNGSTEN_W } from '!raw-loader!./hard-buttons/tungstenw.svg';
 export { default as HARD_BUTTONS_PALM_V } from '!raw-loader!./hard-buttons/v.svg';
+export { default as HARD_BUTTONS_I705 } from '!raw-loader!./hard-buttons/i705.svg';
 
 export { default as SILKSCREEN_IIIC } from '!raw-loader!./silkscreen/iiic.svg';
 export { default as SILKSCREEN_M100 } from '!raw-loader!./silkscreen/m100.svg';
@@ -18,3 +19,4 @@ export { default as SILKSCREEN_M515 } from '!raw-loader!./silkscreen/m515.svg';
 export { default as SILKSCREEN_PILOT } from '!raw-loader!./silkscreen/pilot.svg';
 export { default as SILKSCREEN_TUNGSTEN_W } from '!raw-loader!./silkscreen/tungstenw.svg';
 export { default as SILKSCREEN_V } from '!raw-loader!./silkscreen/v.svg';
+export { default as SILKSCREEN_I705 } from '!raw-loader!./silkscreen/i705.svg';

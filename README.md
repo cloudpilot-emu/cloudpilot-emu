@@ -36,7 +36,7 @@ The following devices are currently emulated:
 -   Palm III
 -   Palm IIIxe, Palm IIIx, Palm IIIe
 -   Palm Vx, Palm V
--   Palm VII
+-   Palm VII, Palm VII EZ, Palm VIIx
 -   Palm m500, Palm m505, Palm m515
 -   Palm m100, Palm m105, Palm m125, Palm m130
 -   Tungsten W (silkscreen version)
