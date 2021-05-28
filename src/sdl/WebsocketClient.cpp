@@ -11,9 +11,11 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
+#include <condition_variable>
 #include <cstdio>
 #include <functional>
 #include <iostream>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -50,9 +52,9 @@ class WebsocketClientImpl {
         ws.handshake(host, "/", err);
         if (err) return;
 
-        t = thread(bind(&WebsocketClientImpl::Poll, this));
-
         running = true;
+
+        t = thread(bind(&WebsocketClientImpl::Poll, this));
     }
 
     void Stop() {
@@ -78,6 +80,14 @@ class WebsocketClientImpl {
         ws.write(net::buffer(message, size), err);
     }
 
+    std::pair<uint8*, size_t> Receive() {
+        std::unique_lock<std::mutex> lock(receiveMutex);
+
+        while (!receiveBuffer) receiveCv.wait(lock);
+
+        return make_pair(receiveBuffer.release(), receiveBufferSize);
+    }
+
    private:
     void Poll() {
         while (running) {
@@ -86,14 +96,26 @@ class WebsocketClientImpl {
 
             // Read a message into our buffer
             ws.read(buffer, err);
+
             if (err) {
+                cout << "receive loop died" << endl << flush;
+
                 running = false;
                 break;
             }
 
-            cout << "received: " << flush;
-            write(STDOUT_FILENO, buffer.cdata().data(), buffer.cdata().size());
-            cout << endl << flush;
+            {
+                std::unique_lock<std::mutex> lock(receiveMutex);
+
+                if (receiveBuffer) cerr << "WARNING: discarding pending response" << endl << flush;
+
+                receiveBufferSize = buffer.size();
+                receiveBuffer = make_unique<uint8[]>(receiveBufferSize);
+
+                memcpy(receiveBuffer.get(), buffer.cdata().data(), receiveBufferSize);
+            }
+
+            receiveCv.notify_one();
         }
     }
 
@@ -108,6 +130,12 @@ class WebsocketClientImpl {
     string port;
 
     atomic<bool> running;
+
+    unique_ptr<uint8[]> receiveBuffer;
+    size_t receiveBufferSize;
+
+    std::mutex receiveMutex;
+    std::condition_variable receiveCv;
 
    private:
     WebsocketClientImpl(const WebsocketClientImpl&) = delete;
@@ -131,3 +159,5 @@ void WebsocketClient::Join() { return impl->Join(); }
 void WebsocketClient::Send(const uint8* message, size_t size) { return impl->Send(message, size); }
 
 void WebsocketClient::Stop() { impl->Stop(); }
+
+std::pair<uint8*, size_t> WebsocketClient::Receive() { return impl->Receive(); }

@@ -17,6 +17,8 @@ class WebsocketClient {
     void Join();
     void Send(const uint8* message, size_t size);
 
+    std::pair<uint8*, size_t> Receive();
+
    private:
     WebsocketClientImpl* impl{nullptr};
 

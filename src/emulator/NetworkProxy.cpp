@@ -3,11 +3,13 @@
 #include <functional>
 
 #include "EmSubroutine.h"
+#include "Logging.h"
 #include "Marshal.h"
 #include "SuspendContextNetworkConnect.h"
 #include "SuspendContextNetworkRpc.h"
 #include "SuspendManager.h"
 #include "networking.pb.h"
+#include "pb_decode.h"
 #include "pb_encode.h"
 
 using namespace std::placeholders;
@@ -73,7 +75,40 @@ void NetworkProxy::ConnectAbort() {
 }
 
 void NetworkProxy::SocketOpenSuccess(uint8* response, size_t size) {
-    // TODO
+    CALLED_SETUP("NetSocketRef",
+                 "UInt16 libRefNum, NetSocketAddrEnum domain, "
+                 "NetSocketTypeEnum type, Int16 protocol, Int32 timeout, "
+                 "Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+    PUT_RESULT_VAL(Int16, 0);
+
+    *errP = 1;
+    CALLED_PUT_PARAM_REF(errP);
+
+    MsgResponse msgResponse = MsgResponse_init_zero;
+    unique_ptr<uint8[]> autodelete(response);
+
+    pb_istream_t stream = pb_istream_from_buffer(response, size);
+    bool status = pb_decode(&stream, MsgResponse_fields, &msgResponse);
+
+    if (!status) {
+        logging::printf("SocketOpen: failed to decode response");
+
+        return;
+    }
+
+    if (msgResponse.which_payload != MsgResponse_socketOpenResponse_tag) {
+        logging::printf("SocketOpen: invalid response");
+
+        return;
+    }
+
+    cout << "SocketOpen: handle=" << msgResponse.payload.socketOpenResponse.handle << endl << flush;
+
+    *errP = 0;
+    CALLED_PUT_PARAM_REF(errP);
+    PUT_RESULT_VAL(Int16, static_cast<Int16>(msgResponse.payload.socketOpenResponse.handle));
 }
 
 void NetworkProxy::SocketOpenFail() {

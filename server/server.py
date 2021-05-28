@@ -23,6 +23,11 @@ async def handle(socket, path):
                 print(
                     f'socketOpenRequest: domain={socketOpenRequest.domain} type={socketOpenRequest.type} protocol={socketOpenRequest.protocol}')
 
+                msgResponse = proto.MsgResponse()
+                msgResponse.socketOpenResponse.handle = 42
+
+                await socket.send(msgResponse.SerializeToString())
+
             else:
                 print(f'unknown message {requestType}')
 
