@@ -9,6 +9,7 @@ Currently, the following devices are emulated:
 -   Palm VII, Palm VII EZ, Palm VIIx
 -   Palm m500, Palm m505, Palm m515
 -   Palm m100, Palm m105, Palm m125, Palm m130
+-   Palm i705
 -   Tungsten W (silkscreen version)
 
 The coorrect device type is automatically determined from the ROM you load. If
