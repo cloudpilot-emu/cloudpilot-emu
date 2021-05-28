@@ -37,6 +37,8 @@ class WebsocketClientImpl {
     WebsocketClientImpl(const string& host, const string& port) : host(host), port(port) {}
 
     void Start() {
+        if (running) return;
+
         boost::system::error_code err;
 
         auto const resolveResults = resolver.resolve(host, port, err);
@@ -51,6 +53,17 @@ class WebsocketClientImpl {
         t = thread(bind(&WebsocketClientImpl::Poll, this));
 
         running = true;
+    }
+
+    void Stop() {
+        if (!running) return;
+
+        boost::system::error_code err;
+        ws.close(websocket::close_reason(), err);
+
+        t.join();
+
+        running = false;
     }
 
     bool IsRunning() const { return running; }
@@ -116,3 +129,5 @@ bool WebsocketClient::IsRunning() const { return impl->IsRunning(); }
 void WebsocketClient::Join() { return impl->Join(); }
 
 void WebsocketClient::Send(const string& message) { return impl->Send(message); }
+
+void WebsocketClient::Stop() { impl->Stop(); }

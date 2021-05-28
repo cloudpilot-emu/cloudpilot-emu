@@ -3,6 +3,7 @@
 #include "EmCommon.h"
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
+#include "SuspendContextNetworkConnect.h"
 #include "SuspendManager.h"
 
 SuspendContextClipboardCopy& SuspendContext::AsContextClipboardCopy() {
@@ -17,4 +18,10 @@ SuspendContextClipboardPaste& SuspendContext::AsContextClipboardPaste() {
     return static_cast<SuspendContextClipboardPaste&>(*this);
 }
 
-void SuspendContext::TriggerResume() { SuspendManager::Resume(); }
+SuspendContextNetworkConnect& SuspendContext::AsContextNetworkConnect() {
+    EmAssert(GetKind() == Kind::networkConnect);
+
+    return static_cast<SuspendContextNetworkConnect&>(*this);
+}
+
+void SuspendContext::ResumeExecution() { SuspendManager::Resume(); }

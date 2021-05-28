@@ -7,11 +7,15 @@ class NetworkProxy {
    public:
     NetworkProxy() = default;
 
-    Err Open();
+    void Open();
 
     Err Close();
 
     int OpenCount();
+
+   private:
+    void ConnectSuccess();
+    void ConnectAbort();
 
    private:
     int openCount{0};

@@ -11,6 +11,7 @@ class WebsocketClient {
     ~WebsocketClient();
 
     void Start();
+    void Stop();
 
     bool IsRunning() const;
     void Join();

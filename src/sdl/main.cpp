@@ -22,7 +22,9 @@
 #include "SessionImage.h"
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
+#include "SuspendContextNetworkConnect.h"
 #include "SuspendManager.h"
+#include "WebsocketClient.h"
 #include "util.h"
 
 #ifndef __EMSCRIPTEN__
@@ -30,6 +32,8 @@
 #endif
 
 using namespace std;
+
+static WebsocketClient websocketClient("localhost", "6666");
 
 void setupMemoryImage(void* image, size_t size) {
     if (size != static_cast<size_t>(gSession->GetMemorySize())) {
@@ -61,6 +65,12 @@ void handleSuspend() {
 
                 break;
             }
+
+            case SuspendContext::Kind::networkConnect:
+                websocketClient.Start();
+
+                context.AsContextNetworkConnect().Resume();
+                break;
 
             case SuspendContext::Kind::networkRpc: {
                 // ...
@@ -133,6 +143,7 @@ int main(int argc, const char** argv) {
     };
 
     Cli::Stop();
+    websocketClient.Stop();
 
     SDL_Quit();
     IMG_Quit();

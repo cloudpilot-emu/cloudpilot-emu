@@ -20,6 +20,7 @@ async def handle(socket, path):
 
             await socket.send("holpewolpe")
     except websockets.exceptions.ConnectionClosedError:
+        print("connection closed")
         pass
 
 server = websockets.serve(handle, port=6666)

@@ -11,3 +11,6 @@ protobuf = "*"
 
 [requires]
 python_version = "3.9"
+
+[scripts]
+serve = "python server.py"

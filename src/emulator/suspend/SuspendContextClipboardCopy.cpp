@@ -7,6 +7,6 @@ SuspendContext::Kind SuspendContextClipboardCopy::GetKind() const { return Kind:
 
 void SuspendContextClipboardCopy::Cancel() { Resume(); }
 
-void SuspendContextClipboardCopy::Resume() { TriggerResume(); }
+void SuspendContextClipboardCopy::Resume() { ResumeExecution(); }
 
 const char* SuspendContextClipboardCopy::GetClipboardContent() { return clipboardContent.c_str(); }

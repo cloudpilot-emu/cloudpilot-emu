@@ -168,7 +168,7 @@ namespace {
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 *netIFErrsP");
 
         if (Feature::GetNetworkRedirection()) {
-            PUT_RESULT_VAL(Err, gNetworkProxy.Open());
+            gNetworkProxy.Open();
 
             return kSkipROM;
         }
@@ -919,7 +919,7 @@ namespace {
         PRINTF("\nNetLibOpenConfig, configIndex = %u", configIndex);
 
         if (Feature::GetNetworkRedirection()) {
-            PUT_RESULT_VAL(Err, gNetworkProxy.Open());
+            gNetworkProxy.Open();
 
             *netIFErrP = 0;
             CALLED_PUT_PARAM_REF(netIFErrP);

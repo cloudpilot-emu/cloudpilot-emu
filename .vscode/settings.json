@@ -100,5 +100,9 @@
     "__threading_support": "cpp"
   },
   "editor.formatOnSave": true,
-  "python.venvPath": "${workspaceFolder}/server"
+  "python.venvPath": "${workspaceFolder}/server",
+  "CppHelper.SourcePattern": [
+    "{FILE}.cpp",
+    "{FILE}.c",
+  ]
 }
