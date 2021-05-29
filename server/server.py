@@ -1,40 +1,60 @@
 import asyncio
 import websockets
-import proto.networking_pb2 as proto
+import proto.networking_pb2 as networking
+
+
+class ProxyContext:
+    async def start(self, socket):
+        self._socket = socket
+
+        try:
+            while True:
+                message = await socket.recv()
+
+                print("\nincoming request")
+
+                await self._handleMessage(message)
+
+        except websockets.exceptions.ConnectionClosedError:
+            print("connection closed")
+
+    async def _handleMessage(self, message):
+        reqest = networking.MsgRequest()
+        reqest.ParseFromString(message)
+
+        print(reqest)
+
+        requestType = reqest.WhichOneof("payload")
+
+        if (requestType == "socketOpenRequest"):
+            await self._handleSocketOpen(reqest.socketOpenRequest)
+
+        else:
+            print(f'unknown request {requestType}')
+
+    async def _handleSocketOpen(self, request):
+        print(
+            f'socketOpenRequest: domain={request.domain} type={request.type} protocol={request.protocol}')
+
+        response = networking.MsgResponse()
+        response.socketOpenResponse.handle = 42
+
+        await self._socket.send(response.SerializeToString())
 
 
 async def handle(socket, path):
-    print("connection to %s" % path)
+    print(f"incoming connection for {path}")
 
-    try:
-        while True:
-            message = await socket.recv()
+    context = ProxyContext()
+    await context.start(socket)
 
-            msgRequest = proto.MsgRequest()
-            msgRequest.ParseFromString(message)
 
-            print(msgRequest)
+async def main():
+    server = await websockets.serve(handle, port=6666)
+    print("server running on port 6666")
 
-            requestType = msgRequest.WhichOneof("payload")
+    await server.wait_closed()
 
-            if requestType == "socketOpenRequest":
-                socketOpenRequest = msgRequest.socketOpenRequest
+    print("server closed")
 
-                print(
-                    f'socketOpenRequest: domain={socketOpenRequest.domain} type={socketOpenRequest.type} protocol={socketOpenRequest.protocol}')
-
-                msgResponse = proto.MsgResponse()
-                msgResponse.socketOpenResponse.handle = 42
-
-                await socket.send(msgResponse.SerializeToString())
-
-            else:
-                print(f'unknown message {requestType}')
-
-    except websockets.exceptions.ConnectionClosedError:
-        print("connection closed")
-        pass
-
-server = websockets.serve(handle, port=6666)
-asyncio.get_event_loop().run_until_complete(server)
-asyncio.get_event_loop().run_forever()
+asyncio.run(main())
