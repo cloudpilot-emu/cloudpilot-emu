@@ -144,6 +144,7 @@ const IMAGE_SILKSCREEN_M100 = prepareImage('SILKSCREEN_M100');
 const IMAGE_SILKSCREEN_M130 = prepareImage('SILKSCREEN_M130');
 const IMAGE_SILKSCREEN_TUNGSTENW = prepareImage('SILKSCREEN_TUNGSTEN_W');
 const IMAGE_SILKSCREEN_PILOT = prepareImage('SILKSCREEN_PILOT');
+const IMAGE_SILKSCREEN_I705 = prepareImage('SILKSCREEN_I705');
 
 const IMAGE_BUTTONS_V = prepareImage('HARD_BUTTONS_PALM_V');
 const IMAGE_BUTTONS_M515 = prepareImage('HARD_BUTTONS_M515');
@@ -156,6 +157,7 @@ const IMAGE_BUTTONS_M125 = prepareImage('HARD_BUTTONS_M125');
 const IMAGE_BUTTONS_M130 = prepareImage('HARD_BUTTONS_M130');
 const IMAGE_BUTTONS_TUNGSTENW = prepareImage('HARD_BUTTONS_TUNGSTEN_W');
 const IMAGE_BUTTONS_PILOT = prepareImage('HARD_BUTTONS_PILOT');
+const IMAGE_BUTTONS_I705 = prepareImage('HARD_BUTTONS_I705');
 
 @Injectable({
     providedIn: 'root',
@@ -492,11 +494,16 @@ export class CanvasDisplayService {
             case DeviceId.i710:
                 return IMAGE_SILKSCREEN_TUNGSTENW;
 
+            case DeviceId.i705:
+                return IMAGE_SILKSCREEN_I705;
+
             case DeviceId.iiic:
             case DeviceId.iiix:
             case DeviceId.iiixe:
             case DeviceId.palmVx:
             case DeviceId.palmV:
+            case DeviceId.palmVIIEZ:
+            case DeviceId.palmVIIx:
             default:
                 return IMAGE_SILKSCREEN_V;
         }
@@ -535,10 +542,15 @@ export class CanvasDisplayService {
             case DeviceId.iiix:
             case DeviceId.iiixe:
             case DeviceId.palmVII:
+            case DeviceId.palmVIIEZ:
+            case DeviceId.palmVIIx:
                 return IMAGE_BUTTONS_IIIX;
 
             case DeviceId.iiie:
                 return IMAGE_BUTTONS_IIIE;
+
+            case DeviceId.i705:
+                return IMAGE_BUTTONS_I705;
 
             case DeviceId.palmVx:
             case DeviceId.palmV:

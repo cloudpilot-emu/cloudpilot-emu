@@ -5,6 +5,8 @@ export enum DeviceId {
     palmVx = 'PalmVx',
     palmV = 'PalmV',
     palmVII = 'PalmVII',
+    palmVIIEZ = 'PalmVIIEZ',
+    palmVIIx = 'PalmVIIx',
     iiic = 'PalmIIIc',
     iiix = 'PalmIIIx',
     iiixe = 'PalmIIIxe',
@@ -16,5 +18,6 @@ export enum DeviceId {
     m105 = 'PalmM105',
     m125 = 'PalmM125',
     m130 = 'PalmM130',
+    i705 = 'Palmi705',
     i710 = 'PalmI710',
 }

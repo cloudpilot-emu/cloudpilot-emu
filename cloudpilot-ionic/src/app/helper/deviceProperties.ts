@@ -37,6 +37,9 @@ export function isColor(deviceId: DeviceId | undefined): boolean {
         case DeviceId.m125:
         case DeviceId.m500:
         case DeviceId.palmVII:
+        case DeviceId.palmVIIEZ:
+        case DeviceId.palmVIIx:
+        case DeviceId.i705:
             return false;
 
         default:
@@ -82,6 +85,12 @@ export function deviceName(deviceId: DeviceId): string {
         case DeviceId.palmVII:
             return 'Palm VII';
 
+        case DeviceId.palmVIIEZ:
+            return 'Palm VII EZ';
+
+        case DeviceId.palmVIIx:
+            return 'Palm VIIx';
+
         case DeviceId.iiic:
             return 'Palm IIIc';
 
@@ -97,6 +106,9 @@ export function deviceName(deviceId: DeviceId): string {
         case DeviceId.m130:
             return 'Palm m130';
 
+        case DeviceId.i705:
+            return 'Palm i705';
+
         case DeviceId.i710:
             return 'Tungsten W';
 
@@ -106,7 +118,7 @@ export function deviceName(deviceId: DeviceId): string {
 }
 
 export function quirkNoPoweroff(deviceId: DeviceId) {
-    return deviceId === DeviceId.i710;
+    return [DeviceId.i705, DeviceId.i710].includes(deviceId);
 }
 
 export function supportsDBExport(deviceId: DeviceId) {
