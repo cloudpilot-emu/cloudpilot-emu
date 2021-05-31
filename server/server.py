@@ -19,27 +19,34 @@ class ProxyContext:
             print("connection closed")
 
     async def _handleMessage(self, message):
-        reqest = networking.MsgRequest()
-        reqest.ParseFromString(message)
+        request = networking.MsgRequest()
+        request.ParseFromString(message)
+        response = None
 
-        print(reqest)
+        print(request)
 
-        requestType = reqest.WhichOneof("payload")
+        requestType = request.WhichOneof("payload")
 
         if (requestType == "socketOpenRequest"):
-            await self._handleSocketOpen(reqest.socketOpenRequest)
+            response = await self._handleSocketOpen(request.socketOpenRequest)
 
         else:
             print(f'unknown request {requestType}')
 
+        if response:
+            response.id = request.id
+
+            await self._socket.send(response.SerializeToString())
+
     async def _handleSocketOpen(self, request):
         print(
-            f'socketOpenRequest: domain={request.domain} type={request.type} protocol={request.protocol}')
+            f'socketOpenRequest: type={request.type} protocol={request.protocol}')
 
         response = networking.MsgResponse()
         response.socketOpenResponse.handle = 42
+        response.socketOpenResponse.err = 0
 
-        await self._socket.send(response.SerializeToString())
+        return response
 
 
 async def handle(socket, path):

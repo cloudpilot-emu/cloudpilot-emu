@@ -12,6 +12,12 @@ PB_BIND(MsgSocketOpenRequest, MsgSocketOpenRequest, AUTO)
 PB_BIND(MsgSocketOpenResponse, MsgSocketOpenResponse, AUTO)
 
 
+PB_BIND(MsgSocketBindRequest, MsgSocketBindRequest, AUTO)
+
+
+PB_BIND(MsgSocketBindResponse, MsgSocketBindResponse, AUTO)
+
+
 PB_BIND(MsgRequest, MsgRequest, AUTO)
 
 
