@@ -17,6 +17,7 @@ import { PageLockService } from './page-lock.service';
 import { Session } from 'src/app/model/Session';
 import { StorageError } from './storage/StorageError';
 import { environment } from '../../environments/environment';
+import { isIOS } from './../helper/browser';
 import md5 from 'md5';
 
 declare global {
@@ -350,6 +351,10 @@ export class StorageService {
 
     @guard()
     private async setupDb(): Promise<IDBDatabase> {
+        // This works on spurious hangs during indexedDB setup when starting up from the homescreen
+        // on iOS 14.6
+        const watchdogHandle = setTimeout(() => isIOS && window.location.reload(), 500);
+
         if (indexedDB.databases) {
             const databaseEntry = (await indexedDB.databases()).find((x) => x.name === environment.dbName);
 
@@ -361,9 +366,19 @@ export class StorageService {
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(environment.dbName, DB_VERSION);
 
-            request.onerror = () => reject(new StorageError('failed to open DB'));
-            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => {
+                clearTimeout(watchdogHandle);
+
+                reject(new StorageError('failed to open DB'));
+            };
+            request.onsuccess = () => {
+                clearTimeout(watchdogHandle);
+
+                resolve(request.result);
+            };
             request.onupgradeneeded = (e) => {
+                clearTimeout(watchdogHandle);
+
                 if (e.oldVersion < 1) {
                     migrate0to1(request.result);
                 }

@@ -1,3 +1,9 @@
+# Version 1.4.3
+
+-   Work around an IndexDB bug on iOS 14.6 that causes spurious hangs if Cloudpilot
+    is started from the homescreen. The workaround may delay startup by a second
+    or so if the bug is triggered, but at least Cloudpilot starts reliably again.
+
 # Version 1.4.2
 
 -   Fix skin for VII EZ / VIIx
