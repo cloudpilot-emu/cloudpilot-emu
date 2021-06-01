@@ -359,6 +359,8 @@ export class StorageService {
             const databaseEntry = (await indexedDB.databases()).find((x) => x.name === environment.dbName);
 
             if (databaseEntry && databaseEntry.version > DB_VERSION) {
+                clearTimeout(watchdogHandle);
+
                 throw E_VERSION_MISMATCH;
             }
         }

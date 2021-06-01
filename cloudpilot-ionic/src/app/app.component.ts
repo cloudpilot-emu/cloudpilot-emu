@@ -45,6 +45,8 @@ export class AppComponent implements AfterViewInit {
         if (storedVersion === VERSION) return;
 
         if (previousVersion === VERSION && latestVersion !== VERSION) {
+            this.updateReverted = true;
+
             await this.emulationService.bootstrapComplete();
 
             this.alertService.message(
