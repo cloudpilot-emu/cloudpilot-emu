@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { ModalController } from '@ionic/angular';
+import { SwUpdate } from '@angular/service-worker';
 import { VERSION } from '../../../app/helper/version';
 
 @Component({
@@ -9,7 +10,7 @@ import { VERSION } from '../../../app/helper/version';
     styleUrls: ['./about.page.scss'],
 })
 export class AboutPage {
-    constructor(private modalController: ModalController) {}
+    constructor(private modalController: ModalController, private updates: SwUpdate) {}
 
     get version(): string {
         return VERSION;
@@ -25,6 +26,10 @@ export class AboutPage {
         });
 
         await modal.present();
+    }
+
+    get serviceWorkerAvailable(): boolean {
+        return this.updates.isEnabled;
     }
 
     loading = true;

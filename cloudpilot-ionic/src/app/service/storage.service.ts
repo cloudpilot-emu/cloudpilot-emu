@@ -196,10 +196,12 @@ export class StorageService {
     }
 
     @guard()
-    async kvsSet<T extends keyof Kvs>(key: T, value: Kvs[T]): Promise<void> {
+    async kvsSet(data: Partial<Kvs>): Promise<void> {
         const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_KVS);
 
-        objectStore.put(value, key);
+        for (const key of Object.keys(data)) {
+            objectStore.put(data[key as keyof Kvs], key);
+        }
 
         await complete(tx);
     }

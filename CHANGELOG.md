@@ -1,3 +1,7 @@
+# Next version
+
+-   Work around worker update idosyncrasies on iOS.
+
 # Version 1.4.4
 
 -   Minor bug fixes.
