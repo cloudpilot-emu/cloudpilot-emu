@@ -357,41 +357,41 @@ export class StorageService {
         // on iOS 14.6
         const watchdogHandle = setTimeout(() => isIOS && window.location.reload(), 500);
 
-        if (indexedDB.databases) {
-            const databaseEntry = (await indexedDB.databases()).find((x) => x.name === environment.dbName);
+        try {
+            if (indexedDB.databases) {
+                const databaseEntry = (await indexedDB.databases()).find((x) => x.name === environment.dbName);
 
-            if (databaseEntry && databaseEntry.version > DB_VERSION) {
                 clearTimeout(watchdogHandle);
 
-                throw E_VERSION_MISMATCH;
+                if (databaseEntry && databaseEntry.version > DB_VERSION) {
+                    throw E_VERSION_MISMATCH;
+                }
             }
+
+            return await new Promise((resolve, reject) => {
+                const request = indexedDB.open(environment.dbName, DB_VERSION);
+
+                request.onerror = () => {
+                    reject(new StorageError('failed to open DB'));
+                };
+                request.onsuccess = () => {
+                    resolve(request.result);
+                };
+                request.onupgradeneeded = (e) => {
+                    clearTimeout(watchdogHandle);
+
+                    if (e.oldVersion < 1) {
+                        migrate0to1(request.result);
+                    }
+
+                    if (e.oldVersion < 2) {
+                        migrate1to2(request.result, request.transaction);
+                    }
+                };
+            });
+        } finally {
+            clearTimeout(watchdogHandle);
         }
-
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(environment.dbName, DB_VERSION);
-
-            request.onerror = () => {
-                clearTimeout(watchdogHandle);
-
-                reject(new StorageError('failed to open DB'));
-            };
-            request.onsuccess = () => {
-                clearTimeout(watchdogHandle);
-
-                resolve(request.result);
-            };
-            request.onupgradeneeded = (e) => {
-                clearTimeout(watchdogHandle);
-
-                if (e.oldVersion < 1) {
-                    migrate0to1(request.result);
-                }
-
-                if (e.oldVersion < 2) {
-                    migrate1to2(request.result, request.transaction);
-                }
-            };
-        });
     }
 
     public sessionChangeEvent = new Event<number>();
