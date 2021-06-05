@@ -16,7 +16,8 @@ message MsgSocketOpenResponse {
 }
 
 message MsgSocketBindRequest {
-    required Address address = 1;
+    required int32 handle = 1;
+    required Address address = 2;
 }
 
 message MsgSocketBindResponse {

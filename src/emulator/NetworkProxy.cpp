@@ -114,6 +114,7 @@ void NetworkProxy::SocketBind(int16 handle, NetSocketAddrType* sockAddrP) {
 
     MsgRequest request = NewRequest(MsgRequest_socketBindRequest_tag);
 
+    request.payload.socketBindRequest.handle = handle;
     request.payload.socketBindRequest.address.port = sockAddrINP->port;
     request.payload.socketBindRequest.address.ip = sockAddrINP->addr;
 

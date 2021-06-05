@@ -39,6 +39,7 @@ typedef struct _MsgResponse {
 } MsgResponse;
 
 typedef struct _MsgSocketBindRequest { 
+    int32_t handle; 
     Address address; 
 } MsgSocketBindRequest;
 
@@ -60,14 +61,14 @@ extern "C" {
 #define Address_init_default                     {0, 0}
 #define MsgSocketOpenRequest_init_default        {0, 0}
 #define MsgSocketOpenResponse_init_default       {0, 0}
-#define MsgSocketBindRequest_init_default        {Address_init_default}
+#define MsgSocketBindRequest_init_default        {0, Address_init_default}
 #define MsgSocketBindResponse_init_default       {0}
 #define MsgRequest_init_default                  {0, 0, {MsgSocketOpenRequest_init_default}}
 #define MsgResponse_init_default                 {0, 0, {MsgSocketOpenResponse_init_default}}
 #define Address_init_zero                        {0, 0}
 #define MsgSocketOpenRequest_init_zero           {0, 0}
 #define MsgSocketOpenResponse_init_zero          {0, 0}
-#define MsgSocketBindRequest_init_zero           {Address_init_zero}
+#define MsgSocketBindRequest_init_zero           {0, Address_init_zero}
 #define MsgSocketBindResponse_init_zero          {0}
 #define MsgRequest_init_zero                     {0, 0, {MsgSocketOpenRequest_init_zero}}
 #define MsgResponse_init_zero                    {0, 0, {MsgSocketOpenResponse_init_zero}}
@@ -83,7 +84,8 @@ extern "C" {
 #define MsgResponse_id_tag                       1
 #define MsgResponse_socketOpenResponse_tag       2
 #define MsgResponse_socketBindResponse_tag       3
-#define MsgSocketBindRequest_address_tag         1
+#define MsgSocketBindRequest_handle_tag          1
+#define MsgSocketBindRequest_address_tag         2
 #define MsgRequest_id_tag                        1
 #define MsgRequest_socketOpenRequest_tag         2
 #define MsgRequest_socketBindRequest_tag         3
@@ -108,7 +110,8 @@ X(a, STATIC,   REQUIRED, INT32,    err,               2)
 #define MsgSocketOpenResponse_DEFAULT NULL
 
 #define MsgSocketBindRequest_FIELDLIST(X, a) \
-X(a, STATIC,   REQUIRED, MESSAGE,  address,           1)
+X(a, STATIC,   REQUIRED, INT32,    handle,            1) \
+X(a, STATIC,   REQUIRED, MESSAGE,  address,           2)
 #define MsgSocketBindRequest_CALLBACK NULL
 #define MsgSocketBindRequest_DEFAULT NULL
 #define MsgSocketBindRequest_address_MSGTYPE Address
@@ -155,9 +158,9 @@ extern const pb_msgdesc_t MsgResponse_msg;
 
 /* Maximum encoded size of messages (where known) */
 #define Address_size                             17
-#define MsgRequest_size                          27
+#define MsgRequest_size                          38
 #define MsgResponse_size                         30
-#define MsgSocketBindRequest_size                19
+#define MsgSocketBindRequest_size                30
 #define MsgSocketBindResponse_size               11
 #define MsgSocketOpenRequest_size                12
 #define MsgSocketOpenResponse_size               22

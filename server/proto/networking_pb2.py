@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto2',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x10networking.proto\"#\n\x07\x41\x64\x64ress\x12\n\n\x02ip\x18\x01 \x02(\r\x12\x0c\n\x04port\x18\x02 \x02(\x05\"6\n\x14MsgSocketOpenRequest\x12\x0c\n\x04type\x18\x01 \x02(\r\x12\x10\n\x08protocol\x18\x02 \x02(\r\"4\n\x15MsgSocketOpenResponse\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0b\n\x03\x65rr\x18\x02 \x02(\x05\"1\n\x14MsgSocketBindRequest\x12\x19\n\x07\x61\x64\x64ress\x18\x01 \x02(\x0b\x32\x08.Address\"$\n\x15MsgSocketBindResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"\x8b\x01\n\nMsgRequest\x12\n\n\x02id\x18\x01 \x02(\r\x12\x32\n\x11socketOpenRequest\x18\x02 \x01(\x0b\x32\x15.MsgSocketOpenRequestH\x00\x12\x32\n\x11socketBindRequest\x18\x03 \x01(\x0b\x32\x15.MsgSocketBindRequestH\x00\x42\t\n\x07payload\"\x90\x01\n\x0bMsgResponse\x12\n\n\x02id\x18\x01 \x02(\r\x12\x34\n\x12socketOpenResponse\x18\x02 \x01(\x0b\x32\x16.MsgSocketOpenResponseH\x00\x12\x34\n\x12socketBindResponse\x18\x03 \x01(\x0b\x32\x16.MsgSocketBindResponseH\x00\x42\t\n\x07payload'
+  serialized_pb=b'\n\x10networking.proto\"#\n\x07\x41\x64\x64ress\x12\n\n\x02ip\x18\x01 \x02(\r\x12\x0c\n\x04port\x18\x02 \x02(\x05\"6\n\x14MsgSocketOpenRequest\x12\x0c\n\x04type\x18\x01 \x02(\r\x12\x10\n\x08protocol\x18\x02 \x02(\r\"4\n\x15MsgSocketOpenResponse\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0b\n\x03\x65rr\x18\x02 \x02(\x05\"A\n\x14MsgSocketBindRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x19\n\x07\x61\x64\x64ress\x18\x02 \x02(\x0b\x32\x08.Address\"$\n\x15MsgSocketBindResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"\x8b\x01\n\nMsgRequest\x12\n\n\x02id\x18\x01 \x02(\r\x12\x32\n\x11socketOpenRequest\x18\x02 \x01(\x0b\x32\x15.MsgSocketOpenRequestH\x00\x12\x32\n\x11socketBindRequest\x18\x03 \x01(\x0b\x32\x15.MsgSocketBindRequestH\x00\x42\t\n\x07payload\"\x90\x01\n\x0bMsgResponse\x12\n\n\x02id\x18\x01 \x02(\r\x12\x34\n\x12socketOpenResponse\x18\x02 \x01(\x0b\x32\x16.MsgSocketOpenResponseH\x00\x12\x34\n\x12socketBindResponse\x18\x03 \x01(\x0b\x32\x16.MsgSocketBindResponseH\x00\x42\t\n\x07payload'
 )
 
 
@@ -151,8 +151,15 @@ _MSGSOCKETBINDREQUEST = _descriptor.Descriptor(
   create_key=_descriptor._internal_create_key,
   fields=[
     _descriptor.FieldDescriptor(
-      name='address', full_name='MsgSocketBindRequest.address', index=0,
-      number=1, type=11, cpp_type=10, label=2,
+      name='handle', full_name='MsgSocketBindRequest.handle', index=0,
+      number=1, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='address', full_name='MsgSocketBindRequest.address', index=1,
+      number=2, type=11, cpp_type=10, label=2,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -170,7 +177,7 @@ _MSGSOCKETBINDREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=167,
-  serialized_end=216,
+  serialized_end=232,
 )
 
 
@@ -201,8 +208,8 @@ _MSGSOCKETBINDRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=218,
-  serialized_end=254,
+  serialized_start=234,
+  serialized_end=270,
 )
 
 
@@ -252,8 +259,8 @@ _MSGREQUEST = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=257,
-  serialized_end=396,
+  serialized_start=273,
+  serialized_end=412,
 )
 
 
@@ -303,8 +310,8 @@ _MSGRESPONSE = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=399,
-  serialized_end=543,
+  serialized_start=415,
+  serialized_end=559,
 )
 
 _MSGSOCKETBINDREQUEST.fields_by_name['address'].message_type = _ADDRESS
