@@ -324,24 +324,21 @@ namespace {
     CallROMType HeadpatchNetLibSocketBind(void) {
         PRINTF("\nNetLibSocketBind");
 
-        CALLED_SETUP("Int16",
-                     "UInt16 libRefNum, NetSocketRef socket,"
-                     "NetSocketAddrType *sockAddrP, Int16 addrLen, Int32 timeout, "
-                     "Err *errP");
+        if (Feature::GetNetworkRedirection()) {
+            CALLED_SETUP("Int16",
+                         "UInt16 libRefNum, NetSocketRef socket,"
+                         "NetSocketAddrType *sockAddrP, Int16 addrLen, Int32 timeout, "
+                         "Err *errP");
 
-        CALLED_GET_PARAM_VAL(UInt16, libRefNum);
-        CALLED_GET_PARAM_VAL(NetSocketRef, socket);
-        CALLED_GET_PARAM_REF(NetSocketAddrType, sockAddrP, Marshal::kInput);
-        CALLED_GET_PARAM_VAL(Int16, addrLen);
-        CALLED_GET_PARAM_VAL(Int32, timeout);
-        CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+            CALLED_GET_PARAM_VAL(NetSocketRef, socket);
+            CALLED_GET_PARAM_REF(NetSocketAddrType, sockAddrP, Marshal::kInput);
 
-        *errP = 0;
-        CALLED_PUT_PARAM_REF(errP);
+            gNetworkProxy.SocketBind(socket, sockAddrP);
 
-        PUT_RESULT_VAL(Int16, 0);
+            return kSkipROM;
+        }
 
-        return kSkipROM;
+        return kExecuteROM;
     }
 
     CallROMType HeadpatchNetLibSocketConnect(void) {

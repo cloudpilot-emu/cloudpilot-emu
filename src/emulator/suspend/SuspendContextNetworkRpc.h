@@ -7,6 +7,7 @@
 #include "SuspendContext.h"
 
 class SuspendContextNetworkRpc : public SuspendContext {
+   public:
     using successCallbackT = function<void(uint8* response, size_t size)>;
     using failCallbackT = function<void()>;
 

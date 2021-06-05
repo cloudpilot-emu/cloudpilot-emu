@@ -10,10 +10,10 @@
 #endif
 
 /* Struct definitions */
-typedef struct _MsgSocketBindRequest { 
-    uint32_t address; 
+typedef struct _Address { 
+    uint32_t ip; 
     int32_t port; 
-} MsgSocketBindRequest;
+} Address;
 
 typedef struct _MsgSocketBindResponse { 
     int32_t err; 
@@ -29,21 +29,27 @@ typedef struct _MsgSocketOpenResponse {
     int32_t err; 
 } MsgSocketOpenResponse;
 
-typedef struct _MsgRequest { 
-    uint32_t id; 
-    pb_size_t which_payload;
-    union {
-        MsgSocketOpenRequest socketOpenRequest;
-    } payload; 
-} MsgRequest;
-
 typedef struct _MsgResponse { 
     uint32_t id; 
     pb_size_t which_payload;
     union {
         MsgSocketOpenResponse socketOpenResponse;
+        MsgSocketBindResponse socketBindResponse;
     } payload; 
 } MsgResponse;
+
+typedef struct _MsgSocketBindRequest { 
+    Address address; 
+} MsgSocketBindRequest;
+
+typedef struct _MsgRequest { 
+    uint32_t id; 
+    pb_size_t which_payload;
+    union {
+        MsgSocketOpenRequest socketOpenRequest;
+        MsgSocketBindRequest socketBindRequest;
+    } payload; 
+} MsgRequest;
 
 
 #ifdef __cplusplus
@@ -51,33 +57,44 @@ extern "C" {
 #endif
 
 /* Initializer values for message structs */
+#define Address_init_default                     {0, 0}
 #define MsgSocketOpenRequest_init_default        {0, 0}
 #define MsgSocketOpenResponse_init_default       {0, 0}
-#define MsgSocketBindRequest_init_default        {0, 0}
+#define MsgSocketBindRequest_init_default        {Address_init_default}
 #define MsgSocketBindResponse_init_default       {0}
 #define MsgRequest_init_default                  {0, 0, {MsgSocketOpenRequest_init_default}}
 #define MsgResponse_init_default                 {0, 0, {MsgSocketOpenResponse_init_default}}
+#define Address_init_zero                        {0, 0}
 #define MsgSocketOpenRequest_init_zero           {0, 0}
 #define MsgSocketOpenResponse_init_zero          {0, 0}
-#define MsgSocketBindRequest_init_zero           {0, 0}
+#define MsgSocketBindRequest_init_zero           {Address_init_zero}
 #define MsgSocketBindResponse_init_zero          {0}
 #define MsgRequest_init_zero                     {0, 0, {MsgSocketOpenRequest_init_zero}}
 #define MsgResponse_init_zero                    {0, 0, {MsgSocketOpenResponse_init_zero}}
 
 /* Field tags (for use in manual encoding/decoding) */
-#define MsgSocketBindRequest_address_tag         1
-#define MsgSocketBindRequest_port_tag            2
+#define Address_ip_tag                           1
+#define Address_port_tag                         2
 #define MsgSocketBindResponse_err_tag            1
 #define MsgSocketOpenRequest_type_tag            1
 #define MsgSocketOpenRequest_protocol_tag        2
 #define MsgSocketOpenResponse_handle_tag         1
 #define MsgSocketOpenResponse_err_tag            2
-#define MsgRequest_id_tag                        1
-#define MsgRequest_socketOpenRequest_tag         2
 #define MsgResponse_id_tag                       1
 #define MsgResponse_socketOpenResponse_tag       2
+#define MsgResponse_socketBindResponse_tag       3
+#define MsgSocketBindRequest_address_tag         1
+#define MsgRequest_id_tag                        1
+#define MsgRequest_socketOpenRequest_tag         2
+#define MsgRequest_socketBindRequest_tag         3
 
 /* Struct field encoding specification for nanopb */
+#define Address_FIELDLIST(X, a) \
+X(a, STATIC,   REQUIRED, UINT32,   ip,                1) \
+X(a, STATIC,   REQUIRED, INT32,    port,              2)
+#define Address_CALLBACK NULL
+#define Address_DEFAULT NULL
+
 #define MsgSocketOpenRequest_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, UINT32,   type,              1) \
 X(a, STATIC,   REQUIRED, UINT32,   protocol,          2)
@@ -91,10 +108,10 @@ X(a, STATIC,   REQUIRED, INT32,    err,               2)
 #define MsgSocketOpenResponse_DEFAULT NULL
 
 #define MsgSocketBindRequest_FIELDLIST(X, a) \
-X(a, STATIC,   REQUIRED, UINT32,   address,           1) \
-X(a, STATIC,   REQUIRED, INT32,    port,              2)
+X(a, STATIC,   REQUIRED, MESSAGE,  address,           1)
 #define MsgSocketBindRequest_CALLBACK NULL
 #define MsgSocketBindRequest_DEFAULT NULL
+#define MsgSocketBindRequest_address_MSGTYPE Address
 
 #define MsgSocketBindResponse_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, INT32,    err,               1)
@@ -103,18 +120,23 @@ X(a, STATIC,   REQUIRED, INT32,    err,               1)
 
 #define MsgRequest_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, UINT32,   id,                1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketOpenRequest,payload.socketOpenRequest),   2)
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketOpenRequest,payload.socketOpenRequest),   2) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketBindRequest,payload.socketBindRequest),   3)
 #define MsgRequest_CALLBACK NULL
 #define MsgRequest_DEFAULT NULL
 #define MsgRequest_payload_socketOpenRequest_MSGTYPE MsgSocketOpenRequest
+#define MsgRequest_payload_socketBindRequest_MSGTYPE MsgSocketBindRequest
 
 #define MsgResponse_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, UINT32,   id,                1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketOpenResponse,payload.socketOpenResponse),   2)
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketOpenResponse,payload.socketOpenResponse),   2) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketBindResponse,payload.socketBindResponse),   3)
 #define MsgResponse_CALLBACK NULL
 #define MsgResponse_DEFAULT NULL
 #define MsgResponse_payload_socketOpenResponse_MSGTYPE MsgSocketOpenResponse
+#define MsgResponse_payload_socketBindResponse_MSGTYPE MsgSocketBindResponse
 
+extern const pb_msgdesc_t Address_msg;
 extern const pb_msgdesc_t MsgSocketOpenRequest_msg;
 extern const pb_msgdesc_t MsgSocketOpenResponse_msg;
 extern const pb_msgdesc_t MsgSocketBindRequest_msg;
@@ -123,6 +145,7 @@ extern const pb_msgdesc_t MsgRequest_msg;
 extern const pb_msgdesc_t MsgResponse_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
+#define Address_fields &Address_msg
 #define MsgSocketOpenRequest_fields &MsgSocketOpenRequest_msg
 #define MsgSocketOpenResponse_fields &MsgSocketOpenResponse_msg
 #define MsgSocketBindRequest_fields &MsgSocketBindRequest_msg
@@ -131,9 +154,10 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define MsgResponse_fields &MsgResponse_msg
 
 /* Maximum encoded size of messages (where known) */
-#define MsgRequest_size                          20
+#define Address_size                             17
+#define MsgRequest_size                          27
 #define MsgResponse_size                         30
-#define MsgSocketBindRequest_size                17
+#define MsgSocketBindRequest_size                19
 #define MsgSocketBindResponse_size               11
 #define MsgSocketOpenRequest_size                12
 #define MsgSocketOpenResponse_size               22

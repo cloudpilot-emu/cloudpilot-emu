@@ -6,6 +6,9 @@
 #error Regenerate this file with the current version of nanopb generator.
 #endif
 
+PB_BIND(Address, Address, AUTO)
+
+
 PB_BIND(MsgSocketOpenRequest, MsgSocketOpenRequest, AUTO)
 
 

@@ -2,6 +2,7 @@
 #define _NETWORK_PROXY_H_
 
 #include "EmCommon.h"
+#include "SuspendContextNetworkRpc.h"
 #include "networking.pb.h"
 
 class NetworkProxy {
@@ -16,16 +17,24 @@ class NetworkProxy {
 
     void SocketOpen(uint8 domain, uint8 type, uint16 protocol);
 
+    void SocketBind(int16 handle, NetSocketAddrType* sockAddrP);
+
    private:
     void ConnectSuccess();
     void ConnectAbort();
 
-    void SocketOpenSuccess(uint8* response, size_t size);
+    void SocketOpenSuccess(uint8* responseData, size_t size);
     void SocketOpenFail(Err err = netErrInternal);
 
+    void SocketBindSuccess(uint8* responseData, size_t size);
+    void SocketBindFail(Err err = netErrInternal);
+
     MsgRequest NewRequest(pb_size_t payloadTag);
-    bool DecodeResponse(uint8* response, size_t size, MsgResponse& msgResponse,
+    bool DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
                         pb_size_t payloadTag);
+
+    void SendAndSuspend(MsgRequest& request, SuspendContextNetworkRpc::successCallbackT cbSuccess,
+                        SuspendContextNetworkRpc::failCallbackT cbFail);
 
    private:
     uint32 openCount{0};

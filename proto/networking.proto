@@ -1,5 +1,10 @@
 syntax = "proto2";
 
+message Address {
+    required uint32 ip = 1;
+    required int32 port = 2;
+}
+
 message MsgSocketOpenRequest {
     required uint32 type = 1;
     required uint32 protocol = 2;
@@ -11,8 +16,7 @@ message MsgSocketOpenResponse {
 }
 
 message MsgSocketBindRequest {
-    required uint32 address = 1;
-    required int32 port = 2;
+    required Address address = 1;
 }
 
 message MsgSocketBindResponse {
@@ -24,6 +28,7 @@ message MsgRequest {
 
     oneof payload {
         MsgSocketOpenRequest socketOpenRequest = 2;
+        MsgSocketBindRequest socketBindRequest = 3;
     }
 }
 
@@ -32,5 +37,6 @@ message MsgResponse {
 
     oneof payload {
         MsgSocketOpenResponse socketOpenResponse = 2;
+        MsgSocketBindResponse socketBindResponse = 3;
     }
 }
