@@ -14,6 +14,7 @@ import { RouteReuseStrategy } from '@angular/router';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { SessionService } from 'src/app/service/session.service';
 import { StorageService } from './service/storage.service';
+import { UpdateService } from './service/update.service';
 import { environment } from '../environments/environment';
 
 const markedOptionsFactory = (): MarkedOptions => {
@@ -62,6 +63,8 @@ export class AppModule {
         storageService: StorageService,
         emulationService: EmulationService,
         audioService: AudioService,
-        sessionService: SessionService
+        sessionService: SessionService,
+        kvs: KvsService,
+        updateService: UpdateService
     ) {}
 }

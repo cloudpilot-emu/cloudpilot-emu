@@ -17,6 +17,7 @@ import { PageLockService } from './page-lock.service';
 import { Session } from 'src/app/model/Session';
 import { StorageError } from './storage/StorageError';
 import { environment } from '../../environments/environment';
+import { isIOS } from './../helper/browser';
 import md5 from 'md5';
 
 declare global {
@@ -195,10 +196,12 @@ export class StorageService {
     }
 
     @guard()
-    async kvsSet<T extends keyof Kvs>(key: T, value: Kvs[T]): Promise<void> {
+    async kvsSet(data: Partial<Kvs>): Promise<void> {
         const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_KVS);
 
-        objectStore.put(value, key);
+        for (const key of Object.keys(data)) {
+            objectStore.put(data[key as keyof Kvs], key);
+        }
 
         await complete(tx);
     }
@@ -350,29 +353,45 @@ export class StorageService {
 
     @guard()
     private async setupDb(): Promise<IDBDatabase> {
-        if (indexedDB.databases) {
-            const databaseEntry = (await indexedDB.databases()).find((x) => x.name === environment.dbName);
+        // This works on spurious hangs during indexedDB setup when starting up from the homescreen
+        // on iOS 14.6
+        const watchdogHandle = setTimeout(() => isIOS && window.location.reload(), 500);
 
-            if (databaseEntry && databaseEntry.version > DB_VERSION) {
-                throw E_VERSION_MISMATCH;
+        try {
+            if (indexedDB.databases) {
+                const databaseEntry = (await indexedDB.databases()).find((x) => x.name === environment.dbName);
+
+                clearTimeout(watchdogHandle);
+
+                if (databaseEntry && databaseEntry.version > DB_VERSION) {
+                    throw E_VERSION_MISMATCH;
+                }
             }
+
+            return await new Promise((resolve, reject) => {
+                const request = indexedDB.open(environment.dbName, DB_VERSION);
+
+                request.onerror = () => {
+                    reject(new StorageError('failed to open DB'));
+                };
+                request.onsuccess = () => {
+                    resolve(request.result);
+                };
+                request.onupgradeneeded = (e) => {
+                    clearTimeout(watchdogHandle);
+
+                    if (e.oldVersion < 1) {
+                        migrate0to1(request.result);
+                    }
+
+                    if (e.oldVersion < 2) {
+                        migrate1to2(request.result, request.transaction);
+                    }
+                };
+            });
+        } finally {
+            clearTimeout(watchdogHandle);
         }
-
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(environment.dbName, DB_VERSION);
-
-            request.onerror = () => reject(new StorageError('failed to open DB'));
-            request.onsuccess = () => resolve(request.result);
-            request.onupgradeneeded = (e) => {
-                if (e.oldVersion < 1) {
-                    migrate0to1(request.result);
-                }
-
-                if (e.oldVersion < 2) {
-                    migrate1to2(request.result, request.transaction);
-                }
-            };
-        });
     }
 
     public sessionChangeEvent = new Event<number>();
