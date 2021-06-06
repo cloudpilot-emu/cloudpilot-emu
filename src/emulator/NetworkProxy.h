@@ -23,6 +23,9 @@ class NetworkProxy {
 
     void SocketOptionSet(int16 handle, uint16 level, uint16 option, uint32 valueP, uint16 valueLen);
 
+    void SocketSend(int16 handle, uint8* data, size_t count, int32 flags,
+                    NetSocketAddrType* toAddrP, int32 toLen, int32 timeout);
+
    private:
     void ConnectSuccess();
     void ConnectAbort();
@@ -38,11 +41,15 @@ class NetworkProxy {
 
     void SocketOptionSetFail(Err err = netErrInternal);
 
+    void SocketSendSuccess(uint8* responseData, size_t size);
+    void SocketSendFail(Err errr = netErrInternal);
+
     MsgRequest NewRequest(pb_size_t payloadTag);
     bool DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
                         pb_size_t payloadTag);
 
-    void SendAndSuspend(MsgRequest& request, SuspendContextNetworkRpc::successCallbackT cbSuccess,
+    void SendAndSuspend(MsgRequest& request, size_t bufferSize,
+                        SuspendContextNetworkRpc::successCallbackT cbSuccess,
                         SuspendContextNetworkRpc::failCallbackT cbFail);
 
    private:

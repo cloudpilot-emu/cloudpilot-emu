@@ -437,20 +437,19 @@ namespace {
         CALLED_GET_PARAM_VAL(UInt16, toLen);
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
-        CALLED_GET_PARAM_PTR(uint8, bufP, bufLen, Marshal::kInput);
 
         PRINTF("\nNetLibSend, bufLen = %u", bufLen);
-        Hexdump(bufP, bufLen);
 
-        if (bufLen <= PACKAGE_BUF_SIZE) {
-            memmove(packageBuf, bufP, bufLen);
-            packageBufLen = bufLen;
-            packagePending = true;
+        if (Feature::GetNetworkRedirection()) {
+            CALLED_GET_PARAM_PTR(uint8, bufP, bufLen, Marshal::kInput);
 
-            *errP = 0;
-            CALLED_PUT_PARAM_REF(errP);
+            if (bufLen <= PACKAGE_BUF_SIZE) {
+                memmove(packageBuf, bufP, bufLen);
+                packageBufLen = bufLen;
+                packagePending = true;
+            }
 
-            PUT_RESULT_VAL(Int16, bufLen);
+            gNetworkProxy.SocketSend(socket, bufP, bufLen, flags, toAddrP, toLen, timeout);
 
             return kSkipROM;
         }

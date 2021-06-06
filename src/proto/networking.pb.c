@@ -27,6 +27,12 @@ PB_BIND(MsgSocketAddrRequest, MsgSocketAddrRequest, AUTO)
 PB_BIND(MsgSocketAddrResponse, MsgSocketAddrResponse, AUTO)
 
 
+PB_BIND(MsgSocketSendRequest, MsgSocketSendRequest, AUTO)
+
+
+PB_BIND(MsgSocketSendResponse, MsgSocketSendResponse, AUTO)
+
+
 PB_BIND(MsgRequest, MsgRequest, AUTO)
 
 

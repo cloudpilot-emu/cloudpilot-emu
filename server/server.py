@@ -1,6 +1,7 @@
 import asyncio
 import websockets
 import proto.networking_pb2 as networking
+import hexdump
 
 
 class ProxyContext:
@@ -10,8 +11,6 @@ class ProxyContext:
         try:
             while True:
                 message = await socket.recv()
-
-                print("\nincoming request")
 
                 await self._handleMessage(message)
 
@@ -23,8 +22,6 @@ class ProxyContext:
         request.ParseFromString(message)
         response = None
 
-        print(request)
-
         requestType = request.WhichOneof("payload")
 
         if (requestType == "socketOpenRequest"):
@@ -35,6 +32,9 @@ class ProxyContext:
 
         elif (requestType == "socketAddrRequest"):
             response = await self._handleSocketAddr(request.socketAddrRequest)
+
+        elif (requestType == "socketSendRequest"):
+            response = await self._handleSocketSend(request.socketSendRequest)
 
         else:
             print(f'unknown request {requestType}')
@@ -64,7 +64,7 @@ class ProxyContext:
         return response
 
     async def _handleSocketAddr(self, request):
-        print(f'socketAddRequest: handle={request.handle}')
+        print(f'socketAddrRequest: handle={request.handle}')
 
         response = networking.MsgResponse()
         response.socketAddrResponse.addressLocal.ip = 0
@@ -72,6 +72,21 @@ class ProxyContext:
         response.socketAddrResponse.addressRemote.ip = 0
         response.socketAddrResponse.addressRemote.port = 0
         response.socketAddrResponse.err = 0
+
+        return response
+
+    async def _handleSocketSend(self, request):
+        print(
+            f'socketSendRequest: handle={request.handle} len={len(request.data)} flags={request.flags} timeout={request.timeout} {f"ip={request.address.ip} port={request.address.port}" if request.HasField("address") else ""}\n')
+
+        for line in hexdump.dumpgen(request.data):
+            print(line)
+
+        print()
+
+        response = networking.MsgResponse()
+        response.socketSendResponse.err = 0
+        response.socketSendResponse.bytesSent = len(request.data)
 
         return response
 

@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 websockets = "*"
 protobuf = "*"
+hexdump = "*"
 
 [dev-packages]
 
