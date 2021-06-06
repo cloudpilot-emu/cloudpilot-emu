@@ -280,18 +280,15 @@ namespace {
         CALLED_GET_PARAM_VAL(NetSocketRef, socket);
         CALLED_GET_PARAM_VAL(UInt16, level);
         CALLED_GET_PARAM_VAL(UInt16, option);
+        CALLED_GET_PARAM_VAL(UInt32, optValueP);
         CALLED_GET_PARAM_VAL(UInt16, optValueLen);
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
-        CALLED_GET_PARAM_PTR(void, optValueP, optValueLen, Marshal::kInput);
 
         PRINTF("\nNetLibSocketOptionSet, option = 0x%04x", option);
 
-        if (option == netSocketOptSockRequireErrClear) {
-            *errP = 0;
-            CALLED_PUT_PARAM_REF(errP);
-
-            PUT_RESULT_VAL(Int16, 0);
+        if (Feature::GetNetworkRedirection()) {
+            gNetworkProxy.SocketOptionSet(socket, level, option, optValueP, optValueLen);
 
             return kSkipROM;
         }

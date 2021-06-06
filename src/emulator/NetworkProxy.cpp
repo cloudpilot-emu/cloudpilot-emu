@@ -2,6 +2,7 @@
 
 #include <functional>
 
+#include "EmMemory.h"
 #include "EmSubroutine.h"
 #include "Logging.h"
 #include "Marshal.h"
@@ -15,7 +16,25 @@ using namespace std::placeholders;
 
 namespace {
     NetworkProxy networkProxy;
-}
+
+    uint32 getOptionValue(uint32 address, uint16 len) {
+        if (address == 0) return 0;
+
+        switch (len) {
+            case 1:
+                return EmMemGet8(address);
+
+            case 2:
+                return EmMemGet16(address);
+
+            case 4:
+                return EmMemGet32(address);
+
+            default:
+                return 0;
+        }
+    }
+}  // namespace
 
 NetworkProxy& gNetworkProxy{networkProxy};
 
@@ -243,6 +262,46 @@ void NetworkProxy::SocketAddrFail(Err err) {
                  "UInt16 libRefNum, NetSocketRef socket,"
                  "NetSocketAddrType *locAddrP, Int16 *locAddrLenP, "
                  "NetSocketAddrType *remAddrP, Int16 *remAddrLenP, "
+                 "Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
+}
+
+void NetworkProxy::SocketOptionSet(int16 handle, uint16 level, uint16 option, uint32 valueP,
+                                   uint16 valueLen) {
+    if (!valueP || (valueLen != 1 && valueLen != 2 && valueLen != 4))
+        return SocketOptionSetFail(netErrParamErr);
+
+    uint32 value = getOptionValue(valueP, valueLen);
+
+    logging::printf(
+        "WARNING: unsupported NetLibSocketOptionSet, level=0x%04x option=0x%04x value=%u", level,
+        option, value);
+
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "UInt16 level, UInt16 option, "
+                 "void *optValueP, UInt16 optValueLen,"
+                 "Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = 0;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, 0);
+}
+
+void NetworkProxy::SocketOptionSetFail(Err err) {
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "UInt16 level, UInt16 option, "
+                 "void *optValueP, UInt16 optValueLen,"
                  "Int32 timeout, Err *errP");
 
     CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
