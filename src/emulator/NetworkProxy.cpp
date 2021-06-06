@@ -122,15 +122,6 @@ void NetworkProxy::SocketBind(int16 handle, NetSocketAddrType* sockAddrP) {
                    bind(&NetworkProxy::SocketBindFail, this, netErrInternal));
 }
 
-MsgRequest NetworkProxy::NewRequest(pb_size_t payloadTag) {
-    MsgRequest request = MsgRequest_init_zero;
-
-    request.id = ++currentId;
-    request.which_payload = payloadTag;
-
-    return request;
-}
-
 void NetworkProxy::SocketBindSuccess(uint8* responseData, size_t size) {
     MsgResponse response;
 
@@ -173,6 +164,95 @@ void NetworkProxy::SocketBindFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
+void NetworkProxy::SocketAddr(int16 handle) {
+    MsgRequest request = NewRequest(MsgRequest_socketAddrRequest_tag);
+    request.payload.socketAddrRequest.handle = handle;
+
+    SendAndSuspend(request, bind(&NetworkProxy::SocketAddrSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SocketAddrFail, this, netErrInternal));
+}
+
+void NetworkProxy::SocketAddrSuccess(uint8* responseData, size_t size) {
+    MsgResponse response;
+
+    if (!DecodeResponse(responseData, size, response, MsgResponse_socketAddrResponse_tag)) {
+        logging::printf("SocketAddr: bad response");
+
+        return SocketBindFail();
+    }
+
+    if (response.payload.socketAddrResponse.err != 0) {
+        logging::printf("SocketAddr: failed");
+
+        return SocketBindFail(response.payload.socketAddrResponse.err);
+    }
+
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "NetSocketAddrType *locAddrP, Int16 *locAddrLenP, "
+                 "NetSocketAddrType *remAddrP, Int16 *remAddrLenP, "
+                 "Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(NetSocketAddrType, locAddrP, Marshal::kOutput);
+    CALLED_GET_PARAM_REF(Int16, locAddrLenP, Marshal::kInOut);
+    CALLED_GET_PARAM_REF(NetSocketAddrType, remAddrP, Marshal::kOutput);
+    CALLED_GET_PARAM_REF(Int16, remAddrLenP, Marshal::kInOut);
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    if ((locAddrP && *locAddrLenP < 8) || (remAddrP && *remAddrLenP < 8)) {
+        return SocketBindFail(netErrParamErr);
+    }
+
+    if (locAddrP) {
+        NetSocketAddrINType* locAddrINP =
+            reinterpret_cast<NetSocketAddrINType*>((NetSocketAddrType*)locAddrP);
+
+        *locAddrLenP = 8;
+
+        locAddrINP->family = netSocketAddrINET;
+        locAddrINP->addr = response.payload.socketAddrResponse.addressLocal.ip;
+        locAddrINP->port = response.payload.socketAddrResponse.addressLocal.port;
+
+        CALLED_PUT_PARAM_REF(locAddrP);
+        CALLED_PUT_PARAM_REF(locAddrLenP);
+    }
+
+    if (remAddrP) {
+        NetSocketAddrINType* remAddrINP =
+            reinterpret_cast<NetSocketAddrINType*>((NetSocketAddrType*)remAddrP);
+
+        *remAddrLenP = 8;
+
+        remAddrINP->family = netSocketAddrINET;
+        remAddrINP->addr = response.payload.socketAddrResponse.addressRemote.ip;
+        remAddrINP->port = response.payload.socketAddrResponse.addressRemote.port;
+
+        CALLED_PUT_PARAM_REF(remAddrP);
+        CALLED_PUT_PARAM_REF(remAddrLenP);
+    }
+
+    *errP = 0;
+
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, 0);
+}
+
+void NetworkProxy::SocketAddrFail(Err err) {
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "NetSocketAddrType *locAddrP, Int16 *locAddrLenP, "
+                 "NetSocketAddrType *remAddrP, Int16 *remAddrLenP, "
+                 "Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
+}
+
 bool NetworkProxy::DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
                                   pb_size_t payloadTag) {
     response = MsgResponse_init_zero;
@@ -198,6 +278,15 @@ bool NetworkProxy::DecodeResponse(uint8* responseData, size_t size, MsgResponse&
     }
 
     return true;
+}
+
+MsgRequest NetworkProxy::NewRequest(pb_size_t payloadTag) {
+    MsgRequest request = MsgRequest_init_zero;
+
+    request.id = ++currentId;
+    request.which_payload = payloadTag;
+
+    return request;
 }
 
 void NetworkProxy::SendAndSuspend(MsgRequest& request,

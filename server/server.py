@@ -33,6 +33,9 @@ class ProxyContext:
         elif (requestType == "socketBindRequest"):
             response = await self._handleSocketBind(request.socketBindRequest)
 
+        elif (requestType == "socketAddrRequest"):
+            response = await self._handleSocketAddr(request.socketAddrRequest)
+
         else:
             print(f'unknown request {requestType}')
 
@@ -53,10 +56,22 @@ class ProxyContext:
 
     async def _handleSocketBind(self, request):
         print(
-            f'socketBindRequest: ip={request.address.ip} port={request.address.port}')
+            f'socketBindRequest: handle={request.handle} ip={request.address.ip} port={request.address.port}')
 
         response = networking.MsgResponse()
         response.socketBindResponse.err = 0
+
+        return response
+
+    async def _handleSocketAddr(self, request):
+        print(f'socketAddRequest: handle={request.handle}')
+
+        response = networking.MsgResponse()
+        response.socketAddrResponse.addressLocal.ip = 0
+        response.socketAddrResponse.addressLocal.port = 0
+        response.socketAddrResponse.addressRemote.ip = 0
+        response.socketAddrResponse.addressRemote.port = 0
+        response.socketAddrResponse.err = 0
 
         return response
 

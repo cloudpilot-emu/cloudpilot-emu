@@ -24,12 +24,23 @@ message MsgSocketBindResponse {
     required int32 err = 1;
 }
 
+message MsgSocketAddrRequest {
+    required int32 handle = 1;
+}
+
+message MsgSocketAddrResponse {
+    required Address addressLocal = 1;
+    required Address addressRemote = 2;
+    required int32 err = 3;
+}
+
 message MsgRequest {
     required uint32 id = 1;
 
     oneof payload {
         MsgSocketOpenRequest socketOpenRequest = 2;
         MsgSocketBindRequest socketBindRequest = 3;
+        MsgSocketAddrRequest socketAddrRequest = 4;
     }
 }
 
@@ -39,5 +50,6 @@ message MsgResponse {
     oneof payload {
         MsgSocketOpenResponse socketOpenResponse = 2;
         MsgSocketBindResponse socketBindResponse = 3;
+        MsgSocketAddrResponse socketAddrResponse = 4;
     }
 }

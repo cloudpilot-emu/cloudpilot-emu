@@ -547,6 +547,45 @@ void Marshal::GetNetSocketAddrType(emuptr p, NetSocketAddrType& d) {
     }
 }
 
+void Marshal::PutNetSocketAddrType(emuptr p, const NetSocketAddrType& s) {
+    if (p) {
+        switch (s.family) {
+            case netSocketAddrRaw: {
+                EmAliasNetSocketAddrRawType<PAS> dest(p);
+                NetSocketAddrRawType& src = (NetSocketAddrRawType&)s;
+
+                dest.family = src.family;          // In HBO
+                dest.ifInstance = src.ifInstance;  // Unspecified order
+                dest.ifCreator = src.ifCreator;    // Unspecified order
+
+                break;
+            }
+
+            case netSocketAddrINET: {
+                EmAliasNetSocketAddrINType<PAS> dest(p);
+                NetSocketAddrINType& src = (NetSocketAddrINType&)s;
+
+                dest.family = src.family;               // In HBO
+                dest.port = NetHToNS(ntohs(src.port));  // In NBO
+                dest.addr = NetHToNL(ntohl(src.addr));  // In NBO
+
+                break;
+            }
+
+            default: {
+                // Do the best we can...
+                EmAliasNetSocketAddrType<PAS> dest(p);
+                NetSocketAddrType& src = (NetSocketAddrType&)s;
+
+                dest.family = src.family;  // In HBO
+
+                EmMem_memcpy(dest.data.GetPtr(), (void*)&src.data[0], 14);
+                break;
+            }
+        }
+    }
+}
+
 void* Marshal::GetBuffer(emuptr p, long len) {
     void* result = NULL;
 

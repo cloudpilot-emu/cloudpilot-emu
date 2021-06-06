@@ -19,6 +19,8 @@ class NetworkProxy {
 
     void SocketBind(int16 handle, NetSocketAddrType* sockAddrP);
 
+    void SocketAddr(int16 handle);
+
    private:
     void ConnectSuccess();
     void ConnectAbort();
@@ -28,6 +30,9 @@ class NetworkProxy {
 
     void SocketBindSuccess(uint8* responseData, size_t size);
     void SocketBindFail(Err err = netErrInternal);
+
+    void SocketAddrSuccess(uint8* responseData, size_t size);
+    void SocketAddrFail(Err err = netErrInternal);
 
     MsgRequest NewRequest(pb_size_t payloadTag);
     bool DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
