@@ -37,7 +37,7 @@ message MsgSocketAddrResponse {
 message MsgSocketSendRequest {
     required int32 handle = 1;
     required bytes data = 2;
-    required int32 flags = 3;
+    required uint32 flags = 3;
     optional Address address = 4;
     required int32 timeout = 5;
 }
@@ -45,6 +45,19 @@ message MsgSocketSendRequest {
 message MsgSocketSendResponse {
     required int32 err = 1;
     required int32 bytesSent = 2;
+}
+
+message MsgSocketReceiveRequest {
+    required int32 handle = 1;
+    required uint32 flags = 2;
+    required int32 timeout = 3;
+    required uint32 maxLen = 4;
+}
+
+message MsgSocketReceiveResponse {
+    required int32 err = 1;
+    required bytes data = 2;
+    required Address address = 3;
 }
 
 message MsgRequest {
@@ -55,6 +68,7 @@ message MsgRequest {
         MsgSocketBindRequest socketBindRequest = 3;
         MsgSocketAddrRequest socketAddrRequest = 4;
         MsgSocketSendRequest socketSendRequest = 5;
+        MsgSocketReceiveRequest socketReceiveRequest = 6;
     }
 }
 
@@ -66,5 +80,6 @@ message MsgResponse {
         MsgSocketBindResponse socketBindResponse = 3;
         MsgSocketAddrResponse socketAddrResponse = 4;
         MsgSocketSendResponse socketSendResponse = 5;
+        MsgSocketReceiveResponse socketReceiveResponse = 6;
     }
 }

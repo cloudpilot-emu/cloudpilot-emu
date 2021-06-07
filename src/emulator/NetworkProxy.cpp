@@ -1,6 +1,7 @@
 #include "NetworkProxy.h"
 
 #include <functional>
+#include <memory>
 
 #include "EmMemory.h"
 #include "EmSubroutine.h"
@@ -13,6 +14,16 @@
 #include "pb_encode.h"
 
 using namespace std::placeholders;
+
+struct BufferDecodeContext {
+    unique_ptr<uint8[]> data;
+    size_t len;
+};
+
+struct BufferEncodeContext {
+    uint8* data;
+    size_t len;
+};
 
 namespace {
     constexpr size_t REQUEST_STATIC_SIZE = 128;
@@ -56,11 +67,6 @@ namespace {
         sockAddrIN->addr = address.ip;
     }
 
-    struct BufferEncodeContext {
-        uint8* data;
-        size_t len;
-    };
-
     bool bufferEncodeCb(pb_ostream_t* stream, const pb_field_iter_t* field, void* const* arg) {
         if (!arg) return false;
 
@@ -69,6 +75,32 @@ namespace {
         pb_encode_tag_for_field(stream, field);
 
         return pb_encode_string(stream, ctx->data, ctx->len);
+    }
+
+    bool bufferDecodeCb(pb_istream_t* stream, const pb_field_iter_t* field, void** arg) {
+        if (!arg) return false;
+
+        BufferDecodeContext* ctx = (BufferDecodeContext*)(*arg);
+
+        ctx->len = stream->bytes_left;
+        ctx->data = make_unique<uint8[]>(stream->bytes_left);
+
+        return pb_read(stream, ctx->data.get(), stream->bytes_left);
+
+        return true;
+    }
+
+    bool setupPayloadDecodeCb(pb_istream_t* stream, const pb_field_iter_t* field, void** arg) {
+        if (!arg) return false;
+
+        if (field->tag == MsgResponse_socketReceiveResponse_tag) {
+            MsgSocketReceiveResponse* receiveResponse = (MsgSocketReceiveResponse*)field->pData;
+
+            receiveResponse->data.arg = *arg;
+            receiveResponse->data.funcs.decode = bufferDecodeCb;
+        }
+
+        return true;
     }
 }  // namespace
 
@@ -133,8 +165,6 @@ void NetworkProxy::SocketOpenSuccess(uint8* responseData, size_t size) {
 
         return SocketOpenFail(response.payload.socketOpenResponse.err);
     }
-
-    cout << "SocketOpen: handle=" << response.payload.socketOpenResponse.handle << endl << flush;
 
     CALLED_SETUP("NetSocketRef",
                  "UInt16 libRefNum, NetSocketAddrEnum domain, "
@@ -336,7 +366,7 @@ void NetworkProxy::SocketOptionSetFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
-void NetworkProxy::SocketSend(int16 handle, uint8* data, size_t count, int32 flags,
+void NetworkProxy::SocketSend(int16 handle, uint8* data, size_t count, uint32 flags,
                               NetSocketAddrType* toAddrP, int32 toLen, int32 timeout) {
     MsgRequest request = NewRequest(MsgRequest_socketSendRequest_tag);
     MsgSocketSendRequest& sendRequest(request.payload.socketSendRequest);
@@ -413,10 +443,102 @@ void NetworkProxy::SocketSendFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
+void NetworkProxy::SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int32 timeout) {
+    MsgRequest request = NewRequest(MsgRequest_socketReceiveRequest_tag);
+
+    if (flags) {
+        logging::printf("ERROR: SocketReceive: unsupported flags 0x%08x", flags);
+
+        return SocketReceiveFail();
+    }
+
+    request.payload.socketReceiveRequest.handle = handle;
+    request.payload.socketReceiveRequest.flags = flags;
+    request.payload.socketReceiveRequest.timeout = timeout;
+    request.payload.socketReceiveRequest.maxLen = bufLen;
+
+    SendAndSuspend(request, REQUEST_STATIC_SIZE,
+                   bind(&NetworkProxy::SocketReceiveSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SocketReceiveFail, this, netErrInternal));
+}
+
+void NetworkProxy::SocketReceiveSuccess(uint8* responseData, size_t size) {
+    MsgResponse response;
+    BufferDecodeContext bufferDecodeContext;
+
+    if (!DecodeResponse(responseData, size, response, MsgResponse_socketReceiveResponse_tag,
+                        &bufferDecodeContext)) {
+        logging::printf("SocketReceive: bad response");
+
+        return SocketReceiveFail();
+    }
+
+    if (response.payload.socketReceiveResponse.err != 0) {
+        logging::printf("SocketReceive: failed");
+
+        return SocketReceiveFail(response.payload.socketReceiveResponse.err);
+    }
+
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "void *bufP, UInt16 bufLen, UInt16 flags, "
+                 "void *fromAddrP, UInt16 *fromLenP, Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_VAL(UInt16, bufLen);
+    CALLED_GET_PARAM_VAL(UInt32, bufP);
+    CALLED_GET_PARAM_REF(NetSocketAddrType, fromAddrP, Marshal::kOutput);
+    CALLED_GET_PARAM_REF(UInt16, fromLenP, Marshal::kInOut);
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    if (bufferDecodeContext.len > bufLen) {
+        logging::printf("SocketReceive: message too long: %u vs. %u", bufferDecodeContext.len,
+                        bufLen);
+
+        return SocketReceiveFail();
+    }
+
+    if (fromAddrP && fromLenP < 8) return SocketReceiveFail(netErrParamErr);
+
+    EmMem_memcpy((emuptr)bufP, static_cast<void*>(bufferDecodeContext.data.get()),
+                 bufferDecodeContext.len);
+
+    if (fromAddrP) {
+        deserializeAddress(fromAddrP, response.payload.socketReceiveResponse.address);
+        *fromLenP = 8;
+
+        CALLED_PUT_PARAM_REF(fromAddrP);
+        CALLED_PUT_PARAM_REF(fromLenP);
+    }
+
+    *errP = 0;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, bufferDecodeContext.len);
+}
+
+void NetworkProxy::SocketReceiveFail(Err err) {
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "void *bufP, UInt16 bufLen, UInt16 flags, "
+                 "void *fromAddrP, UInt16 *fromLenP, Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
+}
+
 bool NetworkProxy::DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
-                                  pb_size_t payloadTag) {
-    response = MsgResponse_init_default;
+                                  pb_size_t payloadTag, BufferDecodeContext* bufferrDecodeContext) {
+    response = MsgResponse_init_zero;
     unique_ptr<uint8[]> autodelete(responseData);
+
+    if (bufferrDecodeContext) {
+        response.cb_payload.arg = bufferrDecodeContext;
+        response.cb_payload.funcs.decode = setupPayloadDecodeCb;
+    }
 
     pb_istream_t stream = pb_istream_from_buffer(responseData, size);
     bool status = pb_decode(&stream, MsgResponse_fields, &response);
@@ -449,11 +571,11 @@ MsgRequest NetworkProxy::NewRequest(pb_size_t payloadTag) {
     return request;
 }
 
-void NetworkProxy::SendAndSuspend(MsgRequest& request, size_t staticSize,
+void NetworkProxy::SendAndSuspend(MsgRequest& request, size_t size,
                                   SuspendContextNetworkRpc::successCallbackT cbSuccess,
                                   SuspendContextNetworkRpc::failCallbackT cbFail) {
-    uint8* buffer = new uint8[staticSize];
-    pb_ostream_t stream = pb_ostream_from_buffer(buffer, staticSize);
+    uint8* buffer = new uint8[size];
+    pb_ostream_t stream = pb_ostream_from_buffer(buffer, size);
 
     pb_encode(&stream, MsgRequest_fields, &request);
 

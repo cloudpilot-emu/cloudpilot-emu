@@ -5,6 +5,8 @@
 #include "SuspendContextNetworkRpc.h"
 #include "networking.pb.h"
 
+struct BufferDecodeContext;
+
 class NetworkProxy {
    public:
     NetworkProxy() = default;
@@ -23,8 +25,10 @@ class NetworkProxy {
 
     void SocketOptionSet(int16 handle, uint16 level, uint16 option, uint32 valueP, uint16 valueLen);
 
-    void SocketSend(int16 handle, uint8* data, size_t count, int32 flags,
+    void SocketSend(int16 handle, uint8* data, size_t count, uint32 flags,
                     NetSocketAddrType* toAddrP, int32 toLen, int32 timeout);
+
+    void SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int32 timeout);
 
    private:
     void ConnectSuccess();
@@ -42,11 +46,14 @@ class NetworkProxy {
     void SocketOptionSetFail(Err err = netErrInternal);
 
     void SocketSendSuccess(uint8* responseData, size_t size);
-    void SocketSendFail(Err errr = netErrInternal);
+    void SocketSendFail(Err err = netErrInternal);
+
+    void SocketReceiveSuccess(uint8* responseData, size_t size);
+    void SocketReceiveFail(Err err = netErrInternal);
 
     MsgRequest NewRequest(pb_size_t payloadTag);
     bool DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
-                        pb_size_t payloadTag);
+                        pb_size_t payloadTag, BufferDecodeContext* bufferrDecodeContext = nullptr);
 
     void SendAndSuspend(MsgRequest& request, size_t bufferSize,
                         SuspendContextNetworkRpc::successCallbackT cbSuccess,

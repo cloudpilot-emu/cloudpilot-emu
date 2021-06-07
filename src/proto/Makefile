@@ -1,6 +1,6 @@
 PROTOC = nanopb_generator.py
 
-networking.pb.c: ../../proto/networking.proto
+networking.pb.c: ../../proto/networking.proto ../../proto/networking.options
 	$(PROTOC) -I $(dir $<) $(notdir $<)
 
 clean:

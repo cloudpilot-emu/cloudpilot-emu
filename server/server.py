@@ -5,6 +5,9 @@ import hexdump
 
 
 class ProxyContext:
+    def __init__(self):
+        self.echoRequest = None
+
     async def start(self, socket):
         self._socket = socket
 
@@ -24,17 +27,19 @@ class ProxyContext:
 
         requestType = request.WhichOneof("payload")
 
-        if (requestType == "socketOpenRequest"):
+        if requestType == "socketOpenRequest":
             response = await self._handleSocketOpen(request.socketOpenRequest)
 
-        elif (requestType == "socketBindRequest"):
+        elif requestType == "socketBindRequest":
             response = await self._handleSocketBind(request.socketBindRequest)
 
-        elif (requestType == "socketAddrRequest"):
+        elif requestType == "socketAddrRequest":
             response = await self._handleSocketAddr(request.socketAddrRequest)
 
-        elif (requestType == "socketSendRequest"):
+        elif requestType == "socketSendRequest":
             response = await self._handleSocketSend(request.socketSendRequest)
+        elif requestType == "socketReceiveRequest":
+            response = await self._handeSocketReceive(request.socketReceiveRequest)
 
         else:
             print(f'unknown request {requestType}')
@@ -84,11 +89,52 @@ class ProxyContext:
 
         print()
 
+        self.echoRequest = request.data
+
         response = networking.MsgResponse()
         response.socketSendResponse.err = 0
         response.socketSendResponse.bytesSent = len(request.data)
 
         return response
+
+    async def _handeSocketReceive(self, request):
+        print(
+            f'socketReceiveRequest: handle={request.handle} flags={request.flags} timeout={request.timeout} maxLength{request.maxLen}')
+
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketReceiveResponse
+
+        if self.echoRequest == None or len(self.echoRequest) < 24:
+            response.err = 0x1200 | 17
+            response.data = b''
+            response.address.port = 0
+            response.address.ip = 0
+        else:
+            response.err = 0
+
+            echoResponse = bytearray(self.echoRequest)
+            echoResponse[12:16] = self.echoRequest[16:20]
+            echoResponse[16:20] = self.echoRequest[12:16]
+
+            echoResponse[20] = 0x00
+
+            checksum = echoResponse[22] | (echoResponse[23] << 8)
+            checksum += 8
+            echoResponse[22] = checksum & 0xff
+            echoResponse[23] = (checksum >> 8) & 0xff
+
+            self.echoRequest = None
+
+            response.data = bytes(echoResponse)
+            response.address.port = 0
+            response.address.ip = 0
+
+            print()
+            for line in hexdump.dumpgen(response.data):
+                print(line)
+            print()
+
+        return responseMsg
 
 
 async def handle(socket, path):

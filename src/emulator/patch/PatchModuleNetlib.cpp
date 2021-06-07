@@ -150,18 +150,6 @@ namespace {
         return buf;
     }
 
-    void Hexdump(const uint8* buf, size_t bufSize) {
-        printf("===BEGIN OF HEXDUMP===");
-
-        for (size_t i = 0; i < bufSize; i++) {
-            if (i % 16 == 0) putchar('\n');
-
-            printf("%02x ", buf[i]);
-        }
-
-        printf("\n====END OF HEXDUMP====\n");
-    }
-
     CallROMType HeadpatchNetLibOpen(void) {
         PRINTF("\nNetLibOpen");
 
@@ -488,32 +476,12 @@ namespace {
         CALLED_GET_PARAM_REF(UInt16, fromLenP, Marshal::kInOut);
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
-        CALLED_GET_PARAM_PTR(UInt8, bufP, bufLen, Marshal::kInOut);
 
-        PRINTF("\nNetLibReceive, bufLen = %u", bufLen);
+        PRINTF("\nNetLibReceive, bufLen = %u, fromAddrP = %u, fromLen = %u", bufLen,
+               (long)fromAddrP, *fromLenP);
 
-        if (packagePending && packageBufLen <= bufLen) {
-            memmove(bufP, packageBuf, packageBufLen);
-            memmove((uint8*)bufP + 12, packageBuf + 16, 4);
-            memmove((uint8*)bufP + 16, packageBuf + 12, 4);
-
-            ((uint8*)bufP)[20] = 0x00;
-
-            uint16 checksum = packageBuf[22] | (packageBuf[23] << 8);
-            checksum += 8;
-            ((uint8*)bufP)[22] = checksum & 0xff;
-            ((uint8*)bufP)[23] = (checksum >> 8) & 0xff;
-
-            packagePending = false;
-
-            CALLED_PUT_PARAM_REF(bufP);
-
-            *errP = 0;
-            CALLED_PUT_PARAM_REF(errP);
-
-            PUT_RESULT_VAL(Int16, packageBufLen);
-
-            Hexdump((uint8*)bufP, packageBufLen);
+        if (Feature::GetNetworkRedirection()) {
+            gNetworkProxy.SocketReceive(socket, flags, bufLen, timeout);
 
             return kSkipROM;
         }
