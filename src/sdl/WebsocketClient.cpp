@@ -52,6 +52,7 @@ class WebsocketClientImpl : public WebsocketClient {
         ws.handshake(host, "/", err);
         if (err) return;
 
+        if (t.joinable()) t.join();
         t = thread(bind(&WebsocketClientImpl::Poll, this));
     }
 
@@ -66,20 +67,25 @@ class WebsocketClientImpl : public WebsocketClient {
 
     bool IsRunning() const override { return ws.is_open(); }
 
-    void Send(const uint8* message, size_t size) override {
-        if (!ws.is_open()) return;
+    bool Send(const uint8* message, size_t size) override {
+        if (!ws.is_open()) return false;
 
         boost::system::error_code err;
         ws.binary(true);
         ws.write(net::buffer(message, size), err);
+
+        return !err;
     }
 
     std::pair<uint8*, size_t> Receive() override {
-        std::unique_lock<std::mutex> lock(receiveMutex);
+        if (ws.is_open()) {
+            std::unique_lock<std::mutex> lock(receiveMutex);
 
-        while (!receiveBuffer) receiveCv.wait(lock);
+            while (!receiveBuffer && ws.is_open()) receiveCv.wait(lock);
+        }
 
-        return make_pair(receiveBuffer.release(), receiveBufferSize);
+        return receiveBuffer ? make_pair(receiveBuffer.release(), receiveBufferSize)
+                             : make_pair(nullptr, 0);
     }
 
    private:
@@ -111,6 +117,8 @@ class WebsocketClientImpl : public WebsocketClient {
 
             receiveCv.notify_one();
         }
+
+        receiveCv.notify_one();
     }
 
     void Join() { t.join(); }

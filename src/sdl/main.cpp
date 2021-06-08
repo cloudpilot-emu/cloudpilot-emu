@@ -77,12 +77,19 @@ void handleSuspend() {
                 {
                     auto [request, size] = context.AsContextNetworkRpc().GetRequest();
 
-                    websocketClient->Send(request, size);
+                    if (!websocketClient->Send(request, size)) {
+                        context.AsContextNetworkRpc().Cancel();
+
+                        break;
+                    }
 
                     auto [responseBuffer, responseSize] = websocketClient->Receive();
                     cout << "received response" << endl << flush;
 
-                    context.AsContextNetworkRpc().ReceiveResponse(responseBuffer, responseSize);
+                    if (responseBuffer)
+                        context.AsContextNetworkRpc().ReceiveResponse(responseBuffer, responseSize);
+                    else
+                        context.AsContextNetworkRpc().Cancel();
 
                     break;
                 }
