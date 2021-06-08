@@ -530,6 +530,54 @@ void NetworkProxy::SocketReceiveFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
+void NetworkProxy::SocketClose(int16 handle) {
+    MsgRequest request = NewRequest(MsgRequest_socketCloseRequest_tag);
+
+    request.payload.socketCloseRequest.handle = handle;
+
+    SendAndSuspend(request, REQUEST_STATIC_SIZE,
+                   bind(&NetworkProxy::SocketCloseSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SocketCloseFail, this, netErrInternal));
+}
+
+void NetworkProxy::SocketCloseSuccess(uint8* responseData, size_t size) {
+    MsgResponse response;
+    BufferDecodeContext bufferDecodeContext;
+
+    if (!DecodeResponse(responseData, size, response, MsgResponse_socketCloseResponse_tag,
+                        &bufferDecodeContext)) {
+        logging::printf("SocketClose: bad response");
+
+        return SocketCloseFail();
+    }
+
+    if (response.payload.socketCloseResponse.err != 0) {
+        logging::printf("SocketClose: failed");
+
+        return SocketReceiveFail(response.payload.socketReceiveResponse.err);
+    }
+
+    CALLED_SETUP("Int16", "UInt16 libRefNum, NetSocketRef socket, Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = 0;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, 0);
+}
+
+void NetworkProxy::SocketCloseFail(Err err) {
+    CALLED_SETUP("Int16", "UInt16 libRefNum, NetSocketRef socket, Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
+}
+
 bool NetworkProxy::DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
                                   pb_size_t payloadTag, BufferDecodeContext* bufferrDecodeContext) {
     response = MsgResponse_init_zero;

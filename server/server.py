@@ -40,6 +40,8 @@ class ProxyContext:
             response = await self._handleSocketSend(request.socketSendRequest)
         elif requestType == "socketReceiveRequest":
             response = await self._handeSocketReceive(request.socketReceiveRequest)
+        elif requestType == "socketCloseRequest":
+            response = await self._handleSocketClose(request.socketCloseRequest)
 
         else:
             print(f'unknown request {requestType}')
@@ -135,6 +137,14 @@ class ProxyContext:
             print()
 
         return responseMsg
+
+    async def _handleSocketClose(self, request):
+        print(f'socketCloseRequest: handle={request.handle}')
+
+        response = networking.MsgResponse()
+        response.socketCloseResponse.err = 0
+
+        return response
 
 
 async def handle(socket, path):

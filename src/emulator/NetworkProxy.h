@@ -30,6 +30,8 @@ class NetworkProxy {
 
     void SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int32 timeout);
 
+    void SocketClose(int16 handle);
+
    private:
     void ConnectSuccess();
     void ConnectAbort();
@@ -50,6 +52,9 @@ class NetworkProxy {
 
     void SocketReceiveSuccess(uint8* responseData, size_t size);
     void SocketReceiveFail(Err err = netErrInternal);
+
+    void SocketCloseSuccess(uint8* responseData, size_t size);
+    void SocketCloseFail(Err err = netErrInternal);
 
     MsgRequest NewRequest(pb_size_t payloadTag);
     bool DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,

@@ -254,6 +254,12 @@ namespace {
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
+        if (Feature::GetNetworkRedirection()) {
+            gNetworkProxy.SocketClose(socket);
+
+            return kSkipROM;
+        }
+
         return kExecuteROM;
     }
 
@@ -635,7 +641,7 @@ namespace {
         PRINTF("\nNetLibIFSettingGet, instance = %u, creator = %s, setting = %s, valueLenP = %u",
                ifInstance, decodeCreator(ifCreator), DecodeIfSetting(setting), *valueLenP);
 
-        if (setting == netIFSettingUp && *valueLenP > 0) {
+        if (Feature::GetNetworkRedirection() && setting == netIFSettingUp && *valueLenP > 0) {
             EmMemPut8(valueP, 1);
             *valueLenP = 1;
 
@@ -680,9 +686,13 @@ namespace {
 
         PRINTF("\nNetLibIFUp, instance = %u, creator = %s", ifInstance, decodeCreator(ifCreator));
 
-        PUT_RESULT_VAL(Err, 0);
+        if (Feature::GetNetworkRedirection()) {
+            PUT_RESULT_VAL(Err, 0);
 
-        return kSkipROM;
+            return kSkipROM;
+        }
+
+        return kExecuteROM;
     }
 
     void TailpatchNetLibIFUp(void) {

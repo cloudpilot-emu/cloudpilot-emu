@@ -60,6 +60,14 @@ message MsgSocketReceiveResponse {
     required Address address = 3;
 }
 
+message MsgSocketCloseRequest {
+    required int32 handle = 1;
+}
+
+message MsgSocketCloseResponse {
+    required int32 err = 1;
+}
+
 message MsgRequest {
     required uint32 id = 1;
 
@@ -69,6 +77,7 @@ message MsgRequest {
         MsgSocketAddrRequest socketAddrRequest = 4;
         MsgSocketSendRequest socketSendRequest = 5;
         MsgSocketReceiveRequest socketReceiveRequest = 6;
+        MsgSocketCloseRequest socketCloseRequest = 7;
     }
 }
 
@@ -81,5 +90,6 @@ message MsgResponse {
         MsgSocketAddrResponse socketAddrResponse = 4;
         MsgSocketSendResponse socketSendResponse = 5;
         MsgSocketReceiveResponse socketReceiveResponse = 6;
+        MsgSocketCloseResponse socketCloseResponse = 7;
     }
 }

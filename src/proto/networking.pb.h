@@ -23,6 +23,14 @@ typedef struct _MsgSocketBindResponse {
     int32_t err; 
 } MsgSocketBindResponse;
 
+typedef struct _MsgSocketCloseRequest { 
+    int32_t handle; 
+} MsgSocketCloseRequest;
+
+typedef struct _MsgSocketCloseResponse { 
+    int32_t err; 
+} MsgSocketCloseResponse;
+
 typedef struct _MsgSocketOpenRequest { 
     uint32_t type; 
     uint32_t protocol; 
@@ -80,6 +88,7 @@ typedef struct _MsgRequest {
         MsgSocketAddrRequest socketAddrRequest;
         MsgSocketSendRequest socketSendRequest;
         MsgSocketReceiveRequest socketReceiveRequest;
+        MsgSocketCloseRequest socketCloseRequest;
     } payload; 
 } MsgRequest;
 
@@ -93,6 +102,7 @@ typedef struct _MsgResponse {
         MsgSocketAddrResponse socketAddrResponse;
         MsgSocketSendResponse socketSendResponse;
         MsgSocketReceiveResponse socketReceiveResponse;
+        MsgSocketCloseResponse socketCloseResponse;
     } payload; 
 } MsgResponse;
 
@@ -113,6 +123,8 @@ extern "C" {
 #define MsgSocketSendResponse_init_default       {0, 0}
 #define MsgSocketReceiveRequest_init_default     {0, 0, 0, 0}
 #define MsgSocketReceiveResponse_init_default    {0, {{NULL}, NULL}, Address_init_default}
+#define MsgSocketCloseRequest_init_default       {0}
+#define MsgSocketCloseResponse_init_default      {0}
 #define MsgRequest_init_default                  {0, 0, {MsgSocketOpenRequest_init_default}}
 #define MsgResponse_init_default                 {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_default}}
 #define Address_init_zero                        {0, 0}
@@ -126,6 +138,8 @@ extern "C" {
 #define MsgSocketSendResponse_init_zero          {0, 0}
 #define MsgSocketReceiveRequest_init_zero        {0, 0, 0, 0}
 #define MsgSocketReceiveResponse_init_zero       {0, {{NULL}, NULL}, Address_init_zero}
+#define MsgSocketCloseRequest_init_zero          {0}
+#define MsgSocketCloseResponse_init_zero         {0}
 #define MsgRequest_init_zero                     {0, 0, {MsgSocketOpenRequest_init_zero}}
 #define MsgResponse_init_zero                    {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_zero}}
 
@@ -134,6 +148,8 @@ extern "C" {
 #define Address_port_tag                         2
 #define MsgSocketAddrRequest_handle_tag          1
 #define MsgSocketBindResponse_err_tag            1
+#define MsgSocketCloseRequest_handle_tag         1
+#define MsgSocketCloseResponse_err_tag           1
 #define MsgSocketOpenRequest_type_tag            1
 #define MsgSocketOpenRequest_protocol_tag        2
 #define MsgSocketOpenResponse_handle_tag         1
@@ -163,12 +179,14 @@ extern "C" {
 #define MsgRequest_socketAddrRequest_tag         4
 #define MsgRequest_socketSendRequest_tag         5
 #define MsgRequest_socketReceiveRequest_tag      6
+#define MsgRequest_socketCloseRequest_tag        7
 #define MsgResponse_id_tag                       1
 #define MsgResponse_socketOpenResponse_tag       2
 #define MsgResponse_socketBindResponse_tag       3
 #define MsgResponse_socketAddrResponse_tag       4
 #define MsgResponse_socketSendResponse_tag       5
 #define MsgResponse_socketReceiveResponse_tag    6
+#define MsgResponse_socketCloseResponse_tag      7
 
 /* Struct field encoding specification for nanopb */
 #define Address_FIELDLIST(X, a) \
@@ -247,13 +265,24 @@ X(a, STATIC,   REQUIRED, MESSAGE,  address,           3)
 #define MsgSocketReceiveResponse_DEFAULT NULL
 #define MsgSocketReceiveResponse_address_MSGTYPE Address
 
+#define MsgSocketCloseRequest_FIELDLIST(X, a) \
+X(a, STATIC,   REQUIRED, INT32,    handle,            1)
+#define MsgSocketCloseRequest_CALLBACK NULL
+#define MsgSocketCloseRequest_DEFAULT NULL
+
+#define MsgSocketCloseResponse_FIELDLIST(X, a) \
+X(a, STATIC,   REQUIRED, INT32,    err,               1)
+#define MsgSocketCloseResponse_CALLBACK NULL
+#define MsgSocketCloseResponse_DEFAULT NULL
+
 #define MsgRequest_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, UINT32,   id,                1) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketOpenRequest,payload.socketOpenRequest),   2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketBindRequest,payload.socketBindRequest),   3) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketAddrRequest,payload.socketAddrRequest),   4) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketSendRequest,payload.socketSendRequest),   5) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketReceiveRequest,payload.socketReceiveRequest),   6)
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketReceiveRequest,payload.socketReceiveRequest),   6) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketCloseRequest,payload.socketCloseRequest),   7)
 #define MsgRequest_CALLBACK NULL
 #define MsgRequest_DEFAULT NULL
 #define MsgRequest_payload_socketOpenRequest_MSGTYPE MsgSocketOpenRequest
@@ -261,6 +290,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketReceiveRequest,payload.socketR
 #define MsgRequest_payload_socketAddrRequest_MSGTYPE MsgSocketAddrRequest
 #define MsgRequest_payload_socketSendRequest_MSGTYPE MsgSocketSendRequest
 #define MsgRequest_payload_socketReceiveRequest_MSGTYPE MsgSocketReceiveRequest
+#define MsgRequest_payload_socketCloseRequest_MSGTYPE MsgSocketCloseRequest
 
 #define MsgResponse_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, UINT32,   id,                1) \
@@ -268,7 +298,8 @@ X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOpenResponse,payload.socketOpe
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketBindResponse,payload.socketBindResponse),   3) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketAddrResponse,payload.socketAddrResponse),   4) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketSendResponse,payload.socketSendResponse),   5) \
-X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketReceiveResponse,payload.socketReceiveResponse),   6)
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketReceiveResponse,payload.socketReceiveResponse),   6) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketCloseResponse,payload.socketCloseResponse),   7)
 #define MsgResponse_CALLBACK NULL
 #define MsgResponse_DEFAULT NULL
 #define MsgResponse_payload_socketOpenResponse_MSGTYPE MsgSocketOpenResponse
@@ -276,6 +307,7 @@ X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketReceiveResponse,payload.socket
 #define MsgResponse_payload_socketAddrResponse_MSGTYPE MsgSocketAddrResponse
 #define MsgResponse_payload_socketSendResponse_MSGTYPE MsgSocketSendResponse
 #define MsgResponse_payload_socketReceiveResponse_MSGTYPE MsgSocketReceiveResponse
+#define MsgResponse_payload_socketCloseResponse_MSGTYPE MsgSocketCloseResponse
 
 extern const pb_msgdesc_t Address_msg;
 extern const pb_msgdesc_t MsgSocketOpenRequest_msg;
@@ -288,6 +320,8 @@ extern const pb_msgdesc_t MsgSocketSendRequest_msg;
 extern const pb_msgdesc_t MsgSocketSendResponse_msg;
 extern const pb_msgdesc_t MsgSocketReceiveRequest_msg;
 extern const pb_msgdesc_t MsgSocketReceiveResponse_msg;
+extern const pb_msgdesc_t MsgSocketCloseRequest_msg;
+extern const pb_msgdesc_t MsgSocketCloseResponse_msg;
 extern const pb_msgdesc_t MsgRequest_msg;
 extern const pb_msgdesc_t MsgResponse_msg;
 
@@ -303,6 +337,8 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define MsgSocketSendResponse_fields &MsgSocketSendResponse_msg
 #define MsgSocketReceiveRequest_fields &MsgSocketReceiveRequest_msg
 #define MsgSocketReceiveResponse_fields &MsgSocketReceiveResponse_msg
+#define MsgSocketCloseRequest_fields &MsgSocketCloseRequest_msg
+#define MsgSocketCloseResponse_fields &MsgSocketCloseResponse_msg
 #define MsgRequest_fields &MsgRequest_msg
 #define MsgResponse_fields &MsgResponse_msg
 
@@ -316,6 +352,8 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define MsgSocketAddrResponse_size               49
 #define MsgSocketBindRequest_size                30
 #define MsgSocketBindResponse_size               11
+#define MsgSocketCloseRequest_size               11
+#define MsgSocketCloseResponse_size              11
 #define MsgSocketOpenRequest_size                12
 #define MsgSocketOpenResponse_size               22
 #define MsgSocketReceiveRequest_size             34
