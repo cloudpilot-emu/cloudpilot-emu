@@ -34,12 +34,12 @@ void boost::throw_exception(std::exception const& exc, boost::source_location co
     throw_exception(exc);
 }
 
-class WebsocketClientImpl {
+class WebsocketClientImpl : public WebsocketClient {
    public:
     WebsocketClientImpl(const string& host, const string& port) : host(host), port(port) {}
 
-    void Start() {
-        if (running) return;
+    void Start() override {
+        if (ws.is_open()) return;
 
         boost::system::error_code err;
 
@@ -52,35 +52,29 @@ class WebsocketClientImpl {
         ws.handshake(host, "/", err);
         if (err) return;
 
-        running = true;
-
         t = thread(bind(&WebsocketClientImpl::Poll, this));
     }
 
-    void Stop() {
-        if (!running) return;
+    void Stop() override {
+        if (!ws.is_open()) return;
 
         boost::system::error_code err;
         ws.close(websocket::close_reason(), err);
 
         t.join();
-
-        running = false;
     }
 
-    bool IsRunning() const { return running; }
+    bool IsRunning() const override { return ws.is_open(); }
 
-    void Join() { t.join(); }
-
-    void Send(const uint8* message, size_t size) {
-        if (!running) return;
+    void Send(const uint8* message, size_t size) override {
+        if (!ws.is_open()) return;
 
         boost::system::error_code err;
         ws.binary(true);
         ws.write(net::buffer(message, size), err);
     }
 
-    std::pair<uint8*, size_t> Receive() {
+    std::pair<uint8*, size_t> Receive() override {
         std::unique_lock<std::mutex> lock(receiveMutex);
 
         while (!receiveBuffer) receiveCv.wait(lock);
@@ -90,7 +84,7 @@ class WebsocketClientImpl {
 
    private:
     void Poll() {
-        while (running) {
+        while (true) {
             boost::beast::flat_buffer buffer;
             boost::system::error_code err;
 
@@ -98,10 +92,10 @@ class WebsocketClientImpl {
             ws.read(buffer, err);
 
             if (err) {
-                cout << "receive loop died" << endl << flush;
-
-                running = false;
-                break;
+                if (ws.is_open())
+                    continue;
+                else
+                    break;
             }
 
             {
@@ -119,6 +113,8 @@ class WebsocketClientImpl {
         }
     }
 
+    void Join() { t.join(); }
+
    private:
     net::io_context ioc;
     tcp::resolver resolver{ioc};
@@ -128,8 +124,6 @@ class WebsocketClientImpl {
 
     string host;
     string port;
-
-    atomic<bool> running;
 
     unique_ptr<uint8[]> receiveBuffer;
     size_t receiveBufferSize;
@@ -144,20 +138,6 @@ class WebsocketClientImpl {
     WebsocketClientImpl& operator=(WebsocketClientImpl&&) = delete;
 };
 
-WebsocketClient::WebsocketClient(const string& host, const string& port) {
-    impl = new WebsocketClientImpl(host, port);
+WebsocketClient* WebsocketClient::Create(const string& host, const string& port) {
+    return new WebsocketClientImpl(host, port);
 }
-
-WebsocketClient::~WebsocketClient() { delete impl; }
-
-void WebsocketClient::Start() { return impl->Start(); }
-
-bool WebsocketClient::IsRunning() const { return impl->IsRunning(); }
-
-void WebsocketClient::Join() { return impl->Join(); }
-
-void WebsocketClient::Send(const uint8* message, size_t size) { return impl->Send(message, size); }
-
-void WebsocketClient::Stop() { impl->Stop(); }
-
-std::pair<uint8*, size_t> WebsocketClient::Receive() { return impl->Receive(); }

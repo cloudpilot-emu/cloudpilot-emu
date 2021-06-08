@@ -97,7 +97,15 @@
     "__mutex_base": "cpp",
     "__nullptr": "cpp",
     "__string": "cpp",
-    "__threading_support": "cpp"
+    "__threading_support": "cpp",
+    "any": "cpp",
+    "csignal": "cpp",
+    "future": "cpp",
+    "numbers": "cpp",
+    "semaphore": "cpp",
+    "typeindex": "cpp",
+    "unordered_set": "cpp",
+    "variant": "cpp"
   },
   "editor.formatOnSave": true,
   "CppHelper.SourcePattern": [

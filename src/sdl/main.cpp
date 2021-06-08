@@ -45,7 +45,7 @@ void setupMemoryImage(void* image, size_t size) {
 }
 
 #ifndef __EMSCRIPTEN__
-static WebsocketClient websocketClient("localhost", "6666");
+static WebsocketClient* websocketClient = WebsocketClient::Create("localhost", "6666");
 
 void handleSuspend() {
     if (SuspendManager::IsSuspended()) {
@@ -68,7 +68,7 @@ void handleSuspend() {
             }
 
             case SuspendContext::Kind::networkConnect:
-                websocketClient.Start();
+                websocketClient->Start();
 
                 context.AsContextNetworkConnect().Resume();
                 break;
@@ -77,9 +77,9 @@ void handleSuspend() {
                 {
                     auto [request, size] = context.AsContextNetworkRpc().GetRequest();
 
-                    websocketClient.Send(request, size);
+                    websocketClient->Send(request, size);
 
-                    auto [responseBuffer, responseSize] = websocketClient.Receive();
+                    auto [responseBuffer, responseSize] = websocketClient->Receive();
                     cout << "received response" << endl << flush;
 
                     context.AsContextNetworkRpc().ReceiveResponse(responseBuffer, responseSize);
@@ -153,7 +153,7 @@ int main(int argc, const char** argv) {
     };
 
     Cli::Stop();
-    websocketClient.Stop();
+    websocketClient->Stop();
 
     SDL_Quit();
     IMG_Quit();

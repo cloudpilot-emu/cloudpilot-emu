@@ -7,20 +7,20 @@ class WebsocketClientImpl;
 
 class WebsocketClient {
    public:
-    WebsocketClient(const string& host, const string& port);
-    ~WebsocketClient();
+    static WebsocketClient* Create(const string& host, const string& port);
 
-    void Start();
-    void Stop();
+    virtual ~WebsocketClient() = default;
 
-    bool IsRunning() const;
-    void Join();
-    void Send(const uint8* message, size_t size);
+    virtual void Start() = 0;
+    virtual void Stop() = 0;
 
-    std::pair<uint8*, size_t> Receive();
+    virtual bool IsRunning() const = 0;
+    virtual void Send(const uint8* message, size_t size) = 0;
 
-   private:
-    WebsocketClientImpl* impl{nullptr};
+    virtual std::pair<uint8*, size_t> Receive() = 0;
+
+   protected:
+    WebsocketClient() = default;
 
    private:
     WebsocketClient(const WebsocketClient&) = delete;
