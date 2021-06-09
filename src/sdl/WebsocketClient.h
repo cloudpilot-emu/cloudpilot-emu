@@ -11,8 +11,8 @@ class WebsocketClient {
 
     virtual ~WebsocketClient() = default;
 
-    virtual void Start() = 0;
-    virtual void Stop() = 0;
+    virtual bool Connect() = 0;
+    virtual void Disconnect() = 0;
 
     virtual bool IsRunning() const = 0;
     virtual bool Send(const uint8* message, size_t size) = 0;

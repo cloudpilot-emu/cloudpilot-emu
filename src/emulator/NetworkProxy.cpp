@@ -8,6 +8,7 @@
 #include "Logging.h"
 #include "Marshal.h"
 #include "SuspendContextNetworkConnect.h"
+#include "SuspendContextNetworkDisconnect.h"
 #include "SuspendContextNetworkRpc.h"
 #include "SuspendManager.h"
 #include "pb_decode.h"
@@ -113,12 +114,20 @@ void NetworkProxy::Open() {
                                                           bind(&NetworkProxy::ConnectAbort, this));
 }
 
-Err NetworkProxy::Close() {
-    if (openCount == 0) return 1;
+void NetworkProxy::Close() {
+    if (openCount == 0) return CloseDone(netErrNotOpen);
 
-    openCount--;
+    if (--openCount == 0)
+        SuspendManager::Suspend<SuspendContextNetworkDisconnect>(
+            bind(&NetworkProxy::CloseDone, this, 0));
+    else
+        CloseDone(netErrStillOpen);
+}
 
-    return 0;
+void NetworkProxy::CloseDone(Err err) {
+    CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 immediate");
+
+    PUT_RESULT_VAL(Err, err);
 }
 
 void NetworkProxy::ConnectSuccess() {

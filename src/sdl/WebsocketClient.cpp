@@ -1,14 +1,10 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-#define BOOST_NO_EXCEPTIONS
-#define BOOST_NO_RTTI
-#define BOOST_NO_TYPEID
-#define BOOST_BEAST_CORE_IMPL_BASIC_STREAM_HPP
-
 #include "WebsocketClient.h"
 
 #include <atomic>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/spawn.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
 #include <condition_variable>
@@ -25,44 +21,39 @@ using tcp = boost::asio::ip::tcp;
 namespace websocket = boost::beast::websocket;
 namespace net = boost::asio;
 
-void boost::throw_exception(std::exception const&) {
-    EmAssert(false);
-    exit(1);
-}
-
-void boost::throw_exception(std::exception const& exc, boost::source_location const&) {
-    throw_exception(exc);
-}
-
 class WebsocketClientImpl : public WebsocketClient {
    public:
     WebsocketClientImpl(const string& host, const string& port) : host(host), port(port) {}
 
-    void Start() override {
-        if (ws.is_open()) return;
+    bool Connect() override {
+        if (ws.is_open()) return true;
 
         boost::system::error_code err;
 
         auto const resolveResults = resolver.resolve(host, port, err);
-        if (err) return;
+        if (err) return false;
 
         net::connect(ws.next_layer(), resolveResults.begin(), resolveResults.end(), err);
-        if (err) return;
+        if (err) return false;
 
         ws.handshake(host, "/", err);
-        if (err) return;
+        if (err) return false;
 
         if (t.joinable()) t.join();
-        t = thread(bind(&WebsocketClientImpl::Poll, this));
+        t = thread(bind(&WebsocketClientImpl::PollThread, this));
+
+        return true;
     }
 
-    void Stop() override {
-        if (!ws.is_open()) return;
+    void Disconnect() override {
+        ws.next_layer().cancel();
 
-        boost::system::error_code err;
-        ws.close(websocket::close_reason(), err);
+        if (ws.is_open()) {
+            boost::system::error_code err;
+            ws.close(websocket::close_reason(), err);
+        }
 
-        t.join();
+        if (t.joinable()) t.join();
     }
 
     bool IsRunning() const override { return ws.is_open(); }
@@ -72,6 +63,7 @@ class WebsocketClientImpl : public WebsocketClient {
 
         boost::system::error_code err;
         ws.binary(true);
+
         ws.write(net::buffer(message, size), err);
 
         return !err;
@@ -89,19 +81,25 @@ class WebsocketClientImpl : public WebsocketClient {
     }
 
    private:
-    void Poll() {
-        while (true) {
+    void PollThread() {
+        boost::asio::spawn(ioc, std::bind(&WebsocketClientImpl::Poll, this, std::placeholders::_1));
+
+        ioc.restart();
+        ioc.run();
+    }
+
+    void Poll(boost::asio::yield_context yield) {
+        while (ws.is_open()) {
             boost::beast::flat_buffer buffer;
             boost::system::error_code err;
 
             // Read a message into our buffer
-            ws.read(buffer, err);
+            ws.async_read(buffer, yield[err]);
 
             if (err) {
-                if (ws.is_open())
-                    continue;
-                else
-                    break;
+                if (ws.is_open()) ws.close(websocket::close_reason(), err);
+
+                break;
             }
 
             {
@@ -120,8 +118,6 @@ class WebsocketClientImpl : public WebsocketClient {
 
         receiveCv.notify_one();
     }
-
-    void Join() { t.join(); }
 
    private:
     net::io_context ioc;

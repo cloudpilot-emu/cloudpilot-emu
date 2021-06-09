@@ -23,6 +23,7 @@
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendContextNetworkConnect.h"
+#include "SuspendContextNetworkDisconnect.h"
 #include "SuspendContextNetworkRpc.h"
 #include "SuspendManager.h"
 #include "WebsocketClient.h"
@@ -68,9 +69,24 @@ void handleSuspend() {
             }
 
             case SuspendContext::Kind::networkConnect:
-                websocketClient->Start();
+                if (websocketClient->Connect()) {
+                    context.AsContextNetworkConnect().Resume();
 
-                context.AsContextNetworkConnect().Resume();
+                    cout << "network proxy connected" << endl << flush;
+                } else {
+                    context.Cancel();
+
+                    cout << "failed to connect to network proxy" << endl << flush;
+                }
+
+                break;
+
+            case SuspendContext::Kind::networkDisconnect:
+                websocketClient->Disconnect();
+                context.AsContextNetworkDisconnect().Resume();
+
+                cout << "network proxy disconnected" << endl << flush;
+
                 break;
 
             case SuspendContext::Kind::networkRpc: {
@@ -78,18 +94,18 @@ void handleSuspend() {
                     auto [request, size] = context.AsContextNetworkRpc().GetRequest();
 
                     if (!websocketClient->Send(request, size)) {
-                        context.AsContextNetworkRpc().Cancel();
+                        context.Cancel();
 
                         break;
                     }
 
                     auto [responseBuffer, responseSize] = websocketClient->Receive();
-                    cout << "received response" << endl << flush;
+                    cout << "received proxy response" << endl << flush;
 
                     if (responseBuffer)
                         context.AsContextNetworkRpc().ReceiveResponse(responseBuffer, responseSize);
                     else
-                        context.AsContextNetworkRpc().Cancel();
+                        context.Cancel();
 
                     break;
                 }
@@ -160,7 +176,7 @@ int main(int argc, const char** argv) {
     };
 
     Cli::Stop();
-    websocketClient->Stop();
+    websocketClient->Disconnect();
 
     SDL_Quit();
     IMG_Quit();

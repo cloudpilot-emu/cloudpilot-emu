@@ -173,7 +173,7 @@ namespace {
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 immediate");
 
         if (Feature::GetNetworkRedirection()) {
-            PUT_RESULT_VAL(Err, gNetworkProxy.Close());
+            gNetworkProxy.Close();
 
             return kSkipROM;
         }

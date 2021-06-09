@@ -13,7 +13,7 @@ class NetworkProxy {
 
     void Open();
 
-    Err Close();
+    void Close();
 
     int OpenCount();
 
@@ -35,6 +35,8 @@ class NetworkProxy {
    private:
     void ConnectSuccess();
     void ConnectAbort();
+
+    void CloseDone(Err err);
 
     void SocketOpenSuccess(uint8* responseData, size_t size);
     void SocketOpenFail(Err err = netErrInternal);
