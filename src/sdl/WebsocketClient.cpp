@@ -7,6 +7,7 @@
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/websocket.hpp>
+#include <chrono>
 #include <condition_variable>
 #include <cstdio>
 #include <functional>
@@ -16,6 +17,8 @@
 #include <thread>
 
 using namespace std;
+using namespace std::chrono_literals;
+using namespace std::placeholders;
 
 using tcp = boost::asio::ip::tcp;
 namespace websocket = boost::beast::websocket;
@@ -39,24 +42,27 @@ class WebsocketClientImpl : public WebsocketClient {
         ws.handshake(host, "/", err);
         if (err) return false;
 
+        terminating = false;
+
         if (t.joinable()) t.join();
-        t = thread(bind(&WebsocketClientImpl::PollThread, this));
+        t = thread(bind(&WebsocketClientImpl::ThreadMain, this));
 
         return true;
     }
 
     void Disconnect() override {
-        ws.next_layer().cancel();
+        {
+            unique_lock<mutex> lock(terminatingMutex);
 
-        if (ws.is_open()) {
-            boost::system::error_code err;
-            ws.close(websocket::close_reason(), err);
+            while (!terminating) {
+                ws.next_layer().cancel();
+
+                terminatingCv.wait_for(lock, 10ms);
+            }
         }
 
         if (t.joinable()) t.join();
     }
-
-    bool IsRunning() const override { return ws.is_open(); }
 
     bool Send(const uint8* message, size_t size) override {
         if (!ws.is_open()) return false;
@@ -69,9 +75,9 @@ class WebsocketClientImpl : public WebsocketClient {
         return !err;
     }
 
-    std::pair<uint8*, size_t> Receive() override {
+    pair<uint8*, size_t> Receive() override {
         if (ws.is_open()) {
-            std::unique_lock<std::mutex> lock(receiveMutex);
+            unique_lock<mutex> lock(receiveMutex);
 
             while (!receiveBuffer && ws.is_open()) receiveCv.wait(lock);
         }
@@ -81,14 +87,14 @@ class WebsocketClientImpl : public WebsocketClient {
     }
 
    private:
-    void PollThread() {
-        boost::asio::spawn(ioc, std::bind(&WebsocketClientImpl::Poll, this, std::placeholders::_1));
+    void ThreadMain() {
+        boost::asio::spawn(io_context, bind(&WebsocketClientImpl::ThreadLoop, this, _1));
 
-        ioc.restart();
-        ioc.run();
+        io_context.restart();
+        io_context.run();
     }
 
-    void Poll(boost::asio::yield_context yield) {
+    void ThreadLoop(boost::asio::yield_context yield) {
         while (ws.is_open()) {
             boost::beast::flat_buffer buffer;
             boost::system::error_code err;
@@ -96,33 +102,40 @@ class WebsocketClientImpl : public WebsocketClient {
             // Read a message into our buffer
             ws.async_read(buffer, yield[err]);
 
-            if (err) {
-                if (ws.is_open()) ws.close(websocket::close_reason(), err);
-
-                break;
-            }
-
             {
-                std::unique_lock<std::mutex> lock(receiveMutex);
+                unique_lock<mutex> lock(receiveMutex);
 
-                if (receiveBuffer) cerr << "WARNING: discarding pending response" << endl << flush;
+                if (err) {
+                    if (ws.is_open()) ws.async_close(websocket::close_reason(), yield[err]);
+                }
 
-                receiveBufferSize = buffer.size();
-                receiveBuffer = make_unique<uint8[]>(receiveBufferSize);
+                if (ws.is_open()) {
+                    if (receiveBuffer)
+                        cerr << "WARNING: discarding pending response" << endl << flush;
 
-                memcpy(receiveBuffer.get(), buffer.cdata().data(), receiveBufferSize);
+                    receiveBufferSize = buffer.size();
+                    receiveBuffer = make_unique<uint8[]>(receiveBufferSize);
+
+                    memcpy(receiveBuffer.get(), buffer.cdata().data(), receiveBufferSize);
+                }
             }
 
             receiveCv.notify_one();
         }
 
-        receiveCv.notify_one();
+        {
+            unique_lock<mutex> lock(terminatingMutex);
+
+            terminating = true;
+        }
+
+        terminatingCv.notify_one();
     }
 
    private:
-    net::io_context ioc;
-    tcp::resolver resolver{ioc};
-    websocket::stream<tcp::socket> ws{ioc};
+    net::io_context io_context;
+    tcp::resolver resolver{io_context};
+    websocket::stream<tcp::socket> ws{io_context};
 
     thread t;
 
@@ -132,8 +145,12 @@ class WebsocketClientImpl : public WebsocketClient {
     unique_ptr<uint8[]> receiveBuffer;
     size_t receiveBufferSize;
 
-    std::mutex receiveMutex;
-    std::condition_variable receiveCv;
+    mutex receiveMutex;
+    condition_variable receiveCv;
+
+    bool terminating;
+    mutex terminatingMutex;
+    condition_variable terminatingCv;
 
    private:
     WebsocketClientImpl(const WebsocketClientImpl&) = delete;

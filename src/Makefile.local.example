@@ -21,4 +21,4 @@ LDFLAGS_NATIVE =  \
 	-fsanitize=address,undefined \
 	$(shell sdl2-config --libs) -lSDL2_image \
 	-L/usr/local/opt/readline/lib \
-	-lreadline
+	-lreadline -lboost_coroutine

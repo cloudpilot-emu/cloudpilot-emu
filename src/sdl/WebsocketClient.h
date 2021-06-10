@@ -14,7 +14,6 @@ class WebsocketClient {
     virtual bool Connect() = 0;
     virtual void Disconnect() = 0;
 
-    virtual bool IsRunning() const = 0;
     virtual bool Send(const uint8* message, size_t size) = 0;
 
     virtual std::pair<uint8*, size_t> Receive() = 0;
