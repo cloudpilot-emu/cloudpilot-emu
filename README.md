@@ -167,6 +167,9 @@ SDCTL emulation to enable the full 16MB of RAM on the m515 is taken from
 
 Zipfile I/O uses the [zip library](https://github.com/kuba--/zip).
 
+Protobuf (de)serialization in C++ is done using the awesome
+[NanoPB](https://github.com/nanopb/nanopb) library.
+
 # LICENSE
 
 This program is free software: you can redistribute it and/or modify it under
