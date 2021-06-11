@@ -1,4 +1,6 @@
 import asyncio
+from errno import errorcode
+import errno
 import websockets
 import proto.networking_pb2 as networking
 import hexdump
@@ -12,15 +14,39 @@ SOCKET_TYPE = {
 }
 
 
+class InvalidHandleError(Exception):
+    def __init__(self, handle):
+        super().__init__()
+        self.handle = handle
+
+
+def deserializeAddress(addr):
+    return(
+        f'{addr.ip & 0xff}.{(addr.ip >> 8) & 0xff}.{(addr.ip > 16) & 0xff}.{(addr .ip> 24) & 0xff}', addr.port)
+
+
 def formatException(ex):
+    if isinstance(ex, InvalidHandleError):
+        return f'invalid handle {ex.handle}'
+
     return f'{type(ex).__name__}: {ex}'
+
+
+def exceptionToErr(ex):
+    if isinstance(ex, OSError):
+        return err.errnoToPalm(ex.errno)
+
+    if isinstance(ex, InvalidHandleError):
+        return err.netErrParamErr
+
+    return err.netErrInternal
 
 
 def closeSocket(sock):
     try:
         sock.shutdown(socket.SHUT_RDWR)
     except OSError as ex:
-        if ex.errno != 107:
+        if ex.errno != errno.ENOTCONN:
             raise ex
 
     sock.close()
@@ -29,7 +55,7 @@ def closeSocket(sock):
 class ProxyContext:
     def __init__(self):
         self.echoRequest = None
-        self.sockets = {}
+        self._sockets = {}
         self.nextHandle = 0
 
     async def start(self, ws):
@@ -37,19 +63,12 @@ class ProxyContext:
 
         try:
             while True:
-                message = await ws.recv()
-
-                await self._handleMessage(message)
+                await self._handleMessage(await ws.recv())
 
         except websockets.exceptions.ConnectionClosedError:
             print("connection closed")
 
-        for handle, sock in self.sockets.items():
-            try:
-                closeSocket(sock)
-            except Exception as ex:
-                print(
-                    f'failed to close socket {handle}: {formatException(ex)}')
+        self._closeAllSockets()
 
     async def _handleMessage(self, message):
         request = networking.MsgRequest()
@@ -77,7 +96,7 @@ class ProxyContext:
             response = await self._handleSocketClose(request.socketCloseRequest)
 
         else:
-            print(f'unknown request {requestType}')
+            print(f'ERROR: unknown request {requestType}')
 
         if response:
             response.id = request.id
@@ -91,11 +110,10 @@ class ProxyContext:
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketOpenResponse
 
-        response.err = err.NET_ERR_INTERNAL
         response.handle = -1
 
         if not request.type in SOCKET_TYPE:
-            response.err = err.NET_ERR_PARAM_ERR
+            response.err = err.netErrParamErr
             return responseMsg
 
         try:
@@ -106,14 +124,15 @@ class ProxyContext:
             sockProtocol = socket.getprotobyname(
                 'icmp') if sockType == socket.SOCK_RAW else 0
 
-            self.sockets[handle] = socket.socket(
+            self._sockets[handle] = socket.socket(
                 socket.AF_INET, sockType, sockProtocol)
 
             response.handle = handle
             response.err = 0
 
         except Exception as ex:
-            print(f'failed to open socket: {formatException(ex)}')
+            print(f'ERROR: failed to open socket: {formatException(ex)}')
+            response.err = exceptionToErr(ex)
 
         return responseMsg
 
@@ -121,10 +140,19 @@ class ProxyContext:
         print(
             f'socketBindRequest: handle={request.handle} ip={request.address.ip} port={request.address.port}')
 
-        response = networking.MsgResponse()
-        response.socketBindResponse.err = 0
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketBindResponse
 
-        return response
+        try:
+            self._getSocket(request.handle).bind(
+                deserializeAddress(request.address))
+            response.err = 0
+
+        except Exception as ex:
+            print(f'ERROR: failed to bind socket: {formatException(ex)}')
+            response.err = exceptionToErr(ex)
+
+        return responseMsg
 
     async def _handleSocketAddr(self, request):
         print(f'socketAddrRequest: handle={request.handle}')
@@ -200,23 +228,33 @@ class ProxyContext:
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketCloseResponse
 
-        if not request.handle in self.sockets:
-            response.err = err.NET_ERR_PARAM_ERR
-            return responseMsg
-
-        sock = self.sockets[request.handle]
-        del self.sockets[request.handle]
-
         try:
+            sock = self._getSocket(request.handle)
+            del self._sockets[request.handle]
+
             closeSocket(sock)
             response.err = 0
 
         except Exception as ex:
             print(
-                f'failed to close socket {request.handle}: {formatException(ex)}')
-            response.err = err.NET_ERR_INTERNAL
+                f'ERROR: failed to close socket {request.handle}: {formatException(ex)}')
+            response.err = exceptionToErr(ex)
 
         return responseMsg
+
+    def _getSocket(self, handle):
+        if not handle in self._sockets:
+            raise InvalidHandleError(handle)
+
+        return self._sockets[handle]
+
+    def _closeAllSockets(self):
+        for handle, sock in self._sockets.items():
+            try:
+                closeSocket(sock)
+            except Exception as ex:
+                print(
+                    f'ERROR: failed to close socket {handle}: {formatException(ex)}')
 
 
 async def handle(socket, path):
