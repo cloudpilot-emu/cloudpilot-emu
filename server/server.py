@@ -2,23 +2,54 @@ import asyncio
 import websockets
 import proto.networking_pb2 as networking
 import hexdump
+import socket
+import net_errors as err
+
+SOCKET_TYPE = {
+    1: socket.SOCK_STREAM,
+    2: socket.SOCK_DGRAM,
+    3: socket.SOCK_RAW
+}
+
+
+def formatException(ex):
+    return f'{type(ex).__name__}: {ex}'
+
+
+def closeSocket(sock):
+    try:
+        sock.shutdown(socket.SHUT_RDWR)
+    except OSError as ex:
+        if ex.errno != 107:
+            raise ex
+
+    sock.close()
 
 
 class ProxyContext:
     def __init__(self):
         self.echoRequest = None
+        self.sockets = {}
+        self.nextHandle = 0
 
-    async def start(self, socket):
-        self._socket = socket
+    async def start(self, ws):
+        self._ws = ws
 
         try:
             while True:
-                message = await socket.recv()
+                message = await ws.recv()
 
                 await self._handleMessage(message)
 
         except websockets.exceptions.ConnectionClosedError:
             print("connection closed")
+
+        for handle, sock in self.sockets.items():
+            try:
+                closeSocket(sock)
+            except Exception as ex:
+                print(
+                    f'failed to close socket {handle}: {formatException(ex)}')
 
     async def _handleMessage(self, message):
         request = networking.MsgRequest()
@@ -38,8 +69,10 @@ class ProxyContext:
 
         elif requestType == "socketSendRequest":
             response = await self._handleSocketSend(request.socketSendRequest)
+
         elif requestType == "socketReceiveRequest":
             response = await self._handeSocketReceive(request.socketReceiveRequest)
+
         elif requestType == "socketCloseRequest":
             response = await self._handleSocketClose(request.socketCloseRequest)
 
@@ -49,17 +82,40 @@ class ProxyContext:
         if response:
             response.id = request.id
 
-            await self._socket.send(response.SerializeToString())
+            await self._ws.send(response.SerializeToString())
 
     async def _handleSocketOpen(self, request):
         print(
             f'socketOpenRequest: type={request.type} protocol={request.protocol}')
 
-        response = networking.MsgResponse()
-        response.socketOpenResponse.handle = 42
-        response.socketOpenResponse.err = 0
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketOpenResponse
 
-        return response
+        response.err = err.NET_ERR_INTERNAL
+        response.handle = -1
+
+        if not request.type in SOCKET_TYPE:
+            response.err = err.NET_ERR_PARAM_ERR
+            return responseMsg
+
+        try:
+            handle = self.nextHandle
+            self.nextHandle += 1
+
+            sockType = SOCKET_TYPE[request.type]
+            sockProtocol = socket.getprotobyname(
+                'icmp') if sockType == socket.SOCK_RAW else 0
+
+            self.sockets[handle] = socket.socket(
+                socket.AF_INET, sockType, sockProtocol)
+
+            response.handle = handle
+            response.err = 0
+
+        except Exception as ex:
+            print(f'failed to open socket: {formatException(ex)}')
+
+        return responseMsg
 
     async def _handleSocketBind(self, request):
         print(
@@ -141,10 +197,26 @@ class ProxyContext:
     async def _handleSocketClose(self, request):
         print(f'socketCloseRequest: handle={request.handle}')
 
-        response = networking.MsgResponse()
-        response.socketCloseResponse.err = 0
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketCloseResponse
 
-        return response
+        if not request.handle in self.sockets:
+            response.err = err.NET_ERR_PARAM_ERR
+            return responseMsg
+
+        sock = self.sockets[request.handle]
+        del self.sockets[request.handle]
+
+        try:
+            closeSocket(sock)
+            response.err = 0
+
+        except Exception as ex:
+            print(
+                f'failed to close socket {request.handle}: {formatException(ex)}')
+            response.err = err.NET_ERR_INTERNAL
+
+        return responseMsg
 
 
 async def handle(socket, path):
