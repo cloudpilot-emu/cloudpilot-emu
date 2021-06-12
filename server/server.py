@@ -42,14 +42,14 @@ def exceptionToErr(ex):
     return err.netErrInternal
 
 
-def closeSocket(sock):
+async def closeSocket(sock):
     try:
-        sock.shutdown(socket.SHUT_RDWR)
+        await asyncio.to_thread(lambda: sock.shutdown(socket.SHUT_RDWR))
     except OSError as ex:
         if ex.errno != errno.ENOTCONN:
             raise ex
 
-    sock.close()
+    await asyncio.to_thread(lambda: sock.close())
 
 
 class ProxyContext:
@@ -68,7 +68,7 @@ class ProxyContext:
         except websockets.exceptions.ConnectionClosedError:
             print("connection closed")
 
-        self._closeAllSockets()
+        await self._closeAllSockets()
 
     async def _handleMessage(self, message):
         request = networking.MsgRequest()
@@ -124,8 +124,8 @@ class ProxyContext:
             sockProtocol = socket.getprotobyname(
                 'icmp') if sockType == socket.SOCK_RAW else 0
 
-            self._sockets[handle] = socket.socket(
-                socket.AF_INET, sockType, sockProtocol)
+            self._sockets[handle] = await asyncio.to_thread(lambda: socket.socket(
+                socket.AF_INET, sockType, sockProtocol))
 
             response.handle = handle
             response.err = 0
@@ -144,8 +144,8 @@ class ProxyContext:
         response = responseMsg.socketBindResponse
 
         try:
-            self._getSocket(request.handle).bind(
-                deserializeAddress(request.address))
+            await asyncio.to_thread(lambda: self._getSocket(request.handle).bind(
+                deserializeAddress(request.address)))
             response.err = 0
 
         except Exception as ex:
@@ -232,7 +232,7 @@ class ProxyContext:
             sock = self._getSocket(request.handle)
             del self._sockets[request.handle]
 
-            closeSocket(sock)
+            await closeSocket(sock)
             response.err = 0
 
         except Exception as ex:
@@ -248,10 +248,10 @@ class ProxyContext:
 
         return self._sockets[handle]
 
-    def _closeAllSockets(self):
+    async def _closeAllSockets(self):
         for handle, sock in self._sockets.items():
             try:
-                closeSocket(sock)
+                await closeSocket(sock)
             except Exception as ex:
                 print(
                     f'ERROR: failed to close socket {handle}: {formatException(ex)}')
