@@ -21,7 +21,8 @@ class NetworkProxy {
 
     void SocketBind(int16 handle, NetSocketAddrType* sockAddrP);
 
-    void SocketAddr(int16 handle);
+    void SocketAddr(int16 handle, NetSocketAddrType* locAddrP, Int16* locAddrLenP,
+                    NetSocketAddrType* remAddrP, Int16* remAddrLen);
 
     void SocketOptionSet(int16 handle, uint16 level, uint16 option, uint32 valueP, uint16 valueLen);
 

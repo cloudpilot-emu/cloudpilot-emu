@@ -55,7 +55,7 @@ namespace {
         const NetSocketAddrINType* sockAddrIN = (const NetSocketAddrINType*)(sockAddr);
 
         address.port = sockAddrIN->port;
-        address.ip = sockAddrIN->addr;
+        address.ip = ntohl(sockAddrIN->addr);
 
         return true;
     }
@@ -65,7 +65,7 @@ namespace {
 
         sockAddrIN->family = netSocketAddrINET;
         sockAddrIN->port = address.port;
-        sockAddrIN->addr = address.ip;
+        sockAddrIN->addr = htonl(address.ip);
     }
 
     bool bufferEncodeCb(pb_ostream_t* stream, const pb_field_iter_t* field, void* const* arg) {
@@ -257,9 +257,17 @@ void NetworkProxy::SocketBindFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
-void NetworkProxy::SocketAddr(int16 handle) {
+void NetworkProxy::SocketAddr(int16 handle, NetSocketAddrType* locAddrP, Int16* locAddrLenP,
+                              NetSocketAddrType* remAddrP, Int16* remAddrLenP) {
     MsgRequest request = NewRequest(MsgRequest_socketAddrRequest_tag);
     request.payload.socketAddrRequest.handle = handle;
+
+    if ((locAddrP && *locAddrLenP < 8) || (remAddrP && *remAddrLenP < 8)) {
+        return SocketBindFail(netErrParamErr);
+    }
+
+    request.payload.socketAddrRequest.requestAddressLocal = locAddrP;
+    request.payload.socketAddrRequest.requestAddressRemote = remAddrP;
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketAddrSuccess, this, _1, _2),

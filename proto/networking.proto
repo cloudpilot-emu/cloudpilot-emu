@@ -26,11 +26,13 @@ message MsgSocketBindResponse {
 
 message MsgSocketAddrRequest {
     required int32 handle = 1;
+    required bool requestAddressLocal = 2;
+    required bool requestAddressRemote = 3;
 }
 
 message MsgSocketAddrResponse {
-    required Address addressLocal = 1;
-    required Address addressRemote = 2;
+    optional Address addressLocal = 1;
+    optional Address addressRemote = 2;
     required int32 err = 3;
 }
 

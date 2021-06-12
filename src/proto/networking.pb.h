@@ -17,6 +17,8 @@ typedef struct _Address {
 
 typedef struct _MsgSocketAddrRequest { 
     int32_t handle; 
+    bool requestAddressLocal; 
+    bool requestAddressRemote; 
 } MsgSocketAddrRequest;
 
 typedef struct _MsgSocketBindResponse { 
@@ -54,7 +56,9 @@ typedef struct _MsgSocketSendResponse {
 } MsgSocketSendResponse;
 
 typedef struct _MsgSocketAddrResponse { 
+    bool has_addressLocal;
     Address addressLocal; 
+    bool has_addressRemote;
     Address addressRemote; 
     int32_t err; 
 } MsgSocketAddrResponse;
@@ -117,8 +121,8 @@ extern "C" {
 #define MsgSocketOpenResponse_init_default       {0, 0}
 #define MsgSocketBindRequest_init_default        {0, Address_init_default}
 #define MsgSocketBindResponse_init_default       {0}
-#define MsgSocketAddrRequest_init_default        {0}
-#define MsgSocketAddrResponse_init_default       {Address_init_default, Address_init_default, 0}
+#define MsgSocketAddrRequest_init_default        {0, 0, 0}
+#define MsgSocketAddrResponse_init_default       {false, Address_init_default, false, Address_init_default, 0}
 #define MsgSocketSendRequest_init_default        {0, {{NULL}, NULL}, 0, false, Address_init_default, 0}
 #define MsgSocketSendResponse_init_default       {0, 0}
 #define MsgSocketReceiveRequest_init_default     {0, 0, 0, 0}
@@ -132,8 +136,8 @@ extern "C" {
 #define MsgSocketOpenResponse_init_zero          {0, 0}
 #define MsgSocketBindRequest_init_zero           {0, Address_init_zero}
 #define MsgSocketBindResponse_init_zero          {0}
-#define MsgSocketAddrRequest_init_zero           {0}
-#define MsgSocketAddrResponse_init_zero          {Address_init_zero, Address_init_zero, 0}
+#define MsgSocketAddrRequest_init_zero           {0, 0, 0}
+#define MsgSocketAddrResponse_init_zero          {false, Address_init_zero, false, Address_init_zero, 0}
 #define MsgSocketSendRequest_init_zero           {0, {{NULL}, NULL}, 0, false, Address_init_zero, 0}
 #define MsgSocketSendResponse_init_zero          {0, 0}
 #define MsgSocketReceiveRequest_init_zero        {0, 0, 0, 0}
@@ -147,6 +151,8 @@ extern "C" {
 #define Address_ip_tag                           1
 #define Address_port_tag                         2
 #define MsgSocketAddrRequest_handle_tag          1
+#define MsgSocketAddrRequest_requestAddressLocal_tag 2
+#define MsgSocketAddrRequest_requestAddressRemote_tag 3
 #define MsgSocketBindResponse_err_tag            1
 #define MsgSocketCloseRequest_handle_tag         1
 #define MsgSocketCloseResponse_err_tag           1
@@ -220,13 +226,15 @@ X(a, STATIC,   REQUIRED, INT32,    err,               1)
 #define MsgSocketBindResponse_DEFAULT NULL
 
 #define MsgSocketAddrRequest_FIELDLIST(X, a) \
-X(a, STATIC,   REQUIRED, INT32,    handle,            1)
+X(a, STATIC,   REQUIRED, INT32,    handle,            1) \
+X(a, STATIC,   REQUIRED, BOOL,     requestAddressLocal,   2) \
+X(a, STATIC,   REQUIRED, BOOL,     requestAddressRemote,   3)
 #define MsgSocketAddrRequest_CALLBACK NULL
 #define MsgSocketAddrRequest_DEFAULT NULL
 
 #define MsgSocketAddrResponse_FIELDLIST(X, a) \
-X(a, STATIC,   REQUIRED, MESSAGE,  addressLocal,      1) \
-X(a, STATIC,   REQUIRED, MESSAGE,  addressRemote,     2) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  addressLocal,      1) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  addressRemote,     2) \
 X(a, STATIC,   REQUIRED, INT32,    err,               3)
 #define MsgSocketAddrResponse_CALLBACK NULL
 #define MsgSocketAddrResponse_DEFAULT NULL
@@ -348,7 +356,7 @@ extern const pb_msgdesc_t MsgResponse_msg;
 /* MsgRequest_size depends on runtime parameters */
 /* MsgResponse_size depends on runtime parameters */
 #define Address_size                             17
-#define MsgSocketAddrRequest_size                11
+#define MsgSocketAddrRequest_size                15
 #define MsgSocketAddrResponse_size               49
 #define MsgSocketBindRequest_size                30
 #define MsgSocketBindResponse_size               11

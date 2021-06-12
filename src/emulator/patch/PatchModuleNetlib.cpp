@@ -766,7 +766,7 @@ namespace {
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
         if (Feature::GetNetworkRedirection()) {
-            gNetworkProxy.SocketAddr(socket);
+            gNetworkProxy.SocketAddr(socket, locAddrP, locAddrLenP, remAddrP, remAddrLenP);
 
             return kSkipROM;
         }

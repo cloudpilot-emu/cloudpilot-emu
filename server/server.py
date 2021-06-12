@@ -20,14 +20,42 @@ class InvalidHandleError(Exception):
         self.handle = handle
 
 
+class InvalidAddressError(Exception):
+    def __init__(self, address):
+        super().__init__()
+        self.address = address
+
+
 def deserializeAddress(addr):
     return(
-        f'{addr.ip & 0xff}.{(addr.ip >> 8) & 0xff}.{(addr.ip > 16) & 0xff}.{(addr .ip> 24) & 0xff}', addr.port)
+        f'{(addr.ip >> 24) & 0xff}.{(addr.ip >> 16) & 0xff}.{(addr.ip >> 8) & 0xff}.{addr.ip & 0xff}', addr.port)
+
+
+def serializeAddress(addr, target):
+
+    if type(addr) != tuple or len(addr) != 2:
+        raise InvalidAddressError(addr)
+
+    target.port = addr[1]
+
+    try:
+        parts = [int(x) for x in addr[0].split(".")]
+    except Exception:
+        raise InvalidAddressError(addr)
+
+    if len(parts) != 4:
+        raise InvalidAddressError(addr)
+
+    target.ip = ((parts[0] << 24) | (parts[1] << 16) | (
+        parts[2] << 8) | parts[3]) & 0xffffffff
 
 
 def formatException(ex):
     if isinstance(ex, InvalidHandleError):
         return f'invalid handle {ex.handle}'
+
+    if isinstance(ex, InvalidAddressError):
+        return f'invalid address {ex.address}'
 
     return f'{type(ex).__name__}: {ex}'
 
@@ -38,6 +66,9 @@ def exceptionToErr(ex):
 
     if isinstance(ex, InvalidHandleError):
         return err.netErrParamErr
+
+    if isinstance(ex, InvalidAddressError):
+        return err.netErrInternal
 
     return err.netErrInternal
 
@@ -155,16 +186,29 @@ class ProxyContext:
         return responseMsg
 
     async def _handleSocketAddr(self, request):
-        print(f'socketAddrRequest: handle={request.handle}')
+        print(
+            f'socketAddrRequest: handle={request.handle} requestAddressLocal={request.requestAddressLocal} requestAddressRemote={request.requestAddressRemote}')
 
-        response = networking.MsgResponse()
-        response.socketAddrResponse.addressLocal.ip = 0
-        response.socketAddrResponse.addressLocal.port = 0
-        response.socketAddrResponse.addressRemote.ip = 0
-        response.socketAddrResponse.addressRemote.port = 0
-        response.socketAddrResponse.err = 0
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketAddrResponse
 
-        return response
+        try:
+            sock = self._getSocket(request.handle)
+
+            if request.requestAddressLocal:
+                serializeAddress(await asyncio.to_thread(lambda: sock.getsockname()), response.addressLocal)
+
+            if request.requestAddressRemote:
+                serializeAddress(await asyncio.to_thread(lambda: sock.getpeername()), response.addressRemote)
+
+            response.err = 0
+
+        except Exception as ex:
+            print(
+                f'ERROR: failed to get socket addresses: {formatException(ex)}')
+            response.err = exceptionToErr(ex)
+
+        return responseMsg
 
     async def _handleSocketSend(self, request):
         print(
@@ -185,7 +229,7 @@ class ProxyContext:
 
     async def _handeSocketReceive(self, request):
         print(
-            f'socketReceiveRequest: handle={request.handle} flags={request.flags} timeout={request.timeout} maxLength{request.maxLen}')
+            f'socketReceiveRequest: handle={request.handle} flags={request.flags} timeout={request.timeout} maxLength={request.maxLen}')
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketReceiveResponse
