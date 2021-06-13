@@ -5,7 +5,9 @@ import websockets
 import proto.networking_pb2 as networking
 import hexdump
 import socket
+import select
 import net_errors as err
+import traceback
 
 SOCKET_TYPE = {
     1: socket.SOCK_STREAM,
@@ -24,6 +26,16 @@ class InvalidAddressError(Exception):
     def __init__(self, address):
         super().__init__()
         self.address = address
+
+
+class BadPacketException(Exception):
+    pass
+
+
+class SocketContext:
+    def __init__(self, socket, type):
+        self.socket = socket
+        self.type = type
 
 
 def deserializeAddress(addr):
@@ -50,12 +62,30 @@ def serializeAddress(addr, target):
         parts[2] << 8) | parts[3]) & 0xffffffff
 
 
+def translateFlags(flags):
+    translatedFlags = 0
+
+    if flags & 0x01:
+        translatedFlags |= socket.MSG_OOB
+
+    if flags & 0x02:
+        translatedFlags |= socket.MSG_PEEK
+
+    if flags & 0x04:
+        translatedFlags |= socket.MSG_DONTROUTE
+
+    return flags
+
+
 def formatException(ex):
     if isinstance(ex, InvalidHandleError):
         return f'invalid handle {ex.handle}'
 
     if isinstance(ex, InvalidAddressError):
         return f'invalid address {ex.address}'
+
+    if isinstance(ex, BadPacketException):
+        return 'bad IPv4 packet'
 
     return f'{type(ex).__name__}: {ex}'
 
@@ -70,6 +100,9 @@ def exceptionToErr(ex):
     if isinstance(ex, InvalidAddressError):
         return err.netErrInternal
 
+    if isinstance(ex, BadPacketException):
+        return err.netErrParamErr
+
     return err.netErrInternal
 
 
@@ -81,6 +114,13 @@ async def closeSocket(sock):
             raise ex
 
     await asyncio.to_thread(lambda: sock.close())
+
+
+def ipFromIpPacket(packet):
+    if len(packet) < 20:
+        raise BadPacketException()
+
+    return f'{packet[16]}.{packet[17]}.{packet[18]}.{packet[19]}'
 
 
 class ProxyContext:
@@ -155,8 +195,10 @@ class ProxyContext:
             sockProtocol = socket.getprotobyname(
                 'icmp') if sockType == socket.SOCK_RAW else 0
 
-            self._sockets[handle] = await asyncio.to_thread(lambda: socket.socket(
+            sock = await asyncio.to_thread(lambda: socket.socket(
                 socket.AF_INET, sockType, sockProtocol))
+
+            self._sockets[handle] = SocketContext(sock, sockType)
 
             response.handle = handle
             response.err = 0
@@ -175,7 +217,9 @@ class ProxyContext:
         response = responseMsg.socketBindResponse
 
         try:
-            await asyncio.to_thread(lambda: self._getSocket(request.handle).bind(
+            sock = self._getSocketCtx(request.handle).socket
+
+            await asyncio.to_thread(lambda: sock.bind(
                 deserializeAddress(request.address)))
             response.err = 0
 
@@ -193,7 +237,7 @@ class ProxyContext:
         response = responseMsg.socketAddrResponse
 
         try:
-            sock = self._getSocket(request.handle)
+            sock = self._getSocketCtx(request.handle).socket
 
             if request.requestAddressLocal:
                 serializeAddress(await asyncio.to_thread(lambda: sock.getsockname()), response.addressLocal)
@@ -221,11 +265,41 @@ class ProxyContext:
 
         self.echoRequest = request.data
 
-        response = networking.MsgResponse()
-        response.socketSendResponse.err = 0
-        response.socketSendResponse.bytesSent = len(request.data)
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketSendResponse
 
-        return response
+        try:
+            socketCtx = self._getSocketCtx(request.handle)
+            sock = socketCtx.socket
+            flags = translateFlags(request.flags)
+
+            if request.timeout > 0:
+                rlist, wlist, xlist = await asyncio.to_thread(lambda: select.select((), (sock,), (), request.timeout / 1000))
+
+                if len(wlist) == 0:
+                    response.err = err.netErrTimeout
+                    response.bytesSent = -1
+
+                    return responseMsg
+
+            if request.HasField("address"):
+                response.bytesSent = await asyncio.to_thread(lambda: sock.sendto(request.data, flags, deserializeAddress(request.address)))
+
+            elif socketCtx.type == socket.SOCK_RAW:
+                response.bytesSent = await asyncio.to_thread(lambda: sock.sendto(request.data, flags, (ipFromIpPacket(request.data), 1)))
+
+            else:
+                response.bytesSent = await asyncio.to_thread(lambda: sock.send(request.data, flags))
+
+            response.err = 0
+
+        except Exception as ex:
+            print(f'ERROR: failed to send: {formatException(ex)}')
+
+            response.err = exceptionToErr(ex)
+            response.bytesSent = -1
+
+        return responseMsg
 
     async def _handeSocketReceive(self, request):
         print(
@@ -273,7 +347,7 @@ class ProxyContext:
         response = responseMsg.socketCloseResponse
 
         try:
-            sock = self._getSocket(request.handle)
+            sock = self._getSocketCtx(request.handle).socket
             del self._sockets[request.handle]
 
             await closeSocket(sock)
@@ -286,16 +360,16 @@ class ProxyContext:
 
         return responseMsg
 
-    def _getSocket(self, handle):
+    def _getSocketCtx(self, handle):
         if not handle in self._sockets:
             raise InvalidHandleError(handle)
 
         return self._sockets[handle]
 
     async def _closeAllSockets(self):
-        for handle, sock in self._sockets.items():
+        for handle, sockCtx in self._sockets.items():
             try:
-                await closeSocket(sock)
+                await closeSocket(sockCtx.socket)
             except Exception as ex:
                 print(
                     f'ERROR: failed to close socket {handle}: {formatException(ex)}')

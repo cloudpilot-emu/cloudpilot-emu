@@ -390,7 +390,7 @@ void NetworkProxy::SocketSend(int16 handle, uint8* data, size_t count, uint32 fl
 
     sendRequest.handle = handle;
 
-    if (flags) {
+    if (flags & ~(netIOFlagOutOfBand | netIOFlagPeek | netIOFlagDontRoute)) {
         logging::printf("ERROR: SocketSend: unsupported flags 0x%08x", flags);
 
         return SocketSendFail();
@@ -406,7 +406,8 @@ void NetworkProxy::SocketSend(int16 handle, uint8* data, size_t count, uint32 fl
     } else
         sendRequest.has_address = false;
 
-    sendRequest.timeout = timeout;
+    sendRequest.timeout =
+        timeout > 0 ? timeout * 10 : timeout;  // milliseconds, assume 100 ticks per second
 
     BufferEncodeContext bufferEncodeCtx{data, count};
 
