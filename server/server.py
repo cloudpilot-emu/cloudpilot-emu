@@ -123,6 +123,14 @@ def ipFromIpPacket(packet):
     return f'{packet[16]}.{packet[17]}.{packet[18]}.{packet[19]}'
 
 
+def removeIpHeader(packet, socketCtx):
+    if socketCtx.type != socket.SOCK_RAW or len(packet) < 20 or (packet[0] >> 4) != 4 or (packet[0] & 0x0f) < 5 or packet[9] != 1:
+        return packet
+
+    hlen = packet[0] & 0x0f
+    return packet[4*hlen:]
+
+
 class ProxyContext:
     def __init__(self):
         self.echoRequest = None
@@ -188,12 +196,21 @@ class ProxyContext:
             return responseMsg
 
         try:
+            sockType = SOCKET_TYPE[request.type]
+            sockProtocol = 0
+
+            if sockType == socket.SOCK_RAW:
+                if request.protocol == 255 or request.protocol == 1:
+                    sockProtocol = socket.IPPROTO_ICMP
+                else:
+                    print(
+                        f'unsupported protocol for RAW socket: {request.protocol}')
+                    response.err = err.netErrParamErr
+
+                    return responseMsg
+
             handle = self.nextHandle
             self.nextHandle += 1
-
-            sockType = SOCKET_TYPE[request.type]
-            sockProtocol = socket.getprotobyname(
-                'icmp') if sockType == socket.SOCK_RAW else 0
 
             sock = await asyncio.to_thread(lambda: socket.socket(
                 socket.AF_INET, sockType, sockProtocol))
@@ -282,11 +299,16 @@ class ProxyContext:
 
                     return responseMsg
 
-            if request.HasField("address"):
-                response.bytesSent = await asyncio.to_thread(lambda: sock.sendto(request.data, flags, deserializeAddress(request.address)))
+            if socketCtx.type == socket.SOCK_RAW:
+                data = removeIpHeader(request.data, socketCtx)
 
-            elif socketCtx.type == socket.SOCK_RAW:
-                response.bytesSent = await asyncio.to_thread(lambda: sock.sendto(request.data, flags, (ipFromIpPacket(request.data), 1)))
+                address = deserializeAddress(request.address) if request.HasField(
+                    "address") else (ipFromIpPacket(request.data), 1)
+
+                response.bytesSent = await asyncio.to_thread(lambda: sock.sendto(data, flags, address) + len(request.data) - len(data))
+
+            elif request.HasField("address"):
+                response.bytesSent = await asyncio.to_thread(lambda: sock.sendto(request.data, flags, deserializeAddress(request.address)))
 
             else:
                 response.bytesSent = await asyncio.to_thread(lambda: sock.send(request.data, flags))
@@ -308,35 +330,37 @@ class ProxyContext:
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketReceiveResponse
 
-        if self.echoRequest == None or len(self.echoRequest) < 24:
-            response.err = 0x1200 | 17
-            response.data = b''
-            response.address.port = 0
-            response.address.ip = 0
-        else:
+        response.data = b''
+        response.address.ip = 0
+        response.address.port = 0
+
+        try:
+            sock = self._getSocketCtx(request.handle).socket
+            flags = translateFlags(request.flags)
+
+            if request.timeout > 0:
+                rlist, wlist, xlist = await asyncio.to_thread(lambda: select.select((sock,), (), (), request.timeout / 1000))
+
+                if len(rlist) == 0:
+                    response.err = err.netErrTimeout
+
+                    return responseMsg
+
+            data, address = await asyncio.to_thread(lambda: sock.recvfrom(request.maxLen, flags))
+
+            serializeAddress(address, response.address)
+            response.data = data
             response.err = 0
-
-            echoResponse = bytearray(self.echoRequest)
-            echoResponse[12:16] = self.echoRequest[16:20]
-            echoResponse[16:20] = self.echoRequest[12:16]
-
-            echoResponse[20] = 0x00
-
-            checksum = echoResponse[22] | (echoResponse[23] << 8)
-            checksum += 8
-            echoResponse[22] = checksum & 0xff
-            echoResponse[23] = (checksum >> 8) & 0xff
-
-            self.echoRequest = None
-
-            response.data = bytes(echoResponse)
-            response.address.port = 0
-            response.address.ip = 0
 
             print()
             for line in hexdump.dumpgen(response.data):
                 print(line)
             print()
+
+        except Exception as ex:
+            print(f'ERROR: failed to receive: {formatException(ex)}')
+
+            response.err = exceptionToErr(ex)
 
         return responseMsg
 
