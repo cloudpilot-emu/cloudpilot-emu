@@ -102,9 +102,10 @@ void handleSuspend() {
                     auto [responseBuffer, responseSize] = websocketClient->Receive();
                     cout << "received proxy response" << endl << flush;
 
-                    if (responseBuffer)
+                    if (responseBuffer) {
                         context.AsContextNetworkRpc().ReceiveResponse(responseBuffer, responseSize);
-                    else
+                        delete[] responseBuffer;
+                    } else
                         context.Cancel();
 
                     break;

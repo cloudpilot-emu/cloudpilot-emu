@@ -599,7 +599,6 @@ void NetworkProxy::SocketCloseFail(Err err) {
 bool NetworkProxy::DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
                                   pb_size_t payloadTag, BufferDecodeContext* bufferrDecodeContext) {
     response = MsgResponse_init_zero;
-    unique_ptr<uint8[]> autodelete(responseData);
 
     if (bufferrDecodeContext) {
         response.cb_payload.arg = bufferrDecodeContext;
