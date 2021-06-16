@@ -1,4 +1,5 @@
 import errno
+import socket
 
 netErrorClass = 0x1200
 
@@ -133,7 +134,7 @@ netErrScptPluginLaunchFail = netErrorClass | 129
 netErrScptPluginCmdFail = netErrorClass | 130
 netErrScptPluginInvalidCmd = netErrorClass | 131
 
-_nameLookup = {
+_errnoNameLookup = {
     'EINTR': netErrUserCancel,
     'EDEADLK': netErrWouldBlock,
     'ENOMEM': netErrOutOfMemory,
@@ -212,11 +213,22 @@ _nameLookup = {
     'WSAEDISCON': netErrSocketNotConnected
 }
 
-_codeLookup = {}
+_errnoLookup = {}
 
 for code, name in errno.errorcode.items():
-    _codeLookup[code] = _nameLookup[name] if name in _nameLookup else netErrInternal
+    _errnoLookup[code] = _errnoNameLookup[name] if name in _errnoNameLookup else netErrInternal
+
+_herrnoLookup = {
+    socket.EAI_NONAME: netErrDNSUnreachable,
+    socket.EAI_AGAIN: netErrDNSServerFailure,
+    socket.EAI_FAIL: netErrDNSRefused,
+    socket.EAI_NODATA: netErrDNSNonexistantName
+}
 
 
-def errnoToPalm(code):
-    return _codeLookup[code] if code in _codeLookup else netErrInternal
+def errnoToPalm(errno):
+    return _errnoLookup[errno] if errno in _errnoLookup else netErrInternal
+
+
+def herrnoToPalm(herrno):
+    return _herrnoLookup[herrno] if herrno in _herrnoLookup else netErrInternal

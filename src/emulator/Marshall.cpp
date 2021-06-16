@@ -613,3 +613,70 @@ void Marshal::GetNetServInfoBufType(emuptr p, NetServInfoBufType& netServInfoBuf
     if (p) {
     }
 }
+
+void Marshal::PutNetHostInfoBufType(emuptr p, const NetHostInfoBufType& src) {
+    if (p) {
+        EmAliasNetHostInfoBufType<PAS> dest(p);
+
+        // Copy the host name.
+
+        dest.hostInfo.nameP = dest.name.GetPtr();
+        EmMem_strcpy((emuptr)dest.hostInfo.nameP, src.name);
+
+        // Copy the aliases.
+
+        dest.hostInfo.nameAliasesP = dest.aliasList.GetPtr();
+
+        Char** srcNameAliasesP = src.hostInfo.nameAliasesP;  // Ptr to src ptrs
+        emuptr destAliasList = dest.aliasList.GetPtr();      // Ptr to dest ptrs
+        emuptr destAliases = dest.aliases.GetPtr();          // Ptr to dest buffer
+
+        while (*srcNameAliasesP) {
+            EmMem_strcpy(destAliases, *srcNameAliasesP);
+
+            EmAliasemuptr<PAS> p(destAliasList);
+            p = destAliases;
+
+            destAliasList += sizeof(emuptr);
+            destAliases += strlen(*srcNameAliasesP) + 1;
+            srcNameAliasesP += 1;
+        }
+
+        EmAliasemuptr<PAS> p1(destAliasList);
+        p1 = EmMemNULL;
+
+        // Copy the easy fields.
+
+        dest.hostInfo.addrType = src.hostInfo.addrType;
+        dest.hostInfo.addrLen = src.hostInfo.addrLen;
+
+        // Copy the address list.
+
+        dest.hostInfo.addrListP = dest.addressList.GetPtr();
+
+        NetIPAddr** addrListP = (NetIPAddr**)src.hostInfo.addrListP;
+        emuptr destAddressList = dest.addressList.GetPtr();
+        emuptr destAddress = dest.address.GetPtr();
+
+        while (*addrListP) {
+            // Copy them one at a time to sort out endian issues.  Just how this
+            // is supposed to be done is not clear (NetLib documentation says that
+            // the addresses are in HBO, while the WinSock header says that the
+            // addresses are supplied in NBO but returned in HBO), but the following
+            // seems to work.
+
+            EmAliasNetIPAddr<PAS> addr(destAddress);
+            addr = ntohl(**addrListP);
+
+            EmAliasemuptr<PAS> p(destAddressList);
+            p = destAddress;
+
+            destAddressList += sizeof(emuptr);
+            destAddress += sizeof(NetIPAddr);
+            addrListP += 1;
+        }
+
+        EmAliasemuptr<PAS> p2(destAddressList);
+        p2 = EmMemNULL;
+    }
+}

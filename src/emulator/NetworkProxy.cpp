@@ -627,6 +627,92 @@ bool NetworkProxy::DecodeResponse(uint8* responseData, size_t size, MsgResponse&
     return true;
 }
 
+void NetworkProxy::GetHostByName(const string name) {
+    if (name.length() > 255) return GetHostByNameFail(netErrParamErr);
+
+    MsgRequest request = NewRequest(MsgRequest_getHostByNameRequest_tag);
+
+    strncpy(request.payload.getHostByNameRequest.name, name.c_str(), 255);
+    request.payload.getHostByNameRequest.name[255] = 0;
+
+    SendAndSuspend(request, REQUEST_STATIC_SIZE + 256,
+                   bind(&NetworkProxy::GetHostByNameSuccess, this, _1, _2),
+                   bind(&NetworkProxy::GetHostByNameFail, this, netErrInternal));
+}
+
+void NetworkProxy::GetHostByNameSuccess(uint8* responseData, size_t size) {
+    MsgResponse msgResponse;
+
+    if (!DecodeResponse(responseData, size, msgResponse, MsgResponse_getHostByNameResponse_tag)) {
+        logging::printf("GetHostByName: bad response");
+
+        return GetHostByNameFail();
+    }
+
+    const MsgGetHostByNameResponse& response(msgResponse.payload.getHostByNameResponse);
+
+    if (response.err != 0) {
+        logging::printf("GetHostByName: failed");
+
+        return GetHostByNameFail(response.err);
+    }
+
+    if (response.addresses_count > 3) {
+        return GetHostByNameFail();
+    }
+
+    CALLED_SETUP("NetHostInfoPtr",
+                 "UInt16 libRefNum, Char *nameP, "
+                 "NetHostInfoBufPtr bufP, Int32	timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(NetHostInfoBufType, bufP, Marshal::kOutput);
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    strncpy((*bufP).name, response.name, 255);
+    (*bufP).name[255] = 0;
+
+    if (response.has_alias) {
+        strncpy((*bufP).aliases[0], response.alias, 255);
+        (*bufP).aliases[0][255] = 0;
+
+        (*bufP).aliasList[0] = (*bufP).aliases[0];
+        (*bufP).aliasList[1] = nullptr;
+    } else
+        (*bufP).aliasList[0] = nullptr;
+
+    for (int i = 0; i < response.addresses_count; i++) {
+        (*bufP).address[i] = ntohl(response.addresses[i]);
+        (*bufP).addressList[i] = &(*bufP).address[i];
+    }
+
+    (*bufP).addressList[response.addresses_count] = nullptr;
+
+    (*bufP).hostInfo.nameP = (*bufP).name;
+    (*bufP).hostInfo.nameAliasesP = (*bufP).aliasList;
+    (*bufP).hostInfo.addrListP = reinterpret_cast<uint8**>((*bufP).addressList);
+    (*bufP).hostInfo.addrType = netSocketAddrINET;
+    (*bufP).hostInfo.addrLen = 4;
+
+    *errP = 0;
+
+    CALLED_PUT_PARAM_REF(errP);
+    CALLED_PUT_PARAM_REF(bufP);
+    PUT_RESULT_VAL(emuptr, (emuptr)bufP);
+}
+
+void NetworkProxy::GetHostByNameFail(Err err) {
+    CALLED_SETUP("NetHostInfoPtr",
+                 "UInt16 libRefNum, Char *nameP, "
+                 "NetHostInfoBufPtr bufP, Int32	timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(emuptr, 0);
+}
+
 MsgRequest NetworkProxy::NewRequest(pb_size_t payloadTag) {
     MsgRequest request = MsgRequest_init_zero;
 

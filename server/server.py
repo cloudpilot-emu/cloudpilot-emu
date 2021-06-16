@@ -43,23 +43,26 @@ def deserializeAddress(addr):
         f'{(addr.ip >> 24) & 0xff}.{(addr.ip >> 16) & 0xff}.{(addr.ip >> 8) & 0xff}.{addr.ip & 0xff}', addr.port)
 
 
-def serializeAddress(addr, target):
-
-    if type(addr) != tuple or len(addr) != 2:
-        raise InvalidAddressError(addr)
-
-    target.port = addr[1]
-
+def serializeIp(addr):
     try:
-        parts = [int(x) for x in addr[0].split(".")]
+        parts = [int(x) for x in addr.split(".")]
     except Exception:
         raise InvalidAddressError(addr)
 
     if len(parts) != 4:
         raise InvalidAddressError(addr)
 
-    target.ip = ((parts[0] << 24) | (parts[1] << 16) | (
+    return ((parts[0] << 24) | (parts[1] << 16) | (
         parts[2] << 8) | parts[3]) & 0xffffffff
+
+
+def serializeAddress(addr, target):
+
+    if type(addr) != tuple or len(addr) != 2:
+        raise InvalidAddressError(addr)
+
+    target.port = addr[1]
+    target.ip = serializeIp(addr[0])
 
 
 def translateFlags(flags):
@@ -91,6 +94,9 @@ def formatException(ex):
 
 
 def exceptionToErr(ex):
+    if isinstance(ex, socket.gaierror):
+        return err.herrnoToPalm(ex.args[0])
+
     if isinstance(ex, OSError):
         return err.errnoToPalm(ex.errno)
 
@@ -174,7 +180,13 @@ class ProxyContext:
         elif requestType == "socketCloseRequest":
             response = await self._handleSocketClose(request.socketCloseRequest)
 
+        elif requestType == "getHostByNameRequest":
+            response = await self._handleGetHostByName(request.getHostByNameRequest)
+
         else:
+            response = networking.MsgResponse()
+            response.invalidRequestResponse.tag = True
+
             print(f'ERROR: unknown request {requestType}')
 
         if response:
@@ -380,6 +392,35 @@ class ProxyContext:
         except Exception as ex:
             print(
                 f'ERROR: failed to close socket {request.handle}: {formatException(ex)}')
+            response.err = exceptionToErr(ex)
+
+        return responseMsg
+
+    async def _handleGetHostByName(self, request):
+        print(f'getHostByNameRequest name{request.name}')
+
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.getHostByNameResponse
+        response.name = ""
+
+        try:
+            hostname, aliases, addresses = await asyncio.to_thread(lambda: socket.gethostbyname_ex(
+                request.name))
+
+            response.name = hostname
+
+            if len(aliases) > 0:
+                response.alias = aliases[0]
+
+            response.addresses[:] = [
+                serializeIp(x) for x in addresses][:3]
+
+            response.err = 0
+
+        except Exception as ex:
+            print(
+                f'failed to resolve host {request.name}: {formatException(ex)}')
+
             response.err = exceptionToErr(ex)
 
         return responseMsg

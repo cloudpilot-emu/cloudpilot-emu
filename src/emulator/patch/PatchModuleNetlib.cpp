@@ -560,6 +560,12 @@ namespace {
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
+        if (Feature::GetNetworkRedirection()) {
+            gNetworkProxy.GetHostByName(string(nameP));
+
+            return kSkipROM;
+        }
+
         return kExecuteROM;
     }
 

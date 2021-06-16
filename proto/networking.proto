@@ -70,6 +70,21 @@ message MsgSocketCloseResponse {
     required int32 err = 1;
 }
 
+message MsgGetHostByNameRequest {
+    required string name = 1;
+}
+
+message MsgGetHostByNameResponse {
+    required string name = 1;
+    optional string alias = 2;
+    repeated uint32 addresses = 3;
+    required int32 err = 4;
+}
+
+message MsgInvalidRequestResponse {
+    required bool tag = 1;
+}
+
 message MsgRequest {
     required uint32 id = 1;
 
@@ -80,6 +95,7 @@ message MsgRequest {
         MsgSocketSendRequest socketSendRequest = 5;
         MsgSocketReceiveRequest socketReceiveRequest = 6;
         MsgSocketCloseRequest socketCloseRequest = 7;
+        MsgGetHostByNameRequest getHostByNameRequest = 8;
     }
 }
 
@@ -93,5 +109,7 @@ message MsgResponse {
         MsgSocketSendResponse socketSendResponse = 5;
         MsgSocketReceiveResponse socketReceiveResponse = 6;
         MsgSocketCloseResponse socketCloseResponse = 7;
+        MsgGetHostByNameResponse getHostByNameResponse = 8;
+        MsgInvalidRequestResponse invalidRequestResponse = 255;
     }
 }

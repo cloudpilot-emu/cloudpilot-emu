@@ -33,6 +33,8 @@ class NetworkProxy {
 
     void SocketClose(int16 handle);
 
+    void GetHostByName(const string name);
+
    private:
     void ConnectSuccess();
     void ConnectAbort();
@@ -58,6 +60,9 @@ class NetworkProxy {
 
     void SocketCloseSuccess(uint8* responseData, size_t size);
     void SocketCloseFail(Err err = netErrInternal);
+
+    void GetHostByNameSuccess(uint8* responseData, size_t size);
+    void GetHostByNameFail(Err err = netErrInternal);
 
     MsgRequest NewRequest(pb_size_t payloadTag);
     bool DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,

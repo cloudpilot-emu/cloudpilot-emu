@@ -1,1 +1,7 @@
 MsgResponse submsg_callback:true
+
+MsgGetHostByNameRequest.name max_length:255
+
+MsgGetHostByNameResponse.name max_length:255
+MsgGetHostByNameResponse.alias max_length:255
+MsgGetHostByNameResponse.addresses max_count:3

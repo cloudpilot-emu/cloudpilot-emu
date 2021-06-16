@@ -45,10 +45,19 @@ PB_BIND(MsgSocketCloseRequest, MsgSocketCloseRequest, AUTO)
 PB_BIND(MsgSocketCloseResponse, MsgSocketCloseResponse, AUTO)
 
 
-PB_BIND(MsgRequest, MsgRequest, AUTO)
+PB_BIND(MsgGetHostByNameRequest, MsgGetHostByNameRequest, 2)
 
 
-PB_BIND(MsgResponse, MsgResponse, AUTO)
+PB_BIND(MsgGetHostByNameResponse, MsgGetHostByNameResponse, 2)
+
+
+PB_BIND(MsgInvalidRequestResponse, MsgInvalidRequestResponse, AUTO)
+
+
+PB_BIND(MsgRequest, MsgRequest, 2)
+
+
+PB_BIND(MsgResponse, MsgResponse, 2)
 
 
 
