@@ -26,7 +26,9 @@ namespace net = boost::asio;
 
 class WebsocketClientImpl : public WebsocketClient {
    public:
-    WebsocketClientImpl(const string& host, const string& port) : host(host), port(port) {}
+    WebsocketClientImpl(const string& host, const string& port) : host(host), port(port) {
+        terminating = true;
+    }
 
     bool Connect() override {
         if (ws.is_open()) return true;
@@ -51,6 +53,8 @@ class WebsocketClientImpl : public WebsocketClient {
     }
 
     void Disconnect() override {
+        if (!ws.is_open()) return;
+
         {
             unique_lock<mutex> lock(terminatingMutex);
 

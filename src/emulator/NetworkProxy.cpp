@@ -596,46 +596,15 @@ void NetworkProxy::SocketCloseFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
-bool NetworkProxy::DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
-                                  pb_size_t payloadTag, BufferDecodeContext* bufferrDecodeContext) {
-    response = MsgResponse_init_zero;
-
-    if (bufferrDecodeContext) {
-        response.cb_payload.arg = bufferrDecodeContext;
-        response.cb_payload.funcs.decode = setupPayloadDecodeCb;
-    }
-
-    pb_istream_t stream = pb_istream_from_buffer(responseData, size);
-    bool status = pb_decode(&stream, MsgResponse_fields, &response);
-
-    if (!status) {
-        logging::printf("failed to decode response");
-
-        return false;
-    }
-
-    if (response.id != currentId) {
-        logging::printf("response out of order");
-        return false;
-    }
-
-    if (response.which_payload != payloadTag) {
-        logging::printf("tag mismatch");
-        return false;
-    }
-
-    return true;
-}
-
 void NetworkProxy::GetHostByName(const string name) {
-    if (name.length() > 255) return GetHostByNameFail(netErrParamErr);
+    MsgRequest requestMsg = NewRequest(MsgRequest_getHostByNameRequest_tag);
+    MsgGetHostByNameRequest& request(requestMsg.payload.getHostByNameRequest);
 
-    MsgRequest request = NewRequest(MsgRequest_getHostByNameRequest_tag);
+    if (name.length() >= sizeof(request.name)) return GetHostByNameFail(netErrParamErr);
 
-    strncpy(request.payload.getHostByNameRequest.name, name.c_str(), 255);
-    request.payload.getHostByNameRequest.name[255] = 0;
+    strcpy(request.name, name.c_str());
 
-    SendAndSuspend(request, REQUEST_STATIC_SIZE + 256,
+    SendAndSuspend(requestMsg, REQUEST_STATIC_SIZE + sizeof(request.name),
                    bind(&NetworkProxy::GetHostByNameSuccess, this, _1, _2),
                    bind(&NetworkProxy::GetHostByNameFail, this, netErrInternal));
 }
@@ -711,6 +680,116 @@ void NetworkProxy::GetHostByNameFail(Err err) {
     CALLED_PUT_PARAM_REF(errP);
 
     PUT_RESULT_VAL(emuptr, 0);
+}
+
+void NetworkProxy::GetServByName(const string name, const string proto) {
+    MsgRequest requestMsg = NewRequest(MsgRequest_getServByNameRequest_tag);
+    MsgGetServByNameRequest& request(requestMsg.payload.getServByNameRequest);
+
+    if (name.length() >= sizeof(request.name) - 1 || proto.length() >= sizeof(request.protocol))
+        return GetHostByNameFail(netErrParamErr);
+
+    strcpy(request.name, name.c_str());
+    strcpy(request.protocol, proto.c_str());
+
+    SendAndSuspend(requestMsg,
+                   REQUEST_STATIC_SIZE + sizeof(request.name) + sizeof(request.protocol),
+                   bind(&NetworkProxy::GetServByNameSuccess, this, _1, _2),
+                   bind(&NetworkProxy::GetServByNameFail, this, netErrInternal));
+}
+
+void NetworkProxy::GetServByNameSuccess(uint8* responseData, size_t size) {
+    MsgResponse msgResponse;
+
+    if (!DecodeResponse(responseData, size, msgResponse, MsgResponse_getServByNameResponse_tag)) {
+        logging::printf("GetServByName: bad response");
+
+        return GetServByNameFail();
+    }
+
+    const MsgGetServByNameResponse& response(msgResponse.payload.getServByNameResponse);
+
+    if (response.err != 0) {
+        logging::printf("GetServByName: failed");
+
+        return GetServByNameFail(response.err);
+    }
+
+    CALLED_SETUP("NetServInfoPtr",
+                 "UInt16 libRefNum, const Char *servNameP, "
+                 "const Char *protoNameP,  NetServInfoBufPtr bufP, "
+                 "Int32	timeout, Err *errP");
+
+    CALLED_GET_PARAM_STR(Char, servNameP);
+    CALLED_GET_PARAM_STR(Char, protoNameP);
+    CALLED_GET_PARAM_REF(NetServInfoBufType, bufP, Marshal::kOutput);
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    if (strlen(servNameP) > netServMaxName || strlen(protoNameP) > netProtoMaxName)
+        return GetServByNameFail(netErrParamErr);
+
+    strcpy((*bufP).name, servNameP);
+    strcpy((*bufP).protoName, protoNameP);
+
+    (*bufP).aliasList[0] = nullptr;
+
+    (*bufP).servInfo.nameP = (*bufP).name;
+    (*bufP).servInfo.protoP = (*bufP).protoName;
+    (*bufP).servInfo.nameAliasesP = (*bufP).aliasList;
+    (*bufP).servInfo.port = response.port;
+
+    CALLED_PUT_PARAM_REF(bufP);
+
+    *errP = 0;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(emuptr, (emuptr)bufP);
+}
+
+void NetworkProxy::GetServByNameFail(Err err) {
+    CALLED_SETUP("NetServInfoPtr",
+                 "UInt16 libRefNum, const Char *servNameP, "
+                 "const Char *protoNameP,  NetServInfoBufPtr bufP, "
+                 "Int32	timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(emuptr, 0);
+}
+
+bool NetworkProxy::DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
+                                  pb_size_t payloadTag, BufferDecodeContext* bufferrDecodeContext) {
+    response = MsgResponse_init_zero;
+
+    if (bufferrDecodeContext) {
+        response.cb_payload.arg = bufferrDecodeContext;
+        response.cb_payload.funcs.decode = setupPayloadDecodeCb;
+    }
+
+    pb_istream_t stream = pb_istream_from_buffer(responseData, size);
+    bool status = pb_decode(&stream, MsgResponse_fields, &response);
+
+    if (!status) {
+        logging::printf("failed to decode response");
+
+        return false;
+    }
+
+    if (response.id != currentId) {
+        logging::printf("response out of order");
+        return false;
+    }
+
+    if (response.which_payload != payloadTag) {
+        logging::printf("tag mismatch");
+        return false;
+    }
+
+    return true;
 }
 
 MsgRequest NetworkProxy::NewRequest(pb_size_t payloadTag) {

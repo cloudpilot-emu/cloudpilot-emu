@@ -183,6 +183,9 @@ class ProxyContext:
         elif requestType == "getHostByNameRequest":
             response = await self._handleGetHostByName(request.getHostByNameRequest)
 
+        elif requestType == "getServByNameRequest":
+            response = await self._handleGetServByName(request.getServByNameRequest)
+
         else:
             response = networking.MsgResponse()
             response.invalidRequestResponse.tag = True
@@ -422,6 +425,27 @@ class ProxyContext:
                 f'failed to resolve host {request.name}: {formatException(ex)}')
 
             response.err = exceptionToErr(ex)
+
+        return responseMsg
+
+    async def _handleGetServByName(self, request):
+        print(
+            f'getServByNameRequest name={request.name} protocol={request.protocol}')
+
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.getServByNameResponse
+        response.port = 0
+
+        try:
+            response.port = await asyncio.to_thread(lambda: socket.getservbyname(
+                request.name, request.protocol))
+
+            response.err = 0
+
+        except Exception as ex:
+            print(f'failed to resolve service: {formatException(ex)}')
+
+            response.err = err.netErrUnknownService
 
         return responseMsg
 

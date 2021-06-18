@@ -51,6 +51,12 @@ PB_BIND(MsgGetHostByNameRequest, MsgGetHostByNameRequest, 2)
 PB_BIND(MsgGetHostByNameResponse, MsgGetHostByNameResponse, 2)
 
 
+PB_BIND(MsgGetServByNameRequest, MsgGetServByNameRequest, AUTO)
+
+
+PB_BIND(MsgGetServByNameResponse, MsgGetServByNameResponse, AUTO)
+
+
 PB_BIND(MsgInvalidRequestResponse, MsgInvalidRequestResponse, AUTO)
 
 

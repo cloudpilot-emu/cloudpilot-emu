@@ -153,16 +153,19 @@ namespace {
     CallROMType HeadpatchNetLibOpen(void) {
         PRINTF("\nNetLibOpen");
 
-        CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 *netIFErrsP");
+        CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 *netIFErrP");
+
+        CALLED_GET_PARAM_VAL(UInt16, libRefNum);
+        CALLED_GET_PARAM_REF(UInt16, netIFErrP, Marshal::kOutput);
 
         if (Feature::GetNetworkRedirection()) {
+            *netIFErrP = 0;
+            CALLED_PUT_PARAM_REF(netIFErrP);
+
             gNetworkProxy.Open();
 
             return kSkipROM;
         }
-
-        CALLED_GET_PARAM_VAL(UInt16, libRefNum);
-        CALLED_GET_PARAM_REF(UInt16, netIFErrsP, Marshal::kOutput);
 
         return kExecuteROM;
     }
@@ -750,6 +753,12 @@ namespace {
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
+        if (Feature::GetNetworkRedirection()) {
+            gNetworkProxy.GetServByName(string(servNameP), string(protoNameP));
+
+            return kSkipROM;
+        }
+
         return kExecuteROM;
     }
 
@@ -903,10 +912,10 @@ namespace {
         PRINTF("\nNetLibOpenConfig, configIndex = %u", configIndex);
 
         if (Feature::GetNetworkRedirection()) {
-            gNetworkProxy.Open();
-
             *netIFErrP = 0;
             CALLED_PUT_PARAM_REF(netIFErrP);
+
+            gNetworkProxy.Open();
 
             return kSkipROM;
         }

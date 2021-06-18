@@ -81,6 +81,16 @@ message MsgGetHostByNameResponse {
     required int32 err = 4;
 }
 
+message MsgGetServByNameRequest {
+    required string name = 1;
+    required string protocol = 2;
+}
+
+message MsgGetServByNameResponse {
+    required uint32 port = 1;
+    required int32 err = 2;
+}
+
 message MsgInvalidRequestResponse {
     required bool tag = 1;
 }
@@ -96,6 +106,7 @@ message MsgRequest {
         MsgSocketReceiveRequest socketReceiveRequest = 6;
         MsgSocketCloseRequest socketCloseRequest = 7;
         MsgGetHostByNameRequest getHostByNameRequest = 8;
+        MsgGetServByNameRequest getServByNameRequest = 9;
     }
 }
 
@@ -110,6 +121,7 @@ message MsgResponse {
         MsgSocketReceiveResponse socketReceiveResponse = 6;
         MsgSocketCloseResponse socketCloseResponse = 7;
         MsgGetHostByNameResponse getHostByNameResponse = 8;
+        MsgGetServByNameResponse getServByNameResponse = 9;
         MsgInvalidRequestResponse invalidRequestResponse = 255;
     }
 }

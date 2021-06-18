@@ -5,3 +5,6 @@ MsgGetHostByNameRequest.name max_length:255
 MsgGetHostByNameResponse.name max_length:255
 MsgGetHostByNameResponse.alias max_length:255
 MsgGetHostByNameResponse.addresses max_count:3
+
+MsgGetServByNameRequest.name max_length:15
+MsgGetServByNameRequest.protocol max_length:3

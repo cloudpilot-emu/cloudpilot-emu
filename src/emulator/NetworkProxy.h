@@ -35,6 +35,8 @@ class NetworkProxy {
 
     void GetHostByName(const string name);
 
+    void GetServByName(const string name, const string proto);
+
    private:
     void ConnectSuccess();
     void ConnectAbort();
@@ -63,6 +65,9 @@ class NetworkProxy {
 
     void GetHostByNameSuccess(uint8* responseData, size_t size);
     void GetHostByNameFail(Err err = netErrInternal);
+
+    void GetServByNameSuccess(uint8* responseData, size_t size);
+    void GetServByNameFail(Err err = netErrInternal);
 
     MsgRequest NewRequest(pb_size_t payloadTag);
     bool DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,

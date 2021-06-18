@@ -600,15 +600,57 @@ void* Marshal::GetBuffer(emuptr p, long len) {
     return result;
 }
 
-void Marshal::GetNetHostInfoBufType(emuptr p, NetHostInfoBufType& netHostInfoBufType) {
-    memset(&netHostInfoBufType, 0, sizeof(NetHostInfoBufType));
+void Marshal::GetNetServInfoBufType(emuptr p, NetServInfoBufType& netServInfoBuf) {
+    memset(&netServInfoBuf, 0, sizeof(NetServInfoBufType));
 
     if (p) {
     }
 }
 
-void Marshal::GetNetServInfoBufType(emuptr p, NetServInfoBufType& netServInfoBuf) {
-    memset(&netServInfoBuf, 0, sizeof(NetServInfoBufType));
+void Marshal::PutNetServInfoBufType(emuptr p, const NetServInfoBufType& src) {
+    if (p) {
+        EmAliasNetServInfoBufType<PAS> dest(p);
+
+        // Copy the server name.
+
+        dest.servInfo.nameP = dest.name.GetPtr();
+        EmMem_strcpy((emuptr)dest.servInfo.nameP, src.name);
+
+        // Copy the aliases.
+
+        dest.servInfo.nameAliasesP = dest.aliasList.GetPtr();
+
+        Char** srcNameAliasesP = src.servInfo.nameAliasesP;  // Ptr to src ptrs
+        emuptr destAliasList = dest.aliasList.GetPtr();      // Ptr to dest ptrs
+        emuptr destAliases = dest.aliases.GetPtr();          // Ptr to dest buffer
+
+        while (*srcNameAliasesP) {
+            EmMem_strcpy(destAliases, *srcNameAliasesP);
+
+            EmAliasemuptr<PAS> p(destAliasList);
+            p = destAliases;
+
+            destAliasList += sizeof(emuptr);
+            destAliases += strlen(*srcNameAliasesP) + 1;
+            srcNameAliasesP += 1;
+        }
+
+        EmAliasemuptr<PAS> p1(destAliasList);
+        p1 = EmMemNULL;
+
+        // Copy the port.
+
+        dest.servInfo.port = NetHToNS(ntohs(src.servInfo.port));  // In NBO
+
+        // Copy the proto name.
+
+        dest.servInfo.protoP = dest.protoName.GetPtr();
+        EmMem_strcpy((emuptr)dest.servInfo.protoP, src.protoName);
+    }
+}
+
+void Marshal::GetNetHostInfoBufType(emuptr p, NetHostInfoBufType& netHostInfoBufType) {
+    memset(&netHostInfoBufType, 0, sizeof(NetHostInfoBufType));
 
     if (p) {
     }

@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto2',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x10networking.proto\"#\n\x07\x41\x64\x64ress\x12\n\n\x02ip\x18\x01 \x02(\r\x12\x0c\n\x04port\x18\x02 \x02(\x05\"6\n\x14MsgSocketOpenRequest\x12\x0c\n\x04type\x18\x01 \x02(\r\x12\x10\n\x08protocol\x18\x02 \x02(\r\"4\n\x15MsgSocketOpenResponse\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0b\n\x03\x65rr\x18\x02 \x02(\x05\"A\n\x14MsgSocketBindRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x19\n\x07\x61\x64\x64ress\x18\x02 \x02(\x0b\x32\x08.Address\"$\n\x15MsgSocketBindResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"a\n\x14MsgSocketAddrRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x1b\n\x13requestAddressLocal\x18\x02 \x02(\x08\x12\x1c\n\x14requestAddressRemote\x18\x03 \x02(\x08\"e\n\x15MsgSocketAddrResponse\x12\x1e\n\x0c\x61\x64\x64ressLocal\x18\x01 \x01(\x0b\x32\x08.Address\x12\x1f\n\raddressRemote\x18\x02 \x01(\x0b\x32\x08.Address\x12\x0b\n\x03\x65rr\x18\x03 \x02(\x05\"o\n\x14MsgSocketSendRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\x12\r\n\x05\x66lags\x18\x03 \x02(\r\x12\x19\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x08.Address\x12\x0f\n\x07timeout\x18\x05 \x02(\x05\"7\n\x15MsgSocketSendResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\x12\x11\n\tbytesSent\x18\x02 \x02(\x05\"Y\n\x17MsgSocketReceiveRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\r\n\x05\x66lags\x18\x02 \x02(\r\x12\x0f\n\x07timeout\x18\x03 \x02(\x05\x12\x0e\n\x06maxLen\x18\x04 \x02(\r\"P\n\x18MsgSocketReceiveResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\x12\x19\n\x07\x61\x64\x64ress\x18\x03 \x02(\x0b\x32\x08.Address\"\'\n\x15MsgSocketCloseRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\"%\n\x16MsgSocketCloseResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"\'\n\x17MsgGetHostByNameRequest\x12\x0c\n\x04name\x18\x01 \x02(\t\"W\n\x18MsgGetHostByNameResponse\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\r\n\x05\x61lias\x18\x02 \x01(\t\x12\x11\n\taddresses\x18\x03 \x03(\r\x12\x0b\n\x03\x65rr\x18\x04 \x02(\x05\"(\n\x19MsgInvalidRequestResponse\x12\x0b\n\x03tag\x18\x01 \x02(\x08\"\x9d\x03\n\nMsgRequest\x12\n\n\x02id\x18\x01 \x02(\r\x12\x32\n\x11socketOpenRequest\x18\x02 \x01(\x0b\x32\x15.MsgSocketOpenRequestH\x00\x12\x32\n\x11socketBindRequest\x18\x03 \x01(\x0b\x32\x15.MsgSocketBindRequestH\x00\x12\x32\n\x11socketAddrRequest\x18\x04 \x01(\x0b\x32\x15.MsgSocketAddrRequestH\x00\x12\x32\n\x11socketSendRequest\x18\x05 \x01(\x0b\x32\x15.MsgSocketSendRequestH\x00\x12\x38\n\x14socketReceiveRequest\x18\x06 \x01(\x0b\x32\x18.MsgSocketReceiveRequestH\x00\x12\x34\n\x12socketCloseRequest\x18\x07 \x01(\x0b\x32\x16.MsgSocketCloseRequestH\x00\x12\x38\n\x14getHostByNameRequest\x18\x08 \x01(\x0b\x32\x18.MsgGetHostByNameRequestH\x00\x42\t\n\x07payload\"\xeb\x03\n\x0bMsgResponse\x12\n\n\x02id\x18\x01 \x02(\r\x12\x34\n\x12socketOpenResponse\x18\x02 \x01(\x0b\x32\x16.MsgSocketOpenResponseH\x00\x12\x34\n\x12socketBindResponse\x18\x03 \x01(\x0b\x32\x16.MsgSocketBindResponseH\x00\x12\x34\n\x12socketAddrResponse\x18\x04 \x01(\x0b\x32\x16.MsgSocketAddrResponseH\x00\x12\x34\n\x12socketSendResponse\x18\x05 \x01(\x0b\x32\x16.MsgSocketSendResponseH\x00\x12:\n\x15socketReceiveResponse\x18\x06 \x01(\x0b\x32\x19.MsgSocketReceiveResponseH\x00\x12\x36\n\x13socketCloseResponse\x18\x07 \x01(\x0b\x32\x17.MsgSocketCloseResponseH\x00\x12:\n\x15getHostByNameResponse\x18\x08 \x01(\x0b\x32\x19.MsgGetHostByNameResponseH\x00\x12=\n\x16invalidRequestResponse\x18\xff\x01 \x01(\x0b\x32\x1a.MsgInvalidRequestResponseH\x00\x42\t\n\x07payload'
+  serialized_pb=b'\n\x10networking.proto\"#\n\x07\x41\x64\x64ress\x12\n\n\x02ip\x18\x01 \x02(\r\x12\x0c\n\x04port\x18\x02 \x02(\x05\"6\n\x14MsgSocketOpenRequest\x12\x0c\n\x04type\x18\x01 \x02(\r\x12\x10\n\x08protocol\x18\x02 \x02(\r\"4\n\x15MsgSocketOpenResponse\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0b\n\x03\x65rr\x18\x02 \x02(\x05\"A\n\x14MsgSocketBindRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x19\n\x07\x61\x64\x64ress\x18\x02 \x02(\x0b\x32\x08.Address\"$\n\x15MsgSocketBindResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"a\n\x14MsgSocketAddrRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x1b\n\x13requestAddressLocal\x18\x02 \x02(\x08\x12\x1c\n\x14requestAddressRemote\x18\x03 \x02(\x08\"e\n\x15MsgSocketAddrResponse\x12\x1e\n\x0c\x61\x64\x64ressLocal\x18\x01 \x01(\x0b\x32\x08.Address\x12\x1f\n\raddressRemote\x18\x02 \x01(\x0b\x32\x08.Address\x12\x0b\n\x03\x65rr\x18\x03 \x02(\x05\"o\n\x14MsgSocketSendRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\x12\r\n\x05\x66lags\x18\x03 \x02(\r\x12\x19\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x08.Address\x12\x0f\n\x07timeout\x18\x05 \x02(\x05\"7\n\x15MsgSocketSendResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\x12\x11\n\tbytesSent\x18\x02 \x02(\x05\"Y\n\x17MsgSocketReceiveRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\r\n\x05\x66lags\x18\x02 \x02(\r\x12\x0f\n\x07timeout\x18\x03 \x02(\x05\x12\x0e\n\x06maxLen\x18\x04 \x02(\r\"P\n\x18MsgSocketReceiveResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\x12\x19\n\x07\x61\x64\x64ress\x18\x03 \x02(\x0b\x32\x08.Address\"\'\n\x15MsgSocketCloseRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\"%\n\x16MsgSocketCloseResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"\'\n\x17MsgGetHostByNameRequest\x12\x0c\n\x04name\x18\x01 \x02(\t\"W\n\x18MsgGetHostByNameResponse\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\r\n\x05\x61lias\x18\x02 \x01(\t\x12\x11\n\taddresses\x18\x03 \x03(\r\x12\x0b\n\x03\x65rr\x18\x04 \x02(\x05\"9\n\x17MsgGetServByNameRequest\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x10\n\x08protocol\x18\x02 \x02(\t\"5\n\x18MsgGetServByNameResponse\x12\x0c\n\x04port\x18\x01 \x02(\r\x12\x0b\n\x03\x65rr\x18\x02 \x02(\x05\"(\n\x19MsgInvalidRequestResponse\x12\x0b\n\x03tag\x18\x01 \x02(\x08\"\xd7\x03\n\nMsgRequest\x12\n\n\x02id\x18\x01 \x02(\r\x12\x32\n\x11socketOpenRequest\x18\x02 \x01(\x0b\x32\x15.MsgSocketOpenRequestH\x00\x12\x32\n\x11socketBindRequest\x18\x03 \x01(\x0b\x32\x15.MsgSocketBindRequestH\x00\x12\x32\n\x11socketAddrRequest\x18\x04 \x01(\x0b\x32\x15.MsgSocketAddrRequestH\x00\x12\x32\n\x11socketSendRequest\x18\x05 \x01(\x0b\x32\x15.MsgSocketSendRequestH\x00\x12\x38\n\x14socketReceiveRequest\x18\x06 \x01(\x0b\x32\x18.MsgSocketReceiveRequestH\x00\x12\x34\n\x12socketCloseRequest\x18\x07 \x01(\x0b\x32\x16.MsgSocketCloseRequestH\x00\x12\x38\n\x14getHostByNameRequest\x18\x08 \x01(\x0b\x32\x18.MsgGetHostByNameRequestH\x00\x12\x38\n\x14getServByNameRequest\x18\t \x01(\x0b\x32\x18.MsgGetServByNameRequestH\x00\x42\t\n\x07payload\"\xa7\x04\n\x0bMsgResponse\x12\n\n\x02id\x18\x01 \x02(\r\x12\x34\n\x12socketOpenResponse\x18\x02 \x01(\x0b\x32\x16.MsgSocketOpenResponseH\x00\x12\x34\n\x12socketBindResponse\x18\x03 \x01(\x0b\x32\x16.MsgSocketBindResponseH\x00\x12\x34\n\x12socketAddrResponse\x18\x04 \x01(\x0b\x32\x16.MsgSocketAddrResponseH\x00\x12\x34\n\x12socketSendResponse\x18\x05 \x01(\x0b\x32\x16.MsgSocketSendResponseH\x00\x12:\n\x15socketReceiveResponse\x18\x06 \x01(\x0b\x32\x19.MsgSocketReceiveResponseH\x00\x12\x36\n\x13socketCloseResponse\x18\x07 \x01(\x0b\x32\x17.MsgSocketCloseResponseH\x00\x12:\n\x15getHostByNameResponse\x18\x08 \x01(\x0b\x32\x19.MsgGetHostByNameResponseH\x00\x12:\n\x15getServByNameResponse\x18\t \x01(\x0b\x32\x19.MsgGetServByNameResponseH\x00\x12=\n\x16invalidRequestResponse\x18\xff\x01 \x01(\x0b\x32\x1a.MsgInvalidRequestResponseH\x00\x42\t\n\x07payload'
 )
 
 
@@ -652,6 +652,84 @@ _MSGGETHOSTBYNAMERESPONSE = _descriptor.Descriptor(
 )
 
 
+_MSGGETSERVBYNAMEREQUEST = _descriptor.Descriptor(
+  name='MsgGetServByNameRequest',
+  full_name='MsgGetServByNameRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='name', full_name='MsgGetServByNameRequest.name', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='protocol', full_name='MsgGetServByNameRequest.protocol', index=1,
+      number=2, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=b"".decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1027,
+  serialized_end=1084,
+)
+
+
+_MSGGETSERVBYNAMERESPONSE = _descriptor.Descriptor(
+  name='MsgGetServByNameResponse',
+  full_name='MsgGetServByNameResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='port', full_name='MsgGetServByNameResponse.port', index=0,
+      number=1, type=13, cpp_type=3, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='err', full_name='MsgGetServByNameResponse.err', index=1,
+      number=2, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto2',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=1086,
+  serialized_end=1139,
+)
+
+
 _MSGINVALIDREQUESTRESPONSE = _descriptor.Descriptor(
   name='MsgInvalidRequestResponse',
   full_name='MsgInvalidRequestResponse',
@@ -679,8 +757,8 @@ _MSGINVALIDREQUESTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1027,
-  serialized_end=1067,
+  serialized_start=1141,
+  serialized_end=1181,
 )
 
 
@@ -748,6 +826,13 @@ _MSGREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='getServByNameRequest', full_name='MsgRequest.getServByNameRequest', index=8,
+      number=9, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -765,8 +850,8 @@ _MSGREQUEST = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=1070,
-  serialized_end=1483,
+  serialized_start=1184,
+  serialized_end=1655,
 )
 
 
@@ -835,7 +920,14 @@ _MSGRESPONSE = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
     _descriptor.FieldDescriptor(
-      name='invalidRequestResponse', full_name='MsgResponse.invalidRequestResponse', index=8,
+      name='getServByNameResponse', full_name='MsgResponse.getServByNameResponse', index=8,
+      number=9, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='invalidRequestResponse', full_name='MsgResponse.invalidRequestResponse', index=9,
       number=255, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -858,8 +950,8 @@ _MSGRESPONSE = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=1486,
-  serialized_end=1977,
+  serialized_start=1658,
+  serialized_end=2209,
 )
 
 _MSGSOCKETBINDREQUEST.fields_by_name['address'].message_type = _ADDRESS
@@ -874,6 +966,7 @@ _MSGREQUEST.fields_by_name['socketSendRequest'].message_type = _MSGSOCKETSENDREQ
 _MSGREQUEST.fields_by_name['socketReceiveRequest'].message_type = _MSGSOCKETRECEIVEREQUEST
 _MSGREQUEST.fields_by_name['socketCloseRequest'].message_type = _MSGSOCKETCLOSEREQUEST
 _MSGREQUEST.fields_by_name['getHostByNameRequest'].message_type = _MSGGETHOSTBYNAMEREQUEST
+_MSGREQUEST.fields_by_name['getServByNameRequest'].message_type = _MSGGETSERVBYNAMEREQUEST
 _MSGREQUEST.oneofs_by_name['payload'].fields.append(
   _MSGREQUEST.fields_by_name['socketOpenRequest'])
 _MSGREQUEST.fields_by_name['socketOpenRequest'].containing_oneof = _MSGREQUEST.oneofs_by_name['payload']
@@ -895,6 +988,9 @@ _MSGREQUEST.fields_by_name['socketCloseRequest'].containing_oneof = _MSGREQUEST.
 _MSGREQUEST.oneofs_by_name['payload'].fields.append(
   _MSGREQUEST.fields_by_name['getHostByNameRequest'])
 _MSGREQUEST.fields_by_name['getHostByNameRequest'].containing_oneof = _MSGREQUEST.oneofs_by_name['payload']
+_MSGREQUEST.oneofs_by_name['payload'].fields.append(
+  _MSGREQUEST.fields_by_name['getServByNameRequest'])
+_MSGREQUEST.fields_by_name['getServByNameRequest'].containing_oneof = _MSGREQUEST.oneofs_by_name['payload']
 _MSGRESPONSE.fields_by_name['socketOpenResponse'].message_type = _MSGSOCKETOPENRESPONSE
 _MSGRESPONSE.fields_by_name['socketBindResponse'].message_type = _MSGSOCKETBINDRESPONSE
 _MSGRESPONSE.fields_by_name['socketAddrResponse'].message_type = _MSGSOCKETADDRRESPONSE
@@ -902,6 +998,7 @@ _MSGRESPONSE.fields_by_name['socketSendResponse'].message_type = _MSGSOCKETSENDR
 _MSGRESPONSE.fields_by_name['socketReceiveResponse'].message_type = _MSGSOCKETRECEIVERESPONSE
 _MSGRESPONSE.fields_by_name['socketCloseResponse'].message_type = _MSGSOCKETCLOSERESPONSE
 _MSGRESPONSE.fields_by_name['getHostByNameResponse'].message_type = _MSGGETHOSTBYNAMERESPONSE
+_MSGRESPONSE.fields_by_name['getServByNameResponse'].message_type = _MSGGETSERVBYNAMERESPONSE
 _MSGRESPONSE.fields_by_name['invalidRequestResponse'].message_type = _MSGINVALIDREQUESTRESPONSE
 _MSGRESPONSE.oneofs_by_name['payload'].fields.append(
   _MSGRESPONSE.fields_by_name['socketOpenResponse'])
@@ -925,6 +1022,9 @@ _MSGRESPONSE.oneofs_by_name['payload'].fields.append(
   _MSGRESPONSE.fields_by_name['getHostByNameResponse'])
 _MSGRESPONSE.fields_by_name['getHostByNameResponse'].containing_oneof = _MSGRESPONSE.oneofs_by_name['payload']
 _MSGRESPONSE.oneofs_by_name['payload'].fields.append(
+  _MSGRESPONSE.fields_by_name['getServByNameResponse'])
+_MSGRESPONSE.fields_by_name['getServByNameResponse'].containing_oneof = _MSGRESPONSE.oneofs_by_name['payload']
+_MSGRESPONSE.oneofs_by_name['payload'].fields.append(
   _MSGRESPONSE.fields_by_name['invalidRequestResponse'])
 _MSGRESPONSE.fields_by_name['invalidRequestResponse'].containing_oneof = _MSGRESPONSE.oneofs_by_name['payload']
 DESCRIPTOR.message_types_by_name['Address'] = _ADDRESS
@@ -942,6 +1042,8 @@ DESCRIPTOR.message_types_by_name['MsgSocketCloseRequest'] = _MSGSOCKETCLOSEREQUE
 DESCRIPTOR.message_types_by_name['MsgSocketCloseResponse'] = _MSGSOCKETCLOSERESPONSE
 DESCRIPTOR.message_types_by_name['MsgGetHostByNameRequest'] = _MSGGETHOSTBYNAMEREQUEST
 DESCRIPTOR.message_types_by_name['MsgGetHostByNameResponse'] = _MSGGETHOSTBYNAMERESPONSE
+DESCRIPTOR.message_types_by_name['MsgGetServByNameRequest'] = _MSGGETSERVBYNAMEREQUEST
+DESCRIPTOR.message_types_by_name['MsgGetServByNameResponse'] = _MSGGETSERVBYNAMERESPONSE
 DESCRIPTOR.message_types_by_name['MsgInvalidRequestResponse'] = _MSGINVALIDREQUESTRESPONSE
 DESCRIPTOR.message_types_by_name['MsgRequest'] = _MSGREQUEST
 DESCRIPTOR.message_types_by_name['MsgResponse'] = _MSGRESPONSE
@@ -1051,6 +1153,20 @@ MsgGetHostByNameResponse = _reflection.GeneratedProtocolMessageType('MsgGetHostB
   # @@protoc_insertion_point(class_scope:MsgGetHostByNameResponse)
   })
 _sym_db.RegisterMessage(MsgGetHostByNameResponse)
+
+MsgGetServByNameRequest = _reflection.GeneratedProtocolMessageType('MsgGetServByNameRequest', (_message.Message,), {
+  'DESCRIPTOR' : _MSGGETSERVBYNAMEREQUEST,
+  '__module__' : 'networking_pb2'
+  # @@protoc_insertion_point(class_scope:MsgGetServByNameRequest)
+  })
+_sym_db.RegisterMessage(MsgGetServByNameRequest)
+
+MsgGetServByNameResponse = _reflection.GeneratedProtocolMessageType('MsgGetServByNameResponse', (_message.Message,), {
+  'DESCRIPTOR' : _MSGGETSERVBYNAMERESPONSE,
+  '__module__' : 'networking_pb2'
+  # @@protoc_insertion_point(class_scope:MsgGetServByNameResponse)
+  })
+_sym_db.RegisterMessage(MsgGetServByNameResponse)
 
 MsgInvalidRequestResponse = _reflection.GeneratedProtocolMessageType('MsgInvalidRequestResponse', (_message.Message,), {
   'DESCRIPTOR' : _MSGINVALIDREQUESTRESPONSE,

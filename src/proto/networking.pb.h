@@ -28,6 +28,16 @@ typedef struct _MsgGetHostByNameResponse {
     int32_t err; 
 } MsgGetHostByNameResponse;
 
+typedef struct _MsgGetServByNameRequest { 
+    char name[16]; 
+    char protocol[4]; 
+} MsgGetServByNameRequest;
+
+typedef struct _MsgGetServByNameResponse { 
+    uint32_t port; 
+    int32_t err; 
+} MsgGetServByNameResponse;
+
 typedef struct _MsgInvalidRequestResponse { 
     bool tag; 
 } MsgInvalidRequestResponse;
@@ -111,6 +121,7 @@ typedef struct _MsgRequest {
         MsgSocketReceiveRequest socketReceiveRequest;
         MsgSocketCloseRequest socketCloseRequest;
         MsgGetHostByNameRequest getHostByNameRequest;
+        MsgGetServByNameRequest getServByNameRequest;
     } payload; 
 } MsgRequest;
 
@@ -126,6 +137,7 @@ typedef struct _MsgResponse {
         MsgSocketReceiveResponse socketReceiveResponse;
         MsgSocketCloseResponse socketCloseResponse;
         MsgGetHostByNameResponse getHostByNameResponse;
+        MsgGetServByNameResponse getServByNameResponse;
         MsgInvalidRequestResponse invalidRequestResponse;
     } payload; 
 } MsgResponse;
@@ -151,6 +163,8 @@ extern "C" {
 #define MsgSocketCloseResponse_init_default      {0}
 #define MsgGetHostByNameRequest_init_default     {""}
 #define MsgGetHostByNameResponse_init_default    {"", false, "", 0, {0, 0, 0}, 0}
+#define MsgGetServByNameRequest_init_default     {"", ""}
+#define MsgGetServByNameResponse_init_default    {0, 0}
 #define MsgInvalidRequestResponse_init_default   {0}
 #define MsgRequest_init_default                  {0, 0, {MsgSocketOpenRequest_init_default}}
 #define MsgResponse_init_default                 {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_default}}
@@ -169,6 +183,8 @@ extern "C" {
 #define MsgSocketCloseResponse_init_zero         {0}
 #define MsgGetHostByNameRequest_init_zero        {""}
 #define MsgGetHostByNameResponse_init_zero       {"", false, "", 0, {0, 0, 0}, 0}
+#define MsgGetServByNameRequest_init_zero        {"", ""}
+#define MsgGetServByNameResponse_init_zero       {0, 0}
 #define MsgInvalidRequestResponse_init_zero      {0}
 #define MsgRequest_init_zero                     {0, 0, {MsgSocketOpenRequest_init_zero}}
 #define MsgResponse_init_zero                    {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_zero}}
@@ -181,6 +197,10 @@ extern "C" {
 #define MsgGetHostByNameResponse_alias_tag       2
 #define MsgGetHostByNameResponse_addresses_tag   3
 #define MsgGetHostByNameResponse_err_tag         4
+#define MsgGetServByNameRequest_name_tag         1
+#define MsgGetServByNameRequest_protocol_tag     2
+#define MsgGetServByNameResponse_port_tag        1
+#define MsgGetServByNameResponse_err_tag         2
 #define MsgInvalidRequestResponse_tag_tag        1
 #define MsgSocketAddrRequest_handle_tag          1
 #define MsgSocketAddrRequest_requestAddressLocal_tag 2
@@ -219,6 +239,7 @@ extern "C" {
 #define MsgRequest_socketReceiveRequest_tag      6
 #define MsgRequest_socketCloseRequest_tag        7
 #define MsgRequest_getHostByNameRequest_tag      8
+#define MsgRequest_getServByNameRequest_tag      9
 #define MsgResponse_id_tag                       1
 #define MsgResponse_socketOpenResponse_tag       2
 #define MsgResponse_socketBindResponse_tag       3
@@ -227,6 +248,7 @@ extern "C" {
 #define MsgResponse_socketReceiveResponse_tag    6
 #define MsgResponse_socketCloseResponse_tag      7
 #define MsgResponse_getHostByNameResponse_tag    8
+#define MsgResponse_getServByNameResponse_tag    9
 #define MsgResponse_invalidRequestResponse_tag   255
 
 /* Struct field encoding specification for nanopb */
@@ -331,6 +353,18 @@ X(a, STATIC,   REQUIRED, INT32,    err,               4)
 #define MsgGetHostByNameResponse_CALLBACK NULL
 #define MsgGetHostByNameResponse_DEFAULT NULL
 
+#define MsgGetServByNameRequest_FIELDLIST(X, a) \
+X(a, STATIC,   REQUIRED, STRING,   name,              1) \
+X(a, STATIC,   REQUIRED, STRING,   protocol,          2)
+#define MsgGetServByNameRequest_CALLBACK NULL
+#define MsgGetServByNameRequest_DEFAULT NULL
+
+#define MsgGetServByNameResponse_FIELDLIST(X, a) \
+X(a, STATIC,   REQUIRED, UINT32,   port,              1) \
+X(a, STATIC,   REQUIRED, INT32,    err,               2)
+#define MsgGetServByNameResponse_CALLBACK NULL
+#define MsgGetServByNameResponse_DEFAULT NULL
+
 #define MsgInvalidRequestResponse_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, BOOL,     tag,               1)
 #define MsgInvalidRequestResponse_CALLBACK NULL
@@ -344,7 +378,8 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketAddrRequest,payload.socketAddr
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketSendRequest,payload.socketSendRequest),   5) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketReceiveRequest,payload.socketReceiveRequest),   6) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketCloseRequest,payload.socketCloseRequest),   7) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,getHostByNameRequest,payload.getHostByNameRequest),   8)
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,getHostByNameRequest,payload.getHostByNameRequest),   8) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,getServByNameRequest,payload.getServByNameRequest),   9)
 #define MsgRequest_CALLBACK NULL
 #define MsgRequest_DEFAULT NULL
 #define MsgRequest_payload_socketOpenRequest_MSGTYPE MsgSocketOpenRequest
@@ -354,6 +389,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payload,getHostByNameRequest,payload.getHost
 #define MsgRequest_payload_socketReceiveRequest_MSGTYPE MsgSocketReceiveRequest
 #define MsgRequest_payload_socketCloseRequest_MSGTYPE MsgSocketCloseRequest
 #define MsgRequest_payload_getHostByNameRequest_MSGTYPE MsgGetHostByNameRequest
+#define MsgRequest_payload_getServByNameRequest_MSGTYPE MsgGetServByNameRequest
 
 #define MsgResponse_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, UINT32,   id,                1) \
@@ -364,6 +400,7 @@ X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketSendResponse,payload.socketSen
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketReceiveResponse,payload.socketReceiveResponse),   6) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketCloseResponse,payload.socketCloseResponse),   7) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,getHostByNameResponse,payload.getHostByNameResponse),   8) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,getServByNameResponse,payload.getServByNameResponse),   9) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,invalidRequestResponse,payload.invalidRequestResponse), 255)
 #define MsgResponse_CALLBACK NULL
 #define MsgResponse_DEFAULT NULL
@@ -374,6 +411,7 @@ X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,invalidRequestResponse,payload.inval
 #define MsgResponse_payload_socketReceiveResponse_MSGTYPE MsgSocketReceiveResponse
 #define MsgResponse_payload_socketCloseResponse_MSGTYPE MsgSocketCloseResponse
 #define MsgResponse_payload_getHostByNameResponse_MSGTYPE MsgGetHostByNameResponse
+#define MsgResponse_payload_getServByNameResponse_MSGTYPE MsgGetServByNameResponse
 #define MsgResponse_payload_invalidRequestResponse_MSGTYPE MsgInvalidRequestResponse
 
 extern const pb_msgdesc_t Address_msg;
@@ -391,6 +429,8 @@ extern const pb_msgdesc_t MsgSocketCloseRequest_msg;
 extern const pb_msgdesc_t MsgSocketCloseResponse_msg;
 extern const pb_msgdesc_t MsgGetHostByNameRequest_msg;
 extern const pb_msgdesc_t MsgGetHostByNameResponse_msg;
+extern const pb_msgdesc_t MsgGetServByNameRequest_msg;
+extern const pb_msgdesc_t MsgGetServByNameResponse_msg;
 extern const pb_msgdesc_t MsgInvalidRequestResponse_msg;
 extern const pb_msgdesc_t MsgRequest_msg;
 extern const pb_msgdesc_t MsgResponse_msg;
@@ -411,6 +451,8 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define MsgSocketCloseResponse_fields &MsgSocketCloseResponse_msg
 #define MsgGetHostByNameRequest_fields &MsgGetHostByNameRequest_msg
 #define MsgGetHostByNameResponse_fields &MsgGetHostByNameResponse_msg
+#define MsgGetServByNameRequest_fields &MsgGetServByNameRequest_msg
+#define MsgGetServByNameResponse_fields &MsgGetServByNameResponse_msg
 #define MsgInvalidRequestResponse_fields &MsgInvalidRequestResponse_msg
 #define MsgRequest_fields &MsgRequest_msg
 #define MsgResponse_fields &MsgResponse_msg
@@ -423,6 +465,8 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define Address_size                             17
 #define MsgGetHostByNameRequest_size             258
 #define MsgGetHostByNameResponse_size            545
+#define MsgGetServByNameRequest_size             22
+#define MsgGetServByNameResponse_size            17
 #define MsgInvalidRequestResponse_size           2
 #define MsgSocketAddrRequest_size                15
 #define MsgSocketAddrResponse_size               49
