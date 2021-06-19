@@ -46,6 +46,7 @@ typedef struct _MsgSocketAddrRequest {
     int32_t handle; 
     bool requestAddressLocal; 
     bool requestAddressRemote; 
+    int32_t timeout; 
 } MsgSocketAddrRequest;
 
 typedef struct _MsgSocketBindResponse { 
@@ -54,6 +55,7 @@ typedef struct _MsgSocketBindResponse {
 
 typedef struct _MsgSocketCloseRequest { 
     int32_t handle; 
+    int32_t timeout; 
 } MsgSocketCloseRequest;
 
 typedef struct _MsgSocketCloseResponse { 
@@ -93,6 +95,7 @@ typedef struct _MsgSocketAddrResponse {
 typedef struct _MsgSocketBindRequest { 
     int32_t handle; 
     Address address; 
+    int32_t timeout; 
 } MsgSocketBindRequest;
 
 typedef struct _MsgSocketReceiveResponse { 
@@ -151,15 +154,15 @@ extern "C" {
 #define Address_init_default                     {0, 0}
 #define MsgSocketOpenRequest_init_default        {0, 0}
 #define MsgSocketOpenResponse_init_default       {0, 0}
-#define MsgSocketBindRequest_init_default        {0, Address_init_default}
+#define MsgSocketBindRequest_init_default        {0, Address_init_default, 0}
 #define MsgSocketBindResponse_init_default       {0}
-#define MsgSocketAddrRequest_init_default        {0, 0, 0}
+#define MsgSocketAddrRequest_init_default        {0, 0, 0, 0}
 #define MsgSocketAddrResponse_init_default       {false, Address_init_default, false, Address_init_default, 0}
 #define MsgSocketSendRequest_init_default        {0, {{NULL}, NULL}, 0, false, Address_init_default, 0}
 #define MsgSocketSendResponse_init_default       {0, 0}
 #define MsgSocketReceiveRequest_init_default     {0, 0, 0, 0}
 #define MsgSocketReceiveResponse_init_default    {0, {{NULL}, NULL}, Address_init_default}
-#define MsgSocketCloseRequest_init_default       {0}
+#define MsgSocketCloseRequest_init_default       {0, 0}
 #define MsgSocketCloseResponse_init_default      {0}
 #define MsgGetHostByNameRequest_init_default     {""}
 #define MsgGetHostByNameResponse_init_default    {"", false, "", 0, {0, 0, 0}, 0}
@@ -171,15 +174,15 @@ extern "C" {
 #define Address_init_zero                        {0, 0}
 #define MsgSocketOpenRequest_init_zero           {0, 0}
 #define MsgSocketOpenResponse_init_zero          {0, 0}
-#define MsgSocketBindRequest_init_zero           {0, Address_init_zero}
+#define MsgSocketBindRequest_init_zero           {0, Address_init_zero, 0}
 #define MsgSocketBindResponse_init_zero          {0}
-#define MsgSocketAddrRequest_init_zero           {0, 0, 0}
+#define MsgSocketAddrRequest_init_zero           {0, 0, 0, 0}
 #define MsgSocketAddrResponse_init_zero          {false, Address_init_zero, false, Address_init_zero, 0}
 #define MsgSocketSendRequest_init_zero           {0, {{NULL}, NULL}, 0, false, Address_init_zero, 0}
 #define MsgSocketSendResponse_init_zero          {0, 0}
 #define MsgSocketReceiveRequest_init_zero        {0, 0, 0, 0}
 #define MsgSocketReceiveResponse_init_zero       {0, {{NULL}, NULL}, Address_init_zero}
-#define MsgSocketCloseRequest_init_zero          {0}
+#define MsgSocketCloseRequest_init_zero          {0, 0}
 #define MsgSocketCloseResponse_init_zero         {0}
 #define MsgGetHostByNameRequest_init_zero        {""}
 #define MsgGetHostByNameResponse_init_zero       {"", false, "", 0, {0, 0, 0}, 0}
@@ -205,8 +208,10 @@ extern "C" {
 #define MsgSocketAddrRequest_handle_tag          1
 #define MsgSocketAddrRequest_requestAddressLocal_tag 2
 #define MsgSocketAddrRequest_requestAddressRemote_tag 3
+#define MsgSocketAddrRequest_timeout_tag         4
 #define MsgSocketBindResponse_err_tag            1
 #define MsgSocketCloseRequest_handle_tag         1
+#define MsgSocketCloseRequest_timeout_tag        4
 #define MsgSocketCloseResponse_err_tag           1
 #define MsgSocketOpenRequest_type_tag            1
 #define MsgSocketOpenRequest_protocol_tag        2
@@ -223,6 +228,7 @@ extern "C" {
 #define MsgSocketAddrResponse_err_tag            3
 #define MsgSocketBindRequest_handle_tag          1
 #define MsgSocketBindRequest_address_tag         2
+#define MsgSocketBindRequest_timeout_tag         3
 #define MsgSocketReceiveResponse_err_tag         1
 #define MsgSocketReceiveResponse_data_tag        2
 #define MsgSocketReceiveResponse_address_tag     3
@@ -272,7 +278,8 @@ X(a, STATIC,   REQUIRED, INT32,    err,               2)
 
 #define MsgSocketBindRequest_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, INT32,    handle,            1) \
-X(a, STATIC,   REQUIRED, MESSAGE,  address,           2)
+X(a, STATIC,   REQUIRED, MESSAGE,  address,           2) \
+X(a, STATIC,   REQUIRED, INT32,    timeout,           3)
 #define MsgSocketBindRequest_CALLBACK NULL
 #define MsgSocketBindRequest_DEFAULT NULL
 #define MsgSocketBindRequest_address_MSGTYPE Address
@@ -285,7 +292,8 @@ X(a, STATIC,   REQUIRED, INT32,    err,               1)
 #define MsgSocketAddrRequest_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, INT32,    handle,            1) \
 X(a, STATIC,   REQUIRED, BOOL,     requestAddressLocal,   2) \
-X(a, STATIC,   REQUIRED, BOOL,     requestAddressRemote,   3)
+X(a, STATIC,   REQUIRED, BOOL,     requestAddressRemote,   3) \
+X(a, STATIC,   REQUIRED, INT32,    timeout,           4)
 #define MsgSocketAddrRequest_CALLBACK NULL
 #define MsgSocketAddrRequest_DEFAULT NULL
 
@@ -331,7 +339,8 @@ X(a, STATIC,   REQUIRED, MESSAGE,  address,           3)
 #define MsgSocketReceiveResponse_address_MSGTYPE Address
 
 #define MsgSocketCloseRequest_FIELDLIST(X, a) \
-X(a, STATIC,   REQUIRED, INT32,    handle,            1)
+X(a, STATIC,   REQUIRED, INT32,    handle,            1) \
+X(a, STATIC,   REQUIRED, INT32,    timeout,           4)
 #define MsgSocketCloseRequest_CALLBACK NULL
 #define MsgSocketCloseRequest_DEFAULT NULL
 
@@ -468,11 +477,11 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define MsgGetServByNameRequest_size             22
 #define MsgGetServByNameResponse_size            17
 #define MsgInvalidRequestResponse_size           2
-#define MsgSocketAddrRequest_size                15
+#define MsgSocketAddrRequest_size                26
 #define MsgSocketAddrResponse_size               49
-#define MsgSocketBindRequest_size                30
+#define MsgSocketBindRequest_size                41
 #define MsgSocketBindResponse_size               11
-#define MsgSocketCloseRequest_size               11
+#define MsgSocketCloseRequest_size               22
 #define MsgSocketCloseResponse_size              11
 #define MsgSocketOpenRequest_size                12
 #define MsgSocketOpenResponse_size               22

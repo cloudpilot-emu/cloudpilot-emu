@@ -5,9 +5,10 @@ import websockets
 import proto.networking_pb2 as networking
 import hexdump
 import socket
-import select
 import net_errors as err
-import traceback
+import time
+
+MAX_TIMEOUT = 5
 
 SOCKET_TYPE = {
     1: socket.SOCK_STREAM,
@@ -36,6 +37,36 @@ class SocketContext:
     def __init__(self, socket, type):
         self.socket = socket
         self.type = type
+
+        self._timeout = None
+        self._timoutBase = time.time()
+
+    def setTimeoutMsec(self, timeout):
+        self._timeout = min(
+            MAX_TIMEOUT, timeout / 1000) if timeout != None and timeout > 0 else None
+        self._timeoutBase = time.time()
+
+        self.updateTimeout()
+
+    def updateTimeout(self):
+        if self._timeout == None:
+            self.socket.settimeout(MAX_TIMEOUT)
+
+        else:
+            self.socket.settimeout(
+                max(0, self._timeout - time.time() + self._timeoutBase))
+
+    async def close(self):
+        self.updateTimeout()
+
+        try:
+            await asyncio.to_thread(lambda: self.socket.shutdown(socket.SHUT_RDWR))
+        except OSError as ex:
+            if ex.errno != errno.ENOTCONN:
+                raise ex
+
+        self.updateTimeout()
+        await asyncio.to_thread(lambda: self.socket.close())
 
 
 def deserializeAddress(addr):
@@ -110,16 +141,6 @@ def exceptionToErr(ex):
         return err.netErrParamErr
 
     return err.netErrInternal
-
-
-async def closeSocket(sock):
-    try:
-        await asyncio.to_thread(lambda: sock.shutdown(socket.SHUT_RDWR))
-    except OSError as ex:
-        if ex.errno != errno.ENOTCONN:
-            raise ex
-
-    await asyncio.to_thread(lambda: sock.close())
 
 
 def ipFromIpPacket(packet):
@@ -243,17 +264,22 @@ class ProxyContext:
 
     async def _handleSocketBind(self, request):
         print(
-            f'socketBindRequest: handle={request.handle} ip={request.address.ip} port={request.address.port}')
+            f'socketBindRequest: handle={request.handle} ip={request.address.ip} port={request.address.port} timeout={request.timeout}')
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketBindResponse
 
         try:
-            sock = self._getSocketCtx(request.handle).socket
+            socketCtx = self._getSocketCtx(request.handle)
 
-            await asyncio.to_thread(lambda: sock.bind(
+            socketCtx.setTimeoutMsec(request.timeout)
+
+            await asyncio.to_thread(lambda: socketCtx.socket.bind(
                 deserializeAddress(request.address)))
             response.err = 0
+
+        except socket.timeout:
+            response.err = err.netErrTimeout
 
         except Exception as ex:
             print(f'ERROR: failed to bind socket: {formatException(ex)}')
@@ -263,21 +289,28 @@ class ProxyContext:
 
     async def _handleSocketAddr(self, request):
         print(
-            f'socketAddrRequest: handle={request.handle} requestAddressLocal={request.requestAddressLocal} requestAddressRemote={request.requestAddressRemote}')
+            f'socketAddrRequest: handle={request.handle} requestAddressLocal={request.requestAddressLocal} requestAddressRemote={request.requestAddressRemote} timeout={request.timeout}')
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketAddrResponse
 
         try:
-            sock = self._getSocketCtx(request.handle).socket
+            socketCtx = self._getSocketCtx(request.handle)
+            sock = socketCtx.socket
+
+            socketCtx.setTimeoutMsec(request.timeout)
 
             if request.requestAddressLocal:
                 serializeAddress(await asyncio.to_thread(lambda: sock.getsockname()), response.addressLocal)
+                socketCtx.updateTimeout()
 
             if request.requestAddressRemote:
                 serializeAddress(await asyncio.to_thread(lambda: sock.getpeername()), response.addressRemote)
 
             response.err = 0
+
+        except socket.timeout:
+            response.err = err.netErrTimeout
 
         except Exception as ex:
             print(
@@ -299,20 +332,14 @@ class ProxyContext:
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketSendResponse
+        response.bytesSent = -1
 
         try:
             socketCtx = self._getSocketCtx(request.handle)
             sock = socketCtx.socket
             flags = translateFlags(request.flags)
 
-            if request.timeout > 0:
-                rlist, wlist, xlist = await asyncio.to_thread(lambda: select.select((), (sock,), (), request.timeout / 1000))
-
-                if len(wlist) == 0:
-                    response.err = err.netErrTimeout
-                    response.bytesSent = -1
-
-                    return responseMsg
+            socketCtx.setTimeoutMsec(request.timeout)
 
             if socketCtx.type == socket.SOCK_RAW:
                 data = removeIpHeader(request.data, socketCtx)
@@ -330,11 +357,13 @@ class ProxyContext:
 
             response.err = 0
 
+        except socket.timeout:
+            response.err = err.netErrTimeout
+
         except Exception as ex:
             print(f'ERROR: failed to send: {formatException(ex)}')
 
             response.err = exceptionToErr(ex)
-            response.bytesSent = -1
 
         return responseMsg
 
@@ -350,18 +379,11 @@ class ProxyContext:
         response.address.port = 0
 
         try:
-            sock = self._getSocketCtx(request.handle).socket
+            socketCtx = self._getSocketCtx(request.handle)
             flags = translateFlags(request.flags)
 
-            if request.timeout > 0:
-                rlist, wlist, xlist = await asyncio.to_thread(lambda: select.select((sock,), (), (), request.timeout / 1000))
-
-                if len(rlist) == 0:
-                    response.err = err.netErrTimeout
-
-                    return responseMsg
-
-            data, address = await asyncio.to_thread(lambda: sock.recvfrom(request.maxLen, flags))
+            socketCtx.setTimeoutMsec(request.timeout)
+            data, address = await asyncio.to_thread(lambda: socketCtx.socket.recvfrom(request.maxLen, flags))
 
             serializeAddress(address, response.address)
             response.data = data
@@ -372,6 +394,9 @@ class ProxyContext:
                 print(line)
             print()
 
+        except socket.timeout:
+            response.err = err.netErrTimeout
+
         except Exception as ex:
             print(f'ERROR: failed to receive: {formatException(ex)}')
 
@@ -380,17 +405,23 @@ class ProxyContext:
         return responseMsg
 
     async def _handleSocketClose(self, request):
-        print(f'socketCloseRequest: handle={request.handle}')
+        print(
+            f'socketCloseRequest: handle={request.handle} timeout={request.timeout}')
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketCloseResponse
 
         try:
-            sock = self._getSocketCtx(request.handle).socket
+            socketContext = self._getSocketCtx(request.handle)
             del self._sockets[request.handle]
 
-            await closeSocket(sock)
+            socketContext.setTimeoutMsec(request.timeout)
+
+            await socketContext.close()
             response.err = 0
+
+        except socket.timeout:
+            response.err = err.netErrTimeout
 
         except Exception as ex:
             print(
@@ -456,9 +487,11 @@ class ProxyContext:
         return self._sockets[handle]
 
     async def _closeAllSockets(self):
-        for handle, sockCtx in self._sockets.items():
+        for socketCtx in self._sockets.values():
             try:
-                await closeSocket(sockCtx.socket)
+                socketCtx.setTimeoutMsec(5000)
+
+                await socketCtx.close()
             except Exception as ex:
                 print(
                     f'ERROR: failed to close socket {handle}: {formatException(ex)}')

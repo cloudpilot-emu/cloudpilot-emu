@@ -18,6 +18,7 @@ message MsgSocketOpenResponse {
 message MsgSocketBindRequest {
     required int32 handle = 1;
     required Address address = 2;
+    required int32 timeout = 3;
 }
 
 message MsgSocketBindResponse {
@@ -28,6 +29,7 @@ message MsgSocketAddrRequest {
     required int32 handle = 1;
     required bool requestAddressLocal = 2;
     required bool requestAddressRemote = 3;
+    required int32 timeout = 4;
 }
 
 message MsgSocketAddrResponse {
@@ -64,6 +66,7 @@ message MsgSocketReceiveResponse {
 
 message MsgSocketCloseRequest {
     required int32 handle = 1;
+    required int32 timeout = 4;
 }
 
 message MsgSocketCloseResponse {

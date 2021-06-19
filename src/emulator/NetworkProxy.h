@@ -21,10 +21,10 @@ class NetworkProxy {
 
     void SocketOpen(uint8 domain, uint8 type, uint16 protocol);
 
-    void SocketBind(int16 handle, NetSocketAddrType* sockAddrP);
+    void SocketBind(int16 handle, NetSocketAddrType* sockAddrP, Int32 timeout);
 
     void SocketAddr(int16 handle, NetSocketAddrType* locAddrP, Int16* locAddrLenP,
-                    NetSocketAddrType* remAddrP, Int16* remAddrLen);
+                    NetSocketAddrType* remAddrP, Int16* remAddrLen, int32 timeout);
 
     void SocketOptionSet(int16 handle, uint16 level, uint16 option, uint32 valueP, uint16 valueLen);
 
@@ -33,7 +33,7 @@ class NetworkProxy {
 
     void SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int32 timeout);
 
-    void SocketClose(int16 handle);
+    void SocketClose(int16 handle, int32 timeout);
 
     void GetHostByName(const string name);
 

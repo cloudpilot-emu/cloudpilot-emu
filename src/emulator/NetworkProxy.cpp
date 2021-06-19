@@ -102,6 +102,10 @@ namespace {
 
         return true;
     }
+
+    int32 convertTimeout(int32 timeout) {
+        return timeout > 0 ? timeout * 10 : timeout;  // milliseconds, assume 100 ticks per second
+    }
 }  // namespace
 
 NetworkProxy& gNetworkProxy{networkProxy};
@@ -201,10 +205,11 @@ void NetworkProxy::SocketOpenFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
-void NetworkProxy::SocketBind(int16 handle, NetSocketAddrType* sockAddrP) {
+void NetworkProxy::SocketBind(int16 handle, NetSocketAddrType* sockAddrP, Int32 timeout) {
     MsgRequest request = NewRequest(MsgRequest_socketBindRequest_tag);
 
     request.payload.socketBindRequest.handle = handle;
+    request.payload.socketBindRequest.timeout = timeout;
 
     if (!serializeAddress(sockAddrP, request.payload.socketBindRequest.address))
         return SocketBindFail(netErrParamErr);
@@ -257,7 +262,7 @@ void NetworkProxy::SocketBindFail(Err err) {
 }
 
 void NetworkProxy::SocketAddr(int16 handle, NetSocketAddrType* locAddrP, Int16* locAddrLenP,
-                              NetSocketAddrType* remAddrP, Int16* remAddrLenP) {
+                              NetSocketAddrType* remAddrP, Int16* remAddrLenP, int32 timeout) {
     MsgRequest request = NewRequest(MsgRequest_socketAddrRequest_tag);
     request.payload.socketAddrRequest.handle = handle;
 
@@ -267,6 +272,7 @@ void NetworkProxy::SocketAddr(int16 handle, NetSocketAddrType* locAddrP, Int16* 
 
     request.payload.socketAddrRequest.requestAddressLocal = locAddrP;
     request.payload.socketAddrRequest.requestAddressRemote = remAddrP;
+    request.payload.socketAddrRequest.timeout = convertTimeout(timeout);
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketAddrSuccess, this, _1, _2),
@@ -405,8 +411,7 @@ void NetworkProxy::SocketSend(int16 handle, uint8* data, size_t count, uint32 fl
     } else
         sendRequest.has_address = false;
 
-    sendRequest.timeout =
-        timeout > 0 ? timeout * 10 : timeout;  // milliseconds, assume 100 ticks per second
+    sendRequest.timeout = convertTimeout(timeout);
 
     BufferEncodeContext bufferEncodeCtx{data, count};
 
@@ -471,7 +476,7 @@ void NetworkProxy::SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int3
 
     request.payload.socketReceiveRequest.handle = handle;
     request.payload.socketReceiveRequest.flags = flags;
-    request.payload.socketReceiveRequest.timeout = timeout;
+    request.payload.socketReceiveRequest.timeout = convertTimeout(timeout);
     request.payload.socketReceiveRequest.maxLen = bufLen;
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE,
@@ -547,10 +552,11 @@ void NetworkProxy::SocketReceiveFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
-void NetworkProxy::SocketClose(int16 handle) {
+void NetworkProxy::SocketClose(int16 handle, int32 timeout) {
     MsgRequest request = NewRequest(MsgRequest_socketCloseRequest_tag);
 
     request.payload.socketCloseRequest.handle = handle;
+    request.payload.socketCloseRequest.timeout = convertTimeout(timeout);
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketCloseSuccess, this, _1, _2),

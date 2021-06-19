@@ -258,7 +258,7 @@ namespace {
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
         if (Feature::GetNetworkRedirection()) {
-            gNetworkProxy.SocketClose(socket);
+            gNetworkProxy.SocketClose(socket, timeout);
 
             return kSkipROM;
         }
@@ -326,8 +326,9 @@ namespace {
 
             CALLED_GET_PARAM_VAL(NetSocketRef, socket);
             CALLED_GET_PARAM_REF(NetSocketAddrType, sockAddrP, Marshal::kInput);
+            CALLED_GET_PARAM_VAL(Int32, timeout);
 
-            gNetworkProxy.SocketBind(socket, sockAddrP);
+            gNetworkProxy.SocketBind(socket, sockAddrP, timeout);
 
             return kSkipROM;
         }
@@ -781,7 +782,7 @@ namespace {
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
         if (Feature::GetNetworkRedirection()) {
-            gNetworkProxy.SocketAddr(socket, locAddrP, locAddrLenP, remAddrP, remAddrLenP);
+            gNetworkProxy.SocketAddr(socket, locAddrP, locAddrLenP, remAddrP, remAddrLenP, timeout);
 
             return kSkipROM;
         }
