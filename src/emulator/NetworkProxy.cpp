@@ -1,6 +1,5 @@
 #include "NetworkProxy.h"
 
-#include <functional>
 #include <memory>
 
 #include "EmMemory.h"
@@ -157,7 +156,7 @@ void NetworkProxy::SocketOpen(uint8 domain, uint8 type, uint16 protocol) {
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketOpenSuccess, this, _1, _2),
-                   bind(&NetworkProxy::SocketOpenFail, this, netErrInternal));
+                   bind(&NetworkProxy::SocketOpenFail, this, _1));
 }
 
 void NetworkProxy::SocketOpenSuccess(uint8* responseData, size_t size) {
@@ -212,7 +211,7 @@ void NetworkProxy::SocketBind(int16 handle, NetSocketAddrType* sockAddrP) {
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketBindSuccess, this, _1, _2),
-                   bind(&NetworkProxy::SocketBindFail, this, netErrInternal));
+                   bind(&NetworkProxy::SocketBindFail, this, _1));
 }
 
 void NetworkProxy::SocketBindSuccess(uint8* responseData, size_t size) {
@@ -271,7 +270,7 @@ void NetworkProxy::SocketAddr(int16 handle, NetSocketAddrType* locAddrP, Int16* 
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketAddrSuccess, this, _1, _2),
-                   bind(&NetworkProxy::SocketAddrFail, this, netErrInternal));
+                   bind(&NetworkProxy::SocketAddrFail, this, _1));
 }
 
 void NetworkProxy::SocketAddrSuccess(uint8* responseData, size_t size) {
@@ -416,7 +415,7 @@ void NetworkProxy::SocketSend(int16 handle, uint8* data, size_t count, uint32 fl
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE + count,
                    bind(&NetworkProxy::SocketSendSuccess, this, _1, _2),
-                   bind(&NetworkProxy::SocketSendFail, this, netErrInternal));
+                   bind(&NetworkProxy::SocketSendFail, this, _1));
 }
 
 void NetworkProxy::SocketSendSuccess(uint8* responseData, size_t size) {
@@ -477,7 +476,7 @@ void NetworkProxy::SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int3
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketReceiveSuccess, this, _1, _2),
-                   bind(&NetworkProxy::SocketReceiveFail, this, netErrInternal));
+                   bind(&NetworkProxy::SocketReceiveFail, this, _1));
 }
 
 void NetworkProxy::SocketReceiveSuccess(uint8* responseData, size_t size) {
@@ -555,7 +554,7 @@ void NetworkProxy::SocketClose(int16 handle) {
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketCloseSuccess, this, _1, _2),
-                   bind(&NetworkProxy::SocketCloseFail, this, netErrInternal));
+                   bind(&NetworkProxy::SocketCloseFail, this, _1));
 }
 
 void NetworkProxy::SocketCloseSuccess(uint8* responseData, size_t size) {
@@ -606,7 +605,7 @@ void NetworkProxy::GetHostByName(const string name) {
 
     SendAndSuspend(requestMsg, REQUEST_STATIC_SIZE + sizeof(request.name),
                    bind(&NetworkProxy::GetHostByNameSuccess, this, _1, _2),
-                   bind(&NetworkProxy::GetHostByNameFail, this, netErrInternal));
+                   bind(&NetworkProxy::GetHostByNameFail, this, _1));
 }
 
 void NetworkProxy::GetHostByNameSuccess(uint8* responseData, size_t size) {
@@ -695,7 +694,7 @@ void NetworkProxy::GetServByName(const string name, const string proto) {
     SendAndSuspend(requestMsg,
                    REQUEST_STATIC_SIZE + sizeof(request.name) + sizeof(request.protocol),
                    bind(&NetworkProxy::GetServByNameSuccess, this, _1, _2),
-                   bind(&NetworkProxy::GetServByNameFail, this, netErrInternal));
+                   bind(&NetworkProxy::GetServByNameFail, this, _1));
 }
 
 void NetworkProxy::GetServByNameSuccess(uint8* responseData, size_t size) {
@@ -803,12 +802,14 @@ MsgRequest NetworkProxy::NewRequest(pb_size_t payloadTag) {
 
 void NetworkProxy::SendAndSuspend(MsgRequest& request, size_t size,
                                   SuspendContextNetworkRpc::successCallbackT cbSuccess,
-                                  SuspendContextNetworkRpc::failCallbackT cbFail) {
+                                  function<void(Err)> cbFail) {
+    if (openCount == 0) return cbFail(netErrNotOpen);
+
     uint8* buffer = new uint8[size];
     pb_ostream_t stream = pb_ostream_from_buffer(buffer, size);
 
     pb_encode(&stream, MsgRequest_fields, &request);
 
     SuspendManager::Suspend<SuspendContextNetworkRpc>(buffer, stream.bytes_written, cbSuccess,
-                                                      cbFail);
+                                                      bind(cbFail, netErrInternal));
 }

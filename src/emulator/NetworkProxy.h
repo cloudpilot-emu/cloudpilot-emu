@@ -1,6 +1,8 @@
 #ifndef _NETWORK_PROXY_H_
 #define _NETWORK_PROXY_H_
 
+#include <functional>
+
 #include "EmCommon.h"
 #include "SuspendContextNetworkRpc.h"
 #include "networking.pb.h"
@@ -75,7 +77,7 @@ class NetworkProxy {
 
     void SendAndSuspend(MsgRequest& request, size_t bufferSize,
                         SuspendContextNetworkRpc::successCallbackT cbSuccess,
-                        SuspendContextNetworkRpc::failCallbackT cbFail);
+                        function<void(Err)> cbFail);
 
    private:
     uint32 openCount{0};
