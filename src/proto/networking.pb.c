@@ -57,6 +57,12 @@ PB_BIND(MsgGetServByNameRequest, MsgGetServByNameRequest, AUTO)
 PB_BIND(MsgGetServByNameResponse, MsgGetServByNameResponse, AUTO)
 
 
+PB_BIND(MsgSocketConnectRequest, MsgSocketConnectRequest, AUTO)
+
+
+PB_BIND(MsgSocketConnectResponse, MsgSocketConnectResponse, AUTO)
+
+
 PB_BIND(MsgInvalidRequestResponse, MsgInvalidRequestResponse, AUTO)
 
 

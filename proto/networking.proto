@@ -61,7 +61,7 @@ message MsgSocketReceiveRequest {
 message MsgSocketReceiveResponse {
     required int32 err = 1;
     required bytes data = 2;
-    required Address address = 3;
+    optional Address address = 3;
 }
 
 message MsgSocketCloseRequest {
@@ -94,6 +94,16 @@ message MsgGetServByNameResponse {
     required int32 err = 2;
 }
 
+message MsgSocketConnectRequest {
+    required int32 handle = 1;
+    required Address address = 2;
+    required int32 timeout = 3;
+}
+
+message MsgSocketConnectResponse {
+    required int32 err = 1;
+}
+
 message MsgInvalidRequestResponse {
     required bool tag = 1;
 }
@@ -110,6 +120,7 @@ message MsgRequest {
         MsgSocketCloseRequest socketCloseRequest = 7;
         MsgGetHostByNameRequest getHostByNameRequest = 8;
         MsgGetServByNameRequest getServByNameRequest = 9;
+        MsgSocketConnectRequest socketConnectRequest = 10;
     }
 }
 
@@ -125,6 +136,7 @@ message MsgResponse {
         MsgSocketCloseResponse socketCloseResponse = 7;
         MsgGetHostByNameResponse getHostByNameResponse = 8;
         MsgGetServByNameResponse getServByNameResponse = 9;
+        MsgSocketConnectResponse socketConnectResponse = 10;
         MsgInvalidRequestResponse invalidRequestResponse = 255;
     }
 }

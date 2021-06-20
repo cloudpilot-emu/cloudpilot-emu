@@ -167,6 +167,9 @@ class ProxyContext:
         elif requestType == "getServByNameRequest":
             response = await self._handleGetServByName(request.getServByNameRequest)
 
+        elif requestType == "socketConnectRequest":
+            response = await self._handleSocketConnect(request.socketConnectRequest)
+
         else:
             response = networking.MsgResponse()
             response.invalidRequestResponse.tag = True
@@ -336,8 +339,6 @@ class ProxyContext:
         response = responseMsg.socketReceiveResponse
 
         response.data = b''
-        response.address.ip = 0
-        response.address.port = 0
 
         try:
             socketCtx = self._getSocketCtx(request.handle)
@@ -346,7 +347,9 @@ class ProxyContext:
             socketCtx.setTimeoutMsec(request.timeout)
             data, address = await asyncio.to_thread(lambda: socketCtx.socket.recvfrom(request.maxLen, flags))
 
-            serializeAddress(address, response.address)
+            if address != None:
+                serializeAddress(address, response.address)
+
             response.data = data
             response.err = 0
 
@@ -438,6 +441,33 @@ class ProxyContext:
             print(f'failed to resolve service: {formatException(ex)}')
 
             response.err = err.netErrUnknownService
+
+        return responseMsg
+
+    async def _handleSocketConnect(self, request):
+        print(
+            f'socketConnectRequest handle={request.handle} ip={request.address.ip} port={request.address.port} timeout={request.timeout}')
+
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketConnectResponse
+
+        print(deserializeAddress(request.address))
+
+        try:
+            socketContext = self._getSocketCtx(request.handle)
+
+            socketContext.setTimeoutMsec(request.timeout)
+
+            await asyncio.to_thread(lambda: socketContext.socket.connect(deserializeAddress(request.address)))
+
+            response.err = 0
+
+        except socket.timeout:
+            response.err = err.netErrTimeout
+
+        except Exception as ex:
+            print(f'failed to connect socket: {formatException(ex)}')
+            response.err = exceptionToErr(ex)
 
         return responseMsg
 

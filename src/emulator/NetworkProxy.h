@@ -39,6 +39,8 @@ class NetworkProxy {
 
     void GetServByName(const string name, const string proto);
 
+    void SocketConnect(int16 handle, NetSocketAddrType* address, int16 addrLen, int32 timeout);
+
    private:
     void ConnectSuccess();
     void ConnectAbort();
@@ -70,6 +72,9 @@ class NetworkProxy {
 
     void GetServByNameSuccess(uint8* responseData, size_t size);
     void GetServByNameFail(Err err = netErrInternal);
+
+    void SocketConnectSuccess(uint8* responseData, size_t size);
+    void SocketConnectFail(Err err = netErrInternal);
 
     MsgRequest NewRequest(pb_size_t payloadTag);
     bool DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,

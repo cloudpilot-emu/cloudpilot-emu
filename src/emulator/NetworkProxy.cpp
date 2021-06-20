@@ -524,7 +524,7 @@ void NetworkProxy::SocketReceiveSuccess(uint8* responseData, size_t size) {
     EmMem_memcpy((emuptr)bufP, static_cast<void*>(bufferDecodeContext.data.get()),
                  bufferDecodeContext.len);
 
-    if (fromAddrP) {
+    if (fromAddrP && response.payload.socketReceiveResponse.has_address) {
         deserializeAddress(fromAddrP, response.payload.socketReceiveResponse.address);
         *fromLenP = 8;
 
@@ -764,6 +764,67 @@ void NetworkProxy::GetServByNameFail(Err err) {
     CALLED_PUT_PARAM_REF(errP);
 
     PUT_RESULT_VAL(emuptr, 0);
+}
+
+void NetworkProxy::SocketConnect(int16 handle, NetSocketAddrType* address, int16 addrLen,
+                                 int32 timeout) {
+    if (addrLen < 8) return SocketConnectFail(netErrParamErr);
+
+    MsgRequest msgRequest = NewRequest(MsgRequest_socketConnectRequest_tag);
+    MsgSocketConnectRequest& request(msgRequest.payload.socketConnectRequest);
+
+    if (!serializeAddress(address, request.address)) return SocketConnectFail(netErrParamErr);
+
+    request.handle = handle;
+    request.timeout = timeout;
+
+    SendAndSuspend(msgRequest, REQUEST_STATIC_SIZE,
+                   bind(&NetworkProxy::SocketConnectSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SocketConnectFail, this, _1));
+}
+
+void NetworkProxy::SocketConnectSuccess(uint8* responseData, size_t size) {
+    MsgResponse msgResponse;
+
+    if (!DecodeResponse(responseData, size, msgResponse, MsgResponse_socketConnectResponse_tag)) {
+        logging::printf("SocketConnect: bad response");
+
+        return SocketConnectFail();
+    }
+
+    const MsgSocketConnectResponse& response(msgResponse.payload.socketConnectResponse);
+
+    if (response.err != 0) {
+        logging::printf("SocketConnect: failed");
+
+        return SocketConnectFail(response.err);
+    }
+
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "NetSocketAddrType *sockAddrP, Int16 addrLen, Int32 timeout, "
+                 "Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = 0;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, 0);
+}
+
+void NetworkProxy::SocketConnectFail(Err err) {
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "NetSocketAddrType *sockAddrP, Int16 addrLen, Int32 timeout, "
+                 "Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
 }
 
 bool NetworkProxy::DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
