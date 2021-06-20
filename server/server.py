@@ -1,14 +1,10 @@
 import asyncio
-from errno import errorcode
-import errno
 import websockets
 import proto.networking_pb2 as networking
 import hexdump
 import socket
 import net_errors as err
-import time
-
-MAX_TIMEOUT = 5
+from socket_context import SocketContext
 
 SOCKET_TYPE = {
     1: socket.SOCK_STREAM,
@@ -31,42 +27,6 @@ class InvalidAddressError(Exception):
 
 class BadPacketException(Exception):
     pass
-
-
-class SocketContext:
-    def __init__(self, socket, type):
-        self.socket = socket
-        self.type = type
-
-        self._timeout = None
-        self._timoutBase = time.time()
-
-    def setTimeoutMsec(self, timeout):
-        self._timeout = min(
-            MAX_TIMEOUT, timeout / 1000) if timeout != None and timeout > 0 else None
-        self._timeoutBase = time.time()
-
-        self.updateTimeout()
-
-    def updateTimeout(self):
-        if self._timeout == None:
-            self.socket.settimeout(MAX_TIMEOUT)
-
-        else:
-            self.socket.settimeout(
-                max(0, self._timeout - time.time() + self._timeoutBase))
-
-    async def close(self):
-        self.updateTimeout()
-
-        try:
-            await asyncio.to_thread(lambda: self.socket.shutdown(socket.SHUT_RDWR))
-        except OSError as ex:
-            if ex.errno != errno.ENOTCONN:
-                raise ex
-
-        self.updateTimeout()
-        await asyncio.to_thread(lambda: self.socket.close())
 
 
 def deserializeAddress(addr):
@@ -251,7 +211,8 @@ class ProxyContext:
             sock = await asyncio.to_thread(lambda: socket.socket(
                 socket.AF_INET, sockType, sockProtocol))
 
-            self._sockets[handle] = SocketContext(sock, sockType)
+            self._sockets[handle] = SocketContext(
+                sock, sockType)
 
             response.handle = handle
             response.err = 0
@@ -489,7 +450,7 @@ class ProxyContext:
     async def _closeAllSockets(self):
         for socketCtx in self._sockets.values():
             try:
-                socketCtx.setTimeoutMsec(5000)
+                socketCtx.setTimeoutMsec(None)
 
                 await socketCtx.close()
             except Exception as ex:
