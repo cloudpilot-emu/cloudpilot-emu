@@ -41,6 +41,9 @@ class NetworkProxy {
 
     void SocketConnect(int16 handle, NetSocketAddrType* address, int16 addrLen, int32 timeout);
 
+    void Select(UInt16 width, NetFDSetType readFDs, NetFDSetType writeFDs, NetFDSetType exceptFDs,
+                int32 timeout);
+
    private:
     void ConnectSuccess();
     void ConnectAbort();
@@ -75,6 +78,9 @@ class NetworkProxy {
 
     void SocketConnectSuccess(uint8* responseData, size_t size);
     void SocketConnectFail(Err err = netErrInternal);
+
+    void SelectSuccess(uint8* responseData, size_t size);
+    void SelectFail(Err err = netErrInternal);
 
     MsgRequest NewRequest(pb_size_t payloadTag);
     bool DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,

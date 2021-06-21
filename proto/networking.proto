@@ -104,6 +104,21 @@ message MsgSocketConnectResponse {
     required int32 err = 1;
 }
 
+message MsgSelectRequest {
+    required uint32 width = 2;
+    required uint32 readFDs = 3;
+    required uint32 writeFDs = 4;
+    required uint32 exceptFDs = 5;
+    required int32 timeout = 6;
+}
+
+message MsgSelectResponse {
+    required uint32 readFDs = 1;
+    required uint32 writeFDs = 2;
+    required uint32 exceptFDs = 3;
+    required int32 err = 4;
+}
+
 message MsgInvalidRequestResponse {
     required bool tag = 1;
 }
@@ -121,6 +136,7 @@ message MsgRequest {
         MsgGetHostByNameRequest getHostByNameRequest = 8;
         MsgGetServByNameRequest getServByNameRequest = 9;
         MsgSocketConnectRequest socketConnectRequest = 10;
+        MsgSelectRequest selectRequest = 11;
     }
 }
 
@@ -137,6 +153,7 @@ message MsgResponse {
         MsgGetHostByNameResponse getHostByNameResponse = 8;
         MsgGetServByNameResponse getServByNameResponse = 9;
         MsgSocketConnectResponse socketConnectResponse = 10;
+        MsgSelectResponse selectResponse = 11;
         MsgInvalidRequestResponse invalidRequestResponse = 255;
     }
 }

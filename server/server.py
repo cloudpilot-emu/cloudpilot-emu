@@ -4,7 +4,10 @@ import proto.networking_pb2 as networking
 import hexdump
 import socket
 import net_errors as err
-from socket_context import SocketContext
+from socket_context import MAX_TIMEOUT, SocketContext
+import select
+
+MAX_HANDLE = 31
 
 SOCKET_TYPE = {
     1: socket.SOCK_STREAM,
@@ -23,6 +26,10 @@ class InvalidAddressError(Exception):
     def __init__(self, address):
         super().__init__()
         self.address = address
+
+
+class NoMoreSocketsError(Exception):
+    pass
 
 
 class BadPacketException(Exception):
@@ -81,6 +88,9 @@ def formatException(ex):
     if isinstance(ex, BadPacketException):
         return 'bad IPv4 packet'
 
+    if isinstance(ex, NoMoreSocketsError):
+        return 'no more sockets'
+
     return f'{type(ex).__name__}: {ex}'
 
 
@@ -99,6 +109,9 @@ def exceptionToErr(ex):
 
     if isinstance(ex, BadPacketException):
         return err.netErrParamErr
+
+    if isinstance(ex, NoMoreSocketsError):
+        return err.netErrNoMoreSockets
 
     return err.netErrInternal
 
@@ -121,8 +134,7 @@ def removeIpHeader(packet, socketCtx):
 class ProxyContext:
     def __init__(self):
         self.echoRequest = None
-        self._sockets = {}
-        self.nextHandle = 0
+        self._sockets = [None] * MAX_HANDLE
 
     async def start(self, ws):
         self._ws = ws
@@ -170,6 +182,9 @@ class ProxyContext:
         elif requestType == "socketConnectRequest":
             response = await self._handleSocketConnect(request.socketConnectRequest)
 
+        elif requestType == "selectRequest":
+            response = await self._handleSelect(request.selectRequest)
+
         else:
             response = networking.MsgResponse()
             response.invalidRequestResponse.tag = True
@@ -208,8 +223,7 @@ class ProxyContext:
 
                     return responseMsg
 
-            handle = self.nextHandle
-            self.nextHandle += 1
+            handle = self._getFreeHandle()
 
             sock = await asyncio.to_thread(lambda: socket.socket(
                 socket.AF_INET, sockType, sockProtocol))
@@ -228,7 +242,7 @@ class ProxyContext:
 
     async def _handleSocketBind(self, request):
         print(
-            f'socketBindRequest: handle={request.handle} ip={request.address.ip} port={request.address.port} timeout={request.timeout}')
+            f'socketBindRequest: handle={request.handle} address={deserializeAddress(request.address)} timeout={request.timeout}')
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketBindResponse
@@ -285,7 +299,7 @@ class ProxyContext:
 
     async def _handleSocketSend(self, request):
         print(
-            f'socketSendRequest: handle={request.handle} len={len(request.data)} flags={request.flags} timeout={request.timeout} {f"ip={request.address.ip} port={request.address.port}" if request.HasField("address") else ""}\n')
+            f'socketSendRequest: handle={request.handle} len={len(request.data)} flags={request.flags} timeout={request.timeout} address={deserializeAddress(request.address) if request.HasField("address") else ""}\n')
 
         for line in hexdump.dumpgen(request.data):
             print(line)
@@ -377,7 +391,7 @@ class ProxyContext:
 
         try:
             socketContext = self._getSocketCtx(request.handle)
-            del self._sockets[request.handle]
+            self._sockets[request.handle] = None
 
             socketContext.setTimeoutMsec(request.timeout)
 
@@ -446,12 +460,10 @@ class ProxyContext:
 
     async def _handleSocketConnect(self, request):
         print(
-            f'socketConnectRequest handle={request.handle} ip={request.address.ip} port={request.address.port} timeout={request.timeout}')
+            f'socketConnectRequest handle={request.handle} address={deserializeAddress(request.address)} timeout={request.timeout}')
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketConnectResponse
-
-        print(deserializeAddress(request.address))
 
         try:
             socketContext = self._getSocketCtx(request.handle)
@@ -471,21 +483,87 @@ class ProxyContext:
 
         return responseMsg
 
+    async def _handleSelect(self, request):
+        print(f'select width={request.width} readFDs={self._fdSetToHandles(request.readFDs, request.width)} writeFDs={self._fdSetToHandles(request.writeFDs, request.width)} exceptFDs={self._fdSetToHandles(request.exceptFDs, request.width)} timeout={request.timeout}')
+
+        try:
+            responseMsg = networking.MsgResponse()
+            response = responseMsg.selectResponse
+
+            response.readFDs = 0
+            response.writeFDs = 0
+            response.exceptFDs = 0
+            response.err = err.netErrInternal
+
+            timeout = min(MAX_TIMEOUT, request.timeout /
+                          1000 if request.timeout >= 0 else MAX_TIMEOUT)
+
+            rlist, wlist, xlist = await asyncio.to_thread(
+                lambda: select.select(
+                    self._fdSetToSockets(request.readFDs, request.width),
+                    self._fdSetToSockets(request.writeFDs, request.width),
+                    self._fdSetToSockets(request.exceptFDs, request.width),
+                    timeout
+                )
+            )
+
+            response.readFDs = self._socketsToFdSet(rlist)
+            response.writeFDs = self._socketsToFdSet(wlist)
+            response.exceptFDs = self._socketsToFdSet(xlist)
+
+            response.err = 0
+
+        except Exception as ex:
+            print(f'select failed {ex}')
+
+        return responseMsg
+
+    async def _closeAllSockets(self):
+        async def closeCtx(ctx):
+            try:
+                ctx.setTimeoutMsec(None)
+
+                await ctx.close()
+            except Exception as ex:
+                print(
+                    f'ERROR: failed to close socket: {formatException(ex)}')
+
+        contexts = [ctx for ctx in self._sockets if ctx != None]
+
+        if len(contexts) > 0:
+            await asyncio.wait([asyncio.create_task(closeCtx(ctx)) for ctx in contexts])
+
     def _getSocketCtx(self, handle):
-        if not handle in self._sockets:
+        if handle < 1 or handle > MAX_HANDLE or self._sockets[handle] == None:
             raise InvalidHandleError(handle)
 
         return self._sockets[handle]
 
-    async def _closeAllSockets(self):
-        for socketCtx in self._sockets.values():
-            try:
-                socketCtx.setTimeoutMsec(None)
+    def _getFreeHandle(self):
+        for handle, ctx in enumerate(self._sockets):
+            if handle > 0 and ctx == None:
+                return handle
 
-                await socketCtx.close()
-            except Exception as ex:
-                print(
-                    f'ERROR: failed to close socket {handle}: {formatException(ex)}')
+        raise NoMoreSocketsError()
+
+    def _fdSetToHandles(self, fds, width):
+        width = max(min(width, 32), 0)
+
+        return [handle for handle in range(1, width) if (fds & (1 << handle) > 0)]
+
+    def _fdSetToSockets(self, fds, width):
+        return [self._sockets[handle].socket for handle in self._fdSetToHandles(fds, width) if self._sockets[handle] != None]
+
+    def _socketsToFdSet(self, sockets):
+        packed = 0
+
+        for handle, ctx in enumerate(self._sockets):
+            if ctx == None or not ctx.socket in sockets:
+                continue
+
+            packed |= 1 << handle
+
+        return packed
 
 
 async def handle(socket, path):

@@ -63,6 +63,12 @@ PB_BIND(MsgSocketConnectRequest, MsgSocketConnectRequest, AUTO)
 PB_BIND(MsgSocketConnectResponse, MsgSocketConnectResponse, AUTO)
 
 
+PB_BIND(MsgSelectRequest, MsgSelectRequest, AUTO)
+
+
+PB_BIND(MsgSelectResponse, MsgSelectResponse, AUTO)
+
+
 PB_BIND(MsgInvalidRequestResponse, MsgInvalidRequestResponse, AUTO)
 
 

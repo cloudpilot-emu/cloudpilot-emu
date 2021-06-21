@@ -53,7 +53,7 @@ namespace {
 
         const NetSocketAddrINType* sockAddrIN = (const NetSocketAddrINType*)(sockAddr);
 
-        address.port = sockAddrIN->port;
+        address.port = ntohs(sockAddrIN->port);
         address.ip = ntohl(sockAddrIN->addr);
 
         return true;
@@ -63,7 +63,7 @@ namespace {
         NetSocketAddrINType* sockAddrIN = reinterpret_cast<NetSocketAddrINType*>(sockAddr);
 
         sockAddrIN->family = netSocketAddrINET;
-        sockAddrIN->port = address.port;
+        sockAddrIN->port = htons(address.port);
         sockAddrIN->addr = htonl(address.ip);
     }
 
@@ -105,6 +105,15 @@ namespace {
 
     int32 convertTimeout(int32 timeout) {
         return timeout > 0 ? timeout * 10 : timeout;  // milliseconds, assume 100 ticks per second
+    }
+
+    int32 countFDs(int32 fdSet) {
+        int32 result = 0;
+
+        for (int i = 0; i < 32; i++)
+            if (fdSet & (1 << i)) result++;
+
+        return result;
     }
 }  // namespace
 
@@ -741,7 +750,7 @@ void NetworkProxy::GetServByNameSuccess(uint8* responseData, size_t size) {
     (*bufP).servInfo.nameP = (*bufP).name;
     (*bufP).servInfo.protoP = (*bufP).protoName;
     (*bufP).servInfo.nameAliasesP = (*bufP).aliasList;
-    (*bufP).servInfo.port = response.port;
+    (*bufP).servInfo.port = htons(response.port);
 
     CALLED_PUT_PARAM_REF(bufP);
 
@@ -818,6 +827,80 @@ void NetworkProxy::SocketConnectFail(Err err) {
                  "UInt16 libRefNum, NetSocketRef socket,"
                  "NetSocketAddrType *sockAddrP, Int16 addrLen, Int32 timeout, "
                  "Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
+}
+
+void NetworkProxy::Select(UInt16 width, NetFDSetType readFDs, NetFDSetType writeFDs,
+                          NetFDSetType exceptFDs, int32 timeout) {
+    if (width > 32) width = 32;
+
+    MsgRequest msgRequest = NewRequest(MsgRequest_selectRequest_tag);
+    MsgSelectRequest& request(msgRequest.payload.selectRequest);
+
+    request.width = width;
+    request.readFDs = readFDs;
+    request.writeFDs = writeFDs;
+    request.exceptFDs = exceptFDs;
+    request.timeout = convertTimeout(timeout);
+
+    SendAndSuspend(msgRequest, REQUEST_STATIC_SIZE,
+                   bind(&NetworkProxy::SelectSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SelectFail, this, _1));
+}
+
+void NetworkProxy::SelectSuccess(uint8* responseData, size_t size) {
+    MsgResponse msgResponse;
+
+    if (!DecodeResponse(responseData, size, msgResponse, MsgResponse_selectResponse_tag)) {
+        logging::printf("Select: bad response");
+
+        return SelectFail();
+    }
+
+    const MsgSelectResponse& response(msgResponse.payload.selectResponse);
+
+    if (response.err != 0) {
+        logging::printf("Select: failed");
+
+        return SocketConnectFail(response.err);
+    }
+
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, UInt16 width, NetFDSetType *readFDs, "
+                 "NetFDSetType *writeFDs, NetFDSetType *exceptFDs,"
+                 "Int32	timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(NetFDSetType, readFDs, Marshal::kOutput);
+    CALLED_GET_PARAM_REF(NetFDSetType, writeFDs, Marshal::kOutput);
+    CALLED_GET_PARAM_REF(NetFDSetType, exceptFDs, Marshal::kOutput);
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *readFDs = response.readFDs;
+    *writeFDs = response.writeFDs;
+    *exceptFDs = response.exceptFDs;
+    *errP = 0;
+
+    CALLED_PUT_PARAM_REF(readFDs);
+    CALLED_PUT_PARAM_REF(writeFDs);
+    CALLED_PUT_PARAM_REF(exceptFDs);
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16,
+                   static_cast<Int16>(countFDs(response.readFDs) + countFDs(response.writeFDs) +
+                                      countFDs(response.exceptFDs)));
+}
+
+void NetworkProxy::SelectFail(Err err) {
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, UInt16 width, NetFDSetType *readFDs, "
+                 "NetFDSetType *writeFDs, NetFDSetType *exceptFDs,"
+                 "Int32	timeout, Err *errP");
 
     CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 

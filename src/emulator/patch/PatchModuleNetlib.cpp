@@ -544,6 +544,12 @@ namespace {
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
+        if (Feature::GetNetworkRedirection()) {
+            gNetworkProxy.Select(width, *readFDs, *writeFDs, *exceptFDs, timeout);
+
+            return kSkipROM;
+        }
+
         return kExecuteROM;
     }
 
@@ -583,6 +589,10 @@ namespace {
         PRINTF("\nNetLibSettingGet");
 
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 setting, void *valueP, UInt16 *valueLenP");
+
+        CALLED_GET_PARAM_VAL(UInt16, setting);
+
+        cout << DecodeIfSetting(setting) << " " << setting << endl << flush;
 
         return kExecuteROM;
     }
