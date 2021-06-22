@@ -595,6 +595,24 @@ namespace {
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 setting, void *valueP, UInt16 *valueLenP");
 
         CALLED_GET_PARAM_VAL(UInt16, setting);
+        CALLED_GET_PARAM_VAL(UInt32, valueP);
+        CALLED_GET_PARAM_REF(UInt16, valueLenP, Marshal::kInOut);
+
+        if (Feature::GetNetworkRedirection() &&
+            (setting == netSettingRTPrimaryDNS || setting == netSettingRTPrimaryDNS)) {
+            if (*valueLenP >= 4) {
+                EmMemPut32(valueP, 0x08080808);
+                *valueLenP = 4;
+
+                CALLED_PUT_PARAM_REF(valueLenP);
+
+                PUT_RESULT_VAL(Err, 0);
+            } else {
+                PUT_RESULT_VAL(Err, netErrBufWrongSize);
+            }
+
+            return kSkipROM;
+        }
 
         cout << DecodeIfSetting(setting) << " " << setting << endl << flush;
 

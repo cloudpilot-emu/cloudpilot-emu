@@ -27,7 +27,7 @@ using namespace std::placeholders;
     const auto& response(msgResponse.payload.submessage);                                   \
                                                                                             \
     if (response.err != 0) {                                                                \
-        logging::printf(#call ": failed");                                                  \
+        logging::printf(#call ": failed, err = %u", response.err);                          \
                                                                                             \
         return call##Fail(response.err);                                                    \
     }
@@ -46,7 +46,7 @@ using namespace std::placeholders;
     const auto& response(msgResponse.payload.submessage);                                \
                                                                                          \
     if (response.err != 0) {                                                             \
-        logging::printf(#call ": failed");                                               \
+        logging::printf(#call ": failed, err = %u", response.err);                       \
                                                                                          \
         return call##Fail(response.err);                                                 \
     }
