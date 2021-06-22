@@ -45,10 +45,12 @@ def serializeIp(addr):
     try:
         parts = [int(x) for x in addr.split(".")]
     except Exception:
-        raise InvalidAddressError(addr)
+        print(f'WARNING: address is not IPv4 {addr}')
+        return None
 
     if len(parts) != 4:
-        raise InvalidAddressError(addr)
+        print(f'WARNING: address is not IPv4 {addr}')
+        return None
 
     return ((parts[0] << 24) | (parts[1] << 16) | (
         parts[2] << 8) | parts[3]) & 0xffffffff
@@ -56,8 +58,13 @@ def serializeIp(addr):
 
 def serializeAddress(addr, target):
 
-    if type(addr) != tuple or len(addr) != 2:
-        raise InvalidAddressError(addr)
+    if type(addr) != tuple or len(addr) != 2 or not isinstance(addr[0], str) or not isinstance(addr[1], int):
+        target.port = 0
+        target.ip = 0
+
+        print(f'WARNING: address is not IPv4 {addr}')
+
+        return
 
     target.port = addr[1]
     target.ip = serializeIp(addr[0])
@@ -425,7 +432,7 @@ class ProxyContext:
                 response.alias = aliases[0]
 
             response.addresses[:] = [
-                serializeIp(x) for x in addresses][:3]
+                serializeIp(x) for x in addresses if serializeIp(x) != None][:3]
 
             response.err = 0
 
