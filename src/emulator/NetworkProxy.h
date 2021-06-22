@@ -33,6 +33,8 @@ class NetworkProxy {
 
     void SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int32 timeout);
 
+    void SocketDmReceive(int16 handle, uint32 flags, uint16 rcvlen, int32 timeout);
+
     void SocketClose(int16 handle, int32 timeout);
 
     void GetHostByName(const string name);
@@ -66,6 +68,9 @@ class NetworkProxy {
 
     void SocketReceiveSuccess(uint8* responseData, size_t size);
     void SocketReceiveFail(Err err = netErrInternal);
+
+    void SocketDmReceiveSuccess(uint8* responseData, size_t size);
+    void SocketDmReceiveFail(Err err = netErrInternal);
 
     void SocketCloseSuccess(uint8* responseData, size_t size);
     void SocketCloseFail(Err err = netErrInternal);

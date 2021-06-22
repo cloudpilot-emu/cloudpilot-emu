@@ -523,7 +523,11 @@ namespace {
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
-        CALLED_GET_PARAM_PTR(void, recordP, rcvLen + recordOffset, Marshal::kInOut);
+        if (Feature::GetNetworkRedirection()) {
+            gNetworkProxy.SocketDmReceive(socket, flags, rcvLen, timeout);
+
+            return kSkipROM;
+        }
 
         return kExecuteROM;
     }
