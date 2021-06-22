@@ -10,6 +10,7 @@
 #include "EmSession.h"
 #include "EmSystemState.h"
 #include "Silkscreen.h"
+#include "SuspendManager.h"
 
 constexpr uint8 SILKSCREEN_BACKGROUND_HUE = 0xbb;
 constexpr uint32 BACKGROUND_HUE = 0xd2;
@@ -63,7 +64,7 @@ void MainLoop::Cycle() {
         gSystemState.MarkScreenClean();
     }
 #ifndef __EMSCRIPTEN__
-    else
+    else if (!SuspendManager::IsSuspended())
         SDL_Delay(16);
 #endif
 
