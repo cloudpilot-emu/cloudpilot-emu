@@ -248,22 +248,6 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
 
     int pcAdjust = fromTrap ? 2 : 0;
 
-    CEnableFullAccess munge;
-
-    UInt32 memSemaphoreIDP = EmLowMem_GetGlobal(memSemaphoreID);
-    EmAliascj_xsmb<PAS> memSemaphoreID(memSemaphoreIDP);
-
-    if (!gSession->IsNested() && memSemaphoreID.xsmuse == 0) {
-        DispatchNextEvent();
-
-        if (gSession->WaitingForSyscall()) {
-            gCPU->SetPC(gCPU->GetPC() - pcAdjust);
-            gSession->NotifySyscallDispatched();
-
-            return true;
-        }
-    }
-
     // ======================================================================
     //	Determine what ROM function is about to be called, and determine
     //	the method by which it is being called.
@@ -282,6 +266,30 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
         // should never return (they should throw exceptions).
 
         EmAssert(false);
+    }
+
+    CEnableFullAccess munge;
+
+    UInt32 memSemaphoreIDP = EmLowMem_GetGlobal(memSemaphoreID);
+    EmAliascj_xsmb<PAS> memSemaphoreID(memSemaphoreIDP);
+
+    if (!gSession->IsNested() && memSemaphoreID.xsmuse == 0) {
+        switch (context.fTrapWord) {
+            case sysTrapHwrIRQ1Handler:
+            case sysTrapHwrIRQ2Handler:
+            case sysTrapHwrIRQ3Handler:
+            case sysTrapHwrIRQ4Handler:
+            case sysTrapHwrIRQ5Handler:
+            case sysTrapHwrIRQ6Handler:
+                DispatchNextEvent();
+        }
+
+        if (gSession->WaitingForSyscall()) {
+            gCPU->SetPC(gCPU->GetPC() - pcAdjust);
+            gSession->NotifySyscallDispatched();
+
+            return true;
+        }
     }
 
     // ======================================================================
