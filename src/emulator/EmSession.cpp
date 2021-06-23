@@ -479,7 +479,8 @@ void EmSession::YieldMemoryMgr() {
 
     uint32 cycles = 0;
 
-    while (memSemaphoreID.xsmuse != 0 && !EmPatchMgr::IsExecutingPatch()) {
+    while (memSemaphoreID.xsmuse != 0 && !EmPatchMgr::IsExecutingPatch() &&
+           !SuspendManager::IsSuspended()) {
         EmAssert(cycles < YIELD_MEMMGR_LIMIT);
 
         cycles += gCPU68K->Execute(0);
