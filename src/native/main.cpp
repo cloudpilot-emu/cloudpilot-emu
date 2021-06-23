@@ -1,3 +1,6 @@
+#include <SDL.h>
+#include <SDL_image.h>
+
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
@@ -5,13 +8,7 @@
 #include <memory>
 #include <string>
 
-#ifdef __EMSCRIPTEN__
-    #include <emscripten.h>
-#endif
-
-#include <SDL.h>
-#include <SDL_image.h>
-
+#include "Cli.h"
 #include "EmCommon.h"
 #include "EmDevice.h"
 #include "EmROMReader.h"
@@ -29,10 +26,6 @@
 #include "WebsocketClient.h"
 #include "util.h"
 
-#ifndef __EMSCRIPTEN__
-    #include "Cli.h"
-#endif
-
 using namespace std;
 
 void setupMemoryImage(void* image, size_t size) {
@@ -45,7 +38,6 @@ void setupMemoryImage(void* image, size_t size) {
     memcpy(gSession->GetMemoryPtr(), image, size);
 }
 
-#ifndef __EMSCRIPTEN__
 static WebsocketClient* websocketClient = WebsocketClient::Create("localhost", "6666");
 
 void handleSuspend() {
@@ -114,7 +106,6 @@ void handleSuspend() {
         }
     }
 }
-#endif
 
 int main(int argc, const char** argv) {
     switch (argc) {
@@ -132,12 +123,6 @@ int main(int argc, const char** argv) {
     }
 
     srand(time(nullptr));
-
-#ifdef __EMSCRIPTEN__
-    EM_ASM({ module.sessionReady(); });
-
-    SDL_setenv("SDL_EMSCRIPTEN_KEYBOARD_ELEMENT", "canvas", 1);
-#endif
 
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     IMG_Init(IMG_INIT_PNG);
@@ -160,9 +145,6 @@ int main(int argc, const char** argv) {
 
     MainLoop mainLoop(window, renderer, scale);
 
-#ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop_arg((em_arg_callback_func)MainLoop::CycleStatic, &mainLoop, 0, true);
-#else
     Cli::Start();
 
     Feature::SetClipboardIntegration(true);
@@ -181,5 +163,4 @@ int main(int argc, const char** argv) {
 
     SDL_Quit();
     IMG_Quit();
-#endif
 }

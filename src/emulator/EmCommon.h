@@ -98,4 +98,14 @@ extern char check8[sizeof(uint64) == 8 ? 1 : 0];
 
 extern char check9[sizeof(emuptr) == 4 ? 1 : 0];
 
+#ifdef __EMSCRIPTEN__
+
+    #define htons(x) (((x & 0xff00) >> 8) | ((x & 0xff) << 8))
+    #define htonl(x) \
+        (((x >> 24) & 0xff) | ((x >> 8) & 0xff00) | ((x & 0x0000ff00) << 8) | ((x & 0xff) << 24))
+    #define ntohs htons
+    #define ntohl htonl
+
+#endif
+
 #endif /* EmCommon_h */

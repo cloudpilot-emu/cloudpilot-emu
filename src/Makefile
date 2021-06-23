@@ -27,7 +27,7 @@ CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
 CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
 
-CFLAGS_EMCC = -O3 -flto -s USE_SDL=2 -s USE_SDL_IMAGE=2 -D_POSIX_SOURCE
+CFLAGS_EMCC = -O3 -flto -D_POSIX_SOURCE
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)  -fno-rtti -fno-exceptions
 
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined
@@ -38,18 +38,6 @@ WEBIDL_BINDING_DIR = web/binding
 WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
 WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/binding.idl
 WEBIDL_BINDING_CXX = web/binding.cpp
-
-LDFLAGS_EMCC_SDL = -O3 -Wno-version-check -flto \
-	-s EXIT_RUNTIME=1 \
-	-s SDL2_IMAGE_FORMATS='["png"]' \
-	-s USE_SDL=2 \
-	-s USE_SDL_IMAGE=2 \
-	-s MODULARIZE=1 \
-	-s EXPORT_NAME=createModule \
-	-s ALLOW_MEMORY_GROWTH=1 \
-	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
-	-s EXPORTED_RUNTIME_METHODS=["FS"] \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall"]
 
 LDFLAGS_EMCC_WEB = -O3 -Wno-version-check -flto \
 	--post-js $(WEBIDL_BINDING_JS) \
@@ -222,22 +210,17 @@ SOURCE_TEST = \
 	test/Miscellaneous.cpp \
 	test/main.cpp
 
-SOURCE_SDL = \
+SOURCE_NATIVE = \
 	$(SOURCE_EMU) \
-	sdl/main.cpp \
-	sdl/MainLoop.cpp \
-	sdl/Silkscreen.cpp \
-	sdl/util.cpp \
-	sdl/EventHandler.cpp
-
-SOURCE_SDL_NATIVE = \
-	$(SOURCE_SDL) \
-	sdl/Cli.cpp \
+	native/main.cpp \
+	native/MainLoop.cpp \
+	native/Silkscreen.cpp \
+	native/util.cpp \
+	native/EventHandler.cpp \
+	native/Cli.cpp \
+	native/WebsocketClient.cpp \
 	emulator/assert_native.cpp \
-	emulator/stacktrace.cpp \
-	sdl/WebsocketClient.cpp
-
-SOURCE_SDL_EMCC = $(SOURCE_SDL) sdl/EmscriptenApi.cpp emulator/assert_emscripten.cpp
+	emulator/stacktrace.cpp
 
 SOURCE_WEB = \
 	$(SOURCE_EMU) \
@@ -248,13 +231,10 @@ SOURCE_WEB = \
 	$(WEBIDL_BINDING_CXX)
 
 OBJECTS_TEST = $(SOURCE_C:%.c=$(BUILDDIR_TEST)/%.o) $(SOURCE_TEST:%.cpp=$(BUILDDIR_TEST)/%.o)
-OBJECTS_SDL_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_SDL_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)
-OBJECTS_SDL_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_SDL_EMCC:%.cpp=$(BUILDDIR_EMCC)/%.o)
+OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_WEB_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o)
 
-BINARY_SDL_NATIVE = cloudpilot
-BINARY_SDL_EMCC = cloudpilot.js
-BINARY_SDL_WASM = cloudpilot.wasm
+BINARY_NATIVE = cloudpilot
 
 BINARY_WEB_EMCC = cloudpilot_web.js
 BINARY_WEB_WASM = cloudpilot_web.wasm
@@ -266,9 +246,7 @@ GARBAGE = \
 	$(BUILDDIR_NATIVE) \
 	$(BUILDDIR_EMCC) \
 	$(BUILDDIR_TEST) \
-	$(BINARY_SDL_EMCC) \
-	$(BINARY_SDL_NATIVE) \
-	$(BINARY_SDL_WASM) \
+	$(BINARY_NATIVE) \
 	$(BINARY_WEB_EMCC) \
 	$(BINARY_WEB_WASM) \
 	$(BINARY_TEST) \
@@ -283,24 +261,15 @@ GARBAGE = \
 
 all: bin emscripten
 
-bin: $(BINARY_SDL_NATIVE)
+bin: $(BINARY_NATIVE)
 
-emscripten: $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC)
-
-wasm-opt: $(WASM_OPT_STAMP)
+emscripten: $(BINARY_WEB_EMCC)
 
 test: $(BINARY_TEST)
 	$(BINARY_TEST)
 
-$(WASM_OPT_STAMP): $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC)
-	for i in $(BINARY_SDL_EMCC) $(BINARY_WEB_EMCC); do terser -c -o $$i < $$i; done
-	touch $@
-
-$(BINARY_SDL_NATIVE): $(OBJECTS_SDL_NATIVE)
+$(BINARY_NATIVE): $(OBJECTS_NATIVE)
 	$(LD_NATIVE) $(LDFLAGS_NATIVE) -o $@ $^
-
-$(BINARY_SDL_EMCC): $(OBJECTS_SDL_EMCC)
-	$(LD_EMCC) $(LDFLAGS_EMCC_SDL) -o $@ $^
 
 $(BINARY_WEB_EMCC): $(OBJECTS_WEB_EMCC)
 	$(LD_EMCC) $(LDFLAGS_EMCC_WEB) -o $@ $^

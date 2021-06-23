@@ -47,12 +47,6 @@ The following devices are currently emulated:
 A preview build of the next version of Cloudpilot is available
 [here](https://cloudpilot-emu.github.io/app-preview).
 
-There also is a web build of the native SDL version of cloudpilot
-[here](https://cloudpilot-emu.github.io/sdl)
-([preview build here](https://cloudpilot-emu.github.io/sdl-preview)).
-This has only a very basic interface and offers less features than the full
-web app --- it is mainly a debugging tool.
-
 # Reporting issues
 
 Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloudpilot/issues).
@@ -151,12 +145,6 @@ with
 and you will up with a `src/cloudpilot` binary. The binary takes a ROM file or
 session image as an argument. There is a rudemtary readline CLI with tab
 completion that allows you to save session images and reset the virtual device.
-
-## Web SDL build
-
-The web frontend for the SDL build consists of a single `index.html`. You can serve
-it directly from the git repository and the compiled WASM code is loaded from `src`
-(see above).
 
 # Credits
 

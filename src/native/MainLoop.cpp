@@ -2,10 +2,6 @@
 
 #include <SDL_image.h>
 
-#ifdef __EMSCRIPTEN__
-    #include <emscripten.h>
-#endif
-
 #include "EmHAL.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
@@ -62,15 +58,8 @@ void MainLoop::Cycle() {
     if (gSystemState.IsScreenDirty()) {
         UpdateScreen();
         gSystemState.MarkScreenClean();
-    }
-#ifndef __EMSCRIPTEN__
-    else if (!SuspendManager::IsSuspended())
+    } else if (!SuspendManager::IsSuspended())
         SDL_Delay(16);
-#endif
-
-#ifdef __EMSCRIPTEN__
-    EM_ASM({ module.onCycle&& module.onCycle(); });
-#endif
 
     eventHandler.HandleEvents(millis);
 }

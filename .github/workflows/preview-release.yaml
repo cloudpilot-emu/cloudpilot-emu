@@ -47,8 +47,6 @@ jobs:
           cp -r ../cloudpilot-ionic/www ./app-preview
           test -x sdl-preview && rm -fr sdl-preview
           mkdir -p sdl-preview/src
-          cp ../index.html sdl-preview
-          cp ../src/cloudpilot.js ../src/cloudpilot.wasm sdl-preview/src
           git add .
           git config --global user.email "golem@nowhere.org"
           git config --global user.name "The Golem"
