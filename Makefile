@@ -13,4 +13,7 @@ proto:
 clean:
 	$(MAKE) -Csrc clean
 
+test:
+	$(MAKE) -Csrc test
+
 .PHONY: all bin emscripten proto clean
