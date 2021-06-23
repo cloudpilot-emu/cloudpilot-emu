@@ -170,6 +170,9 @@ Zipfile I/O uses the [zip library](https://github.com/kuba--/zip).
 Protobuf (de)serialization in C++ is done using the awesome
 [NanoPB](https://github.com/nanopb/nanopb) library.
 
+Stacktraces in the native build are based on Farooq Melas
+[gist](https://gist.github.com/fmela/591333).
+
 # LICENSE
 
 This program is free software: you can redistribute it and/or modify it under

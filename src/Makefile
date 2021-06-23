@@ -210,6 +210,7 @@ SOURCE_EMU = \
 SOURCE_TEST = \
 	$(SOURCE_EMU) \
 	emulator/assert_native.cpp \
+	emulator/stacktrace.cpp \
 	test/SavestateChunk.cpp \
 	test/SavestateChunkProbe.cpp \
 	test/SavestateProbe.cpp \
@@ -229,7 +230,13 @@ SOURCE_SDL = \
 	sdl/util.cpp \
 	sdl/EventHandler.cpp
 
-SOURCE_SDL_NATIVE = $(SOURCE_SDL) sdl/Cli.cpp emulator/assert_native.cpp sdl/WebsocketClient.cpp
+SOURCE_SDL_NATIVE = \
+	$(SOURCE_SDL) \
+	sdl/Cli.cpp \
+	emulator/assert_native.cpp \
+	emulator/stacktrace.cpp \
+	sdl/WebsocketClient.cpp
+
 SOURCE_SDL_EMCC = $(SOURCE_SDL) sdl/EmscriptenApi.cpp emulator/assert_emscripten.cpp
 
 SOURCE_WEB = \
