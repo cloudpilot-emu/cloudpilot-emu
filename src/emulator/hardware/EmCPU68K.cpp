@@ -403,7 +403,8 @@ Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
         }
     }
 
-    if ((regs.spcflags & SPCFLAG_DOINT) && !gKernelStackOverflowed) {
+    if ((regs.spcflags & SPCFLAG_DOINT) && !gKernelStackOverflowed &&
+        !SuspendManager::IsSuspended()) {
         int32 interruptLevel = EmHAL::GetInterruptLevel();
         regs.spcflags &= ~SPCFLAG_DOINT;  // was ~(SPCFLAG_INT | SPCFLAG_DOINT) in Greg and Craig,
                                           // but the latest UAE has this
@@ -436,6 +437,7 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
 
     EmAssert(session);
     EmAssert(regs.intmask < 7);
+    EmAssert(!SuspendManager::IsSuspended());
 
     // Do not run cycleSlowly on each call if single stepping
     int counter = maxCycles ? 0 : 1;
@@ -745,6 +747,8 @@ void EmCPU68K::ProcessException(ExceptionNumber exception) {
     if (handled) {
         return;
     }
+
+    EmAssert(!SuspendManager::IsSuspended());
 
     // The following is vaguely modelled after Exception() from newcpu.c
     // (The call to MakeSR appears at the start of this method).
