@@ -11,14 +11,14 @@
 # WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
 
 CFLAGS_NATIVE = \
-	-O0 -fsanitize=address,undefined -g \
+	-O0 -fsanitize=address,undefined -fsanitize-ignorelist=src/clang_blacklist.txt -g \
 	$(shell sdl2-config --cflags) \
 	-I/usr/local/opt/readline/include
 
 # CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
 LDFLAGS_NATIVE =  \
-	-fsanitize=address,undefined \
+	-fsanitize=address,undefined -fsanitize-ignorelist=src/clang_blacklist.txt \
 	$(shell sdl2-config --libs) -lSDL2_image \
 	-L/usr/local/opt/readline/lib \
 	-lreadline -lboost_coroutine
