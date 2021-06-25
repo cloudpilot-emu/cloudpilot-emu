@@ -1,17 +1,39 @@
 #include "ProxyHandler.h"
 
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <functional>
+#include <sstream>
+
 #include "EmCommon.h"
+#include "Logging.h"
+#include "NetworkProxy.h"
 #include "SuspendContext.h"
 #include "SuspendContextNetworkConnect.h"
-#include "SuspendContextNetworkDisconnect.h"
 #include "SuspendContextNetworkRpc.h"
 #include "SuspendManager.h"
 
+using namespace std::placeholders;
+
 ProxyHandler::ProxyHandler(ProxyClient& client) : client(client) {}
 
-void ProxyHandler::Initialize() {}
+void ProxyHandler::Initialize() {
+    if (onDisconnectHandle) return;
 
-void ProxyHandler::Teardown() { client.Disconnect(); }
+    onDisconnectHandle =
+        gNetworkProxy.onDisconnect.AddHandler(bind(&ProxyHandler::OnDisconnectHandler, this, _1));
+}
+
+void ProxyHandler::Teardown() {
+    client.Disconnect();
+    sessionId = "";
+
+    if (onDisconnectHandle) {
+        gNetworkProxy.onDisconnect.RemoveHandler(*onDisconnectHandle);
+        onDisconnectHandle.reset();
+    }
+}
 
 void ProxyHandler::HandleSuspend() {
     if (!SuspendManager::IsSuspended()) return;
@@ -21,10 +43,6 @@ void ProxyHandler::HandleSuspend() {
     switch (context.GetKind()) {
         case SuspendContext::Kind::networkConnect:
             HandleConnect(context);
-            break;
-
-        case SuspendContext::Kind::networkDisconnect:
-            HandleDisconnect(context);
             break;
 
         case SuspendContext::Kind::networkRpc:
@@ -37,22 +55,23 @@ void ProxyHandler::HandleSuspend() {
 }
 
 void ProxyHandler::HandleConnect(SuspendContext& context) {
-    if (client.Connect()) {
-        context.AsContextNetworkConnect().Resume();
+    client.Disconnect();
+    sessionId = "";
 
-        cout << "network proxy connected" << endl << flush;
+    if (client.Connect()) {
+        stringstream ss;
+
+        ss << boost::uuids::random_generator()();
+        sessionId = ss.str();
+
+        context.AsContextNetworkConnect().Resume(sessionId);
+
+        logging::printf("network proxy connected");
     } else {
         context.Cancel();
 
-        cout << "failed to connect to network proxy" << endl << flush;
+        logging::printf("ERROR: failed to connect to network proxy");
     }
-}
-
-void ProxyHandler::HandleDisconnect(SuspendContext& context) {
-    client.Disconnect();
-    context.AsContextNetworkDisconnect().Resume();
-
-    cout << "network proxy disconnected" << endl << flush;
 }
 
 void ProxyHandler::HandleRpc(SuspendContext& context) {
@@ -71,4 +90,13 @@ void ProxyHandler::HandleRpc(SuspendContext& context) {
         delete[] responseBuffer;
     } else
         context.Cancel();
+}
+
+void ProxyHandler::OnDisconnectHandler(const string& sessionId) {
+    if (sessionId != this->sessionId) return;
+
+    client.Disconnect();
+    this->sessionId = "";
+
+    logging::printf("network proxy disconnected");
 }

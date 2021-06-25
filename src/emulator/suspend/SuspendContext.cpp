@@ -4,7 +4,6 @@
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendContextNetworkConnect.h"
-#include "SuspendContextNetworkDisconnect.h"
 #include "SuspendContextNetworkRpc.h"
 #include "SuspendManager.h"
 
@@ -30,12 +29,6 @@ SuspendContextNetworkConnect& SuspendContext::AsContextNetworkConnect() {
     EmAssert(GetKind() == Kind::networkConnect);
 
     return static_cast<SuspendContextNetworkConnect&>(*this);
-}
-
-SuspendContextNetworkDisconnect& SuspendContext::AsContextNetworkDisconnect() {
-    EmAssert(GetKind() == Kind::networkDisconnect);
-
-    return static_cast<SuspendContextNetworkDisconnect&>(*this);
 }
 
 void SuspendContext::ResumeExecution() { SuspendManager::Resume(); }

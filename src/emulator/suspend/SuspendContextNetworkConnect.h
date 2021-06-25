@@ -7,20 +7,21 @@
 #include "SuspendContext.h"
 
 class SuspendContextNetworkConnect : public SuspendContext {
-    using callbackT = function<void()>;
+    using successCallbackT = function<void(const string&)>;
+    using failCallbackT = function<void()>;
 
    public:
-    SuspendContextNetworkConnect(callbackT onSuccess, callbackT onFail);
+    SuspendContextNetworkConnect(successCallbackT onSuccess, failCallbackT onFail);
 
     Kind GetKind() const override;
 
     void Cancel() override;
 
-    void Resume();
+    void Resume(const string& sessionId);
 
    private:
-    callbackT onSuccess;
-    callbackT onFail;
+    successCallbackT onSuccess;
+    failCallbackT onFail;
 };
 
 #endif  // _SUSPEND_CONTEXT_NETWORK_CONNECT_H_

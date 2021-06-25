@@ -1,6 +1,10 @@
 #ifndef _PROXY_HANDLER_H_
 #define _PROXY_HANDLER_H_
 
+#include <optional>
+
+#include "EmCommon.h"
+#include "EmEvent.h"
 #include "ProxyClient.h"
 #include "SuspendContext.h"
 
@@ -16,11 +20,15 @@ class ProxyHandler {
 
    private:
     void HandleConnect(SuspendContext& context);
-    void HandleDisconnect(SuspendContext& context);
     void HandleRpc(SuspendContext& context);
+
+    void OnDisconnectHandler(const string& sessionId);
 
    private:
     ProxyClient& client;
+
+    string sessionId;
+    optional<EmEvent<const string&>::HandleT> onDisconnectHandle;
 
    private:
     ProxyHandler(const ProxyHandler&) = delete;

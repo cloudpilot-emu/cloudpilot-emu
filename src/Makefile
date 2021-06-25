@@ -161,7 +161,6 @@ SOURCE_EMU = \
 	emulator/suspend/SuspendContextClipboardPaste.cpp \
 	emulator/suspend/SuspendContextClipboardCopy.cpp \
 	emulator/suspend/SuspendContextNetworkConnect.cpp \
-	emulator/suspend/SuspendContextNetworkDisconnect.cpp \
 	emulator/suspend/SuspendContextNetworkRpc.cpp \
 	emulator/EmSystemState.cpp \
 	emulator/Miscellaneous.cpp \

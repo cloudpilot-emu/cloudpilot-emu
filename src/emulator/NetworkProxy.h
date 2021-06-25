@@ -4,6 +4,7 @@
 #include <functional>
 
 #include "EmCommon.h"
+#include "EmEvent.h"
 #include "SuspendContextNetworkRpc.h"
 #include "networking.pb.h"
 
@@ -12,6 +13,8 @@ struct BufferDecodeContext;
 class NetworkProxy {
    public:
     NetworkProxy() = default;
+
+    void Reset();
 
     void Open();
 
@@ -46,8 +49,11 @@ class NetworkProxy {
     void Select(UInt16 width, NetFDSetType readFDs, NetFDSetType writeFDs, NetFDSetType exceptFDs,
                 int32 timeout);
 
+   public:
+    EmEvent<string> onDisconnect;
+
    private:
-    void ConnectSuccess();
+    void ConnectSuccess(const string& sessionId);
     void ConnectAbort();
 
     void CloseDone(Err err);
@@ -98,6 +104,7 @@ class NetworkProxy {
    private:
     uint32 openCount{0};
     uint32 currentId{0xffffffff};
+    string sessionId;
 
    private:
     NetworkProxy(const NetworkProxy&) = delete;

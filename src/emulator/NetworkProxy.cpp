@@ -7,7 +7,6 @@
 #include "Logging.h"
 #include "Marshal.h"
 #include "SuspendContextNetworkConnect.h"
-#include "SuspendContextNetworkDisconnect.h"
 #include "SuspendContextNetworkRpc.h"
 #include "SuspendManager.h"
 #include "pb_decode.h"
@@ -155,39 +154,50 @@ namespace {
 
 NetworkProxy& gNetworkProxy{networkProxy};
 
-void NetworkProxy::Open() {
-    if (openCount > 0) return ConnectSuccess();
+void NetworkProxy::Reset() {
+    if (this->openCount > 0) onDisconnect.Dispatch(sessionId);
 
-    SuspendManager::Suspend<SuspendContextNetworkConnect>(bind(&NetworkProxy::ConnectSuccess, this),
-                                                          bind(&NetworkProxy::ConnectAbort, this));
+    openCount = 0;
+}
+
+void NetworkProxy::Open() {
+    if (openCount > 0) {
+        CALLED_SETUP("Err", "void");
+        PUT_RESULT_VAL(Err, 0);
+
+        return;
+    }
+
+    SuspendManager::Suspend<SuspendContextNetworkConnect>(
+        bind(&NetworkProxy::ConnectSuccess, this, _1), bind(&NetworkProxy::ConnectAbort, this));
+}
+
+void NetworkProxy::ConnectSuccess(const string& sessionId) {
+    this->sessionId = sessionId;
+    openCount++;
+
+    CALLED_SETUP("Err", "void");
+    PUT_RESULT_VAL(Err, 0);
+}
+
+void NetworkProxy::ConnectAbort() {
+    CALLED_SETUP("Err", "void");
+    PUT_RESULT_VAL(Err, netErrInternal);
 }
 
 void NetworkProxy::Close() {
     if (openCount == 0) return CloseDone(netErrNotOpen);
 
-    if (--openCount == 0)
-        SuspendManager::Suspend<SuspendContextNetworkDisconnect>(
-            bind(&NetworkProxy::CloseDone, this, 0));
-    else
-        CloseDone(netErrStillOpen);
+    if (--openCount == 0) this->onDisconnect.Dispatch(sessionId);
+    return CloseDone(0);
+
+    CloseDone(netErrStillOpen);
 }
 
 void NetworkProxy::CloseDone(Err err) {
     CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 immediate");
 
     PUT_RESULT_VAL(Err, err);
-}
-
-void NetworkProxy::ConnectSuccess() {
-    CALLED_SETUP("Err", "void");
-    PUT_RESULT_VAL(Err, 0);
-
-    openCount++;
-}
-
-void NetworkProxy::ConnectAbort() {
-    CALLED_SETUP("Err", "void");
-    PUT_RESULT_VAL(Err, netErrInternal);
 }
 
 int NetworkProxy::OpenCount() { return openCount; }

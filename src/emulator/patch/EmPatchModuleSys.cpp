@@ -10,6 +10,7 @@
 #include "Logging.h"
 #include "Marshal.h"
 #include "Miscellaneous.h"
+#include "NetworkProxy.h"
 #include "PenEvent.h"
 #include "Platform.h"
 #include "ROMStubs.h"
@@ -215,6 +216,8 @@ namespace {
         SetHotSyncUserName(gSystemState.GetHotsyncUserName().c_str());
 
         gSystemState.SetUIInitialized();
+
+        gNetworkProxy.Reset();
 
         PRINTF("syscall: UIInitialize");
     }

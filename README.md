@@ -162,8 +162,8 @@ The native build uses [argparse](https://github.com/p-ranav/argparse)
 and [arg-parse](https://github.com/ben-zen/uri-library).
 Stacktraces in the native build are based on Farooq Melas
 [gist](https://gist.github.com/fmela/591333). HTTP and Websocket I/O
-in the native build is done with [Boost.Beast](https://github.com/boostorg/beast)
-and Boost coroutines.
+in the native build is done with [Boost.Beast](https://github.com/boostorg/beast).
+In addition, the native build uses Boost coroutines and uuid.
 
 # LICENSE
 

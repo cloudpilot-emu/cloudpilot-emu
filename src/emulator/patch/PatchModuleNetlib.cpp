@@ -860,9 +860,6 @@ namespace {
             *countP = gNetworkProxy.OpenCount();
 
             CALLED_PUT_PARAM_REF(countP);
-
-            cout << "put: " << *countP << endl << flush;
-
             PUT_RESULT_VAL(Err, 0);
 
             return kSkipROM;

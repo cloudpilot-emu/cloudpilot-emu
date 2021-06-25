@@ -15,6 +15,7 @@
 #include "Logging.h"
 #include "MetaMemory.h"
 #include "Miscellaneous.h"
+#include "NetworkProxy.h"
 #include "ROMStubs.h"
 #include "Savestate.h"
 #include "SavestateLoader.h"
@@ -83,6 +84,8 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
 void EmSession::Deinitialize() {
     if (!isInitialized) return;
 
+    gNetworkProxy.Reset();
+    SuspendManager::Reset();
     EmPalmOS::Dispose();
     CallbackManager::Clear();
     Memory::Dispose();
@@ -238,7 +241,10 @@ void EmSession::Load(SavestateLoader& loader) {
 }
 
 bool EmSession::Save() {
-    if (SuspendManager::IsSuspended()) return false;
+    if (SuspendManager::IsSuspended()) {
+        logging::printf("unable to save state while the emulator is suspended");
+        return false;
+    }
 
     return savestate.Save(*this);
 }
@@ -285,6 +291,8 @@ void EmSession::Reset(ResetType resetType) {
 
     if (resetType != ResetType::sys) systemCycles = 0;
 
+    gNetworkProxy.Reset();
+    SuspendManager::Reset();
     Memory::Reset(resetType != ResetType::sys);
     cpu->Reset(resetType != ResetType::sys);
     EmPalmOS::Reset();
