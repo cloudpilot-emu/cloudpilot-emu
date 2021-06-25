@@ -16,13 +16,11 @@
 #include "Feature.h"
 #include "MainLoop.h"
 #include "ProxyClient.h"
+#include "ProxyHandler.h"
 #include "ScreenDimensions.h"
 #include "SessionImage.h"
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
-#include "SuspendContextNetworkConnect.h"
-#include "SuspendContextNetworkDisconnect.h"
-#include "SuspendContextNetworkRpc.h"
 #include "SuspendManager.h"
 #include "argparse/argparse.h"
 #include "uri/uri.h"
@@ -64,68 +62,26 @@ void handleSuspend(ProxyClient* proxyClient) {
             break;
         }
 
-        case SuspendContext::Kind::networkConnect:
-            EmAssert(proxyClient);
-
-            if (proxyClient->Connect()) {
-                context.AsContextNetworkConnect().Resume();
-
-                cout << "network proxy connected" << endl << flush;
-            } else {
-                context.Cancel();
-
-                cout << "failed to connect to network proxy" << endl << flush;
-            }
-
+        default:
             break;
-
-        case SuspendContext::Kind::networkDisconnect:
-            EmAssert(proxyClient);
-
-            proxyClient->Disconnect();
-            context.AsContextNetworkDisconnect().Resume();
-
-            cout << "network proxy disconnected" << endl << flush;
-
-            break;
-
-        case SuspendContext::Kind::networkRpc: {
-            {
-                EmAssert(proxyClient);
-
-                auto [request, size] = context.AsContextNetworkRpc().GetRequest();
-
-                if (!proxyClient->Send(request, size)) {
-                    context.Cancel();
-
-                    break;
-                }
-
-                auto [responseBuffer, responseSize] = proxyClient->Receive();
-
-                if (responseBuffer) {
-                    context.AsContextNetworkRpc().ReceiveResponse(responseBuffer, responseSize);
-                    delete[] responseBuffer;
-                } else
-                    context.Cancel();
-
-                break;
-            }
-        }
     }
 }
 
 void run(const Options& options) {
+    ProxyClient* proxyClient = nullptr;
+    ProxyHandler* proxyHandler = nullptr;
+
     if (!(options.deviceId ? util::initializeSession(options.image, *options.deviceId)
                            : util::initializeSession(options.image)))
         exit(1);
-
-    ProxyClient* proxyClient = nullptr;
 
     if (options.proxyConfiguration) {
         proxyClient =
             ProxyClient::Create(options.proxyConfiguration->host, options.proxyConfiguration->port,
                                 options.proxyConfiguration->path);
+
+        proxyHandler = new ProxyHandler(*proxyClient);
+        proxyHandler->Initialize();
 
         Feature::SetNetworkRedirection(true);
     }
@@ -165,10 +121,11 @@ void run(const Options& options) {
         if (Cli::Execute()) break;
 
         handleSuspend(proxyClient);
+        if (proxyHandler) proxyHandler->HandleSuspend();
     };
 
     Cli::Stop();
-    if (proxyClient) proxyClient->Disconnect();
+    if (proxyHandler) proxyHandler->Teardown();
 
     SDL_Quit();
     IMG_Quit();

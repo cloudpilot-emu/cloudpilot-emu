@@ -219,6 +219,7 @@ SOURCE_NATIVE = \
 	native/EventHandler.cpp \
 	native/Cli.cpp \
 	native/ProxyClient.cpp \
+	native/ProxyHandler.cpp \
 	emulator/assert_native.cpp \
 	emulator/stacktrace.cpp
 
