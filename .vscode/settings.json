@@ -115,5 +115,8 @@
   ],
   "python.analysis.extraPaths": [
     "${workspaceFolder}/server"
-  ]
+  ],
+  "[python]": {
+    "editor.codeActionsOnSave": {"source.organizeImports": true}
+  }
 }

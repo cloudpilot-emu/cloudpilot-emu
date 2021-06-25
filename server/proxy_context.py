@@ -1,11 +1,15 @@
 import asyncio
-import websockets
-import proto.networking_pb2 as networking
-import hexdump
-import socket
-import net_errors as err
-from socket_context import MAX_TIMEOUT, SocketContext
+import logging
 import select
+import socket
+
+import hexdump
+import websockets
+
+import net_errors as err
+import proto.networking_pb2 as networking
+from logger import debug, error, info, logger, warning
+from socket_context import MAX_TIMEOUT, SocketContext
 
 MAX_HANDLE = 31
 
@@ -45,11 +49,11 @@ def serializeIp(addr):
     try:
         parts = [int(x) for x in addr.split(".")]
     except Exception:
-        print(f'WARNING: address is not IPv4 {addr}')
+        warning(f'address is not IPv4 {addr}')
         return None
 
     if len(parts) != 4:
-        print(f'WARNING: address is not IPv4 {addr}')
+        warning(f'address is not IPv4 {addr}')
         return None
 
     return ((parts[0] << 24) | (parts[1] << 16) | (
@@ -62,7 +66,7 @@ def serializeAddress(addr, target):
         target.port = 0
         target.ip = 0
 
-        print(f'WARNING: address is not IPv4 {addr}')
+        warning(f'address is not IPv4 {addr}')
 
         return
 
@@ -138,20 +142,36 @@ def removeIpHeader(packet, socketCtx):
     return packet[4*hlen:]
 
 
+def logPayload(data):
+    if not logger.isEnabledFor(logging.DEBUG):
+        return
+
+    dump = ""
+    for line in hexdump.dumpgen(data):
+        dump += ("\n" + line)
+
+    debug(dump)
+
+
 class ProxyContext:
+    connectionIndex = 0
+
     def __init__(self):
         self.echoRequest = None
         self._sockets = [None] * MAX_HANDLE
 
     async def start(self, ws):
+        info(f'starting proxy connection {self.connectionIndex}')
+        self.connectionIndex = self.connectionIndex + 1
+
         self._ws = ws
 
         try:
             while True:
                 await self._handleMessage(await ws.recv())
 
-        except websockets.exceptions.ConnectionClosedError:
-            print("connection closed")
+        except (websockets.exceptions.ConnectionClosedError, websockets.exceptions.ConnectionClosedOK):
+            info(f'connection {self.connectionIndex} closed')
 
         await self._closeAllSockets()
 
@@ -196,7 +216,7 @@ class ProxyContext:
             response = networking.MsgResponse()
             response.invalidRequestResponse.tag = True
 
-            print(f'ERROR: unknown request {requestType}')
+            error(f'unknown request {requestType}')
 
         if response:
             response.id = request.id
@@ -204,7 +224,7 @@ class ProxyContext:
             await self._ws.send(response.SerializeToString())
 
     async def _handleSocketOpen(self, request):
-        print(
+        debug(
             f'socketOpenRequest: type={request.type} protocol={request.protocol}')
 
         responseMsg = networking.MsgResponse()
@@ -224,7 +244,7 @@ class ProxyContext:
                 if request.protocol == 255 or request.protocol == 1:
                     sockProtocol = socket.IPPROTO_ICMP
                 else:
-                    print(
+                    error(
                         f'unsupported protocol for RAW socket: {request.protocol}')
                     response.err = err.netErrParamErr
 
@@ -242,13 +262,13 @@ class ProxyContext:
             response.err = 0
 
         except Exception as ex:
-            print(f'ERROR: failed to open socket: {formatException(ex)}')
+            error(f'failed to open socket: {formatException(ex)}')
             response.err = exceptionToErr(ex)
 
         return responseMsg
 
     async def _handleSocketBind(self, request):
-        print(
+        debug(
             f'socketBindRequest: handle={request.handle} address={deserializeAddress(request.address)} timeout={request.timeout}')
 
         responseMsg = networking.MsgResponse()
@@ -267,13 +287,13 @@ class ProxyContext:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            print(f'ERROR: failed to bind socket: {formatException(ex)}')
+            error(f'failed to bind socket: {formatException(ex)}')
             response.err = exceptionToErr(ex)
 
         return responseMsg
 
     async def _handleSocketAddr(self, request):
-        print(
+        debug(
             f'socketAddrRequest: handle={request.handle} requestAddressLocal={request.requestAddressLocal} requestAddressRemote={request.requestAddressRemote} timeout={request.timeout}')
 
         responseMsg = networking.MsgResponse()
@@ -298,20 +318,17 @@ class ProxyContext:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            print(
-                f'ERROR: failed to get socket addresses: {formatException(ex)}')
+            error(
+                f'failed to get socket addresses: {formatException(ex)}')
             response.err = exceptionToErr(ex)
 
         return responseMsg
 
     async def _handleSocketSend(self, request):
-        print(
-            f'socketSendRequest: handle={request.handle} len={len(request.data)} flags={request.flags} timeout={request.timeout} address={deserializeAddress(request.address) if request.HasField("address") else ""}\n')
+        debug(
+            f'socketSendRequest: handle={request.handle} len={len(request.data)} flags={request.flags} timeout={request.timeout} {f"address={deserializeAddress(request.address)}" if request.HasField("address") else ""}')
 
-        for line in hexdump.dumpgen(request.data):
-            print(line)
-
-        print()
+        logPayload(request.data)
 
         self.echoRequest = request.data
 
@@ -346,14 +363,14 @@ class ProxyContext:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            print(f'ERROR: failed to send: {formatException(ex)}')
+            error(f'failed to send: {formatException(ex)}')
 
             response.err = exceptionToErr(ex)
 
         return responseMsg
 
     async def _handeSocketReceive(self, request):
-        print(
+        debug(
             f'socketReceiveRequest: handle={request.handle} flags={request.flags} timeout={request.timeout} maxLength={request.maxLen}')
 
         responseMsg = networking.MsgResponse()
@@ -374,23 +391,20 @@ class ProxyContext:
             response.data = data
             response.err = 0
 
-            print()
-            for line in hexdump.dumpgen(response.data):
-                print(line)
-            print()
+            logPayload(response.data)
 
         except socket.timeout:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            print(f'ERROR: failed to receive: {formatException(ex)}')
+            error(f'failed to receive: {formatException(ex)}')
 
             response.err = exceptionToErr(ex)
 
         return responseMsg
 
     async def _handleSocketClose(self, request):
-        print(
+        debug(
             f'socketCloseRequest: handle={request.handle} timeout={request.timeout}')
 
         responseMsg = networking.MsgResponse()
@@ -409,14 +423,14 @@ class ProxyContext:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            print(
-                f'ERROR: failed to close socket {request.handle}: {formatException(ex)}')
+            error(
+                f'sfailed to close socket {request.handle}: {formatException(ex)}')
             response.err = exceptionToErr(ex)
 
         return responseMsg
 
     async def _handleGetHostByName(self, request):
-        print(f'getHostByNameRequest name{request.name}')
+        debug(f'getHostByNameRequest name{request.name}')
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.getHostByNameResponse
@@ -437,7 +451,7 @@ class ProxyContext:
             response.err = 0
 
         except Exception as ex:
-            print(
+            error(
                 f'failed to resolve host {request.name}: {formatException(ex)}')
 
             response.err = exceptionToErr(ex)
@@ -445,7 +459,7 @@ class ProxyContext:
         return responseMsg
 
     async def _handleGetServByName(self, request):
-        print(
+        debug(
             f'getServByNameRequest name={request.name} protocol={request.protocol}')
 
         responseMsg = networking.MsgResponse()
@@ -459,14 +473,14 @@ class ProxyContext:
             response.err = 0
 
         except Exception as ex:
-            print(f'failed to resolve service: {formatException(ex)}')
+            error(f'failed to resolve service: {formatException(ex)}')
 
             response.err = err.netErrUnknownService
 
         return responseMsg
 
     async def _handleSocketConnect(self, request):
-        print(
+        debug(
             f'socketConnectRequest handle={request.handle} address={deserializeAddress(request.address)} timeout={request.timeout}')
 
         responseMsg = networking.MsgResponse()
@@ -485,13 +499,13 @@ class ProxyContext:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            print(f'failed to connect socket: {formatException(ex)}')
+            error(f'failed to connect socket: {formatException(ex)}')
             response.err = exceptionToErr(ex)
 
         return responseMsg
 
     async def _handleSelect(self, request):
-        print(f'select width={request.width} readFDs={self._fdSetToHandles(request.readFDs, request.width)} writeFDs={self._fdSetToHandles(request.writeFDs, request.width)} exceptFDs={self._fdSetToHandles(request.exceptFDs, request.width)} timeout={request.timeout}')
+        debug(f'select width={request.width} readFDs={self._fdSetToHandles(request.readFDs, request.width)} writeFDs={self._fdSetToHandles(request.writeFDs, request.width)} exceptFDs={self._fdSetToHandles(request.exceptFDs, request.width)} timeout={request.timeout}')
 
         try:
             responseMsg = networking.MsgResponse()
@@ -521,7 +535,7 @@ class ProxyContext:
             response.err = 0
 
         except Exception as ex:
-            print(f'select failed {ex}')
+            error(f'select failed {ex}')
 
         return responseMsg
 
@@ -532,8 +546,8 @@ class ProxyContext:
 
                 await ctx.close()
             except Exception as ex:
-                print(
-                    f'ERROR: failed to close socket: {formatException(ex)}')
+                error(
+                    f'failed to close socket: {formatException(ex)}')
 
         contexts = [ctx for ctx in self._sockets if ctx != None]
 
@@ -571,21 +585,3 @@ class ProxyContext:
             packed |= 1 << handle
 
         return packed
-
-
-async def handle(socket, path):
-    print(f"incoming connection for {path}")
-
-    context = ProxyContext()
-    await context.start(socket)
-
-
-async def main():
-    server = await websockets.serve(handle, port=6666)
-    print("server running on port 6666")
-
-    await server.wait_closed()
-
-    print("server closed")
-
-asyncio.run(main())

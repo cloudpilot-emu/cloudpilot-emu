@@ -14,4 +14,4 @@ hexdump = "*"
 python_version = "3.9"
 
 [scripts]
-serve = "python server.py"
+cli = "python cli.py"

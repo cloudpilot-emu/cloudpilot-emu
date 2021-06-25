@@ -1,7 +1,7 @@
-import time
+import asyncio
 import errno
 import socket
-import asyncio
+import time
 
 MAX_TIMEOUT = 10
 

@@ -16,6 +16,8 @@
 #include <string>
 #include <thread>
 
+#include "Logging.h"
+
 using namespace std;
 using namespace std::chrono_literals;
 using namespace std::placeholders;
@@ -95,6 +97,8 @@ class ProxyClientImpl : public ProxyClient {
 
         io_context.restart();
         io_context.run();
+
+        logging::printf("websocket connection terminated");
     }
 
     void ThreadLoop(boost::asio::yield_context yield) {
@@ -113,8 +117,7 @@ class ProxyClientImpl : public ProxyClient {
                 }
 
                 if (ws.is_open()) {
-                    if (receiveBuffer)
-                        cerr << "WARNING: discarding pending response" << endl << flush;
+                    if (receiveBuffer) logging::printf("WARNING: discarding pending response");
 
                     receiveBufferSize = buffer.size();
                     receiveBuffer = make_unique<uint8[]>(receiveBufferSize);

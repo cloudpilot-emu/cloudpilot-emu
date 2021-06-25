@@ -97,6 +97,4 @@ void ProxyHandler::OnDisconnectHandler(const string& sessionId) {
 
     client.Disconnect();
     this->sessionId = "";
-
-    logging::printf("network proxy disconnected");
 }
