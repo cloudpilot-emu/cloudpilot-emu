@@ -26,12 +26,12 @@ class Server:
             return
 
         if not self.terminating:
+            self.terminating = True
+
             self.server.close()
 
             for connection in self.connections:
                 asyncio.create_task(connection.close())
-
-            self.terminating = True
 
         logger.info(
             f'waiting for {len(self.connections)} connections to close')
