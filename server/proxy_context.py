@@ -371,7 +371,7 @@ class ProxyContext:
 
     async def _handeSocketReceive(self, request):
         debug(
-            f'socketReceiveRequest: handle={request.handle} flags={request.flags} timeout={request.timeout} maxLength={request.maxLen}')
+            f'socketReceiveRequest: handle={request.handle} flags={request.flags} timeout={request.timeout} maxLength={request.maxLen} addressRequested={request.addressRequested}')
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketReceiveResponse
@@ -385,7 +385,7 @@ class ProxyContext:
             socketCtx.setTimeoutMsec(request.timeout)
             data, address = await asyncio.to_thread(lambda: socketCtx.socket.recvfrom(request.maxLen, flags))
 
-            if address != None:
+            if address != None and request.addressRequested:
                 serializeAddress(address, response.address)
 
             response.data = data

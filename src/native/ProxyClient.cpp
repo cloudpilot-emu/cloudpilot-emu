@@ -98,7 +98,7 @@ class ProxyClientImpl : public ProxyClient {
         io_context.restart();
         io_context.run();
 
-        logging::printf("websocket connection terminated");
+        logging::printf("websocket connection closed");
     }
 
     void ThreadLoop(boost::asio::yield_context yield) {

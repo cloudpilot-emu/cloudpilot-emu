@@ -96,6 +96,7 @@ typedef struct _MsgSocketReceiveRequest {
     uint32_t flags; 
     int32_t timeout; 
     uint32_t maxLen; 
+    bool addressRequested; 
 } MsgSocketReceiveRequest;
 
 typedef struct _MsgSocketSendResponse { 
@@ -190,7 +191,7 @@ extern "C" {
 #define MsgSocketAddrResponse_init_default       {false, Address_init_default, false, Address_init_default, 0}
 #define MsgSocketSendRequest_init_default        {0, {{NULL}, NULL}, 0, false, Address_init_default, 0}
 #define MsgSocketSendResponse_init_default       {0, 0}
-#define MsgSocketReceiveRequest_init_default     {0, 0, 0, 0}
+#define MsgSocketReceiveRequest_init_default     {0, 0, 0, 0, 0}
 #define MsgSocketReceiveResponse_init_default    {0, {{NULL}, NULL}, false, Address_init_default}
 #define MsgSocketCloseRequest_init_default       {0, 0}
 #define MsgSocketCloseResponse_init_default      {0}
@@ -214,7 +215,7 @@ extern "C" {
 #define MsgSocketAddrResponse_init_zero          {false, Address_init_zero, false, Address_init_zero, 0}
 #define MsgSocketSendRequest_init_zero           {0, {{NULL}, NULL}, 0, false, Address_init_zero, 0}
 #define MsgSocketSendResponse_init_zero          {0, 0}
-#define MsgSocketReceiveRequest_init_zero        {0, 0, 0, 0}
+#define MsgSocketReceiveRequest_init_zero        {0, 0, 0, 0, 0}
 #define MsgSocketReceiveResponse_init_zero       {0, {{NULL}, NULL}, false, Address_init_zero}
 #define MsgSocketCloseRequest_init_zero          {0, 0}
 #define MsgSocketCloseResponse_init_zero         {0}
@@ -269,6 +270,7 @@ extern "C" {
 #define MsgSocketReceiveRequest_flags_tag        2
 #define MsgSocketReceiveRequest_timeout_tag      3
 #define MsgSocketReceiveRequest_maxLen_tag       4
+#define MsgSocketReceiveRequest_addressRequested_tag 5
 #define MsgSocketSendResponse_err_tag            1
 #define MsgSocketSendResponse_bytesSent_tag      2
 #define MsgSocketAddrResponse_addressLocal_tag   1
@@ -381,7 +383,8 @@ X(a, STATIC,   REQUIRED, INT32,    bytesSent,         2)
 X(a, STATIC,   REQUIRED, INT32,    handle,            1) \
 X(a, STATIC,   REQUIRED, UINT32,   flags,             2) \
 X(a, STATIC,   REQUIRED, INT32,    timeout,           3) \
-X(a, STATIC,   REQUIRED, UINT32,   maxLen,            4)
+X(a, STATIC,   REQUIRED, UINT32,   maxLen,            4) \
+X(a, STATIC,   REQUIRED, BOOL,     addressRequested,   5)
 #define MsgSocketReceiveRequest_CALLBACK NULL
 #define MsgSocketReceiveRequest_DEFAULT NULL
 
@@ -590,7 +593,7 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define MsgSocketConnectResponse_size            11
 #define MsgSocketOpenRequest_size                12
 #define MsgSocketOpenResponse_size               22
-#define MsgSocketReceiveRequest_size             34
+#define MsgSocketReceiveRequest_size             36
 #define MsgSocketSendResponse_size               22
 
 #ifdef __cplusplus

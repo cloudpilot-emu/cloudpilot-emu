@@ -471,7 +471,8 @@ void NetworkProxy::SocketSendFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
-void NetworkProxy::SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int32 timeout) {
+void NetworkProxy::SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int32 timeout,
+                                 NetSocketAddrType* fromAddrP) {
     MsgRequest request = NewRequest(MsgRequest_socketReceiveRequest_tag);
 
     if (flags & ~(netIOFlagOutOfBand | netIOFlagPeek | netIOFlagDontRoute)) {
@@ -484,6 +485,7 @@ void NetworkProxy::SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int3
     request.payload.socketReceiveRequest.flags = flags;
     request.payload.socketReceiveRequest.timeout = convertTimeout(timeout);
     request.payload.socketReceiveRequest.maxLen = bufLen;
+    request.payload.socketReceiveRequest.addressRequested = fromAddrP;
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketReceiveSuccess, this, _1, _2),
@@ -544,7 +546,8 @@ void NetworkProxy::SocketReceiveFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
-void NetworkProxy::SocketDmReceive(int16 handle, uint32 flags, uint16 rcvlen, int32 timeout) {
+void NetworkProxy::SocketDmReceive(int16 handle, uint32 flags, uint16 rcvlen, int32 timeout,
+                                   NetSocketAddrType* fromAddrP) {
     MsgRequest request = NewRequest(MsgRequest_socketReceiveRequest_tag);
 
     if (flags & ~(netIOFlagOutOfBand | netIOFlagPeek | netIOFlagDontRoute)) {
@@ -557,6 +560,7 @@ void NetworkProxy::SocketDmReceive(int16 handle, uint32 flags, uint16 rcvlen, in
     request.payload.socketReceiveRequest.flags = flags;
     request.payload.socketReceiveRequest.timeout = convertTimeout(timeout);
     request.payload.socketReceiveRequest.maxLen = rcvlen;
+    request.payload.socketReceiveRequest.addressRequested = fromAddrP;
 
     SendAndSuspend(request, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketDmReceiveSuccess, this, _1, _2),

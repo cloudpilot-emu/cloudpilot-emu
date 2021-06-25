@@ -497,7 +497,7 @@ namespace {
                (long)fromAddrP, *fromLenP);
 
         if (Feature::GetNetworkRedirection()) {
-            gNetworkProxy.SocketReceive(socket, flags, bufLen, timeout);
+            gNetworkProxy.SocketReceive(socket, flags, bufLen, timeout, fromAddrP);
 
             return kSkipROM;
         }
@@ -524,7 +524,7 @@ namespace {
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
         if (Feature::GetNetworkRedirection()) {
-            gNetworkProxy.SocketDmReceive(socket, flags, rcvLen, timeout);
+            gNetworkProxy.SocketDmReceive(socket, flags, rcvLen, timeout, fromAddrP);
 
             return kSkipROM;
         }

@@ -34,9 +34,11 @@ class NetworkProxy {
     void SocketSend(int16 handle, uint8* data, size_t count, uint32 flags,
                     NetSocketAddrType* toAddrP, int32 toLen, int32 timeout);
 
-    void SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int32 timeout);
+    void SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int32 timeout,
+                       NetSocketAddrType* fromAddrP);
 
-    void SocketDmReceive(int16 handle, uint32 flags, uint16 rcvlen, int32 timeout);
+    void SocketDmReceive(int16 handle, uint32 flags, uint16 rcvlen, int32 timeout,
+                         NetSocketAddrType* fromAddrP);
 
     void SocketClose(int16 handle, int32 timeout);
 

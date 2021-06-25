@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto2',
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x10networking.proto\"#\n\x07\x41\x64\x64ress\x12\n\n\x02ip\x18\x01 \x02(\r\x12\x0c\n\x04port\x18\x02 \x02(\x05\"6\n\x14MsgSocketOpenRequest\x12\x0c\n\x04type\x18\x01 \x02(\r\x12\x10\n\x08protocol\x18\x02 \x02(\r\"4\n\x15MsgSocketOpenResponse\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0b\n\x03\x65rr\x18\x02 \x02(\x05\"R\n\x14MsgSocketBindRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x19\n\x07\x61\x64\x64ress\x18\x02 \x02(\x0b\x32\x08.Address\x12\x0f\n\x07timeout\x18\x03 \x02(\x05\"$\n\x15MsgSocketBindResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"r\n\x14MsgSocketAddrRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x1b\n\x13requestAddressLocal\x18\x02 \x02(\x08\x12\x1c\n\x14requestAddressRemote\x18\x03 \x02(\x08\x12\x0f\n\x07timeout\x18\x04 \x02(\x05\"e\n\x15MsgSocketAddrResponse\x12\x1e\n\x0c\x61\x64\x64ressLocal\x18\x01 \x01(\x0b\x32\x08.Address\x12\x1f\n\raddressRemote\x18\x02 \x01(\x0b\x32\x08.Address\x12\x0b\n\x03\x65rr\x18\x03 \x02(\x05\"o\n\x14MsgSocketSendRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\x12\r\n\x05\x66lags\x18\x03 \x02(\r\x12\x19\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x08.Address\x12\x0f\n\x07timeout\x18\x05 \x02(\x05\"7\n\x15MsgSocketSendResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\x12\x11\n\tbytesSent\x18\x02 \x02(\x05\"Y\n\x17MsgSocketReceiveRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\r\n\x05\x66lags\x18\x02 \x02(\r\x12\x0f\n\x07timeout\x18\x03 \x02(\x05\x12\x0e\n\x06maxLen\x18\x04 \x02(\r\"P\n\x18MsgSocketReceiveResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\x12\x19\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x08.Address\"8\n\x15MsgSocketCloseRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0f\n\x07timeout\x18\x04 \x02(\x05\"%\n\x16MsgSocketCloseResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"\'\n\x17MsgGetHostByNameRequest\x12\x0c\n\x04name\x18\x01 \x02(\t\"W\n\x18MsgGetHostByNameResponse\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\r\n\x05\x61lias\x18\x02 \x01(\t\x12\x11\n\taddresses\x18\x03 \x03(\r\x12\x0b\n\x03\x65rr\x18\x04 \x02(\x05\"9\n\x17MsgGetServByNameRequest\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x10\n\x08protocol\x18\x02 \x02(\t\"5\n\x18MsgGetServByNameResponse\x12\x0c\n\x04port\x18\x01 \x02(\r\x12\x0b\n\x03\x65rr\x18\x02 \x02(\x05\"U\n\x17MsgSocketConnectRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x19\n\x07\x61\x64\x64ress\x18\x02 \x02(\x0b\x32\x08.Address\x12\x0f\n\x07timeout\x18\x03 \x02(\x05\"\'\n\x18MsgSocketConnectResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"h\n\x10MsgSelectRequest\x12\r\n\x05width\x18\x02 \x02(\r\x12\x0f\n\x07readFDs\x18\x03 \x02(\r\x12\x10\n\x08writeFDs\x18\x04 \x02(\r\x12\x11\n\texceptFDs\x18\x05 \x02(\r\x12\x0f\n\x07timeout\x18\x06 \x02(\x05\"V\n\x11MsgSelectResponse\x12\x0f\n\x07readFDs\x18\x01 \x02(\r\x12\x10\n\x08writeFDs\x18\x02 \x02(\r\x12\x11\n\texceptFDs\x18\x03 \x02(\r\x12\x0b\n\x03\x65rr\x18\x04 \x02(\x05\"(\n\x19MsgInvalidRequestResponse\x12\x0b\n\x03tag\x18\x01 \x02(\x08\"\xbd\x04\n\nMsgRequest\x12\n\n\x02id\x18\x01 \x02(\r\x12\x32\n\x11socketOpenRequest\x18\x02 \x01(\x0b\x32\x15.MsgSocketOpenRequestH\x00\x12\x32\n\x11socketBindRequest\x18\x03 \x01(\x0b\x32\x15.MsgSocketBindRequestH\x00\x12\x32\n\x11socketAddrRequest\x18\x04 \x01(\x0b\x32\x15.MsgSocketAddrRequestH\x00\x12\x32\n\x11socketSendRequest\x18\x05 \x01(\x0b\x32\x15.MsgSocketSendRequestH\x00\x12\x38\n\x14socketReceiveRequest\x18\x06 \x01(\x0b\x32\x18.MsgSocketReceiveRequestH\x00\x12\x34\n\x12socketCloseRequest\x18\x07 \x01(\x0b\x32\x16.MsgSocketCloseRequestH\x00\x12\x38\n\x14getHostByNameRequest\x18\x08 \x01(\x0b\x32\x18.MsgGetHostByNameRequestH\x00\x12\x38\n\x14getServByNameRequest\x18\t \x01(\x0b\x32\x18.MsgGetServByNameRequestH\x00\x12\x38\n\x14socketConnectRequest\x18\n \x01(\x0b\x32\x18.MsgSocketConnectRequestH\x00\x12*\n\rselectRequest\x18\x0b \x01(\x0b\x32\x11.MsgSelectRequestH\x00\x42\t\n\x07payload\"\x91\x05\n\x0bMsgResponse\x12\n\n\x02id\x18\x01 \x02(\r\x12\x34\n\x12socketOpenResponse\x18\x02 \x01(\x0b\x32\x16.MsgSocketOpenResponseH\x00\x12\x34\n\x12socketBindResponse\x18\x03 \x01(\x0b\x32\x16.MsgSocketBindResponseH\x00\x12\x34\n\x12socketAddrResponse\x18\x04 \x01(\x0b\x32\x16.MsgSocketAddrResponseH\x00\x12\x34\n\x12socketSendResponse\x18\x05 \x01(\x0b\x32\x16.MsgSocketSendResponseH\x00\x12:\n\x15socketReceiveResponse\x18\x06 \x01(\x0b\x32\x19.MsgSocketReceiveResponseH\x00\x12\x36\n\x13socketCloseResponse\x18\x07 \x01(\x0b\x32\x17.MsgSocketCloseResponseH\x00\x12:\n\x15getHostByNameResponse\x18\x08 \x01(\x0b\x32\x19.MsgGetHostByNameResponseH\x00\x12:\n\x15getServByNameResponse\x18\t \x01(\x0b\x32\x19.MsgGetServByNameResponseH\x00\x12:\n\x15socketConnectResponse\x18\n \x01(\x0b\x32\x19.MsgSocketConnectResponseH\x00\x12,\n\x0eselectResponse\x18\x0b \x01(\x0b\x32\x12.MsgSelectResponseH\x00\x12=\n\x16invalidRequestResponse\x18\xff\x01 \x01(\x0b\x32\x1a.MsgInvalidRequestResponseH\x00\x42\t\n\x07payload'
+  serialized_pb=b'\n\x10networking.proto\"#\n\x07\x41\x64\x64ress\x12\n\n\x02ip\x18\x01 \x02(\r\x12\x0c\n\x04port\x18\x02 \x02(\x05\"6\n\x14MsgSocketOpenRequest\x12\x0c\n\x04type\x18\x01 \x02(\r\x12\x10\n\x08protocol\x18\x02 \x02(\r\"4\n\x15MsgSocketOpenResponse\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0b\n\x03\x65rr\x18\x02 \x02(\x05\"R\n\x14MsgSocketBindRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x19\n\x07\x61\x64\x64ress\x18\x02 \x02(\x0b\x32\x08.Address\x12\x0f\n\x07timeout\x18\x03 \x02(\x05\"$\n\x15MsgSocketBindResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"r\n\x14MsgSocketAddrRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x1b\n\x13requestAddressLocal\x18\x02 \x02(\x08\x12\x1c\n\x14requestAddressRemote\x18\x03 \x02(\x08\x12\x0f\n\x07timeout\x18\x04 \x02(\x05\"e\n\x15MsgSocketAddrResponse\x12\x1e\n\x0c\x61\x64\x64ressLocal\x18\x01 \x01(\x0b\x32\x08.Address\x12\x1f\n\raddressRemote\x18\x02 \x01(\x0b\x32\x08.Address\x12\x0b\n\x03\x65rr\x18\x03 \x02(\x05\"o\n\x14MsgSocketSendRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\x12\r\n\x05\x66lags\x18\x03 \x02(\r\x12\x19\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x08.Address\x12\x0f\n\x07timeout\x18\x05 \x02(\x05\"7\n\x15MsgSocketSendResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\x12\x11\n\tbytesSent\x18\x02 \x02(\x05\"s\n\x17MsgSocketReceiveRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\r\n\x05\x66lags\x18\x02 \x02(\r\x12\x0f\n\x07timeout\x18\x03 \x02(\x05\x12\x0e\n\x06maxLen\x18\x04 \x02(\r\x12\x18\n\x10\x61\x64\x64ressRequested\x18\x05 \x02(\x08\"P\n\x18MsgSocketReceiveResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\x12\x0c\n\x04\x64\x61ta\x18\x02 \x02(\x0c\x12\x19\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x08.Address\"8\n\x15MsgSocketCloseRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x0f\n\x07timeout\x18\x04 \x02(\x05\"%\n\x16MsgSocketCloseResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"\'\n\x17MsgGetHostByNameRequest\x12\x0c\n\x04name\x18\x01 \x02(\t\"W\n\x18MsgGetHostByNameResponse\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\r\n\x05\x61lias\x18\x02 \x01(\t\x12\x11\n\taddresses\x18\x03 \x03(\r\x12\x0b\n\x03\x65rr\x18\x04 \x02(\x05\"9\n\x17MsgGetServByNameRequest\x12\x0c\n\x04name\x18\x01 \x02(\t\x12\x10\n\x08protocol\x18\x02 \x02(\t\"5\n\x18MsgGetServByNameResponse\x12\x0c\n\x04port\x18\x01 \x02(\r\x12\x0b\n\x03\x65rr\x18\x02 \x02(\x05\"U\n\x17MsgSocketConnectRequest\x12\x0e\n\x06handle\x18\x01 \x02(\x05\x12\x19\n\x07\x61\x64\x64ress\x18\x02 \x02(\x0b\x32\x08.Address\x12\x0f\n\x07timeout\x18\x03 \x02(\x05\"\'\n\x18MsgSocketConnectResponse\x12\x0b\n\x03\x65rr\x18\x01 \x02(\x05\"h\n\x10MsgSelectRequest\x12\r\n\x05width\x18\x02 \x02(\r\x12\x0f\n\x07readFDs\x18\x03 \x02(\r\x12\x10\n\x08writeFDs\x18\x04 \x02(\r\x12\x11\n\texceptFDs\x18\x05 \x02(\r\x12\x0f\n\x07timeout\x18\x06 \x02(\x05\"V\n\x11MsgSelectResponse\x12\x0f\n\x07readFDs\x18\x01 \x02(\r\x12\x10\n\x08writeFDs\x18\x02 \x02(\r\x12\x11\n\texceptFDs\x18\x03 \x02(\r\x12\x0b\n\x03\x65rr\x18\x04 \x02(\x05\"(\n\x19MsgInvalidRequestResponse\x12\x0b\n\x03tag\x18\x01 \x02(\x08\"\xbd\x04\n\nMsgRequest\x12\n\n\x02id\x18\x01 \x02(\r\x12\x32\n\x11socketOpenRequest\x18\x02 \x01(\x0b\x32\x15.MsgSocketOpenRequestH\x00\x12\x32\n\x11socketBindRequest\x18\x03 \x01(\x0b\x32\x15.MsgSocketBindRequestH\x00\x12\x32\n\x11socketAddrRequest\x18\x04 \x01(\x0b\x32\x15.MsgSocketAddrRequestH\x00\x12\x32\n\x11socketSendRequest\x18\x05 \x01(\x0b\x32\x15.MsgSocketSendRequestH\x00\x12\x38\n\x14socketReceiveRequest\x18\x06 \x01(\x0b\x32\x18.MsgSocketReceiveRequestH\x00\x12\x34\n\x12socketCloseRequest\x18\x07 \x01(\x0b\x32\x16.MsgSocketCloseRequestH\x00\x12\x38\n\x14getHostByNameRequest\x18\x08 \x01(\x0b\x32\x18.MsgGetHostByNameRequestH\x00\x12\x38\n\x14getServByNameRequest\x18\t \x01(\x0b\x32\x18.MsgGetServByNameRequestH\x00\x12\x38\n\x14socketConnectRequest\x18\n \x01(\x0b\x32\x18.MsgSocketConnectRequestH\x00\x12*\n\rselectRequest\x18\x0b \x01(\x0b\x32\x11.MsgSelectRequestH\x00\x42\t\n\x07payload\"\x91\x05\n\x0bMsgResponse\x12\n\n\x02id\x18\x01 \x02(\r\x12\x34\n\x12socketOpenResponse\x18\x02 \x01(\x0b\x32\x16.MsgSocketOpenResponseH\x00\x12\x34\n\x12socketBindResponse\x18\x03 \x01(\x0b\x32\x16.MsgSocketBindResponseH\x00\x12\x34\n\x12socketAddrResponse\x18\x04 \x01(\x0b\x32\x16.MsgSocketAddrResponseH\x00\x12\x34\n\x12socketSendResponse\x18\x05 \x01(\x0b\x32\x16.MsgSocketSendResponseH\x00\x12:\n\x15socketReceiveResponse\x18\x06 \x01(\x0b\x32\x19.MsgSocketReceiveResponseH\x00\x12\x36\n\x13socketCloseResponse\x18\x07 \x01(\x0b\x32\x17.MsgSocketCloseResponseH\x00\x12:\n\x15getHostByNameResponse\x18\x08 \x01(\x0b\x32\x19.MsgGetHostByNameResponseH\x00\x12:\n\x15getServByNameResponse\x18\t \x01(\x0b\x32\x19.MsgGetServByNameResponseH\x00\x12:\n\x15socketConnectResponse\x18\n \x01(\x0b\x32\x19.MsgSocketConnectResponseH\x00\x12,\n\x0eselectResponse\x18\x0b \x01(\x0b\x32\x12.MsgSelectResponseH\x00\x12=\n\x16invalidRequestResponse\x18\xff\x01 \x01(\x0b\x32\x1a.MsgInvalidRequestResponseH\x00\x42\t\n\x07payload'
 )
 
 
@@ -454,6 +454,13 @@ _MSGSOCKETRECEIVEREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='addressRequested', full_name='MsgSocketReceiveRequest.addressRequested', index=4,
+      number=5, type=8, cpp_type=7, label=2,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -467,7 +474,7 @@ _MSGSOCKETRECEIVEREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=678,
-  serialized_end=767,
+  serialized_end=793,
 )
 
 
@@ -512,8 +519,8 @@ _MSGSOCKETRECEIVERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=769,
-  serialized_end=849,
+  serialized_start=795,
+  serialized_end=875,
 )
 
 
@@ -551,8 +558,8 @@ _MSGSOCKETCLOSEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=851,
-  serialized_end=907,
+  serialized_start=877,
+  serialized_end=933,
 )
 
 
@@ -583,8 +590,8 @@ _MSGSOCKETCLOSERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=909,
-  serialized_end=946,
+  serialized_start=935,
+  serialized_end=972,
 )
 
 
@@ -615,8 +622,8 @@ _MSGGETHOSTBYNAMEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=948,
-  serialized_end=987,
+  serialized_start=974,
+  serialized_end=1013,
 )
 
 
@@ -668,8 +675,8 @@ _MSGGETHOSTBYNAMERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=989,
-  serialized_end=1076,
+  serialized_start=1015,
+  serialized_end=1102,
 )
 
 
@@ -707,8 +714,8 @@ _MSGGETSERVBYNAMEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1078,
-  serialized_end=1135,
+  serialized_start=1104,
+  serialized_end=1161,
 )
 
 
@@ -746,8 +753,8 @@ _MSGGETSERVBYNAMERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1137,
-  serialized_end=1190,
+  serialized_start=1163,
+  serialized_end=1216,
 )
 
 
@@ -792,8 +799,8 @@ _MSGSOCKETCONNECTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1192,
-  serialized_end=1277,
+  serialized_start=1218,
+  serialized_end=1303,
 )
 
 
@@ -824,8 +831,8 @@ _MSGSOCKETCONNECTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1279,
-  serialized_end=1318,
+  serialized_start=1305,
+  serialized_end=1344,
 )
 
 
@@ -884,8 +891,8 @@ _MSGSELECTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1320,
-  serialized_end=1424,
+  serialized_start=1346,
+  serialized_end=1450,
 )
 
 
@@ -937,8 +944,8 @@ _MSGSELECTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1426,
-  serialized_end=1512,
+  serialized_start=1452,
+  serialized_end=1538,
 )
 
 
@@ -969,8 +976,8 @@ _MSGINVALIDREQUESTRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1514,
-  serialized_end=1554,
+  serialized_start=1540,
+  serialized_end=1580,
 )
 
 
@@ -1076,8 +1083,8 @@ _MSGREQUEST = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=1557,
-  serialized_end=2130,
+  serialized_start=1583,
+  serialized_end=2156,
 )
 
 
@@ -1190,8 +1197,8 @@ _MSGRESPONSE = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=2133,
-  serialized_end=2790,
+  serialized_start=2159,
+  serialized_end=2816,
 )
 
 _MSGSOCKETBINDREQUEST.fields_by_name['address'].message_type = _ADDRESS
