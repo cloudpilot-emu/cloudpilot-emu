@@ -9,7 +9,7 @@
 #define LOGGING 1
 
 #ifdef LOGGING
-    #define PRINTF logging::printf
+    #define PRINTF(...) logging::printf(logging::domainNetlib, __VA_ARGS__)
 #else
     #define PRINTF(...) ;
 #endif

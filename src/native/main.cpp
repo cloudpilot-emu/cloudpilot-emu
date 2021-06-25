@@ -130,6 +130,8 @@ void run(const Options& options) {
         Feature::SetNetworkRedirection(true);
     }
 
+    if (options.traceNetlib) logging::enableDomain(logging::domainNetlib);
+
     Feature::SetClipboardIntegration(true);
 
     srand(time(nullptr));
@@ -235,6 +237,7 @@ int main(int argc, const char** argv) {
     Options options;
 
     options.image = program.get("image");
+    options.traceNetlib = program.get<bool>("--net-trace");
     if (auto deviceId = program.present("--device-id")) options.deviceId = *deviceId;
     if (auto proxyConfiguration = program.present<ProxyConfiguration>("--net-proxy"))
         options.proxyConfiguration = *proxyConfiguration;
