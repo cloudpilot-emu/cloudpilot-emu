@@ -218,7 +218,7 @@ SOURCE_NATIVE = \
 	native/util.cpp \
 	native/EventHandler.cpp \
 	native/Cli.cpp \
-	native/WebsocketClient.cpp \
+	native/ProxyClient.cpp \
 	emulator/assert_native.cpp \
 	emulator/stacktrace.cpp
 

@@ -64,8 +64,6 @@ void MainLoop::Cycle() {
     eventHandler.HandleEvents(millis);
 }
 
-void MainLoop::CycleStatic(MainLoop* self) { self->Cycle(); }
-
 void MainLoop::LoadSilkscreen() {
     SDL_RWops* rwops = SDL_RWFromConstMem((const void*)silkscreenPng_data, silkscreenPng_len);
     SDL_Surface* surface = IMG_LoadPNG_RW(rwops);

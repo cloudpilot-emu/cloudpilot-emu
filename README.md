@@ -135,7 +135,7 @@ app.
 ## Native build
 
 There is a simple native build for debugging Cloudpilot outside the browser. You
-need SDL2 and its headers available in order to build. The build is accomplished
+need SDL2 and a recent version of Boost in order to build. The build is accomplished
 with
 
 ```
@@ -158,8 +158,11 @@ Zipfile I/O uses the [zip library](https://github.com/kuba--/zip).
 Protobuf (de)serialization in C++ is done using the awesome
 [NanoPB](https://github.com/nanopb/nanopb) library.
 
+The native build uses [argparse](https://github.com/p-ranav/argparse)
+and [arg-parse](https://github.com/ben-zen/uri-library).
 Stacktraces in the native build are based on Farooq Melas
-[gist](https://gist.github.com/fmela/591333).
+[gist](https://gist.github.com/fmela/591333). HTTP and Websocket I/O
+in the native build is done with [Boost.Beast](https://github.com/boostorg/beast);
 
 # LICENSE
 

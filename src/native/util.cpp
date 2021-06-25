@@ -5,13 +5,6 @@
 #include "EmSession.h"
 #include "SessionImage.h"
 
-namespace {
-    constexpr const char* SUPPORTED_DEVICES[] = {
-        "PalmPilot", "Pilot",    "PalmIIIc", "PalmV",     "PalmIII",  "PalmIIIe", "PalmIIIx",
-        "PalmIIIxe", "PalmVx",   "PalmVII",  "PalmVIIEZ", "PalmVIIx", "PalmM500", "PalmM505",
-        "PalmM515",  "PalmM105", "PalmM100", "PalmM125",  "PalmM130", "PalmI705", "PalmI710"};
-}
-
 bool util::readFile(string file, unique_ptr<uint8[]>& buffer, size_t& len) {
     fstream stream(file, ios_base::in);
     if (stream.fail()) return false;
@@ -58,7 +51,7 @@ void util::analyzeRom(EmROMReader& reader) {
          << endl;
 }
 
-bool util::initializeSession(string file, string deviceId) {
+bool util::initializeSession(string file, optional<string> deviceId) {
     unique_ptr<uint8[]> fileBuffer;
     size_t fileSize;
 
@@ -71,6 +64,13 @@ bool util::initializeSession(string file, string deviceId) {
     SessionImage sessionImage = SessionImage::Deserialize(fileSize, fileBuffer.get());
     if (sessionImage.IsValid()) {
         cout << "restoring session image" << endl << flush;
+
+        if (deviceId && *deviceId != sessionImage.GetDeviceId()) {
+            cerr << "device ID " << *deviceId << " does not match session ID "
+                 << sessionImage.GetDeviceId() << endl;
+
+            return false;
+        }
 
         if (!gSession->LoadImage(sessionImage)) {
             cerr << "failed to restore image" << endl << flush;
@@ -93,7 +93,7 @@ bool util::initializeSession(string file, string deviceId) {
     EmDevice* device = nullptr;
 
     for (auto id : SUPPORTED_DEVICES) {
-        if (deviceId != "" && id != deviceId) continue;
+        if (deviceId && id != *deviceId) continue;
 
         EmDevice* d = new EmDevice(id);
 
@@ -106,7 +106,7 @@ bool util::initializeSession(string file, string deviceId) {
     }
 
     if (!device) {
-        cerr << (deviceId != "" ? "deviceId not supported by ROM" : "unsupported ROM") << endl;
+        cerr << (deviceId ? "deviceId not supported by ROM" : "unsupported ROM") << endl;
 
         return false;
     }

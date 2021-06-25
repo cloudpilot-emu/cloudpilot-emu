@@ -17,8 +17,6 @@ class MainLoop {
 
     void Cycle();
 
-    static void CycleStatic(MainLoop* self);
-
    private:
     void LoadSilkscreen();
 

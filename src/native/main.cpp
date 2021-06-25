@@ -15,6 +15,7 @@
 #include "EmSession.h"
 #include "Feature.h"
 #include "MainLoop.h"
+#include "ProxyClient.h"
 #include "ScreenDimensions.h"
 #include "SessionImage.h"
 #include "SuspendContextClipboardCopy.h"
@@ -23,104 +24,113 @@
 #include "SuspendContextNetworkDisconnect.h"
 #include "SuspendContextNetworkRpc.h"
 #include "SuspendManager.h"
-#include "WebsocketClient.h"
+#include "argparse/argparse.h"
+#include "uri/uri.h"
 #include "util.h"
 
 using namespace std;
 
-void setupMemoryImage(void* image, size_t size) {
-    if (size != static_cast<size_t>(gSession->GetMemorySize())) {
-        cerr << "memory image size mismatch: expected " << gSession->GetMemorySize() << " , got "
-             << size << endl
-             << flush;
-    }
+struct ProxyConfiguration {
+    string host;
+    long port;
+    string path;
+};
 
-    memcpy(gSession->GetMemoryPtr(), image, size);
-}
+struct Options {
+    string image;
+    optional<string> deviceId;
+    optional<ProxyConfiguration> proxyConfiguration;
+    bool traceNetlib;
+};
 
-static WebsocketClient* websocketClient = WebsocketClient::Create("localhost", "6666");
+void handleSuspend(ProxyClient* proxyClient) {
+    if (!SuspendManager::IsSuspended()) return;
 
-void handleSuspend() {
-    if (SuspendManager::IsSuspended()) {
-        SuspendContext& context = SuspendManager::GetContext();
+    SuspendContext& context = SuspendManager::GetContext();
 
-        switch (context.GetKind()) {
-            case SuspendContext::Kind::clipboardCopy:
-                SDL_SetClipboardText(context.AsContextClipboardCopy().GetClipboardContent());
+    switch (context.GetKind()) {
+        case SuspendContext::Kind::clipboardCopy:
+            SDL_SetClipboardText(context.AsContextClipboardCopy().GetClipboardContent());
 
-                context.AsContextClipboardCopy().Resume();
+            context.AsContextClipboardCopy().Resume();
 
-                break;
+            break;
 
-            case SuspendContext::Kind::clipboardPaste: {
-                const char* clipboardContent = SDL_GetClipboardText();
+        case SuspendContext::Kind::clipboardPaste: {
+            const char* clipboardContent = SDL_GetClipboardText();
 
-                context.AsContextClipboardPaste().Resume(clipboardContent ? clipboardContent : "");
+            context.AsContextClipboardPaste().Resume(clipboardContent ? clipboardContent : "");
 
-                break;
+            break;
+        }
+
+        case SuspendContext::Kind::networkConnect:
+            EmAssert(proxyClient);
+
+            if (proxyClient->Connect()) {
+                context.AsContextNetworkConnect().Resume();
+
+                cout << "network proxy connected" << endl << flush;
+            } else {
+                context.Cancel();
+
+                cout << "failed to connect to network proxy" << endl << flush;
             }
 
-            case SuspendContext::Kind::networkConnect:
-                if (websocketClient->Connect()) {
-                    context.AsContextNetworkConnect().Resume();
+            break;
 
-                    cout << "network proxy connected" << endl << flush;
-                } else {
+        case SuspendContext::Kind::networkDisconnect:
+            EmAssert(proxyClient);
+
+            proxyClient->Disconnect();
+            context.AsContextNetworkDisconnect().Resume();
+
+            cout << "network proxy disconnected" << endl << flush;
+
+            break;
+
+        case SuspendContext::Kind::networkRpc: {
+            {
+                EmAssert(proxyClient);
+
+                auto [request, size] = context.AsContextNetworkRpc().GetRequest();
+
+                if (!proxyClient->Send(request, size)) {
                     context.Cancel();
-
-                    cout << "failed to connect to network proxy" << endl << flush;
-                }
-
-                break;
-
-            case SuspendContext::Kind::networkDisconnect:
-                websocketClient->Disconnect();
-                context.AsContextNetworkDisconnect().Resume();
-
-                cout << "network proxy disconnected" << endl << flush;
-
-                break;
-
-            case SuspendContext::Kind::networkRpc: {
-                {
-                    auto [request, size] = context.AsContextNetworkRpc().GetRequest();
-
-                    if (!websocketClient->Send(request, size)) {
-                        context.Cancel();
-
-                        break;
-                    }
-
-                    auto [responseBuffer, responseSize] = websocketClient->Receive();
-                    cout << "received proxy response" << endl << flush;
-
-                    if (responseBuffer) {
-                        context.AsContextNetworkRpc().ReceiveResponse(responseBuffer, responseSize);
-                        delete[] responseBuffer;
-                    } else
-                        context.Cancel();
 
                     break;
                 }
+
+                auto [responseBuffer, responseSize] = proxyClient->Receive();
+
+                if (responseBuffer) {
+                    context.AsContextNetworkRpc().ReceiveResponse(responseBuffer, responseSize);
+                    delete[] responseBuffer;
+                } else
+                    context.Cancel();
+
+                break;
             }
         }
     }
 }
 
-int main(int argc, const char** argv) {
-    switch (argc) {
-        case 2:
-            if (!util::initializeSession(argv[1])) exit(1);
-            break;
+void run(const Options& options) {
+    if (!(options.deviceId ? util::initializeSession(options.image, *options.deviceId)
+                           : util::initializeSession(options.image)))
+        exit(1);
 
-        case 3:
-            if (!util::initializeSession(argv[2], argv[1])) exit(1);
-            break;
+    ProxyClient* proxyClient = nullptr;
 
-        default:
-            cerr << "usage: cloudpalm [deviceId] <romimage.rom>" << endl;
-            exit(1);
+    if (options.proxyConfiguration) {
+        proxyClient =
+            ProxyClient::Create(options.proxyConfiguration->host, options.proxyConfiguration->port,
+                                options.proxyConfiguration->path);
+
+        Feature::SetNetworkRedirection(true);
     }
+
+    Feature::SetClipboardIntegration(true);
 
     srand(time(nullptr));
 
@@ -147,20 +157,87 @@ int main(int argc, const char** argv) {
 
     Cli::Start();
 
-    Feature::SetClipboardIntegration(true);
-    Feature::SetNetworkRedirection(true);
-
     while (mainLoop.IsRunning()) {
         mainLoop.Cycle();
 
         if (Cli::Execute()) break;
 
-        handleSuspend();
+        handleSuspend(proxyClient);
     };
 
     Cli::Stop();
-    websocketClient->Disconnect();
+    if (proxyClient) proxyClient->Disconnect();
 
     SDL_Quit();
     IMG_Quit();
+}
+
+int main(int argc, const char** argv) {
+    class bad_device_id : public exception {};
+
+    argparse::ArgumentParser program("cloudpilot");
+
+    program.add_description("Cloudpilot is an emulator for dragonball-based PalmOS devices.");
+
+    program.add_argument("image").help("image or ROM file").required();
+
+    program.add_argument("--device-id", "-d")
+        .help("specify device ID")
+        .action([](const string& value) -> string {
+            for (auto& deviceId : util::SUPPORTED_DEVICES)
+                if (value == deviceId) return deviceId;
+
+            throw bad_device_id();
+        });
+
+    program.add_argument("--net-proxy", "-n")
+        .help("enable network redirection via specified proxy URI")
+        .action([](const string& value) {
+            try {
+                uri parsed(value);
+
+                string scheme = parsed.get_scheme();
+                string host = parsed.get_host();
+                long port = parsed.get_port();
+                string path = parsed.get_path();
+                string query = parsed.get_query();
+
+                if (!query.empty()) path += "?" + query;
+
+                if (scheme != "http") throw runtime_error("bad URI scheme - must be http");
+
+                return ProxyConfiguration{host, port > 0 ? port : 80, path.empty() ? "/" : path};
+            } catch (const invalid_argument& e) {
+                throw runtime_error("invalid proxy URI");
+            }
+        });
+
+    program.add_argument("--net-trace")
+        .help("trace network API")
+        .default_value(false)
+        .implicit_value(true);
+
+    try {
+        program.parse_args(argc, argv);
+    } catch (const bad_device_id& e) {
+        cerr << "bad device ID; valid IDs are:" << endl;
+
+        for (auto& deviceId : util::SUPPORTED_DEVICES) cerr << "  " << deviceId << endl;
+
+        exit(1);
+    } catch (const runtime_error& e) {
+        cerr << e.what() << endl << endl;
+        cerr << program;
+
+        exit(1);
+    }
+
+    Options options;
+
+    options.image = program.get("image");
+    if (auto deviceId = program.present("--device-id")) options.deviceId = *deviceId;
+    if (auto proxyConfiguration = program.present<ProxyConfiguration>("--net-proxy"))
+        options.proxyConfiguration = *proxyConfiguration;
+
+    run(options);
 }

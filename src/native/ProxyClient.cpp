@@ -1,6 +1,6 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-#include "WebsocketClient.h"
+#include "ProxyClient.h"
 
 #include <atomic>
 #include <boost/asio/ip/tcp.hpp>
@@ -24,11 +24,10 @@ using tcp = boost::asio::ip::tcp;
 namespace websocket = boost::beast::websocket;
 namespace net = boost::asio;
 
-class WebsocketClientImpl : public WebsocketClient {
+class ProxyClientImpl : public ProxyClient {
    public:
-    WebsocketClientImpl(const string& host, const string& port) : host(host), port(port) {
-        terminating = true;
-    }
+    ProxyClientImpl(const string& host, long port, const string& path)
+        : host(host), port(to_string(port)), path(path), terminating(true) {}
 
     bool Connect() override {
         if (ws.is_open()) return true;
@@ -41,13 +40,13 @@ class WebsocketClientImpl : public WebsocketClient {
         net::connect(ws.next_layer(), resolveResults.begin(), resolveResults.end(), err);
         if (err) return false;
 
-        ws.handshake(host, "/", err);
+        ws.handshake(host, path, err);
         if (err) return false;
 
         terminating = false;
 
         if (t.joinable()) t.join();
-        t = thread(bind(&WebsocketClientImpl::ThreadMain, this));
+        t = thread(bind(&ProxyClientImpl::ThreadMain, this));
 
         return true;
     }
@@ -92,7 +91,7 @@ class WebsocketClientImpl : public WebsocketClient {
 
    private:
     void ThreadMain() {
-        boost::asio::spawn(io_context, bind(&WebsocketClientImpl::ThreadLoop, this, _1));
+        boost::asio::spawn(io_context, bind(&ProxyClientImpl::ThreadLoop, this, _1));
 
         io_context.restart();
         io_context.run();
@@ -145,6 +144,7 @@ class WebsocketClientImpl : public WebsocketClient {
 
     string host;
     string port;
+    string path;
 
     unique_ptr<uint8[]> receiveBuffer;
     size_t receiveBufferSize;
@@ -157,12 +157,12 @@ class WebsocketClientImpl : public WebsocketClient {
     condition_variable terminatingCv;
 
    private:
-    WebsocketClientImpl(const WebsocketClientImpl&) = delete;
-    WebsocketClientImpl(WebsocketClientImpl&&) = delete;
-    WebsocketClientImpl& operator=(const WebsocketClientImpl&) = delete;
-    WebsocketClientImpl& operator=(WebsocketClientImpl&&) = delete;
+    ProxyClientImpl(const ProxyClientImpl&) = delete;
+    ProxyClientImpl(ProxyClientImpl&&) = delete;
+    ProxyClientImpl& operator=(const ProxyClientImpl&) = delete;
+    ProxyClientImpl& operator=(ProxyClientImpl&&) = delete;
 };
 
-WebsocketClient* WebsocketClient::Create(const string& host, const string& port) {
-    return new WebsocketClientImpl(host, port);
+ProxyClient* ProxyClient::Create(const string& host, long port, const string& path) {
+    return new ProxyClientImpl(host, port, path);
 }
