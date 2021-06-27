@@ -6,4 +6,6 @@ export interface Kvs {
     didShowInvitation?: boolean;
     showStatistics: boolean;
     clipboardIntegration: boolean;
+    networkRedirection: boolean;
+    proxyServer: string;
 }

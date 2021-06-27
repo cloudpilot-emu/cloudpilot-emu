@@ -33,9 +33,21 @@ export class SettingsPage implements OnInit {
     }
 
     ionViewWillLeave(): void {
-        this.kvsService.kvs.volume = this.formGroup.get('volume')!.value;
-        this.kvsService.kvs.showStatistics = this.formGroup.get('showStatistics')!.value;
-        this.kvsService.kvs.clipboardIntegration = this.formGroup.get('clipboardIntegration')?.value;
+        if (!this.formGroup.get('networkRedirection')?.value) {
+            this.formGroup.get('proxyServer')?.setValue(this.kvsService.kvs.proxyServer);
+        }
+
+        this.kvsService.set({
+            volume: this.formGroup.get('volume')!.value,
+            showStatistics: this.formGroup.get('showStatistics')!.value,
+            clipboardIntegration: this.formGroup.get('clipboardIntegration')?.value,
+            networkRedirection: this.formGroup.get('networkRedirection')?.value,
+            proxyServer: this.formGroup.get('proxyServer')?.value,
+        });
+    }
+
+    get showProxyServer(): boolean {
+        return this.formGroup.get('networkRedirection')?.value;
     }
 
     private createFormGroup() {
@@ -43,6 +55,8 @@ export class SettingsPage implements OnInit {
             volume: new FormControl(this.kvsService.kvs.volume),
             showStatistics: new FormControl(this.kvsService.kvs.showStatistics),
             clipboardIntegration: new FormControl(this.kvsService.kvs.clipboardIntegration),
+            networkRedirection: new FormControl(this.kvsService.kvs.networkRedirection),
+            proxyServer: new FormControl(this.kvsService.kvs.proxyServer),
         });
     }
 

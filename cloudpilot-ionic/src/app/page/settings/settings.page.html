@@ -34,6 +34,16 @@
       <ion-label>Clipboard integration</ion-label>
       <ion-toggle formControlName="clipboardIntegration"></ion-toggle>
     </ion-item>
+
+    <ion-item lines="inset">
+      <ion-label>Network redirection</ion-label>
+      <ion-toggle formControlName="networkRedirection"></ion-toggle>
+    </ion-item>
+
+    <ion-item lines="inset" *ngIf="showProxyServer">
+      <ion-label position="stacked">Proxy server</ion-label>
+      <ion-input placeholder="proxy host or host:port or URI" formControlName="proxyServer"></ion-input>
+    </ion-item>
   </form>
 
 </ion-content>
