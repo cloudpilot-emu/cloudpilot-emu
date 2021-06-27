@@ -104,8 +104,7 @@ The following instructions apply to Linux and MacOS.
 
 The emulator is written in C++ and compiled to Web Assembly using emscripten. In
 order to build the WASM binary you need to install a recent version of the
-emscripten toolchain. Cloudpilot currently builds with 2.0.18, 2.0.15 -- 2.0.17
-have a bug that breaks LTO.
+emscripten toolchain. Cloudpilot currently builds with 2.0.24.
 
 With the SDK properly set up you can build the source via
 

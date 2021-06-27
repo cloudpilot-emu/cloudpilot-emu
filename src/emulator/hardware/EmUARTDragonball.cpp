@@ -573,7 +573,6 @@ void EmUARTDragonball::TransmitTxFIFO(EmTransport* transport) {
     if (transport->CanWrite()) {
         // Write out any outgoing bytes.
 
-        ErrCode err = errNone;
         char buffer[kMaxFifoSize];
         long spaceInTxFIFO = fTxFIFO.GetUsed();
 
@@ -588,7 +587,7 @@ void EmUARTDragonball::TransmitTxFIFO(EmTransport* transport) {
 #endif
             PRINTF("UART: Transmitted %ld serial bytes.", spaceInTxFIFO);
 
-            err = transport->Write(spaceInTxFIFO, buffer);
+            transport->Write(spaceInTxFIFO, buffer);
         }
     }
 }
