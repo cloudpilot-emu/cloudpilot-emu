@@ -11,6 +11,7 @@
 #include "EmSession.h"
 #include "EmSystemState.h"
 #include "Feature.h"
+#include "NetworkProxy.h"
 #include "SuspendManager.h"
 
 namespace {
@@ -199,3 +200,9 @@ void Cloudpilot::SetClipboardIntegration(bool toggle) { Feature::SetClipboardInt
 bool Cloudpilot::IsSuspended() { return SuspendManager::IsSuspended(); }
 
 SuspendContext& Cloudpilot::GetSuspendContext() { return SuspendManager::GetContext(); }
+
+void Cloudpilot::RegisterProxyDisconnectHandler(uint32 handlerPtr) {
+    typedef void (*handler_ptr)(const char*);
+
+    gNetworkProxy.onDisconnect.AddHandler(reinterpret_cast<handler_ptr>(handlerPtr));
+}

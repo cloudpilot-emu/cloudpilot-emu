@@ -72,6 +72,8 @@ class Cloudpilot {
     bool IsSuspended();
     SuspendContext& GetSuspendContext();
 
+    void RegisterProxyDisconnectHandler(uint32 handlerPtr);
+
    private:
     Frame frame{320 * 320 * 4};
 };

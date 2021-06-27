@@ -13,9 +13,13 @@ void SuspendContextNetworkRpc::Cancel() {
     ResumeExecution();
 }
 
-std::pair<uint8*, size_t> SuspendContextNetworkRpc::GetRequest() {
+std::pair<const uint8*, size_t> SuspendContextNetworkRpc::GetRequest() {
     return make_pair(request.get(), requestSize);
 }
+
+size_t SuspendContextNetworkRpc::GetRequestSize() { return requestSize; }
+
+const uint8* SuspendContextNetworkRpc::GetRequestData() { return request.get(); }
 
 void SuspendContextNetworkRpc::ReceiveResponse(uint8* buffer, size_t size) {
     onSuccess(buffer, size);

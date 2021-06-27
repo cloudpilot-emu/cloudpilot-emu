@@ -19,7 +19,10 @@ class SuspendContextNetworkRpc : public SuspendContext {
 
     void Cancel() override;
 
-    std::pair<uint8*, size_t> GetRequest();
+    std::pair<const uint8*, size_t> GetRequest();
+
+    size_t GetRequestSize();
+    const uint8* GetRequestData();
 
     void ReceiveResponse(uint8* response, size_t size);
 

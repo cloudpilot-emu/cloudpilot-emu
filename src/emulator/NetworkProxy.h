@@ -52,7 +52,7 @@ class NetworkProxy {
                 int32 timeout);
 
    public:
-    EmEvent<string> onDisconnect;
+    EmEvent<const char*> onDisconnect;
 
    private:
     void ConnectSuccess(const string& sessionId);

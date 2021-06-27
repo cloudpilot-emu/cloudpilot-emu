@@ -61,6 +61,8 @@ interface Cloudpilot {
 
     boolean IsSuspended();
     [Ref] SuspendContext GetSuspendContext();
+
+    void RegisterProxyDisconnectHandler(long handlerPtr);
 };
 
 interface RomInfo {
@@ -114,10 +116,23 @@ interface SuspendContextClipboardPaste {
     void Resume([Const] DOMString clipboardContent);
 };
 
+interface SuspendContextNetworkConnect {
+    void Cancel();
+    void Resume([Const] DOMString sessionId);
+};
+
+interface SuspendContextNetworkRpc {
+    void Cancel();
+    long GetRequestSize();
+    [Const] VoidPtr GetRequestData();
+};
+
 interface SuspendContext {
     long GetKind();
     void Cancel();
 
     [Ref] SuspendContextClipboardCopy AsContextClipboardCopy();
     [Ref] SuspendContextClipboardPaste AsContextClipboardPaste();
+    [Ref] SuspendContextNetworkConnect AsContextNetworkConnect();
+    [Ref] SuspendContextNetworkRpc AsContextNetworkRpc();
 };
