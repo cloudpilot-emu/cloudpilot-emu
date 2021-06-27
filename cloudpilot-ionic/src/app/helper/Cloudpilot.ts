@@ -12,6 +12,8 @@ import createModule, {
     PalmButton,
     SuspendContextClipboardCopy,
     SuspendContextClipboardPaste,
+    SuspendContextNetworkConnect,
+    SuspendContextNetworkRpc,
     SuspendKind,
     VoidPtr,
 } from '../../../../src';
@@ -95,6 +97,13 @@ export class Cloudpilot {
             module.addFunction(
                 (frequency: number, dutyCycle: number) => this.pwmUpdateEvent.dispatch({ frequency, dutyCycle }),
                 'vdd'
+            )
+        );
+
+        this.cloudpilot.RegisterProxyDisconnectHandler(
+            module.addFunction(
+                (sessionIdPtr: number) => this.proxyDisconnectEvent.dispatch(module.UTF8ToString(sessionIdPtr)),
+                'vi'
             )
         );
     }
@@ -386,6 +395,21 @@ export class Cloudpilot {
         return this.wrap(this.cloudpilot.GetSuspendContext().AsContextClipboardPaste());
     }
 
+    @guard()
+    setNetworkRedirection(toggle: boolean) {
+        this.cloudpilot.SetNetworkRedirection(toggle);
+    }
+
+    @guard()
+    getSuspendContextNetworkConnect(): SuspendContextNetworkConnect {
+        return this.wrap(this.cloudpilot.GetSuspendContext().AsContextNetworkConnect());
+    }
+
+    @guard()
+    getSuspendContextNetworkRpc(): SuspendContextNetworkRpc {
+        return this.wrap(this.cloudpilot.GetSuspendContext().AsContextNetworkRpc());
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);
@@ -426,6 +450,7 @@ export class Cloudpilot {
 
     fatalErrorEvent = new Event<Error>();
     pwmUpdateEvent = new Event<PwmUpdate>();
+    proxyDisconnectEvent = new Event<string>();
 
     private cloudpilot: CloudpilotNative;
     private amIdead = false;

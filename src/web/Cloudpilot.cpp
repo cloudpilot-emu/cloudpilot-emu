@@ -201,6 +201,8 @@ bool Cloudpilot::IsSuspended() { return SuspendManager::IsSuspended(); }
 
 SuspendContext& Cloudpilot::GetSuspendContext() { return SuspendManager::GetContext(); }
 
+void Cloudpilot::SetNetworkRedirection(bool toggle) { Feature::SetNetworkRedirection(toggle); }
+
 void Cloudpilot::RegisterProxyDisconnectHandler(uint32 handlerPtr) {
     typedef void (*handler_ptr)(const char*);
 

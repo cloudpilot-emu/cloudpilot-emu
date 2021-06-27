@@ -96,6 +96,9 @@ export interface Cloudpilot {
 
     IsSuspended(): boolean;
     GetSuspendContext(): SuspendContext;
+
+    SetNetworkRedirection(toggle: boolean): void;
+    RegisterProxyDisconnectHandler(handlerPtr: number): void;
 }
 
 export interface Frame {
@@ -136,10 +139,23 @@ interface SuspendContextClipboardPaste {
     Resume(clipboardContent: string): void;
 }
 
+interface SuspendContextNetworkConnect {
+    Cancel(): void;
+    Resume(sessionId: string): void;
+}
+
+interface SuspendContextNetworkRpc {
+    Cancel(): void;
+    GetRequestSize(): number;
+    GetRequestData(): VoidPtr;
+}
+
 interface SuspendContext {
     GetKind(): SuspendKind;
     Cancel(): void;
 
     AsContextClipboardCopy(): SuspendContextClipboardCopy;
     AsContextClipboardPaste(): SuspendContextClipboardPaste;
+    AsContextNetworkConnect(): SuspendContextNetworkConnect;
+    AsContextNetworkRpc(): SuspendContextNetworkRpc;
 }

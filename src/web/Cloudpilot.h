@@ -72,6 +72,7 @@ class Cloudpilot {
     bool IsSuspended();
     SuspendContext& GetSuspendContext();
 
+    void SetNetworkRedirection(bool toggle);
     void RegisterProxyDisconnectHandler(uint32 handlerPtr);
 
    private:

@@ -9,6 +9,7 @@ export interface Module extends EmscriptenModule {
     ccall: typeof ccall;
     addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;
+    UTF8ToString(charPtr: number): string;
 
     Cloudpilot: { new (): Cloudpilot };
     RomInfo: { new (buffer: VoidPtr, size: number): RomInfo };
