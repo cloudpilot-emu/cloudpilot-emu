@@ -3,8 +3,8 @@ import asyncio
 
 import websockets
 
+from connection import Connection
 from logger import logger
-from proxy_context import ProxyContext
 
 
 class Server:
@@ -39,7 +39,7 @@ class Server:
     async def _handle(self, socket, path):
         self.connections.add(socket)
 
-        context = ProxyContext()
-        await context.start(socket)
+        connection = Connection()
+        await connection.start(socket)
 
         self.connections.remove(socket)

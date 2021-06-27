@@ -153,16 +153,18 @@ def logPayload(data):
     debug(dump)
 
 
-class ProxyContext:
-    connectionIndex = 0
+class Connection:
+    nexConnectionIndex = 0
 
     def __init__(self):
         self.echoRequest = None
         self._sockets = [None] * MAX_HANDLE
+        self.connectionIndex = self.nexConnectionIndex
+
+        self.nexConnectionIndex += 1
 
     async def start(self, ws):
         info(f'starting proxy connection {self.connectionIndex}')
-        self.connectionIndex = self.connectionIndex + 1
 
         self._ws = ws
 
