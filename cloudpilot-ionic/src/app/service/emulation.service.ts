@@ -464,7 +464,7 @@ export class EmulationService {
             this.storageService.updateSession(session);
         }
 
-        if (uiInitialized && !powerOff && currentSession) {
+        if (uiInitialized && !powerOff && currentSession && !currentSession.dontManageHotsyncName) {
             if (this.deviceHotsyncName === undefined) {
                 this.deviceHotsyncName = this.cloudpilotInstance.getHotsyncName();
             }

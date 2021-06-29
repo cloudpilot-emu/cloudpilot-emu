@@ -9,6 +9,7 @@ export interface SessionSettings {
     name: string;
     device: DeviceId;
     hotsyncName?: string;
+    dontManageHotsyncName?: boolean;
 }
 
 @Component({
@@ -27,8 +28,16 @@ export class SessionSettingsComponent implements OnInit {
         return this.formGroup.get('hotsyncName')!;
     }
 
-    get forControlDevice(): AbstractControl {
+    get formControlDevice(): AbstractControl {
         return this.formGroup.get('device')!;
+    }
+
+    get formControlManageHotsyncName(): AbstractControl {
+        return this.formGroup.get('manageHotsyncName')!;
+    }
+
+    get showHotsyncNameInput(): boolean {
+        return this.formControlManageHotsyncName.value;
     }
 
     get placeholder(): string {
@@ -50,13 +59,20 @@ export class SessionSettingsComponent implements OnInit {
 
         this.session.name = this.formControlName.value;
 
-        if (this.formControlHotsyncName.value) {
-            this.session.hotsyncName = this.formControlHotsyncName.value;
+        if (this.formControlManageHotsyncName.value) {
+            this.session.dontManageHotsyncName = false;
+
+            if (this.formControlHotsyncName.value) {
+                this.session.hotsyncName = this.formControlHotsyncName.value;
+            } else {
+                this.session.hotsyncName = this.session.hotsyncName === undefined ? undefined : '';
+            }
         } else {
-            this.session.hotsyncName = this.session.hotsyncName === undefined ? undefined : '';
+            this.session.dontManageHotsyncName = true;
+            this.session.hotsyncName = undefined;
         }
 
-        this.session.device = this.forControlDevice.value;
+        this.session.device = this.formControlDevice.value;
 
         this.onSave();
     }
@@ -70,6 +86,7 @@ export class SessionSettingsComponent implements OnInit {
             name: new FormControl(this.session.name, {
                 validators: [Validators.required, this.validateNameUnique],
             }),
+            manageHotsyncName: new FormControl(!this.session.dontManageHotsyncName),
             hotsyncName: new FormControl(this.session.hotsyncName || ''),
             device: new FormControl({ value: this.session.device, disabled: this.availableDevices.length === 1 }),
         });

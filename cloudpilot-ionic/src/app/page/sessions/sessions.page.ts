@@ -122,6 +122,7 @@ export class SessionsPage {
                 name: this.disambiguateSessionName(sessionImage.metadata?.name ?? file.name),
                 hotsyncName: sessionImage.metadata?.hotsyncName,
                 device: sessionImage.deviceId,
+                dontManageHotsyncName: sessionImage.metadata?.dontManageHotsyncName,
             };
 
             if (await this.editSettings(settings)) {

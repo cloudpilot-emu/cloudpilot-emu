@@ -29,6 +29,7 @@ export class SessionService {
     async addSessionFromImage(image: SessionImage, name: string, presets: Partial<Session> = {}): Promise<Session> {
         const session: Session = {
             hotsyncName: image.metadata?.hotsyncName,
+            dontManageHotsyncName: false,
             ...presets,
             id: -1,
             name,
@@ -57,6 +58,7 @@ export class SessionService {
     ): Promise<Session> {
         const session: Session = {
             hotsyncName: '',
+            dontManageHotsyncName: false,
             ...presets,
             id: -1,
             name,

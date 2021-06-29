@@ -20,6 +20,11 @@
         </ion-item>
 
         <ion-item lines="inset">
+            <ion-label>Manage hotsync name</ion-label>
+            <ion-toggle formControlName="manageHotsyncName"></ion-toggle>
+        </ion-item>
+
+        <ion-item lines="inset" *ngIf="showHotsyncNameInput">
             <ion-label position="stacked">Hotsync name</ion-label>
             <ion-input [placeholder]="placeholder" formControlName="hotsyncName" maxlength="40"></ion-input>
         </ion-item>

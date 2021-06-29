@@ -8,4 +8,5 @@ export interface Session {
     ram: number;
     osVersion?: number;
     hotsyncName?: string;
+    dontManageHotsyncName?: boolean;
 }
