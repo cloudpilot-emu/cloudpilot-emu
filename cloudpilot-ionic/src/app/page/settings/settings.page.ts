@@ -1,11 +1,20 @@
+import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { Component, OnInit } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
 
+import { AlertService } from './../../service/alert.service';
 import { ClipboardService } from './../../service/clipboard.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { KvsService } from './../../service/kvs.service';
 import { ModalController } from '@ionic/angular';
+import { validateProxyAddress } from 'src/app/helper/proxyAddress';
 
+const enum fields {
+    volume = 'volume',
+    showStatistics = 'showStatistics',
+    clipboardIntegration = 'clipboardIntegration',
+    networkRedirection = 'networkRedirection',
+    proxyServer = 'proxyServer',
+}
 @Component({
     selector: 'app-settings',
     templateUrl: './settings.page.html',
@@ -15,7 +24,8 @@ export class SettingsPage implements OnInit {
     constructor(
         private modalController: ModalController,
         private kvsService: KvsService,
-        public clipboardService: ClipboardService
+        public clipboardService: ClipboardService,
+        private alertService: AlertService
     ) {}
 
     ngOnInit(): void {
@@ -33,6 +43,15 @@ export class SettingsPage implements OnInit {
     }
 
     ionViewWillLeave(): void {
+        if (this.formGroup.get(fields.networkRedirection)?.value && !this.formGroup.get(fields.proxyServer)?.valid) {
+            this.alertService.message(
+                'Invalid proxy server',
+                'The proxy server you specified is invalid. Network redirection will be disabled.'
+            );
+
+            this.formGroup.get(fields.networkRedirection)!.setValue(false);
+        }
+
         if (!this.formGroup.get('networkRedirection')?.value) {
             this.formGroup.get('proxyServer')?.setValue(this.kvsService.kvs.proxyServer);
         }
@@ -52,11 +71,13 @@ export class SettingsPage implements OnInit {
 
     private createFormGroup() {
         this.formGroup = new FormGroup({
-            volume: new FormControl(this.kvsService.kvs.volume),
-            showStatistics: new FormControl(this.kvsService.kvs.showStatistics),
-            clipboardIntegration: new FormControl(this.kvsService.kvs.clipboardIntegration),
-            networkRedirection: new FormControl(this.kvsService.kvs.networkRedirection),
-            proxyServer: new FormControl(this.kvsService.kvs.proxyServer),
+            [fields.volume]: new FormControl(this.kvsService.kvs.volume),
+            [fields.showStatistics]: new FormControl(this.kvsService.kvs.showStatistics),
+            [fields.clipboardIntegration]: new FormControl(this.kvsService.kvs.clipboardIntegration),
+            [fields.networkRedirection]: new FormControl(this.kvsService.kvs.networkRedirection),
+            [fields.proxyServer]: new FormControl(this.kvsService.kvs.proxyServer, {
+                validators: [validateProxyAddress],
+            }),
         });
     }
 
