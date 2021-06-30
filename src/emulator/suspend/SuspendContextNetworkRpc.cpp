@@ -21,7 +21,7 @@ size_t SuspendContextNetworkRpc::GetRequestSize() { return requestSize; }
 
 const uint8* SuspendContextNetworkRpc::GetRequestData() { return request.get(); }
 
-void SuspendContextNetworkRpc::ReceiveResponse(uint8* buffer, size_t size) {
+void SuspendContextNetworkRpc::ReceiveResponse(void* buffer, size_t size) {
     onSuccess(buffer, size);
 
     ResumeExecution();

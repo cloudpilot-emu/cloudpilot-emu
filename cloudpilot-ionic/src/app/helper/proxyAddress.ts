@@ -4,7 +4,7 @@ const DEFAULT_PORT = 8666;
 const REGEX_HOST = /^[\da-z\-\.]+$/i;
 const REGEXT_HOST_PORT = /^[\da-z\-\.]+:\d+$/i;
 
-export function normalizeProxyAddress(address: string): string | undefined {
+export function normalizeProxyAddress(address: string | undefined): string | undefined {
     if (!address) return undefined;
 
     if (address.match(REGEX_HOST)) return `http://${address}:${DEFAULT_PORT}`;

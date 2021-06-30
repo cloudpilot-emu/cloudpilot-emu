@@ -126,6 +126,7 @@ interface SuspendContextNetworkRpc {
     void Cancel();
     long GetRequestSize();
     [Const] VoidPtr GetRequestData();
+    void ReceiveResponse(VoidPtr data, long size);
 };
 
 interface SuspendContext {

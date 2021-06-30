@@ -24,6 +24,8 @@ export const enum DbInstallResult {
 export const enum SuspendKind {
     clipboardCopy = 1,
     clipboardPaste = 2,
+    networkRpc = 3,
+    networkConnect = 4,
 }
 
 export interface RomInfo {
@@ -148,6 +150,7 @@ interface SuspendContextNetworkRpc {
     Cancel(): void;
     GetRequestSize(): number;
     GetRequestData(): VoidPtr;
+    ReceiveResponse(data: VoidPtr, size: number): void;
 }
 
 interface SuspendContext {

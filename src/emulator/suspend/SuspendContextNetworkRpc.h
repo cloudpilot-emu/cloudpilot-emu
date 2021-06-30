@@ -8,7 +8,7 @@
 
 class SuspendContextNetworkRpc : public SuspendContext {
    public:
-    using successCallbackT = function<void(uint8* response, size_t size)>;
+    using successCallbackT = function<void(void* response, size_t size)>;
     using failCallbackT = function<void()>;
 
    public:
@@ -24,7 +24,7 @@ class SuspendContextNetworkRpc : public SuspendContext {
     size_t GetRequestSize();
     const uint8* GetRequestData();
 
-    void ReceiveResponse(uint8* response, size_t size);
+    void ReceiveResponse(void* response, size_t size);
 
    private:
     successCallbackT onSuccess;

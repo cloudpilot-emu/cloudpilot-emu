@@ -28,6 +28,7 @@ export {
     SuspendKind,
     SuspendContextClipboardCopy,
     SuspendContextClipboardPaste,
+    VoidPtr,
 } from '../../../../src';
 
 export interface RomInfo {
@@ -408,6 +409,23 @@ export class Cloudpilot {
     @guard()
     getSuspendContextNetworkRpc(): SuspendContextNetworkRpc {
         return this.wrap(this.cloudpilot.GetSuspendContext().AsContextNetworkRpc());
+    }
+
+    @guard()
+    copyBuffer(data: Uint8Array): VoidPtr {
+        return this.copyIn(data);
+    }
+
+    @guard()
+    freeBuffer(ptr: VoidPtr): void {
+        this.cloudpilot.Free(ptr);
+    }
+
+    @guard()
+    resolveBuffer(ptr: VoidPtr, size: number): Uint8Array {
+        const bufferPtr = this.module.getPointer(ptr);
+
+        return this.module.HEAPU8.subarray(bufferPtr, bufferPtr + size);
     }
 
     private copyIn(data: Uint8Array): VoidPtr {

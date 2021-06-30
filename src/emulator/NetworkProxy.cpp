@@ -218,7 +218,7 @@ void NetworkProxy::SocketOpen(uint8 domain, uint8 type, uint16 protocol) {
                    bind(&NetworkProxy::SocketOpenFail, this, _1));
 }
 
-void NetworkProxy::SocketOpenSuccess(uint8* responseData, size_t size) {
+void NetworkProxy::SocketOpenSuccess(void* responseData, size_t size) {
     PREPARE_RESPONSE(SocketOpen, socketOpenResponse)
     CALLED_SETUP("NetSocketRef",
                  "UInt16 libRefNum, NetSocketAddrEnum domain, "
@@ -261,7 +261,7 @@ void NetworkProxy::SocketBind(int16 handle, NetSocketAddrType* sockAddrP, Int32 
                    bind(&NetworkProxy::SocketBindFail, this, _1));
 }
 
-void NetworkProxy::SocketBindSuccess(uint8* responseData, size_t size) {
+void NetworkProxy::SocketBindSuccess(void* responseData, size_t size) {
     PREPARE_RESPONSE(SocketBind, socketBindResponse)
 
     CALLED_SETUP("Int16",
@@ -309,7 +309,7 @@ void NetworkProxy::SocketAddr(int16 handle, NetSocketAddrType* locAddrP, Int16* 
                    bind(&NetworkProxy::SocketAddrFail, this, _1));
 }
 
-void NetworkProxy::SocketAddrSuccess(uint8* responseData, size_t size) {
+void NetworkProxy::SocketAddrSuccess(void* responseData, size_t size) {
     PREPARE_RESPONSE(SocketAddr, socketAddrResponse)
 
     CALLED_SETUP("Int16",
@@ -441,7 +441,7 @@ void NetworkProxy::SocketSend(int16 handle, uint8* data, size_t count, uint32 fl
                    bind(&NetworkProxy::SocketSendFail, this, _1));
 }
 
-void NetworkProxy::SocketSendSuccess(uint8* responseData, size_t size) {
+void NetworkProxy::SocketSendSuccess(void* responseData, size_t size) {
     PREPARE_RESPONSE(SocketSend, socketSendResponse)
 
     CALLED_SETUP("Int16",
@@ -492,7 +492,7 @@ void NetworkProxy::SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int3
                    bind(&NetworkProxy::SocketReceiveFail, this, _1));
 }
 
-void NetworkProxy::SocketReceiveSuccess(uint8* responseData, size_t size) {
+void NetworkProxy::SocketReceiveSuccess(void* responseData, size_t size) {
     PREPARE_RESPONSE_WITH_BUFFER(SocketReceive, socketReceiveResponse)
 
     CALLED_SETUP("Int16",
@@ -567,7 +567,7 @@ void NetworkProxy::SocketDmReceive(int16 handle, uint32 flags, uint16 rcvlen, in
                    bind(&NetworkProxy::SocketDmReceiveFail, this, _1));
 }
 
-void NetworkProxy::SocketDmReceiveSuccess(uint8* responseData, size_t size) {
+void NetworkProxy::SocketDmReceiveSuccess(void* responseData, size_t size) {
     PREPARE_RESPONSE_WITH_BUFFER(SocketDmReceive, socketReceiveResponse)
 
     CALLED_SETUP("Int16",
@@ -635,7 +635,7 @@ void NetworkProxy::SocketClose(int16 handle, int32 timeout) {
                    bind(&NetworkProxy::SocketCloseFail, this, _1));
 }
 
-void NetworkProxy::SocketCloseSuccess(uint8* responseData, size_t size) {
+void NetworkProxy::SocketCloseSuccess(void* responseData, size_t size) {
     PREPARE_RESPONSE(SocketClose, socketCloseResponse)
 
     CALLED_SETUP("Int16", "UInt16 libRefNum, NetSocketRef socket, Int32 timeout, Err *errP");
@@ -672,7 +672,7 @@ void NetworkProxy::GetHostByName(const string name) {
                    bind(&NetworkProxy::GetHostByNameFail, this, _1));
 }
 
-void NetworkProxy::GetHostByNameSuccess(uint8* responseData, size_t size) {
+void NetworkProxy::GetHostByNameSuccess(void* responseData, size_t size) {
     PREPARE_RESPONSE(GetHostByName, getHostByNameResponse)
 
     if (response.addresses_count > 3) {
@@ -747,7 +747,7 @@ void NetworkProxy::GetServByName(const string name, const string proto) {
                    bind(&NetworkProxy::GetServByNameFail, this, _1));
 }
 
-void NetworkProxy::GetServByNameSuccess(uint8* responseData, size_t size) {
+void NetworkProxy::GetServByNameSuccess(void* responseData, size_t size) {
     PREPARE_RESPONSE(GetServByName, getServByNameResponse)
 
     CALLED_SETUP("NetServInfoPtr",
@@ -813,7 +813,7 @@ void NetworkProxy::SocketConnect(int16 handle, NetSocketAddrType* address, int16
                    bind(&NetworkProxy::SocketConnectFail, this, _1));
 }
 
-void NetworkProxy::SocketConnectSuccess(uint8* responseData, size_t size) {
+void NetworkProxy::SocketConnectSuccess(void* responseData, size_t size) {
     PREPARE_RESPONSE(SocketConnect, socketConnectResponse)
 
     CALLED_SETUP("Int16",
@@ -861,7 +861,7 @@ void NetworkProxy::Select(UInt16 width, NetFDSetType readFDs, NetFDSetType write
                    bind(&NetworkProxy::SelectFail, this, _1));
 }
 
-void NetworkProxy::SelectSuccess(uint8* responseData, size_t size) {
+void NetworkProxy::SelectSuccess(void* responseData, size_t size) {
     PREPARE_RESPONSE(Select, selectResponse)
 
     CALLED_SETUP("Int16",
@@ -903,7 +903,7 @@ void NetworkProxy::SelectFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
-bool NetworkProxy::DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
+bool NetworkProxy::DecodeResponse(void* responseData, size_t size, MsgResponse& response,
                                   pb_size_t payloadTag, BufferDecodeContext* bufferrDecodeContext) {
     response = MsgResponse_init_zero;
 
@@ -912,7 +912,7 @@ bool NetworkProxy::DecodeResponse(uint8* responseData, size_t size, MsgResponse&
         response.cb_payload.funcs.decode = setupPayloadDecodeCb;
     }
 
-    pb_istream_t stream = pb_istream_from_buffer(responseData, size);
+    pb_istream_t stream = pb_istream_from_buffer(static_cast<uint8*>(responseData), size);
     bool status = pb_decode(&stream, MsgResponse_fields, &response);
 
     if (!status) {

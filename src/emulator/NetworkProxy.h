@@ -60,43 +60,43 @@ class NetworkProxy {
 
     void CloseDone(Err err);
 
-    void SocketOpenSuccess(uint8* responseData, size_t size);
+    void SocketOpenSuccess(void* responseData, size_t size);
     void SocketOpenFail(Err err = netErrInternal);
 
-    void SocketBindSuccess(uint8* responseData, size_t size);
+    void SocketBindSuccess(void* responseData, size_t size);
     void SocketBindFail(Err err = netErrInternal);
 
-    void SocketAddrSuccess(uint8* responseData, size_t size);
+    void SocketAddrSuccess(void* responseData, size_t size);
     void SocketAddrFail(Err err = netErrInternal);
 
     void SocketOptionSetFail(Err err = netErrInternal);
 
-    void SocketSendSuccess(uint8* responseData, size_t size);
+    void SocketSendSuccess(void* responseData, size_t size);
     void SocketSendFail(Err err = netErrInternal);
 
-    void SocketReceiveSuccess(uint8* responseData, size_t size);
+    void SocketReceiveSuccess(void* responseData, size_t size);
     void SocketReceiveFail(Err err = netErrInternal);
 
-    void SocketDmReceiveSuccess(uint8* responseData, size_t size);
+    void SocketDmReceiveSuccess(void* responseData, size_t size);
     void SocketDmReceiveFail(Err err = netErrInternal);
 
-    void SocketCloseSuccess(uint8* responseData, size_t size);
+    void SocketCloseSuccess(void* responseData, size_t size);
     void SocketCloseFail(Err err = netErrInternal);
 
-    void GetHostByNameSuccess(uint8* responseData, size_t size);
+    void GetHostByNameSuccess(void* responseData, size_t size);
     void GetHostByNameFail(Err err = netErrInternal);
 
-    void GetServByNameSuccess(uint8* responseData, size_t size);
+    void GetServByNameSuccess(void* responseData, size_t size);
     void GetServByNameFail(Err err = netErrInternal);
 
-    void SocketConnectSuccess(uint8* responseData, size_t size);
+    void SocketConnectSuccess(void* responseData, size_t size);
     void SocketConnectFail(Err err = netErrInternal);
 
-    void SelectSuccess(uint8* responseData, size_t size);
+    void SelectSuccess(void* responseData, size_t size);
     void SelectFail(Err err = netErrInternal);
 
     MsgRequest NewRequest(pb_size_t payloadTag);
-    bool DecodeResponse(uint8* responseData, size_t size, MsgResponse& response,
+    bool DecodeResponse(void* responseData, size_t size, MsgResponse& response,
                         pb_size_t payloadTag, BufferDecodeContext* bufferrDecodeContext = nullptr);
 
     void SendAndSuspend(MsgRequest& request, size_t bufferSize,
