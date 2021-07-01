@@ -17,10 +17,12 @@ import { KvsService } from './kvs.service';
 import { LoadingController } from '@ionic/angular';
 import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
+import { ProxyService } from './proxy.service';
 import { PwmUpdate } from './../helper/Cloudpilot';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
+import { ThisReceiver } from '@angular/compiler';
 
 const PEN_MOVE_THROTTLE = 25;
 const SNAPSHOT_INTERVAL = 1000;
@@ -46,7 +48,8 @@ export class EmulationService {
         private alertService: AlertService,
         private modalWatcher: ModalWatcherService,
         private clipboardService: ClipboardService,
-        private kvsService: KvsService
+        private kvsService: KvsService,
+        private proxyService: ProxyService
     ) {
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
         errorService.fatalErrorEvent.addHandler(this.pause);
@@ -55,6 +58,9 @@ export class EmulationService {
         this.cloudpilot.then((instance) => {
             instance.fatalErrorEvent.addHandler(this.errorService.fatalInNativeCode);
             instance.pwmUpdateEvent.addHandler(this.onPwmUpdate);
+
+            this.proxyService.initialize(instance);
+            this.proxyService.resumeEvent.addHandler(() => this.running && this.advanceEmulation(performance.now()));
         });
 
         const storedSession = getStoredSession();
@@ -86,63 +92,24 @@ export class EmulationService {
                     throw new Error(`invalid session ${id}`);
                 }
 
-                const dimensions = deviceDimensions(session?.device);
-
-                this.canvas.width = dimensions.width;
-                this.canvas.height = dimensions.height;
-
-                this.imageData = new ImageData(dimensions.width, dimensions.height);
-                this.imageData32 = new Uint32Array(this.imageData.data.buffer);
-
-                this.imageData32.fill(0xfffffffff);
-
-                const context = this.canvas.getContext('2d');
-                if (!context) {
-                    throw new Error('get a new browser');
-                }
-
-                this.context = context;
-
-                const [rom, memory, state] = await this.storageService.loadSession(session);
-                if (!rom) {
-                    throw new Error(`invalid ROM ${session.rom}`);
-                }
+                this.resetCanvas(session);
 
                 const cloudpilot = await this.cloudpilot;
-                let memoryLoaded = false;
 
-                cloudpilot.initializeSession(rom, session.device);
-
-                if (memory) {
-                    const emulatedMemory = cloudpilot.getMemory32();
-
-                    if (emulatedMemory.length * 4 === memory.length) {
-                        emulatedMemory.set(new Uint32Array(memory.buffer, memory.byteOffset, emulatedMemory.length));
-                        memoryLoaded = true;
-                    } else {
-                        console.error(
-                            `memory size mismatch; ${emulatedMemory.length * 4} vs. ${memory.length} - ignoring image`
-                        );
-                    }
-                }
-
-                if (memoryLoaded && state) {
-                    cloudpilot.loadState(state);
-                }
+                await this.restoreSession(session, cloudpilot);
 
                 this.powerButtonEngaged = false;
                 (await this.cloudpilot).queueButtonUp(PalmButton.power);
 
                 this.pendingPwmUpdates.flush();
-
-                this.clearCanvas();
-                setStoredSession(id);
-
+                this.proxyService.reset();
                 await this.snapshotService.initialize(session, await this.cloudpilot);
 
                 this.deviceHotsyncName = undefined;
                 this.emulationSpeed = 1;
                 this.speedAverage.reset(1);
+
+                setStoredSession(id);
             } finally {
                 await loader.dismiss();
             }
@@ -159,6 +126,9 @@ export class EmulationService {
             this.cloudpilotInstance.setClipboardIntegration(
                 this.kvsService.kvs.clipboardIntegration && this.clipboardService.isSupported()
             );
+
+            this.cloudpilotInstance.setNetworkRedirection(this.kvsService.kvs.networkRedirection);
+            if (this.kvsService.kvs.networkRedirection) this.proxyService.reset();
 
             this.clockEmulator = performance.now();
 
@@ -268,6 +238,55 @@ export class EmulationService {
         };
     }
 
+    private resetCanvas(session: Session): void {
+        const dimensions = deviceDimensions(session.device);
+
+        this.canvas.width = dimensions.width;
+        this.canvas.height = dimensions.height;
+
+        this.imageData = new ImageData(dimensions.width, dimensions.height);
+        this.imageData32 = new Uint32Array(this.imageData.data.buffer);
+
+        this.imageData32.fill(0xfffffffff);
+
+        const context = this.canvas.getContext('2d');
+        if (!context) {
+            throw new Error('get a new browser');
+        }
+
+        this.context = context;
+
+        this.clearCanvas();
+    }
+
+    private async restoreSession(session: Session, cloudpilot: Cloudpilot): Promise<void> {
+        const [rom, memory, state] = await this.storageService.loadSession(session);
+        if (!rom) {
+            throw new Error(`invalid ROM ${session.rom}`);
+        }
+
+        let memoryLoaded = false;
+
+        cloudpilot.initializeSession(rom, session.device);
+
+        if (memory) {
+            const emulatedMemory = cloudpilot.getMemory32();
+
+            if (emulatedMemory.length * 4 === memory.length) {
+                emulatedMemory.set(new Uint32Array(memory.buffer, memory.byteOffset, emulatedMemory.length));
+                memoryLoaded = true;
+            } else {
+                console.error(
+                    `memory size mismatch; ${emulatedMemory.length * 4} vs. ${memory.length} - ignoring image`
+                );
+            }
+        }
+
+        if (memoryLoaded && state) {
+            cloudpilot.loadState(state);
+        }
+    }
+
     private onSessionChange = (sessionId: number): Promise<void> =>
         this.mutex.runExclusive(async () => {
             if (sessionId !== this.emulationState.getCurrentSession()?.id) return;
@@ -370,7 +389,10 @@ export class EmulationService {
             }
 
             if (this.advanceEmulationHandle === undefined) {
-                this.advanceEmulationHandle = window.setTimeout(() => this.advanceEmulation(timestamp), 0);
+                this.advanceEmulationHandle = window.setTimeout(() => {
+                    this.advanceEmulationHandle = undefined;
+                    this.advanceEmulation(timestamp);
+                }, 0);
 
                 this.timePerFrameAverage.push(Math.max(0, timestamp - this.timestampLastFrame));
                 this.timestampLastFrame = timestamp;
@@ -388,8 +410,6 @@ export class EmulationService {
     }
 
     private advanceEmulation = (timestamp: number): void => {
-        this.advanceEmulationHandle = undefined;
-
         if (this.errorService.hasFatalError() || timestamp < this.clockEmulator) return;
 
         const wasSuspended = this.cloudpilotInstance.isSuspended();
@@ -440,6 +460,7 @@ export class EmulationService {
 
         if (isSuspended && !wasSuspended) {
             this.clipboardService.handleSuspend(this.cloudpilotInstance);
+            this.proxyService.handleSuspend();
             return;
         }
 
@@ -493,7 +514,11 @@ export class EmulationService {
             }
         }
 
-        if (timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL && this.isUiInitialized) {
+        if (
+            timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL &&
+            this.isUiInitialized &&
+            !this.cloudpilotInstance.isSuspended()
+        ) {
             this.snapshotService.triggerSnapshot();
 
             this.lastSnapshotAt = timestamp;

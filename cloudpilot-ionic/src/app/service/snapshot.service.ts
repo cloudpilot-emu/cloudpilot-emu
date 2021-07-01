@@ -46,7 +46,7 @@ export class SnapshotService {
 
     triggerSnapshot = (): Promise<void> =>
         this.ngZone.runOutsideAngular(() => {
-            if (this.sessionId < 0) return Promise.resolve();
+            if (this.sessionId < 0 || this.cloudpilot.isSuspended()) return Promise.resolve();
 
             if (this.snapshotInProgress) return this.pendingSnapshotPromise;
             if (this.errorService.hasFatalError()) return Promise.reject();

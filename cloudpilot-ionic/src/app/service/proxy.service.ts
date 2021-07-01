@@ -1,7 +1,7 @@
 import { Cloudpilot, SuspendKind, VoidPtr } from './../helper/Cloudpilot';
+import { Injectable, NgZone } from '@angular/core';
 
 import { AlertService } from './alert.service';
-import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
 import { Event as Microevent } from 'microevent.ts';
 import { normalizeProxyAddress } from '../helper/proxyAddress';
@@ -11,7 +11,7 @@ import { v4 as uuid } from 'uuid';
     providedIn: 'root',
 })
 export class ProxyService {
-    constructor(private kvsService: KvsService, private alertService: AlertService) {}
+    constructor(private kvsService: KvsService, private alertService: AlertService, private ngZone: NgZone) {}
 
     initialize(cloudpilot: Cloudpilot) {
         this.cloudpilot = cloudpilot;
@@ -56,6 +56,7 @@ export class ProxyService {
         }
 
         this.socket = new WebSocket(url);
+        this.socket.binaryType = 'arraybuffer';
 
         this.bindListeners(this.socket);
     }
@@ -72,9 +73,12 @@ export class ProxyService {
         this.socket.send(this.cloudpilot.resolveBuffer(ctx.GetRequestData(), ctx.GetRequestSize()));
     }
 
-    private disconnect(socket: WebSocket): void {
-        this.unbindListeners(socket);
-        socket.close();
+    private disconnect(socket: WebSocket | undefined): void {
+        if (socket) {
+            this.closing = true;
+            this.unbindListeners(socket);
+            socket.close();
+        }
 
         this.sessionId = '';
         this.socket = undefined;
@@ -82,29 +86,26 @@ export class ProxyService {
 
     private bindListeners(socket: WebSocket): void {
         socket.addEventListener('open', this.onSocketOpen);
-        socket.addEventListener('message', this.onSocketMessage);
         socket.addEventListener('error', this.onSocketError);
+        socket.addEventListener('close', this.onSocketClose);
+
+        this.ngZone.runOutsideAngular(() => socket.addEventListener('message', this.onSocketMessage));
     }
 
     private unbindListeners(socket: WebSocket): void {
-        socket.addEventListener('open', this.onSocketOpen);
-        socket.addEventListener('message', this.onSocketMessage);
-        socket.addEventListener('error', this.onSocketError);
+        socket.removeEventListener('message', this.onSocketMessage);
+        socket.removeEventListener('open', this.onSocketOpen);
+        socket.removeEventListener('error', this.onSocketError);
+        socket.removeEventListener('close', this.onSocketClose);
     }
 
-    private cancelConnectioon(): void {
-        this.disconnect(this.socket!);
-        this.alertService.errorMessage('Connection to proxy closed unexpectedly due to an error.');
-
+    private cancelSuspend(): void {
         if (!this.cloudpilot.isSuspended()) return;
 
         switch (this.cloudpilot.getSuspendKind()) {
             case SuspendKind.networkConnect:
-                this.cloudpilot.getSuspendContextNetworkConnect().Cancel();
-                break;
-
             case SuspendKind.networkRpc:
-                this.cloudpilot.getSuspendContextNetworkRpc().Cancel();
+                this.cloudpilot.cancelSuspend();
                 break;
 
             default:
@@ -116,12 +117,15 @@ export class ProxyService {
         if (!this.cloudpilot.isSuspended() || this.cloudpilot.getSuspendKind() !== SuspendKind.networkConnect) {
             console.error('ERROR: socket connected, but emulation is not waiting for connect');
 
+            this.disconnect(this.socket);
+
             return;
         }
 
         this.sessionId = uuid();
-
         this.cloudpilot.getSuspendContextNetworkConnect().Resume(this.sessionId);
+
+        this.closing = false;
 
         this.resumeEvent.dispatch();
     };
@@ -133,27 +137,44 @@ export class ProxyService {
             return;
         }
 
-        if (!ArrayBuffer.isView(evt.data)) {
+        if (!(evt.data instanceof ArrayBuffer)) {
             console.error('ERROR: socket received a text frame');
+            this.disconnect(this.socket);
+            this.alertService.errorMessage('Connection to proxy closed unexpectedly due to an error.');
 
-            this.disconnect(this.socket!);
+            this.cancelSuspend();
 
             return;
         }
 
-        const ptr: VoidPtr = this.cloudpilot.copyBuffer(evt.data as Uint8Array);
+        const ptr: VoidPtr = this.cloudpilot.copyBuffer(new Uint8Array(evt.data));
 
         this.cloudpilot.getSuspendContextNetworkRpc().ReceiveResponse(ptr, evt.data.byteLength);
-
         this.cloudpilot.freeBuffer(ptr);
 
         this.resumeEvent.dispatch();
     };
 
     private onSocketError = (evt: Event): void => {
-        this.cancelConnectioon();
+        if (this.cloudpilot.isSuspended() && this.cloudpilot.getSuspendKind() === SuspendKind.networkConnect) {
+            this.alertService.errorMessage('Failed to connect to proxy.');
+        } else {
+            this.alertService.errorMessage('Connection to proxy closed unexpectedly due to an error.');
+        }
+
+        this.disconnect(this.socket);
+        this.cancelSuspend();
 
         console.error('ERROR: socket error', evt);
+    };
+
+    private onSocketClose = (): void => {
+        if (!this.closing) {
+            this.alertService.errorMessage('Connection to proxy closed unexpectedly');
+        }
+
+        this.cancelSuspend();
+        this.closing = false;
     };
 
     private onProxyDisconnect = (sessionId: string): void => {
@@ -167,4 +188,5 @@ export class ProxyService {
     private socket: WebSocket | undefined;
     private sessionId = '';
     private cloudpilot!: Cloudpilot;
+    private closing = false;
 }
