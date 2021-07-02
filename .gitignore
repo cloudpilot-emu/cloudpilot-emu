@@ -29,3 +29,4 @@ Makefile.local
 *.zip
 *.prc
 *.pdb
+*.pem

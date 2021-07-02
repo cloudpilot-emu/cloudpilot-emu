@@ -2,6 +2,7 @@ import argparse
 import asyncio
 import logging
 import signal
+import ssl
 
 from logger import logger
 from server import Server
@@ -17,14 +18,27 @@ parser.add_argument('--bind', '-b', default="0.0.0.0",
 parser.add_argument("--log", help="log level [default: info]", default="info", dest="log",
                     choices=["error", "warning", "info", "debug"])
 
+parser.add_argument("--cert", help="enable TLS encryption using the specified certificate",
+                    default=None)
+
 options = parser.parse_args()
 
 logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s")
 logger.setLevel(options.log.upper())
 
+sslCtx = None
+if options.cert != None:
+    try:
+        sslCtx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        sslCtx.load_cert_chain(options.cert)
+    except Exception as ex:
+        print(f'unable to load certificate: ${ex}')
+        exit(1)
+
 server = Server()
 eventLoop = asyncio.get_event_loop()
-task = eventLoop.create_task(server.start(options.host, options.port))
+task = eventLoop.create_task(server.start(
+    options.host, options.port, sslCtx))
 tasks = [task]
 
 try:

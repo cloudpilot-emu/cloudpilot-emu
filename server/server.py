@@ -1,5 +1,6 @@
 
 import asyncio
+import ssl
 
 import websockets
 
@@ -13,9 +14,10 @@ class Server:
         self.terminating = False
         self.server = None
 
-    async def start(self, host, port):
-        self.server = await websockets.serve(self._handle, host=host, port=port, close_timeout=1)
-        print(f'server listening on {host}:{port}\n')
+    async def start(self, host, port, sslCtx=None):
+        self.server = await websockets.serve(self._handle, host=host, port=port, close_timeout=1, ssl=sslCtx)
+        print(
+            f'server listening on {host}:{port} {"using TLS" if sslCtx != None else ""}\n')
 
         await self.server.wait_closed()
 
