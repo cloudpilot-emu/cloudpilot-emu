@@ -12,6 +12,7 @@ import { FileService } from 'src/app/service/file.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { InstallationService } from './../../service/installation.service';
 import { KvsService } from './../../service/kvs.service';
+import { ProxyService } from './../../service/proxy.service';
 import { SnapshotService } from './../../service/snapshot.service';
 import { SnapshotStatistics } from './../../model/SnapshotStatistics';
 import { StorageService } from './../../service/storage.service';
@@ -36,7 +37,8 @@ export class EmulationPage implements AfterViewInit {
         private alertService: AlertService,
         private fileService: FileService,
         private snapshotService: SnapshotService,
-        private installlationService: InstallationService
+        private installlationService: InstallationService,
+        public proxyService: ProxyService
     ) {}
 
     ngAfterViewInit(): void {}
@@ -120,6 +122,10 @@ export class EmulationPage implements AfterViewInit {
                 Help: () => this.showHelp(),
             }
         );
+    }
+
+    async showProxyConnectedHint(): Promise<void> {
+        await this.alertService.message('Proxy connected', 'Network proxy connected.');
     }
 
     get installFileDisabled(): boolean {

@@ -7,6 +7,7 @@ import { Event as Microevent } from 'microevent.ts';
 import { normalizeProxyAddress } from '../helper/proxyAddress';
 import { v4 as uuid } from 'uuid';
 
+const CONNECT_TIMEOUT = 5000;
 @Injectable({
     providedIn: 'root',
 })
@@ -42,6 +43,10 @@ export class ProxyService {
         }
     }
 
+    isConnected(): boolean {
+        return !!this.socket;
+    }
+
     private async handleConnect(): Promise<void> {
         if (this.socket) this.disconnect(this.socket);
 
@@ -59,6 +64,8 @@ export class ProxyService {
         this.socket.binaryType = 'arraybuffer';
 
         this.bindListeners(this.socket);
+
+        this.ngZone.run(() => (this.connectTimeoutHandle = setTimeout(this.onSocketError, CONNECT_TIMEOUT)));
     }
 
     private handleRpc(): void {
@@ -75,7 +82,6 @@ export class ProxyService {
 
     private disconnect(socket: WebSocket | undefined): void {
         if (socket) {
-            this.closing = true;
             this.unbindListeners(socket);
             socket.close();
         }
@@ -85,14 +91,20 @@ export class ProxyService {
     }
 
     private bindListeners(socket: WebSocket): void {
-        socket.addEventListener('open', this.onSocketOpen);
-        socket.addEventListener('error', this.onSocketError);
-        socket.addEventListener('close', this.onSocketClose);
+        this.ngZone.run(() => {
+            socket.addEventListener('open', this.onSocketOpen);
+            socket.addEventListener('error', this.onSocketError);
+            socket.addEventListener('close', this.onSocketClose);
+        });
 
         this.ngZone.runOutsideAngular(() => socket.addEventListener('message', this.onSocketMessage));
     }
 
-    private unbindListeners(socket: WebSocket): void {
+    private unbindListeners(socket: WebSocket | undefined): void {
+        if (!socket) {
+            return;
+        }
+
         socket.removeEventListener('message', this.onSocketMessage);
         socket.removeEventListener('open', this.onSocketOpen);
         socket.removeEventListener('error', this.onSocketError);
@@ -114,6 +126,8 @@ export class ProxyService {
     }
 
     private onSocketOpen = (): void => {
+        this.cancelConnectTimeout();
+
         if (!this.cloudpilot.isSuspended() || this.cloudpilot.getSuspendKind() !== SuspendKind.networkConnect) {
             console.error('ERROR: socket connected, but emulation is not waiting for connect');
 
@@ -124,8 +138,6 @@ export class ProxyService {
 
         this.sessionId = uuid();
         this.cloudpilot.getSuspendContextNetworkConnect().Resume(this.sessionId);
-
-        this.closing = false;
 
         this.resumeEvent.dispatch();
     };
@@ -155,7 +167,9 @@ export class ProxyService {
         this.resumeEvent.dispatch();
     };
 
-    private onSocketError = (evt: Event): void => {
+    private onSocketError = (evt: Event | undefined): void => {
+        this.cancelConnectTimeout();
+
         if (this.cloudpilot.isSuspended() && this.cloudpilot.getSuspendKind() === SuspendKind.networkConnect) {
             this.alertService.errorMessage('Failed to connect to proxy.');
         } else {
@@ -169,24 +183,34 @@ export class ProxyService {
     };
 
     private onSocketClose = (): void => {
-        if (!this.closing) {
-            this.alertService.errorMessage('Connection to proxy closed unexpectedly');
-        }
+        this.cancelConnectTimeout();
 
+        this.alertService.errorMessage('Connection to proxy closed unexpectedly');
+
+        this.unbindListeners(this.socket);
         this.cancelSuspend();
-        this.closing = false;
+
+        this.sessionId = '';
+        this.socket = undefined;
     };
 
     private onProxyDisconnect = (sessionId: string): void => {
         if (sessionId !== this.sessionId || !this.socket) return;
 
-        this.disconnect(this.socket);
+        this.ngZone.run(() => this.disconnect(this.socket));
     };
+
+    private cancelConnectTimeout(): void {
+        if (this.connectTimeoutHandle !== undefined) clearTimeout(this.connectTimeoutHandle);
+
+        this.connectTimeoutHandle = undefined;
+    }
 
     public resumeEvent = new Microevent<void>();
 
     private socket: WebSocket | undefined;
     private sessionId = '';
     private cloudpilot!: Cloudpilot;
-    private closing = false;
+
+    private connectTimeoutHandle: number | undefined;
 }
