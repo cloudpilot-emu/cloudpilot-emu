@@ -10,8 +10,8 @@ from server import Server
 
 parser = argparse.ArgumentParser(description="Socket proxy for Cloudpilot")
 
-parser.add_argument('--port', '-p', default="8666",
-                    type=int, help="server port [default: 8666]")
+parser.add_argument('--port', '-p', default=None,
+                    type=int, help="server port [default: 8666 / 8667 (TLS)]")
 
 parser.add_argument('--bind', '-b', default="0.0.0.0",
                     help="bind server to host [default: 0.0.0.0]", dest="host")
@@ -38,8 +38,12 @@ if options.cert != None:
 
 server = Server()
 eventLoop = asyncio.get_event_loop()
+
+defaultPort = 8666 if sslCtx == None else 8667
+port = defaultPort if options.port == None else options.port
+
 task = eventLoop.create_task(server.start(
-    options.host, options.port, sslCtx))
+    options.host, port, sslCtx))
 tasks = [task]
 
 print(f'running on {platform.python_implementation()} {platform.python_version()}')
