@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import logging
+import platform
 import signal
 import ssl
 
@@ -40,6 +41,8 @@ eventLoop = asyncio.get_event_loop()
 task = eventLoop.create_task(server.start(
     options.host, options.port, sslCtx))
 tasks = [task]
+
+print(f'running on {platform.python_implementation()} {platform.python_version()}')
 
 try:
     for sig in (signal.SIGINT, signal.SIGTERM):

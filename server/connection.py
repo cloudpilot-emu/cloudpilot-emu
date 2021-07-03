@@ -10,6 +10,7 @@ import net_errors as err
 import proto.networking_pb2 as networking
 from logger import debug, error, info, logger, warning
 from socket_context import MAX_TIMEOUT, SocketContext
+from util import runInThread
 
 MAX_HANDLE = 31
 
@@ -254,7 +255,7 @@ class Connection:
 
             handle = self._getFreeHandle()
 
-            sock = await asyncio.to_thread(lambda: socket.socket(
+            sock = await runInThread(lambda: socket.socket(
                 socket.AF_INET, sockType, sockProtocol))
 
             self._sockets[handle] = SocketContext(
@@ -281,7 +282,7 @@ class Connection:
 
             socketCtx.setTimeoutMsec(request.timeout)
 
-            await asyncio.to_thread(lambda: socketCtx.socket.bind(
+            await runInThread(lambda: socketCtx.socket.bind(
                 deserializeAddress(request.address)))
             response.err = 0
 
@@ -308,11 +309,11 @@ class Connection:
             socketCtx.setTimeoutMsec(request.timeout)
 
             if request.requestAddressLocal:
-                serializeAddress(await asyncio.to_thread(lambda: sock.getsockname()), response.addressLocal)
+                serializeAddress(await runInThread(lambda: sock.getsockname()), response.addressLocal)
                 socketCtx.updateTimeout()
 
             if request.requestAddressRemote:
-                serializeAddress(await asyncio.to_thread(lambda: sock.getpeername()), response.addressRemote)
+                serializeAddress(await runInThread(lambda: sock.getpeername()), response.addressRemote)
 
             response.err = 0
 
@@ -351,13 +352,13 @@ class Connection:
                 address = deserializeAddress(request.address) if request.HasField(
                     "address") else (ipFromIpPacket(request.data), 1)
 
-                response.bytesSent = await asyncio.to_thread(lambda: sock.sendto(data, flags, address) + len(request.data) - len(data))
+                response.bytesSent = await runInThread(lambda: sock.sendto(data, flags, address) + len(request.data) - len(data))
 
             elif request.HasField("address"):
-                response.bytesSent = await asyncio.to_thread(lambda: sock.sendto(request.data, flags, deserializeAddress(request.address)))
+                response.bytesSent = await runInThread(lambda: sock.sendto(request.data, flags, deserializeAddress(request.address)))
 
             else:
-                response.bytesSent = await asyncio.to_thread(lambda: sock.send(request.data, flags))
+                response.bytesSent = await runInThread(lambda: sock.send(request.data, flags))
 
             response.err = 0
 
@@ -385,7 +386,7 @@ class Connection:
             flags = translateFlags(request.flags)
 
             socketCtx.setTimeoutMsec(request.timeout)
-            data, address = await asyncio.to_thread(lambda: socketCtx.socket.recvfrom(request.maxLen, flags))
+            data, address = await runInThread(lambda: socketCtx.socket.recvfrom(request.maxLen, flags))
 
             if address != None and request.addressRequested:
                 serializeAddress(address, response.address)
@@ -439,7 +440,7 @@ class Connection:
         response.name = ""
 
         try:
-            hostname, aliases, addresses = await asyncio.to_thread(lambda: socket.gethostbyname_ex(
+            hostname, aliases, addresses = await runInThread(lambda: socket.gethostbyname_ex(
                 request.name))
 
             response.name = hostname
@@ -469,7 +470,7 @@ class Connection:
         response.port = 0
 
         try:
-            response.port = await asyncio.to_thread(lambda: socket.getservbyname(
+            response.port = await runInThread(lambda: socket.getservbyname(
                 request.name, request.protocol))
 
             response.err = 0
@@ -493,7 +494,7 @@ class Connection:
 
             socketContext.setTimeoutMsec(request.timeout)
 
-            await asyncio.to_thread(lambda: socketContext.socket.connect(deserializeAddress(request.address)))
+            await runInThread(lambda: socketContext.socket.connect(deserializeAddress(request.address)))
 
             response.err = 0
 
@@ -521,7 +522,7 @@ class Connection:
             timeout = min(MAX_TIMEOUT, request.timeout /
                           1000 if request.timeout >= 0 else MAX_TIMEOUT)
 
-            rlist, wlist, xlist = await asyncio.to_thread(
+            rlist, wlist, xlist = await runInThread(
                 lambda: select.select(
                     self._fdSetToSockets(request.readFDs, request.width),
                     self._fdSetToSockets(request.writeFDs, request.width),

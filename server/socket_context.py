@@ -3,6 +3,8 @@ import errno
 import socket
 import time
 
+from util import runInThread
+
 MAX_TIMEOUT = 10
 
 
@@ -33,10 +35,10 @@ class SocketContext:
         self.updateTimeout()
 
         try:
-            await asyncio.to_thread(lambda: self.socket.shutdown(socket.SHUT_RDWR))
+            await runInThread(lambda: self.socket.shutdown(socket.SHUT_RDWR))
         except OSError as ex:
             if ex.errno != errno.ENOTCONN:
                 raise ex
 
         self.updateTimeout()
-        await asyncio.to_thread(lambda: self.socket.close())
+        await runInThread(lambda: self.socket.close())
