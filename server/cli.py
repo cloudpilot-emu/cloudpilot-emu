@@ -5,6 +5,7 @@ import platform
 import signal
 import ssl
 
+from certificate import generateCertificate
 from logger import logger
 from server import Server
 
@@ -22,7 +23,14 @@ parser.add_argument("--log", help="log level [default: info]", default="info", d
 parser.add_argument("--cert", help="enable TLS encryption using the specified certificate",
                     default=None)
 
+parser.add_argument("--generate-cert", help="generate certificate and exit",
+    dest="generateCert", default=False, action="store_true")
+
 options = parser.parse_args()
+
+if options.generateCert:
+    generateCertificate()
+    exit(0)
 
 logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s")
 logger.setLevel(options.log.upper())
