@@ -7,12 +7,6 @@ def generateCertificate():
     key = crypto.PKey()
     key.generate_key(crypto.TYPE_RSA, 4096)
 
-    req = crypto.X509Req()
-    req.get_subject().CN = "cloudpilot-server"
-
-    req.set_pubkey(key)
-    req.sign(key, "sha256")
-
     cert = crypto.X509()
 
     cert.get_subject().CN = "cloudpilot-server"
