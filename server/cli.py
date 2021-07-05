@@ -26,10 +26,13 @@ parser.add_argument("--cert", help="enable TLS encryption using the specified ce
 parser.add_argument("--generate-cert", help="generate certificate and exit",
     dest="generateCert", default=False, action="store_true")
 
+parser.add_argument("--overwrite", help="overwrite existing certificate files, --generate-cert only",
+    default=False, action="store_true")
+
 options = parser.parse_args()
 
 if options.generateCert:
-    generateCertificate()
+    generateCertificate(options.overwrite)
     exit(0)
 
 logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s")
