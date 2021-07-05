@@ -73,6 +73,7 @@ def generateCertificate(overwrite):
     key.generate_key(crypto.TYPE_RSA, 4096)
 
     cert = crypto.X509()
+    cert.set_version(2)
     cert.get_subject().CN = cn
 
     basicConstraints = crypto.X509Extension(b"basicConstraints", True, b"CA:TRUE")
