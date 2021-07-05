@@ -76,7 +76,7 @@ def generateCertificate(overwrite):
     cert.set_version(2)
     cert.get_subject().CN = cn
 
-    basicConstraints = crypto.X509Extension(b"basicConstraints", True, b"CA:TRUE")
+    basicConstraints = crypto.X509Extension(b"basicConstraints", True, b"CA:TRUE,pathlen:0")
     subjectAltName = crypto.X509Extension(b"subjectAltName", False,
         bytes(",".join([f'IP:{ip}' for ip in ips] + [f'DNS:{name}' for name in names]), "utf8")
     )
