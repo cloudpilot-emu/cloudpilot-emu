@@ -7,9 +7,13 @@ import sys
 from OpenSSL import crypto
 
 CN_DEFAULT = "cloudpilot-server"
+VALIDITY_YEARS = 1
+BASIC_CONSTRAINTS = b'CA:TRUE,pathlen:0'
+BASIC_KEY_USAGE = b'serverAuth'
+EXTENDED_KEY_USAGE = b'keyEncipherment,keyAgreement,cRLSign'
+
 REGEX_IP = re.compile('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 REGEX_NAME = re.compile('^[a-zA-Z\d\.\-]+$')
-VALIDITY_YEARS = 2
 
 def _deleteIfRequired(file, overwrite):
     if not os.path.exists(file):
@@ -29,10 +33,7 @@ def _deleteIfRequired(file, overwrite):
         print(f'ERROR: unable to delete {file}: {ex}')
         exit(1)
 
-def _inputNames():
-    print('please enter a comma separated list of IPs, hostnames or domains for which this cert will be valid:')
-    namestring = input()
-
+def _decomposeNames(namestring):
     parts = [name.strip() for name in namestring.split(",")]
     ips = []
     names = []
@@ -50,22 +51,39 @@ def _inputNames():
 
     return (ips, names)
 
-def generateCertificate(overwrite):
-    cn = input(f'certificate name (enter for {CN_DEFAULT}): ')
-    cn = cn if cn else CN_DEFAULT
-    print()
+def _inputNames():
+    print('please enter a comma separated list of IPs, hostnames or domains for which this cert will be valid:')
+    return _decomposeNames(input())
+
+def generateCertificate(options):
+    cn = None
+    print(options)
+
+    if options.certName == None:
+        cn = input(f'certificate name (enter for {CN_DEFAULT}): ')
+        cn = cn if cn else CN_DEFAULT
+        print()
+    else:
+        cn = options.certName
 
     filePem = cn + ".pem"
     fileCer = cn + ".cer"
 
-    _deleteIfRequired(filePem, overwrite)
-    _deleteIfRequired(fileCer, overwrite)
+    _deleteIfRequired(filePem, options.overwriteCert)
+    _deleteIfRequired(fileCer, options.overwriteCert)
 
     ips = None
     names = None
-    while ips == None or names == None:
-        ips, names = _inputNames()
-        print()
+
+    if options.certNames == None:
+        while ips == None or names == None:
+            ips, names = _inputNames()
+            print()
+    else:
+        ips, names = _decomposeNames(options.certNames)
+
+        if ips == None or names == None:
+            exit(1)
 
     print("generating key and certificate...")
 
@@ -76,11 +94,14 @@ def generateCertificate(overwrite):
     cert.set_version(2)
     cert.get_subject().CN = cn
 
-    basicConstraints = crypto.X509Extension(b"basicConstraints", True, b"CA:TRUE,pathlen:0")
+    basicConstraints = crypto.X509Extension(b"basicConstraints", True, BASIC_CONSTRAINTS)
     subjectAltName = crypto.X509Extension(b"subjectAltName", False,
         bytes(",".join([f'IP:{ip}' for ip in ips] + [f'DNS:{name}' for name in names]), "utf8")
     )
-    cert.add_extensions((basicConstraints, subjectAltName))
+    extendedKeyUsage = crypto.X509Extension(b'extendedKeyUsage', True, BASIC_KEY_USAGE)
+    keyUsage = crypto.X509Extension(b'keyUsage', True, EXTENDED_KEY_USAGE)
+
+    cert.add_extensions((basicConstraints, keyUsage, extendedKeyUsage, subjectAltName))
 
     random.seed()
     cert.set_serial_number(random.randint(0, 0xffff))

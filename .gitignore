@@ -31,3 +31,4 @@ Makefile.local
 *.pdb
 *.pem
 *.cer
+*.p12
