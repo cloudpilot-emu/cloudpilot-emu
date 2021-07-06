@@ -98,3 +98,6 @@ if options.subcommand == "serve":
 
 elif options.subcommand == "generate-cert":
     generateCertificate(options)
+
+else:
+    parser.print_help()
