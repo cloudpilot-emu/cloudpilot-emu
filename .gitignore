@@ -32,3 +32,4 @@ Makefile.local
 *.pem
 *.cer
 *.p12
+__pycache__

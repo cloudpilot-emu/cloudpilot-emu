@@ -57,30 +57,29 @@ def _inputNames():
 
 def generateCertificate(options):
     cn = None
-    print(options)
 
-    if options.certName == None:
+    if options.name == None:
         cn = input(f'certificate name (enter for {CN_DEFAULT}): ')
         cn = cn if cn else CN_DEFAULT
         print()
     else:
-        cn = options.certName
+        cn = options.name
 
     filePem = cn + ".pem"
     fileCer = cn + ".cer"
 
-    _deleteIfRequired(filePem, options.overwriteCert)
-    _deleteIfRequired(fileCer, options.overwriteCert)
+    _deleteIfRequired(filePem, options.overwrite)
+    _deleteIfRequired(fileCer, options.overwrite)
 
     ips = None
     names = None
 
-    if options.certNames == None:
+    if options.names == None:
         while ips == None or names == None:
             ips, names = _inputNames()
             print()
     else:
-        ips, names = _decomposeNames(options.certNames)
+        ips, names = _decomposeNames(options.names)
 
         if ips == None or names == None:
             exit(1)
