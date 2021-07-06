@@ -9,6 +9,8 @@ protobuf = "*"
 hexdump = "*"
 pyopenssl = "*"
 pyinstaller = "*"
+pywin32-ctypes = "*"
+pyreadline = "*"
 
 [dev-packages]
 
