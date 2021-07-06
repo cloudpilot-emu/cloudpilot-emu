@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e4045125d6ead23028385e93b012e26858fbd36c79f4085d1a15ce79bdcb37d1"
+            "sha256": "50c12be7d510c95fde8dfffee51d8b65a53c293df9e2b739254355fcda8ba3e4"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,6 +16,13 @@
         ]
     },
     "default": {
+        "altgraph": {
+            "hashes": [
+                "sha256:1f05a47122542f97028caf78775a095fbe6a2699b5089de8477eb583167d69aa",
+                "sha256:c623e5f3408ca61d4016f23a681b9adb100802ca3e3da5e718915a9e4052cebe"
+            ],
+            "version": "==0.17"
+        },
         "cffi": {
             "hashes": [
                 "sha256:005a36f41773e148deac64b08f233873a4d0c18b053d37da83f6af4d9087b813",
@@ -95,6 +102,14 @@
             "index": "pypi",
             "version": "==3.3"
         },
+        "macholib": {
+            "hashes": [
+                "sha256:0c436bc847e7b1d9bda0560351bf76d7caf930fb585a828d13608839ef42c432",
+                "sha256:c500f02867515e6c60a27875b408920d18332ddf96b4035ef03beddd782d4281"
+            ],
+            "markers": "sys_platform == 'darwin'",
+            "version": "==1.14"
+        },
         "protobuf": {
             "hashes": [
                 "sha256:13ee7be3c2d9a5d2b42a1030976f760f28755fcf5863c55b1460fd205e6cd637",
@@ -135,6 +150,20 @@
             ],
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==2.20"
+        },
+        "pyinstaller": {
+            "hashes": [
+                "sha256:5ecf8bbc230d7298a796e52bb745b95eee12878d141f1645612c99246ecd23f2"
+            ],
+            "index": "pypi",
+            "version": "==4.3"
+        },
+        "pyinstaller-hooks-contrib": {
+            "hashes": [
+                "sha256:57964f93eb69255c49159ffdf052aae893feed223b0f69773dfd010ca6c569d9",
+                "sha256:7f5d0689b30da3092149fc536a835a94045ac8c9f0e6dfb23ac171890f5ea8f2"
+            ],
+            "version": "==2021.2"
         },
         "pyopenssl": {
             "hashes": [

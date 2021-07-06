@@ -8,6 +8,7 @@ websockets = "*"
 protobuf = "*"
 hexdump = "*"
 pyopenssl = "*"
+pyinstaller = "*"
 
 [dev-packages]
 
@@ -16,3 +17,4 @@ python_version = "3"
 
 [scripts]
 cli = "python cli.py"
+build = "pyinstaller -n cloudpilot-server --collect-submodules websockets.legacy --onefile cli.py"
