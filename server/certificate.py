@@ -9,7 +9,7 @@ from OpenSSL import crypto
 CN_DEFAULT = "cloudpilot-server"
 VALIDITY_YEARS = 1
 BASIC_CONSTRAINTS = b'CA:TRUE,pathlen:0'
-BASIC_KEY_USAGE = b'serverAuth'
+KEY_USAGE = b'serverAuth'
 EXTENDED_KEY_USAGE = b'keyEncipherment,keyAgreement,cRLSign,digitalSignature'
 
 REGEX_IP = re.compile('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
@@ -97,7 +97,7 @@ def generateCertificate(options):
     subjectAltName = crypto.X509Extension(b"subjectAltName", False,
         bytes(",".join([f'IP:{ip}' for ip in ips] + [f'DNS:{name}' for name in names]), "utf8")
     )
-    extendedKeyUsage = crypto.X509Extension(b'extendedKeyUsage', True, BASIC_KEY_USAGE)
+    extendedKeyUsage = crypto.X509Extension(b'extendedKeyUsage', True, KEY_USAGE)
     keyUsage = crypto.X509Extension(b'keyUsage', True, EXTENDED_KEY_USAGE)
 
     cert.add_extensions((basicConstraints, keyUsage, extendedKeyUsage, subjectAltName))
@@ -136,8 +136,8 @@ how to install and trust "{fileCer}" on your devices running Cloudpilot.
 
 SECURITY WARNING:
 ===============================================================================
-An attacker that gets hold of "{filePem}" could abuse it in
-order to mount a man-in-the-middle attack on any SSL connection that originates
+An attacker that gets hold of "{filePem}" could abuse it and attempt
+to mount a man-in-the-middle attack on SSL connections that originate
 from devices that have "{fileCer}" installed and trusted.
 
 "{filePem}" is sensitive information; DO NOT DISTRIBUTE IT.
