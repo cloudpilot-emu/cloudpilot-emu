@@ -2,9 +2,10 @@ import asyncio
 import logging
 import select
 import socket
+from asyncio.exceptions import CancelledError
 
 import hexdump
-import websockets
+from sanic.websocket import ConnectionClosed
 
 import net_errors as err
 import proto.networking_pb2 as networking
@@ -173,10 +174,13 @@ class Connection:
             while True:
                 await self._handleMessage(await ws.recv())
 
-        except (websockets.exceptions.ConnectionClosedError, websockets.exceptions.ConnectionClosedOK):
+        except (ConnectionClosed, CancelledError) as ex:
             info(f'connection {self.connectionIndex} closed')
 
-        await self._closeAllSockets()
+            raise ex
+
+        finally:
+            await self._closeAllSockets()
 
     async def _handleMessage(self, message):
         request = networking.MsgRequest()

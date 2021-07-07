@@ -1,46 +1,26 @@
 
-import asyncio
+from asyncio.exceptions import CancelledError
 
-import websockets
+from sanic import Sanic
 
 from connection import Connection
 from logger import logger
 
 
-class Server:
-    def __init__(self):
-        self.connections = set()
-        self.terminating = False
-        self.server = None
+def start(host, port, ssl, loglevel):
+    app = Sanic(name="Cloudpilot server")
+    connections = set()
 
-    async def start(self, host, port, sslCtx=None):
-        self.server = await websockets.serve(self._handle, host=host, port=port, close_timeout=1, ssl=sslCtx)
-        print(
-            f'server listening on {host}:{port}{" using SSL" if sslCtx != None else ""}\n')
+    logger.setLevel(loglevel.upper())
 
-        await self.server.wait_closed()
-
-        print("\nserver stopped")
-
-    def stop(self):
-        if self.server == None:
-            return
-
-        if not self.terminating:
-            self.terminating = True
-
-            self.server.close()
-
-            for connection in self.connections:
-                asyncio.create_task(connection.close())
-
-        logger.info(
-            f'waiting for {len(self.connections)} connections to close')
-
-    async def _handle(self, socket, path):
-        self.connections.add(socket)
+    @app.websocket("/")
+    async def handleProxyConnection(request, socket):
+        connections.add(socket)
 
         connection = Connection()
+
         await connection.start(socket)
 
-        self.connections.remove(socket)
+        connections.remove(socket)
+
+    app.run(host=host, port=port, ssl=ssl)

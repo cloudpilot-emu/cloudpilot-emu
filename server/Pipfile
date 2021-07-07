@@ -4,13 +4,13 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-websockets = "*"
 protobuf = "*"
 hexdump = "*"
 pyopenssl = "*"
 pyinstaller = "*"
 pywin32-ctypes = "*"
 pyreadline = "*"
+sanic = "*"
 
 [dev-packages]
 

@@ -1,21 +1,16 @@
 #!/usr/bin/env python3
 
 import argparse
-import asyncio
-import logging
-import platform
-import signal
 import ssl
 
+import sanic.response as response
+
+import server
 from certificate import generateCertificate
 from logger import logger
-from server import Server
 
 
 def launchServer(options):
-    logging.basicConfig(format="%(asctime)s %(levelname)s: %(message)s")
-    logger.setLevel(options.log.upper())
-
     sslCtx = None
     if options.cert != None:
         try:
@@ -33,34 +28,10 @@ over HTTPS). Generate a certificate and specifiy it via --cert in order to run
 with SSL enabled. Please check the documentation for more details.
 """)
 
-    server = Server()
-    eventLoop = asyncio.get_event_loop()
-
     defaultPort = 8666 if sslCtx == None else 8667
     port = defaultPort if options.port == None else options.port
 
-    task = eventLoop.create_task(server.start(
-        options.host, port, sslCtx))
-    tasks = [task]
-
-    print(f'running on {platform.python_implementation()} {platform.python_version()}')
-
-    try:
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            eventLoop.add_signal_handler(sig, server.stop)
-    except NotImplementedError:
-        pass
-
-    while not task.done():
-        try:
-            eventLoop.run_until_complete(asyncio.gather(*tasks))
-        except KeyboardInterrupt:
-            async def stop():
-                server.stop()
-
-            tasks = [task for task in tasks if not task.done()]
-            tasks.append(eventLoop.create_task(stop()))
-
+    server.start(options.host, port, sslCtx, options.log)
 
 parser = argparse.ArgumentParser(description="Proxy server for Cloudpilot")
 

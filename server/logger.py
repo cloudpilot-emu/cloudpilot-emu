@@ -1,8 +1,8 @@
-import logging
+import sanic.log
 
-logger = logging.getLogger('cloudpilot')
+logger = sanic.log.logger.getChild("cloudpilot")
 
-error = logger.error
-warning = logger.warning
-info = logger.info
 debug = logger.debug
+info = logger.info
+warning = logger.warning
+error = logger.error
