@@ -165,7 +165,7 @@ class Connection:
 
         Connection.nextConnectionIndex += 1
 
-    async def start(self, ws):
+    async def handle(self, ws):
         info(f'starting proxy connection {self.connectionIndex}')
 
         self._ws = ws

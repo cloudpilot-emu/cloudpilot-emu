@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f2635211ccf9edca4f58607c600a8a4227d56be8ab2f46ccfa5cc584a6401a72"
+            "sha256": "cd35f792380ea3847148750da2d039b4830dd59b7e4b33ca131f0dce289901c7"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -262,12 +262,12 @@
             "version": "==0.2.0"
         },
         "sanic": {
+            "git": "https://github.com/DirtyHairy/sanic.git/",
             "hashes": [
                 "sha256:bc79831325b149a9eade5f9913d78da6a7f3682b98f2700117d1dafe530cb4fe",
                 "sha256:eeae886e94f8ee9cee61bf7e3a9c1974cb9cfd666002d2a0a4b82e007aa4f2dd"
             ],
-            "index": "pypi",
-            "version": "==21.6.0"
+            "ref": "ceb90c93102f5a812d13101993f6f0449bf5674d"
         },
         "sanic-routing": {
             "hashes": [
@@ -308,7 +308,7 @@
                 "sha256:f8aded54c2bc554ce20b397f72101737dd61ee7b81c771684a7dd7805e6cca0c",
                 "sha256:fc51e545d65689c398161f07fd405104956ec27f22453de85898fa088b2cd4bb"
             ],
-            "markers": "sys_platform != 'win32' and implementation_name == 'cpython'",
+            "markers": "python_version >= '3.6'",
             "version": "==4.0.2"
         },
         "uvloop": {
@@ -324,7 +324,7 @@
                 "sha256:b45218c99795803fb8bdbc9435ff7f54e3a591b44cd4c121b02fa83affb61c7c",
                 "sha256:e5e5f855c9bf483ee6cd1eb9a179b740de80cb0ae2988e3fa22309b78e2ea0e7"
             ],
-            "markers": "sys_platform != 'win32' and implementation_name == 'cpython'",
+            "markers": "python_version >= '3.7'",
             "version": "==0.15.2"
         },
         "websockets": {
