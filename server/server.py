@@ -1,9 +1,11 @@
 
+import asyncio
 from asyncio.exceptions import CancelledError
 
 import sanic.response as response
 from sanic import Sanic
 from sanic.exceptions import InvalidUsage, NotFound
+from sanic.log import logger as sanicLogger
 
 from connection import Connection
 from logger import logger
