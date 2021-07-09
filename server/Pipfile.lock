@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "752b4b8aa0c73bc4989869b8deb862294d81d0b3b47a50a54d46fbb07c5fafcf"
+            "sha256": "4212eabe8a1a661ff7bb3be09a0bf034ea9fc95cc2ddda967fd6aa746c0f589b"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -104,9 +104,7 @@
             "version": "==3.4.7"
         },
         "hexdump": {
-            "hashes": [
-                "sha256:d781a43b0c16ace3f9366aade73e8ad3a7bd5137d58f0b45ab2d3f54876f20db"
-            ],
+            "hashes": ["sha256:d781a43b0c16ace3f9366aade73e8ad3a7bd5137d58f0b45ab2d3f54876f20db"],
             "index": "pypi",
             "version": "==3.3"
         },
@@ -223,9 +221,7 @@
             "version": "==2.20"
         },
         "pyinstaller": {
-            "hashes": [
-                "sha256:5ecf8bbc230d7298a796e52bb745b95eee12878d141f1645612c99246ecd23f2"
-            ],
+            "hashes": ["sha256:5ecf8bbc230d7298a796e52bb745b95eee12878d141f1645612c99246ecd23f2"],
             "index": "pypi",
             "version": "==4.3"
         },
@@ -264,6 +260,22 @@
         "sanic": {
             "git": "https://github.com/dirtyhairy/sanic",
             "ref": "43c42a5e360c6f4b346cb02a6543efc95a0f83f6"
+        },
+        "sanic-cors": {
+            "hashes": [
+                "sha256:00cea470376808a942ec70aa53002d0805505670bac28c507b272cf9515d81fa",
+                "sha256:d6109b342afcaa053db663d92d44f4f61e59cdb0d0a3c1857dcc9812a6595a61"
+            ],
+            "index": "pypi",
+            "version": "==1.0.0"
+        },
+        "sanic-plugin-toolkit": {
+            "hashes": [
+                "sha256:a4a593a7280011e16eec7c7062415388646ae598fb633d5d30a07e26ba5759a8",
+                "sha256:a7487d9079d09d05ed8f0128ce3fb80336365a415b00fe3061ccbd17e332a880"
+            ],
+            "markers": "python_version >= '3.7' and python_version < '4.0'",
+            "version": "==1.0.1"
         },
         "sanic-routing": {
             "hashes": [
