@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "cd35f792380ea3847148750da2d039b4830dd59b7e4b33ca131f0dce289901c7"
+            "sha256": "752b4b8aa0c73bc4989869b8deb862294d81d0b3b47a50a54d46fbb07c5fafcf"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -103,13 +103,6 @@
             "markers": "python_version >= '3.6'",
             "version": "==3.4.7"
         },
-        "future": {
-            "hashes": [
-                "sha256:b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"
-            ],
-            "markers": "python_version >= '2.6' and python_version not in '3.0, 3.1, 3.2'",
-            "version": "==0.18.2"
-        },
         "hexdump": {
             "hashes": [
                 "sha256:d781a43b0c16ace3f9366aade73e8ad3a7bd5137d58f0b45ab2d3f54876f20db"
@@ -136,6 +129,14 @@
                 "sha256:fd3b8905e21431ad306eeaf56644a68fdd621bf8f3097eff54d0f6bdf7262065"
             ],
             "version": "==0.2.0"
+        },
+        "macholib": {
+            "hashes": [
+                "sha256:0c436bc847e7b1d9bda0560351bf76d7caf930fb585a828d13608839ef42c432",
+                "sha256:c500f02867515e6c60a27875b408920d18332ddf96b4035ef03beddd782d4281"
+            ],
+            "markers": "sys_platform == 'darwin'",
+            "version": "==1.14"
         },
         "multidict": {
             "hashes": [
@@ -179,13 +180,6 @@
             ],
             "markers": "python_version >= '3.6'",
             "version": "==5.1.0"
-        },
-        "pefile": {
-            "hashes": [
-                "sha256:ed79b2353daa58421459abf4d685953bde0adf9f6e188944f97ba9795f100246"
-            ],
-            "markers": "sys_platform == 'win32'",
-            "version": "==2021.5.24"
         },
         "protobuf": {
             "hashes": [
@@ -268,8 +262,8 @@
             "version": "==0.2.0"
         },
         "sanic": {
-            "git": "https://github.com/DirtyHairy/sanic.git/",
-            "ref": "ceb90c93102f5a812d13101993f6f0449bf5674d"
+            "git": "https://github.com/dirtyhairy/sanic",
+            "ref": "43c42a5e360c6f4b346cb02a6543efc95a0f83f6"
         },
         "sanic-routing": {
             "hashes": [
@@ -283,7 +277,7 @@
                 "sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
                 "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"
             ],
-            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2'",
+            "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3'",
             "version": "==1.16.0"
         },
         "websockets": {

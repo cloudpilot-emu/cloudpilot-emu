@@ -31,4 +31,8 @@ def start(host, port, ssl, loglevel):
     async def handle400(request, exception):
         return response.text("bad request", 400)
 
+    @app.listener("after_server_stop")
+    async def afterServerStop(app, loop):
+        await asyncio.gather(*[task for task in asyncio.all_tasks() if task != asyncio.current_task()])
+
     app.run(host=host, port=port, ssl=ssl)

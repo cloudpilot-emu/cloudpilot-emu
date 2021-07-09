@@ -10,7 +10,7 @@ pyopenssl = "*"
 pyinstaller = "*"
 pywin32-ctypes = "*"
 pyreadline = "*"
-sanic = {ref = "fix-response-after-close", git = "https://github.com/DirtyHairy/sanic.git/"}
+sanic = {ref = "fixes", git = "https://github.com/dirtyhairy/sanic"}
 
 [dev-packages]
 
