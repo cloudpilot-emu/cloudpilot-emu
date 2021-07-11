@@ -44,7 +44,8 @@
       <ion-label position="stacked">Proxy server</ion-label>
       <div class="server-container">
         <ion-input placeholder="Proxy server host or URL" formControlName="proxyServer"></ion-input>
-        <ion-button [disabled]="!proxyServerValid" (click)="testProxyConnection()">Test</ion-button>
+        <ion-button [disabled]="!proxyServerValid"
+          (click)="$event.preventDefault(); $event.stopPropagation(); testProxyConnection()">Test</ion-button>
       </div>
     </ion-item>
 

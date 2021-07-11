@@ -9,11 +9,9 @@ export function normalizeProxyAddress(address: string | undefined): string | und
 
     const protocol = window.location.protocol;
 
-    if (address.match(REGEX_HOST)) return `${address === 'localhost' ? 'http:' : protocol}//${address}:${DEFAULT_PORT}`;
+    if (address.match(REGEX_HOST)) return `${protocol}//${address}:${DEFAULT_PORT}`;
 
-    if (address.match(REGEXT_HOST_PORT)) {
-        return `${address.indexOf('localhost:') === 0 ? 'http' : protocol}//${address}`;
-    }
+    if (address.match(REGEXT_HOST_PORT)) return `${protocol}//${address}`;
 
     try {
         const url = new URL(address);
