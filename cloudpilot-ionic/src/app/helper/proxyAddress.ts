@@ -8,7 +8,7 @@ export function normalizeProxyAddress(address: string | undefined): string | und
     if (!address) return undefined;
 
     const host = window.location.hostname;
-    const protocol = host === 'localhost' ? 'http' : window.location.protocol;
+    const protocol = host === 'localhost' ? 'http:' : window.location.protocol;
 
     if (address.match(REGEX_HOST)) return `${protocol}//${address}:${DEFAULT_PORT}`;
 
