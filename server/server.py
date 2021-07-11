@@ -4,7 +4,7 @@ import asyncio
 import sanic.log
 import sanic.response as response
 from sanic import Sanic
-from sanic.exceptions import InvalidUsage, NotFound
+from sanic.exceptions import InvalidUsage, MethodNotSupported, NotFound
 from sanic.request import Request
 from sanic_cors import cross_origin
 
@@ -31,7 +31,6 @@ def start(host, port, ssl, logLevel, logLevelSanic, validOrigins):
     print(
         f'server listening on {host}:{port}{" using SSL" if ssl != None else ""}\n')
 
-    @app.websocket("/")
     @app.websocket("/network-proxy/connect", name=ROUTE_PROXY_SOCKET_CONNECT)
     async def initiateProxyConnection(request, socket):
         connection = Connection()
@@ -49,13 +48,13 @@ def start(host, port, ssl, logLevel, logLevelSanic, validOrigins):
 
             return response.text("forbidden", 403)
 
-    @app.route("/network-proxy/token", methods=["GET", "OPTIONS"])
+    @app.route("/network-proxy/handshake", methods=["POST", "OPTIONS"])
     @no_cache()
     @cross_origin(app,
                   origins="*" if validOrigins.strip() == "*" else [
                       origin.strip() for origin in validOrigins.split(",")]
                   )
-    async def getToken(request):
+    async def handshake(request):
         logger.info(f"issued token, lifetime {TOKEN_TTL} seconds")
         return response.json({'version': 1, 'token': generateToken()})
 
@@ -69,7 +68,11 @@ def start(host, port, ssl, logLevel, logLevelSanic, validOrigins):
 
     @app.exception(asyncio.CancelledError)
     async def handleCancelled(request, exception):
-        return response.text("internal serverr error", 500)
+        return response.text("internal server error", 500)
+
+    @app.exception(MethodNotSupported)
+    async def handleMethodNotAllowed(request, exception):
+        return response.text("method not allowed", 405)
 
     @app.listener("after_server_stop")
     async def afterServerStop(app, loop):

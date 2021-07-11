@@ -54,6 +54,7 @@
 
 import './zone-flags';
 import 'zone.js';
+import 'whatwg-fetch';
 
 /***************************************************************************************************
  * Zone JS is required by default for Angular itself.

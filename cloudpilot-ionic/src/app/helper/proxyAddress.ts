@@ -7,7 +7,8 @@ const REGEXT_HOST_PORT = /^[\da-z\-\.]+:\d+$/i;
 export function normalizeProxyAddress(address: string | undefined): string | undefined {
     if (!address) return undefined;
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.hostname;
+    const protocol = host === 'localhost' ? 'http' : window.location.protocol;
 
     if (address.match(REGEX_HOST)) return `${protocol}//${address}:${DEFAULT_PORT}`;
 
@@ -16,21 +17,12 @@ export function normalizeProxyAddress(address: string | undefined): string | und
     try {
         const url = new URL(address);
 
-        switch (url.protocol) {
-            case 'http:':
-                url.protocol = 'ws:';
-                return url.toString();
-
-            case 'https:':
-                url.protocol = 'wss:';
-                return url.toString();
-
-            default:
-                return undefined;
+        if (url.protocol === 'https' || url.protocol === 'http') {
+            return url.toString().replace(/\/+$/, '');
         }
-    } catch (e) {
-        return undefined;
-    }
+    } catch (e) {}
+
+    return undefined;
 }
 
 export function validateProxyAddress(control: AbstractControl): ValidationErrors | null {

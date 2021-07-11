@@ -4,10 +4,20 @@ import { Injectable, NgZone } from '@angular/core';
 import { AlertService } from './alert.service';
 import { KvsService } from './kvs.service';
 import { Event as Microevent } from 'microevent.ts';
+import { Mutex } from 'async-mutex';
 import { normalizeProxyAddress } from '../helper/proxyAddress';
 import { v4 as uuid } from 'uuid';
 
 const CONNECT_TIMEOUT = 5000;
+const VERSION = 1;
+
+interface HandshakeResponse {
+    version: number;
+    token: string;
+}
+
+type HandshakeResult = { status: 'failed' } | { status: 'version_mismatch' } | { status: 'success'; token: string };
+
 @Injectable({
     providedIn: 'root',
 })
@@ -47,26 +57,76 @@ export class ProxyService {
         return !!this.socket;
     }
 
-    private async handleConnect(): Promise<void> {
-        if (this.socket) this.disconnect(this.socket);
+    async handshake(proxyAddress = this.kvsService.kvs.proxyServer): Promise<HandshakeResult> {
+        const url = normalizeProxyAddress(proxyAddress);
+        if (!url) return { status: 'failed' };
 
-        const url = normalizeProxyAddress(this.kvsService.kvs.proxyServer);
+        try {
+            const response = await fetch(`${url}/network-proxy/handshake`, { method: 'POST' });
 
-        if (!url) {
-            await this.alertService.errorMessage(`Invalid proxy address: ${this.kvsService.kvs.proxyServer}`);
+            if (response.status !== 200) {
+                return { status: 'failed' };
+            }
 
-            this.cloudpilot.getSuspendContextNetworkConnect().Cancel();
+            const handshakeResponse: HandshakeResponse = await response.json();
 
-            return;
+            if (handshakeResponse.version !== VERSION) {
+                return { status: 'version_mismatch' };
+            }
+
+            return { status: 'success', token: handshakeResponse.token };
+        } catch (e) {
+            return { status: 'failed' };
         }
-
-        this.socket = new WebSocket(url);
-        this.socket.binaryType = 'arraybuffer';
-
-        this.bindListeners(this.socket);
-
-        this.ngZone.run(() => (this.connectTimeoutHandle = setTimeout(this.onSocketError, CONNECT_TIMEOUT)));
     }
+
+    private handleConnect = () =>
+        this.mutex.runExclusive(async (): Promise<void> => {
+            if (this.socket) this.disconnect(this.socket);
+
+            const url = normalizeProxyAddress(this.kvsService.kvs.proxyServer);
+
+            if (!url) {
+                await this.alertService.errorMessage(`Invalid proxy address: ${this.kvsService.kvs.proxyServer}`);
+
+                this.cloudpilot.getSuspendContextNetworkConnect().Cancel();
+
+                return;
+            }
+
+            const handshakeResult = await this.handshake();
+
+            switch (handshakeResult.status) {
+                case 'failed':
+                    this.onSocketError(undefined);
+                    return;
+
+                case 'version_mismatch':
+                    await this.alertService.errorMessage(`
+                        Server version does not match Cloudpilot. Please make sure that you are using the latest
+                        versions of Cloudpilot and of the server.
+                    `);
+
+                    this.cancelSuspend();
+
+                    return;
+
+                case 'success':
+                    break;
+
+                default:
+                    throw new Error('unreachable');
+            }
+
+            this.socket = new WebSocket(
+                `${url.replace(/^http/, 'ws')}/network-proxy/connect?token=${encodeURIComponent(handshakeResult.token)}`
+            );
+            this.socket.binaryType = 'arraybuffer';
+
+            this.bindListeners(this.socket);
+
+            this.ngZone.run(() => (this.connectTimeoutHandle = setTimeout(this.onSocketError, CONNECT_TIMEOUT)));
+        });
 
     private handleRpc(): void {
         const ctx = this.cloudpilot.getSuspendContextNetworkRpc();
@@ -207,6 +267,8 @@ export class ProxyService {
     }
 
     public resumeEvent = new Microevent<void>();
+
+    private mutex = new Mutex();
 
     private socket: WebSocket | undefined;
     private sessionId = '';

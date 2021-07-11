@@ -614,8 +614,6 @@ namespace {
             return kSkipROM;
         }
 
-        cout << DecodeIfSetting(setting) << " " << setting << endl << flush;
-
         return kExecuteROM;
     }
 
