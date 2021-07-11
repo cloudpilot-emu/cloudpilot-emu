@@ -58,8 +58,8 @@ parserServe.add_argument("--log-sanic", help="log level for Sanic framework [def
 parserServe.add_argument("--cert", help="enable TLS encryption using the specified certificate in PEM format",
                          default=None)
 
-parserServe.add_argument("--valid-origins", help="valid origins for CORS [default: https://github.io]",
-                         default="https://github.io", dest="validOrigins")
+parserServe.add_argument("--valid-origins", help="valid origins for CORS [default: https://cloudpilot-emu.github.io]",
+                         default="https://cloudpilot-emu.github.io", dest="validOrigins")
 
 
 parserGenerateCert = subparsers.add_parser("generate-cert", help="generate certificate",
