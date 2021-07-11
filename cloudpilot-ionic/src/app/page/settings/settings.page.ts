@@ -1,11 +1,12 @@
 import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { Component, OnInit } from '@angular/core';
+import { LoadingController, ModalController } from '@ionic/angular';
 
 import { AlertService } from './../../service/alert.service';
 import { ClipboardService } from './../../service/clipboard.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { KvsService } from './../../service/kvs.service';
-import { ModalController } from '@ionic/angular';
+import { ProxyService } from './../../service/proxy.service';
 import { validateProxyAddress } from 'src/app/helper/proxyAddress';
 
 const enum fields {
@@ -25,7 +26,9 @@ export class SettingsPage implements OnInit {
         private modalController: ModalController,
         private kvsService: KvsService,
         public clipboardService: ClipboardService,
-        private alertService: AlertService
+        private alertService: AlertService,
+        private proxyService: ProxyService,
+        private loadingController: LoadingController
     ) {}
 
     ngOnInit(): void {
@@ -65,8 +68,43 @@ export class SettingsPage implements OnInit {
         });
     }
 
+    async testProxyConnection(): Promise<void> {
+        if (this.connectionTestInProgress) return;
+
+        const loader = await this.loadingController.create();
+        await loader.present();
+
+        this.connectionTestInProgress = true;
+
+        try {
+            const handshakeResult = await this.proxyService.handshake(this.formGroup.get(fields.proxyServer)?.value);
+
+            switch (handshakeResult.status) {
+                case 'failed':
+                    this.alertService.errorMessage('Unable to connect to proxy');
+                    break;
+
+                case 'version_mismatch':
+                    this.alertService.proxyVersionMismatchError();
+                    break;
+
+                default:
+                    this.alertService.message('Success', 'Connection to proxy successful.');
+            }
+        } finally {
+            this.connectionTestInProgress = false;
+            loader.dismiss();
+        }
+    }
+
     get showProxyServer(): boolean {
-        return this.formGroup.get('networkRedirection')?.value;
+        return this.formGroup.get(fields.networkRedirection)?.value;
+    }
+
+    get proxyServerValid(): boolean {
+        const fieldProxyServer = this.formGroup.get(fields.proxyServer);
+
+        return !!(fieldProxyServer?.value && fieldProxyServer?.valid);
     }
 
     private createFormGroup() {
@@ -82,4 +120,5 @@ export class SettingsPage implements OnInit {
     }
 
     formGroup!: FormGroup;
+    private connectionTestInProgress = false;
 }

@@ -8,7 +8,8 @@ import { Mutex } from 'async-mutex';
 import { normalizeProxyAddress } from '../helper/proxyAddress';
 import { v4 as uuid } from 'uuid';
 
-const CONNECT_TIMEOUT = 5000;
+const CONNECT_TIMEOUT = 3000;
+const HANDSHAKE_TIMEOUT = 3000;
 const VERSION = 1;
 
 interface HandshakeResponse {
@@ -62,7 +63,14 @@ export class ProxyService {
         if (!url) return { status: 'failed' };
 
         try {
-            const response = await fetch(`${url}/network-proxy/handshake`, { method: 'POST' });
+            const abortContrtoller = new AbortController();
+            const timeout = setTimeout(() => abortContrtoller.abort(), HANDSHAKE_TIMEOUT);
+            const response = await fetch(`${url}/network-proxy/handshake`, {
+                method: 'POST',
+                signal: abortContrtoller.signal,
+            });
+
+            clearTimeout(timeout);
 
             if (response.status !== 200) {
                 return { status: 'failed' };
@@ -102,10 +110,7 @@ export class ProxyService {
                     return;
 
                 case 'version_mismatch':
-                    await this.alertService.errorMessage(`
-                        Server version does not match Cloudpilot. Please make sure that you are using the latest
-                        versions of Cloudpilot and of the server.
-                    `);
+                    await this.alertService.proxyVersionMismatchError();
 
                     this.cancelSuspend();
 

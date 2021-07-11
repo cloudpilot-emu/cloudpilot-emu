@@ -56,7 +56,7 @@ def start(host, port, ssl, logLevel, logLevelSanic, validOrigins):
                   )
     async def handshake(request):
         logger.info(f"issued token, lifetime {TOKEN_TTL} seconds")
-        return response.json({'version': 1, 'token': generateToken()})
+        return response.json({'version': VERSION, 'token': generateToken()})
 
     @app.exception(NotFound)
     async def handle404(request, exception):

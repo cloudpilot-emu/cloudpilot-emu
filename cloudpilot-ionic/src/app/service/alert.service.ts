@@ -110,5 +110,12 @@ export class AlertService {
         await alert.present();
     }
 
+    proxyVersionMismatchError() {
+        return this.errorMessage(`
+            Server version does not match Cloudpilot. Please make sure that you are using the latest
+            versions of Cloudpilot and of the server.
+        `);
+    }
+
     emergencySaveEvent = new Event<void>();
 }

@@ -1,0 +1,9 @@
+.server-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+
+    ion-input {
+        flex-grow: 1;
+    }
+}

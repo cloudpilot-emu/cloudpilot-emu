@@ -55,6 +55,7 @@
 import './zone-flags';
 import 'zone.js';
 import 'whatwg-fetch';
+import 'yet-another-abortcontroller-polyfill';
 
 /***************************************************************************************************
  * Zone JS is required by default for Angular itself.
