@@ -1,3 +1,4 @@
+import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
 import { Kvs } from '../model/Kvs';
 import { Mutex } from 'async-mutex';
@@ -34,6 +35,8 @@ export class KvsService {
             for (const key of Object.keys(data)) {
                 (this.rawKvs as any)[key] = data[key as keyof Kvs];
             }
+
+            this.updateEvent.dispatch();
         });
 
     private async startInitialiation(): Promise<void> {
@@ -48,6 +51,7 @@ export class KvsService {
                     target[key] = value;
 
                     self.mutex.runExclusive(() => self.storageService.kvsSet({ [key]: value }));
+                    self.updateEvent.dispatch();
 
                     return true;
                 },
@@ -55,6 +59,7 @@ export class KvsService {
                     delete target[key];
 
                     self.mutex.runExclusive(() => self.storageService.kvsDelete(key));
+                    self.updateEvent.dispatch();
 
                     return true;
                 },
@@ -66,6 +71,8 @@ export class KvsService {
             this.kvsProxy = { ...DEFAULTS };
         }
     }
+
+    updateEvent = new Event<void>();
 
     private initializationPromise: Promise<void>;
     private mutex = new Mutex();

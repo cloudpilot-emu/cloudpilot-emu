@@ -372,6 +372,11 @@ export class Cloudpilot {
     }
 
     @guard()
+    getClipboardIntegration(): boolean {
+        return this.cloudpilot.GetClipboardIntegration();
+    }
+
+    @guard()
     isSuspended(): boolean {
         return this.cloudpilot.IsSuspended();
     }
@@ -399,6 +404,11 @@ export class Cloudpilot {
     @guard()
     setNetworkRedirection(toggle: boolean) {
         this.cloudpilot.SetNetworkRedirection(toggle);
+    }
+
+    @guard()
+    getNetworkRedirection(): boolean {
+        return this.cloudpilot.GetNetworkRedirection();
     }
 
     @guard()

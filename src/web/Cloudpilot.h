@@ -68,11 +68,13 @@ class Cloudpilot {
     DbBackup* StartBackup();
 
     void SetClipboardIntegration(bool toggle);
+    bool GetClipboardIntegration();
 
     bool IsSuspended();
     SuspendContext& GetSuspendContext();
 
     void SetNetworkRedirection(bool toggle);
+    bool GetNetworkRedirection();
     void RegisterProxyDisconnectHandler(uint32 handlerPtr);
 
    private:

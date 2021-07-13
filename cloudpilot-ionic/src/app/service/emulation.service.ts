@@ -63,6 +63,8 @@ export class EmulationService {
             this.proxyService.resumeEvent.addHandler(() => this.running && this.advanceEmulation(performance.now()));
         });
 
+        this.kvsService.updateEvent.addHandler(() => this.isRunning() && this.updateFeatures());
+
         const storedSession = getStoredSession();
         if (storedSession !== undefined) {
             this.bootstrapCompletePromise = this.switchSession(storedSession);
@@ -123,12 +125,7 @@ export class EmulationService {
 
             this.cloudpilotInstance = await this.cloudpilot;
 
-            this.cloudpilotInstance.setClipboardIntegration(
-                this.kvsService.kvs.clipboardIntegration && this.clipboardService.isSupported()
-            );
-
-            this.cloudpilotInstance.setNetworkRedirection(this.kvsService.kvs.networkRedirection);
-            if (this.kvsService.kvs.networkRedirection) this.proxyService.reset();
+            this.updateFeatures();
 
             this.clockEmulator = performance.now();
 
@@ -236,6 +233,23 @@ export class EmulationService {
             emulationSpeed: this.emulationSpeed,
             averageFPS: this.calculateFPS(),
         };
+    }
+
+    private updateFeatures(): void {
+        if (!this.cloudpilotInstance) return;
+
+        const clipboardIntegrationEnabled =
+            this.kvsService.kvs.clipboardIntegration && this.clipboardService.isSupported();
+
+        if (this.cloudpilotInstance.getClipboardIntegration() !== clipboardIntegrationEnabled) {
+            this.cloudpilotInstance.setClipboardIntegration(clipboardIntegrationEnabled);
+        }
+
+        if (this.cloudpilotInstance.getNetworkRedirection() !== this.kvsService.kvs.networkRedirection) {
+            this.cloudpilotInstance.setNetworkRedirection(this.kvsService.kvs.networkRedirection);
+
+            this.proxyService.reset();
+        }
     }
 
     private resetCanvas(session: Session): void {

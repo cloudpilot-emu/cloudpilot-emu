@@ -58,11 +58,13 @@ interface Cloudpilot {
     DbBackup StartBackup();
 
     void SetClipboardIntegration(boolean toggle);
+    boolean GetClipboardIntegration();
 
     boolean IsSuspended();
     [Ref] SuspendContext GetSuspendContext();
 
     void SetNetworkRedirection(boolean toggle);
+    boolean GetNetworkRedirection();
     void RegisterProxyDisconnectHandler(long handlerPtr);
 };
 

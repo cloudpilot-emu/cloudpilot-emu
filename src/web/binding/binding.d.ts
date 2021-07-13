@@ -95,11 +95,13 @@ export interface Cloudpilot {
     StartBackup(): DbBackup;
 
     SetClipboardIntegration(toggle: boolean): void;
+    GetClipboardIntegration(): boolean;
 
     IsSuspended(): boolean;
     GetSuspendContext(): SuspendContext;
 
     SetNetworkRedirection(toggle: boolean): void;
+    GetNetworkRedirection(): boolean;
     RegisterProxyDisconnectHandler(handlerPtr: number): void;
 }
 

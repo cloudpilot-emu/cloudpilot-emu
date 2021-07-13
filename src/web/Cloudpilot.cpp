@@ -197,11 +197,15 @@ DbBackup* Cloudpilot::StartBackup() { return new DbBackup(); }
 
 void Cloudpilot::SetClipboardIntegration(bool toggle) { Feature::SetClipboardIntegration(toggle); }
 
+bool Cloudpilot::GetClipboardIntegration() { return Feature::GetClipboardIntegration(); }
+
 bool Cloudpilot::IsSuspended() { return SuspendManager::IsSuspended(); }
 
 SuspendContext& Cloudpilot::GetSuspendContext() { return SuspendManager::GetContext(); }
 
 void Cloudpilot::SetNetworkRedirection(bool toggle) { Feature::SetNetworkRedirection(toggle); }
+
+bool Cloudpilot::GetNetworkRedirection() { return Feature::GetNetworkRedirection(); }
 
 void Cloudpilot::RegisterProxyDisconnectHandler(uint32 handlerPtr) {
     typedef void (*handler_ptr)(const char*);
