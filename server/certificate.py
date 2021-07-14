@@ -12,8 +12,10 @@ BASIC_CONSTRAINTS = b'CA:TRUE,pathlen:0'
 KEY_USAGE = b'serverAuth'
 EXTENDED_KEY_USAGE = b'keyEncipherment,keyAgreement,cRLSign,digitalSignature'
 
-REGEX_IP = re.compile('^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+REGEX_IP = re.compile(
+    '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
 REGEX_NAME = re.compile('^[a-zA-Z\d\.\-]+$')
+
 
 def _deleteIfRequired(file, overwrite):
     if not os.path.exists(file):
@@ -24,7 +26,8 @@ def _deleteIfRequired(file, overwrite):
         exit(1)
 
     if not overwrite:
-        print(f'{file} exists, aborting... specifiy "--overwrite" if you want to overwrite it instead')
+        print(
+            f'{file} exists, aborting... specifiy "--overwrite" if you want to overwrite it instead')
         exit(1)
 
     try:
@@ -32,6 +35,7 @@ def _deleteIfRequired(file, overwrite):
     except Exception as ex:
         print(f'ERROR: unable to delete {file}: {ex}')
         exit(1)
+
 
 def _decomposeNames(namestring):
     parts = [name.strip() for name in namestring.split(",")]
@@ -51,9 +55,11 @@ def _decomposeNames(namestring):
 
     return (ips, names)
 
+
 def _inputNames():
     print('please enter a comma separated list of IPs, hostnames or domains for which this cert will be valid:')
     return _decomposeNames(input())
+
 
 def generateCertificate(options):
     cn = None
@@ -84,6 +90,9 @@ def generateCertificate(options):
         if ips == None or names == None:
             exit(1)
 
+    if not cn in names:
+        names.append(cn)
+
     print("generating key and certificate...")
 
     key = crypto.PKey()
@@ -93,14 +102,18 @@ def generateCertificate(options):
     cert.set_version(2)
     cert.get_subject().CN = cn
 
-    basicConstraints = crypto.X509Extension(b"basicConstraints", True, BASIC_CONSTRAINTS)
+    basicConstraints = crypto.X509Extension(
+        b"basicConstraints", True, BASIC_CONSTRAINTS)
     subjectAltName = crypto.X509Extension(b"subjectAltName", False,
-        bytes(",".join([f'IP:{ip}' for ip in ips] + [f'DNS:{name}' for name in names]), "utf8")
-    )
-    extendedKeyUsage = crypto.X509Extension(b'extendedKeyUsage', True, KEY_USAGE)
+                                          bytes(",".join(
+                                              [f'IP:{ip}' for ip in ips] + [f'DNS:{name}' for name in names]), "utf8")
+                                          )
+    extendedKeyUsage = crypto.X509Extension(
+        b'extendedKeyUsage', True, KEY_USAGE)
     keyUsage = crypto.X509Extension(b'keyUsage', True, EXTENDED_KEY_USAGE)
 
-    cert.add_extensions((basicConstraints, keyUsage, extendedKeyUsage, subjectAltName))
+    cert.add_extensions((basicConstraints, keyUsage,
+                        extendedKeyUsage, subjectAltName))
 
     random.seed()
     cert.set_serial_number(random.randint(0, 0xffff))
