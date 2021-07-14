@@ -19,3 +19,5 @@ void SuspendContextClipboardPaste::Resume(const string clipboardContent) {
 
     ResumeExecution();
 }
+
+bool SuspendContextClipboardPaste::RequiresStackAccess() { return false; }

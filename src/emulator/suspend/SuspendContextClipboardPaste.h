@@ -14,6 +14,8 @@ class SuspendContextClipboardPaste : public SuspendContext {
 
     void Resume(const string clipboardContent);
 
+    bool RequiresStackAccess() override;
+
    private:
     SuspendContextClipboardPaste(const SuspendContextClipboardPaste&) = delete;
     SuspendContextClipboardPaste(SuspendContextClipboardPaste&&) = delete;

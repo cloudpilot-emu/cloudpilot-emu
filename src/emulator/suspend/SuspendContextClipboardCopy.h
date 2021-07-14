@@ -16,6 +16,8 @@ class SuspendContextClipboardCopy : public SuspendContext {
 
     const char* GetClipboardContent();
 
+    bool RequiresStackAccess() override;
+
    private:
     const string clipboardContent;
 

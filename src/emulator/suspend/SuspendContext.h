@@ -19,6 +19,8 @@ class SuspendContext {
 
     virtual void Cancel() = 0;
 
+    virtual bool RequiresStackAccess();
+
     SuspendContextClipboardCopy& AsContextClipboardCopy();
     SuspendContextClipboardPaste& AsContextClipboardPaste();
     SuspendContextNetworkRpc& AsContextNetworkRpc();

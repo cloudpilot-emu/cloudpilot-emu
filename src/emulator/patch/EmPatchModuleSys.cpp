@@ -254,9 +254,9 @@ namespace {
 
                 EmMem_memcpy(static_cast<void*>(dataCopy), dataPtr, length);
 
-                SuspendManager::Suspend<SuspendContextClipboardCopy>(Isolatin1ToUtf8(dataCopy));
-
                 MemHandleUnlock(dataHdl);
+
+                SuspendManager::Suspend<SuspendContextClipboardCopy>(Isolatin1ToUtf8(dataCopy));
             }
         } else {
             SuspendManager::Suspend<SuspendContextClipboardCopy>("");

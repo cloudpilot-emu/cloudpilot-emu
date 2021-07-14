@@ -7,6 +7,8 @@
 #include "SuspendContextNetworkRpc.h"
 #include "SuspendManager.h"
 
+bool SuspendContext::RequiresStackAccess() { return true; }
+
 SuspendContextClipboardCopy& SuspendContext::AsContextClipboardCopy() {
     EmAssert(GetKind() == Kind::clipboardCopy);
 

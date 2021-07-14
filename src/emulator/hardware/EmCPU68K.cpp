@@ -31,6 +31,7 @@
 #include "SavestateLoader.h"
 #include "SavestateStructures.h"
 #include "StringData.h"  // kExceptionNames
+#include "SuspendContext.h"
 #include "SuspendManager.h"
 #include "UAE.h"  // cpuop_func, etc.
 
@@ -748,7 +749,7 @@ void EmCPU68K::ProcessException(ExceptionNumber exception) {
         return;
     }
 
-    EmAssert(!SuspendManager::IsSuspended());
+    EmAssert(!SuspendManager::IsSuspended() || !SuspendManager::GetContext().RequiresStackAccess());
 
     // The following is vaguely modelled after Exception() from newcpu.c
     // (The call to MakeSR appears at the start of this method).
