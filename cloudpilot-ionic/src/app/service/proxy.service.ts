@@ -3,13 +3,15 @@ import { Injectable, NgZone } from '@angular/core';
 
 import { AlertService } from './alert.service';
 import { KvsService } from './kvs.service';
+import { LoadingController } from '@ionic/angular';
 import { Event as Microevent } from 'microevent.ts';
 import { Mutex } from 'async-mutex';
 import { normalizeProxyAddress } from '../helper/proxyAddress';
 import { v4 as uuid } from 'uuid';
 
-const CONNECT_TIMEOUT = 3000;
-const HANDSHAKE_TIMEOUT = 3000;
+const CONNECT_TIMEOUT = 5000;
+const HANDSHAKE_TIMEOUT = 5000;
+const LOADER_GRRACE_TIME = 500;
 const VERSION = 1;
 
 interface HandshakeResponse {
@@ -23,7 +25,12 @@ type HandshakeResult = { status: 'failed' } | { status: 'version_mismatch' } | {
     providedIn: 'root',
 })
 export class ProxyService {
-    constructor(private kvsService: KvsService, private alertService: AlertService, private ngZone: NgZone) {}
+    constructor(
+        private kvsService: KvsService,
+        private alertService: AlertService,
+        private ngZone: NgZone,
+        private loadingController: LoadingController
+    ) {}
 
     initialize(cloudpilot: Cloudpilot) {
         this.cloudpilot = cloudpilot;
@@ -90,47 +97,57 @@ export class ProxyService {
 
     private handleConnect = () =>
         this.mutex.runExclusive(async (): Promise<void> => {
-            if (this.socket) this.disconnect(this.socket);
+            const loader = await this.loadingController.create();
+            const timeout = setTimeout(() => loader.present(), LOADER_GRRACE_TIME);
 
-            const url = normalizeProxyAddress(this.kvsService.kvs.proxyServer);
+            try {
+                if (this.socket) this.disconnect(this.socket);
 
-            if (!url) {
-                await this.alertService.errorMessage(`Invalid proxy address: ${this.kvsService.kvs.proxyServer}`);
+                const url = normalizeProxyAddress(this.kvsService.kvs.proxyServer);
 
-                this.cloudpilot.getSuspendContextNetworkConnect().Cancel();
+                if (!url) {
+                    await this.alertService.errorMessage(`Invalid proxy address: ${this.kvsService.kvs.proxyServer}`);
 
-                return;
-            }
-
-            const handshakeResult = await this.handshake();
-
-            switch (handshakeResult.status) {
-                case 'failed':
-                    this.onSocketError(undefined);
-                    return;
-
-                case 'version_mismatch':
-                    await this.alertService.proxyVersionMismatchError();
-
-                    this.cancelSuspend();
+                    this.cloudpilot.getSuspendContextNetworkConnect().Cancel();
 
                     return;
+                }
 
-                case 'success':
-                    break;
+                const handshakeResult = await this.handshake();
 
-                default:
-                    throw new Error('unreachable');
+                switch (handshakeResult.status) {
+                    case 'failed':
+                        this.onSocketError(undefined);
+                        return;
+
+                    case 'version_mismatch':
+                        await this.alertService.proxyVersionMismatchError();
+
+                        this.cancelSuspend();
+
+                        return;
+
+                    case 'success':
+                        break;
+
+                    default:
+                        throw new Error('unreachable');
+                }
+
+                this.socket = new WebSocket(
+                    `${url.replace(/^http/, 'ws')}/network-proxy/connect?token=${encodeURIComponent(
+                        handshakeResult.token
+                    )}`
+                );
+                this.socket.binaryType = 'arraybuffer';
+
+                this.bindListeners(this.socket);
+
+                this.ngZone.run(() => (this.connectTimeoutHandle = setTimeout(this.onSocketError, CONNECT_TIMEOUT)));
+            } finally {
+                clearTimeout(timeout);
+                loader.dismiss();
             }
-
-            this.socket = new WebSocket(
-                `${url.replace(/^http/, 'ws')}/network-proxy/connect?token=${encodeURIComponent(handshakeResult.token)}`
-            );
-            this.socket.binaryType = 'arraybuffer';
-
-            this.bindListeners(this.socket);
-
-            this.ngZone.run(() => (this.connectTimeoutHandle = setTimeout(this.onSocketError, CONNECT_TIMEOUT)));
         });
 
     private handleRpc(): void {
