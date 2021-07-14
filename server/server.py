@@ -10,7 +10,6 @@ from sanic_cors import cross_origin
 
 from cloudpilot_token import TOKEN_TTL, generateToken, validateToken
 from connection import Connection
-from decorators import no_cache
 from logger import logger
 
 VERSION = 1
@@ -49,7 +48,6 @@ def start(host, port, ssl, logLevel, logLevelSanic, validOrigins):
             return response.text("forbidden", 403)
 
     @app.route("/network-proxy/handshake", methods=["POST", "OPTIONS"])
-    @no_cache()
     @cross_origin(app,
                   origins="*" if validOrigins.strip() == "*" else [
                       origin.strip() for origin in validOrigins.split(",")]
