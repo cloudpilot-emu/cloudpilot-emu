@@ -2,12 +2,13 @@
 
 import argparse
 import ssl
+import sys
 
 import sanic.response as response
 
 import server
 from certificate import generateCertificate
-from logger import logger
+from version import VERSION
 
 
 def launchServer(options):
@@ -20,10 +21,29 @@ def launchServer(options):
             print(f'unable to load certificate: ${ex}')
             exit(1)
 
-    else:
+    if sslCtx == None and not options.insecure:
+        print("""
+No certificate specified. Please generate a certificate by running
+
+    $ {script} generate-cert
+
+and then run the server with the generated certificate via
+
+    $ {script} serve --cert <generate-certificate.pem>
+
+Please follow the documentation at
+
+    https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md
+
+in order to install the certiicate on yourr device and set up networking in
+Cloudpilot.
+""".format(script=sys.argv[0]))
+        return
+
+    if sslCtx == None:
         print("""
 WARNING: server running without SSL. This will not work with the official SPA at
-https://cloudpilot-emu.github.org (or any other instance of Cloudpilot server
+https://cloudpilot-emu.github.org (or any other instance of Cloudpilot served
 over HTTPS). Generate a certificate and specifiy it via --cert in order to run
 with SSL enabled. Please check the documentation for more details.
 """)
@@ -44,7 +64,7 @@ parserServe = subparsers.add_parser(
     "serve", help="start server", description="Start proxy server")
 
 parserServe.add_argument('--port', '-p', default=None,
-                         type=int, help="server port [default: 8666 / 8667 (TLS)]")
+                         type=int, help="server port [default: 8667 (SSL) / 8666 (insecure)]")
 
 parserServe.add_argument('--bind', '-b', default="0.0.0.0",
                          help="bind server to host [default: 0.0.0.0]", dest="host")
@@ -57,6 +77,9 @@ parserServe.add_argument("--log-sanic", help="log level for Sanic framework [def
 
 parserServe.add_argument("--cert", help="enable TLS encryption using the specified certificate in PEM format",
                          default=None)
+
+parserServe.add_argument(
+    "--insecure", help="run unencrypted", default=False, action="store_true")
 
 parserServe.add_argument("--valid-origins", help="valid origins for CORS [default: https://cloudpilot-emu.github.io]",
                          default="https://cloudpilot-emu.github.io", dest="validOrigins")
@@ -74,6 +97,9 @@ parserGenerateCert.add_argument(
 parserGenerateCert.add_argument("--names", help="certificate names (IPs, hostnames, domains)",
                                 default=None, dest="names")
 
+parserVersion = subparsers.add_parser(
+    "version", help="print server version", description="Print server version and exit.")
+
 options = parser.parse_args()
 
 if options.subcommand == "serve":
@@ -81,6 +107,9 @@ if options.subcommand == "serve":
 
 elif options.subcommand == "generate-cert":
     generateCertificate(options)
+
+elif options.subcommand == "version":
+    print(f"cloudpilot-server version {VERSION}")
 
 else:
     parser.print_help()
