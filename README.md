@@ -5,13 +5,13 @@ browser. In particular, the emulator works on iOS. The emulator is derived from
 the original POSE emulator. Please see below for the list of currently supported
 devices.
 
-<img src="doc/m515.jpeg" width="310" height="552" alt="Palm m515 emulation"></img>
+<img src="doc/images/m515.jpeg" width="310" height="552" alt="Palm m515 emulation"></img>
 &nbsp;
-<img src="doc/palmvx.jpeg" width="310" height="552" alt="Palm Vx emulation"></img>
+<img src="doc/images/palmvx.jpeg" width="310" height="552" alt="Palm Vx emulation"></img>
 &nbsp;
-<img src="doc/tungstenw.jpeg" width="310" height="552" alt="Tungsten W emulation"></img>
+<img src="doc/images/tungstenw.jpeg" width="310" height="552" alt="Tungsten W emulation"></img>
 &nbsp;
-<img src="doc/palmpilot.jpeg" width="310" height="552" alt="Palm Pilot emulation"></img>
+<img src="doc/images/palmpilot.jpeg" width="310" height="552" alt="Palm Pilot emulation"></img>
 
 # The emulator
 

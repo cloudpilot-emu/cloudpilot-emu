@@ -81,7 +81,7 @@ parserServe.add_argument("--cert", help="enable TLS encryption using the specifi
 parserServe.add_argument(
     "--insecure", help="run unencrypted", default=False, action="store_true")
 
-parserServe.add_argument("--valid-origins", help="valid origins for CORS [default: https://cloudpilot-emu.github.io]",
+parserServe.add_argument("--trusted-origins", help="trusted origins for CORS [default: https://cloudpilot-emu.github.io]",
                          default="https://cloudpilot-emu.github.io", dest="validOrigins")
 
 
