@@ -2,7 +2,7 @@ name: Deploy to github.io
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0.9]+'
+      - '[0-9]+.[0-9]+.[0-9]+'
 env:
   EM_VERSION: 2.0.24
   NODE_VERSION: 14
