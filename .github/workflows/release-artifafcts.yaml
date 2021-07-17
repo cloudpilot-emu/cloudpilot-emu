@@ -31,5 +31,5 @@ jobs:
           cd server
           pipenv install
           pipenv run build
-          mv dist/cloudpilot-server dist/cloudpilot-server-macos-x64
-          gh release upload ${GITHUB_REF##*/} dist/cloudpilot-server-macos-x64
+          zip dist/cloudpilot-server-macos-x64.zip dist/cloudpilot-server
+          gh release upload ${GITHUB_REF##*/} dist/cloudpilot-server-macos-x64.zip
