@@ -1,0 +1,15 @@
+name: Build and upload release artifacts
+on:
+  push:
+    tags:
+      - "*"
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  create-release:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Create release
+        run: gh release create ${GITHUB_REF##*/} -d -t "Cloudpilot ${GITHUB_REF##*/}"
