@@ -23,6 +23,8 @@ jobs:
         with:
           python-version: ${{env.PYTHON_VERSION}}
           architecture: x64
+      - name: Checkout
+        uses: actions/checkout@v2
       - name: Build and upload
         run: |
           pip install pipenv
