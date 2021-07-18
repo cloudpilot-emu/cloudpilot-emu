@@ -34,4 +34,4 @@ jobs:
           cd dist
           codesign -fs - cloudpilot-server/cloudpilot-server
           zip -r cloudpilot-server-macos-x64.zip cloudpilot-server
-          gh release upload ${GITHUB_REF##*/} dist/cloudpilot-server-macos-x64.zip
+          gh release upload ${GITHUB_REF##*/} cloudpilot-server-macos-x64.zip
