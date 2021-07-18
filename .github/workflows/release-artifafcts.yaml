@@ -33,4 +33,4 @@ jobs:
           pipenv run build
           mv dist/cloudpilot-server dist/cloudpilot-server-macos-x64
           codesign -fs - dist/cloudpilot-server-macos-x64
-          gh release upload ${GITHUB_REF##*/} cloudpilot-server-macos-x64
+          gh release upload ${GITHUB_REF##*/} dist/cloudpilot-server-macos-x64
