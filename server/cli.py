@@ -17,6 +17,7 @@ def launchServer(options):
         try:
             sslCtx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             sslCtx.load_cert_chain(options.cert)
+            sslCtx.get_ca_certs()
         except Exception as ex:
             print(f'unable to load certificate: ${ex}')
             exit(1)
@@ -35,7 +36,7 @@ Please follow the documentation at
 
 https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md
 
-in order to install the certificate on yourr device and set up networking in
+in order to install the certificate on your device and set up networking in
 Cloudpilot.
 """.format(script=sys.argv[0]))
         return
