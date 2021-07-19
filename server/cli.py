@@ -25,11 +25,11 @@ def launchServer(options):
         print("""
 No certificate specified. Please generate a certificate by running
 
-    $ {script} generate-cert
+    > {script} generate-cert
 
 and then run the server with the generated certificate via
 
-    $ {script} serve --cert <generate-certificate.pem>
+    > {script} serve --cert <generate-certificate.pem>
 
 Please follow the documentation at
 
