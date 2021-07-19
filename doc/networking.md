@@ -19,12 +19,17 @@ The necessary steps to set up networking are
 
 ## Download the server
 
-The server is a small CLI application written in Python, and prepackaged
-executables can be downloaded from the [releases
-page](https://github.com/cloudpilot-emu/cloudpilot/releases) on Github. These
-executables can be run directly on the Shell (or Powershell on Windows) and
-don't require a python installation. Executables are provided for Linux
+The server is a small CLI application written in Python, and standalone
+packages can be downloaded from the [releases
+page](https://github.com/cloudpilot-emu/cloudpilot/releases) on Github.
+After decompressing the packagearchive you'll end up with a directory called
+`cloudpilot-server-<version>`. This directory contains an executable
+version of the server called `cloudpilot-server`, together with all
+support files that are required to run it. Executables are provided for Linux
 Intel/64bit, MacOS Intel/64bit and Windows Intel/64bit.
+
+On MacOS an additional step is necessary to move the downloaded files out
+of quarantine before the first run; please check the release notes for details.
 
 If you need to run the server on another platform or use the latest version in
 git, please follow the instructions under "advanced usage" below.
