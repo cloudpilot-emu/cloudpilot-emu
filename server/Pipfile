@@ -20,4 +20,4 @@ python_version = "3"
 
 [scripts]
 cli = "python cli.py"
-build = "pyinstaller -n cloudpilot-server --collect-submodules websockets.legacy --onefile cli.py"
+build = "pyinstaller -n cloudpilot-server --collect-submodules websockets.legacy cli.py"

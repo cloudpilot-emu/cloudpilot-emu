@@ -6,6 +6,13 @@ on:
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   PYTHON_VERSION: 3.9
+  TAG: ${GITHUB_REF##*/}
+  SERVER_DIRECTORY: cloudpilot-server-${{ env.TAG }}
+  RELEASE_NOTES: |
+    **MacOS:** Please run `xattr -rd com.apply.quarantine ${{ env.SERVER_DIRECTORY }}` in order to
+    remove the server components from quarantine before you run the server for the first time.
+  RELEASE_TITLE: Cloudpilot ${{ env.TAG }}
+  ARCHIVE_MACOS: cloudpilot-server-${{ env.TAG }}-macos-x64.zip
 jobs:
   create-release:
     runs-on: ubuntu-20.04
@@ -13,7 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Create release
-        run: gh release create ${GITHUB_REF##*/} -d -t "Cloudpilot ${GITHUB_REF##*/}"
+        run: gh release create ${{ env.TAG }} -d -t "${{ env.TITLE }}" -n "${{ env.RELEASE_NOTES }}"
   build-server-macos:
     runs-on: macos-10.15
     needs: create-release
@@ -31,6 +38,8 @@ jobs:
           cd server
           pipenv install
           pipenv run build
-          mv dist/cloudpilot-server dist/cloudpilot-server-macos-x64
-          codesign -fs - dist/cloudpilot-server-macos-x64
-          gh release upload ${GITHUB_REF##*/} dist/cloudpilot-server-macos-x64
+          cd dist
+          codesign -fs - cloudpilot-server/cloudpilot-server
+          mv cloudpilot-server ${{ env.SERVER_DIRECTORY }}
+          zip -r ${{ env.ARCHIVE_MACOS }} ${{ env.SERVER_DIRECTORY }}
+          gh release upload ${{ env.TAG }} ${{ env.ARCHIVE_MACOS }}
