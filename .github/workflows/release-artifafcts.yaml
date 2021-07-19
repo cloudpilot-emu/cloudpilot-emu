@@ -14,6 +14,7 @@ env:
     The first start may take a few seconds.
   RELEASE_TITLE: Cloudpilot ${GITHUB_REF##*/}
   ARCHIVE_MACOS: cloudpilot-server-${GITHUB_REF##*/}-macos-x64.zip
+  ARCHIVE_WINDOWS: cloudpilot-server-${GITHUB_REF##*/}-win-x64.zip
 jobs:
   create-release:
     runs-on: ubuntu-20.04
@@ -22,8 +23,8 @@ jobs:
         uses: actions/checkout@v2
       - name: Create release
         run: gh release create ${{ env.TAG }} -d -t "${{ env.RELEASE_TITLE }}" -n "${{ env.RELEASE_NOTES }}"
-  build-server-macos:
-    runs-on: macos-10.15
+  build-server-windows:
+    runs-on: windows-2019
     needs: create-release
     steps:
       - name: Install Python
@@ -40,7 +41,28 @@ jobs:
           pipenv install
           pipenv run build
           cd dist
-          codesign -fs - cloudpilot-server/cloudpilot-server
           mv cloudpilot-server ${{ env.SERVER_DIRECTORY }}
-          zip -r ${{ env.ARCHIVE_MACOS }} ${{ env.SERVER_DIRECTORY }}
-          gh release upload ${{ env.TAG }} ${{ env.ARCHIVE_MACOS }}
+          7z a -r ${{ env.ARCHIVE_WINDOWS }} ${{ env.SERVER_DIRECTORY }}
+          gh release upload ${{ env.TAG }} ${{ env.ARCHIVE_WINDOWS }}
+  #build-server-macos:
+  #  runs-on: macos-10.15
+  #  needs: create-release
+  #  steps:
+  #    - name: Install Python
+  #      uses: actions/setup-python@v2
+  #      with:
+  #        python-version: ${{env.PYTHON_VERSION}}
+  #        architecture: x64
+  #    - name: Checkout
+  #      uses: actions/checkout@v2
+  #    - name: Build and upload
+  #      run: |
+  #        pip install pipenv
+  #        cd server
+  #        pipenv install
+  #        pipenv run build
+  #        cd dist
+  #        codesign -fs - cloudpilot-server/cloudpilot-server
+  #        mv cloudpilot-server ${{ env.SERVER_DIRECTORY }}
+  #        zip -r ${{ env.ARCHIVE_MACOS }} ${{ env.SERVER_DIRECTORY }}
+  #        gh release upload ${{ env.TAG }} ${{ env.ARCHIVE_MACOS }}
