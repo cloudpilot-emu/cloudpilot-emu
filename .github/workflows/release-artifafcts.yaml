@@ -7,12 +7,12 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   PYTHON_VERSION: 3.9
   TAG: ${GITHUB_REF##*/}
-  SERVER_DIRECTORY: cloudpilot-server-${TAG}
+  SERVER_DIRECTORY: cloudpilot-server-${GITHUB_REF##*/}
   RELEASE_NOTES: |
-    **MacOS:** Please run \`xattr -rd com.apply.quarantine cloudpilot-server-${TAG}\` in order to
+    **MacOS:** Please run \`xattr -rd com.apply.quarantine cloudpilot-server-${GITHUB_REF##*/}\` in order to
     remove the server components from quarantine before you run the server for the first time.
-  RELEASE_TITLE: Cloudpilot ${TAG}
-  ARCHIVE_MACOS: cloudpilot-server-${TAG}-macos-x64.zip
+  RELEASE_TITLE: Cloudpilot ${GITHUB_REF##*/}
+  ARCHIVE_MACOS: cloudpilot-server-${GITHUB_REF##*/}-macos-x64.zip
 jobs:
   create-release:
     runs-on: ubuntu-20.04
