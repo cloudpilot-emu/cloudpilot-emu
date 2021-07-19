@@ -142,7 +142,7 @@ def generateCertificate(options):
 
     print("""...done! You can now launch the server with
 
-    > {script} --cert {filePem}
+> {script} --cert {filePem}
 
 in order to use the generated certificate. Please check the documentation on
 how to install and trust "{fileCer}" on your devices running Cloudpilot.

@@ -25,17 +25,17 @@ def launchServer(options):
         print("""
 No certificate specified. Please generate a certificate by running
 
-    > {script} generate-cert
+ > {script} generate-cert
 
 and then run the server with the generated certificate via
 
-    > {script} serve --cert <generate-certificate.pem>
+ > {script} serve --cert <generate-certificate.pem>
 
 Please follow the documentation at
 
-    https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md
+https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md
 
-in order to install the certiicate on yourr device and set up networking in
+in order to install the certificate on yourr device and set up networking in
 Cloudpilot.
 """.format(script=sys.argv[0]))
         return
