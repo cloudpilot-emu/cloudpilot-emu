@@ -9,7 +9,7 @@ env:
   TAG: ${GITHUB_REF##*/}
   SERVER_DIRECTORY: cloudpilot-server-${TAG}
   RELEASE_NOTES: |
-    **MacOS:** Please run \`xattr -rd com.apply.quarantine ${SERVER_DIRECTORY}\` in order to
+    **MacOS:** Please run \`xattr -rd com.apply.quarantine cloudpilot-server-${TAG}\` in order to
     remove the server components from quarantine before you run the server for the first time.
   RELEASE_TITLE: Cloudpilot ${TAG}
   ARCHIVE_MACOS: cloudpilot-server-${TAG}-macos-x64.zip
