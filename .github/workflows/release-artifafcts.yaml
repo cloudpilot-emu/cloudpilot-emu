@@ -40,7 +40,7 @@ jobs:
         run: |
           pip install pipenv
           cd server
-          echo "VERSION = ${TAG}" > version.py
+          echo 'VERSION = "${TAG}"' > version.py
           pipenv install
           pipenv run build
           cd dist
