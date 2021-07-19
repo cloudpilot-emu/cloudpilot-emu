@@ -12,6 +12,7 @@ pywin32-ctypes = "*"
 pyreadline = "*"
 sanic = {ref = "fixes", git = "https://github.com/dirtyhairy/sanic"}
 sanic-cors = "*"
+pefile = "*"
 
 [dev-packages]
 
