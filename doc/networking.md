@@ -110,8 +110,8 @@ operating system. If you want to use Cloudpilot networking on Firefox you have t
 a security exception.
 
 The easiest way to do so is to navigate to the proxy server in your browser after starting
-it. In its default setup the server runs on port 8667, so enter "https://\<host>:8667"
-in the address bar (replacing \<host> with the host or IP of the machine running the server).
+it. In its default setup the server runs on port 8667, so enter `https://<host>:8667`
+in the address bar (replacing `<host>` with the host or IP of the machine running the server).
 You will be presented with a security warning. Click "Advanced" and then "Add exception"
 in order to add an exception.
 
@@ -123,10 +123,10 @@ the text "not found" instead.
 Launch the server with the generated certificate by running
 
 ```
-    > path/to/server/cloudpilot-server serve --cert \<certificate.pem>
+    > path/to/server/cloudpilot-server serve --cert <certificate.pem>
 ```
 
-replacing \<certificate.pem> with the genreated `.pem` file.
+replacing `<certificate.pem>` with the genreated `.pem` file.
 
 ## Configure Cloudpilot
 
