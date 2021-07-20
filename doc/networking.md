@@ -174,7 +174,7 @@ will be established from the machine running the server, so you can use
 
 In order to troubleshoot issues with the connection to the proxy, navigate
 to the proxy server drectly in a browser on the device running Cloudpilot. In its default configuration
-the server runs on port 8667, so the corresponding URL is `https://\<host>:8667` with \<host>
+the server runs on port 8667, so the corresponding URL is `https://<host>:8667` with `<host>`
 replaced with the hostname or IP of the machine running the server.
 
 ### Connectivity problems
