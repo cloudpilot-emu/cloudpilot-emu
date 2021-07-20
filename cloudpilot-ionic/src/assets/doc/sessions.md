@@ -43,16 +43,20 @@ right click on a session in order to open a context menu with the same options.
 
 ### Edit
 
-Edit a session in order to change its name and the hotsync name used by the
+Edit a session in order to change its name and manage hotsync name used by the
 session.
 
 ##### Hotsync name
 
-Cloudpilot devices cannot hotsync, so the hotsync user name can be configured in
-the session settings. The hotsync name can be changed at any time.
+Usually Cloudpilot devices do not hotsync, so Cloudpilot can manage the hotsync
+user name instead. The hotsync name can be changed at any time.
 
 Older versions of Cloudpilot do not include the hotsync name in session images.
 In this case, the name will we read from the device as soon as it is launched.
+
+In case you aer using network hotsync to sync the virtual device with Palm Desktop
+this setting will conflict with the desktop. Turn it off by unchecking
+"Manage hotsync name".
 ### Save
 
 Saving a session exports a session snapshot.

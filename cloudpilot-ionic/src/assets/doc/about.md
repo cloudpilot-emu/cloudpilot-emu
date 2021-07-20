@@ -47,6 +47,14 @@ will resume exaclty where you left off.
 Cloudpilot cannot hotsync, but program (.prc) and database (.pdb)
 files can be installed directly into the emulated device.
 
+# Network support
+
+Cloudpilot can connect the virtual PalmOS device to the network via
+a proxy server. This configuration supports network hotsync. Please check the
+[online documentation](https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md)
+for detailed instructions.
+
+
 # Backing up your virtual devices
 
 Virtual devices can be backed up by creating either session snapshots
