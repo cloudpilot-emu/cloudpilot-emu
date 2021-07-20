@@ -22,7 +22,7 @@ The necessary steps to set up networking are
 The server is a small CLI application written in Python, and standalone
 packages can be downloaded from the [releases
 page](https://github.com/cloudpilot-emu/cloudpilot/releases) on Github.
-After decompressing the packagearchive you'll end up with a directory called
+After decompressing the package archive you'll end up with a directory called
 `cloudpilot-server-<version>`. This directory contains an executable
 version of the server called `cloudpilot-server`, together with all
 support files that are required to run it. Executables are provided for Linux
@@ -42,19 +42,20 @@ self-signed certificate installed on the device running Cloudpiltot.
 This certificate can be generated directly by `cloudpilot-server` by running
 
 ```
-    > cloudpilot-server generate-cert
+    > path/to/server/cloudpilot-server generate-cert
 ```
 
 Note that the certificate is checked by the browser against the host or IP on
 which the server runs, so `cloudpilot-server` will ask for a list of IPs and
-hostnames to encode in the certificate.
+hostnames to encode in the certificate. One of these must match with the
+host or IP that you enter in cloudpilot.
 
 `cloudpilot-server` will generate a file with the suffix `.pem` and one with the
 suffix `.cer`. The file with the suffix `.pem` includes the private key
 associated with the certificate and is used by the server. **DO NOT DISTRIBUTE IT**
 as an attacker could try to use it for attacking SSL connections
 originating from devices that have the certificate installed and trusted
-(altough care has been taken to make the cert as safe to use as possible).
+(altough care has been taken to make this as hard as possible).
 
 The `.cer` file does not contain sensitive data and is safe to distribute. It
 has to be installed on the device(s) running Cloudpilot.
@@ -73,12 +74,12 @@ First, copy the certificate to your iCloud drive (or send it via mail). Tap
 to open it and confirm that you want to prepare it for installation.
 
 Now head over to `Settings` -> `General` -> `Profiles` and confirm that you want to install
-the certificate. Finalle, go to `Settings` -> `General` -> `About` -> `Certificate Trust Settings`
+the certificate. Finally, go to `Settings` -> `General` -> `About` -> `Certificate Trust Settings`
 and confirm that you want to trust the certificate.
 
 ### Android
 
-Copy the certificate to your device (i.e. via USB), navigate to `Settings` -> `Security` ->
+Copy the certificate to your device (i.e. via USB or SD), navigate to `Settings` -> `Security` ->
 `Credential Storage` -> `Install from device storage`
 and install the certificate. When prompted select that you want to
 use the certificate for "VPN and apps". Note that the exact click path to the
@@ -109,8 +110,8 @@ operating system. If you want to use Cloudpilot networking on Firefox you have t
 a security exception.
 
 The easiest way to do so is to navigate to the proxy server in your browser after starting
-it. In its default setup the server runs on port 8667, so enter "https://<host>:8667"
-in the address bar (replacing <host> with the host or IP of the machine running the server).
+it. In its default setup the server runs on port 8667, so enter "https://\<host>:8667"
+in the address bar (replacing \<host> with the host or IP of the machine running the server).
 You will be presented with a security warning. Click "Advanced" and then "Add exception"
 in order to add an exception.
 
@@ -122,50 +123,38 @@ the text "not found" instead.
 Launch the server with the generated certificate by running
 
 ```
-    > cloudpilot-server serve --cert <certificate.pem>
+    > path/to/server/cloudpilot-server serve --cert \<certificate.pem>
 ```
 
-replacing <certificate.pem> with the genreated `.pem` file.
+replacing \<certificate.pem> with the genreated `.pem` file.
 
 ## Configure Cloudpilot
 
-Start Cloudpilot, go to the settings page and enable "Network redirection". Enter the
+Load Cloudpilot, go to the settings page and enable "Network redirection". Enter the
 IP address or hostname of the machine that runs the server in the field "proxy server".
 You can test the connection by pressing the "Test" button on the right.
 
-You can now use the network on your virtual PalmOS devices. On PalmOS, network connectivity
+You can now use the network on your virtual PalmOS devices. Back in the days, network connectivity
 was provided by connecting to a provider via modem, and PalmOS will ask you which service to
 connect to if an application uses the network. You can select any service you like, Cloudpilot
-will skip the dial-up phase and directly provides PalmOS with a working connection,
-
-## Troubleshooting
-
-In order to troubleshoot issues with the connection to the proxy, navigate
-to the proxy server drectly in a browser on the device running Cloudpilot. In its default configuration
-the server runs on port 8667, so the corresponding URL is `https://<host>:8667` with <host>
-replaced with the hostname or IP of the machine running the server.
-
-If the server is reachable and the certificate is configured correctly you should see the
-server respond with "not found"
-
-If the browser complains that it can't load the page you should check whether the server
-is running, whether both devices are on the same network and whether a firewall is
-preventing communication between the devices.
-
-A security warning indicates that the certificate has not been set up correctly. Check the
-installation steps above. If all else fails you can set an exception in most browser
-in a similar way as described for firefox above, but your mileage may vary depending on
-the specific browser and OS.
-
-Note that the default configuration of the server is not suitable for running cloudpilot
-from anywhere other than `https://cloudpilot-emu.github.io`. Please check "advanced usage"
-below if you want to use networking with an instance of Cloudpilot that is served from a
-different machine.
+patches PalmOS to skip dialing and directly connect via the proxy server instead.
 
 # Setting up Network Hotsync
 
+## Hotsync user name
+
+Normally, Cloudpilot will take control of the hotsync user name used by
+its virtual devices. This will conflict with Palm Desktop if you decide
+to hotsync the virtual device. Go to the sessions page in Cloudpilot,
+open the settings for the corresponding session, uncheck "Manage hotsync name"
+and hit save.
+
+## Palm Desktp
+
 On the machine running Palm Desktop, open the Hotsync manager, go to "Connections" and
 make sure that "Network (TCP/IP)" is checked.
+
+## Palm OS
 
 On the virtual device, open Hotsync, select "Modem Sync Prefs" in the menu and switch
 to "Network" (instead of "Direct to modem"). Select "Primary PC Setup" from the menu
@@ -177,7 +166,77 @@ You can now start syncing by tapping the Hotsync symbol.
 
 Note that the connection to the IP that you configure in the hotsync settings
 will be established from the machine running the server, so you can use
-`127.0.0.1` if Hotsync is running on the same machine.s
+`127.0.0.1` if Hotsync is running on the same machine.
+
+# Troubleshooting
+
+## Can't connect to proxy
+
+In order to troubleshoot issues with the connection to the proxy, navigate
+to the proxy server drectly in a browser on the device running Cloudpilot. In its default configuration
+the server runs on port 8667, so the corresponding URL is `https://\<host>:8667` with \<host>
+replaced with the hostname or IP of the machine running the server.
+
+### Connectivity problems
+
+If the server is reachable and the certificate is configured correctly you should see the
+server respond with "not found".
+
+If the browser complains that it can't load the page you should check whether the server
+is running, whether both devices are on the same network and whether a firewall is
+preventing communication between the devices.
+
+### Certificate issues
+
+A security warning indicates that the certificate has not been set up correctly.
+
+Possible issues are:
+
+-   **Installation** The certificate is not installed correctly. Please check the
+    instructions above.
+-   **Wrong certificate** Each generated certificate is unique, and the certificate
+    installed on the device must be the exact same certificate used by the server.
+-   **Name mismatch** The hostname or IP confifgured in Cloudpilot must match one
+    of the names or IPs that were entered when the certificate was generated.
+-   **Expired** The certificate has a lifetime of one year, and you'll have to generate
+    a new one after it has expired.
+
+If all else fails you can set an exception in most browser
+in a similar way as described for firefox above, but your mileage may vary depending on
+the specific browser and OS.
+
+## Hotsync issues
+
+Possible pitfalls to watch out for:
+
+-   **Hotsync Manager** The hotsync manager must be configured to enable network
+    connections.
+-   **Connectivity** Make sure the primary PC address configured in PalmOS is correct.
+    Note that the actual connection originates from the computer that runs the proxy server.
+-   **Cloudpilot suspended** Cloudpilot suspends execution if the browser tab (or mobile app)
+    is not visible,.
+
+# Known issues
+
+These will be fixed in a future version.
+
+-   Some network API calls are currently unhandled and may cause issues with untested
+    applications. Hotsync and Eudora Web are tested to work correctly.
+-   Eudora and other applications that do DNS themselves always use 8.8.8.8 (instead
+    of the DNS configured on the system running the proxy).
+-   Turning "Manage hotsync name" back on is currently buggy and requires a change
+    to the name to work correctly again.
+-   Virtual Tungsten W devices will prompt to turn on the modem after a network
+    connection closes.
+
+Wontfix:
+
+-   ICMP will only work for ICMP/ECHO and requires superuser / root permissions on
+    the machine running the proxy. DON'T. EVER. DO. THAT.
+
+    If you really think you need to ping other machines on your virtual Palm use a Docker
+    container to isolate the proxy server. Not knowing how to do that is a good
+    indication that you probably shouldn't.
 
 # Security considerations
 
