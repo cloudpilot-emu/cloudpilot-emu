@@ -1,7 +1,9 @@
 # Next version
 
 -   Work around worker update idosyncrasies on iOS.
--   Networking support via websocket proxy.
+-   Networking support via websocket proxy. Check the
+    [online documentation](https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md)
+    for more details.
 
 # Version 1.4.4
 
