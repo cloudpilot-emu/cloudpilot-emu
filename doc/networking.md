@@ -192,13 +192,13 @@ A security warning indicates that the certificate has not been set up correctly.
 
 Possible issues are:
 
--   **Installation** The certificate is not installed correctly. Please check the
+-   **Installation:** The certificate is not installed correctly. Please check the
     instructions above.
--   **Wrong certificate** Each generated certificate is unique, and the certificate
+-   **Wrong certificate:** Each generated certificate is unique, and the certificate
     installed on the device must be the exact same certificate used by the server.
--   **Name mismatch** The hostname or IP confifgured in Cloudpilot must match one
+-   **Name mismatch:** The hostname or IP confifgured in Cloudpilot must match one
     of the names or IPs that were entered when the certificate was generated.
--   **Expired** The certificate has a lifetime of one year, and you'll have to generate
+-   **Expired:** The certificate has a lifetime of one year, and you'll have to generate
     a new one after it has expired.
 
 If all else fails you can set an exception in most browser
@@ -209,11 +209,11 @@ the specific browser and OS.
 
 Possible pitfalls to watch out for:
 
--   **Hotsync Manager** The hotsync manager must be configured to enable network
+-   **Hotsync Manager:** The hotsync manager must be configured to enable network
     connections.
--   **Connectivity** Make sure the primary PC address configured in PalmOS is correct.
+-   **Connectivity:** Make sure the primary PC address configured in PalmOS is correct.
     Note that the actual connection originates from the computer that runs the proxy server.
--   **Cloudpilot suspended** Cloudpilot suspends execution if the browser tab (or mobile app)
+-   **Cloudpilot suspended:** Cloudpilot suspends execution if the browser tab (or mobile app)
     is not visible,.
 
 # Known issues
@@ -232,7 +232,7 @@ These will be fixed in a future version.
 Wontfix:
 
 -   ICMP will only work for ICMP/ECHO and requires superuser / root permissions on
-    the machine running the proxy. DON'T. EVER. DO. THAT.
+    the machine running the proxy. **DON'T RUN THE PROXY AS ROOT.**
 
     If you really think you need to ping other machines on your virtual Palm use a Docker
     container to isolate the proxy server. Not knowing how to do that is a good
@@ -243,8 +243,8 @@ Wontfix:
 The proxy server works by opening sockets on behalf of the client that connects and
 tunnels the ensuing traffic over the websocket connection. Thus, any client
 that can connect to the proxy server can use it to open sockets on the machine running
-the server. **Run the proxy on your local network only, do not expose it to the
-internet.**
+the server. **RUN THE PROXY ON YOUR LOCAL NETWORK ONLY, DO NOT EXPOSE IT TO THE
+INTERNET!**
 
 In its default configuration only https://cloudpilot-emu.github.io can connect to
 the server, so driveby attacks from other webpages are impossible.
