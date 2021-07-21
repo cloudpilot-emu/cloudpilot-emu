@@ -251,4 +251,44 @@ the server, so driveby attacks from other webpages are impossible.
 
 # Advanced usage
 
-tbd
+## Running the server from git
+
+In case you want to use the latest version of the server or want to run the server on
+a system that has not prebuild executable you'll have to run it from git. To this end
+you need `python` >= 3.7 and `pipenv` installed.
+
+Check out the Cloudpilot repository (or grab and extract a copy of the source code from
+the releases page). Change to the `server` directory and install the dependencies with
+`pipenv` running
+
+```
+    > pipenv install
+```
+
+After installing the dependencies you can run the server by running
+
+```
+    > pipenv run cloudpilot-server
+```
+
+## Running the server behind a reverse proxy
+
+The server runs fine behine a reverse proxy. The server has two endpoints,
+`/network-proxy/handshake` and `/network-proxy/connect`. which need to be proxied.
+However, Cloudpilot supports entering a full URL instead of just a hostname
+or IP in its configuration, so your proxy can prefix those endpoints with a
+custom path.
+
+In case your reverse proxy does SSL offloading you can run the server without SSL
+by replacing `--cert <certificate.pem>` with `--insecure`. By default, the insecure
+server runs on port 8666, and the secure server runs on 8667, but you can change
+those on the command line.
+
+## Running Cloutpilot locally or on another domain
+
+If you run Cloudpilot locally (during development) or on another domain the default
+server configuration will not work. The reason is that the default configuration
+forbids access from any origin other `https://cloudpilot-emu.github.io` via CORS.
+
+In case you want to use networking with such a setup you can use the `--trusted-origins`
+parameter to tune the CORS configuration to your needs.
