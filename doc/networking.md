@@ -226,8 +226,6 @@ These will be fixed in a future version.
     of the DNS configured on the system running the proxy).
 -   Turning "Manage hotsync name" back on is currently buggy and requires a change
     to the name to work correctly again.
--   Virtual Tungsten W devices will prompt to turn on the modem after a network
-    connection closes.
 
 Wontfix:
 
