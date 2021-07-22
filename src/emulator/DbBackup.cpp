@@ -14,7 +14,8 @@ namespace {
     constexpr int COMPRESSION_LEVEL = 1;
 
     string Suffix(DatabaseInfo& dbInfo) {
-        if (dbInfo.creator == sysFileCClipper) return ".pqa";
+        if (dbInfo.creator == sysFileCClipper && (dbInfo.dbAttrs & dmHdrAttrLaunchableData))
+            return ".pqa";
         if (IsExecutable(dbInfo)) return ".prc";
 
         return ".pdb";
