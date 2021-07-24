@@ -160,13 +160,12 @@ int main(int argc, const char** argv) {
                 string host = parsed.get_host();
                 long port = parsed.get_port();
                 string path = parsed.get_path();
-                string query = parsed.get_query();
-
-                if (!query.empty()) path += "?" + query;
 
                 if (scheme != "http") throw runtime_error("bad URI scheme - must be http");
 
-                return ProxyConfiguration{host, port > 0 ? port : 80, path.empty() ? "/" : path};
+                while (path.size() > 0 && path[path.size() - 1] == '/') path.pop_back();
+
+                return ProxyConfiguration{host, port > 0 ? port : 80, path.empty() ? "" : path};
             } catch (const invalid_argument& e) {
                 throw runtime_error("invalid proxy URI");
             }

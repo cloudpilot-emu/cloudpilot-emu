@@ -6,13 +6,17 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/beast/core.hpp>
+#include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/websocket.hpp>
+#include <boost/json.hpp>
+#include <boost/json/parser.hpp>
 #include <chrono>
 #include <condition_variable>
 #include <cstdio>
 #include <functional>
 #include <iostream>
 #include <mutex>
+#include <sstream>
 #include <string>
 #include <thread>
 
@@ -25,6 +29,37 @@ using namespace std::placeholders;
 using tcp = boost::asio::ip::tcp;
 namespace websocket = boost::beast::websocket;
 namespace net = boost::asio;
+namespace beast = boost::beast;
+namespace http = beast::http;
+namespace json = boost::json;
+
+namespace {
+    constexpr int SERVER_VERSION = 1;
+
+    // https://stackoverflow.com/questions/154536/encode-decode-urls-in-c
+    string UrlEncode(const string& value) {
+        ostringstream escaped;
+        escaped.fill('0');
+        escaped << hex;
+
+        for (string::const_iterator i = value.begin(), n = value.end(); i != n; ++i) {
+            string::value_type c = (*i);
+
+            // Keep alphanumeric and other accepted characters intact
+            if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+                escaped << c;
+                continue;
+            }
+
+            // Any other characters are percent-encoded
+            escaped << uppercase;
+            escaped << '%' << setw(2) << int((unsigned char)c);
+            escaped << nouppercase;
+        }
+
+        return escaped.str();
+    }
+}  // namespace
 
 class ProxyClientImpl : public ProxyClient {
    public:
@@ -39,10 +74,16 @@ class ProxyClientImpl : public ProxyClient {
         auto const resolveResults = resolver.resolve(host, port, err);
         if (err) return false;
 
+        string token;
+        if (!Handshake(resolveResults, token)) {
+            logging::printf("handshake failed");
+            return false;
+        }
+
         net::connect(ws.next_layer(), resolveResults.begin(), resolveResults.end(), err);
         if (err) return false;
 
-        ws.handshake(host, path, err);
+        ws.handshake(host, path + "/network-proxy/connect?token=" + UrlEncode(token), err);
         if (err) return false;
 
         terminating = false;
@@ -136,6 +177,66 @@ class ProxyClientImpl : public ProxyClient {
         }
 
         terminatingCv.notify_one();
+    }
+
+    bool Handshake(const tcp::resolver::results_type& resolveResults, string& token) {
+        boost::system::error_code err;
+
+        beast::tcp_stream stream(io_context);
+
+        stream.connect(resolveResults, err);
+        if (err) return false;
+
+        http::request<http::string_body> req{http::verb::post, path + "/network-proxy/handshake",
+                                             11};
+        req.set(http::field::host, host);
+        req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+
+        http::write(stream, req, err);
+        if (err) {
+            stream.socket().shutdown(tcp::socket::shutdown_both, err);
+            return false;
+        }
+
+        beast::flat_buffer buffer;
+        http::response<http::dynamic_body> res;
+
+        http::read(stream, buffer, res, err);
+        if (err) {
+            stream.socket().shutdown(tcp::socket::shutdown_both, err);
+            return false;
+        }
+
+        stream.socket().shutdown(tcp::socket::shutdown_both, err);
+        if (err && err != beast::errc::not_connected) return false;
+
+        if (res.result_int() != 200) return false;
+
+        string body;
+        for (auto chunk : res.body().cdata())
+            body.append(net::buffer_cast<const char*>(chunk), net::buffer_size(chunk));
+
+        json::parser parser;
+
+        parser.write(body.c_str(), err);
+        if (err) return false;
+
+        json::value parsedResponse = parser.release();
+        if (!parsedResponse.is_object()) return false;
+
+        auto& responseObject = parsedResponse.as_object();
+        if (!responseObject.contains("token") || !responseObject.contains("version")) return false;
+
+        if (!responseObject["version"].is_int64() ||
+            responseObject["version"].as_int64() != SERVER_VERSION) {
+            logging::printf("server version mismatch");
+            return false;
+        }
+
+        if (!responseObject["token"].is_string()) return false;
+        token = responseObject["token"].as_string().c_str();
+
+        return true;
     }
 
    private:

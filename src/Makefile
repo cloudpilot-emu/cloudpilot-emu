@@ -20,7 +20,7 @@ CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
 LDFLAGS_NATIVE ?=  \
 	$(shell sdl2-config --libs) -lSDL2_image \
-	-lreadline -lboost_coroutine
+	-lreadline -lboost_coroutine -lboost_json
 
 CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
 	-DEMULATION_LEVEL=EMULATION_UNIX
