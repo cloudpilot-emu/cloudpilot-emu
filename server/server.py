@@ -1,4 +1,7 @@
 import logging
+import platform
+from asyncio.proactor_events import _ProactorBasePipeTransport
+from functools import wraps
 
 import aiohttp_cors
 from aiohttp import log, web
@@ -52,3 +55,17 @@ def _setupLogging(logLevel, logLevelFramework):
 
     logger.setLevel(logLevel.upper())
 
+# Work around https://github.com/aio-libs/aiohttp/issues/4324
+
+def silence_event_loop_closed(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return func(self, *args, **kwargs)
+        except RuntimeError as e:
+            if str(e) != 'Event loop is closed':
+                raise
+    return wrapper
+
+if platform.system() == 'Windows':
+    _ProactorBasePipeTransport.__del__ = silence_event_loop_closed(_ProactorBasePipeTransport.__del__)

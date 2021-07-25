@@ -1,4 +1,5 @@
 import asyncio
+import errno
 import logging
 import select
 import socket
@@ -62,7 +63,6 @@ def serializeIp(addr):
 
 
 def serializeAddress(addr, target):
-
     if type(addr) != tuple or len(addr) != 2 or not isinstance(addr[0], str) or not isinstance(addr[1], int):
         target.port = 0
         target.ip = 0
@@ -71,8 +71,14 @@ def serializeAddress(addr, target):
 
         return
 
-    target.port = addr[1]
-    target.ip = serializeIp(addr[0])
+    ip = serializeIp(addr[0])
+
+    if ip == None:
+        target.port = 0
+        target.ip = 0
+    else:
+        target.port = addr[1]
+        target.ip = ip
 
 
 def translateFlags(flags):
@@ -254,7 +260,7 @@ class Connection:
                 if request.protocol == 255 or request.protocol == 1:
                     sockProtocol = socket.IPPROTO_ICMP
                 else:
-                    error(
+                    warning(
                         f'unsupported protocol for RAW socket: {request.protocol}')
                     response.err = err.netErrParamErr
 
@@ -272,7 +278,7 @@ class Connection:
             response.err = 0
 
         except Exception as ex:
-            error(f'failed to open socket: {formatException(ex)}')
+            warning(f'failed to open socket: {formatException(ex)}')
             response.err = exceptionToErr(ex)
 
         return responseMsg
@@ -297,7 +303,7 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            error(f'failed to bind socket: {formatException(ex)}')
+            warning(f'failed to bind socket: {formatException(ex)}')
             response.err = exceptionToErr(ex)
 
         return responseMsg
@@ -316,7 +322,15 @@ class Connection:
             socketCtx.setTimeoutMsec(request.timeout)
 
             if request.requestAddressLocal:
-                serializeAddress(await runInThread(lambda: sock.getsockname()), response.addressLocal)
+                try:
+                    serializeAddress(await runInThread(lambda: sock.getsockname()), response.addressLocal)
+                except OSError as ex:
+                    if ex.errno in errno.errorcode and errno.errorcode[ex.errno] == "WSAEINVAL":
+                        response.addressLocal.port = 0
+                        response.addressLocal.ip = 0
+                    else:
+                        raise ex
+
                 socketCtx.updateTimeout()
 
             if request.requestAddressRemote:
@@ -328,7 +342,7 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            error(
+            warning(
                 f'failed to get socket addresses: {formatException(ex)}')
             response.err = exceptionToErr(ex)
 
@@ -373,7 +387,7 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            error(f'failed to send: {formatException(ex)}')
+            warning(f'failed to send: {formatException(ex)}')
 
             response.err = exceptionToErr(ex)
 
@@ -407,7 +421,7 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            error(f'failed to receive: {formatException(ex)}')
+            warning(f'failed to receive: {formatException(ex)}')
 
             response.err = exceptionToErr(ex)
 
@@ -433,7 +447,7 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            error(
+            warning(
                 f'sfailed to close socket {request.handle}: {formatException(ex)}')
             response.err = exceptionToErr(ex)
 
@@ -461,7 +475,7 @@ class Connection:
             response.err = 0
 
         except Exception as ex:
-            error(
+            info(
                 f'failed to resolve host {request.name}: {formatException(ex)}')
 
             response.err = exceptionToErr(ex)
@@ -483,7 +497,7 @@ class Connection:
             response.err = 0
 
         except Exception as ex:
-            error(f'failed to resolve service: {formatException(ex)}')
+            info(f'failed to resolve service: {formatException(ex)}')
 
             response.err = err.netErrUnknownService
 
@@ -509,7 +523,7 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            error(f'failed to connect socket: {formatException(ex)}')
+            info(f'failed to connect socket: {formatException(ex)}')
             response.err = exceptionToErr(ex)
 
         return responseMsg
@@ -545,7 +559,7 @@ class Connection:
             response.err = 0
 
         except Exception as ex:
-            error(f'select failed {ex}')
+            warning(f'select failed {ex}')
 
         return responseMsg
 
@@ -556,7 +570,7 @@ class Connection:
 
                 await ctx.close()
             except Exception as ex:
-                error(
+                warning(
                     f'failed to close socket: {formatException(ex)}')
 
         contexts = [ctx for ctx in self._sockets if ctx != None]
