@@ -2,10 +2,9 @@ import asyncio
 import logging
 import select
 import socket
-from asyncio.exceptions import CancelledError
 
 import hexdump
-from sanic.websocket import ConnectionClosed
+from aiohttp import WSMsgType, web
 
 import net_errors as err
 import proto.networking_pb2 as networking
@@ -165,19 +164,23 @@ class Connection:
 
         Connection.nextConnectionIndex += 1
 
-    async def handle(self, ws):
+    async def handle(self, ws: web.WebSocketResponse):
         info(f'starting proxy connection {self.connectionIndex}')
 
         self._ws = ws
 
         try:
-            while True:
-                await self._handleMessage(await ws.recv())
+            async for message in ws:
+                if message.type == WSMsgType.BINARY:
+                    await self._handleMessage(message.data)
 
-        except (ConnectionClosed, CancelledError) as ex:
+                elif message.type == WSMsgType.ERROR:
+                    error(f"proxy connection closed with exception {ws.exception()}")
+
+                else:
+                    error("bad websocket message")
+
             info(f'connection {self.connectionIndex} closed')
-
-            raise ex
 
         finally:
             await self._closeAllSockets()
@@ -228,7 +231,7 @@ class Connection:
         if response:
             response.id = request.id
 
-            await self._ws.send(response.SerializeToString())
+            await self._ws.send_bytes(response.SerializeToString())
 
     async def _handleSocketOpen(self, request):
         debug(

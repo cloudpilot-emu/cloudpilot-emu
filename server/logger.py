@@ -1,6 +1,11 @@
-import sanic.log
+import logging
 
-logger = sanic.log.logger.getChild("cloudpilot")
+logger = logging.Logger("cloudpilot-server")
+
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter("%(name)s:%(levelname)s: %(asctime)s: %(message)s"))
+
+logger.addHandler(handler)
 
 debug = logger.debug
 info = logger.info

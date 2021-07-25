@@ -10,10 +10,10 @@ pyopenssl = "*"
 pyinstaller = "*"
 pywin32-ctypes = "*"
 pyreadline = "*"
-sanic = {ref = "fixes", git = "https://github.com/dirtyhairy/sanic"}
-sanic-cors = "*"
 pefile = "*"
 macholib = "*"
+aiohttp = "*"
+aiohttp-cors = "*"
 
 [dev-packages]
 
@@ -22,4 +22,4 @@ python_version = "3"
 
 [scripts]
 cloudpilot-server = "python cloudpilot-server.py"
-build = "pyinstaller -n cloudpilot-server --collect-submodules websockets.legacy cloudpilot-server.py"
+build = "pyinstaller -n cloudpilot-server cloudpilot-server.py"

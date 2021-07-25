@@ -4,8 +4,6 @@ import argparse
 import ssl
 import sys
 
-import sanic.response as response
-
 import server
 from certificate import generateCertificate
 from version import VERSION
@@ -53,8 +51,8 @@ with SSL enabled. Please check the documentation for more details.
     port = defaultPort if options.port == None else options.port
 
     server.start(host=options.host, port=port,
-                 ssl=sslCtx, logLevel=options.log, logLevelSanic=options.logLevelSanic,
-                 validOrigins=options.validOrigins)
+                 ssl=sslCtx, logLevel=options.log, logLevelFramework=options.logLevelFramework,
+                 trustedOrigins=options.trustedOrigins)
 
 
 parser = argparse.ArgumentParser(description="Proxy server for Cloudpilot")
@@ -73,8 +71,8 @@ parserServe.add_argument('--bind', '-b', default="0.0.0.0",
 parserServe.add_argument("--log", help="log level [default: info]", default="info", dest="log",
                          choices=["error", "warning", "info", "debug"])
 
-parserServe.add_argument("--log-sanic", help="log level for Sanic framework [default: warrning]",
-                         default="warning", dest="logLevelSanic", choices=["error", "warning", "info", "debug"])
+parserServe.add_argument("--framework-log", help="log level for web framework [default: warrning]",
+                         default="warning", dest="logLevelFramework", choices=["error", "warning", "info", "debug"])
 
 parserServe.add_argument("--cert", help="enable TLS encryption using the specified certificate in PEM format",
                          default=None)
@@ -83,7 +81,7 @@ parserServe.add_argument(
     "--insecure", help="run unencrypted", default=False, action="store_true")
 
 parserServe.add_argument("--trusted-origins", help="trusted origins for CORS [default: https://cloudpilot-emu.github.io]",
-                         default="https://cloudpilot-emu.github.io", dest="validOrigins")
+                         default="https://cloudpilot-emu.github.io", dest="trustedOrigins")
 
 
 parserGenerateCert = subparsers.add_parser("generate-cert", help="generate certificate",
