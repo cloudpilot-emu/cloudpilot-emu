@@ -1,6 +1,6 @@
 import base64
 import binascii
-import hashlib
+import hmac
 import math
 from secrets import token_bytes
 from time import time
@@ -14,10 +14,7 @@ def generateToken():
 
     nonce = token_bytes(16)
 
-    hash = hashlib.new('sha256')
-    hash.update(nonce + timeLE + SECRET)
-
-    return base64.b64encode(nonce + timeLE + hash.digest()).decode('ascii')
+    return base64.b64encode(nonce + timeLE + hmac.digest(SECRET, nonce + timeLE, 'sha256')).decode('ascii')
 
 def validateToken(token: str):
     if len(token) != 72:
@@ -35,7 +32,4 @@ def validateToken(token: str):
     if timestamp < timestampToken or (timestamp - timestampToken) > TOKEN_TTL:
         return False
 
-    hash = hashlib.new('sha256')
-    hash.update(decodedToken[0:20] + SECRET)
-
-    return hash.digest() == decodedToken[20:]
+    return hmac.digest(SECRET, decodedToken[0:20], 'sha256') == decodedToken[20:]
