@@ -47,12 +47,16 @@ over HTTPS). Generate a certificate and specifiy it via --cert in order to run
 with SSL enabled. Please check the documentation for more details.
 """)
 
+    if sslCtx == None and options.basicAuth != None:
+        print("""WARNING: Basic auth enabled without SSL. This is INSECURE.
+""")
+
     defaultPort = 8666 if sslCtx == None else 8667
     port = defaultPort if options.port == None else options.port
 
     server.start(host=options.host, port=port,
                  ssl=sslCtx, logLevel=options.log, logLevelFramework=options.logLevelFramework,
-                 trustedOrigins=options.trustedOrigins, forceBindAddress=options.forceBind)
+                 trustedOrigins=options.trustedOrigins, forceBindAddress=options.forceBind, authentication=options.basicAuth)
 
 
 parser = argparse.ArgumentParser(description="Proxy server for Cloudpilot")
@@ -85,6 +89,9 @@ parserServe.add_argument("--trusted-origins", help="trusted origins for CORS [de
 
 parserServe.add_argument("--force-bind", help="force bind all outgoing connections to the specified address",
                          default=None, dest="forceBind")
+
+parserServe.add_argument("--basic-auth", help="enable basic auth against the provided username:password",
+                         default=None, dest="basicAuth")
 
 
 parserGenerateCert = subparsers.add_parser("generate-cert", help="generate certificate",

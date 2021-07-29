@@ -1,7 +1,9 @@
+import base64
 import logging
 import platform
 from asyncio.proactor_events import _ProactorBasePipeTransport
 from functools import wraps
+from os import stat
 
 import aiohttp_cors
 from aiohttp import log, web
@@ -12,17 +14,22 @@ from logger import logger
 
 VERSION = 1
 
-def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins, forceBindAddress = None):
+
+def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins,
+          forceBindAddress=None, authentication=None):
     routes = web.RouteTableDef()
 
     async def handshakeHandler(request: web.Request):
+        if not _validateAuth(request, authentication):
+            return web.Response(status=401, text="401: unauthorized")
+
         logger.info(f"issued token, lifetime {TOKEN_TTL} seconds")
         return web.json_response({'version': VERSION, 'token': generateToken()})
 
     @routes.get("/network-proxy/connect")
     async def connectHandler(request: web.Request):
         if not ("token" in request.query and validateToken(request.query["token"])):
-            return web.Response(status = 403, text="403: forbidden")
+            return web.Response(status=403, text="403: forbidden")
 
         ws = web.WebSocketResponse()
         await ws.prepare(request)
@@ -35,7 +42,8 @@ def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins, forceBin
     app = web.Application()
     cors = aiohttp_cors.setup(app)
 
-    resourceHandshake = cors.add(app.router.add_resource("/network-proxy/handshake"))
+    resourceHandshake = cors.add(
+        app.router.add_resource("/network-proxy/handshake"))
     cors.add(resourceHandshake.add_route("POST", handshakeHandler), {
         origin.strip(): aiohttp_cors.ResourceOptions(
             allow_headers=("Authorization",)
@@ -55,7 +63,21 @@ def _setupLogging(logLevel, logLevelFramework):
 
     logger.setLevel(logLevel.upper())
 
+
+def _validateAuth(request: web.Request, authentication=None):
+    if authentication == None:
+        return True
+
+    if not "authorization" in request.headers:
+        return False
+
+    try:
+        return base64.b64decode(request.headers.get("authorization"), validate=True).decode('utf8').strip() == authentication
+    except:
+        return False
+
 # Work around https://github.com/aio-libs/aiohttp/issues/4324
+
 
 def silence_event_loop_closed(func):
     @wraps(func)
@@ -67,5 +89,7 @@ def silence_event_loop_closed(func):
                 raise
     return wrapper
 
+
 if platform.system() == 'Windows':
-    _ProactorBasePipeTransport.__del__ = silence_event_loop_closed(_ProactorBasePipeTransport.__del__)
+    _ProactorBasePipeTransport.__del__ = silence_event_loop_closed(
+        _ProactorBasePipeTransport.__del__)
