@@ -12,7 +12,7 @@ from logger import logger
 
 VERSION = 1
 
-def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins):
+def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins, forceBindAddress = None):
     routes = web.RouteTableDef()
 
     async def handshakeHandler(request: web.Request):
@@ -27,7 +27,7 @@ def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins):
         ws = web.WebSocketResponse()
         await ws.prepare(request)
 
-        connection = Connection()
+        connection = Connection(forceBindAddress)
         await connection.handle(ws)
 
     _setupLogging(logLevel, logLevelFramework)

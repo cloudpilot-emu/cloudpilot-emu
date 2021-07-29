@@ -163,10 +163,12 @@ def logPayload(data):
 class Connection:
     nextConnectionIndex = 0
 
-    def __init__(self):
+    def __init__(self, forceBindAddress=None):
         self.echoRequest = None
         self._sockets = [None] * MAX_HANDLE
         self.connectionIndex = Connection.nextConnectionIndex
+        self._forceBindAddress = (
+            forceBindAddress, 0) if forceBindAddress != None else None
 
         Connection.nextConnectionIndex += 1
 
@@ -181,7 +183,8 @@ class Connection:
                     await self._handleMessage(message.data)
 
                 elif message.type == WSMsgType.ERROR:
-                    error(f"proxy connection closed with exception {ws.exception()}")
+                    error(
+                        f"proxy connection closed with exception {ws.exception()}")
 
                 else:
                     error("bad websocket message")
@@ -296,7 +299,9 @@ class Connection:
             socketCtx.setTimeoutMsec(request.timeout)
 
             await runInThread(lambda: socketCtx.socket.bind(
-                deserializeAddress(request.address)))
+                deserializeAddress(request.address) if self._forceBindAddress == None else self._forceBindAddress))
+
+            socketCtx.bound = True
             response.err = 0
 
         except socket.timeout:
@@ -514,6 +519,12 @@ class Connection:
             socketContext = self._getSocketCtx(request.handle)
 
             socketContext.setTimeoutMsec(request.timeout)
+
+            if self._forceBindAddress != None and not socketContext.bound:
+                await runInThread(lambda: socketContext.socket.bind(self._forceBindAddress))
+
+                socketContext.bound = True
+                socketContext.updateTimeout()
 
             await runInThread(lambda: socketContext.socket.connect(deserializeAddress(request.address)))
 

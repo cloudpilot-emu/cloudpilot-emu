@@ -290,3 +290,14 @@ forbids access from any origin other `https://cloudpilot-emu.github.io` via CORS
 
 In case you want to use networking with such a setup you can use the `--trusted-origins`
 parameter to tune the CORS configuration to your needs.
+
+## Improving security
+
+### Limiting outgoing connections to a particular interface
+
+A simple but effective way to reduce the impact from an attacker abusing the proxy
+is to use the `--force-bind` option to limit the proxy's network access.
+
+Passing the assigned IP address of a network interface to `--force-bind` will
+force all outgoing connections to be bound to this interface, effectively
+limiting them to the network segment accessible to this interface.

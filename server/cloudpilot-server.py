@@ -52,7 +52,7 @@ with SSL enabled. Please check the documentation for more details.
 
     server.start(host=options.host, port=port,
                  ssl=sslCtx, logLevel=options.log, logLevelFramework=options.logLevelFramework,
-                 trustedOrigins=options.trustedOrigins)
+                 trustedOrigins=options.trustedOrigins, forceBindAddress=options.forceBind)
 
 
 parser = argparse.ArgumentParser(description="Proxy server for Cloudpilot")
@@ -82,6 +82,9 @@ parserServe.add_argument(
 
 parserServe.add_argument("--trusted-origins", help="trusted origins for CORS [default: https://cloudpilot-emu.github.io]",
                          default="https://cloudpilot-emu.github.io", dest="trustedOrigins")
+
+parserServe.add_argument("--force-bind", help="force bind all outgoing connections to the specified address",
+                         default=None, dest="forceBind")
 
 
 parserGenerateCert = subparsers.add_parser("generate-cert", help="generate certificate",

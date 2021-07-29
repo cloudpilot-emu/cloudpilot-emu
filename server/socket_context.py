@@ -12,6 +12,7 @@ class SocketContext:
     def __init__(self, socket, type):
         self.socket = socket
         self.type = type
+        self.bound = False
 
         self._timeout = None
         self._timoutBase = time.time()
