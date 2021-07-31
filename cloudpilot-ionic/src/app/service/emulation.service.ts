@@ -63,8 +63,6 @@ export class EmulationService {
             this.proxyService.resumeEvent.addHandler(() => this.running && this.advanceEmulation(performance.now()));
         });
 
-        this.kvsService.updateEvent.addHandler(() => this.isRunning() && this.updateFeatures());
-
         const storedSession = getStoredSession();
         if (storedSession !== undefined) {
             this.bootstrapCompletePromise = this.switchSession(storedSession);
@@ -125,7 +123,7 @@ export class EmulationService {
 
             this.cloudpilotInstance = await this.cloudpilot;
 
-            this.updateFeatures();
+            await this.kvsService.mutex.runExclusive(() => this.updateFeatures());
 
             this.clockEmulator = performance.now();
 

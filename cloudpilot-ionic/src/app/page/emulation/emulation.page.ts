@@ -60,6 +60,8 @@ export class EmulationPage implements AfterViewInit {
         }
         this.canvasDisplayService.initialize(this.canvasRef.nativeElement, session).then(() => {
             if (this.kvsService.kvs.showStatistics) this.canvasDisplayService.drawStatistics();
+
+            this.kvsService.updateEvent.addHandler(this.onKvsUpdate);
         });
         this.onNewFrame(this.emulationService.getCanvas());
 
@@ -76,6 +78,8 @@ export class EmulationPage implements AfterViewInit {
 
         this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
         this.snapshotService.snapshotEvent.removeHandler(this.onSnapshot);
+
+        this.kvsService.updateEvent.removeHandler(this.onKvsUpdate);
 
         this.eventHandlingService.release();
     }
@@ -159,6 +163,12 @@ export class EmulationPage implements AfterViewInit {
             }
         }
     }
+
+    private onKvsUpdate = async (): Promise<void> => {
+        await this.canvasDisplayService.drawSilkscreen();
+
+        if (this.kvsService.kvs.showStatistics) this.canvasDisplayService.drawStatistics();
+    };
 
     private onSnapshot = (statistics: SnapshotStatistics): void => {
         if (this.kvsService.kvs.showStatistics) {

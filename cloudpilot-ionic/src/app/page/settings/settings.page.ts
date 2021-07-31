@@ -1,11 +1,12 @@
-import { AbstractControl, FormControl, FormGroup } from '@angular/forms';
 import { Component, OnInit } from '@angular/core';
+import { FormControl, FormGroup } from '@angular/forms';
 import { LoadingController, ModalController } from '@ionic/angular';
 
 import { AlertService } from './../../service/alert.service';
 import { ClipboardService } from './../../service/clipboard.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { KvsService } from './../../service/kvs.service';
+import { MutexInterface } from 'async-mutex';
 import { ProxyService } from './../../service/proxy.service';
 import { validateProxyAddress } from 'src/app/helper/proxyAddress';
 
@@ -45,7 +46,11 @@ export class SettingsPage implements OnInit {
         await modal.present();
     }
 
-    ionViewWillLeave(): void {
+    ionViewWillEnter(): void {
+        this.mutexReleasePromise = this.kvsService.mutex.acquire();
+    }
+
+    async ionViewWillLeave(): Promise<void> {
         if (this.formGroup.get(fields.networkRedirection)?.value && !this.formGroup.get(fields.proxyServer)?.valid) {
             this.alertService.message(
                 'Invalid proxy server',
@@ -59,13 +64,17 @@ export class SettingsPage implements OnInit {
             this.formGroup.get('proxyServer')?.setValue(this.kvsService.kvs.proxyServer);
         }
 
-        this.kvsService.set({
+        await this.kvsService.set({
             volume: this.formGroup.get('volume')!.value,
             showStatistics: this.formGroup.get('showStatistics')!.value,
             clipboardIntegration: this.formGroup.get('clipboardIntegration')?.value,
             networkRedirection: this.formGroup.get('networkRedirection')?.value,
             proxyServer: this.formGroup.get('proxyServer')?.value,
         });
+
+        if (this.mutexReleasePromise) {
+            (await this.mutexReleasePromise)();
+        }
     }
 
     async testProxyConnection(): Promise<void> {
@@ -121,4 +130,5 @@ export class SettingsPage implements OnInit {
 
     formGroup!: FormGroup;
     private connectionTestInProgress = false;
+    private mutexReleasePromise: Promise<MutexInterface.Releaser> | undefined;
 }
