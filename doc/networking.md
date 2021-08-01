@@ -301,3 +301,13 @@ is to use the `--force-bind` option to limit the proxy's network access.
 Passing the assigned IP address of a network interface to `--force-bind` will
 force all outgoing connections to be bound to this interface, effectively
 limiting them to the network segment accessible to this interface.
+
+### Basic auth
+
+The server can be told to do enforce basic auth by adding `--basic-auth username:password`
+to the command line. The app will query the credentials when it encounters
+a proxy server secured with basic auth and stores the credentials for
+later use.
+
+As usual, basic auth transmits the credentials as plain text. DON'T ENABLE IT
+IF SSL IS DISABLED (`--insecure`).
