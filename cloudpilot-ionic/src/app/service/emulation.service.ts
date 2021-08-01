@@ -233,6 +233,10 @@ export class EmulationService {
         };
     }
 
+    isSuspended(): boolean {
+        return this.cloudpilotInstance ? this.cloudpilotInstance.isSuspended() : false;
+    }
+
     private updateFeatures(): void {
         if (!this.cloudpilotInstance) return;
 

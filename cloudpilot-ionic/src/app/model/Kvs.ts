@@ -1,3 +1,8 @@
+export interface Credentials {
+    username: string;
+    password: string;
+}
+
 export interface Kvs {
     version?: string;
     previousVersion?: string;
@@ -8,4 +13,5 @@ export interface Kvs {
     clipboardIntegration: boolean;
     networkRedirection: boolean;
     proxyServer: string;
+    proxyCredentials: Record<string, Credentials>;
 }

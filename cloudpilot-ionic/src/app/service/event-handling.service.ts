@@ -194,6 +194,8 @@ export class EventHandlingService {
     };
 
     private handleKeyDown = (e: KeyboardEvent): void => {
+        if (this.emulationService.isSuspended()) return;
+
         if (this.isToggleGameMode(e)) {
             e.preventDefault();
 
@@ -218,6 +220,8 @@ export class EventHandlingService {
     };
 
     private handleKeyUp = (e: KeyboardEvent): void => {
+        if (this.emulationService.isSuspended()) return;
+
         const button = this.buttonFromEvent(e);
         if (button !== undefined) {
             this.handleButtonUp(button);

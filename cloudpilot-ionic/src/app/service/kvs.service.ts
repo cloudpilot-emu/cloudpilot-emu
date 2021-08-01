@@ -10,6 +10,7 @@ const DEFAULTS: Kvs = {
     clipboardIntegration: false,
     networkRedirection: false,
     proxyServer: '',
+    proxyCredentials: {},
 };
 
 @Injectable({

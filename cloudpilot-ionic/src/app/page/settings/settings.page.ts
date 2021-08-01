@@ -1,11 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { LoadingController, ModalController } from '@ionic/angular';
 
 import { AlertService } from './../../service/alert.service';
 import { ClipboardService } from './../../service/clipboard.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { KvsService } from './../../service/kvs.service';
+import { ModalController } from '@ionic/angular';
 import { MutexInterface } from 'async-mutex';
 import { ProxyService } from './../../service/proxy.service';
 import { validateProxyAddress } from 'src/app/helper/proxyAddress';
@@ -28,8 +28,7 @@ export class SettingsPage implements OnInit {
         private kvsService: KvsService,
         public clipboardService: ClipboardService,
         private alertService: AlertService,
-        private proxyService: ProxyService,
-        private loadingController: LoadingController
+        private proxyService: ProxyService
     ) {}
 
     ngOnInit(): void {
@@ -80,13 +79,10 @@ export class SettingsPage implements OnInit {
     async testProxyConnection(): Promise<void> {
         if (this.connectionTestInProgress) return;
 
-        const loader = await this.loadingController.create();
-        await loader.present();
-
         this.connectionTestInProgress = true;
 
         try {
-            const handshakeResult = await this.proxyService.handshake(this.formGroup.get(fields.proxyServer)?.value);
+            const handshakeResult = await this.proxyService.handshake(this.formGroup.get(fields.proxyServer)?.value, 0);
 
             switch (handshakeResult.status) {
                 case 'failed':
@@ -102,7 +98,6 @@ export class SettingsPage implements OnInit {
             }
         } finally {
             this.connectionTestInProgress = false;
-            loader.dismiss();
         }
     }
 
