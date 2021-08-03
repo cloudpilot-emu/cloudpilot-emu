@@ -114,6 +114,9 @@ def formatException(ex):
 
 def exceptionToErr(ex):
     if isinstance(ex, socket.gaierror):
+        return err.gaierrnoToPalm(ex.args[0])
+
+    if isinstance(ex, socket.herror):
         return err.herrnoToPalm(ex.args[0])
 
     if isinstance(ex, OSError):
@@ -459,7 +462,7 @@ class Connection:
         return responseMsg
 
     async def _handleGetHostByName(self, request):
-        debug(f'getHostByNameRequest name{request.name}')
+        debug(f'getHostByNameRequest name={request.name}')
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.getHostByNameResponse

@@ -218,16 +218,31 @@ _errnoLookup = {}
 for code, name in errno.errorcode.items():
     _errnoLookup[code] = _errnoNameLookup[name] if name in _errnoNameLookup else netErrInternal
 
-_herrnoLookup = {
+_gaierrnoLookup = {
     socket.EAI_NONAME: netErrDNSUnreachable,
     socket.EAI_AGAIN: netErrDNSServerFailure,
     socket.EAI_FAIL: netErrDNSRefused,
     socket.EAI_NODATA: netErrDNSNonexistantName
 }
 
+_herrnoLookup = {
+    1: netErrDNSUnreachable,
+    2: netErrDNSServerFailure,
+    3: netErrDNSRefused,
+    4: netErrDNSNonexistantName,
+    11001: netErrDNSUnreachable,
+    11002: netErrDNSServerFailure,
+    11003: netErrDNSRefused,
+    11004: netErrDNSNonexistantName,
+}
+
 
 def errnoToPalm(errno):
     return _errnoLookup[errno] if errno in _errnoLookup else netErrInternal
+
+
+def gaierrnoToPalm(gaierrno):
+    return _gaierrnoLookup[gaierrno] if gaierrno in _gaierrnoLookup else netErrInternal
 
 
 def herrnoToPalm(herrno):
