@@ -1,3 +1,7 @@
+# Version 1.4.5
+
+-   Fix a very rare crash on session restore.
+
 # Version 1.4.4
 
 -   Minor bug fixes.
