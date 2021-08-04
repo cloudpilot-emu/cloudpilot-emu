@@ -103,6 +103,8 @@ export class SnapshotService {
 
         await this.storageService.acquireLock(tx.objectStore(OBJECT_STORE_STATE), -1);
 
+        if (this.cloudpilot.isSuspended()) return;
+
         if (this.emulationState.getCurrentSession()?.id !== this.sessionId) throw E_SESSION_MISMATCH;
 
         const statistics: SnapshotStatistics = await new Promise((resolve, reject) => {
