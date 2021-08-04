@@ -212,6 +212,12 @@ void EmPatchMgr::Load(SavestateLoader& loader) {
         TailpatchType patch;
         DoSaveLoad(helper, patch);
 
+        HeadpatchProc hp;
+        TailpatchProc tp;
+        EmPatchMgr::GetPatches(patch.fContext, hp, tp);
+
+        patch.fTailpatch = tp;
+
         gInstalledTailpatches.push_back(patch);
     }
 
