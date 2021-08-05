@@ -225,9 +225,9 @@ void EmSession::Load(SavestateLoader& loader) {
 
     lastButtonEventReadAt = systemCycles;
 
+    gSystemState.Load(loader);
     cpu->Load(loader);
     EmPatchMgr::Load(loader);
-    gSystemState.Load(loader);
     Memory::Load(loader);
 
     if (gSystemState.IsUIInitialized()) {
