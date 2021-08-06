@@ -16,7 +16,7 @@ VERSION = 1
 
 
 def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins,
-          forceBindAddress=None, authentication=None):
+          forceBindAddress=None, authentication=None, nameserver=None):
     routes = web.RouteTableDef()
 
     async def handshakeHandler(request: web.Request):
@@ -34,7 +34,7 @@ def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins,
         ws = web.WebSocketResponse()
         await ws.prepare(request)
 
-        connection = Connection(forceBindAddress)
+        connection = Connection(forceBindAddress, nameserver)
         await connection.handle(ws)
 
     _setupLogging(logLevel, logLevelFramework)

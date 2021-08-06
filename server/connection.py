@@ -165,12 +165,13 @@ def logPayload(data):
 class Connection:
     nextConnectionIndex = 0
 
-    def __init__(self, forceBindAddress=None):
+    def __init__(self, forceBindAddress=None, nameserver=None):
         self.echoRequest = None
         self._sockets = [None] * MAX_HANDLE
         self.connectionIndex = Connection.nextConnectionIndex
         self._forceBindAddress = (
             forceBindAddress, 0) if forceBindAddress != None else None
+        self._nameserver = nameserver
 
         Connection.nextConnectionIndex += 1
 
@@ -592,13 +593,14 @@ class Connection:
 
             elif request.setting in [1, 2, 0x1004, 0x1005]:
                 resolver = dns.resolver.Resolver()
-                ip = None
+                ip = self._nameserver
 
-                for nameserver in resolver.nameservers:
-                    ip = serializeIp(nameserver)
+                if ip == None:
+                    for nameserver in resolver.nameservers:
+                        ip = serializeIp(nameserver)
 
-                    if ip != None:
-                        break
+                        if ip != None:
+                            break
 
                 response.uint32val = ip if ip != None else 0x08080808
 

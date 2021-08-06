@@ -6,6 +6,7 @@ import sys
 
 import server
 from certificate import generateCertificate
+from connection import serializeIp
 from version import VERSION
 
 
@@ -54,9 +55,18 @@ with SSL enabled. Please check the documentation for more details.
     defaultPort = 8666 if sslCtx == None else 8667
     port = defaultPort if options.port == None else options.port
 
+    nameserver = None
+    if options.nameserver != None:
+        nameserver = serializeIp(options.nameserver)
+
+        if nameserver == None:
+            sys.stderr.write(f"invalid nameserver: {options.nameserver}\n")
+            exit(1)
+
     server.start(host=options.host, port=port,
                  ssl=sslCtx, logLevel=options.log, logLevelFramework=options.logLevelFramework,
-                 trustedOrigins=options.trustedOrigins, forceBindAddress=options.forceBind, authentication=options.basicAuth)
+                 trustedOrigins=options.trustedOrigins, forceBindAddress=options.forceBind, authentication=options.basicAuth,
+                 nameserver=nameserver)
 
 
 parser = argparse.ArgumentParser(description="Proxy server for Cloudpilot")
@@ -93,6 +103,8 @@ parserServe.add_argument("--force-bind", help="force bind all outgoing connectio
 parserServe.add_argument("--basic-auth", help="enable basic auth against the provided username:password",
                          default=None, dest="basicAuth")
 
+parserServe.add_argument(
+    "--nameserver", help="manually specify a nameserver (IP, no hostname) for PalmOS", default=None)
 
 parserGenerateCert = subparsers.add_parser("generate-cert", help="generate certificate",
                                            description="Generate self-signed certificate and exit")
