@@ -4,6 +4,7 @@ import logging
 import select
 import socket
 
+import dns.resolver
 import hexdump
 from aiohttp import WSMsgType, web
 
@@ -51,11 +52,9 @@ def serializeIp(addr):
     try:
         parts = [int(x) for x in addr.split(".")]
     except Exception:
-        warning(f'address is not IPv4 {addr}')
         return None
 
     if len(parts) != 4:
-        warning(f'address is not IPv4 {addr}')
         return None
 
     return ((parts[0] << 24) | (parts[1] << 16) | (
@@ -592,7 +591,16 @@ class Connection:
                 response.strval = socket.gethostname()
 
             elif request.setting in [1, 2, 0x1004, 0x1005]:
-                response.uint32val = 0x08080808
+                resolver = dns.resolver.Resolver()
+                ip = None
+
+                for nameserver in resolver.nameservers:
+                    ip = serializeIp(nameserver)
+
+                    if ip != None:
+                        break
+
+                response.uint32val = ip if ip != None else 0x08080808
 
             else:
                 response.err = err.netErrParamErr
