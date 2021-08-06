@@ -124,6 +124,20 @@ message MsgInvalidRequestResponse {
     required bool tag = 1;
 }
 
+message MsgSettingGetRequest {
+    required uint32 setting = 1;
+}
+
+message MsgSettingGetResponse {
+    oneof value {
+        uint32 uint32val = 1;
+        uint32 uint8val = 2;
+        string strval = 3;
+    }
+
+    required int32 err = 4;
+}
+
 message MsgRequest {
     required uint32 id = 1;
 
@@ -138,6 +152,7 @@ message MsgRequest {
         MsgGetServByNameRequest getServByNameRequest = 9;
         MsgSocketConnectRequest socketConnectRequest = 10;
         MsgSelectRequest selectRequest = 11;
+        MsgSettingGetRequest settingGetRequest = 12;
     }
 }
 
@@ -155,6 +170,7 @@ message MsgResponse {
         MsgGetServByNameResponse getServByNameResponse = 9;
         MsgSocketConnectResponse socketConnectResponse = 10;
         MsgSelectResponse selectResponse = 11;
+        MsgSettingGetResponse settingGetResponse = 12;
         MsgInvalidRequestResponse invalidRequestResponse = 255;
     }
 }

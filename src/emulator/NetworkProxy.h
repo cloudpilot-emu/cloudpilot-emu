@@ -51,6 +51,8 @@ class NetworkProxy {
     void Select(UInt16 width, NetFDSetType readFDs, NetFDSetType writeFDs, NetFDSetType exceptFDs,
                 int32 timeout);
 
+    bool SettingGet(UInt16 setting);
+
    public:
     EmEvent<const char*> onDisconnect;
 
@@ -94,6 +96,9 @@ class NetworkProxy {
 
     void SelectSuccess(void* responseData, size_t size);
     void SelectFail(Err err = netErrInternal);
+
+    void SettingGetSuccess(void* responseData, size_t size);
+    void SettingGetFail(Err err = netErrInternal);
 
     MsgRequest NewRequest(pb_size_t payloadTag);
     bool DecodeResponse(void* responseData, size_t size, MsgResponse& response,

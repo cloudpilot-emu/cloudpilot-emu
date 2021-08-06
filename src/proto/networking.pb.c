@@ -72,6 +72,12 @@ PB_BIND(MsgSelectResponse, MsgSelectResponse, AUTO)
 PB_BIND(MsgInvalidRequestResponse, MsgInvalidRequestResponse, AUTO)
 
 
+PB_BIND(MsgSettingGetRequest, MsgSettingGetRequest, AUTO)
+
+
+PB_BIND(MsgSettingGetResponse, MsgSettingGetResponse, 2)
+
+
 PB_BIND(MsgRequest, MsgRequest, 2)
 
 

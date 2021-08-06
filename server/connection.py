@@ -234,6 +234,9 @@ class Connection:
         elif requestType == "selectRequest":
             response = await self._handleSelect(request.selectRequest)
 
+        elif requestType == "settingGetRequest":
+            response = await self._handleSettingGet(request.settingGetRequest)
+
         else:
             response = networking.MsgResponse()
             response.invalidRequestResponse.tag = True
@@ -574,6 +577,29 @@ class Connection:
 
         except Exception as ex:
             warning(f'select failed {ex}')
+
+        return responseMsg
+
+    async def _handleSettingGet(self, request):
+        debug(f'settingGet setting={request.setting}')
+
+        try:
+            responseMsg = networking.MsgResponse()
+            response = responseMsg.settingGetResponse
+            response.err = 0
+
+            if request.setting == 6:
+                response.strval = socket.gethostname()
+
+            elif request.setting in [1, 2, 0x1004, 0x1005]:
+                response.uint32val = 0x08080808
+
+            else:
+                response.err = err.netErrParamErr
+
+        except Exception as ex:
+            warning(f'settingGet failed {ex}')
+            response.err = err.netErrInternal
 
         return responseMsg
 

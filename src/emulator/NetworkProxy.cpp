@@ -903,6 +903,84 @@ void NetworkProxy::SelectFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
+bool NetworkProxy::SettingGet(UInt16 setting) {
+    switch (setting) {
+        case 6:
+        case 1:
+        case 2:
+        case 0x1004:
+        case 0x1005:
+            break;
+
+        default:
+            return false;
+    }
+
+    MsgRequest msgRequest = NewRequest(MsgRequest_settingGetRequest_tag);
+    MsgSettingGetRequest& request(msgRequest.payload.settingGetRequest);
+
+    request.setting = setting;
+
+    SendAndSuspend(msgRequest, REQUEST_STATIC_SIZE + 256,
+                   bind(&NetworkProxy::SettingGetSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SettingGetFail, this, _1));
+
+    return true;
+}
+
+void NetworkProxy::SettingGetSuccess(void* responseData, size_t size) {
+    PREPARE_RESPONSE(SettingGet, settingGetResponse);
+
+    CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 setting, void *valueP, UInt16 *valueLenP");
+
+    CALLED_GET_PARAM_REF(UInt16, valueLenP, Marshal::kInOut);
+    CALLED_GET_PARAM_VAL(emuptr, valueP);
+
+    switch (response.which_value) {
+        case MsgSettingGetResponse_strval_tag: {
+            size_t len = strnlen(response.value.strval, 256);
+
+            if (len == 256) return SettingGetFail(netErrInternal);
+            if (len >= *valueLenP) return SettingGetFail(netErrBufTooSmall);
+
+            EmMem_strcpy(static_cast<emuptr>(valueP), response.value.strval);
+
+            *valueLenP = len;
+
+            break;
+        }
+
+        case MsgSettingGetResponse_uint32val_tag:
+            if (*valueLenP < 4) return SettingGetFail(netErrBufTooSmall);
+
+            EmMemPut32(valueP, response.value.uint32val);
+            *valueLenP = 4;
+
+            break;
+
+        case MsgSettingGetResponse_uint8val_tag:
+            if (*valueLenP == 0) return SettingGetFail(netErrBufTooSmall);
+
+            EmMemPut8(valueP, response.value.uint8val);
+            *valueLenP = 1;
+
+            break;
+
+        default:
+            return SettingGetFail(netErrInternal);
+    }
+
+    CALLED_PUT_PARAM_REF(valueLenP);
+
+    PUT_RESULT_VAL(Err, 0);
+}
+
+void NetworkProxy::SettingGetFail(Err err) {
+    CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 setting, void *valueP, UInt16 *valueLenP");
+
+    PUT_RESULT_VAL(Err, err);
+}
+
 bool NetworkProxy::DecodeResponse(void* responseData, size_t size, MsgResponse& response,
                                   pb_size_t payloadTag, BufferDecodeContext* bufferrDecodeContext) {
     response = MsgResponse_init_zero;
