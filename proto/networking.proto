@@ -138,6 +138,21 @@ message MsgSettingGetResponse {
     required int32 err = 4;
 }
 
+message MsgSocketOptionSetRequest {
+    required int32 handle = 1;
+    required uint32 level = 2;
+    required uint32 option = 3;
+    oneof value {
+        bool boolval = 5;
+        int32 intval = 6;
+        bytes bufval = 7;
+    }
+}
+
+message MsgSocketOptionSetResponse {
+    required int32 err = 1;
+}
+
 message MsgRequest {
     required uint32 id = 1;
 
@@ -153,6 +168,7 @@ message MsgRequest {
         MsgSocketConnectRequest socketConnectRequest = 10;
         MsgSelectRequest selectRequest = 11;
         MsgSettingGetRequest settingGetRequest = 12;
+        MsgSocketOptionSetRequest socketOptionSetRequest = 13;
     }
 }
 
@@ -171,6 +187,7 @@ message MsgResponse {
         MsgSocketConnectResponse socketConnectResponse = 10;
         MsgSelectResponse selectResponse = 11;
         MsgSettingGetResponse settingGetResponse = 12;
+        MsgSocketOptionSetResponse socketOptionSetResponse = 13;
         MsgInvalidRequestResponse invalidRequestResponse = 255;
     }
 }

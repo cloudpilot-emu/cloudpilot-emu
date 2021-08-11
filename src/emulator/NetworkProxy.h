@@ -29,8 +29,6 @@ class NetworkProxy {
     void SocketAddr(int16 handle, NetSocketAddrType* locAddrP, Int16* locAddrLenP,
                     NetSocketAddrType* remAddrP, Int16* remAddrLen, int32 timeout);
 
-    void SocketOptionSet(int16 handle, uint16 level, uint16 option, uint32 valueP, uint16 valueLen);
-
     void SocketSend(int16 handle, uint8* data, size_t count, uint32 flags,
                     NetSocketAddrType* toAddrP, int32 toLen, int32 timeout);
 
@@ -53,6 +51,8 @@ class NetworkProxy {
 
     bool SettingGet(UInt16 setting);
 
+    void SocketOptionSet(int16 handle, uint16 level, uint16 option, emuptr valueP, size_t len);
+
    public:
     EmEvent<const char*> onDisconnect;
 
@@ -70,8 +70,6 @@ class NetworkProxy {
 
     void SocketAddrSuccess(void* responseData, size_t size);
     void SocketAddrFail(Err err = netErrInternal);
-
-    void SocketOptionSetFail(Err err = netErrInternal);
 
     void SocketSendSuccess(void* responseData, size_t size);
     void SocketSendFail(Err err = netErrInternal);
@@ -99,6 +97,9 @@ class NetworkProxy {
 
     void SettingGetSuccess(void* responseData, size_t size);
     void SettingGetFail(Err err = netErrInternal);
+
+    void SocketOptionSetSuccess(void* responseData, size_t size);
+    void SocketOptionSetFail(Err err = netErrInternal);
 
     MsgRequest NewRequest(pb_size_t payloadTag);
     bool DecodeResponse(void* responseData, size_t size, MsgResponse& response,

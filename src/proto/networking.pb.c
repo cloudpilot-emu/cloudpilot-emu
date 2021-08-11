@@ -78,6 +78,12 @@ PB_BIND(MsgSettingGetRequest, MsgSettingGetRequest, AUTO)
 PB_BIND(MsgSettingGetResponse, MsgSettingGetResponse, 2)
 
 
+PB_BIND(MsgSocketOptionSetRequest, MsgSocketOptionSetRequest, AUTO)
+
+
+PB_BIND(MsgSocketOptionSetResponse, MsgSocketOptionSetResponse, AUTO)
+
+
 PB_BIND(MsgRequest, MsgRequest, 2)
 
 

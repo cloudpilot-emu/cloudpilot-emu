@@ -10,7 +10,9 @@ from aiohttp import WSMsgType, web
 
 import net_errors as err
 import proto.networking_pb2 as networking
+import sockopt
 from logger import debug, error, info, logger, warning
+from palmos_constants import *
 from socket_context import MAX_TIMEOUT, SocketContext
 from util import runInThread
 
@@ -236,6 +238,9 @@ class Connection:
 
         elif requestType == "settingGetRequest":
             response = await self._handleSettingGet(request.settingGetRequest)
+
+        elif requestType == "socketOptionSetRequest":
+            response = await self._handleSocketOptionSet(request.socketOptionSetRequest)
 
         else:
             response = networking.MsgResponse()
@@ -548,10 +553,10 @@ class Connection:
     async def _handleSelect(self, request):
         debug(f'select width={request.width} readFDs={self._fdSetToHandles(request.readFDs, request.width)} writeFDs={self._fdSetToHandles(request.writeFDs, request.width)} exceptFDs={self._fdSetToHandles(request.exceptFDs, request.width)} timeout={request.timeout}')
 
-        try:
-            responseMsg = networking.MsgResponse()
-            response = responseMsg.selectResponse
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.selectResponse
 
+        try:
             response.readFDs = 0
             response.writeFDs = 0
             response.exceptFDs = 0
@@ -576,22 +581,22 @@ class Connection:
             response.err = 0
 
         except Exception as ex:
-            warning(f'select failed {ex}')
+            warning(f'select failed {formatException(ex)}')
 
         return responseMsg
 
     async def _handleSettingGet(self, request):
         debug(f'settingGet setting={request.setting}')
 
-        try:
-            responseMsg = networking.MsgResponse()
-            response = responseMsg.settingGetResponse
-            response.err = 0
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.settingGetResponse
+        response.err = 0
 
-            if request.setting == 6:
+        try:
+            if request.setting == netSettingHostName:
                 response.strval = socket.gethostname()
 
-            elif request.setting in [1, 2, 0x1004, 0x1005]:
+            elif request.setting in [netSettingPrimaryDNS, netSettingSecondaryDNS, netSettingRTPrimaryDNS, netSettingRTSecondaryDNS]:
                 resolver = dns.resolver.Resolver()
                 ip = self._nameserver
 
@@ -608,8 +613,40 @@ class Connection:
                 response.err = err.netErrParamErr
 
         except Exception as ex:
-            warning(f'settingGet failed {ex}')
+            warning(f'settingGet failed {formatException(ex)}')
             response.err = err.netErrInternal
+
+        return responseMsg
+
+    async def _handleSocketOptionSet(self, request):
+        value = sockopt.sockoptValue(request)
+
+        debug(
+            f'socketOptionSet handle={request.handle} level={request.level} option={request.option} value={value}')
+
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketOptionSetResponse
+        response.err = 0
+
+        try:
+            socket = self._getSocketCtx(request.handle).socket
+
+            if request.level == netSocketOptLevelSocket and request.option == netSocketOptSockNonBlocking:
+                await runInThread(lambda: socket.setblocking(bool(value)))
+            else:
+                level = sockopt.translateSockoptLevel(request.level)
+                option = sockopt.translateSockoptOption(
+                    request.level, request.option)
+
+                if level == None or option == None:
+                    response.err = err.netErrParamErr
+                else:
+                    await runInThread(lambda: socket.setsockopt(level, option, value))
+
+        except Exception as ex:
+            warning(
+                f'socketOptionSet failed handle={request.handle} {formatException(ex)}')
+            response.err = exceptionToErr(ex)
 
         return responseMsg
 

@@ -9,7 +9,7 @@ MAX_TIMEOUT = 10
 
 
 class SocketContext:
-    def __init__(self, socket, type):
+    def __init__(self, socket: socket.socket, type):
         self.socket = socket
         self.type = type
         self.bound = False
@@ -25,7 +25,7 @@ class SocketContext:
         self.updateTimeout()
 
     def updateTimeout(self):
-        if self._timeout == None:
+        if self._timeout == None and self.socket.getblocking():
             self.socket.settimeout(MAX_TIMEOUT)
 
         else:

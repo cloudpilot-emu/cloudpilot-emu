@@ -105,6 +105,23 @@ typedef struct _MsgSocketOpenResponse {
     int32_t err; 
 } MsgSocketOpenResponse;
 
+typedef PB_BYTES_ARRAY_T(40) MsgSocketOptionSetRequest_bufval_t;
+typedef struct _MsgSocketOptionSetRequest { 
+    int32_t handle; 
+    uint32_t level; 
+    uint32_t option; 
+    pb_size_t which_value;
+    union {
+        bool boolval;
+        int32_t intval;
+        MsgSocketOptionSetRequest_bufval_t bufval;
+    } value; 
+} MsgSocketOptionSetRequest;
+
+typedef struct _MsgSocketOptionSetResponse { 
+    int32_t err; 
+} MsgSocketOptionSetResponse;
+
 typedef struct _MsgSocketReceiveRequest { 
     int32_t handle; 
     uint32_t flags; 
@@ -169,6 +186,7 @@ typedef struct _MsgRequest {
         MsgSocketConnectRequest socketConnectRequest;
         MsgSelectRequest selectRequest;
         MsgSettingGetRequest settingGetRequest;
+        MsgSocketOptionSetRequest socketOptionSetRequest;
     } payload; 
 } MsgRequest;
 
@@ -188,6 +206,7 @@ typedef struct _MsgResponse {
         MsgSocketConnectResponse socketConnectResponse;
         MsgSelectResponse selectResponse;
         MsgSettingGetResponse settingGetResponse;
+        MsgSocketOptionSetResponse socketOptionSetResponse;
         MsgInvalidRequestResponse invalidRequestResponse;
     } payload; 
 } MsgResponse;
@@ -222,6 +241,8 @@ extern "C" {
 #define MsgInvalidRequestResponse_init_default   {0}
 #define MsgSettingGetRequest_init_default        {0}
 #define MsgSettingGetResponse_init_default       {0, {0}, 0}
+#define MsgSocketOptionSetRequest_init_default   {0, 0, 0, 0, {0}}
+#define MsgSocketOptionSetResponse_init_default  {0}
 #define MsgRequest_init_default                  {0, 0, {MsgSocketOpenRequest_init_default}}
 #define MsgResponse_init_default                 {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_default}}
 #define Address_init_zero                        {0, 0}
@@ -248,6 +269,8 @@ extern "C" {
 #define MsgInvalidRequestResponse_init_zero      {0}
 #define MsgSettingGetRequest_init_zero           {0}
 #define MsgSettingGetResponse_init_zero          {0, {0}, 0}
+#define MsgSocketOptionSetRequest_init_zero      {0, 0, 0, 0, {0}}
+#define MsgSocketOptionSetResponse_init_zero     {0}
 #define MsgRequest_init_zero                     {0, 0, {MsgSocketOpenRequest_init_zero}}
 #define MsgResponse_init_zero                    {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_zero}}
 
@@ -291,6 +314,13 @@ extern "C" {
 #define MsgSocketOpenRequest_protocol_tag        2
 #define MsgSocketOpenResponse_handle_tag         1
 #define MsgSocketOpenResponse_err_tag            2
+#define MsgSocketOptionSetRequest_handle_tag     1
+#define MsgSocketOptionSetRequest_level_tag      2
+#define MsgSocketOptionSetRequest_option_tag     3
+#define MsgSocketOptionSetRequest_boolval_tag    5
+#define MsgSocketOptionSetRequest_intval_tag     6
+#define MsgSocketOptionSetRequest_bufval_tag     7
+#define MsgSocketOptionSetResponse_err_tag       1
 #define MsgSocketReceiveRequest_handle_tag       1
 #define MsgSocketReceiveRequest_flags_tag        2
 #define MsgSocketReceiveRequest_timeout_tag      3
@@ -327,6 +357,7 @@ extern "C" {
 #define MsgRequest_socketConnectRequest_tag      10
 #define MsgRequest_selectRequest_tag             11
 #define MsgRequest_settingGetRequest_tag         12
+#define MsgRequest_socketOptionSetRequest_tag    13
 #define MsgResponse_id_tag                       1
 #define MsgResponse_socketOpenResponse_tag       2
 #define MsgResponse_socketBindResponse_tag       3
@@ -339,6 +370,7 @@ extern "C" {
 #define MsgResponse_socketConnectResponse_tag    10
 #define MsgResponse_selectResponse_tag           11
 #define MsgResponse_settingGetResponse_tag       12
+#define MsgResponse_socketOptionSetResponse_tag  13
 #define MsgResponse_invalidRequestResponse_tag   255
 
 /* Struct field encoding specification for nanopb */
@@ -507,6 +539,21 @@ X(a, STATIC,   REQUIRED, INT32,    err,               4)
 #define MsgSettingGetResponse_CALLBACK NULL
 #define MsgSettingGetResponse_DEFAULT NULL
 
+#define MsgSocketOptionSetRequest_FIELDLIST(X, a) \
+X(a, STATIC,   REQUIRED, INT32,    handle,            1) \
+X(a, STATIC,   REQUIRED, UINT32,   level,             2) \
+X(a, STATIC,   REQUIRED, UINT32,   option,            3) \
+X(a, STATIC,   ONEOF,    BOOL,     (value,boolval,value.boolval),   5) \
+X(a, STATIC,   ONEOF,    INT32,    (value,intval,value.intval),   6) \
+X(a, STATIC,   ONEOF,    BYTES,    (value,bufval,value.bufval),   7)
+#define MsgSocketOptionSetRequest_CALLBACK NULL
+#define MsgSocketOptionSetRequest_DEFAULT NULL
+
+#define MsgSocketOptionSetResponse_FIELDLIST(X, a) \
+X(a, STATIC,   REQUIRED, INT32,    err,               1)
+#define MsgSocketOptionSetResponse_CALLBACK NULL
+#define MsgSocketOptionSetResponse_DEFAULT NULL
+
 #define MsgRequest_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, UINT32,   id,                1) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketOpenRequest,payload.socketOpenRequest),   2) \
@@ -519,7 +566,8 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payload,getHostByNameRequest,payload.getHost
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,getServByNameRequest,payload.getServByNameRequest),   9) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketConnectRequest,payload.socketConnectRequest),  10) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (payload,selectRequest,payload.selectRequest),  11) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,settingGetRequest,payload.settingGetRequest),  12)
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,settingGetRequest,payload.settingGetRequest),  12) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketOptionSetRequest,payload.socketOptionSetRequest),  13)
 #define MsgRequest_CALLBACK NULL
 #define MsgRequest_DEFAULT NULL
 #define MsgRequest_payload_socketOpenRequest_MSGTYPE MsgSocketOpenRequest
@@ -533,6 +581,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (payload,settingGetRequest,payload.settingGet
 #define MsgRequest_payload_socketConnectRequest_MSGTYPE MsgSocketConnectRequest
 #define MsgRequest_payload_selectRequest_MSGTYPE MsgSelectRequest
 #define MsgRequest_payload_settingGetRequest_MSGTYPE MsgSettingGetRequest
+#define MsgRequest_payload_socketOptionSetRequest_MSGTYPE MsgSocketOptionSetRequest
 
 #define MsgResponse_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, UINT32,   id,                1) \
@@ -547,6 +596,7 @@ X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,getServByNameResponse,payload.getSer
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketConnectResponse,payload.socketConnectResponse),  10) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,selectResponse,payload.selectResponse),  11) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,settingGetResponse,payload.settingGetResponse),  12) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOptionSetResponse,payload.socketOptionSetResponse),  13) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,invalidRequestResponse,payload.invalidRequestResponse), 255)
 #define MsgResponse_CALLBACK NULL
 #define MsgResponse_DEFAULT NULL
@@ -561,6 +611,7 @@ X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,invalidRequestResponse,payload.inval
 #define MsgResponse_payload_socketConnectResponse_MSGTYPE MsgSocketConnectResponse
 #define MsgResponse_payload_selectResponse_MSGTYPE MsgSelectResponse
 #define MsgResponse_payload_settingGetResponse_MSGTYPE MsgSettingGetResponse
+#define MsgResponse_payload_socketOptionSetResponse_MSGTYPE MsgSocketOptionSetResponse
 #define MsgResponse_payload_invalidRequestResponse_MSGTYPE MsgInvalidRequestResponse
 
 extern const pb_msgdesc_t Address_msg;
@@ -587,6 +638,8 @@ extern const pb_msgdesc_t MsgSelectResponse_msg;
 extern const pb_msgdesc_t MsgInvalidRequestResponse_msg;
 extern const pb_msgdesc_t MsgSettingGetRequest_msg;
 extern const pb_msgdesc_t MsgSettingGetResponse_msg;
+extern const pb_msgdesc_t MsgSocketOptionSetRequest_msg;
+extern const pb_msgdesc_t MsgSocketOptionSetResponse_msg;
 extern const pb_msgdesc_t MsgRequest_msg;
 extern const pb_msgdesc_t MsgResponse_msg;
 
@@ -615,6 +668,8 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define MsgInvalidRequestResponse_fields &MsgInvalidRequestResponse_msg
 #define MsgSettingGetRequest_fields &MsgSettingGetRequest_msg
 #define MsgSettingGetResponse_fields &MsgSettingGetResponse_msg
+#define MsgSocketOptionSetRequest_fields &MsgSocketOptionSetRequest_msg
+#define MsgSocketOptionSetResponse_fields &MsgSocketOptionSetResponse_msg
 #define MsgRequest_fields &MsgRequest_msg
 #define MsgResponse_fields &MsgResponse_msg
 
@@ -643,6 +698,8 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define MsgSocketConnectResponse_size            11
 #define MsgSocketOpenRequest_size                12
 #define MsgSocketOpenResponse_size               22
+#define MsgSocketOptionSetRequest_size           65
+#define MsgSocketOptionSetResponse_size          11
 #define MsgSocketReceiveRequest_size             36
 #define MsgSocketSendResponse_size               22
 
