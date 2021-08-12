@@ -242,6 +242,9 @@ class Connection:
         elif requestType == "socketOptionSetRequest":
             response = await self._handleSocketOptionSet(request.socketOptionSetRequest)
 
+        elif requestType == "socketListenRequest":
+            response = await self._handleSocketListen(request.socketListenRequest)
+
         else:
             response = networking.MsgResponse()
             response.invalidRequestResponse.tag = True
@@ -649,6 +652,29 @@ class Connection:
         except Exception as ex:
             warning(
                 f'socketOptionSet failed handle={request.handle} {formatException(ex)}')
+            response.err = exceptionToErr(ex)
+
+        return responseMsg
+
+    async def _handleSocketListen(self, request):
+        debug(
+            f'socketOptionListen handle={request.handle} backlock={request.backlog} timeout={request.timeout}')
+
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketListenResponse
+
+        try:
+            socketCtx = self._getSocketCtx(request.handle)
+
+            socketCtx.setTimeoutMsec(request.timeout)
+            await runInThread(lambda: socketCtx.socket.listen(request.backlog))
+
+            response.err = 0
+
+        except Exception as ex:
+            warning(
+                f'socketListen failed handle={request.handle} {formatException(ex)}')
+
             response.err = exceptionToErr(ex)
 
         return responseMsg

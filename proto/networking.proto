@@ -154,6 +154,16 @@ message MsgSocketOptionSetResponse {
     required int32 err = 1;
 }
 
+message MsgSocketListenRequest {
+    required int32 handle = 1;
+    required int32 backlog = 2;
+    required int32 timeout = 3;
+}
+
+message MsgSocketListenResponse {
+    required int32 err = 1;
+}
+
 message MsgRequest {
     required uint32 id = 1;
 
@@ -170,6 +180,7 @@ message MsgRequest {
         MsgSelectRequest selectRequest = 11;
         MsgSettingGetRequest settingGetRequest = 12;
         MsgSocketOptionSetRequest socketOptionSetRequest = 13;
+        MsgSocketListenRequest socketListenRequest = 14;
     }
 }
 
@@ -189,6 +200,7 @@ message MsgResponse {
         MsgSelectResponse selectResponse = 11;
         MsgSettingGetResponse settingGetResponse = 12;
         MsgSocketOptionSetResponse socketOptionSetResponse = 13;
+        MsgSocketListenResponse socketListenResponse = 14;
         MsgInvalidRequestResponse invalidRequestResponse = 255;
     }
 }

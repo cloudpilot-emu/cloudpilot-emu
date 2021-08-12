@@ -1050,6 +1050,47 @@ void NetworkProxy::SocketOptionSetFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
+void NetworkProxy::SocketListen(int16 handle, int32 timeout) {
+    MsgRequest msgRequest = NewRequest(MsgRequest_socketListenRequest_tag);
+    MsgSocketListenRequest& request(msgRequest.payload.socketListenRequest);
+
+    request.handle = handle;
+    request.backlog = 1;
+    request.timeout = timeout;
+
+    SendAndSuspend(msgRequest, REQUEST_STATIC_SIZE,
+                   bind(&NetworkProxy::SocketListenSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SocketListenFail, this, _1));
+}
+
+void NetworkProxy::SocketListenSuccess(void* responseData, size_t size) {
+    PREPARE_RESPONSE(SocketListen, socketListenResponse);
+
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "UInt16	queueLen, Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = 0;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, 0);
+}
+
+void NetworkProxy::SocketListenFail(Err err) {
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "UInt16	queueLen, Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
+}
+
 bool NetworkProxy::DecodeResponse(void* responseData, size_t size, MsgResponse& response,
                                   pb_size_t payloadTag, BufferDecodeContext* bufferrDecodeContext) {
     response = MsgResponse_init_zero;
