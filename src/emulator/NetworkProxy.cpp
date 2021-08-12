@@ -262,7 +262,7 @@ void NetworkProxy::SocketBind(int16 handle, NetSocketAddrType* sockAddrP, Int32 
     MsgRequest request = NewRequest(MsgRequest_socketBindRequest_tag);
 
     request.payload.socketBindRequest.handle = handle;
-    request.payload.socketBindRequest.timeout = timeout;
+    request.payload.socketBindRequest.timeout = convertTimeout(timeout);
 
     if (!serializeAddress(sockAddrP, request.payload.socketBindRequest.address))
         return SocketBindFail(netErrParamErr);
@@ -777,7 +777,7 @@ void NetworkProxy::SocketConnect(int16 handle, NetSocketAddrType* address, int16
     if (!serializeAddress(address, request.address)) return SocketConnectFail(netErrParamErr);
 
     request.handle = handle;
-    request.timeout = timeout;
+    request.timeout = convertTimeout(timeout);
 
     SendAndSuspend(msgRequest, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketConnectSuccess, this, _1, _2),
@@ -953,7 +953,7 @@ void NetworkProxy::SettingGetFail(Err err) {
 }
 
 void NetworkProxy::SocketOptionSet(int16 handle, uint16 level, uint16 option, emuptr valueP,
-                                   size_t len) {
+                                   size_t len, int32 timeout) {
     if (level == netSocketOptLevelSocket &&
         (option == netSocketOptSockRequireErrClear || option == netSocketOptSockMultiPktAddr))
         return SocketOptionSetFail(netErrUnimplemented);
@@ -964,6 +964,7 @@ void NetworkProxy::SocketOptionSet(int16 handle, uint16 level, uint16 option, em
     request.handle = handle;
     request.level = level;
     request.option = option;
+    request.timeout = convertTimeout(timeout);
 
     if (level == netSocketOptLevelSocket && option == netSocketOptSockLinger) {
         request.which_value = MsgSocketOptionSetRequest_intval_tag;

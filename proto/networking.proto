@@ -142,6 +142,7 @@ message MsgSocketOptionSetRequest {
     required int32 handle = 1;
     required uint32 level = 2;
     required uint32 option = 3;
+    required int32 timeout = 4;
     oneof value {
         bool boolval = 5;
         int32 intval = 6;

@@ -285,7 +285,7 @@ namespace {
         PRINTF("\nNetLibSocketOptionSet, option = 0x%04x", option);
 
         if (Feature::GetNetworkRedirection()) {
-            gNetworkProxy.SocketOptionSet(socket, level, option, optValueP, optValueLen);
+            gNetworkProxy.SocketOptionSet(socket, level, option, optValueP, optValueLen, timeout);
 
             return kSkipROM;
         }

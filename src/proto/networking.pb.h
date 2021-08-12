@@ -110,6 +110,7 @@ typedef struct _MsgSocketOptionSetRequest {
     int32_t handle; 
     uint32_t level; 
     uint32_t option; 
+    int32_t timeout; 
     pb_size_t which_value;
     union {
         bool boolval;
@@ -241,7 +242,7 @@ extern "C" {
 #define MsgInvalidRequestResponse_init_default   {0}
 #define MsgSettingGetRequest_init_default        {0}
 #define MsgSettingGetResponse_init_default       {0, {0}, 0}
-#define MsgSocketOptionSetRequest_init_default   {0, 0, 0, 0, {0}}
+#define MsgSocketOptionSetRequest_init_default   {0, 0, 0, 0, 0, {0}}
 #define MsgSocketOptionSetResponse_init_default  {0}
 #define MsgRequest_init_default                  {0, 0, {MsgSocketOpenRequest_init_default}}
 #define MsgResponse_init_default                 {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_default}}
@@ -269,7 +270,7 @@ extern "C" {
 #define MsgInvalidRequestResponse_init_zero      {0}
 #define MsgSettingGetRequest_init_zero           {0}
 #define MsgSettingGetResponse_init_zero          {0, {0}, 0}
-#define MsgSocketOptionSetRequest_init_zero      {0, 0, 0, 0, {0}}
+#define MsgSocketOptionSetRequest_init_zero      {0, 0, 0, 0, 0, {0}}
 #define MsgSocketOptionSetResponse_init_zero     {0}
 #define MsgRequest_init_zero                     {0, 0, {MsgSocketOpenRequest_init_zero}}
 #define MsgResponse_init_zero                    {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_zero}}
@@ -317,6 +318,7 @@ extern "C" {
 #define MsgSocketOptionSetRequest_handle_tag     1
 #define MsgSocketOptionSetRequest_level_tag      2
 #define MsgSocketOptionSetRequest_option_tag     3
+#define MsgSocketOptionSetRequest_timeout_tag    4
 #define MsgSocketOptionSetRequest_boolval_tag    5
 #define MsgSocketOptionSetRequest_intval_tag     6
 #define MsgSocketOptionSetRequest_bufval_tag     7
@@ -543,6 +545,7 @@ X(a, STATIC,   REQUIRED, INT32,    err,               4)
 X(a, STATIC,   REQUIRED, INT32,    handle,            1) \
 X(a, STATIC,   REQUIRED, UINT32,   level,             2) \
 X(a, STATIC,   REQUIRED, UINT32,   option,            3) \
+X(a, STATIC,   REQUIRED, INT32,    timeout,           4) \
 X(a, STATIC,   ONEOF,    BOOL,     (value,boolval,value.boolval),   5) \
 X(a, STATIC,   ONEOF,    INT32,    (value,intval,value.intval),   6) \
 X(a, STATIC,   ONEOF,    BYTES,    (value,bufval,value.bufval),   7)
@@ -698,7 +701,7 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define MsgSocketConnectResponse_size            11
 #define MsgSocketOpenRequest_size                12
 #define MsgSocketOpenResponse_size               22
-#define MsgSocketOptionSetRequest_size           65
+#define MsgSocketOptionSetRequest_size           76
 #define MsgSocketOptionSetResponse_size          11
 #define MsgSocketReceiveRequest_size             36
 #define MsgSocketSendResponse_size               22

@@ -622,14 +622,15 @@ class Connection:
         value = sockopt.sockoptValue(request)
 
         debug(
-            f'socketOptionSet handle={request.handle} level={request.level} option={request.option} value={value}')
+            f'socketOptionSet handle={request.handle} level={request.level} option={request.option} value={value} timeout={request.timeout}')
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketOptionSetResponse
         response.err = 0
 
         try:
-            socket = self._getSocketCtx(request.handle).socket
+            socketCtx = self._getSocketCtx(request.handle)
+            socket = socketCtx.socket
 
             if request.level == netSocketOptLevelSocket and request.option == netSocketOptSockNonBlocking:
                 await runInThread(lambda: socket.setblocking(bool(value)))
@@ -641,6 +642,8 @@ class Connection:
                 if level == None or option == None:
                     response.err = err.netErrParamErr
                 else:
+                    socketCtx.setTimeoutMsec(request.timeout)
+
                     await runInThread(lambda: socket.setsockopt(level, option, value))
 
         except Exception as ex:

@@ -51,7 +51,8 @@ class NetworkProxy {
 
     bool SettingGet(UInt16 setting);
 
-    void SocketOptionSet(int16 handle, uint16 level, uint16 option, emuptr valueP, size_t len);
+    void SocketOptionSet(int16 handle, uint16 level, uint16 option, emuptr valueP, size_t len,
+                         int32 timeout);
 
    public:
     EmEvent<const char*> onDisconnect;
