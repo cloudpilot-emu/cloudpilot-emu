@@ -326,11 +326,6 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
         EmOpcode68K opcode;
 
         opcode = EmMemGet16(pc);
-        if (opcode > 0xffff) {
-            cout << "foo"
-                 << " " << pc << " " << opcode << endl
-                 << flush;
-        }
         cycles = (functable[opcode])(opcode);
         fCurrentCycles += cycles;
         // =======================================================================
