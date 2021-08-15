@@ -147,7 +147,7 @@ def logAndConvertException(msg, ex):
     if ecode != err.netErrTimeout and ecode != err.netErrWouldBlock:
         warning(f'{msg}: {formatException(ex)}')
 
-    return err
+    return ecode
 
 
 def ipFromIpPacket(packet):
