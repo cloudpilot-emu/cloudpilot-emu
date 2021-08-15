@@ -413,9 +413,6 @@ void Byteswap(regstruct& p) {
     Byteswap(p.stopped);
     Byteswap(p.intmask);
     Byteswap(p.pc);
-    Byteswap(p.pc_p);
-    Byteswap(p.pc_oldp);
-    Byteswap(p.pc_meta_oldp);
     Byteswap(p.vbr);
     Byteswap(p.sfc);
     Byteswap(p.dfc);

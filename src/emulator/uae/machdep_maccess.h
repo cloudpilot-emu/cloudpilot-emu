@@ -1,6 +1,6 @@
- /* 
+ /*
   * UAE - The Un*x Amiga Emulator
-  * 
+  *
   * Memory access functions
   *
   * Copyright 1996 Bernd Schmidt
@@ -24,4 +24,3 @@
 #define put_word			EmMemPut16
 #define put_byte			EmMemPut8
 
-#define get_real_address	EmMemGetRealAddress

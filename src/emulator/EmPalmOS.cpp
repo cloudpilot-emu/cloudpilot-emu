@@ -160,9 +160,8 @@ Bool EmPalmOS::HandleJSR_Ind(emuptr oldpc, emuptr dest) {
     //			0x2269, (trapNum-sysTrapBase)*4,
     //			0x4e91)
 
-    uint8* realMem = EmMemGetRealAddress(oldpc);
-    if (EmMemDoGet16(realMem) == 0x4e91 && EmMemDoGet16(realMem - 4) == 0x2269 &&
-        EmMemDoGet16(realMem - 8) == 0x2278) {
+    if (EmMemGet16(oldpc) == 0x4e91 && EmMemGet16(oldpc - 4) == 0x2269 &&
+        EmMemGet16(oldpc - 8) == 0x2278) {
         handledIt = EmPalmOS::HandleSystemCall(false);
     } else {
         if (gBigROMEntry == EmMemNULL) {

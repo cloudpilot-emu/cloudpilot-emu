@@ -267,8 +267,7 @@ Bool GetSystemCallContext(emuptr pc, SystemCallContext& context) {
     // The PC is current pointing to either the TRAP $F or the JSR (A1),
     // so we can look at the opcode to determine how we got here.
 
-    uint8* realMem = EmMemGetRealAddress(pc);
-    uint16 opcode = EmMemDoGet16(realMem);
+    uint16 opcode = EmMemGet16(pc);
 
     context.fViaTrap = opcode == (m68kTrapInstr + sysDispatchTrapNum);
     context.fViaJsrA1 = opcode == (0x4e91);

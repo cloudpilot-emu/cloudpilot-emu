@@ -104,13 +104,13 @@ STATIC_INLINE uint32 EmMemGet32(emuptr addr) { return EmMemCallGetFunc(lget, add
 //		� EmMemGet16
 // ---------------------------------------------------------------------------
 
-STATIC_INLINE uint32 EmMemGet16(emuptr addr) { return EmMemCallGetFunc(wget, addr); }
+STATIC_INLINE uint16 EmMemGet16(emuptr addr) { return EmMemCallGetFunc(wget, addr); }
 
 // ---------------------------------------------------------------------------
 //		� EmMemGet8
 // ---------------------------------------------------------------------------
 
-STATIC_INLINE uint32 EmMemGet8(emuptr addr) { return EmMemCallGetFunc(bget, addr); }
+STATIC_INLINE uint8 EmMemGet8(emuptr addr) { return EmMemCallGetFunc(bget, addr); }
 
 // ---------------------------------------------------------------------------
 //		� EmMemPut32
@@ -122,13 +122,13 @@ STATIC_INLINE void EmMemPut32(emuptr addr, uint32 l) { EmMemCallPutFunc(lput, ad
 //		� EmMemPut16
 // ---------------------------------------------------------------------------
 
-STATIC_INLINE void EmMemPut16(emuptr addr, uint32 w) { EmMemCallPutFunc(wput, addr, w); }
+STATIC_INLINE void EmMemPut16(emuptr addr, uint16 w) { EmMemCallPutFunc(wput, addr, w); }
 
 // ---------------------------------------------------------------------------
 //		� EmMemPut8
 // ---------------------------------------------------------------------------
 
-STATIC_INLINE void EmMemPut8(emuptr addr, uint32 b) { EmMemCallPutFunc(bput, addr, b); }
+STATIC_INLINE void EmMemPut8(emuptr addr, uint8 b) { EmMemCallPutFunc(bput, addr, b); }
 
 // ---------------------------------------------------------------------------
 //		� EmMemGetRealAddress

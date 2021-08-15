@@ -277,9 +277,7 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
     uint32 cycles;
     cpuop_func** functable = cpufunctbl;
 
-#define pc_p (regs.pc_p)
-#define pc_meta_oldp (regs.pc_meta_oldp)
-#define pc_oldp (regs.pc_oldp)
+#define pc (regs.pc)
 #define spcflags (regs.spcflags)
 #define session (fSession)
 
@@ -327,7 +325,12 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
 
         EmOpcode68K opcode;
 
-        opcode = do_get_mem_word(pc_p);
+        opcode = EmMemGet16(pc);
+        if (opcode > 0xffff) {
+            cout << "foo"
+                 << " " << pc << " " << opcode << endl
+                 << flush;
+        }
         cycles = (functable[opcode])(opcode);
         fCurrentCycles += cycles;
         // =======================================================================
@@ -353,9 +356,7 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
 
     }  // while (1)
 
-#undef pc_p
-#undef pc_meta_oldp
-#undef pc_oldp
+#undef pc
 #undef spcflags
 #undef session
 

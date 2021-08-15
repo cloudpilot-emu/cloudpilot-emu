@@ -74,10 +74,10 @@ typedef struct regstruct
     int intmask;
 
     uae_u32 pc;
-    uae_u8 *pc_p;
-    uae_u8 *pc_oldp;
+    // uae_u8 *pc_p;
+    // uae_u8 *pc_oldp;
 
-    uae_u8 *pc_meta_oldp;
+    // uae_u8 *pc_meta_oldp;
 
     uae_u32 vbr,sfc,dfc;
 
@@ -116,60 +116,23 @@ extern regstruct *gDynRegsP;
 #define m68k_dreg(r,num) ((r).regs[(num)])
 #define m68k_areg(r,num) (((r).regs + 8)[(num)])
 
-	// If we're profiling, go through the real work so we can count
-	// read cycles.  Note that we don't want to actually return the
-	// value returned by get_foo.  That function doesn't always word-
-	// swap on little-endian machines (e.g., the DummyBank function).
-	// However, the rest of the emulator is positioned to always
-	// expect that opcode should be word-swapped on little-endian
-	// machines (e.g., ATrap::DoCall).  Therefore, always fetch opcodes
-	// with do_get_mem_foo, which will do that swapping.
-
-#if HAS_PROFILING
-
-	#define M68K_GETPC() (regs.pc+((char*)regs.pc_p-(char*)regs.pc_oldp))
-
-	STATIC_INLINE uae_u8 get_ibyte (uae_s32 o) {
-		if (gProfilingEnabled) get_byte(M68K_GETPC());
-		return do_get_mem_byte((uae_u8 *)(regs.pc_p + (o) + 1)); }
-
-	STATIC_INLINE uae_u16 get_iword (uae_s32 o) {
-		if (gProfilingEnabled) get_word(M68K_GETPC());
-		return do_get_mem_word((uae_u16 *)(regs.pc_p + (o))); }
-
-	STATIC_INLINE uae_u32 get_ilong (uae_s32 o) {
-		if (gProfilingEnabled) get_long(M68K_GETPC());
-		return do_get_mem_long((uae_u32 *)(regs.pc_p + (o))); }
-
-#else
-
-	#define get_ibyte(o) do_get_mem_byte((uae_u8 *)(regs.pc_p + (o) + 1))
-	#define get_iword(o) do_get_mem_word((uae_u16 *)(regs.pc_p + (o)))
-	#define get_ilong(o) do_get_mem_long((uae_u32 *)(regs.pc_p + (o)))
-
-#endif
+#define get_ibyte(o) get_byte(regs.pc + (o) + 1)
+#define get_iword(o) get_word(regs.pc + (o))
+#define get_ilong(o) get_long(regs.pc + (o))
 
 
-#define m68k_incpc(o) (regs.pc_p += (o))
+#define m68k_incpc(o) (regs.pc += (o))
 
 STATIC_INLINE void m68k_setpc (uaecptr newpc)
 {
 	{
-	addrbank*	bank = &(get_mem_bank(newpc));
-    regs.pc_p = regs.pc_oldp = (bank->xlateaddr)(newpc);
     regs.pc = newpc;
-    regs.pc_meta_oldp = (bank->xlatemetaaddr)(newpc);
 	}
 }
 
 STATIC_INLINE uaecptr m68k_getpc (void)
 {
-    return regs.pc + ((char *)regs.pc_p - (char *)regs.pc_oldp);
-}
-
-STATIC_INLINE uaecptr m68k_getpc_p (uae_u8 *p)
-{
-    return regs.pc + ((char *)p - (char *)regs.pc_oldp);
+    return regs.pc;
 }
 
 #define m68k_setpc_fast m68k_setpc

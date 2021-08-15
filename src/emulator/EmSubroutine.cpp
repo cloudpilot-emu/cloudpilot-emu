@@ -2236,19 +2236,16 @@ Err EmSubroutineCPU68K::DoCall(uint16 trapWord) {
     // order.  That's why there's no call to Canonical to put them into Big
     // Endian order.
 
-    uint16 code[] = {kOpcode_ROMCall, trapWord, kOpcode_ATrapReturn};
-
-    // Oh, OK, we do have to byteswap the trapWord.  Opcodes are fetched with
-    // EmMemDoGet16, which always gets the value in host byte order.  The
-    // trapWord is fetched with EmMemGet16, which gets values according to the
-    // rules of the memory bank.  For the dummy bank, the defined byte order
-    // is Big Endian.
-
-    Canonical(code[1]);
+    uint16 code[3];
 
     // Map in the code stub so that the emulation code can access it.
 
     StMemoryMapper mapper(code, sizeof(code));
+    emuptr base = EmBankMapped::GetEmulatedAddress(code);
+
+    EmMemPut16(base, kOpcode_ROMCall);
+    EmMemPut16(base + 2, trapWord);
+    EmMemPut16(base + 4, kOpcode_ATrapReturn);
 
     // Prepare to handle the TRAP 12 exception.
 
