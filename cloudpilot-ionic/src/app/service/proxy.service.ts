@@ -13,10 +13,11 @@ import { v4 as uuid } from 'uuid';
 const CONNECT_TIMEOUT = 5000;
 const HANDSHAKE_TIMEOUT = 5000;
 const LOADER_GRACE_TIME = 500;
-const VERSION = 1;
+const VERSION = 2;
 
 interface HandshakeResponse {
     version: number;
+    compatVersion: number;
     token: string;
 }
 
@@ -126,7 +127,7 @@ export class ProxyService {
 
                 const handshakeResponse: HandshakeResponse = await response.json();
 
-                if (handshakeResponse.version !== VERSION) {
+                if (handshakeResponse.version < VERSION || handshakeResponse.compatVersion > VERSION) {
                     return { status: 'version_mismatch' };
                 }
 

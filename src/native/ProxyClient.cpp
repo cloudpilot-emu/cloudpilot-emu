@@ -34,7 +34,7 @@ namespace http = beast::http;
 namespace json = boost::json;
 
 namespace {
-    constexpr int SERVER_VERSION = 1;
+    constexpr int SERVER_VERSION = 2;
 
     // https://stackoverflow.com/questions/154536/encode-decode-urls-in-c
     string UrlEncode(const string& value) {
@@ -228,7 +228,9 @@ class ProxyClientImpl : public ProxyClient {
         if (!responseObject.contains("token") || !responseObject.contains("version")) return false;
 
         if (!responseObject["version"].is_int64() ||
-            responseObject["version"].as_int64() != SERVER_VERSION) {
+            responseObject["version"].as_int64() < SERVER_VERSION ||
+            !responseObject["compatVersion"].is_int64() ||
+            responseObject["compatVersion"].as_int64() > SERVER_VERSION) {
             logging::printf("server version mismatch");
             return false;
         }

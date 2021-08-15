@@ -12,7 +12,8 @@ from cloudpilot_token import TOKEN_TTL, generateToken, validateToken
 from connection import Connection
 from logger import logger
 
-VERSION = 1
+VERSION = 2
+COMPAT_VERSION = 1
 
 
 def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins,
@@ -24,7 +25,7 @@ def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins,
             return web.Response(status=401, text="401: unauthorized")
 
         logger.info(f"issued token, lifetime {TOKEN_TTL} seconds")
-        return web.json_response({'version': VERSION, 'token': generateToken()})
+        return web.json_response({'version': VERSION, 'compatVersion': COMPAT_VERSION, 'token': generateToken()})
 
     @routes.get("/network-proxy/connect")
     async def connectHandler(request: web.Request):
