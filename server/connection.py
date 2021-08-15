@@ -114,6 +114,9 @@ def formatException(ex):
 
 
 def exceptionToErr(ex):
+    if isinstance(ex, socket.timeout):
+        return err.netErrTimeout
+
     if isinstance(ex, socket.gaierror):
         return err.gaierrnoToPalm(ex.args[0])
 
@@ -136,6 +139,15 @@ def exceptionToErr(ex):
         return err.netErrNoMoreSockets
 
     return err.netErrInternal
+
+
+def logAndConvertException(msg, ex):
+    ecode = exceptionToErr(ex)
+
+    if ecode != err.netErrTimeout and ecode != err.netErrWouldBlock:
+        warning(f'{msg}: {formatException(ex)}')
+
+    return err
 
 
 def ipFromIpPacket(packet):
@@ -245,6 +257,9 @@ class Connection:
         elif requestType == "socketListenRequest":
             response = await self._handleSocketListen(request.socketListenRequest)
 
+        elif requestType == "socketAcceptRequest":
+            response = await self._handleSocketAccept(request.socketAcceptRequest)
+
         else:
             response = networking.MsgResponse()
             response.invalidRequestResponse.tag = True
@@ -295,8 +310,7 @@ class Connection:
             response.err = 0
 
         except Exception as ex:
-            warning(f'failed to open socket: {formatException(ex)}')
-            response.err = exceptionToErr(ex)
+            response.err = logAndConvertException("failed to open socket", ex)
 
         return responseMsg
 
@@ -322,8 +336,7 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            warning(f'failed to bind socket: {formatException(ex)}')
-            response.err = exceptionToErr(ex)
+            response.err = logAndConvertException("failed to bind socket", ex)
 
         return responseMsg
 
@@ -361,9 +374,8 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            warning(
-                f'failed to get socket addresses: {formatException(ex)}')
-            response.err = exceptionToErr(ex)
+            response.err = logAndConvertException(
+                "failed to get socket addresses", ex)
 
         return responseMsg
 
@@ -406,9 +418,7 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            warning(f'failed to send: {formatException(ex)}')
-
-            response.err = exceptionToErr(ex)
+            response.err = logAndConvertException("failed to send", ex)
 
         return responseMsg
 
@@ -440,9 +450,7 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            warning(f'failed to receive: {formatException(ex)}')
-
-            response.err = exceptionToErr(ex)
+            response.err = logAndConvertException("failed to receive", ex)
 
         return responseMsg
 
@@ -466,9 +474,8 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            warning(
-                f'sfailed to close socket {request.handle}: {formatException(ex)}')
-            response.err = exceptionToErr(ex)
+            response.err = logAndConvertException(
+                f'failed to close socket {request.handle}', ex)
 
         return responseMsg
 
@@ -494,10 +501,8 @@ class Connection:
             response.err = 0
 
         except Exception as ex:
-            info(
-                f'failed to resolve host {request.name}: {formatException(ex)}')
-
-            response.err = exceptionToErr(ex)
+            response.err = logAndConvertException(
+                f'failed to resolve host {request.name}', ex)
 
         return responseMsg
 
@@ -548,8 +553,8 @@ class Connection:
             response.err = err.netErrTimeout
 
         except Exception as ex:
-            info(f'failed to connect socket: {formatException(ex)}')
-            response.err = exceptionToErr(ex)
+            response.err = logAndConvertException(
+                'failed to connect socket', ex)
 
         return responseMsg
 
@@ -584,7 +589,7 @@ class Connection:
             response.err = 0
 
         except Exception as ex:
-            warning(f'select failed {formatException(ex)}')
+            response.err = logAndConvertException('select failed', ex)
 
         return responseMsg
 
@@ -616,8 +621,7 @@ class Connection:
                 response.err = err.netErrParamErr
 
         except Exception as ex:
-            warning(f'settingGet failed {formatException(ex)}')
-            response.err = err.netErrInternal
+            response.err = logAndConvertException('settingGet failed', ex)
 
         return responseMsg
 
@@ -650,9 +654,8 @@ class Connection:
                     await runInThread(lambda: socket.setsockopt(level, option, value))
 
         except Exception as ex:
-            warning(
-                f'socketOptionSet failed handle={request.handle} {formatException(ex)}')
-            response.err = exceptionToErr(ex)
+            response.err = logAndConvertException(
+                f'socketOptionSet failed handle={request.handle}', ex)
 
         return responseMsg
 
@@ -672,10 +675,38 @@ class Connection:
             response.err = 0
 
         except Exception as ex:
-            warning(
-                f'socketListen failed handle={request.handle} {formatException(ex)}')
+            response.err = logAndConvertException(
+                f'socketListen failed handle={request.handle}', ex)
 
-            response.err = exceptionToErr(ex)
+        return responseMsg
+
+    async def _handleSocketAccept(self, request):
+        debug(
+            f'socketAccept handle={request.handle} timeout={request.timeout}')
+
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketAcceptResponse
+
+        response.handle = -1
+        response.address.port = 0
+        response.address.ip = 0
+
+        try:
+            handle = self._getFreeHandle()
+            socketCtx = self._getSocketCtx(request.handle)
+
+            socketCtx.setTimeoutMsec(request.timeout)
+
+            (connection, address) = await runInThread(lambda: socketCtx.socket.accept())
+            self._sockets[handle] = SocketContext(connection, socketCtx.type)
+
+            response.handle = handle
+            serializeAddress(address, response.address)
+            response.err = 0
+
+        except Exception as ex:
+            response.err = logAndConvertException(
+                f'socketAccept failed handle={request.handle}', ex)
 
         return responseMsg
 

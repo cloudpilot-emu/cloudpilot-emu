@@ -90,6 +90,12 @@ PB_BIND(MsgSocketListenRequest, MsgSocketListenRequest, AUTO)
 PB_BIND(MsgSocketListenResponse, MsgSocketListenResponse, AUTO)
 
 
+PB_BIND(MsgSocketAcceptRequest, MsgSocketAcceptRequest, AUTO)
+
+
+PB_BIND(MsgSocketAcceptResponse, MsgSocketAcceptResponse, AUTO)
+
+
 PB_BIND(MsgRequest, MsgRequest, 2)
 
 

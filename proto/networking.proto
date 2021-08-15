@@ -164,6 +164,17 @@ message MsgSocketListenResponse {
     required int32 err = 1;
 }
 
+message MsgSocketAcceptRequest {
+    required int32 handle = 1;
+    required int32 timeout = 2;
+}
+
+message MsgSocketAcceptResponse {
+    required int32 handle = 1;
+    required Address address = 2;
+    required int32 err = 3;
+}
+
 message MsgRequest {
     required uint32 id = 1;
 
@@ -181,6 +192,7 @@ message MsgRequest {
         MsgSettingGetRequest settingGetRequest = 12;
         MsgSocketOptionSetRequest socketOptionSetRequest = 13;
         MsgSocketListenRequest socketListenRequest = 14;
+        MsgSocketAcceptRequest socketAcceptRequest = 15;
     }
 }
 
@@ -201,6 +213,7 @@ message MsgResponse {
         MsgSettingGetResponse settingGetResponse = 12;
         MsgSocketOptionSetResponse socketOptionSetResponse = 13;
         MsgSocketListenResponse socketListenResponse = 14;
+        MsgSocketAcceptResponse socketAcceptResponse = 15;
         MsgInvalidRequestResponse invalidRequestResponse = 255;
     }
 }

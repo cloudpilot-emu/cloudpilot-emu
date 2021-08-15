@@ -1056,7 +1056,7 @@ void NetworkProxy::SocketListen(int16 handle, int32 timeout) {
 
     request.handle = handle;
     request.backlog = 1;
-    request.timeout = timeout;
+    request.timeout = convertTimeout(timeout);
 
     SendAndSuspend(msgRequest, REQUEST_STATIC_SIZE,
                    bind(&NetworkProxy::SocketListenSuccess, this, _1, _2),
@@ -1082,6 +1082,62 @@ void NetworkProxy::SocketListenFail(Err err) {
     CALLED_SETUP("Int16",
                  "UInt16 libRefNum, NetSocketRef socket,"
                  "UInt16	queueLen, Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
+}
+
+void NetworkProxy::SocketAccept(int16 handle, int32 timeout) {
+    MsgRequest msgRequest = NewRequest(MsgRequest_socketAcceptRequest_tag);
+    MsgSocketAcceptRequest& request(msgRequest.payload.socketAcceptRequest);
+
+    request.handle = handle;
+    request.timeout = convertTimeout(timeout);
+
+    SendAndSuspend(msgRequest, REQUEST_STATIC_SIZE,
+                   bind(&NetworkProxy::SocketAcceptSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SocketAcceptFail, this, _1));
+}
+
+void NetworkProxy::SocketAcceptSuccess(void* responseData, size_t size) {
+    PREPARE_RESPONSE(SocketAccept, socketAcceptResponse);
+
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "NetSocketAddrType *sockAddrP, Int16 *addrLenP, Int32 timeout,"
+                 "Err *errP");
+
+    CALLED_GET_PARAM_REF(NetSocketAddrType, sockAddrP, Marshal::kOutput);
+    CALLED_GET_PARAM_REF(Int16, addrLenP, Marshal::kInOut);
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    if ((sockAddrP && *addrLenP < 8)) {
+        return SocketBindFail(netErrParamErr);
+    }
+
+    if (sockAddrP) {
+        deserializeAddress(sockAddrP, response.address);
+        *addrLenP = 8;
+
+        CALLED_PUT_PARAM_REF(sockAddrP);
+        CALLED_PUT_PARAM_REF(addrLenP);
+    }
+
+    *errP = 0;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, response.handle);
+}
+
+void NetworkProxy::SocketAcceptFail(Err err) {
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "NetSocketAddrType *sockAddrP, Int16 *addrLenP, Int32 timeout,"
+                 "Err *errP");
 
     CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
