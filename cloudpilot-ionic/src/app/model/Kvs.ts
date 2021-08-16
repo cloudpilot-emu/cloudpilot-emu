@@ -14,4 +14,5 @@ export interface Kvs {
     networkRedirection: boolean;
     proxyServer: string;
     proxyCredentials: Record<string, Credentials>;
+    runHidden: boolean;
 }

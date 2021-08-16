@@ -1,3 +1,4 @@
+import { AnimationFrameScheduler, Scheduler, SchedulerKind, TimeoutScheduler } from './../helper/scheduler';
 import { Cloudpilot, DbInstallResult, PalmButton } from '../helper/Cloudpilot';
 import { GRAYSCALE_PALETTE_HEX, GRAYSCALE_PALETTE_RGBA } from '../helper/palette';
 import { Injectable, NgZone } from '@angular/core';
@@ -22,7 +23,6 @@ import { PwmUpdate } from './../helper/Cloudpilot';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
-import { ThisReceiver } from '@angular/compiler';
 
 const PEN_MOVE_THROTTLE = 25;
 const SNAPSHOT_INTERVAL = 1000;
@@ -127,9 +127,7 @@ export class EmulationService {
 
             this.clockEmulator = performance.now();
 
-            this.ngZone.runOutsideAngular(
-                () => (this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame))
-            );
+            this.schedule();
 
             this.lastSnapshotAt = performance.now();
             this.setRunning(true);
@@ -358,10 +356,7 @@ export class EmulationService {
     private stopLoop(): void {
         if (!this.running) return;
 
-        if (this.animationFrameHandle > 0) {
-            cancelAnimationFrame(this.animationFrameHandle);
-            this.animationFrameHandle = -1;
-        }
+        this.scheduler.cancel();
 
         if (this.advanceEmulationHandle !== undefined) {
             window.clearTimeout(this.advanceEmulationHandle);
@@ -396,9 +391,21 @@ export class EmulationService {
         }
     }
 
-    private onAnimationFrame = (timestamp: number): void => {
-        this.animationFrameHandle = -1;
+    private schedule() {
+        this.scheduler.cancel();
 
+        if (this.kvsService.kvs.runHidden && this.scheduler.getKind() !== SchedulerKind.timeout) {
+            this.scheduler = new TimeoutScheduler(this.onSchedule);
+        }
+
+        if (!this.kvsService.kvs.runHidden && this.scheduler.getKind() !== SchedulerKind.animationFrame) {
+            this.scheduler = new AnimationFrameScheduler(this.onSchedule);
+        }
+
+        this.ngZone.runOutsideAngular(() => this.scheduler.schedule());
+    }
+
+    private onSchedule = (timestamp: number): void => {
         if (this.errorService.hasFatalError()) return;
 
         if (!this.modalWatcher.isModalActive()) {
@@ -419,7 +426,7 @@ export class EmulationService {
             }
         }
 
-        this.animationFrameHandle = requestAnimationFrame(this.onAnimationFrame);
+        this.schedule();
     };
 
     private performScreenUpdate(): void {
@@ -661,7 +668,7 @@ export class EmulationService {
     private bootstrapCompletePromise: Promise<void>;
 
     private clockEmulator = 0;
-    private animationFrameHandle = -1;
+    private scheduler: Scheduler = new AnimationFrameScheduler(this.onSchedule);
 
     private mutex = new Mutex();
 

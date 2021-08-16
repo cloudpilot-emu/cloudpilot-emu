@@ -5,6 +5,7 @@
     [online documentation](https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md)
     for more details.
 -   Improve memory safety of the emulation core.
+-   Add an option to keep Cloudpilot running when the tab is hidden.
 
 # Version 1.4.5
 

@@ -30,6 +30,11 @@
       <ion-toggle formControlName="showStatistics"></ion-toggle>
     </ion-item>
 
+    <ion-item lines="inset">
+      <ion-label>Run when hidden</ion-label>
+      <ion-toggle formControlName="runHidden"></ion-toggle>
+    </ion-item>
+
     <ion-item lines="inset" *ngIf="clipboardService.isSupported()">
       <ion-label>Clipboard integration</ion-label>
       <ion-toggle formControlName="clipboardIntegration"></ion-toggle>

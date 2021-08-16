@@ -16,6 +16,7 @@ const enum fields {
     clipboardIntegration = 'clipboardIntegration',
     networkRedirection = 'networkRedirection',
     proxyServer = 'proxyServer',
+    runHidden = 'runHidden',
 }
 @Component({
     selector: 'app-settings',
@@ -64,11 +65,12 @@ export class SettingsPage implements OnInit {
         }
 
         await this.kvsService.set({
-            volume: this.formGroup.get('volume')!.value,
-            showStatistics: this.formGroup.get('showStatistics')!.value,
-            clipboardIntegration: this.formGroup.get('clipboardIntegration')?.value,
-            networkRedirection: this.formGroup.get('networkRedirection')?.value,
-            proxyServer: this.formGroup.get('proxyServer')?.value,
+            volume: this.formGroup.get(fields.volume)!.value,
+            showStatistics: this.formGroup.get(fields.showStatistics)!.value,
+            clipboardIntegration: this.formGroup.get(fields.clipboardIntegration)?.value,
+            networkRedirection: this.formGroup.get(fields.networkRedirection)?.value,
+            proxyServer: this.formGroup.get(fields.proxyServer)?.value,
+            runHidden: this.formGroup.get(fields.runHidden)?.value,
         });
 
         if (this.mutexReleasePromise) {
@@ -115,6 +117,7 @@ export class SettingsPage implements OnInit {
         this.formGroup = new FormGroup({
             [fields.volume]: new FormControl(this.kvsService.kvs.volume),
             [fields.showStatistics]: new FormControl(this.kvsService.kvs.showStatistics),
+            [fields.runHidden]: new FormControl(this.kvsService.kvs.runHidden),
             [fields.clipboardIntegration]: new FormControl(this.kvsService.kvs.clipboardIntegration),
             [fields.networkRedirection]: new FormControl(this.kvsService.kvs.networkRedirection),
             [fields.proxyServer]: new FormControl(this.kvsService.kvs.proxyServer, {

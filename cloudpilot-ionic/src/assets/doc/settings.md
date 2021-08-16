@@ -11,6 +11,12 @@ disables audio.
 
 This overlays the grafitti area with a collection of performance statistics.
 
+### Run when hidden
+
+Keep Cloudpilot running when its browser tab is hidden. Note that this does not
+keep Cloudpilot running on mobile if the browser or homescreen app is
+backgrounded.
+
 ### Clipboard integration (supported browser only)
 
 This turns on clipboard integration. This option is only available on browsers that

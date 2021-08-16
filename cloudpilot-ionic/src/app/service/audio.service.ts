@@ -151,7 +151,7 @@ export class AudioService {
             !this.modalWatcher.isModalActive() &&
             !this.muted &&
             this.gain() > 0 &&
-            (document.visibilityState !== 'hidden' || isIOS)
+            (document.visibilityState !== 'hidden' || isIOS || this.kvsService.kvs.runHidden)
         );
     }
 

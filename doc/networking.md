@@ -214,7 +214,7 @@ Possible pitfalls to watch out for:
 -   **Connectivity:** Make sure the primary PC address configured in PalmOS is correct.
     Note that the actual connection originates from the computer that runs the proxy server.
 -   **Cloudpilot suspended:** Cloudpilot suspends execution if the browser tab (or mobile app)
-    is not visible,.
+    is not visible. This can be deactivated in the settings.
 
 # Known issues
 
