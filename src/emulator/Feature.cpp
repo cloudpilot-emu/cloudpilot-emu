@@ -5,6 +5,7 @@
 
 bool Feature::clipboardIntegration{false};
 bool Feature::networkRedirection{false};
+bool Feature::hotsyncNameManagement{true};
 
 void Feature::SetClipboardIntegration(bool toggle) {
     clipboardIntegration = toggle;
@@ -21,3 +22,7 @@ bool Feature::GetClipboardIntegration() { return clipboardIntegration; }
 void Feature::SetNetworkRedirection(bool toggle) { networkRedirection = toggle; }
 
 bool Feature::GetNetworkRedirection() { return networkRedirection; }
+
+void Feature::SetHotsyncNameManagement(bool toggle) { hotsyncNameManagement = toggle; }
+
+bool Feature::GetHotsyncNameManagement() { return hotsyncNameManagement; }

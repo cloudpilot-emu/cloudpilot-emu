@@ -252,6 +252,10 @@ export class EmulationService {
 
             this.proxyService.reset();
         }
+
+        this.cloudpilotInstance.setHotsyncNameManagement(
+            !this.emulationState.getCurrentSession()?.dontManageHotsyncName
+        );
     }
 
     private resetCanvas(session: Session): void {

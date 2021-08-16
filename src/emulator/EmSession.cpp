@@ -70,7 +70,7 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     extraCycles = 0;
     Reset(ResetType::soft);
 
-    gSystemState.Reset();
+    gSystemState.Initialize();
 
     RecalculateClocksPerSecond();
 

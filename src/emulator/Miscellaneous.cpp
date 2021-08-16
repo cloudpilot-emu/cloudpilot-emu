@@ -8,6 +8,7 @@
 #include "EmPalmStructs.h"
 #include "EmPatchModuleHtal.h"
 #include "EmSystemState.h"
+#include "Feature.h"
 #include "Logging.h"
 #include "Platform.h"
 #include "ROMStubs.h"
@@ -497,6 +498,8 @@ uint32 DateToDays(uint32 year, uint32 month, uint32 day) {
 }
 
 void SetHotSyncUserName(const char* userNameP) {
+    if (!Feature::GetHotsyncNameManagement()) return;
+
     if (EmLowMem::GetTrapAddress(sysTrapDlkDispatchRequest) == EmMemNULL) return;
 
     if (!userNameP) return;

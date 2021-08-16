@@ -10,6 +10,7 @@ class EmSystemState {
    public:
     EmSystemState() = default;
 
+    void Initialize();
     void Reset();
 
     template <typename T>

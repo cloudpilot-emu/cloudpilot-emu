@@ -103,6 +103,8 @@ export interface Cloudpilot {
     SetNetworkRedirection(toggle: boolean): void;
     GetNetworkRedirection(): boolean;
     RegisterProxyDisconnectHandler(handlerPtr: number): void;
+
+    SetHotsyncNameManagement(toggle: boolean): void;
 }
 
 export interface Frame {

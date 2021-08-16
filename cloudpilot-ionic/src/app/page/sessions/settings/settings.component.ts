@@ -1,6 +1,7 @@
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
 
+import { AlertService } from './../../../service/alert.service';
 import { DeviceId } from 'src/app/model/DeviceId';
 import { SessionService } from '../../../service/session.service';
 import { deviceName } from 'src/app/helper/deviceProperties';
@@ -18,7 +19,7 @@ export interface SessionSettings {
     styleUrls: ['./settings.component.scss'],
 })
 export class SessionSettingsComponent implements OnInit {
-    constructor(private sessionService: SessionService) {}
+    constructor(private sessionService: SessionService, private alertService: AlertService) {}
 
     get formControlName(): AbstractControl {
         return this.formGroup.get('name')!;
@@ -43,7 +44,9 @@ export class SessionSettingsComponent implements OnInit {
     get placeholder(): string {
         if (this.formControlHotsyncName.value) return this.formControlName.value;
 
-        return this.session.hotsyncName === undefined ? 'use setting from device' : 'Enter hotsync name';
+        return this.session.hotsyncName === undefined && !this.session.dontManageHotsyncName
+            ? 'use setting from device'
+            : 'Enter hotsync name';
     }
 
     get deviceList(): Array<[DeviceId, string]> {
@@ -60,16 +63,20 @@ export class SessionSettingsComponent implements OnInit {
         this.session.name = this.formControlName.value;
 
         if (this.formControlManageHotsyncName.value) {
-            this.session.dontManageHotsyncName = false;
+            if (this.session.dontManageHotsyncName) {
+                this.session.dontManageHotsyncName = false;
+                this.session.hotsyncName = this.formControlHotsyncName.value || '';
 
-            if (this.formControlHotsyncName.value) {
-                this.session.hotsyncName = this.formControlHotsyncName.value;
+                this.alertService.message(
+                    'Reset required',
+                    'Please reset the virtual device in order to make sure that the hotsync name is synced properly again.'
+                );
             } else {
-                this.session.hotsyncName = this.session.hotsyncName === undefined ? undefined : '';
+                this.session.hotsyncName =
+                    this.formControlHotsyncName.value || (this.session.hotsyncName === undefined ? undefined : '');
             }
         } else {
             this.session.dontManageHotsyncName = true;
-            this.session.hotsyncName = undefined;
         }
 
         this.session.device = this.formControlDevice.value;

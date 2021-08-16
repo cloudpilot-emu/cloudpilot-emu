@@ -66,6 +66,8 @@ interface Cloudpilot {
     void SetNetworkRedirection(boolean toggle);
     boolean GetNetworkRedirection();
     void RegisterProxyDisconnectHandler(long handlerPtr);
+
+    void SetHotsyncNameManagement(boolean toggle);
 };
 
 interface RomInfo {

@@ -212,3 +212,7 @@ void Cloudpilot::RegisterProxyDisconnectHandler(uint32 handlerPtr) {
 
     gNetworkProxy.onDisconnect.AddHandler(reinterpret_cast<handler_ptr>(handlerPtr));
 }
+
+void Cloudpilot::SetHotsyncNameManagement(bool toggle) {
+    Feature::SetHotsyncNameManagement(toggle);
+}

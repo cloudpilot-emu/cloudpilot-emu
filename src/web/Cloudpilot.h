@@ -77,6 +77,8 @@ class Cloudpilot {
     bool GetNetworkRedirection();
     void RegisterProxyDisconnectHandler(uint32 handlerPtr);
 
+    void SetHotsyncNameManagement(bool toggle);
+
    private:
     Frame frame{320 * 320 * 4};
 };

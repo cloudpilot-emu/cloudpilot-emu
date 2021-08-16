@@ -221,11 +221,7 @@ Possible pitfalls to watch out for:
 These will be fixed in a future version.
 
 -   Some network API calls are currently unhandled and may cause issues with untested
-    applications. Hotsync and Eudora Web are tested to work correctly.
--   Eudora and other applications that do DNS themselves always use 8.8.8.8 (instead
-    of the DNS configured on the system running the proxy).
--   Turning "Manage hotsync name" back on is currently buggy and requires a change
-    to the name to work correctly again.
+    applications.
 
 Wontfix:
 

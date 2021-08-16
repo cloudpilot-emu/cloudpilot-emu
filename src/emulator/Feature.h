@@ -11,9 +11,14 @@ class Feature {
 
     static bool GetNetworkRedirection();
 
+    static void SetHotsyncNameManagement(bool toggle);
+
+    static bool GetHotsyncNameManagement();
+
    private:
     static bool clipboardIntegration;
     static bool networkRedirection;
+    static bool hotsyncNameManagement;
 };
 
 #endif  // _FEATURE_H_

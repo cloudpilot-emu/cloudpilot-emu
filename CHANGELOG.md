@@ -4,6 +4,7 @@
 -   Networking support via websocket proxy. Check the
     [online documentation](https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md)
     for more details.
+-   Improve memory safety of the emulation core.
 
 # Version 1.4.5
 

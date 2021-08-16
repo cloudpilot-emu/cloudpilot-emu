@@ -432,6 +432,11 @@ export class Cloudpilot {
     }
 
     @guard()
+    setHotsyncNameManagement(toggle: boolean): void {
+        this.cloudpilot.SetHotsyncNameManagement(toggle);
+    }
+
+    @guard()
     resolveBuffer(ptr: VoidPtr, size: number): Uint8Array {
         const bufferPtr = this.module.getPointer(ptr);
 

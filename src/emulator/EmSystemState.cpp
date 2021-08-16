@@ -12,11 +12,18 @@ namespace {
     constexpr uint32 SAVESTATE_VERSION = 2;
 }
 
+void EmSystemState::Initialize() {
+    uiInitialized = false;
+    screenDirty = true;
+    setupComplete = false;
+    osVersion = 0;
+    hotsyncUserName = "";
+}
+
 void EmSystemState::Reset() {
     uiInitialized = false;
     screenDirty = true;
     setupComplete = false;
-    hotsyncUserName = "";
 }
 
 template <typename T>
