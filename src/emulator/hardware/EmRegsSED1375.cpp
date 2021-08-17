@@ -143,61 +143,6 @@ void EmRegsSED1375::DoSaveLoad(T& helper, uint32 version) {
     lutColorIndex = LutColorIndex(colorIndexTmp);
 }
 
-#if 0
-
-// ---------------------------------------------------------------------------
-//		� EmRegsSED1375::Save
-// ---------------------------------------------------------------------------
-
-void EmRegsSED1375::Save(SessionFile& f) {
-    EmRegs::Save(f);
-
-    f.WriteSED1375RegsType(*(SED1375RegsType*)fRegs.GetPtr());
-    f.FixBug(SessionFile::kBugByteswappedStructs);
-
-    StWordSwapper swapper1(fClutData, sizeof(fClutData));
-    f.WriteSED1375Palette(fClutData);
-}
-
-// ---------------------------------------------------------------------------
-//		� EmRegsSED1375::Load
-// ---------------------------------------------------------------------------
-
-void EmRegsSED1375::Load(SessionFile& f) {
-    EmRegs::Load(f);
-
-    // Read in the SED registers.
-
-    if (f.ReadSED1375RegsType(*(SED1375RegsType*)fRegs.GetPtr())) {
-        // The Windows version of Poser 2.1d29 and earlier did not write
-        // out structs in the correct format.  The fields of the struct
-        // were written out in Little-Endian format, not Big-Endian.  To
-        // address this problem, the bug has been fixed, and a new field
-        // is added to the file format indicating that the bug has been
-        // fixed.  With the new field (the "bug bit"), Poser can identify
-        // old files from new files and read them in accordingly.
-        //
-        // With the bug fixed, the .psf files should now be interchangeable
-        // across platforms (modulo other bugs...).
-
-        if (!f.IncludesBugFix(SessionFile::kBugByteswappedStructs)) {
-            Canonical(*(SED1375RegsType*)fRegs.GetPtr());
-        }
-    } else {
-        f.SetCanReload(false);
-    }
-
-    // Read in the LCD palette, and then byteswap it.
-
-    if (f.ReadSED1375Palette(fClutData)) {
-        ::ByteswapWords(fClutData, sizeof(fClutData));
-    } else {
-        f.SetCanReload(false);
-    }
-}
-
-#endif
-
 // ---------------------------------------------------------------------------
 //		� EmRegsSED1375::Dispose
 // ---------------------------------------------------------------------------

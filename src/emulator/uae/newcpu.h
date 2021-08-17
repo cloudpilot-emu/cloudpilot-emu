@@ -74,10 +74,6 @@ typedef struct regstruct
     int intmask;
 
     uae_u32 pc;
-    // uae_u8 *pc_p;
-    // uae_u8 *pc_oldp;
-
-    // uae_u8 *pc_meta_oldp;
 
     uae_u32 vbr,sfc,dfc;
 

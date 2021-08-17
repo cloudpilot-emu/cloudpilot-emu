@@ -2204,14 +2204,12 @@ void EmSubroutineCPU68K::SetReturnRegPointer(uint32 val) {
 Err EmSubroutineCPU68K::DoCall(uint16 trapWord) {
     Err err = errNone;
 
-    // Assert that the function we're trying to call is implemented.
-    //
-    // Oops...bad test...this doesn't work when we're calling a library.
-    // Instead, since we now invoke ROM functions by creating a TRAP $F
-    // sequence, we'll let our TRAP $F handler deal with validating the
-    // function call (it does that anyway).
+    uint16 code[3];
 
-    //	EmAssert (LowMem::GetTrapAddress (trapWord));
+    // Map in the code stub so that the emulation code can access it.
+
+    StMemoryMapper mapper(code, sizeof(code));
+    emuptr base = EmBankMapped::GetEmulatedAddress(code);
 
     // We call the ROM function by dummying up a sequence of 68xxx instructions
     // for it.  The sequence of instructions is:
@@ -2223,25 +2221,6 @@ Err EmSubroutineCPU68K::DoCall(uint16 trapWord) {
     // The first two words invoke the function (calling any head- or tailpatches
     // along the way).  The third word allows the emulator to regain control
     // after the function has returned.
-    //
-    // Note: this gets a little ugly on little-endian machines.  The following
-    // instructions are stored on the emulator's stack.  This memory is mapped
-    // into the emulated address space in such a fashion that no byteswapping of
-    // word or long values occurs.  Thus, we have to put the data into Big Endian
-    // format when putting it into the array.
-    //
-    // However, opcodes are a special case.  They are optimized in the emulator
-    // for fast access.  Opcodes are *always* fetched a word at a time in host-
-    // endian order.  Thus, the opcodes below have to be stored in host-endian
-    // order.  That's why there's no call to Canonical to put them into Big
-    // Endian order.
-
-    uint16 code[3];
-
-    // Map in the code stub so that the emulation code can access it.
-
-    StMemoryMapper mapper(code, sizeof(code));
-    emuptr base = EmBankMapped::GetEmulatedAddress(code);
 
     EmMemPut16(base, kOpcode_ROMCall);
     EmMemPut16(base + 2, trapWord);
