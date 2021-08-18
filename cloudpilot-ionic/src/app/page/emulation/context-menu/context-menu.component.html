@@ -2,6 +2,9 @@
   <ion-item button [detail]="false" (click)="power()" [disabled]="!emulationService.isRunning() || powerDisabled">
     Power
   </ion-item>
+  <ion-item button [detail]="false" (click)="hotsync()" [disabled]="!emulationService.isRunning()">
+    Hotsync
+  </ion-item>
   <ion-item button [detail]="false" (click)="reset()" [disabled]="!emulationService.isRunning()">
     Reset
   </ion-item>

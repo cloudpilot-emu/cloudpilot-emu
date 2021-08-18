@@ -7,6 +7,7 @@ import { deviceDimensions, isColor } from '../helper/deviceProperties';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { Average } from './../helper/Average';
+import { ButtonService } from './button.service';
 import { ClipboardService } from './clipboard.service';
 import { EmulationStateService } from './emulation-state.service';
 import { EmulationStatistics } from './../model/EmulationStatistics';
@@ -26,7 +27,6 @@ import { StorageService } from './storage.service';
 
 const PEN_MOVE_THROTTLE = 25;
 const SNAPSHOT_INTERVAL = 1000;
-const ENGAGE_POWER_BUTTON_DURATION = 250;
 const PWM_FIFO_SIZE = 10;
 const SPEED_AVERAGE_N = 20;
 const TIME_PER_FRAME_AVERAGE_N = 60;
@@ -49,7 +49,8 @@ export class EmulationService {
         private modalWatcher: ModalWatcherService,
         private clipboardService: ClipboardService,
         private kvsService: KvsService,
-        private proxyService: ProxyService
+        private proxyService: ProxyService,
+        private buttonService: ButtonService
     ) {
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
         errorService.fatalErrorEvent.addHandler(this.pause);
@@ -98,9 +99,6 @@ export class EmulationService {
 
                 await this.restoreSession(session, cloudpilot);
 
-                this.powerButtonEngaged = false;
-                (await this.cloudpilot).queueButtonUp(PalmButton.power);
-
                 this.pendingPwmUpdates.flush();
                 this.proxyService.reset();
                 await this.snapshotService.initialize(session, await this.cloudpilot);
@@ -108,6 +106,8 @@ export class EmulationService {
                 this.deviceHotsyncName = undefined;
                 this.emulationSpeed = 1;
                 this.speedAverage.reset(1);
+
+                this.buttonService.reset(cloudpilot);
 
                 setStoredSession(id);
             } finally {
@@ -150,15 +150,6 @@ export class EmulationService {
 
             this.emulationState.setCurrentSession(undefined);
         });
-
-    engagePower(): void {
-        if (!this.cloudpilotInstance) return;
-
-        this.powerButtonEngaged = true;
-        this.powerButtonDuration = 0;
-
-        this.cloudpilotInstance.queueButtonDown(PalmButton.power);
-    }
 
     handlePointerMove(x: number, y: number): void {
         const ts = performance.now();
@@ -531,15 +522,7 @@ export class EmulationService {
             }
         }
 
-        if (this.powerButtonEngaged) {
-            this.powerButtonDuration += cycles / this.cloudpilotInstance.cyclesPerSecond();
-
-            if (this.powerButtonDuration * 1000 >= ENGAGE_POWER_BUTTON_DURATION) {
-                this.powerButtonEngaged = false;
-
-                this.cloudpilotInstance.queueButtonUp(PalmButton.power);
-            }
-        }
+        this.buttonService.tick(cycles / this.cloudpilotInstance.cyclesPerSecond());
 
         if (
             timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL &&
@@ -686,9 +669,6 @@ export class EmulationService {
 
     private lastSnapshotAt = 0;
     private deviceHotsyncName: string | undefined;
-
-    private powerButtonEngaged = false;
-    private powerButtonDuration = 0;
 
     private pendingPwmUpdates = new Fifo<PwmUpdate>(PWM_FIFO_SIZE);
 

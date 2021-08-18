@@ -2,8 +2,10 @@ import { Component, Input, OnInit } from '@angular/core';
 import { quirkNoPoweroff, supportsDBExport } from 'src/app/helper/deviceProperties';
 
 import { BackupService } from './../../../service/backup.service';
+import { ButtonService } from '../../../service/button.service';
 import { EmulationService } from './../../../service/emulation.service';
 import { EmulationStateService } from 'src/app/service/emulation-state.service';
+import { PalmButton } from 'src/app/helper/Cloudpilot';
 
 @Component({
     selector: 'app-emulation-context-menu',
@@ -14,7 +16,8 @@ export class ContextMenuComponent implements OnInit {
     constructor(
         public emulationService: EmulationService,
         private emulationStateService: EmulationStateService,
-        private backupService: BackupService
+        private backupService: BackupService,
+        private buttonService: ButtonService
     ) {}
 
     ngOnInit(): void {}
@@ -38,7 +41,13 @@ export class ContextMenuComponent implements OnInit {
     }
 
     power(): void {
-        this.emulationService.engagePower();
+        this.buttonService.engage(PalmButton.power);
+
+        this.onClick();
+    }
+
+    hotsync(): void {
+        this.buttonService.engage(PalmButton.cradle);
 
         this.onClick();
     }
