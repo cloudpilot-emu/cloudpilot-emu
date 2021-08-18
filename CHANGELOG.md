@@ -6,6 +6,7 @@
     for more details.
 -   Improve memory safety of the emulation core.
 -   Add an option to keep Cloudpilot running when the tab is hidden.
+-   Add "Hotsync" to emulation menu.
 
 # Version 1.4.5
 
