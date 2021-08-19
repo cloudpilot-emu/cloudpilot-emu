@@ -7,6 +7,9 @@
 -   Improve memory safety of the emulation core.
 -   Add an option to keep Cloudpilot running when the tab is hidden.
 -   Add "Hotsync" to emulation menu.
+-   Route `DbgMessage` calls to console.
+-   Disable log messages in web.
+-   Set `cldp` feature on boot.
 
 # Version 1.4.5
 

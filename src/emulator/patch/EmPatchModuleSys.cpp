@@ -146,6 +146,16 @@ namespace {
         return kExecuteROM;
     }
 
+    CallROMType HeadpatchDbgMessage() {
+        CALLED_SETUP("void", "Char* aStr");
+
+        CALLED_GET_PARAM_STR(Char, aStr);
+
+        cout << "DbgMessage: " << static_cast<char*>(aStr) << endl << flush;
+
+        return kSkipROM;
+    }
+
     void TailpatchFtrInit(void) {
         PRINTF("syscall: FtrInit");
 
@@ -204,7 +214,9 @@ namespace {
     void TailpatchUIInitialize(void) {
         ::SysSetAutoOffTime(0);
         EmLowMem::fgLowMem.globals.sysRandomSeed = Platform::Random();
+
         ::FtrSet('pose', 0, 0);
+        ::FtrSet('cldp', 0, 0x20150103);
 
 #if 0  // CSTODO
        // Can't call PrefSetPreference on 1.0 devices....
@@ -291,6 +303,7 @@ namespace {
         {sysTrapClipboardAddItem, NULL, TailpatchClipboardAddItem},
         {sysTrapClipboardAppendItem, NULL, TailpatchClipboardAppendItem},
         {sysTrapSysSemaphoreWait, HeadpatchSysSemaphoreWait, NULL},
+        {sysTrapDbgMessage, HeadpatchDbgMessage, NULL},
         {0, NULL, NULL}};
 }  // namespace
 
