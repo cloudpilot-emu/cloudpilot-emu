@@ -169,8 +169,6 @@ extern struct cputbl op_smalltbl_3[];
 /* 68000 slow but compatible.  */
 extern struct cputbl op_smalltbl_4[];
 
-extern cpuop_func *cpufunctbl[65536] ASM_SYM_FOR_FUNC ("cpufunctbl");
-
 #ifdef __cplusplus
 }
 #endif
