@@ -52,25 +52,13 @@ export class EmulationPage implements AfterViewInit {
     }
 
     async ionViewDidEnter(): Promise<void> {
-        let session = this.emulationState.getCurrentSession();
-        const storedSession = getStoredSession();
+        await this.emulationService.bootstrapComplete();
 
-        if (!session && storedSession !== undefined) {
-            session = await this.storageService.getSession(storedSession);
-        }
-        this.canvasDisplayService.initialize(this.canvasRef.nativeElement, session).then(() => {
-            if (this.kvsService.kvs.showStatistics) this.canvasDisplayService.drawStatistics();
+        const session = this.emulationState.getCurrentSession();
 
-            this.kvsService.updateEvent.addHandler(this.onKvsUpdate);
-        });
-        this.onNewFrame(this.emulationService.getCanvas());
+        if (!session) return;
 
-        this.emulationService.newFrameEvent.addHandler(this.onNewFrame);
-        this.snapshotService.snapshotEvent.addHandler(this.onSnapshot);
-
-        this.emulationService.resume();
-
-        this.eventHandlingService.bind(this.canvasRef.nativeElement);
+        if (!session.wasResetForcefully) await this.launchEmulator();
     }
 
     ionViewWillLeave() {
@@ -162,6 +150,53 @@ export class EmulationPage implements AfterViewInit {
                 this.audioService.initialize();
             }
         }
+    }
+
+    async bootAfterForcefulReset(): Promise<void> {
+        await this.clearForcefulReset();
+
+        await this.launchEmulator();
+    }
+
+    async bootAfterForcefulResetNoExtensions(): Promise<void> {
+        await this.clearForcefulReset();
+
+        (await this.emulationService.cloudpilot).resetNoExtensions();
+        await this.launchEmulator();
+    }
+
+    async bootAfterForcefulResetHardReset(): Promise<void> {
+        await this.clearForcefulReset();
+
+        (await this.emulationService.cloudpilot).resetHard();
+        await this.launchEmulator();
+    }
+
+    private async clearForcefulReset(): Promise<void> {
+        const session = this.emulationState.getCurrentSession();
+        if (!session) return;
+
+        session.wasResetForcefully = false;
+        await this.storageService.updateSession(session);
+    }
+
+    private async launchEmulator(): Promise<void> {
+        const session = this.emulationState.getCurrentSession();
+        if (!session) return;
+
+        this.canvasDisplayService.initialize(this.canvasRef.nativeElement, session).then(() => {
+            if (this.kvsService.kvs.showStatistics) this.canvasDisplayService.drawStatistics();
+
+            this.kvsService.updateEvent.addHandler(this.onKvsUpdate);
+        });
+        this.onNewFrame(this.emulationService.getCanvas());
+
+        this.emulationService.newFrameEvent.addHandler(this.onNewFrame);
+        this.snapshotService.snapshotEvent.addHandler(this.onSnapshot);
+
+        this.emulationService.resume();
+
+        this.eventHandlingService.bind(this.canvasRef.nativeElement);
     }
 
     private onKvsUpdate = async (): Promise<void> => {

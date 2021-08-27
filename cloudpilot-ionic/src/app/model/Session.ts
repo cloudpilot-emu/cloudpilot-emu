@@ -9,4 +9,5 @@ export interface Session {
     osVersion?: number;
     hotsyncName?: string;
     dontManageHotsyncName?: boolean;
+    wasResetForcefully?: boolean;
 }

@@ -83,6 +83,9 @@ export class SessionsPage {
 
         await this.storageService.deleteStateForSession(session);
 
+        session.wasResetForcefully = true;
+        await this.storageService.updateSession(session);
+
         if (running) await this.emulationService.switchSession(session.id);
 
         const alert = await this.alertController.create({

@@ -8,8 +8,8 @@
 -   Add an option to keep Cloudpilot running when the tab is hidden.
 -   Add "Hotsync" to emulation menu.
 -   Route `DbgMessage` calls to console.
--   Disable log messages in web.
 -   Set `cldp` feature on boot.
+-   Allow to choose boot mode after a forceful reset.
 
 # Version 1.4.5
 

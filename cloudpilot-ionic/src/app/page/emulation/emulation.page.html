@@ -31,9 +31,20 @@
 
 <ion-content>
 
-  <div class="container running-session" [style.display]="emulationState.getCurrentSession() ? undefined : 'none'">
+  <div class="container running-session"
+    [style.display]="(emulationState.getCurrentSession() && !emulationState.getCurrentSession()?.wasResetForcefully) ? undefined : 'none'">
     <canvas #canvas [style.width]="cssWidth" [style.height]="cssHeight"
       [style.display]="emulationState.getCurrentSession() ? 'block' : 'none'"></canvas>
+  </div>
+
+  <div class="container no-session"
+    *ngIf="!emulationState.getCurrentSession()?.wasResetForcefully ? undefined : 'none'">
+
+    The device was reset forcefully. How do you want to boot?
+
+    <ion-button type="button" color="light" (click)="bootAfterForcefulReset()">Normal boot</ion-button>
+    <ion-button type="button" color="light" (click)="bootAfterForcefulResetNoExtensions()">No extensions</ion-button>
+    <ion-button type="button" color="light" (click)="bootAfterForcefulResetHardReset()">Hard reset</ion-button>
   </div>
 
   <div class="container no-session" *ngIf=" !emulationState.getCurrentSession()">
