@@ -651,9 +651,7 @@ bool GetDatabases(DatabaseInfoList& dbList, uint32 flags) {
                 continue;
             }
 
-            if ((flags & GetDatabaseFlags::kOnlyRamDatabases) &&
-                (dbInfo.dbAttrs & dmHdrAttrReadOnly))
-                continue;
+            if ((flags & GetDatabaseFlags::kOnlyRamDatabases) && ((dbID & 0x01) == 0)) continue;
 
             //--------------------------------------------------------------
             // Save info on this database

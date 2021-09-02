@@ -450,7 +450,7 @@ void EmFileImport::HomeBrewInstallStart(void) {
 
     LocalID tempID = ::DmFindDatabase(fCardNo, (Char*)hdr.name.GetPtr());
 
-    if (tempID != 0) {
+    if ((tempID & 0x01) != 0) {
         err = ::DmDeleteDatabase(fCardNo, tempID);
 
         if (err && err != dmErrROMBased) goto Error;
