@@ -18,7 +18,6 @@ DbInstaller::Result DbInstaller::Install(size_t bufferSize, uint8* buffer) {
     if (gSession->IsCpuStopped()) return Result::failure;
 
     size_t bytesRead = 0;
-    bool failedToOverwrite = false;
 
     CallbackWrapper readProcP([&]() {
         CALLED_SETUP_STDARG("Err", "void* dataP, UInt32* sizeP, void* userDataP");
@@ -48,27 +47,15 @@ DbInstaller::Result DbInstaller::Install(size_t bufferSize, uint8* buffer) {
             "Boolean",
             "const char* nameP, UInt16 version, UInt16 cardNo, LocalID dbID, void* userDataP");
 
-        CALLED_GET_PARAM_VAL(UInt16, cardNo);
-        CALLED_GET_PARAM_VAL(LocalID, dbID);
-
-        UInt16 attributes;
-
-        DmDatabaseInfo(cardNo, dbID, NULL, &attributes, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                       NULL, NULL);
-
-        if (DmDeleteDatabase(cardNo, dbID) == 0) {
-            PUT_RESULT_VAL(Boolean, 1);
-        } else {
-            failedToOverwrite = true;
-            PUT_RESULT_VAL(Boolean, 0);
-        }
+        PUT_RESULT_VAL(Boolean, 1);
     });
 
     LocalID localId;
     Boolean needsReset = false;
 
-    if (ExgDBRead(readProcP, deleteProcP, 0, &localId, 0, &needsReset, true) == 0 &&
-        !failedToOverwrite)
+    cout << "install" << endl << flush;
+
+    if (ExgDBRead(readProcP, deleteProcP, 0, &localId, 0, &needsReset, true) == 0)
         return needsReset ? Result::needsReboot : Result::success;
 
     return Result::failure;

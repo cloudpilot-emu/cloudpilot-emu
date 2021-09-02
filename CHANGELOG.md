@@ -11,6 +11,10 @@
 -   Set `cldp` feature on boot.
 -   Allow to choose boot mode after a forceful reset.
 
+# Version 1.4.6
+
+-   Fix installation of DBs that shadow a ROM DB.
+
 # Version 1.4.5
 
 -   Fix a very rare crash on session restore.
