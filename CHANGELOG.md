@@ -1,3 +1,7 @@
+# Version 1.4.6
+
+-   Fix installation of DBs that shadow a ROM DB.
+
 # Version 1.4.5
 
 -   Fix a very rare crash on session restore.
