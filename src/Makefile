@@ -304,6 +304,7 @@ clean:
 	-rm -fr $(GARBAGE)
 
 .PHONY: clean all bin emscripten test
+.SUFFIXES:
 
 include $(shell test -e $(DEPDIR_NATIVE) && find $(DEPDIR_NATIVE) -type f)
 include $(shell test -e $(DEPDIR_EMCC) && find $(DEPDIR_EMCC) -type f)
