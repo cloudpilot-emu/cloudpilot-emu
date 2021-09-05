@@ -1,4 +1,4 @@
-# Next version
+# 1.5.0
 
 -   Work around worker update idosyncrasies on iOS.
 -   Networking support via websocket proxy. Check the
