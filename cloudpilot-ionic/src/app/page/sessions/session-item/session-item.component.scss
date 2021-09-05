@@ -9,4 +9,10 @@ ion-item-option {
 
 ion-item-sliding {
     cursor: pointer;
+    max-width: 40em;
+    margin: auto;
+}
+
+ion-item {
+    --background: none;
 }
