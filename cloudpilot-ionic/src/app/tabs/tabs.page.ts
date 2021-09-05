@@ -1,5 +1,6 @@
+import { Component, ElementRef, ViewChild } from '@angular/core';
+
 import { CanvasDisplayService } from './../service/canvas-display.service';
-import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 
 @Component({
@@ -13,9 +14,20 @@ export class TabsPage {
 
         this.updateUseSmallUI();
     }
-
     get smallUI(): boolean {
         return this.router.url === '/tab/emulation' && this.useSmallUI;
+    }
+
+    lock(): void {
+        this.isLockedFlag = true;
+    }
+
+    unlock(): void {
+        this.isLockedFlag = false;
+    }
+
+    isLocked(): boolean {
+        return this.isLockedFlag;
     }
 
     private updateUseSmallUI = (): void => {
@@ -48,4 +60,5 @@ export class TabsPage {
     }
 
     private useSmallUI = false;
+    private isLockedFlag = false;
 }

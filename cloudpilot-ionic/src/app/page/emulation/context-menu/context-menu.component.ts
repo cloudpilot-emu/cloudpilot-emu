@@ -1,10 +1,13 @@
+import { ActionSheetController, PopoverController } from '@ionic/angular';
 import { Component, Input, OnInit } from '@angular/core';
 import { quirkNoPoweroff, supportsDBExport } from 'src/app/helper/deviceProperties';
 
+import { AudioService } from './../../../service/audio.service';
 import { BackupService } from './../../../service/backup.service';
 import { ButtonService } from '../../../service/button.service';
 import { EmulationService } from './../../../service/emulation.service';
 import { EmulationStateService } from 'src/app/service/emulation-state.service';
+import { KvsService } from './../../../service/kvs.service';
 import { PalmButton } from 'src/app/helper/Cloudpilot';
 
 @Component({
@@ -17,51 +20,87 @@ export class ContextMenuComponent implements OnInit {
         public emulationService: EmulationService,
         private emulationStateService: EmulationStateService,
         private backupService: BackupService,
-        private buttonService: ButtonService
+        private buttonService: ButtonService,
+        private actionSheetController: ActionSheetController,
+        private popoverController: PopoverController,
+        private audioService: AudioService,
+        private kvsService: KvsService
     ) {}
 
     ngOnInit(): void {}
 
-    reset(): void {
-        this.emulationService.reset();
+    async reset(): Promise<void> {
+        this.popoverController.dismiss();
 
-        this.onClick();
-    }
+        const sheet = await this.actionSheetController.create({
+            header: 'How do you want to reset?',
+            buttons: [
+                {
+                    text: 'Normal boot',
+                    handler: () => this.emulationService.reset(),
+                },
+                {
+                    text: 'No extensions',
+                    handler: () => this.emulationService.resetNoExtensions(),
+                },
+                {
+                    text: 'Hard reset',
+                    handler: () => this.emulationService.resetHard(),
+                },
+                {
+                    text: 'Cancel',
+                    role: 'cancel',
+                },
+            ],
+        });
 
-    resetNoExtensions(): void {
-        this.emulationService.resetNoExtensions();
-
-        this.onClick();
-    }
-
-    resetHard(): void {
-        this.emulationService.resetHard();
-
-        this.onClick();
+        sheet.present();
     }
 
     power(): void {
         this.buttonService.engage(PalmButton.power);
 
-        this.onClick();
+        this.popoverController.dismiss();
     }
 
     hotsync(): void {
         this.buttonService.engage(PalmButton.cradle);
 
-        this.onClick();
+        this.popoverController.dismiss();
     }
 
     help(): void {
         this.showHelp();
 
-        this.onClick();
+        this.popoverController.dismiss();
     }
 
     backup(): void {
         this.backupService.saveBackup();
 
-        this.onClick();
+        this.popoverController.dismiss();
+    }
+
+    get isMuted(): boolean {
+        return !this.audioService.isInitialized() || this.audioService.isMuted();
+    }
+
+    get isAudioOff(): boolean {
+        return this.kvsService.kvs.volume <= 0;
+    }
+
+    mute(muted: boolean): void {
+        if (muted) {
+            this.audioService.mute(true);
+        } else {
+            if (this.audioService.isInitialized()) {
+                this.audioService.mute(false);
+            } else {
+                this.audioService.initialize();
+            }
+        }
+
+        this.popoverController.dismiss();
     }
 
     get backupDisabled(): boolean {
@@ -80,9 +119,6 @@ export class ContextMenuComponent implements OnInit {
 
         return currentSession ? quirkNoPoweroff(currentSession.device) : false;
     }
-
-    @Input()
-    onClick: () => void = () => undefined;
 
     @Input()
     showHelp: () => void = () => undefined;

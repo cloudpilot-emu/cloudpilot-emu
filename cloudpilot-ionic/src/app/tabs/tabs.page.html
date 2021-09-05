@@ -1,7 +1,8 @@
 <ion-tabs>
 
   <div class="overflow-wrapper">
-    <ion-tab-bar [class.small-ui]="smallUI" slot="bottom">
+    <ion-tab-bar [class.small-ui]="smallUI" slot="bottom" [class.disabled]="isLocked()">
+
       <ion-tab-button tab="emulation">
         <ion-icon name="phone-portrait-outline"></ion-icon>
         <ion-label>Emulator</ion-label>

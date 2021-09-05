@@ -2,7 +2,6 @@ import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
 import { ModalController, PopoverController } from '@ionic/angular';
 
 import { AlertService } from 'src/app/service/alert.service';
-import { AudioService } from './../../service/audio.service';
 import { CanvasDisplayService } from './../../service/canvas-display.service';
 import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
@@ -16,7 +15,7 @@ import { ProxyService } from './../../service/proxy.service';
 import { SnapshotService } from './../../service/snapshot.service';
 import { SnapshotStatistics } from './../../model/SnapshotStatistics';
 import { StorageService } from './../../service/storage.service';
-import { getStoredSession } from 'src/app/helper/storedSession';
+import { TabsPage } from './../../tabs/tabs.page';
 
 @Component({
     selector: 'app-emulation',
@@ -31,15 +30,17 @@ export class EmulationPage implements AfterViewInit {
         public eventHandlingService: EventHandlingService,
         private canvasDisplayService: CanvasDisplayService,
         private kvsService: KvsService,
-        private audioService: AudioService,
         private popoverController: PopoverController,
         private modalController: ModalController,
         private alertService: AlertService,
         private fileService: FileService,
         private snapshotService: SnapshotService,
         private installlationService: InstallationService,
-        public proxyService: ProxyService
-    ) {}
+        public proxyService: ProxyService,
+        public navigation: TabsPage
+    ) {
+        console.log(navigation);
+    }
 
     ngAfterViewInit(): void {}
 
@@ -79,7 +80,6 @@ export class EmulationPage implements AfterViewInit {
             backdropDismiss: true,
             showBackdrop: false,
             componentProps: {
-                onClick: () => popover.dismiss(),
                 showHelp: () => this.showHelp(),
             },
         });
@@ -130,26 +130,6 @@ export class EmulationPage implements AfterViewInit {
 
     get title(): string {
         return this.emulationState.getCurrentSession()?.name || '';
-    }
-
-    get isMuted(): boolean {
-        return !this.audioService.isInitialized() || this.audioService.isMuted();
-    }
-
-    get isAudioOff(): boolean {
-        return this.kvsService.kvs.volume <= 0;
-    }
-
-    mute(muted: boolean): void {
-        if (muted) {
-            this.audioService.mute(true);
-        } else {
-            if (this.audioService.isInitialized()) {
-                this.audioService.mute(false);
-            } else {
-                this.audioService.initialize();
-            }
-        }
     }
 
     async bootAfterForcefulReset(): Promise<void> {

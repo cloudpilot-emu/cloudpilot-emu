@@ -1,23 +1,30 @@
 <ion-list>
   <ion-item button [detail]="false" (click)="power()" [disabled]="!emulationService.isRunning() || powerDisabled">
-    Power
+    <ion-label>Power</ion-label>
+    <ion-icon name="power-outline" slot="end"></ion-icon>
   </ion-item>
   <ion-item button [detail]="false" (click)="hotsync()" [disabled]="!emulationService.isRunning()">
-    Hotsync
+    <ion-label>Hotsync</ion-label>
+    <ion-icon name="sync-outline" slot="end"></ion-icon>
   </ion-item>
   <ion-item button [detail]="false" (click)="reset()" [disabled]="!emulationService.isRunning()">
-    Reset
+    <ion-label>Reset</ion-label>
+    <ion-icon name="refresh-outline" slot="end"></ion-icon>
   </ion-item>
-  <ion-item button [detail]="false" (click)="resetNoExtensions()" [disabled]="!emulationService.isRunning()">
-    Reset (no extensions)
+  <ion-item button [detail]="false" *ngIf="isMuted && !isAudioOff" (click)="mute(false)">
+    <ion-label>Enable audio</ion-label>
+    <ion-icon name="volume-high-outline"></ion-icon>
   </ion-item>
-  <ion-item button [detail]="false" (click)="resetHard()" [disabled]="!emulationService.isRunning()">
-    Hard reset
+  <ion-item button [detail]="false" *ngIf="!isMuted && !isAudioOff" (click)="mute(true)">
+    <ion-label>Disable audio</ion-label>
+    <ion-icon name="volume-mute-outline"></ion-icon>
   </ion-item>
   <ion-item button [detail]="false" (click)="backup()" [disabled]="backupDisabled">
-    Save backup
+    <ion-label>Save backup</ion-label>
+    <ion-icon name="share-outline" slot="end"></ion-icon>
   </ion-item>
   <ion-item button [detail]="false" (click)="help()">
-    Help
+    <ion-label>Help</ion-label>
+    <ion-icon name="help-outline" slot="end"></ion-icon>
   </ion-item>
 </ion-list>

@@ -20,6 +20,10 @@ ion-tab-bar {
     min-width: 280px;
 }
 
+ion-tab-bar.disabled {
+    display: none;
+}
+
 .overflow-wrapper {
     overflow-x: auto;
 }

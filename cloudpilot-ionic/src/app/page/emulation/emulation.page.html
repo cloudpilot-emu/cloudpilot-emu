@@ -6,18 +6,17 @@
       <ion-button [disabled]="installFileDisabled" (click)="installFiles()">
         <ion-icon name="download-outline"></ion-icon>
       </ion-button>
+      <ion-button *ngIf="!navigation.isLocked()" (click)="navigation.lock()">
+        <ion-icon name="lock-open-outline"></ion-icon>
+      </ion-button>
+      <ion-button *ngIf="navigation.isLocked()" (click)="navigation.unlock()">
+        <ion-icon name="lock-closed-outline"></ion-icon>
+      </ion-button>
     </ion-buttons>
 
     <ion-buttons slot="start">
       <ion-button (click)="openContextMenu($event)">
         <ion-icon name="ellipsis-vertical-outline"></ion-icon>
-      </ion-button>
-
-      <ion-button *ngIf="isMuted && !isAudioOff" (click)="mute(false)">
-        <ion-icon name="volume-mute-outline"></ion-icon>
-      </ion-button>
-      <ion-button *ngIf="!isMuted && !isAudioOff" (click)="mute(true)">
-        <ion-icon name="volume-high-outline"></ion-icon>
       </ion-button>
       <ion-button *ngIf="eventHandlingService.isGameMode()" (click)="showGameModeHint()">
         <ion-icon name="game-controller-outline"></ion-icon>
