@@ -10,6 +10,9 @@
 -   Route `DbgMessage` calls to console.
 -   Set `cldp` feature on boot.
 -   Allow to choose boot mode after a forceful reset.
+-   Move audio toggle to the emulation menu
+-   Add "Lock UI" for hiding the navigation bar while the Pilot
+    is running.
 
 # Version 1.4.6
 
