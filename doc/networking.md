@@ -196,7 +196,7 @@ Possible issues are:
     instructions above.
 -   **Wrong certificate:** Each generated certificate is unique, and the certificate
     installed on the device must be the exact same certificate used by the server.
--   **Name mismatch:** The hostname or IP confifgured in Cloudpilot must match one
+-   **Name mismatch:** The hostname or IP configured in Cloudpilot must match one
     of the names or IPs that were entered when the certificate was generated.
 -   **Expired:** The certificate has a lifetime of one year, and you'll have to generate
     a new one after it has expired.
@@ -220,17 +220,13 @@ Possible pitfalls to watch out for:
 
 These will be fixed in a future version.
 
--   Some network API calls are currently unhandled and may cause issues with untested
-    applications.
+-   Some network API calls are currently unhandled. However, no application that I
+    have tested actually uses those.
 
 Wontfix:
 
 -   ICMP will only work for ICMP/ECHO and requires superuser / root permissions on
-    the machine running the proxy. **DON'T RUN THE PROXY AS ROOT.**
-
-    If you really think you need to ping other machines on your virtual Palm use a Docker
-    container to isolate the proxy server. Not knowing how to do that is a good
-    indication that you probably shouldn't.
+    the machine running the proxy.
 
 # Security considerations
 
