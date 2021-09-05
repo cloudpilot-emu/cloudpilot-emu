@@ -17,6 +17,7 @@ const enum fields {
     networkRedirection = 'networkRedirection',
     proxyServer = 'proxyServer',
     runHidden = 'runHidden',
+    autoLockUI = 'autoLockUI',
 }
 @Component({
     selector: 'app-settings',
@@ -71,6 +72,7 @@ export class SettingsPage implements OnInit {
             networkRedirection: this.formGroup.get(fields.networkRedirection)?.value,
             proxyServer: this.formGroup.get(fields.proxyServer)?.value,
             runHidden: this.formGroup.get(fields.runHidden)?.value,
+            autoLockUI: this.formGroup.get(fields.autoLockUI)?.value,
         });
 
         if (this.mutexReleasePromise) {
@@ -123,6 +125,7 @@ export class SettingsPage implements OnInit {
             [fields.proxyServer]: new FormControl(this.kvsService.kvs.proxyServer, {
                 validators: [validateProxyAddress],
             }),
+            [fields.autoLockUI]: new FormControl(this.kvsService.kvs.autoLockUI),
         });
     }
 

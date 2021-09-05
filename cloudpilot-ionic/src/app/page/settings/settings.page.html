@@ -19,44 +19,57 @@
     </ion-toolbar>
   </ion-header>
 
-  <form [formGroup]="formGroup">
-    <ion-item lines="inset">
-      <ion-label>Volume</ion-label>
-      <ion-range min="0" max="1" step="0.1" formControlName="volume"></ion-range>
-    </ion-item>
+  <div class="settings-container">
+    <form [formGroup]="formGroup" class="settings-form">
+      <h1>Emulation</h1>
 
-    <ion-item lines="inset">
-      <ion-label>Show statistics</ion-label>
-      <ion-toggle formControlName="showStatistics"></ion-toggle>
-    </ion-item>
+      <ion-item lines="none">
+        <ion-label>Volume</ion-label>
+        <ion-range min="0" max="1" step="0.1" formControlName="volume"></ion-range>
+      </ion-item>
 
-    <ion-item lines="inset">
-      <ion-label>Run when hidden</ion-label>
-      <ion-toggle formControlName="runHidden"></ion-toggle>
-    </ion-item>
+      <ion-item lines="none">
+        <ion-label>Run when hidden</ion-label>
+        <ion-toggle formControlName="runHidden"></ion-toggle>
+      </ion-item>
 
-    <ion-item lines="inset" *ngIf="clipboardService.isSupported()">
-      <ion-label>Clipboard integration</ion-label>
-      <ion-toggle formControlName="clipboardIntegration"></ion-toggle>
-    </ion-item>
+      <h1>Host integration</h1>
 
-    <ion-item lines="inset">
-      <ion-label>Network redirection</ion-label>
-      <ion-toggle formControlName="networkRedirection"></ion-toggle>
-    </ion-item>
+      <ion-item lines="none" *ngIf="clipboardService.isSupported()">
+        <ion-label>Clipboard integration</ion-label>
+        <ion-toggle formControlName="clipboardIntegration"></ion-toggle>
+      </ion-item>
 
-    <ion-item lines="inset" *ngIf="showProxyServer">
-      <ion-label position="stacked">Proxy server</ion-label>
-      <div class="server-container">
-        <ion-input placeholder="Proxy server host or URL" formControlName="proxyServer"></ion-input>
-        <ion-button [disabled]="!proxyServerValid"
-          (click)="$event.preventDefault(); $event.stopPropagation(); testProxyConnection()"
-          (touchstart)="$event.preventDefault(); $event.stopPropagation(); testProxyConnection()">
-          Test
-        </ion-button>
-      </div>
-    </ion-item>
+      <ion-item lines="none">
+        <ion-label>Network redirection</ion-label>
+        <ion-toggle formControlName="networkRedirection"></ion-toggle>
+      </ion-item>
 
-  </form>
+      <ion-item lines="none" *ngIf="showProxyServer">
+        <ion-label position="stacked">Proxy server</ion-label>
+        <div class="server-container">
+          <ion-input placeholder="Proxy server host or URL" formControlName="proxyServer"></ion-input>
+          <ion-button [disabled]="!proxyServerValid"
+            (click)="$event.preventDefault(); $event.stopPropagation(); testProxyConnection()"
+            (touchstart)="$event.preventDefault(); $event.stopPropagation(); testProxyConnection()">
+            Test
+          </ion-button>
+        </div>
+      </ion-item>
+
+      <h1>UI</h1>
+
+      <ion-item lines="none">
+        <ion-label>Auto-lock UI</ion-label>
+        <ion-toggle formControlName="autoLockUI"></ion-toggle>
+      </ion-item>
+
+      <ion-item lines="none">
+        <ion-label>Show statistics</ion-label>
+        <ion-toggle formControlName="showStatistics"></ion-toggle>
+      </ion-item>
+
+    </form>
+  </div>
 
 </ion-content>

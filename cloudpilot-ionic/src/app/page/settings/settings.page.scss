@@ -7,3 +7,19 @@
         flex-grow: 1;
     }
 }
+
+h1 {
+    margin-left: 1rem;
+    margin-right: 1rem;
+}
+
+.settings-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+.settings-form {
+    max-width: 40em;
+    flex-basis: 100%;
+}

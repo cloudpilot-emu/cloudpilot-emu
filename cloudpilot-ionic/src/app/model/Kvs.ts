@@ -15,4 +15,5 @@ export interface Kvs {
     proxyServer: string;
     proxyCredentials: Record<string, Credentials>;
     runHidden: boolean;
+    autoLockUI: boolean;
 }

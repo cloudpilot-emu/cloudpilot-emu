@@ -12,6 +12,7 @@ const DEFAULTS: Kvs = {
     proxyServer: '',
     proxyCredentials: {},
     runHidden: false,
+    autoLockUI: false,
 };
 
 @Injectable({

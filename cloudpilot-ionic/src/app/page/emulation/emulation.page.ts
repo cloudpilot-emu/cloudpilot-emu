@@ -63,6 +63,9 @@ export class EmulationPage implements AfterViewInit {
     }
 
     ionViewWillLeave() {
+        if (this.emulationService.isRunning()) {
+            this.autoLockUI = false;
+        }
         this.emulationService.pause();
 
         this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
@@ -71,6 +74,8 @@ export class EmulationPage implements AfterViewInit {
         this.kvsService.updateEvent.removeHandler(this.onKvsUpdate);
 
         this.eventHandlingService.release();
+
+        this.navigation.unlock();
     }
 
     async openContextMenu(e: MouseEvent): Promise<void> {
@@ -164,6 +169,10 @@ export class EmulationPage implements AfterViewInit {
         const session = this.emulationState.getCurrentSession();
         if (!session) return;
 
+        await this.kvsService.mutex.runExclusive(
+            () => this.kvsService.kvs.autoLockUI && this.autoLockUI && this.navigation.lock()
+        );
+
         this.canvasDisplayService.initialize(this.canvasRef.nativeElement, session).then(() => {
             if (this.kvsService.kvs.showStatistics) this.canvasDisplayService.drawStatistics();
 
@@ -196,4 +205,5 @@ export class EmulationPage implements AfterViewInit {
     };
 
     @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
+    private autoLockUI = true;
 }
