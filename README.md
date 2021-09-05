@@ -11,7 +11,7 @@ devices.
 &nbsp;
 <img src="doc/images/tungstenw.jpeg" width="310" height="552" alt="Tungsten W emulation"></img>
 &nbsp;
-<img src="doc/images/hotsync.jpeg" width="310" height="552" alt="Palm Pilot emulation"></img>
+<img src="doc/images/palmpilot.jpeg" width="310" height="552" alt="Palm Pilot emulation"></img>
 
 # The emulator
 
