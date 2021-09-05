@@ -7,10 +7,6 @@ The "Settings" tab allows you to configure Cloudpilot.
 This setting control the volume of the emulated audio. Setting the volume to zero
 disables audio.
 
-### Show Statistics
-
-This overlays the grafitti area with a collection of performance statistics.
-
 ### Run when hidden
 
 Keep Cloudpilot running when its browser tab is hidden. Note that this does not
@@ -32,3 +28,13 @@ for detailed instructions.
 If you enable network redirection you'll have to enter the address of the proxy
 server below. Use the "Test" button to test the connection before attempting to
 connect from within the virtual device.
+
+
+### Auto-lock UI
+
+This setting causes the navigation to automatically hide when the emulated devices
+launches on startup.
+
+### Show Statistics
+
+This overlays the grafitti area with a collection of performance statistics.

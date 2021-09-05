@@ -15,6 +15,16 @@ mappings" at the end of this page).
 On browsers that support the necessary APIs the clipboard can be shared with
 the host. Check "Clipboard integration" below for more details.
 
+# Locking the UI
+
+By default the navigation at the bottom remains visible when the emulator is
+running. This may cause your fingers to accidentially touch the navigation
+if you are interacting with your pilot.
+
+You can touch the lock item at the top in order to hide the navigation
+and make room for your fingers. You can toggle the "Auto-lock UI" setting
+on the settings page in order to do that automatically on launch.
+
 # Installing program and database files
 
 Select the "Install file" button on the top right in order to install `.prc` and
@@ -54,7 +64,7 @@ This feature only is available on PalmOS 3 and later.
 
 # Device reset
 
-The device can be reset by selecting one of the reset options from the menu.
+The device can be reset by selecting "reset" from the menu.
 This is equivalent to pushing a pin into the reset hole on a real
 device. The different options correspond to different key combinations held while
 the device resets.
@@ -74,13 +84,17 @@ This is very useful to recover from a bad hack or system extension.
 Corresponds to "power" being held during reset. This will
 trigger a prompt that will allow you to factory reset the device.
 
-# The power button
+# Power button
 
-The power button can be pressed by selecting the "Power" entry in the menu.
+The power button can be pressed by selecting "Power" from the menu.
+
+# Hotsync button
+
+The hotsync button on the cradle can be pressed by selecting "Hotsync" from the menu.
 
 # Audio
 
-The speaker button at the top allows to toggle audio emulation on / off.
+The speaker setting in the menu allows to toggle audio emulation on / off.
 Cloudpilot always starts with audio disabled, and the icon must be tapped to enable
 it.
 
