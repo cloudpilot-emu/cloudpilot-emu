@@ -1,3 +1,8 @@
+# 1.5.2
+
+-   Proxy Server: fix nonblocking sockets. This avoids spurious error messages during
+    hotsync and potential networking issues.
+
 # 1.5.1
 
 -   Improve dark mode on non-iOS.
