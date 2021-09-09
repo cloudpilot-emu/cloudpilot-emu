@@ -13,6 +13,7 @@ class SocketContext:
         self.socket = socket
         self.type = type
         self.bound = False
+        self.nonblocking = False
 
         self._timeout = None
         self._timoutBase = time.time()
@@ -25,12 +26,20 @@ class SocketContext:
         self.updateTimeout()
 
     def updateTimeout(self):
-        if self._timeout == None and self.socket.getblocking():
+        if self.nonblocking:
+            self.socket.settimeout(0)
+            return
+
+        if self._timeout == None:
             self.socket.settimeout(MAX_TIMEOUT)
 
         else:
             self.socket.settimeout(
                 max(0, self._timeout - time.time() + self._timeoutBase))
+
+    def setNonblocking(self, value):
+        self.nonblocking = value
+        self.updateTimeout()
 
     async def close(self):
         self.updateTimeout()

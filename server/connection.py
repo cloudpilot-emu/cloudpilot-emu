@@ -640,7 +640,7 @@ class Connection:
             socket = socketCtx.socket
 
             if request.level == netSocketOptLevelSocket and request.option == netSocketOptSockNonBlocking:
-                await runInThread(lambda: socket.setblocking(bool(value)))
+                await runInThread(lambda: socketCtx.setNonblocking(bool(value)))
             else:
                 level = sockopt.translateSockoptLevel(request.level)
                 option = sockopt.translateSockoptOption(
