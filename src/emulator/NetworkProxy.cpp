@@ -64,6 +64,7 @@ namespace {
     enum class SocketOptionType { flagval, intval, bufval };
 
     constexpr size_t REQUEST_STATIC_SIZE = 128;
+    constexpr uint16 VALID_FLAGS = netIOFlagOutOfBand | netIOFlagPeek | netIOFlagDontRoute;
 
     NetworkProxy networkProxy;
 
@@ -377,14 +378,14 @@ void NetworkProxy::SocketAddrFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
-void NetworkProxy::SocketSend(int16 handle, uint8* data, size_t count, uint32 flags,
+void NetworkProxy::SocketSend(int16 handle, uint8* data, size_t count, uint16 flags,
                               NetSocketAddrType* toAddrP, int32 toLen, int32 timeout) {
     MsgRequest request = NewRequest(MsgRequest_socketSendRequest_tag);
     MsgSocketSendRequest& sendRequest(request.payload.socketSendRequest);
 
     sendRequest.handle = handle;
 
-    if (flags & ~(netIOFlagOutOfBand | netIOFlagPeek | netIOFlagDontRoute)) {
+    if (flags & ~VALID_FLAGS) {
         logging::printf("ERROR: SocketSend: unsupported flags 0x%08x", flags);
 
         return SocketSendFail();
@@ -442,11 +443,86 @@ void NetworkProxy::SocketSendFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
-void NetworkProxy::SocketReceive(int16 handle, uint32 flags, uint16 bufLen, int32 timeout,
+void NetworkProxy::SocketSendPB(int16 handle, NetIOParamType* pbP, uint16 flags, int32 timeout) {
+    MsgRequest request = NewRequest(MsgRequest_socketSendRequest_tag);
+    MsgSocketSendRequest& sendRequest(request.payload.socketSendRequest);
+
+    sendRequest.handle = handle;
+
+    if (flags & ~VALID_FLAGS) {
+        logging::printf("ERROR: SocketSend: unsupported flags 0x%08x", flags);
+
+        return SocketSendPBFail();
+    }
+
+    sendRequest.flags = flags;
+
+    if (pbP->addrP) {
+        if (pbP->addrLen < 8 || !serializeAddress(reinterpret_cast<NetSocketAddrType*>(pbP->addrP),
+                                                  request.payload.socketSendRequest.address))
+            return SocketSendPBFail(netErrParamErr);
+
+        sendRequest.has_address = true;
+    } else
+        sendRequest.has_address = false;
+
+    sendRequest.timeout = convertTimeout(timeout);
+
+    size_t count = 0;
+    for (int i = 0; i < pbP->iovLen; i++) count += pbP->iov[i].bufLen;
+
+    auto dataPtr = make_unique<uint8[]>(count);
+
+    size_t offset = 0;
+    for (int i = 0; i < pbP->iovLen; i++) {
+        memcpy(dataPtr.get() + offset, pbP->iov[i].bufP, pbP->iov[i].bufLen);
+
+        offset += pbP->iov[i].bufLen;
+    }
+
+    BufferEncodeContext bufferEncodeCtx{dataPtr.get(), count};
+
+    sendRequest.data.arg = &bufferEncodeCtx;
+    sendRequest.data.funcs.encode = bufferEncodeCb;
+
+    SendAndSuspend(request, REQUEST_STATIC_SIZE + count,
+                   bind(&NetworkProxy::SocketSendPBSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SocketSendPBFail, this, _1));
+}
+
+void NetworkProxy::SocketSendPBSuccess(void* responseData, size_t size) {
+    PREPARE_RESPONSE(SocketSend, socketSendResponse)
+
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "NetIOParamType *pbP, UInt16 flags, Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = 0, CALLED_PUT_PARAM_REF(errP);
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, response.bytesSent);
+}
+
+void NetworkProxy::SocketSendPBFail(Err err) {
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "NetIOParamType *pbP, UInt16 flags, Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
+}
+
+void NetworkProxy::SocketReceive(int16 handle, uint16 flags, uint16 bufLen, int32 timeout,
                                  NetSocketAddrType* fromAddrP) {
     MsgRequest request = NewRequest(MsgRequest_socketReceiveRequest_tag);
 
-    if (flags & ~(netIOFlagOutOfBand | netIOFlagPeek | netIOFlagDontRoute)) {
+    if (flags & ~VALID_FLAGS) {
         logging::printf("ERROR: SocketReceive: unsupported flags 0x%08x", flags);
 
         return SocketReceiveFail();
@@ -517,11 +593,11 @@ void NetworkProxy::SocketReceiveFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
-void NetworkProxy::SocketDmReceive(int16 handle, uint32 flags, uint16 rcvlen, int32 timeout,
+void NetworkProxy::SocketDmReceive(int16 handle, uint16 flags, uint16 rcvlen, int32 timeout,
                                    NetSocketAddrType* fromAddrP) {
     MsgRequest request = NewRequest(MsgRequest_socketReceiveRequest_tag);
 
-    if (flags & ~(netIOFlagOutOfBand | netIOFlagPeek | netIOFlagDontRoute)) {
+    if (flags & ~VALID_FLAGS) {
         logging::printf("ERROR: SocketDmReceive: unsupported flags 0x%08x", flags);
 
         return SocketDmReceiveFail();

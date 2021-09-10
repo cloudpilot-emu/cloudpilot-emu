@@ -15,12 +15,6 @@
 #endif
 
 namespace {
-    constexpr size_t PACKAGE_BUF_SIZE = 256;
-
-    uint8 packageBuf[PACKAGE_BUF_SIZE];
-    size_t packageBufLen = 0;
-    bool packagePending = false;
-
     const char* DecodeIfSetting(uint16 setting) {
         switch (setting) {
             case netIFSettingResetAll:
@@ -436,6 +430,12 @@ namespace {
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
+        if (Feature::GetNetworkRedirection()) {
+            gNetworkProxy.SocketSendPB(socket, pbP, flags, timeout);
+
+            return kSkipROM;
+        }
+
         return kExecuteROM;
     }
 
@@ -458,12 +458,6 @@ namespace {
 
         if (Feature::GetNetworkRedirection()) {
             CALLED_GET_PARAM_PTR(uint8, bufP, bufLen, Marshal::kInput);
-
-            if (bufLen <= PACKAGE_BUF_SIZE) {
-                memmove(packageBuf, bufP, bufLen);
-                packageBufLen = bufLen;
-                packagePending = true;
-            }
 
             gNetworkProxy.SocketSend(socket, bufP, bufLen, flags, toAddrP, toLen, timeout);
 
