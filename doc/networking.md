@@ -85,6 +85,9 @@ and install the certificate. When prompted select that you want to
 use the certificate for "VPN and apps". Note that the exact click path to the
 relevant setting may vary slightly depending on your particular Android version and vendor.
 
+If your device refuses to accept the certificate for "VPN and apps" and offers "CA certificate",
+try that instead.
+
 ### Windows
 
 Double click the certificate to import it. A wizard will open that guides you through the
