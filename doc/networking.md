@@ -157,6 +157,11 @@ and hit save.
 On the machine running Palm Desktop, open the Hotsync manager, go to "Connections" and
 make sure that "Network (TCP/IP)" is checked.
 
+## Palm M1xx devices
+
+Palm decided to strip network hotsync from the M1xx line of devices, so it is not
+available there.
+
 ## Palm OS
 
 On the virtual device, open Hotsync, select "Modem Sync Prefs" in the menu and switch
