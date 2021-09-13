@@ -1140,13 +1140,13 @@ void EmCPU68K::InitializeUAETables(void) {
 #ifdef __EMSCRIPTEN__
     cpufunctbl_base = (cpuop_func*)EM_ASM_INT(
         {
-            wasmTable.grow(0xffff);
+            wasmTable.grow(0x10000);
 
-            for (let i = 0; i < 0xffff; i++)
-                wasmTable.set(wasmTable.length - 0xffff + i,
+            for (let i = 0; i <= 0xffff; i++)
+                wasmTable.set(wasmTable.length - 0xffff - 1 + i,
                               wasmTable.get(HEAPU32[($0 >>> 2) + i]));
 
-            return wasmTable.length - 0xffff;
+            return wasmTable.length - 0xffff - 1;
         },
         cpufunctbl);
 

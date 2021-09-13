@@ -1,3 +1,7 @@
+# 1.5.3
+
+-   Fix an emulator crash on the execution of invalid code.
+
 # 1.5.2
 
 -   Proxy Server: fix nonblocking sockets. This avoids spurious error messages during
