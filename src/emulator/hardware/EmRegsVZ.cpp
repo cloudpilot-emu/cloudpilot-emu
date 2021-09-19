@@ -572,6 +572,9 @@ void EmRegsVZ::Reset(Bool hardwareReset) {
         fPortDDataCount = 0;
 
         pwmActive = false;
+        pwmFifoSize = 0;
+        lastPwmFifoShiftAt = 0;
+        cachedSystemCycles = 0;
 
         // React to the new data in the UART registers.
 
@@ -770,15 +773,15 @@ void EmRegsVZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, portMPullupdnEn);
     INSTALL_HANDLER(StdRead, StdWrite, portMSelect);
 
-    INSTALL_HANDLER(StdRead, pwmc1Write, pwmControl);
+    INSTALL_HANDLER(pwmc1Read, pwmc1Write, pwmControl);
     INSTALL_HANDLER(StdRead, StdWrite, pwmSampleHi);
     INSTALL_HANDLER(StdRead, pwms1Write, pwmSampleLo);
     INSTALL_HANDLER(StdRead, pwmp1Write, pwmPeriod);
-    INSTALL_HANDLER(StdRead, NullWrite, pwmCounter);
+    INSTALL_HANDLER(pwmctr1Read, NullWrite, pwmCounter);
 
-    INSTALL_HANDLER(StdRead, StdWrite, pwm2Control);
-    INSTALL_HANDLER(StdRead, StdWrite, pwm2Period);
-    INSTALL_HANDLER(StdRead, StdWrite, pwm2Width);
+    INSTALL_HANDLER(StdRead, pwm2Write, pwm2Control);
+    INSTALL_HANDLER(StdRead, pwm2Write, pwm2Period);
+    INSTALL_HANDLER(StdRead, pwm2Write, pwm2Width);
     INSTALL_HANDLER(StdRead, NullWrite, pwm2Counter);
 
     INSTALL_HANDLER(StdRead, tmr1RegisterWrite, tmr1Control);
@@ -895,6 +898,8 @@ uint32 EmRegsVZ::GetAddressRange(void) { return kMemorySize; }
 // is in its own separate function instead of being inline.
 
 void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
+    cachedSystemCycles = systemCycles;
+
     if (afterLoad) {
         DispatchPwmChange();
         afterLoad = false;
@@ -975,6 +980,8 @@ void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
             }
         }
     }
+
+    UpdatePWMFIFO();
 }
 
 // ---------------------------------------------------------------------------
@@ -2975,7 +2982,86 @@ uint32 EmRegsVZ::CyclesToNextInterrupt(uint64 systemCycles) {
     return min(Tmr1CyclesToNextInterrupt(systemCycles), Tmr2CyclesToNextInterrupt(systemCycles));
 }
 
+void EmRegsVZ::UpdatePWMFIFO() {
+    uint16 value = READ_REGISTER(pwmControl);
+
+    if (value & 0x10) {
+        double clocksPerSecond = gSession->GetClocksPerSecond();
+
+        uint8 pwmp1 = READ_REGISTER(pwmPeriod);
+
+        uint8 prescaler = (value >> 8) & 0x7f;
+        uint8 clksel = value & 0x03;
+        uint32 baseFreq = (value & 0x8000) ? 32768 : GetSystemClockFrequency();
+        uint8 repeat = 1 << ((value >> 2) & 0x03);
+
+        double freq = static_cast<double>(baseFreq) / (prescaler + 1) / (2 << clksel) /
+                      min(256u, static_cast<uint32>(pwmp1) + 2) / repeat;
+
+        double delta = cachedSystemCycles - lastPwmFifoShiftAt;
+        uint32 samplesConsumed = delta / clocksPerSecond * freq;
+
+        pwmFifoSize = samplesConsumed > pwmFifoSize ? 0 : pwmFifoSize - samplesConsumed;
+
+        if (samplesConsumed > 0) {
+            lastPwmFifoShiftAt += (uint32)((double)(samplesConsumed) / freq * clocksPerSecond);
+        }
+
+        if (samplesConsumed > 0 && pwmFifoSize <= 1) {
+            cout << "FIFO underrun" << endl << flush;
+            value |= 0x0080;
+            WRITE_REGISTER(pwmControl, value);
+        }
+    }
+
+    uint16 intPendingLo = READ_REGISTER(intPendingLo);
+
+    if ((value & 0x00d0) == 0x00d0 && !(intPendingLo & hwrVZ328IntLoPWM)) {
+        WRITE_REGISTER(intPendingLo, intPendingLo | hwrVZ328IntLoPWM);
+        UpdateInterrupts();
+
+        cout << "interrupt raised" << endl << flush;
+    }
+
+    if ((value & 0x00d0) != 0x00d0 && (intPendingLo & hwrVZ328IntLoPWM)) {
+        WRITE_REGISTER(intPendingLo, intPendingLo & ~hwrVZ328IntLoPWM);
+        UpdateInterrupts();
+
+        cout << "interrupt cleared" << endl << flush;
+    }
+}
+
+uint32 EmRegsVZ::pwmc1Read(emuptr address, int size) {
+    uint32 value = EmRegsVZ::StdRead(address, size);
+
+    value &= ~0x0020;
+    if (pwmFifoSize < 5 && (value & 0x0010)) value |= 0x0020;
+
+    if (value & 0x0080) {
+        WRITE_REGISTER(pwmControl, value & ~0x0080);
+    }
+
+    cout << "pcmc read " << hex << value << dec << endl << flush;
+
+    return value;
+}
+
 void EmRegsVZ::pwmc1Write(emuptr address, int size, uint32 value) {
+    uint32 oldValue = READ_REGISTER(pwmControl);
+    cout << "pwmc write " << hex << value << dec << endl;
+
+    if ((oldValue ^ value) & 0x10) {
+        if (value & 0x10) {
+            pwmFifoSize = 0;
+            lastPwmFifoShiftAt = cachedSystemCycles;
+            value |= 0x0080;
+        } else {
+            // value &= ~0x0080;
+
+            pwmFifoSize = 0;
+        }
+    }
+
     EmRegsVZ::StdWrite(address, size, value);
 
     if (pwmActive && !(value & 0x10)) {
@@ -2985,18 +3071,38 @@ void EmRegsVZ::pwmc1Write(emuptr address, int size, uint32 value) {
 }
 
 void EmRegsVZ::pwms1Write(emuptr address, int size, uint32 value) {
+    cout << "sample write " << size << endl << flush;
+
+    if (!(READ_REGISTER(pwmControl) & 0x10)) return;
+
     EmRegsVZ::StdWrite(address, size, value);
 
-    if (READ_REGISTER(pwmControl) & 0x10) {
-        pwmActive = true;
-        DispatchPwmChange();
-    }
+    pwmActive = true;
+    DispatchPwmChange();
+
+    pwmFifoSize = std::min(pwmFifoSize + size, 5);
+
+    cout << "sample write, FIFO now at " << (int)pwmFifoSize << flush << endl;
 }
 
 void EmRegsVZ::pwmp1Write(emuptr address, int size, uint32 value) {
+    if (!(READ_REGISTER(pwmControl) & 0x10)) return;
+
     EmRegsVZ::StdWrite(address, size, value);
 
     if (pwmActive) DispatchPwmChange();
+}
+
+uint32 EmRegsVZ::pwmctr1Read(emuptr address, int size) {
+    cout << "pwmctr1 read" << endl << flush;
+
+    return EmRegsVZ::StdRead(address, size);
+}
+
+void EmRegsVZ::pwm2Write(emuptr address, int size, uint32 value) {
+    cout << "PWM2 write" << endl << flush;
+
+    EmRegsVZ::StdWrite(address, size, value);
 }
 
 void EmRegsVZ::DispatchPwmChange() {

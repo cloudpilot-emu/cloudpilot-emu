@@ -85,6 +85,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     uint32 uart2Read(emuptr address, int size);
     uint32 rtcHourMinSecRead(emuptr address, int size);
     uint32 rtcDayRead(emuptr address, int size);
+    uint32 pwmc1Read(emuptr address, int size);
+    uint32 pwmctr1Read(emuptr address, int size);
 
     void sdctlWrite(emuptr address, int size, uint32 value);
     void csControl1Write(emuptr address, int size, uint32 value);
@@ -112,6 +114,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     void pwmc1Write(emuptr address, int size, uint32 value);
     void pwms1Write(emuptr address, int size, uint32 value);
     void pwmp1Write(emuptr address, int size, uint32 value);
+    void pwm2Write(emuptr address, int size, uint32 value);
 
    protected:
     void HotSyncEvent(Bool buttonIsDown);
@@ -148,6 +151,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     uint32 Tmr2CyclesToNextInterrupt(uint64 systemCycles);
 
     void DispatchPwmChange();
+    void UpdatePWMFIFO();
 
     template <typename T>
     void DoSave(T& savestate);
@@ -179,6 +183,10 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
 
     bool pwmActive{false};
     bool afterLoad{false};
+    uint8 pwmFifoSize{0};
+    uint64 lastPwmFifoShiftAt{0};
+
+    uint64 cachedSystemCycles{0};
 
     EmEvent<uint64, bool>::HandleT onCycleHandle;
 };
