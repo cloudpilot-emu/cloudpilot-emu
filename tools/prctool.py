@@ -10,7 +10,14 @@ def transformZeroTerminatedString(str: bytes) -> str:
     return str[:terminator if terminator >= 0 else len(str)].decode('ascii')
 
 
-class PrcHeader:
+class Record:
+    _format: str = ""
+
+    def size(self) -> int:
+        return calcsize(self._format)
+
+
+class PrcHeader(Record):
     name: str
     attributes: int
     version: int
@@ -42,11 +49,8 @@ class PrcHeader:
 
         self.name = transformZeroTerminatedString(self.name)
 
-    def size(self) -> int:
-        return calcsize(self._format)
 
-
-class RecordList:
+class RecordList(Record):
     nextRecordListID: int
     numRecords: int
 
@@ -56,11 +60,8 @@ class RecordList:
         (self.nextRecordListID, self.numRecords) = unpack_from(
             self._format, buffer, offset)
 
-    def size(self) -> int:
-        return calcsize(self._format)
 
-
-class ResourceEntry:
+class ResourceEntry(Record):
     type: bytes
     id: int
     localChunkID: int
@@ -70,9 +71,6 @@ class ResourceEntry:
     def __init__(self, buffer: bytes, offset: int):
         (self.type, self.id, self.localChunkID) = unpack_from(
             self._format, buffer, offset)
-
-    def size(self) -> int:
-        return calcsize(self._format)
 
 
 def splitResources(options):
