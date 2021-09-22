@@ -37,6 +37,8 @@ class NetworkProxy {
     void SocketReceive(int16 handle, uint16 flags, uint16 bufLen, int32 timeout,
                        NetSocketAddrType* fromAddrP);
 
+    void SocketReceivePB(int16 handle, NetIOParamType* pbP, uint16 flags, int32 timeout);
+
     void SocketDmReceive(int16 handle, uint16 flags, uint16 rcvlen, int32 timeout,
                          NetSocketAddrType* fromAddrP);
 
@@ -86,6 +88,9 @@ class NetworkProxy {
 
     void SocketReceiveSuccess(void* responseData, size_t size);
     void SocketReceiveFail(Err err = netErrInternal);
+
+    void SocketReceivePBSuccess(void* responseData, size_t size);
+    void SocketReceivePBFail(Err err = netErrInternal);
 
     void SocketDmReceiveSuccess(void* responseData, size_t size);
     void SocketDmReceiveFail(Err err = netErrInternal);

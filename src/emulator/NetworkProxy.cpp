@@ -565,7 +565,7 @@ void NetworkProxy::SocketReceiveSuccess(void* responseData, size_t size) {
     EmMem_memcpy((emuptr)bufP, static_cast<void*>(bufferDecodeContext.data.get()),
                  bufferDecodeContext.len);
 
-    if (fromAddrP && response.has_address) {
+    if (fromAddrP && response.has_address && fromLenP >= 8) {
         deserializeAddress(fromAddrP, response.address);
         *fromLenP = 8;
 
@@ -584,6 +584,87 @@ void NetworkProxy::SocketReceiveFail(Err err) {
                  "UInt16 libRefNum, NetSocketRef socket,"
                  "void *bufP, UInt16 bufLen, UInt16 flags, "
                  "void *fromAddrP, UInt16 *fromLenP, Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
+}
+
+void NetworkProxy::SocketReceivePB(int16 handle, NetIOParamType* pbP, uint16 flags, int32 timeout) {
+    MsgRequest request = NewRequest(MsgRequest_socketReceiveRequest_tag);
+
+    if (flags & ~VALID_FLAGS) {
+        logging::printf("ERROR: SocketReceive: unsupported flags 0x%08x", flags);
+
+        return SocketReceivePBFail();
+    }
+
+    size_t bufLen = 0;
+    for (int i = 0; i < pbP->iovLen; i++) bufLen += pbP->iov[i].bufLen;
+
+    request.payload.socketReceiveRequest.handle = handle;
+    request.payload.socketReceiveRequest.flags = flags;
+    request.payload.socketReceiveRequest.timeout = convertTimeout(timeout);
+    request.payload.socketReceiveRequest.maxLen = bufLen;
+    request.payload.socketReceiveRequest.addressRequested = pbP->addrP;
+
+    SendAndSuspend(request, REQUEST_STATIC_SIZE,
+                   bind(&NetworkProxy::SocketReceivePBSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SocketReceivePBFail, this, _1));
+}
+
+void NetworkProxy::SocketReceivePBSuccess(void* responseData, size_t size) {
+    PREPARE_RESPONSE_WITH_BUFFER(SocketReceive, socketReceiveResponse);
+
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "NetIOParamType *pbP, UInt16 flags, Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(NetIOParamType, pbP, Marshal::kInOut);
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    size_t bufLen = 0;
+    for (int i = 0; i < (*pbP).iovLen; i++) bufLen += (*pbP).iov[i].bufLen;
+
+    if (bufferDecodeContext.len > bufLen) {
+        logging::printf("SocketReceivePB: message too long: %u vs. %u", bufferDecodeContext.len,
+                        bufLen);
+
+        return SocketReceivePBFail();
+    }
+
+    size_t consumed = 0;
+    int chunk = 0;
+
+    while (consumed < bufferDecodeContext.len) {
+        size_t chunkSize =
+            min<size_t>(bufferDecodeContext.len - consumed, (*pbP).iov[chunk].bufLen);
+
+        memcpy((*pbP).iov[chunk].bufP, bufferDecodeContext.data.get() + consumed, chunkSize);
+
+        consumed += chunkSize;
+        chunk++;
+    }
+
+    if ((*pbP).addrP && response.has_address && (*pbP).addrLen >= 8) {
+        deserializeAddress(reinterpret_cast<NetSocketAddrType*>((*pbP).addrP), response.address);
+    }
+
+    CALLED_PUT_PARAM_REF(pbP);
+
+    *errP = 0;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, bufferDecodeContext.len);
+}
+
+void NetworkProxy::SocketReceivePBFail(Err err) {
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "NetIOParamType *pbP, UInt16 flags, Int32 timeout, Err *errP");
 
     CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 

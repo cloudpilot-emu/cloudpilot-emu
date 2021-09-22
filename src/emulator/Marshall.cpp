@@ -496,6 +496,51 @@ void Marshal::GetNetIOParamType(emuptr p, NetIOParamType& dest) {
     }
 }
 
+void Marshal::PutNetIOParamType(emuptr p, const NetIOParamType& src) {
+    if (p) {
+        EmAliasNetIOParamType<PAS> dest(p);
+
+        // Copy the simple fields.
+
+        dest.addrLen = src.addrLen;
+        dest.iovLen = src.iovLen;
+        dest.accessRightsLen = src.accessRightsLen;
+
+        // Copy the address field.
+
+        PutBuffer(dest.addrP, src.addrP, src.addrLen);
+
+        if (src.addrP) {
+            // The "family" field needs to be stored in HBO, not NBO.
+            // The following sequence will assure that.
+
+            EmAliasNetSocketAddrType<PAS> addr(dest.addrP);
+
+            addr.family = ((NetSocketAddrType*)(src.addrP))->family;
+        }
+
+        // Copy the access rights field.
+
+        PutBuffer(dest.accessRights, src.accessRights, src.accessRightsLen);
+
+        // Copy the i/o buffers.
+
+        emuptr iovP = dest.iov;
+
+        for (UInt16 ii = 0; ii < src.iovLen; ++ii) {
+            EmAliasNetIOVecType<PAS> iov(iovP);
+
+            iov.bufLen = src.iov[ii].bufLen;
+            PutBuffer(iov.bufP, src.iov[ii].bufP, src.iov[ii].bufLen);
+
+            iovP += iov.GetSize();
+        }
+
+        void* buffer = src.iov;
+        Platform::DisposeMemory(buffer);
+    }
+}
+
 void Marshal::GetNetSocketAddrType(emuptr p, NetSocketAddrType& d) {
     memset(&d, 0, sizeof(NetSocketAddrType));
 
