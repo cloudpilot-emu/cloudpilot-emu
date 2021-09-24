@@ -1,3 +1,9 @@
+# 1.5.4
+
+-   Fix a regression that prevented the overwriting existing RAM DBs during
+    PRC installation.
+-   Support additional network APIs (NetlibSendPB, NetlibReceivePB).
+
 # 1.5.3
 
 -   Fix an emulator crash on the execution of invalid code.
