@@ -3,6 +3,7 @@
 -   Fix a regression that prevented the overwriting existing RAM DBs during
     PRC installation.
 -   Support additional network APIs (NetlibSendPB, NetlibReceivePB).
+-   Minor UI fixes.
 
 # 1.5.3
 
