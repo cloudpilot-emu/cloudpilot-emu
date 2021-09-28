@@ -21,7 +21,7 @@
 
   </ion-item-options>
 
-  <ion-item [color]="color" (click)="selectItem.emit()" [class.is-selected]="selected">
+  <ion-item [color]="color" (click)="selectItem.emit()">
     <ion-label [class.in-item-color]="selected">
       <h2>{{session?.name}}</h2>
       <p>{{device}}, {{session?.ram}}MB RAM<span *ngIf="session?.osVersion">, OS
