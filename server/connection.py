@@ -694,7 +694,6 @@ class Connection:
             elif request.level == netSocketOptLevelIP:
                 socketCtx.setTimeoutMsec(request.timeout)
                 response.bufval = await runInThread(lambda: socket.getsockopt(level, option, 40))
-                print(response.bufval, len(response.bufval))
 
             else:
                 socketCtx.setTimeoutMsec(request.timeout)
