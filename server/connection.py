@@ -3,6 +3,7 @@ import errno
 import logging
 import select
 import socket
+from struct import unpack
 
 import dns.resolver
 import hexdump
@@ -253,6 +254,9 @@ class Connection:
 
         elif requestType == "socketOptionSetRequest":
             response = await self._handleSocketOptionSet(request.socketOptionSetRequest)
+
+        elif requestType == "socketOptionGetRequest":
+            response = await self._handleSocketOptionGet(request.socketOptionGetRequest)
 
         elif requestType == "socketListenRequest":
             response = await self._handleSocketListen(request.socketListenRequest)
@@ -656,6 +660,50 @@ class Connection:
         except Exception as ex:
             response.err = logAndConvertException(
                 f'socketOptionSet failed handle={request.handle}', ex)
+
+        return responseMsg
+
+    async def _handleSocketOptionGet(self, request):
+        debug(
+            f'socketOptionGet handle={request.handle} level={request.level} option={request.option} timeout={request.timeout}')
+
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketOptionGetResponse
+        response.err = 0
+
+        try:
+            socketCtx = self._getSocketCtx(request.handle)
+            socket = socketCtx.socket
+
+            level = sockopt.translateSockoptLevel(request.level)
+            option = sockopt.translateSockoptOption(
+                request.level, request.option)
+
+            if request.level == netSocketOptLevelSocket and request.option == netSocketOptSockNonBlocking:
+                response.intval = socketCtx.getNonblocking()
+
+            elif level == None or option == None:
+                response.err = err.netErrParamErr
+
+            elif request.level == netSocketOptLevelSocket and request.option == netSocketOptSockLinger:
+                socketCtx.setTimeoutMsec(request.timeout)
+                (onoff, linger) = unpack('ii', await runInThread(lambda: socket.getsockopt(level, option, 8)))
+
+                response.intval = (onoff & 0xffff) | ((linger & 0xffff) << 16)
+
+            elif request.level == netSocketOptLevelIP:
+                socketCtx.setTimeoutMsec(request.timeout)
+                response.bufval = await runInThread(lambda: socket.getsockopt(level, option, 40))
+                print(response.bufval, len(response.bufval))
+
+            else:
+                socketCtx.setTimeoutMsec(request.timeout)
+
+                response.intval = await runInThread(lambda: socket.getsockopt(level, option))
+
+        except Exception as ex:
+            response.err = logAndConvertException(
+                f'socketOptionGet failed handle={request.handle}', ex)
 
         return responseMsg
 

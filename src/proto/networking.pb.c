@@ -84,6 +84,12 @@ PB_BIND(MsgSocketOptionSetRequest, MsgSocketOptionSetRequest, AUTO)
 PB_BIND(MsgSocketOptionSetResponse, MsgSocketOptionSetResponse, AUTO)
 
 
+PB_BIND(MsgSocketOptionGetRequest, MsgSocketOptionGetRequest, AUTO)
+
+
+PB_BIND(MsgSocketOptionGetResponse, MsgSocketOptionGetResponse, AUTO)
+
+
 PB_BIND(MsgSocketListenRequest, MsgSocketListenRequest, AUTO)
 
 

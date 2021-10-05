@@ -53,7 +53,7 @@ def InvalidOptionError(Exception):
 def translateSockoptOption(level, option):
     name = _lookupSockoptName(level, option)
     if name == None:
-        raise InvalidOptionError()
+        return None
 
     try:
         return getattr(socket, name)
@@ -62,7 +62,7 @@ def translateSockoptOption(level, option):
 
 
 def translateSockoptLevel(level):
-    if level == netSocketOptLevelIP:
+    if level == netSocketOptLevelSocket:
         return socket.SOL_SOCKET
 
     if level == netSocketOptLevelIP:
@@ -76,9 +76,6 @@ def translateSockoptLevel(level):
 
 def sockoptValue(message):
     valueType = message.WhichOneof("value")
-
-    if valueType == "boolval":
-        return int(message.boolval)
 
     if valueType == "bufval":
         return message.bufval

@@ -1127,8 +1127,9 @@ void NetworkProxy::SocketOptionSet(int16 handle, uint16 level, uint16 option, em
         request.which_value = MsgSocketOptionSetRequest_intval_tag;
 
         if (len != 4) return SocketOptionSetFail(netErrParamErr);
-        uint16 onOff = EmMemGet16(valueP);
-        uint16 time = EmMemGet16(valueP + 2);
+
+        const uint16 time = EmMemGet16(valueP + 2);
+        const uint16 onOff = EmMemGet16(valueP);
 
         request.value.intval = onOff | (time << 16);
     } else {
@@ -1143,10 +1144,24 @@ void NetworkProxy::SocketOptionSet(int16 handle, uint16 level, uint16 option, em
                 break;
 
             case SocketOptionType::flagval:
-                if (len != 1 && len != 2 && len != 4) return SocketOptionSetFail(netErrParamErr);
+                request.which_value = MsgSocketOptionSetRequest_intval_tag;
 
-                request.which_value = MsgSocketOptionSetRequest_boolval_tag;
-                request.value.boolval = EmMemGet8(valueP);
+                switch (len) {
+                    case 1:
+                        request.value.intval = EmMemGet8(valueP) != 0 ? 1 : 0;
+                        break;
+
+                    case 2:
+                        request.value.intval = EmMemGet16(valueP) != 0 ? 1 : 0;
+                        break;
+
+                    case 4:
+                        request.value.intval = EmMemGet32(valueP) != 0 ? 1 : 0;
+                        break;
+
+                    default:
+                        return SocketOptionSetFail(netErrParamErr);
+                }
 
                 break;
 
@@ -1197,6 +1212,131 @@ void NetworkProxy::SocketOptionSetFail(Err err) {
                  "UInt16 libRefNum, NetSocketRef socket,"
                  "UInt16 level, UInt16 option, "
                  "void *optValueP, UInt16 optValueLen,"
+                 "Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
+}
+
+void NetworkProxy::SocketOptionGet(int16 handle, uint16 level, uint16 option, int32 timeout) {
+    if (level == netSocketOptLevelSocket &&
+        (option == netSocketOptSockRequireErrClear || option == netSocketOptSockMultiPktAddr))
+        return SocketOptionGetFail(netErrUnimplemented);
+
+    MsgRequest msgRequest = NewRequest(MsgRequest_socketOptionGetRequest_tag);
+    MsgSocketOptionGetRequest& request(msgRequest.payload.socketOptionGetRequest);
+
+    request.handle = handle;
+    request.level = level;
+    request.option = option;
+    request.timeout = convertTimeout(timeout);
+
+    SendAndSuspend(msgRequest, REQUEST_STATIC_SIZE,
+                   bind(&NetworkProxy::SocketOptionGetSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SocketOptionGetFail, this, _1));
+}
+
+void NetworkProxy::SocketOptionGetSuccess(void* responseData, size_t size) {
+    PREPARE_RESPONSE(SocketOptionGet, socketOptionGetResponse);
+
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "UInt16 level, UInt16 option,"
+                 "void *optValueP, UInt16 *optValueLenP,"
+                 "Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_VAL(UInt16, level);
+    CALLED_GET_PARAM_VAL(UInt16, option);
+    CALLED_GET_PARAM_VAL(UInt32, optValueP);
+    CALLED_GET_PARAM_REF(UInt16, optValueLenP, Marshal::kInOut);
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    if (level == netSocketOptLevelSocket && option == netSocketOptSockLinger) {
+        if (response.which_value != MsgSocketOptionGetResponse_intval_tag)
+            return SocketOptionGetFail(netErrInternal);
+
+        if (*optValueLenP != 4) return SocketOptionGetFail(netErrParamErr);
+
+        const uint16 onOff = response.value.intval & 0xffff;
+        const uint16 time = (response.value.intval >> 16) & 0xffff;
+
+        EmMemPut16(optValueP, onOff);
+        EmMemPut16(optValueP + 2, time);
+    } else {
+        switch (determineSocketOptionType(level, option)) {
+            case SocketOptionType::bufval:
+                if (response.which_value != MsgSocketOptionGetResponse_bufval_tag ||
+                    response.value.bufval.size > 40)
+                    return SocketOptionGetFail(netErrInternal);
+
+                if (*optValueLenP < response.value.bufval.size)
+                    return SocketOptionGetFail(netErrParamErr);
+
+                EmMem_memcpy(static_cast<emuptr>(optValueP), (void*)response.value.bufval.bytes,
+                             response.value.bufval.size);
+                *optValueLenP = response.value.bufval.size;
+
+                break;
+
+            case SocketOptionType::intval:
+                if (response.which_value != MsgSocketOptionGetResponse_intval_tag)
+                    return SocketOptionGetFail(netErrInternal);
+
+                switch (*optValueLenP) {
+                    case 2:
+                        EmMemPut16(optValueP, response.value.intval);
+                        break;
+
+                    case 4:
+                        EmMemPut32(optValueP, response.value.intval);
+                        break;
+
+                    default:
+                        return SocketOptionGetFail(netErrParamErr);
+                }
+
+                break;
+
+            case SocketOptionType::flagval:
+                if (response.which_value != MsgSocketOptionGetResponse_intval_tag)
+                    return SocketOptionGetFail(netErrInternal);
+
+                switch (*optValueLenP) {
+                    case 1:
+                        EmMemPut8(optValueP, response.value.intval != 0 ? 1 : 0);
+                        break;
+
+                    case 2:
+                        EmMemPut16(optValueP, response.value.intval != 0 ? 1 : 0);
+                        break;
+
+                    case 4:
+                        EmMemPut32(optValueP, response.value.intval != 0 ? 1 : 0);
+                        break;
+
+                    default:
+                        return SocketOptionGetFail(netErrParamErr);
+                }
+        }
+    }
+
+    CALLED_PUT_PARAM_REF(optValueLenP);
+
+    *errP = 0;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, 0);
+}
+
+void NetworkProxy::SocketOptionGetFail(Err err) {
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefNum, NetSocketRef socket,"
+                 "UInt16 level, UInt16 option,"
+                 "void *optValueP, UInt16 *optValueLenP,"
                  "Int32 timeout, Err *errP");
 
     CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);

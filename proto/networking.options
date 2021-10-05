@@ -12,3 +12,4 @@ MsgGetServByNameRequest.protocol max_length:3
 MsgSettingGetResponse.strval max_length:255
 
 MsgSocketOptionSetRequest.bufval max_size:40
+MsgSocketOptionGetResponse.bufval max_size:40

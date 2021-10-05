@@ -41,6 +41,9 @@ class SocketContext:
         self.nonblocking = value
         self.updateTimeout()
 
+    def getNonblocking(self):
+        return self.nonblocking
+
     async def close(self):
         self.updateTimeout()
 

@@ -144,7 +144,6 @@ message MsgSocketOptionSetRequest {
     required uint32 option = 3;
     required int32 timeout = 4;
     oneof value {
-        bool boolval = 5;
         int32 intval = 6;
         bytes bufval = 7;
     }
@@ -152,6 +151,21 @@ message MsgSocketOptionSetRequest {
 
 message MsgSocketOptionSetResponse {
     required int32 err = 1;
+}
+
+message MsgSocketOptionGetRequest {
+    required int32 handle = 1;
+    required uint32 level = 2;
+    required uint32 option = 3;
+    required int32 timeout = 4;
+}
+
+message MsgSocketOptionGetResponse {
+    required int32 err = 1;
+    oneof value {
+        int32 intval = 3;
+        bytes bufval = 4;
+    }
 }
 
 message MsgSocketListenRequest {
@@ -193,6 +207,7 @@ message MsgRequest {
         MsgSocketOptionSetRequest socketOptionSetRequest = 13;
         MsgSocketListenRequest socketListenRequest = 14;
         MsgSocketAcceptRequest socketAcceptRequest = 15;
+        MsgSocketOptionGetRequest socketOptionGetRequest = 16;
     }
 }
 
@@ -214,6 +229,7 @@ message MsgResponse {
         MsgSocketOptionSetResponse socketOptionSetResponse = 13;
         MsgSocketListenResponse socketListenResponse = 14;
         MsgSocketAcceptResponse socketAcceptResponse = 15;
+        MsgSocketOptionGetResponse socketOptionGetResponse = 16;
         MsgInvalidRequestResponse invalidRequestResponse = 255;
     }
 }

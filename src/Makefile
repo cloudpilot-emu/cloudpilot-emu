@@ -10,6 +10,8 @@ LD_EMCC ?= emcc
 
 PYTHON ?= python3
 
+EMCC_OPT ?= -O3 -flto
+
 WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
 
 CFLAGS_NATIVE ?= \
@@ -27,7 +29,7 @@ CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack \
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
 CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
 
-CFLAGS_EMCC = -O3 -flto -D_POSIX_SOURCE
+CFLAGS_EMCC = $(EMCC_OPT) -D_POSIX_SOURCE
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)  -fno-rtti -fno-exceptions
 
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined -fsanitize-ignorelist=src/clang_blacklist.txt
@@ -39,7 +41,7 @@ WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
 WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/binding.idl
 WEBIDL_BINDING_CXX = web/binding.cpp
 
-LDFLAGS_EMCC_WEB = -O3 -Wno-version-check -flto \
+LDFLAGS_EMCC_WEB = $(EMCC_OPT) -Wno-version-check \
 	--post-js $(WEBIDL_BINDING_JS) \
 	-s NO_EXIT_RUNTIME=1 \
 	-s MODULARIZE=1 \

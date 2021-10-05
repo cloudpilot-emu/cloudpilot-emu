@@ -8,6 +8,8 @@
 
 # PYTHON ?= python
 
+# EMCC_OPT = -g -O0
+
 # WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
 
 CFLAGS_NATIVE = \

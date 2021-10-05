@@ -303,8 +303,13 @@ namespace {
         CALLED_GET_PARAM_REF(UInt16, optValueLenP, Marshal::kInOut);
         CALLED_GET_PARAM_VAL(Int32, timeout);
         CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
-
         CALLED_GET_PARAM_PTR(void, optValueP, *optValueLenP, Marshal::kOutput);
+
+        if (Feature::GetNetworkRedirection()) {
+            gNetworkProxy.SocketOptionGet(socket, level, option, timeout);
+
+            return kSkipROM;
+        }
 
         return kExecuteROM;
     }

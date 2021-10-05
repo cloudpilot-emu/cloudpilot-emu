@@ -58,6 +58,8 @@ class NetworkProxy {
     void SocketOptionSet(int16 handle, uint16 level, uint16 option, emuptr valueP, size_t len,
                          int32 timeout);
 
+    void SocketOptionGet(int16 handle, uint16 level, uint16 option, int32 timeout);
+
     void SocketListen(int16 handle, int32 timeout);
 
     void SocketAccept(int16 handle, int32 timeout);
@@ -115,6 +117,9 @@ class NetworkProxy {
 
     void SocketOptionSetSuccess(void* responseData, size_t size);
     void SocketOptionSetFail(Err err = netErrInternal);
+
+    void SocketOptionGetSuccess(void* responseData, size_t size);
+    void SocketOptionGetFail(Err err = netErrInternal);
 
     void SocketListenSuccess(void* responseData, size_t size);
     void SocketListenFail(Err err = netErrInternal);
