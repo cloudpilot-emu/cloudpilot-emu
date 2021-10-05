@@ -226,11 +226,6 @@ Possible pitfalls to watch out for:
 
 # Known issues
 
-These will be fixed in a future version.
-
--   Some network API calls are currently unhandled. However, no application that I
-    have tested actually uses those.
-
 Wontfix:
 
 -   ICMP will only work for ICMP/ECHO and requires superuser / root permissions on
