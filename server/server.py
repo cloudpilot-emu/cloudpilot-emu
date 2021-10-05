@@ -12,8 +12,8 @@ from cloudpilot_token import TOKEN_TTL, generateToken, validateToken
 from connection import Connection
 from logger import logger
 
-VERSION = 2
-COMPAT_VERSION = 1
+VERSION = 3
+COMPAT_VERSION = 3
 
 
 def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins,

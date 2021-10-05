@@ -34,7 +34,7 @@ namespace http = beast::http;
 namespace json = boost::json;
 
 namespace {
-    constexpr int SERVER_VERSION = 2;
+    constexpr int SERVER_VERSION = 3;
 
     // https://stackoverflow.com/questions/154536/encode-decode-urls-in-c
     string UrlEncode(const string& value) {

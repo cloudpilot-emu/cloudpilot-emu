@@ -13,7 +13,7 @@ import { v4 as uuid } from 'uuid';
 const CONNECT_TIMEOUT = 5000;
 const HANDSHAKE_TIMEOUT = 5000;
 const LOADER_GRACE_TIME = 500;
-const VERSION = 2;
+const VERSION = 3;
 
 interface HandshakeResponse {
     version: number;
