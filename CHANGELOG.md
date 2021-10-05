@@ -1,3 +1,8 @@
+# Next version
+
+-   Finalize networking API. This release requires an updated version of the proxy
+    server for networking.
+
 # 1.5.4
 
 -   Fix a regression that prevented the overwriting existing RAM DBs during
