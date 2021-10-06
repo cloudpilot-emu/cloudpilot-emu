@@ -9,7 +9,7 @@ SECRET = token_bytes(16)
 TOKEN_TTL = 10
 
 
-def generateToken():
+def generateToken() -> str:
     timestamp = math.floor(time())
     timeLE = bytes((timestamp & 0xff, (timestamp >> 8) & 0xff,
                    (timestamp >> 16) & 0xff, (timestamp >> 24) & 0xff))
@@ -19,7 +19,7 @@ def generateToken():
     return base64.b64encode(nonce + timeLE + hmac.digest(SECRET, nonce + timeLE, 'sha256')).decode('ascii')
 
 
-def validateToken(token: str):
+def validateToken(token: str) -> bool:
     if len(token) != 72:
         return False
 

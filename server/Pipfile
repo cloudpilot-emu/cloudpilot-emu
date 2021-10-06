@@ -15,6 +15,9 @@ macholib = "*"
 aiohttp = "*"
 aiohttp-cors = "*"
 dnspython = "*"
+types-pyopenssl = "*"
+types-protobuf = "*"
+types-futures = "*"
 
 [dev-packages]
 

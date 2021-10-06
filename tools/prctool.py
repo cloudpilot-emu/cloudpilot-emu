@@ -34,7 +34,7 @@ class PrcHeader(Record):
     _format: str = ">32s2H6I4s4sI"
 
     def __init__(self, buffer: bytes, offset: int):
-        (self.name,
+        (encodedName,
          self.attributes,
          self.version,
          self.creationDate,
@@ -47,7 +47,7 @@ class PrcHeader(Record):
          self.creator,
          self.uniqueIDSeed) = unpack_from(self._format, buffer, offset)
 
-        self.name = transformZeroTerminatedString(self.name)
+        self.name = transformZeroTerminatedString(encodedName)
 
 
 class RecordList(Record):

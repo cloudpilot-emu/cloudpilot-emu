@@ -3,6 +3,7 @@ import random
 import re
 import readline
 import sys
+from typing import List, Optional, Tuple
 
 from OpenSSL import crypto
 
@@ -17,7 +18,7 @@ REGEX_IP = re.compile(
 REGEX_NAME = re.compile('^[a-zA-Z\d\.\-]+$')
 
 
-def _deleteIfRequired(file, overwrite):
+def _deleteIfRequired(file: str, overwrite: bool):
     if not os.path.exists(file):
         return
 
@@ -37,7 +38,7 @@ def _deleteIfRequired(file, overwrite):
         exit(1)
 
 
-def _decomposeNames(namestring):
+def _decomposeNames(namestring: str) -> Tuple[Optional[List[str]], Optional[List[str]]]:
     parts = [name.strip() for name in namestring.split(",")]
     ips = []
     names = []
@@ -56,7 +57,7 @@ def _decomposeNames(namestring):
     return (ips, names)
 
 
-def _inputNames():
+def _inputNames() -> Tuple[Optional[List[str]], Optional[List[str]]]:
     print('please enter a comma separated list of IPs, hostnames or domains for which this cert will be valid:')
     return _decomposeNames(input())
 

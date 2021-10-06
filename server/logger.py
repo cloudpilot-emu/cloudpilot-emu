@@ -3,7 +3,8 @@ import logging
 logger = logging.Logger("cloudpilot-server")
 
 handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter("%(name)s:%(levelname)s: %(asctime)s: %(message)s"))
+handler.setFormatter(logging.Formatter(
+    "%(name)s:%(levelname)s: %(asctime)s: %(message)s"))
 
 logger.addHandler(handler)
 

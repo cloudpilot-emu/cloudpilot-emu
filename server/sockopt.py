@@ -1,7 +1,9 @@
 import socket
 import struct
+from typing import Optional, Union
 
 from palmos_constants import *
+from proto.networking_pb2 import MsgSocketOptionSetRequest
 
 _lookup = {
     netSocketOptSockDebug: "SO_DEBUG",
@@ -24,7 +26,7 @@ _lookup = {
 }
 
 
-def _lookupSockoptName(level, option):
+def _lookupSockoptName(level: int, option: int) -> Optional[str]:
     if level == netSocketOptLevelIP:
         if option == netSocketOptIPOptions:
             return "IP_OPTIONS"
@@ -46,13 +48,9 @@ def _lookupSockoptName(level, option):
         return None
 
 
-def InvalidOptionError(Exception):
-    pass
-
-
-def translateSockoptOption(level, option):
+def translateSockoptOption(level: int, option: int) -> Optional[int]:
     name = _lookupSockoptName(level, option)
-    if name == None:
+    if name is None:
         return None
 
     try:
@@ -61,7 +59,7 @@ def translateSockoptOption(level, option):
         return None
 
 
-def translateSockoptLevel(level):
+def translateSockoptLevel(level: int) -> Optional[int]:
     if level == netSocketOptLevelSocket:
         return socket.SOL_SOCKET
 
@@ -74,7 +72,7 @@ def translateSockoptLevel(level):
     return None
 
 
-def sockoptValue(message):
+def sockoptValue(message: MsgSocketOptionSetRequest) -> Union[bytes, int]:
     valueType = message.WhichOneof("value")
 
     if valueType == "bufval":

@@ -4,9 +4,12 @@ import platform
 from asyncio.proactor_events import _ProactorBasePipeTransport
 from functools import wraps
 from os import stat
+from ssl import SSLContext
+from typing import Optional
 
-import aiohttp_cors
+import aiohttp_cors  # type: ignore
 from aiohttp import log, web
+from aiohttp.web_response import Response
 
 from cloudpilot_token import TOKEN_TTL, generateToken, validateToken
 from connection import Connection
@@ -16,11 +19,11 @@ VERSION = 3
 COMPAT_VERSION = 3
 
 
-def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins,
-          forceBindAddress=None, authentication=None, nameserver=None):
+def start(host: str, port: int, ssl: Optional[SSLContext], logLevel: str, logLevelFramework: str, trustedOrigins: str,
+          forceBindAddress: Optional[str] = None, authentication: Optional[str] = None, nameserver: Optional[str] = None):
     routes = web.RouteTableDef()
 
-    async def handshakeHandler(request: web.Request):
+    async def handshakeHandler(request: web.Request) -> Response:
         if not _validateAuth(request, authentication):
             return web.Response(status=401, text="401: unauthorized")
 
@@ -56,7 +59,7 @@ def start(host, port, ssl, logLevel, logLevelFramework, trustedOrigins,
     web.run_app(app, host=host, port=port, ssl_context=ssl)
 
 
-def _setupLogging(logLevel, logLevelFramework):
+def _setupLogging(logLevel: str, logLevelFramework: str):
     logging.basicConfig(level=logging.ERROR)
 
     for aiohttpLogger in (log.access_logger, log.server_logger):
@@ -65,7 +68,7 @@ def _setupLogging(logLevel, logLevelFramework):
     logger.setLevel(logLevel.upper())
 
 
-def _validateAuth(request: web.Request, authentication=None):
+def _validateAuth(request: web.Request, authentication=None) -> bool:
     if authentication == None:
         return True
 
@@ -73,7 +76,11 @@ def _validateAuth(request: web.Request, authentication=None):
         return False
 
     try:
-        return base64.b64decode(request.headers.get("authorization"), validate=True).decode('utf8').strip() == authentication
+        authHeader = request.headers.get("authorization")
+        if authHeader is None:
+            return False
+
+        return base64.b64decode(authHeader, validate=True).decode('utf8').strip() == authentication
     except:
         return False
 
@@ -92,5 +99,5 @@ def silence_event_loop_closed(func):
 
 
 if platform.system() == 'Windows':
-    _ProactorBasePipeTransport.__del__ = silence_event_loop_closed(
+    _ProactorBasePipeTransport.__del__ = silence_event_loop_closed(  # type: ignore
         _ProactorBasePipeTransport.__del__)

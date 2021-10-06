@@ -237,13 +237,13 @@ _herrnoLookup = {
 }
 
 
-def errnoToPalm(errno):
+def errnoToPalm(errno: int) -> int:
     return _errnoLookup[errno] if errno in _errnoLookup else netErrInternal
 
 
-def gaierrnoToPalm(gaierrno):
+def gaierrnoToPalm(gaierrno: int) -> int:
     return _gaierrnoLookup[gaierrno] if gaierrno in _gaierrnoLookup else netErrInternal
 
 
-def herrnoToPalm(herrno):
+def herrnoToPalm(herrno: int) -> int:
     return _herrnoLookup[herrno] if herrno in _herrnoLookup else netErrInternal

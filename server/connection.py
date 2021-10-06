@@ -4,10 +4,12 @@ import logging
 import select
 import socket
 from struct import unpack
+from typing import Awaitable, List, Optional, Tuple, cast
 
 import dns.resolver
-import hexdump
+import hexdump  # type: ignore
 from aiohttp import WSMsgType, web
+from aiohttp.web_ws import WebSocketResponse
 
 import net_errors as err
 import proto.networking_pb2 as networking
@@ -27,13 +29,17 @@ SOCKET_TYPE = {
 
 
 class InvalidHandleError(Exception):
-    def __init__(self, handle):
+    handle: int
+
+    def __init__(self, handle: int):
         super().__init__()
         self.handle = handle
 
 
 class InvalidAddressError(Exception):
-    def __init__(self, address):
+    address: int
+
+    def __init__(self, address: int):
         super().__init__()
         self.address = address
 
@@ -46,12 +52,12 @@ class BadPacketException(Exception):
     pass
 
 
-def deserializeAddress(addr):
+def deserializeAddress(addr: networking.Address) -> Tuple[str, int]:
     return(
         f'{(addr.ip >> 24) & 0xff}.{(addr.ip >> 16) & 0xff}.{(addr.ip >> 8) & 0xff}.{addr.ip & 0xff}', addr.port)
 
 
-def serializeIp(addr):
+def serializeIp(addr: str) -> Optional[int]:
     try:
         parts = [int(x) for x in addr.split(".")]
     except Exception:
@@ -64,7 +70,7 @@ def serializeIp(addr):
         parts[2] << 8) | parts[3]) & 0xffffffff
 
 
-def serializeAddress(addr, target):
+def serializeAddress(addr: Tuple[str, int], target: networking.Address):
     if type(addr) != tuple or len(addr) != 2 or not isinstance(addr[0], str) or not isinstance(addr[1], int):
         target.port = 0
         target.ip = 0
@@ -75,15 +81,15 @@ def serializeAddress(addr, target):
 
     ip = serializeIp(addr[0])
 
-    if ip == None:
-        target.port = 0
-        target.ip = 0
-    else:
+    if ip is not None:
         target.port = addr[1]
         target.ip = ip
+    else:
+        target.port = 0
+        target.ip = 0
 
 
-def translateFlags(flags):
+def translateFlags(flags: int) -> int:
     translatedFlags = 0
 
     if flags & 0x01:
@@ -98,7 +104,7 @@ def translateFlags(flags):
     return flags
 
 
-def formatException(ex):
+def formatException(ex: Exception) -> str:
     if isinstance(ex, InvalidHandleError):
         return f'invalid handle {ex.handle}'
 
@@ -114,7 +120,7 @@ def formatException(ex):
     return f'{type(ex).__name__}: {ex}'
 
 
-def exceptionToErr(ex):
+def exceptionToErr(ex: Exception) -> int:
     if isinstance(ex, socket.timeout):
         return err.netErrTimeout
 
@@ -142,7 +148,7 @@ def exceptionToErr(ex):
     return err.netErrInternal
 
 
-def logAndConvertException(msg, ex):
+def logAndConvertException(msg: str, ex: Exception) -> int:
     ecode = exceptionToErr(ex)
 
     if ecode != err.netErrTimeout and ecode != err.netErrWouldBlock:
@@ -151,14 +157,14 @@ def logAndConvertException(msg, ex):
     return ecode
 
 
-def ipFromIpPacket(packet):
+def ipFromIpPacket(packet: bytes) -> str:
     if len(packet) < 20:
         raise BadPacketException()
 
     return f'{packet[16]}.{packet[17]}.{packet[18]}.{packet[19]}'
 
 
-def removeIpHeader(packet, socketCtx):
+def removeIpHeader(packet: bytes, socketCtx: SocketContext) -> bytes:
     if socketCtx.type != socket.SOCK_RAW or len(packet) < 20 or (packet[0] >> 4) != 4 or (packet[0] & 0x0f) < 5 or packet[9] != 1:
         return packet
 
@@ -166,7 +172,7 @@ def removeIpHeader(packet, socketCtx):
     return packet[4*hlen:]
 
 
-def logPayload(data):
+def logPayload(data: bytes):
     if not logger.isEnabledFor(logging.DEBUG):
         return
 
@@ -178,14 +184,21 @@ def logPayload(data):
 
 
 class Connection:
-    nextConnectionIndex = 0
+    nextConnectionIndex: int = 0
 
-    def __init__(self, forceBindAddress=None, nameserver=None):
-        self.echoRequest = None
+    connectionIndex: int
+
+    _sockets: List[Optional[SocketContext]]
+    _forceBindAddress: Optional[Tuple[str, int]]
+    _nameserver: Optional[str]
+
+    def __init__(self, forceBindAddress: Optional[str] = None, nameserver: Optional[str] = None):
         self._sockets = [None] * MAX_HANDLE
         self.connectionIndex = Connection.nextConnectionIndex
+
         self._forceBindAddress = (
-            forceBindAddress, 0) if forceBindAddress != None else None
+            forceBindAddress, 0) if forceBindAddress is not None else None
+
         self._nameserver = nameserver
 
         Connection.nextConnectionIndex += 1
@@ -193,12 +206,10 @@ class Connection:
     async def handle(self, ws: web.WebSocketResponse):
         info(f'starting proxy connection {self.connectionIndex}')
 
-        self._ws = ws
-
         try:
             async for message in ws:
                 if message.type == WSMsgType.BINARY:
-                    await self._handleMessage(message.data)
+                    await self._handleMessage(message.data, ws)
 
                 elif message.type == WSMsgType.ERROR:
                     error(
@@ -212,10 +223,9 @@ class Connection:
         finally:
             await self._closeAllSockets()
 
-    async def _handleMessage(self, message):
+    async def _handleMessage(self, message: bytes, ws: WebSocketResponse):
         request = networking.MsgRequest()
         request.ParseFromString(message)
-        response = None
 
         requestType = request.WhichOneof("payload")
 
@@ -270,12 +280,11 @@ class Connection:
 
             error(f'unknown request {requestType}')
 
-        if response:
-            response.id = request.id
+        response.id = request.id
 
-            await self._ws.send_bytes(response.SerializeToString())
+        await ws.send_bytes(response.SerializeToString())
 
-    async def _handleSocketOpen(self, request):
+    async def _handleSocketOpen(self, request: networking.MsgSocketOpenRequest) -> networking.MsgResponse:
         debug(
             f'socketOpenRequest: type={request.type} protocol={request.protocol}')
 
@@ -318,7 +327,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handleSocketBind(self, request):
+    async def _handleSocketBind(self, request: networking.MsgSocketBindRequest) -> networking.MsgResponse:
         debug(
             f'socketBindRequest: handle={request.handle} address={deserializeAddress(request.address)} timeout={request.timeout}')
 
@@ -331,7 +340,7 @@ class Connection:
             socketCtx.setTimeoutMsec(request.timeout)
 
             await runInThread(lambda: socketCtx.socket.bind(
-                deserializeAddress(request.address) if self._forceBindAddress == None else self._forceBindAddress))
+                deserializeAddress(request.address) if self._forceBindAddress is None else self._forceBindAddress))
 
             socketCtx.bound = True
             response.err = 0
@@ -344,7 +353,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handleSocketAddr(self, request):
+    async def _handleSocketAddr(self, request: networking.MsgSocketAddrRequest) -> networking.MsgResponse:
         debug(
             f'socketAddrRequest: handle={request.handle} requestAddressLocal={request.requestAddressLocal} requestAddressRemote={request.requestAddressRemote} timeout={request.timeout}')
 
@@ -383,13 +392,11 @@ class Connection:
 
         return responseMsg
 
-    async def _handleSocketSend(self, request):
+    async def _handleSocketSend(self, request: networking.MsgSocketSendRequest) -> networking.MsgResponse:
         debug(
             f'socketSendRequest: handle={request.handle} len={len(request.data)} flags={request.flags} timeout={request.timeout} {f"address={deserializeAddress(request.address)}" if request.HasField("address") else ""}')
 
         logPayload(request.data)
-
-        self.echoRequest = request.data
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketSendResponse
@@ -426,7 +433,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handeSocketReceive(self, request):
+    async def _handeSocketReceive(self, request: networking.MsgSocketReceiveRequest) -> networking.MsgResponse:
         debug(
             f'socketReceiveRequest: handle={request.handle} flags={request.flags} timeout={request.timeout} maxLength={request.maxLen} addressRequested={request.addressRequested}')
 
@@ -458,7 +465,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handleSocketClose(self, request):
+    async def _handleSocketClose(self, request: networking.MsgSocketCloseRequest) -> networking.MsgResponse:
         debug(
             f'socketCloseRequest: handle={request.handle} timeout={request.timeout}')
 
@@ -483,7 +490,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handleGetHostByName(self, request):
+    async def _handleGetHostByName(self, request: networking.MsgGetHostByNameRequest) -> networking.MsgResponse:
         debug(f'getHostByNameRequest name={request.name}')
 
         responseMsg = networking.MsgResponse()
@@ -500,7 +507,7 @@ class Connection:
                 response.alias = aliases[0]
 
             response.addresses[:] = [
-                serializeIp(x) for x in addresses if serializeIp(x) != None][:3]
+                cast(int, serializeIp(x)) for x in addresses if serializeIp(x) is not None][:3]
 
             response.err = 0
 
@@ -510,7 +517,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handleGetServByName(self, request):
+    async def _handleGetServByName(self, request: networking.MsgGetServByNameRequest) -> networking.MsgResponse:
         debug(
             f'getServByNameRequest name={request.name} protocol={request.protocol}')
 
@@ -531,7 +538,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handleSocketConnect(self, request):
+    async def _handleSocketConnect(self, request: networking.MsgSocketConnectRequest) -> networking.MsgResponse:
         debug(
             f'socketConnectRequest handle={request.handle} address={deserializeAddress(request.address)} timeout={request.timeout}')
 
@@ -543,8 +550,10 @@ class Connection:
 
             socketContext.setTimeoutMsec(request.timeout)
 
-            if self._forceBindAddress != None and not socketContext.bound:
-                await runInThread(lambda: socketContext.socket.bind(self._forceBindAddress))
+            if self._forceBindAddress is not None and not socketContext.bound:
+                forceBindAddress = self._forceBindAddress
+
+                await runInThread(lambda: socketContext.socket.bind(forceBindAddress))
 
                 socketContext.bound = True
                 socketContext.updateTimeout()
@@ -562,7 +571,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handleSelect(self, request):
+    async def _handleSelect(self, request: networking.MsgSelectRequest) -> networking.MsgResponse:
         debug(f'select width={request.width} readFDs={self._fdSetToHandles(request.readFDs, request.width)} writeFDs={self._fdSetToHandles(request.writeFDs, request.width)} exceptFDs={self._fdSetToHandles(request.exceptFDs, request.width)} timeout={request.timeout}')
 
         responseMsg = networking.MsgResponse()
@@ -597,7 +606,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handleSettingGet(self, request):
+    async def _handleSettingGet(self, request: networking.MsgSettingGetRequest) -> networking.MsgResponse:
         debug(f'settingGet setting={request.setting}')
 
         responseMsg = networking.MsgResponse()
@@ -610,16 +619,17 @@ class Connection:
 
             elif request.setting in [netSettingPrimaryDNS, netSettingSecondaryDNS, netSettingRTPrimaryDNS, netSettingRTSecondaryDNS]:
                 resolver = dns.resolver.Resolver()
-                ip = self._nameserver
 
-                if ip == None:
+                if self._nameserver is None:
                     for nameserver in resolver.nameservers:
                         ip = serializeIp(nameserver)
 
                         if ip != None:
                             break
+                else:
+                    ip = serializeIp(self._nameserver)
 
-                response.uint32val = ip if ip != None else 0x08080808
+                response.uint32val = ip if ip is not None else 0x08080808
 
             else:
                 response.err = err.netErrParamErr
@@ -629,11 +639,11 @@ class Connection:
 
         return responseMsg
 
-    async def _handleSocketOptionSet(self, request):
+    async def _handleSocketOptionSet(self, request: networking.MsgSocketOptionSetRequest) -> networking.MsgResponse:
         value = sockopt.sockoptValue(request)
 
         debug(
-            f'socketOptionSet handle={request.handle} level={request.level} option={request.option} value={value} timeout={request.timeout}')
+            f'socketOptionSet handle={request.handle} level={request.level} option={request.option} value={value} timeout={request.timeout}')  # type: ignore
 
         responseMsg = networking.MsgResponse()
         response = responseMsg.socketOptionSetResponse
@@ -650,12 +660,16 @@ class Connection:
                 option = sockopt.translateSockoptOption(
                     request.level, request.option)
 
-                if level == None or option == None:
+                if level is None or option is None:
                     response.err = err.netErrParamErr
                 else:
                     socketCtx.setTimeoutMsec(request.timeout)
 
-                    await runInThread(lambda: socket.setsockopt(level, option, value))
+                    # https://github.com/python/mypy/issues/4297
+                    _level = level
+                    _option = option
+
+                    await runInThread(lambda: socket.setsockopt(_level, _option, value))
 
         except Exception as ex:
             response.err = logAndConvertException(
@@ -663,7 +677,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handleSocketOptionGet(self, request):
+    async def _handleSocketOptionGet(self, request: networking.MsgSocketOptionGetRequest) -> networking.MsgResponse:
         debug(
             f'socketOptionGet handle={request.handle} level={request.level} option={request.option} timeout={request.timeout}')
 
@@ -687,18 +701,35 @@ class Connection:
 
             elif request.level == netSocketOptLevelSocket and request.option == netSocketOptSockLinger:
                 socketCtx.setTimeoutMsec(request.timeout)
-                (onoff, linger) = unpack('ii', await runInThread(lambda: socket.getsockopt(level, option, 8)))
+
+                # https://github.com/python/mypy/issues/4297
+                assert level is not None and option is not None
+                _level = level
+                _option = option
+
+                (onoff, linger) = unpack('ii', await runInThread(lambda: socket.getsockopt(_level, _option, 8)))
 
                 response.intval = (onoff & 0xffff) | ((linger & 0xffff) << 16)
 
             elif request.level == netSocketOptLevelIP:
                 socketCtx.setTimeoutMsec(request.timeout)
-                response.bufval = await runInThread(lambda: socket.getsockopt(level, option, 40))
+
+                # https://github.com/python/mypy/issues/4297
+                assert level is not None and option is not None
+                _level = level
+                _option = option
+
+                response.bufval = await runInThread(lambda: socket.getsockopt(_level, _option, 40))
 
             else:
                 socketCtx.setTimeoutMsec(request.timeout)
 
-                response.intval = await runInThread(lambda: socket.getsockopt(level, option))
+                # https://github.com/python/mypy/issues/4297
+                assert level is not None and option is not None
+                _level = level
+                _option = option
+
+                response.intval = await runInThread(lambda: socket.getsockopt(_level, _option))
 
         except Exception as ex:
             response.err = logAndConvertException(
@@ -706,7 +737,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handleSocketListen(self, request):
+    async def _handleSocketListen(self, request: networking.MsgSocketListenRequest) -> networking.MsgResponse:
         debug(
             f'socketOptionListen handle={request.handle} backlock={request.backlog} timeout={request.timeout}')
 
@@ -727,7 +758,7 @@ class Connection:
 
         return responseMsg
 
-    async def _handleSocketAccept(self, request):
+    async def _handleSocketAccept(self, request: networking.MsgSocketAcceptRequest) -> networking.MsgResponse:
         debug(
             f'socketAccept handle={request.handle} timeout={request.timeout}')
 
@@ -772,26 +803,29 @@ class Connection:
         if len(contexts) > 0:
             await asyncio.wait([asyncio.create_task(closeCtx(ctx)) for ctx in contexts])
 
-    def _getSocketCtx(self, handle):
-        if handle < 1 or handle > MAX_HANDLE or self._sockets[handle] == None:
+    def _getSocketCtx(self, handle: int) -> SocketContext:
+        if handle < 1 or handle > MAX_HANDLE or self._sockets[handle] is None:
             raise InvalidHandleError(handle)
 
-        return self._sockets[handle]
+        socketCtx = self._sockets[handle]
+        assert socketCtx is not None
 
-    def _getFreeHandle(self):
+        return socketCtx
+
+    def _getFreeHandle(self) -> int:
         for handle, ctx in enumerate(self._sockets):
             if handle > 0 and ctx == None:
                 return handle
 
         raise NoMoreSocketsError()
 
-    def _fdSetToHandles(self, fds, width):
+    def _fdSetToHandles(self, fds: int, width: int) -> List[int]:
         width = max(min(width, 32), 0)
 
         return [handle for handle in range(1, width) if (fds & (1 << handle) > 0)]
 
-    def _fdSetToSockets(self, fds, width):
-        return [self._sockets[handle].socket for handle in self._fdSetToHandles(fds, width) if self._sockets[handle] != None]
+    def _fdSetToSockets(self, fds: int, width: int) -> List[socket.socket]:
+        return [cast(SocketContext, self._sockets[handle]).socket for handle in self._fdSetToHandles(fds, width) if self._sockets[handle] is not None]
 
     def _socketsToFdSet(self, sockets):
         packed = 0
