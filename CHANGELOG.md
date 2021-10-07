@@ -1,7 +1,6 @@
-# Next version
+# 1.5.5
 
--   Finalize networking API. This release requires an updated version of the proxy
-    server for networking.
+-   Finalize networking support. This release requires an updated proxy server.
 
 # 1.5.4
 
