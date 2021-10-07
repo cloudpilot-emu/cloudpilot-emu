@@ -1111,9 +1111,24 @@ void NetworkProxy::SettingGetFail(Err err) {
 
 void NetworkProxy::SocketOptionSet(int16 handle, uint16 level, uint16 option, emuptr valueP,
                                    size_t len, int32 timeout) {
-    if (level == netSocketOptLevelSocket &&
-        (option == netSocketOptSockRequireErrClear || option == netSocketOptSockMultiPktAddr))
+    if (level == netSocketOptLevelSocket && option == netSocketOptSockMultiPktAddr)
         return SocketOptionSetFail(netErrUnimplemented);
+
+    if (level == netSocketOptLevelSocket && option == netSocketOptSockRequireErrClear) {
+        CALLED_SETUP("Int16",
+                     "UInt16 libRefNum, NetSocketRef socket,"
+                     "UInt16 level, UInt16 option, "
+                     "void *optValueP, UInt16 optValueLen,"
+                     "Int32 timeout, Err *errP");
+
+        CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+        *errP = 0;
+        CALLED_PUT_PARAM_REF(errP);
+        PUT_RESULT_VAL(int16, 0);
+
+        return;
+    }
 
     MsgRequest msgRequest = NewRequest(MsgRequest_socketOptionSetRequest_tag);
     MsgSocketOptionSetRequest& request(msgRequest.payload.socketOptionSetRequest);

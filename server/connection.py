@@ -190,9 +190,9 @@ class Connection:
 
     _sockets: List[Optional[SocketContext]]
     _forceBindAddress: Optional[Tuple[str, int]]
-    _nameserver: Optional[str]
+    _nameserver: Optional[int]
 
-    def __init__(self, forceBindAddress: Optional[str] = None, nameserver: Optional[str] = None):
+    def __init__(self, forceBindAddress: Optional[str] = None, nameserver: Optional[int] = None):
         self._sockets = [None] * MAX_HANDLE
         self.connectionIndex = Connection.nextConnectionIndex
 
@@ -627,7 +627,7 @@ class Connection:
                         if ip != None:
                             break
                 else:
-                    ip = serializeIp(self._nameserver)
+                    ip = self._nameserver
 
                 response.uint32val = ip if ip is not None else 0x08080808
 

@@ -20,7 +20,7 @@ COMPAT_VERSION = 3
 
 
 def start(host: str, port: int, ssl: Optional[SSLContext], logLevel: str, logLevelFramework: str, trustedOrigins: str,
-          forceBindAddress: Optional[str] = None, authentication: Optional[str] = None, nameserver: Optional[str] = None):
+          forceBindAddress: Optional[str] = None, authentication: Optional[str] = None, nameserver: Optional[int] = None):
     routes = web.RouteTableDef()
 
     async def handshakeHandler(request: web.Request) -> Response:

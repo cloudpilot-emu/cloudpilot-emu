@@ -3,6 +3,7 @@
 import argparse
 import ssl
 import sys
+from typing import Any
 
 import server
 from certificate import generateCertificate
@@ -10,7 +11,7 @@ from connection import serializeIp
 from version import VERSION
 
 
-def launchServer(options):
+def launchServer(options: Any):
     sslCtx = None
     if options.cert != None:
         try:
