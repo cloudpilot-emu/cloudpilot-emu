@@ -102,7 +102,7 @@ void run(const Options& options) {
 
     ScreenDimensions::Kind screenDimensionsKind = gSession->GetDevice().GetScreenDimensions();
     ScreenDimensions screenDimensions(screenDimensionsKind);
-    int scale = screenDimensionsKind == ScreenDimensions::screen320x320 ? 2 : 3;
+    int scale = screenDimensionsKind == ScreenDimensions::screen160x160 ? 3 : 2;
 
     if (SDL_CreateWindowAndRenderer(
             screenDimensions.Width() * scale,

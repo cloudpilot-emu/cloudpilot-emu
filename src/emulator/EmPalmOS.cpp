@@ -426,6 +426,7 @@ void EmPalmOS::InjectEvent(CallROMType& callROM) {
                 point.y = evt.getY();
 
                 TransformPenCoordinates(point.x, point.y);
+                // PenScreenToRaw(&point);
             } else {
                 point.x = point.y = -1;
             }

@@ -75,6 +75,8 @@ void MainLoop::LoadSilkscreen() {
 }
 
 void MainLoop::DrawSilkscreen(SDL_Renderer* renderer) {
+    if (screenDimensions.SilkscreenHeight() == 0) return;
+
     SDL_SetRenderDrawColor(renderer, SILKSCREEN_BACKGROUND_HUE, SILKSCREEN_BACKGROUND_HUE,
                            SILKSCREEN_BACKGROUND_HUE, 0xff);
 

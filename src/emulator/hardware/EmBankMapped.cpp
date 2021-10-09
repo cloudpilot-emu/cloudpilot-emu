@@ -170,7 +170,7 @@ uint32 EmBankMapped::GetLong(emuptr address) {
         AddressError(address, sizeof(uint32), true);
     }
 
-    uint8* p = GetRealAddress(address);
+    uint8* p = GetRealAddressForSize(address, 4);
 
     if (p == NULL) {
         return ~0;
@@ -188,7 +188,7 @@ uint32 EmBankMapped::GetWord(emuptr address) {
         AddressError(address, sizeof(uint16), true);
     }
 
-    uint8* p = GetRealAddress(address);
+    uint8* p = GetRealAddressForSize(address, 2);
 
     if (p == NULL) {
         return ~0;
@@ -202,7 +202,7 @@ uint32 EmBankMapped::GetWord(emuptr address) {
 // ---------------------------------------------------------------------------
 
 uint32 EmBankMapped::GetByte(emuptr address) {
-    uint8* p = GetRealAddress(address);
+    uint8* p = GetRealAddressForSize(address, 1);
 
     if (p == NULL) {
         return ~0;
@@ -220,7 +220,7 @@ void EmBankMapped::SetLong(emuptr address, uint32 value) {
         AddressError(address, sizeof(uint32), false);
     }
 
-    uint8* p = GetRealAddress(address);
+    uint8* p = GetRealAddressForSize(address, 4);
 
     if (p == NULL) {
         return;
@@ -241,7 +241,7 @@ void EmBankMapped::SetWord(emuptr address, uint32 value) {
         AddressError(address, sizeof(uint16), false);
     }
 
-    uint8* p = GetRealAddress(address);
+    uint8* p = GetRealAddressForSize(address, 2);
 
     if (p == NULL) {
         return;
@@ -256,7 +256,7 @@ void EmBankMapped::SetWord(emuptr address, uint32 value) {
 // ---------------------------------------------------------------------------
 
 void EmBankMapped::SetByte(emuptr address, uint32 value) {
-    uint8* p = GetRealAddress(address);
+    uint8* p = GetRealAddressForSize(address, 1);
 
     if (p == NULL) {
         return;
@@ -269,8 +269,8 @@ void EmBankMapped::SetByte(emuptr address, uint32 value) {
 //		� EmBankMapped::ValidAddress
 // ---------------------------------------------------------------------------
 
-int EmBankMapped::ValidAddress(emuptr address, uint32) {
-    uint8* realAddress = GetRealAddress(address);
+int EmBankMapped::ValidAddress(emuptr address, uint32 size) {
+    uint8* realAddress = GetRealAddressForSize(address, size);
     int result = realAddress != NULL;
 
     return result;
@@ -284,6 +284,15 @@ uint8* EmBankMapped::GetRealAddress(emuptr address) {
     MapRangeList::iterator iter = ::PrvGetMappingInfo(address);
 
     if (iter == gMappedRanges.end()) return NULL;
+
+    return ((uint8*)iter->realAddress) + (address - iter->mappedAddress);
+}
+
+uint8* EmBankMapped::GetRealAddressForSize(emuptr address, uint32 size) {
+    MapRangeList::iterator iter = ::PrvGetMappingInfo(address);
+
+    if (iter == gMappedRanges.end()) return NULL;
+    if (size > iter->size - (address - iter->mappedAddress)) return NULL;
 
     return ((uint8*)iter->realAddress) + (address - iter->mappedAddress);
 }

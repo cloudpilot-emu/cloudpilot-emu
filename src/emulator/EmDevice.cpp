@@ -49,10 +49,13 @@
 #include "EmBankRegs.h"  // AddSubBank
 #include "EmCPU68K.h"
 #include "EmCommon.h"
+#include "EmHandEraCFBus.h"
+#include "EmHandEraSDBus.h"
 #include "EmROMReader.h"  // EmROMReader
 #include "EmRegs328PalmIII.h"
 #include "EmRegs328PalmVII.h"
 #include "EmRegs328Pilot.h"
+#include "EmRegs330CPLD.h"
 #include "EmRegsEZPalmIIIc.h"
 #include "EmRegsEZPalmIIIe.h"
 #include "EmRegsEZPalmIIIx.h"
@@ -72,11 +75,14 @@
 #include "EmRegsSED1376.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
 #include "EmRegsVZAtlantiC.h"
+#include "EmRegsVZHandEra330.h"
 #include "EmRegsVZPalmI705.h"
 #include "EmRegsVZPalmM125.h"
 #include "EmRegsVZPalmM130.h"
 #include "EmRegsVZPalmM505.h"
 #include "EmStructs.h"
+#include "EmTRGCF.h"
+#include "EmTRGSD.h"
 #include "Platform.h"  // _stricmp
 
 #if 0  // CSTODO
@@ -436,7 +442,7 @@ static const DeviceInfo kDeviceInfo[] = {
      2048,
      hwrMiscFlagIDRocky,
      hwrMiscFlagExtSubIDNone,
-     {}}
+     {}},
 #if 0  // CSTODO
     // ===== TRG/HandEra devices =====
 
@@ -448,16 +454,16 @@ static const DeviceInfo kDeviceInfo[] = {
      hwrOEMCompanyIDTRG,
      hwrTRGproID,
      {{'trgp', 'trg1'}}},
-
+#endif
     {kDeviceHandEra330,
      "HandEra 330",
      {"HandEra330"},
      kSupports68VZ328 + kHasFlash,
      8192,
-     hwrOEMCompanyIDTRG,
-     hwrTRGproID + 1,
-     {{'trgp', 'trg2'}}},
-
+     1,
+     1,
+     {{'trgp', 'trg2'}}}
+#if 0
     // ===== Handspring devices =====
     {
         kDeviceVisor,
@@ -821,10 +827,13 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
             break;
 
         case kDeviceTRGpro:
+#endif
+
         case kDeviceHandEra330:
-            if (ROM.GetCardManufacturer() == TRGPRO_MANUF) return true;
+            if (ROM.GetCardManufacturer() == "TRG Products") return true;
             break;
 
+#if 0
         case kDeviceVisor:
             if ((ROM.GetCardManufacturer() == HANDSPRING_MANUF) && (ROM.Version() == 0x030100))
                 return true;
@@ -1057,11 +1066,17 @@ void EmDevice::CreateRegs(void) const {
         case kDeviceTRGpro:
             OEMCreateTRGRegObjs(hwrTRGproID);
             break;
+#endif
 
-        case kDeviceHandEra330:
-            OEMCreateTRGRegObjs(hwrTRGproID + 1);
-            break;
+        case kDeviceHandEra330: {
+            HandEra330PortManager* fPortMgr;
 
+            EmBankRegs::AddSubBank(new EmRegsVZHandEra330(&fPortMgr));
+            EmBankRegs::AddSubBank(new EmRegs330CPLD(fPortMgr));
+            EmBankRegs::AddSubBank(new EmRegsCFMemCard(&fPortMgr->CFBus));
+        } break;
+
+#if 0
         case kDeviceVisor:
             EmBankRegs::AddSubBank(new EmRegsEZVisor);
             EmBankRegs::AddSubBank(new EmRegsUSBVisor);
@@ -1343,11 +1358,16 @@ bool EmDevice::EmulatesDockStatus() const {
 
 bool EmDevice::NeedsSDCTLHack() const { return fDeviceID == kDevicePalmM515; }
 
+bool EmDevice::HasCustomTouchTransform() const { return fDeviceID == kDeviceHandEra330; }
+
 ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
     switch (fDeviceID) {
         case kDevicePalmI710:
         case kDevicePalmPacifiC:
             return ScreenDimensions::screen320x320;
+
+        case kDeviceHandEra330:
+            return ScreenDimensions::screen240x320;
 
         default:
             return ScreenDimensions::screen160x160;

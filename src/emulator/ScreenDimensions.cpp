@@ -11,6 +11,11 @@ ScreenDimensions::ScreenDimensions(Kind kind) {
             width = height = 320;
             silkscreenHeight = 120;
             break;
+
+        case screen240x320:
+            width = 240;
+            height = 320;
+            silkscreenHeight = 0;
     }
 }
 

@@ -82,6 +82,9 @@ namespace {
     }
 
     CallROMType HeadpatchPenScreenToRaw_RawToScreen(void) {
+        EmAssert(gSession);
+        if (gSession->GetDevice().HasCustomTouchTransform()) return kExecuteROM;
+
         CALLED_SETUP("Err", "PointType* point");
 
         CALLED_GET_PARAM_REF(PointType, point, Marshal::kInOut);

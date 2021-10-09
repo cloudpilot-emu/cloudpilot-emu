@@ -72,6 +72,7 @@ MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
 INCLUDE = \
 	-I./emulator/hardware \
+	-I./emulator/hardware/handera \
 	-I./emulator/uae \
 	-I./emulator/patch \
 	-I./emulator/savestate \
@@ -148,6 +149,15 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsPLDPalmVIIEZ.cpp \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
+	emulator/hardware/handera/EmRegs330CPLD.cpp \
+	emulator/hardware/handera/EmRegsVZHandEra330.cpp \
+	emulator/hardware/handera/EmSPISlave330Current.cpp \
+	emulator/hardware/handera/EmTRGATA.cpp \
+	emulator/hardware/handera/EmTRGCF.cpp \
+	emulator/hardware/handera/EmTRGCFIO.cpp \
+	emulator/hardware/handera/EmTRGCFMem.cpp \
+	emulator/hardware/handera/EmTRGDiskIO.cpp \
+	emulator/hardware/handera/EmTRGSD.cpp \
 	emulator/patch/EmPatchModule.cpp \
 	emulator/patch/EmPatchModuleSys.cpp \
 	emulator/patch/EmPatchModuleHtal.cpp \

@@ -14,7 +14,10 @@ class ButtonEvent {
         cradle,
         contrast,
         antenna,
-        invalid
+        invalid,
+        wheelUp,
+        wheelDown,
+        wheelPush
     };
 
     enum class Type { press, release };

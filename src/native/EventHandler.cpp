@@ -166,6 +166,18 @@ void EventHandler::HandleButtonKey(SDL_Event event, ButtonEvent::Type type) {
         case SDLK_m:
             gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::power, type));
             break;
+
+        case SDLK_w:
+            gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::wheelUp, type));
+            break;
+
+        case SDLK_s:
+            gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::wheelPush, type));
+            break;
+
+        case SDLK_x:
+            gSession->QueueButtonEvent(ButtonEvent(ButtonEvent::Button::wheelDown, type));
+            break;
     }
 }
 

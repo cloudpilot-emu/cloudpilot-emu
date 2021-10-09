@@ -5,7 +5,7 @@
 
 class ScreenDimensions {
    public:
-    enum Kind { screen160x160 = 0x00, screen320x320 = 0x01 };
+    enum Kind { screen160x160 = 0x00, screen320x320 = 0x01, screen240x320 = 0x02 };
 
     ScreenDimensions() = default;
     ScreenDimensions(const ScreenDimensions&) = default;
