@@ -29,12 +29,23 @@ class EmSPISlave330Current : public EmSPISlave {
     EmSPISlave330Current();
     virtual ~EmSPISlave330Current(void);
 
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
+
     virtual uint16 DoExchange(uint16 control, uint16 data);
     void SetMode(Bool powerConnected) { fPowerConnected = powerConnected; }
 
    protected:
     void ProcessCommand(uint8);
     void LoadPendingConversion(void);
+
+   private:
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
 
    private:
     uint32 fBitBufferIn;

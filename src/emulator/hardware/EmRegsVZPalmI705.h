@@ -20,9 +20,6 @@ class EmRegsVZPalmI705 : public EmRegsVZ {
 
    protected:
     virtual EmSPISlave* GetSPISlave(void);
-
-   private:
-    EmSPISlave* fSPISlaveADC;
 };
 
 #endif  // _EM_REGS_VZ_PALM_I705_H_

@@ -111,6 +111,10 @@ class EmRegs330CPLD : public EmRegs {
     EmRegs330CPLD(HandEra330PortManager* fPortManager);
     virtual ~EmRegs330CPLD(void);
 
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
+
     virtual void Reset(Bool hardwareReset);
 
     uint8* GetRealAddress(emuptr address);
@@ -120,6 +124,16 @@ class EmRegs330CPLD : public EmRegs {
 
     uint32 GetWord(emuptr iAddress);
     void SetWord(emuptr iAddress, uint32 iWordValue);
+
+   private:
+    uint32 Read(emuptr address, int size);
+    void Write(emuptr address, int size, uint32 value);
+
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
 
     // only word access is allowed to the CPLD
     //    uint32          GetLong                 (emuptr iAddress) { return 0;}
@@ -131,10 +145,6 @@ class EmRegs330CPLD : public EmRegs {
     uint16 Reg2;
     uint16 Reg4;
     uint8 Buffer[kMemorySizeCPLD];
-    uint32 Read(emuptr address, int size);
-    void Write(emuptr address, int size, uint32 value);
-    //    void            SetReg02(uint16 val);
-    //    void            SetReg04(uint16 val);
     HandEra330PortManager* fPortMgr;
 };
 

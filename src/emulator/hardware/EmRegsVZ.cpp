@@ -590,6 +590,8 @@ void EmRegsVZ::Save(Savestate& savestate) { DoSave(savestate); }
 void EmRegsVZ::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
 void EmRegsVZ::Load(SavestateLoader& loader) {
+    if (fSPISlaveADC) fSPISlaveADC->Load(loader);
+
     Chunk* chunk = loader.GetChunk(ChunkType::regsVZ);
     if (!chunk) return;
 
@@ -620,6 +622,8 @@ void EmRegsVZ::Load(SavestateLoader& loader) {
 
 template <typename T>
 void EmRegsVZ::DoSave(T& savestate) {
+    if (fSPISlaveADC) fSPISlaveADC->Save(savestate);
+
     typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsVZ);
     if (!chunk) return;
 

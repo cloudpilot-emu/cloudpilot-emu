@@ -34,8 +34,9 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
 //		� EmRegsEZPalmIIIc::EmRegsEZPalmIIIc
 // ---------------------------------------------------------------------------
 
-EmRegsEZPalmIIIc::EmRegsEZPalmIIIc(void)
-    : EmRegsEZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
+EmRegsEZPalmIIIc::EmRegsEZPalmIIIc(void) : EmRegsEZ() {
+    fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet2);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsEZPalmIIIc::~EmRegsEZPalmIIIc

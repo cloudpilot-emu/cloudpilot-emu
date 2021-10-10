@@ -181,6 +181,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     bool afterLoad{false};
 
     EmEvent<uint64, bool>::HandleT onCycleHandle;
+
+    EmSPISlave* fSPISlaveADC{nullptr};
 };
 
 class EmRegsVZNoScreen : public EmRegsVZ {

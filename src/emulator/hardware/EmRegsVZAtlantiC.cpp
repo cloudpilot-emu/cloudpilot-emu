@@ -19,7 +19,7 @@ namespace {
         {keyBitPower, keyBitContrast, 0, 0}};
 }  // namespace
 
-EmRegsVZAtlantiC::EmRegsVZAtlantiC() : fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet1)) {}
+EmRegsVZAtlantiC::EmRegsVZAtlantiC() { fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1); }
 
 EmRegsVZAtlantiC::~EmRegsVZAtlantiC() { delete fSPISlaveADC; }
 

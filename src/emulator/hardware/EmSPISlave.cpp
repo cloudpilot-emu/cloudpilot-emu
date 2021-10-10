@@ -27,6 +27,12 @@ EmSPISlave::EmSPISlave(void) {}
 
 EmSPISlave::~EmSPISlave(void) {}
 
+void EmSPISlave::Save(Savestate&) {}
+
+void EmSPISlave::Save(SavestateProbe&) {}
+
+void EmSPISlave::Load(SavestateLoader&) {}
+
 // ---------------------------------------------------------------------------
 //		� EmSPISlave::Enable
 // ---------------------------------------------------------------------------

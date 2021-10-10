@@ -81,6 +81,10 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
     EmRegsVZHandEra330(HandEra330PortManager** fPortManager);
     virtual ~EmRegsVZHandEra330(void);
 
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
+
     virtual void Initialize(void);
     virtual void Dispose(void);
 
@@ -103,6 +107,13 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
     virtual uint16 ButtonToBits(ButtonEventT::Button btn);
 
    private:
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
+
+   private:
     uint8 GetPortD(uint8 result);
     UInt16 PortD;
     UInt16 PortF;
@@ -110,7 +121,6 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
     UInt16 PortJ;
     UInt16 PortK;
     UInt16 PortM;
-    EmSPISlave* fSPISlaveADC;
     EmSPISlave* fSPISlaveCurrent;
     HandEra330PortManager PortMgr;
     EmTRGSD SD;

@@ -31,9 +31,6 @@ class EmRegsEZPalmV : public EmRegsEZ {
 
    protected:
     virtual EmSPISlave* GetSPISlave(void);
-
-   private:
-    EmSPISlave* fSPISlaveADC;
 };
 
 #endif /* EmRegsEZPalmV_h */

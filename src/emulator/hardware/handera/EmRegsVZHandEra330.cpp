@@ -13,6 +13,7 @@
 
 #include "EmRegsVZHandEra330.h"
 
+#include "ChunkHelper.h"
 #include "EmBankRegs.h"  // EmBankRegs::DisableSubBank
 #include "EmCommon.h"
 #include "EmRegs330CPLD.h"
@@ -20,6 +21,9 @@
 #include "EmSPISlave330Current.h"
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
 #include "EmTRGSD.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 #pragma mark -
 
@@ -33,14 +37,20 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
     {0, 0, 0, keyBitThumbUp},
 };
 
+namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+}
+
 // ---------------------------------------------------------------------------
 //		� EmRegsVZHandEra330::EmRegsVZHandEra330
 // ---------------------------------------------------------------------------
 
 EmRegsVZHandEra330::EmRegsVZHandEra330(HandEra330PortManager** fPortManager)
     : EmRegsVZ(),
-      fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)),
+
       fSPISlaveCurrent(new EmSPISlave330Current()) {
+    fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet2);
+
     PortD = PortD_DOCK_BTN | PortD_CD_IRQ | PortD_CF_IRQ | PortD_POWER_FAIL;
     PortF = PortF_PEN_IO | PortF_CPLD_CS_F;
     PortG = PortG_DTACK | PortG_A0 | PortG_Unused |
@@ -77,6 +87,63 @@ EmRegsVZHandEra330::EmRegsVZHandEra330(HandEra330PortManager** fPortManager)
 // ---------------------------------------------------------------------------
 
 EmRegsVZHandEra330::~EmRegsVZHandEra330(void) { delete fSPISlaveADC; }
+
+void EmRegsVZHandEra330::Load(SavestateLoader& loader) {
+    EmRegsVZ::Load(loader);
+    fSPISlaveCurrent->Load(loader);
+
+    Chunk* chunk = loader.GetChunk(ChunkType::regsVZHandera330);
+    if (!chunk) return;
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore RegsVZHandEra330: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+void EmRegsVZHandEra330::Save(Savestate& savestate) { DoSave(savestate); }
+
+void EmRegsVZHandEra330::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+
+template <typename T>
+void EmRegsVZHandEra330::DoSave(T& savestate) {
+    EmRegsVZ::Save(savestate);
+    fSPISlaveCurrent->Save(savestate);
+
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsVZHandera330);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegsVZHandEra330::DoSaveLoad(T& helper) {
+    helper.Do(typename T::Pack16() << PortD << PortF)
+        .Do(typename T::Pack16() << PortG << PortJ)
+        .Do(typename T::Pack16() << PortK << PortM)
+        .Do(typename T::Pack16() << PortMgr.Keys.Row[0] << PortMgr.Keys.Row[1])
+        .Do(typename T::Pack16() << PortMgr.Keys.Row[2] << PortMgr.Keys.Row[3])
+        .Do(typename T::BoolPack()
+            << PortMgr.LCDOn << PortMgr.BacklightOn << PortMgr.IRPortOn << PortMgr.SenseCurrent
+            << PortMgr.pendingIRQ2 << PortMgr.CFInserted << PortMgr.SDInserted
+            << PortMgr.PowerConnected << PortMgr.SDChipSelect)
+        .Do32(rxHead)
+        .Do32(rxTail)
+        .Do32(txHead)
+        .Do32(txTail)
+        .Do(typename T::BoolPack() << rxFifoEmpty << txFifoEmpty);
+
+    for (int i = 0; i < 8; i++) helper.Do(typename T::Pack16() << rxFifo[i] << txFifo[i]);
+}
 
 void EmRegsVZHandEra330::Initialize(void) {
     EmRegsVZ::Initialize();

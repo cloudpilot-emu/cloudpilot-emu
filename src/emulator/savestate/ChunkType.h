@@ -15,7 +15,11 @@ enum class ChunkType : uint32 {
     regsSED1375 = 0x00c0,
     regsMQ1xx = 0x00d0,
     regsPLLDAtlantiC = 0x00e0,
-    regs328 = 0x00f0
+    regs328 = 0x00f0,
+    regsVZHandera330 = 0x0110,
+    spiSlave330Current = 0x0120,
+    regs330CPLD = 0x0130,
+    spiSlaveADS784 = 0x140
 };
 
 #endif  // _CHUNK_TYPE_H_

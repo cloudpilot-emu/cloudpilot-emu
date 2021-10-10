@@ -34,9 +34,6 @@ class EmRegsVZPalmM500 : public EmRegsVZ {
 
    protected:
     virtual EmSPISlave* GetSPISlave(void);
-
-   private:
-    EmSPISlave* fSPISlaveADC;
 };
 
 #endif /* EmRegsVZPalmM500_h */

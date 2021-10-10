@@ -13,8 +13,12 @@
 
 #include "EmSPISlave330Current.h"
 
+#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "Logging.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 // #define LOGGING 0
 #ifdef LOGGING
@@ -22,6 +26,10 @@
 #else
     #define PRINTF(...) ;
 #endif
+
+namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+}
 
 /*****************************************************************************
  * The HandEra 330 includes a battery current sense.  It is switched in and
@@ -47,6 +55,46 @@ EmSPISlave330Current::EmSPISlave330Current()
 // ---------------------------------------------------------------------------
 
 EmSPISlave330Current::~EmSPISlave330Current(void) {}
+
+void EmSPISlave330Current::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::spiSlave330Current);
+    if (!chunk) return;
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore SPISlave330Current: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+void EmSPISlave330Current::Save(Savestate& savestate) { DoSave(savestate); }
+
+void EmSPISlave330Current::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+
+template <typename T>
+void EmSPISlave330Current::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::spiSlave330Current);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmSPISlave330Current::DoSaveLoad(T& helper) {
+    helper.Do32(fBitBufferIn)
+        .Do32(fNumBitsIn)
+        .Do32(fCommandBitsSeen)
+        .Do(typename T::Pack16() << fBitBufferOut << fPendingResult)
+        .Do(typename T::BoolPack() << fHavePending << fPowerConnected);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmSPISlave330Current::DoExchange

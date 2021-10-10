@@ -43,9 +43,6 @@ class EmRegsEZPalmIIIc : public EmRegsEZ {
     // memory
     virtual void MarkScreen();
     virtual void UnmarkScreen();
-
-   private:
-    EmSPISlave* fSPISlaveADC;
 };
 
 #endif /* EmRegsEZPalmIIIc_h */

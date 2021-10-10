@@ -25,9 +25,6 @@ class EmRegsVZAtlantiC : public EmRegsVZNoScreen {
 
    protected:
     virtual EmSPISlave* GetSPISlave(void);
-
-   private:
-    EmSPISlave* fSPISlaveADC;
 };
 
 #endif  // _EM_REGS_VZ_ATLANTIC_H_

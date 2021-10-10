@@ -13,11 +13,15 @@
 
 #include "EmSPISlaveADS784x.h"
 
+#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmLowMem.h"       // EmLowMem_GetGlobal
 #include "EmMemory.h"       // CEnableFullAccess
 #include "EmPalmStructs.h"  // EmAliasSysBatteryDataStruct
 #include "Logging.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 // #define LOGGING 1
 #ifdef LOGGING
@@ -60,6 +64,10 @@
 
 #define kChannelBits 0x70
 
+namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+}
+
 // ---------------------------------------------------------------------------
 //		� EmSPISlaveADS784x::EmSPISlaveADS784x
 // ---------------------------------------------------------------------------
@@ -98,6 +106,46 @@ EmSPISlaveADS784x::EmSPISlaveADS784x(EmADSChannelType ch0, EmADSChannelType ch1,
 // ---------------------------------------------------------------------------
 
 EmSPISlaveADS784x::~EmSPISlaveADS784x(void) {}
+
+void EmSPISlaveADS784x::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::spiSlaveADS784);
+    if (!chunk) return;
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore PISlaveADS784x: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+void EmSPISlaveADS784x::Save(Savestate& savestate) { DoSave(savestate); }
+
+void EmSPISlaveADS784x::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+
+template <typename T>
+void EmSPISlaveADS784x::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::spiSlaveADS784);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmSPISlaveADS784x::DoSaveLoad(T& helper) {
+    helper.Do32(fBitBufferIn)
+        .Do32(fNumBitsIn)
+        .Do32(fCommandBitsSeen)
+        .Do(typename T::Pack16() << fBitBufferOut << fPendingResult)
+        .DoBool(fHavePending);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmSPISlaveADS784x::DoExchange

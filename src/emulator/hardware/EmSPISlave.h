@@ -16,10 +16,18 @@
 
 #include "EmCommon.h"
 
+class Savestate;
+class SavestateProbe;
+class SavestateLoader;
+
 class EmSPISlave {
    public:
     EmSPISlave(void);
     virtual ~EmSPISlave(void);
+
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
 
     virtual uint16 DoExchange(uint16 control, uint16 data) = 0;
     virtual void Enable(void);

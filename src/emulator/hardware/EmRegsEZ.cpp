@@ -511,6 +511,8 @@ void EmRegsEZ::Save(Savestate& savestate) { DoSave(savestate); }
 void EmRegsEZ::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
 void EmRegsEZ::Load(SavestateLoader& savestate) {
+    if (fSPISlaveADC) fSPISlaveADC->Load(savestate);
+
     Chunk* chunk = savestate.GetChunk(ChunkType::regsEZ);
     if (!chunk) return;
 
@@ -538,6 +540,8 @@ void EmRegsEZ::Load(SavestateLoader& savestate) {
 
 template <typename T>
 void EmRegsEZ::DoSave(T& savestate) {
+    if (fSPISlaveADC) fSPISlaveADC->Save(savestate);
+
     typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsEZ);
     if (!chunk) return;
 

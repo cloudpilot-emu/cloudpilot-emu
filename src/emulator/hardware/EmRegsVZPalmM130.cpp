@@ -30,8 +30,9 @@ constexpr uint16 kButtonMapPalmM130[kNumButtonRows][kNumButtonCols] = {
 //		� EmRegsVZPalmM130::EmRegsVZPalmM130
 // ---------------------------------------------------------------------------
 
-EmRegsVZPalmM130::EmRegsVZPalmM130(void)
-    : EmRegsVZNoScreen(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet1)) {}
+EmRegsVZPalmM130::EmRegsVZPalmM130(void) : EmRegsVZNoScreen() {
+    fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmM130::~EmRegsVZPalmM130

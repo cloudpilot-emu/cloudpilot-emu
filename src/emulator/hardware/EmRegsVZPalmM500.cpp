@@ -48,8 +48,9 @@ const uint16 kGenericMonoMap[kNumButtonRows][kNumButtonCols] = {
 //		� EmRegsVZPalmM500::EmRegsVZPalmM500
 // ---------------------------------------------------------------------------
 
-EmRegsVZPalmM500::EmRegsVZPalmM500(void)
-    : EmRegsVZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet1)) {}
+EmRegsVZPalmM500::EmRegsVZPalmM500(void) : EmRegsVZ() {
+    fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmM500::~EmRegsVZPalmM500

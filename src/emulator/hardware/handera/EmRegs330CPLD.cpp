@@ -12,11 +12,19 @@
 \* ===================================================================== */
 #include "EmRegs330CPLD.h"
 
+#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmHAL.h"  // EmHAL::LineDriverChanged
 #include "EmHandEra330Defs.h"
 #include "EmMemory.h"
 #include "EmSystemState.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
+
+namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+}
 
 /*****************************************************************************
  * The HandEra 330 uses a CPLD for additional GPIO
@@ -49,6 +57,42 @@ EmRegs330CPLD::EmRegs330CPLD(HandEra330PortManager* fPortManager) {
 // ---------------------------------------------------------------------------
 
 EmRegs330CPLD::~EmRegs330CPLD(void) {}
+
+void EmRegs330CPLD::Save(Savestate& savestate) { DoSave(savestate); }
+
+void EmRegs330CPLD::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+
+void EmRegs330CPLD::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::regs330CPLD);
+    if (!chunk) return;
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore Regs330CPLD: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegs330CPLD::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regs330CPLD);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegs330CPLD::DoSaveLoad(T& helper) {
+    helper.Do(typename T::Pack16() << Reg0 << Reg2).Do16(Reg4).DoBuffer(Buffer, kMemorySizeCPLD);
+}
 
 void EmRegs330CPLD::Reset(Bool /*hardwareReset*/) {
     fPortMgr->Keys.Row[0] = 1;

@@ -31,8 +31,9 @@ constexpr uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
 
 #define hwrVZPalmI705PortMIR_SD 0x20  // (L) Infrared Shut-down (UART 2)
 
-EmRegsVZPalmI705::EmRegsVZPalmI705(void)
-    : EmRegsVZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet1)) {}
+EmRegsVZPalmI705::EmRegsVZPalmI705(void) : EmRegsVZ() {
+    fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmI705::~EmRegsVZPalmI705

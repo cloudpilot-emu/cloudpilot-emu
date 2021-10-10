@@ -168,6 +168,8 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
 
     bool pwmActive{false};
     bool afterLoad{false};
+
+    EmSPISlave* fSPISlaveADC{nullptr};
 };
 
 #endif /* EmRegsEZ_h */

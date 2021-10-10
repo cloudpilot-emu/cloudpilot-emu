@@ -47,11 +47,21 @@ class EmSPISlaveADS784x : public EmSPISlave {
                       EmADSChannelType ch6, EmADSChannelType ch7);
     virtual ~EmSPISlaveADS784x(void);
 
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
+
     virtual uint16 DoExchange(uint16 control, uint16 data);
 
    protected:
     void ProcessCommand(uint8);
     void LoadPendingConversion(void);
+
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
 
    private:
     EmADSChannelType fChannelUse[8];
