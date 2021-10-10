@@ -11,6 +11,7 @@ Currently, the following devices are emulated:
 -   Palm m100, Palm m105, Palm m125, Palm m130
 -   Palm i705
 -   Tungsten W (silkscreen version)
+-   Handera 330
 
 The coorrect device type is automatically determined from the ROM you load. If
 there are multiple possible devices Cloudpilot will let you choose when you

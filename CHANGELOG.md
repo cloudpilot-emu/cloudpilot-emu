@@ -1,3 +1,7 @@
+# Next version
+
+-   Support Handera 330.
+
 # 1.5.5
 
 -   Finalize networking support. This release requires an updated proxy server.

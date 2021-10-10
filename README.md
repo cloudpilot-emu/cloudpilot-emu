@@ -41,6 +41,7 @@ The following devices are currently emulated:
 -   Palm m100, Palm m105, Palm m125, Palm m130
 -   Palm i705
 -   Tungsten W (silkscreen version)
+-   Handera 330
 
 ## Other versions
 
