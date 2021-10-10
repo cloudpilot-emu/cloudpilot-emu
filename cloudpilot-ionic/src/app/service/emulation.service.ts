@@ -359,8 +359,13 @@ export class EmulationService {
     }
 
     private clearCanvas(): void {
+        const session = this.emulationState.getCurrentSession();
+        if (!session) return;
+
+        const dimensions = deviceDimensions(session.device);
+
         this.context.beginPath();
-        this.context.rect(0, 0, 160, 160);
+        this.context.rect(0, 0, dimensions.width, dimensions.height);
         this.context.fillStyle = isColor(this.emulationState.getCurrentSession()?.device)
             ? 'white'
             : GRAYSCALE_PALETTE_HEX[0];

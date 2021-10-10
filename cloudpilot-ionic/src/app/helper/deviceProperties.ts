@@ -12,6 +12,14 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
                 silkscreenHeight: 120,
             };
 
+        case DeviceId.handera330:
+            return {
+                screenSize: ScreenSize.screen240x320,
+                width: 240,
+                height: 320,
+                silkscreenHeight: 0,
+            };
+
         default:
             return {
                 screenSize: ScreenSize.screen160x160,
@@ -40,6 +48,7 @@ export function isColor(deviceId: DeviceId | undefined): boolean {
         case DeviceId.palmVIIEZ:
         case DeviceId.palmVIIx:
         case DeviceId.i705:
+        case DeviceId.handera330:
             return false;
 
         default:
@@ -111,6 +120,9 @@ export function deviceName(deviceId: DeviceId): string {
 
         case DeviceId.i710:
             return 'Tungsten W';
+
+        case DeviceId.handera330:
+            return 'Handera 330';
 
         default:
             throw new Error('bad device ID');

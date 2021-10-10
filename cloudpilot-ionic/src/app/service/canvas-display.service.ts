@@ -44,6 +44,19 @@ interface Layout {
     buttonBottom: FrameDependent;
 }
 
+function buttonHeightForScreenSize(screenSize: ScreenSize) {
+    switch (screenSize) {
+        case ScreenSize.screen320x320:
+            return 60;
+
+        case ScreenSize.screen240x320:
+            return 45;
+
+        default:
+            return 30;
+    }
+}
+
 function calculateLayout(device: DeviceId): Layout {
     const dimensions = deviceDimensions(device);
     const scale = (dimensions.screenSize === ScreenSize.screen320x320 ? 2 : 3) * devicePixelRatio;
@@ -52,8 +65,8 @@ function calculateLayout(device: DeviceId): Layout {
     const dist = (x: number): FrameDependent => ({ frameDevice: x, frameCanvas: x * scale });
     const coord = (x: number): FrameDependent => ({ frameDevice: x, frameCanvas: borderWidth.frameCanvas + x * scale });
 
-    const separatorHeight = dist(1);
-    const buttonHeight = dist(dimensions.screenSize === ScreenSize.screen320x320 ? 60 : 30);
+    const separatorHeight = dimensions.silkscreenHeight > 0 ? dist(1) : dist(0);
+    const buttonHeight = dist(buttonHeightForScreenSize(dimensions.screenSize));
 
     return {
         scale,
@@ -158,6 +171,7 @@ const IMAGE_BUTTONS_M130 = prepareImage('HARD_BUTTONS_M130');
 const IMAGE_BUTTONS_TUNGSTENW = prepareImage('HARD_BUTTONS_TUNGSTEN_W');
 const IMAGE_BUTTONS_PILOT = prepareImage('HARD_BUTTONS_PILOT');
 const IMAGE_BUTTONS_I705 = prepareImage('HARD_BUTTONS_I705');
+const IMAGE_BUTTONS_HANDERA330 = prepareImage('HARD_BUTTONS_HANDERA330');
 
 @Injectable({
     providedIn: 'root',
@@ -204,6 +218,8 @@ export class CanvasDisplayService {
     }
 
     async drawSilkscreen(): Promise<void> {
+        if (this.layout.silkscreenHeight.frameCanvas == 0) return;
+
         if (!this.ctx) return;
 
         this.fillRect(
@@ -230,6 +246,8 @@ export class CanvasDisplayService {
         snapshotStatistics?: SnapshotStatistics,
         emulationStatistics?: EmulationStatistics
     ): Promise<void> {
+        if (this.layout.silkscreenHeight.frameCanvas == 0) return;
+
         if (!this.ctx) return;
 
         await this.drawSilkscreen();
@@ -551,6 +569,9 @@ export class CanvasDisplayService {
 
             case DeviceId.i705:
                 return IMAGE_BUTTONS_I705;
+
+            case DeviceId.handera330:
+                return IMAGE_BUTTONS_HANDERA330;
 
             case DeviceId.palmVx:
             case DeviceId.palmV:

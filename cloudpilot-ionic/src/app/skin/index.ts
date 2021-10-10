@@ -10,6 +10,7 @@ export { default as HARD_BUTTONS_PILOT } from '!raw-loader!./hard-buttons/pilot.
 export { default as HARD_BUTTONS_TUNGSTEN_W } from '!raw-loader!./hard-buttons/tungstenw.svg';
 export { default as HARD_BUTTONS_PALM_V } from '!raw-loader!./hard-buttons/v.svg';
 export { default as HARD_BUTTONS_I705 } from '!raw-loader!./hard-buttons/i705.svg';
+export { default as HARD_BUTTONS_HANDERA330 } from '!raw-loader!./hard-buttons/handera330.svg';
 
 export { default as SILKSCREEN_IIIC } from '!raw-loader!./silkscreen/iiic.svg';
 export { default as SILKSCREEN_M100 } from '!raw-loader!./silkscreen/m100.svg';

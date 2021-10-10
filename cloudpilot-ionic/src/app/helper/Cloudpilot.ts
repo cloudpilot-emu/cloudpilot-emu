@@ -76,6 +76,7 @@ export const SUPPORTED_DEVICES = [
     DeviceId.m130,
     DeviceId.i705,
     DeviceId.i710,
+    DeviceId.handera330,
 ];
 
 function guard(): any {
