@@ -66,7 +66,7 @@ static inline uint8* InlineGetMetaAddress(emuptr address) {
 }
 
 static inline void markDirty(emuptr address) {
-    gRAM_DirtyPages[address >> 13] |= (1 << ((address >> 10) & 0x07));
+    gDirtyPages[address >> 13] |= (1 << ((address >> 10) & 0x07));
 }
 
 /***********************************************************************
@@ -87,8 +87,8 @@ static inline void markDirty(emuptr address) {
 void EmBankSRAM::Initialize() {
     EmAssert(gRAM_MetaMemory == NULL);
 
-    gRAMBank_Mask = gRAMBank_Size - 1;
-    gRAM_MetaMemory = (uint8*)Platform::AllocateMemoryClear(gRAMBank_Size);
+    gRAMBank_Mask = gRAMSize - 1;
+    gRAM_MetaMemory = (uint8*)Platform::AllocateMemoryClear(gRAMSize);
 
     EmAssert(gSession);
 
@@ -118,7 +118,7 @@ void EmBankSRAM::Initialize() {
  *
  ***********************************************************************/
 
-void EmBankSRAM::Reset(Bool /*hardwareReset*/) { memset(gRAM_MetaMemory, 0, gRAMBank_Size); }
+void EmBankSRAM::Reset(Bool /*hardwareReset*/) { memset(gRAM_MetaMemory, 0, gRAMSize); }
 
 /***********************************************************************
  *
@@ -152,14 +152,13 @@ void EmBankSRAM::Dispose(void) { Platform::DisposeMemory(gRAM_MetaMemory); }
 void EmBankSRAM::SetBankHandlers(void) {
     // Memory banks 0x1000 to <mumble> are managed by the functions
     // in EmBankSRAM.  <mumble> is based on the amount of RAM being emulated.
-    long numBanks =
-        EmMemBankIndex(gMemoryStart + gRAMBank_Size - 1) - EmMemBankIndex(gMemoryStart) + 1;
+    long numBanks = EmMemBankIndex(gMemoryStart + gRAMSize - 1) - EmMemBankIndex(gMemoryStart) + 1;
 
     // On the m515 PalmOS plays with the memory layout while it is detecting
     // memory size. We need to claim 32MB of the address space for this to work,
     // and the layout set up by writing to SDCTL will take care that only the
     // physical memory is actually accessed.
-    if (gRAMBank_Size == 16 * 1024 * 1024) numBanks *= 2;
+    if (gRAMSize == 16 * 1024 * 1024) numBanks *= 2;
 
     Memory::InitializeBanks(gAddressBank, EmMemBankIndex(gMemoryStart), numBanks);
 }
@@ -189,7 +188,7 @@ uint32 EmBankSRAM::GetLong(emuptr address) {
 
     address &= gRAMBank_Mask;
 
-    return EmMemDoGet32(gRAM_Memory + address);
+    return EmMemDoGet32(gMemory + address);
 }
 
 // ---------------------------------------------------------------------------
@@ -221,7 +220,7 @@ uint32 EmBankSRAM::GetWord(emuptr address) {
 
     address &= gRAMBank_Mask;
 
-    return EmMemDoGet16(gRAM_Memory + address);
+    return EmMemDoGet16(gMemory + address);
 }
 
 // ---------------------------------------------------------------------------
@@ -251,7 +250,7 @@ uint32 EmBankSRAM::GetByte(emuptr address) {
 
     address &= gRAMBank_Mask;
 
-    return EmMemDoGet8(gRAM_Memory + address);
+    return EmMemDoGet8(gMemory + address);
 }
 
 // ---------------------------------------------------------------------------
@@ -288,7 +287,7 @@ void EmBankSRAM::SetLong(emuptr address, uint32 value) {
     // uint8* metaAddress = InlineGetMetaAddress(phyAddress);
     //	META_CHECK (metaAddress, address, SetLong, uint32, false);
 
-    EmMemDoPut32(gRAM_Memory + phyAddress, value);
+    EmMemDoPut32(gMemory + phyAddress, value);
 
     markDirty(phyAddress);
     markDirty(phyAddress + 2);
@@ -328,7 +327,7 @@ void EmBankSRAM::SetWord(emuptr address, uint32 value) {
     // uint8* metaAddress = InlineGetMetaAddress(phyAddress);
     //	META_CHECK (metaAddress, address, SetLong, uint16, false);
 
-    EmMemDoPut16(gRAM_Memory + phyAddress, value);
+    EmMemDoPut16(gMemory + phyAddress, value);
 
     markDirty(phyAddress);
 
@@ -361,7 +360,7 @@ void EmBankSRAM::SetByte(emuptr address, uint32 value) {
     // uint8* metaAddress = InlineGetMetaAddress(phyAddress);
     //	META_CHECK (metaAddress, address, SetLong, uint8, false);
 
-    EmMemDoPut8(gRAM_Memory + phyAddress, value);
+    EmMemDoPut8(gMemory + phyAddress, value);
 
     markDirty(phyAddress);
 
@@ -377,7 +376,7 @@ void EmBankSRAM::SetByte(emuptr address, uint32 value) {
 
 int EmBankSRAM::ValidAddress(emuptr address, uint32 size) {
     address -= gMemoryStart;
-    int result = (address + size) <= (gMemoryStart + gRAMBank_Size);
+    int result = (address + size) <= (gMemoryStart + gRAMSize);
 
     return result;
 }
@@ -389,9 +388,9 @@ int EmBankSRAM::ValidAddress(emuptr address, uint32 size) {
 uint8* EmBankSRAM::GetRealAddress(emuptr address) {
     // Strip the uppermost bit of the address.
 
-    address &= (gRAMBank_Size - 1);
+    address &= (gRAMSize - 1);
 
-    return (uint8*)&(gRAM_Memory[address]);
+    return (uint8*)&(gMemory[address]);
 }
 
 // ---------------------------------------------------------------------------
@@ -401,7 +400,7 @@ uint8* EmBankSRAM::GetRealAddress(emuptr address) {
 uint8* EmBankSRAM::GetMetaAddress(emuptr address) {
     // Strip the uppermost bit of the address.
 
-    address &= (gRAMBank_Size - 1);
+    address &= (gRAMSize - 1);
 
     return (uint8*)&(gRAM_MetaMemory[address]);
 }

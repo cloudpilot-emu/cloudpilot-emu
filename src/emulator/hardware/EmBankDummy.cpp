@@ -33,7 +33,7 @@ static EmAddressBank gAddressBank = {EmBankDummy::GetLong,        EmBankDummy::G
 
 inline Bool HackForHwrGetRAMSize(emuptr address) {
     //	if ((address & 0xFF000000) == EmBankSRAM::GetMemoryStart ())
-    if (address == EmBankSRAM::GetMemoryStart() + gRAMBank_Size) return true;
+    if (address == EmBankSRAM::GetMemoryStart() + gRAMSize) return true;
 
     return false;
 }

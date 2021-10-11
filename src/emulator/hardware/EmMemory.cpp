@@ -190,16 +190,14 @@ Bool gPCInRAM;
 Bool gPCInROM;
 
 uint32 gTotalMemorySize;
-uint8* gTotalMemory;
-uint8* gTotalDirtyPages;
-
+uint32 gRAMSize;
 uint32 gFramebufferMemorySize;
+
+uint8* gMemory;
+uint8* gDirtyPages;
+
 uint8* gFramebufferMemory;
 uint8* gFramebufferDirtyPages;
-
-uint32 gRAMBank_Size;
-uint8* gRAM_Memory;
-uint8* gRAM_DirtyPages;
 
 MemAccessFlags gMemAccessFlags = {
     MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH,
@@ -262,17 +260,14 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device
     memset(gEmMemBanks, 0, sizeof(gEmMemBanks));
 
     gTotalMemorySize = device.TotalMemorysize() * 1024;
-    gTotalMemory = static_cast<uint8*>(malloc(gTotalMemorySize));
-    gTotalDirtyPages = static_cast<uint8*>(malloc(gTotalMemorySize / 1024));
-
     gFramebufferMemorySize = device.FramebufferSize() * 1024;
-    gRAMBank_Size = gTotalMemorySize - gFramebufferMemorySize;
+    gRAMSize = gTotalMemorySize - gFramebufferMemorySize;
 
-    gFramebufferMemory = gTotalMemory + gRAMBank_Size;
-    gFramebufferDirtyPages = gTotalDirtyPages + gRAMBank_Size / 1024;
+    gMemory = static_cast<uint8*>(malloc(gTotalMemorySize));
+    gDirtyPages = static_cast<uint8*>(malloc(gTotalMemorySize / 1024));
 
-    gRAM_Memory = gTotalMemory;
-    gRAM_DirtyPages = gTotalDirtyPages;
+    gFramebufferMemory = gMemory + gRAMSize;
+    gFramebufferDirtyPages = gDirtyPages + gRAMSize / 1024;
 
     // Initialize the valid memory banks.
 
@@ -371,8 +366,8 @@ void Memory::Dispose(void) {
     EmBankROM::Dispose();
     EmBankMapped::Dispose();
 
-    free(gTotalMemory);
-    free(gTotalDirtyPages);
+    free(gMemory);
+    free(gDirtyPages);
 
     // We can't reliably call GetDevice here.  That's because the
     // session may not have been initialized (we could be disposing

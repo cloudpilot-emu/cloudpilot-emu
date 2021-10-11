@@ -34,13 +34,13 @@ void MetaMemory::MarkRange(emuptr start, emuptr end, uint8 v) {
     // LCD -- for a while, the LCD framebuffer range falls off the end
     // of the dynamic heap.
 
-    if (start >= 0 && start < 0 + gRAMBank_Size && end >= 0 + gRAMBank_Size) {
-        end = gRAMBank_Size - 1;
+    if (start >= 0 && start < 0 + gRAMSize && end >= 0 + gRAMSize) {
+        end = gRAMSize - 1;
     }
 
-    if (start >= gMemoryStart && start < gMemoryStart + gRAMBank_Size &&
-        end >= gMemoryStart + gRAMBank_Size) {
-        end = gMemoryStart + gRAMBank_Size - 1;
+    if (start >= gMemoryStart && start < gMemoryStart + gRAMSize &&
+        end >= gMemoryStart + gRAMSize) {
+        end = gMemoryStart + gRAMSize - 1;
     }
 
     uint8* startP = EmMemGetMetaAddress(start);
@@ -103,13 +103,13 @@ void MetaMemory::UnmarkRange(emuptr start, emuptr end, uint8 v) {
     // LCD -- for a while, the LCD framebuffer range falls off the end
     // of the dynamic heap.
 
-    if (start >= 0 && start < 0 + gRAMBank_Size && end >= 0 + gRAMBank_Size) {
-        end = gRAMBank_Size - 1;
+    if (start >= 0 && start < 0 + gRAMSize && end >= 0 + gRAMSize) {
+        end = gRAMSize - 1;
     }
 
-    if (start >= gMemoryStart && start < gMemoryStart + gRAMBank_Size &&
-        end >= gMemoryStart + gRAMBank_Size) {
-        end = gMemoryStart + gRAMBank_Size - 1;
+    if (start >= gMemoryStart && start < gMemoryStart + gRAMSize &&
+        end >= gMemoryStart + gRAMSize) {
+        end = gMemoryStart + gRAMSize - 1;
     }
 
     uint8* startP = EmMemGetMetaAddress(start);
@@ -174,13 +174,13 @@ void MetaMemory::MarkUnmarkRange(emuptr start, emuptr end, uint8 andValue, uint8
     // LCD -- for a while, the LCD framebuffer range falls off the end
     // of the dynamic heap.
 
-    if (start >= 0 && start < 0 + gRAMBank_Size && end >= 0 + gRAMBank_Size) {
-        end = gRAMBank_Size - 1;
+    if (start >= 0 && start < 0 + gRAMSize && end >= 0 + gRAMSize) {
+        end = gRAMSize - 1;
     }
 
-    if (start >= gMemoryStart && start < gMemoryStart + gRAMBank_Size &&
-        end >= gMemoryStart + gRAMBank_Size) {
-        end = gMemoryStart + gRAMBank_Size - 1;
+    if (start >= gMemoryStart && start < gMemoryStart + gRAMSize &&
+        end >= gMemoryStart + gRAMSize) {
+        end = gMemoryStart + gRAMSize - 1;
     }
 
     uint8* startP = EmMemGetMetaAddress(start);

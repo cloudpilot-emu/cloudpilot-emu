@@ -64,21 +64,19 @@ static EmAddressBank gAddressBank = {EmBankDRAM::GetLong,        EmBankDRAM::Get
 // ---------------------------------------------------------------------------
 
 static inline int InlineValidAddress(emuptr address, size_t size) {
-    int result = (address + size) <= gRAMBank_Size;
+    int result = (address + size) <= gRAMSize;
 
     return result;
 }
 
-static inline uint8* InlineGetRealAddress(emuptr address) {
-    return (uint8*)&(gRAM_Memory[address]);
-}
+static inline uint8* InlineGetRealAddress(emuptr address) { return (uint8*)&(gMemory[address]); }
 
 static inline uint8* InlineGetMetaAddress(emuptr address) {
     return (uint8*)&(gRAM_MetaMemory[address]);
 }
 
 static inline void markDirty(emuptr address) {
-    gRAM_DirtyPages[address >> 13] |= (1 << ((address >> 10) & 0x07));
+    gDirtyPages[address >> 13] |= (1 << ((address >> 10) & 0x07));
 }
 
 // ===========================================================================
@@ -157,7 +155,7 @@ void EmBankDRAM::SetBankHandlers(void) {
 
     gDynamicHeapSize = EmHAL::GetDynamicHeapSize();
 
-    if (gDynamicHeapSize > gRAMBank_Size) gDynamicHeapSize = gRAMBank_Size;
+    if (gDynamicHeapSize > gRAMSize) gDynamicHeapSize = gRAMSize;
 
     uint32 sixtyFourK = 64 * 1024L;
     uint32 numBanks = (gDynamicHeapSize + sixtyFourK - 1) / sixtyFourK;
@@ -181,7 +179,7 @@ uint32 EmBankDRAM::GetLong(emuptr address) {
         InvalidAccess(address, sizeof(uint32), true);
     }
 
-    return EmMemDoGet32(gRAM_Memory + address);
+    return EmMemDoGet32(gMemory + address);
 }
 
 // ---------------------------------------------------------------------------
@@ -200,7 +198,7 @@ uint32 EmBankDRAM::GetWord(emuptr address) {
         InvalidAccess(address, sizeof(uint16), true);
     }
 
-    return EmMemDoGet16(gRAM_Memory + address);
+    return EmMemDoGet16(gMemory + address);
 }
 
 // ---------------------------------------------------------------------------
@@ -215,7 +213,7 @@ uint32 EmBankDRAM::GetByte(emuptr address) {
         InvalidAccess(address, sizeof(uint8), true);
     }
 
-    return EmMemDoGet8(gRAM_Memory + address);
+    return EmMemDoGet8(gMemory + address);
 }
 
 // ---------------------------------------------------------------------------
@@ -237,7 +235,7 @@ void EmBankDRAM::SetLong(emuptr address, uint32 value) {
         InvalidAccess(address, sizeof(uint32), false);
     }
 
-    EmMemDoPut32(gRAM_Memory + address, value);
+    EmMemDoPut32(gMemory + address, value);
 
     // Debug::CheckStepSpy(address, sizeof(uint32));
 
@@ -266,7 +264,7 @@ void EmBankDRAM::SetWord(emuptr address, uint32 value) {
         InvalidAccess(address, sizeof(uint16), false);
     }
 
-    EmMemDoPut16(gRAM_Memory + address, value);
+    EmMemDoPut16(gMemory + address, value);
 
     // Debug::CheckStepSpy(address, sizeof(uint16));
 
@@ -290,7 +288,7 @@ void EmBankDRAM::SetByte(emuptr address, uint32 value) {
         InvalidAccess(address, sizeof(uint8), false);
     }
 
-    EmMemDoPut8(gRAM_Memory + address, value);
+    EmMemDoPut8(gMemory + address, value);
 
     // Debug::CheckStepSpy(address, sizeof(uint8));
 
