@@ -28,6 +28,18 @@
 extern "C" {
 #endif
 
+extern uint32 gTotalMemorySize;
+extern uint8* gTotalMemory;
+extern uint8* gTotalDirtyPages;
+
+extern uint32 gFramebufferMemorySize;
+extern uint8* gFramebufferMemory;
+extern uint8* gFramebufferDirtyPages;
+
+extern uint32 gRAMBank_Size;
+extern uint8* gRAM_Memory;
+extern uint8* gRAM_DirtyPages;
+
 // ---------------------------------------------------------------------------
 //		� EmAddressBank
 // ---------------------------------------------------------------------------
@@ -294,9 +306,11 @@ class SavestateLoader;
 
 // Function prototypes.
 
+class EmDevice;
+
 class Memory {
    public:
-    static bool Initialize(const uint8* romBuffer, size_t romSize, RAMSizeType ramSize);
+    static bool Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device);
     static void Reset(Bool hardwareReset);
 
     template <typename T>

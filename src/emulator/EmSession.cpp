@@ -63,7 +63,7 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
 
     cpu.reset(device->CreateCPU(this));
 
-    if (!Memory::Initialize(romImage, romLength, device->MinRAMSize())) return false;
+    if (!Memory::Initialize(romImage, romLength, *device)) return false;
     EmPalmOS::Initialize();
 
     systemCycles = 0;

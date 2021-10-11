@@ -20,6 +20,7 @@
 #include "EmBankRegs.h"    // EmBankRegs::Initialize
 #include "EmBankSRAM.h"    // EmBankSRAM::Initialize
 #include "EmCommon.h"
+#include "EmDevice.h"
 #include "EmSession.h"   // gSession, GetDevice
 #include "MetaMemory.h"  // MetaMemory::Initialize
 #include "Savestate.h"
@@ -188,6 +189,18 @@ EmAddressBank* gEmMemBanks[65536];  // (normally defined in memory.c)
 Bool gPCInRAM;
 Bool gPCInROM;
 
+uint32 gTotalMemorySize;
+uint8* gTotalMemory;
+uint8* gTotalDirtyPages;
+
+uint32 gFramebufferMemorySize;
+uint8* gFramebufferMemory;
+uint8* gFramebufferDirtyPages;
+
+uint32 gRAMBank_Size;
+uint8* gRAM_Memory;
+uint8* gRAM_DirtyPages;
+
 MemAccessFlags gMemAccessFlags = {
     MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH,
     MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH,
@@ -241,12 +254,25 @@ MemAccessFlags kZeroMemAccessFlags;
 // Initializes the RAM, ROM, and special memory areas of the emulator. Takes
 // a stream handle to the ROM.
 
-bool Memory::Initialize(const uint8* romBuffer, size_t romSize, RAMSizeType ramSize) {
+bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device) {
     bool success = true;
 
     // Clear everything out.
 
     memset(gEmMemBanks, 0, sizeof(gEmMemBanks));
+
+    gTotalMemorySize = device.TotalMemorysize() * 1024;
+    gTotalMemory = static_cast<uint8*>(malloc(gTotalMemorySize));
+    gTotalDirtyPages = static_cast<uint8*>(malloc(gTotalMemorySize / 1024));
+
+    gFramebufferMemorySize = device.FramebufferSize() * 1024;
+    gRAMBank_Size = gTotalMemorySize - gFramebufferMemorySize;
+
+    gFramebufferMemory = gTotalMemory + gRAMBank_Size;
+    gFramebufferDirtyPages = gTotalDirtyPages + gRAMBank_Size / 1024;
+
+    gRAM_Memory = gTotalMemory;
+    gRAM_DirtyPages = gTotalDirtyPages;
 
     // Initialize the valid memory banks.
 
@@ -265,7 +291,7 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, RAMSizeType ramS
     // second, we allow it to overwrite the EmAddressBank handlers
     // for the part of memory where they overlap.
 
-    EmBankSRAM::Initialize(ramSize);
+    EmBankSRAM::Initialize();
     EmBankDRAM::Initialize();
 
     success = success && EmBankROM::Initialize(romSize, romBuffer);
@@ -344,6 +370,9 @@ void Memory::Dispose(void) {
     EmBankDRAM::Dispose();
     EmBankROM::Dispose();
     EmBankMapped::Dispose();
+
+    free(gTotalMemory);
+    free(gTotalDirtyPages);
 
     // We can't reliably call GetDevice here.  That's because the
     // session may not have been initialized (we could be disposing

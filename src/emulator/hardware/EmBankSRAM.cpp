@@ -45,12 +45,8 @@ static const emuptr kMemoryStartVZ = 0x00000000;
 
 emuptr gMemoryStart;
 
-uint32 gRAMBank_Size;
 uint32 gRAMBank_Mask;
-uint8* gRAM_Memory;
 uint8* gRAM_MetaMemory;
-
-uint8* gRAM_DirtyPages;
 
 #if defined(_DEBUG)
 
@@ -88,26 +84,11 @@ static inline void markDirty(emuptr address) {
  *
  ***********************************************************************/
 
-void EmBankSRAM::Initialize(RAMSizeType ramSize) {
-    EmAssert(gRAM_Memory == NULL);
+void EmBankSRAM::Initialize() {
     EmAssert(gRAM_MetaMemory == NULL);
 
-    if (ramSize > 0) {
-        gRAMBank_Size = ramSize * 1024;
-        gRAMBank_Mask = gRAMBank_Size - 1;
-        gRAM_Memory = (uint8*)Platform::AllocateMemoryClear(gRAMBank_Size);
-        gRAM_MetaMemory = (uint8*)Platform::AllocateMemoryClear(gRAMBank_Size);
-        gRAM_DirtyPages = (uint8*)Platform::AllocateMemoryClear(gRAMBank_Size / 8192 +
-                                                                (gRAMBank_Size % 8192 ? 1 : 0));
-
-#if defined(_DEBUG)
-        // In debug mode, define a global variable that points to the
-        // Palm ROM's low-memory globals.  That makes it easier to find
-        // out what's going wrong when something goes wrong.
-
-        gLowMemory = (LowMemHdrType*)gRAM_Memory;
-#endif
-    }
+    gRAMBank_Mask = gRAMBank_Size - 1;
+    gRAM_MetaMemory = (uint8*)Platform::AllocateMemoryClear(gRAMBank_Size);
 
     EmAssert(gSession);
 
@@ -153,11 +134,7 @@ void EmBankSRAM::Reset(Bool /*hardwareReset*/) { memset(gRAM_MetaMemory, 0, gRAM
  *
  ***********************************************************************/
 
-void EmBankSRAM::Dispose(void) {
-    Platform::DisposeMemory(gRAM_Memory);
-    Platform::DisposeMemory(gRAM_MetaMemory);
-    Platform::DisposeMemory(gRAM_DirtyPages);
-}
+void EmBankSRAM::Dispose(void) { Platform::DisposeMemory(gRAM_MetaMemory); }
 
 /***********************************************************************
  *

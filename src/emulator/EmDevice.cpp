@@ -925,8 +925,7 @@ void EmDevice::CreateRegs(void) const {
         case kDevicePalmIIIc: {
             EmBankRegs::AddSubBank(new EmRegsEZPalmIIIc);
 
-            EmRegsFrameBuffer* framebuffer =
-                new EmRegsFrameBuffer(sed1375BaseAddress, sed1375VideoMemSize);
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(sed1375BaseAddress);
 
             EmBankRegs::AddSubBank(
                 new EmRegsSED1375(sed1375RegsAddr, sed1375BaseAddress, *framebuffer));
@@ -978,7 +977,7 @@ void EmDevice::CreateRegs(void) const {
         case kDevicePalmM130: {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM130);
 
-            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET);
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
 
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
@@ -989,7 +988,7 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsVZAtlantiC());
             EmBankRegs::AddSubBank(new EmRegsPLDAtlantiC(0x10800000));
 
-            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET);
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
 
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
@@ -1001,7 +1000,7 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsVZAtlantiC());
             EmBankRegs::AddSubBank(new EmRegsPLDPacifiC(0x10800000));
 
-            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE, MMIO_OFFSET);
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
 
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xxPacifiC(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
@@ -1017,8 +1016,7 @@ void EmDevice::CreateRegs(void) const {
         case kDevicePalmM505: {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM505);
 
-            EmRegsFrameBuffer* framebuffer =
-                new EmRegsFrameBuffer(sed1376VideoMemStart, sed1376VideoMemSize);
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(sed1376VideoMemStart);
 
             EmBankRegs::AddSubBank(
                 new EmRegsSED1376PalmGeneric(sed1376RegsAddr, sed1376VideoMemStart, *framebuffer));
@@ -1029,8 +1027,7 @@ void EmDevice::CreateRegs(void) const {
         case kDevicePalmM515: {
             EmBankRegs::AddSubBank(new EmRegsVZPalmM505);
 
-            EmRegsFrameBuffer* framebuffer =
-                new EmRegsFrameBuffer(sed1376VideoMemStart, sed1376VideoMemSize);
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(sed1376VideoMemStart);
 
             EmBankRegs::AddSubBank(
                 new EmRegsSED1376PalmGeneric(sed1376RegsAddr, sed1376VideoMemStart, *framebuffer));
@@ -1144,6 +1141,26 @@ RAMSizeType EmDevice::MinRAMSize(void) const {
     const DeviceInfo* info = this->GetDeviceInfo();
     return info->fMinRAMSize;
 }
+
+uint32 EmDevice::FramebufferSize() const {
+    switch (fDeviceID) {
+        case kDevicePalmIIIc:
+        case kDevicePalmM505:
+        case kDevicePalmM515:
+        case kDeviceVisorPrism:
+            return 80;
+
+        case kDevicePalmPacifiC:
+        case kDevicePalmI710:
+        case kDevicePalmM130:
+            return 256;
+
+        default:
+            return 0;
+    }
+}
+
+uint32 EmDevice::TotalMemorysize() const { return MinRAMSize() + FramebufferSize(); }
 
 /***********************************************************************
  *

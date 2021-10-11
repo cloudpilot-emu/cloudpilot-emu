@@ -19,15 +19,12 @@
 extern emuptr gMemoryStart;
 
 // These are also accessed by the DRAMBank functions.
-extern uint32 gRAMBank_Size;
 extern uint32 gRAMBank_Mask;
-extern uint8* gRAM_Memory;
 extern uint8* gRAM_MetaMemory;
-extern uint8* gRAM_DirtyPages;
 
 class EmBankSRAM {
    public:
-    static void Initialize(RAMSizeType ramSize);
+    static void Initialize();
     static void Reset(Bool hardwareReset);
     static void Dispose(void);
 

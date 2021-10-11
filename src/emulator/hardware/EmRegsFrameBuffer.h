@@ -20,7 +20,7 @@ class SessionFile;
 
 class EmRegsFrameBuffer : public EmRegs {
    public:
-    EmRegsFrameBuffer(emuptr baseAddr, int32 size);
+    EmRegsFrameBuffer(emuptr baseAddr);
     virtual ~EmRegsFrameBuffer(void);
 
     virtual void Initialize(void);
@@ -28,7 +28,6 @@ class EmRegsFrameBuffer : public EmRegs {
     virtual void Save(Savestate&);
     virtual void Save(SavestateProbe&);
     virtual void Load(SavestateLoader&);
-    virtual void Dispose(void);
 
     virtual uint32 GetLong(emuptr address);
     virtual uint32 GetWord(emuptr address);
@@ -48,8 +47,6 @@ class EmRegsFrameBuffer : public EmRegs {
 
    private:
     emuptr fBaseAddr;
-    int32 fSize;
-    void* fVideoMem;
 };
 
 #endif /* EmRegsFrameBuffer_h */

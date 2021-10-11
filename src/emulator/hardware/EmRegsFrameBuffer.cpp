@@ -31,8 +31,7 @@ namespace {
 //		� EmRegsFrameBuffer::EmRegsFrameBuffer
 // ---------------------------------------------------------------------------
 
-EmRegsFrameBuffer::EmRegsFrameBuffer(emuptr baseAddr, int32 size)
-    : fBaseAddr(baseAddr), fSize(size), fVideoMem(NULL) {}
+EmRegsFrameBuffer::EmRegsFrameBuffer(emuptr baseAddr) : fBaseAddr(baseAddr) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsFrameBuffer::~EmRegsFrameBuffer
@@ -44,15 +43,7 @@ EmRegsFrameBuffer::~EmRegsFrameBuffer(void) {}
 //		� EmRegsFrameBuffer::Initialize
 // ---------------------------------------------------------------------------
 
-void EmRegsFrameBuffer::Initialize(void) {
-    EmRegs::Initialize();
-
-    // Allocate a chunk of memory for the VRAM space.
-
-    if (!fVideoMem) {
-        fVideoMem = Platform::AllocateMemoryClear(fSize);
-    }
-}
+void EmRegsFrameBuffer::Initialize(void) { EmRegs::Initialize(); }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsFrameBuffer::Reset
@@ -77,7 +68,7 @@ void EmRegsFrameBuffer::Load(SavestateLoader& loader) {
 
     // NOT ENDIANESS SAFE
 
-    chunk->GetBuffer(fVideoMem, fSize);
+    chunk->GetBuffer(gFramebufferMemory, gFramebufferMemorySize);
 }
 
 template <typename T>
@@ -89,17 +80,7 @@ void EmRegsFrameBuffer::DoSave(T& savestate) {
 
     // NOT ENDIANESS SAFE
 
-    chunk->PutBuffer(fVideoMem, fSize);
-}
-
-// ---------------------------------------------------------------------------
-//		� EmRegsFrameBuffer::Dispose
-// ---------------------------------------------------------------------------
-
-void EmRegsFrameBuffer::Dispose(void) {
-    EmRegs::Dispose();
-
-    Platform::DisposeMemory(fVideoMem);
+    chunk->PutBuffer(gFramebufferMemory, gFramebufferMemorySize);
 }
 
 // ---------------------------------------------------------------------------
@@ -108,7 +89,7 @@ void EmRegsFrameBuffer::Dispose(void) {
 
 uint32 EmRegsFrameBuffer::GetLong(emuptr address) {
     uint32 offset = address - fBaseAddr;
-    return EmMemDoGet32(((uint8*)fVideoMem) + offset);
+    return EmMemDoGet32(gFramebufferMemory + offset);
 }
 
 // ---------------------------------------------------------------------------
@@ -117,7 +98,7 @@ uint32 EmRegsFrameBuffer::GetLong(emuptr address) {
 
 uint32 EmRegsFrameBuffer::GetWord(emuptr address) {
     uint32 offset = address - fBaseAddr;
-    return EmMemDoGet16(((uint8*)fVideoMem) + offset);
+    return EmMemDoGet16((gFramebufferMemory) + offset);
 }
 
 // ---------------------------------------------------------------------------
@@ -126,7 +107,7 @@ uint32 EmRegsFrameBuffer::GetWord(emuptr address) {
 
 uint32 EmRegsFrameBuffer::GetByte(emuptr address) {
     uint32 offset = address - fBaseAddr;
-    return EmMemDoGet8(((uint8*)fVideoMem) + offset);
+    return EmMemDoGet8((gFramebufferMemory) + offset);
 }
 
 // ---------------------------------------------------------------------------
@@ -135,7 +116,7 @@ uint32 EmRegsFrameBuffer::GetByte(emuptr address) {
 
 void EmRegsFrameBuffer::SetLong(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
-    EmMemDoPut32(((uint8*)fVideoMem) + offset, value);
+    EmMemDoPut32((gFramebufferMemory) + offset, value);
 
     gSystemState.MarkScreenDirty();
 }
@@ -146,7 +127,7 @@ void EmRegsFrameBuffer::SetLong(emuptr address, uint32 value) {
 
 void EmRegsFrameBuffer::SetWord(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
-    EmMemDoPut16(((uint8*)fVideoMem) + offset, value);
+    EmMemDoPut16((gFramebufferMemory) + offset, value);
 
     gSystemState.MarkScreenDirty();
 }
@@ -157,7 +138,7 @@ void EmRegsFrameBuffer::SetWord(emuptr address, uint32 value) {
 
 void EmRegsFrameBuffer::SetByte(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
-    EmMemDoPut8(((uint8*)fVideoMem) + offset, value);
+    EmMemDoPut8((gFramebufferMemory) + offset, value);
 
     gSystemState.MarkScreenDirty();
 }
@@ -188,7 +169,7 @@ void EmRegsFrameBuffer::SetSubBankHandlers(void) {
 
 uint8* EmRegsFrameBuffer::GetRealAddress(emuptr address) {
     uint32 offset = address - fBaseAddr;
-    return (uint8*)fVideoMem + offset;
+    return gFramebufferMemory + offset;
 }
 
 // ---------------------------------------------------------------------------
@@ -201,4 +182,4 @@ emuptr EmRegsFrameBuffer::GetAddressStart(void) { return fBaseAddr; }
 //		� EmRegsFrameBuffer::GetAddressRange
 // ---------------------------------------------------------------------------
 
-uint32 EmRegsFrameBuffer::GetAddressRange(void) { return fSize; }
+uint32 EmRegsFrameBuffer::GetAddressRange(void) { return gFramebufferMemorySize; }

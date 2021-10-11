@@ -60,6 +60,8 @@ class EmDevice {
     Bool HasFlash(void) const;
 
     RAMSizeType MinRAMSize(void) const;
+    uint32 FramebufferSize() const;
+    uint32 TotalMemorysize() const;
 
     long HardwareID(void) const;
     long HardwareSubID(void) const;
