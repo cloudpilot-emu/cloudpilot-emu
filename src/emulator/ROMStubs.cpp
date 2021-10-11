@@ -724,3 +724,51 @@ emuptr ClipboardGetItem(const ClipboardFormatType format, UInt16* length) {
     // Return the result.
     RETURN_RESULT_VAL(emuptr);
 }
+
+emuptr DmGetResource(DmResType type, DmResID id) {
+    // Prepare the stack.
+    CALLER_SETUP("emuptr", "DmResType type, DmResID id");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(DmResType, type);
+    CALLER_PUT_PARAM_VAL(DmResID, id);
+
+    // Call the function.
+    sub.Call(sysTrapDmGetResource);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_VAL(emuptr);
+}
+
+emuptr PrefOpenPreferenceDBV10(void) {
+    // Prepare the stack.
+    CALLER_SETUP("emuptr", "void");
+
+    // Set the parameters.
+
+    // Call the function.
+    sub.Call(sysTrapPrefOpenPreferenceDBV10);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_VAL(emuptr);
+}
+
+emuptr PrefOpenPreferenceDB(Boolean saved) {
+    // Prepare the stack.
+    CALLER_SETUP("emuptr", "Boolean saved");
+
+    // Set the parameters.
+    CALLER_PUT_PARAM_VAL(Boolean, saved);
+
+    // Call the function.
+    sub.Call(sysTrapPrefOpenPreferenceDB);
+
+    // Write back any "by ref" parameters.
+
+    // Return the result.
+    RETURN_RESULT_VAL(emuptr);
+}

@@ -68,6 +68,10 @@ Err DmDatabaseInfo(UInt16 cardNo, LocalID dbID, Char* nameP, UInt16* attributesP
                    UInt32* crDateP, UInt32* modDateP, UInt32* bckUpDateP, UInt32* modNumP,
                    LocalID* appInfoIDP, LocalID* sortInfoIDP, UInt32* typeP, UInt32* creatorP);
 emuptr DmGet1Resource(DmResType type, DmResID id);
+emuptr DmGetResource(DmResType type, DmResID id);
+
+emuptr PrefOpenPreferenceDBV10(void);
+emuptr PrefOpenPreferenceDB(Boolean saved);
 
 emuptr MemHandleLock(emuptr h);
 Err MemHandleUnlock(emuptr h);

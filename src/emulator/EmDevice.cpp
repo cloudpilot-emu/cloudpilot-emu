@@ -1358,7 +1358,7 @@ bool EmDevice::EmulatesDockStatus() const {
 
 bool EmDevice::NeedsSDCTLHack() const { return fDeviceID == kDevicePalmM515; }
 
-bool EmDevice::HasCustomTouchTransform() const { return fDeviceID == kDeviceHandEra330; }
+bool EmDevice::HasCustomDigitizerTransform() const { return fDeviceID == kDeviceHandEra330; }
 
 ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
     switch (fDeviceID) {

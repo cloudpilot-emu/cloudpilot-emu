@@ -425,8 +425,11 @@ void EmPalmOS::InjectEvent(CallROMType& callROM) {
                 point.x = evt.getX();
                 point.y = evt.getY();
 
-                TransformPenCoordinates(point.x, point.y);
-                // PenScreenToRaw(&point);
+                if (gSession->GetDevice().HasCustomDigitizerTransform()) {
+                    PenScreenToRaw(&point);
+                } else {
+                    TransformPenCoordinates(point.x, point.y);
+                }
             } else {
                 point.x = point.y = -1;
             }

@@ -71,7 +71,7 @@ class EmDevice {
     bool IsValid() const;
     bool EmulatesDockStatus() const;
     bool NeedsSDCTLHack() const;
-    bool HasCustomTouchTransform() const;
+    bool HasCustomDigitizerTransform() const;
 
     ScreenDimensions::Kind GetScreenDimensions() const;
 

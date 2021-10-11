@@ -777,3 +777,53 @@ void TransformPenCoordinates(int16& x, int16& y) {
     x = 500 - x;
     y = 500 - y;
 }
+
+void InstallCalibrationInfo(void) {
+    // Open the preferences database.  If the new version of PrefOpenPreferenceDB
+    // exists, then call it.  Otherwise, call the old version.	We can't just
+    // unconditionally call the old version, as that has a bug in the newer
+    // ROMs that causes it to create the database incorrectly if it doesn't
+    // already exsist.
+
+    emuptr dbP;
+    if (EmLowMem::TrapExists(sysTrapPrefOpenPreferenceDB))
+        dbP = ::PrefOpenPreferenceDB(false);
+    else
+        dbP = ::PrefOpenPreferenceDBV10();
+
+    if (dbP) {
+        // Get the calibration information.
+
+        emuptr resourceH = ::DmGetResource(sysResTSysPref, sysResIDSysPrefCalibration);
+
+        // If that information doesn't exist, go about creating it.
+
+        if (!resourceH) {
+            resourceH =
+                DmNewResource(dbP, sysResTSysPref, sysResIDSysPrefCalibration, 4 * sizeof(UInt16));
+        }
+
+        if (resourceH) {
+            // Write in the calibration information.  The information has the
+            // following format and values:
+            //
+            //		scaleX	: 256
+            //		scaleY	: 256
+            //		offsetX :	0
+            //		offsetY :	0
+            //
+            // We encode that data here as a string of bytes to avoid endian problems.
+
+            emuptr resP = ::MemHandleLock(resourceH);
+
+            unsigned char data[] = {1, 0, 1, 0, 0, 0, 0, 0};
+
+            ::DmWrite(resP, 0, data, 4 * sizeof(UInt16));
+
+            ::MemHandleUnlock(resourceH);
+            ::DmReleaseResource(resourceH);
+        }
+
+        ::DmCloseDatabase(dbP);
+    }
+}

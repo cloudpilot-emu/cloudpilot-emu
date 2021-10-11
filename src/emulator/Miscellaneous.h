@@ -35,6 +35,8 @@ string Isolatin1ToUtf8(const string& input);
 
 void TransformPenCoordinates(int16& x, int16& y);
 
+void InstallCalibrationInfo(void);
+
 class StMemoryMapper {
    public:
     StMemoryMapper(const void* memory, long size);

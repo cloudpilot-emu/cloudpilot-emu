@@ -83,7 +83,7 @@ namespace {
 
     CallROMType HeadpatchPenScreenToRaw_RawToScreen(void) {
         EmAssert(gSession);
-        if (gSession->GetDevice().HasCustomTouchTransform()) return kExecuteROM;
+        if (gSession->GetDevice().HasCustomDigitizerTransform()) return kExecuteROM;
 
         CALLED_SETUP("Err", "PointType* point");
 
@@ -95,6 +95,18 @@ namespace {
         PUT_RESULT_VAL(Err, 0);
 
         return kSkipROM;
+    }
+
+    CallROMType HeadpatchPenCalibrate(void) {
+        EmAssert(gSession);
+
+        if (gSession->GetDevice().HasCustomDigitizerTransform()) {
+            InstallCalibrationInfo();
+
+            return kSkipROM;
+        }
+
+        return kExecuteROM;
     }
 
     CallROMType HeadpatchSysUIAppSwitch() {
@@ -302,6 +314,7 @@ namespace {
         {sysTrapHwrDockStatus, HeadpatchHwrDockStatus, NULL},
         {sysTrapPenScreenToRaw, HeadpatchPenScreenToRaw_RawToScreen, NULL},
         {sysTrapPenRawToScreen, HeadpatchPenScreenToRaw_RawToScreen, NULL},
+        {sysTrapPenCalibrate, HeadpatchPenCalibrate, NULL},
         {sysTrapClipboardGetItem, HeadpatchClipboardGetItem, NULL},
         {sysTrapClipboardAddItem, NULL, TailpatchClipboardAddItem},
         {sysTrapClipboardAppendItem, NULL, TailpatchClipboardAppendItem},
