@@ -59,7 +59,7 @@ function buttonHeightForScreenSize(screenSize: ScreenSize) {
 
 function calculateLayout(device: DeviceId): Layout {
     const dimensions = deviceDimensions(device);
-    const scale = (dimensions.screenSize === ScreenSize.screen320x320 ? 2 : 3) * devicePixelRatio;
+    const scale = (dimensions.screenSize === ScreenSize.screen160x160 ? 3 : 2) * devicePixelRatio;
     const borderWidth: FrameDependent = { frameDevice: 1, frameCanvas: scale };
 
     const dist = (x: number): FrameDependent => ({ frameDevice: x, frameCanvas: x * scale });
