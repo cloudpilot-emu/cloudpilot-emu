@@ -72,4 +72,6 @@ Chunk* SavestateLoader::GetChunk(ChunkType type) {
     return &chunk;
 }
 
+bool SavestateLoader::HasChunk(ChunkType type) { return chunkMap.find(type) != chunkMap.end(); }
+
 void SavestateLoader::NotifyError() { error = true; }

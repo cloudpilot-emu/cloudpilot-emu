@@ -15,6 +15,8 @@ interface Cloudpilot {
     void MarkScreenClean();
 
     long MinMemoryForDevice([Const] DOMString deviceId);
+    long FramebufferSizeForDevice([Const] DOMString deviceId);
+    long TotalMemoryForDevice([Const] DOMString deviceId);
 
     void QueuePenMove(long x, long y);
     void QueuePenUp();

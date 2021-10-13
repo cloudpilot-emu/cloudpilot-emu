@@ -118,5 +118,6 @@
   ],
   "[python]": {
     "editor.codeActionsOnSave": {"source.organizeImports": true}
-  }
+  },
+  "typescript.tsdk": "./cloudpilot-ionic/node_modules/typescript/lib"
 }

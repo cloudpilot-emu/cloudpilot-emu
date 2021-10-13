@@ -124,7 +124,8 @@ pair<size_t, unique_ptr<uint8[]>> EmSession::SaveImage() {
 
     SessionImageSerializer image;
 
-    image.SetRomImage(romSize, romImage.get()).SetRamImage(GetMemorySize(), GetMemoryPtr());
+    image.SetRomImage(romSize, romImage.get())
+        .SetMemoryImage(GetMemorySize(), device->FramebufferSize() * 1024, GetMemoryPtr());
 
     if (savestate.Save(*this)) {
         image.SetSavestate(savestate.GetSize(), savestate.GetBuffer());
@@ -150,13 +151,18 @@ bool EmSession::LoadImage(SessionImage& image) {
         return false;
     }
 
-    auto [ramSize, ramImage] = image.GetRamImage();
-    if (ramSize != GetMemorySize()) {
-        logging::printf("memory size mismatch, not restoring RAM");
+    auto [memorySize, memoryImage] = image.GetMemoryImage();
+    uint32 version = image.GetVersion();
 
+    if (version >= 2 && memorySize == GetMemorySize()) {
+        memcpy(GetMemoryPtr(), memoryImage, memorySize);
+    } else if (version < 2 && memorySize == GetMemorySize() - device->FramebufferSize() * 1024) {
+        memcpy(GetMemoryPtr(), memoryImage, memorySize);
+        memset(GetMemoryPtr() + memorySize, 0, GetMemorySize() - memorySize);
+    } else {
+        logging::printf("memory size mismatch, not restoring RAM");
         return true;
-    } else
-        memcpy(this->GetMemoryPtr(), ramImage, ramSize);
+    }
 
     auto [savestateSize, savestateImage] = image.GetSavestate();
     if (savestateSize == 0) return true;
@@ -531,7 +537,7 @@ ButtonEvent EmSession::NextButtonEvent() {
                : ButtonEvent(ButtonEvent::Button::invalid, ButtonEvent::Type::press);
 }
 
-uint32 EmSession::GetMemorySize() const { return gRAMSize; }
+uint32 EmSession::GetMemorySize() const { return gTotalMemorySize; }
 
 uint8* EmSession::GetMemoryPtr() const { return gMemory; };
 

@@ -29,7 +29,7 @@ export class SnapshotService {
     async initialize(session: Session, cloudpilot: Cloudpilot): Promise<void> {
         if (this.errorService.hasFatalError()) return;
 
-        const pageCount = session.ram * 1024;
+        const pageCount = session.totalMemory / 1024;
 
         this.sessionId = session.id;
         this.dirtyPages = new Uint8Array(pageCount >>> 3);

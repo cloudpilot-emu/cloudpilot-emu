@@ -27,14 +27,26 @@ export class SessionService {
     }
 
     async addSessionFromImage(image: SessionImage, name: string, presets: Partial<Session> = {}): Promise<Session> {
+        const framebufferSizeForDevice = (await this.emulationService.cloudpilot).framebufferSizeForDevice(
+            image.deviceId
+        );
+        if (framebufferSizeForDevice < 0) {
+            throw new Error(`invalid device ID ${image.deviceId}`);
+        }
+
+        const ram =
+            (image.version >= 2 ? image.memory.length - framebufferSizeForDevice : image.memory.length) / 1024 / 1024;
+        const totalMemory = image.version >= 2 ? image.memory.length : image.memory.length + framebufferSizeForDevice;
+
         const session: Session = {
             hotsyncName: image.metadata?.hotsyncName,
             dontManageHotsyncName: false,
             ...presets,
             id: -1,
             name,
-            device: image.deviceId as DeviceId,
-            ram: image.memory.length / 1024 / 1024,
+            device: image.deviceId,
+            ram,
+            totalMemory,
             rom: '',
             osVersion: image?.metadata?.osVersion,
         };
@@ -64,6 +76,7 @@ export class SessionService {
             name,
             device,
             ram: (await this.emulationService.cloudpilot).minRamForDevice(device) / 1024 / 1024,
+            totalMemory: (await this.emulationService.cloudpilot).totalMemorySizeForDevice(device),
             rom: '',
         };
 

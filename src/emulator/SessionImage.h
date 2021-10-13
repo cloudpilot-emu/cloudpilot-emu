@@ -12,7 +12,7 @@ class SessionImageSerializer {
 
     SessionImageSerializer& SetRomImage(size_t size, void* image);
 
-    SessionImageSerializer& SetRamImage(size_t size, void* image);
+    SessionImageSerializer& SetMemoryImage(size_t size, size_t framebufferSize, void* image);
 
     SessionImageSerializer& SetSavestate(size_t size, void* image);
 
@@ -22,7 +22,7 @@ class SessionImageSerializer {
 
    private:
     void *romImage{nullptr}, *ramImage{nullptr}, *savestate{nullptr}, *metadata{nullptr};
-    size_t romSize{0}, ramSize{0}, savestateSize{0}, metadataSize{0};
+    size_t romSize{0}, ramSize{0}, savestateSize{0}, metadataSize{0}, framebufferSize{0};
 };
 
 class SessionImage {
@@ -32,18 +32,23 @@ class SessionImage {
     bool IsValid() const;
 
     string GetDeviceId() const;
+
     pair<size_t, void*> GetRomImage() const;
-    pair<size_t, void*> GetRamImage() const;
+    pair<size_t, void*> GetMemoryImage() const;
     pair<size_t, void*> GetMetadata() const;
     pair<size_t, void*> GetSavestate() const;
+    uint32 GetframebufferSize() const;
+
+    uint32 GetVersion() const;
 
    private:
     SessionImage() = default;
 
     static SessionImage DeserializeLegacyImage(size_t size, uint8* buffer);
 
+    uint32 version;
     void *romImage{nullptr}, *ramImage{nullptr}, *savestate{nullptr}, *metadata{nullptr};
-    size_t romSize{0}, ramSize{0}, savestateSize{0}, metadataSize{0};
+    size_t romSize{0}, ramSize{0}, savestateSize{0}, metadataSize{0}, framebufferSize{0};
     string deviceId;
 
     bool valid{false};

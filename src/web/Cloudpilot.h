@@ -25,6 +25,8 @@ class Cloudpilot {
     void MarkScreenClean();
 
     long MinMemoryForDevice(string id);
+    long FramebufferSizeForDevice(string id);
+    long TotalMemoryForDevice(string id);
 
     void QueuePenMove(int x, int y);
     void QueuePenUp();

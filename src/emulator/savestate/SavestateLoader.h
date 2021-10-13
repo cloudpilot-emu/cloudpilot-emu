@@ -19,6 +19,7 @@ class SavestateLoader {
     bool Load(void* buffer, size_t size, T& tartget);
 
     Chunk* GetChunk(ChunkType type);
+    bool HasChunk(ChunkType type);
 
     void NotifyError();
 

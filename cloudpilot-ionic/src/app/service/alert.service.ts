@@ -60,7 +60,7 @@ export class AlertService {
         await alert.present();
     }
 
-    async fatalError(reason: string) {
+    async fatalError(reason: string, emergencySave = true) {
         const haveCurrentSession = !!this.emulationState.getCurrentSession();
 
         const alert = await this.alertController.create({
@@ -69,11 +69,15 @@ export class AlertService {
                 ${reason}
                 <br/><br/>
                 Please close or reload this window.
-                ${haveCurrentSession ? ' You may save an image of your current session before reloading.' : ''}
+                ${
+                    haveCurrentSession && emergencySave
+                        ? ' You may save an image of your current session before reloading.'
+                        : ''
+                }
             `,
             backdropDismiss: false,
             buttons: [
-                ...(haveCurrentSession
+                ...(haveCurrentSession && emergencySave
                     ? [
                           {
                               text: 'Save image',

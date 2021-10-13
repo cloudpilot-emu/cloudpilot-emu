@@ -8,7 +8,7 @@ import {
 } from './storage/constants';
 import { Injectable, NgZone } from '@angular/core';
 import { complete, compressPage } from './storage/util';
-import { migrate0to1, migrate1to2 } from './storage/migrations';
+import { migrate0to1, migrate1to2, migrate2to3 } from './storage/migrations';
 
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
@@ -66,7 +66,7 @@ export class StorageService {
     }
 
     @guard()
-    async addSession(session: Session, rom: Uint8Array, ram?: Uint8Array, state?: Uint8Array): Promise<Session> {
+    async addSession(session: Session, rom: Uint8Array, memory?: Uint8Array, state?: Uint8Array): Promise<Session> {
         const hash = md5(rom);
 
         const tx = await this.newTransaction(
@@ -90,8 +90,8 @@ export class StorageService {
 
         const storedSession = await complete<Session>(objectStoreSession.get(key));
 
-        if (ram) {
-            this.saveMemory(tx, storedSession.id, ram);
+        if (memory) {
+            this.saveMemory(tx, storedSession.id, memory);
         }
 
         if (state) {
@@ -174,7 +174,7 @@ export class StorageService {
 
         return [
             await complete<Uint8Array>(objectStoreRom.get(session.rom)),
-            await this.loadMemory(tx, session.id, session.ram * 1024 * 1024),
+            await this.loadMemory(tx, session.id, session.totalMemory),
             await this.loadState(tx, session.id),
         ];
     }
@@ -377,7 +377,7 @@ export class StorageService {
                 request.onsuccess = () => {
                     resolve(request.result);
                 };
-                request.onupgradeneeded = (e) => {
+                request.onupgradeneeded = async (e) => {
                     clearTimeout(watchdogHandle);
 
                     if (e.oldVersion < 1) {
@@ -386,6 +386,12 @@ export class StorageService {
 
                     if (e.oldVersion < 2) {
                         migrate1to2(request.result, request.transaction);
+                    }
+
+                    // v3 introduced u32 view in snapshots
+
+                    if (e.oldVersion < 4) {
+                        await migrate2to3(request.result, request.transaction);
                     }
                 };
             });

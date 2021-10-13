@@ -7,4 +7,6 @@ export interface SessionImage {
     rom: Uint8Array;
     memory: Uint8Array;
     savestate?: Uint8Array;
+    framebufferSize: number;
+    version: number;
 }

@@ -5,25 +5,32 @@ import { SessionImage } from '../model/SessionImage';
 import { SessionMetadata } from '../model/SessionMetadata';
 
 const IMAGE_MAGIC = 0x20150103 | 0;
-const IMAGE_VERSION = 0x00000001 | 0;
+const IMAGE_VERSION = 0x00000002 | 0;
 const IMAGE_VERSION_MASK = 0x80000000 | 0;
 
 export function deserializeSessionImage(buffer: Uint8Array): SessionImage | undefined {
     if (buffer.length < 16) return undefined;
     if (read32LE(buffer, 0) !== IMAGE_MAGIC) return undefined;
     if ((read32LE(buffer, 4) & IMAGE_VERSION_MASK) === 0) return parseSessionImageLegacy(buffer);
-    if (read32LE(buffer, 4) !== (IMAGE_VERSION | IMAGE_VERSION_MASK)) return undefined;
-    if (buffer.length < 28) return undefined;
+
+    const version = read32LE(buffer, 4) & ~IMAGE_VERSION_MASK;
+    if (version > 2) return undefined;
+
+    if (buffer.length < (version >= 2 ? 32 : 28)) return undefined;
 
     const deviceIdSize = read32LE(buffer, 8);
     const metadataSize = read32LE(buffer, 12);
     const romSize = read32LE(buffer, 16);
     const memorySize = read32LE(buffer, 20);
-    const savestateSize = read32LE(buffer, 24);
+    const framebufferSize = version >= 2 ? read32LE(buffer, 24) : 0;
+    const savestateSize = read32LE(buffer, version >= 2 ? 28 : 24);
+    const dataStart = version >= 2 ? 32 : 28;
 
-    if (28 + deviceIdSize + metadataSize + romSize + memorySize + savestateSize !== buffer.length) return undefined;
+    if (dataStart + deviceIdSize + metadataSize + romSize + memorySize + savestateSize !== buffer.length) {
+        return undefined;
+    }
 
-    const deviceId = new TextDecoder().decode(buffer.subarray(28, 28 + deviceIdSize)) as DeviceId;
+    const deviceId = new TextDecoder().decode(buffer.subarray(dataStart, dataStart + deviceIdSize)) as DeviceId;
     if (!SUPPORTED_DEVICES.includes(deviceId)) {
         return undefined;
     }
@@ -31,7 +38,7 @@ export function deserializeSessionImage(buffer: Uint8Array): SessionImage | unde
     let metadata: SessionMetadata | undefined;
     try {
         metadata = JSON.parse(
-            new TextDecoder().decode(buffer.subarray(28 + deviceIdSize, 28 + deviceIdSize + metadataSize))
+            new TextDecoder().decode(buffer.subarray(dataStart + deviceIdSize, dataStart + deviceIdSize + metadataSize))
         );
     } catch (e) {
         console.warn('metadata is not valid JSON');
@@ -40,13 +47,20 @@ export function deserializeSessionImage(buffer: Uint8Array): SessionImage | unde
     return {
         metadata,
         deviceId,
-        rom: buffer.subarray(28 + deviceIdSize + metadataSize, 28 + deviceIdSize + metadataSize + romSize),
+        rom: buffer.subarray(
+            dataStart + deviceIdSize + metadataSize,
+            dataStart + deviceIdSize + metadataSize + romSize
+        ),
         memory: buffer.subarray(
-            28 + deviceIdSize + metadataSize + romSize,
-            28 + deviceIdSize + metadataSize + romSize + memorySize
+            dataStart + deviceIdSize + metadataSize + romSize,
+            dataStart + deviceIdSize + metadataSize + romSize + memorySize
         ),
         savestate:
-            savestateSize > 0 ? buffer.subarray(28 + deviceIdSize + metadataSize + romSize + memorySize) : undefined,
+            savestateSize > 0
+                ? buffer.subarray(dataStart + deviceIdSize + metadataSize + romSize + memorySize)
+                : undefined,
+        framebufferSize,
+        version,
     };
 }
 
@@ -56,12 +70,12 @@ export function metadataForSession(session: Session): SessionMetadata {
     return { name, hotsyncName, osVersion, dontManageHotsyncName };
 }
 
-export function serializeSessionImage(sessionImage: SessionImage): Uint8Array {
+export function serializeSessionImage(sessionImage: Omit<SessionImage, 'version'>): Uint8Array {
     const metadata = new TextEncoder().encode(JSON.stringify(sessionImage.metadata));
     const deviceId = new TextEncoder().encode(sessionImage.deviceId);
 
     const serializedImage = new Uint8Array(
-        28 +
+        32 +
             deviceId.length +
             metadata.length +
             sessionImage.rom.length +
@@ -75,17 +89,18 @@ export function serializeSessionImage(sessionImage: SessionImage): Uint8Array {
     write32LE(metadata.length, serializedImage, 12);
     write32LE(sessionImage.rom.length, serializedImage, 16);
     write32LE(sessionImage.memory.length, serializedImage, 20);
-    write32LE(sessionImage.savestate?.length ?? 0, serializedImage, 24);
+    write32LE(sessionImage.framebufferSize, serializedImage, 24);
+    write32LE(sessionImage.savestate?.length ?? 0, serializedImage, 28);
 
-    serializedImage.set(deviceId, 28);
-    serializedImage.set(metadata, 28 + deviceId.length);
-    serializedImage.set(sessionImage.rom, 28 + deviceId.length + metadata.length);
-    serializedImage.set(sessionImage.memory, 28 + deviceId.length + metadata.length + sessionImage.rom.length);
+    serializedImage.set(deviceId, 32);
+    serializedImage.set(metadata, 32 + deviceId.length);
+    serializedImage.set(sessionImage.rom, 32 + deviceId.length + metadata.length);
+    serializedImage.set(sessionImage.memory, 32 + deviceId.length + metadata.length + sessionImage.rom.length);
 
     if (sessionImage.savestate) {
         serializedImage.set(
             sessionImage.savestate,
-            28 + deviceId.length + metadata.length + sessionImage.rom.length + sessionImage.memory.length
+            32 + deviceId.length + metadata.length + sessionImage.rom.length + sessionImage.memory.length
         );
     }
 
@@ -115,5 +130,7 @@ function parseSessionImageLegacy(buffer: Uint8Array): SessionImage | undefined {
         rom: buffer.subarray(16 + romNameSize, 16 + romNameSize + romSize),
         memory: buffer.subarray(16 + romNameSize + romSize),
         savestate: new Uint8Array(0),
+        framebufferSize: 0,
+        version: 0,
     };
 }

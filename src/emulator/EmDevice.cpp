@@ -1160,7 +1160,7 @@ uint32 EmDevice::FramebufferSize() const {
     }
 }
 
-uint32 EmDevice::TotalMemorysize() const { return MinRAMSize() + FramebufferSize(); }
+uint32 EmDevice::TotalMemorySize() const { return MinRAMSize() + FramebufferSize(); }
 
 /***********************************************************************
  *

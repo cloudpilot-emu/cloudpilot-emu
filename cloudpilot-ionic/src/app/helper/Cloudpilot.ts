@@ -199,6 +199,16 @@ export class Cloudpilot {
     }
 
     @guard()
+    framebufferSizeForDevice(id: DeviceId): number {
+        return this.cloudpilot.FramebufferSizeForDevice(id) * 1024;
+    }
+
+    @guard()
+    totalMemorySizeForDevice(id: DeviceId): number {
+        return this.cloudpilot.TotalMemoryForDevice(id) * 1024;
+    }
+
+    @guard()
     queuePenMove(x: number, y: number): void {
         this.cloudpilot.QueuePenMove(x, y);
     }

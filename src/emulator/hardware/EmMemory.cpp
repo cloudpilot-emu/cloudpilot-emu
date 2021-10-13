@@ -259,15 +259,15 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device
 
     memset(gEmMemBanks, 0, sizeof(gEmMemBanks));
 
-    gTotalMemorySize = device.TotalMemorysize() * 1024;
+    gTotalMemorySize = device.TotalMemorySize() * 1024;
     gFramebufferMemorySize = device.FramebufferSize() * 1024;
     gRAMSize = gTotalMemorySize - gFramebufferMemorySize;
 
     gMemory = static_cast<uint8*>(malloc(gTotalMemorySize));
-    gDirtyPages = static_cast<uint8*>(malloc(gTotalMemorySize / 1024));
+    gDirtyPages = static_cast<uint8*>(malloc(gTotalMemorySize / 1024 / 8));
 
     gFramebufferMemory = gMemory + gRAMSize;
-    gFramebufferDirtyPages = gDirtyPages + gRAMSize / 1024;
+    gFramebufferDirtyPages = gDirtyPages + gRAMSize / 1024 / 8;
 
     // Initialize the valid memory banks.
 

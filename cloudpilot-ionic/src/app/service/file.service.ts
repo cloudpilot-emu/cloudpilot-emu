@@ -1,6 +1,7 @@
 import { metadataForSession, serializeSessionImage } from '../helper/sessionFile';
 
 import { Cloudpilot } from '../helper/Cloudpilot';
+import { EmulationService } from './emulation.service';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Session } from './../model/Session';
@@ -42,12 +43,13 @@ export class FileService {
                 throw new Error(`invalid ROM ${session.rom}`);
             }
 
-            const sessionImage: SessionImage = {
+            const sessionImage: Omit<SessionImage, 'version'> = {
                 deviceId: session.device,
                 metadata: metadataForSession(session),
                 rom,
                 memory,
                 savestate,
+                framebufferSize: session.totalMemory - session.ram * 1024 * 1024,
             };
 
             this.saveFile(filenameForSession(session), serializeSessionImage(sessionImage));
@@ -60,13 +62,19 @@ export class FileService {
         const rom = cloudpilot.getRomImage();
         const memory = cloudpilot.getMemory();
         const savestate = cloudpilot.saveState() ? cloudpilot.getSavestate() : undefined;
+        const framebufferSize = cloudpilot.framebufferSizeForDevice(session.device);
 
-        const sessionImage: SessionImage = {
+        if (framebufferSize < 0) {
+            throw new Error(`invalid device ID ${session.device}`);
+        }
+
+        const sessionImage: Omit<SessionImage, 'version'> = {
             deviceId: session.device,
             metadata: metadataForSession(session),
             rom,
             memory,
             savestate,
+            framebufferSize,
         };
 
         this.saveFile(filenameForSession(session), serializeSessionImage(sessionImage));

@@ -53,6 +53,8 @@ export interface Cloudpilot {
     IsSetupComplete(): boolean;
 
     MinMemoryForDevice(id: string): number;
+    FramebufferSizeForDevice(id: string): number;
+    TotalMemoryForDevice(id: string): number;
 
     QueuePenMove(x: number, y: number): void;
     QueuePenUp(): void;

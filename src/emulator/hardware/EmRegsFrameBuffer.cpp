@@ -25,7 +25,11 @@
 
 namespace {
     constexpr int SAVESTATE_VERSION = 1;
-}
+
+    inline void markDirty(emuptr offset) {
+        gFramebufferDirtyPages[offset >> 13] |= (1 << ((offset >> 10) & 0x07));
+    }
+}  // namespace
 
 // ---------------------------------------------------------------------------
 //		� EmRegsFrameBuffer::EmRegsFrameBuffer
@@ -43,7 +47,10 @@ EmRegsFrameBuffer::~EmRegsFrameBuffer(void) {}
 //		� EmRegsFrameBuffer::Initialize
 // ---------------------------------------------------------------------------
 
-void EmRegsFrameBuffer::Initialize(void) { EmRegs::Initialize(); }
+void EmRegsFrameBuffer::Initialize(void) {
+    EmRegs::Initialize();
+    memset(gFramebufferMemory, 0, gFramebufferMemorySize);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsFrameBuffer::Reset
@@ -51,36 +58,27 @@ void EmRegsFrameBuffer::Initialize(void) { EmRegs::Initialize(); }
 
 void EmRegsFrameBuffer::Reset(Bool hardwareReset) { EmRegs::Reset(hardwareReset); }
 
-void EmRegsFrameBuffer::Save(Savestate& savestate) { DoSave(savestate); }
-
-void EmRegsFrameBuffer::Save(SavestateProbe& savestate) { DoSave(savestate); }
-
 void EmRegsFrameBuffer::Load(SavestateLoader& loader) {
+    if (!loader.HasChunk(ChunkType::regsFrameBuffer)) return;
+
     Chunk* chunk = loader.GetChunk(ChunkType::regsFrameBuffer);
     if (!chunk) return;
 
-    if (chunk->Get32() != SAVESTATE_VERSION) {
+    if (chunk->Get32() > SAVESTATE_VERSION) {
         logging::printf("unable to restore regsFrameBuffer: unsupported savestate version\n");
         loader.NotifyError();
 
         return;
     }
 
+    // We used to save the framebuffer in the savestate, but we have since moved
+    // to appending it to the memory and saving it page by page. Savestate contains
+    // framebuffer? -> load it and make sure the corrersponding pages will all be
+    // saved.
+    //
     // NOT ENDIANESS SAFE
-
     chunk->GetBuffer(gFramebufferMemory, gFramebufferMemorySize);
-}
-
-template <typename T>
-void EmRegsFrameBuffer::DoSave(T& savestate) {
-    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsFrameBuffer);
-    if (!chunk) return;
-
-    chunk->Put32(SAVESTATE_VERSION);
-
-    // NOT ENDIANESS SAFE
-
-    chunk->PutBuffer(gFramebufferMemory, gFramebufferMemorySize);
+    memset(gFramebufferDirtyPages, 0xff, gFramebufferMemorySize / 1024 / 8);
 }
 
 // ---------------------------------------------------------------------------
@@ -119,6 +117,9 @@ void EmRegsFrameBuffer::SetLong(emuptr address, uint32 value) {
     EmMemDoPut32((gFramebufferMemory) + offset, value);
 
     gSystemState.MarkScreenDirty();
+
+    markDirty(offset);
+    markDirty(offset + 2);
 }
 
 // ---------------------------------------------------------------------------
@@ -130,6 +131,8 @@ void EmRegsFrameBuffer::SetWord(emuptr address, uint32 value) {
     EmMemDoPut16((gFramebufferMemory) + offset, value);
 
     gSystemState.MarkScreenDirty();
+
+    markDirty(offset);
 }
 
 // ---------------------------------------------------------------------------
@@ -141,6 +144,8 @@ void EmRegsFrameBuffer::SetByte(emuptr address, uint32 value) {
     EmMemDoPut8((gFramebufferMemory) + offset, value);
 
     gSystemState.MarkScreenDirty();
+
+    markDirty(offset);
 }
 
 // ---------------------------------------------------------------------------

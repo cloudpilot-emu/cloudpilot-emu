@@ -61,7 +61,7 @@ class EmDevice {
 
     RAMSizeType MinRAMSize(void) const;
     uint32 FramebufferSize() const;
-    uint32 TotalMemorysize() const;
+    uint32 TotalMemorySize() const;
 
     long HardwareID(void) const;
     long HardwareSubID(void) const;

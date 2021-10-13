@@ -29,9 +29,9 @@ export class ErrorService {
 
     fatalBug = (reason: string) => this.fatalWithMessage(`You encountered a bug in cloudpilot:<br/><br/>${reason}.`);
 
-    fatalInNativeCode = (e: Error) => this.fatalWithMessage(e.message);
+    fatalInNativeCode = (e: Error) => this.fatalWithMessage(e.message, true, false);
 
-    private fatalWithMessage = (message: string, clearSession = true) =>
+    private fatalWithMessage = (message: string, clearSession = true, emergencySave = true) =>
         this.ngZone.run(() => {
             if (this.fatalErrorTriggered) return;
             this.fatalErrorTriggered = true;
@@ -40,7 +40,7 @@ export class ErrorService {
 
             this.fatalErrorEvent.dispatch();
 
-            this.alertService.fatalError(message);
+            this.alertService.fatalError(message, emergencySave);
         });
 
     fatalErrorEvent = new Event<void>();

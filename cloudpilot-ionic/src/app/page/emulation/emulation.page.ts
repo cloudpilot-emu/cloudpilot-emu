@@ -38,9 +38,7 @@ export class EmulationPage implements AfterViewInit {
         private installlationService: InstallationService,
         public proxyService: ProxyService,
         public navigation: TabsPage
-    ) {
-        console.log(navigation);
-    }
+    ) {}
 
     ngAfterViewInit(): void {}
 
