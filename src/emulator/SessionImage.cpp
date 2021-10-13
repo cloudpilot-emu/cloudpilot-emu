@@ -90,7 +90,7 @@ SessionImage SessionImage::Deserialize(size_t size, uint8* buffer) {
     uint32 version = get32(buffer + 4);
 
     if (!(version & VERSION_MASK)) return DeserializeLegacyImage(size, buffer);
-    if (size < 28) return SessionImage();
+    if (size < (version >= 2 ? 32 : 28)) return SessionImage();
 
     version &= ~VERSION_MASK;
     if (version > VERSION) return SessionImage();
