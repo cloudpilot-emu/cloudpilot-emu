@@ -1,6 +1,9 @@
 # Next version
 
 -   Support Handera 330.
+-   Improve snapshot performance for devices with framebuffer (color devices).
+    Session images saved with this and later versions of Cloupilot are incompatible
+    with older ones.
 
 # 1.5.5
 
