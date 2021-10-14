@@ -29,7 +29,7 @@ DbBackup::~DbBackup() {
     if (archive) free(archive);
 }
 
-bool DbBackup::Init() {
+bool DbBackup::Init(bool includeRomDatabases) {
     EmAssert(state == State::created);
 
     if (gSession->IsCpuStopped()) {
@@ -38,7 +38,7 @@ bool DbBackup::Init() {
 
     if (gSystemState.OSMajorVersion() < 3) return false;
 
-    if (!GetDatabases(databases, GetDatabaseFlags::kOnlyRamDatabases)) {
+    if (!GetDatabases(databases, includeRomDatabases ? 0 : GetDatabaseFlags::kOnlyRamDatabases)) {
         return false;
     }
 

@@ -17,8 +17,8 @@ export function filenameForSession(session: Session): string {
     return `${filenameFragment(session)}.bin`;
 }
 
-export function filenameForBackup(session: Session): string {
-    return `backup_${filenameFragment(session)}.zip`;
+export function filenameForBackup(session: Session, includeRomDatabases: boolean): string {
+    return `backup_${filenameFragment(session)}${includeRomDatabases ? '_with_rom' : ''}.zip`;
 }
 
 export function concatFilenames(files: Array<string>, limit = 3): string {

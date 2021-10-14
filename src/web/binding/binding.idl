@@ -97,7 +97,7 @@ interface Frame {
 };
 
 interface DbBackup {
-    boolean Init();
+    boolean Init(boolean includeRomDatabases);
 
     boolean IsInProgress();
     boolean IsDone();

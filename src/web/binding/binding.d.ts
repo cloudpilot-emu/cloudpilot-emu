@@ -121,7 +121,7 @@ export interface Frame {
 }
 
 export interface DbBackup {
-    Init(): boolean;
+    Init(includeRomDatabases: boolean): boolean;
 
     IsInProgress(): boolean;
     IsDone(): boolean;

@@ -79,10 +79,10 @@ namespace {
         }
     }
 
-    void SaveBackup(string file) {
+    void SaveBackup(string file, bool includeRomDatabases) {
         DbBackup backup;
 
-        if (!backup.Init()) {
+        if (!backup.Init(includeRomDatabases)) {
             cout << "backup failed" << endl << flush;
 
             return;
@@ -231,7 +231,18 @@ namespace {
             return false;
         }
 
-        SaveBackup(args[0]);
+        SaveBackup(args[0], false);
+
+        return false;
+    }
+
+    bool CmdSaveBackupWithRom(vector<string> args) {
+        if (args.size() != 1) {
+            cout << "usage: save-backup-with-rom <file>" << endl << flush;
+            return false;
+        }
+
+        SaveBackup(args[0], true);
 
         return false;
     }
@@ -251,7 +262,8 @@ namespace {
                           {.name = "reset-noext", .cmd = CmdResetNoext},
                           {.name = "save-image", .cmd = CmdSaveImage},
                           {.name = "switch-image", .cmd = CmdSwitchImage},
-                          {.name = "save-backup", .cmd = CmdSaveBackup}};
+                          {.name = "save-backup", .cmd = CmdSaveBackup},
+                          {.name = "save-backup-with-rom", .cmd = CmdSaveBackupWithRom}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);

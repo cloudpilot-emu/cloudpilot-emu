@@ -223,6 +223,11 @@ Possible pitfalls to watch out for:
     Note that the actual connection originates from the computer that runs the proxy server.
 -   **Cloudpilot suspended:** Cloudpilot suspends execution if the browser tab (or mobile app)
     is not visible. This can be deactivated in the settings.
+-   **Unsupported PalmOS version:** Palm in their infite wisdom decided to remove network hotsync
+    from their m1xx line of devices. You can work around this by installing the hotsync app
+    from a backup of a non-m1xx device with a matching ROM version (you need to save a backup
+    that includes ROM databases). The installed app will shadow the ROM version and work as expected.
+    Network hotsync is not supported in PalmOS 2 and 1.
 
 # Known issues
 

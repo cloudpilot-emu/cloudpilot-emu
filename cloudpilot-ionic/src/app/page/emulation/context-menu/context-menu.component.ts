@@ -75,10 +75,28 @@ export class ContextMenuComponent implements OnInit {
         this.popoverController.dismiss();
     }
 
-    backup(): void {
-        this.backupService.saveBackup();
-
+    async backup(): Promise<void> {
         this.popoverController.dismiss();
+
+        const sheet = await this.actionSheetController.create({
+            header: 'What do you want to backup?',
+            buttons: [
+                {
+                    text: 'Only RAM (default)',
+                    handler: () => this.backupService.saveBackup(false),
+                },
+                {
+                    text: 'Include ROM',
+                    handler: () => this.backupService.saveBackup(true),
+                },
+                {
+                    text: 'Cancel',
+                    role: 'cancel',
+                },
+            ],
+        });
+
+        sheet.present();
     }
 
     get isMuted(): boolean {

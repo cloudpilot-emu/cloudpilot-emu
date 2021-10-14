@@ -13,7 +13,7 @@ class DbBackup {
 
     ~DbBackup();
 
-    bool Init();
+    bool Init(bool includeRomDatabases);
 
     bool IsInProgress() const;
     bool IsDone() const;

@@ -19,7 +19,7 @@ export class BackupService {
         private alertService: AlertService
     ) {}
 
-    async saveBackup(): Promise<void> {
+    async saveBackup(includeRomDatabases: boolean): Promise<void> {
         const currentSession = this.emulationStateService.getCurrentSession();
         if (!currentSession) return;
 
@@ -36,7 +36,7 @@ export class BackupService {
             const cloudpilot = await this.emulationService.cloudpilot;
 
             await cloudpilot.backup(async (dbBackup) => {
-                dbBackup.Init();
+                dbBackup.Init(includeRomDatabases);
 
                 while (dbBackup.IsInProgress()) {
                     const db = dbBackup.GetCurrentDatabase();
@@ -64,11 +64,14 @@ export class BackupService {
                     Open databases cannot be backuped. Please run backup from the launcher
                     in order to backup all databases.
                 `,
-                { 'Save Backup': () => this.fileService.saveFile(filenameForBackup(currentSession), archive!) },
+                {
+                    'Save Backup': () =>
+                        this.fileService.saveFile(filenameForBackup(currentSession, includeRomDatabases), archive!),
+                },
                 'Cancel'
             );
         } else {
-            this.fileService.saveFile(filenameForBackup(currentSession), archive);
+            this.fileService.saveFile(filenameForBackup(currentSession, includeRomDatabases), archive);
         }
     }
 }

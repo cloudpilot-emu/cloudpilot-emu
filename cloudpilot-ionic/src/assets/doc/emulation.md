@@ -52,6 +52,13 @@ You can save a backup of all databases in the device RAM by selecting "Save Back
 from the menu. This will create and save a zip archive with .prc and .pdb
 files that can be installed again on any PalmOS device at a later point.
 
+There are two types of backup, and Cloudpilot will prompt you to choose between them:
+
+* Backup only RAM databases. This is an ordinary backup, and you should choose it use unless
+  you specifically want to retrieve the databases in the device ROM.
+* Include ROM databases. This will include the contents of the device ROM with the
+  backup. This is not required for a normal backup.
+
 Databases must be closed in order to back up, so if you are backing up while
 an application is opened, the corresponding DB files will not be included
 in the backup. Cloudpilot will notify you if this happens.
