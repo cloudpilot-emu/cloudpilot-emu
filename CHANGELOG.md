@@ -4,6 +4,7 @@
 -   Improve snapshot performance for devices with framebuffer (color devices).
     Session images saved with this and later versions of Cloupilot are incompatible
     with older ones.
+-   Allow backups that include the databases in the device ROM.
 
 # 1.5.5
 
