@@ -171,6 +171,7 @@ EmCPU68K::~EmCPU68K(void) {
 // ---------------------------------------------------------------------------
 
 void EmCPU68K::Reset(Bool hardwareReset) {
+    isSettingUpExceptionFrame = false;
     fLastTraceAddress = EmMemNULL;
 #if REGISTER_HISTORY
     fRegHistoryIndex = 0;
@@ -712,9 +713,11 @@ void EmCPU68K::ProcessInterrupt(int32 interrupt) {
 // ---------------------------------------------------------------------------
 
 void EmCPU68K::ProcessException(ExceptionNumber exception) {
-    // make sure that we don't enter an endless loop if setting up the stack
-    // frame triggers a bus error
-    EmAssert(!isHandlingException);
+    if (isSettingUpExceptionFrame) {
+        if (!gSession->IsNested()) gSession->ScheduleReset(EmSession::ResetType::soft);
+
+        return;
+    }
 
     // Make sure the Status Register is up-to-date.
     this->UpdateSRFromRegisters();
@@ -775,32 +778,33 @@ void EmCPU68K::ProcessException(ExceptionNumber exception) {
     // !!! If we're handling a trace exception, I think that fLastTraceAddress
     // comes into play here instead of m68k_getpc.
     // !!! Manage this with EmPalmStructs...
+    {
+        EmValueChanger trackHandleException(isSettingUpExceptionFrame, true);
 
-    EmValueChanger trackHandleException(isHandlingException, true);
+        if (exception == kException_BusErr || exception == kException_AddressErr) {
+            COMPILE_TIME_ASSERT(sizeof(ExceptionStackFrame2) == 14);
+            m68k_areg(regs, 7) -= sizeof(ExceptionStackFrame2);
+            CHECK_STACK_POINTER_DECREMENT();
 
-    if (exception == kException_BusErr || exception == kException_AddressErr) {
-        COMPILE_TIME_ASSERT(sizeof(ExceptionStackFrame2) == 14);
-        m68k_areg(regs, 7) -= sizeof(ExceptionStackFrame2);
-        CHECK_STACK_POINTER_DECREMENT();
+            emuptr frame = m68k_areg(regs, 7);
 
-        emuptr frame = m68k_areg(regs, 7);
+            // Eh...Palm OS doesn't use these 3 anyway...
+            EmMemPut16(frame + offsetof(ExceptionStackFrame2, functionCode), 0);
+            EmMemPut32(frame + offsetof(ExceptionStackFrame2, accessAddress), 0);
+            EmMemPut16(frame + offsetof(ExceptionStackFrame2, instructionRegister), 0);
 
-        // Eh...Palm OS doesn't use these 3 anyway...
-        EmMemPut16(frame + offsetof(ExceptionStackFrame2, functionCode), 0);
-        EmMemPut32(frame + offsetof(ExceptionStackFrame2, accessAddress), 0);
-        EmMemPut16(frame + offsetof(ExceptionStackFrame2, instructionRegister), 0);
+            EmMemPut16(frame + offsetof(ExceptionStackFrame2, statusRegister), regs.sr);
+            EmMemPut32(frame + offsetof(ExceptionStackFrame2, programCounter), m68k_getpc());
+        } else {
+            COMPILE_TIME_ASSERT(sizeof(ExceptionStackFrame1) == 6);
+            m68k_areg(regs, 7) -= sizeof(ExceptionStackFrame1);
+            CHECK_STACK_POINTER_DECREMENT();
 
-        EmMemPut16(frame + offsetof(ExceptionStackFrame2, statusRegister), regs.sr);
-        EmMemPut32(frame + offsetof(ExceptionStackFrame2, programCounter), m68k_getpc());
-    } else {
-        COMPILE_TIME_ASSERT(sizeof(ExceptionStackFrame1) == 6);
-        m68k_areg(regs, 7) -= sizeof(ExceptionStackFrame1);
-        CHECK_STACK_POINTER_DECREMENT();
+            emuptr frame = m68k_areg(regs, 7);
 
-        emuptr frame = m68k_areg(regs, 7);
-
-        EmMemPut16(frame + offsetof(ExceptionStackFrame1, statusRegister), regs.sr);
-        EmMemPut32(frame + offsetof(ExceptionStackFrame1, programCounter), m68k_getpc());
+            EmMemPut16(frame + offsetof(ExceptionStackFrame1, statusRegister), regs.sr);
+            EmMemPut32(frame + offsetof(ExceptionStackFrame1, programCounter), m68k_getpc());
+        }
     }
 
     emuptr newpc;

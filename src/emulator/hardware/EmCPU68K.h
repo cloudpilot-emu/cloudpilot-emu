@@ -291,7 +291,7 @@ class EmCPU68K : public EmCPU {
     Hook68KExceptionList fExceptionHandlers[kException_LastException];
     Hook68KJSR_IndList fHookJSR_Ind;
     uint32 fCurrentCycles{0};
-    Bool isHandlingException{false};
+    Bool isSettingUpExceptionFrame{false};
 
 #if REGISTER_HISTORY
     #define kRegHistorySize 512

@@ -295,8 +295,6 @@ void EmSession::Reset(ResetType resetType) {
     EmAssert(cpu);
     EmAssert(nestLevel == 0);
 
-    if (resetType != ResetType::sys) systemCycles = 0;
-
     gNetworkProxy.Reset();
     SuspendManager::Reset();
     Memory::Reset(resetType != ResetType::sys);

@@ -5,6 +5,8 @@
     Session images saved with this and later versions of Cloupilot are incompatible
     with older ones.
 -   Allow backups that include the databases in the device ROM.
+-   Reboot device if PalmOS crashes with an invalid stack pointer (instead of dying
+    with an assertion or freezing like a real device).
 
 # 1.5.5
 
