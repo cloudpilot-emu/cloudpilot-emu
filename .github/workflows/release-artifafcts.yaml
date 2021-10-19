@@ -88,7 +88,7 @@ jobs:
           pip install pipenv
           cd server
           echo "VERSION = \"${{ env.TAG }}\"" > version.py
-          pipenv install --python ${{ env.PYTHON_VERSION }}
+          pipenv install --python C:/hostedtoolcache/windows/Python/${{ env.PYTHON_VERSION }}/x86/python.exe
           pipenv run build
           cd dist
           mv cloudpilot-server ${{ env.SERVER_DIRECTORY }}
