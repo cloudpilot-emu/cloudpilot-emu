@@ -293,9 +293,7 @@ forbids access from any origin other `https://cloudpilot-emu.github.io` via CORS
 In case you want to use networking with such a setup you can use the `--trusted-origins`
 parameter to tune the CORS configuration to your needs. As an example, in order to
 allow Cloudpilot running on `http://localhost:4600` (which is the default for the
-angular dev server), invoke the server with `--trusted-origins http://localhost:4600`
-(or `--trusted-origins http://localhost:4600,https://cloudpilot-emu.github.io` if you
-want to allow the official build as well.)
+angular dev server), invoke the server with `--trusted-origins http://localhost:4600`.
 
 ### Default protocol
 
