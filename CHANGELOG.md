@@ -1,9 +1,9 @@
-# Next version
+# 1.5.6
 
 -   Support Handera 330.
 -   Improve snapshot performance for devices with framebuffer (color devices).
-    Session images saved with this and later versions of Cloupilot are incompatible
-    with older ones.
+    Session images saved with this and later versions of Cloupilot cannot be
+    loaded on older versions.
 -   Allow backups that include the databases in the device ROM.
 -   Reboot device if PalmOS crashes with an invalid stack pointer (instead of dying
     with an assertion or freezing like a real device).
