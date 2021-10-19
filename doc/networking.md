@@ -294,6 +294,8 @@ In case you want to use networking with such a setup you can use the `--trusted-
 parameter to tune the CORS configuration to your needs. As an example, in order to
 allow Cloudpilot running on `http://localhost:4600` (which is the default for the
 angular dev server), invoke the server with `--trusted-origins http://localhost:4600`.
+Note that you can allow more than one trusted origin by specifying multiple
+origins separated by commata.
 
 ### Default protocol
 
