@@ -284,7 +284,7 @@ those on the command line.
 
 ## Running Cloutpilot locally or on another domain
 
-## CORS setup
+### CORS setup
 
 If you run Cloudpilot locally (during development) or on another domain the default
 server configuration will not work. The reason is that the default configuration
@@ -297,7 +297,7 @@ angular dev server), invoke the server with `--trusted-origins http://localhost:
 (or `--trusted-origins http://localhost:4600,https://cloudpilot-emu.github.io` if you
 want to allow the official build as well.)
 
-## Default protocol
+### Default protocol
 
 Cloudpilot allows you to simplify the configuration by filling only the hostname
 of the proxy server on the settings page. This works by determining the protocol
