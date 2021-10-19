@@ -15,6 +15,7 @@ env:
   RELEASE_TITLE: Cloudpilot ${GITHUB_REF##*/}
   ARCHIVE_MACOS: cloudpilot-server-${GITHUB_REF##*/}-macos-x64.zip
   ARCHIVE_WINDOWS: cloudpilot-server-${GITHUB_REF##*/}-win-x64.zip
+  ARCHIVE_WIN32: cloudpilot-server-${GITHUB_REF##*/}-win-x86.zip
   ARCHIVE_LINUX: cloudpilot-server-${GITHUB_REF##*/}-linux-x64.tar.gz
 jobs:
   create-release:
@@ -70,6 +71,29 @@ jobs:
           mv cloudpilot-server ${{ env.SERVER_DIRECTORY }}
           7z a -r ${{ env.ARCHIVE_WINDOWS }} ${{ env.SERVER_DIRECTORY }}
           gh release upload ${{ env.TAG }} ${{ env.ARCHIVE_WINDOWS }}
+  build-server-win32:
+    runs-on: windows-2019
+    needs: create-release
+    steps:
+      - name: Install Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{env.PYTHON_VERSION}}
+          architecture: x86
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Build and upload
+        shell: bash
+        run: |
+          pip install pipenv
+          cd server
+          echo "VERSION = \"${{ env.TAG }}\"" > version.py
+          pipenv install --python ${{ env.PYTHON_VERSION }}
+          pipenv run build
+          cd dist
+          mv cloudpilot-server ${{ env.SERVER_DIRECTORY }}
+          7z a -r ${{ env.ARCHIVE_WIN32 }} ${{ env.SERVER_DIRECTORY }}
+          gh release upload ${{ env.TAG }} ${{ env.ARCHIVE_WIN32 }}
   build-server-macos:
     runs-on: macos-10.15
     needs: create-release
