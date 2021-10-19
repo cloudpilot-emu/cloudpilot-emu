@@ -32,9 +32,9 @@ CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
 CFLAGS_EMCC = $(EMCC_OPT) -D_POSIX_SOURCE
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)  -fno-rtti -fno-exceptions
 
-CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined -fsanitize-ignorelist=src/clang_blacklist.txt
+CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt
 CXXFLAGS_TEST ?= $(CFLAGS_TEST)
-LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-ignorelist=src/clang_blacklist.txt -lgtest -lgmock
+LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt -lgtest -lgmock
 
 WEBIDL_BINDING_DIR = web/binding
 WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
