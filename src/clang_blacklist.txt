@@ -1,1 +1,3 @@
 src:*/uae/cpuemu.c
+src:*/zip/miniz.h
+src:*/zip/zip.c

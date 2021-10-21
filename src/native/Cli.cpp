@@ -23,6 +23,7 @@
 #include "EmCommon.h"
 #include "EmErrCodes.h"
 #include "EmSession.h"
+#include "ZipfileWalker.h"
 #include "util.h"
 
 namespace {
@@ -36,16 +37,8 @@ namespace {
     mutex dispatchMutex;
     condition_variable cvExecuteTask;
 
-    void InstallFile(string path) {
-        unique_ptr<uint8[]> buffer;
-        size_t len;
-
-        if (!util::readFile(path, buffer, len)) {
-            cout << "failed to read " << path << endl << flush;
-            return;
-        }
-
-        switch (DbInstaller::Install(len, buffer.get())) {
+    void InstallOne(size_t len, uint8* buffer) {
+        switch (DbInstaller::Install(len, buffer)) {
             case DbInstaller::Result::needsReboot:
                 cout << "installation successful; device requires reset" << endl << flush;
                 break;
@@ -57,6 +50,34 @@ namespace {
             default:
                 cout << "installation failed" << endl << flush;
                 break;
+        }
+    }
+
+    void InstallFile(string path) {
+        unique_ptr<uint8[]> buffer;
+        size_t len;
+
+        if (!util::readFile(path, buffer, len)) {
+            cout << "failed to read " << path << endl << flush;
+            return;
+        }
+
+        if (path.length() >= 4 && (path.substr(path.length() - 4) == ".zip" ||
+                                   path.substr(path.length() - 4) == ".ZIP")) {
+            ZipfileWalker walker(len, buffer.get());
+
+            while (walker.GetState() == ZipfileWalker::State::open) {
+                uint8* content = walker.GetEntryContent();
+
+                if (content) {
+                    cout << "installing " << walker.GetCurrentEntryName() << "... ";
+                    InstallOne(walker.GetCurrentEntrySize(), content);
+                }
+
+                walker.Next();
+            }
+        } else {
+            InstallOne(len, buffer.get());
         }
     }
 

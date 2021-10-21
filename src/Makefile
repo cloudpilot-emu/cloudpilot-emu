@@ -204,7 +204,8 @@ SOURCE_EMU = \
 	emulator/Fifo.cpp \
 	emulator/Feature.cpp \
 	emulator/ScreenDimensions.cpp \
-	emulator/NetworkProxy.cpp
+	emulator/NetworkProxy.cpp \
+	emulator/ZipfileWalker.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \

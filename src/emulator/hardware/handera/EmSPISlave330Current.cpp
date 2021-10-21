@@ -110,7 +110,7 @@ uint16 EmSPISlave330Current::DoExchange(uint16 control, uint16 data) {
     // -----------------------------------------------------------------------
 
     uint16 numBits = (control & hwrVZ328SPIMControlBitsMask) + 1;
-    uint32 oldBitsMask = ~0 << numBits;
+    uint32 oldBitsMask = ~0u << numBits;
     uint32 newBitsMask = ~oldBitsMask;
 
     PRINTF("Before merging input:   fBitBufferIn = 0x%04X, fNumBitsIn = 0x%04X", fBitBufferIn,
