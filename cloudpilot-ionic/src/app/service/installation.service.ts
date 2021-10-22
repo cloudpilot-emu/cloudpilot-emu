@@ -6,7 +6,14 @@ import { FileDescriptor } from './file.service';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { SnapshotService } from './snapshot.service';
+import { ZipfileWalkerState } from '../../../../src';
 import { concatFilenames } from '../helper/filename';
+
+const ZIP_SIZE_LIMIT = 32 * 1024 * 1024;
+
+function isInstallable(filename: string) {
+    return /\.(prc|pdb|pqa)$/i.test(filename);
+}
 
 @Injectable({ providedIn: 'root' })
 export class InstallationService {
@@ -27,34 +34,66 @@ export class InstallationService {
         await this.emulationService.pause();
         await this.snapshotService.waitForPendingSnapshot();
 
+        const cloudpilot = await this.emulationService.cloudpilot;
+
         const filesSuccess: Array<string> = [];
         const filesFail: Array<string> = [];
         const filesRequireReset: Array<string> = [];
 
+        const installOne = async (name: string, content: Uint8Array) => {
+            switch (await cloudpilot.installDb(content)) {
+                case DbInstallResult.failure:
+                    filesFail.push(name);
+                    break;
+
+                case DbInstallResult.needsReboot:
+                    filesRequireReset.push(name);
+                    filesSuccess.push(name);
+                    break;
+
+                case DbInstallResult.success:
+                    filesSuccess.push(name);
+                    break;
+            }
+
+            await new Promise((r) => setTimeout(r, 0));
+        };
+
         try {
             for (const file of files) {
-                if (!/\.(prc|pdb|pqa)$/i.test(file.name)) {
-                    filesFail.push(file.name);
+                if (/\.zip/i.test(file.name) && file.content.length < ZIP_SIZE_LIMIT) {
+                    try {
+                        await cloudpilot.withZipfileWalker(file.content, async (walker) => {
+                            let installed = 0;
 
-                    continue;
-                }
+                            while (walker.GetState() === ZipfileWalkerState.open) {
+                                const name = walker.GetCurrentEntryName().replace(/^.*\//, '');
 
-                switch (await this.emulationService.installDb(file.content)) {
-                    case DbInstallResult.failure:
+                                if (!isInstallable(walker.GetCurrentEntryName())) {
+                                    walker.Next();
+                                    continue;
+                                }
+                                const content = walker.GetCurrentEntryContent();
+                                if (content) {
+                                    await installOne(name, content);
+                                    installed++;
+                                } else {
+                                    filesFail.push(name);
+                                }
+
+                                walker.Next();
+                            }
+
+                            if (installed === 0) throw new Error('no installable files in archive');
+                        });
+                    } catch (err) {
                         filesFail.push(file.name);
-                        break;
-
-                    case DbInstallResult.needsReboot:
-                        filesRequireReset.push(file.name);
-                        filesSuccess.push(file.name);
-                        break;
-
-                    case DbInstallResult.success:
-                        filesSuccess.push(file.name);
-                        break;
+                    }
+                } else if (isInstallable(file.name)) {
+                    await installOne(file.name, file.content);
+                } else {
+                    filesFail.push(file.name);
                 }
-
-                await new Promise((r) => setTimeout(r, 0));
             }
         } finally {
             loader.dismiss();
@@ -96,7 +135,7 @@ export class InstallationService {
                 return `Installation of ${filesSuccess[0]} successful.`;
 
             default:
-                return `Installation of ${filesSuccess.length} files successful.`;
+                return `Installation of ${filesSuccess.length} items successful.`;
         }
     }
 

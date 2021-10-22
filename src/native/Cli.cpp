@@ -66,8 +66,8 @@ namespace {
                                    path.substr(path.length() - 4) == ".ZIP")) {
             ZipfileWalker walker(len, buffer.get());
 
-            while (walker.GetState() == ZipfileWalker::State::open) {
-                uint8* content = walker.GetEntryContent();
+            while (walker.GetState() == ZipfileWalker::State::stateOpen) {
+                uint8* content = walker.GetCurrentEntryContent();
 
                 if (content) {
                     cout << "installing " << walker.GetCurrentEntryName() << "... ";

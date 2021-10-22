@@ -29,7 +29,8 @@ on the settings page in order to do that automatically on launch.
 
 Select the "Install file" button on the top right in order to install `.prc` and
 `.pdb` files into the emulator. You can select and install multiple files at
-once.
+once. `.zip` archives can be selected as well, and Cloudpilot will install
+all installable files it finds in the archive.
 
 Please note that the launcher needs to be restarted by switching to another
 program and back to the launcher in order for newly installed programs to become

@@ -204,10 +204,6 @@ export class EmulationService {
         return this.uiInitialized;
     }
 
-    installDb(data: Uint8Array): Promise<DbInstallResult> {
-        return this.cloudpilot.then((c) => c.installDb(data));
-    }
-
     getCanvas(): HTMLCanvasElement {
         return this.canvas;
     }

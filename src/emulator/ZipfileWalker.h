@@ -7,10 +7,10 @@ struct zip_t;
 
 class ZipfileWalker {
    public:
-    enum class State : int8 { error = -1, open = 0, done = 1 };
+    enum State : int8 { stateError = -1, stateOpen = 0, stateDone = 1 };
 
    public:
-    ZipfileWalker(size_t bufferSize, uint8* buffer);
+    ZipfileWalker(size_t bufferSize, void* buffer);
 
     ~ZipfileWalker();
 
@@ -19,7 +19,7 @@ class ZipfileWalker {
 
     size_t GetCurrentEntrySize();
     const char* GetCurrentEntryName();
-    uint8* GetEntryContent();
+    uint8* GetCurrentEntryContent();
 
    private:
     unique_ptr<char[]> buffer;

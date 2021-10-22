@@ -2,7 +2,7 @@
 
 #include "zip.h"
 
-ZipfileWalker::ZipfileWalker(size_t bufferSize, uint8* buffer) {
+ZipfileWalker::ZipfileWalker(size_t bufferSize, void* buffer) {
     this->buffer = make_unique<char[]>(bufferSize);
     memcpy(this->buffer.get(), buffer, bufferSize);
 
@@ -23,14 +23,14 @@ ZipfileWalker::~ZipfileWalker() {
 }
 
 ZipfileWalker::State ZipfileWalker::GetState() const {
-    if (!zip || entriesTotal < 0) return State::error;
-    if (done) return State::done;
+    if (!zip || entriesTotal < 0) return State::stateError;
+    if (done) return State::stateDone;
 
-    return State::open;
+    return State::stateOpen;
 }
 
 ZipfileWalker::State ZipfileWalker::Next() {
-    while (GetState() == State::open) {
+    while (GetState() == State::stateOpen) {
         if (currentEntryContent) {
             free(currentEntryContent);
             currentEntryContent = nullptr;
@@ -51,19 +51,19 @@ ZipfileWalker::State ZipfileWalker::Next() {
 }
 
 size_t ZipfileWalker::GetCurrentEntrySize() {
-    EmAssert(GetState() == State::open);
+    EmAssert(GetState() == State::stateOpen);
 
     return zip_entry_size(zip);
 }
 
 const char* ZipfileWalker::GetCurrentEntryName() {
-    EmAssert(GetState() == State::open);
+    EmAssert(GetState() == State::stateOpen);
 
     const char* name = zip_entry_name(zip);
     return name ? name : "";
 }
 
-uint8* ZipfileWalker::GetEntryContent() {
+uint8* ZipfileWalker::GetCurrentEntryContent() {
     if (currentEntryContent) return currentEntryContent;
 
     size_t bufferSize;

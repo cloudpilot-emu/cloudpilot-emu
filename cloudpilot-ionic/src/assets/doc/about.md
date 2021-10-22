@@ -45,8 +45,8 @@ will resume exaclty where you left off.
 
 # Installing programs and databases
 
-Cloudpilot cannot hotsync, but program (.prc) and database (.pdb)
-files can be installed directly into the emulated device.
+Program (.prc) and database (.pdb) files can be installed directly into the emulated
+device. `.zip` archives containing such files can be installed as well.
 
 # Network support
 

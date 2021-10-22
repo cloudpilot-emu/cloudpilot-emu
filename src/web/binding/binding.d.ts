@@ -28,6 +28,12 @@ export const enum SuspendKind {
     networkConnect = 4,
 }
 
+export const enum ZipfileWalkerState {
+    error = -1,
+    open = 0,
+    done = 1,
+}
+
 export interface RomInfo {
     CardVersion(): number;
     CardName(): string;
@@ -167,4 +173,13 @@ interface SuspendContext {
     AsContextClipboardPaste(): SuspendContextClipboardPaste;
     AsContextNetworkConnect(): SuspendContextNetworkConnect;
     AsContextNetworkRpc(): SuspendContextNetworkRpc;
+}
+
+interface ZipfileWalker {
+    GetState(): ZipfileWalkerState;
+    Next(): ZipfileWalkerState;
+
+    GetCurrentEntrySize(): number;
+    GetCurrentEntryName(): string;
+    GetCurrentEntryContent(): VoidPtr;
 }

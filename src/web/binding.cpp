@@ -8,6 +8,7 @@
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendContextNetworkConnect.h"
 #include "SuspendContextNetworkRpc.h"
+#include "ZipfileWalker.h"
 
 // clang-format off
 #include "binding/binding.cpp"

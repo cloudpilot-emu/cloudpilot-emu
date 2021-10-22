@@ -16,6 +16,7 @@ import createModule, {
     SuspendContextNetworkRpc,
     SuspendKind,
     VoidPtr,
+    ZipfileWalker as ZipfileWalkerNative,
 } from '../../../../src';
 
 import { DeviceId } from '../model/DeviceId';
@@ -52,6 +53,10 @@ export interface Frame {
 export interface PwmUpdate {
     frequency: number;
     dutyCycle: number;
+}
+
+export interface ZipfileWalker extends Omit<ZipfileWalkerNative, 'GetCurrentEntryContent'> {
+    GetCurrentEntryContent(): Uint8Array | undefined;
 }
 
 export const SUPPORTED_DEVICES = [
@@ -452,6 +457,37 @@ export class Cloudpilot {
         const bufferPtr = this.module.getPointer(ptr);
 
         return this.module.HEAPU8.subarray(bufferPtr, bufferPtr + size);
+    }
+
+    async withZipfileWalker<T>(buffer: Uint8Array, callback: (walker: ZipfileWalker) => Promise<T>): Promise<T> {
+        const walker = this.guard(() => {
+            const ptr = this.copyIn(buffer);
+            const newWalker = new this.module.ZipfileWalker(buffer.length, ptr);
+
+            this.cloudpilot.Free(ptr);
+
+            return newWalker;
+        });
+
+        try {
+            return await callback(
+                this.wrap(
+                    Object.setPrototypeOf(
+                        {
+                            GetCurrentEntryContent: () => {
+                                const ptr = this.module.getPointer(walker.GetCurrentEntryContent());
+                                if (ptr === 0) return undefined;
+
+                                return this.module.HEAPU8.subarray(ptr, ptr + walker.GetCurrentEntrySize()).slice();
+                            },
+                        },
+                        walker
+                    )
+                )
+            );
+        } finally {
+            this.module.destroy(walker);
+        }
     }
 
     private copyIn(data: Uint8Array): VoidPtr {

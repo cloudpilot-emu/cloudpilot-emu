@@ -1,3 +1,7 @@
+# Next version
+
+-   Installation of databases from zip archives.
+
 # 1.5.6
 
 -   Support Handera 330.
