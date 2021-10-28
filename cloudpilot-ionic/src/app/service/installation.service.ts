@@ -5,7 +5,6 @@ import { DbInstallResult } from '../helper/Cloudpilot';
 import { EmulationService } from './emulation.service';
 import { FileDescriptor } from './file.service';
 import { Injectable } from '@angular/core';
-import { JobQueue } from './../helper/JobQueue';
 import { SnapshotService } from './snapshot.service';
 import { ZipfileWalkerState } from '../../../../src';
 import { concatFilenames } from '../helper/filename';
@@ -62,8 +61,6 @@ class InstallationContext {
             }
         }
 
-        await this.errorMessageQueue.waitUntilEmpty();
-
         return [this.filesSuccess, this.filesRequireReset, this.filesFail];
     }
 
@@ -85,7 +82,7 @@ class InstallationContext {
 
             default:
                 this.filesFail.push(name);
-                this.errorMessageQueue.push(() => this.reportError(name, code));
+                await this.reportError(name, code);
 
                 break;
         }
@@ -165,7 +162,6 @@ class InstallationContext {
     private filesSuccess: Array<string> = [];
     private filesFail: Array<string> = [];
     private filesRequireReset: Array<string> = [];
-    private errorMessageQueue = new JobQueue();
 
     private sizeInstalledSinceLastsnapshot = 0;
     private skipErrors = false;
