@@ -1,18 +1,159 @@
+import { AlertController, LoadingController } from '@ionic/angular';
+
 import { AlertService } from './alert.service';
 import { DbInstallResult } from '../helper/Cloudpilot';
 import { EmulationService } from './emulation.service';
-import { EmulationStateService } from './emulation-state.service';
 import { FileDescriptor } from './file.service';
 import { Injectable } from '@angular/core';
-import { LoadingController } from '@ionic/angular';
+import { JobQueue } from './../helper/JobQueue';
 import { SnapshotService } from './snapshot.service';
 import { ZipfileWalkerState } from '../../../../src';
 import { concatFilenames } from '../helper/filename';
 
 const ZIP_SIZE_LIMIT = 32 * 1024 * 1024;
+const SNAPSHOT_LIMIT = 4 * 1024 * 1024;
 
 function isInstallable(filename: string) {
     return /\.(prc|pdb|pqa)$/i.test(filename);
+}
+
+function describeError(code: DbInstallResult): string {
+    switch (code) {
+        case DbInstallResult.failedCouldNotOverwrite:
+            return 'database exists on device and could not be overwritten';
+
+        case DbInstallResult.failureDbIsCorrupt:
+            return 'database file is corrupt';
+
+        case DbInstallResult.failureDbIsOpen:
+            return 'database is open on device';
+
+        case DbInstallResult.failureInternal:
+            return 'internal PalmOS error';
+
+        case DbInstallResult.failureNotEnoughMemory:
+            return 'not enough memory on device';
+
+        default:
+            return 'unknown reason';
+    }
+}
+
+class InstallationContext {
+    constructor(
+        private emulationService: EmulationService,
+        private alertController: AlertController,
+        private snapshotService: SnapshotService,
+        private files: Array<FileDescriptor>
+    ) {}
+
+    async run(): Promise<[Array<string>, Array<string>, Array<string>]> {
+        for (const file of this.files) {
+            if (/\.zip/i.test(file.name) && file.content.length < ZIP_SIZE_LIMIT) {
+                try {
+                    await this.installZip(file);
+                } catch (err) {
+                    this.filesFail.push(file.name);
+                }
+            } else if (isInstallable(file.name)) {
+                await this.installOne(file.name, file.content);
+            } else {
+                this.filesFail.push(file.name);
+            }
+        }
+
+        await this.errorMessageQueue.isClear();
+
+        return [this.filesSuccess, this.filesRequireReset, this.filesFail];
+    }
+
+    private async installOne(name: string, content: Uint8Array): Promise<void> {
+        const cloudpilot = await this.emulationService.cloudpilot;
+        const code = await cloudpilot.installDb(content);
+
+        switch (code) {
+            case DbInstallResult.needsReboot:
+                this.filesRequireReset.push(name);
+                this.filesSuccess.push(name);
+                this.sizeInstalledSinceLastsnapshot += content.length;
+                break;
+
+            case DbInstallResult.success:
+                this.filesSuccess.push(name);
+                this.sizeInstalledSinceLastsnapshot += content.length;
+                break;
+
+            default:
+                this.filesFail.push(name);
+                this.errorMessageQueue.push(() => this.reportError(name, code));
+
+                break;
+        }
+
+        if (this.sizeInstalledSinceLastsnapshot > SNAPSHOT_LIMIT) {
+            this.snapshotService.triggerSnapshot();
+            this.sizeInstalledSinceLastsnapshot = 0;
+        }
+
+        await new Promise((r) => setTimeout(r, 0));
+    }
+
+    private async installZip(file: FileDescriptor): Promise<void> {
+        const cloudpilot = await this.emulationService.cloudpilot;
+
+        await cloudpilot.withZipfileWalker(file.content, async (walker) => {
+            let installed = 0;
+
+            while (walker.GetState() === ZipfileWalkerState.open) {
+                const name = walker.GetCurrentEntryName().replace(/^.*\//, '');
+
+                if (!isInstallable(walker.GetCurrentEntryName())) {
+                    walker.Next();
+                    continue;
+                }
+                const content = walker.GetCurrentEntryContent();
+                if (content) {
+                    await this.installOne(name, content);
+                    installed++;
+                } else {
+                    this.filesFail.push(name);
+                }
+
+                walker.Next();
+            }
+
+            if (installed === 0) throw new Error('no installable files in archive');
+        });
+    }
+
+    private reportError(file: string, code: DbInstallResult): Promise<void> {
+        return new Promise((resolve) => {
+            const alert = this.alertController.create({
+                header: 'Installation failed',
+                backdropDismiss: false,
+                cssClass: 'on-top',
+                message: `Could not install ${file}: ${describeError(code)}.`,
+                buttons: [
+                    {
+                        text: 'Close',
+                        role: 'cancel',
+                        handler: () => {
+                            this.alertController.dismiss();
+                            resolve();
+                        },
+                    },
+                ],
+            });
+
+            alert.then((a) => a.present());
+        });
+    }
+
+    private filesSuccess: Array<string> = [];
+    private filesFail: Array<string> = [];
+    private filesRequireReset: Array<string> = [];
+    private errorMessageQueue = new JobQueue();
+    private sizeInstalledSinceLastsnapshot = 0;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -21,8 +162,8 @@ export class InstallationService {
         private emulationService: EmulationService,
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
-        private emulationStateService: EmulationStateService,
-        private alertService: AlertService
+        private alertService: AlertService,
+        private alertController: AlertController
     ) {}
 
     async installFiles(files: Array<FileDescriptor>): Promise<void> {
@@ -34,67 +175,18 @@ export class InstallationService {
         await this.emulationService.pause();
         await this.snapshotService.waitForPendingSnapshot();
 
-        const cloudpilot = await this.emulationService.cloudpilot;
-
-        const filesSuccess: Array<string> = [];
-        const filesFail: Array<string> = [];
-        const filesRequireReset: Array<string> = [];
-
-        const installOne = async (name: string, content: Uint8Array) => {
-            switch (await cloudpilot.installDb(content)) {
-                case DbInstallResult.failure:
-                    filesFail.push(name);
-                    break;
-
-                case DbInstallResult.needsReboot:
-                    filesRequireReset.push(name);
-                    filesSuccess.push(name);
-                    break;
-
-                case DbInstallResult.success:
-                    filesSuccess.push(name);
-                    break;
-            }
-
-            await new Promise((r) => setTimeout(r, 0));
-        };
+        let filesSuccess: Array<string> = [];
+        let filesFail: Array<string> = [];
+        let filesRequireReset: Array<string> = [];
 
         try {
-            for (const file of files) {
-                if (/\.zip/i.test(file.name) && file.content.length < ZIP_SIZE_LIMIT) {
-                    try {
-                        await cloudpilot.withZipfileWalker(file.content, async (walker) => {
-                            let installed = 0;
-
-                            while (walker.GetState() === ZipfileWalkerState.open) {
-                                const name = walker.GetCurrentEntryName().replace(/^.*\//, '');
-
-                                if (!isInstallable(walker.GetCurrentEntryName())) {
-                                    walker.Next();
-                                    continue;
-                                }
-                                const content = walker.GetCurrentEntryContent();
-                                if (content) {
-                                    await installOne(name, content);
-                                    installed++;
-                                } else {
-                                    filesFail.push(name);
-                                }
-
-                                walker.Next();
-                            }
-
-                            if (installed === 0) throw new Error('no installable files in archive');
-                        });
-                    } catch (err) {
-                        filesFail.push(file.name);
-                    }
-                } else if (isInstallable(file.name)) {
-                    await installOne(file.name, file.content);
-                } else {
-                    filesFail.push(file.name);
-                }
-            }
+            const installationContext = new InstallationContext(
+                this.emulationService,
+                this.alertController,
+                this.snapshotService,
+                files
+            );
+            [filesSuccess, filesRequireReset, filesFail] = await installationContext.run();
         } finally {
             loader.dismiss();
 

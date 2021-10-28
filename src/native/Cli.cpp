@@ -37,20 +37,38 @@ namespace {
     mutex dispatchMutex;
     condition_variable cvExecuteTask;
 
-    void InstallOne(size_t len, uint8* buffer) {
-        switch (DbInstaller::Install(len, buffer)) {
-            case DbInstaller::Result::needsReboot:
-                cout << "installation successful; device requires reset" << endl << flush;
-                break;
-
+    string translateInstallResult(DbInstaller::Result result) {
+        switch (result) {
             case DbInstaller::Result::success:
-                cout << "installation successful" << endl << flush;
-                break;
+                return "installation successful";
+
+            case DbInstaller::Result::needsReboot:
+                return "installation successful; device requires reset";
+
+            case DbInstaller::Result::failureNotEnoughMemory:
+                return "installation failed: not enough memory";
+
+            case DbInstaller::Result::failureInternal:
+                return "installation failed: internal error in PalmOS";
+
+            case DbInstaller::Result::failureDbIsOpen:
+                return "installation failed: DB is open";
+
+            case DbInstaller::Result::failureDbIsCorrupt:
+                return "installation failed: database file corrup";
+
+            case DbInstaller::Result::failedCouldNotOverwrite:
+                return "installation failed: could not overwrite existing DB";
 
             default:
-                cout << "installation failed" << endl << flush;
-                break;
+                return "installation failed for unknown reason";
         }
+    }
+
+    void InstallOne(size_t len, uint8* buffer) {
+        DbInstaller::Result installationResult = DbInstaller::Install(len, buffer);
+
+        cout << translateInstallResult(installationResult) << endl << flush;
     }
 
     void InstallFile(string path) {

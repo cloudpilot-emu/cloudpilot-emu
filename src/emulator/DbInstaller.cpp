@@ -8,14 +8,35 @@
 #include "Marshal.h"
 #include "ROMStubs.h"
 
+namespace {
+    DbInstaller::Result mapErr(Err err) {
+        switch (err) {
+            case 0:
+                return DbInstaller::Result::success;
+
+            case memErrNotEnoughSpace:
+                return DbInstaller::Result::failureNotEnoughMemory;
+
+            case dmErrCorruptDatabase:
+                return DbInstaller::Result::failureDbIsCorrupt;
+
+            case dmErrDatabaseOpen:
+                return DbInstaller::Result::failureDbIsOpen;
+
+            default:
+                return DbInstaller::Result::failureUnknownReasoon;
+        }
+    }
+}  // namespace
+
 DbInstaller::Result DbInstaller::Install(size_t bufferSize, uint8* buffer) {
     if (gSystemState.OSMajorVersion() < 3) {
         return EmFileImport::LoadPalmFile(buffer, bufferSize, kMethodHomebrew) == kError_NoError
                    ? Result::success
-                   : Result::failure;
+                   : Result::failureUnknownReasoon;
     }
 
-    if (gSession->IsCpuStopped()) return Result::failure;
+    if (gSession->IsCpuStopped()) return Result::failureInternal;
 
     size_t bytesRead = 0;
     bool failedToOverwrite = false;
@@ -72,9 +93,10 @@ DbInstaller::Result DbInstaller::Install(size_t bufferSize, uint8* buffer) {
     LocalID localId;
     Boolean needsReset = false;
 
-    if (ExgDBRead(readProcP, deleteProcP, 0, &localId, 0, &needsReset, true) == 0 &&
-        !failedToOverwrite)
-        return needsReset ? Result::needsReboot : Result::success;
+    Err err = ExgDBRead(readProcP, deleteProcP, 0, &localId, 0, &needsReset, true);
 
-    return Result::failure;
+    if (err == 0 && !failedToOverwrite) return needsReset ? Result::needsReboot : Result::success;
+    if (failedToOverwrite) return Result::failedCouldNotOverwrite;
+
+    return mapErr(err);
 }

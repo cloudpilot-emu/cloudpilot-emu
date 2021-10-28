@@ -16,7 +16,12 @@ export const enum PalmButton {
 }
 
 export const enum DbInstallResult {
-    failure = -1,
+    failedCouldNotOverwrite = -6,
+    failureInternal = -5,
+    failureDbIsCorrupt = -4,
+    failureDbIsOpen = -3,
+    failureNotEnoughMemory = -2,
+    failureUnknownReasoon = -1,
     success = 1,
     needsReboot = 2,
 }
