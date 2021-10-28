@@ -62,7 +62,7 @@ class InstallationContext {
             }
         }
 
-        await this.errorMessageQueue.isClear();
+        await this.errorMessageQueue.waitUntilEmpty();
 
         return [this.filesSuccess, this.filesRequireReset, this.filesFail];
     }

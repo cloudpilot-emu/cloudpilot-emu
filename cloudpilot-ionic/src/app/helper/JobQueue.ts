@@ -9,7 +9,7 @@ export class JobQueue {
         });
     }
 
-    isClear(): Promise<void> {
+    waitUntilEmpty(): Promise<void> {
         return this.state;
     }
 
