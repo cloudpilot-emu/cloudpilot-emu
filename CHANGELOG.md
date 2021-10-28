@@ -1,6 +1,8 @@
 # Next version
 
 -   Installation of databases from zip archives.
+-   Show reason for failed installations.
+-   Improve snapshot performance on Chrome.
 
 # 1.5.6
 
