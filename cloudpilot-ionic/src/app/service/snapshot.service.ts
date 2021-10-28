@@ -10,7 +10,17 @@ import { Session } from './../model/Session';
 import { SnapshotStatistics } from './../model/SnapshotStatistics';
 import { compressPage } from './storage/util';
 
-const TIMEOUT_MSEC = 5000;
+declare global {
+    interface IDBDatabase {
+        transaction(
+            storeNames: string | string[],
+            mode?: IDBTransactionMode,
+            options?: { durability?: 'default' | 'strict' | 'relaxed' }
+        ): IDBTransaction;
+    }
+}
+
+const TIMEOUT_MSEC = 6000;
 const MAX_CONSECUTIVE_ERRORS = 3;
 
 const E_TIMEOUT = new Error('transaction timeout');
@@ -99,7 +109,9 @@ export class SnapshotService {
     }
 
     private async triggerSnapshotOnce(): Promise<void> {
-        const tx = this.db.transaction([OBJECT_STORE_MEMORY, OBJECT_STORE_STATE], 'readwrite');
+        const tx = this.db.transaction([OBJECT_STORE_MEMORY, OBJECT_STORE_STATE], 'readwrite', {
+            durability: 'relaxed',
+        });
 
         await this.storageService.acquireLock(tx.objectStore(OBJECT_STORE_STATE), -1);
 
