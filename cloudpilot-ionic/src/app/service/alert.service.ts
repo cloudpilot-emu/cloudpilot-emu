@@ -90,6 +90,7 @@ export class AlertService {
                     : []),
                 { text: 'Reload', handler: () => window.location.reload() },
             ],
+            cssClass: 'fatal-error',
         });
 
         await alert.present();

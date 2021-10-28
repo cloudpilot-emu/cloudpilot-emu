@@ -25,6 +25,15 @@
 @import "~@ionic/angular/css/text-transformation.css";
 @import "~@ionic/angular/css/flex-utils.css";
 
-.on-top {
+.installation-error {
     z-index: 100000 !important;
+}
+
+.fatal-error {
+    z-index: 200000 !important;
+}
+
+
+.alert-checkbox-no-border .alert-checkbox-group {
+    border: none !important;
 }

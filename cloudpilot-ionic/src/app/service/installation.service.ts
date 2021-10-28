@@ -127,11 +127,13 @@ class InstallationContext {
     }
 
     private reportError(file: string, code: DbInstallResult): Promise<void> {
+        if (this.skipErrors) return Promise.resolve();
+
         return new Promise((resolve) => {
             const alert = this.alertController.create({
                 header: 'Installation failed',
                 backdropDismiss: false,
-                cssClass: 'on-top',
+                cssClass: 'alert-checkbox-no-border installation-error',
                 message: `Could not install ${file}: ${describeError(code)}.`,
                 buttons: [
                     {
@@ -143,6 +145,17 @@ class InstallationContext {
                         },
                     },
                 ],
+                inputs:
+                    this.filesFail.length >= 3
+                        ? [
+                              {
+                                  type: 'checkbox',
+                                  label: 'Skip any remaining errors',
+                                  checked: false,
+                                  handler: (inpt) => (this.skipErrors = inpt.checked === true),
+                              },
+                          ]
+                        : [],
             });
 
             alert.then((a) => a.present());
@@ -153,7 +166,9 @@ class InstallationContext {
     private filesFail: Array<string> = [];
     private filesRequireReset: Array<string> = [];
     private errorMessageQueue = new JobQueue();
+
     private sizeInstalledSinceLastsnapshot = 0;
+    private skipErrors = false;
 }
 
 @Injectable({ providedIn: 'root' })
