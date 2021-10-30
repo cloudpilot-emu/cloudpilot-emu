@@ -128,7 +128,7 @@ class InstallationContext {
 
         return new Promise((resolve) => {
             const alert = this.alertController.create({
-                header: 'Installation failed',
+                header: 'Item failed to install',
                 backdropDismiss: false,
                 cssClass: 'alert-checkbox-no-border installation-error',
                 message: `Could not install ${file}: ${describeError(code)}.`,
