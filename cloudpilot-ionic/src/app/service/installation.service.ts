@@ -38,6 +38,19 @@ function describeError(code: DbInstallResult): string {
     }
 }
 
+function getDatabaseName(data: Uint8Array): string {
+    if (data.length < 32) throw new Error('not a database');
+
+    let iTerminator: number;
+    for (iTerminator = 0; iTerminator < 32; iTerminator++) {
+        if (data[iTerminator] === 0) break;
+    }
+
+    if (iTerminator > 31) throw new Error('not a database');
+
+    return new TextDecoder('ascii').decode(data.subarray(0, iTerminator));
+}
+
 class InstallationContext {
     constructor(
         private emulationService: EmulationService,
@@ -87,6 +100,21 @@ class InstallationContext {
                 break;
         }
 
+        if (code === DbInstallResult.needsReboot || code === DbInstallResult.success) {
+            try {
+                const dbName = getDatabaseName(content);
+
+                if (this.installedDatabases.has(dbName)) {
+                    await this.errorDialog(
+                        'Duplicate item',
+                        `${name} overwrites previously installed database ${this.installedDatabases.get(dbName)}`
+                    );
+                }
+
+                this.installedDatabases.set(dbName, name);
+            } catch (e) {}
+        }
+
         if (this.sizeInstalledSinceLastsnapshot > SNAPSHOT_LIMIT) {
             this.snapshotService.triggerSnapshot();
             this.sizeInstalledSinceLastsnapshot = 0;
@@ -124,14 +152,18 @@ class InstallationContext {
     }
 
     private reportError(file: string, code: DbInstallResult): Promise<void> {
+        return this.errorDialog('Item failed to install', `Could not install ${file}: ${describeError(code)}.`);
+    }
+
+    private errorDialog(header: string, message: string): Promise<void> {
         if (this.skipErrors) return Promise.resolve();
 
         return new Promise((resolve) => {
             const alert = this.alertController.create({
-                header: 'Item failed to install',
+                header,
                 backdropDismiss: false,
                 cssClass: 'alert-checkbox-no-border installation-error',
-                message: `Could not install ${file}: ${describeError(code)}.`,
+                message,
                 buttons: [
                     {
                         text: 'Close',
@@ -143,7 +175,7 @@ class InstallationContext {
                     },
                 ],
                 inputs:
-                    this.filesFail.length >= 3
+                    ++this.errors >= 3
                         ? [
                               {
                                   type: 'checkbox',
@@ -165,6 +197,9 @@ class InstallationContext {
 
     private sizeInstalledSinceLastsnapshot = 0;
     private skipErrors = false;
+    private errors = 0;
+
+    private installedDatabases = new Map<string, string>();
 }
 
 @Injectable({ providedIn: 'root' })
