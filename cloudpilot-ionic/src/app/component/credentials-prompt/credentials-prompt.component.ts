@@ -20,8 +20,8 @@ export class CredentialsPromptComponent implements OnInit {
     }
 
     saveAndContinue(): void {
-        this.kvs.kvs.proxyCredentials = {
-            ...this.kvs.kvs.proxyCredentials,
+        this.kvs.kvs.credentials = {
+            ...this.kvs.kvs.credentials,
             [this.origin]: {
                 username: this.formGroup.get('username')?.value ?? '',
                 password: this.formGroup.get('password')?.value ?? '',
@@ -32,7 +32,7 @@ export class CredentialsPromptComponent implements OnInit {
     }
 
     private createFormGroup(): void {
-        const auth = this.kvs.kvs.proxyCredentials[this.origin];
+        const auth = this.kvs.kvs.credentials[this.origin];
 
         this.formGroup = new FormGroup({
             username: new FormControl(auth?.username ?? ''),

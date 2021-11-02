@@ -8,7 +8,7 @@ import {
 } from './storage/constants';
 import { Injectable, NgZone } from '@angular/core';
 import { complete, compressPage } from './storage/util';
-import { migrate0to1, migrate1to2, migrate2to3 } from './storage/migrations';
+import { migrate0to1, migrate1to2, migrate2to4, migrate4to5 } from './storage/migrations';
 
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
@@ -391,7 +391,11 @@ export class StorageService {
                     // v3 introduced u32 view in snapshots
 
                     if (e.oldVersion < 4) {
-                        await migrate2to3(request.result, request.transaction);
+                        await migrate2to4(request.result, request.transaction);
+                    }
+
+                    if (e.oldVersion < 5) {
+                        await migrate4to5(request.result, request.transaction);
                     }
                 };
             });

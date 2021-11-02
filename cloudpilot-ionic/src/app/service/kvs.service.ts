@@ -10,7 +10,7 @@ const DEFAULTS: Kvs = {
     clipboardIntegration: false,
     networkRedirection: false,
     proxyServer: '',
-    proxyCredentials: {},
+    credentials: {},
     runHidden: false,
     autoLockUI: false,
 };

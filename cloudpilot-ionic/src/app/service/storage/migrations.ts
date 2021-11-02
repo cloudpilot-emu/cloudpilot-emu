@@ -29,7 +29,7 @@ export function migrate1to2(db: IDBDatabase, tx: IDBTransaction | null): void {
     db.createObjectStore(OBJECT_STORE_KVS);
 }
 
-export async function migrate2to3(db: IDBDatabase, tx: IDBTransaction | null): Promise<void> {
+export async function migrate2to4(db: IDBDatabase, tx: IDBTransaction | null): Promise<void> {
     interface Session {
         device: string;
         ram: number;
@@ -77,4 +77,22 @@ export async function migrate2to3(db: IDBDatabase, tx: IDBTransaction | null): P
 
         cursorRequest.onerror = (e) => reject(e);
     });
+}
+
+export async function migrate4to5(db: IDBDatabase, tx: IDBTransaction | null): Promise<void> {
+    if (!tx) throw new Error('no version change transaction!');
+
+    const kvsStore = tx.objectStore(OBJECT_STORE_KVS);
+
+    const credentials: unknown | undefined = await new Promise((resolve, reject) => {
+        const request = kvsStore.get('proxyCredentials');
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(new Error(request.error?.message));
+    });
+
+    if (credentials) {
+        kvsStore.put(credentials, 'credentials');
+        kvsStore.delete('proxyCredentials');
+    }
 }

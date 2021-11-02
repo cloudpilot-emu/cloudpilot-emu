@@ -86,7 +86,7 @@ export class ProxyService {
                     loaderTimeout = window.setTimeout(() => loader!.present(), loaderDelay);
                 }
 
-                const auth = this.kvsService.kvs.proxyCredentials[urlParsed.origin];
+                const auth = this.kvsService.kvs.credentials[urlParsed.origin];
 
                 const abortContrtoller = new AbortController();
                 const fetchTimeout = setTimeout(() => abortContrtoller.abort(), HANDSHAKE_TIMEOUT);

@@ -13,7 +13,7 @@ export interface Kvs {
     clipboardIntegration: boolean;
     networkRedirection: boolean;
     proxyServer: string;
-    proxyCredentials: Record<string, Credentials>;
+    credentials: Record<string, Credentials>;
     runHidden: boolean;
     autoLockUI: boolean;
 }
