@@ -18,6 +18,7 @@ const enum fields {
     proxyServer = 'proxyServer',
     runHidden = 'runHidden',
     autoLockUI = 'autoLockUI',
+    enableRemoteInstall = 'enableRemoteInstall',
 }
 @Component({
     selector: 'app-settings',
@@ -73,6 +74,7 @@ export class SettingsPage implements OnInit {
             proxyServer: this.formGroup.get(fields.proxyServer)?.value,
             runHidden: this.formGroup.get(fields.runHidden)?.value,
             autoLockUI: this.formGroup.get(fields.autoLockUI)?.value,
+            enableRemoteInstall: this.formGroup.get(fields.enableRemoteInstall)?.value,
         });
 
         if (this.mutexReleasePromise) {
@@ -126,6 +128,7 @@ export class SettingsPage implements OnInit {
                 validators: [validateProxyAddress],
             }),
             [fields.autoLockUI]: new FormControl(this.kvsService.kvs.autoLockUI),
+            [fields.enableRemoteInstall]: new FormControl(this.kvsService.kvs.enableRemoteInstall),
         });
     }
 

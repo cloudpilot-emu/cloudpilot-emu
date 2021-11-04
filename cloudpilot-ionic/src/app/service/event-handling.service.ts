@@ -2,6 +2,7 @@ import { Injectable, NgZone } from '@angular/core';
 
 import { CanvasDisplayService } from './canvas-display.service';
 import { EmulationService } from './emulation.service';
+import { ModalWatcherService } from './modal-watcher.service';
 import { PalmButton } from '../helper/Cloudpilot';
 
 const enum Area {
@@ -27,6 +28,7 @@ export class EventHandlingService {
     constructor(
         private emulationService: EmulationService,
         private canvasDisplayService: CanvasDisplayService,
+        private modalWatcherService: ModalWatcherService,
         private ngZone: NgZone
     ) {}
 
@@ -194,7 +196,7 @@ export class EventHandlingService {
     };
 
     private handleKeyDown = (e: KeyboardEvent): void => {
-        if (this.emulationService.isSuspended()) return;
+        if (this.emulationService.isSuspended() || this.modalWatcherService.isModalActive()) return;
 
         if (this.isToggleGameMode(e)) {
             e.preventDefault();
@@ -220,7 +222,7 @@ export class EventHandlingService {
     };
 
     private handleKeyUp = (e: KeyboardEvent): void => {
-        if (this.emulationService.isSuspended()) return;
+        if (this.emulationService.isSuspended() || this.modalWatcherService.isModalActive()) return;
 
         const button = this.buttonFromEvent(e);
         if (button !== undefined) {

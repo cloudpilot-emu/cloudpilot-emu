@@ -13,6 +13,7 @@ const DEFAULTS: Kvs = {
     credentials: {},
     runHidden: false,
     autoLockUI: false,
+    enableRemoteInstall: false,
 };
 
 @Injectable({

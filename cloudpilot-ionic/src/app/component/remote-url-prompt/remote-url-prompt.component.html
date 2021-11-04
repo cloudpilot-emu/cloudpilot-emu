@@ -1,0 +1,35 @@
+<ion-header translucent>
+  <ion-toolbar>
+    <ion-title>Enter download URL</ion-title>
+
+    <ion-buttons slot="primary">
+      <ion-button (click)="continue()" [disabled]="formGroup.invalid">OK</ion-button>
+    </ion-buttons>
+
+    <ion-buttons slot="secondary">
+      <ion-button (click)="onCancel()">Cancel</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+
+<ion-content fullscreen>
+  <form [formGroup]="formGroup" (keydown)="formKeyDown($event)">
+    <p>
+      Please enter the URL from which to download:
+    </p>
+
+    <ion-item lines="inset">
+      <ion-label position="stacked">URL</ion-label>
+      <ion-input placeholder="Enter URL" formControlName="url"></ion-input>
+    </ion-item>
+
+    <p *ngIf="isMixedContent" class="error">
+      ERROR: URL must be served via HTTPS.
+    </p>
+
+    <p>
+      Note that the remote server needs to support the CORS protocol.
+    </p>
+  </form>
+</ion-content>

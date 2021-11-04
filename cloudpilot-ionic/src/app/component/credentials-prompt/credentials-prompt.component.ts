@@ -40,8 +40,10 @@ export class CredentialsPromptComponent implements OnInit {
         });
     }
 
+    @Input()
     onContinue: () => void = () => undefined;
 
+    @Input()
     onCancel: () => void = () => undefined;
 
     @Input()

@@ -16,4 +16,5 @@ export interface Kvs {
     credentials: Record<string, Credentials>;
     runHidden: boolean;
     autoLockUI: boolean;
+    enableRemoteInstall: boolean;
 }

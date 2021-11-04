@@ -1,12 +1,15 @@
+import { ActionSheetController, LoadingController, ModalController } from '@ionic/angular';
 import { metadataForSession, serializeSessionImage } from '../helper/sessionFile';
 
+import { AlertService } from 'src/app/service/alert.service';
 import { Cloudpilot } from '../helper/Cloudpilot';
-import { EmulationService } from './emulation.service';
 import { Injectable } from '@angular/core';
-import { LoadingController } from '@ionic/angular';
+import { KvsService } from './kvs.service';
+import { RemoteUrlPromptComponent } from './../component/remote-url-prompt/remote-url-prompt.component';
 import { Session } from './../model/Session';
 import { SessionImage } from './../model/SessionImage';
 import { StorageService } from './storage.service';
+import Url from 'url-parse';
 import { filenameForSession } from '../helper/filename';
 
 // tslint:disable: no-bitwise
@@ -20,16 +23,23 @@ export interface FileDescriptor {
     providedIn: 'root',
 })
 export class FileService {
-    constructor(private storageService: StorageService, private loadingController: LoadingController) {}
+    constructor(
+        private storageService: StorageService,
+        private loadingController: LoadingController,
+        private actionSheetController: ActionSheetController,
+        private kvsService: KvsService,
+        private modalController: ModalController,
+        private alertService: AlertService
+    ) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {
-        return this.openFilesImpl(false, (files) => {
+        this.openFilesImpl(false, (files) => {
             if (files.length > 0) handler(files[0]);
         });
     }
 
     openFiles(handler: (files: Array<FileDescriptor>) => void): void {
-        return this.openFilesImpl(true, handler);
+        this.openFilesImpl(true, handler);
     }
 
     async saveSession(session: Session): Promise<void> {
@@ -90,7 +100,84 @@ export class FileService {
         a.click();
     }
 
-    private openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): void {
+    private async openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): Promise<void> {
+        if (this.kvsService.kvs.enableRemoteInstall) {
+            const sheet = await this.actionSheetController.create({
+                header: 'From where do you want to install?',
+                buttons: [
+                    {
+                        text: 'Local files',
+                        handler: () => this.openFilesLocal(multiple, handler),
+                    },
+                    {
+                        text: 'Remote server',
+                        handler: () => this.openFileRemote(handler),
+                    },
+                ],
+            });
+
+            sheet.present();
+        } else {
+            this.openFilesLocal(multiple, handler);
+        }
+    }
+
+    private async openFileRemote(handler: (files: Array<FileDescriptor>) => void): Promise<void> {
+        let url!: string;
+
+        try {
+            url = await new Promise<string>((resolve, reject) =>
+                this.modalController
+                    .create({
+                        component: RemoteUrlPromptComponent,
+                        backdropDismiss: false,
+                        componentProps: {
+                            onContinue: resolve,
+                            onCancel: reject,
+                        },
+                    })
+                    .then((modal) => modal.present())
+            );
+        } catch (e) {
+            return;
+        } finally {
+            this.modalController.dismiss();
+        }
+
+        let urlParsed!: Url;
+        try {
+            urlParsed = new Url(url);
+        } catch (e) {
+            await this.alertService.errorMessage(`Invalid URL: ${url}`);
+
+            return;
+        }
+
+        const loader = await this.loadingController.create();
+        await loader.present();
+
+        let fileContent: Uint8Array;
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error('request failed');
+            }
+
+            fileContent = new Uint8Array(await response.arrayBuffer());
+
+            loader.dismiss();
+        } catch (e) {
+            loader.dismiss();
+            await this.alertService.errorMessage(`Download from ${url} failed.`);
+
+            return;
+        }
+
+        handler([{ name: urlParsed.pathname.replace(/.*\//, ''), content: fileContent }]);
+    }
+
+    private openFilesLocal(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): void {
         if (this.input) {
             document.body.removeChild(this.input);
         }
