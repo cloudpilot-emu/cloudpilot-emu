@@ -12,15 +12,14 @@
 
 # WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
 
+INCLUDE_EXTRA = -I/opt/homebrew/include
+
 CFLAGS_NATIVE = \
-	-O0 -fsanitize=address,undefined -fsanitize-ignorelist=src/clang_blacklist.txt -g \
-	$(shell sdl2-config --cflags) \
-	-I/usr/local/opt/readline/include
+	-O2 -g \
+	$(shell sdl2-config --cflags)
 
 # CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
 LDFLAGS_NATIVE =  \
-	-fsanitize=address,undefined -fsanitize-ignorelist=src/clang_blacklist.txt \
-	$(shell sdl2-config --libs) -lSDL2_image \
-	-L/usr/local/opt/readline/lib \
-	-lreadline -lboost_coroutine
+	$(shell sdl2-config --libs) -lSDL2_image -lreadline -lboost_coroutine -lboost_json \
+	-L/opt/homebrew/lib
