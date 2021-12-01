@@ -20,6 +20,8 @@ CFLAGS_NATIVE ?= \
 
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
+INCLUDE_EXTRA ?=
+
 LDFLAGS_NATIVE ?=  \
 	$(shell sdl2-config --libs) -lSDL2_image \
 	-lreadline -lboost_coroutine -lboost_json
@@ -90,7 +92,8 @@ INCLUDE = \
 	-I./emulator \
 	-I./zip \
 	-I./nanopb \
-	-I./proto
+	-I./proto \
+	$(INCLUDE_EXTRA)
 
 SOURCE_C = \
 	emulator/uae/cpudefs.c \

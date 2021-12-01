@@ -3,6 +3,7 @@ import { metadataForSession, serializeSessionImage } from '../helper/sessionFile
 
 import { AlertService } from 'src/app/service/alert.service';
 import { Cloudpilot } from '../helper/Cloudpilot';
+import { FetchService } from './fetch.service';
 import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
 import { RemoteUrlPromptComponent } from './../component/remote-url-prompt/remote-url-prompt.component';
@@ -29,7 +30,8 @@ export class FileService {
         private actionSheetController: ActionSheetController,
         private kvsService: KvsService,
         private modalController: ModalController,
-        private alertService: AlertService
+        private alertService: AlertService,
+        private fetchService: FetchService
     ) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {
@@ -153,28 +155,24 @@ export class FileService {
             return;
         }
 
-        const loader = await this.loadingController.create();
-        await loader.present();
-
-        let fileContent: Uint8Array;
-
         try {
-            const response = await fetch(url);
+            const response = await this.fetchService.fetch(url);
+
             if (!response.ok) {
                 throw new Error('request failed');
             }
 
-            fileContent = new Uint8Array(await response.arrayBuffer());
-
-            loader.dismiss();
-        } catch (e) {
-            loader.dismiss();
-            await this.alertService.errorMessage(`Download from ${url} failed.`);
+            handler([
+                {
+                    name: urlParsed.pathname.replace(/.*\//, ''),
+                    content: new Uint8Array(await response.arrayBuffer()),
+                },
+            ]);
 
             return;
+        } catch (e) {
+            await this.alertService.errorMessage(`Download from ${url} failed.`);
         }
-
-        handler([{ name: urlParsed.pathname.replace(/.*\//, ''), content: fileContent }]);
     }
 
     private openFilesLocal(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): void {
