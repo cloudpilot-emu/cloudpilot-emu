@@ -22,7 +22,7 @@ export class FetchService {
 
     async fetch(input: RequestInfo, init?: ExtendedRequestInit): Promise<Response> {
         let loaderDelay = init?.loaderDelay;
-        const timeout = typeof init?.timeout === undefined ? DEFAULT_TIMEOUT : init?.timeout;
+        const timeout = init?.timeout === undefined ? DEFAULT_TIMEOUT : init?.timeout;
         const urlParsed = new Url(typeof input === 'string' ? input : input.url);
 
         let loader: HTMLIonLoadingElement | undefined;
@@ -44,6 +44,7 @@ export class FetchService {
 
                 const response = await fetch(input, {
                     ...this.requestInit(init),
+                    signal: abortContrtoller.signal,
                     headers: {
                         ...(init?.headers || {}),
                         ...(authorizationRequired && auth

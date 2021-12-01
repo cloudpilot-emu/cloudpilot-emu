@@ -80,7 +80,14 @@ def _validateAuth(request: web.Request, authentication=None) -> bool:
         if authHeader is None:
             return False
 
-        return base64.b64decode(authHeader, validate=True).decode('utf8').strip() == authentication
+        pieces = authHeader.split(" ")
+        if len(pieces) != 2:
+            return False
+
+        if pieces[0] != "Basic":
+            return False
+
+        return base64.b64decode(pieces[1], validate=True).decode('utf8').strip() == authentication
     except:
         return False
 

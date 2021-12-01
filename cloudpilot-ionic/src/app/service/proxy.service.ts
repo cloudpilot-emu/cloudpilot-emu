@@ -1,9 +1,8 @@
 import { Cloudpilot, SuspendKind, VoidPtr } from './../helper/Cloudpilot';
 import { Injectable, NgZone } from '@angular/core';
-import { LoadingController, ModalController } from '@ionic/angular';
 
 import { AlertService } from './alert.service';
-import { CredentialsPromptComponent } from './../component/credentials-prompt/credentials-prompt.component';
+import { FetchService } from './fetch.service';
 import { KvsService } from './kvs.service';
 import { Event as Microevent } from 'microevent.ts';
 import { Mutex } from 'async-mutex';
@@ -11,7 +10,6 @@ import { normalizeProxyAddress } from '../helper/proxyAddress';
 import { v4 as uuid } from 'uuid';
 
 const CONNECT_TIMEOUT = 5000;
-const HANDSHAKE_TIMEOUT = 5000;
 const LOADER_GRACE_TIME = 500;
 const VERSION = 3;
 
@@ -31,8 +29,7 @@ export class ProxyService {
         private kvsService: KvsService,
         private alertService: AlertService,
         private ngZone: NgZone,
-        private loadingController: LoadingController,
-        private modalController: ModalController
+        private fetchService: FetchService
     ) {}
 
     initialize(cloudpilot: Cloudpilot) {
@@ -72,93 +69,26 @@ export class ProxyService {
         const url = normalizeProxyAddress(proxyAddress);
         if (!url) return { status: 'failed' };
 
-        const urlParsed = new URL(url);
+        try {
+            const response = await this.fetchService.fetch(`${url}/network-proxy/handshake`, {
+                method: 'POST',
+                loaderDelay,
+            });
 
-        let loader: HTMLIonLoadingElement | undefined;
-        let loaderTimeout: number | undefined;
-        let authorizationRequired = false;
-
-        while (true) {
-            try {
-                if (loaderDelay >= 0 && !loader) {
-                    loader = await this.loadingController.create();
-
-                    loaderTimeout = window.setTimeout(() => loader!.present(), loaderDelay);
-                }
-
-                const auth = this.kvsService.kvs.credentials[urlParsed.origin];
-
-                const abortContrtoller = new AbortController();
-                const fetchTimeout = setTimeout(() => abortContrtoller.abort(), HANDSHAKE_TIMEOUT);
-                const response = await fetch(`${url}/network-proxy/handshake`, {
-                    method: 'POST',
-                    signal: abortContrtoller.signal,
-                    headers:
-                        authorizationRequired && auth
-                            ? { Authorization: btoa(`${auth.username}:${auth.password}`) }
-                            : undefined,
-                });
-
-                clearTimeout(fetchTimeout);
-
-                if (response.status === 401) {
-                    if (!authorizationRequired && auth) {
-                        authorizationRequired = true;
-                        continue;
-                    }
-
-                    if (loader) {
-                        loader.dismiss();
-                        clearTimeout(loaderTimeout);
-
-                        loaderDelay = 0;
-                        loader = undefined;
-                    }
-
-                    authorizationRequired = true;
-
-                    if (await this.authenticate(urlParsed.origin)) continue;
-                    else return { status: 'failed' };
-                }
-
-                if (response.status !== 200) {
-                    return { status: 'failed' };
-                }
-
-                const handshakeResponse: HandshakeResponse = await response.json();
-
-                if (handshakeResponse.version < VERSION || handshakeResponse.compatVersion > VERSION) {
-                    return { status: 'version_mismatch' };
-                }
-
-                return { status: 'success', token: handshakeResponse.token };
-            } catch (e) {
+            if (!response.ok) {
                 return { status: 'failed' };
-            } finally {
-                if (loader) await loader.dismiss();
-                clearTimeout(loaderTimeout);
             }
+
+            const handshakeResponse: HandshakeResponse = await response.json();
+
+            if (handshakeResponse.version < VERSION || handshakeResponse.compatVersion > VERSION) {
+                return { status: 'version_mismatch' };
+            }
+
+            return { status: 'success', token: handshakeResponse.token };
+        } catch (e) {
+            return { status: 'failed' };
         }
-    }
-
-    private async authenticate(origin: string): Promise<boolean> {
-        const confirmed = await new Promise<boolean>((resolve) =>
-            this.modalController
-                .create({
-                    component: CredentialsPromptComponent,
-                    backdropDismiss: false,
-                    componentProps: {
-                        origin,
-                        onContinue: () => resolve(true),
-                        onCancel: () => resolve(false),
-                    },
-                })
-                .then((modal) => modal.present())
-        );
-
-        this.modalController.dismiss();
-
-        return confirmed;
     }
 
     private handleConnect = () =>
