@@ -3,6 +3,9 @@
 -   Installation of databases from zip archives.
 -   Show reason for failed installations.
 -   Improve snapshot performance on Chrome.
+-   Fix basic auth handling in poxy to conform with standard. This version of
+    Cloudpilot requires an updated version of the proxy if basic auth is used
+    to secure the connection.
 
 # 1.5.6
 
