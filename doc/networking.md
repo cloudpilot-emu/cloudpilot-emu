@@ -121,6 +121,21 @@ in order to add an exception.
 Relead the page with the exception in place. The error should be gone, and you should see
 the text "not found" instead.
 
+### Chrome on Linux
+
+Chrome on Linux is a special case, too. On Linux, Chrome manages its own
+certificate store. In order to import the generated certificate you need to open
+the settings and navigate to "Privacy and Security" -> "Security" -> "Manage
+Certificates" -> "Authorities" and click "Import". You need to set the filter to
+"all files" in order to see and import the .cer file. In the dialog that opens,
+select "Trust this certificate for identifying websites".
+
+On order for Chrome for Linux to accept the certificate, you have to answer the
+corresponding question during certificate creation with "YES" (or use the
+`--compat-chrome-linux`) command line option. Not that this will allow for
+easier abuse of the certificate as a CA certificate and should be kept off
+unless required.
+
 ## Start the server
 
 Launch the server with the generated certificate by running

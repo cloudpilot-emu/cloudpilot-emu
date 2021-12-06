@@ -8,6 +8,7 @@ from typing import Any
 import server
 from certificate import generateCertificate
 from connection import serializeIp
+from util import T
 from version import VERSION
 
 
@@ -118,6 +119,10 @@ parserGenerateCert.add_argument(
 
 parserGenerateCert.add_argument("--names", help="certificate names (IPs, hostnames, domains)",
                                 default=None, dest="names")
+
+parserGenerateCert.add_argument("--compat-chrome-linux",
+                                help="Don't restrict usage as a CA cert. This is required for compatibility with Chrome on Linux.",
+                                default=None, dest="enableCA", action="store_true")
 
 parserVersion = subparsers.add_parser(
     "version", help="print server version", description="Print server version and exit.")

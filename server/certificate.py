@@ -10,8 +10,8 @@ from OpenSSL import crypto
 CN_DEFAULT = "cloudpilot-server"
 VALIDITY_YEARS = 1
 BASIC_CONSTRAINTS = b'CA:TRUE,pathlen:0'
-KEY_USAGE = b'serverAuth'
-EXTENDED_KEY_USAGE = b'keyEncipherment,keyAgreement,cRLSign,digitalSignature'
+EXTENDED_KEY_USAGE = b'serverAuth'
+KEY_USAGE = b'keyEncipherment,keyAgreement,cRLSign,digitalSignature'
 
 REGEX_IP = re.compile(
     '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
@@ -94,6 +94,24 @@ def generateCertificate(options):
     if not cn in names:
         names.append(cn)
 
+    enableCA = False
+
+    if options.enableCA == None:
+        print("""Do you want to use the certificate with Chrome on Linux?
+WARNING: This allows the generated certificate to be used as a CA certificate.""")
+
+        choice = "x"
+        while choice.strip() and choice.upper() != "YES" and choice.upper() != "NO":
+            choice = input("Type YES or NO (default is NO): ")
+
+        if choice.upper() == "YES":
+            enableCA = True
+
+        print()
+
+    else:
+        enableCA = options.enableCA
+
     print("generating key and certificate...")
 
     key = crypto.PKey()
@@ -110,8 +128,9 @@ def generateCertificate(options):
                                               [f'IP:{ip}' for ip in ips] + [f'DNS:{name}' for name in names]), "utf8")
                                           )
     extendedKeyUsage = crypto.X509Extension(
-        b'extendedKeyUsage', True, KEY_USAGE)
-    keyUsage = crypto.X509Extension(b'keyUsage', True, EXTENDED_KEY_USAGE)
+        b'extendedKeyUsage', True, EXTENDED_KEY_USAGE)
+    keyUsage = crypto.X509Extension(
+        b'keyUsage', True, KEY_USAGE + (b",keyCertSign" if enableCA else b""))
 
     cert.add_extensions((basicConstraints, keyUsage,
                         extendedKeyUsage, subjectAltName))
