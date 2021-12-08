@@ -1,4 +1,4 @@
-# Next version
+# 1.5.7
 
 -   Catch a rare iOS bug that causes the database to ocassionally come up empty
     on launch.
