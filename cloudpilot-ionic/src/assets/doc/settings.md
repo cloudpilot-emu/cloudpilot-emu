@@ -38,3 +38,10 @@ launches on startup.
 ### Show Statistics
 
 This overlays the grafitti area with a collection of performance statistics.
+
+### Remote Installation sources
+
+Enabling this will allow you to load ROMs, session images and install files
+from remote URLs. Please note that those will have to be served via HTTPS
+(unless you are hosting cloudpilot yourself via HTTP), and the file server
+has to support CORS.
