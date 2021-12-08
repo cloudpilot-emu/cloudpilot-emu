@@ -109,7 +109,8 @@ Double click it, expand the "Trust" section and set "SSL" to "Always trust".
 ### Firefox
 
 Unfortunately, Firefox uses its own certificate store and ignores the store of your
-operating system. If you want to use Cloudpilot networking on Firefox you have to add
+operating system. Importing the certificate into Firefox' store will not worl.
+If you want to use Cloudpilot networking on Firefox you have to add
 a security exception.
 
 The easiest way to do so is to navigate to the proxy server in your browser after starting
@@ -130,11 +131,17 @@ Certificates" -> "Authorities" and click "Import". You need to set the filter to
 "all files" in order to see and import the .cer file. In the dialog that opens,
 select "Trust this certificate for identifying websites".
 
-On order for Chrome for Linux to accept the certificate, you have to answer the
+In order for Chrome for Linux to accept the certificate, you have to answer the
 corresponding question during certificate creation with "YES" (or use the
 `--compat-chrome-linux`) command line option. Not that this will allow for
 easier abuse of the certificate as a CA certificate and should be kept off
 unless required.
+
+As an alternative, you can open the website settings in chrome and enable
+"insecure content". This will allow you to run the proxy server over HTTP
+(by using the `--insecure` command line option). Note that you have to enter
+the full URL to the server in Cloudpilot in this case, and that the connection
+will not be encrypted. DON'T USE BASIC AUTHENTICATION IN THIS CASE.
 
 ## Start the server
 
