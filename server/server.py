@@ -84,7 +84,7 @@ def _validateAuth(request: web.Request, authentication=None) -> bool:
         if len(pieces) != 2:
             return False
 
-        if pieces[0] != "Basic":
+        if pieces[0].upper() != "BASIC":
             return False
 
         return base64.b64decode(pieces[1], validate=True).decode('utf8').strip() == authentication
