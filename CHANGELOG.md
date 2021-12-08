@@ -1,5 +1,7 @@
 # Next version
 
+-   Catch a rare iOS bug that causes the database to ocassionally come up empty
+    on launch.
 -   Installation of databases from zip archives.
 -   Show reason for failed installations.
 -   Improve snapshot performance on Chrome.

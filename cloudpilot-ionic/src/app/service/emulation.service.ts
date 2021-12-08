@@ -24,6 +24,7 @@ import { PwmUpdate } from './../helper/Cloudpilot';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
+import { isIOS } from './../helper/browser';
 
 const PEN_MOVE_THROTTLE = 25;
 const SNAPSHOT_INTERVAL = 1000;
@@ -66,7 +67,7 @@ export class EmulationService {
 
         const storedSession = getStoredSession();
         if (storedSession !== undefined) {
-            this.bootstrapCompletePromise = this.switchSession(storedSession);
+            this.bootstrapCompletePromise = this.recoverStoredSession(storedSession);
         } else {
             this.bootstrapCompletePromise = Promise.resolve();
         }
@@ -220,6 +221,23 @@ export class EmulationService {
 
     isSuspended(): boolean {
         return this.cloudpilotInstance ? this.cloudpilotInstance.isSuspended() : false;
+    }
+
+    private async recoverStoredSession(session: number) {
+        try {
+            await this.switchSession(session);
+        } catch (e) {
+            if (isIOS) {
+                await this.alertService.message(
+                    'Possible iOS bug',
+                    `It seems that you hit an iOS bug that ocassionally
+causes the database to come up empty when the App starts. If this happens to you, please force close
+the app in the app switcher and reopen it; your data will be back on the second attempt.
+<br/><br/>
+Sorry for the inconvenience.`
+                );
+            }
+        }
     }
 
     private updateFeatures(): void {
