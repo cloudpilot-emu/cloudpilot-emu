@@ -231,7 +231,7 @@ export class EmulationService {
                 await this.alertService.message(
                     'Possible iOS bug',
                     `It seems that you hit an iOS bug that ocassionally
-causes the database to come up empty when the App starts. If this happens to you, please force close
+causes the database to come up empty when the app starts. If this happens to you, please force close
 the app in the app switcher and reopen it; your data will be back on the second attempt.
 <br/><br/>
 Sorry for the inconvenience.`
