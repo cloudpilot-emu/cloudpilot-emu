@@ -146,7 +146,7 @@ export class FileService {
             this.modalController.dismiss();
         }
 
-        let urlParsed!: Url;
+        let urlParsed!: Url<unknown>;
         try {
             urlParsed = new Url(url);
         } catch (e) {

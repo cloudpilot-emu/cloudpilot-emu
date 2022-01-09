@@ -20,12 +20,6 @@ import { environment } from '../../environments/environment';
 import { isIOS } from './../helper/browser';
 import md5 from 'md5';
 
-declare global {
-    interface IDBFactory {
-        databases?(): Promise<Array<{ name: string; version: number }>>;
-    }
-}
-
 export const E_LOCK_LOST = new Error('page lock lost');
 const E_VERSION_MISMATCH = new Error('version mismatch');
 
@@ -38,13 +32,13 @@ function guard(): any {
 
             try {
                 return await oldMethod.apply(this, arguments);
-            } catch (e) {
+            } catch (e: any) {
                 if (e instanceof StorageError) {
                     errorService.fatalIDBDead();
                 } else if (e === E_VERSION_MISMATCH) {
                     errorService.fatalVersionMismatch();
                 } else {
-                    errorService.fatalBug(e.message);
+                    errorService.fatalBug(e?.message);
                 }
             }
         };
@@ -363,7 +357,7 @@ export class StorageService {
 
                 clearTimeout(watchdogHandle);
 
-                if (databaseEntry && databaseEntry.version > DB_VERSION) {
+                if (databaseEntry && databaseEntry.version !== undefined && databaseEntry.version > DB_VERSION) {
                     throw E_VERSION_MISMATCH;
                 }
             }

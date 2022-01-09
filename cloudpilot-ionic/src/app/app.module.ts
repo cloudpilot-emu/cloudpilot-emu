@@ -34,7 +34,6 @@ const markedOptionsFactory = (): MarkedOptions => {
 
 @NgModule({
     declarations: [AppComponent],
-    entryComponents: [],
     imports: [
         BrowserModule,
         IonicModule.forRoot(),
@@ -55,7 +54,7 @@ const markedOptionsFactory = (): MarkedOptions => {
             deps: [KvsService],
         },
     ],
-    bootstrap: [AppComponent],
+    bootstrap: [AppComponent]
 })
 export class AppModule {
     constructor(

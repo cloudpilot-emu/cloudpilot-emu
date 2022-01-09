@@ -37,8 +37,11 @@ export class TabsPage {
         const canvasPadding = 6;
 
         this.useSmallUI =
-            this.canvasArea(window.innerHeight - headerHeight - tabbarHeight - canvasPadding, window.innerWidth - 6) <
-            this.canvasArea(window.innerHeight - headerHeight - 25 - canvasPadding, window.innerWidth - 6);
+            this.canvasArea(
+                window.innerHeight - headerHeight - tabbarHeight - canvasPadding,
+                window.innerWidth - canvasPadding
+            ) <
+            this.canvasArea(window.innerHeight - headerHeight - 25 - canvasPadding, window.innerWidth - canvasPadding);
     };
 
     private canvasArea(availableHeight: number, availableWidth: number): number {

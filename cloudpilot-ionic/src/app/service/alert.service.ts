@@ -1,5 +1,4 @@
 import { AlertController } from '@ionic/angular';
-import { EmulationService } from './emulation.service';
 import { EmulationStateService } from './emulation-state.service';
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';

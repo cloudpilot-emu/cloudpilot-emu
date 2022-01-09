@@ -10,7 +10,7 @@ function validateUrl(control: AbstractControl): ValidationErrors | null {
         };
     }
 
-    let urlParsed: Url;
+    let urlParsed: Url<unknown>;
     try {
         urlParsed = new Url(control.value);
     } catch (e) {

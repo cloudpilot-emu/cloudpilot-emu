@@ -7,6 +7,7 @@ import { deviceDimensions, isColor } from '../helper/deviceProperties';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { Average } from './../helper/Average';
+import { BootstrapService } from './bootstrap-service';
 import { ButtonService } from './button.service';
 import { ClipboardService } from './clipboard.service';
 import { EmulationStateService } from './emulation-state.service';
@@ -51,7 +52,8 @@ export class EmulationService {
         private clipboardService: ClipboardService,
         private kvsService: KvsService,
         private proxyService: ProxyService,
-        private buttonService: ButtonService
+        private buttonService: ButtonService,
+        private bootstrapService: BootstrapService
     ) {
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
         errorService.fatalErrorEvent.addHandler(this.pause);
@@ -83,6 +85,7 @@ export class EmulationService {
                 return;
             }
 
+            await this.bootstrapService.hasRendered();
             const loader = await this.loadingController.create({ message: 'Loading...' });
             await loader.present();
 
