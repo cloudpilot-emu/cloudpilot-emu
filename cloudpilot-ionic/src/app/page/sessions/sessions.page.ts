@@ -65,6 +65,10 @@ export class SessionsPage {
         this.fileService.saveSession(session);
     }
 
+    trackSessionBy(index: number, session: Session) {
+        return session.id;
+    }
+
     async launchSession(session: Session) {
         this.lastSessionTouched = session.id;
         this.currentSessionOverride = session.id;
