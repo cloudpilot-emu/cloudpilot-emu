@@ -52,6 +52,7 @@ export class EmulationPage implements AfterViewInit {
 
     async ionViewDidEnter(): Promise<void> {
         await this.emulationService.bootstrapComplete();
+        this.boostrapComplete = true;
 
         const session = this.emulationState.getCurrentSession();
 
@@ -202,6 +203,9 @@ export class EmulationPage implements AfterViewInit {
         this.canvasDisplayService.drawEmulationCanvas(canvas);
     };
 
+    boostrapComplete = false;
+
     @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
+
     private autoLockUI = true;
 }

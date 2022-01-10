@@ -46,7 +46,7 @@
     <ion-button type="button" color="light" (click)="bootAfterForcefulResetHardReset()">Hard reset</ion-button>
   </div>
 
-  <div class="container no-session" *ngIf=" !emulationState.getCurrentSession()">
+  <div class="container no-session" *ngIf="!emulationState.getCurrentSession() && boostrapComplete">
     <div>No session selected</div>
   </div>
 
