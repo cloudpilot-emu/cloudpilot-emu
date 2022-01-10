@@ -102,50 +102,7 @@ export class FileService {
         a.click();
     }
 
-    private async openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): Promise<void> {
-        if (this.kvsService.kvs.enableRemoteInstall) {
-            const sheet = await this.actionSheetController.create({
-                header: 'From where do you want to install?',
-                buttons: [
-                    {
-                        text: 'Local files',
-                        handler: () => this.openFilesLocal(multiple, handler),
-                    },
-                    {
-                        text: 'Remote server',
-                        handler: () => this.openFileRemote(handler),
-                    },
-                ],
-            });
-
-            sheet.present();
-        } else {
-            this.openFilesLocal(multiple, handler);
-        }
-    }
-
-    private async openFileRemote(handler: (files: Array<FileDescriptor>) => void): Promise<void> {
-        let url!: string;
-
-        try {
-            url = await new Promise<string>((resolve, reject) =>
-                this.modalController
-                    .create({
-                        component: RemoteUrlPromptComponent,
-                        backdropDismiss: false,
-                        componentProps: {
-                            onContinue: resolve,
-                            onCancel: reject,
-                        },
-                    })
-                    .then((modal) => modal.present())
-            );
-        } catch (e) {
-            return;
-        } finally {
-            this.modalController.dismiss();
-        }
-
+    async openUrl(url: string, handler: (files: Array<FileDescriptor>) => void): Promise<void> {
         let urlParsed!: Url<unknown>;
         try {
             urlParsed = new Url(url);
@@ -173,6 +130,53 @@ export class FileService {
         } catch (e) {
             await this.alertService.errorMessage(`Download from ${url} failed.`);
         }
+    }
+
+    private async openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): Promise<void> {
+        if (this.kvsService.kvs.enableRemoteInstall) {
+            const sheet = await this.actionSheetController.create({
+                header: 'From where do you want to install?',
+                buttons: [
+                    {
+                        text: 'Local files',
+                        handler: () => this.openFilesLocal(multiple, handler),
+                    },
+                    {
+                        text: 'Remote server',
+                        handler: () => this.queryAndOpenFileRemote(handler),
+                    },
+                ],
+            });
+
+            sheet.present();
+        } else {
+            this.openFilesLocal(multiple, handler);
+        }
+    }
+
+    private async queryAndOpenFileRemote(handler: (files: Array<FileDescriptor>) => void): Promise<void> {
+        let url!: string;
+
+        try {
+            url = await new Promise<string>((resolve, reject) =>
+                this.modalController
+                    .create({
+                        component: RemoteUrlPromptComponent,
+                        backdropDismiss: false,
+                        componentProps: {
+                            onContinue: resolve,
+                            onCancel: reject,
+                        },
+                    })
+                    .then((modal) => modal.present())
+            );
+        } catch (e) {
+            return;
+        } finally {
+            this.modalController.dismiss();
+        }
+
+        await this.openUrl(url, handler);
     }
 
     private openFilesLocal(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): void {

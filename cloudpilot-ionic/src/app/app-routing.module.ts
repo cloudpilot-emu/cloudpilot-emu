@@ -2,6 +2,8 @@ import { HashLocationStrategy, LocationStrategy } from '@angular/common';
 import { Injectable, NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 
+import { DummyComponent } from './component/dummy/dummy.component';
+import { RoutingInterceptor } from './service/routing-interceptor.service';
 import { TabsPage } from './tabs/tabs.page';
 import { TabsPageModule } from './tabs/tabs.module';
 
@@ -13,6 +15,11 @@ class ReplaceLocationStrategy extends HashLocationStrategy {
 }
 
 const routes: Routes = [
+    {
+        path: 'install',
+        component: DummyComponent,
+        canActivate: [RoutingInterceptor],
+    },
     {
         path: '',
         component: TabsPage,

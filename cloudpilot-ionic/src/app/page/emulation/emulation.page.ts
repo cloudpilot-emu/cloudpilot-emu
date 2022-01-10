@@ -11,11 +11,13 @@ import { FileService } from 'src/app/service/file.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { InstallationService } from './../../service/installation.service';
 import { KvsService } from './../../service/kvs.service';
+import { LinkApi } from './../../service/link-api.service';
 import { ProxyService } from './../../service/proxy.service';
 import { SnapshotService } from './../../service/snapshot.service';
 import { SnapshotStatistics } from './../../model/SnapshotStatistics';
 import { StorageService } from './../../service/storage.service';
 import { TabsPage } from './../../tabs/tabs.page';
+import Url from 'url-parse';
 
 @Component({
     selector: 'app-emulation',
@@ -37,7 +39,8 @@ export class EmulationPage implements AfterViewInit {
         private snapshotService: SnapshotService,
         private installlationService: InstallationService,
         public proxyService: ProxyService,
-        public navigation: TabsPage
+        public navigation: TabsPage,
+        private linkApi: LinkApi
     ) {}
 
     ngAfterViewInit(): void {}
@@ -56,12 +59,17 @@ export class EmulationPage implements AfterViewInit {
 
         const session = this.emulationState.getCurrentSession();
 
-        if (!session) return;
+        if (session && !session.wasResetForcefully) {
+            await this.launchEmulator();
+        }
 
-        if (!session.wasResetForcefully) await this.launchEmulator();
+        this.handleLinkApiInstallationRequest();
+        this.linkApi.installationRequestEvent.addHandler(this.handleLinkApiInstallationRequest);
     }
 
     ionViewWillLeave() {
+        this.linkApi.installationRequestEvent.removeHandler(this.handleLinkApiInstallationRequest);
+
         if (this.emulationService.isRunning()) {
             this.autoLockUI = false;
         }
@@ -69,7 +77,6 @@ export class EmulationPage implements AfterViewInit {
 
         this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
         this.snapshotService.snapshotEvent.removeHandler(this.onSnapshot);
-
         this.kvsService.updateEvent.removeHandler(this.onKvsUpdate);
 
         this.eventHandlingService.release();
@@ -182,7 +189,7 @@ export class EmulationPage implements AfterViewInit {
         this.emulationService.newFrameEvent.addHandler(this.onNewFrame);
         this.snapshotService.snapshotEvent.addHandler(this.onSnapshot);
 
-        this.emulationService.resume();
+        await this.emulationService.resume();
 
         this.eventHandlingService.bind(this.canvasRef.nativeElement);
     }
@@ -201,6 +208,30 @@ export class EmulationPage implements AfterViewInit {
 
     private onNewFrame = (canvas: HTMLCanvasElement): void => {
         this.canvasDisplayService.drawEmulationCanvas(canvas);
+    };
+
+    private handleLinkApiInstallationRequest = (): void => {
+        if (!this.linkApi.hasPendingInstallationRequest()) {
+            return;
+        }
+
+        const url = this.linkApi.receivePendingInstallationUrl();
+        if (!url) {
+            return;
+        }
+
+        const currentSession = this.emulationState.getCurrentSession();
+        if (!currentSession || !this.emulationService.isRunning()) {
+            this.alertService.message('Unable to install', `Please start a session in order to install ${url} .`);
+        } else {
+            this.alertService.message('Installation request', `Do you want to install<br>${url} ?`, {
+                OK: () =>
+                    this.fileService.openUrl(
+                        url,
+                        this.installlationService.installFiles.bind(this.installlationService)
+                    ),
+            });
+        }
     };
 
     boostrapComplete = false;

@@ -7,6 +7,7 @@ import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { AudioService } from './service/audio.service';
 import { BrowserModule } from '@angular/platform-browser';
+import { DummyComponent } from './component/dummy/dummy.component';
 import { EmulationService } from './service/emulation.service';
 import { KvsService } from './service/kvs.service';
 import { PageLockService } from './service/page-lock.service';
@@ -33,7 +34,7 @@ const markedOptionsFactory = (): MarkedOptions => {
 };
 
 @NgModule({
-    declarations: [AppComponent],
+    declarations: [AppComponent, DummyComponent],
     imports: [
         BrowserModule,
         IonicModule.forRoot(),
@@ -54,7 +55,7 @@ const markedOptionsFactory = (): MarkedOptions => {
             deps: [KvsService],
         },
     ],
-    bootstrap: [AppComponent]
+    bootstrap: [AppComponent],
 })
 export class AppModule {
     constructor(

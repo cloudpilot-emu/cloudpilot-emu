@@ -1,6 +1,7 @@
 import './app/helper/pagelock';
 
 import { AppModule } from './app/app.module';
+import { bootstrapLinkApi } from './app/service/link-api.service';
 import { enableProdMode } from '@angular/core';
 import { environment } from './environments/environment';
 import { hasStoredSession } from './app/helper/storedSession';
@@ -8,6 +9,8 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
 // Work around issue with webpack and deep-equal
 (window as any).global = window;
+
+bootstrapLinkApi();
 
 if (hasStoredSession()) {
     const url = new URL(location.toString());
