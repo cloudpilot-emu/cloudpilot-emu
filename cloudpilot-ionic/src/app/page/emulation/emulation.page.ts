@@ -24,7 +24,7 @@ import Url from 'url-parse';
     templateUrl: './emulation.page.html',
     styleUrls: ['./emulation.page.scss'],
 })
-export class EmulationPage implements AfterViewInit {
+export class EmulationPage {
     constructor(
         public emulationService: EmulationService,
         public emulationState: EmulationStateService,
@@ -42,8 +42,6 @@ export class EmulationPage implements AfterViewInit {
         public navigation: TabsPage,
         private linkApi: LinkApi
     ) {}
-
-    ngAfterViewInit(): void {}
 
     get cssWidth(): string {
         return this.canvasDisplayService.width / devicePixelRatio + 'px';
@@ -63,12 +61,12 @@ export class EmulationPage implements AfterViewInit {
             await this.launchEmulator();
         }
 
+        this.linkApi.installation.requestEvent.addHandler(this.handleLinkApiInstallationRequest);
         this.handleLinkApiInstallationRequest();
-        this.linkApi.installationRequestEvent.addHandler(this.handleLinkApiInstallationRequest);
     }
 
     ionViewWillLeave() {
-        this.linkApi.installationRequestEvent.removeHandler(this.handleLinkApiInstallationRequest);
+        this.linkApi.installation.requestEvent.removeHandler(this.handleLinkApiInstallationRequest);
 
         if (this.emulationService.isRunning()) {
             this.autoLockUI = false;
@@ -211,11 +209,11 @@ export class EmulationPage implements AfterViewInit {
     };
 
     private handleLinkApiInstallationRequest = (): void => {
-        if (!this.linkApi.hasPendingInstallationRequest()) {
+        if (!this.linkApi.installation.hasPendingRequest()) {
             return;
         }
 
-        const url = this.linkApi.receivePendingInstallationUrl();
+        const url = this.linkApi.installation.receivePendingUrl();
         if (!url) {
             return;
         }
@@ -225,11 +223,7 @@ export class EmulationPage implements AfterViewInit {
             this.alertService.message('Unable to install', `Please start a session in order to install ${url} .`);
         } else {
             this.alertService.message('Installation request', `Do you want to install<br>${url} ?`, {
-                OK: () =>
-                    this.fileService.openUrl(
-                        url,
-                        this.installlationService.installFiles.bind(this.installlationService)
-                    ),
+                OK: () => this.fileService.openUrl(url, (file) => this.installlationService.installFiles([file])),
             });
         }
     };

@@ -25,6 +25,7 @@ import { PwmUpdate } from './../helper/Cloudpilot';
 import { Session } from 'src/app/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
+import { hasInitialImportRequest } from './link-api.service';
 import { isIOS } from './../helper/browser';
 
 const PEN_MOVE_THROTTLE = 25;
@@ -68,10 +69,12 @@ export class EmulationService {
         });
 
         const storedSession = getStoredSession();
-        if (storedSession !== undefined) {
+        this.bootstrapCompletePromise = Promise.resolve();
+
+        // We don't start with the emulator running if we were opened with an initial import
+        // request -> don't recover the session in this case
+        if (storedSession !== undefined && !hasInitialImportRequest()) {
             this.bootstrapCompletePromise = this.recoverStoredSession(storedSession);
-        } else {
-            this.bootstrapCompletePromise = Promise.resolve();
         }
     }
 

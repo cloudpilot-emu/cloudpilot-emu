@@ -1,7 +1,8 @@
 import './app/helper/pagelock';
 
+import { bootstrapLinkApi, hasInitialImportRequest } from './app/service/link-api.service';
+
 import { AppModule } from './app/app.module';
-import { bootstrapLinkApi } from './app/service/link-api.service';
 import { enableProdMode } from '@angular/core';
 import { environment } from './environments/environment';
 import { hasStoredSession } from './app/helper/storedSession';
@@ -12,9 +13,7 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
 bootstrapLinkApi();
 
-if (hasStoredSession()) {
-    const url = new URL(location.toString());
-
+if (hasStoredSession() && !hasInitialImportRequest()) {
     location.replace(`${location.origin}${location.pathname}#/tab/emulation`);
 } else {
     location.replace(`${location.origin}${location.pathname}#/tab/sessions`);

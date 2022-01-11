@@ -3,9 +3,10 @@ import { Injectable } from '@angular/core';
 import Url from 'url-parse';
 
 let initialInstallationUrl: string | undefined;
+let initialImportUrl: string | undefined;
 
-export function bootstrapLinkApi(): void {
-    if (!window.location.hash.startsWith('#/install?')) {
+function boostrapOperation(fragment: string): string | undefined {
+    if (!window.location.hash.startsWith(fragment)) {
         return;
     }
 
@@ -18,8 +19,7 @@ export function bootstrapLinkApi(): void {
     for (const [name, value] of pairs) {
         if (name === 'url' && value) {
             try {
-                initialInstallationUrl = decodeURIComponent(value);
-                return;
+                return decodeURIComponent(value);
             } catch (e) {
                 continue;
             }
@@ -27,15 +27,17 @@ export function bootstrapLinkApi(): void {
     }
 }
 
-@Injectable({ providedIn: 'root' })
-export class LinkApi {
-    constructor() {
-        if (initialInstallationUrl) {
-            this.dispatchInstallationRequest(initialInstallationUrl);
-        }
-    }
+export function bootstrapLinkApi(): void {
+    initialInstallationUrl = boostrapOperation('#/install?');
+    initialImportUrl = boostrapOperation('#/import?');
+}
 
-    dispatchInstallationRequest(url: string) {
+export function hasInitialImportRequest(): boolean {
+    return initialImportUrl !== undefined;
+}
+
+class Operation {
+    dispatchRequest(url: string) {
         if (!url) {
             return;
         }
@@ -47,22 +49,37 @@ export class LinkApi {
             return;
         }
 
-        this.installationUrl = url;
-        this.installationRequestEvent.dispatch();
+        this.url = url;
+        this.requestEvent.dispatch();
     }
 
-    hasPendingInstallationRequest(): boolean {
-        return this.installationUrl !== undefined;
+    hasPendingRequest(): boolean {
+        return this.url !== undefined;
     }
 
-    receivePendingInstallationUrl(): string | undefined {
-        const url = this.installationUrl;
-        this.installationUrl = undefined;
+    receivePendingUrl(): string | undefined {
+        const url = this.url;
+        this.url = undefined;
 
         return url;
     }
 
-    installationRequestEvent = new Event<void>();
+    requestEvent = new Event<void>();
+    private url: string | undefined;
+}
 
-    private installationUrl: string | undefined;
+@Injectable({ providedIn: 'root' })
+export class LinkApi {
+    constructor() {
+        if (initialInstallationUrl) {
+            this.installation.dispatchRequest(initialInstallationUrl);
+        }
+
+        if (initialImportUrl) {
+            this.import.dispatchRequest(initialImportUrl);
+        }
+    }
+
+    readonly installation = new Operation();
+    readonly import = new Operation();
 }

@@ -102,7 +102,7 @@ export class FileService {
         a.click();
     }
 
-    async openUrl(url: string, handler: (files: Array<FileDescriptor>) => void): Promise<void> {
+    async openUrl(url: string, handler: (file: FileDescriptor) => void): Promise<void> {
         let urlParsed!: Url<unknown>;
         try {
             urlParsed = new Url(url);
@@ -119,12 +119,10 @@ export class FileService {
                 throw new Error('request failed');
             }
 
-            handler([
-                {
-                    name: urlParsed.pathname.replace(/.*\//, ''),
-                    content: new Uint8Array(await response.arrayBuffer()),
-                },
-            ]);
+            handler({
+                name: urlParsed.pathname.replace(/.*\//, ''),
+                content: new Uint8Array(await response.arrayBuffer()),
+            });
 
             return;
         } catch (e) {
@@ -176,7 +174,7 @@ export class FileService {
             this.modalController.dismiss();
         }
 
-        await this.openUrl(url, handler);
+        await this.openUrl(url, (file) => handler([file]));
     }
 
     private openFilesLocal(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): void {

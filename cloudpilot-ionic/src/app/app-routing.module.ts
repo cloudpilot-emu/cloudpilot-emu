@@ -21,6 +21,11 @@ const routes: Routes = [
         canActivate: [RoutingInterceptor],
     },
     {
+        path: 'import',
+        component: DummyComponent,
+        canActivate: [RoutingInterceptor],
+    },
+    {
         path: '',
         component: TabsPage,
     },

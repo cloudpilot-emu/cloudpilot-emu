@@ -7,6 +7,7 @@ import { Component } from '@angular/core';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
 import { HelpComponent } from '../../component/help/help.component';
+import { LinkApi } from './../../service/link-api.service';
 import { Router } from '@angular/router';
 import { Session } from './../../model/Session';
 import { SessionService } from 'src/app/service/session.service';
@@ -29,8 +30,18 @@ export class SessionsPage {
         public emulationState: EmulationStateService,
         private storageService: StorageService,
         private modalController: ModalController,
+        private linkApi: LinkApi,
         private router: Router
     ) {}
+
+    ionViewDidEnter(): void {
+        this.linkApi.import.requestEvent.addHandler(this.handleLinkApiImportRequest);
+        this.handleLinkApiImportRequest();
+    }
+
+    ionViewWillLeave(): void {
+        this.linkApi.import.requestEvent.removeHandler(this.handleLinkApiImportRequest);
+    }
 
     get sessions(): Array<Session> {
         return this.sessionService.getSessions().sort((a, b) => a.name.localeCompare(b.name));
@@ -57,7 +68,7 @@ export class SessionsPage {
         }
     }
 
-    loadFile(): void {
+    importSession(): void {
         this.fileService.openFile(this.processFile.bind(this));
     }
 
@@ -208,6 +219,21 @@ export class SessionsPage {
 
         return name;
     }
+
+    private handleLinkApiImportRequest = (): void => {
+        if (!this.linkApi.import.hasPendingRequest()) {
+            return;
+        }
+
+        const url = this.linkApi.import.receivePendingUrl();
+        if (!url) {
+            return;
+        }
+
+        this.alertService.message('Import request', `Do you want to import<br>${url} ?`, {
+            OK: () => this.fileService.openUrl(url, this.processFile.bind(this)),
+        });
+    };
 
     private currentSessionOverride: number | undefined;
     lastSessionTouched = -1;
