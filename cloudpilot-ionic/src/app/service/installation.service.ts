@@ -166,7 +166,7 @@ class InstallationContext {
                 message,
                 buttons: [
                     {
-                        text: 'Close',
+                        text: 'Continue',
                         role: 'cancel',
                         handler: () => {
                             this.alertController.dismiss();

@@ -230,9 +230,14 @@ export class SessionsPage {
             return;
         }
 
-        this.alertService.message('Import request', `Do you want to import<br>${url} ?`, {
-            OK: () => this.fileService.openUrl(url, this.processFile.bind(this)),
-        });
+        this.alertService.message(
+            'Import request',
+            `Do you want to import<br>${url} ?`,
+            {
+                OK: () => this.fileService.openUrl(url, this.processFile.bind(this)),
+            },
+            'Cancel'
+        );
     };
 
     private currentSessionOverride: number | undefined;

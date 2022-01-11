@@ -1,6 +1,6 @@
 import './app/helper/pagelock';
 
-import { bootstrapLinkApi, hasInitialImportRequest } from './app/service/link-api.service';
+import { bootstrapLinkApi, hasInitialImportRequest, hasInitialInstallRequest } from './app/service/link-api.service';
 
 import { AppModule } from './app/app.module';
 import { enableProdMode } from '@angular/core';
@@ -13,7 +13,7 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
 bootstrapLinkApi();
 
-if (hasStoredSession() && !hasInitialImportRequest()) {
+if ((hasStoredSession() && !hasInitialImportRequest()) || hasInitialInstallRequest()) {
     location.replace(`${location.origin}${location.pathname}#/tab/emulation`);
 } else {
     location.replace(`${location.origin}${location.pathname}#/tab/sessions`);

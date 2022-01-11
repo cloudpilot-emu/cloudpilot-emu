@@ -36,6 +36,10 @@ export function hasInitialImportRequest(): boolean {
     return initialImportUrl !== undefined;
 }
 
+export function hasInitialInstallRequest(): boolean {
+    return initialInstallationUrl !== undefined;
+}
+
 class Operation {
     dispatchRequest(url: string) {
         if (!url) {

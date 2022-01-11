@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild } from '@angular/core';
 import { ModalController, PopoverController } from '@ionic/angular';
 
 import { AlertService } from 'src/app/service/alert.service';
@@ -7,6 +7,7 @@ import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
 import { EventHandlingService } from './../../service/event-handling.service';
+import { EventInterface } from 'microevent.ts';
 import { FileService } from 'src/app/service/file.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { InstallationService } from './../../service/installation.service';
@@ -17,7 +18,6 @@ import { SnapshotService } from './../../service/snapshot.service';
 import { SnapshotStatistics } from './../../model/SnapshotStatistics';
 import { StorageService } from './../../service/storage.service';
 import { TabsPage } from './../../tabs/tabs.page';
-import Url from 'url-parse';
 
 @Component({
     selector: 'app-emulation',
@@ -218,18 +218,32 @@ export class EmulationPage {
             return;
         }
 
+        if (this.installFileDisabled) {
+            this.alertService.message('Unable to install', `Installation is currently not possible.`, {}, 'Cancel');
+            return;
+        }
+
         const currentSession = this.emulationState.getCurrentSession();
         if (!currentSession || !this.emulationService.isRunning()) {
-            this.alertService.message('Unable to install', `Please start a session in order to install ${url} .`);
+            this.alertService.message(
+                'Unable to install',
+                `Please start a session in order to install ${url} .`,
+                {},
+                'Cancel'
+            );
         } else {
-            this.alertService.message('Installation request', `Do you want to install<br>${url} ?`, {
-                OK: () => this.fileService.openUrl(url, (file) => this.installlationService.installFiles([file])),
-            });
+            this.alertService.message(
+                'Installation request',
+                `Do you want to install<br>${url} ?`,
+                {
+                    OK: () => this.fileService.openUrl(url, (file) => this.installlationService.installFiles([file])),
+                },
+                'Cancel'
+            );
         }
     };
 
     boostrapComplete = false;
-
     @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
 
     private autoLockUI = true;

@@ -112,7 +112,10 @@ export class EmulationService {
 
                 this.deviceHotsyncName = undefined;
                 this.emulationSpeed = 1;
+                this.frameCounter = 0;
                 this.speedAverage.reset(1);
+                this.powerOff = cloudpilot.isPowerOff();
+                this.uiInitialized = cloudpilot.isUiInitialized();
 
                 this.buttonService.reset(cloudpilot);
 
@@ -424,7 +427,7 @@ Sorry for the inconvenience.`
     private onSchedule = (timestamp: number): void => {
         if (this.errorService.hasFatalError()) return;
 
-        if (!this.modalWatcher.isModalActive()) {
+        if (!this.modalWatcher.isModalActive() || this.frameCounter === 0) {
             this.performScreenUpdate();
 
             if (this.pendingPwmUpdates.count() > 0) {
@@ -449,6 +452,8 @@ Sorry for the inconvenience.`
         if (this.cloudpilotInstance.isScreenDirty()) {
             this.updateScreen();
             this.cloudpilotInstance.markScreenClean();
+
+            this.frameCounter++;
         }
     }
 
@@ -704,4 +709,6 @@ Sorry for the inconvenience.`
 
     private timePerFrameAverage = new Average(TIME_PER_FRAME_AVERAGE_N);
     private timestampLastFrame = 0;
+
+    private frameCounter = 0;
 }
