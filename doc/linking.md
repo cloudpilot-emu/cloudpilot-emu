@@ -22,7 +22,7 @@ The `url` query parameter contains the full URL encoded URL to the file.
 Navigating to such an URL will open Cloudpilot, navigate to the session tab and prompt
 the user to import the file from the supplied URL.
 
-# Installing file
+# Installing databases
 
 An URL for installing a database (or a zip archive with databases) has the form
 
