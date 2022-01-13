@@ -29,7 +29,6 @@ If you enable network redirection you'll have to enter the address of the proxy
 server below. Use the "Test" button to test the connection before attempting to
 connect from within the virtual device.
 
-
 ### Auto-lock UI
 
 This setting causes the navigation to automatically hide when the emulated devices

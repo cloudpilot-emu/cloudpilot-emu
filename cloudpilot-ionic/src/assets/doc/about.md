@@ -31,7 +31,7 @@ previously saved session snapshot.
 
 ### Emulation tab
 
-The emulator tab hosts the emulated device.
+The emulation tab hosts the emulated device.
 
 ### Settings tab
 
@@ -41,7 +41,7 @@ The settings tab allows you to adjust the emulator settings.
 
 Cloutpilot automatically saves the state of the emulated device every second while
 the while the emulation is running. If Cloudpilot terminates and restarts the emulation
-will resume exaclty where you left off.
+will resume exactly where you left off.
 
 # Installing programs and databases
 
@@ -55,11 +55,10 @@ a proxy server. This configuration supports network hotsync. Please check the
 [online documentation](https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md)
 for detailed instructions.
 
-
 # Backing up your virtual devices
 
 Virtual devices can be backed up by creating either session snapshots
-or DB backups. This feature is not available on PalmOS 2 and earlier.
+or DB backups. The latter feature is not available on PalmOS 2 and earlier.
 
 ### Device snapshots
 
@@ -98,7 +97,7 @@ session. This allows you to break the crash loop.
 Cloudpilot runs on all reasonable recent browsers and can be added to the homescreen
 of Android and iOS devices as a mobile app. For iPhones and iPads this is highly
 recommended as Safari may clear the data of ordinary web sites if they are not used
-for ab extended period of time.
+for an extended period of time.
 
 On iOS devices iOS 14 or higher is recommended. Earlier versions have bugs that
 may make it impossible to save session snapshots. The emulator runs smoothly on all
@@ -138,7 +137,7 @@ In order to force check for an update terminate and restart the app.
     launcher is active and the category menu is open.
 -   The power switch on the Tungsten W andd i705 does not operate correctly and
     is disabled. You'll have to do a reset in order to wake up the device if you
-    acidentially power off the device.
+    acidentially power off via software.
 
 # Cloudpilot on the web
 

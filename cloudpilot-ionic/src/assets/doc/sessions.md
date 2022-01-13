@@ -22,15 +22,11 @@ You can find a collection of suitable ROM files
 Session images are session snapshots that have been exported by Cloudpilot. They
 contain the ROM image of the exported device together with a snapshot of the
 device RAM and state at the moment the snapshot was taken. Importing a session
-image will create a clone of the device at the moment in which the snapshot was
-taken.
+image will create a clone of the device.
 
 Changes to the image format are backwards compatible, which means that a newer
 version of Cloudpilot can always import a session image written by an older
-version. However, the opposite is not true, and importing an image created by a
-newer version of Cloudpilot may cause the state to be lost during import. The
-contents of RAM are still preserved, so loading an incompatible image will
-cause a reboot but will preserve all data.
+version.
 
 # The sessions list
 
@@ -53,6 +49,8 @@ user name instead. The hotsync name can be changed at any time.
 
 Older versions of Cloudpilot do not include the hotsync name in session images.
 In this case, the name will we read from the device as soon as it is launched.
+
+##### Manage hotsync name
 
 In case you aer using network hotsync to sync the virtual device with Palm Desktop
 this setting will conflict with the desktop. Turn it off by unchecking

@@ -39,7 +39,8 @@ category.
 
 On rare ocassions the installation catches PalmOS on the wrong foot and
 crashes the emulator. In this case you can simply resume the session and
-retry the installation.
+retry the installation. Installing while the launcher is open is generally
+safe.
 
 # State saves
 
@@ -58,7 +59,8 @@ There are two types of backup, and Cloudpilot will prompt you to choose between 
 * Backup only RAM databases. This is an ordinary backup, and you should choose it use unless
   you specifically want to retrieve the databases in the device ROM.
 * Include ROM databases. This will include the contents of the device ROM with the
-  backup. This is not required for a normal backup.
+  backup. This is not required for a normal backup, and restoring it blindly will
+  have undesired side effects.
 
 Databases must be closed in order to back up, so if you are backing up while
 an application is opened, the corresponding DB files will not be included
@@ -84,7 +86,7 @@ No key held. This causes a plain reset.
 ### Reset (no extensions)
 
 This corresponds to holding "down" while resetting
-the deviCe and will disable the loading of system extensions during startup.
+the device and will disable the loading of system extensions during startup.
 This is very useful to recover from a bad hack or system extension.
 
 ### Hard reset
@@ -102,12 +104,12 @@ The hotsync button on the cradle can be pressed by selecting "Hotsync" from the 
 
 # Audio
 
-The speaker setting in the menu allows to toggle audio emulation on / off.
-Cloudpilot always starts with audio disabled, and the icon must be tapped to enable
+The "Enable audio" / "Disable audio" option in the menu allows to toggle audio emulation on / off.
+Cloudpilot always starts with audio disabled, and the option must be selected to enable
 it.
 
-The volume can be changed on the settings tab. The speaker button is not shown if the
-volume is set to zero.
+The volume can be changed on the settings tab. Audio is not available if the volume is set
+to zero.
 
 On iOS, muting the phone also mutes audio from the emulator. Ocassionally the audio
 may glitch and stay off after resuming Cloudpilot from the background due to browser
