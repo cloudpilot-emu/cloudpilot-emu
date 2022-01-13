@@ -1,7 +1,10 @@
-# Next version
+# 1.5.8
 
--   Update to Emscripten to 3.1.0
--   Update to Angular 13 / Ionic 6
+-   Link API for importing ROMs or sessions and installing databases via
+    hyperlinks. Check the
+    [online documentation](https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/linking.md)
+    for more details
+-   UI dependecy updates
 
 # 1.5.7
 
