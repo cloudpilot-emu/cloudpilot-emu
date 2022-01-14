@@ -171,6 +171,51 @@ namespace {
         return kSkipROM;
     }
 
+    CallROMType HeadpatchHwrBatteryLevel(void) {
+        EmAssert(gSession);
+
+        if (!gSession->GetDevice().NeedsBatteryPatch()) {
+            return kExecuteROM;
+        }
+
+        CALLED_SETUP("UInt16", "void");
+
+        PUT_RESULT_VAL(UInt16, 255);  // Hardcode a maximum level
+
+        return kSkipROM;
+    }
+
+    CallROMType HeadpatchHwrBattery(void) {
+        EmAssert(gSession);
+
+        if (!gSession->GetDevice().NeedsBatteryPatch()) {
+            return kExecuteROM;
+        }
+
+        CALLED_SETUP("Err", "UInt16 cmd, void * cmdP");
+
+        CALLED_GET_PARAM_VAL(UInt16, cmd);
+
+        if (cmd == 2 /* hwrBatteryCmdMainRead */) {
+            CALLED_GET_PARAM_REF(HwrBatCmdReadType, cmdP, Marshal::kInOut);
+
+            if (gSession->GetDevice().HardwareID() == 0x0a /*halModelIDVisorPrism*/) {
+                (*cmdP).mVolts = 4000;  // 4.0 volts
+            } else {
+                (*cmdP).mVolts = 2500;  // 2.5 volts
+            }
+
+            (*cmdP).abs = 255;  // Hardcode a maximum level
+
+            cmdP.Put();
+
+            PUT_RESULT_VAL(Err, errNone);
+            return kSkipROM;
+        }
+
+        return kExecuteROM;
+    }
+
     void TailpatchFtrInit(void) {
         PRINTF("syscall: FtrInit");
 
@@ -320,6 +365,8 @@ namespace {
         {sysTrapClipboardAppendItem, NULL, TailpatchClipboardAppendItem},
         {sysTrapSysSemaphoreWait, HeadpatchSysSemaphoreWait, NULL},
         {sysTrapDbgMessage, HeadpatchDbgMessage, NULL},
+        {sysTrapHwrBatteryLevel, HeadpatchHwrBatteryLevel, NULL},
+        {sysTrapHwrBattery, HeadpatchHwrBattery, NULL},
         {0, NULL, NULL}};
 }  // namespace
 

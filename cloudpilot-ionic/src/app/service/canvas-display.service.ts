@@ -158,6 +158,7 @@ const IMAGE_SILKSCREEN_M130 = prepareImage('SILKSCREEN_M130');
 const IMAGE_SILKSCREEN_TUNGSTENW = prepareImage('SILKSCREEN_TUNGSTEN_W');
 const IMAGE_SILKSCREEN_PILOT = prepareImage('SILKSCREEN_PILOT');
 const IMAGE_SILKSCREEN_I705 = prepareImage('SILKSCREEN_I705');
+const IMAGE_SILKSCREEN_PEG_S300 = prepareImage('SILKSCREEN_PEG_S300');
 
 const IMAGE_BUTTONS_V = prepareImage('HARD_BUTTONS_PALM_V');
 const IMAGE_BUTTONS_M515 = prepareImage('HARD_BUTTONS_M515');
@@ -172,6 +173,7 @@ const IMAGE_BUTTONS_TUNGSTENW = prepareImage('HARD_BUTTONS_TUNGSTEN_W');
 const IMAGE_BUTTONS_PILOT = prepareImage('HARD_BUTTONS_PILOT');
 const IMAGE_BUTTONS_I705 = prepareImage('HARD_BUTTONS_I705');
 const IMAGE_BUTTONS_HANDERA330 = prepareImage('HARD_BUTTONS_HANDERA330');
+const IMAGE_HARD_BUTTONS_PEG_S300 = prepareImage('HARD_BUTTONS_PEG_S300');
 
 @Injectable({
     providedIn: 'root',
@@ -485,6 +487,9 @@ export class CanvasDisplayService {
 
     private silkscreenImage(): PrerenderedImage {
         switch (this.session?.device) {
+            case DeviceId.pegS300:
+                return IMAGE_SILKSCREEN_PEG_S300;
+
             case DeviceId.palmPilot:
             case DeviceId.pilot:
             case DeviceId.iii:
@@ -529,6 +534,9 @@ export class CanvasDisplayService {
 
     private buttonsImage(): PrerenderedImage {
         switch (this.session?.device) {
+            case DeviceId.pegS300:
+                return IMAGE_HARD_BUTTONS_PEG_S300;
+
             case DeviceId.pilot:
             case DeviceId.palmPilot:
                 return IMAGE_BUTTONS_PILOT;

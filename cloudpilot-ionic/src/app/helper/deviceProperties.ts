@@ -20,6 +20,14 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
                 silkscreenHeight: 0,
             };
 
+        case DeviceId.pegS300:
+            return {
+                screenSize: ScreenSize.screen160x160,
+                width: 160,
+                height: 160,
+                silkscreenHeight: 76,
+            };
+
         default:
             return {
                 screenSize: ScreenSize.screen160x160,
@@ -49,6 +57,7 @@ export function isColor(deviceId: DeviceId | undefined): boolean {
         case DeviceId.palmVIIx:
         case DeviceId.i705:
         case DeviceId.handera330:
+        case DeviceId.pegS300:
             return false;
 
         default:
@@ -123,6 +132,9 @@ export function deviceName(deviceId: DeviceId): string {
 
         case DeviceId.handera330:
             return 'Handera 330';
+
+        case DeviceId.pegS300:
+            return 'Sony PEG-S300';
 
         default:
             throw new Error('bad device ID');

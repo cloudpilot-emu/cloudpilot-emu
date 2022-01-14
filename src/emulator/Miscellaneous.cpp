@@ -447,8 +447,6 @@ string GetLibraryName(uint16 refNum) {
     char libName[256];
     EmMem_strcpy(libName, libNameP);
 
-    PRINTF("library %u = %s", refNum, libName);
-
     return string(libName);
 }
 

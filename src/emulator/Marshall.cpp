@@ -759,3 +759,23 @@ void Marshal::PutNetHostInfoBufType(emuptr p, const NetHostInfoBufType& src) {
         p2 = EmMemNULL;
     }
 }
+
+void Marshal::GetHwrBatCmdReadType(emuptr p, HwrBatCmdReadType& dest) {
+    memset(&dest, 0, sizeof(HwrBatCmdReadType));
+
+    if (p) {
+        EmAliasHwrBatCmdReadType<PAS> src(p);
+
+        dest.mVolts = src.mVolts;
+        dest.abs = src.abs;
+    }
+}
+
+void Marshal::PutHwrBatCmdReadType(emuptr p, const HwrBatCmdReadType& src) {
+    if (p) {
+        EmAliasHwrBatCmdReadType<PAS> dest(p);
+
+        dest.mVolts = src.mVolts;
+        dest.abs = src.abs;
+    }
+}

@@ -62,6 +62,7 @@ class EmPatchMgr {
     static EmPatchModule* patchModuleSys;
     static EmPatchModule* patchModuleHtal;
     static EmPatchModule* patchModuleNetlib;
+    static EmPatchModule* patchModuleClieSlotDriver;
 };
 
 #endif /* EmPatchMgr_h */

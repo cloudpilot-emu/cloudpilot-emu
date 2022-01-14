@@ -74,6 +74,8 @@ class EmDevice {
     bool EmulatesDockStatus() const;
     bool NeedsSDCTLHack() const;
     bool HasCustomDigitizerTransform() const;
+    bool IsClie() const;
+    bool NeedsBatteryPatch() const;
 
     ScreenDimensions::Kind GetScreenDimensions() const;
 

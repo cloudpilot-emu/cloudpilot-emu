@@ -64,6 +64,8 @@
 #include "EmRegsEZPalmVII.h"
 #include "EmRegsEZPalmVIIx.h"
 #include "EmRegsEZPalmVx.h"
+#include "EmRegsExpCardCLIE.h"
+#include "EmRegsEzPegS300.h"
 #include "EmRegsFrameBuffer.h"
 #include "EmRegsMediaQ11xx.h"
 #include "EmRegsMediaQ11xxPacifiC.h"
@@ -74,6 +76,7 @@
 #include "EmRegsSED1375.h"
 #include "EmRegsSED1376.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
+#include "EmRegsUsbCLIE.h"
 #include "EmRegsVZAtlantiC.h"
 #include "EmRegsVZHandEra330.h"
 #include "EmRegsVZPalmI705.h"
@@ -154,6 +157,7 @@ enum  // DeviceType
     kDeviceVisorPrism,
     kDeviceVisorPlatinum,
     kDeviceVisorEdge,
+    kDevicePEGS300,
     kDeviceLast
 };
 
@@ -224,6 +228,7 @@ static const long hwrMiscFlagExtSubIDNone = 0xFF;
 #define PALM_VII_EZ_NEW_DB "TuneUp"
 #define PALM_VIIX_DB "iMessenger"
 #define PALM_m100_DB "cclkPalmClock"
+#define SONY_MANUF "SONY Corporation"
 
 // Table used to describe the various hardware devices we support.
 // Some good summary background information is at:
@@ -462,7 +467,8 @@ static const DeviceInfo kDeviceInfo[] = {
      8192,
      1,
      1,
-     {{'trgp', 'trg2'}}}
+     {{'trgp', 'trg2'}}},
+    {kDevicePEGS300, "PEG-S300 series", {"PEG-S300"}, kSupports68EZ328, 8192, 0, 0, {}}
 #if 0
     // ===== Handspring devices =====
     {
@@ -855,6 +861,9 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
             break;
 
 #endif
+        case kDevicePEGS300:
+            if (!(ROM.GetCardManufacturer().compare(0, 16, SONY_MANUF)) && !isColor) return true;
+            break;
 
         case kDeviceLast:
             EmAssert(false);
@@ -1072,6 +1081,12 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegs330CPLD(fPortMgr));
             EmBankRegs::AddSubBank(new EmRegsCFMemCard(&fPortMgr->CFBus));
         } break;
+
+        case kDevicePEGS300:
+            EmBankRegs::AddSubBank(new EmRegsEzPegS300);
+            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE());
+            EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x00100000));
+            break;
 
 #if 0
         case kDeviceVisor:
@@ -1376,6 +1391,18 @@ bool EmDevice::EmulatesDockStatus() const {
 bool EmDevice::NeedsSDCTLHack() const { return fDeviceID == kDevicePalmM515; }
 
 bool EmDevice::HasCustomDigitizerTransform() const { return fDeviceID == kDeviceHandEra330; }
+
+bool EmDevice::IsClie() const {
+    switch (fDeviceID) {
+        case kDevicePEGS300:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+bool EmDevice::NeedsBatteryPatch() const { return Supports68328() || IsClie(); }
 
 ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
     switch (fDeviceID) {

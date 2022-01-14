@@ -27,6 +27,7 @@
 #include "Logging.h"     // LogEvtAddEventToQueue, etc.
 #include "MetaMemory.h"  // MetaMemory mark functions
 #include "Miscellaneous.h"
+#include "PatchModuleClieSlotDriver.h"
 #include "PatchModuleNetlib.h"
 #include "PenEvent.h"
 #include "ROMStubs.h"  // FtrSet, FtrUnregister, EvtWakeup, ...
@@ -51,7 +52,8 @@ static TailPatchIndex gInstalledTailpatches;
 //	Private functions
 // ======================================================================
 
-// #define LOG_SYSCALLS
+//#define LOG_SYSCALLS
+//#define LOG_LIBCALLS
 #ifdef LOG_SYSCALLS
     #include "DecodeSyscalls.h"
 #endif
@@ -82,6 +84,7 @@ namespace {
 EmPatchModule* EmPatchMgr::patchModuleSys = nullptr;
 EmPatchModule* EmPatchMgr::patchModuleHtal = nullptr;
 EmPatchModule* EmPatchMgr::patchModuleNetlib = nullptr;
+EmPatchModule* EmPatchMgr::patchModuleClieSlotDriver = nullptr;
 
 /***********************************************************************
  *
@@ -111,6 +114,10 @@ void EmPatchMgr::Initialize(void) {
 
     if (!patchModuleNetlib) {
         patchModuleNetlib = new PatchModuleNetlib();
+    }
+
+    if (!patchModuleClieSlotDriver) {
+        patchModuleClieSlotDriver = new PatchModuleClieSlotDriver();
     }
 
     executingPatch = false;
@@ -256,6 +263,11 @@ void EmPatchMgr::Dispose(void) {
         delete patchModuleNetlib;
         patchModuleNetlib = nullptr;
     }
+
+    if (patchModuleClieSlotDriver) {
+        delete patchModuleClieSlotDriver;
+        patchModuleClieSlotDriver = nullptr;
+    }
 }
 
 /***********************************************************************
@@ -387,10 +399,17 @@ EmPatchModule* EmPatchMgr::GetLibPatchTable(uint16 refNum) {
     if (libPtchEntry.IsDirty() == true) {
         string libName = ::GetLibraryName(refNum);
 
+#ifdef LOG_LIBCALLS
+        cout << "library " << refNum << " = " << libName;
+#endif
+
         EmPatchModule* patchModuleIP = NULL;
 
         if (libName == string(PatchModuleNetlib::LIBNAME)) {
             patchModuleIP = patchModuleNetlib;
+        } else if (libName == string(PatchModuleClieSlotDriver::LIBNAME) &&
+                   gSession->GetDevice().IsClie()) {
+            patchModuleIP = patchModuleClieSlotDriver;
         }
 
         libPtchEntry.SetPatchTableP(patchModuleIP);
@@ -428,7 +447,7 @@ CallROMType EmPatchMgr::HandleSystemCall(const SystemCallContext& context) {
     EmPatchMgr::GetPatches(context, hp, tp);
 
 #ifdef LOG_SYSCALLS
-    cout << trapWordToString(context.fTrapWord) << endl << flush;
+    cout << "syscall: " << trapWordToString(context.fTrapWord) << endl << flush;
 #endif
 
     CallROMType handled = EmPatchMgr::HandlePatches(context, hp, tp);
@@ -465,6 +484,11 @@ void EmPatchMgr::GetPatches(const SystemCallContext& context, HeadpatchProc& hp,
 
     // Otherwise, see if this is a call to a patched library
     else {
+#ifdef LOG_LIBCALLS
+        cout << "libcall: " << context.fExtra << " , selector " << hex << context.fTrapIndex << endl
+             << flush;
+#endif
+
         patchModule = GetLibPatchTable(context.fExtra);
     }
 

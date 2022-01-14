@@ -11,6 +11,7 @@ export { default as HARD_BUTTONS_TUNGSTEN_W } from '!raw-loader!./hard-buttons/t
 export { default as HARD_BUTTONS_PALM_V } from '!raw-loader!./hard-buttons/v.svg';
 export { default as HARD_BUTTONS_I705 } from '!raw-loader!./hard-buttons/i705.svg';
 export { default as HARD_BUTTONS_HANDERA330 } from '!raw-loader!./hard-buttons/handera330.svg';
+export { default as HARD_BUTTONS_PEG_S300 } from '!raw-loader!./hard-buttons/clie-s300.svg';
 
 export { default as SILKSCREEN_IIIC } from '!raw-loader!./silkscreen/iiic.svg';
 export { default as SILKSCREEN_M100 } from '!raw-loader!./silkscreen/m100.svg';
@@ -21,3 +22,4 @@ export { default as SILKSCREEN_PILOT } from '!raw-loader!./silkscreen/pilot.svg'
 export { default as SILKSCREEN_TUNGSTEN_W } from '!raw-loader!./silkscreen/tungstenw.svg';
 export { default as SILKSCREEN_V } from '!raw-loader!./silkscreen/v.svg';
 export { default as SILKSCREEN_I705 } from '!raw-loader!./silkscreen/i705.svg';
+export { default as SILKSCREEN_PEG_S300 } from '!raw-loader!./silkscreen/clie_s300_s320_s360.svg';

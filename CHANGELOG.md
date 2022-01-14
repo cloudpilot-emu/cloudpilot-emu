@@ -1,3 +1,7 @@
+# Next version
+
+-   Support for Sony PEG-S300
+
 # 1.5.8
 
 -   Link API for importing ROMs or sessions and installing databases via

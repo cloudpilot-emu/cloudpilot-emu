@@ -1,3 +1,6 @@
+#ifndef _DECODE_SYSCALLS_H_
+#define _DECODE_SYSCALLS_H_
+
 static const char* trapWordToString(int trapWord) {
 #define _ENTRY(x, y) \
     case y:          \
@@ -1425,3 +1428,5 @@ static const char* trapWordToString(int trapWord) {
 #undef _ENTTRY
     }
 }
+
+#endif  // _DECODE_SYSCALLS_H_

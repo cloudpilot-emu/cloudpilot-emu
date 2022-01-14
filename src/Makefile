@@ -74,9 +74,11 @@ MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
 INCLUDE = \
 	-I./emulator/hardware \
+	-I./emulator/hardware/clie \
 	-I./emulator/hardware/handera \
 	-I./emulator/uae \
 	-I./emulator/patch \
+	-I./emulator/patch/clie \
 	-I./emulator/savestate \
 	-I./emulator/palm/Device \
 	-I./emulator/palm/Platform \
@@ -152,6 +154,9 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsPLDPalmVIIEZ.cpp \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
+	emulator/hardware/clie/EmRegsExpCardCLIE.cpp \
+	emulator/hardware/clie/EmRegsUsbCLIE.cpp \
+	emulator/hardware/clie/EmRegsEzPegS300.cpp \
 	emulator/hardware/handera/EmRegs330CPLD.cpp \
 	emulator/hardware/handera/EmRegsVZHandEra330.cpp \
 	emulator/hardware/handera/EmSPISlave330Current.cpp \
@@ -165,6 +170,7 @@ SOURCE_EMU = \
 	emulator/patch/EmPatchModuleSys.cpp \
 	emulator/patch/EmPatchModuleHtal.cpp \
 	emulator/patch/PatchModuleNetlib.cpp \
+	emulator/patch/clie/PatchModuleClieSlotDriver.cpp \
 	emulator/patch/EmPatchMgr.cpp \
 	emulator/savestate/Chunk.cpp \
 	emulator/savestate/ChunkProbe.cpp \
