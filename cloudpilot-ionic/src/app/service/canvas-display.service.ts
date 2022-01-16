@@ -487,6 +487,7 @@ export class CanvasDisplayService {
 
     private silkscreenImage(): PrerenderedImage {
         switch (this.session?.device) {
+            case DeviceId.pegS320:
             case DeviceId.pegS300:
                 return IMAGE_SILKSCREEN_PEG_S300;
 
@@ -534,6 +535,7 @@ export class CanvasDisplayService {
 
     private buttonsImage(): PrerenderedImage {
         switch (this.session?.device) {
+            case DeviceId.pegS320:
             case DeviceId.pegS300:
                 return IMAGE_HARD_BUTTONS_PEG_S300;
 

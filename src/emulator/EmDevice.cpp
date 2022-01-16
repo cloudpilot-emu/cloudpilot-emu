@@ -83,27 +83,11 @@
 #include "EmRegsVZPalmM125.h"
 #include "EmRegsVZPalmM130.h"
 #include "EmRegsVZPalmM505.h"
+#include "EmRegsVZPegNasca.h"
 #include "EmStructs.h"
 #include "EmTRGCF.h"
 #include "EmTRGSD.h"
 #include "Platform.h"  // _stricmp
-
-#if 0  // CSTODO
-    #include "EmRegs328PalmIII.h"
-    #include "EmRegs328PalmPilot.h"
-    #include "EmRegs328Symbol1700.h"
-    #include "EmRegsASICSymbol1700.h"
-    #include "EmRegsEZVisor.h"
-    #include "EmRegsSZTemp.h"
-    #include "EmRegsUSBVisor.h"
-    #include "EmRegsVZPalmM500.h"
-    #include "EmRegsVZTemp.h"
-    #include "EmRegsVZVisorEdge.h"
-    #include "EmRegsVZVisorPlatinum.h"
-    #include "EmRegsVZVisorPrism.h"
-    #include "EmTRG.h"
-
-#endif
 
 // clang-format false
 #include "PalmPack.h"
@@ -158,6 +142,7 @@ enum  // DeviceType
     kDeviceVisorPlatinum,
     kDeviceVisorEdge,
     kDevicePEGS300,
+    kDevicePEGS320,
     kDeviceLast
 };
 
@@ -468,7 +453,15 @@ static const DeviceInfo kDeviceInfo[] = {
      1,
      1,
      {{'trgp', 'trg2'}}},
-    {kDevicePEGS300, "PEG-S300 series", {"PEG-S300"}, kSupports68EZ328, 8192, 0, 0, {}}
+    {kDevicePEGS300, "PEG-S300 series", {"PEG-S300"}, kSupports68EZ328, 8192, 0, 0, {}},
+    {kDevicePEGS320,
+     "PEG-S320 series",
+     {"PEG-S320"},
+     kSupports68VZ328,
+     8192,
+     UNSUPPORTED,
+     UNSUPPORTED,
+     {{'sony', 'nasc'}}},
 #if 0
     // ===== Handspring devices =====
     {
@@ -1086,6 +1079,12 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsEzPegS300);
             EmBankRegs::AddSubBank(new EmRegsExpCardCLIE());
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x00100000));
+            break;
+
+        case kDevicePEGS320:
+            EmBankRegs::AddSubBank(new EmRegsVzPegNasca);
+            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE);
+            EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x11000000L, 0));
             break;
 
 #if 0

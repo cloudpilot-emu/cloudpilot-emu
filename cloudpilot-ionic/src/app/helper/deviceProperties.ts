@@ -21,6 +21,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
             };
 
         case DeviceId.pegS300:
+        case DeviceId.pegS320:
             return {
                 screenSize: ScreenSize.screen160x160,
                 width: 160,
@@ -58,6 +59,7 @@ export function isColor(deviceId: DeviceId | undefined): boolean {
         case DeviceId.i705:
         case DeviceId.handera330:
         case DeviceId.pegS300:
+        case DeviceId.pegS320:
             return false;
 
         default:
@@ -135,6 +137,9 @@ export function deviceName(deviceId: DeviceId): string {
 
         case DeviceId.pegS300:
             return 'Sony PEG-S300';
+
+        case DeviceId.pegS320:
+            return 'Sony PEG-S320';
 
         default:
             throw new Error('bad device ID');
