@@ -28,6 +28,7 @@
 #include "MetaMemory.h"  // MetaMemory mark functions
 #include "Miscellaneous.h"
 #include "PatchModuleClieSlotDriver.h"
+#include "PatchModuleClieStubAll.h"
 #include "PatchModuleNetlib.h"
 #include "PenEvent.h"
 #include "ROMStubs.h"  // FtrSet, FtrUnregister, EvtWakeup, ...
@@ -85,6 +86,7 @@ EmPatchModule* EmPatchMgr::patchModuleSys = nullptr;
 EmPatchModule* EmPatchMgr::patchModuleHtal = nullptr;
 EmPatchModule* EmPatchMgr::patchModuleNetlib = nullptr;
 EmPatchModule* EmPatchMgr::patchModuleClieSlotDriver = nullptr;
+EmPatchModule* EmPatchMgr::patchModuleClieStubAll = nullptr;
 
 /***********************************************************************
  *
@@ -118,6 +120,10 @@ void EmPatchMgr::Initialize(void) {
 
     if (!patchModuleClieSlotDriver) {
         patchModuleClieSlotDriver = new PatchModuleClieSlotDriver();
+    }
+
+    if (!patchModuleClieStubAll) {
+        patchModuleClieStubAll = new PatchModuleClieStubAll();
     }
 
     executingPatch = false;
@@ -268,6 +274,11 @@ void EmPatchMgr::Dispose(void) {
         delete patchModuleClieSlotDriver;
         patchModuleClieSlotDriver = nullptr;
     }
+
+    if (patchModuleClieStubAll) {
+        delete patchModuleClieStubAll;
+        patchModuleClieStubAll = nullptr;
+    }
 }
 
 /***********************************************************************
@@ -407,9 +418,12 @@ EmPatchModule* EmPatchMgr::GetLibPatchTable(uint16 refNum) {
 
         if (libName == string(PatchModuleNetlib::LIBNAME)) {
             patchModuleIP = patchModuleNetlib;
-        } else if (libName == string(PatchModuleClieSlotDriver::LIBNAME) &&
-                   gSession->GetDevice().IsClie()) {
+        } else if (gSession->GetDevice().IsClie() &&
+                   libName == string(PatchModuleClieSlotDriver::LIBNAME)) {
             patchModuleIP = patchModuleClieSlotDriver;
+        } else if (gSession->GetDevice().IsClie() &&
+                   PatchModuleClieStubAll::HandlesLibrary(libName)) {
+            patchModuleIP = patchModuleClieStubAll;
         }
 
         libPtchEntry.SetPatchTableP(patchModuleIP);

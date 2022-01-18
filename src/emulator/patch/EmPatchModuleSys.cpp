@@ -216,6 +216,21 @@ namespace {
         return kExecuteROM;
     }
 
+    CallROMType HeadpatchSysLibLoad(void) {
+        CALLED_SETUP("Err", "UInt32 libType, UInt32 libCreator, UInt16* refNumP");
+
+        CALLED_GET_PARAM_VAL(UInt32, libType);
+        CALLED_GET_PARAM_VAL(UInt32, libCreator);
+
+        if (gSession->GetDevice().IsClie() && libType == sysResTLibrary && libCreator == 'SlMa') {
+            // unsupported Audio Library on POSE
+            PUT_RESULT_VAL(Err, sysErrLibNotFound);
+            return kSkipROM;
+        }
+
+        return kExecuteROM;
+    }
+
     void TailpatchFtrInit(void) {
         PRINTF("syscall: FtrInit");
 
@@ -367,6 +382,7 @@ namespace {
         {sysTrapDbgMessage, HeadpatchDbgMessage, NULL},
         {sysTrapHwrBatteryLevel, HeadpatchHwrBatteryLevel, NULL},
         {sysTrapHwrBattery, HeadpatchHwrBattery, NULL},
+        {sysTrapSysLibLoad, HeadpatchSysLibLoad, NULL},
         {0, NULL, NULL}};
 }  // namespace
 

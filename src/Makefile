@@ -174,6 +174,7 @@ SOURCE_EMU = \
 	emulator/patch/EmPatchModuleHtal.cpp \
 	emulator/patch/PatchModuleNetlib.cpp \
 	emulator/patch/clie/PatchModuleClieSlotDriver.cpp \
+	emulator/patch/clie/PatchModuleClieStubAll.cpp \
 	emulator/patch/EmPatchMgr.cpp \
 	emulator/savestate/Chunk.cpp \
 	emulator/savestate/ChunkProbe.cpp \

@@ -17,12 +17,12 @@
 // Port B Bit settings for Venice
 
 // Port D Bit settings for Venice
-#define hwrVZVenicePortDKbdCol0 0x01  // PD0 /
-#define hwrVZVenicePortDKbdCol1 0x02  // PD1 /
-#define hwrVZVenicePortDKbdCol2 0x04  // PD2 /
-#define hwrVZVenicePortDMS_IF_Intl 0x08  // PD3 / �������X�e�B�b�N�}�����o���荞��
+#define hwrVZVenicePortDKbdCol0 0x01     // PD0 /
+#define hwrVZVenicePortDKbdCol1 0x02     // PD1 /
+#define hwrVZVenicePortDKbdCol2 0x04     // PD2 /
+#define hwrVZVenicePortDMS_IF_Intl 0x08  // PD3
 
-#define hwrVZVenicePortDDockButton 0x10  // PD4 / HotSync���荞��
+#define hwrVZVenicePortDDockButton 0x10  // PD4 / HotSync
 #define hwrVZVenicePortDPowerFail \
     0x80  // PD7 / (L) Power Fail Interrupt	(aka IRQ6) (level, low)
 
@@ -41,7 +41,7 @@
 #define hwrVZVenicePortKKbdRow2 0x80      // PK7
 
 // Port J Bit settings for Venice
-#define hwrVZVenicePortJDC_IN 0x04  // PJ2 : DC_IN / DC�ެ���d����������
+#define hwrVZVenicePortJDC_IN 0x04        // PJ2 : DC_IN / DC
 #define hwrVZVenicePortJLCDEnableOn 0x08  // PJ3 :(H) LCD Enable
 
 #define keyBitJogBack (0x0800)  // JogDial: Back key
@@ -53,7 +53,7 @@ namespace {
        public:
         Nibbler() = default;
 
-        void reset(const uint8* row, int offset) {
+        inline void reset(const uint8* row, int offset) {
             next = row + offset / nibblesPerByte;
             current = *(next++);
 
@@ -61,7 +61,7 @@ namespace {
             current <<= (bpp * nextNibble);
         }
 
-        uint8 nibble() {
+        inline uint8 nibble() {
             if (nextNibble >= nibblesPerByte) {
                 current = *(next++);
                 nextNibble = 0;
@@ -257,11 +257,7 @@ bool EmRegsVzPegVenice::CopyLCDFrame(Frame& frame) {
     uint32* bufferTmp = framebufferTmp.get();
     uint8* buffer = frame.GetBuffer();
 
-    frame.lines = 320;
-    frame.lineWidth = 320;
-    frame.margin = 0;
-
-    // The following scaling code is designed for big endian and not endian safe!
+    // The following scaling code is designed for little endian and not endian safe!
     switch (frame.bpp) {
         case 4: {
             Nibbler<4> nibbler;
@@ -319,6 +315,10 @@ bool EmRegsVzPegVenice::CopyLCDFrame(Frame& frame) {
             break;
         }
     }
+
+    frame.lines = 320;
+    frame.lineWidth = 320;
+    frame.margin = 0;
 
     for (int y = 0; y < 160; y++) {
         memcpy(buffer + 2 * y * frame.bytesPerLine, bufferTmp + y * frame.bytesPerLine / 4,

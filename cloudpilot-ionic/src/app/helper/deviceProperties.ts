@@ -29,6 +29,14 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
                 silkscreenHeight: 76,
             };
 
+        case DeviceId.pegT400:
+            return {
+                screenSize: ScreenSize.screen320x320,
+                width: 320,
+                height: 320,
+                silkscreenHeight: 140,
+            };
+
         default:
             return {
                 screenSize: ScreenSize.screen160x160,
@@ -60,6 +68,7 @@ export function isColor(deviceId: DeviceId | undefined): boolean {
         case DeviceId.handera330:
         case DeviceId.pegS300:
         case DeviceId.pegS320:
+        case DeviceId.pegT400:
             return false;
 
         default:
@@ -140,6 +149,9 @@ export function deviceName(deviceId: DeviceId): string {
 
         case DeviceId.pegS320:
             return 'Sony PEG-S320';
+
+        case DeviceId.pegT400:
+            return 'Sony PEG-T400';
 
         default:
             throw new Error('bad device ID');
