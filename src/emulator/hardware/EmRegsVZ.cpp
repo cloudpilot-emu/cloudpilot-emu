@@ -1206,7 +1206,6 @@ void EmRegsVZ::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 
 bool EmRegsVZ::CopyLCDFrame(Frame& frame) {
     // Get the screen metrics.
-
     frame.bpp = 1 << (READ_REGISTER(lcdPanelControl) & 0x03);
     frame.lineWidth = READ_REGISTER(lcdScreenWidth);
     frame.lines = READ_REGISTER(lcdScreenHeight) + 1;
@@ -1303,8 +1302,16 @@ int32 EmRegsVZ::GetDynamicHeapSize(void) {
 
         long chip_select_size = (32 * 1024L) << csDSIZ;
 
-        if ((csControl & DSIZ3Mask) != 0 && (csDSelect & DRAMMask) != 0 && csDSIZ <= 0x01) {
-            chip_select_size = (8 * 1024L * 1024L) << csDSIZ;
+        if ((csControl & DSIZ3Mask) != 0 && (csDSelect & DRAMMask) != 0) {
+            if (csDSIZ <= 0x01) {
+                chip_select_size = (8 * 1024L * 1024L) << csDSIZ;
+            } else if (csDSIZ == 0x07) {
+                chip_select_size = 8 * 1024L * 1024L;
+                logging::printf(
+                    "out-of-spec combination of DSIZ=1 and SIZ=0x07 --- assuming %u "
+                    "bytes DRAM memory range",
+                    chip_select_size);
+            }
         }
 
         result = chip_select_size / (1 << (7 - csDUPSIZ));

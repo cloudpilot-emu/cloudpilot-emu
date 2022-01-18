@@ -76,6 +76,7 @@ class EmDevice {
     bool HasCustomDigitizerTransform() const;
     bool IsClie() const;
     bool NeedsBatteryPatch() const;
+    int DigitizerScale() const;
 
     ScreenDimensions::Kind GetScreenDimensions() const;
 

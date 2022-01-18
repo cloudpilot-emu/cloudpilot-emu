@@ -1,7 +1,3 @@
-// EmRegsEzPegS300.cpp: EmRegsEzPegS300 �N���X�̃C���v�������e�[�V����
-//
-//////////////////////////////////////////////////////////////////////
-
 #include "EmRegsEzPegS300.h"
 
 #include "EmCommon.h"

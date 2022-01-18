@@ -110,8 +110,9 @@ void MainLoop::UpdateScreen() {
 
         switch (frame.bpp) {
             case 1: {
-                for (uint32 x = 0; x < frame.lineWidth; x++)
-                    for (uint32 y = 0; y < frame.lines; y++)
+                for (uint32 y = 0; y < frame.lines; y++)
+                    for (uint32 x = 0; x < frame.lineWidth; x++)
+
                         pixels[y * pitch / 4 + x] =
                             ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
                               (0x80 >> ((x + frame.margin) % 8))) == 0
@@ -120,8 +121,9 @@ void MainLoop::UpdateScreen() {
             } break;
 
             case 4: {
-                for (uint32 x = 0; x < frame.lineWidth; x++)
-                    for (uint32 y = 0; y < frame.lines; y++)
+                for (uint32 y = 0; y < frame.lines; y++)
+                    for (uint32 x = 0; x < frame.lineWidth; x++)
+
                         pixels[y * pitch / 4 + x] =
                             PALETTE_GRAYSCALE_16[((buffer[y * frame.bytesPerLine +
                                                           (x + frame.margin) / 2]) >>
@@ -137,8 +139,8 @@ void MainLoop::UpdateScreen() {
                                      PALETTE_GRAYSCALE_16[(mapping >> 8) & 0x000f],
                                      PALETTE_GRAYSCALE_16[(mapping >> 12) & 0x000f]};
 
-                for (uint32 x = 0; x < frame.lineWidth; x++)
-                    for (uint32 y = 0; y < frame.lines; y++)
+                for (uint32 y = 0; y < frame.lines; y++)
+                    for (uint32 x = 0; x < frame.lineWidth; x++)
                         pixels[y * pitch / 4 + x] =
                             palette[((buffer[y * frame.bytesPerLine + (x + frame.margin) / 4]) >>
                                      (6 - ((x + frame.margin) % 4) * 2)) &
@@ -146,8 +148,8 @@ void MainLoop::UpdateScreen() {
             } break;
 
             case 24: {
-                for (uint32 x = 0; x < frame.lineWidth; x++)
-                    for (uint32 y = 0; y < frame.lines; y++) {
+                for (uint32 y = 0; y < frame.lines; y++)
+                    for (uint32 x = 0; x < frame.lineWidth; x++) {
                         uint32* buffer32 = reinterpret_cast<uint32*>(buffer);
 
                         pixels[y * pitch / 4 + x] =

@@ -1,7 +1,3 @@
-// EmRegsVzPegNasca.cpp: EmRegsVzPegNasca �N���X�̃C���v�������e�[�V����
-//
-//////////////////////////////////////////////////////////////////////
-
 #include "EmRegsVZPegNasca.h"
 
 #include "EmBankRegs.h"  // EmBankRegs::InvalidAccess

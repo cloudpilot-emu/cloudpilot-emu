@@ -1,7 +1,3 @@
-// EmRegsEzPegS300.h: EmRegsEzPegS300 �N���X�̃C���^�[�t�F�C�X
-//
-//////////////////////////////////////////////////////////////////////
-
 #ifndef _EM_REGS_EZ_PEG_S300_
 #define _EM_REGS_EZ_PEG_S300_
 

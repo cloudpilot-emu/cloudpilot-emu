@@ -66,6 +66,7 @@
 #include "EmRegsEZPalmVx.h"
 #include "EmRegsExpCardCLIE.h"
 #include "EmRegsEzPegS300.h"
+#include "EmRegsFMSound.h"
 #include "EmRegsFrameBuffer.h"
 #include "EmRegsMediaQ11xx.h"
 #include "EmRegsMediaQ11xxPacifiC.h"
@@ -84,6 +85,7 @@
 #include "EmRegsVZPalmM130.h"
 #include "EmRegsVZPalmM505.h"
 #include "EmRegsVZPegNasca.h"
+#include "EmRegsVZPegVenice.h"
 #include "EmStructs.h"
 #include "EmTRGCF.h"
 #include "EmTRGSD.h"
@@ -143,6 +145,7 @@ enum  // DeviceType
     kDeviceVisorEdge,
     kDevicePEGS300,
     kDevicePEGS320,
+    kDevicePEGT400,
     kDeviceLast
 };
 
@@ -462,6 +465,14 @@ static const DeviceInfo kDeviceInfo[] = {
      UNSUPPORTED,
      UNSUPPORTED,
      {{'sony', 'nasc'}}},
+    {kDevicePEGT400,
+     "PEG-T400 series",
+     {"PEG-T400"},
+     kSupports68VZ328,
+     8192,
+     UNSUPPORTED,
+     UNSUPPORTED,
+     {{'sony', 'vnce'}}},
 #if 0
     // ===== Handspring devices =====
     {
@@ -1087,6 +1098,13 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x11000000L, 0));
             break;
 
+        case kDevicePEGT400:
+            EmBankRegs::AddSubBank(new EmRegsVzPegVenice);
+            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE);
+            EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x10900000L, 0));
+            EmBankRegs::AddSubBank(new EmRegsFMSound(FMSound_BaseAddress));
+            break;
+
 #if 0
         case kDeviceVisor:
             EmBankRegs::AddSubBank(new EmRegsEZVisor);
@@ -1403,10 +1421,21 @@ bool EmDevice::IsClie() const {
 
 bool EmDevice::NeedsBatteryPatch() const { return Supports68328() || IsClie(); }
 
+int EmDevice::DigitizerScale() const {
+    switch (fDeviceID) {
+        case kDevicePEGT400:
+            return 2;
+
+        default:
+            return 1;
+    }
+}
+
 ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
     switch (fDeviceID) {
         case kDevicePalmI710:
         case kDevicePalmPacifiC:
+        case kDevicePEGT400:
             return ScreenDimensions::screen320x320;
 
         case kDeviceHandEra330:
