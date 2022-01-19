@@ -35,6 +35,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
                 width: 320,
                 height: 320,
                 silkscreenHeight: 140,
+                silkscreenOvershoot: 10,
             };
 
         default:

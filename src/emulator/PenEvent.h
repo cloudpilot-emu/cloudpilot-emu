@@ -7,18 +7,18 @@ class PenEvent {
    public:
     PenEvent() = default;
 
-    uint32 getX() const { return x; };
-    uint32 getY() const { return y; };
+    int32 getX() const { return x; };
+    int32 getY() const { return y; };
     bool isPenDown() const { return penDown; }
 
-    static PenEvent down(uint32 x, uint32 y) { return PenEvent(x, y, true); };
+    static PenEvent down(int32 x, int32 y) { return PenEvent(x, y, true); };
     static PenEvent up() { return PenEvent(0, 0, false); }
 
    private:
-    PenEvent(uint32 x, uint32 y, bool down) : x(x), y(y), penDown(down){};
+    PenEvent(int32 x, int32 y, bool down) : x(x), y(y), penDown(down){};
 
    private:
-    uint32 x{0}, y{0};
+    int32 x{0}, y{0};
     bool penDown{false};
 };
 

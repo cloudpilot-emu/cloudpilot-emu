@@ -403,10 +403,10 @@ export class CanvasDisplayService {
 
         // Compensate for the border
         let x =
-            Math.floor((((e.clientX - contentX) / contentWidth) * this.width) / this.layout.scale) -
+            (((e.clientX - contentX) / contentWidth) * this.width) / this.layout.scale -
             this.layout.borderWidth.frameDevice;
         let y =
-            Math.floor((((e.clientY - contentY) / contentHeight) * this.height) / this.layout.scale) -
+            (((e.clientY - contentY) / contentHeight) * this.height) / this.layout.scale -
             this.layout.borderWidth.frameDevice;
 
         // The canvas layout inside the border is as follows:
@@ -443,6 +443,12 @@ export class CanvasDisplayService {
         }
 
         return [x, y];
+    }
+
+    isSilkscreen(coords: [number, number]): boolean {
+        const [, y] = coords;
+
+        return !this.isButtons(coords) && y >= this.layout.screenHeight.frameDevice;
     }
 
     isButtons([, y]: [number, number]): boolean {

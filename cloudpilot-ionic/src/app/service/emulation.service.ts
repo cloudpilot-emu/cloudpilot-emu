@@ -161,13 +161,17 @@ export class EmulationService {
             this.emulationState.setCurrentSession(undefined);
         });
 
-    handlePointerMove(x: number, y: number): void {
+    handlePointerMove(x: number, y: number, isSilkscreen: boolean): void {
         const ts = performance.now();
         this.penDown = true;
 
         if (ts - this.lastPenUpdate < PEN_MOVE_THROTTLE || !this.cloudpilotInstance) return;
 
-        this.cloudpilotInstance.queuePenMove(x, y);
+        if (isSilkscreen) {
+            x = this.transformSilkscreenX(x);
+        }
+
+        this.cloudpilotInstance.queuePenMove(Math.floor(x), Math.floor(y));
         this.lastPenUpdate = ts;
     }
 
@@ -408,6 +412,21 @@ Sorry for the inconvenience.`
             // speed increase is subject to 5% hysteresis
             this.emulationSpeed = currentSpeed - normalizedSpeed >= 0.05 ? normalizedSpeed : this.emulationSpeed;
         }
+    }
+
+    private transformSilkscreenX(x: number): number {
+        const session = this.emulationState.getCurrentSession();
+        if (!session) {
+            return x;
+        }
+
+        const dimensions = deviceDimensions(session.device);
+        if (dimensions.silkscreenOvershoot === undefined) {
+            return x;
+        }
+
+        const factor = dimensions.width / (dimensions.width + 2 * dimensions.silkscreenOvershoot);
+        return (x - dimensions.width / 2) / factor + dimensions.width / 2;
     }
 
     private schedule() {
