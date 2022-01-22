@@ -1,6 +1,6 @@
 # Next version
 
--   Support for Sony PEG-S300, PEG-S320, PEG-T400/T415
+-   Support for Sony PEG-S300, PEG-S320, PEG-T400/T415, PEG-N600C/N610C
 
 # 1.5.8
 

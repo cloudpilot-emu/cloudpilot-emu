@@ -38,6 +38,14 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
                 silkscreenOvershoot: 10,
             };
 
+        case DeviceId.pegtN600c:
+            return {
+                screenSize: ScreenSize.screen320x320,
+                width: 320,
+                height: 320,
+                silkscreenHeight: 120,
+            };
+
         default:
             return {
                 screenSize: ScreenSize.screen160x160,
@@ -152,7 +160,10 @@ export function deviceName(deviceId: DeviceId): string {
             return 'Sony PEG-S320';
 
         case DeviceId.pegT400:
-            return 'Sony PEG-T400';
+            return 'Sony PEG-T400/410';
+
+        case DeviceId.pegtN600c:
+            return 'Sony PEG-N600C/610C';
 
         default:
             throw new Error('bad device ID');

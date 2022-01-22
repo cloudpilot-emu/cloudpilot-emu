@@ -106,7 +106,7 @@ export class EventHandlingService {
 
     private handleMouseMove = (e: MouseEvent): void => {
         // tslint:disable-next-line: no-bitwise
-        if (!(e.buttons & 0x01) || this.interactionMouse?.area === Area.buttons) {
+        if (!(e.buttons & 0x01) || !this.interactionMouse || this.interactionMouse?.area === Area.buttons) {
             return;
         }
 

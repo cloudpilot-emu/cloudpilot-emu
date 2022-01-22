@@ -24,4 +24,5 @@ export enum DeviceId {
     pegS300 = 'PEG-S300',
     pegS320 = 'PEG-S320',
     pegT400 = 'PEG-T400',
+    pegtN600c = 'PEG-N600C/N610C',
 }
