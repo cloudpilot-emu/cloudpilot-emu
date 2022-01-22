@@ -86,6 +86,7 @@
 #include "EmRegsVZPalmM505.h"
 #include "EmRegsVZPegNasca.h"
 #include "EmRegsVZPegVenice.h"
+#include "EmRegsVZPegYellowStone.h"
 #include "EmStructs.h"
 #include "EmTRGCF.h"
 #include "EmTRGSD.h"
@@ -146,6 +147,7 @@ enum  // DeviceType
     kDevicePEGS300,
     kDevicePEGS320,
     kDevicePEGT400,
+    kDevicePEGN600C,
     kDeviceLast
 };
 
@@ -473,6 +475,14 @@ static const DeviceInfo kDeviceInfo[] = {
      UNSUPPORTED,
      UNSUPPORTED,
      {{'sony', 'vnce'}}},
+    {kDevicePEGN600C,
+     "PEG-N600C/N610C series",
+     {"PEG-N600C/N610C"},
+     kSupports68VZ328,
+     8192,
+     UNSUPPORTED,
+     UNSUPPORTED,
+     {{'sony', 'ystn'}}},
 #if 0
     // ===== Handspring devices =====
     {
@@ -1105,6 +1115,17 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsFMSound(FMSound_BaseAddress));
             break;
 
+        case kDevicePEGN600C: {
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
+
+            EmBankRegs::AddSubBank(new EmRegsVzPegYellowStone);
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
+            EmBankRegs::AddSubBank(framebuffer);
+            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE);
+            EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x10900000L, 0));
+            break;
+        }
+
 #if 0
         case kDeviceVisor:
             EmBankRegs::AddSubBank(new EmRegsEZVisor);
@@ -1185,6 +1206,7 @@ uint32 EmDevice::FramebufferSize() const {
         case kDevicePalmPacifiC:
         case kDevicePalmI710:
         case kDevicePalmM130:
+        case kDevicePEGN600C:
             return 256;
 
         default:
@@ -1424,6 +1446,7 @@ bool EmDevice::NeedsBatteryPatch() const { return Supports68328() || IsClie(); }
 int EmDevice::DigitizerScale() const {
     switch (fDeviceID) {
         case kDevicePEGT400:
+        case kDevicePEGN600C:
             return 2;
 
         default:
@@ -1436,6 +1459,7 @@ ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
         case kDevicePalmI710:
         case kDevicePalmPacifiC:
         case kDevicePEGT400:
+        case kDevicePEGN600C:
             return ScreenDimensions::screen320x320;
 
         case kDeviceHandEra330:

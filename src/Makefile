@@ -160,6 +160,7 @@ SOURCE_EMU = \
 	emulator/hardware/clie/EmRegsEzPegS300.cpp \
 	emulator/hardware/clie/EmRegsVZPegNasca.cpp \
 	emulator/hardware/clie/EmRegsVZPegVenice.cpp \
+	emulator/hardware/clie/EmRegsVZPegYellowStone.cpp \
 	emulator/hardware/handera/EmRegs330CPLD.cpp \
 	emulator/hardware/handera/EmRegsVZHandEra330.cpp \
 	emulator/hardware/handera/EmSPISlave330Current.cpp \

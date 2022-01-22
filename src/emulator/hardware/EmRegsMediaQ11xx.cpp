@@ -1680,10 +1680,55 @@ void EmRegsMediaQ11xx::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 uint16 EmRegsMediaQ11xx::GetLCD2bitMapping() { return 0xfa50; }
 
 bool EmRegsMediaQ11xx::CopyLCDFrame(Frame& frame) {
+    class Scaler1x {
+       public:
+        Scaler1x(uint32* buffer, uint32) : buffer(buffer) {}
+
+        inline void draw(uint32 color) { *(buffer++) = color; }
+
+       private:
+        uint32* buffer;
+    };
+
+    class Scaler2x {
+       public:
+        Scaler2x(uint32* buffer, uint32 width) : buf1(buffer), buf2(buffer + width), width(width) {}
+
+        inline void draw(uint32 color) {
+            *(buf1++) = *(buf1++) = *(buf2++) = *(buf2++) = color;
+
+            x += 2;
+            if (x >= width) {
+                x = 0;
+                buf1 += width;
+                buf2 += width;
+            }
+        }
+
+       private:
+        uint32* buf1;
+        uint32* buf2;
+        uint32 width;
+        uint32 x{0};
+    };
+
+    uint32 doubling = READ_REGISTER(gcREG[GC_CONTROL]) & GC_PIX_DBLNG_MASK;
+    if (doubling) {
+        return doubling == GC_PIX_DBLNG_MASK ? CopyLCDFrameWithScale<Scaler2x, 2>(frame) : false;
+    }
+
+    return CopyLCDFrameWithScale<Scaler1x, 1>(frame);
+}
+
+template <typename T, int scale>
+bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame) {
     int32 bpp = this->PrvGetBPP();
-    int32 width = this->PrvGetWidth();
     int32 height = this->PrvGetHeight();
     int32 rowBytes = this->PrvGetRowBytes();
+
+    if (rowBytes <= 0) return false;
+
+    int32 width = std::min(this->PrvGetWidth(), static_cast<uint32>(rowBytes * 8 * scale / bpp));
     emuptr baseAddr = this->PrvGetFrameBuffer();
 
     EmAssert(gSession);
@@ -1701,58 +1746,56 @@ bool EmRegsMediaQ11xx::CopyLCDFrame(Frame& frame) {
     frame.bytesPerLine = width * 3;
 
     if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
-    uint32* buffer = reinterpret_cast<uint32*>(frame.GetBuffer());
+
+    T scaler(reinterpret_cast<uint32*>(frame.GetBuffer()), width);
 
     switch (bpp) {
         case 1:
             PrvUpdatePalette();
 
-            for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = palette[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 8) >>
-                                           (7 - (x % 8))) &
-                                          0x01];
-                }
+            for (int32 y = 0; y < height / scale; y++)
+                for (int32 x = 0; x < width / scale; x++)
+                    scaler.draw(palette[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 8) >>
+                                         (7 - (x % 8))) &
+                                        0x01]);
 
             break;
 
         case 2:
             PrvUpdatePalette();
 
-            for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = palette[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 4) >>
-                                           2 * (3 - (x % 4))) &
-                                          0x03];
-                }
+            for (int32 y = 0; y < height / scale; y++)
+                for (int32 x = 0; x < width / scale; x++)
+                    scaler.draw(palette[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 4) >>
+                                         2 * (3 - (x % 4))) &
+                                        0x03]);
 
             break;
 
         case 4:
             PrvUpdatePalette();
 
-            for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = palette[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 2) >>
-                                           4 * (1 - (x % 2))) &
-                                          0x0f];
-                }
+            for (int32 y = 0; y < height / scale; y++)
+                for (int32 x = 0; x < width / scale; x++)
+                    scaler.draw(palette[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 2) >>
+                                         4 * (1 - (x % 2))) &
+                                        0x0f]);
 
             break;
 
         case 8:
             PrvUpdatePalette();
 
-            for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = palette[framebuffer.GetByte(baseAddr + y * rowBytes + x)];
+            for (int32 y = 0; y < height / scale; y++)
+                for (int32 x = 0; x < width / scale; x++) {
+                    scaler.draw(palette[framebuffer.GetByte(baseAddr + y * rowBytes + x)]);
                 }
 
             break;
 
         default:
-            for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
+            for (int32 y = 0; y < height / scale; y++)
+                for (int32 x = 0; x < width / scale; x++) {
                     uint8 p1 = framebuffer.GetByte(baseAddr++);  // GGGBBBBB
                     uint8 p2 = framebuffer.GetByte(baseAddr++);  // RRRRRGGG
 
@@ -1770,9 +1813,9 @@ bool EmRegsMediaQ11xx::CopyLCDFrame(Frame& frame) {
                     // lookup tables.  If speed is an issue, we might want to
                     // investigate that.
 
-                    *buffer++ = 0xff000000 | ((((p << 3) & 0xF8) | ((p >> 0) & 0x07)) << 16) |
+                    scaler.draw(0xff000000 | ((((p << 3) & 0xF8) | ((p >> 0) & 0x07)) << 16) |
                                 ((((p >> 3) & 0xFC) | ((p >> 5) & 0x03)) << 8) |
-                                (((p >> 8) & 0xF8) | ((p >> 11) & 0x07));
+                                (((p >> 8) & 0xF8) | ((p >> 11) & 0x07)));
                 }
 
             break;

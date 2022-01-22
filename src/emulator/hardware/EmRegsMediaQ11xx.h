@@ -237,6 +237,9 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     void PrvUpdatePalette();
     void PrvUpdateByteLanes(void);
 
+    template <typename T, int scale>
+    bool CopyLCDFrameWithScale(Frame& frame);
+
     uint32 PrvGetBPP(void);
     uint32 PrvGetWidth(void);
     uint32 PrvGetHeight(void);
