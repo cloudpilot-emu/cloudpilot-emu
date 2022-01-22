@@ -5,6 +5,7 @@
 #include "EmHAL.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
+#include "Nibbler.h"
 #include "Silkscreen.h"
 #include "SuspendManager.h"
 
@@ -110,25 +111,26 @@ void MainLoop::UpdateScreen() {
 
         switch (frame.bpp) {
             case 1: {
-                for (uint32 y = 0; y < frame.lines; y++)
-                    for (uint32 x = 0; x < frame.lineWidth; x++)
+                Nibbler<1> nibbler;
 
+                for (uint32 y = 0; y < frame.lines; y++) {
+                    nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
+
+                    for (uint32 x = 0; x < frame.lineWidth; x++)
                         pixels[y * pitch / 4 + x] =
-                            ((buffer[y * frame.bytesPerLine + (x + frame.margin) / 8] &
-                              (0x80 >> ((x + frame.margin) % 8))) == 0
-                                 ? BACKGROUND_COLOR
-                                 : FOREGROUND_COLOR);
+                            nibbler.nibble() == 0 ? BACKGROUND_COLOR : FOREGROUND_COLOR;
+                }
             } break;
 
             case 4: {
-                for (uint32 y = 0; y < frame.lines; y++)
-                    for (uint32 x = 0; x < frame.lineWidth; x++)
+                Nibbler<4> nibbler;
 
-                        pixels[y * pitch / 4 + x] =
-                            PALETTE_GRAYSCALE_16[((buffer[y * frame.bytesPerLine +
-                                                          (x + frame.margin) / 2]) >>
-                                                  ((x + frame.margin) % 2 ? 0 : 4)) &
-                                                 0xf];
+                for (uint32 y = 0; y < frame.lines; y++) {
+                    nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
+
+                    for (uint32 x = 0; x < frame.lineWidth; x++)
+                        pixels[y * pitch / 4 + x] = PALETTE_GRAYSCALE_16[nibbler.nibble()];
+                }
             } break;
 
             case 2: {
@@ -139,22 +141,24 @@ void MainLoop::UpdateScreen() {
                                      PALETTE_GRAYSCALE_16[(mapping >> 8) & 0x000f],
                                      PALETTE_GRAYSCALE_16[(mapping >> 12) & 0x000f]};
 
-                for (uint32 y = 0; y < frame.lines; y++)
+                Nibbler<2> nibbler;
+
+                for (uint32 y = 0; y < frame.lines; y++) {
+                    nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
+
                     for (uint32 x = 0; x < frame.lineWidth; x++)
-                        pixels[y * pitch / 4 + x] =
-                            palette[((buffer[y * frame.bytesPerLine + (x + frame.margin) / 4]) >>
-                                     (6 - ((x + frame.margin) % 4) * 2)) &
-                                    0x3];
+                        pixels[y * pitch / 4 + x] = palette[nibbler.nibble()];
+                }
             } break;
 
             case 24: {
-                for (uint32 y = 0; y < frame.lines; y++)
-                    for (uint32 x = 0; x < frame.lineWidth; x++) {
-                        uint32* buffer32 = reinterpret_cast<uint32*>(buffer);
+                for (uint32 y = 0; y < frame.lines; y++) {
+                    uint32* buffer32 =
+                        reinterpret_cast<uint32*>(buffer) + y * frame.lineWidth + frame.margin;
 
-                        pixels[y * pitch / 4 + x] =
-                            buffer32[x + frame.margin + (y * frame.lineWidth)];
-                    }
+                    for (uint32 x = 0; x < frame.lineWidth; x++)
+                        pixels[y * pitch / 4 + x] = *(buffer32++);
+                }
             } break;
         }
 

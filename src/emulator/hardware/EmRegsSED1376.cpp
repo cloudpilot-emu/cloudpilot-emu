@@ -18,6 +18,7 @@
 #include "EmRegsFrameBuffer.h"
 #include "EmSystemState.h"
 #include "Frame.h"
+#include "Nibbler.h"
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
@@ -667,7 +668,6 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
 
     int32 width = right - left + (32 / bpp);
     int32 height = bottom - top + 1;
-    int32 rowBytes = ((fRegs.ovlyLineAddressOffset1 << 8) | fRegs.ovlyLineAddressOffset0) * 4;
     uint32 offset = (fRegs.ovlyStartAddress2 << 18) | (fRegs.ovlyStartAddress1 << 10) |
                     (fRegs.ovlyStartAddress0 << 2);
 #endif
@@ -686,41 +686,40 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame) {
     uint32* lut = GetLUT(mono);
 
     switch (bpp) {
-        case 1:
+        case 1: {
+            Nibbler<1, true> nibbler;
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+
             for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = lut[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 8) >>
-                                       (7 - (x % 8))) &
-                                      0x01];
-                }
+                for (int32 x = 0; x < width; x++) *(buffer++) = lut[nibbler.nibble()];
 
             break;
+        }
 
-        case 2:
+        case 2: {
+            Nibbler<2, true> nibbler;
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+
             for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = lut[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 4) >>
-                                       2 * (3 - (x % 4))) &
-                                      0x03];
-                }
+                for (int32 x = 0; x < width; x++) *(buffer++) = lut[nibbler.nibble()];
 
             break;
+        }
 
-        case 4:
+        case 4: {
+            Nibbler<4, true> nibbler;
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+
             for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = lut[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 2) >>
-                                       4 * (1 - (x % 2))) &
-                                      0x0f];
-                }
+                for (int32 x = 0; x < width; x++) *(buffer++) = lut[nibbler.nibble()];
 
             break;
+        }
 
         case 8:
             for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = lut[framebuffer.GetByte(baseAddr + y * rowBytes + x)];
-                }
+                for (int32 x = 0; x < width; x++)
+                    *(buffer++) = lut[framebuffer.GetByte(baseAddr++)];
 
             break;
 

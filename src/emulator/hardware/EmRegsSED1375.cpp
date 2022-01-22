@@ -20,6 +20,7 @@
 #include "EmSystemState.h"
 #include "Frame.h"
 #include "Miscellaneous.h"  // StWordSwapper
+#include "Nibbler.h"
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
@@ -256,7 +257,6 @@ bool EmRegsSED1375::CopyLCDFrame(Frame& frame) {
     int32 bpp = 1 << ((fRegs.mode1 & sed1375BPPMask) >> sed1375BPPShift);
     int32 width = (fRegs.horizontalPanelSize + 1) * 8;
     int32 height = ((fRegs.verticalPanelSizeMSB << 8) | fRegs.verticalPanelSizeLSB) + 1;
-    int32 rowBytes = (fRegs.horizontalPanelSize + 1) * bpp;
     uint32 offset = (fRegs.screen1StartAddressMSBit << 17) | (fRegs.screen1StartAddressMSB << 9) |
                     (fRegs.screen1StartAddressLSB << 1);
     emuptr baseAddr = fBaseVideoAddr + offset;
@@ -273,41 +273,40 @@ bool EmRegsSED1375::CopyLCDFrame(Frame& frame) {
     uint32* buffer = reinterpret_cast<uint32*>(frame.GetBuffer());
 
     switch (bpp) {
-        case 1:
+        case 1: {
+            Nibbler<1, true> nibbler;
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+
             for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = fClutData[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 8) >>
-                                             (7 - (x % 8))) &
-                                            0x01];
-                }
+                for (int32 x = 0; x < width; x++) *(buffer++) = fClutData[nibbler.nibble()];
 
             return true;
+        }
 
-        case 2:
+        case 2: {
+            Nibbler<2, true> nibbler;
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+
             for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = fClutData[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 4) >>
-                                             2 * (3 - (x % 4))) &
-                                            0x03];
-                }
+                for (int32 x = 0; x < width; x++) *(buffer++) = fClutData[nibbler.nibble()];
 
             return true;
+        }
 
-        case 4:
+        case 4: {
+            Nibbler<4, true> nibbler;
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+
             for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = fClutData[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 2) >>
-                                             4 * (1 - (x % 2))) &
-                                            0x0f];
-                }
+                for (int32 x = 0; x < width; x++) *(buffer++) = fClutData[nibbler.nibble()];
 
             return true;
+        }
 
         case 8:
             for (int32 y = 0; y < height; y++)
-                for (int32 x = 0; x < width; x++) {
-                    *(buffer++) = fClutData[framebuffer.GetByte(baseAddr + y * rowBytes + x)];
-                }
+                for (int32 x = 0; x < width; x++)
+                    *(buffer++) = fClutData[framebuffer.GetByte(baseAddr++)];
 
             return true;
     }

@@ -6,7 +6,9 @@
 #include "EmRegsVZPrv.h"
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
 #include "Frame.h"
+#include "Nibbler.h"
 #include "PalmPack.h"
+
 #define NON_PORTABLE
 #include "EZAustin/IncsPrv/HardwareAustin.h"  // hwrEZPortCKbdRow0, hwrEZPortBRS232Enable, etc.
 #undef NON_PORTABLE
@@ -46,45 +48,6 @@
 
 #define keyBitJogBack (0x0800)  // JogDial: Back key
 
-namespace {
-
-    template <int bpp>
-    class Nibbler {
-       public:
-        Nibbler() = default;
-
-        inline void reset(const uint8* row, int offset) {
-            next = row + offset / nibblesPerByte;
-            current = *(next++);
-
-            nextNibble = offset % nibblesPerByte;
-            current <<= (bpp * nextNibble);
-        }
-
-        inline uint8 nibble() {
-            if (nextNibble >= nibblesPerByte) {
-                current = *(next++);
-                nextNibble = 0;
-            }
-
-            uint8 value = (current & (0xff << (8 - bpp))) >> (8 - bpp);
-            current <<= bpp;
-            nextNibble++;
-
-            return value;
-        }
-
-       private:
-        uint8 current;
-        const uint8* next;
-        int nextNibble;
-
-        static constexpr int nibblesPerByte = 8 / bpp;
-    };
-
-}  // namespace
-
-// �ȉ�����
 const int kNumButtonRows = 3;
 const int kNumButtonCols = 3;
 

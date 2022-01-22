@@ -23,6 +23,7 @@
 #include "EmSystemState.h"
 #include "Frame.h"
 #include "Logging.h"  // LogAppendMsg
+#include "Nibbler.h"
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
@@ -1750,46 +1751,45 @@ bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame) {
     T scaler(reinterpret_cast<uint32*>(frame.GetBuffer()), width);
 
     switch (bpp) {
-        case 1:
+        case 1: {
             PrvUpdatePalette();
+            Nibbler<1, true> nibbler;
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
 
             for (int32 y = 0; y < height / scale; y++)
-                for (int32 x = 0; x < width / scale; x++)
-                    scaler.draw(palette[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 8) >>
-                                         (7 - (x % 8))) &
-                                        0x01]);
+                for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
 
             break;
+        }
 
-        case 2:
+        case 2: {
             PrvUpdatePalette();
+            Nibbler<2, true> nibbler;
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
 
             for (int32 y = 0; y < height / scale; y++)
-                for (int32 x = 0; x < width / scale; x++)
-                    scaler.draw(palette[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 4) >>
-                                         2 * (3 - (x % 4))) &
-                                        0x03]);
+                for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
 
             break;
+        }
 
-        case 4:
+        case 4: {
             PrvUpdatePalette();
+            Nibbler<4, true> nibbler;
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
 
             for (int32 y = 0; y < height / scale; y++)
-                for (int32 x = 0; x < width / scale; x++)
-                    scaler.draw(palette[(framebuffer.GetByte(baseAddr + y * rowBytes + x / 2) >>
-                                         4 * (1 - (x % 2))) &
-                                        0x0f]);
+                for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
 
             break;
+        }
 
         case 8:
             PrvUpdatePalette();
 
             for (int32 y = 0; y < height / scale; y++)
-                for (int32 x = 0; x < width / scale; x++) {
-                    scaler.draw(palette[framebuffer.GetByte(baseAddr + y * rowBytes + x)]);
-                }
+                for (int32 x = 0; x < width / scale; x++)
+                    scaler.draw(palette[framebuffer.GetByte(baseAddr++)]);
 
             break;
 
@@ -2133,11 +2133,15 @@ void EmRegsMediaQ11xx::AddressError(emuptr address, long size, Bool forRead) {
 // ---------------------------------------------------------------------------
 
 void EmRegsMediaQ11xx::PrvUpdatePalette() {
+    if (!paletteDirty) return;
+
     for (int ii = 0; ii < 256; ++ii) {
         uint32 reg = READ_REGISTER(cpREG[ii]);
 
         palette[ii] = 0xff000000 | (reg & (RED_MASK | GREEN_MASK | BLUE_MASK));
     }
+
+    paletteDirty = true;
 }
 
 // ---------------------------------------------------------------------------
