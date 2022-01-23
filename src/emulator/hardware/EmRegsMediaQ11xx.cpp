@@ -1784,20 +1784,24 @@ bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame) {
             break;
         }
 
-        case 8:
+        case 8: {
             PrvUpdatePalette();
+            uint8* buffer = framebuffer.GetRealAddress(baseAddr);
 
             for (int32 y = 0; y < height / scale; y++)
                 for (int32 x = 0; x < width / scale; x++)
-                    scaler.draw(palette[framebuffer.GetByte(baseAddr++)]);
+                    scaler.draw(palette[*(uint8*)((long)(buffer++) ^ 1)]);
 
             break;
+        }
 
-        default:
+        default: {
+            uint8* buffer = framebuffer.GetRealAddress(baseAddr);
+
             for (int32 y = 0; y < height / scale; y++)
                 for (int32 x = 0; x < width / scale; x++) {
-                    uint8 p1 = framebuffer.GetByte(baseAddr++);  // GGGBBBBB
-                    uint8 p2 = framebuffer.GetByte(baseAddr++);  // RRRRRGGG
+                    uint8 p1 = *(uint8*)((long)(buffer++) ^ 1);  // GGGBBBBB
+                    uint8 p2 = *(uint8*)((long)(buffer++) ^ 1);  // RRRRRGGG
 
                     // Merge the two together so that we get RRRRRGGG GGGBBBBB
 
@@ -1819,6 +1823,7 @@ bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame) {
                 }
 
             break;
+        }
     }
 
     return true;

@@ -303,12 +303,15 @@ bool EmRegsSED1375::CopyLCDFrame(Frame& frame) {
             return true;
         }
 
-        case 8:
+        case 8: {
+            uint8* fbuf = framebuffer.GetRealAddress(baseAddr);
+
             for (int32 y = 0; y < height; y++)
                 for (int32 x = 0; x < width; x++)
-                    *(buffer++) = fClutData[framebuffer.GetByte(baseAddr++)];
+                    *(buffer++) = fClutData[*(uint8*)((long)(fbuf++) ^ 1)];
 
             return true;
+        }
     }
 
     return false;
