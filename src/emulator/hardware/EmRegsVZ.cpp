@@ -531,8 +531,8 @@ void EmRegsVZ::Initialize(void) {
     lastRtcAlarmCheck = -1;
     pwmActive = false;
     afterLoad = false;
-    onCycleHandle = EmHAL::onCycle.AddHandler(
-        [&](uint64 systemCycles, bool sleeping) { this->Cycle(systemCycles, sleeping); });
+
+    EmHAL::AddCycleConsumer(this);
 
     systemCycles = gSession->GetSystemCycles();
     tmr1LastProcessedSystemCycles = systemCycles;
@@ -675,7 +675,7 @@ void EmRegsVZ::Dispose(void) {
 
     gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
 
-    EmHAL::onCycle.RemoveHandler(onCycleHandle);
+    EmHAL::RemoveCycleConsumer(this);
 }
 
 // ---------------------------------------------------------------------------

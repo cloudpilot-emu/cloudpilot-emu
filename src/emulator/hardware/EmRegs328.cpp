@@ -691,8 +691,7 @@ void EmRegs328::Initialize(void) {
 
     onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
 
-    onCycleHandle = EmHAL::onCycle.AddHandler(
-        [&](uint64 systemCycles, bool sleeping) { this->Cycle(systemCycles, sleeping); });
+    EmHAL::AddCycleConsumer(this);
 
     tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
     tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();
@@ -811,7 +810,7 @@ void EmRegs328::Dispose(void) {
     EmRegs::Dispose();
 
     gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
-    EmHAL::onCycle.RemoveHandler(onCycleHandle);
+    EmHAL::RemoveCycleConsumer(this);
 }
 
 // ---------------------------------------------------------------------------

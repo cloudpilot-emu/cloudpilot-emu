@@ -22,7 +22,7 @@
 
 class EmSPISlave;
 
-class EmRegsVZ : public EmRegs, public EmHALHandler {
+class EmRegsVZ : public EmRegs, public EmHALHandler, public CycleConsumer {
    public:
     using ButtonEventT = class ButtonEvent;
 
@@ -75,6 +75,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) = 0;
 
     virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
+    virtual void Cycle(uint64 systemCycles, Bool sleeping);
 
    private:
     uint32 pllFreqSelRead(emuptr address, int size);
@@ -142,7 +143,6 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     int GetPort(emuptr address);
 
    private:
-    void Cycle(uint64 systemCycles, Bool sleeping);
     void UpdateTimers();
 
     void DispatchPwmChange();
@@ -177,8 +177,6 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
 
     bool pwmActive{false};
     bool afterLoad{false};
-
-    EmEvent<uint64, bool>::HandleT onCycleHandle;
 
     EmSPISlave* fSPISlaveADC{nullptr};
 };

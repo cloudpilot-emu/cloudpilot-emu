@@ -20,7 +20,7 @@
 #include "EmRegs.h"            // EmRegs
 #include "EmUARTDragonball.h"  // EmUARTDragonball::State
 
-class EmRegs328 : public EmRegs, public EmHALHandler {
+class EmRegs328 : public EmRegs, public EmHALHandler, public CycleConsumer {
     using ButtonEventT = class ButtonEvent;
 
    public:
@@ -71,6 +71,7 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     virtual void PortDataChanged(int, uint8, uint8);
 
     virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
+    virtual void Cycle(uint64 systemCycles, Bool sleeping);
 
    private:
     uint32 pllFreqSelRead(emuptr address, int size);
@@ -135,8 +136,6 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     int GetPort(emuptr address);
 
    private:
-    void Cycle(uint64 systemCycles, Bool sleeping);
-
     void UpdateTimerTicksPerSecond();
     uint32 Tmr1CyclesToNextInterrupt(uint64 systemCycles);
     uint32 Tmr2CyclesToNextInterrupt(uint64 systemCycles);
@@ -167,7 +166,6 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
 
     bool markScreen{true};
     EmEvent<>::HandleT onMarkScreenCleanHandle;
-    EmEvent<uint64, bool>::HandleT onCycleHandle;
 
     EmUARTDragonball* fUART;
 

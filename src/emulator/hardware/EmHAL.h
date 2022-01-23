@@ -14,6 +14,8 @@
 #ifndef EmHAL_h
 #define EmHAL_h
 
+#include <algorithm>
+
 #include "ButtonEvent.h"
 #include "EmCommon.h"
 #include "EmEvent.h"
@@ -94,6 +96,14 @@ class EmHALHandler {
     friend class EmHAL;
 };
 
+class CycleConsumer {
+   public:
+    virtual void Cycle(uint64 cycles, bool sleeping) = 0;
+
+   protected:
+    CycleConsumer() = default;
+};
+
 class EmHAL {
     using ButtonEventT = ButtonEvent;
 
@@ -148,11 +158,16 @@ class EmHAL {
 
     static EmEvent<> onSystemClockChange;
     static EmEvent<double, double> onPwmChange;
-    static EmEvent<uint64, bool> onCycle;
+
+    static void AddCycleConsumer(CycleConsumer* consumer);
+    static void RemoveCycleConsumer(CycleConsumer* consumer);
+    static void DispatchCycle(uint64 cycles, bool sleeping);
 
    private:
     static EmHALHandler* GetRootHandler(void) { return fgRootHandler; }
     static EmHALHandler* fgRootHandler;
+
+    static vector<CycleConsumer*> cycleConsumers;
 };
 
 #endif /* EmHAL_h */

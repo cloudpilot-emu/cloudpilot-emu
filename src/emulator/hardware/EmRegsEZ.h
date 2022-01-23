@@ -22,7 +22,7 @@
 
 class EmSPISlave;
 
-class EmRegsEZ : public EmRegs, public EmHALHandler {
+class EmRegsEZ : public EmRegs, public EmHALHandler, public CycleConsumer {
     using ButtonEventT = class ButtonEvent;
 
    public:
@@ -74,6 +74,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) = 0;
 
     virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
+    virtual void Cycle(uint64 systemCycles, Bool sleeping);
 
    protected:
     uint32 pllFreqSelRead(emuptr address, int size);
@@ -134,8 +135,6 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     int GetPort(emuptr address);
 
    private:
-    void Cycle(uint64 systemCycles, Bool sleeping);
-
     void UpdateTimerTicksPerSecond();
 
     void DispatchPwmChange();
@@ -162,7 +161,6 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
 
     bool markScreen{true};
     EmEvent<>::HandleT onMarkScreenCleanHandle;
-    EmEvent<uint64, bool>::HandleT onCycleHandle;
 
     EmUARTDragonball* fUART;
 

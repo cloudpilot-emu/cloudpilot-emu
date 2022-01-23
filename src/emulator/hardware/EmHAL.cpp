@@ -58,7 +58,8 @@ namespace {
 
 EmEvent<> EmHAL::onSystemClockChange{};
 EmEvent<double, double> EmHAL::onPwmChange{};
-EmEvent<uint64, bool> EmHAL::onCycle{};
+
+vector<CycleConsumer*> EmHAL::cycleConsumers;
 
 // ---------------------------------------------------------------------------
 //		� EmHAL::AddHandler
@@ -477,6 +478,30 @@ uint16 EmHAL::GetLEDState(void) {
 uint32 EmHAL::CyclesToNextInterrupt(uint64 systemCycles) {
     EmAssert(EmHAL::GetRootHandler());
     return EmHAL::GetRootHandler()->CyclesToNextInterrupt(systemCycles);
+}
+
+void EmHAL::AddCycleConsumer(CycleConsumer* consumer) {
+    for (const auto c : cycleConsumers) {
+        if (c == consumer) return;
+    }
+
+    cycleConsumers.push_back(consumer);
+}
+
+void EmHAL::RemoveCycleConsumer(CycleConsumer* consumer) {
+    typename vector<CycleConsumer*>::size_type j = 0;
+
+    for (typename vector<CycleConsumer*>::size_type i = 0; i < cycleConsumers.size(); i++)
+        if (cycleConsumers[i] != consumer) {
+            if (j != i) cycleConsumers[j] = cycleConsumers[i];
+            j++;
+        }
+
+    if (j < cycleConsumers.size()) cycleConsumers.resize(j);
+}
+
+void EmHAL::DispatchCycle(uint64 cycles, bool sleeping) {
+    for (auto consumer : cycleConsumers) consumer->Cycle(cycles, sleeping);
 }
 
 #pragma mark -
