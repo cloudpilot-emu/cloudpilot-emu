@@ -96,16 +96,11 @@ class EmHALHandler {
     friend class EmHAL;
 };
 
-class CycleConsumer {
-   public:
-    virtual void Cycle(uint64 cycles, bool sleeping) = 0;
-
-   protected:
-    CycleConsumer() = default;
-};
-
 class EmHAL {
     using ButtonEventT = ButtonEvent;
+
+   public:
+    typedef void (*CycleHandler)(void*, uint64, bool);
 
    public:
     static void AddHandler(EmHALHandler*);
@@ -159,15 +154,21 @@ class EmHAL {
     static EmEvent<> onSystemClockChange;
     static EmEvent<double, double> onPwmChange;
 
-    static void AddCycleConsumer(CycleConsumer* consumer);
-    static void RemoveCycleConsumer(CycleConsumer* consumer);
+    static void AddCycleConsumer(CycleHandler handler, void* context);
+    static void RemoveCycleConsumer(CycleHandler handler, void* context);
     static void DispatchCycle(uint64 cycles, bool sleeping);
+
+   private:
+    struct CycleConsumer {
+        CycleHandler handler;
+        void* context;
+    };
 
    private:
     static EmHALHandler* GetRootHandler(void) { return fgRootHandler; }
     static EmHALHandler* fgRootHandler;
 
-    static vector<CycleConsumer*> cycleConsumers;
+    static vector<CycleConsumer> cycleConsumers;
 };
 
 #endif /* EmHAL_h */

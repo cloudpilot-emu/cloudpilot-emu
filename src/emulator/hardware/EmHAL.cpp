@@ -59,7 +59,7 @@ namespace {
 EmEvent<> EmHAL::onSystemClockChange{};
 EmEvent<double, double> EmHAL::onPwmChange{};
 
-vector<CycleConsumer*> EmHAL::cycleConsumers;
+vector<EmHAL::CycleConsumer> EmHAL::cycleConsumers;
 
 // ---------------------------------------------------------------------------
 //		� EmHAL::AddHandler
@@ -480,19 +480,19 @@ uint32 EmHAL::CyclesToNextInterrupt(uint64 systemCycles) {
     return EmHAL::GetRootHandler()->CyclesToNextInterrupt(systemCycles);
 }
 
-void EmHAL::AddCycleConsumer(CycleConsumer* consumer) {
-    for (const auto c : cycleConsumers) {
-        if (c == consumer) return;
+void EmHAL::AddCycleConsumer(CycleHandler handler, void* context) {
+    for (const auto consumer : cycleConsumers) {
+        if (consumer.handler == handler && consumer.context == context) return;
     }
 
-    cycleConsumers.push_back(consumer);
+    cycleConsumers.push_back({handler, context});
 }
 
-void EmHAL::RemoveCycleConsumer(CycleConsumer* consumer) {
+void EmHAL::RemoveCycleConsumer(CycleHandler handler, void* context) {
     typename vector<CycleConsumer*>::size_type j = 0;
 
     for (typename vector<CycleConsumer*>::size_type i = 0; i < cycleConsumers.size(); i++)
-        if (cycleConsumers[i] != consumer) {
+        if (cycleConsumers[i].handler != handler && cycleConsumers[i].context != context) {
             if (j != i) cycleConsumers[j] = cycleConsumers[i];
             j++;
         }
@@ -501,7 +501,7 @@ void EmHAL::RemoveCycleConsumer(CycleConsumer* consumer) {
 }
 
 void EmHAL::DispatchCycle(uint64 cycles, bool sleeping) {
-    for (auto consumer : cycleConsumers) consumer->Cycle(cycles, sleeping);
+    for (auto consumer : cycleConsumers) consumer.handler(consumer.context, cycles, sleeping);
 }
 
 #pragma mark -

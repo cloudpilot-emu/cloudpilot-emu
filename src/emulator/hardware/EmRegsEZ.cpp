@@ -74,6 +74,10 @@ namespace {
     constexpr long hwrEZ328LcdPageSize = 0x00020000;  // 128K
     constexpr long hwrEZ328LcdPageMask = 0xFFFE0000;
 
+    void cycleThunk(void* context, uint64 cycles, bool sleeping) {
+        ((EmRegsEZ*)context)->Cycle(cycles, sleeping);
+    }
+
     // Values used to initialize the DragonBallEZ registers.
 
     const HwrM68EZ328Type kInitial68EZ328RegisterValues = {
@@ -462,7 +466,7 @@ void EmRegsEZ::Initialize(void) {
 
     onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
 
-    EmHAL::AddCycleConsumer(this);
+    EmHAL::AddCycleConsumer(cycleThunk, this);
 
     lastProcessedSystemCycles = gSession->GetSystemCycles();
     UpdateTimerTicksPerSecond();
@@ -578,7 +582,7 @@ void EmRegsEZ::Dispose(void) {
     EmRegs::Dispose();
 
     gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
-    EmHAL::RemoveCycleConsumer(this);
+    EmHAL::RemoveCycleConsumer(cycleThunk, this);
 }
 
 // ---------------------------------------------------------------------------

@@ -22,7 +22,7 @@
 
 class EmSPISlave;
 
-class EmRegsEZ : public EmRegs, public EmHALHandler, public CycleConsumer {
+class EmRegsEZ : public EmRegs, public EmHALHandler {
     using ButtonEventT = class ButtonEvent;
 
    public:
@@ -74,7 +74,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler, public CycleConsumer {
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) = 0;
 
     virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
-    virtual void Cycle(uint64 systemCycles, Bool sleeping);
+    void Cycle(uint64 systemCycles, Bool sleeping);
 
    protected:
     uint32 pllFreqSelRead(emuptr address, int size);

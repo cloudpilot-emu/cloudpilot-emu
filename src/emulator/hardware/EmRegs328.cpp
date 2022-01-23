@@ -142,6 +142,10 @@ namespace {
         return mapping[bitstream & 0x07];
     }
 
+    void cycleThunk(void* context, uint64 cycles, bool sleeping) {
+        ((EmRegs328*)context)->Cycle(cycles, sleeping);
+    }
+
     // Values used to initialize the DragonBall registers.
     const HwrM68328Type kInitial68328RegisterValues = {
         0x0C,  //	Byte		scr;						// $000:
@@ -691,7 +695,7 @@ void EmRegs328::Initialize(void) {
 
     onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
 
-    EmHAL::AddCycleConsumer(this);
+    EmHAL::AddCycleConsumer(cycleThunk, this);
 
     tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
     tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();
@@ -810,7 +814,7 @@ void EmRegs328::Dispose(void) {
     EmRegs::Dispose();
 
     gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
-    EmHAL::RemoveCycleConsumer(this);
+    EmHAL::RemoveCycleConsumer(cycleThunk, this);
 }
 
 // ---------------------------------------------------------------------------

@@ -107,6 +107,10 @@ namespace {
 
         marker(firstLineAddr, lastLineAddr);
     }
+
+    void cycleThunk(void* context, uint64 cycles, bool sleeping) {
+        ((EmRegsVZ*)context)->Cycle(cycles, sleeping);
+    }
 }  // namespace
 
 // Values used to initialize the DragonBallVZ registers.
@@ -532,7 +536,7 @@ void EmRegsVZ::Initialize(void) {
     pwmActive = false;
     afterLoad = false;
 
-    EmHAL::AddCycleConsumer(this);
+    EmHAL::AddCycleConsumer(cycleThunk, this);
 
     systemCycles = gSession->GetSystemCycles();
     tmr1LastProcessedSystemCycles = systemCycles;
@@ -545,6 +549,7 @@ void EmRegsVZ::Initialize(void) {
 
     ApplySdctl();
     UpdateTimers();
+    powerOffCached = GetAsleep();
 }
 
 // ---------------------------------------------------------------------------
@@ -582,6 +587,7 @@ void EmRegsVZ::Reset(Bool hardwareReset) {
         EmRegsVZ::UARTStateChanged(sendTxData, 1);
 
         ApplySdctl();
+        powerOffCached = GetAsleep();
     }
 
     UpdateTimers();
@@ -623,6 +629,7 @@ void EmRegsVZ::Load(SavestateLoader& loader) {
 
     systemCycles = gSession->GetSystemCycles();
     UpdateTimers();
+    powerOffCached = GetAsleep();
 }
 
 template <typename T>
@@ -675,7 +682,7 @@ void EmRegsVZ::Dispose(void) {
 
     gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
 
-    EmHAL::RemoveCycleConsumer(this);
+    EmHAL::RemoveCycleConsumer(cycleThunk, this);
 }
 
 // ---------------------------------------------------------------------------
@@ -906,13 +913,13 @@ uint32 EmRegsVZ::GetAddressRange(void) { return kMemorySize; }
 // Emulator::Execute.  Interestingly, the loop runs 3% FASTER if this function
 // is in its own separate function instead of being inline.
 
-void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
+inline void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
     if (afterLoad) {
         DispatchPwmChange();
         afterLoad = false;
     }
 
-    if (GetAsleep()) return;
+    if (powerOffCached) return;
 
     this->systemCycles = systemCycles;
     if (systemCycles >= nextTimerEventAfterCycle) UpdateTimers();
@@ -2116,6 +2123,7 @@ void EmRegsVZ::tmrRegisterWrite(emuptr address, int size, uint32 value) {
     EmRegsVZ::StdWrite(address, size, value);
 
     UpdateTimers();
+    powerOffCached = GetAsleep();
 }
 
 // ---------------------------------------------------------------------------
