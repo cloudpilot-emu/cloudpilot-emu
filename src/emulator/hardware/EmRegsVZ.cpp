@@ -79,7 +79,7 @@ static const int kBaseAddressShift = 13;  // Shift to get base address from CSGB
 #endif
 
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 2;
+    constexpr uint32 SAVESTATE_VERSION = 3;
 
     double TimerTicksPerSecond(uint16 tmrControl, uint16 tmrPrescaler, int32 systemClockFrequency) {
         uint8 clksource = (tmrControl >> 1) & 0x7;
@@ -534,9 +534,9 @@ void EmRegsVZ::Initialize(void) {
     onCycleHandle = EmHAL::onCycle.AddHandler(
         [&](uint64 systemCycles, bool sleeping) { this->Cycle(systemCycles, sleeping); });
 
-    tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
-    tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();
-    UpdateTimerTicksPerSecond();
+    systemCycles = gSession->GetSystemCycles();
+    tmr1LastProcessedSystemCycles = systemCycles;
+    tmr2LastProcessedSystemCycles = systemCycles;
 
     fUART[0] = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballVZ, 0);
     fUART[1] = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballVZ, 1);
@@ -544,6 +544,7 @@ void EmRegsVZ::Initialize(void) {
     onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
 
     ApplySdctl();
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -555,8 +556,9 @@ void EmRegsVZ::Reset(Bool hardwareReset) {
     UnmarkScreen();
 
     if (hardwareReset) {
-        tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
-        tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();
+        systemCycles = gSession->GetSystemCycles();
+        tmr1LastProcessedSystemCycles = systemCycles;
+        tmr2LastProcessedSystemCycles = systemCycles;
 
         f68VZ328Regs = kInitial68VZ328RegisterValues;
 
@@ -582,7 +584,7 @@ void EmRegsVZ::Reset(Bool hardwareReset) {
         ApplySdctl();
     }
 
-    UpdateTimerTicksPerSecond();
+    UpdateTimers();
 }
 
 void EmRegsVZ::Save(Savestate& savestate) { DoSave(savestate); }
@@ -618,6 +620,9 @@ void EmRegsVZ::Load(SavestateLoader& loader) {
 
     markScreen = true;
     afterLoad = true;
+
+    systemCycles = gSession->GetSystemCycles();
+    UpdateTimers();
 }
 
 template <typename T>
@@ -644,11 +649,14 @@ void EmRegsVZ::DoSaveLoad(T& helper, uint32 version) {
         .Do8(fPortDEdge)
         .Do32(fPortDDataCount)
         .DoDouble(tmr1LastProcessedSystemCycles)
-        .DoDouble(tmr2LastProcessedSystemCycles)
-        .DoDouble(timer1TicksPerSecond)
-        .DoDouble(timer2TicksPerSecond)
-        .Do32(rtcDayAtWrite)
-        .Do32(lastRtcAlarmCheck);
+        .DoDouble(tmr2LastProcessedSystemCycles);
+
+    if (version < SAVESTATE_VERSION) {
+        double dummy = 0;
+        helper.DoDouble(dummy).DoDouble(dummy);
+    }
+
+    helper.Do32(rtcDayAtWrite).Do32(lastRtcAlarmCheck);
 
     if (version > 1) helper.DoBool(pwmActive);
 }
@@ -785,18 +793,18 @@ void EmRegsVZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, pwm2Width);
     INSTALL_HANDLER(StdRead, NullWrite, pwm2Counter);
 
-    INSTALL_HANDLER(StdRead, tmr1RegisterWrite, tmr1Control);
-    INSTALL_HANDLER(StdRead, tmr1RegisterWrite, tmr1Prescaler);
-    INSTALL_HANDLER(StdRead, StdWrite, tmr1Compare);
-    INSTALL_HANDLER(StdRead, StdWrite, tmr1Capture);
-    INSTALL_HANDLER(StdRead, NullWrite, tmr1Counter);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr1Control);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr1Prescaler);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr1Compare);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr1Capture);
+    INSTALL_HANDLER(tmrRegisterRead, NullWrite, tmr1Counter);
     INSTALL_HANDLER(tmr1StatusRead, tmr1StatusWrite, tmr1Status);
 
-    INSTALL_HANDLER(StdRead, StdWrite, tmr2Control);
-    INSTALL_HANDLER(StdRead, StdWrite, tmr2Prescaler);
-    INSTALL_HANDLER(StdRead, StdWrite, tmr2Compare);
-    INSTALL_HANDLER(StdRead, StdWrite, tmr2Capture);
-    INSTALL_HANDLER(StdRead, NullWrite, tmr2Counter);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr2Control);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr2Prescaler);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr2Compare);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr2Capture);
+    INSTALL_HANDLER(tmrRegisterRead, NullWrite, tmr2Counter);
     INSTALL_HANDLER(tmr2StatusRead, tmr2StatusWrite, tmr2Status);
 
     INSTALL_HANDLER(StdRead, StdWrite, spiRxD);
@@ -906,79 +914,8 @@ void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
 
     if (GetAsleep()) return;
 
-    double clocksPerSecond = gSession->GetClocksPerSecond();
-
-    if (((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) != 0) &&
-        timer1TicksPerSecond > 0) {
-        // If so, increment the timer.
-
-        uint32 ticks = ((double)systemCycles - tmr1LastProcessedSystemCycles) / clocksPerSecond *
-                       timer1TicksPerSecond;
-
-        tmr1LastProcessedSystemCycles += (double)ticks / timer1TicksPerSecond * clocksPerSecond;
-
-        WRITE_REGISTER(tmr1Counter, READ_REGISTER(tmr1Counter) + ticks);
-
-        // Determine whether the timer has reached the specified count.
-
-        uint16 tcmp = READ_REGISTER(tmr1Compare);
-        uint16 tcn = READ_REGISTER(tmr1Counter);
-
-        if (tcn >= tcmp) {
-            // Flag the occurrence of the successful comparison.
-
-            WRITE_REGISTER(tmr1Status, READ_REGISTER(tmr1Status) | hwrVZ328TmrStatusCompare);
-
-            // If the Free Run/Restart flag is not set, clear the counter.
-
-            if ((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlFreeRun) == 0) {
-                WRITE_REGISTER(tmr1Counter, tcn - tcmp);
-            }
-
-            // If the timer interrupt is enabled, post an interrupt.
-
-            if ((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnInterrupt) != 0) {
-                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrVZ328IntLoTimer);
-                EmRegsVZ::UpdateInterrupts();
-            }
-        }
-    }
-
-    if (((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnable) != 0) &&
-        timer2TicksPerSecond > 0) {
-        // If so, increment the timer.
-
-        uint32 ticks = ((double)systemCycles - tmr2LastProcessedSystemCycles) / clocksPerSecond *
-                       timer2TicksPerSecond;
-
-        tmr2LastProcessedSystemCycles += (double)ticks / timer2TicksPerSecond * clocksPerSecond;
-
-        WRITE_REGISTER(tmr2Counter, READ_REGISTER(tmr2Counter) + ticks);
-
-        // Determine whether the timer has reached the specified count.
-
-        uint16 tcmp = READ_REGISTER(tmr2Compare);
-        uint16 tcn = READ_REGISTER(tmr2Counter);
-
-        if (tcn >= tcmp) {
-            // Flag the occurrence of the successful comparison.
-
-            WRITE_REGISTER(tmr2Status, READ_REGISTER(tmr2Status) | hwrVZ328TmrStatusCompare);
-
-            // If the Free Run/Restart flag is not set, clear the counter.
-
-            if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlFreeRun) == 0) {
-                WRITE_REGISTER(tmr2Counter, tcn - tcmp);
-            }
-
-            // If the timer interrupt is enabled, post an interrupt.
-
-            if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnInterrupt) != 0) {
-                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrVZ328IntLoTimer2);
-                EmRegsVZ::UpdateInterrupts();
-            }
-        }
-    }
+    this->systemCycles = systemCycles;
+    if (systemCycles >= nextTimerEventAfterCycle) UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -1265,15 +1202,6 @@ void EmRegsVZ::UnmarkScreen() {
 }
 
 void EmRegsVZ::MarkScreenDirty() { gSystemState.MarkScreenDirty(); }
-
-void EmRegsVZ::UpdateTimerTicksPerSecond() {
-    int32 systemClockFrequency = GetSystemClockFrequency();
-
-    timer1TicksPerSecond = TimerTicksPerSecond(READ_REGISTER(tmr1Control),
-                                               READ_REGISTER(tmr1Prescaler), systemClockFrequency);
-    timer2TicksPerSecond = TimerTicksPerSecond(READ_REGISTER(tmr2Control),
-                                               READ_REGISTER(tmr2Prescaler), systemClockFrequency);
-}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZ::GetDynamicHeapSize
@@ -1604,12 +1532,12 @@ uint32 EmRegsVZ::portXDataRead(emuptr address, int) {
 // ---------------------------------------------------------------------------
 
 uint32 EmRegsVZ::tmr1StatusRead(emuptr address, int size) {
-    // Remember this guy for later (see EmRegsVZ::tmr2StatusWrite())
+    UpdateTimers();
 
+    // Remember this guy for later (see EmRegsVZ::tmr2StatusWrite())
     fLastTmr1Status |= READ_REGISTER(tmr1Status);
 
     // Finish up by doing a standard read.
-
     return EmRegsVZ::StdRead(address, size);
 }
 
@@ -1618,11 +1546,17 @@ uint32 EmRegsVZ::tmr1StatusRead(emuptr address, int size) {
 // ---------------------------------------------------------------------------
 
 uint32 EmRegsVZ::tmr2StatusRead(emuptr address, int size) {
-    // Remember this guy for later (see EmRegsVZ::tmr2StatusWrite())
+    UpdateTimers();
 
+    // Remember this guy for later (see EmRegsVZ::tmr2StatusWrite())
     fLastTmr2Status |= READ_REGISTER(tmr2Status);
 
     // Finish up by doing a standard read.
+    return EmRegsVZ::StdRead(address, size);
+}
+
+uint32 EmRegsVZ::tmrRegisterRead(emuptr address, int size) {
+    UpdateTimers();
 
     return EmRegsVZ::StdRead(address, size);
 }
@@ -1815,6 +1749,7 @@ void EmRegsVZ::intMaskLoWrite(emuptr address, int size, uint32 value) {
     // Respond to the new interrupt state.
 
     EmRegsVZ::UpdateInterrupts();
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -1977,6 +1912,8 @@ void EmRegsVZ::tmr1StatusWrite(emuptr address, int size, uint32 value) {
 
         EmRegsVZ::UpdateInterrupts();
     }
+
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -2012,6 +1949,8 @@ void EmRegsVZ::tmr2StatusWrite(emuptr address, int size, uint32 value) {
 
         EmRegsVZ::UpdateInterrupts();
     }
+
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -2167,25 +2106,16 @@ void EmRegsVZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
 void EmRegsVZ::pllRegisterWrite(emuptr address, int size, uint32 value) {
     EmRegsVZ::StdWrite(address, size, value);
 
-    UpdateTimerTicksPerSecond();
-
+    UpdateTimers();
     gSystemState.MarkScreenDirty();
 
     EmHAL::onSystemClockChange.Dispatch();
 }
 
-void EmRegsVZ::tmr1RegisterWrite(emuptr address, int size, uint32 value) {
+void EmRegsVZ::tmrRegisterWrite(emuptr address, int size, uint32 value) {
     EmRegsVZ::StdWrite(address, size, value);
 
-    timer1TicksPerSecond = TimerTicksPerSecond(
-        READ_REGISTER(tmr1Control), READ_REGISTER(tmr1Prescaler), GetSystemClockFrequency());
-}
-
-void EmRegsVZ::tmr2RegisterWrite(emuptr address, int size, uint32 value) {
-    EmRegsVZ::StdWrite(address, size, value);
-
-    timer2TicksPerSecond = TimerTicksPerSecond(
-        READ_REGISTER(tmr2Control), READ_REGISTER(tmr2Prescaler), GetSystemClockFrequency());
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -2942,48 +2872,114 @@ int EmRegsVZ::GetPort(emuptr address) {
     return 0;
 }
 
-uint32 EmRegsVZ::Tmr1CyclesToNextInterrupt(uint64 systemCycles) {
-    if ((READ_REGISTER(intMaskLo) & hwrVZ328IntLoTimer) ||
-        !(READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) || timer1TicksPerSecond <= 0)
-        return 0xffffffff;
-
-    uint16 tcmp = READ_REGISTER(tmr1Compare);
-    uint16 tcn = READ_REGISTER(tmr1Counter);
-    uint16 delta = tcmp - tcn;
-
-    double clocksPerSecond = gSession->GetClocksPerSecond();
-
-    uint32 cycles = ceil((double)delta / timer1TicksPerSecond * clocksPerSecond);
-
-    while ((uint32)(((double)(cycles + systemCycles) - tmr1LastProcessedSystemCycles) /
-                    clocksPerSecond * timer1TicksPerSecond) < delta)
-        cycles++;
-
-    return cycles;
-}
-
-uint32 EmRegsVZ::Tmr2CyclesToNextInterrupt(uint64 systemCycles) {
-    if ((READ_REGISTER(intMaskLo) & hwrVZ328IntLoTimer2) ||
-        !(READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnable) || timer2TicksPerSecond <= 0)
-        return 0xffffffff;
-
-    uint16 tcmp = READ_REGISTER(tmr2Compare);
-    uint16 tcn = READ_REGISTER(tmr2Counter);
-    uint16 delta = tcmp - tcn;
-
-    double clocksPerSecond = gSession->GetClocksPerSecond();
-
-    uint32 cycles = ceil((double)delta / timer2TicksPerSecond * clocksPerSecond);
-
-    while ((uint32)(((double)(cycles + systemCycles) - tmr2LastProcessedSystemCycles) /
-                    clocksPerSecond * timer2TicksPerSecond) < delta)
-        cycles++;
-
-    return cycles;
-}
-
 uint32 EmRegsVZ::CyclesToNextInterrupt(uint64 systemCycles) {
-    return min(Tmr1CyclesToNextInterrupt(systemCycles), Tmr2CyclesToNextInterrupt(systemCycles));
+    this->systemCycles = systemCycles;
+
+    return nextTimerEventAfterCycle < ~(uint64)(0) ? nextTimerEventAfterCycle - systemCycles
+                                                   : 0xffffffff;
+}
+
+void EmRegsVZ::UpdateTimers() {
+    double clocksPerSecond = gSession->GetClocksPerSecond();
+    int32 systemClockFrequency = GetSystemClockFrequency();
+
+    double timer1TicksPerSecond = TimerTicksPerSecond(
+        READ_REGISTER(tmr1Control), READ_REGISTER(tmr1Prescaler), systemClockFrequency);
+    double timer2TicksPerSecond = TimerTicksPerSecond(
+        READ_REGISTER(tmr2Control), READ_REGISTER(tmr2Prescaler), systemClockFrequency);
+
+    nextTimerEventAfterCycle = ~0;
+
+    if (((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) != 0) &&
+        timer1TicksPerSecond > 0) {
+        uint32 ticks = ((double)systemCycles - tmr1LastProcessedSystemCycles) / clocksPerSecond *
+                       timer1TicksPerSecond;
+
+        tmr1LastProcessedSystemCycles += (double)ticks / timer1TicksPerSecond * clocksPerSecond;
+        WRITE_REGISTER(tmr1Counter, READ_REGISTER(tmr1Counter) + ticks);
+
+        uint16 tcmp = READ_REGISTER(tmr1Compare);
+        uint16 tcn = READ_REGISTER(tmr1Counter);
+
+        if (tcn >= tcmp) {
+            // Flag the occurrence of the successful comparison.
+            WRITE_REGISTER(tmr1Status, READ_REGISTER(tmr1Status) | hwrVZ328TmrStatusCompare);
+
+            // If the Free Run/Restart flag is not set, clear the counter.
+            if ((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlFreeRun) == 0) {
+                WRITE_REGISTER(tmr1Counter, tcn - tcmp);
+            }
+
+            // If the timer interrupt is enabled, post an interrupt.
+            if ((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnInterrupt) != 0) {
+                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrVZ328IntLoTimer);
+                EmRegsVZ::UpdateInterrupts();
+            }
+        }
+
+        if (!(READ_REGISTER(intMaskLo) & hwrVZ328IntLoTimer) &&
+            (READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnInterrupt)) {
+            tcn = READ_REGISTER(tmr1Counter);
+            uint16 delta = tcmp - tcn;
+
+            uint32 cycles = ceil((double)delta / timer1TicksPerSecond * clocksPerSecond);
+
+            while ((uint32)(((double)(cycles + systemCycles) - tmr1LastProcessedSystemCycles) /
+                            clocksPerSecond * timer1TicksPerSecond) < delta)
+                cycles++;
+
+            if (systemCycles + cycles < nextTimerEventAfterCycle)
+                nextTimerEventAfterCycle = systemCycles + cycles;
+        }
+
+    } else {
+        tmr1LastProcessedSystemCycles = systemCycles;
+    }
+
+    if (((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnable) != 0) &&
+        timer2TicksPerSecond > 0) {
+        uint32 ticks = ((double)systemCycles - tmr2LastProcessedSystemCycles) / clocksPerSecond *
+                       timer2TicksPerSecond;
+
+        tmr2LastProcessedSystemCycles += (double)ticks / timer2TicksPerSecond * clocksPerSecond;
+        WRITE_REGISTER(tmr2Counter, READ_REGISTER(tmr2Counter) + ticks);
+
+        uint16 tcmp = READ_REGISTER(tmr2Compare);
+        uint16 tcn = READ_REGISTER(tmr2Counter);
+
+        if (tcn >= tcmp) {
+            // Flag the occurrence of the successful comparison.
+            WRITE_REGISTER(tmr2Status, READ_REGISTER(tmr2Status) | hwrVZ328TmrStatusCompare);
+
+            // If the Free Run/Restart flag is not set, clear the counter.
+            if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlFreeRun) == 0) {
+                WRITE_REGISTER(tmr2Counter, tcn - tcmp);
+            }
+
+            // If the timer interrupt is enabled, post an interrupt.
+            if ((READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnInterrupt) != 0) {
+                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrVZ328IntLoTimer2);
+                EmRegsVZ::UpdateInterrupts();
+            }
+        }
+
+        if (!(READ_REGISTER(intMaskLo) & hwrVZ328IntLoTimer2) &&
+            (READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnInterrupt)) {
+            tcn = READ_REGISTER(tmr2Counter);
+            uint16 delta = tcmp - tcn;
+
+            uint32 cycles = ceil((double)delta / timer2TicksPerSecond * clocksPerSecond);
+
+            while ((uint32)(((double)(cycles + systemCycles) - tmr2LastProcessedSystemCycles) /
+                            clocksPerSecond * timer2TicksPerSecond) < delta)
+                cycles++;
+
+            if (systemCycles + cycles < nextTimerEventAfterCycle)
+                nextTimerEventAfterCycle = systemCycles + cycles;
+        }
+    } else {
+        tmr2LastProcessedSystemCycles = systemCycles;
+    }
 }
 
 void EmRegsVZ::pwmc1Write(emuptr address, int size, uint32 value) {

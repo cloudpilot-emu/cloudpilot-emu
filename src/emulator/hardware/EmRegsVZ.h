@@ -81,6 +81,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     uint32 portXDataRead(emuptr address, int size);
     uint32 tmr1StatusRead(emuptr address, int size);
     uint32 tmr2StatusRead(emuptr address, int size);
+    uint32 tmrRegisterRead(emuptr address, int size);
     uint32 uart1Read(emuptr address, int size);
     uint32 uart2Read(emuptr address, int size);
     uint32 rtcHourMinSecRead(emuptr address, int size);
@@ -98,8 +99,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     void pllRegisterWrite(emuptr address, int size, uint32 value);
     void tmr1StatusWrite(emuptr address, int size, uint32 value);
     void tmr2StatusWrite(emuptr address, int size, uint32 value);
-    void tmr1RegisterWrite(emuptr address, int size, uint32 value);
-    void tmr2RegisterWrite(emuptr address, int size, uint32 value);
+    void tmrRegisterWrite(emuptr address, int size, uint32 value);
     void spiCont1Write(emuptr address, int size, uint32 value);
     void spiMasterControlWrite(emuptr address, int size, uint32 value);
     void uart1Write(emuptr address, int size, uint32 value);
@@ -143,9 +143,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
 
    private:
     void Cycle(uint64 systemCycles, Bool sleeping);
-    void UpdateTimerTicksPerSecond();
-    uint32 Tmr1CyclesToNextInterrupt(uint64 systemCycles);
-    uint32 Tmr2CyclesToNextInterrupt(uint64 systemCycles);
+    void UpdateTimers();
 
     void DispatchPwmChange();
 
@@ -171,8 +169,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
 
     double tmr1LastProcessedSystemCycles;
     double tmr2LastProcessedSystemCycles;
-    double timer1TicksPerSecond;
-    double timer2TicksPerSecond;
+    uint64 nextTimerEventAfterCycle;
+    uint64 systemCycles;
 
     uint32 rtcDayAtWrite{0};
     int32 lastRtcAlarmCheck{-1};
