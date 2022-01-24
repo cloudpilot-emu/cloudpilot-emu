@@ -2113,17 +2113,18 @@ void EmRegsVZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
 void EmRegsVZ::pllRegisterWrite(emuptr address, int size, uint32 value) {
     EmRegsVZ::StdWrite(address, size, value);
 
-    UpdateTimers();
     gSystemState.MarkScreenDirty();
 
     EmHAL::onSystemClockChange.Dispatch();
+
+    UpdateTimers();
+    powerOffCached = GetAsleep();
 }
 
 void EmRegsVZ::tmrRegisterWrite(emuptr address, int size, uint32 value) {
     EmRegsVZ::StdWrite(address, size, value);
 
     UpdateTimers();
-    powerOffCached = GetAsleep();
 }
 
 // ---------------------------------------------------------------------------
@@ -2888,6 +2889,9 @@ uint32 EmRegsVZ::CyclesToNextInterrupt(uint64 systemCycles) {
 }
 
 void EmRegsVZ::UpdateTimers() {
+    nextTimerEventAfterCycle = ~0;
+    if (GetAsleep()) return;
+
     double clocksPerSecond = gSession->GetClocksPerSecond();
     int32 systemClockFrequency = GetSystemClockFrequency();
 
@@ -2895,8 +2899,6 @@ void EmRegsVZ::UpdateTimers() {
         READ_REGISTER(tmr1Control), READ_REGISTER(tmr1Prescaler), systemClockFrequency);
     double timer2TicksPerSecond = TimerTicksPerSecond(
         READ_REGISTER(tmr2Control), READ_REGISTER(tmr2Prescaler), systemClockFrequency);
-
-    nextTimerEventAfterCycle = ~0;
 
     if (((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) != 0) &&
         timer1TicksPerSecond > 0) {
@@ -2931,11 +2933,12 @@ void EmRegsVZ::UpdateTimers() {
             uint16 delta = tcmp - tcn;
             uint64 cycles = ceil((double)delta / timer1TicksPerSecond * clocksPerSecond);
 
-            while ((uint32)(((double)(cycles + systemCycles) - tmr1LastProcessedSystemCycles) /
-                            clocksPerSecond * timer1TicksPerSecond) < delta)
-                cycles += clocksPerSecond / timer2TicksPerSecond;
+            if ((uint32)(((double)(cycles + systemCycles) - tmr1LastProcessedSystemCycles) /
+                         clocksPerSecond * timer1TicksPerSecond) < delta)
 
-            if (systemCycles + cycles < nextTimerEventAfterCycle)
+                cycles += clocksPerSecond / timer1TicksPerSecond;
+
+            if (cycles < nextTimerEventAfterCycle - systemCycles)
                 nextTimerEventAfterCycle = systemCycles + cycles;
         }
 
@@ -2976,12 +2979,12 @@ void EmRegsVZ::UpdateTimers() {
             uint16 delta = tcmp - tcn;
             uint64 cycles = ceil((double)delta / timer2TicksPerSecond * clocksPerSecond);
 
-            while ((uint32)(((double)(cycles + systemCycles) - tmr2LastProcessedSystemCycles) /
-                            clocksPerSecond * timer2TicksPerSecond) < delta)
+            if ((uint32)(((double)(cycles + systemCycles) - tmr2LastProcessedSystemCycles) /
+                         clocksPerSecond * timer2TicksPerSecond) < delta)
 
                 cycles += clocksPerSecond / timer2TicksPerSecond;
 
-            if (systemCycles + cycles < nextTimerEventAfterCycle)
+            if (cycles < nextTimerEventAfterCycle - systemCycles)
                 nextTimerEventAfterCycle = systemCycles + cycles;
         }
     } else {
