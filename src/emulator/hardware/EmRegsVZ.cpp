@@ -2883,8 +2883,8 @@ int EmRegsVZ::GetPort(emuptr address) {
 uint32 EmRegsVZ::CyclesToNextInterrupt(uint64 systemCycles) {
     this->systemCycles = systemCycles;
 
-    return nextTimerEventAfterCycle < ~(uint64)(0) ? nextTimerEventAfterCycle - systemCycles
-                                                   : 0xffffffff;
+    if (systemCycles > nextTimerEventAfterCycle) return 1;
+    return std::min(nextTimerEventAfterCycle - systemCycles, (uint64)0xffffffff);
 }
 
 void EmRegsVZ::UpdateTimers() {
@@ -2929,12 +2929,11 @@ void EmRegsVZ::UpdateTimers() {
             (READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnInterrupt)) {
             tcn = READ_REGISTER(tmr1Counter);
             uint16 delta = tcmp - tcn;
-
-            uint32 cycles = ceil((double)delta / timer1TicksPerSecond * clocksPerSecond);
+            uint64 cycles = ceil((double)delta / timer1TicksPerSecond * clocksPerSecond);
 
             while ((uint32)(((double)(cycles + systemCycles) - tmr1LastProcessedSystemCycles) /
                             clocksPerSecond * timer1TicksPerSecond) < delta)
-                cycles++;
+                cycles += clocksPerSecond / timer2TicksPerSecond;
 
             if (systemCycles + cycles < nextTimerEventAfterCycle)
                 nextTimerEventAfterCycle = systemCycles + cycles;
@@ -2975,12 +2974,12 @@ void EmRegsVZ::UpdateTimers() {
             (READ_REGISTER(tmr2Control) & hwrVZ328TmrControlEnInterrupt)) {
             tcn = READ_REGISTER(tmr2Counter);
             uint16 delta = tcmp - tcn;
-
-            uint32 cycles = ceil((double)delta / timer2TicksPerSecond * clocksPerSecond);
+            uint64 cycles = ceil((double)delta / timer2TicksPerSecond * clocksPerSecond);
 
             while ((uint32)(((double)(cycles + systemCycles) - tmr2LastProcessedSystemCycles) /
                             clocksPerSecond * timer2TicksPerSecond) < delta)
-                cycles++;
+
+                cycles += clocksPerSecond / timer2TicksPerSecond;
 
             if (systemCycles + cycles < nextTimerEventAfterCycle)
                 nextTimerEventAfterCycle = systemCycles + cycles;
