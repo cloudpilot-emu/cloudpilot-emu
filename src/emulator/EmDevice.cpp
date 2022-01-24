@@ -84,6 +84,7 @@
 #include "EmRegsVZPalmM125.h"
 #include "EmRegsVZPalmM130.h"
 #include "EmRegsVZPalmM505.h"
+#include "EmRegsVZPegModena.h"
 #include "EmRegsVZPegNasca.h"
 #include "EmRegsVZPegVenice.h"
 #include "EmRegsVZPegYellowStone.h"
@@ -148,6 +149,7 @@ enum  // DeviceType
     kDevicePEGS320,
     kDevicePEGT400,
     kDevicePEGN600C,
+    kDevicePEGT600,
     kDeviceLast
 };
 
@@ -483,6 +485,14 @@ static const DeviceInfo kDeviceInfo[] = {
      UNSUPPORTED,
      UNSUPPORTED,
      {{'sony', 'ystn'}}},
+    {kDevicePEGT600,
+     "PEG-T600 series",
+     {"PEG-T600"},
+     kSupports68VZ328,
+     8192,
+     UNSUPPORTED,
+     UNSUPPORTED,
+     {{'sony', 'mdna'}}},
 #if 0
     // ===== Handspring devices =====
     {
@@ -1116,13 +1126,27 @@ void EmDevice::CreateRegs(void) const {
             break;
 
         case kDevicePEGN600C: {
-            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
-
             EmBankRegs::AddSubBank(new EmRegsVzPegYellowStone);
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
+
             EmBankRegs::AddSubBank(new EmRegsExpCardCLIE);
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x10900000L, 0));
+            break;
+        }
+
+        case kDevicePEGT600: {
+            EmBankRegs::AddSubBank(new EmRegsVzPegModena);
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
+            EmBankRegs::AddSubBank(framebuffer);
+
+            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE(ExpCard_BaseAddress));
+            EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x10900000L, 0));
+            EmBankRegs::AddSubBank(new EmRegsFMSound(FMSound_BaseAddress));
             break;
         }
 
@@ -1207,6 +1231,7 @@ uint32 EmDevice::FramebufferSize() const {
         case kDevicePalmI710:
         case kDevicePalmM130:
         case kDevicePEGN600C:
+        case kDevicePEGT600:
             return 256;
 
         default:
@@ -1434,6 +1459,10 @@ bool EmDevice::HasCustomDigitizerTransform() const { return fDeviceID == kDevice
 bool EmDevice::IsClie() const {
     switch (fDeviceID) {
         case kDevicePEGS300:
+        case kDevicePEGS320:
+        case kDevicePEGT400:
+        case kDevicePEGN600C:
+        case kDevicePEGT600:
             return true;
 
         default:
@@ -1447,6 +1476,7 @@ int EmDevice::DigitizerScale() const {
     switch (fDeviceID) {
         case kDevicePEGT400:
         case kDevicePEGN600C:
+        case kDevicePEGT600:
             return 2;
 
         default:
@@ -1460,6 +1490,7 @@ ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
         case kDevicePalmPacifiC:
         case kDevicePEGT400:
         case kDevicePEGN600C:
+        case kDevicePEGT600:
             return ScreenDimensions::screen320x320;
 
         case kDeviceHandEra330:
