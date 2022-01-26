@@ -78,6 +78,7 @@
 #include "EmRegsSED1376.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
 #include "EmRegsUsbCLIE.h"
+#include "EmRegsUsbPegN700C.h"
 #include "EmRegsVZAtlantiC.h"
 #include "EmRegsVZHandEra330.h"
 #include "EmRegsVZPalmI705.h"
@@ -85,6 +86,7 @@
 #include "EmRegsVZPalmM130.h"
 #include "EmRegsVZPalmM505.h"
 #include "EmRegsVZPegModena.h"
+#include "EmRegsVZPegN700C.h"
 #include "EmRegsVZPegNasca.h"
 #include "EmRegsVZPegVenice.h"
 #include "EmRegsVZPegYellowStone.h"
@@ -150,6 +152,7 @@ enum  // DeviceType
     kDevicePEGT400,
     kDevicePEGN600C,
     kDevicePEGT600,
+    kDevicePEGN700C,
     kDeviceLast
 };
 
@@ -220,7 +223,6 @@ static const long hwrMiscFlagExtSubIDNone = 0xFF;
 #define PALM_VII_EZ_NEW_DB "TuneUp"
 #define PALM_VIIX_DB "iMessenger"
 #define PALM_m100_DB "cclkPalmClock"
-#define SONY_MANUF "SONY Corporation"
 
 // Table used to describe the various hardware devices we support.
 // Some good summary background information is at:
@@ -493,6 +495,14 @@ static const DeviceInfo kDeviceInfo[] = {
      UNSUPPORTED,
      UNSUPPORTED,
      {{'sony', 'mdna'}}},
+    {kDevicePEGN700C,
+     "PEG-N700C/N710C series",
+     {"PEG-N700C/N710C"},
+     kSupports68VZ328,
+     8192,
+     UNSUPPORTED,
+     UNSUPPORTED,
+     {{'sony', 'ysmt'}}},
 #if 0
     // ===== Handspring devices =====
     {
@@ -686,7 +696,7 @@ Bool EmDevice::Supports68SZ328(void) const {
 
 Bool EmDevice::PrismPlatinumEdgeHack(void) const {
     return fDeviceID == kDeviceVisorPrism || fDeviceID == kDeviceVisorPlatinum ||
-           fDeviceID == kDeviceVisorEdge;
+           fDeviceID == kDeviceVisorEdge || fDeviceID == kDevicePEGN700C;
 }
 
 /***********************************************************************
@@ -886,8 +896,15 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
 
 #endif
         case kDevicePEGS300:
-            if (!(ROM.GetCardManufacturer().compare(0, 16, SONY_MANUF)) && !isColor) return true;
+            if (!(ROM.GetCardManufacturer().compare(0, 16, "SONY Corporation")) && !isColor)
+                return true;
             break;
+
+        case kDevicePEGN700C: {
+            if (!ROM.GetCardManufacturer().compare(0, 16, "SonyCorporation") ||
+                !ROM.GetCardManufacturer().compare(0, 4, "Sony"))
+                return true;
+        } break;
 
         case kDeviceLast:
             EmAssert(false);
@@ -1150,6 +1167,17 @@ void EmDevice::CreateRegs(void) const {
             break;
         }
 
+        case kDevicePEGN700C: {
+            EmBankRegs::AddSubBank(new EmRegsVzPegN700C);
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
+            EmBankRegs::AddSubBank(framebuffer);
+
+            EmBankRegs::AddSubBank(new EmRegsUsbPegN700C(0x10800000L));
+            break;
+        }
+
 #if 0
         case kDeviceVisor:
             EmBankRegs::AddSubBank(new EmRegsEZVisor);
@@ -1232,6 +1260,7 @@ uint32 EmDevice::FramebufferSize() const {
         case kDevicePalmM130:
         case kDevicePEGN600C:
         case kDevicePEGT600:
+        case kDevicePEGN700C:
             return 256;
 
         default:
@@ -1463,6 +1492,7 @@ bool EmDevice::IsClie() const {
         case kDevicePEGT400:
         case kDevicePEGN600C:
         case kDevicePEGT600:
+        case kDevicePEGN700C:
             return true;
 
         default:
@@ -1477,6 +1507,7 @@ int EmDevice::DigitizerScale() const {
         case kDevicePEGT400:
         case kDevicePEGN600C:
         case kDevicePEGT600:
+        case kDevicePEGN700C:
             return 2;
 
         default:
@@ -1491,6 +1522,7 @@ ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
         case kDevicePEGT400:
         case kDevicePEGN600C:
         case kDevicePEGT600:
+        case kDevicePEGN700C:
             return ScreenDimensions::screen320x320;
 
         case kDeviceHandEra330:

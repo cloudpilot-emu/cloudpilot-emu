@@ -96,7 +96,6 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     void intMaskLoWrite(emuptr address, int size, uint32 value);
     void intStatusHiWrite(emuptr address, int size, uint32 value);
     void portXDataWrite(emuptr address, int size, uint32 value);
-    void portDIntReqEnWrite(emuptr address, int size, uint32 value);
     void pllRegisterWrite(emuptr address, int size, uint32 value);
     void tmr1StatusWrite(emuptr address, int size, uint32 value);
     void tmr2StatusWrite(emuptr address, int size, uint32 value);
@@ -126,6 +125,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual void MarkScreenDirty();
 
     virtual void ApplySdctl();
+
+    virtual void portDIntReqEnWrite(emuptr address, int size, uint32 value);
 
    protected:
     void UpdateInterrupts(void);

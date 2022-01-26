@@ -534,8 +534,11 @@ void SetHotSyncUserName(const char* userNameP) {
     //
     //		[str ] userName
 
-    char buffer[sizeof(DlpReqHeaderType) + sizeof(DlpTinyArgWrapperType) +
-                sizeof(DlpWriteUserInfoReqHdrType) + dlpMaxUserNameSize];
+    size_t bufferSize = sizeof(DlpReqHeaderType) + sizeof(DlpTinyArgWrapperType) +
+                        sizeof(DlpWriteUserInfoReqHdrType) + dlpMaxUserNameSize;
+
+    uint32_t bufferAligned[bufferSize / 4 + (bufferSize % 4 ? 1 : 0)];
+    char* buffer = (char*)bufferAligned;
 
     // Get handy pointers to all of the above.
     DlpReqHeaderType* reqHdr = (DlpReqHeaderType*)buffer;
@@ -565,7 +568,8 @@ void SetHotSyncUserName(const char* userNameP) {
     memset(&session, 0, sizeof(session));
     session.htalLibRefNum = EmPatchModuleHtal::kMagicRefNum;  // See comments in HtalLibSendReply.
     session.gotCommand = true;
-    session.cmdLen = sizeof(buffer);
+
+    session.cmdLen = bufferSize;
     session.cmdP = buffer;
 
     // For simplicity, byteswap here so that we don't have to reparse all

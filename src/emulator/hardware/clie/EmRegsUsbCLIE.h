@@ -16,6 +16,7 @@
 
 #include "EmPalmStructs.h"
 #include "EmRegs.h"
+#include "PalmPack.h"
 
 struct HwrUsbCLIEType {
     UInt8 dataWrite;  // 0x0000
@@ -23,6 +24,7 @@ struct HwrUsbCLIEType {
     UInt8 cmdWrite;   // 0x0002
     UInt8 cmdRead;    // 0x0003
 };
+#include "PalmPackPop.h"
 
 class EmRegsUsbCLIE : public EmRegs {
    public:
@@ -39,8 +41,6 @@ class EmRegsUsbCLIE : public EmRegs {
     virtual uint8* GetRealAddress(emuptr address);
     virtual emuptr GetAddressStart(void);
     virtual uint32 GetAddressRange(void);
-
-    void UnsupportedWrite(emuptr address, int size, uint32 value);
 
    private:
     uint32 Read(emuptr address, int size);

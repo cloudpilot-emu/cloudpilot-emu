@@ -1,70 +1,29 @@
-/* -*- mode: C++; tab-width: 4 -*- */
-/* ===================================================================== *\
-        Copyright (c) 1998-2000 Palm, Inc. or its subsidiaries.
-        All rights reserved.
+#include "EmRegsUsbPegN700C.h"
 
-        This file is part of the Palm OS Emulator.
+#undef addressof
+#undef INSTALL_HANDLER
 
-        This program is free software; you can redistribute it and/or modify
-        it under the terms of the GNU General Public License as published by
-        the Free Software Foundation; either version 2 of the License, or
-        (at your option) any later version.
-\* ===================================================================== */
+#define addressof(x) (this->GetAddressStart() + offsetof(HwrRegsUsbPegN700C, x))
 
-#include "EmRegsUsbCLIE.h"
-
-#include "Byteswapping.h"  // ByteswapWords
-#include "DebugMgr.h"      // Debug::CheckStepSpy
-#include "EmBankROM.h"     // ROMBank::IsPCInRAM
-#include "EmBankRegs.h"    // RegsBank::GetROMSize
-#include "EmCommon.h"
-#include "EmHAL.h"
-#include "EmMemory.h"  // gMemoryAccess
-
-typedef uint32 (*ReadFunction)(emuptr address, int size);
-typedef void (*WriteFunction)(emuptr address, int size, uint32 value);
-
-//*******************************************************************
-// EmRegsUsbCLIE Class
-//*******************************************************************
-
-// Macro to return the Dragonball address of the specified register
-
-#define addressof(x) (this->GetAddressStart() + offsetof(HwrUsbCLIEType, x))
-
-#define INSTALL_HANDLER(read, write, reg)                                                      \
-    this->SetHandler((ReadFunction)&EmRegsUsbCLIE::read, (WriteFunction)&EmRegsUsbCLIE::write, \
-                     addressof(reg), sizeof(fRegs.reg))
-#pragma mark -
+#define INSTALL_HANDLER(read, write, reg)                    \
+    this->SetHandler((ReadFunction)&EmRegsUsbPegN700C::read, \
+                     (WriteFunction)&EmRegsUsbPegN700C::write, addressof(reg), sizeof(fRegs.reg))
 
 // ---------------------------------------------------------------------------
-//		� EmRegsUsbCLIE::EmRegsUsbCLIE
+//		� EmRegsUSBforPegN700C::EmRegsUSBforPegN700C
 // ---------------------------------------------------------------------------
 
-EmRegsUsbCLIE::EmRegsUsbCLIE() {
-    fOffsetAddr = 0;
-    fBaseAddr = 0;
-}
-
-EmRegsUsbCLIE::EmRegsUsbCLIE(uint32 offset) {
-    fOffsetAddr = offset;
-    fBaseAddr = 0;
-}
-
-EmRegsUsbCLIE::EmRegsUsbCLIE(emuptr baseAddr, uint32 offset) {
-    fOffsetAddr = offset;
-    fBaseAddr = baseAddr;
-}
+EmRegsUsbPegN700C::EmRegsUsbPegN700C(emuptr baseAddr) : fBaseAddr(baseAddr) {}
 
 // ---------------------------------------------------------------------------
-//		� EmRegsUsbCLIE::~EmRegsUsbCLIE
+//		� EmRegsUSBforPegN700C::~EmRegsUSBforPegN700C
 // ---------------------------------------------------------------------------
 
-EmRegsUsbCLIE::~EmRegsUsbCLIE(void) {}
+EmRegsUsbPegN700C::~EmRegsUsbPegN700C(void) {}
 
 /***********************************************************************
  *
- * FUNCTION:	EmRegsUsbCLIE::Initialize
+ * FUNCTION:	EmRegsUSBforPegN700C::Initialize
  *
  * DESCRIPTION: Standard initialization function.  Responsible for
  *				initializing this sub-system when a new session is
@@ -77,14 +36,14 @@ EmRegsUsbCLIE::~EmRegsUsbCLIE(void) {}
  *
  ***********************************************************************/
 
-void EmRegsUsbCLIE::Initialize(void) {
+void EmRegsUsbPegN700C::Initialize(void) {
     EmRegs::Initialize();
     Reset(true);
 }
 
 /***********************************************************************
  *
- * FUNCTION:	EmRegsUsbCLIE::Reset
+ * FUNCTION:	EmRegsUSBforPegN700C::Reset
  *
  * DESCRIPTION: Standard reset function.  Sets the sub-system to a
  *				default state.	This occurs not only on a Reset (as
@@ -99,16 +58,19 @@ void EmRegsUsbCLIE::Initialize(void) {
  *
  ***********************************************************************/
 
-void EmRegsUsbCLIE::Reset(Bool hardwareReset) {
+void EmRegsUsbPegN700C::Reset(Bool hardwareReset) {
     EmRegs::Reset(hardwareReset);
+
     if (hardwareReset) {
         memset(&fRegs, 0, sizeof(fRegs));
+        fRegs.USB0C06 = 0xFC;
+        fRegs.USB0C07 = 0x00;
     }
 }
 
 /***********************************************************************
  *
- * FUNCTION:	EmRegsUsbCLIE::Dispose
+ * FUNCTION:	EmRegsUSBforPegN700C::Dispose
  *
  * DESCRIPTION: Standard dispose function.	Completely release any
  *				resources acquired or allocated in Initialize and/or
@@ -120,12 +82,12 @@ void EmRegsUsbCLIE::Reset(Bool hardwareReset) {
  *
  ***********************************************************************/
 
-void EmRegsUsbCLIE::Dispose(void) {}
+void EmRegsUsbPegN700C::Dispose(void) {}
 
 // ---------------------------------------------------------------------------
-//		� EmRegsUsbCLIE::SetSubBankHandlers
+//		� EmRegsUSBforPegN700C::SetSubBankHandlers
 // ---------------------------------------------------------------------------
-void EmRegsUsbCLIE::SetSubBankHandlers(void) {
+void EmRegsUsbPegN700C::SetSubBankHandlers(void) {
     // Install base handlers.
 
     EmRegs::SetSubBankHandlers();
@@ -136,48 +98,80 @@ void EmRegsUsbCLIE::SetSubBankHandlers(void) {
     INSTALL_HANDLER(Read, Write, dataRead);
     INSTALL_HANDLER(Read, Write, cmdWrite);
     INSTALL_HANDLER(Read, Write, cmdRead);
+    INSTALL_HANDLER(Read, Write, USB0200);
+    INSTALL_HANDLER(Read, Write, USB0201);
+    INSTALL_HANDLER(Read, Write, USB0202);
+    INSTALL_HANDLER(Read, Write, USB0203);
+    INSTALL_HANDLER(Read, Write, USB0204);
+    INSTALL_HANDLER(Read, Write, USB0205);
+    INSTALL_HANDLER(Read, Write, USB0206);
+    INSTALL_HANDLER(Read, Write, USB0207);
+    INSTALL_HANDLER(Read, Write, USB0208);
+    INSTALL_HANDLER(Read, Write, USB0209);
+
+    INSTALL_HANDLER(Read, Write, USB0C00);
+    INSTALL_HANDLER(Read, Write, USB0C01);
+    INSTALL_HANDLER(Read, Write, USB0C02);
+    INSTALL_HANDLER(Read, Write, USB0C03);
+    INSTALL_HANDLER(Read, Write, USB0C04);
+    INSTALL_HANDLER(Read, Write, USB0C05);
+    INSTALL_HANDLER(Read, Write, USB0C06);
+    INSTALL_HANDLER(Read, Write, USB0C07);
+    INSTALL_HANDLER(Read, Write, USB0C08);
+    INSTALL_HANDLER(Read, Write, USB0C09);
+    INSTALL_HANDLER(Read, Write, USB0C0A);
+    INSTALL_HANDLER(Read, Write, USB0C0B);
+    INSTALL_HANDLER(Read, Write, USB0C0C);
+    INSTALL_HANDLER(Read, Write, USB0C0D);
+    INSTALL_HANDLER(Read, Write, USB0C0E);
+    INSTALL_HANDLER(Read, Write, USB0C0F);
+
+    INSTALL_HANDLER(Read, Write, _filler01);
+    INSTALL_HANDLER(Read, Write, _filler02);
+    INSTALL_HANDLER(Read, Write, _filler03);
+    INSTALL_HANDLER(Read, Write, _filler04);
+    INSTALL_HANDLER(Read, Write, _filler05);
+
+    INSTALL_HANDLER(Read, Write, USB8000);
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsUsbCLIE::GetRealAddress
+//		� EmRegsUSBforPegN700C::GetRealAddress
 // ---------------------------------------------------------------------------
 
-uint8* EmRegsUsbCLIE::GetRealAddress(emuptr address) {
+uint8* EmRegsUsbPegN700C::GetRealAddress(emuptr address) {
     uint8* loc = ((uint8*)&fRegs) + (address - this->GetAddressStart());
+
     return loc;
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsUsbCLIE::GetAddressStart
+//		� EmRegsUSBforPegN700C::GetAddressStart
 // ---------------------------------------------------------------------------
 
-emuptr EmRegsUsbCLIE::GetAddressStart(void) {
-    emuptr startAddr = fBaseAddr;
-    if (!startAddr) startAddr = EmBankROM::GetMemoryStart() + EmHAL::GetROMSize();
-    return startAddr + fOffsetAddr;
-}
+emuptr EmRegsUsbPegN700C::GetAddressStart(void) { return fBaseAddr; }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsUsbCLIE::GetAddressRange
+//		� EmRegsUSBforPegN700C::GetAddressRange
 // ---------------------------------------------------------------------------
 
-uint32 EmRegsUsbCLIE::GetAddressRange(void) { return sizeof(fRegs); }
+uint32 EmRegsUsbPegN700C::GetAddressRange(void) { return sizeof(fRegs); }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsUsbCLIE::Write
+//		� EmRegsCFMemCard::Write
 // ---------------------------------------------------------------------------
-void EmRegsUsbCLIE::Write(emuptr address, int size, uint32 value) {
-    if ((value & 0x000000FF) == 0xFB && address == (this->GetAddressStart() + 2)) {
-        fRegs.dataRead = 0xC0;
+void EmRegsUsbPegN700C::Write(emuptr address, int size, uint32 value)
+
+{
+    if (address == (GetAddressStart() + 0x0C06) && size == 2) {
+        if (this->StdReadBE(address, size) == 0xFC00) value = 0x0001;
     }
 
     this->StdWriteBE(address, size, value);
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsUsbCLIE::Read
+//		� EmRegsUSBforPegN700C::Read
 // ---------------------------------------------------------------------------
-uint32 EmRegsUsbCLIE::Read(emuptr address, int size) {
-    uint32 rstValue = this->StdReadBE(address, size);
-    return rstValue;
-}
+
+uint32 EmRegsUsbPegN700C::Read(emuptr address, int size) { return this->StdReadBE(address, size); }
