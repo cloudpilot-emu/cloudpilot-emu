@@ -31,7 +31,7 @@
 
 #define LogAppendMsg PRINTF
 
-// #define LOGGING 0
+//#define LOGGING 0
 #ifdef LOGGING
     #define PRINTF_LINE logging::printf
     #define PRINTF_BLIT logging::printf
@@ -1165,7 +1165,9 @@ EmRegsMediaQ11xx::~EmRegsMediaQ11xx(void) {}
 
 void EmRegsMediaQ11xx::Initialize(void) {
     EmRegs::Initialize();
+
     paletteDirty = true;
+    WRITE_REGISTER(dcREG[0x03], 0x00000040);
 }
 
 // ---------------------------------------------------------------------------
@@ -1242,7 +1244,7 @@ void EmRegsMediaQ11xx::Reset(Bool hardwareReset) {
         WRITE_REGISTER(dcREG[0x00], 0x00000000);
         WRITE_REGISTER(dcREG[0x01], 0xF0000000);
         WRITE_REGISTER(dcREG[0x02], 0x00000000);
-        WRITE_REGISTER(dcREG[0x03], 0x00000000);
+        WRITE_REGISTER(dcREG[0x03], 0x00000040);
         WRITE_REGISTER(dcREG[0x04], 0x00000000);
         WRITE_REGISTER(dcREG[0x05], 0x00000000);
         WRITE_REGISTER(dcREG[0x06], 0x00000000);
@@ -1349,6 +1351,8 @@ void EmRegsMediaQ11xx::Load(SavestateLoader& loader) {
 
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper);
+
+    WRITE_REGISTER(dcREG[0x03], 0x00000040);
 
     this->PrvUpdateByteLanes();
     this->PrvGetGEState(kAllRegisters);
@@ -1503,7 +1507,7 @@ void EmRegsMediaQ11xx::SetSubBankHandlers(void) {
     INSTALL_HANDLER(MQRead, DC00Write, dcREG[0x00]);
     INSTALL_HANDLER(MQRead, MQWrite, dcREG[0x01]);
     INSTALL_HANDLER(MQRead, MQWrite, dcREG[0x02]);
-    INSTALL_HANDLER(MQRead, MQWrite, dcREG[0x03]);
+    INSTALL_HANDLER(MQRead, NullWrite, dcREG[0x03]);
     INSTALL_HANDLER(MQRead, MQWrite, dcREG[0x04]);
     INSTALL_HANDLER(MQRead, MQWrite, dcREG[0x05]);
     INSTALL_HANDLER(MQRead, MQWrite, dcREG[0x06]);
@@ -4070,14 +4074,24 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
     }
 
     // We're getting the source pixel value from the display memory.
+    if (!fState.monoSource && fState.memToScreen) {
+        uint8 bpp = fState.colorDepth == kColorDepth8 ? 1 : 2;
+        uint16 x = fXSrc >= fState.xSrc ? fXSrc - fState.xSrc : 0;
+        uint16 y = fYSrc >= fState.ySrc ? fYSrc - fState.ySrc : 0;
 
-    uint16 result = this->PrvGetPixel(fXSrc, fYSrc);
+        emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
+                          (fState.ySrc * fState.destLineStride + fLeadingSourcePixels +
+                           y * (fState.width + fState.srcTrailingBytes / bpp) + x) *
+                              bpp;
 
-    PRINTF_BLIT("	PrvSrcPipeNextPixel:	fXSrc:	%u", fXSrc);
-    PRINTF_BLIT("	PrvSrcPipeNextPixel:	fYSrc:	%u", fYSrc);
-    PRINTF_BLIT("	PrvSrcPipeNextPixel:	result:	0x%04X", result);
-
-    return result;
+        if ((location - this->PrvGetVideoBase()) <= 0x40000) {
+            return bpp == 1 ? EmMemGet8(location) : EmMemGet16(location);
+        } else {
+            return 0;
+        }
+    } else {
+        return this->PrvGetPixel(fXSrc, fYSrc);
+    }
 }
 
 // ---------------------------------------------------------------------------
