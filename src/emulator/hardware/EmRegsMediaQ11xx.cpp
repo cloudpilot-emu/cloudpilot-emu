@@ -31,7 +31,7 @@
 
 #define LogAppendMsg PRINTF
 
-//#define LOGGING 0
+// #define LOGGING 0
 #ifdef LOGGING
     #define PRINTF_LINE logging::printf
     #define PRINTF_BLIT logging::printf
@@ -4080,7 +4080,7 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
         uint16 y = fYSrc >= fState.ySrc ? fYSrc - fState.ySrc : 0;
 
         emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
-                          (fState.ySrc * fState.destLineStride + fLeadingSourcePixels +
+                          (fState.ySrc * fState.destLineStride + fState.srcLeadingBytes +
                            y * (fState.width + fState.srcTrailingBytes / bpp) + x) *
                               bpp;
 
