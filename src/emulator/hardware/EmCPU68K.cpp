@@ -39,6 +39,8 @@
 #include "SuspendManager.h"
 #include "UAE.h"  // cpuop_func, etc.
 
+//#define TRACE_FUNCTION_CALLS
+
 constexpr uint32 SAVESTATE_VERSION = 1;
 
 // Define our own flags for regs.spcflag.  Please do not let these
@@ -128,6 +130,54 @@ EmCPU68K* gCPU68K;
             }                                                                            \
         }                                                                                \
     }
+
+namespace {
+#ifdef TRACE_FUNCTION_CALLS
+    void traceFunctionCalls(uint16 opcode, emuptr pc) {
+        if (opcode == 0x4e56 && (pc & 0x10000000) == 0x10000000) {
+            emuptr addr;
+            for (addr = pc; addr - pc < 0x1000; addr += 2) {
+                if (EmMemGet16(addr) == 0x4e75) break;
+            }
+
+            if (addr - pc >= 0x1000) {
+                cout << "no return found at " << hex << pc << endl << flush;
+            } else {
+                char fname[32];
+                int i;
+
+                for (i = 0; i < 32; i++) {
+                    fname[i] = EmMemGet8(addr + 3 + i);
+                    if (fname[i] == 0 || fname[i] > 127 || fname[i] < 0x20) break;
+                }
+
+                if (i < 32 && fname[i] == 0) {
+                    cout << "call -> " << hex << (pc & 0x0fffffff) << " : " << fname << endl
+                         << flush;
+                } else {
+                    cout << "call ->" << hex << (pc & 0x0fffffff) << endl << flush;
+                }
+            }
+        }
+
+        if (opcode == 0x4e75 && (pc & 0x10000000) == 0x10000000) {
+            char fname[32];
+            int i;
+
+            for (i = 0; i < 32; i++) {
+                fname[i] = EmMemGet8(pc + 3 + i);
+                if (fname[i] == 0 || fname[i] > 127 || fname[i] < 0x20) break;
+            }
+
+            if (i < 32 && fname[i] == 0) {
+                cout << "rtrn <- " << hex << (pc & 0x0fffffff) << " : " << fname << endl << flush;
+            } else {
+                cout << "rtrn <- " << hex << (pc & 0x0fffffff) << endl << flush;
+            }
+        }
+    }
+#endif
+}  // namespace
 
 // ---------------------------------------------------------------------------
 //		� EmCPU68K::EmCPU68K
@@ -334,6 +384,9 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
         EmOpcode68K opcode;
 
         opcode = EmMemGet16(pc);
+#ifdef TRACE_FUNCTION_CALLS
+        traceFunctionCalls(opcode, pc);
+#endif
 
 #ifdef __EMSCRIPTEN__
         cycles = ((cpuop_func*)((long)cpufunctbl_base + opcode))(opcode);
