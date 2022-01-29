@@ -165,6 +165,7 @@ export class EventHandlingService {
             if (!touch) continue;
 
             const area = this.interactionsTouch.get(touch.identifier)?.area;
+            if (area === undefined) return;
 
             if (area !== Area.buttons) {
                 const coords = this.canvasDisplayService.eventToPalmCoordinates(touch, true);
