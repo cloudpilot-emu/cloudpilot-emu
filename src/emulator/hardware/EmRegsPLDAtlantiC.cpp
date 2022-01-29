@@ -21,7 +21,12 @@ void EmRegsPLDAtlantiC::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
 void EmRegsPLDAtlantiC::Load(SavestateLoader& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regsPLLDAtlantiC);
-    if (!chunk) return;
+    if (!chunk) {
+        logging::printf("unable to restore RegsPLDAtlantiC: missing savestate\n");
+        loader.NotifyError();
+
+        return;
+    }
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {

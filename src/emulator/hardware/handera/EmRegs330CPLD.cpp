@@ -64,7 +64,12 @@ void EmRegs330CPLD::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe
 
 void EmRegs330CPLD::Load(SavestateLoader& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regs330CPLD);
-    if (!chunk) return;
+    if (!chunk) {
+        logging::printf("unable to restore Regs330CPLD: missing savestate\n");
+        loader.NotifyError();
+
+        return;
+    }
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {

@@ -601,7 +601,12 @@ void EmRegsVZ::Load(SavestateLoader& loader) {
     if (fSPISlaveADC) fSPISlaveADC->Load(loader);
 
     Chunk* chunk = loader.GetChunk(ChunkType::regsVZ);
-    if (!chunk) return;
+    if (!chunk) {
+        logging::printf("unable to restore RegsVZ: missing savestate\n");
+        loader.NotifyError();
+
+        return;
+    }
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {

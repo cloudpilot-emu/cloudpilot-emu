@@ -108,7 +108,12 @@ void EmRegsSED1375::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
 void EmRegsSED1375::Load(SavestateLoader& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regsSED1375);
-    if (!chunk) return;
+    if (!chunk) {
+        logging::printf("unable to restore RegsSED1375: missing savestate\n");
+        loader.NotifyError();
+
+        return;
+    }
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {

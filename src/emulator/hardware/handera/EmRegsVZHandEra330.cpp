@@ -93,7 +93,12 @@ void EmRegsVZHandEra330::Load(SavestateLoader& loader) {
     fSPISlaveCurrent->Load(loader);
 
     Chunk* chunk = loader.GetChunk(ChunkType::regsVZHandera330);
-    if (!chunk) return;
+    if (!chunk) {
+        logging::printf("unable to restore RegsVZHandEra330: missing savestate\n");
+        loader.NotifyError();
+
+        return;
+    }
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {

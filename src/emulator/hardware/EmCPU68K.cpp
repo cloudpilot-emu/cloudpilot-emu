@@ -279,7 +279,12 @@ void EmCPU68K::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
 void EmCPU68K::Load(SavestateLoader& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::cpu68k);
-    if (!chunk) return;
+    if (!chunk) {
+        logging::printf("error restoring cpu68k: missing savestate");
+        loader.NotifyError();
+
+        return;
+    }
 
     if (chunk->Get32() != SAVESTATE_VERSION) {
         logging::printf("error restoring cpu68k: savestate version mismatch");

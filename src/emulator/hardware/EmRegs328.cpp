@@ -747,7 +747,12 @@ void EmRegs328::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
 void EmRegs328::Load(SavestateLoader& savestate) {
     Chunk* chunk = savestate.GetChunk(ChunkType::regs328);
-    if (!chunk) return;
+    if (!chunk) {
+        logging::printf("unable to restore Regs328: missing savestate\n");
+        savestate.NotifyError();
+
+        return;
+    }
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {

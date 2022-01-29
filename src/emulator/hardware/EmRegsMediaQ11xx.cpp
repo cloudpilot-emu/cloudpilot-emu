@@ -1339,7 +1339,12 @@ void EmRegsMediaQ11xx::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
 void EmRegsMediaQ11xx::Load(SavestateLoader& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regsMQ1xx);
-    if (!chunk) return;
+    if (!chunk) {
+        logging::printf("unable to restore RegsMediaQ11xx: missing savestate\n");
+        loader.NotifyError();
+
+        return;
+    }
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {

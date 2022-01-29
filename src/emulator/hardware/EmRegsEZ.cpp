@@ -517,7 +517,12 @@ void EmRegsEZ::Load(SavestateLoader& savestate) {
     if (fSPISlaveADC) fSPISlaveADC->Load(savestate);
 
     Chunk* chunk = savestate.GetChunk(ChunkType::regsEZ);
-    if (!chunk) return;
+    if (!chunk) {
+        logging::printf("unable to restore RegsEZ: missing savestate\n");
+        savestate.NotifyError();
+
+        return;
+    }
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
