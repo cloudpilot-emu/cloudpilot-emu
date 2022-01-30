@@ -2,7 +2,8 @@
 
 -   Fix an endless loop
 -   Performance improvement between 10% and 30%
--   Support for Sony PEG-S300, PEG-S320, PEG-T400/T415, PEG-N600C/N610C
+-   Support for Sony PEG-S300, PEG-S320, PEG-T400 series, PEG-N600C series,
+    PEG-T600C series, PEG-N700C series
 
 # 1.5.8
 
