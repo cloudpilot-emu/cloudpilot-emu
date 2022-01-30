@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg width="480px" height="210px" viewBox="0 0 480 210" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+<svg width="480px" height="180px" viewBox="0 0 480 180" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
     <g id="silkscreen_clie_n610c_n710c_n760c_s500_sj20_sl10_t415">
-        <rect id="bg" x="0" y="0" width="480" height="210" style="fill:rgb(69,73,76);"/>
-        <g transform="translate(0 15)">
+        <rect id="bg" x="0" y="0" width="480" height="180" style="fill:rgb(69,73,76);"/>
+        <g transform="translate(0 0)">
             <g id="graffiti-pad">
                 <g id="letter" transform="matrix(5.14365,0,0,5.14365,-702.914,-708.606)">
                     <path d="M158.626,168.675C158.626,167.217 156.99,167.849 156.876,167.898L156.876,168.286C156.983,168.196 158.042,167.8 158.042,168.763C157.999,168.719 157.608,168.61 157.514,168.61C157.201,168.61 156.951,168.69 156.764,168.847C156.39,169.161 156.39,169.889 156.695,170.21C156.833,170.355 157.04,170.425 157.312,170.425C157.476,170.425 157.621,170.39 157.745,170.322C157.869,170.253 157.988,170.166 158.042,170.057L158.042,170.425L158.626,170.425L158.626,168.675ZM157.879,169.864C157.794,169.936 157.701,169.971 157.595,169.971C157.471,169.971 157.37,169.943 157.292,169.883C157.212,169.825 157.174,169.709 157.174,169.534L157.174,169.464C157.174,169.299 157.21,169.175 157.286,169.099C157.359,169.022 157.462,168.983 157.589,168.983C157.727,168.983 157.829,169.024 157.9,169.104C157.97,169.187 158.004,169.304 158.004,169.461L158.004,169.531C158.004,169.682 157.961,169.794 157.879,169.864" style="fill:rgb(150,150,150);fill-rule:nonzero;"/>

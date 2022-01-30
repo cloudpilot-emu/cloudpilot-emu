@@ -161,6 +161,7 @@ const IMAGE_SILKSCREEN_I705 = prepareImage('SILKSCREEN_I705');
 const IMAGE_SILKSCREEN_PEG_S300 = prepareImage('SILKSCREEN_PEG_S300');
 const IMAGE_SILKSCREEN_PEG_T415 = prepareImage('SILKSCREEN_PEG_T415');
 const IMAGE_SILKSCREEN_PEG_N610 = prepareImage('SILKSCREEN_PEG_N610');
+const IMAGE_SILKSCREEN_PEG_T600 = prepareImage('SILKSCREEN_PEG_T600');
 
 const IMAGE_BUTTONS_V = prepareImage('HARD_BUTTONS_PALM_V');
 const IMAGE_BUTTONS_M515 = prepareImage('HARD_BUTTONS_M515');
@@ -179,6 +180,7 @@ const IMAGE_HARD_BUTTONS_PEG_S300 = prepareImage('HARD_BUTTONS_PEG_S300');
 const IMAGE_HARD_BUTTONS_PEG_S320 = prepareImage('HARD_BUTTONS_PEG_S320');
 const IMAGE_HARD_BUTTONS_PEG_T415 = prepareImage('HARD_BUTTONS_PEG_T415');
 const IMAGE_HARD_BUTTONS_PEG_N610 = prepareImage('HARD_BUTTONS_PEG_N610');
+const IMAGE_HARD_BUTTONS_PEG_N700 = prepareImage('HARD_BUTTONS_PEG_N700');
 
 @Injectable({
     providedIn: 'root',
@@ -498,7 +500,11 @@ export class CanvasDisplayService {
 
     private silkscreenImage(): PrerenderedImage {
         switch (this.session?.device) {
-            case DeviceId.pegtN600c:
+            case DeviceId.pegT600c:
+                return IMAGE_SILKSCREEN_PEG_T600;
+
+            case DeviceId.pegN700c:
+            case DeviceId.pegN600c:
                 return IMAGE_SILKSCREEN_PEG_N610;
 
             case DeviceId.pegS320:
@@ -552,7 +558,10 @@ export class CanvasDisplayService {
 
     private buttonsImage(): PrerenderedImage {
         switch (this.session?.device) {
-            case DeviceId.pegtN600c:
+            case DeviceId.pegN700c:
+                return IMAGE_HARD_BUTTONS_PEG_N700;
+
+            case DeviceId.pegN600c:
                 return IMAGE_HARD_BUTTONS_PEG_N610;
 
             case DeviceId.pegS300:
@@ -562,6 +571,7 @@ export class CanvasDisplayService {
                 return IMAGE_HARD_BUTTONS_PEG_S320;
 
             case DeviceId.pegT400:
+            case DeviceId.pegT600c:
                 return IMAGE_HARD_BUTTONS_PEG_T415;
 
             case DeviceId.pilot:
