@@ -1,5 +1,10 @@
 #include "EmRegsUsbPegN700C.h"
 
+#include "ChunkHelper.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
+
 #undef addressof
 #undef INSTALL_HANDLER
 
@@ -8,6 +13,10 @@
 #define INSTALL_HANDLER(read, write, reg)                    \
     this->SetHandler((ReadFunction)&EmRegsUsbPegN700C::read, \
                      (WriteFunction)&EmRegsUsbPegN700C::write, addressof(reg), sizeof(fRegs.reg))
+
+namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsUSBforPegN700C::EmRegsUSBforPegN700C
@@ -83,6 +92,47 @@ void EmRegsUsbPegN700C::Reset(Bool hardwareReset) {
  ***********************************************************************/
 
 void EmRegsUsbPegN700C::Dispose(void) {}
+
+void EmRegsUsbPegN700C::Save(Savestate& savestate) { DoSave(savestate); }
+
+void EmRegsUsbPegN700C::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+
+void EmRegsUsbPegN700C::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::regsUsbClieN700C);
+    if (!chunk) {
+        logging::printf("unable to restore EmRegsUsbPegN700C: missing savestate\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore EmRegsUsbPegN700C: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegsUsbPegN700C::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsUsbClieN700C);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegsUsbPegN700C::DoSaveLoad(T& helper) {
+    helper.Do(typename T::Pack8() << fRegs.USB0C06 << fRegs.USB0C07);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsUSBforPegN700C::SetSubBankHandlers

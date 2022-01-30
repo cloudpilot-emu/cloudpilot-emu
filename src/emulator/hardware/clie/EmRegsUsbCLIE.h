@@ -33,6 +33,10 @@ class EmRegsUsbCLIE : public EmRegs {
     EmRegsUsbCLIE(uint32 offset);
     virtual ~EmRegsUsbCLIE(void);
 
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
+
     virtual void Initialize(void);
     virtual void Reset(Bool hardwareReset);
     virtual void Dispose(void);
@@ -45,6 +49,12 @@ class EmRegsUsbCLIE : public EmRegs {
    private:
     uint32 Read(emuptr address, int size);
     void Write(emuptr address, int size, uint32 value);
+
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
 
     HwrUsbCLIEType fRegs;
     uint32 fOffsetAddr;

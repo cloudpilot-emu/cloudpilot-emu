@@ -14,15 +14,23 @@
 #include "EmRegsUsbCLIE.h"
 
 #include "Byteswapping.h"  // ByteswapWords
-#include "DebugMgr.h"      // Debug::CheckStepSpy
-#include "EmBankROM.h"     // ROMBank::IsPCInRAM
-#include "EmBankRegs.h"    // RegsBank::GetROMSize
+#include "ChunkHelper.h"
+#include "DebugMgr.h"    // Debug::CheckStepSpy
+#include "EmBankROM.h"   // ROMBank::IsPCInRAM
+#include "EmBankRegs.h"  // RegsBank::GetROMSize
 #include "EmCommon.h"
 #include "EmHAL.h"
 #include "EmMemory.h"  // gMemoryAccess
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 typedef uint32 (*ReadFunction)(emuptr address, int size);
 typedef void (*WriteFunction)(emuptr address, int size, uint32 value);
+
+namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+}
 
 //*******************************************************************
 // EmRegsUsbCLIE Class
@@ -121,6 +129,50 @@ void EmRegsUsbCLIE::Reset(Bool hardwareReset) {
  ***********************************************************************/
 
 void EmRegsUsbCLIE::Dispose(void) {}
+
+void EmRegsUsbCLIE::Save(Savestate& savestate) { DoSave(savestate); }
+
+void EmRegsUsbCLIE::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+
+void EmRegsUsbCLIE::Load(SavestateLoader& loader) {
+    if (!loader.HasChunk(ChunkType::regsUsbClie)) return;
+
+    Chunk* chunk = loader.GetChunk(ChunkType::regsUsbClie);
+    if (!chunk) {
+        logging::printf("unable to restore EmRegsUsbCLIE: missing savestate\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore EmRegsUsbCLIE: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegsUsbCLIE::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsUsbClie);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegsUsbCLIE::DoSaveLoad(T& helper) {
+    helper.Do(typename T::Pack8() << fRegs.cmdRead << fRegs.cmdWrite << fRegs.dataRead
+                                  << fRegs.dataWrite);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsUsbCLIE::SetSubBankHandlers
