@@ -210,6 +210,10 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     virtual uint32 GetWord(emuptr address);
     virtual uint32 GetByte(emuptr address);
 
+    virtual void SetLong(emuptr address, uint32 value);
+    virtual void SetWord(emuptr address, uint32 value);
+    virtual void SetByte(emuptr address, uint32 value);
+
     // EmHAL overrides
     virtual Bool GetLCDScreenOn(void);
     virtual Bool GetLCDBacklightOn(void);

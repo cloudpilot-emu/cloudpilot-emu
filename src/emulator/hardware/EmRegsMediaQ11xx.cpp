@@ -1666,6 +1666,24 @@ uint32 EmRegsMediaQ11xx::GetByte(emuptr address) {
     return (address < fBaseRegsAddr + REGISTER_FILE_SIZE) ? EmRegs::GetByte(address) : 0;
 }
 
+void EmRegsMediaQ11xx::SetLong(emuptr address, uint32 value) {
+    if (address < fBaseRegsAddr + REGISTER_FILE_SIZE) {
+        EmRegs::SetLong(address, value);
+    }
+}
+
+void EmRegsMediaQ11xx::SetWord(emuptr address, uint32 value) {
+    if (address < fBaseRegsAddr + REGISTER_FILE_SIZE) {
+        EmRegs::SetWord(address, value);
+    }
+}
+
+void EmRegsMediaQ11xx::SetByte(emuptr address, uint32 value) {
+    if (address < fBaseRegsAddr + REGISTER_FILE_SIZE) {
+        EmRegs::SetByte(address, value);
+    }
+}
+
 // ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::GetLCDScreenOn
 // ---------------------------------------------------------------------------
