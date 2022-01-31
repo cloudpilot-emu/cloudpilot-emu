@@ -3583,6 +3583,9 @@ uint16 EmRegsMediaQ11xx::PrvAdjustPixel(uint16 pattern, uint16 src, uint16 dest,
 
 void EmRegsMediaQ11xx::PrvSetPixel(uint16 pixel, uint16 x, uint16 y) {
     emuptr pixelLocation = this->PrvGetPixelLocation(x, y);
+    if ((pixelLocation - this->PrvGetVideoBase()) > MMIO_OFFSET) {
+        return;
+    }
 
     switch (fState.colorDepth) {
         case kColorDepth8:
@@ -3606,6 +3609,9 @@ void EmRegsMediaQ11xx::PrvSetPixel(uint16 pixel, uint16 x, uint16 y) {
 uint16 EmRegsMediaQ11xx::PrvGetPixel(uint16 x, uint16 y) {
     uint16 result;
     emuptr pixelLocation = this->PrvGetPixelLocation(x, y);
+    if ((pixelLocation - this->PrvGetVideoBase()) > MMIO_OFFSET) {
+        return 0;
+    }
 
     switch (fState.colorDepth) {
         case kColorDepth8:
@@ -3678,9 +3684,6 @@ emuptr EmRegsMediaQ11xx::PrvGetPixelLocation(uint16 x, uint16 y) {
     emuptr frameBuffer = this->PrvGetVideoBase() + fState.baseAddr;
     emuptr scanLine = frameBuffer + (y * fState.destLineStride);
     emuptr scanByte = scanLine + (x * bytesPerPixel);
-
-    EmAssert(scanByte >= fBaseVideoAddr);
-    EmAssert(scanByte + bytesPerPixel <= fBaseVideoAddr + MMIO_OFFSET);
 
     return scanByte;
 }
@@ -4079,22 +4082,48 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
     }
 
     // We're getting the source pixel value from the display memory.
-    if (!fState.monoSource && fState.memToScreen) {
-        uint8 bpp = fState.colorDepth == kColorDepth8 ? 1 : 2;
-        uint16 x = fXSrc >= fState.xSrc ? fXSrc - fState.xSrc : 0;
+    if (fState.memToScreen) {
         uint16 y = fYSrc >= fState.ySrc ? fYSrc - fState.ySrc : 0;
 
-        emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
-                          (fState.ySrc * fState.destLineStride + fState.srcLeadingBytes +
-                           y * (fState.width + fState.srcTrailingBytes / bpp) + x) *
-                              bpp;
+        if (fState.monoSource) {
+            emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
+                              fState.ySrc * fState.destLineStride + fState.srcLeadingBytes;
 
-        if ((location - this->PrvGetVideoBase()) <= 0x40000) {
-            return bpp == 1 ? EmMemGet8(location) : EmMemGet16(location);
+            uint32 pixel =
+                fState.srcLeadingBits +
+                y * (fState.width + fState.srcTrailingBits + fState.srcTrailingBytes * 8) + fXSrc;
+
+            location += pixel / 8;
+            if ((location - this->PrvGetVideoBase()) > MMIO_OFFSET) {
+                return 0;
+            }
+
+            uint8 byte = EmMemGet8(location);
+            uint32 shift = pixel % 8;
+
+            if (fState.monoSrcBitSwap) {
+                return byte & (0x01 << shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
+            } else {
+                return byte & (0x80 >> shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
+            }
         } else {
-            return 0;
+            uint8 bpp = fState.colorDepth == kColorDepth8 ? 1 : 2;
+
+            emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
+                              fState.ySrc * fState.destLineStride + fState.srcLeadingBytes +
+                              y * (fState.width * bpp + fState.srcTrailingBytes) + fXSrc * bpp;
+
+            if ((location - this->PrvGetVideoBase()) <= 0x40000) {
+                return bpp == 1 ? EmMemGet8(location) : EmMemGet16(location);
+            } else {
+                return 0;
+            }
         }
+
     } else {
+        if (fState.memToScreen) {
+            cout << "mono blit!" << endl << flush;
+        }
         return this->PrvGetPixel(fXSrc, fYSrc);
     }
 }
