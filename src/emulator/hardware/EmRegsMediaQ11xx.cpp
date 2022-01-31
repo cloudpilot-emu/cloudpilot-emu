@@ -1652,7 +1652,19 @@ emuptr EmRegsMediaQ11xx::GetAddressStart(void) { return fBaseRegsAddr; }
 //		� EmRegsMediaQ11xx::GetAddressRange
 // ---------------------------------------------------------------------------
 
-uint32 EmRegsMediaQ11xx::GetAddressRange(void) { return fRegs.GetSize(); }
+uint32 EmRegsMediaQ11xx::GetAddressRange(void) { return TOTAL_ADDRESS_SPACE_SIZE; }
+
+uint32 EmRegsMediaQ11xx::GetLong(emuptr address) {
+    return (address < fBaseRegsAddr + REGISTER_FILE_SIZE) ? EmRegs::GetLong(address) : 0;
+}
+
+uint32 EmRegsMediaQ11xx::GetWord(emuptr address) {
+    return (address < fBaseRegsAddr + REGISTER_FILE_SIZE) ? EmRegs::GetWord(address) : 0;
+}
+
+uint32 EmRegsMediaQ11xx::GetByte(emuptr address) {
+    return (address < fBaseRegsAddr + REGISTER_FILE_SIZE) ? EmRegs::GetByte(address) : 0;
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::GetLCDScreenOn

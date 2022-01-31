@@ -24,6 +24,8 @@
 
 #define T_BASE 0x1F000000L   // 68KVZ for Palm platform
 #define MMIO_OFFSET 0x40000  // starts at 256K address
+#define TOTAL_ADDRESS_SPACE_SIZE 0x40000
+#define REGISTER_FILE_SIZE 0x2000
 #define MMIO_BASE (T_BASE + MMIO_OFFSET)
 
 // This struct is a mirror of the MediaQ graphics enginer registers.  As
@@ -203,6 +205,10 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     virtual uint8* GetRealAddress(emuptr address);
     virtual emuptr GetAddressStart(void);
     virtual uint32 GetAddressRange(void);
+
+    virtual uint32 GetLong(emuptr address);
+    virtual uint32 GetWord(emuptr address);
+    virtual uint32 GetByte(emuptr address);
 
     // EmHAL overrides
     virtual Bool GetLCDScreenOn(void);
