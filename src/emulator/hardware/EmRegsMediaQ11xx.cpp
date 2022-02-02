@@ -2497,7 +2497,7 @@ void EmRegsMediaQ11xx::PrvGetGEState(int regNum) {
     if (regNum == kAllRegisters || regNum == 10) {
         reg = READ_REGISTER(geREG[0x0A]);
 
-        fState.destLineStride = (reg >> 0) & 0x000003FF;
+        fState.destLineStride = (reg >> 0) & 0x00000FFF;
         fState.monoSrcBitSwap = (reg >> 28) & 0x00000001;
         fState.rotate90 = (reg >> 29) & 0x00000001;
         fState.colorDepth = (reg >> 30) & 0x00000003;
@@ -4151,9 +4151,6 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
         }
 
     } else {
-        if (fState.memToScreen) {
-            cout << "mono blit!" << endl << flush;
-        }
         return this->PrvGetPixel(fXSrc, fYSrc);
     }
 }
