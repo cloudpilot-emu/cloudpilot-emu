@@ -24,7 +24,7 @@ uint32 DateToDays(uint32 year, uint32 month, uint32 day);
 
 void SetHotSyncUserName(const char*);
 
-void SetCurrentDate();
+void SetCurrentDate(int32 adjust = 0);
 
 bool GetDatabases(DatabaseInfoList& appList, uint32 flags);
 

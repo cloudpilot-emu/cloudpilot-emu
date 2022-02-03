@@ -593,7 +593,7 @@ void SetHotSyncUserName(const char* userNameP) {
     DlkDispatchRequest(&session);
 }
 
-void SetCurrentDate(void) {
+void SetCurrentDate(int32 adjust) {
     CEnableFullAccess munge;
 
     // Get the current date.
@@ -603,7 +603,7 @@ void SetCurrentDate(void) {
 
     // Convert it to days -- and then hourse -- since 1/1/1904
 
-    uint32 rtcHours = ::DateToDays(year, month, day) * 24;
+    uint32 rtcHours = (::DateToDays(year, month, day) + adjust) * 24;
 
     // Update the "hours adjustment" value to contain the current date.
 

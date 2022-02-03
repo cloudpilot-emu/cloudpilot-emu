@@ -328,11 +328,6 @@ namespace {
         }
     }
 
-    void TailpatchHwrIRQ4Handler() {
-        // We handle rollover ourselves, so override any date adjustment made PalmOS.
-        SetCurrentDate();
-    }
-
     void DispatchCopyClipboard() {
         UInt16 length;
         emuptr dataHdl = ClipboardGetItem(clipboardText, &length);
@@ -367,6 +362,21 @@ namespace {
         if (Feature::GetClipboardIntegration() && !gSession->IsNested()) DispatchCopyClipboard();
     }
 
+    CallROMType HeadpatchHwrIRQ4Handler() {
+        // PalmOS will increment the date by one day if this is a rollover interrupt,
+        // so make sure that the day is set in one day in the past. This should
+        // make sure that PalmOS calculates programs the alarms correctly.
+        SetCurrentDate(-1);
+
+        return kExecuteROM;
+    }
+
+    void TailpatchHwrIRQ4Handler() {
+        // If this wasn't a rollover interrupt we're gonne be one day in the past by now, so
+        // make sure that the date is correct again.
+        SetCurrentDate();
+    }
+
     ProtoPatchTableEntry protoPatchTable[] = {
         {sysTrapDmInit, HeadpatchDmInit, NULL},
         {sysTrapSysUIAppSwitch, HeadpatchSysUIAppSwitch, NULL},
@@ -388,7 +398,7 @@ namespace {
         {sysTrapHwrBatteryLevel, HeadpatchHwrBatteryLevel, NULL},
         {sysTrapHwrBattery, HeadpatchHwrBattery, NULL},
         {sysTrapSysLibLoad, HeadpatchSysLibLoad, NULL},
-        {sysTrapHwrIRQ4Handler, NULL, TailpatchHwrIRQ4Handler},
+        {sysTrapHwrIRQ4Handler, HeadpatchHwrIRQ4Handler, TailpatchHwrIRQ4Handler},
         {0, NULL, NULL}};
 }  // namespace
 
