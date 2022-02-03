@@ -694,6 +694,7 @@ void EmRegs328::Initialize(void) {
     fUART = new EmUARTDragonball(EmUARTDragonball::kUART_Dragonball, 0);
 
     onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
+    onDayRolloverHandle = EmHAL::onDayRollover.AddHandler([this]() { HandleDayRollover(); });
 
     EmHAL::AddCycleConsumer(cycleThunk, this);
 
@@ -819,6 +820,7 @@ void EmRegs328::Dispose(void) {
     EmRegs::Dispose();
 
     gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
+    EmHAL::onDayRollover.RemoveHandler(onDayRolloverHandle);
     EmHAL::RemoveCycleConsumer(cycleThunk, this);
 }
 
@@ -2796,6 +2798,14 @@ void EmRegs328::pwmcWrite(emuptr address, int size, uint32 value) {
     if (newState != pwmActive) {
         pwmActive = newState;
         DispatchPwmChange();
+    }
+}
+
+void EmRegs328::HandleDayRollover() {
+    if ((READ_REGISTER(rtcIntEnable) & hwr328RTCIntEnable24Hr) != 0 &&
+        (READ_REGISTER(rtcIntStatus) & hwr328RTCIntStatus24Hr) == 0) {
+        WRITE_REGISTER(rtcIntStatus, READ_REGISTER(rtcIntStatus) | hwr328RTCIntStatus24Hr);
+        UpdateRTCInterrupts();
     }
 }
 

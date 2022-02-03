@@ -95,7 +95,7 @@ class EmSession {
 
    private:
     template <typename T>
-    void DoSaveLoad(T& helper);
+    void DoSaveLoad(T& helper, uint32 version);
 
     bool PromoteKeyboardEvent();
     bool PromotePenEvent();
@@ -127,8 +127,8 @@ class EmSession {
     uint32 extraCycles{0};
     double clockFactor{1};
 
-    uint64 dayCheckedAt{0};
-    uint32 dayAtLastClockSync{0};
+    uint64 dateCheckedAt{0};
+    uint32 lastDate{0};
 
     uint32 clocksPerSecond;
 

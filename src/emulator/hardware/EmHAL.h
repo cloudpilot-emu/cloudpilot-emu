@@ -153,6 +153,7 @@ class EmHAL {
 
     static EmEvent<> onSystemClockChange;
     static EmEvent<double, double> onPwmChange;
+    static EmEvent<> onDayRollover;
 
     static void AddCycleConsumer(CycleHandler handler, void* context);
     static void RemoveCycleConsumer(CycleHandler handler, void* context);

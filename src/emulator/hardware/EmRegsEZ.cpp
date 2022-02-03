@@ -465,6 +465,7 @@ void EmRegsEZ::Initialize(void) {
     fUART = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballEZ, 0);
 
     onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
+    onDayRolloverHandle = EmHAL::onDayRollover.AddHandler([this]() { HandleDayRollover(); });
 
     EmHAL::AddCycleConsumer(cycleThunk, this);
 
@@ -587,6 +588,7 @@ void EmRegsEZ::Dispose(void) {
     EmRegs::Dispose();
 
     gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
+    EmHAL::onDayRollover.RemoveHandler(onDayRolloverHandle);
     EmHAL::RemoveCycleConsumer(cycleThunk, this);
 }
 
@@ -2540,6 +2542,14 @@ uint32 EmRegsEZ::CyclesToNextInterrupt(uint64 systemCycles) {
         cycles++;
 
     return cycles;
+}
+
+void EmRegsEZ::HandleDayRollover() {
+    if ((READ_REGISTER(rtcIntEnable) & hwrEZ328RTCIntEnable24Hr) != 0 &&
+        (READ_REGISTER(rtcIntStatus) & hwrEZ328RTCIntStatus24Hr) == 0) {
+        WRITE_REGISTER(rtcIntStatus, READ_REGISTER(rtcIntStatus) | hwrEZ328RTCIntStatus24Hr);
+        UpdateRTCInterrupts();
+    }
 }
 
 void EmRegsEZ::pwmcWrite(emuptr address, int size, uint32 value) {

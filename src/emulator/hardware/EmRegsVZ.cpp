@@ -546,6 +546,7 @@ void EmRegsVZ::Initialize(void) {
     fUART[1] = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballVZ, 1);
 
     onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
+    onDayRolloverHandle = EmHAL::onDayRollover.AddHandler([this]() { HandleDayRollover(); });
 
     ApplySdctl();
     UpdateTimers();
@@ -686,6 +687,7 @@ void EmRegsVZ::Dispose(void) {
     EmRegs::Dispose();
 
     gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
+    EmHAL::onDayRollover.RemoveHandler(onDayRolloverHandle);
 
     EmHAL::RemoveCycleConsumer(cycleThunk, this);
 }
@@ -2994,6 +2996,14 @@ void EmRegsVZ::UpdateTimers() {
         }
     } else {
         tmr2LastProcessedSystemCycles = systemCycles;
+    }
+}
+
+void EmRegsVZ::HandleDayRollover() {
+    if ((READ_REGISTER(rtcIntEnable) & hwrVZ328RTCIntEnable24Hr) != 0 &&
+        (READ_REGISTER(rtcIntStatus) & hwrVZ328RTCIntStatus24Hr) == 0) {
+        WRITE_REGISTER(rtcIntStatus, READ_REGISTER(rtcIntStatus) | hwrVZ328RTCIntStatus24Hr);
+        UpdateRTCInterrupts();
     }
 }
 

@@ -77,6 +77,12 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     void Cycle(uint64 systemCycles, Bool sleeping);
 
    protected:
+    virtual uint8 GetKeyBits(void);
+    virtual uint16 ButtonToBits(ButtonEventT::Button btn);
+    virtual EmSPISlave* GetSPISlave(void);
+    virtual void MarkScreen();
+    virtual void UnmarkScreen();
+
     uint32 pllFreqSelRead(emuptr address, int size);
     uint32 portXDataRead(emuptr address, int size);
     uint32 tmr1StatusRead(emuptr address, int size);
@@ -105,37 +111,26 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     void pwmsWrite(emuptr address, int size, uint32 value);
     void pwmpWrite(emuptr address, int size, uint32 value);
 
-   protected:
     void HotSyncEvent(Bool buttonIsDown);
 
-    virtual uint8 GetKeyBits(void);
-    virtual uint16 ButtonToBits(ButtonEventT::Button btn);
-    virtual EmSPISlave* GetSPISlave(void);
-
-    virtual void MarkScreen();
-    virtual void UnmarkScreen();
-
-   protected:
     void UpdateInterrupts(void);
     void UpdatePortDInterrupts(void);
     void UpdateRTCInterrupts(void);
 
-   protected:
     Bool IDDetectAsserted(void);
     UInt8 GetHardwareID(void);
 
-   protected:
     void UARTStateChanged(Bool sendTxData);
     void UpdateUARTState(Bool refreshRxData);
     void UpdateUARTInterrupts(const EmUARTDragonball::State& state);
     void MarshalUARTState(EmUARTDragonball::State& state);
     void UnmarshalUARTState(const EmUARTDragonball::State& state);
 
-   protected:
     int GetPort(emuptr address);
 
    private:
     void UpdateTimerTicksPerSecond();
+    void HandleDayRollover();
 
     void DispatchPwmChange();
 
@@ -161,6 +156,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
 
     bool markScreen{true};
     EmEvent<>::HandleT onMarkScreenCleanHandle;
+    EmEvent<>::HandleT onDayRolloverHandle;
 
     EmUARTDragonball* fUART;
 

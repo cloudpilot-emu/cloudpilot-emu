@@ -24,7 +24,7 @@
 #include "SuspendManager.h"
 
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 2;
+    constexpr uint32 SAVESTATE_VERSION = 3;
 
     constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
 
@@ -36,12 +36,12 @@ namespace {
 
     EmSession _gSession;
 
-    uint32 CurrentDay() {
+    uint32 CurrentDate() {
         uint32 year, month, day;
 
         Platform::GetDate(year, month, day);
 
-        return day;
+        return (year << 16) | (month << 8) | day;
     }
 }  // namespace
 
@@ -74,8 +74,8 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
 
     RecalculateClocksPerSecond();
 
-    dayCheckedAt = 0;
-    dayAtLastClockSync = CurrentDay();
+    dateCheckedAt = 0;
+    lastDate = CurrentDate();
 
     isInitialized = true;
     return true;
@@ -109,8 +109,8 @@ void EmSession::Deinitialize() {
     extraCycles = 0;
     holdingBootKeys = false;
 
-    dayCheckedAt = 0;
-    dayAtLastClockSync = 0;
+    dateCheckedAt = 0;
+    lastDate = 0;
 
     romSize = 0;
     romImage.reset();
@@ -189,7 +189,7 @@ void EmSession::Save(T& savestate) {
     chunk->PutString(device->GetIDString(), 16);
 
     SaveChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, SAVESTATE_VERSION);
 
     cpu->Save(savestate);
     EmPatchMgr::Save(savestate);
@@ -205,9 +205,13 @@ void EmSession::Load(SavestateLoader& loader) {
     EmAssert(cpu);
 
     Chunk* chunk = loader.GetChunk(ChunkType::session);
-    if (!chunk) return;
+    if (!chunk) {
+        loader.NotifyError();
+        return;
+    }
 
-    if (chunk->Get32() > SAVESTATE_VERSION) {
+    uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
         logging::printf("unable to restore session: savestate version mismatch");
         loader.NotifyError();
 
@@ -227,7 +231,7 @@ void EmSession::Load(SavestateLoader& loader) {
     buttonEventQueue.Clear();
 
     LoadChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, version);
 
     lastButtonEventReadAt = systemCycles;
 
@@ -236,12 +240,9 @@ void EmSession::Load(SavestateLoader& loader) {
     EmPatchMgr::Load(loader);
     Memory::Load(loader);
 
-    if (gSystemState.IsUIInitialized()) {
-        SetCurrentDate();
-    }
-
-    dayCheckedAt = systemCycles;
-    dayAtLastClockSync = CurrentDay();
+    SetCurrentDate();
+    dateCheckedAt = systemCycles;
+    if (version <= 2) lastDate = 0;
 
     RecalculateClocksPerSecond();
 }
@@ -276,11 +277,15 @@ pair<size_t, uint8*> EmSession::GetRomImage() {
 }
 
 template <typename T>
-void EmSession::DoSaveLoad(T& helper) {
+void EmSession::DoSaveLoad(T& helper, uint32 version) {
     helper.Do(typename T::BoolPack() << bankResetScheduled << resetScheduled << holdingBootKeys)
         .Do(typename T::Pack8() << *reinterpret_cast<uint8*>(&resetType)
                                 << *reinterpret_cast<uint8*>(&bootKeysType))
         .Do64(systemCycles);
+
+    if (version > 2) {
+        helper.Do32(lastDate);
+    }
 }
 
 void EmSession::ScheduleReset(ResetType resetType) {
@@ -567,13 +572,16 @@ void EmSession::RecalculateClocksPerSecond() {
 }
 
 void EmSession::CheckDayForRollover() {
-    if (gSystemState.IsUIInitialized() && systemCycles - dayCheckedAt > clocksPerSecond) {
-        uint32 currentDay = CurrentDay();
+    if (systemCycles - dateCheckedAt > clocksPerSecond) {
+        uint32 currentDate = CurrentDate();
 
-        if (currentDay != dayAtLastClockSync) SetCurrentDate();
+        if (currentDate != lastDate) {
+            SetCurrentDate();
+            EmHAL::onDayRollover.Dispatch();
+        }
 
-        dayAtLastClockSync = currentDay;
-        dayCheckedAt = systemCycles;
+        lastDate = currentDate;
+        dateCheckedAt = systemCycles;
     }
 }
 

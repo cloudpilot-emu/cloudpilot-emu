@@ -328,6 +328,11 @@ namespace {
         }
     }
 
+    void TailpatchHwrIRQ4Handler() {
+        // We handle rollover ourselves, so override any date adjustment made PalmOS.
+        SetCurrentDate();
+    }
+
     void DispatchCopyClipboard() {
         UInt16 length;
         emuptr dataHdl = ClipboardGetItem(clipboardText, &length);
@@ -383,6 +388,7 @@ namespace {
         {sysTrapHwrBatteryLevel, HeadpatchHwrBatteryLevel, NULL},
         {sysTrapHwrBattery, HeadpatchHwrBattery, NULL},
         {sysTrapSysLibLoad, HeadpatchSysLibLoad, NULL},
+        {sysTrapHwrIRQ4Handler, NULL, TailpatchHwrIRQ4Handler},
         {0, NULL, NULL}};
 }  // namespace
 

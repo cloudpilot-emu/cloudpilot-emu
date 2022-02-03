@@ -58,6 +58,7 @@ namespace {
 
 EmEvent<> EmHAL::onSystemClockChange{};
 EmEvent<double, double> EmHAL::onPwmChange{};
+EmEvent<> EmHAL::onDayRollover{};
 
 vector<EmHAL::CycleConsumer> EmHAL::cycleConsumers;
 
