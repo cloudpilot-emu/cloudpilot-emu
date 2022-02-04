@@ -2558,222 +2558,6 @@ void EmRegsMediaQ11xx::PrvGetGEState(int regNum) {
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsMediaQ11xx::PrvLogGEState
-// ---------------------------------------------------------------------------
-
-void EmRegsMediaQ11xx::PrvLogGEState(void) {
-    LogAppendMsg("========================================");
-
-    // ==================== GE00R ====================
-
-    LogAppendMsg("GC00R:");
-    LogAppendMsg("	xDoubling		%s", this->PrvGetXDoubling() ? "TRUE" : "FALSE");
-    LogAppendMsg("	yDoubling		%s", this->PrvGetYDoubling() ? "TRUE" : "FALSE");
-    LogAppendMsg("");
-
-    // ==================== GE00R ====================
-
-    LogAppendMsg("GE00R:");
-    LogAppendMsg("	rasterOperation		0x%02X (%s)", fState.rasterOperation,
-                 kROPs[fState.rasterOperation]);
-    LogAppendMsg("	commandType			%u (%s)", fState.commandType,
-                 kCommands[fState.commandType]);
-    LogAppendMsg("	xDirection			%u (%s)", fState.xDirection,
-                 kDirections[fState.xDirection]);
-    LogAppendMsg("	yDirection			%u (%s)", fState.yDirection,
-                 kDirections[fState.yDirection]);
-    LogAppendMsg("	systemMemory		%u", fState.systemMemory);
-    LogAppendMsg("	monoSource			%u", fState.monoSource);
-    LogAppendMsg("	monoPattern			%u", fState.monoPattern);
-    LogAppendMsg("	colorTransEnable	%u", fState.colorTransEnable);
-    LogAppendMsg("	destTransPolarity	%u (Transparent if pixel is %s to test color)",
-                 fState.destTransPolarity, fState.destTransPolarity ? "NOT equal" : "equal");
-    LogAppendMsg("	monoTransEnable		%u", fState.monoTransEnable);
-    LogAppendMsg("	monoTransPolarity	%u", fState.monoTransPolarity);
-    LogAppendMsg("	memToScreen			%u (%s)", fState.memToScreen,
-                 fState.memToScreen ? "PACKED" : "LINED");
-    LogAppendMsg("	solidSourceColor	%u", fState.solidSourceColor);
-    LogAppendMsg("	srcEqualDestStride	%u", fState.srcEqualDestStride);
-    LogAppendMsg("	rop2Select			%u", fState.rop2Select);
-    LogAppendMsg("	clipEnable			%u", fState.clipEnable);
-    LogAppendMsg("	autoExecute			%u", fState.autoExecute);
-    LogAppendMsg("	solidPattern		%u", fState.solidPattern);
-    LogAppendMsg("	colorTransCmpSrc	%u (Compare to %s)", fState.colorTransCmpSrc,
-                 fState.colorTransCmpSrc ? "Destination" : "Source");
-    LogAppendMsg("");
-
-    // ==================== GE01R ====================
-
-    // BitBLT
-
-    if (fState.commandType == kCommandBitBLT) {
-        LogAppendMsg("GE01R (BitBLT):");
-        LogAppendMsg("	width				%u", fState.width);
-        LogAppendMsg("	height				%u", fState.height);
-        LogAppendMsg("	xyConversion		%u", fState.xyConversion);
-        LogAppendMsg("");
-    }
-
-    // Line
-
-    if (fState.commandType == kCommandLine) {
-        LogAppendMsg("GE01R (Line):");
-        LogAppendMsg("	gamma				%d", fState.gamma);
-        LogAppendMsg("	majorLength			%u", fState.majorLength);
-        LogAppendMsg("	yIsMajor			%u", fState.yIsMajor);
-        LogAppendMsg("	drawLastPixel		%u", fState.drawLastPixel);
-        LogAppendMsg("	useXY				%u", fState.useXY);
-        LogAppendMsg("");
-    }
-
-    // ==================== GE02R ====================
-
-    // BitBLT
-
-    if (fState.commandType == kCommandBitBLT) {
-        LogAppendMsg("GE02R (BitBLT):");
-        LogAppendMsg("	xDest				%u", fState.xDest);
-        LogAppendMsg("	yDest				%u", fState.yDest);
-        LogAppendMsg("	monoPatternXOffset	%u", fState.monoPatternXOffset);
-        LogAppendMsg("	monoPatternYOffset	%u", fState.monoPatternYOffset);
-        LogAppendMsg("");
-    }
-
-    // Line
-
-    if (fState.commandType == kCommandLine) {
-        LogAppendMsg("GE02R (Line):");
-        LogAppendMsg("	xStart				%u", fState.xStart);
-        LogAppendMsg("	deltaMajor			%u", fState.deltaMajor);
-        LogAppendMsg("	quadrant			%u (%s)", fState.quadrant,
-                     kQuadrantDecode[fState.quadrant].text);
-        LogAppendMsg("");
-    }
-
-    // ==================== GE03R ====================
-
-    // BitBLT
-
-    if (fState.commandType == kCommandBitBLT) {
-        LogAppendMsg("GE03R (BitBLT):");
-        LogAppendMsg("	xSrc				%u", fState.xSrc);
-        LogAppendMsg("	ySrc				%u", fState.ySrc);
-        LogAppendMsg("");
-    }
-
-    // Line
-
-    if (fState.commandType == kCommandLine) {
-        LogAppendMsg("GE03R (Line):");
-        LogAppendMsg("	yStart				%u", fState.yStart);
-        LogAppendMsg("	deltaMinor			%u", fState.deltaMinor);
-        LogAppendMsg("");
-    }
-
-    // ==================== GE04R ====================
-
-    if (fState.colorTransEnable) {
-        LogAppendMsg("GE04R:");
-        LogAppendMsg("	destTransColor		0x%04X", fState.destTransColor);
-        LogAppendMsg("");
-    }
-
-    // ==================== GE05R/GE06R ====================
-
-    if (fState.clipEnable) {
-        LogAppendMsg("GE05R/GE06R:");
-        LogAppendMsg("	clipLeft			%u", fState.clipLeft);
-        LogAppendMsg("	clipTop				%u", fState.clipTop);
-        LogAppendMsg("	clipRight			%u", fState.clipRight);
-        LogAppendMsg("	clipBottom			%u", fState.clipBottom);
-        LogAppendMsg("");
-    }
-
-    // ==================== GE07R/GE08R ====================
-
-    if (fState.monoSource) {
-        LogAppendMsg("GE07R/GE08R:");
-        LogAppendMsg("	fgColorMonoSrc		0x%04X", fState.fgColorMonoSrc);
-        LogAppendMsg("	bgColorMonoSrc		0x%04X", fState.bgColorMonoSrc);
-        LogAppendMsg("");
-    }
-
-    // ==================== GE09R ====================
-
-    // Lined Mode
-
-    if (fState.memToScreen == 0) {
-        LogAppendMsg("GE09R (Lined):");
-        LogAppendMsg("	srcLineStride		%u", fState.srcLineStride);
-        LogAppendMsg("	srcBitOffset		%u", fState.srcBitOffset);
-        LogAppendMsg("	srcByteOffset		%u", fState.srcByteOffset);
-        LogAppendMsg("");
-    }
-
-    // Packed Mode
-
-    if (fState.memToScreen == 1) {
-        LogAppendMsg("GE09R (Packed):");
-        LogAppendMsg("	srcLeadingBits		%u", fState.srcLeadingBits);
-        LogAppendMsg("	srcLeadingBytes		%u", fState.srcLeadingBytes);
-        LogAppendMsg("	srcNumBytes			%u", fState.srcNumBytes);
-        LogAppendMsg("	srcTrailingBits		%u", fState.srcTrailingBits);
-        LogAppendMsg("	srcTrailingBytes	%u", fState.srcTrailingBytes);
-        LogAppendMsg("");
-    }
-
-    // ==================== GE0AR ====================
-
-    LogAppendMsg("GE0AR:");
-    LogAppendMsg("	destLineStride		%u", fState.destLineStride);
-    LogAppendMsg("	monoSrcBitSwap		%u", fState.monoSrcBitSwap);
-    LogAppendMsg("	rotate90			%u", fState.rotate90);
-    LogAppendMsg("	colorDepth			%u", fState.colorDepth);
-    LogAppendMsg("");
-
-    // ==================== GE0BR ====================
-
-    LogAppendMsg("GE0AR:");
-    LogAppendMsg("	baseAddr			0x%08X", fState.baseAddr);
-    LogAppendMsg("");
-
-    // ==================== GE0CR ====================
-
-    LogAppendMsg("GE0CR:");
-    LogAppendMsg("	cmdLineStart		%u", fState.cmdLineStart);
-    LogAppendMsg("	cmdLineEnd			%u", fState.cmdLineEnd);
-    LogAppendMsg("	cmdLineControl		%u", fState.cmdLineControl);
-    LogAppendMsg("	gc1SwitchControl	%u", fState.gc1SwitchControl);
-    LogAppendMsg("");
-
-    // ==================== GE0FR ====================
-
-    // ==================== GE10R/GE11R ====================
-
-    if (fState.monoPattern) {
-        LogAppendMsg("GE10R/GE11R:");
-        LogAppendMsg("	monoPattern1		0x%08X", fState.monoPattern1);
-        LogAppendMsg("	monoPattern2		0x%08X", fState.monoPattern2);
-        LogAppendMsg("");
-    }
-
-    // ==================== GE12R/GE13R ====================
-
-    if (fState.monoPattern) {
-        LogAppendMsg("GE12R/GE13R:");
-        LogAppendMsg("	fgColorMonoPat		0x%04X", fState.fgColorMonoPat);
-        LogAppendMsg("	bgColorMonoPat		0x%04X", fState.bgColorMonoPat);
-    }
-
-    LogAppendMsg("========================================");
-
-    if (fState.commandType == kCommandBitBLT) {
-        EmAssert(!((fState.width == 25) && (fState.height == 19) && (fState.xDest == 0) &&
-                   (fState.yDest == 320) && (fState.xSrc == 0) && (fState.ySrc == 320) && 1));
-    }
-}
-
-// ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::PrvDoCommand
 // ---------------------------------------------------------------------------
 
@@ -2979,13 +2763,13 @@ void EmRegsMediaQ11xx::PrvIllegalCommand(void) {}
 //		� EmRegsMediaQ11xx::PrvSrcFifoFilledSlots
 // ---------------------------------------------------------------------------
 
-int EmRegsMediaQ11xx::PrvSrcFifoFilledSlots(void) { return fSourceFifo.Size() / 2; }
+inline int EmRegsMediaQ11xx::PrvSrcFifoFilledSlots(void) { return fSourceFifo.Size() / 2; }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::PrvGetSrcFifoSlot
 // ---------------------------------------------------------------------------
 
-void EmRegsMediaQ11xx::PrvGetSrcFifoSlot(uint32& a, uint32& b) {
+inline void EmRegsMediaQ11xx::PrvGetSrcFifoSlot(uint32& a, uint32& b) {
     a = fSourceFifo.Pop();
     b = fSourceFifo.Pop();
 }
@@ -3611,7 +3395,7 @@ uint16 EmRegsMediaQ11xx::PrvAdjustPixel(uint16 pattern, uint16 src, uint16 dest,
 //		� EmRegsMediaQ11xx::PrvSetPixel
 // ---------------------------------------------------------------------------
 
-void EmRegsMediaQ11xx::PrvSetPixel(uint16 pixel, uint16 x, uint16 y) {
+inline void EmRegsMediaQ11xx::PrvSetPixel(uint16 pixel, uint16 x, uint16 y) {
     emuptr pixelLocation = this->PrvGetPixelLocation(x, y);
     if ((pixelLocation - this->PrvGetVideoBase()) > MMIO_OFFSET) {
         return;
@@ -3636,7 +3420,7 @@ void EmRegsMediaQ11xx::PrvSetPixel(uint16 pixel, uint16 x, uint16 y) {
 //		� EmRegsMediaQ11xx::PrvGetPixel
 // ---------------------------------------------------------------------------
 
-uint16 EmRegsMediaQ11xx::PrvGetPixel(uint16 x, uint16 y) {
+inline uint16 EmRegsMediaQ11xx::PrvGetPixel(uint16 x, uint16 y) {
     uint16 result;
     emuptr pixelLocation = this->PrvGetPixelLocation(x, y);
     if ((pixelLocation - this->PrvGetVideoBase()) > MMIO_OFFSET) {
@@ -3665,7 +3449,7 @@ uint16 EmRegsMediaQ11xx::PrvGetPixel(uint16 x, uint16 y) {
 //		� EmRegsMediaQ11xx::PrvGetPixelLocation
 // ---------------------------------------------------------------------------
 
-emuptr EmRegsMediaQ11xx::PrvGetPixelLocation(uint16 x, uint16 y) {
+inline emuptr EmRegsMediaQ11xx::PrvGetPixelLocation(uint16 x, uint16 y) {
     int bytesPerPixel;
 
     switch (fState.colorDepth) {
@@ -3977,7 +3761,7 @@ void EmRegsMediaQ11xx::PrvPatternPipeInit(void) {
 //		� EmRegsMediaQ11xx::PrvPatternPipeNextPixel
 // ---------------------------------------------------------------------------
 
-uint16 EmRegsMediaQ11xx::PrvPatternPipeNextPixel(void) {
+inline uint16 EmRegsMediaQ11xx::PrvPatternPipeNextPixel(void) {
     uint16 result = fPatternPipe[fXPattern + fYPattern * 8];
 
     PRINTF_BLIT("	PrvPatternPipeNextPixel:	fXPattern:	%u", fXPattern);
@@ -3991,7 +3775,7 @@ uint16 EmRegsMediaQ11xx::PrvPatternPipeNextPixel(void) {
 //		� EmRegsMediaQ11xx::PrvPatternPipeNextX
 // ---------------------------------------------------------------------------
 
-void EmRegsMediaQ11xx::PrvPatternPipeNextX(void) {
+inline void EmRegsMediaQ11xx::PrvPatternPipeNextX(void) {
     ++fXPattern;
 
     if (fXPattern == 8) {
@@ -4003,7 +3787,7 @@ void EmRegsMediaQ11xx::PrvPatternPipeNextX(void) {
 //		� EmRegsMediaQ11xx::PrvPatternPipeNextY
 // ---------------------------------------------------------------------------
 
-void EmRegsMediaQ11xx::PrvPatternPipeNextY(void) {
+inline void EmRegsMediaQ11xx::PrvPatternPipeNextY(void) {
     ++fYPattern;
     fXPattern = fState.monoPatternXOffset;
 
@@ -4054,7 +3838,6 @@ void EmRegsMediaQ11xx::PrvSrcPipeInit(void) {
 // ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::PrvSrcPipeNextPixel
 // ---------------------------------------------------------------------------
-
 uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
     stalled = false;
 
@@ -4159,13 +3942,13 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
 //		� EmRegsMediaQ11xx::PrvSrcPipeNextX
 // ---------------------------------------------------------------------------
 
-void EmRegsMediaQ11xx::PrvSrcPipeNextX(void) { fXSrc += (fState.xDirection == 0) ? 1 : -1; }
+inline void EmRegsMediaQ11xx::PrvSrcPipeNextX(void) { fXSrc += (fState.xDirection == 0) ? 1 : -1; }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::PrvSrcPipeNextY
 // ---------------------------------------------------------------------------
 
-void EmRegsMediaQ11xx::PrvSrcPipeNextY(void) {
+inline void EmRegsMediaQ11xx::PrvSrcPipeNextY(void) {
     fYSrc += (fState.yDirection == 0) ? 1 : -1;
     fXSrc = fState.xSrc;
 
@@ -4301,7 +4084,7 @@ void EmRegsMediaQ11xx::PrvDestPipeInit(void) {
 //		� EmRegsMediaQ11xx::PrvDestPipeNextPixel
 // ---------------------------------------------------------------------------
 
-uint16 EmRegsMediaQ11xx::PrvDestPipeNextPixel(void) {
+inline uint16 EmRegsMediaQ11xx::PrvDestPipeNextPixel(void) {
     uint16 result = this->PrvGetPixel(fXDest, fYDest);
 
     PRINTF_BLIT("	PrvDestPipeNextPixel:	fXDest:	%u", fXDest);
@@ -4315,13 +4098,15 @@ uint16 EmRegsMediaQ11xx::PrvDestPipeNextPixel(void) {
 //		� EmRegsMediaQ11xx::PrvDestPipeNextX
 // ---------------------------------------------------------------------------
 
-void EmRegsMediaQ11xx::PrvDestPipeNextX(void) { fXDest += (fState.xDirection == 0) ? 1 : -1; }
+inline void EmRegsMediaQ11xx::PrvDestPipeNextX(void) {
+    fXDest += (fState.xDirection == 0) ? 1 : -1;
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::PrvDestPipeNextY
 // ---------------------------------------------------------------------------
 
-void EmRegsMediaQ11xx::PrvDestPipeNextY(void) {
+inline void EmRegsMediaQ11xx::PrvDestPipeNextY(void) {
     fYDest += (fState.yDirection == 0) ? 1 : -1;
     fXDest = fState.xDest;
 
@@ -4340,7 +4125,7 @@ void EmRegsMediaQ11xx::PrvDestPipeNextY(void) {
 // we've merely moved to the next pixel on the same line, inform the pipes
 // that we've done that.
 
-Bool EmRegsMediaQ11xx::PrvNextXY(void) {
+inline Bool EmRegsMediaQ11xx::PrvNextXY(void) {
     fCurXOffset += 1;
 
     if (fCurXOffset == fState.width) {
@@ -4461,7 +4246,7 @@ Bool EmRegsMediaQ11xx::PrvTransparent(uint16 source, uint16 dest, uint16 pattern
 //		� EmRegsMediaQ11xx::PrvClipped
 // ---------------------------------------------------------------------------
 
-Bool EmRegsMediaQ11xx::PrvClipped(void) {
+inline Bool EmRegsMediaQ11xx::PrvClipped(void) {
     if (fState.clipEnable) {
         if (fXDest < fState.clipLeft || fXDest >= fState.clipRight || fYDest < fState.clipTop ||
             fYDest >= fState.clipBottom) {
@@ -4622,7 +4407,7 @@ uint16 EmRegsMediaQ11xx::PrvTrailingPixels(void) {
 // that we're interested in.  We can test the whole result to see if it's
 // zero or non-zero.
 
-Bool EmRegsMediaQ11xx::PrvUsesPattern(void) {
+inline Bool EmRegsMediaQ11xx::PrvUsesPattern(void) {
     uint8 rop = fState.rasterOperation;
     uint8 shifted = rop >> 4;
     uint8 xored = rop ^ shifted;
@@ -4683,7 +4468,7 @@ Bool EmRegsMediaQ11xx::PrvUsesPattern(void) {
 // that we're interested in.  We can test the whole result to see if it's
 // zero or non-zero.
 
-Bool EmRegsMediaQ11xx::PrvUsesSource(void) {
+inline Bool EmRegsMediaQ11xx::PrvUsesSource(void) {
     uint8 rop = fState.rasterOperation;
     uint8 shifted = rop >> 2;
     uint8 xored = rop ^ shifted;
@@ -4699,7 +4484,8 @@ Bool EmRegsMediaQ11xx::PrvUsesSource(void) {
 // elements of the array are set to the foreground color if the bit in the
 // pattern is one, and the background color if the bit is zero.
 
-void EmRegsMediaQ11xx::PrvExpandMono8(uint8 bits, uint16* results, uint16 fgColor, uint16 bgColor) {
+inline void EmRegsMediaQ11xx::PrvExpandMono8(uint8 bits, uint16* results, uint16 fgColor,
+                                             uint16 bgColor) {
     if (fState.monoSrcBitSwap) {
         for (int ii = 0; ii < 8; ++ii) {
             if ((bits & (1 << ii)) != 0) {
@@ -4724,8 +4510,8 @@ void EmRegsMediaQ11xx::PrvExpandMono8(uint8 bits, uint16* results, uint16 fgColo
 // ---------------------------------------------------------------------------
 // Wrapper to perform the expansion of 4 8-bit bitfields in a DWORD.
 
-void EmRegsMediaQ11xx::PrvExpandMono32(uint32 bits, uint16* results, uint16 fgColor,
-                                       uint16 bgColor) {
+inline void EmRegsMediaQ11xx::PrvExpandMono32(uint32 bits, uint16* results, uint16 fgColor,
+                                              uint16 bgColor) {
     this->PrvExpandMono8(bits >> 0, &results[0], fgColor, bgColor);
     this->PrvExpandMono8(bits >> 8, &results[8], fgColor, bgColor);
     this->PrvExpandMono8(bits >> 16, &results[16], fgColor, bgColor);

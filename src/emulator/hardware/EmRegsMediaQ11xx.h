@@ -261,7 +261,6 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     Bool PrvGetYDoubling(void);
 
     void PrvGetGEState(int regNum);
-    void PrvLogGEState();
 
     void PrvDoCommand(void);
     void PrvDoBitBLT(void);
