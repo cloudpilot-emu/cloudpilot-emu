@@ -86,6 +86,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     uint32 pllFreqSelRead(emuptr address, int size);
     uint32 portXDataRead(emuptr address, int size);
     uint32 tmr1StatusRead(emuptr address, int size);
+    uint32 tmrRegisterRead(emuptr address, int size);
     uint32 uartRead(emuptr address, int size);
     uint32 rtcHourMinSecRead(emuptr address, int size);
     uint32 rtcDayRead(emuptr address, int size);
@@ -129,8 +130,9 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     int GetPort(emuptr address);
 
    private:
-    void UpdateTimerTicksPerSecond();
+    double TimerTicksPerSecond();
     void HandleDayRollover();
+    void UpdateTimer();
 
     void DispatchPwmChange();
 
@@ -149,7 +151,8 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     uint32 fPortDDataCount;
 
     double lastProcessedSystemCycles;
-    double timerTicksPerSecond;
+    uint64 nextTimerEventAfterCycle;
+    uint64 systemCycles;
 
     uint32 rtcDayAtWrite;
     int32 lastRtcAlarmCheck;
@@ -162,6 +165,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
 
     bool pwmActive{false};
     bool afterLoad{false};
+    bool powerOffCached{false};
 
     EmSPISlave* fSPISlaveADC{nullptr};
 };

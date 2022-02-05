@@ -664,7 +664,7 @@ void EmRegsVZ::DoSaveLoad(T& helper, uint32 version) {
         .DoDouble(tmr1LastProcessedSystemCycles)
         .DoDouble(tmr2LastProcessedSystemCycles);
 
-    if (version < SAVESTATE_VERSION) {
+    if (version < 3) {
         double dummy = 0;
         helper.DoDouble(dummy).DoDouble(dummy);
     }
@@ -2908,7 +2908,7 @@ void EmRegsVZ::UpdateTimers() {
         READ_REGISTER(tmr2Control), READ_REGISTER(tmr2Prescaler), systemClockFrequency);
 
     if (((READ_REGISTER(tmr1Control) & hwrVZ328TmrControlEnable) != 0) &&
-        timer1TicksPerSecond > 0) {
+        timer1TicksPerSecond > 0 && clocksPerSecond > 0) {
         uint32 ticks = ((double)systemCycles - tmr1LastProcessedSystemCycles) / clocksPerSecond *
                        timer1TicksPerSecond;
 
