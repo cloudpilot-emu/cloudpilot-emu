@@ -562,7 +562,6 @@ void EmRegsVZ::Reset(Bool hardwareReset) {
     UnmarkScreen();
 
     if (hardwareReset) {
-        systemCycles = gSession->GetSystemCycles();
         tmr1LastProcessedSystemCycles = systemCycles;
         tmr2LastProcessedSystemCycles = systemCycles;
 
@@ -2891,7 +2890,7 @@ int EmRegsVZ::GetPort(emuptr address) {
 uint32 EmRegsVZ::CyclesToNextInterrupt(uint64 systemCycles) {
     this->systemCycles = systemCycles;
 
-    if (systemCycles > nextTimerEventAfterCycle) return 1;
+    if (systemCycles >= nextTimerEventAfterCycle) return 1;
     return std::min(nextTimerEventAfterCycle - systemCycles, (uint64)0xffffffff);
 }
 

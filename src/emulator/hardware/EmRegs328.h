@@ -101,6 +101,7 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     uint32 portXDataRead(emuptr address, int size);
     uint32 tmr1StatusRead(emuptr address, int size);
     uint32 tmr2StatusRead(emuptr address, int size);
+    uint32 tmrRegisterRead(emuptr address, int size);
     uint32 uartRead(emuptr address, int size);
     uint32 rtcHourMinSecRead(emuptr address, int size);
     uint32 rtcDayRead(emuptr address, int size);
@@ -120,8 +121,7 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     void uartWrite(emuptr address, int size, uint32 value);
     void lcdRegisterWrite(emuptr address, int size, uint32 value);
     void pllRegisterWrite(emuptr address, int size, uint32 value);
-    void tmr1RegisterWrite(emuptr address, int size, uint32 value);
-    void tmr2RegisterWrite(emuptr address, int size, uint32 value);
+    void tmrRegisterWrite(emuptr address, int size, uint32 value);
     void rtcControlWrite(emuptr address, int size, uint32 value);
     void rtcIntStatusWrite(emuptr address, int size, uint32 value);
     void rtcIntEnableWrite(emuptr address, int size, uint32 value);
@@ -130,10 +130,10 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     void pwmwWrite(emuptr address, int size, uint32 value);
     void pwmpWrite(emuptr address, int size, uint32 value);
 
-    void UpdateTimerTicksPerSecond();
     uint32 Tmr1CyclesToNextInterrupt(uint64 systemCycles);
     uint32 Tmr2CyclesToNextInterrupt(uint64 systemCycles);
 
+    void UpdateTimers();
     void HandleDayRollover();
     void DispatchPwmChange();
 
@@ -154,8 +154,8 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
 
     double tmr1LastProcessedSystemCycles;
     double tmr2LastProcessedSystemCycles;
-    double timer1TicksPerSecond;
-    double timer2TicksPerSecond;
+    uint64 nextTimerEventAfterCycle;
+    uint64 systemCycles;
 
     int32 lastRtcAlarmCheck;
 
@@ -167,6 +167,7 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
 
     bool pwmActive{false};
     bool afterLoad{false};
+    bool powerOffCached{false};
 };
 
 #endif /* EmRegs328_h */

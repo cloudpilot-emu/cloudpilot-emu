@@ -106,7 +106,7 @@
 
 namespace {
 
-    constexpr uint32 SAVESTATE_VERSION = 2;
+    constexpr uint32 SAVESTATE_VERSION = 3;
     static const uint32 ADDRESS_MASK = 0x0000FFF0;
 
     double TimerTicksPerSecond(uint16 tmrControl, uint16 tmrPrescaler, int32 systemClockFrequency) {
@@ -698,10 +698,12 @@ void EmRegs328::Initialize(void) {
 
     EmHAL::AddCycleConsumer(cycleThunk, this);
 
-    tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
-    tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();
+    systemCycles = gSession->GetSystemCycles();
+    tmr1LastProcessedSystemCycles = systemCycles;
+    tmr2LastProcessedSystemCycles = systemCycles;
 
-    UpdateTimerTicksPerSecond();
+    UpdateTimers();
+    powerOffCached = GetAsleep();
 }
 
 // ---------------------------------------------------------------------------
@@ -713,8 +715,8 @@ void EmRegs328::Reset(Bool hardwareReset) {
     UnmarkScreen();
 
     if (hardwareReset) {
-        tmr1LastProcessedSystemCycles = gSession->GetSystemCycles();
-        tmr2LastProcessedSystemCycles = gSession->GetSystemCycles();
+        tmr1LastProcessedSystemCycles = systemCycles;
+        tmr2LastProcessedSystemCycles = systemCycles;
 
         f68328Regs = kInitial68328RegisterValues;
 
@@ -734,9 +736,10 @@ void EmRegs328::Reset(Bool hardwareReset) {
 
         Bool sendTxData = false;
         EmRegs328::UARTStateChanged(sendTxData);
+        powerOffCached = GetAsleep();
     }
 
-    UpdateTimerTicksPerSecond();
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -775,6 +778,9 @@ void EmRegs328::Load(SavestateLoader& savestate) {
 
     gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csASelect1) & 0x0008) != 0;
     markScreen = true;
+    systemCycles = gSession->GetSystemCycles();
+    UpdateTimers();
+    powerOffCached = GetAsleep();
 
     afterLoad = true;
 }
@@ -799,12 +805,21 @@ void EmRegs328::DoSaveLoad(T& helper, uint32 version) {
         .Do16(fLastTmr1Status)
         .Do8(fPortDEdge)
         .Do32(fPortDDataCount)
-        .DoDouble(tmr1LastProcessedSystemCycles)
-        .DoDouble(timer1TicksPerSecond)
-        .DoDouble(tmr2LastProcessedSystemCycles)
-        .DoDouble(timer2TicksPerSecond)
-        .Do32(lastRtcAlarmCheck)
-        .DoBool(pwmActive);
+        .DoDouble(tmr1LastProcessedSystemCycles);
+
+    if (version < 3) {
+        double dummy = 0;
+        helper.DoDouble(dummy);
+    }
+
+    helper.DoDouble(tmr2LastProcessedSystemCycles);
+
+    if (version < 3) {
+        double dummy = 0;
+        helper.DoDouble(dummy);
+    }
+
+    helper.Do32(lastRtcAlarmCheck).DoBool(pwmActive);
 
     if (version > 1) helper.Do16(fLastTmr2Status);
 }
@@ -941,18 +956,18 @@ void EmRegs328::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, pwmwWrite, pwmWidth);
     INSTALL_HANDLER(StdRead, NullWrite, pwmCounter);
 
-    INSTALL_HANDLER(StdRead, tmr1RegisterWrite, tmr1Control);
-    INSTALL_HANDLER(StdRead, tmr1RegisterWrite, tmr1Prescaler);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr1Control);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr1Prescaler);
     INSTALL_HANDLER(StdRead, StdWrite, tmr1Compare);
     INSTALL_HANDLER(StdRead, StdWrite, tmr1Capture);
-    INSTALL_HANDLER(StdRead, NullWrite, tmr1Counter);
+    INSTALL_HANDLER(tmrRegisterRead, NullWrite, tmr1Counter);
     INSTALL_HANDLER(tmr1StatusRead, tmr1StatusWrite, tmr1Status);
 
-    INSTALL_HANDLER(StdRead, tmr2RegisterWrite, tmr2Control);
-    INSTALL_HANDLER(StdRead, tmr2RegisterWrite, tmr2Prescaler);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr2Control);
+    INSTALL_HANDLER(StdRead, tmrRegisterWrite, tmr2Prescaler);
     INSTALL_HANDLER(StdRead, StdWrite, tmr2Compare);
     INSTALL_HANDLER(StdRead, StdWrite, tmr2Capture);
-    INSTALL_HANDLER(StdRead, NullWrite, tmr2Counter);
+    INSTALL_HANDLER(tmrRegisterRead, NullWrite, tmr2Counter);
     INSTALL_HANDLER(tmr2StatusRead, tmr2StatusWrite, tmr2Status);
 
     INSTALL_HANDLER(StdRead, StdWrite, wdControl);
@@ -1037,79 +1052,10 @@ void EmRegs328::Cycle(uint64 systemCycles, Bool sleeping) {
         afterLoad = false;
     }
 
-    if (GetAsleep()) return;
+    if (powerOffCached) return;
 
-    double clocksPerSecond = gSession->GetClocksPerSecond();
-
-    if (((READ_REGISTER(tmr1Control) & hwr328TmrControlEnable) != 0) && timer1TicksPerSecond > 0) {
-        // If so, increment the timer.
-
-        uint32 ticks = ((double)systemCycles - tmr1LastProcessedSystemCycles) / clocksPerSecond *
-                       timer1TicksPerSecond;
-
-        tmr1LastProcessedSystemCycles += (double)ticks / timer1TicksPerSecond * clocksPerSecond;
-
-        WRITE_REGISTER(tmr1Counter, READ_REGISTER(tmr1Counter) + ticks);
-
-        // Determine whether the timer has reached the specified count.
-
-        uint16 tcmp = READ_REGISTER(tmr1Compare);
-        uint16 tcn = READ_REGISTER(tmr1Counter);
-
-        if (tcn >= tcmp) {
-            // Flag the occurrence of the successful comparison.
-
-            WRITE_REGISTER(tmr1Status, READ_REGISTER(tmr1Status) | hwr328TmrStatusCompare);
-
-            // If the Free Run/Restart flag is not set, clear the counter.
-
-            if ((READ_REGISTER(tmr1Control) & hwr328TmrControlFreeRun) == 0) {
-                WRITE_REGISTER(tmr1Counter, tcn - tcmp);
-            }
-
-            // If the timer interrupt is enabled, post an interrupt.
-
-            if ((READ_REGISTER(tmr1Control) & hwr328TmrControlEnInterrupt) != 0) {
-                WRITE_REGISTER(intPendingHi, READ_REGISTER(intPendingHi) | hwr328IntHiTimer1);
-                EmRegs328::UpdateInterrupts();
-            }
-        }
-    }
-
-    if (((READ_REGISTER(tmr2Control) & hwr328TmrControlEnable) != 0) && timer2TicksPerSecond > 0) {
-        // If so, increment the timer.
-
-        uint32 ticks = ((double)systemCycles - tmr2LastProcessedSystemCycles) / clocksPerSecond *
-                       timer2TicksPerSecond;
-
-        tmr2LastProcessedSystemCycles += (double)ticks / timer2TicksPerSecond * clocksPerSecond;
-
-        WRITE_REGISTER(tmr2Counter, READ_REGISTER(tmr2Counter) + ticks);
-
-        // Determine whether the timer has reached the specified count.
-
-        uint16 tcmp = READ_REGISTER(tmr2Compare);
-        uint16 tcn = READ_REGISTER(tmr2Counter);
-
-        if (tcn >= tcmp) {
-            // Flag the occurrence of the successful comparison.
-
-            WRITE_REGISTER(tmr2Status, READ_REGISTER(tmr2Status) | hwr328TmrStatusCompare);
-
-            // If the Free Run/Restart flag is not set, clear the counter.
-
-            if ((READ_REGISTER(tmr2Control) & hwr328TmrControlFreeRun) == 0) {
-                WRITE_REGISTER(tmr2Counter, tcn - tcmp);
-            }
-
-            // If the timer interrupt is enabled, post an interrupt.
-
-            if ((READ_REGISTER(tmr2Control) & hwr328TmrControlEnInterrupt) != 0) {
-                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwr328IntLoTimer2);
-                EmRegs328::UpdateInterrupts();
-            }
-        }
-    }
+    this->systemCycles = systemCycles;
+    if (systemCycles >= nextTimerEventAfterCycle) UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -1312,15 +1258,6 @@ void EmRegs328::UnmarkScreen() {
     markScreenWith(MetaMemory::UnmarkScreen, f68328Regs);
 
     markScreen = true;
-}
-
-void EmRegs328::UpdateTimerTicksPerSecond() {
-    int32 systemClockFrequency = GetSystemClockFrequency();
-
-    timer1TicksPerSecond = TimerTicksPerSecond(READ_REGISTER(tmr1Control),
-                                               READ_REGISTER(tmr1Prescaler), systemClockFrequency);
-    timer2TicksPerSecond = TimerTicksPerSecond(READ_REGISTER(tmr2Control),
-                                               READ_REGISTER(tmr2Prescaler), systemClockFrequency);
 }
 
 // ---------------------------------------------------------------------------
@@ -1636,8 +1573,9 @@ uint32 EmRegs328::portXDataRead(emuptr address, int) {
 // ---------------------------------------------------------------------------
 
 uint32 EmRegs328::tmr1StatusRead(emuptr address, int size) {
-    // Remember this guy for later (see EmRegsVZ::tmr2StatusWrite())
+    UpdateTimers();
 
+    // Remember this guy for later (see EmRegsVZ::tmr2StatusWrite())
     fLastTmr1Status |= READ_REGISTER(tmr1Status);
 
     // Finish up by doing a standard read.
@@ -1650,11 +1588,18 @@ uint32 EmRegs328::tmr1StatusRead(emuptr address, int size) {
 // ---------------------------------------------------------------------------
 
 uint32 EmRegs328::tmr2StatusRead(emuptr address, int size) {
-    // Remember this guy for later (see EmRegsVZ::tmr2StatusWrite())
+    UpdateTimers();
 
+    // Remember this guy for later (see EmRegsVZ::tmr2StatusWrite())
     fLastTmr2Status |= READ_REGISTER(tmr2Status);
 
     // Finish up by doing a standard read.
+
+    return EmRegs328::StdRead(address, size);
+}
+
+uint32 EmRegs328::tmrRegisterRead(emuptr address, int size) {
+    UpdateTimers();
 
     return EmRegs328::StdRead(address, size);
 }
@@ -1762,6 +1707,7 @@ void EmRegs328::intMaskHiWrite(emuptr address, int size, uint32 value) {
     // Respond to the new interrupt state.
 
     EmRegs328::UpdateInterrupts();
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -1776,6 +1722,7 @@ void EmRegs328::intMaskLoWrite(emuptr address, int size, uint32 value) {
     // Respond to the new interrupt state.
 
     EmRegs328::UpdateInterrupts();
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -1922,6 +1869,8 @@ void EmRegs328::tmr1StatusWrite(emuptr address, int size, uint32 value) {
 
         EmRegs328::UpdateInterrupts();
     }
+
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -1957,6 +1906,8 @@ void EmRegs328::tmr2StatusWrite(emuptr address, int size, uint32 value) {
 
         EmRegs328::UpdateInterrupts();
     }
+
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -2069,24 +2020,17 @@ void EmRegs328::lcdRegisterWrite(emuptr address, int size, uint32 value) {
 void EmRegs328::pllRegisterWrite(emuptr address, int size, uint32 value) {
     EmRegs328::StdWrite(address, size, value);
 
-    UpdateTimerTicksPerSecond();
     gSystemState.MarkScreenDirty();
 
     EmHAL::onSystemClockChange.Dispatch();
+    UpdateTimers();
+    powerOffCached = GetAsleep();
 }
 
-void EmRegs328::tmr1RegisterWrite(emuptr address, int size, uint32 value) {
+void EmRegs328::tmrRegisterWrite(emuptr address, int size, uint32 value) {
     EmRegs328::StdWrite(address, size, value);
 
-    timer1TicksPerSecond = TimerTicksPerSecond(
-        READ_REGISTER(tmr1Control), READ_REGISTER(tmr1Prescaler), GetSystemClockFrequency());
-}
-
-void EmRegs328::tmr2RegisterWrite(emuptr address, int size, uint32 value) {
-    EmRegs328::StdWrite(address, size, value);
-
-    timer2TicksPerSecond = TimerTicksPerSecond(
-        READ_REGISTER(tmr2Control), READ_REGISTER(tmr2Prescaler), GetSystemClockFrequency());
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -2746,48 +2690,114 @@ int EmRegs328::GetPort(emuptr address) {
     return 0;
 }
 
-uint32 EmRegs328::Tmr1CyclesToNextInterrupt(uint64 systemCycles) {
-    if ((READ_REGISTER(intMaskHi) & hwr328IntHiTimer1) ||
-        !(READ_REGISTER(tmr1Control) & hwr328TmrControlEnable) || timer1TicksPerSecond <= 0)
-        return 0xffffffff;
-
-    uint16 tcmp = READ_REGISTER(tmr1Compare);
-    uint16 tcn = READ_REGISTER(tmr1Counter);
-    uint16 delta = tcmp - tcn;
-
-    double clocksPerSecond = gSession->GetClocksPerSecond();
-
-    uint32 cycles = ceil((double)delta / timer1TicksPerSecond * clocksPerSecond);
-
-    while ((uint32)(((double)(cycles + systemCycles) - tmr1LastProcessedSystemCycles) /
-                    clocksPerSecond * timer1TicksPerSecond) < delta)
-        cycles++;
-
-    return cycles;
-}
-
-uint32 EmRegs328::Tmr2CyclesToNextInterrupt(uint64 systemCycles) {
-    if ((READ_REGISTER(intMaskLo) & hwr328IntLoTimer2) ||
-        !(READ_REGISTER(tmr2Control) & hwr328TmrControlEnable) || timer2TicksPerSecond <= 0)
-        return 0xffffffff;
-
-    uint16 tcmp = READ_REGISTER(tmr2Compare);
-    uint16 tcn = READ_REGISTER(tmr2Counter);
-    uint16 delta = tcmp - tcn;
-
-    double clocksPerSecond = gSession->GetClocksPerSecond();
-
-    uint32 cycles = ceil((double)delta / timer2TicksPerSecond * clocksPerSecond);
-
-    while ((uint32)(((double)(cycles + systemCycles) - tmr2LastProcessedSystemCycles) /
-                    clocksPerSecond * timer2TicksPerSecond) < delta)
-        cycles++;
-
-    return cycles;
-}
-
 uint32 EmRegs328::CyclesToNextInterrupt(uint64 systemCycles) {
-    return min(Tmr1CyclesToNextInterrupt(systemCycles), Tmr2CyclesToNextInterrupt(systemCycles));
+    this->systemCycles = systemCycles;
+
+    if (systemCycles >= nextTimerEventAfterCycle) return 1;
+    return std::min(nextTimerEventAfterCycle - systemCycles, (uint64)0xffffffff);
+}
+
+void EmRegs328::UpdateTimers() {
+    nextTimerEventAfterCycle = ~0;
+    if (GetAsleep()) return;
+
+    double clocksPerSecond = gSession->GetClocksPerSecond();
+    int32 systemClockFrequency = GetSystemClockFrequency();
+
+    double timer1TicksPerSecond = TimerTicksPerSecond(
+        READ_REGISTER(tmr1Control), READ_REGISTER(tmr1Prescaler), systemClockFrequency);
+    double timer2TicksPerSecond = TimerTicksPerSecond(
+        READ_REGISTER(tmr2Control), READ_REGISTER(tmr2Prescaler), systemClockFrequency);
+
+    if (((READ_REGISTER(tmr1Control) & hwr328TmrControlEnable) != 0) && timer1TicksPerSecond > 0 &&
+        clocksPerSecond > 0) {
+        uint32 ticks = ((double)systemCycles - tmr1LastProcessedSystemCycles) / clocksPerSecond *
+                       timer1TicksPerSecond;
+
+        tmr1LastProcessedSystemCycles += (double)ticks / timer1TicksPerSecond * clocksPerSecond;
+        WRITE_REGISTER(tmr1Counter, READ_REGISTER(tmr1Counter) + ticks);
+
+        uint16 tcmp = READ_REGISTER(tmr1Compare);
+        uint16 tcn = READ_REGISTER(tmr1Counter);
+
+        if (tcn >= tcmp) {
+            // Flag the occurrence of the successful comparison.
+            WRITE_REGISTER(tmr1Status, READ_REGISTER(tmr1Status) | hwr328TmrStatusCompare);
+
+            // If the Free Run/Restart flag is not set, clear the counter.
+            if ((READ_REGISTER(tmr1Control) & hwr328TmrControlFreeRun) == 0) {
+                WRITE_REGISTER(tmr1Counter, tcn - tcmp);
+            }
+
+            // If the timer interrupt is enabled, post an interrupt.
+            if ((READ_REGISTER(tmr1Control) & hwr328TmrControlEnInterrupt) != 0) {
+                WRITE_REGISTER(intPendingHi, READ_REGISTER(intPendingHi) | hwr328IntHiTimer1);
+                EmRegs328::UpdateInterrupts();
+            }
+        }
+
+        if (!(READ_REGISTER(intMaskHi) & hwr328IntHiTimer1) &&
+            (READ_REGISTER(tmr1Control) & hwr328TmrControlEnInterrupt)) {
+            tcn = READ_REGISTER(tmr1Counter);
+            uint16 delta = tcmp - tcn;
+            uint64 cycles = ceil((double)delta / timer1TicksPerSecond * clocksPerSecond);
+
+            if ((uint32)(((double)(cycles + systemCycles) - tmr1LastProcessedSystemCycles) /
+                         clocksPerSecond * timer1TicksPerSecond) < delta)
+
+                cycles += clocksPerSecond / timer1TicksPerSecond;
+
+            if (cycles < nextTimerEventAfterCycle - systemCycles)
+                nextTimerEventAfterCycle = systemCycles + cycles;
+        }
+
+    } else {
+        tmr1LastProcessedSystemCycles = systemCycles;
+    }
+
+    if (((READ_REGISTER(tmr2Control) & hwr328TmrControlEnable) != 0) && timer2TicksPerSecond > 0) {
+        uint32 ticks = ((double)systemCycles - tmr2LastProcessedSystemCycles) / clocksPerSecond *
+                       timer2TicksPerSecond;
+
+        tmr2LastProcessedSystemCycles += (double)ticks / timer2TicksPerSecond * clocksPerSecond;
+        WRITE_REGISTER(tmr2Counter, READ_REGISTER(tmr2Counter) + ticks);
+
+        uint16 tcmp = READ_REGISTER(tmr2Compare);
+        uint16 tcn = READ_REGISTER(tmr2Counter);
+
+        if (tcn >= tcmp) {
+            // Flag the occurrence of the successful comparison.
+            WRITE_REGISTER(tmr2Status, READ_REGISTER(tmr2Status) | hwr328TmrStatusCompare);
+
+            // If the Free Run/Restart flag is not set, clear the counter.
+            if ((READ_REGISTER(tmr2Control) & hwr328TmrControlFreeRun) == 0) {
+                WRITE_REGISTER(tmr2Counter, tcn - tcmp);
+            }
+
+            // If the timer interrupt is enabled, post an interrupt.
+            if ((READ_REGISTER(tmr2Control) & hwr328TmrControlEnInterrupt) != 0) {
+                WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwr328IntLoTimer2);
+                EmRegs328::UpdateInterrupts();
+            }
+        }
+
+        if (!(READ_REGISTER(intMaskLo) & hwr328IntLoTimer2) &&
+            (READ_REGISTER(tmr2Control) & hwr328TmrControlEnInterrupt)) {
+            tcn = READ_REGISTER(tmr2Counter);
+            uint16 delta = tcmp - tcn;
+            uint64 cycles = ceil((double)delta / timer2TicksPerSecond * clocksPerSecond);
+
+            if ((uint32)(((double)(cycles + systemCycles) - tmr2LastProcessedSystemCycles) /
+                         clocksPerSecond * timer2TicksPerSecond) < delta)
+
+                cycles += clocksPerSecond / timer2TicksPerSecond;
+
+            if (cycles < nextTimerEventAfterCycle - systemCycles)
+                nextTimerEventAfterCycle = systemCycles + cycles;
+        }
+    } else {
+        tmr2LastProcessedSystemCycles = systemCycles;
+    }
 }
 
 void EmRegs328::pwmcWrite(emuptr address, int size, uint32 value) {

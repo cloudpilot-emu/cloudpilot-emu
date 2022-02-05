@@ -485,7 +485,6 @@ void EmRegsEZ::Reset(Bool hardwareReset) {
     UnmarkScreen();
 
     if (hardwareReset) {
-        systemCycles = gSession->GetSystemCycles();
         lastProcessedSystemCycles = systemCycles;
 
         f68EZ328Regs = kInitial68EZ328RegisterValues;
@@ -2513,7 +2512,7 @@ int EmRegsEZ::GetPort(emuptr address) {
 uint32 EmRegsEZ::CyclesToNextInterrupt(uint64 systemCycles) {
     this->systemCycles = systemCycles;
 
-    if (systemCycles > nextTimerEventAfterCycle) return 1;
+    if (systemCycles >= nextTimerEventAfterCycle) return 1;
     return std::min(nextTimerEventAfterCycle - systemCycles, (uint64)0xffffffff);
 }
 
