@@ -2916,7 +2916,8 @@ uint16 EmRegsMediaQ11xx::PrvAdjustPixel(uint16 pen, uint16 dest, uint8 rOpCode) 
             break;
 
         default:
-            EmAssert(false);
+            logging::printf("illegal ROP");
+
             result = 0;
             break;
     }
@@ -3407,7 +3408,6 @@ inline void EmRegsMediaQ11xx::PrvSetPixel(uint16 pixel, uint16 x, uint16 y) {
             break;
 
         case kColorDepth16:
-            EmAssert(IsEven(pixelLocation));
             EmMemPut16(pixelLocation, pixel);
             break;
 
@@ -3433,12 +3433,12 @@ inline uint16 EmRegsMediaQ11xx::PrvGetPixel(uint16 x, uint16 y) {
             break;
 
         case kColorDepth16:
-            EmAssert(IsEven(pixelLocation));
             result = EmMemGet16(pixelLocation);
             break;
 
         default:
-            EmAssert(false);
+            logging::printf("illegal color depth");
+
             result = 0;
     }
 
@@ -3462,8 +3462,9 @@ inline emuptr EmRegsMediaQ11xx::PrvGetPixelLocation(uint16 x, uint16 y) {
             break;
 
         default:
-            EmAssert(false);
-            return 0;
+            logging::printf("illegal color depth");
+
+            return this->PrvGetVideoBase();
     }
 
     if (fState.rotate90) {
@@ -3632,7 +3633,6 @@ void EmRegsMediaQ11xx::PrvIncBlitterRun(void) {
         fBlitInProgress = this->PrvNextXY();
 
         if (!fBlitInProgress) {
-            EmAssert(this->PrvSrcFifoFilledSlots() == 0);
             PRINTF_BLIT("	PrvIncBlitterRun:	Completed!");
         }
     }
@@ -3745,7 +3745,7 @@ void EmRegsMediaQ11xx::PrvPatternPipeInit(void) {
             // The monoPattern bit MUST be programmed to 1, according to
             // the docs.  Color patterns don't appear to be supported.
 
-            EmAssert(false);
+            logging::printf("illegal pattern setup");
         }
     }
 
@@ -4056,7 +4056,7 @@ void EmRegsMediaQ11xx::PrvSrcPipeFill(Bool& stalled) {
         PRINTF_BLIT("	PrvSrcPipeFill:	0:	0x%04X 0x%04X 0x%04X 0x%04X", p[0], p[1], p[2],
                     p[3]);
     } else {
-        EmAssert(false);
+        logging::printf("illegal source pipe setup");
     }
 }
 
@@ -4274,10 +4274,9 @@ uint16 EmRegsMediaQ11xx::PrvLeadingPixels(void) {
         } else if (fState.colorDepth == kColorDepth8) {
             result = fState.srcLeadingBytes;
         } else if (fState.colorDepth == kColorDepth16) {
-            EmAssert(IsEven(fState.srcLeadingBytes));
             result = fState.srcLeadingBytes / 2;
         } else {
-            EmAssert(false);
+            logging::printf("illegal source setup");
             result = 0;
         }
     } else {
@@ -4288,15 +4287,17 @@ uint16 EmRegsMediaQ11xx::PrvLeadingPixels(void) {
         } else if (fState.colorDepth == kColorDepth8) {
             result = fState.srcByteOffset;
         } else if (fState.colorDepth == kColorDepth16) {
-            EmAssert(IsEven(fState.srcByteOffset));
             result = fState.srcByteOffset / 2;
         } else {
-            EmAssert(false);
+            logging::printf("illegal source setup");
             result = 0;
         }
     }
 
-    EmAssert(result < 64);
+    if (result >= 64) {
+        logging::printf("illegal amount of leading pixels");
+        result = 0;
+    }
 
     return result;
 }
@@ -4316,10 +4317,9 @@ uint16 EmRegsMediaQ11xx::PrvTrailingPixels(void) {
         } else if (fState.colorDepth == kColorDepth8) {
             result = fState.srcTrailingBytes;
         } else if (fState.colorDepth == kColorDepth16) {
-            EmAssert(IsEven(fState.srcTrailingBytes));
             result = fState.srcTrailingBytes / 2;
         } else {
-            EmAssert(false);
+            logging::printf("illegal source setup");
             result = 0;
         }
     } else {
@@ -4340,17 +4340,19 @@ uint16 EmRegsMediaQ11xx::PrvTrailingPixels(void) {
         } else if (fState.colorDepth == kColorDepth8) {
             pixelsPerLine = bytesPerLine;
         } else if (fState.colorDepth == kColorDepth16) {
-            EmAssert(IsEven(bytesPerLine));
             pixelsPerLine = bytesPerLine / 2;
         } else {
-            EmAssert(false);
+            logging::printf("illegal source setup");
             pixelsPerLine = 0;
         }
 
         result = pixelsPerLine - (fState.width + fLeadingSourcePixels);
     }
 
-    EmAssert(result < 64);
+    if (result >= 64) {
+        logging::printf("illegal amount of leading pixels");
+        result = 0;
+    }
 
     return result;
 }
