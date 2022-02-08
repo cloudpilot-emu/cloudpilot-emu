@@ -42,6 +42,11 @@ The following devices are currently emulated:
 -   Palm i705
 -   Tungsten W (silkscreen version)
 -   Handera 330
+-   Sony PEG-S300, PEG-S320
+-   Sony PEG-T400 series
+-   Sony PEG-N600C series
+-   Sony PEG-T600C series
+-   Sony PEG-N700C series
 
 ## Other versions
 
@@ -52,7 +57,7 @@ A preview build of the next version of Cloudpilot is available
 
 Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloudpilot/issues).
 
-# Known issues
+# Known issues and limitations
 
 -   iOS: changing device orientation between portrait and landscape may mess
     up the layout of the app. This is an iOS bug that can be worked around by
@@ -69,6 +74,8 @@ Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloud
     on a virtual Palm IIIc with PalmOS 3.5 while the launcher is active and the
     category menu is open.
 -   Trying to enable mobile on Tungsten W will crash the emulated device.
+-   On Clié devices, audio is not emulated beyond the usual beeps.
+-   External memory (CF card, SD card, memory stick) is not supported
 
 # Source code and relationship to POSE
 
@@ -91,6 +98,8 @@ bug fixes new features. In particular:
 -   Savestate code has been rewritten to work with a fixed buffer without
     allocations.
 -   Event injection works without generating null events.
+-   Reminders and alarms trigger propely.
+-   Clié devices use full MQ11xx video acceleration.
 
 # Building
 

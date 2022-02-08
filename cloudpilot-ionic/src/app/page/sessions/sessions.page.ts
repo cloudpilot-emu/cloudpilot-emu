@@ -105,7 +105,7 @@ export class SessionsPage {
 
         const alert = await this.alertController.create({
             header: 'Done',
-            message: `State for session ${session.name} has been reset.`,
+            message: `Session ${session.name} has been reset.`,
             buttons: [{ text: 'Close', role: 'cancel' }],
         });
 

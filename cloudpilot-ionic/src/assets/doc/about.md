@@ -12,6 +12,11 @@ Currently, the following devices are emulated:
 -   Palm i705
 -   Tungsten W (silkscreen version)
 -   Handera 330
+-   Sony PEG-S300, PEG-S320
+-   Sony PEG-T400 series
+-   Sony PEG-N600C series
+-   Sony PEG-T600C series
+-   Sony PEG-N700C series
 
 The coorrect device type is automatically determined from the ROM you load. If
 there are multiple possible devices Cloudpilot will let you choose when you
@@ -122,7 +127,7 @@ reloading Cloudpilot will apply the update.
 
 In order to force check for an update terminate and restart the app.
 
-# Known issues
+# Known issues and limitations
 
 -   iOS: changing device orientation between portrait and landscape may mess
     up the layout of the app. This is an iOS bug that can be worked around by
@@ -138,6 +143,8 @@ In order to force check for an update terminate and restart the app.
 -   The power switch on the Tungsten W andd i705 does not operate correctly and
     is disabled. You'll have to do a reset in order to wake up the device if you
     acidentially power off via software.
+-   On Clié devices, audio is not emulated beyond the usual beeps.
+-   External memory (CF card, SD card, memory stick) is not supported
 
 # Cloudpilot on the web
 
