@@ -1,12 +1,16 @@
-# Next version
+# 1.6.0
 
 -   Emulate date rollover interrupts. This means that the virtual Pilot will now
     schedule caledar alarms correctly. Virtual devices may hang for a few seconds
     on the first launch after this update while PalmOS processes all the alarms
     that it missed.
--   Performance improvement between 10% and 30%
--   Support for Sony PEG-S300, PEG-S320, PEG-T400 series, PEG-N600C series,
-    PEG-T600C series, PEG-N700C series
+-   Optimizations that give 10% -- 30% performance improvement
+-   Support for serveral Clié devices:
+    -   Sony PEG-S300, PEG-S320
+    -   Sony PEG-T400 series
+    -   Sony PEG-N600C series
+    -   Sony PEG-T600C series
+    -   Sony PEG-N700C series
 
 # 1.5.8
 
