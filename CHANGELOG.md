@@ -1,3 +1,7 @@
+# 1.6.1
+
+-   Fix PEG-T4xx skin.
+
 # 1.6.0
 
 -   Emulate date rollover interrupts. This means that the virtual Pilot will now
