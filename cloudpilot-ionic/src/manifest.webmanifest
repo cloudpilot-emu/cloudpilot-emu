@@ -1,6 +1,6 @@
 {
-  "name": "CloudpilotEmu",
-  "short_name": "CloudpilotEmu",
+  "name": "Cloudpilot",
+  "short_name": "Cloudpilot",
   "display": "standalone",
   "scope": "./",
   "start_url": "./index.html",

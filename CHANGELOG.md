@@ -1,4 +1,8 @@
-# 1.6.1
+# 1.6.3
+
+-   A few more wording changes.
+
+# 1.6.2
 
 -   Rename to CloudpilotEmu.
 
