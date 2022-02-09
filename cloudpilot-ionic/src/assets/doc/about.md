@@ -1,5 +1,5 @@
 CloudpilotEmu is a web-based emulator for PalmOS. It emulates dragonball based devices
-and supports PalmOS up to version 4.x. CloudpilotEmu is based on the original POSE.
+and supports PalmOS up to version 4.x. The emulator is based on the original POSE.
 Currently, the following devices are emulated:
 
 -   Pilot, Palm Pilot
@@ -24,9 +24,9 @@ create the session.
 
 # Tabs
 
-CloudpilotEmu's interface is divided in tabs.
-Each tab has a dedicated help page that can be accessed by tapping the "?" in
-the toolbar (or selecting "Help" from the menu on the emulation page).
+The interface is divided in tabs. Each tab has a dedicated help page that can be
+accessed by tapping the "?" in the toolbar (or selecting "Help" from the menu on
+the emulation page).
 
 ### Sessions tab
 
@@ -44,7 +44,7 @@ The settings tab allows you to adjust the emulator settings.
 
 # Reloads and emulation state
 
-Cloutpilot automatically saves the state of the emulated device every second while
+The emulator automatically saves the state of the emulated device every second while
 the while the emulation is running. If CloudpilotEmu terminates and restarts the emulation
 will resume exactly where you left off.
 
@@ -91,7 +91,7 @@ page. You can resume your session from there.
 
 ### Escaping a crash loop
 
-In the unlikely event that the emulated device keeps on
+In the unlikely event that the emulated device keeps
 crashing the emulator you can reset the device directly on the
 sessions page (see the help page there for more info). This will remove the
 hardware state but preserve the RAM, resulting in a reboot when you resume your
@@ -108,7 +108,7 @@ On iOS devices iOS 14 or higher is recommended. Earlier versions have bugs that
 may make it impossible to save session snapshots. The emulator runs smoothly on all
 iPhones and iPads that support iOS 14.
 
-On older Android devices performance may be an issue. CloudpilotEmu requires decent
+On older Android devices performance may be an issue. The emulator requires decent
 single core performance, and this is a domain where Android devices are traditionally
 lacking. CloudpilotEmu will dynamically adjust the speed of the emulated device if
 the host device cannot sustain emulation at full speed. A score of 350 in the single
@@ -122,8 +122,8 @@ CloudpilotEmu caches all its files locally and does not require a network connec
 to run once the caching is complete.
 
 During startup CloudpilotEmu checks for new versions. If a new version is available
-CloudpilotEmu will download it and inform you with a notification. At this point
-reloading CloudpilotEmu will apply the update.
+CloudpilotEmu will download it and inform you with a notification. After this point
+reloading will apply the update.
 
 In order to force check for an update terminate and restart the app.
 
