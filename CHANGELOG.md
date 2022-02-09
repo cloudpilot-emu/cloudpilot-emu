@@ -1,5 +1,9 @@
 # 1.6.1
 
+-   Rename to CloudpilotEmu.
+
+# 1.6.1
+
 -   Fix PEG-T4xx skin.
 
 # 1.6.0
