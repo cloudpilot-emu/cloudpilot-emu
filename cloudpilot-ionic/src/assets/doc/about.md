@@ -1,5 +1,5 @@
-Cloudpilot is a web-based emulator for PalmOS. It emulates dragonball based devices
-and supports PalmOS up to version 4.x. Cloudpilot is based on the original POSE.
+CloudpilotEmu is a web-based emulator for PalmOS. It emulates dragonball based devices
+and supports PalmOS up to version 4.x. CloudpilotEmu is based on the original POSE.
 Currently, the following devices are emulated:
 
 -   Pilot, Palm Pilot
@@ -19,12 +19,12 @@ Currently, the following devices are emulated:
 -   Sony PEG-N700C series
 
 The coorrect device type is automatically determined from the ROM you load. If
-there are multiple possible devices Cloudpilot will let you choose when you
+there are multiple possible devices CloudpilotEmu will let you choose when you
 create the session.
 
 # Tabs
 
-Cloudpilot's interface is divided in tabs.
+CloudpilotEmu's interface is divided in tabs.
 Each tab has a dedicated help page that can be accessed by tapping the "?" in
 the toolbar (or selecting "Help" from the menu on the emulation page).
 
@@ -45,7 +45,7 @@ The settings tab allows you to adjust the emulator settings.
 # Reloads and emulation state
 
 Cloutpilot automatically saves the state of the emulated device every second while
-the while the emulation is running. If Cloudpilot terminates and restarts the emulation
+the while the emulation is running. If CloudpilotEmu terminates and restarts the emulation
 will resume exactly where you left off.
 
 # Installing programs and databases
@@ -55,9 +55,9 @@ device. `.zip` archives containing such files can be installed as well.
 
 # Network support
 
-Cloudpilot can connect the virtual PalmOS device to the network via
+CloudpilotEmu can connect the virtual PalmOS device to the network via
 a proxy server. This configuration supports network hotsync. Please check the
-[online documentation](https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md)
+[online documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/networking.md)
 for detailed instructions.
 
 # Backing up your virtual devices
@@ -81,11 +81,11 @@ as portable .prc and .pdb files.
 
 The emulator is pretty stable, but you may encounter situations in which
 it crashes. This may be due to a bug in the emulator, or due to the way
-POSE and Cloudpilot interact with PalmOS for installing software,
+POSE and CloudpilotEmu interact with PalmOS for installing software,
 backing up databases, setting the hotsync name and similar tasks.
 
-If the emulator crashes Cloudpilot will stop immediatelly and show you a dialog
-that allows you to restart the emulator. Upon restart Cloudpilot will not
+If the emulator crashes CloudpilotEmu will stop immediatelly and show you a dialog
+that allows you to restart the emulator. Upon restart CloudpilotEmu will not
 automatically resume your session but will instead start up with the session
 page. You can resume your session from there.
 
@@ -99,7 +99,7 @@ session. This allows you to break the crash loop.
 
 # Requirements and browser support
 
-Cloudpilot runs on all reasonable recent browsers and can be added to the homescreen
+CloudpilotEmu runs on all reasonable recent browsers and can be added to the homescreen
 of Android and iOS devices as a mobile app. For iPhones and iPads this is highly
 recommended as Safari may clear the data of ordinary web sites if they are not used
 for an extended period of time.
@@ -108,22 +108,22 @@ On iOS devices iOS 14 or higher is recommended. Earlier versions have bugs that
 may make it impossible to save session snapshots. The emulator runs smoothly on all
 iPhones and iPads that support iOS 14.
 
-On older Android devices performance may be an issue. Cloudpilot requires decent
+On older Android devices performance may be an issue. CloudpilotEmu requires decent
 single core performance, and this is a domain where Android devices are traditionally
-lacking. Cloudpilot will dynamically adjust the speed of the emulated device if
+lacking. CloudpilotEmu will dynamically adjust the speed of the emulated device if
 the host device cannot sustain emulation at full speed. A score of 350 in the single
 core [geekbench benchmark](https://browser.geekbench.com/android-benchmarks) is
-enough to run Cloudpilot smoothly with minor slowdowns, and 500
+enough to run CloudpilotEmu smoothly with minor slowdowns, and 500
 or more will give smooth emulation without slowdowns.
 
 # Updates
 
-Cloudpilot caches all its files locally and does not require a network connection
+CloudpilotEmu caches all its files locally and does not require a network connection
 to run once the caching is complete.
 
-During startup Cloudpilot checks for new versions. If a new version is available
-Cloudpilot will download it and inform you with a notification. At this point
-reloading Cloudpilot will apply the update.
+During startup CloudpilotEmu checks for new versions. If a new version is available
+CloudpilotEmu will download it and inform you with a notification. At this point
+reloading CloudpilotEmu will apply the update.
 
 In order to force check for an update terminate and restart the app.
 
@@ -146,14 +146,14 @@ In order to force check for an update terminate and restart the app.
 -   On Clié devices, audio is not emulated beyond the usual beeps.
 -   External memory (CF card, SD card, memory stick) is not supported
 
-# Cloudpilot on the web
+# CloudpilotEmu on the web
 
- * [Source code](https://github.com/cloudpilot-emu/cloudpilot)
+ * [Source code](https://github.com/cloudpilot-emu/cloudpilot-emu)
  * [Webpage](https://cloudpilot-emu.github.io)
 
 # License
 
-Cloudpilot is free software: you can redistribute it and/or modify it under
+CloudpilotEmu is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
 Foundation, either version 3 of the License, or (at your option) any later
 version.

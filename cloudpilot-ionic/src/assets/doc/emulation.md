@@ -1,5 +1,5 @@
 The "Emulation" tab displays your emulated device. The device is running as
-long as the tab is visible. Once the tab is switched (or Cloudpilot goes into
+long as the tab is visible. Once the tab is switched (or CloudpilotEmu goes into
 the background) the emulation pauses. Date and time are synced to the host
 system, so the clock is not affected by the emulator pausing and resuming.
 
@@ -29,7 +29,7 @@ on the settings page in order to do that automatically on launch.
 
 Select the "Install file" button on the top right in order to install `.prc` and
 `.pdb` files into the emulator. You can select and install multiple files at
-once. `.zip` archives can be selected as well, and Cloudpilot will install
+once. `.zip` archives can be selected as well, and CloudpilotEmu will install
 all installable files it finds in the archive.
 
 Please note that the launcher needs to be restarted by switching to another
@@ -44,8 +44,8 @@ safe.
 
 # State saves
 
-Cloudpilot automatically saves the emulator state every second while the
-emulator is running. If Cloudpilot is reloaded (or the session is switched) the
+CloudpilotEmu automatically saves the emulator state every second while the
+emulator is running. If CloudpilotEmu is reloaded (or the session is switched) the
 state is preserved and restored.
 
 # Saving a backup
@@ -54,7 +54,7 @@ You can save a backup of all databases in the device RAM by selecting "Save Back
 from the menu. This will create and save a zip archive with .prc and .pdb
 files that can be installed again on any PalmOS device at a later point.
 
-There are two types of backup, and Cloudpilot will prompt you to choose between them:
+There are two types of backup, and CloudpilotEmu will prompt you to choose between them:
 
 * Backup only RAM databases. This is an ordinary backup, and you should choose it use unless
   you specifically want to retrieve the databases in the device ROM.
@@ -64,7 +64,7 @@ There are two types of backup, and Cloudpilot will prompt you to choose between 
 
 Databases must be closed in order to back up, so if you are backing up while
 an application is opened, the corresponding DB files will not be included
-in the backup. Cloudpilot will notify you if this happens.
+in the backup. CloudpilotEmu will notify you if this happens.
 
 Backing up databases interacts with PalmOS, and there is a (very) slim chance of crashing
 the emulator, depending on the state of the virtual device when the backup is
@@ -105,19 +105,19 @@ The hotsync button on the cradle can be pressed by selecting "Hotsync" from the 
 # Audio
 
 The "Enable audio" / "Disable audio" option in the menu allows to toggle audio emulation on / off.
-Cloudpilot always starts with audio disabled, and the option must be selected to enable
+CloudpilotEmu always starts with audio disabled, and the option must be selected to enable
 it.
 
 The volume can be changed on the settings tab. Audio is not available if the volume is set
 to zero.
 
 On iOS, muting the phone also mutes audio from the emulator. Ocassionally the audio
-may glitch and stay off after resuming Cloudpilot from the background due to browser
+may glitch and stay off after resuming CloudpilotEmu from the background due to browser
 bugs. You can reenable audio by turning it off and on again.
 
 # Keyboard input
 
-If you are using Cloudpilot on a device with a keyboard you can use the keyboard to
+If you are using CloudpilotEmu on a device with a keyboard you can use the keyboard to
 control the emulator. There are two different modes of keyboard input, game mode
 and normal mode. In normal mode the keyboard can be used to enter text on
 the Palm, and in game mode it controls the hardware buttons.
@@ -156,8 +156,8 @@ Accessing the clipboard is a sensitive operation, and browsers implement securit
 mechanisms around it.
 
 On most webkit-based browsers (including Chrome) a popup asking for permission must be
-confirmed the first time Cloudpilot pastes from the host clipboard. On other browsers
-(notably Safari) Cloudpilot shows a dialog asking to confirm the operation on every
+confirmed the first time CloudpilotEmu pastes from the host clipboard. On other browsers
+(notably Safari) CloudpilotEmu shows a dialog asking to confirm the operation on every
 clipboard access. This is necessary because those browsers require clipboard access to
 be the direct consequence of an user interaction. When pasting Safari will show
 an additionl "Paste" widget that needs to be tapped in order to paste.
@@ -168,7 +168,7 @@ an additionl "Paste" widget that needs to be tapped in order to paste.
 required for normal operation. You can skip the remainder of this documentation page unless
 you want to interpret the statistics overlay.
 
-If "Show Statistics" is enabled (on the settings tab) Cloudpilot displays an overlay with
+If "Show Statistics" is enabled (on the settings tab) CloudpilotEmu displays an overlay with
 performance statistics above the grafitti silkscreen. The statistics are updated
 whenever a new state snapshot is taken.
 
@@ -198,20 +198,20 @@ data around the CPU load on the host device increases as well.
 
 While all supported iOS devices are fast enough to execute the emulator at full
 speed at all times, some (in particular older) Android devices are not able to
-keep up all the time. Cloudpilot compensates this by monitoring the "host speed"
+keep up all the time. CloudpilotEmu compensates this by monitoring the "host speed"
 (the ratio between the real time required to emulate a chunk of m68k code relative
 to the corresponding time in the frame of the virtual device). If this drops below one
-Cloudpilot will reduce the clock of the emulated device accordingly while keeping the
+CloudpilotEmu will reduce the clock of the emulated device accordingly while keeping the
 timers in sync with real time.
 
  * **host speed**: See above. Note that this is calculated using the true clock speed
    of the virtual device (ignoring the correction that is applied if host speed
    drops below one).
  * **emulation speed**: The ratio between the actual clock of the emulated device and
-   the clock at which it is supposed to run. This drops below 1 if Cloudpilot reduces
+   the clock at which it is supposed to run. This drops below 1 if CloudpilotEmu reduces
    speed in order to compensate for a slow host.
  * **average FPS**: The average frames per second at which the emulator runs.
    This is usually identical to the refresh rate of the display (usually 60Hz), but it
    will drop if the host device cannot keep up. Note that the screen is not actually
-   updated during every frame; Cloudpilot redraws only if the display content has
+   updated during every frame; CloudpilotEmu redraws only if the display content has
    changed.

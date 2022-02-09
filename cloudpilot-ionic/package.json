@@ -1,5 +1,5 @@
 {
-  "name": "cloudpilot-ionic",
+  "name": "cloudpilot-emu-ionic",
   "version": "1.6.1",
   "author": "Christian Speckner",
   "homepage": "https://cloudpilot-emu.github.io/",
@@ -73,7 +73,7 @@
     "tslint": "~6.1.0",
     "typescript": "~4.5.4"
   },
-  "description": "Cloudpilot PWA",
+  "description": "CloudpilotEmu PWA",
   "prettier": {
     "printWidth": 120,
     "tabWidth": 4,

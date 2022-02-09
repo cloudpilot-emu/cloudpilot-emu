@@ -20,7 +20,7 @@
 
 -   Link API for importing ROMs or sessions and installing databases via
     hyperlinks. Check the
-    [online documentation](https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/linking.md)
+    [online documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/linking.md)
     for more details
 -   UI dependecy updates
 
@@ -32,7 +32,7 @@
 -   Show reason for failed installations.
 -   Improve snapshot performance on Chrome.
 -   Fix basic auth handling in poxy to conform with standard. This version of
-    Cloudpilot requires an updated version of the proxy if basic auth is used
+    CloudpilotEmu requires an updated version of the proxy if basic auth is used
     to secure the connection.
 
 # 1.5.6
@@ -74,10 +74,10 @@
 
 -   Work around worker update idosyncrasies on iOS.
 -   Networking support via websocket proxy. Check the
-    [online documentation](https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md)
+    [online documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/networking.md)
     for more details.
 -   Improve memory safety of the emulation core.
--   Add an option to keep Cloudpilot running when the tab is hidden.
+-   Add an option to keep CloudpilotEmu running when the tab is hidden.
 -   Add "Hotsync" to emulation menu.
 -   Route `DbgMessage` calls to console.
 -   Set `cldp` feature on boot.
@@ -100,9 +100,9 @@
 
 # Version 1.4.3
 
--   Work around an IndexedDB bug on iOS 14.6 that causes spurious hangs if Cloudpilot
+-   Work around an IndexedDB bug on iOS 14.6 that causes spurious hangs if CloudpilotEmu
     is started from the homescreen. The workaround may delay startup by a second
-    or so if the bug is triggered, but at least Cloudpilot starts reliably again.
+    or so if the bug is triggered, but at least CloudpilotEmu starts reliably again.
 
 # Version 1.4.2
 

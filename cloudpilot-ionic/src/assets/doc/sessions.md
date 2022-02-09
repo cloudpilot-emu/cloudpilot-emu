@@ -11,7 +11,7 @@ session image. The file suffix should be either `.rom`, `.img` or `.bin`.
 ### ROM files
 
 The emulated device is selected automatically based on the ROM. If the ROM supports
-multiple devices Cloudpilot will allow you to choose between them. Please check
+multiple devices CloudpilotEmu will allow you to choose between them. Please check
 the "About" tab for a list of supported devices.
 
 You can find a collection of suitable ROM files
@@ -19,13 +19,13 @@ You can find a collection of suitable ROM files
 
 ### Session images
 
-Session images are session snapshots that have been exported by Cloudpilot. They
+Session images are session snapshots that have been exported by CloudpilotEmu. They
 contain the ROM image of the exported device together with a snapshot of the
 device RAM and state at the moment the snapshot was taken. Importing a session
 image will create a clone of the device.
 
 Changes to the image format are backwards compatible, which means that a newer
-version of Cloudpilot can always import a session image written by an older
+version of CloudpilotEmu can always import a session image written by an older
 version.
 
 # The sessions list
@@ -44,10 +44,10 @@ session.
 
 ##### Hotsync name
 
-Usually Cloudpilot devices do not hotsync, so Cloudpilot can manage the hotsync
+Usually CloudpilotEmu devices do not hotsync, so CloudpilotEmu can manage the hotsync
 user name instead. The hotsync name can be changed at any time.
 
-Older versions of Cloudpilot do not include the hotsync name in session images.
+Older versions of CloudpilotEmu do not include the hotsync name in session images.
 In this case, the name will we read from the device as soon as it is launched.
 
 ##### Manage hotsync name
@@ -61,7 +61,7 @@ Saving a session exports a session snapshot.
 
 ### Reset
 
-While the emulation is running, Cloudpilot persists the device RAM and state
+While the emulation is running, CloudpilotEmu persists the device RAM and state
 every second. Resetting the session will remove the saved state but preserve the
 contents of RAM. This forces the device to reboot the next time the session is
 launched.

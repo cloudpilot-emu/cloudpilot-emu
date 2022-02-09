@@ -249,7 +249,7 @@ export class ClipboardService {
 
     private msgPermissionDenied(): Promise<void> {
         return this.alertService.errorMessage(`
-        Cloudpilot has no permission to access the clipboard. Please check your browser's settings
+        CloudpilotEmu has no permission to access the clipboard. Please check your browser's settings
         and grant the necessary permission to ${location.origin} .
     `);
     }

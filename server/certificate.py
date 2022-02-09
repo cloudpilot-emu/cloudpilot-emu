@@ -165,7 +165,7 @@ WARNING: This allows the generated certificate to be used as a CA certificate.""
 > {script} --cert {filePem}
 
 in order to use the generated certificate. Please check the documentation on
-how to install and trust "{fileCer}" on your devices running Cloudpilot.
+how to install and trust "{fileCer}" on your devices running CloudpilotEmu.
 
 SECURITY WARNING:
 ===============================================================================

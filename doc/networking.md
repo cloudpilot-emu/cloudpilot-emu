@@ -1,27 +1,27 @@
-This document describes how network access in Cloudpilot is set up and
+This document describes how network access in CloudpilotEmu is set up and
 how the virtual device is configured for Network Hotsync.
 
 # Basic Setup
 
-As a web application, Cloudpilot cannot access the network directly. In order
+As a web application, CloudpilotEmu cannot access the network directly. In order
 to access the network you need to run a small proxy server locally and
-configure Cloudpilot to use it. As the official version of Cloudpilot is
-hosted over HTTPS, the connection between the proxy server and Cloudpilot
+configure CloudpilotEmu to use it. As the official version of CloudpilotEmu is
+hosted over HTTPS, the connection between the proxy server and CloudpilotEmu
 has to be encrypted as well.
 
 The necessary steps to set up networking are
 
 1. Download latest server version from the
-   [releases page](https://github.com/cloudpilot-emu/cloudpilot/releases).
-2. Generate a certificate and install it on the device running Cloudpilot
+   [releases page](https://github.com/cloudpilot-emu/cloudpilot-emu/releases).
+2. Generate a certificate and install it on the device running CloudpilotEmu
 3. Start the server
-4. Enable networking in Cloudpilot and point it to the proxy server.
+4. Enable networking in CloudpilotEmu and point it to the proxy server.
 
 ## Download the server
 
 The server is a small CLI application written in Python, and standalone
 packages can be downloaded from the [releases
-page](https://github.com/cloudpilot-emu/cloudpilot/releases) on Github.
+page](https://github.com/cloudpilot-emu/cloudpilot-emu/releases) on Github.
 After decompressing the package archive you'll end up with a directory called
 `cloudpilot-server-<version>`. This directory contains an executable
 version of the server called `cloudpilot-server`, together with all
@@ -36,7 +36,7 @@ git, please follow the instructions under "advanced usage" below.
 
 ## Generate a certificate
 
-In order to open an encrypted connection to Cloudpilot the server needs a
+In order to open an encrypted connection to CloudpilotEmu the server needs a
 self-signed certificate installed on the device running Cloudpiltot.
 
 This certificate can be generated directly by `cloudpilot-server` by running
@@ -48,7 +48,7 @@ This certificate can be generated directly by `cloudpilot-server` by running
 Note that the certificate is checked by the browser against the host or IP on
 which the server runs, so `cloudpilot-server` will ask for a list of IPs and
 hostnames to encode in the certificate. One of these must match with the
-host or IP that you enter in cloudpilot.
+host or IP that you enter in CloudpilotEmu.
 
 `cloudpilot-server` will generate a file with the suffix `.pem` and one with the
 suffix `.cer`. The file with the suffix `.pem` includes the private key
@@ -58,11 +58,11 @@ originating from devices that have the certificate installed and trusted
 (altough care has been taken to make this as hard as possible).
 
 The `.cer` file does not contain sensitive data and is safe to distribute. It
-has to be installed on the device(s) running Cloudpilot.
+has to be installed on the device(s) running CloudpilotEmu.
 
 ## Install the certificate
 
-Depending on the device that runs Cloudpilot, different steps need to be taken to
+Depending on the device that runs CloudpilotEmu, different steps need to be taken to
 install the certificate.
 
 **IMPORTANT:** Always use the `.cer` file for installation, the `.pem` should be considered
@@ -110,7 +110,7 @@ Double click it, expand the "Trust" section and set "SSL" to "Always trust".
 
 Unfortunately, Firefox uses its own certificate store and ignores the store of your
 operating system. Importing the certificate into Firefox' store will not worl.
-If you want to use Cloudpilot networking on Firefox you have to add
+If you want to use CloudpilotEmu networking on Firefox you have to add
 a security exception.
 
 The easiest way to do so is to navigate to the proxy server in your browser after starting
@@ -140,7 +140,7 @@ unless required.
 As an alternative, you can open the website settings in chrome and enable
 "insecure content". This will allow you to run the proxy server over HTTP
 (by using the `--insecure` command line option). Note that you have to enter
-the full URL to the server in Cloudpilot in this case, and that the connection
+the full URL to the server in CloudpilotEmu in this case, and that the connection
 will not be encrypted. DON'T USE BASIC AUTHENTICATION IN THIS CASE.
 
 ## Start the server
@@ -153,24 +153,24 @@ Launch the server with the generated certificate by running
 
 replacing `<certificate.pem>` with the genreated `.pem` file.
 
-## Configure Cloudpilot
+## Configure CloudpilotEmu
 
-Load Cloudpilot, go to the settings page and enable "Network redirection". Enter the
+Load CloudpilotEmu, go to the settings page and enable "Network redirection". Enter the
 IP address or hostname of the machine that runs the server in the field "proxy server".
 You can test the connection by pressing the "Test" button on the right.
 
 You can now use the network on your virtual PalmOS devices. Back in the days, network connectivity
 was provided by connecting to a provider via modem, and PalmOS will ask you which service to
-connect to if an application uses the network. You can select any service you like, Cloudpilot
+connect to if an application uses the network. You can select any service you like, CloudpilotEmu
 patches PalmOS to skip dialing and directly connect via the proxy server instead.
 
 # Setting up Network Hotsync
 
 ## Hotsync user name
 
-Normally, Cloudpilot will take control of the hotsync user name used by
+Normally, CloudpilotEmu will take control of the hotsync user name used by
 its virtual devices. This will conflict with Palm Desktop if you decide
-to hotsync the virtual device. Go to the sessions page in Cloudpilot,
+to hotsync the virtual device. Go to the sessions page in CloudpilotEmu,
 open the settings for the corresponding session, uncheck "Manage hotsync name"
 and hit save.
 
@@ -203,7 +203,7 @@ will be established from the machine running the server, so you can use
 ## Can't connect to proxy
 
 In order to troubleshoot issues with the connection to the proxy, navigate
-to the proxy server drectly in a browser on the device running Cloudpilot. In its default configuration
+to the proxy server drectly in a browser on the device running CloudpilotEmu. In its default configuration
 the server runs on port 8667, so the corresponding URL is `https://<host>:8667` with `<host>`
 replaced with the hostname or IP of the machine running the server.
 
@@ -226,7 +226,7 @@ Possible issues are:
     instructions above.
 -   **Wrong certificate:** Each generated certificate is unique, and the certificate
     installed on the device must be the exact same certificate used by the server.
--   **Name mismatch:** The hostname or IP configured in Cloudpilot must match one
+-   **Name mismatch:** The hostname or IP configured in CloudpilotEmu must match one
     of the names or IPs that were entered when the certificate was generated.
 -   **Expired:** The certificate has a lifetime of one year, and you'll have to generate
     a new one after it has expired.
@@ -243,7 +243,7 @@ Possible pitfalls to watch out for:
     connections.
 -   **Connectivity:** Make sure the primary PC address configured in PalmOS is correct.
     Note that the actual connection originates from the computer that runs the proxy server.
--   **Cloudpilot suspended:** Cloudpilot suspends execution if the browser tab (or mobile app)
+-   **CloudpilotEmu suspended:** CloudpilotEmu suspends execution if the browser tab (or mobile app)
     is not visible. This can be deactivated in the settings.
 -   **Unsupported PalmOS version:** Palm in their infite wisdom decided to remove network hotsync
     from their m1xx line of devices. You can work around this by installing the hotsync app
@@ -277,7 +277,7 @@ In case you want to use the latest version of the server or want to run the serv
 a system that has not prebuild executable you'll have to run it from git. To this end
 you need `python` >= 3.7 and `pipenv` installed.
 
-Check out the Cloudpilot repository (or grab and extract a copy of the source code from
+Check out the CloudpilotEmu repository (or grab and extract a copy of the source code from
 the releases page). Change to the `server` directory and install the dependencies with
 `pipenv` running
 
@@ -295,7 +295,7 @@ After installing the dependencies you can run the server by running
 
 The server runs fine behine a reverse proxy. The server has two endpoints,
 `/network-proxy/handshake` and `/network-proxy/connect`. which need to be proxied.
-However, Cloudpilot supports entering a full URL instead of just a hostname
+However, CloudpilotEmu supports entering a full URL instead of just a hostname
 or IP in its configuration, so your proxy can prefix those endpoints with a
 custom path.
 
@@ -308,25 +308,25 @@ those on the command line.
 
 ### CORS setup
 
-If you run Cloudpilot locally (during development) or on another domain the default
+If you run CloudpilotEmu locally (during development) or on another domain the default
 server configuration will not work. The reason is that the default configuration
 forbids access from any origin other `https://cloudpilot-emu.github.io` via CORS.
 
 In case you want to use networking with such a setup you can use the `--trusted-origins`
 parameter to tune the CORS configuration to your needs. As an example, in order to
-allow Cloudpilot running on `http://localhost:4600` (which is the default for the
+allow CloudpilotEmu running on `http://localhost:4600` (which is the default for the
 angular dev server), invoke the server with `--trusted-origins http://localhost:4600`.
 Note that you can allow more than one trusted origin by specifying multiple
 origins separated by commata.
 
 ### Default protocol
 
-Cloudpilot allows you to simplify the configuration by filling only the hostname
+CloudpilotEmu allows you to simplify the configuration by filling only the hostname
 of the proxy server on the settings page. This works by determining the protocol
-(https or http) from the URL on which Cloudpilot runs and choosing the port (8667
+(https or http) from the URL on which CloudpilotEmu runs and choosing the port (8667
 or 8666) accordingly.
 
-If Cloudpilot runs locally this will default to http and port 8666. If you want to
+If CloudpilotEmu runs locally this will default to http and port 8666. If you want to
 connect to a proxy using SSL you'll have to enter the fully qualified URL.
 
 ## Improving security

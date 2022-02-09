@@ -14,20 +14,20 @@ export class ErrorService {
         return this.fatalErrorTriggered;
     }
 
-    fatalPageLockLost = () => this.fatalWithMessage('Cloudpilot was opened in another tab or windoow.', false);
+    fatalPageLockLost = () => this.fatalWithMessage('CloudpilotEmu was opened in another tab or windoow.', false);
 
     fatalIDBDead = () => this.fatalWithMessage('IndexedDB access failed. This is most likely a browser bug.', false);
 
     fatalVersionMismatch = () =>
         this.fatalWithMessage(
             `
-        Database was written by a newer version of Cloudpilot. Please wait for a few seconds before reloading
+        Database was written by a newer version of CloudpilotEmu. Please wait for a few seconds before reloading
         while the latest version downloads in the background.
     `,
             false
         );
 
-    fatalBug = (reason: string) => this.fatalWithMessage(`You encountered a bug in cloudpilot:<br/><br/>${reason}.`);
+    fatalBug = (reason: string) => this.fatalWithMessage(`You encountered a bug in CloudpilotEmu:<br/><br/>${reason}.`);
 
     fatalInNativeCode = (e: Error) => this.fatalWithMessage(e.message, true, false);
 

@@ -50,12 +50,12 @@ The following devices are currently emulated:
 
 ## Other versions
 
-A preview build of the next version of Cloudpilot is available
+A preview build of the next version of CloudpilotEmu is available
 [here](https://cloudpilot-emu.github.io/app-preview).
 
 # Reporting issues
 
-Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloudpilot/issues).
+Please report issues on the [Github tracker](https://github.com/cloudpilot-emu/cloudpilot-emu/issues).
 
 # Known issues and limitations
 
@@ -68,7 +68,7 @@ Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloud
     reproduced correctly.
 -   Savestates are not endian safe and can not be exchanged between big and
     little endian systems. As long as there are not big endian system that run
-    Cloudpilot that issue is probably academical :)
+    CloudpilotEmu that issue is probably academical :)
 -   On rare ocassions installing a prc or pdb can catch PalmOS on the wrong
     foot and crashes the emulator. This is particularly true if a file is installed
     on a virtual Palm IIIc with PalmOS 3.5 while the launcher is active and the
@@ -79,7 +79,7 @@ Please report issues on the [Github tracker](https://github.com/DirtyHairy/cloud
 
 # Source code and relationship to POSE
 
-Cloudpilot is derived from the original POSE sources. It is not a
+CloudpilotEmu is derived from the original POSE sources. It is not a
 straightforward port, though, as the original code has been adapted and partly
 rewritten to fit well with a browser environment. In addition, it contains a few
 bug fixes new features. In particular:
@@ -88,7 +88,7 @@ bug fixes new features. In particular:
     little endian systems. Big endian systems should work, but I cannot test
     this (are there even any relevant big endian systems left?).
 -   POSE was built as a tool for debugging and profiling PalmOS applications.
-    Most of this functionality has been removed in Cloudpilot.
+    Most of this functionality has been removed in CloudpilotEmu.
 -   All UI parts and in particular threading were removed from the source.
 -   Dispatch and timing have been partly rewritten, timing should now be pretty
     close to the original device.
@@ -114,7 +114,7 @@ The following instructions apply to Linux and MacOS.
 
 The emulator is written in C++ and compiled to Web Assembly using emscripten. In
 order to build the WASM binary you need to install a recent version of the
-emscripten toolchain. Cloudpilot currently builds with 2.0.24.
+emscripten toolchain. CloudpilotEmu currently builds with 2.0.24.
 
 With the SDK properly set up you can build the source via
 
@@ -143,7 +143,7 @@ app.
 
 ## Native build
 
-There is a simple native build for debugging Cloudpilot outside the browser. You
+There is a simple native build for debugging CloudpilotEmu outside the browser. You
 need SDL2 and a recent version of Boost in order to build. The build is accomplished
 with
 
@@ -157,7 +157,7 @@ completion that allows you to save session images and reset the virtual device.
 
 # Credits
 
-Artwork for Cloudpilot was done by Paolo Lazatin.
+Artwork for CloudpilotEmu was done by Paolo Lazatin.
 
 SDCTL emulation to enable the full 16MB of RAM on the m515 is taken from
 [Mu](https://github.com/meepingsnesroms/Mu).

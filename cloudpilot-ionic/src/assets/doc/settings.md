@@ -1,4 +1,4 @@
-The "Settings" tab allows you to configure Cloudpilot.
+The "Settings" tab allows you to configure CloudpilotEmu.
 
 # Settings
 
@@ -9,8 +9,8 @@ disables audio.
 
 ### Run when hidden
 
-Keep Cloudpilot running when its browser tab is hidden. Note that this does not
-keep Cloudpilot running on mobile if the browser or homescreen app is
+Keep CloudpilotEmu running when its browser tab is hidden. Note that this does not
+keep CloudpilotEmu running on mobile if the browser or homescreen app is
 backgrounded.
 
 ### Clipboard integration (supported browser only)
@@ -20,9 +20,9 @@ support it. Notably, this option is not available on Firefox.
 
 ### Network redirection
 
-Cloudpilot can connect the virtual PalmOS device to the network via
+CloudpilotEmu can connect the virtual PalmOS device to the network via
 a proxy server. This configuration supports network hotsync. Please check the
-[online documentation](https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md)
+[online documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/networking.md)
 for detailed instructions.
 
 If you enable network redirection you'll have to enter the address of the proxy
@@ -42,5 +42,5 @@ This overlays the grafitti area with a collection of performance statistics.
 
 Enabling this will allow you to load ROMs, session images and install files
 from remote URLs. Please note that those will have to be served via HTTPS
-(unless you are hosting cloudpilot yourself via HTTP), and the file server
+(unless you are hosting CloudpilotEmu yourself via HTTP), and the file server
 has to support CORS.
