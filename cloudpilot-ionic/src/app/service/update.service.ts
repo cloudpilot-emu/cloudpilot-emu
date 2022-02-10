@@ -53,7 +53,7 @@ export class UpdateService {
             // wait for a possible loader to disappear
             await this.emulationService.bootstrapComplete();
 
-            this.alertService.message('Update complete', `CloudpilotEmu was updated to version ${VERSION}.`, {
+            this.alertService.message('Update complete', `Cloudpilot was updated to version ${VERSION}.`, {
                 Changes: () => this.showChangelog(),
             });
         });

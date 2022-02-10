@@ -15,37 +15,37 @@ declare global {
 
 const INSTRUCTIONS_ANDROID = `
     Open your browser's menu and tap "Add to Home screen" or "Install App"
-    in order to install CloudpilotEmu as an app.
+    in order to install Cloudpilot as an app.
     <br/><br/>
     This removes the browser UI and gives you a native app experience.
 `;
 
 const INSTRUCTIONS_SAFARI_IOS = `
     Tap the "Share" icon on the bottom of the screen (the little box with the arrow)
-    and select "Add to Home Screen" in order to install CloudpilotEmu as an app.
+    and select "Add to Home Screen" in order to install Cloudpilot as an app.
     <br/><br/>
     This removes the browser UI and makes sure that Safari never deletes your sessions.
 `;
 
 const INSTRUCTIONS_IOS = `
-    Open CloudpilotEmu in Safari, tap the "Share" icon on the bottom of the screen
+    Open Cloudpilot in Safari, tap the "Share" icon on the bottom of the screen
     (the little box with the arrow) and select "Add to Home Screen" in order to install
-    CloudpilotEmu as an app.
+    Cloudpilot as an app.
     <br/><br/>
     This removes the browser UI and gives you a native app experience.
 `;
 
 const INVITATION_ANDROID = `
-    Howdy! It seems that you are using CloudpilotEmu on an Android device. You can
-    install CloudpilotEmu as an app by opening your browser's menu
+    Howdy! It seems that you are using Cloudpilot on an Android device. You can
+    install Cloudpilot as an app by opening your browser's menu
     and tapping "Add to Home screen".
     <br/><br/>
     This removes the browser UI and gives you a native app experience.
 `;
 
 const INVITATION_SAFARI_IOS = `
-    Howdy! It seems that you are using CloudpilotEmu on an iPhone or iPad. You can
-    install CloudpilotEmu as an app by tapping the "Share" icon
+    Howdy! It seems that you are using Cloudpilot on an iPhone or iPad. You can
+    install Cloudpilot as an app by tapping the "Share" icon
     at the bottom of the screen (the little box with the arrow) and selecting
     "Add to Home Screen".
     <br/><br/>
@@ -53,8 +53,8 @@ const INVITATION_SAFARI_IOS = `
 `;
 
 const INVITATION_IOS = `
-    Howdy! It seems that you are using CloudpilotEmu on an iPhone or iPad. You can
-    install CloudpilotEmu as an app by opening it in Safari,
+    Howdy! It seems that you are using Cloudpilot on an iPhone or iPad. You can
+    install Cloudpilot as an app by opening it in Safari,
     tapping the "Share" icon at the bottom of the screen (the little box with the arrow)
     and selecting "Add to Home Screen"
     <br/><br/>

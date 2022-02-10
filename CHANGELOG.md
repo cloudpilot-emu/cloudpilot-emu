@@ -1,3 +1,7 @@
+# 1.6.4
+
+-   More wording.
+
 # 1.6.3
 
 -   A few more wording changes.
