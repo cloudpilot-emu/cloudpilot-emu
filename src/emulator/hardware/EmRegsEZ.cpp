@@ -62,7 +62,7 @@
 #endif
 
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 3;
+    constexpr uint32 SAVESTATE_VERSION = 4;
 
     constexpr uint16 UPSIZ = 0x1800;  // Mask to get the unprotected memory size from csDSelect.
     constexpr uint16 SIZ = 0x000E;    // Mask to get the memory size from csASelect.
@@ -441,7 +441,6 @@ EmRegsEZ::EmRegsEZ(void)
       fLastTmr1Status(0),
       fPortDEdge(0),
       fPortDDataCount(0),
-      rtcDayAtWrite(0),
       lastRtcAlarmCheck(-1),
       fUART(NULL) {}
 
@@ -457,7 +456,6 @@ EmRegsEZ::~EmRegsEZ(void) {}
 
 void EmRegsEZ::Initialize(void) {
     EmRegs::Initialize();
-    rtcDayAtWrite = 0;
     lastRtcAlarmCheck = -1;
     pwmActive = false;
     afterLoad = false;
@@ -580,11 +578,18 @@ void EmRegsEZ::DoSaveLoad(T& helper, uint32 version) {
         .DoDouble(lastProcessedSystemCycles);
 
     if (version < 3) {
+        // Obsolete timer stuff, removed in savestate version 3
         double dummy = 0;
         helper.DoDouble(dummy);
     }
 
-    helper.Do32(rtcDayAtWrite).Do32(lastRtcAlarmCheck);
+    if (version < 4) {
+        // Horribly broken RTC day stuff, removed in savestate version 4
+        uint32 dummy = 0;
+        helper.Do32(dummy);
+    }
+
+    helper.Do32(lastRtcAlarmCheck);
 
     if (version > 1) helper.DoBool(pwmActive);
 }
@@ -734,7 +739,7 @@ void EmRegsEZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, rtcIntStatusWrite, rtcIntStatus);
     INSTALL_HANDLER(StdRead, rtcIntEnableWrite, rtcIntEnable);
     INSTALL_HANDLER(StdRead, StdWrite, stopWatch);
-    INSTALL_HANDLER(rtcDayRead, rtcDayWrite, rtcDay);
+    INSTALL_HANDLER(StdRead, StdWrite, rtcDay);
     INSTALL_HANDLER(StdRead, StdWrite, rtcDayAlarm);
 
     INSTALL_HANDLER(StdRead, StdWrite, dramConfig);
@@ -1430,18 +1435,6 @@ uint32 EmRegsEZ::rtcHourMinSecRead(emuptr address, int size) {
                                       (sec << hwrEZ328RTCHourMinSecSecondsOffset));
 
     // Finish up by doing a standard read.
-
-    return EmRegsEZ::StdRead(address, size);
-}
-
-void EmRegsEZ::rtcDayWrite(emuptr address, int size, uint32 value) {
-    EmRegsEZ::StdWrite(address, size, value);
-
-    rtcDayAtWrite = Platform::GetMilliseconds() / (3600 * 24 * 1000);
-}
-
-uint32 EmRegsEZ::rtcDayRead(emuptr address, int size) {
-    WRITE_REGISTER(rtcDay, (rtcDayAtWrite + Platform::GetMilliseconds() / (1000)) & 0x01ff);
 
     return EmRegsEZ::StdRead(address, size);
 }

@@ -79,7 +79,7 @@ static const int kBaseAddressShift = 13;  // Shift to get base address from CSGB
 #endif
 
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 3;
+    constexpr uint32 SAVESTATE_VERSION = 4;
 
     double TimerTicksPerSecond(uint16 tmrControl, uint16 tmrPrescaler, int32 systemClockFrequency) {
         uint8 clksource = (tmrControl >> 1) & 0x7;
@@ -531,7 +531,6 @@ EmRegsVZ::~EmRegsVZ(void) {}
 
 void EmRegsVZ::Initialize(void) {
     EmRegs::Initialize();
-    rtcDayAtWrite = 0;
     lastRtcAlarmCheck = -1;
     pwmActive = false;
     afterLoad = false;
@@ -664,11 +663,18 @@ void EmRegsVZ::DoSaveLoad(T& helper, uint32 version) {
         .DoDouble(tmr2LastProcessedSystemCycles);
 
     if (version < 3) {
+        // Obsolete timer stuff, removed in savestate version 3
         double dummy = 0;
         helper.DoDouble(dummy).DoDouble(dummy);
     }
 
-    helper.Do32(rtcDayAtWrite).Do32(lastRtcAlarmCheck);
+    if (version < 4) {
+        // Horribly broken RTC day stuff, removed in savestate version 4
+        uint32 dummy = 0;
+        helper.Do32(dummy);
+    }
+
+    helper.Do32(lastRtcAlarmCheck);
 
     if (version > 1) helper.DoBool(pwmActive);
 }
@@ -873,7 +879,7 @@ void EmRegsVZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, rtcIntStatusWrite, rtcIntStatus);
     INSTALL_HANDLER(StdRead, rtcIntEnableWrite, rtcIntEnable);
     INSTALL_HANDLER(StdRead, StdWrite, stopWatch);
-    INSTALL_HANDLER(rtcDayRead, rtcDayWrite, rtcDay);
+    INSTALL_HANDLER(StdRead, StdWrite, rtcDay);
     INSTALL_HANDLER(StdRead, StdWrite, rtcDayAlarm);
 
     INSTALL_HANDLER(StdRead, StdWrite, dramConfig);
@@ -1631,12 +1637,6 @@ uint32 EmRegsVZ::rtcHourMinSecRead(emuptr address, int size) {
     return EmRegsVZ::StdRead(address, size);
 }
 
-void EmRegsVZ::rtcDayWrite(emuptr address, int size, uint32 value) {
-    EmRegsVZ::StdWrite(address, size, value);
-
-    rtcDayAtWrite = Platform::GetMilliseconds() / (3600 * 24 * 1000);
-}
-
 void EmRegsVZ::sdctlWrite(emuptr address, int size, uint32 value) {
     EmRegsVZ::StdWrite(address, size, value);
 
@@ -1656,12 +1656,6 @@ void EmRegsVZ::ApplySdctl() {
 
     if ((sdctl & 0x0c) == 0x08) gRAMBank_Mask |= 0x00800000;
     if ((sdctl & 0x30) == 0x10) gRAMBank_Mask |= 0x00400000;
-}
-
-uint32 EmRegsVZ::rtcDayRead(emuptr address, int size) {
-    WRITE_REGISTER(rtcDay, (rtcDayAtWrite + Platform::GetMilliseconds() / (1000)) & 0x01ff);
-
-    return EmRegsVZ::StdRead(address, size);
 }
 
 // ---------------------------------------------------------------------------

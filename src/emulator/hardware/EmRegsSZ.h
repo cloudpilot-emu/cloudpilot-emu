@@ -11,30 +11,29 @@
         (at your option) any later version.
 \* ===================================================================== */
 
-#ifndef EmRegsEZ_h
-#define EmRegsEZ_h
+#ifndef _EM_REGS_SZ_H_
+#define _EM_REGS_SZ_H_
 
 #include "ButtonEvent.h"
 #include "EmEvent.h"
 #include "EmHAL.h"             // EmHALHandler
 #include "EmRegs.h"            // EmRegs
+#include "EmStructs.h"         // RGBList
 #include "EmUARTDragonball.h"  // EmUARTDragonball::State
 
 class EmSPISlave;
 
-class EmRegsEZ : public EmRegs, public EmHALHandler {
+class EmRegsSZ : public EmRegs, public EmHALHandler {
+   public:
     using ButtonEventT = class ButtonEvent;
 
    public:
-    EmRegsEZ(void);
-    virtual ~EmRegsEZ(void);
+    EmRegsSZ(void);
+    virtual ~EmRegsSZ(void);
 
     // EmRegs overrides
     virtual void Initialize(void);
     virtual void Reset(Bool hardwareReset);
-    virtual void Save(Savestate&);
-    virtual void Save(SavestateProbe&);
-    virtual void Load(SavestateLoader&);
     virtual void Dispose(void);
 
     virtual void SetSubBankHandlers(void);
@@ -56,11 +55,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDScreenOn(void) = 0;
     virtual Bool GetLCDBacklightOn(void) = 0;
     virtual Bool GetLCDHasFrame(void);
-    virtual void GetLCDBeginEnd(emuptr&, emuptr&);
-    virtual bool CopyLCDFrame(Frame& frame);
-    virtual uint16 GetLCD2bitMapping();
 
-    virtual EmUARTDeviceType GetUARTDevice(int uartNum);
     virtual int32 GetDynamicHeapSize(void);
     virtual int32 GetROMSize(void);
     virtual emuptr GetROMBaseAddress(void);
@@ -74,97 +69,89 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) = 0;
 
     virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
-    void Cycle(uint64 systemCycles, Bool sleeping);
+    inline void Cycle(uint64 systemCycles, Bool sleeping);
 
    protected:
+    void HotSyncEvent(Bool buttonIsDown);
+
     virtual uint8 GetKeyBits(void);
     virtual uint16 ButtonToBits(ButtonEventT::Button btn);
     virtual EmSPISlave* GetSPISlave(void);
-    virtual void MarkScreen();
-    virtual void UnmarkScreen();
 
-    uint32 pllFreqSelRead(emuptr address, int size);
+    void UpdateInterrupts(void);
+    void UpdatePortXInterrupts(char);
+    void UpdateRTCInterrupts(void);
+
+    void UARTStateChanged(Bool sendTxData, int uartNum);
+    void UpdateUARTState(Bool refreshRxData, int uartNum);
+    void UpdateUARTInterrupts(const EmUARTDragonball::State& state, int uartNum);
+    void MarshalUARTState(EmUARTDragonball::State& state, int uartNum);
+    void UnmarshalUARTState(const EmUARTDragonball::State& state, int uartNum);
+
+    int GetPortFromAddress(emuptr address);
+    emuptr GetAddressFromPort(int port);
+
+   private:
     uint32 portXDataRead(emuptr address, int size);
     uint32 tmr1StatusRead(emuptr address, int size);
+    uint32 tmr2StatusRead(emuptr address, int size);
     uint32 tmrRegisterRead(emuptr address, int size);
-    uint32 uartRead(emuptr address, int size);
+    uint32 uart1Read(emuptr address, int size);
+    uint32 uart2Read(emuptr address, int size);
     uint32 rtcHourMinSecRead(emuptr address, int size);
+    uint32 rtcDayRead(emuptr address, int size);
 
+    void portDIntReqEnWrite(emuptr address, int size, uint32 value);
+    void csControl1Write(emuptr address, int size, uint32 value);
     void csASelectWrite(emuptr address, int size, uint32 value);
-    void csDSelectWrite(emuptr address, int size, uint32 value);
+    void csESelectWrite(emuptr address, int size, uint32 value);
     void intMaskHiWrite(emuptr address, int size, uint32 value);
     void intMaskLoWrite(emuptr address, int size, uint32 value);
     void intStatusHiWrite(emuptr address, int size, uint32 value);
     void portXDataWrite(emuptr address, int size, uint32 value);
-    void portDIntReqEnWrite(emuptr address, int size, uint32 value);
+    void portXIntStatusWrite(emuptr address, int size, uint32 value);
     void tmr1StatusWrite(emuptr address, int size, uint32 value);
+    void tmr2StatusWrite(emuptr address, int size, uint32 value);
+    void spiCont1Write(emuptr address, int size, uint32 value);
     void spiMasterControlWrite(emuptr address, int size, uint32 value);
-    void uartWrite(emuptr address, int size, uint32 value);
+    void tmrRegisterWrite(emuptr address, int size, uint32 value);
+    void uart1Write(emuptr address, int size, uint32 value);
+    void uart2Write(emuptr address, int size, uint32 value);
     void lcdRegisterWrite(emuptr address, int size, uint32 value);
-    void pllRegisterWrite(emuptr address, int size, uint32 value);
-    void tmr1RegisterWrite(emuptr address, int size, uint32 value);
     void rtcControlWrite(emuptr address, int size, uint32 value);
     void rtcIntStatusWrite(emuptr address, int size, uint32 value);
     void rtcIntEnableWrite(emuptr address, int size, uint32 value);
-    void pwmcWrite(emuptr address, int size, uint32 value);
-    void pwmsWrite(emuptr address, int size, uint32 value);
-    void pwmpWrite(emuptr address, int size, uint32 value);
+    void pllRegisterWrite(emuptr address, int size, uint32 value);
+    void adcIntControlWrite(emuptr address, int size, uint32 value);
 
-    void HotSyncEvent(Bool buttonIsDown);
-
-    void UpdateInterrupts(void);
-    void UpdatePortDInterrupts(void);
-    void UpdateRTCInterrupts(void);
-
-    Bool IDDetectAsserted(void);
-    UInt8 GetHardwareID(void);
-
-    void UARTStateChanged(Bool sendTxData);
-    void UpdateUARTState(Bool refreshRxData);
-    void UpdateUARTInterrupts(const EmUARTDragonball::State& state);
-    void MarshalUARTState(EmUARTDragonball::State& state);
-    void UnmarshalUARTState(const EmUARTDragonball::State& state);
-
-    int GetPort(emuptr address);
-
-   private:
-    double TimerTicksPerSecond();
+    void UpdateTimers();
     void HandleDayRollover();
-    void UpdateTimer();
-
-    void DispatchPwmChange();
-
-    template <typename T>
-    void DoSave(T& savestate);
-
-    template <typename T>
-    void DoSaveLoad(T& helper, uint32 version);
 
    protected:
-    HwrM68EZ328Type f68EZ328Regs;
+    HwrM68SZ328Type f68SZ328Regs;
     bool fHotSyncButtonDown;
     uint16 fKeyBits;
     uint16 fLastTmr1Status;
-    uint8 fPortDEdge;
+    uint16 fLastTmr2Status;
+    uint8 fPortXEdge['R' - 'D' + 1];
     uint32 fPortDDataCount;
 
-    double lastProcessedSystemCycles;
+    EmEvent<>::HandleT onDayRolloverHandle;
+
+    double tmr1LastProcessedSystemCycles;
+    double tmr2LastProcessedSystemCycles;
     uint64 nextTimerEventAfterCycle;
     uint64 systemCycles;
 
-    int32 lastRtcAlarmCheck;
-
-    bool markScreen{true};
-    EmEvent<>::HandleT onMarkScreenCleanHandle;
-    EmEvent<>::HandleT onDayRolloverHandle;
-
-    EmUARTDragonball* fUART;
+    uint32 rtcDayAtWrite{0};
+    int32 lastRtcAlarmCheck{-1};
 
     bool pwmActive{false};
     bool afterLoad{false};
     bool powerOffCached{false};
 
+    EmUARTDragonball* fUART[2];
     EmSPISlave* fSPISlaveADC{nullptr};
 };
 
-#endif /* EmRegsEZ_h */
+#endif  // _EM_REGS_SZ_H_

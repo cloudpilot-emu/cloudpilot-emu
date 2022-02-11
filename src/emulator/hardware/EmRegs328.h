@@ -104,7 +104,6 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     uint32 tmrRegisterRead(emuptr address, int size);
     uint32 uartRead(emuptr address, int size);
     uint32 rtcHourMinSecRead(emuptr address, int size);
-    uint32 rtcDayRead(emuptr address, int size);
 
     void csASelect1Write(emuptr address, int size, uint32 value);
     void csCSelect0Write(emuptr address, int size, uint32 value);
@@ -125,7 +124,6 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     void rtcControlWrite(emuptr address, int size, uint32 value);
     void rtcIntStatusWrite(emuptr address, int size, uint32 value);
     void rtcIntEnableWrite(emuptr address, int size, uint32 value);
-    void rtcDayWrite(emuptr address, int size, uint32 value);
     void pwmcWrite(emuptr address, int size, uint32 value);
     void pwmwWrite(emuptr address, int size, uint32 value);
     void pwmpWrite(emuptr address, int size, uint32 value);
