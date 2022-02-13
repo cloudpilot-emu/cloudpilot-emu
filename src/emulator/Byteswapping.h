@@ -80,6 +80,7 @@ inline void Byteswap(T*& v) {
 void Byteswap(HwrM68328Type&);
 void Byteswap(HwrM68EZ328Type&);
 void Byteswap(HwrM68VZ328Type&);
+void Byteswap(HwrM68SZ328Type&);
 void Byteswap(regstruct& r);
 void Byteswap(SED1375RegsType& p);
 

@@ -128,6 +128,7 @@ SOURCE_EMU = \
 	emulator/hardware/EmUARTDragonball.cpp \
 	emulator/hardware/EmRegsEZ.cpp \
 	emulator/hardware/EmRegsVZ.cpp \
+	emulator/hardware/EmRegsSZ.cpp \
 	emulator/hardware/EmSPISlaveADS784x.cpp \
 	emulator/hardware/EmRegsUSBPhilipsPDIUSBD12.cpp \
 	emulator/hardware/EmRegsSED1376.cpp \

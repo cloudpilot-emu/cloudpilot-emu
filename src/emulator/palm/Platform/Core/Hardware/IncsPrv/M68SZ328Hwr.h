@@ -3,17 +3,17 @@
  *
  *		 Copyright(c) 1995-1999, Palm Computing Inc., All Rights Reserved
  *
- *-------------------------------------------------------------------  
+ *-------------------------------------------------------------------
  * FileName:
  *		M68SZ328Hwr.h
  *
  * Description:
- *		Hardware Equates for the Motorola 68SZ328 Dragonball-SZ chip 
+ *		Hardware Equates for the Motorola 68SZ328 Dragonball-SZ chip
  *
  * History:
  *   	07/05/99  TJC	Created; integrated from M68VZ328Hwr.h
  *
- *******************************************************************/  
+ *******************************************************************/
 
 #ifdef	NON_PORTABLE						// So apps don't include this...
 
@@ -21,15 +21,13 @@
 #ifndef	__M68SZ328HWR_H__
 #define	__M68SZ328HWR_H__
 
-#if INCLUDE_SECRET_STUFF
-
 
 #include <PalmTypes.h>							// Touchdown includes
 
 
 //  Define location of the 68328 Dragonball chip
 //	Note: this is not the same as kMemoryStart in this chip
-#define	hwr68328Base		0xFFFFF000L					// Base address of 68328 
+#define	hwr68328Base		0xFFFFF000L					// Base address of 68328
 
 
 /***********************************************************************
@@ -331,7 +329,7 @@ struct HwrM68SZ328Type
 	UInt16	swID;						// $10006: Software ID Register
 	UInt16	ioDriveControl;				// $10008: I/O Drive Control Register
 
-	UInt8									___filler40[0x100-0x00A];				 
+	UInt8									___filler40[0x100-0x00A];
 
 	UInt16	csAGroupBase;				// $10100: Chip Select Group A Base Register
 	UInt16	csBGroupBase;				// $10102: Chip Select Group B Base Register
@@ -351,7 +349,7 @@ struct HwrM68SZ328Type
 
 	UInt16	emuCS;						// $10118: EMU Chip Select Register
 
-	UInt8									___filler43[0x150-0x11A];		
+	UInt8									___filler43[0x150-0x11A];
 
 	UInt16	csControl3;					// $10150: Chip Select Control Register 3
 
@@ -416,19 +414,19 @@ struct HwrM68SZ328Type
 	UInt8	portAData;					// $10401: Port A Data Register
 	UInt8	portAPullupEn;				// $10402: Port A Pullup Enable
 
-	UInt8									___filler52[0x408-0x403];	
+	UInt8									___filler52[0x408-0x403];
 
 	UInt8	portBDir;					// $10408: Port B Direction Register
 	UInt8	portBData;					// $10409: Port B Data Register
 	UInt8	portBPullupEn;				// $1040A: Port B Pullup Enable
-	UInt8	portBSelect;				// $1040B: Port B Select Register	
+	UInt8	portBSelect;				// $1040B: Port B Select Register
 
 	UInt8									___filler53[0x410-0x40C];
 
 	UInt8	portCDir;					// $10410: Port C Direction Register
 	UInt8	portCData;					// $10411: Port C Data Register
 	UInt8	portCPulldnEn;				// $10412: Port C Pulldown Enable
-	UInt8	portCSelect;				// $10413: Port C Select Register	
+	UInt8	portCSelect;				// $10413: Port C Select Register
 
 	UInt8									___filler54[0x418-0x414];
 
@@ -627,12 +625,12 @@ struct HwrM68SZ328Type
 	UInt32	sdramControlE;				// $10C00: SDRAM Control Register for Chip Select E
 	UInt32  sdramControlF;				// $10C04: SDRAM Control Register for Chip Select F
 	UInt32	edoControlE;				// $10C08: EDO Control Register for Chip Select E
-	UInt32	edoControlF;				// $10C0C: EDO Control Register for Chip Select F	
+	UInt32	edoControlF;				// $10C0C: EDO Control Register for Chip Select F
 	UInt16	secondaryControl;			// $10C10: Secondary Control Register
 
 	UInt8									___filler71[0xD00-0xC12];
 
-	UInt32	emuAddrCompare;				// $10D00: Emulation Address Compare Register   
+	UInt32	emuAddrCompare;				// $10D00: Emulation Address Compare Register
 	UInt32	emuAddrMask;				// $10D04: Emulation Address Mask Register
 	UInt16	emuControlCompare;			// $10D08: Emulation Control Compare Register
 	UInt16	emuControlMask;				// $10D0A: Emulation Control Mask Register
@@ -667,7 +665,7 @@ typedef volatile struct HwrM68SZ328Type*	HwrM68SZ328Ptr;
 #define hwrSZ328maskID0J75C								0x02
 #define hwrSZ328maskID1J75C								0x03
 #define hwrSZ328maskID0J83G								0x04
- 
+
 /************************************************************************
  * LCD Controller Bits
  ************************************************************************/
@@ -680,7 +678,7 @@ typedef volatile struct HwrM68SZ328Type*	HwrM68SZ328Ptr;
 #define  hwrSZ328LcdCursorXPosValueMask				0x1FF
 // lcdCursorYPos Register
 #define  hwrSZ328LcdCursorYPosValueMask				0x1FF
-	
+
 // lcdCursorSize Register
 #define hwrSZ328LcdCursorWidthMask					0x3F
    #define  hwrSZ328LcdCursorWidthOffset			0x8
@@ -758,15 +756,15 @@ typedef volatile struct HwrM68SZ328Type*	HwrM68SZ328Ptr;
 #define	hwrSZ328IntLoLCDC							0x0001
 
 // intControl bits
-// NOTE: These are different than that documented in the User's manual 
+// NOTE: These are different than that documented in the User's manual
 // for the DragonBall (see erratas).  The DragonBall is the same as the EZ.
 // Note 2: I am going to assume that these have not changed, since the SZ
 // manual is the same as the VZ's (even thought the manual is not followed) [TJC]
-#define	hwrSZ328IntCtlEdge1							0x0800	
+#define	hwrSZ328IntCtlEdge1							0x0800
 #define	hwrSZ328IntCtlEdge2							0x0400
 #define	hwrSZ328IntCtlEdge3							0x0200
 #define	hwrSZ328IntCtlEdge6							0x0100
-#define	hwrSZ328IntCtlPol1							0x8000	
+#define	hwrSZ328IntCtlPol1							0x8000
 #define	hwrSZ328IntCtlPol2							0x4000
 #define	hwrSZ328IntCtlPol3							0x2000
 #define	hwrSZ328IntCtlPol6							0x1000
@@ -975,7 +973,7 @@ typedef volatile struct HwrM68SZ328Type*	HwrM68SZ328Ptr;
 #define	hwrSZ328PLLControlSysDMADiv16				0x0300
 #define	hwrSZ328PLLControlSysDMADiv1				0x0400
 
-#define	hwrSZ328PLLControlPixDMADiv2				0x0000  
+#define	hwrSZ328PLLControlPixDMADiv2				0x0000
 #define	hwrSZ328PLLControlPixDMADiv4				0x0800
 #define	hwrSZ328PLLControlPixDMADiv8				0x1000
 #define	hwrSZ328PLLControlPixDMADiv16				0x1800
@@ -1070,8 +1068,6 @@ typedef volatile struct HwrM68SZ328Type*	HwrM68SZ328Ptr;
 #define	hwrSZ328SPIMControlInvPolarity				0x0010
 #define	hwrSZ328SPIMControlBitsMask					0x000F
 
-
-#endif	// INCLUDE_SECRET_STUFF
 
 #endif // __M68SZ328_H__
 
