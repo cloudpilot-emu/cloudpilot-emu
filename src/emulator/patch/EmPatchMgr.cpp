@@ -53,8 +53,8 @@ static TailPatchIndex gInstalledTailpatches;
 //	Private functions
 // ======================================================================
 
-//#define LOG_SYSCALLS
-//#define LOG_LIBCALLS
+#define LOG_SYSCALLS
+#define LOG_LIBCALLS
 #ifdef LOG_SYSCALLS
     #include "DecodeSyscalls.h"
 #endif
@@ -411,7 +411,7 @@ EmPatchModule* EmPatchMgr::GetLibPatchTable(uint16 refNum) {
         string libName = ::GetLibraryName(refNum);
 
 #ifdef LOG_LIBCALLS
-        cout << "library " << refNum << " = " << libName;
+        cout << dec << "library " << refNum << " = " << libName << endl << flush;
 #endif
 
         EmPatchModule* patchModuleIP = NULL;
@@ -499,7 +499,8 @@ void EmPatchMgr::GetPatches(const SystemCallContext& context, HeadpatchProc& hp,
     // Otherwise, see if this is a call to a patched library
     else {
 #ifdef LOG_LIBCALLS
-        cout << "libcall: " << context.fExtra << " , selector " << hex << context.fTrapIndex << endl
+        cout << dec << "libcall: " << context.fExtra << " , selector " << hex << context.fTrapIndex
+             << endl
              << flush;
 #endif
 

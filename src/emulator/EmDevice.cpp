@@ -76,6 +76,8 @@
 #include "EmRegsPLDPalmVIIEZ.h"
 #include "EmRegsSED1375.h"
 #include "EmRegsSED1376.h"
+#include "EmRegsSZNaples.h"
+#include "EmRegsSZRedwood.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
 #include "EmRegsUsbCLIE.h"
 #include "EmRegsUsbPegN700C.h"
@@ -153,6 +155,7 @@ enum  // DeviceType
     kDevicePEGN600C,
     kDevicePEGT600,
     kDevicePEGN700C,
+    kDeviceYSX1230,
     kDeviceLast
 };
 
@@ -503,6 +506,14 @@ static const DeviceInfo kDeviceInfo[] = {
      UNSUPPORTED,
      UNSUPPORTED,
      {{'sony', 'ysmt'}}},
+    {kDeviceYSX1230,
+     "YSX1230 series",
+     {"YSX1230"},
+     kSupports68SZ328,
+     8192,
+     UNSUPPORTED,
+     UNSUPPORTED,
+     {{'sony', 'npls'}}},
 #if 0
     // ===== Handspring devices =====
     {
@@ -1178,6 +1189,16 @@ void EmDevice::CreateRegs(void) const {
             break;
         }
 
+        case kDeviceYSX1230: {
+            EmBankRegs::AddSubBank(new EmRegsSzRedwood());
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
+            EmBankRegs::AddSubBank(framebuffer);
+
+            EmBankRegs::AddSubBank(new EmRegsUsbPegN700C(0x11000000L));
+            break;
+        }
+
 #if 0
         case kDeviceVisor:
             EmBankRegs::AddSubBank(new EmRegsEZVisor);
@@ -1261,6 +1282,7 @@ uint32 EmDevice::FramebufferSize() const {
         case kDevicePEGN600C:
         case kDevicePEGT600:
         case kDevicePEGN700C:
+        case kDeviceYSX1230:
             return 256;
 
         default:
@@ -1474,6 +1496,7 @@ bool EmDevice::EmulatesDockStatus() const {
         case kDevicePalmI705:
         case kDevicePalmI710:
         case kDevicePalmPacifiC:
+        case kDeviceYSX1230:
             return false;
 
         default:
@@ -1493,6 +1516,7 @@ bool EmDevice::IsClie() const {
         case kDevicePEGN600C:
         case kDevicePEGT600:
         case kDevicePEGN700C:
+        case kDeviceYSX1230:
             return true;
 
         default:
@@ -1508,6 +1532,7 @@ int EmDevice::DigitizerScale() const {
         case kDevicePEGN600C:
         case kDevicePEGT600:
         case kDevicePEGN700C:
+        case kDeviceYSX1230:
             return 2;
 
         default:
@@ -1523,6 +1548,7 @@ ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
         case kDevicePEGN600C:
         case kDevicePEGT600:
         case kDevicePEGN700C:
+        case kDeviceYSX1230:
             return ScreenDimensions::screen320x320;
 
         case kDeviceHandEra330:

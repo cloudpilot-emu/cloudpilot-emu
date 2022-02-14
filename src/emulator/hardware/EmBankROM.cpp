@@ -1201,6 +1201,8 @@ Bool Card::Supports328(const EmAliasCardHeaderType<LAS>& cardHdr) {
 // ---------------------------------------------------------------------------
 
 Bool Card::SupportsEZ(const EmAliasCardHeaderType<LAS>& cardHdr) {
+    if (gSession->GetDevice().Supports68SZ328()) return false;
+
     Bool ezMode = false;
 
     if (cardHdr.hdrVersion >= 3 && (cardHdr.flags & memCardHeaderFlagEZ)) {
@@ -1216,6 +1218,8 @@ Bool Card::SupportsEZ(const EmAliasCardHeaderType<LAS>& cardHdr) {
 #define memCardHeaderFlagVZ 0x0040  // ROM Supports 68VZ328 processor
 
 Bool Card::SupportsVZ(const EmAliasCardHeaderType<LAS>& cardHdr) {
+    if (gSession->GetDevice().Supports68SZ328()) return false;
+
     Bool vzMode = false;
 
     if (cardHdr.hdrVersion >= 3 && (cardHdr.flags & memCardHeaderFlagVZ)) {
@@ -1231,6 +1235,8 @@ Bool Card::SupportsVZ(const EmAliasCardHeaderType<LAS>& cardHdr) {
 #define memCardHeaderFlagSZ 0x0080  // ROM Supports 68SZ328 processor
 
 Bool Card::SupportsSZ(const EmAliasCardHeaderType<LAS>& cardHdr) {
+    if (gSession->GetDevice().Supports68SZ328()) return true;
+
     Bool szMode = false;
 
     if (cardHdr.hdrVersion >= 3 && (cardHdr.flags & memCardHeaderFlagSZ)) {

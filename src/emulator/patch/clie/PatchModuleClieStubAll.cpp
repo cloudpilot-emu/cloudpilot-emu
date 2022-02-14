@@ -17,6 +17,10 @@ Err PatchModuleClieStubAll::GetTailpatch(uint16 index, TailpatchProc &procP) {
 bool PatchModuleClieStubAll::HandlesLibrary(const string &libname) {
     if (libname == "Sony Sound Library") return true;
     if (libname == "Sony Irc Library") return true;
+    if (libname == "Sony MgSys Library") return true;
+    if (libname == "Sony HR Library") return true;
+    if (libname == "Sony Rmc Library") return true;
+    if (libname == "Sony MsScsi Library") return true;
 
     return false;
 }

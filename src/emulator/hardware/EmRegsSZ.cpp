@@ -32,14 +32,14 @@ static const uint16 UPSIZMask = 0x1800;  // Mask to get the unprotected memory s
 static const uint16 SIZMask = 0x000E;    // Mask to get the memory size from csASelect.
 static const uint16 ENMask = 0x0001;     // Mask to get the enable bit from csASelect.
 
-static const int UPSIZShift = 11;
+// static const int UPSIZShift = 11;
 static const int SIZShift = 1;
 // static const int ENShift = 0;
 
 static const uint16 EUPS2Mask = 0x0040;
 static const uint16 EUPENMask = 0x4000;
 
-static const int EUPS2Shift = 5;
+// static const int EUPS2Shift = 5;
 
 static const int kBaseAddressShift = 16;  // Shift to get base address from CSGBx register value
 
@@ -1896,6 +1896,8 @@ Bool EmRegsSZ::GetLCDHasFrame(void) { return false; }
 // ---------------------------------------------------------------------------
 
 int32 EmRegsSZ::GetDynamicHeapSize(void) {
+    // CSTODO: Fix
+#if 0
     int32 result = 0;
 
     uint16 csControl = READ_REGISTER(csControl1);
@@ -1923,7 +1925,12 @@ int32 EmRegsSZ::GetDynamicHeapSize(void) {
         result = (32 * 1024L) << csEUPSIZ;
     }
 
+    cout << dec << "dheap size " << result << endl << flush;
+
     return result;
+#endif
+
+    return 1024 * 1024;
 }
 
 // ---------------------------------------------------------------------------
@@ -2542,8 +2549,11 @@ void EmRegsSZ::tmr1StatusWrite(emuptr address, int size, uint32 value) {
     UNUSED_PARAM(address)
     UNUSED_PARAM(size)
 
-    EmAssert(size == 2);  // This function's a hell of a lot easier to write if
-                          // we assume only full-register access.
+    EmAssert(size == 2 || size == 4);  // This function's a hell of a lot easier to write if
+                                       // we assume only full-register access.
+
+    // CSTODO: Review
+    value &= 0xffff;
 
     // Get the current value.
 
@@ -2579,8 +2589,11 @@ void EmRegsSZ::tmr2StatusWrite(emuptr address, int size, uint32 value) {
     UNUSED_PARAM(address)
     UNUSED_PARAM(size)
 
-    EmAssert(size == 2);  // This function's a hell of a lot easier to write if
-                          // we assume only full-register access.
+    EmAssert(size == 2 || size == 4);  // This function's a hell of a lot easier to write if
+                                       // we assume only full-register access.
+
+    // CSTODO: Review
+    value &= 0xffff;
 
     // Get the current value.
 

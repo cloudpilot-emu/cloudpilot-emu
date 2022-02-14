@@ -42,6 +42,7 @@ static EmAddressBank gAddressBank = {EmBankSRAM::GetLong,        EmBankSRAM::Get
 static const emuptr kMemoryStart = 0x10000000;
 static const emuptr kMemoryStartEZ = 0x00000000;
 static const emuptr kMemoryStartVZ = 0x00000000;
+static const emuptr kMemoryStartSZ = 0x00000000;
 
 emuptr gMemoryStart;
 
@@ -96,6 +97,8 @@ void EmBankSRAM::Initialize() {
         gMemoryStart = kMemoryStartEZ;
     } else if (gSession->GetDevice().Supports68VZ328()) {
         gMemoryStart = kMemoryStartVZ;
+    } else if (gSession->GetDevice().Supports68SZ328()) {
+        gMemoryStart = kMemoryStartSZ;
     } else {
         gMemoryStart = kMemoryStart;
     }
