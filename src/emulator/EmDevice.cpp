@@ -510,7 +510,7 @@ static const DeviceInfo kDeviceInfo[] = {
      "YSX1230 series",
      {"YSX1230"},
      kSupports68SZ328,
-     8192,
+     16384,
      UNSUPPORTED,
      UNSUPPORTED,
      {{'sony', 'npls'}}},
@@ -1250,50 +1250,6 @@ Bool EmDevice::HasFlash(void) const {
 
 /***********************************************************************
  *
- * FUNCTION:    EmDevice::MinRAMSize
- *
- * DESCRIPTION: Returns the minimum RAM size that this device should
- *				be configured with.  Some devices can't operate lower
- *				than the levels they ship with, as they run out of
- *				memory and crash.
- *
- * PARAMETERS:  None
- *
- * RETURNED:    Minimum RAM size, in K (so 1024 == 1 Meg).
- *
- ***********************************************************************/
-
-RAMSizeType EmDevice::MinRAMSize(void) const {
-    const DeviceInfo* info = this->GetDeviceInfo();
-    return info->fMinRAMSize;
-}
-
-uint32 EmDevice::FramebufferSize() const {
-    switch (fDeviceID) {
-        case kDevicePalmIIIc:
-        case kDevicePalmM505:
-        case kDevicePalmM515:
-        case kDeviceVisorPrism:
-            return 80;
-
-        case kDevicePalmPacifiC:
-        case kDevicePalmI710:
-        case kDevicePalmM130:
-        case kDevicePEGN600C:
-        case kDevicePEGT600:
-        case kDevicePEGN700C:
-        case kDeviceYSX1230:
-            return 256;
-
-        default:
-            return 0;
-    }
-}
-
-uint32 EmDevice::TotalMemorySize() const { return MinRAMSize() + FramebufferSize(); }
-
-/***********************************************************************
- *
  * FUNCTION:    EmDevice::HardwareID
  *
  * DESCRIPTION: Returns the hardware ID of this device.  This ID is the
@@ -1488,6 +1444,35 @@ int EmDevice::GetDeviceID(const char* s) const {
 
 bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }
 
+RAMSizeType EmDevice::MinRAMSize(void) const {
+    const DeviceInfo* info = this->GetDeviceInfo();
+    return info->fMinRAMSize;
+}
+
+uint32 EmDevice::FramebufferSize() const {
+    switch (fDeviceID) {
+        case kDevicePalmIIIc:
+        case kDevicePalmM505:
+        case kDevicePalmM515:
+        case kDeviceVisorPrism:
+            return 80;
+
+        case kDevicePalmPacifiC:
+        case kDevicePalmI710:
+        case kDevicePalmM130:
+        case kDevicePEGN600C:
+        case kDevicePEGT600:
+        case kDevicePEGN700C:
+        case kDeviceYSX1230:
+            return 256;
+
+        default:
+            return 0;
+    }
+}
+
+uint32 EmDevice::TotalMemorySize() const { return MinRAMSize() + FramebufferSize(); }
+
 bool EmDevice::EmulatesDockStatus() const {
     if (Supports68328()) return false;
 
@@ -1496,7 +1481,6 @@ bool EmDevice::EmulatesDockStatus() const {
         case kDevicePalmI705:
         case kDevicePalmI710:
         case kDevicePalmPacifiC:
-        case kDeviceYSX1230:
             return false;
 
         default:
@@ -1525,6 +1509,16 @@ bool EmDevice::IsClie() const {
 }
 
 bool EmDevice::NeedsBatteryPatch() const { return Supports68328() || IsClie(); }
+
+bool EmDevice::NeedsBatteryGlobalsHack() const {
+    switch (fDeviceID) {
+        case kDeviceYSX1230:
+            return true;
+
+        default:
+            return false;
+    }
+}
 
 int EmDevice::DigitizerScale() const {
     switch (fDeviceID) {

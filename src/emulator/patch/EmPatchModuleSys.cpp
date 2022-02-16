@@ -216,14 +216,24 @@ namespace {
         return kExecuteROM;
     }
 
+    void TailpatchHwrBattery(void) {
+        if (!gSession->GetDevice().NeedsBatteryGlobalsHack()) return;
+
+        CEnableFullAccess munge;
+
+        EmLowMem::fgLowMem.globals.hwrBatteryLevel = 0xff;
+        EmLowMem::fgLowMem.globals.hwrBatteryPercent = 100;
+        EmLowMem::fgLowMem.globals.sysBatteryMinThreshold = 0;
+    }
+
     CallROMType HeadpatchSysLibLoad(void) {
         CALLED_SETUP("Err", "UInt32 libType, UInt32 libCreator, UInt16* refNumP");
 
         CALLED_GET_PARAM_VAL(UInt32, libType);
         CALLED_GET_PARAM_VAL(UInt32, libCreator);
 
-        if (gSession->GetDevice().IsClie() && libType == sysResTLibrary && libCreator == 'SlMa') {
-            // unsupported Audio Library on POSE
+        if (gSession->GetDevice().IsClie() && libType == sysResTLibrary &&
+            (libCreator == 'SlMa' || libCreator == 'SlJU')) {
             PUT_RESULT_VAL(Err, sysErrLibNotFound);
             return kSkipROM;
         }
@@ -396,7 +406,7 @@ namespace {
         {sysTrapSysSemaphoreWait, HeadpatchSysSemaphoreWait, NULL},
         {sysTrapDbgMessage, HeadpatchDbgMessage, NULL},
         {sysTrapHwrBatteryLevel, HeadpatchHwrBatteryLevel, NULL},
-        {sysTrapHwrBattery, HeadpatchHwrBattery, NULL},
+        {sysTrapHwrBattery, HeadpatchHwrBattery, TailpatchHwrBattery},
         {sysTrapSysLibLoad, HeadpatchSysLibLoad, NULL},
         {sysTrapHwrIRQ4Handler, HeadpatchHwrIRQ4Handler, TailpatchHwrIRQ4Handler},
         {0, NULL, NULL}};

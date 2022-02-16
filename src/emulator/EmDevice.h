@@ -59,10 +59,6 @@ class EmDevice {
 
     Bool HasFlash(void) const;
 
-    RAMSizeType MinRAMSize(void) const;
-    uint32 FramebufferSize() const;
-    uint32 TotalMemorySize() const;
-
     long HardwareID(void) const;
     long HardwareSubID(void) const;
 
@@ -70,12 +66,17 @@ class EmDevice {
     string GetIDString(void) const;
     vector<string> GetIDStrings(void) const;
 
+    RAMSizeType MinRAMSize(void) const;
+    uint32 FramebufferSize() const;
+    uint32 TotalMemorySize() const;
+
     bool IsValid() const;
     bool EmulatesDockStatus() const;
     bool NeedsSDCTLHack() const;
     bool HasCustomDigitizerTransform() const;
     bool IsClie() const;
     bool NeedsBatteryPatch() const;
+    bool NeedsBatteryGlobalsHack() const;
     int DigitizerScale() const;
 
     ScreenDimensions::Kind GetScreenDimensions() const;
