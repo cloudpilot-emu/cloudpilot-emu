@@ -133,31 +133,54 @@ EmCPU68K* gCPU68K;
 
 namespace {
 #ifdef TRACE_FUNCTION_CALLS
+    const char* getFunctionName(emuptr address) {
+        static char fname[33];
+        memset(fname, 0, 33);
+
+        emuptr addr;
+        for (addr = address; addr - address < 0x1000; addr += 2) {
+            if (EmMemGet16(addr) == 0x4e75) break;
+        }
+
+        if (addr - address >= 0x1000) {
+            strcpy(fname, "[unknown]");
+        } else {
+            int i;
+
+            for (i = 0; i < 32; i++) {
+                fname[i] = EmMemGet8(addr + 3 + i);
+                if (fname[i] == 0 || fname[i] > 127 || fname[i] < 0x20) break;
+            }
+        }
+
+        return fname;
+    }
+
+    const char* getCaller() {
+        CEnableFullAccess munge;
+
+        if (m68k_areg(regs, 7) >= 1024 * 1024) {
+            return "[invalid]";
+        }
+
+        return getFunctionName(EmMemGet32(m68k_areg(regs, 7)));
+    }
+
+    emuptr callerAddress() {
+        CEnableFullAccess munge;
+
+        if (m68k_areg(regs, 7) >= 1024 * 1024) {
+            return 0;
+        }
+
+        return EmMemGet32(m68k_areg(regs, 7));
+    }
+
     void traceFunctionCalls(uint16 opcode, emuptr pc) {
         if (opcode == 0x4e56 && (pc & 0x10000000) == 0x10000000) {
-            emuptr addr;
-            for (addr = pc; addr - pc < 0x1000; addr += 2) {
-                if (EmMemGet16(addr) == 0x4e75) break;
-            }
-
-            if (addr - pc >= 0x1000) {
-                cout << "no return found at " << hex << pc << endl << flush;
-            } else {
-                char fname[32];
-                int i;
-
-                for (i = 0; i < 32; i++) {
-                    fname[i] = EmMemGet8(addr + 3 + i);
-                    if (fname[i] == 0 || fname[i] > 127 || fname[i] < 0x20) break;
-                }
-
-                if (i < 32 && fname[i] == 0) {
-                    cout << "call -> " << hex << (pc & 0x0fffffff) << " : " << fname << endl
-                         << flush;
-                } else {
-                    cout << "call ->" << hex << (pc & 0x0fffffff) << endl << flush;
-                }
-            }
+            cout << "call ->" << hex << (pc & 0x0fffffff) << " : " << getFunctionName(pc)
+                 << " from " << callerAddress() << " (" << getCaller() << ")" << endl
+                 << flush;
         }
 
         if (opcode == 0x4e75 && (pc & 0x10000000) == 0x10000000) {
