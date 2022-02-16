@@ -53,8 +53,8 @@ static TailPatchIndex gInstalledTailpatches;
 //	Private functions
 // ======================================================================
 
-#define LOG_SYSCALLS
-#define LOG_LIBCALLS
+// #define LOG_SYSCALLS
+// #define LOG_LIBCALLS
 #ifdef LOG_SYSCALLS
     #include "DecodeSyscalls.h"
 #endif
