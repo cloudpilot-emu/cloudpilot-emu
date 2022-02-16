@@ -15,7 +15,7 @@
                      (WriteFunction)&EmRegsUsbPegN700C::write, addressof(reg), sizeof(fRegs.reg))
 
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 1;
+    constexpr uint32 SAVESTATE_VERSION = 2;
 }
 
 // ---------------------------------------------------------------------------
@@ -74,6 +74,9 @@ void EmRegsUsbPegN700C::Reset(Bool hardwareReset) {
         memset(&fRegs, 0, sizeof(fRegs));
         fRegs.USB0C06 = 0xFC;
         fRegs.USB0C07 = 0x00;
+
+        fSecondFlg = false;
+        fSecondCnt = 0;
     }
 }
 
@@ -115,7 +118,7 @@ void EmRegsUsbPegN700C::Load(SavestateLoader& loader) {
     }
 
     LoadChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, version);
 }
 
 template <typename T>
@@ -126,12 +129,16 @@ void EmRegsUsbPegN700C::DoSave(T& savestate) {
     chunk->Put32(SAVESTATE_VERSION);
 
     SaveChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
 template <typename T>
-void EmRegsUsbPegN700C::DoSaveLoad(T& helper) {
+void EmRegsUsbPegN700C::DoSaveLoad(T& helper, uint32 version) {
     helper.Do(typename T::Pack8() << fRegs.USB0C06 << fRegs.USB0C07);
+
+    if (version > 1) {
+        helper.DoBool(fSecondFlg).Do8(fSecondCnt);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -224,4 +231,33 @@ void EmRegsUsbPegN700C::Write(emuptr address, int size, uint32 value)
 //		� EmRegsUSBforPegN700C::Read
 // ---------------------------------------------------------------------------
 
-uint32 EmRegsUsbPegN700C::Read(emuptr address, int size) { return this->StdReadBE(address, size); }
+uint32 EmRegsUsbPegN700C::Read(emuptr address, int size) {
+    uint32 rstValue = this->StdReadBE(address, size);
+
+    if (address == (GetAddressStart() + 0x0C06) && size == 2) {
+        if (fSecondFlg == true) {
+            switch (fSecondCnt) {
+                case 0:
+                    fSecondCnt = 1;
+                    rstValue = 0xFC00;
+                    break;
+
+                case 1:
+                    fSecondCnt = 2;
+                    rstValue = 0x0001;
+                    break;
+
+                case 2:
+                    fSecondCnt = 0;
+                    fSecondFlg = false;
+                    fRegs.USB0C06 = 0xfc;
+                    rstValue = 0;
+
+                    break;
+            }
+        }
+        if (rstValue == 0x0000 && fSecondFlg == false) fSecondFlg = true;
+    }
+
+    return rstValue;
+}

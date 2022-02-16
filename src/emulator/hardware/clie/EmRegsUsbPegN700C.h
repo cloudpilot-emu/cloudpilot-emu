@@ -79,10 +79,13 @@ class EmRegsUsbPegN700C : public EmRegs {
     void DoSave(T& savestate);
 
     template <typename T>
-    void DoSaveLoad(T& helper);
+    void DoSaveLoad(T& helper, uint32 version);
 
     emuptr fBaseAddr;
     HwrRegsUsbPegN700C fRegs;
+
+    bool fSecondFlg;   // for Redwood & Naples
+    uint8 fSecondCnt;  // for Redwood & Naples
 };
 
 #endif  // _EM_REGS_USB_PEG_N700C_
