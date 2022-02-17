@@ -85,6 +85,7 @@ class EmHALHandler {
     virtual uint16 GetLEDState(void);
 
     virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
+    virtual bool EnableRAM();
 
    protected:
     EmHALHandler* GetNextHandler(void) { return fNextHandler; }
@@ -150,6 +151,7 @@ class EmHAL {
     static uint16 GetLEDState(void);
 
     static uint32 CyclesToNextInterrupt(uint64 systemCycles);
+    static bool EnableRAM();
 
     static EmEvent<> onSystemClockChange;
     static EmEvent<double, double> onPwmChange;

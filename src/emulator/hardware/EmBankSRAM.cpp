@@ -17,6 +17,7 @@
 #include "DebugMgr.h"      // Debug::CheckStepSpy
 #include "EmCPU68K.h"      // gCPU68K
 #include "EmCommon.h"
+#include "EmHAL.h"
 #include "EmMemory.h"   // gRAMBank_Size, gRAM_Memory, gMemoryAccess
 #include "EmSession.h"  // GetDevice
 #include "EmSystemState.h"
@@ -34,6 +35,12 @@ static EmAddressBank gAddressBank = {EmBankSRAM::GetLong,        EmBankSRAM::Get
                                      EmBankSRAM::SetWord,        EmBankSRAM::SetByte,
                                      EmBankSRAM::GetRealAddress, EmBankSRAM::ValidAddress,
                                      EmBankSRAM::GetMetaAddress, EmBankSRAM::AddOpcodeCycles};
+
+static EmAddressBank gAddressBankDisabled = {
+    EmBankSRAM::GetDummy,       EmBankSRAM::GetDummy,     EmBankSRAM::GetDummy,
+    EmBankSRAM::SetDummy,       EmBankSRAM::SetDummy,     EmBankSRAM::SetDummy,
+    EmBankSRAM::GetRealAddress, EmBankSRAM::ValidAddress, EmBankSRAM::GetMetaAddress,
+    EmBankSRAM::AddOpcodeCycles};
 
 // Note: I'd've used hwrCardBase0 here, except that that
 // changes on different hardware. It's 0x10000000 in some
@@ -163,7 +170,8 @@ void EmBankSRAM::SetBankHandlers(void) {
     // physical memory is actually accessed.
     if (gRAMSize == 16 * 1024 * 1024) numBanks *= 2;
 
-    Memory::InitializeBanks(gAddressBank, EmMemBankIndex(gMemoryStart), numBanks);
+    Memory::InitializeBanks(EmHAL::EnableRAM() ? gAddressBank : gAddressBankDisabled,
+                            EmMemBankIndex(gMemoryStart), numBanks);
 }
 
 // ---------------------------------------------------------------------------
@@ -372,6 +380,10 @@ void EmBankSRAM::SetByte(emuptr address, uint32 value) {
 
     // Debug::CheckStepSpy(address, sizeof(uint8));
 }
+
+uint32 EmBankSRAM::GetDummy(emuptr address) { return 0; }
+
+void EmBankSRAM::SetDummy(emuptr address, uint32 value) {}
 
 // ---------------------------------------------------------------------------
 //		� EmBankSRAM::ValidAddress

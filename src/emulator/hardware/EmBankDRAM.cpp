@@ -59,6 +59,12 @@ static EmAddressBank gAddressBank = {EmBankDRAM::GetLong,        EmBankDRAM::Get
                                      EmBankDRAM::GetRealAddress, EmBankDRAM::ValidAddress,
                                      EmBankDRAM::GetMetaAddress, EmBankDRAM::AddOpcodeCycles};
 
+static EmAddressBank gAddressBankDisabled = {
+    EmBankDRAM::GetDummy,       EmBankDRAM::GetDummy,     EmBankDRAM::GetDummy,
+    EmBankDRAM::SetDummy,       EmBankDRAM::SetDummy,     EmBankDRAM::SetDummy,
+    EmBankDRAM::GetRealAddress, EmBankDRAM::ValidAddress, EmBankDRAM::GetMetaAddress,
+    EmBankDRAM::AddOpcodeCycles};
+
 // ---------------------------------------------------------------------------
 #pragma mark ===== Inlines
 // ---------------------------------------------------------------------------
@@ -160,7 +166,8 @@ void EmBankDRAM::SetBankHandlers(void) {
     uint32 sixtyFourK = 64 * 1024L;
     uint32 numBanks = (gDynamicHeapSize + sixtyFourK - 1) / sixtyFourK;
 
-    Memory::InitializeBanks(gAddressBank, EmMemBankIndex(kMemoryStart), numBanks);
+    Memory::InitializeBanks(EmHAL::EnableRAM() ? gAddressBank : gAddressBankDisabled,
+                            EmMemBankIndex(kMemoryStart), numBanks);
 }
 
 // ---------------------------------------------------------------------------
@@ -296,6 +303,10 @@ void EmBankDRAM::SetByte(emuptr address, uint32 value) {
 
     if (MetaMemory::IsScreenBuffer8(InlineGetMetaAddress(address))) gSystemState.MarkScreenDirty();
 }
+
+uint32 EmBankDRAM::GetDummy(emuptr address) { return 0; }
+
+void EmBankDRAM::SetDummy(emuptr address, uint32 value) {}
 
 // ---------------------------------------------------------------------------
 //		� EmBankDRAM::ValidAddress

@@ -69,6 +69,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) = 0;
 
     virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
+    virtual bool EnableRAM();
     inline void Cycle(uint64 systemCycles, Bool sleeping);
 
    protected:
@@ -122,6 +123,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     void rtcIntEnableWrite(emuptr address, int size, uint32 value);
     void pllRegisterWrite(emuptr address, int size, uint32 value);
     void adcIntControlWrite(emuptr address, int size, uint32 value);
+    void sdramControlEWrite(emuptr address, int size, uint32 value);
 
     void UpdateTimers();
     void HandleDayRollover();

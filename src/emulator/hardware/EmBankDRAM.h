@@ -29,6 +29,8 @@ class EmBankDRAM {
     static void SetLong(emuptr address, uint32 value);
     static void SetWord(emuptr address, uint32 value);
     static void SetByte(emuptr address, uint32 value);
+    static uint32 GetDummy(emuptr address);
+    static void SetDummy(emuptr address, uint32 value);
     static int ValidAddress(emuptr address, uint32 size);
     static uint8* GetRealAddress(emuptr address);
     static uint8* GetMetaAddress(emuptr address);

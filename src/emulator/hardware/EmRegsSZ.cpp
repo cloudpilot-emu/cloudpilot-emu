@@ -1109,6 +1109,7 @@ void EmRegsSZ::Initialize(void) {
 
 void EmRegsSZ::Reset(Bool hardwareReset) {
     EmRegs::Reset(hardwareReset);
+
     if (hardwareReset) {
         tmr1LastProcessedSystemCycles = systemCycles;
         tmr2LastProcessedSystemCycles = systemCycles;
@@ -1542,7 +1543,7 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, rtcDay);
     INSTALL_HANDLER(StdRead, StdWrite, rtcDayAlarm);
 
-    INSTALL_HANDLER(StdRead, StdWrite, sdramControlE);
+    INSTALL_HANDLER(StdRead, sdramControlEWrite, sdramControlE);
     INSTALL_HANDLER(StdRead, StdWrite, sdramControlF);
 
     INSTALL_HANDLER(StdRead, StdWrite, edoControlE);
@@ -3704,4 +3705,12 @@ void EmRegsSZ::HandleDayRollover() {
         WRITE_REGISTER(rtcIntStatus, READ_REGISTER(rtcIntStatus) | hwrSZ328RTCIntStatus24Hr);
         UpdateRTCInterrupts();
     }
+}
+
+bool EmRegsSZ::EnableRAM() { return (READ_REGISTER(sdramControlE) >> 28) == 0x8; }
+
+void EmRegsSZ::sdramControlEWrite(emuptr address, int size, uint32 value) {
+    EmRegsSZ::StdWrite(address, size, value);
+
+    gSession->ScheduleResetBanks();
 }

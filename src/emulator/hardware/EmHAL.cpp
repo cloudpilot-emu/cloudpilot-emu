@@ -481,6 +481,11 @@ uint32 EmHAL::CyclesToNextInterrupt(uint64 systemCycles) {
     return EmHAL::GetRootHandler()->CyclesToNextInterrupt(systemCycles);
 }
 
+bool EmHAL::EnableRAM() {
+    EmAssert(EmHAL::GetRootHandler);
+    return EmHAL::GetRootHandler()->EnableRAM();
+}
+
 void EmHAL::AddCycleConsumer(CycleHandler handler, void* context) {
     for (const auto consumer : cycleConsumers) {
         if (consumer.handler == handler && consumer.context == context) return;
@@ -798,4 +803,10 @@ uint32 EmHALHandler::CyclesToNextInterrupt(uint64 systemCycles) {
 
     EmAssert(this->GetNextHandler());
     return this->GetNextHandler()->CyclesToNextInterrupt(systemCycles);
+}
+
+bool EmHALHandler::EnableRAM() {
+    if (!this->GetNextHandler()) return true;
+
+    return this->GetNextHandler()->EnableRAM();
 }
