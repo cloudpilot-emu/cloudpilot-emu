@@ -110,6 +110,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     void intMaskLoWrite(emuptr address, int size, uint32 value);
     void intStatusHiWrite(emuptr address, int size, uint32 value);
     void portXDataWrite(emuptr address, int size, uint32 value);
+    void portXIntMaskWrite(emuptr address, int size, uint32 value);
     void portXIntStatusWrite(emuptr address, int size, uint32 value);
     void tmr1StatusWrite(emuptr address, int size, uint32 value);
     void tmr2StatusWrite(emuptr address, int size, uint32 value);

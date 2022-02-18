@@ -1394,7 +1394,7 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(portXDataRead, portXDataWrite, portDData);
     INSTALL_HANDLER(StdRead, StdWrite, portDPullupEn);
     INSTALL_HANDLER(StdRead, StdWrite, portDSelect);
-    INSTALL_HANDLER(StdRead, StdWrite, portDIntMask);
+    INSTALL_HANDLER(StdRead, portXIntMaskWrite, portDIntMask);
     INSTALL_HANDLER(StdRead, portXIntStatusWrite, portDIntStatus);
     INSTALL_HANDLER(StdRead, StdWrite, portDIntEdge);
     INSTALL_HANDLER(StdRead, StdWrite, portDIntPolarity);
@@ -2145,8 +2145,8 @@ void EmRegsSZ::PortDataChanged(int port, uint8, uint8 newValue) {
 
     // Set the new interrupt state, if applicable (ports A-C have no interrupts)
 
-        EmRegsSZ::UpdatePortXInterrupts((char)port);
-    }
+    EmRegsSZ::UpdatePortXInterrupts((char)port);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSZ::portXDataRead
@@ -2516,17 +2516,17 @@ void EmRegsSZ::portXDataWrite(emuptr address, int size, uint32 value) {
     EmHAL::CompareLineDriverStates(driverStates);
 }
 
+void EmRegsSZ::portXIntMaskWrite(emuptr address, int size, uint32 value) {
+    StdWrite(address, size, value);
+
+    UpdatePortXInterrupts(GetPortFromAddress(address));
+}
+
 // ---------------------------------------------------------------------------
 //		� EmRegsSZ::portXIntStatusWrite
 // ---------------------------------------------------------------------------
 
 void EmRegsSZ::portXIntStatusWrite(emuptr address, int size, uint32 value) {
-#ifdef SONY_ROM
-    if ('D' == EmRegsSZ::GetPortFromAddress(address)) {
-        if (value & 0x08) value &= ~0x08;
-    }
-#endif  // SONY_ROM
-
     // Do a standard update of the register.
 
     EmRegsSZ::StdWrite(address, size, value);
@@ -2959,12 +2959,6 @@ void EmRegsSZ::UpdateInterrupts(void) {
 // settings in portXData and fPortXEdge.
 
 void EmRegsSZ::UpdatePortXInterrupts(char port) {
-    // Update INT0-INT3 of the Interrupt-Pending register (bits 8-11 of the low word).
-
-    // First, get those bits and clear them out.
-
-    uint16 intPendingLo = READ_REGISTER(intPendingLo) & ~hwrSZ328IntLoAllKeys;
-
     // Initialize the variable to hold the new interrupt settings.
 
     uint8 newBits = 0;
@@ -2981,7 +2975,7 @@ void EmRegsSZ::UpdatePortXInterrupts(char port) {
     switch (port) {
         case 'D':
             portXDir = READ_REGISTER(portDDir);  // Interrupt on inputs only (when pin is low)
-            portXData = EmHAL::GetPortInputValue('D');
+            portXData = EmHAL::GetPortInputValue('D') ^ 0x07;
             portXIntMask = READ_REGISTER(portDIntMask);
             portXIntStatus = READ_REGISTER(portDIntStatus);
             portXIntEdge = READ_REGISTER(portDIntEdge);
@@ -3115,19 +3109,90 @@ void EmRegsSZ::UpdatePortXInterrupts(char port) {
 
     // Only have interrupts if they're enabled and the pin is configured for input.
 
-    newBits &= portXIntStatus & ~portXDir;
-
-    PRINTF("EmRegsSZ::UpdatePortXInterrupts: Dir  Data Pol  Req  Edg  PDE  bits port");
-    PRINTF(
-        "EmRegsSZ::UpdatePortXInterrupts: 0x%02lX 0x%02lX 0x%02lX 0x%02lX 0x%02lX 0x%02lX 0x%02lX "
-        "%c",
-        (uint32)portXDir, (uint32)portXData, (uint32)portXIntPolarity, (uint32)portXIntStatus,
-        (uint32)portXIntEdge, (uint32)fPortXEdge[port - 'D'], (uint32)newBits, (char)port);
+    newBits &= portXIntMask & ~portXDir;
 
     // Merge in the new values and write out the result.
 
-    intPendingLo |= (((uint16)newBits) << hwrSZ328IntLoInt0Bit) & hwrSZ328IntLoAllKeys;
-    WRITE_REGISTER(intPendingLo, intPendingLo);
+    portXIntStatus |= newBits;
+    portXIntStatus &= portXIntMask;
+    uint8 intBit = 0;
+
+    switch (port) {
+        case 'D':
+            WRITE_REGISTER(portDIntStatus, portXIntStatus);
+            intBit = 11;
+            break;
+
+        case 'E':
+            WRITE_REGISTER(portEIntStatus, portXIntStatus);
+            intBit = 10;
+            break;
+
+        case 'F':
+            WRITE_REGISTER(portFIntStatus, portXIntStatus);
+            intBit = 9;
+            break;
+
+        case 'G':
+            WRITE_REGISTER(portGIntStatus, portXIntStatus);
+            intBit = 8;
+            break;
+
+        case 'J':
+            WRITE_REGISTER(portJIntStatus, portXIntStatus);
+            intBit = 6;
+            break;
+
+        case 'K':
+            WRITE_REGISTER(portKIntStatus, portXIntStatus);
+            intBit = 28;
+            break;
+
+        case 'M':
+            WRITE_REGISTER(portMIntStatus, portXIntStatus);
+            intBit = 27;
+            break;
+
+        case 'N':
+            WRITE_REGISTER(portNIntStatus, portXIntStatus);
+            intBit = 26;
+            break;
+
+        case 'P':
+            WRITE_REGISTER(portPIntStatus, portXIntStatus);
+            intBit = 25;
+            break;
+
+        case 'R':
+            WRITE_REGISTER(portRIntStatus, portXIntStatus);
+            intBit = 20;
+            break;
+    }
+
+    if (intBit != 0 && intBit <= 15) {
+        uint16 intPendingLo = READ_REGISTER(intPendingLo);
+
+        if (portXIntStatus > 0)
+            intPendingLo |= (1 << intBit);
+        else
+            intPendingLo &= ~(1 << intBit);
+
+        WRITE_REGISTER(intPendingLo, intPendingLo);
+    }
+
+    if (intBit != 0 && intBit > 16) {
+        uint16 intPendingHi = READ_REGISTER(intPendingHi);
+        intBit -= 16;
+
+        if (portXIntStatus > 0)
+            intPendingHi |= (1 << intBit);
+        else
+            intPendingHi &= ~(1 << intBit);
+
+        WRITE_REGISTER(intPendingHi, intPendingHi);
+    }
+
+    WRITE_REGISTER(portDIntStatus, portXIntStatus);
 
     // Respond to the new interrupt state.
 
