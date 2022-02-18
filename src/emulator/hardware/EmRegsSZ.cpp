@@ -2120,6 +2120,8 @@ uint8 EmRegsSZ::GetPortInternalValue(int port) {
 // ---------------------------------------------------------------------------
 
 void EmRegsSZ::PortDataChanged(int port, uint8, uint8 newValue) {
+    if (port < 'D') return;
+
     uint8 portXIntEdge;
 
     emuptr portBaseAddress = EmRegsSZ::GetAddressFromPort(port);
@@ -2143,10 +2145,8 @@ void EmRegsSZ::PortDataChanged(int port, uint8, uint8 newValue) {
 
     // Set the new interrupt state, if applicable (ports A-C have no interrupts)
 
-    if (port >= 'D') {
         EmRegsSZ::UpdatePortXInterrupts((char)port);
     }
-}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSZ::portXDataRead
@@ -2178,15 +2178,9 @@ uint32 EmRegsSZ::portXDataRead(emuptr address, int) {
 #endif
 
     if (port == 'D') {
-        // The system will poll portD twice in KeyBootKeys to see
-        // if any keys are down.  Wait at least that long before
-        // letting up any boot keys maintained by the session.  When we
-        // do call ReleaseBootKeys, set our counter to -1 as a flag not
-        // to call it any more.
-
-        if (fPortDDataCount != 0xFFFFFFFF && ++fPortDDataCount >= 2 * 2) {
+        if (fPortDDataCount != 0xFFFFFFFF && ++fPortDDataCount >= 20 * 2) {
             fPortDDataCount = 0xFFFFFFFF;
-            // gSession->ReleaseBootKeys ();
+            gSession->ReleaseBootKeys();
         }
     }
 
