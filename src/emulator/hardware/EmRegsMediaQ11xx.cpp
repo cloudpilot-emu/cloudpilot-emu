@@ -2185,7 +2185,7 @@ void EmRegsMediaQ11xx::PrvUpdatePalette() {
         palette[ii] = 0xff000000 | (reg & (RED_MASK | GREEN_MASK | BLUE_MASK));
     }
 
-    paletteDirty = true;
+    paletteDirty = false;
 }
 
 // ---------------------------------------------------------------------------

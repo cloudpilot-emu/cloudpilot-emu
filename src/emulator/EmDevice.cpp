@@ -68,6 +68,7 @@
 #include "EmRegsEzPegS300.h"
 #include "EmRegsFMSound.h"
 #include "EmRegsFrameBuffer.h"
+#include "EmRegsLCDCtrlT2.h"
 #include "EmRegsMediaQ11xx.h"
 #include "EmRegsMediaQ11xxPacifiC.h"
 #include "EmRegsPLDAtlantiC.h"
@@ -156,6 +157,7 @@ enum  // DeviceType
     kDevicePEGT600,
     kDevicePEGN700C,
     kDeviceYSX1230,
+    kDeviceYSX1100,
     kDeviceLast
 };
 
@@ -514,6 +516,14 @@ static const DeviceInfo kDeviceInfo[] = {
      UNSUPPORTED,
      UNSUPPORTED,
      {{'sony', 'npls'}}},
+    {kDeviceYSX1100,
+     "NR70 series",
+     {"NR70"},
+     kSupports68SZ328,
+     16384,
+     UNSUPPORTED,
+     UNSUPPORTED,
+     {{'sony', 'rdwd'}}},
 #if 0
     // ===== Handspring devices =====
     {
@@ -1189,8 +1199,19 @@ void EmDevice::CreateRegs(void) const {
             break;
         }
 
-        case kDeviceYSX1230: {
+        case kDeviceYSX1100: {
             EmBankRegs::AddSubBank(new EmRegsSzRedwood());
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
+            EmBankRegs::AddSubBank(new EmRegsMQLCDControlT2(
+                *framebuffer, MQ_LCDControllerT2_RegsAddr, MQ_LCDControllerT2_VideoMemStart));
+            EmBankRegs::AddSubBank(framebuffer);
+
+            EmBankRegs::AddSubBank(new EmRegsUsbPegN700C(0x11000000L));
+            break;
+        }
+
+        case kDeviceYSX1230: {
+            EmBankRegs::AddSubBank(new EmRegsSzNaples());
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
@@ -1466,6 +1487,9 @@ uint32 EmDevice::FramebufferSize() const {
         case kDeviceYSX1230:
             return 256;
 
+        case kDeviceYSX1100:
+            return 320;
+
         default:
             return 0;
     }
@@ -1490,7 +1514,9 @@ bool EmDevice::EmulatesDockStatus() const {
 
 bool EmDevice::NeedsSDCTLHack() const { return fDeviceID == kDevicePalmM515; }
 
-bool EmDevice::HasCustomDigitizerTransform() const { return fDeviceID == kDeviceHandEra330; }
+bool EmDevice::HasCustomDigitizerTransform() const {
+    return fDeviceID == kDeviceHandEra330 || fDeviceID == kDeviceYSX1100;
+}
 
 bool EmDevice::IsClie() const {
     switch (fDeviceID) {
@@ -1501,6 +1527,7 @@ bool EmDevice::IsClie() const {
         case kDevicePEGT600:
         case kDevicePEGN700C:
         case kDeviceYSX1230:
+        case kDeviceYSX1100:
             return true;
 
         default:
@@ -1513,6 +1540,7 @@ bool EmDevice::NeedsBatteryPatch() const { return Supports68328() || IsClie(); }
 bool EmDevice::NeedsBatteryGlobalsHack() const {
     switch (fDeviceID) {
         case kDeviceYSX1230:
+        case kDeviceYSX1100:
             return true;
 
         default:
@@ -1527,6 +1555,7 @@ int EmDevice::DigitizerScale() const {
         case kDevicePEGT600:
         case kDevicePEGN700C:
         case kDeviceYSX1230:
+        case kDeviceYSX1100:
             return 2;
 
         default:
@@ -1547,6 +1576,9 @@ ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
 
         case kDeviceHandEra330:
             return ScreenDimensions::screen240x320;
+
+        case kDeviceYSX1100:
+            return ScreenDimensions::screen320x480;
 
         default:
             return ScreenDimensions::screen160x160;

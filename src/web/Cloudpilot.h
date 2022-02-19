@@ -82,7 +82,7 @@ class Cloudpilot {
     void SetHotsyncNameManagement(bool toggle);
 
    private:
-    Frame frame{320 * 320 * 4};
+    Frame frame{320 * 480 * 4};
 };
 
 #endif  // _CLOUDPILOT_H_

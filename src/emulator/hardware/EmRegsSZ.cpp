@@ -2145,7 +2145,7 @@ void EmRegsSZ::PortDataChanged(int port, uint8, uint8 newValue) {
 
     // Set the new interrupt state, if applicable (ports A-C have no interrupts)
 
-    EmRegsSZ::UpdatePortXInterrupts((char)port);
+    UpdatePortXInterrupts((char)port);
 }
 
 // ---------------------------------------------------------------------------
@@ -2533,7 +2533,7 @@ void EmRegsSZ::portXIntStatusWrite(emuptr address, int size, uint32 value) {
 
     // Set the new interrupt state.
 
-    EmRegsSZ::UpdatePortXInterrupts(EmRegsSZ::GetPortFromAddress(address));
+    UpdatePortXInterrupts(EmRegsSZ::GetPortFromAddress(address));
 }
 
 // ---------------------------------------------------------------------------
@@ -2799,7 +2799,7 @@ void EmRegsSZ::ButtonEvent(ButtonEventT event) {
 
     // Set the new interrupt state.
 
-    EmRegsSZ::UpdatePortXInterrupts('D');
+    UpdatePortXInterrupts('D');
 }
 
 // ---------------------------------------------------------------------------
@@ -2975,6 +2975,7 @@ void EmRegsSZ::UpdatePortXInterrupts(char port) {
     switch (port) {
         case 'D':
             portXDir = READ_REGISTER(portDDir);  // Interrupt on inputs only (when pin is low)
+            // This is a hack. I have no idea why it is required.
             portXData = EmHAL::GetPortInputValue('D') ^ 0x07;
             portXIntMask = READ_REGISTER(portDIntMask);
             portXIntStatus = READ_REGISTER(portDIntStatus);

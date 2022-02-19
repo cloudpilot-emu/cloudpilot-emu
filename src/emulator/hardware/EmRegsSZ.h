@@ -80,7 +80,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     virtual EmSPISlave* GetSPISlave(void);
 
     void UpdateInterrupts(void);
-    void UpdatePortXInterrupts(char);
+    virtual void UpdatePortXInterrupts(char);
     void UpdateRTCInterrupts(void);
 
     void UARTStateChanged(Bool sendTxData, int uartNum);

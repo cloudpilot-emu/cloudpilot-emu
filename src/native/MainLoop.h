@@ -31,7 +31,7 @@ class MainLoop {
 
     int scale{1};
     ScreenDimensions screenDimensions;
-    Frame frame{320 * 320 * 4};
+    Frame frame{320 * 480 * 4};
 
     const long millisOffset{Platform::GetMilliseconds()};
     double clockEmu{0};

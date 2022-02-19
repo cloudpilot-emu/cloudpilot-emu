@@ -155,6 +155,12 @@ uint8 EmRegsSzRedwood::GetPortInternalValue(int port) {
     return result;
 }
 
+void EmRegsSzRedwood::UpdatePortXInterrupts(char port) {
+    if (port != 'D') return;
+
+    EmRegsSZ::UpdatePortXInterrupts(port);
+}
+
 // ---------------------------------------------------------------------------
 //		� EmRegsSzRedwood::GetKeyInfo
 // ---------------------------------------------------------------------------
