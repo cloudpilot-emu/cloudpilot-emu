@@ -2010,63 +2010,30 @@ uint32 EmRegsSZ::GetROMBaseAddress(void) {
 Bool EmRegsSZ::ChipSelectsConfigured(void) { return READ_REGISTER(csASelect) & ENMask; }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsSZ::GetSystemClockFrequency
+//		� EmRegsSZ::GetSystemClockFrequency431.,
 // ---------------------------------------------------------------------------
 
-int32 EmRegsSZ::GetSystemClockFrequency(void) { return 66000000; }
-/********************************* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!! needs updating *****/
-/*
-int32 EmRegsSZ::GetSystemClockFrequency (void)
-{
-        uint16	pllControl	= READ_REGISTER (pllControl);
-        uint16	pllFreqSel0	= READ_REGISTER (pllFreqSel0);
-        uint16	pllFreqSel1	= READ_REGISTER (pllFreqSel1);
+int32 EmRegsSZ::GetSystemClockFrequency(void) {
+    constexpr uint32 clockRef = 32768;
+    constexpr uint32 premult = 512;
 
-        // Convert the 16.384KHz clock (CLK32) into the PLLCLK frequency.
+    const uint32 mpfsr0 = READ_REGISTER(pllFreqSel0);
+    const uint32 mpfsr1 = READ_REGISTER(pllFreqSel1);
+    const uint32 mmfi = (mpfsr0 >> 11) & 0x0f;
+    const uint32 mmfn = mpfsr0 & 0x3ff;
+    const uint32 mmfd = (mpfsr1 + 1) & 0x3ff;
+    const uint32 mpdf = ((mpfsr1 >> 11) + 1) & 0x0f;
 
-        uint16	PC			= (pllFreqSel & 0x00FF);
-        uint16	QC			= (pllFreqSel & 0x0F00) >> 8;
+    const uint32 mcupllClock =
+        (2 * clockRef * premult * (static_cast<uint64>(mmfi) * mmfd + mmfn)) / (mpdf * mmfd);
 
-        uint32	result		= 16384L * 2 * (14 * (PC + 1) + QC + 1);
+    const uint32 cscr = READ_REGISTER(clockSrcCtl);
+    const uint32 dmaClockDivider = (cscr & (1 << 10)) ? 1 : 2 << ((cscr >> 8) & 0x03);
 
-        // Divide by the first prescaler, if needed.
+    const uint32 cpuClock = mcupllClock / dmaClockDivider;
 
-        if ((pllControl & hwrSZ328PLLControlPreSc1Div2) != 0)
-        {
-                result /= 2;
-        }
-
-        // Divide by the second prescaler, if needed.
-
-        if ((pllControl & hwrSZ328PLLControlPreSc2Div2) != 0)
-        {
-                result /= 2;
-        }
-
-        // Divide by the system clock scaler, if needed.
-
-        switch (pllControl & 0x0F00)
-        {
-                case hwrSZ328PLLControlSysDMADiv2:
-                        result /= 2;
-                        break;
-
-                case hwrSZ328PLLControlSysDMADiv4:
-                        result /= 4;
-                        break;
-
-                case hwrSZ328PLLControlSysDMADiv8:
-                        result /= 8;
-                        break;
-
-                case hwrSZ328PLLControlSysDMADiv16:
-                        result /= 16;
-                        break;
-        }
-
-        return result;
+    return cpuClock;
 }
-*/
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSZ::GetAsleep
@@ -2411,6 +2378,7 @@ void EmRegsSZ::intMaskLoWrite(emuptr address, int size, uint32 value) {
     // Respond to the new interrupt state.
 
     EmRegsSZ::UpdateInterrupts();
+    UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -3659,8 +3627,15 @@ void EmRegsSZ::UpdateTimers() {
     nextTimerEventAfterCycle = ~0;
     if (GetAsleep()) return;
 
+    // WARNING! The terminology is off here. "SystemClockFrequency" in Cloudpilot
+    // really refers to the CPU clock. However, for the SZ the CPU clock is equal
+    // to the DMA clock, and this goes through an additional divider to generate
+    // the actual system clock which drives the timer.
+    const uint32 pllcr = READ_REGISTER(pllControl);
+    const uint32 sysclkDiv = (pllcr & (1 << 10)) ? 1 : 2 << ((pllcr >> 8) & 0x03);
+
     double clocksPerSecond = gSession->GetClocksPerSecond();
-    int32 systemClockFrequency = GetSystemClockFrequency();
+    int32 systemClockFrequency = GetSystemClockFrequency() / sysclkDiv;
 
     double timer1TicksPerSecond = TimerTicksPerSecond(
         READ_REGISTER(tmr1Control), READ_REGISTER(tmr1Prescaler), systemClockFrequency);
