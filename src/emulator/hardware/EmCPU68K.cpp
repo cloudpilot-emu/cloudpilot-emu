@@ -826,19 +826,21 @@ void EmCPU68K::ProcessException(ExceptionNumber exception) {
     // If profiling is on, (2) never occurs because we want to profile the
     // trap dispatcher itself.  Therefore, only (1) is possible.
 
-    Bool handled = false;
-    Hook68KExceptionList& fns = fExceptionHandlers[exception];
-    Hook68KExceptionList::iterator iter = fns.begin();
-    while (iter != fns.end()) {
-        if ((*iter)(exception)) {
-            handled = true;
+    if (exception < kException_LastException) {
+        Bool handled = false;
+        Hook68KExceptionList& fns = fExceptionHandlers[exception];
+        Hook68KExceptionList::iterator iter = fns.begin();
+        while (iter != fns.end()) {
+            if ((*iter)(exception)) {
+                handled = true;
+            }
+
+            ++iter;
         }
 
-        ++iter;
-    }
-
-    if (handled) {
-        return;
+        if (handled) {
+            return;
+        }
     }
 
     EmAssert(!SuspendManager::IsSuspended() || !SuspendManager::GetContext().RequiresStackAccess());
