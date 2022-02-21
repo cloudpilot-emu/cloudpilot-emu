@@ -108,4 +108,37 @@ void DoSaveLoad(LoadChunkHelper<T>& helper, HwrM68328Type& regs) {
 #endif
 }
 
+// The SZ register file has a huge gap between 0x0082c and 0x1f000 --- excluding it
+// saves > 120k of space.
+
+template <typename T>
+void DoSaveLoad(SaveChunkHelper<T>& helper, HwrM68SZ328Type& regs) {
+#if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)
+    HwrM68EV328Type regsCopy = regs;
+    Byteswap(regsCopy);
+
+    uint8* registerFile = reinterpret_cast<uint8*>(&regsCopy);
+
+    helper.DoBuffer(registerFile, 0x082c);
+    helper.DoBuffer(registerFile + 0x1f000, sizeof(HwrM68SZ328Type - 0x1f000));
+#else
+    uint8* registerFile = reinterpret_cast<uint8*>(&regs);
+
+    helper.DoBuffer(registerFile, 0x082c)
+        .DoBuffer(registerFile + 0x1f000, sizeof(HwrM68SZ328Type) - 0x1f000);
+#endif
+}
+
+template <typename T>
+void DoSaveLoad(LoadChunkHelper<T>& helper, HwrM68SZ328Type& regs) {
+    uint8* registerFile = reinterpret_cast<uint8*>(&regs);
+
+    helper.DoBuffer(registerFile, 0x082c)
+        .DoBuffer(registerFile + 0x1f000, sizeof(HwrM68SZ328Type) - 0x1f000);
+
+#if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)
+    Byteswap(regs);
+#endif
+}
+
 #endif  // _SAVESTATE_STRUCTURES_H_

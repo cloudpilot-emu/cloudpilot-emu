@@ -17,15 +17,21 @@
 #include <cmath>
 
 #include "Byteswapping.h"  // Canonical
+#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmHAL.h"     // EmHAL
 #include "EmMemory.h"  // gMemAccessFlags, EmMem_memcpy
 #include "EmRegsSZPrv.h"
-#include "EmSession.h"  // gSession
+#include "EmSPISlave.h"  // DoExchange
+#include "EmSession.h"   // gSession
 #include "EmSystemState.h"
 #include "Logging.h"        // LogAppendMsg
 #include "Miscellaneous.h"  // GetHostTime
-#include "UAE.h"            // regs, SPCFLAG_INT
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
+#include "SavestateStructures.h"
+#include "UAE.h"  // regs, SPCFLAG_INT
 
 static const uint16 ROPMask = 0x2000;    // Make to get the Read-Only-Protect bit.
 static const uint16 UPSIZMask = 0x1800;  // Mask to get the unprotected memory size from csESelect.
@@ -53,7 +59,7 @@ static const int kBaseAddressShift = 16;  // Shift to get base address from CSGB
 #define SONY_ROM
 
 namespace {
-    // constexpr uint32 SAVESTATE_VERSION = 1;
+    constexpr uint32 SAVESTATE_VERSION = 1;
 
     double TimerTicksPerSecond(uint16 tmrControl, uint16 tmrPrescaler, int32 systemClockFrequency) {
         uint8 clksource = (tmrControl >> 1) & 0x7;
@@ -1156,6 +1162,79 @@ void EmRegsSZ::Dispose(void) {
 
     EmHAL::onDayRollover.RemoveHandler(onDayRolloverHandle);
     EmHAL::RemoveCycleConsumer(cycleThunk, this);
+}
+
+void EmRegsSZ::Save(Savestate& savestate) { DoSave(savestate); }
+
+void EmRegsSZ::Save(SavestateProbe& savestate) { DoSave(savestate); }
+
+void EmRegsSZ::Load(SavestateLoader& loader) {
+    if (fSPISlaveADC) fSPISlaveADC->Load(loader);
+
+    Chunk* chunk = loader.GetChunk(ChunkType::regsSZ);
+    if (!chunk) {
+        logging::printf("unable to restore RegsSZ: missing savestate\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore RegsSZ: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    pwmActive = false;
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper, version);
+
+    Bool sendTxData = false;
+    EmRegsSZ::UARTStateChanged(sendTxData, 0);
+    EmRegsSZ::UARTStateChanged(sendTxData, 1);
+
+    gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csESelect) & ROPMask) != 0;
+
+    afterLoad = true;
+
+    systemCycles = gSession->GetSystemCycles();
+    UpdateTimers();
+    powerOffCached = GetAsleep();
+}
+
+template <typename T>
+void EmRegsSZ::DoSave(T& savestate) {
+    if (fSPISlaveADC) fSPISlaveADC->Save(savestate);
+
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsSZ);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper, SAVESTATE_VERSION);
+}
+
+template <typename T>
+void EmRegsSZ::DoSaveLoad(T& helper, uint32 version) {
+    ::DoSaveLoad(helper, f68SZ328Regs);
+
+    helper.DoBool(fHotSyncButtonDown)
+        .Do16(fKeyBits)
+        .Do(typename T::Pack16() << fLastTmr1Status << fLastTmr2Status)
+        .Do(typename T::Pack8() << fPortXEdge[0] << fPortXEdge[1] << fPortXEdge[2] << fPortXEdge[3])
+        .Do(typename T::Pack8() << fPortXEdge[4] << fPortXEdge[5] << fPortXEdge[6] << fPortXEdge[7])
+        .Do(typename T::Pack8() << fPortXEdge[8] << fPortXEdge[9] << fPortXEdge[10]
+                                << fPortXEdge[11])
+        .Do(typename T::Pack8() << fPortXEdge[12] << fPortXEdge[13] << fPortXEdge[14])
+        .Do32(fPortDDataCount)
+        .DoDouble(tmr1LastProcessedSystemCycles)
+        .DoDouble(tmr2LastProcessedSystemCycles)
+        .Do32(lastRtcAlarmCheck)
+        .DoBool(pwmActive);
 }
 
 // ---------------------------------------------------------------------------

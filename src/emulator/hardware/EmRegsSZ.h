@@ -36,6 +36,10 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     virtual void Reset(Bool hardwareReset);
     virtual void Dispose(void);
 
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
+
     virtual void SetSubBankHandlers(void);
     virtual uint8* GetRealAddress(emuptr address);
     virtual emuptr GetAddressStart(void);
@@ -129,6 +133,12 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     void UpdateTimers();
     void HandleDayRollover();
 
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper, uint32 version);
+
    protected:
     HwrM68SZ328Type f68SZ328Regs;
     bool fHotSyncButtonDown;
@@ -145,7 +155,6 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     uint64 nextTimerEventAfterCycle;
     uint64 systemCycles;
 
-    uint32 rtcDayAtWrite{0};
     int32 lastRtcAlarmCheck{-1};
 
     bool pwmActive{false};

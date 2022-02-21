@@ -1,5 +1,6 @@
 #include "EmRegsLCDCtrlT2.h"
 
+#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmMemory.h"  // EmMemGetRealAddress
 #include "EmRegsFrameBuffer.h"
@@ -7,6 +8,9 @@
 #include "EmSystemState.h"
 #include "Frame.h"
 #include "Nibbler.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 // Given a register (specified by its field name), return its address
 // in emulated space.
@@ -22,7 +26,10 @@
 
 #define READ_REGISTER_T2(reg) this->ReadLCDRegister(fRegs.reg)
 
-static UInt16 g_highResMode = 160;
+namespace {
+    constexpr uint16 g_highResMode = 160;
+    constexpr uint32 SAVESTATE_VERSION = 1;
+}  // namespace
 
 // ---------------------------------------------------------------------------
 //		� EmRegsMQLCDControlT2::EmRegsMQLCDControlT2
@@ -68,6 +75,49 @@ void EmRegsMQLCDControlT2::Reset(Bool hardwareReset) {
 // ---------------------------------------------------------------------------
 
 void EmRegsMQLCDControlT2::Dispose(void) { EmRegs::Dispose(); }
+
+void EmRegsMQLCDControlT2::Save(Savestate& savestate) { DoSave(savestate); }
+
+void EmRegsMQLCDControlT2::Save(SavestateProbe& savestate) { DoSave(savestate); }
+
+void EmRegsMQLCDControlT2::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::regsMQ1168);
+    if (!chunk) {
+        logging::printf("unable to restore RegsMQLCDControlT2: missing savestate\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore RegsMQLCDControlT2: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+
+    paletteDirty = true;
+}
+
+template <typename T>
+void EmRegsMQLCDControlT2::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsMQ1168);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegsMQLCDControlT2::DoSaveLoad(T& helper) {
+    helper.DoBuffer(&fRegs, sizeof(fRegs));
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsMQLCDControlT2::SetSubBankHandlers

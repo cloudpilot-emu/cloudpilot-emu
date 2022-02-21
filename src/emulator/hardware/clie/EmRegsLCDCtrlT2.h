@@ -28,6 +28,8 @@
 #define MQ_GraphicController_T2_16BPP_BGR565_NoColorPalette \
     0x000000D0  // 16-bpp (GRB565)graphics with color palette bypassed.
 
+#include "PalmPack.h"
+
 typedef struct {
     // CPU Control Register
     UInt32 CPUControl;           // 0x0000 : CC00
@@ -123,7 +125,7 @@ typedef struct {
     UInt32 DeviceConfig03A0;  // 0x03A0 : DC08
     UInt32 DeviceConfig03A4;  // 0x03A4 : DC09
 
-    UInt8 _filler08[0x56];  // 0x03A8 - 0x03FF
+    UInt8 _filler08[0x58];  // 0x03A8 - 0x03FF
 
     // PCI Configuration Header
     UInt8 _filler09[0x100];  // 0x0400 - 0x04FF
@@ -284,6 +286,8 @@ typedef struct {
 
 } HwrLCDCtrlT2Type;
 
+#include "PalmPackPop.h"
+
 class EmRegsFrameBuffer;
 
 class EmRegsMQLCDControlT2 : public EmRegs, public EmHALHandler {
@@ -295,6 +299,10 @@ class EmRegsMQLCDControlT2 : public EmRegs, public EmHALHandler {
     virtual void Initialize(void);
     virtual void Reset(Bool hardwareReset);
     virtual void Dispose(void);
+
+    virtual void Save(Savestate&);
+    virtual void Save(SavestateProbe&);
+    virtual void Load(SavestateLoader&);
 
     virtual void SetSubBankHandlers(void);
     virtual uint8* GetRealAddress(emuptr address);
@@ -325,7 +333,11 @@ class EmRegsMQLCDControlT2 : public EmRegs, public EmHALHandler {
     void PrvUpdatePalette();
     uint8 GetBpp();
 
-   private:
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
     UInt32 ReadLCDRegister(UInt32 reg);
 
    private:
@@ -341,4 +353,5 @@ class EmRegsMQLCDControlT2 : public EmRegs, public EmHALHandler {
 #define MQ_LCDControllerT2_RegsAddr 0x1F050000
 #define MQ_LCDControllerT2_VideoMemStart (MQ_LCDControllerT2_BaseAddress)
 #define MQ_LCDControllerT2_VideoMemSize 0x00050000  // 256K of memory for VRAM
-#endif                                              // EmRegsLCDCtrlT2_H
+
+#endif  // EmRegsLCDCtrlT2_H
