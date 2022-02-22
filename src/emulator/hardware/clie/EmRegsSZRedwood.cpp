@@ -118,47 +118,25 @@ uint8 EmRegsSzRedwood::GetPortInputValue(int port) {
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsSzRedwood::GetPortInternalValue(int port) {
-    uint8 result = EmRegsSZ::GetPortInternalValue(port);
+    switch (port) {
+        case 'D':
+            return GetKeyBits();
 
-    if (port == 'D') {
-        result = GetKeyBits();
+        case 'C':
+            return 0xff;
 
-        // Ensure that bit hwrEZPortDDockButton is set.  If it's clear, HotSync
-        // will sync via the modem instead of the serial port.
-        //
-        // Also make sure that hwrEZPortDPowerFail is set.  If it's clear,
-        // the battery code will make the device go to sleep immediately.
+        case 'G':
+            return 0x02;
 
-        result |= hwrSZRedwoodPortDDockButton | hwrSZRedwoodPortDPowerFail;
+        case 'J':
+            return 0xff;
+
+        case 'P':
+            return 0x0a;
+
+        default:
+            return 0;
     }
-
-    if (port == 'C') {
-        result = ~result & 0x07;
-    }
-
-    if (port == 'G') {
-        result |= 0x02;  // LCD_FLIP
-    }
-
-    if (port == 'J') {
-        result |= 0xFF;  // KBD_COL0-6,LCD_ROTATE
-    }
-    if (port == 'P') {
-        result |= 0x08;  // AREM_PUSH
-        result |= 0x02;  // HOLD
-    }
-
-    /*	if (port == 'R')
-            {
-                    result |= 0x3F;		// KBD_ROW0-5
-            }*/
-    return result;
-}
-
-void EmRegsSzRedwood::UpdatePortXInterrupts(char port) {
-    if (port != 'D') return;
-
-    EmRegsSZ::UpdatePortXInterrupts(port);
 }
 
 // ---------------------------------------------------------------------------

@@ -2913,11 +2913,7 @@ uint8 EmRegsSZ::GetKeyBits(void) {
         }
     }
 
-#ifdef SONY_ROM
-    return ~keyData & 0x07;
-#else
-    return keyData;
-#endif
+    return ~keyData;
 }
 
 // ---------------------------------------------------------------------------
@@ -3022,8 +3018,7 @@ void EmRegsSZ::UpdatePortXInterrupts(char port) {
     switch (port) {
         case 'D':
             portXDir = READ_REGISTER(portDDir);  // Interrupt on inputs only (when pin is low)
-            // This is a hack. I have no idea why it is required.
-            portXData = EmHAL::GetPortInputValue('D') ^ 0x07;
+            portXData = EmHAL::GetPortInputValue('D');
             portXIntMask = READ_REGISTER(portDIntMask);
             portXIntStatus = READ_REGISTER(portDIntStatus);
             portXIntEdge = READ_REGISTER(portDIntEdge);
@@ -3122,6 +3117,8 @@ void EmRegsSZ::UpdatePortXInterrupts(char port) {
             portXIntEdge = 0;
             portXIntPolarity = 0;
     }
+
+    portXData ^= portXIntPolarity;
 
     // We have a line-level interrupt if:
     //
