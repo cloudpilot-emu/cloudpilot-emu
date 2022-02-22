@@ -18,7 +18,6 @@ bool PatchModuleClieStubAll::HandlesLibrary(const string &libname) {
     if (libname == "Sony Sound Library") return true;
     if (libname == "Sony Irc Library") return true;
     if (libname == "Sony MgSys Library") return true;
-    if (libname == "Pa1Lib") return true;
 
     return false;
 }

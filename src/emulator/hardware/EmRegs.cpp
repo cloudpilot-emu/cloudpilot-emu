@@ -404,3 +404,10 @@ void EmRegs::NullWrite(emuptr address, int size, uint32 value) {
 
     // Do nothing (for read-only registers).
 }
+
+bool EmRegs::AllowUnalignedAccess(emuptr address, int size) {
+    UNUSED_PARAM(address);
+    UNUSED_PARAM(size);
+
+    return false;
+}

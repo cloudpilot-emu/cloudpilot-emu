@@ -41,12 +41,11 @@ class EmRegsFMSound : public EmRegs {
 
     void UnsupportedWrite(emuptr address, int size, uint32 value);
 
-   private:
-    uint32 Read(emuptr address, int size);
-    void Write(emuptr address, int size, uint32 value);
+    virtual bool AllowUnalignedAccess(emuptr address, int size);
 
+   private:
     uint32 ReadFromDummy(emuptr address, int size);
-    void WrireToDummy(emuptr address, int size, uint32 value);
+    void WriteToDummy(emuptr address, int size, uint32 value);
 
     int ValidAddress(emuptr iAddress, uint32 iSize);
 

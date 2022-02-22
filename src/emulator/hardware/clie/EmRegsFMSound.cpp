@@ -120,7 +120,7 @@ void EmRegsFMSound::SetSubBankHandlers(void) {
 
     // Now add standard/specialized handers for the defined registers.
 
-    INSTALL_HANDLER(ReadFromDummy, WrireToDummy, _filler01);
+    INSTALL_HANDLER(ReadFromDummy, WriteToDummy, _filler01);
 }
 
 // ---------------------------------------------------------------------------
@@ -145,37 +145,21 @@ emuptr EmRegsFMSound::GetAddressStart(void) { return fBaseAddr; }
 uint32 EmRegsFMSound::GetAddressRange(void) { return sizeof(fRegs); }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsFMSound::Write
-// ---------------------------------------------------------------------------
-void EmRegsFMSound::Write(emuptr address, int size, uint32 value) {
-    this->StdWriteBE(address, size, value);
-}
-
-// ---------------------------------------------------------------------------
-//		� EmRegsFMSound::Read
-// ---------------------------------------------------------------------------
-uint32 EmRegsFMSound::Read(emuptr address, int size) {
-    uint32 rstValue = this->StdReadBE(address, size);
-    return rstValue;
-}
-
-// ---------------------------------------------------------------------------
 //		� EmRegsFMSound::WrireToDummy
 // ---------------------------------------------------------------------------
-void EmRegsFMSound::WrireToDummy(emuptr address, int size, uint32 value){
-    UNUSED_PARAM(address) UNUSED_PARAM(size)
-
-    //	this->StdWriteBE (address, size, value);
+void EmRegsFMSound::WriteToDummy(emuptr address, int size, uint32 value) {
+    UNUSED_PARAM(address);
+    UNUSED_PARAM(size);
 }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsFMSound::ReadFromDummy
 // ---------------------------------------------------------------------------
 uint32 EmRegsFMSound::ReadFromDummy(emuptr address, int size) {
-    UNUSED_PARAM(address)
-    UNUSED_PARAM(size)
+    UNUSED_PARAM(address);
+    UNUSED_PARAM(size);
 
-    return this->StdReadBE(address, size);
+    return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -195,6 +179,13 @@ void EmRegsFMSound::UnsupportedWrite(emuptr address, int size, uint32 value) {
     UNUSED_PARAM(value)
 
     return;
+}
+
+bool EmRegsFMSound::AllowUnalignedAccess(emuptr address, int size) {
+    UNUSED_PARAM(address);
+    UNUSED_PARAM(size);
+
+    return true;
 }
 
 #pragma mark -

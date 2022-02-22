@@ -50,6 +50,8 @@ class EmRegs {
     virtual emuptr GetAddressStart(void) = 0;
     virtual uint32 GetAddressRange(void) = 0;
 
+    virtual bool AllowUnalignedAccess(emuptr address, int size);
+
    protected:
     typedef uint32 (EmRegs::*ReadFunction)(emuptr address, int size);
     typedef void (EmRegs::*WriteFunction)(emuptr address, int size, uint32 value);

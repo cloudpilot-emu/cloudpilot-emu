@@ -228,12 +228,6 @@ void EmBankRegs::SetBankHandlers(void) {
 // ---------------------------------------------------------------------------
 
 uint32 EmBankRegs::GetLong(emuptr address) {
-#if (CHECK_FOR_ADDRESS_ERROR)
-    if ((address & 1) != 0) {
-        AddressError(address, sizeof(uint32), true);
-    }
-#endif
-
 #if (VALIDATE_REGISTER_GET)
     if (gMemAccessFlags.fValidate_RegisterGet && !ValidAddress(address, sizeof(uint32))) {
         EmBankRegs::InvalidAccess(address, sizeof(uint32), true);
@@ -243,6 +237,12 @@ uint32 EmBankRegs::GetLong(emuptr address) {
     EmRegs* bank = EmBankRegs::GetSubBank(address, sizeof(uint32));
 
     if (bank) {
+#if (CHECK_FOR_ADDRESS_ERROR)
+        if ((address & 1 && !bank->AllowUnalignedAccess(address, 4)) != 0) {
+            AddressError(address, sizeof(uint32), true);
+        }
+#endif
+
         return bank->GetLong(address);
     }
 
@@ -255,12 +255,6 @@ uint32 EmBankRegs::GetLong(emuptr address) {
 // ---------------------------------------------------------------------------
 
 uint32 EmBankRegs::GetWord(emuptr address) {
-#if (CHECK_FOR_ADDRESS_ERROR)
-    if ((address & 1) != 0) {
-        AddressError(address, sizeof(uint16), true);
-    }
-#endif
-
 #if (VALIDATE_REGISTER_GET)
     if (gMemAccessFlags.fValidate_RegisterGet && !ValidAddress(address, sizeof(uint16))) {
         EmBankRegs::InvalidAccess(address, sizeof(uint16), true);
@@ -270,6 +264,12 @@ uint32 EmBankRegs::GetWord(emuptr address) {
     EmRegs* bank = EmBankRegs::GetSubBank(address, sizeof(uint16));
 
     if (bank) {
+#if (CHECK_FOR_ADDRESS_ERROR)
+        if ((address & 1 && !bank->AllowUnalignedAccess(address, 2)) != 0) {
+            AddressError(address, sizeof(uint16), true);
+        }
+#endif
+
         return bank->GetWord(address);
     }
 
@@ -303,12 +303,6 @@ uint32 EmBankRegs::GetByte(emuptr address) {
 // ---------------------------------------------------------------------------
 
 void EmBankRegs::SetLong(emuptr address, uint32 value) {
-#if (CHECK_FOR_ADDRESS_ERROR)
-    if ((address & 1) != 0) {
-        AddressError(address, sizeof(uint32), false);
-    }
-#endif
-
 #if (VALIDATE_REGISTER_SET)
     if (gMemAccessFlags.fValidate_RegisterSet && !ValidAddress(address, sizeof(uint32))) {
         EmBankRegs::InvalidAccess(address, sizeof(uint32), false);
@@ -318,6 +312,12 @@ void EmBankRegs::SetLong(emuptr address, uint32 value) {
     EmRegs* bank = EmBankRegs::GetSubBank(address, sizeof(uint32));
 
     if (bank) {
+#if (CHECK_FOR_ADDRESS_ERROR)
+        if ((address & 1 && !bank->AllowUnalignedAccess(address, 4)) != 0) {
+            AddressError(address, sizeof(uint32), false);
+        }
+#endif
+
         bank->SetLong(address, value);
 
         // See if any interesting memory locations have changed.  If so,
@@ -336,12 +336,6 @@ void EmBankRegs::SetLong(emuptr address, uint32 value) {
 // ---------------------------------------------------------------------------
 
 void EmBankRegs::SetWord(emuptr address, uint32 value) {
-#if (CHECK_FOR_ADDRESS_ERROR)
-    if ((address & 1) != 0) {
-        AddressError(address, sizeof(uint16), false);
-    }
-#endif
-
 #if (VALIDATE_REGISTER_SET)
     if (gMemAccessFlags.fValidate_RegisterSet && !ValidAddress(address, sizeof(uint16))) {
         EmBankRegs::InvalidAccess(address, sizeof(uint16), false);
@@ -351,6 +345,12 @@ void EmBankRegs::SetWord(emuptr address, uint32 value) {
     EmRegs* bank = EmBankRegs::GetSubBank(address, sizeof(uint16));
 
     if (bank) {
+#if (CHECK_FOR_ADDRESS_ERROR)
+        if ((address & 1 && !bank->AllowUnalignedAccess(address, 2)) != 0) {
+            AddressError(address, sizeof(uint16), false);
+        }
+#endif
+
         bank->SetWord(address, value);
 
         // See if any interesting memory locations have changed.  If so,
