@@ -1205,7 +1205,6 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsMQLCDControlT2(
                 *framebuffer, MQ_LCDControllerT2_RegsAddr, MQ_LCDControllerT2_VideoMemStart));
             EmBankRegs::AddSubBank(framebuffer);
-            EmBankRegs::AddSubBank(new EmRegsFMSound(0x18000000));
             EmBankRegs::AddSubBank(new EmRegsUsbPegN700C(0x11000000L));
             break;
         }
@@ -1216,11 +1215,6 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
             EmBankRegs::AddSubBank(new EmRegsUsbPegN700C(0x11000000L));
-
-            // One of those two is something else. However, as this piece of "hardware" just
-            // stubs out 1024 bytes of address space, this is fine.
-            EmBankRegs::AddSubBank(new EmRegsFMSound(0x5e481000));
-            EmBankRegs::AddSubBank(new EmRegsFMSound(0x18000000));
             break;
         }
 
@@ -1564,6 +1558,19 @@ int EmDevice::DigitizerScale() const {
 
         default:
             return 1;
+    }
+}
+
+bool EmDevice::BuggySleep() const {
+    switch (fDeviceID) {
+        case kDeviceYSX1100:
+        case kDeviceYSX1230:
+        case kDevicePalmPacifiC:
+        case kDevicePalmI710:
+            return true;
+
+        default:
+            return false;
     }
 }
 

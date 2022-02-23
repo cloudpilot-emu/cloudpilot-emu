@@ -77,6 +77,7 @@ class EmDevice {
     bool IsClie() const;
     bool NeedsBatteryPatch() const;
     bool NeedsBatteryGlobalsHack() const;
+    bool BuggySleep() const;
     int DigitizerScale() const;
 
     ScreenDimensions::Kind GetScreenDimensions() const;

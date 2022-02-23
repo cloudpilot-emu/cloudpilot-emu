@@ -233,7 +233,7 @@ namespace {
         CALLED_GET_PARAM_VAL(UInt32, libCreator);
 
         if (gSession->GetDevice().IsClie() && libType == sysResTLibrary &&
-            (libCreator == 'SlMa' || libCreator == 'SlJU')) {
+            (libCreator == 'SlMa' || libCreator == 'SlJU' || libCreator == 'yP1L')) {
             PUT_RESULT_VAL(Err, sysErrLibNotFound);
             return kSkipROM;
         }
@@ -387,6 +387,16 @@ namespace {
         SetCurrentDate();
     }
 
+    CallROMType HeadpatchSysSleep() {
+        if (!gSession->GetDevice().BuggySleep()) return kExecuteROM;
+
+        CALLED_SETUP("Err", "void");
+
+        PUT_RESULT_VAL(Err, 0);
+
+        return kSkipROM;
+    }
+
     ProtoPatchTableEntry protoPatchTable[] = {
         {sysTrapDmInit, HeadpatchDmInit, NULL},
         {sysTrapSysUIAppSwitch, HeadpatchSysUIAppSwitch, NULL},
@@ -409,6 +419,7 @@ namespace {
         {sysTrapHwrBattery, HeadpatchHwrBattery, TailpatchHwrBattery},
         {sysTrapSysLibLoad, HeadpatchSysLibLoad, NULL},
         {sysTrapHwrIRQ4Handler, HeadpatchHwrIRQ4Handler, TailpatchHwrIRQ4Handler},
+        {sysTrapSysSleep, HeadpatchSysSleep, NULL},
         {0, NULL, NULL}};
 }  // namespace
 

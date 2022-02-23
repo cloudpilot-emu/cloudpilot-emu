@@ -192,3 +192,9 @@ Bool EmRegsSzNaples::GetVibrateOn(void) {
     UInt8 portNData = READ_REGISTER(portNData);
     return (portNData & hwrSZNaplesPortNVibrate);
 }
+
+void EmRegsSzNaples::UpdatePortXInterrupts(char port) {
+    if (port != 'D') return;
+
+    EmRegsSZ::UpdatePortXInterrupts(port);
+}

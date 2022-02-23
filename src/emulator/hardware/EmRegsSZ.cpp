@@ -3118,15 +3118,13 @@ void EmRegsSZ::UpdatePortXInterrupts(char port) {
             portXIntPolarity = 0;
     }
 
-    portXData ^= portXIntPolarity;
-
     // We have a line-level interrupt if:
     //
     //	- line-level interrupts are requested
     //	- the GPIO bit matches the polarity bit
 
-    newBits |= ~portXIntEdge & portXData & portXIntPolarity;
-    newBits |= ~portXIntEdge & ~portXData & ~portXIntPolarity;
+    newBits |= ~portXIntEdge & portXData & ~portXIntPolarity;
+    newBits |= ~portXIntEdge & ~portXData & portXIntPolarity;
 
     // We have an edge interrupt if:
     //
@@ -3225,7 +3223,7 @@ void EmRegsSZ::UpdatePortXInterrupts(char port) {
         WRITE_REGISTER(intPendingLo, intPendingLo);
     }
 
-    if (intBit != 0 && intBit > 16) {
+    if (intBit != 0 && intBit > 15) {
         uint16 intPendingHi = READ_REGISTER(intPendingHi);
         intBit -= 16;
 
@@ -3236,8 +3234,6 @@ void EmRegsSZ::UpdatePortXInterrupts(char port) {
 
         WRITE_REGISTER(intPendingHi, intPendingHi);
     }
-
-    WRITE_REGISTER(portDIntStatus, portXIntStatus);
 
     // Respond to the new interrupt state.
 
@@ -3277,10 +3273,6 @@ void EmRegsSZ::UpdateRTCInterrupts(void) {
     } else {
         intPendingLo &= ~hwrSZ328IntLoRTC;  // no events, so clear interrupt
     }
-
-    // Update the interrupt pending register.
-
-    WRITE_REGISTER(intPendingLo, intPendingLo);
 
     // Respond to the new interrupt state.
 

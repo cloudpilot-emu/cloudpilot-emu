@@ -173,27 +173,7 @@ EmSPISlave* EmRegsSzRedwood::GetSPISlave(void) {
     return NULL;
 }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsSzRedwood::GetLEDState
-// ---------------------------------------------------------------------------
-/*
-uint16 EmRegsSzRedwood::GetLEDState (void)
-{
-        uint16	result		= kLEDOff;
-        UInt8	portNData	= READ_REGISTER (portNData);
-
-        if (portNData & hwrSZRedwoodPortNAlermLED)
-                result |= (kLEDRed | kLEDGreen);
-        return result;
+void EmRegsSzRedwood::UpdatePortXInterrupts(char port) {
+    if (port != 'D') return;
+    EmRegsSZ::UpdatePortXInterrupts(port);
 }
-
-// ---------------------------------------------------------------------------
-//		� EmRegsSzRedwood::GetVibrateOn
-// ---------------------------------------------------------------------------
-
-Bool EmRegsSzRedwood::GetVibrateOn (void)
-{
-        UInt8	portNData	= READ_REGISTER (portNData);
-        return (portNData & hwrSZRedwoodPortNVibrate);
-}
-*/
