@@ -1,7 +1,14 @@
 #include "PatchModuleClieStubAll.h"
 
+#include "Marshal.h"
+
 namespace {
-    CallROMType HeadpatchStub(void) { return kSkipROM; }
+    CallROMType HeadpatchStub(void) {
+        CALLED_SETUP("Err", "void");
+        PUT_RESULT_VAL(Err, 0xffff);
+
+        return kSkipROM;
+    }
 }  // namespace
 
 Err PatchModuleClieStubAll::GetHeadpatch(uint16 index, HeadpatchProc &procP) {

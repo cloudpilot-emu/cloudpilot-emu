@@ -233,7 +233,7 @@ namespace {
         CALLED_GET_PARAM_VAL(UInt32, libCreator);
 
         if (gSession->GetDevice().IsClie() && libType == sysResTLibrary &&
-            (libCreator == 'SlMa' || libCreator == 'SlJU' || libCreator == 'yP1L')) {
+            (libCreator == 'SlMa' || libCreator == 'yP1L')) {
             PUT_RESULT_VAL(Err, sysErrLibNotFound);
             return kSkipROM;
         }
