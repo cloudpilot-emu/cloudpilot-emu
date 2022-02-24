@@ -1,3 +1,7 @@
+# Next version
+
+-   Support for PEG-NR70 and PEG-T650C series.
+
 # 1.6.4
 
 -   More wording.
