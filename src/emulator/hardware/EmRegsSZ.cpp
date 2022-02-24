@@ -3267,6 +3267,8 @@ void EmRegsSZ::UpdateRTCInterrupts(void) {
     // Otherwise, clear the interrupt.
 
     uint16 intPendingLo = READ_REGISTER(intPendingLo);
+    // Workaround clang bug
+    UNUSED_PARAM(intPendingLo);
 
     if (rtcEnabled && havePendingEvents) {
         intPendingLo |= hwrSZ328IntLoRTC;  // have events, so set interrupt

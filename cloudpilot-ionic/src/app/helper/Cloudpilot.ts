@@ -88,6 +88,8 @@ export const SUPPORTED_DEVICES = [
     DeviceId.pegN600c,
     DeviceId.pegT600c,
     DeviceId.pegN700c,
+    DeviceId.pegT650C,
+    DeviceId.pegNR70,
 ];
 
 function guard(): any {

@@ -2,6 +2,7 @@ export const enum ScreenSize {
     screen160x160,
     screen320x320,
     screen240x320,
+    screen320x480,
 }
 
 export interface Dimensions {

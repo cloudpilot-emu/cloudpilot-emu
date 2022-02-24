@@ -46,6 +46,7 @@ interface Layout {
 
 function buttonHeightForScreenSize(screenSize: ScreenSize) {
     switch (screenSize) {
+        case ScreenSize.screen320x480:
         case ScreenSize.screen320x320:
             return 60;
 
@@ -181,6 +182,7 @@ const IMAGE_HARD_BUTTONS_PEG_S320 = prepareImage('HARD_BUTTONS_PEG_S320');
 const IMAGE_HARD_BUTTONS_PEG_T415 = prepareImage('HARD_BUTTONS_PEG_T415');
 const IMAGE_HARD_BUTTONS_PEG_N610 = prepareImage('HARD_BUTTONS_PEG_N610');
 const IMAGE_HARD_BUTTONS_PEG_N700 = prepareImage('HARD_BUTTONS_PEG_N700');
+const IMAGE_HARD_BUTTONS_PEG_NR70 = prepareImage('HARD_BUTTONS_PEG_NR70');
 
 @Injectable({
     providedIn: 'root',
@@ -501,6 +503,7 @@ export class CanvasDisplayService {
     private silkscreenImage(): PrerenderedImage {
         switch (this.session?.device) {
             case DeviceId.pegT600c:
+            case DeviceId.pegT650C:
                 return IMAGE_SILKSCREEN_PEG_T600;
 
             case DeviceId.pegN700c:
@@ -558,6 +561,9 @@ export class CanvasDisplayService {
 
     private buttonsImage(): PrerenderedImage {
         switch (this.session?.device) {
+            case DeviceId.pegNR70:
+                return IMAGE_HARD_BUTTONS_PEG_NR70;
+
             case DeviceId.pegN700c:
                 return IMAGE_HARD_BUTTONS_PEG_N700;
 
@@ -572,6 +578,7 @@ export class CanvasDisplayService {
 
             case DeviceId.pegT400:
             case DeviceId.pegT600c:
+            case DeviceId.pegT650C:
                 return IMAGE_HARD_BUTTONS_PEG_T415;
 
             case DeviceId.pilot:

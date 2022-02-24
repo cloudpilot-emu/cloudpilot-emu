@@ -16,6 +16,7 @@ export { default as HARD_BUTTONS_PEG_S320 } from '!raw-loader!./hard-buttons/cli
 export { default as HARD_BUTTONS_PEG_T415 } from '!raw-loader!./hard-buttons/clie-t415.svg';
 export { default as HARD_BUTTONS_PEG_N610 } from '!raw-loader!./hard-buttons/clie-n610.svg';
 export { default as HARD_BUTTONS_PEG_N700 } from '!raw-loader!./hard-buttons/clie-n700.svg';
+export { default as HARD_BUTTONS_PEG_NR70 } from '!raw-loader!./hard-buttons/clie-nr70.svg';
 
 export { default as SILKSCREEN_IIIC } from '!raw-loader!./silkscreen/iiic.svg';
 export { default as SILKSCREEN_M100 } from '!raw-loader!./silkscreen/m100.svg';
