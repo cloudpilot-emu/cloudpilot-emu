@@ -1595,3 +1595,14 @@ ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
             return ScreenDimensions::screen160x160;
     }
 }
+
+bool EmDevice::SupportsHardBtnCradle() const {
+    switch (fDeviceID) {
+        case kDeviceYSX1100:
+        case kDeviceYSX1230:
+            return false;
+
+        default:
+            return true;
+    }
+}

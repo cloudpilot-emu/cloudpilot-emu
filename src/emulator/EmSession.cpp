@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "CallbackManager.h"
+#include "Chars.h"
 #include "ChunkHelper.h"
 #include "EmBankSRAM.h"
 #include "EmCPU.h"
@@ -519,8 +520,12 @@ void EmSession::QueuePenEvent(PenEvent evt) { EmPalmOS::QueuePenEvent(evt); }
 void EmSession::QueueKeyboardEvent(KeyboardEvent evt) { EmPalmOS::QueueKeyboardEvent(evt); }
 
 void EmSession::QueueButtonEvent(ButtonEvent evt) {
-    if (buttonEventQueue.GetFree() == 0) buttonEventQueue.Get();
+    if (evt.GetButton() == ButtonEvent::Button::cradle && !device->SupportsHardBtnCradle()) {
+        if (evt.GetType() == ButtonEvent::Type::press) QueueKeyboardEvent(hardCradleChr);
+        return;
+    }
 
+    if (buttonEventQueue.GetFree() == 0) buttonEventQueue.Get();
     buttonEventQueue.Put(evt);
 }
 
