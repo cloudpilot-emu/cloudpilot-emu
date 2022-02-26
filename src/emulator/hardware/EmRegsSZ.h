@@ -129,9 +129,14 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     void pllRegisterWrite(emuptr address, int size, uint32 value);
     void adcIntControlWrite(emuptr address, int size, uint32 value);
     void sdramControlEWrite(emuptr address, int size, uint32 value);
+    void pwmc1Write(emuptr address, int size, uint32 value);
+    void pwms1Write(emuptr address, int size, uint32 value);
+    void pwmp1Write(emuptr address, int size, uint32 value);
 
     void UpdateTimers();
     void HandleDayRollover();
+    void DispatchPwmChange();
+    int32 GetSysClk();
 
     template <typename T>
     void DoSave(T& savestate);

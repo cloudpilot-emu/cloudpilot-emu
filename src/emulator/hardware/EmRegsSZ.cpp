@@ -1558,10 +1558,10 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, portRIntEdge);
     INSTALL_HANDLER(StdRead, StdWrite, portRIntPolarity);
 
-    INSTALL_HANDLER(StdRead, StdWrite, pwmControl);
+    INSTALL_HANDLER(StdRead, pwmc1Write, pwmControl);
     INSTALL_HANDLER(StdRead, StdWrite, pwmSampleHi);
-    INSTALL_HANDLER(StdRead, StdWrite, pwmSampleLo);
-    INSTALL_HANDLER(StdRead, StdWrite, pwmPeriod);
+    INSTALL_HANDLER(StdRead, pwms1Write, pwmSampleLo);
+    INSTALL_HANDLER(StdRead, pwmp1Write, pwmPeriod);
     INSTALL_HANDLER(StdRead, NullWrite, pwmCounter);
 
     INSTALL_HANDLER(StdRead, StdWrite, pwm2Control);
@@ -3693,19 +3693,24 @@ uint32 EmRegsSZ::CyclesToNextInterrupt(uint64 systemCycles) {
     return std::min(nextTimerEventAfterCycle - systemCycles, (uint64)0xffffffff);
 }
 
-void EmRegsSZ::UpdateTimers() {
-    nextTimerEventAfterCycle = ~0;
-    if (GetAsleep()) return;
-
+int32 EmRegsSZ::GetSysClk() {
     // WARNING! The terminology is off here. "SystemClockFrequency" in Cloudpilot
     // really refers to the CPU clock. However, for the SZ the CPU clock is equal
     // to the DMA clock, and this goes through an additional divider to generate
     // the actual system clock which drives the timer.
+
     const uint32 pllcr = READ_REGISTER(pllControl);
     const uint32 sysclkDiv = (pllcr & (1 << 10)) ? 1 : 2 << ((pllcr >> 8) & 0x03);
 
+    return GetSystemClockFrequency() / sysclkDiv;
+}
+
+void EmRegsSZ::UpdateTimers() {
+    nextTimerEventAfterCycle = ~0;
+    if (GetAsleep()) return;
+
     double clocksPerSecond = gSession->GetClocksPerSecond();
-    int32 systemClockFrequency = GetSystemClockFrequency() / sysclkDiv;
+    int32 systemClockFrequency = GetSysClk();
 
     double timer1TicksPerSecond = TimerTicksPerSecond(
         READ_REGISTER(tmr1Control), READ_REGISTER(tmr1Prescaler), systemClockFrequency);
@@ -3818,4 +3823,51 @@ void EmRegsSZ::sdramControlEWrite(emuptr address, int size, uint32 value) {
     EmRegsSZ::StdWrite(address, size, value);
 
     gSession->ScheduleResetBanks();
+}
+
+void EmRegsSZ::pwmc1Write(emuptr address, int size, uint32 value) {
+    EmRegsSZ::StdWrite(address, size, value);
+
+    if (pwmActive && !(value & 0x10)) {
+        pwmActive = false;
+        DispatchPwmChange();
+    }
+}
+
+void EmRegsSZ::pwms1Write(emuptr address, int size, uint32 value) {
+    EmRegsSZ::StdWrite(address, size, value);
+
+    if (READ_REGISTER(pwmControl) & 0x10) {
+        pwmActive = true;
+        DispatchPwmChange();
+    }
+}
+
+void EmRegsSZ::pwmp1Write(emuptr address, int size, uint32 value) {
+    EmRegsSZ::StdWrite(address, size, value);
+
+    if (pwmActive) DispatchPwmChange();
+}
+
+void EmRegsSZ::DispatchPwmChange() {
+    uint16 pwmc1 = READ_REGISTER(pwmControl);
+    uint8 pwms1 = READ_REGISTER(pwmSampleLo);
+    uint8 pwmp1 = READ_REGISTER(pwmPeriod);
+
+    if (!pwmActive) {
+        EmHAL::onPwmChange.Dispatch(-1, -1);
+
+        return;
+    }
+
+    uint8 prescaler = (pwmc1 >> 8) & 0x7f;
+    uint8 clksel = pwmc1 & 0x03;
+    uint32 baseFreq = (pwmc1 & 0x8000) ? 32768 : GetSysClk();
+
+    double freq = static_cast<double>(baseFreq) / (prescaler + 1) / (2 << clksel) /
+                  min(256u, static_cast<uint32>(pwmp1) + 2);
+
+    double dutyCycle = static_cast<double>(pwms1) / pwmp1;
+
+    if (freq <= 20000) EmHAL::onPwmChange.Dispatch(freq, dutyCycle);
 }
