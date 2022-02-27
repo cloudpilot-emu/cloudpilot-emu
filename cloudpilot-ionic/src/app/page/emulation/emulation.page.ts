@@ -178,8 +178,7 @@ export class EmulationPage {
         );
 
         this.canvasDisplayService.initialize(this.canvasRef.nativeElement, session).then(() => {
-            if (this.kvsService.kvs.showStatistics) this.canvasDisplayService.drawStatistics();
-
+            this.onKvsUpdate();
             this.kvsService.updateEvent.addHandler(this.onKvsUpdate);
         });
         this.onNewFrame(this.emulationService.getCanvas());
@@ -193,19 +192,21 @@ export class EmulationPage {
     }
 
     private onKvsUpdate = async (): Promise<void> => {
-        await this.canvasDisplayService.drawSilkscreen();
-
-        if (this.kvsService.kvs.showStatistics) this.canvasDisplayService.drawStatistics();
+        if (this.kvsService.kvs.showStatistics) {
+            this.canvasDisplayService.updateStatistics();
+        } else {
+            this.canvasDisplayService.clearStatistics();
+        }
     };
 
     private onSnapshot = (statistics: SnapshotStatistics): void => {
         if (this.kvsService.kvs.showStatistics) {
-            this.canvasDisplayService.drawStatistics(statistics, this.emulationService.getStatistics());
+            this.canvasDisplayService.updateStatistics(statistics, this.emulationService.getStatistics());
         }
     };
 
     private onNewFrame = (canvas: HTMLCanvasElement): void => {
-        this.canvasDisplayService.drawEmulationCanvas(canvas);
+        this.canvasDisplayService.updateEmulationCanvase(canvas);
     };
 
     private handleLinkApiInstallationRequest = (): void => {

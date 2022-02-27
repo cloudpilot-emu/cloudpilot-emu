@@ -1,9 +1,9 @@
-import { Injectable, defineInjectable } from '@angular/core';
 import { deviceDimensions, isColor } from '../helper/deviceProperties';
 
 import { DeviceId } from '../model/DeviceId';
 import { EmulationStatistics } from './../model/EmulationStatistics';
 import { GRAYSCALE_PALETTE_HEX } from './../helper/palette';
+import { Injectable } from '@angular/core';
 import { PalmButton } from '../helper/Cloudpilot';
 import { ScreenSize } from '../model/Dimensions';
 import { Session } from '../model/Session';
@@ -38,6 +38,7 @@ interface Layout {
     silkscreenHeight: FrameDependent;
     silkscreenTop: FrameDependent;
     silkscreenBottom: FrameDependent;
+    softSilkscreenHeight: FrameDependent;
     buttonHeight: FrameDependent;
     buttonWidth: FrameDependent;
     buttonTop: FrameDependent;
@@ -55,6 +56,20 @@ function buttonHeightForScreenSize(screenSize: ScreenSize) {
 
         default:
             return 30;
+    }
+}
+
+function fontScaleForScreenSize(screenSize: ScreenSize) {
+    switch (screenSize) {
+        case ScreenSize.screen320x320:
+        case ScreenSize.screen320x480:
+            return 2;
+
+        case ScreenSize.screen240x320:
+            return 1.5;
+
+        default:
+            return 1;
     }
 }
 
@@ -89,6 +104,7 @@ function calculateLayout(device: DeviceId): Layout {
         silkscreenHeight: dist(dimensions.silkscreenHeight),
         silkscreenTop: coord(dimensions.height + separatorHeight.frameDevice),
         silkscreenBottom: coord(dimensions.height + separatorHeight.frameDevice + dimensions.silkscreenHeight),
+        softSilkscreenHeight: dist(dimensions.silkscreenHeight > 0 ? 0 : dimensions.height - dimensions.width),
         buttonHeight,
         buttonWidth: buttonHeight,
         buttonTop: coord(dimensions.height + separatorHeight.frameDevice + dimensions.silkscreenHeight),
@@ -228,81 +244,6 @@ export class CanvasDisplayService {
         await Promise.all([this.drawSilkscreen(), this.drawButtons()]);
     }
 
-    async drawSilkscreen(): Promise<void> {
-        if (this.layout.silkscreenHeight.frameCanvas == 0) return;
-
-        if (!this.ctx) return;
-
-        this.fillRect(
-            this.layout.screenLeft.frameDevice,
-            this.layout.silkscreenTop.frameDevice,
-            this.layout.screenWidth.frameDevice,
-            this.layout.silkscreenHeight.frameDevice,
-            BACKGROUND_COLOR_SILKSCREEN
-        );
-
-        this.ctx.imageSmoothingEnabled = true;
-        this.ctx.imageSmoothingQuality = 'high';
-
-        this.ctx.drawImage(
-            await this.silkscreenImage()(this.layout.screenWidth.frameCanvas, this.layout.silkscreenHeight.frameCanvas),
-            this.layout.borderWidth.frameCanvas,
-            this.layout.silkscreenTop.frameCanvas,
-            this.layout.screenWidth.frameCanvas,
-            this.layout.silkscreenHeight.frameCanvas
-        );
-    }
-
-    async drawStatistics(
-        snapshotStatistics?: SnapshotStatistics,
-        emulationStatistics?: EmulationStatistics
-    ): Promise<void> {
-        if (this.layout.silkscreenHeight.frameCanvas == 0) return;
-
-        if (!this.ctx) return;
-
-        await this.drawSilkscreen();
-
-        this.ctx.beginPath();
-        this.fillRect(
-            this.layout.screenLeft.frameDevice,
-            this.layout.silkscreenTop.frameDevice,
-            this.layout.screenWidth.frameDevice,
-            this.layout.silkscreenHeight.frameDevice,
-            'rgba(255,255,255,0.6)'
-        );
-
-        const screenSize = deviceDimensions(this.session?.device ?? DEFAULT_DEVICE).screenSize;
-        const fontScale = screenSize === ScreenSize.screen320x320 ? 2 : 1;
-
-        this.ctx.font = `${this.layout.scale * 6 * fontScale}px monospace`;
-        this.ctx.fillStyle = 'black';
-        [
-            ...(!snapshotStatistics && !emulationStatistics ? ['collecting statistics...'] : []),
-            ...(snapshotStatistics
-                ? [
-                      `last snapshot          : ${new Date(snapshotStatistics.timestamp).toLocaleTimeString()}`,
-                      `snapshot pages         : ${snapshotStatistics.pages}`,
-                      `snapshot time total    : ${snapshotStatistics.timeTotal.toFixed(2)} msec`,
-                      `snapshot time blocking : ${snapshotStatistics.timeBlocking.toFixed(2)} msec`,
-                  ]
-                : []),
-            ...(emulationStatistics
-                ? [
-                      `host speed             : ${emulationStatistics.hostSpeed.toFixed(2)}x`,
-                      `emulation speed        : ${emulationStatistics.emulationSpeed.toFixed(2)}x`,
-                      `average FPS            : ${emulationStatistics.averageFPS.toFixed(2)}`,
-                  ]
-                : []),
-        ].forEach((line, i) =>
-            this.ctx!.fillText(
-                line,
-                this.layout.screenLeft.frameCanvas + fontScale * this.layout.scale,
-                this.layout.silkscreenTop.frameCanvas + fontScale * this.layout.scale * (8 + i * 6)
-            )
-        );
-    }
-
     async drawButtons(activeButtons: Array<PalmButton> = []): Promise<void> {
         if (!this.ctx) return;
 
@@ -370,17 +311,35 @@ export class CanvasDisplayService {
         }
     }
 
-    drawEmulationCanvas(canvas: HTMLCanvasElement): void {
-        if (!this.ctx) return;
+    async clearStatistics(): Promise<void> {
+        this.statisticsVisible = false;
 
-        this.ctx.imageSmoothingEnabled = false;
-        this.ctx.drawImage(
-            canvas,
-            this.layout.screenLeft.frameCanvas,
-            this.layout.screenTop.frameCanvas,
-            this.layout.screenWidth.frameCanvas,
-            this.layout.screenHeight.frameCanvas
-        );
+        if (this.layout.silkscreenHeight.frameCanvas > 0) {
+            await this.drawSilkscreen();
+        } else {
+            await this.drawEmulationCanvas();
+        }
+    }
+
+    async updateStatistics(
+        snapshotStatistics?: SnapshotStatistics,
+        emulationStatistics?: EmulationStatistics
+    ): Promise<void> {
+        await this.clearStatistics();
+
+        this.drawStatistics(snapshotStatistics, emulationStatistics);
+
+        this.lastEmulationStatistics = emulationStatistics;
+        this.lastSnapshotStatistics = snapshotStatistics;
+        this.statisticsVisible = true;
+    }
+
+    updateEmulationCanvase(canvas?: HTMLCanvasElement) {
+        this.drawEmulationCanvas(canvas);
+
+        if (this.statisticsVisible && this.layout.silkscreenHeight.frameCanvas === 0) {
+            this.drawStatistics(this.lastSnapshotStatistics, this.lastEmulationStatistics);
+        }
     }
 
     eventToPalmCoordinates(e: MouseEvent | Touch, clip = false): [number, number] | undefined {
@@ -475,6 +434,104 @@ export class CanvasDisplayService {
         if (x >= this.layout.buttonWidth.frameDevice) return PalmButton.phone;
 
         return PalmButton.cal;
+    }
+
+    private async drawSilkscreen(): Promise<void> {
+        if (this.layout.silkscreenHeight.frameCanvas === 0) return;
+
+        if (!this.ctx) return;
+
+        this.fillRect(
+            this.layout.screenLeft.frameDevice,
+            this.layout.silkscreenTop.frameDevice,
+            this.layout.screenWidth.frameDevice,
+            this.layout.silkscreenHeight.frameDevice,
+            BACKGROUND_COLOR_SILKSCREEN
+        );
+
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
+
+        this.ctx.drawImage(
+            await this.silkscreenImage()(this.layout.screenWidth.frameCanvas, this.layout.silkscreenHeight.frameCanvas),
+            this.layout.borderWidth.frameCanvas,
+            this.layout.silkscreenTop.frameCanvas,
+            this.layout.screenWidth.frameCanvas,
+            this.layout.silkscreenHeight.frameCanvas
+        );
+    }
+
+    private async drawStatistics(
+        snapshotStatistics?: SnapshotStatistics,
+        emulationStatistics?: EmulationStatistics
+    ): Promise<void> {
+        if (!this.ctx) return;
+
+        const height =
+            this.layout.silkscreenHeight.frameDevice > 0
+                ? this.layout.silkscreenHeight
+                : this.layout.softSilkscreenHeight;
+
+        const top =
+            this.layout.silkscreenHeight.frameCanvas > 0
+                ? this.layout.silkscreenTop
+                : {
+                      frameCanvas: this.layout.screenBottom.frameCanvas - height.frameCanvas,
+                      frameDevice: this.layout.screenBottom.frameDevice - height.frameDevice,
+                  };
+
+        this.ctx.beginPath();
+        this.fillRect(
+            this.layout.screenLeft.frameDevice,
+            top.frameDevice,
+            this.layout.screenWidth.frameDevice,
+            height.frameDevice,
+            'rgba(255,255,255,0.6)'
+        );
+
+        const screenSize = deviceDimensions(this.session?.device ?? DEFAULT_DEVICE).screenSize;
+        const fontScale = fontScaleForScreenSize(screenSize);
+
+        this.ctx.font = `${this.layout.scale * 6 * fontScale}px monospace`;
+        this.ctx.fillStyle = 'black';
+        [
+            ...(!snapshotStatistics && !emulationStatistics ? ['collecting statistics...'] : []),
+            ...(snapshotStatistics
+                ? [
+                      `last snapshot          : ${new Date(snapshotStatistics.timestamp).toLocaleTimeString()}`,
+                      `snapshot pages         : ${snapshotStatistics.pages}`,
+                      `snapshot time total    : ${snapshotStatistics.timeTotal.toFixed(2)} msec`,
+                      `snapshot time blocking : ${snapshotStatistics.timeBlocking.toFixed(2)} msec`,
+                  ]
+                : []),
+            ...(emulationStatistics
+                ? [
+                      `host speed             : ${emulationStatistics.hostSpeed.toFixed(2)}x`,
+                      `emulation speed        : ${emulationStatistics.emulationSpeed.toFixed(2)}x`,
+                      `average FPS            : ${emulationStatistics.averageFPS.toFixed(2)}`,
+                  ]
+                : []),
+        ].forEach((line, i) =>
+            this.ctx!.fillText(
+                line,
+                this.layout.screenLeft.frameCanvas + fontScale * this.layout.scale,
+                top.frameCanvas + fontScale * this.layout.scale * (8 + i * 6)
+            )
+        );
+    }
+
+    private drawEmulationCanvas(canvas = this.lastEmulationCanvas): void {
+        if (!canvas || !this.ctx) return;
+        this.lastEmulationCanvas = canvas;
+
+        this.ctx.imageSmoothingEnabled = false;
+        this.ctx.drawImage(
+            canvas,
+            this.layout.screenLeft.frameCanvas,
+            this.layout.screenTop.frameCanvas,
+            this.layout.screenWidth.frameCanvas,
+            this.layout.screenHeight.frameCanvas
+        );
     }
 
     private fillRect(x: number, y: number, width: number, height: number, style: string): void {
@@ -643,6 +700,11 @@ export class CanvasDisplayService {
     private ctx: CanvasRenderingContext2D | undefined;
     private session: Session | undefined;
     private layout = calculateLayout(DEFAULT_DEVICE);
+    private lastEmulationCanvas: HTMLCanvasElement | undefined;
+
+    lastSnapshotStatistics?: SnapshotStatistics;
+    lastEmulationStatistics?: EmulationStatistics;
+    statisticsVisible = false;
 
     // private dimensions = DEFAULT_DIMENSIONS;
 }
