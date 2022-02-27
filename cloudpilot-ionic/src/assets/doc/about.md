@@ -18,6 +18,8 @@ emulated:
 -   Sony PEG-N600C series
 -   Sony PEG-T600C series
 -   Sony PEG-N700C series
+-   Sony PEG-T650C series
+-   Sony PEG-NR70 series
 
 The coorrect device type is automatically determined from the ROM you load. If
 there are multiple possible devices CloudpilotEmu will let you choose when you

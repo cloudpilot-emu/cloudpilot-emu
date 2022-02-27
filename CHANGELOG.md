@@ -1,6 +1,7 @@
 # Next version
 
 -   Support for PEG-NR70 and PEG-T650C series.
+-   Support statistics display on soft silkscreen devices.
 
 # 1.6.4
 

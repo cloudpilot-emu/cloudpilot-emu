@@ -47,6 +47,8 @@ The following devices are currently emulated:
 -   Sony PEG-N600C series
 -   Sony PEG-T600C series
 -   Sony PEG-N700C series
+-   Sony PEG-T650C series
+-   Sony PEG-NR70 series
 
 ## Other versions
 
