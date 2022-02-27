@@ -23,10 +23,11 @@ export enum DeviceId {
     handera330 = 'HandEra330',
     pegS300 = 'PEG-S300',
     pegS320 = 'PEG-S320',
+    pegS500c = 'PEG-S500C',
     pegT400 = 'PEG-T400',
     pegN600c = 'PEG-N600C/N610C',
     pegT600c = 'PEG-T600',
     pegN700c = 'PEG-N700C/N710C',
-    pegT650C = 'YSX1230',
+    pegT650c = 'YSX1230',
     pegNR70 = 'NR70',
 }

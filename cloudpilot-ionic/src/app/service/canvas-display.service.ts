@@ -176,6 +176,7 @@ const IMAGE_SILKSCREEN_TUNGSTENW = prepareImage('SILKSCREEN_TUNGSTEN_W');
 const IMAGE_SILKSCREEN_PILOT = prepareImage('SILKSCREEN_PILOT');
 const IMAGE_SILKSCREEN_I705 = prepareImage('SILKSCREEN_I705');
 const IMAGE_SILKSCREEN_PEG_S300 = prepareImage('SILKSCREEN_PEG_S300');
+const IMAGE_SILKSCREEN_PEG_S500 = prepareImage('SILKSCREEN_PEG_S500');
 const IMAGE_SILKSCREEN_PEG_T415 = prepareImage('SILKSCREEN_PEG_T415');
 const IMAGE_SILKSCREEN_PEG_N610 = prepareImage('SILKSCREEN_PEG_N610');
 const IMAGE_SILKSCREEN_PEG_T600 = prepareImage('SILKSCREEN_PEG_T600');
@@ -194,6 +195,7 @@ const IMAGE_BUTTONS_PILOT = prepareImage('HARD_BUTTONS_PILOT');
 const IMAGE_BUTTONS_I705 = prepareImage('HARD_BUTTONS_I705');
 const IMAGE_BUTTONS_HANDERA330 = prepareImage('HARD_BUTTONS_HANDERA330');
 const IMAGE_HARD_BUTTONS_PEG_S300 = prepareImage('HARD_BUTTONS_PEG_S300');
+const IMAGE_HARD_BUTTONS_PEG_S500 = prepareImage('HARD_BUTTONS_PEG_S500');
 const IMAGE_HARD_BUTTONS_PEG_S320 = prepareImage('HARD_BUTTONS_PEG_S320');
 const IMAGE_HARD_BUTTONS_PEG_T415 = prepareImage('HARD_BUTTONS_PEG_T415');
 const IMAGE_HARD_BUTTONS_PEG_N610 = prepareImage('HARD_BUTTONS_PEG_N610');
@@ -560,7 +562,7 @@ export class CanvasDisplayService {
     private silkscreenImage(): PrerenderedImage {
         switch (this.session?.device) {
             case DeviceId.pegT600c:
-            case DeviceId.pegT650C:
+            case DeviceId.pegT650c:
                 return IMAGE_SILKSCREEN_PEG_T600;
 
             case DeviceId.pegN700c:
@@ -570,6 +572,9 @@ export class CanvasDisplayService {
             case DeviceId.pegS320:
             case DeviceId.pegS300:
                 return IMAGE_SILKSCREEN_PEG_S300;
+
+            case DeviceId.pegS500c:
+                return IMAGE_SILKSCREEN_PEG_S500;
 
             case DeviceId.pegT400:
                 return IMAGE_SILKSCREEN_PEG_T415;
@@ -630,12 +635,15 @@ export class CanvasDisplayService {
             case DeviceId.pegS300:
                 return IMAGE_HARD_BUTTONS_PEG_S300;
 
+            case DeviceId.pegS500c:
+                return IMAGE_HARD_BUTTONS_PEG_S500;
+
             case DeviceId.pegS320:
                 return IMAGE_HARD_BUTTONS_PEG_S320;
 
             case DeviceId.pegT400:
             case DeviceId.pegT600c:
-            case DeviceId.pegT650C:
+            case DeviceId.pegT650c:
                 return IMAGE_HARD_BUTTONS_PEG_T415;
 
             case DeviceId.pilot:

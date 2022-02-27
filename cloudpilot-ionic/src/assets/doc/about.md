@@ -14,6 +14,7 @@ emulated:
 -   Tungsten W (silkscreen version)
 -   Handera 330
 -   Sony PEG-S300, PEG-S320
+-   Sony PEG-S500C series
 -   Sony PEG-T400 series
 -   Sony PEG-N600C series
 -   Sony PEG-T600C series
@@ -143,11 +144,12 @@ In order to force check for an update terminate and restart the app.
     PalmOS on the wrong foot and crash the emulator. In particular, this happens
     if a file is installed on a virtual Palm IIIc with PalmOS 3.5 while the
     launcher is active and the category menu is open.
--   The power switch on the Tungsten W andd i705 does not operate correctly and
-    is disabled. You'll have to do a reset in order to wake up the device if you
-    acidentially power off via software.
+-   Tungsten W, i705, PEG-T650C and PEG-NR70 cannot enter and exit sleep correctly,
+    and the corresponding functionality has been disabled.
 -   On Clié devices, audio is not emulated beyond the usual beeps.
--   External memory (CF card, SD card, memory stick) is not supported
+-   External memory (CF card, SD card, memory stick) is not supported.
+-   The MQ-1168 video chip in PEG-NR70 series devices is not emulated beyond
+    framebuffer support, 2D acceleration is not available.
 
 # CloudpilotEmu on the web
 

@@ -22,6 +22,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
 
         case DeviceId.pegS300:
         case DeviceId.pegS320:
+        case DeviceId.pegS500c:
             return {
                 screenSize: ScreenSize.screen160x160,
                 width: 160,
@@ -31,7 +32,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
 
         case DeviceId.pegT600c:
         case DeviceId.pegT400:
-        case DeviceId.pegT650C:
+        case DeviceId.pegT650c:
             return {
                 screenSize: ScreenSize.screen320x320,
                 width: 320,
@@ -89,8 +90,6 @@ export function isColor(deviceId: DeviceId | undefined): boolean {
         case DeviceId.pegS300:
         case DeviceId.pegS320:
         case DeviceId.pegT400:
-        case DeviceId.pegT650C:
-        case DeviceId.pegNR70:
             return false;
 
         default:
@@ -184,11 +183,14 @@ export function deviceName(deviceId: DeviceId): string {
         case DeviceId.pegN700c:
             return 'Sony PEG-N700C series';
 
-        case DeviceId.pegT650C:
+        case DeviceId.pegT650c:
             return 'Sony PEG-T650C series';
 
         case DeviceId.pegNR70:
             return 'Sony PEG-NR70 series';
+
+        case DeviceId.pegS500c:
+            return 'Sony PEG-S500C series';
 
         default:
             throw new Error('bad device ID');
@@ -196,7 +198,7 @@ export function deviceName(deviceId: DeviceId): string {
 }
 
 export function quirkNoPoweroff(deviceId: DeviceId) {
-    return [DeviceId.i705, DeviceId.i710, DeviceId.pegNR70, DeviceId.pegT650C].includes(deviceId);
+    return [DeviceId.i705, DeviceId.i710, DeviceId.pegNR70, DeviceId.pegT650c].includes(deviceId);
 }
 
 export function supportsDBExport(deviceId: DeviceId) {

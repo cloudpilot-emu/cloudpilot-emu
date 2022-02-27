@@ -66,6 +66,7 @@
 #include "EmRegsEZPalmVx.h"
 #include "EmRegsExpCardCLIE.h"
 #include "EmRegsEzPegS300.h"
+#include "EmRegsEzPegS500C.h"
 #include "EmRegsFMSound.h"
 #include "EmRegsFrameBuffer.h"
 #include "EmRegsLCDCtrlT2.h"
@@ -158,6 +159,7 @@ enum  // DeviceType
     kDevicePEGN700C,
     kDeviceYSX1230,
     kDeviceYSX1100,
+    kDevicePEGS500C,
     kDeviceLast
 };
 
@@ -524,6 +526,7 @@ static const DeviceInfo kDeviceInfo[] = {
      UNSUPPORTED,
      UNSUPPORTED,
      {{'sony', 'rdwd'}}},
+    {kDevicePEGS500C, "PEG-S500C series", {"PEG-S500C"}, kSupports68EZ328, 8192, 0, 0, {}},
 #if 0
     // ===== Handspring devices =====
     {
@@ -916,6 +919,11 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
             break;
 
 #endif
+        case kDevicePEGS500C:
+            if (!(ROM.GetCardManufacturer().compare(0, 16, "SONY Corporation")) && isColor)
+                return true;
+            break;
+
         case kDevicePEGS300:
             if (!(ROM.GetCardManufacturer().compare(0, 16, "SONY Corporation")) && !isColor)
                 return true;
@@ -1155,6 +1163,18 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsExpCardCLIE);
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x11000000L, 0));
             break;
+
+        case kDevicePEGS500C: {
+            EmBankRegs::AddSubBank(new EmRegsEzPegS500C());
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(sed1375BaseAddress);
+            EmBankRegs::AddSubBank(
+                new EmRegsSED1375(sed1375RegsAddr, sed1375BaseAddress, *framebuffer));
+            EmBankRegs::AddSubBank(framebuffer);
+
+            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE());
+            EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x00100000));
+        } break;
 
         case kDevicePEGT400:
             EmBankRegs::AddSubBank(new EmRegsVzPegVenice);
@@ -1473,6 +1493,7 @@ uint32 EmDevice::FramebufferSize() const {
         case kDevicePalmIIIc:
         case kDevicePalmM505:
         case kDevicePalmM515:
+        case kDevicePEGS500C:
         case kDeviceVisorPrism:
             return 80;
 
@@ -1526,6 +1547,7 @@ bool EmDevice::IsClie() const {
         case kDevicePEGN700C:
         case kDeviceYSX1230:
         case kDeviceYSX1100:
+        case kDevicePEGS500C:
             return true;
 
         default:

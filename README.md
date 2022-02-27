@@ -43,6 +43,7 @@ The following devices are currently emulated:
 -   Tungsten W (silkscreen version)
 -   Handera 330
 -   Sony PEG-S300, PEG-S320
+-   Sony PEG-S500C series
 -   Sony PEG-T400 series
 -   Sony PEG-N600C series
 -   Sony PEG-T600C series

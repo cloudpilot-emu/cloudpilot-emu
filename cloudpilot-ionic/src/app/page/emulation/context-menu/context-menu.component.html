@@ -1,5 +1,5 @@
 <ion-list>
-  <ion-item button [detail]="false" (click)="power()" [disabled]="!emulationService.isRunning() || powerDisabled">
+  <ion-item button [detail]="false" (click)="power()" [disabled]="!emulationService.isRunning()" *ngIf="!powerDisabled">
     <ion-label>Power</ion-label>
     <ion-icon name="power-outline" slot="end"></ion-icon>
   </ion-item>

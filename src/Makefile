@@ -159,6 +159,7 @@ SOURCE_EMU = \
 	emulator/hardware/clie/EmRegsUsbCLIE.cpp \
 	emulator/hardware/clie/EmRegsFMSound.cpp \
 	emulator/hardware/clie/EmRegsEzPegS300.cpp \
+	emulator/hardware/clie/EmRegsEzPegS500C.cpp \
 	emulator/hardware/clie/EmRegsVZPegNasca.cpp \
 	emulator/hardware/clie/EmRegsVZPegVenice.cpp \
 	emulator/hardware/clie/EmRegsVZPegYellowStone.cpp \
