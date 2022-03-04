@@ -55,7 +55,7 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDBacklightOn(void) = 0;
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr&, emuptr&);
-    virtual bool CopyLCDFrame(Frame& frame);
+    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
     virtual uint16 GetLCD2bitMapping();
 
     virtual EmUARTDeviceType GetUARTDevice(int uartNum);

@@ -34,8 +34,13 @@ class EmSystemState {
     const string& GetHotsyncUserName() const;
 
     bool IsScreenDirty() const;
-    inline void MarkScreenDirty() { screenDirty = true; }
+    bool ScreenRequiresFullRefresh() const;
     void MarkScreenClean();
+    inline void MarkScreenDirty();
+    inline void MarkScreenDirty(emuptr addressLo, emuptr addressHi);
+
+    emuptr GetScreenHighWatermark() const;
+    emuptr GetScreenLowWatermark() const;
 
    public:
     EmEvent<> onMarkScreenClean;
@@ -45,6 +50,8 @@ class EmSystemState {
     void DoSaveLoad(T& helper, uint32 version);
 
    private:
+    enum class ScreenState : uint8 { clean, dirty, needsFullRefresh };
+
     uint32 osVersion{0};
 
     bool uiInitialized{false};
@@ -52,9 +59,28 @@ class EmSystemState {
 
     string hotsyncUserName;
 
-    bool screenDirty;
+    ScreenState screenState;
+    emuptr screenHighWatermark;
+    emuptr screenLowWatermark;
 };
 
 extern EmSystemState gSystemState;
+
+///////////////////////////////////////////////////////////////////////////////
+// IMPLEMENTATION
+///////////////////////////////////////////////////////////////////////////////
+
+inline void EmSystemState::MarkScreenDirty() { screenState = ScreenState::needsFullRefresh; }
+
+inline void EmSystemState::MarkScreenDirty(emuptr addressLo, emuptr addressHi) {
+    if (likely(screenState == ScreenState::dirty)) {
+        if (addressLo < screenLowWatermark) screenLowWatermark = addressLo;
+        if (addressHi > screenHighWatermark) screenHighWatermark = addressHi;
+    } else if (screenState == ScreenState::clean) {
+        screenLowWatermark = addressLo;
+        screenHighWatermark = addressHi;
+        screenState = ScreenState::dirty;
+    }
+}
 
 #endif  // _EM_SYSTEM_STATE_H_

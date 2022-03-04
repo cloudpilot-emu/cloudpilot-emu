@@ -199,8 +199,8 @@ Bool EmRegsVzPegVenice::GetVibrateOn(void) {
     return (portKData & hwrVZVenicePortKVibrate);
 }
 
-bool EmRegsVzPegVenice::CopyLCDFrame(Frame& frame) {
-    if (!EmRegsVZ::CopyLCDFrame(frame)) {
+bool EmRegsVzPegVenice::CopyLCDFrame(Frame& frame, bool fullRefresh) {
+    if (!EmRegsVZ::CopyLCDFrame(frame, true)) {
         return false;
     }
 
@@ -282,6 +282,8 @@ bool EmRegsVzPegVenice::CopyLCDFrame(Frame& frame) {
     frame.lines = 320;
     frame.lineWidth = 320;
     frame.margin = 0;
+    frame.firstDirtyLine = 0;
+    frame.lastDirtyLine = 319;
 
     for (int y = 0; y < 160; y++) {
         memcpy(buffer + 2 * y * frame.bytesPerLine, bufferTmp + y * frame.bytesPerLine / 4,

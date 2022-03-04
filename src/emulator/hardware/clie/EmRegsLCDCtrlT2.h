@@ -315,7 +315,7 @@ class EmRegsMQLCDControlT2 : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
     virtual uint16 GetLCD2bitMapping();
-    virtual bool CopyLCDFrame(Frame& frame);
+    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
 
     static UInt16 GetResolutionMode();
 
@@ -323,7 +323,7 @@ class EmRegsMQLCDControlT2 : public EmRegs, public EmHALHandler {
     void ColorPaletteWrite(emuptr address, int size, uint32 value);
 
     template <typename T, int scale>
-    bool CopyLCDFrameWithScale(Frame& frame);
+    bool CopyLCDFrameWithScale(Frame& frame, bool fullRefresh);
 
     uint32 DC380Read(emuptr address, int size);
 

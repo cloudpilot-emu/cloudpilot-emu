@@ -32,8 +32,12 @@ MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer, int scale)
 
     SDL_RenderPresent(renderer);
 
-    lcdTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING,
+    lcdTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_TARGET,
                                    screenDimensions.Width(), screenDimensions.Height());
+
+    lcdTempTexture =
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING,
+                          screenDimensions.Width(), screenDimensions.Height());
 }
 
 bool MainLoop::IsRunning() const { return !eventHandler.IsQuit(); }
@@ -94,79 +98,102 @@ void MainLoop::UpdateScreen() {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
 
-    SDL_Rect dest = {.x = 0,
-                     .y = 0,
-                     .w = static_cast<int32>(scale * screenDimensions.Width()),
-                     .h = static_cast<int32>(scale * screenDimensions.Height())};
-
     if (gSession->IsPowerOn() && EmHAL::CopyLCDFrame(frame)) {
-        if (frame.lineWidth != screenDimensions.Width() || frame.lines != screenDimensions.Height())
-            return;
+        if (frame.firstDirtyLine >= 0 && frame.lastDirtyLine >= 0 &&
+            frame.lineWidth == screenDimensions.Width() &&
+            frame.lines == screenDimensions.Height()) {
+            uint32* pixels;
+            int pitch;
+            uint8* buffer = frame.GetBuffer();
 
-        uint32* pixels;
-        int pitch;
-        uint8* buffer = frame.GetBuffer();
+            SDL_LockTexture(lcdTempTexture, nullptr, (void**)&pixels, &pitch);
 
-        SDL_LockTexture(lcdTexture, nullptr, (void**)&pixels, &pitch);
+            switch (frame.bpp) {
+                case 1: {
+                    Nibbler<1> nibbler;
 
-        switch (frame.bpp) {
-            case 1: {
-                Nibbler<1> nibbler;
+                    for (int32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                        nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
 
-                for (uint32 y = 0; y < frame.lines; y++) {
-                    nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
+                        for (uint32 x = 0; x < frame.lineWidth; x++)
+                            pixels[y * pitch / 4 + x] =
+                                nibbler.nibble() == 0 ? BACKGROUND_COLOR : FOREGROUND_COLOR;
+                    }
+                } break;
 
-                    for (uint32 x = 0; x < frame.lineWidth; x++)
-                        pixels[y * pitch / 4 + x] =
-                            nibbler.nibble() == 0 ? BACKGROUND_COLOR : FOREGROUND_COLOR;
-                }
-            } break;
+                case 4: {
+                    Nibbler<4> nibbler;
 
-            case 4: {
-                Nibbler<4> nibbler;
+                    for (int32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                        nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
 
-                for (uint32 y = 0; y < frame.lines; y++) {
-                    nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
+                        for (uint32 x = 0; x < frame.lineWidth; x++)
+                            pixels[y * pitch / 4 + x] = PALETTE_GRAYSCALE_16[nibbler.nibble()];
+                    }
+                } break;
 
-                    for (uint32 x = 0; x < frame.lineWidth; x++)
-                        pixels[y * pitch / 4 + x] = PALETTE_GRAYSCALE_16[nibbler.nibble()];
-                }
-            } break;
+                case 2: {
+                    uint16 mapping = EmHAL::GetLCD2bitMapping();
 
-            case 2: {
-                uint16 mapping = EmHAL::GetLCD2bitMapping();
+                    uint32 palette[4] = {PALETTE_GRAYSCALE_16[mapping & 0x000f],
+                                         PALETTE_GRAYSCALE_16[(mapping >> 4) & 0x000f],
+                                         PALETTE_GRAYSCALE_16[(mapping >> 8) & 0x000f],
+                                         PALETTE_GRAYSCALE_16[(mapping >> 12) & 0x000f]};
 
-                uint32 palette[4] = {PALETTE_GRAYSCALE_16[mapping & 0x000f],
-                                     PALETTE_GRAYSCALE_16[(mapping >> 4) & 0x000f],
-                                     PALETTE_GRAYSCALE_16[(mapping >> 8) & 0x000f],
-                                     PALETTE_GRAYSCALE_16[(mapping >> 12) & 0x000f]};
+                    Nibbler<2> nibbler;
 
-                Nibbler<2> nibbler;
+                    for (int32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                        nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
 
-                for (uint32 y = 0; y < frame.lines; y++) {
-                    nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
+                        for (uint32 x = 0; x < frame.lineWidth; x++)
+                            pixels[y * pitch / 4 + x] = palette[nibbler.nibble()];
+                    }
+                } break;
 
-                    for (uint32 x = 0; x < frame.lineWidth; x++)
-                        pixels[y * pitch / 4 + x] = palette[nibbler.nibble()];
-                }
-            } break;
+                case 24: {
+                    for (int32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                        uint32* buffer32 =
+                            reinterpret_cast<uint32*>(buffer) + y * frame.lineWidth + frame.margin;
 
-            case 24: {
-                for (uint32 y = 0; y < frame.lines; y++) {
-                    uint32* buffer32 =
-                        reinterpret_cast<uint32*>(buffer) + y * frame.lineWidth + frame.margin;
+                        for (uint32 x = 0; x < frame.lineWidth; x++)
+                            pixels[y * pitch / 4 + x] = *(buffer32++);
+                    }
+                } break;
+            }
 
-                    for (uint32 x = 0; x < frame.lineWidth; x++)
-                        pixels[y * pitch / 4 + x] = *(buffer32++);
-                }
-            } break;
+            SDL_UnlockTexture(lcdTempTexture);
+
+            SDL_Rect src = {
+                .x = 0,
+                .y = static_cast<int32>(frame.firstDirtyLine),
+                .w = static_cast<int32>(frame.lineWidth),
+                .h = static_cast<int32>(frame.lastDirtyLine - frame.firstDirtyLine + 1)};
+
+            SDL_Rect dest = {
+                .x = 0,
+                .y = static_cast<int32>(frame.firstDirtyLine),
+                .w = static_cast<int32>(frame.lineWidth),
+                .h = static_cast<int32>(frame.lastDirtyLine - frame.firstDirtyLine + 1)};
+
+            SDL_SetRenderTarget(renderer, lcdTexture);
+            SDL_RenderCopy(renderer, lcdTempTexture, &src, &dest);
         }
 
-        SDL_UnlockTexture(lcdTexture);
+        SDL_Rect dest = {.x = 0,
+                         .y = 0,
+                         .w = static_cast<int32>(scale * screenDimensions.Width()),
+                         .h = static_cast<int32>(scale * screenDimensions.Height())};
 
+        SDL_SetRenderTarget(renderer, nullptr);
         SDL_RenderCopy(renderer, lcdTexture, nullptr, &dest);
     } else {
         SDL_SetRenderDrawColor(renderer, BACKGROUND_HUE, BACKGROUND_HUE, BACKGROUND_HUE, 0xff);
+
+        SDL_Rect dest = {.x = 0,
+                         .y = 0,
+                         .w = static_cast<int32>(scale * screenDimensions.Width()),
+                         .h = static_cast<int32>(scale * screenDimensions.Height())};
+
         SDL_RenderFillRect(renderer, &dest);
     }
 

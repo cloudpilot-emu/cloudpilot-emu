@@ -22,7 +22,7 @@ class EmRegsVzPegVenice : public EmRegsVZ {
     virtual uint8 GetPortInternalValue(int);
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows);
 
-    virtual bool CopyLCDFrame(Frame& frame);
+    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
 
    protected:
     virtual EmSPISlave* GetSPISlave(void);

@@ -27,6 +27,7 @@ class MainLoop {
    private:
     SDL_Renderer* renderer{nullptr};
     SDL_Texture* lcdTexture{nullptr};
+    SDL_Texture* lcdTempTexture{nullptr};
     SDL_Texture* silkscreenTexture{nullptr};
 
     int scale{1};

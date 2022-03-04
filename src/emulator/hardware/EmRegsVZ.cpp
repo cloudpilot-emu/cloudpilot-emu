@@ -926,15 +926,15 @@ uint32 EmRegsVZ::GetAddressRange(void) { return kMemorySize; }
 // is in its own separate function instead of being inline.
 
 inline void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
-    if (afterLoad) {
+    if (unlikely(afterLoad)) {
         DispatchPwmChange();
         afterLoad = false;
     }
 
-    if (powerOffCached) return;
+    if (unlikely(powerOffCached)) return;
 
     this->systemCycles = systemCycles;
-    if (systemCycles >= nextTimerEventAfterCycle) UpdateTimers();
+    if (unlikely(systemCycles >= nextTimerEventAfterCycle)) UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -1160,13 +1160,15 @@ void EmRegsVZ::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
     end = baseAddr + rowBytes * height;
 }
 
-bool EmRegsVZ::CopyLCDFrame(Frame& frame) {
+bool EmRegsVZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     // Get the screen metrics.
     frame.bpp = 1 << (READ_REGISTER(lcdPanelControl) & 0x03);
     frame.lineWidth = READ_REGISTER(lcdScreenWidth);
     frame.lines = READ_REGISTER(lcdScreenHeight) + 1;
     frame.bytesPerLine = READ_REGISTER(lcdPageWidth) * 2;
     frame.margin = READ_REGISTER(lcdPanningOffset);
+    frame.firstDirtyLine = 0;
+    frame.lastDirtyLine = frame.lines - 1;
     emuptr baseAddr = READ_REGISTER(lcdStartAddr);
 
     if (baseAddr == 0) return false;
@@ -3047,7 +3049,9 @@ void EmRegsVZ::DispatchPwmChange() {
     if (freq <= 20000) EmHAL::onPwmChange.Dispatch(freq, dutyCycle);
 }
 
-bool EmRegsVZNoScreen::CopyLCDFrame(Frame& frame) { return EmHALHandler::CopyLCDFrame(frame); }
+bool EmRegsVZNoScreen::CopyLCDFrame(Frame& frame, bool fullRefresh) {
+    return EmHALHandler::CopyLCDFrame(frame, fullRefresh);
+}
 
 uint16 EmRegsVZNoScreen::GetLCD2bitMapping() { return EmHALHandler::GetLCD2bitMapping(); }
 

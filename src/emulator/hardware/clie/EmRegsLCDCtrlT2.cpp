@@ -152,7 +152,7 @@ void EmRegsMQLCDControlT2::SetSubBankHandlers(void) {
 
     INSTALL_HANDLER(StdReadBE, StdWriteBE, _filler04);
 
-    INSTALL_HANDLER(StdReadBE, StdWriteBE, GraphicController);
+    INSTALL_HANDLER(StdReadBE, InvalidateWrite, GraphicController);
     INSTALL_HANDLER(StdReadBE, StdWriteBE, PowerSequencing);
     INSTALL_HANDLER(StdReadBE, StdWriteBE, HorizontalDisplay);
     INSTALL_HANDLER(StdReadBE, StdWriteBE, VerticalDisplay);
@@ -167,9 +167,9 @@ void EmRegsMQLCDControlT2::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdReadBE, StdWriteBE, LineClock);
     INSTALL_HANDLER(StdReadBE, StdWriteBE, AlternateLineClockControl);
 
-    INSTALL_HANDLER(StdReadBE, StdWriteBE, WindowStartAddress);
+    INSTALL_HANDLER(StdReadBE, InvalidateWrite, WindowStartAddress);
     INSTALL_HANDLER(StdReadBE, StdWriteBE, AlternateWindowStartAddress);
-    INSTALL_HANDLER(StdReadBE, StdWriteBE, WindowStride);
+    INSTALL_HANDLER(StdReadBE, InvalidateWrite, WindowStride);
     INSTALL_HANDLER(StdReadBE, StdWriteBE, Reserved01BC);
 
     INSTALL_HANDLER(StdReadBE, StdWriteBE, HwrCursorPosition);
@@ -387,7 +387,7 @@ void EmRegsMQLCDControlT2::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 
 uint16 EmRegsMQLCDControlT2::GetLCD2bitMapping() { return 0xfa50; }
 
-bool EmRegsMQLCDControlT2::CopyLCDFrame(Frame& frame) {
+bool EmRegsMQLCDControlT2::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     class Scaler1x {
        public:
         Scaler1x(uint32* buffer, uint32) : buffer(buffer) {}
@@ -421,12 +421,12 @@ bool EmRegsMQLCDControlT2::CopyLCDFrame(Frame& frame) {
     };
 
     return (READ_REGISTER_T2(GraphicController) & MQ_GraphicController_T2_LowRezBit)
-               ? CopyLCDFrameWithScale<Scaler2x, 2>(frame)
-               : CopyLCDFrameWithScale<Scaler1x, 1>(frame);
+               ? CopyLCDFrameWithScale<Scaler2x, 2>(frame, fullRefresh)
+               : CopyLCDFrameWithScale<Scaler1x, 1>(frame, fullRefresh);
 }
 
 template <typename T, int scale>
-bool EmRegsMQLCDControlT2::CopyLCDFrameWithScale(Frame& frame) {
+bool EmRegsMQLCDControlT2::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh) {
     int32 bpp = GetBpp();
     int32 height = 480;
     int32 width = 320;
@@ -448,19 +448,58 @@ bool EmRegsMQLCDControlT2::CopyLCDFrameWithScale(Frame& frame) {
     frame.lineWidth = width;
     frame.lines = height;
     frame.margin = 0;
-    frame.bytesPerLine = width * 3;
+    frame.bytesPerLine = width * 4;
+
+    if (!gSystemState.IsScreenDirty() && !fullRefresh) {
+        frame.firstDirtyLine = frame.lastDirtyLine = -1;
+        return true;
+    }
+
+    if (gSystemState.ScreenRequiresFullRefresh() || fullRefresh) {
+        frame.firstDirtyLine = 0;
+        frame.lastDirtyLine = frame.lines - 1;
+    } else {
+        if (gSystemState.GetScreenHighWatermark() < baseAddr) {
+            frame.firstDirtyLine = frame.lastDirtyLine = -1;
+            return true;
+        }
+
+        if constexpr (scale == 2) {
+            frame.firstDirtyLine =
+                2 * min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes,
+                        frame.lines / 2 - 1);
+
+            frame.lastDirtyLine =
+                2 * min((gSystemState.GetScreenHighWatermark() - baseAddr) / rowBytes,
+                        frame.lines / 2 - 1) +
+                1;
+        } else {
+            frame.firstDirtyLine =
+                min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes,
+                    frame.lines - 1);
+
+            frame.lastDirtyLine =
+                min((gSystemState.GetScreenHighWatermark() - baseAddr) / rowBytes, frame.lines - 1);
+        }
+    }
+
+    frame.firstDirtyLine = 0;
+    frame.lastDirtyLine = 479;
 
     if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
 
-    T scaler(reinterpret_cast<uint32*>(frame.GetBuffer()), width);
+    T scaler(
+        reinterpret_cast<uint32*>(frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine),
+        width);
 
     switch (bpp) {
         case 1: {
             PrvUpdatePalette();
             Nibbler<1, true> nibbler;
-            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+            nibbler.reset(
+                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
 
-            for (int32 y = 0; y < height / scale; y++)
+            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
 
             break;
@@ -469,9 +508,10 @@ bool EmRegsMQLCDControlT2::CopyLCDFrameWithScale(Frame& frame) {
         case 2: {
             PrvUpdatePalette();
             Nibbler<2, true> nibbler;
-            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+            nibbler.reset(
+                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
 
-            for (int32 y = 0; y < height / scale; y++)
+            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
 
             break;
@@ -480,9 +520,10 @@ bool EmRegsMQLCDControlT2::CopyLCDFrameWithScale(Frame& frame) {
         case 4: {
             PrvUpdatePalette();
             Nibbler<4, true> nibbler;
-            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+            nibbler.reset(
+                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
 
-            for (int32 y = 0; y < height / scale; y++)
+            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
 
             break;
@@ -490,9 +531,10 @@ bool EmRegsMQLCDControlT2::CopyLCDFrameWithScale(Frame& frame) {
 
         case 8: {
             PrvUpdatePalette();
-            uint8* buffer = framebuffer.GetRealAddress(baseAddr);
+            uint8* buffer =
+                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes);
 
-            for (int32 y = 0; y < height / scale; y++)
+            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++)
                     scaler.draw(palette[*(uint8*)((long)(buffer++) ^ 1)]);
 
@@ -500,9 +542,10 @@ bool EmRegsMQLCDControlT2::CopyLCDFrameWithScale(Frame& frame) {
         }
 
         default: {
-            uint8* buffer = framebuffer.GetRealAddress(baseAddr);
+            uint8* buffer =
+                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes);
 
-            for (int32 y = 0; y < height / scale; y++)
+            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++) {
                     uint8 p1 = *(uint8*)((long)(buffer++) ^ 1);  // GGGBBBBB
                     uint8 p2 = *(uint8*)((long)(buffer++) ^ 1);  // RRRRRGGG

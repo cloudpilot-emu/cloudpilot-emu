@@ -784,15 +784,15 @@ uint32 EmRegsEZ::GetAddressRange(void) { return kMemorySize; }
 // is in its own separate function instead of being inline.
 
 void EmRegsEZ::Cycle(uint64 systemCycles, Bool sleeping) {
-    if (afterLoad) {
+    if (unlikely(afterLoad)) {
         DispatchPwmChange();
         afterLoad = false;
     }
 
-    if (powerOffCached) return;
+    if (unlikely(powerOffCached)) return;
 
     this->systemCycles = systemCycles;
-    if (systemCycles >= nextTimerEventAfterCycle) UpdateTimer();
+    if (unlikely(systemCycles >= nextTimerEventAfterCycle)) UpdateTimer();
 }
 
 // ---------------------------------------------------------------------------
@@ -946,7 +946,7 @@ void EmRegsEZ::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 //		� EmRegsEZ::GetLCDScanlines
 // ---------------------------------------------------------------------------
 
-bool EmRegsEZ::CopyLCDFrame(Frame& frame) {
+bool EmRegsEZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     // Get the screen metrics.
 
     frame.bpp = 1 << (READ_REGISTER(lcdPanelControl) & 0x03);
@@ -954,6 +954,8 @@ bool EmRegsEZ::CopyLCDFrame(Frame& frame) {
     frame.lines = READ_REGISTER(lcdScreenHeight) + 1;
     frame.bytesPerLine = READ_REGISTER(lcdPageWidth) * 2;
     frame.margin = READ_REGISTER(lcdPanningOffset);
+    frame.firstDirtyLine = 0;
+    frame.lastDirtyLine = frame.lines - 1;
     emuptr baseAddr = READ_REGISTER(lcdStartAddr);
 
     if (baseAddr == 0) return false;

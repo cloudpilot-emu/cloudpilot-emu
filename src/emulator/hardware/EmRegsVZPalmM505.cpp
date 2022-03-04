@@ -112,7 +112,9 @@ void EmRegsVZPalmM505::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
     EmHALHandler::GetLCDBeginEnd(begin, end);
 }
 
-bool EmRegsVZPalmM505::CopyLCDFrame(Frame& frame) { return EmHALHandler::CopyLCDFrame(frame); }
+bool EmRegsVZPalmM505::CopyLCDFrame(Frame& frame, bool fullRefresh) {
+    return EmHALHandler::CopyLCDFrame(frame, fullRefresh);
+}
 
 uint16 EmRegsVZPalmM505::GetLCD2bitMapping() { return EmHALHandler::GetLCD2bitMapping(); }
 

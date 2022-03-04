@@ -14,7 +14,8 @@ namespace {
 
 void EmSystemState::Initialize() {
     uiInitialized = false;
-    screenDirty = true;
+    screenLowWatermark = screenHighWatermark = 0;
+    screenState = ScreenState::needsFullRefresh;
     setupComplete = false;
     osVersion = 0;
     hotsyncUserName = "";
@@ -22,7 +23,8 @@ void EmSystemState::Initialize() {
 
 void EmSystemState::Reset() {
     uiInitialized = false;
-    screenDirty = true;
+    screenLowWatermark = screenHighWatermark = 0;
+    screenState = ScreenState::needsFullRefresh;
     setupComplete = false;
 }
 
@@ -57,7 +59,8 @@ void EmSystemState::Load(SavestateLoader& loader) {
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper, version);
 
-    screenDirty = true;
+    screenLowWatermark = screenHighWatermark = 0;
+    screenState = ScreenState::needsFullRefresh;
 }
 
 template <typename T>
@@ -96,9 +99,17 @@ void EmSystemState::SetHotsyncUserName(string hotsyncUserName) {
 }
 const string& EmSystemState::GetHotsyncUserName() const { return hotsyncUserName; };
 
-bool EmSystemState::IsScreenDirty() const { return screenDirty; }
+bool EmSystemState::IsScreenDirty() const { return screenState != ScreenState::clean; }
 
 void EmSystemState::MarkScreenClean() {
-    screenDirty = false;
+    screenState = ScreenState::clean;
+    screenLowWatermark = screenHighWatermark = 0;
+
     onMarkScreenClean.Dispatch();
+}
+
+emuptr EmSystemState::GetScreenHighWatermark() const { return screenHighWatermark; }
+emuptr EmSystemState::GetScreenLowWatermark() const { return screenLowWatermark; }
+bool EmSystemState::ScreenRequiresFullRefresh() const {
+    return screenState == ScreenState::needsFullRefresh;
 }

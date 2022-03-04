@@ -1047,15 +1047,15 @@ uint32 EmRegs328::GetAddressRange(void) {
 // Emulator::Execute.  Interestingly, the loop runs 3% FASTER if this function
 // is in its own separate function instead of being inline.
 void EmRegs328::Cycle(uint64 systemCycles, Bool sleeping) {
-    if (afterLoad) {
+    if (unlikely(afterLoad)) {
         DispatchPwmChange();
         afterLoad = false;
     }
 
-    if (powerOffCached) return;
+    if (unlikely(powerOffCached)) return;
 
     this->systemCycles = systemCycles;
-    if (systemCycles >= nextTimerEventAfterCycle) UpdateTimers();
+    if (unlikely(systemCycles >= nextTimerEventAfterCycle)) UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -1202,7 +1202,7 @@ void EmRegs328::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
     end = baseAddr + rowBytes * height;
 }
 
-bool EmRegs328::CopyLCDFrame(Frame& frame) {
+bool EmRegs328::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     // Get the screen metrics.
 
     frame.bpp = 1 << (READ_REGISTER(lcdPanelControl) & 0x01);
@@ -1210,6 +1210,8 @@ bool EmRegs328::CopyLCDFrame(Frame& frame) {
     frame.lines = READ_REGISTER(lcdScreenHeight) + 1;
     frame.bytesPerLine = READ_REGISTER(lcdPageWidth) * 2;
     frame.margin = READ_REGISTER(lcdPanningOffset) & 0x0f;
+    frame.firstDirtyLine = 0;
+    frame.lastDirtyLine = frame.lines - 1;
     emuptr baseAddr = READ_REGISTER(lcdStartAddr);
 
     if (baseAddr == 0) return false;

@@ -88,7 +88,9 @@ void EmRegsEZPalmIIIc::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 //		� EmRegsEZPalmIIIc::GetLCDScanlines
 // ---------------------------------------------------------------------------
 
-bool EmRegsEZPalmIIIc::CopyLCDFrame(Frame& frame) { return EmHALHandler::CopyLCDFrame(frame); }
+bool EmRegsEZPalmIIIc::CopyLCDFrame(Frame& frame, bool fullRefresh) {
+    return EmHALHandler::CopyLCDFrame(frame, fullRefresh);
+}
 
 uint16 EmRegsEZPalmIIIc::GetLCD2bitMapping() { return EmHALHandler::GetLCD2bitMapping(); }
 

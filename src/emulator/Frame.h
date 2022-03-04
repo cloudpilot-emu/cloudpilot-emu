@@ -15,6 +15,9 @@ struct Frame {
     uint8 margin{0};
     uint32 bytesPerLine{0};
 
+    int32 firstDirtyLine{0};
+    int32 lastDirtyLine{0};
+
     uint8* GetBuffer();
     size_t GetBufferSize() const;
 
@@ -25,6 +28,9 @@ struct Frame {
     uint32 GetLines() const;
     uint8 GetMargin() const;
     uint32 GetBytesPerLine() const;
+
+    int32 GetFirstDirtyLine() const;
+    int32 GetLastDirtyLine() const;
 
    private:
     const unique_ptr<uint8[]> buffer;

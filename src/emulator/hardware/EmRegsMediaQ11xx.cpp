@@ -1719,7 +1719,7 @@ void EmRegsMediaQ11xx::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 
 uint16 EmRegsMediaQ11xx::GetLCD2bitMapping() { return 0xfa50; }
 
-bool EmRegsMediaQ11xx::CopyLCDFrame(Frame& frame) {
+bool EmRegsMediaQ11xx::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     class Scaler1x {
        public:
         Scaler1x(uint32* buffer, uint32) : buffer(buffer) {}
@@ -1754,14 +1754,16 @@ bool EmRegsMediaQ11xx::CopyLCDFrame(Frame& frame) {
 
     uint32 doubling = READ_REGISTER(gcREG[GC_CONTROL]) & GC_PIX_DBLNG_MASK;
     if (doubling) {
-        return doubling == GC_PIX_DBLNG_MASK ? CopyLCDFrameWithScale<Scaler2x, 2>(frame) : false;
+        return doubling == GC_PIX_DBLNG_MASK
+                   ? CopyLCDFrameWithScale<Scaler2x, 2>(frame, fullRefresh)
+                   : false;
     }
 
-    return CopyLCDFrameWithScale<Scaler1x, 1>(frame);
+    return CopyLCDFrameWithScale<Scaler1x, 1>(frame, fullRefresh);
 }
 
 template <typename T, int scale>
-bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame) {
+bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh) {
     int32 bpp = this->PrvGetBPP();
     int32 height = this->PrvGetHeight();
     int32 rowBytes = this->PrvGetRowBytes();
@@ -1783,19 +1785,55 @@ bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame) {
     frame.lineWidth = width;
     frame.lines = height;
     frame.margin = 0;
-    frame.bytesPerLine = width * 3;
+    frame.bytesPerLine = width * 4;
+
+    if (!gSystemState.IsScreenDirty() && !fullRefresh) {
+        frame.firstDirtyLine = frame.lastDirtyLine = -1;
+        return true;
+    }
+
+    if (gSystemState.ScreenRequiresFullRefresh() || fullRefresh) {
+        frame.firstDirtyLine = 0;
+        frame.lastDirtyLine = frame.lines - 1;
+    } else {
+        if (gSystemState.GetScreenHighWatermark() < baseAddr) {
+            frame.firstDirtyLine = frame.lastDirtyLine = -1;
+            return true;
+        }
+
+        if constexpr (scale == 2) {
+            frame.firstDirtyLine =
+                2 * min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes,
+                        frame.lines / 2 - 1);
+
+            frame.lastDirtyLine =
+                2 * min((gSystemState.GetScreenHighWatermark() - baseAddr) / rowBytes,
+                        frame.lines / 2 - 1) +
+                1;
+        } else {
+            frame.firstDirtyLine =
+                min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes,
+                    frame.lines - 1);
+
+            frame.lastDirtyLine =
+                min((gSystemState.GetScreenHighWatermark() - baseAddr) / rowBytes, frame.lines - 1);
+        }
+    }
 
     if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
 
-    T scaler(reinterpret_cast<uint32*>(frame.GetBuffer()), width);
+    T scaler(
+        reinterpret_cast<uint32*>(frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine),
+        width);
 
     switch (bpp) {
         case 1: {
             PrvUpdatePalette();
             Nibbler<1, true> nibbler;
-            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+            nibbler.reset(
+                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
 
-            for (int32 y = 0; y < height / scale; y++)
+            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
 
             break;
@@ -1804,9 +1842,10 @@ bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame) {
         case 2: {
             PrvUpdatePalette();
             Nibbler<2, true> nibbler;
-            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+            nibbler.reset(
+                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
 
-            for (int32 y = 0; y < height / scale; y++)
+            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
 
             break;
@@ -1815,9 +1854,10 @@ bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame) {
         case 4: {
             PrvUpdatePalette();
             Nibbler<4, true> nibbler;
-            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+            nibbler.reset(
+                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
 
-            for (int32 y = 0; y < height / scale; y++)
+            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
 
             break;
@@ -1825,9 +1865,10 @@ bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame) {
 
         case 8: {
             PrvUpdatePalette();
-            uint8* buffer = framebuffer.GetRealAddress(baseAddr);
+            uint8* buffer =
+                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes);
 
-            for (int32 y = 0; y < height / scale; y++)
+            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++)
                     scaler.draw(palette[*(uint8*)((long)(buffer++) ^ 1)]);
 
@@ -1835,9 +1876,10 @@ bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame) {
         }
 
         default: {
-            uint8* buffer = framebuffer.GetRealAddress(baseAddr);
+            uint8* buffer =
+                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes);
 
-            for (int32 y = 0; y < height / scale; y++)
+            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++) {
                     uint8 p1 = *(uint8*)((long)(buffer++) ^ 1);  // GGGBBBBB
                     uint8 p2 = *(uint8*)((long)(buffer++) ^ 1);  // RRRRRGGG

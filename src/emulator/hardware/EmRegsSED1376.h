@@ -105,7 +105,7 @@ class EmRegsSED1376PalmGeneric : public EmRegsSED1376 {
     virtual ~EmRegsSED1376PalmGeneric(void);
 
     virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
-    virtual bool CopyLCDFrame(Frame& frame);
+    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
     virtual uint16 GetLCD2bitMapping();
 };
 

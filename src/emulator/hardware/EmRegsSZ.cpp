@@ -1669,15 +1669,15 @@ uint32 EmRegsSZ::GetAddressRange(void) { return kMemorySize; }
 // is in its own separate function instead of being inline.
 
 inline void EmRegsSZ::Cycle(uint64 systemCycles, Bool sleeping) {
-    if (afterLoad) {
+    if (unlikely(afterLoad)) {
         // DispatchPwmChange();
         afterLoad = false;
     }
 
-    if (powerOffCached) return;
+    if (unlikely(powerOffCached)) return;
 
     this->systemCycles = systemCycles;
-    if (systemCycles >= nextTimerEventAfterCycle) UpdateTimers();
+    if (unlikely(systemCycles >= nextTimerEventAfterCycle)) UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------

@@ -116,7 +116,7 @@ void EmRegsFrameBuffer::SetLong(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
     EmMemDoPut32((gFramebufferMemory) + offset, value);
 
-    gSystemState.MarkScreenDirty();
+    gSystemState.MarkScreenDirty(address, address + 4);
 
     markDirty(offset);
     markDirty(offset + 2);
@@ -130,7 +130,7 @@ void EmRegsFrameBuffer::SetWord(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
     EmMemDoPut16((gFramebufferMemory) + offset, value);
 
-    gSystemState.MarkScreenDirty();
+    gSystemState.MarkScreenDirty(address, address + 2);
 
     markDirty(offset);
 }
@@ -143,7 +143,7 @@ void EmRegsFrameBuffer::SetByte(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
     EmMemDoPut8((gFramebufferMemory) + offset, value);
 
-    gSystemState.MarkScreenDirty();
+    gSystemState.MarkScreenDirty(address, address);
 
     markDirty(offset);
 }

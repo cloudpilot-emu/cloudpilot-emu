@@ -219,7 +219,7 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDBacklightOn(void);
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
-    virtual bool CopyLCDFrame(Frame& frame);
+    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
     virtual uint16 GetLCD2bitMapping();
 
    protected:
@@ -248,7 +248,7 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     void PrvUpdateByteLanes(void);
 
     template <typename T, int scale>
-    bool CopyLCDFrameWithScale(Frame& frame);
+    bool CopyLCDFrameWithScale(Frame& frame, bool fullRefresh);
 
     uint32 PrvGetBPP(void);
     uint32 PrvGetWidth(void);

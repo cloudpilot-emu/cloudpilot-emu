@@ -59,7 +59,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDBacklightOn(void) = 0;
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr&, emuptr&);
-    virtual bool CopyLCDFrame(Frame& frame);
+    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
     virtual uint16 GetLCD2bitMapping();
 
     virtual int32 GetDynamicHeapSize(void);
@@ -179,7 +179,7 @@ class EmRegsVZNoScreen : public EmRegsVZ {
    public:
     EmRegsVZNoScreen() = default;
 
-    virtual bool CopyLCDFrame(Frame& frame);
+    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
     virtual uint16 GetLCD2bitMapping();
 
    protected:

@@ -248,9 +248,9 @@ void EmHAL::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
     EmHAL::GetRootHandler()->GetLCDBeginEnd(begin, end);
 }
 
-bool EmHAL::CopyLCDFrame(Frame& frame) {
+bool EmHAL::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     EmAssert(EmHAL::GetRootHandler());
-    return EmHAL::GetRootHandler()->CopyLCDFrame(frame);
+    return EmHAL::GetRootHandler()->CopyLCDFrame(frame, fullRefresh);
 }
 
 uint16 EmHAL::GetLCD2bitMapping() {
@@ -633,9 +633,9 @@ void EmHALHandler::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 //		� EmHALHandler::GetLCDScanlines
 // ---------------------------------------------------------------------------
 
-bool EmHALHandler::CopyLCDFrame(Frame& frame) {
+bool EmHALHandler::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     EmAssert(this->GetNextHandler());
-    return this->GetNextHandler()->CopyLCDFrame(frame);
+    return this->GetNextHandler()->CopyLCDFrame(frame, fullRefresh);
 }
 
 uint16 EmHALHandler::GetLCD2bitMapping() {

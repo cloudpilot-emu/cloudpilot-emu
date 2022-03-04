@@ -258,7 +258,7 @@ void EmRegsSED1375::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
     end = baseAddr + rowBytes * height;
 }
 
-bool EmRegsSED1375::CopyLCDFrame(Frame& frame) {
+bool EmRegsSED1375::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     int32 bpp = 1 << ((fRegs.mode1 & sed1375BPPMask) >> sed1375BPPShift);
     int32 width = (fRegs.horizontalPanelSize + 1) * 8;
     int32 height = ((fRegs.verticalPanelSizeMSB << 8) | fRegs.verticalPanelSizeLSB) + 1;
@@ -273,6 +273,8 @@ bool EmRegsSED1375::CopyLCDFrame(Frame& frame) {
     frame.lines = height;
     frame.margin = 0;
     frame.bytesPerLine = width * 3;
+    frame.firstDirtyLine = 0;
+    frame.lastDirtyLine = frame.lines - 1;
 
     if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
     uint32* buffer = reinterpret_cast<uint32*>(frame.GetBuffer());
