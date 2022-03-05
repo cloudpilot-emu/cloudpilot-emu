@@ -1075,41 +1075,35 @@ static constexpr const char* kROPs[] = {"0 BLACKNESS",
                                         "DPSoo",
                                         "1 WHITENESS"};
 
-// Inline functions.
-
-inline uint32 EmRegsMediaQ11xx::PrvGetBPP(void) {
+uint32 EmRegsMediaQ11xx::GetBPP(void) {
     return 1 << ((READ_REGISTER(gcREG[GC_CONTROL]) & 0x00000070) >> 4);
 }
 
-inline uint32 EmRegsMediaQ11xx::PrvGetWidth(void) {
-    return (READ_REGISTER(gcREG[GC_HWINDOW]) >> 16) + 1;
+uint32 EmRegsMediaQ11xx::GetWidth(void) { return (READ_REGISTER(gcREG[GC_HWINDOW]) >> 16) + 1; }
+
+uint32 EmRegsMediaQ11xx::GetHeight(void) { return (READ_REGISTER(gcREG[GC_VWINDOW]) >> 16) + 1; }
+
+uint32 EmRegsMediaQ11xx::GetRowBytes(void) { return READ_REGISTER(gcREG[GC_STRIDE]) & 0x0000FFFF; }
+
+Bool EmRegsMediaQ11xx::GetXDoubling(void) {
+    return (READ_REGISTER(gcREG[GC_CONTROL]) & GC_H_PIX_DBLNG) != 0;
 }
 
-inline uint32 EmRegsMediaQ11xx::PrvGetHeight(void) {
-    return (READ_REGISTER(gcREG[GC_VWINDOW]) >> 16) + 1;
+Bool EmRegsMediaQ11xx::GetYDoubling(void) {
+    return (READ_REGISTER(gcREG[GC_CONTROL]) & GC_V_PIX_DBLNG) != 0;
 }
 
-inline uint32 EmRegsMediaQ11xx::PrvGetRowBytes(void) {
-    return READ_REGISTER(gcREG[GC_STRIDE]) & 0x0000FFFF;
+emuptr EmRegsMediaQ11xx::GetFrameBuffer(void) {
+    return this->PrvGetVideoBase() + this->PrvGetVideoOffset();
 }
+
+// Inline functions.
 
 inline uint32 EmRegsMediaQ11xx::PrvGetVideoOffset(void) {
     return READ_REGISTER(gcREG[GC_START_ADDR]) & 0x0003FFFF;
 }
 
 inline emuptr EmRegsMediaQ11xx::PrvGetVideoBase(void) { return fBaseVideoAddr; }
-
-inline emuptr EmRegsMediaQ11xx::PrvGetFrameBuffer(void) {
-    return this->PrvGetVideoBase() + this->PrvGetVideoOffset();
-}
-
-inline Bool EmRegsMediaQ11xx::PrvGetXDoubling(void) {
-    return (READ_REGISTER(gcREG[GC_CONTROL]) & GC_H_PIX_DBLNG) != 0;
-}
-
-inline Bool EmRegsMediaQ11xx::PrvGetYDoubling(void) {
-    return (READ_REGISTER(gcREG[GC_CONTROL]) & GC_V_PIX_DBLNG) != 0;
-}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::EmRegsMediaQ11xx
@@ -1709,206 +1703,15 @@ Bool EmRegsMediaQ11xx::GetLCDHasFrame(void) { return true; }
 // ---------------------------------------------------------------------------
 
 void EmRegsMediaQ11xx::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    int32 height = this->PrvGetHeight();
-    int32 rowBytes = this->PrvGetRowBytes();
-    emuptr baseAddr = this->PrvGetFrameBuffer();
+    int32 height = this->GetHeight();
+    int32 rowBytes = this->GetRowBytes();
+    emuptr baseAddr = this->GetFrameBuffer();
 
     begin = baseAddr;
     end = baseAddr + rowBytes * height;
 }
 
 uint16 EmRegsMediaQ11xx::GetLCD2bitMapping() { return 0xfa50; }
-
-bool EmRegsMediaQ11xx::CopyLCDFrame(Frame& frame, bool fullRefresh) {
-    class Scaler1x {
-       public:
-        Scaler1x(uint32* buffer, uint32) : buffer(buffer) {}
-
-        inline void draw(uint32 color) { *(buffer++) = color; }
-
-       private:
-        uint32* buffer;
-    };
-
-    class Scaler2x {
-       public:
-        Scaler2x(uint32* buffer, uint32 width) : buf1(buffer), buf2(buffer + width), width(width) {}
-
-        inline void draw(uint32 color) {
-            *(buf1++) = *(buf1++) = *(buf2++) = *(buf2++) = color;
-
-            x += 2;
-            if (x >= width) {
-                x = 0;
-                buf1 += width;
-                buf2 += width;
-            }
-        }
-
-       private:
-        uint32* buf1;
-        uint32* buf2;
-        uint32 width;
-        uint32 x{0};
-    };
-
-    uint32 doubling = READ_REGISTER(gcREG[GC_CONTROL]) & GC_PIX_DBLNG_MASK;
-    if (doubling) {
-        return doubling == GC_PIX_DBLNG_MASK
-                   ? CopyLCDFrameWithScale<Scaler2x, 2>(frame, fullRefresh)
-                   : false;
-    }
-
-    return CopyLCDFrameWithScale<Scaler1x, 1>(frame, fullRefresh);
-}
-
-template <typename T, int scale>
-bool EmRegsMediaQ11xx::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh) {
-    int32 bpp = this->PrvGetBPP();
-    int32 height = this->PrvGetHeight();
-    int32 rowBytes = this->PrvGetRowBytes();
-
-    if (rowBytes <= 0) return false;
-
-    int32 width = std::min(this->PrvGetWidth(), static_cast<uint32>(rowBytes * 8 * scale / bpp));
-    emuptr baseAddr = this->PrvGetFrameBuffer();
-
-    EmAssert(gSession);
-    const ScreenDimensions screenDimensions(gSession->GetDevice().GetScreenDimensions());
-
-    if (width != static_cast<int32>(screenDimensions.Width()) ||
-        height != static_cast<int32>(screenDimensions.Height())) {
-        return false;
-    }
-
-    frame.bpp = 24;
-    frame.lineWidth = width;
-    frame.lines = height;
-    frame.margin = 0;
-    frame.bytesPerLine = width * 4;
-
-    if (!gSystemState.IsScreenDirty() && !fullRefresh) {
-        frame.firstDirtyLine = frame.lastDirtyLine = -1;
-        return true;
-    }
-
-    if (gSystemState.ScreenRequiresFullRefresh() || fullRefresh) {
-        frame.firstDirtyLine = 0;
-        frame.lastDirtyLine = frame.lines - 1;
-    } else {
-        if (gSystemState.GetScreenHighWatermark() < baseAddr) {
-            frame.firstDirtyLine = frame.lastDirtyLine = -1;
-            return true;
-        }
-
-        if constexpr (scale == 2) {
-            frame.firstDirtyLine =
-                2 * min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes,
-                        frame.lines / 2 - 1);
-
-            frame.lastDirtyLine =
-                2 * min((gSystemState.GetScreenHighWatermark() - baseAddr) / rowBytes,
-                        frame.lines / 2 - 1) +
-                1;
-        } else {
-            frame.firstDirtyLine =
-                min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes,
-                    frame.lines - 1);
-
-            frame.lastDirtyLine =
-                min((gSystemState.GetScreenHighWatermark() - baseAddr) / rowBytes, frame.lines - 1);
-        }
-    }
-
-    if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
-
-    T scaler(
-        reinterpret_cast<uint32*>(frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine),
-        width);
-
-    switch (bpp) {
-        case 1: {
-            PrvUpdatePalette();
-            Nibbler<1, true> nibbler;
-            nibbler.reset(
-                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
-
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
-                for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
-
-            break;
-        }
-
-        case 2: {
-            PrvUpdatePalette();
-            Nibbler<2, true> nibbler;
-            nibbler.reset(
-                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
-
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
-                for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
-
-            break;
-        }
-
-        case 4: {
-            PrvUpdatePalette();
-            Nibbler<4, true> nibbler;
-            nibbler.reset(
-                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
-
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
-                for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
-
-            break;
-        }
-
-        case 8: {
-            PrvUpdatePalette();
-            uint8* buffer =
-                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes);
-
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
-                for (int32 x = 0; x < width / scale; x++)
-                    scaler.draw(palette[*(uint8*)((long)(buffer++) ^ 1)]);
-
-            break;
-        }
-
-        default: {
-            uint8* buffer =
-                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes);
-
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
-                for (int32 x = 0; x < width / scale; x++) {
-                    uint8 p1 = *(uint8*)((long)(buffer++) ^ 1);  // GGGBBBBB
-                    uint8 p2 = *(uint8*)((long)(buffer++) ^ 1);  // RRRRRGGG
-
-                    // Merge the two together so that we get RRRRRGGG GGGBBBBB
-
-                    uint16 p;
-
-                    p = (p1 << 8) | p2;
-
-                    // Shift the bits around, forming RRRRRrrr, GGGGGGgg, and
-                    // BBBBBbbb values, where the lower-case bits are copies of
-                    // the least significant bits in the upper-case bits.
-                    //
-                    // Note that all of this could also be done with three 64K
-                    // lookup tables.  If speed is an issue, we might want to
-                    // investigate that.
-
-                    scaler.draw(0xff000000 | ((((p << 3) & 0xF8) | ((p >> 0) & 0x07)) << 16) |
-                                ((((p >> 3) & 0xFC) | ((p >> 5) & 0x03)) << 8) |
-                                (((p >> 8) & 0xF8) | ((p >> 11) & 0x07)));
-                }
-
-            break;
-        }
-    }
-
-    return true;
-}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsMediaQ11xx::MQRead

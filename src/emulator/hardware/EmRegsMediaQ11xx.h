@@ -21,6 +21,7 @@
 #include "EmRegs.h"         // EmRegs
 #include "EmStructs.h"
 #include "Fifo.h"
+#include "MediaQFramebuffer.h"
 
 #define T_BASE 0x1F000000L   // 68KVZ for Palm platform
 #define MMIO_OFFSET 0x40000  // starts at 256K address
@@ -188,7 +189,9 @@ struct GEState {
     uint16 bgColorMonoPat;  // [15:0]*
 };
 
-class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
+class EmRegsMediaQ11xx : public EmRegs, public MediaQFramebuffer<EmRegsMediaQ11xx> {
+    friend MediaQFramebuffer<EmRegsMediaQ11xx>;
+
    public:
     EmRegsMediaQ11xx(EmRegsFrameBuffer& framebuffer, emuptr baseRegsAddr, emuptr baseVideoAddr);
     virtual ~EmRegsMediaQ11xx(void);
@@ -219,7 +222,6 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDBacklightOn(void);
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
-    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
     virtual uint16 GetLCD2bitMapping();
 
    protected:
@@ -243,22 +245,21 @@ class EmRegsMediaQ11xx : public EmRegs, public EmHALHandler {
     template <typename T>
     void DoSaveLoad(T& helper);
 
+    // These are required by MediaQFramebuffer
+    uint32 GetBPP(void);
+    uint32 GetWidth(void);
+    uint32 GetHeight(void);
+    uint32 GetFrameBuffer(void);
+    Bool GetXDoubling(void);
+    Bool GetYDoubling(void);
+    uint32 GetRowBytes(void);
+
     void AddressError(emuptr address, long size, Bool forRead);
     void PrvUpdatePalette();
     void PrvUpdateByteLanes(void);
 
-    template <typename T, int scale>
-    bool CopyLCDFrameWithScale(Frame& frame, bool fullRefresh);
-
-    uint32 PrvGetBPP(void);
-    uint32 PrvGetWidth(void);
-    uint32 PrvGetHeight(void);
-    uint32 PrvGetRowBytes(void);
     uint32 PrvGetVideoOffset(void);
     uint32 PrvGetVideoBase(void);
-    uint32 PrvGetFrameBuffer(void);
-    Bool PrvGetXDoubling(void);
-    Bool PrvGetYDoubling(void);
 
     void PrvGetGEState(int regNum);
 

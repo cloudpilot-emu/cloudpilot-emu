@@ -387,195 +387,6 @@ void EmRegsMQLCDControlT2::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
 
 uint16 EmRegsMQLCDControlT2::GetLCD2bitMapping() { return 0xfa50; }
 
-bool EmRegsMQLCDControlT2::CopyLCDFrame(Frame& frame, bool fullRefresh) {
-    class Scaler1x {
-       public:
-        Scaler1x(uint32* buffer, uint32) : buffer(buffer) {}
-
-        inline void draw(uint32 color) { *(buffer++) = color; }
-
-       private:
-        uint32* buffer;
-    };
-
-    class Scaler2x {
-       public:
-        Scaler2x(uint32* buffer, uint32 width) : buf1(buffer), buf2(buffer + width), width(width) {}
-
-        inline void draw(uint32 color) {
-            *(buf1++) = *(buf1++) = *(buf2++) = *(buf2++) = color;
-
-            x += 2;
-            if (x >= width) {
-                x = 0;
-                buf1 += width;
-                buf2 += width;
-            }
-        }
-
-       private:
-        uint32* buf1;
-        uint32* buf2;
-        uint32 width;
-        uint32 x{0};
-    };
-
-    return (READ_REGISTER_T2(GraphicController) & MQ_GraphicController_T2_LowRezBit)
-               ? CopyLCDFrameWithScale<Scaler2x, 2>(frame, fullRefresh)
-               : CopyLCDFrameWithScale<Scaler1x, 1>(frame, fullRefresh);
-}
-
-template <typename T, int scale>
-bool EmRegsMQLCDControlT2::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh) {
-    int32 bpp = GetBpp();
-    int32 height = 480;
-    int32 width = 320;
-    int32 rowBytes = READ_REGISTER_T2(WindowStride) & 0x0000FFFF;
-
-    if (rowBytes <= 0) return false;
-
-    emuptr baseAddr = fBaseVideoAddr + READ_REGISTER_T2(WindowStartAddress);
-
-    EmAssert(gSession);
-    const ScreenDimensions screenDimensions(gSession->GetDevice().GetScreenDimensions());
-
-    if (width != static_cast<int32>(screenDimensions.Width()) ||
-        height != static_cast<int32>(screenDimensions.Height())) {
-        return false;
-    }
-
-    frame.bpp = 24;
-    frame.lineWidth = width;
-    frame.lines = height;
-    frame.margin = 0;
-    frame.bytesPerLine = width * 4;
-
-    if (!gSystemState.IsScreenDirty() && !fullRefresh) {
-        frame.firstDirtyLine = frame.lastDirtyLine = -1;
-        return true;
-    }
-
-    if (gSystemState.ScreenRequiresFullRefresh() || fullRefresh) {
-        frame.firstDirtyLine = 0;
-        frame.lastDirtyLine = frame.lines - 1;
-    } else {
-        if (gSystemState.GetScreenHighWatermark() < baseAddr) {
-            frame.firstDirtyLine = frame.lastDirtyLine = -1;
-            return true;
-        }
-
-        if constexpr (scale == 2) {
-            frame.firstDirtyLine =
-                2 * min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes,
-                        frame.lines / 2 - 1);
-
-            frame.lastDirtyLine =
-                2 * min((gSystemState.GetScreenHighWatermark() - baseAddr) / rowBytes,
-                        frame.lines / 2 - 1) +
-                1;
-        } else {
-            frame.firstDirtyLine =
-                min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes,
-                    frame.lines - 1);
-
-            frame.lastDirtyLine =
-                min((gSystemState.GetScreenHighWatermark() - baseAddr) / rowBytes, frame.lines - 1);
-        }
-    }
-
-    frame.firstDirtyLine = 0;
-    frame.lastDirtyLine = 479;
-
-    if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
-
-    T scaler(
-        reinterpret_cast<uint32*>(frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine),
-        width);
-
-    switch (bpp) {
-        case 1: {
-            PrvUpdatePalette();
-            Nibbler<1, true> nibbler;
-            nibbler.reset(
-                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
-
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
-                for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
-
-            break;
-        }
-
-        case 2: {
-            PrvUpdatePalette();
-            Nibbler<2, true> nibbler;
-            nibbler.reset(
-                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
-
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
-                for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
-
-            break;
-        }
-
-        case 4: {
-            PrvUpdatePalette();
-            Nibbler<4, true> nibbler;
-            nibbler.reset(
-                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes), 0);
-
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
-                for (int32 x = 0; x < width / scale; x++) scaler.draw(palette[nibbler.nibble()]);
-
-            break;
-        }
-
-        case 8: {
-            PrvUpdatePalette();
-            uint8* buffer =
-                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes);
-
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
-                for (int32 x = 0; x < width / scale; x++)
-                    scaler.draw(palette[*(uint8*)((long)(buffer++) ^ 1)]);
-
-            break;
-        }
-
-        default: {
-            uint8* buffer =
-                framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine / scale * rowBytes);
-
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
-                for (int32 x = 0; x < width / scale; x++) {
-                    uint8 p1 = *(uint8*)((long)(buffer++) ^ 1);  // GGGBBBBB
-                    uint8 p2 = *(uint8*)((long)(buffer++) ^ 1);  // RRRRRGGG
-
-                    // Merge the two together so that we get RRRRRGGG GGGBBBBB
-
-                    uint16 p;
-
-                    p = (p1 << 8) | p2;
-
-                    // Shift the bits around, forming RRRRRrrr, GGGGGGgg, and
-                    // BBBBBbbb values, where the lower-case bits are copies of
-                    // the least significant bits in the upper-case bits.
-                    //
-                    // Note that all of this could also be done with three 64K
-                    // lookup tables.  If speed is an issue, we might want to
-                    // investigate that.
-
-                    scaler.draw(0xff000000 | ((((p << 3) & 0xF8) | ((p >> 0) & 0x07)) << 16) |
-                                ((((p >> 3) & 0xFC) | ((p >> 5) & 0x03)) << 8) |
-                                (((p >> 8) & 0xF8) | ((p >> 11) & 0x07)));
-                }
-
-            break;
-        }
-    }
-
-    return true;
-}
-
 // ---------------------------------------------------------------------------
 //		� EmRegsMQLCDControlT2::InvalidateWrite
 // ---------------------------------------------------------------------------
@@ -645,7 +456,7 @@ UInt32 EmRegsMQLCDControlT2::ReadLCDRegister(UInt32 reg) {
     return upper_bit + lower_bit;
 }
 
-uint8 EmRegsMQLCDControlT2::GetBpp() {
+uint32 EmRegsMQLCDControlT2::GetBPP() {
     switch (READ_REGISTER_T2(GraphicController) & MQ_GraphicController_T2_ColorDepthMask) {
         case MQ_GraphicController_T2_1BPP_ColorPalette:
             return 1;
@@ -665,4 +476,23 @@ uint8 EmRegsMQLCDControlT2::GetBpp() {
         default:
             return 0;
     }
+}
+
+uint32 EmRegsMQLCDControlT2::GetWidth(void) { return 320; }
+
+uint32 EmRegsMQLCDControlT2::GetHeight(void) { return 480; }
+
+uint32 EmRegsMQLCDControlT2::GetFrameBuffer(void) {
+    return fBaseVideoAddr + READ_REGISTER_T2(WindowStartAddress);
+}
+
+Bool EmRegsMQLCDControlT2::GetXDoubling(void) {
+    return READ_REGISTER_T2(GraphicController) & MQ_GraphicController_T2_LowRezBit;
+}
+
+Bool EmRegsMQLCDControlT2::GetYDoubling(void) {
+    return READ_REGISTER_T2(GraphicController) & MQ_GraphicController_T2_LowRezBit;
+}
+uint32 EmRegsMQLCDControlT2::GetRowBytes(void) {
+    return READ_REGISTER_T2(WindowStride) & 0x0000FFFF;
 }

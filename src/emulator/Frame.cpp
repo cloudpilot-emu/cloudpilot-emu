@@ -18,4 +18,5 @@ uint8 Frame::GetMargin() const { return margin; }
 uint32 Frame::GetBytesPerLine() const { return bytesPerLine; }
 
 int32 Frame::GetFirstDirtyLine() const { return firstDirtyLine; }
+
 int32 Frame::GetLastDirtyLine() const { return lastDirtyLine; }

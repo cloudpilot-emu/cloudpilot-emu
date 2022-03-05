@@ -3,6 +3,7 @@
 
 #include "EmHAL.h"   // EmHALHandler
 #include "EmRegs.h"  // EmRegs
+#include "MediaQFramebuffer.h"
 
 #define MQ_GraphicController_T2_LCDOnBit 0x00000088
 #define MQ_GraphicController_T2_Enabled 0x00000001
@@ -290,7 +291,9 @@ typedef struct {
 
 class EmRegsFrameBuffer;
 
-class EmRegsMQLCDControlT2 : public EmRegs, public EmHALHandler {
+class EmRegsMQLCDControlT2 : public EmRegs, public MediaQFramebuffer<EmRegsMQLCDControlT2> {
+    friend MediaQFramebuffer<EmRegsMQLCDControlT2>;
+
    public:
     EmRegsMQLCDControlT2(EmRegsFrameBuffer& framebuffer, emuptr baseRegsAddr, emuptr baseVideoAddr);
     virtual ~EmRegsMQLCDControlT2(void);
@@ -315,23 +318,26 @@ class EmRegsMQLCDControlT2 : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDHasFrame(void);
     virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
     virtual uint16 GetLCD2bitMapping();
-    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
 
     static UInt16 GetResolutionMode();
 
    private:
     void ColorPaletteWrite(emuptr address, int size, uint32 value);
 
-    template <typename T, int scale>
-    bool CopyLCDFrameWithScale(Frame& frame, bool fullRefresh);
-
+    // These are required by MediaQFramebuffer
+    uint32 GetBPP(void);
+    uint32 GetWidth(void);
+    uint32 GetHeight(void);
+    uint32 GetFrameBuffer(void);
+    Bool GetXDoubling(void);
+    Bool GetYDoubling(void);
+    uint32 GetRowBytes(void);
     uint32 DC380Read(emuptr address, int size);
 
     void InvalidateWrite(emuptr address, int size, uint32 value);
     void IgnoreWrite(emuptr address, int size, uint32 value);
 
     void PrvUpdatePalette();
-    uint8 GetBpp();
 
     template <typename T>
     void DoSave(T& savestate);
