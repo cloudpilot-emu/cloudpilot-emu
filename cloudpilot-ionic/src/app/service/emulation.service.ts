@@ -675,7 +675,7 @@ Sorry for the inconvenience.`
                             frame.buffer.byteLength >>> 2
                         );
 
-                        if (frame.margin !== 0) {
+                        if (frame.margin === 0) {
                             imageData32
                                 .subarray(0, frame.lineWidth * (frame.lastDirtyLine - frame.firstDirtyLine + 1))
                                 .set(
