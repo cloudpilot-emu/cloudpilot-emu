@@ -3,6 +3,7 @@
 -   Support for PEG-NR70 and PEG-T650C series devices.
 -   Support statistics display on soft silkscreen devices.
 -   Support for PEG-S500C series devices.
+-   Improved performance of framebuffer copies.
 
 # 1.6.4
 
