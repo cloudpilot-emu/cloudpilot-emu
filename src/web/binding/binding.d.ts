@@ -127,6 +127,10 @@ export interface Frame {
     GetMargin(): number;
     GetBytesPerLine(): number;
 
+    GetFirstDirtyLine(): number;
+    GetLastDirtyLine(): number;
+    GetHasChanges(): boolean;
+
     GetBuffer(): VoidPtr;
     GetBufferSize(): number;
 }

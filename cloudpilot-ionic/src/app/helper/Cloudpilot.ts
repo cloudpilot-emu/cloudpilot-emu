@@ -47,6 +47,10 @@ export interface Frame {
     margin: number;
     bytesPerLine: number;
 
+    firstDirtyLine: number;
+    lastDirtyLine: number;
+    hasChanges: boolean;
+
     buffer: Uint8Array;
 }
 
@@ -193,6 +197,9 @@ export class Cloudpilot {
             lines: nativeFrame.GetLines(),
             lineWidth: nativeFrame.GetLineWidth(),
             margin: nativeFrame.GetMargin(),
+            firstDirtyLine: nativeFrame.GetFirstDirtyLine(),
+            lastDirtyLine: nativeFrame.GetLastDirtyLine(),
+            hasChanges: nativeFrame.GetHasChanges(),
             buffer: this.module.HEAPU8.subarray(bufferPtr, bufferPtr + nativeFrame.GetBufferSize()),
         };
     }

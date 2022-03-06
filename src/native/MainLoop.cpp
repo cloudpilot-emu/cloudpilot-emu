@@ -113,10 +113,10 @@ void MainLoop::UpdateScreen() {
 
                     for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                         nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
+                        uint32* line = pixels + y * pitch / 4;
 
                         for (uint32 x = 0; x < frame.lineWidth; x++)
-                            pixels[y * pitch / 4 + x] =
-                                nibbler.nibble() == 0 ? BACKGROUND_COLOR : FOREGROUND_COLOR;
+                            *(line++) = nibbler.nibble() == 0 ? BACKGROUND_COLOR : FOREGROUND_COLOR;
                     }
                 } break;
 
@@ -132,9 +132,10 @@ void MainLoop::UpdateScreen() {
 
                     for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                         nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
+                        uint32* line = pixels + y * pitch / 4;
 
                         for (uint32 x = 0; x < frame.lineWidth; x++)
-                            pixels[y * pitch / 4 + x] = palette[nibbler.nibble()];
+                            *(line++) = palette[nibbler.nibble()];
                     }
                 } break;
 
@@ -143,19 +144,18 @@ void MainLoop::UpdateScreen() {
 
                     for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                         nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
+                        uint32* line = pixels + y * pitch / 4;
 
                         for (uint32 x = 0; x < frame.lineWidth; x++)
-                            pixels[y * pitch / 4 + x] = PALETTE_GRAYSCALE_16[nibbler.nibble()];
+                            *(line++) = PALETTE_GRAYSCALE_16[nibbler.nibble()];
                     }
                 } break;
 
                 case 24: {
                     for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                        uint32* buffer32 =
-                            reinterpret_cast<uint32*>(buffer) + y * frame.lineWidth + frame.margin;
-
-                        for (uint32 x = 0; x < frame.lineWidth; x++)
-                            pixels[y * pitch / 4 + x] = *(buffer32++);
+                        memcpy(pixels + y * pitch / 4,
+                               buffer + y * frame.bytesPerLine + 4 * frame.margin,
+                               4 * frame.lineWidth);
                     }
                 } break;
             }

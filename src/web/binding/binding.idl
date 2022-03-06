@@ -92,6 +92,10 @@ interface Frame {
     long GetMargin();
     long GetBytesPerLine();
 
+    long GetFirstDirtyLine();
+    long GetLastDirtyLine();
+    boolean GetHasChanges();
+
     VoidPtr GetBuffer();
     long GetBufferSize();
 };

@@ -249,6 +249,9 @@ export class CanvasDisplayService {
     async drawButtons(activeButtons: Array<PalmButton> = []): Promise<void> {
         if (!this.ctx) return;
 
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
+
         this.ctx.drawImage(
             await this.buttonsImage()(this.layout.screenWidth.frameCanvas, this.layout.buttonHeight.frameCanvas),
             this.layout.screenLeft.frameCanvas,

@@ -595,6 +595,10 @@ Sorry for the inconvenience.`
             return;
         }
 
+        if (!frame.hasChanges) {
+            return;
+        }
+
         if (frame.lines === this.imageData.height && frame.lineWidth === this.imageData.width) {
             const width = frame.lineWidth;
             const height = frame.lines;
@@ -603,14 +607,14 @@ Sorry for the inconvenience.`
                 case 1: {
                     const fg = GRAYSCALE_PALETTE_RGBA[15];
                     const bg = GRAYSCALE_PALETTE_RGBA[0];
+                    let iDest = 0;
 
-                    for (let y = 0; y < height; y++) {
-                        for (let x = 0; x < width; x++) {
-                            this.imageData32[y * width + x + frame.margin] =
-                                frame.buffer[y * frame.bytesPerLine + ((x + frame.margin) >>> 3)] &
-                                (0x80 >>> ((x + frame.margin) & 0x07))
-                                    ? fg
-                                    : bg;
+                    for (let y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                        const offsetSrc = y * frame.bytesPerLine;
+
+                        for (let i = frame.margin; i < width + frame.margin; i++) {
+                            this.imageData32[iDest++] =
+                                frame.buffer[offsetSrc + (i >>> 3)] & (0x80 >>> (i & 0x07)) ? fg : bg;
                         }
                     }
 
@@ -619,22 +623,20 @@ Sorry for the inconvenience.`
 
                 case 2: {
                     const mapping = this.cloudpilotInstance.getPalette2bitMapping();
-
                     const palette = [
                         GRAYSCALE_PALETTE_RGBA[mapping & 0x000f],
                         GRAYSCALE_PALETTE_RGBA[(mapping >>> 4) & 0x000f],
                         GRAYSCALE_PALETTE_RGBA[(mapping >>> 8) & 0x000f],
                         GRAYSCALE_PALETTE_RGBA[(mapping >>> 12) & 0x000f],
                     ];
+                    let iDest = 0;
 
-                    for (let y = 0; y < height; y++) {
-                        for (let x = 0; x < width; x++) {
-                            this.imageData32[y * width + x + frame.margin] =
-                                palette[
-                                    (frame.buffer[y * frame.bytesPerLine + ((x + frame.margin) >>> 2)] >>
-                                        (6 - 2 * ((x + frame.margin) & 0x03))) &
-                                        0x03
-                                ];
+                    for (let y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                        const offsetSrc = y * frame.bytesPerLine;
+
+                        for (let i = frame.margin; i < width + frame.margin; i++) {
+                            this.imageData32[iDest++] =
+                                palette[(frame.buffer[offsetSrc + (i >>> 2)] >> (6 - 2 * (i & 0x03))) & 0x03];
                         }
                     }
 
@@ -642,13 +644,15 @@ Sorry for the inconvenience.`
                 }
 
                 case 4: {
-                    for (let y = 0; y < height; y++) {
-                        for (let x = 0; x < width; x++) {
-                            this.imageData32[y * width + x + frame.margin] =
+                    let iDest = 0;
+
+                    for (let y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                        const offsetSrc = y * frame.bytesPerLine;
+
+                        for (let i = frame.margin; i < width + frame.margin; i++) {
+                            this.imageData32[iDest++] =
                                 GRAYSCALE_PALETTE_RGBA[
-                                    (frame.buffer[y * frame.bytesPerLine + ((x + frame.margin) >>> 1)] >>>
-                                        (4 - 4 * ((x + frame.margin) & 0x01))) &
-                                        0x0f
+                                    (frame.buffer[offsetSrc + (i >>> 1)] >>> (4 - 4 * (i & 0x01))) & 0x0f
                                 ];
                         }
                     }
@@ -658,23 +662,26 @@ Sorry for the inconvenience.`
 
                 case 24:
                     {
-                        const imageData32 = new Uint32Array(
-                            this.imageData.data.buffer,
-                            this.imageData.data.byteOffset,
-                            this.imageData.data.byteLength >>> 2
-                        );
                         const buffer32 = new Uint32Array(
                             frame.buffer.buffer,
                             frame.buffer.byteOffset,
                             frame.buffer.byteLength >>> 2
                         );
 
-                        if (frame.margin === 0) {
-                            imageData32.subarray(0, width * height).set(buffer32.subarray(0, width * height));
+                        if (frame.margin !== 0) {
+                            this.imageData32
+                                .subarray(0, width * (frame.lastDirtyLine - frame.firstDirtyLine + 1))
+                                .set(
+                                    buffer32.subarray(frame.firstDirtyLine * width, width * (frame.lastDirtyLine + 1))
+                                );
                         } else {
-                            for (let y = 0; y < height; y++) {
+                            let iDest = 0;
+
+                            for (let y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                                let j = y * (frame.bytesPerLine >>> 2) + frame.margin;
+
                                 for (let x = 0; x < width; x++) {
-                                    imageData32[y * width + x] = buffer32[y * frame.bytesPerLine + x + frame.margin];
+                                    this.imageData32[iDest++] = buffer32[j++];
                                 }
                             }
                         }
@@ -684,7 +691,15 @@ Sorry for the inconvenience.`
             }
         }
 
-        this.context.putImageData(this.imageData, 0, 0);
+        this.context.putImageData(
+            this.imageData,
+            0,
+            frame.firstDirtyLine,
+            0,
+            0,
+            frame.lineWidth,
+            frame.lastDirtyLine - frame.firstDirtyLine + 1
+        );
 
         this.newFrameEvent.dispatch(this.canvas);
     }
