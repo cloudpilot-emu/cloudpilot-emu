@@ -15,8 +15,9 @@ struct Frame {
     uint8 margin{0};
     uint32 bytesPerLine{0};
 
-    int32 firstDirtyLine{0};
-    int32 lastDirtyLine{0};
+    bool hasChanges{true};
+    uint32 firstDirtyLine{0};
+    uint32 lastDirtyLine{0};
 
     uint8* GetBuffer();
     size_t GetBufferSize() const;
@@ -29,8 +30,9 @@ struct Frame {
     uint8 GetMargin() const;
     uint32 GetBytesPerLine() const;
 
-    int32 GetFirstDirtyLine() const;
-    int32 GetLastDirtyLine() const;
+    uint32 GetFirstDirtyLine() const;
+    uint32 GetLastDirtyLine() const;
+    bool GetHasChanges() const;
 
    private:
     const unique_ptr<uint8[]> buffer;

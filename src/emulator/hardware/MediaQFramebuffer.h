@@ -96,9 +96,10 @@ bool MediaQFramebuffer<T>::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh)
     frame.lines = height;
     frame.margin = 0;
     frame.bytesPerLine = width * 4;
+    frame.hasChanges = true;
 
     if (!gSystemState.IsScreenDirty() && !fullRefresh) {
-        frame.firstDirtyLine = frame.lastDirtyLine = -1;
+        frame.hasChanges = false;
         return true;
     }
 
@@ -107,7 +108,7 @@ bool MediaQFramebuffer<T>::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh)
         frame.lastDirtyLine = frame.lines - 1;
     } else {
         if (gSystemState.GetScreenHighWatermark() < baseAddr) {
-            frame.firstDirtyLine = frame.lastDirtyLine = -1;
+            frame.hasChanges = false;
             return true;
         }
 
@@ -144,7 +145,7 @@ bool MediaQFramebuffer<T>::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh)
                               baseAddr + frame.firstDirtyLine / scale * rowBytes),
                           0);
 
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
+            for (uint32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++)
                     scaler.draw(static_cast<T*>(this)->palette[nibbler.nibble()]);
 
@@ -158,7 +159,7 @@ bool MediaQFramebuffer<T>::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh)
                               baseAddr + frame.firstDirtyLine / scale * rowBytes),
                           0);
 
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
+            for (uint32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++)
                     scaler.draw(static_cast<T*>(this)->palette[nibbler.nibble()]);
 
@@ -172,7 +173,7 @@ bool MediaQFramebuffer<T>::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh)
                               baseAddr + frame.firstDirtyLine / scale * rowBytes),
                           0);
 
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
+            for (uint32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++)
                     scaler.draw(static_cast<T*>(this)->palette[nibbler.nibble()]);
 
@@ -184,7 +185,7 @@ bool MediaQFramebuffer<T>::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh)
             uint8* buffer = static_cast<T*>(this)->framebuffer.GetRealAddress(
                 baseAddr + frame.firstDirtyLine / scale * rowBytes);
 
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
+            for (uint32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++)
                     scaler.draw(static_cast<T*>(this)->palette[*(uint8*)((long)(buffer++) ^ 1)]);
 
@@ -195,7 +196,7 @@ bool MediaQFramebuffer<T>::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh)
             uint8* buffer = static_cast<T*>(this)->framebuffer.GetRealAddress(
                 baseAddr + frame.firstDirtyLine / scale * rowBytes);
 
-            for (int32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
+            for (uint32 y = frame.firstDirtyLine / scale; y <= frame.lastDirtyLine / scale; y++)
                 for (int32 x = 0; x < width / scale; x++) {
                     uint8 p1 = *(uint8*)((long)(buffer++) ^ 1);  // GGGBBBBB
                     uint8 p2 = *(uint8*)((long)(buffer++) ^ 1);  // RRRRRGGG

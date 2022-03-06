@@ -687,6 +687,8 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     frame.bytesPerLine = width * 3;
     frame.firstDirtyLine = 0;
     frame.lastDirtyLine = frame.lines - 1;
+    frame.hasChanges = true;
+
     if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
     uint32* buffer = reinterpret_cast<uint32*>(frame.GetBuffer());
 

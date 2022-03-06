@@ -99,8 +99,7 @@ void MainLoop::UpdateScreen() {
     SDL_RenderClear(renderer);
 
     if (gSession->IsPowerOn() && EmHAL::CopyLCDFrame(frame)) {
-        if (frame.firstDirtyLine >= 0 && frame.lastDirtyLine >= 0 &&
-            frame.lineWidth == screenDimensions.Width() &&
+        if (frame.hasChanges && frame.lineWidth == screenDimensions.Width() &&
             frame.lines == screenDimensions.Height()) {
             uint32* pixels;
             int pitch;
@@ -112,23 +111,12 @@ void MainLoop::UpdateScreen() {
                 case 1: {
                     Nibbler<1> nibbler;
 
-                    for (int32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                    for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                         nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
 
                         for (uint32 x = 0; x < frame.lineWidth; x++)
                             pixels[y * pitch / 4 + x] =
                                 nibbler.nibble() == 0 ? BACKGROUND_COLOR : FOREGROUND_COLOR;
-                    }
-                } break;
-
-                case 4: {
-                    Nibbler<4> nibbler;
-
-                    for (int32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                        nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
-
-                        for (uint32 x = 0; x < frame.lineWidth; x++)
-                            pixels[y * pitch / 4 + x] = PALETTE_GRAYSCALE_16[nibbler.nibble()];
                     }
                 } break;
 
@@ -142,7 +130,7 @@ void MainLoop::UpdateScreen() {
 
                     Nibbler<2> nibbler;
 
-                    for (int32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                    for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                         nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
 
                         for (uint32 x = 0; x < frame.lineWidth; x++)
@@ -150,8 +138,19 @@ void MainLoop::UpdateScreen() {
                     }
                 } break;
 
+                case 4: {
+                    Nibbler<4> nibbler;
+
+                    for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                        nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
+
+                        for (uint32 x = 0; x < frame.lineWidth; x++)
+                            pixels[y * pitch / 4 + x] = PALETTE_GRAYSCALE_16[nibbler.nibble()];
+                    }
+                } break;
+
                 case 24: {
-                    for (int32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                    for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                         uint32* buffer32 =
                             reinterpret_cast<uint32*>(buffer) + y * frame.lineWidth + frame.margin;
 

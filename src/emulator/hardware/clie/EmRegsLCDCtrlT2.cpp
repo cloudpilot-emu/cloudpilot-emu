@@ -474,24 +474,28 @@ uint32 EmRegsMQLCDControlT2::GetBPP() {
             return 16;
 
         default:
-            return 0;
+            return 16;
     }
 }
 
-uint32 EmRegsMQLCDControlT2::GetWidth(void) { return 320; }
+uint32 EmRegsMQLCDControlT2::GetWidth(void) {
+    return (READ_REGISTER_T2(HorizontalWindow) >> 16) + 1;
+}
 
-uint32 EmRegsMQLCDControlT2::GetHeight(void) { return 480; }
+uint32 EmRegsMQLCDControlT2::GetHeight(void) {
+    return (READ_REGISTER_T2(VerticalWindow) >> 16) + 1;
+}
 
 uint32 EmRegsMQLCDControlT2::GetFrameBuffer(void) {
     return fBaseVideoAddr + READ_REGISTER_T2(WindowStartAddress);
 }
 
 Bool EmRegsMQLCDControlT2::GetXDoubling(void) {
-    return READ_REGISTER_T2(GraphicController) & MQ_GraphicController_T2_LowRezBit;
+    return READ_REGISTER_T2(GraphicController) & 0x4000;
 }
 
 Bool EmRegsMQLCDControlT2::GetYDoubling(void) {
-    return READ_REGISTER_T2(GraphicController) & MQ_GraphicController_T2_LowRezBit;
+    return READ_REGISTER_T2(GraphicController) & 0x8000;
 }
 uint32 EmRegsMQLCDControlT2::GetRowBytes(void) {
     return READ_REGISTER_T2(WindowStride) & 0x0000FFFF;

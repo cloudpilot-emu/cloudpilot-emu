@@ -204,6 +204,8 @@ bool EmRegsVzPegVenice::CopyLCDFrame(Frame& frame, bool fullRefresh) {
         return false;
     }
 
+    if (!frame.hasChanges) return true;
+
     switch (frame.bpp) {
         case 1:
         case 2:

@@ -1169,6 +1169,8 @@ bool EmRegsVZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     frame.margin = READ_REGISTER(lcdPanningOffset);
     frame.firstDirtyLine = 0;
     frame.lastDirtyLine = frame.lines - 1;
+    frame.hasChanges = true;
+
     emuptr baseAddr = READ_REGISTER(lcdStartAddr);
 
     if (baseAddr == 0) return false;
