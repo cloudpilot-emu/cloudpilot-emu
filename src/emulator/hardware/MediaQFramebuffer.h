@@ -98,6 +98,8 @@ bool MediaQFramebuffer<T>::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh)
     frame.bytesPerLine = width * 4;
     frame.hasChanges = true;
 
+    if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
+
     if (!gSystemState.IsScreenDirty() && !fullRefresh) {
         frame.hasChanges = false;
         return true;
@@ -130,8 +132,6 @@ bool MediaQFramebuffer<T>::CopyLCDFrameWithScale(Frame& frame, bool fullRefresh)
                 min((gSystemState.GetScreenHighWatermark() - baseAddr) / rowBytes, frame.lines - 1);
         }
     }
-
-    if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
 
     S scaler(
         reinterpret_cast<uint32*>(frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine),

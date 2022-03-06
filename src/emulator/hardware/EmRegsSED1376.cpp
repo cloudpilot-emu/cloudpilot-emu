@@ -656,9 +656,10 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     // Get the screen metrics.
 
     //	Bool	wordSwapped	= (fRegs.specialEffects & sed1376WordSwapMask) != 0;
-    Bool byteSwapped = (fRegs.specialEffects & sed1376ByteSwapMask) != 0;
-    Bool mono = (fRegs.displayMode & sed1376MonoMask) != 0;
-    int32 bpp = 1 << ((fRegs.displayMode & sed1376BPPMask) >> sed1376BPPShift);
+    const bool byteSwapped = (fRegs.specialEffects & sed1376ByteSwapMask) != 0;
+    const bool mono = (fRegs.displayMode & sed1376MonoMask) != 0;
+    const int32 bpp = 1 << ((fRegs.displayMode & sed1376BPPMask) >> sed1376BPPShift);
+
 #if !OVERLAY_IS_MAIN
     int32 width = ((fRegs.horizontalPeriod + 1) * 8);
     int32 height = ((fRegs.verticalPeriod1 << 8) | fRegs.verticalPeriod0) + 1;
@@ -666,40 +667,63 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     uint32 offset = (fRegs.mainStartAddress2 << 18) | (fRegs.mainStartAddress1 << 10) |
                     (fRegs.mainStartAddress0 << 2);
 #else
-    int32 left = ((fRegs.ovlyStartXPosition1 << 8) | fRegs.ovlyStartXPosition0) * 32 / bpp;
-    int32 right = ((fRegs.ovlyEndXPosition1 << 8) | fRegs.ovlyEndXPosition0) * 32 / bpp;
-    int32 top = ((fRegs.ovlyStartYPosition1 << 8) | fRegs.ovlyStartYPosition0);
-    int32 bottom = ((fRegs.ovlyEndYPosition1 << 8) | fRegs.ovlyEndYPosition0);
+    const int32 left = ((fRegs.ovlyStartXPosition1 << 8) | fRegs.ovlyStartXPosition0) * 32 / bpp;
+    const int32 right = ((fRegs.ovlyEndXPosition1 << 8) | fRegs.ovlyEndXPosition0) * 32 / bpp;
+    const int32 top = ((fRegs.ovlyStartYPosition1 << 8) | fRegs.ovlyStartYPosition0);
+    const int32 bottom = ((fRegs.ovlyEndYPosition1 << 8) | fRegs.ovlyEndYPosition0);
 
-    int32 width = right - left + (32 / bpp);
-    int32 height = bottom - top + 1;
-    uint32 offset = (fRegs.ovlyStartAddress2 << 18) | (fRegs.ovlyStartAddress1 << 10) |
-                    (fRegs.ovlyStartAddress0 << 2);
+    const int32 width = right - left + (32 / bpp);
+    const int32 height = bottom - top + 1;
+    const uint32 offset = (fRegs.ovlyStartAddress2 << 18) | (fRegs.ovlyStartAddress1 << 10) |
+                          (fRegs.ovlyStartAddress0 << 2);
 #endif
     if (width != 160 || height != 160) return false;
 
-    emuptr baseAddr = fBaseVideoAddr + offset;
+    const uint32 rowBytes = (bpp * width) / 8;
+    const emuptr baseAddr = fBaseVideoAddr + offset;
 
     frame.bpp = 24;
     frame.lineWidth = width;
     frame.lines = height;
     frame.margin = 0;
-    frame.bytesPerLine = width * 3;
-    frame.firstDirtyLine = 0;
-    frame.lastDirtyLine = frame.lines - 1;
+    frame.bytesPerLine = width * 4;
     frame.hasChanges = true;
 
     if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
-    uint32* buffer = reinterpret_cast<uint32*>(frame.GetBuffer());
 
-    uint32* lut = GetLUT(mono);
+    if (!gSystemState.IsScreenDirty() && !fullRefresh) {
+        frame.hasChanges = false;
+        return true;
+    }
+
+    if (gSystemState.ScreenRequiresFullRefresh() || fullRefresh) {
+        frame.firstDirtyLine = 0;
+        frame.lastDirtyLine = frame.lines - 1;
+    } else {
+        if (gSystemState.GetScreenHighWatermark() < baseAddr) {
+            frame.hasChanges = false;
+            return true;
+        }
+
+        frame.firstDirtyLine =
+            min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes,
+                frame.lines - 1);
+
+        frame.lastDirtyLine =
+            min((gSystemState.GetScreenHighWatermark() - baseAddr) / rowBytes, frame.lines - 1);
+    }
+
+    uint32* buffer =
+        reinterpret_cast<uint32*>(frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine);
+    const uint32* lut = GetLUT(mono);
 
     switch (bpp) {
         case 1: {
             Nibbler<1, true> nibbler;
-            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine * rowBytes),
+                          0);
 
-            for (int32 y = 0; y < height; y++)
+            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++)
                 for (int32 x = 0; x < width; x++) *(buffer++) = lut[nibbler.nibble()];
 
             break;
@@ -707,9 +731,10 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame, bool fullRefresh) {
 
         case 2: {
             Nibbler<2, true> nibbler;
-            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine * rowBytes),
+                          0);
 
-            for (int32 y = 0; y < height; y++)
+            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++)
                 for (int32 x = 0; x < width; x++) *(buffer++) = lut[nibbler.nibble()];
 
             break;
@@ -717,27 +742,28 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame, bool fullRefresh) {
 
         case 4: {
             Nibbler<4, true> nibbler;
-            nibbler.reset(framebuffer.GetRealAddress(baseAddr), 0);
+            nibbler.reset(framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine * rowBytes),
+                          0);
 
-            for (int32 y = 0; y < height; y++)
+            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++)
                 for (int32 x = 0; x < width; x++) *(buffer++) = lut[nibbler.nibble()];
 
             break;
         }
 
         case 8: {
-            uint8* fbuf = framebuffer.GetRealAddress(baseAddr);
+            uint8* fbuf = framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine * rowBytes);
 
-            for (int32 y = 0; y < height; y++)
+            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++)
                 for (int32 x = 0; x < width; x++) *(buffer++) = lut[*(uint8*)((long)(fbuf++) ^ 1)];
 
             break;
         }
 
         default: {
-            uint8* fbuf = framebuffer.GetRealAddress(baseAddr);
+            uint8* fbuf = framebuffer.GetRealAddress(baseAddr + frame.firstDirtyLine * rowBytes);
 
-            for (int32 y = 0; y < height; y++)
+            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++)
                 for (int32 x = 0; x < width; x++) {
                     uint8 p1 = *(uint8*)((long)(fbuf++) ^ 1);  // GGGBBBBB
                     uint8 p2 = *(uint8*)((long)(fbuf++) ^ 1);  // RRRRRGGG
