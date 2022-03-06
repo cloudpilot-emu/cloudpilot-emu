@@ -959,8 +959,12 @@ bool EmRegsEZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     frame.hasChanges = true;
 
     emuptr baseAddr = READ_REGISTER(lcdStartAddr);
-
     if (baseAddr == 0) return false;
+
+    if (!gSystemState.IsScreenDirty() && !fullRefresh) {
+        frame.hasChanges = false;
+        return true;
+    }
 
     switch (frame.bpp) {
         case 1:
@@ -990,10 +994,32 @@ bool EmRegsEZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     emuptr boundaryAddr = ((baseAddr & hwrEZ328LcdPageMask) + hwrEZ328LcdPageSize);
 
     if (lastLineAddr <= boundaryAddr) {
-        // Bits don't cross the 128K boundary
+        if (gSystemState.ScreenRequiresFullRefresh() || fullRefresh) {
+            frame.firstDirtyLine = 0;
+            frame.lastDirtyLine = frame.lines - 1;
+        } else {
+            if (gSystemState.GetScreenHighWatermark() < baseAddr) {
+                frame.hasChanges = false;
+                return true;
+            }
+
+            frame.firstDirtyLine =
+                min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) /
+                        frame.bytesPerLine,
+                    frame.lines - 1);
+
+            frame.lastDirtyLine =
+                min((gSystemState.GetScreenHighWatermark() - baseAddr) / frame.bytesPerLine,
+                    frame.lines - 1);
+        }
+
+        firstLineAddr = baseAddr + frame.firstDirtyLine * frame.bytesPerLine;
+        lastLineAddr = baseAddr + (frame.lastDirtyLine + 1) * frame.bytesPerLine;
+        dst += frame.firstDirtyLine * frame.bytesPerLine;
     } else {
         // Bits straddle the 128K boundary;
         // copy the first part here, the wrapped part below
+        // Dirty region tracking does not work in this case.
 
         EmMem_memcpy((void*)dst, firstLineAddr, boundaryAddr - firstLineAddr);
         dst += (boundaryAddr - firstLineAddr);

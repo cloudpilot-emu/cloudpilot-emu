@@ -1167,13 +1167,33 @@ bool EmRegsVZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     frame.lines = READ_REGISTER(lcdScreenHeight) + 1;
     frame.bytesPerLine = READ_REGISTER(lcdPageWidth) * 2;
     frame.margin = READ_REGISTER(lcdPanningOffset);
-    frame.firstDirtyLine = 0;
-    frame.lastDirtyLine = frame.lines - 1;
     frame.hasChanges = true;
 
-    emuptr baseAddr = READ_REGISTER(lcdStartAddr);
-
+    const emuptr baseAddr = READ_REGISTER(lcdStartAddr);
     if (baseAddr == 0) return false;
+
+    if (!gSystemState.IsScreenDirty() && !fullRefresh) {
+        frame.hasChanges = false;
+        return true;
+    }
+
+    if (gSystemState.ScreenRequiresFullRefresh() || fullRefresh) {
+        frame.firstDirtyLine = 0;
+        frame.lastDirtyLine = frame.lines - 1;
+    } else {
+        if (gSystemState.GetScreenHighWatermark() < baseAddr) {
+            frame.hasChanges = false;
+            return true;
+        }
+
+        frame.firstDirtyLine = min(
+            (max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / frame.bytesPerLine,
+            frame.lines - 1);
+
+        frame.lastDirtyLine =
+            min((gSystemState.GetScreenHighWatermark() - baseAddr) / frame.bytesPerLine,
+                frame.lines - 1);
+    }
 
     switch (frame.bpp) {
         case 1:
@@ -1194,10 +1214,10 @@ bool EmRegsVZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
 
     // Determine first and last scanlines to fetch, and fetch them.
 
-    emuptr firstLineAddr = baseAddr;
-    emuptr lastLineAddr = baseAddr + frame.lines * frame.bytesPerLine;
+    emuptr firstLineAddr = baseAddr + frame.firstDirtyLine * frame.bytesPerLine;
+    emuptr lastLineAddr = baseAddr + (frame.lastDirtyLine + 1) * frame.bytesPerLine;
 
-    uint8* dst = frame.GetBuffer();
+    uint8* dst = frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine;
 
     EmASSERT(frame.GetBufferSize() >= lastLineAddr - firstLineAddr);
     EmMem_memcpy((void*)dst, firstLineAddr, lastLineAddr - firstLineAddr);
