@@ -51,6 +51,9 @@ export interface Frame {
     lastDirtyLine: number;
     hasChanges: boolean;
 
+    scaleX: number;
+    scaleY: number;
+
     buffer: Uint8Array;
 }
 
@@ -200,6 +203,8 @@ export class Cloudpilot {
             firstDirtyLine: nativeFrame.GetFirstDirtyLine(),
             lastDirtyLine: nativeFrame.GetLastDirtyLine(),
             hasChanges: nativeFrame.GetHasChanges(),
+            scaleX: nativeFrame.GetScaleX(),
+            scaleY: nativeFrame.GetScaleY(),
             buffer: this.module.HEAPU8.subarray(bufferPtr, bufferPtr + nativeFrame.GetBufferSize()),
         };
     }

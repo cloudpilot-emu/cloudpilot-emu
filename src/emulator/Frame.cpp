@@ -22,3 +22,7 @@ uint32 Frame::GetFirstDirtyLine() const { return firstDirtyLine; }
 uint32 Frame::GetLastDirtyLine() const { return lastDirtyLine; }
 
 bool Frame::GetHasChanges() const { return hasChanges; }
+
+uint8 Frame::GetScaleX() const { return scaleX; }
+
+uint8 Frame::GetScaleY() const { return scaleY; }

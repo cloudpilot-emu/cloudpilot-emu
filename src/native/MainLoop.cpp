@@ -99,8 +99,8 @@ void MainLoop::UpdateScreen() {
     SDL_RenderClear(renderer);
 
     if (gSession->IsPowerOn() && EmHAL::CopyLCDFrame(frame)) {
-        if (frame.hasChanges && frame.lineWidth == screenDimensions.Width() &&
-            frame.lines == screenDimensions.Height()) {
+        if (frame.hasChanges && frame.lineWidth * frame.scaleX == screenDimensions.Width() &&
+            frame.lines * frame.scaleY == screenDimensions.Height()) {
             uint32* pixels;
             int pitch;
             uint8* buffer = frame.GetBuffer();
@@ -168,11 +168,11 @@ void MainLoop::UpdateScreen() {
                 .w = static_cast<int32>(frame.lineWidth),
                 .h = static_cast<int32>(frame.lastDirtyLine - frame.firstDirtyLine + 1)};
 
-            SDL_Rect dest = {
-                .x = 0,
-                .y = static_cast<int32>(frame.firstDirtyLine),
-                .w = static_cast<int32>(frame.lineWidth),
-                .h = static_cast<int32>(frame.lastDirtyLine - frame.firstDirtyLine + 1)};
+            SDL_Rect dest = {.x = 0,
+                             .y = static_cast<int32>(frame.firstDirtyLine * frame.scaleY),
+                             .w = static_cast<int32>(frame.lineWidth * frame.scaleX),
+                             .h = static_cast<int32>(
+                                 (frame.lastDirtyLine - frame.firstDirtyLine + 1) * frame.scaleY)};
 
             SDL_SetRenderTarget(renderer, lcdTexture);
             SDL_RenderCopy(renderer, lcdTempTexture, &src, &dest);

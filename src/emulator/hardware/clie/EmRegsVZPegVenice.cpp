@@ -6,7 +6,6 @@
 #include "EmRegsVZPrv.h"
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
 #include "Frame.h"
-#include "Nibbler.h"
 #include "PalmPack.h"
 
 #define NON_PORTABLE
@@ -204,94 +203,9 @@ bool EmRegsVzPegVenice::CopyLCDFrame(Frame& frame, bool fullRefresh) {
         return false;
     }
 
-    if (!frame.hasChanges) return true;
-
-    switch (frame.bpp) {
-        case 1:
-        case 2:
-        case 4:
-            break;
-        default:
-            return false;
-    }
-
-    if (frame.lineWidth != 160 || frame.lines < 160) {
-        return true;
-    }
-
-    uint32* bufferTmp = framebufferTmp.get();
-    uint8* buffer = frame.GetBuffer();
-
-    // The following scaling code is designed for little endian and not endian safe!
-    switch (frame.bpp) {
-        case 4: {
-            Nibbler<4> nibbler;
-
-            for (int y = 0; y < 160; y++) {
-                nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
-
-                for (uint32* dest = bufferTmp + y * 40; dest - bufferTmp < (y + 1) * 40; dest++)
-                    *dest = (nibbler.nibble() * 0x00000011) | (nibbler.nibble() * 0x00001100) |
-                            (nibbler.nibble() * 0x00110000) | (nibbler.nibble() * 0x11000000);
-            }
-
-            frame.bytesPerLine = 160;
-
-            break;
-        }
-
-        case 2: {
-            Nibbler<2> nibbler;
-
-            for (int y = 0; y < 160; y++) {
-                nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
-
-                for (uint32* dest = bufferTmp + y * 20; dest - bufferTmp < (y + 1) * 20; dest++)
-                    *dest = (nibbler.nibble() * 0x00000050) | (nibbler.nibble() * 0x00000005) |
-                            (nibbler.nibble() * 0x00005000) | (nibbler.nibble() * 0x00000500) |
-                            (nibbler.nibble() * 0x00500000) | (nibbler.nibble() * 0x00050000) |
-                            (nibbler.nibble() * 0x50000000) | (nibbler.nibble() * 0x05000000);
-            }
-
-            frame.bytesPerLine = 80;
-
-            break;
-        }
-
-        case 1: {
-            Nibbler<1> nibbler;
-
-            for (int y = 0; y < 160; y++) {
-                nibbler.reset(buffer + y * frame.bytesPerLine, frame.margin);
-
-                for (uint32* dest = bufferTmp + y * 10; dest - bufferTmp < (y + 1) * 10; dest++)
-                    *dest = (nibbler.nibble() * 0x000000c0) | (nibbler.nibble() * 0x00000030) |
-                            (nibbler.nibble() * 0x0000000c) | (nibbler.nibble() * 0x00000003) |
-                            (nibbler.nibble() * 0x0000c000) | (nibbler.nibble() * 0x00003000) |
-                            (nibbler.nibble() * 0x00000c00) | (nibbler.nibble() * 0x00000300) |
-                            (nibbler.nibble() * 0x00c00000) | (nibbler.nibble() * 0x00300000) |
-                            (nibbler.nibble() * 0x000c0000) | (nibbler.nibble() * 0x00030000) |
-                            (nibbler.nibble() * 0xc0000000) | (nibbler.nibble() * 0x30000000) |
-                            (nibbler.nibble() * 0x0c000000) | (nibbler.nibble() * 0x03000000);
-            }
-
-            frame.bytesPerLine = 40;
-
-            break;
-        }
-    }
-
-    frame.lines = 320;
-    frame.lineWidth = 320;
-    frame.margin = 0;
-    frame.firstDirtyLine = 0;
-    frame.lastDirtyLine = 319;
-
-    for (int y = 0; y < 160; y++) {
-        memcpy(buffer + 2 * y * frame.bytesPerLine, bufferTmp + y * frame.bytesPerLine / 4,
-               frame.bytesPerLine);
-        memcpy(buffer + (2 * y + 1) * frame.bytesPerLine, bufferTmp + y * frame.bytesPerLine / 4,
-               frame.bytesPerLine);
+    if (frame.lineWidth == 160 && frame.lines >= 160) {
+        frame.lines = 160;
+        frame.scaleX = frame.scaleY = 2;
     }
 
     return true;

@@ -133,6 +133,9 @@ export interface Frame {
 
     GetBuffer(): VoidPtr;
     GetBufferSize(): number;
+
+    GetScaleX(): number;
+    GetScaleY(): number;
 }
 
 export interface DbBackup {

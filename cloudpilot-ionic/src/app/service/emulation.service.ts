@@ -27,6 +27,7 @@ import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
 import { hasInitialImportRequest } from './link-api.service';
 import { isIOS } from './../helper/browser';
+import { timeStamp } from 'console';
 
 const PEN_MOVE_THROTTLE = 25;
 const SNAPSHOT_INTERVAL = 1000;
@@ -277,13 +278,8 @@ Sorry for the inconvenience.`
     private resetCanvas(session: Session): void {
         const dimensions = deviceDimensions(session.device);
 
-        this.canvas.width = dimensions.width;
-        this.canvas.height = dimensions.height;
-
-        this.imageData = new ImageData(dimensions.width, dimensions.height);
-        this.imageData32 = new Uint32Array(this.imageData.data.buffer);
-
-        this.imageData32.fill(0xfffffffff);
+        this.canvas.width = this.canvasTmp.width = dimensions.width;
+        this.canvas.height = this.canvasTmp.height = dimensions.height;
 
         const context = this.canvas.getContext('2d');
         if (!context) {
@@ -291,6 +287,13 @@ Sorry for the inconvenience.`
         }
 
         this.context = context;
+
+        const contextTmp = this.canvasTmp.getContext('2d');
+        if (!contextTmp) {
+            throw new Error('get a new browser');
+        }
+
+        this.contextTmp = contextTmp;
 
         this.clearCanvas();
     }
@@ -599,9 +602,13 @@ Sorry for the inconvenience.`
             return;
         }
 
-        if (frame.lines === this.imageData.height && frame.lineWidth === this.imageData.width) {
-            const width = frame.lineWidth;
-            const height = frame.lines;
+        if (frame.lines * frame.scaleY === this.canvas.height && frame.lineWidth * frame.scaleX === this.canvas.width) {
+            if (!this.imageData || this.imageData.width !== frame.lineWidth || this.imageData.height !== frame.lines) {
+                this.imageData = new ImageData(frame.lineWidth, frame.lines);
+                new Uint32Array(this.imageData.data.buffer).fill(0xfffffffff);
+            }
+
+            const imageData32 = new Uint32Array(this.imageData.data.buffer);
 
             switch (frame.bpp) {
                 case 1: {
@@ -612,8 +619,8 @@ Sorry for the inconvenience.`
                     for (let y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                         const offsetSrc = y * frame.bytesPerLine;
 
-                        for (let i = frame.margin; i < width + frame.margin; i++) {
-                            this.imageData32[iDest++] =
+                        for (let i = frame.margin; i < frame.lineWidth + frame.margin; i++) {
+                            imageData32[iDest++] =
                                 frame.buffer[offsetSrc + (i >>> 3)] & (0x80 >>> (i & 0x07)) ? fg : bg;
                         }
                     }
@@ -634,8 +641,8 @@ Sorry for the inconvenience.`
                     for (let y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                         const offsetSrc = y * frame.bytesPerLine;
 
-                        for (let i = frame.margin; i < width + frame.margin; i++) {
-                            this.imageData32[iDest++] =
+                        for (let i = frame.margin; i < frame.lineWidth + frame.margin; i++) {
+                            imageData32[iDest++] =
                                 palette[(frame.buffer[offsetSrc + (i >>> 2)] >> (6 - 2 * (i & 0x03))) & 0x03];
                         }
                     }
@@ -649,8 +656,8 @@ Sorry for the inconvenience.`
                     for (let y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                         const offsetSrc = y * frame.bytesPerLine;
 
-                        for (let i = frame.margin; i < width + frame.margin; i++) {
-                            this.imageData32[iDest++] =
+                        for (let i = frame.margin; i < frame.lineWidth + frame.margin; i++) {
+                            imageData32[iDest++] =
                                 GRAYSCALE_PALETTE_RGBA[
                                     (frame.buffer[offsetSrc + (i >>> 1)] >>> (4 - 4 * (i & 0x01))) & 0x0f
                                 ];
@@ -669,10 +676,13 @@ Sorry for the inconvenience.`
                         );
 
                         if (frame.margin !== 0) {
-                            this.imageData32
-                                .subarray(0, width * (frame.lastDirtyLine - frame.firstDirtyLine + 1))
+                            imageData32
+                                .subarray(0, frame.lineWidth * (frame.lastDirtyLine - frame.firstDirtyLine + 1))
                                 .set(
-                                    buffer32.subarray(frame.firstDirtyLine * width, width * (frame.lastDirtyLine + 1))
+                                    buffer32.subarray(
+                                        frame.firstDirtyLine * frame.lineWidth,
+                                        frame.lineWidth * (frame.lastDirtyLine + 1)
+                                    )
                                 );
                         } else {
                             let iDest = 0;
@@ -680,8 +690,8 @@ Sorry for the inconvenience.`
                             for (let y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                                 let j = y * (frame.bytesPerLine >>> 2) + frame.margin;
 
-                                for (let x = 0; x < width; x++) {
-                                    this.imageData32[iDest++] = buffer32[j++];
+                                for (let x = 0; x < frame.lineWidth; x++) {
+                                    imageData32[iDest++] = buffer32[j++];
                                 }
                             }
                         }
@@ -691,7 +701,9 @@ Sorry for the inconvenience.`
             }
         }
 
-        this.context.putImageData(
+        const scaling = frame.scaleX !== 1 || frame.scaleY !== 1;
+
+        (scaling ? this.contextTmp : this.context).putImageData(
             this.imageData,
             0,
             frame.firstDirtyLine,
@@ -700,6 +712,21 @@ Sorry for the inconvenience.`
             frame.lineWidth,
             frame.lastDirtyLine - frame.firstDirtyLine + 1
         );
+
+        if (scaling) {
+            this.context.imageSmoothingEnabled = false;
+            this.context.drawImage(
+                this.canvasTmp,
+                0,
+                frame.firstDirtyLine,
+                frame.lineWidth,
+                frame.lastDirtyLine - frame.firstDirtyLine + 1,
+                0,
+                frame.firstDirtyLine * frame.scaleY,
+                frame.lineWidth * frame.scaleX,
+                (frame.lastDirtyLine - frame.firstDirtyLine + 1) * frame.scaleY
+            );
+        }
 
         this.newFrameEvent.dispatch(this.canvas);
     }
@@ -720,9 +747,10 @@ Sorry for the inconvenience.`
     private mutex = new Mutex();
 
     private canvas: HTMLCanvasElement = document.createElement('canvas');
+    private canvasTmp: HTMLCanvasElement = document.createElement('canvas');
     private context!: CanvasRenderingContext2D;
-    private imageData = new ImageData(160, 160);
-    private imageData32 = new Uint32Array(this.imageData.data.buffer);
+    private contextTmp!: CanvasRenderingContext2D;
+    private imageData!: ImageData;
 
     private lastPenUpdate = 0;
     private penDown = false;

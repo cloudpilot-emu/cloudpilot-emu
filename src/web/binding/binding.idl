@@ -98,6 +98,9 @@ interface Frame {
 
     VoidPtr GetBuffer();
     long GetBufferSize();
+
+    long GetScaleX();
+    long GetScaleY();
 };
 
 interface DbBackup {

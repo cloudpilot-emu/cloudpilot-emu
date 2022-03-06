@@ -1210,6 +1210,7 @@ bool EmRegs328::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     frame.lines = READ_REGISTER(lcdScreenHeight) + 1;
     frame.bytesPerLine = READ_REGISTER(lcdPageWidth) * 2;
     frame.margin = READ_REGISTER(lcdPanningOffset) & 0x0f;
+    frame.scaleX = frame.scaleY = 1;
     frame.hasChanges = true;
 
     const emuptr baseAddr = READ_REGISTER(lcdStartAddr);

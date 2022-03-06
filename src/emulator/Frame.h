@@ -19,6 +19,9 @@ struct Frame {
     uint32 firstDirtyLine{0};
     uint32 lastDirtyLine{0};
 
+    uint8 scaleX{0};
+    uint8 scaleY{0};
+
     uint8* GetBuffer();
     size_t GetBufferSize() const;
 
@@ -33,6 +36,9 @@ struct Frame {
     uint32 GetFirstDirtyLine() const;
     uint32 GetLastDirtyLine() const;
     bool GetHasChanges() const;
+
+    uint8 GetScaleX() const;
+    uint8 GetScaleY() const;
 
    private:
     const unique_ptr<uint8[]> buffer;

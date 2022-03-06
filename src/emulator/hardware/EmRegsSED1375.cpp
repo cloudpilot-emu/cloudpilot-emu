@@ -275,6 +275,7 @@ bool EmRegsSED1375::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     frame.margin = 0;
     frame.bytesPerLine = width * 4;
     frame.hasChanges = true;
+    frame.scaleX = frame.scaleY = 1;
 
     if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
 
