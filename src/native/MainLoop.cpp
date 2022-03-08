@@ -19,6 +19,8 @@ constexpr uint32 PALETTE_GRAYSCALE_16[] = {
     0xffd2d2d2, 0xffc4c4c4, 0xffb6b6b6, 0xffa8a8a8, 0xff9a9a9a, 0xff8c8c8c, 0xff7e7e7e, 0xff707070,
     0xff626262, 0xff545454, 0xff464646, 0xff383838, 0xff2a2a2a, 0xff1c1c1c, 0xff0e0e0e, 0xff000000};
 
+constexpr long SCREEN_REFRESH_GRACE_TIME = 5;
+
 MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer, int scale)
     : renderer(renderer),
       scale(scale),
@@ -198,5 +200,12 @@ void MainLoop::UpdateScreen() {
 
     DrawSilkscreen(renderer);
 
+    const long timestamp = Platform::GetMilliseconds();
+    if (timestamp - lastScreenRefreshAt < SCREEN_REFRESH_GRACE_TIME) {
+        SDL_Delay(SCREEN_REFRESH_GRACE_TIME - timestamp + lastScreenRefreshAt);
+    }
+
     SDL_RenderPresent(renderer);
+
+    lastScreenRefreshAt = Platform::GetMilliseconds();
 }

@@ -37,6 +37,8 @@ class MainLoop {
     const long millisOffset{Platform::GetMilliseconds()};
     double clockEmu{0};
 
+    long lastScreenRefreshAt = 0;
+
     EventHandler eventHandler;
 };
 
