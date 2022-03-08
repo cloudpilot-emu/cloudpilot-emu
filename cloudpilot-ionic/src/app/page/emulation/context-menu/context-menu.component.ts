@@ -1,4 +1,4 @@
-import { ActionSheetController, PopoverController } from '@ionic/angular';
+import { ActionSheetController, ModalController, PopoverController } from '@ionic/angular';
 import { Component, Input, OnInit } from '@angular/core';
 import { quirkNoPoweroff, supportsDBExport } from 'src/app/helper/deviceProperties';
 
@@ -9,6 +9,8 @@ import { EmulationService } from './../../../service/emulation.service';
 import { EmulationStateService } from 'src/app/service/emulation-state.service';
 import { KvsService } from './../../../service/kvs.service';
 import { PalmButton } from 'src/app/helper/Cloudpilot';
+import { SessionService } from 'src/app/service/session.service';
+import { SessionSettingsComponent } from '../../../component/session-settings/session-settings.component';
 
 @Component({
     selector: 'app-emulation-context-menu',
@@ -24,7 +26,9 @@ export class ContextMenuComponent implements OnInit {
         private actionSheetController: ActionSheetController,
         private popoverController: PopoverController,
         private audioService: AudioService,
-        private kvsService: KvsService
+        private kvsService: KvsService,
+        private modalController: ModalController,
+        private sessionService: SessionService
     ) {}
 
     ngOnInit(): void {}
@@ -136,6 +140,30 @@ export class ContextMenuComponent implements OnInit {
         const currentSession = this.emulationStateService.getCurrentSession();
 
         return currentSession ? quirkNoPoweroff(currentSession.device) : false;
+    }
+
+    async editSettings(): Promise<void> {
+        const session = this.emulationStateService.getCurrentSession();
+        if (!session) {
+            return;
+        }
+
+        const modal = await this.modalController.create({
+            component: SessionSettingsComponent,
+            backdropDismiss: false,
+            componentProps: {
+                session,
+                availableDevices: [session.device],
+                onSave: () => {
+                    this.sessionService.updateSession(session);
+                    modal.dismiss();
+                },
+                onCancel: () => modal.dismiss(),
+            },
+        });
+
+        await this.popoverController.dismiss();
+        await modal.present();
     }
 
     @Input()

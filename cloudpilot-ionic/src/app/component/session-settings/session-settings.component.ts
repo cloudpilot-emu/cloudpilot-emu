@@ -1,9 +1,9 @@
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
 
-import { AlertService } from './../../../service/alert.service';
+import { AlertService } from './../../service/alert.service';
 import { DeviceId } from 'src/app/model/DeviceId';
-import { SessionService } from '../../../service/session.service';
+import { SessionService } from '../../service/session.service';
 import { deviceName } from 'src/app/helper/deviceProperties';
 
 export interface SessionSettings {
@@ -15,8 +15,8 @@ export interface SessionSettings {
 
 @Component({
     selector: 'app-session-settings',
-    templateUrl: './settings.component.html',
-    styleUrls: ['./settings.component.scss'],
+    templateUrl: './session-settings.component.html',
+    styleUrls: ['./session-settings.component.scss'],
 })
 export class SessionSettingsComponent implements OnInit {
     constructor(private sessionService: SessionService, private alertService: AlertService) {}
@@ -84,8 +84,8 @@ export class SessionSettingsComponent implements OnInit {
         this.onSave();
     }
 
-    formKeyDown(e: KeyboardEvent): void {
-        if (e.key === 'Enter') this.save();
+    onEnter(): void {
+        this.save();
     }
 
     private createFormGroup() {

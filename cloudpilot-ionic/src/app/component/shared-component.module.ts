@@ -8,10 +8,23 @@ import { MarkdownModule } from 'ngx-markdown';
 import { NgModule } from '@angular/core';
 import { PwaPromptComponent } from './pwa-prompt/pwa-prompt.component';
 import { RemoteUrlPromptComponent } from './remote-url-prompt/remote-url-prompt.component';
+import { SessionSettingsComponent } from './session-settings/session-settings.component';
 
 @NgModule({
-    declarations: [HelpComponent, PwaPromptComponent, CredentialsPromptComponent, RemoteUrlPromptComponent],
+    declarations: [
+        HelpComponent,
+        PwaPromptComponent,
+        CredentialsPromptComponent,
+        RemoteUrlPromptComponent,
+        SessionSettingsComponent,
+    ],
     imports: [CommonModule, MarkdownModule.forChild(), IonicModule, FormsModule, ReactiveFormsModule],
-    exports: [HelpComponent, PwaPromptComponent, CredentialsPromptComponent, RemoteUrlPromptComponent],
+    exports: [
+        HelpComponent,
+        PwaPromptComponent,
+        CredentialsPromptComponent,
+        RemoteUrlPromptComponent,
+        SessionSettingsComponent,
+    ],
 })
 export class SharedComponentModule {}

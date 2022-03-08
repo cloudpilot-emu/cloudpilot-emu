@@ -13,7 +13,7 @@
 </ion-header>
 
 <ion-content fullscreen>
-    <form [formGroup]="formGroup" (keydown)="formKeyDown($event)">
+    <form [formGroup]="formGroup" (keydown.enter)="onEnter()">
         <ion-item lines="inset">
             <ion-label position="stacked">Session name</ion-label>
             <ion-input placeholder="Enter session name" formControlName="name"></ion-input>

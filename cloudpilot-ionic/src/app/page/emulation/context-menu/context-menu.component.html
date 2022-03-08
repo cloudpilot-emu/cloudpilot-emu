@@ -23,6 +23,10 @@
     <ion-label>Save backup</ion-label>
     <ion-icon name="share-outline" slot="end"></ion-icon>
   </ion-item>
+  <ion-item button [detail]="false" (click)="editSettings()">
+    <ion-label>Session settings</ion-label>
+    <ion-icon name="cog-outline" slot="end"></ion-icon>
+  </ion-item>
   <ion-item button [detail]="false" (click)="help()">
     <ion-label>Help</ion-label>
     <ion-icon name="help-outline" slot="end"></ion-icon>
