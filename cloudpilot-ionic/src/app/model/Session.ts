@@ -11,4 +11,5 @@ export interface Session {
     hotsyncName?: string;
     dontManageHotsyncName?: boolean;
     wasResetForcefully?: boolean;
+    speed?: number;
 }

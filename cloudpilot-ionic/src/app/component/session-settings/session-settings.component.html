@@ -29,6 +29,12 @@
             <ion-input [placeholder]="placeholder" formControlName="hotsyncName" maxlength="40"></ion-input>
         </ion-item>
 
+        <ion-item lines="inset" *ngIf="showHotsyncNameInput">
+            <ion-label>{{speedLabel}}</ion-label>
+            <ion-range min="-4" max="4" step="0.25" snaps="true" ticks="false" formControlName="speed">
+            </ion-range>
+        </ion-item>
+
         <ion-item lines="inset">
             <ion-label position="stacked">Device</ion-label>
             <ion-select formControlName="device">

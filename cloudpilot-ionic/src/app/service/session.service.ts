@@ -78,6 +78,7 @@ export class SessionService {
             ram: (await this.emulationService.cloudpilot).minRamForDevice(device) / 1024 / 1024,
             totalMemory: (await this.emulationService.cloudpilot).totalMemorySizeForDevice(device),
             rom: '',
+            speed: 1,
         };
 
         const loader = await this.loadingController.create({ message: 'Importing...' });

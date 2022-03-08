@@ -11,6 +11,7 @@ export interface SessionSettings {
     device: DeviceId;
     hotsyncName?: string;
     dontManageHotsyncName?: boolean;
+    speed?: number;
 }
 
 @Component({
@@ -35,6 +36,10 @@ export class SessionSettingsComponent implements OnInit {
 
     get formControlManageHotsyncName(): AbstractControl {
         return this.formGroup.get('manageHotsyncName')!;
+    }
+
+    get formControlSpeed(): AbstractControl {
+        return this.formGroup.get('speed')!;
     }
 
     get showHotsyncNameInput(): boolean {
@@ -80,12 +85,23 @@ export class SessionSettingsComponent implements OnInit {
         }
 
         this.session.device = this.formControlDevice.value;
+        this.session.speed = this.speedValue;
 
         this.onSave();
     }
 
     onEnter(): void {
         this.save();
+    }
+
+    get speedValue(): number {
+        const speed = this.formControlSpeed.value || 0;
+
+        return speed >= 0 ? 1 + speed : 1 / (1 - speed);
+    }
+
+    get speedLabel(): string {
+        return `Speed: ${this.speedValue.toFixed(2)}x`;
     }
 
     private createFormGroup() {
@@ -96,6 +112,9 @@ export class SessionSettingsComponent implements OnInit {
             manageHotsyncName: new FormControl(!this.session.dontManageHotsyncName),
             hotsyncName: new FormControl(this.session.hotsyncName || ''),
             device: new FormControl({ value: this.session.device, disabled: this.availableDevices.length === 1 }),
+            speed: new FormControl(
+                (this.session.speed || 1) >= 1 ? (this.session.speed || 1) - 1 : 1 - 1 / this.session.speed!
+            ),
         });
     }
 

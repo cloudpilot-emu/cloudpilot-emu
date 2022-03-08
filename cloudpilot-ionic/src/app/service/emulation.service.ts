@@ -485,8 +485,10 @@ Sorry for the inconvenience.`
         const wasSuspended = this.cloudpilotInstance.isSuspended();
         let isSuspended = false;
 
+        const currentSession = this.emulationState.getCurrentSession();
+
         // Scale the clock by the calculated emulation speed
-        this.cloudpilotInstance.setClockFactor(this.emulationSpeed);
+        this.cloudpilotInstance.setClockFactor(this.emulationSpeed * (currentSession?.speed || 1));
 
         // Limit the time that we try to catch up. This will avoid that we lock onto a low
         // FPS if the emulation cannot run at full speed
@@ -536,7 +538,6 @@ Sorry for the inconvenience.`
 
         const powerOff = this.cloudpilotInstance.isPowerOff();
         const uiInitialized = this.cloudpilotInstance.isUiInitialized();
-        const currentSession = this.emulationState.getCurrentSession();
 
         if (powerOff !== this.powerOff || uiInitialized !== this.uiInitialized) {
             this.ngZone.run(() => {
