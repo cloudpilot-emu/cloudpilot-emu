@@ -1,4 +1,13 @@
 ion-item {
     --highlight-color-valid: var(--highlight-color-focused);
+    --background: none;
 }
 
+.label-speed {
+    min-width: 7rem;
+}
+
+h1 {
+    margin-left: 1rem;
+    margin-right: 1rem;
+}

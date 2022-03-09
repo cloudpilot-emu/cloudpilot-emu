@@ -14,33 +14,39 @@
 
 <ion-content fullscreen>
     <form [formGroup]="formGroup" (keydown.enter)="onEnter()">
-        <ion-item lines="inset">
+        <h1>Session</h1>
+
+        <ion-item lines="none">
             <ion-label position="stacked">Session name</ion-label>
             <ion-input placeholder="Enter session name" formControlName="name"></ion-input>
         </ion-item>
 
-        <ion-item lines="inset">
-            <ion-label>Manage hotsync name</ion-label>
-            <ion-toggle formControlName="manageHotsyncName"></ion-toggle>
-        </ion-item>
+        <h1>Device</h1>
 
-        <ion-item lines="inset" *ngIf="showHotsyncNameInput">
-            <ion-label position="stacked">Hotsync name</ion-label>
-            <ion-input [placeholder]="placeholder" formControlName="hotsyncName" maxlength="40"></ion-input>
-        </ion-item>
-
-        <ion-item lines="inset" *ngIf="showHotsyncNameInput">
-            <ion-label>{{speedLabel}}</ion-label>
-            <ion-range min="-4" max="4" step="0.25" snaps="true" ticks="false" formControlName="speed">
-            </ion-range>
-        </ion-item>
-
-        <ion-item lines="inset">
-            <ion-label position="stacked">Device</ion-label>
+        <ion-item lines="none">
+            <ion-label position="stacked">Device type</ion-label>
             <ion-select formControlName="device">
                 <ion-select-option *ngFor="let device of deviceList" [value]="device[0]">{{device[1]}}
                 </ion-select-option>
             </ion-select>
+        </ion-item>
+
+        <ion-item lines="none">
+            <ion-label class="label-speed">{{speedLabel}}</ion-label>
+            <ion-range min="-4" max="4" step="0.25" snaps="true" ticks="false" formControlName="speed">
+            </ion-range>
+        </ion-item>
+
+        <h1>Hotsync</h1>
+
+        <ion-item lines="none">
+            <ion-label>Manage hotsync name</ion-label>
+            <ion-toggle formControlName="manageHotsyncName"></ion-toggle>
+        </ion-item>
+
+        <ion-item lines="none" *ngIf="showHotsyncNameInput">
+            <ion-label position="stacked">Hotsync name</ion-label>
+            <ion-input [placeholder]="placeholder" formControlName="hotsyncName" maxlength="40"></ion-input>
         </ion-item>
     </form>
 </ion-content>
