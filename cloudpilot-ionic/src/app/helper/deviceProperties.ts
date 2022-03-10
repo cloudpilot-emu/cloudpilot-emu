@@ -97,6 +97,49 @@ export function isColor(deviceId: DeviceId | undefined): boolean {
     }
 }
 
+export function cpuClock(deviceId: DeviceId): number {
+    switch (deviceId) {
+        case DeviceId.palmPilot:
+        case DeviceId.pilot:
+        case DeviceId.iii:
+        case DeviceId.palmVII:
+            return 16;
+
+        case DeviceId.palmVx:
+        case DeviceId.palmV:
+        case DeviceId.palmVIIEZ:
+        case DeviceId.palmVIIx:
+        case DeviceId.iiic:
+        case DeviceId.iiix:
+        case DeviceId.iiixe:
+        case DeviceId.iiie:
+        case DeviceId.m100:
+        case DeviceId.m105:
+        case DeviceId.pegS300:
+        case DeviceId.pegS500c:
+            return 16;
+
+        case DeviceId.m500:
+        case DeviceId.m505:
+        case DeviceId.m515:
+        case DeviceId.m125:
+        case DeviceId.m130:
+        case DeviceId.i705:
+        case DeviceId.i710:
+        case DeviceId.handera330:
+        case DeviceId.pegS320:
+        case DeviceId.pegT400:
+        case DeviceId.pegN600c:
+        case DeviceId.pegT600c:
+        case DeviceId.pegN700c:
+            return 33;
+
+        case DeviceId.pegT650c:
+        case DeviceId.pegNR70:
+            return 66;
+    }
+}
+
 export function deviceName(deviceId: DeviceId): string {
     switch (deviceId) {
         case DeviceId.pilot:

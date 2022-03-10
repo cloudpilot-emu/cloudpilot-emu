@@ -1,10 +1,10 @@
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
+import { cpuClock, deviceName } from 'src/app/helper/deviceProperties';
 
 import { AlertService } from './../../service/alert.service';
 import { DeviceId } from 'src/app/model/DeviceId';
 import { SessionService } from '../../service/session.service';
-import { deviceName } from 'src/app/helper/deviceProperties';
 
 export interface SessionSettings {
     name: string;
@@ -101,7 +101,12 @@ export class SessionSettingsComponent implements OnInit {
     }
 
     get speedLabel(): string {
-        return `Speed: ${this.speedValue.toFixed(2)}x`;
+        return (
+            'Clock: ' +
+            (this.formControlSpeed.value === 0
+                ? 'default'
+                : `${Math.round(this.speedValue * cpuClock(this.formControlDevice.value))}MHz`)
+        );
     }
 
     private createFormGroup() {
