@@ -37,11 +37,17 @@ Swiping a session to the left or right will reveal options to save, edit, reset
 and delete a session. On devices that have a mouse or trackpad you can also do a
 right click on a session in order to open a context menu with the same options.
 
-### Edit
+### Session settings
 
-Edit a session in order to change its name and manage hotsync name used by the
-session.
+##### Device type
 
+This setting lets you choose between the different device types supported by a ROM
+on import. After import this field is read only.
+
+##### Speed
+
+This allows you to adjust the speed of your virtual device. This setting will affect
+the speed of the emulated CPU but leave the timers intact.
 ##### Hotsync name
 
 Usually CloudpilotEmu devices do not hotsync, so CloudpilotEmu can manage the hotsync

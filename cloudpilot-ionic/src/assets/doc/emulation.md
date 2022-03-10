@@ -115,6 +115,18 @@ On iOS, muting the phone also mutes audio from the emulator. Ocassionally the au
 may glitch and stay off after resuming CloudpilotEmu from the background due to browser
 bugs. You can reenable audio by turning it off and on again.
 
+# Session settings
+
+The "Settings" option from the menu gives you access to the session settings. The settings are
+described in detail on the sessions tab help.
+
+# Performance issues
+
+CloudpilotEmu will automatically throttle the clock of the virtual device if your host
+is too slow to keep up. In this case an icon in the menu bar will appear to notify you.
+You can adjust the speed of your virtual device in the session settings in order to avoid
+this.
+
 # Keyboard input
 
 If you are using CloudpilotEmu on a device with a keyboard you can use the keyboard to

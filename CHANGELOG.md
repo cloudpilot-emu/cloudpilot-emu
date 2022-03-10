@@ -1,4 +1,4 @@
-# Next version
+# 1.6.5
 
 -   Support for PEG-NR70 and PEG-T650C series devices.
 -   Support statistics display on soft silkscreen devices.
@@ -6,7 +6,6 @@
 -   Improved performance of framebuffer copies.
 -   Add session settings to emulation menu.
 -   Add a speed slider to session settings.
--   Add a indicator for performance issues.
 
 # 1.6.4
 
