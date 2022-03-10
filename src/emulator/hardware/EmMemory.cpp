@@ -264,7 +264,7 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device
     gRAMSize = gTotalMemorySize - gFramebufferMemorySize;
 
     gMemory = static_cast<uint8*>(malloc(gTotalMemorySize));
-    gDirtyPages = static_cast<uint8*>(malloc(gTotalMemorySize / 1024 / 8));
+    gDirtyPages = static_cast<uint8*>(calloc(gTotalMemorySize / 1024 / 8, 1));
 
     gFramebufferMemory = gMemory + gRAMSize;
     gFramebufferDirtyPages = gDirtyPages + gRAMSize / 1024 / 8;
