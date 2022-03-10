@@ -24,6 +24,11 @@ export class PerformanceWatchdogService implements OnDestroy {
 
     ngOnDestroy(): void {
         this.emulationService.emulationStateChangeEvent.removeHandler(this.onEmulationStateChanged);
+
+        if (this.intervalHandle !== undefined) {
+            clearInterval(this.intervalHandle);
+            this.intervalHandle = undefined;
+        }
     }
 
     private onInterval = () => {
