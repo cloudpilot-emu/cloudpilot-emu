@@ -6,6 +6,7 @@
 -   Improved performance of framebuffer copies.
 -   Add session settings to emulation menu.
 -   Add a speed slider to session settings.
+-   Add a indicator for performance issues.
 
 # 1.6.4
 
