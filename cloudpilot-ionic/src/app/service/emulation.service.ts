@@ -233,6 +233,10 @@ export class EmulationService {
         };
     }
 
+    getEmulationSpeed(): number {
+        return this.emulationSpeed;
+    }
+
     isSuspended(): boolean {
         return this.cloudpilotInstance ? this.cloudpilotInstance.isSuspended() : false;
     }

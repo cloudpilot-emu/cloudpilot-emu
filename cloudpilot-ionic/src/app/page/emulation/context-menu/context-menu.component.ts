@@ -9,6 +9,7 @@ import { EmulationService } from './../../../service/emulation.service';
 import { EmulationStateService } from 'src/app/service/emulation-state.service';
 import { KvsService } from './../../../service/kvs.service';
 import { PalmButton } from 'src/app/helper/Cloudpilot';
+import { PerformanceWatchdogService } from 'src/app/service/performance-watchdog.service';
 import { SessionService } from 'src/app/service/session.service';
 import { SessionSettingsComponent } from '../../../component/session-settings/session-settings.component';
 
@@ -28,7 +29,8 @@ export class ContextMenuComponent implements OnInit {
         private audioService: AudioService,
         private kvsService: KvsService,
         private modalController: ModalController,
-        private sessionService: SessionService
+        private sessionService: SessionService,
+        private performanceWatchdogService: PerformanceWatchdogService
     ) {}
 
     ngOnInit(): void {}
@@ -148,6 +150,8 @@ export class ContextMenuComponent implements OnInit {
             return;
         }
 
+        const oldSpeed = session.speed;
+
         const modal = await this.modalController.create({
             component: SessionSettingsComponent,
             backdropDismiss: false,
@@ -155,6 +159,8 @@ export class ContextMenuComponent implements OnInit {
                 session,
                 availableDevices: [session.device],
                 onSave: () => {
+                    if (oldSpeed !== session.speed) this.performanceWatchdogService.reset();
+
                     this.sessionService.updateSession(session);
                     modal.dismiss();
                 },

@@ -24,6 +24,9 @@
       <ion-button *ngIf="proxyService.isConnected()" (click)="showProxyConnectedHint()">
         <ion-icon name="swap-vertical-outline"></ion-icon>
       </ion-button>
+      <ion-button *ngIf="performanceWatchdogService.isSlowdownDetected()" (click)="showSlowdowndHint()">
+        <ion-icon name="speedometer-outline"></ion-icon>
+      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>

@@ -14,6 +14,7 @@ import { InstallationService } from './../../service/installation.service';
 import { KvsService } from './../../service/kvs.service';
 import { LinkApi } from './../../service/link-api.service';
 import { Mutex } from 'async-mutex';
+import { PerformanceWatchdogService } from './../../service/performance-watchdog.service';
 import { ProxyService } from './../../service/proxy.service';
 import { SnapshotService } from './../../service/snapshot.service';
 import { SnapshotStatistics } from './../../model/SnapshotStatistics';
@@ -41,7 +42,8 @@ export class EmulationPage {
         private installlationService: InstallationService,
         public proxyService: ProxyService,
         public navigation: TabsPage,
-        private linkApi: LinkApi
+        private linkApi: LinkApi,
+        public performanceWatchdogService: PerformanceWatchdogService
     ) {}
 
     get cssWidth(): string {
@@ -130,6 +132,17 @@ export class EmulationPage {
 
     async showProxyConnectedHint(): Promise<void> {
         await this.alertService.message('Proxy connected', 'Network proxy connected.');
+    }
+
+    async showSlowdowndHint(): Promise<void> {
+        await this.alertService.message(
+            'Speed throttled',
+            `
+                Your host is too slow to run your virtual device at full speed, and the clock
+                has been throttled in order to compensate. You can avoid this by reducing the speed of your
+                virtual device in the session settings.
+        `
+        );
     }
 
     get installFileDisabled(): boolean {
