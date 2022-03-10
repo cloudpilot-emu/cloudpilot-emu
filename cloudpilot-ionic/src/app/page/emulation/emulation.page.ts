@@ -13,6 +13,7 @@ import { HelpComponent } from 'src/app/component/help/help.component';
 import { InstallationService } from './../../service/installation.service';
 import { KvsService } from './../../service/kvs.service';
 import { LinkApi } from './../../service/link-api.service';
+import { Mutex } from 'async-mutex';
 import { ProxyService } from './../../service/proxy.service';
 import { SnapshotService } from './../../service/snapshot.service';
 import { SnapshotStatistics } from './../../model/SnapshotStatistics';
@@ -51,36 +52,38 @@ export class EmulationPage {
         return this.canvasDisplayService.height / devicePixelRatio + 'px';
     }
 
-    async ionViewDidEnter(): Promise<void> {
-        await this.emulationService.bootstrapComplete();
-        this.boostrapComplete = true;
+    ionViewDidEnter = () =>
+        this.mutex.runExclusive(async () => {
+            await this.emulationService.bootstrapComplete();
+            this.boostrapComplete = true;
 
-        const session = this.emulationState.getCurrentSession();
+            const session = this.emulationState.getCurrentSession();
 
-        if (session && !session.wasResetForcefully) {
-            await this.launchEmulator();
-        }
+            if (session && !session.wasResetForcefully) {
+                await this.launchEmulator();
+            }
 
-        this.linkApi.installation.requestEvent.addHandler(this.handleLinkApiInstallationRequest);
-        this.handleLinkApiInstallationRequest();
-    }
+            this.linkApi.installation.requestEvent.addHandler(this.handleLinkApiInstallationRequest);
+            this.handleLinkApiInstallationRequest();
+        });
 
-    ionViewWillLeave() {
-        this.linkApi.installation.requestEvent.removeHandler(this.handleLinkApiInstallationRequest);
+    ionViewWillLeave = () =>
+        this.mutex.runExclusive(() => {
+            this.linkApi.installation.requestEvent.removeHandler(this.handleLinkApiInstallationRequest);
 
-        if (this.emulationService.isRunning()) {
-            this.autoLockUI = false;
-        }
-        this.emulationService.pause();
+            if (this.emulationService.isRunning()) {
+                this.autoLockUI = false;
+            }
+            this.emulationService.pause();
 
-        this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
-        this.snapshotService.snapshotEvent.removeHandler(this.onSnapshot);
-        this.kvsService.updateEvent.removeHandler(this.onKvsUpdate);
+            this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
+            this.snapshotService.snapshotEvent.removeHandler(this.onSnapshot);
+            this.kvsService.updateEvent.removeHandler(this.onKvsUpdate);
 
-        this.eventHandlingService.release();
+            this.eventHandlingService.release();
 
-        this.navigation.unlock();
-    }
+            this.navigation.unlock();
+        });
 
     async openContextMenu(e: MouseEvent): Promise<void> {
         const popover = await this.popoverController.create({
@@ -248,4 +251,6 @@ export class EmulationPage {
     @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
 
     private autoLockUI = true;
+
+    private mutex = new Mutex();
 }
