@@ -1,3 +1,7 @@
+# 1.6.6
+
+-   Fix an ocassional crash on boot introduced in 1.6.5
+
 # 1.6.5
 
 -   Support for PEG-NR70 and PEG-T650C series devices.

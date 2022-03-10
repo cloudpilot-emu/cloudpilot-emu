@@ -708,32 +708,34 @@ Sorry for the inconvenience.`
 
         const scaling = frame.scaleX !== 1 || frame.scaleY !== 1;
 
-        (scaling ? this.contextTmp : this.context).putImageData(
-            this.imageData,
-            0,
-            frame.firstDirtyLine,
-            0,
-            0,
-            frame.lineWidth,
-            frame.lastDirtyLine - frame.firstDirtyLine + 1
-        );
-
-        if (scaling) {
-            this.context.imageSmoothingEnabled = false;
-            this.context.drawImage(
-                this.canvasTmp,
+        if (this.imageData) {
+            (scaling ? this.contextTmp : this.context).putImageData(
+                this.imageData,
                 0,
                 frame.firstDirtyLine,
-                frame.lineWidth,
-                frame.lastDirtyLine - frame.firstDirtyLine + 1,
                 0,
-                frame.firstDirtyLine * frame.scaleY,
-                frame.lineWidth * frame.scaleX,
-                (frame.lastDirtyLine - frame.firstDirtyLine + 1) * frame.scaleY
+                0,
+                frame.lineWidth,
+                frame.lastDirtyLine - frame.firstDirtyLine + 1
             );
-        }
 
-        this.newFrameEvent.dispatch(this.canvas);
+            if (scaling) {
+                this.context.imageSmoothingEnabled = false;
+                this.context.drawImage(
+                    this.canvasTmp,
+                    0,
+                    frame.firstDirtyLine,
+                    frame.lineWidth,
+                    frame.lastDirtyLine - frame.firstDirtyLine + 1,
+                    0,
+                    frame.firstDirtyLine * frame.scaleY,
+                    frame.lineWidth * frame.scaleX,
+                    (frame.lastDirtyLine - frame.firstDirtyLine + 1) * frame.scaleY
+                );
+            }
+
+            this.newFrameEvent.dispatch(this.canvas);
+        }
     }
 
     readonly cloudpilot = Cloudpilot.create();
