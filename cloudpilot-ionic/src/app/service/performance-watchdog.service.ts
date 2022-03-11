@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
+import { Injectable, NgZone, OnDestroy } from '@angular/core';
 
 import { EmulationService } from './emulation.service';
 
@@ -7,7 +7,7 @@ const INTERVAL = 1000;
 
 @Injectable({ providedIn: 'root' })
 export class PerformanceWatchdogService implements OnDestroy {
-    constructor(private emulationService: EmulationService) {
+    constructor(private emulationService: EmulationService, private ngZone: NgZone) {
         this.onEmulationStateChanged(this.emulationService.isRunning());
 
         this.emulationService.emulationStateChangeEvent.addHandler(this.onEmulationStateChanged);
@@ -34,10 +34,10 @@ export class PerformanceWatchdogService implements OnDestroy {
     private onInterval = () => {
         if (this.emulationService.getEmulationSpeed() < 1) {
             if (this.level < TRIPPOINT) this.level++;
-            if (this.level === TRIPPOINT) this.slowdownDetected = true;
+            if (this.level === TRIPPOINT) this.ngZone.run(() => (this.slowdownDetected = true));
         } else {
             if (this.level > 0) this.level--;
-            if (this.level === 0) this.slowdownDetected = false;
+            if (this.level === 0) this.ngZone.run(() => (this.slowdownDetected = false));
         }
     };
 
@@ -46,7 +46,7 @@ export class PerformanceWatchdogService implements OnDestroy {
 
         if (running && this.intervalHandle === undefined) {
             this.onInterval();
-            this.intervalHandle = window.setInterval(this.onInterval, INTERVAL);
+            this.ngZone.runOutsideAngular(() => (this.intervalHandle = window.setInterval(this.onInterval, INTERVAL)));
         }
 
         if (!running && this.intervalHandle !== undefined) {
