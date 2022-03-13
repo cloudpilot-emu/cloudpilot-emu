@@ -1,3 +1,7 @@
+# 1.6.7
+
+-   Minor fixes + performance improvements.
+
 # 1.6.6
 
 -   Fix an ocassional crash on boot introduced in 1.6.5
