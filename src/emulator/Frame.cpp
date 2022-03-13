@@ -1,5 +1,9 @@
 #include "Frame.h"
 
+#include <algorithm>
+
+#include "EmSystemState.h"
+
 Frame::Frame(size_t bufferSize)
     : buffer(make_unique<uint8[]>(bufferSize)), bufferSize(bufferSize) {}
 
@@ -26,3 +30,29 @@ bool Frame::GetHasChanges() const { return hasChanges; }
 uint8 Frame::GetScaleX() const { return scaleX; }
 
 uint8 Frame::GetScaleY() const { return scaleY; }
+
+void Frame::UpdateDirtyLines(const EmSystemState& systemState, emuptr baseAddr, uint32 rowBytes,
+                             bool fullRefresh) {
+    if (!systemState.IsScreenDirty() && !fullRefresh) {
+        hasChanges = false;
+        return;
+    }
+
+    if (systemState.ScreenRequiresFullRefresh() ||
+        (systemState.GetScreenHighWatermark() < systemState.GetScreenLowWatermark()) ||
+        fullRefresh) {
+        firstDirtyLine = 0;
+        lastDirtyLine = lines - 1;
+    } else {
+        if (systemState.GetScreenHighWatermark() < baseAddr) {
+            hasChanges = false;
+            return;
+        }
+
+        firstDirtyLine = min(
+            (max(systemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes, lines - 1);
+
+        lastDirtyLine =
+            min((systemState.GetScreenHighWatermark() - baseAddr) / rowBytes, lines - 1);
+    }
+}

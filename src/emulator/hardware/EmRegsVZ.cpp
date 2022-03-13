@@ -1178,23 +1178,8 @@ bool EmRegsVZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
         return true;
     }
 
-    if (gSystemState.ScreenRequiresFullRefresh() || fullRefresh) {
-        frame.firstDirtyLine = 0;
-        frame.lastDirtyLine = frame.lines - 1;
-    } else {
-        if (gSystemState.GetScreenHighWatermark() < baseAddr) {
-            frame.hasChanges = false;
-            return true;
-        }
-
-        frame.firstDirtyLine = min(
-            (max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / frame.bytesPerLine,
-            frame.lines - 1);
-
-        frame.lastDirtyLine =
-            min((gSystemState.GetScreenHighWatermark() - baseAddr) / frame.bytesPerLine,
-                frame.lines - 1);
-    }
+    frame.UpdateDirtyLines(gSystemState, baseAddr, frame.bytesPerLine, fullRefresh);
+    if (!frame.hasChanges) return true;
 
     switch (frame.bpp) {
         case 1:

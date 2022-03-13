@@ -692,27 +692,8 @@ bool EmRegsSED1376PalmGeneric::CopyLCDFrame(Frame& frame, bool fullRefresh) {
 
     if (4 * width * height > static_cast<ssize_t>(frame.GetBufferSize())) return false;
 
-    if (!gSystemState.IsScreenDirty() && !fullRefresh) {
-        frame.hasChanges = false;
-        return true;
-    }
-
-    if (gSystemState.ScreenRequiresFullRefresh() || fullRefresh) {
-        frame.firstDirtyLine = 0;
-        frame.lastDirtyLine = frame.lines - 1;
-    } else {
-        if (gSystemState.GetScreenHighWatermark() < baseAddr) {
-            frame.hasChanges = false;
-            return true;
-        }
-
-        frame.firstDirtyLine =
-            min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes,
-                frame.lines - 1);
-
-        frame.lastDirtyLine =
-            min((gSystemState.GetScreenHighWatermark() - baseAddr) / rowBytes, frame.lines - 1);
-    }
+    frame.UpdateDirtyLines(gSystemState, baseAddr, rowBytes, fullRefresh);
+    if (!frame.hasChanges) return true;
 
     uint32* buffer =
         reinterpret_cast<uint32*>(frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine);

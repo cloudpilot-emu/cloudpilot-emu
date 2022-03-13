@@ -5,6 +5,8 @@
 
 #include "EmCommon.h"
 
+class EmSystemState;
+
 struct Frame {
     Frame(size_t bufferSize);
 
@@ -39,6 +41,9 @@ struct Frame {
 
     uint8 GetScaleX() const;
     uint8 GetScaleY() const;
+
+    void UpdateDirtyLines(const EmSystemState& systemState, emuptr baseAddr, uint32 rowBytes,
+                          bool fullRefresh);
 
    private:
     const unique_ptr<uint8[]> buffer;

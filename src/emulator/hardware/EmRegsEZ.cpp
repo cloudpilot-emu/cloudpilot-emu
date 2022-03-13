@@ -995,24 +995,8 @@ bool EmRegsEZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     emuptr boundaryAddr = ((baseAddr & hwrEZ328LcdPageMask) + hwrEZ328LcdPageSize);
 
     if (lastLineAddr <= boundaryAddr) {
-        if (gSystemState.ScreenRequiresFullRefresh() || fullRefresh) {
-            frame.firstDirtyLine = 0;
-            frame.lastDirtyLine = frame.lines - 1;
-        } else {
-            if (gSystemState.GetScreenHighWatermark() < baseAddr) {
-                frame.hasChanges = false;
-                return true;
-            }
-
-            frame.firstDirtyLine =
-                min((max(gSystemState.GetScreenLowWatermark(), baseAddr) - baseAddr) /
-                        frame.bytesPerLine,
-                    frame.lines - 1);
-
-            frame.lastDirtyLine =
-                min((gSystemState.GetScreenHighWatermark() - baseAddr) / frame.bytesPerLine,
-                    frame.lines - 1);
-        }
+        frame.UpdateDirtyLines(gSystemState, baseAddr, frame.bytesPerLine, fullRefresh);
+        if (!frame.hasChanges) return true;
 
         firstLineAddr = baseAddr + frame.firstDirtyLine * frame.bytesPerLine;
         lastLineAddr = baseAddr + (frame.lastDirtyLine + 1) * frame.bytesPerLine;

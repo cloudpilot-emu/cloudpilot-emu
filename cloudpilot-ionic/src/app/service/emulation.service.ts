@@ -612,7 +612,6 @@ Sorry for the inconvenience.`
         if (frame.lines * frame.scaleY === this.canvas.height && frame.lineWidth * frame.scaleX === this.canvas.width) {
             if (!this.imageData || this.imageData.width !== frame.lineWidth || this.imageData.height !== frame.lines) {
                 this.imageData = new ImageData(frame.lineWidth, frame.lines);
-                new Uint32Array(this.imageData.data.buffer).fill(0xfffffffff);
             }
 
             const imageData32 = new Uint32Array(this.imageData.data.buffer);
