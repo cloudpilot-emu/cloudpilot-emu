@@ -1,4 +1,5 @@
 import { DeviceId } from './DeviceId';
+import { DeviceOrientation } from './DeviceOrientation';
 
 export interface Session {
     id: number;
@@ -12,4 +13,5 @@ export interface Session {
     dontManageHotsyncName?: boolean;
     wasResetForcefully?: boolean;
     speed?: number;
+    deviceOrientation?: DeviceOrientation;
 }

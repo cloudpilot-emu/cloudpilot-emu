@@ -5,6 +5,8 @@ import { quirkNoPoweroff, supportsDBExport } from 'src/app/helper/deviceProperti
 import { AudioService } from './../../../service/audio.service';
 import { BackupService } from './../../../service/backup.service';
 import { ButtonService } from '../../../service/button.service';
+import { CanvasDisplayService } from './../../../service/canvas-display.service';
+import { DeviceOrientation } from 'src/app/model/DeviceOrientation';
 import { EmulationService } from './../../../service/emulation.service';
 import { EmulationStateService } from 'src/app/service/emulation-state.service';
 import { KvsService } from './../../../service/kvs.service';
@@ -30,7 +32,8 @@ export class ContextMenuComponent implements OnInit {
         private kvsService: KvsService,
         private modalController: ModalController,
         private sessionService: SessionService,
-        private performanceWatchdogService: PerformanceWatchdogService
+        private performanceWatchdogService: PerformanceWatchdogService,
+        private canvasDisplayService: CanvasDisplayService
     ) {}
 
     ngOnInit(): void {}
@@ -151,6 +154,7 @@ export class ContextMenuComponent implements OnInit {
         }
 
         const oldSpeed = session.speed;
+        const oldOrientation = session.deviceOrientation;
 
         const modal = await this.modalController.create({
             component: SessionSettingsComponent,
@@ -160,8 +164,13 @@ export class ContextMenuComponent implements OnInit {
                 availableDevices: [session.device],
                 onSave: () => {
                     if (oldSpeed !== session.speed) this.performanceWatchdogService.reset();
+                    if (oldOrientation !== session.deviceOrientation) {
+                        this.canvasDisplayService.initialize(undefined, session);
+                        this.canvasDisplayService.updateEmulationCanvas();
+                    }
 
                     this.sessionService.updateSession(session);
+
                     modal.dismiss();
                 },
                 onCancel: () => modal.dismiss(),
@@ -170,6 +179,33 @@ export class ContextMenuComponent implements OnInit {
 
         await this.popoverController.dismiss();
         await modal.present();
+    }
+
+    rotate(): void {
+        const session = this.emulationStateService.getCurrentSession();
+        if (!session) {
+            return;
+        }
+
+        switch (session.deviceOrientation) {
+            case DeviceOrientation.protrait:
+            case undefined:
+                session.deviceOrientation = DeviceOrientation.landscape90;
+                break;
+
+            case DeviceOrientation.landscape90:
+                session.deviceOrientation = DeviceOrientation.landscape270;
+                break;
+
+            case DeviceOrientation.landscape270:
+                session.deviceOrientation = DeviceOrientation.protrait;
+                break;
+        }
+
+        this.canvasDisplayService.initialize(undefined, session);
+        this.canvasDisplayService.updateEmulationCanvas();
+
+        this.sessionService.updateSession(session);
     }
 
     @Input()

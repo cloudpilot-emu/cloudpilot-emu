@@ -7,7 +7,6 @@ import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
 import { EventHandlingService } from './../../service/event-handling.service';
-import { EventInterface } from 'microevent.ts';
 import { FileService } from 'src/app/service/file.service';
 import { HelpComponent } from 'src/app/component/help/help.component';
 import { InstallationService } from './../../service/installation.service';
@@ -222,7 +221,7 @@ export class EmulationPage {
     };
 
     private onNewFrame = (canvas: HTMLCanvasElement): void => {
-        this.canvasDisplayService.updateEmulationCanvase(canvas);
+        this.canvasDisplayService.updateEmulationCanvas(canvas);
     };
 
     private handleLinkApiInstallationRequest = (): void => {

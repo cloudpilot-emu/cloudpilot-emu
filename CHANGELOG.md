@@ -1,3 +1,8 @@
+# Next version
+
+-   Fix speed change being ignored on import.
+-   Implement device rotation.
+
 # 1.6.7
 
 -   Minor fixes + performance improvements.

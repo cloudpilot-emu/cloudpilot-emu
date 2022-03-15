@@ -44,6 +44,10 @@ right click on a session in order to open a context menu with the same options.
 This setting lets you choose between the different device types supported by a ROM
 on import. After import this field is read only.
 
+##### Orientation
+
+This allows you to rotate the virtual device.
+
 ##### Speed
 
 This allows you to adjust the speed of your virtual device. This setting will affect

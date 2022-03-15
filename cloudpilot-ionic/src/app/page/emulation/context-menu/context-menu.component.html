@@ -23,6 +23,10 @@
     <ion-label>Save backup</ion-label>
     <ion-icon name="share-outline" slot="end"></ion-icon>
   </ion-item>
+  <ion-item button [detail]="false" (click)="rotate()">
+    <ion-label>Rotate</ion-label>
+    <ion-icon name="reload-outline" slot="end"></ion-icon>
+  </ion-item>
   <ion-item button [detail]="false" (click)="editSettings()">
     <ion-label>Settings</ion-label>
     <ion-icon name="cog-outline" slot="end"></ion-icon>

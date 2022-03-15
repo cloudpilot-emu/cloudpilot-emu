@@ -4,6 +4,7 @@ import { cpuClock, deviceName } from 'src/app/helper/deviceProperties';
 
 import { AlertService } from './../../service/alert.service';
 import { DeviceId } from 'src/app/model/DeviceId';
+import { DeviceOrientation } from 'src/app/model/DeviceOrientation';
 import { SessionService } from '../../service/session.service';
 
 export interface SessionSettings {
@@ -12,6 +13,7 @@ export interface SessionSettings {
     hotsyncName?: string;
     dontManageHotsyncName?: boolean;
     speed?: number;
+    deviceOrientation?: DeviceOrientation;
 }
 
 @Component({
@@ -40,6 +42,10 @@ export class SessionSettingsComponent implements OnInit {
 
     get formControlSpeed(): AbstractControl {
         return this.formGroup.get('speed')!;
+    }
+
+    get formControlOrientation(): AbstractControl {
+        return this.formGroup.get('orientation')!;
     }
 
     get showHotsyncNameInput(): boolean {
@@ -86,6 +92,7 @@ export class SessionSettingsComponent implements OnInit {
 
         this.session.device = this.formControlDevice.value;
         this.session.speed = this.speedValue;
+        this.session.deviceOrientation = this.formControlOrientation.value;
 
         this.onSave();
     }
@@ -120,6 +127,7 @@ export class SessionSettingsComponent implements OnInit {
             speed: new FormControl(
                 (this.session.speed || 1) >= 1 ? (this.session.speed || 1) - 1 : 1 - 1 / this.session.speed!
             ),
+            orientation: new FormControl(this.session.deviceOrientation || DeviceOrientation.protrait),
         });
     }
 
@@ -143,4 +151,10 @@ export class SessionSettingsComponent implements OnInit {
     availableDevices!: Array<DeviceId>;
 
     formGroup!: FormGroup;
+
+    readonly orientations = [
+        [DeviceOrientation.protrait, 'Portrait'],
+        [DeviceOrientation.landscape90, 'Landscape 90°'],
+        [DeviceOrientation.landscape270, 'Landscape 270°'],
+    ];
 }

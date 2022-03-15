@@ -1,6 +1,7 @@
 import { deviceDimensions, isColor } from '../helper/deviceProperties';
 
 import { DeviceId } from '../model/DeviceId';
+import { DeviceOrientation } from '../model/DeviceOrientation';
 import { EmulationStatistics } from './../model/EmulationStatistics';
 import { GRAYSCALE_PALETTE_HEX } from './../helper/palette';
 import { Injectable } from '@angular/core';
@@ -209,14 +210,34 @@ export class CanvasDisplayService {
     constructor() {}
 
     get width(): number {
-        return this.layout.width.frameCanvas;
+        switch (this.session?.deviceOrientation) {
+            case DeviceOrientation.protrait:
+            case undefined:
+                return this.layout.width.frameCanvas;
+
+            default:
+                return this.layout.height.frameCanvas;
+        }
     }
 
     get height(): number {
-        return this.layout.height.frameCanvas;
+        switch (this.session?.deviceOrientation) {
+            case DeviceOrientation.protrait:
+            case undefined:
+                return this.layout.height.frameCanvas;
+
+            default:
+                return this.layout.width.frameCanvas;
+        }
     }
 
-    async initialize(canvas: HTMLCanvasElement, session: Session | undefined): Promise<void> {
+    async initialize(
+        canvas: HTMLCanvasElement | undefined = this.ctx?.canvas,
+        session: Session | undefined = this.session
+    ): Promise<void> {
+        if (!canvas) return;
+
+        this.session = session;
         this.layout = calculateLayout(session?.device ?? DeviceId.m515);
 
         canvas.width = this.width;
@@ -229,9 +250,8 @@ export class CanvasDisplayService {
 
         this.ctx = ctx;
 
-        this.session = session;
-
-        this.fillCanvasRect(0, 0, this.width, this.height, this.frameColor());
+        this.setupTransformation();
+        this.fillCanvasRect(0, 0, this.layout.width.frameCanvas, this.layout.height.frameCanvas, this.frameColor());
         this.fillRect(
             0,
             0,
@@ -248,6 +268,7 @@ export class CanvasDisplayService {
 
     async drawButtons(activeButtons: Array<PalmButton> = []): Promise<void> {
         if (!this.ctx) return;
+        this.setupTransformation();
 
         this.ctx.imageSmoothingEnabled = true;
         this.ctx.imageSmoothingQuality = 'high';
@@ -339,7 +360,7 @@ export class CanvasDisplayService {
         this.statisticsVisible = true;
     }
 
-    updateEmulationCanvase(canvas?: HTMLCanvasElement) {
+    updateEmulationCanvas(canvas?: HTMLCanvasElement) {
         this.drawEmulationCanvas(canvas);
 
         if (this.statisticsVisible && this.layout.silkscreenHeight.frameCanvas === 0) {
@@ -371,13 +392,31 @@ export class CanvasDisplayService {
             contentY = bb.top + (bb.height - contentHeight) / 2;
         }
 
+        // Transform coordinate to device frame
+        let x = (((e.clientX - contentX) / contentWidth) * this.width) / this.layout.scale;
+        let y = (((e.clientY - contentY) / contentHeight) * this.height) / this.layout.scale;
+
+        // Rotate if applicable
+        switch (this.session?.deviceOrientation) {
+            case DeviceOrientation.landscape90: {
+                const tmp = y;
+                y = this.layout.height.frameDevice - x;
+                x = tmp;
+
+                break;
+            }
+
+            case DeviceOrientation.landscape270: {
+                const tmp = y;
+                y = x;
+                x = this.layout.width.frameDevice - tmp;
+                break;
+            }
+        }
+
         // Compensate for the border
-        let x =
-            (((e.clientX - contentX) / contentWidth) * this.width) / this.layout.scale -
-            this.layout.borderWidth.frameDevice;
-        let y =
-            (((e.clientY - contentY) / contentHeight) * this.height) / this.layout.scale -
-            this.layout.borderWidth.frameDevice;
+        x -= this.layout.borderWidth.frameDevice;
+        y -= this.layout.borderWidth.frameDevice;
 
         // The canvas layout inside the border is as follows:
         //
@@ -441,10 +480,31 @@ export class CanvasDisplayService {
         return PalmButton.cal;
     }
 
-    private async drawSilkscreen(): Promise<void> {
-        if (this.layout.silkscreenHeight.frameCanvas === 0) return;
+    private setupTransformation(): void {
+        if (!this.session || !this.ctx) return;
 
-        if (!this.ctx) return;
+        this.ctx?.resetTransform();
+
+        switch (this.session.deviceOrientation) {
+            case DeviceOrientation.protrait:
+            case undefined:
+                break;
+
+            case DeviceOrientation.landscape90:
+                this.ctx.translate(this.layout.height.frameCanvas, 0);
+                this.ctx.rotate(Math.PI / 2);
+                break;
+
+            case DeviceOrientation.landscape270:
+                this.ctx.translate(0, this.layout.width.frameCanvas);
+                this.ctx.rotate((3 * Math.PI) / 2);
+                break;
+        }
+    }
+
+    private async drawSilkscreen(): Promise<void> {
+        if (this.layout.silkscreenHeight.frameCanvas === 0 || !this.ctx) return;
+        this.setupTransformation();
 
         this.fillRect(
             this.layout.screenLeft.frameDevice,
@@ -471,6 +531,7 @@ export class CanvasDisplayService {
         emulationStatistics?: EmulationStatistics
     ): Promise<void> {
         if (!this.ctx) return;
+        this.setupTransformation();
 
         const height =
             this.layout.silkscreenHeight.frameDevice > 0

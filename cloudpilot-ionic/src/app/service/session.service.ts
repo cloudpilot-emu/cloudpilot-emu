@@ -1,6 +1,7 @@
 import {} from './file.service';
 
 import { DeviceId } from './../model/DeviceId';
+import { DeviceOrientation } from '../model/DeviceOrientation';
 import { EmulationService } from './emulation.service';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
@@ -42,6 +43,7 @@ export class SessionService {
             hotsyncName: image.metadata?.hotsyncName,
             dontManageHotsyncName: false,
             speed: 1,
+            deviceOrientation: DeviceOrientation.protrait,
             ...presets,
             id: -1,
             name,
@@ -73,6 +75,7 @@ export class SessionService {
             hotsyncName: '',
             dontManageHotsyncName: false,
             speed: 1,
+            deviceOrientation: DeviceOrientation.protrait,
             ...presets,
             id: -1,
             name,
