@@ -41,6 +41,7 @@ export class SessionService {
         const session: Session = {
             hotsyncName: image.metadata?.hotsyncName,
             dontManageHotsyncName: false,
+            speed: 1,
             ...presets,
             id: -1,
             name,
@@ -71,6 +72,7 @@ export class SessionService {
         const session: Session = {
             hotsyncName: '',
             dontManageHotsyncName: false,
+            speed: 1,
             ...presets,
             id: -1,
             name,
@@ -78,7 +80,6 @@ export class SessionService {
             ram: (await this.emulationService.cloudpilot).minRamForDevice(device) / 1024 / 1024,
             totalMemory: (await this.emulationService.cloudpilot).totalMemorySizeForDevice(device),
             rom: '',
-            speed: 1,
         };
 
         const loader = await this.loadingController.create({ message: 'Importing...' });
