@@ -156,5 +156,6 @@ export class SessionSettingsComponent implements OnInit {
         [DeviceOrientation.protrait, 'Portrait'],
         [DeviceOrientation.landscape90, 'Landscape 90°'],
         [DeviceOrientation.landscape270, 'Landscape 270°'],
+        [DeviceOrientation.portrait180, 'Upside down'],
     ];
 }

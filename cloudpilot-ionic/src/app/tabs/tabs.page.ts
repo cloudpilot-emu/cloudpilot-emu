@@ -11,6 +11,7 @@ import { Router } from '@angular/router';
 export class TabsPage {
     constructor(private router: Router, private canvasDisplayService: CanvasDisplayService) {
         window.addEventListener('resize', this.updateUseSmallUI);
+        canvasDisplayService.onResize.addHandler(() => this.updateUseSmallUI());
 
         this.updateUseSmallUI();
     }

@@ -194,6 +194,10 @@ export class ContextMenuComponent implements OnInit {
                 break;
 
             case DeviceOrientation.landscape90:
+                session.deviceOrientation = DeviceOrientation.portrait180;
+                break;
+
+            case DeviceOrientation.portrait180:
                 session.deviceOrientation = DeviceOrientation.landscape270;
                 break;
 

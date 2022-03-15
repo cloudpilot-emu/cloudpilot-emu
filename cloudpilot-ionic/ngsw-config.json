@@ -41,6 +41,8 @@
           "/svg/lock-open-outline.svg",
           "/svg/lock-closed-outline.svg",
           "/svg/sync-outline.svg",
+          "/svg/speedometer-outline.svg",
+          "/svg/reload-outline.svg",
           "/assets/**",
           "/*.(eot|svg|cur|jpg|png|webp|gif|otf|ttf|woff|woff2|ani)"
         ]

@@ -3,6 +3,7 @@ import { deviceDimensions, isColor } from '../helper/deviceProperties';
 import { DeviceId } from '../model/DeviceId';
 import { DeviceOrientation } from '../model/DeviceOrientation';
 import { EmulationStatistics } from './../model/EmulationStatistics';
+import { Event } from 'microevent.ts';
 import { GRAYSCALE_PALETTE_HEX } from './../helper/palette';
 import { Injectable } from '@angular/core';
 import { PalmButton } from '../helper/Cloudpilot';
@@ -212,6 +213,7 @@ export class CanvasDisplayService {
     get width(): number {
         switch (this.session?.deviceOrientation) {
             case DeviceOrientation.protrait:
+            case DeviceOrientation.portrait180:
             case undefined:
                 return this.layout.width.frameCanvas;
 
@@ -223,6 +225,7 @@ export class CanvasDisplayService {
     get height(): number {
         switch (this.session?.deviceOrientation) {
             case DeviceOrientation.protrait:
+            case DeviceOrientation.portrait180:
             case undefined:
                 return this.layout.height.frameCanvas;
 
@@ -239,6 +242,8 @@ export class CanvasDisplayService {
 
         this.session = session;
         this.layout = calculateLayout(session?.device ?? DeviceId.m515);
+
+        this.onResize.dispatch();
 
         canvas.width = this.width;
         canvas.height = this.height;
@@ -412,6 +417,12 @@ export class CanvasDisplayService {
                 x = this.layout.width.frameDevice - tmp;
                 break;
             }
+
+            case DeviceOrientation.portrait180: {
+                x = this.layout.width.frameDevice - x;
+                y = this.layout.height.frameDevice - y;
+                break;
+            }
         }
 
         // Compensate for the border
@@ -498,6 +509,11 @@ export class CanvasDisplayService {
             case DeviceOrientation.landscape270:
                 this.ctx.translate(0, this.layout.width.frameCanvas);
                 this.ctx.rotate((3 * Math.PI) / 2);
+                break;
+
+            case DeviceOrientation.portrait180:
+                this.ctx.translate(this.layout.width.frameCanvas, this.layout.height.frameCanvas);
+                this.ctx.rotate(Math.PI);
                 break;
         }
     }
@@ -777,6 +793,8 @@ export class CanvasDisplayService {
     lastSnapshotStatistics?: SnapshotStatistics;
     lastEmulationStatistics?: EmulationStatistics;
     statisticsVisible = false;
+
+    readonly onResize = new Event<void>();
 
     // private dimensions = DEFAULT_DIMENSIONS;
 }
