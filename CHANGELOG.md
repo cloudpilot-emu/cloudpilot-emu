@@ -1,17 +1,17 @@
-# Next version
+# Version 1.6.8
 
+-   Allow to change device orientation (portrait, landscape 90°/270°, upside down).
 -   Fix speed change being ignored on import.
--   Implement device rotation.
 
-# 1.6.7
+# Version 1.6.7
 
 -   Minor fixes + performance improvements.
 
-# 1.6.6
+# Version 1.6.6
 
 -   Fix an ocassional crash on boot introduced in 1.6.5
 
-# 1.6.5
+# Version 1.6.5
 
 -   Support for PEG-NR70 and PEG-T650C series devices.
 -   Support statistics display on soft silkscreen devices.
@@ -20,23 +20,23 @@
 -   Add session settings to emulation menu.
 -   Add a speed slider to session settings.
 
-# 1.6.4
+# Version 1.6.4
 
 -   More wording.
 
-# 1.6.3
+# Version 1.6.3
 
 -   A few more wording changes.
 
-# 1.6.2
+# Version 1.6.2
 
 -   Rename to CloudpilotEmu.
 
-# 1.6.1
+# Version 1.6.1
 
 -   Fix PEG-T4xx skin.
 
-# 1.6.0
+# Version 1.6.0
 
 -   Emulate date rollover interrupts. This means that the virtual Pilot will now
     schedule caledar alarms correctly. Virtual devices may hang for a few seconds
@@ -50,7 +50,7 @@
     -   Sony PEG-T600C series
     -   Sony PEG-N700C series
 
-# 1.5.8
+# Version 1.5.8
 
 -   Link API for importing ROMs or sessions and installing databases via
     hyperlinks. Check the
@@ -58,7 +58,7 @@
     for more details
 -   UI dependecy updates
 
-# 1.5.7
+# Version 1.5.7
 
 -   Catch a rare iOS bug that causes the database to ocassionally come up empty
     on launch.
@@ -69,7 +69,7 @@
     CloudpilotEmu requires an updated version of the proxy if basic auth is used
     to secure the connection.
 
-# 1.5.6
+# Version 1.5.6
 
 -   Support Handera 330.
 -   Improve snapshot performance for devices with framebuffer (color devices).
@@ -79,32 +79,32 @@
 -   Reboot device if PalmOS crashes with an invalid stack pointer (instead of dying
     with an assertion or freezing like a real device).
 
-# 1.5.5
+# Version 1.5.5
 
 -   Finalize networking support. This release requires an updated proxy server.
 
-# 1.5.4
+# Version 1.5.4
 
 -   Fix a regression that prevented the overwriting existing RAM DBs during
     PRC installation.
 -   Support additional network APIs (NetlibSendPB, NetlibReceivePB).
 -   Minor UI fixes.
 
-# 1.5.3
+# Version 1.5.3
 
 -   Fix an emulator crash on the execution of invalid code.
 
-# 1.5.2
+# Version 1.5.2
 
 -   Proxy Server: fix nonblocking sockets. This avoids spurious error messages during
     hotsync and potential networking issues.
 
-# 1.5.1
+# Version 1.5.1
 
 -   Improve dark mode on non-iOS.
 -   Limit width of session list.
 
-# 1.5.0
+# Version 1.5.0
 
 -   Work around worker update idosyncrasies on iOS.
 -   Networking support via websocket proxy. Check the
