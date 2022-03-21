@@ -1,7 +1,7 @@
 name: Build preview release
 on: workflow_dispatch
 env:
-  EM_VERSION: 3.1.0
+  EM_VERSION: 3.1.7
   NODE_VERSION: 16
   EM_CACHE_FOLDER: emsdk
   PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git
