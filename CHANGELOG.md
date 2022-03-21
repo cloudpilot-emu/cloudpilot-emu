@@ -1,3 +1,7 @@
+# Next version
+
+-   Add "Enable audio on start" option.
+
 # Version 1.6.8
 
 -   Allow to change device orientation (portrait, landscape 90°/270°, upside down).

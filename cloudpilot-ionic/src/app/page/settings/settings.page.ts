@@ -19,6 +19,7 @@ const enum fields {
     runHidden = 'runHidden',
     autoLockUI = 'autoLockUI',
     enableRemoteInstall = 'enableRemoteInstall',
+    audioOnStart = 'audioOnStart',
 }
 @Component({
     selector: 'app-settings',
@@ -75,6 +76,7 @@ export class SettingsPage implements OnInit {
             runHidden: this.formGroup.get(fields.runHidden)?.value,
             autoLockUI: this.formGroup.get(fields.autoLockUI)?.value,
             enableRemoteInstall: this.formGroup.get(fields.enableRemoteInstall)?.value,
+            enableAudioOnFirstInteraction: this.formGroup.get(fields.audioOnStart)?.value,
         });
 
         if (this.mutexReleasePromise) {
@@ -129,8 +131,26 @@ export class SettingsPage implements OnInit {
             }),
             [fields.autoLockUI]: new FormControl(this.kvsService.kvs.autoLockUI),
             [fields.enableRemoteInstall]: new FormControl(this.kvsService.kvs.enableRemoteInstall),
+            [fields.audioOnStart]: new FormControl(this.kvsService.kvs.enableAudioOnFirstInteraction),
         });
+
+        this.formGroup.get(fields.audioOnStart)?.valueChanges.subscribe(this.onAudioOnStartChange);
     }
+
+    private onAudioOnStartChange = (audioOnStart: boolean) => {
+        this.kvsService.kvs.enableAudioOnFirstInteraction = audioOnStart;
+
+        if (!audioOnStart) return;
+
+        this.alertService.message(
+            'Enable audio on start',
+            `
+            Audio will automatically turn on after the first interaction with the application
+            (i.e. touch, click or keyboard event). This option will only take effect the next time
+            Coudpilot is restarts.
+        `
+        );
+    };
 
     formGroup!: FormGroup;
     private connectionTestInProgress = false;

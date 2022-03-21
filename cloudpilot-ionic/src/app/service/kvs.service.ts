@@ -14,6 +14,7 @@ const DEFAULTS: Kvs = {
     runHidden: false,
     autoLockUI: false,
     enableRemoteInstall: false,
+    enableAudioOnFirstInteraction: false,
 };
 
 @Injectable({

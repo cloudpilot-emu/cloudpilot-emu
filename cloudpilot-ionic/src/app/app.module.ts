@@ -6,6 +6,7 @@ import { MarkdownModule, MarkedOptions, MarkedRenderer } from 'ngx-markdown';
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
 import { AudioService } from './service/audio.service';
+import { AutoEnableAudioService } from './service/auto-enable-audio.service';
 import { BrowserModule } from '@angular/platform-browser';
 import { DummyComponent } from './component/dummy/dummy.component';
 import { EmulationService } from './service/emulation.service';
@@ -65,6 +66,7 @@ export class AppModule {
         audioService: AudioService,
         sessionService: SessionService,
         kvs: KvsService,
-        updateService: UpdateService
+        updateService: UpdateService,
+        autoEnableAudioService: AutoEnableAudioService
     ) {}
 }

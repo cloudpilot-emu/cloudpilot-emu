@@ -17,4 +17,5 @@ export interface Kvs {
     runHidden: boolean;
     autoLockUI: boolean;
     enableRemoteInstall: boolean;
+    enableAudioOnFirstInteraction: boolean;
 }
