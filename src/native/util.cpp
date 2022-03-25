@@ -61,8 +61,9 @@ bool util::initializeSession(string file, optional<string> deviceId) {
         return false;
     }
 
-    SessionImage sessionImage = SessionImage::Deserialize(fileSize, fileBuffer.get());
-    if (sessionImage.IsValid()) {
+    SessionImage sessionImage;
+
+    if (sessionImage.Deserialize(fileSize, fileBuffer.get())) {
         cout << "restoring session image" << endl << flush;
 
         if (deviceId && *deviceId != sessionImage.GetDeviceId()) {

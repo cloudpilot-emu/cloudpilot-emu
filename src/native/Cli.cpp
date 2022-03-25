@@ -23,6 +23,7 @@
 #include "EmCommon.h"
 #include "EmErrCodes.h"
 #include "EmSession.h"
+#include "SessionImage.h"
 #include "ZipfileWalker.h"
 #include "util.h"
 
@@ -109,9 +110,10 @@ namespace {
 
         EmAssert(gSession);
 
-        auto [imageSize, image] = gSession->SaveImage();
+        SessionImage image;
+        gSession->SaveImage(image);
 
-        stream.write((const char*)image.get(), imageSize);
+        stream.write((const char*)image.GetSerializedImage(), image.GetSerializedImageSize());
 
         if (stream.fail()) {
             cout << "I/O error writing " << file << endl << flush;

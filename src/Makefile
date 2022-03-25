@@ -106,6 +106,7 @@ SOURCE_C = \
 	nanopb/pb_encode.c \
 	nanopb/pb_decode.c \
 	proto/networking.pb.c \
+	zip/miniz.c \
 	zip/zip.c
 
 SOURCE_CPP = \

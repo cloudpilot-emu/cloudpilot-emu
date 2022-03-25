@@ -25,7 +25,7 @@ class EmSession {
    public:
     bool Initialize(EmDevice* device, const uint8* romImage, size_t romLength);
 
-    pair<size_t, unique_ptr<uint8[]>> SaveImage();
+    void SaveImage(SessionImage& image);
     bool LoadImage(SessionImage& image);
 
     template <typename T>

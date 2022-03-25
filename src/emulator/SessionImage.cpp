@@ -1,8 +1,10 @@
 #include "SessionImage.h"
 
+#include "miniz.h"
+
 namespace {
     constexpr uint32 MAGIC = 0x20150103;
-    constexpr uint32 VERSION = 0x02;
+    constexpr uint32 VERSION = 0x03;
     constexpr uint32 VERSION_MASK = 0x80000000;
 
     void put32(uint8* buffer, uint32 value) {
@@ -17,162 +19,196 @@ namespace {
     }
 }  // namespace
 
-SessionImageSerializer& SessionImageSerializer::SetRomImage(size_t size, void* image) {
+string SessionImage::GetDeviceId() const { return deviceId; }
+
+SessionImage& SessionImage::SetDeviceId(const string deviceId) {
+    this->deviceId = deviceId;
+
+    return *this;
+}
+
+void* SessionImage::GetRomImage() const { return romImage; }
+
+size_t SessionImage::GetRomImageSize() const { return romSize; }
+
+SessionImage& SessionImage::SetRomImage(void* image, size_t size) {
     romImage = image;
     romSize = size;
 
     return *this;
 }
 
-SessionImageSerializer& SessionImageSerializer::SetMemoryImage(size_t size, size_t framebufferSize,
-                                                               void* image) {
+void* SessionImage::GetMemoryImage() const { return ramImage; }
+
+size_t SessionImage::GetMemoryImageSize() const { return ramSize; }
+
+SessionImage& SessionImage::SetMemoryImage(void* image, size_t size) {
     ramImage = image;
     ramSize = size;
-    this->framebufferSize = framebufferSize;
 
     return *this;
 }
 
-SessionImageSerializer& SessionImageSerializer::SetSavestate(size_t size, void* image) {
-    savestate = image;
-    savestateSize = size;
+void* SessionImage::GetMetadata() const { return metadata; }
 
-    return *this;
-}
+size_t SessionImage::GetMetadataSize() const { return metadataSize; }
 
-SessionImageSerializer& SessionImageSerializer::SetMetadata(size_t size, void* data) {
-    metadata = data;
+SessionImage& SessionImage::SetMetadata(void* metadata, size_t size) {
+    this->metadata = metadata;
     metadataSize = size;
 
     return *this;
 }
 
-pair<size_t, unique_ptr<uint8[]>> SessionImageSerializer::Serialize(string deviceId) const {
-    const size_t size = 32 + deviceId.size() + romSize + ramSize + savestateSize + metadataSize;
-    auto image = make_unique<uint8[]>(size);
-    uint8* buffer = image.get();
+void* SessionImage::GetSavestate() const { return savestate; }
 
-    put32(buffer, MAGIC);
-    put32(buffer + 4, VERSION | VERSION_MASK);
-    put32(buffer + 8, deviceId.size());
-    put32(buffer + 12, metadataSize);
-    put32(buffer + 16, romSize);
-    put32(buffer + 20, ramSize);
-    put32(buffer + 24, framebufferSize);
-    put32(buffer + 28, savestateSize);
-    buffer += 32;
+size_t SessionImage::GetSavestateSize() const { return savestateSize; }
 
-    memcpy(buffer, deviceId.c_str(), deviceId.size());
-    buffer += deviceId.size();
+SessionImage& SessionImage::SetSavestate(void* savestate, size_t size) {
+    this->savestate = savestate;
+    savestateSize = size;
 
-    memcpy(buffer, metadata, metadataSize);
-    buffer += metadataSize;
-
-    memcpy(buffer, romImage, romSize);
-    buffer += romSize;
-
-    memcpy(buffer, ramImage, ramSize);
-    buffer += ramSize;
-
-    memcpy(buffer, savestate, savestateSize);
-
-    return pair(size, std::move(image));
+    return *this;
 }
 
-bool SessionImage::IsValid() const { return valid; }
+uint32 SessionImage::GetFramebufferSize() const { return framebufferSize; }
+
+SessionImage& SessionImage::SetFramebufferSize(size_t framebufferSize) {
+    this->framebufferSize = framebufferSize;
+
+    return *this;
+}
 
 uint32 SessionImage::GetVersion() const { return version; }
 
-SessionImage SessionImage::Deserialize(size_t size, uint8* buffer) {
-    if (size < 16) return SessionImage();
-    if (get32(buffer) != MAGIC) return SessionImage();
+void SessionImage::Serialize() {
+    version = VERSION;
 
-    uint32 version = get32(buffer + 4);
+    const size_t uncompressedSize =
+        24 + deviceId.size() + romSize + ramSize + savestateSize + metadataSize;
 
-    if (!(version & VERSION_MASK)) return DeserializeLegacyImage(size, buffer);
-    if (size < (version >= 2 ? 32 : 28)) return SessionImage();
+    auto uncompressed = make_unique<uint8[]>(uncompressedSize);
+    uint8* uncompressedPtr = uncompressed.get();
 
-    version &= ~VERSION_MASK;
-    if (version > VERSION) return SessionImage();
+    put32(uncompressedPtr, deviceId.size());
+    put32(uncompressedPtr + 4, metadataSize);
+    put32(uncompressedPtr + 8, romSize);
+    put32(uncompressedPtr + 12, ramSize);
+    put32(uncompressedPtr + 16, framebufferSize);
+    put32(uncompressedPtr + 20, savestateSize);
+    uncompressedPtr += 24;
 
-    size_t deviceIdSize = get32(buffer + 8);
-    size_t metadataSize = get32(buffer + 12);
-    size_t romSize = get32(buffer + 16);
-    size_t ramSize = get32(buffer + 20);
-    uint32 framebufferSize = (version >= 2) ? get32(buffer + 24) : 0;
-    size_t savestateSize = get32(buffer + (version >= 2 ? 28 : 24));
+    if (deviceId.size() > 0) memcpy(uncompressedPtr, deviceId.c_str(), deviceId.size());
+    uncompressedPtr += deviceId.size();
 
-    buffer += (version >= 2 ? 32 : 28);
+    if (metadataSize > 0) memcpy(uncompressedPtr, metadata, metadataSize);
+    uncompressedPtr += metadataSize;
 
-    if (size != ((version >= 2 ? 32 : 28) + deviceIdSize + metadataSize + romSize + ramSize +
-                 savestateSize) ||
-        deviceIdSize > 16)
-        return SessionImage();
+    if (romSize > 0) memcpy(uncompressedPtr, romImage, romSize);
+    uncompressedPtr += romSize;
 
-    SessionImage image;
-    image.version = version;
+    if (ramSize > 0) memcpy(uncompressedPtr, ramImage, ramSize);
+    uncompressedPtr += ramSize;
 
-    char deviceId[deviceIdSize + 1];
-    memset(deviceId, 0, deviceIdSize + 1);
-    memcpy(deviceId, buffer, deviceIdSize);
-    buffer += deviceIdSize;
+    if (savestateSize > 0) memcpy(uncompressedPtr, savestate, savestateSize);
 
-    image.deviceId = deviceId;
+    mz_ulong compressedSize = uncompressedSize;
+    serializationBuffer = make_unique<uint8[]>(compressedSize + 12);
+    uint8* serializationBufferPtr = serializationBuffer.get();
 
-    image.metadataSize = metadataSize;
-    if (metadataSize > 0) image.metadata = buffer;
-    buffer += metadataSize;
+    put32(serializationBufferPtr, MAGIC);
+    put32(serializationBufferPtr + 4, VERSION | VERSION_MASK);
+    put32(serializationBufferPtr + 8, uncompressedSize);
+    serializationBufferPtr += 12;
 
-    image.romSize = romSize;
-    if (romSize > 0) image.romImage = buffer;
-    buffer += romSize;
+    mz_compress(serializationBufferPtr, &compressedSize, uncompressed.get(), uncompressedSize);
 
-    image.ramSize = ramSize;
-    image.framebufferSize = framebufferSize;
-    if (ramSize > 0) image.ramImage = buffer;
-    buffer += ramSize;
-
-    image.savestateSize = savestateSize;
-    if (savestateSize > 0) image.savestate = buffer;
-
-    image.valid = true;
-    return image;
+    serizalizedImageSize = compressedSize + 12;
 }
 
-SessionImage SessionImage::DeserializeLegacyImage(size_t size, uint8* buffer) {
+void* SessionImage::GetSerializedImage() const { return serializationBuffer.get(); }
+
+size_t SessionImage::GetSerializedImageSize() const { return serizalizedImageSize; }
+
+bool SessionImage::Deserialize(size_t size, uint8* buffer) {
+    if (size < 16) return false;
+    if (get32(buffer) != MAGIC) return false;
+
+    version = get32(buffer + 4);
+
+    if (!(version & VERSION_MASK)) return DeserializeLegacyImage(size, buffer);
+    version &= ~VERSION_MASK;
+
+    if (version > VERSION) return false;
+
+    if (version > 2) {
+        uint32 uncompressedSize = get32(buffer + 8);
+        deserializationBuffer = make_unique<uint8[]>(uncompressedSize);
+
+        mz_ulong realUncompressedSize = uncompressedSize;
+        if (uncompress(deserializationBuffer.get(), &realUncompressedSize, buffer + 12,
+                       size - 12) != MZ_OK)
+            return false;
+
+        if (realUncompressedSize != uncompressedSize) return false;
+
+        buffer = deserializationBuffer.get();
+        size = uncompressedSize;
+    } else {
+        buffer += 8;
+        size -= 8;
+    }
+
+    if (size < (version >= 2 ? 24 : 20)) return false;
+
+    size_t deviceIdSize = get32(buffer);
+    metadataSize = get32(buffer + 4);
+    romSize = get32(buffer + 8);
+    ramSize = get32(buffer + 12);
+    framebufferSize = (version >= 2) ? get32(buffer + 16) : 0;
+    savestateSize = get32(buffer + (version >= 2 ? 20 : 16));
+
+    buffer += (version >= 2 ? 24 : 20);
+
+    if (size != ((version >= 2 ? 24 : 20) + deviceIdSize + metadataSize + romSize + ramSize +
+                 savestateSize) ||
+        deviceIdSize > 16)
+        return false;
+
+    deviceId = string(reinterpret_cast<const char*>(buffer), deviceIdSize);
+    buffer += deviceIdSize;
+
+    metadata = metadataSize > 0 ? buffer : nullptr;
+    buffer += metadataSize;
+
+    romImage = romSize > 0 ? buffer : nullptr;
+    buffer += romSize;
+
+    ramImage = ramSize > 0 ? buffer : nullptr;
+    buffer += ramSize;
+
+    savestate = savestateSize > 0 ? buffer : nullptr;
+
+    return true;
+}
+
+bool SessionImage::DeserializeLegacyImage(size_t size, uint8* buffer) {
     size_t romNameSize = get32(buffer + 4);
-    size_t romSize = get32(buffer + 8);
-    size_t ramSize = get32(buffer + 12);
+    romSize = get32(buffer + 8);
+    ramSize = get32(buffer + 12);
 
     buffer += 16;
 
-    if (size != (16 + romNameSize + romSize + ramSize)) return SessionImage();
-
-    SessionImage image;
+    if (size != (16 + romNameSize + romSize + ramSize)) return false;
 
     buffer += romNameSize;
-    image.deviceId = "PalmV";
+    deviceId = "PalmV";
 
-    image.romSize = romSize;
-    if (romSize > 0) image.romImage = buffer;
+    romImage = romSize > 0 ? buffer : nullptr;
     buffer += romSize;
 
-    image.ramSize = ramSize;
-    if (ramSize > 0) image.ramImage = buffer;
+    ramImage = ramSize > 0 ? buffer : nullptr;
     buffer += ramSize;
 
-    image.valid = true;
-    return image;
+    return true;
 }
-
-string SessionImage::GetDeviceId() const { return deviceId; }
-
-pair<size_t, void*> SessionImage::GetRomImage() const { return pair(romSize, romImage); }
-
-pair<size_t, void*> SessionImage::GetMemoryImage() const { return pair(ramSize, ramImage); }
-
-pair<size_t, void*> SessionImage::GetMetadata() const { return pair(metadataSize, metadata); }
-
-pair<size_t, void*> SessionImage::GetSavestate() const { return pair(savestateSize, savestate); }
-
-uint32 SessionImage::GetframebufferSize() const { return framebufferSize; }

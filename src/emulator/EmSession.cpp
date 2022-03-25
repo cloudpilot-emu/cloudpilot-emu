@@ -120,39 +120,38 @@ void EmSession::Deinitialize() {
     isInitialized = false;
 }
 
-pair<size_t, unique_ptr<uint8[]>> EmSession::SaveImage() {
+void EmSession::SaveImage(SessionImage& image) {
     EmAssert(romImage);
 
-    SessionImageSerializer image;
-
-    image.SetRomImage(romSize, romImage.get())
-        .SetMemoryImage(GetMemorySize(), device->FramebufferSize() * 1024, GetMemoryPtr());
+    image.SetRomImage(romImage.get(), romSize)
+        .SetMemoryImage(GetMemoryPtr(), GetMemorySize())
+        .SetFramebufferSize(device->FramebufferSize() * 1024)
+        .SetDeviceId(device->GetIDString());
 
     if (savestate.Save(*this)) {
-        image.SetSavestate(savestate.GetSize(), savestate.GetBuffer());
+        image.SetSavestate(savestate.GetBuffer(), savestate.GetSize());
     } else {
+        image.SetSavestate(nullptr, 0);
         logging::printf("failed to save savestate");
     }
 
-    return image.Serialize(device->GetIDString());
+    image.Serialize();
 }
 
 bool EmSession::LoadImage(SessionImage& image) {
-    if (!image.IsValid()) return false;
-
     EmDevice* device = new EmDevice(image.GetDeviceId());
     if (device->GetIDString() != device->GetIDString()) {
         logging::printf("device id mismatch");
         return false;
     }
 
-    auto [romSize, romImage] = image.GetRomImage();
-    if (!Initialize(device, static_cast<uint8*>(romImage), romSize)) {
+    if (!Initialize(device, static_cast<uint8*>(image.GetRomImage()), image.GetRomImageSize())) {
         logging::printf("failed to initialize session");
         return false;
     }
 
-    auto [memorySize, memoryImage] = image.GetMemoryImage();
+    size_t memorySize = image.GetMemoryImageSize();
+    void* memoryImage = image.GetMemoryImage();
     uint32 version = image.GetVersion();
 
     if (version >= 2 && memorySize == GetMemorySize()) {
@@ -165,10 +164,10 @@ bool EmSession::LoadImage(SessionImage& image) {
         return true;
     }
 
-    auto [savestateSize, savestateImage] = image.GetSavestate();
-    if (savestateSize == 0) return true;
+    size_t savestateSize = image.GetSavestateSize();
+    void* savestate = image.GetSavestate();
 
-    if (!Load(savestateSize, static_cast<uint8*>(savestateImage)))
+    if (savestateSize > 0 && !Load(savestateSize, static_cast<uint8*>(savestate)))
         logging::printf("failed to restore savestate");
 
     return true;

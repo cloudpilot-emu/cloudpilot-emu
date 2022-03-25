@@ -6,52 +6,53 @@
 
 #include "EmCommon.h"
 
-class SessionImageSerializer {
-   public:
-    SessionImageSerializer() = default;
-
-    SessionImageSerializer& SetRomImage(size_t size, void* image);
-
-    SessionImageSerializer& SetMemoryImage(size_t size, size_t framebufferSize, void* image);
-
-    SessionImageSerializer& SetSavestate(size_t size, void* image);
-
-    SessionImageSerializer& SetMetadata(size_t size, void* data);
-
-    pair<size_t, unique_ptr<uint8[]>> Serialize(string deviceId) const;
-
-   private:
-    void *romImage{nullptr}, *ramImage{nullptr}, *savestate{nullptr}, *metadata{nullptr};
-    size_t romSize{0}, ramSize{0}, savestateSize{0}, metadataSize{0}, framebufferSize{0};
-};
-
 class SessionImage {
    public:
-    static SessionImage Deserialize(size_t size, uint8* buffer);
-
-    bool IsValid() const;
+    SessionImage() = default;
 
     string GetDeviceId() const;
+    SessionImage& SetDeviceId(const string deviceId);
 
-    pair<size_t, void*> GetRomImage() const;
-    pair<size_t, void*> GetMemoryImage() const;
-    pair<size_t, void*> GetMetadata() const;
-    pair<size_t, void*> GetSavestate() const;
-    uint32 GetframebufferSize() const;
+    void* GetRomImage() const;
+    size_t GetRomImageSize() const;
+    SessionImage& SetRomImage(void* image, size_t size);
+
+    void* GetMemoryImage() const;
+    size_t GetMemoryImageSize() const;
+    SessionImage& SetMemoryImage(void* image, size_t size);
+
+    void* GetMetadata() const;
+    size_t GetMetadataSize() const;
+    SessionImage& SetMetadata(void* metadata, size_t size);
+
+    void* GetSavestate() const;
+    size_t GetSavestateSize() const;
+    SessionImage& SetSavestate(void* savestate, size_t size);
+
+    uint32 GetFramebufferSize() const;
+    SessionImage& SetFramebufferSize(size_t framebufferSize);
 
     uint32 GetVersion() const;
 
-   private:
-    SessionImage() = default;
+    void Serialize();
+    void* GetSerializedImage() const;
+    size_t GetSerializedImageSize() const;
 
-    static SessionImage DeserializeLegacyImage(size_t size, uint8* buffer);
+    bool Deserialize(size_t size, uint8* buffer);
+
+   private:
+    bool DeserializeLegacyImage(size_t size, uint8* buffer);
 
     uint32 version;
+
     void *romImage{nullptr}, *ramImage{nullptr}, *savestate{nullptr}, *metadata{nullptr};
     size_t romSize{0}, ramSize{0}, savestateSize{0}, metadataSize{0}, framebufferSize{0};
-    string deviceId;
 
-    bool valid{false};
+    string deviceId;
+    size_t serizalizedImageSize{0};
+
+    unique_ptr<uint8[]> serializationBuffer;
+    unique_ptr<uint8[]> deserializationBuffer;
 };
 
 #endif  // _SESSION_IMAGE_
