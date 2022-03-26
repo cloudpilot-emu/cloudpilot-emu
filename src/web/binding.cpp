@@ -4,6 +4,7 @@
 #include "Cloudpilot.h"
 #include "Frame.h"
 #include "RomInfo.h"
+#include "SessionImage.h"
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendContextNetworkConnect.h"

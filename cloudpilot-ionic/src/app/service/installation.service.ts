@@ -1,6 +1,7 @@
 import { AlertController, LoadingController } from '@ionic/angular';
 
 import { AlertService } from './alert.service';
+import { CloudpilotService } from './cloudpilot.service';
 import { DbInstallResult } from '../helper/Cloudpilot';
 import { EmulationService } from './emulation.service';
 import { FileDescriptor } from './file.service';
@@ -53,7 +54,7 @@ function getDatabaseName(data: Uint8Array): string {
 
 class InstallationContext {
     constructor(
-        private emulationService: EmulationService,
+        private cloudpilotService: CloudpilotService,
         private alertController: AlertController,
         private snapshotService: SnapshotService,
         private files: Array<FileDescriptor>
@@ -78,7 +79,7 @@ class InstallationContext {
     }
 
     private async installOne(name: string, content: Uint8Array): Promise<void> {
-        const cloudpilot = await this.emulationService.cloudpilot;
+        const cloudpilot = await this.cloudpilotService.cloudpilot;
         const code = await cloudpilot.installDb(content);
 
         switch (code) {
@@ -124,7 +125,7 @@ class InstallationContext {
     }
 
     private async installZip(file: FileDescriptor): Promise<void> {
-        const cloudpilot = await this.emulationService.cloudpilot;
+        const cloudpilot = await this.cloudpilotService.cloudpilot;
 
         await cloudpilot.withZipfileWalker(file.content, async (walker) => {
             let installed = 0;
@@ -205,6 +206,7 @@ class InstallationContext {
 @Injectable({ providedIn: 'root' })
 export class InstallationService {
     constructor(
+        private cloudpilotService: CloudpilotService,
         private emulationService: EmulationService,
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
@@ -227,7 +229,7 @@ export class InstallationService {
 
         try {
             const installationContext = new InstallationContext(
-                this.emulationService,
+                this.cloudpilotService,
                 this.alertController,
                 this.snapshotService,
                 files

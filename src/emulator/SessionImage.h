@@ -10,8 +10,9 @@ class SessionImage {
    public:
     SessionImage() = default;
 
-    string GetDeviceId() const;
+    const char* GetDeviceId() const;
     SessionImage& SetDeviceId(const string deviceId);
+    SessionImage& SetDeviceId(const char* deviceId);
 
     void* GetRomImage() const;
     size_t GetRomImageSize() const;
@@ -38,10 +39,10 @@ class SessionImage {
     void* GetSerializedImage() const;
     size_t GetSerializedImageSize() const;
 
-    bool Deserialize(size_t size, uint8* buffer);
+    bool Deserialize(void* buffer, size_t size);
 
    private:
-    bool DeserializeLegacyImage(size_t size, uint8* buffer);
+    bool DeserializeLegacyImage(void* buffer, size_t size);
 
     uint32 version;
 

@@ -51,6 +51,7 @@ export interface RomInfo {
 export interface Cloudpilot {
     Malloc(size: number): VoidPtr;
     Free(buffer: VoidPtr): void;
+    Nullptr(): VoidPtr;
 
     InitializeSession(buffer: VoidPtr, size: number, deviceType: string): boolean;
 
@@ -153,31 +154,31 @@ export interface DbBackup {
     GetArchiveSize(): number;
 }
 
-interface SuspendContextClipboardCopy {
+export interface SuspendContextClipboardCopy {
     Cancel(): void;
     Resume(): void;
 
     GetClipboardContent(): string;
 }
 
-interface SuspendContextClipboardPaste {
+export interface SuspendContextClipboardPaste {
     Cancel(): void;
     Resume(clipboardContent: string): void;
 }
 
-interface SuspendContextNetworkConnect {
+export interface SuspendContextNetworkConnect {
     Cancel(): void;
     Resume(sessionId: string): void;
 }
 
-interface SuspendContextNetworkRpc {
+export interface SuspendContextNetworkRpc {
     Cancel(): void;
     GetRequestSize(): number;
     GetRequestData(): VoidPtr;
     ReceiveResponse(data: VoidPtr, size: number): void;
 }
 
-interface SuspendContext {
+export interface SuspendContext {
     GetKind(): SuspendKind;
     Cancel(): void;
 
@@ -187,11 +188,43 @@ interface SuspendContext {
     AsContextNetworkRpc(): SuspendContextNetworkRpc;
 }
 
-interface ZipfileWalker {
+export interface ZipfileWalker {
     GetState(): ZipfileWalkerState;
     Next(): ZipfileWalkerState;
 
     GetCurrentEntrySize(): number;
     GetCurrentEntryName(): string;
     GetCurrentEntryContent(): VoidPtr;
+}
+
+export interface SessionImage {
+    GetDeviceId(): string;
+    SetDeviceId(deviceId: string): SessionImage;
+
+    GetRomImage(): VoidPtr;
+    GetRomImageSize(): number;
+    SetRomImage(image: VoidPtr, size: number): SessionImage;
+
+    GetMemoryImage(): VoidPtr;
+    GetMemoryImageSize(): number;
+    SetMemoryImage(image: VoidPtr, size: number): SessionImage;
+
+    GetMetadata(): VoidPtr;
+    GetMetadataSize(): number;
+    SetMetadata(metadata: VoidPtr, size: number): SessionImage;
+
+    GetSavestate(): VoidPtr;
+    GetSavestateSize(): number;
+    SetSavestate(savestate: VoidPtr, size: number): SessionImage;
+
+    GetFramebufferSize(): number;
+    SetFramebufferSize(framebufferSize: number): SessionImage;
+
+    GetVersion(): number;
+
+    Serialize(): void;
+    GetSerializedImage(): VoidPtr;
+    GetSerializedImageSize(): number;
+
+    Deserialize(buffer: VoidPtr, size: number): boolean;
 }

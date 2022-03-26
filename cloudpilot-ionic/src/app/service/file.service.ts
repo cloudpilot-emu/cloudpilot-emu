@@ -1,17 +1,18 @@
 import { ActionSheetController, LoadingController, ModalController } from '@ionic/angular';
-import { metadataForSession, serializeSessionImage } from '../helper/sessionFile';
+import { Cloudpilot, SessionImage } from '../helper/Cloudpilot';
 
 import { AlertService } from 'src/app/service/alert.service';
-import { Cloudpilot } from '../helper/Cloudpilot';
+import { CloudpilotService } from './cloudpilot.service';
 import { FetchService } from './fetch.service';
 import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
 import { RemoteUrlPromptComponent } from './../component/remote-url-prompt/remote-url-prompt.component';
 import { Session } from './../model/Session';
-import { SessionImage } from './../model/SessionImage';
+import { SessionMetadata } from '../model/SessionMetadata';
 import { StorageService } from './storage.service';
 import Url from 'url-parse';
 import { filenameForSession } from '../helper/filename';
+import { metadataForSession } from '../helper/metadata';
 
 // tslint:disable: no-bitwise
 
@@ -31,7 +32,8 @@ export class FileService {
         private kvsService: KvsService,
         private modalController: ModalController,
         private alertService: AlertService,
-        private fetchService: FetchService
+        private fetchService: FetchService,
+        private cloudpilotService: CloudpilotService
     ) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {
@@ -55,7 +57,7 @@ export class FileService {
                 throw new Error(`invalid ROM ${session.rom}`);
             }
 
-            const sessionImage: Omit<SessionImage, 'version'> = {
+            const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
                 deviceId: session.device,
                 metadata: metadataForSession(session),
                 rom,
@@ -64,13 +66,16 @@ export class FileService {
                 framebufferSize: session.totalMemory - session.ram * 1024 * 1024,
             };
 
-            this.saveFile(filenameForSession(session), serializeSessionImage(sessionImage));
+            this.saveFile(
+                filenameForSession(session),
+                (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage)
+            );
         } finally {
             loader.dismiss();
         }
     }
 
-    emergencySaveSession(session: Session, cloudpilot: Cloudpilot): void {
+    async emergencySaveSession(session: Session, cloudpilot: Cloudpilot): Promise<void> {
         const rom = cloudpilot.getRomImage();
         const memory = cloudpilot.getMemory();
         const savestate = cloudpilot.saveState() ? cloudpilot.getSavestate() : undefined;
@@ -80,7 +85,7 @@ export class FileService {
             throw new Error(`invalid device ID ${session.device}`);
         }
 
-        const sessionImage: Omit<SessionImage, 'version'> = {
+        const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
             deviceId: session.device,
             metadata: metadataForSession(session),
             rom,
@@ -89,7 +94,10 @@ export class FileService {
             framebufferSize,
         };
 
-        this.saveFile(filenameForSession(session), serializeSessionImage(sessionImage));
+        this.saveFile(
+            filenameForSession(session),
+            (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage)
+        );
     }
 
     saveFile(name: string, content: Uint8Array): void {

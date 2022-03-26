@@ -62,6 +62,16 @@ export interface PwmUpdate {
     dutyCycle: number;
 }
 
+export interface SessionImage<T> {
+    metadata?: T;
+    deviceId: DeviceId;
+    rom: Uint8Array;
+    memory: Uint8Array;
+    savestate?: Uint8Array;
+    framebufferSize: number;
+    version: number;
+}
+
 export interface ZipfileWalker extends Omit<ZipfileWalkerNative, 'GetCurrentEntryContent'> {
     GetCurrentEntryContent(): Uint8Array | undefined;
 }
@@ -396,11 +406,7 @@ export class Cloudpilot {
     getArchive(dbBackup: DbBackup): Uint8Array | undefined {
         const size = dbBackup.GetArchiveSize();
 
-        if (size <= 0) return undefined;
-
-        const ptr = this.module.getPointer(dbBackup.GetArchivePtr());
-
-        return this.module.HEAPU8.subarray(ptr, ptr + size).slice();
+        return this.copyOut(dbBackup.GetArchivePtr(), size);
     }
 
     @guard()
@@ -495,12 +501,8 @@ export class Cloudpilot {
                 this.wrap(
                     Object.setPrototypeOf(
                         {
-                            GetCurrentEntryContent: () => {
-                                const ptr = this.module.getPointer(walker.GetCurrentEntryContent());
-                                if (ptr === 0) return undefined;
-
-                                return this.module.HEAPU8.subarray(ptr, ptr + walker.GetCurrentEntrySize()).slice();
-                            },
+                            GetCurrentEntryContent: () =>
+                                this.copyOut(walker.GetCurrentEntryContent(), walker.GetCurrentEntrySize()),
                         },
                         walker
                     )
@@ -511,6 +513,87 @@ export class Cloudpilot {
         }
     }
 
+    @guard()
+    serializeSessionImage<T>(sessionImage: Omit<SessionImage<T>, 'version'>): Uint8Array {
+        const nativeImage = new this.module.SessionImage();
+        const nullptr = this.cloudpilot.Nullptr();
+
+        const romImage = this.copyIn(sessionImage.rom);
+        const memoryImage = this.copyIn(sessionImage.memory);
+        const savestate = sessionImage.savestate !== undefined ? this.copyIn(sessionImage.savestate) : nullptr;
+
+        let metadata = nullptr;
+        let metadataLenght = 0;
+        if (sessionImage.metadata !== undefined) {
+            const serializedMetadata = new TextEncoder().encode(JSON.stringify(sessionImage.metadata));
+
+            metadataLenght = serializedMetadata.length;
+            metadata = this.copyIn(serializedMetadata);
+        }
+
+        nativeImage.SetRomImage(romImage, sessionImage.rom.length);
+        nativeImage.SetMemoryImage(memoryImage, sessionImage.memory.length);
+        nativeImage.SetDeviceId(sessionImage.deviceId);
+        nativeImage.SetFramebufferSize(sessionImage.framebufferSize);
+        nativeImage.SetSavestate(savestate, sessionImage.savestate?.length || 0);
+        nativeImage.SetMetadata(metadata, metadataLenght);
+
+        nativeImage.Serialize();
+
+        const result = this.copyOut(nativeImage.GetSerializedImage(), nativeImage.GetSerializedImageSize())!;
+
+        this.module.destroy(nativeImage);
+        [romImage, memoryImage, savestate, metadata].forEach((buffer) => this.cloudpilot.Free(buffer));
+
+        return result;
+    }
+
+    @guard()
+    deserializeSessionImage<T>(buffer: Uint8Array): SessionImage<T> | undefined {
+        const nativeImage = new this.module.SessionImage();
+        const bufferPtr = this.copyIn(buffer);
+
+        const result = ((): SessionImage<T> | undefined => {
+            if (!nativeImage.Deserialize(bufferPtr, buffer.length)) return undefined;
+
+            const rom = this.copyOut(nativeImage.GetRomImage(), nativeImage.GetRomImageSize())!;
+            const memory = this.copyOut(nativeImage.GetMemoryImage(), nativeImage.GetMemoryImageSize())!;
+            const savestate = this.copyOut(nativeImage.GetSavestate(), nativeImage.GetSavestateSize());
+
+            const deviceId = nativeImage.GetDeviceId() as DeviceId;
+            if (!SUPPORTED_DEVICES.includes(deviceId)) {
+                console.warn(`unsupported device ${deviceId}`);
+                return undefined;
+            }
+
+            let metadata: T | undefined;
+            const serializedMetadata = this.copyOut(nativeImage.GetMetadata(), nativeImage.GetMetadataSize());
+
+            if (serializedMetadata) {
+                try {
+                    metadata = JSON.parse(new TextDecoder().decode(serializedMetadata));
+                } catch (e) {
+                    console.warn('invalid metadata', e);
+                }
+            }
+
+            return {
+                deviceId,
+                rom,
+                memory,
+                savestate,
+                metadata,
+                framebufferSize: nativeImage.GetFramebufferSize(),
+                version: nativeImage.GetVersion(),
+            };
+        })();
+
+        this.module.destroy(nativeImage);
+        this.cloudpilot.Free(bufferPtr);
+
+        return result;
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);
@@ -518,6 +601,12 @@ export class Cloudpilot {
         this.module.HEAP8.subarray(bufferPtr, bufferPtr + data.length).set(data);
 
         return buffer;
+    }
+
+    private copyOut(ptr: VoidPtr, size: number): Uint8Array | undefined {
+        const p = this.module.getPointer(ptr);
+
+        return p > 0 && size > 0 ? this.module.HEAPU8.subarray(p, p + size).slice() : undefined;
     }
 
     private wrap<T extends object>(unguarded: T): T {

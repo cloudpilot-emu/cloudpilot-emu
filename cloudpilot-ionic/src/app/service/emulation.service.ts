@@ -1,5 +1,5 @@
 import { AnimationFrameScheduler, Scheduler, SchedulerKind, TimeoutScheduler } from './../helper/scheduler';
-import { Cloudpilot, DbInstallResult, PalmButton } from '../helper/Cloudpilot';
+import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
 import { GRAYSCALE_PALETTE_HEX, GRAYSCALE_PALETTE_RGBA } from '../helper/palette';
 import { Injectable, NgZone } from '@angular/core';
 import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
@@ -10,6 +10,7 @@ import { Average } from './../helper/Average';
 import { BootstrapService } from './bootstrap-service';
 import { ButtonService } from './button.service';
 import { ClipboardService } from './clipboard.service';
+import { CloudpilotService } from './cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
 import { EmulationStatistics } from './../model/EmulationStatistics';
 import { ErrorService } from './error.service';
@@ -55,13 +56,14 @@ export class EmulationService {
         private kvsService: KvsService,
         private proxyService: ProxyService,
         private buttonService: ButtonService,
-        private bootstrapService: BootstrapService
+        private bootstrapService: BootstrapService,
+        private cloudpilotService: CloudpilotService
     ) {
         storageService.sessionChangeEvent.addHandler(this.onSessionChange);
         errorService.fatalErrorEvent.addHandler(this.pause);
         this.alertService.emergencySaveEvent.addHandler(this.onEmergencySave);
 
-        this.cloudpilot.then((instance) => {
+        this.cloudpilotService.cloudpilot.then((instance) => {
             instance.fatalErrorEvent.addHandler(this.errorService.fatalInNativeCode);
             instance.pwmUpdateEvent.addHandler(this.onPwmUpdate);
 
@@ -103,13 +105,13 @@ export class EmulationService {
 
                 this.resetCanvas(session);
 
-                const cloudpilot = await this.cloudpilot;
+                const cloudpilot = await this.cloudpilotService.cloudpilot;
 
                 await this.restoreSession(session, cloudpilot);
 
                 this.pendingPwmUpdates.flush();
                 this.proxyService.reset();
-                await this.snapshotService.initialize(session, await this.cloudpilot);
+                await this.snapshotService.initialize(session, await this.cloudpilotService.cloudpilot);
 
                 this.deviceHotsyncName = undefined;
                 this.emulationSpeed = 1;
@@ -132,7 +134,7 @@ export class EmulationService {
                 return;
             }
 
-            this.cloudpilotInstance = await this.cloudpilot;
+            this.cloudpilotInstance = await this.cloudpilotService.cloudpilot;
 
             await this.kvsService.mutex.runExclusive(() => this.updateFeatures());
 
@@ -376,7 +378,7 @@ Sorry for the inconvenience.`
             const session = this.emulationState.getCurrentSession();
 
             if (session) {
-                this.fileService.emergencySaveSession(session, await this.cloudpilot);
+                this.fileService.emergencySaveSession(session, await this.cloudpilotService.cloudpilot);
             }
         });
 
@@ -738,8 +740,6 @@ Sorry for the inconvenience.`
 
         this.newFrameEvent.dispatch(this.canvas);
     }
-
-    readonly cloudpilot = Cloudpilot.create();
 
     newFrameEvent = new Event<HTMLCanvasElement>();
     pwmUpdateEvent = new Event<PwmUpdate>();

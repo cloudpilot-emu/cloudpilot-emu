@@ -61,7 +61,11 @@ namespace {
 
 void* Cloudpilot::Malloc(long size) { return ::malloc(size); }
 
-void Cloudpilot::Free(void* buffer) { ::free(buffer); }
+void Cloudpilot::Free(void* buffer) {
+    if (buffer) ::free(buffer);
+}
+
+void* Cloudpilot::Nullptr() { return nullptr; }
 
 bool Cloudpilot::InitializeSession(void* buffer, long size, const char* deviceType) {
     auto reader = createReader(buffer, size);

@@ -1,12 +1,13 @@
 import {} from './file.service';
 
+import { CloudpilotService } from './cloudpilot.service';
 import { DeviceId } from './../model/DeviceId';
 import { DeviceOrientation } from '../model/DeviceOrientation';
-import { EmulationService } from './emulation.service';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Session } from '../model/Session';
-import { SessionImage } from '../model/SessionImage';
+import { SessionImage } from '../helper/Cloudpilot';
+import { SessionMetadata } from '../model/SessionMetadata';
 import { StorageService } from './storage.service';
 
 @Injectable({
@@ -14,7 +15,7 @@ import { StorageService } from './storage.service';
 })
 export class SessionService {
     constructor(
-        private emulationService: EmulationService,
+        private cloudpilotService: CloudpilotService,
         private storageService: StorageService,
         private loadingController: LoadingController
     ) {
@@ -27,8 +28,12 @@ export class SessionService {
         return this.loading;
     }
 
-    async addSessionFromImage(image: SessionImage, name: string, presets: Partial<Session> = {}): Promise<Session> {
-        const framebufferSizeForDevice = (await this.emulationService.cloudpilot).framebufferSizeForDevice(
+    async addSessionFromImage(
+        image: SessionImage<SessionMetadata>,
+        name: string,
+        presets: Partial<Session> = {}
+    ): Promise<Session> {
+        const framebufferSizeForDevice = (await this.cloudpilotService.cloudpilot).framebufferSizeForDevice(
             image.deviceId
         );
         if (framebufferSizeForDevice < 0) {
@@ -80,8 +85,8 @@ export class SessionService {
             id: -1,
             name,
             device,
-            ram: (await this.emulationService.cloudpilot).minRamForDevice(device) / 1024 / 1024,
-            totalMemory: (await this.emulationService.cloudpilot).totalMemorySizeForDevice(device),
+            ram: (await this.cloudpilotService.cloudpilot).minRamForDevice(device) / 1024 / 1024,
+            totalMemory: (await this.cloudpilotService.cloudpilot).totalMemorySizeForDevice(device),
             rom: '',
         };
 

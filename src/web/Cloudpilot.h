@@ -13,6 +13,7 @@ class Cloudpilot {
    public:
     void* Malloc(long size);
     void Free(void* buffer);
+    void* Nullptr();
 
     bool InitializeSession(void* buffer, long size, const char* deviceType);
 

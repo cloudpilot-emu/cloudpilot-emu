@@ -1,6 +1,7 @@
 import { concatFilenames, filenameForBackup } from 'src/app/helper/filename';
 
 import { AlertService } from './alert.service';
+import { CloudpilotService } from './cloudpilot.service';
 import { EmulationService } from './emulation.service';
 import { EmulationStateService } from './emulation-state.service';
 import { FileService } from 'src/app/service/file.service';
@@ -16,7 +17,8 @@ export class BackupService {
         private snapshotService: SnapshotService,
         private fileService: FileService,
         private emulationStateService: EmulationStateService,
-        private alertService: AlertService
+        private alertService: AlertService,
+        private cloudpilotService: CloudpilotService
     ) {}
 
     async saveBackup(includeRomDatabases: boolean): Promise<void> {
@@ -33,7 +35,7 @@ export class BackupService {
         await this.snapshotService.waitForPendingSnapshot();
 
         try {
-            const cloudpilot = await this.emulationService.cloudpilot;
+            const cloudpilot = await this.cloudpilotService.cloudpilot;
 
             await cloudpilot.backup(async (dbBackup) => {
                 dbBackup.Init(includeRomDatabases);

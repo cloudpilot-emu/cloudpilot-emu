@@ -1,4 +1,4 @@
-import { DbBackup, ZipfileWalker } from './web/binding/binding.d';
+import { DbBackup, ZipfileWalker, SessionImage } from './web/binding/binding.d';
 import 'emscripten';
 
 import { Cloudpilot, RomInfo, VoidPtr } from './web/binding/binding';
@@ -16,11 +16,13 @@ export interface Module extends EmscriptenModule {
     ZipfileWalker: {
         new (bufferSize: number, buffer: VoidPtr): ZipfileWalker;
     };
+    SessionImage: { new (): SessionImage };
 
     destroy(cloudpilot: Cloudpilot): void;
     destroy(romInfo: RomInfo): void;
     destroy(dbBackup: DbBackup): void;
     destroy(zipfileWalker: ZipfileWalker): void;
+    destroy(sessionImage: SessionImage): void;
 }
 
 declare const createModule: EmscriptenModuleFactory<Module>;

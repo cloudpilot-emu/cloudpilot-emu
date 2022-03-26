@@ -3,6 +3,7 @@ import { ModalController, PopoverController } from '@ionic/angular';
 
 import { AlertService } from 'src/app/service/alert.service';
 import { CanvasDisplayService } from './../../service/canvas-display.service';
+import { CloudpilotService } from './../../service/cloudpilot.service';
 import { ContextMenuComponent } from './context-menu/context-menu.component';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
@@ -42,7 +43,8 @@ export class EmulationPage {
         public proxyService: ProxyService,
         public navigation: TabsPage,
         private linkApi: LinkApi,
-        public performanceWatchdogService: PerformanceWatchdogService
+        public performanceWatchdogService: PerformanceWatchdogService,
+        private cloudpilotService: CloudpilotService
     ) {}
 
     get cssWidth(): string {
@@ -165,14 +167,14 @@ export class EmulationPage {
     async bootAfterForcefulResetNoExtensions(): Promise<void> {
         await this.clearForcefulReset();
 
-        (await this.emulationService.cloudpilot).resetNoExtensions();
+        (await this.cloudpilotService.cloudpilot).resetNoExtensions();
         await this.launchEmulator();
     }
 
     async bootAfterForcefulResetHardReset(): Promise<void> {
         await this.clearForcefulReset();
 
-        (await this.emulationService.cloudpilot).resetHard();
+        (await this.cloudpilotService.cloudpilot).resetHard();
         await this.launchEmulator();
     }
 

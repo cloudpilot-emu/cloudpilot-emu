@@ -3,6 +3,7 @@ interface Cloudpilot {
 
     VoidPtr Malloc(long size);
     void Free(VoidPtr buffer);
+    VoidPtr Nullptr();
 
     boolean InitializeSession(VoidPtr buffer, long size, [Const] DOMString deviceType);
 
@@ -161,4 +162,38 @@ interface ZipfileWalker {
     long GetCurrentEntrySize();
     [Const] DOMString GetCurrentEntryName();
     VoidPtr GetCurrentEntryContent();
+};
+
+interface SessionImage {
+    void SessionImage();
+
+    [Const] DOMString GetDeviceId();
+    [Ref] SessionImage SetDeviceId([Const] DOMString deviceId);
+
+    VoidPtr GetRomImage();
+    long GetRomImageSize();
+    [Ref] SessionImage SetRomImage(VoidPtr image, long size);
+
+    VoidPtr GetMemoryImage();
+    long GetMemoryImageSize();
+    [Ref] SessionImage SetMemoryImage(VoidPtr image, long size);
+
+    VoidPtr GetMetadata();
+    long GetMetadataSize();
+    [Ref] SessionImage SetMetadata(VoidPtr metadata, long size);
+
+    VoidPtr GetSavestate();
+    long GetSavestateSize();
+    [Ref] SessionImage SetSavestate(VoidPtr savestate, long size);
+
+    long GetFramebufferSize();
+    [Ref] SessionImage SetFramebufferSize(long framebufferSize);
+
+    long GetVersion();
+
+    void Serialize();
+    VoidPtr GetSerializedImage();
+    long GetSerializedImageSize();
+
+    boolean Deserialize(VoidPtr buffer, long size);
 };

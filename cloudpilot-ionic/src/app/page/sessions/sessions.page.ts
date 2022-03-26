@@ -3,6 +3,7 @@ import { FileDescriptor, FileService } from './../../service/file.service';
 import { SessionSettings, SessionSettingsComponent } from '../../component/session-settings/session-settings.component';
 
 import { AlertService } from './../../service/alert.service';
+import { CloudpilotService } from './../../service/cloudpilot.service';
 import { Component } from '@angular/core';
 import { EmulationService } from './../../service/emulation.service';
 import { EmulationStateService } from './../../service/emulation-state.service';
@@ -10,10 +11,10 @@ import { HelpComponent } from '../../component/help/help.component';
 import { LinkApi } from './../../service/link-api.service';
 import { Router } from '@angular/router';
 import { Session } from './../../model/Session';
+import { SessionMetadata } from 'src/app/model/SessionMetadata';
 import { SessionService } from 'src/app/service/session.service';
 import { StorageService } from './../../service/storage.service';
 import deepEqual from 'deep-equal';
-import { deserializeSessionImage } from 'src/app/helper/sessionFile';
 
 @Component({
     selector: 'app-sessions',
@@ -31,7 +32,8 @@ export class SessionsPage {
         private storageService: StorageService,
         private modalController: ModalController,
         private linkApi: LinkApi,
-        private router: Router
+        private router: Router,
+        private cloudpilotService: CloudpilotService
     ) {}
 
     ionViewDidEnter(): void {
@@ -133,7 +135,9 @@ export class SessionsPage {
             return;
         }
 
-        const sessionImage = deserializeSessionImage(file.content);
+        const sessionImage = (await this.cloudpilotService.cloudpilot).deserializeSessionImage<SessionMetadata>(
+            file.content
+        );
 
         if (sessionImage) {
             const settings: SessionSettings = {
@@ -141,6 +145,8 @@ export class SessionsPage {
                 hotsyncName: sessionImage.metadata?.hotsyncName,
                 device: sessionImage.deviceId,
                 dontManageHotsyncName: sessionImage.metadata?.dontManageHotsyncName,
+                speed: sessionImage.metadata?.speed,
+                deviceOrientation: sessionImage.metadata?.deviceOrientation,
             };
 
             if (await this.editSettings(settings)) {
@@ -149,7 +155,7 @@ export class SessionsPage {
                 this.lastSessionTouched = session.id;
             }
         } else {
-            const romInfo = (await this.emulationService.cloudpilot).getRomInfo(file.content);
+            const romInfo = (await this.cloudpilotService.cloudpilot).getRomInfo(file.content);
 
             if (!romInfo) {
                 this.alertService.errorMessage(`Not a valid session file or ROM image.`);

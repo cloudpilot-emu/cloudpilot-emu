@@ -19,9 +19,15 @@ namespace {
     }
 }  // namespace
 
-string SessionImage::GetDeviceId() const { return deviceId; }
+const char* SessionImage::GetDeviceId() const { return deviceId.c_str(); }
 
 SessionImage& SessionImage::SetDeviceId(const string deviceId) {
+    this->deviceId = deviceId;
+
+    return *this;
+}
+
+SessionImage& SessionImage::SetDeviceId(const char* deviceId) {
     this->deviceId = deviceId;
 
     return *this;
@@ -130,13 +136,15 @@ void* SessionImage::GetSerializedImage() const { return serializationBuffer.get(
 
 size_t SessionImage::GetSerializedImageSize() const { return serizalizedImageSize; }
 
-bool SessionImage::Deserialize(size_t size, uint8* buffer) {
+bool SessionImage::Deserialize(void* _buffer, size_t size) {
+    uint8* buffer = static_cast<uint8*>(_buffer);
+
     if (size < 16) return false;
     if (get32(buffer) != MAGIC) return false;
 
     version = get32(buffer + 4);
 
-    if (!(version & VERSION_MASK)) return DeserializeLegacyImage(size, buffer);
+    if (!(version & VERSION_MASK)) return DeserializeLegacyImage(buffer, size);
     version &= ~VERSION_MASK;
 
     if (version > VERSION) return false;
@@ -192,7 +200,9 @@ bool SessionImage::Deserialize(size_t size, uint8* buffer) {
     return true;
 }
 
-bool SessionImage::DeserializeLegacyImage(size_t size, uint8* buffer) {
+bool SessionImage::DeserializeLegacyImage(void* _buffer, size_t size) {
+    uint8* buffer = static_cast<uint8*>(_buffer);
+
     size_t romNameSize = get32(buffer + 4);
     romSize = get32(buffer + 8);
     ramSize = get32(buffer + 12);
