@@ -96,7 +96,7 @@ bool SessionImage::Serialize() {
         24 + deviceId.size() + romSize + ramSize + savestateSize + metadataSize;
 
     // Assume a compression ratio of at least 2 and make sure that the buffer will actually grow
-    const size_t initialBufferSize = min(static_cast<size_t>(1024), uncompressedSize / 2);
+    const size_t initialBufferSize = max(static_cast<size_t>(1024), uncompressedSize / 2);
 
     serializationBuffer = make_unique<uint8[]>(initialBufferSize + UNCOMPRESSED_HEADER_SIZE);
     uint8* serializationBufferPtr = serializationBuffer.get();
