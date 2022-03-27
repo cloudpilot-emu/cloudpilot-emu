@@ -6,6 +6,7 @@ namespace {
     constexpr uint32 MAGIC = 0x20150103;
     constexpr uint32 VERSION = 0x03;
     constexpr uint32 VERSION_MASK = 0x80000000;
+    constexpr size_t COMPRESSED_GROW_LIMIT = 128 * 1024 * 1024;
 
     void put32(uint8* buffer, uint32 value) {
         buffer[0] = value & 0xff;
@@ -88,14 +89,38 @@ SessionImage& SessionImage::SetFramebufferSize(size_t framebufferSize) {
 uint32 SessionImage::GetVersion() const { return version; }
 
 bool SessionImage::Serialize() {
-#define STREAM_OUT(ptr, size)                                     \
-    stream.next_in = reinterpret_cast<const unsigned char*>(ptr); \
-    stream.avail_in = size;                                       \
-                                                                  \
-    if (deflate(&stream, Z_NO_FLUSH) != Z_OK) {                   \
-        deflateEnd(&stream);                                      \
-                                                                  \
-        return false;                                             \
+    constexpr size_t HEADER_SIZE = 12;
+
+#define STREAM_OUT(ptr, size)                                                                   \
+    stream.next_in = reinterpret_cast<const unsigned char*>(ptr);                               \
+    stream.avail_in = size;                                                                     \
+                                                                                                \
+    int deflateResult;                                                                          \
+    do {                                                                                        \
+        deflateResult = deflate(&stream, Z_NO_FLUSH);                                           \
+                                                                                                \
+        if (deflateResult == Z_BUF_ERROR &&                                                     \
+            (stream.avail_out + stream.total_out + HEADER_SIZE) != COMPRESSED_GROW_LIMIT) {     \
+            size_t growTo = min(((stream.total_out + stream.avail_out + HEADER_SIZE) * 3) / 2,  \
+                                COMPRESSED_GROW_LIMIT);                                         \
+            unique_ptr<uint8[]> newBuffer = make_unique<uint8[]>(growTo);                       \
+                                                                                                \
+            memcpy(newBuffer.get(), serializationBuffer.get(), HEADER_SIZE + stream.total_out); \
+                                                                                                \
+            stream.next_out = newBuffer.get() + stream.total_out + HEADER_SIZE;                 \
+            stream.avail_out = growTo - stream.total_out - HEADER_SIZE;                         \
+                                                                                                \
+            serializationBuffer.swap(newBuffer);                                                \
+            serializationBufferPtr = serializationBuffer.get();                                 \
+                                                                                                \
+            deflateResult = Z_OK;                                                               \
+        }                                                                                       \
+    } while (stream.avail_in != 0 && deflateResult == Z_OK);                                    \
+                                                                                                \
+    if (deflateResult != Z_OK) {                                                                \
+        deflateEnd(&stream);                                                                    \
+                                                                                                \
+        return false;                                                                           \
     }
 
     version = VERSION;
@@ -103,7 +128,10 @@ bool SessionImage::Serialize() {
     const size_t uncompressedSize =
         24 + deviceId.size() + romSize + ramSize + savestateSize + metadataSize;
 
-    serializationBuffer = make_unique<uint8[]>(uncompressedSize + 12);
+    // Assume a compression ratio of at least 2 and make sure that the buffer will actually grow
+    const size_t initialBufferSize = min(static_cast<size_t>(1024), uncompressedSize / 2);
+
+    serializationBuffer = make_unique<uint8[]>(initialBufferSize + HEADER_SIZE);
     uint8* serializationBufferPtr = serializationBuffer.get();
 
     put32(serializationBufferPtr, MAGIC);
@@ -117,8 +145,8 @@ bool SessionImage::Serialize() {
         return false;
     }
 
-    stream.next_out = serializationBufferPtr + 12;
-    stream.avail_out = uncompressedSize;
+    stream.next_out = serializationBufferPtr + HEADER_SIZE;
+    stream.avail_out = initialBufferSize;
 
     uint8 header[24];
 
@@ -156,7 +184,7 @@ bool SessionImage::Serialize() {
         return false;
     }
 
-    serizalizedImageSize = stream.total_out + 12;
+    serizalizedImageSize = stream.total_out + HEADER_SIZE;
 
     deflateEnd(&stream);
     return true;
