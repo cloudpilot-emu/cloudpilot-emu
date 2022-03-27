@@ -222,7 +222,7 @@ export interface SessionImage {
 
     GetVersion(): number;
 
-    Serialize(): void;
+    Serialize(): boolean;
     GetSerializedImage(): VoidPtr;
     GetSerializedImageSize(): number;
 

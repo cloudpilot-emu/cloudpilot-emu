@@ -101,17 +101,20 @@ namespace {
     }
 
     void SaveImage(string file) {
+        EmAssert(gSession);
+
+        SessionImage image;
+        if (!gSession->SaveImage(image)) {
+            cout << "failed to serialize session image" << endl << flush;
+            return;
+        }
+
         fstream stream(file, ios_base::out);
 
         if (stream.fail()) {
             cout << "failed to open " << file << endl << flush;
             return;
         }
-
-        EmAssert(gSession);
-
-        SessionImage image;
-        gSession->SaveImage(image);
 
         stream.write((const char*)image.GetSerializedImage(), image.GetSerializedImageSize());
 

@@ -35,7 +35,7 @@ class SessionImage {
 
     uint32 GetVersion() const;
 
-    void Serialize();
+    bool Serialize();
     void* GetSerializedImage() const;
     size_t GetSerializedImageSize() const;
 

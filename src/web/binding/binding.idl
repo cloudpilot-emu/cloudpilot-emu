@@ -191,7 +191,7 @@ interface SessionImage {
 
     long GetVersion();
 
-    void Serialize();
+    boolean Serialize();
     VoidPtr GetSerializedImage();
     long GetSerializedImageSize();
 

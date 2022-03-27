@@ -66,38 +66,56 @@ export class FileService {
                 framebufferSize: session.totalMemory - session.ram * 1024 * 1024,
             };
 
-            this.saveFile(
-                filenameForSession(session),
-                (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage)
-            );
+            const image = (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);
+            if (image) {
+                this.saveFile(filenameForSession(session), image);
+            } else {
+                await loader.dismiss();
+                this.alertService.errorMessage('Failed to save session.');
+            }
         } finally {
             loader.dismiss();
         }
     }
 
     async emergencySaveSession(session: Session, cloudpilot: Cloudpilot): Promise<void> {
-        const rom = cloudpilot.getRomImage();
-        const memory = cloudpilot.getMemory();
-        const savestate = cloudpilot.saveState() ? cloudpilot.getSavestate() : undefined;
-        const framebufferSize = cloudpilot.framebufferSizeForDevice(session.device);
+        const loader = await this.loadingController.create();
 
-        if (framebufferSize < 0) {
-            throw new Error(`invalid device ID ${session.device}`);
+        // This code path is usually triggered from a dialog, so make sure that the loader is on top.
+        // This is a hack, but sufficient for this edge case.
+        loader.style.zIndex = '10000000';
+
+        await loader.present();
+
+        try {
+            const rom = cloudpilot.getRomImage().slice();
+            const memory = cloudpilot.getMemory().slice();
+            const savestate = cloudpilot.saveState() ? cloudpilot.getSavestate().slice() : undefined;
+            const framebufferSize = cloudpilot.framebufferSizeForDevice(session.device);
+
+            if (framebufferSize < 0) {
+                throw new Error(`invalid device ID ${session.device}`);
+            }
+
+            const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
+                deviceId: session.device,
+                metadata: metadataForSession(session),
+                rom,
+                memory,
+                savestate,
+                framebufferSize,
+            };
+
+            const image = (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);
+            if (image) {
+                this.saveFile(filenameForSession(session), image);
+            }
+            // Showing an error alert may conflict with the alert that is already visible.
+            // However, the error case is only possible if allocations fail in WASM --- an
+            // extreme edge case.
+        } finally {
+            loader.dismiss();
         }
-
-        const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
-            deviceId: session.device,
-            metadata: metadataForSession(session),
-            rom,
-            memory,
-            savestate,
-            framebufferSize,
-        };
-
-        this.saveFile(
-            filenameForSession(session),
-            (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage)
-        );
     }
 
     saveFile(name: string, content: Uint8Array): void {

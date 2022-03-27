@@ -87,49 +87,81 @@ SessionImage& SessionImage::SetFramebufferSize(size_t framebufferSize) {
 
 uint32 SessionImage::GetVersion() const { return version; }
 
-void SessionImage::Serialize() {
+bool SessionImage::Serialize() {
+#define STREAM_OUT(ptr, size)                                     \
+    stream.next_in = reinterpret_cast<const unsigned char*>(ptr); \
+    stream.avail_in = size;                                       \
+                                                                  \
+    if (deflate(&stream, Z_NO_FLUSH) != Z_OK) {                   \
+        deflateEnd(&stream);                                      \
+                                                                  \
+        return false;                                             \
+    }
+
     version = VERSION;
 
     const size_t uncompressedSize =
         24 + deviceId.size() + romSize + ramSize + savestateSize + metadataSize;
 
-    auto uncompressed = make_unique<uint8[]>(uncompressedSize);
-    uint8* uncompressedPtr = uncompressed.get();
-
-    put32(uncompressedPtr, deviceId.size());
-    put32(uncompressedPtr + 4, metadataSize);
-    put32(uncompressedPtr + 8, romSize);
-    put32(uncompressedPtr + 12, ramSize);
-    put32(uncompressedPtr + 16, framebufferSize);
-    put32(uncompressedPtr + 20, savestateSize);
-    uncompressedPtr += 24;
-
-    if (deviceId.size() > 0) memcpy(uncompressedPtr, deviceId.c_str(), deviceId.size());
-    uncompressedPtr += deviceId.size();
-
-    if (metadataSize > 0) memcpy(uncompressedPtr, metadata, metadataSize);
-    uncompressedPtr += metadataSize;
-
-    if (romSize > 0) memcpy(uncompressedPtr, romImage, romSize);
-    uncompressedPtr += romSize;
-
-    if (ramSize > 0) memcpy(uncompressedPtr, ramImage, ramSize);
-    uncompressedPtr += ramSize;
-
-    if (savestateSize > 0) memcpy(uncompressedPtr, savestate, savestateSize);
-
-    mz_ulong compressedSize = uncompressedSize;
-    serializationBuffer = make_unique<uint8[]>(compressedSize + 12);
+    serializationBuffer = make_unique<uint8[]>(uncompressedSize + 12);
     uint8* serializationBufferPtr = serializationBuffer.get();
 
     put32(serializationBufferPtr, MAGIC);
     put32(serializationBufferPtr + 4, VERSION | VERSION_MASK);
     put32(serializationBufferPtr + 8, uncompressedSize);
-    serializationBufferPtr += 12;
 
-    mz_compress(serializationBufferPtr, &compressedSize, uncompressed.get(), uncompressedSize);
+    z_stream stream;
+    memset(&stream, 0, sizeof(stream));
 
-    serizalizedImageSize = compressedSize + 12;
+    if (deflateInit(&stream, MZ_DEFAULT_COMPRESSION) != Z_OK) {
+        return false;
+    }
+
+    stream.next_out = serializationBufferPtr + 12;
+    stream.avail_out = uncompressedSize;
+
+    uint8 header[24];
+
+    put32(header, deviceId.size());
+    put32(header + 4, metadataSize);
+    put32(header + 8, romSize);
+    put32(header + 12, ramSize);
+    put32(header + 16, framebufferSize);
+    put32(header + 20, savestateSize);
+
+    STREAM_OUT(header, 24);
+
+    if (deviceId.size() > 0) {
+        STREAM_OUT(deviceId.c_str(), deviceId.size());
+    }
+
+    if (metadataSize > 0) {
+        STREAM_OUT(metadata, metadataSize);
+    }
+
+    if (romSize > 0) {
+        STREAM_OUT(romImage, romSize);
+    }
+
+    if (ramSize > 0) {
+        STREAM_OUT(ramImage, ramSize);
+    }
+
+    if (savestateSize > 0) {
+        STREAM_OUT(savestate, savestateSize);
+    }
+
+    if (deflate(&stream, Z_FINISH) != Z_STREAM_END) {
+        deflateEnd(&stream);
+        return false;
+    }
+
+    serizalizedImageSize = stream.total_out + 12;
+
+    deflateEnd(&stream);
+    return true;
+
+#undef STREAM_OUT
 }
 
 void* SessionImage::GetSerializedImage() const { return serializationBuffer.get(); }

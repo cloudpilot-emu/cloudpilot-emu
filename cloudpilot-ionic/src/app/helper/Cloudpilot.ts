@@ -514,7 +514,7 @@ export class Cloudpilot {
     }
 
     @guard()
-    serializeSessionImage<T>(sessionImage: Omit<SessionImage<T>, 'version'>): Uint8Array {
+    serializeSessionImage<T>(sessionImage: Omit<SessionImage<T>, 'version'>): Uint8Array | undefined {
         const nativeImage = new this.module.SessionImage();
         const nullptr = this.cloudpilot.Nullptr();
 
@@ -538,9 +538,9 @@ export class Cloudpilot {
         nativeImage.SetSavestate(savestate, sessionImage.savestate?.length || 0);
         nativeImage.SetMetadata(metadata, metadataLenght);
 
-        nativeImage.Serialize();
-
-        const result = this.copyOut(nativeImage.GetSerializedImage(), nativeImage.GetSerializedImageSize())!;
+        const result = nativeImage.Serialize()
+            ? this.copyOut(nativeImage.GetSerializedImage(), nativeImage.GetSerializedImageSize())
+            : undefined;
 
         this.module.destroy(nativeImage);
         [romImage, memoryImage, savestate, metadata].forEach((buffer) => this.cloudpilot.Free(buffer));

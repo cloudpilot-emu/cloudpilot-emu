@@ -120,7 +120,7 @@ void EmSession::Deinitialize() {
     isInitialized = false;
 }
 
-void EmSession::SaveImage(SessionImage& image) {
+bool EmSession::SaveImage(SessionImage& image) {
     EmAssert(romImage);
 
     image.SetRomImage(romImage.get(), romSize)
@@ -135,7 +135,7 @@ void EmSession::SaveImage(SessionImage& image) {
         logging::printf("failed to save savestate");
     }
 
-    image.Serialize();
+    return image.Serialize();
 }
 
 bool EmSession::LoadImage(SessionImage& image) {
