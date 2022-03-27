@@ -14,7 +14,7 @@ export function filenameFragment(session: Session): string {
 }
 
 export function filenameForSession(session: Session): string {
-    return `${filenameFragment(session)}.bin`;
+    return `${filenameFragment(session)}.img`;
 }
 
 export function filenameForBackup(session: Session, includeRomDatabases: boolean): string {
