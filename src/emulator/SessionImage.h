@@ -6,6 +6,8 @@
 
 #include "EmCommon.h"
 
+struct mz_stream_s;
+
 class SessionImage {
    public:
     SessionImage() = default;
@@ -43,6 +45,8 @@ class SessionImage {
 
    private:
     bool DeserializeLegacyImage(void* buffer, size_t size);
+
+    bool AppendToSerializationStream(mz_stream_s& stream, void* buffer, size_t size);
 
     uint32 version;
 

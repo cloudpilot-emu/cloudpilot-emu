@@ -1277,65 +1277,63 @@ mz_uint tdefl_create_comp_flags_from_zip_params(int level, int window_bits, int 
 }
     #endif
 
-#endif  // MINIZ_HEADER_INCLUDED
-
 // ------------------- End of Header: Implementation follows. (If you only want
 // the header, define MINIZ_HEADER_FILE_ONLY.)
 
-#ifndef MINIZ_HEADER_FILE_ONLY
+    #ifndef MINIZ_HEADER_FILE_ONLY
 
 typedef unsigned char mz_validate_uint16[sizeof(mz_uint16) == 2 ? 1 : -1];
 typedef unsigned char mz_validate_uint32[sizeof(mz_uint32) == 4 ? 1 : -1];
 typedef unsigned char mz_validate_uint64[sizeof(mz_uint64) == 8 ? 1 : -1];
 
-    #include <assert.h>
-    #include <string.h>
+        #include <assert.h>
+        #include <string.h>
 
-    #define MZ_ASSERT(x) assert(x)
+        #define MZ_ASSERT(x) assert(x)
 
-    #ifdef MINIZ_NO_MALLOC
-        #define MZ_MALLOC(x) NULL
-        #define MZ_FREE(x) (void)x, ((void)0)
-        #define MZ_REALLOC(p, x) NULL
-    #else
-        #define MZ_MALLOC(x) malloc(x)
-        #define MZ_FREE(x) free(x)
-        #define MZ_REALLOC(p, x) realloc(p, x)
-    #endif
+        #ifdef MINIZ_NO_MALLOC
+            #define MZ_MALLOC(x) NULL
+            #define MZ_FREE(x) (void)x, ((void)0)
+            #define MZ_REALLOC(p, x) NULL
+        #else
+            #define MZ_MALLOC(x) malloc(x)
+            #define MZ_FREE(x) free(x)
+            #define MZ_REALLOC(p, x) realloc(p, x)
+        #endif
 
-    #define MZ_MAX(a, b) (((a) > (b)) ? (a) : (b))
-    #define MZ_MIN(a, b) (((a) < (b)) ? (a) : (b))
-    #define MZ_CLEAR_OBJ(obj) memset(&(obj), 0, sizeof(obj))
+        #define MZ_MAX(a, b) (((a) > (b)) ? (a) : (b))
+        #define MZ_MIN(a, b) (((a) < (b)) ? (a) : (b))
+        #define MZ_CLEAR_OBJ(obj) memset(&(obj), 0, sizeof(obj))
 
-    #if MINIZ_USE_UNALIGNED_LOADS_AND_STORES && MINIZ_LITTLE_ENDIAN
-        #define MZ_READ_LE16(p) *((const mz_uint16 *)(p))
-        #define MZ_READ_LE32(p) *((const mz_uint32 *)(p))
-    #else
-        #define MZ_READ_LE16(p)                        \
-            ((mz_uint32)(((const mz_uint8 *)(p))[0]) | \
-             ((mz_uint32)(((const mz_uint8 *)(p))[1]) << 8U))
-        #define MZ_READ_LE32(p)                                 \
-            ((mz_uint32)(((const mz_uint8 *)(p))[0]) |          \
-             ((mz_uint32)(((const mz_uint8 *)(p))[1]) << 8U) |  \
-             ((mz_uint32)(((const mz_uint8 *)(p))[2]) << 16U) | \
-             ((mz_uint32)(((const mz_uint8 *)(p))[3]) << 24U))
-    #endif
+        #if MINIZ_USE_UNALIGNED_LOADS_AND_STORES && MINIZ_LITTLE_ENDIAN
+            #define MZ_READ_LE16(p) *((const mz_uint16 *)(p))
+            #define MZ_READ_LE32(p) *((const mz_uint32 *)(p))
+        #else
+            #define MZ_READ_LE16(p)                        \
+                ((mz_uint32)(((const mz_uint8 *)(p))[0]) | \
+                 ((mz_uint32)(((const mz_uint8 *)(p))[1]) << 8U))
+            #define MZ_READ_LE32(p)                                 \
+                ((mz_uint32)(((const mz_uint8 *)(p))[0]) |          \
+                 ((mz_uint32)(((const mz_uint8 *)(p))[1]) << 8U) |  \
+                 ((mz_uint32)(((const mz_uint8 *)(p))[2]) << 16U) | \
+                 ((mz_uint32)(((const mz_uint8 *)(p))[3]) << 24U))
+        #endif
 
-    #define MZ_READ_LE64(p)             \
-        (((mz_uint64)MZ_READ_LE32(p)) | \
-         (((mz_uint64)MZ_READ_LE32((const mz_uint8 *)(p) + sizeof(mz_uint32))) << 32U))
+        #define MZ_READ_LE64(p)             \
+            (((mz_uint64)MZ_READ_LE32(p)) | \
+             (((mz_uint64)MZ_READ_LE32((const mz_uint8 *)(p) + sizeof(mz_uint32))) << 32U))
 
-    #ifdef _MSC_VER
-        #define MZ_FORCEINLINE __forceinline
-    #elif defined(__GNUC__)
-        #define MZ_FORCEINLINE inline __attribute__((__always_inline__))
-    #else
-        #define MZ_FORCEINLINE inline
-    #endif
+        #ifdef _MSC_VER
+            #define MZ_FORCEINLINE __forceinline
+        #elif defined(__GNUC__)
+            #define MZ_FORCEINLINE inline __attribute__((__always_inline__))
+        #else
+            #define MZ_FORCEINLINE inline
+        #endif
 
-    #ifdef __cplusplus
+        #ifdef __cplusplus
 extern "C" {
-    #endif
+        #endif
 
 // Various ZIP archive enums. To completely avoid cross platform compiler
 // alignment and platform endian issues, miniz.c doesn't use structs for any of
@@ -1425,102 +1423,102 @@ enum {
     MZ_ZIP_GENERAL_PURPOSE_BIT_FLAG_UTF8 = 1 << 11
 };
 
-    #ifdef MINIZ_NO_STDIO
-        #define MZ_FILE void *
-    #else
-        #include <stdio.h>
-        #include <sys/stat.h>
-
-        #if defined(_MSC_VER) || defined(__MINGW32__)
-
-            #include <windows.h>
-
-            #ifndef MINIZ_NO_TIME
-                #include <sys/utime.h>
-            #endif
-            #define MZ_FILE FILE
-            #define MZ_FOPEN mz_fopen
-            #define MZ_FCLOSE fclose
-            #define MZ_FREAD fread
-            #define MZ_FWRITE fwrite
-            #define MZ_FTELL64 _ftelli64
-            #define MZ_FSEEK64 _fseeki64
-            #define MZ_FILE_STAT_STRUCT _stat
-            #define MZ_FILE_STAT _stat
-            #define MZ_FFLUSH fflush
-            #define MZ_FREOPEN mz_freopen
-            #define MZ_DELETE_FILE remove
-        #elif defined(__MINGW32__)
-            #ifndef MINIZ_NO_TIME
-                #include <sys/utime.h>
-            #endif
-            #define MZ_FILE FILE
-            #define MZ_FOPEN(f, m) mz_fopen
-            #define MZ_FCLOSE fclose
-            #define MZ_FREAD fread
-            #define MZ_FWRITE fwrite
-            #define MZ_FTELL64 ftell
-            #define MZ_FSEEK64 fseek
-            #define MZ_FILE_STAT_STRUCT _stat
-            #define MZ_FILE_STAT _stat
-            #define MZ_FFLUSH fflush
-            #define MZ_FREOPEN(f, m, s) mz_freopen
-            #define MZ_DELETE_FILE remove
-        #elif defined(__TINYC__)
-            #ifndef MINIZ_NO_TIME
-                #include <sys/utime.h>
-            #endif
-            #define MZ_FILE FILE
-            #define MZ_FOPEN(f, m) fopen(f, m)
-            #define MZ_FCLOSE fclose
-            #define MZ_FREAD fread
-            #define MZ_FWRITE fwrite
-            #define MZ_FTELL64 ftell
-            #define MZ_FSEEK64 fseek
-            #define MZ_FILE_STAT_STRUCT stat
-            #define MZ_FILE_STAT stat
-            #define MZ_FFLUSH fflush
-            #define MZ_FREOPEN(f, m, s) freopen(f, m, s)
-            #define MZ_DELETE_FILE remove
-        #elif defined(__GNUC__) && _LARGEFILE64_SOURCE
-            #ifndef MINIZ_NO_TIME
-                #include <utime.h>
-            #endif
-            #define MZ_FILE FILE
-            #define MZ_FOPEN(f, m) fopen64(f, m)
-            #define MZ_FCLOSE fclose
-            #define MZ_FREAD fread
-            #define MZ_FWRITE fwrite
-            #define MZ_FTELL64 ftello64
-            #define MZ_FSEEK64 fseeko64
-            #define MZ_FILE_STAT_STRUCT stat64
-            #define MZ_FILE_STAT stat64
-            #define MZ_FFLUSH fflush
-            #define MZ_FREOPEN(p, m, s) freopen64(p, m, s)
-            #define MZ_DELETE_FILE remove
+        #ifdef MINIZ_NO_STDIO
+            #define MZ_FILE void *
         #else
-            #ifndef MINIZ_NO_TIME
-                #include <utime.h>
-            #endif
-            #define MZ_FILE FILE
-            #define MZ_FOPEN(f, m) fopen(f, m)
-            #define MZ_FCLOSE fclose
-            #define MZ_FREAD fread
-            #define MZ_FWRITE fwrite
-            #if _FILE_OFFSET_BITS == 64 || _POSIX_C_SOURCE >= 200112L
-                #define MZ_FTELL64 ftello
-                #define MZ_FSEEK64 fseeko
-            #else
+            #include <stdio.h>
+            #include <sys/stat.h>
+
+            #if defined(_MSC_VER) || defined(__MINGW32__)
+
+                #include <windows.h>
+
+                #ifndef MINIZ_NO_TIME
+                    #include <sys/utime.h>
+                #endif
+                #define MZ_FILE FILE
+                #define MZ_FOPEN mz_fopen
+                #define MZ_FCLOSE fclose
+                #define MZ_FREAD fread
+                #define MZ_FWRITE fwrite
+                #define MZ_FTELL64 _ftelli64
+                #define MZ_FSEEK64 _fseeki64
+                #define MZ_FILE_STAT_STRUCT _stat
+                #define MZ_FILE_STAT _stat
+                #define MZ_FFLUSH fflush
+                #define MZ_FREOPEN mz_freopen
+                #define MZ_DELETE_FILE remove
+            #elif defined(__MINGW32__)
+                #ifndef MINIZ_NO_TIME
+                    #include <sys/utime.h>
+                #endif
+                #define MZ_FILE FILE
+                #define MZ_FOPEN(f, m) mz_fopen
+                #define MZ_FCLOSE fclose
+                #define MZ_FREAD fread
+                #define MZ_FWRITE fwrite
                 #define MZ_FTELL64 ftell
                 #define MZ_FSEEK64 fseek
-            #endif
-            #define MZ_FILE_STAT_STRUCT stat
-            #define MZ_FILE_STAT stat
-            #define MZ_FFLUSH fflush
-            #define MZ_FREOPEN(f, m, s) freopen(f, m, s)
-            #define MZ_DELETE_FILE remove
-        #endif  // #ifdef _MSC_VER
-    #endif
+                #define MZ_FILE_STAT_STRUCT _stat
+                #define MZ_FILE_STAT _stat
+                #define MZ_FFLUSH fflush
+                #define MZ_FREOPEN(f, m, s) mz_freopen
+                #define MZ_DELETE_FILE remove
+            #elif defined(__TINYC__)
+                #ifndef MINIZ_NO_TIME
+                    #include <sys/utime.h>
+                #endif
+                #define MZ_FILE FILE
+                #define MZ_FOPEN(f, m) fopen(f, m)
+                #define MZ_FCLOSE fclose
+                #define MZ_FREAD fread
+                #define MZ_FWRITE fwrite
+                #define MZ_FTELL64 ftell
+                #define MZ_FSEEK64 fseek
+                #define MZ_FILE_STAT_STRUCT stat
+                #define MZ_FILE_STAT stat
+                #define MZ_FFLUSH fflush
+                #define MZ_FREOPEN(f, m, s) freopen(f, m, s)
+                #define MZ_DELETE_FILE remove
+            #elif defined(__GNUC__) && _LARGEFILE64_SOURCE
+                #ifndef MINIZ_NO_TIME
+                    #include <utime.h>
+                #endif
+                #define MZ_FILE FILE
+                #define MZ_FOPEN(f, m) fopen64(f, m)
+                #define MZ_FCLOSE fclose
+                #define MZ_FREAD fread
+                #define MZ_FWRITE fwrite
+                #define MZ_FTELL64 ftello64
+                #define MZ_FSEEK64 fseeko64
+                #define MZ_FILE_STAT_STRUCT stat64
+                #define MZ_FILE_STAT stat64
+                #define MZ_FFLUSH fflush
+                #define MZ_FREOPEN(p, m, s) freopen64(p, m, s)
+                #define MZ_DELETE_FILE remove
+            #else
+                #ifndef MINIZ_NO_TIME
+                    #include <utime.h>
+                #endif
+                #define MZ_FILE FILE
+                #define MZ_FOPEN(f, m) fopen(f, m)
+                #define MZ_FCLOSE fclose
+                #define MZ_FREAD fread
+                #define MZ_FWRITE fwrite
+                #if _FILE_OFFSET_BITS == 64 || _POSIX_C_SOURCE >= 200112L
+                    #define MZ_FTELL64 ftello
+                    #define MZ_FSEEK64 fseeko
+                #else
+                    #define MZ_FTELL64 ftell
+                    #define MZ_FSEEK64 fseek
+                #endif
+                #define MZ_FILE_STAT_STRUCT stat
+                #define MZ_FILE_STAT stat
+                #define MZ_FFLUSH fflush
+                #define MZ_FREOPEN(f, m, s) freopen(f, m, s)
+                #define MZ_DELETE_FILE remove
+            #endif  // #ifdef _MSC_VER
+        #endif
 typedef struct {
     mz_zip_archive *m_pZip;
     mz_uint64 m_cur_archive_file_ofs;
@@ -1560,15 +1558,15 @@ struct mz_zip_internal_state_tag {
     size_t m_mem_capacity;
 };
 
-    #define MZ_TOLOWER(c) ((((c) >= 'A') && ((c) <= 'Z')) ? ((c) - 'A' + 'a') : (c))
+        #define MZ_TOLOWER(c) ((((c) >= 'A') && ((c) <= 'Z')) ? ((c) - 'A' + 'a') : (c))
 
-    #define MZ_ZIP_ARRAY_SET_ELEMENT_SIZE(array_ptr, element_size) \
-        (array_ptr)->m_element_size = element_size
-    #define MZ_ZIP_ARRAY_ELEMENT(array_ptr, element_type, index) \
-        ((element_type *)((array_ptr)->m_p))[index]
+        #define MZ_ZIP_ARRAY_SET_ELEMENT_SIZE(array_ptr, element_size) \
+            (array_ptr)->m_element_size = element_size
+        #define MZ_ZIP_ARRAY_ELEMENT(array_ptr, element_type, index) \
+            ((element_type *)((array_ptr)->m_p))[index]
 
-    #define MZ_WRITE_LE16(p, v) mz_write_le16((mz_uint8 *)(p), (mz_uint16)(v))
-    #define MZ_WRITE_LE32(p, v) mz_write_le32((mz_uint8 *)(p), (mz_uint32)(v))
+        #define MZ_WRITE_LE16(p, v) mz_write_le16((mz_uint8 *)(p), (mz_uint16)(v))
+        #define MZ_WRITE_LE32(p, v) mz_write_le32((mz_uint8 *)(p), (mz_uint32)(v))
 
 size_t mz_zip_heap_write_func(void *pOpaque, mz_uint64 file_ofs, const void *pBuf, size_t n);
 mz_bool mz_zip_writer_add_put_buf_callback(const void *pBuf, int len, void *pUser);
@@ -1592,11 +1590,13 @@ mz_bool mz_zip_writer_add_to_central_dir(
 void mz_write_le16(mz_uint8 *p, mz_uint16 v);
 void mz_write_le32(mz_uint8 *p, mz_uint32 v);
 
-    #ifdef __cplusplus
+        #ifdef __cplusplus
 }
-    #endif
+        #endif
 
-#endif  // MINIZ_HEADER_FILE_ONLY
+    #endif  // MINIZ_HEADER_FILE_ONLY
+
+#endif  // MINIZ_HEADER_INCLUDED
 
 /*
   This is free and unencumbered software released into the public domain.
