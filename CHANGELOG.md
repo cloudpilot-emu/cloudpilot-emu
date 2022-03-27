@@ -1,6 +1,9 @@
 # Next version
 
 -   Add "Enable audio on start" option.
+-   Save and restore speed and orientation with session images.
+-   Change image suffix to .img
+-   Add compression to images.
 
 # Version 1.6.8
 
