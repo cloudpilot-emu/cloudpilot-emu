@@ -47,7 +47,9 @@ class SessionImage {
     bool DeserializeLegacyImage(void* buffer, size_t size);
 
     bool AppendToSerializationStream(mz_stream_s& stream, void* buffer, size_t size);
+    bool GrowSerializationBuffer(mz_stream_s& stream);
 
+   private:
     uint32 version;
 
     void *romImage{nullptr}, *ramImage{nullptr}, *savestate{nullptr}, *metadata{nullptr};

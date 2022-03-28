@@ -140,7 +140,17 @@ bool SessionImage::Serialize() {
     if (savestateSize > 0 && !AppendToSerializationStream(stream, savestate, savestateSize))
         return false;
 
-    if (deflate(&stream, Z_FINISH) != Z_STREAM_END) {
+    int finishStreamResult;
+    while (true) {
+        finishStreamResult = deflate(&stream, Z_FINISH);
+
+        if (!(finishStreamResult == Z_OK || finishStreamResult == Z_BUF_ERROR) ||
+            !GrowSerializationBuffer(stream)) {
+            break;
+        }
+    }
+
+    if (finishStreamResult != Z_STREAM_END) {
         deflateEnd(&stream);
         return false;
     }
@@ -159,24 +169,7 @@ bool SessionImage::AppendToSerializationStream(z_stream& stream, void* buffer, s
     do {
         deflateResult = deflate(&stream, Z_NO_FLUSH);
 
-        if (deflateResult == Z_BUF_ERROR &&
-            (stream.avail_out + stream.total_out + UNCOMPRESSED_HEADER_SIZE) !=
-                COMPRESSED_IMAGE_GROW_LIMIT) {
-            size_t growTo =
-                min(((stream.total_out + stream.avail_out + UNCOMPRESSED_HEADER_SIZE) * 3) / 2,
-                    COMPRESSED_IMAGE_GROW_LIMIT);
-            unique_ptr<uint8[]> newBuffer = make_unique<uint8[]>(growTo);
-
-            memcpy(newBuffer.get(), serializationBuffer.get(),
-                   UNCOMPRESSED_HEADER_SIZE + stream.total_out);
-
-            stream.next_out = newBuffer.get() + stream.total_out + UNCOMPRESSED_HEADER_SIZE;
-            stream.avail_out = growTo - stream.total_out - UNCOMPRESSED_HEADER_SIZE;
-
-            serializationBuffer.swap(newBuffer);
-
-            deflateResult = Z_OK;
-        }
+        if (deflateResult == Z_BUF_ERROR && GrowSerializationBuffer(stream)) deflateResult = Z_OK;
     } while (stream.avail_in != 0 && deflateResult == Z_OK);
 
     if (deflateResult != Z_OK) {
@@ -184,6 +177,25 @@ bool SessionImage::AppendToSerializationStream(z_stream& stream, void* buffer, s
 
         return false;
     }
+
+    return true;
+}
+
+bool SessionImage::GrowSerializationBuffer(mz_stream_s& stream) {
+    if (stream.avail_out + stream.total_out + UNCOMPRESSED_HEADER_SIZE ==
+        COMPRESSED_IMAGE_GROW_LIMIT)
+        return false;
+
+    size_t growTo = min(((stream.total_out + stream.avail_out + UNCOMPRESSED_HEADER_SIZE) * 3) / 2,
+                        COMPRESSED_IMAGE_GROW_LIMIT);
+    unique_ptr<uint8[]> newBuffer = make_unique<uint8[]>(growTo);
+
+    memcpy(newBuffer.get(), serializationBuffer.get(), UNCOMPRESSED_HEADER_SIZE + stream.total_out);
+
+    stream.next_out = newBuffer.get() + stream.total_out + UNCOMPRESSED_HEADER_SIZE;
+    stream.avail_out = growTo - stream.total_out - UNCOMPRESSED_HEADER_SIZE;
+
+    serializationBuffer.swap(newBuffer);
 
     return true;
 }
