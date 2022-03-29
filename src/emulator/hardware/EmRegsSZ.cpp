@@ -3276,6 +3276,8 @@ void EmRegsSZ::UpdateRTCInterrupts(void) {
         intPendingLo &= ~hwrSZ328IntLoRTC;  // no events, so clear interrupt
     }
 
+    WRITE_REGISTER(intPendingLo, intPendingLo);
+
     // Respond to the new interrupt state.
 
     EmRegsSZ::UpdateInterrupts();
