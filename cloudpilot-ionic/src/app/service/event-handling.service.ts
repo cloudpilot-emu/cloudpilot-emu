@@ -17,7 +17,8 @@ interface InteractionScreen {
 
 interface InteractionButton {
     area: Area.buttons;
-    button: PalmButton;
+    buttonPrimary: PalmButton;
+    buttonSecondary?: PalmButton;
 }
 
 type Interaction = InteractionScreen | InteractionButton;
@@ -95,7 +96,7 @@ export class EventHandlingService {
 
         if (area === Area.buttons) {
             const button = this.canvasDisplayService.determineButton(coords);
-            this.interactionMouse = { area, button };
+            this.interactionMouse = { area, buttonPrimary: button };
 
             this.handleButtonDown(button);
         } else {
@@ -124,7 +125,7 @@ export class EventHandlingService {
 
         switch (interaction?.area) {
             case Area.buttons:
-                this.handleButtonUp(interaction.button);
+                this.handleButtonUp(interaction.buttonPrimary);
 
                 break;
 
@@ -147,7 +148,7 @@ export class EventHandlingService {
             const area = this.determineArea(coords);
             if (area === Area.buttons) {
                 const button = this.canvasDisplayService.determineButton(coords);
-                this.interactionsTouch.set(touch.identifier, { area, button });
+                this.interactionsTouch.set(touch.identifier, { area, buttonPrimary: button });
 
                 this.handleButtonDown(button);
             } else {
@@ -164,14 +165,48 @@ export class EventHandlingService {
             const touch = e.changedTouches.item(i);
             if (!touch) continue;
 
-            const area = this.interactionsTouch.get(touch.identifier)?.area;
-            if (area === undefined) return;
+            const interaction = this.interactionsTouch.get(touch.identifier);
+            if (!interaction) continue;
 
-            if (area !== Area.buttons) {
-                const coords = this.canvasDisplayService.eventToPalmCoordinates(touch, true);
-                if (!coords) continue;
+            const area = interaction.area;
+            switch (area) {
+                case Area.buttons: {
+                    const coords = this.canvasDisplayService.eventToPalmCoordinates(touch);
 
-                this.emulationService.handlePointerMove(...coords, area === Area.silkscreen);
+                    if (!coords || this.determineArea(coords) !== Area.buttons) {
+                        this.handleButtonUp(interaction.buttonSecondary);
+                        interaction.buttonSecondary = undefined;
+
+                        break;
+                    }
+
+                    const button = this.canvasDisplayService.determineButton(coords);
+
+                    if (button === interaction.buttonPrimary) {
+                        this.handleButtonUp(interaction.buttonSecondary);
+                        interaction.buttonSecondary = undefined;
+                    } else if (button !== interaction.buttonSecondary) {
+                        this.handleButtonUp(interaction.buttonSecondary);
+                        interaction.buttonSecondary = button;
+
+                        this.handleButtonDown(button);
+                    }
+
+                    break;
+                }
+
+                case Area.screen:
+                case Area.silkscreen: {
+                    const coords = this.canvasDisplayService.eventToPalmCoordinates(touch, true);
+                    if (!coords) continue;
+
+                    this.emulationService.handlePointerMove(...coords, area === Area.silkscreen);
+
+                    break;
+                }
+
+                default:
+                    continue;
             }
         }
 
@@ -188,7 +223,8 @@ export class EventHandlingService {
 
             switch (interaction?.area) {
                 case Area.buttons:
-                    this.handleButtonUp(interaction.button);
+                    this.handleButtonUp(interaction.buttonPrimary);
+                    this.handleButtonUp(interaction.buttonSecondary);
 
                     break;
 
@@ -270,8 +306,8 @@ export class EventHandlingService {
         this.canvasDisplayService.drawButtons(Array.from(this.activeButtons.values()));
     }
 
-    private handleButtonUp(button: PalmButton): void {
-        if (!this.activeButtons.has(button)) return;
+    private handleButtonUp(button: PalmButton | undefined): void {
+        if (button === undefined || !this.activeButtons.has(button)) return;
 
         this.activeButtons.delete(button);
         this.emulationService.handleButtonUp(button);

@@ -1,5 +1,10 @@
 # Next version
 
+-   Enable pressing multiple hard buttons at once on touch devices
+    by touching the first button and then moving over the other button.
+
+# Version 1.6.9
+
 -   Add "Enable audio on start" option.
 -   Save and restore speed and orientation with session images.
 -   Compress session images.
