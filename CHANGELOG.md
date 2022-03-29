@@ -1,7 +1,8 @@
-# Next version
+# Version 1.6.10
 
--   Enable pressing multiple hard buttons at once on touch devices
+-   Support pressing multiple buttons with one finger on touch devices
     by touching the first button and then moving over the other button.
+-   Fix RTC interrupts on SZ devices (PEG-T675C and PEG-NR70).
 
 # Version 1.6.9
 
