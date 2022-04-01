@@ -44,7 +44,7 @@ jobs:
         working-directory: cloudpilot-emu.github.io
         run: |
           test -x app-preview && rm -fr app-preview
-          cp -r ../web/build-spa ./app-preview
+          cp -r ../web/build-pwa ./app-preview
           git add .
           git config --global user.email "golem@nowhere.org"
           git config --global user.name "The Golem"

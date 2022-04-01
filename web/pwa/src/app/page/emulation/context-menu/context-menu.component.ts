@@ -1,18 +1,18 @@
 import { ActionSheetController, ModalController, PopoverController } from '@ionic/angular';
 import { Component, Input, OnInit } from '@angular/core';
-import { quirkNoPoweroff, supportsDBExport } from 'spa/src/app/helper/deviceProperties';
+import { quirkNoPoweroff, supportsDBExport } from '../../../helper/deviceProperties';
 
 import { AudioService } from './../../../service/audio.service';
 import { BackupService } from './../../../service/backup.service';
 import { ButtonService } from '../../../service/button.service';
 import { CanvasDisplayService } from './../../../service/canvas-display.service';
-import { DeviceOrientation } from 'spa/src/app/model/DeviceOrientation';
+import { DeviceOrientation } from '../../../model/DeviceOrientation';
 import { EmulationService } from './../../../service/emulation.service';
-import { EmulationStateService } from 'spa/src/app/service/emulation-state.service';
+import { EmulationStateService } from '../../../service/emulation-state.service';
 import { KvsService } from './../../../service/kvs.service';
 import { PalmButton } from '../../../../../../../src';
-import { PerformanceWatchdogService } from 'spa/src/app/service/performance-watchdog.service';
-import { SessionService } from 'spa/src/app/service/session.service';
+import { PerformanceWatchdogService } from '../../../service/performance-watchdog.service';
+import { SessionService } from '../../../service/session.service';
 import { SessionSettingsComponent } from '../../../component/session-settings/session-settings.component';
 
 @Component({

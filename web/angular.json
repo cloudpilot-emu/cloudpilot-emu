@@ -2,11 +2,11 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "defaultProject": "app",
-  "newProjectRoot": "spa/projects",
+  "newProjectRoot": "pwa/projects",
   "projects": {
     "app": {
-      "root": "spa",
-      "sourceRoot": "spa/src",
+      "root": "pwa",
+      "sourceRoot": "pwa/src",
       "projectType": "application",
       "prefix": "app",
       "schematics": {},
@@ -14,20 +14,20 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
-            "outputPath": "build-spa",
-            "index": "spa/src/index.html",
-            "main": "spa/src/main.ts",
-            "polyfills": "spa/src/polyfills.ts",
-            "tsConfig": "spa/tsconfig.app.json",
+            "outputPath": "build-pwa",
+            "index": "pwa/src/index.html",
+            "main": "pwa/src/main.ts",
+            "polyfills": "pwa/src/polyfills.ts",
+            "tsConfig": "pwa/tsconfig.app.json",
             "assets": [
               {
                 "glob": "**/*",
-                "input": "spa/src/assets",
+                "input": "pwa/src/assets",
                 "output": "assets"
               },
               {
                 "glob": "**/*",
-                "input": "spa/src/assets-pwa",
+                "input": "pwa/src/assets-pwa",
                 "output": "assets-pwa"
               },
               {
@@ -45,15 +45,15 @@
                 "input": "..",
                 "output": "assets/doc"
               },
-              "spa/src/manifest.webmanifest"
+              "pwa/src/manifest.webmanifest"
             ],
             "styles": [
               {
-                "input": "spa/src/theme/variables.scss",
+                "input": "pwa/src/theme/variables.scss",
                 "inject": true
               },
               {
-                "input": "spa/src/global.scss",
+                "input": "pwa/src/global.scss",
                 "inject": true
               }
             ],
@@ -70,11 +70,11 @@
             "production": {
               "fileReplacements": [
                 {
-                  "replace": "spa/src/environments/environment.ts",
-                  "with": "spa/src/environments/environment.prod.ts"
+                  "replace": "pwa/src/environments/environment.ts",
+                  "with": "pwa/src/environments/environment.prod.ts"
                 }, {
-                  "replace": "spa/src/revision.ts",
-                  "with": "spa/src/revision.gen.ts"
+                  "replace": "pwa/src/revision.ts",
+                  "with": "pwa/src/revision.gen.ts"
                 }
               ],
               "optimization": true,
@@ -92,16 +92,16 @@
                 }
               ],
               "serviceWorker": true,
-              "ngswConfigPath": "spa/ngsw-config.json"
+              "ngswConfigPath": "pwa/ngsw-config.json"
             },
             "preview": {
               "fileReplacements": [
                 {
-                  "replace": "spa/src/environments/environment.ts",
-                  "with": "spa/src/environments/environment.preview.ts"
+                  "replace": "pwa/src/environments/environment.ts",
+                  "with": "pwa/src/environments/environment.preview.ts"
                 }, {
-                  "replace": "spa/src/revision.ts",
-                  "with": "spa/src/revision.gen.ts"
+                  "replace": "pwa/src/revision.ts",
+                  "with": "pwa/src/revision.gen.ts"
                 }
               ]
             },
@@ -133,29 +133,29 @@
         "test": {
           "builder": "@angular-devkit/build-angular:karma",
           "options": {
-            "main": "spa/src/test.ts",
-            "polyfills": "spa/src/polyfills.ts",
-            "tsConfig": "spa/tsconfig.spec.json",
-            "karmaConfig": "spa/karma.conf.js",
+            "main": "pwa/src/test.ts",
+            "polyfills": "pwa/src/polyfills.ts",
+            "tsConfig": "pwa/tsconfig.spec.json",
+            "karmaConfig": "pwa/karma.conf.js",
             "styles": [],
             "scripts": [],
             "assets": [
               {
                 "glob": "favicon.ico",
-                "input": "spa/src/",
+                "input": "pwa/src/",
                 "output": "/"
               },
               {
                 "glob": "**/*",
-                "input": "spa/src/assets",
+                "input": "pwa/src/assets",
                 "output": "/assets"
               },
               {
                 "glob": "**/*",
-                "input": "spa/src/assets-pwa",
+                "input": "pwa/src/assets-pwa",
                 "output": "/assets-pwa"
               },
-              "spa/src/manifest.webmanifest"
+              "pwa/src/manifest.webmanifest"
             ]
           },
           "configurations": {

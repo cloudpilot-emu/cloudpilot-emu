@@ -1,4 +1,4 @@
 node_modules
 .angular
 yarn-error.log
-build-spa
+build-pwa

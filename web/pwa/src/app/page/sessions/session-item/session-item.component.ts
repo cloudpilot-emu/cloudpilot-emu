@@ -2,9 +2,9 @@ import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angu
 import { IonItemSliding, PopoverController } from '@ionic/angular';
 
 import { ContextMenuComponent } from './../context-menu/context-menu.component';
-import { Session } from 'spa/src/app/model/Session';
-import { decodeVersion } from 'spa/src/app/model/OSVersion';
-import { deviceName } from 'spa/src/app/helper/deviceProperties';
+import { Session } from '../../../model/Session';
+import { decodeVersion } from '../../../model/OSVersion';
+import { deviceName } from '../../../helper/deviceProperties';
 
 @Component({
     selector: 'app-session-item',
