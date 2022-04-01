@@ -2,7 +2,7 @@ import { E_LOCK_LOST, StorageService } from './storage.service';
 import { Injectable, NgZone } from '@angular/core';
 import { OBJECT_STORE_MEMORY, OBJECT_STORE_STATE } from './storage/constants';
 
-import { Cloudpilot } from './../helper/Cloudpilot';
+import { Cloudpilot } from '@common/Cloudpilot';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';

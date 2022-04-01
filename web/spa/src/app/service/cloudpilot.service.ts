@@ -1,4 +1,4 @@
-import { Cloudpilot } from '../helper/Cloudpilot';
+import { Cloudpilot } from '@common/Cloudpilot';
 import { Injectable } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })

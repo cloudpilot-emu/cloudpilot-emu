@@ -19,6 +19,9 @@
       "es2018",
       "dom"
     ],
+    "paths": {
+      "@common/*": ["common/*"]
+    }
   },
   "angularCompilerOptions": {
     "fullTemplateTypeCheck": true,

@@ -1,5 +1,5 @@
 import { AlertController, LoadingController } from '@ionic/angular';
-import { DbInstallResult, ZipfileWalkerState } from '../helper/Cloudpilot';
+import { DbInstallResult, ZipfileWalkerState } from '@common/Cloudpilot';
 
 import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';

@@ -1,5 +1,5 @@
 import { ActionSheetController, LoadingController, ModalController } from '@ionic/angular';
-import { Cloudpilot, SessionImage } from '../helper/Cloudpilot';
+import { Cloudpilot, SessionImage } from '@common/Cloudpilot';
 
 import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';

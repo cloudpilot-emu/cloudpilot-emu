@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
 import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
-import { PwmUpdate } from './../helper/Cloudpilot';
+import { PwmUpdate } from '@common/Cloudpilot';
 import { isIOS } from './../helper/browser';
 
 type AudioContextType = typeof AudioContext;

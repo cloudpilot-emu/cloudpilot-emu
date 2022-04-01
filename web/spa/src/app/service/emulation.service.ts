@@ -1,5 +1,5 @@
 import { AnimationFrameScheduler, Scheduler, SchedulerKind, TimeoutScheduler } from './../helper/scheduler';
-import { Cloudpilot, PalmButton } from '../helper/Cloudpilot';
+import { Cloudpilot, PalmButton } from '@common/Cloudpilot';
 import { GRAYSCALE_PALETTE_HEX, GRAYSCALE_PALETTE_RGBA } from '../helper/palette';
 import { Injectable, NgZone } from '@angular/core';
 import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
@@ -22,7 +22,7 @@ import { LoadingController } from '@ionic/angular';
 import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
 import { ProxyService } from './proxy.service';
-import { PwmUpdate } from './../helper/Cloudpilot';
+import { PwmUpdate } from '@common/Cloudpilot';
 import { Session } from '../model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';

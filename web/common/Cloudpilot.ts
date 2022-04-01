@@ -2,7 +2,7 @@
 // the webpack build is unable to resolve emscripten with a simple ES6 style import.
 //
 // tslint:disable-next-line: no-reference
-/// <reference path="../../../../node_modules/@types/emscripten/index.d.ts"/>
+/// <reference path="../node_modules/@types/emscripten/index.d.ts"/>
 
 import createModule, {
     Cloudpilot as CloudpilotNative,
@@ -17,9 +17,9 @@ import createModule, {
     SuspendKind,
     VoidPtr,
     ZipfileWalker as ZipfileWalkerNative,
-} from '../../../../../src';
+} from '../../src';
 
-import { DeviceId } from '../model/DeviceId';
+import { DeviceId } from './model/DeviceId';
 import { Event } from 'microevent.ts';
 
 export {
@@ -31,7 +31,7 @@ export {
     SuspendContextClipboardPaste,
     VoidPtr,
     ZipfileWalkerState,
-} from '../../../../../src';
+} from '../../src';
 
 export interface RomInfo {
     cardVersion: number;

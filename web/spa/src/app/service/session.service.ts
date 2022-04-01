@@ -1,12 +1,12 @@
 import {} from './file.service';
 
 import { CloudpilotService } from './cloudpilot.service';
-import { DeviceId } from './../model/DeviceId';
+import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '../model/DeviceOrientation';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Session } from '../model/Session';
-import { SessionImage } from '../helper/Cloudpilot';
+import { SessionImage } from '@common/Cloudpilot';
 import { SessionMetadata } from '../model/SessionMetadata';
 import { StorageService } from './storage.service';
 

@@ -3,7 +3,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { CanvasDisplayService } from './canvas-display.service';
 import { EmulationService } from './emulation.service';
 import { ModalWatcherService } from './modal-watcher.service';
-import { PalmButton } from '../helper/Cloudpilot';
+import { PalmButton } from '@common/Cloudpilot';
 
 const enum Area {
     screen,

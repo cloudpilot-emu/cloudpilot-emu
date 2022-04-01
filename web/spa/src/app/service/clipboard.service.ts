@@ -1,4 +1,4 @@
-import { Cloudpilot, SuspendContextClipboardPaste, SuspendKind } from '../helper/Cloudpilot';
+import { Cloudpilot, SuspendContextClipboardPaste, SuspendKind } from '@common/Cloudpilot';
 
 import { AlertController } from '@ionic/angular';
 import { AlertService } from './alert.service';

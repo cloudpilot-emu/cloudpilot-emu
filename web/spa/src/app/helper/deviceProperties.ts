@@ -1,6 +1,6 @@
 import { Dimensions, ScreenSize } from './../model/Dimensions';
 
-import { DeviceId } from '../model/DeviceId';
+import { DeviceId } from '@common/model/DeviceId';
 
 export function deviceDimensions(deviceId: DeviceId): Dimensions {
     switch (deviceId) {

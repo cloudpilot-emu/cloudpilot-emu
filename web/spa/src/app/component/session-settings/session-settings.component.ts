@@ -3,7 +3,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { cpuClock, deviceName } from '../../helper/deviceProperties';
 
 import { AlertService } from './../../service/alert.service';
-import { DeviceId } from '../../model/DeviceId';
+import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '../../model/DeviceOrientation';
 import { SessionService } from '../../service/session.service';
 
