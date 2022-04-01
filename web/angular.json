@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
-  "defaultProject": "app",
+  "defaultProject": "pwa/app",
   "newProjectRoot": "pwa/projects",
   "projects": {
     "app": {

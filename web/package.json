@@ -7,6 +7,8 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "yarn run gen-revision && ng run app:build",
+    "build-embedded": "yarn webpack --mode production -c webpack.embedded.config.js",
+    "start-embedded": "yarn webpack serve --mode development -c webpack.embedded.config.js",
     "gen-revision": "echo \"export const REVISION = '`git rev-parse --short HEAD`';\" > pwa/src/revision.gen.ts",
     "test": "ng test",
     "lint": "ng lint",
@@ -56,6 +58,7 @@
     "@types/jasminewd2": "~2.0.10",
     "@types/node": "^17.0.8",
     "codelyzer": "^6.0.2",
+    "copy-webpack-plugin": "^10.2.4",
     "import-sort-style-eslint": "^6.0.0",
     "jasmine-core": "~4.0.0",
     "jasmine-spec-reporter": "~7.0.0",
@@ -69,9 +72,12 @@
     "protractor": "~7.0.0",
     "pwa-asset-generator": "^6.0.5",
     "raw-loader": "^4.0.2",
+    "ts-loader": "^9.2.8",
     "ts-node": "~10.4.0",
     "tslint": "~6.1.0",
-    "typescript": "~4.5.4"
+    "typescript": "~4.5.4",
+    "webpack-cli": "^4.9.2",
+    "webpack-dev-server": "^4.7.4"
   },
   "description": "CloudpilotEmu PWA",
   "prettier": {
