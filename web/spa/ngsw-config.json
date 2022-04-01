@@ -1,0 +1,52 @@
+{
+  "$schema": "../node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "app",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/favicon.ico",
+          "/index.html",
+          "/manifest.webmanifest",
+          "/*.css",
+          "/*.js",
+          "/*.wasm"
+        ]
+      }
+    },
+    {
+      "name": "assets",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/svg/phone-portrait-outline.svg",
+          "/svg/albums-outline.svg",
+          "/svg/cog-outline.svg",
+          "/svg/power-outline.svg",
+          "/svg/download-outline.svg",
+          "/svg/ellipsis-vertical-outline.svg",
+          "/svg/add-outline.svg",
+          "/svg/chevron-back.svg",
+          "/svg/create-outline.svg",
+          "/svg/share-outline.svg",
+          "/svg/refresh-outline.svg",
+          "/svg/trash-outline.svg",
+          "/svg/help-outline.svg",
+          "/svg/volume-mute-outline.svg",
+          "/svg/volume-high-outline.svg",
+          "/svg/lock-open-outline.svg",
+          "/svg/lock-closed-outline.svg",
+          "/svg/sync-outline.svg",
+          "/svg/speedometer-outline.svg",
+          "/svg/reload-outline.svg",
+          "/assets/**",
+          "/*.(eot|svg|cur|jpg|png|webp|gif|otf|ttf|woff|woff2|ani)"
+        ]
+      }
+    }
+  ]
+}

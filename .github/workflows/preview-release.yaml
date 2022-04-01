@@ -29,10 +29,10 @@ jobs:
         with:
           node-version: ${{env.NODE_VERSION}}
       - name: Install node deps
-        working-directory: cloudpilot-ionic
+        working-directory: web
         run: yarn install
       - name: Build PWA
-        working-directory: cloudpilot-ionic
+        working-directory: web
         run: yarn build --configuration production,preview,ci --base-href /app-preview/
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.5.1
@@ -44,9 +44,7 @@ jobs:
         working-directory: cloudpilot-emu.github.io
         run: |
           test -x app-preview && rm -fr app-preview
-          cp -r ../cloudpilot-ionic/www ./app-preview
-          test -x sdl-preview && rm -fr sdl-preview
-          mkdir -p sdl-preview/src
+          cp -r ../web/build-spa ./app-preview
           git add .
           git config --global user.email "golem@nowhere.org"
           git config --global user.name "The Golem"

@@ -22,7 +22,7 @@ jobs:
         id: version
         run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
       - name: Validate package.json version
-        run: echo 'if (require("./cloudpilot-ionic/package.json").version !== "${{steps.version.outputs.VERSION}}") process.exit(1)' | node
+        run: echo 'if (require("./web/package.json").version !== "${{steps.version.outputs.VERSION}}") process.exit(1)' | node
       - name: Setup cache
         id: cache-system-libraries
         uses: actions/cache@v2
@@ -37,10 +37,10 @@ jobs:
       - name: Build wasm
         run: make -Csrc -j2 emscripten
       - name: Install node deps
-        working-directory: cloudpilot-ionic
+        working-directory: web
         run: yarn install
       - name: Build PWA
-        working-directory: cloudpilot-ionic
+        working-directory: web
         run: yarn build --configuration production,ci --base-href /app/
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.5.1
@@ -52,9 +52,7 @@ jobs:
         working-directory: cloudpilot-emu.github.io
         run: |
           test -x app-preview && rm -fr app
-          cp -r ../cloudpilot-ionic/www ./app
-          test -x sdl-preview && rm -fr sdl
-          mkdir -p sdl/src
+          cp -r ../web/build-pwa ./app
           git add .
           git config --global user.email "golem@nowhere.org"
           git config --global user.name "The Golem"
