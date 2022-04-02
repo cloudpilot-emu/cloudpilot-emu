@@ -6,6 +6,19 @@
 
 <body>
     <h1>Hello world</h1>
+
+    <script>
+        (async function () {
+            const imageResponse = await fetch('session.img');
+            if (!imageResponse.ok) {
+                throw new Error('could not download session image');
+            }
+
+            const image = await imageResponse.arrayBuffer();
+
+            const emulator = await cloudpilot.createEmulator(new Uint8Array(image));
+        })().catch(e => console.log(e));
+    </script>
 </body>
 
 </html>

@@ -1,12 +1,12 @@
 import { AnimationFrameScheduler, Scheduler, SchedulerKind, TimeoutScheduler } from './../helper/scheduler';
 import { Cloudpilot, PalmButton } from '@common/Cloudpilot';
-import { GRAYSCALE_PALETTE_HEX, GRAYSCALE_PALETTE_RGBA } from '../helper/palette';
+import { GRAYSCALE_PALETTE_HEX, GRAYSCALE_PALETTE_RGBA } from '@common/helper/palette';
 import { Injectable, NgZone } from '@angular/core';
 import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
 import { deviceDimensions, isColor } from '../helper/deviceProperties';
 
 import { AlertService } from './alert.service';
-import { Average } from './../helper/Average';
+import { Average } from '@common/helper/Average';
 import { BootstrapService } from './bootstrap-service';
 import { ButtonService } from './button.service';
 import { ClipboardService } from './clipboard.service';
@@ -15,7 +15,7 @@ import { EmulationStateService } from './emulation-state.service';
 import { EmulationStatistics } from './../model/EmulationStatistics';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
-import { Fifo } from './../helper/Fifo';
+import { Fifo } from '@common/helper/Fifo';
 import { FileService } from './file.service';
 import { KvsService } from './kvs.service';
 import { LoadingController } from '@ionic/angular';

@@ -4,7 +4,7 @@ import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '../model/DeviceOrientation';
 import { EmulationStatistics } from './../model/EmulationStatistics';
 import { Event } from 'microevent.ts';
-import { GRAYSCALE_PALETTE_HEX } from './../helper/palette';
+import { GRAYSCALE_PALETTE_HEX } from '@common/helper/palette';
 import { Injectable } from '@angular/core';
 import { PalmButton } from '@common/Cloudpilot';
 import { ScreenSize } from '../model/Dimensions';
