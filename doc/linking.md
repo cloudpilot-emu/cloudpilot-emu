@@ -14,7 +14,7 @@ sufficient.
 An URL for importing a session or ROM file has the form
 
 ```
-https://cloudpilot-emu.github.io/app/#/install?url=url_encoded_rom_url
+https://cloudpilot-emu.github.io/app/#/import?url=url_encoded_rom_url
 ```
 
 The `url` query parameter contains the full URL encoded URL to the file.
