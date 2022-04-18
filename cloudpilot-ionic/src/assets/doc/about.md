@@ -22,7 +22,7 @@ emulated:
 -   Sony PEG-T650C series
 -   Sony PEG-NR70 series
 
-The coorrect device type is automatically determined from the ROM you load. If
+The correct device type is automatically determined from the ROM you load. If
 there are multiple possible devices CloudpilotEmu will let you choose when you
 create the session.
 
