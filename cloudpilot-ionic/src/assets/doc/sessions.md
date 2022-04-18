@@ -62,7 +62,7 @@ In this case, the name will we read from the device as soon as it is launched.
 
 ##### Manage hotsync name
 
-In case you aer using network hotsync to sync the virtual device with Palm Desktop
+In case you are using network hotsync to sync the virtual device with Palm Desktop
 this setting will conflict with the desktop. Turn it off by unchecking
 "Manage hotsync name".
 ### Save
