@@ -1,13 +1,13 @@
-import { deviceDimensions, isColor } from '../helper/deviceProperties';
+import { deviceDimensions, isColor } from '@common/helper/deviceProperties';
 
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '../model/DeviceOrientation';
-import { EmulationStatistics } from './../model/EmulationStatistics';
+import { EmulationStatistics } from '../../../../common/model/EmulationStatistics';
 import { Event } from 'microevent.ts';
 import { GRAYSCALE_PALETTE_HEX } from '@common/helper/palette';
 import { Injectable } from '@angular/core';
 import { PalmButton } from '@common/Cloudpilot';
-import { ScreenSize } from '../model/Dimensions';
+import { ScreenSize } from '@common/model/Dimensions';
 import { Session } from '../model/Session';
 import { SnapshotStatistics } from './../model/SnapshotStatistics';
 

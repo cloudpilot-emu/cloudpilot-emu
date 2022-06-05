@@ -1,6 +1,6 @@
 import { ActionSheetController, ModalController, PopoverController } from '@ionic/angular';
 import { Component, Input, OnInit } from '@angular/core';
-import { quirkNoPoweroff, supportsDBExport } from '../../../helper/deviceProperties';
+import { quirkNoPoweroff, supportsDBExport } from '../../../../../../common/helper/deviceProperties';
 
 import { AudioService } from './../../../service/audio.service';
 import { BackupService } from './../../../service/backup.service';

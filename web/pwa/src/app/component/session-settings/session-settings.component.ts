@@ -1,6 +1,6 @@
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
-import { cpuClock, deviceName } from '../../helper/deviceProperties';
+import { cpuClock, deviceName } from '@common/helper/deviceProperties';
 
 import { AlertService } from './../../service/alert.service';
 import { DeviceId } from '@common/model/DeviceId';

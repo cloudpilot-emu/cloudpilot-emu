@@ -1,4 +1,4 @@
-import { Dimensions, ScreenSize } from './../model/Dimensions';
+import { Dimensions, ScreenSize } from '@common/model/Dimensions';
 
 import { DeviceId } from '@common/model/DeviceId';
 
