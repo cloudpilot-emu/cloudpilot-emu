@@ -1,12 +1,12 @@
 import { ActionSheetController, ModalController, PopoverController } from '@ionic/angular';
 import { Component, Input, OnInit } from '@angular/core';
-import { quirkNoPoweroff, supportsDBExport } from '../../../../../../common/helper/deviceProperties';
+import { quirkNoPoweroff, supportsDBExport } from '@common/helper/deviceProperties';
 
 import { AudioService } from './../../../service/audio.service';
 import { BackupService } from './../../../service/backup.service';
 import { ButtonService } from '../../../service/button.service';
 import { CanvasDisplayService } from './../../../service/canvas-display.service';
-import { DeviceOrientation } from '../../../model/DeviceOrientation';
+import { DeviceOrientation } from '../../../../../../common/model/DeviceOrientation';
 import { EmulationService } from './../../../service/emulation.service';
 import { EmulationStateService } from '../../../service/emulation-state.service';
 import { KvsService } from './../../../service/kvs.service';

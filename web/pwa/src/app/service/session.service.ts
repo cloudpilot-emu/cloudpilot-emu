@@ -2,7 +2,7 @@ import {} from './file.service';
 
 import { CloudpilotService } from './cloudpilot.service';
 import { DeviceId } from '@common/model/DeviceId';
-import { DeviceOrientation } from '../model/DeviceOrientation';
+import { DeviceOrientation } from '../../../../common/model/DeviceOrientation';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Session } from '../model/Session';

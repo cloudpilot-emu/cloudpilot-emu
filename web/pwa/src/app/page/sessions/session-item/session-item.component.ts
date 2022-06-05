@@ -4,7 +4,7 @@ import { IonItemSliding, PopoverController } from '@ionic/angular';
 import { ContextMenuComponent } from './../context-menu/context-menu.component';
 import { Session } from '../../../model/Session';
 import { decodeVersion } from '../../../model/OSVersion';
-import { deviceName } from '../../../../../../common/helper/deviceProperties';
+import { deviceName } from '@common/helper/deviceProperties';
 
 @Component({
     selector: 'app-session-item',

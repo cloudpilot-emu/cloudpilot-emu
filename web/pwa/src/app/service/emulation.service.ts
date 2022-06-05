@@ -15,7 +15,7 @@ import { KvsService } from './kvs.service';
 import { LoadingController } from '@ionic/angular';
 import { ModalWatcherService } from './modal-watcher.service';
 import { ProxyService } from './proxy.service';
-import { SchedulerKind } from './../../../../common/helper/scheduler';
+import { SchedulerKind } from '../helper/scheduler';
 import { Session } from '../model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';

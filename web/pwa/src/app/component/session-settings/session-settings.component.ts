@@ -4,7 +4,7 @@ import { cpuClock, deviceName } from '@common/helper/deviceProperties';
 
 import { AlertService } from './../../service/alert.service';
 import { DeviceId } from '@common/model/DeviceId';
-import { DeviceOrientation } from '../../model/DeviceOrientation';
+import { DeviceOrientation } from '../../../../../common/model/DeviceOrientation';
 import { SessionService } from '../../service/session.service';
 
 export interface SessionSettings {

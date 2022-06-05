@@ -1,5 +1,5 @@
 import { DeviceId } from '@common/model/DeviceId';
-import { DeviceOrientation } from './DeviceOrientation';
+import { DeviceOrientation } from '../../../../common/model/DeviceOrientation';
 
 export interface Session {
     id: number;
