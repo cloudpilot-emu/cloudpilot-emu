@@ -1,7 +1,7 @@
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
-import { pageLockIntact } from '../helper/pagelock';
+import { pageLockIntact } from '@pwa/helper/pagelock';
 
 @Injectable({
     providedIn: 'root',

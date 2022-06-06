@@ -2,8 +2,8 @@ import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angu
 import { IonItemSliding, PopoverController } from '@ionic/angular';
 
 import { ContextMenuComponent } from './../context-menu/context-menu.component';
-import { Session } from '../../../model/Session';
-import { decodeVersion } from '../../../model/OSVersion';
+import { Session } from '@pwa/model/Session';
+import { decodeVersion } from '@pwa/model/OSVersion';
 import { deviceName } from '@common/helper/deviceProperties';
 
 @Component({

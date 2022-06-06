@@ -1,19 +1,19 @@
 import { AlertController, ModalController } from '@ionic/angular';
-import { FileDescriptor, FileService } from './../../service/file.service';
-import { SessionSettings, SessionSettingsComponent } from '../../component/session-settings/session-settings.component';
+import { FileDescriptor, FileService } from '@pwa/service/file.service';
+import { SessionSettings, SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
 
-import { AlertService } from './../../service/alert.service';
-import { CloudpilotService } from './../../service/cloudpilot.service';
+import { AlertService } from '@pwa/service/alert.service';
+import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { Component } from '@angular/core';
-import { EmulationService } from './../../service/emulation.service';
-import { EmulationStateService } from './../../service/emulation-state.service';
-import { HelpComponent } from '../../component/help/help.component';
-import { LinkApi } from './../../service/link-api.service';
+import { EmulationService } from '@pwa/service/emulation.service';
+import { EmulationStateService } from '@pwa/service/emulation-state.service';
+import { HelpComponent } from '@pwa/component/help/help.component';
+import { LinkApi } from '@pwa/service/link-api.service';
 import { Router } from '@angular/router';
-import { Session } from './../../model/Session';
-import { SessionMetadata } from '../../model/SessionMetadata';
-import { SessionService } from '../../service/session.service';
-import { StorageService } from './../../service/storage.service';
+import { Session } from '@pwa/model/Session';
+import { SessionMetadata } from '@pwa/model/SessionMetadata';
+import { SessionService } from '@pwa/service/session.service';
+import { StorageService } from '@pwa/service/storage.service';
 import deepEqual from 'deep-equal';
 
 @Component({

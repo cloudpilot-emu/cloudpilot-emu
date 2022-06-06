@@ -5,18 +5,18 @@ import { MarkdownModule, MarkedOptions, MarkedRenderer } from 'ngx-markdown';
 
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
-import { AudioService } from './service/audio.service';
-import { AutoEnableAudioService } from './service/auto-enable-audio.service';
+import { AudioService } from '@pwa/service/audio.service';
+import { AutoEnableAudioService } from '@pwa/service/auto-enable-audio.service';
 import { BrowserModule } from '@angular/platform-browser';
-import { DummyComponent } from './component/dummy/dummy.component';
-import { EmulationService } from './service/emulation.service';
-import { KvsService } from './service/kvs.service';
-import { PageLockService } from './service/page-lock.service';
+import { DummyComponent } from '@pwa/component/dummy/dummy.component';
+import { EmulationService } from '@pwa/service/emulation.service';
+import { KvsService } from '@pwa/service/kvs.service';
+import { PageLockService } from '@pwa/service/page-lock.service';
 import { RouteReuseStrategy } from '@angular/router';
 import { ServiceWorkerModule } from '@angular/service-worker';
-import { SessionService } from './service/session.service';
-import { StorageService } from './service/storage.service';
-import { UpdateService } from './service/update.service';
+import { SessionService } from '@pwa/service/session.service';
+import { StorageService } from '@pwa/service/storage.service';
+import { UpdateService } from '@pwa/service/update.service';
 import { environment } from '../environments/environment';
 
 const markedOptionsFactory = (): MarkedOptions => {

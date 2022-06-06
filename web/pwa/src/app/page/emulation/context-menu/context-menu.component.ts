@@ -2,18 +2,18 @@ import { ActionSheetController, ModalController, PopoverController } from '@ioni
 import { Component, Input, OnInit } from '@angular/core';
 import { quirkNoPoweroff, supportsDBExport } from '@common/helper/deviceProperties';
 
-import { AudioService } from './../../../service/audio.service';
-import { BackupService } from './../../../service/backup.service';
-import { ButtonService } from '../../../service/button.service';
-import { CanvasDisplayService } from './../../../service/canvas-display.service';
-import { DeviceOrientation } from '../../../../../../common/model/DeviceOrientation';
-import { EmulationService } from './../../../service/emulation.service';
-import { EmulationStateService } from '../../../service/emulation-state.service';
-import { KvsService } from './../../../service/kvs.service';
+import { AudioService } from '@pwa/service/audio.service';
+import { BackupService } from '@pwa/service/backup.service';
+import { ButtonService } from '@pwa/service/button.service';
+import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
+import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { EmulationService } from '@pwa/service/emulation.service';
+import { EmulationStateService } from '@pwa/service/emulation-state.service';
+import { KvsService } from '@pwa/service/kvs.service';
 import { PalmButton } from '@common/Cloudpilot';
-import { PerformanceWatchdogService } from '../../../service/performance-watchdog.service';
-import { SessionService } from '../../../service/session.service';
-import { SessionSettingsComponent } from '../../../component/session-settings/session-settings.component';
+import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
+import { SessionService } from '@pwa/service/session.service';
+import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
 
 @Component({
     selector: 'app-emulation-context-menu',

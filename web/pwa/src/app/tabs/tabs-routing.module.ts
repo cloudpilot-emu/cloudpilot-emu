@@ -1,10 +1,10 @@
 import { RouterModule, Routes } from '@angular/router';
 
-import { AboutPage } from './../page/about/about.page';
-import { EmulationPage } from './../page/emulation/emulation.page';
+import { AboutPage } from '@pwa/page/about/about.page';
+import { EmulationPage } from '@pwa/page/emulation/emulation.page';
 import { NgModule } from '@angular/core';
-import { SessionsPage } from './../page/sessions/sessions.page';
-import { SettingsPage } from './../page/settings/settings.page';
+import { SessionsPage } from '@pwa/page/sessions/sessions.page';
+import { SettingsPage } from '@pwa/page/settings/settings.page';
 import { TabsPage } from './tabs.page';
 
 const routes: Routes = [

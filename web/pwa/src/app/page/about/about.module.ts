@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { IonicModule } from '@ionic/angular';
 import { MarkdownModule } from 'ngx-markdown';
 import { NgModule } from '@angular/core';
-import { SharedComponentModule } from './../../component/shared-component.module';
+import { SharedComponentModule } from '@pwa/component/shared-component.module';
 
 @NgModule({
     imports: [CommonModule, FormsModule, IonicModule, SharedComponentModule, MarkdownModule.forChild()],

@@ -1,25 +1,25 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { ModalController, PopoverController } from '@ionic/angular';
 
-import { AlertService } from '../../service/alert.service';
-import { CanvasDisplayService } from './../../service/canvas-display.service';
-import { CloudpilotService } from './../../service/cloudpilot.service';
+import { AlertService } from '@pwa/service/alert.service';
+import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
+import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { ContextMenuComponent } from './context-menu/context-menu.component';
-import { EmulationService } from './../../service/emulation.service';
-import { EmulationStateService } from './../../service/emulation-state.service';
-import { EventHandlingService } from './../../service/event-handling.service';
-import { FileService } from '../../service/file.service';
-import { HelpComponent } from '../../component/help/help.component';
-import { InstallationService } from './../../service/installation.service';
-import { KvsService } from './../../service/kvs.service';
-import { LinkApi } from './../../service/link-api.service';
+import { EmulationService } from '@pwa/service/emulation.service';
+import { EmulationStateService } from '@pwa/service/emulation-state.service';
+import { EventHandlingService } from '@pwa/service/event-handling.service';
+import { FileService } from '@pwa/service/file.service';
+import { HelpComponent } from '@pwa/component/help/help.component';
+import { InstallationService } from '@pwa/service/installation.service';
+import { KvsService } from '@pwa/service/kvs.service';
+import { LinkApi } from '@pwa/service/link-api.service';
 import { Mutex } from 'async-mutex';
-import { PerformanceWatchdogService } from './../../service/performance-watchdog.service';
-import { ProxyService } from './../../service/proxy.service';
-import { SnapshotService } from './../../service/snapshot.service';
-import { SnapshotStatistics } from './../../model/SnapshotStatistics';
-import { StorageService } from './../../service/storage.service';
-import { TabsPage } from './../../tabs/tabs.page';
+import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
+import { ProxyService } from '@pwa/service/proxy.service';
+import { SnapshotService } from '@pwa/service/snapshot.service';
+import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
+import { StorageService } from '@pwa/service/storage.service';
+import { TabsPage } from '@pwa/tabs/tabs.page';
 
 @Component({
     selector: 'app-emulation',

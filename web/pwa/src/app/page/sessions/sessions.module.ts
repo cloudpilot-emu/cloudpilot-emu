@@ -6,7 +6,7 @@ import { IonicModule } from '@ionic/angular';
 import { NgModule } from '@angular/core';
 import { SessionItemComponent } from './session-item/session-item.component';
 import { SessionsPage } from './sessions.page';
-import { SharedComponentModule } from './../../component/shared-component.module';
+import { SharedComponentModule } from '@pwa/component/shared-component.module';
 
 @NgModule({
     imports: [CommonModule, FormsModule, IonicModule, ReactiveFormsModule, SharedComponentModule],

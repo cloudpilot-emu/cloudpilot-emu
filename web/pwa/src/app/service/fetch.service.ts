@@ -1,6 +1,6 @@
 import { LoadingController, ModalController } from '@ionic/angular';
 
-import { CredentialsPromptComponent } from '../component/credentials-prompt/credentials-prompt.component';
+import { CredentialsPromptComponent } from '@pwa/component/credentials-prompt/credentials-prompt.component';
 import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
 import Url from 'url-parse';

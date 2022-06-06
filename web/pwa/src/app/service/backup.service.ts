@@ -1,4 +1,4 @@
-import { concatFilenames, filenameForBackup } from '../helper/filename';
+import { concatFilenames, filenameForBackup } from '@pwa/helper/filename';
 
 import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';

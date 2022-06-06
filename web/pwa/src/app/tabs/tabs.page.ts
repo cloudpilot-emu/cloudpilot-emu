@@ -1,6 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 
-import { CanvasDisplayService } from './../service/canvas-display.service';
+import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { Router } from '@angular/router';
 
 @Component({

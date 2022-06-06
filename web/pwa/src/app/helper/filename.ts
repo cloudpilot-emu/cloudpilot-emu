@@ -1,4 +1,4 @@
-import { Session } from '../model/Session';
+import { Session } from '@pwa/model/Session';
 
 export function filenameFragment(session: Session): string {
     const now = new Date();

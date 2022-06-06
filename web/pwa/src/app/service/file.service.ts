@@ -6,13 +6,13 @@ import { CloudpilotService } from './cloudpilot.service';
 import { FetchService } from './fetch.service';
 import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
-import { RemoteUrlPromptComponent } from './../component/remote-url-prompt/remote-url-prompt.component';
-import { Session } from './../model/Session';
-import { SessionMetadata } from '../model/SessionMetadata';
+import { RemoteUrlPromptComponent } from '@pwa/component/remote-url-prompt/remote-url-prompt.component';
+import { Session } from '@pwa/model/Session';
+import { SessionMetadata } from '@pwa/model/SessionMetadata';
 import { StorageService } from './storage.service';
 import Url from 'url-parse';
-import { filenameForSession } from '../helper/filename';
-import { metadataForSession } from '../helper/metadata';
+import { filenameForSession } from '@pwa/helper/filename';
+import { metadataForSession } from '@pwa/helper/metadata';
 
 // tslint:disable: no-bitwise
 

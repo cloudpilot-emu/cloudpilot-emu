@@ -1,8 +1,8 @@
 import { AfterViewInit, Component } from '@angular/core';
 
-import { BootstrapService } from './service/bootstrap-service';
-import { PwaService } from './service/pwa.service';
-import { UpdateService } from './service/update.service';
+import { BootstrapService } from '@pwa/service/bootstrap-service';
+import { PwaService } from '@pwa/service/pwa.service';
+import { UpdateService } from '@pwa/service/update.service';
 
 @Component({
     selector: 'app-root',

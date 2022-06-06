@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
-import { HelpComponent } from '../../component/help/help.component';
+import { HelpComponent } from '@pwa/component/help/help.component';
 import { ModalController } from '@ionic/angular';
 import { SwUpdate } from '@angular/service-worker';
-import { VERSION } from '../../../app/helper/version';
+import { VERSION } from '@pwa/helper/version';
 
 @Component({
     selector: 'app-about',

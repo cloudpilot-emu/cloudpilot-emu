@@ -2,10 +2,10 @@ import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators }
 import { Component, Input, OnInit } from '@angular/core';
 import { cpuClock, deviceName } from '@common/helper/deviceProperties';
 
-import { AlertService } from './../../service/alert.service';
+import { AlertService } from '@pwa/service/alert.service';
 import { DeviceId } from '@common/model/DeviceId';
-import { DeviceOrientation } from '../../../../../common/model/DeviceOrientation';
-import { SessionService } from '../../service/session.service';
+import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { SessionService } from '@pwa/service/session.service';
 
 export interface SessionSettings {
     name: string;

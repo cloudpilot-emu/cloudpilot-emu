@@ -2,10 +2,10 @@ import { HashLocationStrategy, LocationStrategy } from '@angular/common';
 import { Injectable, NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 
-import { DummyComponent } from './component/dummy/dummy.component';
-import { RoutingInterceptor } from './service/routing-interceptor.service';
-import { TabsPage } from './tabs/tabs.page';
-import { TabsPageModule } from './tabs/tabs.module';
+import { DummyComponent } from '@pwa/component/dummy/dummy.component';
+import { RoutingInterceptor } from '@pwa/service/routing-interceptor.service';
+import { TabsPage } from '@pwa/tabs/tabs.page';
+import { TabsPageModule } from '@pwa/tabs/tabs.module';
 
 @Injectable()
 class ReplaceLocationStrategy extends HashLocationStrategy {

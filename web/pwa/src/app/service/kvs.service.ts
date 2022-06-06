@@ -1,6 +1,6 @@
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
-import { Kvs } from '../model/Kvs';
+import { Kvs } from '@pwa/model/Kvs';
 import { Mutex } from 'async-mutex';
 import { StorageService } from './storage.service';
 

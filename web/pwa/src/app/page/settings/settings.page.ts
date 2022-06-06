@@ -1,14 +1,14 @@
 import { Component, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 
-import { AlertService } from './../../service/alert.service';
-import { ClipboardService } from './../../service/clipboard.service';
-import { HelpComponent } from '../../component/help/help.component';
-import { KvsService } from './../../service/kvs.service';
+import { AlertService } from '@pwa/service/alert.service';
+import { ClipboardService } from '@pwa/service/clipboard.service';
+import { HelpComponent } from '@pwa/component/help/help.component';
+import { KvsService } from '@pwa/service/kvs.service';
 import { ModalController } from '@ionic/angular';
 import { MutexInterface } from 'async-mutex';
-import { ProxyService } from './../../service/proxy.service';
-import { validateProxyAddress } from '../../helper/proxyAddress';
+import { ProxyService } from '@pwa/service/proxy.service';
+import { validateProxyAddress } from '@pwa/helper/proxyAddress';
 
 const enum fields {
     volume = 'volume',

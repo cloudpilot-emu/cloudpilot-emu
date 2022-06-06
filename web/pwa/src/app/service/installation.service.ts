@@ -7,7 +7,7 @@ import { EmulationService } from './emulation.service';
 import { FileDescriptor } from './file.service';
 import { Injectable } from '@angular/core';
 import { SnapshotService } from './snapshot.service';
-import { concatFilenames } from '../helper/filename';
+import { concatFilenames } from '@pwa/helper/filename';
 
 const ZIP_SIZE_LIMIT = 32 * 1024 * 1024;
 const SNAPSHOT_LIMIT = 4 * 1024 * 1024;

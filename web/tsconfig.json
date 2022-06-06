@@ -22,7 +22,8 @@
     ],
     "paths": {
       "@common/*": ["common/*"],
-      "@native/*": ["../src/*"]
+      "@native/*": ["../src/*"],
+      "@pwa/*": ["pwa/src/app/*"]
     }
   },
   "angularCompilerOptions": {

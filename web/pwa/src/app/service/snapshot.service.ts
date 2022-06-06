@@ -6,8 +6,8 @@ import { Cloudpilot } from '@common/Cloudpilot';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
-import { Session } from './../model/Session';
-import { SnapshotStatistics } from './../model/SnapshotStatistics';
+import { Session } from '@pwa/model/Session';
+import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
 import { compressPage } from './storage/util';
 
 declare global {

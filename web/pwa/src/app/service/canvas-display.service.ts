@@ -1,12 +1,12 @@
 import { AbstractCanvasDisplayService, DEFAULT_DEVICE } from '@common/service/AbstractCanvasDisplayService';
 
-import { DeviceId } from '../../../../common/model/DeviceId';
-import { DeviceOrientation } from '../../../../common/model/DeviceOrientation';
+import { DeviceId } from '@common/model/DeviceId';
+import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { Injectable } from '@angular/core';
 import { ScreenSize } from '@common/model/Dimensions';
-import { Session } from '../model/Session';
-import { SnapshotStatistics } from '../model/SnapshotStatistics';
+import { Session } from '@pwa/model/Session';
+import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
 import { deviceDimensions } from '@common/helper/deviceProperties';
 import { loadSkin } from '@common/skin/loader';
 

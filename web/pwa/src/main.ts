@@ -1,11 +1,11 @@
-import './app/helper/pagelock';
+import '@pwa/helper/pagelock';
 
-import { bootstrapLinkApi, hasInitialImportRequest, hasInitialInstallRequest } from './app/service/link-api.service';
+import { bootstrapLinkApi, hasInitialImportRequest, hasInitialInstallRequest } from '@pwa/service/link-api.service';
 
 import { AppModule } from './app/app.module';
 import { enableProdMode } from '@angular/core';
 import { environment } from './environments/environment';
-import { hasStoredSession } from './app/helper/storedSession';
+import { hasStoredSession } from '@pwa/helper/storedSession';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
 // Work around issue with webpack and deep-equal

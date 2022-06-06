@@ -3,7 +3,7 @@ import { GenericEventHandlingService, HasEvents } from '@common/service/GenericE
 
 import { CanvasDisplayService } from './canvas-display.service';
 import { EmulationService } from './emulation.service';
-import { EventHandler } from '../../../../common/service/GenericEventHandlingService';
+import { EventHandler } from '@common/service/GenericEventHandlingService';
 import { ModalWatcherService } from './modal-watcher.service';
 
 @Injectable({ providedIn: 'root' })

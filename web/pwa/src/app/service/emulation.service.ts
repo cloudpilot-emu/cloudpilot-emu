@@ -1,5 +1,5 @@
 import { ApplicationRef, Injectable, NgZone } from '@angular/core';
-import { clearStoredSession, getStoredSession, setStoredSession } from '../helper/storedSession';
+import { clearStoredSession, getStoredSession, setStoredSession } from '@pwa/helper/storedSession';
 
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { AlertService } from './alert.service';
@@ -15,12 +15,12 @@ import { KvsService } from './kvs.service';
 import { LoadingController } from '@ionic/angular';
 import { ModalWatcherService } from './modal-watcher.service';
 import { ProxyService } from './proxy.service';
-import { SchedulerKind } from '../helper/scheduler';
-import { Session } from '../model/Session';
+import { SchedulerKind } from '@pwa/helper/scheduler';
+import { Session } from '@pwa/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
 import { hasInitialImportRequest } from './link-api.service';
-import { isIOS } from '../../../../common/helper/browser';
+import { isIOS } from '@common/helper/browser';
 
 const SNAPSHOT_INTERVAL = 1000;
 

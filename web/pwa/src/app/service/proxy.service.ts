@@ -6,7 +6,7 @@ import { FetchService } from './fetch.service';
 import { KvsService } from './kvs.service';
 import { Event as Microevent } from 'microevent.ts';
 import { Mutex } from 'async-mutex';
-import { normalizeProxyAddress } from '../helper/proxyAddress';
+import { normalizeProxyAddress } from '@pwa/helper/proxyAddress';
 import { v4 as uuid } from 'uuid';
 
 const CONNECT_TIMEOUT = 5000;

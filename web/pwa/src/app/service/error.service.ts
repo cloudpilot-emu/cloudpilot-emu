@@ -2,7 +2,7 @@ import { Injectable, NgZone } from '@angular/core';
 
 import { AlertService } from './alert.service';
 import { Event } from 'microevent.ts';
-import { clearStoredSession } from '../helper/storedSession';
+import { clearStoredSession } from '@pwa/helper/storedSession';
 
 @Injectable({
     providedIn: 'root',

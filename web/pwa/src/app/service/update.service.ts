@@ -1,12 +1,12 @@
 import { AlertService } from './alert.service';
 import { EmulationService } from './emulation.service';
-import { HelpComponent } from '../component/help/help.component';
+import { HelpComponent } from '@pwa/component/help/help.component';
 import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
 import { ModalController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { SwUpdate } from '@angular/service-worker';
-import { VERSION } from '../helper/version';
+import { VERSION } from '@pwa/helper/version';
 
 const UPDATE_INTERVAL_MSEC = 15 * 60 * 1000;
 

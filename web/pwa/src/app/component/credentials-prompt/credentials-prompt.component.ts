@@ -1,7 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
 
-import { KvsService } from './../../service/kvs.service';
+import { KvsService } from '@pwa/service/kvs.service';
 
 @Component({
     selector: 'app-credentials-prompt',

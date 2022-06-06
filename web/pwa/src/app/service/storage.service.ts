@@ -12,12 +12,12 @@ import { migrate0to1, migrate1to2, migrate2to4, migrate4to5 } from './storage/mi
 
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
-import { Kvs } from './../model/Kvs';
+import { Kvs } from '@pwa/model/Kvs';
 import { PageLockService } from './page-lock.service';
-import { Session } from '../model/Session';
+import { Session } from '@pwa/model/Session';
 import { StorageError } from './storage/StorageError';
 import { environment } from '../../environments/environment';
-import { isIOS } from '../../../../common/helper/browser';
+import { isIOS } from '@common/helper/browser';
 import md5 from 'md5';
 
 export const E_LOCK_LOST = new Error('page lock lost');
