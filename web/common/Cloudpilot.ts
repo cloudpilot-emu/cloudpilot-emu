@@ -17,7 +17,7 @@ import createModule, {
     SuspendKind,
     VoidPtr,
     ZipfileWalker as ZipfileWalkerNative,
-} from '../../src';
+} from '@native/index';
 
 import { DeviceId } from './model/DeviceId';
 import { Event } from 'microevent.ts';
@@ -31,7 +31,7 @@ export {
     SuspendContextClipboardPaste,
     VoidPtr,
     ZipfileWalkerState,
-} from '../../src';
+} from '@native/index';
 
 export interface RomInfo {
     cardVersion: number;

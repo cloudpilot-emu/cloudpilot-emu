@@ -1,4 +1,4 @@
-import { PrerenderedImage, Skin } from '../skin/loader';
+import { PrerenderedImage, Skin } from '@common/skin/loader';
 import { deviceDimensions, isColor } from '@common/helper/deviceProperties';
 
 import { DeviceId } from '@common/model/DeviceId';

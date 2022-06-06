@@ -21,7 +21,8 @@
       "dom"
     ],
     "paths": {
-      "@common/*": ["common/*"]
+      "@common/*": ["common/*"],
+      "@native/*": ["../src/*"]
     }
   },
   "angularCompilerOptions": {

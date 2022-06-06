@@ -10,7 +10,7 @@ import { DeviceOrientation } from '../../../../../../common/model/DeviceOrientat
 import { EmulationService } from './../../../service/emulation.service';
 import { EmulationStateService } from '../../../service/emulation-state.service';
 import { KvsService } from './../../../service/kvs.service';
-import { PalmButton } from '../../../../../../../src';
+import { PalmButton } from '@common/Cloudpilot';
 import { PerformanceWatchdogService } from '../../../service/performance-watchdog.service';
 import { SessionService } from '../../../service/session.service';
 import { SessionSettingsComponent } from '../../../component/session-settings/session-settings.component';
