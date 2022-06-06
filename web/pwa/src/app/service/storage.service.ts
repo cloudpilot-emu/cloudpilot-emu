@@ -52,6 +52,7 @@ function guard(): any {
 })
 export class StorageService {
     constructor(private pageLockService: PageLockService, private ngZone: NgZone, private errorService: ErrorService) {
+        this.requestPersistentStorage();
         this.db = this.setupDb();
     }
 
@@ -395,6 +396,23 @@ export class StorageService {
             });
         } finally {
             clearTimeout(watchdogHandle);
+        }
+    }
+
+    private async requestPersistentStorage() {
+        if (!(navigator.storage as any)?.persist || !(navigator.storage as any)?.persisted) {
+            console.log('storage manager not supported; unable to request persistent storage');
+        }
+
+        try {
+            if ((await navigator.storage.persisted()) || (await navigator.storage.persist())) {
+                console.log('persistent storage enabled');
+            } else {
+                console.log('request for persistent storage denied by browser');
+            }
+        } catch (e) {
+            console.warn(e);
+            console.log('failed to request persistent storage');
         }
     }
 

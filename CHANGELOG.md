@@ -1,3 +1,9 @@
+# Version 1.6.11
+
+-   Use storage manager API to request persistent storage on browsers that
+    support it. This keeps browsers from deleting session data under certain
+    conditions.
+
 # Version 1.6.10
 
 -   Support pressing multiple buttons with one finger on touch devices
