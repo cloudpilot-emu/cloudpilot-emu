@@ -8,7 +8,6 @@ import { DeviceId } from '@common/model/DeviceId';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { Event } from 'microevent.ts';
 import { Fifo } from '@common/helper/Fifo';
-import { Mutex } from 'async-mutex';
 
 const PEN_MOVE_THROTTLE = 25;
 const PWM_FIFO_SIZE = 10;
@@ -18,20 +17,6 @@ const MIN_FPS = 30;
 const DUMMY_SPEED = 1000;
 
 export abstract class AbstractEmulationService {
-    pause = (): Promise<void> =>
-        this.mutex.runExclusive(async () => {
-            this.stopLoop();
-
-            await this.onPause();
-        });
-
-    stop = (): Promise<void> =>
-        this.mutex.runExclusive(async () => {
-            this.stopLoop();
-
-            await this.onStop();
-        });
-
     handlePointerMove(x: number, y: number, isSilkscreen: boolean): void {
         const ts = performance.now();
         this.penDown = true;
@@ -129,10 +114,6 @@ export abstract class AbstractEmulationService {
 
     protected handleSuspend(): void {}
 
-    protected async onPause(): Promise<void> {}
-
-    protected async onStop(): Promise<void> {}
-
     protected callScheduler(): void {
         this.scheduler.schedule();
     }
@@ -218,6 +199,14 @@ export abstract class AbstractEmulationService {
 
         this.setRunning(true);
         this.resetFPS();
+    }
+
+    protected doPause(): void {
+        this.stopLoop();
+    }
+
+    protected doStop(): void {
+        this.stopLoop();
     }
 
     protected stopLoop(): void {
@@ -585,7 +574,6 @@ export abstract class AbstractEmulationService {
     emulationStateChangeEvent = new Event<boolean>();
     powerOffChangeEvent = new Event<boolean>();
 
-    protected mutex = new Mutex();
     protected cloudpilotInstance: Cloudpilot | undefined;
     protected deviceId = DeviceId.m515;
 

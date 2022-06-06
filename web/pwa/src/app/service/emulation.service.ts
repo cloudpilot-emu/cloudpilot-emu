@@ -14,6 +14,7 @@ import { FileService } from './file.service';
 import { KvsService } from './kvs.service';
 import { LoadingController } from '@ionic/angular';
 import { ModalWatcherService } from './modal-watcher.service';
+import { Mutex } from 'async-mutex';
 import { ProxyService } from './proxy.service';
 import { SchedulerKind } from '@pwa/helper/scheduler';
 import { Session } from '@pwa/model/Session';
@@ -116,6 +117,23 @@ export class EmulationService extends AbstractEmulationService {
             this.lastSnapshotAt = performance.now();
         });
 
+    pause = (): Promise<void> =>
+        this.mutex.runExclusive(async () => {
+            this.doPause();
+
+            if (!this.errorService.hasFatalError() && this.emulationState.getCurrentSession()) {
+                await this.snapshotService.waitForPendingSnapshot();
+                await this.snapshotService.triggerSnapshot();
+            }
+        });
+
+    stop = (): Promise<void> =>
+        this.mutex.runExclusive(async () => {
+            this.doStop();
+
+            this.emulationState.setCurrentSession(undefined);
+        });
+
     protected getConfiguredSpeed(): number {
         return this.emulationState.getCurrentSession()?.speed || 1;
     }
@@ -180,17 +198,6 @@ export class EmulationService extends AbstractEmulationService {
 
         this.clipboardService.handleSuspend(this.cloudpilotInstance);
         this.proxyService.handleSuspend();
-    }
-
-    protected override async onPause(): Promise<void> {
-        if (!this.errorService.hasFatalError() && this.emulationState.getCurrentSession()) {
-            await this.snapshotService.waitForPendingSnapshot();
-            await this.snapshotService.triggerSnapshot();
-        }
-    }
-
-    protected override async onStop(): Promise<void> {
-        this.emulationState.setCurrentSession(undefined);
     }
 
     protected override callScheduler(): void {
@@ -273,6 +280,7 @@ Sorry for the inconvenience.`
             }
         });
 
+    protected mutex = new Mutex();
     private bootstrapCompletePromise: Promise<void>;
     private lastSnapshotAt = 0;
 }
