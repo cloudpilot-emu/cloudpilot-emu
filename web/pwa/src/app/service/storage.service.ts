@@ -17,7 +17,7 @@ import { PageLockService } from './page-lock.service';
 import { Session } from '../model/Session';
 import { StorageError } from './storage/StorageError';
 import { environment } from '../../environments/environment';
-import { isIOS } from './../helper/browser';
+import { isIOS } from '../../../../common/helper/browser';
 import md5 from 'md5';
 
 export const E_LOCK_LOST = new Error('page lock lost');

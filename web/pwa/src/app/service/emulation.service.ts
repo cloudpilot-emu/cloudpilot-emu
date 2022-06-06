@@ -20,7 +20,7 @@ import { Session } from '../model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';
 import { hasInitialImportRequest } from './link-api.service';
-import { isIOS } from '../helper/browser';
+import { isIOS } from '../../../../common/helper/browser';
 
 const SNAPSHOT_INTERVAL = 1000;
 

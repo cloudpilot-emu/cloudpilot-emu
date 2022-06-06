@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { isAndroid, isIOS } from './../../helper/browser';
+import { isAndroid, isIOS } from '../../../../../common/helper/browser';
 
 import { PwaService } from './../../service/pwa.service';
 

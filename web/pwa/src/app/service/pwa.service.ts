@@ -1,4 +1,4 @@
-import { isAndroid, isIOS, isIOSSafari, isSafari } from './../helper/browser';
+import { isAndroid, isIOS, isIOSSafari, isSafari } from '../../../../common/helper/browser';
 
 import { AlertService } from './alert.service';
 import { Injectable } from '@angular/core';
