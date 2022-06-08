@@ -155,6 +155,10 @@ export class Cloudpilot {
         this.module.destroy(this.cloudpilot);
     }
 
+    hasFatalError(): boolean {
+        return this.amIdead;
+    }
+
     @guard()
     getRomInfo(rom: Uint8Array): RomInfo | undefined {
         const buffer = this.copyIn(rom);

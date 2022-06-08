@@ -35,46 +35,47 @@ export interface HasEvents {
     ): void;
 }
 
-export abstract class GenericEventHandlingService {
+export class GenericEventHandlingService {
     constructor(
         private emulationService: AbstractEmulationService,
         private canvasDisplayService: AbstractCanvasDisplayService
     ) {}
 
-    bind(canvas: HTMLCanvasElement): void {
-        if (this.canvas) {
+    bind(pointerEventTarget: HasEvents, keyEventTarget: HasEvents = window): void {
+        if (this.pointerEventTarget) {
             this.release();
         }
 
-        this.canvas = canvas;
+        this.pointerEventTarget = pointerEventTarget;
+        this.keyEventTarget = keyEventTarget || window;
 
-        this.addEventListener(canvas, 'mousedown', this.handleMouseDown);
+        this.addEventListener(pointerEventTarget, 'mousedown', this.handleMouseDown);
         this.addEventListener(window, 'mouseup', this.handeMouseUp);
         this.addEventListener(window, 'mousemove', this.handleMouseMove);
 
-        this.addEventListener(canvas, 'touchstart', this.handleTouchStart);
-        this.addEventListener(canvas, 'touchmove', this.handleTouchMove);
-        this.addEventListener(canvas, 'touchend', this.handleTouchEnd);
-        this.addEventListener(canvas, 'touchcancel', this.handleTouchEnd);
+        this.addEventListener(pointerEventTarget, 'touchstart', this.handleTouchStart);
+        this.addEventListener(pointerEventTarget, 'touchmove', this.handleTouchMove);
+        this.addEventListener(pointerEventTarget, 'touchend', this.handleTouchEnd);
+        this.addEventListener(pointerEventTarget, 'touchcancel', this.handleTouchEnd);
 
-        this.addEventListener(window, 'keydown', this.handleKeyDown);
-        this.addEventListener(window, 'keyup', this.handleKeyUp);
+        this.addEventListener(this.keyEventTarget, 'keydown', this.handleKeyDown);
+        this.addEventListener(this.keyEventTarget, 'keyup', this.handleKeyUp);
     }
 
     release(): void {
-        if (!this.canvas) return;
+        if (!this.pointerEventTarget) return;
 
-        this.removeEventListener(this.canvas, 'mousedown', this.handleMouseDown);
+        this.removeEventListener(this.pointerEventTarget, 'mousedown', this.handleMouseDown);
         this.removeEventListener(window, 'mouseup', this.handeMouseUp);
         this.removeEventListener(window, 'mousemove', this.handleMouseMove);
 
-        this.removeEventListener(this.canvas, 'touchstart', this.handleTouchStart);
-        this.removeEventListener(this.canvas, 'touchmove', this.handleTouchMove);
-        this.removeEventListener(this.canvas, 'touchend', this.handleTouchEnd);
-        this.removeEventListener(this.canvas, 'touchcancel', this.handleTouchEnd);
+        this.removeEventListener(this.pointerEventTarget, 'touchstart', this.handleTouchStart);
+        this.removeEventListener(this.pointerEventTarget, 'touchmove', this.handleTouchMove);
+        this.removeEventListener(this.pointerEventTarget, 'touchend', this.handleTouchEnd);
+        this.removeEventListener(this.pointerEventTarget, 'touchcancel', this.handleTouchEnd);
 
-        this.removeEventListener(window, 'keydown', this.handleKeyDown);
-        this.removeEventListener(window, 'keyup', this.handleKeyUp);
+        this.removeEventListener(this.keyEventTarget, 'keydown', this.handleKeyDown);
+        this.removeEventListener(this.keyEventTarget, 'keyup', this.handleKeyUp);
 
         for (const button of this.activeButtons) {
             this.handleButtonUp(button);
@@ -84,7 +85,7 @@ export abstract class GenericEventHandlingService {
         this.interactionsTouch.clear();
         this.interactionMouse = undefined;
 
-        this.canvas = undefined;
+        this.pointerEventTarget = undefined;
     }
 
     isGameMode(): boolean {
@@ -433,7 +434,9 @@ export abstract class GenericEventHandlingService {
         }
     }
 
-    private canvas: HTMLCanvasElement | undefined;
+    private pointerEventTarget: HasEvents | undefined;
+    private keyEventTarget: HasEvents = window;
+
     private interactionMouse: Interaction | undefined;
     private interactionsTouch = new Map<number, Interaction>();
     private activeButtons = new Set<PalmButton>();

@@ -16,12 +16,21 @@ module.exports = (env, argv) => ({
                 },
                 exclude: /node_modules/,
             },
+            {
+                test: /.*\.svg/,
+                use: {
+                    loader: path.resolve(path.join(__dirname, 'webpack', 'svg-loader.js')),
+                },
+            },
         ],
     },
     resolve: {
         extensions: ['.ts', '.js'],
         alias: {
             '@common': path.resolve(__dirname, './common'),
+            '@native': path.resolve(__dirname, '../src'),
+            '@pwa': path.resolve(__dirname, './pwa/src/app'),
+            '@embedded': path.resolve(__dirname, './embedded/src'),
         },
     },
     output: {

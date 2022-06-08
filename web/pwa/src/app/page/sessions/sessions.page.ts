@@ -11,7 +11,7 @@ import { HelpComponent } from '@pwa/component/help/help.component';
 import { LinkApi } from '@pwa/service/link-api.service';
 import { Router } from '@angular/router';
 import { Session } from '@pwa/model/Session';
-import { SessionMetadata } from '@pwa/model/SessionMetadata';
+import { SessionMetadata } from '@common/model/SessionMetadata';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
 import deepEqual from 'deep-equal';

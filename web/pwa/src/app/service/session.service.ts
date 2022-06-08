@@ -7,7 +7,7 @@ import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Session } from '@pwa/model/Session';
 import { SessionImage } from '@common/Cloudpilot';
-import { SessionMetadata } from '@pwa/model/SessionMetadata';
+import { SessionMetadata } from '@common/model/SessionMetadata';
 import { StorageService } from './storage.service';
 
 @Injectable({

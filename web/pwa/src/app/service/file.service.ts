@@ -8,7 +8,7 @@ import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
 import { RemoteUrlPromptComponent } from '@pwa/component/remote-url-prompt/remote-url-prompt.component';
 import { Session } from '@pwa/model/Session';
-import { SessionMetadata } from '@pwa/model/SessionMetadata';
+import { SessionMetadata } from '@common/model/SessionMetadata';
 import { StorageService } from './storage.service';
 import Url from 'url-parse';
 import { filenameForSession } from '@pwa/helper/filename';

@@ -124,110 +124,6 @@ export abstract class AbstractCanvasDisplayService {
         }
     }
 
-    async initWithCanvas(canvas: HTMLCanvasElement | undefined = this.ctx?.canvas): Promise<void> {
-        if (!canvas) return;
-
-        this.layout = calculateLayout(this.getDeviceId());
-
-        this.onResize.dispatch();
-
-        canvas.width = this.width;
-        canvas.height = this.height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            throw new Error('canvas not supported - get a new browser');
-        }
-
-        this.ctx = ctx;
-
-        this.setupTransformation();
-        this.fillCanvasRect(0, 0, this.layout.width.frameCanvas, this.layout.height.frameCanvas, this.frameColor());
-        this.fillRect(
-            0,
-            0,
-            this.layout.screenWidth.frameDevice,
-            this.layout.screenHeight.frameDevice +
-                this.layout.silkscreenHeight.frameDevice +
-                this.layout.separatorHeight.frameDevice +
-                this.layout.buttonHeight.frameDevice,
-            this.backgroundColor()
-        );
-
-        await Promise.all([this.drawSilkscreen(), this.drawButtons()]);
-    }
-
-    async drawButtons(activeButtons: Array<PalmButton> = []): Promise<void> {
-        if (!this.ctx) return;
-        this.setupTransformation();
-
-        this.ctx.imageSmoothingEnabled = true;
-        this.ctx.imageSmoothingQuality = 'high';
-
-        this.ctx.drawImage(
-            await this.buttonsImage()(this.layout.screenWidth.frameCanvas, this.layout.buttonHeight.frameCanvas),
-            this.layout.screenLeft.frameCanvas,
-            this.layout.buttonTop.frameCanvas,
-            this.layout.screenWidth.frameCanvas,
-            this.layout.buttonHeight.frameCanvas
-        );
-
-        if (activeButtons.includes(PalmButton.cal)) {
-            this.fillRect(
-                0,
-                this.layout.buttonTop.frameDevice,
-                this.layout.buttonWidth.frameDevice,
-                this.layout.buttonHeight.frameDevice,
-                BACKGROUND_ACTIVE_BUTTON
-            );
-        }
-        if (activeButtons.includes(PalmButton.phone)) {
-            this.fillRect(
-                this.layout.buttonWidth.frameDevice,
-                this.layout.buttonTop.frameDevice,
-                this.layout.buttonWidth.frameDevice,
-                this.layout.buttonHeight.frameDevice,
-                BACKGROUND_ACTIVE_BUTTON
-            );
-        }
-        if (activeButtons.includes(PalmButton.todo)) {
-            this.fillRect(
-                this.layout.screenWidth.frameDevice - 2 * this.layout.buttonWidth.frameDevice,
-                this.layout.buttonTop.frameDevice,
-                this.layout.buttonWidth.frameDevice,
-                this.layout.buttonHeight.frameDevice,
-                BACKGROUND_ACTIVE_BUTTON
-            );
-        }
-        if (activeButtons.includes(PalmButton.notes)) {
-            this.fillRect(
-                this.layout.screenWidth.frameDevice - this.layout.buttonWidth.frameDevice,
-                this.layout.buttonTop.frameDevice,
-                this.layout.buttonWidth.frameDevice,
-                this.layout.buttonHeight.frameDevice,
-                BACKGROUND_ACTIVE_BUTTON
-            );
-        }
-        if (activeButtons.includes(PalmButton.up)) {
-            this.fillRect(
-                2 * this.layout.buttonWidth.frameDevice,
-                this.layout.buttonTop.frameDevice,
-                this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
-                this.layout.buttonHeight.frameDevice / 2,
-                BACKGROUND_ACTIVE_BUTTON
-            );
-        }
-        if (activeButtons.includes(PalmButton.down)) {
-            this.fillRect(
-                2 * this.layout.buttonWidth.frameDevice,
-                this.layout.buttonTop.frameDevice + this.layout.buttonHeight.frameDevice / 2,
-                this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
-                this.layout.buttonHeight.frameDevice / 2,
-                BACKGROUND_ACTIVE_BUTTON
-            );
-        }
-    }
-
     updateEmulationCanvas(canvas?: HTMLCanvasElement) {
         this.drawEmulationCanvas(canvas);
 
@@ -350,6 +246,110 @@ export abstract class AbstractCanvasDisplayService {
         if (x >= this.layout.buttonWidth.frameDevice) return PalmButton.phone;
 
         return PalmButton.cal;
+    }
+
+    protected async initWithCanvas(canvas: HTMLCanvasElement | undefined = this.ctx?.canvas): Promise<void> {
+        if (!canvas) return;
+
+        this.layout = calculateLayout(this.getDeviceId());
+
+        this.onResize.dispatch();
+
+        canvas.width = this.width;
+        canvas.height = this.height;
+
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            throw new Error('canvas not supported - get a new browser');
+        }
+
+        this.ctx = ctx;
+
+        this.setupTransformation();
+        this.fillCanvasRect(0, 0, this.layout.width.frameCanvas, this.layout.height.frameCanvas, this.frameColor());
+        this.fillRect(
+            0,
+            0,
+            this.layout.screenWidth.frameDevice,
+            this.layout.screenHeight.frameDevice +
+                this.layout.silkscreenHeight.frameDevice +
+                this.layout.separatorHeight.frameDevice +
+                this.layout.buttonHeight.frameDevice,
+            this.backgroundColor()
+        );
+
+        await Promise.all([this.drawSilkscreen(), this.drawButtons()]);
+    }
+
+    async drawButtons(activeButtons: Array<PalmButton> = []): Promise<void> {
+        if (!this.ctx) return;
+        this.setupTransformation();
+
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
+
+        this.ctx.drawImage(
+            await this.buttonsImage()(this.layout.screenWidth.frameCanvas, this.layout.buttonHeight.frameCanvas),
+            this.layout.screenLeft.frameCanvas,
+            this.layout.buttonTop.frameCanvas,
+            this.layout.screenWidth.frameCanvas,
+            this.layout.buttonHeight.frameCanvas
+        );
+
+        if (activeButtons.includes(PalmButton.cal)) {
+            this.fillRect(
+                0,
+                this.layout.buttonTop.frameDevice,
+                this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice,
+                BACKGROUND_ACTIVE_BUTTON
+            );
+        }
+        if (activeButtons.includes(PalmButton.phone)) {
+            this.fillRect(
+                this.layout.buttonWidth.frameDevice,
+                this.layout.buttonTop.frameDevice,
+                this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice,
+                BACKGROUND_ACTIVE_BUTTON
+            );
+        }
+        if (activeButtons.includes(PalmButton.todo)) {
+            this.fillRect(
+                this.layout.screenWidth.frameDevice - 2 * this.layout.buttonWidth.frameDevice,
+                this.layout.buttonTop.frameDevice,
+                this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice,
+                BACKGROUND_ACTIVE_BUTTON
+            );
+        }
+        if (activeButtons.includes(PalmButton.notes)) {
+            this.fillRect(
+                this.layout.screenWidth.frameDevice - this.layout.buttonWidth.frameDevice,
+                this.layout.buttonTop.frameDevice,
+                this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice,
+                BACKGROUND_ACTIVE_BUTTON
+            );
+        }
+        if (activeButtons.includes(PalmButton.up)) {
+            this.fillRect(
+                2 * this.layout.buttonWidth.frameDevice,
+                this.layout.buttonTop.frameDevice,
+                this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice / 2,
+                BACKGROUND_ACTIVE_BUTTON
+            );
+        }
+        if (activeButtons.includes(PalmButton.down)) {
+            this.fillRect(
+                2 * this.layout.buttonWidth.frameDevice,
+                this.layout.buttonTop.frameDevice + this.layout.buttonHeight.frameDevice / 2,
+                this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
+                this.layout.buttonHeight.frameDevice / 2,
+                BACKGROUND_ACTIVE_BUTTON
+            );
+        }
     }
 
     protected abstract getDeviceId(): DeviceId;

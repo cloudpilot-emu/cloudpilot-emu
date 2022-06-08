@@ -1,16 +1,9 @@
-import { Cloudpilot } from '@common/Cloudpilot';
+import { Emulator, EmulatorInterface } from './Emulator';
 
-interface Emulator {}
+import { Cloudpilot } from '@common/Cloudpilot';
 
 export const VERSION = 'dev';
 
-export async function createFromSession(sessionOrRom: Uint8Array): Promise<Emulator> {
-    const cloudpilotInstance = await Cloudpilot.create();
-
-    const session = cloudpilotInstance.deserializeSessionImage<unknown>(sessionOrRom);
-    if (!session) {
-        throw new Error('not a session');
-    }
-
-    return {};
+export async function createEmulator(): Promise<EmulatorInterface> {
+    return new Emulator(await Cloudpilot.create());
 }
