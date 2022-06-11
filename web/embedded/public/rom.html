@@ -1,0 +1,35 @@
+<html>
+
+<head>
+    <script src="cloudpilot-emu.js"></script>
+    <link rel="stylesheet" href="sample.css">
+
+    </style>
+</head>
+
+<body>
+    <h1>Load ROM</h1>
+    <canvas></canvas>
+    <a href="index.html">...back to index</a>
+
+    <script>
+        (async function () {
+            const romResponse = await fetch('palmv.rom');
+            if (!romResponse.ok) {
+                throw new Error('could not download rom');
+            }
+
+            const rom = await romResponse.arrayBuffer();
+            const emulator = await cloudpilot.createEmulator();
+            const canvas = document.getElementsByTagName('canvas')[0];
+
+            emulator.loadRom(new Uint8Array(rom), cloudpilot.DeviceId.palmV);
+            emulator
+                .setCanvas(canvas)
+                .bindInput(canvas)
+                .resume();
+        })().catch(e => console.log(e));
+    </script>
+</body>
+
+</html>

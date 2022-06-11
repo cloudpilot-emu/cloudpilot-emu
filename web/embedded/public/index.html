@@ -1,37 +1,17 @@
 <html>
 
 <head>
-    <script src="cloudpilot-emu.js"></script>
-
-    <style>
-        canvas {
-            width: 100%;
-            height: 100%;
-        }
-    </style>
 </head>
 
 <body>
-    <canvas></canvas>
+    <h1>Cloudpilot embedded samples</h1>
 
-    <script>
-        (async function () {
-            const imageResponse = await fetch('session.img');
-            if (!imageResponse.ok) {
-                throw new Error('could not download session image');
-            }
+    <ul>
+        <li><a href="session.html">Load session file</a></li>
+        <li><a href="rom.html">Load ROM</a></li>
+        <li><a href="rom-autodetect.html">Load ROM, autodetect device</a></li>
+    </ul>
 
-            const image = await imageResponse.arrayBuffer();
-            const emulator = await cloudpilot.createEmulator();
-            const canvas = document.getElementsByTagName('canvas')[0];
-
-            emulator.loadSession(new Uint8Array(image));
-            emulator
-                .setCanvas(canvas)
-                .bindInput(canvas)
-                .resume();
-        })().catch(e => console.log(e));
-    </script>
 </body>
 
 </html>

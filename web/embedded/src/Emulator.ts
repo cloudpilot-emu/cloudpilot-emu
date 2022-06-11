@@ -87,7 +87,13 @@ export class Emulator implements EmulatorInterface {
         throw new Error('Method not implemented.');
     }
 
-    loadRom(rom: Uint8Array, deviceId: DeviceId): boolean {
+    loadRom(rom: Uint8Array, deviceId?: DeviceId): boolean {
+        if (deviceId === undefined) {
+            const rominfo = this.cloudpilot.getRomInfo(rom);
+            if (!rominfo || rominfo.supportedDevices.length === 0) return false;
+
+            deviceId = rominfo.supportedDevices[0];
+        }
         this.session = { ...DEFAULT_SESSION, deviceId };
 
         if (this.emulationService.initWithRom(this.cloudpilot, rom, deviceId, this.session)) {
