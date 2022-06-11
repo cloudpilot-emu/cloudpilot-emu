@@ -37,6 +37,8 @@ void TransformPenCoordinates(int16& x, int16& y);
 
 void InstallCalibrationInfo(void);
 
+bool LaunchAppByName(const string& name);
+
 class StMemoryMapper {
    public:
     StMemoryMapper(const void* memory, long size);

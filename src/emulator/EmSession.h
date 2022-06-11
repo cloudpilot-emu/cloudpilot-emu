@@ -62,6 +62,8 @@ class EmSession {
     uint32 GetClocksPerSecond() const { return clocksPerSecond; }
     uint64 GetSystemCycles() const { return systemCycles; }
 
+    bool LaunchAppByName(const string& name);
+
     ///////////////////////////////////////////////////////////////////////////
     // Internal stuff
     ///////////////////////////////////////////////////////////////////////////

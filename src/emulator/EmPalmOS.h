@@ -34,7 +34,11 @@ class EmPalmOS {
     static bool HasKeyboardEvent();
     static PenEvent PeekPenEvent();
 
-    static void InjectEvent(CallROMType& callROM);
+    static void InjectSystemEvent(CallROMType& callROM);
+    static void InjectUIEvent();
+
+    static bool LaunchAppByName(const string& name);
+    static bool HasPendingAppForLaunch();
 
    protected:
     static bool HandleTrap15(ExceptionNumber);
@@ -56,6 +60,9 @@ class EmPalmOS {
     static EmThreadSafeQueue<PenEvent> penEventQueueIncoming;
     static EmThreadSafeQueue<KeyboardEvent> keyboardEventQueueIncoming;
     static uint64 lastEventPromotedAt;
+
+    static LocalID dbForLaunch;
+    static bool postNilEvent;
 };
 
 #endif /* EmPalmOS_h */

@@ -590,3 +590,5 @@ void EmSession::CheckDayForRollover() {
 }
 
 void EmSession::TriggerDeadMansSwitch() { deadMansSwitch = true; }
+
+bool EmSession::LaunchAppByName(const string& name) { return EmPalmOS::LaunchAppByName(name); }

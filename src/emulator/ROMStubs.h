@@ -91,4 +91,6 @@ Err ExgDBRead(emuptr readProcP, emuptr deleteProcP, emuptr userDataP, LocalID* d
 void ClipboardAddItem(const ClipboardFormatType format, const void* ptr, UInt16 length);
 emuptr ClipboardGetItem(const ClipboardFormatType format, UInt16* length);
 
+Err SysUIAppSwitch(UInt16 cardNo, LocalID dbID, UInt16 cmd, emuptr cmdPBP);
+
 #endif /* _ROMSTUBS_H_ */

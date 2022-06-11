@@ -46,6 +46,8 @@ EmThreadSafeQueue<KeyboardEvent> EmPalmOS::keyboardEventQueue{EVENT_QUEUE_SIZE};
 EmThreadSafeQueue<PenEvent> EmPalmOS::penEventQueueIncoming{EVENT_QUEUE_SIZE};
 EmThreadSafeQueue<KeyboardEvent> EmPalmOS::keyboardEventQueueIncoming{EVENT_QUEUE_SIZE};
 uint64 EmPalmOS::lastEventPromotedAt{0};
+LocalID EmPalmOS::dbForLaunch{0};
+bool EmPalmOS::postNilEvent{false};
 
 /***********************************************************************
  *
@@ -71,6 +73,8 @@ void EmPalmOS::Initialize(void) {
     gBigROMEntry = EmMemNULL;
 
     ClearQueues();
+    dbForLaunch = 0;
+    postNilEvent = false;
 
     EmPatchMgr::Initialize();
 }
@@ -96,6 +100,8 @@ void EmPalmOS::Reset(void) {
     EmPatchMgr::Reset();
 
     ClearQueues();
+    dbForLaunch = 0;
+    postNilEvent = false;
 }
 
 /***********************************************************************
@@ -346,6 +352,9 @@ bool EmPalmOS::DispatchNextEvent() {
         Wakeup();
 
         return true;
+    } else if (postNilEvent) {
+        EvtWakeup();
+        postNilEvent = false;
     }
 
     return false;
@@ -387,7 +396,7 @@ void EmPalmOS::ClearQueues() {
     lastEventPromotedAt = gSession->GetSystemCycles();
 }
 
-void EmPalmOS::InjectEvent(CallROMType& callROM) {
+void EmPalmOS::InjectSystemEvent(CallROMType& callROM) {
     callROM = kExecuteROM;
 
     // Set the return value (Err) to zero in case we return
@@ -438,3 +447,23 @@ void EmPalmOS::InjectEvent(CallROMType& callROM) {
         }
     }
 }
+
+void EmPalmOS::InjectUIEvent() {
+    if (dbForLaunch != 0) SysUIAppSwitch(0, dbForLaunch, sysAppLaunchCmdNormalLaunch, 0);
+    dbForLaunch = 0;
+}
+
+bool EmPalmOS::LaunchAppByName(const string& name) {
+    LocalID id = DmFindDatabase(0, name.c_str());
+    if (id == 0) return false;
+
+    // We need to make sure that SysUIAppSwitch is called on the UI thread. EvtGetEvent is
+    // hooked to do the actual call to InjectUIEvent, and we just inject a null event here
+    // in order to make sure that the event loop is cycled.
+    dbForLaunch = id;
+    postNilEvent = true;
+
+    return true;
+}
+
+bool EmPalmOS::HasPendingAppForLaunch() { return dbForLaunch != 0; }

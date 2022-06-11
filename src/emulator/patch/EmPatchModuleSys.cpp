@@ -54,7 +54,7 @@ namespace {
 
         CallROMType result = kExecuteROM;
 
-        EmPalmOS::InjectEvent(result);
+        EmPalmOS::InjectSystemEvent(result);
 
         return result;
     }
@@ -76,7 +76,7 @@ namespace {
 
         CallROMType result;
 
-        EmPalmOS::InjectEvent(result);
+        EmPalmOS::InjectSystemEvent(result);
 
         return result;
     }
@@ -328,12 +328,23 @@ namespace {
         GET_RESULT_VAL(Boolean);
 
         if (result == 0) {
+            bool handled = false;
+
             if (EmPalmOS::HasPenEvent()) {
                 PenEvent event = EmPalmOS::PeekPenEvent();
 
                 if (event.isPenDown() || !ignorePenUps) {
                     PUT_RESULT_VAL(Boolean, true);
+                    handled = true;
                 }
+            }
+
+            // This is a nasty hack in order to make sure that launching apps works if the Pilot
+            // is currently executing an app that does no run the event loop until EvtSysEventAvail
+            // returns true.
+            if (!handled && EmPalmOS::HasPendingAppForLaunch()) {
+                PUT_RESULT_VAL(Boolean, true);
+                handled = true;
             }
         }
     }
@@ -397,6 +408,12 @@ namespace {
         return kSkipROM;
     }
 
+    CallROMType HeadpatchEvtGetEvent() {
+        EmPalmOS::InjectUIEvent();
+
+        return kExecuteROM;
+    }
+
     ProtoPatchTableEntry protoPatchTable[] = {
         {sysTrapDmInit, HeadpatchDmInit, NULL},
         {sysTrapSysUIAppSwitch, HeadpatchSysUIAppSwitch, NULL},
@@ -420,6 +437,7 @@ namespace {
         {sysTrapSysLibLoad, HeadpatchSysLibLoad, NULL},
         {sysTrapHwrIRQ4Handler, HeadpatchHwrIRQ4Handler, TailpatchHwrIRQ4Handler},
         {sysTrapSysSleep, HeadpatchSysSleep, NULL},
+        {sysTrapEvtGetEvent, HeadpatchEvtGetEvent, NULL},
         {0, NULL, NULL}};
 }  // namespace
 

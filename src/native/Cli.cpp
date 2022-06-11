@@ -291,6 +291,19 @@ namespace {
         return false;
     }
 
+    bool CmdLaunch(vector<string> args) {
+        if (args.size() != 1) {
+            cout << "usage: launch <database>" << endl << flush;
+            return false;
+        }
+
+        cout << (gSession->LaunchAppByName(args[0]) ? "app launched successfully" : "launch failed")
+             << endl
+             << flush;
+
+        return false;
+    }
+
     struct Command {
         string name;
         Cmd cmd;
@@ -307,7 +320,8 @@ namespace {
                           {.name = "save-image", .cmd = CmdSaveImage},
                           {.name = "switch-image", .cmd = CmdSwitchImage},
                           {.name = "save-backup", .cmd = CmdSaveBackup},
-                          {.name = "save-backup-with-rom", .cmd = CmdSaveBackupWithRom}};
+                          {.name = "save-backup-with-rom", .cmd = CmdSaveBackupWithRom},
+                          {.name = "launch", .cmd = CmdLaunch}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);

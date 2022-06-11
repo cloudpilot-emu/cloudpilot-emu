@@ -829,3 +829,12 @@ void InstallCalibrationInfo(void) {
         ::DmCloseDatabase(dbP);
     }
 }
+
+bool LaunchAppByName(const string& name) {
+    LocalID id = DmFindDatabase(0, name.c_str());
+    if (id == 0) return false;
+
+    if (SysUIAppSwitch(0, id, sysAppLaunchCmdNormalLaunch, 0) != 0) return false;
+
+    return true;
+}

@@ -772,3 +772,15 @@ emuptr PrefOpenPreferenceDB(Boolean saved) {
     // Return the result.
     RETURN_RESULT_VAL(emuptr);
 }
+
+Err SysUIAppSwitch(UInt16 cardNo, LocalID dbID, UInt16 cmd, emuptr cmdPBP) {
+    CALLER_SETUP("Err", "UInt16 cardNo, LocalID dbID, UInt16 cmd, emuptr cmdPBP");
+
+    CALLER_PUT_PARAM_VAL(LocalID, dbID);
+    CALLER_PUT_PARAM_VAL(UInt16, cmd);
+    CALLER_PUT_PARAM_VAL(emuptr, cmdPBP);
+
+    sub.Call(sysTrapSysUIAppSwitch);
+
+    RETURN_RESULT_VAL(Err);
+}
