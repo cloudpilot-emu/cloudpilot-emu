@@ -460,6 +460,10 @@ bool EmPalmOS::LaunchAppByName(const string& name) {
     // We need to make sure that SysUIAppSwitch is called on the UI thread. EvtGetEvent is
     // hooked to do the actual call to InjectUIEvent, and we just inject a null event here
     // in order to make sure that the event loop is cycled.
+    //
+    // EDIT: Actually, after 5da779c9515a I am not sure that this is strictly necessary, the
+    // crashes may also have been caused by my own blunder. Nevertheless, it is probably a good
+    // idea to do the actual call to SysUIAppSwitch in a well defined place.
     dbForLaunch = id;
     postNilEvent = true;
 
