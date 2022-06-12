@@ -82,6 +82,8 @@ class Cloudpilot {
 
     void SetHotsyncNameManagement(bool toggle);
 
+    bool LaunchAppByName(const char* name);
+
    private:
     Frame frame{320 * 480 * 4};
 };

@@ -232,3 +232,5 @@ void Cloudpilot::RegisterProxyDisconnectHandler(uint32 handlerPtr) {
 void Cloudpilot::SetHotsyncNameManagement(bool toggle) {
     Feature::SetHotsyncNameManagement(toggle);
 }
+
+bool Cloudpilot::LaunchAppByName(const char* name) { return gSession->LaunchAppByName(name); }

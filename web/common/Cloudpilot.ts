@@ -599,6 +599,11 @@ export class Cloudpilot {
         return result;
     }
 
+    @guard()
+    launchAppByName(name: string): boolean {
+        return this.cloudpilot.LaunchAppByName(name);
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);

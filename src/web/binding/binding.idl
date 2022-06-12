@@ -71,6 +71,8 @@ interface Cloudpilot {
     void RegisterProxyDisconnectHandler(long handlerPtr);
 
     void SetHotsyncNameManagement(boolean toggle);
+
+    boolean LaunchAppByName([Const] DOMString name);
 };
 
 interface RomInfo {

@@ -34,7 +34,7 @@ export interface EmulatorInterface {
     installDatabase(file: Uint8Array): boolean;
     installFromZipfile(file: Uint8Array): boolean;
 
-    launch(dbName: string): boolean;
+    launch(name: string): boolean;
 
     reset(): this;
     resetNoExtensions(): this;
@@ -143,15 +143,15 @@ export class Emulator implements EmulatorInterface {
     }
 
     installDatabase(file: Uint8Array): boolean {
-        throw new Error('Method not implemented.');
+        return this.cloudpilot.installDb(file) >= 0;
     }
 
     installFromZipfile(file: Uint8Array): boolean {
         throw new Error('Method not implemented.');
     }
 
-    launch(dbName: string): boolean {
-        throw new Error('Method not implemented.');
+    launch(name: string): boolean {
+        return this.cloudpilot.launchAppByName(name);
     }
 
     reset(): this {

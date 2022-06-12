@@ -1,0 +1,47 @@
+<html>
+
+<head>
+    <script src="cloudpilot-emu.js"></script>
+    <link rel="stylesheet" href="sample.css">
+
+    </style>
+</head>
+
+<body>
+    <h1>Install and start a .prc</h1>
+    <canvas></canvas>
+    <a href="index.html">...back to index</a>
+
+    <script>
+        (async function () {
+            const romResponse = await fetch('session.img');
+            if (!romResponse.ok) {
+                throw new Error('could not download session file');
+            }
+
+            const rom = await romResponse.arrayBuffer();
+
+            const prcResponse = await fetch('pilotmines.prc');
+            if (!prcResponse.ok) {
+                throw new Error('could not download prc file');
+            }
+
+            const prc = await prcResponse.arrayBuffer();
+
+            const emulator = await cloudpilot.createEmulator();
+            const canvas = document.getElementsByTagName('canvas')[0];
+
+            emulator.loadSession(new Uint8Array(rom));
+            emulator.installDatabase(new Uint8Array(prc));
+            emulator.launch('PilotMines');
+
+            emulator
+                .setCanvas(canvas)
+                .bindInput(canvas)
+                .resume();
+
+        })().catch(e => console.log(e));
+    </script>
+</body>
+
+</html>

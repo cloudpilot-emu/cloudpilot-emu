@@ -119,6 +119,8 @@ export interface Cloudpilot {
     RegisterProxyDisconnectHandler(handlerPtr: number): void;
 
     SetHotsyncNameManagement(toggle: boolean): void;
+
+    LaunchAppByName(name: string): boolean;
 }
 
 export interface Frame {
