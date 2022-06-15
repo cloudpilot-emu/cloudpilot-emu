@@ -1,6 +1,7 @@
 #include "Cloudpilot.h"
 
 #include <cstdlib>
+#include <cstring>
 
 #include "ButtonEvent.h"
 #include "DbInstaller.h"
@@ -233,4 +234,15 @@ void Cloudpilot::SetHotsyncNameManagement(bool toggle) {
     Feature::SetHotsyncNameManagement(toggle);
 }
 
-bool Cloudpilot::LaunchAppByName(const char* name) { return gSession->LaunchAppByName(name); }
+bool Cloudpilot::LaunchAppByName(const char* name) {
+    string encodedName = Utf8ToIsolatin1(name);
+    if (encodedName.length() > 31) return false;
+
+    return gSession->LaunchAppByName(encodedName);
+}
+
+bool Cloudpilot::LaunchAppByDbHeader(void* header, int len) {
+    if (len < 32 || strnlen(static_cast<const char*>(header), 32) == 32) return false;
+
+    return gSession->LaunchAppByName(static_cast<const char*>(header));
+}

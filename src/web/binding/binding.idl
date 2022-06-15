@@ -73,6 +73,7 @@ interface Cloudpilot {
     void SetHotsyncNameManagement(boolean toggle);
 
     boolean LaunchAppByName([Const] DOMString name);
+    boolean LaunchAppByDbHeader(VoidPtr buffer, long len);
 };
 
 interface RomInfo {

@@ -121,6 +121,7 @@ export interface Cloudpilot {
     SetHotsyncNameManagement(toggle: boolean): void;
 
     LaunchAppByName(name: string): boolean;
+    LaunchAppByDbHeader(buffer: VoidPtr, len: number): boolean;
 }
 
 export interface Frame {

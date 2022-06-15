@@ -604,6 +604,17 @@ export class Cloudpilot {
         return this.cloudpilot.LaunchAppByName(name);
     }
 
+    @guard()
+    launchAppByDbHeader(header: Uint8Array): boolean {
+        if (header.length < 32) return false;
+
+        const headerPtr = this.copyIn(header.subarray(0, 32));
+        const result = this.cloudpilot.LaunchAppByDbHeader(headerPtr, 32);
+        this.cloudpilot.Free(headerPtr);
+
+        return result;
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);
