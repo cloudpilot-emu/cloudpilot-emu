@@ -31,14 +31,14 @@
             const emulator = await cloudpilot.createEmulator();
             const canvas = document.getElementsByTagName('canvas')[0];
 
-            emulator.loadSession(new Uint8Array(rom));
-            emulator.installDatabase(new Uint8Array(prc));
-            emulator.launchDatabase(new Uint8Array(prc));
-
             emulator
+                .loadSession(new Uint8Array(rom))
+                .installAndLaunchDatabase(new Uint8Array(prc))
                 .setCanvas(canvas)
                 .bindInput(canvas)
                 .resume();
+
+            if (emulator.getError() !== undefined) console.warn(emulator.getError());
 
         })().catch(e => console.log(e));
     </script>

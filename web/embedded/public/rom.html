@@ -23,11 +23,14 @@
             const emulator = await cloudpilot.createEmulator();
             const canvas = document.getElementsByTagName('canvas')[0];
 
-            emulator.loadRom(new Uint8Array(rom), cloudpilot.DeviceId.palmV);
             emulator
+                .loadRom(new Uint8Array(rom), cloudpilot.DeviceId.palmV)
                 .setCanvas(canvas)
                 .bindInput(canvas)
                 .resume();
+
+
+            if (emulator.getError() !== undefined) console.warn(emulator.getError());
         })().catch(e => console.log(e));
     </script>
 </body>

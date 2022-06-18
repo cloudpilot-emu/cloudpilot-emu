@@ -24,13 +24,14 @@
             const emulator = await cloudpilot.createEmulator();
             const canvas = document.getElementsByTagName('canvas')[0];
 
-            emulator.loadSession(new Uint8Array(rom));
-            emulator.launchByName('Calculator');
-
             emulator
+                .loadSession(new Uint8Array(rom))
+                .launchByName('Calculator')
                 .setCanvas(canvas)
                 .bindInput(canvas)
                 .resume();
+
+            if (emulator.getError() !== undefined) console.warn(emulator.getError());
 
         })().catch(e => console.log(e));
     </script>
