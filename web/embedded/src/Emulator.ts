@@ -22,9 +22,6 @@ const DEFAULT_SESSION: Session = {
 };
 
 export interface EmulatorInterface {
-    getError(): string | undefined;
-    clearError(): this;
-
     loadRom(rom: Uint8Array, deviceId: DeviceId): this;
 
     loadSession(session: Uint8Array): this;
@@ -88,27 +85,15 @@ export class Emulator implements EmulatorInterface {
         );
     }
 
-    getError(): string | undefined {
-        return this.pendingError;
-    }
-
-    clearError(): this {
-        this.pendingError = undefined;
-
-        return this;
-    }
-
     getStatistics(): EmulationStatistics {
         throw new Error('Method not implemented.');
     }
 
     loadRom(rom: Uint8Array, deviceId?: DeviceId): this {
-        if (this.pendingError) return this;
-
         if (deviceId === undefined) {
             const rominfo = this.cloudpilot.getRomInfo(rom);
             if (!rominfo || rominfo.supportedDevices.length === 0) {
-                return this.setError('unsupported device');
+                throw new Error('unsupported device');
             }
 
             deviceId = rominfo.supportedDevices[0];
@@ -120,14 +105,12 @@ export class Emulator implements EmulatorInterface {
             return this;
         }
 
-        return this.setError('failed to initialize session');
+        throw new Error('failed to initialize session');
     }
 
     loadSession(session: Uint8Array): this {
-        if (this.pendingError) return this;
-
         const sessionImage = this.cloudpilot.deserializeSessionImage<SessionMetadata>(session);
-        if (!sessionImage) return this.setError('bad session image');
+        if (!sessionImage) throw new Error('bad session image');
 
         this.session = {
             hotsyncName: sessionImage.metadata?.hotsyncName,
@@ -142,47 +125,35 @@ export class Emulator implements EmulatorInterface {
             return this;
         }
 
-        return this.setError('failed to initialize session');
+        throw new Error('failed to initialize session');
     }
 
     setCanvas(canvas: HTMLCanvasElement): this {
-        if (this.pendingError) return this;
-
         this.canvasDisplayService.initialize(canvas, this.session.deviceId, this.session.orientation);
 
         return this;
     }
 
     bindInput(pointerTarget: HasEvents, keyEventTarget?: HasEvents): this {
-        if (this.pendingError) return this;
-
         this.eventHandlingService.bind(pointerTarget, keyEventTarget);
 
         return this;
     }
 
     releaseInput(): this {
-        if (this.pendingError) return this;
-
         this.eventHandlingService.release();
 
         return this;
     }
 
     installDatabase(file: Uint8Array): this {
-        if (this.pendingError) return this;
+        if (this.cloudpilot.installDb(file) < 0) throw new Error('failed to install database');
 
-        return this.cloudpilot.installDb(file) >= 0 ? this : this.setError('failed to install database');
+        return this;
     }
 
     installAndLaunchDatabase(file: Uint8Array): this {
-        if (this.pendingError) return this;
-
-        this.installDatabase(file);
-        if (this.getError() !== undefined) return this;
-
-        this.launchDatabase(file);
-        return this;
+        return this.installDatabase(file).launchDatabase(file);
     }
 
     installFromZipfile(file: Uint8Array): this {
@@ -190,36 +161,30 @@ export class Emulator implements EmulatorInterface {
     }
 
     launchByName(name: string): this {
-        if (this.pendingError) return this;
+        if (!this.cloudpilot.launchAppByName(name)) throw new Error(`failed to launch ${name}`);
 
-        return this.cloudpilot.launchAppByName(name) ? this : this.setError(`failed to launch ${name}`);
+        return this;
     }
 
     launchDatabase(database: Uint8Array): this {
-        if (this.pendingError) return this;
+        if (!this.cloudpilot.launchAppByDbHeader(database)) throw new Error('failed to launch database');
 
-        return this.cloudpilot.launchAppByDbHeader(database) ? this : this.setError('failed to launch database');
+        return this;
     }
 
     reset(): this {
-        if (this.pendingError) return this;
-
         this.emulationService.reset();
 
         return this;
     }
 
     resetNoExtensions(): this {
-        if (this.pendingError) return this;
-
         this.emulationService.resetNoExtensions();
 
         return this;
     }
 
     resetHard(): this {
-        if (this.pendingError) return this;
-
         this.emulationService.resetHard();
 
         return this;
@@ -256,24 +221,18 @@ export class Emulator implements EmulatorInterface {
     }
 
     resume(): this {
-        if (this.pendingError) return this;
-
         this.emulationService.resume();
 
         return this;
     }
 
     pause(): this {
-        if (this.pendingError) return this;
-
         this.emulationService.pause();
 
         return this;
     }
 
     setSpeed(speed: number): this {
-        if (this.pendingError) return this;
-
         this.session.speed = speed;
 
         return this;
@@ -284,8 +243,6 @@ export class Emulator implements EmulatorInterface {
     }
 
     setVolume(volume: number): this {
-        if (this.pendingError) return this;
-
         throw new Error('Method not implemented.');
 
         return this;
@@ -296,8 +253,6 @@ export class Emulator implements EmulatorInterface {
     }
 
     setOrientation(orientation: DeviceOrientation): this {
-        if (this.pendingError) return this;
-
         this.session.orientation = orientation;
         this.canvasDisplayService.updateOrientation(this.session.orientation);
 
@@ -309,8 +264,6 @@ export class Emulator implements EmulatorInterface {
     }
 
     setHotsyncName(hotsyncName: string | undefined): this {
-        if (this.pendingError) return this;
-
         this.session.hotsyncName = hotsyncName;
 
         return this;
@@ -321,8 +274,6 @@ export class Emulator implements EmulatorInterface {
     }
 
     setRunHidden(toggle: boolean): this {
-        if (this.pendingError) return this;
-
         this.session.runInBackground = toggle;
 
         return this;
@@ -330,11 +281,6 @@ export class Emulator implements EmulatorInterface {
 
     getRunHidden(): boolean {
         return this.session.runInBackground;
-    }
-
-    private setError(error: string): this {
-        this.pendingError = error;
-        return this;
     }
 
     readonly powerOffChangeEvent = new Event<boolean>();
@@ -345,6 +291,4 @@ export class Emulator implements EmulatorInterface {
     private eventHandlingService: GenericEventHandlingService;
 
     private session: Session = { ...DEFAULT_SESSION };
-
-    private pendingError: string | undefined = undefined;
 }

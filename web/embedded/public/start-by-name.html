@@ -30,10 +30,7 @@
                 .setCanvas(canvas)
                 .bindInput(canvas)
                 .resume();
-
-            if (emulator.getError() !== undefined) console.warn(emulator.getError());
-
-        })().catch(e => console.log(e));
+        })().catch(e => console.error(e));
     </script>
 </body>
 
