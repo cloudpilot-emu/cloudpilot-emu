@@ -14,12 +14,12 @@
 
     <script>
         (async function () {
-            const romResponse = await fetch('session.img');
-            if (!romResponse.ok) {
+            const sessionResponse = await fetch('session.img');
+            if (!sessionResponse.ok) {
                 throw new Error('could not download session file');
             }
 
-            const rom = await romResponse.arrayBuffer();
+            const session = await sessionResponse.arrayBuffer();
 
             const prcResponse = await fetch('pilotmines.prc');
             if (!prcResponse.ok) {
@@ -32,7 +32,7 @@
             const canvas = document.getElementsByTagName('canvas')[0];
 
             emulator
-                .loadSession(new Uint8Array(rom))
+                .loadSession(new Uint8Array(session))
                 .installAndLaunchDatabase(new Uint8Array(prc))
                 .setCanvas(canvas)
                 .bindInput(canvas)
