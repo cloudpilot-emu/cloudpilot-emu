@@ -1,9 +1,9 @@
 import * as skin from '@common/skin';
 
+import { Cloudpilot, ZipfileWalkerState } from '@common/Cloudpilot';
 import { Event, EventInterface } from 'microevent.ts';
 import { GenericEventHandlingService, HasEvents } from '@common/service/GenericEventHandlingService';
 
-import { Cloudpilot } from '@common/Cloudpilot';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmbeddedCanvasDisplayService } from './service/EmbeddedCanvasDisplayService';
@@ -34,6 +34,7 @@ export interface EmulatorInterface {
     installDatabase(file: Uint8Array): this;
     installAndLaunchDatabase(file: Uint8Array): this;
     installFromZipfile(file: Uint8Array): this;
+    installFromZipfileAndLaunch(file: Uint8Array, launchFile?: string): this;
 
     launchByName(name: string): this;
     launchDatabase(database: Uint8Array): this;
@@ -157,7 +158,37 @@ export class Emulator implements EmulatorInterface {
     }
 
     installFromZipfile(file: Uint8Array): this {
-        throw new Error('Method not implemented.');
+        return this.installFromZipfileAndLaunch(file);
+    }
+
+    installFromZipfileAndLaunch(file: Uint8Array, launchFile?: string): this {
+        let launch: Uint8Array | undefined;
+
+        this.cloudpilot.withZipfileWalkerSync(file, (walker) => {
+            while (walker.GetState() === ZipfileWalkerState.open) {
+                const content = walker.GetCurrentEntryContent();
+                const name = walker.GetCurrentEntryName();
+
+                if (!content) {
+                    throw new Error(`unable to read ${name} from zupfile`);
+                }
+
+                this.installDatabase(content);
+
+                if (name.toLowerCase() === launchFile?.toLowerCase()) launch = content.subarray(0, 32).slice();
+
+                walker.Next();
+            }
+
+            if (walker.GetState() === ZipfileWalkerState.error) {
+                throw new Error('error reading zipfile');
+            }
+        });
+
+        if (launchFile !== undefined && !launch) throw new Error(`database ${launchFile} not found `);
+        if (launch) this.launchDatabase(launch);
+
+        return this;
     }
 
     launchByName(name: string): this {
