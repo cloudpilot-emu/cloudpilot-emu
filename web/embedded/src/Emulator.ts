@@ -4,6 +4,7 @@ import { Cloudpilot, ZipfileWalkerState } from '@common/Cloudpilot';
 import { Event, EventInterface } from 'microevent.ts';
 import { GenericEventHandlingService, HasEvents } from '@common/service/GenericEventHandlingService';
 
+import { Button } from './index';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmbeddedCanvasDisplayService } from './service/EmbeddedCanvasDisplayService';
@@ -54,6 +55,9 @@ export interface EmulatorInterface {
     resume(): this;
     pause(): this;
 
+    buttonDown(button: Button): this;
+    buttonUp(button: Button): this;
+
     setSpeed(speed: number): this;
     getSpeed(): number;
 
@@ -72,7 +76,9 @@ export interface EmulatorInterface {
     getStatistics(): EmulationStatistics;
 
     readonly powerOffChangeEvent: EventInterface<boolean>;
-    readonly audioInitialized: EventInterface<void>;
+    readonly isUiInitializedChangeEvent: EventInterface<boolean>;
+    readonly audioInitializedEvent: EventInterface<void>;
+    readonly timesliceEvent: EventInterface<void>;
 }
 
 export class Emulator implements EmulatorInterface {
@@ -84,6 +90,11 @@ export class Emulator implements EmulatorInterface {
         this.emulationService.newFrameEvent.addHandler((canvas) =>
             this.canvasDisplayService.updateEmulationCanvas(canvas)
         );
+
+        this.timesliceEvent = this.emulationService.timesliceEvent;
+        this.timesliceEvent.addHandler(this.onTimeslice);
+
+        this.powerOffCached = this.isPowerOff();
     }
 
     getStatistics(): EmulationStatistics {
@@ -263,6 +274,18 @@ export class Emulator implements EmulatorInterface {
         return this;
     }
 
+    buttonDown(button: Button): this {
+        this.emulationService.handleButtonDown(button as number);
+
+        return this;
+    }
+
+    buttonUp(button: Button): this {
+        this.emulationService.handleButtonUp(button as number);
+
+        return this;
+    }
+
     setSpeed(speed: number): this {
         this.session.speed = speed;
 
@@ -314,12 +337,23 @@ export class Emulator implements EmulatorInterface {
         return this.session.runInBackground;
     }
 
+    private onTimeslice = (): void => {
+        if (this.powerOffCached !== this.isPowerOff()) {
+            this.powerOffCached = this.isPowerOff();
+            this.powerOffChangeEvent.dispatch(this.powerOffCached);
+        }
+    };
+
     readonly powerOffChangeEvent = new Event<boolean>();
-    readonly audioInitialized = new Event<void>();
+    readonly isUiInitializedChangeEvent = new Event<boolean>();
+    readonly audioInitializedEvent = new Event<void>();
+    readonly timesliceEvent: EventInterface<void>;
 
     private emulationService: EmbeddedEmulationService;
     private canvasDisplayService: EmbeddedCanvasDisplayService;
     private eventHandlingService: GenericEventHandlingService;
+
+    private powerOffCached: boolean;
 
     private session: Session = { ...DEFAULT_SESSION };
 }

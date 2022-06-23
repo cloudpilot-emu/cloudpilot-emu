@@ -3,6 +3,7 @@ import { Cloudpilot, SessionImage } from '@common/Cloudpilot';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { Event } from 'microevent.ts';
 import { SchedulerKind } from '@pwa/helper/scheduler';
 import { Session } from '@embedded/model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
@@ -88,5 +89,11 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
         return false;
     }
 
+    protected override onAfterAdvanceEmulation(timestamp: number, cycles: number): void {
+        this.timesliceEvent.dispatch();
+    }
+
     private session: Session | undefined;
+
+    readonly timesliceEvent = new Event<void>();
 }

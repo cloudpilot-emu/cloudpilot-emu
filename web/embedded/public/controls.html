@@ -1,0 +1,98 @@
+<html>
+
+<head>
+    <script src="cloudpilot-emu.js"></script>
+
+    <style>
+        .container {
+            width: 100%;
+            height: calc(100vh - 8em);
+            margin-bottom: 1em;
+
+            display: flex;
+            flex-direction: row;
+        }
+
+        canvas {
+            flex-grow: 1;
+        }
+
+        #control-container {
+            flex-grow: none;
+            flex-basis: 40em;
+            text-align: left;
+        }
+
+        .hidden {
+            visibility: hidden;
+        }
+
+        body {
+            text-align: center;
+        }
+
+        button {
+            min-width: 10em;
+            margin: 0.5em;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Emulator controls</h1>
+    <div class="container">
+        <canvas></canvas>
+        <div id="control-container" class="hidden">
+            <button type="button" id="power-button"></button>
+            <button type="button" id="reset-button">Reset</button>
+            <button type="button" id="reset-noext-button">Reset noext</button>
+            <button type="button" id="reset-hard-button">Reset hard</button>
+        </div>
+    </div>
+
+    <a href="index.html">...back to index</a>
+
+    <script>
+        (async function () {
+            const imageResponse = await fetch('session.img');
+            if (!imageResponse.ok) {
+                throw new Error('could not download session image');
+            }
+
+            const image = await imageResponse.arrayBuffer();
+            const emulator = await cloudpilot.createEmulator();
+            const canvas = document.getElementsByTagName('canvas')[0];
+
+            const powerButton = document.getElementById('power-button');
+            const resetButton = document.getElementById('reset-button');
+            const resetNoextButton = document.getElementById('reset-noext-button');
+            const resetHardButton = document.getElementById('reset-hard-button');
+            const controlContainer = document.getElementById('control-container');
+
+            emulator.
+                loadSession(new Uint8Array(image))
+                .setCanvas(canvas)
+                .bindInput(canvas)
+                .resume();
+
+            function updateUi() {
+                powerButton.innerText = emulator.isPowerOff() ? 'Power on' : 'Power off';
+            }
+
+            emulator.powerOffChangeEvent.addHandler(updateUi);
+            emulator.isUiInitializedChangeEvent.addHandler(updateUi);
+
+            controlContainer.className = '';
+            updateUi();
+
+            powerButton.addEventListener('mousedown', () => emulator.buttonDown(cloudpilot.Button.power));
+            powerButton.addEventListener('mouseup', () => emulator.buttonUp(cloudpilot.Button.power));
+
+            resetButton.addEventListener('click', () => emulator.reset());
+            resetNoextButton.addEventListener('click', () => emulator.resetNoExtensions());
+            resetHardButton.addEventListener('click', () => emulator.resetHard());
+        })().catch(e => console.error(e));
+    </script>
+</body>
+
+</html>

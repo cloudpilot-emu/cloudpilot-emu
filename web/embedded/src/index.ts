@@ -1,8 +1,8 @@
+import { Cloudpilot, PalmButton } from '@common/Cloudpilot';
 import { Emulator, EmulatorInterface } from './Emulator';
 
-import { Cloudpilot } from '@common/Cloudpilot';
-
 export { DeviceId } from '@common/model/DeviceId';
+export { Button } from './button';
 
 export const VERSION = 'dev';
 
