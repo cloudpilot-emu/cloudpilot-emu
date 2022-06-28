@@ -32,5 +32,5 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
     }
 
     private deviceId: DeviceId = DeviceId.m515;
-    private orientation: DeviceOrientation = DeviceOrientation.protrait;
+    private orientation: DeviceOrientation = DeviceOrientation.portrait;
 }

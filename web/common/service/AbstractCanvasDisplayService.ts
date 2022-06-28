@@ -102,7 +102,7 @@ export abstract class AbstractCanvasDisplayService {
 
     get width(): number {
         switch (this.getOrientation()) {
-            case DeviceOrientation.protrait:
+            case DeviceOrientation.portrait:
             case DeviceOrientation.portrait180:
             case undefined:
                 return this.layout.width.frameCanvas;
@@ -114,7 +114,7 @@ export abstract class AbstractCanvasDisplayService {
 
     get height(): number {
         switch (this.getOrientation()) {
-            case DeviceOrientation.protrait:
+            case DeviceOrientation.portrait:
             case DeviceOrientation.portrait180:
             case undefined:
                 return this.layout.height.frameCanvas;
@@ -278,6 +278,7 @@ export abstract class AbstractCanvasDisplayService {
             this.backgroundColor()
         );
 
+        this.drawEmulationCanvas();
         await Promise.all([this.drawSilkscreen(), this.drawButtons()]);
     }
 
@@ -364,7 +365,7 @@ export abstract class AbstractCanvasDisplayService {
         this.ctx?.resetTransform();
 
         switch (this.getOrientation()) {
-            case DeviceOrientation.protrait:
+            case DeviceOrientation.portrait:
             case undefined:
                 break;
 

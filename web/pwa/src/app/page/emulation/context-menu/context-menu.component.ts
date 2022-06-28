@@ -188,7 +188,7 @@ export class ContextMenuComponent implements OnInit {
         }
 
         switch (session.deviceOrientation) {
-            case DeviceOrientation.protrait:
+            case DeviceOrientation.portrait:
             case undefined:
                 session.deviceOrientation = DeviceOrientation.landscape90;
                 break;
@@ -202,7 +202,7 @@ export class ContextMenuComponent implements OnInit {
                 break;
 
             case DeviceOrientation.landscape270:
-                session.deviceOrientation = DeviceOrientation.protrait;
+                session.deviceOrientation = DeviceOrientation.portrait;
                 break;
         }
 

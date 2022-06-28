@@ -127,7 +127,7 @@ export class SessionSettingsComponent implements OnInit {
             speed: new FormControl(
                 (this.session.speed || 1) >= 1 ? (this.session.speed || 1) - 1 : 1 - 1 / this.session.speed!
             ),
-            orientation: new FormControl(this.session.deviceOrientation || DeviceOrientation.protrait),
+            orientation: new FormControl(this.session.deviceOrientation || DeviceOrientation.portrait),
         });
     }
 
@@ -153,7 +153,7 @@ export class SessionSettingsComponent implements OnInit {
     formGroup!: FormGroup;
 
     readonly orientations = [
-        [DeviceOrientation.protrait, 'Portrait'],
+        [DeviceOrientation.portrait, 'Portrait'],
         [DeviceOrientation.landscape90, 'Landscape 90°'],
         [DeviceOrientation.landscape270, 'Landscape 270°'],
         [DeviceOrientation.portrait180, 'Upside down'],

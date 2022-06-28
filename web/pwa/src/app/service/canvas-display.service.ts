@@ -64,7 +64,7 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
     }
 
     protected getOrientation(): DeviceOrientation {
-        return this.session?.deviceOrientation ?? DeviceOrientation.protrait;
+        return this.session?.deviceOrientation ?? DeviceOrientation.portrait;
     }
 
     protected override onAfterUpdateCanvas(): void {

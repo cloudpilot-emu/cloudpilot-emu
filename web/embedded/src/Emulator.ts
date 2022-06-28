@@ -12,11 +12,12 @@ import { EmbeddedEmulationService } from './service/EmbeddedEmulationService';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { Session } from './model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
+import { Watcher } from './Watcher';
 import { loadSkin } from '@common/skin/loader';
 
 const DEFAULT_SESSION: Session = {
     hotsyncName: undefined,
-    orientation: DeviceOrientation.protrait,
+    orientation: DeviceOrientation.portrait,
     runInBackground: false,
     speed: 1,
     deviceId: DeviceId.m515,
@@ -94,7 +95,8 @@ export class Emulator implements EmulatorInterface {
         this.timesliceEvent = this.emulationService.timesliceEvent;
         this.timesliceEvent.addHandler(this.onTimeslice);
 
-        this.powerOffCached = this.isPowerOff();
+        this.powerOffWatcher = new Watcher(() => this.emulationService.isPowerOff());
+        this.uiInitializedWatcher = new Watcher(() => this.emulationService.isUiInitialized());
     }
 
     getStatistics(): EmulationStatistics {
@@ -127,7 +129,7 @@ export class Emulator implements EmulatorInterface {
         this.session = {
             hotsyncName: sessionImage.metadata?.hotsyncName,
             speed: sessionImage.metadata?.speed ?? 1,
-            orientation: sessionImage.metadata?.deviceOrientation ?? DeviceOrientation.protrait,
+            orientation: sessionImage.metadata?.deviceOrientation ?? DeviceOrientation.portrait,
             runInBackground: false,
             deviceId: sessionImage.deviceId,
         };
@@ -337,15 +339,19 @@ export class Emulator implements EmulatorInterface {
         return this.session.runInBackground;
     }
 
+    get powerOffChangeEvent(): EventInterface<boolean> {
+        return this.powerOffWatcher.changeEvent;
+    }
+
+    get isUiInitializedChangeEvent(): EventInterface<boolean> {
+        return this.uiInitializedWatcher.changeEvent;
+    }
+
     private onTimeslice = (): void => {
-        if (this.powerOffCached !== this.isPowerOff()) {
-            this.powerOffCached = this.isPowerOff();
-            this.powerOffChangeEvent.dispatch(this.powerOffCached);
-        }
+        this.powerOffWatcher.update();
+        this.uiInitializedWatcher.update();
     };
 
-    readonly powerOffChangeEvent = new Event<boolean>();
-    readonly isUiInitializedChangeEvent = new Event<boolean>();
     readonly audioInitializedEvent = new Event<void>();
     readonly timesliceEvent: EventInterface<void>;
 
@@ -353,7 +359,8 @@ export class Emulator implements EmulatorInterface {
     private canvasDisplayService: EmbeddedCanvasDisplayService;
     private eventHandlingService: GenericEventHandlingService;
 
-    private powerOffCached: boolean;
+    private powerOffWatcher: Watcher<boolean>;
+    private uiInitializedWatcher: Watcher<boolean>;
 
     private session: Session = { ...DEFAULT_SESSION };
 }
