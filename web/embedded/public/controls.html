@@ -24,12 +24,17 @@
             height: 100%;
         }
 
+        canvas:focus {
+            border: none;
+            outline: none;
+        }
+
         #control-container {
             flex-grow: 0;
             flex-shrink: 0;
             flex-basis: 30em;
-            width: 40em;
             text-align: left;
+            margin-left: 0.5em;
         }
 
         .hidden {
@@ -45,6 +50,10 @@
             margin: 0.5em;
         }
 
+        input {
+            width: 15em;
+        }
+
         #ui-status {
             display: inline-block;
             margin-left: 1em;
@@ -55,7 +64,7 @@
 <body>
     <h1>Emulator controls</h1>
     <div class="container">
-        <div id="canvas-wrapper"><canvas></canvas></div>
+        <div id="canvas-wrapper"><canvas tabindex="1"></canvas></div>
         <div id="control-container" class="hidden">
             <div><button type="button" id="power-button"></button><span id="ui-status"></span></div>
             <div>
@@ -63,9 +72,15 @@
                 <button type="button" id="reset-noext-button">Reset noext</button>
                 <button type="button" id="reset-hard-button">Reset hard</button>
             </div>
-            <dvi>
+            <div>
                 <button type="button" id="orientation-button"></button>
-            </dvi>
+            </div>
+            <div id="hotsync-name-container"></div>
+            <div id="hotsync-name-controls">
+                <label for="hotsync-name-input">New name:</label>
+                <input maxlength="40" type="text" id="hotsync-name-field"></input>
+                <button type="button" id="apply-hotsync-name-button">apply</button>
+            </div>
         </div>
     </div>
 
@@ -121,24 +136,31 @@
             const controlContainer = document.getElementById('control-container');
             const orientationButton = document.getElementById('orientation-button');
             const uiStatusContainer = document.getElementById('ui-status');
+            const hotsyncNameContainer = document.getElementById('hotsync-name-container');
+            const applyHotsyncNameButton = document.getElementById('apply-hotsync-name-button');
+            const hotsyncNameInput = document.getElementById('hotsync-name-field');
 
             emulator.
                 loadSession(new Uint8Array(image))
                 .setCanvas(canvas)
-                .bindInput(canvas)
+                .bindInput(canvas, canvas)
                 .resume();
 
             function updateUi() {
                 powerButton.innerText = emulator.isPowerOff() ? 'Power on' : 'Power off';
                 uiStatusContainer.innerText = emulator.isUiInitialized() ? 'UI initialized' : 'UI not initialized';
                 orientationButton.innerText = 'Rotate to ' + orientationToString(nextOrientation(emulator.getOrientation()));
+
+                hotsyncNameContainer.innerText = `Hotsync name: ${emulator.getHotsyncName()}`;
+                applyHotsyncNameButton.disabled = emulator.isPowerOff() || !emulator.isUiInitialized();
             }
 
             emulator.powerOffChangeEvent.addHandler(updateUi);
             emulator.isUiInitializedChangeEvent.addHandler(updateUi);
+            emulator.hotsyncNameChangeEvent.addHandler(updateUi);
 
-            controlContainer.className = '';
             updateUi();
+            controlContainer.className = '';
 
             powerButton.addEventListener('mousedown', () => emulator.buttonDown(cloudpilot.Button.power));
             powerButton.addEventListener('mouseup', () => emulator.buttonUp(cloudpilot.Button.power));
@@ -150,6 +172,8 @@
                 emulator.setOrientation(nextOrientation(emulator.getOrientation()));
                 updateUi();
             });
+            applyHotsyncNameButton.addEventListener('click', () => emulator.setHotsyncName(hotsyncNameInput.value));
+            hotsyncNameInput.addEventListener('keydown', (e) => e.key === 'Enter' && emulator.setHotsyncName(hotsyncNameInput.value));
         })().catch(e => console.error(e));
     </script>
 </body>
