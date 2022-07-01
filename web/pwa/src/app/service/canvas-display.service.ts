@@ -118,7 +118,7 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
                 ? [
                       `host speed             : ${emulationStatistics.hostSpeed.toFixed(2)}x`,
                       `emulation speed        : ${emulationStatistics.emulationSpeed.toFixed(2)}x`,
-                      `average FPS            : ${emulationStatistics.averageFPS.toFixed(2)}`,
+                      `average FPS            : ${emulationStatistics.averageFps.toFixed(2)}`,
                   ]
                 : []),
         ].forEach((line, i) =>

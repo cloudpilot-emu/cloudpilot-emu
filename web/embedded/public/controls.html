@@ -60,6 +60,10 @@
             display: inline-block;
             margin-left: 1em;
         }
+
+        #statistics {
+            margin-top: 0.5em;
+        }
     </style>
 </head>
 
@@ -89,6 +93,11 @@
                     <label for="volume-input">Volume:</label>
                     <input type="range" min="0" max="100" step="5" id="volume-input">
                 </div>
+            </div>
+            <div id="statistics" style="display: none">
+                <div id="host-speed"></div>
+                <div id="emulation-speed"></div>
+                <div id="fps"></div>
             </div>
         </div>
     </div>
@@ -151,6 +160,10 @@
             const enableAudioButton = document.getElementById('enable-audio-button');
             const volumeInput = document.getElementById('volume-input');
             const volumeInputContainer = document.getElementById('volume-input-container');
+            const statisticsContainer = document.getElementById('statistics');
+            const hostSpeedContainer = document.getElementById('host-speed');
+            const emulationSpeedContainer = document.getElementById('emulation-speed');
+            const fpsContainer = document.getElementById('fps');
 
             emulator.
                 loadSession(new Uint8Array(image))
@@ -168,6 +181,15 @@
                 enableAudioButton.style.display = emulator.isAudioInitialized() ? 'none' : undefined;
                 volumeInputContainer.style.display = emulator.isAudioInitialized() ? 'inline-block' : 'none';
                 volumeInput.value = (emulator.getVolume() * 100) + '';
+            }
+
+            function updateStatistics() {
+                const statistics = emulator.getStatistics();
+
+                statisticsContainer.style.display = 'block';
+                hostSpeedContainer.innerText = `host speed: ${statistics.hostSpeed.toFixed(2)} x`;
+                emulationSpeedContainer.innerText = `emulation speed: ${statistics.emulationSpeed.toFixed(2)} x`;
+                fpsContainer.innerText = `${statistics.averageFps.toFixed(2)} frames / second`;
             }
 
             emulator.powerOffChangeEvent.addHandler(updateUi);
@@ -200,6 +222,8 @@
                 const volume = parseInt(volumeInput.value);
                 !isNaN(volume) && emulator.setVolume(volume / 100);
             });
+
+            setInterval(updateStatistics, 1000);
         })().catch(e => console.error(e));
     </script>
 </body>

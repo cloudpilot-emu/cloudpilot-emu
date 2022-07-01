@@ -103,7 +103,7 @@ export class Emulator implements EmulatorInterface {
     }
 
     getStatistics(): EmulationStatistics {
-        throw new Error('Method not implemented.');
+        return this.emulationService.getStatistics();
     }
 
     loadRom(rom: Uint8Array, deviceId?: DeviceId): this {

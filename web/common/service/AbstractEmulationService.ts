@@ -84,7 +84,7 @@ export abstract class AbstractEmulationService {
         return {
             hostSpeed: this.speedAverage.calculateAverage(),
             emulationSpeed: this.emulationSpeed,
-            averageFPS: this.calculateFPS(),
+            averageFps: this.calculateFPS(),
         };
     }
 
