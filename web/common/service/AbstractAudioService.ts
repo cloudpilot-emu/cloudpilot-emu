@@ -114,9 +114,7 @@ export abstract class AbstractAudioService {
 
             if (this.shouldRun()) {
                 try {
-                    if (this.gainNode) {
-                        this.gainNode.gain.value = this.gain();
-                    }
+                    this.updateGain();
 
                     await withTimeout(this.context.resume());
 
@@ -136,6 +134,12 @@ export abstract class AbstractAudioService {
 
             console.log(`audio context state change ${oldState} -> ${this.context.state}`);
         });
+
+    protected updateGain(): void {
+        if (this.gainNode) {
+            this.gainNode.gain.value = this.gain();
+        }
+    }
 
     private async start(): Promise<void> {
         if (!this.context) return;

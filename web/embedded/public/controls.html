@@ -48,10 +48,12 @@
         button {
             min-width: 10em;
             margin: 0.5em;
+            margin-left: 0;
         }
 
         input {
             width: 15em;
+            margin-right: 0.5em;
         }
 
         #ui-status {
@@ -80,6 +82,13 @@
                 <label for="hotsync-name-input">New name:</label>
                 <input maxlength="40" type="text" id="hotsync-name-field"></input>
                 <button type="button" id="apply-hotsync-name-button">apply</button>
+            </div>
+            <div id="audio-controls">
+                <button type="button" id="enable-audio-button">Enable audio</button>
+                <div id="volume-input-container" style="display: none">
+                    <label for="volume-input">Volume:</label>
+                    <input type="range" min="0" max="100" step="5" id="volume-input">
+                </div>
             </div>
         </div>
     </div>
@@ -139,6 +148,9 @@
             const hotsyncNameContainer = document.getElementById('hotsync-name-container');
             const applyHotsyncNameButton = document.getElementById('apply-hotsync-name-button');
             const hotsyncNameInput = document.getElementById('hotsync-name-field');
+            const enableAudioButton = document.getElementById('enable-audio-button');
+            const volumeInput = document.getElementById('volume-input');
+            const volumeInputContainer = document.getElementById('volume-input-container');
 
             emulator.
                 loadSession(new Uint8Array(image))
@@ -153,6 +165,9 @@
 
                 hotsyncNameContainer.innerText = `Hotsync name: ${emulator.getHotsyncName()}`;
                 applyHotsyncNameButton.disabled = emulator.isPowerOff() || !emulator.isUiInitialized();
+                enableAudioButton.style.display = emulator.isAudioInitialized() ? 'none' : undefined;
+                volumeInputContainer.style.display = emulator.isAudioInitialized() ? 'inline-block' : 'none';
+                volumeInput.value = (emulator.getVolume() * 100) + '';
             }
 
             emulator.powerOffChangeEvent.addHandler(updateUi);
@@ -168,12 +183,23 @@
             resetButton.addEventListener('click', () => emulator.reset());
             resetNoextButton.addEventListener('click', () => emulator.resetNoExtensions());
             resetHardButton.addEventListener('click', () => emulator.resetHard());
+
             orientationButton.addEventListener('click', () => {
                 emulator.setOrientation(nextOrientation(emulator.getOrientation()));
                 updateUi();
             });
             applyHotsyncNameButton.addEventListener('click', () => emulator.setHotsyncName(hotsyncNameInput.value));
             hotsyncNameInput.addEventListener('keydown', (e) => e.key === 'Enter' && emulator.setHotsyncName(hotsyncNameInput.value));
+
+            enableAudioButton.addEventListener('click', async () => {
+                await emulator.initializeAudio();
+                updateUi();
+            });
+
+            volumeInput.addEventListener('change', () => {
+                const volume = parseInt(volumeInput.value);
+                !isNaN(volume) && emulator.setVolume(volume / 100);
+            });
         })().catch(e => console.error(e));
     </script>
 </body>

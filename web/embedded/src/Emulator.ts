@@ -7,6 +7,7 @@ import { GenericEventHandlingService, HasEvents } from '@common/service/GenericE
 import { Button } from './index';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { EmbeddedAudioService } from './service/EmbeddedAudioService';
 import { EmbeddedCanvasDisplayService } from './service/EmbeddedCanvasDisplayService';
 import { EmbeddedEmulationService } from './service/EmbeddedEmulationService';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
@@ -49,10 +50,6 @@ export interface EmulatorInterface {
     isPowerOff(): boolean;
     isUiInitialized(): boolean;
 
-    mute(): this;
-    unmute(): this;
-    autounmute(): this;
-
     resume(): this;
     pause(): this;
 
@@ -64,6 +61,9 @@ export interface EmulatorInterface {
 
     setVolume(volume: number): this;
     getVolume(): number;
+
+    initializeAudio(): Promise<boolean>;
+    isAudioInitialized(): boolean;
 
     setOrientation(orientation: DeviceOrientation): this;
     getOrientation(): DeviceOrientation;
@@ -80,6 +80,7 @@ export interface EmulatorInterface {
     readonly isUiInitializedChangeEvent: EventInterface<boolean>;
     readonly audioInitializedEvent: EventInterface<void>;
     readonly timesliceEvent: EventInterface<void>;
+    readonly hotsyncNameChangeEvent: EventInterface<string>;
 }
 
 export class Emulator implements EmulatorInterface {
@@ -87,6 +88,7 @@ export class Emulator implements EmulatorInterface {
         this.emulationService = new EmbeddedEmulationService();
         this.canvasDisplayService = new EmbeddedCanvasDisplayService(loadSkin(Promise.resolve(skin)));
         this.eventHandlingService = new GenericEventHandlingService(this.emulationService, this.canvasDisplayService);
+        this.audioService = new EmbeddedAudioService(this.emulationService);
 
         this.emulationService.newFrameEvent.addHandler((canvas) =>
             this.canvasDisplayService.updateEmulationCanvas(canvas)
@@ -95,8 +97,9 @@ export class Emulator implements EmulatorInterface {
         this.timesliceEvent = this.emulationService.timesliceEvent;
         this.timesliceEvent.addHandler(this.onTimeslice);
 
-        this.powerOffWatcher = new Watcher(() => this.emulationService.isPowerOff());
-        this.uiInitializedWatcher = new Watcher(() => this.emulationService.isUiInitialized());
+        this.powerOffWatcher = new Watcher(() => this.isPowerOff());
+        this.uiInitializedWatcher = new Watcher(() => this.isUiInitialized());
+        this.hotsyncNameWatcher = new Watcher(() => this.getHotsyncName() || '');
     }
 
     getStatistics(): EmulationStatistics {
@@ -246,24 +249,6 @@ export class Emulator implements EmulatorInterface {
         return this.emulationService.isUiInitialized();
     }
 
-    mute(): this {
-        throw new Error('Method not implemented.');
-
-        return this;
-    }
-
-    unmute(): this {
-        throw new Error('Method not implemented.');
-
-        return this;
-    }
-
-    autounmute(): this {
-        throw new Error('Method not implemented.');
-
-        return this;
-    }
-
     resume(): this {
         this.emulationService.resume();
 
@@ -299,13 +284,22 @@ export class Emulator implements EmulatorInterface {
     }
 
     setVolume(volume: number): this {
-        throw new Error('Method not implemented.');
+        this.audioService.setVolume(volume);
 
         return this;
     }
 
     getVolume(): number {
-        throw new Error('Method not implemented.');
+        return this.audioService.getVolume();
+    }
+
+    async initializeAudio(): Promise<boolean> {
+        await this.audioService.initialize();
+        return this.audioService.isInitialized();
+    }
+
+    isAudioInitialized(): boolean {
+        return this.audioService.isInitialized();
     }
 
     setOrientation(orientation: DeviceOrientation): this {
@@ -347,9 +341,14 @@ export class Emulator implements EmulatorInterface {
         return this.uiInitializedWatcher.changeEvent;
     }
 
+    get hotsyncNameChangeEvent(): EventInterface<string> {
+        return this.hotsyncNameWatcher.changeEvent;
+    }
+
     private onTimeslice = (): void => {
         this.powerOffWatcher.update();
         this.uiInitializedWatcher.update();
+        this.hotsyncNameWatcher.update();
     };
 
     readonly audioInitializedEvent = new Event<void>();
@@ -358,9 +357,11 @@ export class Emulator implements EmulatorInterface {
     private emulationService: EmbeddedEmulationService;
     private canvasDisplayService: EmbeddedCanvasDisplayService;
     private eventHandlingService: GenericEventHandlingService;
+    private audioService: EmbeddedAudioService;
 
     private powerOffWatcher: Watcher<boolean>;
     private uiInitializedWatcher: Watcher<boolean>;
+    private hotsyncNameWatcher: Watcher<string>;
 
     private session: Session = { ...DEFAULT_SESSION };
 }
