@@ -37,8 +37,8 @@ export interface HasEvents {
 
 export class GenericEventHandlingService {
     constructor(
-        private emulationService: AbstractEmulationService,
-        private canvasDisplayService: AbstractCanvasDisplayService
+        protected emulationService: AbstractEmulationService,
+        protected canvasDisplayService: AbstractCanvasDisplayService
     ) {}
 
     bind(pointerEventTarget: HasEvents, keyEventTarget: HasEvents = window): void {

@@ -2,7 +2,6 @@ import * as skin from '@common/skin';
 
 import { Cloudpilot, ZipfileWalkerState } from '@common/Cloudpilot';
 import { Event, EventInterface } from 'microevent.ts';
-import { GenericEventHandlingService, HasEvents } from '@common/service/GenericEventHandlingService';
 
 import { Button } from './index';
 import { DeviceId } from '@common/model/DeviceId';
@@ -10,7 +9,9 @@ import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmbeddedAudioService } from './service/EmbeddedAudioService';
 import { EmbeddedCanvasDisplayService } from './service/EmbeddedCanvasDisplayService';
 import { EmbeddedEmulationService } from './service/EmbeddedEmulationService';
+import { EmbeddedEventHandlingServie } from './service/EmbeddedEventHandlingService';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
+import { HasEvents } from '@common/service/GenericEventHandlingService';
 import { Session } from './model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { Watcher } from './Watcher';
@@ -87,7 +88,7 @@ export class Emulator implements EmulatorInterface {
     constructor(private cloudpilot: Cloudpilot) {
         this.emulationService = new EmbeddedEmulationService();
         this.canvasDisplayService = new EmbeddedCanvasDisplayService(loadSkin(Promise.resolve(skin)));
-        this.eventHandlingService = new GenericEventHandlingService(this.emulationService, this.canvasDisplayService);
+        this.eventHandlingService = new EmbeddedEventHandlingServie(this.emulationService, this.canvasDisplayService);
         this.audioService = new EmbeddedAudioService(this.emulationService);
 
         this.emulationService.newFrameEvent.addHandler((canvas) =>
@@ -356,7 +357,7 @@ export class Emulator implements EmulatorInterface {
 
     private emulationService: EmbeddedEmulationService;
     private canvasDisplayService: EmbeddedCanvasDisplayService;
-    private eventHandlingService: GenericEventHandlingService;
+    private eventHandlingService: EmbeddedEventHandlingServie;
     private audioService: EmbeddedAudioService;
 
     private powerOffWatcher: Watcher<boolean>;
