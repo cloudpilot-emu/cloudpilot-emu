@@ -1,6 +1,8 @@
-export type PrerenderedImage = (width: number, height: number) => Promise<HTMLCanvasElement>;
+import { LazyLoadingImage, PrerenderedImage, lazyLoadImage, prerender } from '@common/helper/image';
+
+import { svgToUrl } from './../helper/image';
+
 export type SkinModuleType = typeof import('@common/skin');
-export type LazyLoadingImage = () => Promise<HTMLImageElement>;
 export type SkinImageType = keyof SkinModuleType;
 
 export type Skin = Record<SkinImageType, PrerenderedImage>;
@@ -42,31 +44,6 @@ const SKIN_IMAGE_KEYS: Array<SkinImageType> = [
     'HARD_BUTTONS_PEG_NR70',
 ];
 
-function prerender(image: LazyLoadingImage): PrerenderedImage {
-    let cachedWidth: number;
-    let cachedHeight: number;
-    const canvas = document.createElement('canvas');
-
-    return async (width: number, height: number) => {
-        if (cachedWidth === width && cachedHeight === height) {
-            return canvas;
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) throw new Error('get a new browser');
-
-        ctx.drawImage(await image(), 0, 0, canvas.width, canvas.height);
-
-        cachedWidth = width;
-        cachedHeight = height;
-
-        return canvas;
-    };
-}
-
 export function loadSkin(skinModule: Promise<SkinModuleType>): Skin {
     function loadImage(key: SkinImageType): LazyLoadingImage {
         let deferredImage: Promise<HTMLImageElement> | undefined;
@@ -75,14 +52,7 @@ export function loadSkin(skinModule: Promise<SkinModuleType>): Skin {
             if (!deferredImage) {
                 const svg = (await skinModule)[key];
 
-                deferredImage = new Promise<HTMLImageElement>((resolve, reject) => {
-                    const image = new Image();
-
-                    image.onload = () => resolve(image);
-                    image.onerror = () => reject();
-
-                    image.src = `data:image/svg+xml;base64,${btoa(svg)}`;
-                });
+                deferredImage = lazyLoadImage(svgToUrl(svg))();
             }
 
             return deferredImage;
