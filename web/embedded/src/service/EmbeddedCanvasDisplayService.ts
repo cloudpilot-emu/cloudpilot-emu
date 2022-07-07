@@ -71,11 +71,6 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
         const padding = Math.floor(indicatorSize * 0.1);
         const iconPadding = Math.floor(indicatorSize * 0.11);
 
-        this.ctx.save();
-
-        this.ctx.shadowBlur = 4 * padding;
-        this.ctx.shadowColor = 'white';
-
         this.fillCanvasRect(
             this.layout.screenLeft.frameCanvas - padding + this.layout.screenWidth.frameCanvas - indicatorSize,
             this.layout.buttonTop.frameCanvas + this.layout.buttonHeight.frameCanvas - indicatorSize - padding,
@@ -83,8 +78,6 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
             indicatorSize,
             'rgba(200, 200, 200, 0.7)'
         );
-
-        this.ctx.restore();
 
         const icon = await GAME_ICON_PRERENDERED(indicatorSize, indicatorSize);
 
