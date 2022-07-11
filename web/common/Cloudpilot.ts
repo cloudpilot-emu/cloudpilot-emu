@@ -142,11 +142,12 @@ export class Cloudpilot {
         );
     }
 
-    static async create(): Promise<Cloudpilot> {
+    static async create(wasmModuleUrl?: string): Promise<Cloudpilot> {
         return new Cloudpilot(
             await createModule({
                 print: (x: string) => console.log(x),
                 printErr: (x: string) => console.error(x),
+                ...(wasmModuleUrl !== undefined ? { locateFile: () => wasmModuleUrl } : {}),
             })
         );
     }

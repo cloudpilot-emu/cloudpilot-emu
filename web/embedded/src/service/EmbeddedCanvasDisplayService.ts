@@ -53,7 +53,6 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
 
         await super.drawButtons(activeButtons);
 
-        console.log(this.gameModeActive, this.gameModeIndicatorEnabled);
         if (this.gameModeActive && this.gameModeIndicatorEnabled) {
             await this.drawGameModeIndicator();
         }
