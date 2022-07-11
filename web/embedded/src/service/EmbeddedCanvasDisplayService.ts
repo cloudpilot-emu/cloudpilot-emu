@@ -44,6 +44,10 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
         this.drawButtons(this.lastActiveButtons);
     }
 
+    isGameModeIndicatorEnabled(): boolean {
+        return this.gameModeIndicatorEnabled;
+    }
+
     override async drawButtons(activeButtons: Array<PalmButton> = []): Promise<void> {
         this.lastActiveButtons = activeButtons;
 

@@ -64,6 +64,7 @@
         #statistics {
             margin-top: 0.5em;
         }
+
     </style>
 </head>
 
@@ -86,6 +87,11 @@
                 <label for="hotsync-name-input">New name:</label>
                 <input maxlength="40" type="text" id="hotsync-name-field"></input>
                 <button type="button" id="apply-hotsync-name-button">apply</button>
+            </div>
+            <div>
+                <button type="button" id="game-mode-button"></button>
+                <button type="button" id="game-mode-hotkey-button"></button>
+                <button type="button" id="game-mode-indicator-button"></button>
             </div>
             <div id="audio-controls">
                 <button type="button" id="enable-audio-button">Enable audio</button>
@@ -164,6 +170,9 @@
             const hostSpeedContainer = document.getElementById('host-speed');
             const emulationSpeedContainer = document.getElementById('emulation-speed');
             const fpsContainer = document.getElementById('fps');
+            const gameModeButton = document.getElementById('game-mode-button');
+            const gameModeHotkeyButton = document.getElementById('game-mode-hotkey-button');
+            const gameModeIndicatorButton = document.getElementById('game-mode-indicator-button');
 
             emulator.
                 loadSession(new Uint8Array(image))
@@ -179,6 +188,9 @@
                 hotsyncNameContainer.innerText = `Hotsync name: ${emulator.getHotsyncName()}`;
                 applyHotsyncNameButton.disabled = emulator.isPowerOff() || !emulator.isUiInitialized();
                 enableAudioButton.style.display = emulator.isAudioInitialized() ? 'none' : undefined;
+                gameModeButton.innerText = emulator.isGameMode() ? 'Game mode off' : 'Game mode on';
+                gameModeHotkeyButton.innerText = emulator.isGameModeHotkeyEnabled() ? 'Game mode hotkey off' : 'Game mode hotkey on';
+                gameModeIndicatorButton.innerText = emulator.isGameModeIndicatorEnabled() ? 'Game mode indicator off' : 'Game mode hotkey on';
                 volumeInputContainer.style.display = emulator.isAudioInitialized() ? 'inline-block' : 'none';
                 volumeInput.value = (emulator.getVolume() * 100) + '';
             }
@@ -195,6 +207,7 @@
             emulator.powerOffChangeEvent.addHandler(updateUi);
             emulator.isUiInitializedChangeEvent.addHandler(updateUi);
             emulator.hotsyncNameChangeEvent.addHandler(updateUi);
+            emulator.gameModeChangeEvent.addHandler(updateUi);
 
             updateUi();
             controlContainer.className = '';
@@ -205,6 +218,16 @@
             resetButton.addEventListener('click', () => emulator.reset());
             resetNoextButton.addEventListener('click', () => emulator.resetNoExtensions());
             resetHardButton.addEventListener('click', () => emulator.resetHard());
+
+            gameModeButton.addEventListener('click', () => emulator.setGameMode(!emulator.isGameMode()));
+            gameModeHotkeyButton.addEventListener('click', () => {
+                emulator.setGameModeHotkeyEnabled(!emulator.isGameModeHotkeyEnabled());
+                updateUi();
+            });
+            gameModeIndicatorButton.addEventListener('click', () => {
+                emulator.setGameModeIndicatorEnabled(!emulator.isGameModeIndicatorEnabled());
+                updateUi();
+            });
 
             orientationButton.addEventListener('click', () => {
                 emulator.setOrientation(nextOrientation(emulator.getOrientation()));

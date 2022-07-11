@@ -66,6 +66,15 @@ export interface EmulatorInterface {
     initializeAudio(): Promise<boolean>;
     isAudioInitialized(): boolean;
 
+    isGameMode(): boolean;
+    setGameMode(gameModeActive: boolean): this;
+
+    isGameModeHotkeyEnabled(): boolean;
+    setGameModeHotkeyEnabled(enableGamemodeHotkey: boolean): this;
+
+    isGameModeIndicatorEnabled(): boolean;
+    setGameModeIndicatorEnabled(gameModeIndicatorEnabled: boolean): this;
+
     setOrientation(orientation: DeviceOrientation): this;
     getOrientation(): DeviceOrientation;
 
@@ -82,6 +91,7 @@ export interface EmulatorInterface {
     readonly audioInitializedEvent: EventInterface<void>;
     readonly timesliceEvent: EventInterface<void>;
     readonly hotsyncNameChangeEvent: EventInterface<string>;
+    readonly gameModeChangeEvent: EventInterface<boolean>;
 }
 
 export class Emulator implements EmulatorInterface {
@@ -334,6 +344,36 @@ export class Emulator implements EmulatorInterface {
         return this.session.runInBackground;
     }
 
+    isGameMode(): boolean {
+        return this.eventHandlingService.isGameMode();
+    }
+
+    setGameMode(gameModeActive: boolean): this {
+        this.eventHandlingService.setGameMode(gameModeActive);
+
+        return this;
+    }
+
+    isGameModeHotkeyEnabled(): boolean {
+        return this.eventHandlingService.isGameModeHotkeyEnabled();
+    }
+
+    setGameModeHotkeyEnabled(enableGamemodeHotkey: boolean): this {
+        this.eventHandlingService.setGameModeHotkeyEnabled(enableGamemodeHotkey);
+
+        return this;
+    }
+
+    isGameModeIndicatorEnabled(): boolean {
+        return this.canvasDisplayService.isGameModeIndicatorEnabled();
+    }
+
+    setGameModeIndicatorEnabled(gameModeIndicatorEnabled: boolean): this {
+        this.canvasDisplayService.setGameModeIndicatorEnabled(gameModeIndicatorEnabled);
+
+        return this;
+    }
+
     get powerOffChangeEvent(): EventInterface<boolean> {
         return this.powerOffWatcher.changeEvent;
     }
@@ -344,6 +384,10 @@ export class Emulator implements EmulatorInterface {
 
     get hotsyncNameChangeEvent(): EventInterface<string> {
         return this.hotsyncNameWatcher.changeEvent;
+    }
+
+    get gameModeChangeEvent(): EventInterface<boolean> {
+        return this.eventHandlingService.gameModeChangeEvent;
     }
 
     private onTimeslice = (): void => {

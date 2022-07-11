@@ -92,6 +92,20 @@ export class GenericEventHandlingService {
         return this.gameMode;
     }
 
+    setGameMode(enableGameMode: boolean): void {
+        this.gameMode = enableGameMode;
+
+        this.onToggleGameMode();
+    }
+
+    setGameModeHotkeyEnabled(enableGamemodeHotkey: boolean): void {
+        this.enableGamemodeHotkey = enableGamemodeHotkey;
+    }
+
+    isGameModeHotkeyEnabled(): boolean {
+        return this.enableGamemodeHotkey;
+    }
+
     protected enableKeyboardEvents(): boolean {
         return true;
     }
@@ -346,7 +360,9 @@ export class GenericEventHandlingService {
     }
 
     private isToggleGameMode(e: KeyboardEvent): boolean {
-        return (e.key === 'Shift' && e.ctrlKey) || (e.key === 'Control' && e.shiftKey);
+        return (
+            this.isGameModeHotkeyEnabled() && ((e.key === 'Shift' && e.ctrlKey) || (e.key === 'Control' && e.shiftKey))
+        );
     }
 
     private isGameModeActive(e: KeyboardEvent): boolean {
@@ -441,4 +457,5 @@ export class GenericEventHandlingService {
     private interactionsTouch = new Map<number, Interaction>();
     private activeButtons = new Set<PalmButton>();
     private gameMode = false;
+    private enableGamemodeHotkey = true;
 }
