@@ -26,7 +26,7 @@ const DEFAULT_SESSION: Session = {
 };
 
 export interface EmulatorInterface {
-    loadRom(rom: Uint8Array, deviceId: DeviceId): this;
+    loadRom(rom: Uint8Array, deviceId?: DeviceId): this;
 
     loadSession(session: Uint8Array): this;
 
