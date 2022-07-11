@@ -18,6 +18,8 @@ const DUMMY_SPEED = 1000;
 
 export abstract class AbstractEmulationService {
     handlePointerMove(x: number, y: number, isSilkscreen: boolean): void {
+        if (!this.handleInput()) return;
+
         const ts = performance.now();
         this.penDown = true;
 
@@ -32,6 +34,8 @@ export abstract class AbstractEmulationService {
     }
 
     handlePointerUp(): void {
+        if (!this.handleInput()) return;
+
         if (this.cloudpilotInstance && this.penDown) this.cloudpilotInstance.queuePenUp();
 
         this.lastPenUpdate = 0;
@@ -39,14 +43,20 @@ export abstract class AbstractEmulationService {
     }
 
     handleButtonDown(button: PalmButton): void {
+        if (!this.handleInput()) return;
+
         if (this.cloudpilotInstance) this.cloudpilotInstance.queueButtonDown(button);
     }
 
     handleButtonUp(button: PalmButton): void {
+        if (!this.handleInput()) return;
+
         if (this.cloudpilotInstance) this.cloudpilotInstance.queueButtonUp(button);
     }
 
     handleKeyDown(key: number, ctrl = false) {
+        if (!this.handleInput()) return;
+
         if (this.cloudpilotInstance) this.cloudpilotInstance.queueKeyboardEvent(key, ctrl);
     }
 
@@ -116,6 +126,10 @@ export abstract class AbstractEmulationService {
 
     protected callScheduler(): void {
         this.scheduler.schedule();
+    }
+
+    protected handleInput(): boolean {
+        return true;
     }
 
     protected openSession(

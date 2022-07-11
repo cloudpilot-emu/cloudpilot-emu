@@ -93,6 +93,10 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
         this.timesliceEvent.dispatch();
     }
 
+    protected override handleInput(): boolean {
+        return this.isRunning();
+    }
+
     private session: Session | undefined;
 
     readonly timesliceEvent = new Event<void>();

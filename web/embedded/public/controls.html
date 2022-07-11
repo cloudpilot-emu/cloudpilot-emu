@@ -74,6 +74,7 @@
         <div id="canvas-wrapper"><canvas tabindex="1"></canvas></div>
         <div id="control-container" class="hidden">
             <div><button type="button" id="power-button"></button><span id="ui-status"></span></div>
+            <div><button type="button" id="pause-resume-button"></button></div>
             <div>
                 <button type="button" id="reset-button">Reset</button>
                 <button type="button" id="reset-noext-button">Reset noext</button>
@@ -153,6 +154,7 @@
             const emulator = await cloudpilot.createEmulator();
             const canvas = document.getElementsByTagName('canvas')[0];
 
+            const pauseResumeButton = document.getElementById('pause-resume-button');
             const powerButton = document.getElementById('power-button');
             const resetButton = document.getElementById('reset-button');
             const resetNoextButton = document.getElementById('reset-noext-button');
@@ -181,6 +183,8 @@
                 .resume();
 
             function updateUi() {
+                pauseResumeButton.innerText = emulator.isRunning() ? 'Pause' : 'Resume';
+
                 powerButton.innerText = emulator.isPowerOff() ? 'Power on' : 'Power off';
                 uiStatusContainer.innerText = emulator.isUiInitialized() ? 'UI initialized' : 'UI not initialized';
                 orientationButton.innerText = 'Rotate to ' + orientationToString(nextOrientation(emulator.getOrientation()));
@@ -211,6 +215,13 @@
 
             updateUi();
             controlContainer.className = '';
+
+            pauseResumeButton.addEventListener('click', () => {
+                if (emulator.isRunning()) emulator.pause();
+                else emulator.resume();
+
+                updateUi();
+            });
 
             powerButton.addEventListener('mousedown', () => emulator.buttonDown(cloudpilot.Button.power));
             powerButton.addEventListener('mouseup', () => emulator.buttonUp(cloudpilot.Button.power));
