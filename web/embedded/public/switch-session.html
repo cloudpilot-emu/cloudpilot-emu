@@ -59,53 +59,55 @@
             <div><button type="button" id="launch-rom-button" disabled>Load ROM</button>
                 <div><button type="button" id="load-session-button" disabled>Load session</button></div>
             </div>
+        </div>
+    </div>
 
-            <a href="index.html">...back to index</a>
+    <a href="index.html">...back to index</a>
 
-            <script>
-                (async function () {
-                    const imageResponse = await fetch('session.img');
-                    if (!imageResponse.ok) {
-                        throw new Error('could not download session image');
-                    }
+    <script>
+        (async function () {
+            const imageResponse = await fetch('session.img');
+            if (!imageResponse.ok) {
+                throw new Error('could not download session image');
+            }
 
-                    const romResponse = await fetch('palmiii.rom');
-                    if (!romResponse.ok) {
-                        throw new Error('could not download ROM image');
-                    }
+            const romResponse = await fetch('palmiii.rom');
+            if (!romResponse.ok) {
+                throw new Error('could not download ROM image');
+            }
 
-                    const image = await imageResponse.arrayBuffer();
-                    const rom = await romResponse.arrayBuffer();
-                    const emulator = await cloudpilot.createEmulator();
-                    const canvas = document.getElementsByTagName('canvas')[0];
+            const image = await imageResponse.arrayBuffer();
+            const rom = await romResponse.arrayBuffer();
+            const emulator = await cloudpilot.createEmulator();
+            const canvas = document.getElementsByTagName('canvas')[0];
 
-                    const launchRomButton = document.getElementById('launch-rom-button');
-                    const loadSessionButton = document.getElementById('load-session-button');
+            const launchRomButton = document.getElementById('launch-rom-button');
+            const loadSessionButton = document.getElementById('load-session-button');
 
-                    emulator
-                        .setCanvas(canvas)
-                        .bindInput(canvas, canvas);
+            emulator
+                .setCanvas(canvas)
+                .bindInput(canvas, canvas);
 
-                    launchRomButton.disabled = false;
-                    loadSessionButton.disabled = false;
+            launchRomButton.disabled = false;
+            loadSessionButton.disabled = false;
 
-                    launchRomButton.addEventListener('click', () => {
-                        emulator
-                            .loadRom(new Uint8Array(rom))
-                            .resume();
+            launchRomButton.addEventListener('click', () => {
+                emulator
+                    .loadRom(new Uint8Array(rom))
+                    .resume();
 
-                        canvas.style.visibility = 'visible';
-                    });
+                canvas.style.visibility = 'visible';
+            });
 
-                    loadSessionButton.addEventListener('click', () => {
-                        emulator
-                            .loadSession(new Uint8Array(image))
-                            .resume();
+            loadSessionButton.addEventListener('click', () => {
+                emulator
+                    .loadSession(new Uint8Array(image))
+                    .resume();
 
-                        canvas.visibility = 'visible';
-                    });
-                })().catch(e => console.error(e));
-            </script>
+                canvas.visibility = 'visible';
+            });
+        })().catch(e => console.error(e));
+    </script>
 </body>
 
 </html>
