@@ -1,0 +1,8 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": ["embedded/src/index.ts"],
+    "tsconfig": "tsconfig.embedded.json",
+    "name": "cloudpilot",
+    "readme": "embedded/README.md",
+    "out": "docs-embedded"
+}

@@ -1,12 +1,23 @@
-import { Cloudpilot, PalmButton } from '@common/Cloudpilot';
-import { Emulator, EmulatorInterface } from './Emulator';
+import { Emulator, EmulatorImpl } from './Emulator';
+
+import { Cloudpilot } from '@common/Cloudpilot';
 
 export { DeviceId } from '@common/model/DeviceId';
 export { Button } from './button';
 export { DeviceOrientation } from '@common/model/DeviceOrientation';
+export { Emulator } from './Emulator';
+export { EmulationStatistics } from '@common/model/EmulationStatistics';
+export { EventTarget, EventHandler } from '@common/service/GenericEventHandlingService';
+export { Event } from './Event';
 
 export const VERSION = 'dev';
 
-export async function createEmulator(wasmModuleUrl?: string): Promise<EmulatorInterface> {
-    return new Emulator(await Cloudpilot.create(wasmModuleUrl));
+/**
+ * Create a new instance of the emulator.
+ *
+ * @param wasmModuleUrl Optional: URL for loading web assembly module
+ * @returns Emulator instance
+ */
+export async function createEmulator(wasmModuleUrl?: string): Promise<Emulator> {
+    return new EmulatorImpl(await Cloudpilot.create(wasmModuleUrl));
 }

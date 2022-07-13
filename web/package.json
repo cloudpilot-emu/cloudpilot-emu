@@ -9,6 +9,7 @@
     "build": "yarn run gen-revision && ng run app:build",
     "build-embedded": "yarn webpack --mode production -c webpack.embedded.config.js",
     "start-embedded": "yarn webpack serve --mode development -c webpack.embedded.config.js",
+    "typedoc-embedded": "yarn typedoc",
     "gen-revision": "echo \"export const REVISION = '`git rev-parse --short HEAD`';\" > pwa/src/revision.gen.ts",
     "test": "ng test",
     "lint": "ng lint",
@@ -77,7 +78,8 @@
     "ts-loader": "^9.2.8",
     "ts-node": "~10.4.0",
     "tslint": "~6.1.0",
-    "typescript": "~4.5.4",
+    "typedoc": "^0.23.7",
+    "typescript": "~4.7.4",
     "webpack-cli": "^4.9.2",
     "webpack-dev-server": "^4.7.4"
   },

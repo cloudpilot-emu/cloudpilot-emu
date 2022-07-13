@@ -22,7 +22,7 @@ type Interaction = InteractionScreen | InteractionButton;
 
 export type EventHandler<K extends keyof HTMLElementEventMap> = (ev: HTMLElementEventMap[K]) => void;
 
-export interface HasEvents {
+export interface EventTarget {
     addEventListener<K extends keyof HTMLElementEventMap>(
         type: K,
         handler: EventHandler<K>,
@@ -41,7 +41,7 @@ export class GenericEventHandlingService {
         protected canvasDisplayService: AbstractCanvasDisplayService
     ) {}
 
-    bind(pointerEventTarget: HasEvents, keyEventTarget: HasEvents = window): void {
+    bind(pointerEventTarget: EventTarget, keyEventTarget: EventTarget = window): void {
         if (this.pointerEventTarget) {
             this.release();
         }
@@ -112,7 +112,7 @@ export class GenericEventHandlingService {
 
     protected onToggleGameMode(): void {}
 
-    protected addEventListener<K extends keyof HTMLElementEventMap, E extends HasEvents>(
+    protected addEventListener<K extends keyof HTMLElementEventMap, E extends EventTarget>(
         elt: E,
         type: K,
         handler: EventHandler<K>,
@@ -121,7 +121,7 @@ export class GenericEventHandlingService {
         elt.addEventListener(type, handler, caputure);
     }
 
-    protected removeEventListener<K extends keyof HTMLElementEventMap, E extends HasEvents>(
+    protected removeEventListener<K extends keyof HTMLElementEventMap, E extends EventTarget>(
         elt: E,
         type: K,
         handler: EventHandler<K>,
@@ -450,8 +450,8 @@ export class GenericEventHandlingService {
         }
     }
 
-    private pointerEventTarget: HasEvents | undefined;
-    private keyEventTarget: HasEvents = window;
+    private pointerEventTarget: EventTarget | undefined;
+    private keyEventTarget: EventTarget = window;
 
     private interactionMouse: Interaction | undefined;
     private interactionsTouch = new Map<number, Interaction>();

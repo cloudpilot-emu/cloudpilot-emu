@@ -1,7 +1,6 @@
 import * as skin from '@common/skin';
 
 import { Cloudpilot, ZipfileWalkerState } from '@common/Cloudpilot';
-import { Event, EventInterface } from 'microevent.ts';
 
 import { Button } from './index';
 import { DeviceId } from '@common/model/DeviceId';
@@ -11,7 +10,9 @@ import { EmbeddedCanvasDisplayService } from './service/EmbeddedCanvasDisplaySer
 import { EmbeddedEmulationService } from './service/EmbeddedEmulationService';
 import { EmbeddedEventHandlingServie } from './service/EmbeddedEventHandlingService';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
-import { HasEvents } from '@common/service/GenericEventHandlingService';
+import { Event } from './Event';
+import { Event as EventImpl } from 'microevent.ts';
+import { EventTarget } from '@common/service/GenericEventHandlingService';
 import { Session } from './model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { Watcher } from './Watcher';
@@ -25,14 +26,36 @@ const DEFAULT_SESSION: Session = {
     deviceId: DeviceId.m515,
 };
 
-export interface EmulatorInterface {
+export interface Emulator {
+    /**
+     * Load a ROM and put the emulator in paused state.
+     *
+     * @param rom Device ROM
+     * @param deviceId Optional: device ID, autodetected if not specified
+     */
     loadRom(rom: Uint8Array, deviceId?: DeviceId): this;
 
+    /**
+     * Load a Cloudpilot session and put the emulator in paused state.
+     *
+     * @param session Session image
+     */
     loadSession(session: Uint8Array): this;
 
+    /**
+     * Configure the canvas element used for displaying the emulator.
+     *
+     * @param canvas Canvas for displaying the emulatpr
+     */
     setCanvas(canvas: HTMLCanvasElement): this;
 
-    bindInput(pointerTarget: HasEvents, keyboardTarget?: HasEvents): this;
+    /**
+     * Receive input events from the specified targets
+     *
+     * @param pointerTarget Target for pointer events
+     * @param keyboardTarget Optional: target for keyboard events, default: `window`
+     */
+    bindInput(pointerTarget: EventTarget, keyboardTarget?: EventTarget): this;
     releaseInput(): this;
 
     installDatabase(file: Uint8Array): this;
@@ -86,15 +109,15 @@ export interface EmulatorInterface {
 
     getStatistics(): EmulationStatistics;
 
-    readonly powerOffChangeEvent: EventInterface<boolean>;
-    readonly isUiInitializedChangeEvent: EventInterface<boolean>;
-    readonly audioInitializedEvent: EventInterface<void>;
-    readonly timesliceEvent: EventInterface<void>;
-    readonly hotsyncNameChangeEvent: EventInterface<string>;
-    readonly gameModeChangeEvent: EventInterface<boolean>;
+    readonly powerOffChangeEvent: Event<boolean>;
+    readonly isUiInitializedChangeEvent: Event<boolean>;
+    readonly audioInitializedEvent: Event<void>;
+    readonly timesliceEvent: Event<void>;
+    readonly hotsyncNameChangeEvent: Event<string>;
+    readonly gameModeChangeEvent: Event<boolean>;
 }
 
-export class Emulator implements EmulatorInterface {
+export class EmulatorImpl implements Emulator {
     constructor(private cloudpilot: Cloudpilot) {
         this.emulationService = new EmbeddedEmulationService();
         this.canvasDisplayService = new EmbeddedCanvasDisplayService(loadSkin(Promise.resolve(skin)));
@@ -105,7 +128,6 @@ export class Emulator implements EmulatorInterface {
             this.canvasDisplayService.updateEmulationCanvas(canvas)
         );
 
-        this.timesliceEvent = this.emulationService.timesliceEvent;
         this.timesliceEvent.addHandler(this.onTimeslice);
 
         this.powerOffWatcher = new Watcher(() => this.isPowerOff());
@@ -162,7 +184,7 @@ export class Emulator implements EmulatorInterface {
         return this;
     }
 
-    bindInput(pointerTarget: HasEvents, keyEventTarget?: HasEvents): this {
+    bindInput(pointerTarget: EventTarget, keyEventTarget?: EventTarget): this {
         this.eventHandlingService.bind(pointerTarget, keyEventTarget);
 
         return this;
@@ -374,20 +396,24 @@ export class Emulator implements EmulatorInterface {
         return this;
     }
 
-    get powerOffChangeEvent(): EventInterface<boolean> {
+    get powerOffChangeEvent(): Event<boolean> {
         return this.powerOffWatcher.changeEvent;
     }
 
-    get isUiInitializedChangeEvent(): EventInterface<boolean> {
+    get isUiInitializedChangeEvent(): Event<boolean> {
         return this.uiInitializedWatcher.changeEvent;
     }
 
-    get hotsyncNameChangeEvent(): EventInterface<string> {
+    get hotsyncNameChangeEvent(): Event<string> {
         return this.hotsyncNameWatcher.changeEvent;
     }
 
-    get gameModeChangeEvent(): EventInterface<boolean> {
+    get gameModeChangeEvent(): Event<boolean> {
         return this.eventHandlingService.gameModeChangeEvent;
+    }
+
+    get timesliceEvent(): Event<void> {
+        return this.emulationService.timesliceEvent;
     }
 
     private onTimeslice = (): void => {
@@ -396,8 +422,7 @@ export class Emulator implements EmulatorInterface {
         this.hotsyncNameWatcher.update();
     };
 
-    readonly audioInitializedEvent = new Event<void>();
-    readonly timesliceEvent: EventInterface<void>;
+    readonly audioInitializedEvent = new EventImpl<void>();
 
     private emulationService: EmbeddedEmulationService;
     private canvasDisplayService: EmbeddedCanvasDisplayService;
