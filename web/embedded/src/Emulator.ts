@@ -12,7 +12,7 @@ import { EmbeddedEventHandlingServie } from './service/EmbeddedEventHandlingServ
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { Event } from './Event';
 import { Event as EventImpl } from 'microevent.ts';
-import { EventTarget } from '@common/service/GenericEventHandlingService';
+import { EventSource } from '@common/service/GenericEventHandlingService';
 import { Session } from './model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { Watcher } from './Watcher';
@@ -45,75 +45,267 @@ export interface Emulator {
     /**
      * Configure the canvas element used for displaying the emulator.
      *
-     * @param canvas Canvas for displaying the emulatpr
+     * @param canvas Canvas for displaying the emulator
      */
     setCanvas(canvas: HTMLCanvasElement): this;
 
     /**
-     * Receive input events from the specified targets
+     * Receive input events from the specified sources. If this method is called
+     * multiple times the previous sources will be unbound.
      *
-     * @param pointerTarget Target for pointer events
-     * @param keyboardTarget Optional: target for keyboard events, default: `window`
+     * @param pointerSource Target for pointer events
+     * @param keyboardSource Optional: target for keyboard events, default: `window`
      */
-    bindInput(pointerTarget: EventTarget, keyboardTarget?: EventTarget): this;
+    bindInput(pointerSource: EventSource, keyboardSource?: EventSource): this;
+
+    /**
+     * Unbind the handlers previous bound with `bindInput`.
+     */
     releaseInput(): this;
 
+    /**
+     * Install a prc or pdb database to the device.
+     *
+     * @param file The database data.
+     */
     installDatabase(file: Uint8Array): this;
-    installAndLaunchDatabase(file: Uint8Array): this;
-    installFromZipfile(file: Uint8Array): this;
-    installFromZipfileAndLaunch(file: Uint8Array, launchFile?: string): this;
 
+    /**
+     * Install a prc database to the device and attempt to launch it.
+     *
+     * @param file The database data.
+     */
+    installAndLaunchDatabase(file: Uint8Array): this;
+
+    /**
+     * Extract all databases from a zip archive and install them.
+     *
+     * @param file The zip archive data.
+     */
+    installFromZipfile(file: Uint8Array): this;
+
+    /**
+     * Extract all databases from a zip archive and install them, then attampt to
+     * launch the specified file.
+     *
+     * @param file The zip archive data.
+     */
+    installFromZipfileAndLaunch(file: Uint8Array, launchFile: string): this;
+
+    /**
+     * Attemot to launch the database with the specified name.
+     *
+     * @param name Database name
+     */
     launchByName(name: string): this;
+
+    /**
+     * Attempt to extract the name from a database and launch it.
+     *
+     * @param database Database data (only the first 32 bytes are required)
+     */
     launchDatabase(database: Uint8Array): this;
 
+    /**
+     * Perform a soft reset (equivalent of pushing the reset button).
+     */
     reset(): this;
+
+    /**
+     * Reset w/o system extensions (equivalent to holding "down" while pushing the
+     * reset button).
+     */
     resetNoExtensions(): this;
+
+    /**
+     * Hard reset (equivalent to holding "power" while pushing the
+     * reset button).
+     */
     resetHard(): this;
 
+    /**
+     * Is the emulator running?
+     */
     isRunning(): boolean;
+
+    /**
+     * Is the device powered off?
+     */
     isPowerOff(): boolean;
+
+    /**
+     * Has the emulated device passed UI initialization (during boot)? This
+     * is required before software can be installed.
+     */
     isUiInitialized(): boolean;
 
+    /**
+     * Resume a paused device.
+     */
     resume(): this;
+
+    /**
+     * Pause a running device.
+     */
     pause(): this;
 
+    /**
+     * Push a hardware button.
+     *
+     * @param button The desired button
+     */
     buttonDown(button: Button): this;
+
+    /**
+     * Release a hardware button.
+     *
+     * @param button The desired button
+     */
+
     buttonUp(button: Button): this;
 
+    /**
+     * Adjust speed of the emulated device.
+     *
+     * @param speed Speed factor
+     */
     setSpeed(speed: number): this;
+
+    /**
+     * Query configured speed factor.
+     */
     getSpeed(): number;
 
+    /**
+     * Set audio volume.
+     *
+     * @param volume Volume (1 = 100%, 0 = silent)
+     */
     setVolume(volume: number): this;
+
+    /**
+     * Query audio volume
+     */
     getVolume(): number;
 
+    /**
+     * Initialize audio. This must be called from an event handler that was triggered
+     * by a user interaction, i.e. a click or a key press.
+     */
     initializeAudio(): Promise<boolean>;
+
+    /**
+     * Was audio initialized succesfully?
+     */
     isAudioInitialized(): boolean;
 
-    isGameMode(): boolean;
+    /**
+     * Enable or disable game mode (direct key mapping to hardware buttons).
+     *
+     * @param gameModeActive Desired state
+     */
     setGameMode(gameModeActive: boolean): this;
 
-    isGameModeHotkeyEnabled(): boolean;
+    /**
+     * Is game mode enabled?
+     */
+    isGameMode(): boolean;
+
+    /**
+     * Enable or disable shift-ctrl for toggling game mode (enabled by default).
+     *
+     * @param enableGamemodeHotkey Desired state
+     */
     setGameModeHotkeyEnabled(enableGamemodeHotkey: boolean): this;
 
-    isGameModeIndicatorEnabled(): boolean;
+    /**
+     * Can game mode be toggled via shift-ctrl?
+     */
+    isGameModeHotkeyEnabled(): boolean;
+
+    /**
+     * Enable or disable game mode indicator (overlays hard buttons if game mode is active)? Enabled
+     * by default.
+     *
+     * @param gameModeIndicatorEnabled Desired state
+     */
     setGameModeIndicatorEnabled(gameModeIndicatorEnabled: boolean): this;
 
+    /**
+     * Is game mode overlay enabled?
+     */
+    isGameModeIndicatorEnabled(): boolean;
+
+    /**
+     * Change device orientation.
+     *
+     * @param orientation Desired orientation
+     */
     setOrientation(orientation: DeviceOrientation): this;
+
+    /**
+     * Query device orientation
+     */
     getOrientation(): DeviceOrientation;
 
+    /**
+     * Set hotsync name.
+     *
+     * @param hotsyncName Desired hotsync name
+     */
     setHotsyncName(hotsyncName: string | undefined): this;
+
+    /**
+     * Get hotsync name.
+     */
     getHotsyncName(): string | undefined;
 
+    /**
+     * Keep running if the emulator tab is not visible?
+     *
+     * @param toggle Desired state
+     */
     setRunHidden(toggle: boolean): this;
+
+    /**
+     * Keep running if the emulator tab is not visible?
+     */
     getRunHidden(): boolean;
 
+    /**
+     * Get performance statistics
+     */
     getStatistics(): EmulationStatistics;
 
+    /**
+     * Fires when the device turns on or off.
+     */
     readonly powerOffChangeEvent: Event<boolean>;
+
+    /**
+     * Fires when PalmOS resets or passed UI initialization during boot.
+     */
     readonly isUiInitializedChangeEvent: Event<boolean>;
+
+    /**
+     * Fires when audio is initializd successfully.
+     */
     readonly audioInitializedEvent: Event<void>;
+
+    /**
+     * Fires after each emulated timeslice (typicall 60 times per second)
+     */
     readonly timesliceEvent: Event<void>;
+
+    /**
+     * Fires when the hotsync name changes. This does not happen immediatelly when
+     * `setHotsyncName` is called, but only when the OS is notified of the new name.
+     */
     readonly hotsyncNameChangeEvent: Event<string>;
+
+    /**
+     * Fires if game mode is enabled or disabled.
+     */
     readonly gameModeChangeEvent: Event<boolean>;
 }
 
@@ -184,7 +376,7 @@ export class EmulatorImpl implements Emulator {
         return this;
     }
 
-    bindInput(pointerTarget: EventTarget, keyEventTarget?: EventTarget): this {
+    bindInput(pointerTarget: EventSource, keyEventTarget?: EventSource): this {
         this.eventHandlingService.bind(pointerTarget, keyEventTarget);
 
         return this;

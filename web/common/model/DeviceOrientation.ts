@@ -1,3 +1,6 @@
+/**
+ * The four different orientation settings.
+ */
 export enum DeviceOrientation {
     portrait = 'portrait',
     landscape90 = 'landscape90',

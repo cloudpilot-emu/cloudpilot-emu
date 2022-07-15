@@ -1,5 +1,5 @@
 import { ApplicationRef, Injectable, NgZone } from '@angular/core';
-import { EventTarget, GenericEventHandlingService } from '@common/service/GenericEventHandlingService';
+import { EventSource, GenericEventHandlingService } from '@common/service/GenericEventHandlingService';
 
 import { CanvasDisplayService } from './canvas-display.service';
 import { EmulationService } from './emulation.service';
@@ -26,7 +26,7 @@ export class EventHandlingService extends GenericEventHandlingService {
         this.app.tick();
     }
 
-    protected override addEventListener<K extends keyof HTMLElementEventMap, E extends EventTarget>(
+    protected override addEventListener<K extends keyof HTMLElementEventMap, E extends EventSource>(
         elt: E,
         type: K,
         handler: EventHandler<K>,

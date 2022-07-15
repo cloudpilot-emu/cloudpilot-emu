@@ -1,5 +1,8 @@
 import { PalmButton } from '@native/cloudpilot_web';
 
+/**
+ * The various supported hard buttons.
+ */
 export enum Button {
     cal = PalmButton.cal,
     phone = PalmButton.phone,

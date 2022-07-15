@@ -10,6 +10,7 @@
     "build-embedded": "yarn webpack --mode production -c webpack.embedded.config.js",
     "start-embedded": "yarn webpack serve --mode development -c webpack.embedded.config.js",
     "typedoc-embedded": "yarn typedoc",
+    "typedoc-embedded-watch": "yarn typedoc --watch --cleanOutputDir false",
     "gen-revision": "echo \"export const REVISION = '`git rev-parse --short HEAD`';\" > pwa/src/revision.gen.ts",
     "test": "ng test",
     "lint": "ng lint",

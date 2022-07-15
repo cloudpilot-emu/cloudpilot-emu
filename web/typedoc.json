@@ -3,6 +3,10 @@
     "entryPoints": ["embedded/src/index.ts"],
     "tsconfig": "tsconfig.embedded.json",
     "name": "cloudpilot",
-    "readme": "embedded/README.md",
-    "out": "docs-embedded"
+    "readme": "embedded/README.typedoc.md",
+    "out": "docs-embedded",
+    "sort": [
+        "kind",
+        "instance-first"
+    ]
 }

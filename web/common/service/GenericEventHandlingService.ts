@@ -20,9 +20,15 @@ interface InteractionButton {
 
 type Interaction = InteractionScreen | InteractionButton;
 
+/**
+ * DOM event handler callback.
+ */
 export type EventHandler<K extends keyof HTMLElementEventMap> = (ev: HTMLElementEventMap[K]) => void;
 
-export interface EventTarget {
+/**
+ * A source of DOM events.
+ */
+export interface EventSource {
     addEventListener<K extends keyof HTMLElementEventMap>(
         type: K,
         handler: EventHandler<K>,
@@ -41,7 +47,7 @@ export class GenericEventHandlingService {
         protected canvasDisplayService: AbstractCanvasDisplayService
     ) {}
 
-    bind(pointerEventTarget: EventTarget, keyEventTarget: EventTarget = window): void {
+    bind(pointerEventTarget: EventSource, keyEventTarget: EventSource = window): void {
         if (this.pointerEventTarget) {
             this.release();
         }
@@ -112,7 +118,7 @@ export class GenericEventHandlingService {
 
     protected onToggleGameMode(): void {}
 
-    protected addEventListener<K extends keyof HTMLElementEventMap, E extends EventTarget>(
+    protected addEventListener<K extends keyof HTMLElementEventMap, E extends EventSource>(
         elt: E,
         type: K,
         handler: EventHandler<K>,
@@ -121,7 +127,7 @@ export class GenericEventHandlingService {
         elt.addEventListener(type, handler, caputure);
     }
 
-    protected removeEventListener<K extends keyof HTMLElementEventMap, E extends EventTarget>(
+    protected removeEventListener<K extends keyof HTMLElementEventMap, E extends EventSource>(
         elt: E,
         type: K,
         handler: EventHandler<K>,
@@ -450,8 +456,8 @@ export class GenericEventHandlingService {
         }
     }
 
-    private pointerEventTarget: EventTarget | undefined;
-    private keyEventTarget: EventTarget = window;
+    private pointerEventTarget: EventSource | undefined;
+    private keyEventTarget: EventSource = window;
 
     private interactionMouse: Interaction | undefined;
     private interactionsTouch = new Map<number, Interaction>();

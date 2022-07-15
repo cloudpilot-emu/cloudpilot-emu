@@ -1,3 +1,6 @@
+/**
+ * This enumerates all supported devices.
+ */
 export enum DeviceId {
     palmPilot = 'PalmPilot',
     pilot = 'Pilot',
