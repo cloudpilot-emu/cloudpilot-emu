@@ -1,7 +1,8 @@
 {
   "name": "cloudpilot-emu",
   "version": "1.6.11",
-  "author": "Christian Speckner",
+  "author": "Christian Speckner <cnspeckn@googlemail.com>",
+  "license": "GPL-3.0-or-later",
   "homepage": "https://cloudpilot-emu.github.io/",
   "scripts": {
     "ng": "ng",
@@ -21,7 +22,8 @@
     "pwa-assets": "yarn pwa-icons && yarn pwa-splash && yarn pwa-splash-dark && prettier -w --parser html pwa/src/index.html"
   },
   "private": true,
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "@angular/common": "~13.1.1",
     "@angular/core": "~13.1.1",
     "@angular/forms": "~13.1.1",
@@ -46,9 +48,7 @@
     "whatwg-fetch": "^3.6.2",
     "worker-timers": "^7.0.44",
     "yet-another-abortcontroller-polyfill": "^0.0.4",
-    "zone.js": "~0.11.4"
-  },
-  "devDependencies": {
+    "zone.js": "~0.11.4",
     "@angular-builders/custom-webpack": "^13.1.0",
     "@angular-devkit/build-angular": "~13.1.2",
     "@angular/cli": "~13.1.2",
