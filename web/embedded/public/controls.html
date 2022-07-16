@@ -56,6 +56,10 @@
             margin-right: 0.5em;
         }
 
+        label {
+            display: block;
+        }
+
         #ui-status {
             display: inline-block;
             margin-left: 1em;
@@ -94,10 +98,14 @@
                 <button type="button" id="game-mode-hotkey-button"></button>
                 <button type="button" id="game-mode-indicator-button"></button>
             </div>
+            <div id="speed-controls">
+                <label for="speed-input" id="speed-label">Speed:</label>
+                <input type="range" min="10" max="500" step="10" id="speed-input">
+            </div>
             <div id="audio-controls">
                 <button type="button" id="enable-audio-button">Enable audio</button>
                 <div id="volume-input-container" style="display: none">
-                    <label for="volume-input">Volume:</label>
+                    <label for="volume-input" id="volume-label">Volume:</label>
                     <input type="range" min="0" max="100" step="5" id="volume-input">
                 </div>
             </div>
@@ -166,6 +174,7 @@
             const applyHotsyncNameButton = document.getElementById('apply-hotsync-name-button');
             const hotsyncNameInput = document.getElementById('hotsync-name-field');
             const enableAudioButton = document.getElementById('enable-audio-button');
+            const volumeLabel = document.getElementById('volume-label');
             const volumeInput = document.getElementById('volume-input');
             const volumeInputContainer = document.getElementById('volume-input-container');
             const statisticsContainer = document.getElementById('statistics');
@@ -175,6 +184,8 @@
             const gameModeButton = document.getElementById('game-mode-button');
             const gameModeHotkeyButton = document.getElementById('game-mode-hotkey-button');
             const gameModeIndicatorButton = document.getElementById('game-mode-indicator-button');
+            const speedLabel = document.getElementById('speed-label');
+            const speedInput = document.getElementById('speed-input');
 
             emulator.
                 loadSession(new Uint8Array(image))
@@ -197,6 +208,9 @@
                 gameModeIndicatorButton.innerText = emulator.isGameModeIndicatorEnabled() ? 'Game mode indicator off' : 'Game mode hotkey on';
                 volumeInputContainer.style.display = emulator.isAudioInitialized() ? 'inline-block' : 'none';
                 volumeInput.value = (emulator.getVolume() * 100) + '';
+                volumeLabel.innerText = `Volume: ${Math.floor(emulator.getVolume() * 100)}`;
+                speedInput.value = (emulator.getSpeed() * 100) + '';
+                speedLabel.innerText = `Speed: ${emulator.getSpeed().toFixed(2)}x`;
             }
 
             function updateStatistics() {
@@ -252,10 +266,21 @@
                 updateUi();
             });
 
-            volumeInput.addEventListener('change', () => {
+            volumeInput.addEventListener('input', () => {
                 const volume = parseInt(volumeInput.value);
-                !isNaN(volume) && emulator.setVolume(volume / 100);
+                if (!isNaN(volume)) {
+                    emulator.setVolume(volume / 100);
+                    updateUi();
+                }
             });
+
+            speedInput.addEventListener('input', () => {
+                const speed = parseInt(speedInput.value) / 100;
+                if (!isNaN(speed)) {
+                    emulator.setSpeed(speed);
+                    updateUi();
+                }
+            })
 
             setInterval(updateStatistics, 1000);
         })().catch(e => console.error(e));
