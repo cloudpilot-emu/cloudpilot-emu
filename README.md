@@ -130,7 +130,7 @@ With the SDK properly set up you can build the source via
 The web app is written in Typescript using [Angular](https://angular.io) and
 [Ionic](https://ionicframework.com). In order to build
 you need [NodeJS](https://nodejs.org/en/) and [yarn](https://yarnpkg.com)
-installed. Go to the `cloudpilot-ionic" directory and do
+installed. Go to the `web` directory and do
 
 ```
     $ yarn install
