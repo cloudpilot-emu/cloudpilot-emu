@@ -41,7 +41,9 @@ jobs:
         run: yarn install
       - name: Build PWA
         working-directory: web
-        run: yarn build --configuration production,ci --base-href /app/
+        run: |
+          yarn run gen-revision
+          yarn ng run app:build:production,ci --base-href /app/
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.5.1
         with:

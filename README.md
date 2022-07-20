@@ -134,7 +134,8 @@ installed. Go to the `web` directory and do
 
 ```
     $ yarn install
-    $ yarn build --configuration production
+    $ yarn gen-revision
+    $ yarn ng run app:build:production
 ```
 
 The result will be in the `www` subdir. The build includes a service worker for
