@@ -8,7 +8,7 @@ export { DeviceOrientation } from '@common/model/DeviceOrientation';
 export { Emulator } from './Emulator';
 export { EmulationStatistics } from '@common/model/EmulationStatistics';
 export { EventSource, EventHandler } from '@common/service/GenericEventHandlingService';
-export { Event } from './Event';
+export { Event, Handler } from './Event';
 
 export const VERSION = 'dev';
 
