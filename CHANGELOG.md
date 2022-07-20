@@ -1,3 +1,7 @@
+# Next version
+
+-   Introduce Cloudpilot embedded.
+
 # Version 1.6.11
 
 -   Use storage manager API to request persistent storage on browsers that
