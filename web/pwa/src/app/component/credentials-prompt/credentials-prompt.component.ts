@@ -1,5 +1,5 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
+import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 
 import { KvsService } from '@pwa/service/kvs.service';
 
@@ -34,9 +34,9 @@ export class CredentialsPromptComponent implements OnInit {
     private createFormGroup(): void {
         const auth = this.kvs.kvs.credentials[this.origin];
 
-        this.formGroup = new FormGroup({
-            username: new FormControl(auth?.username ?? ''),
-            password: new FormControl(auth?.password ?? ''),
+        this.formGroup = new UntypedFormGroup({
+            username: new UntypedFormControl(auth?.username ?? ''),
+            password: new UntypedFormControl(auth?.password ?? ''),
         });
     }
 
@@ -49,5 +49,5 @@ export class CredentialsPromptComponent implements OnInit {
     @Input()
     origin = '';
 
-    formGroup!: FormGroup;
+    formGroup!: UntypedFormGroup;
 }

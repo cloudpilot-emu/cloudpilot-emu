@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { FormControl, FormGroup } from '@angular/forms';
+import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { ClipboardService } from '@pwa/service/clipboard.service';
@@ -120,18 +120,18 @@ export class SettingsPage implements OnInit {
     }
 
     private createFormGroup() {
-        this.formGroup = new FormGroup({
-            [fields.volume]: new FormControl(this.kvsService.kvs.volume),
-            [fields.showStatistics]: new FormControl(this.kvsService.kvs.showStatistics),
-            [fields.runHidden]: new FormControl(this.kvsService.kvs.runHidden),
-            [fields.clipboardIntegration]: new FormControl(this.kvsService.kvs.clipboardIntegration),
-            [fields.networkRedirection]: new FormControl(this.kvsService.kvs.networkRedirection),
-            [fields.proxyServer]: new FormControl(this.kvsService.kvs.proxyServer, {
+        this.formGroup = new UntypedFormGroup({
+            [fields.volume]: new UntypedFormControl(this.kvsService.kvs.volume),
+            [fields.showStatistics]: new UntypedFormControl(this.kvsService.kvs.showStatistics),
+            [fields.runHidden]: new UntypedFormControl(this.kvsService.kvs.runHidden),
+            [fields.clipboardIntegration]: new UntypedFormControl(this.kvsService.kvs.clipboardIntegration),
+            [fields.networkRedirection]: new UntypedFormControl(this.kvsService.kvs.networkRedirection),
+            [fields.proxyServer]: new UntypedFormControl(this.kvsService.kvs.proxyServer, {
                 validators: [validateProxyAddress],
             }),
-            [fields.autoLockUI]: new FormControl(this.kvsService.kvs.autoLockUI),
-            [fields.enableRemoteInstall]: new FormControl(this.kvsService.kvs.enableRemoteInstall),
-            [fields.audioOnStart]: new FormControl(this.kvsService.kvs.enableAudioOnFirstInteraction),
+            [fields.autoLockUI]: new UntypedFormControl(this.kvsService.kvs.autoLockUI),
+            [fields.enableRemoteInstall]: new UntypedFormControl(this.kvsService.kvs.enableRemoteInstall),
+            [fields.audioOnStart]: new UntypedFormControl(this.kvsService.kvs.enableAudioOnFirstInteraction),
         });
 
         this.formGroup.get(fields.audioOnStart)?.valueChanges.subscribe(this.onAudioOnStartChange);
@@ -152,7 +152,7 @@ export class SettingsPage implements OnInit {
         );
     };
 
-    formGroup!: FormGroup;
+    formGroup!: UntypedFormGroup;
     private connectionTestInProgress = false;
     private mutexReleasePromise: Promise<MutexInterface.Releaser> | undefined;
 }

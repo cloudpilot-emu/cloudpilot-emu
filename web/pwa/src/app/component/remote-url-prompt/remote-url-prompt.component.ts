@@ -1,4 +1,4 @@
-import { AbstractControl, FormControl, FormGroup, ValidationErrors } from '@angular/forms';
+import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidationErrors } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
 
 import Url from 'url-parse';
@@ -62,13 +62,13 @@ export class RemoteUrlPromptComponent implements OnInit {
     }
 
     private createFormGroup(): void {
-        this.formGroup = new FormGroup({
-            url: new FormControl('', validateUrl),
+        this.formGroup = new UntypedFormGroup({
+            url: new UntypedFormControl('', validateUrl),
         });
     }
 
     @Input() onContinue: (url: string) => void = () => undefined;
     @Input() onCancel: () => void = () => undefined;
 
-    formGroup!: FormGroup;
+    formGroup!: UntypedFormGroup;
 }

@@ -1,4 +1,4 @@
-import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
+import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
 import { cpuClock, deviceName } from '@common/helper/deviceProperties';
 
@@ -117,17 +117,17 @@ export class SessionSettingsComponent implements OnInit {
     }
 
     private createFormGroup() {
-        this.formGroup = new FormGroup({
-            name: new FormControl(this.session.name, {
+        this.formGroup = new UntypedFormGroup({
+            name: new UntypedFormControl(this.session.name, {
                 validators: [Validators.required, this.validateNameUnique],
             }),
-            manageHotsyncName: new FormControl(!this.session.dontManageHotsyncName),
-            hotsyncName: new FormControl(this.session.hotsyncName || ''),
-            device: new FormControl({ value: this.session.device, disabled: this.availableDevices.length === 1 }),
-            speed: new FormControl(
+            manageHotsyncName: new UntypedFormControl(!this.session.dontManageHotsyncName),
+            hotsyncName: new UntypedFormControl(this.session.hotsyncName || ''),
+            device: new UntypedFormControl({ value: this.session.device, disabled: this.availableDevices.length === 1 }),
+            speed: new UntypedFormControl(
                 (this.session.speed || 1) >= 1 ? (this.session.speed || 1) - 1 : 1 - 1 / this.session.speed!
             ),
-            orientation: new FormControl(this.session.deviceOrientation || DeviceOrientation.portrait),
+            orientation: new UntypedFormControl(this.session.deviceOrientation || DeviceOrientation.portrait),
         });
     }
 
@@ -150,7 +150,7 @@ export class SessionSettingsComponent implements OnInit {
     @Input()
     availableDevices!: Array<DeviceId>;
 
-    formGroup!: FormGroup;
+    formGroup!: UntypedFormGroup;
 
     readonly orientations = [
         [DeviceOrientation.portrait, 'Portrait'],
