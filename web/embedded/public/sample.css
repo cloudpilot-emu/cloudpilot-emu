@@ -7,3 +7,7 @@ canvas {
     height: calc(100vh - 8em);
     margin-bottom: 1em;
 }
+
+a {
+    margin: 0 0.5em;
+}
