@@ -3,7 +3,8 @@
     "compilerOptions": {
         "target": "es2015",
         "module": "es2015",
-        "lib": ["dom", "es2015"]
+        "lib": ["dom", "es2015"],
+        "declaration": true,
     },
     "include": ["common/**/*.ts", "embedded/**/*.ts"],
     "exclude": ["node_modules"]

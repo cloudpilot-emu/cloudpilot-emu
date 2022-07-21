@@ -1,0 +1,14 @@
+{
+    "compilationOptions": {
+        "preferredConfigPath": "./tsconfig.embedded.json"
+    },
+    "entries": [
+        {
+            "filePath": "./embedded/src/index.ts",
+            "outFile": "./build-embedded/cloudpilot-emu.d.ts",
+            "output": {
+                "umdModuleName": "cloudpilot"
+            }
+        }
+    ]
+}

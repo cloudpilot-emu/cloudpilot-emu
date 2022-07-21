@@ -1,3 +1,8 @@
+// This is required for dts-bundle-generator
+//
+// tslint:disable-next-line: no-reference
+/// <reference path="./svg-import.d.ts" />
+
 export { default as HARD_BUTTONS_IIIC } from './hard-buttons/iiic.svg';
 export { default as HARD_BUTTONS_IIIE } from './hard-buttons/iiie.svg';
 export { default as HARD_BUTTONS_IIIX } from './hard-buttons/iiix.svg';
