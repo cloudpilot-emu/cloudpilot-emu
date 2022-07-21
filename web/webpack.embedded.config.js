@@ -1,5 +1,16 @@
 const path = require('path');
+const { execSync } = require('node:child_process');
 const CopyPlugin = require('copy-webpack-plugin');
+const webpack = require('webpack');
+const pkg = require('./package.json');
+
+function getGitRev() {
+    const rev = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trimEnd();
+
+    if (!/^[0-9a-f]{7}$/.test(rev)) throw new Error(`unable to determine git revision; command returned ${rev}`);
+
+    return rev;
+}
 
 module.exports = (env, argv) => ({
     entry: './embedded/src/index.ts',
@@ -48,9 +59,17 @@ module.exports = (env, argv) => ({
                 { from: path.resolve(__dirname, '../src/cloudpilot_web.wasm'), to: '.' },
             ],
         }),
+        new webpack.EnvironmentPlugin({
+            VERSION:
+                argv.mode === 'development'
+                    ? 'dev'
+                    : env['RELEASE']
+                    ? pkg.version
+                    : `${pkg.version}-${getGitRev()} (preview)`,
+        }),
     ],
     performance: {
-        maxAssetSize: 1 * 1024 * 1024,
+        maxAssetSize: 3 * 1024 * 1024,
         maxEntrypointSize: 1 * 1024 * 1024,
     },
     devServer: {

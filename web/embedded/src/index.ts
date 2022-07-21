@@ -10,7 +10,7 @@ export { EmulationStatistics } from '@common/model/EmulationStatistics';
 export { EventSource, EventHandler } from '@common/service/GenericEventHandlingService';
 export { Event, Handler } from './Event';
 
-export const VERSION = 'dev';
+export const VERSION = process.env.VERSION;
 
 /**
  * Create a new instance of the emulator.
