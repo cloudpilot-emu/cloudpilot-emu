@@ -171,6 +171,7 @@ export abstract class AbstractEmulationService {
         this.resetCanvas();
 
         this.pendingPwmUpdates.flush();
+        this.lastPwmUpdateEvent = 0;
         this.deviceHotsyncName = undefined;
         this.emulationSpeed = 1;
         this.frameCounter = 0;
@@ -307,9 +308,10 @@ export abstract class AbstractEmulationService {
 
             if (
                 this.pendingPwmUpdates.count() > 0 &&
-                timestamp - this.timestampLastFrame > MIN_MILLISECONDS_PER_PWD_UPDATE
+                timestamp - this.lastPwmUpdateEvent > MIN_MILLISECONDS_PER_PWD_UPDATE
             ) {
                 this.pwmUpdateEvent.dispatch(this.pendingPwmUpdates.pop()!);
+                this.lastPwmUpdateEvent = timestamp;
             }
 
             if (this.advanceEmulationHandle === undefined) {
@@ -621,6 +623,7 @@ export abstract class AbstractEmulationService {
     protected deviceHotsyncName: string | undefined;
 
     protected pendingPwmUpdates = new Fifo<PwmUpdate>(PWM_FIFO_SIZE);
+    protected lastPwmUpdateEvent = 0;
 
     protected advanceEmulationHandle: number | undefined;
 
