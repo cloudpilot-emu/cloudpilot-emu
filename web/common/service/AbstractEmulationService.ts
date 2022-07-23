@@ -8,6 +8,7 @@ import { DeviceId } from '@common/model/DeviceId';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { Event } from 'microevent.ts';
 import { Fifo } from '@common/helper/Fifo';
+import { TimeoutScheduler } from './../../pwa/src/app/helper/scheduler';
 
 const PEN_MOVE_THROTTLE = 25;
 const PWM_FIFO_SIZE = 10;
@@ -328,7 +329,7 @@ export abstract class AbstractEmulationService {
             this.scheduler =
                 this.getConfiguredSchdedulerKind() === SchedulerKind.animationFrame
                     ? new AnimationFrameScheduler((timestamp) => this.onSchedule(timestamp))
-                    : new AnimationFrameScheduler((timestamp) => this.onSchedule(timestamp));
+                    : new TimeoutScheduler((timestamp) => this.onSchedule(timestamp));
         }
 
         this.callScheduler();
