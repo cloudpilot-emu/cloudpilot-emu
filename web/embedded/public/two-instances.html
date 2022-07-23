@@ -59,8 +59,8 @@
 <body>
     <h1>Multiple instances</h1>
     <div id="container">
-        <div class="canvas-wrapper"><canvas id="canvas-1" tabindex="-1"></canvas></div>
-        <div class="canvas-wrapper"><canvas id="canvas-2" tabindex="-1"></canvas></div>
+        <div class="canvas-wrapper"><canvas id="canvas-1" tabindex="1"></canvas></div>
+        <div class="canvas-wrapper"><canvas id="canvas-2" tabindex="1"></canvas></div>
     </div>
     <a href="index.html">...back to index</a>
     |
@@ -90,13 +90,13 @@
             emulator1
                 .loadRom(new Uint8Array(rom1))
                 .setCanvas(canvas1)
-                .bindInput(canvas1, canvas1)
+                .bindInput(canvas1)
                 .resume();
 
             emulator2
                 .loadRom(new Uint8Array(rom2))
                 .setCanvas(canvas2)
-                .bindInput(canvas2, canvas2)
+                .bindInput(canvas2)
                 .resume();
         })().catch(e => console.error(e));
     </script>

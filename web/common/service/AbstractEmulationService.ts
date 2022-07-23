@@ -16,6 +16,7 @@ const SPEED_AVERAGE_N = 20;
 const TIME_PER_FRAME_AVERAGE_N = 60;
 const MIN_FPS = 30;
 const DUMMY_SPEED = 1000;
+const MIN_MILLISECONDS_PER_PWD_UPDATE = 10;
 
 export abstract class AbstractEmulationService {
     handlePointerMove(x: number, y: number, isSilkscreen: boolean): void {
@@ -304,7 +305,10 @@ export abstract class AbstractEmulationService {
         if (!this.skipEmulationUpdate()) {
             this.performScreenUpdate();
 
-            if (this.pendingPwmUpdates.count() > 0) {
+            if (
+                this.pendingPwmUpdates.count() > 0 &&
+                timestamp - this.timestampLastFrame > MIN_MILLISECONDS_PER_PWD_UPDATE
+            ) {
                 this.pwmUpdateEvent.dispatch(this.pendingPwmUpdates.pop()!);
             }
 
@@ -313,10 +317,10 @@ export abstract class AbstractEmulationService {
                     this.advanceEmulationHandle = undefined;
                     this.advanceEmulation(timestamp);
                 }, 0);
-
-                this.timePerFrameAverage.push(Math.max(0, timestamp - this.timestampLastFrame));
-                this.timestampLastFrame = timestamp;
             }
+
+            this.timePerFrameAverage.push(Math.max(0, timestamp - this.timestampLastFrame));
+            this.timestampLastFrame = timestamp;
         }
 
         this.schedule();
@@ -406,26 +410,32 @@ export abstract class AbstractEmulationService {
         }
 
         if (uiInitialized && !powerOff && this.manageHotsyncName()) {
-            if (this.deviceHotsyncName === undefined) {
-                this.deviceHotsyncName = this.cloudpilotInstance.getHotsyncName();
-            }
-
-            const configuredHotsyncName = this.getConfiguredHotsyncName();
-
-            if (configuredHotsyncName === undefined) {
-                this.updateConfiguredHotsyncName(this.deviceHotsyncName);
-            } else if (
-                configuredHotsyncName !== this.deviceHotsyncName &&
-                configuredHotsyncName.length <= 40 &&
-                this.cloudpilotInstance.isSetupComplete()
-            ) {
-                this.cloudpilotInstance.setHotsyncName(configuredHotsyncName);
-                this.deviceHotsyncName = configuredHotsyncName;
-            }
+            this.checkAndUpdateHotsyncName();
         }
 
         this.onAfterAdvanceEmulation(timestamp, cycles);
     };
+
+    protected checkAndUpdateHotsyncName(): void {
+        if (!this.cloudpilotInstance) return;
+
+        if (this.deviceHotsyncName === undefined) {
+            this.deviceHotsyncName = this.cloudpilotInstance.getHotsyncName();
+        }
+
+        const configuredHotsyncName = this.getConfiguredHotsyncName();
+
+        if (configuredHotsyncName === undefined) {
+            this.updateConfiguredHotsyncName(this.deviceHotsyncName);
+        } else if (
+            configuredHotsyncName !== this.deviceHotsyncName &&
+            configuredHotsyncName.length <= 40 &&
+            this.cloudpilotInstance.isSetupComplete()
+        ) {
+            this.cloudpilotInstance.setHotsyncName(configuredHotsyncName);
+            this.deviceHotsyncName = configuredHotsyncName;
+        }
+    }
 
     protected clearCanvas(): void {
         const deviceId = this.deviceId;

@@ -91,6 +91,9 @@
             <div>
                 <button type="button" id="orientation-button"></button>
             </div>
+            <div>
+                <button type="button" id="run-hidden-button"></button>
+            </div>
             <div id="hotsync-name-container"></div>
             <div id="hotsync-name-controls">
                 <label for="hotsync-name-input">New name:</label>
@@ -129,6 +132,7 @@
 
     <script>
         (async function () {
+            // Convert orientation into a human readable string
             function orientationToString(orientation) {
                 switch (orientation) {
                     case cloudpilot.DeviceOrientation.portrait:
@@ -145,6 +149,7 @@
                 }
             }
 
+            // Switch to the next orientation: 0° -> 90° -> 180° -> 270° -> 0°
             function nextOrientation(orientation) {
                 switch (orientation) {
                     case cloudpilot.DeviceOrientation.portrait:
@@ -153,23 +158,34 @@
                     case cloudpilot.DeviceOrientation.landscape90:
                         return cloudpilot.DeviceOrientation.portrait180;
 
-                    case cloudpilot.DeviceOrientation.landscape270:
-                        return cloudpilot.DeviceOrientation.portrait;
-
                     case cloudpilot.DeviceOrientation.portrait180:
                         return cloudpilot.DeviceOrientation.landscape270;
+
+                    case cloudpilot.DeviceOrientation.landscape270:
+                        return cloudpilot.DeviceOrientation.portrait;
                 }
             }
 
+            // Fetch session image
             const imageResponse = await fetch('session.img');
             if (!imageResponse.ok) {
                 throw new Error('could not download session image');
             }
 
             const image = await imageResponse.arrayBuffer();
-            const emulator = await cloudpilot.createEmulator();
-            const canvas = document.getElementsByTagName('canvas')[0];
 
+            // Get handle to canvas and initialize emulator
+            const canvas = document.getElementsByTagName('canvas')[0];
+            const emulator = await cloudpilot.createEmulator();
+
+            // Load session and start emulator
+            emulator.
+                loadSession(new Uint8Array(image))
+                .setCanvas(canvas)
+                .bindInput(canvas)
+                .resume();
+
+            // Get handles to the UI elements
             const pauseResumeButton = document.getElementById('pause-resume-button');
             const powerButton = document.getElementById('power-button');
             const resetButton = document.getElementById('reset-button');
@@ -194,13 +210,9 @@
             const gameModeIndicatorButton = document.getElementById('game-mode-indicator-button');
             const speedLabel = document.getElementById('speed-label');
             const speedInput = document.getElementById('speed-input');
+            const runHiddenButton = document.getElementById('run-hidden-button');
 
-            emulator.
-                loadSession(new Uint8Array(image))
-                .setCanvas(canvas)
-                .bindInput(canvas, canvas)
-                .resume();
-
+            // Update UI to reflect emulator state
             function updateUi() {
                 pauseResumeButton.innerText = emulator.isRunning() ? 'Pause' : 'Resume';
 
@@ -210,17 +222,24 @@
 
                 hotsyncNameContainer.innerText = `Hotsync name: ${emulator.getHotsyncName()}`;
                 applyHotsyncNameButton.disabled = emulator.isPowerOff() || !emulator.isUiInitialized();
+
                 enableAudioButton.style.display = emulator.isAudioInitialized() ? 'none' : undefined;
+
                 gameModeButton.innerText = emulator.isGameMode() ? 'Game mode off' : 'Game mode on';
                 gameModeHotkeyButton.innerText = emulator.isGameModeHotkeyEnabled() ? 'Game mode hotkey off' : 'Game mode hotkey on';
                 gameModeIndicatorButton.innerText = emulator.isGameModeIndicatorEnabled() ? 'Game mode indicator off' : 'Game mode hotkey on';
+
                 volumeInputContainer.style.display = emulator.isAudioInitialized() ? 'inline-block' : 'none';
                 volumeInput.value = (emulator.getVolume() * 100) + '';
                 volumeLabel.innerText = `Volume: ${Math.floor(emulator.getVolume() * 100)}`;
+
                 speedInput.value = (emulator.getSpeed() * 100) + '';
                 speedLabel.innerText = `Speed: ${emulator.getSpeed().toFixed(2)}x`;
+
+                runHiddenButton.innerText = emulator.getRunHidden() ? `pause if hidden` : `run while hidden`;
             }
 
+            // Update statistics
             function updateStatistics() {
                 const statistics = emulator.getStatistics();
 
@@ -230,14 +249,18 @@
                 fpsContainer.innerText = `${statistics.averageFps.toFixed(2)} frames / second`;
             }
 
+            // Update UI on changes that we didn't trigger directly
             emulator.powerOffChangeEvent.addHandler(updateUi);
             emulator.isUiInitializedChangeEvent.addHandler(updateUi);
             emulator.hotsyncNameChangeEvent.addHandler(updateUi);
             emulator.gameModeChangeEvent.addHandler(updateUi);
 
+            // Perform initial UI update
             updateUi();
+            // Unhide controls
             controlContainer.className = '';
 
+            // Pause / resume button
             pauseResumeButton.addEventListener('click', () => {
                 if (emulator.isRunning()) emulator.pause();
                 else emulator.resume();
@@ -245,13 +268,18 @@
                 updateUi();
             });
 
+            // Power button. The button is directly wired to the Pilot hard button. Note that
+            // powerOffChangeEvent will fire when the device powers down, so we don't have to call
+            // updateUi ourselves.
             powerButton.addEventListener('mousedown', () => emulator.buttonDown(cloudpilot.Button.power));
             powerButton.addEventListener('mouseup', () => emulator.buttonUp(cloudpilot.Button.power));
 
+            // Reset buttons
             resetButton.addEventListener('click', () => emulator.reset());
             resetNoextButton.addEventListener('click', () => emulator.resetNoExtensions());
             resetHardButton.addEventListener('click', () => emulator.resetHard());
 
+            // The various game mode buttons
             gameModeButton.addEventListener('click', () => emulator.setGameMode(!emulator.isGameMode()));
             gameModeHotkeyButton.addEventListener('click', () => {
                 emulator.setGameModeHotkeyEnabled(!emulator.isGameModeHotkeyEnabled());
@@ -262,18 +290,26 @@
                 updateUi();
             });
 
+            // Orientation button
             orientationButton.addEventListener('click', () => {
                 emulator.setOrientation(nextOrientation(emulator.getOrientation()));
                 updateUi();
             });
+
+            // Hotsync name UI. Note that hotsyncNameChangeEvent will fire when the hotsync name is changed, so
+            // we do not have to call updateUi ourselves.
             applyHotsyncNameButton.addEventListener('click', () => emulator.setHotsyncName(hotsyncNameInput.value));
             hotsyncNameInput.addEventListener('keydown', (e) => e.key === 'Enter' && emulator.setHotsyncName(hotsyncNameInput.value));
 
+            // Enable audio. This has to happen on a user interaction, so we do it here.
             enableAudioButton.addEventListener('click', async () => {
+                // Make sure to await the result before checking whether audio is enabled (as is done
+                // by updateUi)
                 await emulator.initializeAudio();
                 updateUi();
             });
 
+            // Volume slider.
             volumeInput.addEventListener('input', () => {
                 const volume = parseInt(volumeInput.value);
                 if (!isNaN(volume)) {
@@ -282,14 +318,22 @@
                 }
             });
 
+            // Speed slider
             speedInput.addEventListener('input', () => {
                 const speed = parseInt(speedInput.value) / 100;
                 if (!isNaN(speed)) {
                     emulator.setSpeed(speed);
                     updateUi();
                 }
-            })
+            });
 
+            // Run-in-background button
+            runHiddenButton.addEventListener('click', () => {
+                emulator.setRunHidden(!emulator.getRunHidden());
+                updateUi();
+            });
+
+            // Update statistics every second
             setInterval(updateStatistics, 1000);
         })().catch(e => console.error(e));
     </script>

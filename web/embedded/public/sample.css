@@ -8,6 +8,11 @@ canvas {
     margin-bottom: 1em;
 }
 
+canvas:focus {
+    border: none;
+    outline: none;
+}
+
 a {
     margin: 0 0.5em;
 }

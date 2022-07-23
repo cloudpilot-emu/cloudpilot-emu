@@ -7,7 +7,7 @@ export { Button } from './button';
 export { DeviceOrientation } from '@common/model/DeviceOrientation';
 export { Emulator } from './Emulator';
 export { EmulationStatistics } from '@common/model/EmulationStatistics';
-export { EventSource, EventHandler } from '@common/service/GenericEventHandlingService';
+export { EventTarget, EventHandler } from '@common/service/GenericEventHandlingService';
 export { Event, Handler } from './Event';
 
 export const VERSION = process.env.VERSION;

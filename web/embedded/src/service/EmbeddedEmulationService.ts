@@ -59,6 +59,14 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
         return this.session;
     }
 
+    forceUpdateHotsyncName(): void {
+        if (!this.cloudpilotInstance) return;
+
+        if (this.cloudpilotInstance.isUiInitialized() && !this.cloudpilotInstance.isPowerOff()) {
+            this.checkAndUpdateHotsyncName();
+        }
+    }
+
     protected getConfiguredSpeed(): number {
         return this.session?.speed ?? 1;
     }

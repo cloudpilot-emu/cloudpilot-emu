@@ -12,7 +12,7 @@ import { EmbeddedEventHandlingServie } from './service/EmbeddedEventHandlingServ
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { Event } from './Event';
 import { Event as EventImpl } from 'microevent.ts';
-import { EventSource } from '@common/service/GenericEventHandlingService';
+import { EventTarget } from '@common/service/GenericEventHandlingService';
 import { Session } from './model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { Watcher } from './Watcher';
@@ -53,10 +53,9 @@ export interface Emulator {
      * Receive input events from the specified sources. If this method is called
      * multiple times the previous sources will be unbound.
      *
-     * @param pointerSource Target for pointer events
-     * @param keyboardSource Optional: target for keyboard events, default: `window`
+     * @param keyboardTarget Optional: target for keyboard events, default: `window`
      */
-    bindInput(pointerSource: EventSource, keyboardSource?: EventSource): this;
+    bindInput(keyboardTarget?: EventTarget): this;
 
     /**
      * Unbind the handlers previous bound with `bindInput`.
@@ -376,8 +375,12 @@ export class EmulatorImpl implements Emulator {
         return this;
     }
 
-    bindInput(pointerTarget: EventSource, keyEventTarget?: EventSource): this {
-        this.eventHandlingService.bind(pointerTarget, keyEventTarget);
+    bindInput(keyEventTarget?: EventTarget): this {
+        const canvas = this.canvasDisplayService.getCanvas();
+        if (!canvas) {
+            throw new Error('you must set up the canvas setCanvas before calling bindInput');
+        }
+        this.eventHandlingService.bind(canvas, keyEventTarget);
 
         return this;
     }
@@ -540,6 +543,7 @@ export class EmulatorImpl implements Emulator {
 
     setHotsyncName(hotsyncName: string | undefined): this {
         this.session.hotsyncName = hotsyncName;
+        this.emulationService.forceUpdateHotsyncName();
 
         return this;
     }
