@@ -91,8 +91,6 @@ export abstract class AbstractEmulationService {
     }
 
     getStatistics(): EmulationStatistics {
-        const timePerFrame = this.timePerFrameAverage.calculateAverage();
-
         return {
             hostSpeed: this.speedAverage.calculateAverage(),
             emulationSpeed: this.emulationSpeed,

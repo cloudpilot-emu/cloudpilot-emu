@@ -18,8 +18,8 @@ export interface EmulationStatistics {
     emulationSpeed: number;
 
     /**
-     * The average number of rendered FPS. Frames are only generated if the screen
-     * content changes, so this is not a speed indicator.
+     * The average number of frames per second. Note that only frames are only
+     * rendered if the screen content actually changed.
      */
     averageFps: number;
 }
