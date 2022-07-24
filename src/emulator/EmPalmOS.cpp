@@ -447,6 +447,8 @@ void EmPalmOS::InjectUIEvent() {
 }
 
 bool EmPalmOS::LaunchAppByName(const string& name) {
+    if (!gSystemState.IsUIInitialized()) return false;
+
     LocalID id = DmFindDatabase(0, name.c_str());
     if (id == 0) return false;
 
