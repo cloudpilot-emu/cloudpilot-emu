@@ -288,13 +288,6 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
             case sysTrapHwrIRQ6Handler:
                 DispatchNextEvent();
         }
-
-        if (gSession->WaitingForSyscall()) {
-            gCPU->SetPC(gCPU->GetPC() - pcAdjust);
-            gSession->NotifySyscallDispatched();
-
-            return true;
-        }
     }
 
     // ======================================================================

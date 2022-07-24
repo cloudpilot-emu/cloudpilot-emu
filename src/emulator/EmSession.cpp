@@ -29,7 +29,6 @@ namespace {
 
     constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
 
-    constexpr uint32 RUN_TO_SYSCALL_LIMIT = 10000000;
     constexpr uint32 YIELD_MEMMGR_LIMIT = 10000000;
     constexpr uint32 EXECUTE_SUBROUTINE_LIMIT = 50000000;
 
@@ -100,9 +99,6 @@ void EmSession::Deinitialize() {
 
     bankResetScheduled = false;
     resetScheduled = false;
-    waitingForSyscall = false;
-    syscallDispatched = false;
-
     nestLevel = 0;
     subroutineReturn = false;
 
@@ -179,8 +175,6 @@ void EmSession::Save(T& savestate) {
     EmAssert(device);
     EmAssert(cpu);
     EmAssert(!subroutineReturn);
-    EmAssert(!waitingForSyscall);
-    EmAssert(!syscallDispatched);
 
     typename T::chunkT* chunk = savestate.GetChunk(ChunkType::session);
     if (!chunk) return;
@@ -225,8 +219,6 @@ void EmSession::Load(SavestateLoader& loader) {
     nestLevel = 0;
     extraCycles = 0;
     subroutineReturn = false;
-    waitingForSyscall = false;
-    syscallDispatched = false;
 
     buttonEventQueue.Clear();
 
@@ -310,9 +302,6 @@ void EmSession::Reset(ResetType resetType) {
     bankResetScheduled = false;
     resetScheduled = false;
 
-    waitingForSyscall = false;
-    syscallDispatched = false;
-
     if (resetType != ResetType::sys) {
         buttonEventQueue.Clear();
         lastButtonEventReadAt = 0;
@@ -391,9 +380,7 @@ bool EmSession::ExecuteSpecial(bool checkForResetOnly) {
     return false;
 }
 
-bool EmSession::CheckForBreak() const {
-    return (IsNested() && subroutineReturn) || (waitingForSyscall && syscallDispatched);
-}
+bool EmSession::CheckForBreak() const { return (IsNested() && subroutineReturn); }
 
 void EmSession::ScheduleResetBanks() {
     bankResetScheduled = true;
@@ -457,34 +444,6 @@ void EmSession::ExecuteSubroutine() {
         EmAssert(cycles < EXECUTE_SUBROUTINE_LIMIT);
     }
 }
-
-bool EmSession::RunToSyscall() {
-    EmValueChanger<bool> startRunToSyscall(waitingForSyscall, true);
-    EmValueChanger<bool> resetSyscallDispatched(syscallDispatched, false);
-
-    EmAssert(gCPU);
-
-    uint32 cycles = 0;
-
-    while (!syscallDispatched && cycles < RUN_TO_SYSCALL_LIMIT) {
-        cycles += cpu->Execute(RUN_TO_SYSCALL_LIMIT);
-
-        if (cpu->Stopped()) break;
-    }
-
-    systemCycles += cycles;
-
-    return syscallDispatched;
-}
-
-void EmSession::NotifySyscallDispatched() {
-    syscallDispatched = true;
-
-    EmAssert(gCPU);
-    cpu->CheckAfterCycle();
-}
-
-bool EmSession::WaitingForSyscall() const { return waitingForSyscall; }
 
 void EmSession::YieldMemoryMgr() {
     EmAssert(gCPU);

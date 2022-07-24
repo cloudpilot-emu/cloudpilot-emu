@@ -82,10 +82,6 @@ class EmSession {
     void ExecuteSubroutine();
     void ScheduleSubroutineReturn();
 
-    bool RunToSyscall();
-    bool WaitingForSyscall() const;
-    void NotifySyscallDispatched();
-
     void YieldMemoryMgr();
 
     void HandleInstructionBreak();
@@ -113,9 +109,6 @@ class EmSession {
 
     int nestLevel{0};
     bool subroutineReturn{false};
-
-    bool waitingForSyscall{false};
-    bool syscallDispatched{false};
 
     bool isInitialized{false};
     shared_ptr<EmDevice> device{nullptr};
