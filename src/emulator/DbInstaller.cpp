@@ -24,16 +24,18 @@ namespace {
                 return DbInstaller::Result::failureDbIsOpen;
 
             default:
-                return DbInstaller::Result::failureUnknownReasoon;
+                return DbInstaller::Result::failureUnknownReason;
         }
     }
 }  // namespace
 
 DbInstaller::Result DbInstaller::Install(size_t bufferSize, uint8* buffer) {
+    if (!gSystemState.IsUIInitialized()) return Result::failureInternal;
+
     if (gSystemState.OSMajorVersion() < 3) {
         return EmFileImport::LoadPalmFile(buffer, bufferSize, kMethodHomebrew) == kError_NoError
                    ? Result::success
-                   : Result::failureUnknownReasoon;
+                   : Result::failureUnknownReason;
     }
 
     if (gSession->IsCpuStopped()) return Result::failureInternal;

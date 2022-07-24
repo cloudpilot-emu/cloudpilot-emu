@@ -11,7 +11,7 @@ class DbInstaller {
         failureDbIsCorrupt = -4,
         failureDbIsOpen = -3,
         failureNotEnoughMemory = -2,
-        failureUnknownReasoon = -1,
+        failureUnknownReason = -1,
         success = 1,
         needsReboot = 2
     };
