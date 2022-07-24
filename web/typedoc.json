@@ -8,5 +8,6 @@
     "sort": [
         "kind",
         "instance-first"
-    ]
+    ],
+    "githubPages": true
 }

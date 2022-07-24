@@ -48,7 +48,7 @@ function getDatabaseName(data: Uint8Array): string {
 
     if (iTerminator > 31) throw new Error('not a database');
 
-    return new TextDecoder('ascii').decode(data.subarray(0, iTerminator));
+    return new TextDecoder('latin1', { fatal: false }).decode(data.subarray(0, iTerminator));
 }
 
 class InstallationContext {

@@ -4,3 +4,4 @@ yarn-error.log
 build-pwa
 build-embedded
 docs-embedded
+dist-embedded

@@ -88,6 +88,7 @@ export interface Emulator {
      * launch the specified file.
      *
      * @param file The zip archive data.
+     * @param launchFile The file name of the database that Cloudpilot will try to launch.
      */
     installFromZipfileAndLaunch(file: Uint8Array, launchFile: string): this;
 
