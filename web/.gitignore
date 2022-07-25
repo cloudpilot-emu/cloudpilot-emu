@@ -5,3 +5,4 @@ build-pwa
 build-embedded
 docs-embedded
 dist-embedded
+npm-embedded
