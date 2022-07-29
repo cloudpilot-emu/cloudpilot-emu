@@ -11,9 +11,9 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   TAG: ${GITHUB_REF##*/}
   CP_EMBEDDED_ZIP_CONTENT: |
-    build-embedded/cloudpilot-emu.js |
-    build-embedded/cloudpilot-emu.js.map |
-    build-embedded/cloudpilot-emu.d.ts |
+    build-embedded/cloudpilot-emu.js
+    build-embedded/cloudpilot-emu.js.map
+    build-embedded/cloudpilot-emu.d.ts
     build-embedded/cloudpilot-web.wasm
   CP_EMBEDDED_ZIP_NAME: cloudpilot-emu-embedded.zip
 jobs:
@@ -26,7 +26,7 @@ jobs:
           ref: ${{ github.ref }}
           check-name: Create release
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 1
+          wait-interval: 10
   build_and_release:
     runs-on: ubuntu-20.04
     needs: wait-for-release

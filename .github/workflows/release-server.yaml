@@ -21,7 +21,7 @@ jobs:
           ref: ${{ github.ref }}
           check-name: Create release
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 1
+          wait-interval: 10
   build-server-linux:
     runs-on: ubuntu-18.04
     needs: wait-for-release
