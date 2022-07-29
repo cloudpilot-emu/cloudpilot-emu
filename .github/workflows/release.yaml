@@ -8,7 +8,22 @@ env:
   NODE_VERSION: 18
   EM_CACHE_FOLDER: emsdk-cache
   PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  TAG: ${GITHUB_REF##*/}
+  CP_EMBEDDED_ZIP_CONTENT: |
+    dist-embedded/cloudpilot-emu.js |
+    dist-embedded/cloudpilot-emu.js.map |
+    dist-embedded/cloudpilot-emu.d.ts |
+    dist-embedded/cloudpilot-web.wasm
+  CP_EMBEDDED_ZIP_NAME: cloudpilot-emu-embedded.zip
 jobs:
+  create-release:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Make sure that release exists
+        run: gh release create ${{ env.TAG }} -d || true
   build_and_release:
     runs-on: ubuntu-20.04
     steps:
@@ -39,6 +54,9 @@ jobs:
       - name: Install node deps
         working-directory: web
         run: yarn install
+      - name: Build Cloudpilot embedded
+        working-directory: web
+        run: CP_RELEASE=1 yarn dist-embedded
       - name: Build PWA
         working-directory: web
         run: |
@@ -53,10 +71,18 @@ jobs:
       - name: Copy and deploy
         working-directory: cloudpilot-emu.github.io
         run: |
-          test -x app-preview && rm -fr app
-          cp -r ../web/build-pwa ./app
+          # test -x app-preview && rm -fr app
+          test -x embedded && rm -fr embedded
+          # cp -r ../web/build-pwa ./app
+          cp -r ../web/dist-embedded ./embedded
           git add .
           git config --global user.email "golem@nowhere.org"
           git config --global user.name "The Golem"
           git commit -m "Bump."
           git push
+      - name: Upload CP embedded release files
+        working-directory: web
+        run: |
+          zip -c ${{ env.CP_EMBEDDED_ZIP_NAME }} ${{ env.CP_EMBEDDED_ZIP_CONTENT }}
+          gh release upload ${{ env.TAG }} ${{ env.CP_EMBEDDED_ZIP_NAME }}
+
