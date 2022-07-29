@@ -24,7 +24,7 @@ jobs:
         uses: lewagon/wait-on-check-action@v1.0.0
         with:
           ref: ${{ github.ref }}
-          check-name: 'Create release'
+          check-name: Create release
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 1
   build_and_release:

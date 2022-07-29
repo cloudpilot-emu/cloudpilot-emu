@@ -13,6 +13,7 @@ env:
   RELEASE_TITLE: CloudpilotEmu ${GITHUB_REF##*/}
 jobs:
   create-release:
+    name: Create release
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
