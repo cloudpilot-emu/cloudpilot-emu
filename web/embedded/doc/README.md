@@ -13,7 +13,7 @@ archive you will find the following files:
 * `cloudpilot-emu.js`: The JavaScript bundle
 * `cloudpilot-emu.js.map`: Source map for debugging
 * `cloudpilot-emu.d.ts`: Type declarations (in case you are using TypeScript)
-* `cloudpilot-web.wasm`: The compiled web assembly bytecode
+* `cloudpilot_web.wasm`: The compiled web assembly bytecode
 
 Drop `cloudpilot-emu.js` and `cloudpilot-web.wasm` next to your web page and
 include the JavaScript bundle with a script tag in your HTML code
