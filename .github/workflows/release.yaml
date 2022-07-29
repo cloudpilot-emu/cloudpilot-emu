@@ -49,7 +49,7 @@ jobs:
         with:
             ssh-private-key: ${{ secrets.SSH_DEPLOY_KEY }}
       - name: Checkout pages source
-        run: git clone ${{env.PAGES_REPO_URL}}
+        run: git clone --depth 1 ${{env.PAGES_REPO_URL}}
       - name: Copy and deploy
         working-directory: cloudpilot-emu.github.io
         run: |
