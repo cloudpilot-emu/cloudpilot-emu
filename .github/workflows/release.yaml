@@ -10,11 +10,7 @@ env:
   PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   TAG: ${GITHUB_REF##*/}
-  CP_EMBEDDED_ZIP_CONTENT: |
-    build-embedded/cloudpilot-emu.js
-    build-embedded/cloudpilot-emu.js.map
-    build-embedded/cloudpilot-emu.d.ts
-    build-embedded/cloudpilot-web.wasm
+  CP_EMBEDDED_ZIP_CONTENT: build-embedded/cloudpilot-emu.js build-embedded/cloudpilot-emu.js.map build-embedded/cloudpilot-emu.d.ts build-embedded/cloudpilot-web.wasm
   CP_EMBEDDED_ZIP_NAME: cloudpilot-emu-embedded.zip
 jobs:
   wait-for-release:
@@ -87,6 +83,6 @@ jobs:
       - name: Upload CP embedded release files
         working-directory: web
         run: |
-          zip -c ${{ env.CP_EMBEDDED_ZIP_NAME }} ${{ env.CP_EMBEDDED_ZIP_CONTENT }}
+          zip ${{ env.CP_EMBEDDED_ZIP_NAME }} ${{ env.CP_EMBEDDED_ZIP_CONTENT }}
           gh release upload ${{ env.TAG }} ${{ env.CP_EMBEDDED_ZIP_NAME }}
 
