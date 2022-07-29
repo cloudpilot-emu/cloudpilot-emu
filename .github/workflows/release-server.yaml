@@ -1,4 +1,4 @@
-name: Build and upload Cloudpilot server binaries
+name: Build and release Cloudpilot server binaries
 on:
   push:
     tags:
