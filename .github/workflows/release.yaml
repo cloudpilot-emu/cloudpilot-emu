@@ -11,7 +11,7 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   TAG: ${GITHUB_REF##*/}
   CP_EMBEDDED_ZIP_CONTENT: npm-embedded/dist/*
-  CP_EMBEDDED_ZIP_NAME: cloudpilot-emu-embedded.zip
+  CP_EMBEDDED_ZIP_NAME: cloudpilot-emu-embedded-${GITHUB_REF##*/}.zip
 jobs:
   wait-for-release:
     runs-on: ubuntu-20.04
