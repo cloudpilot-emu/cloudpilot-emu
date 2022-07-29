@@ -71,9 +71,9 @@ jobs:
       - name: Copy and deploy
         working-directory: cloudpilot-emu.github.io
         run: |
-          # test -x app-preview && rm -fr app
+          test -x app-preview && rm -fr app
           test -x embedded && rm -fr embedded
-          # cp -r ../web/build-pwa ./app
+          cp -r ../web/build-pwa ./app
           cp -r ../web/dist-embedded ./embedded
           git add .
           git config --global user.email "golem@nowhere.org"
