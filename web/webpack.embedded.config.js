@@ -63,7 +63,7 @@ module.exports = (env, argv) => ({
             VERSION:
                 argv.mode === 'development'
                     ? 'dev'
-                    : env['RELEASE']
+                    : env['RELEASE'] || process.env['CP_RELEASE']
                     ? pkg.version
                     : `${pkg.version}-${getGitRev()} (preview)`,
         }),
