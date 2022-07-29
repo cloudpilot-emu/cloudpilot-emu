@@ -11,21 +11,25 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   TAG: ${GITHUB_REF##*/}
   CP_EMBEDDED_ZIP_CONTENT: |
-    dist-embedded/cloudpilot-emu.js |
-    dist-embedded/cloudpilot-emu.js.map |
-    dist-embedded/cloudpilot-emu.d.ts |
-    dist-embedded/cloudpilot-web.wasm
+    build-embedded/cloudpilot-emu.js |
+    build-embedded/cloudpilot-emu.js.map |
+    build-embedded/cloudpilot-emu.d.ts |
+    build-embedded/cloudpilot-web.wasm
   CP_EMBEDDED_ZIP_NAME: cloudpilot-emu-embedded.zip
 jobs:
-  create-release:
+  wait-for-release:
     runs-on: ubuntu-20.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Make sure that release exists
-        run: gh release create ${{ env.TAG }} -d || true
+      - name: Wait for relase to be created
+        uses: lewagon/wait-on-check-action@v1.0.0
+        with:
+          ref: ${{ github.ref }}
+          check-name: 'Create release'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 1
   build_and_release:
     runs-on: ubuntu-20.04
+    needs: wait-for-release
     steps:
       - name: Checkout
         uses: actions/checkout@v2

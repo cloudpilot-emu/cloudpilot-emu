@@ -8,27 +8,23 @@ env:
   PYTHON_VERSION: 3.9
   TAG: ${GITHUB_REF##*/}
   SERVER_DIRECTORY: cloudpilot-server-${GITHUB_REF##*/}
-  RELEASE_NOTES: |
-    **MacOS:** Please run \`xattr -rd com.apple.quarantine cloudpilot-server-${GITHUB_REF##*/}\`
-    in order to remove the server components from quarantine before you run the server for
-    the first time. The first start may take a few seconds.
-  RELEASE_TITLE: CloudpilotEmu ${GITHUB_REF##*/}
   ARCHIVE_MACOS: cloudpilot-server-${GITHUB_REF##*/}-macos-x64.zip
   ARCHIVE_WINDOWS: cloudpilot-server-${GITHUB_REF##*/}-win-x64.zip
   ARCHIVE_LINUX: cloudpilot-server-${GITHUB_REF##*/}-linux-x64.tar.gz
 jobs:
-  create-release:
+  wait-for-release:
     runs-on: ubuntu-20.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: Make sure that release exists
-        run: gh release create ${{ env.TAG }} -d || true
-      - name: Augment release with title and release notes
-        run: gh release edit ${{ env.TAG }} -t "${{ env.RELEASE_TITLE }}" -n "${{ env.RELEASE_NOTES }}"
+      - name: Wait for relase to be created
+        uses: lewagon/wait-on-check-action@v1.0.0
+        with:
+          ref: ${{ github.ref }}
+          check-name: 'Create release'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 1
   build-server-linux:
     runs-on: ubuntu-18.04
-    needs: create-release
+    needs: wait-for-release
     steps:
       - name: Install Python
         uses: actions/setup-python@v2
@@ -51,7 +47,7 @@ jobs:
           gh release upload ${{ env.TAG }} ${{ env.ARCHIVE_LINUX }}
   build-server-windows:
     runs-on: windows-2019
-    needs: create-release
+    needs: wait-for-release
     steps:
       - name: Install Python
         uses: actions/setup-python@v2
@@ -74,7 +70,7 @@ jobs:
           gh release upload ${{ env.TAG }} ${{ env.ARCHIVE_WINDOWS }}
   build-server-macos:
     runs-on: macos-10.15
-    needs: create-release
+    needs: wait-for-release
     steps:
       - name: Install Python
         uses: actions/setup-python@v2
