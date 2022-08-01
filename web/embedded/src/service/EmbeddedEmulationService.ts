@@ -2,12 +2,9 @@ import { Cloudpilot, SessionImage } from '@common/Cloudpilot';
 
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { DeviceId } from '@common/model/DeviceId';
-import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { Event } from 'microevent.ts';
-import { SchedulerKind } from '@pwa/helper/scheduler';
+import { SchedulerKind } from '@common/helper/scheduler';
 import { Session } from '@embedded/model/Session';
-import { SessionMetadata } from '@common/model/SessionMetadata';
-import { hostname } from 'os';
 
 export class EmbeddedEmulationService extends AbstractEmulationService {
     pause(): void {

@@ -16,7 +16,7 @@ import { LoadingController } from '@ionic/angular';
 import { ModalWatcherService } from './modal-watcher.service';
 import { Mutex } from 'async-mutex';
 import { ProxyService } from './proxy.service';
-import { SchedulerKind } from '@pwa/helper/scheduler';
+import { SchedulerKind } from '@common/helper/scheduler';
 import { Session } from '@pwa/model/Session';
 import { SnapshotService } from './snapshot.service';
 import { StorageService } from './storage.service';

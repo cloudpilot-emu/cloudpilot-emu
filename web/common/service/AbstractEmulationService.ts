@@ -8,7 +8,7 @@ import { DeviceId } from '@common/model/DeviceId';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { Event } from 'microevent.ts';
 import { Fifo } from '@common/helper/Fifo';
-import { TimeoutScheduler } from './../../pwa/src/app/helper/scheduler';
+import { TimeoutScheduler } from '@common/helper/scheduler';
 
 const PEN_MOVE_THROTTLE = 25;
 const PWM_FIFO_SIZE = 10;

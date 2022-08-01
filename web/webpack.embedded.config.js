@@ -1,5 +1,5 @@
 const path = require('path');
-const { execSync } = require('node:child_process');
+const { execSync } = require('child_process');
 const CopyPlugin = require('copy-webpack-plugin');
 const webpack = require('webpack');
 const pkg = require('./package.json');
