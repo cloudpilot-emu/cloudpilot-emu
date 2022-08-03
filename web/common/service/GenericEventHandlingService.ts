@@ -188,12 +188,16 @@ export class GenericEventHandlingService {
     };
 
     private handleTouchStart = (e: TouchEvent): void => {
+        let handled = false;
+
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches.item(i);
             if (!touch) continue;
 
             const coords = this.canvasDisplayService.eventToPalmCoordinates(touch);
             if (!coords) continue;
+
+            handled = true;
 
             const area = this.determineArea(coords);
             if (area === Area.buttons) {
@@ -207,16 +211,20 @@ export class GenericEventHandlingService {
             }
         }
 
-        if (e.cancelable !== false) e.preventDefault();
+        if (handled && e.cancelable !== false) e.preventDefault();
     };
 
     private handleTouchMove = (e: TouchEvent): void => {
+        let handled = false;
+
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches.item(i);
             if (!touch) continue;
 
             const interaction = this.interactionsTouch.get(touch.identifier);
             if (!interaction) continue;
+
+            handled = true;
 
             const area = interaction.area;
             switch (area) {
@@ -260,15 +268,19 @@ export class GenericEventHandlingService {
             }
         }
 
-        if (e.cancelable !== false) e.preventDefault();
+        if (handled && e.cancelable !== false) e.preventDefault();
     };
 
     private handleTouchEnd = (e: TouchEvent): void => {
+        let handled = false;
+
         for (let i = 0; i < e.changedTouches.length; i++) {
             const touch = e.changedTouches.item(i);
             if (!touch) continue;
 
             const interaction = this.interactionsTouch.get(touch.identifier);
+            if (interaction) handled = true;
+
             this.interactionsTouch.delete(touch.identifier);
 
             switch (interaction?.area) {
@@ -286,7 +298,7 @@ export class GenericEventHandlingService {
             }
         }
 
-        if (e.cancelable !== false) e.preventDefault();
+        if (handled && e.cancelable !== false) e.preventDefault();
     };
 
     private handleKeyDown = (e: KeyboardEvent): void => {
