@@ -235,3 +235,10 @@ While game mode is active, a small overlay is shown in the bottom right corner
 of the emulator. Game mode and the overlay can be controlled (and permanently
 disabled) by various methods on the emulator object; check the [reference
 documentation](./reference/interfaces/Emulator.html#setGameMode) for more details.
+
+## Creating a session file
+
+Session files can be created in Cloudpilot on the sessions tab. Either right
+click on a session and select "save" or swipe the session to the right and
+select the second icon. A dialog will open that allows you save a session
+snapshot.
