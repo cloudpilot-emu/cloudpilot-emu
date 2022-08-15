@@ -119,5 +119,6 @@
   "[python]": {
     "editor.codeActionsOnSave": {"source.organizeImports": true}
   },
-  "typescript.tsdk": "./cloudpilot-ionic/node_modules/typescript/lib"
+  "typescript.tsdk": "./cloudpilot-ionic/node_modules/typescript/lib",
+  "cSpell.enabled": false
 }

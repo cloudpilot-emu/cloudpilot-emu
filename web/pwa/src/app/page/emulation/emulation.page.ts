@@ -178,6 +178,16 @@ export class EmulationPage {
         await this.launchEmulator();
     }
 
+    public cancelIfEmulationActive(event: TouchEvent): void {
+        if (
+            this.emulationState.getCurrentSession() &&
+            !this.emulationState.getCurrentSession()?.wasResetForcefully &&
+            event.cancelable
+        ) {
+            event.preventDefault();
+        }
+    }
+
     private async clearForcefulReset(): Promise<void> {
         const session = this.emulationState.getCurrentSession();
         if (!session) return;

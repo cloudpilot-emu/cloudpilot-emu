@@ -34,7 +34,8 @@
 <ion-content>
 
   <div class="container running-session"
-    [style.display]="(emulationState.getCurrentSession() && !emulationState.getCurrentSession()?.wasResetForcefully) ? undefined : 'none'">
+    [style.display]="(emulationState.getCurrentSession() && !emulationState.getCurrentSession()?.wasResetForcefully) ? undefined : 'none'"
+    (touchstart)="cancelIfEmulationActive($event)" (touchmove)="cancelIfEmulationActive($event)">
     <canvas #canvas [style.width]="cssWidth" [style.height]="cssHeight"
       [style.display]="emulationState.getCurrentSession() ? 'block' : 'none'"></canvas>
   </div>
