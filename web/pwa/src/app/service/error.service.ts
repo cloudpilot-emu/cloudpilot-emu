@@ -14,7 +14,7 @@ export class ErrorService {
         return this.fatalErrorTriggered;
     }
 
-    fatalPageLockLost = () => this.fatalWithMessage('Cloudpilot was opened in another tab or windoow.', false);
+    fatalPageLockLost = () => this.fatalWithMessage('Cloudpilot was opened in another tab or window.', false);
 
     fatalIDBDead = () => this.fatalWithMessage('IndexedDB access failed. This is most likely a browser bug.', false);
 
