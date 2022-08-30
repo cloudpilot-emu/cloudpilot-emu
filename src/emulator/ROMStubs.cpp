@@ -785,3 +785,84 @@ Err SysUIAppSwitch(UInt16 cardNo, LocalID dbID, UInt16 cmd, emuptr cmdPBP) {
 
     RETURN_RESULT_VAL(Err);
 }
+
+UInt16 DmNumResources(emuptr dbP) {
+    CALLER_SETUP("UInt16", "DmOpenRef dbP");
+
+    CALLER_PUT_PARAM_VAL(emuptr, dbP);
+
+    sub.Call(sysTrapDmNumResources);
+
+    RETURN_RESULT_VAL(UInt16);
+}
+
+UInt16 DmNumRecords(emuptr dbP) {
+    CALLER_SETUP("UInt16", "DmOpenRef dbP");
+
+    CALLER_PUT_PARAM_VAL(emuptr, dbP);
+
+    sub.Call(sysTrapDmNumRecords);
+
+    RETURN_RESULT_VAL(UInt16);
+}
+
+emuptr MemLocalIDToLockedPtr(LocalID local, UInt16 cardNo) {
+    CALLER_SETUP("emuptr", "LocalID local, UInt16 cardNo");
+
+    CALLER_PUT_PARAM_VAL(LocalID, local);
+    CALLER_PUT_PARAM_VAL(UInt16, cardNo);
+
+    sub.Call(sysTrapMemLocalIDToLockedPtr);
+
+    RETURN_RESULT_VAL(emuptr);
+}
+
+Err MemPtrUnlock(emuptr p) {
+    CALLER_SETUP("Err", "MemPtr p");
+
+    CALLER_PUT_PARAM_VAL(emuptr, p);
+
+    sub.Call(sysTrapMemPtrUnlock);
+
+    RETURN_RESULT_VAL(Err);
+}
+
+Err DmResourceInfo(emuptr dbP, UInt16 index, DmResType* resTypeP, DmResID* resIDP,
+                   LocalID* chunkLocalIDP) {
+    CALLER_SETUP(
+        "Err",
+        "emuptr dbP, UInt16 index, DmResType* resTypeP, DmResID* resIDP, LocalID* chunkLocalIDP");
+
+    CALLER_PUT_PARAM_VAL(emuptr, dbP);
+    CALLER_PUT_PARAM_VAL(UInt16, index);
+    CALLER_PUT_PARAM_REF(DmResType, resTypeP, Marshal::kOutput);
+    CALLER_PUT_PARAM_REF(DmResID, resIDP, Marshal::kOutput);
+    CALLER_PUT_PARAM_REF(LocalID, chunkLocalIDP, Marshal::kOutput);
+
+    sub.Call(sysTrapDmResourceInfo);
+
+    CALLER_GET_PARAM_REF(resTypeP);
+    CALLER_GET_PARAM_REF(resIDP);
+    CALLER_GET_PARAM_REF(chunkLocalIDP);
+
+    RETURN_RESULT_VAL(Err);
+}
+
+Err DmRecordInfo(emuptr dbP, UInt16 index, UInt16* attrP, UInt32* uniqueIDP, LocalID* chunkIDP) {
+    CALLER_SETUP(
+        "Err", "DmOpenRef dbP, UInt16 index, UInt16 *attrP, UInt32 *uniqueIDP, LocalID *chunkIDP");
+
+    CALLER_PUT_PARAM_VAL(emuptr, dbP);
+    CALLER_PUT_PARAM_VAL(UInt16, index);
+    CALLER_PUT_PARAM_REF(UInt16, attrP, Marshal::kOutput);
+    CALLER_PUT_PARAM_REF(UInt32, uniqueIDP, Marshal::kOutput);
+    CALLER_PUT_PARAM_REF(LocalID, chunkIDP, Marshal::kOutput);
+
+    sub.Call(sysTrapDmRecordInfo);
+
+    CALLER_GET_PARAM_REF(attrP);
+    CALLER_GET_PARAM_REF(uniqueIDP);
+    CALLER_GET_PARAM_REF(chunkIDP);
+
+    RETURN_RESULT_VAL(Err);
+}

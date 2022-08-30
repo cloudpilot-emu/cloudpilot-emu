@@ -1,13 +1,8 @@
 #include "DbBackup.h"
 
-#include <functional>
-
-#include "CallbackManager.h"
-#include "EmSession.h"
+#include "DbBackupFallback.h"
+#include "DbBackupNative.h"
 #include "EmSystemState.h"
-#include "Marshal.h"
-#include "Miscellaneous.h"
-#include "ROMStubs.h"
 #include "zip.h"
 
 namespace {
@@ -22,7 +17,11 @@ namespace {
     }
 }  // namespace
 
-DbBackup::DbBackup() : callback(bind(&DbBackup::Callback, this)) {}
+unique_ptr<DbBackup> DbBackup::create() {
+    return gSystemState.OSMajorVersion() < 3
+               ? static_cast<unique_ptr<DbBackup>>(make_unique<DbBackupFallback>())
+               : static_cast<unique_ptr<DbBackup>>(make_unique<DbBackupNative>());
+}
 
 DbBackup::~DbBackup() {
     if (zip) zip_stream_close(zip);
@@ -31,12 +30,6 @@ DbBackup::~DbBackup() {
 
 bool DbBackup::Init(bool includeRomDatabases) {
     EmAssert(state == State::created);
-
-    if (gSession->IsCpuStopped()) {
-        return false;
-    }
-
-    if (gSystemState.OSMajorVersion() < 3) return false;
 
     if (!GetDatabases(databases, includeRomDatabases ? 0 : GetDatabaseFlags::kOnlyRamDatabases)) {
         return false;
@@ -71,8 +64,7 @@ bool DbBackup::Save() {
 
     zip_entry_open(zip, GetCurrentDatabase());
 
-    bool success =
-        ExgDBWrite(callback, 0, currentDb->dbName, currentDb->dbID, currentDb->cardNo) == 0;
+    bool success = DoSave(*currentDb);
 
     zip_entry_close(zip);
 
@@ -99,20 +91,3 @@ pair<ssize_t, uint8*> DbBackup::GetArchive() {
 uint8* DbBackup::GetArchivePtr() { return GetArchive().second; }
 
 ssize_t DbBackup::GetArchiveSize() { return GetArchive().first; }
-
-void DbBackup::Callback() {
-    CALLED_SETUP_STDARG("Err", "const void* dataP, UInt32* sizeP, void* userDataP");
-
-    CALLED_GET_PARAM_REF(UInt32, sizeP, Marshal::kInput);
-    CALLED_GET_PARAM_PTR(void, dataP, *sizeP, Marshal::kInput);
-
-    if (zip_entry_write(zip, dataP, *sizeP) == 0) {
-        PUT_RESULT_VAL(Err, 0);
-    } else {
-        PUT_RESULT_VAL(Err, 1);
-    }
-
-    PUT_RESULT_VAL(Err, 0);
-
-    gSession->TriggerDeadMansSwitch();
-}

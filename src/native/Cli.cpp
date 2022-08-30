@@ -124,25 +124,25 @@ namespace {
     }
 
     void SaveBackup(string file, bool includeRomDatabases) {
-        DbBackup backup;
+        unique_ptr<DbBackup> backup = DbBackup::create();
 
-        if (!backup.Init(includeRomDatabases)) {
+        if (!backup->Init(includeRomDatabases)) {
             cout << "backup failed" << endl << flush;
 
             return;
         }
 
-        while (backup.IsInProgress()) {
-            cout << "backing up " << backup.GetCurrentDatabase() << " ... ";
+        while (backup->IsInProgress()) {
+            cout << "backing up " << backup->GetCurrentDatabase() << " ... ";
 
-            if (backup.Save()) {
+            if (backup->Save()) {
                 cout << "success" << endl << flush;
             } else {
                 cout << "failed" << endl << flush;
             }
         }
 
-        auto [archiveSize, archive] = backup.GetArchive();
+        auto [archiveSize, archive] = backup->GetArchive();
 
         if (archiveSize <= 0) return;
 

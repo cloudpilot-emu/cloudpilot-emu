@@ -1,6 +1,8 @@
 #ifndef _MISCELLANEOUS_H_
 #define _MISCELLANEOUS_H_
 
+#include <functional>
+
 #include "EmCommon.h"
 #include "EmStructs.h"
 
@@ -60,6 +62,22 @@ class EmValueChanger {
    private:
     T& fVariable;
     T fOrigValue;
+};
+
+class Defer {
+   public:
+    Defer(function<void()> deferCb) : deferCb(deferCb) {}
+
+    ~Defer() { deferCb(); }
+
+   private:
+    function<void()> deferCb;
+
+   private:
+    Defer(const Defer&) = delete;
+    Defer(Defer&&) = delete;
+    Defer& operator=(const Defer&) = delete;
+    Defer& operator=(Defer&&) = delete;
 };
 
 #endif

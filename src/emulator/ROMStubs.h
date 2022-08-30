@@ -69,6 +69,11 @@ Err DmDatabaseInfo(UInt16 cardNo, LocalID dbID, Char* nameP, UInt16* attributesP
                    LocalID* appInfoIDP, LocalID* sortInfoIDP, UInt32* typeP, UInt32* creatorP);
 emuptr DmGet1Resource(DmResType type, DmResID id);
 emuptr DmGetResource(DmResType type, DmResID id);
+UInt16 DmNumResources(emuptr db);
+UInt16 DmNumRecords(emuptr db);
+Err DmResourceInfo(emuptr dbP, UInt16 index, DmResType* resTypeP, DmResID* resIDP,
+                   LocalID* chunkLocalIDP);
+Err DmRecordInfo(emuptr dbP, UInt16 index, UInt16* attrP, UInt32* uniqueIDP, LocalID* chunkIDP);
 
 emuptr PrefOpenPreferenceDBV10(void);
 emuptr PrefOpenPreferenceDB(Boolean saved);
@@ -83,6 +88,8 @@ UInt16 MemNumCards(void);
 LocalIDKind MemLocalIDKind(LocalID local);
 emuptr MemLocalIDToGlobal(LocalID local, UInt16 cardNo);
 UInt32 MemPtrSize(emuptr p);
+emuptr MemLocalIDToLockedPtr(LocalID local, UInt16 cardNo);
+Err MemPtrUnlock(emuptr p);
 
 Err ExgDBWrite(emuptr writeProcP, emuptr userDataP, const Char* nameP, LocalID dbID, UInt16 cardNo);
 Err ExgDBRead(emuptr readProcP, emuptr deleteProcP, emuptr userDataP, LocalID* dbIDP, UInt16 cardNo,

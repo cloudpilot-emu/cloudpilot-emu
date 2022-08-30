@@ -2,7 +2,6 @@
 
 #include "ChunkHelper.h"
 #include "EmCommon.h"
-#include "EmMemory.h"  // EmMemGetRealAddress
 #include "EmRegsFrameBuffer.h"
 #include "EmSession.h"
 #include "EmSystemState.h"

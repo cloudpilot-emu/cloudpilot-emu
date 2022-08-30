@@ -210,7 +210,7 @@ void Cloudpilot::RegisterPwmHandler(uint32 handlerPtr) {
     EmHAL::onPwmChange.AddHandler(reinterpret_cast<handler_ptr>(handlerPtr));
 }
 
-DbBackup* Cloudpilot::StartBackup() { return new DbBackup(); }
+DbBackup* Cloudpilot::StartBackup() { return DbBackup::create().release(); }
 
 void Cloudpilot::SetClipboardIntegration(bool toggle) { Feature::SetClipboardIntegration(toggle); }
 

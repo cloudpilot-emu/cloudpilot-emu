@@ -1,7 +1,8 @@
 #ifndef _DB_BACKUP_H_
 #define _DB_BACKUP_H_
 
-#include "CallbackManager.h"
+#include <memory>
+
 #include "EmCommon.h"
 #include "Miscellaneous.h"
 
@@ -9,11 +10,11 @@ struct zip_t;
 
 class DbBackup {
    public:
-    DbBackup();
+    static unique_ptr<DbBackup> create();
 
-    ~DbBackup();
+    virtual ~DbBackup();
 
-    bool Init(bool includeRomDatabases);
+    virtual bool Init(bool includeRomDatabases);
 
     bool IsInProgress() const;
     bool IsDone() const;
@@ -27,8 +28,11 @@ class DbBackup {
     uint8* GetArchivePtr();
     ssize_t GetArchiveSize();
 
-   private:
-    void Callback();
+   protected:
+    virtual bool DoSave(const DatabaseInfo& dbInfo) = 0;
+
+   protected:
+    zip_t* zip{nullptr};
 
    private:
     enum class State { created, inProgress, done };
@@ -37,22 +41,13 @@ class DbBackup {
     State state{State::created};
 
     DatabaseInfoList databases;
-    CallbackWrapper callback;
 
     DatabaseInfoList::iterator currentDb;
-
-    zip_t* zip{nullptr};
 
     uint8* archive{nullptr};
     ssize_t archiveSize{0};
 
     string currentDatabase;
-
-   private:
-    DbBackup(const DbBackup&) = delete;
-    DbBackup(DbBackup&&) = delete;
-    DbBackup& operator=(const DbBackup&) = delete;
-    DbBackup& operator=(DbBackup&&) = delete;
 };
 
-#endif  // _DB_BACKUP_H_
+#endif  //  _DB_BACKUP_H_
