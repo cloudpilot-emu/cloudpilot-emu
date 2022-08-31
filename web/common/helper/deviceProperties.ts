@@ -243,14 +243,3 @@ export function deviceName(deviceId: DeviceId): string {
 export function quirkNoPoweroff(deviceId: DeviceId) {
     return [DeviceId.i705, DeviceId.i710, DeviceId.pegNR70, DeviceId.pegT650c].includes(deviceId);
 }
-
-export function supportsDBExport(deviceId: DeviceId) {
-    switch (deviceId) {
-        case DeviceId.pilot:
-        case DeviceId.palmPilot:
-            return false;
-
-        default:
-            return true;
-    }
-}

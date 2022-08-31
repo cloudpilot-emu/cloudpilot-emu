@@ -18,7 +18,7 @@ the host. Check "Clipboard integration" below for more details.
 # Locking the UI
 
 By default the navigation at the bottom remains visible when the emulator is
-running. This may cause your fingers to accidentially touch the navigation
+running. This may cause your fingers to accidentally touch the navigation
 if you are interacting with your pilot.
 
 You can touch the lock item at the top in order to hide the navigation
@@ -37,7 +37,7 @@ program and back to the launcher in order for newly installed programs to become
 visible. On Palm OS 3.5 and above it is sufficient to switch the launcher
 category.
 
-On rare ocassions the installation catches PalmOS on the wrong foot and
+On rare occasions the installation catches PalmOS on the wrong foot and
 crashes the emulator. In this case you can simply resume the session and
 retry the installation. Installing while the launcher is open is generally
 safe.
@@ -50,7 +50,7 @@ state is preserved and restored.
 
 # Saving a backup
 
-You can save a backup of all databases in the device RAM by selecting "Save Backup"
+You can save a backup of all databases in device RAM by selecting "Save Backup"
 from the menu. This will create and save a zip archive with .prc and .pdb
 files that can be installed again on any PalmOS device at a later point.
 
@@ -70,7 +70,10 @@ Backing up databases interacts with PalmOS, and there is a (very) slim chance of
 the emulator, depending on the state of the virtual device when the backup is
 run. In general it is best to run the backup while the launcher is open.
 
-This feature only is available on PalmOS 3 and later.
+Note that currently opened DBs cannot be backed up. This is particularly
+noticeable on OS1 and OS2 where the launcher opens on top of the running
+application. Try switching to another app if Cloudpilot complains about failed
+databases.
 
 # Device reset
 
@@ -111,7 +114,7 @@ it.
 The volume can be changed on the settings tab. Audio is not available if the volume is set
 to zero.
 
-On iOS, muting the phone also mutes audio from the emulator. Ocassionally the audio
+On iOS, muting the phone also mutes audio from the emulator. Occasionally the audio
 may glitch and stay off after resuming CloudpilotEmu from the background due to browser
 bugs. You can reenable audio by turning it off and on again.
 
@@ -172,7 +175,7 @@ confirmed the first time CloudpilotEmu pastes from the host clipboard. On other 
 (notably Safari) CloudpilotEmu shows a dialog asking to confirm the operation on every
 clipboard access. This is necessary because those browsers require clipboard access to
 be the direct consequence of an user interaction. When pasting Safari will show
-an additionl "Paste" widget that needs to be tapped in order to paste.
+an additions "Paste" widget that needs to be tapped in order to paste.
 
 # Statistics
 
@@ -189,9 +192,9 @@ whenever a new state snapshot is taken.
 State snapshots are taken every second while the emulator is running and preserve
 the current state of the emulator in the browser's IndexedDB. In order to
 reduce the amount of data saved memory is divided into pages of 1k, and only the
-pages that have been modfied are saved.
+pages that have been modified are saved.
 
- * **last snapshot**: This is the time at wbich the last snapshot was taken.
+ * **last snapshot**: This is the time at which the last snapshot was taken.
  * **snapshot pages**: The number of pages updated in this snapshot.
  * **snapshot time total**: The total amount of time the snapshot took to complete.
    Most of this time is spent by the browser on a separate thread and does not block

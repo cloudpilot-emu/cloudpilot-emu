@@ -7,20 +7,26 @@
 
 struct PrcHeader {
     char name[dmDBNameLength];
-    UInt16 attributes;
-    UInt16 version;
-    UInt32 creationDate;
-    UInt32 modificationDate;
-    UInt32 lastBackupDate;
-    UInt32 modificationNumber;
-    UInt32 appInfoOfst;
-    UInt32 sortInfoOfst;
-    UInt32 type;
-    UInt32 crid;
-    UInt32 uniqueIDSeed;
+    uint16 attributes;
+    uint16 version;
+    uint32 creationDate;
+    uint32 modificationDate;
+    uint32 lastBackupDate;
+    uint32 modificationNumber;
+    uint32 appInfoOfst;
+    uint32 sortInfoOfst;
+    uint32 type;
+    uint32 crid;
+    uint32 uniqueIDSeed;
 };
 
 namespace {
+    constexpr uint32 SIZEOF_HEADER = 72;
+    constexpr uint32 SIZEOF_CHILD_LIST = 6;
+    constexpr uint32 SIZEOF_ZERO = 2;
+    constexpr uint32 SIZEOF_RESOURCE_ENTRY = 10;
+    constexpr uint32 SIZEOF_RECORD_ENTRY = 8;
+
     uint32 localIdSize(uint16 cardNo, LocalID lid) {
         emuptr ptr = MemLocalIDToLockedPtr(lid, cardNo);
         uint32 result = MemPtrSize(ptr);
@@ -40,7 +46,7 @@ bool DbBackupFallback::Init(bool includeRomDatabases) {
 bool DbBackupFallback::DoSave(const DatabaseInfo& dbInfo) {
     PrcHeader hdr;
     LocalID appInfo, sortInfo;
-    uint32 currentOffset = 72 + 6 + 2;
+    uint32 currentOffset = SIZEOF_HEADER + SIZEOF_CHILD_LIST + SIZEOF_ZERO;
 
     memset(&hdr, 0, sizeof(hdr));
 
@@ -61,10 +67,10 @@ bool DbBackupFallback::DoSave(const DatabaseInfo& dbInfo) {
     uint16 numChildren;
     if (hdr.attributes & dmHdrAttrResDB) {
         numChildren = DmNumResources(db);
-        currentOffset += 10 * numChildren;
+        currentOffset += SIZEOF_RESOURCE_ENTRY * numChildren;
     } else {
         numChildren = DmNumRecords(db);
-        currentOffset += 8 * numChildren;
+        currentOffset += SIZEOF_RECORD_ENTRY * numChildren;
     }
 
     if (appInfo) {
@@ -97,9 +103,9 @@ bool DbBackupFallback::DoSave(const DatabaseInfo& dbInfo) {
         }
     } else {
         for (uint32 i = 0; i < numChildren; i++) {
-            UInt16 attr = 666;
-            UInt32 id = 777;
-            LocalID lid = 888;
+            UInt16 attr;
+            UInt32 id;
+            LocalID lid;
 
             if (DmRecordInfo(db, i, &attr, &id, &lid) != errNone) return false;
             children.push_back(lid);

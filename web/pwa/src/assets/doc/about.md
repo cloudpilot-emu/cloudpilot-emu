@@ -88,7 +88,7 @@ it crashes. This may be due to a bug in the emulator, or due to the way
 POSE and CloudpilotEmu interact with PalmOS for installing software,
 backing up databases, setting the hotsync name and similar tasks.
 
-If the emulator crashes CloudpilotEmu will stop immediatelly and show you a dialog
+If the emulator crashes CloudpilotEmu will stop immediately and show you a dialog
 that allows you to restart the emulator. Upon restart CloudpilotEmu will not
 automatically resume your session but will instead start up with the session
 page. You can resume your session from there.
@@ -140,7 +140,7 @@ In order to force check for an update terminate and restart the app.
     (usually the same as the screen refresh rate of the host device). Sound
     effects that rely on quickly modulating the audio signal may not be
     reproduced correctly.
--   On rare ocassions installing files or changing the hotsync name can catch
+-   On rare cassinos installing files or changing the hotsync name can catch
     PalmOS on the wrong foot and crash the emulator. In particular, this happens
     if a file is installed on a virtual Palm IIIc with PalmOS 3.5 while the
     launcher is active and the category menu is open.

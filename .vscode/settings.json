@@ -120,5 +120,17 @@
     "editor.codeActionsOnSave": {"source.organizeImports": true}
   },
   "typescript.tsdk": "./cloudpilot-ionic/node_modules/typescript/lib",
-  "cSpell.enabled": false
+  "cSpell.words": [
+    "Clié",
+    "Cloudpilot",
+    "framebuffer",
+    "gamepad",
+    "grafitti",
+    "homescreen",
+    "hostnames",
+    "Hotsync",
+    "Keychain",
+    "proxied",
+    "trackpad"
+  ]
 }

@@ -1,7 +1,7 @@
 CloudpilotEmu can be linked from other webpages in order to automatically import
 ROMs or sessions or to automatically install databases from a supplied URL.
 
-When linking via a `<a>` tag, be sure to inlcude a `target="cloudpilot"` attribute.
+When linking via a `<a>` tag, be sure to include a `target="cloudpilot"` attribute.
 This will cause the browser to reuse a previously opened tab if another link is clicked
 (instead of reloading the page over and over again).
 

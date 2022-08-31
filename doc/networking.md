@@ -37,7 +37,7 @@ git, please follow the instructions under "advanced usage" below.
 ## Generate a certificate
 
 In order to open an encrypted connection to CloudpilotEmu the server needs a
-self-signed certificate installed on the device running Cloudpiltot.
+self-signed certificate installed on the device running Cloudpilot.
 
 This certificate can be generated directly by `cloudpilot-server` by running
 
@@ -55,7 +55,7 @@ suffix `.cer`. The file with the suffix `.pem` includes the private key
 associated with the certificate and is used by the server. **DO NOT DISTRIBUTE IT**
 as an attacker could try to use it for attacking SSL connections
 originating from devices that have the certificate installed and trusted
-(altough care has been taken to make this as hard as possible).
+(although care has been taken to make this as hard as possible).
 
 The `.cer` file does not contain sensitive data and is safe to distribute. It
 has to be installed on the device(s) running CloudpilotEmu.
@@ -95,7 +95,7 @@ installation of the certificate. When asked select "Place all certificates in th
 store" (instead of automatic selection) and select "Trusted Root Certification Authorities".
 Complete the wizard to install the certificate.
 
-If you accidentially install the certificate to the wrong store (or want to remove it)
+If you accidentally install the certificate to the wrong store (or want to remove it)
 launch "certmgr.msc" from the execute dialog in order to manage your installed certificates.
 
 ### MacOS
@@ -119,7 +119,7 @@ in the address bar (replacing `<host>` with the host or IP of the machine runnin
 You will be presented with a security warning. Click "Advanced" and then "Add exception"
 in order to add an exception.
 
-Relead the page with the exception in place. The error should be gone, and you should see
+Reload the page with the exception in place. The error should be gone, and you should see
 the text "not found" instead.
 
 ### Chrome on Linux
@@ -151,7 +151,7 @@ Launch the server with the generated certificate by running
     > path/to/server/cloudpilot-server serve --cert <certificate.pem>
 ```
 
-replacing `<certificate.pem>` with the genreated `.pem` file.
+replacing `<certificate.pem>` with the generated `.pem` file.
 
 ## Configure CloudpilotEmu
 
@@ -174,7 +174,7 @@ to hotsync the virtual device. Go to the sessions page in CloudpilotEmu,
 open the settings for the corresponding session, uncheck "Manage hotsync name"
 and hit save.
 
-## Palm Desktp
+## Palm Desktop
 
 On the machine running Palm Desktop, open the Hotsync manager, go to "Connections" and
 make sure that "Network (TCP/IP)" is checked.
@@ -245,7 +245,7 @@ Possible pitfalls to watch out for:
     Note that the actual connection originates from the computer that runs the proxy server.
 -   **CloudpilotEmu suspended:** CloudpilotEmu suspends execution if the browser tab (or mobile app)
     is not visible. This can be deactivated in the settings.
--   **Unsupported PalmOS version:** Palm in their infite wisdom decided to remove network hotsync
+-   **Unsupported PalmOS version:** Palm in their infinite wisdom decided to remove network hotsync
     from their m1xx line of devices. You can work around this by installing the hotsync app
     from a backup of a non-m1xx device with a matching ROM version (you need to save a backup
     that includes ROM databases). The installed app will shadow the ROM version and work as expected.
@@ -267,7 +267,7 @@ the server. **RUN THE PROXY ON YOUR LOCAL NETWORK ONLY, DO NOT EXPOSE IT TO THE
 INTERNET!**
 
 In its default configuration only https://cloudpilot-emu.github.io can connect to
-the server, so driveby attacks from other webpages are impossible.
+the server, so drive-by attacks from other webpages are impossible.
 
 # Advanced usage
 
@@ -304,7 +304,7 @@ by replacing `--cert <certificate.pem>` with `--insecure`. By default, the insec
 server runs on port 8666, and the secure server runs on 8667, but you can change
 those on the command line.
 
-## Running Cloutpilot locally or on another domain
+## Running Cloudpilot locally or on another domain
 
 ### CORS setup
 

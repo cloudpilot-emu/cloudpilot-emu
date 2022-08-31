@@ -1,6 +1,5 @@
 import { ActionSheetController, ModalController, PopoverController } from '@ionic/angular';
 import { Component, Input, OnInit } from '@angular/core';
-import { quirkNoPoweroff, supportsDBExport } from '@common/helper/deviceProperties';
 
 import { AudioService } from '@pwa/service/audio.service';
 import { BackupService } from '@pwa/service/backup.service';
@@ -14,6 +13,7 @@ import { PalmButton } from '@common/Cloudpilot';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
 import { SessionService } from '@pwa/service/session.service';
 import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
+import { quirkNoPoweroff } from '@common/helper/deviceProperties';
 
 @Component({
     selector: 'app-emulation-context-menu',
@@ -136,8 +136,7 @@ export class ContextMenuComponent implements OnInit {
         return (
             !this.emulationService.isRunning() ||
             this.emulationService.isPowerOff() ||
-            !this.emulationService.isUiInitialized() ||
-            (!!currentSession && !supportsDBExport(currentSession.device))
+            !this.emulationService.isUiInitialized()
         );
     }
 
