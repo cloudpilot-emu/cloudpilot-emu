@@ -1,3 +1,9 @@
+# Next version
+
+-   Support database backups on PalmOS 1 and 2.
+-   Spelling fixes.
+-   CP embedded: add a note on styling to the documentation.
+
 # Version 1.7.1
 
 -   Swiping left and right of the emulated device on iOS does not "drag" the
