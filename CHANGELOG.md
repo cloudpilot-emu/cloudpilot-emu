@@ -1,4 +1,4 @@
-# Next version
+# Version 1.7.2
 
 -   Support database backups on PalmOS 1 and 2.
 -   Spelling fixes.
