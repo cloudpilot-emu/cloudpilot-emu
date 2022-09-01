@@ -109,7 +109,7 @@ Double click it, expand the "Trust" section and set "SSL" to "Always trust".
 ### Firefox
 
 Unfortunately, Firefox uses its own certificate store and ignores the store of your
-operating system. Importing the certificate into Firefox' store will not worl.
+operating system. Importing the certificate into Firefox' store will not work.
 If you want to use CloudpilotEmu networking on Firefox you have to add
 a security exception.
 
@@ -203,7 +203,7 @@ will be established from the machine running the server, so you can use
 ## Can't connect to proxy
 
 In order to troubleshoot issues with the connection to the proxy, navigate
-to the proxy server drectly in a browser on the device running CloudpilotEmu. In its default configuration
+to the proxy server directly in a browser on the device running CloudpilotEmu. In its default configuration
 the server runs on port 8667, so the corresponding URL is `https://<host>:8667` with `<host>`
 replaced with the hostname or IP of the machine running the server.
 
@@ -274,7 +274,7 @@ the server, so drive-by attacks from other webpages are impossible.
 ## Running the server from git
 
 In case you want to use the latest version of the server or want to run the server on
-a system that has not prebuild executable you'll have to run it from git. To this end
+a system that has not prebuilt executable you'll have to run it from git. To this end
 you need `python` >= 3.7 and `pipenv` installed.
 
 Check out the CloudpilotEmu repository (or grab and extract a copy of the source code from
@@ -293,7 +293,7 @@ After installing the dependencies you can run the server by running
 
 ## Running the server behind a reverse proxy
 
-The server runs fine behine a reverse proxy. The server has two endpoints,
+The server runs fine behind a reverse proxy. The server has two endpoints,
 `/network-proxy/handshake` and `/network-proxy/connect`. which need to be proxied.
 However, CloudpilotEmu supports entering a full URL instead of just a hostname
 or IP in its configuration, so your proxy can prefix those endpoints with a
@@ -317,7 +317,7 @@ parameter to tune the CORS configuration to your needs. As an example, in order 
 allow CloudpilotEmu running on `http://localhost:4600` (which is the default for the
 angular dev server), invoke the server with `--trusted-origins http://localhost:4600`.
 Note that you can allow more than one trusted origin by specifying multiple
-origins separated by commata.
+origins separated by commas.
 
 ### Default protocol
 

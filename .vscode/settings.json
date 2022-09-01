@@ -121,6 +121,7 @@
   },
   "typescript.tsdk": "./cloudpilot-ionic/node_modules/typescript/lib",
   "cSpell.words": [
+    "bytecode",
     "Clié",
     "Cloudpilot",
     "framebuffer",

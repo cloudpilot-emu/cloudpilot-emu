@@ -45,7 +45,7 @@ it from there.
 
 ## Examples
 
-The [examples page](./examples) has a comprehesive list of examples that show
+The [examples page](./examples) has a comprehensive list of examples that show
 how to use and interact with the emulator in different ways.
 
 ## Reference documentation
@@ -155,7 +155,7 @@ run the emulator even if the window is not currently visible.
 Starting CloudpilotEmu with a ROM file will boot the device and go through the
 initial setup process (digitizer calibration, locale, etc.).
 
-If your goal in embedding the emulatur is running a particular application, then
+If your goal in embedding the emulator is running a particular application, then
 you are better off preparing a pre-booted session in CloudpilotEmu and using
 that with the embedded emulator. Note that you don't have to include all
 possible application that you might want to run in the session --- you can
@@ -163,7 +163,7 @@ install the relevant applications after initializing the emulator (see below.)
 
 ## Installing and launching applications
 
-You can install and launch applications programatically, either individual
+You can install and launch applications programmatically, either individual
 `.prc` / `.pdb` databases or zipfiles that contain databases. All files are
 passed to the emulator as `Uint8Array` typed arrays.
 
@@ -226,10 +226,10 @@ into keyboard events for PalmOS. By pressing shift-ctrl the user can enter "game
 mode". In game mode, various buttons are mapped to the hardware buttons instead:
 
 * **wasd/qe:** The w/a/s/d buttons control up/cal/down/notes and the q/e buttons
-  control contacs/todo.
+  control contacts/todo.
 * **uhjk/uo:** The same as wasd/qe, but shifted to the right of the keyboard.
 * **up/down/left/right**: These buttons control up/down/cal/notes.
-* **zxcv/yxcv**: z/x/c/v (or y/x/c/v) control cal/contacs/todo/notes.
+* **zxcv/yxcv**: z/x/c/v (or y/x/c/v) control cal/contacts/todo/notes.
 
 While game mode is active, a small overlay is shown in the bottom right corner
 of the emulator. Game mode and the overlay can be controlled (and permanently
@@ -242,3 +242,23 @@ Session files can be created in Cloudpilot on the sessions tab. Either right
 click on a session and select "save" or swipe the session to the right and
 select the second icon. A dialog will open that allows you save a session
 snapshot.
+
+## Sizing and styling the canvas
+
+When applying CSS to the canvas element you must make sure not to touch
+`border`, `padding`, `box-size` and `object-fit`. Messing with those breaks
+Cloudpilot's handling of pointer events. If you need border or padding, wrap the
+canvas in a containing element and apply those properties on the container
+instead.
+
+Apart from this restriction you are free to style Cloudpilot as you like.
+Regardless of the layout dimensions and aspect of the canvas, the virtual pilot
+will always be rendered at the maximum size possible and centered, and the
+surrounding area will be transparent and invisible for pointer events.
+
+Cloudpilot renders at a high resolution internally and lets the browser do the
+(down)scaling. Non-integer scaling adds a slight blur to the pixelated pilot
+screen. If you want a fully crisp image instead you can set
+`image-rendering` to either `pixelated` or `crisp`. Be aware, however, that this
+will cause aliasing artifacts (non-uniformly sized pixels) and will degrade the
+visual quality of the graffiti area and button controls.
