@@ -67,7 +67,7 @@ for detailed instructions.
 # Backing up your virtual devices
 
 Virtual devices can be backed up by creating either session snapshots
-or DB backups. The latter feature is not available on PalmOS 2 and earlier.
+or DB backups.
 
 ### Device snapshots
 
