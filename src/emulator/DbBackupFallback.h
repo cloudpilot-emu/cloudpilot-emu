@@ -1,7 +1,7 @@
 #ifndef _DB_BACKUP_FALLBACK_H_
 #define _DB_BACKUP_FALLBACK_H_
 
-#include <algorithm>
+#include <vector>
 
 #include "DbBackup.h"
 #include "EmCommon.h"
