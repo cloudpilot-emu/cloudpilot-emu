@@ -40,6 +40,7 @@ struct Options {
     optional<string> deviceId;
     optional<ProxyConfiguration> proxyConfiguration;
     bool traceNetlib;
+    string mountImage;
 };
 
 void handleSuspend(ProxyClient* proxyClient) {
@@ -75,6 +76,9 @@ void run(const Options& options) {
     if (!(options.deviceId ? util::initializeSession(options.image, *options.deviceId)
                            : util::initializeSession(options.image)))
         exit(1);
+
+    if (!options.mountImage.empty() && util::mountImage(options.mountImage))
+        cout << options.mountImage << " mounted successfully" << endl << flush;
 
     if (options.proxyConfiguration) {
         proxyClient =
@@ -176,6 +180,8 @@ int main(int argc, const char** argv) {
         .default_value(false)
         .implicit_value(true);
 
+    program.add_argument("--mount").help("mount SD card image (WIP)");
+
     try {
         program.parse_args(argc, argv);
     } catch (const bad_device_id& e) {
@@ -195,6 +201,7 @@ int main(int argc, const char** argv) {
 
     options.image = program.get("image");
     options.traceNetlib = program.get<bool>("--net-trace");
+    if (auto mountImage = program.present("--mount")) options.mountImage = *mountImage;
     if (auto deviceId = program.present("--device-id")) options.deviceId = *deviceId;
     if (auto proxyConfiguration = program.present<ProxyConfiguration>("--net-proxy"))
         options.proxyConfiguration = *proxyConfiguration;

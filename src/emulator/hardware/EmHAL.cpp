@@ -833,7 +833,12 @@ bool EmHALHandler::SupportsSlot(EmHAL::Slot slot) {
 }
 
 void EmHALHandler::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+    if (!this->GetNextHandler()) return;
+
     this->GetNextHandler()->Mount(slot, key, cardImage);
 }
 
-void EmHALHandler::Unmount(EmHAL::Slot slot) { this->GetNextHandler()->Unmount(slot); }
+void EmHALHandler::Unmount(EmHAL::Slot slot) {
+    if (!this->GetNextHandler()) return;
+    this->GetNextHandler()->Unmount(slot);
+}

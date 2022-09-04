@@ -3,6 +3,7 @@
 #include <fstream>
 
 #include "EmSession.h"
+#include "ExternalStorage.h"
 #include "SessionImage.h"
 
 bool util::readFile(string file, unique_ptr<uint8[]>& buffer, size_t& len) {
@@ -116,6 +117,31 @@ bool util::initializeSession(string file, optional<string> deviceId) {
 
     if (!gSession->Initialize(device, fileBuffer.get(), fileSize)) {
         cerr << "Session failed to initialize" << endl;
+
+        return false;
+    }
+
+    return true;
+}
+
+bool util::mountImage(const string& image) {
+    unique_ptr<uint8[]> fileBuffer;
+    size_t fileSize;
+
+    if (!util::readFile(image, fileBuffer, fileSize)) {
+        cerr << "unable to open SD image " << image << endl;
+
+        return false;
+    }
+
+    if (!gExternalStorage.AddImage(image, fileBuffer.get(), fileSize)) {
+        cerr << "failed to register SD image " << image << endl;
+
+        return false;
+    }
+
+    if (!gExternalStorage.Mount(image, EmHAL::Slot::sdcard)) {
+        cerr << "failed to mount SD image " << image << endl;
 
         return false;
     }

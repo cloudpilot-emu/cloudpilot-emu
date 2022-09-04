@@ -93,6 +93,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     void UpdateInterrupts(void);
     void UpdatePortDInterrupts(void);
     void UpdateRTCInterrupts(void);
+    void UpdateIRQ2(uint8 oldBit);
 
     void UARTStateChanged(Bool sendTxData, int uartNum);
     void UpdateUARTState(Bool refreshRxData, int uartNum);

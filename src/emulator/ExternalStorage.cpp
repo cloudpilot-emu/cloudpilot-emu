@@ -1,5 +1,7 @@
 #include "ExternalStorage.h"
 
+ExternalStorage gExternalStorage;
+
 bool ExternalStorage::HasImage(const string& key) { return images.find(key) != images.end(); }
 
 CardImage* ExternalStorage::GetImage(const string& key) {
@@ -7,9 +9,7 @@ CardImage* ExternalStorage::GetImage(const string& key) {
 }
 
 bool ExternalStorage::AddImage(const string& key, uint8* imageData, size_t size) {
-    EmAssert(size % CardImage::BLOCK_SIZE == 0);
-
-    if (HasImage(key)) return false;
+    if (size % CardImage::BLOCK_SIZE != 0 || HasImage(key)) return false;
 
     images.emplace(key, CardImage(imageData, size / CardImage::BLOCK_SIZE));
 
@@ -56,6 +56,10 @@ EmHAL::Slot ExternalStorage::GetSlot(const string& key) {
 
 CardImage* ExternalStorage::GetImageInSlot(EmHAL::Slot slot) {
     return IsMounted(slot) ? &(slots[static_cast<uint8>(slot)]->image) : nullptr;
+}
+
+string ExternalStorage::GetImageKeyInSlot(EmHAL::Slot slot) {
+    return IsMounted(slot) ? slots[static_cast<uint8>(slot)]->key : "";
 }
 
 bool ExternalStorage::RemoveImage(const string& key) {

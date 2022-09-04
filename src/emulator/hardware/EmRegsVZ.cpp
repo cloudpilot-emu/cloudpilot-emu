@@ -1975,6 +1975,7 @@ void EmRegsVZ::tmr2StatusWrite(emuptr address, int size, uint32 value) {
 // ---------------------------------------------------------------------------
 
 void EmRegsVZ::spiCont1Write(emuptr address, int size, uint32 value) {
+    cout << "spi1 write" << endl << flush;
     // Do a standard update of the register.
 
     EmRegsVZ::StdWrite(address, size, value);
@@ -2517,6 +2518,27 @@ void EmRegsVZ::UpdateRTCInterrupts(void) {
     // Respond to the new interrupt state.
 
     EmRegsVZ::UpdateInterrupts();
+}
+
+void EmRegsVZ::UpdateIRQ2(uint8 oldBit) {
+    oldBit &= 0x20;
+    uint8 currentBit = GetPortInputValue('D') & 0x20;
+
+    uint16 icr = READ_REGISTER(intControl);
+    uint8 polarity = ((icr & 0x4000) >> 9);
+    uint8 edge = ((icr & 0x0400) >> 5);
+
+    uint8 value = (~edge & polarity & currentBit) | (~edge & ~polarity & ~currentBit) |
+                  (edge & polarity & currentBit & ~oldBit) |
+                  (edge & ~polarity & ~currentBit & oldBit);
+    value &= 0x20;
+
+    uint16 intPendingHi = READ_REGISTER(intPendingHi);
+    intPendingHi &= ~0x02;
+    intPendingHi |= (value >> 4);
+    WRITE_REGISTER(intPendingHi, intPendingHi);
+
+    UpdateInterrupts();
 }
 
 // ---------------------------------------------------------------------------

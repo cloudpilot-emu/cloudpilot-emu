@@ -23,6 +23,7 @@
 #include "EmCommon.h"
 #include "EmErrCodes.h"
 #include "EmSession.h"
+#include "ExternalStorage.h"
 #include "SessionImage.h"
 #include "ZipfileWalker.h"
 #include "util.h"
@@ -304,6 +305,31 @@ namespace {
         return false;
     }
 
+    bool CmdUnmount(vector<string> args) {
+        if (!gExternalStorage.IsMounted(EmHAL::Slot::sdcard)) {
+            cout << "no mounted card" << endl << flush;
+            return false;
+        }
+
+        if (gExternalStorage.RemoveImage(gExternalStorage.GetImageKeyInSlot(EmHAL::Slot::sdcard)))
+            cout << "card ejected successfully" << endl << flush;
+        else
+            cout << "failed to eject card" << endl << flush;
+
+        return false;
+    }
+
+    bool CmdMount(vector<string> args) {
+        if (args.size() != 1) {
+            cout << "usage: mount <image>" << endl << flush;
+            return false;
+        }
+
+        if (util::mountImage(args[0])) cout << args[0] << " mounted successfully" << endl << flush;
+
+        return false;
+    }
+
     struct Command {
         string name;
         Cmd cmd;
@@ -321,7 +347,9 @@ namespace {
                           {.name = "switch-image", .cmd = CmdSwitchImage},
                           {.name = "save-backup", .cmd = CmdSaveBackup},
                           {.name = "save-backup-with-rom", .cmd = CmdSaveBackupWithRom},
-                          {.name = "launch", .cmd = CmdLaunch}};
+                          {.name = "launch", .cmd = CmdLaunch},
+                          {.name = "unmount", .cmd = CmdUnmount},
+                          {.name = "mount", .cmd = CmdMount}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);

@@ -17,4 +17,6 @@ namespace util {
     bool initializeSession(string file, optional<string> deviceId = optional<string>());
 
     void analyzeRom(EmROMReader& reader);
+
+    bool mountImage(const string& image);
 }  // namespace util

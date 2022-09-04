@@ -16,6 +16,7 @@
 #include "EmCommon.h"
 #include "EmRegsVZPrv.h"
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
+#include "ExternalStorage.h"
 
 #define hwrVZPortBALARM_LED 0x40  // (L) Alarm LED
 
@@ -176,7 +177,12 @@ uint8 EmRegsVZPalmM500::GetPortInternalValue(int port) {
         // Also make sure that hwrVZPortDSpi1Card is set.  If it's clear,
         // the slot driver will think there's a card installed and will try querying it.
 
-        result |= hwrVZPortDPowerFail | hwrVZPortDSpi1Card;
+        result |= hwrVZPortDPowerFail;
+
+        if (!gExternalStorage.IsMounted(EmHAL::Slot::sdcard))
+            result |= hwrVZPortDSpi1Card;
+        else
+            result &= ~hwrVZPortDSpi1Card;
     }
 
     return result;
@@ -201,6 +207,14 @@ void EmRegsVZPalmM500::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bo
     rows[1] = (portKDir & hwrVZPortKKbdRow1) != 0 && (portKData & hwrVZPortKKbdRow1) == 0;
     rows[2] = (portKDir & hwrVZPortKKbdRow2) != 0 && (portKData & hwrVZPortKKbdRow2) == 0;
 }
+
+bool EmRegsVZPalmM500::SupportsSlot(EmHAL::Slot slot) { return slot == EmHAL::Slot::sdcard; }
+
+void EmRegsVZPalmM500::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+    UpdateIRQ2(hwrVZPortDSpi1Card);
+}
+
+void EmRegsVZPalmM500::Unmount(EmHAL::Slot slot) { UpdateIRQ2(0x00); }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmM500::GetSPISlave

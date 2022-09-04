@@ -23,6 +23,7 @@ class ExternalStorage {
 
     EmHAL::Slot GetSlot(const string& key);
     CardImage* GetImageInSlot(EmHAL::Slot slot);
+    string GetImageKeyInSlot(EmHAL::Slot slot);
 
     bool RemoveImage(const string& key);
     void Clear();

@@ -21,19 +21,23 @@ class EmRegsVZPalmM500 : public EmRegsVZ {
     EmRegsVZPalmM500(void);
     virtual ~EmRegsVZPalmM500(void);
 
-    virtual Bool GetLCDScreenOn(void);
-    virtual Bool GetLCDBacklightOn(void);
-    virtual Bool GetLineDriverState(EmUARTDeviceType type);
-    virtual EmUARTDeviceType GetUARTDevice(int uartNum);
-    virtual Bool GetVibrateOn(void);
-    virtual uint16 GetLEDState(void);
+    Bool GetLCDScreenOn(void) override;
+    Bool GetLCDBacklightOn(void) override;
+    Bool GetLineDriverState(EmUARTDeviceType type) override;
+    EmUARTDeviceType GetUARTDevice(int uartNum) override;
+    Bool GetVibrateOn(void) override;
+    uint16 GetLEDState(void) override;
 
-    virtual uint8 GetPortInputValue(int);
-    virtual uint8 GetPortInternalValue(int);
-    virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows);
+    uint8 GetPortInputValue(int) override;
+    uint8 GetPortInternalValue(int) override;
+    void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) override;
+
+    bool SupportsSlot(EmHAL::Slot slot) override;
+    void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
+    void Unmount(EmHAL::Slot slot) override;
 
    protected:
-    virtual EmSPISlave* GetSPISlave(void);
+    EmSPISlave* GetSPISlave(void) override;
 };
 
 #endif /* EmRegsVZPalmM500_h */
