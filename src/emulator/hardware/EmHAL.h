@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #include "ButtonEvent.h"
+#include "CardImage.h"
 #include "EmCommon.h"
 #include "EmEvent.h"
 
@@ -40,65 +41,14 @@ enum EmUARTDeviceType {
 
 DEFINE_SCALAR_MODIFIERS(EmUARTDeviceType)
 
-class EmHALHandler {
-    using ButtonEventT = ButtonEvent;
-
-   public:
-    EmHALHandler(void);
-    virtual ~EmHALHandler(void);
-
-    virtual void CycleSlowly(Bool sleeping);
-
-    virtual void ButtonEvent(ButtonEventT evt);
-    virtual void TurnSoundOff(void);
-    virtual void ResetTimer(void);
-    virtual void ResetRTC(void);
-
-    virtual int32 GetInterruptLevel(void);
-    virtual int32 GetInterruptBase(void);
-
-    virtual Bool GetLCDScreenOn(void);
-    virtual Bool GetLCDBacklightOn(void);
-    virtual Bool GetLCDHasFrame(void);
-    virtual void GetLCDBeginEnd(emuptr&, emuptr&);
-    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
-    virtual uint16 GetLCD2bitMapping();
-
-    virtual int32 GetDynamicHeapSize(void);
-    virtual int32 GetROMSize(void);
-    virtual emuptr GetROMBaseAddress(void);
-    virtual Bool ChipSelectsConfigured(void);
-    virtual int32 GetSystemClockFrequency(void);
-    virtual Bool GetAsleep(void);
-
-    virtual uint8 GetPortInputValue(int);
-    virtual uint8 GetPortInternalValue(int);
-    virtual void PortDataChanged(int, uint8, uint8);
-    virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows);
-
-    virtual Bool GetLineDriverState(EmUARTDeviceType);
-    virtual EmUARTDeviceType GetUARTDevice(int uartNum);
-
-    virtual Bool GetDTR(int uartNum);
-
-    virtual Bool GetVibrateOn(void);
-    virtual uint16 GetLEDState(void);
-
-    virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
-    virtual bool EnableRAM();
-
-   protected:
-    EmHALHandler* GetNextHandler(void) { return fNextHandler; }
-
-   private:
-    EmHALHandler* fNextHandler;
-    EmHALHandler* fPrevHandler;
-
-    friend class EmHAL;
-};
+class EmHALHandler;
 
 class EmHAL {
     using ButtonEventT = ButtonEvent;
+
+   public:
+    enum class Slot { none = -1, sdcard = 0, memorystick = 1, hostfs = 2 };
+    constexpr static Slot MAX_SLOT = Slot::hostfs;
 
    public:
     typedef void (*CycleHandler)(void*, uint64, bool);
@@ -161,6 +111,10 @@ class EmHAL {
     static void RemoveCycleConsumer(CycleHandler handler, void* context);
     static void DispatchCycle(uint64 cycles, bool sleeping);
 
+    static bool SupportsSlot(Slot slot);
+    static void Mount(Slot slot, const string& key, CardImage& cardImage);
+    static void Unmount(Slot slot);
+
    private:
     struct CycleConsumer {
         CycleHandler handler;
@@ -172,6 +126,67 @@ class EmHAL {
     static EmHALHandler* fgRootHandler;
 
     static vector<CycleConsumer> cycleConsumers;
+};
+
+class EmHALHandler {
+    using ButtonEventT = ButtonEvent;
+
+   public:
+    EmHALHandler(void);
+    virtual ~EmHALHandler(void);
+
+    virtual void CycleSlowly(Bool sleeping);
+
+    virtual void ButtonEvent(ButtonEventT evt);
+    virtual void TurnSoundOff(void);
+    virtual void ResetTimer(void);
+    virtual void ResetRTC(void);
+
+    virtual int32 GetInterruptLevel(void);
+    virtual int32 GetInterruptBase(void);
+
+    virtual Bool GetLCDScreenOn(void);
+    virtual Bool GetLCDBacklightOn(void);
+    virtual Bool GetLCDHasFrame(void);
+    virtual void GetLCDBeginEnd(emuptr&, emuptr&);
+    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
+    virtual uint16 GetLCD2bitMapping();
+
+    virtual int32 GetDynamicHeapSize(void);
+    virtual int32 GetROMSize(void);
+    virtual emuptr GetROMBaseAddress(void);
+    virtual Bool ChipSelectsConfigured(void);
+    virtual int32 GetSystemClockFrequency(void);
+    virtual Bool GetAsleep(void);
+
+    virtual uint8 GetPortInputValue(int);
+    virtual uint8 GetPortInternalValue(int);
+    virtual void PortDataChanged(int, uint8, uint8);
+    virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows);
+
+    virtual Bool GetLineDriverState(EmUARTDeviceType);
+    virtual EmUARTDeviceType GetUARTDevice(int uartNum);
+
+    virtual Bool GetDTR(int uartNum);
+
+    virtual Bool GetVibrateOn(void);
+    virtual uint16 GetLEDState(void);
+
+    virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
+    virtual bool EnableRAM();
+
+    virtual bool SupportsSlot(EmHAL::Slot slot);
+    virtual void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage);
+    virtual void Unmount(EmHAL::Slot slot);
+
+   protected:
+    EmHALHandler* GetNextHandler(void) { return fNextHandler; }
+
+   private:
+    EmHALHandler* fNextHandler;
+    EmHALHandler* fPrevHandler;
+
+    friend class EmHAL;
 };
 
 #endif /* EmHAL_h */

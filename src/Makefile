@@ -230,7 +230,9 @@ SOURCE_EMU = \
 	emulator/Feature.cpp \
 	emulator/ScreenDimensions.cpp \
 	emulator/NetworkProxy.cpp \
-	emulator/ZipfileWalker.cpp
+	emulator/ZipfileWalker.cpp \
+	emulator/ExternalStorage.cpp \
+	emulator/CardImage.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \

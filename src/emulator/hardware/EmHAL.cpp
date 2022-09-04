@@ -482,7 +482,7 @@ uint32 EmHAL::CyclesToNextInterrupt(uint64 systemCycles) {
 }
 
 bool EmHAL::EnableRAM() {
-    EmAssert(EmHAL::GetRootHandler);
+    EmAssert(EmHAL::GetRootHandler());
     return EmHAL::GetRootHandler()->EnableRAM();
 }
 
@@ -508,6 +508,21 @@ void EmHAL::RemoveCycleConsumer(CycleHandler handler, void* context) {
 
 void EmHAL::DispatchCycle(uint64 cycles, bool sleeping) {
     for (auto consumer : cycleConsumers) consumer.handler(consumer.context, cycles, sleeping);
+}
+
+bool EmHAL::SupportsSlot(Slot slot) {
+    EmAssert(EmHAL::GetRootHandler());
+    return EmHAL::GetRootHandler()->SupportsSlot(slot);
+}
+
+void EmHAL::Mount(Slot slot, const string& key, CardImage& cardImage) {
+    EmAssert(EmHAL::GetRootHandler());
+    EmHAL::GetRootHandler()->Mount(slot, key, cardImage);
+}
+
+void EmHAL::Unmount(Slot slot) {
+    EmAssert(EmHAL::GetRootHandler());
+    return EmHAL::GetRootHandler()->Unmount(slot);
 }
 
 #pragma mark -
@@ -810,3 +825,15 @@ bool EmHALHandler::EnableRAM() {
 
     return this->GetNextHandler()->EnableRAM();
 }
+
+bool EmHALHandler::SupportsSlot(EmHAL::Slot slot) {
+    if (!this->GetNextHandler()) return false;
+
+    return this->GetNextHandler()->SupportsSlot(slot);
+}
+
+void EmHALHandler::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+    this->GetNextHandler()->Mount(slot, key, cardImage);
+}
+
+void EmHALHandler::Unmount(EmHAL::Slot slot) { this->GetNextHandler()->Unmount(slot); }
