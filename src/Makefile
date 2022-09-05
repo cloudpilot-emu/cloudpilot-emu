@@ -226,7 +226,6 @@ SOURCE_EMU = \
 	emulator/DbBackupFallback.cpp \
 	emulator/CallbackManager.cpp \
 	emulator/DbInstaller.cpp \
-	emulator/Fifo.cpp \
 	emulator/Feature.cpp \
 	emulator/ScreenDimensions.cpp \
 	emulator/NetworkProxy.cpp \

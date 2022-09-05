@@ -321,7 +321,7 @@ class EmRegsMediaQ11xx : public EmRegs, public MediaQFramebuffer<EmRegsMediaQ11x
     emuptr fLastAddress;
     int32 fLastSize;
 
-    Fifo fSourceFifo{32};
+    Fifo<uint32> fSourceFifo{32};
 
     // Values used while incrementally blitting.
 
