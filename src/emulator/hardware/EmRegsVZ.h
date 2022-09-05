@@ -19,6 +19,7 @@
 #include "EmHAL.h"             // EmHALHandler
 #include "EmRegs.h"            // EmRegs
 #include "EmUARTDragonball.h"  // EmUARTDragonball::State
+#include "Fifo.h"
 
 class EmSPISlave;
 
@@ -103,6 +104,9 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
 
     int GetPort(emuptr address);
 
+    void Spi1TransmitWord();
+    void Spi1UpdateInterrupts(bool rxOverflow = false);
+
    private:
     uint32 pllFreqSelRead(emuptr address, int size);
     uint32 portXDataRead(emuptr address, int size);
@@ -125,7 +129,6 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     void tmr1StatusWrite(emuptr address, int size, uint32 value);
     void tmr2StatusWrite(emuptr address, int size, uint32 value);
     void tmrRegisterWrite(emuptr address, int size, uint32 value);
-    void spiCont1Write(emuptr address, int size, uint32 value);
     void spiMasterControlWrite(emuptr address, int size, uint32 value);
     void uart1Write(emuptr address, int size, uint32 value);
     void uart2Write(emuptr address, int size, uint32 value);
@@ -136,6 +139,11 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     void pwmc1Write(emuptr address, int size, uint32 value);
     void pwms1Write(emuptr address, int size, uint32 value);
     void pwmp1Write(emuptr address, int size, uint32 value);
+
+    uint32 spiRxDRead(emuptr address, int size);
+    void spiTxDWrite(emuptr address, int size, uint32 value);
+    void SpiIntCSWrite(emuptr address, int size, uint32 value);
+    void spiCont1Write(emuptr address, int size, uint32 value);
 
     void UpdateTimers();
     void DispatchPwmChange();
@@ -172,6 +180,12 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     bool pwmActive{false};
     bool afterLoad{false};
     bool powerOffCached{false};
+
+    Fifo<uint16> spi1RxFifo{8};
+    Fifo<uint16> spi1TxFifo{8};
+    int32 spi1Countdown{0};
+    uint16 spi1TxWordPending{0};
+    bool spi1TransferInProgress{false};
 
     EmSPISlave* fSPISlaveADC{nullptr};
 };

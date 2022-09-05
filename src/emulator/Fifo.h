@@ -41,7 +41,7 @@ void Fifo<T>::DoSaveLoad(U& helper) {
 
 template <class T>
 Fifo<T>::Fifo(uint32 capacity) : capacity(capacity) {
-    buffer = new uint32[capacity];
+    buffer = new T[capacity];
     memset(buffer, 0, sizeof(T) * capacity);
 }
 

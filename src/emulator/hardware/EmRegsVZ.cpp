@@ -579,6 +579,12 @@ void EmRegsVZ::Reset(Bool hardwareReset) {
 
         pwmActive = false;
 
+        spi1RxFifo.Clear();
+        spi1TxFifo.Clear();
+        spi1Countdown = 0;
+        spi1TxWordPending = 0;
+        spi1TransferInProgress = false;
+
         // React to the new data in the UART registers.
 
         Bool sendTxData = false;
@@ -826,10 +832,10 @@ void EmRegsVZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(tmrRegisterRead, NullWrite, tmr2Counter);
     INSTALL_HANDLER(tmr2StatusRead, tmr2StatusWrite, tmr2Status);
 
-    INSTALL_HANDLER(StdRead, StdWrite, spiRxD);
-    INSTALL_HANDLER(StdRead, StdWrite, spiTxD);
+    INSTALL_HANDLER(spiRxDRead, NullWrite, spiRxD);
+    INSTALL_HANDLER(StdRead, spiTxDWrite, spiTxD);
     INSTALL_HANDLER(StdRead, spiCont1Write, spiCont1);
-    INSTALL_HANDLER(StdRead, StdWrite, spiIntCS);
+    INSTALL_HANDLER(StdRead, SpiIntCSWrite, spiIntCS);
     INSTALL_HANDLER(StdRead, StdWrite, spiTest);
     INSTALL_HANDLER(StdRead, StdWrite, spiSpc);
 
@@ -933,8 +939,15 @@ inline void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
 
     if (unlikely(powerOffCached)) return;
 
+    uint32 delta = systemCycles - this->systemCycles;
     this->systemCycles = systemCycles;
+
     if (unlikely(systemCycles >= nextTimerEventAfterCycle)) UpdateTimers();
+
+    if (spi1TransferInProgress) {
+        spi1Countdown -= delta;
+        if (spi1Countdown <= 0) Spi1TransmitWord();
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1971,32 +1984,6 @@ void EmRegsVZ::tmr2StatusWrite(emuptr address, int size, uint32 value) {
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsVZ::spiCont1Write
-// ---------------------------------------------------------------------------
-
-void EmRegsVZ::spiCont1Write(emuptr address, int size, uint32 value) {
-    cout << "spi1 write" << endl << flush;
-    // Do a standard update of the register.
-
-    EmRegsVZ::StdWrite(address, size, value);
-
-    // Get the current value.
-
-    uint16 spiCont1 = READ_REGISTER(spiCont1);
-
-    // Check to see if data exchange and enable are enabled.
-
-#define BIT_MASK (hwrVZ328SPIMControlExchange | hwrVZ328SPIMControlEnable)
-    if ((spiCont1 & BIT_MASK) == BIT_MASK) {
-        // Clear the exchange bit.
-
-        spiCont1 &= ~hwrVZ328SPIMControlExchange;
-
-        WRITE_REGISTER(spiCont1, spiCont1);
-    }
-}
-
-// ---------------------------------------------------------------------------
 //		� EmRegsVZ::spiMasterControlWrite
 // ---------------------------------------------------------------------------
 
@@ -2914,10 +2901,50 @@ int EmRegsVZ::GetPort(emuptr address) {
     return 0;
 }
 
+void EmRegsVZ::Spi1TransmitWord() {
+    if (spi1TransferInProgress)
+        cout << hex << "spi1: transmitting 0x" << spi1TxWordPending << endl << flush << dec;
+
+    spi1TransferInProgress = spi1TxFifo.Size() > 0;
+    if (!spi1TransferInProgress) {
+        uint16 spiCont1 = READ_REGISTER(spiCont1);
+        WRITE_REGISTER(spiCont1, spiCont1 & ~0x0100);
+
+        return;
+    }
+
+    spi1TxWordPending = spi1TxFifo.Pop();
+    Spi1UpdateInterrupts();
+
+    uint16 spiCont1 = READ_REGISTER(spiCont1);
+    spi1Countdown += (4 << ((spiCont1 >> 13) & 0x07)) * ((spiCont1 & 0x0f) + 1);
+}
+
+void EmRegsVZ::Spi1UpdateInterrupts(bool rxOverflow) {
+    uint8 flags = (rxOverflow ? 0x40 : 0) | (spi1RxFifo.Size() == 8 ? 0x20 : 0) |
+                  (spi1RxFifo.Size() >= 4 ? 0x10 : 0) | (spi1RxFifo.Size() > 0 ? 0x08 : 0) |
+                  (spi1TxFifo.Size() == 8 ? 0x04 : 0) | (spi1TxFifo.Size() >= 4 ? 0x02 : 0) |
+                  (spi1TxFifo.Size() == 0 ? 0x01 : 0);
+
+    uint16 spiIntCS = READ_REGISTER(spiIntCS);
+    uint8 mask = spiIntCS >> 8;
+
+    WRITE_REGISTER(spiIntCS, (spiIntCS & 0xff00) | flags);
+
+    uint16 intPendingHi = READ_REGISTER(intPendingHi);
+    if (flags & mask)
+        intPendingHi |= 0x0020;
+    else
+        intPendingHi &= ~0x0020;
+    WRITE_REGISTER(intPendingHi, intPendingHi);
+
+    UpdateInterrupts();
+}
+
 uint32 EmRegsVZ::CyclesToNextInterrupt(uint64 systemCycles) {
     this->systemCycles = systemCycles;
 
-    if (systemCycles >= nextTimerEventAfterCycle) return 1;
+    if (systemCycles >= nextTimerEventAfterCycle || spi1TransferInProgress) return 1;
     return std::min(nextTimerEventAfterCycle - systemCycles, (uint64)0xffffffff);
 }
 
@@ -3055,6 +3082,53 @@ void EmRegsVZ::pwmp1Write(emuptr address, int size, uint32 value) {
     EmRegsVZ::StdWrite(address, size, value);
 
     if (pwmActive) DispatchPwmChange();
+}
+
+uint32 EmRegsVZ::spiRxDRead(emuptr address, int size) {
+    uint16 result = spi1RxFifo.Pop();
+
+    Spi1UpdateInterrupts();
+
+    return result;
+}
+
+void EmRegsVZ::spiTxDWrite(emuptr address, int size, uint32 value) {
+    if (spi1TxFifo.Size() < 8) spi1TxFifo.Push(value & 0xffff);
+
+    Spi1UpdateInterrupts();
+}
+
+void EmRegsVZ::SpiIntCSWrite(emuptr address, int size, uint32 value) {
+    uint16 oldValue = READ_REGISTER(spiIntCS);
+
+    StdWrite(address, size, (oldValue & 0x00ff) | (value & 0xff00));
+}
+
+void EmRegsVZ::spiCont1Write(emuptr address, int size, uint32 value) {
+    cout << "spi1 write" << endl << flush;
+
+    uint16 valueOld = READ_REGISTER(spiCont1);
+    EmRegsVZ::StdWrite(address, size, value);
+
+    if ((value & 0x0200) == 0) {
+        spi1TxFifo.Clear();
+        spi1RxFifo.Clear();
+        Spi1UpdateInterrupts();
+    }
+
+    if ((value & 0x0600) != 0x0600) {
+        spi1TransferInProgress = false;
+        WRITE_REGISTER(spiCont1, value & ~0x00100);
+
+        return;
+    };
+
+    if (value & ~valueOld & 0x0100) {
+        spi1Countdown = 0;
+        Spi1TransmitWord();
+    }
+
+    if (~value & valueOld & 0x0100) spi1TransferInProgress = false;
 }
 
 void EmRegsVZ::DispatchPwmChange() {
