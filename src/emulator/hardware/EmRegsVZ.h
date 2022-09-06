@@ -81,7 +81,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
    protected:
     virtual uint8 GetKeyBits(void);
     virtual uint16 ButtonToBits(ButtonEventT::Button btn);
-    virtual EmSPISlave* GetSPISlave(void);
+    virtual EmSPISlave* GetSPI2Slave(void);
+    virtual EmSPISlave* GetSPI1Slave(void);
 
     virtual void MarkScreen();
     virtual void UnmarkScreen();
@@ -103,6 +104,9 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     void UnmarshalUARTState(const EmUARTDragonball::State& state, int uartNum);
 
     int GetPort(emuptr address);
+
+    virtual void Spi1AssertSlaveSelect();
+    virtual void Spi1DeassertSlaveSelect();
 
    private:
     uint32 pllFreqSelRead(emuptr address, int size);
@@ -142,6 +146,7 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     void spiIntCSWrite(emuptr address, int size, uint32 value);
     uint32 spiIntCSRead(emuptr address, int size);
     void spiCont1Write(emuptr address, int size, uint32 value);
+    uint32 spiTestRead(emuptr address, int size);
 
     void UpdateTimers();
     void DispatchPwmChange();

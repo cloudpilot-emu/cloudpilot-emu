@@ -350,7 +350,7 @@ void EmRegsVZHandEra330::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, 
 //		� EmRegsVZHandEra330::GetSPISlave
 // ---------------------------------------------------------------------------
 
-EmSPISlave* EmRegsVZHandEra330::GetSPISlave(void) {
+EmSPISlave* EmRegsVZHandEra330::GetSPI2Slave(void) {
     if ((READ_REGISTER(portJData) & PortJ_AD_CS) == 0) {
         if (PortMgr.SenseCurrent)
             return fSPISlaveCurrent;

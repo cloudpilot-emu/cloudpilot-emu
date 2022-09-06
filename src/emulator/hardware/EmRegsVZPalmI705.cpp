@@ -180,7 +180,7 @@ void EmRegsVZPalmI705::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bo
 //		� EmRegsVZPalmI705::GetSPISlave
 // ---------------------------------------------------------------------------
 
-EmSPISlave* EmRegsVZPalmI705::GetSPISlave(void) {
+EmSPISlave* EmRegsVZPalmI705::GetSPI2Slave(void) {
     if ((READ_REGISTER(portGData) & hwrVZPalmI705PortGADC_CS_N) == 0) {
         return fSPISlaveADC;
     }

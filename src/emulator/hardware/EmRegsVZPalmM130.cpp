@@ -147,10 +147,10 @@ void EmRegsVZPalmM130::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bo
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsVZPalmM130::GetSPISlave
+//		� EmRegsVZPalmM130::GetSPI2Slave
 // ---------------------------------------------------------------------------
 
-EmSPISlave* EmRegsVZPalmM130::GetSPISlave(void) {
+EmSPISlave* EmRegsVZPalmM130::GetSPI2Slave(void) {
     if ((READ_REGISTER(portGData) & hwrVZPalmM130PortGADC_CS_N) == 0) {
         return fSPISlaveADC;
     }

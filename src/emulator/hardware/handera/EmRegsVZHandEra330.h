@@ -103,7 +103,7 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
     void SetSubBankHandlers(void);
 
    protected:
-    virtual EmSPISlave* GetSPISlave(void);
+    virtual EmSPISlave* GetSPI2Slave(void);
     virtual uint16 ButtonToBits(ButtonEventT::Button btn);
 
    private:

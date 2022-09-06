@@ -99,7 +99,7 @@ Bool EmRegsVZAtlantiC::GetDTR(int uartNum) {
 
 Bool EmRegsVZAtlantiC::GetVibrateOn(void) { return (READ_REGISTER(portFData) & 0x01) != 0; }
 
-EmSPISlave* EmRegsVZAtlantiC::GetSPISlave(void) {
+EmSPISlave* EmRegsVZAtlantiC::GetSPI2Slave(void) {
     if ((READ_REGISTER(portGData) & hwrVZPalmM130PortGADC_CS_N) == 0) {
         return fSPISlaveADC;
     }

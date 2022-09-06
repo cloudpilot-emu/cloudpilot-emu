@@ -59,6 +59,11 @@ EmRegsVZPalmM500::EmRegsVZPalmM500(void) : EmRegsVZ() {
 
 EmRegsVZPalmM500::~EmRegsVZPalmM500(void) { delete fSPISlaveADC; }
 
+void EmRegsVZPalmM500::Reset(Bool hardwareReset) {
+    EmRegsVZ::Reset(hardwareReset);
+    spiSlaveSD->Reset();
+}
+
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmM500::GetLCDScreenOn
 // ---------------------------------------------------------------------------
@@ -216,14 +221,45 @@ void EmRegsVZPalmM500::Mount(EmHAL::Slot slot, const string& key, CardImage& car
 
 void EmRegsVZPalmM500::Unmount(EmHAL::Slot slot) { UpdateIRQ2(0x00); }
 
+void EmRegsVZPalmM500::PortDataChanged(int port, uint8 oldValue, uint8 newValue) {
+    EmRegsVZ::PortDataChanged(port, oldValue, newValue);
+
+    if (port != 'J') return;
+
+    uint8 portJSelect = READ_REGISTER(portJSelect);
+    if ((portJSelect & 0x08) == 0) return;
+    if (((oldValue ^ newValue) & 0x08) == 0) return;
+
+    if (newValue & 0x08)
+        spiSlaveSD->Disable();
+    else
+        spiSlaveSD->Enable();
+}
+
+EmSPISlave* EmRegsVZPalmM500::GetSPI1Slave() { return spiSlaveSD.get(); }
+
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmM500::GetSPISlave
 // ---------------------------------------------------------------------------
 
-EmSPISlave* EmRegsVZPalmM500::GetSPISlave(void) {
+EmSPISlave* EmRegsVZPalmM500::GetSPI2Slave(void) {
     if ((READ_REGISTER(portGData) & hwrVZPortGADC_CS_N) == 0) {
         return fSPISlaveADC;
     }
 
     return NULL;
+}
+
+void EmRegsVZPalmM500::Spi1AssertSlaveSelect() {
+    uint8 portJSelect = READ_REGISTER(portJSelect);
+    if (portJSelect & 0x08) return;
+
+    spiSlaveSD->Enable();
+}
+
+void EmRegsVZPalmM500::Spi1DeassertSlaveSelect() {
+    uint8 portJSelect = READ_REGISTER(portJSelect);
+    if (portJSelect & 0x08) return;
+
+    spiSlaveSD->Disable();
 }

@@ -153,7 +153,7 @@ void EmRegsVzPegNasca::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bo
 //		� EmRegsVzPegNasca::GetSPISlave
 // ---------------------------------------------------------------------------
 
-EmSPISlave* EmRegsVzPegNasca::GetSPISlave(void) {
+EmSPISlave* EmRegsVzPegNasca::GetSPI2Slave(void) {
     if ((READ_REGISTER(portGData) & hwrVZNascaPortGADC_CS) == 0) {
         return fSPISlaveADC;
     }

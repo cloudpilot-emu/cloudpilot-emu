@@ -150,7 +150,7 @@ void EmRegsVZPalmM125::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bo
 //		� EmRegsVZPalmM125::GetSPISlave
 // ---------------------------------------------------------------------------
 
-EmSPISlave* EmRegsVZPalmM125::GetSPISlave(void) {
+EmSPISlave* EmRegsVZPalmM125::GetSPI2Slave(void) {
     if ((READ_REGISTER(portGData) & hwrVZPalmM125PortGADC_CS_N) == 0) {
         return fSPISlaveADC;
     }

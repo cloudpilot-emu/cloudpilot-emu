@@ -25,7 +25,7 @@ class EmRegsVzPegVenice : public EmRegsVZ {
     virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
 
    protected:
-    virtual EmSPISlave* GetSPISlave(void);
+    virtual EmSPISlave* GetSPI2Slave(void);
 
    private:
     EmSPISlave* fSPISlaveADC;

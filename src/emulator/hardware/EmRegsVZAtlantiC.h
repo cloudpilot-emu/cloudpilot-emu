@@ -24,7 +24,7 @@ class EmRegsVZAtlantiC : public EmRegsVZNoScreen {
     virtual Bool GetVibrateOn(void);
 
    protected:
-    virtual EmSPISlave* GetSPISlave(void);
+    virtual EmSPISlave* GetSPI2Slave(void);
 };
 
 #endif  // _EM_REGS_VZ_ATLANTIC_H_

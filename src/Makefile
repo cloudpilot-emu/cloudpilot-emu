@@ -156,6 +156,7 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsPLDPalmVIIEZ.cpp \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
+	emulator/hardware/EmSPISlaveSD.cpp \
 	emulator/hardware/clie/EmRegsExpCardCLIE.cpp \
 	emulator/hardware/clie/EmRegsUsbCLIE.cpp \
 	emulator/hardware/clie/EmRegsFMSound.cpp \

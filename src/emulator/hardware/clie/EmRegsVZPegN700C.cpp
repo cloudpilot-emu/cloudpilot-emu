@@ -175,10 +175,10 @@ void EmRegsVzPegN700C::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bo
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsVzPegN700C::GetSPISlave
+//		� EmRegsVzPegN700C::GetSPI2Slave
 // ---------------------------------------------------------------------------
 
-EmSPISlave* EmRegsVzPegN700C::GetSPISlave(void) {
+EmSPISlave* EmRegsVzPegN700C::GetSPI2Slave(void) {
     if ((READ_REGISTER(portMData) & hwrVZPEG700PortMADC_CS) == 0) {
         return fSPISlaveADC;
     }

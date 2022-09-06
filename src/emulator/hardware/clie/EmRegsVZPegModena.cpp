@@ -159,10 +159,10 @@ void EmRegsVzPegModena::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, B
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsVzPegModena::GetSPISlave
+//		� EmRegsVzPegModena::GetSPI2Slave
 // ---------------------------------------------------------------------------
 
-EmSPISlave* EmRegsVzPegModena::GetSPISlave(void) {
+EmSPISlave* EmRegsVzPegModena::GetSPI2Slave(void) {
     if ((READ_REGISTER(portGData) & hwrVZModenaPortGADC_CS) == 0) {
         return fSPISlaveADC;
     }

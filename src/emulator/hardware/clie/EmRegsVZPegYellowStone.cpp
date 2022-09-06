@@ -158,10 +158,10 @@ void EmRegsVzPegYellowStone::GetKeyInfo(int* numRows, int* numCols, uint16* keyM
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsVzPegYellowStone::GetSPISlave
+//		� EmRegsVzPegYellowStone::GetSPI2Slave
 // ---------------------------------------------------------------------------
 
-EmSPISlave* EmRegsVzPegYellowStone::GetSPISlave(void) {
+EmSPISlave* EmRegsVzPegYellowStone::GetSPI2Slave(void) {
     if ((READ_REGISTER(portGData) & hwrVZYellowPortGADC_CS) == 0) {
         return fSPISlaveADC;
     }

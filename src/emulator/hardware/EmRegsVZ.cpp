@@ -836,7 +836,7 @@ void EmRegsVZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, spiTxDWrite, spiTxD);
     INSTALL_HANDLER(StdRead, spiCont1Write, spiCont1);
     INSTALL_HANDLER(spiIntCSRead, spiIntCSWrite, spiIntCS);
-    INSTALL_HANDLER(StdRead, StdWrite, spiTest);
+    INSTALL_HANDLER(spiTestRead, StdWrite, spiTest);
     INSTALL_HANDLER(StdRead, StdWrite, spiSpc);
 
     INSTALL_HANDLER(StdRead, StdWrite, spiMasterData);
@@ -2004,7 +2004,7 @@ void EmRegsVZ::spiMasterControlWrite(emuptr address, int size, uint32 value) {
     if ((spiMasterControl & BIT_MASK) == BIT_MASK) {
         // If the SPI is hooked up to something, talk with it.
 
-        EmSPISlave* spiSlave = this->GetSPISlave();
+        EmSPISlave* spiSlave = this->GetSPI2Slave();
         if (spiSlave) {
             // Write out the old data, read in the new data.
 
@@ -2335,10 +2335,12 @@ uint16 EmRegsVZ::ButtonToBits(ButtonEventT::Button button) {
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsVZ::GetSPISlave
+//		� EmRegsVZ::GetSPI2Slave
 // ---------------------------------------------------------------------------
 
-EmSPISlave* EmRegsVZ::GetSPISlave(void) { return NULL; }
+EmSPISlave* EmRegsVZ::GetSPI2Slave(void) { return nullptr; }
+
+EmSPISlave* EmRegsVZ::GetSPI1Slave(void) { return nullptr; }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZ::UpdateInterrupts
@@ -2903,10 +2905,29 @@ int EmRegsVZ::GetPort(emuptr address) {
 }
 
 void EmRegsVZ::Spi1TransmitWord() {
-    if (spi1TransferInProgress)
-        cout << hex << "spi1: transmitting 0x" << spi1TxWordPending << endl << flush << dec;
+    EmSPISlave* slave = GetSPI1Slave();
 
+    if (spi1TransferInProgress) {
+        uint16 dataOut = spi1TxWordPending;
+        uint16 dataIn = slave ? slave->DoExchange(READ_REGISTER(spiCont1), dataOut) : 0;
+
+        cout << hex << "spi1: -> 0x" << dataOut << ", <- 0x" << dataIn << dec << endl << flush;
+
+        if (spi1RxFifo.Size() == 0) {
+            uint16 spiIntCS = READ_REGISTER(spiIntCS);
+            WRITE_REGISTER(spiIntCS, spiIntCS | 0x0040);
+        }
+
+        spi1RxFifo.Push(dataIn);
+        Spi1UpdateInterrupts();
+    }
+
+    const bool transferWasInProgress = spi1TransferInProgress;
     spi1TransferInProgress = spi1TxFifo.Size() > 0;
+
+    if (!transferWasInProgress && spi1TransferInProgress) Spi1AssertSlaveSelect();
+    if (transferWasInProgress && !spi1TransferInProgress) Spi1DeassertSlaveSelect();
+
     if (!spi1TransferInProgress) {
         uint16 spiCont1 = READ_REGISTER(spiCont1);
         WRITE_REGISTER(spiCont1, spiCont1 & ~0x0100);
@@ -2940,6 +2961,10 @@ void EmRegsVZ::Spi1UpdateInterrupts() {
 
     UpdateInterrupts();
 }
+
+void EmRegsVZ::Spi1AssertSlaveSelect() {}
+
+void EmRegsVZ::Spi1DeassertSlaveSelect() {}
 
 uint32 EmRegsVZ::CyclesToNextInterrupt(uint64 systemCycles) {
     this->systemCycles = systemCycles;
@@ -3093,7 +3118,9 @@ uint32 EmRegsVZ::spiRxDRead(emuptr address, int size) {
 }
 
 void EmRegsVZ::spiTxDWrite(emuptr address, int size, uint32 value) {
-    if (spi1TxFifo.Size() < 8) spi1TxFifo.Push(value & 0xffff);
+    if ((READ_REGISTER(spiCont1) & 0x0200) == 0) return;
+
+    spi1TxFifo.Push(value & 0xffff);
 
     Spi1UpdateInterrupts();
 }
@@ -3123,6 +3150,7 @@ void EmRegsVZ::spiCont1Write(emuptr address, int size, uint32 value) {
 
     if ((value & 0x0600) != 0x0600) {
         spi1TransferInProgress = false;
+        Spi1DeassertSlaveSelect();
         WRITE_REGISTER(spiCont1, value & ~0x00100);
 
         return;
@@ -3133,7 +3161,14 @@ void EmRegsVZ::spiCont1Write(emuptr address, int size, uint32 value) {
         Spi1TransmitWord();
     }
 
-    if (~value & valueOld & 0x0100) spi1TransferInProgress = false;
+    if (~value & valueOld & 0x0100) {
+        spi1TransferInProgress = false;
+        Spi1DeassertSlaveSelect();
+    }
+}
+
+uint32 EmRegsVZ::spiTestRead(emuptr address, int size) {
+    return spi1TxFifo.Size() | (spi1RxFifo.Size() << 4);
 }
 
 void EmRegsVZ::DispatchPwmChange() {

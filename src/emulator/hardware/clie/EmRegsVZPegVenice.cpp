@@ -169,7 +169,7 @@ void EmRegsVzPegVenice::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, B
 //		� EmRegsVzPegVenice::GetSPISlave
 // ---------------------------------------------------------------------------
 
-EmSPISlave* EmRegsVzPegVenice::GetSPISlave(void) {
+EmSPISlave* EmRegsVzPegVenice::GetSPI2Slave(void) {
     if ((READ_REGISTER(portGData) & hwrVZVenicePortGADC_CS) == 0) {
         return fSPISlaveADC;
     }

@@ -19,7 +19,7 @@ class EmRegsVZPalmI705 : public EmRegsVZ {
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows);
 
    protected:
-    virtual EmSPISlave* GetSPISlave(void);
+    virtual EmSPISlave* GetSPI2Slave(void);
 };
 
 #endif  // _EM_REGS_VZ_PALM_I705_H_

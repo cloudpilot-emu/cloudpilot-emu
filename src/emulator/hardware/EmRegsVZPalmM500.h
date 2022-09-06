@@ -14,12 +14,17 @@
 #ifndef EmRegsVZPalmM500_h
 #define EmRegsVZPalmM500_h
 
+#include <memory>
+
 #include "EmRegsVZ.h"
+#include "EmSPISlaveSD.h"
 
 class EmRegsVZPalmM500 : public EmRegsVZ {
    public:
     EmRegsVZPalmM500(void);
     virtual ~EmRegsVZPalmM500(void);
+
+    void Reset(Bool hardwareReset) override;
 
     Bool GetLCDScreenOn(void) override;
     Bool GetLCDBacklightOn(void) override;
@@ -36,8 +41,17 @@ class EmRegsVZPalmM500 : public EmRegsVZ {
     void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
     void Unmount(EmHAL::Slot slot) override;
 
+    void PortDataChanged(int port, uint8 oldValue, uint8 newValue) override;
+
    protected:
-    EmSPISlave* GetSPISlave(void) override;
+    EmSPISlave* GetSPI1Slave() override;
+    EmSPISlave* GetSPI2Slave(void) override;
+
+    void Spi1AssertSlaveSelect() override;
+    void Spi1DeassertSlaveSelect() override;
+
+   private:
+    unique_ptr<EmSPISlaveSD> spiSlaveSD = make_unique<EmSPISlaveSD>();
 };
 
 #endif /* EmRegsVZPalmM500_h */

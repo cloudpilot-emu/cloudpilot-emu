@@ -23,7 +23,7 @@ class EmRegsVzPegYellowStone : public EmRegsVZNoScreen {
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows);
 
    protected:
-    virtual EmSPISlave* GetSPISlave(void);
+    virtual EmSPISlave* GetSPI2Slave(void);
 
    private:
     EmSPISlave* fSPISlaveADC;
