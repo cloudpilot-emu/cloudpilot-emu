@@ -104,9 +104,6 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
 
     int GetPort(emuptr address);
 
-    void Spi1TransmitWord();
-    void Spi1UpdateInterrupts(bool rxOverflow = false);
-
    private:
     uint32 pllFreqSelRead(emuptr address, int size);
     uint32 portXDataRead(emuptr address, int size);
@@ -142,12 +139,16 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
 
     uint32 spiRxDRead(emuptr address, int size);
     void spiTxDWrite(emuptr address, int size, uint32 value);
-    void SpiIntCSWrite(emuptr address, int size, uint32 value);
+    void spiIntCSWrite(emuptr address, int size, uint32 value);
+    uint32 spiIntCSRead(emuptr address, int size);
     void spiCont1Write(emuptr address, int size, uint32 value);
 
     void UpdateTimers();
     void DispatchPwmChange();
     void HandleDayRollover();
+
+    void Spi1TransmitWord();
+    void Spi1UpdateInterrupts();
 
     template <typename T>
     void DoSave(T& savestate);

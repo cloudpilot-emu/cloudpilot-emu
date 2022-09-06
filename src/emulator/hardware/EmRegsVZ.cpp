@@ -835,7 +835,7 @@ void EmRegsVZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(spiRxDRead, NullWrite, spiRxD);
     INSTALL_HANDLER(StdRead, spiTxDWrite, spiTxD);
     INSTALL_HANDLER(StdRead, spiCont1Write, spiCont1);
-    INSTALL_HANDLER(StdRead, SpiIntCSWrite, spiIntCS);
+    INSTALL_HANDLER(spiIntCSRead, spiIntCSWrite, spiIntCS);
     INSTALL_HANDLER(StdRead, StdWrite, spiTest);
     INSTALL_HANDLER(StdRead, StdWrite, spiSpc);
 
@@ -939,15 +939,16 @@ inline void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
 
     if (unlikely(powerOffCached)) return;
 
-    uint32 delta = systemCycles - this->systemCycles;
-    this->systemCycles = systemCycles;
-
-    if (unlikely(systemCycles >= nextTimerEventAfterCycle)) UpdateTimers();
-
     if (spi1TransferInProgress) {
+        uint32 delta = systemCycles - this->systemCycles;
+
         spi1Countdown -= delta;
         if (spi1Countdown <= 0) Spi1TransmitWord();
     }
+
+    this->systemCycles = systemCycles;
+
+    if (unlikely(systemCycles >= nextTimerEventAfterCycle)) UpdateTimers();
 }
 
 // ---------------------------------------------------------------------------
@@ -2920,11 +2921,10 @@ void EmRegsVZ::Spi1TransmitWord() {
     spi1Countdown += (4 << ((spiCont1 >> 13) & 0x07)) * ((spiCont1 & 0x0f) + 1);
 }
 
-void EmRegsVZ::Spi1UpdateInterrupts(bool rxOverflow) {
-    uint8 flags = (rxOverflow ? 0x40 : 0) | (spi1RxFifo.Size() == 8 ? 0x20 : 0) |
-                  (spi1RxFifo.Size() >= 4 ? 0x10 : 0) | (spi1RxFifo.Size() > 0 ? 0x08 : 0) |
-                  (spi1TxFifo.Size() == 8 ? 0x04 : 0) | (spi1TxFifo.Size() >= 4 ? 0x02 : 0) |
-                  (spi1TxFifo.Size() == 0 ? 0x01 : 0);
+void EmRegsVZ::Spi1UpdateInterrupts() {
+    uint8 flags = (spi1RxFifo.Size() == 8 ? 0x20 : 0) | (spi1RxFifo.Size() >= 4 ? 0x10 : 0) |
+                  (spi1RxFifo.Size() > 0 ? 0x08 : 0) | (spi1TxFifo.Size() == 8 ? 0x04 : 0) |
+                  (spi1TxFifo.Size() >= 4 ? 0x02 : 0) | (spi1TxFifo.Size() == 0 ? 0x01 : 0);
 
     uint16 spiIntCS = READ_REGISTER(spiIntCS);
     uint8 mask = spiIntCS >> 8;
@@ -3098,15 +3098,20 @@ void EmRegsVZ::spiTxDWrite(emuptr address, int size, uint32 value) {
     Spi1UpdateInterrupts();
 }
 
-void EmRegsVZ::SpiIntCSWrite(emuptr address, int size, uint32 value) {
+void EmRegsVZ::spiIntCSWrite(emuptr address, int size, uint32 value) {
     uint16 oldValue = READ_REGISTER(spiIntCS);
 
     StdWrite(address, size, (oldValue & 0x00ff) | (value & 0xff00));
 }
 
-void EmRegsVZ::spiCont1Write(emuptr address, int size, uint32 value) {
-    cout << "spi1 write" << endl << flush;
+uint32 EmRegsVZ::spiIntCSRead(emuptr address, int size) {
+    uint32 oldValue = READ_REGISTER(spiIntCS);
+    WRITE_REGISTER(spiIntCS, oldValue & ~0x0040);
 
+    return oldValue;
+}
+
+void EmRegsVZ::spiCont1Write(emuptr address, int size, uint32 value) {
     uint16 valueOld = READ_REGISTER(spiCont1);
     EmRegsVZ::StdWrite(address, size, value);
 
