@@ -15,7 +15,9 @@ class CardImage {
 
     size_t Read(uint8* dest, size_t index, size_t count = 1);
     size_t Write(const uint8* source, size_t index, size_t count = 1);
-    size_t BlockstTotal() const;
+    size_t BlocksTotal() const;
+
+    uint8* RawData();
 
    private:
     uint8* data;

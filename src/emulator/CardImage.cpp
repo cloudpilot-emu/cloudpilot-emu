@@ -28,4 +28,6 @@ size_t CardImage::Write(const uint8* source, size_t index, size_t count) {
     return count;
 }
 
-size_t CardImage::BlockstTotal() const { return blocksTotal; }
+size_t CardImage::BlocksTotal() const { return blocksTotal; }
+
+uint8* CardImage::RawData() { return data; }

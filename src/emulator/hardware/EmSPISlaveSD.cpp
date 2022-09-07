@@ -181,7 +181,7 @@ void EmSPISlaveSD::DoCmd() {
             } else {
                 blockAddress = Param() >> 9;
 
-                if (blockAddress < image()->BlockstTotal()) {
+                if (blockAddress < image()->BlocksTotal()) {
                     PrepareR1(0x00);
                     cardState = CardState::writeTransaction;
                 } else {
@@ -231,7 +231,7 @@ void EmSPISlaveSD::DoReadCSD() {
     uint8 csd[15];
 
     // Block size is hardcoded to 512 bytes
-    const uint32 cSizeMult = 0x07, cSize = (image()->BlockstTotal() >> 9) - 1, blLen = 0x09,
+    const uint32 cSizeMult = 0x07, cSize = (image()->BlocksTotal() >> 9) - 1, blLen = 0x09,
                  sectorSize = 31;
 
     csd[0] = 0x00;

@@ -330,6 +330,39 @@ namespace {
         return false;
     }
 
+    bool CmdSaveCard(vector<string> args) {
+        if (args.size() != 1) {
+            cout << "usage: save-card <image>" << endl << flush;
+            return false;
+        }
+
+        if (!gExternalStorage.IsMounted(EmHAL::Slot::sdcard)) {
+            cout << "no mounted card" << endl << flush;
+            return false;
+        }
+
+        const string& file = args[0];
+        auto image = gExternalStorage.GetImageInSlot(EmHAL::Slot::sdcard);
+
+        fstream stream(file, ios_base::out);
+
+        if (stream.fail()) {
+            cout << "failed to open " << file << endl << flush;
+            return false;
+        }
+
+        stream.write((const char*)image->RawData(), image->BlocksTotal() * CardImage::BLOCK_SIZE);
+
+        if (stream.fail()) {
+            cout << "I/O error writing " << file << endl << flush;
+            return false;
+        }
+
+        cout << "successfully saved " << file << endl << flush;
+
+        return false;
+    }
+
     struct Command {
         string name;
         Cmd cmd;
@@ -349,7 +382,8 @@ namespace {
                           {.name = "save-backup-with-rom", .cmd = CmdSaveBackupWithRom},
                           {.name = "launch", .cmd = CmdLaunch},
                           {.name = "unmount", .cmd = CmdUnmount},
-                          {.name = "mount", .cmd = CmdMount}};
+                          {.name = "mount", .cmd = CmdMount},
+                          {.name = "save-card", .cmd = CmdSaveCard}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);
