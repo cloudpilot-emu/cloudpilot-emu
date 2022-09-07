@@ -15,8 +15,16 @@ class EmSPISlaveSD : public EmSPISlave {
     void Disable(void) override;
 
    private:
-    enum class SpiState : uint8 { notSelected = 0, rxCmdByte = 1, rxArg = 2, txResult = 3 };
-    enum class CardState : uint8 { idle = 0, initialized = 1 };
+    enum class SpiState : uint8 {
+        notSelected = 0,
+        rxCmdByte = 1,
+        rxArg = 2,
+        txResult = 3,
+        rxBlockWait = 4,
+        rxBlock = 5
+    };
+
+    enum class CardState : uint8 { idle = 0, initialized = 1, writeTransaction = 2 };
 
    private:
     uint8 DoExchange8(uint8 data);
@@ -38,6 +46,8 @@ class EmSPISlaveSD : public EmSPISlave {
     void DoReadCSD();
     void DoReadCID();
 
+    void FinishWriteSingleBlock();
+
     uint32 Param() const;
 
     void PrepareR1(uint8 flags);
@@ -48,6 +58,7 @@ class EmSPISlaveSD : public EmSPISlave {
     SpiState spiState{SpiState::notSelected};
     CardState cardState{CardState::idle};
     uint8 lastCmd{0};
+    size_t blockAddress{0};
 
     uint8 buffer[550];
     uint32 bufferSize{0};

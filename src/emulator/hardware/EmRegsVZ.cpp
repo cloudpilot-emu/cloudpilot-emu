@@ -2911,11 +2911,11 @@ void EmRegsVZ::Spi1TransmitWord() {
         uint16 dataOut = spi1TxWordPending;
         uint16 dataIn = slave ? slave->DoExchange(READ_REGISTER(spiCont1), dataOut) : 0;
 
-        /*
-                cout << hex << "spi1: -> 0x" << dataOut << ", <- 0x" << dataIn << dec << " @ "
-                     << ((READ_REGISTER(spiCont1) & 0x0f) + 1) << " bit" << endl
-                     << flush;
-        */
+#if 0
+        cout << hex << "spi1: -> 0x" << dataOut << ", <- 0x" << dataIn << dec << " @ "
+             << ((READ_REGISTER(spiCont1) & 0x0f) + 1) << " bit" << endl
+             << flush;
+#endif
 
         if (spi1RxFifo.Size() == 0) {
             uint16 spiIntCS = READ_REGISTER(spiIntCS);

@@ -10,6 +10,9 @@ namespace {
 
     constexpr uint8 DATA_TOKEN_DEFAULT = 0xfe;
 
+    constexpr uint8 DATA_RESPONSE_ACCEPTED = 0x05;
+    constexpr uint8 DATA_RESPONSE_WRITE_FAILED = 0x0d;
+
     CardImage* image() { return gExternalStorage.GetImageInSlot(EmHAL::Slot::sdcard); }
 }  // namespace
 
@@ -57,7 +60,7 @@ uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
 
     switch (spiState) {
         case SpiState::notSelected:
-            return 0x00;
+            return 0xff;
 
         case SpiState::rxCmdByte:
             if ((data & 0xc0) == 0x40) {
@@ -80,12 +83,26 @@ uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
 
         case SpiState::txResult: {
             uint8 dataOut = buffer[bufferIndex++];
-            if (bufferIndex == bufferSize) {
-                spiState = SpiState::rxCmdByte;
-            }
+            if (bufferIndex == bufferSize)
+                spiState = cardState == CardState::writeTransaction ? SpiState::rxBlockWait
+                                                                    : SpiState::rxCmdByte;
 
             return dataOut;
         }
+
+        case SpiState::rxBlockWait:
+            if (data == DATA_TOKEN_DEFAULT) {
+                spiState = SpiState::rxBlock;
+                BufferStart(514);
+            };
+
+            return 0xff;
+
+        case SpiState::rxBlock:
+            buffer[bufferIndex++] = data;
+            if (bufferIndex == bufferSize) FinishWriteSingleBlock();
+
+            return 0xff;
     }
 }
 
@@ -107,8 +124,6 @@ void EmSPISlaveSD::BufferAddBlock(uint8 token, uint8* data, size_t size) {
 void EmSPISlaveSD::DoCmd() {
     if (acmd) return DoAcmd();
     acmd = false;
-
-    cout << "SD card CMD" << (int)lastCmd << endl << flush;
 
     switch (lastCmd) {
         case 0:
@@ -160,6 +175,22 @@ void EmSPISlaveSD::DoCmd() {
 
             return;
 
+        case 24:
+            if (cardState == CardState::idle) {
+                PrepareR1(ERR_CARD_IDLE);
+            } else {
+                blockAddress = Param() >> 9;
+
+                if (blockAddress < image()->BlockstTotal()) {
+                    PrepareR1(0x00);
+                    cardState = CardState::writeTransaction;
+                } else {
+                    PrepareR1(ERR_PARAMETER);
+                }
+            }
+
+            return;
+
         case 55:
             PrepareR1(0x00);
             acmd = true;
@@ -167,7 +198,7 @@ void EmSPISlaveSD::DoCmd() {
             return;
 
         default:
-            cout << "usupported SD CMD" << endl << flush;
+            cout << "unsupported SD CMD" << (int)lastCmd << endl << flush;
             PrepareR1(ERR_ILLEGAL_COMMAND);
 
             return;
@@ -175,15 +206,13 @@ void EmSPISlaveSD::DoCmd() {
 }
 
 void EmSPISlaveSD::DoAcmd() {
-    cout << "SD card ACMD" << (int)lastCmd << endl << flush;
-    cout << "usupported SD ACMD" << endl << flush;
+    cout << "unsupported SD ACMD" << (int)lastCmd << endl << flush;
 
     PrepareR1(ERR_ILLEGAL_COMMAND);
     acmd = false;
 }
 
 void EmSPISlaveSD::DoReadSingleBlock() {
-    cout << "read block " << (Param() >> 9) << endl << flush;
     uint8 block[512];
 
     BufferStart(0);
@@ -253,6 +282,19 @@ void EmSPISlaveSD::DoReadCID() {
     PrepareR1(0x00);
     BufferAdd(0xff);
     BufferAddBlock(DATA_TOKEN_DEFAULT, cid, sizeof(cid));
+}
+
+void EmSPISlaveSD::FinishWriteSingleBlock() {
+    BufferStart(0);
+
+    if (image()->Write(buffer, blockAddress) == 1) {
+        BufferAdd(DATA_RESPONSE_ACCEPTED, 0xff);
+    } else {
+        BufferAdd(DATA_RESPONSE_WRITE_FAILED);
+    }
+
+    cardState = CardState::initialized;
+    spiState = SpiState::txResult;
 }
 
 uint32 EmSPISlaveSD::Param() const {
