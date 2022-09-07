@@ -33,13 +33,14 @@ class EmSPISlaveSD : public EmSPISlave {
 
     void DoCmd();
     void DoAcmd();
+
     void DoReadSingleBlock();
+    void DoReadCSD();
+    void DoReadCID();
 
     uint32 Param() const;
 
     void PrepareR1(uint8 flags);
-    void PrepareCSD();
-    void PrepareCID();
 
    private:
     bool acmd = false;

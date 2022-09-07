@@ -126,8 +126,7 @@ void EmSPISlaveSD::DoCmd() {
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
             } else {
-                PrepareR1(0x00);
-                PrepareCSD();
+                DoReadCSD();
             }
 
             return;
@@ -136,8 +135,7 @@ void EmSPISlaveSD::DoCmd() {
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
             } else {
-                PrepareR1(0x00);
-                PrepareCID();
+                DoReadCID();
             }
 
             return;
@@ -200,16 +198,7 @@ void EmSPISlaveSD::DoReadSingleBlock() {
     BufferAddBlock(DATA_TOKEN_DEFAULT, block, 512);
 }
 
-uint32 EmSPISlaveSD::Param() const {
-    return (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[0];
-}
-
-void EmSPISlaveSD::PrepareR1(uint8 flags) {
-    BufferStart(0);
-    BufferAdd(0xff, flags & 0x7f);
-}
-
-void EmSPISlaveSD::PrepareCSD() {
+void EmSPISlaveSD::DoReadCSD() {
     uint8 csd[15];
 
     // Block size is hardcoded to 512 bytes
@@ -236,11 +225,12 @@ void EmSPISlaveSD::PrepareCSD() {
     csd[14] = 0x00;  // FILE_FORMAT_GRP, COPY, PERM_WRITE_PROTECT, TMP_WRITE_PROTECT, FILE_FORMAT,
                      // RESERVED
 
+    PrepareR1(0x00);
     BufferAdd(0xff);
     BufferAddBlock(DATA_TOKEN_DEFAULT, csd, sizeof(csd));
 }
 
-void EmSPISlaveSD::PrepareCID() {
+void EmSPISlaveSD::DoReadCID() {
     uint8 cid[16];
 
     cid[0] = 'D';  // MID
@@ -260,6 +250,16 @@ void EmSPISlaveSD::PrepareCID() {
     cid[14] = 22;  // MDT.year = 2022
     cid[15] = crc::sdCRC7(cid, 15) << 1;
 
+    PrepareR1(0x00);
     BufferAdd(0xff);
     BufferAddBlock(DATA_TOKEN_DEFAULT, cid, sizeof(cid));
+}
+
+uint32 EmSPISlaveSD::Param() const {
+    return (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[0];
+}
+
+void EmSPISlaveSD::PrepareR1(uint8 flags) {
+    BufferStart(0);
+    BufferAdd(0xff, flags & 0x7f);
 }
