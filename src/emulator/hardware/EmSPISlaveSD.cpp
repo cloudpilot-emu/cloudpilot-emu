@@ -22,6 +22,7 @@ void EmSPISlaveSD::Reset() {
 
 uint16 EmSPISlaveSD::DoExchange(uint16 control, uint16 data) {
     uint8 bits = (control & 0x0f) + 1;
+
     switch (bits) {
         case 16: {
             uint16 dataOut = DoExchange8(data >> 8) << 8;
@@ -152,6 +153,15 @@ void EmSPISlaveSD::DoCmd() {
 
             return;
 
+        case 17:
+            if (cardState == CardState::idle) {
+                PrepareR1(ERR_CARD_IDLE);
+            } else {
+                DoReadSingleBlock();
+            }
+
+            return;
+
         case 55:
             PrepareR1(0x00);
             acmd = true;
@@ -172,6 +182,22 @@ void EmSPISlaveSD::DoAcmd() {
 
     PrepareR1(ERR_ILLEGAL_COMMAND);
     acmd = false;
+}
+
+void EmSPISlaveSD::DoReadSingleBlock() {
+    cout << "read block " << (Param() >> 9) << endl << flush;
+    uint8 block[512];
+
+    BufferStart(0);
+    if (image()->Read(block, Param() >> 9, 1) != 1) {
+        PrepareR1(ERR_PARAMETER);
+        return;
+    }
+
+    PrepareR1(0x00);
+    BufferAdd(0xff);
+
+    BufferAddBlock(DATA_TOKEN_DEFAULT, block, 512);
 }
 
 uint32 EmSPISlaveSD::Param() const {

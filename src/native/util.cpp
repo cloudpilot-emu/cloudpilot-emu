@@ -138,6 +138,8 @@ bool util::mountImage(const string& image) {
         cerr << "failed to register SD image " << image << endl;
 
         return false;
+    } else {
+        fileBuffer.release();
     }
 
     if (!gExternalStorage.Mount(image, EmHAL::Slot::sdcard)) {

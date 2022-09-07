@@ -33,6 +33,7 @@ class EmSPISlaveSD : public EmSPISlave {
 
     void DoCmd();
     void DoAcmd();
+    void DoReadSingleBlock();
 
     uint32 Param() const;
 
