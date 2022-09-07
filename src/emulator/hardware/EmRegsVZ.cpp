@@ -943,7 +943,7 @@ inline void EmRegsVZ::Cycle(uint64 systemCycles, Bool sleeping) {
         uint32 delta = systemCycles - this->systemCycles;
 
         spi1Countdown -= delta;
-        if (spi1Countdown <= 0) Spi1TransmitWord();
+        while (spi1TransferInProgress && spi1Countdown <= 0) Spi1TransmitWord();
     }
 
     this->systemCycles = systemCycles;

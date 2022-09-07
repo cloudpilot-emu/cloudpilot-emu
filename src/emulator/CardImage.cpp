@@ -2,7 +2,9 @@
 
 #include <algorithm>
 
-CardImage::CardImage(uint8* data, size_t blocksTotal) : data(data), blocksTotal(blocksTotal) {}
+CardImage::CardImage(uint8* data, size_t blocksTotal) : data(data), blocksTotal(blocksTotal) {
+    EmAssert(blocksTotal % BLOCK_GRANULARITY == 0);
+}
 
 size_t CardImage::Read(uint8* dest, size_t index, size_t count) {
     if (index >= blocksTotal) return 0;
@@ -25,3 +27,5 @@ size_t CardImage::Write(const uint8* source, size_t index, size_t count) {
 
     return count;
 }
+
+size_t CardImage::BlockstTotal() const { return blocksTotal; }

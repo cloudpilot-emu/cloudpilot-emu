@@ -1,13 +1,22 @@
 #include "EmSPISlaveSD.h"
 
+#include "EmCRC.h"
+#include "ExternalStorage.h"
+
 namespace {
     constexpr uint8 ERR_ILLEGAL_COMMAND = 0x04;
+    constexpr uint8 ERR_CARD_IDLE = 0x01;
+    constexpr uint8 ERR_PARAMETER = 0x40;
+
+    constexpr uint8 DATA_TOKEN_DEFAULT = 0xfe;
+
+    CardImage* image() { return gExternalStorage.GetImageInSlot(EmHAL::Slot::sdcard); }
 }  // namespace
 
 void EmSPISlaveSD::Reset() {
-    state = SpiState::notSelected;
+    spiState = SpiState::notSelected;
+    cardState = CardState::idle;
     lastCmd = 0;
-    idle = true;
     acmd = false;
 }
 
@@ -32,21 +41,27 @@ uint16 EmSPISlaveSD::DoExchange(uint16 control, uint16 data) {
 }
 
 void EmSPISlaveSD::Enable(void) {
-    state = SpiState::rxCmdByte;
-    lastCmd = 0;
+    if (gExternalStorage.IsMounted(EmHAL::Slot::sdcard)) {
+        spiState = SpiState::rxCmdByte;
+        lastCmd = 0;
+    } else {
+        cerr << "attempt enable SD without an inserted card" << endl << flush;
+    }
 }
 
-void EmSPISlaveSD::Disable(void) { state = SpiState::notSelected; }
+void EmSPISlaveSD::Disable(void) { spiState = SpiState::notSelected; }
 
 uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
-    switch (state) {
+    if (!gExternalStorage.IsMounted(EmHAL::Slot::sdcard)) return 0x00;
+
+    switch (spiState) {
         case SpiState::notSelected:
-            return 0xff;
+            return 0x00;
 
         case SpiState::rxCmdByte:
             if ((data & 0xc0) == 0x40) {
                 lastCmd = data & 0x3f;
-                state = SpiState::rxArg;
+                spiState = SpiState::rxArg;
                 BufferStart(5);
             }
 
@@ -55,17 +70,17 @@ uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
         case SpiState::rxArg:
             buffer[bufferIndex++] = data;
 
-            if (bufferIndex == bufferCount) {
+            if (bufferIndex == bufferSize) {
                 DoCmd();
-                state = SpiState::txResult;
+                spiState = SpiState::txResult;
             }
 
             return 0xff;
 
         case SpiState::txResult: {
             uint8 dataOut = buffer[bufferIndex++];
-            if (bufferIndex == bufferCount) {
-                state = SpiState::rxCmdByte;
+            if (bufferIndex == bufferSize) {
+                spiState = SpiState::rxCmdByte;
             }
 
             return dataOut;
@@ -74,33 +89,79 @@ uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
 }
 
 void EmSPISlaveSD::BufferStart(uint32 count) {
-    bufferCount = count;
+    bufferSize = count;
     bufferIndex = 0;
+}
+
+void EmSPISlaveSD::BufferAddBlock(uint8 token, uint8* data, size_t size) {
+    BufferAdd(token);
+
+    memcpy(buffer + bufferSize, data, size);
+    bufferSize += size;
+
+    uint16 crc16 = crc::sdCRC16(data, size);
+    BufferAdd(crc16 >> 8, crc16);
 }
 
 void EmSPISlaveSD::DoCmd() {
     if (acmd) return DoAcmd();
+    acmd = false;
 
     cout << "SD card CMD" << (int)lastCmd << endl << flush;
 
     switch (lastCmd) {
         case 0:
             PrepareR1(0x00);
+
             return;
 
         case 1:
             PrepareR1(0x00);
-            idle = false;
+            cardState = CardState::initialized;
+
+            return;
+
+        case 9:
+            if (cardState == CardState::idle) {
+                PrepareR1(ERR_CARD_IDLE);
+            } else {
+                PrepareR1(0x00);
+                PrepareCSD();
+            }
+
+            return;
+
+        case 10:
+            if (cardState == CardState::idle) {
+                PrepareR1(ERR_CARD_IDLE);
+            } else {
+                PrepareR1(0x00);
+                PrepareCID();
+            }
+
+            return;
+
+        case 16:
+            if (cardState == CardState::idle) {
+                PrepareR1(ERR_CARD_IDLE);
+            } else if (Param() != 512) {
+                PrepareR1(ERR_PARAMETER);
+            } else {
+                PrepareR1(0x00);
+            }
+
             return;
 
         case 55:
             PrepareR1(0x00);
             acmd = true;
+
             return;
 
         default:
             cout << "usupported SD CMD" << endl << flush;
             PrepareR1(ERR_ILLEGAL_COMMAND);
+
             return;
     }
 }
@@ -113,9 +174,66 @@ void EmSPISlaveSD::DoAcmd() {
     acmd = false;
 }
 
-void EmSPISlaveSD::PrepareR1(uint8 flags) {
-    buffer[0] = 0xff;
-    buffer[1] = flags & 0x7f;
+uint32 EmSPISlaveSD::Param() const {
+    return (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[0];
+}
 
-    BufferStart(2);
+void EmSPISlaveSD::PrepareR1(uint8 flags) {
+    BufferStart(0);
+    BufferAdd(0xff, flags & 0x7f);
+}
+
+void EmSPISlaveSD::PrepareCSD() {
+    uint8 csd[15];
+
+    // Block size is hardcoded to 512 bytes
+    const uint32 cSizeMult = 0x07, cSize = (image()->BlockstTotal() >> 9) - 1, blLen = 0x09,
+                 sectorSize = 31;
+
+    csd[0] = 0x00;
+    csd[1] = 0x0e;                  // TAAC
+    csd[2] = 0x00;                  // NSAC
+    csd[3] = 0x5A;                  // TRAN_SPEED
+    csd[4] = 0x5B;                  // CCC[4..11]
+    csd[5] = blLen | 0x50;          // CCC[0..3], READ_BL_LEN
+    csd[6] = (cSize >> 10) | 0x80;  // READ_BL_PARTIAL(1), WRITE_BLK_MISALIGN, READ_BLK_MISALIGN,
+                                    // DSR_IMP, RESERVED, C_SIZE[10..11]
+    csd[7] = cSize >> 2;            // C_SIZE[2..9]
+    csd[8] = (cSize << 6) | 0x2D;   // C_SIZE[0..1], VDD_R_CURR_MIN (35mA), VDD_R_CURR_MAX(45mA)
+    csd[9] =
+        (cSizeMult >> 1) | 0xD8;  // VDD_W_CURR_MIN (60mA), VDD_W_CURR_MAX(80mA), C_SIZE_MULT[1..2]
+    csd[10] = (sectorSize >> 1) |
+              ((cSizeMult << 7) & 0xff);  // C_SIZE_MULT[0], ERASE_BLK_EN, SECTOR_SIZE[1..7]
+    csd[11] = (sectorSize << 7) & 0xff;   // SECTOR_SIZE[0], WP_GRP_SIZE
+    csd[12] = (blLen >> 2) | 8;     // WP_GRP_ENABLE, RESERVED, R2W_FACTOR(2), WRITE_BL_LEN[2..3]
+    csd[13] = (blLen << 6) & 0xff;  // WRITE_BL_LEN[0..1], WRITE_BL_PARTIAL, RESERVED
+    csd[14] = 0x00;  // FILE_FORMAT_GRP, COPY, PERM_WRITE_PROTECT, TMP_WRITE_PROTECT, FILE_FORMAT,
+                     // RESERVED
+
+    BufferAdd(0xff);
+    BufferAddBlock(DATA_TOKEN_DEFAULT, csd, sizeof(csd));
+}
+
+void EmSPISlaveSD::PrepareCID() {
+    uint8 cid[16];
+
+    cid[0] = 'D';  // MID
+    cid[1] = 't';  // OID
+    cid[2] = 'y';
+    cid[3] = 'C';  // PNM
+    cid[4] = 'l';
+    cid[5] = 'p';
+    cid[6] = 'l';
+    cid[7] = 't';
+    cid[8] = 32;    // PRV
+    cid[9] = 0x00;  // PSN
+    cid[10] = 0x00;
+    cid[11] = 0x4A;
+    cid[12] = 0xEC;
+    cid[13] = 9;   // MDT.month = sept
+    cid[14] = 22;  // MDT.year = 2022
+    cid[15] = crc::sdCRC7(cid, 15) << 1;
+
+    BufferAdd(0xff);
+    BufferAddBlock(DATA_TOKEN_DEFAULT, cid, sizeof(cid));
 }

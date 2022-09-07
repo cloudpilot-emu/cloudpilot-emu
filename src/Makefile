@@ -232,7 +232,8 @@ SOURCE_EMU = \
 	emulator/NetworkProxy.cpp \
 	emulator/ZipfileWalker.cpp \
 	emulator/ExternalStorage.cpp \
-	emulator/CardImage.cpp
+	emulator/CardImage.cpp \
+	emulator/EmCRC.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \
