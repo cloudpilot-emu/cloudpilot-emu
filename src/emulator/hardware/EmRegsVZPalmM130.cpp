@@ -4,6 +4,8 @@
 #include "EmRegsVZPrv.h"
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
 
+using VZ = EMPalmVZWithSD<EmRegsVZNoScreen>;
+
 constexpr int kNumButtonRows = 3;
 constexpr int kNumButtonCols = 4;
 
@@ -30,9 +32,7 @@ constexpr uint16 kButtonMapPalmM130[kNumButtonRows][kNumButtonCols] = {
 //		� EmRegsVZPalmM130::EmRegsVZPalmM130
 // ---------------------------------------------------------------------------
 
-EmRegsVZPalmM130::EmRegsVZPalmM130(void) : EmRegsVZNoScreen() {
-    fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1);
-}
+EmRegsVZPalmM130::EmRegsVZPalmM130(void) { fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1); }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmM130::~EmRegsVZPalmM130
@@ -96,7 +96,7 @@ EmUARTDeviceType EmRegsVZPalmM130::GetUARTDevice(int uartNum) {
 // if the select pins are high.
 
 uint8 EmRegsVZPalmM130::GetPortInputValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInputValue(port);
+    uint8 result = VZ::GetPortInputValue(port);
 
     return result;
 }
@@ -108,7 +108,7 @@ uint8 EmRegsVZPalmM130::GetPortInputValue(int port) {
 // used if the select pins are low.
 
 uint8 EmRegsVZPalmM130::GetPortInternalValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInternalValue(port);
+    uint8 result = VZ::GetPortInternalValue(port);
 
     if (port == 'D') {
         // Make sure that hwrVZPortDPowerFail is set.  If it's clear,
@@ -117,7 +117,7 @@ uint8 EmRegsVZPalmM130::GetPortInternalValue(int port) {
         // Also make sure that hwrVZPalmM130PortDTWISTIRQ is set.  If it's clear,
         // the slot driver will think there's a card installed and will try querying it.
 
-        result |= hwrVZPalmM130PortDPowerFail | hwrVZPalmM130PortDTWISTIRQ;
+        result |= hwrVZPalmM130PortDPowerFail;
     }
 
     return result;

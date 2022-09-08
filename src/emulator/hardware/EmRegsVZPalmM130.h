@@ -1,9 +1,10 @@
 #ifndef _EM_REGS_VZ_PALM_M130_
 #define _EM_REGS_VZ_PALM_M130_
 
+#include "EmPalmVZWithSD.h"
 #include "EmRegsVZ.h"
 
-class EmRegsVZPalmM130 : public EmRegsVZNoScreen {
+class EmRegsVZPalmM130 : public EMPalmVZWithSD<EmRegsVZNoScreen> {
    public:
     EmRegsVZPalmM130(void);
     virtual ~EmRegsVZPalmM130(void);

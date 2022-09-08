@@ -1,9 +1,10 @@
 #ifndef _EM_REGS_VZ_PALM_M125_H_
 #define _EM_REGS_VZ_PALM_M125_H_
 
+#include "EmPalmVZWithSD.h"
 #include "EmRegsVZ.h"
 
-class EmRegsVZPalmM125 : public EmRegsVZ {
+class EmRegsVZPalmM125 : public EMPalmVZWithSD<EmRegsVZ> {
    public:
     EmRegsVZPalmM125(void);
     virtual ~EmRegsVZPalmM125(void);

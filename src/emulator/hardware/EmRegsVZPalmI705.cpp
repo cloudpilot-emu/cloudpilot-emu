@@ -4,6 +4,8 @@
 #include "EmRegsVZPrv.h"
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
 
+using VZ = EMPalmVZWithSD<EmRegsVZ>;
+
 constexpr int kNumButtonRows = 3;
 constexpr int kNumButtonCols = 4;
 
@@ -31,9 +33,7 @@ constexpr uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
 
 #define hwrVZPalmI705PortMIR_SD 0x20  // (L) Infrared Shut-down (UART 2)
 
-EmRegsVZPalmI705::EmRegsVZPalmI705(void) : EmRegsVZ() {
-    fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1);
-}
+EmRegsVZPalmI705::EmRegsVZPalmI705(void) { fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1); }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmI705::~EmRegsVZPalmI705
@@ -126,7 +126,7 @@ Bool EmRegsVZPalmI705::GetVibrateOn(void) {
 // if the select pins are high.
 
 uint8 EmRegsVZPalmI705::GetPortInputValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInputValue(port);
+    uint8 result = VZ::GetPortInputValue(port);
 
     return result;
 }
@@ -138,7 +138,7 @@ uint8 EmRegsVZPalmI705::GetPortInputValue(int port) {
 // used if the select pins are low.
 
 uint8 EmRegsVZPalmI705::GetPortInternalValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInternalValue(port);
+    uint8 result = VZ::GetPortInternalValue(port);
 
     if (port == 'D') {
         // Make sure that hwrVZPortDPowerFail is set.  If it's clear,
@@ -147,7 +147,7 @@ uint8 EmRegsVZPalmI705::GetPortInternalValue(int port) {
         // Also make sure that hwrVZPalmI705PortDTWISTIRQ is set.  If it's clear,
         // the slot driver will think there's a card installed and will try querying it.
 
-        result |= hwrVZPalmI705PortDPowerFail | hwrVZPalmI705PortDTWISTIRQ;
+        result |= hwrVZPalmI705PortDPowerFail;
     }
 
     return result;
