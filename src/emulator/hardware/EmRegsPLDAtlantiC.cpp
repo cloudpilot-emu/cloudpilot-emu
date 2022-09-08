@@ -78,6 +78,12 @@ void EmRegsPLDAtlantiC::SetSubBankHandlers() {
 
                 break;
 
+            case 0x4e:
+                SetHandler((ReadFunction)&EmRegsPLDAtlantiC::ReadReg_0x4e,
+                           (WriteFunction)&EmRegsPLDAtlantiC::StdWriteBE, baseAddress + 2 * i, 2);
+
+                break;
+
             default:
                 SetHandler((ReadFunction)&EmRegsPLDAtlantiC::StdReadBE,
                            (WriteFunction)&EmRegsPLDAtlantiC::StdWriteBE, baseAddress + 2 * i, 2);
@@ -104,3 +110,5 @@ uint32 EmRegsPLDAtlantiC::ReadReg_0x2e(emuptr address, int size) {
 }
 
 uint32 EmRegsPLDAtlantiC::ReadReg_0x50(emuptr address, int size) { return 0xffffffff; }
+
+uint32 EmRegsPLDAtlantiC::ReadReg_0x4e(emuptr address, int size) { return 0; }

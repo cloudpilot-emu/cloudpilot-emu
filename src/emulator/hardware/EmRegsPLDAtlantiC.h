@@ -24,6 +24,7 @@ class EmRegsPLDAtlantiC : public EmRegs, EmHALHandler {
     uint32 ReadReg_0x06(emuptr address, int size);
     uint32 ReadReg_0x2e(emuptr address, int size);
     uint32 ReadReg_0x50(emuptr address, int size);
+    uint32 ReadReg_0x4e(emuptr address, int size);
 
     template <typename T>
     void DoSave(T& savestate);
