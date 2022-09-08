@@ -18,6 +18,8 @@
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
 #include "ExternalStorage.h"
 
+using VZ = EMPalmVZWithSD<EmRegsVZ>;
+
 #define hwrVZPortBALARM_LED 0x40  // (L) Alarm LED
 
 #define hwrVZPortDSpi1Card \
@@ -49,20 +51,13 @@ const uint16 kGenericMonoMap[kNumButtonRows][kNumButtonCols] = {
 //		� EmRegsVZPalmM500::EmRegsVZPalmM500
 // ---------------------------------------------------------------------------
 
-EmRegsVZPalmM500::EmRegsVZPalmM500(void) : EmRegsVZ() {
-    fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1);
-}
+EmRegsVZPalmM500::EmRegsVZPalmM500(void) { fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1); }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmM500::~EmRegsVZPalmM500
 // ---------------------------------------------------------------------------
 
 EmRegsVZPalmM500::~EmRegsVZPalmM500(void) { delete fSPISlaveADC; }
-
-void EmRegsVZPalmM500::Reset(Bool hardwareReset) {
-    EmRegsVZ::Reset(hardwareReset);
-    spiSlaveSD->Reset();
-}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmM500::GetLCDScreenOn
@@ -154,7 +149,7 @@ uint16 EmRegsVZPalmM500::GetLEDState(void) {
 // if the select pins are high.
 
 uint8 EmRegsVZPalmM500::GetPortInputValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInputValue(port);
+    uint8 result = VZ::GetPortInputValue(port);
 
     if (port == 'K') {
         // Make sure hwrVZPortKAC_PWR_N is set, or the dock-status routines
@@ -173,7 +168,7 @@ uint8 EmRegsVZPalmM500::GetPortInputValue(int port) {
 // used if the select pins are low.
 
 uint8 EmRegsVZPalmM500::GetPortInternalValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInternalValue(port);
+    uint8 result = VZ::GetPortInternalValue(port);
 
     if (port == 'D') {
         // Make sure that hwrVZPortDPowerFail is set.  If it's clear,
@@ -183,11 +178,6 @@ uint8 EmRegsVZPalmM500::GetPortInternalValue(int port) {
         // the slot driver will think there's a card installed and will try querying it.
 
         result |= hwrVZPortDPowerFail;
-
-        if (!gExternalStorage.IsMounted(EmHAL::Slot::sdcard))
-            result |= hwrVZPortDSpi1Card;
-        else
-            result &= ~hwrVZPortDSpi1Card;
     }
 
     return result;
@@ -213,31 +203,6 @@ void EmRegsVZPalmM500::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bo
     rows[2] = (portKDir & hwrVZPortKKbdRow2) != 0 && (portKData & hwrVZPortKKbdRow2) == 0;
 }
 
-bool EmRegsVZPalmM500::SupportsSlot(EmHAL::Slot slot) { return slot == EmHAL::Slot::sdcard; }
-
-void EmRegsVZPalmM500::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
-    UpdateIRQ2(hwrVZPortDSpi1Card);
-}
-
-void EmRegsVZPalmM500::Unmount(EmHAL::Slot slot) { UpdateIRQ2(0x00); }
-
-void EmRegsVZPalmM500::PortDataChanged(int port, uint8 oldValue, uint8 newValue) {
-    EmRegsVZ::PortDataChanged(port, oldValue, newValue);
-
-    if (port != 'J') return;
-
-    uint8 portJSelect = READ_REGISTER(portJSelect);
-    if ((portJSelect & 0x08) == 0) return;
-    if (((oldValue ^ newValue) & 0x08) == 0) return;
-
-    if (newValue & 0x08)
-        spiSlaveSD->Disable();
-    else
-        spiSlaveSD->Enable();
-}
-
-EmSPISlave* EmRegsVZPalmM500::GetSPI1Slave() { return spiSlaveSD.get(); }
-
 // ---------------------------------------------------------------------------
 //		� EmRegsVZPalmM500::GetSPISlave
 // ---------------------------------------------------------------------------
@@ -248,18 +213,4 @@ EmSPISlave* EmRegsVZPalmM500::GetSPI2Slave(void) {
     }
 
     return NULL;
-}
-
-void EmRegsVZPalmM500::Spi1AssertSlaveSelect() {
-    uint8 portJSelect = READ_REGISTER(portJSelect);
-    if (portJSelect & 0x08) return;
-
-    spiSlaveSD->Enable();
-}
-
-void EmRegsVZPalmM500::Spi1DeassertSlaveSelect() {
-    uint8 portJSelect = READ_REGISTER(portJSelect);
-    if (portJSelect & 0x08) return;
-
-    spiSlaveSD->Disable();
 }
