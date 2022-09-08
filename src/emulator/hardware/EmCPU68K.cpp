@@ -178,7 +178,7 @@ namespace {
 
     void traceFunctionCalls(uint16 opcode, emuptr pc) {
         if (opcode == 0x4e56 && (pc & 0x10000000) == 0x10000000) {
-            cout << "call ->" << hex << (pc & 0x0fffffff) << " : " << getFunctionName(pc)
+            cerr << "call ->" << hex << (pc & 0x0fffffff) << " : " << getFunctionName(pc)
                  << " from " << callerAddress() << " (" << getCaller() << ")" << endl
                  << flush;
         }
@@ -193,9 +193,9 @@ namespace {
             }
 
             if (i < 32 && fname[i] == 0) {
-                cout << "rtrn <- " << hex << (pc & 0x0fffffff) << " : " << fname << endl << flush;
+                cerr << "rtrn <- " << hex << (pc & 0x0fffffff) << " : " << fname << endl << flush;
             } else {
-                cout << "rtrn <- " << hex << (pc & 0x0fffffff) << endl << flush;
+                cerr << "rtrn <- " << hex << (pc & 0x0fffffff) << endl << flush;
             }
         }
     }
