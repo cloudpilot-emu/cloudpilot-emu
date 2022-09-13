@@ -20,7 +20,6 @@
 #include "EmRegsVZPrv.h"
 #include "EmSPISlave330Current.h"
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
-#include "EmTRGSD.h"
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
@@ -150,16 +149,13 @@ void EmRegsVZHandEra330::DoSaveLoad(T& helper) {
     for (int i = 0; i < 8; i++) helper.Do(typename T::Pack16() << rxFifo[i] << txFifo[i]);
 }
 
-void EmRegsVZHandEra330::Initialize(void) {
-    EmRegsVZ::Initialize();
+void EmRegsVZHandEra330::Initialize(void) { EmRegsVZ::Initialize(); }
 
-    SD.Initialize();
-}
+void EmRegsVZHandEra330::Dispose(void) { EmRegsVZ::Dispose(); }
 
-void EmRegsVZHandEra330::Dispose(void) {
-    EmRegsVZ::Dispose();
-
-    SD.Dispose();
+void EmRegsVZHandEra330::Reset(Bool hardwareReset) {
+    EmRegsVZ::Reset(hardwareReset);
+    spiSlaveSD->Reset();
 }
 
 // ---------------------------------------------------------------------------
@@ -239,6 +235,16 @@ int32 EmRegsVZHandEra330::GetInterruptLevel(void) {
 
     return retval;
 }
+
+EmSPISlaveSD* EmRegsVZHandEra330::GetSPISlaveSD() { return spiSlaveSD.get(); }
+
+bool EmRegsVZHandEra330::SupportsSlot(EmHAL::Slot slot) { return slot == EmHAL::Slot::sdcard; }
+
+void EmRegsVZHandEra330::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+    PortMgr.pendingIRQ2 = true;
+}
+
+void EmRegsVZHandEra330::Unmount(EmHAL::Slot slot) { PortMgr.pendingIRQ2 = true; }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZHandEra330::GetLEDState
@@ -361,6 +367,8 @@ EmSPISlave* EmRegsVZHandEra330::GetSPI2Slave(void) {
     return NULL;
 }
 
+EmSPISlave* EmRegsVZHandEra330::GetSPI1Slave(void) { return spiSlaveSD.get(); }
+
 // ---------------------------------------------------------------------------
 //		� EmRegsVZHandEra330::GetROMSize
 // ---------------------------------------------------------------------------
@@ -393,118 +401,4 @@ uint16 EmRegsVZHandEra330::ButtonToBits(ButtonEventT::Button btn) {
     }
 
     return bitNumber;
-}
-
-/**********************************************************************************
- * SD support:
- * HandEra 330 SD is attached to the DragonballVZ SPI1 which is otherwise unused.
- **********************************************************************************/
-uint32 EmRegsVZHandEra330::spiRxDRead(emuptr /* address */, int /* size */) {
-    uint32 retval;
-
-    // there is an 8 word fifo here, read back the first in.
-
-    if ((rxHead == rxTail) && rxFifoEmpty) {
-        // invalid read, fifo empty
-        return 0;
-    }
-
-    retval = rxFifo[rxTail++];
-    if (rxTail == 8) rxTail = 0;
-    if (rxTail == rxHead) txFifoEmpty = true;
-    return retval;
-}
-
-void EmRegsVZHandEra330::spiTxDWrite(emuptr address, int size, uint32 value) {
-    // Do a standard update of the register. (so reading the last value back works)
-    EmRegsVZ::StdWrite(address, size, value);
-
-    if (!txFifoEmpty && (txHead == txTail)) {
-        // fifo full, do nothing
-        return;
-    }
-
-    txFifoEmpty = false;
-
-    // there is an 8 word fifo here.
-    txFifo[txHead++] = value;
-    if (txHead == 8) txHead = 0;
-}
-
-void EmRegsVZHandEra330::spiCont1Write(emuptr address, int size, uint32 value) {
-    // if we were not enabled before, flush fifos
-    if ((value & hwrVZ328SPIMControlEnable) == 0) {
-        txTail = txHead;
-        rxTail = rxHead;
-        txFifoEmpty = rxFifoEmpty = true;
-    }
-
-    // Do a standard update of the register.
-    EmRegsVZ::StdWrite(address, size, value);
-
-    // Get the current value.
-    uint16 spiCont1 = READ_REGISTER(spiCont1);
-
-// Check to see if data exchange and enable are enabled.
-#define BIT_MASK (hwrVZ328SPIMControlExchange | hwrVZ328SPIMControlEnable)
-    if ((spiCont1 & BIT_MASK) == BIT_MASK) {
-        // do the exchange
-        if (!txFifoEmpty) {
-            // is SD chip selected?
-            if (PortMgr.SDChipSelect) {
-                uint16 rxData, txData;
-
-                do {
-                    txData = txFifo[txTail++];
-                    if (txTail == 8) txTail = 0;
-                    SD.ExchangeBits(txData, &rxData, (spiCont1 & 0x000f) + 1);
-                    rxFifo[rxHead++] = rxData;
-                    if (rxHead == 8) rxHead = 0;
-                } while (txTail != txHead);
-                txFifoEmpty = true;
-                rxFifoEmpty = false;
-            } else {
-                // nothing else is connected here, just stuff the rx fifo and flush the tx fifo
-                do {
-                    txTail++;
-                    if (txTail == 8) txTail = 0;
-                    rxFifo[rxHead++] = 0xff;
-                    if (rxHead == 8) rxHead = 0;
-                } while (txTail != txHead);
-                rxFifoEmpty = false;
-                txFifoEmpty = true;
-            }
-        }
-
-        // Clear the exchange bit.
-        spiCont1 &= ~hwrVZ328SPIMControlExchange;
-        WRITE_REGISTER(spiCont1, spiCont1);
-    }
-}
-
-uint32 EmRegsVZHandEra330::spiCont1Read(emuptr /* address */, int /* size */) { return 0; }
-
-void EmRegsVZHandEra330::spiIntCSWrite(emuptr /* address */, int /* size */, uint32 /* value */) {}
-
-uint32 EmRegsVZHandEra330::spiIntCSRead(emuptr /* address */, int /* size */) { return 0; }
-
-// ---------------------------------------------------------------------------
-//		� EmRegsVZHandEra330::SetSubBankHandlers
-// ---------------------------------------------------------------------------
-
-void EmRegsVZHandEra330::SetSubBankHandlers(void) {
-    // HwrM68VZ328Type   regs;
-
-    EmRegsVZ::SetSubBankHandlers();
-
-    // SD support
-    this->SetHandler((ReadFunction)&EmRegsVZHandEra330::spiRxDRead,
-                     (WriteFunction)&EmRegsVZHandEra330::StdWrite, db_addressof(spiRxD),
-                     sizeof(UInt16));
-    this->SetHandler((ReadFunction)&EmRegsVZHandEra330::StdRead,
-                     (WriteFunction)&EmRegsVZHandEra330::spiTxDWrite, db_addressof(spiTxD),
-                     sizeof(UInt16));
-    this->SetHandler((ReadFunction)&EmRegsVZHandEra330::StdRead,
-                     (WriteFunction)&EmRegsVZHandEra330::spiCont1Write, db_addressof(spiCont1),
-                     sizeof(UInt16));
 }

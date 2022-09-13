@@ -45,6 +45,8 @@ uint16 EmSPISlaveSD::DoExchange(uint16 control, uint16 data) {
 }
 
 void EmSPISlaveSD::Enable(void) {
+    if (spiState != SpiState::notSelected) return;
+
     if (gExternalStorage.IsMounted(EmHAL::Slot::sdcard)) {
         spiState = SpiState::rxCmdByte;
         lastCmd = 0;
@@ -125,9 +127,11 @@ void EmSPISlaveSD::DoCmd() {
     if (acmd) return DoAcmd();
     acmd = false;
 
+    cout << "received CMD" << (int)lastCmd << endl << flush;
+
     switch (lastCmd) {
         case 0:
-            PrepareR1(0x00);
+            PrepareR1(ERR_CARD_IDLE);
 
             return;
 
@@ -151,6 +155,16 @@ void EmSPISlaveSD::DoCmd() {
                 PrepareR1(ERR_CARD_IDLE);
             } else {
                 DoReadCID();
+            }
+
+            return;
+
+        case 13:
+            BufferStart(0);
+            if (cardState == CardState::idle) {
+                BufferAdd(0xff, ERR_CARD_IDLE, 0);
+            } else {
+                BufferAdd(0xff, 0, 0);
             }
 
             return;

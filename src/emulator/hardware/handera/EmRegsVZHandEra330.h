@@ -14,10 +14,13 @@
 #ifndef EmRegsVZHandEra330_h
 #define EmRegsVZHandEra330_h
 
+#include <memory>
+
 #include "EmHandEra330Defs.h"
 #include "EmPalmStructs.h"
 #include "EmRegsVZ.h"
-#include "EmTRGSD.h"
+#include "EmSPISlaveSD.h"
+#include "ExternalStorage.h"
 
 #define keyBitThumbDown 0x1000
 #define keyBitThumbUp 0x2000
@@ -87,6 +90,7 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
 
     virtual void Initialize(void);
     virtual void Dispose(void);
+    virtual void Reset(Bool hardwareReset);
 
     virtual Bool GetLCDScreenOn(void);
     virtual Bool GetLCDBacklightOn(void);
@@ -100,10 +104,16 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
     virtual uint8 GetPortInternalValue(int);
     virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows);
     virtual int32 GetInterruptLevel(void);
-    void SetSubBankHandlers(void);
+
+    EmSPISlaveSD* GetSPISlaveSD();
+
+    virtual bool SupportsSlot(EmHAL::Slot slot);
+    virtual void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage);
+    virtual void Unmount(EmHAL::Slot slot);
 
    protected:
     virtual EmSPISlave* GetSPI2Slave(void);
+    virtual EmSPISlave* GetSPI1Slave(void);
     virtual uint16 ButtonToBits(ButtonEventT::Button btn);
 
    private:
@@ -123,7 +133,8 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
     UInt16 PortM;
     EmSPISlave* fSPISlaveCurrent;
     HandEra330PortManager PortMgr;
-    EmTRGSD SD;
+
+    unique_ptr<EmSPISlaveSD> spiSlaveSD = make_unique<EmSPISlaveSD>();
 
     uint16 rxFifo[8];
     bool rxFifoEmpty;
@@ -133,15 +144,6 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
     bool txFifoEmpty;
     int txHead;
     int txTail;
-
-    void spiRxDWrite(emuptr address, int size, uint32 value);
-    uint32 spiRxDRead(emuptr address, int size);
-    void spiTxDWrite(emuptr address, int size, uint32 value);
-    uint32 spiTxDRead(emuptr address, int size);
-    void spiCont1Write(emuptr address, int size, uint32 value);
-    uint32 spiCont1Read(emuptr address, int size);
-    void spiIntCSWrite(emuptr address, int size, uint32 value);
-    uint32 spiIntCSRead(emuptr address, int size);
 };
 
 #endif /* EmRegsVZTemp_h */

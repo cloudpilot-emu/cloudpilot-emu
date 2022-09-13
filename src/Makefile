@@ -179,7 +179,6 @@ SOURCE_EMU = \
 	emulator/hardware/handera/EmTRGCFIO.cpp \
 	emulator/hardware/handera/EmTRGCFMem.cpp \
 	emulator/hardware/handera/EmTRGDiskIO.cpp \
-	emulator/hardware/handera/EmTRGSD.cpp \
 	emulator/patch/EmPatchModule.cpp \
 	emulator/patch/EmPatchModuleSys.cpp \
 	emulator/patch/EmPatchModuleHtal.cpp \

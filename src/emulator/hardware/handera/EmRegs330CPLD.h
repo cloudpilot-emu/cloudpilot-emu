@@ -15,6 +15,7 @@
 
 #include "EmHandEra330Defs.h"
 #include "EmRegs.h"
+#include "EmSPISlaveSD.h"
 
 #define CpldReg00 0x0000
 // CPLD Register 0x0000 Bit Definitions
@@ -108,8 +109,8 @@ const uint32 kMemorySizeCPLD = 0x100;
 
 class EmRegs330CPLD : public EmRegs {
    public:
-    EmRegs330CPLD(HandEra330PortManager* fPortManager);
-    virtual ~EmRegs330CPLD(void);
+    EmRegs330CPLD(HandEra330PortManager* fPortManager, EmSPISlaveSD* spiSlaveSD);
+    virtual ~EmRegs330CPLD();
 
     virtual void Save(Savestate&);
     virtual void Save(SavestateProbe&);
@@ -146,6 +147,8 @@ class EmRegs330CPLD : public EmRegs {
     uint16 Reg4;
     uint8 Buffer[kMemorySizeCPLD];
     HandEra330PortManager* fPortMgr;
+
+    EmSPISlaveSD* spiSlaveSD;
 };
 
 #endif  // EmTRGCFDefs_h

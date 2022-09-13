@@ -96,7 +96,6 @@
 #include "EmRegsVZPegYellowStone.h"
 #include "EmStructs.h"
 #include "EmTRGCF.h"
-#include "EmTRGSD.h"
 #include "Platform.h"  // _stricmp
 
 // clang-format false
@@ -1146,9 +1145,10 @@ void EmDevice::CreateRegs(void) const {
 
         case kDeviceHandEra330: {
             HandEra330PortManager* fPortMgr;
+            EmRegsVZHandEra330* regsVZHandera330 = new EmRegsVZHandEra330(&fPortMgr);
 
-            EmBankRegs::AddSubBank(new EmRegsVZHandEra330(&fPortMgr));
-            EmBankRegs::AddSubBank(new EmRegs330CPLD(fPortMgr));
+            EmBankRegs::AddSubBank(regsVZHandera330);
+            EmBankRegs::AddSubBank(new EmRegs330CPLD(fPortMgr, regsVZHandera330->GetSPISlaveSD()));
             EmBankRegs::AddSubBank(new EmRegsCFMemCard(&fPortMgr->CFBus));
         } break;
 

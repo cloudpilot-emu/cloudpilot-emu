@@ -18,6 +18,7 @@
 #include "EmHandEra330Defs.h"
 #include "EmMemory.h"
 #include "EmSystemState.h"
+#include "ExternalStorage.h"
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
@@ -40,7 +41,8 @@ namespace {
 // ---------------------------------------------------------------------------
 //		� EmRegs330CPLD::EmRegs330CPLD
 // ---------------------------------------------------------------------------
-EmRegs330CPLD::EmRegs330CPLD(HandEra330PortManager* fPortManager) {
+EmRegs330CPLD::EmRegs330CPLD(HandEra330PortManager* fPortManager, EmSPISlaveSD* spiSlaveSD)
+    : spiSlaveSD(spiSlaveSD) {
     Reg0 = Cpld0Edo;
     Reg2 = Cpld2CfDetect | Cpld2NoSdDetect | Cpld2NoExPwrDetect | Cpld2SdUnwriteProt |
            Cpld2SdPowerOff | Cpld2Kbd3Inactive | Cpld2Kbd2Inactive | Cpld2Kbd1Inactive |
@@ -149,7 +151,7 @@ uint32 EmRegs330CPLD::GetWord(emuptr address) {
                 Reg2 &= ~Cpld2NoCfDetect;
             else
                 Reg2 |= Cpld2NoCfDetect;
-            if (fPortMgr->SDInserted)
+            if (gExternalStorage.IsMounted(EmHAL::Slot::sdcard))
                 Reg2 &= ~Cpld2NoSdDetect;
             else
                 Reg2 |= Cpld2NoSdDetect;
@@ -216,6 +218,11 @@ void EmRegs330CPLD::SetWord(emuptr address, uint32 val) {
             fPortMgr->IRPortOn = (Reg4 & Cpld4IrdaOff) == 0;
             fPortMgr->SenseCurrent = (Reg4 & Cpld4SenseCurrent);
             fPortMgr->SDChipSelect = ((Reg4 & Cpld4MmcCsOn) == 0);
+
+            if (fPortMgr->SDChipSelect)
+                spiSlaveSD->Enable();
+            else
+                spiSlaveSD->Disable();
 
             if ((fPortMgr->LCDOn != lcdWasOn) || (fPortMgr->BacklightOn != backlightWasOn))
                 gSystemState.MarkScreenDirty();
