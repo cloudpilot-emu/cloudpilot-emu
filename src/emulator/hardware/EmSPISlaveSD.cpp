@@ -38,7 +38,7 @@ uint16 EmSPISlaveSD::DoExchange(uint16 control, uint16 data) {
             return DoExchange8(data);
 
         default:
-            cout << "unsupported SPI shift width " << (int)bits << endl << flush;
+            cerr << "unsupported SPI shift width " << (int)bits << endl << flush;
 
             return 0xff;
     }
@@ -119,15 +119,15 @@ void EmSPISlaveSD::BufferAddBlock(uint8 token, uint8* data, size_t size) {
     memcpy(buffer + bufferSize, data, size);
     bufferSize += size;
 
-    uint16 crc16 = crc::sdCRC16(data, size);
-    BufferAdd(crc16 >> 8, crc16);
+    // uint16 crc16 = crc::sdCRC16(data, size);
+    BufferAdd(0, 0);
 }
 
 void EmSPISlaveSD::DoCmd() {
     if (acmd) return DoAcmd();
     acmd = false;
 
-    cout << "received CMD" << (int)lastCmd << endl << flush;
+    cerr << "received CMD" << (int)lastCmd << endl << flush;
 
     switch (lastCmd) {
         case 0:
@@ -212,7 +212,7 @@ void EmSPISlaveSD::DoCmd() {
             return;
 
         default:
-            cout << "unsupported SD CMD" << (int)lastCmd << endl << flush;
+            cerr << "unsupported SD CMD" << (int)lastCmd << endl << flush;
             PrepareR1(ERR_ILLEGAL_COMMAND);
 
             return;
@@ -220,10 +220,23 @@ void EmSPISlaveSD::DoCmd() {
 }
 
 void EmSPISlaveSD::DoAcmd() {
-    cout << "unsupported SD ACMD" << (int)lastCmd << endl << flush;
+    cerr << "received ACMD" << (int)lastCmd << endl << flush;
 
-    PrepareR1(ERR_ILLEGAL_COMMAND);
     acmd = false;
+
+    switch (lastCmd) {
+        case 41:
+            PrepareR1(0x00);
+            cardState = CardState::initialized;
+
+            return;
+
+        default:
+            cerr << "unsupported SD ACMD" << (int)lastCmd << endl << flush;
+            PrepareR1(ERR_ILLEGAL_COMMAND);
+
+            return;
+    }
 }
 
 void EmSPISlaveSD::DoReadSingleBlock() {

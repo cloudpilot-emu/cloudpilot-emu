@@ -2912,7 +2912,7 @@ void EmRegsVZ::Spi1TransmitWord() {
         uint16 dataIn = slave ? slave->DoExchange(READ_REGISTER(spiCont1), dataOut) : 0;
 
 #if 0
-        cout << hex << "spi1: -> 0x" << dataOut << ", <- 0x" << dataIn << dec << " @ "
+        cerr << hex << "spi1: -> 0x" << dataOut << ", <- 0x" << dataIn << dec << " @ "
              << ((READ_REGISTER(spiCont1) & 0x0f) + 1) << " bit" << endl
              << flush;
 #endif
