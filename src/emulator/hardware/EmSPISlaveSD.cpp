@@ -10,7 +10,7 @@ namespace {
 
     constexpr uint8 DATA_TOKEN_DEFAULT = 0xfe;
 
-    constexpr uint8 DATA_RESPONSE_ACCEPTED = 0x05;
+    constexpr uint8 DATA_RESPONSE_ACCEPTED = 0xe5;
     constexpr uint8 DATA_RESPONSE_WRITE_FAILED = 0x0d;
 
     CardImage* image() { return gExternalStorage.GetImageInSlot(EmHAL::Slot::sdcard); }
@@ -127,7 +127,9 @@ void EmSPISlaveSD::DoCmd() {
     if (acmd) return DoAcmd();
     acmd = false;
 
+#if 0
     cerr << "received CMD" << (int)lastCmd << endl << flush;
+#endif
 
     switch (lastCmd) {
         case 0:
@@ -220,7 +222,9 @@ void EmSPISlaveSD::DoCmd() {
 }
 
 void EmSPISlaveSD::DoAcmd() {
+#if 0
     cerr << "received ACMD" << (int)lastCmd << endl << flush;
+#endif
 
     acmd = false;
 
