@@ -21,6 +21,7 @@ void EmSPISlaveSD::Reset() {
     cardState = CardState::idle;
     lastCmd = 0;
     acmd = false;
+    cmd12Countdown = 0;
 }
 
 uint16 EmSPISlaveSD::DoExchange(uint16 control, uint16 data) {
@@ -59,6 +60,7 @@ void EmSPISlaveSD::Disable(void) { spiState = SpiState::notSelected; }
 
 uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
     if (!gExternalStorage.IsMounted(EmHAL::Slot::sdcard)) return 0x00;
+    if (cardState == CardState::multiblockRead) HandleCmd12(data);
 
     switch (spiState) {
         case SpiState::notSelected:
@@ -78,16 +80,27 @@ uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
 
             if (bufferIndex == bufferSize) {
                 DoCmd();
-                spiState = SpiState::txResult;
+                spiState = SpiState::txData;
             }
 
             return 0xff;
 
-        case SpiState::txResult: {
+        case SpiState::txData: {
             uint8 dataOut = buffer[bufferIndex++];
-            if (bufferIndex == bufferSize)
-                spiState = cardState == CardState::writeTransaction ? SpiState::rxBlockWait
-                                                                    : SpiState::rxCmdByte;
+            if (bufferIndex == bufferSize) {
+                switch (cardState) {
+                    case CardState::writeTransaction:
+                        spiState = SpiState::rxBlockWait;
+                        break;
+
+                    case CardState::multiblockRead:
+                        spiState = SpiState::txBlockWait;
+                        break;
+
+                    default:
+                        spiState = SpiState::rxCmdByte;
+                }
+            }
 
             return dataOut;
         }
@@ -103,6 +116,12 @@ uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
         case SpiState::rxBlock:
             buffer[bufferIndex++] = data;
             if (bufferIndex == bufferSize) FinishWriteSingleBlock();
+
+            return 0xff;
+
+        case SpiState::txBlockWait:
+            spiState = SpiState::txData;
+            DoReadMulitblock();
 
             return 0xff;
     }
@@ -191,6 +210,18 @@ void EmSPISlaveSD::DoCmd() {
 
             return;
 
+        case 18:
+            if (cardState == CardState::idle) {
+                PrepareR1(ERR_CARD_IDLE);
+            } else {
+                cardState = CardState::multiblockRead;
+                cmd12Countdown = 0;
+                currentBlock = Param() >> 9;
+                PrepareR1(0);
+            }
+
+            return;
+
         case 24:
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
@@ -254,6 +285,15 @@ void EmSPISlaveSD::DoReadSingleBlock() {
 
     PrepareR1(0x00);
     BufferAdd(0xff);
+
+    BufferAddBlock(DATA_TOKEN_DEFAULT, block, 512);
+}
+
+void EmSPISlaveSD::DoReadMulitblock() {
+    uint8 block[512];
+
+    BufferStart(0);
+    image()->Read(block, (currentBlock++) % image()->BlocksTotal(), 1);
 
     BufferAddBlock(DATA_TOKEN_DEFAULT, block, 512);
 }
@@ -325,7 +365,22 @@ void EmSPISlaveSD::FinishWriteSingleBlock() {
     }
 
     cardState = CardState::initialized;
-    spiState = SpiState::txResult;
+    spiState = SpiState::txData;
+}
+
+void EmSPISlaveSD::HandleCmd12(uint8 data) {
+    if (cmd12Countdown > 0 && --cmd12Countdown == 0) {
+        cardState = CardState::initialized;
+        spiState = SpiState::txData;
+        BufferStart(0);
+        PrepareR1(0);
+
+        return;
+    }
+
+    if (data == 0x4c) {
+        cmd12Countdown = 6;
+    }
 }
 
 uint32 EmSPISlaveSD::Param() const {

@@ -19,12 +19,18 @@ class EmSPISlaveSD : public EmSPISlave {
         notSelected = 0,
         rxCmdByte = 1,
         rxArg = 2,
-        txResult = 3,
+        txData = 3,
         rxBlockWait = 4,
-        rxBlock = 5
+        rxBlock = 5,
+        txBlockWait = 6
     };
 
-    enum class CardState : uint8 { idle = 0, initialized = 1, writeTransaction = 2 };
+    enum class CardState : uint8 {
+        idle = 0,
+        initialized = 1,
+        writeTransaction = 2,
+        multiblockRead = 3
+    };
 
    private:
     uint8 DoExchange8(uint8 data);
@@ -43,10 +49,13 @@ class EmSPISlaveSD : public EmSPISlave {
     void DoAcmd();
 
     void DoReadSingleBlock();
+    void DoReadMulitblock();
     void DoReadCSD();
     void DoReadCID();
 
     void FinishWriteSingleBlock();
+
+    void HandleCmd12(uint8 data);
 
     uint32 Param() const;
 
@@ -63,6 +72,8 @@ class EmSPISlaveSD : public EmSPISlave {
     uint8 buffer[550];
     uint32 bufferSize{0};
     uint32 bufferIndex{0};
+    uint8 cmd12Countdown{0};
+    uint32 currentBlock{0};
 
    private:
     EmSPISlaveSD(const EmSPISlaveSD&);
