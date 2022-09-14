@@ -9,6 +9,8 @@ namespace {
     constexpr uint8 ERR_PARAMETER = 0x40;
 
     constexpr uint8 DATA_TOKEN_DEFAULT = 0xfe;
+    constexpr uint8 DATA_TOKEN_CMD25 = 0xfc;
+    constexpr uint8 DATA_TOKEN_STOP = 0xfd;
 
     constexpr uint8 DATA_RESPONSE_ACCEPTED = 0xe5;
     constexpr uint8 DATA_RESPONSE_WRITE_FAILED = 0x0d;
@@ -90,6 +92,7 @@ uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
             if (bufferIndex == bufferSize) {
                 switch (cardState) {
                     case CardState::writeTransaction:
+                    case CardState::multiblockWrite:
                         spiState = SpiState::rxBlockWait;
                         break;
 
@@ -106,16 +109,27 @@ uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
         }
 
         case SpiState::rxBlockWait:
-            if (data == DATA_TOKEN_DEFAULT) {
+            if (data == DATA_TOKEN_DEFAULT ||
+                (data == DATA_TOKEN_CMD25 && cardState == CardState::multiblockWrite)) {
                 spiState = SpiState::rxBlock;
                 BufferStart(514);
             };
+
+            if ((data == DATA_TOKEN_STOP && cardState == CardState::multiblockWrite)) {
+                cardState = CardState::initialized;
+                spiState = SpiState::rxCmdByte;
+            }
 
             return 0xff;
 
         case SpiState::rxBlock:
             buffer[bufferIndex++] = data;
-            if (bufferIndex == bufferSize) FinishWriteSingleBlock();
+            if (bufferIndex == bufferSize) {
+                if (cardState == CardState::multiblockWrite)
+                    FinishWriteMultiblock();
+                else
+                    FinishWriteSingleBlock();
+            }
 
             return 0xff;
 
@@ -138,8 +152,8 @@ void EmSPISlaveSD::BufferAddBlock(uint8 token, uint8* data, size_t size) {
     memcpy(buffer + bufferSize, data, size);
     bufferSize += size;
 
-    // uint16 crc16 = crc::sdCRC16(data, size);
-    BufferAdd(0, 0);
+    uint16 crc16 = crc::sdCRC16(data, size);
+    BufferAdd(crc16 >> 8, crc16);
 }
 
 void EmSPISlaveSD::DoCmd() {
@@ -213,6 +227,8 @@ void EmSPISlaveSD::DoCmd() {
         case 18:
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
+            } else if (Param() >> 9 >= image()->BlocksTotal()) {
+                PrepareR1(ERR_PARAMETER);
             } else {
                 cardState = CardState::multiblockRead;
                 cmd12Countdown = 0;
@@ -225,15 +241,26 @@ void EmSPISlaveSD::DoCmd() {
         case 24:
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
+            } else if (Param() >> 9 >= image()->BlocksTotal()) {
+                PrepareR1(ERR_PARAMETER);
             } else {
-                blockAddress = Param() >> 9;
+                currentBlock = Param() >> 9;
 
-                if (blockAddress < image()->BlocksTotal()) {
-                    PrepareR1(0x00);
-                    cardState = CardState::writeTransaction;
-                } else {
-                    PrepareR1(ERR_PARAMETER);
-                }
+                PrepareR1(0x00);
+                cardState = CardState::writeTransaction;
+            }
+
+            return;
+
+        case 25:
+            if (cardState == CardState::idle) {
+                PrepareR1(ERR_CARD_IDLE);
+            } else if (Param() >> 9 >= image()->BlocksTotal()) {
+                PrepareR1(ERR_PARAMETER);
+            } else {
+                cardState = CardState::multiblockWrite;
+                currentBlock = Param() >> 9;
+                PrepareR1(0);
             }
 
             return;
@@ -358,13 +385,22 @@ void EmSPISlaveSD::DoReadCID() {
 void EmSPISlaveSD::FinishWriteSingleBlock() {
     BufferStart(0);
 
-    if (image()->Write(buffer, blockAddress) == 1) {
+    if (image()->Write(buffer, currentBlock) == 1) {
         BufferAdd(DATA_RESPONSE_ACCEPTED, 0xff);
     } else {
         BufferAdd(DATA_RESPONSE_WRITE_FAILED);
     }
 
     cardState = CardState::initialized;
+    spiState = SpiState::txData;
+}
+
+void EmSPISlaveSD::FinishWriteMultiblock() {
+    BufferStart(0);
+
+    image()->Write(buffer, (currentBlock++) % image()->BlocksTotal());
+    BufferAdd(DATA_RESPONSE_ACCEPTED, 0xff);
+
     spiState = SpiState::txData;
 }
 

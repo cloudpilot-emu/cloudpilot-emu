@@ -29,12 +29,12 @@ class EmSPISlaveSD : public EmSPISlave {
         idle = 0,
         initialized = 1,
         writeTransaction = 2,
-        multiblockRead = 3
+        multiblockRead = 3,
+        multiblockWrite = 4
     };
 
    private:
     uint8 DoExchange8(uint8 data);
-
     void BufferStart(uint32 size);
 
     template <class T, class... Us>
@@ -54,6 +54,7 @@ class EmSPISlaveSD : public EmSPISlave {
     void DoReadCID();
 
     void FinishWriteSingleBlock();
+    void FinishWriteMultiblock();
 
     void HandleCmd12(uint8 data);
 
@@ -67,7 +68,6 @@ class EmSPISlaveSD : public EmSPISlave {
     SpiState spiState{SpiState::notSelected};
     CardState cardState{CardState::idle};
     uint8 lastCmd{0};
-    size_t blockAddress{0};
 
     uint8 buffer[550];
     uint32 bufferSize{0};
