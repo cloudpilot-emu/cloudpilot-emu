@@ -6,7 +6,6 @@
 class CardImage {
    public:
     constexpr static size_t BLOCK_SIZE = 512;
-    constexpr static size_t BLOCK_GRANULARITY = 512;
 
    public:
     CardImage(uint8* data, size_t blocksTotal);

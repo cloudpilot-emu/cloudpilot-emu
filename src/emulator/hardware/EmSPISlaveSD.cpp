@@ -3,6 +3,8 @@
 #include "EmCRC.h"
 #include "ExternalStorage.h"
 
+// #define DUMP_COMMAND_STREAM
+
 namespace {
     constexpr uint8 ERR_ILLEGAL_COMMAND = 0x04;
     constexpr uint8 ERR_CARD_IDLE = 0x01;
@@ -16,6 +18,18 @@ namespace {
     constexpr uint8 DATA_RESPONSE_WRITE_FAILED = 0x0d;
 
     CardImage* image() { return gExternalStorage.GetImageInSlot(EmHAL::Slot::sdcard); }
+
+    bool determineLayout(size_t blocksTotal, uint32& cSizeMult, uint32& cSize) {
+        for (cSizeMult = 0; cSizeMult < 8; cSizeMult++) {
+            if ((blocksTotal >> (cSizeMult + 2)) < 0x1000) break;
+        }
+
+        if (cSizeMult > 7) return false;
+
+        cSize = (blocksTotal >> (cSizeMult + 2)) - 1;
+
+        return (1 << (cSizeMult + 2)) * (cSize + 1) == blocksTotal;
+    }
 }  // namespace
 
 void EmSPISlaveSD::Reset() {
@@ -41,7 +55,7 @@ uint16 EmSPISlaveSD::DoExchange(uint16 control, uint16 data) {
             return DoExchange8(data);
 
         default:
-            cerr << "unsupported SPI shift width " << (int)bits << endl << flush;
+            // cerr << "unsupported SPI shift width " << (int)bits << endl << flush;
 
             return 0xff;
     }
@@ -53,8 +67,6 @@ void EmSPISlaveSD::Enable(void) {
     if (gExternalStorage.IsMounted(EmHAL::Slot::sdcard)) {
         spiState = SpiState::rxCmdByte;
         lastCmd = 0;
-    } else {
-        cerr << "attempt enable SD without an inserted card" << endl << flush;
     }
 }
 
@@ -160,22 +172,31 @@ void EmSPISlaveSD::DoCmd() {
     if (acmd) return DoAcmd();
     acmd = false;
 
-#if 0
+#ifdef DUMP_COMMAND_STREAM
     cerr << "received CMD" << (int)lastCmd << endl << flush;
 #endif
 
     switch (lastCmd) {
+        // Reset
         case 0:
             PrepareR1(ERR_CARD_IDLE);
 
             return;
 
+        // Initialize (MMC)
         case 1:
             PrepareR1(0x00);
             cardState = CardState::initialized;
 
             return;
 
+        // SDIO stuff. We do not support this.
+        case 5:
+            PrepareR1(ERR_ILLEGAL_COMMAND);
+
+            return;
+
+        // Read CSD
         case 9:
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
@@ -185,6 +206,7 @@ void EmSPISlaveSD::DoCmd() {
 
             return;
 
+        // Read CID
         case 10:
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
@@ -194,6 +216,7 @@ void EmSPISlaveSD::DoCmd() {
 
             return;
 
+        // Read status register
         case 13:
             BufferStart(0);
             if (cardState == CardState::idle) {
@@ -204,6 +227,7 @@ void EmSPISlaveSD::DoCmd() {
 
             return;
 
+        // Set block length. We only support 512 bytes.
         case 16:
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
@@ -215,6 +239,7 @@ void EmSPISlaveSD::DoCmd() {
 
             return;
 
+        // Single block read
         case 17:
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
@@ -224,6 +249,7 @@ void EmSPISlaveSD::DoCmd() {
 
             return;
 
+        // Multiblock read
         case 18:
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
@@ -238,6 +264,7 @@ void EmSPISlaveSD::DoCmd() {
 
             return;
 
+        // Single block write
         case 24:
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
@@ -252,6 +279,7 @@ void EmSPISlaveSD::DoCmd() {
 
             return;
 
+        // Multiblock write
         case 25:
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
@@ -265,11 +293,20 @@ void EmSPISlaveSD::DoCmd() {
 
             return;
 
+        // Escape to ACMD
         case 55:
             PrepareR1(0x00);
             acmd = true;
 
             return;
+
+        // Read OCR
+        case 58: {
+            BufferStart(0);
+            BufferAdd(0xff, 0x00, 0x00, 0xff, 0x80, 0x00);
+
+            return;
+        }
 
         default:
             cerr << "unsupported SD CMD" << (int)lastCmd << endl << flush;
@@ -280,16 +317,39 @@ void EmSPISlaveSD::DoCmd() {
 }
 
 void EmSPISlaveSD::DoAcmd() {
-#if 0
+#ifdef DUMP_COMMAND_STREAM
     cerr << "received ACMD" << (int)lastCmd << endl << flush;
 #endif
 
     acmd = false;
 
     switch (lastCmd) {
+        // Set preerease block count. The spec flags the content of blocks
+        // that have been marked for erasure but not subsequently written as
+        // undefined, so we just ignore this command.
+        case 23:
+            if (cardState == CardState::idle) {
+                PrepareR1(ERR_CARD_IDLE);
+            } else {
+                PrepareR1(0x00);
+            }
+
+            return;
+
+        // Init (SD style)
         case 41:
             PrepareR1(0x00);
             cardState = CardState::initialized;
+
+            return;
+
+        // Read SCR
+        case 51:
+            if (cardState == CardState::idle) {
+                PrepareR1(ERR_CARD_IDLE);
+            } else {
+                DoReadSCR();
+            }
 
             return;
 
@@ -326,11 +386,16 @@ void EmSPISlaveSD::DoReadMulitblock() {
 }
 
 void EmSPISlaveSD::DoReadCSD() {
-    uint8 csd[15];
-
     // Block size is hardcoded to 512 bytes
-    const uint32 cSizeMult = 0x07, cSize = (image()->BlocksTotal() >> 9) - 1, blLen = 0x09,
-                 sectorSize = 31;
+    const uint32 blLen = 0x09, sectorSize = 0;
+    uint32 cSizeMult, cSize;
+
+    if (!determineLayout(image()->BlocksTotal(), cSizeMult, cSize)) {
+        PrepareR1(ERR_PARAMETER);
+        return;
+    }
+
+    uint8 csd[15];
 
     csd[0] = 0x00;
     csd[1] = 0x0e;                  // TAAC
@@ -382,6 +447,23 @@ void EmSPISlaveSD::DoReadCID() {
     BufferAddBlock(DATA_TOKEN_DEFAULT, cid, sizeof(cid));
 }
 
+void EmSPISlaveSD::DoReadSCR() {
+    uint8 scr[8];
+
+    scr[0] = 0x01;  // SCR_STRUCTURE, SD_SPEC
+    scr[1] = 0x25;  // DATA_STAT_AFTER_ERASE, SD_SECURITY, SD_BUS_WIDTHS
+    scr[2] = 0x00;  // SD_SPEC3, EX_ SECURITY, SD_SPEC4, SD_SPECX[2..3]
+    scr[3] = 0x03;  // SD_SPECX[0..1], RESERVED, CMD_SUPPORT (CMD23, CMD20)
+    scr[4] = 0;     // rserved for manufacturer
+    scr[5] = 0;     // rserved for manufacturer
+    scr[6] = 0;     // rserved for manufacturer
+    scr[7] = 0;     // rserved for manufacturer
+
+    PrepareR1(0);
+    BufferAdd(0xff);
+    BufferAddBlock(DATA_TOKEN_DEFAULT, scr, 8);
+}
+
 void EmSPISlaveSD::FinishWriteSingleBlock() {
     BufferStart(0);
 
@@ -426,4 +508,10 @@ uint32 EmSPISlaveSD::Param() const {
 void EmSPISlaveSD::PrepareR1(uint8 flags) {
     BufferStart(0);
     BufferAdd(0xff, flags & 0x7f);
+}
+
+bool EmSPISlaveSD::IsSizeRepresentable(size_t blocksTotal) {
+    uint32 cSizeMult, cSize;
+
+    return determineLayout(blocksTotal, cSizeMult, cSize);
 }

@@ -2,9 +2,7 @@
 
 #include <algorithm>
 
-CardImage::CardImage(uint8* data, size_t blocksTotal) : data(data), blocksTotal(blocksTotal) {
-    EmAssert(blocksTotal % BLOCK_GRANULARITY == 0);
-}
+CardImage::CardImage(uint8* data, size_t blocksTotal) : data(data), blocksTotal(blocksTotal) {}
 
 size_t CardImage::Read(uint8* dest, size_t index, size_t count) {
     if (index >= blocksTotal) return 0;

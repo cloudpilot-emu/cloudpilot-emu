@@ -1,5 +1,7 @@
 #include "ExternalStorage.h"
 
+#include "EmSPISlaveSD.h"
+
 ExternalStorage gExternalStorage;
 
 bool ExternalStorage::HasImage(const string& key) const { return images.find(key) != images.end(); }
@@ -9,7 +11,8 @@ CardImage* ExternalStorage::GetImage(const string& key) {
 }
 
 bool ExternalStorage::AddImage(const string& key, uint8* imageData, size_t size) {
-    if (size % (CardImage::BLOCK_SIZE * CardImage::BLOCK_GRANULARITY) != 0 || HasImage(key))
+    if (size % (CardImage::BLOCK_SIZE) != 0 ||
+        !EmSPISlaveSD::IsSizeRepresentable(size / CardImage::BLOCK_SIZE) || HasImage(key))
         return false;
 
     images.emplace(key, CardImage(imageData, size / CardImage::BLOCK_SIZE));

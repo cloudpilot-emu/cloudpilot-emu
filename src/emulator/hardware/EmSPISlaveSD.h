@@ -6,6 +6,8 @@
 
 class EmSPISlaveSD : public EmSPISlave {
    public:
+    static bool IsSizeRepresentable(size_t blocksTotal);
+
     EmSPISlaveSD() = default;
 
     void Reset();
@@ -52,6 +54,7 @@ class EmSPISlaveSD : public EmSPISlave {
     void DoReadMulitblock();
     void DoReadCSD();
     void DoReadCID();
+    void DoReadSCR();
 
     void FinishWriteSingleBlock();
     void FinishWriteMultiblock();

@@ -71,6 +71,7 @@ static const int DUPS2Shift = 4;
 
 static const int kBaseAddressShift = 13;  // Shift to get base address from CSGBx register value
 
+// #define DUMP_SPI_TRANSFERS
 // #define LOGGING 0
 #ifdef LOGGING
     #define PRINTF logging::printf
@@ -2911,7 +2912,7 @@ void EmRegsVZ::Spi1TransmitWord() {
         uint16 dataOut = spi1TxWordPending;
         uint16 dataIn = slave ? slave->DoExchange(READ_REGISTER(spiCont1), dataOut) : 0;
 
-#if 0
+#ifdef DUMP_SPI_TRANSFERS
         cerr << hex << "spi1: -> 0x" << dataOut << ", <- 0x" << dataIn << dec << " @ "
              << ((READ_REGISTER(spiCont1) & 0x0f) + 1) << " bit" << endl
              << flush;
