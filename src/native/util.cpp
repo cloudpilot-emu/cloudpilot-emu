@@ -124,29 +124,43 @@ bool util::initializeSession(string file, optional<string> deviceId) {
     return true;
 }
 
-bool util::mountImage(const string& image) {
+bool util::mountImage(const string& image, EmHAL::Slot slot) {
     unique_ptr<uint8[]> fileBuffer;
     size_t fileSize;
 
+    if (!EmHAL::SupportsSlot(slot)) {
+        cerr << "slot type not supported by device " << endl << flush;
+
+        return false;
+    }
+
     if (!util::readFile(image, fileBuffer, fileSize)) {
-        cerr << "unable to open SD image " << image << endl;
+        cerr << "unable to open card " << image << endl;
 
         return false;
     }
 
     if (!gExternalStorage.AddImage(image, fileBuffer.get(), fileSize)) {
-        cerr << "failed to register SD image " << image << endl;
+        cerr << "failed to register card " << image << endl;
 
         return false;
     } else {
         fileBuffer.release();
     }
 
-    if (!gExternalStorage.Mount(image, EmHAL::Slot::sdcard)) {
-        cerr << "failed to mount SD image " << image << endl;
+    if (!gExternalStorage.Mount(image, slot)) {
+        cerr << "failed to mount card " << image << endl;
 
         return false;
     }
 
     return true;
+}
+
+EmHAL::Slot util::nameToSlot(const string& name) {
+    if (name == "sdcard") return EmHAL::Slot::sdcard;
+    if (name == "memorystick") return EmHAL::Slot::memorystick;
+    if (name == "hostfs") return EmHAL::Slot::hostfs;
+
+    return EmHAL::Slot::none;
 }

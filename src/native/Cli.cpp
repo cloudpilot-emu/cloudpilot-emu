@@ -306,12 +306,19 @@ namespace {
     }
 
     bool CmdUnmount(vector<string> args) {
-        if (!gExternalStorage.IsMounted(EmHAL::Slot::sdcard)) {
+        if (args.size() != 1 || util::nameToSlot(args[0]) == EmHAL::Slot::none) {
+            cout << "usage: mount <sdcard|memorystick|hostfs> <image>" << endl << flush;
+            return false;
+        }
+
+        EmHAL::Slot slot = util::nameToSlot(args[0]);
+
+        if (!gExternalStorage.IsMounted(slot)) {
             cout << "no mounted card" << endl << flush;
             return false;
         }
 
-        if (gExternalStorage.RemoveImage(gExternalStorage.GetImageKeyInSlot(EmHAL::Slot::sdcard)))
+        if (gExternalStorage.RemoveImage(gExternalStorage.GetImageKeyInSlot(slot)))
             cout << "card ejected successfully" << endl << flush;
         else
             cout << "failed to eject card" << endl << flush;
@@ -320,29 +327,32 @@ namespace {
     }
 
     bool CmdMount(vector<string> args) {
-        if (args.size() != 1) {
-            cout << "usage: mount <image>" << endl << flush;
+        if (args.size() != 2 || util::nameToSlot(args[0]) == EmHAL::Slot::none) {
+            cout << "usage: mount <sdcard|memorystick|hostfs> <image>" << endl << flush;
             return false;
         }
 
-        if (util::mountImage(args[0])) cout << args[0] << " mounted successfully" << endl << flush;
+        if (util::mountImage(args[1], util::nameToSlot(args[0])))
+            cout << args[0] << " mounted successfully" << endl << flush;
 
         return false;
     }
 
     bool CmdSaveCard(vector<string> args) {
-        if (args.size() != 1) {
-            cout << "usage: save-card <image>" << endl << flush;
+        if (args.size() != 2 || util::nameToSlot(args[0]) == EmHAL::Slot::none) {
+            cout << "usage: save-card <sdcard|memorystick|hostfs> <image>" << endl << flush;
             return false;
         }
 
-        if (!gExternalStorage.IsMounted(EmHAL::Slot::sdcard)) {
+        EmHAL::Slot slot = util::nameToSlot(args[0]);
+
+        if (!gExternalStorage.IsMounted(slot)) {
             cout << "no mounted card" << endl << flush;
             return false;
         }
 
         const string& file = args[0];
-        auto image = gExternalStorage.GetImageInSlot(EmHAL::Slot::sdcard);
+        auto image = gExternalStorage.GetImageInSlot(slot);
 
         fstream stream(file, ios_base::out);
 

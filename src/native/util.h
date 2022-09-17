@@ -1,6 +1,7 @@
 #include <memory>
 
 #include "EmCommon.h"
+#include "EmHAL.h"
 #include "EmROMReader.h"
 
 namespace util {
@@ -18,5 +19,7 @@ namespace util {
 
     void analyzeRom(EmROMReader& reader);
 
-    bool mountImage(const string& image);
+    bool mountImage(const string& image, EmHAL::Slot slot);
+
+    EmHAL::Slot nameToSlot(const string& name);
 }  // namespace util

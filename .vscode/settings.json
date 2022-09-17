@@ -106,7 +106,9 @@
     "typeindex": "cpp",
     "unordered_set": "cpp",
     "variant": "cpp",
-    "*.ipp": "cpp"
+    "*.ipp": "cpp",
+    "__bits": "cpp",
+    "charconv": "cpp"
   },
   "editor.formatOnSave": true,
   "CppHelper.SourcePattern": [

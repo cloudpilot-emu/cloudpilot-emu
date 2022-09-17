@@ -332,7 +332,7 @@ namespace argparse {
         friend auto operator<<(std::ostream &, ArgumentParser const &) -> std::ostream &;
 
         template <size_t N, size_t... I>
-        explicit Argument(std::string_view(&&a)[N], std::index_sequence<I...>)
+        explicit Argument(std::string_view (&&a)[N], std::index_sequence<I...>)
             : mIsOptional((is_optional(a[I]) || ...)),
               mIsRequired(false),
               mIsRepeatable(false),
@@ -345,7 +345,7 @@ namespace argparse {
 
        public:
         template <size_t N>
-        explicit Argument(std::string_view(&&a)[N])
+        explicit Argument(std::string_view (&&a)[N])
             : Argument(std::move(a), std::make_index_sequence<N>{}) {}
 
         Argument &help(std::string aHelp) {

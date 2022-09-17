@@ -21,8 +21,8 @@ bool ExternalStorage::AddImage(const string& key, uint8* imageData, size_t size)
 }
 
 bool ExternalStorage::Mount(const string& key, EmHAL::Slot slot) {
-    if (IsMounted(slot) || !HasImage(key) || GetSlot(key) != EmHAL::Slot::none ||
-        !EmHAL::SupportsSlot(slot))
+    if (slot == EmHAL::Slot::none || IsMounted(slot) || !HasImage(key) ||
+        GetSlot(key) != EmHAL::Slot::none || !EmHAL::SupportsSlot(slot))
         return false;
 
     slots[static_cast<uint8>(slot)] = make_unique<MountedImage>(key, images.at(key));
@@ -47,7 +47,7 @@ bool ExternalStorage::Unmount(const string& key) {
 }
 
 bool ExternalStorage::IsMounted(EmHAL::Slot slot) const {
-    return slots[static_cast<uint8>(slot)].operator bool();
+    return slot != EmHAL::Slot::none && slots[static_cast<uint8>(slot)].operator bool();
 }
 
 EmHAL::Slot ExternalStorage::GetSlot(const string& key) const {
