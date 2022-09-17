@@ -13,6 +13,7 @@
 #include "EmPalmOS.h"
 #include "EmPatchMgr.h"
 #include "EmSystemState.h"
+#include "ExternalStorage.h"
 #include "Logging.h"
 #include "MetaMemory.h"
 #include "Miscellaneous.h"
@@ -112,6 +113,8 @@ void EmSession::Deinitialize() {
     romSize = 0;
     romImage.reset();
     savestate.Reset();
+
+    gExternalStorage.Clear();
 
     isInitialized = false;
 }

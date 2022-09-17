@@ -521,8 +521,7 @@ void EmHAL::Mount(Slot slot, const string& key, CardImage& cardImage) {
 }
 
 void EmHAL::Unmount(Slot slot) {
-    EmAssert(EmHAL::GetRootHandler());
-    return EmHAL::GetRootHandler()->Unmount(slot);
+    if (EmHAL::GetRootHandler()) return EmHAL::GetRootHandler()->Unmount(slot);
 }
 
 #pragma mark -
