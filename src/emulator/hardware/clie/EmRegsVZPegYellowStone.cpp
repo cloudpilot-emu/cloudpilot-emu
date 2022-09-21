@@ -5,6 +5,7 @@
 #include "EmMemory.h"
 #include "EmRegsVZPrv.h"
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
+#include "ExternalStorage.h"
 #include "PalmPack.h"
 
 #define NON_PORTABLE
@@ -29,7 +30,7 @@
 #define hwrVZYellowPortDKbdCol0 0x01
 #define hwrVZYellowPortDKbdCol1 0x02
 #define hwrVZYellowPortDKbdCol2 0x04
-#define hwrVZYellowPortDMS_INS 0x40
+#define hwrVZYellowPortDMS_INS 0x08
 
 #define hwrVZYellowPortDDockButton 0x10
 #define hwrVZYellowPortDPowerFail 0x80  // (L) Power Fail Interrupt	(aka IRQ6) (level, low)
@@ -129,6 +130,12 @@ uint8 EmRegsVzPegYellowStone::GetPortInternalValue(int port) {
         // Also make sure that hwrEZPortDPowerFail is set.  If it's clear,
         // the battery code will make the device go to sleep immediately.
 
+        if (gExternalStorage.IsMounted(EmHAL::Slot::memorystick)) {
+            result |= hwrVZYellowPortDMS_INS;
+        } else {
+            result &= ~hwrVZYellowPortDMS_INS;
+        }
+
         result |= hwrVZYellowPortDDockButton | hwrVZYellowPortDPowerFail;
     }
 
@@ -155,6 +162,23 @@ void EmRegsVzPegYellowStone::GetKeyInfo(int* numRows, int* numCols, uint16* keyM
         (portCDir & hwrVZYellowPortCKbdRow1) != 0 && (portCData & hwrVZYellowPortCKbdRow1) == 0;
     rows[2] =
         (portCDir & hwrVZYellowPortCKbdRow2) != 0 && (portCData & hwrVZYellowPortCKbdRow2) == 0;
+}
+
+bool EmRegsVzPegYellowStone::SupportsSlot(EmHAL::Slot slot) {
+    cout << "hulpe" << endl << flush;
+    return slot == EmHAL::Slot::memorystick;
+}
+
+void EmRegsVzPegYellowStone::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+    if (slot != EmHAL::Slot::memorystick) return;
+
+    UpdatePortDInterrupts();
+}
+
+void EmRegsVzPegYellowStone::Unmount(EmHAL::Slot slot) {
+    if (slot != EmHAL::Slot::memorystick) return;
+
+    UpdatePortDInterrupts();
 }
 
 // ---------------------------------------------------------------------------

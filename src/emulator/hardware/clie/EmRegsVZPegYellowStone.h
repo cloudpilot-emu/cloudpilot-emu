@@ -11,19 +11,23 @@ class EmRegsVzPegYellowStone : public EmRegsVZNoScreen {
     virtual ~EmRegsVzPegYellowStone(void);
 
    public:
-    virtual Bool GetLCDScreenOn(void);
-    virtual Bool GetLCDBacklightOn(void);
-    virtual uint16 GetLEDState(void);
+    Bool GetLCDScreenOn(void) override;
+    Bool GetLCDBacklightOn(void) override;
+    uint16 GetLEDState(void) override;
 
     virtual Bool GetSerialPortOn(int uartNum);
-    virtual Bool GetVibrateOn(void);
+    Bool GetVibrateOn(void) override;
 
-    virtual uint8 GetPortInputValue(int);
-    virtual uint8 GetPortInternalValue(int);
-    virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows);
+    uint8 GetPortInputValue(int) override;
+    uint8 GetPortInternalValue(int) override;
+    void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) override;
+
+    bool SupportsSlot(EmHAL::Slot slot) override;
+    void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
+    void Unmount(EmHAL::Slot slot) override;
 
    protected:
-    virtual EmSPISlave* GetSPI2Slave(void);
+    EmSPISlave* GetSPI2Slave(void) override;
 
    private:
     EmSPISlave* fSPISlaveADC;
