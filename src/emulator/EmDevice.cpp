@@ -70,6 +70,7 @@
 #include "EmRegsFMSound.h"
 #include "EmRegsFrameBuffer.h"
 #include "EmRegsLCDCtrlT2.h"
+#include "EmRegsMB86189.h"
 #include "EmRegsMediaQ11xx.h"
 #include "EmRegsMediaQ11xxPacifiC.h"
 #include "EmRegsPLDAtlantiC.h"
@@ -1190,7 +1191,7 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
 
-            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE);
+            EmBankRegs::AddSubBank(new EmRegsMB86189(0x10800000));
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x10900000L, 0));
             break;
         }
