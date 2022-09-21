@@ -165,7 +165,6 @@ void EmRegsVzPegYellowStone::GetKeyInfo(int* numRows, int* numCols, uint16* keyM
 }
 
 bool EmRegsVzPegYellowStone::SupportsSlot(EmHAL::Slot slot) {
-    cout << "hulpe" << endl << flush;
     return slot == EmHAL::Slot::memorystick;
 }
 
