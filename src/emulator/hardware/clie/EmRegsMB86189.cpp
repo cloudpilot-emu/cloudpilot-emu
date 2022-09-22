@@ -86,6 +86,8 @@ void EmRegsMB86189::UpdateIrqLine() {
     if (irqStat != 0) {
         if ((reg.mscs & 0x8000) == 0) irq.Dispatch();
         reg.mscs |= 0x8000;
+    } else {
+        reg.mscs &= ~0x8000;
     }
 }
 
