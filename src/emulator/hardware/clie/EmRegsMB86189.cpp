@@ -59,7 +59,7 @@ void EmRegsMB86189::SetSubBankHandlers(void) {
 }
 
 void EmRegsMB86189::RaiseIrq(uint8 bits) {
-    if ((reg.msics & 0x08) == 0) return;
+    if ((reg.msics & 0x0080) == 0) return;
 
     irqStat |= bits;
 
@@ -68,7 +68,7 @@ void EmRegsMB86189::RaiseIrq(uint8 bits) {
 }
 
 void EmRegsMB86189::NegateIrq(uint8 bits) {
-    if ((reg.msics & 0x08) == 0) return;
+    if ((reg.msics & 0x0080) == 0) return;
 
     irqStat &= ~bits;
 
@@ -76,7 +76,7 @@ void EmRegsMB86189::NegateIrq(uint8 bits) {
 }
 
 void EmRegsMB86189::ClearIrq(uint8 bits) {
-    if ((reg.msics & 0x08) == 0) return;
+    if ((reg.msics & 0x0080) == 0) return;
 
     NegateIrq(bits);
     TransferIrqStat();
@@ -189,14 +189,15 @@ uint32 EmRegsMB86189::msdataRead(emuptr address, int size) {
 }
 
 uint32 EmRegsMB86189::msicsRead(emuptr address, int size) {
-    uint32 value = compositeRegisterRead(baseAddress + OFFSET_MSICS, address, size, reg.msics);
-
-    NegateIrq(IRQ_SIF);
-
+    uint32 value = reg.msics;
     if (state == State::idle)
         value &= ~0x8000;
     else
         value |= 0x8000;
+
+    value = compositeRegisterRead(baseAddress + OFFSET_MSICS, address, size, value);
+
+    NegateIrq(IRQ_SIF);
 
     cerr << "MSICS_" << (address - baseAddress - OFFSET_MSICS) << " -> 0x" << hex << value << dec
          << endl
