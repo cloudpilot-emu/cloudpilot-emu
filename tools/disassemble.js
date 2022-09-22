@@ -14,7 +14,9 @@ function disassemble(start, stop, name) {
     console.log('```');
     console.log(
         execSync(
-            `m68k-palmos-objdump -b binary -m m68k -D --start-address=${start} --stop-address=${stop + 2} "${file}"`
+            `m68k-palmos-objdump -b binary -m m68k:68000 -D --start-address=${start} --stop-address=${
+                stop + 2
+            } "${file}"`
         )
             .toString('utf-8')
             .replace(/^[\s\S]+>:/m, '')

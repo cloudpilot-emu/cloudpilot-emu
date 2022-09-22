@@ -2,7 +2,10 @@
 #define _EM_REGS_MB86189_
 
 #include "EmCommon.h"
+#include "EmEvent.h"
 #include "EmRegs.h"
+#include "Fifo.h"
+#include "MemoryStick.h"
 
 class EmRegsMB86189 : public EmRegs {
    public:
@@ -16,6 +19,17 @@ class EmRegsMB86189 : public EmRegs {
     void SetSubBankHandlers(void) override;
 
    private:
+    void RaiseIrq(uint8 bits);
+    void NegateIrq(uint8 bits);
+    void ClearIrq(uint8 bits);
+    void UpdateIrqLine();
+    void TransferIrqStat();
+
+    void BeginTpc();
+    void FinishTpc();
+
+    void FifoWrite(uint16 data);
+
     uint32 mscmdRead(emuptr address, int size);
     uint32 mscsRead(emuptr address, int size);
     uint32 msdataRead(emuptr address, int size);
@@ -35,6 +49,9 @@ class EmRegsMB86189 : public EmRegs {
     inline void compositeRegisterWrite(emuptr base, emuptr address, int size, uint32 value,
                                        uint16& target);
 
+   public:
+    EmEvent<> irq;
+
    private:
     struct Registers {
         uint16 mscmd;
@@ -43,9 +60,22 @@ class EmRegsMB86189 : public EmRegs {
         uint16 msppcd;
     };
 
+    enum class State : uint8 { idle = 0, tpcWrite = 1, tpcRead = 2 };
+
    private:
     emuptr baseAddress;
     Registers reg;
+
+    uint8 irqStat{0};
+    MemoryStick memoryStick;
+
+    State state{State::idle};
+
+    Fifo<uint16> fifo{4};
+
+    uint8 outBuffer[512];
+    uint32 outBufferSize{0};
+    uint32 inBufferIndex{0};
 
    private:
     EmRegsMB86189(const EmRegsMB86189&) = delete;

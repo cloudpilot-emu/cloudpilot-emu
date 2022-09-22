@@ -2925,8 +2925,9 @@
     22b8:	6026           	bras 0x22e0
     22ba:	4878 0064      	pea 0x64
     22be:	4e4f           	trap #15
-    22c0:	a249 0643      	macw %a1u,%a1l,>>
-    22c4:	0064 5245      	oriw #21061,%a4@-
+    22c0:	a249           	0121111
+    22c2:	0643 0064      	addiw #100,%d3
+    22c6:	5245           	addqw #1,%d5
     22c8:	3043           	moveaw %d3,%a0
     22ca:	b1c6           	cmpal %d6,%a0
     22cc:	584f           	addqw #4,%sp
@@ -3021,7 +3022,7 @@
     23a6:	0210 007f      	andib #127,%a0@
     23aa:	4878 0514      	pea 0x514
     23ae:	2f0a           	movel %a2,%sp@-
-    23b0:	4eba feac      	jsr %pc@(0x225e)
+    23b0:	4eba feac      	jsr %pc@(0x225e)        wait_int(&global_514,%a2)
     23b4:	4a00           	tstb %d0
     23b6:	4fef 000c      	lea %sp@(12),%sp
     23ba:	6704           	beqs 0x23c0
@@ -3137,7 +3138,8 @@
     24d0:	0010 0020      	orib #32,%a0@
     24d4:	4878 0bb8      	pea 0xbb8
     24d8:	4e4f           	trap #15
-    24da:	a249 584f      	macl %a1,%a1
+    24da:	a249           	0121111
+    24dc:	584f           	addqw #4,%sp
     24de:	261f           	movel %sp@+,%d3
     24e0:	4e5e           	unlk %fp
     24e2:	4e75           	rts
@@ -4865,7 +4867,7 @@
     3758:	3f3c 0001      	movew #1,%sp@-
     375c:	2f3c 536c 4d73 	movel #1399606643,%sp@-
     3762:	4e4f           	trap #15
-    3764:	a35a           	mov3ql #1,%a2@+
+    3764:	a35a           	0121532
     3766:	4aaa 0014      	tstl %a2@(20)
     376a:	4fef 0020      	lea %sp@(32),%sp
     376e:	661a           	bnes 0x378a
@@ -4890,8 +4892,8 @@
     37a2:	0238 00df f431 	andib #-33,0xfffffffffffff431
     37a8:	4878 0014      	pea 0x14
     37ac:	4e4f           	trap #15
-    37ae:	a249 0038      	macw %a1l,%a1l
-    37b2:	0020 f431      	orib #49,%a0@-
+    37ae:	a249           	0121111
+    37b0:	0038 0020 f431 	orib #32,0xfffffffffffff431
     37b6:	486e fff1      	pea %fp@(-15)
     37ba:	4eba eb38      	jsr %pc@(0x22f4)
     37be:	42a7           	clrl %sp@-
@@ -4900,13 +4902,14 @@
     37c6:	486e fffc      	pea %fp@(-4)
     37ca:	486a 0010      	pea %a2@(16)
     37ce:	4e4f           	trap #15
-    37d0:	a099 3800      	macl %d0,%d3,%a1@+,%d0
+    37d0:	a099           	0120231
+    37d2:	3800           	movew %d0,%d4
     37d4:	4fef 001c      	lea %sp@(28),%sp
     37d8:	6728           	beqs 0x3802
     37da:	3f3c 0001      	movew #1,%sp@-
     37de:	2f3c 536c 4d73 	movel #1399606643,%sp@-
     37e4:	4e4f           	trap #15
-    37e6:	a35b           	mov3ql #1,%a3@+
+    37e6:	a35b           	0121533
     37e8:	3f03           	movew %d3,%sp@-
     37ea:	4e4f           	trap #15
     37ec:	a0b9           	0120271
@@ -4931,7 +4934,7 @@
     3820:	3f3c 0001      	movew #1,%sp@-
     3824:	2f3c 536c 4d73 	movel #1399606643,%sp@-
     382a:	4e4f           	trap #15
-    382c:	a35b           	mov3ql #1,%a3@+
+    382c:	a35b           	0121533
     382e:	3f03           	movew %d3,%sp@-
     3830:	4e4f           	trap #15
     3832:	a0b9           	0120271
@@ -4962,7 +4965,9 @@
     3880:	486e fffc      	pea %fp@(-4)
     3884:	486a 437e      	pea %a2@(17278)
     3888:	4e4f           	trap #15
-    388a:	a0ae 3800 504f 	macl %d0,%d3,%fp@(20559),%d0
+    388a:	a0ae           	0120256
+    388c:	3800           	movew %d0,%d4
+    388e:	504f           	addqw #8,%sp
     3890:	6738           	beqs 0x38ca
     3892:	2078 0304      	moveal 0x304,%a0
     3896:	42a8 0024      	clrl %a0@(36)
@@ -4972,7 +4977,7 @@
     38a2:	3f3c 0001      	movew #1,%sp@-
     38a6:	2f3c 536c 4d73 	movel #1399606643,%sp@-
     38ac:	4e4f           	trap #15
-    38ae:	a35b           	mov3ql #1,%a3@+
+    38ae:	a35b           	0121533
     38b0:	3f03           	movew %d3,%sp@-
     38b2:	4e4f           	trap #15
     38b4:	a0b9           	0120271
@@ -4987,7 +4992,7 @@
     38ce:	3f03           	movew %d3,%sp@-
     38d0:	7404           	moveq #4,%d2
     38d2:	4e4f           	trap #15
-    38d4:	a347           	mov3ql #1,%d7
+    38d4:	a347           	0121507
     38d6:	486e fff6      	pea %fp@(-10)
     38da:	486e fffa      	pea %fp@(-6)
     38de:	1f3c 0001      	moveb #1,%sp@-
@@ -5004,7 +5009,7 @@
     3908:	2f2e fff6      	movel %fp@(-10),%sp@-
     390c:	3f2e fffa      	movew %fp@(-6),%sp@-
     3910:	4e4f           	trap #15
-    3912:	a353           	mov3ql #1,%a3@
+    3912:	a353           	0121523
     3914:	2f0a           	movel %a2,%sp@-
     3916:	4227           	clrb %sp@-
     3918:	487a fd26      	pea %pc@(0x3640)
@@ -5012,7 +5017,7 @@
     3922:	2f2e fff6      	movel %fp@(-10),%sp@-
     3926:	3f2e fffa      	movew %fp@(-6),%sp@-
     392a:	4e4f           	trap #15
-    392c:	a353           	mov3ql #1,%a3@
+    392c:	a353           	0121523
     392e:	41fa 10ce      	lea %pc@(0x49fe),%a0
     3932:	2548 0008      	movel %a0,%a2@(8)
     3936:	41fa 10c6      	lea %pc@(0x49fe),%a0
@@ -5081,17 +5086,17 @@
     3a50:	2f2e fffa      	movel %fp@(-6),%sp@-
     3a54:	3f2e fffe      	movew %fp@(-2),%sp@-
     3a58:	4e4f           	trap #15
-    3a5a:	a354           	mov3ql #1,%a4@
+    3a5a:	a354           	0121524
     3a5c:	4227           	clrb %sp@-
     3a5e:	2f3c 6372 646f 	movel #1668441199,%sp@-
     3a64:	2f2e fffa      	movel %fp@(-6),%sp@-
     3a68:	3f2e fffe      	movew %fp@(-2),%sp@-
     3a6c:	4e4f           	trap #15
-    3a6e:	a354           	mov3ql #1,%a4@
+    3a6e:	a354           	0121524
     3a70:	3f2a 4374      	movew %a2@(17268),%sp@-
     3a74:	7405           	moveq #5,%d2
     3a76:	4e4f           	trap #15
-    3a78:	a347           	mov3ql #1,%d7
+    3a78:	a347           	0121507
     3a7a:	2f2a 437e      	movel %a2@(17278),%sp@-
     3a7e:	4e4f           	trap #15
     3a80:	a0af           	0120257
@@ -5100,15 +5105,16 @@
     3a8a:	42a7           	clrl %sp@-
     3a8c:	2f2a 0010      	movel %a2@(16),%sp@-
     3a90:	4e4f           	trap #15
-    3a92:	a09a 2f2a      	msacml %a2,%d2,>>,%a2@+,%d0
-    3a96:	0010 4e4f      	orib #79,%a0@
+    3a92:	a09a           	0120232
+    3a94:	2f2a 0010      	movel %a2@(16),%sp@-
+    3a98:	4e4f           	trap #15
     3a9a:	a0bf           	0120277
     3a9c:	4227           	clrb %sp@-
     3a9e:	4eba e9c6      	jsr %pc@(0x2466)
     3aa2:	3f3c 0001      	movew #1,%sp@-
     3aa6:	2f3c 536c 4d73 	movel #1399606643,%sp@-
     3aac:	4e4f           	trap #15
-    3aae:	a35b           	mov3ql #1,%a3@+
+    3aae:	a35b           	0121533
     3ab0:	3f2e 0008      	movew %fp@(8),%sp@-
     3ab4:	4e4f           	trap #15
     3ab6:	a0b9           	0120271
@@ -5198,7 +5204,7 @@
     3ba2:	3f2a 4374      	movew %a2@(17268),%sp@-
     3ba6:	7407           	moveq #7,%d2
     3ba8:	4e4f           	trap #15
-    3baa:	a347           	mov3ql #1,%d7
+    3baa:	a347           	0121507
     3bac:	544f           	addqw #2,%sp
     3bae:	102a 437a      	moveb %a2@(17274),%d0
     3bb2:	0240 0002      	andiw #2,%d0
@@ -5206,7 +5212,7 @@
     3bb8:	3f2a 4374      	movew %a2@(17268),%sp@-
     3bbc:	7406           	moveq #6,%d2
     3bbe:	4e4f           	trap #15
-    3bc0:	a347           	mov3ql #1,%d7
+    3bc0:	a347           	0121507
     3bc2:	544f           	addqw #2,%sp
     3bc4:	0278 f7ff f306 	andiw #-2049,0xfffffffffffff306
     3bca:	7000           	moveq #0,%d0
@@ -5369,11 +5375,11 @@
     3db2:	3f03           	movew %d3,%sp@-
     3db4:	7407           	moveq #7,%d2
     3db6:	4e4f           	trap #15
-    3db8:	a347           	mov3ql #1,%d7
+    3db8:	a347           	0121507
     3dba:	3f2a 4374      	movew %a2@(17268),%sp@-
     3dbe:	7406           	moveq #6,%d2
     3dc0:	4e4f           	trap #15
-    3dc2:	a347           	mov3ql #1,%d7
+    3dc2:	a347           	0121507
     3dc4:	7600           	moveq #0,%d3
     3dc6:	584f           	addqw #4,%sp
     3dc8:	6004           	bras 0x3dce
@@ -5470,8 +5476,8 @@
     3ed4:	0238 00df f431 	andib #-33,0xfffffffffffff431
     3eda:	4878 0014      	pea 0x14
     3ede:	4e4f           	trap #15
-    3ee0:	a249 0038      	macw %a1l,%a1l
-    3ee4:	0020 f431      	orib #49,%a0@-
+    3ee0:	a249           	0121111
+    3ee2:	0038 0020 f431 	orib #32,0xfffffffffffff431
     3ee8:	486e ffff      	pea %fp@(-1)
     3eec:	4eba e406      	jsr %pc@(0x22f4)
     3ef0:	3838 fc02      	movew 0xfffffffffffffc02,%d4
@@ -5500,7 +5506,8 @@
     3f3e:	4878 0064      	pea 0x64
     3f42:	2f2a 0010      	movel %a2@(16),%sp@-
     3f46:	4e4f           	trap #15
-    3f48:	a09a 3004      	macw %d4l,%d3l,%a2@+,%d0
+    3f48:	a09a           	0120232
+    3f4a:	3004           	movew %d4,%d0
     3f4c:	0240 00e0      	andiw #224,%d0
     3f50:	3238 fc02      	movew 0xfffffffffffffc02,%d1
     3f54:	0241 ff1f      	andiw #-225,%d1
@@ -5973,7 +5980,8 @@
     4522:	42a7           	clrl %sp@-
     4524:	2f2a 0010      	movel %a2@(16),%sp@-
     4528:	4e4f           	trap #15
-    452a:	a09a 4267      	macmw %d7u,%d4l,<<,%a2@+,%d0
+    452a:	a09a           	0120232
+    452c:	4267           	clrw %sp@-
     452e:	2f0b           	movel %a3,%sp@-
     4530:	4e4f           	trap #15
     4532:	a01b           	0120033
@@ -6004,7 +6012,8 @@
     4584:	4878 0064      	pea 0x64
     4588:	2f2a 0010      	movel %a2@(16),%sp@-
     458c:	4e4f           	trap #15
-    458e:	a09a 3005      	macw %d5l,%d3l,%a2@+,%d0
+    458e:	a09a           	0120232
+    4590:	3005           	movew %d5,%d0
     4592:	0240 00e0      	andiw #224,%d0
     4596:	3238 fc02      	movew 0xfffffffffffffc02,%d1
     459a:	0241 ff1f      	andiw #-225,%d1
@@ -6147,7 +6156,8 @@
     4736:	4878 0064      	pea 0x64
     473a:	2f2a 0010      	movel %a2@(16),%sp@-
     473e:	4e4f           	trap #15
-    4740:	a09a 3005      	macw %d5l,%d3l,%a2@+,%d0
+    4740:	a09a           	0120232
+    4742:	3005           	movew %d5,%d0
     4744:	0240 00e0      	andiw #224,%d0
     4748:	3238 fc02      	movew 0xfffffffffffffc02,%d1
     474c:	0241 ff1f      	andiw #-225,%d1
@@ -6290,7 +6300,8 @@
     48e6:	4878 0064      	pea 0x64
     48ea:	2f2a 0010      	movel %a2@(16),%sp@-
     48ee:	4e4f           	trap #15
-    48f0:	a09a 3005      	macw %d5l,%d3l,%a2@+,%d0
+    48f0:	a09a           	0120232
+    48f2:	3005           	movew %d5,%d0
     48f4:	0240 00e0      	andiw #224,%d0
     48f8:	3238 fc02      	movew 0xfffffffffffffc02,%d1
     48fc:	0241 ff1f      	andiw #-225,%d1
@@ -6390,11 +6401,11 @@
 
     49fe:	4e56 0000      	linkw %fp,#0
     4a02:	2f0a           	movel %a2,%sp@-
-    4a04:	1038 f41c      	moveb 0xfffffffffffff41c,%d0        %d0 = pdpol;    // Port D polarity
+    4a04:	1038 f41c      	moveb 0xfffffffffffff41c,%d0
     4a08:	0240 0008      	andiw #8,%d0
-    4a0c:	6754           	beqs 0x4a62                         if (%d0 & 0x08 == 0) goto polarity_pos;
+    4a0c:	6754           	beqs 0x4a62
     4a0e:	4ab8 0304      	tstl 0x304
-    4a12:	6734           	beqs 0x4a48                         if (global_304 == 0) goto lbl_4a48;
+    4a12:	6734           	beqs 0x4a48
     4a14:	2078 0304      	moveal 0x304,%a0
     4a18:	2468 0024      	moveal %a0@(36),%a2
     4a1c:	200a           	movel %a2,%d0
@@ -6402,7 +6413,7 @@
     4a20:	3f2a 4374      	movew %a2@(17268),%sp@-
     4a24:	7406           	moveq #6,%d2
     4a26:	4e4f           	trap #15
-    4a28:	a347           	mov3ql #1,%d7
+    4a28:	a347           	0121507
     4a2a:	2078 0304      	moveal 0x304,%a0
     4a2e:	2068 0024      	moveal %a0@(36),%a0
     4a32:	0228 00fe 437a 	andib #-2,%a0@(17274)
@@ -6410,15 +6421,15 @@
     4a3c:	2068 0024      	moveal %a0@(36),%a0
     4a40:	0028 0002 437a 	orib #2,%a0@(17274)
     4a46:	544f           	addqw #2,%sp
-    4a48:	0238 00f7 f41c 	andib #-9,0xfffffffffffff41c    lbl_4a48: pdpol &= 0xf7; // switch to positive polarity
-    4a4e:	2078 0304      	moveal 0x304,%a0                    %a0 = global_304;
-    4a52:	2468 0010      	moveal %a0@(16),%a2                 %a2 = *(global_304 + 16)
-    4a56:	200a           	movel %a2,%d0                       %d0 = %a2;
+    4a48:	0238 00f7 f41c 	andib #-9,0xfffffffffffff41c
+    4a4e:	2078 0304      	moveal 0x304,%a0
+    4a52:	2468 0010      	moveal %a0@(16),%a2
+    4a56:	200a           	movel %a2,%d0
     4a58:	6768           	beqs 0x4ac2
     4a5a:	7001           	moveq #1,%d0
     4a5c:	81aa 001c      	orl %d0,%a2@(28)
     4a60:	6060           	bras 0x4ac2
-    4a62:	4ab8 0304      	tstl 0x304                      plolarity_pos:
+    4a62:	4ab8 0304      	tstl 0x304
     4a66:	6738           	beqs 0x4aa0
     4a68:	2078 0304      	moveal 0x304,%a0
     4a6c:	2468 0024      	moveal %a0@(36),%a2
@@ -6427,7 +6438,7 @@
     4a74:	3f2a 4374      	movew %a2@(17268),%sp@-
     4a78:	7407           	moveq #7,%d2
     4a7a:	4e4f           	trap #15
-    4a7c:	a347           	mov3ql #1,%d7
+    4a7c:	a347           	0121507
     4a7e:	2078 0304      	moveal 0x304,%a0
     4a82:	2068 0024      	moveal %a0@(36),%a0
     4a86:	41e8 437a      	lea %a0@(17274),%a0
