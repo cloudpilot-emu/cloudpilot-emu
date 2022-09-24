@@ -19,11 +19,25 @@ class EmRegsMB86189 : public EmRegs {
     void SetSubBankHandlers(void) override;
 
    private:
+    struct Registers {
+        uint16 mscmd;
+        uint16 mscs;
+        uint16 msics;
+        uint16 msppcd;
+    };
+
+    enum class State : uint8 { idle = 0, tpcWrite = 1, tpcRead = 2 };
+
+   private:
+    void ResetHostController();
+
     void RaiseIrq(uint8 bits);
     void NegateIrq(uint8 bits);
     void ClearIrq(uint8 bits);
     void UpdateIrqLine();
     void TransferIrqStat();
+
+    void SetState(State state);
 
     void BeginTpc();
     void FinishTpc();
@@ -51,16 +65,6 @@ class EmRegsMB86189 : public EmRegs {
 
    public:
     EmEvent<> irq;
-
-   private:
-    struct Registers {
-        uint16 mscmd;
-        uint16 mscs;
-        uint16 msics;
-        uint16 msppcd;
-    };
-
-    enum class State : uint8 { idle = 0, tpcWrite = 1, tpcRead = 2 };
 
    private:
     emuptr baseAddress;

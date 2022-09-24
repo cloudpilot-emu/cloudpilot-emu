@@ -13,8 +13,14 @@ namespace {
     constexpr uint32 OFFSET_MSICS = 0x06;
     constexpr uint32 OFFSET_MSPPCD = 0x08;
 
+    constexpr uint16 MSCS_INT = 0x8000;
+    constexpr uint16 MSCS_RST = 0x0080;
+
     constexpr uint8 IRQ_RDY = 0x80;
     constexpr uint8 IRQ_SIF = 0x40;
+
+    constexpr uint16 MSICS_INTEN = 0x0080;
+    constexpr uint16 MSICS_RDY = 0x8000;
 }  // namespace
 
 EmRegsMB86189::EmRegsMB86189(emuptr baseAddress) : baseAddress(baseAddress) {
@@ -22,20 +28,10 @@ EmRegsMB86189::EmRegsMB86189(emuptr baseAddress) : baseAddress(baseAddress) {
 }
 
 void EmRegsMB86189::Reset(Bool hardwareReset) {
-    reg.mscmd = 0;
-    reg.mscs = 0x0a05;
-    reg.msics = 0x8000;
-    reg.msppcd = 0;
+    reg.msics = 0x00;
 
-    state = State::idle;
-
-    irqStat = 0;
+    ResetHostController();
     memoryStick.Reset();
-
-    fifo.Clear();
-
-    outBufferSize = 0;
-    inBufferIndex = 0;
 }
 
 uint8* EmRegsMB86189::GetRealAddress(emuptr address) {
@@ -58,8 +54,26 @@ void EmRegsMB86189::SetSubBankHandlers(void) {
     INSTALL_HANDLER(stubRead, stubRead, OFFSET_MSPPCD + 2, REGISTER_FILE_SIZE - OFFSET_MSPPCD - 2);
 }
 
+void EmRegsMB86189::ResetHostController() {
+    cerr << "MSHC reset" << endl << flush;
+    reg.mscmd = 0;
+    reg.mscs = 0x0a05;
+    reg.msics &= MSICS_INTEN;
+    reg.msppcd = 0;
+
+    state = State::idle;
+
+    irqStat = 0;
+    memoryStick.Reset();
+
+    fifo.Clear();
+
+    outBufferSize = 0;
+    inBufferIndex = 0;
+}
+
 void EmRegsMB86189::RaiseIrq(uint8 bits) {
-    if ((reg.msics & 0x0080) == 0) return;
+    if ((reg.msics & MSICS_INTEN) == 0) return;
 
     irqStat |= bits;
 
@@ -68,7 +82,7 @@ void EmRegsMB86189::RaiseIrq(uint8 bits) {
 }
 
 void EmRegsMB86189::NegateIrq(uint8 bits) {
-    if ((reg.msics & 0x0080) == 0) return;
+    if ((reg.msics & MSICS_INTEN) == 0) return;
 
     irqStat &= ~bits;
 
@@ -76,7 +90,7 @@ void EmRegsMB86189::NegateIrq(uint8 bits) {
 }
 
 void EmRegsMB86189::ClearIrq(uint8 bits) {
-    if ((reg.msics & 0x0080) == 0) return;
+    if ((reg.msics & MSICS_INTEN) == 0) return;
 
     NegateIrq(bits);
     TransferIrqStat();
@@ -84,10 +98,10 @@ void EmRegsMB86189::ClearIrq(uint8 bits) {
 
 void EmRegsMB86189::UpdateIrqLine() {
     if (irqStat != 0) {
-        if ((reg.mscs & 0x8000) == 0) irq.Dispatch();
-        reg.mscs |= 0x8000;
+        if ((reg.mscs & MSCS_INT) == 0) irq.Dispatch();
+        reg.mscs |= MSCS_INT;
     } else {
-        reg.mscs &= ~0x8000;
+        reg.mscs &= ~MSCS_INT;
     }
 }
 
@@ -96,12 +110,25 @@ void EmRegsMB86189::TransferIrqStat() {
     reg.msics |= (irqStat << 8);
 }
 
+void EmRegsMB86189::SetState(State state) {
+    if (state != this->state) {
+        if (state == State::idle) {
+            RaiseIrq(IRQ_RDY);
+            reg.msics |= MSICS_RDY;
+        } else {
+            reg.msics &= ~MSICS_RDY;
+        }
+    }
+
+    this->state = state;
+}
+
 void EmRegsMB86189::BeginTpc() {
     uint8 tpcId = reg.mscmd >> 12;
     uint32 transferSize = reg.mscmd & 0x1ff;
 
-    state = MemoryStick::GetTpcType(tpcId) == MemoryStick::TpcType::read ? State::tpcRead
-                                                                         : State::tpcWrite;
+    SetState(MemoryStick::GetTpcType(tpcId) == MemoryStick::TpcType::read ? State::tpcRead
+                                                                          : State::tpcWrite);
 
     outBufferSize = 0;
     inBufferIndex = 0;
@@ -119,8 +146,7 @@ void EmRegsMB86189::FinishTpc() {
 
     fifo.Clear();
 
-    state = State::idle;
-    RaiseIrq(IRQ_RDY);
+    SetState(State::idle);
 }
 
 void EmRegsMB86189::FifoWrite(uint16 data) {
@@ -189,15 +215,9 @@ uint32 EmRegsMB86189::msdataRead(emuptr address, int size) {
 }
 
 uint32 EmRegsMB86189::msicsRead(emuptr address, int size) {
-    uint32 value = reg.msics;
-    if (state == State::idle)
-        value &= ~0x8000;
-    else
-        value |= 0x8000;
+    uint32 value = compositeRegisterRead(baseAddress + OFFSET_MSICS, address, size, reg.msics);
 
-    value = compositeRegisterRead(baseAddress + OFFSET_MSICS, address, size, value);
-
-    NegateIrq(IRQ_SIF);
+    NegateIrq(IRQ_SIF | IRQ_RDY);
 
     cerr << "MSICS_" << (address - baseAddress - OFFSET_MSICS) << " -> 0x" << hex << value << dec
          << endl
@@ -232,7 +252,7 @@ void EmRegsMB86189::mscmdWrite(emuptr address, int size, uint32 value) {
 
     cerr << "MSCMD <- 0x" << hex << value << dec << endl << flush;
 
-    ClearIrq(IRQ_RDY | IRQ_SIF);
+    ClearIrq(IRQ_SIF);
 
     reg.mscmd = value;
     BeginTpc();
@@ -243,7 +263,13 @@ void EmRegsMB86189::mscsWrite(emuptr address, int size, uint32 value) {
          << endl
          << flush;
 
+    uint16 oldValue = reg.mscs;
     compositeRegisterWrite(baseAddress + OFFSET_MSCS, address, size, value, reg.mscs);
+
+    if (((oldValue ^ reg.mscs) & oldValue) & MSCS_RST) {
+        ResetHostController();
+        RaiseIrq(IRQ_RDY);
+    }
 }
 
 void EmRegsMB86189::msdataWrite(emuptr address, int size, uint32 value) {
