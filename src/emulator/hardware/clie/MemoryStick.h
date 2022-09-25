@@ -25,12 +25,20 @@ class MemoryStick {
    private:
 #pragma pack(push, 1)
     struct Registers {
+        uint8 _filler_0;
+
         uint8 intFlags;
         uint8 status0;
         uint8 status1;
         uint8 msType;
+
+        uint8 _filler_1;
+
         uint8 msCategory;
         uint8 msClass;
+
+        uint8 _filler_2[8];
+
         uint8 cfg;
         uint8 blockHi;
         uint8 blockMid;

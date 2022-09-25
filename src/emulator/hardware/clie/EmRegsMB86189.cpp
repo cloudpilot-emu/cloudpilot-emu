@@ -287,6 +287,8 @@ void EmRegsMB86189::msdataWrite(emuptr address, int size, uint32 value) {
 }
 
 void EmRegsMB86189::msicsWrite(emuptr address, int size, uint32 value) {
+    value &= 0x00ff;
+
     cerr << "MSICS_" << (address - baseAddress - OFFSET_MSICS) << " <- 0x" << hex << value << dec
          << endl
          << flush;

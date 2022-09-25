@@ -17,7 +17,6 @@ namespace {
     constexpr uint8 TPC_SET_CMD = 0x0e;
     constexpr uint8 TPC_READ_LONG_DATA = 0x02;
     constexpr uint8 TPC_WRITE_LONG_DATA = 0x0c;
-
 }  // namespace
 
 void MemoryStick::Reset() {
@@ -38,16 +37,17 @@ void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
 
     switch (tpcId) {
         case TPC_REGS_WRITE: {
-            if (dataInCount != writeWindowSize || writeWindowStart < 0x10 ||
-                writeWindowSize > 0x15) {
+            if (dataInCount != writeWindowSize || writeWindowStart < offsetof(Registers, cfg) ||
+                writeWindowSize + writeWindowStart > sizeof(Registers)) {
                 reg.intFlags = INT_TPC_ERR;
                 break;
             }
 
-            uint8* registerFile = reinterpret_cast<uint8*>(&reg.cfg);
-            memcpy(registerFile + writeWindowStart - 0x10, dataIn, writeWindowSize);
+            uint8* registerFile = reinterpret_cast<uint8*>(&reg);
+            memcpy(registerFile + writeWindowStart, dataIn, writeWindowSize);
 
             reg.intFlags = INT_TPC_OK;
+
             break;
         }
 
