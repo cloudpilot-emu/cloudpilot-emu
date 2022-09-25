@@ -1,6 +1,7 @@
 #ifndef _MEMORY_STICK_
 #define _MEMORY_STICK_
 
+#include "CardImage.h"
 #include "EmCommon.h"
 #include "EmEvent.h"
 
@@ -10,6 +11,7 @@ class MemoryStick {
 
    public:
     static TpcType GetTpcType(uint8 tpcId);
+    static bool IsSizeRepresentable(size_t pagesTotal);
 
     MemoryStick() = default;
 
@@ -18,6 +20,9 @@ class MemoryStick {
     void ExecuteTpc(uint8 tpcId, uint32 dataInCount = 0, uint8* dataIn = nullptr);
     uint8* GetDataOut();
     uint32 GetDataOutSize();
+
+    void Mount(CardImage* cardImage);
+    void Unmount();
 
    public:
     EmEvent<> irq;
@@ -59,6 +64,10 @@ class MemoryStick {
 
     uint8 bufferOut[512];
     uint32 bufferOutSize{0};
+
+    CardImage* cardImage = nullptr;
+    uint8 pagesPerBlock{0};
+    uint8 segments{0};
 
    private:
     MemoryStick(const MemoryStick&) = delete;

@@ -510,9 +510,9 @@ void EmHAL::DispatchCycle(uint64 cycles, bool sleeping) {
     for (auto consumer : cycleConsumers) consumer.handler(consumer.context, cycles, sleeping);
 }
 
-bool EmHAL::SupportsSlot(Slot slot) {
+bool EmHAL::SupportsImageInSlot(Slot slot, const CardImage& cardImage) {
     EmAssert(EmHAL::GetRootHandler());
-    return EmHAL::GetRootHandler()->SupportsSlot(slot);
+    return EmHAL::GetRootHandler()->SupportsImageInSlot(slot, cardImage);
 }
 
 void EmHAL::Mount(Slot slot, const string& key, CardImage& cardImage) {
@@ -825,10 +825,10 @@ bool EmHALHandler::EnableRAM() {
     return this->GetNextHandler()->EnableRAM();
 }
 
-bool EmHALHandler::SupportsSlot(EmHAL::Slot slot) {
+bool EmHALHandler::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) {
     if (!this->GetNextHandler()) return false;
 
-    return this->GetNextHandler()->SupportsSlot(slot);
+    return this->GetNextHandler()->SupportsImageInSlot(slot, cardImage);
 }
 
 void EmHALHandler::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {

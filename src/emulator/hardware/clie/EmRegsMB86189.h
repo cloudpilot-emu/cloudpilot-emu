@@ -3,11 +3,12 @@
 
 #include "EmCommon.h"
 #include "EmEvent.h"
+#include "EmHAL.h"
 #include "EmRegs.h"
 #include "Fifo.h"
 #include "MemoryStick.h"
 
-class EmRegsMB86189 : public EmRegs {
+class EmRegsMB86189 : public EmRegs, public EmHALHandler {
    public:
     EmRegsMB86189(emuptr baseAddress);
 
@@ -17,6 +18,10 @@ class EmRegsMB86189 : public EmRegs {
     emuptr GetAddressStart(void) override;
     uint32 GetAddressRange(void) override;
     void SetSubBankHandlers(void) override;
+
+    bool SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) override;
+    void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
+    void Unmount(EmHAL::Slot slot) override;
 
    private:
     struct Registers {

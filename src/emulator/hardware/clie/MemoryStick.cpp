@@ -17,6 +17,24 @@ namespace {
     constexpr uint8 TPC_SET_CMD = 0x0e;
     constexpr uint8 TPC_READ_LONG_DATA = 0x02;
     constexpr uint8 TPC_WRITE_LONG_DATA = 0x0c;
+
+    bool determineLayoutWithBlockSize(size_t pagesTotal, uint32 pagesPerBlock, uint8& segments) {
+        if (pagesTotal % pagesPerBlock != 0) return false;
+        size_t blocks = pagesTotal / pagesPerBlock;
+
+        if ((blocks + 2) % 496 != 0) return false;
+        segments = (blocks + 2) / 496;
+
+        return segments <= 16;
+    }
+
+    bool determineLayout(size_t pagesTotal, uint8& pagesPerBlock, uint8& segments) {
+        pagesPerBlock = 16;
+        if (determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments)) return true;
+
+        pagesPerBlock = 32;
+        return determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments);
+    }
 }  // namespace
 
 void MemoryStick::Reset() {
@@ -34,6 +52,7 @@ void MemoryStick::Reset() {
 
 void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
     bufferOutSize = 0;
+    if (!cardImage) return;
 
     switch (tpcId) {
         case TPC_REGS_WRITE: {
@@ -63,6 +82,18 @@ uint8* MemoryStick::GetDataOut() { return bufferOut; }
 
 uint32 MemoryStick::GetDataOutSize() { return bufferOutSize; }
 
+void MemoryStick::Mount(CardImage* cardImage) {
+    EmAssert(determineLayout(cardImage->BlocksTotal(), pagesPerBlock, segments));
+
+    this->cardImage = cardImage;
+
+    cerr << "mounted memory stick image, " << (int)segments << " segments, " << (int)pagesPerBlock
+         << " pages per block" << endl
+         << flush;
+}
+
+void MemoryStick::Unmount() { this->cardImage = nullptr; }
+
 MemoryStick::TpcType MemoryStick::GetTpcType(uint8 tpcId) {
     switch (tpcId) {
         case TPC_SET_REGS_WINDOW:
@@ -76,4 +107,10 @@ MemoryStick::TpcType MemoryStick::GetTpcType(uint8 tpcId) {
         default:
             return TpcType::read;
     }
+}
+
+bool MemoryStick::IsSizeRepresentable(size_t pagesTotal) {
+    uint8 pagesPerBlock, segments;
+
+    return determineLayout(pagesTotal, pagesPerBlock, segments);
 }

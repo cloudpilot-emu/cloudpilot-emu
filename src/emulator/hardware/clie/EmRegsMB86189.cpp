@@ -54,6 +54,25 @@ void EmRegsMB86189::SetSubBankHandlers(void) {
     INSTALL_HANDLER(stubRead, stubRead, OFFSET_MSPPCD + 2, REGISTER_FILE_SIZE - OFFSET_MSPPCD - 2);
 }
 
+bool EmRegsMB86189::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) {
+    return slot == EmHAL::Slot::memorystick &&
+           MemoryStick::IsSizeRepresentable(cardImage.BlocksTotal());
+}
+
+void EmRegsMB86189::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+    if (this->GetNextHandler()) this->GetNextHandler()->Mount(slot, key, cardImage);
+    if (slot != EmHAL::Slot::memorystick) return;
+
+    memoryStick.Mount(&cardImage);
+}
+
+void EmRegsMB86189::Unmount(EmHAL::Slot slot) {
+    if (this->GetNextHandler()) this->GetNextHandler()->Unmount(slot);
+    if (slot != EmHAL::Slot::memorystick) return;
+
+    memoryStick.Unmount();
+}
+
 void EmRegsMB86189::ResetHostController() {
     cerr << "MSHC reset" << endl << flush;
     reg.mscmd = 0;

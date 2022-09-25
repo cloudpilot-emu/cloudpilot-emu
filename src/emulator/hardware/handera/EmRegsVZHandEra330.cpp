@@ -238,7 +238,10 @@ int32 EmRegsVZHandEra330::GetInterruptLevel(void) {
 
 EmSPISlaveSD* EmRegsVZHandEra330::GetSPISlaveSD() { return spiSlaveSD.get(); }
 
-bool EmRegsVZHandEra330::SupportsSlot(EmHAL::Slot slot) { return slot == EmHAL::Slot::sdcard; }
+bool EmRegsVZHandEra330::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) {
+    return slot == EmHAL::Slot::sdcard &&
+           EmSPISlaveSD::IsSizeRepresentable(cardImage.BlocksTotal());
+}
 
 void EmRegsVZHandEra330::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
     PortMgr.pendingIRQ2 = true;

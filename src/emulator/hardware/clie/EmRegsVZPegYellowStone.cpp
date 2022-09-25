@@ -164,17 +164,15 @@ void EmRegsVzPegYellowStone::GetKeyInfo(int* numRows, int* numCols, uint16* keyM
         (portCDir & hwrVZYellowPortCKbdRow2) != 0 && (portCData & hwrVZYellowPortCKbdRow2) == 0;
 }
 
-bool EmRegsVzPegYellowStone::SupportsSlot(EmHAL::Slot slot) {
-    return slot == EmHAL::Slot::memorystick;
-}
-
 void EmRegsVzPegYellowStone::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+    if (this->GetNextHandler()) this->GetNextHandler()->Mount(slot, key, cardImage);
     if (slot != EmHAL::Slot::memorystick) return;
 
     UpdatePortDInterrupts();
 }
 
 void EmRegsVzPegYellowStone::Unmount(EmHAL::Slot slot) {
+    if (this->GetNextHandler()) this->GetNextHandler()->Unmount(slot);
     if (slot != EmHAL::Slot::memorystick) return;
 
     UpdatePortDInterrupts();

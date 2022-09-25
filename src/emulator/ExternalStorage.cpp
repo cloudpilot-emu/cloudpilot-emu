@@ -22,7 +22,7 @@ bool ExternalStorage::AddImage(const string& key, uint8* imageData, size_t size)
 
 bool ExternalStorage::Mount(const string& key, EmHAL::Slot slot) {
     if (slot == EmHAL::Slot::none || IsMounted(slot) || !HasImage(key) ||
-        GetSlot(key) != EmHAL::Slot::none || !EmHAL::SupportsSlot(slot))
+        GetSlot(key) != EmHAL::Slot::none || !EmHAL::SupportsImageInSlot(slot, images.at(key)))
         return false;
 
     slots[static_cast<uint8>(slot)] = make_unique<MountedImage>(key, images.at(key));

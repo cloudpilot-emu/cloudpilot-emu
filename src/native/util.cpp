@@ -128,12 +128,6 @@ bool util::mountImage(const string& image, EmHAL::Slot slot) {
     unique_ptr<uint8[]> fileBuffer;
     size_t fileSize;
 
-    if (!EmHAL::SupportsSlot(slot)) {
-        cerr << "slot type not supported by device " << endl << flush;
-
-        return false;
-    }
-
     if (!util::readFile(image, fileBuffer, fileSize)) {
         cerr << "unable to open card " << image << endl;
 

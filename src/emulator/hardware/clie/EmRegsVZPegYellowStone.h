@@ -22,7 +22,6 @@ class EmRegsVzPegYellowStone : public EmRegsVZNoScreen {
     uint8 GetPortInternalValue(int) override;
     void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) override;
 
-    bool SupportsSlot(EmHAL::Slot slot) override;
     void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
     void Unmount(EmHAL::Slot slot) override;
 

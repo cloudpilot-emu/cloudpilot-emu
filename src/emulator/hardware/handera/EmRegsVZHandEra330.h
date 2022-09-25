@@ -107,7 +107,7 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
 
     EmSPISlaveSD* GetSPISlaveSD();
 
-    virtual bool SupportsSlot(EmHAL::Slot slot);
+    virtual bool SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage);
     virtual void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage);
     virtual void Unmount(EmHAL::Slot slot);
 

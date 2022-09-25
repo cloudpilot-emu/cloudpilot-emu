@@ -15,7 +15,7 @@ class EMPalmVZWithSD : public VZ {
 
     uint8 GetPortInternalValue(int port) override;
 
-    bool SupportsSlot(EmHAL::Slot slot) override;
+    bool SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) override;
     void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
     void Unmount(EmHAL::Slot slot) override;
 
@@ -59,8 +59,9 @@ uint8 EMPalmVZWithSD<VZ>::GetPortInternalValue(int port) {
 }
 
 template <class VZ>
-bool EMPalmVZWithSD<VZ>::SupportsSlot(EmHAL::Slot slot) {
-    return slot == EmHAL::Slot::sdcard;
+bool EMPalmVZWithSD<VZ>::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) {
+    return slot == EmHAL::Slot::sdcard &&
+           EmSPISlaveSD::IsSizeRepresentable(cardImage.BlocksTotal());
 }
 
 template <class VZ>
