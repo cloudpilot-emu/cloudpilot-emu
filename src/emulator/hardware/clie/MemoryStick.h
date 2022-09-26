@@ -18,11 +18,19 @@ class MemoryStick {
     void Reset();
 
     void ExecuteTpc(uint8 tpcId, uint32 dataInCount = 0, uint8* dataIn = nullptr);
+    void FinishReadTpc();
+
     uint8* GetDataOut();
     uint32 GetDataOutSize();
 
     void Mount(CardImage* cardImage);
     void Unmount();
+
+   private:
+    void TpcSetCommand(uint8 commandByte);
+    bool PreparePage();
+    void SetFlags(uint8 flags);
+    void ClearFlags();
 
    public:
     EmEvent<> irq;
@@ -54,20 +62,32 @@ class MemoryStick {
     };
 #pragma pack(pop)
 
+    enum class Operation : uint8 {
+        none = 0,
+        readOne = 1,
+        readMulti = 2,
+        programOne = 3,
+        programMulti = 4
+    };
+
    private:
     Registers reg;
 
-    // uint8 readWindowStart{0};
-    // uint8 readWindowSize{0};
+    uint8 readWindowStart{0};
+    uint8 readWindowSize{0};
     uint8 writeWindowStart{0};
     uint8 writeWindowSize{0};
 
-    uint8 bufferOut[512];
+    uint8* bufferOut{nullptr};
     uint32 bufferOutSize{0};
+
+    uint8 preparedPage[512];
 
     CardImage* cardImage = nullptr;
     uint8 pagesPerBlock{0};
     uint8 segments{0};
+
+    Operation currentOperation{Operation::none};
 
    private:
     MemoryStick(const MemoryStick&) = delete;

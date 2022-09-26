@@ -82,9 +82,9 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
 
     Fifo<uint16> fifo{4};
 
-    uint8 outBuffer[512];
-    uint32 outBufferSize{0};
-    uint32 inBufferIndex{0};
+    uint8 writeBuffer[512];
+    uint32 writeBufferSize{0};
+    uint32 readBufferIndex{0};
 
    private:
     EmRegsMB86189(const EmRegsMB86189&) = delete;

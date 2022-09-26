@@ -1,13 +1,13 @@
 #include "MemoryStick.h"
 
 namespace {
-    constexpr uint8 INT_TPC_OK = 0x80;
-    constexpr uint8 INT_TPC_ERR = 0x40;
-    // constexpr uint8 INT_TPC_READ_FOR_TRANSFER = 0x20;
-    // constexpr uint8 INT_TPC_INVALID = 0x01;
+    constexpr uint8 STATUS_COMMAND_OK = 0x80;
+    constexpr uint8 STATUS_ERR = 0x40;
+    constexpr uint8 STATUS_READY_FOR_TRANSFER = 0x20;
+    constexpr uint8 STATUS_INVALID_COMMAND = 0x01;
 
-    // constexpr uint8 ACCESS_BLOCK = 0x00;
-    // constexpr uint8 ACCESS_PAGE = 0x20;
+    constexpr uint8 ACCESS_BLOCK = 0x00;
+    constexpr uint8 ACCESS_PAGE = 0x20;
     // constexpr uint8 ACCESS_OOB_ONLY = 0x40;
     // constexpr uint8 ACCESS_OOB_ONLY_NO_EEC = 0x80;
 
@@ -17,6 +17,9 @@ namespace {
     constexpr uint8 TPC_SET_CMD = 0x0e;
     constexpr uint8 TPC_READ_LONG_DATA = 0x02;
     constexpr uint8 TPC_WRITE_LONG_DATA = 0x0c;
+
+    constexpr uint8 CMD_READ = 0xaa;
+    constexpr uint8 CMD_STOP = 0x33;
 
     bool determineLayoutWithBlockSize(size_t pagesTotal, uint32 pagesPerBlock, uint8& segments) {
         if (pagesTotal % pagesPerBlock != 0) return false;
@@ -47,7 +50,13 @@ void MemoryStick::Reset() {
     writeWindowStart = 0x10;
     writeWindowSize = 15;
 
+    readWindowStart = 0x00;
+    readWindowSize = 0x1e;
+
     bufferOutSize = 0;
+    bufferOut = nullptr;
+
+    currentOperation = Operation::none;
 }
 
 void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
@@ -58,24 +67,81 @@ void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
         case TPC_REGS_WRITE: {
             if (dataInCount != writeWindowSize || writeWindowStart < offsetof(Registers, cfg) ||
                 writeWindowSize + writeWindowStart > sizeof(Registers)) {
-                reg.intFlags = INT_TPC_ERR;
-                break;
+                SetFlags(STATUS_ERR);
+                return;
             }
 
             uint8* registerFile = reinterpret_cast<uint8*>(&reg);
             memcpy(registerFile + writeWindowStart, dataIn, writeWindowSize);
 
-            reg.intFlags = INT_TPC_OK;
-
-            break;
+            ClearFlags();
+            return;
         }
 
-        default:
-            cerr << "unsupported TCP 0x" << hex << (int)tpcId << dec << endl << flush;
-            reg.intFlags = INT_TPC_ERR;
-    }
+        case TPC_REGS_READ: {
+            if (readWindowStart + readWindowSize >= sizeof(Registers)) {
+                SetFlags(STATUS_ERR);
+                return;
+            }
 
-    irq.Dispatch();
+            bufferOutSize = readWindowSize;
+            bufferOut = reinterpret_cast<uint8*>(&reg) + readWindowStart;
+
+            return;
+        }
+
+        case TPC_SET_CMD:
+            if (dataInCount != 1) {
+                SetFlags(STATUS_ERR);
+                return;
+            }
+
+            TpcSetCommand(dataIn[0]);
+
+            return;
+
+        case TPC_READ_LONG_DATA:
+            if (currentOperation == Operation::readOne ||
+                currentOperation == Operation::readMulti) {
+                bufferOutSize = 512;
+                bufferOut = preparedPage;
+
+                ClearFlags();
+            } else {
+                cerr << "TPC READ_LONG_DATA without anything to read" << endl << flush;
+                SetFlags(STATUS_ERR);
+            }
+
+            return;
+
+        default:
+            cerr << "unsupported TPC 0x" << hex << (int)tpcId << dec << endl << flush;
+
+            SetFlags(STATUS_ERR);
+    }
+}
+
+void MemoryStick::FinishReadTpc() {
+    bufferOutSize = 0;
+    bufferOut = nullptr;
+
+    switch (currentOperation) {
+        case Operation::readMulti:
+            if (!PreparePage()) currentOperation = Operation::none;
+
+            break;
+
+        case Operation::readOne:
+            currentOperation = Operation::none;
+            SetFlags(STATUS_COMMAND_OK);
+            break;
+
+        case Operation::none:
+            break;
+
+        default:
+            EmAssert(false);
+    }
 }
 
 uint8* MemoryStick::GetDataOut() { return bufferOut; }
@@ -93,6 +159,68 @@ void MemoryStick::Mount(CardImage* cardImage) {
 }
 
 void MemoryStick::Unmount() { this->cardImage = nullptr; }
+
+void MemoryStick::TpcSetCommand(uint8 commandByte) {
+    switch (commandByte) {
+        case CMD_READ:
+            if (PreparePage()) {
+                switch (reg.accessType) {
+                    case ACCESS_BLOCK:
+                        currentOperation = Operation::readMulti;
+                        break;
+
+                    case ACCESS_PAGE:
+                        currentOperation = Operation::readOne;
+                        break;
+
+                    default:
+                        cerr << "unhandled access type 0x" << hex << reg.accessType << dec << endl
+                             << flush;
+                        currentOperation = Operation::none;
+                        break;
+                }
+            } else {
+                cerr << "invalid parameters for read" << endl << flush;
+                SetFlags(STATUS_ERR);
+            }
+
+            return;
+
+        case CMD_STOP:
+            if (currentOperation == Operation::readMulti) {
+                currentOperation = Operation::readOne;
+                SetFlags(STATUS_COMMAND_OK);
+            } else {
+                cerr << "cmd_stop without running multi page operation" << endl << flush;
+                SetFlags(STATUS_ERR);
+            }
+            break;
+
+        default:
+            cerr << "invalid command 0x" << hex << (int)commandByte << dec << endl << flush;
+            SetFlags(STATUS_INVALID_COMMAND);
+    }
+}
+
+bool MemoryStick::PreparePage() {
+    if (reg.page >= pagesPerBlock) return false;
+
+    const uint32 blockIndex = reg.blockLo | (reg.blockMid << 8) | (reg.blockHi << 16);
+    if (blockIndex >= segments * 512) return false;
+
+    memset(preparedPage, 0, 512);
+
+    SetFlags(STATUS_READY_FOR_TRANSFER);
+
+    return true;
+}
+
+void MemoryStick::SetFlags(uint8 flags) {
+    reg.intFlags = flags;
+    if (flags) irq.Dispatch();
+}
+
+void MemoryStick::ClearFlags() { reg.intFlags = 0; }
 
 MemoryStick::TpcType MemoryStick::GetTpcType(uint8 tpcId) {
     switch (tpcId) {
