@@ -28,7 +28,10 @@ class MemoryStick {
 
    private:
     void TpcSetCommand(uint8 commandByte);
+
     bool PreparePage();
+    void PreparePageBootBlock(uint8 page);
+
     void SetFlags(uint8 flags);
     void ClearFlags();
 

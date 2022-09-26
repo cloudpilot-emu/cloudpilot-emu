@@ -213,7 +213,7 @@ uint32 EmRegsMB86189::mscsRead(emuptr address, int size) {
 
     if (state == State::tpcRead && memoryStick.GetDataOutSize() - readBufferIndex >= 4)
         value |= MSCS_RBF;
-    if (state == State::tpcRead && memoryStick.GetDataOutSize() - readBufferIndex == 0)
+    if (state != State::tpcRead || memoryStick.GetDataOutSize() - readBufferIndex == 0)
         value |= MSCS_RBE;
     if (state != State::idle) value |= MSCS_DRQ;
 
@@ -238,7 +238,7 @@ uint32 EmRegsMB86189::msdataRead(emuptr address, int size) {
         uint8* buffer = memoryStick.GetDataOut();
         uint32 bufferSize = memoryStick.GetDataOutSize();
 
-        value = buffer[readBufferIndex++] << 8;
+        if (readBufferIndex < bufferSize) value = buffer[readBufferIndex++] << 8;
         if (readBufferIndex < bufferSize) value |= buffer[readBufferIndex++];
 
         if (readBufferIndex >= bufferSize) FinishTpc();

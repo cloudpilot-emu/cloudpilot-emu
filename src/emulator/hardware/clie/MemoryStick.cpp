@@ -1,5 +1,7 @@
 #include "MemoryStick.h"
 
+#include "MemoryStickStructs.h"
+
 namespace {
     constexpr uint8 STATUS_COMMAND_OK = 0x80;
     constexpr uint8 STATUS_ERR = 0x40;
@@ -38,6 +40,8 @@ namespace {
         pagesPerBlock = 32;
         return determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments);
     }
+
+    uint16 swap16(uint16 x) { return (x << 8) | (x >> 8); }
 }  // namespace
 
 void MemoryStick::Reset() {
@@ -109,6 +113,8 @@ void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
                 ClearFlags();
             } else {
                 cerr << "TPC READ_LONG_DATA without anything to read" << endl << flush;
+
+                bufferOutSize = 0;
                 SetFlags(STATUS_ERR);
             }
 
@@ -122,11 +128,16 @@ void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
 }
 
 void MemoryStick::FinishReadTpc() {
+    bool wasPageRead = bufferOut == preparedPage;
+
     bufferOutSize = 0;
     bufferOut = nullptr;
 
+    if (!wasPageRead) return;
+
     switch (currentOperation) {
         case Operation::readMulti:
+            reg.page++;
             if (!PreparePage()) currentOperation = Operation::none;
 
             break;
@@ -171,6 +182,7 @@ void MemoryStick::TpcSetCommand(uint8 commandByte) {
 
                     case ACCESS_PAGE:
                         currentOperation = Operation::readOne;
+                        SetFlags(STATUS_COMMAND_OK | STATUS_READY_FOR_TRANSFER);
                         break;
 
                     default:
@@ -208,11 +220,55 @@ bool MemoryStick::PreparePage() {
     const uint32 blockIndex = reg.blockLo | (reg.blockMid << 8) | (reg.blockHi << 16);
     if (blockIndex >= segments * 512) return false;
 
-    memset(preparedPage, 0, 512);
+    if (blockIndex == 0 | blockIndex == 1) {
+        PreparePageBootBlock(reg.page);
+    } else {
+        reg.oob[0] = 0xff;
+        reg.oob[1] = 0x34;
+        reg.oob[2] = reg.oob[3] = 0;
+
+        memset(preparedPage, 0, 512);
+    }
 
     SetFlags(STATUS_READY_FOR_TRANSFER);
 
     return true;
+}
+
+void MemoryStick::PreparePageBootBlock(uint8 page) {
+    reg.oob[0] = 0xff;
+    reg.oob[1] = 0x38;
+    reg.oob[2] = reg.oob[3] = 0;
+
+    memset(preparedPage, 0, 512);
+
+    if (page == 0) {
+        MsBootBlock* boot = reinterpret_cast<MsBootBlock*>(preparedPage);
+
+        boot->blkid = swap16(0x01);
+        boot->ftlVer = 0x0101;
+        boot->numBbis = 0x01;
+        boot->bbi[0].start = 0;
+        boot->bbi[0].len = 0;
+        boot->bbi[0].type = 0x01;
+        boot->msClass = 0x01;
+        boot->msSubclass = 0x02;
+        boot->kbPerBlock = swap16(pagesPerBlock >> 1);
+        boot->numBlocks = swap16(segments * 512);
+        boot->usableBlocks = swap16(segments * 496);
+        boot->pageSize = swap16(512);
+        boot->oobSize = 16;
+        boot->manufTimeYearHi = 20;
+        boot->manufTimeYearLo = 22;
+        boot->manufTimeMonth = 9;
+        boot->manufDateDay = 26;
+        boot->assemblyMakerCode = 0x01;
+        boot->formatType = 0x01;
+    }
+
+    if (page == 1) {
+        preparedPage[0] = preparedPage[1] = 0xff;
+    }
 }
 
 void MemoryStick::SetFlags(uint8 flags) {
