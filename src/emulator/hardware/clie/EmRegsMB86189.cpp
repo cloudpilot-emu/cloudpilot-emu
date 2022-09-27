@@ -1,5 +1,7 @@
 #include "EmRegsMB86189.h"
 
+#define TRACE_ACCESS
+
 #define INSTALL_HANDLER(read, write, offset, size)                                             \
     this->SetHandler((ReadFunction)&EmRegsMB86189::read, (WriteFunction)&EmRegsMB86189::write, \
                      baseAddress + offset, size)
@@ -202,7 +204,9 @@ uint32 EmRegsMB86189::mscmdRead(emuptr address, int size) {
         return 0;
     }
 
+#ifdef TRACE_ACCESS
     cerr << "MSCMD -> 0x" << hex << reg.mscmd << dec << endl << flush;
+#endif
 
     return reg.mscmd;
 }
@@ -219,9 +223,11 @@ uint32 EmRegsMB86189::mscsRead(emuptr address, int size) {
 
     value = compositeRegisterRead(baseAddress + OFFSET_MSCS, address, size, value);
 
+#ifdef TRACE_ACCESS
     cerr << "MSCS_" << (address - baseAddress - OFFSET_MSCS) << " -> 0x" << hex << value << dec
          << endl
          << flush;
+#endif
 
     return value;
 }
@@ -244,7 +250,9 @@ uint32 EmRegsMB86189::msdataRead(emuptr address, int size) {
         if (readBufferIndex >= bufferSize) FinishTpc();
     }
 
+#ifdef TRACE_ACCESS
     cerr << "MSDATA -> 0x" << hex << value << dec << endl << flush;
+#endif
 
     return value;
 }
@@ -254,9 +262,11 @@ uint32 EmRegsMB86189::msicsRead(emuptr address, int size) {
 
     NegateIrq(IRQ_SIF | IRQ_RDY);
 
+#ifdef TRACE_ACCESS
     cerr << "MSICS_" << (address - baseAddress - OFFSET_MSICS) << " -> 0x" << hex << value << dec
          << endl
          << flush;
+#endif
 
     return value;
 }
@@ -264,9 +274,11 @@ uint32 EmRegsMB86189::msicsRead(emuptr address, int size) {
 uint32 EmRegsMB86189::msppcdRead(emuptr address, int size) {
     uint32 value = compositeRegisterRead(baseAddress + OFFSET_MSPPCD, address, size, reg.msppcd);
 
+#ifdef TRACE_ACCESS
     cerr << "MSPPCD_" << (address - baseAddress - OFFSET_MSPPCD) << " -> 0x" << hex << value << dec
          << endl
          << flush;
+#endif
 
     return value;
 }
@@ -285,7 +297,9 @@ void EmRegsMB86189::mscmdWrite(emuptr address, int size, uint32 value) {
         return;
     }
 
+#ifdef TRACE_ACCESS
     cerr << "MSCMD <- 0x" << hex << value << dec << endl << flush;
+#endif
 
     ClearIrq(IRQ_SIF);
 
@@ -294,9 +308,11 @@ void EmRegsMB86189::mscmdWrite(emuptr address, int size, uint32 value) {
 }
 
 void EmRegsMB86189::mscsWrite(emuptr address, int size, uint32 value) {
+#ifdef TRACE_ACCESS
     cerr << "MSCS_" << (address - baseAddress - OFFSET_MSCS) << " <- 0x" << hex << value << dec
          << endl
          << flush;
+#endif
 
     uint16 oldValue = reg.mscs;
 
@@ -320,7 +336,9 @@ void EmRegsMB86189::msdataWrite(emuptr address, int size, uint32 value) {
         return;
     }
 
+#ifdef TRACE_ACCESS
     cerr << "MSDATA <- 0x" << hex << value << dec << endl << flush;
+#endif
 
     FifoWrite(value);
 }
@@ -328,17 +346,21 @@ void EmRegsMB86189::msdataWrite(emuptr address, int size, uint32 value) {
 void EmRegsMB86189::msicsWrite(emuptr address, int size, uint32 value) {
     value &= 0x00ff;
 
+#ifdef TRACE_ACCESS
     cerr << "MSICS_" << (address - baseAddress - OFFSET_MSICS) << " <- 0x" << hex << value << dec
          << endl
          << flush;
+#endif
 
     compositeRegisterWrite(baseAddress + OFFSET_MSICS, address, size, value, reg.msics);
 }
 
 void EmRegsMB86189::msppcdWrite(emuptr address, int size, uint32 value) {
+#ifdef TRACE_ACCESS
     cerr << "MSCPPCD_" << (address - baseAddress - OFFSET_MSPPCD) << " <- 0x" << hex << value << dec
          << endl
          << flush;
+#endif
 
     compositeRegisterWrite(baseAddress + OFFSET_MSPPCD, address, size, value, reg.msppcd);
 }
