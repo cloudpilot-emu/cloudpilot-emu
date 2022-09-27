@@ -282,9 +282,6 @@ bool MemoryStick::PreparePage(bool oobOnly) {
 
             if (!oobOnly) memset(preparedPage, 0, 512);
         } else {
-            cerr << hex << "block=0x" << blockIndex << " logicalBlock=0x" << logicalBlock
-                 << " page=0x" << (int)reg.page << dec << endl
-                 << flush;
             reg.oob[2] = logicalBlock >> 8;
             reg.oob[3] = logicalBlock;
 
