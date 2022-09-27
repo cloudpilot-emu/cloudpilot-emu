@@ -184,7 +184,7 @@ void MemoryStick::Mount(CardImage* cardImage) {
     uint16 logicalBlock = 0;
     for (uint8 segment = 0; segment < segments; segment++)
         for (uint16 block = segment == 0 ? 2 : 0; block < 496; block++)
-            blockMap[(segment << 8) | block] = logicalBlock++;
+            blockMap[(segment << 9) | block] = logicalBlock++;
 
     cerr << "mounted memory stick image, " << (int)segments << " segments, " << (int)pagesPerBlock
          << " pages per block" << endl
