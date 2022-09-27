@@ -10,18 +10,20 @@ namespace {
 
     constexpr uint8 ACCESS_BLOCK = 0x00;
     constexpr uint8 ACCESS_PAGE = 0x20;
-    // constexpr uint8 ACCESS_OOB_ONLY = 0x40;
+    constexpr uint8 ACCESS_OOB_ONLY = 0x40;
     // constexpr uint8 ACCESS_OOB_ONLY_NO_EEC = 0x80;
 
     constexpr uint8 TPC_SET_REGS_WINDOW = 0x08;
     constexpr uint8 TPC_REGS_WRITE = 0x0b;
     constexpr uint8 TPC_REGS_READ = 0x04;
+    constexpr uint8 TPC_GET_INT = 0x07;
     constexpr uint8 TPC_SET_CMD = 0x0e;
     constexpr uint8 TPC_READ_LONG_DATA = 0x02;
     constexpr uint8 TPC_WRITE_LONG_DATA = 0x0c;
 
     constexpr uint8 CMD_READ = 0xaa;
     constexpr uint8 CMD_STOP = 0x33;
+    constexpr uint8 CMD_ERASE = 0x99;
 
     bool determineLayoutWithBlockSize(size_t pagesTotal, uint32 pagesPerBlock, uint8& segments) {
         if (pagesTotal % pagesPerBlock != 0) return false;
@@ -43,6 +45,10 @@ namespace {
 
     uint16 swap16(uint16 x) { return (x << 8) | (x >> 8); }
 }  // namespace
+
+MemoryStick::MemoryStick() { blockMap = new uint16[16 * 512]; }
+
+MemoryStick::~MemoryStick() { delete[] blockMap; }
 
 void MemoryStick::Reset() {
     memset(&reg, 0, sizeof(reg));
@@ -94,6 +100,12 @@ void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
             return;
         }
 
+        case TPC_GET_INT:
+            bufferOutSize = 1;
+            bufferOut = reinterpret_cast<uint8*>(&reg) + 1;
+
+            return;
+
         case TPC_SET_CMD:
             if (dataInCount != 1) {
                 SetFlags(STATUS_ERR);
@@ -138,7 +150,10 @@ void MemoryStick::FinishReadTpc() {
     switch (currentOperation) {
         case Operation::readMulti:
             reg.page++;
-            if (!PreparePage()) currentOperation = Operation::none;
+            if (PreparePage(false))
+                SetFlags(STATUS_READY_FOR_TRANSFER);
+            else
+                currentOperation = Operation::none;
 
             break;
 
@@ -164,6 +179,13 @@ void MemoryStick::Mount(CardImage* cardImage) {
 
     this->cardImage = cardImage;
 
+    memset(blockMap, 0xffff, sizeof(uint16) * 512 * 16);
+
+    uint16 logicalBlock = 0;
+    for (uint8 segment = 0; segment < segments; segment++)
+        for (uint16 block = segment == 0 ? 2 : 0; block < 496; block++)
+            blockMap[(segment << 8) | block] = logicalBlock++;
+
     cerr << "mounted memory stick image, " << (int)segments << " segments, " << (int)pagesPerBlock
          << " pages per block" << endl
          << flush;
@@ -174,29 +196,53 @@ void MemoryStick::Unmount() { this->cardImage = nullptr; }
 void MemoryStick::TpcSetCommand(uint8 commandByte) {
     switch (commandByte) {
         case CMD_READ:
-            if (PreparePage()) {
-                switch (reg.accessType) {
-                    case ACCESS_BLOCK:
-                        currentOperation = Operation::readMulti;
-                        break;
+            currentOperation = Operation::none;
 
-                    case ACCESS_PAGE:
-                        currentOperation = Operation::readOne;
-                        SetFlags(STATUS_COMMAND_OK | STATUS_READY_FOR_TRANSFER);
-                        break;
+            switch (reg.accessType) {
+                case ACCESS_BLOCK:
+                    if (!PreparePage(false)) {
+                        cerr << "invalid parameters for read" << endl << flush;
+                        SetFlags(STATUS_ERR);
 
-                    default:
-                        cerr << "unhandled access type 0x" << hex << reg.accessType << dec << endl
-                             << flush;
-                        currentOperation = Operation::none;
-                        break;
-                }
-            } else {
-                cerr << "invalid parameters for read" << endl << flush;
-                SetFlags(STATUS_ERR);
+                        return;
+                    }
+
+                    currentOperation = Operation::readMulti;
+                    SetFlags(STATUS_READY_FOR_TRANSFER);
+
+                    return;
+
+                case ACCESS_PAGE:
+                    if (!PreparePage(false)) {
+                        cerr << "invalid parameters for read" << endl << flush;
+                        SetFlags(STATUS_ERR);
+
+                        return;
+                    }
+
+                    currentOperation = Operation::readOne;
+                    SetFlags(STATUS_COMMAND_OK | STATUS_READY_FOR_TRANSFER);
+
+                    return;
+
+                case ACCESS_OOB_ONLY:
+                    if (!PreparePage(true)) {
+                        cerr << "invalid parameters for read" << endl << flush;
+                        SetFlags(STATUS_ERR);
+
+                        return;
+                    }
+
+                    SetFlags(STATUS_COMMAND_OK);
+
+                    return;
+
+                default:
+                    cerr << "unhandled access type 0x" << hex << (int)reg.accessType << dec << endl
+                         << flush;
+
+                    return;
             }
-
-            return;
 
         case CMD_STOP:
             if (currentOperation == Operation::readMulti) {
@@ -208,37 +254,53 @@ void MemoryStick::TpcSetCommand(uint8 commandByte) {
             }
             break;
 
+        case CMD_ERASE:
+            SetFlags(STATUS_COMMAND_OK);
+            return;
+
         default:
             cerr << "invalid command 0x" << hex << (int)commandByte << dec << endl << flush;
             SetFlags(STATUS_INVALID_COMMAND);
     }
 }
 
-bool MemoryStick::PreparePage() {
+bool MemoryStick::PreparePage(bool oobOnly) {
     if (reg.page >= pagesPerBlock) return false;
 
     const uint32 blockIndex = reg.blockLo | (reg.blockMid << 8) | (reg.blockHi << 16);
     if (blockIndex >= segments * 512) return false;
 
     if (blockIndex == 0 | blockIndex == 1) {
-        PreparePageBootBlock(reg.page);
+        PreparePageBootBlock(reg.page, oobOnly);
     } else {
+        uint16 logicalBlock = blockMap[blockIndex];
         reg.oob[0] = 0xff;
-        reg.oob[1] = 0x34;
-        reg.oob[2] = reg.oob[3] = 0;
+        reg.oob[1] = 0x3c;
 
-        memset(preparedPage, 0, 512);
+        if (logicalBlock == 0xffff) {
+            reg.oob[2] = reg.oob[3] = 0xff;
+
+            if (!oobOnly) memset(preparedPage, 0, 512);
+        } else {
+            cerr << hex << "block=0x" << blockIndex << " logicalBlock=0x" << logicalBlock
+                 << " page=0x" << (int)reg.page << dec << endl
+                 << flush;
+            reg.oob[2] = logicalBlock >> 8;
+            reg.oob[3] = logicalBlock;
+
+            if (!oobOnly) cardImage->Read(preparedPage, logicalBlock * pagesPerBlock + reg.page, 1);
+        }
     }
-
-    SetFlags(STATUS_READY_FOR_TRANSFER);
 
     return true;
 }
 
-void MemoryStick::PreparePageBootBlock(uint8 page) {
+void MemoryStick::PreparePageBootBlock(uint8 page, bool oobOnly) {
     reg.oob[0] = 0xff;
     reg.oob[1] = 0x38;
     reg.oob[2] = reg.oob[3] = 0;
+
+    if (oobOnly) return;
 
     memset(preparedPage, 0, 512);
 

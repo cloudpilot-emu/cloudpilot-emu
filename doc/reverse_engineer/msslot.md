@@ -312,13 +312,13 @@
      3c4:	1f3c 0001      	moveb #1,%sp@-
      3c8:	4227           	clrb %sp@-
      3ca:	3f03           	movew %d3,%sp@-
-     3cc:	4eba 2aea      	jsr %pc@(0x2eb8)
+     3cc:	4eba 2aea      	jsr %pc@(0x2eb8)                -> ReadFlashPages
      3d0:	4a80           	tstl %d0
      3d2:	4fef 001a      	lea %sp@(26),%sp
      3d6:	6664           	bnes 0x43c
-     3d8:	0c6a 0001 4158 	cmpiw #1,%a2@(16728)
+     3d8:	0c6a 0001 4158 	cmpiw #1,%a2@(16728)            -> boot[0] == 1
      3de:	666c           	bnes 0x44c
-     3e0:	0c6a ffff 4376 	cmpiw #-1,%a2@(17270)
+     3e0:	0c6a ffff 4376 	cmpiw #-1,%a2@(17270)           ->
      3e6:	6706           	beqs 0x3ee
      3e8:	3543 4378      	movew %d3,%a2@(17272)
      3ec:	6074           	bras 0x462
@@ -342,7 +342,7 @@
      422:	1f2a 437d      	moveb %a2@(17277),%sp@-
      426:	4227           	clrb %sp@-
      428:	3f03           	movew %d3,%sp@-
-     42a:	4eba 2a8c      	jsr %pc@(0x2eb8)
+     42a:	4eba 2a8c      	jsr %pc@(0x2eb8)                -> ReadFlashPages
      42e:	4a80           	tstl %d0
      430:	4fef 001a      	lea %sp@(26),%sp
      434:	6616           	bnes 0x44c
@@ -4113,7 +4113,7 @@
     2f24:	486e ffff      	pea %fp@(-1)
     2f28:	4227           	clrb %sp@-
     2f2a:	2f07           	movel %d7,%sp@-
-    2f2c:	4eba d1a0      	jsr %pc@(0xce)
+    2f2c:	4eba d1a0      	jsr %pc@(0xce)                      -> write_reg
     2f30:	7200           	moveq #0,%d1
     2f32:	3200           	movew %d0,%d1
     2f34:	2601           	movel %d1,%d3
@@ -4122,7 +4122,7 @@
     2f3c:	2044           	moveal %d4,%a0
     2f3e:	2083           	movel %d3,%a0@
     2f40:	2f10           	movel %a0@,%sp@-
-    2f42:	4eba 04fa      	jsr %pc@(0x343e)
+    2f42:	4eba 04fa      	jsr %pc@(0x343e)                    -> Restore
     2f46:	5280           	addql #1,%d0
     2f48:	584f           	addqw #4,%sp
     2f4a:	6608           	bnes 0x2f54
@@ -4133,7 +4133,7 @@
     2f5a:	486e ffff      	pea %fp@(-1)
     2f5e:	4227           	clrb %sp@-
     2f60:	1f3c 00aa      	moveb #-86,%sp@-
-    2f64:	4eba d21a      	jsr %pc@(0x180)
+    2f64:	4eba d21a      	jsr %pc@(0x180)                     -> set_cmd
     2f68:	7200           	moveq #0,%d1
     2f6a:	3200           	movew %d0,%d1
     2f6c:	2601           	movel %d1,%d3
@@ -4144,7 +4144,7 @@
     2f76:	2044           	moveal %d4,%a0
     2f78:	2080           	movel %d0,%a0@
     2f7a:	2f10           	movel %a0@,%sp@-
-    2f7c:	4eba 04c0      	jsr %pc@(0x343e)
+    2f7c:	4eba 04c0      	jsr %pc@(0x343e)                    -> Restore
     2f80:	5280           	addql #1,%d0
     2f82:	584f           	addqw #4,%sp
     2f84:	6608           	bnes 0x2f8e
@@ -4161,7 +4161,7 @@
     2fa4:	3d40 fffc      	movew %d0,%fp@(-4)
     2fa8:	486e ffff      	pea %fp@(-1)
     2fac:	1f3c 0001      	moveb #1,%sp@-
-    2fb0:	4eba d244      	jsr %pc@(0x1f6)
+    2fb0:	4eba d244      	jsr %pc@(0x1f6)                     -> wait_msInt
     2fb4:	7200           	moveq #0,%d1
     2fb6:	3200           	movew %d0,%d1
     2fb8:	2601           	movel %d1,%d3
@@ -4173,13 +4173,13 @@
     2fc4:	6628           	bnes 0x2fee
     2fc6:	486e ffff      	pea %fp@(-1)
     2fca:	2f0a           	movel %a2,%sp@-
-    2fcc:	4eba d15c      	jsr %pc@(0x12a)
+    2fcc:	4eba d15c      	jsr %pc@(0x12a)                     -> read_reg
     2fd0:	7010           	moveq #16,%d0
     2fd2:	8083           	orl %d3,%d0
     2fd4:	2044           	moveal %d4,%a0
     2fd6:	2080           	movel %d0,%a0@
     2fd8:	2f10           	movel %a0@,%sp@-
-    2fda:	4eba 0462      	jsr %pc@(0x343e)
+    2fda:	4eba 0462      	jsr %pc@(0x343e)                    -> Restore
     2fde:	5280           	addql #1,%d0
     2fe0:	4fef 000c      	lea %sp@(12),%sp
     2fe4:	6608           	bnes 0x2fee
@@ -4189,7 +4189,7 @@
     2ff0:	6000 02a4      	braw 0x3296
     2ff4:	486e ffff      	pea %fp@(-1)
     2ff8:	2f0a           	movel %a2,%sp@-
-    2ffa:	4eba d12e      	jsr %pc@(0x12a)
+    2ffa:	4eba d12e      	jsr %pc@(0x12a)                     -> read_reg
     2ffe:	7200           	moveq #0,%d1
     3000:	3200           	movew %d0,%d1
     3002:	2601           	movel %d1,%d3
@@ -4200,7 +4200,7 @@
     300c:	2044           	moveal %d4,%a0
     300e:	2080           	movel %d0,%a0@
     3010:	2f10           	movel %a0@,%sp@-
-    3012:	4eba 042a      	jsr %pc@(0x343e)
+    3012:	4eba 042a      	jsr %pc@(0x343e)                    -> Restore
     3016:	5280           	addql #1,%d0
     3018:	584f           	addqw #4,%sp
     301a:	6608           	bnes 0x3024

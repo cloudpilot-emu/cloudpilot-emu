@@ -13,7 +13,9 @@ class MemoryStick {
     static TpcType GetTpcType(uint8 tpcId);
     static bool IsSizeRepresentable(size_t pagesTotal);
 
-    MemoryStick() = default;
+    MemoryStick();
+
+    ~MemoryStick();
 
     void Reset();
 
@@ -29,8 +31,8 @@ class MemoryStick {
    private:
     void TpcSetCommand(uint8 commandByte);
 
-    bool PreparePage();
-    void PreparePageBootBlock(uint8 page);
+    bool PreparePage(bool oobOnly);
+    void PreparePageBootBlock(uint8 page, bool oobOnly);
 
     void SetFlags(uint8 flags);
     void ClearFlags();
@@ -73,6 +75,8 @@ class MemoryStick {
         programMulti = 4
     };
 
+    enum class Access : uint8 { full = 0, oobOnly = 1 };
+
    private:
     Registers reg;
 
@@ -89,6 +93,8 @@ class MemoryStick {
     CardImage* cardImage = nullptr;
     uint8 pagesPerBlock{0};
     uint8 segments{0};
+
+    uint16* blockMap;
 
     Operation currentOperation{Operation::none};
 
