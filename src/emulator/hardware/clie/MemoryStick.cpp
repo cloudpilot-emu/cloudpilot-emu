@@ -24,6 +24,7 @@ namespace {
     constexpr uint8 CMD_READ = 0xaa;
     constexpr uint8 CMD_STOP = 0x33;
     constexpr uint8 CMD_ERASE = 0x99;
+    constexpr uint8 CMD_RESET = 0x3c;
 
     bool determineLayoutWithBlockSize(size_t pagesTotal, uint32 pagesPerBlock, uint8& segments) {
         if (pagesTotal % pagesPerBlock != 0) return false;
@@ -207,10 +208,16 @@ void MemoryStick::DoCmd(uint8 commandByte) {
                 cerr << "cmd_stop without running multi page operation" << endl << flush;
                 SetFlags(STATUS_ERR);
             }
-            break;
+
+            return;
 
         case CMD_ERASE:
             SetFlags(STATUS_COMMAND_OK);
+            return;
+
+        case CMD_RESET:
+            Reset();
+            cerr << "memory stick reset" << endl << flush;
             return;
 
         default:
