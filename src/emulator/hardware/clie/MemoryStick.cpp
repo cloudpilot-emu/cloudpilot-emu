@@ -112,7 +112,7 @@ void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
                 return;
             }
 
-            TpcSetCommand(dataIn[0]);
+            DoCmd(dataIn[0]);
 
             return;
 
@@ -193,56 +193,11 @@ void MemoryStick::Mount(CardImage* cardImage) {
 
 void MemoryStick::Unmount() { this->cardImage = nullptr; }
 
-void MemoryStick::TpcSetCommand(uint8 commandByte) {
+void MemoryStick::DoCmd(uint8 commandByte) {
     switch (commandByte) {
         case CMD_READ:
-            currentOperation = Operation::none;
-
-            switch (reg.accessType) {
-                case ACCESS_BLOCK:
-                    if (!PreparePage(false)) {
-                        cerr << "invalid parameters for read" << endl << flush;
-                        SetFlags(STATUS_ERR);
-
-                        return;
-                    }
-
-                    currentOperation = Operation::readMulti;
-                    SetFlags(STATUS_READY_FOR_TRANSFER);
-
-                    return;
-
-                case ACCESS_PAGE:
-                    if (!PreparePage(false)) {
-                        cerr << "invalid parameters for read" << endl << flush;
-                        SetFlags(STATUS_ERR);
-
-                        return;
-                    }
-
-                    currentOperation = Operation::readOne;
-                    SetFlags(STATUS_COMMAND_OK | STATUS_READY_FOR_TRANSFER);
-
-                    return;
-
-                case ACCESS_OOB_ONLY:
-                    if (!PreparePage(true)) {
-                        cerr << "invalid parameters for read" << endl << flush;
-                        SetFlags(STATUS_ERR);
-
-                        return;
-                    }
-
-                    SetFlags(STATUS_COMMAND_OK);
-
-                    return;
-
-                default:
-                    cerr << "unhandled access type 0x" << hex << (int)reg.accessType << dec << endl
-                         << flush;
-
-                    return;
-            }
+            DoCmdRead();
+            return;
 
         case CMD_STOP:
             if (currentOperation == Operation::readMulti) {
@@ -261,6 +216,56 @@ void MemoryStick::TpcSetCommand(uint8 commandByte) {
         default:
             cerr << "invalid command 0x" << hex << (int)commandByte << dec << endl << flush;
             SetFlags(STATUS_INVALID_COMMAND);
+    }
+}
+
+void MemoryStick::DoCmdRead() {
+    currentOperation = Operation::none;
+
+    switch (reg.accessType) {
+        case ACCESS_BLOCK:
+            if (!PreparePage(false)) {
+                cerr << "invalid parameters for read" << endl << flush;
+                SetFlags(STATUS_ERR);
+
+                return;
+            }
+
+            currentOperation = Operation::readMulti;
+            SetFlags(STATUS_READY_FOR_TRANSFER);
+
+            return;
+
+        case ACCESS_PAGE:
+            if (!PreparePage(false)) {
+                cerr << "invalid parameters for read" << endl << flush;
+                SetFlags(STATUS_ERR);
+
+                return;
+            }
+
+            currentOperation = Operation::readOne;
+            SetFlags(STATUS_COMMAND_OK | STATUS_READY_FOR_TRANSFER);
+
+            return;
+
+        case ACCESS_OOB_ONLY:
+            if (!PreparePage(true)) {
+                cerr << "invalid parameters for read" << endl << flush;
+                SetFlags(STATUS_ERR);
+
+                return;
+            }
+
+            SetFlags(STATUS_COMMAND_OK);
+
+            return;
+
+        default:
+            cerr << "unhandled access type 0x" << hex << (int)reg.accessType << dec << endl
+                 << flush;
+
+            return;
     }
 }
 

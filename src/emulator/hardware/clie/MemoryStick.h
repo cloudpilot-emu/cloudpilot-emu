@@ -29,7 +29,8 @@ class MemoryStick {
     void Unmount();
 
    private:
-    void TpcSetCommand(uint8 commandByte);
+    void DoCmd(uint8 commandByte);
+    void DoCmdRead();
 
     bool PreparePage(bool oobOnly);
     void PreparePageBootBlock(uint8 page, bool oobOnly);
