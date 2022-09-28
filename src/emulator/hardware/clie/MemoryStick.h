@@ -35,6 +35,10 @@ class MemoryStick {
     bool PreparePage(bool oobOnly);
     void PreparePageBootBlock(uint8 page, bool oobOnly);
 
+    bool EraseBlock();
+
+    void ProgramPage(uint8* data);
+
     void SetFlags(uint8 flags);
     void ClearFlags();
 

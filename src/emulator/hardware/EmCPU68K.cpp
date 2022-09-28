@@ -39,7 +39,7 @@
 #include "SuspendManager.h"
 #include "UAE.h"  // cpuop_func, etc.
 
-#define TRACE_FUNCTION_CALLS
+// #define TRACE_FUNCTION_CALLS
 
 constexpr uint32 SAVESTATE_VERSION = 1;
 

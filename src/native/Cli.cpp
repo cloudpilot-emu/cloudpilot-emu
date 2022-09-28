@@ -351,7 +351,7 @@ namespace {
             return false;
         }
 
-        const string& file = args[0];
+        const string& file = args[1];
         auto image = gExternalStorage.GetImageInSlot(slot);
 
         fstream stream(file, ios_base::out);

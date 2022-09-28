@@ -11,7 +11,7 @@ namespace {
     constexpr uint8 ACCESS_BLOCK = 0x00;
     constexpr uint8 ACCESS_PAGE = 0x20;
     constexpr uint8 ACCESS_OOB_ONLY = 0x40;
-    // constexpr uint8 ACCESS_OOB_ONLY_NO_EEC = 0x80;
+    constexpr uint8 ACCESS_OOB_ONLY_NO_EEC = 0x80;
 
     constexpr uint8 TPC_SET_REGS_WINDOW = 0x08;
     constexpr uint8 TPC_REGS_WRITE = 0x0b;
@@ -19,12 +19,13 @@ namespace {
     constexpr uint8 TPC_GET_INT = 0x07;
     constexpr uint8 TPC_SET_CMD = 0x0e;
     constexpr uint8 TPC_READ_LONG_DATA = 0x02;
-    constexpr uint8 TPC_WRITE_LONG_DATA = 0x0c;
+    constexpr uint8 TPC_WRITE_LONG_DATA = 0x0d;
 
     constexpr uint8 CMD_READ = 0xaa;
     constexpr uint8 CMD_STOP = 0x33;
     constexpr uint8 CMD_ERASE = 0x99;
     constexpr uint8 CMD_RESET = 0x3c;
+    constexpr uint8 CMD_PROGRAM = 0x55;
 
     bool determineLayoutWithBlockSize(size_t pagesTotal, uint32 pagesPerBlock, uint8& segments) {
         if (pagesTotal % pagesPerBlock != 0) return false;
@@ -133,6 +134,42 @@ void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
 
             return;
 
+        case TPC_WRITE_LONG_DATA:
+            if (dataInCount != 512) {
+                cerr << "not enough data for TPC_WRITE_LONG_DATA: " << dataInCount << endl << flush;
+
+                SetFlags(STATUS_ERR);
+                return;
+            }
+
+            switch (currentOperation) {
+                case Operation::programMulti:
+                    ProgramPage(dataIn);
+
+                    if (++reg.page < pagesPerBlock) {
+                        SetFlags(STATUS_READY_FOR_TRANSFER);
+                    } else {
+                        SetFlags(STATUS_COMMAND_OK);
+                        currentOperation = Operation::none;
+                    }
+
+                    return;
+
+                case Operation::programOne:
+                    ProgramPage(dataIn);
+                    currentOperation = Operation::none;
+
+                    SetFlags(STATUS_COMMAND_OK);
+
+                    return;
+
+                default:
+                    cerr << "TPC_WRITE_LONG_DATA without pending write" << endl << flush;
+                    SetFlags(STATUS_ERR);
+
+                    return;
+            }
+
         default:
             cerr << "unsupported TPC 0x" << hex << (int)tpcId << dec << endl << flush;
 
@@ -151,11 +188,12 @@ void MemoryStick::FinishReadTpc() {
     switch (currentOperation) {
         case Operation::readMulti:
             reg.page++;
-            if (PreparePage(false))
+            if (PreparePage(false)) {
                 SetFlags(STATUS_READY_FOR_TRANSFER);
-            else
+            } else {
                 currentOperation = Operation::none;
-
+                SetFlags(STATUS_COMMAND_OK);
+            }
             break;
 
         case Operation::readOne:
@@ -201,18 +239,29 @@ void MemoryStick::DoCmd(uint8 commandByte) {
             return;
 
         case CMD_STOP:
-            if (currentOperation == Operation::readMulti) {
-                currentOperation = Operation::readOne;
-                SetFlags(STATUS_COMMAND_OK);
-            } else {
-                cerr << "cmd_stop without running multi page operation" << endl << flush;
-                SetFlags(STATUS_ERR);
+            switch (currentOperation) {
+                case Operation::readMulti:
+                    currentOperation = Operation::readOne;
+                    SetFlags(STATUS_COMMAND_OK);
+
+                    return;
+
+                case Operation::programMulti: {
+                    currentOperation = Operation::programOne;
+                    SetFlags(STATUS_COMMAND_OK);
+
+                    return;
+                }
+
+                default:
+                    cerr << "cmd_stop without running multi page operation" << endl << flush;
+                    SetFlags(STATUS_ERR);
+
+                    return;
             }
 
-            return;
-
         case CMD_ERASE:
-            SetFlags(STATUS_COMMAND_OK);
+            SetFlags(EraseBlock() ? STATUS_COMMAND_OK : STATUS_ERR);
             return;
 
         case CMD_RESET:
@@ -220,9 +269,38 @@ void MemoryStick::DoCmd(uint8 commandByte) {
             cerr << "memory stick reset" << endl << flush;
             return;
 
+        case CMD_PROGRAM:
+            switch (reg.accessType) {
+                case ACCESS_BLOCK:
+                    currentOperation = Operation::programMulti;
+                    SetFlags(STATUS_READY_FOR_TRANSFER);
+
+                    return;
+
+                case ACCESS_PAGE:
+                    currentOperation = Operation::programOne;
+                    SetFlags(STATUS_COMMAND_OK);
+
+                    return;
+
+                case ACCESS_OOB_ONLY:
+                case ACCESS_OOB_ONLY_NO_EEC:
+                    SetFlags(STATUS_COMMAND_OK);
+
+                    return;
+
+                default:
+                    cerr << "unhandled access type 0x" << hex << (int)reg.accessType << dec << endl
+                         << flush;
+
+                    return;
+            }
+
         default:
             cerr << "invalid command 0x" << hex << (int)commandByte << dec << endl << flush;
             SetFlags(STATUS_INVALID_COMMAND);
+
+            return;
     }
 }
 
@@ -286,14 +364,13 @@ bool MemoryStick::PreparePage(bool oobOnly) {
         PreparePageBootBlock(reg.page, oobOnly);
     } else {
         uint16 logicalBlock = blockMap[blockIndex];
-        reg.oob[0] = 0xff;
-        reg.oob[1] = 0x3c;
 
         if (logicalBlock == 0xffff) {
-            reg.oob[2] = reg.oob[3] = 0xff;
-
-            if (!oobOnly) memset(preparedPage, 0, 512);
+            memset(reg.oob, 0xff, 9);
+            if (!oobOnly) memset(preparedPage, 0xff, 512);
         } else {
+            reg.oob[0] = 0xff;
+            reg.oob[1] = 0x3c;
             reg.oob[2] = logicalBlock >> 8;
             reg.oob[3] = logicalBlock;
 
@@ -340,6 +417,43 @@ void MemoryStick::PreparePageBootBlock(uint8 page, bool oobOnly) {
     if (page == 1) {
         preparedPage[0] = preparedPage[1] = 0xff;
     }
+}
+
+bool MemoryStick::EraseBlock() {
+    const uint32 blockIndex = reg.blockLo | (reg.blockMid << 8) | (reg.blockHi << 16);
+    if (blockIndex >= segments * 512) return false;
+
+    blockMap[blockIndex] = 0xffff;
+
+    return true;
+}
+
+void MemoryStick::ProgramPage(uint8* data) {
+    const uint32 blockIndex = reg.blockLo | (reg.blockMid << 8) | (reg.blockHi << 16);
+    if (blockIndex >= segments * 512) {
+        cerr << "attempt to program invalid block 0x" << hex << blockIndex << dec << endl << flush;
+        return;
+    }
+
+    if (reg.page >= pagesPerBlock) {
+        cerr << "attempt to program invalid page 0x" << hex << (int)reg.page << dec << endl
+             << flush;
+        return;
+    }
+
+    const uint16 logicalBlock = (reg.oob[2] << 8) | reg.oob[3];
+    const uint16 logicalPage = logicalBlock * pagesPerBlock + reg.page;
+
+    if (logicalPage >= cardImage->BlocksTotal()) {
+        cerr << "attempt to write beyond card bounds: block 0x" << hex << logicalPage << dec << endl
+             << flush;
+
+        return;
+    }
+
+    cardImage->Write(data, logicalPage, 1);
+
+    if (reg.page == 0) blockMap[blockIndex] = logicalBlock;
 }
 
 void MemoryStick::SetFlags(uint8 flags) {

@@ -1,6 +1,6 @@
 #include "EmRegsMB86189.h"
 
-#define TRACE_ACCESS
+// #define TRACE_ACCESS
 
 #define INSTALL_HANDLER(read, write, offset, size)                                             \
     this->SetHandler((ReadFunction)&EmRegsMB86189::read, (WriteFunction)&EmRegsMB86189::write, \
@@ -149,7 +149,7 @@ void EmRegsMB86189::SetState(State state) {
 
 void EmRegsMB86189::BeginTpc() {
     uint8 tpcId = reg.mscmd >> 12;
-    uint32 transferSize = reg.mscmd & 0x1ff;
+    uint32 transferSize = reg.mscmd & 0x2ff;
 
     SetState(MemoryStick::GetTpcType(tpcId) == MemoryStick::TpcType::read ? State::tpcRead
                                                                           : State::tpcWrite);
@@ -168,7 +168,7 @@ void EmRegsMB86189::BeginTpc() {
 
 void EmRegsMB86189::FinishTpc() {
     if (state == State::tpcWrite)
-        memoryStick.ExecuteTpc(reg.mscmd >> 12, reg.mscmd & 0x1ff, writeBuffer);
+        memoryStick.ExecuteTpc(reg.mscmd >> 12, reg.mscmd & 0x3ff, writeBuffer);
     else
         memoryStick.FinishReadTpc();
 
@@ -180,10 +180,10 @@ void EmRegsMB86189::FinishTpc() {
 void EmRegsMB86189::FifoWrite(uint16 data) {
     if (state != State::idle) {
         writeBuffer[writeBufferSize++] = data >> 8;
-        if (writeBufferSize >= (reg.mscmd & 0x1ff)) return FinishTpc();
+        if (writeBufferSize >= (reg.mscmd & 0x2ff)) return FinishTpc();
 
         writeBuffer[writeBufferSize++] = data;
-        if (writeBufferSize >= (reg.mscmd & 0x1ff)) FinishTpc();
+        if (writeBufferSize >= (reg.mscmd & 0x2ff)) FinishTpc();
 
         return;
     }
