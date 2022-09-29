@@ -12,6 +12,8 @@
 #undef NON_PORTABLE
 #include "PalmPackPop.h"
 
+using VZ = EmSonyVzWithSlot<EmRegsVZNoScreen>;
+
 ////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////
@@ -61,8 +63,8 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {{keyBitHard1, keyBitH
 //		� EmRegsVzPegModena::EmRegsVzPegModena
 // ---------------------------------------------------------------------------
 
-EmRegsVzPegModena::EmRegsVzPegModena(void)
-    : EmRegsVZNoScreen(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
+EmRegsVzPegModena::EmRegsVzPegModena(EmRegsMB86189& mb86189)
+    : VZ(mb86189), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsEZPalmIIIc::~EmRegsEZPalmIIIc
@@ -100,7 +102,7 @@ Bool EmRegsVzPegModena::GetSerialPortOn(int /*uartNum*/) {
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsVzPegModena::GetPortInputValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInputValue(port);
+    uint8 result = VZ::GetPortInputValue(port);
 
     if (port == 'J') {
         result |= hwrVZModenaPortJDC_IN;
@@ -119,11 +121,9 @@ uint8 EmRegsVzPegModena::GetPortInputValue(int port) {
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsVzPegModena::GetPortInternalValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInternalValue(port);
+    uint8 result = VZ::GetPortInternalValue(port);
 
     if (port == 'D') {
-        result = GetKeyBits();
-
         // Ensure that bit hwrEZPortDDockButton is set.  If it's clear, HotSync
         // will sync via the modem instead of the serial port.
         //

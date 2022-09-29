@@ -13,6 +13,8 @@
 #undef NON_PORTABLE
 #include "PalmPackPop.h"
 
+using VZ = EmSonyVzWithSlot<EmRegsVZNoScreen>;
+
 ////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////
@@ -30,7 +32,6 @@
 #define hwrVZYellowPortDKbdCol0 0x01
 #define hwrVZYellowPortDKbdCol1 0x02
 #define hwrVZYellowPortDKbdCol2 0x04
-#define hwrVZYellowPortDMS_INS 0x08
 
 #define hwrVZYellowPortDDockButton 0x10
 #define hwrVZYellowPortDPowerFail 0x80  // (L) Power Fail Interrupt	(aka IRQ6) (level, low)
@@ -57,8 +58,8 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
 //		� EmRegsVzPegYellowStone::EmRegsVzPegYellowStone
 // ---------------------------------------------------------------------------
 
-EmRegsVzPegYellowStone::EmRegsVzPegYellowStone(void)
-    : EmRegsVZNoScreen(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
+EmRegsVzPegYellowStone::EmRegsVzPegYellowStone(EmRegsMB86189& mb86189)
+    : VZ(mb86189), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsEZPalmIIIc::~EmRegsEZPalmIIIc
@@ -119,23 +120,14 @@ uint8 EmRegsVzPegYellowStone::GetPortInputValue(int port) {
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsVzPegYellowStone::GetPortInternalValue(int port) {
-    uint8 result = EmRegsVZNoScreen::GetPortInternalValue(port);
+    uint8 result = VZ::GetPortInternalValue(port);
 
     if (port == 'D') {
-        result = GetKeyBits();
-
         // Ensure that bit hwrEZPortDDockButton is set.  If it's clear, HotSync
         // will sync via the modem instead of the serial port.
         //
         // Also make sure that hwrEZPortDPowerFail is set.  If it's clear,
         // the battery code will make the device go to sleep immediately.
-
-        if (gExternalStorage.IsMounted(EmHAL::Slot::memorystick)) {
-            result |= hwrVZYellowPortDMS_INS;
-        } else {
-            result &= ~hwrVZYellowPortDMS_INS;
-        }
-
         result |= hwrVZYellowPortDDockButton | hwrVZYellowPortDPowerFail;
     }
 
@@ -162,20 +154,6 @@ void EmRegsVzPegYellowStone::GetKeyInfo(int* numRows, int* numCols, uint16* keyM
         (portCDir & hwrVZYellowPortCKbdRow1) != 0 && (portCData & hwrVZYellowPortCKbdRow1) == 0;
     rows[2] =
         (portCDir & hwrVZYellowPortCKbdRow2) != 0 && (portCData & hwrVZYellowPortCKbdRow2) == 0;
-}
-
-void EmRegsVzPegYellowStone::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
-    if (this->GetNextHandler()) this->GetNextHandler()->Mount(slot, key, cardImage);
-    if (slot != EmHAL::Slot::memorystick) return;
-
-    UpdatePortDInterrupts();
-}
-
-void EmRegsVzPegYellowStone::Unmount(EmHAL::Slot slot) {
-    if (this->GetNextHandler()) this->GetNextHandler()->Unmount(slot);
-    if (slot != EmHAL::Slot::memorystick) return;
-
-    UpdatePortDInterrupts();
 }
 
 // ---------------------------------------------------------------------------

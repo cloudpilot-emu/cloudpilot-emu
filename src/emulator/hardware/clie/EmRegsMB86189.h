@@ -23,6 +23,8 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
     void Unmount(EmHAL::Slot slot) override;
 
+    bool GetIrq();
+
    private:
     struct Registers {
         uint16 mscmd;
@@ -69,7 +71,7 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
                                        uint16& target);
 
    public:
-    EmEvent<> irq;
+    EmEvent<bool> irqChange;
 
    private:
     emuptr baseAddress;

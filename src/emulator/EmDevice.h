@@ -80,6 +80,7 @@ class EmDevice {
     bool BuggySleep() const;
     bool SupportsHardBtnCradle() const;
     int DigitizerScale() const;
+    bool EmulatesSlotMS() const;
 
     ScreenDimensions::Kind GetScreenDimensions() const;
 

@@ -1,6 +1,6 @@
 #include "EmRegsMB86189.h"
 
-// #define TRACE_ACCESS
+//#define TRACE_ACCESS
 
 #define INSTALL_HANDLER(read, write, offset, size)                                             \
     this->SetHandler((ReadFunction)&EmRegsMB86189::read, (WriteFunction)&EmRegsMB86189::write, \
@@ -78,6 +78,8 @@ void EmRegsMB86189::Unmount(EmHAL::Slot slot) {
     memoryStick.Unmount();
 }
 
+bool EmRegsMB86189::GetIrq() { return (reg.mscs & MSCS_INT) != 0; }
+
 void EmRegsMB86189::ResetHostController() {
     cerr << "MSHC reset" << endl << flush;
     reg.mscmd = 0;
@@ -121,11 +123,14 @@ void EmRegsMB86189::ClearIrq(uint8 bits) {
 }
 
 void EmRegsMB86189::UpdateIrqLine() {
+    uint16 mcsOld = reg.mscs;
+
     if (irqStat != 0) {
-        if ((reg.mscs & MSCS_INT) == 0) irq.Dispatch();
         reg.mscs |= MSCS_INT;
+        if ((mcsOld & MSCS_INT) == 0) irqChange.Dispatch(true);
     } else {
         reg.mscs &= ~MSCS_INT;
+        if ((mcsOld & MSCS_INT) != 0) irqChange.Dispatch(false);
     }
 }
 

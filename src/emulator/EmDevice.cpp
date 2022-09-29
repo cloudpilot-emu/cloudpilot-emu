@@ -1177,33 +1177,38 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x00100000));
         } break;
 
-        case kDevicePEGT400:
-            EmBankRegs::AddSubBank(new EmRegsVzPegVenice);
-            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE);
+        case kDevicePEGT400: {
+            EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10800000);
+
+            EmBankRegs::AddSubBank(new EmRegsVzPegVenice(*mb86189));
+            EmBankRegs::AddSubBank(mb86189);
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x10900000L, 0));
             EmBankRegs::AddSubBank(new EmRegsFMSound(FMSound_BaseAddress));
             break;
+        }
 
         case kDevicePEGN600C: {
-            EmBankRegs::AddSubBank(new EmRegsVzPegYellowStone);
+            EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10800000);
+            EmBankRegs::AddSubBank(new EmRegsVzPegYellowStone(*mb86189));
 
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
 
-            EmBankRegs::AddSubBank(new EmRegsMB86189(0x10800000));
+            EmBankRegs::AddSubBank(mb86189);
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x10900000L, 0));
             break;
         }
 
         case kDevicePEGT600: {
-            EmBankRegs::AddSubBank(new EmRegsVzPegModena);
+            EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10800000);
+            EmBankRegs::AddSubBank(new EmRegsVzPegModena(*mb86189));
 
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
 
-            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE(ExpCard_BaseAddress));
+            EmBankRegs::AddSubBank(mb86189);
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x10900000L, 0));
             EmBankRegs::AddSubBank(new EmRegsFMSound(FMSound_BaseAddress));
             break;
@@ -1581,6 +1586,18 @@ int EmDevice::DigitizerScale() const {
 
         default:
             return 1;
+    }
+}
+
+bool EmDevice::EmulatesSlotMS() const {
+    switch (fDeviceID) {
+        case kDevicePEGN600C:
+        case kDevicePEGT400:
+        case kDevicePEGT600:
+            return true;
+
+        default:
+            return false;
     }
 }
 

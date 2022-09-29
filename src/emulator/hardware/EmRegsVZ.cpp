@@ -2533,6 +2533,28 @@ void EmRegsVZ::UpdateIRQ2(uint8 oldBit) {
     UpdateInterrupts();
 }
 
+void EmRegsVZ::UpdateIRQ3(uint8 oldBit) {
+    uint8 currentBit = GetPortInputValue('D');
+    uint8 pdsel = READ_REGISTER(portDSelect);
+    uint16 icr = READ_REGISTER(intControl);
+
+    uint8 polarity = ((icr & 0x2000) >> 7);
+    uint8 edge = ((icr & 0x0200) >> 3);
+
+    uint8 value = (~edge & polarity & currentBit) | (~edge & ~polarity & ~currentBit) |
+                  (edge & polarity & currentBit & ~oldBit) |
+                  (edge & ~polarity & ~currentBit & oldBit);
+    value &= ~pdsel;
+    value &= 0x40;
+
+    uint16 intPendingHi = READ_REGISTER(intPendingHi);
+    intPendingHi &= ~0x04;
+    intPendingHi |= (value >> 4);
+    WRITE_REGISTER(intPendingHi, intPendingHi);
+
+    UpdateInterrupts();
+}
+
 // ---------------------------------------------------------------------------
 //		� EmRegsVZ::UARTStateChanged
 // ---------------------------------------------------------------------------

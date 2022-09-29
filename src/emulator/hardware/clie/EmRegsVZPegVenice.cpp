@@ -8,6 +8,8 @@
 #include "Frame.h"
 #include "PalmPack.h"
 
+using VZ = EmSonyVzWithSlot<EmRegsVZ>;
+
 #define NON_PORTABLE
 #include "EZAustin/IncsPrv/HardwareAustin.h"  // hwrEZPortCKbdRow0, hwrEZPortBRS232Enable, etc.
 #undef NON_PORTABLE
@@ -59,8 +61,8 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
 //		� EmRegsEZPalmIIIc::EmRegsEZPalmIIIc
 // ---------------------------------------------------------------------------
 
-EmRegsVzPegVenice::EmRegsVzPegVenice(void)
-    : EmRegsVZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {
+EmRegsVzPegVenice::EmRegsVzPegVenice(EmRegsMB86189& mb86189)
+    : VZ(mb86189), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {
     framebufferTmp = make_unique<uint32[]>(320 * 160 / 2 / 4);
 }
 
@@ -100,7 +102,7 @@ Bool EmRegsVzPegVenice::GetSerialPortOn(int /*uartNum*/) {
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsVzPegVenice::GetPortInputValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInputValue(port);
+    uint8 result = VZ::GetPortInputValue(port);
 
     if (port == 'M') {
         result |= 0x00;
@@ -122,15 +124,13 @@ uint8 EmRegsVzPegVenice::GetPortInputValue(int port) {
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsVzPegVenice::GetPortInternalValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInternalValue(port);
+    uint8 result = VZ::GetPortInternalValue(port);
 
     if (port == 'C') {
         result |= 0x10;
     }
 
     if (port == 'D') {
-        result = GetKeyBits();
-
         // Ensure that bit hwrEZPortDDockButton is set.  If it's clear, HotSync
         // will sync via the modem instead of the serial port.
         //
@@ -199,7 +199,7 @@ Bool EmRegsVzPegVenice::GetVibrateOn(void) {
 }
 
 bool EmRegsVzPegVenice::CopyLCDFrame(Frame& frame, bool fullRefresh) {
-    if (!EmRegsVZ::CopyLCDFrame(frame, false)) {
+    if (!VZ::CopyLCDFrame(frame, false)) {
         return false;
     }
 

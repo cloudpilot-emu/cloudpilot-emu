@@ -2,10 +2,11 @@
 #define _EM_REGS_PEG_EZ_MODENA_H_
 
 #include "EmRegsVZ.h"
+#include "EmSonyVZWithSlot.h"
 
-class EmRegsVzPegModena : public EmRegsVZNoScreen {
+class EmRegsVzPegModena : public EmSonyVzWithSlot<EmRegsVZNoScreen> {
    public:
-    EmRegsVzPegModena(void);
+    EmRegsVzPegModena(EmRegsMB86189& mb86189);
     virtual ~EmRegsVzPegModena(void);
 
    public:

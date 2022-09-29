@@ -1,6 +1,7 @@
 #include "PatchModuleClieSlotDriver.h"
 
 #include "EmCommon.h"
+#include "EmSession.h"
 #include "Marshal.h"
 
 #define expErrorClass 0x2900  // Expansion Manager and Slot Driver Library
@@ -21,6 +22,8 @@
 
 namespace {
     CallROMType HeadPatchSelector8(void) {
+        if (gSession && gSession->GetDevice().EmulatesSlotMS()) return kExecuteROM;
+
         CALLED_SETUP("Err", "UInt16 libRefNum, UInt16 slotRefNum, void *infoP");
 
         PUT_RESULT_VAL(Err, expErrCardNotPresent);
