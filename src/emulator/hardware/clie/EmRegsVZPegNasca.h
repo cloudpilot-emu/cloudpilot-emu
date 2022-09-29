@@ -2,10 +2,11 @@
 #define _EM_REGS_VZ_PEG_NASCA_H_
 
 #include "EmRegsVZ.h"
+#include "EmSonyVZWithSlot.h"
 
-class EmRegsVzPegNasca : public EmRegsVZ {
+class EmRegsVzPegNasca : public EmSonyVzWithSlot<EmRegsVZ> {
    public:
-    EmRegsVzPegNasca(void);
+    EmRegsVzPegNasca(EmRegsMB86189& mb86189);
     virtual ~EmRegsVzPegNasca(void);
 
    public:

@@ -7,6 +7,8 @@
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
 #include "PalmPack.h"
 
+using VZ = EmSonyVzWithSlot<EmRegsVZ>;
+
 #define NON_PORTABLE
 #include "EZAustin/IncsPrv/HardwareAustin.h"  // hwrEZPortCKbdRow0, hwrEZPortBRS232Enable, etc.
 #undef NON_PORTABLE
@@ -56,8 +58,8 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {{keyBitHard1, keyBitH
 //		� EmRegsEZPalmIIIc::EmRegsEZPalmIIIc
 // ---------------------------------------------------------------------------
 
-EmRegsVzPegNasca::EmRegsVzPegNasca(void)
-    : EmRegsVZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
+EmRegsVzPegNasca::EmRegsVzPegNasca(EmRegsMB86189& mb86189)
+    : VZ(mb86189), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsEZPalmIIIc::~EmRegsEZPalmIIIc
@@ -95,7 +97,7 @@ Bool EmRegsVzPegNasca::GetSerialPortOn(int /*uartNum*/) {
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsVzPegNasca::GetPortInputValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInputValue(port);
+    uint8 result = VZ::GetPortInputValue(port);
 
     if (port == 'B') {
         result |= hwrVZNascaPortBDC_IN;
@@ -113,11 +115,9 @@ uint8 EmRegsVzPegNasca::GetPortInputValue(int port) {
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsVzPegNasca::GetPortInternalValue(int port) {
-    uint8 result = EmRegsVZ::GetPortInternalValue(port);
+    uint8 result = VZ::GetPortInternalValue(port);
 
     if (port == 'D') {
-        result = GetKeyBits();
-
         // Ensure that bit hwrEZPortDDockButton is set.  If it's clear, HotSync
         // will sync via the modem instead of the serial port.
         //

@@ -1159,11 +1159,14 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x00100000));
             break;
 
-        case kDevicePEGS320:
-            EmBankRegs::AddSubBank(new EmRegsVzPegNasca);
-            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE);
+        case kDevicePEGS320: {
+            EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10400000);
+
+            EmBankRegs::AddSubBank(new EmRegsVzPegNasca(*mb86189));
+            EmBankRegs::AddSubBank(mb86189);
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x11000000L, 0));
             break;
+        }
 
         case kDevicePEGS500C: {
             EmBankRegs::AddSubBank(new EmRegsEzPegS500C());
@@ -1594,6 +1597,7 @@ bool EmDevice::EmulatesSlotMS() const {
         case kDevicePEGN600C:
         case kDevicePEGT400:
         case kDevicePEGT600:
+        case kDevicePEGS320:
             return true;
 
         default:
