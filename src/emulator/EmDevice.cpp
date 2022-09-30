@@ -1153,11 +1153,15 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsCFMemCard(&fPortMgr->CFBus));
         } break;
 
-        case kDevicePEGS300:
-            EmBankRegs::AddSubBank(new EmRegsEzPegS300);
-            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE());
+        case kDevicePEGS300: {
+            EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10200000);
+
+            EmBankRegs::AddSubBank(new EmRegsEzPegS300(*mb86189));
+            EmBankRegs::AddSubBank(mb86189);
+            // EmBankRegs::AddSubBank(new EmRegsExpCardCLIE());
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x00100000));
             break;
+        }
 
         case kDevicePEGS320: {
             EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10400000);
@@ -1169,14 +1173,16 @@ void EmDevice::CreateRegs(void) const {
         }
 
         case kDevicePEGS500C: {
-            EmBankRegs::AddSubBank(new EmRegsEzPegS500C());
+            EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10400000);
+
+            EmBankRegs::AddSubBank(new EmRegsEzPegS500C(*mb86189));
 
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(sed1375BaseAddress);
             EmBankRegs::AddSubBank(
                 new EmRegsSED1375(sed1375RegsAddr, sed1375BaseAddress, *framebuffer));
             EmBankRegs::AddSubBank(framebuffer);
 
-            EmBankRegs::AddSubBank(new EmRegsExpCardCLIE());
+            EmBankRegs::AddSubBank(mb86189);
             EmBankRegs::AddSubBank(new EmRegsUsbCLIE(0x00100000));
         } break;
 
@@ -1598,6 +1604,8 @@ bool EmDevice::EmulatesSlotMS() const {
         case kDevicePEGT400:
         case kDevicePEGT600:
         case kDevicePEGS320:
+        case kDevicePEGS300:
+        case kDevicePEGS500C:
             return true;
 
         default:

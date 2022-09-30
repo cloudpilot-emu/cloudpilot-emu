@@ -2,11 +2,11 @@
 #define _EM_REGS_VZ_YELLOWSTONE_
 
 #include "EmRegsVZ.h"
-#include "EmSonyVZWithSlot.h"
+#include "EmSonyXZWithSlot.h"
 
 class EmScreenUpdateInfo;
 
-class EmRegsVzPegYellowStone : public EmSonyVzWithSlot<EmRegsVZNoScreen> {
+class EmRegsVzPegYellowStone : public EmSonyXzWithSlot<EmRegsVZNoScreen> {
    public:
     EmRegsVzPegYellowStone(EmRegsMB86189& mb86189);
     virtual ~EmRegsVzPegYellowStone(void);

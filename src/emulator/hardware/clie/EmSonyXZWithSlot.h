@@ -6,10 +6,10 @@
 #include "EmRegsMB86189.h"
 #include "ExternalStorage.h"
 
-template <class VZ>
-class EmSonyVzWithSlot : public VZ {
+template <class XZ>
+class EmSonyXzWithSlot : public XZ {
    public:
-    EmSonyVzWithSlot(EmRegsMB86189& mb86189);
+    EmSonyXzWithSlot(EmRegsMB86189& mb86189);
 
     void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
     void Unmount(EmHAL::Slot slot) override;
@@ -24,30 +24,30 @@ class EmSonyVzWithSlot : public VZ {
 // IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////////
 
-template <class VZ>
-EmSonyVzWithSlot<VZ>::EmSonyVzWithSlot(EmRegsMB86189& mb86189) : mb86189(mb86189) {
-    mb86189.irqChange.AddHandler([=](bool newState) { VZ::UpdateIRQ3(newState ? 0x40 : 0x00); });
+template <class XZ>
+EmSonyXzWithSlot<XZ>::EmSonyXzWithSlot(EmRegsMB86189& mb86189) : mb86189(mb86189) {
+    mb86189.irqChange.AddHandler([=](bool newState) { XZ::UpdateIRQ3(newState ? 0x40 : 0x00); });
 }
 
-template <class VZ>
-void EmSonyVzWithSlot<VZ>::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+template <class XZ>
+void EmSonyXzWithSlot<XZ>::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
     if (this->GetNextHandler()) this->GetNextHandler()->Mount(slot, key, cardImage);
     if (slot != EmHAL::Slot::memorystick) return;
 
-    VZ::UpdatePortDInterrupts();
+    XZ::UpdatePortDInterrupts();
 }
 
-template <class VZ>
-void EmSonyVzWithSlot<VZ>::Unmount(EmHAL::Slot slot) {
+template <class XZ>
+void EmSonyXzWithSlot<XZ>::Unmount(EmHAL::Slot slot) {
     if (this->GetNextHandler()) this->GetNextHandler()->Unmount(slot);
     if (slot != EmHAL::Slot::memorystick) return;
 
-    VZ::UpdatePortDInterrupts();
+    XZ::UpdatePortDInterrupts();
 }
 
-template <class VZ>
-uint8 EmSonyVzWithSlot<VZ>::GetPortInternalValue(int port) {
-    uint8 result = VZ::GetPortInternalValue(port);
+template <class XZ>
+uint8 EmSonyXzWithSlot<XZ>::GetPortInternalValue(int port) {
+    uint8 result = XZ::GetPortInternalValue(port);
 
     if (port == 'D') {
         if (gExternalStorage.IsMounted(EmHAL::Slot::memorystick))

@@ -12,7 +12,7 @@
 #undef NON_PORTABLE
 #include "PalmPackPop.h"
 
-using VZ = EmSonyVzWithSlot<EmRegsVZNoScreen>;
+using VZ = EmSonyXzWithSlot<EmRegsVZNoScreen>;
 
 ////////////////////////////////////////////////////////////////////////////
 //

@@ -7,7 +7,7 @@
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
 #include "PalmPack.h"
 
-using VZ = EmSonyVzWithSlot<EmRegsVZ>;
+using VZ = EmSonyXzWithSlot<EmRegsVZ>;
 
 #define NON_PORTABLE
 #include "EZAustin/IncsPrv/HardwareAustin.h"  // hwrEZPortCKbdRow0, hwrEZPortBRS232Enable, etc.

@@ -177,8 +177,6 @@ namespace {
     }
 
     void traceFunctionCalls(uint16 opcode, emuptr pc) {
-        if (pc < 0x101EC60E || pc > 0x101F12EC) return;
-
         if (opcode == 0x4e56 && (pc & 0x10000000) == 0x10000000) {
             cerr << "call ->" << hex << (pc & 0x0fffffff) << " : " << getFunctionName(pc)
                  << " from " << callerAddress() << " (" << getCaller() << ")" << endl

@@ -8,8 +8,8 @@
 #include "EmSPISlaveSD.h"
 #include "ExternalStorage.h"
 
-template <class VZ>
-class EMPalmVZWithSD : public VZ {
+template <class XZ>
+class EMPalmVZWithSD : public XZ {
    public:
     void Reset(bool hardwareReset) override;
 
@@ -37,16 +37,16 @@ class EMPalmVZWithSD : public VZ {
 // IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////////
 
-template <class VZ>
-void EMPalmVZWithSD<VZ>::Reset(bool hardwareReset) {
-    VZ::Reset(hardwareReset);
+template <class XZ>
+void EMPalmVZWithSD<XZ>::Reset(bool hardwareReset) {
+    XZ::Reset(hardwareReset);
 
     spiSlaveSD->Reset();
 }
 
-template <class VZ>
-uint8 EMPalmVZWithSD<VZ>::GetPortInternalValue(int port) {
-    uint32 result = VZ::GetPortInternalValue(port);
+template <class XZ>
+uint8 EMPalmVZWithSD<XZ>::GetPortInternalValue(int port) {
+    uint32 result = XZ::GetPortInternalValue(port);
 
     if (port == 'D') {
         if (!gExternalStorage.IsMounted(EmHAL::Slot::sdcard))
@@ -58,29 +58,29 @@ uint8 EMPalmVZWithSD<VZ>::GetPortInternalValue(int port) {
     return result;
 }
 
-template <class VZ>
-bool EMPalmVZWithSD<VZ>::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) {
+template <class XZ>
+bool EMPalmVZWithSD<XZ>::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) {
     return slot == EmHAL::Slot::sdcard &&
            EmSPISlaveSD::IsSizeRepresentable(cardImage.BlocksTotal());
 }
 
-template <class VZ>
-void EMPalmVZWithSD<VZ>::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
-    VZ::UpdateIRQ2(0x20);
+template <class XZ>
+void EMPalmVZWithSD<XZ>::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+    XZ::UpdateIRQ2(0x20);
 }
 
-template <class VZ>
-void EMPalmVZWithSD<VZ>::Unmount(EmHAL::Slot slot) {
-    VZ::UpdateIRQ2(0x00);
+template <class XZ>
+void EMPalmVZWithSD<XZ>::Unmount(EmHAL::Slot slot) {
+    XZ::UpdateIRQ2(0x00);
 }
 
-template <class VZ>
-void EMPalmVZWithSD<VZ>::PortDataChanged(int port, uint8 oldValue, uint8 newValue) {
-    VZ::PortDataChanged(port, oldValue, newValue);
+template <class XZ>
+void EMPalmVZWithSD<XZ>::PortDataChanged(int port, uint8 oldValue, uint8 newValue) {
+    XZ::PortDataChanged(port, oldValue, newValue);
 
     if (port != 'J') return;
 
-    uint8 portJSelect = _get_reg(&VZ::f68VZ328Regs.portJSelect);
+    uint8 portJSelect = _get_reg(&XZ::f68VZ328Regs.portJSelect);
     if ((portJSelect & 0x08) == 0) return;
     if (((oldValue ^ newValue) & 0x08) == 0) return;
 
@@ -90,22 +90,22 @@ void EMPalmVZWithSD<VZ>::PortDataChanged(int port, uint8 oldValue, uint8 newValu
         spiSlaveSD->Enable();
 }
 
-template <class VZ>
-EmSPISlave* EMPalmVZWithSD<VZ>::GetSPI1Slave() {
+template <class XZ>
+EmSPISlave* EMPalmVZWithSD<XZ>::GetSPI1Slave() {
     return spiSlaveSD.get();
 }
 
-template <class VZ>
-void EMPalmVZWithSD<VZ>::Spi1AssertSlaveSelect() {
-    uint8 portJSelect = _get_reg(&VZ::f68VZ328Regs.portJSelect);
+template <class XZ>
+void EMPalmVZWithSD<XZ>::Spi1AssertSlaveSelect() {
+    uint8 portJSelect = _get_reg(&XZ::f68VZ328Regs.portJSelect);
     if (portJSelect & 0x08) return;
 
     spiSlaveSD->Enable();
 }
 
-template <class VZ>
-void EMPalmVZWithSD<VZ>::Spi1DeassertSlaveSelect() {
-    uint8 portJSelect = _get_reg(&VZ::f68VZ328Regs.portJSelect);
+template <class XZ>
+void EMPalmVZWithSD<XZ>::Spi1DeassertSlaveSelect() {
+    uint8 portJSelect = _get_reg(&XZ::f68VZ328Regs.portJSelect);
     if (portJSelect & 0x08) return;
 
     spiSlaveSD->Disable();

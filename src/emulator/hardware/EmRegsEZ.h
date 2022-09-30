@@ -115,8 +115,9 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     void UpdateInterrupts(void);
     void UpdatePortDInterrupts(void);
     void UpdateRTCInterrupts(void);
+    void UpdateIRQ3(uint8 oldBit);
 
-    Bool IDDetectAsserted(void);
+    virtual Bool IDDetectAsserted(void);
     UInt8 GetHardwareID(void);
 
     void UARTStateChanged(Bool sendTxData);

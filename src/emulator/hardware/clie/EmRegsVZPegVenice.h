@@ -4,9 +4,9 @@
 #include <memory>
 
 #include "EmRegsVZ.h"
-#include "EmSonyVZWithSlot.h"
+#include "EmSonyXZWithSlot.h"
 
-class EmRegsVzPegVenice : public EmSonyVzWithSlot<EmRegsVZ> {
+class EmRegsVzPegVenice : public EmSonyXzWithSlot<EmRegsVZ> {
    public:
     EmRegsVzPegVenice(EmRegsMB86189& mb86189);
     virtual ~EmRegsVzPegVenice(void);

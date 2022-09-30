@@ -2,23 +2,26 @@
 #define _EM_REGS_EZ_PEG_S300_
 
 #include "EmRegsEZ.h"
+#include "EmRegsMB86189.h"
+#include "EmSonyXZWithSlot.h"
 
-class EmRegsEzPegS300 : public EmRegsEZ {
+class EmRegsEzPegS300 : public EmSonyXzWithSlot<EmRegsEZ> {
    public:
-    EmRegsEzPegS300();
+    EmRegsEzPegS300(EmRegsMB86189& mb86169);
     virtual ~EmRegsEzPegS300();
 
    public:
-    virtual Bool GetLCDScreenOn(void);
-    virtual Bool GetLCDBacklightOn(void);
-    virtual Bool GetSerialPortOn(int uartNum);
+    Bool GetLCDScreenOn(void) override;
+    Bool GetLCDBacklightOn(void) override;
 
-    virtual uint8 GetPortInputValue(int);
-    virtual uint8 GetPortInternalValue(int);
-    virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows);
+    uint8 GetPortInputValue(int) override;
+    uint8 GetPortInternalValue(int) override;
+    void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) override;
+
+    Bool IDDetectAsserted(void) override;
 
    protected:
-    virtual EmSPISlave* GetSPISlave(void);
+    EmSPISlave* GetSPISlave(void) override;
 
    private:
     EmSPISlave* fSPISlaveADC;

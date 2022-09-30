@@ -12,6 +12,8 @@
 #undef NON_PORTABLE
 #include "PalmPackPop.h"
 
+using EZ = EmSonyXzWithSlot<EmRegsEZ>;
+
 ////////////////////////////////////////////////////////////////////////////
 //
 ////////////////////////////////////////////////////////////////////////////
@@ -48,8 +50,8 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {{keyBitHard1, keyBitH
 //		� EmRegsEZPalmV::EmRegsEZPalmV
 // ---------------------------------------------------------------------------
 
-EmRegsEzPegS300::EmRegsEzPegS300(void)
-    : EmRegsEZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
+EmRegsEzPegS300::EmRegsEzPegS300(EmRegsMB86189& mb86169)
+    : EZ(mb86169), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsEZPalmV::~EmRegsEZPalmV
@@ -74,27 +76,15 @@ Bool EmRegsEzPegS300::GetLCDBacklightOn(void) {
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsEzPegS300::GetSerialPortOn
-// ---------------------------------------------------------------------------
-
-Bool EmRegsEzPegS300::GetSerialPortOn(int uartNum) {
-    return (READ_REGISTER(portGData) & hwrEZPegPortGRS232Enable) != 0;
-}
-
-// ---------------------------------------------------------------------------
 //		� EmRegsEzPegS300::GetPortInputValue
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsEzPegS300::GetPortInputValue(int port) {
-    uint8 result = EmRegsEZ::GetPortInputValue(port);
+    uint8 result = EZ::GetPortInputValue(port);
 
     if (port == 'B') {
         // Make sure this is always set, or HwrDisplayWake will hang
         result |= hwrEZPegPortBLCDPowered;
-    }
-
-    if (port == 'D') {
-        result |= hwrEZPegPortDMsIns;
     }
 
 #if 0
@@ -115,11 +105,9 @@ uint8 EmRegsEzPegS300::GetPortInputValue(int port) {
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsEzPegS300::GetPortInternalValue(int port) {
-    uint8 result = EmRegsEZ::GetPortInternalValue(port);
+    uint8 result = EZ::GetPortInternalValue(port);
 
     if (port == 'D') {
-        result = GetKeyBits();
-
         // Ensure that bit hwrEZPortDDockButton is set.  If it's clear, HotSync
         // will sync via the modem instead of the serial port.
         //
@@ -127,12 +115,6 @@ uint8 EmRegsEzPegS300::GetPortInternalValue(int port) {
         // the battery code will make the device go to sleep immediately.
 
         result |= hwrEZPortDDockButton | hwrEZPegPortDPowerFail;
-
-        result |= hwrEZPegPortDMS_IF_Intl;
-        result |= hwrEZPegPortDMsIns;
-
-        //		if (g_nCardInserted)
-        //			result &= ~hwrEZPegPortDMsIns;
     }
 
     return result;
@@ -157,6 +139,8 @@ void EmRegsEzPegS300::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Boo
     rows[1] = (portFDir & hwrEZPegPortFKbdRow1) != 0 && (portFData & hwrEZPegPortFKbdRow1) == 0;
     rows[2] = (portFDir & hwrEZPegPortFKbdRow2) != 0 && (portFData & hwrEZPegPortFKbdRow2) == 0;
 }
+
+Bool EmRegsEzPegS300::IDDetectAsserted(void) { return false; }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsEzPegS300::GetSPISlave

@@ -2,28 +2,31 @@
 #define _EM_REGS_EZ_PEG_S500C_H_
 
 #include "EmRegsEZ.h"
+#include "EmRegsMB86189.h"
+#include "EmSonyXZWithSlot.h"
 
-class EmRegsEzPegS500C : public EmRegsEZ {
+class EmRegsEzPegS500C : public EmSonyXzWithSlot<EmRegsEZ> {
    public:
-    EmRegsEzPegS500C();
+    EmRegsEzPegS500C(EmRegsMB86189& mb86189);
     virtual ~EmRegsEzPegS500C();
 
    public:
-    virtual Bool GetLCDScreenOn(void);
-    virtual Bool GetLCDBacklightOn(void);
-    virtual Bool GetSerialPortOn(int uartNum);
+    Bool GetLCDScreenOn(void) override;
+    Bool GetLCDBacklightOn(void) override;
 
-    virtual uint8 GetPortInputValue(int);
-    virtual uint8 GetPortInternalValue(int);
-    virtual void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows);
+    uint8 GetPortInputValue(int) override;
+    uint8 GetPortInternalValue(int) override;
+    void GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) override;
+
+    Bool IDDetectAsserted(void) override;
 
    protected:
-    virtual EmSPISlave* GetSPISlave(void);
+    EmSPISlave* GetSPISlave(void) override;
 
     // Override those with noops --- the framebuffer is not backed with meta
     // memory
-    virtual void MarkScreen();
-    virtual void UnmarkScreen();
+    void MarkScreen() override;
+    void UnmarkScreen() override;
 
    private:
     EmSPISlave* fSPISlaveADC;
