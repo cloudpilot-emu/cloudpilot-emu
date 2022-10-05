@@ -93,12 +93,38 @@ function assignLabels() {
     }
 }
 
+function collectParameters() {
+    for (const [, entry] of functions) {
+        entry.parameters = new Set();
+
+        for ([address, line] of entry.lines) {
+            const match = line.disassembly.match(/%fp@\((\d+)\)/);
+            if (!match) continue;
+
+            entry.parameters.add(parseInt(match[1], 10));
+        }
+    }
+}
+
+function collectLocals() {
+    for (const [, entry] of functions) {
+        entry.locals = new Set();
+
+        for ([address, line] of entry.lines) {
+            const match = line.disassembly.match(/%fp@\(-(\d+)\)/);
+            if (!match) continue;
+
+            entry.locals.add(parseInt(match[1], 10));
+        }
+    }
+}
+
 function disassembleAdditionalFunctions(buffer) {
     const processed = new Set();
     let nIdentifiedFunctions;
 
     do {
-        nIdentifiedFunctions = functions.length;
+        nIdentifiedFunctions = functions.size;
 
         for (const [, { lines }] of functions)
             for ([address, line] of lines) {
@@ -112,7 +138,7 @@ function disassembleAdditionalFunctions(buffer) {
                     processed.add(target);
                 }
             }
-    } while (functions.length > nIdentifiedFunctions);
+    } while (functions.size > nIdentifiedFunctions);
 }
 
 function disassembleFunctionAt(buffer, entry) {
@@ -184,15 +210,36 @@ disassembleAdditionalFunctions(binary);
 assignLabels();
 identifyCalls();
 resolveTraps();
+collectParameters();
+collectLocals();
 
-for (const entry of Array.from(functions.keys()).sort()) {
-    const { start, stop, name, lines } = functions.get(entry);
+for (const entry of Array.from(functions.keys()).sort((x, y) => x - y)) {
+    const { start, stop, name, lines, parameters, locals } = functions.get(entry);
+
+    const addressWidth = Math.max(...lines.keys()).toString(16).length;
 
     console.log(`# ${name}: 0x${start.toString(16).padStart(4, '0')} - 0x${stop.toString(16).padStart(4, '0')}`);
     console.log();
-    console.log('```');
 
-    const addressWidth = Math.max(...lines.keys()).toString(16).length;
+    if (parameters.size > 0) {
+        console.log('Parameters:');
+        console.log();
+        for (const parameter of Array.from(parameters.values()).sort((x, y) => x - y)) {
+            console.log(`   * \`%fp@(${parameter})\``.padEnd(20) + ': ???');
+        }
+        console.log();
+    }
+
+    if (locals.size > 0) {
+        console.log('Locals:');
+        console.log();
+        for (const local of Array.from(locals.values()).sort((x, y) => x - y)) {
+            console.log(`   * \`%fp@(-${local})\``.padEnd(20) + ': ???');
+        }
+        console.log();
+    }
+
+    console.log('```');
 
     for ([address, { disassembly, meta, label }] of lines) {
         if (label) {
