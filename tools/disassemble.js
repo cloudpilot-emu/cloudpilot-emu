@@ -4,7 +4,12 @@ const fs = require('fs');
 const { execSync, exec } = require('child_process');
 const traps = require('./traps.js');
 
+let iAnonymousFunction = 0;
 const functions = new Map();
+
+function anonymousFunction() {
+    return `anonymous_function_${iAnonymousFunction++}`;
+}
 
 function disassemble(start, stop, name) {
     const lines = execSync(
@@ -88,10 +93,58 @@ function assignLabels() {
     }
 }
 
+function disassembleAdditionalFunctions(buffer) {
+    const processed = new Set();
+    let nIdentifiedFunctions;
+
+    do {
+        nIdentifiedFunctions = functions.length;
+
+        for (const [, { lines }] of functions)
+            for ([address, line] of lines) {
+                const match = line.disassembly.match(/jsr %pc@\(0x([0-9a-f]+)\)/);
+                if (!match) continue;
+
+                const target = parseInt(match[1], 16);
+
+                if (!functions.has(target) && !processed.has(target) && target < buffer.length) {
+                    disassembleFunctionAt(buffer, target);
+                    processed.add(target);
+                }
+            }
+    } while (functions.length > nIdentifiedFunctions);
+}
+
+function disassembleFunctionAt(buffer, entry) {
+    if (entry % 2 !== 0) throw new Error(`call address 0x${entry.toString(16)} is not aligned`);
+    const buffer16 = new Uint16Array(buffer.buffer, buffer.byteOffset, buffer.length >>> 1);
+
+    for (let i = entry >> 1; i < buffer16.length; i++) {
+        if (buffer16[i] !== 0x754e) continue;
+
+        disassemble(entry, 2 * i, readFunctionName(buffer, 2 * i) || anonymousFunction());
+        return;
+    }
+}
+
+function readFunctionName(buffer, rtsAt) {
+    let name = '';
+
+    for (let i = rtsAt + 3; i < buffer.length; i++) {
+        const char = buffer[i];
+
+        if (char > 127) return undefined;
+        if (char === 0) return name;
+        if (i % 2 === 0 && char === 0x4e && buffer[i + 1] === 0x56) return undefined;
+
+        name += String.fromCharCode(char);
+
+        if (name.length >= 30) return name;
+    }
+}
+
 let link = 0;
-let rts = 0;
 let mode = 'search-link';
-let name = '';
 
 const file = process.argv[2];
 const binary = fs.readFileSync(file);
@@ -111,9 +164,9 @@ for (let i = 0; i < binary16.length; i++) {
 
         case 'search-rts':
             if (opcode === 0x754e && link > 0) {
-                rts = 2 * i;
-                mode = 'scan-name';
-                name = '';
+                disassemble(link, 2 * i, readFunctionName(binary, 2 * i) || anonymousFunction());
+
+                mode = 'search-link';
             }
 
             if (opcode === 0x564e) {
@@ -121,39 +174,20 @@ for (let i = 0; i < binary16.length; i++) {
             }
 
             break;
-
-        case 'scan-name': {
-            const fst = opcode & 0xff;
-            const snd = opcode >> 8;
-
-            if (opcode === 0x564e) {
-                disassemble(link, rts, '[unknown]');
-                link = 2 * i;
-                mode = 'search-rts';
-            } else if (fst === 0) {
-                disassemble(link, rts, name.substring(1));
-                mode = 'search-link';
-            } else if (snd === 0) {
-                name += String.fromCharCode(fst);
-                disassemble(link, rts, name.substring(1));
-                mode = 'search-link';
-            } else {
-                name = name + String.fromCharCode(fst) + String.fromCharCode(snd);
-            }
-
-            break;
-        }
 
         default:
             throw new Error('cannot happen');
     }
 }
 
+disassembleAdditionalFunctions(binary);
 assignLabels();
 identifyCalls();
 resolveTraps();
 
-for (const [, { start, stop, name, lines }] of functions) {
+for (const entry of Array.from(functions.keys()).sort()) {
+    const { start, stop, name, lines } = functions.get(entry);
+
     console.log(`# ${name}: 0x${start.toString(16).padStart(4, '0')} - 0x${stop.toString(16).padStart(4, '0')}`);
     console.log();
     console.log('```');
