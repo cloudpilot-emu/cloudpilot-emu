@@ -4,10 +4,6 @@ const fs = require('fs');
 const { execSync, exec } = require('child_process');
 const traps = require('./traps.js');
 
-const file = process.argv[2];
-const binary = fs.readFileSync(file);
-const binary16 = new Uint16Array(binary.buffer);
-
 const functions = new Map();
 
 function disassemble(start, stop, name) {
@@ -55,13 +51,14 @@ function resolveTraps() {
 }
 
 function assignLabels() {
+    const branchRegex =
+        /^\s*\w+:\s+(?:(?:\w{4})|(?: {4})) (?:(?:\w{4})|(?: {4})) (?:(?:\w{4})|(?: {4})) \s*b\w+\s+0x([0-9a-f]+)/;
+
     for (const [, { lines }] of functions) {
         let iLabel = 0;
 
-        for ([address, line] of lines) {
-            const match = line.disassembly.match(
-                /^\s*\w+:\s+(?:(?:\w{4})|(?: {4}) ) (?:(?:\w{4})|(?: {4}) )(?:(?:\w{4})|(?: {4}) )\s*b\w+\s+0x([0-9a-f]+)/
-            );
+        for (const [address, line] of lines) {
+            const match = line.disassembly.match(branchRegex);
             if (!match) continue;
 
             const target = parseInt(match[1], 16);
@@ -69,11 +66,24 @@ function assignLabels() {
 
             const targetLine = lines.get(target);
             if (targetLine.label === undefined) {
-                targetLine.label = `lbl_${iLabel++}`;
-                targetLine.meta.unshift(`:${targetLine.label}`);
+                targetLine.label = true;
             }
+        }
 
-            line.meta.push(`-> ${targetLine.label}`);
+        for (const [, line] of lines) {
+            if (line.label) line.label = `label_${iLabel++}`;
+        }
+
+        for (const [address, line] of lines) {
+            const match = line.disassembly.match(branchRegex);
+            if (!match) continue;
+
+            const target = parseInt(match[1], 16);
+            if (!lines.has(target)) continue;
+
+            const targetLine = lines.get(target);
+
+            line.meta.push(`${target >= address ? '↓' : '↑'} ${targetLine.label}`);
         }
     }
 }
@@ -82,6 +92,10 @@ let link = 0;
 let rts = 0;
 let mode = 'search-link';
 let name = '';
+
+const file = process.argv[2];
+const binary = fs.readFileSync(file);
+const binary16 = new Uint16Array(binary.buffer, binary.byteOffset, binary.length >>> 1);
 
 for (let i = 0; i < binary16.length; i++) {
     const opcode = binary16[i];
@@ -146,13 +160,20 @@ for (const [, { start, stop, name, lines }] of functions) {
 
     const addressWidth = Math.max(...lines.keys()).toString(16).length;
 
-    for ([address, { disassembly, meta }] of lines) {
+    for ([address, { disassembly, meta, label }] of lines) {
+        if (label) {
+            console.log();
+            console.log(`  ${label}:`);
+        }
+
         console.log(
-            disassembly
+            `    ${disassembly}`
                 .replace('\t', '  ')
                 .replace(/^\w+:\s+/, `${address.toString(16).padStart(addressWidth, '0')}: `)
                 .padEnd(65) + (meta.length > 0 ? `; ${meta.join(' ')}` : '')
         );
     }
+
+    console.log('```');
     console.log();
 }
