@@ -28807,6 +28807,50 @@ Parameters:
 
 # Hwr1859SysIntHandler: 0x12fc8 - 0x13102
 
+
+```
+  if (!(halGlobals && halGlobals->dspGlobals)) return;
+
+  %a2 = dspGlobals = halGlobals->dspGlobals;
+  %d3 = dsp_0220;
+  
+  if (dsp_0222 & 0x01 && dsp_0220 & 0x01) {
+    Hwr1859DspIntHandler();
+  }
+
+  if (
+    ((dsp_0222 & 0x0100) && (dsp_0220 & 0x0100)) ||
+    ((dsp_0222 & 0x0040) && (dsp_0020 & 0x0040)) ||
+    ((dsp_0222 & 0x0010) && (dsp_0220 & 0x0010))
+  )
+  {
+    if (dspGlobals->Handler28) dspGlobals->Handler28();
+    else dsp_0222 &= 0xfeaf;
+  }
+
+  if (dsp_0222 & 0x0004 && dsp_0200 & 0x0004) {
+    if (dspGlobals->Handler20) dspGlobals->Handler20();
+    else dsp_0222 &= 0xfffb;
+  }
+
+  if (dsp_0222 & 0x0008 && dsp_0200 & 0x0008) {
+    if (dspGlobals->Handler24) dspGlobals->Handler24();
+    else dsp_0222 &= 0xfff7;
+  }
+
+  if (dsp_0222 & 0x0002 && dsp_0200 & 0x0002) {
+    if (dspGlobals->Handler36) dspGlobals->Handler36();
+    else dsp_0222 &= 0xfffd;
+  }
+
+  if (dsp_0222 & 0x0020 && dsp_0200 & 0x0020) {
+    dsp_0222 &= 0xffdf;
+  }
+
+  sz_f41d &= 0x08;
+```
+
+
 ```
     12fc8:  4e56 0000      	linkw %fp,#0                         
     12fcc:  48e7 1030      	moveml %d3/%a2-%a3,%sp@-             
@@ -29095,6 +29139,29 @@ Parameters:
 ```
 
 # Hwr1859DspIntHandler: 0x132f6 - 0x1339e
+
+```
+   %d6 = 0;
+   %d5 = %a2 = halGlobals->dspGlobals;
+   
+   %d4 = (dsp_0c06 & 0xfc00) >> 10;
+   %d0 = (dspGlobals->dspExecState->expectedResult & 0xfc00) >> 10;
+   
+   if (%d4 == %d0) {
+     dspGlobals->dspExecState->Handler(dspGlobals->dspExecState->context, 1);
+     dspGlobals->dspExecState->expectedResult = 0;
+     dsp_0c06 = 0x0000;
+
+     SysTaskWake(dspGlobals->dspExecState->taskId);
+   } else {
+    dsp_0c06 = 0x0000;
+   }
+
+   dps_0202 |= 0x0800;
+   dsp_0e60 |= 0x0010;
+
+   SysTaskWaitClr();
+```
 
 ```
     132f6:  4e56 0000      	linkw %fp,#0                         
@@ -29586,19 +29653,19 @@ Parameters:
 
 Parameters:
 
-   * `%fp@(8)`      : ???
-   * `%fp@(12)`     : ???
-   * `%fp@(16)`     : ???
-   * `%fp@(20)`     : ???
+   * `%fp@(8)`      : type
+   * `%fp@(12)`     : creator
+   * `%fp@(16)`     : shmBase           -> `%d6`
+   * `%fp@(20)`     : grabControlWord   -> `%d4`
 
 Locals:
 
-   * `%fp@(-4)`     : ???
-   * `%fp@(-6)`     : ???
-   * `%fp@(-8)`     : ???
-   * `%fp@(-10)`    : ???
-   * `%fp@(-12)`    : ???
-   * `%fp@(-44)`    : ???
+   * `%fp@(-4)`     : dbIDP
+   * `%fp@(-6)`     : cardNoP
+   * `%fp@(-8)`     : hdr2
+   * `%fp@(-10)`    : hdr4
+   * `%fp@(-12)`    : hdr8
+   * `%fp@(-44)`    : stateInfoP
 
 ```
     13776:  4e56 ffd4      	linkw %fp,#-44                       
@@ -29796,11 +29863,11 @@ Locals:
 
 Parameters:
 
-   * `%fp@(8)`      : ???
-   * `%fp@(12)`     : ???
+   * `%fp@(8)`      : dispatchTable
+   * `%fp@(12)`     : some flag
    * `%fp@(14)`     : ???
-   * `%fp@(16)`     : ???
-   * `%fp@(20)`     : ???
+   * `%fp@(16)`     : destinationAddress
+   * `%fp@(20)`     : another flag (grab status word)
 
 ```
     1394e:  4e56 0000      	linkw %fp,#0                         

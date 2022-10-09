@@ -5152,12 +5152,12 @@ Locals:
 
 Parameters:
 
-   * `%fp@(8)`      : ???
-   * `%fp@(12)`     : ???
-   * `%fp@(14)`     : ???
-   * `%fp@(16)`     : ???
-   * `%fp@(18)`     : ???
-   * `%fp@(22)`     : ???
+   * `%fp@(8)`      : parp_8
+   * `%fp@(12)`     : block(?)
+   * `%fp@(14)`     : firstPage (byte)
+   * `%fp@(16)`     : lastPage (byte)
+   * `%fp@(18)`     : destination
+   * `%fp@(22)`     : parp_22
 
 Locals:
 
@@ -5168,25 +5168,116 @@ Locals:
    * `%fp@(-20)`    : ???
    * `%fp@(-24)`    : ???
    * `%fp@(-28)`    : ???
-   * `%fp@(-32)`    : ???
-   * `%fp@(-36)`    : ???
-   * `%fp@(-38)`    : ???
-   * `%fp@(-56)`    : ???
-   * `%fp@(-66)`    : ???
-   * `%fp@(-68)`    : ???
-   * `%fp@(-70)`    : ???
-   * `%fp@(-72)`    : ???
-   * `%fp@(-74)`    : ???
-   * `%fp@(-84)`    : ???
-   * `%fp@(-88)`    : ???
-   * `%fp@(-92)`    : ???
-   * `%fp@(-96)`    : ???
-   * `%fp@(-98)`    : ???
-   * `%fp@(-116)`   : ???
-   * `%fp@(-130)`   : ???
-   * `%fp@(-132)`   : ???
-   * `%fp@(-134)`   : ???
+   * `%fp@(-32)`    : params2.dspDoneHandlerContext
+   * `%fp@(-36)`    : params2.DspDoneHandler
+   * `%fp@(-38)`    : params2.sync
+   * `%fp@(-56)`    : params2.ipcSubCmd
+   * `%fp@(-66)`    : params2.ipcArg4
+   * `%fp@(-68)`    : params2.ipcArg3
+   * `%fp@(-70)`    : params2.ipcArg2
+   * `%fp@(-72)`    : params2.ipcArg1
+   * `%fp@(-74)`    : params2.ipcCmd
+   * `%fp@(-84)`    : result.ipcResult2
+   * `%fp@(-86)`    : result.ipcResult1
+   * `%fp@(-88)`    : result.ipcStatus -> result
+   * `%fp@(-92)`    : params1.dspDoneHandlerContext
+   * `%fp@(-96)`    : params1.DspDoneHandler
+   * `%fp@(-98)`    : params1.sync
+   * `%fp@(-116)`   : params1.ipcSubCmd
+   * `%fp@(-130)`   : params1.ipcArg2
+   * `%fp@(-132)`   : params1.ipcArg1
+   * `%fp@(-134)`   : params1.ipcCmd
    * `%fp@(-138)`   : ???
+
+```
+  {
+    %d7 = firstPage;
+    %d6 = lastPage;
+    %a3 = destination;
+
+    if (par16_12 == 0xffff) {
+      MemSet(destination, (lastPage - firstPage + 1) * 5121, 0);
+
+      return 0;
+    }
+
+    params1.ipcCmd = 0x3601;
+    params1.ipcArg1 = block;
+    %d5 = params1.ipcArg2 = firstPage;
+    params1.ipcSubCmd = 0;
+    params1.sync = 1;
+    params1.DspDoneHandler = PrvDspDoneProc;
+    params1.dspDoneHandlerContext = &result;
+    result.ipcStatus = 0;
+
+    DspExec(&params1);
+
+    if (result.ipcStatus & 0x03ff != 0) {
+      return (*(parp_8 + 4) & 0x00000001) ? 3 : 2;
+    }
+
+    %a0 = %a2 = &result.ipcResult1;
+    %d0 = result.ipcResult1;
+
+    if (ipcResult1 != 0x0030) {
+      MemSet(destination, (lastPage - firstPage + 1) * 5121, 0);
+
+      return 0;
+    }
+
+    %d3 = 0;
+    %d4 = 0x4000;
+
+    if (destination >= 0x11008000 && destination < 0x11010000) {
+      %d4 = ((destination + 0xeeff8000) >> 1) + 0x4000;
+      %d3 = 1;
+    }
+
+    params2.ipcCmd = 0x2601;
+    params2.ipcArg1 = block;
+    params2.ipcArg2 = %d4;
+    params2.ipcArg3 = firstPage;
+    params2.ipcArg4 = lastPage;
+    params2.ipcSubCmd = 0;
+    params2.sync = 1;
+    params2.DspDoneHandler = PrvDspDoneProc;
+    params2.dspDoneHandlerContext = &result;
+    result.ipcStatus = 0;
+
+    DspExec(&params2);
+
+    if (resilt->ipcStatus & 0x03ff != 0) {
+      return (*(parp_8 + 4) & 0x00000001) ? 3 : 2;
+    }
+
+    %d4 = result.ipcResult2;
+    if (result.ipcResult2 != 0) {
+      if (*parp_22 != 0) return 1;
+      *parp_22 = result.ipcResult2;
+    }
+
+    // %d3 <-> destination is in shared memory
+    if (%d3) return 0;
+
+    %d5 = ((lastPage - firstPage + 1) * 512) >> 2;
+    if (%d5 == 0) return 0;
+
+    if (destination & 0x00000001) {
+      %d3 = 0;
+      local32_138 = %d0 = %d5 - 8;
+
+      if (%d5 < 8) {
+        // Copy
+      } else {
+        // Copy
+      }
+    } else {
+      // Copy
+    }
+  }
+  
+```
+
 
 ```
     3318:  4e56 ff76      	linkw %fp,#-138                       
@@ -6766,8 +6857,39 @@ Locals:
 
 Parameters:
 
-   * `%fp@(8)`      : ???
-   * `%fp@(12)`     : ???
+   * `%fp@(8)`      : context
+   * `%fp@(12)`     : success
+
+```
+  struct Context {
+    uint16 ipcStatus;     // 0
+    uint16 ipcResult1;    // 2
+    uint16 ipcResult2;    // 4
+    uint16 ipcResult3;    // 6
+    uint16 ipcResult4;    // 8
+    uint16 ipcResult5;    // 10
+    uint16 ipcResult6;    // 12
+  }:
+
+
+  PrvDspDoneProc(Context* context, bool success)
+  {
+    %d0 = context;
+
+    if (!success) {
+      ipcStatus = 0x30bc;
+      return;
+    }
+
+    ipcStatus = dsp_0c06;
+    ipcResult1 = dsp_0c14;
+    ipcResult2 = dsp_0c16;
+    ipcResult3 = dsp_0c18;
+    ipcResult4 = dsp_0c1a;
+    ipcResult5 = dsp_0c1c;
+    ipcResult6 = dsp_0c1e;
+  }
+```
 
 ```
     4304:  4e56 0000      	linkw %fp,#0                          

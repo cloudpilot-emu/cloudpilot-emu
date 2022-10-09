@@ -62,11 +62,140 @@ Locals:
 
 Parameters:
 
-   * `%fp@(8)`      : ???
+   * `%fp@(8)`      : params
 
 Locals:
 
    * `%fp@(-4)`     : ???
+
+```
+  struct Params {
+    uint16 ipcCmd;              // 00
+    uint16 ipcArg1;             // 02
+    uint16 ipcArg2;             // 04
+    uint16 ipcArg3;             // 06
+    uint16 ipcArg4;             // 08
+    uint16 ipcArg5;             // 10
+    uint16 ipcArg6;             // 12
+
+    uint16 ipcSubCmd;           // 18
+    uint16 ipcSubArg1;          // 20
+    uint16 ipcSubArg2;          // 22
+    uint16 ipcSubArg3;          // 24
+    uint16 ipcSubArg4;          // 26
+    uint16 ipcSubArg5;          // 28
+    uint16 ipcSubArg6;          // 30
+
+    ...                         // 32 - 35
+
+    uint8 sync                // 36
+    void* DspDoneHandler        // 38
+    void* dspDoneHandlerContext;// 42
+  };
+
+  uint16 DspExec(Params* params) {
+    %a0 = gHalGlobals;
+    %a3 = %d4 = dspGlobals = HalGlobals->gDspGlobals;
+
+    %d0 = (gHalGlobals == 0 || dspGlobals == 0) ? 0 : 1;
+
+    if (%d0) {
+      %a0 = dspGlobals;
+      %d0 = dspGlobals->long44 & 0x00000001;
+    } else {
+      %d0 = 1;
+      return;
+    }
+
+    %d5 = SysDisableInts();
+
+    %d0 = dspGlobals->long44 & 0x00000004;
+    if (%d0 == 0) {
+      local32 = 0x53684473; // "ShDs"
+      dspGlobals->long44 |= 0x00000004;
+
+      SysSemaphoreCreate(&dspGlobals->execSemaphore, local32, 0x00000001);
+    }
+
+    SysRestoreStatus(%d5);
+    SysSemaphoreWait(dspGlobals->execSemaphore, 0x00000000, 0x00000000);
+
+    if (!params->sync) {
+      %d3 = 0;
+      dsp_0222 &= 0xfffe;
+      dsp_0222 |= 0x0001;
+
+      SysSemaphoreSignal(dspGlobals->execSemaphore);
+      %d0 = 2;
+    }
+
+    if (params->ipcSubCmd) {
+      dsp_0c08 = params->ipcSubArg1;
+      dsp_0c0a = params->ipcSubArg2;
+      dsp_0c0c = params->ipcSubArg3;
+      dsp_0c0e = params->ipcSubArg4;
+      dsp_0c10 = params->ipcSubArg5;
+      dsp_0c12 = params->ipcSubArg6;
+      dsp_0c04 = params->ipcSubCmd;
+
+      while (dsp_0c04) {}
+    }
+
+    dsp_0c08 = params->ipcArg1;
+    dsp_0c0a = params->ipcArg2;
+    dsp_0c0c = params->ipcArg3;
+    dsp_0c0e = params->ipcArg4;
+    dsp_0c10 = params->ipcArg5;
+    dsp_0c12 = params->ipcArg6;
+
+    dsp_0222 &= 0xfffe;
+
+    if (params->dspDoneHandler) {
+      if (params->sync) {
+        myDspExecState = %a0 = &dspGlobals->dspExecState;
+      } else {
+        myDspExecState = %a0 = &dspGlobals->dspExecState_1;
+      }
+
+      myDspExecState->expectedResult = params->ipcCommand;
+      myDspExecState->handler = params->DspDoneHandler;
+      myDspExecState->context = params->dspDoneHandlerContext;
+      myDspExecState->taskId = SysTaskID();
+    }
+
+    dsp_0202 |= 0x0800;
+    dsp_0e60 |= 0x0010;
+
+    SysTaskWaitClr();
+
+    dsp_0c04 = params->ipcCmd;
+    dps_0222 |= 0x01;
+
+    %d3 = 0;
+
+    if (!params->DspDoneHandler || !params->sync) {
+      SysSemaphoreSignal(dspGlobals->execSemaphore);
+      return 0;
+    }
+
+    %d5 = (params->ipcCommand == 0x2201 || params->ipcCommand == 0x3a01) ? 0x0500 : 0x0200;
+    
+    %d6 = SysTaskWait(%d5);
+    if (%d6 != 0) {
+      dsp_0222 &= 0xfffe;
+
+      if (params->DspDoneHandler) params->DspDoneHandler(params->dspDoneHandlerContext, 0);
+
+      dpsGlobals->dspExecState->expectedResult = 0x0000;
+      %d3 = 3;
+
+      dsp_0222 |= 0x0001;
+    }
+
+    SysSemaphoreSignal(dspGlobals->execSemaphore);
+    return %d3;
+  }
+```
 
 ```
     10c:  4e56 fffc      	linkw %fp,#-4                          
