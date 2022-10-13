@@ -24,7 +24,6 @@ class EmRegsSzNaples : public EmRegsSZ {
 
    protected:
     virtual EmSPISlave* GetSPISlave(void);
-    virtual void UpdatePortXInterrupts(char);
 
    private:
     EmSPISlave* fSPISlaveADC;

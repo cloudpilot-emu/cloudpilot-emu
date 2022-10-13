@@ -461,7 +461,7 @@ CallROMType EmPatchMgr::HandleSystemCall(const SystemCallContext& context) {
     EmPatchMgr::GetPatches(context, hp, tp);
 
 #ifdef LOG_SYSCALLS
-    cout << "syscall: " << trapWordToString(context.fTrapWord) << endl << flush;
+    cerr << "syscall: " << trapWordToString(context.fTrapWord) << endl << flush;
 #endif
 
     CallROMType handled = EmPatchMgr::HandlePatches(context, hp, tp);

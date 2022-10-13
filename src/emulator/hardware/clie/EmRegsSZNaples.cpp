@@ -192,10 +192,3 @@ Bool EmRegsSzNaples::GetVibrateOn(void) {
     UInt8 portNData = READ_REGISTER(portNData);
     return (portNData & hwrSZNaplesPortNVibrate);
 }
-
-void EmRegsSzNaples::UpdatePortXInterrupts(char port) {
-    // There is no change on those ports in emulation, so disable those interrupts here.
-    if (port != 'D') return;
-
-    EmRegsSZ::UpdatePortXInterrupts(port);
-}

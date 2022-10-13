@@ -172,10 +172,3 @@ EmSPISlave* EmRegsSzRedwood::GetSPISlave(void) {
 
     return NULL;
 }
-
-void EmRegsSzRedwood::UpdatePortXInterrupts(char port) {
-    // There is no change on those ports in emulation, so disable those interrupts here.
-    if (port != 'D') return;
-
-    EmRegsSZ::UpdatePortXInterrupts(port);
-}

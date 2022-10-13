@@ -2128,20 +2128,7 @@ Bool EmRegsSZ::GetAsleep(void) {
 // Return the GPIO values for the pins on the port.  These values are used
 // if the select pins are high.
 
-uint8 EmRegsSZ::GetPortInputValue(int port) {
-    uint8 result = 0;
-
-#ifdef SONY_ROM
-    if (port == 'D' || port == 'G' || port == 'J' || port == 'P' || port == 'C')
-#else
-    if (port == 'D')
-#endif
-    {
-        result = this->GetPortInternalValue(port);
-    }
-
-    return result;
-}
+uint8 EmRegsSZ::GetPortInputValue(int port) { return this->GetPortInternalValue(port); }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSZ::GetPortInternalValue
@@ -2167,29 +2154,6 @@ uint8 EmRegsSZ::GetPortInternalValue(int port) {
 
 void EmRegsSZ::PortDataChanged(int port, uint8, uint8 newValue) {
     if (port < 'D') return;
-
-    uint8 portXIntEdge;
-
-    emuptr portBaseAddress = EmRegsSZ::GetAddressFromPort(port);
-
-    // Clear the interrupt bits that are having a 1 written to them.
-    // Only clear them if they're configured as edge-senstive.
-
-    portXIntEdge = EmRegs::StdReadBE(portBaseAddress + 6, 1);
-
-    PRINTF("EmRegsSZ::PortDataChanged (%c): fPort%cEdge  = 0x%02lX", (char)port, (char)port,
-           (uint32)(uint8)fPortXEdge[port - 'D']);
-    PRINTF("EmRegsSZ::PortDataChanged (%c): port%cIntEdge = 0x%02lX", (char)port, (char)port,
-           (uint32)(uint8)portXIntEdge);
-    PRINTF("EmRegsSZ::PortDataChanged (%c): newValue     = 0x%02lX", (char)port,
-           (uint32)(uint8)newValue);
-
-    fPortXEdge[port - 'D'] &= ~(newValue & portXIntEdge);
-
-    PRINTF("EmRegsSZ::PortDataChanged (%c): fPort%cEdge  = 0x%02lX", (char)port, (char)port,
-           (uint32)(uint8)fPortXEdge[port - 'D']);
-
-    // Set the new interrupt state, if applicable (ports A-C have no interrupts)
 
     UpdatePortXInterrupts((char)port);
 }
@@ -2576,9 +2540,12 @@ void EmRegsSZ::portXIntMaskWrite(emuptr address, int size, uint32 value) {
 void EmRegsSZ::portXIntStatusWrite(emuptr address, int size, uint32 value) {
     // Do a standard update of the register.
 
-    EmRegsSZ::StdWrite(address, size, value);
+    // EmRegsSZ::StdWrite(address, size, value);
 
     // Set the new interrupt state.
+
+    int port = EmRegsSZ::GetPortFromAddress(address);
+    fPortXEdge[port - 'D'] &= ~value;
 
     UpdatePortXInterrupts(EmRegsSZ::GetPortFromAddress(address));
 }
@@ -2836,11 +2803,7 @@ void EmRegsSZ::ButtonEvent(ButtonEventT event) {
     // Set the interrupt bits for the bits that went from off to on.
     // These get cleared when portDData is written to.
 
-#ifdef SONY_ROM
-    fPortXEdge['D' - 'D'] = ~newBits & oldBits;
-#else
     fPortXEdge['D' - 'D'] |= newBits & ~oldBits;
-#endif
 
     PRINTF("EmRegsSZ::ButtonEvent: fPortDEdge = 0x%02lX", (uint32)fPortXEdge['D' - 'D']);
 

@@ -1616,7 +1616,6 @@ bool EmDevice::EmulatesSlotMS() const {
 bool EmDevice::BuggySleep() const {
     switch (fDeviceID) {
         case kDeviceYSX1100:
-        case kDeviceYSX1230:
         case kDevicePalmPacifiC:
         case kDevicePalmI710:
             return true;
