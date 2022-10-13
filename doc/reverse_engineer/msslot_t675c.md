@@ -2957,6 +2957,7 @@ Parameters:
    * `%fp@(8)`      : ???
    * `%fp@(10)`     : ???
    * `%fp@(12)`     : ???
+   * 
 
 ```
     1dc4:  4e56 0000      	linkw %fp,#0                          
@@ -4351,23 +4352,112 @@ Locals:
 
 Parameters:
 
-   * `%fp@(8)`      : ???
+   * `%fp@(8)`      : par
 
 Locals:
 
-   * `%fp@(-8)`     : ???
-   * `%fp@(-14)`    : ???
-   * `%fp@(-18)`    : ???
-   * `%fp@(-22)`    : ???
-   * `%fp@(-24)`    : ???
-   * `%fp@(-42)`    : ???
-   * `%fp@(-58)`    : ???
-   * `%fp@(-60)`    : ???
-   * `%fp@(-64)`    : ???
-   * `%fp@(-68)`    : ???
-   * `%fp@(-70)`    : ???
-   * `%fp@(-88)`    : ???
-   * `%fp@(-106)`   : ???
+   * `%fp@(-8)`     : result.ipcResult2;
+   * `%fp@(-14)`    : result.ipcStatus;
+   * `%fp@(-18)`    : params2.dpsDoneHandlerContext
+   * `%fp@(-22)`    : params2.DspDoneHandler
+   * `%fp@(-24)`    : params2.sync
+   * `%fp@(-42)`    : params2.ipcSubCmd
+   * `%fp@(-58)`    : params2.ipcParam1
+   * `%fp@(-60)`    : params2.ipcCmd
+   * `%fp@(-64)`    : params1.dspDoneHandlerContext
+   * `%fp@(-68)`    : params1.DspDoneHandler
+   * `%fp@(-70)`    : params1.sync
+   * `%fp@(-88)`    : params1.ipcSubCmd
+   * `%fp@(-106)`   : params1.ipcCmd
+
+```
+{
+  // ...
+  %d3 = 0;
+
+  params1.ipcCmd = 0x1e01;
+  params1.ipcSubCmd = 0;
+  params1.sync = 1;
+  params1.DspDoneHandler = PrvDspDoneProc;
+  params1.dspDoneHandlerContext = &result;
+  result.ipcStatus = 0x0000;
+
+  %d0 = DspExec(&params1);
+
+  switch (%d0 & 0x03ff) {
+    case 0:
+      break;
+
+    case 1:
+      return 1;
+
+    case 0x03ff:
+      return 1;
+    
+    default:
+      return 3;
+  }
+
+  %d4 = result.ipcResult3 >> 8;
+  %a3 = &result.ipcResult4;
+  %d5 = result.ipcResult4 >> 8;
+  %d0 = result.ipcResult4;
+
+  if (%d4 == 0 && %d5 == 0x80) %d3 = 9;
+
+  if (%d3 != 0x09) {
+    if (%d4 == 0 || %d4 != -1) {
+      %d3 = 1;
+    } else if (%d4 == 0x01 || !(%d5 & 0x80)) {
+      %d3 = 2;
+    } else {
+      %d3 = 9;
+    }
+  }
+
+  switch (%d3) {
+    case 1:
+      if (*(uint32*)(par + 40) != 0x44737331) {
+        if (!DspLoad(0x44737331, 0x53684473, 0x1100800)) return 3;
+        *(uint32*)(par + 40) = 0x44737331
+      }
+
+      break; 
+
+    case 2:
+      return 1;
+
+    default:
+      return 1;
+  }
+
+  params2.ipcCmd = 0x2201;
+  params2.ipcParam1 = 0x4000; // -> target base 0x11008000
+  params2.ipcSubCmd = 0;
+  params1.sync = 1;
+  params1.DspDoneHandler = PrvDspDoneProc;
+  params1.dspDoneHandlerContext = &result;
+
+  %d0 = DspExec(&params2) & 0x03ff;
+  if (%d0) return %d0 == 0x03ff ? 1 : 3;
+
+  if (result.ipcStatus & 0x03ff != 0) return 3;
+
+  DmWrite(*(uint32*)(param+32), 0, 0x110080000, 0x2a00);
+
+  *(uint16*)(param+22) = result.ipcResult2;
+  *(uint16*)(param+12) = result.ipcResult1 >> 2 | ((result.ipcResult1 & 0x0040) << 9);
+
+  if (result.ipcResult2 != 0xffff) *(uint16*)(param+12) |= 0x4000;
+
+  if (*(uint16*)(param+12) & 0x8000) {
+    *(uint32*)(param+8) |= 0x0008;
+
+  }
+
+  // ...
+}
+```
 
 ```
     2b78:  4e56 ff96      	linkw %fp,#-106                       
@@ -5152,8 +5242,8 @@ Locals:
 
 Parameters:
 
-   * `%fp@(8)`      : parp_8
-   * `%fp@(12)`     : block(?)
+   * `%fp@(8)`      : libHandle
+   * `%fp@(12)`     : block
    * `%fp@(14)`     : firstPage (byte)
    * `%fp@(16)`     : lastPage (byte)
    * `%fp@(18)`     : destination
@@ -5213,7 +5303,7 @@ Locals:
     DspExec(&params1);
 
     if (result.ipcStatus & 0x03ff != 0) {
-      return (*(parp_8 + 4) & 0x00000001) ? 3 : 2;
+      return (*(libHandle + 4) & 0x00000001) ? 3 : 2;
     }
 
     %a0 = %a2 = &result.ipcResult1;
@@ -5247,7 +5337,7 @@ Locals:
     DspExec(&params2);
 
     if (resilt->ipcStatus & 0x03ff != 0) {
-      return (*(parp_8 + 4) & 0x00000001) ? 3 : 2;
+      return (*(libHandle + 4) & 0x00000001) ? 3 : 2;
     }
 
     %d4 = result.ipcResult2;
