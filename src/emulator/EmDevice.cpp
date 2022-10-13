@@ -64,7 +64,6 @@
 #include "EmRegsEZPalmVII.h"
 #include "EmRegsEZPalmVIIx.h"
 #include "EmRegsEZPalmVx.h"
-#include "EmRegsExpCardCLIE.h"
 #include "EmRegsEzPegS300.h"
 #include "EmRegsEzPegS500C.h"
 #include "EmRegsFMSound.h"

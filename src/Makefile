@@ -157,7 +157,6 @@ SOURCE_EMU = \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
 	emulator/hardware/EmSPISlaveSD.cpp \
-	emulator/hardware/clie/EmRegsExpCardCLIE.cpp \
 	emulator/hardware/clie/EmRegsUsbCLIE.cpp \
 	emulator/hardware/clie/EmRegsFMSound.cpp \
 	emulator/hardware/clie/EmRegsEzPegS300.cpp \
