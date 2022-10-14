@@ -2,9 +2,9 @@
 
 //#define TRACE_ACCESS
 
-#define INSTALL_HANDLER(read, write, offset, size)                                             \
-    this->SetHandler((ReadFunction)&EmRegsMB86189::read, (WriteFunction)&EmRegsMB86189::write, \
-                     baseAddress + offset, size)
+#define INSTALL_HANDLER(read, write, offset, size)                                       \
+    SetHandler((ReadFunction)&EmRegsMB86189::read, (WriteFunction)&EmRegsMB86189::write, \
+               baseAddress + offset, size)
 
 namespace {
     constexpr uint32 REGISTER_FILE_SIZE = 0x14;
