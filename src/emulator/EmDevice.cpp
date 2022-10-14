@@ -80,6 +80,7 @@
 #include "EmRegsSED1376.h"
 #include "EmRegsSZNaples.h"
 #include "EmRegsSZRedwood.h"
+#include "EmRegsSonyDSP.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
 #include "EmRegsUsbCLIE.h"
 #include "EmRegsUsbPegN700C.h"
@@ -1248,7 +1249,8 @@ void EmDevice::CreateRegs(void) const {
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
-            EmBankRegs::AddSubBank(new EmRegsUsbPegN700C(0x11000000L));
+            // EmBankRegs::AddSubBank(new EmRegsUsbPegN700C(0x11000000L));
+            EmBankRegs::AddSubBank(new EmRegsSonyDSP(0x11000000));
             break;
         }
 

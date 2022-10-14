@@ -20,6 +20,10 @@ class EmRegsSonyDSP : public EmRegs {
     void StdWrite(emuptr address, int size, uint32 value);
 
    private:
+    uint32 DoStdRead(emuptr address, int size);
+    void DoStdWrite(emuptr address, int size, uint32 value);
+
+   private:
     uint8 regs[0x00010000];
 
     emuptr baseAddress;
