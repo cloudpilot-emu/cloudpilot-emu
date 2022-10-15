@@ -2986,7 +2986,6 @@ void EmRegsSZ::UpdatePortXInterrupts(char port) {
             portXIntStatus = READ_REGISTER(portDIntStatus);
             portXIntEdge = READ_REGISTER(portDIntEdge);
             portXIntPolarity = READ_REGISTER(portDIntPolarity);
-
             break;
 
         case 'E':
@@ -3119,6 +3118,7 @@ void EmRegsSZ::UpdatePortXInterrupts(char port) {
 
     // Merge in the new values and write out the result.
 
+    portXIntStatus &= ~portXIntEdge;
     portXIntStatus |= newBits;
     portXIntStatus &= portXIntMask;
     uint8 intBit = 0;

@@ -33,6 +33,13 @@ namespace {
     constexpr emuptr REG_IPC_RESULT_5 = 0x0c1c;
     constexpr emuptr REG_IPC_RESULT_6 = 0x0c1e;
 
+    constexpr emuptr REG_INT_STATUS = 0x0220;
+    constexpr emuptr REG_INT_MASK = 0x0222;
+
+    constexpr uint16 INT_IPC_DONE = 0x0001;
+    constexpr uint16 INT_MS_INSERT = 0x0004;
+    constexpr uint16 INT_MS_EJECT = 0x0008;
+
 #ifdef LOGGING
     string trace(emuptr pc) {
         emuptr rtsAddr;
@@ -100,6 +107,34 @@ void EmRegsSonyDSP::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, 0, sizeof(regs));
 
     INSTALL_HANDLER(StdRead, IpcCmdWrite, REG_IPC_COMMAND, 2);
+    INSTALL_HANDLER(StdRead, IpcStatusWrite, REG_IPC_STATUS, 2);
+    INSTALL_HANDLER(StdRead, IrqMaskWrite, REG_INT_MASK, 2);
+    INSTALL_HANDLER(StdRead, IrqStatusWrite, REG_INT_STATUS, 2);
+}
+
+bool EmRegsSonyDSP::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) {
+    return slot == EmHAL::Slot::memorystick &&
+           MemoryStick::IsSizeRepresentable(cardImage.BlocksTotal());
+}
+
+void EmRegsSonyDSP::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+    if (slot != EmHAL::Slot::memorystick) return;
+
+    cout << hex << "0x" << READ_REGISTER(REG_INT_STATUS) << " 0x" << READ_REGISTER(REG_INT_MASK)
+         << dec << endl
+         << flush;
+
+    RaiseInt(INT_MS_INSERT);
+
+    cout << hex << "0x" << READ_REGISTER(REG_INT_STATUS) << " 0x" << READ_REGISTER(REG_INT_MASK)
+         << dec << endl
+         << flush;
+}
+
+void EmRegsSonyDSP::Unmount(EmHAL::Slot slot) { RaiseInt(INT_MS_EJECT); }
+
+bool EmRegsSonyDSP::GetIrqLine() {
+    return (READ_REGISTER(REG_INT_STATUS) & READ_REGISTER(REG_INT_MASK)) != 0;
 }
 
 uint32 EmRegsSonyDSP::StdRead(emuptr address, int size) {
@@ -138,6 +173,42 @@ void EmRegsSonyDSP::DoStdWrite(emuptr address, int size, uint32 value) {
         EmMemDoPut32(realAddr, value);
 }
 
+void EmRegsSonyDSP::IrqMaskWrite(emuptr address, int size, uint32 value) {
+    StdWrite(address, size, value);
+
+    const uint16 clearIntFlags = value & (INT_MS_EJECT | INT_MS_INSERT);
+    if (clearIntFlags) ClearInt(clearIntFlags);
+}
+
+void EmRegsSonyDSP::IrqStatusWrite(emuptr address, int size, uint32 value) {
+    LOG_WRITE_ACCESS(address, size, value);
+    cerr << "unsupported write to int status register" << endl << flush;
+}
+
+void EmRegsSonyDSP::RaiseInt(uint16 flags) {
+    const bool irqLineOld = GetIrqLine();
+
+    WRITE_REGISTER(REG_INT_STATUS, READ_REGISTER(REG_INT_STATUS) | flags);
+
+    const bool irqLine = GetIrqLine();
+    if (irqLine != irqLineOld) irqChange.Dispatch(irqLine);
+}
+
+void EmRegsSonyDSP::ClearInt(uint16 flags) {
+    const bool irqLineOld = GetIrqLine();
+
+    WRITE_REGISTER(REG_INT_STATUS, READ_REGISTER(REG_INT_STATUS) & ~flags);
+
+    const bool irqLine = GetIrqLine();
+    if (irqLine != irqLineOld) irqChange.Dispatch(irqLine);
+}
+
+void EmRegsSonyDSP::IpcStatusWrite(emuptr address, int size, uint32 value) {
+    StdWrite(address, size, value);
+
+    ClearInt(INT_IPC_DONE);
+}
+
 void EmRegsSonyDSP::IpcCmdWrite(emuptr address, int size, uint32 value) {
     LOG_WRITE_ACCESS(address, size, value);
 
@@ -172,5 +243,9 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
 
         default:
             cerr << "unknown DSP command" << endl << flush;
+            WRITE_REGISTER(REG_IPC_STATUS, 0x00f);
+            break;
     }
+
+    RaiseInt(INT_IPC_DONE);
 }

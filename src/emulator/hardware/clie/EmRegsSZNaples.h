@@ -2,12 +2,13 @@
 #define _EM_REGS_SZ_NAPLES_H_H
 
 #include "EmRegsSZ.h"
+#include "EmRegsSonyDSP.h"
 
 class EmScreenUpdateInfo;
 
 class EmRegsSzNaples : public EmRegsSZ {
    public:
-    EmRegsSzNaples(void);
+    EmRegsSzNaples(EmRegsSonyDSP& dsp);
     virtual ~EmRegsSzNaples(void);
 
    public:
@@ -27,6 +28,7 @@ class EmRegsSzNaples : public EmRegsSZ {
 
    private:
     EmSPISlave* fSPISlaveADC;
+    EmRegsSonyDSP& dsp;
 };
 
 #endif  // _EM_REGS_SZ_NAPLES_H_H

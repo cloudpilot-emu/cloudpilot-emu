@@ -28820,7 +28820,7 @@ Parameters:
 
   if (
     ((dsp_0222 & 0x0100) && (dsp_0220 & 0x0100)) ||
-    ((dsp_0222 & 0x0040) && (dsp_0020 & 0x0040)) ||
+    ((dsp_0222 & 0x0040) && (dsp_0220 & 0x0040)) ||
     ((dsp_0222 & 0x0010) && (dsp_0220 & 0x0010))
   )
   {
@@ -28828,22 +28828,22 @@ Parameters:
     else dsp_0222 &= 0xfeaf;
   }
 
-  if (dsp_0222 & 0x0004 && dsp_0200 & 0x0004) {
+  if (dsp_0222 & 0x0004 && dsp_0220 & 0x0004) {
     if (dspGlobals->Handler20) dspGlobals->Handler20();
     else dsp_0222 &= 0xfffb;
   }
 
-  if (dsp_0222 & 0x0008 && dsp_0200 & 0x0008) {
+  if (dsp_0222 & 0x0008 && dsp_0220 & 0x0008) {
     if (dspGlobals->Handler24) dspGlobals->Handler24();
     else dsp_0222 &= 0xfff7;
   }
 
-  if (dsp_0222 & 0x0002 && dsp_0200 & 0x0002) {
+  if (dsp_0222 & 0x0002 && dsp_0220 & 0x0002) {
     if (dspGlobals->Handler36) dspGlobals->Handler36();
     else dsp_0222 &= 0xfffd;
   }
 
-  if (dsp_0222 & 0x0020 && dsp_0200 & 0x0020) {
+  if (dsp_0222 & 0x0020 && dsp_0220 & 0x0020) {
     dsp_0222 &= 0xffdf;
   }
 

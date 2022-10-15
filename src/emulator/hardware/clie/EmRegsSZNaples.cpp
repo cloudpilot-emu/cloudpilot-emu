@@ -58,8 +58,16 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
 //		� EmRegsSzNaples::EmRegsSzNaples
 // ---------------------------------------------------------------------------
 
-EmRegsSzNaples::EmRegsSzNaples(void)
-    : EmRegsSZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
+EmRegsSzNaples::EmRegsSzNaples(EmRegsSonyDSP& dsp)
+    : EmRegsSZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)), dsp(dsp) {
+    dsp.irqChange.AddHandler([=](bool lineState) {
+        if (lineState) {
+            cout << "RAISE!" << endl << flush;
+            fPortXEdge['D' - 'D'] |= 0x08;
+            UpdatePortXInterrupts('D');
+        }
+    });
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsEZPalmIIIc::~EmRegsEZPalmIIIc
@@ -121,7 +129,7 @@ uint8 EmRegsSzNaples::GetPortInputValue(int port) {
 uint8 EmRegsSzNaples::GetPortInternalValue(int port) {
     switch (port) {
         case 'D':
-            return GetKeyBits();
+            return GetKeyBits() | (dsp.GetIrqLine() ? 0x08 : 0x00);
 
         case 'G':
             return 0x02;

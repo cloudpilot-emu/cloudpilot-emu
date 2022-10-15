@@ -1245,12 +1245,14 @@ void EmDevice::CreateRegs(void) const {
         }
 
         case kDeviceYSX1230: {
-            EmBankRegs::AddSubBank(new EmRegsSzNaples());
+            EmRegsSonyDSP* dsp = new EmRegsSonyDSP(0x11000000);
+
+            EmBankRegs::AddSubBank(new EmRegsSzNaples(*dsp));
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
             // EmBankRegs::AddSubBank(new EmRegsUsbPegN700C(0x11000000L));
-            EmBankRegs::AddSubBank(new EmRegsSonyDSP(0x11000000));
+            EmBankRegs::AddSubBank(dsp);
             break;
         }
 

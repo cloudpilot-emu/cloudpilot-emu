@@ -2,9 +2,12 @@
 #define _EM_REGS_SONY_DSP_
 
 #include "EmCommon.h"
+#include "EmEvent.h"
+#include "EmHAL.h"
 #include "EmRegs.h"
+#include "MemoryStick.h"
 
-class EmRegsSonyDSP : public EmRegs {
+class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
    public:
     EmRegsSonyDSP(emuptr baseAddress);
 
@@ -15,6 +18,15 @@ class EmRegsSonyDSP : public EmRegs {
     uint32 GetAddressRange(void) override;
     void SetSubBankHandlers(void) override;
 
+    bool SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) override;
+    void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
+    void Unmount(EmHAL::Slot slot) override;
+
+    bool GetIrqLine();
+
+   public:
+    EmEvent<bool> irqChange;
+
    protected:
     uint32 StdRead(emuptr address, int size);
     void StdWrite(emuptr address, int size, uint32 value);
@@ -23,8 +35,14 @@ class EmRegsSonyDSP : public EmRegs {
     uint32 DoStdRead(emuptr address, int size);
     void DoStdWrite(emuptr address, int size, uint32 value);
 
-    void IpcCmdWrite(emuptr address, int size, uint32 value);
+    void IrqMaskWrite(emuptr address, int size, uint32 value);
+    void IrqStatusWrite(emuptr address, int size, uint32 value);
 
+    void RaiseInt(uint16 flags);
+    void ClearInt(uint16 flags);
+
+    void IpcStatusWrite(emuptr address, int size, uint32 value);
+    void IpcCmdWrite(emuptr address, int size, uint32 value);
     void IpcDispatch(uint16 cmd);
 
    private:
