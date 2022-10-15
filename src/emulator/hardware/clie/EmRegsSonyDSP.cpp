@@ -174,10 +174,14 @@ void EmRegsSonyDSP::DoStdWrite(emuptr address, int size, uint32 value) {
 }
 
 void EmRegsSonyDSP::IrqMaskWrite(emuptr address, int size, uint32 value) {
-    StdWrite(address, size, value);
-
     const uint16 clearIntFlags = value & (INT_MS_EJECT | INT_MS_INSERT);
-    if (clearIntFlags) ClearInt(clearIntFlags);
+    const bool irqLineOld = GetIrqLine();
+
+    StdWrite(address, size, value);
+    WRITE_REGISTER(REG_INT_STATUS, READ_REGISTER(REG_INT_STATUS & ~clearIntFlags));
+
+    const bool irqLineNew = GetIrqLine();
+    if (irqLineOld != irqLineNew) irqChange.Dispatch(irqLineNew);
 }
 
 void EmRegsSonyDSP::IrqStatusWrite(emuptr address, int size, uint32 value) {
@@ -239,6 +243,16 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
         case 0x0037:
             cerr << "DSP init" << endl << flush;
             WRITE_REGISTER(REG_IPC_STATUS, 0x37 << 10);
+            break;
+
+        case 0x1e01:
+            cerr << "DSP memory stick sense" << endl << flush;
+            WRITE_REGISTER(REG_IPC_STATUS, 0x1e00 & 0xfc00);
+            break;
+
+        case 0x2201:
+            cerr << "read boot block" << endl << flush;
+            WRITE_REGISTER(REG_IPC_STATUS, 0x2001);
             break;
 
         default:

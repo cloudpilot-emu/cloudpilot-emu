@@ -29156,11 +29156,6 @@ Parameters:
    } else {
     dsp_0c06 = 0x0000;
    }
-
-   dps_0202 |= 0x0800;
-   dsp_0e60 |= 0x0010;
-
-   SysTaskWaitClr();
 ```
 
 ```

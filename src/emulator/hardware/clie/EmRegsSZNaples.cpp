@@ -62,7 +62,6 @@ EmRegsSzNaples::EmRegsSzNaples(EmRegsSonyDSP& dsp)
     : EmRegsSZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)), dsp(dsp) {
     dsp.irqChange.AddHandler([=](bool lineState) {
         if (lineState) {
-            cout << "RAISE!" << endl << flush;
             fPortXEdge['D' - 'D'] |= 0x08;
             UpdatePortXInterrupts('D');
         }
