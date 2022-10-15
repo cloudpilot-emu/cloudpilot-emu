@@ -5,6 +5,16 @@
 #include "EmMemory.h"
 #include "UAE.h"
 
+#define LOGGING
+
+#ifdef LOGGING
+    #define LOG_WRITE_ACCESS logWriteAccess
+    #define LOG_READ_ACCESS logReadAccess
+#else
+    #define LOG_WRITE_ACCESS(address, size, value)
+    #define LOG_READ_ACCESS(address, size, value)
+#endif
+
 #define READ_REGISTER(r) DoStdRead(baseAddress + r, 2)
 #define WRITE_REGISTER(r, v) DoStdWrite(baseAddress + r, 2, v)
 
@@ -13,8 +23,17 @@
                baseAddress + offset, size)
 
 namespace {
-    constexpr emuptr REG_IPC_RESULT = 0x0c06;
+    constexpr emuptr REG_IPC_COMMAND = 0x0c04;
+    constexpr emuptr REG_IPC_STATUS = 0x0c06;
 
+    constexpr emuptr REG_IPC_RESULT_1 = 0x0c14;
+    constexpr emuptr REG_IPC_RESULT_2 = 0x0c16;
+    constexpr emuptr REG_IPC_RESULT_3 = 0x0c18;
+    constexpr emuptr REG_IPC_RESULT_4 = 0x0c1a;
+    constexpr emuptr REG_IPC_RESULT_5 = 0x0c1c;
+    constexpr emuptr REG_IPC_RESULT_6 = 0x0c1e;
+
+#ifdef LOGGING
     string trace(emuptr pc) {
         emuptr rtsAddr;
 
@@ -39,6 +58,21 @@ namespace {
 
         return i == sizeof(name) ? "[unknown 3]" : name;
     }
+
+    void logWriteAccess(emuptr address, int size, uint32 value) {
+        cerr << "DSP register write 0x" << hex << right << setfill('0') << setw(8) << address
+             << " <- 0x" << setw(4) << value << dec << " (" << size << " bytes) from "
+             << trace(::regs.pc) << " : 0x" << hex << ::regs.pc << dec << endl
+             << flush;
+    }
+
+    void logReadAccess(emuptr address, int size, uint32 value) {
+        cerr << "DSP register read 0x" << hex << right << setfill('0') << setw(8) << address
+             << " -> 0x" << setw(4) << value << dec << " (" << size << " bytes) from "
+             << trace(::regs.pc) << " : 0x" << hex << ::regs.pc << dec << endl
+             << flush;
+    }
+#endif
 }  // namespace
 
 EmRegsSonyDSP::EmRegsSonyDSP(emuptr baseAddress) : baseAddress(baseAddress) {}
@@ -48,7 +82,7 @@ void EmRegsSonyDSP::Reset(Bool hardwareReset) {
 
     memset(regs, 0, sizeof(regs));
 
-    WRITE_REGISTER(REG_IPC_RESULT, 0xfc00);
+    WRITE_REGISTER(REG_IPC_STATUS, 0xfc00);
 }
 
 uint8* EmRegsSonyDSP::GetRealAddress(emuptr address) {
@@ -64,26 +98,19 @@ uint32 EmRegsSonyDSP::GetAddressRange(void) { return sizeof(regs); }
 
 void EmRegsSonyDSP::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, 0, sizeof(regs));
+
+    INSTALL_HANDLER(StdRead, IpcCmdWrite, REG_IPC_COMMAND, 2);
 }
 
 uint32 EmRegsSonyDSP::StdRead(emuptr address, int size) {
-#if 0
     if (address - baseAddress < 0x00008000 && size == 2)
-        cerr << "DSP register read 0x" << hex << right << setfill('0') << setw(8) << address
-             << " -> 0x" << setw(4) << DoStdRead(address, size) << dec << " (" << size
-             << " bytes) from " << trace(::regs.pc) << " : 0x" << hex << ::regs.pc << dec << endl
-             << flush;
-#endif
+        LOG_READ_ACCESS(address, size, DoStdRead(address, size));
 
     return DoStdRead(address, size);
 }
 
 void EmRegsSonyDSP::StdWrite(emuptr address, int size, uint32 value) {
-    if (address - baseAddress < 0x00008000)
-        cerr << "DSP register write 0x" << hex << right << setfill('0') << setw(8) << address
-             << " <- 0x" << setw(4) << value << dec << " (" << size << " bytes) from "
-             << trace(::regs.pc) << " : 0x" << hex << ::regs.pc << dec << endl
-             << flush;
+    if (address - baseAddress < 0x00008000) LOG_WRITE_ACCESS(address, size, value);
 
     DoStdWrite(address, size, value);
 }
@@ -109,4 +136,41 @@ void EmRegsSonyDSP::DoStdWrite(emuptr address, int size, uint32 value) {
 
     else
         EmMemDoPut32(realAddr, value);
+}
+
+void EmRegsSonyDSP::IpcCmdWrite(emuptr address, int size, uint32 value) {
+    LOG_WRITE_ACCESS(address, size, value);
+
+    IpcDispatch(value);
+}
+
+void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
+    cerr << "DSP dispatch command 0x" << hex << cmd << dec << endl << flush;
+
+    WRITE_REGISTER(REG_IPC_RESULT_1, 0);
+    WRITE_REGISTER(REG_IPC_RESULT_2, 0);
+    WRITE_REGISTER(REG_IPC_RESULT_3, 0);
+    WRITE_REGISTER(REG_IPC_RESULT_4, 0);
+    WRITE_REGISTER(REG_IPC_RESULT_5, 0);
+    WRITE_REGISTER(REG_IPC_RESULT_6, 0);
+
+    switch (cmd) {
+        case 0x0036:
+            cerr << "DSP upload, type 1" << endl << flush;
+            WRITE_REGISTER(REG_IPC_STATUS, 0x36 << 10);
+            break;
+
+        case 0x0c85:
+            cerr << "DSP upload, type 2" << endl << flush;
+            WRITE_REGISTER(REG_IPC_STATUS, 0xfc << 10);
+            break;
+
+        case 0x0037:
+            cerr << "DSP init" << endl << flush;
+            WRITE_REGISTER(REG_IPC_STATUS, 0x37 << 10);
+            break;
+
+        default:
+            cerr << "unknown DSP command" << endl << flush;
+    }
 }

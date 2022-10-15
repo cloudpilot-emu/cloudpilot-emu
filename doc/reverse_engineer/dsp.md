@@ -75,7 +75,7 @@
 * Upload DSP init program
 * Clear `0x0c06`
 * Move IPC argument from loaded program to IPC arg 1 (`0x0c08`)
-* Write `0x0055` to `0x0c04`
+* Write `0x0037` to `0x0c04`
 * Wait until `0x0c06` is nonzero, validate that status is zero
 * Clear `0x0c06`
 * Write `0x0001` to `0x0200`
