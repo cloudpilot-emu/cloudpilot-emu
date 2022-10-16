@@ -30,7 +30,7 @@ namespace {
     constexpr emuptr REG_IPC_ARG_1 = 0x0c08;
     constexpr emuptr REG_IPC_ARG_2 = 0x0c0a;
     constexpr emuptr REG_IPC_ARG_3 = 0x0c0c;
-    // constexpr emuptr REG_IPC_ARG_4 = 0x0c0e;
+    constexpr emuptr REG_IPC_ARG_4 = 0x0c0e;
     // constexpr emuptr REG_IPC_ARG_5 = 0x0c10;
     // constexpr emuptr REG_IPC_ARG_6 = 0x0c12;
 
@@ -57,6 +57,7 @@ namespace {
     constexpr uint16 IPC_COMMAND_MS_READ_OOB = 0x3a01;
     constexpr uint16 IPC_COMMAND_MS_ERASE_BLOCK = 0x3201;
     constexpr uint16 IPC_COMMAND_MS_PROBE_BLOCK = 0x3601;
+    constexpr uint16 IPC_COMMAND_MS_READ_BLOCK = 0x2601;
 
     constexpr uint16 IPC_STATUS_MASK = 0xfc00;
 
@@ -338,6 +339,10 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
             WRITE_REGISTER(REG_IPC_RESULT_1, PROBE_BLOCK_SUCCESS_MAGIC);
             break;
 
+        case IPC_COMMAND_MS_READ_BLOCK:
+            DoCmdReadBlock();
+            break;
+
         default:
             cerr << "unknown DSP command" << endl << flush;
             WRITE_REGISTER(REG_IPC_STATUS, (cmd & IPC_STATUS_MASK) | 0x000f);
@@ -405,4 +410,37 @@ void EmRegsSonyDSP::DoCmdReadOob() {
     }
 
     WRITE_REGISTER(REG_IPC_STATUS, IPC_COMMAND_MS_READ_OOB & IPC_STATUS_MASK);
+}
+
+void EmRegsSonyDSP::DoCmdReadBlock() {
+    WRITE_REGISTER(REG_IPC_STATUS, (IPC_COMMAND_MS_READ_BLOCK & IPC_STATUS_MASK) | 0x0001);
+
+    uint16 block = READ_REGISTER(REG_IPC_ARG_1);
+    uint16 shmBase = READ_REGISTER(REG_IPC_ARG_2) * 2;
+    uint16 firstPage = READ_REGISTER(REG_IPC_ARG_3);
+    uint16 lastPage = READ_REGISTER(REG_IPC_ARG_4);
+
+    cerr << hex << "block 0x" << block << " , first page 0x" << firstPage << " , last page 0x"
+         << lastPage << " , pages per block 0x" << (int)memoryStick.PagesPerBlock() << dec << endl
+         << flush;
+
+    if (lastPage < firstPage || lastPage >= memoryStick.PagesPerBlock()) return;
+
+    if (shmBase < SHM_SPACE_START) return;
+
+    shmBase -= SHM_SPACE_START;
+    if (shmBase + 512 * (lastPage - firstPage + 1) > SHM_SPACE_SIZE) return;
+
+    MemoryStick::Registers& registers(memoryStick.GetRegisters());
+    registers.SetBlock(block);
+
+    uint8* base = regs + SHM_SPACE_START + shmBase;
+    for (uint8 page = firstPage; page <= lastPage; page++) {
+        registers.SetPage(page);
+        memoryStick.PreparePage(base, false);
+
+        base += 512;
+    }
+
+    WRITE_REGISTER(REG_IPC_STATUS, IPC_COMMAND_MS_READ_BLOCK & IPC_STATUS_MASK);
 }

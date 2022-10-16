@@ -63,6 +63,7 @@ class MemoryStick {
     Registers& GetRegisters();
     bool PreparePage(uint8* destination, bool oobOnly);
     uint32 BlocksTotal() const;
+    uint8 PagesPerBlock() const;
 
    private:
     void DoCmd(uint8 commandByte);
