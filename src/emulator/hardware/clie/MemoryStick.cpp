@@ -383,6 +383,8 @@ bool MemoryStick::PreparePage(uint8* destination, bool oobOnly) {
     return true;
 }
 
+uint32 MemoryStick::BlocksTotal() const { return segments * 512; }
+
 void MemoryStick::PreparePageBootBlock(uint8 page, uint8* destination, bool oobOnly) {
     reg.oob[0] = 0xff;
     reg.oob[1] = 0x38;

@@ -6,7 +6,7 @@
 #include "EmMemory.h"
 #include "UAE.h"
 
-#define LOGGING
+// #define LOGGING
 
 #ifdef LOGGING
     #define LOG_WRITE_ACCESS logWriteAccess
@@ -28,8 +28,8 @@ namespace {
     constexpr emuptr REG_IPC_STATUS = 0x0c06;
 
     constexpr emuptr REG_IPC_ARG_1 = 0x0c08;
-    // constexpr emuptr REG_IPC_ARG_2 = 0x0c0a;
-    // constexpr emuptr REG_IPC_ARG_3 = 0x0c0c;
+    constexpr emuptr REG_IPC_ARG_2 = 0x0c0a;
+    constexpr emuptr REG_IPC_ARG_3 = 0x0c0c;
     // constexpr emuptr REG_IPC_ARG_4 = 0x0c0e;
     // constexpr emuptr REG_IPC_ARG_5 = 0x0c10;
     // constexpr emuptr REG_IPC_ARG_6 = 0x0c12;
@@ -54,6 +54,9 @@ namespace {
 
     constexpr uint16 IPC_COMMAND_MS_SENSE = 0x1e01;
     constexpr uint16 IPC_COMMAND_MS_READ_BOOT_BLOCK = 0x2201;
+    constexpr uint16 IPC_COMMAND_MS_READ_OOB = 0x3a01;
+    constexpr uint16 IPC_COMMAND_MS_ERASE_BLOCK = 0x3201;
+    constexpr uint16 IPC_COMMAND_MS_PROBE_BLOCK = 0x3601;
 
     constexpr uint16 IPC_STATUS_MASK = 0xfc00;
 
@@ -312,8 +315,23 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
             break;
 
         case IPC_COMMAND_MS_READ_BOOT_BLOCK:
-            cerr << "read boot block" << endl << flush;
             DoCmdReadBootBlock();
+            break;
+
+        case IPC_COMMAND_MS_READ_OOB:
+            DoCmdReadOob();
+            break;
+
+        case IPC_COMMAND_MS_ERASE_BLOCK:
+            cerr << "Request to erase block " << READ_REGISTER(REG_IPC_ARG_1) << endl << flush;
+            WRITE_REGISTER(REG_IPC_STATUS, cmd & IPC_STATUS_MASK);
+            break;
+
+        case IPC_COMMAND_MS_PROBE_BLOCK:
+            cerr << "Probe block " << READ_REGISTER(REG_IPC_ARG_1) << " page "
+                 << READ_REGISTER(REG_IPC_ARG_2) << endl
+                 << flush;
+            WRITE_REGISTER(REG_IPC_STATUS, cmd & IPC_STATUS_MASK);
             break;
 
         default:
@@ -326,6 +344,8 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
 }
 
 void EmRegsSonyDSP::DoCmdReadBootBlock() {
+    cerr << "read boot block" << endl << flush;
+
     WRITE_REGISTER(REG_IPC_STATUS, (IPC_COMMAND_MS_READ_BOOT_BLOCK & IPC_STATUS_MASK) | 0x0001);
 
     uint16 shmBase = READ_REGISTER(REG_IPC_ARG_1) * 2;
@@ -333,6 +353,8 @@ void EmRegsSonyDSP::DoCmdReadBootBlock() {
 
     shmBase -= SHM_SPACE_START;
     if (shmBase + SHM_GET_BOOT_BLOCK_BLOB_SIZE > SHM_SPACE_SIZE) return;
+
+    cerr << "SHM base is 0x" << hex << shmBase << dec << endl << flush;
 
     uint8* base = regs + SHM_SPACE_START + shmBase;
     memset(base, 0, SHM_GET_BOOT_BLOCK_BLOB_SIZE);
@@ -349,4 +371,34 @@ void EmRegsSonyDSP::DoCmdReadBootBlock() {
     WRITE_REGISTER(REG_IPC_RESULT_2, MemoryStick::BOOT_BLOCK);
 
     WRITE_REGISTER(REG_IPC_STATUS, IPC_COMMAND_MS_READ_BOOT_BLOCK & IPC_STATUS_MASK);
+}
+
+void EmRegsSonyDSP::DoCmdReadOob() {
+    WRITE_REGISTER(REG_IPC_STATUS, (IPC_COMMAND_MS_READ_OOB & IPC_STATUS_MASK) | 0x0001);
+
+    uint16 shmBase = READ_REGISTER(REG_IPC_ARG_3) * 2;
+    if (shmBase < SHM_SPACE_START) return;
+
+    shmBase -= SHM_SPACE_START;
+
+    const uint32 blocksTotal = memoryStick.BlocksTotal();
+    if (shmBase + 4 * blocksTotal > SHM_SPACE_SIZE) return;
+
+    cerr << "SHM base is 0x" << hex << shmBase << dec << endl << flush;
+
+    MemoryStick::Registers& registers(memoryStick.GetRegisters());
+    registers.SetPage(0);
+
+    uint8* base = regs + SHM_SPACE_START + shmBase;
+    for (uint32 block = 0; block < blocksTotal; block++) {
+        registers.SetBlock(block);
+        memoryStick.PreparePage(nullptr, true);
+
+        *(base++) = registers.oob[0];
+        *(base++) = registers.oob[1];
+        *(base++) = registers.oob[2];
+        *(base++) = registers.oob[3];
+    }
+
+    WRITE_REGISTER(REG_IPC_STATUS, IPC_COMMAND_MS_READ_OOB & IPC_STATUS_MASK);
 }

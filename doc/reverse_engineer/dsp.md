@@ -66,7 +66,30 @@
 
 # IPC commands
 
-##
+## Read oob
+
+ * Command: `0x3a01`
+ * Arg 1: ??? (set to zero)
+ * Arg 2: number of bad blocks
+ * Arg 3: SHM base
+ * No results
+
+Reads the first 4 OOB bytes of all blocks into SHM
+
+## Erase block
+
+ * Command: `0x3201`
+ * Arg 1: block to erase
+ * No results
+
+## Probe block
+
+ * Command: `0x3601`
+ * Arg 1: block
+ * Arg 2: page
+ * No results
+
+Dunno what this really does, it should return success.
 
 # Init
 
