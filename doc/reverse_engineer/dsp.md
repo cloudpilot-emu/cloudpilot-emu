@@ -39,7 +39,7 @@
 | address  | width  | register              | notes                                                                               |
 | -------- | ------ | --------------------- | ----------------------------------------------------------------------------------- |
 | `0x0202` | 2      | ???                   | bit 12 is set before dispatching a command and after a command interrupt is handled |
-| `0x0204` | 2      | Reset                 | Writes to this (or a combination of them?) reset the DSP                            |
+| `0x0204` | 2      | Reset                 | writes to this (or a soquence of them?) reset the DSP                               |
 | `0x0220` | 2      | Interrupt status      |                                                                                     |
 | `0x0222` | 2      | Interrupt enable      |                                                                                     |
 | `0x0c04` | 2      | IPC command word      |                                                                                     |
@@ -91,7 +91,7 @@ Reads the first 4 OOB bytes of all blocks into SHM
 -   Result 1: `0x0030`
 
 Dunno what this really does, but it must return `0x0030` in order to signal
-a good block ¯\_(ツ)\_/¯
+a good block `¯\_(ツ)\_/¯`
 
 # Init
 
