@@ -2538,12 +2538,6 @@ void EmRegsSZ::portXIntMaskWrite(emuptr address, int size, uint32 value) {
 // ---------------------------------------------------------------------------
 
 void EmRegsSZ::portXIntStatusWrite(emuptr address, int size, uint32 value) {
-    // Do a standard update of the register.
-
-    // EmRegsSZ::StdWrite(address, size, value);
-
-    // Set the new interrupt state.
-
     int port = EmRegsSZ::GetPortFromAddress(address);
     fPortXEdge[port - 'D'] &= ~value;
 
@@ -3118,7 +3112,7 @@ void EmRegsSZ::UpdatePortXInterrupts(char port) {
 
     // Merge in the new values and write out the result.
 
-    portXIntStatus &= ~portXIntEdge;
+    portXIntStatus = 0;
     portXIntStatus |= newBits;
     portXIntStatus &= portXIntMask;
     uint8 intBit = 0;
