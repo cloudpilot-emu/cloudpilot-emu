@@ -2,6 +2,7 @@
 
 #include <iomanip>
 
+#include "EmCPU68K.h"
 #include "EmMemory.h"
 #include "UAE.h"
 
@@ -39,6 +40,15 @@ namespace {
     constexpr uint16 INT_IPC_DONE = 0x0001;
     constexpr uint16 INT_MS_INSERT = 0x0004;
     constexpr uint16 INT_MS_EJECT = 0x0008;
+
+    constexpr uint16 IPC_COMMAND_UPLOAD_TYPE_1 = 0x0036;
+    constexpr uint16 IPC_COMMAND_UPLOAD_TYPE_2 = 0x0c85;
+    constexpr uint16 IPC_COMMAND_DSP_INIT = 0x0037;
+
+    constexpr uint16 IPC_COMMAND_MS_SENSE = 0x1e01;
+    constexpr uint16 IPC_COMMAND_MS_READ_BOOT_BLOCK = 0x2201;
+
+    constexpr uint16 IPC_STATUS_MASK = 0xfc00;
 
 #ifdef LOGGING
     string trace(emuptr pc) {
@@ -89,7 +99,7 @@ void EmRegsSonyDSP::Reset(Bool hardwareReset) {
 
     memset(regs, 0, sizeof(regs));
 
-    WRITE_REGISTER(REG_IPC_STATUS, 0xfc00);
+    WRITE_REGISTER(REG_IPC_STATUS, IPC_STATUS_MASK);
 }
 
 uint8* EmRegsSonyDSP::GetRealAddress(emuptr address) {
@@ -143,29 +153,55 @@ void EmRegsSonyDSP::StdWrite(emuptr address, int size, uint32 value) {
 }
 
 uint32 EmRegsSonyDSP::DoStdRead(emuptr address, int size) {
+    if ((address + size - baseAddress) > sizeof(regs)) {
+        gCPU68K->BusError(address, size, false);
+
+        return 0;
+    }
+
     uint8* realAddr = this->regs + (address - baseAddress);
 
-    if (size == 1) return EmMemDoGet8(realAddr);
+    if (size == 1) return *realAddr;
 
-    if (size == 2) return EmMemDoGet16(realAddr);
+    if (size == 2) return (*realAddr << 8) | *(realAddr + 1);
 
-    return EmMemDoGet32(realAddr);
+    return (*realAddr << 24) | (*(realAddr + 1) << 16) | (*(realAddr + 2) << 8) | *(realAddr + 3);
 }
 
 void EmRegsSonyDSP::DoStdWrite(emuptr address, int size, uint32 value) {
+    if ((address + size - baseAddress) > sizeof(regs)) {
+        gCPU68K->BusError(address, size, false);
+
+        return;
+    }
+
     uint8* realAddr = this->regs + (address - baseAddress);
 
-    if (size == 1)
-        EmMemDoPut8(realAddr, value);
+    if (size == 1) {
+        *realAddr = value;
+    } else if (size == 2) {
+        *(realAddr++) = value >> 8;
+        *(realAddr++) = value;
+    }
 
-    else if (size == 2)
-        EmMemDoPut16(realAddr, value);
-
-    else
-        EmMemDoPut32(realAddr, value);
+    else {
+        *(realAddr++) = value >> 24;
+        *(realAddr++) = value >> 16;
+        *(realAddr++) = value >> 8;
+        *(realAddr++) = value;
+    }
 }
 
 void EmRegsSonyDSP::IrqMaskWrite(emuptr address, int size, uint32 value) {
+    if (size != 2) {
+        StdWrite(address, size, value);
+
+        cerr << "0x" << hex << address << " : unsupported write size " << dec << size << endl
+             << flush;
+
+        return;
+    }
+
     const uint16 clearIntFlags = value & (INT_MS_EJECT | INT_MS_INSERT);
     const bool irqLineOld = GetIrqLine();
 
@@ -178,6 +214,7 @@ void EmRegsSonyDSP::IrqMaskWrite(emuptr address, int size, uint32 value) {
 
 void EmRegsSonyDSP::IrqStatusWrite(emuptr address, int size, uint32 value) {
     LOG_WRITE_ACCESS(address, size, value);
+
     cerr << "unsupported write to int status register" << endl << flush;
 }
 
@@ -202,11 +239,24 @@ void EmRegsSonyDSP::ClearInt(uint16 flags) {
 void EmRegsSonyDSP::IpcStatusWrite(emuptr address, int size, uint32 value) {
     StdWrite(address, size, value);
 
+    if (size != 2) {
+        cerr << "0x" << hex << address << " : unsupported write size " << dec << size << endl
+             << flush;
+
+        return;
+    }
+
     ClearInt(INT_IPC_DONE);
 }
 
 void EmRegsSonyDSP::IpcCmdWrite(emuptr address, int size, uint32 value) {
     LOG_WRITE_ACCESS(address, size, value);
+
+    if (size != 2) {
+        cerr << "0x" << hex << address << " : unsupported write size " << dec << size << endl
+             << flush;
+        return;
+    }
 
     IpcDispatch(value);
 }
@@ -222,34 +272,34 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
     WRITE_REGISTER(REG_IPC_RESULT_6, 0);
 
     switch (cmd) {
-        case 0x0036:
+        case IPC_COMMAND_UPLOAD_TYPE_1:
             cerr << "DSP upload, type 1" << endl << flush;
-            WRITE_REGISTER(REG_IPC_STATUS, 0x36 << 10);
+            WRITE_REGISTER(REG_IPC_STATUS, (cmd << 10) & IPC_STATUS_MASK);
             break;
 
-        case 0x0c85:
+        case IPC_COMMAND_UPLOAD_TYPE_2:
             cerr << "DSP upload, type 2" << endl << flush;
-            WRITE_REGISTER(REG_IPC_STATUS, 0xfc << 10);
+            WRITE_REGISTER(REG_IPC_STATUS, IPC_STATUS_MASK);
             break;
 
-        case 0x0037:
+        case IPC_COMMAND_DSP_INIT:
             cerr << "DSP init" << endl << flush;
-            WRITE_REGISTER(REG_IPC_STATUS, 0x37 << 10);
+            WRITE_REGISTER(REG_IPC_STATUS, (cmd << 10) & IPC_STATUS_MASK);
             break;
 
-        case 0x1e01:
+        case IPC_COMMAND_MS_SENSE:
             cerr << "DSP memory stick sense" << endl << flush;
-            WRITE_REGISTER(REG_IPC_STATUS, 0x1e00 & 0xfc00);
+            WRITE_REGISTER(REG_IPC_STATUS, cmd & IPC_STATUS_MASK);
             break;
 
-        case 0x2201:
+        case IPC_COMMAND_MS_READ_BOOT_BLOCK:
             cerr << "read boot block" << endl << flush;
-            WRITE_REGISTER(REG_IPC_STATUS, 0x2001);
+            WRITE_REGISTER(REG_IPC_STATUS, (cmd & IPC_STATUS_MASK) | 0x0001);
             break;
 
         default:
             cerr << "unknown DSP command" << endl << flush;
-            WRITE_REGISTER(REG_IPC_STATUS, 0x00f);
+            WRITE_REGISTER(REG_IPC_STATUS, (cmd & IPC_STATUS_MASK) | 0x000f);
             break;
     }
 
