@@ -120,15 +120,7 @@ bool EmRegsSonyDSP::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardI
 void EmRegsSonyDSP::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
     if (slot != EmHAL::Slot::memorystick) return;
 
-    cout << hex << "0x" << READ_REGISTER(REG_INT_STATUS) << " 0x" << READ_REGISTER(REG_INT_MASK)
-         << dec << endl
-         << flush;
-
     RaiseInt(INT_MS_INSERT);
-
-    cout << hex << "0x" << READ_REGISTER(REG_INT_STATUS) << " 0x" << READ_REGISTER(REG_INT_MASK)
-         << dec << endl
-         << flush;
 }
 
 void EmRegsSonyDSP::Unmount(EmHAL::Slot slot) { RaiseInt(INT_MS_EJECT); }
@@ -178,7 +170,7 @@ void EmRegsSonyDSP::IrqMaskWrite(emuptr address, int size, uint32 value) {
     const bool irqLineOld = GetIrqLine();
 
     StdWrite(address, size, value);
-    WRITE_REGISTER(REG_INT_STATUS, READ_REGISTER(REG_INT_STATUS & ~clearIntFlags));
+    WRITE_REGISTER(REG_INT_STATUS, READ_REGISTER(REG_INT_STATUS) & ~clearIntFlags);
 
     const bool irqLineNew = GetIrqLine();
     if (irqLineOld != irqLineNew) irqChange.Dispatch(irqLineNew);
