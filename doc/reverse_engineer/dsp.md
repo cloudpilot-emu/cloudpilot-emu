@@ -87,9 +87,10 @@ Reads the first 4 OOB bytes of all blocks into SHM
  * Command: `0x3601`
  * Arg 1: block
  * Arg 2: page
- * No results
+ * Result 1: `0x0030`
 
-Dunno what this really does, it should return success.
+Dunno what this really does, but it must return `0x0030` in order to signal
+a good block ¯\_(ツ)_/¯
 
 # Init
 

@@ -66,6 +66,8 @@ namespace {
     constexpr uint16 SHM_BOOT_BLOCK_BASE = 18 * 512;
     constexpr uint16 SHM_GET_BOOT_BLOCK_BLOB_SIZE = 0x2a00;
 
+    constexpr uint16 PROBE_BLOCK_SUCCESS_MAGIC = 0x0030;
+
 #ifdef LOGGING
     string trace(emuptr pc) {
         emuptr rtsAddr;
@@ -331,7 +333,9 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
             cerr << "Probe block " << READ_REGISTER(REG_IPC_ARG_1) << " page "
                  << READ_REGISTER(REG_IPC_ARG_2) << endl
                  << flush;
+
             WRITE_REGISTER(REG_IPC_STATUS, cmd & IPC_STATUS_MASK);
+            WRITE_REGISTER(REG_IPC_RESULT_1, PROBE_BLOCK_SUCCESS_MAGIC);
             break;
 
         default:
