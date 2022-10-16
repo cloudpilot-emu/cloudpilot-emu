@@ -44,6 +44,8 @@ namespace {
     constexpr emuptr REG_INT_STATUS = 0x0220;
     constexpr emuptr REG_INT_MASK = 0x0222;
 
+    constexpr emuptr REG_RESET = 0x0204;
+
     constexpr uint16 INT_IPC_DONE = 0x0001;
     constexpr uint16 INT_MS_INSERT = 0x0004;
     constexpr uint16 INT_MS_EJECT = 0x0008;
@@ -51,6 +53,7 @@ namespace {
     constexpr uint16 IPC_COMMAND_UPLOAD_TYPE_1 = 0x0036;
     constexpr uint16 IPC_COMMAND_UPLOAD_TYPE_2 = 0x0c85;
     constexpr uint16 IPC_COMMAND_DSP_INIT = 0x0037;
+    constexpr uint16 IPC_COMMAND_ESCAPE = 0x0800;
 
     constexpr uint16 IPC_COMMAND_MS_SENSE = 0x1e01;
     constexpr uint16 IPC_COMMAND_MS_READ_BOOT_BLOCK = 0x2201;
@@ -58,6 +61,7 @@ namespace {
     constexpr uint16 IPC_COMMAND_MS_ERASE_BLOCK = 0x3201;
     constexpr uint16 IPC_COMMAND_MS_PROBE_BLOCK = 0x3601;
     constexpr uint16 IPC_COMMAND_MS_READ_BLOCK = 0x2601;
+    constexpr uint16 IPC_COMMAND_MS_WRITE_BLOCK = 0x2a01;
 
     constexpr uint16 IPC_STATUS_MASK = 0xfc00;
 
@@ -140,6 +144,7 @@ void EmRegsSonyDSP::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, IpcStatusWrite, REG_IPC_STATUS, 2);
     INSTALL_HANDLER(StdRead, IrqMaskWrite, REG_INT_MASK, 2);
     INSTALL_HANDLER(StdRead, IrqStatusWrite, REG_INT_STATUS, 2);
+    INSTALL_HANDLER(StdRead, ResetWrite, REG_RESET, 2);
 }
 
 bool EmRegsSonyDSP::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) {
@@ -243,6 +248,10 @@ void EmRegsSonyDSP::IrqStatusWrite(emuptr address, int size, uint32 value) {
     cerr << "unsupported write to int status register" << endl << flush;
 }
 
+void EmRegsSonyDSP::ResetWrite(emuptr address, int size, uint32 value) {
+    WRITE_REGISTER(REG_IPC_STATUS, IPC_STATUS_MASK);
+}
+
 void EmRegsSonyDSP::RaiseInt(uint16 flags) {
     const bool irqLineOld = GetIrqLine();
 
@@ -343,13 +352,22 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
             DoCmdReadBlock();
             break;
 
+        case IPC_COMMAND_ESCAPE:
+            cerr << "stubbed: IPC escape" << endl << flush;
+            break;
+
+        case IPC_COMMAND_MS_WRITE_BLOCK:
+            cerr << "stubbed: block write" << endl << flush;
+            WRITE_REGISTER(REG_IPC_STATUS, cmd & IPC_STATUS_MASK);
+            break;
+
         default:
             cerr << "unknown DSP command" << endl << flush;
             WRITE_REGISTER(REG_IPC_STATUS, (cmd & IPC_STATUS_MASK) | 0x000f);
             break;
     }
 
-    RaiseInt(INT_IPC_DONE);
+    if (cmd != IPC_COMMAND_ESCAPE) RaiseInt(INT_IPC_DONE);
 }
 
 void EmRegsSonyDSP::DoCmdReadBootBlock() {

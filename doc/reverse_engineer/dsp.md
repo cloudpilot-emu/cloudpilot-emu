@@ -39,6 +39,7 @@
 | address  | width  | register              | notes                                                                               |
 | -------- | ------ | --------------------- | ----------------------------------------------------------------------------------- |
 | `0x0202` | 2      | ???                   | bit 12 is set before dispatching a command and after a command interrupt is handled |
+| `0x0204` | 2      | Reset                 | Writes to this (or a combination of them?) reset the DSP                            |
 | `0x0220` | 2      | Interrupt status      |                                                                                     |
 | `0x0222` | 2      | Interrupt enable      |                                                                                     |
 | `0x0c04` | 2      | IPC command word      |                                                                                     |
@@ -68,43 +69,43 @@
 
 ## Read oob
 
- * Command: `0x3a01`
- * Arg 1: ??? (set to zero)
- * Arg 2: number of bad blocks
- * Arg 3: SHM base
- * No results
+-   Command: `0x3a01`
+-   Arg 1: ??? (set to zero)
+-   Arg 2: number of bad blocks
+-   Arg 3: SHM base
+-   No results
 
 Reads the first 4 OOB bytes of all blocks into SHM
 
 ## Erase block
 
- * Command: `0x3201`
- * Arg 1: block to erase
- * No results
+-   Command: `0x3201`
+-   Arg 1: block to erase
+-   No results
 
 ## Probe block
 
- * Command: `0x3601`
- * Arg 1: block
- * Arg 2: page
- * Result 1: `0x0030`
+-   Command: `0x3601`
+-   Arg 1: block
+-   Arg 2: page
+-   Result 1: `0x0030`
 
 Dunno what this really does, but it must return `0x0030` in order to signal
-a good block ¯\_(ツ)_/¯
+a good block ¯\_(ツ)\_/¯
 
 # Init
 
-* Poll `0x0c06` until it reads `0xfc00`
-* Clear `0x0c06`
-* Upload DSP init program
-* Clear `0x0c06`
-* Move IPC argument from loaded program to IPC arg 1 (`0x0c08`)
-* Write `0x0037` to `0x0c04`
-* Wait until `0x0c06` is nonzero, validate that status is zero
-* Clear `0x0c06`
-* Write `0x0001` to `0x0200`
-* Write `0x0001` to `0x0222`
-* Toggle some flags in `0x0c00`
+-   Poll `0x0c06` until it reads `0xfc00`
+-   Clear `0x0c06`
+-   Upload DSP init program
+-   Clear `0x0c06`
+-   Move IPC argument from loaded program to IPC arg 1 (`0x0c08`)
+-   Write `0x0037` to `0x0c04`
+-   Wait until `0x0c06` is nonzero, validate that status is zero
+-   Clear `0x0c06`
+-   Write `0x0001` to `0x0200`
+-   Write `0x0001` to `0x0222`
+-   Toggle some flags in `0x0c00`
 
 # Uploading a DSP program
 

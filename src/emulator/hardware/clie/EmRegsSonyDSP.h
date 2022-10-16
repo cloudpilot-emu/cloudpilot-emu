@@ -38,6 +38,8 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
     void IrqMaskWrite(emuptr address, int size, uint32 value);
     void IrqStatusWrite(emuptr address, int size, uint32 value);
 
+    void ResetWrite(emuptr address, int size, uint32 value);
+
     void RaiseInt(uint16 flags);
     void ClearInt(uint16 flags);
 
