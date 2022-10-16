@@ -188,7 +188,7 @@ void MemoryStick::FinishReadTpc() {
     switch (currentOperation) {
         case Operation::readMulti:
             reg.page++;
-            if (PreparePage(false)) {
+            if (PreparePage(preparedPage, false)) {
                 SetFlags(STATUS_READY_FOR_TRANSFER);
             } else {
                 currentOperation = Operation::none;
@@ -231,6 +231,8 @@ void MemoryStick::Mount(CardImage* cardImage) {
 }
 
 void MemoryStick::Unmount() { this->cardImage = nullptr; }
+
+MemoryStick::Registers& MemoryStick::GetRegisters() { return reg; }
 
 void MemoryStick::DoCmd(uint8 commandByte) {
     switch (commandByte) {
@@ -309,7 +311,7 @@ void MemoryStick::DoCmdRead() {
 
     switch (reg.accessType) {
         case ACCESS_BLOCK:
-            if (!PreparePage(false)) {
+            if (!PreparePage(preparedPage, false)) {
                 cerr << "invalid parameters for read" << endl << flush;
                 SetFlags(STATUS_ERR);
 
@@ -322,7 +324,7 @@ void MemoryStick::DoCmdRead() {
             return;
 
         case ACCESS_PAGE:
-            if (!PreparePage(false)) {
+            if (!PreparePage(preparedPage, false)) {
                 cerr << "invalid parameters for read" << endl << flush;
                 SetFlags(STATUS_ERR);
 
@@ -335,7 +337,7 @@ void MemoryStick::DoCmdRead() {
             return;
 
         case ACCESS_OOB_ONLY:
-            if (!PreparePage(true)) {
+            if (!PreparePage(preparedPage, true)) {
                 cerr << "invalid parameters for read" << endl << flush;
                 SetFlags(STATUS_ERR);
 
@@ -354,44 +356,44 @@ void MemoryStick::DoCmdRead() {
     }
 }
 
-bool MemoryStick::PreparePage(bool oobOnly) {
+bool MemoryStick::PreparePage(uint8* destination, bool oobOnly) {
     if (reg.page >= pagesPerBlock) return false;
 
     const uint32 blockIndex = reg.blockLo | (reg.blockMid << 8) | (reg.blockHi << 16);
     if (blockIndex >= segments * 512) return false;
 
-    if (blockIndex == 0 | blockIndex == 1) {
-        PreparePageBootBlock(reg.page, oobOnly);
+    if (blockIndex == BOOT_BLOCK | blockIndex == BOOT_BLOCK_BACKUP) {
+        PreparePageBootBlock(reg.page, destination, oobOnly);
     } else {
         uint16 logicalBlock = blockMap[blockIndex];
 
         if (logicalBlock == 0xffff) {
             memset(reg.oob, 0xff, 9);
-            if (!oobOnly) memset(preparedPage, 0xff, 512);
+            if (!oobOnly) memset(destination, 0xff, 512);
         } else {
             reg.oob[0] = 0xff;
             reg.oob[1] = 0x3c;
             reg.oob[2] = logicalBlock >> 8;
             reg.oob[3] = logicalBlock;
 
-            if (!oobOnly) cardImage->Read(preparedPage, logicalBlock * pagesPerBlock + reg.page, 1);
+            if (!oobOnly) cardImage->Read(destination, logicalBlock * pagesPerBlock + reg.page, 1);
         }
     }
 
     return true;
 }
 
-void MemoryStick::PreparePageBootBlock(uint8 page, bool oobOnly) {
+void MemoryStick::PreparePageBootBlock(uint8 page, uint8* destination, bool oobOnly) {
     reg.oob[0] = 0xff;
     reg.oob[1] = 0x38;
     reg.oob[2] = reg.oob[3] = 0;
 
     if (oobOnly) return;
 
-    memset(preparedPage, 0, 512);
+    memset(destination, 0, 512);
 
     if (page == 0) {
-        MsBootBlock* boot = reinterpret_cast<MsBootBlock*>(preparedPage);
+        MsBootBlock* boot = reinterpret_cast<MsBootBlock*>(destination);
 
         boot->blkid = swap16(0x01);
         boot->ftlVer = 0x0101;
@@ -415,7 +417,7 @@ void MemoryStick::PreparePageBootBlock(uint8 page, bool oobOnly) {
     }
 
     if (page == 1) {
-        preparedPage[0] = preparedPage[1] = 0xff;
+        destination[0] = destination[1] = 0xff;
     }
 }
 
@@ -482,4 +484,18 @@ bool MemoryStick::IsSizeRepresentable(size_t pagesTotal) {
     uint8 pagesPerBlock, segments;
 
     return determineLayout(pagesTotal, pagesPerBlock, segments);
+}
+
+MemoryStick::Registers& MemoryStick::Registers::SetBlock(uint32 block) {
+    blockHi = block >> 16;
+    blockMid = block >> 8;
+    blockLo = block;
+
+    return *this;
+}
+
+MemoryStick::Registers& MemoryStick::Registers::SetPage(uint8 page) {
+    this->page = page;
+
+    return *this;
 }

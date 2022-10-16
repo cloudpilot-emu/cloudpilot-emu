@@ -45,10 +45,20 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
     void IpcCmdWrite(emuptr address, int size, uint32 value);
     void IpcDispatch(uint16 cmd);
 
+    void DoCmdReadBootBlock();
+
    private:
     uint8 regs[0x00010000];
 
     emuptr baseAddress;
+
+    MemoryStick memoryStick;
+
+   private:
+    EmRegsSonyDSP(const EmRegsSonyDSP&);
+    EmRegsSonyDSP(EmRegsSonyDSP&&);
+    EmRegsSonyDSP& operator=(const EmRegsSonyDSP&);
+    EmRegsSonyDSP& operator=(EmRegsSonyDSP&&);
 };
 
 #endif  // _EM_REGS_SONY_DSP_

@@ -9,43 +9,6 @@ class MemoryStick {
    public:
     enum class TpcType { read, write };
 
-   public:
-    static TpcType GetTpcType(uint8 tpcId);
-    static bool IsSizeRepresentable(size_t pagesTotal);
-
-    MemoryStick();
-
-    ~MemoryStick();
-
-    void Reset();
-
-    void ExecuteTpc(uint8 tpcId, uint32 dataInCount = 0, uint8* dataIn = nullptr);
-    void FinishReadTpc();
-
-    uint8* GetDataOut();
-    uint32 GetDataOutSize();
-
-    void Mount(CardImage* cardImage);
-    void Unmount();
-
-   private:
-    void DoCmd(uint8 commandByte);
-    void DoCmdRead();
-
-    bool PreparePage(bool oobOnly);
-    void PreparePageBootBlock(uint8 page, bool oobOnly);
-
-    bool EraseBlock();
-
-    void ProgramPage(uint8* data);
-
-    void SetFlags(uint8 flags);
-    void ClearFlags();
-
-   public:
-    EmEvent<> irq;
-
-   private:
 #pragma pack(push, 1)
     struct Registers {
         uint8 _filler_0;
@@ -69,9 +32,54 @@ class MemoryStick {
         uint8 accessType;
         uint8 page;
         uint8 oob[9];
+
+        Registers& SetBlock(uint32 block);
+        Registers& SetPage(uint8 page);
     };
 #pragma pack(pop)
 
+    static constexpr uint32 BOOT_BLOCK = 0;
+    static constexpr uint32 BOOT_BLOCK_BACKUP = 1;
+
+   public:
+    static TpcType GetTpcType(uint8 tpcId);
+    static bool IsSizeRepresentable(size_t pagesTotal);
+
+    MemoryStick();
+
+    ~MemoryStick();
+
+    void Reset();
+
+    void ExecuteTpc(uint8 tpcId, uint32 dataInCount = 0, uint8* dataIn = nullptr);
+    void FinishReadTpc();
+
+    uint8* GetDataOut();
+    uint32 GetDataOutSize();
+
+    void Mount(CardImage* cardImage);
+    void Unmount();
+
+    Registers& GetRegisters();
+    bool PreparePage(uint8* destination, bool oobOnly);
+
+   private:
+    void DoCmd(uint8 commandByte);
+    void DoCmdRead();
+
+    void PreparePageBootBlock(uint8 page, uint8* destination, bool oobOnly);
+
+    bool EraseBlock();
+
+    void ProgramPage(uint8* data);
+
+    void SetFlags(uint8 flags);
+    void ClearFlags();
+
+   public:
+    EmEvent<> irq;
+
+   private:
     enum class Operation : uint8 {
         none = 0,
         readOne = 1,

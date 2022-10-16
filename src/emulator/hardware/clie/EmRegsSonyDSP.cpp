@@ -27,6 +27,13 @@ namespace {
     constexpr emuptr REG_IPC_COMMAND = 0x0c04;
     constexpr emuptr REG_IPC_STATUS = 0x0c06;
 
+    constexpr emuptr REG_IPC_ARG_1 = 0x0c08;
+    // constexpr emuptr REG_IPC_ARG_2 = 0x0c0a;
+    // constexpr emuptr REG_IPC_ARG_3 = 0x0c0c;
+    // constexpr emuptr REG_IPC_ARG_4 = 0x0c0e;
+    // constexpr emuptr REG_IPC_ARG_5 = 0x0c10;
+    // constexpr emuptr REG_IPC_ARG_6 = 0x0c12;
+
     constexpr emuptr REG_IPC_RESULT_1 = 0x0c14;
     constexpr emuptr REG_IPC_RESULT_2 = 0x0c16;
     constexpr emuptr REG_IPC_RESULT_3 = 0x0c18;
@@ -49,6 +56,12 @@ namespace {
     constexpr uint16 IPC_COMMAND_MS_READ_BOOT_BLOCK = 0x2201;
 
     constexpr uint16 IPC_STATUS_MASK = 0xfc00;
+
+    constexpr uint16 SHM_SPACE_START = 0x8000;
+    constexpr uint16 SHM_SPACE_SIZE = 0x8000;
+
+    constexpr uint16 SHM_BOOT_BLOCK_BASE = 18 * 512;
+    constexpr uint16 SHM_GET_BOOT_BLOCK_BLOB_SIZE = 0x2a00;
 
 #ifdef LOGGING
     string trace(emuptr pc) {
@@ -98,8 +111,9 @@ void EmRegsSonyDSP::Reset(Bool hardwareReset) {
     if (!hardwareReset) return;
 
     memset(regs, 0, sizeof(regs));
-
     WRITE_REGISTER(REG_IPC_STATUS, IPC_STATUS_MASK);
+
+    memoryStick.Reset();
 }
 
 uint8* EmRegsSonyDSP::GetRealAddress(emuptr address) {
@@ -129,25 +143,30 @@ bool EmRegsSonyDSP::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardI
 
 void EmRegsSonyDSP::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
     if (slot != EmHAL::Slot::memorystick) return;
+    memoryStick.Mount(&cardImage);
 
     RaiseInt(INT_MS_INSERT);
 }
 
-void EmRegsSonyDSP::Unmount(EmHAL::Slot slot) { RaiseInt(INT_MS_EJECT); }
+void EmRegsSonyDSP::Unmount(EmHAL::Slot slot) {
+    memoryStick.Unmount();
+
+    RaiseInt(INT_MS_EJECT);
+}
 
 bool EmRegsSonyDSP::GetIrqLine() {
     return (READ_REGISTER(REG_INT_STATUS) & READ_REGISTER(REG_INT_MASK)) != 0;
 }
 
 uint32 EmRegsSonyDSP::StdRead(emuptr address, int size) {
-    if (address - baseAddress < 0x00008000 && size == 2)
+    if (address - baseAddress < SHM_SPACE_START && size == 2)
         LOG_READ_ACCESS(address, size, DoStdRead(address, size));
 
     return DoStdRead(address, size);
 }
 
 void EmRegsSonyDSP::StdWrite(emuptr address, int size, uint32 value) {
-    if (address - baseAddress < 0x00008000) LOG_WRITE_ACCESS(address, size, value);
+    if (address - baseAddress < SHM_SPACE_START) LOG_WRITE_ACCESS(address, size, value);
 
     DoStdWrite(address, size, value);
 }
@@ -294,7 +313,7 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
 
         case IPC_COMMAND_MS_READ_BOOT_BLOCK:
             cerr << "read boot block" << endl << flush;
-            WRITE_REGISTER(REG_IPC_STATUS, (cmd & IPC_STATUS_MASK) | 0x0001);
+            DoCmdReadBootBlock();
             break;
 
         default:
@@ -304,4 +323,30 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
     }
 
     RaiseInt(INT_IPC_DONE);
+}
+
+void EmRegsSonyDSP::DoCmdReadBootBlock() {
+    WRITE_REGISTER(REG_IPC_STATUS, (IPC_COMMAND_MS_READ_BOOT_BLOCK & IPC_STATUS_MASK) | 0x0001);
+
+    uint16 shmBase = READ_REGISTER(REG_IPC_ARG_1) * 2;
+    if (shmBase < SHM_SPACE_START) return;
+
+    shmBase -= SHM_SPACE_START;
+    if (shmBase + SHM_GET_BOOT_BLOCK_BLOB_SIZE > SHM_SPACE_SIZE) return;
+
+    uint8* base = regs + SHM_SPACE_START + shmBase;
+    memset(base, 0, SHM_GET_BOOT_BLOCK_BLOB_SIZE);
+
+    MemoryStick::Registers& registers(memoryStick.GetRegisters());
+
+    registers.SetBlock(MemoryStick::BOOT_BLOCK).SetPage(0);
+    if (!memoryStick.PreparePage(base + SHM_BOOT_BLOCK_BASE, false)) return;
+
+    registers.SetPage(1);
+    if (!memoryStick.PreparePage(base + SHM_BOOT_BLOCK_BASE + 512, false)) return;
+
+    WRITE_REGISTER(REG_IPC_RESULT_1, (registers.oob[0] << 8) | registers.oob[1]);
+    WRITE_REGISTER(REG_IPC_RESULT_2, MemoryStick::BOOT_BLOCK);
+
+    WRITE_REGISTER(REG_IPC_STATUS, IPC_COMMAND_MS_READ_BOOT_BLOCK & IPC_STATUS_MASK);
 }
