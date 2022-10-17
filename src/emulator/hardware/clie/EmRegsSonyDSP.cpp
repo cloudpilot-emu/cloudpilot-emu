@@ -1,12 +1,13 @@
 #include "EmRegsSonyDSP.h"
 
 #include <iomanip>
+#include <sstream>
 
 #include "EmCPU68K.h"
 #include "EmMemory.h"
 #include "UAE.h"
 
-// #define LOGGING
+#define LOGGING
 
 #ifdef LOGGING
     #define LOG_WRITE_ACCESS logWriteAccess
@@ -74,7 +75,7 @@ namespace {
     constexpr uint16 PROBE_BLOCK_SUCCESS_MAGIC = 0x0030;
 
 #ifdef LOGGING
-    string trace(emuptr pc) {
+    string identifyFrame(emuptr pc) {
         emuptr rtsAddr;
 
         for (rtsAddr = pc; rtsAddr < pc + 0x0400; rtsAddr += 2) {
@@ -99,17 +100,28 @@ namespace {
         return i == sizeof(name) ? "[unknown 3]" : name;
     }
 
+    string trace(emuptr pc) {
+        emuptr pcFrame0 = pc;
+        emuptr pcFrame1 = EmMemGet32(m68k_areg(regs, 6) + 4);
+
+        ostringstream ss;
+        ss << identifyFrame(pcFrame1) << ":0x" << hex << pcFrame1 << " -> "
+           << identifyFrame(pcFrame0) << ":0x" << pcFrame0 << dec;
+
+        return ss.str();
+    }
+
     void logWriteAccess(emuptr address, int size, uint32 value) {
         cerr << "DSP register write 0x" << hex << right << setfill('0') << setw(8) << address
              << " <- 0x" << setw(4) << value << dec << " (" << size << " bytes) from "
-             << trace(::regs.pc) << " : 0x" << hex << ::regs.pc << dec << endl
+             << trace(regs.pc) << dec << endl
              << flush;
     }
 
     void logReadAccess(emuptr address, int size, uint32 value) {
-        cerr << "DSP register read 0x" << hex << right << setfill('0') << setw(8) << address
+        cerr << "DSP register read  0x" << hex << right << setfill('0') << setw(8) << address
              << " -> 0x" << setw(4) << value << dec << " (" << size << " bytes) from "
-             << trace(::regs.pc) << " : 0x" << hex << ::regs.pc << dec << endl
+             << trace(regs.pc) << dec << endl
              << flush;
     }
 #endif
@@ -424,7 +436,8 @@ void EmRegsSonyDSP::DoCmdReadOob() {
         *(base++) = registers.oob[0];
         *(base++) = registers.oob[1];
         *(base++) = registers.oob[2];
-        *(base++) = registers.oob[3];
+        *(base++) =
+            (registers.oob[3] == 0xff && registers.oob[2] == 0xff) ? 0xfe : registers.oob[3];
     }
 
     WRITE_REGISTER(REG_IPC_STATUS, IPC_COMMAND_MS_READ_OOB & IPC_STATUS_MASK);
