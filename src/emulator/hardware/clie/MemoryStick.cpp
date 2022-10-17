@@ -434,17 +434,17 @@ bool MemoryStick::EraseBlock() {
     return true;
 }
 
-void MemoryStick::ProgramPage(uint8* data) {
+bool MemoryStick::ProgramPage(uint8* data) {
     const uint32 blockIndex = reg.blockLo | (reg.blockMid << 8) | (reg.blockHi << 16);
     if (blockIndex >= segments * 512) {
         cerr << "attempt to program invalid block 0x" << hex << blockIndex << dec << endl << flush;
-        return;
+        return false;
     }
 
     if (reg.page >= pagesPerBlock) {
         cerr << "attempt to program invalid page 0x" << hex << (int)reg.page << dec << endl
              << flush;
-        return;
+        return false;
     }
 
     const uint16 logicalBlock = (reg.oob[2] << 8) | reg.oob[3];
@@ -454,12 +454,14 @@ void MemoryStick::ProgramPage(uint8* data) {
         cerr << "attempt to write beyond card bounds: block 0x" << hex << logicalPage << dec << endl
              << flush;
 
-        return;
+        return false;
     }
 
     cardImage->Write(data, logicalPage, 1);
 
     if (reg.page == 0) blockMap[blockIndex] = logicalBlock;
+
+    return true;
 }
 
 void MemoryStick::SetFlags(uint8 flags) {
@@ -500,6 +502,13 @@ MemoryStick::Registers& MemoryStick::Registers::SetBlock(uint32 block) {
 
 MemoryStick::Registers& MemoryStick::Registers::SetPage(uint8 page) {
     this->page = page;
+
+    return *this;
+}
+
+MemoryStick::Registers& MemoryStick::Registers::SetLogicalBlock(uint16 block) {
+    oob[2] = block >> 8;
+    oob[3] = block;
 
     return *this;
 }

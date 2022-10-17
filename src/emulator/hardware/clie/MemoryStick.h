@@ -35,6 +35,7 @@ class MemoryStick {
 
         Registers& SetBlock(uint32 block);
         Registers& SetPage(uint8 page);
+        Registers& SetLogicalBlock(uint16 block);
     };
 #pragma pack(pop)
 
@@ -60,8 +61,10 @@ class MemoryStick {
     void Mount(CardImage* cardImage);
     void Unmount();
 
-    Registers& GetRegisters();
     bool PreparePage(uint8* destination, bool oobOnly);
+    bool ProgramPage(uint8* data);
+
+    Registers& GetRegisters();
     uint32 BlocksTotal() const;
     uint8 PagesPerBlock() const;
 
@@ -72,8 +75,6 @@ class MemoryStick {
     void PreparePageBootBlock(uint8 page, uint8* destination, bool oobOnly);
 
     bool EraseBlock();
-
-    void ProgramPage(uint8* data);
 
     void SetFlags(uint8 flags);
     void ClearFlags();

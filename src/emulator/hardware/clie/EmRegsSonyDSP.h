@@ -50,9 +50,11 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
     void DoCmdReadBootBlock();
     void DoCmdReadOob();
     void DoCmdReadBlock();
+    void DoCmdWriteBlock();
 
    private:
     uint8 regs[0x00010000];
+    uint16 savedArguments[6];
 
     emuptr baseAddress;
 

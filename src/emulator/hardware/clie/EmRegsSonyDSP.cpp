@@ -7,7 +7,7 @@
 #include "EmMemory.h"
 #include "UAE.h"
 
-#define LOGGING
+// #define LOGGING
 
 #ifdef LOGGING
     #define LOG_WRITE_ACCESS logWriteAccess
@@ -32,8 +32,8 @@ namespace {
     constexpr emuptr REG_IPC_ARG_2 = 0x0c0a;
     constexpr emuptr REG_IPC_ARG_3 = 0x0c0c;
     constexpr emuptr REG_IPC_ARG_4 = 0x0c0e;
-    // constexpr emuptr REG_IPC_ARG_5 = 0x0c10;
-    // constexpr emuptr REG_IPC_ARG_6 = 0x0c12;
+    constexpr emuptr REG_IPC_ARG_5 = 0x0c10;
+    constexpr emuptr REG_IPC_ARG_6 = 0x0c12;
 
     constexpr emuptr REG_IPC_RESULT_1 = 0x0c14;
     constexpr emuptr REG_IPC_RESULT_2 = 0x0c16;
@@ -133,6 +133,7 @@ void EmRegsSonyDSP::Reset(Bool hardwareReset) {
     if (!hardwareReset) return;
 
     memset(regs, 0, sizeof(regs));
+    memset(savedArguments, 0, sizeof(savedArguments));
     WRITE_REGISTER(REG_IPC_STATUS, IPC_STATUS_MASK);
 
     memoryStick.Reset();
@@ -339,20 +340,22 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
             break;
 
         case IPC_COMMAND_MS_READ_BOOT_BLOCK:
+            cerr << "read boot block" << endl << flush;
             DoCmdReadBootBlock();
             break;
 
         case IPC_COMMAND_MS_READ_OOB:
+            cerr << "read OOB" << endl << flush;
             DoCmdReadOob();
             break;
 
         case IPC_COMMAND_MS_ERASE_BLOCK:
-            cerr << "Request to erase block " << READ_REGISTER(REG_IPC_ARG_1) << endl << flush;
+            cerr << "erase block " << READ_REGISTER(REG_IPC_ARG_1) << endl << flush;
             WRITE_REGISTER(REG_IPC_STATUS, cmd & IPC_STATUS_MASK);
             break;
 
         case IPC_COMMAND_MS_PROBE_BLOCK:
-            cerr << "Probe block " << READ_REGISTER(REG_IPC_ARG_1) << " page "
+            cerr << "probe block " << READ_REGISTER(REG_IPC_ARG_1) << " page "
                  << READ_REGISTER(REG_IPC_ARG_2) << endl
                  << flush;
 
@@ -361,16 +364,25 @@ void EmRegsSonyDSP::IpcDispatch(uint16 cmd) {
             break;
 
         case IPC_COMMAND_MS_READ_BLOCK:
+            cerr << "block read" << endl << flush;
             DoCmdReadBlock();
             break;
 
         case IPC_COMMAND_ESCAPE:
-            cerr << "stubbed: IPC escape" << endl << flush;
+            cerr << "IPC escape" << endl << flush;
+
+            savedArguments[0] = READ_REGISTER(REG_IPC_ARG_1);
+            savedArguments[1] = READ_REGISTER(REG_IPC_ARG_2);
+            savedArguments[2] = READ_REGISTER(REG_IPC_ARG_3);
+            savedArguments[3] = READ_REGISTER(REG_IPC_ARG_4);
+            savedArguments[4] = READ_REGISTER(REG_IPC_ARG_5);
+            savedArguments[5] = READ_REGISTER(REG_IPC_ARG_6);
+
             break;
 
         case IPC_COMMAND_MS_WRITE_BLOCK:
-            cerr << "stubbed: block write" << endl << flush;
-            WRITE_REGISTER(REG_IPC_STATUS, cmd & IPC_STATUS_MASK);
+            cerr << "block write" << endl << flush;
+            DoCmdWriteBlock();
             break;
 
         default:
@@ -474,4 +486,60 @@ void EmRegsSonyDSP::DoCmdReadBlock() {
     }
 
     WRITE_REGISTER(REG_IPC_STATUS, IPC_COMMAND_MS_READ_BLOCK & IPC_STATUS_MASK);
+}
+
+void EmRegsSonyDSP::DoCmdWriteBlock() {
+    WRITE_REGISTER(REG_IPC_STATUS, (IPC_COMMAND_MS_WRITE_BLOCK & IPC_STATUS_MASK) | 0x0001);
+
+    uint16 block = READ_REGISTER(REG_IPC_ARG_1);
+    uint16 shmBase = READ_REGISTER(REG_IPC_ARG_2) * 2;
+    uint16 firstPage = READ_REGISTER(REG_IPC_ARG_3);
+    uint16 lastPage = READ_REGISTER(REG_IPC_ARG_4);
+    uint16 oldBlock = savedArguments[0];
+    uint16 logicalBlock = savedArguments[2];
+
+    cerr << hex << "old block 0x" << oldBlock << " , new block 0x" << block << " , first page 0x"
+         << firstPage << " , last page 0x" << lastPage << " , logical block 0x" << logicalBlock
+         << " , shm base 0x" << shmBase << dec << endl
+         << flush;
+
+    if (oldBlock >= memoryStick.BlocksTotal()) {
+        cerr << "old block out of bounds" << endl << flush;
+        return;
+    }
+
+    if (block >= memoryStick.BlocksTotal()) {
+        cerr << "new block out of bounds" << endl << flush;
+        return;
+    }
+
+    if (firstPage < 0 || firstPage > lastPage) {
+        cerr << "fist page out of bounds" << endl << flush;
+        return;
+    }
+
+    if (lastPage >= memoryStick.PagesPerBlock()) {
+        cerr << "last page out of bounds" << endl << flush;
+        return;
+    }
+
+    if (shmBase < SHM_SPACE_START) return;
+    shmBase -= SHM_SPACE_START;
+
+    if (shmBase + 512 * memoryStick.PagesPerBlock() > SHM_SPACE_SIZE) return;
+
+    MemoryStick::Registers& registers(memoryStick.GetRegisters());
+    uint8* base = regs + SHM_SPACE_START + shmBase;
+
+    registers.SetBlock(block).SetLogicalBlock(logicalBlock);
+
+    for (uint8 page = 0; page < memoryStick.PagesPerBlock(); page++) {
+        registers.SetPage(page);
+        if (!memoryStick.ProgramPage(base)) return;
+
+        base += 512;
+    }
+
+    WRITE_REGISTER(REG_IPC_STATUS, IPC_COMMAND_MS_WRITE_BLOCK & IPC_STATUS_MASK);
+    cerr << "write done" << endl << flush;
 }
