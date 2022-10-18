@@ -7,7 +7,7 @@
 #include "EmMemory.h"
 #include "UAE.h"
 
-// #define LOG_ACCESS
+#define LOG_ACCESS
 // #define LOGGING
 
 #ifdef LOG_ACCESS
@@ -135,6 +135,8 @@ void EmRegsSonyDSP::Reset(Bool hardwareReset) {
 
     memset(regs, 0, sizeof(regs));
     memset(savedArguments, 0, sizeof(savedArguments));
+
+    WRITE_REGISTER(REG_INT_STATUS, isMounted ? INT_MS_INSERT : INT_MS_EJECT);
     WRITE_REGISTER(REG_IPC_STATUS, IPC_STATUS_MASK);
 
     memoryStick.Reset();
@@ -170,12 +172,18 @@ void EmRegsSonyDSP::Mount(EmHAL::Slot slot, const string& key, CardImage& cardIm
     if (slot != EmHAL::Slot::memorystick) return;
     memoryStick.Mount(&cardImage);
 
+    isMounted = true;
+
+    WRITE_REGISTER(REG_INT_STATUS, READ_REGISTER(REG_INT_STATUS) & ~INT_MS_EJECT);
     RaiseInt(INT_MS_INSERT);
 }
 
 void EmRegsSonyDSP::Unmount(EmHAL::Slot slot) {
     memoryStick.Unmount();
 
+    isMounted = false;
+
+    WRITE_REGISTER(REG_INT_STATUS, READ_REGISTER(REG_INT_STATUS) & ~INT_MS_INSERT);
     RaiseInt(INT_MS_EJECT);
 }
 
@@ -246,11 +254,9 @@ void EmRegsSonyDSP::IrqMaskWrite(emuptr address, int size, uint32 value) {
         return;
     }
 
-    const uint16 clearIntFlags = value & (INT_MS_EJECT | INT_MS_INSERT);
     const bool irqLineOld = GetIrqLine();
 
     StdWrite(address, size, value);
-    WRITE_REGISTER(REG_INT_STATUS, READ_REGISTER(REG_INT_STATUS) & ~clearIntFlags);
 
     const bool irqLineNew = GetIrqLine();
     if (irqLineOld != irqLineNew) irqChange.Dispatch(irqLineNew);

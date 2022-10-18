@@ -60,6 +60,8 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
 
     MemoryStick memoryStick;
 
+    bool isMounted{false};
+
    private:
     EmRegsSonyDSP(const EmRegsSonyDSP&);
     EmRegsSonyDSP(EmRegsSonyDSP&&);
