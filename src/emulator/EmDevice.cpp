@@ -1224,13 +1224,14 @@ void EmDevice::CreateRegs(void) const {
         }
 
         case kDevicePEGN700C: {
-            EmBankRegs::AddSubBank(new EmRegsVzPegN700C);
+            EmRegsSonyDSP* dsp = new EmRegsSonyDSP(0x10800000);
 
+            EmBankRegs::AddSubBank(new EmRegsVzPegN700C(*dsp));
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
 
-            EmBankRegs::AddSubBank(new EmRegsUsbPegN700C(0x10800000L));
+            EmBankRegs::AddSubBank(dsp);
             break;
         }
 

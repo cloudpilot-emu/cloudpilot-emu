@@ -61,8 +61,10 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
 //		� EmRegsEZPalmIIIc::EmRegsEZPalmIIIc
 // ---------------------------------------------------------------------------
 
-EmRegsVzPegN700C::EmRegsVzPegN700C(void)
-    : EmRegsVZNoScreen(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
+EmRegsVzPegN700C::EmRegsVzPegN700C(EmRegsSonyDSP& dsp)
+    : EmRegsVZNoScreen(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)), dsp(dsp) {
+    dsp.irqChange.AddHandler([=](bool newState) { UpdatePortDInterrupts(); });
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsEZPalmIIIc::~EmRegsEZPalmIIIc
@@ -127,7 +129,7 @@ uint8 EmRegsVzPegN700C::GetPortInternalValue(int port) {
     uint8 result = EmRegsVZ::GetPortInternalValue(port);
 
     if (port == 'D') {
-        result = GetKeyBits();
+        result = GetKeyBits() | (dsp.GetIrqLine() ? 0x08 : 0x00);
 
         // Ensure that bit hwrEZPortDDockButton is set.  If it's clear, HotSync
         // will sync via the modem instead of the serial port.
@@ -136,8 +138,6 @@ uint8 EmRegsVzPegN700C::GetPortInternalValue(int port) {
         // the battery code will make the device go to sleep immediately.
 
         result |= hwrVZPEG700PortDDockButton | hwrVZPEG700PortDPowerFail;
-
-        result |= hwrVZPEG700PortDMS_IF_Intl;
     }
 
     if (port == 'K') {
@@ -202,5 +202,5 @@ uint16 EmRegsVzPegN700C::GetLEDState(void) {
 Bool EmRegsVzPegN700C::GetVibrateOn(void) { return false; }
 
 void EmRegsVzPegN700C::portDIntReqEnWrite(emuptr address, int size, uint32 value) {
-    EmRegsVZ::portDIntReqEnWrite(address, size, value & ~0x08);
+    EmRegsVZ::portDIntReqEnWrite(address, size, value);
 }

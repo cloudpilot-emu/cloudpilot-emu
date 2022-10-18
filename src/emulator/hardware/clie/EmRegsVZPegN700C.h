@@ -2,11 +2,12 @@
 #ifndef _EM_REGS_VZ_PEG_N700C_
 #define _EM_REGS_VZ_PEG_N700C_
 
+#include "EmRegsSonyDSP.h"
 #include "EmRegsVZ.h"
 
 class EmRegsVzPegN700C : public EmRegsVZNoScreen {
    public:
-    EmRegsVzPegN700C();
+    EmRegsVzPegN700C(EmRegsSonyDSP& dsp);
     virtual ~EmRegsVzPegN700C();
 
    public:
@@ -27,6 +28,7 @@ class EmRegsVzPegN700C : public EmRegsVZNoScreen {
 
    private:
     EmSPISlave* fSPISlaveADC;
+    EmRegsSonyDSP& dsp;
 };
 
 #endif  // _EM_REGS_VZ_PEG_N700C_

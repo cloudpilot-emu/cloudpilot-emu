@@ -47,10 +47,10 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
     void IpcCmdWrite(emuptr address, int size, uint32 value);
     void IpcDispatch(uint16 cmd);
 
-    void DoCmdReadBootBlock();
-    void DoCmdReadOob();
-    void DoCmdReadBlock();
-    void DoCmdWriteBlock();
+    void DoCmdReadBootBlock(uint16 cmd);
+    void DoCmdReadOob(uint16 cmd);
+    void DoCmdReadBlock(uint16 cmd);
+    void DoCmdWriteBlock(uint16 cmd);
 
    private:
     uint8 regs[0x00010000];

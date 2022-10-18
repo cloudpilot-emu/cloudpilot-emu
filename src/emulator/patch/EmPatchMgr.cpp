@@ -27,7 +27,6 @@
 #include "Logging.h"     // LogEvtAddEventToQueue, etc.
 #include "MetaMemory.h"  // MetaMemory mark functions
 #include "Miscellaneous.h"
-#include "PatchModuleClieSlotDriver.h"
 #include "PatchModuleClieStubAll.h"
 #include "PatchModuleNetlib.h"
 #include "PenEvent.h"
@@ -85,7 +84,6 @@ namespace {
 EmPatchModule* EmPatchMgr::patchModuleSys = nullptr;
 EmPatchModule* EmPatchMgr::patchModuleHtal = nullptr;
 EmPatchModule* EmPatchMgr::patchModuleNetlib = nullptr;
-EmPatchModule* EmPatchMgr::patchModuleClieSlotDriver = nullptr;
 EmPatchModule* EmPatchMgr::patchModuleClieStubAll = nullptr;
 
 /***********************************************************************
@@ -116,10 +114,6 @@ void EmPatchMgr::Initialize(void) {
 
     if (!patchModuleNetlib) {
         patchModuleNetlib = new PatchModuleNetlib();
-    }
-
-    if (!patchModuleClieSlotDriver) {
-        patchModuleClieSlotDriver = new PatchModuleClieSlotDriver();
     }
 
     if (!patchModuleClieStubAll) {
@@ -270,11 +264,6 @@ void EmPatchMgr::Dispose(void) {
         patchModuleNetlib = nullptr;
     }
 
-    if (patchModuleClieSlotDriver) {
-        delete patchModuleClieSlotDriver;
-        patchModuleClieSlotDriver = nullptr;
-    }
-
     if (patchModuleClieStubAll) {
         delete patchModuleClieStubAll;
         patchModuleClieStubAll = nullptr;
@@ -418,9 +407,6 @@ EmPatchModule* EmPatchMgr::GetLibPatchTable(uint16 refNum) {
 
         if (libName == string(PatchModuleNetlib::LIBNAME)) {
             patchModuleIP = patchModuleNetlib;
-        } else if (gSession->GetDevice().IsClie() &&
-                   libName == string(PatchModuleClieSlotDriver::LIBNAME)) {
-            patchModuleIP = patchModuleClieSlotDriver;
         } else if (gSession->GetDevice().IsClie() &&
                    PatchModuleClieStubAll::HandlesLibrary(libName)) {
             patchModuleIP = patchModuleClieStubAll;
