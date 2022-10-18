@@ -1,12 +1,14 @@
 #ifndef _EM_REGS_SZ_REDWOOD_H_
 #define _EM_REGS_SZ_REDWOOD_H_
+
 #include "EmRegsSZ.h"
+#include "EmRegsSonyDSP.h"
 
 class EmScreenUpdateInfo;
 
 class EmRegsSzRedwood : public EmRegsSZ {
    public:
-    EmRegsSzRedwood(void);
+    EmRegsSzRedwood(EmRegsSonyDSP& dsp);
     virtual ~EmRegsSzRedwood(void);
 
    public:
@@ -24,6 +26,7 @@ class EmRegsSzRedwood : public EmRegsSZ {
 
    private:
     EmSPISlave* fSPISlaveADC;
+    EmRegsSonyDSP& dsp;
 };
 
 #endif  //  _EM_REGS_SZ_REDWOOD_H_

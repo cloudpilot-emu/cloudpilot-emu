@@ -58,8 +58,15 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
 //		� EmRegsSzRedwood::EmRegsSzRedwood
 // ---------------------------------------------------------------------------
 
-EmRegsSzRedwood::EmRegsSzRedwood(void)
-    : EmRegsSZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)) {}
+EmRegsSzRedwood::EmRegsSzRedwood(EmRegsSonyDSP& dsp)
+    : EmRegsSZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)), dsp(dsp) {
+    dsp.irqChange.AddHandler([=](bool lineState) {
+        if (lineState) {
+            fPortXEdge['D' - 'D'] |= 0x08;
+            UpdatePortXInterrupts('D');
+        }
+    });
+}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSzRedwood::~EmRegsSzRedwood
@@ -120,7 +127,7 @@ uint8 EmRegsSzRedwood::GetPortInputValue(int port) {
 uint8 EmRegsSzRedwood::GetPortInternalValue(int port) {
     switch (port) {
         case 'D':
-            return GetKeyBits();
+            return GetKeyBits() | (dsp.GetIrqLine() ? 0x08 : 0x00);
 
         case 'C':
             return 0xff;

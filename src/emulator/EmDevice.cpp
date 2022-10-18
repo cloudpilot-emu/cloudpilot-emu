@@ -1235,12 +1235,14 @@ void EmDevice::CreateRegs(void) const {
         }
 
         case kDeviceYSX1100: {
-            EmBankRegs::AddSubBank(new EmRegsSzRedwood());
+            EmRegsSonyDSP* dsp = new EmRegsSonyDSP(0x11000000);
+
+            EmBankRegs::AddSubBank(new EmRegsSzRedwood(*dsp));
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMQLCDControlT2(
                 *framebuffer, MQ_LCDControllerT2_RegsAddr, MQ_LCDControllerT2_VideoMemStart));
             EmBankRegs::AddSubBank(framebuffer);
-            EmBankRegs::AddSubBank(new EmRegsUsbPegN700C(0x11000000L));
+            EmBankRegs::AddSubBank(dsp);
             break;
         }
 
@@ -1251,7 +1253,6 @@ void EmDevice::CreateRegs(void) const {
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
-            // EmBankRegs::AddSubBank(new EmRegsUsbPegN700C(0x11000000L));
             EmBankRegs::AddSubBank(dsp);
             break;
         }

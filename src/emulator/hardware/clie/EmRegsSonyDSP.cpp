@@ -7,7 +7,7 @@
 #include "EmMemory.h"
 #include "UAE.h"
 
-#define LOG_ACCESS
+// #define LOG_ACCESS
 // #define LOGGING
 
 #ifdef LOG_ACCESS
