@@ -34,15 +34,33 @@ namespace {
         if ((blocks + 2) % 496 != 0) return false;
         segments = (blocks + 2) / 496;
 
-        return segments <= 16;
+        uint16 blocksTotal = segments * 512;
+
+        switch (blocksTotal) {
+            case 512:
+            case 1024:
+            case 2048:
+            case 4096:
+            case 8192:
+                return true;
+
+            default:
+                return false;
+        }
     }
 
     bool determineLayout(size_t pagesTotal, uint8& pagesPerBlock, uint8& segments) {
-        pagesPerBlock = 16;
-        if (determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments)) return true;
+        if (pagesTotal < 1024) {
+            pagesPerBlock = 16;
+            if (determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments)) return true;
+        }
 
-        pagesPerBlock = 32;
-        return determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments);
+        if (pagesTotal > 512) {
+            pagesPerBlock = 32;
+            return determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments);
+        }
+
+        return false;
     }
 
     uint16 swap16(uint16 x) { return (x << 8) | (x >> 8); }

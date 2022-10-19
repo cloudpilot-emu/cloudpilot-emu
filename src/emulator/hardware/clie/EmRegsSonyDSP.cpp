@@ -8,7 +8,7 @@
 #include "UAE.h"
 
 // #define LOG_ACCESS
-#define LOGGING
+// #define LOGGING
 
 #ifdef LOG_ACCESS
     #define LOG_WRITE_ACCESS logWriteAccess
