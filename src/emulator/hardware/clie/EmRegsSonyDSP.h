@@ -51,6 +51,7 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
     void DoCmdReadOob(uint16 cmd);
     void DoCmdReadBlock(uint16 cmd);
     void DoCmdWriteBlock(uint16 cmd);
+    void DoCmdReadBlockOob(uint16 cmd);
 
    private:
     uint8 regs[0x00010000];

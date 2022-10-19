@@ -63,6 +63,7 @@ class MemoryStick {
 
     bool PreparePage(uint8* destination, bool oobOnly);
     bool ProgramPage(uint8* data);
+    bool EraseBlock();
 
     Registers& GetRegisters();
     uint32 BlocksTotal() const;
@@ -73,8 +74,6 @@ class MemoryStick {
     void DoCmdRead();
 
     void PreparePageBootBlock(uint8 page, uint8* destination, bool oobOnly);
-
-    bool EraseBlock();
 
     void SetFlags(uint8 flags);
     void ClearFlags();
