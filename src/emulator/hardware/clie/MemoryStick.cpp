@@ -466,7 +466,7 @@ bool MemoryStick::ProgramPage(uint8* data) {
     }
 
     const uint16 logicalBlock = (reg.oob[2] << 8) | reg.oob[3];
-    const uint16 logicalPage = logicalBlock * pagesPerBlock + reg.page;
+    const uint32 logicalPage = logicalBlock * pagesPerBlock + reg.page;
 
     if (logicalPage >= cardImage->BlocksTotal()) {
         cerr << "attempt to write beyond card bounds: block 0x" << hex << logicalPage << dec << endl
