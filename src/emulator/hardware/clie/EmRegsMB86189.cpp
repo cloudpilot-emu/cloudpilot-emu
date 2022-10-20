@@ -81,7 +81,6 @@ void EmRegsMB86189::Unmount(EmHAL::Slot slot) {
 bool EmRegsMB86189::GetIrq() { return (reg.mscs & MSCS_INT) != 0; }
 
 void EmRegsMB86189::ResetHostController() {
-    cerr << "MSHC reset" << endl << flush;
     reg.mscmd = 0;
     reg.mscs = 0x0a05;
     reg.msics &= MSICS_INTEN;
