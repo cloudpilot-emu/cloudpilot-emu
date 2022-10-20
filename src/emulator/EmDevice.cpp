@@ -83,7 +83,6 @@
 #include "EmRegsSonyDSP.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
 #include "EmRegsUsbCLIE.h"
-#include "EmRegsUsbPegN700C.h"
 #include "EmRegsVZAtlantiC.h"
 #include "EmRegsVZHandEra330.h"
 #include "EmRegsVZPalmI705.h"

@@ -168,7 +168,6 @@ SOURCE_EMU = \
 	emulator/hardware/clie/EmRegsSZNaples.cpp \
 	emulator/hardware/clie/EmRegsSZRedwood.cpp \
 	emulator/hardware/clie/EmRegsVZPegN700C.cpp \
-	emulator/hardware/clie/EmRegsUsbPegN700C.cpp \
 	emulator/hardware/clie/EmRegsLCDCtrlT2.cpp \
 	emulator/hardware/clie/EmRegsMB86189.cpp \
 	emulator/hardware/clie/EmRegsSonyDSP.cpp \
