@@ -11,9 +11,7 @@ CardImage* ExternalStorage::GetImage(const string& key) {
 }
 
 bool ExternalStorage::AddImage(const string& key, uint8* imageData, size_t size) {
-    if (size % (CardImage::BLOCK_SIZE) != 0 ||
-        !EmSPISlaveSD::IsSizeRepresentable(size / CardImage::BLOCK_SIZE) || HasImage(key))
-        return false;
+    if (size % (CardImage::BLOCK_SIZE) != 0 || HasImage(key)) return false;
 
     images.emplace(key, CardImage(imageData, size / CardImage::BLOCK_SIZE));
 
@@ -29,6 +27,15 @@ bool ExternalStorage::Mount(const string& key, EmHAL::Slot slot) {
     EmHAL::Mount(slot, key, images.at(key));
 
     return true;
+}
+
+bool ExternalStorage::Mount(const string& key) {
+    if (!HasImage(key)) return false;
+
+    for (auto slot : {EmHAL::Slot::sdcard, EmHAL::Slot::memorystick})
+        if (EmHAL::SupportsImageInSlot(slot, images.at(key))) return Mount(key, slot);
+
+    return false;
 }
 
 bool ExternalStorage::Unmount(EmHAL::Slot slot) {

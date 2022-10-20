@@ -124,7 +124,7 @@ bool util::initializeSession(string file, optional<string> deviceId) {
     return true;
 }
 
-bool util::mountImage(const string& image, EmHAL::Slot slot) {
+bool util::mountImage(const string& image) {
     unique_ptr<uint8[]> fileBuffer;
     size_t fileSize;
 
@@ -142,8 +142,9 @@ bool util::mountImage(const string& image, EmHAL::Slot slot) {
         fileBuffer.release();
     }
 
-    if (!gExternalStorage.Mount(image, slot)) {
+    if (!gExternalStorage.Mount(image)) {
         cerr << "failed to mount card " << image << endl;
+        gExternalStorage.RemoveImage(image);
 
         return false;
     }
@@ -151,10 +152,10 @@ bool util::mountImage(const string& image, EmHAL::Slot slot) {
     return true;
 }
 
-EmHAL::Slot util::nameToSlot(const string& name) {
-    if (name == "sdcard") return EmHAL::Slot::sdcard;
-    if (name == "memorystick") return EmHAL::Slot::memorystick;
-    if (name == "hostfs") return EmHAL::Slot::hostfs;
+EmHAL::Slot util::mountedSlot() {
+    EmHAL::Slot slot = EmHAL::Slot::none;
+    for (auto s : {EmHAL::Slot::sdcard, EmHAL::Slot::memorystick})
+        if (gExternalStorage.IsMounted(s)) slot = s;
 
-    return EmHAL::Slot::none;
+    return slot;
 }

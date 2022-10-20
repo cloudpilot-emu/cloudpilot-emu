@@ -41,7 +41,6 @@ struct Options {
     optional<ProxyConfiguration> proxyConfiguration;
     bool traceNetlib;
     string mountImage;
-    EmHAL::Slot mountSlot{EmHAL::Slot::none};
 };
 
 void handleSuspend(ProxyClient* proxyClient) {
@@ -78,8 +77,7 @@ void run(const Options& options) {
                            : util::initializeSession(options.image)))
         exit(1);
 
-    if (options.mountSlot != EmHAL::Slot::none &&
-        util::mountImage(options.mountImage, options.mountSlot))
+    if (!options.mountImage.empty() && util::mountImage(options.mountImage))
         cout << options.mountImage << " mounted successfully" << endl << flush;
 
     if (options.proxyConfiguration) {
@@ -182,7 +180,7 @@ int main(int argc, const char** argv) {
         .default_value(false)
         .implicit_value(true);
 
-    program.add_argument("--mount").help("mount SD card image (WIP)").nargs(2);
+    program.add_argument("--mount").help("mount card image");
 
     try {
         program.parse_args(argc, argv);
@@ -209,19 +207,7 @@ int main(int argc, const char** argv) {
     if (auto proxyConfiguration = program.present<ProxyConfiguration>("--net-proxy"))
         options.proxyConfiguration = *proxyConfiguration;
 
-    if (auto tuple = program.present<vector<string>>("--mount")) {
-        EmHAL::Slot slot = util::nameToSlot(tuple->at(0));
-        if (slot == EmHAL::Slot::none) {
-            cerr << "invalid slot '" << tuple->at(0)
-                 << "', valid slots are: sdcard, memorstick, hostfs" << endl
-                 << flush;
-
-            return 1;
-        }
-
-        options.mountSlot = slot;
-        options.mountImage = tuple->at(1);
-    }
+    if (auto mountImage = program.present("--mount")) options.mountImage = *mountImage;
 
     run(options);
 }

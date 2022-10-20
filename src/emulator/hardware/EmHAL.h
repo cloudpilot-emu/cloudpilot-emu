@@ -47,8 +47,8 @@ class EmHAL {
     using ButtonEventT = ButtonEvent;
 
    public:
-    enum class Slot { none = -1, sdcard = 0, memorystick = 1, hostfs = 2 };
-    constexpr static Slot MAX_SLOT = Slot::hostfs;
+    enum class Slot { none = -1, sdcard = 0, memorystick = 1 };
+    constexpr static Slot MAX_SLOT = Slot::memorystick;
 
    public:
     typedef void (*CycleHandler)(void*, uint64, bool);

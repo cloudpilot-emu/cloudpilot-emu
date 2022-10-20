@@ -306,14 +306,13 @@ namespace {
     }
 
     bool CmdUnmount(vector<string> args) {
-        if (args.size() != 1 || util::nameToSlot(args[0]) == EmHAL::Slot::none) {
-            cout << "usage: mount <sdcard|memorystick|hostfs> <image>" << endl << flush;
+        if (args.size() > 0) {
+            cout << "usage: unmount <image>" << endl << flush;
             return false;
         }
 
-        EmHAL::Slot slot = util::nameToSlot(args[0]);
-
-        if (!gExternalStorage.IsMounted(slot)) {
+        EmHAL::Slot slot = util::mountedSlot();
+        if (slot == EmHAL::Slot::none) {
             cout << "no mounted card" << endl << flush;
             return false;
         }
@@ -327,31 +326,29 @@ namespace {
     }
 
     bool CmdMount(vector<string> args) {
-        if (args.size() != 2 || util::nameToSlot(args[0]) == EmHAL::Slot::none) {
-            cout << "usage: mount <sdcard|memorystick|hostfs> <image>" << endl << flush;
+        if (args.size() != 1) {
+            cout << "usage: mount <image>" << endl << flush;
             return false;
         }
 
-        if (util::mountImage(args[1], util::nameToSlot(args[0])))
-            cout << args[0] << " mounted successfully" << endl << flush;
+        if (util::mountImage(args[0])) cout << args[0] << " mounted successfully" << endl << flush;
 
         return false;
     }
 
     bool CmdSaveCard(vector<string> args) {
-        if (args.size() != 2 || util::nameToSlot(args[0]) == EmHAL::Slot::none) {
-            cout << "usage: save-card <sdcard|memorystick|hostfs> <image>" << endl << flush;
+        if (args.size() != 1) {
+            cout << "usage: save-card <image>" << endl << flush;
             return false;
         }
 
-        EmHAL::Slot slot = util::nameToSlot(args[0]);
-
+        EmHAL::Slot slot = util::mountedSlot();
         if (!gExternalStorage.IsMounted(slot)) {
             cout << "no mounted card" << endl << flush;
             return false;
         }
 
-        const string& file = args[1];
+        const string& file = args[0];
         auto image = gExternalStorage.GetImageInSlot(slot);
 
         fstream stream(file, ios_base::out);

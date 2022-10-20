@@ -50,12 +50,12 @@ namespace {
     }
 
     bool determineLayout(size_t pagesTotal, uint8& pagesPerBlock, uint8& segments) {
-        if (pagesTotal < 1024) {
+        if (pagesTotal < 1024 * 496) {
             pagesPerBlock = 16;
             if (determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments)) return true;
         }
 
-        if (pagesTotal > 512) {
+        if (pagesTotal > 512 * 496) {
             pagesPerBlock = 32;
             return determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments);
         }

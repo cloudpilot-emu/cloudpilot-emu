@@ -17,6 +17,7 @@ class ExternalStorage {
     bool AddImage(const string& key, uint8* imageData, size_t size);
 
     bool Mount(const string& key, EmHAL::Slot slot);
+    bool Mount(const string& key);
     bool Unmount(EmHAL::Slot);
     bool Unmount(const string& key);
     bool IsMounted(EmHAL::Slot slot) const;
