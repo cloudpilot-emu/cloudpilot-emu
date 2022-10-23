@@ -1602,21 +1602,6 @@ int EmDevice::DigitizerScale() const {
     }
 }
 
-bool EmDevice::EmulatesSlotMS() const {
-    switch (fDeviceID) {
-        case kDevicePEGN600C:
-        case kDevicePEGT400:
-        case kDevicePEGT600:
-        case kDevicePEGS320:
-        case kDevicePEGS300:
-        case kDevicePEGS500C:
-            return true;
-
-        default:
-            return false;
-    }
-}
-
 bool EmDevice::BuggySleep() const {
     switch (fDeviceID) {
         case kDeviceYSX1100:
