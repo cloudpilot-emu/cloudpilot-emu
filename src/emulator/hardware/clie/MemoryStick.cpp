@@ -50,7 +50,7 @@ namespace {
     }
 
     bool determineLayout(size_t pagesTotal, uint8& pagesPerBlock, uint8& segments) {
-        // The following thresholds are not correct, but this is not necessary;
+        // The following thresholds are not exact, but this is not necessary;
         // determineLayoutWithBlockSize will do the full calculation.
 
         // 16 pages per block are supported only for stick with 2 segments max
