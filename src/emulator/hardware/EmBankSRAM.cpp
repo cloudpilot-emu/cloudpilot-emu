@@ -168,7 +168,7 @@ void EmBankSRAM::SetBankHandlers(void) {
     // memory size. We need to claim 32MB of the address space for this to work,
     // and the layout set up by writing to SDCTL will take care that only the
     // physical memory is actually accessed.
-    if (gRAMSize == 16 * 1024 * 1024) numBanks *= 2;
+    if (gRAMSize == 16 * 1024 * 1024 && gSession->GetDevice().NeedsSDCTLHack()) numBanks *= 2;
 
     Memory::InitializeBanks(EmHAL::EnableRAM() ? gAddressBank : gAddressBankDisabled,
                             EmMemBankIndex(gMemoryStart), numBanks);
