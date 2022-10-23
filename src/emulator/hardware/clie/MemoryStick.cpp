@@ -60,7 +60,7 @@ namespace {
         }
 
         // 32 pages per block are supported only for sticks with more than one segment
-        if (pagesTotal > 512 * 16) {
+        if (pagesTotal > 512 * 32) {
             pagesPerBlock = 32;
             return determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments);
         }
