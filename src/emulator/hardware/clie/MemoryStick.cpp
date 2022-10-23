@@ -50,12 +50,17 @@ namespace {
     }
 
     bool determineLayout(size_t pagesTotal, uint8& pagesPerBlock, uint8& segments) {
-        if (pagesTotal < 1024 * 496) {
+        // The following thresholds are not correct, but this is not necessary;
+        // determineLayoutWithBlockSize will do the full calculation.
+
+        // 16 pages per block are supported only for stick with 2 segments max
+        if (pagesTotal < 1024 * 16) {
             pagesPerBlock = 16;
             if (determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments)) return true;
         }
 
-        if (pagesTotal > 512 * 496) {
+        // 32 pages per block are supported only for sticks with more than one segment
+        if (pagesTotal > 512 * 16) {
             pagesPerBlock = 32;
             return determineLayoutWithBlockSize(pagesTotal, pagesPerBlock, segments);
         }
