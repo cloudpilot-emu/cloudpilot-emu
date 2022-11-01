@@ -344,6 +344,7 @@ class Memory {
 
     static bool LoadMemoryV1(void* ram, size_t size);
     static bool LoadMemoryV2(void* memory, size_t size);
+    static bool LoadMemoryV4(void* memory, size_t size);
 };
 
 typedef Memory EmMemory;

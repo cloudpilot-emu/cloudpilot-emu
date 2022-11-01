@@ -284,31 +284,26 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device
 
     uint8* regionPtr = memory.get();
     uint8* dirtyPagePtr = dirtyPages.get();
-    uint32* index = reinterpret_cast<uint32*>(regionPtr + regionMap.GetTotalSize() -
-                                              regionMap.GetRegionSize(MemoryRegion::metadata));
+    uint32* toc = reinterpret_cast<uint32*>(regionPtr + regionMap.GetTotalSize() -
+                                            regionMap.GetRegionSize(MemoryRegion::metadata));
 
     for (const auto region : ORDERED_REGIONS) {
         uint32 size = regionMap.GetRegionSize(region);
 
-        if (size == 0) {
-            memoryRegionPointers[static_cast<uint8>(region)] = nullptr;
-            dirtyPageRegionPointers[static_cast<uint8>(region)] = nullptr;
-        } else {
-            memoryRegionPointers[static_cast<uint8>(region)] = regionPtr;
-            dirtyPageRegionPointers[static_cast<uint8>(region)] = dirtyPagePtr;
+        memoryRegionPointers[static_cast<uint8>(region)] = size == 0 ? nullptr : regionPtr;
+        dirtyPageRegionPointers[static_cast<uint8>(region)] = size == 0 ? nullptr : dirtyPagePtr;
 
-            index[0] = static_cast<uint8>(region);
-            index[1] = regionPtr - memory.get();
-            index += 2;
+        toc[0] = static_cast<uint8>(region);
+        toc[1] = size;
+        toc += 2;
 
-            regionPtr += size;
-            dirtyPagePtr += size / 8192;
-        }
+        regionPtr += size;
+        dirtyPagePtr += size / 8192;
     }
 
-    *index = 0xffffffff;
+    *toc = 0xffffffff;
 
-    memset(memory.get(), 0, regionMap.GetTotalSize());
+    memset(memory.get(), 0, regionMap.GetTotalSize() - 1024);
     memset(dirtyPages.get(), 0, dirtyPagesSize);
     dirtyPages[dirtyPagesSize - 1] = 0x01;
 
@@ -542,6 +537,31 @@ bool Memory::LoadMemoryV2(void* memory, size_t size) {
     memcpy(memoryRegionPointers[static_cast<uint8>(MemoryRegion::ram)], memory, ramSize);
     memcpy(memoryRegionPointers[static_cast<uint8>(MemoryRegion::framebuffer)],
            reinterpret_cast<uint8*>(memory) + ramSize, framebufferSize);
+    return true;
+}
+
+bool Memory::LoadMemoryV4(void* memory, size_t size) {
+    if (size != regionMap.GetTotalSize()) return false;
+    uint32* toc = reinterpret_cast<uint32*>(memory) + (size - 1024) / 4;
+
+    for (const auto region : ORDERED_REGIONS) {
+        if (toc[0] != static_cast<uint8>(region) || toc[1] != regionMap.GetRegionSize(region))
+            return false;
+
+        toc += 2;
+    }
+
+    if (*toc != 0xffffffff) return false;
+
+    uint8* regionPtr = static_cast<uint8*>(memory);
+    for (const auto region : ORDERED_REGIONS) {
+        uint32 size = regionMap.GetRegionSize(region);
+        if (size == 0) continue;
+
+        memcpy(memoryRegionPointers[static_cast<uint8>(region)], regionPtr, size);
+        regionPtr += size;
+    }
+
     return true;
 }
 

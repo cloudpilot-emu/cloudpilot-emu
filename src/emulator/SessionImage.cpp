@@ -4,7 +4,7 @@
 
 namespace {
     constexpr uint32 MAGIC = 0x20150103;
-    constexpr uint32 VERSION = 0x03;
+    constexpr uint32 VERSION = 0x04;
     constexpr uint32 VERSION_MASK = 0x80000000;
     constexpr size_t COMPRESSED_IMAGE_GROW_LIMIT = 128 * 1024 * 1024;
     constexpr size_t UNCOMPRESSED_HEADER_SIZE = 12;
@@ -81,19 +81,13 @@ SessionImage& SessionImage::SetSavestate(void* savestate, size_t size) {
 
 uint32 SessionImage::GetFramebufferSize() const { return framebufferSize; }
 
-SessionImage& SessionImage::SetFramebufferSize(size_t framebufferSize) {
-    this->framebufferSize = framebufferSize;
-
-    return *this;
-}
-
 uint32 SessionImage::GetVersion() const { return version; }
 
 bool SessionImage::Serialize() {
     version = VERSION;
 
     const size_t uncompressedSize =
-        24 + deviceId.size() + romSize + ramSize + savestateSize + metadataSize;
+        20 + deviceId.size() + romSize + ramSize + savestateSize + metadataSize;
 
     // Assume a compression ratio of at least 2 and make sure that the buffer will actually grow
     const size_t initialBufferSize = max(static_cast<size_t>(1024), uncompressedSize / 2);
@@ -115,16 +109,15 @@ bool SessionImage::Serialize() {
     stream.next_out = serializationBufferPtr + UNCOMPRESSED_HEADER_SIZE;
     stream.avail_out = initialBufferSize;
 
-    uint8 header[24];
+    uint8 header[20];
 
     put32(header, deviceId.size());
     put32(header + 4, metadataSize);
     put32(header + 8, romSize);
     put32(header + 12, ramSize);
-    put32(header + 16, framebufferSize);
-    put32(header + 20, savestateSize);
+    put32(header + 16, savestateSize);
 
-    if (!AppendToSerializationStream(stream, header, 24)) return false;
+    if (!AppendToSerializationStream(stream, header, 20)) return false;
 
     if (deviceId.size() > 0 &&
         !AppendToSerializationStream(stream, (void*)deviceId.c_str(), deviceId.size()))
@@ -216,6 +209,7 @@ bool SessionImage::Deserialize(void* _buffer, size_t size) {
     version &= ~VERSION_MASK;
 
     if (version > VERSION) return false;
+    uint32 headerSize = (version >= 2 && version < 4) ? 24 : 20;
 
     if (version > 2) {
         uint32 uncompressedSize = get32(buffer + 8);
@@ -235,19 +229,18 @@ bool SessionImage::Deserialize(void* _buffer, size_t size) {
         size -= 8;
     }
 
-    if (size < (version >= 2 ? 24 : 20)) return false;
+    if (size < headerSize) return false;
 
     size_t deviceIdSize = get32(buffer);
     metadataSize = get32(buffer + 4);
     romSize = get32(buffer + 8);
     ramSize = get32(buffer + 12);
-    framebufferSize = (version >= 2) ? get32(buffer + 16) : 0;
-    savestateSize = get32(buffer + (version >= 2 ? 20 : 16));
+    framebufferSize = (version >= 2 && version < 4) ? get32(buffer + 16) : 0;
+    savestateSize = get32(buffer + ((version >= 2 && version < 4) ? 20 : 16));
 
-    buffer += (version >= 2 ? 24 : 20);
+    buffer += headerSize;
 
-    if (size != ((version >= 2 ? 24 : 20) + deviceIdSize + metadataSize + romSize + ramSize +
-                 savestateSize) ||
+    if (size != (headerSize + deviceIdSize + metadataSize + romSize + ramSize + savestateSize) ||
         deviceIdSize > 16)
         return false;
 

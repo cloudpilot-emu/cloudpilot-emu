@@ -124,7 +124,6 @@ bool EmSession::SaveImage(SessionImage& image) {
 
     image.SetRomImage(romImage.get(), romSize)
         .SetMemoryImage(GetMemoryPtr(), GetMemorySize())
-        .SetFramebufferSize(device->FramebufferSize() * 1024)
         .SetDeviceId(device->GetIDString());
 
     if (savestate.Save(*this)) {
@@ -153,7 +152,12 @@ bool EmSession::LoadImage(SessionImage& image) {
     void* memoryImage = image.GetMemoryImage();
     uint32 version = image.GetVersion();
 
-    if (version >= 2) {
+    if (version >= 4) {
+        if (!EmMemory::LoadMemoryV4(memoryImage, memorySize)) {
+            logging::printf("failed to restore memory (V4)");
+            return false;
+        }
+    } else if (version >= 2) {
         if (!EmMemory::LoadMemoryV2(memoryImage, memorySize)) {
             logging::printf("failed to restore memory (V2)");
             return false;

@@ -33,8 +33,6 @@ class SessionImage {
     SessionImage& SetSavestate(void* savestate, size_t size);
 
     uint32 GetFramebufferSize() const;
-    SessionImage& SetFramebufferSize(size_t framebufferSize);
-
     uint32 GetVersion() const;
 
     bool Serialize();
