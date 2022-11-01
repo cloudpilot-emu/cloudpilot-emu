@@ -13,6 +13,8 @@
 
 #include "EmMemory.h"
 
+#include <array>
+
 #include "EmBankDRAM.h"    // EmBankDRAM::Initialize
 #include "EmBankDummy.h"   // EmBankDummy::Initialize
 #include "EmBankMapped.h"  // EmBankMapped::Initialize
@@ -21,7 +23,8 @@
 #include "EmBankSRAM.h"    // EmBankSRAM::Initialize
 #include "EmCommon.h"
 #include "EmDevice.h"
-#include "EmSession.h"   // gSession, GetDevice
+#include "EmSession.h"  // gSession, GetDevice
+#include "MemoryRegion.h"
 #include "MetaMemory.h"  // MetaMemory::Initialize
 #include "Savestate.h"
 #include "SavestateLoader.h"
@@ -189,6 +192,7 @@ EmAddressBank* gEmMemBanks[65536];  // (normally defined in memory.c)
 Bool gPCInRAM;
 Bool gPCInROM;
 
+/*
 uint32 gTotalMemorySize;
 uint32 gRAMSize;
 uint32 gFramebufferMemorySize;
@@ -198,6 +202,7 @@ uint8* gDirtyPages;
 
 uint8* gFramebufferMemory;
 uint8* gFramebufferDirtyPages;
+*/
 
 MemAccessFlags gMemAccessFlags = {
     MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH, MASTER_RUNTIME_VALIDATE_SWITCH,
@@ -242,6 +247,19 @@ MemAccessFlags gMemAccessFlags = {
 
 MemAccessFlags kZeroMemAccessFlags;
 
+namespace {
+    unique_ptr<uint8[]> memory;
+    unique_ptr<uint8[]> dirtyPages;
+    MemoryRegionMap regionMap;
+
+    array<uint8*, N_MEMORY_REGIONS> memoryRegionPointers;
+    array<uint8*, N_MEMORY_REGIONS> dirtyPageRegionPointers;
+
+    constexpr MemoryRegion ORDERED_REGIONS[N_MEMORY_REGIONS] = {
+        MemoryRegion::ram, MemoryRegion::framebuffer, MemoryRegion::memorystick,
+        MemoryRegion::sonyDsp, MemoryRegion::metadata};
+}  // namespace
+
 // ===========================================================================
 //		� Memory
 // ===========================================================================
@@ -255,10 +273,50 @@ MemAccessFlags kZeroMemAccessFlags;
 bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device) {
     bool success = true;
 
+    regionMap = device.GetMemoryRegionMap();
+    regionMap.AllocateRegion(MemoryRegion::metadata, 1024);
+
+    const uint32 dirtyPagesSize =
+        regionMap.GetTotalSize() / 8192 + (regionMap.GetTotalSize() % 8192 == 0 ? 0 : 1);
+
+    memory = make_unique<uint8[]>(regionMap.GetTotalSize());
+    dirtyPages = make_unique<uint8[]>(dirtyPagesSize);
+
+    uint8* regionPtr = memory.get();
+    uint8* dirtyPagePtr = dirtyPages.get();
+    uint32* index = reinterpret_cast<uint32*>(regionPtr + regionMap.GetTotalSize() -
+                                              regionMap.GetRegionSize(MemoryRegion::metadata));
+
+    for (const auto region : ORDERED_REGIONS) {
+        uint32 size = regionMap.GetRegionSize(region);
+
+        if (size == 0) {
+            memoryRegionPointers[static_cast<uint8>(region)] = nullptr;
+            dirtyPageRegionPointers[static_cast<uint8>(region)] = nullptr;
+        } else {
+            memoryRegionPointers[static_cast<uint8>(region)] = regionPtr;
+            dirtyPageRegionPointers[static_cast<uint8>(region)] = dirtyPagePtr;
+
+            index[0] = static_cast<uint8>(region);
+            index[1] = regionPtr - memory.get();
+            index += 2;
+
+            regionPtr += size;
+            dirtyPagePtr += size / 8192;
+        }
+    }
+
+    *index = 0xffffffff;
+
+    memset(memory.get(), 0, regionMap.GetTotalSize());
+    memset(dirtyPages.get(), 0, dirtyPagesSize);
+    dirtyPages[dirtyPagesSize - 1] = 0x01;
+
     // Clear everything out.
 
     memset(gEmMemBanks, 0, sizeof(gEmMemBanks));
 
+    /*
     gTotalMemorySize = device.TotalMemorySize() * 1024;
     gFramebufferMemorySize = device.FramebufferSize() * 1024;
     gRAMSize = gTotalMemorySize - gFramebufferMemorySize;
@@ -268,7 +326,7 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device
 
     gFramebufferMemory = gMemory + gRAMSize;
     gFramebufferDirtyPages = gDirtyPages + gRAMSize / 1024 / 8;
-
+    */
     // Initialize the valid memory banks.
 
     EmBankDummy::Initialize();
@@ -366,9 +424,6 @@ void Memory::Dispose(void) {
     EmBankROM::Dispose();
     EmBankMapped::Dispose();
 
-    free(gMemory);
-    free(gDirtyPages);
-
     // We can't reliably call GetDevice here.  That's because the
     // session may not have been initialized (we could be disposing
     // of everything because an error condition occurred), and so
@@ -454,6 +509,41 @@ void Memory::GetMappingInfo(emuptr addr, void** start, uint32* len) {
 // ---------------------------------------------------------------------------
 
 void Memory::CheckNewPC(emuptr newPC) {}
+
+uint8* Memory::GetDirtyPagesForRegion(MemoryRegion region) {
+    return dirtyPageRegionPointers[static_cast<uint8>(region)];
+}
+
+uint8* Memory::GetForRegion(MemoryRegion region) {
+    return memoryRegionPointers[static_cast<uint8>(region)];
+}
+
+uint32 Memory::GetRegionSize(MemoryRegion region) { return regionMap.GetRegionSize(region); }
+
+uint32 Memory::GetTotalMemorySize() { return regionMap.GetTotalSize(); }
+
+uint8* Memory::GetTotalMemory() { return memory.get(); }
+
+uint8* Memory::GetTotalDirtyPages() { return dirtyPages.get(); }
+
+bool Memory::LoadMemoryV1(void* ram, size_t size) {
+    if (size != regionMap.GetRegionSize(MemoryRegion::ram)) return false;
+
+    memcpy(memoryRegionPointers[static_cast<uint8>(MemoryRegion::ram)], ram, size);
+    return true;
+}
+
+bool Memory::LoadMemoryV2(void* memory, size_t size) {
+    const uint32 ramSize = regionMap.GetRegionSize(MemoryRegion::ram);
+    const uint32 framebufferSize = regionMap.GetRegionSize(MemoryRegion::framebuffer);
+
+    if (size != ramSize + framebufferSize) return false;
+
+    memcpy(memoryRegionPointers[static_cast<uint8>(MemoryRegion::ram)], memory, ramSize);
+    memcpy(memoryRegionPointers[static_cast<uint8>(MemoryRegion::framebuffer)],
+           reinterpret_cast<uint8*>(memory) + ramSize, framebufferSize);
+    return true;
+}
 
 #pragma mark -
 

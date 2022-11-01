@@ -17,6 +17,7 @@
 #include "EmCommon.h"
 #include "EmMemory.h"  // EmMemDoGet32
 #include "EmSystemState.h"
+#include "MemoryRegion.h"
 #include "Miscellaneous.h"  // StWordSwapper
 #include "Platform.h"       // Platform::AllocateMemoryClear
 #include "Savestate.h"
@@ -26,8 +27,12 @@
 namespace {
     constexpr int SAVESTATE_VERSION = 1;
 
+    uint32 framebufferSize;
+    uint8* framebuffer;
+    uint8* dirtyPages;
+
     inline void markDirty(emuptr offset) {
-        gFramebufferDirtyPages[offset >> 13] |= (1 << ((offset >> 10) & 0x07));
+        dirtyPages[offset >> 13] |= (1 << ((offset >> 10) & 0x07));
     }
 }  // namespace
 
@@ -48,8 +53,16 @@ EmRegsFrameBuffer::~EmRegsFrameBuffer(void) {}
 // ---------------------------------------------------------------------------
 
 void EmRegsFrameBuffer::Initialize(void) {
+    framebufferSize = EmMemory::GetRegionSize(MemoryRegion::framebuffer);
+    framebuffer = EmMemory::GetForRegion(MemoryRegion::framebuffer);
+    dirtyPages = EmMemory::GetDirtyPagesForRegion(MemoryRegion::framebuffer);
+
+    EmAssert(framebufferSize > 0);
+    EmAssert(framebuffer);
+    EmAssert(dirtyPages);
+
     EmRegs::Initialize();
-    memset(gFramebufferMemory, 0, gFramebufferMemorySize);
+    memset(framebuffer, 0, framebufferSize);
 }
 
 // ---------------------------------------------------------------------------
@@ -77,8 +90,8 @@ void EmRegsFrameBuffer::Load(SavestateLoader& loader) {
     // saved.
     //
     // NOT ENDIANESS SAFE
-    chunk->GetBuffer(gFramebufferMemory, gFramebufferMemorySize);
-    memset(gFramebufferDirtyPages, 0xff, gFramebufferMemorySize / 1024 / 8);
+    chunk->GetBuffer(framebuffer, framebufferSize);
+    memset(dirtyPages, 0xff, framebufferSize / 1024 / 8);
 }
 
 // ---------------------------------------------------------------------------
@@ -87,7 +100,7 @@ void EmRegsFrameBuffer::Load(SavestateLoader& loader) {
 
 uint32 EmRegsFrameBuffer::GetLong(emuptr address) {
     uint32 offset = address - fBaseAddr;
-    return EmMemDoGet32(gFramebufferMemory + offset);
+    return EmMemDoGet32(framebuffer + offset);
 }
 
 // ---------------------------------------------------------------------------
@@ -96,7 +109,7 @@ uint32 EmRegsFrameBuffer::GetLong(emuptr address) {
 
 uint32 EmRegsFrameBuffer::GetWord(emuptr address) {
     uint32 offset = address - fBaseAddr;
-    return EmMemDoGet16((gFramebufferMemory) + offset);
+    return EmMemDoGet16((framebuffer) + offset);
 }
 
 // ---------------------------------------------------------------------------
@@ -105,7 +118,7 @@ uint32 EmRegsFrameBuffer::GetWord(emuptr address) {
 
 uint32 EmRegsFrameBuffer::GetByte(emuptr address) {
     uint32 offset = address - fBaseAddr;
-    return EmMemDoGet8((gFramebufferMemory) + offset);
+    return EmMemDoGet8((framebuffer) + offset);
 }
 
 // ---------------------------------------------------------------------------
@@ -114,7 +127,7 @@ uint32 EmRegsFrameBuffer::GetByte(emuptr address) {
 
 void EmRegsFrameBuffer::SetLong(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
-    EmMemDoPut32((gFramebufferMemory) + offset, value);
+    EmMemDoPut32((framebuffer) + offset, value);
 
     gSystemState.MarkScreenDirty(address, address + 4);
 
@@ -128,7 +141,7 @@ void EmRegsFrameBuffer::SetLong(emuptr address, uint32 value) {
 
 void EmRegsFrameBuffer::SetWord(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
-    EmMemDoPut16((gFramebufferMemory) + offset, value);
+    EmMemDoPut16((framebuffer) + offset, value);
 
     gSystemState.MarkScreenDirty(address, address + 2);
 
@@ -141,7 +154,7 @@ void EmRegsFrameBuffer::SetWord(emuptr address, uint32 value) {
 
 void EmRegsFrameBuffer::SetByte(emuptr address, uint32 value) {
     uint32 offset = address - fBaseAddr;
-    EmMemDoPut8((gFramebufferMemory) + offset, value);
+    EmMemDoPut8((framebuffer) + offset, value);
 
     gSystemState.MarkScreenDirty(address, address);
 
@@ -174,7 +187,7 @@ void EmRegsFrameBuffer::SetSubBankHandlers(void) {
 
 uint8* EmRegsFrameBuffer::GetRealAddress(emuptr address) {
     uint32 offset = address - fBaseAddr;
-    return gFramebufferMemory + offset;
+    return framebuffer + offset;
 }
 
 // ---------------------------------------------------------------------------
@@ -187,4 +200,4 @@ emuptr EmRegsFrameBuffer::GetAddressStart(void) { return fBaseAddr; }
 //		� EmRegsFrameBuffer::GetAddressRange
 // ---------------------------------------------------------------------------
 
-uint32 EmRegsFrameBuffer::GetAddressRange(void) { return gFramebufferMemorySize; }
+uint32 EmRegsFrameBuffer::GetAddressRange(void) { return framebufferSize; }

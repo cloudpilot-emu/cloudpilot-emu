@@ -18,25 +18,25 @@
 #include "EmCPU68K.h"    // gCPU68K
 #include "EmCommon.h"
 #include "EmMemory.h"  // Memory::InitializeBanks
+#include "MemoryRegion.h"
 
-// ===========================================================================
-//		� Dummy Bank Accessors
-// ===========================================================================
-// Dummy banks are non-existent blocks of memory.  Dummy bank accessors do
-// not do anything.
+namespace {
+    uint32 ramSize;
 
-static EmAddressBank gAddressBank = {EmBankDummy::GetLong,        EmBankDummy::GetWord,
-                                     EmBankDummy::GetByte,        EmBankDummy::SetLong,
-                                     EmBankDummy::SetWord,        EmBankDummy::SetByte,
-                                     EmBankDummy::GetRealAddress, EmBankDummy::ValidAddress,
-                                     EmBankDummy::GetMetaAddress, EmBankDummy::AddOpcodeCycles};
+    EmAddressBank addressBank = {EmBankDummy::GetLong,        EmBankDummy::GetWord,
+                                 EmBankDummy::GetByte,        EmBankDummy::SetLong,
+                                 EmBankDummy::SetWord,        EmBankDummy::SetByte,
+                                 EmBankDummy::GetRealAddress, EmBankDummy::ValidAddress,
+                                 EmBankDummy::GetMetaAddress, EmBankDummy::AddOpcodeCycles};
 
-inline Bool HackForHwrGetRAMSize(emuptr address) {
-    //	if ((address & 0xFF000000) == EmBankSRAM::GetMemoryStart ())
-    if (address == EmBankSRAM::GetMemoryStart() + gRAMSize) return true;
+    inline Bool HackForHwrGetRAMSize(emuptr address) {
+        //	if ((address & 0xFF000000) == EmBankSRAM::GetMemoryStart ())
+        if (address == EmBankSRAM::GetMemoryStart() + ramSize) return true;
 
-    return false;
-}
+        return false;
+    }
+
+}  // namespace
 
 /***********************************************************************
  *
@@ -53,7 +53,7 @@ inline Bool HackForHwrGetRAMSize(emuptr address) {
  *
  ***********************************************************************/
 
-void EmBankDummy::Initialize(void) {}
+void EmBankDummy::Initialize(void) { ramSize = EmMemory::GetRegionSize(MemoryRegion::ram); }
 
 /***********************************************************************
  *
@@ -103,7 +103,7 @@ void EmBankDummy::Dispose(void) {}
  *
  ***********************************************************************/
 
-void EmBankDummy::SetBankHandlers(void) { Memory::InitializeBanks(gAddressBank, 0, 0xFFFF); }
+void EmBankDummy::SetBankHandlers(void) { Memory::InitializeBanks(addressBank, 0, 0xFFFF); }
 
 // ---------------------------------------------------------------------------
 //		� EmBankDummy::GetLong

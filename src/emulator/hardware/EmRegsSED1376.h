@@ -28,6 +28,9 @@ class EmRegsFrameBuffer;
 
 class EmRegsSED1376 : public EmRegs, public EmHALHandler {
    public:
+    static constexpr uint32 FRAMEBUFFER_SIZE = 80 * 1024;
+
+   public:
     EmRegsSED1376(emuptr baseRegsAddr, emuptr baseVideoAddr, EmRegsFrameBuffer& framebuffer);
     virtual ~EmRegsSED1376(void);
 

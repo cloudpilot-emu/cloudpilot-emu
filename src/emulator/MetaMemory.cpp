@@ -18,12 +18,14 @@
 #include "EmBankSRAM.h"
 #include "EmCommon.h"
 #include "EmMemory.h"
+#include "MemoryRegion.h"
 
 set<emuptr> MetaMemory::breakpoints;
 
 void MetaMemory::Clear() { EmAssert(breakpoints.size() == 0); }
 
 void MetaMemory::MarkRange(emuptr start, emuptr end, uint8 v) {
+    size_t ramSize = EmMemory::GetRegionSize(MemoryRegion::ram);
     // If there's no meta-memory (not needed for dedicated framebuffers)
     // just leave.
 
@@ -34,13 +36,12 @@ void MetaMemory::MarkRange(emuptr start, emuptr end, uint8 v) {
     // LCD -- for a while, the LCD framebuffer range falls off the end
     // of the dynamic heap.
 
-    if (start >= 0 && start < 0 + gRAMSize && end >= 0 + gRAMSize) {
-        end = gRAMSize - 1;
+    if (start >= 0 && start < 0 + ramSize && end >= 0 + ramSize) {
+        end = ramSize - 1;
     }
 
-    if (start >= gMemoryStart && start < gMemoryStart + gRAMSize &&
-        end >= gMemoryStart + gRAMSize) {
-        end = gMemoryStart + gRAMSize - 1;
+    if (start >= gMemoryStart && start < gMemoryStart + ramSize && end >= gMemoryStart + ramSize) {
+        end = gMemoryStart + ramSize - 1;
     }
 
     uint8* startP = EmMemGetMetaAddress(start);
@@ -93,6 +94,8 @@ void MetaMemory::MarkRange(emuptr start, emuptr end, uint8 v) {
 // ---------------------------------------------------------------------------
 
 void MetaMemory::UnmarkRange(emuptr start, emuptr end, uint8 v) {
+    size_t ramSize = EmMemory::GetRegionSize(MemoryRegion::ram);
+
     // If there's no meta-memory (not needed for dedicated framebuffers)
     // just leave.
 
@@ -103,13 +106,12 @@ void MetaMemory::UnmarkRange(emuptr start, emuptr end, uint8 v) {
     // LCD -- for a while, the LCD framebuffer range falls off the end
     // of the dynamic heap.
 
-    if (start >= 0 && start < 0 + gRAMSize && end >= 0 + gRAMSize) {
-        end = gRAMSize - 1;
+    if (start >= 0 && start < 0 + ramSize && end >= 0 + ramSize) {
+        end = ramSize - 1;
     }
 
-    if (start >= gMemoryStart && start < gMemoryStart + gRAMSize &&
-        end >= gMemoryStart + gRAMSize) {
-        end = gMemoryStart + gRAMSize - 1;
+    if (start >= gMemoryStart && start < gMemoryStart + ramSize && end >= gMemoryStart + ramSize) {
+        end = gMemoryStart + ramSize - 1;
     }
 
     uint8* startP = EmMemGetMetaAddress(start);
@@ -164,6 +166,8 @@ void MetaMemory::UnmarkRange(emuptr start, emuptr end, uint8 v) {
 // ---------------------------------------------------------------------------
 
 void MetaMemory::MarkUnmarkRange(emuptr start, emuptr end, uint8 andValue, uint8 orValue) {
+    size_t ramSize = EmMemory::GetRegionSize(MemoryRegion::ram);
+
     // If there's no meta-memory (not needed for dedicated framebuffers)
     // just leave.
 
@@ -174,13 +178,12 @@ void MetaMemory::MarkUnmarkRange(emuptr start, emuptr end, uint8 andValue, uint8
     // LCD -- for a while, the LCD framebuffer range falls off the end
     // of the dynamic heap.
 
-    if (start >= 0 && start < 0 + gRAMSize && end >= 0 + gRAMSize) {
-        end = gRAMSize - 1;
+    if (start >= 0 && start < 0 + ramSize && end >= 0 + ramSize) {
+        end = ramSize - 1;
     }
 
-    if (start >= gMemoryStart && start < gMemoryStart + gRAMSize &&
-        end >= gMemoryStart + gRAMSize) {
-        end = gMemoryStart + gRAMSize - 1;
+    if (start >= gMemoryStart && start < gMemoryStart + ramSize && end >= gMemoryStart + ramSize) {
+        end = gMemoryStart + ramSize - 1;
     }
 
     uint8* startP = EmMemGetMetaAddress(start);

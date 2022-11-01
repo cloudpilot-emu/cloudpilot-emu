@@ -19,6 +19,7 @@
 #include <vector>   // vector
 
 #include "EmCommon.h"
+#include "MemoryRegion.h"
 #include "ScreenDimensions.h"
 
 class EmCPU;
@@ -69,6 +70,7 @@ class EmDevice {
     RAMSizeType MinRAMSize(void) const;
     uint32 FramebufferSize() const;
     uint32 TotalMemorySize() const;
+    MemoryRegionMap& GetMemoryRegionMap();
 
     bool IsValid() const;
     bool EmulatesDockStatus() const;
@@ -91,7 +93,12 @@ class EmDevice {
     const DeviceInfo* GetDeviceInfo(void) const;
     int GetDeviceID(const char*) const;
 
+    void ConfigureMemoryRegions();
+
+   private:
     int fDeviceID;
+
+    MemoryRegionMap memoryRegionMap;
 };
 
 #endif /* EmDevice_h */

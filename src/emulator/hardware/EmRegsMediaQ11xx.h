@@ -193,6 +193,9 @@ class EmRegsMediaQ11xx : public EmRegs, public MediaQFramebuffer<EmRegsMediaQ11x
     friend MediaQFramebuffer<EmRegsMediaQ11xx>;
 
    public:
+    static constexpr uint32 FRAMEBUFFER_SIZE = 256 * 1024;
+
+   public:
     EmRegsMediaQ11xx(EmRegsFrameBuffer& framebuffer, emuptr baseRegsAddr, emuptr baseVideoAddr);
     virtual ~EmRegsMediaQ11xx(void);
 

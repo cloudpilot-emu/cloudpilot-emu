@@ -573,15 +573,15 @@ static const DeviceInfo kDeviceInfo[] = {
  *
  ***********************************************************************/
 
-EmDevice::EmDevice(void) : fDeviceID(kDeviceUnspecified) {}
+EmDevice::EmDevice(int id) : fDeviceID(id) { ConfigureMemoryRegions(); }
 
-EmDevice::EmDevice(int id) : fDeviceID(id) {}
+EmDevice::EmDevice(void) : EmDevice(kDeviceUnspecified) {}
 
-EmDevice::EmDevice(const char* s) : fDeviceID(this->GetDeviceID(s)) {}
+EmDevice::EmDevice(const char* s) : EmDevice(this->GetDeviceID(s)) {}
 
-EmDevice::EmDevice(const string& s) : fDeviceID(this->GetDeviceID(s.c_str())) {}
+EmDevice::EmDevice(const string& s) : EmDevice(this->GetDeviceID(s.c_str())) {}
 
-EmDevice::EmDevice(const EmDevice& other) : fDeviceID(other.fDeviceID) {}
+EmDevice::EmDevice(const EmDevice& other) : EmDevice(other.fDeviceID) {}
 
 /***********************************************************************
  *
@@ -1500,21 +1500,22 @@ int EmDevice::GetDeviceID(const char* s) const {
     return kDeviceUnspecified;
 }
 
-bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }
+void EmDevice::ConfigureMemoryRegions() {
+    memoryRegionMap.AllocateRegion(MemoryRegion::ram, MinRAMSize() * 1024);
 
-RAMSizeType EmDevice::MinRAMSize(void) const {
-    const DeviceInfo* info = this->GetDeviceInfo();
-    return info->fMinRAMSize;
-}
-
-uint32 EmDevice::FramebufferSize() const {
     switch (fDeviceID) {
+        case kDevicePEGS500C:
         case kDevicePalmIIIc:
+            memoryRegionMap.AllocateRegion(MemoryRegion::framebuffer,
+                                           EmRegsSED1375::FRAMEBUFFER_SIZE);
+            break;
+
         case kDevicePalmM505:
         case kDevicePalmM515:
-        case kDevicePEGS500C:
         case kDeviceVisorPrism:
-            return 80;
+            memoryRegionMap.AllocateRegion(MemoryRegion::framebuffer,
+                                           EmRegsSED1376::FRAMEBUFFER_SIZE);
+            break;
 
         case kDevicePalmPacifiC:
         case kDevicePalmI710:
@@ -1523,17 +1524,40 @@ uint32 EmDevice::FramebufferSize() const {
         case kDevicePEGT600:
         case kDevicePEGN700C:
         case kDeviceYSX1230:
-            return 256;
+            memoryRegionMap.AllocateRegion(MemoryRegion::framebuffer,
+                                           EmRegsMediaQ11xx::FRAMEBUFFER_SIZE);
+            break;
 
         case kDeviceYSX1100:
-            return 320;
-
-        default:
-            return 0;
+            memoryRegionMap.AllocateRegion(MemoryRegion::framebuffer,
+                                           EmRegsMQLCDControlT2::FRAMEBUFFER_SIZE);
+            break;
     }
 }
 
-uint32 EmDevice::TotalMemorySize() const { return MinRAMSize() + FramebufferSize(); }
+bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }
+
+RAMSizeType EmDevice::MinRAMSize(void) const {
+    const DeviceInfo* info = this->GetDeviceInfo();
+
+    return info ? info->fMinRAMSize : 0;
+}
+
+uint32 EmDevice::FramebufferSize() const {
+    uint32 framebufferSizeBytes = memoryRegionMap.GetRegionSize(MemoryRegion::framebuffer);
+    EmAssert(framebufferSizeBytes % 1024 == 0);
+
+    return framebufferSizeBytes / 1024;
+}
+
+uint32 EmDevice::TotalMemorySize() const {
+    uint32 sizeBytes = memoryRegionMap.GetTotalSize();
+    EmAssert(sizeBytes % 1024 == 0);
+
+    return sizeBytes / 1024;
+}
+
+MemoryRegionMap& EmDevice::GetMemoryRegionMap() { return memoryRegionMap; }
 
 bool EmDevice::EmulatesDockStatus() const {
     if (Supports68328()) return false;

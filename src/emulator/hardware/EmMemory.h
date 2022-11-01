@@ -28,16 +28,18 @@
 extern "C" {
 #endif
 
+/*
 extern uint32 gTotalMemorySize;
 extern uint32 gRAMSize;
 extern uint32 gFramebufferMemorySize;
+
 
 extern uint8* gMemory;
 extern uint8* gDirtyPages;
 
 extern uint8* gFramebufferMemory;
 extern uint8* gFramebufferDirtyPages;
-
+*/
 // ---------------------------------------------------------------------------
 //		� EmAddressBank
 // ---------------------------------------------------------------------------
@@ -239,6 +241,8 @@ STATIC_INLINE void EmMemDoPut8(void* a, uint8 v) {
 
 #ifdef __cplusplus
 
+    #include "MemoryRegion.h"
+
 class EmStream;
 
 // Types.
@@ -329,6 +333,17 @@ class Memory {
     static void CheckNewPC(emuptr newPC);
     static int IsPCInRAM(void) { return gPCInRAM; }
     static int IsPCInROM(void) { return gPCInROM; }
+
+    static uint8* GetDirtyPagesForRegion(MemoryRegion region);
+    static uint8* GetForRegion(MemoryRegion region);
+    static uint32 GetRegionSize(MemoryRegion region);
+
+    static uint32 GetTotalMemorySize();
+    static uint8* GetTotalMemory();
+    static uint8* GetTotalDirtyPages();
+
+    static bool LoadMemoryV1(void* ram, size_t size);
+    static bool LoadMemoryV2(void* memory, size_t size);
 };
 
 typedef Memory EmMemory;

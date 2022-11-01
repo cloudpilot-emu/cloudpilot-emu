@@ -153,14 +153,14 @@ bool EmSession::LoadImage(SessionImage& image) {
     void* memoryImage = image.GetMemoryImage();
     uint32 version = image.GetVersion();
 
-    if (version >= 2 && memorySize == GetMemorySize()) {
-        memcpy(GetMemoryPtr(), memoryImage, memorySize);
-    } else if (version < 2 && memorySize == GetMemorySize() - device->FramebufferSize() * 1024) {
-        memcpy(GetMemoryPtr(), memoryImage, memorySize);
-        memset(GetMemoryPtr() + memorySize, 0, GetMemorySize() - memorySize);
-    } else {
-        logging::printf("memory size mismatch, not restoring RAM");
-        return true;
+    if (version >= 2) {
+        if (!EmMemory::LoadMemoryV2(memoryImage, memorySize)) {
+            logging::printf("failed to restore memory (V2)");
+            return false;
+        }
+    } else if (!EmMemory::LoadMemoryV1(memoryImage, memorySize)) {
+        logging::printf("failed to restore memory (V1)");
+        return false;
     }
 
     size_t savestateSize = image.GetSavestateSize();
@@ -506,13 +506,13 @@ ButtonEvent EmSession::NextButtonEvent() {
                : ButtonEvent(ButtonEvent::Button::invalid, ButtonEvent::Type::press);
 }
 
-uint32 EmSession::GetMemorySize() const { return gTotalMemorySize; }
+uint32 EmSession::GetMemorySize() const { return EmMemory::GetTotalMemorySize(); }
 
-uint8* EmSession::GetMemoryPtr() const { return gMemory; };
+uint8* EmSession::GetMemoryPtr() const { return EmMemory::GetTotalMemory(); };
 
 uint32 EmSession::GetRandomSeed() const { return EmLowMem::fgLowMem.globals.sysRandomSeed; }
 
-uint8* EmSession::GetDirtyPagesPtr() const { return gDirtyPages; }
+uint8* EmSession::GetDirtyPagesPtr() const { return EmMemory::GetTotalDirtyPages(); }
 
 void EmSession::SetHotsyncUserName(string hotsyncUserName) {
     gSystemState.SetHotsyncUserName(hotsyncUserName);

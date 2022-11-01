@@ -295,6 +295,9 @@ class EmRegsMQLCDControlT2 : public EmRegs, public MediaQFramebuffer<EmRegsMQLCD
     friend MediaQFramebuffer<EmRegsMQLCDControlT2>;
 
    public:
+    static constexpr uint32 FRAMEBUFFER_SIZE = 320 * 1024;
+
+   public:
     EmRegsMQLCDControlT2(EmRegsFrameBuffer& framebuffer, emuptr baseRegsAddr, emuptr baseVideoAddr);
     virtual ~EmRegsMQLCDControlT2(void);
 
