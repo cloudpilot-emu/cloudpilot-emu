@@ -217,8 +217,6 @@ namespace {
 
         cout << "saving session image to '" << args[0] << "'" << endl << flush;
 
-        SaveImage(args[0]);
-
         if (args.size() == 2) {
             if (!SaveCard(args[1])) return false;
             cout << "successfully saved card image to " << args[1] << endl << flush;
@@ -230,6 +228,8 @@ namespace {
 
             gExternalStorage.RekeyImage(oldKey, newKey);
         }
+
+        SaveImage(args[0]);
 
         return false;
     }
