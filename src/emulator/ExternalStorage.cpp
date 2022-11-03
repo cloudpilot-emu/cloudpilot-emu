@@ -7,24 +7,24 @@ ExternalStorage gExternalStorage;
 bool ExternalStorage::HasImage(const string& key) const { return images.find(key) != images.end(); }
 
 CardImage* ExternalStorage::GetImage(const string& key) {
-    return HasImage(key) ? &(images.at(key)) : nullptr;
+    return HasImage(key) ? images.at(key).get() : nullptr;
 }
 
 bool ExternalStorage::AddImage(const string& key, uint8* imageData, size_t size) {
     if (size % (CardImage::BLOCK_SIZE) != 0 || HasImage(key)) return false;
 
-    images.emplace(key, CardImage(imageData, size / CardImage::BLOCK_SIZE));
+    images.emplace(key, make_shared<CardImage>(imageData, size / CardImage::BLOCK_SIZE));
 
     return true;
 }
 
 bool ExternalStorage::Mount(const string& key, EmHAL::Slot slot) {
     if (slot == EmHAL::Slot::none || IsMounted(slot) || !HasImage(key) ||
-        GetSlot(key) != EmHAL::Slot::none || !EmHAL::SupportsImageInSlot(slot, images.at(key)))
+        GetSlot(key) != EmHAL::Slot::none || !EmHAL::SupportsImageInSlot(slot, *images.at(key)))
         return false;
 
-    slots[static_cast<uint8>(slot)] = make_unique<MountedImage>(key, images.at(key));
-    EmHAL::Mount(slot, key, images.at(key));
+    slots[static_cast<uint8>(slot)] = make_unique<MountedImage>(key, *images.at(key));
+    EmHAL::Mount(slot, key, *images.at(key));
 
     return true;
 }
@@ -33,7 +33,7 @@ bool ExternalStorage::Mount(const string& key) {
     if (!HasImage(key)) return false;
 
     for (auto slot : {EmHAL::Slot::sdcard, EmHAL::Slot::memorystick})
-        if (EmHAL::SupportsImageInSlot(slot, images.at(key))) return Mount(key, slot);
+        if (EmHAL::SupportsImageInSlot(slot, *images.at(key))) return Mount(key, slot);
 
     return false;
 }
@@ -71,6 +71,16 @@ CardImage* ExternalStorage::GetImageInSlot(EmHAL::Slot slot) {
 
 string ExternalStorage::GetImageKeyInSlot(EmHAL::Slot slot) {
     return IsMounted(slot) ? slots[static_cast<uint8>(slot)]->key : "";
+}
+
+void ExternalStorage::RekeyImage(string oldKey, string newKey) {
+    if (newKey == oldKey || !HasImage(oldKey)) return;
+
+    images.emplace(newKey, images.at(oldKey));
+    images.erase(oldKey);
+
+    for (auto& slot : slots)
+        if (slot && slot->key == oldKey) slot->key = newKey;
 }
 
 bool ExternalStorage::RemoveImage(const string& key) {

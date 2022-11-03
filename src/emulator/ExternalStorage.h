@@ -26,6 +26,8 @@ class ExternalStorage {
     CardImage* GetImageInSlot(EmHAL::Slot slot);
     string GetImageKeyInSlot(EmHAL::Slot slot);
 
+    void RekeyImage(string oldKey, string newKey);
+
     bool RemoveImage(const string& key);
     void Clear();
 
@@ -33,11 +35,11 @@ class ExternalStorage {
     struct MountedImage {
         MountedImage(const string key, CardImage& image);
 
-        const string key;
+        string key;
         CardImage& image;
     };
 
-    using image_map_t = unordered_map<string, CardImage>;
+    using image_map_t = unordered_map<string, shared_ptr<CardImage>>;
 
    private:
     image_map_t images;

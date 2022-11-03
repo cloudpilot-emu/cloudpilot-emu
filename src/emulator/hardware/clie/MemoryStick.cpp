@@ -244,6 +244,7 @@ uint32 MemoryStick::GetDataOutSize() { return bufferOutSize; }
 
 void MemoryStick::Mount(CardImage* cardImage) {
     EmAssert(determineLayout(cardImage->BlocksTotal(), pagesPerBlock, segments));
+    Reset();
 
     this->cardImage = cardImage;
 

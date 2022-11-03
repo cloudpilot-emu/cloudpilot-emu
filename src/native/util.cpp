@@ -5,6 +5,7 @@
 #include "EmSession.h"
 #include "ExternalStorage.h"
 #include "SessionImage.h"
+#include "md5.h"
 
 bool util::readFile(string file, unique_ptr<uint8[]>& buffer, size_t& len) {
     fstream stream(file, ios_base::in);
@@ -134,7 +135,9 @@ bool util::mountImage(const string& image) {
         return false;
     }
 
-    if (!gExternalStorage.AddImage(image, fileBuffer.get(), fileSize)) {
+    string key = md5(fileBuffer.get(), fileSize);
+
+    if (!gExternalStorage.AddImage(key, fileBuffer.get(), fileSize)) {
         cerr << "failed to register card " << image << endl;
 
         return false;
@@ -142,9 +145,9 @@ bool util::mountImage(const string& image) {
         fileBuffer.release();
     }
 
-    if (!gExternalStorage.Mount(image)) {
+    if (!gExternalStorage.Mount(key)) {
         cerr << "failed to mount card " << image << endl;
-        gExternalStorage.RemoveImage(image);
+        gExternalStorage.RemoveImage(key);
 
         return false;
     }

@@ -26,6 +26,7 @@
 #include "ExternalStorage.h"
 #include "SessionImage.h"
 #include "ZipfileWalker.h"
+#include "md5.h"
 #include "util.h"
 
 namespace {
@@ -163,6 +164,29 @@ namespace {
         }
     }
 
+    bool SaveCard(const string file) {
+        EmHAL::Slot slot = util::mountedSlot();
+        if (slot == EmHAL::Slot::none) return false;
+
+        auto image = gExternalStorage.GetImageInSlot(slot);
+
+        fstream stream(file, ios_base::out);
+
+        if (stream.fail()) {
+            cout << "failed to open " << file << endl << flush;
+            return false;
+        }
+
+        stream.write((const char*)image->RawData(), image->BlocksTotal() * CardImage::BLOCK_SIZE);
+
+        if (stream.fail()) {
+            cout << "I/O error writing " << file << endl << flush;
+            return false;
+        }
+
+        return true;
+    }
+
     bool CmdQuit(vector<string> args) { return true; }
 
     bool CmdInstallFile(vector<string> args) {
@@ -180,14 +204,32 @@ namespace {
     }
 
     bool CmdSaveImage(vector<string> args) {
-        if (args.size() != 1) {
-            cout << "usage: save-image <file>" << endl << flush;
+        if (args.size() < 1 || args.size() > 2) {
+            cout << "usage: save-image <image_file> [card_image_file]" << endl << flush;
+            return false;
+        }
+
+        EmHAL::Slot slot = util::mountedSlot();
+        if (args.size() == 2 && slot == EmHAL::Slot::none) {
+            cout << "no mounted card" << endl << flush;
             return false;
         }
 
         cout << "saving session image to '" << args[0] << "'" << endl << flush;
 
         SaveImage(args[0]);
+
+        if (args.size() == 2) {
+            if (!SaveCard(args[1])) return false;
+            cout << "successfully saved card image to " << args[1] << endl << flush;
+
+            const string oldKey = gExternalStorage.GetImageKeyInSlot(slot);
+            CardImage* cardImage = gExternalStorage.GetImageInSlot(slot);
+            const string newKey =
+                md5(cardImage->RawData(), CardImage::BLOCK_SIZE * cardImage->BlocksTotal());
+
+            gExternalStorage.RekeyImage(oldKey, newKey);
+        }
 
         return false;
     }
@@ -348,24 +390,7 @@ namespace {
             return false;
         }
 
-        const string& file = args[0];
-        auto image = gExternalStorage.GetImageInSlot(slot);
-
-        fstream stream(file, ios_base::out);
-
-        if (stream.fail()) {
-            cout << "failed to open " << file << endl << flush;
-            return false;
-        }
-
-        stream.write((const char*)image->RawData(), image->BlocksTotal() * CardImage::BLOCK_SIZE);
-
-        if (stream.fail()) {
-            cout << "I/O error writing " << file << endl << flush;
-            return false;
-        }
-
-        cout << "successfully saved " << file << endl << flush;
+        if (SaveCard(args[0])) cout << "successfully saved " << args[0] << endl << flush;
 
         return false;
     }
