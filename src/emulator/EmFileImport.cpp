@@ -915,8 +915,8 @@ UInt32 PrvGetEntrySize(const EmAliasDatabaseHdrType<LAS>& hdr) {
 void PrvSetResourceTypeIDParameters(UInt32 resType, UInt16 resID) {
     char buffer[20];
 
-    sprintf(buffer, "%c%c%c%c", (char)(resType >> 24), (char)(resType >> 16), (char)(resType >> 8),
-            (char)(resType >> 0));
+    snprintf(buffer, 20, "%c%c%c%c", (char)(resType >> 24), (char)(resType >> 16),
+             (char)(resType >> 8), (char)(resType >> 0));
 }
 
 /***********************************************************************
