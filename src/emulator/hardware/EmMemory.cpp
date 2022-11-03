@@ -545,8 +545,10 @@ bool Memory::LoadMemoryV2(void* memory, size_t size) {
 }
 
 bool Memory::LoadMemoryV4(void* memory, size_t size) {
-    if (size != regionMap.GetTotalSize()) return false;
+    if (size < 1024) return false;
+
     uint8* toc = static_cast<uint8*>(memory) + size - 1024;
+    uint32 offset = 0;
 
     for (const auto region : ORDERED_REGIONS) {
         const uint32 regionFromImage = get32(toc);
@@ -555,20 +557,49 @@ bool Memory::LoadMemoryV4(void* memory, size_t size) {
         const uint32 sizeFromImage = get32(toc);
         toc += 4;
 
-        if (regionFromImage != static_cast<uint8>(region) ||
-            sizeFromImage != regionMap.GetRegionSize(region))
-            return false;
+        if ((regionFromImage != static_cast<uint8>(region) ||
+             sizeFromImage != regionMap.GetRegionSize(region))) {
+            memset(dirtyPages.get() + (offset >> 13), 0xff, (GetTotalMemorySize() - offset) >> 13);
+            break;
+        }
+
+        offset += regionMap.GetRegionSize(region);
     }
 
-    if (get32(toc) != 0xffffffff) return false;
+    toc = static_cast<uint8*>(memory) + size - 1024;
+    offset = 0;
+    while (toc < static_cast<uint8*>(memory) + size) {
+        uint32 regionType = get32(toc);
+        toc += 4;
 
-    uint8* regionPtr = static_cast<uint8*>(memory);
-    for (const auto region : ORDERED_REGIONS) {
-        uint32 size = regionMap.GetRegionSize(region);
-        if (size == 0) continue;
+        uint32 regionSize = get32(toc);
+        toc += 4;
 
-        memcpy(memoryRegionPointers[static_cast<uint8>(region)], regionPtr, size);
-        regionPtr += size;
+        if (regionType == 0xffffffff) break;
+
+        offset += regionSize;
+        if (offset > size) {
+            cerr << "invalid memory image" << endl << flush;
+            return false;
+        }
+
+        if (static_cast<MemoryRegion>(regionType) == MemoryRegion::metadata) continue;
+
+        if (regionType >= N_MEMORY_REGIONS) {
+            cerr << "ignoring unknown memory region " << regionType << endl << flush;
+            continue;
+        }
+
+        uint32 expectedSize = regionMap.GetRegionSize(static_cast<MemoryRegion>(regionType));
+        if (regionSize != expectedSize) {
+            cerr << "region " << regionType << " has size " << regionSize << " , expected "
+                 << expectedSize << " -> ignoring" << endl
+                 << flush;
+            continue;
+        }
+
+        memcpy(memoryRegionPointers[static_cast<uint8>(regionType)],
+               static_cast<uint8*>(memory) + offset - regionSize, regionSize);
     }
 
     return true;
