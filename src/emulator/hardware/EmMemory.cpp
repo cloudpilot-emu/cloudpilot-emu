@@ -258,6 +258,10 @@ namespace {
     constexpr MemoryRegion ORDERED_REGIONS[N_MEMORY_REGIONS] = {
         MemoryRegion::ram, MemoryRegion::framebuffer, MemoryRegion::memorystick,
         MemoryRegion::sonyDsp, MemoryRegion::metadata};
+
+    uint32 get32(uint8* address) {
+        return address[0] | (address[1] << 8) | (address[2] << 16) | (address[3] << 24);
+    }
 }  // namespace
 
 // ===========================================================================
@@ -542,16 +546,21 @@ bool Memory::LoadMemoryV2(void* memory, size_t size) {
 
 bool Memory::LoadMemoryV4(void* memory, size_t size) {
     if (size != regionMap.GetTotalSize()) return false;
-    uint32* toc = reinterpret_cast<uint32*>(memory) + (size - 1024) / 4;
+    uint8* toc = static_cast<uint8*>(memory) + size - 1024;
 
     for (const auto region : ORDERED_REGIONS) {
-        if (toc[0] != static_cast<uint8>(region) || toc[1] != regionMap.GetRegionSize(region))
-            return false;
+        const uint32 regionFromImage = get32(toc);
+        toc += 4;
 
-        toc += 2;
+        const uint32 sizeFromImage = get32(toc);
+        toc += 4;
+
+        if (regionFromImage != static_cast<uint8>(region) ||
+            sizeFromImage != regionMap.GetRegionSize(region))
+            return false;
     }
 
-    if (*toc != 0xffffffff) return false;
+    if (get32(toc) != 0xffffffff) return false;
 
     uint8* regionPtr = static_cast<uint8*>(memory);
     for (const auto region : ORDERED_REGIONS) {
