@@ -136,6 +136,11 @@ namespace {
 
 EmRegsSonyDSP::EmRegsSonyDSP(emuptr baseAddress) : baseAddress(baseAddress) {}
 
+void EmRegsSonyDSP::Initialize() {
+    EmRegs::Initialize();
+    memoryStick.Initialize();
+}
+
 void EmRegsSonyDSP::Reset(Bool hardwareReset) {
     if (!hardwareReset) return;
 

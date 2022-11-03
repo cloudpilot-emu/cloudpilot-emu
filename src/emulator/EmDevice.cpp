@@ -96,6 +96,7 @@
 #include "EmRegsVZPegYellowStone.h"
 #include "EmStructs.h"
 #include "EmTRGCF.h"
+#include "MemoryStick.h"
 #include "Platform.h"  // _stricmp
 
 // clang-format false
@@ -1533,6 +1534,9 @@ void EmDevice::ConfigureMemoryRegions() {
                                            EmRegsMQLCDControlT2::FRAMEBUFFER_SIZE);
             break;
     }
+
+    if (IsClie())
+        memoryRegionMap.AllocateRegion(MemoryRegion::memorystick, MemoryStick::BLOCK_MAP_SIZE);
 }
 
 bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }

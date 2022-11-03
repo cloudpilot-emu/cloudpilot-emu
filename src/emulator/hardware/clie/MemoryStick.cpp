@@ -1,5 +1,6 @@
 #include "MemoryStick.h"
 
+#include "EmMemory.h"
 #include "MemoryStickStructs.h"
 
 namespace {
@@ -71,9 +72,14 @@ namespace {
     uint16 swap16(uint16 x) { return (x << 8) | (x >> 8); }
 }  // namespace
 
-MemoryStick::MemoryStick() { blockMap = new uint16[16 * 512]; }
+MemoryStick::MemoryStick() {}
 
-MemoryStick::~MemoryStick() { delete[] blockMap; }
+MemoryStick::~MemoryStick() {}
+
+void MemoryStick::Initialize() {
+    blockMap = reinterpret_cast<uint16*>(EmMemory::GetForRegion(MemoryRegion::memorystick));
+    blockMapDirtyPages = EmMemory::GetDirtyPagesForRegion(MemoryRegion::memorystick);
+}
 
 void MemoryStick::Reset() {
     memset(&reg, 0, sizeof(reg));
@@ -242,6 +248,7 @@ void MemoryStick::Mount(CardImage* cardImage) {
     this->cardImage = cardImage;
 
     memset(blockMap, 0xffff, sizeof(uint16) * 512 * 16);
+    memset(blockMapDirtyPages, 0xff, BLOCK_MAP_SIZE >> 13);
 
     uint16 logicalBlock = 0;
     for (uint8 segment = 0; segment < segments; segment++)
@@ -452,7 +459,7 @@ bool MemoryStick::EraseBlock() {
     const uint32 blockIndex = reg.blockLo | (reg.blockMid << 8) | (reg.blockHi << 16);
     if (blockIndex >= segments * 512) return false;
 
-    blockMap[blockIndex] = 0xffff;
+    BlockMapSet(blockIndex, 0xffff);
 
     return true;
 }
@@ -482,7 +489,7 @@ bool MemoryStick::ProgramPage(uint8* data) {
 
     cardImage->Write(data, logicalPage, 1);
 
-    if (reg.page == 0) blockMap[blockIndex] = logicalBlock;
+    if (reg.page == 0) BlockMapSet(blockIndex, logicalBlock);
 
     return true;
 }
@@ -493,6 +500,13 @@ void MemoryStick::SetFlags(uint8 flags) {
 }
 
 void MemoryStick::ClearFlags() { reg.intFlags = 0; }
+
+void MemoryStick::BlockMapSet(uint16 block, uint16 mappedBlock) {
+    blockMap[block] = mappedBlock;
+
+    // 12 and 9 instead of 13 and  10 because the block map is *uint16
+    blockMapDirtyPages[block >> 12] |= (1 << ((block >> 9) & 0x07));
+}
 
 MemoryStick::TpcType MemoryStick::GetTpcType(uint8 tpcId) {
     switch (tpcId) {

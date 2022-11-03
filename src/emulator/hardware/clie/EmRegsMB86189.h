@@ -12,6 +12,7 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
    public:
     EmRegsMB86189(emuptr baseAddress);
 
+    void Initialize() override;
     void Reset(Bool hardwareReset) override;
 
     uint8* GetRealAddress(emuptr address) override;

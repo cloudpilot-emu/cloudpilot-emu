@@ -11,6 +11,7 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
    public:
     EmRegsSonyDSP(emuptr baseAddress);
 
+    void Initialize() override;
     void Reset(Bool hardwareReset) override;
 
     uint8* GetRealAddress(emuptr address) override;

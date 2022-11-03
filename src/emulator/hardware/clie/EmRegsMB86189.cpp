@@ -32,6 +32,11 @@ EmRegsMB86189::EmRegsMB86189(emuptr baseAddress) : baseAddress(baseAddress) {
     memoryStick.irq.AddHandler([=]() { RaiseIrq(IRQ_SIF); });
 }
 
+void EmRegsMB86189::Initialize() {
+    EmRegs::Initialize();
+    memoryStick.Initialize();
+}
+
 void EmRegsMB86189::Reset(Bool hardwareReset) {
     reg.msics = 0x00;
 

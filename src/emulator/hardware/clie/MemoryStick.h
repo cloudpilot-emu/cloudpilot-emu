@@ -41,6 +41,7 @@ class MemoryStick {
 
     static constexpr uint32 BOOT_BLOCK = 0;
     static constexpr uint32 BOOT_BLOCK_BACKUP = 1;
+    static constexpr uint32 BLOCK_MAP_SIZE = 16 * 512 * 2;
 
    public:
     static TpcType GetTpcType(uint8 tpcId);
@@ -50,6 +51,7 @@ class MemoryStick {
 
     ~MemoryStick();
 
+    void Initialize();
     void Reset();
 
     void ExecuteTpc(uint8 tpcId, uint32 dataInCount = 0, uint8* dataIn = nullptr);
@@ -77,6 +79,8 @@ class MemoryStick {
 
     void SetFlags(uint8 flags);
     void ClearFlags();
+
+    void BlockMapSet(uint16 block, uint16 mappedBlock);
 
    public:
     EmEvent<> irq;
@@ -110,6 +114,7 @@ class MemoryStick {
     uint8 segments{0};
 
     uint16* blockMap;
+    uint8* blockMapDirtyPages;
 
     Operation currentOperation{Operation::none};
 
