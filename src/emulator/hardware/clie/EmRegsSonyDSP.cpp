@@ -139,12 +139,16 @@ EmRegsSonyDSP::EmRegsSonyDSP(emuptr baseAddress) : baseAddress(baseAddress) {}
 void EmRegsSonyDSP::Initialize() {
     EmRegs::Initialize();
     memoryStick.Initialize();
+
+    regs = EmMemory::GetForRegion(MemoryRegion::sonyDsp);
+    regsDirtyPages = EmMemory::GetDirtyPagesForRegion(MemoryRegion::sonyDsp);
 }
 
 void EmRegsSonyDSP::Reset(Bool hardwareReset) {
     if (!hardwareReset) return;
 
-    memset(regs, 0, sizeof(regs));
+    memset(regs, 0, ADDRESS_SPACE_SIZE);
+    memset(regsDirtyPages, 0xff, ADDRESS_SPACE_SIZE >> 13);
     memset(savedArguments, 0, sizeof(savedArguments));
 
     WRITE_REGISTER(REG_INT_STATUS, isMounted ? INT_MS_INSERT : INT_MS_EJECT);
@@ -162,10 +166,10 @@ uint8* EmRegsSonyDSP::GetRealAddress(emuptr address) {
 
 emuptr EmRegsSonyDSP::GetAddressStart(void) { return baseAddress; }
 
-uint32 EmRegsSonyDSP::GetAddressRange(void) { return sizeof(regs); }
+uint32 EmRegsSonyDSP::GetAddressRange(void) { return ADDRESS_SPACE_SIZE; }
 
 void EmRegsSonyDSP::SetSubBankHandlers(void) {
-    INSTALL_HANDLER(StdRead, StdWrite, 0, sizeof(regs));
+    INSTALL_HANDLER(StdRead, StdWrite, 0, ADDRESS_SPACE_SIZE);
 
     INSTALL_HANDLER(StdRead, IpcCmdWrite, REG_IPC_COMMAND, 2);
     INSTALL_HANDLER(StdRead, IpcStatusWrite, REG_IPC_STATUS, 2);
@@ -215,8 +219,20 @@ void EmRegsSonyDSP::StdWrite(emuptr address, int size, uint32 value) {
     DoStdWrite(address, size, value);
 }
 
+inline void EmRegsSonyDSP::MarkPageDirty(emuptr address) {
+    regsDirtyPages[address >> 13] |= (1 << ((address >> 10) & 0x07));
+}
+
+inline void EmRegsSonyDSP::MarkRangeDirty(emuptr base, uint32 size) {
+    const uint32 firstPage = base >> 10;
+    const uint32 lastPage = (base + size) >> 10;
+
+    for (uint32 page = firstPage; page <= lastPage; page++)
+        regsDirtyPages[page >> 3] |= (1 << (page & 0x07));
+}
+
 uint32 EmRegsSonyDSP::DoStdRead(emuptr address, int size) {
-    if ((address + size - baseAddress) > sizeof(regs)) {
+    if ((address + size - baseAddress) > ADDRESS_SPACE_SIZE) {
         gCPU68K->BusError(address, size, false);
 
         return 0;
@@ -232,7 +248,7 @@ uint32 EmRegsSonyDSP::DoStdRead(emuptr address, int size) {
 }
 
 void EmRegsSonyDSP::DoStdWrite(emuptr address, int size, uint32 value) {
-    if ((address + size - baseAddress) > sizeof(regs)) {
+    if ((address + size - baseAddress) > ADDRESS_SPACE_SIZE) {
         gCPU68K->BusError(address, size, false);
 
         return;
@@ -242,9 +258,11 @@ void EmRegsSonyDSP::DoStdWrite(emuptr address, int size, uint32 value) {
 
     if (size == 1) {
         *realAddr = value;
+        MarkPageDirty(address - baseAddress);
     } else if (size == 2) {
         *(realAddr++) = value >> 8;
         *(realAddr++) = value;
+        MarkPageDirty(address - baseAddress);
     }
 
     else {
@@ -252,6 +270,9 @@ void EmRegsSonyDSP::DoStdWrite(emuptr address, int size, uint32 value) {
         *(realAddr++) = value >> 16;
         *(realAddr++) = value >> 8;
         *(realAddr++) = value;
+
+        MarkPageDirty(address - baseAddress);
+        MarkPageDirty(address - baseAddress + 2);
     }
 }
 
@@ -451,6 +472,7 @@ void EmRegsSonyDSP::DoCmdReadBootBlock(uint16 cmd) {
 
     uint8* base = regs + SHM_SPACE_START + shmBase;
     memset(base, 0, SHM_GET_BOOT_BLOCK_BLOB_SIZE);
+    MarkRangeDirty(SHM_SPACE_SIZE + shmBase, SHM_GET_BOOT_BLOCK_BLOB_SIZE);
 
     MemoryStick::Registers& registers(memoryStick.GetRegisters());
 
@@ -502,6 +524,8 @@ void EmRegsSonyDSP::DoCmdReadOob(uint16 cmd) {
                         : registers.oob[3];
     }
 
+    MarkRangeDirty(SHM_SPACE_START + shmBase, 4 * blocksTotal);
+
     WRITE_REGISTER(REG_IPC_STATUS, cmd & IPC_STATUS_MASK);
 }
 
@@ -537,6 +561,8 @@ void EmRegsSonyDSP::DoCmdReadBlock(uint16 cmd) {
 
         base += 512;
     }
+
+    MarkRangeDirty(SHM_SPACE_START + shmBase, (lastPage - firstPage) * 512);
 
     WRITE_REGISTER(REG_IPC_STATUS, cmd & IPC_STATUS_MASK);
 }

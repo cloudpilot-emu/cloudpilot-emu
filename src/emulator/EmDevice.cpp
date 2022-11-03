@@ -1537,6 +1537,15 @@ void EmDevice::ConfigureMemoryRegions() {
 
     if (IsClie())
         memoryRegionMap.AllocateRegion(MemoryRegion::memorystick, MemoryStick::BLOCK_MAP_SIZE);
+
+    switch (fDeviceID) {
+        case kDevicePEGN700C:
+        case kDeviceYSX1230:
+        case kDeviceYSX1100:
+            memoryRegionMap.AllocateRegion(MemoryRegion::sonyDsp,
+                                           EmRegsSonyDSP::ADDRESS_SPACE_SIZE);
+            break;
+    }
 }
 
 bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }

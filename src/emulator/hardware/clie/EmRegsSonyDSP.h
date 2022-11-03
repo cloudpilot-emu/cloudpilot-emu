@@ -9,6 +9,9 @@
 
 class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
    public:
+    static constexpr uint32 ADDRESS_SPACE_SIZE = 0x00010000;
+
+   public:
     EmRegsSonyDSP(emuptr baseAddress);
 
     void Initialize() override;
@@ -33,6 +36,9 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
     void StdWrite(emuptr address, int size, uint32 value);
 
    private:
+    inline void MarkPageDirty(emuptr address);
+    inline void MarkRangeDirty(emuptr base, uint32 size);
+
     uint32 DoStdRead(emuptr address, int size);
     void DoStdWrite(emuptr address, int size, uint32 value);
 
@@ -55,7 +61,8 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
     void DoCmdReadBlockOob(uint16 cmd);
 
    private:
-    uint8 regs[0x00010000];
+    uint8* regs;
+    uint8* regsDirtyPages;
     uint16 savedArguments[6];
 
     emuptr baseAddress;
