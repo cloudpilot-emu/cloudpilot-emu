@@ -20,6 +20,8 @@ namespace util {
     void analyzeRom(EmROMReader& reader);
 
     bool mountImage(const string& image);
+    string registerImage(const string& image);
+    bool mountKey(const string& key);
 
     EmHAL::Slot mountedSlot();
 }  // namespace util

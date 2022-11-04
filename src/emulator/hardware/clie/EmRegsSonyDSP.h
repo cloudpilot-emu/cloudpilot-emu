@@ -17,14 +17,19 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
     void Initialize() override;
     void Reset(Bool hardwareReset) override;
 
+    void Save(Savestate&) override;
+    void Save(SavestateProbe&) override;
+    void Load(SavestateLoader&) override;
+
     uint8* GetRealAddress(emuptr address) override;
     emuptr GetAddressStart(void) override;
     uint32 GetAddressRange(void) override;
     void SetSubBankHandlers(void) override;
 
     bool SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) override;
-    void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
+    void Mount(EmHAL::Slot slot, CardImage& cardImage) override;
     void Unmount(EmHAL::Slot slot) override;
+    void Remount(EmHAL::Slot, CardImage& cardImage) override;
 
     bool GetIrqLine();
 
@@ -36,6 +41,12 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
     void StdWrite(emuptr address, int size, uint32 value);
 
    private:
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper, uint32 version);
+
     inline void MarkPageDirty(emuptr address);
     inline void MarkRangeDirty(emuptr base, uint32 size);
 

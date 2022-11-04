@@ -23,7 +23,11 @@ enum class ChunkType : uint32 {
     regsUsbClie = 0x150,
     regsUsbClieN700C = 0x160,
     regsSZ = 0x170,
-    regsMQ1168 = 0x180
+    regsMQ1168 = 0x180,
+    memoryStick = 0x190,
+    regsSonyDsp = 0x1a0,
+    regsMB86189 = 0x1b0,
+    externalStorage = 0x1c0
 };
 
 #endif  // _CHUNK_TYPE_H_

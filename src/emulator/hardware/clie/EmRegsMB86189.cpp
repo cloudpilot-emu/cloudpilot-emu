@@ -69,8 +69,8 @@ bool EmRegsMB86189::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardI
            MemoryStick::IsSizeRepresentable(cardImage.BlocksTotal());
 }
 
-void EmRegsMB86189::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
-    if (this->GetNextHandler()) this->GetNextHandler()->Mount(slot, key, cardImage);
+void EmRegsMB86189::Mount(EmHAL::Slot slot, CardImage& cardImage) {
+    if (this->GetNextHandler()) this->GetNextHandler()->Mount(slot, cardImage);
     if (slot != EmHAL::Slot::memorystick) return;
 
     memoryStick.Mount(&cardImage);
@@ -253,8 +253,12 @@ uint32 EmRegsMB86189::msdataRead(emuptr address, int size) {
         uint8* buffer = memoryStick.GetDataOut();
         uint32 bufferSize = memoryStick.GetDataOutSize();
 
-        if (readBufferIndex < bufferSize) value = buffer[readBufferIndex++] << 8;
-        if (readBufferIndex < bufferSize) value |= buffer[readBufferIndex++];
+        if (!buffer) {
+            readBufferIndex += 2;
+        } else {
+            if (readBufferIndex < bufferSize) value = buffer[readBufferIndex++] << 8;
+            if (readBufferIndex < bufferSize) value |= buffer[readBufferIndex++];
+        }
 
         if (readBufferIndex >= bufferSize) FinishTpc();
     }

@@ -3,8 +3,12 @@
 #include <iomanip>
 #include <sstream>
 
+#include "ChunkHelper.h"
 #include "EmCPU68K.h"
 #include "EmMemory.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 #include "UAE.h"
 
 // #define LOG_ACCESS
@@ -26,6 +30,8 @@
                baseAddress + offset, size)
 
 namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+
     constexpr emuptr REG_IPC_COMMAND = 0x0c04;
     constexpr emuptr REG_IPC_STATUS = 0x0c06;
 
@@ -157,6 +163,55 @@ void EmRegsSonyDSP::Reset(Bool hardwareReset) {
     memoryStick.Reset();
 }
 
+void EmRegsSonyDSP::Save(Savestate& savestate) {
+    DoSave(savestate);
+
+    memoryStick.Save(savestate);
+}
+
+void EmRegsSonyDSP::Save(SavestateProbe& savestateProbe) {
+    DoSave(savestateProbe);
+
+    memoryStick.Save(savestateProbe);
+}
+
+void EmRegsSonyDSP::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::regsSonyDsp);
+    if (!chunk) return;
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore RegsSonyDSP: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper, version);
+
+    memoryStick.Load(loader);
+}
+
+template <typename T>
+void EmRegsSonyDSP::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsSonyDsp);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper, SAVESTATE_VERSION);
+}
+
+template <typename T>
+void EmRegsSonyDSP::DoSaveLoad(T& helper, uint32 version) {
+    helper.Do(typename T::Pack16() << savedArguments[0] << savedArguments[1])
+        .Do(typename T::Pack16() << savedArguments[2] << savedArguments[3])
+        .Do(typename T::Pack16() << savedArguments[4] << savedArguments[5])
+        .DoBool(isMounted);
+}
+
 uint8* EmRegsSonyDSP::GetRealAddress(emuptr address) {
     // We don't support direct access from outside.
     EmAssert(false);
@@ -183,7 +238,7 @@ bool EmRegsSonyDSP::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardI
            MemoryStick::IsSizeRepresentable(cardImage.BlocksTotal());
 }
 
-void EmRegsSonyDSP::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+void EmRegsSonyDSP::Mount(EmHAL::Slot slot, CardImage& cardImage) {
     if (slot != EmHAL::Slot::memorystick) return;
     memoryStick.Mount(&cardImage);
 
@@ -194,12 +249,21 @@ void EmRegsSonyDSP::Mount(EmHAL::Slot slot, const string& key, CardImage& cardIm
 }
 
 void EmRegsSonyDSP::Unmount(EmHAL::Slot slot) {
+    if (this->GetNextHandler()) this->GetNextHandler()->Unmount(slot);
+    if (slot != EmHAL::Slot::memorystick) return;
+
     memoryStick.Unmount();
 
     isMounted = false;
 
     WRITE_REGISTER(REG_INT_STATUS, READ_REGISTER(REG_INT_STATUS) & ~INT_MS_INSERT);
     RaiseInt(INT_MS_EJECT);
+}
+
+void EmRegsSonyDSP::Remount(EmHAL::Slot slot, CardImage& cardImage) {
+    if (slot != EmHAL::Slot::memorystick) return;
+
+    memoryStick.Remount(&cardImage);
 }
 
 bool EmRegsSonyDSP::GetIrqLine() {

@@ -16,7 +16,7 @@ class EMPalmVZWithSD : public XZ {
     uint8 GetPortInternalValue(int port) override;
 
     bool SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) override;
-    void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
+    void Mount(EmHAL::Slot slot, CardImage& cardImage) override;
     void Unmount(EmHAL::Slot slot) override;
 
     void PortDataChanged(int port, uint8 oldValue, uint8 newValue) override;
@@ -65,7 +65,7 @@ bool EMPalmVZWithSD<XZ>::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& 
 }
 
 template <class XZ>
-void EMPalmVZWithSD<XZ>::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+void EMPalmVZWithSD<XZ>::Mount(EmHAL::Slot slot, CardImage& cardImage) {
     XZ::UpdateIRQ2(0x20);
 }
 

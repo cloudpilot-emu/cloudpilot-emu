@@ -11,7 +11,7 @@ class EmSonyXzWithSlot : public XZ {
    public:
     EmSonyXzWithSlot(EmRegsMB86189& mb86189);
 
-    void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
+    void Mount(EmHAL::Slot slot, CardImage& cardImage) override;
     void Unmount(EmHAL::Slot slot) override;
 
     uint8 GetPortInternalValue(int) override;
@@ -30,8 +30,8 @@ EmSonyXzWithSlot<XZ>::EmSonyXzWithSlot(EmRegsMB86189& mb86189) : mb86189(mb86189
 }
 
 template <class XZ>
-void EmSonyXzWithSlot<XZ>::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
-    if (this->GetNextHandler()) this->GetNextHandler()->Mount(slot, key, cardImage);
+void EmSonyXzWithSlot<XZ>::Mount(EmHAL::Slot slot, CardImage& cardImage) {
+    if (this->GetNextHandler()) this->GetNextHandler()->Mount(slot, cardImage);
     if (slot != EmHAL::Slot::memorystick) return;
 
     XZ::UpdatePortDInterrupts();

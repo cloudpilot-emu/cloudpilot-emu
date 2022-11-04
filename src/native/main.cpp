@@ -73,11 +73,14 @@ void run(const Options& options) {
     ProxyClient* proxyClient = nullptr;
     ProxyHandler* proxyHandler = nullptr;
 
+    string imageKey;
+    if (!options.mountImage.empty()) imageKey = util::registerImage(options.mountImage);
+
     if (!(options.deviceId ? util::initializeSession(options.image, *options.deviceId)
                            : util::initializeSession(options.image)))
         exit(1);
 
-    if (!options.mountImage.empty() && util::mountImage(options.mountImage))
+    if (!imageKey.empty() && util::mountKey(imageKey))
         cout << options.mountImage << " mounted successfully" << endl << flush;
 
     if (options.proxyConfiguration) {

@@ -1,9 +1,15 @@
 #include "MemoryStick.h"
 
+#include "ChunkHelper.h"
 #include "EmMemory.h"
 #include "MemoryStickStructs.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+
     constexpr uint8 STATUS_COMMAND_OK = 0x80;
     constexpr uint8 STATUS_ERR = 0x40;
     constexpr uint8 STATUS_READY_FOR_TRANSFER = 0x20;
@@ -75,6 +81,68 @@ namespace {
 MemoryStick::MemoryStick() {}
 
 MemoryStick::~MemoryStick() {}
+
+void MemoryStick::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::memoryStick);
+    if (!chunk) return;
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore MemoryStick: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+
+    if (encodedBufferOut == 0) {
+        bufferOut = nullptr;
+    } else if (encodedBufferOut < sizeof(reg)) {
+        bufferOut = reinterpret_cast<uint8*>(&reg) + encodedBufferOut;
+    } else {
+        bufferOut = preparedPage;
+    }
+}
+
+template <typename T>
+void MemoryStick::Save(T& savestate) {
+    if (bufferOut == preparedPage) {
+        encodedBufferOut = 0xff;
+    } else if (bufferOut >= reinterpret_cast<uint8*>(&reg) &&
+               bufferOut - reinterpret_cast<uint8*>(&reg) < static_cast<ssize_t>(sizeof(reg))) {
+        encodedBufferOut = bufferOut - reinterpret_cast<uint8*>(&reg);
+    } else {
+        encodedBufferOut = 0;
+    }
+
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::memoryStick);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template void MemoryStick::Save<Savestate>(Savestate&);
+template void MemoryStick::Save<SavestateProbe>(SavestateProbe&);
+
+template <typename T>
+void MemoryStick::DoSaveLoad(T& helper) {
+    uint8 currentOperationByte = static_cast<uint8>(currentOperation);
+
+    helper.DoBuffer(&reg, sizeof(Registers))
+        .Do(typename T::Pack8() << readWindowStart << readWindowSize << writeWindowStart
+                                << writeWindowSize)
+        .Do32(bufferOutSize)
+        .DoBuffer(preparedPage, sizeof(preparedPage))
+        .Do(typename T::Pack8() << pagesPerBlock << segments << currentOperationByte
+                                << encodedBufferOut);
+
+    currentOperation = static_cast<Operation>(currentOperationByte);
+}
 
 void MemoryStick::Initialize() {
     blockMap = reinterpret_cast<uint16*>(EmMemory::GetForRegion(MemoryRegion::memorystick));
@@ -261,6 +329,8 @@ void MemoryStick::Mount(CardImage* cardImage) {
          << flush;
 }
 
+void MemoryStick::Remount(CardImage* cardImage) { this->cardImage = cardImage; }
+
 void MemoryStick::Unmount() { this->cardImage = nullptr; }
 
 MemoryStick::Registers& MemoryStick::GetRegisters() { return reg; }
@@ -388,7 +458,7 @@ void MemoryStick::DoCmdRead() {
 }
 
 bool MemoryStick::PreparePage(uint8* destination, bool oobOnly) {
-    if (reg.page >= pagesPerBlock) return false;
+    if (!cardImage || reg.page >= pagesPerBlock) return false;
 
     const uint32 blockIndex = reg.blockLo | (reg.blockMid << 8) | (reg.blockHi << 16);
     if (blockIndex >= segments * 512) return false;
@@ -466,6 +536,8 @@ bool MemoryStick::EraseBlock() {
 }
 
 bool MemoryStick::ProgramPage(uint8* data) {
+    if (!cardImage) return false;
+
     const uint32 blockIndex = reg.blockLo | (reg.blockMid << 8) | (reg.blockHi << 16);
     if (blockIndex >= segments * 512) {
         cerr << "attempt to program invalid block 0x" << hex << blockIndex << dec << endl << flush;

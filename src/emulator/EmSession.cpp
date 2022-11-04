@@ -131,6 +131,8 @@ bool EmSession::SaveImage(SessionImage& image) {
     } else {
         image.SetSavestate(nullptr, 0);
         logging::printf("failed to save savestate");
+
+        return false;
     }
 
     return image.Serialize();
@@ -170,8 +172,12 @@ bool EmSession::LoadImage(SessionImage& image) {
     size_t savestateSize = image.GetSavestateSize();
     void* savestate = image.GetSavestate();
 
-    if (savestateSize > 0 && !Load(savestateSize, static_cast<uint8*>(savestate)))
+    if (savestateSize > 0 && !Load(savestateSize, static_cast<uint8*>(savestate))) {
         logging::printf("failed to restore savestate");
+        return false;
+    }
+
+    gExternalStorage.Remount();
 
     return true;
 }
@@ -196,6 +202,7 @@ void EmSession::Save(T& savestate) {
     EmPatchMgr::Save(savestate);
     gSystemState.Save(savestate);
     Memory::Save(savestate);
+    gExternalStorage.Save(savestate);
 }
 
 template void EmSession::Save(Savestate& savestate);
@@ -238,6 +245,7 @@ void EmSession::Load(SavestateLoader& loader) {
     cpu->Load(loader);
     EmPatchMgr::Load(loader);
     Memory::Load(loader);
+    gExternalStorage.Load(loader);
 
     SetCurrentDate();
     dateCheckedAt = systemCycles;

@@ -21,7 +21,7 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     void SetSubBankHandlers(void) override;
 
     bool SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) override;
-    void Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) override;
+    void Mount(EmHAL::Slot slot, CardImage& cardImage) override;
     void Unmount(EmHAL::Slot slot) override;
 
     bool GetIrq();

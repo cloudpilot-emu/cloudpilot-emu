@@ -515,13 +515,17 @@ bool EmHAL::SupportsImageInSlot(Slot slot, const CardImage& cardImage) {
     return EmHAL::GetRootHandler()->SupportsImageInSlot(slot, cardImage);
 }
 
-void EmHAL::Mount(Slot slot, const string& key, CardImage& cardImage) {
+void EmHAL::Mount(Slot slot, CardImage& cardImage) {
     EmAssert(EmHAL::GetRootHandler());
-    EmHAL::GetRootHandler()->Mount(slot, key, cardImage);
+    EmHAL::GetRootHandler()->Mount(slot, cardImage);
 }
 
 void EmHAL::Unmount(Slot slot) {
     if (EmHAL::GetRootHandler()) return EmHAL::GetRootHandler()->Unmount(slot);
+}
+
+void EmHAL::Remount(Slot slot, CardImage& cardImage) {
+    if (EmHAL::GetRootHandler()) return EmHAL::GetRootHandler()->Remount(slot, cardImage);
 }
 
 #pragma mark -
@@ -831,13 +835,18 @@ bool EmHALHandler::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardIm
     return this->GetNextHandler()->SupportsImageInSlot(slot, cardImage);
 }
 
-void EmHALHandler::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+void EmHALHandler::Mount(EmHAL::Slot slot, CardImage& cardImage) {
     if (!this->GetNextHandler()) return;
 
-    this->GetNextHandler()->Mount(slot, key, cardImage);
+    this->GetNextHandler()->Mount(slot, cardImage);
 }
 
 void EmHALHandler::Unmount(EmHAL::Slot slot) {
     if (!this->GetNextHandler()) return;
     this->GetNextHandler()->Unmount(slot);
+}
+
+void EmHALHandler::Remount(EmHAL::Slot slot, CardImage& cardImage) {
+    if (!this->GetNextHandler()) return;
+    this->GetNextHandler()->Remount(slot, cardImage);
 }

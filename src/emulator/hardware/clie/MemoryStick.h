@@ -5,6 +5,10 @@
 #include "EmCommon.h"
 #include "EmEvent.h"
 
+class Savestate;
+class SavestateProbe;
+class SavestateLoader;
+
 class MemoryStick {
    public:
     enum class TpcType { read, write };
@@ -48,8 +52,11 @@ class MemoryStick {
     static bool IsSizeRepresentable(size_t pagesTotal);
 
     MemoryStick();
-
     ~MemoryStick();
+
+    template <typename T>
+    void Save(T& savestate);
+    void Load(SavestateLoader&);
 
     void Initialize();
     void Reset();
@@ -61,6 +68,7 @@ class MemoryStick {
     uint32 GetDataOutSize();
 
     void Mount(CardImage* cardImage);
+    void Remount(CardImage* cardImage);
     void Unmount();
 
     bool PreparePage(uint8* destination, bool oobOnly);
@@ -72,6 +80,12 @@ class MemoryStick {
     uint8 PagesPerBlock() const;
 
    private:
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
+
     void DoCmd(uint8 commandByte);
     void DoCmdRead();
 
@@ -105,6 +119,7 @@ class MemoryStick {
     uint8 writeWindowSize{0};
 
     uint8* bufferOut{nullptr};
+    uint8 encodedBufferOut;
     uint32 bufferOutSize{0};
 
     uint8 preparedPage[512];

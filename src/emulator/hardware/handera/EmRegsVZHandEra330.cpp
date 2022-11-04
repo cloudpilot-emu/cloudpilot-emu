@@ -243,7 +243,7 @@ bool EmRegsVZHandEra330::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& 
            EmSPISlaveSD::IsSizeRepresentable(cardImage.BlocksTotal());
 }
 
-void EmRegsVZHandEra330::Mount(EmHAL::Slot slot, const string& key, CardImage& cardImage) {
+void EmRegsVZHandEra330::Mount(EmHAL::Slot slot, CardImage& cardImage) {
     PortMgr.pendingIRQ2 = true;
 }
 

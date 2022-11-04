@@ -125,14 +125,16 @@ bool util::initializeSession(string file, optional<string> deviceId) {
     return true;
 }
 
-bool util::mountImage(const string& image) {
+bool util::mountImage(const string& image) { return mountKey(registerImage(image)); }
+
+string util::registerImage(const string& image) {
     unique_ptr<uint8[]> fileBuffer;
     size_t fileSize;
 
     if (!util::readFile(image, fileBuffer, fileSize)) {
         cerr << "unable to open card " << image << endl;
 
-        return false;
+        return "";
     }
 
     string key = md5(fileBuffer.get(), fileSize);
@@ -140,13 +142,18 @@ bool util::mountImage(const string& image) {
     if (!gExternalStorage.AddImage(key, fileBuffer.get(), fileSize)) {
         cerr << "failed to register card " << image << endl;
 
-        return false;
-    } else {
-        fileBuffer.release();
+        return "";
     }
 
-    if (!gExternalStorage.Mount(key)) {
-        cerr << "failed to mount card " << image << endl;
+    fileBuffer.release();
+    return key;
+}
+
+bool util::mountKey(const string& key) {
+    if (key.empty()) return false;
+
+    if (!gExternalStorage.IsMounted(key) && !gExternalStorage.Mount(key)) {
+        cerr << "failed to mount card" << endl << flush;
         gExternalStorage.RemoveImage(key);
 
         return false;

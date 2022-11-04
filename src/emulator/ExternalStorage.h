@@ -8,9 +8,20 @@
 #include "EmCommon.h"
 #include "EmHAL.h"
 
+class Savestate;
+class SavestateProbe;
+class SavestateLoader;
+
 class ExternalStorage {
    public:
+    static constexpr size_t MAX_KEY_LENGTH = 32;
+
+   public:
     ExternalStorage() = default;
+
+    template <typename T>
+    void Save(T& savestate);
+    void Load(SavestateLoader&);
 
     bool HasImage(const string& key) const;
     CardImage* GetImage(const string& key);
@@ -20,7 +31,9 @@ class ExternalStorage {
     bool Mount(const string& key);
     bool Unmount(EmHAL::Slot);
     bool Unmount(const string& key);
+    void Remount();
     bool IsMounted(EmHAL::Slot slot) const;
+    bool IsMounted(const string& key) const;
 
     EmHAL::Slot GetSlot(const string& key) const;
     CardImage* GetImageInSlot(EmHAL::Slot slot);
@@ -42,8 +55,14 @@ class ExternalStorage {
     using image_map_t = unordered_map<string, shared_ptr<CardImage>>;
 
    private:
+    template <typename T>
+    void DoSaveLoad(T& helper);
+
+   private:
     image_map_t images;
-    unique_ptr<MountedImage> slots[3];
+    unique_ptr<MountedImage> slots[static_cast<int>(EmHAL::MAX_SLOT) + 1];
+
+    string mountedKeysFromSavestate[static_cast<int>(EmHAL::MAX_SLOT) + 1];
 
    private:
     ExternalStorage(const ExternalStorage&) = delete;
