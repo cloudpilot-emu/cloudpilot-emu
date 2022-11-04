@@ -32,6 +32,7 @@ class ExternalStorage {
     bool Unmount(EmHAL::Slot);
     bool Unmount(const string& key);
     void Remount();
+    bool RemountFailed() const;
     bool IsMounted(EmHAL::Slot slot) const;
     bool IsMounted(const string& key) const;
 
@@ -63,6 +64,7 @@ class ExternalStorage {
     unique_ptr<MountedImage> slots[static_cast<int>(EmHAL::MAX_SLOT) + 1];
 
     string mountedKeysFromSavestate[static_cast<int>(EmHAL::MAX_SLOT) + 1];
+    bool remountFailed{false};
 
    private:
     ExternalStorage(const ExternalStorage&) = delete;

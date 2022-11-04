@@ -63,6 +63,8 @@ bool ExternalStorage::Unmount(const string& key) {
 }
 
 void ExternalStorage::Remount() {
+    remountFailed = false;
+
     for (uint8 slot = 0; slot <= static_cast<uint8>(EmHAL::MAX_SLOT); slot++) {
         const string& key(mountedKeysFromSavestate[slot]);
 
@@ -70,6 +72,7 @@ void ExternalStorage::Remount() {
 
         if (!HasImage(key)) {
             EmHAL::Unmount(static_cast<EmHAL::Slot>(slot));
+            remountFailed = true;
             continue;
         }
 
@@ -77,6 +80,8 @@ void ExternalStorage::Remount() {
         EmHAL::Remount(static_cast<EmHAL::Slot>(slot), *images.at(key));
     }
 }
+
+bool ExternalStorage::RemountFailed() const { return remountFailed; }
 
 bool ExternalStorage::IsMounted(EmHAL::Slot slot) const {
     return slot != EmHAL::Slot::none && slots[static_cast<uint8>(slot)].operator bool();

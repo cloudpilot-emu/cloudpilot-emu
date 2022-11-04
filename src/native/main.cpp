@@ -14,6 +14,7 @@
 #include "EmDevice.h"
 #include "EmROMReader.h"
 #include "EmSession.h"
+#include "ExternalStorage.h"
 #include "Feature.h"
 #include "MainLoop.h"
 #include "ProxyClient.h"
@@ -79,6 +80,13 @@ void run(const Options& options) {
     if (!(options.deviceId ? util::initializeSession(options.image, *options.deviceId)
                            : util::initializeSession(options.image)))
         exit(1);
+
+    if (!imageKey.empty() && gExternalStorage.RemountFailed()) {
+        cout << "remount failed" << endl << flush;
+
+        gExternalStorage.RemoveImage(imageKey);
+        imageKey.clear();
+    }
 
     if (!imageKey.empty() && util::mountKey(imageKey))
         cout << options.mountImage << " mounted successfully" << endl << flush;
