@@ -12,13 +12,13 @@
 
 namespace {
     TEST(FifoTest, isEmptyOnCreation) {
-        Fifo fifo(3);
+        Fifo<uint8> fifo(3);
 
         ASSERT_EQ(fifo.Size(), 0u);
     }
 
     TEST(FifoTest, popRetrievesTheLastEntry) {
-        Fifo fifo(3);
+        Fifo<uint8> fifo(3);
 
         fifo.Push(1u);
 
@@ -28,7 +28,7 @@ namespace {
     }
 
     TEST(FifoTest, consecutivePushesAndPopsWork) {
-        Fifo fifo(3);
+        Fifo<uint8> fifo(3);
 
         fifo.Push(1u);
         ASSERT_EQ(fifo.Pop(), 1u);
@@ -46,7 +46,7 @@ namespace {
     }
 
     TEST(FifoTest, theOldestElementIsDiscardedOnOverflow) {
-        Fifo fifo(3);
+        Fifo<uint8> fifo(3);
 
         fifo.Push(1u);
         fifo.Push(2u);
@@ -60,14 +60,14 @@ namespace {
     }
 
     TEST(FifoTest, popReturnsZeroWhenEmpty) {
-        Fifo fifo(3);
+        Fifo<uint8> fifo(3);
 
         ASSERT_EQ(fifo.Pop(), 0u);
     }
 
     class MockRoot {
        public:
-        Fifo fifo{3};
+        Fifo<uint8> fifo{3};
 
         template <typename T>
         void Save(T& savestate) {
