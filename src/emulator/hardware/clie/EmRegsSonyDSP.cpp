@@ -188,7 +188,7 @@ void EmRegsSonyDSP::Load(SavestateLoader& loader) {
     }
 
     LoadChunkHelper helper(*chunk);
-    DoSaveLoad(helper, version);
+    DoSaveLoad(helper);
 
     memoryStick.Load(loader);
 }
@@ -201,11 +201,11 @@ void EmRegsSonyDSP::DoSave(T& savestate) {
     chunk->Put32(SAVESTATE_VERSION);
 
     SaveChunkHelper helper(*chunk);
-    DoSaveLoad(helper, SAVESTATE_VERSION);
+    DoSaveLoad(helper);
 }
 
 template <typename T>
-void EmRegsSonyDSP::DoSaveLoad(T& helper, uint32 version) {
+void EmRegsSonyDSP::DoSaveLoad(T& helper) {
     helper.Do(typename T::Pack16() << savedArguments[0] << savedArguments[1])
         .Do(typename T::Pack16() << savedArguments[2] << savedArguments[3])
         .Do(typename T::Pack16() << savedArguments[4] << savedArguments[5])

@@ -45,7 +45,7 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
     void DoSave(T& savestate);
 
     template <typename T>
-    void DoSaveLoad(T& helper, uint32 version);
+    void DoSaveLoad(T& helper);
 
     inline void MarkPageDirty(emuptr address);
     inline void MarkRangeDirty(emuptr base, uint32 size);
