@@ -1,5 +1,10 @@
 #include "EmRegsMB86189.h"
 
+#include "ChunkHelper.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
+
 //#define TRACE_ACCESS
 
 #define INSTALL_HANDLER(read, write, offset, size)                                       \
@@ -7,6 +12,8 @@
                baseAddress + offset, size)
 
 namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+
     constexpr uint32 REGISTER_FILE_SIZE = 0x14;
 
     constexpr uint32 OFFSET_MSCMD = 0x00;
@@ -42,6 +49,63 @@ void EmRegsMB86189::Reset(Bool hardwareReset) {
 
     ResetHostController();
     memoryStick.Reset();
+}
+
+void EmRegsMB86189::Save(Savestate& savestate) {
+    DoSave(savestate);
+
+    memoryStick.Save(savestate);
+}
+
+void EmRegsMB86189::Save(SavestateProbe& savestateProbe) {
+    DoSave(savestateProbe);
+
+    memoryStick.Save(savestateProbe);
+}
+
+void EmRegsMB86189::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::regsMB86189);
+    if (!chunk) return;
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore RegsMB86189: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+
+    memoryStick.Load(loader);
+}
+
+template <typename T>
+void EmRegsMB86189::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsMB86189);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmRegsMB86189::DoSaveLoad(T& helper) {
+    uint8 stateByte = static_cast<uint8>(state);
+
+    helper.Do(typename T::Pack16() << reg.mscmd << reg.mscs)
+        .Do(typename T::Pack16() << reg.msics << reg.msppcd)
+        .Do(typename T::Pack8() << irqStat << stateByte)
+        .Do32(writeBufferSize)
+        .Do32(readBufferIndex)
+        .DoBuffer(writeBuffer, sizeof(writeBuffer));
+
+    fifo.DoSaveLoad(helper);
+
+    state = static_cast<State>(stateByte);
 }
 
 uint8* EmRegsMB86189::GetRealAddress(emuptr address) {
@@ -81,6 +145,12 @@ void EmRegsMB86189::Unmount(EmHAL::Slot slot) {
     if (slot != EmHAL::Slot::memorystick) return;
 
     memoryStick.Unmount();
+}
+
+void EmRegsMB86189::Remount(EmHAL::Slot slot, CardImage& cardImage) {
+    if (slot != EmHAL::Slot::memorystick) return;
+
+    memoryStick.Remount(&cardImage);
 }
 
 bool EmRegsMB86189::GetIrq() { return (reg.mscs & MSCS_INT) != 0; }

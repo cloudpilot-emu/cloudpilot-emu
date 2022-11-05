@@ -15,6 +15,10 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     void Initialize() override;
     void Reset(Bool hardwareReset) override;
 
+    void Save(Savestate&) override;
+    void Save(SavestateProbe&) override;
+    void Load(SavestateLoader&) override;
+
     uint8* GetRealAddress(emuptr address) override;
     emuptr GetAddressStart(void) override;
     uint32 GetAddressRange(void) override;
@@ -23,6 +27,7 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     bool SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) override;
     void Mount(EmHAL::Slot slot, CardImage& cardImage) override;
     void Unmount(EmHAL::Slot slot) override;
+    void Remount(EmHAL::Slot slot, CardImage& cardImage) override;
 
     bool GetIrq();
 
@@ -37,6 +42,12 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     enum class State : uint8 { idle = 0, tpcWrite = 1, tpcRead = 2 };
 
    private:
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
+
     void ResetHostController();
 
     void RaiseIrq(uint8 bits);
