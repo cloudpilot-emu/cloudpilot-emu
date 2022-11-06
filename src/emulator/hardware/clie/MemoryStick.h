@@ -81,9 +81,6 @@ class MemoryStick {
 
    private:
     template <typename T>
-    void DoSave(T& savestate);
-
-    template <typename T>
     void DoSaveLoad(T& helper);
 
     void DoCmd(uint8 commandByte);

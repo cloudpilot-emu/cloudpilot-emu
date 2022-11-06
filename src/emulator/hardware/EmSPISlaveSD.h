@@ -12,6 +12,10 @@ class EmSPISlaveSD : public EmSPISlave {
 
     void Reset();
 
+    void Save(Savestate&) override;
+    void Save(SavestateProbe&) override;
+    void Load(SavestateLoader&) override;
+
     uint16 DoExchange(uint16 control, uint16 data) override;
     void Enable(void) override;
     void Disable(void) override;
@@ -36,6 +40,12 @@ class EmSPISlaveSD : public EmSPISlave {
     };
 
    private:
+    template <typename T>
+    void DoSave(T& savestate);
+
+    template <typename T>
+    void DoSaveLoad(T& helper);
+
     uint8 DoExchange8(uint8 data);
     void BufferStart(uint32 size);
 

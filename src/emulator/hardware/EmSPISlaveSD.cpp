@@ -1,11 +1,17 @@
 #include "EmSPISlaveSD.h"
 
+#include "ChunkHelper.h"
 #include "EmCRC.h"
 #include "ExternalStorage.h"
+#include "Savestate.h"
+#include "SavestateLoader.h"
+#include "SavestateProbe.h"
 
 // #define DUMP_COMMAND_STREAM
 
 namespace {
+    constexpr uint32 SAVESTATE_VERSION = 1;
+
     constexpr uint8 ERR_ILLEGAL_COMMAND = 0x04;
     constexpr uint8 ERR_CARD_IDLE = 0x01;
     constexpr uint8 ERR_PARAMETER = 0x40;
@@ -40,6 +46,26 @@ void EmSPISlaveSD::Reset() {
     cmd12Countdown = 0;
 }
 
+void EmSPISlaveSD::Save(Savestate& savestate) { DoSave(savestate); }
+
+void EmSPISlaveSD::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+
+void EmSPISlaveSD::Load(SavestateLoader& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::spiSlaveSD);
+    if (!chunk) return;
+
+    const uint32 version = chunk->Get32();
+    if (version > SAVESTATE_VERSION) {
+        logging::printf("unable to restore SPISlaveSD: unsupported savestate version\n");
+        loader.NotifyError();
+
+        return;
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
 uint16 EmSPISlaveSD::DoExchange(uint16 control, uint16 data) {
     uint8 bits = (control & 0x0f) + 1;
 
@@ -71,6 +97,33 @@ void EmSPISlaveSD::Enable(void) {
 }
 
 void EmSPISlaveSD::Disable(void) { spiState = SpiState::notSelected; }
+
+template <typename T>
+void EmSPISlaveSD::DoSave(T& savestate) {
+    typename T::chunkT* chunk = savestate.GetChunk(ChunkType::spiSlaveSD);
+    if (!chunk) return;
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void EmSPISlaveSD::DoSaveLoad(T& helper) {
+    uint8 spiStateByte = static_cast<uint8>(spiState);
+    uint8 cardStateByte = static_cast<uint8>(cardState);
+
+    helper.Do(typename T::Pack8() << spiStateByte << cardStateByte << lastCmd << cmd12Countdown)
+        .Do32(bufferSize)
+        .Do32(bufferIndex)
+        .Do32(currentBlock)
+        .DoBool(acmd)
+        .DoBuffer(buffer, sizeof(buffer));
+
+    spiState = static_cast<SpiState>(spiStateByte);
+    cardState = static_cast<CardState>(cardStateByte);
+}
 
 uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
     if (!gExternalStorage.IsMounted(EmHAL::Slot::sdcard)) return 0x00;

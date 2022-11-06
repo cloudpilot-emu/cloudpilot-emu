@@ -51,19 +51,13 @@ void EmRegsMB86189::Reset(Bool hardwareReset) {
     memoryStick.Reset();
 }
 
-void EmRegsMB86189::Save(Savestate& savestate) {
-    DoSave(savestate);
+void EmRegsMB86189::Save(Savestate& savestate) { DoSave(savestate); }
 
-    memoryStick.Save(savestate);
-}
-
-void EmRegsMB86189::Save(SavestateProbe& savestateProbe) {
-    DoSave(savestateProbe);
-
-    memoryStick.Save(savestateProbe);
-}
+void EmRegsMB86189::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
 
 void EmRegsMB86189::Load(SavestateLoader& loader) {
+    memoryStick.Load(loader);
+
     Chunk* chunk = loader.GetChunk(ChunkType::regsMB86189);
     if (!chunk) return;
 
@@ -77,12 +71,12 @@ void EmRegsMB86189::Load(SavestateLoader& loader) {
 
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper);
-
-    memoryStick.Load(loader);
 }
 
 template <typename T>
 void EmRegsMB86189::DoSave(T& savestate) {
+    memoryStick.Save(savestate);
+
     typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsMB86189);
     if (!chunk) return;
 

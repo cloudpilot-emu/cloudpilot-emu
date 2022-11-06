@@ -30,7 +30,7 @@ class EMPalmVZWithSD : public XZ {
     void Spi1DeassertSlaveSelect() override;
 
    protected:
-    unique_ptr<EmSPISlaveSD> spiSlaveSD = make_unique<EmSPISlaveSD>();
+    EmSPISlaveSD spiSlaveSD;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ template <class XZ>
 void EMPalmVZWithSD<XZ>::Reset(bool hardwareReset) {
     XZ::Reset(hardwareReset);
 
-    spiSlaveSD->Reset();
+    spiSlaveSD.Reset();
 }
 
 template <class XZ>
@@ -85,14 +85,14 @@ void EMPalmVZWithSD<XZ>::PortDataChanged(int port, uint8 oldValue, uint8 newValu
     if (((oldValue ^ newValue) & 0x08) == 0) return;
 
     if (newValue & 0x08)
-        spiSlaveSD->Disable();
+        spiSlaveSD.Disable();
     else
-        spiSlaveSD->Enable();
+        spiSlaveSD.Enable();
 }
 
 template <class XZ>
 EmSPISlave* EMPalmVZWithSD<XZ>::GetSPI1Slave() {
-    return spiSlaveSD.get();
+    return &spiSlaveSD;
 }
 
 template <class XZ>
@@ -100,7 +100,7 @@ void EMPalmVZWithSD<XZ>::Spi1AssertSlaveSelect() {
     uint8 portJSelect = _get_reg(&XZ::f68VZ328Regs.portJSelect);
     if (portJSelect & 0x08) return;
 
-    spiSlaveSD->Enable();
+    spiSlaveSD.Enable();
 }
 
 template <class XZ>
@@ -108,7 +108,7 @@ void EMPalmVZWithSD<XZ>::Spi1DeassertSlaveSelect() {
     uint8 portJSelect = _get_reg(&XZ::f68VZ328Regs.portJSelect);
     if (portJSelect & 0x08) return;
 
-    spiSlaveSD->Disable();
+    spiSlaveSD.Disable();
 }
 
 #endif  // _EM_PALM_VZ_WITH_SD_

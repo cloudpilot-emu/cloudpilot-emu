@@ -80,7 +80,7 @@ static const int kBaseAddressShift = 13;  // Shift to get base address from CSGB
 #endif
 
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 4;
+    constexpr uint32 SAVESTATE_VERSION = 5;
 
     double TimerTicksPerSecond(uint16 tmrControl, uint16 tmrPrescaler, int32 systemClockFrequency) {
         uint8 clksource = (tmrControl >> 1) & 0x7;
@@ -605,6 +605,7 @@ void EmRegsVZ::Save(SavestateProbe& savestate) { DoSave(savestate); }
 
 void EmRegsVZ::Load(SavestateLoader& loader) {
     if (fSPISlaveADC) fSPISlaveADC->Load(loader);
+    if (GetSPI1Slave()) GetSPI1Slave()->Load(loader);
 
     Chunk* chunk = loader.GetChunk(ChunkType::regsVZ);
     if (!chunk) {
@@ -646,6 +647,7 @@ void EmRegsVZ::Load(SavestateLoader& loader) {
 template <typename T>
 void EmRegsVZ::DoSave(T& savestate) {
     if (fSPISlaveADC) fSPISlaveADC->Save(savestate);
+    if (GetSPI1Slave()) GetSPI1Slave()->Save(savestate);
 
     typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsVZ);
     if (!chunk) return;
@@ -684,6 +686,13 @@ void EmRegsVZ::DoSaveLoad(T& helper, uint32 version) {
     helper.Do32(lastRtcAlarmCheck);
 
     if (version > 1) helper.DoBool(pwmActive);
+
+    if (version > 4) {
+        // Version 5 adds SPI1 transfers (for SD card support)
+        helper.Do32(spi1Countdown).Do16(spi1TxWordPending).DoBool(spi1TransferInProgress);
+        spi1RxFifo.DoSaveLoad(helper);
+        spi1TxFifo.DoSaveLoad(helper);
+    }
 }
 
 // ---------------------------------------------------------------------------

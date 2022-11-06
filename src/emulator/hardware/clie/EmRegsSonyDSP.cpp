@@ -163,19 +163,13 @@ void EmRegsSonyDSP::Reset(Bool hardwareReset) {
     memoryStick.Reset();
 }
 
-void EmRegsSonyDSP::Save(Savestate& savestate) {
-    DoSave(savestate);
+void EmRegsSonyDSP::Save(Savestate& savestate) { DoSave(savestate); }
 
-    memoryStick.Save(savestate);
-}
-
-void EmRegsSonyDSP::Save(SavestateProbe& savestateProbe) {
-    DoSave(savestateProbe);
-
-    memoryStick.Save(savestateProbe);
-}
+void EmRegsSonyDSP::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
 
 void EmRegsSonyDSP::Load(SavestateLoader& loader) {
+    memoryStick.Load(loader);
+
     Chunk* chunk = loader.GetChunk(ChunkType::regsSonyDsp);
     if (!chunk) return;
 
@@ -189,12 +183,12 @@ void EmRegsSonyDSP::Load(SavestateLoader& loader) {
 
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper);
-
-    memoryStick.Load(loader);
 }
 
 template <typename T>
 void EmRegsSonyDSP::DoSave(T& savestate) {
+    memoryStick.Save(savestate);
+
     typename T::chunkT* chunk = savestate.GetChunk(ChunkType::regsSonyDsp);
     if (!chunk) return;
 

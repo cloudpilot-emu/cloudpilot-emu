@@ -27,7 +27,8 @@ enum class ChunkType : uint32 {
     memoryStick = 0x190,
     regsSonyDsp = 0x1a0,
     regsMB86189 = 0x1b0,
-    externalStorage = 0x1c0
+    externalStorage = 0x1c0,
+    spiSlaveSD = 0x1d0
 };
 
 #endif  // _CHUNK_TYPE_H_
