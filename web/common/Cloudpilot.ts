@@ -67,9 +67,8 @@ export interface SessionImage<T> {
     metadata?: T;
     deviceId: DeviceId;
     rom: Uint8Array;
-    memory: Uint8Array;
+    memory?: Uint8Array;
     savestate?: Uint8Array;
-    framebufferSize: number;
     version: number;
 }
 
@@ -351,7 +350,32 @@ export class Cloudpilot {
         const ptr = this.module.getPointer(this.cloudpilot.GetDirtyPagesPtr());
         const memorySize = this.cloudpilot.GetMemorySize();
 
-        return this.module.HEAPU8.subarray(ptr, ptr + (memorySize >>> 13));
+        const size = (memorySize >>> 13) + (memorySize % 8192 === 0 ? 0 : 1);
+
+        return this.module.HEAPU8.subarray(ptr, ptr + size);
+    }
+
+    @guard()
+    loadMemory(memory: Uint32Array): boolean {
+        const memory32 = this.getMemory32();
+
+        const imagesMatch = (): boolean => {
+            if (memory.length !== memory32.length || memory.length < 256) return false;
+
+            for (let i = 0; i < 256; i++) if (memory[memory.length - i] !== memory32[memory32.length - i]) return false;
+            return true;
+        };
+
+        if (imagesMatch()) {
+            memory32.set(memory);
+            return true;
+        } else {
+            const ptr = this.copyIn32(memory);
+            const result = this.cloudpilot.ImportMemoryImage(ptr, memory.length << 2);
+            this.cloudpilot.Free(ptr);
+
+            return result;
+        }
     }
 
     @guard()
@@ -552,7 +576,7 @@ export class Cloudpilot {
         const nullptr = this.cloudpilot.Nullptr();
 
         const romImage = this.copyIn(sessionImage.rom);
-        const memoryImage = this.copyIn(sessionImage.memory);
+        const memoryImage = sessionImage.memory ? this.copyIn(sessionImage.memory) : nullptr;
         const savestate = sessionImage.savestate !== undefined ? this.copyIn(sessionImage.savestate) : nullptr;
 
         let metadata = nullptr;
@@ -565,9 +589,8 @@ export class Cloudpilot {
         }
 
         nativeImage.SetRomImage(romImage, sessionImage.rom.length);
-        nativeImage.SetMemoryImage(memoryImage, sessionImage.memory.length);
+        nativeImage.SetMemoryImage(memoryImage, sessionImage.memory?.length || 0);
         nativeImage.SetDeviceId(sessionImage.deviceId);
-        nativeImage.SetFramebufferSize(sessionImage.framebufferSize);
         nativeImage.SetSavestate(savestate, sessionImage.savestate?.length || 0);
         nativeImage.SetMetadata(metadata, metadataLenght);
 
@@ -616,7 +639,6 @@ export class Cloudpilot {
                 memory,
                 savestate,
                 metadata,
-                framebufferSize: nativeImage.GetFramebufferSize(),
                 version: nativeImage.GetVersion(),
             };
         })();
@@ -648,6 +670,15 @@ export class Cloudpilot {
         const bufferPtr = this.module.getPointer(buffer);
 
         this.module.HEAP8.subarray(bufferPtr, bufferPtr + data.length).set(data);
+
+        return buffer;
+    }
+
+    private copyIn32(data: Uint32Array): VoidPtr {
+        const buffer = this.cloudpilot.Malloc(data.length << 2);
+        const bufferPtr = this.module.getPointer(buffer);
+
+        this.module.HEAP32.subarray(bufferPtr >>> 2, (bufferPtr >>> 2) + data.length).set(data);
 
         return buffer;
     }

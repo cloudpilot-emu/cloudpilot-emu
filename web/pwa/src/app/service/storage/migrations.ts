@@ -1,8 +1,12 @@
-export const OBJECT_STORE_SESSION = 'session';
-export const OBJECT_STORE_ROM = 'rom';
-export const OBJECT_STORE_MEMORY = 'memory';
-export const OBJECT_STORE_STATE = 'state';
-export const OBJECT_STORE_KVS = 'kvs';
+import { MemoryMetadata } from './../../model/MemoryMetadata';
+const OBJECT_STORE_SESSION = 'session';
+const OBJECT_STORE_ROM = 'rom';
+const OBJECT_STORE_MEMORY = 'memory';
+const OBJECT_STORE_STATE = 'state';
+const OBJECT_STORE_KVS = 'kvs';
+const OBJECT_STORE_MEMORY_META = 'memory-meta';
+const OBJECT_STORE_STORAGE = 'storage';
+const OBJECT_STORE_STORAGE_META = 'storage-meta';
 
 export function migrate0to1(db: IDBDatabase): void {
     const sessionStore = db.createObjectStore(OBJECT_STORE_SESSION, { keyPath: 'id', autoIncrement: true });
@@ -95,4 +99,52 @@ export async function migrate4to5(db: IDBDatabase, tx: IDBTransaction | null): P
         kvsStore.put(credentials, 'credentials');
         kvsStore.delete('proxyCredentials');
     }
+}
+
+export async function migrate5to6(db: IDBDatabase, tx: IDBTransaction | null): Promise<void> {
+    interface Session {
+        id: number;
+        totalMemory?: number;
+    }
+
+    interface MemoryMetadata {
+        sessionId: number;
+        totalSize: number;
+    }
+
+    if (!tx) throw new Error('no version change transaction!');
+
+    const memoryMetaStore = db.createObjectStore(OBJECT_STORE_MEMORY_META, { keyPath: 'sessionId' });
+    db.createObjectStore(OBJECT_STORE_STORAGE);
+    db.createObjectStore(OBJECT_STORE_STORAGE_META, { keyPath: 'id', autoIncrement: true });
+
+    const sessionStore = tx.objectStore(OBJECT_STORE_SESSION);
+    const cursorRequest = sessionStore.openCursor();
+
+    return new Promise((resolve, reject) => {
+        cursorRequest.onsuccess = () => {
+            const cursor = cursorRequest.result;
+            if (!cursor) {
+                resolve();
+                return;
+            }
+
+            const session: Session = cursor.value;
+            if (session.totalMemory !== undefined) {
+                const metadata: MemoryMetadata = {
+                    sessionId: session.id,
+                    totalSize: session.totalMemory,
+                };
+
+                memoryMetaStore.put(metadata);
+
+                delete session.totalMemory;
+                cursor.update(session);
+            }
+
+            cursor.continue();
+        };
+
+        cursorRequest.onerror = (e) => reject(e);
+    });
 }

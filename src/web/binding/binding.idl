@@ -43,6 +43,7 @@ interface Cloudpilot {
     VoidPtr GetMemoryPtr();
     VoidPtr GetDirtyPagesPtr();
     long GetMemorySize();
+    boolean ImportMemoryImage(VoidPtr buffer, long len);
 
     VoidPtr GetRomPtr();
     long GetRomSize();
@@ -188,9 +189,6 @@ interface SessionImage {
     VoidPtr GetSavestate();
     long GetSavestateSize();
     [Ref] SessionImage SetSavestate(VoidPtr savestate, long size);
-
-    long GetFramebufferSize();
-    [Ref] SessionImage SetFramebufferSize(long framebufferSize);
 
     long GetVersion();
 

@@ -1,11 +1,12 @@
 import { E_LOCK_LOST, StorageService } from './storage.service';
 import { Injectable, NgZone } from '@angular/core';
-import { OBJECT_STORE_MEMORY, OBJECT_STORE_STATE } from './storage/constants';
+import { OBJECT_STORE_MEMORY, OBJECT_STORE_MEMORY_META, OBJECT_STORE_STATE } from './storage/constants';
 
 import { Cloudpilot } from '@common/Cloudpilot';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
+import { MemoryMetadata } from './../model/MemoryMetadata';
 import { Session } from '@pwa/model/Session';
 import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
 import { compressPage } from './storage/util';
@@ -39,16 +40,10 @@ export class SnapshotService {
     async initialize(session: Session, cloudpilot: Cloudpilot): Promise<void> {
         if (this.errorService.hasFatalError()) return;
 
-        const pageCount = session.totalMemory / 1024;
-
         this.sessionId = session.id;
-        this.dirtyPages = new Uint8Array(pageCount >>> 3);
-        this.pages = new Array<Uint32Array>(pageCount);
+        this.dirtyPages = undefined;
+        this.pages = undefined;
         this.state = undefined;
-
-        for (let i = 0; i < pageCount; i++) {
-            this.pages[i] = new Uint32Array(256);
-        }
 
         this.db = await this.storageService.getDb();
         this.cloudpilot = cloudpilot;
@@ -109,9 +104,13 @@ export class SnapshotService {
     }
 
     private async triggerSnapshotOnce(): Promise<void> {
-        const tx = this.db.transaction([OBJECT_STORE_MEMORY, OBJECT_STORE_STATE], 'readwrite', {
-            durability: 'relaxed',
-        });
+        const tx = this.db.transaction(
+            [OBJECT_STORE_MEMORY, OBJECT_STORE_MEMORY_META, OBJECT_STORE_STATE],
+            'readwrite',
+            {
+                durability: 'relaxed',
+            }
+        );
 
         await this.storageService.acquireLock(tx.objectStore(OBJECT_STORE_STATE), -1);
 
@@ -139,7 +138,7 @@ export class SnapshotService {
 
             tx.oncomplete = () => {
                 clearTimeout(timeout);
-                this.dirtyPages.fill(0);
+                this.dirtyPages?.fill(0);
 
                 resolve({
                     timestamp: Date.now(),
@@ -179,10 +178,28 @@ export class SnapshotService {
     private saveDirtyMemory(tx: IDBTransaction): number {
         let iPage = 0;
         const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
+        const objectStoreMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
 
         const dirtyPages = this.cloudpilot.getDirtyPages();
         const memory = this.cloudpilot.getMemory32();
         let pagesSaved = 0;
+
+        if (!this.dirtyPages || !this.pages) {
+            const pageCount = memory.length >>> 8;
+
+            this.dirtyPages = new Uint8Array(dirtyPages.length);
+            this.pages = new Array<Uint32Array>(pageCount);
+
+            for (let i = 0; i < pageCount; i++) {
+                this.pages[i] = new Uint32Array(256);
+            }
+        }
+
+        const metadata: MemoryMetadata = {
+            sessionId: this.sessionId,
+            totalSize: memory.length << 2,
+        };
+        objectStoreMeta.put(metadata);
 
         for (let i = 0; i < dirtyPages.length; i++) {
             this.dirtyPages[i] |= dirtyPages[i];
@@ -194,6 +211,8 @@ export class SnapshotService {
             }
 
             for (let j = 0; j < 8; j++) {
+                if (iPage >= this.pages.length) break;
+
                 if (this.dirtyPages[i] & (1 << j)) {
                     const compressedPage = compressPage(memory.subarray(iPage * 256, (iPage + 1) * 256));
 
@@ -239,8 +258,8 @@ export class SnapshotService {
     private snapshotInProgress = false;
     private pendingSnapshotPromise = Promise.resolve<void>(undefined);
 
-    private dirtyPages!: Uint8Array;
-    private pages!: Array<Uint32Array>;
+    private dirtyPages: Uint8Array | undefined;
+    private pages: Array<Uint32Array> | undefined;
     private cloudpilot!: Cloudpilot;
     private state: Uint8Array | undefined;
 

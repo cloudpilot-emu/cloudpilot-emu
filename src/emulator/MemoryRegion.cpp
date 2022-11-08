@@ -1,6 +1,9 @@
 #include "MemoryRegion.h"
 
-MemoryRegionMap::MemoryRegionMap() { regionMap.fill(0); }
+MemoryRegionMap::MemoryRegionMap() {
+    regionMap.fill(0);
+    AllocateRegion(MemoryRegion::metadata, 1024);
+}
 
 void MemoryRegionMap::AllocateRegion(MemoryRegion region, uint32 size) {
     EmAssert(static_cast<uint8>(region) < regionMap.size());

@@ -176,6 +176,18 @@ void* Cloudpilot::GetDirtyPagesPtr() { return gSession->GetDirtyPagesPtr(); }
 
 int Cloudpilot::GetMemorySize() { return gSession->GetMemorySize(); }
 
+bool Cloudpilot::ImportMemoryImage(void* buffer, size_t len) {
+    EmDevice& device(gSession->GetDevice());
+
+    if (len == (device.MinRAMSize() + device.FramebufferSize()) * 1024)
+        return EmMemory::LoadMemoryV2(buffer, len);
+
+    if (static_cast<ssize_t>(len) == device.MinRAMSize() * 1024)
+        return EmMemory::LoadMemoryV1(buffer, len);
+
+    return EmMemory::LoadMemoryV4(buffer, len);
+}
+
 void* Cloudpilot::GetRomPtr() {
     auto [romSize, romPtr] = gSession->GetRomImage();
     return romPtr;

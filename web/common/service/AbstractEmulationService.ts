@@ -144,15 +144,16 @@ export abstract class AbstractEmulationService {
         if (!cloudpilot.initializeSession(rom, device)) return false;
 
         if (memory) {
-            const emulatedMemory = cloudpilot.getMemory32();
-
-            if (emulatedMemory.length * 4 === memory.length) {
-                emulatedMemory.set(new Uint32Array(memory.buffer, memory.byteOffset, emulatedMemory.length));
-                memoryLoaded = true;
+            if (memory.length % 4 !== 0) {
+                console.warn(`memory size is not a multiple of 4; ignoring image`);
             } else {
-                console.warn(
-                    `memory size mismatch; ${emulatedMemory.length * 4} vs. ${memory.length} - ignoring image`
+                memoryLoaded = cloudpilot.loadMemory(
+                    new Uint32Array(memory.buffer, memory.byteOffset, memory.length >>> 2)
                 );
+
+                if (!memoryLoaded) {
+                    console.warn('failed to load memory');
+                }
             }
         }
 

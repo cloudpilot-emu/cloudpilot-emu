@@ -28,18 +28,6 @@
 extern "C" {
 #endif
 
-/*
-extern uint32 gTotalMemorySize;
-extern uint32 gRAMSize;
-extern uint32 gFramebufferMemorySize;
-
-
-extern uint8* gMemory;
-extern uint8* gDirtyPages;
-
-extern uint8* gFramebufferMemory;
-extern uint8* gFramebufferDirtyPages;
-*/
 // ---------------------------------------------------------------------------
 //		� EmAddressBank
 // ---------------------------------------------------------------------------

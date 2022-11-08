@@ -53,6 +53,7 @@ class Cloudpilot {
     void* GetMemoryPtr();
     void* GetDirtyPagesPtr();
     int GetMemorySize();
+    bool ImportMemoryImage(void* buffer, size_t len);
 
     void* GetRomPtr();
     int GetRomSize();

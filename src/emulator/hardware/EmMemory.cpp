@@ -278,7 +278,6 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device
     bool success = true;
 
     regionMap = device.GetMemoryRegionMap();
-    regionMap.AllocateRegion(MemoryRegion::metadata, 1024);
 
     const uint32 dirtyPagesSize =
         regionMap.GetTotalSize() / 8192 + (regionMap.GetTotalSize() % 8192 == 0 ? 0 : 1);
@@ -290,6 +289,8 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device
     uint8* dirtyPagePtr = dirtyPages.get();
     uint32* toc = reinterpret_cast<uint32*>(regionPtr + regionMap.GetTotalSize() -
                                             regionMap.GetRegionSize(MemoryRegion::metadata));
+
+    memset(memory.get(), 0, regionMap.GetTotalSize());
 
     for (const auto region : ORDERED_REGIONS) {
         uint32 size = regionMap.GetRegionSize(region);
@@ -307,7 +308,6 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device
 
     *toc = 0xffffffff;
 
-    memset(memory.get(), 0, regionMap.GetTotalSize() - 1024);
     memset(dirtyPages.get(), 0, dirtyPagesSize);
     dirtyPages[dirtyPagesSize - 1] = 0x01;
 
@@ -315,17 +315,6 @@ bool Memory::Initialize(const uint8* romBuffer, size_t romSize, EmDevice& device
 
     memset(gEmMemBanks, 0, sizeof(gEmMemBanks));
 
-    /*
-    gTotalMemorySize = device.TotalMemorySize() * 1024;
-    gFramebufferMemorySize = device.FramebufferSize() * 1024;
-    gRAMSize = gTotalMemorySize - gFramebufferMemorySize;
-
-    gMemory = static_cast<uint8*>(calloc(gTotalMemorySize, 1));
-    gDirtyPages = static_cast<uint8*>(calloc(gTotalMemorySize / 1024 / 8, 1));
-
-    gFramebufferMemory = gMemory + gRAMSize;
-    gFramebufferDirtyPages = gDirtyPages + gRAMSize / 1024 / 8;
-    */
     // Initialize the valid memory banks.
 
     EmBankDummy::Initialize();

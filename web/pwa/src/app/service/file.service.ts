@@ -63,7 +63,6 @@ export class FileService {
                 rom,
                 memory,
                 savestate,
-                framebufferSize: session.totalMemory - session.ram * 1024 * 1024,
             };
 
             const image = (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);
@@ -103,7 +102,6 @@ export class FileService {
                 rom,
                 memory,
                 savestate,
-                framebufferSize,
             };
 
             const image = (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);

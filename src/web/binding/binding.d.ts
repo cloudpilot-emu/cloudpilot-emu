@@ -91,6 +91,7 @@ export interface Cloudpilot {
     GetMemoryPtr(): VoidPtr;
     GetDirtyPagesPtr(): VoidPtr;
     GetMemorySize(): number;
+    ImportMemoryImage(buffer: VoidPtr, len: number): boolean;
 
     GetRomPtr(): VoidPtr;
     GetRomSize(): number;
@@ -219,9 +220,6 @@ export interface SessionImage {
     GetSavestate(): VoidPtr;
     GetSavestateSize(): number;
     SetSavestate(savestate: VoidPtr, size: number): SessionImage;
-
-    GetFramebufferSize(): number;
-    SetFramebufferSize(framebufferSize: number): SessionImage;
 
     GetVersion(): number;
 

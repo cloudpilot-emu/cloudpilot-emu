@@ -33,17 +33,6 @@ export class SessionService {
         name: string,
         presets: Partial<Session> = {}
     ): Promise<Session> {
-        const framebufferSizeForDevice = (await this.cloudpilotService.cloudpilot).framebufferSizeForDevice(
-            image.deviceId
-        );
-        if (framebufferSizeForDevice < 0) {
-            throw new Error(`invalid device ID ${image.deviceId}`);
-        }
-
-        const ram =
-            (image.version >= 2 ? image.memory.length - framebufferSizeForDevice : image.memory.length) / 1024 / 1024;
-        const totalMemory = image.version >= 2 ? image.memory.length : image.memory.length + framebufferSizeForDevice;
-
         const session: Session = {
             hotsyncName: image.metadata?.hotsyncName,
             dontManageHotsyncName: false,
@@ -53,8 +42,7 @@ export class SessionService {
             id: -1,
             name,
             device: image.deviceId,
-            ram,
-            totalMemory,
+            ram: (await this.cloudpilotService.cloudpilot).minRamForDevice(image.deviceId) / 1024 / 1024,
             rom: '',
             osVersion: image?.metadata?.osVersion,
         };
@@ -86,7 +74,6 @@ export class SessionService {
             name,
             device,
             ram: (await this.cloudpilotService.cloudpilot).minRamForDevice(device) / 1024 / 1024,
-            totalMemory: (await this.cloudpilotService.cloudpilot).totalMemorySizeForDevice(device),
             rom: '',
         };
 

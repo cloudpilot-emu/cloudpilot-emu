@@ -2,17 +2,19 @@ import {
     DB_VERSION,
     OBJECT_STORE_KVS,
     OBJECT_STORE_MEMORY,
+    OBJECT_STORE_MEMORY_META,
     OBJECT_STORE_ROM,
     OBJECT_STORE_SESSION,
     OBJECT_STORE_STATE,
 } from './storage/constants';
 import { Injectable, NgZone } from '@angular/core';
 import { complete, compressPage } from './storage/util';
-import { migrate0to1, migrate1to2, migrate2to4, migrate4to5 } from './storage/migrations';
+import { migrate0to1, migrate1to2, migrate2to4, migrate4to5, migrate5to6 } from './storage/migrations';
 
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { Kvs } from '@pwa/model/Kvs';
+import { MemoryMetadata } from './../model/MemoryMetadata';
 import { PageLockService } from './page-lock.service';
 import { Session } from '@pwa/model/Session';
 import { StorageError } from './storage/StorageError';
@@ -53,7 +55,7 @@ function guard(): any {
 export class StorageService {
     constructor(private pageLockService: PageLockService, private ngZone: NgZone, private errorService: ErrorService) {
         this.requestPersistentStorage();
-        this.db = this.setupDb();
+        this.db = ngZone.runOutsideAngular(() => this.setupDb());
     }
 
     getDb(): Promise<IDBDatabase> {
@@ -68,7 +70,8 @@ export class StorageService {
             OBJECT_STORE_SESSION,
             OBJECT_STORE_ROM,
             OBJECT_STORE_STATE,
-            OBJECT_STORE_MEMORY
+            OBJECT_STORE_MEMORY,
+            OBJECT_STORE_MEMORY_META
         );
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
@@ -118,7 +121,8 @@ export class StorageService {
             OBJECT_STORE_SESSION,
             OBJECT_STORE_ROM,
             OBJECT_STORE_STATE,
-            OBJECT_STORE_MEMORY
+            OBJECT_STORE_MEMORY,
+            OBJECT_STORE_MEMORY_META
         );
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
@@ -161,15 +165,22 @@ export class StorageService {
     }
 
     @guard()
-    async loadSession(session: Session): Promise<[Uint8Array | undefined, Uint8Array, Uint8Array | undefined]> {
-        const tx = await this.newTransaction(OBJECT_STORE_ROM, OBJECT_STORE_STATE, OBJECT_STORE_MEMORY);
+    async loadSession(
+        session: Session
+    ): Promise<[Uint8Array | undefined, Uint8Array | undefined, Uint8Array | undefined]> {
+        const tx = await this.newTransaction(
+            OBJECT_STORE_ROM,
+            OBJECT_STORE_STATE,
+            OBJECT_STORE_MEMORY,
+            OBJECT_STORE_MEMORY_META
+        );
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
 
         await this.acquireLock(objectStoreRom, -1);
 
         return [
             await complete<Uint8Array>(objectStoreRom.get(session.rom)),
-            await this.loadMemory(tx, session.id, session.totalMemory),
+            await this.loadMemory(tx, session.id),
             await this.loadState(tx, session.id),
         ];
     }
@@ -278,42 +289,56 @@ export class StorageService {
 
     private saveMemory = (tx: IDBTransaction, sessionId: number, memory8: Uint8Array): void =>
         this.ngZone.runOutsideAngular(() => {
-            const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
+            const objectStoreMemory = tx.objectStore(OBJECT_STORE_MEMORY);
+            const objectStoreMemoryMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
+
             const page32 = new Uint32Array(256);
             const page8 = new Uint8Array(page32.buffer);
 
-            objectStore.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
+            objectStoreMemory.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
+
+            const metadata: MemoryMetadata = {
+                sessionId,
+                totalSize: memory8.length,
+            };
+            objectStoreMemoryMeta.put(metadata);
 
             const pageCount = memory8.length >>> 10;
-
             for (let i = 0; i < pageCount; i++) {
                 page8.set(memory8.subarray(i * 1024, (i + 1) * 1024));
                 const compressedPage = compressPage(page32);
 
                 if (typeof compressedPage === 'number') {
-                    objectStore.put(compressedPage, [sessionId, i]);
+                    objectStoreMemory.put(compressedPage, [sessionId, i]);
                 } else {
                     const page = new Uint32Array(256);
                     page.set(compressedPage);
 
-                    objectStore.put(page, [sessionId, i]);
+                    objectStoreMemory.put(page, [sessionId, i]);
                 }
             }
         });
 
     private deleteMemory(tx: IDBTransaction, sessionId: number): void {
-        const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
+        const objectStoreMemory = tx.objectStore(OBJECT_STORE_MEMORY);
+        const objectStoreMemoryMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
 
-        objectStore.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
+        objectStoreMemory.delete(IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true));
+        objectStoreMemoryMeta.delete(sessionId);
     }
 
-    private loadMemory = (tx: IDBTransaction, sessionId: number, size: number): Promise<Uint8Array> =>
-        this.ngZone.runOutsideAngular(() => {
-            return new Promise((resolve, reject) => {
-                const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
-                const memory = new Uint32Array(size >>> 2);
+    private loadMemory = (tx: IDBTransaction, sessionId: number): Promise<Uint8Array | undefined> =>
+        this.ngZone.runOutsideAngular(async () => {
+            const objectStoreMemoryMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
+            const metadata: MemoryMetadata = await complete(objectStoreMemoryMeta.get(sessionId));
+            if (!metadata) return;
 
-                const request = objectStore.openCursor(
+            return new Promise(async (resolve, reject) => {
+                const objectStoreMemory = tx.objectStore(OBJECT_STORE_MEMORY);
+
+                const memory = new Uint32Array(metadata.totalSize >>> 2);
+
+                const request = objectStoreMemory.openCursor(
                     IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true)
                 );
 
@@ -391,6 +416,10 @@ export class StorageService {
 
                     if (e.oldVersion < 5) {
                         await migrate4to5(request.result, request.transaction);
+                    }
+
+                    if (e.oldVersion < 6) {
+                        await migrate5to6(request.result, request.transaction);
                     }
                 };
             });
