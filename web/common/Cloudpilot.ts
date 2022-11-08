@@ -362,11 +362,16 @@ export class Cloudpilot {
         const imagesMatch = (): boolean => {
             if (memory.length !== memory32.length || memory.length < 256) return false;
 
-            for (let i = 0; i < 256; i++) if (memory[memory.length - i] !== memory32[memory32.length - i]) return false;
+            for (let i = 256; i > 0; i--) {
+                if (memory[memory.length - i] !== memory32[memory32.length - i]) return false;
+                if (memory32[memory32.length - i] === 0xffffffff) break;
+            }
+
             return true;
         };
 
         if (imagesMatch()) {
+            console.log('load');
             memory32.set(memory);
             return true;
         } else {
