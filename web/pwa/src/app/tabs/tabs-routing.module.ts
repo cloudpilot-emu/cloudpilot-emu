@@ -5,6 +5,7 @@ import { EmulationPage } from '@pwa/page/emulation/emulation.page';
 import { NgModule } from '@angular/core';
 import { SessionsPage } from '@pwa/page/sessions/sessions.page';
 import { SettingsPage } from '@pwa/page/settings/settings.page';
+import { StoragePage } from './../page/storage/storage.page';
 import { TabsPage } from './tabs.page';
 
 const routes: Routes = [
@@ -19,6 +20,10 @@ const routes: Routes = [
             {
                 path: 'sessions',
                 component: SessionsPage,
+            },
+            {
+                path: 'storage',
+                component: StoragePage,
             },
             {
                 path: 'settings',

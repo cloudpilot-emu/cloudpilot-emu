@@ -371,7 +371,6 @@ export class Cloudpilot {
         };
 
         if (imagesMatch()) {
-            console.log('load');
             memory32.set(memory);
             return true;
         } else {

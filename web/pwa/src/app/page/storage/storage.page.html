@@ -1,0 +1,27 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Storage</ion-title>
+
+    <ion-buttons slot="primary">
+      <ion-button (click)="importCardImage()">
+        <ion-icon name="add-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+
+    <ion-buttons slot="secondary">
+      <ion-button (click)="showHelp()">
+        <ion-icon name="help-outline"></ion-icon>
+      </ion-button>
+
+      <app-pwa-prompt></app-pwa-prompt>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Storage</ion-title>
+    </ion-toolbar>
+  </ion-header>
+</ion-content>
