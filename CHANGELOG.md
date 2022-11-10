@@ -1,3 +1,7 @@
+# Version 1.7.3
+
+-   UI fixes for iPhones with rounded corners.
+
 # Version 1.7.2
 
 -   Support database backups on PalmOS 1 and 2.
