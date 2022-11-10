@@ -31,7 +31,7 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
+<ion-content [class.locked]="navigation.isLocked()">
 
   <div class="container running-session"
     [style.display]="(emulationState.getCurrentSession() && !emulationState.getCurrentSession()?.wasResetForcefully) ? undefined : 'none'"

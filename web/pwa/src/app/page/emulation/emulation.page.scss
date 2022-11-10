@@ -29,6 +29,10 @@ ion-title {
         width: 100%;
         max-width: 20em;
     }
+
+    ion-content.locked & {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
 }
 
 .container.running-session {
