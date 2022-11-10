@@ -1,6 +1,10 @@
+# Version 1.7.5
+
+-   Fix a UI regression.
+
 # Version 1.7.4
 
--   More safe area workarounds for iPhone X an later.
+-   More safe area workarounds for iPhone X and later.
 
 
 # Version 1.7.3
