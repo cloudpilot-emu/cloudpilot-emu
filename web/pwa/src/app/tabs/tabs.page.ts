@@ -2,6 +2,7 @@ import { Component, ElementRef, ViewChild } from '@angular/core';
 
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { Router } from '@angular/router';
+import { SessionService } from './../service/session.service';
 
 @Component({
     selector: 'app-tabs',
@@ -9,7 +10,11 @@ import { Router } from '@angular/router';
     styleUrls: ['tabs.page.scss'],
 })
 export class TabsPage {
-    constructor(private router: Router, private canvasDisplayService: CanvasDisplayService) {
+    constructor(
+        private router: Router,
+        private canvasDisplayService: CanvasDisplayService,
+        private sessionService: SessionService
+    ) {
         window.addEventListener('resize', this.updateUseSmallUI);
         window.addEventListener('orientationchange', this.updateUseSmallUI);
         canvasDisplayService.onResize.addHandler(() => this.updateUseSmallUI());
@@ -17,7 +22,9 @@ export class TabsPage {
         this.updateUseSmallUI();
     }
     get smallUI(): boolean {
-        return this.router.url === '/tab/emulation' && this.useSmallUI;
+        return (
+            this.router.url === '/tab/emulation' && this.useSmallUI && this.sessionService.getSessions().length !== 0
+        );
     }
 
     lock(): void {
