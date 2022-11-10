@@ -1,3 +1,8 @@
+# Version 1.7.4
+
+-   More safe area workarounds for iPhone X an later.
+
+
 # Version 1.7.3
 
 -   UI fixes for iPhones with rounded corners.
