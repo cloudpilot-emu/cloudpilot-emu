@@ -31,7 +31,7 @@ ion-title {
     }
 
     ion-content.locked & {
-        padding-bottom: env(safe-area-inset-bottom);
+        padding-bottom: var(--ion-safe-area-bottom, 0);
     }
 }
 
