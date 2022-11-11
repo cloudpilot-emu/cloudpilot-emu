@@ -1,5 +1,4 @@
 export enum StorageCardStatus {
-    unformatted = 'unformatted',
     dirty = 'dirty',
     clean = 'clean',
 }

@@ -25,7 +25,6 @@ export class StorageCardComponent {
             backdropDismiss: true,
             showBackdrop: false,
             componentProps: {
-                cannotCheck: this.cannotCheck,
                 isAttached: this.isAttached,
                 onEdit: () => {
                     popover.dismiss();
@@ -67,9 +66,6 @@ export class StorageCardComponent {
         }
 
         switch (this.card.status) {
-            case StorageCardStatus.unformatted:
-                return 'not formatted';
-
             case StorageCardStatus.dirty:
                 return 'not checked';
 
@@ -79,10 +75,6 @@ export class StorageCardComponent {
             default:
                 throw new Error('unreachable');
         }
-    }
-
-    get cannotCheck(): boolean {
-        return this.card === undefined || this.isAttached || this.card.status === StorageCardStatus.unformatted;
     }
 
     get isAttached(): boolean {

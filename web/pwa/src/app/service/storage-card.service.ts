@@ -57,7 +57,7 @@ export class StorageCardService {
             storageId: uuid().replace(/-/g, ''),
             name,
             size: calculateNewCardSizeBytes(size),
-            status: StorageCardStatus.unformatted,
+            status: StorageCardStatus.dirty,
         };
 
         this.cards.push(card);
@@ -74,8 +74,6 @@ export class StorageCardService {
     }
 
     mountedInSession(cardId: number): Session | undefined {
-        if (cardId === 0) return this.sessionService.getSessions()[0];
-
         return this.sessionService.getSessions().find((session) => session.mountedCard === cardId);
     }
 
@@ -99,13 +97,6 @@ export class StorageCardService {
             size: 64 * 1024 * 1024,
             name: 'Lustige Karte 2',
             status: StorageCardStatus.dirty,
-        },
-        {
-            id: NEXT_ID++,
-            storageId: '55047f6788b64d9aad5a344e77ecf060',
-            size: 32 * 1024 * 1024,
-            name: 'Lustige Karte 3',
-            status: StorageCardStatus.unformatted,
         },
         {
             id: NEXT_ID++,

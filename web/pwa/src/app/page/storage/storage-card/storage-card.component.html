@@ -4,7 +4,7 @@
       <ion-icon name="create-outline"></ion-icon>
     </ion-item-option>
 
-    <ion-item-option [disabled]="cannotCheck" color="secondary" icon-only (click)="slidingItem.close(); check.emit(card)">
+    <ion-item-option [disabled]="isAttached" color="secondary" icon-only (click)="slidingItem.close(); check.emit(card)">
       <ion-icon name="medkit-outline"></ion-icon>
     </ion-item-option>
 

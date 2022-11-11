@@ -23,8 +23,5 @@ export class ContextMenuComponent {
     constructor() {}
 
     @Input()
-    cannotCheck: boolean | undefined;
-
-    @Input()
     isAttached: boolean | undefined;
 }
