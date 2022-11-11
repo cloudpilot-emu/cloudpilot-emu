@@ -3,8 +3,43 @@ import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 import { Injectable } from '@angular/core';
 import { Session } from '@pwa/model/Session';
 import { SessionService } from '@pwa/service/session.service';
+import { v4 as uuid } from 'uuid';
+
+export enum NewCardSize {
+    mb4,
+    mb8,
+    mb16,
+    mb32,
+    mb64,
+    mb128,
+}
 
 let NEXT_ID = 0;
+
+export function calculateNewCardSizeBytes(newCardSize: NewCardSize): number {
+    switch (newCardSize) {
+        case NewCardSize.mb4:
+            return 494 * 16 * 512;
+
+        case NewCardSize.mb8:
+            return (2 * 496 - 2) * 16 * 512;
+
+        case NewCardSize.mb16:
+            return (2 * 496 - 2) * 32 * 512;
+
+        case NewCardSize.mb32:
+            return (4 * 496 - 2) * 32 * 512;
+
+        case NewCardSize.mb64:
+            return (8 * 496 - 2) * 32 * 512;
+
+        case NewCardSize.mb128:
+            return (16 * 496 - 2) * 32 * 512;
+
+        default:
+            throw new Error(`bad card size ${newCardSize}`);
+    }
+}
 
 @Injectable({ providedIn: 'root' })
 export class StorageCardService {
@@ -16,11 +51,18 @@ export class StorageCardService {
         return this.cards;
     }
 
-    async addNewCard(card: Omit<StorageCard, 'id'>): Promise<StorageCard> {
-        const newCard = { ...card, id: NEXT_ID++ };
-        this.cards.push(newCard);
+    async createNewCard(name: string, size: NewCardSize): Promise<StorageCard> {
+        const card: StorageCard = {
+            id: NEXT_ID++,
+            storageId: uuid().replace(/-/g, ''),
+            name,
+            size: calculateNewCardSizeBytes(size),
+            status: StorageCardStatus.unformatted,
+        };
 
-        return newCard;
+        this.cards.push(card);
+
+        return card;
     }
 
     async updateCard(updatedCard: StorageCard): Promise<void> {

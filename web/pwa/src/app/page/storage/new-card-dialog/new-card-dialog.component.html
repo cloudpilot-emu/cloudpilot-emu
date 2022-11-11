@@ -1,0 +1,30 @@
+<ion-header translucent>
+  <ion-toolbar>
+      <ion-title>New storage card</ion-title>
+
+      <ion-buttons slot="primary">
+          <ion-button (click)="create()" [disabled]="formGroup.invalid">Create</ion-button>
+      </ion-buttons>
+
+      <ion-buttons slot="secondary">
+          <ion-button (click)="onCancel()">Cancel</ion-button>
+      </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content fullscreen>
+  <form [formGroup]="formGroup" (keydown.enter)="onEnter()">
+      <ion-item lines="none">
+          <ion-label position="stacked">Card name</ion-label>
+          <ion-input placeholder="Enter card name" formControlName="name"></ion-input>
+      </ion-item>
+
+      <ion-item lines="none">
+          <ion-label position="stacked">Card size</ion-label>
+          <ion-select formControlName="size">
+              <ion-select-option *ngFor="let size of sizes" [value]="size">{{sizeBytes(size) | cardSize}}
+              </ion-select-option>
+          </ion-select>
+      </ion-item>
+  </form>
+</ion-content>
