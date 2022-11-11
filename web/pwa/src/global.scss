@@ -46,13 +46,11 @@ ion-item::part(native), ion-item-option {
 ion-modal {
     padding-left: var(--ion-safe-area-left, 0px);
     padding-right: var(--ion-safe-area-right, 0px);
-    padding-bottom: var(--ion-safe-area-bottom, 0px);
 }
 
 @media only screen and (min-width: 768px) and (min-height: 600px) {
     ion-modal {
         padding-left: 0;
         padding-right: 0;
-        padding-bottom: 0;
     }
 }
