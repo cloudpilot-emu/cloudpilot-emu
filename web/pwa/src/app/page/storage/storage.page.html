@@ -3,8 +3,12 @@
     <ion-title>Storage</ion-title>
 
     <ion-buttons slot="primary">
-      <ion-button (click)="importCardImage()">
+      <ion-button (click)="createNewCardImage()">
         <ion-icon name="add-outline"></ion-icon>
+      </ion-button>
+
+      <ion-button (click)="importCardImage()">
+        <ion-icon name="download-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
 
@@ -21,7 +25,29 @@
 <ion-content>
   <ion-header collapse="condense">
     <ion-toolbar>
-      <ion-title size="large">Storage</ion-title>
+      <ion-title size="large">Storage cards</ion-title>
     </ion-toolbar>
   </ion-header>
+
+  <div class="loader" *ngIf="storageCardService.isLoading()">
+    <ion-spinner></ion-spinner>
+  </div>
+
+  <div *ngIf="!storageCardService.isLoading() && cards.length === 0" class="placeholder-container">
+    <div class="placeholder">
+      No storage. Select the &bdquo;+&ldquo; icon in the upper right corner in order to create a
+      new card image, or select the upload icon to import an existing on.
+      <br><br>
+      You can find a collection of compatible ROMs on
+      <a href="https://palmdb.net/app/palm-roms-complete" target="_blank" rel="external">PalmDB</a>.
+    </div>
+  </div>
+
+  <ion-list *ngIf="!storageCardService.isLoading() && cards.length > 0">
+    <app-storage-card *ngFor="let card of cards;trackBy:trackCardBy" [card]="card"
+      (delete)="deleteCard(card)" (select)="selectCard(card)" (edit)="editCard(card)"
+      (check)="checkCard(card)" (eject)="ejectCard(card)" (interaction)="lastCardTouched = card.id"
+      [touched]="card.id === lastCardTouched">
+    </app-storage-card>
+  </ion-list>
 </ion-content>

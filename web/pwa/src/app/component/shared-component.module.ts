@@ -1,5 +1,6 @@
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
+import { CardSizePipe } from './pipe/card-size.pipe';
 import { CommonModule } from '@angular/common';
 import { CredentialsPromptComponent } from './credentials-prompt/credentials-prompt.component';
 import { HelpComponent } from './help/help.component';
@@ -17,6 +18,7 @@ import { SessionSettingsComponent } from './session-settings/session-settings.co
         CredentialsPromptComponent,
         RemoteUrlPromptComponent,
         SessionSettingsComponent,
+        CardSizePipe,
     ],
     imports: [CommonModule, MarkdownModule.forChild(), IonicModule, FormsModule, ReactiveFormsModule],
     exports: [
@@ -25,6 +27,7 @@ import { SessionSettingsComponent } from './session-settings/session-settings.co
         CredentialsPromptComponent,
         RemoteUrlPromptComponent,
         SessionSettingsComponent,
+        CardSizePipe,
     ],
 })
 export class SharedComponentModule {}

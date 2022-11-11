@@ -38,6 +38,25 @@
     border: none !important;
 }
 
+ion-label h4, p {
+    margin-top: 0.75em;
+}
+
+ion-item-option {
+    font-size: 1.5em;
+    min-width: 3em;
+}
+
+ion-item-sliding {
+    cursor: pointer;
+    max-width: 40em;
+    margin: auto;
+}
+
+ion-item {
+    --background: none;
+}
+
 ion-item::part(native), ion-item-option {
     --ion-safe-area-left: 0px;
     --ion-safe-area-right: 0px;

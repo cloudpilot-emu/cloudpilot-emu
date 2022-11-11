@@ -13,4 +13,5 @@ export interface Session {
     wasResetForcefully?: boolean;
     speed?: number;
     deviceOrientation?: DeviceOrientation;
+    mountedCard?: number;
 }
