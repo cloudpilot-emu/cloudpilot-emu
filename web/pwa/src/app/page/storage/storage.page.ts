@@ -1,5 +1,7 @@
+import { AlertController, ModalController } from '@ionic/angular';
+
 import { Component } from '@angular/core';
-import { ModalController } from '@ionic/angular';
+import { EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
 import { NewCardDialogComponent } from './new-card-dialog/new-card-dialog.component';
 import { NewCardSize } from '@pwa/service/storage-card.service';
 import { StorageCard } from '@pwa/model/StorageCard';
@@ -11,7 +13,11 @@ import { StorageCardService } from './../../service/storage-card.service';
     styleUrls: ['./storage.page.scss'],
 })
 export class StoragePage {
-    constructor(public storageCardService: StorageCardService, private modalController: ModalController) {}
+    constructor(
+        public storageCardService: StorageCardService,
+        private modalController: ModalController,
+        private alertController: AlertController
+    ) {}
 
     get cards(): Array<StorageCard> {
         return this.storageCardService.getAllCards().sort((x, y) => x.name.localeCompare(y.name));
@@ -41,8 +47,21 @@ export class StoragePage {
         console.log(`select ${card.name}`);
     }
 
-    editCard(card: StorageCard) {
-        console.log(`edit ${card.name}`);
+    async editCard(card: StorageCard) {
+        const modal = await this.modalController.create({
+            component: EditCardDialogComponent,
+            backdropDismiss: false,
+            componentProps: {
+                card,
+                onCancel: () => modal.dismiss(),
+                onSave: (updatedCard: StorageCard) => {
+                    this.storageCardService.updateCard(updatedCard);
+                    modal.dismiss();
+                },
+            },
+        });
+
+        await modal.present();
     }
 
     checkCard(card: StorageCard) {
@@ -53,8 +72,17 @@ export class StoragePage {
         console.log(`eject ${card.name}`);
     }
 
-    deleteCard(card: StorageCard) {
-        console.log(`delete ${card.name}`);
+    async deleteCard(card: StorageCard) {
+        const alert = await this.alertController.create({
+            header: 'Warning',
+            message: `Deleting the card '${card.name}' cannot be undone. Are you sure you want to continue?`,
+            buttons: [
+                { text: 'Cancel', role: 'cancel' },
+                { text: 'Delete', handler: () => this.storageCardService.deleteCard(card) },
+            ],
+        });
+
+        await alert.present();
     }
 
     trackCardBy(index: number, card: StorageCard) {

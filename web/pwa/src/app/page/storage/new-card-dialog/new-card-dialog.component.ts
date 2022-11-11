@@ -1,5 +1,5 @@
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input } from '@angular/core';
-import { FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { StorageCardService, calculateNewCardSizeBytes } from './../../../service/storage-card.service';
 
 import { NewCardSize } from '@pwa/service/storage-card.service';
@@ -45,14 +45,14 @@ export class NewCardDialogComponent {
         this.create();
     }
 
-    private validateNameUnique = (control: FormControl<string>): ValidationErrors | null => {
+    private validateNameUnique = (control: AbstractControl<string>): ValidationErrors | null => {
         return this.storageCardService.getAllCards().some((card) => card.name === control.value)
             ? { name: 'already taken' }
             : null;
     };
 
     @Input()
-    onCreate = (name: string, size: NewCardSize) => undefined;
+    private onCreate = (name: string, size: NewCardSize) => undefined;
 
     @Input()
     onCancel = () => undefined;
