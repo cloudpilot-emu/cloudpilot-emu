@@ -1,4 +1,3 @@
-import { MemoryMetadata } from './../../model/MemoryMetadata';
 const OBJECT_STORE_SESSION = 'session';
 const OBJECT_STORE_ROM = 'rom';
 const OBJECT_STORE_MEMORY = 'memory';
@@ -7,6 +6,7 @@ const OBJECT_STORE_KVS = 'kvs';
 const OBJECT_STORE_MEMORY_META = 'memory-meta';
 const OBJECT_STORE_STORAGE = 'storage';
 const OBJECT_STORE_STORAGE_META = 'storage-meta';
+const OBJECT_STORE_STORAGE_CARD = 'storage-card';
 
 export function migrate0to1(db: IDBDatabase): void {
     const sessionStore = db.createObjectStore(OBJECT_STORE_SESSION, { keyPath: 'id', autoIncrement: true });
@@ -147,4 +147,10 @@ export async function migrate5to6(db: IDBDatabase, tx: IDBTransaction | null): P
 
         cursorRequest.onerror = (e) => reject(e);
     });
+}
+
+export async function migrate6to7(db: IDBDatabase, tx: IDBTransaction | null): Promise<void> {
+    if (!tx) throw new Error('no version change transaction!');
+
+    tx.objectStore(OBJECT_STORE_STORAGE_META).name = OBJECT_STORE_STORAGE_CARD;
 }

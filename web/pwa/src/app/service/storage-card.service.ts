@@ -3,6 +3,7 @@ import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 import { Injectable } from '@angular/core';
 import { Session } from '@pwa/model/Session';
 import { SessionService } from '@pwa/service/session.service';
+import { StorageService } from '@pwa/service/storage.service';
 import { v4 as uuid } from 'uuid';
 
 export enum NewCardSize {
@@ -13,8 +14,6 @@ export enum NewCardSize {
     mb64,
     mb128,
 }
-
-let NEXT_ID = 0;
 
 export function calculateNewCardSizeBytes(newCardSize: NewCardSize): number {
     switch (newCardSize) {
@@ -41,36 +40,44 @@ export function calculateNewCardSizeBytes(newCardSize: NewCardSize): number {
     }
 }
 
+function newStorageId(): string {
+    return uuid().replace(/-/g, '');
+}
+
 @Injectable({ providedIn: 'root' })
 export class StorageCardService {
-    constructor(private sessionService: SessionService) {
-        setTimeout(() => (this.loading = false), 500);
+    constructor(private sessionService: SessionService, private storageService: StorageService) {
+        this.updateCardsFromDB().then(() => (this.loading = false));
+
+        storageService.storageCardChangeEvent.addHandler(() => this.updateCardsFromDB());
     }
 
     getAllCards(): Array<StorageCard> {
         return this.cards;
     }
 
-    async createNewCard(name: string, size: NewCardSize): Promise<StorageCard> {
-        const card: StorageCard = {
-            id: NEXT_ID++,
-            storageId: uuid().replace(/-/g, ''),
+    async createEmptyCard(name: string, size: NewCardSize): Promise<StorageCard> {
+        const cardWithoutId: Omit<StorageCard, 'id'> = {
+            storageId: newStorageId(),
             name,
             size: calculateNewCardSizeBytes(size),
-            status: StorageCardStatus.dirty,
+            status: StorageCardStatus.clean,
         };
 
+        const card = await this.storageService.addEmptyStorageCard(cardWithoutId);
         this.cards.push(card);
 
         return card;
     }
 
-    async updateCard(updatedCard: StorageCard): Promise<void> {
-        this.cards = this.cards.map((card) => (card.id === updatedCard.id ? { ...updatedCard } : card));
+    updateCard(card: StorageCard): Promise<void> {
+        return this.storageService.updateStorageCard(card);
     }
 
-    async deleteCard(cardForDeletion: StorageCard): Promise<void> {
-        this.cards = this.cards.filter((card) => card.id !== cardForDeletion.id);
+    async deleteCard(card: StorageCard): Promise<void> {
+        await this.storageService.deleteStorageCard(card.id);
+
+        this.updateCardsFromDB();
     }
 
     mountedInSession(cardId: number): Session | undefined {
@@ -81,29 +88,11 @@ export class StorageCardService {
         return this.loading;
     }
 
+    private async updateCardsFromDB(): Promise<void> {
+        this.cards = (await this.storageService.getAllStorageCards()).sort((x, y) => x.name.localeCompare(y.name));
+    }
+
     private loading = true;
 
-    private cards: Array<StorageCard> = [
-        {
-            id: NEXT_ID++,
-            storageId: '365350027f8f4d9a924a0c19c74aa094',
-            size: 128 * 1024 * 1024,
-            name: 'Lustige Karte 1',
-            status: StorageCardStatus.clean,
-        },
-        {
-            id: NEXT_ID++,
-            storageId: '55047f6788b64d9aad5a344e77ecf060',
-            size: 64 * 1024 * 1024,
-            name: 'Lustige Karte 2',
-            status: StorageCardStatus.dirty,
-        },
-        {
-            id: NEXT_ID++,
-            storageId: '2e5fbf116a9247d68b6299221084789e',
-            size: 16 * 1024 * 1024,
-            name: 'Lustige Karte 4',
-            status: StorageCardStatus.clean,
-        },
-    ];
+    private cards: Array<StorageCard> = [];
 }

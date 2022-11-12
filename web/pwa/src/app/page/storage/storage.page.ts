@@ -20,7 +20,7 @@ export class StoragePage {
     ) {}
 
     get cards(): Array<StorageCard> {
-        return this.storageCardService.getAllCards().sort((x, y) => x.name.localeCompare(y.name));
+        return this.storageCardService.getAllCards();
     }
 
     importCardImage(): void {}
@@ -32,7 +32,7 @@ export class StoragePage {
             componentProps: {
                 onCancel: () => modal.dismiss(),
                 onCreate: (name: string, size: NewCardSize) => {
-                    this.storageCardService.createNewCard(name, size);
+                    this.storageCardService.createEmptyCard(name, size);
                     modal.dismiss();
                 },
             },

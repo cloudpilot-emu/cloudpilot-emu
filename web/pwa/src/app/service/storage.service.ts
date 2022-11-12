@@ -6,10 +6,11 @@ import {
     OBJECT_STORE_ROM,
     OBJECT_STORE_SESSION,
     OBJECT_STORE_STATE,
+    OBJECT_STORE_STORAGE_CARD,
 } from './storage/constants';
 import { Injectable, NgZone } from '@angular/core';
 import { complete, compressPage } from './storage/util';
-import { migrate0to1, migrate1to2, migrate2to4, migrate4to5, migrate5to6 } from './storage/migrations';
+import { migrate0to1, migrate1to2, migrate2to4, migrate4to5, migrate5to6, migrate6to7 } from './storage/migrations';
 
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
@@ -17,6 +18,7 @@ import { Kvs } from '@pwa/model/Kvs';
 import { MemoryMetadata } from './../model/MemoryMetadata';
 import { PageLockService } from './page-lock.service';
 import { Session } from '@pwa/model/Session';
+import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageError } from './storage/StorageError';
 import { environment } from '../../environments/environment';
 import { isIOS } from '@common/helper/browser';
@@ -190,6 +192,47 @@ export class StorageService {
         const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_STATE);
 
         objectStore.delete(session.id);
+
+        await complete(tx);
+    }
+
+    @guard()
+    async addEmptyStorageCard(card: Omit<StorageCard, 'id'>): Promise<StorageCard> {
+        const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_STORAGE_CARD);
+
+        const key = await complete(objectStore.add(card));
+
+        return complete(objectStore.get(key));
+    }
+
+    @guard()
+    async getAllStorageCards(): Promise<Array<StorageCard>> {
+        const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_STORAGE_CARD);
+
+        return complete(objectStore.getAll());
+    }
+
+    @guard()
+    async updateStorageCard(card: StorageCard): Promise<void> {
+        const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_STORAGE_CARD);
+
+        const persistentCard: StorageCard = await complete(objectStore.get(card.id));
+        if (!persistentCard) throw new Error(`no card with id ${card.id}`);
+
+        if (card.storageId !== persistentCard.storageId) throw new Error('attempt to modify storage id');
+        if (card.size !== persistentCard.size) throw new Error('attempt to modify card size');
+
+        objectStore.put(card);
+
+        await complete(tx);
+
+        this.storageCardChangeEvent.dispatch(card.id);
+    }
+
+    @guard()
+    async deleteStorageCard(id: number): Promise<void> {
+        const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_STORAGE_CARD);
+        objectStore.delete(id);
 
         await complete(tx);
     }
@@ -408,7 +451,9 @@ export class StorageService {
                         migrate1to2(request.result, request.transaction);
                     }
 
-                    // v3 introduced u32 view in snapshots
+                    // v3 introduced u32 view in snapshots. There is no actual migration, the version
+                    // increment only ensures that old versions of CP will not try to load the new
+                    // data.
 
                     if (e.oldVersion < 4) {
                         await migrate2to4(request.result, request.transaction);
@@ -420,6 +465,10 @@ export class StorageService {
 
                     if (e.oldVersion < 6) {
                         await migrate5to6(request.result, request.transaction);
+                    }
+
+                    if (e.oldVersion < 7) {
+                        await migrate6to7(request.result, request.transaction);
                     }
                 };
             });
@@ -446,6 +495,7 @@ export class StorageService {
     }
 
     public sessionChangeEvent = new Event<number>();
+    public storageCardChangeEvent = new Event<number>();
 
     private db!: Promise<IDBDatabase>;
 }
