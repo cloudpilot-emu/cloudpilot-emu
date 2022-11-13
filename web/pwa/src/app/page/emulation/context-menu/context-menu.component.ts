@@ -146,6 +146,10 @@ export class ContextMenuComponent implements OnInit {
         return currentSession ? quirkNoPoweroff(currentSession.device) : false;
     }
 
+    get hasActiveSession(): boolean {
+        return !!this.emulationStateService.getCurrentSession();
+    }
+
     async editSettings(): Promise<void> {
         const session = this.emulationStateService.getCurrentSession();
         if (!session) {

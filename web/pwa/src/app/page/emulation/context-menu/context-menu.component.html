@@ -1,13 +1,13 @@
 <ion-list>
-  <ion-item button [detail]="false" (click)="power()" [disabled]="!emulationService.isRunning()" *ngIf="!powerDisabled">
+  <ion-item button [detail]="false" (click)="power()" [disabled]="!emulationService.isRunning()" *ngIf="hasActiveSession && !powerDisabled">
     <ion-label>Power</ion-label>
     <ion-icon name="power-outline" slot="end"></ion-icon>
   </ion-item>
-  <ion-item button [detail]="false" (click)="hotsync()" [disabled]="!emulationService.isRunning()">
+  <ion-item button *ngIf="hasActiveSession" [detail]="false" (click)="hotsync()" [disabled]="!emulationService.isRunning()">
     <ion-label>Hotsync</ion-label>
     <ion-icon name="sync-outline" slot="end"></ion-icon>
   </ion-item>
-  <ion-item button [detail]="false" (click)="reset()" [disabled]="!emulationService.isRunning()">
+  <ion-item button *ngIf="hasActiveSession" [detail]="false" (click)="reset()" [disabled]="!emulationService.isRunning()">
     <ion-label>Reset</ion-label>
     <ion-icon name="refresh-outline" slot="end"></ion-icon>
   </ion-item>
@@ -19,15 +19,15 @@
     <ion-label>Disable audio</ion-label>
     <ion-icon name="volume-mute-outline"></ion-icon>
   </ion-item>
-  <ion-item button [detail]="false" (click)="backup()" [disabled]="backupDisabled">
+  <ion-item button *ngIf="hasActiveSession" [detail]="false" (click)="backup()" [disabled]="backupDisabled">
     <ion-label>Save backup</ion-label>
     <ion-icon name="share-outline" slot="end"></ion-icon>
   </ion-item>
-  <ion-item button [detail]="false" (click)="rotate()">
+  <ion-item button *ngIf="hasActiveSession" [detail]="false" (click)="rotate()">
     <ion-label>Rotate</ion-label>
     <ion-icon name="reload-outline" slot="end"></ion-icon>
   </ion-item>
-  <ion-item button [detail]="false" (click)="editSettings()">
+  <ion-item button *ngIf="hasActiveSession" [detail]="false" (click)="editSettings()">
     <ion-label>Settings</ion-label>
     <ion-icon name="cog-outline" slot="end"></ion-icon>
   </ion-item>
