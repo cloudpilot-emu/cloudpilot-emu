@@ -123,6 +123,8 @@ export interface Cloudpilot {
 
     LaunchAppByName(name: string): boolean;
     LaunchAppByDbHeader(buffer: VoidPtr, len: number): boolean;
+
+    SupportsCardSize(size: number): boolean;
 }
 
 export interface Frame {

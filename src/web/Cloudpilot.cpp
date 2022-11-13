@@ -258,3 +258,10 @@ bool Cloudpilot::LaunchAppByDbHeader(void* header, int len) {
 
     return gSession->LaunchAppByName(static_cast<const char*>(header));
 }
+
+bool Cloudpilot::SupportsCardSize(uint32 size) {
+    if (size % 512 != 0) return false;
+
+    return EmHAL::SupportsImageInSlot(EmHAL::Slot::sdcard, size / 512) ||
+           EmHAL::SupportsImageInSlot(EmHAL::Slot::memorystick, size / 512);
+}

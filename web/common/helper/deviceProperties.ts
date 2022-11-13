@@ -1,6 +1,7 @@
 import { Dimensions, ScreenSize } from '@common/model/Dimensions';
 
 import { DeviceId } from '@common/model/DeviceId';
+import { SlotType } from '../model/SlotType';
 
 export function deviceDimensions(deviceId: DeviceId): Dimensions {
     switch (deviceId) {
@@ -242,4 +243,32 @@ export function deviceName(deviceId: DeviceId): string {
 
 export function quirkNoPoweroff(deviceId: DeviceId) {
     return [DeviceId.i705, DeviceId.i710, DeviceId.pegNR70, DeviceId.pegT650c].includes(deviceId);
+}
+
+export function slotType(deviceId: DeviceId) {
+    switch (deviceId) {
+        case DeviceId.m500:
+        case DeviceId.m505:
+        case DeviceId.m515:
+        case DeviceId.m125:
+        case DeviceId.m130:
+        case DeviceId.i705:
+        case DeviceId.i710:
+        case DeviceId.handera330:
+            return SlotType.sdcard;
+
+        case DeviceId.pegS300:
+        case DeviceId.pegS500c:
+        case DeviceId.pegS320:
+        case DeviceId.pegT400:
+        case DeviceId.pegN600c:
+        case DeviceId.pegT600c:
+        case DeviceId.pegN700c:
+        case DeviceId.pegT650c:
+        case DeviceId.pegNR70:
+            return SlotType.memorystick;
+
+        default:
+            return SlotType.none;
+    }
 }

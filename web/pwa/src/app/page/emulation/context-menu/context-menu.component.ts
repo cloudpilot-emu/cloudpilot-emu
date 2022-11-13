@@ -1,10 +1,13 @@
-import { ActionSheetController, ModalController, PopoverController } from '@ionic/angular';
+import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
 import { Component, Input, OnInit } from '@angular/core';
+import { quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
 
+import { AlertService } from '@pwa/service/alert.service';
 import { AudioService } from '@pwa/service/audio.service';
 import { BackupService } from '@pwa/service/backup.service';
 import { ButtonService } from '@pwa/service/button.service';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
+import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
@@ -13,7 +16,8 @@ import { PalmButton } from '@common/Cloudpilot';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
 import { SessionService } from '@pwa/service/session.service';
 import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
-import { quirkNoPoweroff } from '@common/helper/deviceProperties';
+import { SlotType } from '@common/model/SlotType';
+import { StorageCardService } from '@pwa/service/storage-card.service';
 
 @Component({
     selector: 'app-emulation-context-menu',
@@ -33,7 +37,11 @@ export class ContextMenuComponent implements OnInit {
         private modalController: ModalController,
         private sessionService: SessionService,
         private performanceWatchdogService: PerformanceWatchdogService,
-        private canvasDisplayService: CanvasDisplayService
+        private canvasDisplayService: CanvasDisplayService,
+        private cloudpilotService: CloudpilotService,
+        private storageCardService: StorageCardService,
+        private alertService: AlertService,
+        private alertController: AlertController
     ) {}
 
     ngOnInit(): void {}
@@ -150,6 +158,20 @@ export class ContextMenuComponent implements OnInit {
         return !!this.emulationStateService.getCurrentSession();
     }
 
+    get supportsStorageCard(): boolean {
+        const currentSession = this.emulationStateService.getCurrentSession();
+        if (!currentSession) return false;
+
+        return slotType(currentSession.device) !== SlotType.none;
+    }
+
+    get hasMemorystick(): boolean {
+        const currentSession = this.emulationStateService.getCurrentSession();
+        if (!currentSession) return false;
+
+        return slotType(currentSession.device) === SlotType.memorystick;
+    }
+
     async editSettings(): Promise<void> {
         const session = this.emulationStateService.getCurrentSession();
         if (!session) {
@@ -213,6 +235,45 @@ export class ContextMenuComponent implements OnInit {
         this.canvasDisplayService.updateEmulationCanvas();
 
         this.sessionService.updateSession(session);
+    }
+
+    async insertCard(): Promise<void> {
+        this.popoverController.dismiss();
+
+        const deviceId = this.emulationStateService.getCurrentSession()?.device;
+        if (deviceId === undefined) return;
+
+        const cloudpilot = await this.cloudpilotService.cloudpilot;
+        const eligibleCards = this.storageCardService
+            .getAllCards()
+            .filter((card) => cloudpilot.supportsCardSize(card.size));
+
+        if (eligibleCards.length === 0) {
+            this.alertService.message(
+                'No image available',
+                `There is no ${
+                    this.hasMemorystick ? 'memory stick' : 'SD card'
+                } image available. Please go to the "Storage" tab in order to create new one.`
+            );
+
+            return;
+        }
+
+        const alert = await this.alertController.create({
+            header: 'Choose image for insertion',
+            buttons: [
+                { text: 'Cancel', role: 'cancel' },
+                { text: 'Insert', handler: (id) => console.log(`mount ${id}`) },
+            ],
+            inputs: eligibleCards.map((card, index) => ({
+                label: card.name,
+                type: 'radio',
+                value: card.id,
+                checked: index === 0,
+            })),
+        });
+
+        await alert.present();
     }
 
     @Input()

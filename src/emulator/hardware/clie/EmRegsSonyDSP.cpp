@@ -227,9 +227,8 @@ void EmRegsSonyDSP::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, ResetWrite, REG_RESET, 2);
 }
 
-bool EmRegsSonyDSP::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) {
-    return slot == EmHAL::Slot::memorystick &&
-           MemoryStick::IsSizeRepresentable(cardImage.BlocksTotal());
+bool EmRegsSonyDSP::SupportsImageInSlot(EmHAL::Slot slot, uint32 blocksTotal) {
+    return slot == EmHAL::Slot::memorystick && MemoryStick::IsSizeRepresentable(blocksTotal);
 }
 
 void EmRegsSonyDSP::Mount(EmHAL::Slot slot, CardImage& cardImage) {

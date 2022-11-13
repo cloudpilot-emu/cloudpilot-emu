@@ -26,7 +26,7 @@ class EmRegsSonyDSP : public EmRegs, public EmHALHandler {
     uint32 GetAddressRange(void) override;
     void SetSubBankHandlers(void) override;
 
-    bool SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) override;
+    bool SupportsImageInSlot(EmHAL::Slot slot, uint32 blocksTotal) override;
     void Mount(EmHAL::Slot slot, CardImage& cardImage) override;
     void Unmount(EmHAL::Slot slot) override;
     void Remount(EmHAL::Slot, CardImage& cardImage) override;

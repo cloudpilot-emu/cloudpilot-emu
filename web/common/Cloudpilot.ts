@@ -669,6 +669,11 @@ export class Cloudpilot {
         return result;
     }
 
+    @guard()
+    supportsCardSize(size: number): boolean {
+        return this.cloudpilot.SupportsCardSize(size);
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);

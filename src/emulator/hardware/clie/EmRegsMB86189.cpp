@@ -5,7 +5,7 @@
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
 
-//#define TRACE_ACCESS
+// #define TRACE_ACCESS
 
 #define INSTALL_HANDLER(read, write, offset, size)                                       \
     SetHandler((ReadFunction)&EmRegsMB86189::read, (WriteFunction)&EmRegsMB86189::write, \
@@ -122,9 +122,8 @@ void EmRegsMB86189::SetSubBankHandlers(void) {
     INSTALL_HANDLER(stubRead, stubRead, OFFSET_MSPPCD + 2, REGISTER_FILE_SIZE - OFFSET_MSPPCD - 2);
 }
 
-bool EmRegsMB86189::SupportsImageInSlot(EmHAL::Slot slot, const CardImage& cardImage) {
-    return slot == EmHAL::Slot::memorystick &&
-           MemoryStick::IsSizeRepresentable(cardImage.BlocksTotal());
+bool EmRegsMB86189::SupportsImageInSlot(EmHAL::Slot slot, uint32 blocksTotal) {
+    return slot == EmHAL::Slot::memorystick && MemoryStick::IsSizeRepresentable(blocksTotal);
 }
 
 void EmRegsMB86189::Mount(EmHAL::Slot slot, CardImage& cardImage) {

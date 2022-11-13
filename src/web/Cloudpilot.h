@@ -86,6 +86,8 @@ class Cloudpilot {
     bool LaunchAppByName(const char* name);
     bool LaunchAppByDbHeader(void* header, int len);
 
+    bool SupportsCardSize(uint32 size);
+
    private:
     Frame frame{320 * 480 * 4};
 };

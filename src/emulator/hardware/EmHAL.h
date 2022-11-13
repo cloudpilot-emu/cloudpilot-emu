@@ -111,6 +111,7 @@ class EmHAL {
     static void RemoveCycleConsumer(CycleHandler handler, void* context);
     static void DispatchCycle(uint64 cycles, bool sleeping);
 
+    static bool SupportsImageInSlot(Slot slot, uint32 blocksTotal);
     static bool SupportsImageInSlot(Slot slot, const CardImage& cardImage);
     static void Mount(Slot slot, CardImage& cardImage);
     static void Unmount(Slot slot);
@@ -176,7 +177,7 @@ class EmHALHandler {
     virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
     virtual bool EnableRAM();
 
-    virtual bool SupportsImageInSlot(EmHAL::Slot slot, const CardImage& CardImage);
+    virtual bool SupportsImageInSlot(EmHAL::Slot slot, uint32 blocksTotal);
     virtual void Mount(EmHAL::Slot slot, CardImage& cardImage);
     virtual void Unmount(EmHAL::Slot slot);
     virtual void Remount(EmHAL::Slot slot, CardImage& cardImage);

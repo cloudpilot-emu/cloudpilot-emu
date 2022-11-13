@@ -75,6 +75,8 @@ interface Cloudpilot {
 
     boolean LaunchAppByName([Const] DOMString name);
     boolean LaunchAppByDbHeader(VoidPtr buffer, long len);
+
+    boolean SupportsCardSize(long size);
 };
 
 interface RomInfo {
