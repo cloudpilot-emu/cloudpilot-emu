@@ -12,8 +12,29 @@ export class EmulationStateService {
     }
 
     setCurrentSession(session: Session | undefined): void {
+        if (session?.id !== this.currentSession?.id) {
+            this.mountedCard = undefined;
+        }
+
         this.currentSession = session;
     }
 
+    setMountedCard(cardId: number): void {
+        this.mountedCard = cardId;
+    }
+
+    clearMountedCard(): void {
+        this.mountedCard = undefined;
+    }
+
+    hasMountedCard(): boolean {
+        return this.mountedCard !== undefined;
+    }
+
+    getMountedCard(): number | undefined {
+        return this.mountedCard;
+    }
+
     private currentSession: Session | undefined;
+    private mountedCard: number | undefined;
 }

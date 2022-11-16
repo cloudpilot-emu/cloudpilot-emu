@@ -213,6 +213,13 @@ export class StorageService {
     }
 
     @guard()
+    async getCard(id: number): Promise<StorageCard> {
+        const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_STORAGE_CARD);
+
+        return complete(objectStore.get(id));
+    }
+
+    @guard()
     async updateStorageCard(card: StorageCard): Promise<void> {
         const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_STORAGE_CARD);
 
@@ -235,6 +242,11 @@ export class StorageService {
         objectStore.delete(id);
 
         await complete(tx);
+    }
+
+    @guard()
+    async loadCardData(id: number, target: Uint32Array): Promise<void> {
+        // TODO
     }
 
     @guard()

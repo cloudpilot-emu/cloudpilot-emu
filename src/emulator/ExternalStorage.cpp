@@ -129,10 +129,14 @@ bool ExternalStorage::RemoveImage(const string& key) {
     return true;
 }
 
-void ExternalStorage::Clear() {
+void ExternalStorage::UnmountAll() {
     for (uint8 slot = 0; slot <= static_cast<uint8>(EmHAL::MAX_SLOT); slot++) {
         if (slots[slot]) Unmount(static_cast<EmHAL::Slot>(slot));
     }
+}
+
+void ExternalStorage::Clear() {
+    UnmountAll();
 
     images.clear();
 }

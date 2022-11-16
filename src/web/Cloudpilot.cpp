@@ -11,6 +11,7 @@
 #include "EmROMReader.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
+#include "ExternalStorage.h"
 #include "Feature.h"
 #include "NetworkProxy.h"
 #include "SuspendManager.h"
@@ -265,3 +266,36 @@ bool Cloudpilot::SupportsCardSize(uint32 size) {
     return EmHAL::SupportsImageInSlot(EmHAL::Slot::sdcard, size / 512) ||
            EmHAL::SupportsImageInSlot(EmHAL::Slot::memorystick, size / 512);
 }
+
+void Cloudpilot::ClearExternalStorage() { gExternalStorage.Clear(); }
+
+bool Cloudpilot::AllocateCard(const char* key, uint32 blockCount) {
+    uint8* data = new uint8[CardImage::BLOCK_SIZE * blockCount];
+
+    if (!gExternalStorage.AddImage(key, data, CardImage::BLOCK_SIZE * blockCount)) {
+        delete[] data;
+        return false;
+    }
+
+    return true;
+}
+
+bool Cloudpilot::MountCard(const char* key) { return gExternalStorage.Mount(key); }
+
+bool Cloudpilot::RemoveCard(const char* key) { return gExternalStorage.RemoveImage(key); }
+
+void* Cloudpilot::GetCardData(const char* key) {
+    CardImage* image = gExternalStorage.GetImage(key);
+    if (!image) return nullptr;
+
+    return image->RawData();
+}
+
+int Cloudpilot::GetCardSize(const char* key) {
+    CardImage* image = gExternalStorage.GetImage(key);
+    if (!image) return 0;
+
+    return image->BlocksTotal() * CardImage::BLOCK_SIZE;
+}
+
+void Cloudpilot::RemountCards() { gExternalStorage.Remount(); }

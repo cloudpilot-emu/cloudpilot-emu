@@ -125,6 +125,13 @@ export interface Cloudpilot {
     LaunchAppByDbHeader(buffer: VoidPtr, len: number): boolean;
 
     SupportsCardSize(size: number): boolean;
+    ClearExternalStorage(): void;
+    AllocateCard(key: string, blockCount: number): boolean;
+    MountCard(key: string): boolean;
+    RemoveCard(key: string): boolean;
+    GetCardData(key: string): VoidPtr;
+    GetCardSize(key: string): number;
+    RemountCards(): void;
 }
 
 export interface Frame {

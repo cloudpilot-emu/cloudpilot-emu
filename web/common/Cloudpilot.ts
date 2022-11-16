@@ -674,6 +674,39 @@ export class Cloudpilot {
         return this.cloudpilot.SupportsCardSize(size);
     }
 
+    @guard()
+    clearExternalStorage(): void {
+        this.cloudpilot.ClearExternalStorage();
+    }
+
+    @guard()
+    allocateCard(key: string, size: number): boolean {
+        return this.cloudpilot.AllocateCard(key, size >>> 9);
+    }
+
+    @guard()
+    getCardData(key: string): Uint32Array | undefined {
+        const dataPtr = this.module.getPointer(this.cloudpilot.GetCardData(key));
+        if (dataPtr === 0) return undefined;
+
+        return this.module.HEAPU32.subarray(dataPtr >>> 2, (dataPtr + this.cloudpilot.GetCardSize(key)) >> 2);
+    }
+
+    @guard()
+    mountCard(key: string): boolean {
+        return this.cloudpilot.MountCard(key);
+    }
+
+    @guard()
+    removeCard(key: string): boolean {
+        return this.cloudpilot.RemoveCard(key);
+    }
+
+    @guard()
+    remountCards() {
+        this.cloudpilot.RemountCards();
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);

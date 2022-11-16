@@ -172,6 +172,10 @@ export class ContextMenuComponent implements OnInit {
         return slotType(currentSession.device) === SlotType.memorystick;
     }
 
+    get hasMountedCard(): boolean {
+        return this.emulationStateService.hasMountedCard();
+    }
+
     async editSettings(): Promise<void> {
         const session = this.emulationStateService.getCurrentSession();
         if (!session) {
@@ -263,7 +267,7 @@ export class ContextMenuComponent implements OnInit {
             header: 'Choose image for insertion',
             buttons: [
                 { text: 'Cancel', role: 'cancel' },
-                { text: 'Insert', handler: (id) => console.log(`mount ${id}`) },
+                { text: 'Insert', handler: (id) => this.storageCardService.mountCard(id) },
             ],
             inputs: eligibleCards.map((card, index) => ({
                 label: card.name,
@@ -274,6 +278,11 @@ export class ContextMenuComponent implements OnInit {
         });
 
         await alert.present();
+    }
+
+    ejectCard(): void {
+        this.storageCardService.ejectCard();
+        this.popoverController.dismiss();
     }
 
     @Input()

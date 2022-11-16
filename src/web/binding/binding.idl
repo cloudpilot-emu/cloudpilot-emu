@@ -77,6 +77,13 @@ interface Cloudpilot {
     boolean LaunchAppByDbHeader(VoidPtr buffer, long len);
 
     boolean SupportsCardSize(long size);
+    void ClearExternalStorage();
+    boolean AllocateCard([Const] DOMString key, long blockCount);
+    boolean MountCard([Const] DOMString key);
+    boolean RemoveCard([Const] DOMString key);
+    VoidPtr GetCardData([Const] DOMString key);
+    long GetCardSize([Const] DOMString key);
+    void RemountCards();
 };
 
 interface RomInfo {

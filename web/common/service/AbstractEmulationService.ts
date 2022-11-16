@@ -141,6 +141,8 @@ export abstract class AbstractEmulationService {
     ): boolean {
         let memoryLoaded = false;
 
+        cloudpilot.clearExternalStorage();
+
         if (!cloudpilot.initializeSession(rom, device)) return false;
 
         if (memory) {
@@ -160,6 +162,8 @@ export abstract class AbstractEmulationService {
         if (memoryLoaded && state) {
             cloudpilot.loadState(state);
         }
+
+        cloudpilot.remountCards();
 
         if (this.cloudpilotInstance) this.cloudpilotInstance.pwmUpdateEvent.removeHandler(this.onPwmUpdate);
         cloudpilot.pwmUpdateEvent.addHandler(this.onPwmUpdate);

@@ -43,6 +43,7 @@ class ExternalStorage {
     void RekeyImage(string oldKey, string newKey);
 
     bool RemoveImage(const string& key);
+    void UnmountAll();
     void Clear();
 
    private:

@@ -307,6 +307,7 @@ namespace {
             return false;
         }
 
+        gExternalStorage.Clear();
         util::initializeSession(args[0]);
 
         return false;

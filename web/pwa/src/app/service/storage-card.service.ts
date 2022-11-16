@@ -1,5 +1,8 @@
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
+import { CloudpilotService } from '@pwa/service/cloudpilot.service';
+import { EmulationStateService } from './emulation-state.service';
+import { ErrorService } from './error.service';
 import { Injectable } from '@angular/core';
 import { Session } from '@pwa/model/Session';
 import { SessionService } from '@pwa/service/session.service';
@@ -46,7 +49,13 @@ function newStorageId(): string {
 
 @Injectable({ providedIn: 'root' })
 export class StorageCardService {
-    constructor(private sessionService: SessionService, private storageService: StorageService) {
+    constructor(
+        private sessionService: SessionService,
+        private storageService: StorageService,
+        private emulationStateService: EmulationStateService,
+        private cloudpilotService: CloudpilotService,
+        private errorService: ErrorService
+    ) {
         this.updateCardsFromDB().then(() => (this.loading = false));
 
         storageService.storageCardChangeEvent.addHandler(() => this.updateCardsFromDB());
@@ -75,6 +84,8 @@ export class StorageCardService {
     }
 
     async deleteCard(card: StorageCard): Promise<void> {
+        if (this.emulationStateService.getMountedCard() === card.id) await this.ejectCard();
+
         await this.storageService.deleteStorageCard(card.id);
 
         this.updateCardsFromDB();
@@ -86,6 +97,48 @@ export class StorageCardService {
 
     isLoading(): boolean {
         return this.loading;
+    }
+
+    async mountCard(cardId: number): Promise<void> {
+        const card = await this.storageService.getCard(cardId);
+        if (!card) {
+            return this.errorService.fatalBug(`no card with id ${cardId}`);
+        }
+
+        const cloudpilot = await this.cloudpilotService.cloudpilot;
+        if (!cloudpilot.allocateCard(card.storageId, card.size)) {
+            return this.errorService.fatalBug('failed to allocate card');
+        }
+
+        const cardData = cloudpilot.getCardData(card.storageId);
+        if (!cardData) {
+            return this.errorService.fatalBug('failed to access card data');
+        }
+
+        await this.storageService.loadCardData(card.id, cardData);
+
+        if (!cloudpilot.mountCard(card.storageId)) {
+            return this.errorService.fatalBug('failed to mount card');
+        }
+
+        this.emulationStateService.setMountedCard(cardId);
+    }
+
+    async ejectCard(): Promise<void> {
+        const cardId = this.emulationStateService.getMountedCard();
+        if (cardId === undefined) {
+            return this.errorService.fatalBug(`no mounted card`);
+        }
+
+        const card = await this.storageService.getCard(cardId);
+        if (!card) {
+            return this.errorService.fatalBug(`no card with id ${cardId}`);
+        }
+
+        const cloudpilot = await this.cloudpilotService.cloudpilot;
+
+        cloudpilot.removeCard(card.storageId);
+        this.emulationStateService.clearMountedCard();
     }
 
     private async updateCardsFromDB(): Promise<void> {

@@ -11,9 +11,13 @@
     <ion-label>Reset</ion-label>
     <ion-icon name="refresh-outline" slot="end"></ion-icon>
   </ion-item>
-  <ion-item button *ngIf="supportsStorageCard" [detail]="false" (click)="insertCard()">
+  <ion-item button *ngIf="supportsStorageCard && !hasMountedCard" [detail]="false" (click)="insertCard()">
     <ion-label>Insert {{hasMemorystick ? 'stick' : 'SD card'}}</ion-label>
     <ion-icon name="log-in-outline" slot="end"></ion-icon>
+  </ion-item>
+  <ion-item button *ngIf="supportsStorageCard && hasMountedCard" [detail]="false" (click)="ejectCard()">
+    <ion-label>Eject {{hasMemorystick ? 'stick' : 'SD card'}}</ion-label>
+    <ion-icon name="log-out-outline" slot="end"></ion-icon>
   </ion-item>
   <ion-item button [detail]="false" *ngIf="isMuted && !isAudioOff" (click)="mute(false)">
     <ion-label>Enable audio</ion-label>

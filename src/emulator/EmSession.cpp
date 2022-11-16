@@ -114,7 +114,7 @@ void EmSession::Deinitialize() {
     romImage.reset();
     savestate.Reset();
 
-    gExternalStorage.Clear();
+    gExternalStorage.UnmountAll();
 
     isInitialized = false;
 }

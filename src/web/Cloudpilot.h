@@ -87,6 +87,13 @@ class Cloudpilot {
     bool LaunchAppByDbHeader(void* header, int len);
 
     bool SupportsCardSize(uint32 size);
+    void ClearExternalStorage();
+    bool AllocateCard(const char* key, uint32 blockCount);
+    bool MountCard(const char* key);
+    bool RemoveCard(const char* key);
+    void* GetCardData(const char* key);
+    int GetCardSize(const char* key);
+    void RemountCards();
 
    private:
     Frame frame{320 * 480 * 4};
