@@ -9,6 +9,8 @@
 #include "Frame.h"
 #include "SuspendContext.h"
 
+enum class CardSupportLevel : int { unsupported = 0, sdOnly = 1, sdAndMs = 2 };
+
 class Cloudpilot {
    public:
     void* Malloc(long size);
@@ -86,7 +88,7 @@ class Cloudpilot {
     bool LaunchAppByName(const char* name);
     bool LaunchAppByDbHeader(void* header, int len);
 
-    bool SupportsCardSize(uint32 size);
+    bool DeviceSupportsCardSize(uint32 size);
     void ClearExternalStorage();
     bool AllocateCard(const char* key, uint32 blockCount);
     bool MountCard(const char* key);
@@ -94,6 +96,7 @@ class Cloudpilot {
     void* GetCardData(const char* key);
     int GetCardSize(const char* key);
     void RemountCards();
+    int GetSupportLevel(uint32 size);
 
    private:
     Frame frame{320 * 480 * 4};

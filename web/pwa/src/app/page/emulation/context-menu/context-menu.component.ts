@@ -250,7 +250,7 @@ export class ContextMenuComponent implements OnInit {
         const cloudpilot = await this.cloudpilotService.cloudpilot;
         const eligibleCards = this.storageCardService
             .getAllCards()
-            .filter((card) => cloudpilot.supportsCardSize(card.size));
+            .filter((card) => cloudpilot.deviceSupportsCardSize(card.size));
 
         if (eligibleCards.length === 0) {
             this.alertService.message(

@@ -3,6 +3,7 @@ import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
+import { FileDescriptor } from '@pwa/service/file.service';
 import { Injectable } from '@angular/core';
 import { Session } from '@pwa/model/Session';
 import { SessionService } from '@pwa/service/session.service';
@@ -77,6 +78,10 @@ export class StorageCardService {
         this.cards.push(card);
 
         return card;
+    }
+
+    async createCardFromFile(name: string, file: FileDescriptor): Promise<void> {
+        console.log('create card');
     }
 
     updateCard(card: StorageCard): Promise<void> {

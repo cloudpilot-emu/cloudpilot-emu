@@ -5,6 +5,7 @@
 /// <reference path="../node_modules/@types/emscripten/index.d.ts"/>
 
 import createModule, {
+    CardSupportLevel,
     Cloudpilot as CloudpilotNative,
     DbBackup,
     DbInstallResult,
@@ -31,6 +32,7 @@ export {
     SuspendContextClipboardPaste,
     VoidPtr,
     ZipfileWalkerState,
+    CardSupportLevel,
 } from '@native/index';
 
 export interface RomInfo {
@@ -670,8 +672,8 @@ export class Cloudpilot {
     }
 
     @guard()
-    supportsCardSize(size: number): boolean {
-        return this.cloudpilot.SupportsCardSize(size);
+    deviceSupportsCardSize(size: number): boolean {
+        return this.cloudpilot.DeviceSupportsCardSize(size);
     }
 
     @guard()
@@ -705,6 +707,11 @@ export class Cloudpilot {
     @guard()
     remountCards() {
         this.cloudpilot.RemountCards();
+    }
+
+    @guard()
+    getCardSupportLevel(size: number): CardSupportLevel {
+        return this.cloudpilot.GetSupportLevel(size);
     }
 
     private copyIn(data: Uint8Array): VoidPtr {

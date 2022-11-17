@@ -1,20 +1,23 @@
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
 
+import { CardSupportLevel } from '@native/cloudpilot_web';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageCardService } from '@pwa/service/storage-card.service';
+
+export type CardSettings = Pick<StorageCard, 'name' | 'size'>;
 
 @Component({
     selector: 'app-edit-card-dialog',
     templateUrl: './edit-card-dialog.component.html',
     styleUrls: ['./edit-card-dialog.component.scss'],
 })
-export class EditCardDialogComponent implements OnInit {
+export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
     @Input()
     onCancel = () => undefined;
 
     @Input()
-    private onSave = (card: StorageCard) => undefined;
+    private onSave = (card: T) => undefined;
 
     constructor(private storageCardService: StorageCardService) {}
 
@@ -38,6 +41,10 @@ export class EditCardDialogComponent implements OnInit {
         this.save();
     }
 
+    get memoryStickSupported(): boolean {
+        return this.cardSupportLevel === CardSupportLevel.sdAndMs;
+    }
+
     private validateNameUnique = (control: AbstractControl<string>): ValidationErrors | null => {
         return this.storageCardService.getAllCards().some((card) => card.name === control.value)
             ? { name: 'already taken' }
@@ -46,9 +53,15 @@ export class EditCardDialogComponent implements OnInit {
 
     formGroup = new FormGroup({
         name: new FormControl('', { nonNullable: true, validators: [Validators.required, this.validateNameUnique] }),
-        size: new FormControl('dummy'),
+        size: new FormControl({ value: 'dummy', disabled: true }),
     });
 
     @Input()
-    card: StorageCard | undefined;
+    card: T | undefined;
+
+    @Input()
+    newCard = false;
+
+    @Input()
+    cardSupportLevel = CardSupportLevel.sdAndMs;
 }

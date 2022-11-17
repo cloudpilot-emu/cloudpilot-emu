@@ -1,6 +1,6 @@
 <ion-header translucent>
   <ion-toolbar>
-      <ion-title>Edit storage card</ion-title>
+      <ion-title>{{newCard ? 'New storage card' : 'Edit storage card'}}</ion-title>
 
       <ion-buttons slot="primary">
           <ion-button (click)="save()" [disabled]="formGroup.invalid">Save</ion-button>
@@ -21,10 +21,11 @@
 
       <ion-item lines="none">
           <ion-label position="stacked">Card size</ion-label>
-          <ion-select [disabled]="true" formControlName="size">
+          <ion-select formControlName="size">
               <ion-select-option  value="dummy">{{card?.size | cardSize}}
               </ion-select-option>
           </ion-select>
       </ion-item>
   </form>
+  <div class="sd-only-warning" *ngIf="!memoryStickSupported"><b>WARNING:</b> This image cannot be used as a memory stick image.</div>
 </ion-content>

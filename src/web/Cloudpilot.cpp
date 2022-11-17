@@ -9,10 +9,12 @@
 #include "EmFileImport.h"
 #include "EmHAL.h"
 #include "EmROMReader.h"
+#include "EmSPISlaveSD.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
 #include "ExternalStorage.h"
 #include "Feature.h"
+#include "MemoryStick.h"
 #include "NetworkProxy.h"
 #include "SuspendManager.h"
 
@@ -260,7 +262,7 @@ bool Cloudpilot::LaunchAppByDbHeader(void* header, int len) {
     return gSession->LaunchAppByName(static_cast<const char*>(header));
 }
 
-bool Cloudpilot::SupportsCardSize(uint32 size) {
+bool Cloudpilot::DeviceSupportsCardSize(uint32 size) {
     if (size % 512 != 0) return false;
 
     return EmHAL::SupportsImageInSlot(EmHAL::Slot::sdcard, size / 512) ||
@@ -299,3 +301,15 @@ int Cloudpilot::GetCardSize(const char* key) {
 }
 
 void Cloudpilot::RemountCards() { gExternalStorage.Remount(); }
+
+int Cloudpilot::GetSupportLevel(uint32 size) {
+    if (size % 512) return static_cast<int>(CardSupportLevel::unsupported);
+
+    if (EmSPISlaveSD::IsSizeRepresentable(size >> 9) && MemoryStick::IsSizeRepresentable(size >> 9))
+        return static_cast<int>(CardSupportLevel::sdAndMs);
+
+    if (EmSPISlaveSD::IsSizeRepresentable(size >> 9))
+        return static_cast<int>(CardSupportLevel::sdOnly);
+
+    return static_cast<int>(CardSupportLevel::unsupported);
+}

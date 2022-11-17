@@ -39,6 +39,12 @@ export const enum ZipfileWalkerState {
     done = 1,
 }
 
+export const enum CardSupportLevel {
+    unsupported = 0,
+    sdOnly = 1,
+    sdAndMs = 2,
+}
+
 export interface RomInfo {
     CardVersion(): number;
     CardName(): string;
@@ -124,7 +130,7 @@ export interface Cloudpilot {
     LaunchAppByName(name: string): boolean;
     LaunchAppByDbHeader(buffer: VoidPtr, len: number): boolean;
 
-    SupportsCardSize(size: number): boolean;
+    DeviceSupportsCardSize(size: number): boolean;
     ClearExternalStorage(): void;
     AllocateCard(key: string, blockCount: number): boolean;
     MountCard(key: string): boolean;
@@ -132,6 +138,7 @@ export interface Cloudpilot {
     GetCardData(key: string): VoidPtr;
     GetCardSize(key: string): number;
     RemountCards(): void;
+    GetSupportLevel(size: number): CardSupportLevel;
 }
 
 export interface Frame {

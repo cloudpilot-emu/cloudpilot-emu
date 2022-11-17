@@ -1,7 +1,11 @@
 import { AlertController, ModalController } from '@ionic/angular';
+import { CardSettings, EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
+import { FileDescriptor, FileService } from '@pwa/service/file.service';
 
+import { AlertService } from '@pwa/service/alert.service';
+import { CardSupportLevel } from '@native/cloudpilot_web';
+import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { Component } from '@angular/core';
-import { EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
 import { NewCardDialogComponent } from './new-card-dialog/new-card-dialog.component';
 import { NewCardSize } from '@pwa/service/storage-card.service';
 import { StorageCard } from '@pwa/model/StorageCard';
@@ -16,14 +20,19 @@ export class StoragePage {
     constructor(
         public storageCardService: StorageCardService,
         private modalController: ModalController,
-        private alertController: AlertController
+        private alertController: AlertController,
+        private fileService: FileService,
+        private cloudpilotService: CloudpilotService,
+        private alertService: AlertService
     ) {}
 
     get cards(): Array<StorageCard> {
         return this.storageCardService.getAllCards();
     }
 
-    importCardImage(): void {}
+    importCardImage(): void {
+        this.fileService.openFile(this.handleCardImport);
+    }
 
     async createNewCardImage(): Promise<void> {
         const modal = await this.modalController.create({
@@ -48,11 +57,14 @@ export class StoragePage {
     }
 
     async editCard(card: StorageCard) {
+        const cloudpilot = await this.cloudpilotService.cloudpilot;
+
         const modal = await this.modalController.create({
             component: EditCardDialogComponent,
             backdropDismiss: false,
             componentProps: {
                 card,
+                cardSupportLevel: cloudpilot.getCardSupportLevel(card.size),
                 onCancel: () => modal.dismiss(),
                 onSave: (updatedCard: StorageCard) => {
                     this.storageCardService.updateCard(updatedCard);
@@ -88,6 +100,40 @@ export class StoragePage {
     trackCardBy(index: number, card: StorageCard) {
         return card.id;
     }
+
+    private handleCardImport = async (file: FileDescriptor): Promise<void> => {
+        const cloudpilot = await this.cloudpilotService.cloudpilot;
+        const supportLevel = cloudpilot.getCardSupportLevel(file.content.length);
+
+        if (supportLevel === CardSupportLevel.unsupported) {
+            this.alertService.errorMessage('This is not a supported card image.');
+            return;
+        }
+
+        const cardSettings: CardSettings | undefined = await new Promise(async (resolve) => {
+            const modal = await this.modalController.create({
+                component: EditCardDialogComponent,
+                backdropDismiss: false,
+                componentProps: {
+                    card: { name: file.name, size: file.content.length },
+                    cardSupportLevel: supportLevel,
+                    newCard: true,
+                    onCancel: () => {
+                        modal.dismiss();
+                        resolve(undefined);
+                    },
+                    onSave: (updatedCard: StorageCard) => {
+                        resolve(updatedCard);
+                        modal.dismiss();
+                    },
+                },
+            });
+
+            await modal.present();
+        });
+
+        if (cardSettings) this.storageCardService.createCardFromFile(cardSettings.name, file);
+    };
 
     public lastCardTouched: number | undefined = undefined;
 }
