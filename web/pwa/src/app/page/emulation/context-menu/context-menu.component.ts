@@ -275,6 +275,7 @@ export class ContextMenuComponent implements OnInit {
                 value: card.id,
                 checked: index === 0,
             })),
+            backdropDismiss: false,
         });
 
         await alert.present();

@@ -57,6 +57,7 @@ export class SessionsPage {
                 { text: 'Cancel', role: 'cancel' },
                 { text: 'Delete', handler: () => this.sessionService.deleteSession(session) },
             ],
+            backdropDismiss: false,
         });
 
         await alert.present();
@@ -109,6 +110,7 @@ export class SessionsPage {
             header: 'Done',
             message: `Session ${session.name} has been reset.`,
             buttons: [{ text: 'Close', role: 'cancel' }],
+            backdropDismiss: false,
         });
 
         await alert.present();

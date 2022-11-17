@@ -87,6 +87,7 @@ export class StoragePage {
     async deleteCard(card: StorageCard) {
         const alert = await this.alertController.create({
             header: 'Warning',
+            backdropDismiss: false,
             message: `Deleting the card '${card.name}' cannot be undone. Are you sure you want to continue?`,
             buttons: [
                 { text: 'Cancel', role: 'cancel' },
