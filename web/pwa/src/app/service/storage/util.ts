@@ -29,3 +29,13 @@ export function compressPage(page: Uint32Array): Uint32Array | number {
 
     return page[0] & 0xff;
 }
+
+export function compressStoragePage(page: Uint32Array): Uint32Array | number {
+    const fst = page[0];
+
+    for (let i = 1; i < 2048; i++) {
+        if (page[i] !== fst) return page;
+    }
+
+    return fst;
+}

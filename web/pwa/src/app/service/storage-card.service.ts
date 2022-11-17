@@ -5,6 +5,7 @@ import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { FileDescriptor } from '@pwa/service/file.service';
 import { Injectable } from '@angular/core';
+import { LoadingController } from '@ionic/angular';
 import { Session } from '@pwa/model/Session';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
@@ -55,7 +56,8 @@ export class StorageCardService {
         private storageService: StorageService,
         private emulationStateService: EmulationStateService,
         private cloudpilotService: CloudpilotService,
-        private errorService: ErrorService
+        private errorService: ErrorService,
+        private loadingController: LoadingController
     ) {
         this.updateCardsFromDB().then(() => (this.loading = false));
 
@@ -80,8 +82,29 @@ export class StorageCardService {
         return card;
     }
 
-    async createCardFromFile(name: string, file: FileDescriptor): Promise<void> {
-        console.log('create card');
+    async createCardFromFile(name: string, file: FileDescriptor): Promise<StorageCard> {
+        const cardWithoutId: Omit<StorageCard, 'id'> = {
+            storageId: newStorageId(),
+            name,
+            size: file.content.length,
+            status: StorageCardStatus.clean,
+        };
+
+        const loader = await this.loadingController.create({ message: 'Importing...' });
+
+        try {
+            await loader.present();
+
+            const card = await this.storageService.importStorageCard(
+                cardWithoutId,
+                new Uint32Array(file.content.buffer, file.content.byteOffset, file.content.length >>> 2)
+            );
+            this.cards.push(card);
+
+            return card;
+        } finally {
+            loader.dismiss();
+        }
     }
 
     updateCard(card: StorageCard): Promise<void> {

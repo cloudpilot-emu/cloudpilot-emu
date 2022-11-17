@@ -6,10 +6,11 @@ import {
     OBJECT_STORE_ROM,
     OBJECT_STORE_SESSION,
     OBJECT_STORE_STATE,
+    OBJECT_STORE_STORAGE,
     OBJECT_STORE_STORAGE_CARD,
 } from './storage/constants';
 import { Injectable, NgZone } from '@angular/core';
-import { complete, compressPage } from './storage/util';
+import { complete, compressPage, compressStoragePage } from './storage/util';
 import { migrate0to1, migrate1to2, migrate2to4, migrate4to5, migrate5to6, migrate6to7 } from './storage/migrations';
 
 import { ErrorService } from './error.service';
@@ -206,6 +207,40 @@ export class StorageService {
     }
 
     @guard()
+    async importStorageCard(card: Omit<StorageCard, 'id'>, data: Uint32Array): Promise<StorageCard> {
+        return this.ngZone.runOutsideAngular(async () => {
+            const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
+            const objectStoreStorageCard = tx.objectStore(OBJECT_STORE_STORAGE_CARD);
+            const objectStoreStorage = tx.objectStore(OBJECT_STORE_STORAGE);
+
+            await this.acquireLock(objectStoreStorageCard, -1);
+
+            const key = await complete(objectStoreStorageCard.add(card));
+            const pageCount = (card.size >>> 13) + (data.length % 8192 === 0 ? 0 : 1);
+
+            const paddedPage = new Uint32Array(2048);
+
+            for (let iPage = 0; iPage < pageCount; iPage++) {
+                const page = data.subarray(iPage * 2048, (iPage + 1) * 2048);
+                if (iPage === pageCount - 1) paddedPage.set(page);
+
+                const compressedPage = compressStoragePage(iPage === pageCount - 1 ? paddedPage : page);
+                if (compressedPage === 0) continue;
+
+                objectStoreStorage.put(typeof compressedPage === 'number' ? compressedPage : compressedPage?.slice(), [
+                    key,
+                    iPage,
+                ]);
+            }
+
+            const updatedCard = await complete(objectStoreStorageCard.get(key));
+            await complete(tx);
+
+            return updatedCard;
+        });
+    }
+
+    @guard()
     async getAllStorageCards(): Promise<Array<StorageCard>> {
         const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_STORAGE_CARD);
 
@@ -238,15 +273,49 @@ export class StorageService {
 
     @guard()
     async deleteStorageCard(id: number): Promise<void> {
-        const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_STORAGE_CARD);
-        objectStore.delete(id);
+        const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
+        const objectStoreStorageCard = tx.objectStore(OBJECT_STORE_STORAGE_CARD);
+        const objectStoreStorage = tx.objectStore(OBJECT_STORE_STORAGE);
+
+        await this.acquireLock(objectStoreStorageCard, -1);
+
+        objectStoreStorageCard.delete(id);
+        objectStoreStorage.delete(IDBKeyRange.bound([id, 0], [id + 1, 0], false, true));
 
         await complete(tx);
     }
 
     @guard()
     async loadCardData(id: number, target: Uint32Array): Promise<void> {
-        // TODO
+        return this.ngZone.runOutsideAngular(async () => {
+            const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
+            const objectStore = tx.objectStore(OBJECT_STORE_STORAGE);
+
+            await this.acquireLock(objectStore, -1);
+
+            await new Promise<void>(async (resolve, reject) => {
+                const request = objectStore.openCursor(IDBKeyRange.bound([id, 0], [id + 1, 0], false, true));
+
+                request.onsuccess = () => {
+                    const cursor = request.result;
+
+                    if (!cursor) return resolve();
+
+                    const compressedPage: number | Uint32Array = cursor.value;
+                    const [, iPage] = cursor.key as [number, number];
+
+                    if (typeof compressedPage === 'number') {
+                        target.subarray(iPage * 2048, (iPage + 1) * 2048).fill(compressedPage);
+                    } else {
+                        target.subarray(iPage * 2048, (iPage + 1) * 2048).set(compressedPage);
+                    }
+
+                    cursor.continue();
+                };
+
+                request.onerror = () => reject(new StorageError(request.error?.message));
+            });
+        });
     }
 
     @guard()

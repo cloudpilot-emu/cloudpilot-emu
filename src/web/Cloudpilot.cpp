@@ -272,7 +272,10 @@ bool Cloudpilot::DeviceSupportsCardSize(uint32 size) {
 void Cloudpilot::ClearExternalStorage() { gExternalStorage.Clear(); }
 
 bool Cloudpilot::AllocateCard(const char* key, uint32 blockCount) {
-    uint8* data = new uint8[CardImage::BLOCK_SIZE * blockCount];
+    uint32 paddedSize = CardImage::BLOCK_SIZE * blockCount;
+    if (paddedSize % 8192 != 0) paddedSize = ((paddedSize / 8192) + 1) * 8192;
+
+    uint8* data = new uint8[paddedSize];
 
     if (!gExternalStorage.AddImage(key, data, CardImage::BLOCK_SIZE * blockCount)) {
         delete[] data;
