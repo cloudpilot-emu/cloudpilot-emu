@@ -276,6 +276,7 @@ bool Cloudpilot::AllocateCard(const char* key, uint32 blockCount) {
     if (paddedSize % 8192 != 0) paddedSize = ((paddedSize / 8192) + 1) * 8192;
 
     uint8* data = new uint8[paddedSize];
+    memset(data, 0, paddedSize);
 
     if (!gExternalStorage.AddImage(key, data, CardImage::BLOCK_SIZE * blockCount)) {
         delete[] data;
