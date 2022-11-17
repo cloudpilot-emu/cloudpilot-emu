@@ -1,6 +1,7 @@
 # Next version
 
--   Support for SD card and memory stick (not yet available in app).
+-   Support for SD card and memory stick. Support in web app is wip; insertion
+    and changes to card data are currently not persistent.
 
 # Version 1.7.5
 
