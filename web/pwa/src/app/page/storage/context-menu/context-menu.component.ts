@@ -12,6 +12,9 @@ export class ContextMenuComponent {
     onEdit = () => undefined;
 
     @Input()
+    onSave = () => undefined;
+
+    @Input()
     onCheck = () => undefined;
 
     @Input()

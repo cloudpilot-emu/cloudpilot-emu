@@ -301,12 +301,16 @@ export class StorageService {
 
                     if (!cursor) return resolve();
 
-                    const compressedPage: number | Uint32Array = cursor.value;
+                    let compressedPage: number | Uint32Array = cursor.value;
                     const [, iPage] = cursor.key as [number, number];
 
                     if (typeof compressedPage === 'number') {
                         target.subarray(iPage * 2048, (iPage + 1) * 2048).fill(compressedPage);
                     } else {
+                        if ((iPage + 1) * 2048 > target.length) {
+                            compressedPage = compressedPage.subarray(0, 2048 - (iPage + 1) * 2048 + target.length);
+                        }
+
                         target.subarray(iPage * 2048, (iPage + 1) * 2048).set(compressedPage);
                     }
 

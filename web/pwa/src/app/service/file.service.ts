@@ -157,14 +157,14 @@ export class FileService {
     private async openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): Promise<void> {
         if (this.kvsService.kvs.enableRemoteInstall) {
             const sheet = await this.actionSheetController.create({
-                header: 'From where do you want to install?',
+                header: 'What source do you want to open?',
                 buttons: [
                     {
                         text: 'Local files',
                         handler: () => this.openFilesLocal(multiple, handler),
                     },
                     {
-                        text: 'Remote server',
+                        text: 'File on remote server',
                         handler: () => this.queryAndOpenFileRemote(handler),
                     },
                 ],

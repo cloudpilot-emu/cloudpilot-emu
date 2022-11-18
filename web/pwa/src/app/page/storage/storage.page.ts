@@ -1,4 +1,4 @@
-import { AlertController, ModalController } from '@ionic/angular';
+import { ActionSheetController, AlertController, LoadingController, ModalController } from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 
@@ -10,6 +10,7 @@ import { NewCardDialogComponent } from './new-card-dialog/new-card-dialog.compon
 import { NewCardSize } from '@pwa/service/storage-card.service';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageCardService } from './../../service/storage-card.service';
+import { StorageService } from '@pwa/service/storage.service';
 
 @Component({
     selector: 'app-storage',
@@ -23,11 +24,32 @@ export class StoragePage {
         private alertController: AlertController,
         private fileService: FileService,
         private cloudpilotService: CloudpilotService,
-        private alertService: AlertService
+        private alertService: AlertService,
+        private storageService: StorageService,
+        private loadingController: LoadingController,
+        private actionSheetController: ActionSheetController
     ) {}
 
     get cards(): Array<StorageCard> {
         return this.storageCardService.getAllCards();
+    }
+
+    async addCardImage(): Promise<void> {
+        const sheet = await this.actionSheetController.create({
+            header: 'What type of image do you want to create?',
+            buttons: [
+                {
+                    text: 'Empty image',
+                    handler: () => this.createNewCardImage(),
+                },
+                {
+                    text: 'Import an existing image',
+                    handler: () => this.importCardImage(),
+                },
+            ],
+        });
+
+        sheet.present();
     }
 
     importCardImage(): void {
@@ -74,6 +96,24 @@ export class StoragePage {
         });
 
         await modal.present();
+    }
+
+    async saveCard(card: StorageCard) {
+        const loader = await this.loadingController.create({ message: 'saving...' });
+        await loader.present();
+
+        const data = new Uint32Array(card.size >>> 2);
+
+        try {
+            await this.storageService.loadCardData(card.id, data);
+        } finally {
+            loader.dismiss();
+        }
+
+        this.fileService.saveFile(
+            card.name.match(/\.img$/) ? card.name : `${card.name}.img`,
+            new Uint8Array(data.buffer, data.byteOffset, data.length << 2)
+        );
     }
 
     checkCard(card: StorageCard) {

@@ -2,7 +2,10 @@
   <ion-item button [detail]="false" (click)="onEdit()">
     Edit
   </ion-item>
-  <ion-item button [disabled]="isAttached" [detail]="false" (click)="onCheck()">
+  <ion-item button [detail]="false" (click)="onEdit()">
+    Save
+  </ion-item>
+  <ion-item button [disabled]="isAttached" [detail]="false" (click)="onSave()">
     Check
   </ion-item>
   <ion-item button [disabled]="!isAttached" [detail]="false" (click)="onEject()">
