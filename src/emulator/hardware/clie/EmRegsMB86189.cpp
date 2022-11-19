@@ -222,8 +222,7 @@ void EmRegsMB86189::SetState(State state) {
 }
 
 void EmRegsMB86189::BeginTpc() {
-    uint8 tpcId = reg.mscmd >> 12;
-    uint32 transferSize = reg.mscmd & DATA_SIZE_MASK;
+    const uint8 tpcId = reg.mscmd >> 12;
 
     SetState(MemoryStick::GetTpcType(tpcId) == MemoryStick::TpcType::read ? State::tpcRead
                                                                           : State::tpcWrite);
@@ -233,7 +232,7 @@ void EmRegsMB86189::BeginTpc() {
     if (state == State::tpcRead) memoryStick.ExecuteTpc(tpcId);
 
     if (state == State::tpcWrite) {
-        if (transferSize == 0)
+        if (GetTransferSize() == 0)
             FinishTpc();
         else
             while (fifo.Size() > 0 && state != State::idle) FifoWrite(fifo.Pop());
@@ -242,7 +241,7 @@ void EmRegsMB86189::BeginTpc() {
 
 void EmRegsMB86189::FinishTpc() {
     if (state == State::tpcWrite)
-        memoryStick.ExecuteTpc(reg.mscmd >> 12, reg.mscmd & DATA_SIZE_MASK, writeBuffer);
+        memoryStick.ExecuteTpc(reg.mscmd >> 12, GetTransferSize(), writeBuffer);
     else
         memoryStick.FinishReadTpc();
 
@@ -254,10 +253,10 @@ void EmRegsMB86189::FinishTpc() {
 void EmRegsMB86189::FifoWrite(uint16 data) {
     if (state != State::idle) {
         writeBuffer[writeBufferSize++] = data >> 8;
-        if (writeBufferSize >= (reg.mscmd & DATA_SIZE_MASK)) return FinishTpc();
+        if (writeBufferSize >= GetTransferSize()) return FinishTpc();
 
         writeBuffer[writeBufferSize++] = data;
-        if (writeBufferSize >= (reg.mscmd & DATA_SIZE_MASK)) FinishTpc();
+        if (writeBufferSize >= GetTransferSize()) FinishTpc();
 
         return;
     }
@@ -268,6 +267,16 @@ void EmRegsMB86189::FifoWrite(uint16 data) {
     }
 
     fifo.Push(data);
+}
+
+uint16 EmRegsMB86189::GetTransferSize() {
+    const uint32 transferSize = reg.mscmd & DATA_SIZE_MASK;
+    if (transferSize > 512) {
+        cerr << "capping unexpected transfer size to 512 bytes" << endl << flush;
+        return 512;
+    }
+
+    return transferSize;
 }
 
 uint32 EmRegsMB86189::mscmdRead(emuptr address, int size) {

@@ -63,6 +63,8 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
 
     void FifoWrite(uint16 data);
 
+    uint16 GetTransferSize();
+
     uint32 mscmdRead(emuptr address, int size);
     uint32 mscsRead(emuptr address, int size);
     uint32 msdataRead(emuptr address, int size);
