@@ -33,6 +33,8 @@ namespace {
 
     constexpr uint16 MSICS_INTEN = 0x0080;
     constexpr uint16 MSICS_RDY = 0x8000;
+
+    constexpr uint16 DATA_SIZE_MASK = 0x03ff;
 }  // namespace
 
 EmRegsMB86189::EmRegsMB86189(emuptr baseAddress) : baseAddress(baseAddress) {
@@ -221,7 +223,7 @@ void EmRegsMB86189::SetState(State state) {
 
 void EmRegsMB86189::BeginTpc() {
     uint8 tpcId = reg.mscmd >> 12;
-    uint32 transferSize = reg.mscmd & 0x2ff;
+    uint32 transferSize = reg.mscmd & DATA_SIZE_MASK;
 
     SetState(MemoryStick::GetTpcType(tpcId) == MemoryStick::TpcType::read ? State::tpcRead
                                                                           : State::tpcWrite);
@@ -240,7 +242,7 @@ void EmRegsMB86189::BeginTpc() {
 
 void EmRegsMB86189::FinishTpc() {
     if (state == State::tpcWrite)
-        memoryStick.ExecuteTpc(reg.mscmd >> 12, reg.mscmd & 0x3ff, writeBuffer);
+        memoryStick.ExecuteTpc(reg.mscmd >> 12, reg.mscmd & DATA_SIZE_MASK, writeBuffer);
     else
         memoryStick.FinishReadTpc();
 
@@ -252,10 +254,10 @@ void EmRegsMB86189::FinishTpc() {
 void EmRegsMB86189::FifoWrite(uint16 data) {
     if (state != State::idle) {
         writeBuffer[writeBufferSize++] = data >> 8;
-        if (writeBufferSize >= (reg.mscmd & 0x2ff)) return FinishTpc();
+        if (writeBufferSize >= (reg.mscmd & DATA_SIZE_MASK)) return FinishTpc();
 
         writeBuffer[writeBufferSize++] = data;
-        if (writeBufferSize >= (reg.mscmd & 0x2ff)) FinishTpc();
+        if (writeBufferSize >= (reg.mscmd & DATA_SIZE_MASK)) FinishTpc();
 
         return;
     }
