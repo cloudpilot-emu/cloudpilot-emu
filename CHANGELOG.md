@@ -1,3 +1,8 @@
+# Version 1.7.6
+
+-   Fix a heap overflow.
+-   Minor UI tuning.
+
 # Version 1.7.5
 
 -   Fix a UI regression.
