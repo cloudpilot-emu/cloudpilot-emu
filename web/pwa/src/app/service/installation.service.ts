@@ -116,7 +116,7 @@ class InstallationContext {
         }
 
         if (this.sizeInstalledSinceLastsnapshot > SNAPSHOT_LIMIT) {
-            this.snapshotService.triggerSnapshot();
+            await this.snapshotService.triggerSnapshot();
             this.sizeInstalledSinceLastsnapshot = 0;
         }
 

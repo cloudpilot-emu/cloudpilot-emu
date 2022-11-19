@@ -18,9 +18,6 @@ export class ContextMenuComponent {
     onCheck = () => undefined;
 
     @Input()
-    onEject = () => undefined;
-
-    @Input()
     onDelete = () => undefined;
 
     constructor() {}

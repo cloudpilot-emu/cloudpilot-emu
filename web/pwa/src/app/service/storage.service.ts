@@ -11,7 +11,15 @@ import {
 } from './storage/constants';
 import { Injectable, NgZone } from '@angular/core';
 import { complete, compressPage, compressStoragePage } from './storage/util';
-import { migrate0to1, migrate1to2, migrate2to4, migrate4to5, migrate5to6, migrate6to7 } from './storage/migrations';
+import {
+    migrate0to1,
+    migrate1to2,
+    migrate2to4,
+    migrate4to5,
+    migrate5to6,
+    migrate6to7,
+    migrate7to8,
+} from './storage/migrations';
 
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
@@ -554,6 +562,10 @@ export class StorageService {
 
                     if (e.oldVersion < 7) {
                         await migrate6to7(request.result, request.transaction);
+                    }
+
+                    if (e.oldVersion < 8) {
+                        await migrate7to8(request.result, request.transaction);
                     }
                 };
             });

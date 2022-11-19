@@ -1,6 +1,14 @@
 import { E_LOCK_LOST, StorageService } from './storage.service';
+import {
+    INDEX_CARD_STORAGE_ID,
+    OBJECT_STORE_MEMORY,
+    OBJECT_STORE_MEMORY_META,
+    OBJECT_STORE_STATE,
+    OBJECT_STORE_STORAGE,
+    OBJECT_STORE_STORAGE_CARD,
+} from './storage/constants';
 import { Injectable, NgZone } from '@angular/core';
-import { OBJECT_STORE_MEMORY, OBJECT_STORE_MEMORY_META, OBJECT_STORE_STATE } from './storage/constants';
+import { complete, compressPage } from './storage/util';
 
 import { Cloudpilot } from '@common/Cloudpilot';
 import { EmulationStateService } from './emulation-state.service';
@@ -9,7 +17,7 @@ import { Event } from 'microevent.ts';
 import { MemoryMetadata } from './../model/MemoryMetadata';
 import { Session } from '@pwa/model/Session';
 import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
-import { compressPage } from './storage/util';
+import { StorageCard } from './../model/StorageCard';
 
 declare global {
     interface IDBDatabase {
@@ -47,6 +55,13 @@ export class SnapshotService {
 
         this.db = await this.storageService.getDb();
         this.cloudpilot = cloudpilot;
+
+        this.resetCard();
+    }
+
+    resetCard(): void {
+        this.cardPagePool = [];
+        this.cardDirtyPages = undefined;
     }
 
     triggerSnapshot = (): Promise<void> =>
@@ -105,7 +120,13 @@ export class SnapshotService {
 
     private async triggerSnapshotOnce(): Promise<void> {
         const tx = this.db.transaction(
-            [OBJECT_STORE_MEMORY, OBJECT_STORE_MEMORY_META, OBJECT_STORE_STATE],
+            [
+                OBJECT_STORE_MEMORY,
+                OBJECT_STORE_MEMORY_META,
+                OBJECT_STORE_STATE,
+                OBJECT_STORE_STORAGE,
+                OBJECT_STORE_STORAGE_CARD,
+            ],
             'readwrite',
             {
                 durability: 'relaxed',
@@ -117,6 +138,15 @@ export class SnapshotService {
         if (this.cloudpilot.isSuspended()) return;
 
         if (this.emulationState.getCurrentSession()?.id !== this.sessionId) throw E_SESSION_MISMATCH;
+
+        let storageCard: StorageCard | undefined;
+        const storageId = this.cloudpilot.getMountedKey();
+
+        if (storageId) {
+            storageCard = await complete(
+                tx.objectStore(OBJECT_STORE_STORAGE_CARD).index(INDEX_CARD_STORAGE_ID).get(storageId)
+            );
+        }
 
         const statistics: SnapshotStatistics = await new Promise((resolve, reject) => {
             let isTimeout = false;
@@ -139,6 +169,7 @@ export class SnapshotService {
             tx.oncomplete = () => {
                 clearTimeout(timeout);
                 this.dirtyPages?.fill(0);
+                this.cardDirtyPages?.fill(0);
 
                 resolve({
                     timestamp: Date.now(),
@@ -158,6 +189,9 @@ export class SnapshotService {
                 timestampBlockingStart = performance.now();
 
                 pages = this.saveDirtyMemory(tx);
+                if (storageCard) {
+                    pages += this.saveDirtyStorage(storageCard, tx);
+                }
                 this.saveSession(tx);
 
                 timestampBlockingEnd = performance.now();
@@ -210,10 +244,10 @@ export class SnapshotService {
                 continue;
             }
 
-            for (let j = 0; j < 8; j++) {
+            for (let mask = 1; mask < 0x0100; mask <<= 1) {
                 if (iPage >= this.pages.length) break;
 
-                if (this.dirtyPages[i] & (1 << j)) {
+                if (this.dirtyPages[i] & mask) {
                     const compressedPage = compressPage(memory.subarray(iPage * 256, (iPage + 1) * 256));
 
                     if (typeof compressedPage === 'number') {
@@ -232,6 +266,60 @@ export class SnapshotService {
         }
 
         return pagesSaved;
+    }
+
+    private saveDirtyStorage(card: StorageCard, tx: IDBTransaction): number {
+        const dirtyPages = this.cloudpilot.getCardDirtyPages(card.storageId);
+        const data = this.cloudpilot.getCardData(card.storageId);
+
+        if (!data) {
+            console.log(`seems ${card.name} was unmounted`);
+            return 0;
+        }
+
+        if (!dirtyPages) throw new Error(`failed to retrieve dirty pages for card ${card.name}`);
+        if (data.length !== card.size >>> 2) throw new Error('card size mismatch');
+
+        if (!this.cardDirtyPages) this.cardDirtyPages = new Uint8Array(dirtyPages.length);
+
+        if (this.cardDirtyPages.length !== dirtyPages.length)
+            throw new Error(`card size has changed without notification`);
+
+        let iPage = 0;
+        let iPool = 0;
+        let pagesSaved = 0;
+        const objectStore = tx.objectStore(OBJECT_STORE_STORAGE);
+        const pagesTotal = (data.length >> 11) + (data.length % 2048 > 0 ? 1 : 0);
+
+        for (let i = 0; i < dirtyPages.length; i++) {
+            this.cardDirtyPages[i] |= dirtyPages[i];
+            dirtyPages[i] = 0;
+
+            if (this.cardDirtyPages[i] === 0) {
+                iPage += 8;
+                continue;
+            }
+
+            for (let mask = 1; mask < 0x0100; mask <<= 1) {
+                if (iPage >= pagesTotal) break;
+
+                if (this.cardDirtyPages[i] & mask) {
+                    if (iPool >= this.cardPagePool.length) {
+                        this.cardPagePool.push(new Uint32Array(2048));
+                    }
+
+                    const page = this.cardPagePool[iPool++];
+                    page.set(data.subarray(iPage * 2048, (iPage + 1) * 2048));
+
+                    objectStore.put(page, [card.id, iPage]);
+                    pagesSaved++;
+                }
+
+                iPage++;
+            }
+        }
+
+        return pagesSaved * 8;
     }
 
     private saveSession(tx: IDBTransaction) {
@@ -262,6 +350,9 @@ export class SnapshotService {
     private pages: Array<Uint32Array> | undefined;
     private cloudpilot!: Cloudpilot;
     private state: Uint8Array | undefined;
+
+    private cardPagePool: Array<Uint32Array> = [];
+    private cardDirtyPages: Uint8Array | undefined;
 
     private db!: IDBDatabase;
 }

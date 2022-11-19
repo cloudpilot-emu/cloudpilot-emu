@@ -82,9 +82,11 @@ interface Cloudpilot {
     boolean MountCard([Const] DOMString key);
     boolean RemoveCard([Const] DOMString key);
     VoidPtr GetCardData([Const] DOMString key);
+    VoidPtr GetCardDirtyPages([Const] DOMString key);
     long GetCardSize([Const] DOMString key);
     void RemountCards();
     long GetSupportLevel(long size);
+    [Const] DOMString GetMountedKey();
 };
 
 interface RomInfo {

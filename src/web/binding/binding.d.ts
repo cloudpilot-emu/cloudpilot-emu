@@ -136,9 +136,11 @@ export interface Cloudpilot {
     MountCard(key: string): boolean;
     RemoveCard(key: string): boolean;
     GetCardData(key: string): VoidPtr;
+    GetCardDirtyPages(key: string): VoidPtr;
     GetCardSize(key: string): number;
     RemountCards(): void;
     GetSupportLevel(size: number): CardSupportLevel;
+    GetMountedKey(): string;
 }
 
 export interface Frame {

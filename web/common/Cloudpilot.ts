@@ -695,6 +695,23 @@ export class Cloudpilot {
     }
 
     @guard()
+    getCardDirtyPages(key: string): Uint8Array | undefined {
+        const dirtyPagesPtr = this.module.getPointer(this.cloudpilot.GetCardDirtyPages(key));
+        if (dirtyPagesPtr === 0) return undefined;
+
+        const cardSize = this.cloudpilot.GetCardSize(key);
+        const pages = (cardSize >>> 13) + (cardSize % 8192 > 0 ? 1 : 0);
+        const bufferSize = (pages >>> 3) + (pages % 8 > 0 ? 1 : 0);
+
+        return this.module.HEAPU8.subarray(dirtyPagesPtr, dirtyPagesPtr + bufferSize);
+    }
+
+    @guard()
+    getMountedKey(): string {
+        return this.cloudpilot.GetMountedKey();
+    }
+
+    @guard()
     mountCard(key: string): boolean {
         return this.cloudpilot.MountCard(key);
     }

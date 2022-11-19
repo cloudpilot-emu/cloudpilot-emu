@@ -7,7 +7,9 @@
 
 class CardImage {
    public:
+    // Those two values cannot be changed --- they're here for documentation only!
     constexpr static size_t BLOCK_SIZE = 512;
+    constexpr static size_t DIRTY_PAGE_SIZE = 8192;
 
    public:
     CardImage(uint8* data, size_t blocksTotal);
@@ -17,9 +19,11 @@ class CardImage {
     size_t BlocksTotal() const;
 
     uint8* RawData();
+    uint8* DirtyPages();
 
    private:
-    unique_ptr<uint8> data;
+    unique_ptr<uint8[]> data;
+    unique_ptr<uint8[]> dirtyPages;
     size_t blocksTotal;
 };
 

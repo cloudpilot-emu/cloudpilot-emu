@@ -8,6 +8,8 @@ const OBJECT_STORE_STORAGE = 'storage';
 const OBJECT_STORE_STORAGE_META = 'storage-meta';
 const OBJECT_STORE_STORAGE_CARD = 'storage-card';
 
+const INDEX_CARD_STORAGE_ID = 'storageId';
+
 export function migrate0to1(db: IDBDatabase): void {
     const sessionStore = db.createObjectStore(OBJECT_STORE_SESSION, { keyPath: 'id', autoIncrement: true });
     sessionStore.createIndex('rom', 'rom');
@@ -153,4 +155,10 @@ export async function migrate6to7(db: IDBDatabase, tx: IDBTransaction | null): P
     if (!tx) throw new Error('no version change transaction!');
 
     tx.objectStore(OBJECT_STORE_STORAGE_META).name = OBJECT_STORE_STORAGE_CARD;
+}
+
+export async function migrate7to8(db: IDBDatabase, tx: IDBTransaction | null): Promise<void> {
+    if (!tx) throw new Error('no version change transaction!');
+
+    tx.objectStore(OBJECT_STORE_STORAGE_CARD).createIndex(INDEX_CARD_STORAGE_ID, 'storageId');
 }

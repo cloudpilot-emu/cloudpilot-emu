@@ -294,6 +294,13 @@ void* Cloudpilot::GetCardData(const char* key) {
     return image->RawData();
 }
 
+void* Cloudpilot::GetCardDirtyPages(const char* key) {
+    CardImage* image = gExternalStorage.GetImage(key);
+    if (!image) return nullptr;
+
+    return image->DirtyPages();
+}
+
 int Cloudpilot::GetCardSize(const char* key) {
     CardImage* image = gExternalStorage.GetImage(key);
     if (!image) return 0;
@@ -313,4 +320,18 @@ int Cloudpilot::GetSupportLevel(uint32 size) {
         return static_cast<int>(CardSupportLevel::sdOnly);
 
     return static_cast<int>(CardSupportLevel::unsupported);
+}
+
+const char* Cloudpilot::GetMountedKey() {
+    static string key;
+    key = "";
+
+    for (auto slot : {EmHAL::Slot::memorystick, EmHAL::Slot::sdcard}) {
+        if (!gExternalStorage.IsMounted(slot)) continue;
+
+        key = gExternalStorage.GetImageKeyInSlot(slot);
+        break;
+    }
+
+    return key.c_str();
 }

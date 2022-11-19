@@ -120,10 +120,6 @@ export class StoragePage {
         console.log(`check ${card.name}`);
     }
 
-    ejectCard(card: StorageCard) {
-        console.log(`eject ${card.name}`);
-    }
-
     async deleteCard(card: StorageCard) {
         const alert = await this.alertController.create({
             header: 'Warning',

@@ -40,7 +40,7 @@
   <ion-list *ngIf="!storageCardService.isLoading() && cards.length > 0">
     <app-storage-card *ngFor="let card of cards;trackBy:trackCardBy" [card]="card"
       (delete)="deleteCard(card)" (select)="selectCard(card)" (edit)="editCard(card)"
-      (check)="checkCard(card)" (eject)="ejectCard(card)" (interaction)="lastCardTouched = card.id" (save)="saveCard(card)"
+      (check)="checkCard(card)" (interaction)="lastCardTouched = card.id" (save)="saveCard(card)"
       [touched]="card.id === lastCardTouched">
     </app-storage-card>
   </ion-list>

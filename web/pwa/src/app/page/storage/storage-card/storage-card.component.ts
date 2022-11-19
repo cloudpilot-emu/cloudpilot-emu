@@ -38,10 +38,6 @@ export class StorageCardComponent {
                     popover.dismiss();
                     this.check.emit();
                 },
-                onEject: () => {
-                    popover.dismiss();
-                    this.eject.emit();
-                },
                 onDelete: () => {
                     popover.dismiss();
                     this.delete.emit();
@@ -102,9 +98,6 @@ export class StorageCardComponent {
 
     @Output()
     check = new EventEmitter<StorageCard>();
-
-    @Output()
-    eject = new EventEmitter<StorageCard>();
 
     @Output()
     delete = new EventEmitter<StorageCard>();

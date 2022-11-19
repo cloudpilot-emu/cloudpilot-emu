@@ -8,6 +8,7 @@ import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Session } from '@pwa/model/Session';
 import { SessionService } from '@pwa/service/session.service';
+import { SnapshotService } from '@pwa/service/snapshot.service';
 import { StorageService } from '@pwa/service/storage.service';
 import { v4 as uuid } from 'uuid';
 
@@ -57,7 +58,8 @@ export class StorageCardService {
         private emulationStateService: EmulationStateService,
         private cloudpilotService: CloudpilotService,
         private errorService: ErrorService,
-        private loadingController: LoadingController
+        private loadingController: LoadingController,
+        private snapshotService: SnapshotService
     ) {
         this.updateCardsFromDB().then(() => (this.loading = false));
 
@@ -134,6 +136,10 @@ export class StorageCardService {
         }
 
         const cloudpilot = await this.cloudpilotService.cloudpilot;
+        if (cloudpilot.getMountedKey()) {
+            return this.errorService.fatalBug('attempt to mount a card while another card is mounted');
+        }
+
         if (!cloudpilot.allocateCard(card.storageId, card.size)) {
             return this.errorService.fatalBug('failed to allocate card');
         }
@@ -163,10 +169,15 @@ export class StorageCardService {
             return this.errorService.fatalBug(`no card with id ${cardId}`);
         }
 
+        await this.snapshotService.waitForPendingSnapshot();
+        await this.snapshotService.triggerSnapshot();
+
         const cloudpilot = await this.cloudpilotService.cloudpilot;
 
         cloudpilot.removeCard(card.storageId);
         this.emulationStateService.clearMountedCard();
+
+        this.snapshotService.resetCard();
     }
 
     private async updateCardsFromDB(): Promise<void> {

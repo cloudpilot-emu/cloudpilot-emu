@@ -94,9 +94,11 @@ class Cloudpilot {
     bool MountCard(const char* key);
     bool RemoveCard(const char* key);
     void* GetCardData(const char* key);
+    void* GetCardDirtyPages(const char* key);
     int GetCardSize(const char* key);
     void RemountCards();
     int GetSupportLevel(uint32 size);
+    const char* GetMountedKey();
 
    private:
     Frame frame{320 * 480 * 4};

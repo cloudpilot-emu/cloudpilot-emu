@@ -11,12 +11,8 @@
   </ion-item-options>
 
   <ion-item-options side="end">
-    <ion-item-option [disabled]="isAttached" color="secondary" icon-only (click)="slidingItem.close(); check.emit(card)">
+    <ion-item-option [disabled]="isAttached" color="tertiary" icon-only (click)="slidingItem.close(); check.emit(card)">
       <ion-icon name="medkit-outline"></ion-icon>
-    </ion-item-option>
-
-    <ion-item-option [disabled]="!isAttached" color="tertiary" icon-only (click)="slidingItem.close(); eject.emit(card)">
-      <ion-icon name="log-out-outline"></ion-icon>
     </ion-item-option>
 
     <ion-item-option color="danger" icon-only (click)="slidingItem.close(); delete.emit(card)">
@@ -25,7 +21,7 @@
 
   </ion-item-options>
 
-  <ion-item [color]="color" (click)="select.emit()">
+  <ion-item [color]="color" (click)="select.emit(); interaction.emit()">
     <ion-label>
       <h2>{{card?.name}}</h2>
       <p>{{card?.size | cardSize}}, {{status}}</p>
