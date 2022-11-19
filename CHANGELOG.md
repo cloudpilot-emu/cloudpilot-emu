@@ -3,6 +3,11 @@
 -   Support for SD card and memory stick. Support in web app is wip; insertion
     and changes to card data are currently not persistent.
 
+# Version 1.7.6
+
+-   Fix a heap overflow.
+-   Minor UI tuning.
+
 # Version 1.7.5
 
 -   Fix a UI regression.

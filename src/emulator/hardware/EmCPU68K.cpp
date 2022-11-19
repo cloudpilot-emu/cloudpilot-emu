@@ -1176,7 +1176,7 @@ void EmCPU68K::InitializeUAETables(void) {
 
 #ifdef __EMSCRIPTEN__
     cpuop_func** cpufunctbl =
-        (cpuop_func**)malloc(0xffff * sizeof(cpuop_func*));  // (normally in newcpu.c)
+        (cpuop_func**)malloc(0x10000 * sizeof(cpuop_func*));  // (normally in newcpu.c)
 #endif
 
     unsigned long opcode;
