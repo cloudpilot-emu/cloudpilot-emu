@@ -2,6 +2,11 @@
 
 -   Support for SD card and memory stick. Support in web app is wip; insertion
     and changes to card data are currently not persistent.
+# Version 1.7.7
+
+-   Fix a bug that might have caused data corruption if a second instance
+    of CP is opened in another window.
+
 
 # Version 1.7.6
 
