@@ -1,6 +1,7 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
+import { EmulationStateService } from '@pwa/service/emulation-state.service';
 import { Router } from '@angular/router';
 import { SessionService } from './../service/session.service';
 
@@ -13,7 +14,7 @@ export class TabsPage {
     constructor(
         private router: Router,
         private canvasDisplayService: CanvasDisplayService,
-        private sessionService: SessionService
+        private emulationStateService: EmulationStateService
     ) {
         window.addEventListener('resize', this.updateUseSmallUI);
         window.addEventListener('orientationchange', this.updateUseSmallUI);
@@ -23,7 +24,9 @@ export class TabsPage {
     }
     get smallUI(): boolean {
         return (
-            this.router.url === '/tab/emulation' && this.useSmallUI && this.sessionService.getSessions().length !== 0
+            this.router.url === '/tab/emulation' &&
+            this.useSmallUI &&
+            this.emulationStateService.getCurrentSession() !== undefined
         );
     }
 
