@@ -213,14 +213,14 @@ export class ContextMenuComponent implements OnInit {
             componentProps: {
                 session,
                 availableDevices: [session.device],
-                onSave: () => {
+                onSave: async () => {
                     if (oldSpeed !== session.speed) this.performanceWatchdogService.reset();
                     if (oldOrientation !== session.deviceOrientation) {
                         this.canvasDisplayService.initialize(undefined, session);
                         this.canvasDisplayService.updateEmulationCanvas();
                     }
 
-                    this.sessionService.updateSession(session);
+                    await this.sessionService.updateSession(session);
 
                     modal.dismiss();
                 },
