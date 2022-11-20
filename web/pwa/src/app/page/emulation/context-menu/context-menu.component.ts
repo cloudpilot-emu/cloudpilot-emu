@@ -1,4 +1,10 @@
-import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
+import {
+    ActionSheetController,
+    AlertController,
+    LoadingController,
+    ModalController,
+    PopoverController,
+} from '@ionic/angular';
 import { Component, Input, OnInit } from '@angular/core';
 import { quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
 
@@ -11,6 +17,7 @@ import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
+import { ErrorService } from './../../../service/error.service';
 import { KvsService } from '@pwa/service/kvs.service';
 import { PalmButton } from '@common/Cloudpilot';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
@@ -63,7 +70,9 @@ export class ContextMenuComponent implements OnInit {
         private storageCardService: StorageCardService,
         private alertService: AlertService,
         private alertController: AlertController,
-        private storageService: StorageService
+        private storageService: StorageService,
+        private loadingController: LoadingController,
+        private errorService: ErrorService
     ) {}
 
     ngOnInit(): void {}
@@ -195,7 +204,7 @@ export class ContextMenuComponent implements OnInit {
     }
 
     get hasMountedCard(): boolean {
-        return this.emulationStateService.hasMountedCard();
+        return this.emulationStateService.getCurrentSession()?.mountedCard !== undefined;
     }
 
     async editSettings(): Promise<void> {
@@ -255,7 +264,10 @@ export class ContextMenuComponent implements OnInit {
         const cloudpilot = await this.cloudpilotService.cloudpilot;
         const eligibleCards = this.storageCardService
             .getAllCards()
-            .filter((card) => cloudpilot.deviceSupportsCardSize(card.size));
+            .filter(
+                (card) =>
+                    cloudpilot.deviceSupportsCardSize(card.size) && !this.storageCardService.mountedInSession(card.id)
+            );
 
         if (eligibleCards.length === 0) {
             this.alertService.message(
@@ -272,7 +284,7 @@ export class ContextMenuComponent implements OnInit {
             header: 'Choose image for insertion',
             buttons: [
                 { text: 'Cancel', role: 'cancel' },
-                { text: 'Insert', handler: (id) => this.storageCardService.mountCard(id) },
+                { text: 'Insert', handler: (id) => this.doMountCard(id) },
             ],
             inputs: eligibleCards.map((card, index) => ({
                 label: card.name,
@@ -286,9 +298,26 @@ export class ContextMenuComponent implements OnInit {
         await alert.present();
     }
 
-    ejectCard(): void {
-        this.storageCardService.ejectCard();
+    async ejectCard(): Promise<void> {
+        try {
+            await this.storageCardService.ejectCard();
+        } catch (e) {
+            this.errorService.fatalBug(e instanceof Error ? e.message : 'eject failed');
+        }
         this.popoverController.dismiss();
+    }
+
+    private async doMountCard(id: number): Promise<void> {
+        const loader = this.loadingController.create({ message: 'Mounting...' });
+        await (await loader).present();
+
+        try {
+            await this.storageCardService.mountCard(id);
+        } catch (e) {
+            this.errorService.fatalBug(e instanceof Error ? e.message : 'mount failed');
+        } finally {
+            (await loader).dismiss();
+        }
     }
 
     @Input()

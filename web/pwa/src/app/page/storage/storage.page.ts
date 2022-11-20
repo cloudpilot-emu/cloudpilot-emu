@@ -6,6 +6,7 @@ import { AlertService } from '@pwa/service/alert.service';
 import { CardSupportLevel } from '@native/cloudpilot_web';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { Component } from '@angular/core';
+import { ErrorService } from './../../service/error.service';
 import { NewCardDialogComponent } from './new-card-dialog/new-card-dialog.component';
 import { NewCardSize } from '@pwa/service/storage-card.service';
 import { StorageCard } from '@pwa/model/StorageCard';
@@ -27,7 +28,8 @@ export class StoragePage {
         private alertService: AlertService,
         private storageService: StorageService,
         private loadingController: LoadingController,
-        private actionSheetController: ActionSheetController
+        private actionSheetController: ActionSheetController,
+        private errorService: ErrorService
     ) {}
 
     get cards(): Array<StorageCard> {
@@ -99,7 +101,17 @@ export class StoragePage {
     }
 
     async saveCard(card: StorageCard) {
-        const loader = await this.loadingController.create({ message: 'saving...' });
+        const session = this.storageCardService.mountedInSession(card.id);
+        if (session) {
+            this.alertService.message(
+                'Card is attached',
+                `This card needs to be ejected from session '${session.name}' before it can be exported.`
+            );
+
+            return;
+        }
+
+        const loader = await this.loadingController.create({ message: 'Exporting...' });
         await loader.present();
 
         const data = new Uint32Array(card.size >>> 2);
@@ -117,17 +129,27 @@ export class StoragePage {
     }
 
     checkCard(card: StorageCard) {
-        console.log(`check ${card.name}`);
+        this.alertService.message('Not implemented', 'File system verification is not implemented yet.');
     }
 
     async deleteCard(card: StorageCard) {
+        const session = this.storageCardService.mountedInSession(card.id);
+        if (session) {
+            this.alertService.message(
+                'Card is attached',
+                `This card needs to be ejected from session '${session.name}' before it can be deleted.`
+            );
+
+            return;
+        }
+
         const alert = await this.alertController.create({
             header: 'Warning',
             backdropDismiss: false,
             message: `Deleting the card '${card.name}' cannot be undone. Are you sure you want to continue?`,
             buttons: [
                 { text: 'Cancel', role: 'cancel' },
-                { text: 'Delete', handler: () => this.storageCardService.deleteCard(card) },
+                { text: 'Delete', handler: () => this.doDeleteCard(card) },
             ],
         });
 
@@ -171,6 +193,14 @@ export class StoragePage {
 
         if (cardSettings) this.storageCardService.createCardFromFile(cardSettings.name, file);
     };
+
+    private async doDeleteCard(card: StorageCard): Promise<void> {
+        try {
+            await this.storageCardService.deleteCard(card);
+        } catch (e) {
+            this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
+        }
+    }
 
     public lastCardTouched: number | undefined = undefined;
 }

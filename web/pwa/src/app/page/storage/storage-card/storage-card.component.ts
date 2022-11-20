@@ -25,7 +25,6 @@ export class StorageCardComponent {
             backdropDismiss: true,
             showBackdrop: false,
             componentProps: {
-                isAttached: this.isAttached,
                 onEdit: () => {
                     popover.dismiss();
                     this.edit.emit(this.card);
@@ -75,10 +74,6 @@ export class StorageCardComponent {
             default:
                 throw new Error('unreachable');
         }
-    }
-
-    get isAttached(): boolean {
-        return this.card !== undefined && !!this.storageCardService.mountedInSession(this.card.id);
     }
 
     @Input()

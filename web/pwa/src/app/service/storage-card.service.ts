@@ -2,7 +2,6 @@ import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
-import { ErrorService } from './error.service';
 import { FileDescriptor } from '@pwa/service/file.service';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
@@ -57,7 +56,6 @@ export class StorageCardService {
         private storageService: StorageService,
         private emulationStateService: EmulationStateService,
         private cloudpilotService: CloudpilotService,
-        private errorService: ErrorService,
         private loadingController: LoadingController,
         private snapshotService: SnapshotService
     ) {
@@ -114,7 +112,7 @@ export class StorageCardService {
     }
 
     async deleteCard(card: StorageCard): Promise<void> {
-        if (this.emulationStateService.getMountedCard() === card.id) await this.ejectCard();
+        if (await this.cardIsMounted(card.id)) await this.ejectCard();
 
         await this.storageService.deleteStorageCard(card.id);
 
@@ -129,59 +127,86 @@ export class StorageCardService {
         return this.loading;
     }
 
-    async mountCard(cardId: number): Promise<void> {
+    async mountCard(cardId: number): Promise<StorageCard> {
+        if (await this.cardIsMounted(cardId)) throw new Error('card already mounted');
+
+        const session = this.emulationStateService.getCurrentSession();
+        if (!session) throw new Error('no current session');
+        if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
+
+        const card = await this.loadCard(cardId);
+        const cloudpilot = await this.cloudpilotService.cloudpilot;
+
+        this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
+
+        if (!cloudpilot.mountCard(card.storageId)) {
+            cloudpilot.removeCard(card.storageId);
+
+            throw new Error('failed to mount card');
+        }
+
+        return card;
+    }
+
+    async loadCard(cardId: number): Promise<StorageCard> {
         const card = await this.storageService.getCard(cardId);
         if (!card) {
-            return this.errorService.fatalBug(`no card with id ${cardId}`);
+            throw new Error(`no card with id ${cardId}`);
         }
 
         const cloudpilot = await this.cloudpilotService.cloudpilot;
         if (cloudpilot.getMountedKey()) {
-            return this.errorService.fatalBug('attempt to mount a card while another card is mounted');
+            throw new Error('attempt to mount a card while another card is mounted');
         }
 
         if (!cloudpilot.allocateCard(card.storageId, card.size)) {
-            return this.errorService.fatalBug('failed to allocate card');
+            throw new Error('failed to allocate card');
         }
 
         const cardData = cloudpilot.getCardData(card.storageId);
         if (!cardData) {
-            return this.errorService.fatalBug('failed to access card data');
+            throw new Error('failed to access card data');
         }
 
         await this.storageService.loadCardData(card.id, cardData);
 
-        if (!cloudpilot.mountCard(card.storageId)) {
-            return this.errorService.fatalBug('failed to mount card');
-        }
-
-        this.emulationStateService.setMountedCard(cardId);
+        return card;
     }
 
     async ejectCard(): Promise<void> {
-        const cardId = this.emulationStateService.getMountedCard();
+        const session = this.emulationStateService.getCurrentSession();
+        if (!session) throw new Error('no running session');
+
+        const cardId = session?.mountedCard;
         if (cardId === undefined) {
-            return this.errorService.fatalBug(`no mounted card`);
+            throw new Error(`no mounted card`);
         }
 
         const card = await this.storageService.getCard(cardId);
         if (!card) {
-            return this.errorService.fatalBug(`no card with id ${cardId}`);
+            throw new Error(`no card with id ${cardId}`);
         }
 
         await this.snapshotService.waitForPendingSnapshot();
         await this.snapshotService.triggerSnapshot();
 
+        await this.storageService.updateSessionPartial(session.id, { mountedCard: undefined });
+
         const cloudpilot = await this.cloudpilotService.cloudpilot;
 
         cloudpilot.removeCard(card.storageId);
-        this.emulationStateService.clearMountedCard();
 
         this.snapshotService.resetCard();
     }
 
     private async updateCardsFromDB(): Promise<void> {
         this.cards = (await this.storageService.getAllStorageCards()).sort((x, y) => x.name.localeCompare(y.name));
+    }
+
+    private async cardIsMounted(id: number): Promise<boolean> {
+        const sessions = await this.storageService.getAllSessions();
+
+        return sessions.some((session) => session.mountedCard === id);
     }
 
     private loading = true;

@@ -19,6 +19,7 @@ import { ProxyService } from './proxy.service';
 import { SchedulerKind } from '@common/helper/scheduler';
 import { Session } from '@pwa/model/Session';
 import { SnapshotService } from './snapshot.service';
+import { StorageCardService } from '@pwa/service/storage-card.service';
 import { StorageService } from './storage.service';
 import { hasInitialImportRequest } from './link-api.service';
 import { isIOS } from '@common/helper/browser';
@@ -43,6 +44,7 @@ export class EmulationService extends AbstractEmulationService {
         private buttonService: ButtonService,
         private bootstrapService: BootstrapService,
         private cloudpilotService: CloudpilotService,
+        private storageCardService: StorageCardService,
         private app: ApplicationRef
     ) {
         super();
@@ -242,6 +244,12 @@ Sorry for the inconvenience.`
         const [rom, memory, state] = await this.storageService.loadSession(session);
         if (!rom) {
             throw new Error(`invalid ROM ${session.rom}`);
+        }
+
+        cloudpilot.clearExternalStorage();
+
+        if (session.mountedCard !== undefined) {
+            await this.storageCardService.loadCard(session.mountedCard);
         }
 
         if (!this.openSession(cloudpilot, rom, session.device, memory, state)) {

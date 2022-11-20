@@ -25,6 +25,7 @@ import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { Kvs } from '@pwa/model/Kvs';
 import { MemoryMetadata } from './../model/MemoryMetadata';
+import { Mutex } from 'async-mutex';
 import { PageLockService } from './page-lock.service';
 import { Session } from '@pwa/model/Session';
 import { StorageCard } from '@pwa/model/StorageCard';
@@ -158,36 +159,40 @@ export class StorageService {
     }
 
     @guard()
-    async updateSessionPartial(id: number, update: Omit<Partial<Session>, 'id' | 'rom' | 'ram' | 'device'>) {
-        const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
+    updateSessionPartial(id: number, update: Omit<Partial<Session>, 'id' | 'rom' | 'ram' | 'device'>): Promise<void> {
+        return this.sessionUpdateMutex.runExclusive(async () => {
+            const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
 
-        const session = await complete<Session>(objectStore.get(id));
-        if (!session) throw new Error(`no session with id ${id}`);
+            const session = await complete<Session>(objectStore.get(id));
+            if (!session) throw new Error(`no session with id ${id}`);
 
-        const updatedSesion = { ...session, ...update };
-        objectStore.put(updatedSesion);
+            const updatedSesion = { ...session, ...update };
+            objectStore.put(updatedSesion);
 
-        await complete(tx);
+            await complete(tx);
 
-        this.sessionChangeEvent.dispatch([session.id, updatedSesion]);
+            this.sessionChangeEvent.dispatch([session.id, updatedSesion]);
+        });
     }
 
     @guard()
-    async updateSession(session: Session): Promise<void> {
-        const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
+    updateSession(session: Session): Promise<void> {
+        return this.sessionUpdateMutex.runExclusive(async () => {
+            const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
 
-        const persistentSession = await complete<Session>(objectStore.get(session.id));
+            const persistentSession = await complete<Session>(objectStore.get(session.id));
 
-        if (!persistentSession) throw new Error(`no session with id ${session.id}`);
-        if (persistentSession.rom !== session.rom) throw new Error('attempt to change ROM reference');
-        if (persistentSession.ram !== session.ram) throw new Error('attempt to change RAM size');
-        if (persistentSession.device !== session.device) throw new Error('attempt to change device type');
+            if (!persistentSession) throw new Error(`no session with id ${session.id}`);
+            if (persistentSession.rom !== session.rom) throw new Error('attempt to change ROM reference');
+            if (persistentSession.ram !== session.ram) throw new Error('attempt to change RAM size');
+            if (persistentSession.device !== session.device) throw new Error('attempt to change device type');
 
-        objectStore.put(session);
+            objectStore.put(session);
 
-        await complete(tx);
+            await complete(tx);
 
-        this.sessionChangeEvent.dispatch([session.id, session]);
+            this.sessionChangeEvent.dispatch([session.id, session]);
+        });
     }
 
     @guard()
@@ -610,4 +615,6 @@ export class StorageService {
     public storageCardChangeEvent = new Event<number>();
 
     private db!: Promise<IDBDatabase>;
+
+    private sessionUpdateMutex = new Mutex();
 }

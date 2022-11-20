@@ -5,6 +5,7 @@ import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
+import { Mutex } from 'async-mutex';
 import { Session } from '@pwa/model/Session';
 import { SessionImage } from '@common/Cloudpilot';
 import { SessionMetadata } from '@common/model/SessionMetadata';
@@ -101,9 +102,12 @@ export class SessionService {
     }
 
     private async updateSessionsFromStorage(): Promise<void> {
-        this.sessions = (await this.storageService.getAllSessions()).sort((x, y) => x.name.localeCompare(y.name));
+        this.sessions = await this.updateMutex.runExclusive(async () =>
+            (await this.storageService.getAllSessions()).sort((x, y) => x.name.localeCompare(y.name))
+        );
     }
 
     private sessions: Array<Session> = [];
     private loading = true;
+    private updateMutex = new Mutex();
 }

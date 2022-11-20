@@ -21,7 +21,4 @@ export class ContextMenuComponent {
     onDelete = () => undefined;
 
     constructor() {}
-
-    @Input()
-    isAttached: boolean | undefined;
 }

@@ -141,8 +141,6 @@ export abstract class AbstractEmulationService {
     ): boolean {
         let memoryLoaded = false;
 
-        cloudpilot.clearExternalStorage();
-
         if (!cloudpilot.initializeSession(rom, device)) return false;
 
         if (memory) {

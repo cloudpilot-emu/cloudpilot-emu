@@ -21,6 +21,8 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
             this.session = undefined;
         }
 
+        cloudpilot.clearExternalStorage();
+
         if (this.openSession(cloudpilot, rom, device)) {
             this.session = session;
             return true;
@@ -34,6 +36,8 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
             this.doStop();
             this.session = undefined;
         }
+
+        cloudpilot.clearExternalStorage();
 
         if (
             this.openSession(
