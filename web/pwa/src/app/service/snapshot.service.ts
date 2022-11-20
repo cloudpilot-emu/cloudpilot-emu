@@ -282,8 +282,9 @@ export class SnapshotService {
 
         if (!this.cardDirtyPages) this.cardDirtyPages = new Uint8Array(dirtyPages.length);
 
-        if (this.cardDirtyPages.length !== dirtyPages.length)
+        if (this.cardDirtyPages.length !== dirtyPages.length) {
             throw new Error(`card size has changed without notification`);
+        }
 
         let iPage = 0;
         let iPool = 0;
