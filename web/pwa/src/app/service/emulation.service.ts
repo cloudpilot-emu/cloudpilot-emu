@@ -147,12 +147,10 @@ export class EmulationService extends AbstractEmulationService {
     }
 
     protected updateConfiguredHotsyncName(hotsyncName: string): void {
-        const currentSession = this.emulationState.getCurrentSession();
-        if (!currentSession) return;
+        const session = this.emulationState.getCurrentSession();
+        if (!session) return;
 
-        const session: Session = { ...currentSession, hotsyncName };
-
-        this.storageService.updateSession(session);
+        this.storageService.updateSessionPartial(session.id, { hotsyncName });
     }
 
     protected getConfiguredSchdedulerKind(): SchedulerKind {
@@ -170,12 +168,10 @@ export class EmulationService extends AbstractEmulationService {
     protected override onAfterAdvanceEmulation(timestamp: number, cycles: number): void {
         if (!this.cloudpilotInstance) return;
 
-        const currentSession = this.emulationState.getCurrentSession();
+        const session = this.emulationState.getCurrentSession();
 
-        if (this.uiInitialized && currentSession && currentSession.osVersion === undefined) {
-            const session: Session = { ...currentSession, osVersion: this.cloudpilotInstance.getOSVersion() };
-
-            this.storageService.updateSession(session);
+        if (this.uiInitialized && session && session.osVersion === undefined) {
+            this.storageService.updateSessionPartial(session.id, { osVersion: this.cloudpilotInstance.getOSVersion() });
         }
 
         this.buttonService.tick(cycles / this.cloudpilotInstance.cyclesPerSecond());
@@ -258,12 +254,11 @@ Sorry for the inconvenience.`
         await this.snapshotService.initialize(session, await this.cloudpilotService.cloudpilot);
     }
 
-    private onSessionChange = (sessionId: number): Promise<void> =>
+    private onSessionChange = ([sessionId, session]: [number, Session | undefined]): Promise<void> =>
         this.mutex.runExclusive(async () => {
             if (sessionId !== this.emulationState.getCurrentSession()?.id) return;
 
-            this.emulationState.setCurrentSession(await this.storageService.getSession(sessionId));
-
+            this.emulationState.setCurrentSession(session);
             if (!this.emulationState.getCurrentSession()) {
                 clearStoredSession();
 

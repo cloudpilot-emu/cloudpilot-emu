@@ -192,8 +192,7 @@ export class EmulationPage {
         const session = this.emulationState.getCurrentSession();
         if (!session) return;
 
-        session.wasResetForcefully = false;
-        await this.storageService.updateSession(session);
+        await this.storageService.updateSessionPartial(session.id, { wasResetForcefully: false });
     }
 
     private async launchEmulator(): Promise<void> {

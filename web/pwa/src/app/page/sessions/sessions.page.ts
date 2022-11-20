@@ -101,8 +101,7 @@ export class SessionsPage {
 
         await this.storageService.deleteStateForSession(session);
 
-        session.wasResetForcefully = true;
-        await this.storageService.updateSession(session);
+        await this.storageService.updateSessionPartial(session.id, { wasResetForcefully: true });
 
         if (running) await this.emulationService.switchSession(session.id);
 

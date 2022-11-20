@@ -154,7 +154,22 @@ export class StorageService {
 
         await complete(tx);
 
-        this.sessionChangeEvent.dispatch(session.id);
+        this.sessionChangeEvent.dispatch([session.id, undefined]);
+    }
+
+    @guard()
+    async updateSessionPartial(id: number, update: Omit<Partial<Session>, 'id' | 'rom' | 'ram' | 'device'>) {
+        const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
+
+        const session = await complete<Session>(objectStore.get(id));
+        if (!session) throw new Error(`no session with id ${id}`);
+
+        const updatedSesion = { ...session, ...update };
+        objectStore.put(updatedSesion);
+
+        await complete(tx);
+
+        this.sessionChangeEvent.dispatch([session.id, updatedSesion]);
     }
 
     @guard()
@@ -172,7 +187,7 @@ export class StorageService {
 
         await complete(tx);
 
-        this.sessionChangeEvent.dispatch(session.id);
+        this.sessionChangeEvent.dispatch([session.id, session]);
     }
 
     @guard()
@@ -591,7 +606,7 @@ export class StorageService {
         }
     }
 
-    public sessionChangeEvent = new Event<number>();
+    public sessionChangeEvent = new Event<[number, Session | undefined]>();
     public storageCardChangeEvent = new Event<number>();
 
     private db!: Promise<IDBDatabase>;

@@ -18,6 +18,27 @@ import { SessionService } from '@pwa/service/session.service';
 import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
 import { SlotType } from '@common/model/SlotType';
 import { StorageCardService } from '@pwa/service/storage-card.service';
+import { StorageService } from '@pwa/service/storage.service';
+
+function rotate(oldOrientation: DeviceOrientation | undefined): DeviceOrientation {
+    switch (oldOrientation) {
+        case DeviceOrientation.portrait:
+        case undefined:
+            return DeviceOrientation.landscape90;
+
+        case DeviceOrientation.landscape90:
+            return DeviceOrientation.portrait180;
+
+        case DeviceOrientation.portrait180:
+            return DeviceOrientation.landscape270;
+
+        case DeviceOrientation.landscape270:
+            return DeviceOrientation.portrait;
+
+        default:
+            throw new Error('cannot happen');
+    }
+}
 
 @Component({
     selector: 'app-emulation-context-menu',
@@ -41,7 +62,8 @@ export class ContextMenuComponent implements OnInit {
         private cloudpilotService: CloudpilotService,
         private storageCardService: StorageCardService,
         private alertService: AlertService,
-        private alertController: AlertController
+        private alertController: AlertController,
+        private storageService: StorageService
     ) {}
 
     ngOnInit(): void {}
@@ -210,35 +232,18 @@ export class ContextMenuComponent implements OnInit {
         await modal.present();
     }
 
-    rotate(): void {
+    async rotate(): Promise<void> {
+        const oldSession = this.emulationStateService.getCurrentSession();
+        if (!oldSession) return;
+
+        await this.storageService.updateSessionPartial(oldSession.id, {
+            deviceOrientation: rotate(oldSession.deviceOrientation),
+        });
+
         const session = this.emulationStateService.getCurrentSession();
-        if (!session) {
-            return;
-        }
-
-        switch (session.deviceOrientation) {
-            case DeviceOrientation.portrait:
-            case undefined:
-                session.deviceOrientation = DeviceOrientation.landscape90;
-                break;
-
-            case DeviceOrientation.landscape90:
-                session.deviceOrientation = DeviceOrientation.portrait180;
-                break;
-
-            case DeviceOrientation.portrait180:
-                session.deviceOrientation = DeviceOrientation.landscape270;
-                break;
-
-            case DeviceOrientation.landscape270:
-                session.deviceOrientation = DeviceOrientation.portrait;
-                break;
-        }
 
         this.canvasDisplayService.initialize(undefined, session);
         this.canvasDisplayService.updateEmulationCanvas();
-
-        this.sessionService.updateSession(session);
     }
 
     async insertCard(): Promise<void> {
