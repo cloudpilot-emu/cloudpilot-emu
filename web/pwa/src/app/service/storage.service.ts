@@ -529,7 +529,7 @@ export class StorageService {
         });
 
     @guard()
-    private async setLock(db: IDBDatabase): Promise<void> {
+    private async initializeLock(db: IDBDatabase): Promise<void> {
         const tx = db.transaction(OBJECT_STORE_LOCK, 'readwrite');
 
         await complete(tx.objectStore(OBJECT_STORE_LOCK).put(this.lockToken, 0));
@@ -602,7 +602,7 @@ export class StorageService {
                 };
             });
 
-            await this.setLock(db);
+            await this.initializeLock(db);
 
             return db;
         } finally {
