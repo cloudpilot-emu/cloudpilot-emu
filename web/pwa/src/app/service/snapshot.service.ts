@@ -97,7 +97,11 @@ export class SnapshotService {
                     throw e;
                 }
 
-                if (e === E_LOCK_LOST) throw e;
+                if (e === E_LOCK_LOST) {
+                    this.errorService.fatalPageLockLost();
+
+                    throw e;
+                }
 
                 if (++this.consecutiveErrorCount > MAX_CONSECUTIVE_ERRORS) {
                     this.errorService.fatalIDBDead();

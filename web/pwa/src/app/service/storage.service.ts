@@ -37,6 +37,8 @@ function guard(): any {
                     errorService.fatalIDBDead();
                 } else if (e === E_VERSION_MISMATCH) {
                     errorService.fatalVersionMismatch();
+                } else if (e === E_LOCK_LOST) {
+                    errorService.fatalPageLockLost();
                 } else {
                     errorService.fatalBug(e?.message);
                 }
@@ -230,11 +232,13 @@ export class StorageService {
         await complete(tx);
     }
 
-    @guard()
     async acquireLock(store: IDBObjectStore, key: string | number): Promise<void> {
         await complete(store.get(key));
 
         if (this.pageLockService.lockLost()) {
+            store.transaction.abort();
+            store.transaction.db.close();
+
             throw E_LOCK_LOST;
         }
     }

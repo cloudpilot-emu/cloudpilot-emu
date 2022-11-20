@@ -1,3 +1,9 @@
+# Version 1.7.7
+
+-   Fix a bug that might have caused data corruption if a second instance
+    of CP is opened in another window.
+
+
 # Version 1.7.6
 
 -   Fix a heap overflow.
