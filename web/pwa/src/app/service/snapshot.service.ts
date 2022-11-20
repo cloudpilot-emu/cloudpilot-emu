@@ -1,6 +1,7 @@
 import { E_LOCK_LOST, StorageService } from './storage.service';
 import {
     INDEX_CARD_STORAGE_ID,
+    OBJECT_STORE_LOCK,
     OBJECT_STORE_MEMORY,
     OBJECT_STORE_MEMORY_META,
     OBJECT_STORE_STATE,
@@ -107,7 +108,11 @@ export class SnapshotService {
                     throw e;
                 }
 
-                if (e === E_LOCK_LOST) throw e;
+                if (e === E_LOCK_LOST) {
+                    this.errorService.fatalPageLockLost();
+
+                    throw e;
+                }
 
                 if (++this.consecutiveErrorCount > MAX_CONSECUTIVE_ERRORS) {
                     this.errorService.fatalIDBDead();
@@ -126,6 +131,7 @@ export class SnapshotService {
                 OBJECT_STORE_STATE,
                 OBJECT_STORE_STORAGE,
                 OBJECT_STORE_STORAGE_CARD,
+                OBJECT_STORE_LOCK,
             ],
             'readwrite',
             {
@@ -133,7 +139,7 @@ export class SnapshotService {
             }
         );
 
-        await this.storageService.acquireLock(tx.objectStore(OBJECT_STORE_STATE), -1);
+        await this.storageService.acquireLock(tx);
 
         if (this.cloudpilot.isSuspended()) return;
 

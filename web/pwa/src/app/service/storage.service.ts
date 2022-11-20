@@ -1,6 +1,7 @@
 import {
     DB_VERSION,
     OBJECT_STORE_KVS,
+    OBJECT_STORE_LOCK,
     OBJECT_STORE_MEMORY,
     OBJECT_STORE_MEMORY_META,
     OBJECT_STORE_ROM,
@@ -19,6 +20,7 @@ import {
     migrate5to6,
     migrate6to7,
     migrate7to8,
+    migrate8to9,
 } from './storage/migrations';
 
 import { ErrorService } from './error.service';
@@ -26,13 +28,13 @@ import { Event } from 'microevent.ts';
 import { Kvs } from '@pwa/model/Kvs';
 import { MemoryMetadata } from './../model/MemoryMetadata';
 import { Mutex } from 'async-mutex';
-import { PageLockService } from './page-lock.service';
 import { Session } from '@pwa/model/Session';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageError } from './storage/StorageError';
 import { environment } from '../../environments/environment';
 import { isIOS } from '@common/helper/browser';
 import md5 from 'md5';
+import { v4 as uuid } from 'uuid';
 
 export const E_LOCK_LOST = new Error('page lock lost');
 const E_VERSION_MISMATCH = new Error('version mismatch');
@@ -51,9 +53,13 @@ function guard(): any {
                     errorService.fatalIDBDead();
                 } else if (e === E_VERSION_MISMATCH) {
                     errorService.fatalVersionMismatch();
+                } else if (e === E_LOCK_LOST) {
+                    errorService.fatalPageLockLost();
                 } else {
                     errorService.fatalBug(e?.message);
                 }
+
+                throw e;
             }
         };
 
@@ -65,7 +71,7 @@ function guard(): any {
     providedIn: 'root',
 })
 export class StorageService {
-    constructor(private pageLockService: PageLockService, private ngZone: NgZone, private errorService: ErrorService) {
+    constructor(private ngZone: NgZone, private errorService: ErrorService) {
         this.requestPersistentStorage();
         this.db = ngZone.runOutsideAngular(() => this.setupDb());
     }
@@ -87,8 +93,6 @@ export class StorageService {
         );
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
-
-        await this.acquireLock(objectStoreSession, -1);
 
         const recordRom = await complete(objectStoreRom.get(hash));
         if (!recordRom) {
@@ -138,8 +142,6 @@ export class StorageService {
         );
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
-
-        await this.acquireLock(objectStoreSession, -1);
 
         session = await complete(objectStoreSession.get(session.id));
         if (!session) return;
@@ -207,8 +209,6 @@ export class StorageService {
         );
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
 
-        await this.acquireLock(objectStoreRom, -1);
-
         return [
             await complete<Uint8Array>(objectStoreRom.get(session.rom)),
             await this.loadMemory(tx, session.id),
@@ -240,8 +240,6 @@ export class StorageService {
             const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
             const objectStoreStorageCard = tx.objectStore(OBJECT_STORE_STORAGE_CARD);
             const objectStoreStorage = tx.objectStore(OBJECT_STORE_STORAGE);
-
-            await this.acquireLock(objectStoreStorageCard, -1);
 
             const key = await complete(objectStoreStorageCard.add(card));
             const pageCount = (card.size >>> 13) + (data.length % 8192 === 0 ? 0 : 1);
@@ -305,8 +303,6 @@ export class StorageService {
         const objectStoreStorageCard = tx.objectStore(OBJECT_STORE_STORAGE_CARD);
         const objectStoreStorage = tx.objectStore(OBJECT_STORE_STORAGE);
 
-        await this.acquireLock(objectStoreStorageCard, -1);
-
         objectStoreStorageCard.delete(id);
         objectStoreStorage.delete(IDBKeyRange.bound([id, 0], [id + 1, 0], false, true));
 
@@ -318,8 +314,6 @@ export class StorageService {
         return this.ngZone.runOutsideAngular(async () => {
             const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
             const objectStore = tx.objectStore(OBJECT_STORE_STORAGE);
-
-            await this.acquireLock(objectStore, -1);
 
             await new Promise<void>(async (resolve, reject) => {
                 const request = objectStore.openCursor(IDBKeyRange.bound([id, 0], [id + 1, 0], false, true));
@@ -397,26 +391,33 @@ export class StorageService {
         await complete(tx);
     }
 
-    @guard()
-    async acquireLock(store: IDBObjectStore, key: string | number): Promise<void> {
-        await complete(store.get(key));
+    async acquireLock(tx: IDBTransaction): Promise<void> {
+        const lockToken = await complete(tx.objectStore(OBJECT_STORE_LOCK).get(0));
 
-        if (this.pageLockService.lockLost()) {
+        if (lockToken !== this.lockToken) {
+            tx.abort();
+            tx.db.close();
+
             throw E_LOCK_LOST;
         }
+
+        this.lockToken = uuid();
+
+        await complete(tx.objectStore(OBJECT_STORE_LOCK).put(this.lockToken, 0));
     }
 
     @guard()
     async newTransaction(...stores: Array<string>): Promise<IDBTransaction> {
-        return (await this.db).transaction(stores, 'readwrite');
+        const tx = (await this.db).transaction([OBJECT_STORE_LOCK, ...stores], 'readwrite');
+        await this.acquireLock(tx);
+
+        return tx;
     }
 
     @guard()
     async prepareObjectStore(name: string): Promise<[IDBObjectStore, IDBTransaction]> {
         const tx = await this.newTransaction(name);
         const objectStore = tx.objectStore(name);
-
-        await this.acquireLock(objectStore, -1);
 
         return [objectStore, tx];
     }
@@ -528,6 +529,13 @@ export class StorageService {
         });
 
     @guard()
+    private async setLock(db: IDBDatabase): Promise<void> {
+        const tx = db.transaction(OBJECT_STORE_LOCK, 'readwrite');
+
+        await complete(tx.objectStore(OBJECT_STORE_LOCK).put(this.lockToken, 0));
+    }
+
+    @guard()
     private async setupDb(): Promise<IDBDatabase> {
         // This works on spurious hangs during indexedDB setup when starting up from the homescreen
         // on iOS 14.6
@@ -544,7 +552,7 @@ export class StorageService {
                 }
             }
 
-            return await new Promise((resolve, reject) => {
+            const db: IDBDatabase = await new Promise((resolve, reject) => {
                 const request = indexedDB.open(environment.dbName, DB_VERSION);
 
                 request.onerror = () => {
@@ -587,8 +595,16 @@ export class StorageService {
                     if (e.oldVersion < 8) {
                         await migrate7to8(request.result, request.transaction);
                     }
+
+                    if (e.oldVersion < 9) {
+                        await migrate8to9(request.result, request.transaction);
+                    }
                 };
             });
+
+            await this.setLock(db);
+
+            return db;
         } finally {
             clearTimeout(watchdogHandle);
         }
@@ -617,4 +633,5 @@ export class StorageService {
     private db!: Promise<IDBDatabase>;
 
     private sessionUpdateMutex = new Mutex();
+    private lockToken = uuid();
 }

@@ -1,5 +1,3 @@
-import '@pwa/helper/pagelock';
-
 import { bootstrapLinkApi, hasInitialImportRequest, hasInitialInstallRequest } from '@pwa/service/link-api.service';
 
 import { AppModule } from './app/app.module';

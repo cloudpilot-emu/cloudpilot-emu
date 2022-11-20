@@ -11,7 +11,6 @@ import { BrowserModule } from '@angular/platform-browser';
 import { DummyComponent } from '@pwa/component/dummy/dummy.component';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { KvsService } from '@pwa/service/kvs.service';
-import { PageLockService } from '@pwa/service/page-lock.service';
 import { RouteReuseStrategy } from '@angular/router';
 import { ServiceWorkerModule } from '@angular/service-worker';
 import { SessionService } from '@pwa/service/session.service';
@@ -60,7 +59,6 @@ const markedOptionsFactory = (): MarkedOptions => {
 })
 export class AppModule {
     constructor(
-        pageLockService: PageLockService,
         storageService: StorageService,
         emulationService: EmulationService,
         audioService: AudioService,

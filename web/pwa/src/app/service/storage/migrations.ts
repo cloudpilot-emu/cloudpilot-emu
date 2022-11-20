@@ -7,6 +7,7 @@ const OBJECT_STORE_MEMORY_META = 'memory-meta';
 const OBJECT_STORE_STORAGE = 'storage';
 const OBJECT_STORE_STORAGE_META = 'storage-meta';
 const OBJECT_STORE_STORAGE_CARD = 'storage-card';
+const OBJECT_STORE_LOCK = 'lock';
 
 const INDEX_CARD_STORAGE_ID = 'storageId';
 
@@ -161,4 +162,10 @@ export async function migrate7to8(db: IDBDatabase, tx: IDBTransaction | null): P
     if (!tx) throw new Error('no version change transaction!');
 
     tx.objectStore(OBJECT_STORE_STORAGE_CARD).createIndex(INDEX_CARD_STORAGE_ID, 'storageId');
+}
+
+export async function migrate8to9(db: IDBDatabase, tx: IDBTransaction | null): Promise<void> {
+    if (!tx) throw new Error('no version change transaction!');
+
+    db.createObjectStore(OBJECT_STORE_LOCK);
 }
