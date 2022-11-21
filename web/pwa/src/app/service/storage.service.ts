@@ -38,6 +38,7 @@ import { v4 as uuid } from 'uuid';
 
 export const E_LOCK_LOST = new Error('page lock lost');
 const E_VERSION_MISMATCH = new Error('version mismatch');
+const LOCK_TOKEN = uuid();
 
 function guard(): any {
     return (target: any, propertyKey: string, desc: PropertyDescriptor) => {
@@ -394,16 +395,12 @@ export class StorageService {
     async acquireLock(tx: IDBTransaction): Promise<void> {
         const lockToken = await complete(tx.objectStore(OBJECT_STORE_LOCK).get(0));
 
-        if (lockToken !== this.lockToken) {
+        if (lockToken !== LOCK_TOKEN) {
             tx.abort();
             tx.db.close();
 
             throw E_LOCK_LOST;
         }
-
-        this.lockToken = uuid();
-
-        await complete(tx.objectStore(OBJECT_STORE_LOCK).put(this.lockToken, 0));
     }
 
     @guard()
@@ -532,7 +529,7 @@ export class StorageService {
     private async initializeLock(db: IDBDatabase): Promise<void> {
         const tx = db.transaction(OBJECT_STORE_LOCK, 'readwrite');
 
-        await complete(tx.objectStore(OBJECT_STORE_LOCK).put(this.lockToken, 0));
+        await complete(tx.objectStore(OBJECT_STORE_LOCK).put(LOCK_TOKEN, 0));
     }
 
     @guard()
@@ -633,5 +630,4 @@ export class StorageService {
     private db!: Promise<IDBDatabase>;
 
     private sessionUpdateMutex = new Mutex();
-    private lockToken = uuid();
 }
