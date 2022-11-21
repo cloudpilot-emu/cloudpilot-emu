@@ -5,6 +5,7 @@ import { EmulationStateService } from './emulation-state.service';
 import { FileDescriptor } from '@pwa/service/file.service';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
+import { Mutex } from 'async-mutex';
 import { Session } from '@pwa/model/Session';
 import { SessionService } from '@pwa/service/session.service';
 import { SnapshotService } from '@pwa/service/snapshot.service';
@@ -77,7 +78,7 @@ export class StorageCardService {
         };
 
         const card = await this.storageService.addEmptyStorageCard(cardWithoutId);
-        this.cards.push(card);
+        this.updateCardsFromDB();
 
         return card;
     }
@@ -99,7 +100,8 @@ export class StorageCardService {
                 cardWithoutId,
                 new Uint32Array(file.content.buffer, file.content.byteOffset, file.content.length >>> 2)
             );
-            this.cards.push(card);
+
+            this.updateCardsFromDB();
 
             return card;
         } finally {
@@ -200,7 +202,9 @@ export class StorageCardService {
     }
 
     private async updateCardsFromDB(): Promise<void> {
-        this.cards = (await this.storageService.getAllStorageCards()).sort((x, y) => x.name.localeCompare(y.name));
+        this.cards = await this.updateMutex.runExclusive(async () =>
+            (await this.storageService.getAllStorageCards()).sort((x, y) => x.name.localeCompare(y.name))
+        );
     }
 
     private async cardIsMounted(id: number): Promise<boolean> {
@@ -212,4 +216,5 @@ export class StorageCardService {
     private loading = true;
 
     private cards: Array<StorageCard> = [];
+    private updateMutex = new Mutex();
 }
