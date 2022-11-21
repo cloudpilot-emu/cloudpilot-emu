@@ -25,7 +25,7 @@ export class BackupService {
         const currentSession = this.emulationStateService.getCurrentSession();
         if (!currentSession) return;
 
-        const loader = await this.loadingController.create();
+        const loader = await this.loadingController.create({ message: 'Backing up...' });
         await loader.present();
 
         let failedDatabases: Array<string> = [];

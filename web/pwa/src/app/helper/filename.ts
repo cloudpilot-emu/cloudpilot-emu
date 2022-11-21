@@ -1,6 +1,6 @@
 import { Session } from '@pwa/model/Session';
 
-export function filenameFragment(session: Session): string {
+export function filenameFragment(prefix: string): string {
     const now = new Date();
 
     const year = now.getFullYear();
@@ -10,15 +10,15 @@ export function filenameFragment(session: Session): string {
     const minute = now.getMinutes().toString().padStart(2, '0');
     const second = now.getSeconds().toString().padStart(2, '0');
 
-    return `${session.name}_${year}${month}${day}-${hour}${minute}${second}`;
+    return `${prefix}_${year}${month}${day}-${hour}${minute}${second}`;
 }
 
 export function filenameForSession(session: Session): string {
-    return `${filenameFragment(session)}.bin`;
+    return `${filenameFragment(session.name)}.bin`;
 }
 
 export function filenameForBackup(session: Session, includeRomDatabases: boolean): string {
-    return `backup_${filenameFragment(session)}${includeRomDatabases ? '_with_rom' : ''}.zip`;
+    return `backup_${filenameFragment(session.name)}${includeRomDatabases ? '_with_rom' : ''}.zip`;
 }
 
 export function concatFilenames(files: Array<string>, limit = 3): string {

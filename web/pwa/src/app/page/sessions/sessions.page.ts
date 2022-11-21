@@ -15,6 +15,7 @@ import { SessionMetadata } from '@common/model/SessionMetadata';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
 import deepEqual from 'deep-equal';
+import { disambiguateName } from '@pwa/helper/disambiguate';
 
 @Component({
     selector: 'app-sessions',
@@ -217,14 +218,8 @@ export class SessionsPage {
 
     private disambiguateSessionName(originalName: string) {
         const sessions = this.sessionService.getSessions();
-        let name = originalName;
 
-        let i = 1;
-        while (sessions.some((s) => s.name === name)) {
-            name = `${originalName} (${i++})`;
-        }
-
-        return name;
+        return disambiguateName(originalName, (x) => sessions.some((session) => session.name === x));
     }
 
     private handleLinkApiImportRequest = (): void => {

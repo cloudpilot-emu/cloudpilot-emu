@@ -308,7 +308,7 @@ export class ContextMenuComponent implements OnInit {
     }
 
     private async doMountCard(id: number): Promise<void> {
-        const loader = this.loadingController.create({ message: 'Mounting...' });
+        const loader = this.loadingController.create({ message: 'Inserting...' });
         await (await loader).present();
 
         try {

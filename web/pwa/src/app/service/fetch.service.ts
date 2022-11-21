@@ -32,7 +32,7 @@ export class FetchService {
         while (true) {
             try {
                 if (loaderDelay !== undefined && loaderDelay >= 0 && !loader) {
-                    loader = await this.loadingController.create();
+                    loader = await this.loadingController.create({ message: 'Loading...' });
 
                     loaderTimeout = window.setTimeout(() => loader!.present(), loaderDelay);
                 }

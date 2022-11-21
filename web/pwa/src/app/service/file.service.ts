@@ -47,7 +47,7 @@ export class FileService {
     }
 
     async saveSession(session: Session): Promise<void> {
-        const loader = await this.loadingController.create();
+        const loader = await this.loadingController.create({ message: 'Exporting...' });
         await loader.present();
 
         try {
@@ -78,7 +78,7 @@ export class FileService {
     }
 
     async emergencySaveSession(session: Session, cloudpilot: Cloudpilot): Promise<void> {
-        const loader = await this.loadingController.create();
+        const loader = await this.loadingController.create({ message: 'Exporting...' });
 
         // This code path is usually triggered from a dialog, so make sure that the loader is on top.
         // This is a hack, but sufficient for this edge case.

@@ -12,6 +12,8 @@ import { NewCardSize } from '@pwa/service/storage-card.service';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageCardService } from './../../service/storage-card.service';
 import { StorageService } from '@pwa/service/storage.service';
+import { disambiguateName } from '@pwa/helper/disambiguate';
+import { filenameFragment } from '@pwa/helper/filename';
 
 @Component({
     selector: 'app-storage',
@@ -123,7 +125,7 @@ export class StoragePage {
         }
 
         this.fileService.saveFile(
-            card.name.match(/\.img$/) ? card.name : `${card.name}.img`,
+            `${filenameFragment(card.name.replace(/\.img$/, ''))}.img`,
             new Uint8Array(data.buffer, data.byteOffset, data.length << 2)
         );
     }
@@ -174,7 +176,7 @@ export class StoragePage {
                 component: EditCardDialogComponent,
                 backdropDismiss: false,
                 componentProps: {
-                    card: { name: file.name, size: file.content.length },
+                    card: { name: this.disambiguateName(file.name), size: file.content.length },
                     cardSupportLevel: supportLevel,
                     newCard: true,
                     onCancel: () => {
@@ -200,6 +202,12 @@ export class StoragePage {
         } catch (e) {
             this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
         }
+    }
+
+    private disambiguateName(name: string): string {
+        const cards = this.storageCardService.getAllCards();
+
+        return disambiguateName(name, (x) => cards.some((card) => card.name === x));
     }
 
     public lastCardTouched: number | undefined = undefined;
