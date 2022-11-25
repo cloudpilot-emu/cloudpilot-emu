@@ -43,6 +43,9 @@
           "/svg/sync-outline.svg",
           "/svg/speedometer-outline.svg",
           "/svg/reload-outline.svg",
+          "/svg/log-in-outline.svg",
+          "/svg/log-out-outline.svg",
+          "/svg/medkit-outline.svg",
           "/assets/**",
           "/*.(eot|svg|cur|jpg|png|webp|gif|otf|ttf|woff|woff2|ani)"
         ]
