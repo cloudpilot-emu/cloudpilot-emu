@@ -33,3 +33,5 @@ Makefile.local
 *.cer
 *.p12
 __pycache__
+.vscode/.ropeproject
+.mypy_cache
