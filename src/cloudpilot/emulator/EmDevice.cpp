@@ -1644,6 +1644,7 @@ bool EmDevice::BuggySleep() const {
         case kDeviceYSX1100:
         case kDevicePalmPacifiC:
         case kDevicePalmI710:
+        case kDeviceYSX1230:
             return true;
 
         default:
