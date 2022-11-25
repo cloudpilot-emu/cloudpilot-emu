@@ -4,10 +4,10 @@
 .deps
 .deps-emcc
 .deps-test
-src/cloudpilot
-src/*.js
-src/*.wasm
-src/test/test
+src/cloudpilot/cloudpilot
+src/**/*.js
+src/**/*.wasm
+src/cloudpilot/test/test
 *.rom
 *.stamp
 .vscode/c_cpp_properties.json

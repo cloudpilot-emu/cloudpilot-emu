@@ -39,7 +39,7 @@ module.exports = (env, argv) => ({
         extensions: ['.ts', '.js'],
         alias: {
             '@common': path.resolve(__dirname, './common'),
-            '@native': path.resolve(__dirname, '../src'),
+            '@native': path.resolve(__dirname, '../src/cloudpilot'),
             '@pwa': path.resolve(__dirname, './pwa/src/app'),
             '@embedded': path.resolve(__dirname, './embedded/src'),
         },
@@ -56,7 +56,7 @@ module.exports = (env, argv) => ({
         new CopyPlugin({
             patterns: [
                 { from: 'embedded/public', to: '.' },
-                { from: path.resolve(__dirname, '../src/cloudpilot_web.wasm'), to: '.' },
+                { from: path.resolve(__dirname, '../src/cloudpilot/cloudpilot_web.wasm'), to: '.' },
             ],
         }),
         new webpack.EnvironmentPlugin({
@@ -64,8 +64,8 @@ module.exports = (env, argv) => ({
                 argv.mode === 'development'
                     ? 'dev'
                     : env['RELEASE'] || process.env['CP_RELEASE']
-                    ? pkg.version
-                    : `${pkg.version}-${getGitRev()} (preview)`,
+                        ? pkg.version
+                        : `${pkg.version}-${getGitRev()} (preview)`,
         }),
     ],
     performance: {

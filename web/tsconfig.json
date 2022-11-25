@@ -22,7 +22,7 @@
     ],
     "paths": {
       "@common/*": ["common/*"],
-      "@native/*": ["../src/*"],
+      "@native/*": ["../src/cloudpilot/*"],
       "@pwa/*": ["pwa/src/app/*"],
       "@embedded/*": ["embedded/src/*"]
     }

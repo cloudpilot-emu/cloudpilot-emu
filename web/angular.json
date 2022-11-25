@@ -39,7 +39,7 @@
               },
               {
                 "glob": "cloudpilot_web.wasm",
-                "input": "../src",
+                "input": "../src/cloudpilot",
                 "output": "."
               },
               {
