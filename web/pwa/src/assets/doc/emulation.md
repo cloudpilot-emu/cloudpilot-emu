@@ -72,7 +72,7 @@ run. In general it is best to run the backup while the launcher is open.
 
 Note that currently opened DBs cannot be backed up. This is particularly
 noticeable on OS1 and OS2 where the launcher opens on top of the running
-application. Try switching to another app if Cloudpilot complains about failed
+application. Try switching to another app if CloudpilotEmu complains about failed
 databases.
 
 # Device reset
