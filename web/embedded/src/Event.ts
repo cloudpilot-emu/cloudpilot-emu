@@ -1,5 +1,5 @@
 /**
- * A Cloudpilot event.
+ * A CloudpilotEmu event.
  */
 export interface Event<Payload> {
     /**

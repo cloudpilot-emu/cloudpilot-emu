@@ -238,7 +238,7 @@ documentation](./reference/interfaces/Emulator.html#setGameMode) for more detail
 
 ## Creating a session file
 
-Session files can be created in Cloudpilot on the sessions tab. Either right
+Session files can be created in CloudpilotEmu on the sessions tab. Either right
 click on a session and select "save" or swipe the session to the right and
 select the second icon. A dialog will open that allows you save a session
 snapshot.
@@ -247,16 +247,16 @@ snapshot.
 
 When applying CSS to the canvas element you must make sure not to touch
 `border`, `padding`, `box-size` and `object-fit`. Messing with those breaks
-Cloudpilot's handling of pointer events. If you need border or padding, wrap the
+CloudpilotEmu's handling of pointer events. If you need border or padding, wrap the
 canvas in a containing element and apply those properties on the container
 instead.
 
-Apart from this restriction you are free to style Cloudpilot as you like.
+Apart from this restriction you are free to style CloudpilotEmu as you like.
 Regardless of the layout dimensions and aspect of the canvas, the virtual pilot
 will always be rendered at the maximum size possible and centered, and the
 surrounding area will be transparent and invisible for pointer events.
 
-Cloudpilot renders at a high resolution internally and lets the browser do the
+CloudpilotEmu renders at a high resolution internally and lets the browser do the
 (down)scaling. Non-integer scaling adds a slight blur to the pixelated pilot
 screen. If you want a fully crisp image instead you can set
 `image-rendering` to either `pixelated` or `crisp`. Be aware, however, that this

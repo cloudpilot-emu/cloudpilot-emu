@@ -48,7 +48,7 @@ export class AlertService {
     async updateAvailable() {
         const alert = await this.alertController.create({
             header: 'Update available',
-            message: 'An update is available. Please close Cloudpilot and reload in order to update.',
+            message: 'An update is available. Please close CloudpilotEmu and reload in order to update.',
             backdropDismiss: false,
             buttons: [
                 { text: 'Reload', handler: () => window.location.reload() },
@@ -101,7 +101,7 @@ export class AlertService {
         const alert = await this.alertController.create({
             header: 'Error',
             message: `
-                You encountered a bug in Cloudpilot:
+                You encountered a bug in CloudpilotEmu:
                 <br/><br/>
                 ${reason}.
                 <br/><br/>
@@ -116,8 +116,8 @@ export class AlertService {
 
     proxyVersionMismatchError() {
         return this.errorMessage(`
-            Server version does not match Cloudpilot. Please make sure that you are using the latest
-            versions of Cloudpilot and of the server.
+            Server version does not match CloudpilotEmu. Please make sure that you are using the latest
+            versions of CloudpilotEmu and of the server.
         `);
     }
 
