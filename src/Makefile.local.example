@@ -1,10 +1,12 @@
 # CC_NATIVE ?= gcc
 # CXX_NATIVE ?= g++
 # LD_NATIVE ?= g++
+# AR_NATIVE ?= ar
 
 # CC_EMCC ?= emcc
 # CXX_EMCC ?= emcc
 # LD_EMCC ?= emcc
+# AR_EMCC ?= emar
 
 # PYTHON ?= python
 

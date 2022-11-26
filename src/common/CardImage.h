@@ -1,8 +1,7 @@
 #ifndef _CARD_IMAGE_H_
 #define _CARD_IMAGE_H_
 
-#include <EmCommon.h>
-
+#include <cstdint>
 #include <memory>
 
 class CardImage {
@@ -12,18 +11,18 @@ class CardImage {
     constexpr static size_t DIRTY_PAGE_SIZE = 8192;
 
    public:
-    CardImage(uint8* data, size_t blocksTotal);
+    CardImage(uint8_t* data, size_t blocksTotal);
 
-    size_t Read(uint8* dest, size_t index, size_t count = 1);
-    size_t Write(const uint8* source, size_t index, size_t count = 1);
+    size_t Read(uint8_t* dest, size_t index, size_t count = 1);
+    size_t Write(const uint8_t* source, size_t index, size_t count = 1);
     size_t BlocksTotal() const;
 
-    uint8* RawData();
-    uint8* DirtyPages();
+    uint8_t* RawData();
+    uint8_t* DirtyPages();
 
    private:
-    unique_ptr<uint8[]> data;
-    unique_ptr<uint8[]> dirtyPages;
+    std::unique_ptr<uint8_t[]> data;
+    std::unique_ptr<uint8_t[]> dirtyPages;
     size_t blocksTotal;
 };
 

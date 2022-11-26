@@ -1,4 +1,4 @@
--include Makefile.local
+-include ../Makefile.local
 
 CC_NATIVE ?= gcc
 CXX_NATIVE ?= g++
@@ -73,6 +73,7 @@ MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
 INCLUDE = \
+	-I../common \
 	-I./emulator/hardware \
 	-I./emulator/hardware/clie \
 	-I./emulator/hardware/handera \
@@ -108,10 +109,6 @@ SOURCE_C = \
 	proto/networking.pb.c \
 	zip/miniz.c \
 	zip/zip.c
-
-SOURCE_CPP = \
-	$(shell find . -type f -name '*.cpp' -and -not -name $(notdir $(WEBIDL_BINDING_CXX)) | sed 's/^\.\///g') \
-	$(WEBIDL_BINDING_CXX)
 
 SOURCE_EMU = \
 	emulator/uae/readcpu.cpp \
@@ -231,7 +228,6 @@ SOURCE_EMU = \
 	emulator/NetworkProxy.cpp \
 	emulator/ZipfileWalker.cpp \
 	emulator/ExternalStorage.cpp \
-	emulator/CardImage.cpp \
 	emulator/EmCRC.cpp \
 	emulator/MemoryRegion.cpp
 
@@ -272,9 +268,20 @@ SOURCE_WEB = \
 	web/RomInfo.cpp \
 	$(WEBIDL_BINDING_CXX)
 
-OBJECTS_TEST = $(SOURCE_C:%.c=$(BUILDDIR_TEST)/%.o) $(SOURCE_TEST:%.cpp=$(BUILDDIR_TEST)/%.o)
-OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)
-OBJECTS_WEB_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o)
+OBJECTS_TEST = \
+	$(SOURCE_C:%.c=$(BUILDDIR_TEST)/%.o) \
+	$(SOURCE_TEST:%.cpp=$(BUILDDIR_TEST)/%.o) \
+	../common/libcommon.a
+
+OBJECTS_NATIVE = \
+	$(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) \
+	$(SOURCE_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o) \
+	../common/libcommon.a
+
+OBJECTS_WEB_EMCC = \
+	$(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) \
+	$(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o) \
+	../common/libcommon-wasm.a
 
 BINARY_NATIVE = cloudpilot
 

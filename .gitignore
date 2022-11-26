@@ -4,10 +4,14 @@
 .deps
 .deps-emcc
 .deps-test
+
 src/cloudpilot/cloudpilot
+src/cloudpilot/test/test
 src/**/*.js
 src/**/*.wasm
-src/cloudpilot/test/test
+libcommon.a
+libcommon-wasm.a
+
 *.rom
 *.stamp
 .vscode/c_cpp_properties.json

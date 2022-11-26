@@ -1,4 +1,4 @@
-SUBDIRS = cloudpilot
+SUBDIRS = common cloudpilot
 
 all: bin emscripten
 
