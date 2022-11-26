@@ -5,11 +5,12 @@ import ssl
 import sys
 from typing import Any
 
-import server
 from certificate import generateCertificate
 from connection import serializeIp
 from util import T
 from version import VERSION
+
+import server
 
 
 def launchServer(options: Any):
@@ -38,14 +39,14 @@ Please follow the documentation at
 https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md
 
 in order to install the certificate on your device and set up networking in
-Cloudpilot.
+CloudpilotEmu.
 """.format(script=sys.argv[0]))
         return
 
     if sslCtx == None:
         print("""
 WARNING: server running without SSL. This will not work with the official SPA at
-https://cloudpilot-emu.github.org (or any other instance of Cloudpilot served
+https://cloudpilot-emu.github.org (or any other instance of CloudpilotEmu served
 over HTTPS). Generate a certificate and specifiy it via --cert in order to run
 with SSL enabled. Please check the documentation for more details.
 """)
@@ -71,7 +72,7 @@ with SSL enabled. Please check the documentation for more details.
                  nameserver=nameserver)
 
 
-parser = argparse.ArgumentParser(description="Proxy server for Cloudpilot")
+parser = argparse.ArgumentParser(description="Proxy server for CloudpilotEmu")
 
 subparsers = parser.add_subparsers(help="subcommand", dest="subcommand")
 
