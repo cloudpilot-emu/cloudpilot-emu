@@ -62,7 +62,7 @@ bool CardVolume::ReadPartition(uint8_t index) {
             return false;
     }
 
-    if ((firstSector + sizeSectors + 1) * 512 - 1 >= imageSize) return false;
+    if (sizeSectors == 0 || (firstSector + sizeSectors) * 512 - 1 >= imageSize) return false;
     firstByte = firstSector * 512;
 
     if (Read16(firstByte + 0x01fe) != MAGIC_BOOT_SIGNATURE) return false;
