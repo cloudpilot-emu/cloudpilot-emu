@@ -50,7 +50,7 @@ INCLUDE =
 
 SOURCE_C =
 
-SOURCE_CPP = CardImage.cpp
+SOURCE_CPP = CardImage.cpp CardVolume.cpp
 
 OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)

@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include "CardImage.h"
+#include "CardVolume.h"
 #include "cli.h"
 
 using namespace std;
@@ -35,6 +36,21 @@ bool CmdFsk::Run() {
     }
 
     CardImage image(data.release(), len >> 9);
+    CardVolume volume(image);
+
+    switch (volume.GetType()) {
+        case CardVolume::Type::partition:
+            cout << "found image: MBR image with FAT partition" << endl;
+            break;
+
+        case CardVolume::Type::bigFloppy:
+            cout << "found image: big floppy" << endl;
+            break;
+
+        default:
+            cout << "invalid image: " << volume.InvalidReason() << endl;
+            return false;
+    }
 
     return true;
 }
