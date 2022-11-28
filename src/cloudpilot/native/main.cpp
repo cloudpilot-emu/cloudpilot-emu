@@ -24,7 +24,7 @@
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendManager.h"
-#include "argparse/argparse.h"
+#include "argparse.h"
 #include "uri/uri.h"
 #include "util.h"
 

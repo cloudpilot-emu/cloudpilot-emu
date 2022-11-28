@@ -98,6 +98,8 @@ INCLUDE = \
 	-I./proto \
 	$(INCLUDE_EXTRA)
 
+INCLUDE_NATIVE = -I../argparse
+
 SOURCE_C = \
 	emulator/uae/cpudefs.c \
 	emulator/uae/cpuemu.c \
@@ -334,7 +336,7 @@ $(BUILDDIR_TEST)/%.o : %.c
 	$(MKDIR_TEST) && $(CC_NATIVE) $(DEPFLAGS_TEST) $(CFLAGS_COMMON) $(CFLAGS_TEST) $(INCLUDE) -c -o $@ $<
 
 $(BUILDDIR_NATIVE)/%.o : %.cpp
-	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
+	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(INCLUDE) $(INCLUDE_NATIVE) -c -o $@ $<
 
 $(BUILDDIR_EMCC)/%.o : %.cpp
 	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_COMMON) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
