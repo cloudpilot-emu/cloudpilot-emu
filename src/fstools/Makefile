@@ -65,7 +65,7 @@ MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
 MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
-INCLUDE = $(INCLUDE_EXTRA)
+INCLUDE = -I../common $(INCLUDE_EXTRA)
 
 INCLUDE_NATIVE = -I../argparse
 
@@ -73,7 +73,9 @@ SOURCE_C =
 SOURCE_CPP =
 SOURCE_TEST =
 
-SOURCE_NATIVE = $(SOURCE_CPP) native/main.cpp
+SOURCE_NATIVE = $(SOURCE_CPP) \
+	native/main.cpp \
+	native/CmdFsck.cpp
 
 SOURCE_WEB = $(SOURCE_CPP) $(WEBIDL_BINDING_CXX)
 
@@ -119,7 +121,7 @@ GARBAGE = \
 
 bin: $(BINARY_NATIVE)
 
-emscripten: $(BINARY_WEB_EMCC)
+emscripten: #$(BINARY_WEB_EMCC)
 
 test: $(BINARY_TEST)
 

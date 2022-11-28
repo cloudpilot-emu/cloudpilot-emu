@@ -1,15 +1,11 @@
 #include <iostream>
 
+#include "CmdFsck.h"
 #include "argparse.h"
+#include "cli.h"
 
 using namespace std;
 using argparse::ArgumentParser;
-
-const char* SUBCOMMAND_FSCK = "fsck";
-const char* SUBCOMMAND_FORMAT = "format";
-const char* ARGUMENT_IMAGE = "image";
-
-void runFsck(const ArgumentParser& cmd) { cout << "fsck not implemented" << endl; }
 
 void runFormat(const ArgumentParser& cmd) { cout << "format not implemented" << endl; }
 
@@ -34,13 +30,15 @@ int main(int argc, const char** argv) {
         cerr << e.what() << endl << endl;
         cerr << program;
 
-        exit(1);
+        return 1;
     }
 
     if (program.is_subcommand_used(SUBCOMMAND_FSCK))
-        runFsck(fsckCommand);
+        return CmdFsk(fsckCommand).Run() ? 0 : 1;
     else if (program.is_subcommand_used(SUBCOMMAND_FORMAT))
         runFormat(formatCommand);
     else
         cout << program;
+
+    return 0;
 }

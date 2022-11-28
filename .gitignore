@@ -7,7 +7,7 @@
 
 src/cloudpilot/cloudpilot
 src/cloudpilot/test/test
-src/fstools/fstool
+src/fstools/fstools
 src/**/*.js
 src/**/*.wasm
 libcommon.a
