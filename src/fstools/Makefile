@@ -2,21 +2,25 @@
 
 CC_NATIVE ?= gcc
 CXX_NATIVE ?= g++
-AR_NATIVE ?= ar
-RANLIB_NATIVE ?= ranlib
+LD_NATIVE ?= g++
 
 CC_EMCC ?= emcc
 CXX_EMCC ?= emcc
-AR_EMCC ?= emar
-RANLIB_EMCC = emranlib
+LD_EMCC ?= emcc
+
+PYTHON ?= python3
 
 EMCC_OPT ?= -O3 -flto
 
-CFLAGS_NATIVE ?= O2  -g
+WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
+
+CFLAGS_NATIVE ?= -O2  -g
 
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
 INCLUDE_EXTRA ?=
+
+LDFLAGS_NATIVE ?=
 
 CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
@@ -28,6 +32,21 @@ CXXFLAGS_EMCC = $(CFLAGS_EMCC)  -fno-rtti -fno-exceptions
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt
 CXXFLAGS_TEST ?= $(CFLAGS_TEST)
 LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt -lgtest -lgmock
+
+WEBIDL_BINDING_DIR = web/binding
+WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
+WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/binding.idl
+WEBIDL_BINDING_CXX = web/binding.cpp
+
+LDFLAGS_EMCC_WEB = $(EMCC_OPT) -Wno-version-check \
+	--post-js $(WEBIDL_BINDING_JS) \
+	-s NO_EXIT_RUNTIME=1 \
+	-s MODULARIZE=1 \
+	-s EXPORT_NAME=createModule \
+	-s ENVIRONMENT="web,worker" \
+	-s ALLOW_MEMORY_GROWTH=1 \
+	-s ALLOW_TABLE_GROWTH=1 \
+	-s INITIAL_MEMORY=67108864
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps
@@ -46,38 +65,67 @@ MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
 MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
-INCLUDE =
+INCLUDE = $(INCLUDE_EXTRA)
 
 SOURCE_C =
+SOURCE_CPP =
+SOURCE_TEST =
 
-SOURCE_CPP = CardImage.cpp
+SOURCE_NATIVE = $(SOURCE_CPP) cli/main.cpp
 
-OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
-OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)
+SOURCE_WEB = $(SOURCE_CPP) $(WEBIDL_BINDING_CXX)
 
-LIBRARY_NATIVE = libcommon.a
-LIBRARY_EMCC = libcommon-wasm.a
+OBJECTS_TEST = \
+	$(SOURCE_C:%.c=$(BUILDDIR_TEST)/%.o) \
+	$(SOURCE_TEST:%.cpp=$(BUILDDIR_TEST)/%.o) \
+	../common/libcommon.a
+
+OBJECTS_NATIVE = \
+	$(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) \
+	$(SOURCE_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o) \
+	../common/libcommon.a
+
+OBJECTS_WEB_EMCC = \
+	$(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) \
+	$(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o) \
+	../common/libcommon-wasm.a
+
+BINARY_NATIVE = fstools
+
+BINARY_WEB_EMCC = fstools_web.js
+BINARY_WEB_WASM = fstools_web.wasm
+BINARY_TEST =
+
+WASM_OPT_STAMP = wasm-opt.stamp
 
 GARBAGE = \
 	$(BUILDDIR_NATIVE) \
 	$(BUILDDIR_EMCC) \
 	$(BUILDDIR_TEST) \
-	$(LIBRARY_EMCC) \
-	$(LIBRARY_NATIVE)
+	$(BINARY_NATIVE) \
+	$(BINARY_WEB_EMCC) \
+	$(BINARY_WEB_WASM) \
+	$(BINARY_TEST) \
+	$(DEPDIR_NATIVE) \
+	$(DEPDIR_EMCC) \
+	$(DEPDIR_TEST) \
+	$(WASM_OPT_STAMP) \
+	$(WEBIDL_BINDING_JS) \
+	$(WEBIDL_BINDING_JS:%.js=%.cpp) \
+	parser.out \
+	WebIDLGrammar.pkl
 
-bin: $(LIBRARY_NATIVE)
+bin: $(BINARY_NATIVE)
 
-emscripten: $(LIBRARY_EMCC)
+emscripten: $(BINARY_WEB_EMCC)
 
-test: $(LIBRARY_NATIVE)
+test: $(BINARY_TEST)
 
-$(LIBRARY_NATIVE): $(OBJECTS_NATIVE)
-	$(AR_NATIVE) cru $@ $^
-	$(RANLIB_NATIVE) $@
+$(BINARY_NATIVE): $(OBJECTS_NATIVE)
+	$(LD_NATIVE) $(LDFLAGS_NATIVE) -o $@ $^
 
-$(LIBRARY_EMCC): $(OBJECTS_EMCC)
-	$(AR_EMCC) -cru $@ $^
-	$(RANLIB_EMCC) $@
+$(BINARY_WEB_EMCC): $(OBJECTS_WEB_EMCC)
+	$(LD_EMCC) $(LDFLAGS_EMCC_WEB) -o $@ $^
 
 $(BINARY_TEST) : $(OBJECTS_TEST)
 	$(LD_NATIVE) $(LDFLAGS_TEST) -o $@ $^
@@ -99,6 +147,11 @@ $(BUILDDIR_EMCC)/%.o : %.cpp
 
 $(BUILDDIR_TEST)/%.o : %.cpp
 	$(MKDIR_TEST) && $(CXX_NATIVE) $(DEPFLAGS_TEST) $(CXXFLAGS_COMMON) $(CXXFLAGS_TEST) $(INCLUDE) -c -o $@ $<
+
+$(BUILDDIR_EMCC)/$(WEBIDL_BINDING_CXX:%.cpp=%.o): $(WEBIDL_BINDING_JS)
+
+$(WEBIDL_BINDING_JS): $(WEBIDL_BINDING_SRC)
+	$(WEBIDL_BINDER) $(WEBIDL_BINDING_SRC) $(WEBIDL_BINDING_JS:.js=)
 
 clean:
 	-rm -fr $(GARBAGE)
