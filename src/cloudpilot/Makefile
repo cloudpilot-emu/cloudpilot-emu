@@ -52,8 +52,7 @@ LDFLAGS_EMCC_WEB = $(EMCC_OPT) -Wno-version-check \
 	-s ALLOW_MEMORY_GROWTH=1 \
 	-s INITIAL_MEMORY=67108864 \
 	-s ALLOW_TABLE_GROWTH=1 \
-	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS=["ccall","addFunction","UTF8ToString"]
+	-s EXTRA_EXPORTED_RUNTIME_METHODS=["addFunction","UTF8ToString"]
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps

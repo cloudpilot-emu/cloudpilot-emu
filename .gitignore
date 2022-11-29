@@ -5,13 +5,8 @@
 .deps-emcc
 .deps-test
 
-src/cloudpilot/cloudpilot
-src/cloudpilot/test/test
-src/fstools/fstools
 src/**/*.js
 src/**/*.wasm
-libcommon.a
-libcommon-wasm.a
 
 *.rom
 *.stamp

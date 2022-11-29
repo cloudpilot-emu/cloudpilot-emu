@@ -69,7 +69,9 @@ INCLUDE = -I../common $(INCLUDE_EXTRA)
 
 INCLUDE_NATIVE = -I../argparse
 
-SOURCE_C =
+SOURCE_C = \
+	dosfstools/charconv.c
+
 SOURCE_CPP =
 SOURCE_TEST =
 
@@ -77,7 +79,8 @@ SOURCE_NATIVE = $(SOURCE_CPP) \
 	native/main.cpp \
 	native/CmdFsck.cpp
 
-SOURCE_WEB = $(SOURCE_CPP) $(WEBIDL_BINDING_CXX)
+SOURCE_WEB = $(SOURCE_CPP) $(WEBIDL_BINDING_CXX) \
+	web/FSTools.cpp
 
 OBJECTS_TEST = \
 	$(SOURCE_C:%.c=$(BUILDDIR_TEST)/%.o) \
@@ -121,7 +124,7 @@ GARBAGE = \
 
 bin: $(BINARY_NATIVE)
 
-emscripten: #$(BINARY_WEB_EMCC)
+emscripten: $(BINARY_WEB_EMCC)
 
 test: $(BINARY_TEST)
 

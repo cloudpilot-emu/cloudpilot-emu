@@ -6,7 +6,6 @@ import { Cloudpilot, RomInfo, VoidPtr } from './web/binding/binding';
 export * from './web/binding/binding';
 
 export interface Module extends EmscriptenModule {
-    ccall: typeof ccall;
     addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;
     UTF8ToString(charPtr: number): string;

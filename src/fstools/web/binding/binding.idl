@@ -1,0 +1,7 @@
+interface FSTools {
+    void FSTools();
+
+    VoidPtr Malloc(long size);
+    void Free(VoidPtr buffer);
+    VoidPtr Nullptr();
+};
