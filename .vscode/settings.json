@@ -108,7 +108,10 @@
     "variant": "cpp",
     "*.ipp": "cpp",
     "__bits": "cpp",
-    "charconv": "cpp"
+    "charconv": "cpp",
+    "stdarg.h": "c",
+    "stdlib.h": "c",
+    "stdio.h": "c"
   },
   "editor.formatOnSave": true,
   "CppHelper.SourcePattern": [

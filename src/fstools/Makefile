@@ -70,17 +70,20 @@ INCLUDE = -I../common $(INCLUDE_EXTRA)
 INCLUDE_NATIVE = -I../argparse
 
 SOURCE_C = \
-	dosfstools/charconv.c
+	dosfstools/charconv.c \
+	dosfstools/common.c
 
 SOURCE_CPP =
 SOURCE_TEST =
 
 SOURCE_NATIVE = $(SOURCE_CPP) \
 	native/main.cpp \
-	native/CmdFsck.cpp
+	native/CmdFsck.cpp \
+	native/terminate.cpp
 
 SOURCE_WEB = $(SOURCE_CPP) $(WEBIDL_BINDING_CXX) \
-	web/FSTools.cpp
+	web/FSTools.cpp \
+	web/terminate.cpp
 
 OBJECTS_TEST = \
 	$(SOURCE_C:%.c=$(BUILDDIR_TEST)/%.o) \
