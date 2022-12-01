@@ -13,7 +13,6 @@
 
 #include "EmBankRegs.h"
 
-#include "DebugMgr.h"  // Debug::CheckStepSpy
 #include "EmCPU.h"     // GetPC
 #include "EmCPU68K.h"  // gCPU68K
 #include "EmCommon.h"
@@ -240,6 +239,7 @@ uint32 EmBankRegs::GetLong(emuptr address) {
 #if (CHECK_FOR_ADDRESS_ERROR)
         if ((address & 1 && !bank->AllowUnalignedAccess(address, 4)) != 0) {
             AddressError(address, sizeof(uint32), true);
+            address &= ~1;
         }
 #endif
 
@@ -267,6 +267,7 @@ uint32 EmBankRegs::GetWord(emuptr address) {
 #if (CHECK_FOR_ADDRESS_ERROR)
         if ((address & 1 && !bank->AllowUnalignedAccess(address, 2)) != 0) {
             AddressError(address, sizeof(uint16), true);
+            address &= ~1;
         }
 #endif
 
@@ -315,15 +316,11 @@ void EmBankRegs::SetLong(emuptr address, uint32 value) {
 #if (CHECK_FOR_ADDRESS_ERROR)
         if ((address & 1 && !bank->AllowUnalignedAccess(address, 4)) != 0) {
             AddressError(address, sizeof(uint32), false);
+            address &= ~1;
         }
 #endif
 
         bank->SetLong(address, value);
-
-        // See if any interesting memory locations have changed.  If so,
-        // CheckStepSpy will report it.
-
-        Debug::CheckStepSpy(address, sizeof(uint32));
 
         return;
     }
@@ -348,15 +345,11 @@ void EmBankRegs::SetWord(emuptr address, uint32 value) {
 #if (CHECK_FOR_ADDRESS_ERROR)
         if ((address & 1 && !bank->AllowUnalignedAccess(address, 2)) != 0) {
             AddressError(address, sizeof(uint16), false);
+            address &= ~1;
         }
 #endif
 
         bank->SetWord(address, value);
-
-        // See if any interesting memory locations have changed.  If so,
-        // CheckStepSpy will report it.
-
-        Debug::CheckStepSpy(address, sizeof(uint16));
 
         return;
     }
@@ -379,11 +372,6 @@ void EmBankRegs::SetByte(emuptr address, uint32 value) {
 
     if (bank) {
         bank->SetByte(address, value);
-
-        // See if any interesting memory locations have changed.  If so,
-        // CheckStepSpy will report it.
-
-        Debug::CheckStepSpy(address, sizeof(uint8));
 
         return;
     }

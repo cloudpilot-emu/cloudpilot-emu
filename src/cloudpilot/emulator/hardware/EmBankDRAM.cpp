@@ -17,7 +17,6 @@
 
 #include "EmBankDRAM.h"
 
-#include "DebugMgr.h"    // Debug::CheckStepSpy
 #include "EmBankSRAM.h"  // gRAMBank_Size, gRAM_Memory, gMemoryAccess
 #include "EmCPU.h"       // GetSP
 #include "EmCPU68K.h"    // gCPU68K
@@ -171,6 +170,7 @@ uint32 EmBankDRAM::GetLong(emuptr address) {
 
     if (CHECK_FOR_ADDRESS_ERROR && (address & 1) != 0) {
         AddressError(address, sizeof(uint32), true);
+        address &= ~1;
     }
 
     if (VALIDATE_DRAM_GET && gMemAccessFlags.fValidate_DRAMGet &&
@@ -190,6 +190,7 @@ uint32 EmBankDRAM::GetWord(emuptr address) {
 
     if (CHECK_FOR_ADDRESS_ERROR && (address & 1) != 0) {
         AddressError(address, sizeof(uint16), true);
+        address &= ~1;
     }
 
     if (VALIDATE_DRAM_GET && gMemAccessFlags.fValidate_DRAMGet &&
@@ -227,6 +228,7 @@ void EmBankDRAM::SetLong(emuptr address, uint32 value) {
 
     if (CHECK_FOR_ADDRESS_ERROR && (address & 1) != 0) {
         AddressError(address, sizeof(uint32), false);
+        address &= ~1;
     }
 
     if (VALIDATE_DRAM_SET && gMemAccessFlags.fValidate_DRAMSet &&
@@ -235,8 +237,6 @@ void EmBankDRAM::SetLong(emuptr address, uint32 value) {
     }
 
     EmMemDoPut32(ram + address, value);
-
-    // Debug::CheckStepSpy(address, sizeof(uint32));
 
     markDirty(address);
     markDirty(address + 2);
@@ -252,6 +252,7 @@ void EmBankDRAM::SetLong(emuptr address, uint32 value) {
 void EmBankDRAM::SetWord(emuptr address, uint32 value) {
     if (address > dynamicHeapSize) {
         EmBankSRAM::SetWord(address, value);
+        address &= ~1;
         return;
     }
 
@@ -265,8 +266,6 @@ void EmBankDRAM::SetWord(emuptr address, uint32 value) {
     }
 
     EmMemDoPut16(ram + address, value);
-
-    // Debug::CheckStepSpy(address, sizeof(uint16));
 
     markDirty(address);
 
@@ -290,8 +289,6 @@ void EmBankDRAM::SetByte(emuptr address, uint32 value) {
     }
 
     EmMemDoPut8(ram + address, value);
-
-    // Debug::CheckStepSpy(address, sizeof(uint8));
 
     markDirty(address);
 

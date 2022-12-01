@@ -21,7 +21,6 @@
 
 #include "Byteswapping.h"  // Canonical
 #include "ChunkHelper.h"
-#include "DebugMgr.h"   // gExceptionAddress, gExceptionSize, gExceptionForRead
 #include "EmBankROM.h"  // EmBankROM::GetMemoryStart
 #include "EmCommon.h"
 #include "EmHAL.h"      // EmHAL::GetInterruptLevel
@@ -1115,10 +1114,6 @@ void EmCPU68K::UpdateRegistersFromSR(void) {
 // ---------------------------------------------------------------------------
 
 void EmCPU68K::BusError(emuptr address, long size, Bool forRead) {
-    gExceptionAddress = address;
-    gExceptionSize = size;
-    gExceptionForRead = forRead;
-
     this->ProcessException(kException_BusErr);
     return;
 }
@@ -1128,10 +1123,6 @@ void EmCPU68K::BusError(emuptr address, long size, Bool forRead) {
 // ---------------------------------------------------------------------------
 
 void EmCPU68K::AddressError(emuptr address, long size, Bool forRead) {
-    gExceptionAddress = address;
-    gExceptionSize = size;
-    gExceptionForRead = forRead;
-
     this->ProcessException(kException_AddressErr);
     return;
 }

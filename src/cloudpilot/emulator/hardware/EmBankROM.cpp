@@ -161,6 +161,7 @@ uint32 EmBankROM::GetLong(emuptr address) {
 #if (CHECK_FOR_ADDRESS_ERROR)
     if ((address & 1) != 0) {
         AddressError(address, sizeof(uint32), true);
+        address &= ~1;
     }
 #endif
 
@@ -195,6 +196,7 @@ uint32 EmBankROM::GetWord(emuptr address) {
 #if (CHECK_FOR_ADDRESS_ERROR)
     if ((address & 1) != 0) {
         AddressError(address, sizeof(uint16), true);
+        address &= ~1;
     }
 #endif
 

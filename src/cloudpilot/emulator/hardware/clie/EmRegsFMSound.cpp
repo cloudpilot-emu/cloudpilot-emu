@@ -14,7 +14,6 @@
 #include "EmRegsFMSound.h"
 
 #include "Byteswapping.h"  // ByteswapWords
-#include "DebugMgr.h"      // Debug::CheckStepSpy
 #include "EmBankROM.h"     // ROMBank::IsPCInRAM
 #include "EmBankRegs.h"    // RegsBank::GetROMSize
 #include "EmCommon.h"

@@ -209,7 +209,6 @@ SOURCE_EMU = \
 	emulator/EmTransport.cpp \
 	emulator/MetaMemory.cpp \
 	emulator/Byteswapping.cpp \
-	emulator/DebugMgr.cpp \
 	emulator/EmSession.cpp \
 	emulator/EmPalmStructs.cpp \
 	emulator/EmROMReader.cpp \

@@ -14,7 +14,6 @@
 #include "EmBankSRAM.h"
 
 #include "Byteswapping.h"  // ByteswapWords
-#include "DebugMgr.h"      // Debug::CheckStepSpy
 #include "EmCPU68K.h"      // gCPU68K
 #include "EmCommon.h"
 #include "EmHAL.h"
@@ -178,6 +177,7 @@ uint32 EmBankSRAM::GetLong(emuptr address) {
 #if (CHECK_FOR_ADDRESS_ERROR)
     if ((address & 1) != 0) {
         AddressError(address, sizeof(uint32), true);
+        address &= ~1;
     }
 #endif
 
@@ -210,6 +210,7 @@ uint32 EmBankSRAM::GetWord(emuptr address) {
 #if (CHECK_FOR_ADDRESS_ERROR)
     if ((address & 1) != 0) {
         AddressError(address, sizeof(uint16), true);
+        address &= ~1;
     }
 #endif
 
@@ -273,6 +274,7 @@ void EmBankSRAM::SetLong(emuptr address, uint32 value) {
 #if (CHECK_FOR_ADDRESS_ERROR)
     if ((address & 1) != 0) {
         AddressError(address, sizeof(uint32), false);
+        address &= ~1;
     }
 #endif
 
@@ -301,8 +303,6 @@ void EmBankSRAM::SetLong(emuptr address, uint32 value) {
 
     if (MetaMemory::IsScreenBuffer32(InlineGetMetaAddress(phyAddress)))
         gSystemState.MarkScreenDirty(address, address + 4);
-
-    // Debug::CheckStepSpy(address, sizeof(uint16));
 }
 
 // ---------------------------------------------------------------------------
@@ -313,6 +313,7 @@ void EmBankSRAM::SetWord(emuptr address, uint32 value) {
 #if (CHECK_FOR_ADDRESS_ERROR)
     if ((address & 1) != 0) {
         AddressError(address, sizeof(uint16), false);
+        address &= ~1;
     }
 #endif
 
@@ -340,8 +341,6 @@ void EmBankSRAM::SetWord(emuptr address, uint32 value) {
 
     if (MetaMemory::IsScreenBuffer16(InlineGetMetaAddress(phyAddress)))
         gSystemState.MarkScreenDirty(address, address + 2);
-
-    // Debug::CheckStepSpy(address, sizeof(uint16));
 }
 
 // ---------------------------------------------------------------------------
@@ -373,8 +372,6 @@ void EmBankSRAM::SetByte(emuptr address, uint32 value) {
 
     if (MetaMemory::IsScreenBuffer8(InlineGetMetaAddress(phyAddress)))
         gSystemState.MarkScreenDirty(address, address);
-
-    // Debug::CheckStepSpy(address, sizeof(uint8));
 }
 
 uint32 EmBankSRAM::GetDummy(emuptr address) { return 0; }
