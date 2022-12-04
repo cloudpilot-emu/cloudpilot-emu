@@ -111,7 +111,15 @@
     "charconv": "cpp",
     "stdarg.h": "c",
     "stdlib.h": "c",
-    "stdio.h": "c"
+    "stdio.h": "c",
+    "terminate.h": "c",
+    "wctype.h": "c",
+    "time.h": "c",
+    "fsck.fat.h": "c",
+    "io.h": "c",
+    "endian.h": "c",
+    "cdefs.h": "c",
+    "_endian.h": "c"
   },
   "editor.formatOnSave": true,
   "CppHelper.SourcePattern": [

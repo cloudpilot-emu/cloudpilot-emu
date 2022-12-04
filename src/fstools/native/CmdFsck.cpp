@@ -7,6 +7,7 @@
 #include "CardImage.h"
 #include "CardVolume.h"
 #include "cli.h"
+#include "dosfstools/fsck.h"
 
 using namespace std;
 
@@ -51,6 +52,8 @@ bool CmdFsk::Run() {
             cout << "invalid image: " << volume.InvalidReason() << endl;
             return false;
     }
+
+    runFsck(true);
 
     return true;
 }

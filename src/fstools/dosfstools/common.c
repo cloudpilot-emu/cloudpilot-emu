@@ -37,8 +37,8 @@
 #include <unistd.h>
 #include <wctype.h>
 
-#include "../terminate.h"
 #include "charconv.h"
+#include "terminate.h"
 
 int interactive;
 int write_immed;

@@ -22,7 +22,7 @@ INCLUDE_EXTRA ?=
 
 LDFLAGS_NATIVE ?=
 
-CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter
+CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-deprecated-declarations -Wno-sign-compare
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
 CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
 
@@ -65,15 +65,24 @@ MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
 MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
-INCLUDE = -I../common $(INCLUDE_EXTRA)
+INCLUDE = -I../common -I. $(INCLUDE_EXTRA)
 
 INCLUDE_NATIVE = -I../argparse
 
 SOURCE_C = \
 	dosfstools/charconv.c \
-	dosfstools/common.c
+	dosfstools/common.c \
+	dosfstools/io.c \
+	dosfstools/device_info.c \
+	dosfstools/boot.c \
+	dosfstools/check.c \
+	dosfstools/fat.c \
+	dosfstools/file.c \
+	dosfstools/fsck.fat.c \
+	dosfstools/lfn.c \
+	dosfstools/fsck.c
 
-SOURCE_CPP =
+SOURCE_CPP = card_io.cpp
 SOURCE_TEST =
 
 SOURCE_NATIVE = $(SOURCE_CPP) \
