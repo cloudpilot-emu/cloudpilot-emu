@@ -17,6 +17,14 @@ CardVolume::Type CardVolume::GetType() const { return type; }
 
 const std::string& CardVolume::InvalidReason() const { return invalidReason; }
 
+uint32_t CardVolume::GetSize() const { return partitionSize; }
+
+uint32_t CardVolume::GetGeometryHeads() const { return geometryHeads; }
+
+uint32_t CardVolume::GetGeometrySectors() const { return geometrySectors; }
+
+uint32_t CardVolume::GetSectorsPerCluster() const { return sectorsPerCluster; }
+
 void CardVolume::Identify() {
     if (imageSize < 512) {
         invalidReason = "image too small";
@@ -31,26 +39,33 @@ void CardVolume::Identify() {
     type = (ReadPartition(0) || ReadPartition(1) || ReadPartition(2) || ReadPartition(3))
                ? Type::partition
                : Type::bigFloppy;
+
+    if (type == Type::bigFloppy) {
+        partitionFirstByte = 0;
+        partitionSize = imageSize;
+
+        ReadFatParameters();
+    }
 }
 
-uint8_t CardVolume::Read8(size_t addr) const { return addr >= imageSize ? 0 : imageData[addr]; }
+uint8_t CardVolume::Read8(uint32_t addr) const { return addr >= imageSize ? 0 : imageData[addr]; }
 
-uint16_t CardVolume::Read16(size_t addr) const {
+uint16_t CardVolume::Read16(uint32_t addr) const {
     return addr >= imageSize - 1 ? 0 : (imageData[addr] | (imageData[addr + 1] << 8));
 }
 
-uint32_t CardVolume::Read32(size_t addr) const {
+uint32_t CardVolume::Read32(uint32_t addr) const {
     return addr >= imageSize - 4 ? 0
                                  : (imageData[addr] | (imageData[addr + 1] << 8) |
                                     (imageData[addr + 2] << 16) | (imageData[addr + 3] << 24));
 }
 
 bool CardVolume::ReadPartition(uint8_t index) {
-    size_t base = 0x01be + index * 16;
+    const uint32_t base = 0x01be + index * 16;
 
-    uint8_t partitionType = Read8(base + 0x04);
-    firstSector = Read32(base + 0x08);
-    uint32_t sizeSectors = Read32(base + 0x0c);
+    const uint8_t partitionType = Read8(base + 0x04);
+    const uint32_t partitionFirstSector = Read32(base + 0x08);
+    const uint32_t sizeSectors = Read32(base + 0x0c);
 
     switch (partitionType) {
         case 0x01:
@@ -62,13 +77,45 @@ bool CardVolume::ReadPartition(uint8_t index) {
             return false;
     }
 
-    if (sizeSectors == 0 || (firstSector + sizeSectors) * 512 - 1 >= imageSize) return false;
-    firstByte = firstSector * 512;
+    if (sizeSectors == 0 || (partitionFirstSector + sizeSectors) * 512 > imageSize) return false;
+    partitionFirstByte = partitionFirstSector * 512;
 
-    if (Read16(firstByte + 0x01fe) != MAGIC_BOOT_SIGNATURE) return false;
+    if (Read16(partitionFirstByte + 0x01fe) != MAGIC_BOOT_SIGNATURE) return false;
 
-    uint32_t sectorsTotalCrosscheck = Read16(firstByte + 0x13);
-    if (sectorsTotalCrosscheck == 0) sectorsTotalCrosscheck = Read32(firstByte + 0x20);
+    uint32_t sectorsTotalFromFat = Read16(partitionFirstByte + 0x13);
+    if (sectorsTotalFromFat == 0) sectorsTotalFromFat = Read32(partitionFirstByte + 0x20);
+    if (sectorsTotalFromFat == 0 || sectorsTotalFromFat > sizeSectors) return false;
 
-    return sectorsTotalCrosscheck == sizeSectors;
+    partitionSize = sizeSectors * 512;
+
+    ReadFatParameters();
+
+    AddressCHS startCHS = ReadAddressCHS(base + 0x01);
+    AddressCHS sizeCHS = ReadAddressCHS(base + 0x05);
+
+    return CHSToLBA(startCHS) == partitionFirstSector &&
+           CHSToLBA(sizeCHS) == sizeSectors + partitionFirstSector - 1;
+}
+
+void CardVolume::ReadFatParameters() {
+    geometrySectors = Read16(partitionFirstByte + 0x18);
+    geometryHeads = Read16(partitionFirstByte + 0x1a);
+    sectorsPerCluster = Read8(partitionFirstByte + 0x0d);
+}
+
+CardVolume::AddressCHS CardVolume::ReadAddressCHS(uint32_t index) {
+    const uint8_t chs1 = Read8(index);
+    const uint8_t chs2 = Read8(index + 1);
+    const uint8_t chs3 = Read8(index + 2);
+
+    return (AddressCHS){.head = chs1,
+                        .sector = static_cast<uint8_t>(chs2 & 0x3f),
+                        .cylinder = static_cast<uint16_t>(chs3 | ((chs2 & 0xc0) << 2))};
+}
+
+uint32_t CardVolume::CHSToLBA(const AddressCHS& addressCHS) const {
+    return addressCHS.sector > 0
+               ? ((addressCHS.cylinder * geometryHeads) + addressCHS.head) * geometrySectors +
+                     (addressCHS.sector - 1)
+               : 0;
 }

@@ -38,10 +38,13 @@ int device_info_verbose;
 int get_device_info(int fd, struct device_info *info) {
     *info = device_info_clueless;
 
-    /* there is nothing more to discover for an image file */
     info->type = TYPE_FILE;
     info->partition = 0;
     info->size = card_get_size();
+    info->sector_size = 512;
+    info->geom_start = 0;
+    info->geom_heads = card_geometry_heads();
+    info->geom_sectors = card_geometry_sectors();
 
     return 0;
 }

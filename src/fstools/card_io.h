@@ -10,6 +10,8 @@ extern "C" {
     #include <stddef.h>
 #endif
 
+void card_initialize(void* card_volume);
+
 int card_get_size();
 
 int card_open();
@@ -21,6 +23,10 @@ int card_is_valid_range(int offset, int size);
 int card_write(int offset, int size, const void* buffer);
 
 int card_close();
+
+int card_geometry_sectors();
+
+int card_geometry_heads();
 
 #ifdef __cplusplus
 }

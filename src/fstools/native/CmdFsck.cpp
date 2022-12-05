@@ -6,6 +6,7 @@
 
 #include "CardImage.h"
 #include "CardVolume.h"
+#include "card_io.h"
 #include "cli.h"
 #include "dosfstools/fsck.h"
 
@@ -41,11 +42,15 @@ bool CmdFsk::Run() {
 
     switch (volume.GetType()) {
         case CardVolume::Type::partition:
-            cout << "found image: MBR image with FAT partition" << endl;
+            cout << "found image: MBR image with FAT partition, " << volume.GetGeometryHeads()
+                 << " heads, " << volume.GetGeometrySectors() << " sectors, "
+                 << volume.GetSectorsPerCluster() << " sectors/cluster" << endl;
             break;
 
         case CardVolume::Type::bigFloppy:
-            cout << "found image: big floppy" << endl;
+            cout << "found image: big floppy, " << volume.GetGeometryHeads() << " heads, "
+                 << volume.GetGeometrySectors() << " sectors, " << volume.GetSectorsPerCluster()
+                 << " sectors/cluster" << endl;
             break;
 
         default:
@@ -53,6 +58,7 @@ bool CmdFsk::Run() {
             return false;
     }
 
+    card_initialize(&volume);
     runFsck(true);
 
     return true;
