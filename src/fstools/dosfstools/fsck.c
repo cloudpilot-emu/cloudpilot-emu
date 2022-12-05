@@ -4,17 +4,17 @@
 #include "io.h"
 
 static int runFsckNoWrite() {
-    static char* options[] = {"-n", "null"};
+    static char* options[] = {"fsck", "-n", "-v", "card"};
 
-    fsck_main(2, options);
+    fsck_main(4, options);
 
     return fs_changed();
 }
 
 static int runFsckWithWrite() {
-    static char* options[] = {"-a", "null"};
+    static char* options[] = {"fsck", "-a", "card"};
 
-    fsck_main(2, options);
+    fsck_main(3, options);
 
     return fs_changed();
 }

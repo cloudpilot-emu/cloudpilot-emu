@@ -21,6 +21,9 @@ class CardVolume {
     uint32_t GetGeometrySectors() const;
     uint32_t GetSectorsPerCluster() const;
 
+    bool Read(uint32_t offset, uint32_t size, uint8_t* destination);
+    bool Write(uint32_t offset, uint32_t size, const uint8_t* source);
+
    private:
     struct AddressCHS {
         uint16_t cylinder;
@@ -42,13 +45,15 @@ class CardVolume {
     uint32_t CHSToLBA(const AddressCHS& addressCHS) const;
 
    private:
+    CardImage& image;
+
     uint8_t* imageData;
     uint32_t imageSize{0};
 
     Type type{Type::invalid};
     std::string invalidReason{""};
 
-    uint32_t partitionFirstByte{0};
+    uint32_t partitionOffset{0};
     uint32_t partitionSize{0};
 
     uint32_t geometryHeads{0};

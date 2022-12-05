@@ -1,5 +1,11 @@
 #include "../terminate.h"
 
 #include <cstdlib>
+#include <iostream>
 
-void terminate() { exit(1); }
+using namespace std;
+
+void terminate() {
+    cerr << "terminated" << endl;
+    exit(1);
+}

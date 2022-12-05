@@ -59,7 +59,7 @@ bool CmdFsk::Run() {
     }
 
     card_initialize(&volume);
-    runFsck(true);
+    runFsck(false);
 
     return true;
 }

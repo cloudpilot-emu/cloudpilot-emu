@@ -10,11 +10,20 @@ int card_get_size() { return volume->GetSize(); }
 
 int card_open() { return volume != nullptr; }
 
-int card_read(int offset, int size, void* buffer) { return 0; }
+int card_read(int offset, int size, void* buffer) {
+    return volume != nullptr ? volume->Read(offset, size, reinterpret_cast<uint8_t*>(buffer)) : 0;
+}
 
-int card_is_valid_range(int offset, int size) { return 0; }
+int card_is_valid_range(int offset, int size) {
+    if (volume == nullptr) return 0;
 
-int card_write(int offset, int size, const void* buffer) { return 0; }
+    return offset >= 0 && size >= 0 && offset + size <= volume->GetSize();
+}
+
+int card_write(int offset, int size, const void* buffer) {
+    return volume != nullptr ? volume->Write(offset, size, reinterpret_cast<const uint8_t*>(buffer))
+                             : 0;
+}
 
 int card_close() { return volume != nullptr; }
 

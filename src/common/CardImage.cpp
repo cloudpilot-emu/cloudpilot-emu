@@ -38,6 +38,31 @@ size_t CardImage::Write(const uint8_t* source, size_t index, size_t count) {
 
 size_t CardImage::BlocksTotal() const { return blocksTotal; }
 
+bool CardImage::WriteByteRange(const uint8_t* source, size_t offset, size_t count) {
+    if (offset + count > blocksTotal * BLOCK_SIZE) return false;
+    if (count == 0) return true;
+
+    memcpy(data.get() + offset, source, count);
+
+    const size_t firstBlock = offset / BLOCK_SIZE;
+    const size_t lastBlock = (offset + count - 1) / BLOCK_SIZE;
+
+    for (size_t block = firstBlock; block <= lastBlock; block++) {
+        const size_t page = block >> 4;
+        dirtyPages[page >> 3] |= 1 << (page & 0x07);
+    }
+
+    return true;
+}
+
+bool CardImage::ReadByteRange(uint8_t* destination, size_t offset, size_t count) {
+    if (offset + count > blocksTotal * BLOCK_SIZE) return false;
+
+    memcpy(destination, data.get() + offset, count);
+
+    return true;
+}
+
 uint8_t* CardImage::RawData() { return data.get(); }
 
 uint8_t* CardImage::DirtyPages() { return dirtyPages.get(); }

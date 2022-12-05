@@ -140,6 +140,11 @@ int xasprintf(char **strp, const char *fmt, ...) {
 }
 
 int get_choice(int noninteractive_result, const char *noninteractive_msg, int choices, ...) {
+    if (!interactive) {
+        printf("%s\n", noninteractive_msg);
+        return noninteractive_result;
+    }
+
     terminate();
     return 0;
 }

@@ -17,6 +17,9 @@ class CardImage {
     size_t Write(const uint8_t* source, size_t index, size_t count = 1);
     size_t BlocksTotal() const;
 
+    bool WriteByteRange(const uint8_t* source, size_t offset, size_t count);
+    bool ReadByteRange(uint8_t* destination, size_t offset, size_t count);
+
     uint8_t* RawData();
     uint8_t* DirtyPages();
 

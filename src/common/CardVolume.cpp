@@ -9,7 +9,7 @@ namespace {
 }
 
 CardVolume::CardVolume(CardImage& image)
-    : imageData(image.RawData()), imageSize(image.BlocksTotal() * 512) {
+    : image(image), imageData(image.RawData()), imageSize(image.BlocksTotal() * 512) {
     Identify();
 }
 
@@ -24,6 +24,18 @@ uint32_t CardVolume::GetGeometryHeads() const { return geometryHeads; }
 uint32_t CardVolume::GetGeometrySectors() const { return geometrySectors; }
 
 uint32_t CardVolume::GetSectorsPerCluster() const { return sectorsPerCluster; }
+
+bool CardVolume::Read(uint32_t offset, uint32_t size, uint8_t* destination) {
+    if (offset + size > partitionSize) return false;
+
+    return image.ReadByteRange(destination, partitionOffset + offset, size);
+}
+
+bool CardVolume::Write(uint32_t offset, uint32_t size, const uint8_t* source) {
+    if (offset + size > partitionSize) return false;
+
+    return image.WriteByteRange(source, partitionOffset + offset, size);
+}
 
 void CardVolume::Identify() {
     if (imageSize < 512) {
@@ -41,7 +53,7 @@ void CardVolume::Identify() {
                : Type::bigFloppy;
 
     if (type == Type::bigFloppy) {
-        partitionFirstByte = 0;
+        partitionOffset = 0;
         partitionSize = imageSize;
 
         ReadFatParameters();
@@ -78,12 +90,12 @@ bool CardVolume::ReadPartition(uint8_t index) {
     }
 
     if (sizeSectors == 0 || (partitionFirstSector + sizeSectors) * 512 > imageSize) return false;
-    partitionFirstByte = partitionFirstSector * 512;
+    partitionOffset = partitionFirstSector * 512;
 
-    if (Read16(partitionFirstByte + 0x01fe) != MAGIC_BOOT_SIGNATURE) return false;
+    if (Read16(partitionOffset + 0x01fe) != MAGIC_BOOT_SIGNATURE) return false;
 
-    uint32_t sectorsTotalFromFat = Read16(partitionFirstByte + 0x13);
-    if (sectorsTotalFromFat == 0) sectorsTotalFromFat = Read32(partitionFirstByte + 0x20);
+    uint32_t sectorsTotalFromFat = Read16(partitionOffset + 0x13);
+    if (sectorsTotalFromFat == 0) sectorsTotalFromFat = Read32(partitionOffset + 0x20);
     if (sectorsTotalFromFat == 0 || sectorsTotalFromFat > sizeSectors) return false;
 
     partitionSize = sizeSectors * 512;
@@ -98,9 +110,9 @@ bool CardVolume::ReadPartition(uint8_t index) {
 }
 
 void CardVolume::ReadFatParameters() {
-    geometrySectors = Read16(partitionFirstByte + 0x18);
-    geometryHeads = Read16(partitionFirstByte + 0x1a);
-    sectorsPerCluster = Read8(partitionFirstByte + 0x0d);
+    geometrySectors = Read16(partitionOffset + 0x18);
+    geometryHeads = Read16(partitionOffset + 0x1a);
+    sectorsPerCluster = Read8(partitionOffset + 0x0d);
 }
 
 CardVolume::AddressCHS CardVolume::ReadAddressCHS(uint32_t index) {
