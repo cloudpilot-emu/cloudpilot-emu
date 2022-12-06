@@ -16,6 +16,8 @@ class CmdFsk {
    private:
     std::string imageFile;
     std::unique_ptr<uint8_t[]> data;
+
+    std::string writeFile;
 };
 
 #endif  // _CMD_FSCK_H_

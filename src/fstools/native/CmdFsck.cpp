@@ -12,29 +12,35 @@
 
 using namespace std;
 
-CmdFsk::CmdFsk(const argparse::ArgumentParser& cmd) : imageFile(cmd.get(ARGUMENT_IMAGE)) {}
+CmdFsk::CmdFsk(const argparse::ArgumentParser& cmd) : imageFile(cmd.get(ARGUMENT_IMAGE)) {
+    if (cmd.present("--write")) writeFile = cmd.get("--write");
+}
 
 bool CmdFsk::Run() {
-    fstream stream(imageFile, ios_base::in);
-    if (stream.fail()) {
-        cout << "unable to open '" << imageFile << "'" << endl;
-        return false;
-    }
+    size_t len;
 
-    stream.seekg(0, ios_base::end);
-    size_t len = stream.tellg();
-    stream.seekg(0, ios_base::beg);
+    {
+        fstream stream(imageFile, ios_base::in);
+        if (stream.fail()) {
+            cout << "unable to open '" << imageFile << "'" << endl;
+            return false;
+        }
 
-    if (len % 512) {
-        cout << "invalid image: not a multiple of 512 byte sectors" << endl;
-        return false;
-    }
+        stream.seekg(0, ios_base::end);
+        len = stream.tellg();
+        stream.seekg(0, ios_base::beg);
 
-    data = make_unique<uint8_t[]>(len);
-    stream.read(reinterpret_cast<char*>(data.get()), len);
-    if (static_cast<size_t>(stream.gcount()) != len) {
-        cout << "failed to read '" << imageFile << "'" << endl;
-        return false;
+        if (len % 512) {
+            cout << "invalid image: not a multiple of 512 byte sectors" << endl;
+            return false;
+        }
+
+        data = make_unique<uint8_t[]>(len);
+        stream.read(reinterpret_cast<char*>(data.get()), len);
+        if (static_cast<size_t>(stream.gcount()) != len) {
+            cout << "failed to read '" << imageFile << "'" << endl;
+            return false;
+        }
     }
 
     CardImage image(data.release(), len >> 9);
@@ -59,7 +65,32 @@ bool CmdFsk::Run() {
     }
 
     card_initialize(&volume);
-    runFsck(false);
+
+    cout << "running fsck..." << endl << endl;
+
+    bool result = runFsck(!writeFile.empty());
+
+    cout << endl
+         << (result ? "fsck successful" : "check failed, damaged file system") << endl
+         << flush;
+
+    if (!writeFile.empty()) {
+        fstream stream(writeFile, ios_base::out);
+        if (stream.fail()) {
+            cout << "failed to open " << writeFile << endl;
+            return false;
+        }
+
+        stream.write(reinterpret_cast<const char*>(image.RawData()),
+                     image.BlocksTotal() * CardImage::BLOCK_SIZE);
+
+        if (stream.fail()) {
+            cout << "failed to write " << writeFile << endl;
+            return false;
+        }
+
+        cout << "modified image written to " << writeFile << endl;
+    }
 
     return true;
 }

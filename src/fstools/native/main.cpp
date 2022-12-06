@@ -16,6 +16,7 @@ int main(int argc, const char** argv) {
     ArgumentParser fsckCommand(SUBCOMMAND_FSCK);
     fsckCommand.add_description("fsck card image");
     fsckCommand.add_argument(ARGUMENT_IMAGE).help("card image").required();
+    fsckCommand.add_argument("--write", "-w").help("write (potentially) modified image to file");
 
     ArgumentParser formatCommand(SUBCOMMAND_FORMAT);
     formatCommand.add_description("format card image (big floppy)");
