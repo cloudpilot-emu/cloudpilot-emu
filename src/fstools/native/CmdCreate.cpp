@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include "CardImage.h"
+#include "CardVolume.h"
 #include "cli.h"
 
 using namespace std;
@@ -48,7 +49,11 @@ bool CmdCreate::Run() {
 
     uint8_t* buffer = new uint8_t[sizeBytes];
     memset(buffer, 0, sizeBytes);
+
     CardImage image(buffer, sizeBytes >> 9);
+    CardVolume volume(image);
+
+    volume.Format();
 
     {
         fstream stream(imageFile, ios_base::out);

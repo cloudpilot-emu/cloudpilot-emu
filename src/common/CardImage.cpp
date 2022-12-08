@@ -44,13 +44,7 @@ bool CardImage::WriteByteRange(const uint8_t* source, size_t offset, size_t coun
 
     memcpy(data.get() + offset, source, count);
 
-    const size_t firstBlock = offset / BLOCK_SIZE;
-    const size_t lastBlock = (offset + count - 1) / BLOCK_SIZE;
-
-    for (size_t block = firstBlock; block <= lastBlock; block++) {
-        const size_t page = block >> 4;
-        dirtyPages[page >> 3] |= 1 << (page & 0x07);
-    }
+    MarkRangeDirty(offset, count);
 
     return true;
 }
@@ -61,6 +55,16 @@ bool CardImage::ReadByteRange(uint8_t* destination, size_t offset, size_t count)
     memcpy(destination, data.get() + offset, count);
 
     return true;
+}
+
+void CardImage::MarkRangeDirty(size_t offset, size_t count) {
+    const size_t firstBlock = offset / BLOCK_SIZE;
+    const size_t lastBlock = (offset + count - 1) / BLOCK_SIZE;
+
+    for (size_t block = firstBlock; block <= lastBlock; block++) {
+        const size_t page = block >> 4;
+        dirtyPages[page >> 3] |= 1 << (page & 0x07);
+    }
 }
 
 uint8_t* CardImage::RawData() { return data.get(); }

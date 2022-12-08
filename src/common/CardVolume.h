@@ -24,6 +24,8 @@ class CardVolume {
     bool Read(uint32_t offset, uint32_t size, uint8_t* destination);
     bool Write(uint32_t offset, uint32_t size, const uint8_t* source);
 
+    void Format();
+
    private:
     struct AddressCHS {
         uint16_t cylinder;
@@ -38,11 +40,19 @@ class CardVolume {
     uint16_t Read16(uint32_t addr) const;
     uint32_t Read32(uint32_t addr) const;
 
+    void Write8(uint32_t addr, uint8_t value);
+    void Write16(uint32_t addr, uint16_t value);
+    void Write32(uint32_t addr, uint32_t value);
+
     bool ReadPartition(uint8_t index);
     void ReadFatParameters();
     AddressCHS ReadAddressCHS(uint32_t index);
+    void WriteAddressCHS(uint32_t index, const AddressCHS& address);
+
+    void CalculateGeometry();
 
     uint32_t CHSToLBA(const AddressCHS& addressCHS) const;
+    AddressCHS LBAToCHS(uint32_t addressLBA) const;
 
    private:
     CardImage& image;

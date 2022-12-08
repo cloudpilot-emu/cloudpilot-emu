@@ -20,6 +20,8 @@ class CardImage {
     bool WriteByteRange(const uint8_t* source, size_t offset, size_t count);
     bool ReadByteRange(uint8_t* destination, size_t offset, size_t count);
 
+    void MarkRangeDirty(size_t offset, size_t count);
+
     uint8_t* RawData();
     uint8_t* DirtyPages();
 

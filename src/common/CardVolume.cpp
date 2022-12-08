@@ -1,5 +1,6 @@
 #include "CardVolume.h"
 
+#include <cstdlib>
 #include <iostream>
 
 using namespace std;
@@ -37,6 +38,30 @@ bool CardVolume::Write(uint32_t offset, uint32_t size, const uint8_t* source) {
     return image.WriteByteRange(source, partitionOffset + offset, size);
 }
 
+void CardVolume::Format() {
+    memset(imageData, 0, imageSize);
+
+    CalculateGeometry();
+
+    const AddressCHS firstSectorCHS = (AddressCHS){.cylinder = 0, .head = 0, .sector = 1};
+    const AddressCHS lastSectorCHS = LBAToCHS(image.BlocksTotal() - 1);
+
+    Write8(0x01be, 0x80);
+    WriteAddressCHS(0x01bf, firstSectorCHS);
+    Write8(0x01c2, 0x01);
+    WriteAddressCHS(0x01c3, lastSectorCHS);
+    Write32(0x01c6, 0x01);
+    Write32(0x01ca, image.BlocksTotal() - 1);
+
+    Write16(0x01fe, 0xaa55);
+
+    image.MarkRangeDirty(0, 512);
+
+    type = Type::partition;
+    partitionOffset = 512;
+    partitionSize = imageSize - 512;
+}
+
 void CardVolume::Identify() {
     if (imageSize < 512) {
         invalidReason = "image too small";
@@ -67,9 +92,31 @@ uint16_t CardVolume::Read16(uint32_t addr) const {
 }
 
 uint32_t CardVolume::Read32(uint32_t addr) const {
-    return addr >= imageSize - 4 ? 0
+    return addr >= imageSize - 3 ? 0
                                  : (imageData[addr] | (imageData[addr + 1] << 8) |
                                     (imageData[addr + 2] << 16) | (imageData[addr + 3] << 24));
+}
+
+void CardVolume::Write8(uint32_t addr, uint8_t value) {
+    if (addr >= imageSize) return;
+
+    imageData[addr] = value;
+}
+
+void CardVolume::Write16(uint32_t addr, uint16_t value) {
+    if (addr >= imageSize - 1) return;
+
+    imageData[addr++] = value;
+    imageData[addr] = value >> 8;
+}
+
+void CardVolume::Write32(uint32_t addr, uint32_t value) {
+    if (addr >= imageSize - 3) return;
+
+    imageData[addr++] = value;
+    imageData[addr++] = value >> 8;
+    imageData[addr++] = value >> 16;
+    imageData[addr] = value >> 24;
 }
 
 bool CardVolume::ReadPartition(uint8_t index) {
@@ -125,9 +172,37 @@ CardVolume::AddressCHS CardVolume::ReadAddressCHS(uint32_t index) {
                         .cylinder = static_cast<uint16_t>(chs3 | ((chs2 & 0xc0) << 2))};
 }
 
+void CardVolume::WriteAddressCHS(uint32_t index, const AddressCHS& address) {
+    Write8(index++, address.head);
+    Write8(index++, (address.sector & 0x3f) | ((address.cylinder >> 2) & 0xc0));
+    Write8(index, address.cylinder);
+}
+
+void CardVolume::CalculateGeometry() {
+    uint32_t sectorsTotal = image.BlocksTotal();
+
+    geometryHeads = sectorsTotal <= 32768    ? 2
+                    : sectorsTotal <= 65536  ? 4
+                    : sectorsTotal <= 262144 ? 8
+                                             : 16;
+
+    geometrySectors = sectorsTotal <= 4096 ? 16 : 32;
+}
+
 uint32_t CardVolume::CHSToLBA(const AddressCHS& addressCHS) const {
     return addressCHS.sector > 0
                ? ((addressCHS.cylinder * geometryHeads) + addressCHS.head) * geometrySectors +
                      (addressCHS.sector - 1)
                : 0;
+}
+
+CardVolume::AddressCHS CardVolume::LBAToCHS(uint32_t addressLBA) const {
+    const uint16_t cylinder = addressLBA / (geometryHeads * geometrySectors);
+    addressLBA -= cylinder * geometryHeads * geometrySectors;
+
+    const uint8_t head = addressLBA / geometrySectors;
+    addressLBA -= head * geometrySectors;
+
+    return (AddressCHS){
+        .cylinder = cylinder, .head = head, .sector = static_cast<uint8_t>(addressLBA + 1)};
 }
