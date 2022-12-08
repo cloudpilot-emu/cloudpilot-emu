@@ -23,7 +23,7 @@
 #ifndef _version_h
 #define _version_h
 
-#define VERSION "cloudpilot"
+#define VERSION "cloudpilot-internal"
 #define VERSION_DATE "2022/04/12"
 
 #endif
