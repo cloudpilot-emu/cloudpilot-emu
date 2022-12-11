@@ -57,11 +57,15 @@ bool CmdCreate::Run() {
 
     volume.Format();
 
+    cout << "creating file system..." << endl << endl;
+
     card_initialize(&volume);
     if (!mkfs(volume.AdvicedClusterSize(), "card")) {
         cout << "failed to create FAT fs";
         return false;
     }
+
+    cout << endl;
 
     {
         fstream stream(imageFile, ios_base::out);
