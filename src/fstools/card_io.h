@@ -28,6 +28,8 @@ int card_geometry_sectors();
 
 int card_geometry_heads();
 
+int card_geometry_start();
+
 #ifdef __cplusplus
 }
 #endif

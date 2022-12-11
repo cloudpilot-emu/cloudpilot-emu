@@ -50,7 +50,7 @@ struct device_info {
 
 extern int device_info_verbose;
 
-int get_device_info(int fd, struct device_info *info);
+int get_device_info(struct device_info *info);
 int is_device_mounted(const char *path);
 
 #endif

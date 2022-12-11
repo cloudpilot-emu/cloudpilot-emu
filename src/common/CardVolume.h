@@ -20,11 +20,13 @@ class CardVolume {
     uint32_t GetGeometryHeads() const;
     uint32_t GetGeometrySectors() const;
     uint32_t GetSectorsPerCluster() const;
+    uint32_t GetPartitionStartSector() const;
 
     bool Read(uint32_t offset, uint32_t size, uint8_t* destination);
     bool Write(uint32_t offset, uint32_t size, const uint8_t* source);
 
     void Format();
+    uint32_t AdvicedClusterSize();
 
    private:
     struct AddressCHS {

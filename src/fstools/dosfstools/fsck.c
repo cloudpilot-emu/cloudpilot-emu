@@ -5,16 +5,8 @@
 #include "fsck.fat.h"
 #include "io.h"
 
-static int runFsckNoWrite() {
-    static char* options[] = {"fsck", "-n", "-v", "-V", "memory card"};
+int runFsck(int fix) {
+    char* args[] = {"fsck", fix ? "-a" : "-n", "-v", "-V", "memory card"};
 
-    return !fsck_main(5, options);
+    return !fsck_main(sizeof(args) / sizeof(char*), args);
 }
-
-static int runFsckWithWrite() {
-    static char* options[] = {"fsck", "-a", "-v", "-V", "memory card"};
-
-    return !fsck_main(5, options);
-}
-
-int runFsck(int fix) { return fix ? runFsckWithWrite() : runFsckNoWrite(); }

@@ -6,7 +6,9 @@
 
 #include "CardImage.h"
 #include "CardVolume.h"
+#include "card_io.h"
 #include "cli.h"
+#include "dosfstools/mkfs.h"
 
 using namespace std;
 
@@ -54,6 +56,12 @@ bool CmdCreate::Run() {
     CardVolume volume(image);
 
     volume.Format();
+
+    card_initialize(&volume);
+    if (!mkfs(volume.AdvicedClusterSize(), "card")) {
+        cout << "failed to create FAT fs";
+        return false;
+    }
 
     {
         fstream stream(imageFile, ios_base::out);

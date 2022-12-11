@@ -26,6 +26,8 @@ uint32_t CardVolume::GetGeometrySectors() const { return geometrySectors; }
 
 uint32_t CardVolume::GetSectorsPerCluster() const { return sectorsPerCluster; }
 
+uint32_t CardVolume::GetPartitionStartSector() const { return partitionOffset >> 9; }
+
 bool CardVolume::Read(uint32_t offset, uint32_t size, uint8_t* destination) {
     if (offset + size > partitionSize) return false;
 
@@ -43,7 +45,7 @@ void CardVolume::Format() {
 
     CalculateGeometry();
 
-    const AddressCHS firstSectorCHS = (AddressCHS){.cylinder = 0, .head = 0, .sector = 1};
+    const AddressCHS firstSectorCHS = LBAToCHS(1);
     const AddressCHS lastSectorCHS = LBAToCHS(image.BlocksTotal() - 1);
 
     Write8(0x01be, 0x80);
@@ -55,12 +57,14 @@ void CardVolume::Format() {
 
     Write16(0x01fe, 0xaa55);
 
-    image.MarkRangeDirty(0, 512);
+    image.MarkRangeDirty(0, imageSize);
 
     type = Type::partition;
     partitionOffset = 512;
     partitionSize = imageSize - 512;
 }
+
+uint32_t CardVolume::AdvicedClusterSize() { return imageSize > 8 * 1024 * 1024 ? 32 : 16; }
 
 void CardVolume::Identify() {
     if (imageSize < 512) {
@@ -167,9 +171,11 @@ CardVolume::AddressCHS CardVolume::ReadAddressCHS(uint32_t index) {
     const uint8_t chs2 = Read8(index + 1);
     const uint8_t chs3 = Read8(index + 2);
 
-    return (AddressCHS){.head = chs1,
-                        .sector = static_cast<uint8_t>(chs2 & 0x3f),
-                        .cylinder = static_cast<uint16_t>(chs3 | ((chs2 & 0xc0) << 2))};
+    return (AddressCHS){
+        .cylinder = static_cast<uint16_t>(chs3 | ((chs2 & 0xc0) << 2)),
+        .head = chs1,
+        .sector = static_cast<uint8_t>(chs2 & 0x3f),
+    };
 }
 
 void CardVolume::WriteAddressCHS(uint32_t index, const AddressCHS& address) {

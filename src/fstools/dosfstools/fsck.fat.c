@@ -44,6 +44,7 @@
 #include "fat.h"
 #include "file.h"
 #include "io.h"
+#include "terminate.h"
 #include "version.h"
 
 int rw = 0, list = 0, test = 0, verbose = 0;
@@ -84,7 +85,7 @@ static void usage(char *name, int exitval) {
     fprintf(stderr, "  -w              write changes to disk immediately\n");
     fprintf(stderr, "  -y              same as -a, for compat with other *fsck\n");
     fprintf(stderr, "  --help          print this message\n");
-    exit(exitval);
+    terminate();
 }
 
 int fsck_main(int argc, char **argv) {
@@ -200,13 +201,13 @@ int fsck_main(int argc, char **argv) {
                 break;
             default:
                 fprintf(stderr, "Internal error: getopt_long() returned unexpected value %d\n", c);
-                exit(3);
+                return 1;
         }
     if (!set_dos_codepage(-1)) /* set default codepage if none was given in command line */
-        exit(2);
+        return 1;
     if ((test || write_immed) && !rw) {
         fprintf(stderr, "-t and -w can not be used in read only mode\n");
-        exit(2);
+        return 1;
     }
     if (optind != argc - 1) usage(argv[0], 2);
 

@@ -31,4 +31,6 @@ int card_geometry_sectors() { return volume == nullptr ? 0 : volume->GetGeometry
 
 int card_geometry_heads() { return volume == nullptr ? 0 : volume->GetGeometryHeads(); }
 
+int card_geometry_start() { return volume == nullptr ? 0 : volume->GetPartitionStartSector(); }
+
 void card_initialize(void* card_volume) { volume = reinterpret_cast<CardVolume*>(card_volume); }

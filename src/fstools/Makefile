@@ -80,6 +80,8 @@ SOURCE_C = \
 	dosfstools/file.c \
 	dosfstools/fsck.fat.c \
 	dosfstools/lfn.c \
+	dosfstools/mkfs.fat.c \
+	dosfstools/mkfs.c \
 	dosfstools/fsck.c
 
 SOURCE_CPP = card_io.cpp
