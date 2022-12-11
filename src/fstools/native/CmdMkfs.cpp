@@ -9,48 +9,21 @@
 #include "card_io.h"
 #include "cli.h"
 #include "dosfstools/mkfs.h"
+#include "fstools_util.h"
 
 using namespace std;
-
-namespace {
-    uint32_t determineImageSize(unsigned int size) {
-        switch (size) {
-            case 4:
-                return 494 * 16 * 512;
-
-            case 8:
-                return (2 * 496 - 2) * 16 * 512;
-
-            case 16:
-                return (2 * 496 - 2) * 32 * 512;
-
-            case 32:
-                return (4 * 496 - 2) * 32 * 512;
-
-            case 64:
-                return (8 * 496 - 2) * 32 * 512;
-
-            case 128:
-                return (16 * 496 - 2) * 32 * 512;
-
-            default:
-                return 0;
-        }
-    }
-}  // namespace
 
 CmdMkfs::CmdMkfs(const argparse::ArgumentParser& cmd)
     : size(cmd.get<unsigned int>(ARGUMENT_SIZE)), imageFile(cmd.get(ARGUMENT_IMAGE)) {}
 
 bool CmdMkfs::Run() {
-    const uint32_t sizeBytes = determineImageSize(size);
+    const uint32_t sizeBytes = FSToolsUtil::determineImageSize(size);
     if (sizeBytes == 0) {
         cout << "invalid image size" << endl;
         return false;
     }
 
     uint8_t* buffer = new uint8_t[sizeBytes];
-    memset(buffer, 0, sizeBytes);
 
     CardImage image(buffer, sizeBytes >> 9);
     CardVolume volume(image);

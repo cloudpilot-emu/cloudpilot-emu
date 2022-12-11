@@ -10,6 +10,7 @@ import { Session } from '@pwa/model/Session';
 import { SessionService } from '@pwa/service/session.service';
 import { SnapshotService } from '@pwa/service/snapshot.service';
 import { StorageService } from '@pwa/service/storage.service';
+import { mkfs } from '@common/FSTools';
 import { v4 as uuid } from 'uuid';
 
 export enum NewCardSize {
@@ -19,6 +20,31 @@ export enum NewCardSize {
     mb32,
     mb64,
     mb128,
+}
+
+export function cardSizeNumeric(newCardSize: NewCardSize): number {
+    switch (newCardSize) {
+        case NewCardSize.mb4:
+            return 4;
+
+        case NewCardSize.mb8:
+            return 8;
+
+        case NewCardSize.mb16:
+            return 16;
+
+        case NewCardSize.mb32:
+            return 32;
+
+        case NewCardSize.mb64:
+            return 64;
+
+        case NewCardSize.mb128:
+            return 128;
+
+        default:
+            throw new Error(`bad card size ${newCardSize}`);
+    }
 }
 
 export function calculateNewCardSizeBytes(newCardSize: NewCardSize): number {
@@ -70,14 +96,17 @@ export class StorageCardService {
     }
 
     async createEmptyCard(name: string, size: NewCardSize): Promise<StorageCard> {
+        const cardImage = await mkfs(cardSizeNumeric(size));
+        if (!cardImage) throw new Error('failed to create image');
+
         const cardWithoutId: Omit<StorageCard, 'id'> = {
             storageId: newStorageId(),
             name,
-            size: calculateNewCardSizeBytes(size),
+            size: cardImage.length * 4,
             status: StorageCardStatus.clean,
         };
 
-        const card = await this.storageService.addEmptyStorageCard(cardWithoutId);
+        const card = await this.storageService.importStorageCard(cardWithoutId, cardImage);
         this.updateCardsFromDB();
 
         return card;

@@ -1,6 +1,6 @@
 import 'emscripten';
 
-import { FSTools, VoidPtr } from './web/binding/binding';
+import { FSTools, VoidPtr, MkfsContext } from './web/binding/binding';
 
 export * from './web/binding/binding';
 
@@ -11,8 +11,10 @@ export interface Module extends EmscriptenModule {
     UTF8ToString(charPtr: number): string;
 
     FSTools: { new (): FSTools };
+    MkfsContext: { new (): MkfsContext };
 
     destroy(fsTools: FSTools): void;
+    destroy(mkfsContext: MkfsContext): void;
 }
 
 declare const createModule: EmscriptenModuleFactory<Module>;

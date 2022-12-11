@@ -9,3 +9,10 @@ export interface FSTools {
     Free(buffer: VoidPtr): void;
     Nullptr(): VoidPtr;
 }
+
+export interface MkfsContext {
+    Mkfs(size: number, label: string): boolean;
+
+    GetImage(): VoidPtr;
+    GetImageSize(): number;
+}

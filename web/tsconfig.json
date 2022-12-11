@@ -23,6 +23,7 @@
     "paths": {
       "@common/*": ["common/*"],
       "@native/*": ["../src/cloudpilot/*"],
+      "@native-fstools/*": ["../src/fstools/*"],
       "@pwa/*": ["pwa/src/app/*"],
       "@embedded/*": ["embedded/src/*"]
     }

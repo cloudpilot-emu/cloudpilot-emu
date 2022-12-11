@@ -84,7 +84,7 @@ SOURCE_C = \
 	dosfstools/mkfs.c \
 	dosfstools/fsck.c
 
-SOURCE_CPP = card_io.cpp
+SOURCE_CPP = card_io.cpp fstools_util.cpp
 SOURCE_TEST =
 
 SOURCE_NATIVE = $(SOURCE_CPP) \
@@ -95,6 +95,7 @@ SOURCE_NATIVE = $(SOURCE_CPP) \
 
 SOURCE_WEB = $(SOURCE_CPP) $(WEBIDL_BINDING_CXX) \
 	web/FSTools.cpp \
+	web/MkfsContext.cpp \
 	web/terminate.cpp
 
 OBJECTS_TEST = \

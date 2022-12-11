@@ -42,6 +42,7 @@ module.exports = (env, argv) => ({
             '@native': path.resolve(__dirname, '../src/cloudpilot'),
             '@pwa': path.resolve(__dirname, './pwa/src/app'),
             '@embedded': path.resolve(__dirname, './embedded/src'),
+            '@native-fstools': path.resolve(__dirname, './src/fstools'),
         },
     },
     output: {

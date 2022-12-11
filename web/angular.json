@@ -43,6 +43,11 @@
                 "output": "."
               },
               {
+                "glob": "fstools_web.wasm",
+                "input": "../src/fstools",
+                "output": "."
+              },
+              {
                 "glob": "CHANGELOG.md",
                 "input": "..",
                 "output": "assets/doc"

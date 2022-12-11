@@ -5,3 +5,12 @@ interface FSTools {
     void Free(VoidPtr buffer);
     VoidPtr Nullptr();
 };
+
+interface MkfsContext {
+    void MkfsContext();
+
+    boolean Mkfs(long size, [Const] DOMString label);
+
+    VoidPtr GetImage();
+    long GetImageSize();
+};
