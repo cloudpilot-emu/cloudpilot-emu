@@ -90,7 +90,7 @@ SOURCE_TEST =
 SOURCE_NATIVE = $(SOURCE_CPP) \
 	native/main.cpp \
 	native/CmdFsck.cpp \
-	native/CmdCreate.cpp \
+	native/CmdMkfs.cpp \
 	native/terminate.cpp
 
 SOURCE_WEB = $(SOURCE_CPP) $(WEBIDL_BINDING_CXX) \

@@ -1,4 +1,4 @@
-#include "CmdCreate.h"
+#include "CmdMkfs.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -39,10 +39,10 @@ namespace {
     }
 }  // namespace
 
-CmdCreate::CmdCreate(const argparse::ArgumentParser& cmd)
+CmdMkfs::CmdMkfs(const argparse::ArgumentParser& cmd)
     : size(cmd.get<unsigned int>(ARGUMENT_SIZE)), imageFile(cmd.get(ARGUMENT_IMAGE)) {}
 
-bool CmdCreate::Run() {
+bool CmdMkfs::Run() {
     const uint32_t sizeBytes = determineImageSize(size);
     if (sizeBytes == 0) {
         cout << "invalid image size" << endl;

@@ -1,7 +1,7 @@
 #include <iostream>
 
-#include "CmdCreate.h"
 #include "CmdFsck.h"
+#include "CmdMkfs.h"
 #include "argparse.h"
 #include "cli.h"
 
@@ -17,16 +17,16 @@ int main(int argc, const char** argv) {
     fsckCommand.add_argument(ARGUMENT_IMAGE).help("card image").required();
     fsckCommand.add_argument("--write", "-w").help("write (potentially) modified image to file");
 
-    ArgumentParser createCommand(SUBCOMMAND_CREATE);
-    createCommand.add_description("create new, formatted card image");
-    createCommand.add_argument(ARGUMENT_SIZE)
+    ArgumentParser mkfsCommand(SUBCOMMAND_MKFS);
+    mkfsCommand.add_description("create new, formatted card image");
+    mkfsCommand.add_argument(ARGUMENT_SIZE)
         .help("image size (4|8|16|32|64|128)")
         .required()
         .scan<'u', unsigned int>();
-    createCommand.add_argument(ARGUMENT_IMAGE).help("image file").required();
+    mkfsCommand.add_argument(ARGUMENT_IMAGE).help("image file").required();
 
     program.add_subparser(fsckCommand);
-    program.add_subparser(createCommand);
+    program.add_subparser(mkfsCommand);
 
     try {
         program.parse_args(argc, argv);
@@ -44,8 +44,8 @@ int main(int argc, const char** argv) {
 
     if (program.is_subcommand_used(SUBCOMMAND_FSCK))
         return CmdFsk(fsckCommand).Run() ? 0 : 1;
-    else if (program.is_subcommand_used(SUBCOMMAND_CREATE))
-        return CmdCreate(createCommand).Run() ? 0 : 1;
+    else if (program.is_subcommand_used(SUBCOMMAND_MKFS))
+        return CmdMkfs(mkfsCommand).Run() ? 0 : 1;
     else
         cout << program;
 

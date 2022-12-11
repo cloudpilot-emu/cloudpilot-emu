@@ -1240,9 +1240,7 @@ int mkfs_main(int argc, char **argv) {
     int c;
     char *tmp;
     char *listfile = NULL;
-    FILE *msgfile;
     struct device_info devinfo;
-    int i = 0, pos, ch;
     int create = 0;
     unsigned long long cblocks = 0;
     int blocks_specified = 0;
@@ -1414,57 +1412,7 @@ int mkfs_main(int argc, char **argv) {
                 break;
 
             case 'm': /* m : Set boot message */
-                if (strcmp(optarg, "-")) {
-                    msgfile = fopen(optarg, "r");
-                    if (!msgfile) perror(optarg);
-                } else
-                    msgfile = stdin;
-
-                if (msgfile) {
-                    /* The boot code ends at offset 448 and needs a null terminator */
-                    i = MESSAGE_OFFSET;
-                    pos = 0; /* We are at beginning of line */
-                    do {
-                        ch = getc(msgfile);
-                        switch (ch) {
-                            case '\r': /* Ignore CRs */
-                            case '\0': /* and nulls */
-                                break;
-
-                            case '\n':     /* LF -> CR+LF if necessary */
-                                if (pos) { /* If not at beginning of line */
-                                    dummy_boot_code[i++] = '\r';
-                                    pos = 0;
-                                }
-                                dummy_boot_code[i++] = '\n';
-                                break;
-
-                            case '\t': /* Expand tabs */
-                                do {
-                                    dummy_boot_code[i++] = ' ';
-                                    pos++;
-                                } while (pos % 8 && i < BOOTCODE_SIZE - 1);
-                                break;
-
-                            case EOF:
-                                dummy_boot_code[i++] = '\0'; /* Null terminator */
-                                break;
-
-                            default:
-                                dummy_boot_code[i++] = ch; /* Store character */
-                                pos++;                     /* Advance position */
-                                break;
-                        }
-                    } while (ch != EOF && i < BOOTCODE_SIZE - 1);
-
-                    /* Fill up with zeros */
-                    while (i < BOOTCODE_SIZE - 1) dummy_boot_code[i++] = '\0';
-                    dummy_boot_code[BOOTCODE_SIZE - 1] = '\0'; /* Just in case */
-
-                    if (ch != EOF) printf("Warning: message too long; truncated\n");
-
-                    if (msgfile != stdin) fclose(msgfile);
-                }
+                die("not supported");
                 break;
 
             case 'M': /* M : FAT Media byte */
