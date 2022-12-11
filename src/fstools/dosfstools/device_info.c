@@ -38,7 +38,7 @@ int device_info_verbose;
 int get_device_info(struct device_info *info) {
     *info = device_info_clueless;
 
-    info->type = TYPE_FILE;
+    info->type = TYPE_FIXED;
     info->partition = 0;
     info->size = card_get_size();
     info->sector_size = 512;

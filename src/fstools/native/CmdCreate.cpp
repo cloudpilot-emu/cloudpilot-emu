@@ -54,16 +54,18 @@ bool CmdCreate::Run() {
 
     CardImage image(buffer, sizeBytes >> 9);
     CardVolume volume(image);
-
-    volume.Format();
+    card_initialize(&volume);
 
     cout << "creating file system..." << endl << endl;
 
-    card_initialize(&volume);
+    volume.Format();
+
     if (!mkfs(volume.AdvicedClusterSize(), "card")) {
         cout << "failed to create FAT fs";
         return false;
     }
+
+    volume.FixupPartitionType();
 
     cout << endl;
 

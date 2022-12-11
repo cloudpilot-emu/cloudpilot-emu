@@ -732,6 +732,14 @@ static void setup_tables(void) {
                 fat_length = 12;
         }
 
+        if (!align_structures) {
+            const int sectors_until_root = hidden_sectors + reserved_sectors + 2 * fat_length;
+            const int clusters_until_data = sectors_until_root / sectors_per_cluster +
+                                            (sectors_until_root % sectors_per_cluster == 0 ? 0 : 1);
+
+            reserved_sectors += clusters_until_data * sectors_per_cluster - sectors_until_root;
+        }
+
         /* Adjust the reserved number of sectors for alignment */
         reserved_sectors = align_object(reserved_sectors, bs.cluster_size);
         bs.reserved = htole16(reserved_sectors);

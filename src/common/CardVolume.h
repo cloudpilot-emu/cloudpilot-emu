@@ -27,6 +27,7 @@ class CardVolume {
 
     void Format();
     uint32_t AdvicedClusterSize();
+    void FixupPartitionType();
 
    private:
     struct AddressCHS {

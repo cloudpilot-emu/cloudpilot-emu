@@ -66,6 +66,12 @@ void CardVolume::Format() {
 
 uint32_t CardVolume::AdvicedClusterSize() { return imageSize > 8 * 1024 * 1024 ? 32 : 16; }
 
+void CardVolume::FixupPartitionType() {
+    if (Read8(partitionOffset + 0x3a) == '6') {
+        Write8(0x01c2, 0x06);
+    }
+}
+
 void CardVolume::Identify() {
     if (imageSize < 512) {
         invalidReason = "image too small";
