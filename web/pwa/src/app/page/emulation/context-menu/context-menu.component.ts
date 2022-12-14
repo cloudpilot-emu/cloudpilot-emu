@@ -165,8 +165,6 @@ export class ContextMenuComponent implements OnInit {
                 this.audioService.initialize();
             }
         }
-
-        this.popoverController.dismiss();
     }
 
     get backupDisabled(): boolean {
