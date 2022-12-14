@@ -220,10 +220,10 @@ int fsck_main(int argc, char **argv) {
     while (read_fat(&fs, 2), scan_root(&fs)) qfree(&mem_queue);
     check_label(&fs);
     if (test) fix_bad(&fs);
-    if (salvage_files)
-        reclaim_file(&fs);
-    else
-        reclaim_free(&fs);
+    // if (salvage_files)
+    //     reclaim_file(&fs);
+    // else
+    reclaim_free(&fs);
     if (!atari_format) check_dirty_bits(&fs);
     free_clusters = update_free(&fs);
     file_unused();
