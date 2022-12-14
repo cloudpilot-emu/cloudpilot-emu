@@ -32,6 +32,7 @@ Makefile.local
 *.pem
 *.cer
 *.p12
+*.patch
 __pycache__
 .vscode/.ropeproject
 .mypy_cache
