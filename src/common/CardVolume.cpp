@@ -55,7 +55,7 @@ void CardVolume::Format() {
     Write32(0x01c6, 0x01);
     Write32(0x01ca, image.BlocksTotal() - 1);
 
-    Write16(0x01fe, 0xaa55);
+    Write16(0x01fe, MAGIC_BOOT_SIGNATURE);
 
     image.MarkRangeDirty(0, imageSize);
 
@@ -159,11 +159,7 @@ bool CardVolume::ReadPartition(uint8_t index) {
 
     ReadFatParameters();
 
-    AddressCHS startCHS = ReadAddressCHS(base + 0x01);
-    AddressCHS sizeCHS = ReadAddressCHS(base + 0x05);
-
-    return CHSToLBA(startCHS) == partitionFirstSector &&
-           CHSToLBA(sizeCHS) == sizeSectors + partitionFirstSector - 1;
+    return true;
 }
 
 void CardVolume::ReadFatParameters() {
@@ -199,13 +195,6 @@ void CardVolume::CalculateGeometry() {
                                              : 16;
 
     geometrySectors = sectorsTotal <= 4096 ? 16 : 32;
-}
-
-uint32_t CardVolume::CHSToLBA(const AddressCHS& addressCHS) const {
-    return addressCHS.sector > 0
-               ? ((addressCHS.cylinder * geometryHeads) + addressCHS.head) * geometrySectors +
-                     (addressCHS.sector - 1)
-               : 0;
 }
 
 CardVolume::AddressCHS CardVolume::LBAToCHS(uint32_t addressLBA) const {

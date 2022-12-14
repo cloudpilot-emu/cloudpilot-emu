@@ -54,7 +54,6 @@ class CardVolume {
 
     void CalculateGeometry();
 
-    uint32_t CHSToLBA(const AddressCHS& addressCHS) const;
     AddressCHS LBAToCHS(uint32_t addressLBA) const;
 
    private:
