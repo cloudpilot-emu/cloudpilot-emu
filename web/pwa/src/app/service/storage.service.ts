@@ -162,14 +162,15 @@ export class StorageService {
     }
 
     @guard()
-    updateSessionPartial(id: number, update: Omit<Partial<Session>, 'id' | 'rom' | 'ram' | 'device'>): Promise<void> {
+    updateSessionPartial(id: number, update: Partial<Session>): Promise<void> {
         return this.sessionUpdateMutex.runExclusive(async () => {
+            const { id: _id, rom, ram, device, ...rest } = update;
             const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
 
             const session = await complete<Session>(objectStore.get(id));
             if (!session) throw new Error(`no session with id ${id}`);
 
-            const updatedSesion = { ...session, ...update };
+            const updatedSesion = { ...session, ...rest };
             objectStore.put(updatedSesion);
 
             await complete(tx);
@@ -275,27 +276,26 @@ export class StorageService {
     }
 
     @guard()
-    async getCard(id: number): Promise<StorageCard> {
+    async getCard(id: number): Promise<StorageCard | undefined> {
         const [objectStore] = await this.prepareObjectStore(OBJECT_STORE_STORAGE_CARD);
 
         return complete(objectStore.get(id));
     }
 
     @guard()
-    async updateStorageCard(card: StorageCard): Promise<void> {
+    async updateStorageCardPartial(id: number, update: Partial<StorageCard>): Promise<void> {
+        const { storageId, size, id: _id, ...rest } = update;
         const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_STORAGE_CARD);
 
-        const persistentCard: StorageCard = await complete(objectStore.get(card.id));
-        if (!persistentCard) throw new Error(`no card with id ${card.id}`);
+        const persistentCard: StorageCard = await complete(objectStore.get(id));
+        if (!persistentCard) throw new Error(`no card with id ${id}`);
 
-        if (card.storageId !== persistentCard.storageId) throw new Error('attempt to modify storage id');
-        if (card.size !== persistentCard.size) throw new Error('attempt to modify card size');
-
-        objectStore.put(card);
+        const updatedCard = { ...persistentCard, ...rest };
+        objectStore.put(updatedCard);
 
         await complete(tx);
 
-        this.storageCardChangeEvent.dispatch(card.id);
+        this.storageCardChangeEvent.dispatch(id);
     }
 
     @guard()

@@ -112,7 +112,7 @@ export class StorageCardService {
         return this.cards;
     }
 
-    async createEmptyCard(name: string, size: NewCardSize): Promise<StorageCard> {
+    async createEmptyCard(name: string, size: NewCardSize, dontFsckAutomatically: boolean): Promise<StorageCard> {
         const loader = await this.loadingController.create({ message: 'Formatting...' });
 
         try {
@@ -126,6 +126,7 @@ export class StorageCardService {
                 name,
                 size: cardImage.length * 4,
                 status: StorageCardStatus.clean,
+                dontFsckAutomatically,
             };
 
             const card = await this.storageService.importStorageCard(cardWithoutId, cardImage);
@@ -137,34 +138,50 @@ export class StorageCardService {
         }
     }
 
-    async createCardFromFile(name: string, file: FileDescriptor): Promise<StorageCard> {
+    async createCardFromFile(name: string, file: FileDescriptor, dontFsckAutomatically: boolean): Promise<boolean> {
         const cardWithoutId: Omit<StorageCard, 'id'> = {
             storageId: newStorageId(),
             name,
             size: file.content.length,
             status: StorageCardStatus.clean,
+            dontFsckAutomatically,
         };
 
         const loader = await this.loadingController.create({ message: 'Importing...' });
 
         try {
             await loader.present();
+            let data = new Uint32Array(file.content.buffer, file.content.byteOffset, file.content.byteLength >>> 2);
+            let errorsFixed = false;
 
-            const card = await this.storageService.importStorageCard(
-                cardWithoutId,
-                new Uint32Array(file.content.buffer, file.content.byteOffset, file.content.length >>> 2)
-            );
+            if (!dontFsckAutomatically) {
+                const fsckContext = await FsckContext.create(file.content.length);
+                fsckContext.getImageData().set(data);
+
+                const result = fsckContext.fsck();
+                if (result === FsckResult.invalid) cardWithoutId.status = StorageCardStatus.unformatted;
+
+                data = fsckContext.getImageData();
+                errorsFixed = result === FsckResult.fixed;
+            }
+
+            const card = await this.storageService.importStorageCard(cardWithoutId, data);
 
             this.updateCardsFromDB();
 
-            return card;
+            return errorsFixed;
         } finally {
             loader.dismiss();
         }
     }
 
-    updateCard(card: StorageCard): Promise<void> {
-        return this.storageService.updateStorageCard(card);
+    async updateCard(id: number, update: Partial<StorageCard>): Promise<void> {
+        const card = await this.storageService.getCard(id);
+        if (!card) throw new Error(`no card with id ${id}`);
+
+        if (!update.dontFsckAutomatically && card.dontFsckAutomatically) update.status = StorageCardStatus.dirty;
+
+        return this.storageService.updateStorageCardPartial(id, update);
     }
 
     async deleteCard(card: StorageCard): Promise<void> {
@@ -173,6 +190,10 @@ export class StorageCardService {
         await this.storageService.deleteStorageCard(card.id);
 
         this.updateCardsFromDB();
+    }
+
+    async getCard(id: number): Promise<StorageCard | undefined> {
+        return this.storageService.getCard(id);
     }
 
     mountedInSession(cardId: number): Session | undefined {
@@ -198,6 +219,7 @@ export class StorageCardService {
             const card = await this.loadCard(cardId);
             const cloudpilot = await this.cloudpilotService.cloudpilot;
 
+            this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
             this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
 
             if (!cloudpilot.mountCard(card.storageId)) {
@@ -282,10 +304,17 @@ export class StorageCardService {
             const result = context.fsck();
             switch (result) {
                 case FsckResult.ok:
+                    await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.clean });
+                    return { result };
+
                 case FsckResult.invalid:
+                    await this.storageService.updateStorageCardPartial(cardId, {
+                        status: StorageCardStatus.unformatted,
+                    });
                     return { result };
 
                 case FsckResult.fixed:
+                    await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
                     return { result, fixedImage: context.getImageData(), dirtyPages: context.getDirtyPages() };
 
                 default:
@@ -302,6 +331,7 @@ export class StorageCardService {
         try {
             await loader.present();
             await this.storageService.updateCardData(cardId, result.fixedImage, result.dirtyPages);
+            await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.clean });
         } finally {
             loader.dismiss();
         }

@@ -5,7 +5,7 @@ import { CardSupportLevel } from '@native/cloudpilot_web';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageCardService } from '@pwa/service/storage-card.service';
 
-export type CardSettings = Pick<StorageCard, 'name' | 'size'>;
+export type CardSettings = Pick<StorageCard, 'name' | 'size' | 'dontFsckAutomatically'>;
 
 @Component({
     selector: 'app-edit-card-dialog',
@@ -17,7 +17,7 @@ export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
     onCancel = () => undefined;
 
     @Input()
-    private onSave = (card: T) => undefined;
+    private onSave = (update: Partial<CardSettings>) => undefined;
 
     constructor(private storageCardService: StorageCardService) {}
 
@@ -27,6 +27,7 @@ export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
         }
 
         this.formGroup.get('name')?.setValue(this.card.name);
+        this.formGroup.get('checkAutomatically')?.setValue(!this.card.dontFsckAutomatically);
     }
 
     save(): void {
@@ -34,7 +35,10 @@ export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
             return;
         }
 
-        this.onSave({ ...this.card, name: this.formGroup.value.name });
+        this.onSave({
+            name: this.formGroup.value.name,
+            dontFsckAutomatically: !this.formGroup.value.checkAutomatically,
+        });
     }
 
     onEnter(): void {
@@ -46,7 +50,9 @@ export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
     }
 
     private validateNameUnique = (control: AbstractControl<string>): ValidationErrors | null => {
-        return this.storageCardService.getAllCards().some((card) => card.name === control.value)
+        return this.storageCardService
+            .getAllCards()
+            .some((card) => card.name === control.value && card.name !== this.card?.name)
             ? { name: 'already taken' }
             : null;
     };
@@ -54,6 +60,7 @@ export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
     formGroup = new FormGroup({
         name: new FormControl('', { nonNullable: true, validators: [Validators.required, this.validateNameUnique] }),
         size: new FormControl({ value: 'dummy', disabled: true }),
+        checkAutomatically: new FormControl(true, { nonNullable: true }),
     });
 
     @Input()

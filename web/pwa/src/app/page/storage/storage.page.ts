@@ -67,8 +67,8 @@ export class StoragePage {
             backdropDismiss: false,
             componentProps: {
                 onCancel: () => modal.dismiss(),
-                onCreate: (name: string, size: NewCardSize) => {
-                    this.storageCardService.createEmptyCard(name, size);
+                onCreate: (name: string, size: NewCardSize, dontFsckAutomatically: boolean) => {
+                    this.storageCardService.createEmptyCard(name, size, dontFsckAutomatically);
                     modal.dismiss();
                 },
             },
@@ -93,8 +93,8 @@ export class StoragePage {
                 card,
                 cardSupportLevel: cloudpilot.getCardSupportLevel(card.size),
                 onCancel: () => modal.dismiss(),
-                onSave: (updatedCard: StorageCard) => {
-                    this.storageCardService.updateCard(updatedCard);
+                onSave: (update: Partial<StorageCard>) => {
+                    this.storageCardService.updateCard(card.id, update);
                     modal.dismiss();
                 },
             },
@@ -146,14 +146,19 @@ export class StoragePage {
 
         switch (fsckStatus.result) {
             case FsckResult.ok:
-                this.alertService.message('Card clean', 'No file system errors were found.');
+                this.alertService.message('Card clean', 'No filesystem errors were found.');
+                return;
 
+            case FsckResult.invalid:
+                this.alertService.message('No filesystem', 'This card does not contain a filesystem.');
                 return;
 
             case FsckResult.fixed:
                 this.alertService.message(
                     'Filesystem errors',
-                    `This file system on this card contains errors that need to be fixed before it can be used. Do you want to fix them now?`,
+                    `This filesystem on this card contains errors${
+                        card.dontFsckAutomatically ? '' : '  that need to be fixed before it can be used'
+                    }. Do you want to fix them now?`,
                     { 'Fix now': () => this.applyFsckResult(card.id, fsckStatus) },
                     'Cancel'
                 );
@@ -221,7 +226,16 @@ export class StoragePage {
             await modal.present();
         });
 
-        if (cardSettings) this.storageCardService.createCardFromFile(cardSettings.name, file);
+        if (
+            cardSettings &&
+            (await this.storageCardService.createCardFromFile(
+                cardSettings.name,
+                file,
+                !!cardSettings.dontFsckAutomatically
+            ))
+        ) {
+            this.alertService.message('Errors fixed', 'The filesystem contained errors that were fixed on import.');
+        }
     };
 
     private async doDeleteCard(card: StorageCard): Promise<void> {

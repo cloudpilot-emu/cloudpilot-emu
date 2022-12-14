@@ -38,7 +38,7 @@ export class NewCardDialogComponent {
             return;
         }
 
-        this.onCreate(this.formGroup.value.name, this.formGroup.value.size);
+        this.onCreate(this.formGroup.value.name, this.formGroup.value.size, !this.formGroup.value.checkAutomatically!);
     }
 
     onEnter(): void {
@@ -52,7 +52,7 @@ export class NewCardDialogComponent {
     };
 
     @Input()
-    private onCreate = (name: string, size: NewCardSize) => undefined;
+    private onCreate = (name: string, size: NewCardSize, dontFsckAutomatically: boolean) => undefined;
 
     @Input()
     onCancel = () => undefined;
@@ -60,5 +60,6 @@ export class NewCardDialogComponent {
     formGroup = new FormGroup({
         name: new FormControl('', { nonNullable: true, validators: [Validators.required, this.validateNameUnique] }),
         size: new FormControl(NewCardSize.mb32, { nonNullable: true }),
+        checkAutomatically: new FormControl(true, { nonNullable: true }),
     });
 }

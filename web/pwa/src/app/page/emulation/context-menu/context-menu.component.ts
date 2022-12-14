@@ -18,6 +18,8 @@ import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
 import { ErrorService } from './../../../service/error.service';
+import { FsckResult } from '@native-fstools/fstools_web';
+import { FsckStatusFixed } from './../../../service/storage-card.service';
 import { KvsService } from '@pwa/service/kvs.service';
 import { PalmButton } from '@common/Cloudpilot';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
@@ -25,6 +27,7 @@ import { SessionService } from '@pwa/service/session.service';
 import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
 import { SlotType } from '@common/model/SlotType';
 import { StorageCardService } from '@pwa/service/storage-card.service';
+import { StorageCardStatus } from '@pwa/model/StorageCard';
 import { StorageService } from '@pwa/service/storage.service';
 
 function rotate(oldOrientation: DeviceOrientation | undefined): DeviceOrientation {
@@ -306,6 +309,38 @@ export class ContextMenuComponent implements OnInit {
     }
 
     private async doMountCard(id: number): Promise<void> {
+        const card = await this.storageCardService.getCard(id);
+        if (!card) throw new Error(`no card with id ${id}`);
+
+        let mountNow = true;
+
+        if (!card.dontFsckAutomatically && card.status === StorageCardStatus.dirty) {
+            const fsckStatus = await this.storageCardService.fsckCard(id);
+
+            if (fsckStatus.result === FsckResult.fixed) {
+                mountNow = false;
+
+                await new Promise((resolve, reject) => {
+                    this.alertService.message(
+                        'Filesystem errors',
+                        'The filesystem on this card contains errors that have to fixed before it can be used. Do you want to fix them now?',
+                        { 'Fix now': () => this.fixAndMountCard(card.id, fsckStatus) },
+                        'Cancel'
+                    );
+                });
+            }
+        }
+
+        try {
+            if (mountNow) await this.storageCardService.mountCard(id);
+        } catch (e) {
+            this.errorService.fatalBug(e instanceof Error ? e.message : 'mount failed');
+        }
+    }
+
+    private async fixAndMountCard(id: number, fsckStatus: FsckStatusFixed): Promise<void> {
+        await this.storageCardService.applyFsckResult(id, fsckStatus);
+
         try {
             await this.storageCardService.mountCard(id);
         } catch (e) {

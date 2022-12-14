@@ -64,12 +64,17 @@ export class StorageCardComponent {
             return `attached to '${session.name}'`;
         }
 
+        if (this.card.dontFsckAutomatically) return 'not checked automatically';
+
         switch (this.card.status) {
             case StorageCardStatus.dirty:
-                return 'not checked';
+                return 'needs check';
 
             case StorageCardStatus.clean:
-                return 'clean';
+                return 'no errors';
+
+            case StorageCardStatus.unformatted:
+                return 'no filesystem';
 
             default:
                 throw new Error('unreachable');

@@ -26,6 +26,11 @@
               </ion-select-option>
           </ion-select>
       </ion-item>
+
+      <ion-item lines="none">
+        <ion-label>Check for errors automatically</ion-label>
+        <ion-toggle formControlName="checkAutomatically"></ion-toggle>
+      </ion-item>
   </form>
   <div class="sd-only-warning" *ngIf="!memoryStickSupported"><b>WARNING:</b> This image cannot be used as a memory stick image.</div>
 </ion-content>
