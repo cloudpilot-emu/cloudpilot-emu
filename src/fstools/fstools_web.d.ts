@@ -1,3 +1,4 @@
+import { FsckContext } from './web/binding/binding.d';
 import 'emscripten';
 
 import { FSTools, VoidPtr, MkfsContext } from './web/binding/binding';
@@ -12,9 +13,11 @@ export interface Module extends EmscriptenModule {
 
     FSTools: { new (): FSTools };
     MkfsContext: { new (): MkfsContext };
+    FsckContext: { new (blockCount: number): FsckContext };
 
     destroy(fsTools: FSTools): void;
     destroy(mkfsContext: MkfsContext): void;
+    destroy(fsckContext: FsckContext): void;
 }
 
 declare const createModule: EmscriptenModuleFactory<Module>;

@@ -96,6 +96,7 @@ SOURCE_NATIVE = $(SOURCE_CPP) \
 SOURCE_WEB = $(SOURCE_CPP) $(WEBIDL_BINDING_CXX) \
 	web/FSTools.cpp \
 	web/MkfsContext.cpp \
+	web/FsckContext.cpp \
 	web/terminate.cpp
 
 OBJECTS_TEST = \

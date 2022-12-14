@@ -1,5 +1,12 @@
 declare const __void_ptr_tag__: unique symbol;
 
+export const enum FsckResult {
+    pending = 0,
+    ok = 1,
+    fixed = 2,
+    invalid = 3,
+}
+
 export interface VoidPtr {
     [__void_ptr_tag__]: null;
 }
@@ -15,4 +22,13 @@ export interface MkfsContext {
 
     GetImage(): VoidPtr;
     GetImageSize(): number;
+}
+
+export interface FsckContext {
+    GetImage(): VoidPtr;
+    GetDirtyPages(): VoidPtr;
+    GetImageSize(): number;
+
+    Fsck(): FsckResult;
+    GetResult(): FsckResult;
 }

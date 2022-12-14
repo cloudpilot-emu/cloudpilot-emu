@@ -1,3 +1,4 @@
+import { FsckContext, FsckResult, mkfs } from '@common/FSTools';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
@@ -10,7 +11,6 @@ import { Session } from '@pwa/model/Session';
 import { SessionService } from '@pwa/service/session.service';
 import { SnapshotService } from '@pwa/service/snapshot.service';
 import { StorageService } from '@pwa/service/storage.service';
-import { mkfs } from '@common/FSTools';
 import { v4 as uuid } from 'uuid';
 
 export enum NewCardSize {
@@ -21,6 +21,23 @@ export enum NewCardSize {
     mb64,
     mb128,
 }
+
+export type FsckStatusClean = {
+    result: FsckResult.ok;
+};
+
+export type FsckStatusFixed = {
+    result: FsckResult.fixed;
+
+    fixedImage: Uint32Array;
+    dirtyPages: Uint8Array;
+};
+
+export type FsckStatusBad = {
+    result: FsckResult.invalid;
+};
+
+export type FsckStatus = FsckStatusClean | FsckStatusFixed | FsckStatusBad;
 
 export function cardSizeNumeric(newCardSize: NewCardSize): number {
     switch (newCardSize) {
@@ -96,20 +113,28 @@ export class StorageCardService {
     }
 
     async createEmptyCard(name: string, size: NewCardSize): Promise<StorageCard> {
-        const cardImage = await mkfs(cardSizeNumeric(size));
-        if (!cardImage) throw new Error('failed to create image');
+        const loader = await this.loadingController.create({ message: 'Formatting...' });
 
-        const cardWithoutId: Omit<StorageCard, 'id'> = {
-            storageId: newStorageId(),
-            name,
-            size: cardImage.length * 4,
-            status: StorageCardStatus.clean,
-        };
+        try {
+            await loader.present();
 
-        const card = await this.storageService.importStorageCard(cardWithoutId, cardImage);
-        this.updateCardsFromDB();
+            const cardImage = await mkfs(cardSizeNumeric(size));
+            if (!cardImage) throw new Error('failed to create image');
 
-        return card;
+            const cardWithoutId: Omit<StorageCard, 'id'> = {
+                storageId: newStorageId(),
+                name,
+                size: cardImage.length * 4,
+                status: StorageCardStatus.clean,
+            };
+
+            const card = await this.storageService.importStorageCard(cardWithoutId, cardImage);
+            this.updateCardsFromDB();
+
+            return card;
+        } finally {
+            loader.dismiss();
+        }
     }
 
     async createCardFromFile(name: string, file: FileDescriptor): Promise<StorageCard> {
@@ -159,24 +184,32 @@ export class StorageCardService {
     }
 
     async mountCard(cardId: number): Promise<StorageCard> {
-        if (await this.cardIsMounted(cardId)) throw new Error('card already mounted');
+        const loader = await this.loadingController.create({ message: 'Inserting...' });
 
-        const session = this.emulationStateService.getCurrentSession();
-        if (!session) throw new Error('no current session');
-        if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
+        try {
+            await loader.present();
 
-        const card = await this.loadCard(cardId);
-        const cloudpilot = await this.cloudpilotService.cloudpilot;
+            if (await this.cardIsMounted(cardId)) throw new Error('card already mounted');
 
-        this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
+            const session = this.emulationStateService.getCurrentSession();
+            if (!session) throw new Error('no current session');
+            if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
 
-        if (!cloudpilot.mountCard(card.storageId)) {
-            cloudpilot.removeCard(card.storageId);
+            const card = await this.loadCard(cardId);
+            const cloudpilot = await this.cloudpilotService.cloudpilot;
 
-            throw new Error('failed to mount card');
+            this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
+
+            if (!cloudpilot.mountCard(card.storageId)) {
+                cloudpilot.removeCard(card.storageId);
+
+                throw new Error('failed to mount card');
+            }
+
+            return card;
+        } finally {
+            loader.dismiss();
         }
-
-        return card;
     }
 
     async loadCard(cardId: number): Promise<StorageCard> {
@@ -228,6 +261,50 @@ export class StorageCardService {
         cloudpilot.removeCard(card.storageId);
 
         this.snapshotService.resetCard();
+    }
+
+    async fsckCard(cardId: number): Promise<FsckStatus> {
+        const loader = await this.loadingController.create({ message: 'Checking card...' });
+
+        try {
+            await loader.present();
+
+            if (await this.cardIsMounted(cardId)) throw new Error('attempt to fsck a mounted card');
+
+            const card = await this.storageService.getCard(cardId);
+            if (!card) {
+                throw new Error(`no card with id ${cardId}`);
+            }
+
+            const context = await FsckContext.create(card.size);
+            await this.storageService.loadCardData(card.id, context.getImageData());
+
+            const result = context.fsck();
+            switch (result) {
+                case FsckResult.ok:
+                case FsckResult.invalid:
+                    return { result };
+
+                case FsckResult.fixed:
+                    return { result, fixedImage: context.getImageData(), dirtyPages: context.getDirtyPages() };
+
+                default:
+                    throw new Error('unrachable: invalid fsck result');
+            }
+        } finally {
+            loader.dismiss();
+        }
+    }
+
+    async applyFsckResult(cardId: number, result: FsckStatusFixed): Promise<void> {
+        const loader = await this.loadingController.create({ message: 'Fixing errors...' });
+
+        try {
+            await loader.present();
+            await this.storageService.updateCardData(cardId, result.fixedImage, result.dirtyPages);
+        } finally {
+            loader.dismiss();
+        }
     }
 
     private async updateCardsFromDB(): Promise<void> {

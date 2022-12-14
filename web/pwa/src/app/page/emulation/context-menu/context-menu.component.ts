@@ -308,15 +308,10 @@ export class ContextMenuComponent implements OnInit {
     }
 
     private async doMountCard(id: number): Promise<void> {
-        const loader = this.loadingController.create({ message: 'Inserting...' });
-        await (await loader).present();
-
         try {
             await this.storageCardService.mountCard(id);
         } catch (e) {
             this.errorService.fatalBug(e instanceof Error ? e.message : 'mount failed');
-        } finally {
-            (await loader).dismiss();
         }
     }
 

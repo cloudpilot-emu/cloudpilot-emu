@@ -1,16 +1,17 @@
 import { ActionSheetController, AlertController, LoadingController, ModalController } from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
+import { FsckStatusFixed, StorageCardService } from './../../service/storage-card.service';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { CardSupportLevel } from '@native/cloudpilot_web';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { Component } from '@angular/core';
 import { ErrorService } from './../../service/error.service';
+import { FsckResult } from '@native-fstools/fstools_web';
 import { NewCardDialogComponent } from './new-card-dialog/new-card-dialog.component';
 import { NewCardSize } from '@pwa/service/storage-card.service';
 import { StorageCard } from '@pwa/model/StorageCard';
-import { StorageCardService } from './../../service/storage-card.service';
 import { StorageService } from '@pwa/service/storage.service';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
@@ -130,8 +131,35 @@ export class StoragePage {
         );
     }
 
-    checkCard(card: StorageCard) {
-        this.alertService.message('Not implemented', 'File system verification is not implemented yet.');
+    async checkCard(card: StorageCard): Promise<void> {
+        const session = this.storageCardService.mountedInSession(card.id);
+        if (session) {
+            this.alertService.message(
+                'Card is attached',
+                `This card needs to be ejected from session '${session.name}' before it can be checked.`
+            );
+
+            return;
+        }
+
+        const fsckStatus = await this.storageCardService.fsckCard(card.id);
+
+        switch (fsckStatus.result) {
+            case FsckResult.ok:
+                this.alertService.message('Card clean', 'No file system errors were found.');
+
+                return;
+
+            case FsckResult.fixed:
+                this.alertService.message(
+                    'Filesystem errors',
+                    `This file system on this card contains errors that need to be fixed before it can be used. Do you want to fix them now?`,
+                    { 'Fix now': () => this.applyFsckResult(card.id, fsckStatus) },
+                    'Cancel'
+                );
+
+                return;
+        }
     }
 
     async deleteCard(card: StorageCard) {
@@ -208,6 +236,12 @@ export class StoragePage {
         const cards = this.storageCardService.getAllCards();
 
         return disambiguateName(name, (x) => cards.some((card) => card.name === x));
+    }
+
+    private async applyFsckResult(cardId: number, result: FsckStatusFixed) {
+        await this.storageCardService.applyFsckResult(cardId, result);
+
+        this.alertService.message('Card fixed', 'All filesystem errors have been fixed');
     }
 
     public lastCardTouched: number | undefined = undefined;

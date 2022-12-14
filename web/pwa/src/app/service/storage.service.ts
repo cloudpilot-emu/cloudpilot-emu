@@ -311,7 +311,7 @@ export class StorageService {
     }
 
     @guard()
-    async loadCardData(id: number, target: Uint32Array): Promise<void> {
+    loadCardData(id: number, target: Uint32Array): Promise<void> {
         return this.ngZone.runOutsideAngular(async () => {
             const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
             const objectStore = tx.objectStore(OBJECT_STORE_STORAGE);
@@ -342,6 +342,40 @@ export class StorageService {
 
                 request.onerror = () => reject(new StorageError(request.error?.message));
             });
+        });
+    }
+
+    updateCardData(id: number, data: Uint32Array, dirtyPages: Uint8Array): Promise<void> {
+        return this.ngZone.runOutsideAngular(async () => {
+            const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
+            const objectStoreStorageCard = tx.objectStore(OBJECT_STORE_STORAGE_CARD);
+            const objectStoreStorage = tx.objectStore(OBJECT_STORE_STORAGE);
+
+            const card: StorageCard | undefined = await complete(objectStoreStorageCard.get(id));
+            if (!card) throw new Error(`no card with ID ${id}`);
+
+            if (data.length !== card.size >>> 2) throw new Error(`data size mismatch`);
+
+            const pagesTotal = (card.size >>> 13) + (card.size % 8192 > 0 ? 1 : 0);
+            if ((pagesTotal >>> 3) + (pagesTotal % 8 > 0 ? 1 : 0) !== dirtyPages.length)
+                throw new Error(`dirty pages size mismatch`);
+
+            let iPage = 0;
+            for (let i = 0; i < dirtyPages.length; i++) {
+                for (let mask = 1; mask < 0x0100; mask <<= 1) {
+                    if (iPage >= pagesTotal) break;
+
+                    if (dirtyPages[i] & mask)
+                        objectStoreStorage.put(data.subarray(iPage * 2048, (iPage + 1) * 2048).slice(), [
+                            card.id,
+                            iPage,
+                        ]);
+
+                    iPage++;
+                }
+            }
+
+            await complete(tx);
         });
     }
 

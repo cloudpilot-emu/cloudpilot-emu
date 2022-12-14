@@ -14,3 +14,14 @@ interface MkfsContext {
     VoidPtr GetImage();
     long GetImageSize();
 };
+
+interface FsckContext {
+    void FsckContext(long blockCount);
+
+    VoidPtr GetImage();
+    VoidPtr GetDirtyPages();
+    long GetImageSize();
+
+    long Fsck();
+    long GetResult();
+};
