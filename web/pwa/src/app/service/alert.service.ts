@@ -34,8 +34,8 @@ export class AlertService {
                 ...Object.keys(extraButtons).map((text) => ({
                     text,
                     handler: () => {
-                        alert.dismiss();
                         extraButtons[text]();
+                        alert.dismiss();
                     },
                 })),
                 { text: closeButtonLabel, role: 'cancel' },
@@ -43,6 +43,7 @@ export class AlertService {
         });
 
         await alert.present();
+        await alert.onDidDismiss();
     }
 
     async updateAvailable() {
@@ -119,6 +120,23 @@ export class AlertService {
             Server version does not match CloudpilotEmu. Please make sure that you are using the latest
             versions of CloudpilotEmu and of the server.
         `);
+    }
+
+    cardHasNoValidFileSystem(): Promise<void> {
+        return this.message('No filesystem', 'This card does not contain a valid filesystem.', {}, 'Continue');
+    }
+
+    cardHasUncorrectableErrors(): Promise<void> {
+        return this.message(
+            'Uncorrectable errors',
+            'The filesystem on this card contains uncorrectable errors.',
+            {},
+            'Continue'
+        );
+    }
+
+    cardIsClean(): Promise<void> {
+        return this.message('Card clean', 'No filesystem errors were found.', {}, 'Continue');
     }
 
     emergencySaveEvent = new Event<void>();

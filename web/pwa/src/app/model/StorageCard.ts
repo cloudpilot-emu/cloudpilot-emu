@@ -2,6 +2,7 @@ export enum StorageCardStatus {
     dirty = 'dirty',
     clean = 'clean',
     unformatted = 'unformatted',
+    unfixable = 'unfixable',
 }
 
 export interface StorageCard {

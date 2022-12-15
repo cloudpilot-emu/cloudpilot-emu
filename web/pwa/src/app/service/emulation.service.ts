@@ -228,7 +228,7 @@ export class EmulationService extends AbstractEmulationService {
             await this.switchSession(session);
         } catch (e) {
             if (isIOS) {
-                await this.alertService.message(
+                this.alertService.message(
                     'Possible iOS bug',
                     `It seems that you hit an iOS bug that ocassionally
 causes the database to come up empty when the app starts. If this happens to you, please force close

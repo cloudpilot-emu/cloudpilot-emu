@@ -19,7 +19,6 @@ import { EmulationService } from '@pwa/service/emulation.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
 import { ErrorService } from './../../../service/error.service';
 import { FsckResult } from '@native-fstools/fstools_web';
-import { FsckStatusFixed } from './../../../service/storage-card.service';
 import { KvsService } from '@pwa/service/kvs.service';
 import { PalmButton } from '@common/Cloudpilot';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
@@ -309,37 +308,62 @@ export class ContextMenuComponent implements OnInit {
     }
 
     private async doMountCard(id: number): Promise<void> {
-        const card = await this.storageCardService.getCard(id);
+        let card = await this.storageCardService.getCard(id);
         if (!card) throw new Error(`no card with id ${id}`);
 
         let mountNow = true;
 
-        if (!card.dontFsckAutomatically && card.status === StorageCardStatus.dirty) {
-            const fsckStatus = await this.storageCardService.fsckCard(id);
+        if (!card.dontFsckAutomatically) {
+            if (card.status === StorageCardStatus.dirty) {
+                const fsckStatus = await this.storageCardService.fsckCard(id);
 
-            if (fsckStatus.result === FsckResult.fixed) {
-                mountNow = false;
+                if (fsckStatus.result === FsckResult.fixed) {
+                    mountNow = false;
 
-                await new Promise((resolve, reject) => {
-                    this.alertService.message(
+                    await this.alertService.message(
                         'Filesystem errors',
-                        'The filesystem on this card contains errors that have to fixed before it can be used. Do you want to fix them now?',
-                        { 'Fix now': () => this.fixAndMountCard(card.id, fsckStatus) },
+                        'The filesystem on this card contains errors that have to fixed before it can be inserted. Do you want to fix them now?',
+                        { 'Fix now': () => (mountNow = true) },
                         'Cancel'
                     );
-                });
+
+                    if (!mountNow) return;
+                    await this.storageCardService.applyFsckResult(card.id, fsckStatus);
+                }
+            }
+
+            card = await this.storageCardService.getCard(id);
+            if (!card) throw new Error(`no card with id ${id}`);
+
+            switch (card.status) {
+                case StorageCardStatus.clean:
+                case StorageCardStatus.unformatted:
+                    break;
+
+                case StorageCardStatus.dirty:
+                    await this.alertService.message(
+                        'Card requires check',
+                        'This card needs to be checked before it can be inserted.'
+                    );
+                    return;
+
+                case StorageCardStatus.unfixable:
+                    mountNow = false;
+
+                    await this.alertService.message(
+                        'Uncorrectable errors',
+                        'The filesystem on this card contains uncorrectable errors. Writing could cause further damage. Do you want to insert it nevertheless?',
+                        { 'Insert card': () => (mountNow = true) },
+                        'Cancel'
+                    );
+
+                    if (!mountNow) return;
+                    break;
+
+                default:
+                    throw new Error('unreachable: bad card status');
             }
         }
-
-        try {
-            if (mountNow) await this.storageCardService.mountCard(id);
-        } catch (e) {
-            this.errorService.fatalBug(e instanceof Error ? e.message : 'mount failed');
-        }
-    }
-
-    private async fixAndMountCard(id: number, fsckStatus: FsckStatusFixed): Promise<void> {
-        await this.storageCardService.applyFsckResult(id, fsckStatus);
 
         try {
             await this.storageCardService.mountCard(id);

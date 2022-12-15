@@ -87,7 +87,7 @@ export class FsckContext {
         } catch (e) {
             console.warn('fsck failed', e);
 
-            this.result = FsckResult.invalid;
+            this.result = FsckResult.unfixable;
             return this.result;
         }
     }

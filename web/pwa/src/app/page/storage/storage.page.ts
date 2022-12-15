@@ -146,17 +146,21 @@ export class StoragePage {
 
         switch (fsckStatus.result) {
             case FsckResult.ok:
-                this.alertService.message('Card clean', 'No filesystem errors were found.');
+                this.alertService.cardIsClean();
                 return;
 
             case FsckResult.invalid:
-                this.alertService.message('No filesystem', 'This card does not contain a filesystem.');
+                this.alertService.cardHasNoValidFileSystem();
                 return;
+
+            case FsckResult.unfixable:
+                this.alertService.cardHasUncorrectableErrors();
+                break;
 
             case FsckResult.fixed:
                 this.alertService.message(
                     'Filesystem errors',
-                    `This filesystem on this card contains errors${
+                    `The filesystem on this card contains errors${
                         card.dontFsckAutomatically ? '' : '  that need to be fixed before it can be used'
                     }. Do you want to fix them now?`,
                     { 'Fix now': () => this.applyFsckResult(card.id, fsckStatus) },
@@ -226,15 +230,12 @@ export class StoragePage {
             await modal.present();
         });
 
-        if (
-            cardSettings &&
-            (await this.storageCardService.createCardFromFile(
+        if (cardSettings) {
+            await this.storageCardService.createCardFromFile(
                 cardSettings.name,
                 file,
                 !!cardSettings.dontFsckAutomatically
-            ))
-        ) {
-            this.alertService.message('Errors fixed', 'The filesystem contained errors that were fixed on import.');
+            );
         }
     };
 
@@ -255,7 +256,7 @@ export class StoragePage {
     private async applyFsckResult(cardId: number, result: FsckStatusFixed) {
         await this.storageCardService.applyFsckResult(cardId, result);
 
-        this.alertService.message('Card fixed', 'All filesystem errors have been fixed');
+        this.alertService.message('Card fixed', 'All filesystem errors have been fixed.');
     }
 
     public lastCardTouched: number | undefined = undefined;

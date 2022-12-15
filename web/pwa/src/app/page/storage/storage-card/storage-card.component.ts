@@ -76,6 +76,9 @@ export class StorageCardComponent {
             case StorageCardStatus.unformatted:
                 return 'no filesystem';
 
+            case StorageCardStatus.unfixable:
+                return 'uncorrectable errors';
+
             default:
                 throw new Error('unreachable');
         }

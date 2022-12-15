@@ -1,6 +1,7 @@
 import { FsckContext, FsckResult, mkfs } from '@common/FSTools';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
+import { AlertService } from './alert.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
 import { FileDescriptor } from '@pwa/service/file.service';
@@ -37,7 +38,11 @@ export type FsckStatusBad = {
     result: FsckResult.invalid;
 };
 
-export type FsckStatus = FsckStatusClean | FsckStatusFixed | FsckStatusBad;
+export type FsckStatusUnfixable = {
+    result: FsckResult.unfixable;
+};
+
+export type FsckStatus = FsckStatusClean | FsckStatusFixed | FsckStatusBad | FsckStatusUnfixable;
 
 export function cardSizeNumeric(newCardSize: NewCardSize): number {
     switch (newCardSize) {
@@ -101,7 +106,8 @@ export class StorageCardService {
         private emulationStateService: EmulationStateService,
         private cloudpilotService: CloudpilotService,
         private loadingController: LoadingController,
-        private snapshotService: SnapshotService
+        private snapshotService: SnapshotService,
+        private alertService: AlertService
     ) {
         this.updateCardsFromDB().then(() => (this.loading = false));
 
@@ -138,7 +144,7 @@ export class StorageCardService {
         }
     }
 
-    async createCardFromFile(name: string, file: FileDescriptor, dontFsckAutomatically: boolean): Promise<boolean> {
+    async createCardFromFile(name: string, file: FileDescriptor, dontFsckAutomatically: boolean): Promise<void> {
         const cardWithoutId: Omit<StorageCard, 'id'> = {
             storageId: newStorageId(),
             name,
@@ -146,33 +152,25 @@ export class StorageCardService {
             status: StorageCardStatus.clean,
             dontFsckAutomatically,
         };
+        const data32 = new Uint32Array(file.content.buffer, file.content.byteOffset, file.content.byteLength >>> 2);
+        let card: StorageCard;
 
         const loader = await this.loadingController.create({ message: 'Importing...' });
-
         try {
-            await loader.present();
-            let data = new Uint32Array(file.content.buffer, file.content.byteOffset, file.content.byteLength >>> 2);
-            let errorsFixed = false;
+            if (dontFsckAutomatically) {
+                await loader.present();
+                card = await this.storageService.importStorageCard(cardWithoutId, data32);
+            } else {
+                const [fixedData32, checkedCardWithoutId] = await this.fsckNewCard(data32, cardWithoutId);
 
-            if (!dontFsckAutomatically) {
-                const fsckContext = await FsckContext.create(file.content.length);
-                fsckContext.getImageData().set(data);
-
-                const result = fsckContext.fsck();
-                if (result === FsckResult.invalid) cardWithoutId.status = StorageCardStatus.unformatted;
-
-                data = fsckContext.getImageData();
-                errorsFixed = result === FsckResult.fixed;
+                await loader.present();
+                card = await this.storageService.importStorageCard(checkedCardWithoutId, fixedData32);
             }
-
-            const card = await this.storageService.importStorageCard(cardWithoutId, data);
-
-            this.updateCardsFromDB();
-
-            return errorsFixed;
         } finally {
             loader.dismiss();
         }
+
+        this.updateCardsFromDB();
     }
 
     async updateCard(id: number, update: Partial<StorageCard>): Promise<void> {
@@ -317,6 +315,10 @@ export class StorageCardService {
                     await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
                     return { result, fixedImage: context.getImageData(), dirtyPages: context.getDirtyPages() };
 
+                case FsckResult.unfixable:
+                    await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.unfixable });
+                    return { result };
+
                 default:
                     throw new Error('unrachable: invalid fsck result');
             }
@@ -347,6 +349,58 @@ export class StorageCardService {
         const sessions = await this.storageService.getAllSessions();
 
         return sessions.some((session) => session.mountedCard === id);
+    }
+
+    private async fsckNewCard(
+        data: Uint32Array,
+        cardWithoutId: Omit<StorageCard, 'id'>
+    ): Promise<[Uint32Array, Omit<StorageCard, 'id'>]> {
+        const loader = await this.loadingController.create({ message: 'Checking card...' });
+        let fsckContext: FsckContext;
+        let result: FsckResult;
+
+        try {
+            await loader.present();
+
+            fsckContext = await FsckContext.create(cardWithoutId.size);
+            fsckContext.getImageData().set(data);
+            result = fsckContext.fsck();
+        } finally {
+            loader.dismiss();
+        }
+
+        switch (result) {
+            case FsckResult.ok:
+                return [data, { ...cardWithoutId, status: StorageCardStatus.clean }];
+
+            case FsckResult.fixed: {
+                let fix = false;
+
+                await this.alertService.message(
+                    'Filesystem errors',
+                    'The filesystem on this card contains errors that must be fixed before the card can be used. Do you want to fix them now?',
+                    { 'Fix now': () => (fix = true) },
+                    'Skip'
+                );
+
+                return fix
+                    ? [fsckContext.getImageData(), { ...cardWithoutId, status: StorageCardStatus.clean }]
+                    : [data, { ...cardWithoutId, status: StorageCardStatus.dirty }];
+            }
+
+            case FsckResult.invalid:
+                await this.alertService.cardHasNoValidFileSystem();
+
+                return [data, { ...cardWithoutId, status: StorageCardStatus.unformatted }];
+
+            case FsckResult.unfixable:
+                await this.alertService.cardHasUncorrectableErrors();
+
+                return [data, { ...cardWithoutId, status: StorageCardStatus.unfixable }];
+
+            default:
+                throw new Error('unreachable: bad fsck result');
+        }
     }
 
     private loading = true;

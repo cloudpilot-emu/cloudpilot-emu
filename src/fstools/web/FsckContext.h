@@ -5,7 +5,7 @@
 
 class FsckContext {
    public:
-    enum class FsckResult { pending = 0, ok = 1, fixed = 2, invalid = 3 };
+    enum class FsckResult { pending = 0, ok = 1, fixed = 2, invalid = 3, unfixable = 4 };
 
    public:
     FsckContext(unsigned long blockCount);

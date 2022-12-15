@@ -5,6 +5,7 @@ export const enum FsckResult {
     ok = 1,
     fixed = 2,
     invalid = 3,
+    unfixable = 4,
 }
 
 export interface VoidPtr {
