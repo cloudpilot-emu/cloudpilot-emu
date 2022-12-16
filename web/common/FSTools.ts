@@ -21,6 +21,8 @@ export async function mkfs(size: number): Promise<Uint32Array | undefined> {
     return context.getImage();
 }
 
+const wasmModule = WebAssembly.compileStreaming(fetch('fstools_web.wasm'));
+
 export class MkfsContext {
     private constructor(private module: Module) {
         this.nativeContext = new module.MkfsContext();
@@ -28,7 +30,12 @@ export class MkfsContext {
 
     static async create(): Promise<MkfsContext> {
         return new MkfsContext(
-            await createModule({ print: (x: string) => console.log(x), printErr: (x: string) => console.error(x) })
+            await createModule({
+                print: (x: string) => console.log(x),
+                printErr: (x: string) => console.error(x),
+                instantiateWasm: async (imports, callback) =>
+                    callback(await WebAssembly.instantiate(await wasmModule, imports)),
+            })
         );
     }
 
@@ -56,6 +63,8 @@ export class FsckContext {
         const module = await createModule({
             print: (x: string) => console.log(x),
             printErr: (x: string) => console.error(x),
+            instantiateWasm: async (imports, callback) =>
+                callback(await WebAssembly.instantiate(await wasmModule, imports)),
         });
 
         return new FsckContext(module, size);
