@@ -217,8 +217,8 @@ export class StorageCardService {
             const card = await this.loadCard(cardId);
             const cloudpilot = await this.cloudpilotService.cloudpilot;
 
-            this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
-            this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
+            await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
+            await this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
 
             if (!cloudpilot.mountCard(card.storageId)) {
                 cloudpilot.removeCard(card.storageId);
@@ -271,6 +271,7 @@ export class StorageCardService {
             throw new Error(`no card with id ${cardId}`);
         }
 
+        await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
         await this.snapshotService.waitForPendingSnapshot();
         await this.snapshotService.triggerSnapshot();
 
