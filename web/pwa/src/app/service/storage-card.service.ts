@@ -4,6 +4,7 @@ import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 import { AlertService } from './alert.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
+import { ErrorService } from './error.service';
 import { FileDescriptor } from '@pwa/service/file.service';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
@@ -86,7 +87,8 @@ export class StorageCardService {
         private cloudpilotService: CloudpilotService,
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
-        private alertService: AlertService
+        private alertService: AlertService,
+        private errorService: ErrorService
     ) {
         this.updateCardsFromDB().then(() => (this.loading = false));
 
@@ -152,37 +154,75 @@ export class StorageCardService {
         this.updateCardsFromDB();
     }
 
-    async mountCard(cardId: number): Promise<StorageCard> {
-        const loader = await this.loadingController.create({ message: 'Inserting...' });
+    async insertCard(id: number): Promise<void> {
+        if (await this.cardIsMounted(id)) throw new Error('card already mounted');
 
-        try {
-            await loader.present();
+        let card = await this.getCard(id);
+        if (!card) throw new Error(`no card with id ${id}`);
 
-            if (await this.cardIsMounted(cardId)) throw new Error('card already mounted');
+        let fsckContext: FsckContext | undefined;
+        let mountNow = true;
 
-            const session = this.emulationStateService.getCurrentSession();
-            if (!session) throw new Error('no current session');
-            if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
+        if (!card.dontFsckAutomatically) {
+            if (card.status === StorageCardStatus.dirty) {
+                fsckContext = await this.fsckCard(id);
 
-            const card = await this.loadCard(cardId);
-            const cloudpilot = await this.cloudpilotService.cloudpilot;
+                if (fsckContext.getResult() === FsckResult.fixed) {
+                    mountNow = false;
 
-            await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
-            await this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
+                    await this.alertService.message(
+                        'Filesystem errors',
+                        'The filesystem on this card contains errors that have to fixed before it can be inserted. Do you want to fix them now?',
+                        { 'Fix now': () => (mountNow = true) },
+                        'Cancel'
+                    );
 
-            if (!cloudpilot.mountCard(card.storageId)) {
-                cloudpilot.removeCard(card.storageId);
+                    if (!mountNow) return;
+                    await this.applyFsckResult(card.id, fsckContext);
+                }
 
-                throw new Error('failed to mount card');
+                card = await this.getCard(id);
+                if (!card) throw new Error(`no card with id ${id}`);
             }
 
-            return card;
-        } finally {
-            loader.dismiss();
+            switch (card.status) {
+                case StorageCardStatus.clean:
+                case StorageCardStatus.unformatted:
+                    break;
+
+                case StorageCardStatus.dirty:
+                    await this.alertService.message(
+                        'Card requires check',
+                        'This card needs to be checked before it can be inserted.'
+                    );
+                    return;
+
+                case StorageCardStatus.unfixable:
+                    mountNow = false;
+
+                    await this.alertService.message(
+                        'Uncorrectable errors',
+                        'The filesystem on this card contains uncorrectable errors. Writing could cause further damage. Do you want to insert it nevertheless?',
+                        { 'Insert card': () => (mountNow = true) },
+                        'Cancel'
+                    );
+
+                    if (!mountNow) return;
+                    break;
+
+                default:
+                    throw new Error('unreachable: bad card status');
+            }
+        }
+
+        try {
+            await this.mountCard(id, fsckContext?.getImageData());
+        } catch (e) {
+            this.errorService.fatalBug(e instanceof Error ? e.message : 'mount failed');
         }
     }
 
-    async loadCard(cardId: number): Promise<StorageCard> {
+    async loadCard(cardId: number, data?: Uint32Array): Promise<StorageCard> {
         const card = await this.storageService.getCard(cardId);
         if (!card) {
             throw new Error(`no card with id ${cardId}`);
@@ -202,7 +242,8 @@ export class StorageCardService {
             throw new Error('failed to access card data');
         }
 
-        await this.storageService.loadCardData(card.id, cardData);
+        if (data) cardData.set(data);
+        else await this.storageService.loadCardData(card.id, cardData);
 
         return card;
     }
@@ -393,6 +434,36 @@ export class StorageCardService {
 
             default:
                 throw new Error('unreachable: bad fsck result');
+        }
+    }
+
+    private async mountCard(cardId: number, data?: Uint32Array): Promise<StorageCard> {
+        if (await this.cardIsMounted(cardId)) throw new Error('card already mounted');
+
+        const loader = await this.loadingController.create({ message: 'Inserting...' });
+
+        try {
+            await loader.present();
+
+            const session = this.emulationStateService.getCurrentSession();
+            if (!session) throw new Error('no current session');
+            if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
+
+            const card = await this.loadCard(cardId, data);
+            const cloudpilot = await this.cloudpilotService.cloudpilot;
+
+            await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
+            await this.storageService.updateSessionPartial(session.id, { mountedCard: cardId });
+
+            if (!cloudpilot.mountCard(card.storageId)) {
+                cloudpilot.removeCard(card.storageId);
+
+                throw new Error('failed to mount card');
+            }
+
+            return card;
+        } finally {
+            loader.dismiss();
         }
     }
 

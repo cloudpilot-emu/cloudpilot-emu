@@ -284,7 +284,7 @@ export class ContextMenuComponent implements OnInit {
             header: 'Choose image for insertion',
             buttons: [
                 { text: 'Cancel', role: 'cancel' },
-                { text: 'Insert', handler: (id) => this.doMountCard(id) },
+                { text: 'Insert', handler: (id) => this.storageCardService.insertCard(id) },
             ],
             inputs: eligibleCards.map((card, index) => ({
                 label: card.name,
@@ -305,71 +305,6 @@ export class ContextMenuComponent implements OnInit {
             this.errorService.fatalBug(e instanceof Error ? e.message : 'eject failed');
         }
         this.popoverController.dismiss();
-    }
-
-    private async doMountCard(id: number): Promise<void> {
-        let card = await this.storageCardService.getCard(id);
-        if (!card) throw new Error(`no card with id ${id}`);
-
-        let mountNow = true;
-
-        if (!card.dontFsckAutomatically) {
-            if (card.status === StorageCardStatus.dirty) {
-                const fsckStatus = await this.storageCardService.fsckCard(id);
-
-                if (fsckStatus.getResult() === FsckResult.fixed) {
-                    mountNow = false;
-
-                    await this.alertService.message(
-                        'Filesystem errors',
-                        'The filesystem on this card contains errors that have to fixed before it can be inserted. Do you want to fix them now?',
-                        { 'Fix now': () => (mountNow = true) },
-                        'Cancel'
-                    );
-
-                    if (!mountNow) return;
-                    await this.storageCardService.applyFsckResult(card.id, fsckStatus);
-                }
-            }
-
-            card = await this.storageCardService.getCard(id);
-            if (!card) throw new Error(`no card with id ${id}`);
-
-            switch (card.status) {
-                case StorageCardStatus.clean:
-                case StorageCardStatus.unformatted:
-                    break;
-
-                case StorageCardStatus.dirty:
-                    await this.alertService.message(
-                        'Card requires check',
-                        'This card needs to be checked before it can be inserted.'
-                    );
-                    return;
-
-                case StorageCardStatus.unfixable:
-                    mountNow = false;
-
-                    await this.alertService.message(
-                        'Uncorrectable errors',
-                        'The filesystem on this card contains uncorrectable errors. Writing could cause further damage. Do you want to insert it nevertheless?',
-                        { 'Insert card': () => (mountNow = true) },
-                        'Cancel'
-                    );
-
-                    if (!mountNow) return;
-                    break;
-
-                default:
-                    throw new Error('unreachable: bad card status');
-            }
-        }
-
-        try {
-            await this.storageCardService.mountCard(id);
-        } catch (e) {
-            this.errorService.fatalBug(e instanceof Error ? e.message : 'mount failed');
-        }
     }
 
     @Input()
