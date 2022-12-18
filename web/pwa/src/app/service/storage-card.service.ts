@@ -152,35 +152,6 @@ export class StorageCardService {
         this.updateCardsFromDB();
     }
 
-    async updateCard(id: number, update: Partial<StorageCard>): Promise<void> {
-        const card = await this.storageService.getCard(id);
-        if (!card) throw new Error(`no card with id ${id}`);
-
-        if (!update.dontFsckAutomatically && card.dontFsckAutomatically) update.status = StorageCardStatus.dirty;
-
-        return this.storageService.updateStorageCardPartial(id, update);
-    }
-
-    async deleteCard(card: StorageCard): Promise<void> {
-        if (await this.cardIsMounted(card.id)) await this.ejectCard();
-
-        await this.storageService.deleteStorageCard(card.id);
-
-        this.updateCardsFromDB();
-    }
-
-    async getCard(id: number): Promise<StorageCard | undefined> {
-        return this.storageService.getCard(id);
-    }
-
-    mountedInSession(cardId: number): Session | undefined {
-        return this.sessionService.getSessions().find((session) => session.mountedCard === cardId);
-    }
-
-    isLoading(): boolean {
-        return this.loading;
-    }
-
     async mountCard(cardId: number): Promise<StorageCard> {
         const loader = await this.loadingController.create({ message: 'Inserting...' });
 
@@ -253,11 +224,9 @@ export class StorageCardService {
         await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
         await this.snapshotService.waitForPendingSnapshot();
         await this.snapshotService.triggerSnapshot();
-
         await this.storageService.updateSessionPartial(session.id, { mountedCard: undefined });
 
         const cloudpilot = await this.cloudpilotService.cloudpilot;
-
         cloudpilot.removeCard(card.storageId);
 
         this.snapshotService.resetCard();
@@ -321,6 +290,46 @@ export class StorageCardService {
         } finally {
             loader.dismiss();
         }
+    }
+
+    async updateCard(id: number, update: Partial<StorageCard>): Promise<void> {
+        const card = await this.storageService.getCard(id);
+        if (!card) throw new Error(`no card with id ${id}`);
+
+        if (!update.dontFsckAutomatically && card.dontFsckAutomatically) update.status = StorageCardStatus.dirty;
+
+        return this.storageService.updateStorageCardPartial(id, update);
+    }
+
+    async deleteCard(card: StorageCard): Promise<void> {
+        const session = this.mountedInSession(card.id);
+
+        if (session) {
+            await this.storageService.updateSessionPartial(session.id, { mountedCard: undefined });
+
+            if (session.id === this.emulationStateService.getCurrentSession()?.id) {
+                const cloudpilot = await this.cloudpilotService.cloudpilot;
+                cloudpilot.removeCard(card.storageId);
+
+                this.snapshotService.resetCard();
+            }
+        }
+
+        await this.storageService.deleteStorageCard(card.id);
+
+        this.updateCardsFromDB();
+    }
+
+    async getCard(id: number): Promise<StorageCard | undefined> {
+        return this.storageService.getCard(id);
+    }
+
+    mountedInSession(cardId: number): Session | undefined {
+        return this.sessionService.getSessions().find((session) => session.mountedCard === cardId);
+    }
+
+    isLoading(): boolean {
+        return this.loading;
     }
 
     private async updateCardsFromDB(): Promise<void> {

@@ -105,16 +105,6 @@ export class StoragePage {
     }
 
     async saveCard(card: StorageCard) {
-        const session = this.storageCardService.mountedInSession(card.id);
-        if (session) {
-            this.alertService.message(
-                'Card is attached',
-                `This card needs to be ejected from session '${session.name}' before it can be exported.`
-            );
-
-            return;
-        }
-
         const loader = await this.loadingController.create({ message: 'Exporting...' });
         await loader.present();
 
@@ -173,23 +163,22 @@ export class StoragePage {
     }
 
     async deleteCard(card: StorageCard) {
-        const session = this.storageCardService.mountedInSession(card.id);
-        if (session) {
-            this.alertService.message(
-                'Card is attached',
-                `This card needs to be ejected from session '${session.name}' before it can be deleted.`
-            );
-
-            return;
-        }
-
         const alert = await this.alertController.create({
             header: 'Warning',
             backdropDismiss: false,
             message: `Deleting the card '${card.name}' cannot be undone. Are you sure you want to continue?`,
             buttons: [
                 { text: 'Cancel', role: 'cancel' },
-                { text: 'Delete', handler: () => this.doDeleteCard(card) },
+                {
+                    text: 'Delete',
+                    handler: async () => {
+                        try {
+                            await this.storageCardService.deleteCard(card);
+                        } catch (e) {
+                            this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
+                        }
+                    },
+                },
             ],
         });
 
@@ -239,14 +228,6 @@ export class StoragePage {
             );
         }
     };
-
-    private async doDeleteCard(card: StorageCard): Promise<void> {
-        try {
-            await this.storageCardService.deleteCard(card);
-        } catch (e) {
-            this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
-        }
-    }
 
     private disambiguateName(name: string): string {
         const cards = this.storageCardService.getAllCards();
