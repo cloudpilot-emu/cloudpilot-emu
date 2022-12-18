@@ -6,6 +6,7 @@ import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { FileDescriptor } from '@pwa/service/file.service';
+import { FileService } from './file.service';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
@@ -88,7 +89,8 @@ export class StorageCardService {
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
         private alertService: AlertService,
-        private errorService: ErrorService
+        private errorService: ErrorService,
+        private fileService: FileService
     ) {
         this.updateCardsFromDB().then(() => (this.loading = false));
 
@@ -359,6 +361,37 @@ export class StorageCardService {
         await this.storageService.deleteStorageCard(card.id);
 
         this.updateCardsFromDB();
+    }
+
+    async saveCard(id: number, name: string): Promise<void> {
+        const card = await this.getCard(id);
+        if (!card) throw new Error(`no card with id ${id}`);
+
+        const loader = await this.loadingController.create({ message: 'Exporting...' });
+        let data: Uint32Array | undefined;
+
+        try {
+            await loader.present();
+
+            const session = this.mountedInSession(id);
+
+            if (session && session.id === this.emulationStateService.getCurrentSession()?.id) {
+                await this.snapshotService.waitForPendingSnapshot();
+                await this.snapshotService.triggerSnapshot();
+
+                const cloudpilot = await this.cloudpilotService.cloudpilot;
+                data = cloudpilot.getCardData(card.storageId);
+            }
+
+            if (!data) {
+                data = new Uint32Array(card.size >>> 2);
+                await this.storageService.loadCardData(card.id, data);
+            }
+        } finally {
+            loader.dismiss();
+        }
+
+        this.fileService.saveFile(name, new Uint8Array(data.buffer, data.byteOffset, data.length << 2));
     }
 
     async getCard(id: number): Promise<StorageCard | undefined> {

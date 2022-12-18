@@ -104,22 +104,8 @@ export class StoragePage {
         await modal.present();
     }
 
-    async saveCard(card: StorageCard) {
-        const loader = await this.loadingController.create({ message: 'Exporting...' });
-        await loader.present();
-
-        const data = new Uint32Array(card.size >>> 2);
-
-        try {
-            await this.storageService.loadCardData(card.id, data);
-        } finally {
-            loader.dismiss();
-        }
-
-        this.fileService.saveFile(
-            `${filenameFragment(card.name.replace(/\.img$/, ''))}.img`,
-            new Uint8Array(data.buffer, data.byteOffset, data.length << 2)
-        );
+    saveCard(card: StorageCard) {
+        this.storageCardService.saveCard(card.id, `${filenameFragment(card.name.replace(/\.img$/, ''))}.img`);
     }
 
     async checkCard(card: StorageCard): Promise<void> {
