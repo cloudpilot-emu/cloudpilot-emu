@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup cache
         id: cache-system-libraries
         uses: actions/cache@v2
@@ -25,7 +25,7 @@ jobs:
       - name: Build wasm
         run: make -Csrc -j2 emscripten
       - name: Setup node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{env.NODE_VERSION}}
       - name: Install node deps
@@ -40,7 +40,7 @@ jobs:
           yarn run gen-revision
           yarn ng run app:build:production,preview,ci --base-href /app-preview/
       - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.5.1
+        uses: webfactory/ssh-agent@v0.7.0
         with:
             ssh-private-key: ${{ secrets.SSH_DEPLOY_KEY }}
       - name: Checkout pages source
