@@ -23,27 +23,6 @@ export enum NewCardSize {
     mb128,
 }
 
-export type FsckStatusClean = {
-    result: FsckResult.ok;
-};
-
-export type FsckStatusFixed = {
-    result: FsckResult.fixed;
-
-    fixedImage: Uint32Array;
-    dirtyPages: Uint8Array;
-};
-
-export type FsckStatusBad = {
-    result: FsckResult.invalid;
-};
-
-export type FsckStatusUnfixable = {
-    result: FsckResult.unfixable;
-};
-
-export type FsckStatus = FsckStatusClean | FsckStatusFixed | FsckStatusBad | FsckStatusUnfixable;
-
 export function cardSizeNumeric(newCardSize: NewCardSize): number {
     switch (newCardSize) {
         case NewCardSize.mb4:
@@ -284,7 +263,7 @@ export class StorageCardService {
         this.snapshotService.resetCard();
     }
 
-    async fsckCard(cardId: number): Promise<FsckStatus> {
+    async fsckCard(cardId: number): Promise<FsckContext> {
         const loader = await this.loadingController.create({ message: 'Checking card...' });
 
         try {
@@ -304,36 +283,40 @@ export class StorageCardService {
             switch (result) {
                 case FsckResult.ok:
                     await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.clean });
-                    return { result };
+                    break;
 
                 case FsckResult.invalid:
                     await this.storageService.updateStorageCardPartial(cardId, {
                         status: StorageCardStatus.unformatted,
                     });
-                    return { result };
+                    break;
 
                 case FsckResult.fixed:
                     await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
-                    return { result, fixedImage: context.getImageData(), dirtyPages: context.getDirtyPages() };
+                    break;
 
                 case FsckResult.unfixable:
                     await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.unfixable });
-                    return { result };
+                    break;
 
                 default:
                     throw new Error('unrachable: invalid fsck result');
             }
+
+            return context;
         } finally {
             loader.dismiss();
         }
     }
 
-    async applyFsckResult(cardId: number, result: FsckStatusFixed): Promise<void> {
+    async applyFsckResult(cardId: number, context: FsckContext): Promise<void> {
+        if (context.getResult() !== FsckResult.fixed) return;
+
         const loader = await this.loadingController.create({ message: 'Fixing errors...' });
 
         try {
             await loader.present();
-            await this.storageService.updateCardData(cardId, result.fixedImage, result.dirtyPages);
+            await this.storageService.updateCardData(cardId, context.getImageData(), context.getDirtyPages());
             await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.clean });
         } finally {
             loader.dismiss();

@@ -1,17 +1,18 @@
 import { ActionSheetController, AlertController, LoadingController, ModalController } from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
-import { FsckStatusFixed, StorageCardService } from './../../service/storage-card.service';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { CardSupportLevel } from '@native/cloudpilot_web';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { Component } from '@angular/core';
 import { ErrorService } from './../../service/error.service';
+import { FsckContext } from '@common/FSTools';
 import { FsckResult } from '@native-fstools/fstools_web';
 import { NewCardDialogComponent } from './new-card-dialog/new-card-dialog.component';
 import { NewCardSize } from '@pwa/service/storage-card.service';
 import { StorageCard } from '@pwa/model/StorageCard';
+import { StorageCardService } from './../../service/storage-card.service';
 import { StorageService } from '@pwa/service/storage.service';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
@@ -142,9 +143,9 @@ export class StoragePage {
             return;
         }
 
-        const fsckStatus = await this.storageCardService.fsckCard(card.id);
+        const fsckContext = await this.storageCardService.fsckCard(card.id);
 
-        switch (fsckStatus.result) {
+        switch (fsckContext.getResult()) {
             case FsckResult.ok:
                 this.alertService.cardIsClean();
                 return;
@@ -163,7 +164,7 @@ export class StoragePage {
                     `The filesystem on this card contains errors${
                         card.dontFsckAutomatically ? '' : '  that need to be fixed before it can be used'
                     }. Do you want to fix them now?`,
-                    { 'Fix now': () => this.applyFsckResult(card.id, fsckStatus) },
+                    { 'Fix now': () => this.applyFsckResult(card.id, fsckContext) },
                     'Cancel'
                 );
 
@@ -253,8 +254,8 @@ export class StoragePage {
         return disambiguateName(name, (x) => cards.some((card) => card.name === x));
     }
 
-    private async applyFsckResult(cardId: number, result: FsckStatusFixed) {
-        await this.storageCardService.applyFsckResult(cardId, result);
+    private async applyFsckResult(cardId: number, context: FsckContext) {
+        await this.storageCardService.applyFsckResult(cardId, context);
 
         this.alertService.message('Card fixed', 'All filesystem errors have been fixed.');
     }

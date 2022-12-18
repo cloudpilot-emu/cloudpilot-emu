@@ -317,7 +317,7 @@ export class ContextMenuComponent implements OnInit {
             if (card.status === StorageCardStatus.dirty) {
                 const fsckStatus = await this.storageCardService.fsckCard(id);
 
-                if (fsckStatus.result === FsckResult.fixed) {
+                if (fsckStatus.getResult() === FsckResult.fixed) {
                     mountNow = false;
 
                     await this.alertService.message(
