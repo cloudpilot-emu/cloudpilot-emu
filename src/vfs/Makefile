@@ -69,35 +69,16 @@ INCLUDE = -I../common -I. $(INCLUDE_EXTRA)
 
 INCLUDE_NATIVE = -I../argparse
 
-SOURCE_C = \
-	dosfstools/charconv.c \
-	dosfstools/common.c \
-	dosfstools/io.c \
-	dosfstools/device_info.c \
-	dosfstools/boot.c \
-	dosfstools/check.c \
-	dosfstools/fat.c \
-	dosfstools/file.c \
-	dosfstools/fsck.fat.c \
-	dosfstools/lfn.c \
-	dosfstools/mkfs.fat.c \
-	dosfstools/mkfs.c \
-	dosfstools/fsck.c
+SOURCE_C =
 
-SOURCE_CPP = card_io.cpp fstools_util.cpp
+SOURCE_CPP =
 SOURCE_TEST =
 
 SOURCE_NATIVE = $(SOURCE_CPP) \
-	native/main.cpp \
-	native/CmdFsck.cpp \
-	native/CmdMkfs.cpp \
-	native/terminate.cpp
+	native/main.cpp
 
 SOURCE_WEB = $(SOURCE_CPP) $(WEBIDL_BINDING_CXX) \
-	web/FSTools.cpp \
-	web/MkfsContext.cpp \
-	web/FsckContext.cpp \
-	web/terminate.cpp \
+	web/Vfs.cpp \
 	web/main.cpp
 
 OBJECTS_TEST = \
@@ -115,10 +96,10 @@ OBJECTS_WEB_EMCC = \
 	$(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o) \
 	../common/libcommon-wasm.a
 
-BINARY_NATIVE = fstools
+BINARY_NATIVE = vfs
 
-BINARY_WEB_EMCC = fstools_web.js
-BINARY_WEB_WASM = fstools_web.wasm
+BINARY_WEB_EMCC = vfs_web.js
+BINARY_WEB_WASM = vfs_web.wasm
 BINARY_TEST =
 
 GARBAGE = \

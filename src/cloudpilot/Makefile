@@ -289,8 +289,6 @@ BINARY_WEB_EMCC = cloudpilot_web.js
 BINARY_WEB_WASM = cloudpilot_web.wasm
 BINARY_TEST = test/test
 
-WASM_OPT_STAMP = wasm-opt.stamp
-
 GARBAGE = \
 	$(BUILDDIR_NATIVE) \
 	$(BUILDDIR_EMCC) \
@@ -302,7 +300,6 @@ GARBAGE = \
 	$(DEPDIR_NATIVE) \
 	$(DEPDIR_EMCC) \
 	$(DEPDIR_TEST) \
-	$(WASM_OPT_STAMP) \
 	$(WEBIDL_BINDING_JS) \
 	$(WEBIDL_BINDING_JS:%.js=%.cpp) \
 	parser.out \

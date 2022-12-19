@@ -1,4 +1,4 @@
-SUBDIRS = common cloudpilot fstools
+SUBDIRS = common cloudpilot fstools vfs
 
 all: bin emscripten
 

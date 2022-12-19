@@ -1,0 +1,7 @@
+interface Vfs {
+    void Vfs();
+
+    VoidPtr Malloc(long size);
+    void Free(VoidPtr buffer);
+    VoidPtr Nullptr();
+};
