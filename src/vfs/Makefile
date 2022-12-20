@@ -69,9 +69,15 @@ INCLUDE = -I../common -I. $(INCLUDE_EXTRA)
 
 INCLUDE_NATIVE = -I../argparse
 
-SOURCE_C =
+SOURCE_C = \
+	fatfs/ff.c \
+	fatfs/ffsystem.c \
+	fatfs/ffunicode.c \
+	fatfs/fattime.c
 
-SOURCE_CPP =
+SOURCE_CPP = \
+	fatfs/diskio.cpp
+
 SOURCE_TEST =
 
 SOURCE_NATIVE = $(SOURCE_CPP) \
