@@ -1,5 +1,8 @@
+#include <memory.h>
+
 #include <iostream>
 
+#include "VfsCli.h"
 #include "argparse.h"
 
 using namespace std;
@@ -14,6 +17,8 @@ int main(int argc, const char** argv) {
 
     try {
         program.parse_args(argc, argv);
+
+        return VfsCli(program.get(ARGUMENT_IMAGE)).Run() ? 0 : 1;
     } catch (const runtime_error& e) {
         cerr << e.what() << endl << endl;
         cerr << program;

@@ -51,7 +51,7 @@ DSTATUS disk_status(BYTE pdrv /* Physical drive nmuber to identify the drive */
 
 DSTATUS disk_initialize(BYTE pdrv /* Physical drive nmuber to identify the drive */
 ) {
-    return STA_NOINIT;
+    return disk_status(pdrv) == 0 ? 0 : STA_NOINIT;
 }
 
 /*-----------------------------------------------------------------------*/

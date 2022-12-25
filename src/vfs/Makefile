@@ -81,7 +81,8 @@ SOURCE_CPP = \
 SOURCE_TEST =
 
 SOURCE_NATIVE = $(SOURCE_CPP) \
-	native/main.cpp
+	native/main.cpp \
+	native/VfsCli.cpp
 
 SOURCE_WEB = $(SOURCE_CPP) $(WEBIDL_BINDING_CXX) \
 	web/Vfs.cpp \
