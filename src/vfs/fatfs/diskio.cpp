@@ -25,13 +25,12 @@ namespace {
     Initializer initializer;
 }  // namespace
 
-void register_card_volume(int index, void *cardVolume) {
-    if (index >= 0 && index < FF_VOLUMES)
-        volumes[index] = reinterpret_cast<CardVolume *>(cardVolume);
+void register_card_volume(unsigned int index, void *cardVolume) {
+    if (index < FF_VOLUMES) volumes[index] = reinterpret_cast<CardVolume *>(cardVolume);
 }
 
-void unregister_card_volume(int index) {
-    if (index >= 0 && index < FF_VOLUMES) volumes[index] = nullptr;
+void unregister_card_volume(unsigned int index) {
+    if (index < FF_VOLUMES) volumes[index] = nullptr;
 }
 
 /*-----------------------------------------------------------------------*/

@@ -15,11 +15,12 @@ class ReaddirContext {
     explicit ReaddirContext(const char* path);
     ~ReaddirContext();
 
-    Status Next();
+    long Next();
 
     const char* GetPath() const;
 
     const char* GetEntryName() const;
+
     bool IsEntryDirectory() const;
     unsigned long GetSize() const;
     unsigned long GetTSModified() const;

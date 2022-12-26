@@ -23,8 +23,8 @@ typedef enum {
     RES_PARERR  /* 4: Invalid Parameter */
 } DRESULT;
 
-void register_card_volume(int index, void* cardVolume);
-void unregister_card_volume(int index);
+void register_card_volume(unsigned int index, void* cardVolume);
+void unregister_card_volume(unsigned int index);
 
 /*---------------------------------------*/
 /* Prototypes for disk control functions */

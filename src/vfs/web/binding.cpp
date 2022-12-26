@@ -1,6 +1,7 @@
 
 #include <cstddef>
 
+#include "ReaddirContext.h"
 #include "Vfs.h"
 
 // clang-format off

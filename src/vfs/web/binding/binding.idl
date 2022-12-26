@@ -5,3 +5,19 @@ interface Vfs {
     void Free(VoidPtr buffer);
     VoidPtr Nullptr();
 };
+
+interface ReaddirContext {
+    void ReaddirContext([Const] DOMString path);
+
+    long Next();
+
+    [Const] DOMString GetEntryName();
+
+    boolean IsEntryDirectory();
+    long GetSize();
+    long GetTSModified();
+
+    long GetStatus();
+    long GetError();
+    [Const] DOMString GetErrorDescription();
+};

@@ -1,3 +1,4 @@
+import { ReaddirContext } from './web/binding/binding.d';
 import { Vfs, VoidPtr } from './web/binding/binding';
 import 'emscripten';
 
@@ -10,6 +11,7 @@ export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'> {
     UTF8ToString(charPtr: number): string;
 
     Vfs: { new (): Vfs };
+    ReaddirContext: { new (): ReaddirContext };
 
     destroy(vfs: Vfs): void;
 

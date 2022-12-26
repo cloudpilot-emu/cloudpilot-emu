@@ -18,21 +18,21 @@ ReaddirContext::~ReaddirContext() {
     if (status == Status::more) f_closedir(&dir);
 }
 
-ReaddirContext::Status ReaddirContext::Next() {
-    if (status != Status::more) return status;
+long ReaddirContext::Next() {
+    if (status != Status::more) return static_cast<long>(status);
 
     err = f_readdir(&dir, &filinfo);
     if (err != FR_OK) {
         f_closedir(&dir);
-        return status = Status::error;
+        return static_cast<long>(status = Status::error);
     }
 
     if (filinfo.fname[0] == '\0') {
         f_closedir(&dir);
-        return status = Status::done;
+        return static_cast<long>(status = Status::done);
     }
 
-    return status;
+    return static_cast<long>(status);
 }
 
 const char* ReaddirContext::GetPath() const { return path.c_str(); }
