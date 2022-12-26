@@ -1,13 +1,21 @@
 #include "VfsCli.h"
 
+#include <ctime>
 #include <fstream>
 #include <iostream>
 #include <memory>
 
+#include "ReaddirContext.h"
 #include "fatfs/diskio.h"
 #include "fatfs/ff.h"
 
 using namespace std;
+
+namespace {
+    string chomp(const string& s) {
+        return s.substr(0, !s.empty() && (s[s.length() - 1] == '\n') ? s.length() - 1 : s.length());
+    }
+}  // namespace
 
 VfsCli::VfsCli(const std::string& imageFile) : imageFile(imageFile) {}
 
@@ -71,26 +79,25 @@ bool VfsCli::Run() {
         return false;
     }
 
-    DIR dir;
-    res = f_opendir(&dir, "/Palm");
-    if (res != FR_OK) {
-        cout << "failed to open /Palm: " << res << endl;
-        return false;
+    ReaddirContext readdirContext("/Palm/Launcher");
+
+    while (static_cast<ReaddirContext::Status>(readdirContext.GetStatus()) ==
+           ReaddirContext::Status::more) {
+        time_t timestamp = readdirContext.GetTSModified();
+        tm* calendar = localtime(&timestamp);
+
+        cout << left << (readdirContext.IsEntryDirectory() ? "[D] " : "[F] ") << setw(33)
+             << string(readdirContext.GetEntryName()).substr(0, 32) << setw(10)
+             << readdirContext.GetSize() << setw(0)
+             << string(calendar ? chomp(asctime(calendar)) : "") << endl;
+
+        readdirContext.Next();
     }
 
-    cout << endl;
-
-    FILINFO filinfo;
-    while (true) {
-        res = f_readdir(&dir, &filinfo);
-        if (res != FR_OK) {
-            cout << "failed to read dir: " << res << endl;
-            return false;
-        }
-
-        if (filinfo.fname[0] == '\0') break;
-
-        cout << filinfo.fname << endl;
+    if (static_cast<ReaddirContext::Status>(readdirContext.GetStatus()) ==
+        ReaddirContext::Status::error) {
+        cout << "readdir failed for " << readdirContext.GetPath() << ": "
+             << readdirContext.GetErrorDescription() << endl;
     }
 
     return true;

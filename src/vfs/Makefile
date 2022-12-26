@@ -76,7 +76,8 @@ SOURCE_C = \
 	fatfs/fattime.c
 
 SOURCE_CPP = \
-	fatfs/diskio.cpp
+	fatfs/diskio.cpp \
+	ReaddirContext.cpp
 
 SOURCE_TEST =
 
