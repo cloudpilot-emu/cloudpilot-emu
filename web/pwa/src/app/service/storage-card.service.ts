@@ -14,6 +14,7 @@ import { Session } from '@pwa/model/Session';
 import { SessionService } from '@pwa/service/session.service';
 import { SnapshotService } from '@pwa/service/snapshot.service';
 import { StorageService } from '@pwa/service/storage.service';
+import { VfsService } from './vfs.service';
 import { v4 as uuid } from 'uuid';
 
 export enum NewCardSize {
@@ -90,7 +91,8 @@ export class StorageCardService {
         private snapshotService: SnapshotService,
         private alertService: AlertService,
         private errorService: ErrorService,
-        private fileService: FileService
+        private fileService: FileService,
+        private vfsService: VfsService
     ) {
         this.updateCardsFromDB().then(() => (this.loading = false));
 
@@ -156,72 +158,12 @@ export class StorageCardService {
         this.updateCardsFromDB();
     }
 
-    async insertCard(id: number): Promise<void> {
-        if (await this.cardIsMounted(id)) throw new Error('card already mounted');
+    insertCard(id: number): Promise<void> {
+        return this.claimCard(id, 'insert');
+    }
 
-        let card = await this.getCard(id);
-        if (!card) throw new Error(`no card with id ${id}`);
-
-        let fsckContext: FsckContext | undefined;
-        let mountNow = true;
-
-        if (!card.dontFsckAutomatically) {
-            if (card.status === StorageCardStatus.dirty) {
-                fsckContext = await this.fsckCard(id);
-
-                if (fsckContext.getResult() === FsckResult.fixed) {
-                    mountNow = false;
-
-                    await this.alertService.message(
-                        'Filesystem errors',
-                        'The filesystem on this card contains errors that have to fixed before it can be inserted. Do you want to fix them now?',
-                        { 'Fix now': () => (mountNow = true) },
-                        'Cancel'
-                    );
-
-                    if (!mountNow) return;
-                    await this.applyFsckResult(card.id, fsckContext);
-                }
-
-                card = await this.getCard(id);
-                if (!card) throw new Error(`no card with id ${id}`);
-            }
-
-            switch (card.status) {
-                case StorageCardStatus.clean:
-                case StorageCardStatus.unformatted:
-                    break;
-
-                case StorageCardStatus.dirty:
-                    await this.alertService.message(
-                        'Card requires check',
-                        'This card needs to be checked before it can be inserted.'
-                    );
-                    return;
-
-                case StorageCardStatus.unfixable:
-                    mountNow = false;
-
-                    await this.alertService.message(
-                        'Uncorrectable errors',
-                        'The filesystem on this card contains uncorrectable errors. Writing could cause further damage. Do you want to insert it nevertheless?',
-                        { 'Insert card': () => (mountNow = true) },
-                        'Cancel'
-                    );
-
-                    if (!mountNow) return;
-                    break;
-
-                default:
-                    throw new Error('unreachable: bad card status');
-            }
-        }
-
-        try {
-            await this.mountCard(id, fsckContext?.getImageData());
-        } catch (e) {
-            this.errorService.fatalBug(e instanceof Error ? e.message : 'mount failed');
-        }
+    attachCardToVfs(id: number): Promise<void> {
+        return this.claimCard(id, 'vfs');
     }
 
     async loadCard(cardId: number, data?: Uint32Array): Promise<StorageCard> {
@@ -404,6 +346,101 @@ export class StorageCardService {
 
     isLoading(): boolean {
         return this.loading;
+    }
+
+    private async claimCard(id: number, action: 'insert' | 'vfs'): Promise<void> {
+        if (await this.cardIsMounted(id)) throw new Error('card already mounted');
+
+        let card = await this.getCard(id);
+        if (!card) throw new Error(`no card with id ${id}`);
+
+        await this.vfsService.releaseCard(id);
+
+        let fsckContext: FsckContext | undefined;
+        let mountNow = true;
+        let mountReadonly = false;
+
+        if (!card.dontFsckAutomatically) {
+            if (card.status === StorageCardStatus.dirty) {
+                fsckContext = await this.fsckCard(id);
+
+                if (fsckContext.getResult() === FsckResult.fixed) {
+                    mountNow = false;
+
+                    await this.alertService.message(
+                        'Filesystem errors',
+                        `The filesystem on this card contains errors that have to fixed before it can be ${
+                            action === 'insert' ? 'inserted' : 'browsed'
+                        }. Do you want to fix them now?`,
+                        { 'Fix now': () => (mountNow = true) },
+                        'Cancel'
+                    );
+
+                    if (!mountNow) return;
+                    await this.applyFsckResult(card.id, fsckContext);
+                }
+
+                card = await this.getCard(id);
+                if (!card) throw new Error(`no card with id ${id}`);
+            }
+
+            switch (card.status) {
+                case StorageCardStatus.clean:
+                    break;
+
+                case StorageCardStatus.unformatted:
+                    if (action === 'vfs') {
+                        this.alertService.message(
+                            'Card unformatted',
+                            'This card is unformatted and cannot be browsed. Insert it into a device and format it.'
+                        );
+
+                        return;
+                    }
+
+                case StorageCardStatus.dirty:
+                    await this.alertService.message(
+                        'Card requires check',
+                        `This card needs to be checked before it can be ${
+                            action === 'insert' ? 'inserted' : 'browsed'
+                        }.`
+                    );
+                    return;
+
+                case StorageCardStatus.unfixable:
+                    mountNow = false;
+                    mountReadonly = true;
+
+                    await this.alertService.message(
+                        'Uncorrectable errors',
+                        `The filesystem on this card contains uncorrectable errors. ${
+                            action === 'insert'
+                                ? 'Writing could cause further damage. Do you want to insert it nevertheless?'
+                                : 'The card will be mounted read-only in order to prevent further damage.'
+                        }`,
+                        { 'Insert card': () => (mountNow = true) },
+                        'Cancel'
+                    );
+
+                    if (!mountNow) return;
+                    break;
+
+                default:
+                    throw new Error('unreachable: bad card status');
+            }
+        }
+
+        try {
+            if (action === 'insert') {
+                if (!(await this.mountCard(id, fsckContext?.getImageData()))) {
+                    this.alertService.message('Failed to mount card', 'The card could not be mounted for browsing.');
+                }
+            } else {
+                await this.vfsService.mountCardUnchecked(id, mountReadonly, fsckContext?.getImageData());
+            }
+        } catch (e) {
+            this.errorService.fatalBug(e instanceof Error ? e.message : 'mount failed');
+        }
     }
 
     private async updateCardsFromDB(): Promise<void> {

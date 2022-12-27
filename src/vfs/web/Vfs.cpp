@@ -10,7 +10,7 @@ using namespace std;
 
 namespace {
     const char* drivePrefix(unsigned int slot) {
-        static char* prefix = "0:";
+        static char prefix[3] = {'0', ':', '\0'};
         prefix[0] = '0' + (slot % 10);
 
         return prefix;

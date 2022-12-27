@@ -14,6 +14,7 @@ import { NewCardSize } from '@pwa/service/storage-card.service';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageCardService } from './../../service/storage-card.service';
 import { StorageService } from '@pwa/service/storage.service';
+import { VfsService } from './../../service/vfs.service';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
 
@@ -30,10 +31,9 @@ export class StoragePage {
         private fileService: FileService,
         private cloudpilotService: CloudpilotService,
         private alertService: AlertService,
-        private storageService: StorageService,
-        private loadingController: LoadingController,
         private actionSheetController: ActionSheetController,
-        private errorService: ErrorService
+        private errorService: ErrorService,
+        private vfsService: VfsService
     ) {}
 
     get cards(): Array<StorageCard> {
@@ -80,8 +80,23 @@ export class StoragePage {
 
     showHelp(): void {}
 
-    selectCard(card: StorageCard) {
-        console.log(`select ${card.name}`);
+    async selectCard(card: StorageCard) {
+        const session = this.storageCardService.mountedInSession(card.id);
+        if (session) {
+            this.alertService.message(
+                'Card is attached',
+                `This card needs to be ejected from session '${session.name}' before it can be browsed.`
+            );
+
+            return;
+        }
+
+        await this.vfsService.releaseCard();
+        await this.storageCardService.attachCardToVfs(card.id);
+
+        if (this.vfsService.currentCard()) {
+            console.log(await this.vfsService.readdir('/'));
+        }
     }
 
     async editCard(card: StorageCard) {

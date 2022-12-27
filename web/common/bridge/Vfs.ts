@@ -18,7 +18,7 @@ export interface FileEntry {
 
 export type ReaddirResult =
     | { error: ReaddirError.none; entries: Array<FileEntry> }
-    | { error: Omit<ReaddirError, 'none'>; reason: string };
+    | { error: ReaddirError.no_such_directory | ReaddirError.unknown; reason: string };
 
 export class Vfs {
     private constructor(private module: Module) {
@@ -54,8 +54,16 @@ export class Vfs {
         return this.module.HEAPU32.subarray(ptr >>> 2, (ptr + size) >>> 2);
     }
 
+    GetImageInSlot(slot: number): Uint32Array | undefined {
+        const ptr = this.module.getPointer(this.vfsNative.GetImage(slot));
+        const size = this.vfsNative.GetSize(slot);
+        if (ptr === 0 || size === 0) return undefined;
+
+        return this.module.HEAPU32.subarray(ptr >>> 2, (ptr + size) >>> 2);
+    }
+
     Readdir(path: string): ReaddirResult {
-        const context = new this.module.ReaddirContext();
+        const context = new this.module.ReaddirContext(path);
 
         try {
             const entries: Array<FileEntry> = [];
@@ -67,11 +75,18 @@ export class Vfs {
                     modifiedTS: context.GetEntryModifiedTS(),
                     isDirectory: context.IsEntryDirectory(),
                 });
+
+                context.Next();
             }
 
             if (context.GetStatus() === ReaddirStatus.error) {
                 console.warn(`readdir failed: ${context.GetErrorDescription()}`);
-                return { error: context.GetError(), reason: context.GetErrorDescription() };
+                const error = context.GetError();
+
+                return {
+                    error: error === ReaddirError.none ? ReaddirError.unknown : error,
+                    reason: context.GetErrorDescription(),
+                };
             }
 
             return { error: ReaddirError.none, entries };
