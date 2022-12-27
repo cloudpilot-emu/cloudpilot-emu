@@ -2,7 +2,7 @@
 // the webpack build is unable to resolve emscripten with a simple ES6 style import.
 //
 // tslint:disable-next-line: no-reference
-/// <reference path="../node_modules/@types/emscripten/index.d.ts"/>
+/// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 
 import createModule, {
     FsckContext as FsckNativeContext,

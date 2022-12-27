@@ -1,11 +1,11 @@
-import { ReaddirContext, ReaddirError, ReaddirStatus, Vfs as VfsNative } from './../../src/vfs/web/binding/binding.d';
-import createModule, { Module } from '@native-vfs/index';
-
 // I am not sure why the ambient import is required here --- tsc does fine without it, but
 // the webpack build is unable to resolve emscripten with a simple ES6 style import.
 //
 // tslint:disable-next-line: no-reference
-/// <reference path="../node_modules/@types/emscripten/index.d.ts"/>
+/// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
+
+import { ReaddirError, ReaddirStatus, Vfs as VfsNative } from '@native-vfs/index';
+import createModule, { Module } from '@native-vfs/index';
 
 export { ReaddirError } from '@native-vfs/index';
 

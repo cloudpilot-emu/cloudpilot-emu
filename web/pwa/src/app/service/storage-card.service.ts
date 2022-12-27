@@ -1,4 +1,4 @@
-import { FsckContext, FsckResult, mkfs } from '@common/FSTools';
+import { FsckContext, FsckResult, mkfs } from '@common/bridge/FSTools';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { AlertService } from './alert.service';

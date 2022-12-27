@@ -1,4 +1,4 @@
-import { Cloudpilot, SessionImage } from '@common/Cloudpilot';
+import { Cloudpilot, SessionImage } from '@common/bridge/Cloudpilot';
 
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { DeviceId } from '@common/model/DeviceId';

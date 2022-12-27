@@ -6,7 +6,7 @@ import { AlertService } from './alert.service';
 import { BootstrapService } from './bootstrap-service';
 import { ButtonService } from './button.service';
 import { ClipboardService } from './clipboard.service';
-import { Cloudpilot } from '@common/Cloudpilot';
+import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { CloudpilotService } from './cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';

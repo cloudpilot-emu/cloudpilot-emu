@@ -1,5 +1,5 @@
 import { AnimationFrameScheduler, Scheduler, SchedulerKind } from '@common/helper/scheduler';
-import { Cloudpilot, PalmButton, PwmUpdate } from '@common/Cloudpilot';
+import { Cloudpilot, PalmButton, PwmUpdate } from '@common/bridge/Cloudpilot';
 import { GRAYSCALE_PALETTE_HEX, GRAYSCALE_PALETTE_RGBA } from '@common/helper/palette';
 import { deviceDimensions, isColor } from '@common/helper/deviceProperties';
 

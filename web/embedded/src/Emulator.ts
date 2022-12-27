@@ -1,6 +1,6 @@
 import * as skin from '@common/skin';
 
-import { Cloudpilot, ZipfileWalkerState } from '@common/Cloudpilot';
+import { Cloudpilot, ZipfileWalkerState } from '@common/bridge/Cloudpilot';
 
 import { Button } from './index';
 import { DeviceId } from '@common/model/DeviceId';

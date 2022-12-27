@@ -7,7 +7,7 @@ import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { Session } from '@pwa/model/Session';
-import { SessionImage } from '@common/Cloudpilot';
+import { SessionImage } from '@common/bridge/Cloudpilot';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { StorageService } from './storage.service';
 

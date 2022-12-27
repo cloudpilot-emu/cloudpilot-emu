@@ -1,4 +1,4 @@
-import { Cloudpilot, PalmButton } from '@common/Cloudpilot';
+import { Cloudpilot, PalmButton } from '@common/bridge/Cloudpilot';
 
 import { Injectable } from '@angular/core';
 

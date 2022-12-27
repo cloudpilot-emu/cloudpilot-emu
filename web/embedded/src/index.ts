@@ -1,6 +1,6 @@
 import { Emulator, EmulatorImpl } from './Emulator';
 
-import { Cloudpilot } from '@common/Cloudpilot';
+import { Cloudpilot } from '@common/bridge/Cloudpilot';
 
 export { DeviceId } from '@common/model/DeviceId';
 export { Button } from './button';

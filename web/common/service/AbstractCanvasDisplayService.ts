@@ -4,7 +4,7 @@ import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { Event } from 'microevent.ts';
 import { GRAYSCALE_PALETTE_HEX } from '@common/helper/palette';
-import { PalmButton } from '@common/Cloudpilot';
+import { PalmButton } from '@common/bridge/Cloudpilot';
 import { PrerenderedImage } from '@common/helper/image';
 import { ScreenSize } from '@common/model/Dimensions';
 import { Skin } from '@common/skin/loader';

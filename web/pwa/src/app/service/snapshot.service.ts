@@ -11,7 +11,7 @@ import {
 import { Injectable, NgZone } from '@angular/core';
 import { complete, compressPage } from './storage/util';
 
-import { Cloudpilot } from '@common/Cloudpilot';
+import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';

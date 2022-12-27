@@ -7,7 +7,7 @@ import { CardSupportLevel } from '@native/cloudpilot_web';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { Component } from '@angular/core';
 import { ErrorService } from './../../service/error.service';
-import { FsckContext } from '@common/FSTools';
+import { FsckContext } from '@common/bridge/FSTools';
 import { FsckResult } from '@native-fstools/fstools_web';
 import { NewCardDialogComponent } from './new-card-dialog/new-card-dialog.component';
 import { NewCardSize } from '@pwa/service/storage-card.service';

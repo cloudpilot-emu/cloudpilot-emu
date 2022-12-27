@@ -1,4 +1,4 @@
-import { Cloudpilot, SuspendKind, VoidPtr } from '@common/Cloudpilot';
+import { Cloudpilot, SuspendKind, VoidPtr } from '@common/bridge/Cloudpilot';
 import { Injectable, NgZone } from '@angular/core';
 
 import { AlertService } from './alert.service';

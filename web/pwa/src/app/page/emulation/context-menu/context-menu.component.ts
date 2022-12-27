@@ -20,7 +20,7 @@ import { EmulationStateService } from '@pwa/service/emulation-state.service';
 import { ErrorService } from './../../../service/error.service';
 import { FsckResult } from '@native-fstools/fstools_web';
 import { KvsService } from '@pwa/service/kvs.service';
-import { PalmButton } from '@common/Cloudpilot';
+import { PalmButton } from '@common/bridge/Cloudpilot';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
 import { SessionService } from '@pwa/service/session.service';
 import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
