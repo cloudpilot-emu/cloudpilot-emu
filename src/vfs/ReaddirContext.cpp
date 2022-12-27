@@ -18,21 +18,21 @@ ReaddirContext::~ReaddirContext() {
     if (status == Status::more) f_closedir(&dir);
 }
 
-long ReaddirContext::Next() {
-    if (status != Status::more) return static_cast<long>(status);
+int ReaddirContext::Next() {
+    if (status != Status::more) return static_cast<int>(status);
 
     err = f_readdir(&dir, &filinfo);
     if (err != FR_OK) {
         f_closedir(&dir);
-        return static_cast<long>(status = Status::error);
+        return static_cast<int>(status = Status::error);
     }
 
     if (filinfo.fname[0] == '\0') {
         f_closedir(&dir);
-        return static_cast<long>(status = Status::done);
+        return static_cast<int>(status = Status::done);
     }
 
-    return static_cast<long>(status);
+    return static_cast<int>(status);
 }
 
 const char* ReaddirContext::GetPath() const { return path.c_str(); }
@@ -49,13 +49,13 @@ bool ReaddirContext::IsEntryDirectory() const {
     return filinfo.fattrib & AM_DIR;
 }
 
-unsigned long ReaddirContext::GetSize() const {
+unsigned int ReaddirContext::GetEntrySize() const {
     if (status == Status::error) return 0;
 
     return filinfo.fsize;
 }
 
-unsigned long ReaddirContext::GetTSModified() const {
+unsigned int ReaddirContext::GetEntryModifiedTS() const {
     if (status == Status::error) return 0;
 
     time_t rawtime;
@@ -77,18 +77,18 @@ unsigned long ReaddirContext::GetTSModified() const {
     return mktime(&calendar);
 }
 
-long ReaddirContext::GetStatus() const { return static_cast<long>(status); }
+int ReaddirContext::GetStatus() const { return static_cast<int>(status); }
 
-long ReaddirContext::GetError() const {
+int ReaddirContext::GetError() const {
     switch (err) {
         case FR_OK:
-            return static_cast<long>(Error::none);
+            return static_cast<int>(Error::none);
 
         case FR_NO_PATH:
-            return static_cast<long>(Error::no_such_directory);
+            return static_cast<int>(Error::no_such_directory);
 
         default:
-            return static_cast<long>(Error::unknown);
+            return static_cast<int>(Error::unknown);
     }
 }
 

@@ -8,18 +8,18 @@
 
 using namespace std;
 
-FsckContext::FsckContext(unsigned long blockCount)
+FsckContext::FsckContext(unsigned int blockCount)
     : image(new uint8_t[blockCount * CardImage::BLOCK_SIZE], blockCount) {}
 
 void* FsckContext::GetImage() { return image.RawData(); }
 
 void* FsckContext::GetDirtyPages() { return image.DirtyPages(); }
 
-unsigned long FsckContext::GetImageSize() const {
+unsigned int FsckContext::GetImageSize() const {
     return image.BlocksTotal() * CardImage::BLOCK_SIZE;
 }
 
-unsigned long FsckContext::Fsck() {
+unsigned int FsckContext::Fsck() {
     if (result != FsckResult::pending) return static_cast<unsigned int>(result);
     result = FsckResult::invalid;
 
@@ -39,7 +39,7 @@ unsigned long FsckContext::Fsck() {
     return static_cast<unsigned int>(result);
 }
 
-unsigned long FsckContext::GetResult() const {
+unsigned int FsckContext::GetResult() const {
     return static_cast<unsigned int>(result);
     ;
 }

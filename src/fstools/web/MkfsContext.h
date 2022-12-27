@@ -9,10 +9,10 @@ class MkfsContext {
    public:
     ~MkfsContext();
 
-    bool Mkfs(unsigned long size, const char* label);
+    bool Mkfs(unsigned int size, const char* label);
 
     void* GetImage() const;
-    unsigned long GetImageSize() const;
+    unsigned int GetImageSize() const;
 
    private:
     CardImage* image{nullptr};

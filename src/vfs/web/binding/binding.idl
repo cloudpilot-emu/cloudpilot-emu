@@ -4,6 +4,15 @@ interface Vfs {
     VoidPtr Malloc(long size);
     void Free(VoidPtr buffer);
     VoidPtr Nullptr();
+
+    void AllocateImage(long blockCount);
+    boolean MountImage(long slot);
+    void UnmountImage(long slot);
+
+    long GetPendingImageSize();
+    long GetSize(long slot);
+    VoidPtr GetPendingImage();
+    VoidPtr GetImage(long slot);
 };
 
 interface ReaddirContext {
@@ -14,8 +23,8 @@ interface ReaddirContext {
     [Const] DOMString GetEntryName();
 
     boolean IsEntryDirectory();
-    long GetSize();
-    long GetTSModified();
+    long GetEntrySize();
+    long GetEntryModifiedTS();
 
     long GetStatus();
     long GetError();

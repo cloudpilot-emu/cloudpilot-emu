@@ -9,9 +9,9 @@
 using namespace std;
 
 namespace {
-    const char* drivePrefix(unsigned long slot) {
-        static char prefix[3];
-        snprintf(prefix, 3, "%ld:", slot);
+    const char* drivePrefix(unsigned int slot) {
+        static char* prefix = "0:";
+        prefix[0] = '0' + (slot % 10);
 
         return prefix;
     }
@@ -21,18 +21,18 @@ Vfs::~Vfs() {
     for (int i = 0; i < FF_VOLUMES; i++) UnmountImage(i);
 }
 
-void* Vfs::Malloc(long size) { return malloc(size); }
+void* Vfs::Malloc(int size) { return malloc(size); }
 
 void Vfs::Free(void* buffer) { free(buffer); }
 
 void* Vfs::Nullptr() { return nullptr; }
 
-void Vfs::AllocateImage(unsigned long blockCount) {
+void Vfs::AllocateImage(unsigned int blockCount) {
     pendingImageSize = blockCount * CardImage::BLOCK_SIZE;
     pendingImage = make_unique<uint8_t[]>(pendingImageSize);
 }
 
-bool Vfs::MountImage(unsigned long slot) {
+bool Vfs::MountImage(unsigned int slot) {
     if (slot >= FF_VOLUMES) {
         cerr << "failed to mount: invalid vfs slot " << slot << endl;
         return false;
@@ -67,7 +67,7 @@ bool Vfs::MountImage(unsigned long slot) {
     return true;
 }
 
-void Vfs::UnmountImage(unsigned long slot) {
+void Vfs::UnmountImage(unsigned int slot) {
     if (slot >= FF_VOLUMES) return;
 
     f_unmount(drivePrefix(slot));
@@ -77,9 +77,9 @@ void Vfs::UnmountImage(unsigned long slot) {
     cardImages[slot].release();
 }
 
-long Vfs::GetPendingImageSize() const { return pendingImage ? pendingImageSize : -1; }
+int Vfs::GetPendingImageSize() const { return pendingImage ? pendingImageSize : -1; }
 
-long Vfs::GetSize(long slot) const {
+int Vfs::GetSize(int slot) const {
     if (slot >= FF_VOLUMES || !cardImages[slot]) return -1;
 
     return cardImages[slot]->BlocksTotal() * CardImage::BLOCK_SIZE;
@@ -87,7 +87,7 @@ long Vfs::GetSize(long slot) const {
 
 void* Vfs::GetPendingImage() const { return pendingImage.get(); }
 
-void* Vfs::GetImage(long slot) const {
+void* Vfs::GetImage(int slot) const {
     if (slot >= FF_VOLUMES || !cardImages[slot]) return nullptr;
 
     return cardImages[slot].get();

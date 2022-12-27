@@ -48,6 +48,11 @@
                 "output": "."
               },
               {
+                "glob": "vfs_web.wasm",
+                "input": "../src/vfs",
+                "output": "."
+              },
+              {
                 "glob": "CHANGELOG.md",
                 "input": "..",
                 "output": "assets/doc"

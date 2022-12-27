@@ -13,23 +13,23 @@ enum class CardSupportLevel : int { unsupported = 0, sdOnly = 1, sdAndMs = 2 };
 
 class Cloudpilot {
    public:
-    void* Malloc(long size);
+    void* Malloc(int size);
     void Free(void* buffer);
     void* Nullptr();
 
-    bool InitializeSession(void* buffer, long size, const char* deviceType);
+    bool InitializeSession(void* buffer, int size, const char* deviceType);
 
-    long GetCyclesPerSecond();
-    long RunEmulation(long cycles);
+    int GetCyclesPerSecond();
+    int RunEmulation(int cycles);
     void SetClockFactor(double clockFactor);
 
     Frame& CopyFrame();
     bool IsScreenDirty();
     void MarkScreenClean();
 
-    long MinMemoryForDevice(string id);
-    long FramebufferSizeForDevice(string id);
-    long TotalMemoryForDevice(string id);
+    int MinMemoryForDevice(string id);
+    int FramebufferSizeForDevice(string id);
+    int TotalMemoryForDevice(string id);
 
     void QueuePenMove(int x, int y);
     void QueuePenUp();

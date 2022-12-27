@@ -2,7 +2,7 @@
 
 #include <cstdlib>
 
-void* FSTools::Malloc(long size) { return malloc(size); }
+void* FSTools::Malloc(int size) { return malloc(size); }
 
 void FSTools::Free(void* buffer) { free(buffer); }
 

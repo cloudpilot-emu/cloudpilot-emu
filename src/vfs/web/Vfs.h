@@ -12,18 +12,18 @@ class Vfs {
    public:
     ~Vfs();
 
-    void* Malloc(long size);
+    void* Malloc(int size);
     void Free(void* buffer);
     void* Nullptr();
 
-    void AllocateImage(unsigned long blockCount);
-    bool MountImage(unsigned long slot);
-    void UnmountImage(unsigned long slot);
+    void AllocateImage(unsigned int blockCount);
+    bool MountImage(unsigned int slot);
+    void UnmountImage(unsigned int slot);
 
-    long GetPendingImageSize() const;
-    long GetSize(long slot) const;
+    int GetPendingImageSize() const;
+    int GetSize(int slot) const;
     void* GetPendingImage() const;
-    void* GetImage(long slot) const;
+    void* GetImage(int slot) const;
 
    private:
     std::unique_ptr<CardImage> cardImages[FF_VOLUMES];

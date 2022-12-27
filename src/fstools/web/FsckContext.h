@@ -8,14 +8,14 @@ class FsckContext {
     enum class FsckResult { pending = 0, ok = 1, fixed = 2, invalid = 3, unfixable = 4 };
 
    public:
-    FsckContext(unsigned long blockCount);
+    FsckContext(unsigned int blockCount);
 
     void *GetImage();
     void *GetDirtyPages();
-    unsigned long GetImageSize() const;
+    unsigned int GetImageSize() const;
 
-    unsigned long Fsck();
-    unsigned long GetResult() const;
+    unsigned int Fsck();
+    unsigned int GetResult() const;
 
    private:
     CardImage image;

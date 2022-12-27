@@ -3,7 +3,7 @@
 
 class FSTools {
    public:
-    void* Malloc(long size);
+    void* Malloc(int size);
     void Free(void* buffer);
     void* Nullptr();
 };

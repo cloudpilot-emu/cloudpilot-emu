@@ -24,6 +24,7 @@
       "@common/*": ["common/*"],
       "@native/*": ["../src/cloudpilot/*"],
       "@native-fstools/*": ["../src/fstools/*"],
+      "@native-vfs/*": ["../src/vfs/*"],
       "@pwa/*": ["pwa/src/app/*"],
       "@embedded/*": ["embedded/src/*"]
     }

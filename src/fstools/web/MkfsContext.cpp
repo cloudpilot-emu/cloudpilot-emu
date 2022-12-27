@@ -9,7 +9,7 @@
 
 using namespace std;
 
-bool MkfsContext::Mkfs(unsigned long size, const char* label) {
+bool MkfsContext::Mkfs(unsigned int size, const char* label) {
     if (image) {
         cout << "double invocation of Mkfs" << endl;
         return false;
@@ -35,7 +35,7 @@ bool MkfsContext::Mkfs(unsigned long size, const char* label) {
 
 void* MkfsContext::GetImage() const { return image ? image->RawData() : nullptr; }
 
-unsigned long MkfsContext::GetImageSize() const {
+unsigned int MkfsContext::GetImageSize() const {
     return image ? image->BlocksTotal() * CardImage::BLOCK_SIZE : 0;
 }
 

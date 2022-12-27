@@ -19,7 +19,7 @@
 #include "SuspendManager.h"
 
 namespace {
-    unique_ptr<EmROMReader> createReader(void* buffer, long size) {
+    unique_ptr<EmROMReader> createReader(void* buffer, int size) {
         auto reader = make_unique<EmROMReader>(buffer, size);
 
         if (!reader->Read()) {
@@ -63,7 +63,7 @@ namespace {
     }
 }  // namespace
 
-void* Cloudpilot::Malloc(long size) { return ::malloc(size); }
+void* Cloudpilot::Malloc(int size) { return ::malloc(size); }
 
 void Cloudpilot::Free(void* buffer) {
     if (buffer) ::free(buffer);
@@ -71,7 +71,7 @@ void Cloudpilot::Free(void* buffer) {
 
 void* Cloudpilot::Nullptr() { return nullptr; }
 
-bool Cloudpilot::InitializeSession(void* buffer, long size, const char* deviceType) {
+bool Cloudpilot::InitializeSession(void* buffer, int size, const char* deviceType) {
     auto reader = createReader(buffer, size);
 
     if (!reader) {
@@ -103,9 +103,9 @@ bool Cloudpilot::InitializeSession(void* buffer, long size, const char* deviceTy
     return true;
 }
 
-long Cloudpilot::GetCyclesPerSecond() { return gSession->GetClocksPerSecond(); }
+int Cloudpilot::GetCyclesPerSecond() { return gSession->GetClocksPerSecond(); }
 
-long Cloudpilot::RunEmulation(long cycles) { return gSession->RunEmulation(cycles); }
+int Cloudpilot::RunEmulation(int cycles) { return gSession->RunEmulation(cycles); }
 
 void Cloudpilot::SetClockFactor(double clockFactor) { gSession->SetClockFactor(clockFactor); }
 
@@ -123,19 +123,19 @@ int Cloudpilot::GetOSVersion() { return gSystemState.OSVersion(); }
 
 void Cloudpilot::MarkScreenClean() { gSystemState.MarkScreenClean(); }
 
-long Cloudpilot::MinMemoryForDevice(string id) {
+int Cloudpilot::MinMemoryForDevice(string id) {
     EmDevice device(id);
 
     return device.IsValid() ? device.MinRAMSize() : -1;
 }
 
-long Cloudpilot::FramebufferSizeForDevice(string id) {
+int Cloudpilot::FramebufferSizeForDevice(string id) {
     EmDevice device(id);
 
     return device.IsValid() ? device.FramebufferSize() : -1;
 }
 
-long Cloudpilot::TotalMemoryForDevice(string id) {
+int Cloudpilot::TotalMemoryForDevice(string id) {
     EmDevice device(id);
 
     return device.IsValid() ? device.TotalMemorySize() : -1;

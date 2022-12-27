@@ -14,6 +14,7 @@ export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'> {
     ReaddirContext: { new (): ReaddirContext };
 
     destroy(vfs: Vfs): void;
+    destroy(context: ReaddirContext): void;
 
     instantiateWasm(
         imports: WebAssembly.Imports,
