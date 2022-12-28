@@ -230,6 +230,8 @@ export class StorageCardService {
                 throw new Error(`no card with id ${cardId}`);
             }
 
+            await this.vfsService.releaseCard(cardId);
+
             const context = await FsckContext.create(card.size);
             await this.storageService.loadCardData(card.id, context.getImageData());
 
