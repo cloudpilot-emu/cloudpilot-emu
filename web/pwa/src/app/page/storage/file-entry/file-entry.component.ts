@@ -11,7 +11,12 @@ export class FileEntryComponent {
     constructor() {}
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async onContextmenu(e: MouseEvent): Promise<void> {}
+    async onContextmenu(e: MouseEvent): Promise<void> {
+        e.stopPropagation();
+        e.preventDefault();
+
+        this.interaction.emit();
+    }
 
     get color(): string | undefined {
         if (this.touched) return 'light';

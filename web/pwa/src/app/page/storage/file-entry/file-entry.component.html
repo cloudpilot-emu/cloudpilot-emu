@@ -21,7 +21,7 @@
 
     </ion-item-options>
 
-    <ion-item [color]="color" (click)="selectEntry.emit(); interaction.emit()" [detail]="entry?.isDirectory">
+    <ion-item [color]="color" (click)="selectEntry.emit(); interaction.emit()" [detail]="entry?.isDirectory" [style.opacity]="touched ? 0.99999 : 1">
         <ion-icon *ngIf="entry?.isDirectory" name="folder-outline" slot="start"></ion-icon>
         <ion-icon *ngIf="!entry?.isDirectory" name="document-outline" slot="start"></ion-icon>
         <ion-label>
