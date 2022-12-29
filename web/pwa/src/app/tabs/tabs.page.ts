@@ -1,9 +1,7 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
-
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
+import { Component } from '@angular/core';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
 import { Router } from '@angular/router';
-import { SessionService } from './../service/session.service';
 
 @Component({
     selector: 'app-tabs',

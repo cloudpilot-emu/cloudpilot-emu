@@ -138,18 +138,17 @@ export class StorageCardService {
             dontFsckAutomatically,
         };
         const data32 = new Uint32Array(file.content.buffer, file.content.byteOffset, file.content.byteLength >>> 2);
-        let card: StorageCard;
 
         const loader = await this.loadingController.create({ message: 'Importing...' });
         try {
             if (dontFsckAutomatically) {
                 await loader.present();
-                card = await this.storageService.importStorageCard(cardWithoutId, data32);
+                await this.storageService.importStorageCard(cardWithoutId, data32);
             } else {
                 const [fixedData32, checkedCardWithoutId] = await this.fsckNewCard(data32, cardWithoutId);
 
                 await loader.present();
-                card = await this.storageService.importStorageCard(checkedCardWithoutId, fixedData32);
+                await this.storageService.importStorageCard(checkedCardWithoutId, fixedData32);
             }
         } finally {
             loader.dismiss();

@@ -58,6 +58,7 @@ const markedOptionsFactory = (): MarkedOptions => {
     bootstrap: [AppComponent],
 })
 export class AppModule {
+    /* eslint-disable @typescript-eslint/no-unused-vars */
     constructor(
         storageService: StorageService,
         emulationService: EmulationService,
@@ -67,4 +68,5 @@ export class AppModule {
         updateService: UpdateService,
         autoEnableAudioService: AutoEnableAudioService
     ) {}
+    /* eslint-enable @typescript-eslint/no-unused-vars */
 }

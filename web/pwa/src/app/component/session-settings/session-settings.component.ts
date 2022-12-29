@@ -123,7 +123,10 @@ export class SessionSettingsComponent implements OnInit {
             }),
             manageHotsyncName: new UntypedFormControl(!this.session.dontManageHotsyncName),
             hotsyncName: new UntypedFormControl(this.session.hotsyncName || ''),
-            device: new UntypedFormControl({ value: this.session.device, disabled: this.availableDevices.length === 1 }),
+            device: new UntypedFormControl({
+                value: this.session.device,
+                disabled: this.availableDevices.length === 1,
+            }),
             speed: new UntypedFormControl(
                 (this.session.speed || 1) >= 1 ? (this.session.speed || 1) - 1 : 1 - 1 / this.session.speed!
             ),

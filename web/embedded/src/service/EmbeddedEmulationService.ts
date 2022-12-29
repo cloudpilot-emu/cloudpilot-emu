@@ -98,6 +98,7 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
         return false;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected override onAfterAdvanceEmulation(timestamp: number, cycles: number): void {
         this.timesliceEvent.dispatch();
     }

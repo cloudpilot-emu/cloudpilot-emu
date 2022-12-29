@@ -97,8 +97,6 @@ export class AlertService {
     }
 
     async errorInNativeCode(reason: string) {
-        const haveCurrentSession = !!this.emulationState.getCurrentSession();
-
         const alert = await this.alertController.create({
             header: 'Error',
             message: `

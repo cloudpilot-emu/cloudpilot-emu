@@ -86,8 +86,6 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
             'rgba(200, 200, 200, 0.7)'
         );
 
-        const icon = await GAME_ICON_PRERENDERED(indicatorSize, indicatorSize);
-
         this.ctx.drawImage(
             await GAME_ICON_PRERENDERED(indicatorSize, indicatorSize),
             this.layout.screenLeft.frameCanvas +

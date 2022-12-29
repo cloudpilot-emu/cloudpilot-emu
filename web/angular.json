@@ -84,7 +84,8 @@
                 {
                   "replace": "pwa/src/environments/environment.ts",
                   "with": "pwa/src/environments/environment.prod.ts"
-                }, {
+                },
+                {
                   "replace": "pwa/src/revision.ts",
                   "with": "pwa/src/revision.gen.ts"
                 }
@@ -111,7 +112,8 @@
                 {
                   "replace": "pwa/src/environments/environment.ts",
                   "with": "pwa/src/environments/environment.preview.ts"
-                }, {
+                },
+                {
                   "replace": "pwa/src/revision.ts",
                   "with": "pwa/src/revision.gen.ts"
                 }
@@ -132,8 +134,7 @@
             "production": {
               "browserTarget": "app:build:production"
             },
-            "ci": {
-            }
+            "ci": {}
           }
         },
         "extract-i18n": {
@@ -177,21 +178,6 @@
             }
           }
         },
-        "e2e": {
-          "builder": "@angular-devkit/build-angular:protractor",
-          "options": {
-            "protractorConfig": "e2e/protractor.conf.js",
-            "devServerTarget": "app:serve"
-          },
-          "configurations": {
-            "production": {
-              "devServerTarget": "app:serve:production"
-            },
-            "ci": {
-              "devServerTarget": "app:serve:ci"
-            }
-          }
-        },
         "ionic-cordova-build": {
           "builder": "@ionic/angular-toolkit:cordova-build",
           "options": {
@@ -215,12 +201,23 @@
               "devServerTarget": "app:serve:production"
             }
           }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "pwa/**/*.ts",
+              "pwa/**/*.html"
+            ]
+          }
         }
       }
     }
   },
   "cli": {
     "schematicCollections": [
+      "@angular-eslint/schematics",
+      "@angular-eslint/schematics",
       "@ionic/angular-toolkit"
     ]
   },

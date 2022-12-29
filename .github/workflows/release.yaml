@@ -55,6 +55,9 @@ jobs:
       - name: Install node deps
         working-directory: web
         run: yarn install
+      - name: Lint
+        working-directory: web
+        run: yarn lint
       - name: Build Cloudpilot embedded
         working-directory: web
         run: CP_RELEASE=1 yarn dist-embedded

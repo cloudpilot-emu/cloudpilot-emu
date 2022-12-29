@@ -52,7 +52,7 @@ export class NewCardDialogComponent {
     };
 
     @Input()
-    private onCreate = (name: string, size: NewCardSize, dontFsckAutomatically: boolean) => undefined;
+    private onCreate: (name: string, size: NewCardSize, dontFsckAutomatically: boolean) => void = () => undefined;
 
     @Input()
     onCancel = () => undefined;

@@ -5,7 +5,7 @@ import {
     ModalController,
     PopoverController,
 } from '@ionic/angular';
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
 
 import { AlertService } from '@pwa/service/alert.service';
@@ -18,7 +18,6 @@ import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
 import { ErrorService } from './../../../service/error.service';
-import { FsckResult } from '@native-fstools/fstools_web';
 import { KvsService } from '@pwa/service/kvs.service';
 import { PalmButton } from '@common/bridge/Cloudpilot';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
@@ -26,7 +25,6 @@ import { SessionService } from '@pwa/service/session.service';
 import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
 import { SlotType } from '@common/model/SlotType';
 import { StorageCardService } from '@pwa/service/storage-card.service';
-import { StorageCardStatus } from '@pwa/model/StorageCard';
 import { StorageService } from '@pwa/service/storage.service';
 
 function rotate(oldOrientation: DeviceOrientation | undefined): DeviceOrientation {
@@ -54,7 +52,7 @@ function rotate(oldOrientation: DeviceOrientation | undefined): DeviceOrientatio
     templateUrl: './context-menu.component.html',
     styleUrls: ['./context-menu.component.scss'],
 })
-export class ContextMenuComponent implements OnInit {
+export class ContextMenuComponent {
     constructor(
         public emulationService: EmulationService,
         private emulationStateService: EmulationStateService,
@@ -76,8 +74,6 @@ export class ContextMenuComponent implements OnInit {
         private loadingController: LoadingController,
         private errorService: ErrorService
     ) {}
-
-    ngOnInit(): void {}
 
     async reset(): Promise<void> {
         this.popoverController.dismiss();
@@ -170,8 +166,6 @@ export class ContextMenuComponent implements OnInit {
     }
 
     get backupDisabled(): boolean {
-        const currentSession = this.emulationStateService.getCurrentSession();
-
         return (
             !this.emulationService.isRunning() ||
             this.emulationService.isPowerOff() ||

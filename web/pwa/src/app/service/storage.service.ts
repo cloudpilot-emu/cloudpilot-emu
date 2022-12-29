@@ -357,19 +357,21 @@ export class StorageService {
             if (data.length !== card.size >>> 2) throw new Error(`data size mismatch`);
 
             const pagesTotal = (card.size >>> 13) + (card.size % 8192 > 0 ? 1 : 0);
-            if ((pagesTotal >>> 3) + (pagesTotal % 8 > 0 ? 1 : 0) !== dirtyPages.length)
+            if ((pagesTotal >>> 3) + (pagesTotal % 8 > 0 ? 1 : 0) !== dirtyPages.length) {
                 throw new Error(`dirty pages size mismatch`);
+            }
 
             let iPage = 0;
             for (let i = 0; i < dirtyPages.length; i++) {
                 for (let mask = 1; mask < 0x0100; mask <<= 1) {
                     if (iPage >= pagesTotal) break;
 
-                    if (dirtyPages[i] & mask)
+                    if (dirtyPages[i] & mask) {
                         objectStoreStorage.put(data.subarray(iPage * 2048, (iPage + 1) * 2048).slice(), [
                             card.id,
                             iPage,
                         ]);
+                    }
 
                     iPage++;
                 }

@@ -17,7 +17,7 @@ export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
     onCancel = () => undefined;
 
     @Input()
-    private onSave = (update: Partial<CardSettings>) => undefined;
+    private onSave: (update: Partial<CardSettings>) => void = () => undefined;
 
     constructor(private storageCardService: StorageCardService) {}
 

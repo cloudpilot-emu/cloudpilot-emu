@@ -1,7 +1,6 @@
 import { Injectable, NgZone } from '@angular/core';
 
 import { Event } from 'microevent.ts';
-import { ModalController } from '@ionic/angular';
 
 @Injectable({
     providedIn: 'root',

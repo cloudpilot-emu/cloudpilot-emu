@@ -133,6 +133,7 @@
     "editor.codeActionsOnSave": {"source.organizeImports": true}
   },
   "typescript.tsdk": "./cloudpilot-ionic/node_modules/typescript/lib",
+  "eslint.workingDirectories": [{"directory": "web", "!cwd": false}],
   "cSpell.words": [
     "bytecode",
     "Clié",

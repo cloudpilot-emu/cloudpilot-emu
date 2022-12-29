@@ -14,7 +14,7 @@ import Url from 'url-parse';
 import { filenameForSession } from '@pwa/helper/filename';
 import { metadataForSession } from '@pwa/helper/metadata';
 
-// tslint:disable: no-bitwise
+/* eslint-disable no-bitwise */
 
 export interface FileDescriptor {
     name: string;

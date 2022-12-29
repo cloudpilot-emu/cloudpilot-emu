@@ -1,4 +1,4 @@
-import { ActionSheetController, AlertController, LoadingController, ModalController } from '@ionic/angular';
+import { ActionSheetController, AlertController, ModalController } from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 
@@ -13,7 +13,6 @@ import { NewCardDialogComponent } from './new-card-dialog/new-card-dialog.compon
 import { NewCardSize } from '@pwa/service/storage-card.service';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageCardService } from './../../service/storage-card.service';
-import { StorageService } from '@pwa/service/storage.service';
 import { VfsService } from './../../service/vfs.service';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';

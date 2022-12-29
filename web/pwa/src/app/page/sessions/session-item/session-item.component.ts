@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
+import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { IonItemSliding, PopoverController } from '@ionic/angular';
 
 import { ContextMenuComponent } from './../context-menu/context-menu.component';
@@ -44,7 +44,7 @@ export class SessionItemComponent {
                 },
                 onReset: () => {
                     popover.dismiss();
-                    this.reset.emit();
+                    this.resetSession.emit();
                 },
             },
         });
@@ -80,7 +80,7 @@ export class SessionItemComponent {
     delete = new EventEmitter<Session>();
 
     @Output()
-    reset = new EventEmitter<Session>();
+    resetSession = new EventEmitter<Session>();
 
     @Output()
     edit = new EventEmitter<Session>();

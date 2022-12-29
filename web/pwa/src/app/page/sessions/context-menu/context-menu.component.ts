@@ -1,11 +1,11 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
     selector: 'app-session-context-menu',
     templateUrl: './context-menu.component.html',
     styleUrls: ['./context-menu.component.scss'],
 })
-export class ContextMenuComponent implements OnInit {
+export class ContextMenuComponent {
     @Input()
     public onEdit: () => void = () => undefined;
 
@@ -19,6 +19,4 @@ export class ContextMenuComponent implements OnInit {
     public onReset: () => void = () => undefined;
 
     constructor() {}
-
-    ngOnInit() {}
 }

@@ -1,6 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
-
-import { StorageCard } from '@pwa/model/StorageCard';
+import { Component, Input } from '@angular/core';
 
 @Component({
     selector: 'app-storage-context-menu',

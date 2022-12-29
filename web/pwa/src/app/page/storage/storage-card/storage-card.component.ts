@@ -94,7 +94,7 @@ export class StorageCardComponent {
     interaction = new EventEmitter<StorageCard>();
 
     @Output()
-    select = new EventEmitter<StorageCard>();
+    selectCard = new EventEmitter<StorageCard>();
 
     @Output()
     edit = new EventEmitter<StorageCard>();

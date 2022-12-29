@@ -120,6 +120,7 @@ export abstract class AbstractEmulationService {
 
     protected abstract skipEmulationUpdate(): boolean;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected onAfterAdvanceEmulation(timestamp: number, cycles: number): void {}
 
     protected handleSuspend(): void {}

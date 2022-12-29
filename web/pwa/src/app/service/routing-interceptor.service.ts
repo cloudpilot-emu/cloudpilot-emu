@@ -1,4 +1,4 @@
-import { ActivatedRouteSnapshot, CanActivate, Router, RouterStateSnapshot } from '@angular/router';
+import { ActivatedRouteSnapshot, CanActivate, Router } from '@angular/router';
 
 import { Injectable } from '@angular/core';
 import { LinkApi } from './link-api.service';
