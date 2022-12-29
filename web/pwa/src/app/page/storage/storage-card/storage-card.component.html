@@ -21,7 +21,7 @@
 
   </ion-item-options>
 
-  <ion-item [color]="color" (click)="select.emit(); interaction.emit()">
+  <ion-item [color]="color" (click)="selectCard.emit(); interaction.emit()">
     <ion-label>
       <h2>{{card?.name}}</h2>
       <p>{{card?.size | cardSize}}, {{status}}</p>
