@@ -1,11 +1,11 @@
 import { Component, Input } from '@angular/core';
 
 @Component({
-    selector: 'app-storage-context-menu',
-    templateUrl: './context-menu.component.html',
-    styleUrls: ['./context-menu.component.scss'],
+    selector: 'app-storage-context-menu-card',
+    templateUrl: './context-menu-card.component.html',
+    styleUrls: ['./context-menu-card.component.scss'],
 })
-export class ContextMenuComponent {
+export class ContextMenuCardComponent {
     @Input()
     onEdit = () => undefined;
 

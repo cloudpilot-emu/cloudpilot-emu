@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
-import { ContextMenuComponent } from '../context-menu/context-menu.component';
+import { ContextMenuCardComponent } from '../context-menu-card/context-menu-card.component';
 import { PopoverController } from '@ionic/angular';
 import { StorageCardService } from './../../../service/storage-card.service';
 
@@ -20,7 +20,7 @@ export class StorageCardComponent {
         this.interaction.emit();
 
         const popover = await this.popoverController.create({
-            component: ContextMenuComponent,
+            component: ContextMenuCardComponent,
             event: e,
             backdropDismiss: true,
             showBackdrop: false,

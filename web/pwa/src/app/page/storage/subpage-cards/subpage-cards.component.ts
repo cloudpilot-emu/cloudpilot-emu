@@ -60,12 +60,19 @@ export class SubpageCardsComponent {
     async selectCard(card: StorageCard) {
         const session = this.storageCardService.mountedInSession(card.id);
         if (session) {
-            this.alertService.message(
+            let forceEject = false;
+
+            await this.alertService.message(
                 'Card is attached',
-                `This card needs to be ejected from session '${session.name}' before it can be browsed.`
+                `This card needs to be ejected from session '${session.name}' before it can be browsed.`,
+                { 'Eject now': () => (forceEject = true) }
             );
 
-            return;
+            if (forceEject) {
+                await this.storageCardService.forceEjectCard(card.id);
+            } else {
+                return;
+            }
         }
 
         if (await this.storageCardService.attachCardToVfs(card.id)) {
@@ -100,12 +107,19 @@ export class SubpageCardsComponent {
     async checkCard(card: StorageCard): Promise<void> {
         const session = this.storageCardService.mountedInSession(card.id);
         if (session) {
-            this.alertService.message(
+            let forceEject = false;
+
+            await this.alertService.message(
                 'Card is attached',
-                `This card needs to be ejected from session '${session.name}' before it can be checked.`
+                `This card needs to be ejected from session '${session.name}' before it can be checked.`,
+                { 'Eject now': () => (forceEject = true) }
             );
 
-            return;
+            if (forceEject) {
+                await this.storageCardService.forceEjectCard(card.id);
+            } else {
+                return;
+            }
         }
 
         const fsckContext = await this.storageCardService.fsckCard(card.id);
@@ -148,7 +162,7 @@ export class SubpageCardsComponent {
                     text: 'Delete',
                     handler: async () => {
                         try {
-                            await this.storageCardService.deleteCard(card);
+                            await this.storageCardService.deleteCard(card.id);
                         } catch (e) {
                             this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
                         }

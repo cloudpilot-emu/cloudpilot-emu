@@ -34,7 +34,7 @@ export class FileEntryComponent {
     edit = new EventEmitter<FileEntry>();
 
     @Output()
-    check = new EventEmitter<FileEntry>();
+    copyEntry = new EventEmitter<FileEntry>();
 
     @Output()
     delete = new EventEmitter<FileEntry>();

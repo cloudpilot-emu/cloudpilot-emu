@@ -17,7 +17,7 @@
 <ion-content>
   <div *ngIf="entries !== undefined && entries.length === 0" class="placeholder-container">
     <div class="placeholder">
-      empty directory
+      empty {{path === '/' ? 'card' : 'directory'}}
     </div>
   </div>
 

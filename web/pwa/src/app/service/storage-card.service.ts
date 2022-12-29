@@ -286,11 +286,11 @@ export class StorageCardService {
         return this.storageService.updateStorageCardPartial(id, update);
     }
 
-    async deleteCard(card: StorageCard): Promise<void> {
-        const session = this.mountedInSession(card.id);
-        await this.vfsService.releaseCard(card.id);
+    async forceEjectCard(id: number): Promise<void> {
+        const session = this.mountedInSession(id);
+        const card = await this.storageService.getCard(id);
 
-        if (session) {
+        if (session && card) {
             await this.storageService.updateSessionPartial(session.id, { mountedCard: undefined });
 
             if (session.id === this.emulationStateService.getCurrentSession()?.id) {
@@ -300,8 +300,12 @@ export class StorageCardService {
                 this.snapshotService.resetCard();
             }
         }
+    }
 
-        await this.storageService.deleteStorageCard(card.id);
+    async deleteCard(id: number): Promise<void> {
+        await this.vfsService.releaseCard(id);
+        await this.forceEjectCard(id);
+        await this.storageService.deleteStorageCard(id);
 
         this.updateCardsFromDB();
     }

@@ -30,7 +30,7 @@ export class SubpageDirectoryComponent implements OnInit {
                 return '';
 
             default:
-                return this.vfsService.splitPath(this.path)[0] ?? '';
+                return this.vfsService.splitPath(this.path)[1] ?? '';
         }
     }
 

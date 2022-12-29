@@ -1,7 +1,7 @@
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { CommonModule } from '@angular/common';
-import { ContextMenuComponent } from './context-menu/context-menu.component';
+import { ContextMenuCardComponent } from './context-menu-card/context-menu-card.component';
 import { EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
 import { FileEntryComponent } from './file-entry/file-entry.component';
 import { IonicModule } from '@ionic/angular';
@@ -18,7 +18,7 @@ import { SubpageDirectoryComponent } from './subpage-directory/subpage-directory
     declarations: [
         StoragePage,
         StorageCardComponent,
-        ContextMenuComponent,
+        ContextMenuCardComponent,
         NewCardDialogComponent,
         EditCardDialogComponent,
         SubpageCardsComponent,
