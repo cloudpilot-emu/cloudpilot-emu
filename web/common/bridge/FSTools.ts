@@ -21,7 +21,13 @@ export async function mkfs(size: number): Promise<Uint32Array | undefined> {
     return context.getImage();
 }
 
-const wasmModule = WebAssembly.compileStreaming(fetch('fstools_web.wasm'));
+const WASM_BINARY = 'fstools_web.wasm';
+
+const wasmModule = !WebAssembly.compileStreaming
+    ? WebAssembly.compileStreaming(fetch(WASM_BINARY))
+    : fetch(WASM_BINARY)
+          .then((response) => response.arrayBuffer())
+          .then((binary) => WebAssembly.compile(binary));
 
 export class MkfsContext {
     private constructor(private module: Module) {
