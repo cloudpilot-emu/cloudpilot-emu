@@ -23,7 +23,7 @@ export async function mkfs(size: number): Promise<Uint32Array | undefined> {
 
 const WASM_BINARY = 'fstools_web.wasm';
 
-const wasmModule = !WebAssembly.compileStreaming
+const wasmModule = WebAssembly.compileStreaming
     ? WebAssembly.compileStreaming(fetch(WASM_BINARY))
     : fetch(WASM_BINARY)
           .then((response) => response.arrayBuffer())
