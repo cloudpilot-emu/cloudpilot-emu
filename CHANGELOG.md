@@ -2,6 +2,11 @@
 
 -   Support for SD card and memory stick.
 
+# Version 1.7.9
+
+-   Fix status bar color in light mode on iOS.
+-   Happy 2023.
+
 # Version 1.7.8
 
 -   Minor wording fixes.
