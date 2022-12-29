@@ -9,6 +9,8 @@ import { NgModule } from '@angular/core';
 import { SharedComponentModule } from '@pwa/component/shared-component.module';
 import { StorageCardComponent } from './storage-card/storage-card.component';
 import { StoragePage } from './storage.page';
+import { SubpageCardsComponent } from './subpage-cards/subpage-cards.component';
+import { SubpageDirectoryComponent } from './subpage-directory/subpage-directory.component';
 
 @NgModule({
     imports: [CommonModule, IonicModule, FormsModule, ReactiveFormsModule, SharedComponentModule],
@@ -18,6 +20,8 @@ import { StoragePage } from './storage.page';
         ContextMenuComponent,
         NewCardDialogComponent,
         EditCardDialogComponent,
+        SubpageCardsComponent,
+        SubpageDirectoryComponent,
     ],
 })
 export class StoragePageModule {}

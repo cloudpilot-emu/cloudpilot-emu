@@ -229,8 +229,6 @@ export class StorageCardService {
                 throw new Error(`no card with id ${cardId}`);
             }
 
-            await this.vfsService.releaseCard(cardId);
-
             const context = await FsckContext.create(card.size);
             await this.storageService.loadCardData(card.id, context.getImageData());
 
@@ -271,6 +269,7 @@ export class StorageCardService {
 
         try {
             await loader.present();
+            await this.vfsService.releaseCard(cardId);
             await this.storageService.updateCardData(cardId, context.getImageData(), context.getDirtyPages());
             await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.clean });
         } finally {
@@ -291,6 +290,7 @@ export class StorageCardService {
         const session = this.mountedInSession(card.id);
 
         if (session) {
+            await this.vfsService.releaseCard(card.id);
             await this.storageService.updateSessionPartial(session.id, { mountedCard: undefined });
 
             if (session.id === this.emulationStateService.getCurrentSession()?.id) {
@@ -354,8 +354,6 @@ export class StorageCardService {
 
         let card = await this.getCard(id);
         if (!card) throw new Error(`no card with id ${id}`);
-
-        await this.vfsService.releaseCard(id);
 
         let fsckContext: FsckContext | undefined;
         let mountNow = true;
@@ -433,11 +431,11 @@ export class StorageCardService {
 
         try {
             if (action === 'insert') {
-                if (!(await this.mountCard(id, fsckContext?.getImageData()))) {
+                await this.mountCardInEmulator(id, fsckContext?.getImageData());
+            } else {
+                if (!(await this.mountCardForBrowsing(id, mountReadonly, fsckContext?.getImageData()))) {
                     this.alertService.message('Failed to mount card', 'The card could not be mounted for browsing.');
                 }
-            } else {
-                await this.vfsService.mountCardUnchecked(id, mountReadonly, fsckContext?.getImageData());
             }
         } catch (e) {
             this.errorService.fatalBug(e instanceof Error ? e.message : 'mount failed');
@@ -508,13 +506,14 @@ export class StorageCardService {
         }
     }
 
-    private async mountCard(cardId: number, data?: Uint32Array): Promise<StorageCard> {
+    private async mountCardInEmulator(cardId: number, data?: Uint32Array): Promise<StorageCard> {
         if (await this.cardIsMounted(cardId)) throw new Error('card already mounted');
 
         const loader = await this.loadingController.create({ message: 'Inserting...' });
 
         try {
             await loader.present();
+            await this.vfsService.releaseCard(cardId);
 
             const session = this.emulationStateService.getCurrentSession();
             if (!session) throw new Error('no current session');
@@ -533,6 +532,19 @@ export class StorageCardService {
             }
 
             return card;
+        } finally {
+            loader.dismiss();
+        }
+    }
+
+    private async mountCardForBrowsing(id: number, readonly: boolean, data?: Uint32Array): Promise<boolean> {
+        if (this.vfsService.currentCard()?.id === id) return true;
+
+        const loader = await this.loadingController.create({ message: 'Mounting...' });
+
+        try {
+            await loader.present();
+            return await this.vfsService.mountCardUnchecked(id, readonly, data);
         } finally {
             loader.dismiss();
         }

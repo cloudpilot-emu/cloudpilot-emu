@@ -16,6 +16,7 @@ export class VfsService {
         const card = await this.storageService.getCard(id);
         if (!card) throw new Error(`no card with id ${id}`);
 
+        if (this.mountedCard?.id === id) return true;
         if (this.mountedCard) this.releaseCard(this.mountedCard.id);
 
         const vfs = await this.vfs;
