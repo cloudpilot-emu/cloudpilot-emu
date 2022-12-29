@@ -65,7 +65,8 @@ export class SubpageCardsComponent {
             await this.alertService.message(
                 'Card is attached',
                 `This card needs to be ejected from session '${session.name}' before it can be browsed.`,
-                { 'Eject now': () => (forceEject = true) }
+                { 'Eject now': () => (forceEject = true) },
+                'Cancel'
             );
 
             if (forceEject) {
@@ -112,7 +113,8 @@ export class SubpageCardsComponent {
             await this.alertService.message(
                 'Card is attached',
                 `This card needs to be ejected from session '${session.name}' before it can be checked.`,
-                { 'Eject now': () => (forceEject = true) }
+                { 'Eject now': () => (forceEject = true) },
+                'Cancel'
             );
 
             if (forceEject) {
