@@ -1,5 +1,6 @@
 import { FileEntry, ReaddirError, Vfs } from '@common/bridge/Vfs';
 
+import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageService } from '@pwa/service/storage.service';
@@ -12,9 +13,15 @@ export class VfsService {
         return path.replace(/\/*$/, '');
     }
 
+    splitPath(path: string): Array<string> {
+        return this.normalizePath(path).split('/');
+    }
+
     async mountCardUnchecked(id: number, readonly: boolean, data?: Uint32Array): Promise<boolean> {
         const card = await this.storageService.getCard(id);
         if (!card) throw new Error(`no card with id ${id}`);
+
+        this.directoryCache.clear();
 
         if (this.mountedCard?.id === id) return true;
         if (this.mountedCard) this.releaseCard(this.mountedCard.id);
@@ -40,34 +47,35 @@ export class VfsService {
     }
 
     async releaseCard(id = this.mountedCard?.id) {
-        if (id !== this.mountedCard?.id) return;
+        if (id === undefined || id !== this.mountedCard?.id) return;
 
         (await this.vfs).UnmountImage(0);
         this.mountedCard = undefined;
-        this.cachedDirectoryPath = undefined;
-        this.cachedDirectoryContent = undefined;
+
+        this.onReleaseCard.dispatch(id);
     }
 
     async readdir(path: string): Promise<Array<FileEntry> | undefined> {
         const normalizedPath = this.normalizePath(path);
-        if (normalizedPath === this.cachedDirectoryPath) return this.cachedDirectoryContent;
 
-        const readdirResult = (await this.vfs).Readdir(path);
-        if (readdirResult.error !== ReaddirError.none) return undefined;
+        if (!this.directoryCache.has(normalizedPath)) {
+            const readdirResult = (await this.vfs).Readdir(path);
+            if (readdirResult.error === ReaddirError.none) {
+                this.directoryCache.set(normalizedPath, readdirResult.entries);
+            }
+        }
 
-        this.cachedDirectoryPath = this.normalizePath(path);
-        this.cachedDirectoryContent = readdirResult.entries;
-
-        return this.cachedDirectoryContent;
+        return this.directoryCache.get(normalizedPath);
     }
 
     currentCard(): StorageCard | undefined {
         return this.mountedCard;
     }
 
+    readonly onReleaseCard = new Event<number>();
+
     private mountedCard: StorageCard | undefined;
     private vfs = Vfs.create();
 
-    private cachedDirectoryPath: string | undefined;
-    private cachedDirectoryContent: Array<FileEntry> | undefined;
+    private directoryCache = new Map<string, Array<FileEntry>>();
 }

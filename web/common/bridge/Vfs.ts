@@ -10,9 +10,11 @@ import createModule, { Module } from '@native-vfs/index';
 export { ReaddirError } from '@native-vfs/index';
 
 export interface FileEntry {
+    path: string;
     name: string;
     size: number;
-    modifiedTS: number;
+    lastModifiedTS: number;
+    lastModifiedLocalDate: string;
     isDirectory: boolean;
 }
 
@@ -69,10 +71,15 @@ export class Vfs {
             const entries: Array<FileEntry> = [];
 
             while (context.GetStatus() === ReaddirStatus.more) {
+                const name = context.GetEntryName();
+                const lastModifiedTS = context.GetEntryModifiedTS();
+
                 entries.push({
-                    name: context.GetEntryName(),
+                    path: `${path.replace(/\/*$/, '')}/${name}`,
+                    name,
                     size: context.GetEntrySize(),
-                    modifiedTS: context.GetEntryModifiedTS(),
+                    lastModifiedTS,
+                    lastModifiedLocalDate: new Date(lastModifiedTS * 1000).toLocaleDateString(),
                     isDirectory: context.IsEntryDirectory(),
                 });
 

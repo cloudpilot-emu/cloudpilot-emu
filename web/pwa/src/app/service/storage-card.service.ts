@@ -157,11 +157,11 @@ export class StorageCardService {
         this.updateCardsFromDB();
     }
 
-    insertCard(id: number): Promise<void> {
+    insertCard(id: number): Promise<boolean> {
         return this.claimCard(id, 'insert');
     }
 
-    attachCardToVfs(id: number): Promise<void> {
+    attachCardToVfs(id: number): Promise<boolean> {
         return this.claimCard(id, 'vfs');
     }
 
@@ -191,7 +191,7 @@ export class StorageCardService {
         return card;
     }
 
-    async ejectCard(): Promise<void> {
+    async ejectCurrentCard(): Promise<void> {
         const session = this.emulationStateService.getCurrentSession();
         if (!session) throw new Error('no running session');
 
@@ -288,9 +288,9 @@ export class StorageCardService {
 
     async deleteCard(card: StorageCard): Promise<void> {
         const session = this.mountedInSession(card.id);
+        await this.vfsService.releaseCard(card.id);
 
         if (session) {
-            await this.vfsService.releaseCard(card.id);
             await this.storageService.updateSessionPartial(session.id, { mountedCard: undefined });
 
             if (session.id === this.emulationStateService.getCurrentSession()?.id) {
@@ -349,7 +349,7 @@ export class StorageCardService {
         return this.loading;
     }
 
-    private async claimCard(id: number, action: 'insert' | 'vfs'): Promise<void> {
+    private async claimCard(id: number, action: 'insert' | 'vfs'): Promise<boolean> {
         if (await this.cardIsMounted(id)) throw new Error('card already mounted');
 
         let card = await this.getCard(id);
@@ -375,7 +375,7 @@ export class StorageCardService {
                         'Cancel'
                     );
 
-                    if (!mountNow) return;
+                    if (!mountNow) return false;
                     await this.applyFsckResult(card.id, fsckContext);
                 }
 
@@ -394,7 +394,7 @@ export class StorageCardService {
                             'This card is unformatted and cannot be browsed. Insert it into a device and format it.'
                         );
 
-                        return;
+                        return false;
                     }
 
                 case StorageCardStatus.dirty:
@@ -404,7 +404,8 @@ export class StorageCardService {
                             action === 'insert' ? 'inserted' : 'browsed'
                         }.`
                     );
-                    return;
+
+                    return false;
 
                 case StorageCardStatus.unfixable:
                     mountNow = false;
@@ -421,7 +422,7 @@ export class StorageCardService {
                         'Cancel'
                     );
 
-                    if (!mountNow) return;
+                    if (!mountNow) return false;
                     break;
 
                 default:
@@ -439,7 +440,10 @@ export class StorageCardService {
             }
         } catch (e) {
             this.errorService.fatalBug(e instanceof Error ? e.message : 'mount failed');
+            return false;
         }
+
+        return true;
     }
 
     private async updateCardsFromDB(): Promise<void> {

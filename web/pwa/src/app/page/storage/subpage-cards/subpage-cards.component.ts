@@ -68,10 +68,7 @@ export class SubpageCardsComponent {
             return;
         }
 
-        await this.storageCardService.attachCardToVfs(card.id);
-
-        if (this.vfsService.currentCard()) {
-            console.log(await this.vfsService.readdir('/'));
+        if (await this.storageCardService.attachCardToVfs(card.id)) {
             this.onMountForBrowse(card);
         }
     }
@@ -239,8 +236,8 @@ export class SubpageCardsComponent {
         this.alertService.message('Card fixed', 'All filesystem errors have been fixed.');
     }
 
-    public lastCardTouched: number | undefined = undefined;
+    lastCardTouched: number | undefined = undefined;
 
     @Input()
-    public onMountForBrowse: (card: StorageCard) => void = () => undefined;
+    onMountForBrowse: (card: StorageCard) => void = () => undefined;
 }

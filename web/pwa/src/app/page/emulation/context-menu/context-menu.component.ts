@@ -294,7 +294,7 @@ export class ContextMenuComponent {
 
     async ejectCard(): Promise<void> {
         try {
-            await this.storageCardService.ejectCard();
+            await this.storageCardService.ejectCurrentCard();
         } catch (e) {
             this.errorService.fatalBug(e instanceof Error ? e.message : 'eject failed');
         }
