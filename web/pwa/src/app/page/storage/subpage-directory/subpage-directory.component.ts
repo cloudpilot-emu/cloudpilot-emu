@@ -29,8 +29,11 @@ export class SubpageDirectoryComponent implements OnInit {
             case undefined:
                 return '';
 
-            default:
-                return this.vfsService.splitPath(this.path)[1] ?? '';
+            default: {
+                const splitPath = this.vfsService.splitPath(this.path);
+
+                return splitPath[splitPath.length - 1] ?? '';
+            }
         }
     }
 
