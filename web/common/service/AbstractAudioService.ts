@@ -60,7 +60,7 @@ export abstract class AbstractAudioService {
             }
 
             this.context.addEventListener('statechange', () => {
-                if ((this.context?.state as string) === 'interrupted') this.updateState();
+                if ((this.context?.state as string) === 'interrupted') void this.updateState();
             });
 
             this.gainNode = this.context.createGain();
@@ -82,7 +82,7 @@ export abstract class AbstractAudioService {
     mute(muted: boolean): void {
         this.muted = muted;
 
-        this.updateState();
+        void this.updateState();
     }
 
     isMuted(): boolean {
@@ -145,7 +145,7 @@ export abstract class AbstractAudioService {
         if (!this.context) return;
 
         await withTimeout(this.context.resume());
-        this.updateState();
+        void this.updateState();
 
         console.log('audio context initialized');
     }
@@ -159,7 +159,7 @@ export abstract class AbstractAudioService {
 
         if (!this.initialized) return;
 
-        if (this.shouldRun() !== this.isRunning()) this.updateState(true);
+        if (this.shouldRun() !== this.isRunning()) void this.updateState(true);
 
         if (!this.shouldRun()) return;
 

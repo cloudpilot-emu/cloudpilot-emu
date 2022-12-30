@@ -345,7 +345,7 @@ export class GenericEventHandlingService {
             }
 
             this.activeButtons.clear();
-            this.canvasDisplayService.drawButtons([]);
+            void this.canvasDisplayService.drawButtons([]);
         }
     };
 
@@ -366,7 +366,7 @@ export class GenericEventHandlingService {
 
         this.activeButtons.add(button);
         this.emulationService.handleButtonDown(button);
-        this.canvasDisplayService.drawButtons(Array.from(this.activeButtons.values()));
+        void this.canvasDisplayService.drawButtons(Array.from(this.activeButtons.values()));
     }
 
     private handleButtonUp(button: PalmButton | undefined): void {
@@ -374,7 +374,7 @@ export class GenericEventHandlingService {
 
         this.activeButtons.delete(button);
         this.emulationService.handleButtonUp(button);
-        this.canvasDisplayService.drawButtons(Array.from(this.activeButtons.values()));
+        void this.canvasDisplayService.drawButtons(Array.from(this.activeButtons.values()));
     }
 
     private isToggleGameMode(e: KeyboardEvent): boolean {

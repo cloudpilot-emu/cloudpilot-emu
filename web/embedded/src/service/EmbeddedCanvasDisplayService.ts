@@ -29,19 +29,19 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
 
     updateOrientation(orientation: DeviceOrientation) {
         this.orientation = orientation;
-        this.initialize();
+        void this.initialize();
     }
 
     toggleGameModeIndicator(gameModeActive: boolean): void {
         this.gameModeActive = gameModeActive;
 
-        this.drawButtons(this.lastActiveButtons);
+        void this.drawButtons(this.lastActiveButtons);
     }
 
     setGameModeIndicatorEnabled(gameModeIndicatorEnabled: boolean) {
         this.gameModeIndicatorEnabled = gameModeIndicatorEnabled;
 
-        this.drawButtons(this.lastActiveButtons);
+        void this.drawButtons(this.lastActiveButtons);
     }
 
     isGameModeIndicatorEnabled(): boolean {

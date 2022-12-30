@@ -1,3 +1,4 @@
+import { CardOwner, StorageCardContext } from './storage-card-context';
 import {
     DB_VERSION,
     OBJECT_STORE_KVS,
@@ -72,9 +73,12 @@ function guard(): any {
     providedIn: 'root',
 })
 export class StorageService {
-    constructor(private ngZone: NgZone, private errorService: ErrorService) {
-        this.requestPersistentStorage();
-        this.db = ngZone.runOutsideAngular(() => this.setupDb());
+    constructor(
+        private ngZone: NgZone,
+        private errorService: ErrorService,
+        private storageCardContext: StorageCardContext
+    ) {
+        this.db = this.requestPersistentStorage().then(() => ngZone.runOutsideAngular(() => this.setupDb()));
     }
 
     getDb(): Promise<IDBDatabase> {
@@ -233,7 +237,10 @@ export class StorageService {
 
         const key = await complete(objectStore.add(card));
 
-        return complete(objectStore.get(key));
+        const updatedCard = await complete(objectStore.get(key));
+        this.storageCardChangeEvent.dispatch(updatedCard.id);
+
+        return updatedCard;
     }
 
     @guard()
@@ -263,6 +270,8 @@ export class StorageService {
 
             const updatedCard = await complete(objectStoreStorageCard.get(key));
             await complete(tx);
+
+            this.storageCardChangeEvent.dispatch(updatedCard.id);
 
             return updatedCard;
         });
@@ -301,6 +310,8 @@ export class StorageService {
     @guard()
     async deleteStorageCard(id: number): Promise<void> {
         const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
+        this.storageCardContext.assertOwnership(id, CardOwner.none);
+
         const objectStoreStorageCard = tx.objectStore(OBJECT_STORE_STORAGE_CARD);
         const objectStoreStorage = tx.objectStore(OBJECT_STORE_STORAGE);
 
@@ -308,12 +319,16 @@ export class StorageService {
         objectStoreStorage.delete(IDBKeyRange.bound([id, 0], [id + 1, 0], false, true));
 
         await complete(tx);
+
+        this.storageCardChangeEvent.dispatch(id);
     }
 
     @guard()
-    loadCardData(id: number, target: Uint32Array): Promise<void> {
+    loadCardData(id: number, target: Uint32Array, owner: CardOwner): Promise<void> {
         return this.ngZone.runOutsideAngular(async () => {
             const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
+            this.storageCardContext.assertOwnership(id, owner);
+
             const objectStore = tx.objectStore(OBJECT_STORE_STORAGE);
 
             await new Promise<void>(async (resolve, reject) => {
@@ -345,9 +360,11 @@ export class StorageService {
         });
     }
 
-    updateCardData(id: number, data: Uint32Array, dirtyPages: Uint8Array): Promise<void> {
+    updateCardData(id: number, data: Uint32Array, dirtyPages: Uint8Array, owner: CardOwner): Promise<void> {
         return this.ngZone.runOutsideAngular(async () => {
             const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
+            this.storageCardContext.assertOwnership(id, owner);
+
             const objectStoreStorageCard = tx.objectStore(OBJECT_STORE_STORAGE_CARD);
             const objectStoreStorage = tx.objectStore(OBJECT_STORE_STORAGE);
 
@@ -429,6 +446,8 @@ export class StorageService {
     }
 
     async acquireLock(tx: IDBTransaction): Promise<void> {
+        if (this.errorService.hasFatalError()) throw new Error('fatal error detected --- refusing DB access');
+
         const lockToken = await complete(tx.objectStore(OBJECT_STORE_LOCK).get(0));
 
         if (lockToken !== LOCK_TOKEN) {

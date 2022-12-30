@@ -55,7 +55,7 @@ export class SubpageDirectoryComponent implements OnInit {
             return;
         }
 
-        this.vfsService
+        void this.vfsService
             .readdir(this.path)
             .then((entries) => (this.entries = entries ? [...entries].sort(entrySortFunction) : []));
     }

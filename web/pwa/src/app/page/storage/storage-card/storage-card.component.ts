@@ -26,25 +26,25 @@ export class StorageCardComponent {
             showBackdrop: false,
             componentProps: {
                 onEdit: () => {
-                    popover.dismiss();
+                    void popover.dismiss();
                     this.edit.emit(this.card);
                 },
                 onSave: () => {
-                    popover.dismiss();
+                    void popover.dismiss();
                     this.save.emit(this.card);
                 },
                 onCheck: () => {
-                    popover.dismiss();
+                    void popover.dismiss();
                     this.check.emit();
                 },
                 onDelete: () => {
-                    popover.dismiss();
+                    void popover.dismiss();
                     this.delete.emit();
                 },
             },
         });
 
-        popover.present();
+        void popover.present();
     }
 
     get color(): string | undefined {

@@ -169,7 +169,7 @@ class InstallationContext {
                         text: 'Continue',
                         role: 'cancel',
                         handler: () => {
-                            this.alertController.dismiss();
+                            void this.alertController.dismiss();
                             resolve();
                         },
                     },
@@ -187,7 +187,7 @@ class InstallationContext {
                         : [],
             });
 
-            alert.then((a) => a.present());
+            void alert.then((a) => a.present());
         });
     }
 
@@ -235,9 +235,8 @@ export class InstallationService {
             );
             [filesSuccess, filesRequireReset, filesFail] = await installationContext.run();
         } finally {
-            loader.dismiss();
-
-            this.emulationService.resume();
+            void loader.dismiss();
+            void this.emulationService.resume();
         }
 
         const message = [
@@ -258,7 +257,7 @@ export class InstallationService {
             header = 'Installation errors';
         }
 
-        this.alertService.message(
+        void this.alertService.message(
             header,
             message,
             filesRequireReset.length > 0 ? { 'Reset now': () => this.emulationService.reset() } : undefined

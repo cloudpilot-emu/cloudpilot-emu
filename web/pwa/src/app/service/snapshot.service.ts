@@ -1,3 +1,4 @@
+import { CardOwner, StorageCardContext } from './storage-card-context';
 import { E_LOCK_LOST, StorageService } from './storage.service';
 import {
     INDEX_CARD_STORAGE_ID,
@@ -43,6 +44,7 @@ export class SnapshotService {
         private storageService: StorageService,
         private emulationState: EmulationStateService,
         private errorService: ErrorService,
+        private storageCardContext: StorageCardContext,
         private ngZone: NgZone
     ) {}
 
@@ -282,6 +284,8 @@ export class SnapshotService {
             console.log(`seems ${card.name} was unmounted`);
             return 0;
         }
+
+        this.storageCardContext.assertOwnership(card.id, CardOwner.cloudpilot);
 
         if (!dirtyPages) throw new Error(`failed to retrieve dirty pages for card ${card.name}`);
         if (data.length !== card.size >>> 2) throw new Error('card size mismatch');

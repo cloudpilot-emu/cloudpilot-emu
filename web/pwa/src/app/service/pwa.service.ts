@@ -66,7 +66,7 @@ const INVITATION_IOS = `
 })
 export class PwaService {
     constructor(private kvsService: KvsService, private alertService: AlertService) {
-        this.serviceWorkerKeepalive();
+        void this.serviceWorkerKeepalive();
     }
 
     promptForInstall(): boolean {
@@ -78,7 +78,7 @@ export class PwaService {
     }
 
     install(): void {
-        this.alertService.message('Install app', this.getInstallMessage());
+        void this.alertService.message('Install app', this.getInstallMessage());
     }
 
     invite(): void {
@@ -88,7 +88,7 @@ export class PwaService {
         this.kvsService.kvs.didShowInvitation = true;
 
         if (!window.hasOwnProperty('onbeforeinstallprompt')) {
-            this.alertService.message('App available', this.getInviteMessage());
+            void this.alertService.message('App available', this.getInviteMessage());
         }
     }
 

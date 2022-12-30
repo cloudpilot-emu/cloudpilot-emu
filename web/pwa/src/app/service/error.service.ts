@@ -40,7 +40,7 @@ export class ErrorService {
 
             this.fatalErrorEvent.dispatch();
 
-            this.alertService.fatalError(message, emergencySave);
+            void this.alertService.fatalError(message, emergencySave);
         });
 
     fatalErrorEvent = new Event<void>();

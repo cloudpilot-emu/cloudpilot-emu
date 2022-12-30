@@ -77,7 +77,7 @@ export class EmulationPage {
             if (this.emulationService.isRunning()) {
                 this.autoLockUI = false;
             }
-            this.emulationService.pause();
+            void this.emulationService.pause();
 
             this.emulationService.newFrameEvent.removeHandler(this.onNewFrame);
             this.snapshotService.snapshotEvent.removeHandler(this.onSnapshot);
@@ -99,7 +99,7 @@ export class EmulationPage {
             },
         });
 
-        popover.present();
+        void popover.present();
     }
 
     installFiles(): void {
@@ -203,7 +203,7 @@ export class EmulationPage {
             () => this.kvsService.kvs.autoLockUI && this.autoLockUI && this.navigation.lock()
         );
 
-        this.canvasDisplayService.initialize(this.canvasRef.nativeElement, session).then(() => {
+        void this.canvasDisplayService.initialize(this.canvasRef.nativeElement, session).then(() => {
             this.onKvsUpdate();
             this.kvsService.updateEvent.addHandler(this.onKvsUpdate);
         });
@@ -217,17 +217,17 @@ export class EmulationPage {
         this.eventHandlingService.bind(this.canvasRef.nativeElement);
     }
 
-    private onKvsUpdate = async (): Promise<void> => {
+    private onKvsUpdate = (): void => {
         if (this.kvsService.kvs.showStatistics) {
-            this.canvasDisplayService.updateStatistics();
+            void this.canvasDisplayService.updateStatistics();
         } else {
-            this.canvasDisplayService.clearStatistics();
+            void this.canvasDisplayService.clearStatistics();
         }
     };
 
     private onSnapshot = (statistics: SnapshotStatistics): void => {
         if (this.kvsService.kvs.showStatistics) {
-            this.canvasDisplayService.updateStatistics(statistics, this.emulationService.getStatistics());
+            void this.canvasDisplayService.updateStatistics(statistics, this.emulationService.getStatistics());
         }
     };
 
@@ -246,20 +246,25 @@ export class EmulationPage {
         }
 
         if (this.installFileDisabled) {
-            this.alertService.message('Unable to install', `Installation is currently not possible.`, {}, 'Cancel');
+            void this.alertService.message(
+                'Unable to install',
+                `Installation is currently not possible.`,
+                {},
+                'Cancel'
+            );
             return;
         }
 
         const currentSession = this.emulationState.getCurrentSession();
         if (!currentSession || !this.emulationService.isRunning()) {
-            this.alertService.message(
+            void this.alertService.message(
                 'Unable to install',
                 `Please start a session in order to install ${url} .`,
                 {},
                 'Cancel'
             );
         } else {
-            this.alertService.message(
+            void this.alertService.message(
                 'Installation request',
                 `Do you want to install<br>${url} ?`,
                 {

@@ -31,25 +31,25 @@ export class SessionItemComponent {
             showBackdrop: false,
             componentProps: {
                 onEdit: () => {
-                    popover.dismiss();
+                    void popover.dismiss();
                     this.edit.emit();
                 },
                 onSave: () => {
-                    popover.dismiss();
+                    void popover.dismiss();
                     this.save.emit();
                 },
                 onDelete: () => {
-                    popover.dismiss();
+                    void popover.dismiss();
                     this.delete.emit();
                 },
                 onReset: () => {
-                    popover.dismiss();
+                    void popover.dismiss();
                     this.resetSession.emit();
                 },
             },
         });
 
-        popover.present();
+        void popover.present();
     }
 
     decodeVersion(v: number | undefined): string {

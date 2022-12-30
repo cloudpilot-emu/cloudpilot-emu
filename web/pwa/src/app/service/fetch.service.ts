@@ -62,7 +62,7 @@ export class FetchService {
                     }
 
                     if (loader) {
-                        loader.dismiss();
+                        void loader.dismiss();
                         clearTimeout(loaderTimeout);
 
                         loaderDelay = 0;
@@ -105,7 +105,7 @@ export class FetchService {
                 .then((modal) => modal.present())
         );
 
-        this.modalController.dismiss();
+        void this.modalController.dismiss();
 
         return confirmed;
     }

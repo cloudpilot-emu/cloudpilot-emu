@@ -10,14 +10,14 @@ export class RoutingInterceptor implements CanActivate {
     canActivate(route: ActivatedRouteSnapshot): boolean {
         if (route.url[0]?.path?.startsWith('install')) {
             this.linkApi.installation.dispatchRequest(route.queryParams.url);
-            this.router.navigateByUrl('/tab/emulation');
+            void this.router.navigateByUrl('/tab/emulation');
 
             return false;
         }
 
         if (route.url[0]?.path?.startsWith('import')) {
             this.linkApi.import.dispatchRequest(route.queryParams.url);
-            this.router.navigateByUrl('/tab/sessions');
+            void this.router.navigateByUrl('/tab/sessions');
 
             return false;
         }

@@ -12,7 +12,7 @@ const EVENTS = ['touch', 'click', 'keydown'];
 @Injectable({ providedIn: 'root' })
 export class AutoEnableAudioService {
     constructor(private kvsService: KvsService, private audioService: AudioService) {
-        this.initialize();
+        void this.initialize();
     }
 
     private async initialize() {
@@ -21,7 +21,7 @@ export class AutoEnableAudioService {
 
         const handler = () => {
             EVENTS.forEach((evt) => window.removeEventListener(evt, handler, true));
-            this.audioService.initialize();
+            void this.audioService.initialize();
         };
 
         EVENTS.forEach((evt) => window.addEventListener(evt, handler, true));

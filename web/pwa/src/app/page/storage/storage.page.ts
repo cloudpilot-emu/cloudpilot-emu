@@ -32,13 +32,13 @@ export class StoragePage implements OnInit {
 
     private browseCard(card: StorageCard): void {
         this.currentlyBrowsingCard = card;
-        this.nav?.push(SubpageDirectoryComponent, { card, path: '/', onNavigate: this.onNavigate });
+        void this.nav?.push(SubpageDirectoryComponent, { card, path: '/', onNavigate: this.onNavigate });
     }
 
     private onNavigate = (path: string): void => {
         if (!this.currentlyBrowsingCard) return;
 
-        this.nav?.push(SubpageDirectoryComponent, {
+        void this.nav?.push(SubpageDirectoryComponent, {
             card: this.currentlyBrowsingCard,
             path,
             onNavigate: this.onNavigate,
@@ -49,7 +49,7 @@ export class StoragePage implements OnInit {
         if (id !== this.currentlyBrowsingCard?.id || !this.nav) return;
 
         if (!this.isVisible) this.nav.animated = false;
-        this.nav.popToRoot(undefined, () => this.nav && (this.nav.animated = true));
+        void this.nav.popToRoot(undefined, () => this.nav && (this.nav.animated = true));
     }
 
     @ViewChild('nav')

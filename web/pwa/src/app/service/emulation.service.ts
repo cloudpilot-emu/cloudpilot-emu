@@ -1,4 +1,5 @@
 import { ApplicationRef, Injectable, NgZone } from '@angular/core';
+import { CardOwner, StorageCardContext } from './storage-card-context';
 import { clearStoredSession, getStoredSession, setStoredSession } from '@pwa/helper/storedSession';
 
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
@@ -45,6 +46,7 @@ export class EmulationService extends AbstractEmulationService {
         private bootstrapService: BootstrapService,
         private cloudpilotService: CloudpilotService,
         private storageCardService: StorageCardService,
+        private storageCardContext: StorageCardContext,
         private app: ApplicationRef
     ) {
         super();
@@ -53,7 +55,7 @@ export class EmulationService extends AbstractEmulationService {
         errorService.fatalErrorEvent.addHandler(this.pause);
         this.alertService.emergencySaveEvent.addHandler(this.onEmergencySave);
 
-        this.cloudpilotService.cloudpilot.then((instance) => {
+        void this.cloudpilotService.cloudpilot.then((instance) => {
             instance.fatalErrorEvent.addHandler(this.errorService.fatalInNativeCode);
 
             this.proxyService.initialize(instance);
@@ -131,7 +133,13 @@ export class EmulationService extends AbstractEmulationService {
 
     stop = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
+            if (!this.emulationState.getCurrentSession()) return;
+
             this.doStop();
+            await this.snapshotService.waitForPendingSnapshot();
+
+            const mountedCard = this.emulationState.getCurrentSession()?.mountedCard;
+            if (mountedCard !== undefined) this.storageCardContext.release(mountedCard, CardOwner.cloudpilot);
 
             this.emulationState.setCurrentSession(undefined);
         });
@@ -152,7 +160,7 @@ export class EmulationService extends AbstractEmulationService {
         const session = this.emulationState.getCurrentSession();
         if (!session) return;
 
-        this.storageService.updateSessionPartial(session.id, { hotsyncName });
+        void this.storageService.updateSessionPartial(session.id, { hotsyncName });
     }
 
     protected getConfiguredSchdedulerKind(): SchedulerKind {
@@ -173,7 +181,9 @@ export class EmulationService extends AbstractEmulationService {
         const session = this.emulationState.getCurrentSession();
 
         if (this.uiInitialized && session && session.osVersion === undefined) {
-            this.storageService.updateSessionPartial(session.id, { osVersion: this.cloudpilotInstance.getOSVersion() });
+            void this.storageService.updateSessionPartial(session.id, {
+                osVersion: this.cloudpilotInstance.getOSVersion(),
+            });
         }
 
         this.buttonService.tick(cycles / this.cloudpilotInstance.cyclesPerSecond());
@@ -183,7 +193,7 @@ export class EmulationService extends AbstractEmulationService {
             this.isUiInitialized() &&
             !this.cloudpilotInstance.isSuspended()
         ) {
-            this.snapshotService.triggerSnapshot();
+            void this.snapshotService.triggerSnapshot();
 
             this.lastSnapshotAt = timestamp;
         }
@@ -228,7 +238,7 @@ export class EmulationService extends AbstractEmulationService {
             await this.switchSession(session);
         } catch (e) {
             if (isIOS) {
-                this.alertService.message(
+                void this.alertService.message(
                     'Possible iOS bug',
                     `It seems that you hit an iOS bug that ocassionally
 causes the database to come up empty when the app starts. If this happens to you, please force close
@@ -249,7 +259,7 @@ Sorry for the inconvenience.`
         cloudpilot.clearExternalStorage();
 
         if (session.mountedCard !== undefined) {
-            await this.storageCardService.loadCard(session.mountedCard);
+            await this.storageCardService.loadCardInEmulator(session.mountedCard);
         }
 
         if (!this.openSession(cloudpilot, rom, session.device, memory, state)) {
@@ -279,7 +289,7 @@ Sorry for the inconvenience.`
             const session = this.emulationState.getCurrentSession();
 
             if (session) {
-                this.fileService.emergencySaveSession(session, await this.cloudpilotService.cloudpilot);
+                void this.fileService.emergencySaveSession(session, await this.cloudpilotService.cloudpilot);
             }
         });
 

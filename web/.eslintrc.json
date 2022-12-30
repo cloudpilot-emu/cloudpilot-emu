@@ -62,6 +62,7 @@
         "space-before-function-paren": "off",
         "eqeqeq": "error",
         "@typescript-eslint/no-unused-vars": ["error", {"ignoreRestSiblings": true}],
+        "@typescript-eslint/no-floating-promises": "error",
         "@angular-eslint/component-class-suffix": [
           "error",
           {

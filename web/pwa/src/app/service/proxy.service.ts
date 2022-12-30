@@ -49,7 +49,7 @@ export class ProxyService {
 
         switch (this.cloudpilot.getSuspendKind()) {
             case SuspendKind.networkConnect:
-                this.handleConnect();
+                void this.handleConnect();
                 break;
 
             case SuspendKind.networkRpc:
@@ -220,7 +220,7 @@ export class ProxyService {
         if (!(evt.data instanceof ArrayBuffer)) {
             console.error('ERROR: socket received a text frame');
             this.disconnect(this.socket);
-            this.alertService.errorMessage('Connection to proxy closed unexpectedly due to an error.');
+            void this.alertService.errorMessage('Connection to proxy closed unexpectedly due to an error.');
 
             this.cancelSuspend();
 
@@ -239,9 +239,9 @@ export class ProxyService {
         this.cancelConnectTimeout();
 
         if (this.cloudpilot.isSuspended() && this.cloudpilot.getSuspendKind() === SuspendKind.networkConnect) {
-            this.alertService.errorMessage('Failed to connect to proxy.');
+            void this.alertService.errorMessage('Failed to connect to proxy.');
         } else {
-            this.alertService.errorMessage('Connection to proxy closed unexpectedly due to an error.');
+            void this.alertService.errorMessage('Connection to proxy closed unexpectedly due to an error.');
         }
 
         this.disconnect(this.socket);
@@ -253,7 +253,7 @@ export class ProxyService {
     private onSocketClose = (): void => {
         this.cancelConnectTimeout();
 
-        this.alertService.errorMessage('Connection to proxy closed unexpectedly');
+        void this.alertService.errorMessage('Connection to proxy closed unexpectedly');
 
         this.unbindListeners(this.socket);
         this.cancelSuspend();

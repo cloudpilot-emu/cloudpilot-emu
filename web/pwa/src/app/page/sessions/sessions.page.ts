@@ -68,7 +68,7 @@ export class SessionsPage {
         const oldSession = { ...session };
 
         if ((await this.editSettings(session)) && !deepEqual(session, oldSession)) {
-            this.sessionService.updateSession(session);
+            await this.sessionService.updateSession(session);
         }
     }
 
@@ -77,7 +77,7 @@ export class SessionsPage {
     }
 
     saveSession(session: Session): void {
-        this.fileService.saveSession(session);
+        void this.fileService.saveSession(session);
     }
 
     trackSessionBy(index: number, session: Session) {
@@ -88,11 +88,12 @@ export class SessionsPage {
         this.lastSessionTouched = session.id;
         this.currentSessionOverride = session.id;
 
+        await this.emulationService.stop();
         await this.emulationService.switchSession(session.id);
 
         this.currentSessionOverride = undefined;
 
-        this.router.navigateByUrl('/tab/emulation');
+        void this.router.navigateByUrl('/tab/emulation');
     }
 
     async resetSession(session: Session) {
@@ -132,7 +133,7 @@ export class SessionsPage {
 
     private async processFile(file: FileDescriptor): Promise<void> {
         if (!/\.(img|rom|bin)$/i.test(file.name)) {
-            this.alertService.errorMessage('Unsupported file suffix. Supported suffixes are .bin, .img and .rom.');
+            void this.alertService.errorMessage('Unsupported file suffix. Supported suffixes are .bin, .img and .rom.');
 
             return;
         }
@@ -160,12 +161,12 @@ export class SessionsPage {
             const romInfo = (await this.cloudpilotService.cloudpilot).getRomInfo(file.content);
 
             if (!romInfo) {
-                this.alertService.errorMessage(`Not a valid session file or ROM image.`);
+                void this.alertService.errorMessage(`Not a valid session file or ROM image.`);
                 return;
             }
 
             if (romInfo.supportedDevices.length === 0) {
-                this.alertService.errorMessage(`No supported device for this ROM.`);
+                void this.alertService.errorMessage(`No supported device for this ROM.`);
                 return;
             }
 
@@ -192,7 +193,7 @@ export class SessionsPage {
         return new Promise((resolve) => {
             let modal: HTMLIonModalElement;
 
-            this.modalController
+            void this.modalController
                 .create({
                     component: SessionSettingsComponent,
                     backdropDismiss: false,
@@ -200,18 +201,18 @@ export class SessionsPage {
                         session,
                         availableDevices,
                         onSave: () => {
-                            modal.dismiss();
+                            void modal.dismiss();
                             resolve(true);
                         },
                         onCancel: () => {
-                            modal.dismiss();
+                            void modal.dismiss();
                             resolve(false);
                         },
                     },
                 })
                 .then((m) => {
                     modal = m;
-                    modal.present();
+                    void modal.present();
                 });
         });
     }
@@ -232,7 +233,7 @@ export class SessionsPage {
             return;
         }
 
-        this.alertService.message(
+        void this.alertService.message(
             'Import request',
             `Do you want to import<br>${url} ?`,
             {

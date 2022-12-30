@@ -343,7 +343,7 @@ export class EmulatorImpl implements Emulator {
         this.session = { ...DEFAULT_SESSION, deviceId };
 
         if (this.emulationService.initWithRom(this.cloudpilot, rom, deviceId, this.session)) {
-            this.canvasDisplayService.initialize(undefined, deviceId, this.session.orientation);
+            void this.canvasDisplayService.initialize(undefined, deviceId, this.session.orientation);
             return this;
         }
 
@@ -363,7 +363,7 @@ export class EmulatorImpl implements Emulator {
         };
 
         if (this.emulationService.initWithSessionImage(this.cloudpilot, sessionImage, this.session)) {
-            this.canvasDisplayService.initialize(undefined, sessionImage.deviceId, this.session.orientation);
+            void this.canvasDisplayService.initialize(undefined, sessionImage.deviceId, this.session.orientation);
             return this;
         }
 
@@ -371,7 +371,7 @@ export class EmulatorImpl implements Emulator {
     }
 
     setCanvas(canvas: HTMLCanvasElement): this {
-        this.canvasDisplayService.initialize(canvas, this.session.deviceId, this.session.orientation);
+        void this.canvasDisplayService.initialize(canvas, this.session.deviceId, this.session.orientation);
 
         return this;
     }

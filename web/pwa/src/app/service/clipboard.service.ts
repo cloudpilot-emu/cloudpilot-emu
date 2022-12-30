@@ -22,11 +22,11 @@ export class ClipboardService {
 
         switch (cloudpilot.getSuspendKind()) {
             case SuspendKind.clipboardCopy:
-                this.handleCopy(cloudpilot);
+                void this.handleCopy(cloudpilot);
                 break;
 
             case SuspendKind.clipboardPaste:
-                this.handlePaste(cloudpilot);
+                void this.handlePaste(cloudpilot);
                 break;
         }
     }
@@ -81,7 +81,7 @@ export class ClipboardService {
                         {
                             text: 'Copy',
                             handler: async () => {
-                                alert.dismiss();
+                                void alert.dismiss();
 
                                 try {
                                     await navigator.clipboard.writeText(clipboardText);
@@ -95,7 +95,7 @@ export class ClipboardService {
                         {
                             text: 'Cancel',
                             handler: () => {
-                                alert.dismiss();
+                                void alert.dismiss();
 
                                 resolve(false);
                             },
@@ -103,7 +103,7 @@ export class ClipboardService {
                     ],
                 });
 
-                alert.present();
+                void alert.present();
             } catch (e) {
                 reject(e);
             }
@@ -167,7 +167,7 @@ export class ClipboardService {
                         {
                             text: 'Paste',
                             handler: async () => {
-                                alert.dismiss();
+                                void alert.dismiss();
 
                                 try {
                                     resolve(await navigator.clipboard.readText());
@@ -179,7 +179,7 @@ export class ClipboardService {
                         {
                             text: 'Cancel',
                             handler: () => {
-                                alert.dismiss();
+                                void alert.dismiss();
 
                                 resolve(undefined);
                             },
@@ -187,7 +187,7 @@ export class ClipboardService {
                     ],
                 });
 
-                alert.present();
+                void alert.present();
             } catch (e) {
                 reject(e);
             }
@@ -207,11 +207,11 @@ export class ClipboardService {
                             this.clipboardContent = await navigator.clipboard.readText();
                             this.lastClipboardReadAt = performance.now();
 
-                            alert.dismiss();
+                            void alert.dismiss();
 
                             ctx.Resume(this.clipboardContent);
                         } catch (e) {
-                            alert.dismiss();
+                            void alert.dismiss();
 
                             await this.alertService.errorMessage('Paste from host clipboard failed.');
 
@@ -222,7 +222,7 @@ export class ClipboardService {
                 {
                     text: 'Cancel',
                     handler: () => {
-                        alert.dismiss();
+                        void alert.dismiss();
 
                         ctx.Resume('');
                     },

@@ -55,7 +55,7 @@ export class SettingsPage implements OnInit {
 
     async ionViewWillLeave(): Promise<void> {
         if (this.formGroup.get(fields.networkRedirection)?.value && !this.formGroup.get(fields.proxyServer)?.valid) {
-            this.alertService.message(
+            void this.alertService.message(
                 'Invalid proxy server',
                 'The proxy server you specified is invalid. Network redirection will be disabled.'
             );
@@ -94,15 +94,15 @@ export class SettingsPage implements OnInit {
 
             switch (handshakeResult.status) {
                 case 'failed':
-                    this.alertService.errorMessage('Unable to connect to proxy');
+                    void this.alertService.errorMessage('Unable to connect to proxy');
                     break;
 
                 case 'version_mismatch':
-                    this.alertService.proxyVersionMismatchError();
+                    void this.alertService.proxyVersionMismatchError();
                     break;
 
                 default:
-                    this.alertService.message('Success', 'Connection to proxy successful.');
+                    void this.alertService.message('Success', 'Connection to proxy successful.');
             }
         } finally {
             this.connectionTestInProgress = false;
@@ -142,7 +142,7 @@ export class SettingsPage implements OnInit {
 
         if (!audioOnStart) return;
 
-        this.alertService.message(
+        void this.alertService.message(
             'Enable audio on start',
             `
             Audio will automatically turn on after the first interaction with the application

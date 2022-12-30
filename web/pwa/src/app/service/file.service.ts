@@ -37,13 +37,13 @@ export class FileService {
     ) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {
-        this.openFilesImpl(false, (files) => {
+        void this.openFilesImpl(false, (files) => {
             if (files.length > 0) handler(files[0]);
         });
     }
 
     openFiles(handler: (files: Array<FileDescriptor>) => void): void {
-        this.openFilesImpl(true, handler);
+        void this.openFilesImpl(true, handler);
     }
 
     async saveSession(session: Session): Promise<void> {
@@ -70,10 +70,10 @@ export class FileService {
                 this.saveFile(filenameForSession(session), image);
             } else {
                 await loader.dismiss();
-                this.alertService.errorMessage('Failed to save session.');
+                void this.alertService.errorMessage('Failed to save session.');
             }
         } finally {
-            loader.dismiss();
+            void loader.dismiss();
         }
     }
 
@@ -112,7 +112,7 @@ export class FileService {
             // However, the error case is only possible if allocations fail in WASM --- an
             // extreme edge case.
         } finally {
-            loader.dismiss();
+            void loader.dismiss();
         }
     }
 
@@ -170,7 +170,7 @@ export class FileService {
                 ],
             });
 
-            sheet.present();
+            void sheet.present();
         } else {
             this.openFilesLocal(multiple, handler);
         }
@@ -195,7 +195,7 @@ export class FileService {
         } catch (e) {
             return;
         } finally {
-            this.modalController.dismiss();
+            void this.modalController.dismiss();
         }
 
         await this.openUrl(url, (file) => handler([file]));

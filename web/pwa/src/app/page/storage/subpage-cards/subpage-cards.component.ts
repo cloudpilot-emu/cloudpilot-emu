@@ -1,4 +1,5 @@
 import { ActionSheetController, AlertController, ModalController } from '@ionic/angular';
+import { CardOwner, StorageCardContext } from './../../../service/storage-card-context';
 import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
 import { Component, Input } from '@angular/core';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
@@ -11,7 +12,6 @@ import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { ErrorService } from '@pwa/service/error.service';
 import { NewCardDialogComponent } from '../new-card-dialog/new-card-dialog.component';
 import { StorageCard } from '@pwa/model/StorageCard';
-import { VfsService } from '@pwa/service/vfs.service';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
 
@@ -29,8 +29,8 @@ export class SubpageCardsComponent {
         private cloudpilotService: CloudpilotService,
         private alertService: AlertService,
         private errorService: ErrorService,
-        private vfsService: VfsService,
-        private fileService: FileService
+        private fileService: FileService,
+        private storaceCarcContext: StorageCardContext
     ) {}
 
     get cards(): Array<StorageCard> {
@@ -52,7 +52,7 @@ export class SubpageCardsComponent {
             ],
         });
 
-        sheet.present();
+        void sheet.present();
     }
 
     showHelp(): void {}
@@ -91,9 +91,9 @@ export class SubpageCardsComponent {
                 card,
                 cardSupportLevel: cloudpilot.getCardSupportLevel(card.size),
                 onCancel: () => modal.dismiss(),
-                onSave: (update: Partial<StorageCard>) => {
-                    this.storageCardService.updateCard(card.id, update);
-                    modal.dismiss();
+                onSave: async (update: Partial<StorageCard>) => {
+                    await this.storageCardService.updateCard(card.id, update);
+                    await modal.dismiss();
                 },
             },
         });
@@ -102,7 +102,7 @@ export class SubpageCardsComponent {
     }
 
     saveCard(card: StorageCard) {
-        this.storageCardService.saveCard(card.id, `${filenameFragment(card.name.replace(/\.img$/, ''))}.img`);
+        void this.storageCardService.saveCard(card.id, `${filenameFragment(card.name.replace(/\.img$/, ''))}.img`);
     }
 
     async checkCard(card: StorageCard): Promise<void> {
@@ -128,28 +128,37 @@ export class SubpageCardsComponent {
 
         switch (fsckContext.getResult()) {
             case FsckResult.ok:
-                this.alertService.cardIsClean();
+                void this.alertService.cardIsClean();
                 return;
 
             case FsckResult.invalid:
-                this.alertService.cardHasNoValidFileSystem();
+                void this.alertService.cardHasNoValidFileSystem();
                 return;
 
             case FsckResult.unfixable:
-                this.alertService.cardHasUncorrectableErrors();
+                void this.alertService.cardHasUncorrectableErrors();
                 break;
 
-            case FsckResult.fixed:
-                this.alertService.message(
+            case FsckResult.fixed: {
+                let fixErrors = false;
+
+                await this.alertService.message(
                     'Filesystem errors',
                     `The filesystem on this card contains errors${
                         card.dontFsckAutomatically ? '' : '  that need to be fixed before it can be used'
                     }. Do you want to fix them now?`,
-                    { 'Fix now': () => this.applyFsckResult(card.id, fsckContext) },
+                    { 'Fix now': () => (fixErrors = true) },
                     'Cancel'
                 );
 
+                if (fixErrors) {
+                    await this.applyFsckResult(card.id, fsckContext);
+                } else {
+                    this.storaceCarcContext.release(card.id, CardOwner.fstools);
+                }
+
                 return;
+            }
         }
     }
 
@@ -190,9 +199,9 @@ export class SubpageCardsComponent {
             backdropDismiss: false,
             componentProps: {
                 onCancel: () => modal.dismiss(),
-                onCreate: (name: string, size: NewCardSize, dontFsckAutomatically: boolean) => {
-                    this.storageCardService.createEmptyCard(name, size, dontFsckAutomatically);
-                    modal.dismiss();
+                onCreate: async (name: string, size: NewCardSize, dontFsckAutomatically: boolean) => {
+                    await this.storageCardService.createEmptyCard(name, size, dontFsckAutomatically);
+                    await modal.dismiss();
                 },
             },
         });
@@ -205,7 +214,7 @@ export class SubpageCardsComponent {
         const supportLevel = cloudpilot.getCardSupportLevel(file.content.length);
 
         if (supportLevel === CardSupportLevel.unsupported) {
-            this.alertService.errorMessage('This is not a supported card image.');
+            void this.alertService.errorMessage('This is not a supported card image.');
             return;
         }
 
@@ -218,12 +227,12 @@ export class SubpageCardsComponent {
                     cardSupportLevel: supportLevel,
                     newCard: true,
                     onCancel: () => {
-                        modal.dismiss();
+                        void modal.dismiss();
                         resolve(undefined);
                     },
                     onSave: (updatedCard: StorageCard) => {
                         resolve(updatedCard);
-                        modal.dismiss();
+                        void modal.dismiss();
                     },
                 },
             });
@@ -249,7 +258,7 @@ export class SubpageCardsComponent {
     private async applyFsckResult(cardId: number, context: FsckContext) {
         await this.storageCardService.applyFsckResult(cardId, context);
 
-        this.alertService.message('Card fixed', 'All filesystem errors have been fixed.');
+        void this.alertService.message('Card fixed', 'All filesystem errors have been fixed.');
     }
 
     lastCardTouched: number | undefined = undefined;

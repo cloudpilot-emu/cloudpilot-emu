@@ -1,3 +1,4 @@
+import { CardOwner, StorageCardContext } from './storage-card-context';
 import { FileEntry, ReaddirError, Vfs } from '@common/bridge/Vfs';
 
 import { Event } from 'microevent.ts';
@@ -7,7 +8,7 @@ import { StorageService } from '@pwa/service/storage.service';
 
 @Injectable({ providedIn: 'root' })
 export class VfsService {
-    constructor(private storageService: StorageService) {}
+    constructor(private storageService: StorageService, private storageCardContext: StorageCardContext) {}
 
     normalizePath(path: string): string {
         return path.replace(/\/*$/, '');
@@ -21,10 +22,12 @@ export class VfsService {
         const card = await this.storageService.getCard(id);
         if (!card) throw new Error(`no card with id ${id}`);
 
+        this.storageCardContext.claim(id, CardOwner.vfs);
+
         this.directoryCache.clear();
 
         if (this.mountedCard?.id === id) return true;
-        if (this.mountedCard) this.releaseCard(this.mountedCard.id);
+        if (this.mountedCard) await this.releaseCard(this.mountedCard.id);
 
         const vfs = await this.vfs;
 
@@ -35,7 +38,7 @@ export class VfsService {
         if (data) {
             pendingImage.set(data);
         } else {
-            await this.storageService.loadCardData(id, pendingImage);
+            await this.storageService.loadCardData(id, pendingImage, CardOwner.vfs);
         }
 
         if (vfs.MountImage(0)) {
@@ -51,6 +54,8 @@ export class VfsService {
 
         (await this.vfs).UnmountImage(0);
         this.mountedCard = undefined;
+
+        this.storageCardContext.release(id, CardOwner.vfs);
 
         this.onReleaseCard.dispatch(id);
     }

@@ -55,7 +55,7 @@ export class KvsService {
                 set<T extends keyof Kvs>(target: Kvs, key: T, value: Kvs[T]): boolean {
                     target[key] = value;
 
-                    self.storageMutex.runExclusive(() => self.storageService.kvsSet({ [key]: value }));
+                    void self.storageMutex.runExclusive(() => self.storageService.kvsSet({ [key]: value }));
                     self.updateEvent.dispatch();
 
                     return true;
@@ -63,7 +63,7 @@ export class KvsService {
                 deleteProperty(target: Kvs, key: keyof Kvs): boolean {
                     delete target[key];
 
-                    self.storageMutex.runExclusive(() => self.storageService.kvsDelete(key));
+                    void self.storageMutex.runExclusive(() => self.storageService.kvsDelete(key));
                     self.updateEvent.dispatch();
 
                     return true;

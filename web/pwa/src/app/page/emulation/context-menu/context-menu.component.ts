@@ -76,7 +76,7 @@ export class ContextMenuComponent {
     ) {}
 
     async reset(): Promise<void> {
-        this.popoverController.dismiss();
+        void this.popoverController.dismiss();
 
         const sheet = await this.actionSheetController.create({
             header: 'How do you want to reset?',
@@ -100,29 +100,29 @@ export class ContextMenuComponent {
             ],
         });
 
-        sheet.present();
+        void sheet.present();
     }
 
     power(): void {
         this.buttonService.engage(PalmButton.power);
 
-        this.popoverController.dismiss();
+        void this.popoverController.dismiss();
     }
 
     hotsync(): void {
         this.buttonService.engage(PalmButton.cradle);
 
-        this.popoverController.dismiss();
+        void this.popoverController.dismiss();
     }
 
     help(): void {
         this.showHelp();
 
-        this.popoverController.dismiss();
+        void this.popoverController.dismiss();
     }
 
     async backup(): Promise<void> {
-        this.popoverController.dismiss();
+        void this.popoverController.dismiss();
 
         const sheet = await this.actionSheetController.create({
             header: 'What do you want to backup?',
@@ -142,7 +142,7 @@ export class ContextMenuComponent {
             ],
         });
 
-        sheet.present();
+        void sheet.present();
     }
 
     get isMuted(): boolean {
@@ -160,7 +160,7 @@ export class ContextMenuComponent {
             if (this.audioService.isInitialized()) {
                 this.audioService.mute(false);
             } else {
-                this.audioService.initialize();
+                void this.audioService.initialize();
             }
         }
     }
@@ -219,13 +219,13 @@ export class ContextMenuComponent {
                 onSave: async () => {
                     if (oldSpeed !== session.speed) this.performanceWatchdogService.reset();
                     if (oldOrientation !== session.deviceOrientation) {
-                        this.canvasDisplayService.initialize(undefined, session);
+                        void this.canvasDisplayService.initialize(undefined, session);
                         this.canvasDisplayService.updateEmulationCanvas();
                     }
 
                     await this.sessionService.updateSession(session);
 
-                    modal.dismiss();
+                    void modal.dismiss();
                 },
                 onCancel: () => modal.dismiss(),
             },
@@ -245,12 +245,12 @@ export class ContextMenuComponent {
 
         const session = this.emulationStateService.getCurrentSession();
 
-        this.canvasDisplayService.initialize(undefined, session);
+        await this.canvasDisplayService.initialize(undefined, session);
         this.canvasDisplayService.updateEmulationCanvas();
     }
 
     async insertCard(): Promise<void> {
-        this.popoverController.dismiss();
+        void this.popoverController.dismiss();
 
         const deviceId = this.emulationStateService.getCurrentSession()?.device;
         if (deviceId === undefined) return;
@@ -264,7 +264,7 @@ export class ContextMenuComponent {
             );
 
         if (eligibleCards.length === 0) {
-            this.alertService.message(
+            void this.alertService.message(
                 'No image available',
                 `There is no ${
                     this.hasMemorystick ? 'memory stick' : 'SD card'
@@ -298,7 +298,7 @@ export class ContextMenuComponent {
         } catch (e) {
             this.errorService.fatalBug(e instanceof Error ? e.message : 'eject failed');
         }
-        this.popoverController.dismiss();
+        void this.popoverController.dismiss();
     }
 
     @Input()

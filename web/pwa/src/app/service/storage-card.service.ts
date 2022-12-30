@@ -1,3 +1,4 @@
+import { CardOwner, StorageCardContext } from './storage-card-context';
 import { FsckContext, FsckResult, mkfs } from '@common/bridge/FSTools';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
@@ -92,9 +93,10 @@ export class StorageCardService {
         private alertService: AlertService,
         private errorService: ErrorService,
         private fileService: FileService,
-        private vfsService: VfsService
+        private vfsService: VfsService,
+        private storageCardContext: StorageCardContext
     ) {
-        this.updateCardsFromDB().then(() => (this.loading = false));
+        void this.updateCardsFromDB().then(() => (this.loading = false));
 
         storageService.storageCardChangeEvent.addHandler(() => this.updateCardsFromDB());
     }
@@ -120,12 +122,9 @@ export class StorageCardService {
                 dontFsckAutomatically,
             };
 
-            const card = await this.storageService.importStorageCard(cardWithoutId, cardImage);
-            this.updateCardsFromDB();
-
-            return card;
+            return await this.storageService.importStorageCard(cardWithoutId, cardImage);
         } finally {
-            loader.dismiss();
+            void loader.dismiss();
         }
     }
 
@@ -151,10 +150,8 @@ export class StorageCardService {
                 await this.storageService.importStorageCard(checkedCardWithoutId, fixedData32);
             }
         } finally {
-            loader.dismiss();
+            void loader.dismiss();
         }
-
-        this.updateCardsFromDB();
     }
 
     insertCard(id: number): Promise<boolean> {
@@ -165,11 +162,13 @@ export class StorageCardService {
         return this.claimCard(id, 'vfs');
     }
 
-    async loadCard(cardId: number, data?: Uint32Array): Promise<StorageCard> {
+    async loadCardInEmulator(cardId: number, data?: Uint32Array): Promise<StorageCard> {
         const card = await this.storageService.getCard(cardId);
         if (!card) {
             throw new Error(`no card with id ${cardId}`);
         }
+
+        await this.vfsService.releaseCard(cardId);
 
         const cloudpilot = await this.cloudpilotService.cloudpilot;
         if (cloudpilot.getMountedKey()) {
@@ -185,8 +184,10 @@ export class StorageCardService {
             throw new Error('failed to access card data');
         }
 
+        this.storageCardContext.claim(cardId, CardOwner.cloudpilot);
+
         if (data) cardData.set(data);
-        else await this.storageService.loadCardData(card.id, cardData);
+        else await this.storageService.loadCardData(card.id, cardData, CardOwner.cloudpilot);
 
         return card;
     }
@@ -214,6 +215,7 @@ export class StorageCardService {
         cloudpilot.removeCard(card.storageId);
 
         this.snapshotService.resetCard();
+        this.storageCardContext.release(cardId, CardOwner.cloudpilot);
     }
 
     async fsckCard(cardId: number): Promise<FsckContext> {
@@ -229,27 +231,37 @@ export class StorageCardService {
                 throw new Error(`no card with id ${cardId}`);
             }
 
+            await this.vfsService.releaseCard(cardId);
+            this.storageCardContext.claim(cardId, CardOwner.fstools);
             const context = await FsckContext.create(card.size);
-            await this.storageService.loadCardData(card.id, context.getImageData());
+
+            await this.storageService.loadCardData(card.id, context.getImageData(), CardOwner.fstools);
 
             const result = context.fsck();
             switch (result) {
                 case FsckResult.ok:
                     await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.clean });
+                    this.storageCardContext.release(cardId, CardOwner.fstools);
+
                     break;
 
                 case FsckResult.invalid:
                     await this.storageService.updateStorageCardPartial(cardId, {
                         status: StorageCardStatus.unformatted,
                     });
+                    this.storageCardContext.release(cardId, CardOwner.fstools);
+
                     break;
 
                 case FsckResult.fixed:
+                    // Do NOT release ownership in this case --- the caller may either apply the changes or release themselves.
                     await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
                     break;
 
                 case FsckResult.unfixable:
                     await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.unfixable });
+                    this.storageCardContext.release(cardId, CardOwner.fstools);
+
                     break;
 
                 default:
@@ -258,7 +270,7 @@ export class StorageCardService {
 
             return context;
         } finally {
-            loader.dismiss();
+            void loader.dismiss();
         }
     }
 
@@ -269,11 +281,17 @@ export class StorageCardService {
 
         try {
             await loader.present();
-            await this.vfsService.releaseCard(cardId);
-            await this.storageService.updateCardData(cardId, context.getImageData(), context.getDirtyPages());
+            await this.storageService.updateCardData(
+                cardId,
+                context.getImageData(),
+                context.getDirtyPages(),
+                CardOwner.fstools
+            );
             await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.clean });
+
+            this.storageCardContext.release(cardId, CardOwner.fstools);
         } finally {
-            loader.dismiss();
+            void loader.dismiss();
         }
     }
 
@@ -289,16 +307,13 @@ export class StorageCardService {
     async forceEjectCard(id: number): Promise<void> {
         const session = this.mountedInSession(id);
         const card = await this.storageService.getCard(id);
+        if (!session || !card) return;
 
-        if (session && card) {
+        if (session.id === this.emulationStateService.getCurrentSession()?.id) {
+            await this.ejectCurrentCard();
+        } else {
             await this.storageService.updateSessionPartial(session.id, { mountedCard: undefined });
-
-            if (session.id === this.emulationStateService.getCurrentSession()?.id) {
-                const cloudpilot = await this.cloudpilotService.cloudpilot;
-                cloudpilot.removeCard(card.storageId);
-
-                this.snapshotService.resetCard();
-            }
+            await this.storageService.updateStorageCardPartial(id, { status: StorageCardStatus.dirty });
         }
     }
 
@@ -306,8 +321,6 @@ export class StorageCardService {
         await this.vfsService.releaseCard(id);
         await this.forceEjectCard(id);
         await this.storageService.deleteStorageCard(id);
-
-        this.updateCardsFromDB();
     }
 
     async saveCard(id: number, name: string): Promise<void> {
@@ -332,10 +345,10 @@ export class StorageCardService {
 
             if (!data) {
                 data = new Uint32Array(card.size >>> 2);
-                await this.storageService.loadCardData(card.id, data);
+                await this.storageService.loadCardData(card.id, data, this.storageCardContext.getOwner(id));
             }
         } finally {
-            loader.dismiss();
+            void loader.dismiss();
         }
 
         this.fileService.saveFile(name, new Uint8Array(data.buffer, data.byteOffset, data.length << 2));
@@ -379,7 +392,10 @@ export class StorageCardService {
                         'Cancel'
                     );
 
-                    if (!mountNow) return false;
+                    if (!mountNow) {
+                        this.storageCardContext.release(id, CardOwner.fstools);
+                        return false;
+                    }
                     await this.applyFsckResult(card.id, fsckContext);
                 }
 
@@ -393,7 +409,7 @@ export class StorageCardService {
 
                 case StorageCardStatus.unformatted:
                     if (action === 'vfs') {
-                        this.alertService.message(
+                        await this.alertService.message(
                             'Card unformatted',
                             'This card is unformatted and cannot be browsed. Insert it into a device and format it.'
                         );
@@ -436,10 +452,14 @@ export class StorageCardService {
 
         try {
             if (action === 'insert') {
+                await this.vfsService.releaseCard(id);
                 await this.mountCardInEmulator(id, fsckContext?.getImageData());
             } else {
                 if (!(await this.mountCardForBrowsing(id, mountReadonly, fsckContext?.getImageData()))) {
-                    this.alertService.message('Failed to mount card', 'The card could not be mounted for browsing.');
+                    await this.alertService.message(
+                        'Failed to mount card',
+                        'The card could not be mounted for browsing.'
+                    );
                 }
             }
         } catch (e) {
@@ -477,7 +497,7 @@ export class StorageCardService {
             fsckContext.getImageData().set(data);
             result = fsckContext.fsck();
         } finally {
-            loader.dismiss();
+            void loader.dismiss();
         }
 
         switch (result) {
@@ -527,7 +547,7 @@ export class StorageCardService {
             if (!session) throw new Error('no current session');
             if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
 
-            const card = await this.loadCard(cardId, data);
+            const card = await this.loadCardInEmulator(cardId, data);
             const cloudpilot = await this.cloudpilotService.cloudpilot;
 
             await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
@@ -541,7 +561,7 @@ export class StorageCardService {
 
             return card;
         } finally {
-            loader.dismiss();
+            void loader.dismiss();
         }
     }
 
@@ -554,7 +574,7 @@ export class StorageCardService {
             await loader.present();
             return await this.vfsService.mountCardUnchecked(id, readonly, data);
         } finally {
-            loader.dismiss();
+            void loader.dismiss();
         }
     }
 

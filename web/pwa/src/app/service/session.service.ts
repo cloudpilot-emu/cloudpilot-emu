@@ -20,7 +20,7 @@ export class SessionService {
         private storageService: StorageService,
         private loadingController: LoadingController
     ) {
-        this.updateSessionsFromStorage().then(() => (this.loading = false));
+        void this.updateSessionsFromStorage().then(() => (this.loading = false));
 
         this.storageService.sessionChangeEvent.addHandler(this.updateSessionsFromStorage.bind(this));
     }

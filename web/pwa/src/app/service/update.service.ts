@@ -21,11 +21,11 @@ export class UpdateService {
         private modalController: ModalController,
         private updates: SwUpdate
     ) {
-        this.mutex.runExclusive(this.checkForDowngrade.bind(this));
+        void this.mutex.runExclusive(this.checkForDowngrade.bind(this));
     }
 
     public start(): void {
-        this.checkForUpgrade();
+        void this.checkForUpgrade();
         this.startUpdateCheck();
         this.registerForUpdates();
     }
@@ -53,7 +53,7 @@ export class UpdateService {
             // wait for a possible loader to disappear
             await this.emulationService.bootstrapComplete();
 
-            this.alertService.message('Update complete', `CloudpilotEmu was updated to version ${VERSION}.`, {
+            void this.alertService.message('Update complete', `CloudpilotEmu was updated to version ${VERSION}.`, {
                 Changes: () => this.showChangelog(),
             });
         });
@@ -66,7 +66,7 @@ export class UpdateService {
         this.updates.available.subscribe(async () => {
             await this.emulationService.bootstrapComplete();
 
-            this.alertService.updateAvailable();
+            void this.alertService.updateAvailable();
         });
     }
 
@@ -102,7 +102,7 @@ export class UpdateService {
 
     private scheduleUpdateCheck(): void {
         setTimeout(() => {
-            this.updates.checkForUpdate();
+            void this.updates.checkForUpdate();
             this.scheduleUpdateCheck();
         }, UPDATE_INTERVAL_MSEC);
     }

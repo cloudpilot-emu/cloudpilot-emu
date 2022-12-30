@@ -78,7 +78,7 @@ export class SessionSettingsComponent implements OnInit {
                 this.session.dontManageHotsyncName = false;
                 this.session.hotsyncName = this.formControlHotsyncName.value || '';
 
-                this.alertService.message(
+                void this.alertService.message(
                     'Reset required',
                     'Please reset the virtual device in order to make sure that the hotsync name is synced properly again.'
                 );

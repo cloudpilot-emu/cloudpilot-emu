@@ -35,7 +35,7 @@ export class AlertService {
                     text,
                     handler: () => {
                         extraButtons[text]();
-                        alert.dismiss();
+                        void alert.dismiss();
                     },
                 })),
                 { text: closeButtonLabel, role: 'cancel' },
