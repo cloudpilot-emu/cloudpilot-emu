@@ -1,9 +1,7 @@
 import { ActionSheetController, AlertController, ModalController } from '@ionic/angular';
-import { CardOwner, StorageCardContext } from './../../../service/storage-card-context';
 import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
 import { Component, Input } from '@angular/core';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
-import { FsckContext, FsckResult } from '@common/bridge/FSTools';
 import { NewCardSize, StorageCardService } from '@pwa/service/storage-card.service';
 
 import { AlertService } from '@pwa/service/alert.service';
@@ -12,6 +10,8 @@ import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { ErrorService } from '@pwa/service/error.service';
 import { NewCardDialogComponent } from '../new-card-dialog/new-card-dialog.component';
 import { StorageCard } from '@pwa/model/StorageCard';
+import { StorageCardContext } from './../../../service/storage-card-context';
+import { debounce } from '@pwa/util/debounce';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
 
@@ -37,6 +37,7 @@ export class SubpageCardsComponent {
         return this.storageCardService.getAllCards();
     }
 
+    @debounce()
     async addCardImage(): Promise<void> {
         const sheet = await this.actionSheetController.create({
             header: 'What type of image do you want to create?',
@@ -57,30 +58,12 @@ export class SubpageCardsComponent {
 
     showHelp(): void {}
 
+    @debounce()
     async selectCard(card: StorageCard) {
-        const session = this.storageCardService.mountedInSession(card.id);
-        if (session) {
-            let forceEject = false;
-
-            await this.alertService.message(
-                'Card is attached',
-                `This card needs to be ejected from session '${session.name}' before it can be browsed.`,
-                { 'Eject now': () => (forceEject = true) },
-                'Cancel'
-            );
-
-            if (forceEject) {
-                await this.storageCardService.forceEjectCard(card.id);
-            } else {
-                return;
-            }
-        }
-
-        if (await this.storageCardService.attachCardToVfs(card.id)) {
-            this.onMountForBrowse(card);
-        }
+        if (await this.storageCardService.browseCard(card)) this.onMountForBrowse(card);
     }
 
+    @debounce()
     async editCard(card: StorageCard) {
         const cloudpilot = await this.cloudpilotService.cloudpilot;
 
@@ -101,67 +84,17 @@ export class SubpageCardsComponent {
         await modal.present();
     }
 
-    saveCard(card: StorageCard) {
-        void this.storageCardService.saveCard(card.id, `${filenameFragment(card.name.replace(/\.img$/, ''))}.img`);
+    @debounce()
+    saveCard(card: StorageCard): Promise<void> {
+        return this.storageCardService.saveCard(card.id, `${filenameFragment(card.name.replace(/\.img$/, ''))}.img`);
     }
 
-    async checkCard(card: StorageCard): Promise<void> {
-        const session = this.storageCardService.mountedInSession(card.id);
-        if (session) {
-            let forceEject = false;
-
-            await this.alertService.message(
-                'Card is attached',
-                `This card needs to be ejected from session '${session.name}' before it can be checked.`,
-                { 'Eject now': () => (forceEject = true) },
-                'Cancel'
-            );
-
-            if (forceEject) {
-                await this.storageCardService.forceEjectCard(card.id);
-            } else {
-                return;
-            }
-        }
-
-        const fsckContext = await this.storageCardService.fsckCard(card.id);
-
-        switch (fsckContext.getResult()) {
-            case FsckResult.ok:
-                void this.alertService.cardIsClean();
-                return;
-
-            case FsckResult.invalid:
-                void this.alertService.cardHasNoValidFileSystem();
-                return;
-
-            case FsckResult.unfixable:
-                void this.alertService.cardHasUncorrectableErrors();
-                break;
-
-            case FsckResult.fixed: {
-                let fixErrors = false;
-
-                await this.alertService.message(
-                    'Filesystem errors',
-                    `The filesystem on this card contains errors${
-                        card.dontFsckAutomatically ? '' : '  that need to be fixed before it can be used'
-                    }. Do you want to fix them now?`,
-                    { 'Fix now': () => (fixErrors = true) },
-                    'Cancel'
-                );
-
-                if (fixErrors) {
-                    await this.applyFsckResult(card.id, fsckContext);
-                } else {
-                    this.storaceCarcContext.release(card.id, CardOwner.fstools);
-                }
-
-                return;
-            }
-        }
+    @debounce()
+    checkCard(card: StorageCard): Promise<void> {
+        return this.storageCardService.checkCard(card);
     }
 
+    @debounce()
     async deleteCard(card: StorageCard) {
         const alert = await this.alertController.create({
             header: 'Warning',
@@ -253,12 +186,6 @@ export class SubpageCardsComponent {
         const cards = this.storageCardService.getAllCards();
 
         return disambiguateName(name, (x) => cards.some((card) => card.name === x));
-    }
-
-    private async applyFsckResult(cardId: number, context: FsckContext) {
-        await this.storageCardService.applyFsckResult(cardId, context);
-
-        void this.alertService.message('Card fixed', 'All filesystem errors have been fixed.');
     }
 
     lastCardTouched: number | undefined = undefined;

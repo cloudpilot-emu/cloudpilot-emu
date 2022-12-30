@@ -14,6 +14,7 @@ import { Session } from '@pwa/model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
+import { debounce } from '@pwa/util/debounce';
 import deepEqual from 'deep-equal';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 
@@ -50,6 +51,7 @@ export class SessionsPage {
         return this.sessionService.getSessions().sort((a, b) => a.name.localeCompare(b.name));
     }
 
+    @debounce()
     async deleteSession(session: Session): Promise<void> {
         const alert = await this.alertController.create({
             header: 'Warning',
@@ -64,6 +66,7 @@ export class SessionsPage {
         await alert.present();
     }
 
+    @debounce()
     async editSession(session: Session): Promise<void> {
         const oldSession = { ...session };
 
@@ -76,14 +79,16 @@ export class SessionsPage {
         this.fileService.openFile(this.processFile.bind(this));
     }
 
-    saveSession(session: Session): void {
-        void this.fileService.saveSession(session);
+    @debounce()
+    saveSession(session: Session): Promise<void> {
+        return this.fileService.saveSession(session);
     }
 
     trackSessionBy(index: number, session: Session) {
         return session.id;
     }
 
+    @debounce()
     async launchSession(session: Session) {
         this.lastSessionTouched = session.id;
         this.currentSessionOverride = session.id;
@@ -95,6 +100,7 @@ export class SessionsPage {
         void this.router.navigateByUrl('/tab/emulation');
     }
 
+    @debounce()
     async resetSession(session: Session) {
         const running = session.id === this.emulationState.getCurrentSession()?.id;
 
