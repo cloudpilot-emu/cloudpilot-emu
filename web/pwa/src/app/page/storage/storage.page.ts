@@ -15,9 +15,15 @@ export class StoragePage implements OnInit {
     constructor(private vfsService: VfsService) {}
 
     ngOnInit(): void {
-        this.vfsService.onReleaseCard.addHandler(
-            (id) => id === this.currentlyBrowsingCard?.id && this.nav?.popToRoot()
-        );
+        this.vfsService.onReleaseCard.addHandler(this.onReleaseCard.bind(this));
+    }
+
+    ionViewDidEnter(): void {
+        this.isVisible = true;
+    }
+
+    ionViewWillLeave(): void {
+        this.isVisible = false;
     }
 
     readonly navRootProps = {
@@ -39,10 +45,18 @@ export class StoragePage implements OnInit {
         });
     };
 
+    private onReleaseCard(id: number): void {
+        if (id !== this.currentlyBrowsingCard?.id || !this.nav) return;
+
+        if (!this.isVisible) this.nav.animated = false;
+        this.nav.popToRoot(undefined, () => this.nav && (this.nav.animated = true));
+    }
+
     @ViewChild('nav')
     nav: IonNav | undefined;
 
     readonly navRoot = SubpageCardsComponent;
 
     private currentlyBrowsingCard: StorageCard | undefined;
+    private isVisible = false;
 }
