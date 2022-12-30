@@ -76,8 +76,10 @@ export class EmulationService extends AbstractEmulationService {
         return this.bootstrapCompletePromise;
     }
 
-    switchSession = (id: number): Promise<void> =>
-        this.mutex.runExclusive(async () => {
+    async switchSession(id: number): Promise<void> {
+        await this.stop();
+
+        await this.mutex.runExclusive(async () => {
             if (id === this.emulationState.getCurrentSession()?.id) {
                 return;
             }
@@ -103,6 +105,7 @@ export class EmulationService extends AbstractEmulationService {
                 await loader.dismiss();
             }
         });
+    }
 
     resume = (): Promise<void> =>
         this.mutex.runExclusive(async () => {

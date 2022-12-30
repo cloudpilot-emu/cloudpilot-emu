@@ -88,7 +88,6 @@ export class SessionsPage {
         this.lastSessionTouched = session.id;
         this.currentSessionOverride = session.id;
 
-        await this.emulationService.stop();
         await this.emulationService.switchSession(session.id);
 
         this.currentSessionOverride = undefined;
