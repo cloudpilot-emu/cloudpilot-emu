@@ -46,6 +46,7 @@ LDFLAGS_EMCC_WEB = $(EMCC_OPT) -Wno-version-check \
 	-s ENVIRONMENT="web,worker" \
 	-s ALLOW_MEMORY_GROWTH=1 \
 	-s ALLOW_TABLE_GROWTH=1 \
+	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
 	-s INITIAL_MEMORY=39976960
 
 BUILDDIR_NATIVE = .build

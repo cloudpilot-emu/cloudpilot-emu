@@ -162,6 +162,11 @@ export class StorageCardService {
         return this.claimCard(id, 'vfs');
     }
 
+    onEmulatorStop(): void {
+        const mountedCard = this.emulationStateService.getCurrentSession()?.mountedCard;
+        if (mountedCard !== undefined) this.storageCardContext.release(mountedCard, CardOwner.cloudpilot);
+    }
+
     async loadCardInEmulator(cardId: number, data?: Uint32Array): Promise<StorageCard> {
         const card = await this.storageService.getCard(cardId);
         if (!card) {

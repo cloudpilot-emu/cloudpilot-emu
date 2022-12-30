@@ -1,5 +1,4 @@
 import { ApplicationRef, Injectable, NgZone } from '@angular/core';
-import { CardOwner, StorageCardContext } from './storage-card-context';
 import { clearStoredSession, getStoredSession, setStoredSession } from '@pwa/helper/storedSession';
 
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
@@ -20,6 +19,7 @@ import { ProxyService } from './proxy.service';
 import { SchedulerKind } from '@common/helper/scheduler';
 import { Session } from '@pwa/model/Session';
 import { SnapshotService } from './snapshot.service';
+import { StorageCardContext } from './storage-card-context';
 import { StorageCardService } from '@pwa/service/storage-card.service';
 import { StorageService } from './storage.service';
 import { hasInitialImportRequest } from './link-api.service';
@@ -140,10 +140,7 @@ export class EmulationService extends AbstractEmulationService {
 
             this.doStop();
             await this.snapshotService.waitForPendingSnapshot();
-
-            const mountedCard = this.emulationState.getCurrentSession()?.mountedCard;
-            if (mountedCard !== undefined) this.storageCardContext.release(mountedCard, CardOwner.cloudpilot);
-
+            this.storageCardService.onEmulatorStop();
             this.emulationState.setCurrentSession(undefined);
         });
 
