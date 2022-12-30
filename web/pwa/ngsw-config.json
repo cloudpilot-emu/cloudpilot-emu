@@ -50,6 +50,7 @@
           "/svg/copy-outline.svg",
           "/svg/document-outline.svg",
           "/svg/list-outline.svg",
+          "/svg/file-tray-outline.svg",
           "/assets/**",
           "/*.(eot|svg|cur|jpg|png|webp|gif|otf|ttf|woff|woff2|ani)"
         ]
