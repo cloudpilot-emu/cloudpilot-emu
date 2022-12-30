@@ -42,7 +42,14 @@ export class StoragePage implements OnInit {
             card: this.currentlyBrowsingCard,
             path,
             onNavigate: this.onNavigate,
+            onNavigateBreadcrumb: this.onNavigateBreadcrumb,
         });
+    };
+
+    private onNavigateBreadcrumb = (index: number): void => {
+        if (!this.currentlyBrowsingCard) return;
+
+        void this.nav?.popTo(index);
     };
 
     private onReleaseCard(id: number): void {

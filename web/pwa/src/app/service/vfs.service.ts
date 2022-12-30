@@ -11,11 +11,11 @@ export class VfsService {
     constructor(private storageService: StorageService, private storageCardContext: StorageCardContext) {}
 
     normalizePath(path: string): string {
-        return path.replace(/\/*$/, '');
+        return ('/' + path).replace(/\/{2,}/g, '/').replace(/\/*$/, '');
     }
 
     splitPath(path: string): Array<string> {
-        return this.normalizePath(path).split('/');
+        return this.normalizePath(path).replace(/^\/+/, '').split('/');
     }
 
     async mountCardUnchecked(id: number, readonly: boolean, data?: Uint32Array): Promise<boolean> {

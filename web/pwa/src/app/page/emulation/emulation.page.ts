@@ -97,6 +97,7 @@ export class EmulationPage {
             componentProps: {
                 showHelp: () => this.showHelp(),
             },
+            arrow: false,
         });
 
         void popover.present();

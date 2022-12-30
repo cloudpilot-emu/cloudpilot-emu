@@ -1,6 +1,7 @@
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { CommonModule } from '@angular/common';
+import { ContextMenuBreadcrumbComponent } from './context-menu-breadcrumb/context-menu-breadcrumb.component';
 import { ContextMenuCardComponent } from './context-menu-card/context-menu-card.component';
 import { EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
 import { FileEntryComponent } from './file-entry/file-entry.component';
@@ -24,6 +25,7 @@ import { SubpageDirectoryComponent } from './subpage-directory/subpage-directory
         SubpageCardsComponent,
         SubpageDirectoryComponent,
         FileEntryComponent,
+        ContextMenuBreadcrumbComponent,
     ],
 })
 export class StoragePageModule {}

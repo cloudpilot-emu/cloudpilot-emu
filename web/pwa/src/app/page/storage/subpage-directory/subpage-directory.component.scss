@@ -19,3 +19,17 @@
 ion-list {
     background: none;
 }
+
+.select-arrow {
+    border-top: 5px solid;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    display: inline-block;
+    opacity: 0.33;
+    margin-left: 0.5em;
+    vertical-align: middle;
+
+    .md & {
+        opacity: 0.55;
+    }
+}

@@ -24,6 +24,7 @@ export class StorageCardComponent {
             event: e,
             backdropDismiss: true,
             showBackdrop: false,
+            arrow: false,
             componentProps: {
                 onEdit: () => {
                     void popover.dismiss();

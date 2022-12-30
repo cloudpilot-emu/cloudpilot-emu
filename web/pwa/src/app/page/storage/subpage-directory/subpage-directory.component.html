@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>{{title}}</ion-title>
+    <ion-title [id]="breadcrumbTriggerId" (click)="openBreadcrumbMenu($event)">{{title}}<div class="select-arrow" *ngIf="showBreadcrumb"></div></ion-title>
 
     <ion-buttons slot="start">
       <ion-back-button></ion-back-button>

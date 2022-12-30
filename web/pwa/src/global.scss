@@ -73,3 +73,7 @@ ion-modal {
         padding-right: 0;
     }
 }
+
+.ios ion-popover.popover-border {
+    --box-shadow: 0 0 0 1px var(--ion-background-color, white);
+}

@@ -47,6 +47,9 @@
           "/svg/log-out-outline.svg",
           "/svg/medkit-outline.svg",
           "/svg/folder-outline.svg",
+          "/svg/copy-outline.svg",
+          "/svg/document-outline.svg",
+          "/svg/list-outline.svg",
           "/assets/**",
           "/*.(eot|svg|cur|jpg|png|webp|gif|otf|ttf|woff|woff2|ani)"
         ]

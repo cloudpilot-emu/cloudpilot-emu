@@ -1,0 +1,7 @@
+<ion-list *ngIf="entries">
+    <ion-item  [color]="color" button [detail]="false" *ngFor="let entry of entries; index as i" (click)="onSelect(i)" [lines]="(i === entries.length - 1) ? 'none' : 'full'">
+        <ion-icon name="list-outline" slot="end" *ngIf="i === (entries?.length || 0) - 1"></ion-icon>
+        <ion-icon name="folder-outline" slot="end" *ngIf="i !== (entries?.length || 0) - 1"></ion-icon>
+        <div class="text-wrapper">{{entry}}</div>
+    </ion-item>
+</ion-list>
