@@ -76,12 +76,12 @@ export class EmulationService extends AbstractEmulationService {
         return this.bootstrapCompletePromise;
     }
 
-    async switchSession(id: number): Promise<void> {
-        if (id === this.emulationState.getCurrentSession()?.id) return;
+    switchSession = (id: number): Promise<void> =>
+        this.mutex.runExclusive(async () => {
+            if (id === this.emulationState.getCurrentSession()?.id) return;
 
-        await this.stop();
+            await this.stopUnchecked();
 
-        await this.mutex.runExclusive(async () => {
             await this.bootstrapService.hasRendered();
             const loader = await this.loadingController.create({ message: 'Loading...' });
             await loader.present();
@@ -103,7 +103,6 @@ export class EmulationService extends AbstractEmulationService {
                 await loader.dismiss();
             }
         });
-    }
 
     resume = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
@@ -132,15 +131,7 @@ export class EmulationService extends AbstractEmulationService {
             }
         });
 
-    stop = (): Promise<void> =>
-        this.mutex.runExclusive(async () => {
-            if (!this.emulationState.getCurrentSession()) return;
-
-            this.doStop();
-            await this.snapshotService.waitForPendingSnapshot();
-            this.storageCardService.onEmulatorStop();
-            this.emulationState.setCurrentSession(undefined);
-        });
+    stop = (): Promise<void> => this.mutex.runExclusive(() => this.stopUnchecked());
 
     protected getConfiguredSpeed(): number {
         return this.emulationState.getCurrentSession()?.speed || 1;
@@ -208,6 +199,15 @@ export class EmulationService extends AbstractEmulationService {
 
     protected override callScheduler(): void {
         this.ngZone.runOutsideAngular(() => this.scheduler.schedule());
+    }
+
+    private async stopUnchecked(): Promise<void> {
+        if (!this.emulationState.getCurrentSession()) return;
+
+        this.doStop();
+        await this.snapshotService.waitForPendingSnapshot();
+        this.storageCardService.onEmulatorStop();
+        this.emulationState.setCurrentSession(undefined);
     }
 
     private updateFeatures(): void {

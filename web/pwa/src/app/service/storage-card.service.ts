@@ -105,69 +105,140 @@ export class StorageCardService {
         return this.cards;
     }
 
-    async createEmptyCard(name: string, size: NewCardSize, dontFsckAutomatically: boolean): Promise<StorageCard> {
-        const loader = await this.loadingController.create({ message: 'Formatting...' });
+    createEmptyCard = (name: string, size: NewCardSize, dontFsckAutomatically: boolean): Promise<StorageCard> =>
+        this.mutex.runExclusive(async () => {
+            const loader = await this.loadingController.create({ message: 'Formatting...' });
 
-        try {
-            await loader.present();
+            try {
+                await loader.present();
 
-            const cardImage = await mkfs(cardSizeNumeric(size));
-            if (!cardImage) throw new Error('failed to create image');
+                const cardImage = await mkfs(cardSizeNumeric(size));
+                if (!cardImage) throw new Error('failed to create image');
 
+                const cardWithoutId: Omit<StorageCard, 'id'> = {
+                    storageId: newStorageId(),
+                    name,
+                    size: cardImage.length * 4,
+                    status: StorageCardStatus.clean,
+                    dontFsckAutomatically,
+                };
+
+                return await this.storageService.importStorageCard(cardWithoutId, cardImage);
+            } finally {
+                void loader.dismiss();
+            }
+        });
+
+    createCardFromFile = (name: string, file: FileDescriptor, dontFsckAutomatically: boolean): Promise<void> =>
+        this.mutex.runExclusive(async () => {
             const cardWithoutId: Omit<StorageCard, 'id'> = {
                 storageId: newStorageId(),
                 name,
-                size: cardImage.length * 4,
+                size: file.content.length,
                 status: StorageCardStatus.clean,
                 dontFsckAutomatically,
             };
+            const data32 = new Uint32Array(file.content.buffer, file.content.byteOffset, file.content.byteLength >>> 2);
 
-            return await this.storageService.importStorageCard(cardWithoutId, cardImage);
-        } finally {
-            void loader.dismiss();
-        }
-    }
+            const loader = await this.loadingController.create({ message: 'Importing...' });
+            try {
+                if (dontFsckAutomatically) {
+                    await loader.present();
+                    await this.storageService.importStorageCard(cardWithoutId, data32);
+                } else {
+                    const [fixedData32, checkedCardWithoutId] = await this.fsckNewCard(data32, cardWithoutId);
 
-    async createCardFromFile(name: string, file: FileDescriptor, dontFsckAutomatically: boolean): Promise<void> {
-        const cardWithoutId: Omit<StorageCard, 'id'> = {
-            storageId: newStorageId(),
-            name,
-            size: file.content.length,
-            status: StorageCardStatus.clean,
-            dontFsckAutomatically,
-        };
-        const data32 = new Uint32Array(file.content.buffer, file.content.byteOffset, file.content.byteLength >>> 2);
-
-        const loader = await this.loadingController.create({ message: 'Importing...' });
-        try {
-            if (dontFsckAutomatically) {
-                await loader.present();
-                await this.storageService.importStorageCard(cardWithoutId, data32);
-            } else {
-                const [fixedData32, checkedCardWithoutId] = await this.fsckNewCard(data32, cardWithoutId);
-
-                await loader.present();
-                await this.storageService.importStorageCard(checkedCardWithoutId, fixedData32);
+                    await loader.present();
+                    await this.storageService.importStorageCard(checkedCardWithoutId, fixedData32);
+                }
+            } finally {
+                void loader.dismiss();
             }
-        } finally {
-            void loader.dismiss();
-        }
-    }
+        });
 
-    insertCard(id: number): Promise<boolean> {
-        return this.claimCard(id, 'insert');
-    }
+    insertCard = (id: number): Promise<boolean> => this.mutex.runExclusive(() => this.claimCard(id, 'insert'));
 
-    attachCardToVfs(id: number): Promise<boolean> {
-        return this.claimCard(id, 'vfs');
-    }
+    attachCardToVfs = (id: number): Promise<boolean> => this.mutex.runExclusive(() => this.claimCard(id, 'vfs'));
 
     onEmulatorStop(): void {
         const mountedCard = this.emulationStateService.getCurrentSession()?.mountedCard;
         if (mountedCard !== undefined) this.storageCardContext.release(mountedCard, CardOwner.cloudpilot);
     }
 
-    async loadCardInEmulator(cardId: number, data?: Uint32Array): Promise<StorageCard> {
+    loadCardInEmulator = (cardId: number, data?: Uint32Array): Promise<StorageCard> =>
+        this.mutex.runExclusive(() => this.loadCardInEmulatorUnsafe(cardId, data));
+
+    ejectCurrentCard = (): Promise<void> => this.mutex.runExclusive(() => this.ejectCurrentCardUnsafe());
+
+    fsckCard = (cardId: number): Promise<FsckContext> => this.mutex.runExclusive(() => this.fsckCardUnsafe(cardId));
+
+    applyFsckResult = (cardId: number, context: FsckContext): Promise<void> =>
+        this.mutex.runExclusive(() => this.applyFsckResultUnsafe(cardId, context));
+
+    updateCard = (id: number, update: Partial<StorageCard>): Promise<void> =>
+        this.mutex.runExclusive(async () => {
+            const card = await this.storageService.getCard(id);
+            if (!card) throw new Error(`no card with id ${id}`);
+
+            if (!update.dontFsckAutomatically && card.dontFsckAutomatically) update.status = StorageCardStatus.dirty;
+
+            return this.storageService.updateStorageCardPartial(id, update);
+        });
+
+    forceEjectCard = (id: number): Promise<void> => this.mutex.runExclusive(() => this.forceEjectCardUnsafe(id));
+
+    deleteCard = (id: number): Promise<void> =>
+        this.mutex.runExclusive(async () => {
+            await this.vfsService.releaseCard(id);
+            await this.forceEjectCardUnsafe(id);
+            await this.storageService.deleteStorageCard(id);
+        });
+
+    saveCard = (id: number, name: string): Promise<void> =>
+        this.mutex.runExclusive(async () => {
+            const card = await this.getCard(id);
+            if (!card) throw new Error(`no card with id ${id}`);
+
+            const loader = await this.loadingController.create({ message: 'Exporting...' });
+            let data: Uint32Array | undefined;
+
+            try {
+                await loader.present();
+
+                const session = this.mountedInSession(id);
+
+                if (session && session.id === this.emulationStateService.getCurrentSession()?.id) {
+                    await this.snapshotService.waitForPendingSnapshot();
+                    await this.snapshotService.triggerSnapshot();
+
+                    const cloudpilot = await this.cloudpilotService.cloudpilot;
+                    data = cloudpilot.getCardData(card.storageId);
+                }
+
+                if (!data) {
+                    data = new Uint32Array(card.size >>> 2);
+                    await this.storageService.loadCardData(card.id, data, this.storageCardContext.getOwner(id));
+                }
+            } finally {
+                void loader.dismiss();
+            }
+
+            this.fileService.saveFile(name, new Uint8Array(data.buffer, data.byteOffset, data.length << 2));
+        });
+
+    async getCard(id: number): Promise<StorageCard | undefined> {
+        return this.storageService.getCard(id);
+    }
+
+    mountedInSession(cardId: number): Session | undefined {
+        return this.sessionService.getSessions().find((session) => session.mountedCard === cardId);
+    }
+
+    isLoading(): boolean {
+        return this.loading;
+    }
+
+    private async loadCardInEmulatorUnsafe(cardId: number, data?: Uint32Array): Promise<StorageCard> {
         const card = await this.storageService.getCard(cardId);
         if (!card) {
             throw new Error(`no card with id ${cardId}`);
@@ -197,7 +268,7 @@ export class StorageCardService {
         return card;
     }
 
-    async ejectCurrentCard(): Promise<void> {
+    private async ejectCurrentCardUnsafe(): Promise<void> {
         const session = this.emulationStateService.getCurrentSession();
         if (!session) throw new Error('no running session');
 
@@ -223,7 +294,7 @@ export class StorageCardService {
         this.storageCardContext.release(cardId, CardOwner.cloudpilot);
     }
 
-    async fsckCard(cardId: number): Promise<FsckContext> {
+    private async fsckCardUnsafe(cardId: number): Promise<FsckContext> {
         const loader = await this.loadingController.create({ message: 'Checking card...' });
 
         try {
@@ -279,7 +350,7 @@ export class StorageCardService {
         }
     }
 
-    async applyFsckResult(cardId: number, context: FsckContext): Promise<void> {
+    private async applyFsckResultUnsafe(cardId: number, context: FsckContext): Promise<void> {
         if (context.getResult() !== FsckResult.fixed) return;
 
         const loader = await this.loadingController.create({ message: 'Fixing errors...' });
@@ -300,75 +371,17 @@ export class StorageCardService {
         }
     }
 
-    async updateCard(id: number, update: Partial<StorageCard>): Promise<void> {
-        const card = await this.storageService.getCard(id);
-        if (!card) throw new Error(`no card with id ${id}`);
-
-        if (!update.dontFsckAutomatically && card.dontFsckAutomatically) update.status = StorageCardStatus.dirty;
-
-        return this.storageService.updateStorageCardPartial(id, update);
-    }
-
-    async forceEjectCard(id: number): Promise<void> {
+    private async forceEjectCardUnsafe(id: number): Promise<void> {
         const session = this.mountedInSession(id);
         const card = await this.storageService.getCard(id);
         if (!session || !card) return;
 
         if (session.id === this.emulationStateService.getCurrentSession()?.id) {
-            await this.ejectCurrentCard();
+            await this.ejectCurrentCardUnsafe();
         } else {
             await this.storageService.updateSessionPartial(session.id, { mountedCard: undefined });
             await this.storageService.updateStorageCardPartial(id, { status: StorageCardStatus.dirty });
         }
-    }
-
-    async deleteCard(id: number): Promise<void> {
-        await this.vfsService.releaseCard(id);
-        await this.forceEjectCard(id);
-        await this.storageService.deleteStorageCard(id);
-    }
-
-    async saveCard(id: number, name: string): Promise<void> {
-        const card = await this.getCard(id);
-        if (!card) throw new Error(`no card with id ${id}`);
-
-        const loader = await this.loadingController.create({ message: 'Exporting...' });
-        let data: Uint32Array | undefined;
-
-        try {
-            await loader.present();
-
-            const session = this.mountedInSession(id);
-
-            if (session && session.id === this.emulationStateService.getCurrentSession()?.id) {
-                await this.snapshotService.waitForPendingSnapshot();
-                await this.snapshotService.triggerSnapshot();
-
-                const cloudpilot = await this.cloudpilotService.cloudpilot;
-                data = cloudpilot.getCardData(card.storageId);
-            }
-
-            if (!data) {
-                data = new Uint32Array(card.size >>> 2);
-                await this.storageService.loadCardData(card.id, data, this.storageCardContext.getOwner(id));
-            }
-        } finally {
-            void loader.dismiss();
-        }
-
-        this.fileService.saveFile(name, new Uint8Array(data.buffer, data.byteOffset, data.length << 2));
-    }
-
-    async getCard(id: number): Promise<StorageCard | undefined> {
-        return this.storageService.getCard(id);
-    }
-
-    mountedInSession(cardId: number): Session | undefined {
-        return this.sessionService.getSessions().find((session) => session.mountedCard === cardId);
-    }
-
-    isLoading(): boolean {
-        return this.loading;
     }
 
     private async claimCard(id: number, action: 'insert' | 'vfs'): Promise<boolean> {
@@ -383,7 +396,7 @@ export class StorageCardService {
 
         if (!card.dontFsckAutomatically) {
             if (card.status === StorageCardStatus.dirty) {
-                fsckContext = await this.fsckCard(id);
+                fsckContext = await this.fsckCardUnsafe(id);
 
                 if (fsckContext.getResult() === FsckResult.fixed) {
                     mountNow = false;
@@ -401,7 +414,7 @@ export class StorageCardService {
                         this.storageCardContext.release(id, CardOwner.fstools);
                         return false;
                     }
-                    await this.applyFsckResult(card.id, fsckContext);
+                    await this.applyFsckResultUnsafe(card.id, fsckContext);
                 }
 
                 card = await this.getCard(id);
@@ -552,7 +565,7 @@ export class StorageCardService {
             if (!session) throw new Error('no current session');
             if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
 
-            const card = await this.loadCardInEmulator(cardId, data);
+            const card = await this.loadCardInEmulatorUnsafe(cardId, data);
             const cloudpilot = await this.cloudpilotService.cloudpilot;
 
             await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.dirty });
@@ -587,4 +600,5 @@ export class StorageCardService {
 
     private cards: Array<StorageCard> = [];
     private updateMutex = new Mutex();
+    private mutex = new Mutex();
 }
