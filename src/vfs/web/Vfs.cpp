@@ -73,8 +73,8 @@ void Vfs::UnmountImage(unsigned int slot) {
     f_unmount(drivePrefix(slot));
     unregister_card_volume(slot);
 
-    cardVolumes[slot].release();
-    cardImages[slot].release();
+    cardVolumes[slot].reset();
+    cardImages[slot].reset();
 }
 
 int Vfs::GetPendingImageSize() const { return pendingImage ? pendingImageSize : -1; }
