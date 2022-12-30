@@ -77,13 +77,11 @@ export class EmulationService extends AbstractEmulationService {
     }
 
     async switchSession(id: number): Promise<void> {
+        if (id === this.emulationState.getCurrentSession()?.id) return;
+
         await this.stop();
 
         await this.mutex.runExclusive(async () => {
-            if (id === this.emulationState.getCurrentSession()?.id) {
-                return;
-            }
-
             await this.bootstrapService.hasRendered();
             const loader = await this.loadingController.create({ message: 'Loading...' });
             await loader.present();
