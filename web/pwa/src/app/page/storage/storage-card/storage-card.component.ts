@@ -22,26 +22,13 @@ export class StorageCardComponent {
         const popover = await this.popoverController.create({
             component: ContextMenuCardComponent,
             event: e,
-            backdropDismiss: true,
-            showBackdrop: false,
             arrow: false,
+            dismissOnSelect: true,
             componentProps: {
-                onEdit: () => {
-                    void popover.dismiss();
-                    this.edit.emit(this.card);
-                },
-                onSave: () => {
-                    void popover.dismiss();
-                    this.save.emit(this.card);
-                },
-                onCheck: () => {
-                    void popover.dismiss();
-                    this.check.emit();
-                },
-                onDelete: () => {
-                    void popover.dismiss();
-                    this.delete.emit();
-                },
+                onEdit: () => this.edit.emit(this.card),
+                onSave: () => this.save.emit(this.card),
+                onCheck: () => this.check.emit(),
+                onDelete: () => this.delete.emit(),
             },
         });
 

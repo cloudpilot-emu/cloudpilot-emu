@@ -92,8 +92,6 @@ export class EmulationPage {
         const popover = await this.popoverController.create({
             component: ContextMenuComponent,
             event: e,
-            backdropDismiss: true,
-            showBackdrop: false,
             componentProps: {
                 showHelp: () => this.showHelp(),
             },

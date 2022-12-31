@@ -75,10 +75,6 @@ ion-modal {
     }
 }
 
-.ios ion-popover {
-    --box-shadow: 0 0 0 1px var(--ion-background-color, white);
-}
-
 .ios ion-popover ion-item {
     --border-color: var(--ion-color-light-shade);
     --background: var(--ion-color-light);

@@ -70,8 +70,6 @@ export class SubpageDirectoryComponent implements OnInit {
         const popover = await this.popoverController.create({
             component: ContextMenuBreadcrumbComponent,
             event: e,
-            backdropDismiss: true,
-            showBackdrop: false,
             componentProps: {
                 entries,
                 onSelect: (index: number) => this.onNavigateBreadcrumb(entries.length - 1 - index),

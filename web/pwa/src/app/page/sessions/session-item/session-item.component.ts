@@ -27,26 +27,13 @@ export class SessionItemComponent {
         const popover = await this.popoverController.create({
             component: ContextMenuComponent,
             event: e,
-            backdropDismiss: true,
-            showBackdrop: false,
             arrow: false,
+            dismissOnSelect: true,
             componentProps: {
-                onEdit: () => {
-                    void popover.dismiss();
-                    this.edit.emit();
-                },
-                onSave: () => {
-                    void popover.dismiss();
-                    this.save.emit();
-                },
-                onDelete: () => {
-                    void popover.dismiss();
-                    this.delete.emit();
-                },
-                onReset: () => {
-                    void popover.dismiss();
-                    this.resetSession.emit();
-                },
+                onEdit: () => this.edit.emit(),
+                onSave: () => this.save.emit(),
+                onDelete: () => this.delete.emit(),
+                onReset: () => this.resetSession.emit(),
             },
         });
 
