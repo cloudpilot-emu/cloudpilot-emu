@@ -1,4 +1,4 @@
-import { ActionSheetController, AlertController, Config, ModalController, PopoverController } from '@ionic/angular';
+import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
 import { Component, Input } from '@angular/core';
 import { quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
 
@@ -65,13 +65,8 @@ export class ContextMenuComponent {
         private alertService: AlertService,
         private alertController: AlertController,
         private storageService: StorageService,
-        private errorService: ErrorService,
-        private config: Config
+        private errorService: ErrorService
     ) {}
-
-    get color(): string | undefined {
-        return this.config.get('mode') === 'ios' ? 'light' : undefined;
-    }
 
     async reset(): Promise<void> {
         void this.popoverController.dismiss();

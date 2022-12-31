@@ -11,10 +11,6 @@ ion-title {
     flex-direction: column;
     padding: 3px;
 
-    &.running-session {
-        background: radial-gradient(circle, #ccc 0%, #eee 100%);
-    }
-
     &.no-session {
         text-align: center;
         padding: 1em
@@ -36,7 +32,7 @@ ion-title {
 }
 
 .container.running-session {
-    background: radial-gradient(circle, #ccc 0%, #eee 100%);
+    background: var(--ion-color-light);
 }
 
 @media (prefers-color-scheme: dark) {

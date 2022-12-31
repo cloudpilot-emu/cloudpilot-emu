@@ -81,7 +81,6 @@ export class SubpageDirectoryComponent implements OnInit {
             side: 'bottom',
             alignment: this.config.get('mode') === 'ios' ? 'center' : 'start',
             trigger: this.breadcrumbTriggerId,
-            cssClass: 'popover-border',
         });
 
         void popover.present();
