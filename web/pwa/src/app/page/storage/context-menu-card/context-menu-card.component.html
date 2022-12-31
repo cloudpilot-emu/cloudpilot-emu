@@ -1,14 +1,18 @@
 <ion-list>
   <ion-item lines="full" button [detail]="false" (click)="onEdit()">
+  <ion-icon name="create-outline" slot="end"></ion-icon>
     Edit
   </ion-item>
   <ion-item lines="full" button [detail]="false" (click)="onSave()">
+  <ion-icon name="share-outline" slot="end"></ion-icon>
     Save
   </ion-item>
   <ion-item lines="full" button [detail]="false" (click)="onCheck()">
+  <ion-icon name="medkit-outline" slot="end"></ion-icon>
     Check
   </ion-item>
-  <ion-item lines="full" button [detail]="false" (click)="onDelete()" lines="none">
+  <ion-item lines="none" button [detail]="false" (click)="onDelete()" lines="none">
+  <ion-icon name="trash-outline" slot="end"></ion-icon>
     Delete
   </ion-item>
 </ion-list>

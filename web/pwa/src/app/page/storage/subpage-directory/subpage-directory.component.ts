@@ -64,7 +64,7 @@ export class SubpageDirectoryComponent implements OnInit {
 
         const entries = [
             ...[...this.vfsService.splitPath(this.path).reverse().slice(1), this.card.name],
-            'Storage cards',
+            'Memory cards',
         ];
 
         const popover = await this.popoverController.create({
