@@ -51,6 +51,9 @@
           "/svg/document-outline.svg",
           "/svg/list-outline.svg",
           "/svg/file-tray-outline.svg",
+          "/svg/cut-outline.svg",
+          "/svg/radio-button-off-outline.svg",
+          "/svg/radio-button-on-outline.svg",
           "/assets/**",
           "/*.(eot|svg|cur|jpg|png|webp|gif|otf|ttf|woff|woff2|ani)"
         ]
