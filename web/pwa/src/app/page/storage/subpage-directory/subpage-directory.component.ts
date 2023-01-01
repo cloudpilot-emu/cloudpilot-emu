@@ -148,7 +148,7 @@ export class SubpageDirectoryComponent implements OnInit {
             });
 
             await sheet.present();
-            await sheet.onDidDismiss();
+            await sheet.onWillDismiss();
         }
 
         this.mode = 'browse';
