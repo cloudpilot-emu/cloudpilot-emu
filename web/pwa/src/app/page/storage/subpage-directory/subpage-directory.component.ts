@@ -130,15 +130,19 @@ export class SubpageDirectoryComponent implements OnInit {
                 buttons: [
                     {
                         text: `Copy`,
+                        handler: this.onCopySelection.bind(this),
                     },
                     {
                         text: `Cut`,
+                        handler: this.onCutSelection.bind(this),
                     },
                     {
                         text: 'Save zip',
+                        handler: this.onSaveZip.bind(this),
                     },
                     {
                         text: 'Delete',
+                        handler: this.onDeleteSelection.bind(this),
                     },
                 ],
             });
@@ -152,6 +156,22 @@ export class SubpageDirectoryComponent implements OnInit {
 
     onSelectAll(): void {
         this.entries?.forEach((entry) => this.selection.add(entry.name));
+    }
+
+    onCopySelection(): void {
+        void this.alertService.message('Not implemented', 'Copy selection: not implemented.');
+    }
+
+    onCutSelection(): void {
+        void this.alertService.message('Not implemented', 'Cut selection: not implemented.');
+    }
+
+    onSaveZip(): void {
+        void this.alertService.message('Not implemented', 'Save zip: not implemented.');
+    }
+
+    onDeleteSelection(): void {
+        void this.alertService.message('Not implemented', 'Delete selection: not implemented.');
     }
 
     async openBreadcrumbMenu(e: MouseEvent): Promise<void> {
