@@ -3,6 +3,7 @@ import { Config, PopoverController } from '@ionic/angular';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { ContextMenuBreadcrumbComponent } from './../context-menu-breadcrumb/context-menu-breadcrumb.component';
+import { ContextMenuDirectoryComponent } from './../context-menu-directory/context-menu-directory.component';
 import { FileEntry } from '@common/bridge/Vfs';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { VfsService } from '@pwa/service/vfs.service';
@@ -30,8 +31,6 @@ export class SubpageDirectoryComponent implements OnInit {
     ) {
         this.breadcrumbTriggerId = `breadcrumb-trigger-${BREADCRUMB_TRIGGER_INDEX++}`;
     }
-
-    showHelp(): void {}
 
     get title(): string {
         switch (this.path) {
@@ -85,6 +84,30 @@ export class SubpageDirectoryComponent implements OnInit {
         void this.alertService.message('Not implemented', `Delete ${entry.name}: not implemented.`);
     }
 
+    onStartSelection(): void {
+        void this.alertService.message('Not implemented', 'Start selection: not implemented.');
+    }
+
+    onAddFiles(): void {
+        void this.alertService.message('Not implemented', 'Add files: not implemented.');
+    }
+
+    onCreateDirectory(): void {
+        void this.alertService.message('Not implemented', 'Create directory: not implemented.');
+    }
+
+    onExtractZipfile(): void {
+        void this.alertService.message('Not implemented', 'Extract zipfile: not implemented.');
+    }
+
+    onPaste(): void {
+        void this.alertService.message('Not implemented', 'Paste: not implemented.');
+    }
+
+    onHelp(): void {
+        void this.alertService.message('Not implemented', 'Help: not implemented.');
+    }
+
     async openBreadcrumbMenu(e: MouseEvent): Promise<void> {
         if (!this.card || !this.path || this.path === '/') return;
 
@@ -105,6 +128,25 @@ export class SubpageDirectoryComponent implements OnInit {
             side: 'bottom',
             alignment: this.config.get('mode') === 'ios' ? 'center' : 'start',
             trigger: this.breadcrumbTriggerId,
+        });
+
+        void popover.present();
+    }
+
+    async openContextMenu(e: MouseEvent): Promise<void> {
+        const popover = await this.popoverController.create({
+            component: ContextMenuDirectoryComponent,
+            componentProps: {
+                onStartSelection: this.onStartSelection.bind(this),
+                onAddFiles: this.onAddFiles.bind(this),
+                onCreateDirectry: this.onCreateDirectory.bind(this),
+                onExtractZipfile: this.onExtractZipfile.bind(this),
+                onPaste: this.onPaste.bind(this),
+                onHelp: this.onHelp.bind(this),
+            },
+            event: e,
+            dismissOnSelect: true,
+            arrow: false,
         });
 
         void popover.present();

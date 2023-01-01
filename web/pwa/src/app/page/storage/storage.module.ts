@@ -14,6 +14,7 @@ import { StoragePage } from './storage.page';
 import { SubpageCardsComponent } from './subpage-cards/subpage-cards.component';
 import { SubpageDirectoryComponent } from './subpage-directory/subpage-directory.component';
 import { ContextMenuFileEntryComponent } from './context-menu-file-entry/context-menu-file-entry.component';
+import { ContextMenuDirectoryComponent } from './context-menu-directory/context-menu-directory.component';
 
 @NgModule({
     imports: [CommonModule, IonicModule, FormsModule, ReactiveFormsModule, SharedComponentModule],
@@ -28,6 +29,7 @@ import { ContextMenuFileEntryComponent } from './context-menu-file-entry/context
         FileEntryComponent,
         ContextMenuBreadcrumbComponent,
         ContextMenuFileEntryComponent,
+        ContextMenuDirectoryComponent,
     ],
 })
 export class StoragePageModule {}

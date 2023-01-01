@@ -83,6 +83,10 @@ ion-modal {
         & {
             --border-color: var(--ion-color-light-tint);
         }
+
+        &[aria-disabled="true"] {
+            opacity: 0.7;
+        }
     }
 
 }
