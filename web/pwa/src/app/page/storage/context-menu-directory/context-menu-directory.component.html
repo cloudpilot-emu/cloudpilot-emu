@@ -1,5 +1,5 @@
 <ion-list>
-  <ion-item lines="full" button [detail]="false" (click)="onStartSelection()">
+  <ion-item lines="full" button [detail]="false" (click)="onStartSelection()" [disabled]="emptyDirectory">
     <ion-icon name="checkmark-circle-outline" slot="end"></ion-icon>
     Start selection
   </ion-item>

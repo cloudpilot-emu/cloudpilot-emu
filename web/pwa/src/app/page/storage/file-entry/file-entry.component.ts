@@ -1,5 +1,5 @@
-import { ActionSheetController, PopoverController } from '@ionic/angular';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ActionSheetController, IonItemSliding, PopoverController } from '@ionic/angular';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
 
 import { ContextMenuFileEntryComponent } from './../context-menu-file-entry/context-menu-file-entry.component';
 import { FileEntry } from '@common/bridge/Vfs';
@@ -9,8 +9,14 @@ import { FileEntry } from '@common/bridge/Vfs';
     templateUrl: './file-entry.component.html',
     styleUrls: ['./file-entry.component.scss'],
 })
-export class FileEntryComponent {
+export class FileEntryComponent implements OnChanges {
     constructor(private actionSheetController: ActionSheetController, private popoverController: PopoverController) {}
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes['selecting'] && changes['selecting'].currentValue && !changes['selecting'].previousValue) {
+            void this.slidingItem?.close();
+        }
+    }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async onContextmenu(e: MouseEvent): Promise<void> {
@@ -37,7 +43,8 @@ export class FileEntryComponent {
     }
 
     get color(): string | undefined {
-        if (this.touched) return 'light';
+        if (!this.selecting && this.touched) return 'light';
+        if (this.selecting && this.selected) return 'light';
 
         return undefined;
     }
@@ -62,11 +69,20 @@ export class FileEntryComponent {
         void sheet.present();
     }
 
+    @ViewChild('slidingItem')
+    slidingItem: IonItemSliding | undefined;
+
     @Input()
     entry: FileEntry | undefined;
 
     @Input()
     touched = false;
+
+    @Input()
+    selecting = false;
+
+    @Input()
+    selected = false;
 
     @Output()
     interaction = new EventEmitter<FileEntry>();

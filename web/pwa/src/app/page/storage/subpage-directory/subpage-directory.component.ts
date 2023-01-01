@@ -1,5 +1,5 @@
+import { ActionSheetController, Config, PopoverController } from '@ionic/angular';
 import { Component, Input, OnInit } from '@angular/core';
-import { Config, PopoverController } from '@ionic/angular';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { ContextMenuBreadcrumbComponent } from './../context-menu-breadcrumb/context-menu-breadcrumb.component';
@@ -7,6 +7,7 @@ import { ContextMenuDirectoryComponent } from './../context-menu-directory/conte
 import { FileEntry } from '@common/bridge/Vfs';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { VfsService } from '@pwa/service/vfs.service';
+import { debounce } from '@pwa/util/debounce';
 
 function entrySortFunction(e1: FileEntry, e2: FileEntry): number {
     if (e1.isDirectory && !e2.isDirectory) return -1;
@@ -27,7 +28,8 @@ export class SubpageDirectoryComponent implements OnInit {
         private vfsService: VfsService,
         private popoverController: PopoverController,
         private config: Config,
-        private alertService: AlertService
+        private alertService: AlertService,
+        private actionSheetController: ActionSheetController
     ) {
         this.breadcrumbTriggerId = `breadcrumb-trigger-${BREADCRUMB_TRIGGER_INDEX++}`;
     }
@@ -56,12 +58,21 @@ export class SubpageDirectoryComponent implements OnInit {
         this.updateEntries();
     }
 
+    ionViewWillLeave(): void {
+        this.mode = 'browse';
+    }
+
     trackEntryBy(index: number, entry: FileEntry) {
         return entry.name;
     }
 
     onSelect(entry: FileEntry): void {
-        if (entry.isDirectory) this.onNavigate(entry.path);
+        if (this.mode === 'browse') {
+            if (entry.isDirectory) this.onNavigate(entry.path);
+        } else {
+            if (this.selection?.has(entry.name)) this.selection.delete(entry.name);
+            else this.selection.add(entry.name);
+        }
     }
 
     onEditEntry(entry: FileEntry): void {
@@ -84,10 +95,6 @@ export class SubpageDirectoryComponent implements OnInit {
         void this.alertService.message('Not implemented', `Delete ${entry.name}: not implemented.`);
     }
 
-    onStartSelection(): void {
-        void this.alertService.message('Not implemented', 'Start selection: not implemented.');
-    }
-
     onAddFiles(): void {
         void this.alertService.message('Not implemented', 'Add files: not implemented.');
     }
@@ -106,6 +113,45 @@ export class SubpageDirectoryComponent implements OnInit {
 
     onHelp(): void {
         void this.alertService.message('Not implemented', 'Help: not implemented.');
+    }
+
+    onStartSelection(): void {
+        if (this.entries?.length === 0) return;
+
+        this.selection.clear();
+        this.mode = 'select';
+    }
+
+    @debounce()
+    async onSelectionDone(): Promise<void> {
+        if (this.selection.size !== 0) {
+            const sheet = await this.actionSheetController.create({
+                header: `What do you want to do?`,
+                buttons: [
+                    {
+                        text: `Copy`,
+                    },
+                    {
+                        text: `Cut`,
+                    },
+                    {
+                        text: 'Save zip',
+                    },
+                    {
+                        text: 'Delete',
+                    },
+                ],
+            });
+
+            await sheet.present();
+            await sheet.onDidDismiss();
+        }
+
+        this.mode = 'browse';
+    }
+
+    onSelectAll(): void {
+        this.entries?.forEach((entry) => this.selection.add(entry.name));
     }
 
     async openBreadcrumbMenu(e: MouseEvent): Promise<void> {
@@ -137,6 +183,7 @@ export class SubpageDirectoryComponent implements OnInit {
         const popover = await this.popoverController.create({
             component: ContextMenuDirectoryComponent,
             componentProps: {
+                emptyDirectory: this.entries?.length === 0,
                 onStartSelection: this.onStartSelection.bind(this),
                 onAddFiles: this.onAddFiles.bind(this),
                 onCreateDirectry: this.onCreateDirectory.bind(this),
@@ -180,4 +227,8 @@ export class SubpageDirectoryComponent implements OnInit {
     lastEntryTouched: string | undefined = undefined;
 
     readonly breadcrumbTriggerId: string;
+
+    mode: 'browse' | 'select' = 'browse';
+
+    selection = new Set<string>();
 }

@@ -25,4 +25,7 @@ export class ContextMenuDirectoryComponent {
 
     @Input()
     onHelp: () => void = () => undefined;
+
+    @Input()
+    emptyDirectory = false;
 }

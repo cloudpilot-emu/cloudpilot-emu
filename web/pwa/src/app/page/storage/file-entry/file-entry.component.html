@@ -1,4 +1,5 @@
-<ion-item-sliding #slidingItem (contextmenu)="onContextmenu($event)" (ionDrag)="interaction.emit(entry)">
+<ion-item-sliding #slidingItem (contextmenu)="onContextmenu($event)" (ionDrag)="interaction.emit(entry)"
+    [disabled]="selecting">
     <ion-item-options side="start">
         <ion-item-option color="primary" icon-only (click)="slidingItem.close(); editEntry.emit(entry)">
             <ion-icon name="create-outline"></ion-icon>
@@ -21,9 +22,12 @@
 
     </ion-item-options>
 
-    <ion-item [color]="color" (click)="selectEntry.emit(); interaction.emit()" [detail]="entry?.isDirectory" [style.opacity]="touched ? 1 : 0.99999">
+    <ion-item [color]="color" (click)="selectEntry.emit(); interaction.emit()" [detail]="entry?.isDirectory && !selecting"
+        [style.opacity]="touched ? 1 : 0.99999">
         <ion-icon *ngIf="entry?.isDirectory" name="folder-outline" slot="start"></ion-icon>
         <ion-icon *ngIf="!entry?.isDirectory" name="document-outline" slot="start"></ion-icon>
+        <ion-icon *ngIf="selecting && !selected" name="radio-button-off-outline" slot="end"></ion-icon>
+        <ion-icon *ngIf="selecting && selected" name="radio-button-on-outline" slot="end"></ion-icon>
         <ion-label>
             <h2>{{entry?.name}}</h2>
             <p>

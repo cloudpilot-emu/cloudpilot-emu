@@ -1,5 +1,5 @@
 <ion-header>
-  <ion-toolbar>
+  <ion-toolbar *ngIf="mode === 'browse'">
     <ion-title [id]="breadcrumbTriggerId" (click)="openBreadcrumbMenu($event)">{{title}}<div class="select-arrow"
         *ngIf="showBreadcrumb"></div></ion-title>
 
@@ -13,6 +13,22 @@
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
+
+  <ion-toolbar *ngIf="mode === 'select'">
+    <ion-title>Selection</ion-title>
+
+    <ion-buttons slot="primary">
+      <ion-button (click)="onSelectionDone()">Done</ion-button>
+    </ion-buttons>
+
+    <ion-buttons slot="secondary" *ngIf="selection.size !== entries?.length">
+      <ion-button (click)="onSelectAll()">Select all</ion-button>
+    </ion-buttons>
+
+    <ion-buttons slot="secondary" *ngIf="selection.size === entries?.length">
+      <ion-button (click)="selection.clear()">Clear</ion-button>
+    </ion-buttons>
+  </ion-toolbar>
 </ion-header>
 
 <ion-content>
@@ -23,9 +39,10 @@
   </div>
 
   <ion-list *ngIf="entries !== undefined">
-    <app-file-entry *ngFor="let entry of entries;trackBy:trackEntryBy" [entry]="entry" (selectEntry)="onSelect(entry)"
-      (editEntry)="onEditEntry(entry)" (saveEntry)="onSaveEntry(entry)" (copyEntry)="onCopyEntry(entry)"
-      (cutEntry)="onCutEntry(entry)" (deleteEntry)="onDeleteEntry(entry)" (interaction)="lastEntryTouched = entry.name"
+    <app-file-entry *ngFor="let entry of entries;trackBy:trackEntryBy" [entry]="entry" [selecting]="mode === 'select'"
+      [selected]="selection.has(entry.name)" (selectEntry)="onSelect(entry)" (editEntry)="onEditEntry(entry)"
+      (saveEntry)="onSaveEntry(entry)" (copyEntry)="onCopyEntry(entry)" (cutEntry)="onCutEntry(entry)"
+      (deleteEntry)="onDeleteEntry(entry)" (interaction)="lastEntryTouched = entry.name"
       [touched]="entry.name === lastEntryTouched">
     </app-file-entry>
   </ion-list>
