@@ -1,6 +1,7 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { Config, PopoverController } from '@ionic/angular';
 
+import { AlertService } from '@pwa/service/alert.service';
 import { ContextMenuBreadcrumbComponent } from './../context-menu-breadcrumb/context-menu-breadcrumb.component';
 import { FileEntry } from '@common/bridge/Vfs';
 import { StorageCard } from '@pwa/model/StorageCard';
@@ -21,7 +22,12 @@ let BREADCRUMB_TRIGGER_INDEX = 0;
     styleUrls: ['./subpage-directory.component.scss'],
 })
 export class SubpageDirectoryComponent implements OnInit {
-    constructor(private vfsService: VfsService, private popoverController: PopoverController, private config: Config) {
+    constructor(
+        private vfsService: VfsService,
+        private popoverController: PopoverController,
+        private config: Config,
+        private alertService: AlertService
+    ) {
         this.breadcrumbTriggerId = `breadcrumb-trigger-${BREADCRUMB_TRIGGER_INDEX++}`;
     }
 
@@ -57,6 +63,26 @@ export class SubpageDirectoryComponent implements OnInit {
 
     onSelect(entry: FileEntry): void {
         if (entry.isDirectory) this.onNavigate(entry.path);
+    }
+
+    onEditEntry(entry: FileEntry): void {
+        void this.alertService.message('Not implemented', `Edit ${entry.name}: not implemented.`);
+    }
+
+    onSaveEntry(entry: FileEntry): void {
+        void this.alertService.message('Not implemented', `Save ${entry.name}: not implemented.`);
+    }
+
+    onCopyEntry(entry: FileEntry): void {
+        void this.alertService.message('Not implemented', `Copy ${entry.name}: not implemented.`);
+    }
+
+    onCutEntry(entry: FileEntry): void {
+        void this.alertService.message('Not implemented', `Cut ${entry.name}: not implemented.`);
+    }
+
+    onDeleteEntry(entry: FileEntry): void {
+        void this.alertService.message('Not implemented', `Delete ${entry.name}: not implemented.`);
     }
 
     async openBreadcrumbMenu(e: MouseEvent): Promise<void> {

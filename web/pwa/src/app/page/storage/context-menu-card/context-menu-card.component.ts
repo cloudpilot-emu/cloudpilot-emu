@@ -9,14 +9,14 @@ export class ContextMenuCardComponent {
     constructor() {}
 
     @Input()
-    onEdit = () => undefined;
+    onEdit: () => void = () => undefined;
 
     @Input()
-    onSave = () => undefined;
+    onSave: () => void = () => undefined;
 
     @Input()
-    onCheck = () => undefined;
+    onCheck: () => void = () => undefined;
 
     @Input()
-    onDelete = () => undefined;
+    onDelete: () => void = () => undefined;
 }

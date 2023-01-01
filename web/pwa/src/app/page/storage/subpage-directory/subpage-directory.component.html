@@ -1,6 +1,7 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title [id]="breadcrumbTriggerId" (click)="openBreadcrumbMenu($event)">{{title}}<div class="select-arrow" *ngIf="showBreadcrumb"></div></ion-title>
+    <ion-title [id]="breadcrumbTriggerId" (click)="openBreadcrumbMenu($event)">{{title}}<div class="select-arrow"
+        *ngIf="showBreadcrumb"></div></ion-title>
 
     <ion-buttons slot="start">
       <ion-back-button></ion-back-button>
@@ -23,7 +24,9 @@
 
   <ion-list *ngIf="entries !== undefined">
     <app-file-entry *ngFor="let entry of entries;trackBy:trackEntryBy" [entry]="entry" (selectEntry)="onSelect(entry)"
-      (interaction)="lastEntryTouched = entry.name" [touched]="entry.name === lastEntryTouched">
+      (editEntry)="onEditEntry(entry)" (saveEntry)="onSaveEntry(entry)" (copyEntry)="onCopyEntry(entry)"
+      (cutEntry)="onCutEntry(entry)" (deleteEntry)="onDeleteEntry(entry)" (interaction)="lastEntryTouched = entry.name"
+      [touched]="entry.name === lastEntryTouched">
     </app-file-entry>
   </ion-list>
 </ion-content>
