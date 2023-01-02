@@ -2,6 +2,7 @@ import { AlertController } from '@ionic/angular';
 import { EmulationStateService } from './emulation-state.service';
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
+import { debounce } from '@pwa/helper/debounce';
 
 @Injectable({
     providedIn: 'root',
@@ -46,6 +47,7 @@ export class AlertService {
         await alert.onDidDismiss();
     }
 
+    @debounce()
     async updateAvailable() {
         const alert = await this.alertController.create({
             header: 'Update available',
@@ -58,8 +60,10 @@ export class AlertService {
         });
 
         await alert.present();
+        await alert.onDidDismiss();
     }
 
+    @debounce()
     async fatalError(reason: string, emergencySave = true) {
         const haveCurrentSession = !!this.emulationState.getCurrentSession();
 
@@ -94,8 +98,10 @@ export class AlertService {
         });
 
         await alert.present();
+        await alert.onDidDismiss();
     }
 
+    @debounce()
     async errorInNativeCode(reason: string) {
         const alert = await this.alertController.create({
             header: 'Error',
@@ -111,6 +117,7 @@ export class AlertService {
         });
 
         await alert.present();
+        await alert.onDidDismiss();
     }
 
     proxyVersionMismatchError() {
