@@ -1,6 +1,8 @@
 # Next version
 
--   Support for SD card and memory stick.
+-   Support for SD cards and memory stick.
+-   File manager for memory cards.
+-   Minor UI rework and bug fixes.
 
 # Version 1.7.9
 
