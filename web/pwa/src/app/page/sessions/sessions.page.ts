@@ -14,7 +14,7 @@ import { Session } from '@pwa/model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
-import { debounce } from '@pwa/util/debounce';
+import { debounce } from '@pwa/helper/debounce';
 import deepEqual from 'deep-equal';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 

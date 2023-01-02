@@ -7,7 +7,8 @@ import { ContextMenuDirectoryComponent } from './../context-menu-directory/conte
 import { FileEntry } from '@common/bridge/Vfs';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { VfsService } from '@pwa/service/vfs.service';
-import { debounce } from '@pwa/util/debounce';
+import { debounce } from '@pwa/helper/debounce';
+import { formatNumeral } from '@pwa/helper/format';
 
 function entrySortFunction(e1: FileEntry, e2: FileEntry): number {
     if (e1.isDirectory && !e2.isDirectory) return -1;
@@ -120,26 +121,39 @@ export class SubpageDirectoryComponent implements OnInit {
 
     @debounce()
     async onSelectionDone(): Promise<void> {
+        if (!this.entries) return;
+
+        const selectionAsArray = Array.from(this.selection);
+        const entryMap = new Map(this.entries.map((entry) => [entry.name, entry]));
+        const filesOnly = selectionAsArray.every((name) => !entryMap.get(name)?.isDirectory);
+        const directoriesOnly = selectionAsArray.every((name) => entryMap.get(name)?.isDirectory);
+        const sizeNumeral = formatNumeral(this.selection.size);
+        let subject = `${sizeNumeral} items`;
+
+        if (filesOnly) subject = this.selection.size === 1 ? 'file' : `${sizeNumeral} files`;
+        if (directoriesOnly) subject = this.selection.size === 1 ? 'directory' : `${sizeNumeral} directories`;
+
         if (this.selection.size !== 0) {
             const sheet = await this.actionSheetController.create({
                 header: `What do you want to do?`,
                 buttons: [
                     {
-                        text: `Copy`,
+                        text: `Copy ${subject}`,
                         handler: this.onCopySelection.bind(this),
                     },
                     {
-                        text: `Cut`,
+                        text: `Cut ${subject}`,
                         handler: this.onCutSelection.bind(this),
                     },
                     {
-                        text: 'Save zip',
+                        text: `Save ${subject} as zip`,
                         handler: this.onSaveZip.bind(this),
                     },
                     {
-                        text: 'Delete',
+                        text: `Delete ${subject}`,
                         handler: this.onDeleteSelection.bind(this),
                     },
+                    { text: 'Cancel' },
                 ],
             });
 

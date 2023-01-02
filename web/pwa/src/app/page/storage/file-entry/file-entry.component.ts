@@ -50,19 +50,20 @@ export class FileEntryComponent implements OnChanges {
     }
 
     async cutOrCopyEntry(): Promise<void> {
-        const entryType = this.entry?.isDirectory ? 'directory' : 'file';
+        const subject = this.entry?.isDirectory ? 'directory' : 'file';
 
         const sheet = await this.actionSheetController.create({
             header: `Do you want to cut or copy?`,
             buttons: [
                 {
-                    text: `Copy ${entryType}`,
+                    text: `Copy ${subject}`,
                     handler: () => this.copyEntry.emit(this.entry),
                 },
                 {
-                    text: `Cut ${entryType}`,
+                    text: `Cut ${subject}`,
                     handler: () => this.cutEntry.emit(this.entry),
                 },
+                { text: 'Cancel' },
             ],
         });
 

@@ -18,7 +18,7 @@
     <ion-title>Selection</ion-title>
 
     <ion-buttons slot="primary">
-      <ion-button (click)="onSelectionDone()">Done</ion-button>
+      <ion-button (click)="onSelectionDone()">{{selection.size === 0 ? 'Cancel' : 'Done'}}</ion-button>
     </ion-buttons>
 
     <ion-buttons slot="secondary" *ngIf="selection.size !== entries?.length">

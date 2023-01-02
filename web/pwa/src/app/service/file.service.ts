@@ -167,6 +167,7 @@ export class FileService {
                         text: 'File on remote server',
                         handler: () => this.queryAndOpenFileRemote(handler),
                     },
+                    { text: 'Cancel' },
                 ],
             });
 

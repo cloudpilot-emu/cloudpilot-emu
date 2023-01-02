@@ -11,7 +11,7 @@ import { ErrorService } from '@pwa/service/error.service';
 import { NewCardDialogComponent } from '../new-card-dialog/new-card-dialog.component';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageCardContext } from './../../../service/storage-card-context';
-import { debounce } from '@pwa/util/debounce';
+import { debounce } from '@pwa/helper/debounce';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
 
@@ -50,6 +50,7 @@ export class SubpageCardsComponent {
                     text: 'Import an existing image',
                     handler: () => this.importCardImage(),
                 },
+                { text: 'Cancel' },
             ],
         });
 
