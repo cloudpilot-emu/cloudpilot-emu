@@ -56,6 +56,8 @@ ion-item-sliding {
 
 ion-item {
     --background: none;
+    max-width: 40em;
+    margin: auto;
 }
 
 ion-item::part(native), ion-item-option {

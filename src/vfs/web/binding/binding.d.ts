@@ -63,6 +63,9 @@ export interface Vfs {
     StatFile(path: string): VfsResult;
 
     GetEntry(): FileEntry;
+
+    BytesFree(slot: number): number;
+    BytesTotal(slot: number): number;
 }
 
 export const enum ReaddirStatus {

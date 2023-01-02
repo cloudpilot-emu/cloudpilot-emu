@@ -55,6 +55,14 @@ export class SubpageDirectoryComponent implements OnInit {
         return !!this.path && this.path !== '/';
     }
 
+    get bytesFree(): number {
+        return this.vfsService.getBytesFree();
+    }
+
+    get bytesTotal(): number {
+        return this.vfsService.getBytesTotal();
+    }
+
     ngOnInit(): void {
         this.updateEntries();
     }

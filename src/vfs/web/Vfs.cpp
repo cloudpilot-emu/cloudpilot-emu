@@ -107,3 +107,19 @@ int Vfs::ChmodFile(const char* path, int attr, int mask) { return f_chmod(path, 
 int Vfs::StatFile(const char* path) { return f_stat(path, fileEntry.GetFilinfo()); }
 
 const FileEntry& Vfs::GetEntry() { return fileEntry; }
+
+unsigned int Vfs::BytesFree(unsigned int slot) {
+    if (slot >= FF_VOLUMES || !cardImages[slot]) return 0;
+
+    DWORD clustersFree;
+    FATFS* fs;
+    if (f_getfree(drivePrefix(slot), &clustersFree, &fs) != FR_OK) return 0;
+
+    return clustersFree * fs->csize * 512;
+}
+
+unsigned int Vfs::BytesTotal(unsigned int slot) {
+    if (slot >= FF_VOLUMES || !cardImages[slot]) return 0;
+
+    return (fs[slot].n_fatent - 2) * fs[slot].csize * 512;
+}

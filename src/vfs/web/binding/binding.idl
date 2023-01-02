@@ -28,6 +28,9 @@ interface Vfs {
     long StatFile([Const] DOMString path);
 
     [Const, Ref] FileEntry GetEntry();
+
+    long BytesFree(long slot);
+    long BytesTotal(long slot);
 };
 
 interface ReaddirContext {

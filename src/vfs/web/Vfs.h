@@ -32,6 +32,9 @@ class Vfs {
     int StatFile(const char* path);
     const FileEntry& GetEntry();
 
+    unsigned int BytesFree(unsigned int slot);
+    unsigned int BytesTotal(unsigned int slot);
+
    private:
     std::unique_ptr<CardImage> cardImages[FF_VOLUMES];
     std::unique_ptr<CardVolume> cardVolumes[FF_VOLUMES];

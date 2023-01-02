@@ -41,12 +41,13 @@ export class VfsService {
             await this.storageService.loadCardData(id, pendingImage, CardOwner.vfs);
         }
 
-        if (vfs.mountImage(0)) {
-            this.mountedCard = card;
-            return true;
-        }
+        if (!vfs.mountImage(0)) return false;
 
-        return false;
+        this.mountedCard = card;
+        this.bytesFree = vfs.bytesFree(0);
+        this.bytesTotal = vfs.bytesTotal(0);
+
+        return true;
     }
 
     async releaseCard(id = this.mountedCard?.id) {
@@ -77,10 +78,20 @@ export class VfsService {
         return this.mountedCard;
     }
 
+    getBytesFree(): number {
+        return this.bytesFree;
+    }
+
+    getBytesTotal(): number {
+        return this.bytesTotal;
+    }
+
     readonly onReleaseCard = new Event<number>();
 
     private mountedCard: StorageCard | undefined;
     private vfs = Vfs.create();
 
     private directoryCache = new Map<string, Array<FileEntry>>();
+    private bytesFree = 0;
+    private bytesTotal = 0;
 }

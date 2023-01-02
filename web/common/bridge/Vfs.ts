@@ -150,5 +150,13 @@ export class Vfs {
         return this.vfsNative.ChmodFile(path, attr, mask);
     }
 
+    bytesFree(slot: number): number {
+        return this.vfsNative.BytesFree(slot);
+    }
+
+    bytesTotal(slot: number): number {
+        return this.vfsNative.BytesTotal(slot);
+    }
+
     private vfsNative: VfsNative;
 }

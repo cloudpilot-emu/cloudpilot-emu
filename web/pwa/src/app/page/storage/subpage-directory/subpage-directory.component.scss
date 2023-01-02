@@ -1,9 +1,13 @@
 .placeholder-container {
-    height: 100%;
+    height: calc(100% - 64px);
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
+
+    .ios & {
+        height: calc(100% - 44px);
+    }
 
     .placeholder {
         text-align: center;
@@ -32,4 +36,8 @@ ion-list {
     .md & {
         opacity: 0.55;
     }
+}
+
+ion-item.free-space {
+    text-align: center;
 }

@@ -32,18 +32,28 @@
 </ion-header>
 
 <ion-content>
+
   <div *ngIf="entries !== undefined && entries.length === 0" class="placeholder-container">
     <div class="placeholder">
       empty {{path === '/' ? 'card' : 'directory'}}
     </div>
   </div>
 
-  <ion-list *ngIf="entries !== undefined">
+  <ion-list>
     <app-file-entry *ngFor="let entry of entries;trackBy:trackEntryBy" [entry]="entry" [selecting]="mode === 'select'"
       [selected]="selection.has(entry.name)" (selectEntry)="onSelect(entry)" (editEntry)="onEditEntry(entry)"
       (saveEntry)="onSaveEntry(entry)" (copyEntry)="onCopyEntry(entry)" (cutEntry)="onCutEntry(entry)"
       (deleteEntry)="onDeleteEntry(entry)" (interaction)="lastEntryTouched = entry.name"
       [touched]="entry.name === lastEntryTouched">
     </app-file-entry>
+
+    <ion-item class="free-space" lines="none">
+      <ion-label>
+        <p>
+          {{bytesFree | fileSize}} free, {{bytesTotal | fileSize}} total
+        </p>
+      </ion-label>
+    </ion-item>
   </ion-list>
+
 </ion-content>
