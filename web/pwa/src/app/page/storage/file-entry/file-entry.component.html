@@ -26,11 +26,13 @@
         [detail]="entry?.isDirectory && !selecting" [class.is-directory]="entry?.isDirectory" [style.opacity]="touched ? 1 : 0.99999">
         <ion-icon *ngIf="entry?.isDirectory" name="folder-outline" slot="start"></ion-icon>
         <ion-icon *ngIf="!entry?.isDirectory" name="document-outline" slot="start"></ion-icon>
-        <ion-icon *ngIf="selecting && !selected" name="radio-button-off-outline" slot="end"></ion-icon>
-        <ion-icon *ngIf="selecting && selected" name="radio-button-on-outline" slot="end"></ion-icon>
+
         <ion-icon *ngIf="entry?.attributes?.readonly" class="attribute-icon" name="lock-closed-outline" size="small" slot="end"></ion-icon>
         <ion-icon *ngIf="entry?.attributes?.hidden" class="attribute-icon" name="eye-off-outline" size="small" slot="end"></ion-icon>
         <ion-icon *ngIf="entry?.attributes?.system" class="attribute-icon" name="cog-outline" size="small" slot="end"></ion-icon>
+
+        <ion-icon *ngIf="selecting && !selected" name="radio-button-off-outline" slot="end"></ion-icon>
+        <ion-icon *ngIf="selecting && selected" name="radio-button-on-outline" slot="end"></ion-icon>
         <ion-label>
             <h2>{{entry?.name}}</h2>
             <p>
