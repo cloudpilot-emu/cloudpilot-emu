@@ -58,10 +58,6 @@ export class SubpageDirectoryComponent implements OnInit {
         this.updateEntries();
     }
 
-    ionViewWillLeave(): void {
-        this.mode = 'browse';
-    }
-
     trackEntryBy(index: number, entry: FileEntry) {
         return entry.name;
     }
