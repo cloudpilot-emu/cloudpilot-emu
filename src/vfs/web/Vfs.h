@@ -6,6 +6,7 @@
 
 #include "CardImage.h"
 #include "CardVolume.h"
+#include "FileEntry.h"
 #include "fatfs/ff.h"
 
 class Vfs {
@@ -21,9 +22,15 @@ class Vfs {
     void UnmountImage(unsigned int slot);
 
     int GetPendingImageSize() const;
-    int GetSize(int slot) const;
+    int GetSize(unsigned int slot) const;
     void* GetPendingImage() const;
-    void* GetImage(int slot) const;
+    void* GetImage(unsigned int slot) const;
+    void* GetDirtyPages(unsigned int slot) const;
+
+    int RenameFile(const char* from, const char* to);
+    int ChmodFile(const char* path, int attr, int mask);
+    int StatFile(const char* path);
+    const FileEntry& GetEntry();
 
    private:
     std::unique_ptr<CardImage> cardImages[FF_VOLUMES];
@@ -32,6 +39,7 @@ class Vfs {
     size_t pendingImageSize{0};
 
     FATFS fs[FF_VOLUMES];
+    FileEntry fileEntry;
 };
 
 #endif  // _VFS_H_

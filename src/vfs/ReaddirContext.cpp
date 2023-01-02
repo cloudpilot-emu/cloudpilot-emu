@@ -22,13 +22,13 @@ ReaddirContext::~ReaddirContext() {
 int ReaddirContext::Next() {
     if (status != Status::more) return static_cast<int>(status);
 
-    err = f_readdir(&dir, &filinfo);
+    err = f_readdir(&dir, fileEntry.GetFilinfo());
     if (err != FR_OK) {
         f_closedir(&dir);
         return static_cast<int>(status = Status::error);
     }
 
-    if (filinfo.fname[0] == '\0') {
+    if (*fileEntry.GetName() == '\0') {
         f_closedir(&dir);
         return static_cast<int>(status = Status::done);
     }
@@ -38,45 +38,7 @@ int ReaddirContext::Next() {
 
 const char* ReaddirContext::GetPath() const { return path.c_str(); }
 
-const char* ReaddirContext::GetEntryName() const {
-    if (status == Status::error || !IsFilenameValid()) return "";
-
-    return filinfo.fname;
-}
-
-bool ReaddirContext::IsEntryDirectory() const {
-    if (status == Status::error) return false;
-
-    return filinfo.fattrib & AM_DIR;
-}
-
-unsigned int ReaddirContext::GetEntrySize() const {
-    if (status == Status::error) return 0;
-
-    return filinfo.fsize;
-}
-
-unsigned int ReaddirContext::GetEntryModifiedTS() const {
-    if (status == Status::error) return 0;
-
-    time_t rawtime;
-    tm calendar;
-
-    time(&rawtime);
-    tm* calendarCurrent = localtime(&rawtime);
-
-    if (!calendarCurrent) return 0;
-    memcpy(&calendar, calendarCurrent, sizeof(calendar));
-
-    calendar.tm_year = 80 + (filinfo.fdate >> 9) & 0x7f;
-    calendar.tm_mon = ((filinfo.fdate >> 5) & 0x0f) - 1;
-    calendar.tm_mday = filinfo.fdate & 0x1f;
-    calendar.tm_hour = (filinfo.ftime >> 11) & 0x1f;
-    calendar.tm_min = (filinfo.ftime >> 5) & 0x3f;
-    calendar.tm_sec = (filinfo.ftime & 0x1f) << 1;
-
-    return mktime(&calendar);
-}
+const FileEntry& ReaddirContext::GetEntry() const { return fileEntry; }
 
 int ReaddirContext::GetStatus() const { return static_cast<int>(status); }
 
@@ -104,11 +66,4 @@ const char* ReaddirContext::GetErrorDescription() const {
         default:
             return "unknown error";
     }
-}
-
-bool ReaddirContext::IsFilenameValid() const {
-    for (size_t i = 0; i < FF_LFN_BUF; i++)
-        if (filinfo.fname[i] == '\0') return true;
-
-    return false;
 }

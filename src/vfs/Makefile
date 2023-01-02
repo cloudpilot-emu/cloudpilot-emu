@@ -78,7 +78,8 @@ SOURCE_C = \
 
 SOURCE_CPP = \
 	fatfs/diskio.cpp \
-	ReaddirContext.cpp
+	ReaddirContext.cpp \
+	FileEntry.cpp
 
 SOURCE_TEST =
 

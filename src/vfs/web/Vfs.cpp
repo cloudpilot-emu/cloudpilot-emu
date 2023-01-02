@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <string_view>
 
 #include "fatfs/diskio.h"
 
@@ -79,7 +80,7 @@ void Vfs::UnmountImage(unsigned int slot) {
 
 int Vfs::GetPendingImageSize() const { return pendingImage ? pendingImageSize : -1; }
 
-int Vfs::GetSize(int slot) const {
+int Vfs::GetSize(unsigned int slot) const {
     if (slot >= FF_VOLUMES || !cardImages[slot]) return -1;
 
     return cardImages[slot]->BlocksTotal() * CardImage::BLOCK_SIZE;
@@ -87,8 +88,22 @@ int Vfs::GetSize(int slot) const {
 
 void* Vfs::GetPendingImage() const { return pendingImage.get(); }
 
-void* Vfs::GetImage(int slot) const {
+void* Vfs::GetImage(unsigned int slot) const {
     if (slot >= FF_VOLUMES || !cardImages[slot]) return nullptr;
 
     return cardImages[slot].get();
 }
+
+void* Vfs::GetDirtyPages(unsigned int slot) const {
+    if (slot >= FF_VOLUMES || !cardImages[slot]) return nullptr;
+
+    return cardImages[slot]->DirtyPages();
+}
+
+int Vfs::RenameFile(const char* from, const char* to) { return f_rename(from, to); }
+
+int Vfs::ChmodFile(const char* path, int attr, int mask) { return f_chmod(path, attr, mask); }
+
+int Vfs::StatFile(const char* path) { return f_stat(path, fileEntry.GetFilinfo()); }
+
+const FileEntry& Vfs::GetEntry() { return fileEntry; }

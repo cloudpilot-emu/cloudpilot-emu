@@ -31,8 +31,8 @@ export class VfsService {
 
         const vfs = await this.vfs;
 
-        vfs.AllocateImage(card.size);
-        const pendingImage = vfs.GetPendingImage();
+        vfs.allocateImage(card.size);
+        const pendingImage = vfs.getPendingImage();
         if (!pendingImage) throw new Error('failed to allocate image');
 
         if (data) {
@@ -41,7 +41,7 @@ export class VfsService {
             await this.storageService.loadCardData(id, pendingImage, CardOwner.vfs);
         }
 
-        if (vfs.MountImage(0)) {
+        if (vfs.mountImage(0)) {
             this.mountedCard = card;
             return true;
         }
@@ -52,7 +52,7 @@ export class VfsService {
     async releaseCard(id = this.mountedCard?.id) {
         if (id === undefined || id !== this.mountedCard?.id) return;
 
-        (await this.vfs).UnmountImage(0);
+        (await this.vfs).unmountImage(0);
         this.mountedCard = undefined;
 
         this.storageCardContext.release(id, CardOwner.vfs);
@@ -64,7 +64,7 @@ export class VfsService {
         const normalizedPath = this.normalizePath(path);
 
         if (!this.directoryCache.has(normalizedPath)) {
-            const readdirResult = (await this.vfs).Readdir(path);
+            const readdirResult = (await this.vfs).readdir(path);
             if (readdirResult.error === ReaddirError.none) {
                 this.directoryCache.set(normalizedPath, readdirResult.entries);
             }

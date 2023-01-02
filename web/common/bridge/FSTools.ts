@@ -11,6 +11,8 @@ import createModule, {
     Module,
 } from '@native-fstools/index';
 
+import { dirtyPagesSize } from './util';
+
 export { FsckResult } from '@native-fstools/index';
 
 export async function mkfs(size: number): Promise<Uint32Array | undefined> {
@@ -85,10 +87,7 @@ export class FsckContext {
 
     getDirtyPages(): Uint8Array {
         const dirtyPagesPtr = this.module.getPointer(this.nativeContext.GetDirtyPages());
-
-        const imageSize = this.nativeContext.GetImageSize();
-        const pages = (imageSize >>> 13) + (imageSize % 8192 > 0 ? 1 : 0);
-        const bufferSize = (pages >>> 3) + (pages % 8 > 0 ? 1 : 0);
+        const bufferSize = dirtyPagesSize(this.nativeContext.GetImageSize());
 
         return this.module.HEAPU8.subarray(dirtyPagesPtr, dirtyPagesPtr + bufferSize);
     }

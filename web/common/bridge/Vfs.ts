@@ -4,10 +4,18 @@
 // tslint:disable-next-line: no-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 
-import { ReaddirError, ReaddirStatus, Vfs as VfsNative } from '@native-vfs/index';
+import { ReaddirError, ReaddirStatus, VfsAttr, Vfs as VfsNative, VfsResult } from '@native-vfs/index';
 import createModule, { Module } from '@native-vfs/index';
 
-export { ReaddirError } from '@native-vfs/index';
+import { dirtyPagesSize } from './util';
+
+export { ReaddirError, VfsResult } from '@native-vfs/index';
+
+export interface Attributes {
+    readonly: boolean;
+    hidden: boolean;
+    system: boolean;
+}
 
 export interface FileEntry {
     path: string;
@@ -16,11 +24,20 @@ export interface FileEntry {
     lastModifiedTS: number;
     lastModifiedLocalDate: string;
     isDirectory: boolean;
+    attributes: Attributes;
 }
 
 export type ReaddirResult =
     | { error: ReaddirError.none; entries: Array<FileEntry> }
     | { error: ReaddirError.no_such_directory | ReaddirError.unknown; reason: string };
+
+function deserializeAttributes(attr: number): Attributes {
+    return {
+        readonly: (attr & VfsAttr.AM_RDO) !== 0,
+        hidden: (attr & VfsAttr.AM_HID) !== 0,
+        system: (attr & VfsAttr.AM_SYS) !== 0,
+    };
+}
 
 export class Vfs {
     private constructor(private module: Module) {
@@ -36,19 +53,19 @@ export class Vfs {
         );
     }
 
-    AllocateImage(size: number): void {
+    allocateImage(size: number): void {
         this.vfsNative.AllocateImage(size >>> 9);
     }
 
-    MountImage(slot: number): boolean {
+    mountImage(slot: number): boolean {
         return this.vfsNative.MountImage(slot);
     }
 
-    UnmountImage(slot: number): void {
+    unmountImage(slot: number): void {
         this.vfsNative.UnmountImage(slot);
     }
 
-    GetPendingImage(): Uint32Array | undefined {
+    getPendingImage(): Uint32Array | undefined {
         const ptr = this.module.getPointer(this.vfsNative.GetPendingImage());
         const size = this.vfsNative.GetPendingImageSize();
         if (ptr === 0 || size === 0) return undefined;
@@ -56,7 +73,7 @@ export class Vfs {
         return this.module.HEAPU32.subarray(ptr >>> 2, (ptr + size) >>> 2);
     }
 
-    GetImageInSlot(slot: number): Uint32Array | undefined {
+    getImageInSlot(slot: number): Uint32Array | undefined {
         const ptr = this.module.getPointer(this.vfsNative.GetImage(slot));
         const size = this.vfsNative.GetSize(slot);
         if (ptr === 0 || size === 0) return undefined;
@@ -64,23 +81,33 @@ export class Vfs {
         return this.module.HEAPU32.subarray(ptr >>> 2, (ptr + size) >>> 2);
     }
 
-    Readdir(path: string): ReaddirResult {
+    getDirtyPagesForSlot(slot: number): Uint8Array | undefined {
+        const dirtyPagesPtr = this.module.getPointer(this.vfsNative.GetDirtyPages(slot));
+        if (dirtyPagesPtr === 0) return undefined;
+
+        const bufferSize = dirtyPagesSize(this.vfsNative.GetSize(slot));
+        return this.module.HEAPU8.subarray(dirtyPagesPtr, dirtyPagesPtr + bufferSize);
+    }
+
+    readdir(path: string): ReaddirResult {
         const context = new this.module.ReaddirContext(path);
 
         try {
             const entries: Array<FileEntry> = [];
 
             while (context.GetStatus() === ReaddirStatus.more) {
-                const name = context.GetEntryName();
-                const lastModifiedTS = context.GetEntryModifiedTS();
+                const entry = context.GetEntry();
+                const name = entry.GetName();
+                const lastModifiedTS = entry.GetModifiedTS();
 
                 entries.push({
                     path: `${path.replace(/\/*$/, '')}/${name}`,
                     name,
-                    size: context.GetEntrySize(),
+                    size: entry.GetSize(),
                     lastModifiedTS,
                     lastModifiedLocalDate: new Date(lastModifiedTS * 1000).toLocaleDateString(),
-                    isDirectory: context.IsEntryDirectory(),
+                    isDirectory: entry.IsDirectory(),
+                    attributes: deserializeAttributes(entry.GetAttributes()),
                 });
 
                 context.Next();
@@ -100,6 +127,27 @@ export class Vfs {
         } finally {
             this.module.destroy(context);
         }
+    }
+
+    rename(from: string, to: string): VfsResult {
+        return this.vfsNative.RenameFile(from, to);
+    }
+
+    chmod(path: string, attributes: Partial<Attributes>): VfsResult {
+        let attr = 0;
+        let mask = 0;
+
+        let processAttribute = (value: boolean | undefined, flag: number) => {
+            if (value === undefined) return;
+            mask |= flag;
+            if (value) attr |= flag;
+        };
+
+        processAttribute(attributes.hidden, VfsAttr.AM_HID);
+        processAttribute(attributes.readonly, VfsAttr.AM_RDO);
+        processAttribute(attributes.system, VfsAttr.AM_SYS);
+
+        return this.vfsNative.ChmodFile(path, attr, mask);
     }
 
     private vfsNative: VfsNative;

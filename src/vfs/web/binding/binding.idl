@@ -1,3 +1,11 @@
+interface FileEntry {
+    [Const] DOMString GetName();
+    boolean IsDirectory();
+    long GetSize();
+    long GetModifiedTS();
+    long GetAttributes();
+};
+
 interface Vfs {
     void Vfs();
 
@@ -13,6 +21,13 @@ interface Vfs {
     long GetSize(long slot);
     VoidPtr GetPendingImage();
     VoidPtr GetImage(long slot);
+    VoidPtr GetDirtyPages(long slot);
+
+    long RenameFile([Const] DOMString from, [Const] DOMString to);
+    long ChmodFile([Const] DOMString path, long attr, long mask);
+    long StatFile([Const] DOMString path);
+
+    [Const, Ref] FileEntry GetEntry();
 };
 
 interface ReaddirContext {
@@ -20,11 +35,7 @@ interface ReaddirContext {
 
     long Next();
 
-    [Const] DOMString GetEntryName();
-
-    boolean IsEntryDirectory();
-    long GetEntrySize();
-    long GetEntryModifiedTS();
+    [Const,Ref] FileEntry GetEntry();
 
     long GetStatus();
     long GetError();

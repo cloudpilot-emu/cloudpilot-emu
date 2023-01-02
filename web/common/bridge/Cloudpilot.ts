@@ -22,6 +22,7 @@ import createModule, {
 
 import { DeviceId } from '../model/DeviceId';
 import { Event } from 'microevent.ts';
+import { dirtyPagesSize } from './util';
 
 export {
     PalmButton,
@@ -699,10 +700,7 @@ export class Cloudpilot {
         const dirtyPagesPtr = this.module.getPointer(this.cloudpilot.GetCardDirtyPages(key));
         if (dirtyPagesPtr === 0) return undefined;
 
-        const cardSize = this.cloudpilot.GetCardSize(key);
-        const pages = (cardSize >>> 13) + (cardSize % 8192 > 0 ? 1 : 0);
-        const bufferSize = (pages >>> 3) + (pages % 8 > 0 ? 1 : 0);
-
+        const bufferSize = dirtyPagesSize(this.cloudpilot.GetCardSize(key));
         return this.module.HEAPU8.subarray(dirtyPagesPtr, dirtyPagesPtr + bufferSize);
     }
 

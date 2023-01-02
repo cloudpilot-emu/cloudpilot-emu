@@ -83,12 +83,13 @@ bool VfsCli::Run() {
 
     while (static_cast<ReaddirContext::Status>(readdirContext.GetStatus()) ==
            ReaddirContext::Status::more) {
-        time_t timestamp = readdirContext.GetEntryModifiedTS();
+        const FileEntry& entry = readdirContext.GetEntry();
+
+        time_t timestamp = entry.GetModifiedTS();
         tm* calendar = localtime(&timestamp);
 
-        cout << left << (readdirContext.IsEntryDirectory() ? "[D] " : "[F] ") << setw(33)
-             << string(readdirContext.GetEntryName()).substr(0, 32) << setw(10)
-             << readdirContext.GetEntrySize() << setw(0)
+        cout << left << (entry.IsDirectory() ? "[D] " : "[F] ") << setw(33)
+             << string(entry.GetName()).substr(0, 32) << setw(10) << entry.GetSize() << setw(0)
              << string(calendar ? chomp(asctime(calendar)) : "") << endl;
 
         readdirContext.Next();

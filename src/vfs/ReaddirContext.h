@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 
+#include "FileEntry.h"
 #include "fatfs/ff.h"
 
 class ReaddirContext {
@@ -18,12 +19,7 @@ class ReaddirContext {
     int Next();
 
     const char* GetPath() const;
-
-    const char* GetEntryName() const;
-
-    bool IsEntryDirectory() const;
-    unsigned int GetEntrySize() const;
-    unsigned int GetEntryModifiedTS() const;
+    const FileEntry& GetEntry() const;
 
     int GetStatus() const;
     int GetError() const;
@@ -36,7 +32,7 @@ class ReaddirContext {
     const std::string path;
 
     DIR dir;
-    FILINFO filinfo;
+    FileEntry fileEntry;
 
     Status status{Status::error};
     int err{FR_NOT_READY};

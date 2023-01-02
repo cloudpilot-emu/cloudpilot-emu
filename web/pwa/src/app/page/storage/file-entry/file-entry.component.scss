@@ -1,3 +1,26 @@
 ion-item {
     background-color: var(--ion-background-color, white);
 }
+
+ion-icon.attribute-icon {
+    color: var(--ion-color-step-600);
+    margin-left: 0.7em;
+
+    &[name="lock-closed-outline"] {
+        position: relative;
+        top: -2px;
+    }
+
+    .ios & {
+        color: rgba(var(--ion-text-color-rgb, 0, 0, 0), 0.4);
+        margin-left: 0;
+    }
+
+    &:last-of-type {
+        margin-right: 1.75em;
+
+        .is-directory & {
+            margin-right: 0.75em;
+        }
+    }
+}
