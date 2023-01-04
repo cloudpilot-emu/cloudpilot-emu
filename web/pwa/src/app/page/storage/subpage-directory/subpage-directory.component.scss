@@ -1,27 +1,27 @@
-.placeholder-container {
-    height: calc(100% - 64px);
+.container {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.placeholder-wrapper {
+    flex: 1;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
-
-    .ios & {
-        height: calc(100% - 44px);
-    }
-
-    .placeholder {
-        text-align: center;
-        max-width: 30em;
-        padding: 0 2em;
-    }
 }
 
-.ios .placeholder-container {
-    height: calc(100% - 4em);
+.placeholder {
+    text-align: center;
+    max-width: 30em;
+    padding: 0 2em;
 }
 
 ion-list {
     background: none;
+    flex: 0;
 }
 
 .select-arrow {
@@ -38,6 +38,6 @@ ion-list {
     }
 }
 
-ion-item.free-space {
+ion-item.metadata {
     text-align: center;
 }

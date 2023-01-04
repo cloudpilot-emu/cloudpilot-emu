@@ -8,7 +8,7 @@ import { FileEntry } from '@common/bridge/Vfs';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { VfsService } from '@pwa/service/vfs.service';
 import { debounce } from '@pwa/helper/debounce';
-import { formatNumeral } from '@pwa/helper/format';
+import { memoize } from '@pwa/helper/memoize';
 
 function entrySortFunction(e1: FileEntry, e2: FileEntry): number {
     if (e1.isDirectory && !e2.isDirectory) return -1;
@@ -61,6 +61,18 @@ export class SubpageDirectoryComponent implements OnInit {
 
     get bytesTotal(): number {
         return this.vfsService.getBytesTotal();
+    }
+
+    get bytesInFiles(): number {
+        return this.bytesInFilesMemoized(this.entries);
+    }
+
+    get isRoot(): boolean {
+        return this.path === '/';
+    }
+
+    get fileCount(): number {
+        return this.fileCountMemoized(this.entries);
     }
 
     ngOnInit(): void {
@@ -135,11 +147,10 @@ export class SubpageDirectoryComponent implements OnInit {
         const entryMap = new Map(this.entries.map((entry) => [entry.name, entry]));
         const filesOnly = selectionAsArray.every((name) => !entryMap.get(name)?.isDirectory);
         const directoriesOnly = selectionAsArray.every((name) => entryMap.get(name)?.isDirectory);
-        const sizeNumeral = formatNumeral(this.selection.size);
-        let subject = `${sizeNumeral} items`;
+        let subject = `${this.selection.size} items`;
 
-        if (filesOnly) subject = this.selection.size === 1 ? 'file' : `${sizeNumeral} files`;
-        if (directoriesOnly) subject = this.selection.size === 1 ? 'directory' : `${sizeNumeral} directories`;
+        if (filesOnly) subject = this.selection.size === 1 ? 'file' : `${this.selection.size} files`;
+        if (directoriesOnly) subject = this.selection.size === 1 ? 'directory' : `${this.selection.size} directories`;
 
         if (this.selection.size !== 0) {
             const sheet = await this.actionSheetController.create({
@@ -247,6 +258,15 @@ export class SubpageDirectoryComponent implements OnInit {
             .readdir(this.path)
             .then((entries) => (this.entries = entries ? [...entries].sort(entrySortFunction) : []));
     }
+
+    private bytesInFilesMemoized = memoize(
+        (entries: Array<FileEntry> | undefined): number =>
+            entries?.reduce((acc, entry) => acc + (entry.isDirectory ? 0 : entry.size), 0) ?? 0
+    );
+
+    private fileCountMemoized = memoize(
+        (entries: Array<FileEntry> | undefined): number => entries?.filter((entry) => !entry.isDirectory)?.length ?? 0
+    );
 
     @Input()
     card: StorageCard | undefined;

@@ -33,27 +33,33 @@
 
 <ion-content>
 
-  <div *ngIf="entries !== undefined && entries.length === 0" class="placeholder-container">
-    <div class="placeholder">
-      empty {{path === '/' ? 'card' : 'directory'}}
+  <div class="container">
+    <div *ngIf="entries?.length === 0" class="placeholder-wrapper">
+      <div class="placeholder">
+        empty {{isRoot ? 'card' : 'directory'}}
+      </div>
     </div>
+
+    <ion-list>
+      <app-file-entry *ngFor="let entry of entries;trackBy:trackEntryBy" [entry]="entry" [selecting]="mode === 'select'"
+        [selected]="selection.has(entry.name)" (selectEntry)="onSelect(entry)" (editEntry)="onEditEntry(entry)"
+        (saveEntry)="onSaveEntry(entry)" (copyEntry)="onCopyEntry(entry)" (cutEntry)="onCutEntry(entry)"
+        (deleteEntry)="onDeleteEntry(entry)" (interaction)="lastEntryTouched = entry.name"
+        [touched]="entry.name === lastEntryTouched">
+      </app-file-entry>
+
+      <ion-item *ngIf="isRoot || fileCount > 0" class="metadata" lines="none">
+        <ion-label>
+          <p *ngIf="isRoot">
+            {{bytesFree | fileSize}} free, {{bytesTotal | fileSize}} total
+          </p>
+
+          <p  *ngIf="fileCount > 0">
+            {{bytesInFiles | fileSize}} in {{fileCount}} {{fileCount === 1 ? 'file' : 'files'}}
+          </p>
+        </ion-label>
+      </ion-item>
+    </ion-list>
   </div>
-
-  <ion-list>
-    <app-file-entry *ngFor="let entry of entries;trackBy:trackEntryBy" [entry]="entry" [selecting]="mode === 'select'"
-      [selected]="selection.has(entry.name)" (selectEntry)="onSelect(entry)" (editEntry)="onEditEntry(entry)"
-      (saveEntry)="onSaveEntry(entry)" (copyEntry)="onCopyEntry(entry)" (cutEntry)="onCutEntry(entry)"
-      (deleteEntry)="onDeleteEntry(entry)" (interaction)="lastEntryTouched = entry.name"
-      [touched]="entry.name === lastEntryTouched">
-    </app-file-entry>
-
-    <ion-item class="free-space" lines="none">
-      <ion-label>
-        <p>
-          {{bytesFree | fileSize}} free, {{bytesTotal | fileSize}} total
-        </p>
-      </ion-label>
-    </ion-item>
-  </ion-list>
 
 </ion-content>
