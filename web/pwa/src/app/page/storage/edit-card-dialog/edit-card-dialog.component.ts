@@ -13,12 +13,6 @@ export type CardSettings = Pick<StorageCard, 'name' | 'size' | 'dontFsckAutomati
     styleUrls: ['./edit-card-dialog.component.scss'],
 })
 export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
-    @Input()
-    onCancel = () => undefined;
-
-    @Input()
-    private onSave: (update: Partial<CardSettings>) => void = () => undefined;
-
     constructor(private storageCardService: StorageCardService) {}
 
     ngOnInit(): void {
@@ -71,4 +65,10 @@ export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
 
     @Input()
     cardSupportLevel = CardSupportLevel.sdAndMs;
+
+    @Input()
+    onCancel = () => undefined;
+
+    @Input()
+    private onSave: (update: Partial<CardSettings>) => void = () => undefined;
 }

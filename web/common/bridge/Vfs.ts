@@ -4,7 +4,14 @@
 // tslint:disable-next-line: no-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 
-import { ReaddirError, ReaddirStatus, VfsAttr, Vfs as VfsNative, VfsResult } from '@native-vfs/index';
+import {
+    FileEntry as FileEntryNative,
+    ReaddirError,
+    ReaddirStatus,
+    VfsAttr,
+    Vfs as VfsNative,
+    VfsResult,
+} from '@native-vfs/index';
 import createModule, { Module } from '@native-vfs/index';
 
 import { dirtyPagesSize } from './util';
@@ -36,6 +43,21 @@ function deserializeAttributes(attr: number): Attributes {
         readonly: (attr & VfsAttr.AM_RDO) !== 0,
         hidden: (attr & VfsAttr.AM_HID) !== 0,
         system: (attr & VfsAttr.AM_SYS) !== 0,
+    };
+}
+
+function convertFileEntry(entry: FileEntryNative, path: string): FileEntry {
+    const name = entry.GetName();
+    const lastModifiedTS = entry.GetModifiedTS();
+
+    return {
+        path,
+        name,
+        size: entry.GetSize(),
+        lastModifiedTS,
+        lastModifiedLocalDate: new Date(lastModifiedTS * 1000).toLocaleDateString(),
+        isDirectory: entry.IsDirectory(),
+        attributes: deserializeAttributes(entry.GetAttributes()),
     };
 }
 
@@ -96,20 +118,8 @@ export class Vfs {
             const entries: Array<FileEntry> = [];
 
             while (context.GetStatus() === ReaddirStatus.more) {
-                const entry = context.GetEntry();
-                const name = entry.GetName();
-                const lastModifiedTS = entry.GetModifiedTS();
-
-                entries.push({
-                    path: `${path.replace(/\/*$/, '')}/${name}`,
-                    name,
-                    size: entry.GetSize(),
-                    lastModifiedTS,
-                    lastModifiedLocalDate: new Date(lastModifiedTS * 1000).toLocaleDateString(),
-                    isDirectory: entry.IsDirectory(),
-                    attributes: deserializeAttributes(entry.GetAttributes()),
-                });
-
+                const nativeEntry = context.GetEntry();
+                entries.push(convertFileEntry(nativeEntry, `${path.replace(/\/*$/, '')}/${nativeEntry.GetName()}`));
                 context.Next();
             }
 
@@ -148,6 +158,17 @@ export class Vfs {
         processAttribute(attributes.system, VfsAttr.AM_SYS);
 
         return this.vfsNative.ChmodFile(path, attr, mask);
+    }
+
+    stat(
+        path: string
+    ):
+        | { result: VfsResult.FR_OK; entry: FileEntry }
+        | { result: Exclude<VfsResult, VfsResult.FR_OK>; entry: undefined } {
+        const result = this.vfsNative.StatFile(path);
+        if (result !== VfsResult.FR_OK) return { result, entry: undefined };
+
+        return { entry: convertFileEntry(this.vfsNative.GetEntry(), path), result };
     }
 
     bytesFree(slot: number): number {

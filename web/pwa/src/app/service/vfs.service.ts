@@ -1,14 +1,26 @@
 import { CardOwner, StorageCardContext } from './storage-card-context';
-import { FileEntry, ReaddirError, Vfs } from '@common/bridge/Vfs';
+import { FileEntry, ReaddirError, Vfs, VfsResult } from '@common/bridge/Vfs';
 
+import { AlertService } from './alert.service';
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageService } from '@pwa/service/storage.service';
+import deepEqual from 'deep-equal';
+
+export enum VfsError {
+    none,
+    read,
+    write,
+}
 
 @Injectable({ providedIn: 'root' })
 export class VfsService {
-    constructor(private storageService: StorageService, private storageCardContext: StorageCardContext) {}
+    constructor(
+        private storageService: StorageService,
+        private storageCardContext: StorageCardContext,
+        private alertService: AlertService
+    ) {}
 
     normalizePath(path: string): string {
         return ('/' + path).replace(/\/{2,}/g, '/').replace(/\/*$/, '');
@@ -16,6 +28,10 @@ export class VfsService {
 
     splitPath(path: string): Array<string> {
         return this.normalizePath(path).replace(/^\/+/, '').split('/');
+    }
+
+    dirname(path: string): string {
+        return this.normalizePath(path).replace(/\/[^\/]*$/, '');
     }
 
     async mountCardUnchecked(id: number, readonly: boolean, data?: Uint32Array): Promise<boolean> {
@@ -72,6 +88,47 @@ export class VfsService {
         }
 
         return this.directoryCache.get(normalizedPath);
+    }
+
+    async updateFileEntry(path: string, changes: Partial<Pick<FileEntry, 'attributes' | 'name'>>): Promise<VfsError> {
+        const vfs = await this.vfs;
+        path = this.normalizePath(path);
+
+        const { result, entry } = vfs.stat(path);
+        if (result !== VfsResult.FR_OK) {
+            await this.alertService.errorMessage(`Unable to stat ${path}.`);
+            return VfsError.read;
+        }
+
+        if (changes.name !== undefined && changes.name !== entry.name) {
+            if (changes.name.indexOf('/') >= 0) throw new Error('bad file name');
+
+            switch (vfs.rename(path, `${this.dirname(path)}/${changes.name}`)) {
+                case VfsResult.FR_OK:
+                    break;
+
+                case VfsResult.FR_INVALID_NAME:
+                    await this.alertService.errorMessage('Invalid file name.');
+                    return VfsError.read;
+
+                default:
+                    return VfsError.write;
+            }
+        }
+
+        if (changes.attributes !== undefined && !deepEqual(changes.attributes, entry.attributes)) {
+            switch (vfs.chmod(path, changes.attributes)) {
+                case VfsResult.FR_OK:
+                    break;
+
+                default:
+                    return VfsError.write;
+            }
+        }
+
+        this.directoryCache.delete(this.dirname(path));
+
+        return VfsError.none;
     }
 
     currentCard(): StorageCard | undefined {
