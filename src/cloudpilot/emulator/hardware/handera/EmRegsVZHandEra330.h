@@ -79,7 +79,7 @@
 #define PortM_SD_A10 0x0010
 #define PortM_CPLD_TDI 0x0020
 
-class EmRegsVZHandEra330 : public EmRegsVZ {
+class EmRegsVZHandEra330 : public EmRegsVZNoScreen {
    public:
     EmRegsVZHandEra330(HandEra330PortManager** fPortManager);
     virtual ~EmRegsVZHandEra330(void);

@@ -730,7 +730,7 @@ static inline void PrvWriteRegister(uint8* p, uint32 value) {
 
 #define ROP_SRCCOPY 0xcc
 #define ROP_SRCAND 0x88
-//#define ROP_SRCANDNOT			0x77
+// #define ROP_SRCANDNOT			0x77
 #define ROP_SRCANDNOT 0x22
 #define ROP_SRCXOR 0x66
 #define ROP_SRCOR 0xee
@@ -740,7 +740,7 @@ static inline void PrvWriteRegister(uint8* p, uint32 value) {
 
 #define ROP_PATCOPY 0xf0
 #define ROP_PATAND 0xa0
-//#define ROP_PATANDNOT			0x5f
+// #define ROP_PATANDNOT			0x5f
 #define ROP_PATANDNOT 0x0a
 #define ROP_PATXOR 0x5a
 #define ROP_PATOR 0xfa

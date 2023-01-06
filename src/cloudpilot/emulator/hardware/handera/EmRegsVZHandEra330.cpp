@@ -45,7 +45,7 @@ namespace {
 // ---------------------------------------------------------------------------
 
 EmRegsVZHandEra330::EmRegsVZHandEra330(HandEra330PortManager** fPortManager)
-    : EmRegsVZ(),
+    : EmRegsVZNoScreen(),
 
       fSPISlaveCurrent(new EmSPISlave330Current()) {
     fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet2);
@@ -375,7 +375,7 @@ EmSPISlave* EmRegsVZHandEra330::GetSPI1Slave(void) { return spiSlaveSD.get(); }
 //		� EmRegsVZHandEra330::GetROMSize
 // ---------------------------------------------------------------------------
 
-int32 EmRegsVZHandEra330::GetROMSize(void) { return (2 * 1024 * 1024); }
+int32 EmRegsVZHandEra330::GetROMSize(void) { return (8 * 1024 * 1024); }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsVZHandEra330::ButtonToBits

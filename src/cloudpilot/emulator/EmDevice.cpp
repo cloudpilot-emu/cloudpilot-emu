@@ -147,6 +147,7 @@ enum  // DeviceType
     kDeviceSymbol1740,
     kDeviceTRGpro,
     kDeviceHandEra330,
+    kDeviceHandEra330c,
     kDeviceVisor,
     kDeviceVisorPrism,
     kDeviceVisorPlatinum,
@@ -469,6 +470,23 @@ static const DeviceInfo kDeviceInfo[] = {
      1,
      1,
      {{'trgp', 'trg2'}}},
+    {kDeviceHandEra330c,
+     "HandEra 330C",
+     {"HandEra330c"},
+     kSupports68VZ328 + kHasFlash,
+     16384,
+     1,
+     1,
+     {{'trgp', 'trg3'}}},
+    {kDevicePEGS300, "PEG-S300 series", {"PEG-S300"}, kSupports68EZ328, 8192, 0, 0, {}},
+    {kDevicePEGS320,
+     "PEG-S320 series",
+     {"PEG-S320"},
+     kSupports68VZ328,
+     8192,
+     UNSUPPORTED,
+     UNSUPPORTED,
+     {{'sony', 'nasc'}}},
     {kDevicePEGS300, "PEG-S300 series", {"PEG-S300"}, kSupports68EZ328, 8192, 0, 0, {}},
     {kDevicePEGS320,
      "PEG-S320 series",
@@ -1153,6 +1171,20 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsCFMemCard(&fPortMgr->CFBus));
         } break;
 
+        case kDeviceHandEra330c: {
+            HandEra330PortManager* fPortMgr;
+            EmRegsVZHandEra330* regsVZHandera330 = new EmRegsVZHandEra330(&fPortMgr);
+
+            EmBankRegs::AddSubBank(regsVZHandera330);
+            EmBankRegs::AddSubBank(new EmRegs330CPLD(fPortMgr, regsVZHandera330->GetSPISlaveSD()));
+            EmBankRegs::AddSubBank(new EmRegsCFMemCard(&fPortMgr->CFBus));
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(0x10c00000);
+
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, 0x10c40000, 0x10c00000));
+            EmBankRegs::AddSubBank(framebuffer);
+        } break;
+
         case kDevicePEGS300: {
             EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10200000);
 
@@ -1521,6 +1553,7 @@ void EmDevice::ConfigureMemoryRegions() {
         case kDevicePalmPacifiC:
         case kDevicePalmI710:
         case kDevicePalmM130:
+        case kDeviceHandEra330c:
         case kDevicePEGN600C:
         case kDevicePEGT600:
         case kDevicePEGN700C:
@@ -1590,7 +1623,8 @@ bool EmDevice::EmulatesDockStatus() const {
 bool EmDevice::NeedsSDCTLHack() const { return fDeviceID == kDevicePalmM515; }
 
 bool EmDevice::HasCustomDigitizerTransform() const {
-    return fDeviceID == kDeviceHandEra330 || fDeviceID == kDeviceYSX1100;
+    return fDeviceID == kDeviceHandEra330 || fDeviceID == kDeviceHandEra330c ||
+           fDeviceID == kDeviceYSX1100;
 }
 
 bool EmDevice::IsClie() const {
@@ -1664,6 +1698,7 @@ ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
             return ScreenDimensions::screen320x320;
 
         case kDeviceHandEra330:
+        case kDeviceHandEra330c:
             return ScreenDimensions::screen240x320;
 
         case kDeviceYSX1100:

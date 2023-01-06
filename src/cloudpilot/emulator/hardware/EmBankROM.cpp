@@ -454,6 +454,9 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
         bigROMOffset &= 0x000FFFFF;  // Allows for 1 Meg offset.
     }
 
+    // CSTODO: fix or just use the big ROM only
+    bigROMOffset = 0x10000;
+
     // Make sure the file is big enough to have a Big ROM.
 
     if (len < (size_t)bigROMOffset) return false;
