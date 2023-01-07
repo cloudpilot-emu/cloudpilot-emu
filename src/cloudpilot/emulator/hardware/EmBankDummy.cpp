@@ -19,6 +19,7 @@
 #include "EmCommon.h"
 #include "EmMemory.h"  // Memory::InitializeBanks
 #include "MemoryRegion.h"
+#include "StackDump.h"
 
 namespace {
     uint32 ramSize;
@@ -157,7 +158,7 @@ void EmBankDummy::SetLong(emuptr address, uint32) {
 
     if (HackForHwrGetRAMSize(address)) return;
 
-    InvalidAccess(address, sizeof(uint32), true);
+    InvalidAccess(address, sizeof(uint32), false);
 }
 
 // ---------------------------------------------------------------------------
@@ -170,7 +171,7 @@ void EmBankDummy::SetWord(emuptr address, uint32) {
 
     if (HackForHwrGetRAMSize(address)) return;
 
-    InvalidAccess(address, sizeof(uint16), true);
+    InvalidAccess(address, sizeof(uint16), false);
 }
 
 // ---------------------------------------------------------------------------
@@ -183,7 +184,7 @@ void EmBankDummy::SetByte(emuptr address, uint32) {
 
     if (HackForHwrGetRAMSize(address)) return;
 
-    InvalidAccess(address, sizeof(uint8), true);
+    InvalidAccess(address, sizeof(uint8), false);
 }
 
 // ---------------------------------------------------------------------------
@@ -228,7 +229,12 @@ void EmBankDummy::InvalidAccess(emuptr address, long size, Bool forRead) {
     // CSTODO: revert debug code
     if (CEnableFullAccess::AccessOK()) return;
 
-    cerr << "bad access to 0x" << hex << address << dec << " " << forRead << endl << flush;
+#if 1
+    cerr << "bad access to 0x" << hex << address << dec << " " << forRead << endl;
+    cerr << "stack:" << endl;
+    StackDump().FrameCount(5).DumpFrames(true).Dump();
+    cerr << endl << flush;
+#endif
 
     EmAssert(gCPU68K);
     // gCPU68K->BusError(address, size, forRead);

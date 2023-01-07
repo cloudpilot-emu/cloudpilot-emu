@@ -230,7 +230,8 @@ SOURCE_EMU = \
 	emulator/ZipfileWalker.cpp \
 	emulator/ExternalStorage.cpp \
 	emulator/EmCRC.cpp \
-	emulator/MemoryRegion.cpp
+	emulator/MemoryRegion.cpp \
+	emulator/StackDump.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \

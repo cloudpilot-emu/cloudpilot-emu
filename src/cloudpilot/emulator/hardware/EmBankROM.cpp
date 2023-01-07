@@ -810,6 +810,8 @@ void EmBankFlash::SetBankHandlers(void) {
 
 uint32 EmBankFlash::GetLong(emuptr address) { return EmBankROM::GetLong(address); }
 
+uint32 EmBankROM::GetRomSize() { return gManagedROMSize; }
+
 // ---------------------------------------------------------------------------
 //		� EmBankFlash::GetWord
 // ---------------------------------------------------------------------------

@@ -39,6 +39,7 @@ class EmBankROM {
     static void AddOpcodeCycles(void);
 
     static emuptr GetMemoryStart(void) { return gROMMemoryStart; }
+    static uint32 GetRomSize();
 
    private:
     static void AddressError(emuptr address, long size, Bool forRead);
