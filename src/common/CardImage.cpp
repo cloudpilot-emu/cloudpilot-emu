@@ -1,6 +1,7 @@
 #include "CardImage.h"
 
 #include <algorithm>
+#include <cstring>
 
 CardImage::CardImage(uint8_t* data, size_t blocksTotal) : data(data), blocksTotal(blocksTotal) {
     const size_t pageCount = (blocksTotal >> 4) + ((blocksTotal % 16 != 0) > 0 ? 1 : 0);
