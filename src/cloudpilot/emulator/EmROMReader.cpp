@@ -298,8 +298,9 @@ bool EmROMReader::AcquireCardHeader(void) {
     SetCardAddress(GuessCardAddress());
 
     // CSTODO: Fixme or just use the big ROM only.
-    // unsigned long bigROM = (fCardVersion < 2) ? 0x3000 : cardHdr.bigrom;
-    unsigned long bigROM = 0x10010000;
+    unsigned long bigROM = (fCardVersion < 2) ? 0x3000 : cardHdr.bigrom;
+
+    if (fCompanyID == 'trgp' && fHalID == 'trg3') bigROM = 0x10010000;
 
     if ((fCardAddress & 0x0FFFFF) != (bigROM & 0x0FFFFF)) {
         /* Whoops, we probably just read a Small ROM. Skip to the

@@ -455,7 +455,7 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
     }
 
     // CSTODO: fix or just use the big ROM only
-    bigROMOffset = 0x10000;
+    if (gSession->GetDevice().GetIDString() == "HandEra330c") bigROMOffset = 0x10000;
 
     // Make sure the file is big enough to have a Big ROM.
 
@@ -684,8 +684,8 @@ enum {
     kAMDState_Unlocked2,  // After second unlock cycle (0x0055 written to 0x5554)
                           // Now looking for a command to be written to 0xAAAA
                           // If we find 0x0090, go to kAMDState_Autoselect.
-                          // If we find 0x0080, set gEraseIsSetup and go to kAMDState_Normal. ???
-                          // When should gEraseIsSetup get cleared? If we find 0x0030, if
+                          // If we find 0x0080, set gEraseIsSetup and go to kAMDState_Normal.
+                          // ??? When should gEraseIsSetup get cleared? If we find 0x0030, if
                           // gEraseIsSetup erase the sector and go to kAMDState_EraseDone. If we
                           // fine 0x00A0, go to kAMDState_Program.
                           // ??? What happens on other operations?
@@ -839,8 +839,8 @@ uint32 EmBankFlash::GetWord(emuptr address) {
             // Now looking for a command to be written to 0xAAAA
             // If we find 0x0090, go to kAMDState_Autoselect.
             // If we find 0x0080, set gEraseIsSetup and go to kAMDState_Normal. ??? When should
-            // gEraseIsSetup get cleared? If we find 0x0030, if gEraseIsSetup erase the sector and
-            // go to kAMDState_ProgramDone. If we fine 0x00A0, go to kAMDState_Program.
+            // gEraseIsSetup get cleared? If we find 0x0030, if gEraseIsSetup erase the sector
+            // and go to kAMDState_ProgramDone. If we fine 0x00A0, go to kAMDState_Program.
             // ??? What happens on other operations?
 
             break;
@@ -949,8 +949,8 @@ void EmBankFlash::SetWord(emuptr address, uint32 value) {
             // Now looking for a command to be written to 0xAAAA
             // If we find 0x0090, go to kAMDState_Autoselect.
             // If we find 0x0080, set gEraseIsSetup and go to kAMDState_Normal. ??? When should
-            // gEraseIsSetup get cleared? If we find 0x0030, if gEraseIsSetup erase the sector and
-            // go to kAMDState_EraseDone. If we fine 0x00A0, go to kAMDState_Program.
+            // gEraseIsSetup get cleared? If we find 0x0030, if gEraseIsSetup erase the sector
+            // and go to kAMDState_EraseDone. If we fine 0x00A0, go to kAMDState_Program.
             // ??? What happens on other operations?
 
             if (value == 0x00F0) {
