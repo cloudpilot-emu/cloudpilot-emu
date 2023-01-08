@@ -235,6 +235,7 @@ class EmRegsMediaQ11xx : public EmRegs, public MediaQFramebuffer<EmRegsMediaQ11x
     uint32 CC01Read(emuptr address, int size);
 
     void DC00Write(emuptr address, int size, uint32 value);
+    void GC0CWrite(emuptr address, int size, uint32 value);
     void GE00Write(emuptr address, int size, uint32 value);
     void GE02Write(emuptr address, int size, uint32 value);
     void SourceFifoWrite(emuptr address, int size, uint32 value);

@@ -1435,7 +1435,7 @@ void EmRegsMediaQ11xx::SetSubBankHandlers(void) {
     INSTALL_HANDLER(MQRead, invalidateWrite, gcREG[0x09]);  // Height
     INSTALL_HANDLER(MQRead, MQWrite, gcREG[0x0A]);
     INSTALL_HANDLER(MQRead, MQWrite, gcREG[0x0B]);
-    INSTALL_HANDLER(MQRead, invalidateWrite, gcREG[0x0C]);  // Base Address
+    INSTALL_HANDLER(MQRead, GC0CWrite, gcREG[0x0C]);  // Base Address
     INSTALL_HANDLER(MQRead, MQWrite, gcREG[0x0D]);
     INSTALL_HANDLER(MQRead, invalidateWrite, gcREG[0x0E]);  // Stride
     INSTALL_HANDLER(MQRead, MQWrite, gcREG[0x0F]);
@@ -1905,6 +1905,14 @@ void EmRegsMediaQ11xx::DC00Write(emuptr address, int size, uint32 value) {
     this->MQWrite(address, size, value);
 
     this->PrvUpdateByteLanes();
+}
+
+void EmRegsMediaQ11xx::GC0CWrite(emuptr address, int size, uint32 value) {
+    MQWrite(address, size, value);
+
+    WRITE_REGISTER(gcREG[0x0c], READ_REGISTER(gcREG[0x0c]) & 0x0003ffff);
+
+    gSystemState.MarkScreenDirty();
 }
 
 // ---------------------------------------------------------------------------
