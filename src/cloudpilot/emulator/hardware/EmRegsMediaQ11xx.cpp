@@ -3787,7 +3787,27 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
         }
 
     } else {
-        return this->PrvGetPixel(fXSrc, fYSrc);
+        if (fState.monoSource) {
+            uint32 pixel = fState.xSrc * 8 + (fXSrc - fState.xSrc) + fState.srcBitOffset +
+                           8 * fState.srcByteOffset;
+            emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
+                              fYSrc * fState.srcLineStride + pixel / 8;
+
+            if ((location - this->PrvGetVideoBase()) > MMIO_OFFSET) {
+                return 0;
+            }
+
+            uint8 byte = EmMemGet8(location);
+            uint8 shift = pixel % 8;
+
+            if (fState.monoSrcBitSwap) {
+                return byte & (0x01 << shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
+            } else {
+                return byte & (0x80 >> shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
+            }
+        } else {
+            return this->PrvGetPixel(fXSrc, fYSrc);
+        }
     }
 }
 
