@@ -6,6 +6,7 @@ import { ContextMenuCardComponent } from './context-menu-card/context-menu-card.
 import { ContextMenuDirectoryComponent } from './context-menu-directory/context-menu-directory.component';
 import { ContextMenuFileEntryComponent } from './context-menu-file-entry/context-menu-file-entry.component';
 import { EditCardDialogComponent } from './edit-card-dialog/edit-card-dialog.component';
+import { EditFileDialogComponent } from './edit-file-dialog/edit-file-dialog.component';
 import { FileEntryComponent } from './file-entry/file-entry.component';
 import { IonicModule } from '@ionic/angular';
 import { NewCardDialogComponent } from './new-card-dialog/new-card-dialog.component';
@@ -15,7 +16,6 @@ import { StorageCardComponent } from './storage-card/storage-card.component';
 import { StoragePage } from './storage.page';
 import { SubpageCardsComponent } from './subpage-cards/subpage-cards.component';
 import { SubpageDirectoryComponent } from './subpage-directory/subpage-directory.component';
-import { EditFileDialogComponent } from './edit-file-dialog/edit-file-dialog.component';
 
 @NgModule({
     imports: [CommonModule, IonicModule, FormsModule, ReactiveFormsModule, SharedComponentModule],
