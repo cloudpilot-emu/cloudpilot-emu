@@ -78,7 +78,7 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     void msppcdWrite(emuptr address, int size, uint32 value);
 
     uint32 stubRead(emuptr address, int size);
-    void stubdWrite(emuptr address, int size, uint32 value);
+    void stubWrite(emuptr address, int size, uint32 value);
 
     inline uint32 compositeRegisterRead(emuptr base, emuptr address, int size, uint16 target);
     inline void compositeRegisterWrite(emuptr base, emuptr address, int size, uint32 value,

@@ -226,15 +226,8 @@ void EmBankDummy::AddOpcodeCycles(void) {}
 // ---------------------------------------------------------------------------
 
 void EmBankDummy::InvalidAccess(emuptr address, long size, Bool forRead) {
-    // CSTODO: revert debug code
     if (CEnableFullAccess::AccessOK()) return;
-#if 1
-    cerr << "bad access to 0x" << hex << address << dec << " " << forRead << endl;
-    cerr << "stack:" << endl;
-    StackDump().FrameCount(5).DumpFrames(true).Dump();
-    cerr << endl << flush;
-#endif
 
     EmAssert(gCPU68K);
-    // gCPU68K->BusError(address, size, forRead);
+    gCPU68K->BusError(address, size, forRead);
 }

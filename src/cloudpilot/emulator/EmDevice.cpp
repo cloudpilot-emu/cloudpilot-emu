@@ -56,6 +56,7 @@
 #include "EmRegs328PalmVII.h"
 #include "EmRegs328Pilot.h"
 #include "EmRegs330CPLD.h"
+#include "EmRegs330cStubs.h"
 #include "EmRegsEZPalmIIIc.h"
 #include "EmRegsEZPalmIIIe.h"
 #include "EmRegsEZPalmIIIx.h"
@@ -1181,6 +1182,7 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(
                 new EmRegs330CPLD(0x10800000, fPortMgr, regsVZHandera330c->GetSPISlaveSD()));
             EmBankRegs::AddSubBank(new EmRegsCFMemCard(&fPortMgr->CFBus));
+            EmBankRegs::AddSubBank(new EmRegs330cStubs());
 
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(0x10c00000);
 
