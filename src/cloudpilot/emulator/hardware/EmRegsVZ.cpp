@@ -3236,8 +3236,8 @@ bool EmRegsVZNoScreen::CopyLCDFrame(Frame& frame, bool fullRefresh) {
 
 uint16 EmRegsVZNoScreen::GetLCD2bitMapping() { return EmHALHandler::GetLCD2bitMapping(); }
 
-void EmRegsVZNoScreen::MarkScreen() { return; }
+void EmRegsVZNoScreen::MarkScreen() {}
 
-void EmRegsVZNoScreen::UnmarkScreen() { return; }
+void EmRegsVZNoScreen::UnmarkScreen() {}
 
-void EmRegsVZNoScreen::MarkScreenDirty() { return; }
+void EmRegsVZNoScreen::MarkScreenDirty() {}

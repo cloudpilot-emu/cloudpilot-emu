@@ -173,6 +173,7 @@ SOURCE_EMU = \
 	emulator/hardware/clie/MemoryStick.cpp \
 	emulator/hardware/handera/EmRegs330CPLD.cpp \
 	emulator/hardware/handera/EmRegsVZHandEra330.cpp \
+	emulator/hardware/handera/EmRegsVZHandEra330c.cpp \
 	emulator/hardware/handera/EmSPISlave330Current.cpp \
 	emulator/hardware/handera/EmTRGATA.cpp \
 	emulator/hardware/handera/EmTRGCF.cpp \

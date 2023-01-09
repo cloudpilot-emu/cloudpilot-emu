@@ -79,7 +79,7 @@
 #define PortM_SD_A10 0x0010
 #define PortM_CPLD_TDI 0x0020
 
-class EmRegsVZHandEra330 : public EmRegsVZNoScreen {
+class EmRegsVZHandEra330 : public EmRegsVZ {
    public:
     EmRegsVZHandEra330(HandEra330PortManager** fPortManager);
     virtual ~EmRegsVZHandEra330(void);
@@ -98,7 +98,7 @@ class EmRegsVZHandEra330 : public EmRegsVZNoScreen {
     virtual EmUARTDeviceType GetUARTDevice(int uartNum);
     virtual Bool GetVibrateOn(void);
     virtual uint16 GetLEDState(void);
-    int32 GetROMSize(void);
+    virtual int32 GetROMSize(void);
 
     virtual uint8 GetPortInputValue(int);
     virtual uint8 GetPortInternalValue(int);

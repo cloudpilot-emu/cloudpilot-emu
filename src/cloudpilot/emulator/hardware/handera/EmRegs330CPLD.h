@@ -104,12 +104,12 @@
 #define Cpld4SenseVoltage 0x0000
 #define Cpld4SenseCurrent 0x0001
 
-const uint32 kMemoryStartCPLD = 0x10800000;
 const uint32 kMemorySizeCPLD = 0x100;
 
 class EmRegs330CPLD : public EmRegs {
    public:
-    EmRegs330CPLD(HandEra330PortManager* fPortManager, EmSPISlaveSD* spiSlaveSD);
+    EmRegs330CPLD(emuptr memoryStart, HandEra330PortManager* fPortManager,
+                  EmSPISlaveSD* spiSlaveSD);
     virtual ~EmRegs330CPLD();
 
     virtual void Save(Savestate&);
@@ -147,6 +147,7 @@ class EmRegs330CPLD : public EmRegs {
     uint16 Reg4;
     uint8 Buffer[kMemorySizeCPLD];
     HandEra330PortManager* fPortMgr;
+    emuptr memoryStart;
 
     EmSPISlaveSD* spiSlaveSD;
 };
