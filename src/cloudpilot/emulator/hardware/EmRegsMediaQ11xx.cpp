@@ -3788,8 +3788,11 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
 
     } else {
         if (fState.monoSource) {
-            uint32 pixel = fState.xSrc * 8 + (fXSrc - fState.xSrc) + fState.srcBitOffset +
-                           8 * fState.srcByteOffset;
+            // This does not align with the documentation in any conceivable way, but it emulates
+            // font rendering on the 330c correctly.
+            uint16 x = fXSrc > fState.xSrc ? fXSrc - fState.xSrc : 0;
+
+            uint32 pixel = fState.xSrc * 8 + x + fState.srcBitOffset + 8 * fState.srcByteOffset;
             emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
                               fYSrc * fState.srcLineStride + pixel / 8;
 
