@@ -98,7 +98,7 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
     virtual EmUARTDeviceType GetUARTDevice(int uartNum);
     virtual Bool GetVibrateOn(void);
     virtual uint16 GetLEDState(void);
-    int32 GetROMSize(void);
+    virtual int32 GetROMSize(void);
 
     virtual uint8 GetPortInputValue(int);
     virtual uint8 GetPortInternalValue(int);

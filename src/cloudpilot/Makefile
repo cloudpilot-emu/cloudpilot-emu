@@ -173,7 +173,9 @@ SOURCE_EMU = \
 	emulator/hardware/clie/MemoryStick.cpp \
 	emulator/hardware/handera/EmRegs330CPLD.cpp \
 	emulator/hardware/handera/EmRegsVZHandEra330.cpp \
+	emulator/hardware/handera/EmRegsVZHandEra330c.cpp \
 	emulator/hardware/handera/EmSPISlave330Current.cpp \
+	emulator/hardware/handera/EmRegs330CPLDMirror.cpp \
 	emulator/hardware/handera/EmTRGATA.cpp \
 	emulator/hardware/handera/EmTRGCF.cpp \
 	emulator/hardware/handera/EmTRGCFIO.cpp \
@@ -230,7 +232,8 @@ SOURCE_EMU = \
 	emulator/ZipfileWalker.cpp \
 	emulator/ExternalStorage.cpp \
 	emulator/EmCRC.cpp \
-	emulator/MemoryRegion.cpp
+	emulator/MemoryRegion.cpp \
+	emulator/StackDump.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_EMU) \

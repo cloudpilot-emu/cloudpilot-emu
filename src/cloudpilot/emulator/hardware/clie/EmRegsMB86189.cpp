@@ -121,7 +121,7 @@ void EmRegsMB86189::SetSubBankHandlers(void) {
     INSTALL_HANDLER(msdataRead, msdataWrite, OFSSET_MSDATA, 2);
     INSTALL_HANDLER(msicsRead, msicsWrite, OFFSET_MSICS, 2);
     INSTALL_HANDLER(msppcdRead, msppcdWrite, OFFSET_MSPPCD, 2);
-    INSTALL_HANDLER(stubRead, stubRead, OFFSET_MSPPCD + 2, REGISTER_FILE_SIZE - OFFSET_MSPPCD - 2);
+    INSTALL_HANDLER(stubRead, stubWrite, OFFSET_MSPPCD + 2, REGISTER_FILE_SIZE - OFFSET_MSPPCD - 2);
 }
 
 bool EmRegsMB86189::SupportsImageInSlot(EmHAL::Slot slot, uint32 blocksTotal) {
@@ -460,7 +460,7 @@ uint32 EmRegsMB86189::stubRead(emuptr address, int size) {
     return 0;
 }
 
-void EmRegsMB86189::stubdWrite(emuptr address, int size, uint32 value) {
+void EmRegsMB86189::stubWrite(emuptr address, int size, uint32 value) {
     cerr << "unimplemented MSHC write of size " << size << " to 0x" << hex << address << " (0x"
          << value << dec << ")" << endl
          << flush;

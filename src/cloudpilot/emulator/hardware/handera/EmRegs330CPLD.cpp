@@ -41,8 +41,9 @@ namespace {
 // ---------------------------------------------------------------------------
 //		� EmRegs330CPLD::EmRegs330CPLD
 // ---------------------------------------------------------------------------
-EmRegs330CPLD::EmRegs330CPLD(HandEra330PortManager* fPortManager, EmSPISlaveSD* spiSlaveSD)
-    : spiSlaveSD(spiSlaveSD) {
+EmRegs330CPLD::EmRegs330CPLD(emuptr memoryStart, HandEra330PortManager* fPortManager,
+                             EmSPISlaveSD* spiSlaveSD)
+    : memoryStart(memoryStart), spiSlaveSD(spiSlaveSD) {
     Reg0 = Cpld0Edo;
     Reg2 = Cpld2CfDetect | Cpld2NoSdDetect | Cpld2NoExPwrDetect | Cpld2SdUnwriteProt |
            Cpld2SdPowerOff | Cpld2Kbd3Inactive | Cpld2Kbd2Inactive | Cpld2Kbd1Inactive |
@@ -126,21 +127,19 @@ void EmRegs330CPLD::SetSubBankHandlers(void) {
     EmRegs::SetSubBankHandlers();
     // Now add standard/specialized handers for the defined registers.
     this->SetHandler((ReadFunction)&EmRegs330CPLD::Read, (WriteFunction)&EmRegs330CPLD::Write,
-                     kMemoryStartCPLD, kMemorySizeCPLD);
+                     memoryStart, kMemorySizeCPLD);
 }
 
 // ---------------------------------------------------------------------------
 //		� EmRegs330CPLD::GetRealAddress
 // ---------------------------------------------------------------------------
-uint8* EmRegs330CPLD::GetRealAddress(emuptr address) {
-    return (address - kMemoryStartCPLD) + Buffer;
-}
+uint8* EmRegs330CPLD::GetRealAddress(emuptr address) { return (address - memoryStart) + Buffer; }
 
 // ---------------------------------------------------------------------------
 //		� EmRegs330CPLD::GetWord
 // ---------------------------------------------------------------------------
 uint32 EmRegs330CPLD::GetWord(emuptr address) {
-    uint32 offset = address - kMemoryStartCPLD;
+    uint32 offset = address - memoryStart;
 
     switch (offset) {
         case CpldReg00:
@@ -173,7 +172,7 @@ uint32 EmRegs330CPLD::GetWord(emuptr address) {
 //		� EmRegs330CPLD::SetWord
 // ---------------------------------------------------------------------------
 void EmRegs330CPLD::SetWord(emuptr address, uint32 val) {
-    uint32 offset = address - kMemoryStartCPLD;
+    uint32 offset = address - memoryStart;
 
     switch (offset) {
         case CpldReg00:
@@ -236,7 +235,7 @@ void EmRegs330CPLD::SetWord(emuptr address, uint32 val) {
 // ---------------------------------------------------------------------------
 //		� EmRegs330CPLD::GetAddressStart
 // ---------------------------------------------------------------------------
-emuptr EmRegs330CPLD::GetAddressStart(void) { return (kMemoryStartCPLD); }
+emuptr EmRegs330CPLD::GetAddressStart(void) { return (memoryStart); }
 
 // ---------------------------------------------------------------------------
 //		� EmRegs330CPLD::GetAddressRange

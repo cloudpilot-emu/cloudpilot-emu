@@ -65,6 +65,7 @@ class EmSPISlaveSD : public EmSPISlave {
     void DoReadCSD();
     void DoReadCID();
     void DoReadSCR();
+    void DoReadSDStatus();
 
     void FinishWriteSingleBlock();
     void FinishWriteMultiblock();

@@ -45,9 +45,7 @@ namespace {
 // ---------------------------------------------------------------------------
 
 EmRegsVZHandEra330::EmRegsVZHandEra330(HandEra330PortManager** fPortManager)
-    : EmRegsVZ(),
-
-      fSPISlaveCurrent(new EmSPISlave330Current()) {
+    : fSPISlaveCurrent(new EmSPISlave330Current()) {
     fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet2);
 
     PortD = PortD_DOCK_BTN | PortD_CD_IRQ | PortD_CF_IRQ | PortD_POWER_FAIL;

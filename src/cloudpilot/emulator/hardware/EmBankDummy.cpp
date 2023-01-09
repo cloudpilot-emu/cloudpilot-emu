@@ -157,7 +157,7 @@ void EmBankDummy::SetLong(emuptr address, uint32) {
 
     if (HackForHwrGetRAMSize(address)) return;
 
-    InvalidAccess(address, sizeof(uint32), true);
+    InvalidAccess(address, sizeof(uint32), false);
 }
 
 // ---------------------------------------------------------------------------
@@ -170,7 +170,7 @@ void EmBankDummy::SetWord(emuptr address, uint32) {
 
     if (HackForHwrGetRAMSize(address)) return;
 
-    InvalidAccess(address, sizeof(uint16), true);
+    InvalidAccess(address, sizeof(uint16), false);
 }
 
 // ---------------------------------------------------------------------------
@@ -183,7 +183,7 @@ void EmBankDummy::SetByte(emuptr address, uint32) {
 
     if (HackForHwrGetRAMSize(address)) return;
 
-    InvalidAccess(address, sizeof(uint8), true);
+    InvalidAccess(address, sizeof(uint8), false);
 }
 
 // ---------------------------------------------------------------------------

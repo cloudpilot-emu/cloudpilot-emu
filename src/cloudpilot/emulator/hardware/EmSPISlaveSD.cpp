@@ -377,6 +377,15 @@ void EmSPISlaveSD::DoAcmd() {
     acmd = false;
 
     switch (lastCmd) {
+        case 13:
+            if (cardState == CardState::idle) {
+                PrepareR1(ERR_CARD_IDLE);
+            } else {
+                DoReadSDStatus();
+            }
+
+            return;
+
         // Set preerease block count. The spec flags the content of blocks
         // that have been marked for erasure but not subsequently written as
         // undefined, so we just ignore this command.
@@ -515,6 +524,15 @@ void EmSPISlaveSD::DoReadSCR() {
     PrepareR1(0);
     BufferAdd(0xff);
     BufferAddBlock(DATA_TOKEN_DEFAULT, scr, 8);
+}
+
+void EmSPISlaveSD::DoReadSDStatus() {
+    uint8 sdStatus[64];
+    memset(sdStatus, 0, sizeof(sdStatus));
+
+    BufferStart(0);
+    BufferAdd(0xff, 0x00, 0x00, 0xff);
+    BufferAddBlock(DATA_TOKEN_DEFAULT, sdStatus, 64);
 }
 
 void EmSPISlaveSD::FinishWriteSingleBlock() {

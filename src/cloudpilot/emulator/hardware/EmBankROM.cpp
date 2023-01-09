@@ -454,6 +454,11 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
         bigROMOffset &= 0x000FFFFF;  // Allows for 1 Meg offset.
     }
 
+    // This is a hack to work around a broken card header in the 330c small ROM.
+    // It would be nicer to handle this generically and scan for the big ROM header,
+    // but there is only one known 330c ROM in existence, so...
+    if (gSession->GetDevice().GetIDString() == "HandEra330c") bigROMOffset = 0x10000;
+
     // Make sure the file is big enough to have a Big ROM.
 
     if (len < (size_t)bigROMOffset) return false;
@@ -681,8 +686,8 @@ enum {
     kAMDState_Unlocked2,  // After second unlock cycle (0x0055 written to 0x5554)
                           // Now looking for a command to be written to 0xAAAA
                           // If we find 0x0090, go to kAMDState_Autoselect.
-                          // If we find 0x0080, set gEraseIsSetup and go to kAMDState_Normal. ???
-                          // When should gEraseIsSetup get cleared? If we find 0x0030, if
+                          // If we find 0x0080, set gEraseIsSetup and go to kAMDState_Normal.
+                          // ??? When should gEraseIsSetup get cleared? If we find 0x0030, if
                           // gEraseIsSetup erase the sector and go to kAMDState_EraseDone. If we
                           // fine 0x00A0, go to kAMDState_Program.
                           // ??? What happens on other operations?
@@ -807,6 +812,8 @@ void EmBankFlash::SetBankHandlers(void) {
 
 uint32 EmBankFlash::GetLong(emuptr address) { return EmBankROM::GetLong(address); }
 
+uint32 EmBankROM::GetRomSize() { return gManagedROMSize; }
+
 // ---------------------------------------------------------------------------
 //		� EmBankFlash::GetWord
 // ---------------------------------------------------------------------------
@@ -834,8 +841,8 @@ uint32 EmBankFlash::GetWord(emuptr address) {
             // Now looking for a command to be written to 0xAAAA
             // If we find 0x0090, go to kAMDState_Autoselect.
             // If we find 0x0080, set gEraseIsSetup and go to kAMDState_Normal. ??? When should
-            // gEraseIsSetup get cleared? If we find 0x0030, if gEraseIsSetup erase the sector and
-            // go to kAMDState_ProgramDone. If we fine 0x00A0, go to kAMDState_Program.
+            // gEraseIsSetup get cleared? If we find 0x0030, if gEraseIsSetup erase the sector
+            // and go to kAMDState_ProgramDone. If we fine 0x00A0, go to kAMDState_Program.
             // ??? What happens on other operations?
 
             break;
@@ -944,8 +951,8 @@ void EmBankFlash::SetWord(emuptr address, uint32 value) {
             // Now looking for a command to be written to 0xAAAA
             // If we find 0x0090, go to kAMDState_Autoselect.
             // If we find 0x0080, set gEraseIsSetup and go to kAMDState_Normal. ??? When should
-            // gEraseIsSetup get cleared? If we find 0x0030, if gEraseIsSetup erase the sector and
-            // go to kAMDState_EraseDone. If we fine 0x00A0, go to kAMDState_Program.
+            // gEraseIsSetup get cleared? If we find 0x0030, if gEraseIsSetup erase the sector
+            // and go to kAMDState_EraseDone. If we fine 0x00A0, go to kAMDState_Program.
             // ??? What happens on other operations?
 
             if (value == 0x00F0) {

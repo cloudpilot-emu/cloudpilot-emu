@@ -730,7 +730,7 @@ static inline void PrvWriteRegister(uint8* p, uint32 value) {
 
 #define ROP_SRCCOPY 0xcc
 #define ROP_SRCAND 0x88
-//#define ROP_SRCANDNOT			0x77
+// #define ROP_SRCANDNOT			0x77
 #define ROP_SRCANDNOT 0x22
 #define ROP_SRCXOR 0x66
 #define ROP_SRCOR 0xee
@@ -740,7 +740,7 @@ static inline void PrvWriteRegister(uint8* p, uint32 value) {
 
 #define ROP_PATCOPY 0xf0
 #define ROP_PATAND 0xa0
-//#define ROP_PATANDNOT			0x5f
+// #define ROP_PATANDNOT			0x5f
 #define ROP_PATANDNOT 0x0a
 #define ROP_PATXOR 0x5a
 #define ROP_PATOR 0xfa
@@ -1435,7 +1435,7 @@ void EmRegsMediaQ11xx::SetSubBankHandlers(void) {
     INSTALL_HANDLER(MQRead, invalidateWrite, gcREG[0x09]);  // Height
     INSTALL_HANDLER(MQRead, MQWrite, gcREG[0x0A]);
     INSTALL_HANDLER(MQRead, MQWrite, gcREG[0x0B]);
-    INSTALL_HANDLER(MQRead, invalidateWrite, gcREG[0x0C]);  // Base Address
+    INSTALL_HANDLER(MQRead, GC0CWrite, gcREG[0x0C]);  // Base Address
     INSTALL_HANDLER(MQRead, MQWrite, gcREG[0x0D]);
     INSTALL_HANDLER(MQRead, invalidateWrite, gcREG[0x0E]);  // Stride
     INSTALL_HANDLER(MQRead, MQWrite, gcREG[0x0F]);
@@ -1905,6 +1905,14 @@ void EmRegsMediaQ11xx::DC00Write(emuptr address, int size, uint32 value) {
     this->MQWrite(address, size, value);
 
     this->PrvUpdateByteLanes();
+}
+
+void EmRegsMediaQ11xx::GC0CWrite(emuptr address, int size, uint32 value) {
+    MQWrite(address, size, value);
+
+    WRITE_REGISTER(gcREG[0x0c], READ_REGISTER(gcREG[0x0c]) & 0x0003ffff);
+
+    gSystemState.MarkScreenDirty();
 }
 
 // ---------------------------------------------------------------------------
@@ -3779,7 +3787,30 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
         }
 
     } else {
-        return this->PrvGetPixel(fXSrc, fYSrc);
+        if (fState.monoSource) {
+            // This does not align with the documentation in any conceivable way, but it emulates
+            // font rendering on the 330c correctly.
+            uint16 x = fXSrc > fState.xSrc ? fXSrc - fState.xSrc : 0;
+
+            uint32 pixel = fState.xSrc * 8 + x + fState.srcBitOffset + 8 * fState.srcByteOffset;
+            emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
+                              fYSrc * fState.srcLineStride + pixel / 8;
+
+            if ((location - this->PrvGetVideoBase()) > MMIO_OFFSET) {
+                return 0;
+            }
+
+            uint8 byte = EmMemGet8(location);
+            uint8 shift = pixel % 8;
+
+            if (fState.monoSrcBitSwap) {
+                return byte & (0x01 << shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
+            } else {
+                return byte & (0x80 >> shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
+            }
+        } else {
+            return this->PrvGetPixel(fXSrc, fYSrc);
+        }
     }
 }
 
