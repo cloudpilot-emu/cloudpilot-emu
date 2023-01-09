@@ -1656,6 +1656,7 @@ bool EmDevice::NeedsBatteryGlobalsHack() const {
     switch (fDeviceID) {
         case kDeviceYSX1230:
         case kDeviceYSX1100:
+        case kDeviceHandEra330c:
             return true;
 
         default:
