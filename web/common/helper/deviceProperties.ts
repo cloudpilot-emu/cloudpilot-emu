@@ -14,6 +14,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
             };
 
         case DeviceId.handera330:
+        case DeviceId.handera330c:
             return {
                 screenSize: ScreenSize.screen240x320,
                 width: 240,
@@ -128,6 +129,7 @@ export function cpuClock(deviceId: DeviceId): number {
         case DeviceId.i705:
         case DeviceId.i710:
         case DeviceId.handera330:
+        case DeviceId.handera330c:
         case DeviceId.pegS320:
         case DeviceId.pegT400:
         case DeviceId.pegN600c:
@@ -209,6 +211,9 @@ export function deviceName(deviceId: DeviceId): string {
         case DeviceId.handera330:
             return 'Handera 330';
 
+        case DeviceId.handera330c:
+            return 'Handera 330c';
+
         case DeviceId.pegS300:
             return 'Sony PEG-S300';
 
@@ -255,6 +260,7 @@ export function slotType(deviceId: DeviceId) {
         case DeviceId.i705:
         case DeviceId.i710:
         case DeviceId.handera330:
+        case DeviceId.handera330c:
             return SlotType.sdcard;
 
         case DeviceId.pegS300:

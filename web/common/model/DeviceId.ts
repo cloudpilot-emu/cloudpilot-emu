@@ -24,6 +24,7 @@ export enum DeviceId {
     i705 = 'Palmi705',
     i710 = 'PalmI710',
     handera330 = 'HandEra330',
+    handera330c = 'HandEra330c',
     pegS300 = 'PEG-S300',
     pegS320 = 'PEG-S320',
     pegS500c = 'PEG-S500C',

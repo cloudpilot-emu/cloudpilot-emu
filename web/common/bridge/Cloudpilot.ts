@@ -102,6 +102,7 @@ export const SUPPORTED_DEVICES = [
     DeviceId.i705,
     DeviceId.i710,
     DeviceId.handera330,
+    DeviceId.handera330c,
     DeviceId.pegS300,
     DeviceId.pegS320,
     DeviceId.pegS500c,
