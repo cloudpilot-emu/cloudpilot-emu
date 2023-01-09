@@ -454,7 +454,9 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
         bigROMOffset &= 0x000FFFFF;  // Allows for 1 Meg offset.
     }
 
-    // CSTODO: fix or just use the big ROM only
+    // This is a hack to work around a broken card header in the 330c small ROM.
+    // It would be nicer to handle this generically and scan for the big ROM header,
+    // but there is only one known 330c ROM in existence, so...
     if (gSession->GetDevice().GetIDString() == "HandEra330c") bigROMOffset = 0x10000;
 
     // Make sure the file is big enough to have a Big ROM.

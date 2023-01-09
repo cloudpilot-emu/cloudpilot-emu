@@ -297,9 +297,11 @@ bool EmROMReader::AcquireCardHeader(void) {
 
     SetCardAddress(GuessCardAddress());
 
-    // CSTODO: Fixme or just use the big ROM only.
     unsigned long bigROM = (fCardVersion < 2) ? 0x3000 : cardHdr.bigrom;
 
+    // This is a hack to work around a broken card header in the 330c small ROM.
+    // It would be nicer to handle this generically and scan for the big ROM header,
+    // but there is only one known 330c ROM in existence, so...
     if (fCompanyID == 'trgp' && fHalID == 'trg3') bigROM = 0x10010000;
 
     if ((fCardAddress & 0x0FFFFF) != (bigROM & 0x0FFFFF)) {
