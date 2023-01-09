@@ -45,6 +45,8 @@
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 1;
 
+    uint16 cscolor = 0;
+
     template <typename T>
     bool IsEven(T t) {
         return ((t & 0x01) == 0);
@@ -2439,6 +2441,8 @@ void EmRegsMediaQ11xx::PrvDoCommand(void) {
 // ---------------------------------------------------------------------------
 
 void EmRegsMediaQ11xx::PrvDoBitBLT(void) {
+    cscolor += 0xf0f0;
+
     this->PrvIncBlitterInit();
     this->PrvIncBlitterRun();
 }
@@ -3788,25 +3792,46 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
 
     } else {
         if (fState.monoSource) {
-            // This does not align with the documentation in any conceivable way, but it emulates
-            // font rendering on the 330c correctly.
-            uint16 x = fXSrc > fState.xSrc ? fXSrc - fState.xSrc : 0;
+            if (fState.colorDepth == kColorDepth16) {
+                uint32 pixel = fState.xSrc * 16 + (fXSrc - fState.xSrc) + fState.srcBitOffset +
+                               8 * fState.srcByteOffset;
+                emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
+                                  fYSrc * fState.srcLineStride + 2 * (pixel / 16);
 
-            uint32 pixel = fState.xSrc * 8 + x + fState.srcBitOffset + 8 * fState.srcByteOffset;
-            emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
-                              fYSrc * fState.srcLineStride + pixel / 8;
+                if ((location - this->PrvGetVideoBase()) > MMIO_OFFSET) {
+                    return 0;
+                }
 
-            if ((location - this->PrvGetVideoBase()) > MMIO_OFFSET) {
-                return 0;
-            }
+                uint16 byte = EmMemGet16(location);
+                uint16 shift = pixel % 16;
 
-            uint8 byte = EmMemGet8(location);
-            uint8 shift = pixel % 8;
-
-            if (fState.monoSrcBitSwap) {
-                return byte & (0x01 << shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
+                if (fState.monoSrcBitSwap) {
+                    return byte & (shift < 8 ? (0x01 << shift) : (0x01 << (16 - shift)))
+                               ? fState.fgColorMonoSrc
+                               : fState.bgColorMonoSrc;
+                } else {
+                    return byte & (shift < 8 ? (0x80 >> shift) : (0x80 << (16 - shift)))
+                               ? fState.fgColorMonoSrc
+                               : fState.bgColorMonoSrc;
+                }
             } else {
-                return byte & (0x80 >> shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
+                uint32 pixel = fState.xSrc * 8 + (fXSrc - fState.xSrc) + fState.srcBitOffset +
+                               8 * fState.srcByteOffset;
+                emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
+                                  fYSrc * fState.srcLineStride + pixel / 8;
+
+                if ((location - this->PrvGetVideoBase()) > MMIO_OFFSET) {
+                    return 0;
+                }
+
+                uint8 byte = EmMemGet8(location);
+                uint8 shift = pixel % 8;
+
+                if (fState.monoSrcBitSwap) {
+                    return byte & (0x01 << shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
+                } else {
+                    return byte & (0x80 >> shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
+                }
             }
         } else {
             return this->PrvGetPixel(fXSrc, fYSrc);
