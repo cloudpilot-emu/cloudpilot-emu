@@ -6,9 +6,8 @@
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
-#include "StackDump.h"
 
-#define DUMP_COMMAND_STREAM
+// #define DUMP_COMMAND_STREAM
 
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 1;
@@ -379,7 +378,6 @@ void EmSPISlaveSD::DoAcmd() {
 
     switch (lastCmd) {
         case 13:
-            StackDump().FrameCount(5).Dump();
             if (cardState == CardState::idle) {
                 PrepareR1(ERR_CARD_IDLE);
             } else {

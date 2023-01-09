@@ -175,7 +175,7 @@ SOURCE_EMU = \
 	emulator/hardware/handera/EmRegsVZHandEra330.cpp \
 	emulator/hardware/handera/EmRegsVZHandEra330c.cpp \
 	emulator/hardware/handera/EmSPISlave330Current.cpp \
-	emulator/hardware/handera/EmRegs330cStubs.cpp \
+	emulator/hardware/handera/EmRegs330CPLDMirror.cpp \
 	emulator/hardware/handera/EmTRGATA.cpp \
 	emulator/hardware/handera/EmTRGCF.cpp \
 	emulator/hardware/handera/EmTRGCFIO.cpp \

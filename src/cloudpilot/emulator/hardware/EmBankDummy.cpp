@@ -19,7 +19,6 @@
 #include "EmCommon.h"
 #include "EmMemory.h"  // Memory::InitializeBanks
 #include "MemoryRegion.h"
-#include "StackDump.h"
 
 namespace {
     uint32 ramSize;

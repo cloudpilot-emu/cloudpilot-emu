@@ -105,6 +105,8 @@
 #define Cpld4SenseCurrent 0x0001
 
 const uint32 kMemorySizeCPLD = 0x100;
+const uint32 kMemoryStartCPLD330 = 0x10e00000;
+const uint32 kMemoryStartCPLD330c = 0x10800000;
 
 class EmRegs330CPLD : public EmRegs {
    public:

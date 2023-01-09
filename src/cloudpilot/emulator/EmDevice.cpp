@@ -56,7 +56,7 @@
 #include "EmRegs328PalmVII.h"
 #include "EmRegs328Pilot.h"
 #include "EmRegs330CPLD.h"
-#include "EmRegs330cStubs.h"
+#include "EmRegs330CPLDMirror.h"
 #include "EmRegsEZPalmIIIc.h"
 #include "EmRegsEZPalmIIIe.h"
 #include "EmRegsEZPalmIIIx.h"
@@ -1169,8 +1169,8 @@ void EmDevice::CreateRegs(void) const {
             EmRegsVZHandEra330* regsVZHandera330 = new EmRegsVZHandEra330(&fPortMgr);
 
             EmBankRegs::AddSubBank(regsVZHandera330);
-            EmBankRegs::AddSubBank(
-                new EmRegs330CPLD(0x10e00000, fPortMgr, regsVZHandera330->GetSPISlaveSD()));
+            EmBankRegs::AddSubBank(new EmRegs330CPLD(kMemoryStartCPLD330, fPortMgr,
+                                                     regsVZHandera330->GetSPISlaveSD()));
             EmBankRegs::AddSubBank(new EmRegsCFMemCard(&fPortMgr->CFBus));
         } break;
 
@@ -1179,10 +1179,10 @@ void EmDevice::CreateRegs(void) const {
             EmRegsVZHandEra330c* regsVZHandera330c = new EmRegsVZHandEra330c(&fPortMgr);
 
             EmBankRegs::AddSubBank(regsVZHandera330c);
-            EmBankRegs::AddSubBank(
-                new EmRegs330CPLD(0x10800000, fPortMgr, regsVZHandera330c->GetSPISlaveSD()));
+            EmBankRegs::AddSubBank(new EmRegs330CPLD(kMemoryStartCPLD330c, fPortMgr,
+                                                     regsVZHandera330c->GetSPISlaveSD()));
             EmBankRegs::AddSubBank(new EmRegsCFMemCard(&fPortMgr->CFBus));
-            EmBankRegs::AddSubBank(new EmRegs330cStubs());
+            EmBankRegs::AddSubBank(new EmRegs330CPLDMirror());
 
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(0x10c00000);
 

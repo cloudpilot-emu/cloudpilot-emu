@@ -4,9 +4,9 @@
 #include "EmCommon.h"
 #include "EmRegs.h"
 
-class EmRegs330cStubs : public EmRegs {
+class EmRegs330CPLDMirror : public EmRegs {
    public:
-    EmRegs330cStubs() = default;
+    EmRegs330CPLDMirror() = default;
 
     uint8* GetRealAddress(emuptr address) override;
     emuptr GetAddressStart(void) override;
