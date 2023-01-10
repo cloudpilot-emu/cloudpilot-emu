@@ -109,6 +109,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual void Spi1AssertSlaveSelect();
     virtual void Spi1DeassertSlaveSelect();
 
+    virtual uint32 GetBootKeyHoldTime();
+
    private:
     uint32 pllFreqSelRead(emuptr address, int size);
     uint32 portXDataRead(emuptr address, int size);

@@ -402,3 +402,5 @@ uint16 EmRegsVZHandEra330::ButtonToBits(ButtonEventT::Button btn) {
 
     return bitNumber;
 }
+
+uint32 EmRegsVZHandEra330::GetBootKeyHoldTime() { return 25; }

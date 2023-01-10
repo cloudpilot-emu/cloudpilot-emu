@@ -1537,9 +1537,7 @@ uint32 EmRegsVZ::portXDataRead(emuptr address, int) {
         // do call ReleaseBootKeys, set our counter to -1 as a flag not
         // to call it any more.
 
-        // Changed to 25 to accomodate handera ROMs
-
-        if (fPortDDataCount != 0xFFFFFFFF && ++fPortDDataCount >= 25 * 2) {
+        if (fPortDDataCount != 0xFFFFFFFF && ++fPortDDataCount >= GetBootKeyHoldTime() * 2) {
             fPortDDataCount = 0xFFFFFFFF;
             gSession->ReleaseBootKeys();
         }
@@ -3003,6 +3001,8 @@ void EmRegsVZ::Spi1UpdateInterrupts() {
 void EmRegsVZ::Spi1AssertSlaveSelect() {}
 
 void EmRegsVZ::Spi1DeassertSlaveSelect() {}
+
+uint32 EmRegsVZ::GetBootKeyHoldTime() { return 18; }
 
 uint32 EmRegsVZ::CyclesToNextInterrupt(uint64 systemCycles) {
     this->systemCycles = systemCycles;
