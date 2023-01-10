@@ -529,7 +529,7 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
             /*	Make a hack for the Prism, Platinum and Edge below since
                     Handspring seems to report the EZ bit in their ROMs. */
 
-            if (!gSession->GetDevice().PrismPlatinumEdgeHack()) {
+            if (!gSession->GetDevice().HasBogusEZFlag()) {
                 return false;
             }
         }

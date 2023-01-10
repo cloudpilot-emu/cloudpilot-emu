@@ -50,7 +50,7 @@ class EmDevice {
     Bool Supports68VZ328(void) const;
     Bool Supports68SZ328(void) const;
 
-    Bool PrismPlatinumEdgeHack(void) const;
+    Bool HasBogusEZFlag(void) const;
     Bool EdgeHack(void) const;
 
     Bool SupportsROM(const EmROMReader&) const;

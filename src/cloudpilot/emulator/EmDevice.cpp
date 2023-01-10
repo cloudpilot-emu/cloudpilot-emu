@@ -738,9 +738,18 @@ Bool EmDevice::Supports68SZ328(void) const {
  *
  ***********************************************************************/
 
-Bool EmDevice::PrismPlatinumEdgeHack(void) const {
-    return fDeviceID == kDeviceVisorPrism || fDeviceID == kDeviceVisorPlatinum ||
-           fDeviceID == kDeviceVisorEdge || fDeviceID == kDevicePEGN700C;
+Bool EmDevice::HasBogusEZFlag(void) const {
+    switch (fDeviceID) {
+        case kDeviceVisorPrism:
+        case kDeviceVisorPlatinum:
+        case kDeviceVisorEdge:
+        case kDeviceHandEra330:
+        case kDevicePEGN700C:
+            return true;
+
+        default:
+            return false;
+    }
 }
 
 /***********************************************************************
@@ -806,7 +815,7 @@ Bool EmDevice::SupportsROM(const EmROMReader& ROM) const {
         /*	Make a hack for the Prism, Platinum and Edge below since
                 Handspring seems to report the EZ bit in their ROMs. */
 
-        if (!this->PrismPlatinumEdgeHack()) {
+        if (!this->HasBogusEZFlag()) {
             return false;
         }
     }
