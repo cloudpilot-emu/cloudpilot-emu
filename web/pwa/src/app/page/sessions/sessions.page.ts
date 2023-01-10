@@ -93,9 +93,10 @@ export class SessionsPage {
         this.lastSessionTouched = session.id;
         this.currentSessionOverride = session.id;
 
-        await this.emulationService.switchSession(session.id);
-
+        const launchSuccess = await this.emulationService.switchSession(session.id);
         this.currentSessionOverride = undefined;
+
+        if (!launchSuccess) return;
 
         void this.router.navigateByUrl('/tab/emulation');
     }

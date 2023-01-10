@@ -52,6 +52,7 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     if (isInitialized) {
         Deinitialize();
     }
+    isInitialized = true;
 
     this->romImage = make_unique<uint8[]>(romLength);
     romSize = romLength;
@@ -64,7 +65,9 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
 
     cpu.reset(device->CreateCPU(this));
 
-    if (!Memory::Initialize(romImage, romLength, *device)) return false;
+    if (!Memory::Initialize(romImage, romLength, *device)) {
+        return false;
+    }
     EmPalmOS::Initialize();
 
     systemCycles = 0;
@@ -78,7 +81,6 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     dateCheckedAt = 0;
     lastDate = CurrentDate();
 
-    isInitialized = true;
     return true;
 }
 

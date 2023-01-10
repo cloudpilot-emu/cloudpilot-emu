@@ -76,9 +76,9 @@ export class EmulationService extends AbstractEmulationService {
         return this.bootstrapCompletePromise;
     }
 
-    switchSession = (id: number): Promise<void> =>
+    switchSession = (id: number): Promise<boolean> =>
         this.mutex.runExclusive(async () => {
-            if (id === this.emulationState.getCurrentSession()?.id) return;
+            if (id === this.emulationState.getCurrentSession()?.id) return true;
 
             await this.stopUnchecked();
 
@@ -88,20 +88,29 @@ export class EmulationService extends AbstractEmulationService {
 
             try {
                 const session = await this.storageService.getSession(id);
-                this.emulationState.setCurrentSession(session);
-
                 if (!session) {
                     throw new Error(`invalid session ${id}`);
                 }
 
+                this.emulationState.setCurrentSession(undefined);
+
                 const cloudpilot = await this.cloudpilotService.cloudpilot;
 
-                await this.restoreSession(session, cloudpilot);
+                if (!(await this.restoreSession(session, cloudpilot))) {
+                    void this.alertService.errorMessage(
+                        'Failed to launch session. This may be the result of a bad ROM file.'
+                    );
+                    return false;
+                }
+
+                this.emulationState.setCurrentSession(session);
 
                 setStoredSession(id);
             } finally {
                 await loader.dismiss();
             }
+
+            return true;
         });
 
     resume = (): Promise<void> =>
@@ -248,7 +257,7 @@ Sorry for the inconvenience.`
         }
     }
 
-    private async restoreSession(session: Session, cloudpilot: Cloudpilot): Promise<void> {
+    private async restoreSession(session: Session, cloudpilot: Cloudpilot): Promise<boolean> {
         const [rom, memory, state] = await this.storageService.loadSession(session);
         if (!rom) {
             throw new Error(`invalid ROM ${session.rom}`);
@@ -261,13 +270,15 @@ Sorry for the inconvenience.`
         }
 
         if (!this.openSession(cloudpilot, rom, session.device, memory, state)) {
-            throw new Error('failed to open session');
+            return false;
         }
 
         this.proxyService.reset();
         this.buttonService.reset(cloudpilot);
 
         await this.snapshotService.initialize(session, await this.cloudpilotService.cloudpilot);
+
+        return true;
     }
 
     private onSessionChange = ([sessionId, session]: [number, Session | undefined]): Promise<void> =>
