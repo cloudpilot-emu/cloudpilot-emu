@@ -1537,7 +1537,9 @@ uint32 EmRegsVZ::portXDataRead(emuptr address, int) {
         // do call ReleaseBootKeys, set our counter to -1 as a flag not
         // to call it any more.
 
-        if (fPortDDataCount != 0xFFFFFFFF && ++fPortDDataCount >= 18 * 2) {
+        // Changed to 25 to accomodate handera ROMs
+
+        if (fPortDDataCount != 0xFFFFFFFF && ++fPortDDataCount >= 25 * 2) {
             fPortDDataCount = 0xFFFFFFFF;
             gSession->ReleaseBootKeys();
         }
