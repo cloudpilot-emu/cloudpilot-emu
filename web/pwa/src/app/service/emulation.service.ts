@@ -1,4 +1,5 @@
 import { ApplicationRef, Injectable, NgZone } from '@angular/core';
+import { CardOwner, StorageCardContext } from './storage-card-context';
 import { clearStoredSession, getStoredSession, setStoredSession } from '@pwa/helper/storedSession';
 
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
@@ -19,7 +20,6 @@ import { ProxyService } from './proxy.service';
 import { SchedulerKind } from '@common/helper/scheduler';
 import { Session } from '@pwa/model/Session';
 import { SnapshotService } from './snapshot.service';
-import { StorageCardContext } from './storage-card-context';
 import { StorageCardService } from '@pwa/service/storage-card.service';
 import { StorageService } from './storage.service';
 import { hasInitialImportRequest } from './link-api.service';
@@ -283,7 +283,12 @@ Sorry for the inconvenience.`
 
     private onSessionChange = ([sessionId, session]: [number, Session | undefined]): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            if (sessionId !== this.emulationState.getCurrentSession()?.id) return;
+            const currentSession = this.emulationState.getCurrentSession();
+            if (sessionId !== currentSession?.id) return;
+
+            if (currentSession.mountedCard !== undefined) {
+                this.storageCardContext.release(currentSession.mountedCard, CardOwner.cloudpilot);
+            }
 
             this.emulationState.setCurrentSession(session);
             if (!this.emulationState.getCurrentSession()) {
