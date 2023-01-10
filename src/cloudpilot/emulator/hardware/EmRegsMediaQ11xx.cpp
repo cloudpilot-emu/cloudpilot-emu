@@ -3792,46 +3792,27 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
 
     } else {
         if (fState.monoSource) {
-            if (fState.colorDepth == kColorDepth16) {
-                uint32 pixel = fState.xSrc * 16 + (fXSrc - fState.xSrc) + fState.srcBitOffset +
-                               8 * fState.srcByteOffset;
-                emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
-                                  fYSrc * fState.srcLineStride + 2 * (pixel / 16);
+            uint8 bpp = fState.colorDepth == kColorDepth16 ? 16 : 8;
 
-                if ((location - this->PrvGetVideoBase()) > MMIO_OFFSET) {
-                    return 0;
-                }
+            uint32 pixel = fState.xSrc * bpp + (fXSrc - fState.xSrc) + fState.srcBitOffset +
+                           8 * fState.srcByteOffset;
+            emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
+                              fYSrc * fState.srcLineStride + pixel / 8;
 
-                uint16 byte = EmMemGet16(location);
-                uint16 shift = pixel % 16;
+            // at 16bpp, pixels are fetched in LE words -> byteswap
+            if (fState.colorDepth == kColorDepth16) location ^= 1;
 
-                if (fState.monoSrcBitSwap) {
-                    return byte & (shift < 8 ? (0x01 << shift) : (0x01 << (16 - shift)))
-                               ? fState.fgColorMonoSrc
-                               : fState.bgColorMonoSrc;
-                } else {
-                    return byte & (shift < 8 ? (0x80 >> shift) : (0x80 << (16 - shift)))
-                               ? fState.fgColorMonoSrc
-                               : fState.bgColorMonoSrc;
-                }
+            if ((location - this->PrvGetVideoBase()) > MMIO_OFFSET) {
+                return 0;
+            }
+
+            uint8 byte = EmMemGet8(location);
+            uint8 shift = pixel % 8;
+
+            if (fState.monoSrcBitSwap) {
+                return byte & (0x01 << shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
             } else {
-                uint32 pixel = fState.xSrc * 8 + (fXSrc - fState.xSrc) + fState.srcBitOffset +
-                               8 * fState.srcByteOffset;
-                emuptr location = this->PrvGetVideoBase() + fState.baseAddr +
-                                  fYSrc * fState.srcLineStride + pixel / 8;
-
-                if ((location - this->PrvGetVideoBase()) > MMIO_OFFSET) {
-                    return 0;
-                }
-
-                uint8 byte = EmMemGet8(location);
-                uint8 shift = pixel % 8;
-
-                if (fState.monoSrcBitSwap) {
-                    return byte & (0x01 << shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
-                } else {
-                    return byte & (0x80 >> shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
-                }
+                return byte & (0x80 >> shift) ? fState.fgColorMonoSrc : fState.bgColorMonoSrc;
             }
         } else {
             return this->PrvGetPixel(fXSrc, fYSrc);
