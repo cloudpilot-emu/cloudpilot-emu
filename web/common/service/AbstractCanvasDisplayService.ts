@@ -577,6 +577,7 @@ export abstract class AbstractCanvasDisplayService {
                 return this.skin.HARD_BUTTONS_I705;
 
             case DeviceId.handera330c:
+            case DeviceId.handera330:
                 return this.skin.HARD_BUTTONS_HANDERA330;
 
             case DeviceId.palmVx:
