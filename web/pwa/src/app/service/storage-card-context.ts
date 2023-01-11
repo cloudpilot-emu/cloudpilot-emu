@@ -29,7 +29,10 @@ export class StorageCardContext {
     assertOwnership(cardId: number, owner: CardOwner): void {
         if (this.getOwner(cardId) === owner) return;
 
-        const message = `Card is already claimed for ${this.getOwner(cardId)}.`;
+        const message =
+            owner === CardOwner.none
+                ? `Card alread claimed for ${this.getOwner(cardId)}.`
+                : `Expected card ownership to be ${owner}, but is ${this.getOwner(cardId)}.`;
 
         this.errorService.fatalBug(message);
         throw new Error(message);
