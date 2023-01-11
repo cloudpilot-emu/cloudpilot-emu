@@ -1668,7 +1668,6 @@ bool EmDevice::NeedsBatteryGlobalsHack() const {
         case kDeviceYSX1230:
         case kDeviceYSX1100:
         case kDevicePEGN700C:
-        case kDeviceHandEra330c:
             return true;
 
         default:

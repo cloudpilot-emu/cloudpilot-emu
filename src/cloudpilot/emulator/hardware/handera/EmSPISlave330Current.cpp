@@ -195,17 +195,7 @@ uint16 EmSPISlave330Current::DoExchange(uint16 control, uint16 data) {
 // ---------------------------------------------------------------------------
 
 void EmSPISlave330Current::ProcessCommand(uint8 command) {
-    uint16 result = 0;
-
-    // we should only get here for channel 2
-    EmAssert(((command & kChannelBits) >> 4) == 2);
-
-    if (fPowerConnected)
-        result = 0;  // no battery current with ext power connected.
-    else
-        result = 0x60;  // just hard code some current for now.
-
-    fPendingResult = result << 4;
+    fPendingResult = 0xffff;
     fHavePending = true;
 }
 
