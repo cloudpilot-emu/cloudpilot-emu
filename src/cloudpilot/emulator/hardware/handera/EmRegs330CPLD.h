@@ -38,6 +38,9 @@
 #define Cpld2SdUnwriteProt 0x0000
 #define Cpld2SdWriteProt 0x1000
 
+#define Cpld2NoModemHotsyncReq 0x0800
+#define CpldModemHotsyncReq 0x0000
+
 #define Cpld2SdPowerOn 0x0000
 #define Cpld2SdPowerOff 0x0200
 
@@ -110,8 +113,11 @@ const uint32 kMemoryStartCPLD330c = 0x10800000;
 
 class EmRegs330CPLD : public EmRegs {
    public:
-    EmRegs330CPLD(emuptr memoryStart, HandEra330PortManager* fPortManager,
-                  EmSPISlaveSD* spiSlaveSD);
+    enum class Model { h330, h330c };
+
+   public:
+    EmRegs330CPLD(emuptr memoryStart, HandEra330PortManager* fPortManager, EmSPISlaveSD* spiSlaveSD,
+                  Model model);
     virtual ~EmRegs330CPLD();
 
     virtual void Save(Savestate&);
@@ -144,6 +150,8 @@ class EmRegs330CPLD : public EmRegs {
     //    void            SetLong                 (emuptr iAddress, uint32 iLongValue) {}
     //    void            SetByte                 (emuptr iAddress, uint32 iByteValue) {}
    private:
+    Model model;
+
     uint16 Reg0;
     uint16 Reg2;
     uint16 Reg4;

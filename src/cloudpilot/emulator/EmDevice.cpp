@@ -1179,7 +1179,8 @@ void EmDevice::CreateRegs(void) const {
 
             EmBankRegs::AddSubBank(regsVZHandera330);
             EmBankRegs::AddSubBank(new EmRegs330CPLD(kMemoryStartCPLD330, fPortMgr,
-                                                     regsVZHandera330->GetSPISlaveSD()));
+                                                     regsVZHandera330->GetSPISlaveSD(),
+                                                     EmRegs330CPLD::Model::h330));
             EmBankRegs::AddSubBank(new EmRegsCFMemCard(&fPortMgr->CFBus));
         } break;
 
@@ -1189,7 +1190,8 @@ void EmDevice::CreateRegs(void) const {
 
             EmBankRegs::AddSubBank(regsVZHandera330c);
             EmBankRegs::AddSubBank(new EmRegs330CPLD(kMemoryStartCPLD330c, fPortMgr,
-                                                     regsVZHandera330c->GetSPISlaveSD()));
+                                                     regsVZHandera330c->GetSPISlaveSD(),
+                                                     EmRegs330CPLD::Model::h330c));
             EmBankRegs::AddSubBank(new EmRegsCFMemCard(&fPortMgr->CFBus));
             EmBankRegs::AddSubBank(new EmRegs330CPLDMirror());
 

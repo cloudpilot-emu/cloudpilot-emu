@@ -22,6 +22,7 @@
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
+#include "StackDump.h"
 
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 1;
@@ -42,13 +43,13 @@ namespace {
 //		� EmRegs330CPLD::EmRegs330CPLD
 // ---------------------------------------------------------------------------
 EmRegs330CPLD::EmRegs330CPLD(emuptr memoryStart, HandEra330PortManager* fPortManager,
-                             EmSPISlaveSD* spiSlaveSD)
-    : memoryStart(memoryStart), spiSlaveSD(spiSlaveSD) {
+                             EmSPISlaveSD* spiSlaveSD, Model model)
+    : model(model), memoryStart(memoryStart), spiSlaveSD(spiSlaveSD) {
     Reg0 = Cpld0Edo;
     Reg2 = Cpld2CfDetect | Cpld2NoSdDetect | Cpld2NoExPwrDetect | Cpld2SdUnwriteProt |
            Cpld2SdPowerOff | Cpld2Kbd3Inactive | Cpld2Kbd2Inactive | Cpld2Kbd1Inactive |
            Cpld2Kbd0Inactive | Cpld2NoReset | Cpld2CfBufsOff | Cpld2SwapOff | Cpld2CfPowerOff |
-           Cpld2BusWidth16;
+           Cpld2BusWidth16 | (model == Model::h330c ? Cpld2NoModemHotsyncReq : 0);
     Reg4 = Cpld4LcdBiasOff | Cpld4LcdVccOn | Cpld4LcdOff | Cpld4BlPdOff | Cpld4DtrOff |
            Cpld4MmcCsOn | Cpld4FiltSdOff | Cpld4Rs232Off | Cpld4IrdaOff | Cpld4MicOff |
            Cpld4SenseVoltage;
@@ -180,7 +181,11 @@ void EmRegs330CPLD::SetWord(emuptr address, uint32 val) {
             break;
 
         case CpldReg02:
-            Reg2 = (val & 0x0fff) | (Reg2 & 0xf000);  // top 4 bits are read only.
+            if (model == Model::h330c) {
+                Reg2 = (val & 0x07ff) | (Reg2 & 0xf800);  // top 5 bits are read only.
+            } else {
+                Reg2 = (val & 0x0fff) | (Reg2 & 0xf000);  // top 4 bits are read only.
+            }
 
             // keys:
             fPortMgr->Keys.Row[3] = (Reg2 & Cpld2Kbd3Inactive) ? 0 : 1;

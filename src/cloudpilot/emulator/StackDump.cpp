@@ -103,7 +103,7 @@ void StackDump::Dump() const {
             return;
         }
 
-        cerr << "frame " << (int)i << ": 0x" << hex << pc << dec << "[" << identifyFrame(pc) << "]"
+        cerr << "frame " << (int)i << ": 0x" << hex << pc << dec << " [" << identifyFrame(pc) << "]"
              << endl;
 
         if (dumpFrames) {
