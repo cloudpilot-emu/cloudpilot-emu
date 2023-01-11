@@ -286,7 +286,7 @@ Sorry for the inconvenience.`
             const currentSession = this.emulationState.getCurrentSession();
             if (sessionId !== currentSession?.id) return;
 
-            if (currentSession.mountedCard !== undefined) {
+            if (currentSession.mountedCard !== undefined && session === undefined) {
                 this.storageCardContext.release(currentSession.mountedCard, CardOwner.cloudpilot);
             }
 
