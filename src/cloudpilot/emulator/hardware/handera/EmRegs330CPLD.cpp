@@ -159,6 +159,7 @@ uint32 EmRegs330CPLD::GetWord(emuptr address) {
                 Reg2 &= ~Cpld2NoExPwrDetect;
             else
                 Reg2 |= Cpld2NoExPwrDetect;
+            if (model == Model::h330c) Reg2 |= Cpld2NoModemHotsyncReq;
             return (Reg2);
 
         case CpldReg04:
