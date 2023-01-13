@@ -336,6 +336,7 @@ class EmRegsMQLCDControlT2 : public EmRegs, public MediaQFramebuffer<EmRegsMQLCD
     int16 GetPitch(void);
     bool FlipX() const;
     bool SwapXY() const;
+    emuptr GetFramebufferBase() const;
     uint32 DC380Read(emuptr address, int size);
 
     void InvalidateWrite(emuptr address, int size, uint32 value);

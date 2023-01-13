@@ -264,7 +264,7 @@ class EmRegsMediaQ11xx : public EmRegs, public MediaQFramebuffer<EmRegsMediaQ11x
     void PrvUpdateByteLanes(void);
 
     uint32 PrvGetVideoOffset(void);
-    uint32 PrvGetVideoBase(void);
+    inline emuptr GetFramebufferBase(void) { return fBaseVideoAddr; }
 
     void PrvGetGEState(int regNum);
 

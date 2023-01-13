@@ -137,7 +137,7 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
     emuptr baseAddr = static_cast<T*>(this)->GetFrameBuffer();
     if constexpr (flipY) {
         baseAddr -= frame.lines * rowBytes - (bpp == 16 ? 2 : 1);
-        if (baseAddr < static_cast<T*>(this)->GetAddressStart()) return false;
+        if (baseAddr < static_cast<T*>(this)->GetFramebufferBase()) return false;
     }
 
     uint32 pitchDelta = rowBytes - frame.lineWidth * bpp / 8;
@@ -155,11 +155,11 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
                           0);
 
             for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                if constexpr (!trivialPitch) nibbler.skipBytes(pitchDelta);
-
                 for (uint32 x = 0; x < frame.lineWidth; x++)
                     UpdatePixel<flipX, flipY, swapXY>(
                         destBuffer, frame, x, y, static_cast<T*>(this)->palette[nibbler.nibble()]);
+
+                if constexpr (!trivialPitch) nibbler.skipBytes(pitchDelta);
             }
 
             break;
@@ -173,11 +173,11 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
                           0);
 
             for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                if constexpr (!trivialPitch) nibbler.skipBytes(pitchDelta);
-
                 for (uint32 x = 0; x < frame.lineWidth; x++)
                     UpdatePixel<flipX, flipY, swapXY>(
                         destBuffer, frame, x, y, static_cast<T*>(this)->palette[nibbler.nibble()]);
+
+                if constexpr (!trivialPitch) nibbler.skipBytes(pitchDelta);
             }
 
             break;
@@ -191,11 +191,11 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
                           0);
 
             for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                if constexpr (!trivialPitch) nibbler.skipBytes(pitchDelta);
-
                 for (uint32 x = 0; x < frame.lineWidth; x++)
                     UpdatePixel<flipX, flipY, swapXY>(
                         destBuffer, frame, x, y, static_cast<T*>(this)->palette[nibbler.nibble()]);
+
+                if constexpr (!trivialPitch) nibbler.skipBytes(pitchDelta);
             }
 
             break;
@@ -208,12 +208,12 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
                 baseAddr + frame.firstDirtyLine * rowBytes);
 
             for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                if constexpr (!trivialPitch) srcBuffer += pitchDelta;
-
                 for (uint32 x = 0; x < frame.lineWidth; x++)
                     UpdatePixel<flipX, flipY, swapXY>(
                         destBuffer, frame, x, y,
                         static_cast<T*>(this)->palette[*(uint8*)((long)(srcBuffer++) ^ 1)]);
+
+                if constexpr (!trivialPitch) srcBuffer += pitchDelta;
             }
 
             break;
@@ -224,8 +224,6 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
                 baseAddr + frame.firstDirtyLine * rowBytes);
 
             for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                if constexpr (!trivialPitch) srcBuffer += pitchDelta;
-
                 for (uint32 x = 0; x < frame.lineWidth; x++) {
                     uint8 p1 = *(uint8*)((long)(srcBuffer++) ^ 1);  // GGGBBBBB
                     uint8 p2 = *(uint8*)((long)(srcBuffer++) ^ 1);  // RRRRRGGG
@@ -250,6 +248,8 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
                             ((((p >> 3) & 0xFC) | ((p >> 5) & 0x03)) << 8) |
                             (((p >> 8) & 0xF8) | ((p >> 11) & 0x07)));
                 }
+
+                if constexpr (!trivialPitch) srcBuffer += pitchDelta;
             }
             break;
         }

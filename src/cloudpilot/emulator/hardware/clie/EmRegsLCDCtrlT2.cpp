@@ -481,3 +481,5 @@ int16 EmRegsMQLCDControlT2::GetPitch(void) { return READ_REGISTER_T2(WindowStrid
 bool EmRegsMQLCDControlT2::FlipX() const { return false; }
 
 bool EmRegsMQLCDControlT2::SwapXY() const { return false; }
+
+emuptr EmRegsMQLCDControlT2::GetFramebufferBase() const { return fBaseVideoAddr; }
