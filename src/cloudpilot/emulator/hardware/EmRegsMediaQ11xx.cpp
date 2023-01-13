@@ -1085,7 +1085,11 @@ uint32 EmRegsMediaQ11xx::GetWidth(void) { return (READ_REGISTER(gcREG[GC_HWINDOW
 
 uint32 EmRegsMediaQ11xx::GetHeight(void) { return (READ_REGISTER(gcREG[GC_VWINDOW]) >> 16) + 1; }
 
-uint32 EmRegsMediaQ11xx::GetRowBytes(void) { return READ_REGISTER(gcREG[GC_STRIDE]) & 0x0000FFFF; }
+int16 EmRegsMediaQ11xx::GetPitch(void) { return READ_REGISTER(gcREG[GC_STRIDE]) & 0x0000FFFF; }
+
+bool EmRegsMediaQ11xx::FlipX() { return READ_REGISTER(gcREG[0x00]) & (1 << 12); }
+
+bool EmRegsMediaQ11xx::SwapXY() { return READ_REGISTER(gcREG[0x00]) & (1 << 13); }
 
 Bool EmRegsMediaQ11xx::GetXDoubling(void) {
     return (READ_REGISTER(gcREG[GC_CONTROL]) & GC_H_PIX_DBLNG) != 0;
@@ -1699,19 +1703,6 @@ Bool EmRegsMediaQ11xx::GetLCDBacklightOn(void) { return true; }
 // ---------------------------------------------------------------------------
 
 Bool EmRegsMediaQ11xx::GetLCDHasFrame(void) { return true; }
-
-// ---------------------------------------------------------------------------
-//		� EmRegsMediaQ11xx::GetLCDBeginEnd
-// ---------------------------------------------------------------------------
-
-void EmRegsMediaQ11xx::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    int32 height = this->GetHeight();
-    int32 rowBytes = this->GetRowBytes();
-    emuptr baseAddr = this->GetFrameBuffer();
-
-    begin = baseAddr;
-    end = baseAddr + rowBytes * height;
-}
 
 uint16 EmRegsMediaQ11xx::GetLCD2bitMapping() { return 0xfa50; }
 

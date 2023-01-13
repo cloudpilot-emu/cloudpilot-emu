@@ -237,17 +237,6 @@ Bool EmHAL::GetLCDHasFrame(void) {
     return EmHAL::GetRootHandler()->GetLCDHasFrame();
 }
 
-// ---------------------------------------------------------------------------
-//		� EmHAL::GetLCDBeginEnd
-// ---------------------------------------------------------------------------
-// Called by Screen class in order to mark the memory used for the framebuffer.
-// Typically implemented in the EmRegs<Processor> or EmRegs<LCDDriver> subclass.
-
-void EmHAL::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    EmAssert(EmHAL::GetRootHandler());
-    EmHAL::GetRootHandler()->GetLCDBeginEnd(begin, end);
-}
-
 bool EmHAL::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     EmAssert(EmHAL::GetRootHandler());
     return EmHAL::GetRootHandler()->CopyLCDFrame(frame, fullRefresh);
@@ -640,15 +629,6 @@ Bool EmHALHandler::GetLCDBacklightOn(void) {
 Bool EmHALHandler::GetLCDHasFrame(void) {
     EmAssert(this->GetNextHandler());
     return this->GetNextHandler()->GetLCDHasFrame();
-}
-
-// ---------------------------------------------------------------------------
-//		� EmHALHandler::GetLCDBeginEnd
-// ---------------------------------------------------------------------------
-
-void EmHALHandler::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    EmAssert(this->GetNextHandler());
-    this->GetNextHandler()->GetLCDBeginEnd(begin, end);
 }
 
 // ---------------------------------------------------------------------------

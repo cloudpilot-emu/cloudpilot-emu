@@ -364,26 +364,6 @@ Bool EmRegsMQLCDControlT2::GetLCDBacklightOn(void) { return true; }
 
 Bool EmRegsMQLCDControlT2::GetLCDHasFrame(void) { return true; }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsMQLCDControlT2::GetLCDBeginEnd
-// ---------------------------------------------------------------------------
-
-void EmRegsMQLCDControlT2::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    UInt32 GraphicController = READ_REGISTER_T2(GraphicController);
-
-    int32 height = ((GraphicController & MQ_GraphicController_T2_LowRezBit) ==
-                    MQ_GraphicController_T2_LowRezBit)
-                       ? 240
-                       : 480;
-
-    int32 rowBytes = READ_REGISTER_T2(WindowStride) & 0x0000FFFF;
-    uint32 offset = READ_REGISTER_T2(WindowStartAddress);
-    emuptr baseAddr = fBaseVideoAddr + offset;
-
-    begin = baseAddr;
-    end = baseAddr + rowBytes * height;
-}
-
 uint16 EmRegsMQLCDControlT2::GetLCD2bitMapping() { return 0xfa50; }
 
 // ---------------------------------------------------------------------------
@@ -496,6 +476,8 @@ Bool EmRegsMQLCDControlT2::GetXDoubling(void) {
 Bool EmRegsMQLCDControlT2::GetYDoubling(void) {
     return READ_REGISTER_T2(GraphicController) & 0x8000;
 }
-uint32 EmRegsMQLCDControlT2::GetRowBytes(void) {
-    return READ_REGISTER_T2(WindowStride) & 0x0000FFFF;
-}
+int16 EmRegsMQLCDControlT2::GetPitch(void) { return READ_REGISTER_T2(WindowStride) & 0x0000FFFF; }
+
+bool EmRegsMQLCDControlT2::FlipX() const { return false; }
+
+bool EmRegsMQLCDControlT2::SwapXY() const { return false; }

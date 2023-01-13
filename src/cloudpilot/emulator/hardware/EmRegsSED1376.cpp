@@ -422,25 +422,6 @@ void EmRegsSED1376VisorPrism::SetSubBankHandlers(void) {
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsSED1376VisorPrism::GetLCDBeginEnd
-// ---------------------------------------------------------------------------
-
-void EmRegsSED1376VisorPrism::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    // Get the screen metrics.
-
-    // The hardware is written to in reverse, so the mainStartOffsetX registers
-    // report the END of the frame buffer, not the beginning.
-    emuptr baseAddr = fBaseVideoAddr;
-
-    int32 width = ((fRegs.horizontalPeriod + 1) * 8);
-    int32 height = ((fRegs.verticalPeriod1 << 8) | fRegs.verticalPeriod0) + 1;
-    int32 rowBytes = ((width * this->PrvGetLCDDepth()) / 8);
-
-    begin = baseAddr;
-    end = baseAddr + rowBytes * height;
-}
-
-// ---------------------------------------------------------------------------
 //		� EmRegsSED1376VisorPrism::GetLCDScanlines
 // ---------------------------------------------------------------------------
 
@@ -610,43 +591,6 @@ EmRegsSED1376PalmGeneric::EmRegsSED1376PalmGeneric(emuptr baseRegsAddr, emuptr b
 // ---------------------------------------------------------------------------
 
 EmRegsSED1376PalmGeneric::~EmRegsSED1376PalmGeneric(void) {}
-
-// ---------------------------------------------------------------------------
-//		� EmRegsSED1376PalmGeneric::GetLCDBeginEnd
-// ---------------------------------------------------------------------------
-
-void EmRegsSED1376PalmGeneric::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    // Get the screen metrics.
-
-//	Bool	wordSwapped	= (fRegs.specialEffects & sed1376WordSwapMask) != 0;
-//	Bool	byteSwapped	= (fRegs.specialEffects & sed1376ByteSwapMask) != 0;
-//	int32	bpp			= 1 << ((fRegs.displayMode & sed1376BPPMask) >>
-// sed1376BPPShift);
-#if !OVERLAY_IS_MAIN
-    //	int32	width		= ((fRegs.horizontalPeriod + 1) * 8);
-    int32 height = ((fRegs.verticalPeriod1 << 8) | fRegs.verticalPeriod0) + 1;
-    int32 rowBytes = ((fRegs.mainLineAddressOffset1 << 8) | fRegs.mainLineAddressOffset0) * 4;
-    uint32 offset = (fRegs.mainStartAddress2 << 18) | (fRegs.mainStartAddress1 << 10) |
-                    (fRegs.mainStartAddress0 << 2);
-#else
-    //	int32	left		= ((fRegs.ovlyStartXPosition1	<< 8) | fRegs.ovlyStartXPosition0)
-    //* 32
-    /// bpp; 	int32	right		= ((fRegs.ovlyEndXPosition1		<< 8) |
-    // fRegs.ovlyEndXPosition0)	* 32 / bpp;
-    int32 top = ((fRegs.ovlyStartYPosition1 << 8) | fRegs.ovlyStartYPosition0);
-    int32 bottom = ((fRegs.ovlyEndYPosition1 << 8) | fRegs.ovlyEndYPosition0);
-
-    //	int32	width		= right - left + (32 / bpp);
-    int32 height = bottom - top + 1;
-    int32 rowBytes = ((fRegs.ovlyLineAddressOffset1 << 8) | fRegs.ovlyLineAddressOffset0) * 4;
-    uint32 offset = (fRegs.ovlyStartAddress2 << 18) | (fRegs.ovlyStartAddress1 << 10) |
-                    (fRegs.ovlyStartAddress0 << 2);
-#endif
-    emuptr baseAddr = fBaseVideoAddr + offset;
-
-    begin = baseAddr;
-    end = baseAddr + rowBytes * height;
-}
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSED1376PalmGeneric::GetLCDScanlines

@@ -26,7 +26,6 @@ class EmRegsEZPalmIIIc : public EmRegsEZ {
     virtual Bool GetLCDScreenOn(void);
     virtual Bool GetLCDBacklightOn(void);
     virtual Bool GetLCDHasFrame(void);
-    virtual void GetLCDBeginEnd(emuptr&, emuptr&);
     virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
     virtual uint16 GetLCD2bitMapping();
 

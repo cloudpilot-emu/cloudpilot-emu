@@ -240,24 +240,6 @@ Bool EmRegsSED1375::GetLCDBacklightOn(void) {
 
 Bool EmRegsSED1375::GetLCDHasFrame(void) { return true; }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsSED1375::GetLCDBeginEnd
-// ---------------------------------------------------------------------------
-
-void EmRegsSED1375::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    // Get the screen metrics.
-
-    int32 bpp = 1 << ((fRegs.mode1 & sed1375BPPMask) >> sed1375BPPShift);
-    int32 height = ((fRegs.verticalPanelSizeMSB << 8) | fRegs.verticalPanelSizeLSB) + 1;
-    int32 rowBytes = (fRegs.horizontalPanelSize + 1) * bpp;
-    uint32 offset = (fRegs.screen1StartAddressMSBit << 17) | (fRegs.screen1StartAddressMSB << 9) |
-                    (fRegs.screen1StartAddressLSB << 1);
-    emuptr baseAddr = fBaseVideoAddr + offset;
-
-    begin = baseAddr;
-    end = baseAddr + rowBytes * height;
-}
-
 bool EmRegsSED1375::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     const int32 bpp = 1 << ((fRegs.mode1 & sed1375BPPMask) >> sed1375BPPShift);
     const int32 width = (fRegs.horizontalPanelSize + 1) * 8;

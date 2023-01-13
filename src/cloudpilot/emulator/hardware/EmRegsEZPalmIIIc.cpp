@@ -75,16 +75,6 @@ Bool EmRegsEZPalmIIIc::GetLCDHasFrame(void) {
 }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsEZPalmIIIc::GetLCDBeginEnd
-// ---------------------------------------------------------------------------
-
-void EmRegsEZPalmIIIc::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    // Override the Dragonball version and let the SED 1375 handle it.
-
-    EmHALHandler::GetLCDBeginEnd(begin, end);
-}
-
-// ---------------------------------------------------------------------------
 //		� EmRegsEZPalmIIIc::GetLCDScanlines
 // ---------------------------------------------------------------------------
 

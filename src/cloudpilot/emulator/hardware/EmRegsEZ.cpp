@@ -930,19 +930,6 @@ int32 EmRegsEZ::GetInterruptBase(void) { return READ_REGISTER(intVector) & 0xF8;
 Bool EmRegsEZ::GetLCDHasFrame(void) { return false; }
 
 // ---------------------------------------------------------------------------
-//		� EmRegsEZ::GetLCDBeginEnd
-// ---------------------------------------------------------------------------
-
-void EmRegsEZ::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    emuptr baseAddr = READ_REGISTER(lcdStartAddr);
-    int rowBytes = READ_REGISTER(lcdPageWidth) * 2;
-    int height = READ_REGISTER(lcdScreenHeight) + 1;
-
-    begin = baseAddr;
-    end = baseAddr + rowBytes * height;
-}
-
-// ---------------------------------------------------------------------------
 //		� EmRegsEZ::GetLCDScanlines
 // ---------------------------------------------------------------------------
 

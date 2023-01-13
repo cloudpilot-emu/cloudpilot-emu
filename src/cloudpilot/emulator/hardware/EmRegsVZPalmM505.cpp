@@ -102,16 +102,6 @@ Bool EmRegsVZPalmM505::GetLCDHasFrame(void) {
     return EmHALHandler::GetLCDHasFrame();
 }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsVZPalmM505::GetLCDBeginEnd
-// ---------------------------------------------------------------------------
-
-void EmRegsVZPalmM505::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    // Override the Dragonball version and let the SED 1376 handle it.
-
-    EmHALHandler::GetLCDBeginEnd(begin, end);
-}
-
 bool EmRegsVZPalmM505::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     return EmHALHandler::CopyLCDFrame(frame, fullRefresh);
 }

@@ -1,6 +1,8 @@
 #ifndef _NIBBLER_H_
 #define _NIBBLER_H_
 
+#include <cstddef>
+
 template <int bpp, bool wordswap = false>
 class Nibbler {
    public:
@@ -17,6 +19,8 @@ class Nibbler {
         nextNibble = offset % nibblesPerByte;
         current <<= (bpp * nextNibble);
     }
+
+    [[gnu::always_inline]] inline void skipBytes(const size_t bytes) { next += bytes; }
 
     [[gnu::always_inline]] inline uint8 nibble() {
         if (nextNibble >= nibblesPerByte) {

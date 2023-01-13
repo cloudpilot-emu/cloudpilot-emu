@@ -1189,19 +1189,6 @@ int32 EmRegs328::GetInterruptBase(void) { return READ_REGISTER(intVector) & 0xF8
 
 Bool EmRegs328::GetLCDHasFrame(void) { return false; }
 
-// ---------------------------------------------------------------------------
-//		� EmRegs328::GetLCDBeginEnd
-// ---------------------------------------------------------------------------
-
-void EmRegs328::GetLCDBeginEnd(emuptr& begin, emuptr& end) {
-    emuptr baseAddr = READ_REGISTER(lcdStartAddr);
-    int rowBytes = READ_REGISTER(lcdPageWidth) * 2;
-    int height = READ_REGISTER(lcdScreenHeight) + 1;
-
-    begin = baseAddr;
-    end = baseAddr + rowBytes * height;
-}
-
 bool EmRegs328::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     // Get the screen metrics.
 

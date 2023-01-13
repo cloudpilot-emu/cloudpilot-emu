@@ -319,7 +319,6 @@ class EmRegsMQLCDControlT2 : public EmRegs, public MediaQFramebuffer<EmRegsMQLCD
     virtual Bool GetLCDScreenOn(void);
     virtual Bool GetLCDBacklightOn(void);
     virtual Bool GetLCDHasFrame(void);
-    virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
     virtual uint16 GetLCD2bitMapping();
 
     static UInt16 GetResolutionMode();
@@ -334,7 +333,9 @@ class EmRegsMQLCDControlT2 : public EmRegs, public MediaQFramebuffer<EmRegsMQLCD
     uint32 GetFrameBuffer(void);
     Bool GetXDoubling(void);
     Bool GetYDoubling(void);
-    uint32 GetRowBytes(void);
+    int16 GetPitch(void);
+    bool FlipX() const;
+    bool SwapXY() const;
     uint32 DC380Read(emuptr address, int size);
 
     void InvalidateWrite(emuptr address, int size, uint32 value);

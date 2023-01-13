@@ -51,7 +51,6 @@ class EmRegsSED1376 : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDScreenOn(void);
     virtual Bool GetLCDBacklightOn(void);
     virtual Bool GetLCDHasFrame(void);
-    virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end) = 0;
 
    private:
     uint32 powerSaveConfigurationRead(emuptr address, int size);
@@ -89,7 +88,6 @@ class EmRegsSED1376VisorPrism : public EmRegsSED1376 {
 
     virtual void SetSubBankHandlers(void);
 
-    virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
     virtual void GetLCDScanlines(EmScreenUpdateInfo& info);
 
    private:
@@ -107,7 +105,6 @@ class EmRegsSED1376PalmGeneric : public EmRegsSED1376 {
                              EmRegsFrameBuffer& framebuffer);
     virtual ~EmRegsSED1376PalmGeneric(void);
 
-    virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
     virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
     virtual uint16 GetLCD2bitMapping();
 };

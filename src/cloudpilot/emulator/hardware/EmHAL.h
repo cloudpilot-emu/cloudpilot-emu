@@ -71,7 +71,6 @@ class EmHAL {
     static Bool GetLCDScreenOn(void);
     static Bool GetLCDBacklightOn(void);
     static Bool GetLCDHasFrame(void);
-    static void GetLCDBeginEnd(emuptr&, emuptr&);
     static bool CopyLCDFrame(Frame& frame, bool fullRefresh = false);
     static uint16 GetLCD2bitMapping();
 
@@ -150,7 +149,6 @@ class EmHALHandler {
     virtual Bool GetLCDScreenOn(void);
     virtual Bool GetLCDBacklightOn(void);
     virtual Bool GetLCDHasFrame(void);
-    virtual void GetLCDBeginEnd(emuptr&, emuptr&);
     virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
     virtual uint16 GetLCD2bitMapping();
 

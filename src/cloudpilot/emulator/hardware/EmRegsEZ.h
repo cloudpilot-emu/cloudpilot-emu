@@ -56,7 +56,6 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual Bool GetLCDScreenOn(void) = 0;
     virtual Bool GetLCDBacklightOn(void) = 0;
     virtual Bool GetLCDHasFrame(void);
-    virtual void GetLCDBeginEnd(emuptr&, emuptr&);
     virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
     virtual uint16 GetLCD2bitMapping();
 

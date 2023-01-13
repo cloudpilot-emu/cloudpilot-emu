@@ -224,7 +224,6 @@ class EmRegsMediaQ11xx : public EmRegs, public MediaQFramebuffer<EmRegsMediaQ11x
     virtual Bool GetLCDScreenOn(void);
     virtual Bool GetLCDBacklightOn(void);
     virtual Bool GetLCDHasFrame(void);
-    virtual void GetLCDBeginEnd(emuptr& begin, emuptr& end);
     virtual uint16 GetLCD2bitMapping();
 
    protected:
@@ -256,7 +255,9 @@ class EmRegsMediaQ11xx : public EmRegs, public MediaQFramebuffer<EmRegsMediaQ11x
     uint32 GetFrameBuffer(void);
     Bool GetXDoubling(void);
     Bool GetYDoubling(void);
-    uint32 GetRowBytes(void);
+    int16 GetPitch(void);
+    bool FlipX();
+    bool SwapXY();
 
     void AddressError(emuptr address, long size, Bool forRead);
     void PrvUpdatePalette();
