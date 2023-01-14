@@ -469,6 +469,8 @@ uint32 EmRegsMQLCDControlT2::GetFrameBuffer(void) {
     return fBaseVideoAddr + READ_REGISTER_T2(WindowStartAddress);
 }
 
+uint32 EmRegsMQLCDControlT2::GetFrameBufferSize() { return 0x50000; }
+
 Bool EmRegsMQLCDControlT2::GetXDoubling(void) {
     return READ_REGISTER_T2(GraphicController) & 0x4000;
 }
@@ -482,4 +484,4 @@ bool EmRegsMQLCDControlT2::FlipX() const { return false; }
 
 bool EmRegsMQLCDControlT2::SwapXY() const { return false; }
 
-emuptr EmRegsMQLCDControlT2::GetFramebufferBase() const { return fBaseVideoAddr; }
+emuptr EmRegsMQLCDControlT2::GetFrameBufferBase() const { return fBaseVideoAddr; }

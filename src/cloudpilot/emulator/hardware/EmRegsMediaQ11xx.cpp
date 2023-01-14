@@ -1100,8 +1100,10 @@ Bool EmRegsMediaQ11xx::GetYDoubling(void) {
 }
 
 emuptr EmRegsMediaQ11xx::GetFrameBuffer(void) {
-    return this->GetFramebufferBase() + this->PrvGetVideoOffset();
+    return this->GetFrameBufferBase() + this->PrvGetVideoOffset();
 }
+
+uint32 EmRegsMediaQ11xx::GetFrameBufferSize(void) { return 0x40000; }
 
 // Inline functions.
 
@@ -3244,7 +3246,7 @@ uint16 EmRegsMediaQ11xx::PrvAdjustPixel(uint16 pattern, uint16 src, uint16 dest,
 
 inline void EmRegsMediaQ11xx::PrvSetPixel(uint16 pixel, uint16 x, uint16 y) {
     emuptr pixelLocation = this->PrvGetPixelLocation(x, y);
-    if ((pixelLocation - this->GetFramebufferBase()) > MMIO_OFFSET) {
+    if ((pixelLocation - this->GetFrameBufferBase()) > MMIO_OFFSET) {
         return;
     }
 
@@ -3269,7 +3271,7 @@ inline void EmRegsMediaQ11xx::PrvSetPixel(uint16 pixel, uint16 x, uint16 y) {
 inline uint16 EmRegsMediaQ11xx::PrvGetPixel(uint16 x, uint16 y) {
     uint16 result;
     emuptr pixelLocation = this->PrvGetPixelLocation(x, y);
-    if ((pixelLocation - this->GetFramebufferBase()) > MMIO_OFFSET) {
+    if ((pixelLocation - this->GetFrameBufferBase()) > MMIO_OFFSET) {
         return 0;
     }
 
@@ -3310,7 +3312,7 @@ inline emuptr EmRegsMediaQ11xx::PrvGetPixelLocation(uint16 x, uint16 y) {
         default:
             logging::printf("illegal color depth");
 
-            return this->GetFramebufferBase();
+            return this->GetFrameBufferBase();
     }
 
     if (fState.rotate90) {
@@ -3342,7 +3344,7 @@ inline emuptr EmRegsMediaQ11xx::PrvGetPixelLocation(uint16 x, uint16 y) {
         y = newY;
     }
 
-    emuptr frameBuffer = this->GetFramebufferBase() + fState.baseAddr;
+    emuptr frameBuffer = this->GetFrameBufferBase() + fState.baseAddr;
     emuptr scanLine = frameBuffer + (y * fState.destLineStride);
     emuptr scanByte = scanLine + (x * bytesPerPixel);
 
@@ -3745,7 +3747,7 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
         uint16 y = fYSrc >= fState.ySrc ? fYSrc - fState.ySrc : 0;
 
         if (fState.monoSource) {
-            emuptr location = this->GetFramebufferBase() + fState.baseAddr +
+            emuptr location = this->GetFrameBufferBase() + fState.baseAddr +
                               fState.ySrc * fState.destLineStride + fState.srcLeadingBytes;
 
             uint32 pixel =
@@ -3753,7 +3755,7 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
                 y * (fState.width + fState.srcTrailingBits + fState.srcTrailingBytes * 8) + fXSrc;
 
             location += pixel / 8;
-            if ((location - this->GetFramebufferBase()) > MMIO_OFFSET) {
+            if ((location - this->GetFrameBufferBase()) > MMIO_OFFSET) {
                 return 0;
             }
 
@@ -3768,11 +3770,11 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
         } else {
             uint8 bpp = fState.colorDepth == kColorDepth8 ? 1 : 2;
 
-            emuptr location = this->GetFramebufferBase() + fState.baseAddr +
+            emuptr location = this->GetFrameBufferBase() + fState.baseAddr +
                               fState.ySrc * fState.destLineStride + fState.srcLeadingBytes +
                               y * (fState.width * bpp + fState.srcTrailingBytes) + fXSrc * bpp;
 
-            if ((location - this->GetFramebufferBase()) <= 0x40000) {
+            if ((location - this->GetFrameBufferBase()) <= 0x40000) {
                 return bpp == 1 ? EmMemGet8(location) : EmMemGet16(location);
             } else {
                 return 0;
@@ -3785,13 +3787,13 @@ uint16 EmRegsMediaQ11xx::PrvSrcPipeNextPixel(Bool& stalled) {
 
             uint32 pixel = fState.xSrc * bpp + (fXSrc - fState.xSrc) + fState.srcBitOffset +
                            8 * fState.srcByteOffset;
-            emuptr location = this->GetFramebufferBase() + fState.baseAddr +
+            emuptr location = this->GetFrameBufferBase() + fState.baseAddr +
                               fYSrc * fState.srcLineStride + pixel / 8;
 
             // at 16bpp, pixels are fetched in LE words -> byteswap
             if (fState.colorDepth == kColorDepth16) location ^= 1;
 
-            if ((location - this->GetFramebufferBase()) > MMIO_OFFSET) {
+            if ((location - this->GetFrameBufferBase()) > MMIO_OFFSET) {
                 return 0;
             }
 

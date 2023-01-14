@@ -197,20 +197,20 @@ class EmRegsMediaQ11xx : public EmRegs, public MediaQFramebuffer<EmRegsMediaQ11x
 
    public:
     EmRegsMediaQ11xx(EmRegsFrameBuffer& framebuffer, emuptr baseRegsAddr, emuptr baseVideoAddr);
-    virtual ~EmRegsMediaQ11xx(void);
+    virtual ~EmRegsMediaQ11xx();
 
     // EmRegs overrides
-    virtual void Initialize(void);
+    virtual void Initialize();
     virtual void Reset(Bool hardwareReset);
     virtual void Save(Savestate&);
     virtual void Save(SavestateProbe&);
     virtual void Load(SavestateLoader&);
-    virtual void Dispose(void);
+    virtual void Dispose();
 
-    virtual void SetSubBankHandlers(void);
+    virtual void SetSubBankHandlers();
     virtual uint8* GetRealAddress(emuptr address);
-    virtual emuptr GetAddressStart(void);
-    virtual uint32 GetAddressRange(void);
+    virtual emuptr GetAddressStart();
+    virtual uint32 GetAddressRange();
 
     virtual uint32 GetLong(emuptr address);
     virtual uint32 GetWord(emuptr address);
@@ -221,9 +221,9 @@ class EmRegsMediaQ11xx : public EmRegs, public MediaQFramebuffer<EmRegsMediaQ11x
     virtual void SetByte(emuptr address, uint32 value);
 
     // EmHAL overrides
-    virtual Bool GetLCDScreenOn(void);
-    virtual Bool GetLCDBacklightOn(void);
-    virtual Bool GetLCDHasFrame(void);
+    virtual Bool GetLCDScreenOn();
+    virtual Bool GetLCDBacklightOn();
+    virtual Bool GetLCDHasFrame();
     virtual uint16 GetLCD2bitMapping();
 
    protected:
@@ -249,31 +249,32 @@ class EmRegsMediaQ11xx : public EmRegs, public MediaQFramebuffer<EmRegsMediaQ11x
     void DoSaveLoad(T& helper);
 
     // These are required by MediaQFramebuffer
-    uint32 GetBPP(void);
-    uint32 GetWidth(void);
-    uint32 GetHeight(void);
-    uint32 GetFrameBuffer(void);
-    Bool GetXDoubling(void);
-    Bool GetYDoubling(void);
-    int16 GetPitch(void);
+    uint32 GetBPP();
+    uint32 GetWidth();
+    uint32 GetHeight();
+    uint32 GetFrameBuffer();
+    uint32 GetFrameBufferSize();
+    Bool GetXDoubling();
+    Bool GetYDoubling();
+    int16 GetPitch();
     bool FlipX();
     bool SwapXY();
 
     void AddressError(emuptr address, long size, Bool forRead);
     void PrvUpdatePalette();
-    void PrvUpdateByteLanes(void);
+    void PrvUpdateByteLanes();
 
-    uint32 PrvGetVideoOffset(void);
-    inline emuptr GetFramebufferBase(void) { return fBaseVideoAddr; }
+    uint32 PrvGetVideoOffset();
+    inline emuptr GetFrameBufferBase() { return fBaseVideoAddr; }
 
     void PrvGetGEState(int regNum);
 
-    void PrvDoCommand(void);
-    void PrvDoBitBLT(void);
-    void PrvDoLine(void);
-    void PrvIllegalCommand(void);
+    void PrvDoCommand();
+    void PrvDoBitBLT();
+    void PrvDoLine();
+    void PrvIllegalCommand();
 
-    int PrvSrcFifoFilledSlots(void);
+    int PrvSrcFifoFilledSlots();
     void PrvGetSrcFifoSlot(uint32&, uint32&);
 
     // Drawing related functions
@@ -284,33 +285,33 @@ class EmRegsMediaQ11xx : public EmRegs, public MediaQFramebuffer<EmRegsMediaQ11x
     uint16 PrvGetPixel(uint16 x, uint16 y);
     emuptr PrvGetPixelLocation(uint16 x, uint16 y);
 
-    void PrvIncBlitterInit(void);
-    void PrvIncBlitterRun(void);
+    void PrvIncBlitterInit();
+    void PrvIncBlitterRun();
 
-    void PrvPatternPipeInit(void);
-    uint16 PrvPatternPipeNextPixel(void);
-    void PrvPatternPipeNextX(void);
-    void PrvPatternPipeNextY(void);
+    void PrvPatternPipeInit();
+    uint16 PrvPatternPipeNextPixel();
+    void PrvPatternPipeNextX();
+    void PrvPatternPipeNextY();
 
-    void PrvSrcPipeInit(void);
+    void PrvSrcPipeInit();
     uint16 PrvSrcPipeNextPixel(Bool& stalled);
-    void PrvSrcPipeNextX(void);
-    void PrvSrcPipeNextY(void);
+    void PrvSrcPipeNextX();
+    void PrvSrcPipeNextY();
     void PrvSrcPipeFill(Bool& stalled);
 
-    void PrvDestPipeInit(void);
-    uint16 PrvDestPipeNextPixel(void);
-    void PrvDestPipeNextX(void);
-    void PrvDestPipeNextY(void);
+    void PrvDestPipeInit();
+    uint16 PrvDestPipeNextPixel();
+    void PrvDestPipeNextX();
+    void PrvDestPipeNextY();
 
-    Bool PrvNextXY(void);
+    Bool PrvNextXY();
     Bool PrvTransparent(uint16 source, uint16 dest, uint16 pattern);
-    Bool PrvClipped(void);
-    uint16 PrvLeadingPixels(void);
-    uint16 PrvTrailingPixels(void);
+    Bool PrvClipped();
+    uint16 PrvLeadingPixels();
+    uint16 PrvTrailingPixels();
 
-    Bool PrvUsesPattern(void);
-    Bool PrvUsesSource(void);
+    Bool PrvUsesPattern();
+    Bool PrvUsesSource();
     void PrvExpandMono8(uint8 bits, uint16* results, uint16 fgColor, uint16 bgColor);
     void PrvExpandMono32(uint32 bits, uint16* results, uint16 fgColor, uint16 bgColor);
 

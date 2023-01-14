@@ -299,26 +299,26 @@ class EmRegsMQLCDControlT2 : public EmRegs, public MediaQFramebuffer<EmRegsMQLCD
 
    public:
     EmRegsMQLCDControlT2(EmRegsFrameBuffer& framebuffer, emuptr baseRegsAddr, emuptr baseVideoAddr);
-    virtual ~EmRegsMQLCDControlT2(void);
+    virtual ~EmRegsMQLCDControlT2();
 
     // EmRegs overrides
-    virtual void Initialize(void);
+    virtual void Initialize();
     virtual void Reset(Bool hardwareReset);
-    virtual void Dispose(void);
+    virtual void Dispose();
 
     virtual void Save(Savestate&);
     virtual void Save(SavestateProbe&);
     virtual void Load(SavestateLoader&);
 
-    virtual void SetSubBankHandlers(void);
+    virtual void SetSubBankHandlers();
     virtual uint8* GetRealAddress(emuptr address);
-    virtual emuptr GetAddressStart(void);
-    virtual uint32 GetAddressRange(void);
+    virtual emuptr GetAddressStart();
+    virtual uint32 GetAddressRange();
 
     // EmHAL overrides
-    virtual Bool GetLCDScreenOn(void);
-    virtual Bool GetLCDBacklightOn(void);
-    virtual Bool GetLCDHasFrame(void);
+    virtual Bool GetLCDScreenOn();
+    virtual Bool GetLCDBacklightOn();
+    virtual Bool GetLCDHasFrame();
     virtual uint16 GetLCD2bitMapping();
 
     static UInt16 GetResolutionMode();
@@ -327,16 +327,17 @@ class EmRegsMQLCDControlT2 : public EmRegs, public MediaQFramebuffer<EmRegsMQLCD
     void ColorPaletteWrite(emuptr address, int size, uint32 value);
 
     // These are required by MediaQFramebuffer
-    uint32 GetBPP(void);
-    uint32 GetWidth(void);
-    uint32 GetHeight(void);
-    uint32 GetFrameBuffer(void);
-    Bool GetXDoubling(void);
-    Bool GetYDoubling(void);
-    int16 GetPitch(void);
+    uint32 GetBPP();
+    uint32 GetWidth();
+    uint32 GetHeight();
+    uint32 GetFrameBuffer();
+    uint32 GetFrameBufferSize();
+    Bool GetXDoubling();
+    Bool GetYDoubling();
+    int16 GetPitch();
     bool FlipX() const;
     bool SwapXY() const;
-    emuptr GetFramebufferBase() const;
+    emuptr GetFrameBufferBase() const;
     uint32 DC380Read(emuptr address, int size);
 
     void InvalidateWrite(emuptr address, int size, uint32 value);

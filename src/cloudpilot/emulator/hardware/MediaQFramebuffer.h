@@ -36,7 +36,7 @@ template <class T>
 bool MediaQFramebuffer<T>::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     const int16 pitch = static_cast<T*>(this)->GetPitch();
     const bool flipY = pitch < 0;
-    const bool flipX = static_cast<T*>(this)->FlipX();
+    bool flipX = static_cast<T*>(this)->FlipX();
     const bool swapXY = static_cast<T*>(this)->SwapXY();
     const uint8 scaleX = static_cast<T*>(this)->GetXDoubling() ? 2 : 1;
     const uint8 scaleY = static_cast<T*>(this)->GetYDoubling() ? 2 : 1;
@@ -49,7 +49,7 @@ bool MediaQFramebuffer<T>::CopyLCDFrame(Frame& frame, bool fullRefresh) {
         swapXY ? static_cast<T*>(this)->GetWidth()
                : std::min(static_cast<T*>(this)->GetWidth(), (rowBytes * scaleX * 8) / bpp);
     const bool trivialPitch =
-        rowBytes == swapXY ? ((height * bpp) / (8 * scaleY)) : ((width * bpp) / (8 * scaleX));
+        rowBytes == (swapXY ? ((height * bpp) / (8 * scaleY)) : ((width * bpp) / (8 * scaleX)));
 
     EmAssert(gSession);
     const ScreenDimensions screenDimensions(gSession->GetDevice().GetScreenDimensions());
@@ -134,34 +134,40 @@ bool MediaQFramebuffer<T>::CopyLCDFrame(Frame& frame, bool fullRefresh) {
 template <class T>
 template <bool flipX, bool flipY, bool swapXY, bool trivialPitch>
 bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp) {
+    const uint32 lines = swapXY ? frame.lineWidth : frame.lines;
+    const uint32 lineWidth = swapXY ? frame.lines : frame.lineWidth;
+    const uint32 pitchDelta = rowBytes - lineWidth * bpp / 8;
+
     emuptr baseAddr = static_cast<T*>(this)->GetFrameBuffer();
 
-    if constexpr (flipY) {
-        baseAddr -= (frame.lines - 1) * rowBytes;
+    if constexpr (flipY) baseAddr -= (lines - 1) * rowBytes;
+    if constexpr (flipX) baseAddr -= rowBytes - (bpp == 16 ? 2 : 1) - pitchDelta;
+
+    const emuptr framebufferBase = static_cast<T*>(this)->GetFrameBufferBase();
+    const uint32 framebufferSize = static_cast<T*>(this)->GetFrameBufferSize();
+
+    if (baseAddr < framebufferBase ||
+        baseAddr + lines * rowBytes - pitchDelta >= framebufferBase + framebufferSize) {
+        return false;
     }
-
-    if constexpr (flipX) {
-        baseAddr -= rowBytes - (bpp == 16 ? 2 : 1);
-    }
-
-    if (baseAddr < static_cast<T*>(this)->GetFramebufferBase()) return false;
-
-    uint32 pitchDelta = rowBytes - frame.lineWidth * bpp / 8;
 
     uint32* destBuffer =
         reinterpret_cast<uint32*>(frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine);
-    if constexpr (flipX && flipY) destBuffer += frame.lines * frame.lineWidth - 1;
+    if constexpr (flipX && flipY && !swapXY) destBuffer += frame.lines * frame.lineWidth - 1;
+
+    const uint32 firstLine = swapXY ? 0 : frame.firstDirtyLine;
+    const uint32 lastLine = swapXY ? lines - 1 : frame.lastDirtyLine;
 
     switch (bpp) {
         case 1: {
             static_cast<T*>(this)->PrvUpdatePalette();
             Nibbler<1, true> nibbler;
-            nibbler.reset(static_cast<T*>(this)->framebuffer.GetRealAddress(
-                              baseAddr + frame.firstDirtyLine * rowBytes),
-                          0);
+            nibbler.reset(
+                static_cast<T*>(this)->framebuffer.GetRealAddress(baseAddr + firstLine * rowBytes),
+                0);
 
-            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                for (uint32 x = 0; x < frame.lineWidth; x++)
+            for (uint32 y = firstLine; y <= lastLine; y++) {
+                for (uint32 x = 0; x < lineWidth; x++)
                     UpdatePixel<flipX, flipY, swapXY>(
                         destBuffer, frame, x, y, static_cast<T*>(this)->palette[nibbler.nibble()]);
 
@@ -174,12 +180,12 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
         case 2: {
             static_cast<T*>(this)->PrvUpdatePalette();
             Nibbler<2, true> nibbler;
-            nibbler.reset(static_cast<T*>(this)->framebuffer.GetRealAddress(
-                              baseAddr + frame.firstDirtyLine * rowBytes),
-                          0);
+            nibbler.reset(
+                static_cast<T*>(this)->framebuffer.GetRealAddress(baseAddr + firstLine * rowBytes),
+                0);
 
-            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                for (uint32 x = 0; x < frame.lineWidth; x++)
+            for (uint32 y = firstLine; y <= lastLine; y++) {
+                for (uint32 x = 0; x < lineWidth; x++)
                     UpdatePixel<flipX, flipY, swapXY>(
                         destBuffer, frame, x, y, static_cast<T*>(this)->palette[nibbler.nibble()]);
 
@@ -192,12 +198,12 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
         case 4: {
             static_cast<T*>(this)->PrvUpdatePalette();
             Nibbler<4, true> nibbler;
-            nibbler.reset(static_cast<T*>(this)->framebuffer.GetRealAddress(
-                              baseAddr + frame.firstDirtyLine * rowBytes),
-                          0);
+            nibbler.reset(
+                static_cast<T*>(this)->framebuffer.GetRealAddress(baseAddr + firstLine * rowBytes),
+                0);
 
-            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                for (uint32 x = 0; x < frame.lineWidth; x++)
+            for (uint32 y = firstLine; y <= lastLine; y++) {
+                for (uint32 x = 0; x < lineWidth; x++)
                     UpdatePixel<flipX, flipY, swapXY>(
                         destBuffer, frame, x, y, static_cast<T*>(this)->palette[nibbler.nibble()]);
 
@@ -210,11 +216,11 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
         case 8: {
             static_cast<T*>(this)->PrvUpdatePalette();
 
-            uint8* srcBuffer = static_cast<T*>(this)->framebuffer.GetRealAddress(
-                baseAddr + frame.firstDirtyLine * rowBytes);
+            uint8* srcBuffer =
+                static_cast<T*>(this)->framebuffer.GetRealAddress(baseAddr + firstLine * rowBytes);
 
-            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                for (uint32 x = 0; x < frame.lineWidth; x++)
+            for (uint32 y = firstLine; y <= lastLine; y++) {
+                for (uint32 x = 0; x < lineWidth; x++)
                     UpdatePixel<flipX, flipY, swapXY>(
                         destBuffer, frame, x, y,
                         static_cast<T*>(this)->palette[*(uint8*)((long)(srcBuffer++) ^ 1)]);
@@ -226,11 +232,11 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
         }
 
         default: {
-            uint8* srcBuffer = static_cast<T*>(this)->framebuffer.GetRealAddress(
-                baseAddr + frame.firstDirtyLine * rowBytes);
+            uint8* srcBuffer =
+                static_cast<T*>(this)->framebuffer.GetRealAddress(baseAddr + firstLine * rowBytes);
 
-            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
-                for (uint32 x = 0; x < frame.lineWidth; x++) {
+            for (uint32 y = firstLine; y <= lastLine; y++) {
+                for (uint32 x = 0; x < lineWidth; x++) {
                     uint8 p1 = *(uint8*)((long)(srcBuffer++) ^ 1);  // GGGBBBBB
                     uint8 p2 = *(uint8*)((long)(srcBuffer++) ^ 1);  // RRRRRGGG
 
@@ -268,8 +274,27 @@ template <class T>
 template <bool flipX, bool flipY, bool swapXY>
 void MediaQFramebuffer<T>::UpdatePixel(uint32*& destBuffer, Frame& frame, uint32 x, uint32 y,
                                        uint32 value) {
-    if constexpr (!flipX && !flipY && !swapXY) *(destBuffer++) = value;
-    if constexpr (flipX && flipY & !swapXY) *(destBuffer--) = value;
+    if constexpr (!flipX && !flipY && !swapXY) {
+        *(destBuffer++) = value;
+    }
+
+    else if constexpr (flipX && flipY & !swapXY) {
+        *(destBuffer--) = value;
+    }
+
+    else if constexpr (swapXY) {
+        if constexpr (swapXY && flipY) y = frame.lineWidth - 1 - y;
+        if constexpr (swapXY && flipX) x = frame.lines - 1 - x;
+
+        *(destBuffer + x * frame.lineWidth + y) = value;
+    }
+
+    else {
+        if constexpr (flipX) x = frame.lineWidth - 1 - x;
+        if constexpr (flipY) y = frame.lines - 1 - y;
+
+        *(destBuffer + y * frame.lineWidth + x) = value;
+    }
 }
 
 #endif
