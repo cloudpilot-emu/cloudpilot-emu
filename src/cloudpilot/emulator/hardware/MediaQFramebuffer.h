@@ -135,10 +135,16 @@ template <class T>
 template <bool flipX, bool flipY, bool swapXY, bool trivialPitch>
 bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp) {
     emuptr baseAddr = static_cast<T*>(this)->GetFrameBuffer();
+
     if constexpr (flipY) {
-        baseAddr -= frame.lines * rowBytes - (bpp == 16 ? 2 : 1);
-        if (baseAddr < static_cast<T*>(this)->GetFramebufferBase()) return false;
+        baseAddr -= (frame.lines - 1) * rowBytes;
     }
+
+    if constexpr (flipX) {
+        baseAddr -= rowBytes - (bpp == 16 ? 2 : 1);
+    }
+
+    if (baseAddr < static_cast<T*>(this)->GetFramebufferBase()) return false;
 
     uint32 pitchDelta = rowBytes - frame.lineWidth * bpp / 8;
 
