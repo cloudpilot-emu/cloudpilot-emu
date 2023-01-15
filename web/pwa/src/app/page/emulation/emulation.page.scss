@@ -32,7 +32,7 @@ ion-title {
 }
 
 .container.running-session {
-    background: var(--ion-color-light);
+    background: radial-gradient(circle, #ccc 0%, #eee 100%);
 }
 
 @media (prefers-color-scheme: dark) {
