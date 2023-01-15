@@ -69,6 +69,8 @@ bool MediaQFramebuffer<T>::CopyLCDFrame(Frame& frame, bool fullRefresh) {
 
     if (4 * frame.lineWidth * frame.lines > frame.GetBufferSize()) return false;
 
+    // We combine those four flags in to a nibble and instantiate a template in a switch block
+    // in order to generate optimized code paths for the various combinations.
     const uint8 variant = (flipX ? 0x08 : 0x00) | (flipY ? 0x04 : 0x00) | (swapXY ? 0x02 : 0x00) |
                           (trivialPitch ? 0x01 : 0x00);
 
@@ -131,35 +133,61 @@ template <class T>
 template <bool flipX, bool flipY, bool swapXY, bool trivialPitch>
 bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp,
                                        bool fullRefresh) {
+    // The internal geometry of the image is rotated by 90° if swapXY is trze.
     const uint32 lines = swapXY ? frame.lineWidth : frame.lines;
     const uint32 lineWidth = swapXY ? frame.lines : frame.lineWidth;
+
+    // A nontrivial pitch leads to padding that needs to be taken into account during scan.
     const uint32 pitchDelta = rowBytes - lineWidth * bpp / 8;
 
     emuptr baseAddr = static_cast<T*>(this)->GetFrameBuffer();
 
+    // We always render from memory in strictly ascending order and apply possible flips
+    // when writing the destination pixels.
+
+    // Flip y axis? -> the MQ decrements y during scan, so shift offset to the address
+    // of the first line
     if constexpr (flipY) baseAddr -= (lines - 1) * rowBytes;
+
+    // Flip x axis? -> the MQ decrements x during scan, so shift offset to the address if the
+    // first pixel. Padding from a nontrivial pitch comes *at the beginning*, so compensate
+    // for that.
     if constexpr (flipX) baseAddr -= rowBytes - (bpp == 16 ? 2 : 1) - pitchDelta;
 
     const emuptr framebufferBase = static_cast<T*>(this)->GetFrameBufferBase();
     const uint32 framebufferSize = static_cast<T*>(this)->GetFrameBufferSize();
 
+    // Make sure that we don't overflow the framebuffer.
     if (baseAddr < framebufferBase ||
         baseAddr + lines * rowBytes - pitchDelta >= framebufferBase + framebufferSize) {
         return false;
     }
 
+    // Caclulate the dirty region.
     frame.UpdateDirtyLines(gSystemState, baseAddr, rowBytes, fullRefresh, swapXY);
     if (!frame.hasChanges) return true;
 
     const uint32 firstLine = frame.firstDirtyLine;
     const uint32 lastLine = frame.lastDirtyLine;
 
-    if constexpr (!swapXY && flipY) frame.FlipDirtyRegion();
+    // The frontend code cannot deal with a vertically oriented dirty region, so always do a
+    // full update in the frontend if swapXY is true.
     if constexpr (swapXY) frame.ResetDirtyRegion();
 
+    // If flipY is true, the actual image is flipped relative to our scanning direction, so
+    // flip the dirty region for the frontend.
+    if constexpr (!swapXY && flipY) frame.FlipDirtyRegion();
+
     uint32* destBuffer = reinterpret_cast<uint32*>(frame.GetBuffer());
+
+    // If the image is not transformed we can skip recalculating the offset and just increment
+    // the pointer. In this case we need to fast-forward the pointer to the start of relevant
+    // region.
     if constexpr (!swapXY && flipX == flipY) destBuffer += frame.firstDirtyLine * frame.lineWidth;
-    if constexpr (flipX && flipY && !swapXY)
+
+    // We can do the same trick in case of a point reflection by *decrementing* the pointer instead
+    // -> forward the pointer to the *end* of the relevant region.
+    if constexpr (!swapXY && flipX && flipY)
         destBuffer += (frame.lastDirtyLine - frame.firstDirtyLine + 1) * frame.lineWidth - 1;
 
     switch (bpp) {
@@ -225,6 +253,7 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
 
             for (uint32 y = firstLine; y <= lastLine; y++) {
                 for (uint32 x = 0; x < lineWidth; x++)
+                    // Pixels are arranged in LE words in the framebuffer, so byteswap
                     UpdatePixel<flipX, flipY, swapXY>(
                         destBuffer, frame, x, y,
                         static_cast<T*>(this)->palette[*(uint8*)((long)(srcBuffer++) ^ 1)]);
@@ -241,6 +270,7 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
 
             for (uint32 y = firstLine; y <= lastLine; y++) {
                 for (uint32 x = 0; x < lineWidth; x++) {
+                    // Pixel data is LE, so byteswap
                     uint8 p1 = *(uint8*)((long)(srcBuffer++) ^ 1);  // GGGBBBBB
                     uint8 p2 = *(uint8*)((long)(srcBuffer++) ^ 1);  // RRRRRGGG
 
@@ -278,14 +308,18 @@ template <class T>
 template <bool flipX, bool flipY, bool swapXY>
 void MediaQFramebuffer<T>::UpdatePixel(uint32*& destBuffer, Frame& frame, uint32 x, uint32 y,
                                        uint32 value) {
+    // No transformation? -> stream pixels to the destination in ascending direction
     if constexpr (!flipX && !flipY && !swapXY) {
         *(destBuffer++) = value;
     }
 
+    // Point reflection? -> stream pixels to the destination in ascending direction
     else if constexpr (flipX && flipY & !swapXY) {
         *(destBuffer--) = value;
     }
 
+    // For more complex transformations we recalculate the offset for every pixel.
+    // Swapped axes? -> Swap x and y
     else if constexpr (swapXY) {
         if constexpr (swapXY && flipY) y = frame.lineWidth - 1 - y;
         if constexpr (swapXY && flipX) x = frame.lines - 1 - x;
@@ -293,6 +327,7 @@ void MediaQFramebuffer<T>::UpdatePixel(uint32*& destBuffer, Frame& frame, uint32
         *(destBuffer + x * frame.lineWidth + y) = value;
     }
 
+    // No swap? -> just calculate the address from x and y
     else {
         if constexpr (flipX) x = frame.lineWidth - 1 - x;
         if constexpr (flipY) y = frame.lines - 1 - y;
