@@ -22,7 +22,7 @@ class MediaQFramebuffer : public EmHALHandler {
 
    private:
     template <bool flipX, bool flipY, bool swapXY, bool trivialPitch>
-    bool DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp);
+    bool DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp, bool fullRefresh);
 
     template <bool flipX, bool flipY, bool swapXY>
     inline void UpdatePixel(uint32*& destBuffer, Frame& frame, uint32 x, uint32 y, uint32 value);
@@ -69,61 +69,57 @@ bool MediaQFramebuffer<T>::CopyLCDFrame(Frame& frame, bool fullRefresh) {
 
     if (4 * frame.lineWidth * frame.lines > frame.GetBufferSize()) return false;
 
-    frame.UpdateDirtyLines(gSystemState, static_cast<T*>(this)->GetFrameBuffer(), rowBytes,
-                           fullRefresh || flipX || flipY || swapXY);
-    if (!frame.hasChanges) return true;
-
     const uint8 variant = (flipX ? 0x08 : 0x00) | (flipY ? 0x04 : 0x00) | (swapXY ? 0x02 : 0x00) |
                           (trivialPitch ? 0x01 : 0x00);
 
     switch (variant) {
         case 0x00:
-            return DecodeFrame<false, false, false, false>(frame, rowBytes, bpp);
+            return DecodeFrame<false, false, false, false>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x01:
-            return DecodeFrame<false, false, false, true>(frame, rowBytes, bpp);
+            return DecodeFrame<false, false, false, true>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x02:
-            return DecodeFrame<false, false, true, false>(frame, rowBytes, bpp);
+            return DecodeFrame<false, false, true, false>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x03:
-            return DecodeFrame<false, false, true, true>(frame, rowBytes, bpp);
+            return DecodeFrame<false, false, true, true>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x04:
-            return DecodeFrame<false, true, false, false>(frame, rowBytes, bpp);
+            return DecodeFrame<false, true, false, false>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x05:
-            return DecodeFrame<false, true, false, true>(frame, rowBytes, bpp);
+            return DecodeFrame<false, true, false, true>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x06:
-            return DecodeFrame<false, true, true, false>(frame, rowBytes, bpp);
+            return DecodeFrame<false, true, true, false>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x07:
-            return DecodeFrame<false, true, true, true>(frame, rowBytes, bpp);
+            return DecodeFrame<false, true, true, true>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x08:
-            return DecodeFrame<true, false, false, false>(frame, rowBytes, bpp);
+            return DecodeFrame<true, false, false, false>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x09:
-            return DecodeFrame<true, false, false, true>(frame, rowBytes, bpp);
+            return DecodeFrame<true, false, false, true>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x0a:
-            return DecodeFrame<true, false, true, false>(frame, rowBytes, bpp);
+            return DecodeFrame<true, false, true, false>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x0b:
-            return DecodeFrame<true, false, true, true>(frame, rowBytes, bpp);
+            return DecodeFrame<true, false, true, true>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x0c:
-            return DecodeFrame<true, true, false, false>(frame, rowBytes, bpp);
+            return DecodeFrame<true, true, false, false>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x0d:
-            return DecodeFrame<true, true, false, true>(frame, rowBytes, bpp);
+            return DecodeFrame<true, true, false, true>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x0e:
-            return DecodeFrame<true, true, true, false>(frame, rowBytes, bpp);
+            return DecodeFrame<true, true, true, false>(frame, rowBytes, bpp, fullRefresh);
 
         case 0x0f:
-            return DecodeFrame<true, true, true, true>(frame, rowBytes, bpp);
+            return DecodeFrame<true, true, true, true>(frame, rowBytes, bpp, fullRefresh);
 
         default:
             EmAssert(false);
@@ -133,7 +129,8 @@ bool MediaQFramebuffer<T>::CopyLCDFrame(Frame& frame, bool fullRefresh) {
 
 template <class T>
 template <bool flipX, bool flipY, bool swapXY, bool trivialPitch>
-bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp) {
+bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp,
+                                       bool fullRefresh) {
     const uint32 lines = swapXY ? frame.lineWidth : frame.lines;
     const uint32 lineWidth = swapXY ? frame.lines : frame.lineWidth;
     const uint32 pitchDelta = rowBytes - lineWidth * bpp / 8;
@@ -151,12 +148,18 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
         return false;
     }
 
-    uint32* destBuffer =
-        reinterpret_cast<uint32*>(frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine);
-    if constexpr (flipX && flipY && !swapXY) destBuffer += frame.lines * frame.lineWidth - 1;
+    frame.UpdateDirtyLines(gSystemState, baseAddr, rowBytes, fullRefresh || swapXY);
+    if (!frame.hasChanges) return true;
 
     const uint32 firstLine = swapXY ? 0 : frame.firstDirtyLine;
     const uint32 lastLine = swapXY ? lines - 1 : frame.lastDirtyLine;
+
+    if constexpr (flipY) frame.FlipDirtyRegion();
+
+    uint32* destBuffer =
+        reinterpret_cast<uint32*>(frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine);
+    if constexpr (flipX && flipY && !swapXY)
+        destBuffer += (frame.lastDirtyLine - frame.firstDirtyLine + 1) * frame.lineWidth - 1;
 
     switch (bpp) {
         case 1: {

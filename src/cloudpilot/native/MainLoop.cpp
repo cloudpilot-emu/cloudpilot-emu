@@ -164,6 +164,8 @@ void MainLoop::UpdateScreen() {
 
             SDL_UnlockTexture(lcdTempTexture);
 
+            cout << frame.firstDirtyLine << " " << frame.lastDirtyLine << endl << flush;
+
             SDL_Rect src = {
                 .x = 0,
                 .y = static_cast<int32>(frame.firstDirtyLine),

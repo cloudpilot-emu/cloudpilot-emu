@@ -56,3 +56,9 @@ void Frame::UpdateDirtyLines(const EmSystemState& systemState, emuptr baseAddr, 
             min((systemState.GetScreenHighWatermark() - baseAddr) / rowBytes, lines - 1);
     }
 }
+
+void Frame::FlipDirtyRegion() {
+    const uint32 tmp = lines - 1 - firstDirtyLine;
+    firstDirtyLine = lines - 1 - lastDirtyLine;
+    lastDirtyLine = tmp;
+}

@@ -45,6 +45,8 @@ struct Frame {
     void UpdateDirtyLines(const EmSystemState& systemState, emuptr baseAddr, uint32 rowBytes,
                           bool fullRefresh);
 
+    void FlipDirtyRegion();
+
    private:
     const unique_ptr<uint8[]> buffer;
     const size_t bufferSize;
