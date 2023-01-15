@@ -18,6 +18,7 @@ struct Frame {
     uint32 bytesPerLine{0};
 
     bool hasChanges{true};
+    bool dirtyRegionIsVertical{false};
     uint32 firstDirtyLine{0};
     uint32 lastDirtyLine{0};
 
@@ -43,9 +44,10 @@ struct Frame {
     uint8 GetScaleY() const;
 
     void UpdateDirtyLines(const EmSystemState& systemState, emuptr baseAddr, uint32 rowBytes,
-                          bool fullRefresh);
+                          bool fullRefresh, bool dirtyRegionIsVertical = false);
 
     void FlipDirtyRegion();
+    void ResetDirtyRegion(bool dirtyRegionIsVertical = false);
 
    private:
     const unique_ptr<uint8[]> buffer;

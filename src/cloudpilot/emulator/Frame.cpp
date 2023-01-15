@@ -32,33 +32,47 @@ uint8 Frame::GetScaleX() const { return scaleX; }
 uint8 Frame::GetScaleY() const { return scaleY; }
 
 void Frame::UpdateDirtyLines(const EmSystemState& systemState, emuptr baseAddr, uint32 rowBytes,
-                             bool fullRefresh) {
+                             bool fullRefresh, bool dirtyRegionIsVertical) {
+    this->dirtyRegionIsVertical = dirtyRegionIsVertical;
+
     if (!systemState.IsScreenDirty() && !fullRefresh) {
         hasChanges = false;
         return;
     }
 
+    const uint32 maxLine = dirtyRegionIsVertical ? lineWidth - 1 : lines - 1;
+
     if (systemState.ScreenRequiresFullRefresh() ||
         (systemState.GetScreenHighWatermark() < systemState.GetScreenLowWatermark()) ||
         fullRefresh) {
         firstDirtyLine = 0;
-        lastDirtyLine = lines - 1;
-    } else {
-        if (systemState.GetScreenHighWatermark() < baseAddr) {
-            hasChanges = false;
-            return;
-        }
+        lastDirtyLine = maxLine;
 
-        firstDirtyLine = min(
-            (max(systemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes, lines - 1);
-
-        lastDirtyLine =
-            min((systemState.GetScreenHighWatermark() - baseAddr) / rowBytes, lines - 1);
+        return;
     }
+
+    if (systemState.GetScreenHighWatermark() < baseAddr) {
+        hasChanges = false;
+        return;
+    }
+
+    firstDirtyLine =
+        min((max(systemState.GetScreenLowWatermark(), baseAddr) - baseAddr) / rowBytes, maxLine);
+
+    lastDirtyLine = min((systemState.GetScreenHighWatermark() - baseAddr) / rowBytes, maxLine);
 }
 
 void Frame::FlipDirtyRegion() {
-    const uint32 tmp = lines - 1 - firstDirtyLine;
-    firstDirtyLine = lines - 1 - lastDirtyLine;
+    const uint32 maxLine = dirtyRegionIsVertical ? lineWidth - 1 : lines - 1;
+
+    const uint32 tmp = maxLine - firstDirtyLine;
+    firstDirtyLine = maxLine - lastDirtyLine;
     lastDirtyLine = tmp;
+}
+
+void Frame::ResetDirtyRegion(bool dirtyRegionIsVertical) {
+    this->dirtyRegionIsVertical = dirtyRegionIsVertical;
+
+    firstDirtyLine = 0;
+    lastDirtyLine = lines - 1;
 }

@@ -148,16 +148,17 @@ bool MediaQFramebuffer<T>::DecodeFrame(Frame& frame, uint32 rowBytes, uint32 bpp
         return false;
     }
 
-    frame.UpdateDirtyLines(gSystemState, baseAddr, rowBytes, fullRefresh || swapXY);
+    frame.UpdateDirtyLines(gSystemState, baseAddr, rowBytes, fullRefresh, swapXY);
     if (!frame.hasChanges) return true;
 
-    const uint32 firstLine = swapXY ? 0 : frame.firstDirtyLine;
-    const uint32 lastLine = swapXY ? lines - 1 : frame.lastDirtyLine;
+    const uint32 firstLine = frame.firstDirtyLine;
+    const uint32 lastLine = frame.lastDirtyLine;
 
-    if constexpr (flipY) frame.FlipDirtyRegion();
+    if constexpr (!swapXY && flipY) frame.FlipDirtyRegion();
+    if constexpr (swapXY) frame.ResetDirtyRegion();
 
-    uint32* destBuffer =
-        reinterpret_cast<uint32*>(frame.GetBuffer() + frame.firstDirtyLine * frame.bytesPerLine);
+    uint32* destBuffer = reinterpret_cast<uint32*>(frame.GetBuffer());
+    if constexpr (!swapXY && flipX == flipY) destBuffer += frame.firstDirtyLine * frame.lineWidth;
     if constexpr (flipX && flipY && !swapXY)
         destBuffer += (frame.lastDirtyLine - frame.firstDirtyLine + 1) * frame.lineWidth - 1;
 
