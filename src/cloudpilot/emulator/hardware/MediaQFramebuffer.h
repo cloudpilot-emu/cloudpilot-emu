@@ -74,59 +74,33 @@ bool MediaQFramebuffer<T>::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     const uint8 variant = (flipX ? 0x08 : 0x00) | (flipY ? 0x04 : 0x00) | (swapXY ? 0x02 : 0x00) |
                           (trivialPitch ? 0x01 : 0x00);
 
+#define MQ_RENDER_VARIANT(x)                                                             \
+    case x:                                                                              \
+        return DecodeFrame<(x >> 3) & 0x01, (x >> 2) & 0x01, (x >> 1) & 0x01, x & 0x01>( \
+            frame, rowBytes, bpp, fullRefresh);
+
     switch (variant) {
-        case 0x00:
-            return DecodeFrame<false, false, false, false>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x01:
-            return DecodeFrame<false, false, false, true>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x02:
-            return DecodeFrame<false, false, true, false>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x03:
-            return DecodeFrame<false, false, true, true>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x04:
-            return DecodeFrame<false, true, false, false>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x05:
-            return DecodeFrame<false, true, false, true>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x06:
-            return DecodeFrame<false, true, true, false>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x07:
-            return DecodeFrame<false, true, true, true>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x08:
-            return DecodeFrame<true, false, false, false>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x09:
-            return DecodeFrame<true, false, false, true>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x0a:
-            return DecodeFrame<true, false, true, false>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x0b:
-            return DecodeFrame<true, false, true, true>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x0c:
-            return DecodeFrame<true, true, false, false>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x0d:
-            return DecodeFrame<true, true, false, true>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x0e:
-            return DecodeFrame<true, true, true, false>(frame, rowBytes, bpp, fullRefresh);
-
-        case 0x0f:
-            return DecodeFrame<true, true, true, true>(frame, rowBytes, bpp, fullRefresh);
-
+        MQ_RENDER_VARIANT(0x00);
+        MQ_RENDER_VARIANT(0x01);
+        MQ_RENDER_VARIANT(0x02);
+        MQ_RENDER_VARIANT(0x03);
+        MQ_RENDER_VARIANT(0x04);
+        MQ_RENDER_VARIANT(0x05);
+        MQ_RENDER_VARIANT(0x06);
+        MQ_RENDER_VARIANT(0x07);
+        MQ_RENDER_VARIANT(0x08);
+        MQ_RENDER_VARIANT(0x09);
+        MQ_RENDER_VARIANT(0x0a);
+        MQ_RENDER_VARIANT(0x0b);
+        MQ_RENDER_VARIANT(0x0c);
+        MQ_RENDER_VARIANT(0x0d);
+        MQ_RENDER_VARIANT(0x0e);
+        MQ_RENDER_VARIANT(0x0f);
         default:
             EmAssert(false);
             return false;
     }
+#undef MQ_RENDER_VARIANT
 }
 
 template <class T>
