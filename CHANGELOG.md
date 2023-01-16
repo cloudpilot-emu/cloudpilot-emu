@@ -3,7 +3,8 @@
 -   Support for SD cards and memory stick.
 -   File manager for memory cards.
 -   Minor UI rework and bug fixes.
--   Support for HandEra 330c (sic!)
+-   Support for HandEra 330c (sic!).
+-   Support dropping files for installation and session import.
 
 # Version 1.7.9
 
