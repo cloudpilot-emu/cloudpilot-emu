@@ -32,6 +32,9 @@ Select the "Install file" button on the top right in order to install `.prc` and
 once. `.zip` archives can be selected as well, and CloudpilotEmu will install
 all installable files it finds in the archive.
 
+You can also drag and drop the files that you want to install to the opened
+emulation tab.
+
 Please note that the launcher needs to be restarted by switching to another
 program and back to the launcher in order for newly installed programs to become
 visible. On Palm OS 3.5 and above it is sufficient to switch the launcher

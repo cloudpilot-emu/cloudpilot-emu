@@ -8,6 +8,8 @@ Tap a session in order to launch it in the emulator.
 Select the "+" icon in the upper right corner in order to import a ROM or a
 session image. The file suffix should be either `.rom`, `.img` or `.bin`.
 
+You can also drag and drop the file that you want to import to the sessions tab.
+
 ### ROM files
 
 The emulated device is selected automatically based on the ROM. If the ROM supports

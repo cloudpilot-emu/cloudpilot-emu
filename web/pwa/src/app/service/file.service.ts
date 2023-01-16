@@ -46,6 +46,16 @@ export class FileService {
         void this.openFilesImpl(true, handler);
     }
 
+    openFromDrop(e: DragEvent, handler: (files: Array<FileDescriptor>) => void): void {
+        if (e.type !== 'drop' || !e.dataTransfer?.files) return;
+
+        const files = Array.from(e.dataTransfer.files).map(this.readFile.bind(this));
+
+        void Promise.all(files)
+            .then((files) => files.filter((file) => !!file))
+            .then((files) => files.length > 0 && handler(files as Array<FileDescriptor>));
+    }
+
     async saveSession(session: Session): Promise<void> {
         const loader = await this.loadingController.create({ message: 'Exporting...' });
         await loader.present();
@@ -216,34 +226,31 @@ export class FileService {
         this.input.addEventListener('change', async (e) => {
             const target = e.target as HTMLInputElement;
 
-            if (!target?.files?.length) return [];
+            if (!target?.files) return;
+            const files = Array.from(target.files).map(this.readFile.bind(this));
 
-            const result: Array<Promise<FileDescriptor>> = [];
-
-            for (let i = 0; i < target.files?.length; i++) {
-                const file = target.files.item(i);
-
-                if (!file) continue;
-
-                const content = new Promise<FileDescriptor>((resolve, reject) => {
-                    const reader = new FileReader();
-
-                    reader.onload = () =>
-                        resolve({ content: new Uint8Array(reader.result as ArrayBuffer), name: file.name });
-                    reader.onerror = () => reject(reader.error);
-
-                    reader.readAsArrayBuffer(file);
-                });
-
-                result.push(content);
-            }
-
-            handler(await Promise.all(result));
+            void Promise.all(files)
+                .then((files) => files.filter((file) => !!file))
+                .then((files) => files.length > 0 && handler(files as Array<FileDescriptor>));
         });
 
         document.body.appendChild(this.input);
 
         this.input.click();
+    }
+
+    private readFile(file: File): Promise<FileDescriptor | undefined> {
+        return new Promise<FileDescriptor | undefined>((resolve) => {
+            const reader = new FileReader();
+
+            reader.onload = () => resolve({ content: new Uint8Array(reader.result as ArrayBuffer), name: file.name });
+            reader.onerror = () => {
+                console.warn(reader.error);
+                resolve(undefined);
+            };
+
+            reader.readAsArrayBuffer(file);
+        });
     }
 
     private input: HTMLInputElement | undefined;

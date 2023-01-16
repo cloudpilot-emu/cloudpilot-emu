@@ -1,4 +1,5 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
+import { DragDropClient, DragDropService } from './../../service/drag-drop.service';
 import { ModalController, PopoverController } from '@ionic/angular';
 
 import { AlertService } from '@pwa/service/alert.service';
@@ -26,7 +27,7 @@ import { TabsPage } from '@pwa/tabs/tabs.page';
     templateUrl: './emulation.page.html',
     styleUrls: ['./emulation.page.scss'],
 })
-export class EmulationPage {
+export class EmulationPage implements DragDropClient {
     constructor(
         public emulationService: EmulationService,
         public emulationState: EmulationStateService,
@@ -44,7 +45,8 @@ export class EmulationPage {
         public navigation: TabsPage,
         private linkApi: LinkApi,
         public performanceWatchdogService: PerformanceWatchdogService,
-        private cloudpilotService: CloudpilotService
+        private cloudpilotService: CloudpilotService,
+        private dragDropService: DragDropService
     ) {}
 
     get cssWidth(): string {
@@ -68,10 +70,14 @@ export class EmulationPage {
 
             this.linkApi.installation.requestEvent.addHandler(this.handleLinkApiInstallationRequest);
             this.handleLinkApiInstallationRequest();
+
+            this.dragDropService.registerClient(this);
         });
 
     ionViewWillLeave = () =>
         this.mutex.runExclusive(() => {
+            this.dragDropService.unregisterClient(this);
+
             this.linkApi.installation.requestEvent.removeHandler(this.handleLinkApiInstallationRequest);
 
             if (this.emulationService.isRunning()) {
@@ -99,6 +105,12 @@ export class EmulationPage {
         });
 
         void popover.present();
+    }
+
+    handleDragDropEvent(e: DragEvent): void | Promise<void> {
+        if (!this.installFileDisabled) {
+            this.fileService.openFromDrop(e, this.installlationService.installFiles.bind(this.installlationService));
+        }
     }
 
     installFiles(): void {

@@ -1,6 +1,7 @@
 import { ActionSheetController, AlertController, ModalController } from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
 import { Component, Input } from '@angular/core';
+import { DragDropClient, DragDropService } from './../../../service/drag-drop.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { NewCardSize, StorageCardService } from '@pwa/service/storage-card.service';
 
@@ -10,7 +11,6 @@ import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { ErrorService } from '@pwa/service/error.service';
 import { NewCardDialogComponent } from '../new-card-dialog/new-card-dialog.component';
 import { StorageCard } from '@pwa/model/StorageCard';
-import { StorageCardContext } from './../../../service/storage-card-context';
 import { debounce } from '@pwa/helper/debounce';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
@@ -20,7 +20,7 @@ import { filenameFragment } from '@pwa/helper/filename';
     templateUrl: './subpage-cards.component.html',
     styleUrls: ['./subpage-cards.component.scss'],
 })
-export class SubpageCardsComponent {
+export class SubpageCardsComponent implements DragDropClient {
     constructor(
         private actionSheetController: ActionSheetController,
         public storageCardService: StorageCardService,
@@ -30,11 +30,23 @@ export class SubpageCardsComponent {
         private alertService: AlertService,
         private errorService: ErrorService,
         private fileService: FileService,
-        private storaceCarcContext: StorageCardContext
+        private dragDropService: DragDropService
     ) {}
+
+    ionViewDidEnter(): void {
+        this.dragDropService.registerClient(this);
+    }
+
+    ionViewWillLeave(): void {
+        this.dragDropService.unregisterClient(this);
+    }
 
     get cards(): Array<StorageCard> {
         return this.storageCardService.getAllCards();
+    }
+
+    handleDragDropEvent(e: DragEvent): void | Promise<void> {
+        this.fileService.openFromDrop(e, this.handleFilesFromDrop.bind(this));
     }
 
     @debounce()
@@ -121,6 +133,20 @@ export class SubpageCardsComponent {
 
     trackCardBy(index: number, card: StorageCard) {
         return card.id;
+    }
+
+    private handleFilesFromDrop(files: Array<FileDescriptor>): void {
+        if (files.length === 0) return;
+
+        if (files.length > 1) {
+            void this.alertService.errorMessage(
+                'Drop a single file system image in order to import it as a new memory card.'
+            );
+
+            return;
+        }
+
+        void this.handleCardImport(files[0]);
     }
 
     private importCardImage(): void {

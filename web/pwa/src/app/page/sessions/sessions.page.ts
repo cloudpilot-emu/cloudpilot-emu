@@ -1,4 +1,5 @@
 import { AlertController, ModalController } from '@ionic/angular';
+import { DragDropClient, DragDropService } from './../../service/drag-drop.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { SessionSettings, SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
 
@@ -23,7 +24,7 @@ import { disambiguateName } from '@pwa/helper/disambiguate';
     templateUrl: './sessions.page.html',
     styleUrls: ['./sessions.page.scss'],
 })
-export class SessionsPage {
+export class SessionsPage implements DragDropClient {
     constructor(
         public sessionService: SessionService,
         private fileService: FileService,
@@ -35,15 +36,18 @@ export class SessionsPage {
         private modalController: ModalController,
         private linkApi: LinkApi,
         private router: Router,
-        private cloudpilotService: CloudpilotService
+        private cloudpilotService: CloudpilotService,
+        private dragDropService: DragDropService
     ) {}
-
     ionViewDidEnter(): void {
         this.linkApi.import.requestEvent.addHandler(this.handleLinkApiImportRequest);
         this.handleLinkApiImportRequest();
+
+        this.dragDropService.registerClient(this);
     }
 
     ionViewWillLeave(): void {
+        this.dragDropService.unregisterClient(this);
         this.linkApi.import.requestEvent.removeHandler(this.handleLinkApiImportRequest);
     }
 
@@ -137,10 +141,24 @@ export class SessionsPage {
         await modal.present();
     }
 
+    handleDragDropEvent(e: DragEvent): void | Promise<void> {
+        this.fileService.openFromDrop(e, this.handleDropFiles.bind(this));
+    }
+
+    private handleDropFiles(files: Array<FileDescriptor>): void {
+        if (files.length === 0) return;
+
+        if (files.length > 1) {
+            void this.alertService.errorMessage('Drop a single ROM or session image in order to create a new session.');
+            return;
+        }
+
+        void this.processFile(files[0]);
+    }
+
     private async processFile(file: FileDescriptor): Promise<void> {
         if (!/\.(img|rom|bin)$/i.test(file.name)) {
             void this.alertService.errorMessage('Unsupported file suffix. Supported suffixes are .bin, .img and .rom.');
-
             return;
         }
 
