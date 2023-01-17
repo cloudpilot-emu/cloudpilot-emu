@@ -5,6 +5,7 @@
 -   Minor UI rework and bug fixes.
 -   Support for HandEra 330c (sic!).
 -   Support dropping files for installation and session import.
+-   Support for Palm m520 prototype.
 
 # Version 1.7.9
 

@@ -1,6 +1,7 @@
 #include "StackDump.h"
 
 #include <algorithm>
+#include <fstream>
 #include <iomanip>
 
 #include "EmBankROM.h"
@@ -10,6 +11,7 @@
 
 namespace {
     constexpr uint32 RTS_SEARCH_LIMIT = 0x400;
+    bool wroteRam{false};
 
     bool inRom(emuptr ptr) {
         emuptr romStart = EmBankROM::GetMemoryStart();
@@ -93,14 +95,29 @@ StackDump& StackDump::MaxFrameSize(uint32 maxFrameSize) {
     return *this;
 }
 
+StackDump& StackDump::WriteRam(const string& file) {
+    ramfile = file;
+
+    return *this;
+}
+
 void StackDump::Dump() const {
     uint32 pc = regs.pc;
     uint32 fp = m68k_areg(regs, 6);
 
+    if (dumpRegisters) {
+        cerr << hex;
+        cerr << "pc: 0x" << regs.pc << " ";
+        for (int i = 0; i <= 7; i++) cerr << "d" << i << ": 0x" << m68k_dreg(regs, i) << " ";
+        cerr << endl;
+        for (int i = 0; i <= 7; i++) cerr << "a" << i << ": 0x" << m68k_dreg(regs, i) << " ";
+        cerr << dec << endl;
+    }
+
     for (uint8 i = 0; i < frameCount; i++) {
         if (!inRom(pc)) {
             cerr << "ERROR: pc 0x" << hex << pc << dec << " not in ROM" << endl << flush;
-            return;
+            break;
         }
 
         cerr << "frame " << (int)i << ": 0x" << hex << pc << dec << " [" << identifyFrame(pc) << "]"
@@ -112,6 +129,25 @@ void StackDump::Dump() const {
 
         pc = EmMemGet32(fp + 4);
         fp = EmMemGet32(fp);
+    }
+
+    if (!ramfile.empty() && !wroteRam) {
+        fstream stream(ramfile, ios_base::out);
+
+        if (stream.fail()) {
+            cerr << "failed to open " << ramfile << endl;
+            return;
+        }
+
+        stream.write((const char*)EmMemory::GetForRegion(MemoryRegion::ram),
+                     EmMemory::GetRegionSize(MemoryRegion::ram));
+
+        if (stream.fail()) {
+            cerr << "I/O error writing " << ramfile << endl;
+        } else {
+            cerr << "wrote RAM image to " << ramfile << endl;
+            wroteRam = true;
+        }
     }
 
     cerr << flush;

@@ -140,6 +140,7 @@ enum  // DeviceType
     kDevicePalmM500,
     kDevicePalmM505,
     kDevicePalmM515,
+    kDevicePalmM520,
     kDevicePalmI705,
     kDevicePalmI710,
     kDevicePalmPacifiC,
@@ -403,6 +404,14 @@ static const DeviceInfo kDeviceInfo[] = {
      hwrMiscFlagIDNone,
      hwrMiscFlagExtSubIDNone,
      {{'palm', 'vlit'}}},
+    {kDevicePalmM520,
+     "Palm m520",
+     {"PalmM520", "m520"},
+     kSupports68VZ328 + kHasFlash,
+     16384,
+     hwrMiscFlagIDNone,
+     hwrMiscFlagExtSubIDNone,
+     {{'palm', 'sfgo'}}},
     {kDevicePalmI705,
      "Palm i705",
      {"PalmI705", "i705", "Everest", "PalmI705"},
@@ -1143,6 +1152,16 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsUSBPhilipsPDIUSBD12(0x10400000));
         } break;
 
+        case kDevicePalmM520: {
+            EmBankRegs::AddSubBank(new EmRegsVZPalmM130);
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
+
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
+            EmBankRegs::AddSubBank(framebuffer);
+            break;
+        }
+
         case kDevicePalmI705:
             EmBankRegs::AddSubBank(new EmRegsVZPalmI705);
             EmBankRegs::AddSubBank(new EmRegsPLDPalmI705(0x11000000));
@@ -1569,6 +1588,7 @@ void EmDevice::ConfigureMemoryRegions() {
         case kDevicePalmPacifiC:
         case kDevicePalmI710:
         case kDevicePalmM130:
+        case kDevicePalmM520:
         case kDeviceHandEra330c:
         case kDevicePEGN600C:
         case kDevicePEGT600:
@@ -1708,6 +1728,7 @@ ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
         case kDevicePalmI710:
         case kDevicePalmPacifiC:
         case kDevicePEGT400:
+        case kDevicePalmM520:
         case kDevicePEGN600C:
         case kDevicePEGT600:
         case kDevicePEGN700C:

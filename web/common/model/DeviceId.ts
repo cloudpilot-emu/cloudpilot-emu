@@ -17,6 +17,7 @@ export enum DeviceId {
     m500 = 'PalmM500',
     m505 = 'PalmM505',
     m515 = 'PalmM515',
+    m520 = 'PalmM520',
     m100 = 'PalmM100',
     m105 = 'PalmM105',
     m125 = 'PalmM125',

@@ -479,6 +479,7 @@ export abstract class AbstractCanvasDisplayService {
 
             case DeviceId.m505:
             case DeviceId.m515:
+            case DeviceId.m520:
                 return this.skin.SILKSCREEN_M515;
 
             case DeviceId.iiic:
@@ -544,6 +545,7 @@ export abstract class AbstractCanvasDisplayService {
 
             case DeviceId.m505:
             case DeviceId.m515:
+            case DeviceId.m520:
                 return this.skin.HARD_BUTTONS_M515;
 
             case DeviceId.iiic:

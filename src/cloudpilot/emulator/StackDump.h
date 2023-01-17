@@ -1,6 +1,8 @@
 #ifndef _STACK_DUMP_H_
 #define _STACK_DUMP_H_
 
+#include <string>
+
 #include "EmCommon.h"
 
 class StackDump {
@@ -11,6 +13,7 @@ class StackDump {
     StackDump& DumpFrames(bool dumpFrames);
     StackDump& DumpRegisters(bool dumpRegisters);
     StackDump& MaxFrameSize(uint32 maxFrameSize);
+    StackDump& WriteRam(const string& file);
 
     void Dump() const;
 
@@ -20,6 +23,7 @@ class StackDump {
     bool dumpFrames{false};
     bool dumpRegisters{false};
     uint32 maxFrameSize{1024};
+    string ramfile;
 };
 
 #endif  // _STACK_DUMP_H_

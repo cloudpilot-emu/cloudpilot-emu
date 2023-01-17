@@ -6,6 +6,7 @@ import { SlotType } from '../model/SlotType';
 export function deviceDimensions(deviceId: DeviceId): Dimensions {
     switch (deviceId) {
         case DeviceId.i710:
+        case DeviceId.m520:
             return {
                 screenSize: ScreenSize.screen320x320,
                 width: 320,
@@ -124,6 +125,7 @@ export function cpuClock(deviceId: DeviceId): number {
         case DeviceId.m500:
         case DeviceId.m505:
         case DeviceId.m515:
+        case DeviceId.m520:
         case DeviceId.m125:
         case DeviceId.m130:
         case DeviceId.i705:
@@ -162,6 +164,9 @@ export function deviceName(deviceId: DeviceId): string {
 
         case DeviceId.m515:
             return 'Palm m515';
+
+        case DeviceId.m520:
+            return 'Palm m520';
 
         case DeviceId.palmVx:
             return 'Palm Vx';
@@ -255,6 +260,7 @@ export function slotType(deviceId: DeviceId) {
         case DeviceId.m500:
         case DeviceId.m505:
         case DeviceId.m515:
+        case DeviceId.m520:
         case DeviceId.m125:
         case DeviceId.m130:
         case DeviceId.i705:
