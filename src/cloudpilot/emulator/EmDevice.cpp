@@ -1153,7 +1153,7 @@ void EmDevice::CreateRegs(void) const {
         } break;
 
         case kDevicePalmM520: {
-            EmBankRegs::AddSubBank(new EmRegsVZPalmM130);
+            EmBankRegs::AddSubBank(new EmRegsVZPalmM505);
 
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
 
