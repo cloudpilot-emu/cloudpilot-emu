@@ -1,9 +1,12 @@
 #include "StackDump.h"
 
 #include <algorithm>
+#include <cstring>
 #include <fstream>
 #include <iomanip>
+#include <memory>
 
+#include "Byteswapping.h"
 #include "EmBankROM.h"
 #include "EmCPU68K.h"
 #include "EmMemory.h"
@@ -134,13 +137,18 @@ void StackDump::Dump() const {
     if (!ramfile.empty() && !wroteRam) {
         fstream stream(ramfile, ios_base::out);
 
+        size_t memorySize = EmMemory::GetRegionSize(MemoryRegion::ram);
+        unique_ptr<uint8[]> memory = make_unique<uint8[]>(memorySize);
+
+        memcpy(memory.get(), EmMemory::GetForRegion(MemoryRegion::ram), memorySize);
+        ByteswapWords(memory.get(), memorySize);
+
         if (stream.fail()) {
             cerr << "failed to open " << ramfile << endl;
             return;
         }
 
-        stream.write((const char*)EmMemory::GetForRegion(MemoryRegion::ram),
-                     EmMemory::GetRegionSize(MemoryRegion::ram));
+        stream.write((const char*)memory.get(), memorySize);
 
         if (stream.fail()) {
             cerr << "I/O error writing " << ramfile << endl;
