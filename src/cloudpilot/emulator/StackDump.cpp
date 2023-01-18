@@ -52,7 +52,7 @@ namespace {
         if (start >= stop) return;
 
         if (stop - start >= limit) {
-            cerr << "[frame too large]" << endl;
+            cerr << "[frame too large: 0x" << (stop - start) << "]" << endl;
             return;
         }
 
@@ -110,7 +110,7 @@ void StackDump::Dump() const {
         cerr << "pc: 0x" << regs.pc << " ";
         for (int i = 0; i <= 7; i++) cerr << "d" << i << ": 0x" << m68k_dreg(regs, i) << " ";
         cerr << endl;
-        for (int i = 0; i <= 7; i++) cerr << "a" << i << ": 0x" << m68k_dreg(regs, i) << " ";
+        for (int i = 0; i <= 7; i++) cerr << "a" << i << ": 0x" << m68k_areg(regs, i) << " ";
         cerr << dec << endl;
     }
 
