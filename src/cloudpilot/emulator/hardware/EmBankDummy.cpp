@@ -20,7 +20,6 @@
 #include "EmMemory.h"  // Memory::InitializeBanks
 #include "EmSession.h"
 #include "MemoryRegion.h"
-#include "StackDump.h"
 
 namespace {
     uint32 ramSize;
@@ -228,11 +227,6 @@ void EmBankDummy::AddOpcodeCycles(void) {}
 
 void EmBankDummy::InvalidAccess(emuptr address, long size, Bool forRead) {
     if (CEnableFullAccess::AccessOK()) return;
-
-    if (gSession->GetDevice().GetIDString() == "PalmM520") {
-        cout << "bad access to " << hex << address << dec << endl << flush;
-        StackDump().FrameCount(5).DumpFrames(true).DumpRegisters(true).Dump();
-    }
 
     EmAssert(gCPU68K);
     gCPU68K->BusError(address, size, forRead);
