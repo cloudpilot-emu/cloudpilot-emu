@@ -31,18 +31,20 @@
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
 #include "SavestateStructures.h"
+#include "StackDump.h"
 #include "UAE.h"  // regs, SPCFLAG_INT
 
 static const uint16 ROPMask = 0x2000;    // Make to get the Read-Only-Protect bit.
 static const uint16 UPSIZMask = 0x1800;  // Mask to get the unprotected memory size from csESelect.
-static const uint16 SIZMask = 0x000E;    // Mask to get the memory size from csASelect.
-static const uint16 ENMask = 0x0001;     // Mask to get the enable bit from csASelect.
+static const uint16 UPSIZShift = 11;
+static const uint16 SIZMask = 0x000E;  // Mask to get the memory size from csASelect.
+static const uint16 ENMask = 0x0001;   // Mask to get the enable bit from csASelect.
 
-// static const int UPSIZShift = 11;
 static const int SIZShift = 1;
 // static const int ENShift = 0;
 
-static const uint16 EUPS2Mask = 0x0040;
+static const uint16 EUPS2Mask = 0x0020;
+static const uint16 EUPS2Shift = 5;
 static const uint16 EUPENMask = 0x4000;
 
 // static const int EUPS2Shift = 5;
@@ -1976,8 +1978,6 @@ Bool EmRegsSZ::GetLCDHasFrame(void) { return false; }
 // ---------------------------------------------------------------------------
 
 int32 EmRegsSZ::GetDynamicHeapSize(void) {
-    // CSTODO: Fix
-#if 0
     int32 result = 0;
 
     uint16 csControl = READ_REGISTER(csControl1);
@@ -1998,19 +1998,15 @@ int32 EmRegsSZ::GetDynamicHeapSize(void) {
 
         // Determine Chip-select Size.
 
-        long chip_select_size = (32 * 1024L) << csESIZ;
+        long chip_select_size = (256 * 1024L) << csESIZ;
 
-        result = chip_select_size / (1 << (7 - csEUPSIZ));
+        // Erratum: 11 instead of 7
+        result = chip_select_size / (1 << (11 - csEUPSIZ));
     } else {
         result = (32 * 1024L) << csEUPSIZ;
     }
 
-    cout << dec << "dheap size " << result << endl << flush;
-
     return result;
-#endif
-
-    return 1024 * 1024;
 }
 
 // ---------------------------------------------------------------------------
