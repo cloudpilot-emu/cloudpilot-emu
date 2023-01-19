@@ -2,6 +2,10 @@
 #include "Marshal.h"
 #include "ROMStubs.h"
 
+#ifdef __linux__
+    #include <arpa/inet.h>
+#endif
+
 void Marshal::GetPointType(emuptr p, PointType& dest) {
     memset(&dest, 0, sizeof(PointType));
 

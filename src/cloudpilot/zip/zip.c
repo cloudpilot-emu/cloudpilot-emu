@@ -27,6 +27,7 @@
 
 #else
 
+#define __USE_XOPEN_EXTENDED
 #include <unistd.h> // needed for symlink()
 
 #define MKDIR(DIRNAME) mkdir(DIRNAME, 0755)

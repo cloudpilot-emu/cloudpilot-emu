@@ -37,6 +37,10 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef __linux__
+    #include <sys/types.h>
+#endif
+
 #include "card_io.h"
 #include "common.h"
 

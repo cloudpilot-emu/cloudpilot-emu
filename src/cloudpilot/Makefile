@@ -26,7 +26,7 @@ LDFLAGS_NATIVE ?=  \
 	$(shell sdl2-config --libs) -lSDL2_image \
 	-lreadline -lboost_coroutine -lboost_json
 
-CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack -Wno-multichar \
+CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack -Wno-multichar -Wno-unknown-pragmas \
 	-DEMULATION_LEVEL=EMULATION_UNIX
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
 CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
@@ -317,13 +317,13 @@ test: $(BINARY_TEST)
 	$(BINARY_TEST)
 
 $(BINARY_NATIVE): $(OBJECTS_NATIVE)
-	$(LD_NATIVE) $(LDFLAGS_NATIVE) -o $@ $^
+	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_NATIVE)
 
 $(BINARY_WEB_EMCC): $(OBJECTS_WEB_EMCC)
-	$(LD_EMCC) $(LDFLAGS_EMCC_WEB) -o $@ $^
+	$(LD_EMCC) -o $@ $^  $(LDFLAGS_EMCC_WEB)
 
 $(BINARY_TEST) : $(OBJECTS_TEST)
-	$(LD_NATIVE) $(LDFLAGS_TEST) -o $@ $^
+	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_TEST)
 
 $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<

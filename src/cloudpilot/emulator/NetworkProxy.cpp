@@ -2,6 +2,10 @@
 
 #include <memory>
 
+#ifdef __linux__
+    #include <arpa/inet.h>
+#endif
+
 #include "EmMemory.h"
 #include "EmSubroutine.h"
 #include "Logging.h"

@@ -1,7 +1,8 @@
 #ifndef ENDIAN_COMPAT_H
 #define ENDIAN_COMPAT_H
 
-#if defined(HAVE_ENDIAN_H) || defined(__EMSCRIPTEN__)
+#if defined(HAVE_ENDIAN_H) || defined(__EMSCRIPTEN__) || defined(__linux__)
+    #define __USE_MISC
     #include <endian.h>
 #elif defined(HAVE_SYS_ENDIAN_H)
     #include <sys/endian.h>

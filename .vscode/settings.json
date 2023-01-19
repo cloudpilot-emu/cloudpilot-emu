@@ -119,7 +119,8 @@
     "io.h": "c",
     "endian.h": "c",
     "cdefs.h": "c",
-    "_endian.h": "c"
+    "_endian.h": "c",
+    "unistd.h": "c"
   },
   "editor.formatOnSave": true,
   "CppHelper.SourcePattern": [

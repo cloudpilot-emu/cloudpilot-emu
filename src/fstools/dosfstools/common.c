@@ -25,6 +25,10 @@
 /* FAT32, VFAT, Atari format support, and various fixes additions May 1998
  * by Roman Hodek <Roman.Hodek@informatik.uni-erlangen.de> */
 
+#ifdef __linux__
+    #define _GNU_SOURCE
+#endif
+
 #include "common.h"
 
 #include <ctype.h>

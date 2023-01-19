@@ -279,10 +279,8 @@ typedef struct HostDIRType HostDIRType;
 
 // * HostDirEntType
 
-#define HOST_NAME_MAX 255
-
 struct HostDirEntType {
-    char d_name[HOST_NAME_MAX + 1];
+    char d_name[256];
 };
 
 typedef struct HostDirEntType HostDirEntType;
