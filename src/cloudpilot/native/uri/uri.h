@@ -1,6 +1,8 @@
 // Copyright (C) 2015 Ben Lewis <benjf5+github@gmail.com>
 // Licensed under the MIT license.
 
+#pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wreorder"
 #pragma GCC diagnostic ignored "-Wreorder-ctor"
 #pragma GCC diagnostic ignored "-Wpessimizing-move"
 

@@ -1,6 +1,8 @@
 #ifndef _ZIPFILE_WALKER_H_
 #define _ZIPFILE_WALKER_H_
 
+#include <memory>
+
 #include "EmCommon.h"
 
 struct zip_t;

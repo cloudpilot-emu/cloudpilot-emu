@@ -31,7 +31,8 @@ DbBackup::~DbBackup() {
 bool DbBackup::Init(bool includeRomDatabases) {
     EmAssert(state == State::created);
 
-    if (!GetDatabases(databases, includeRomDatabases ? 0 : GetDatabaseFlags::kOnlyRamDatabases)) {
+    if (!GetDatabases(databases, includeRomDatabases ? GetDatabaseFlags::kDatabaseFlagsNone
+                                                     : GetDatabaseFlags::kOnlyRamDatabases)) {
         return false;
     }
 

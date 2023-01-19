@@ -463,7 +463,7 @@ bool MemoryStick::PreparePage(uint8* destination, bool oobOnly) {
     const uint32 blockIndex = reg.blockLo | (reg.blockMid << 8) | (reg.blockHi << 16);
     if (blockIndex >= segments * 512) return false;
 
-    if (blockIndex == BOOT_BLOCK | blockIndex == BOOT_BLOCK_BACKUP) {
+    if (blockIndex == BOOT_BLOCK || blockIndex == BOOT_BLOCK_BACKUP) {
         PreparePageBootBlock(reg.page, destination, oobOnly);
     } else {
         uint16 logicalBlock = blockMap[blockIndex];

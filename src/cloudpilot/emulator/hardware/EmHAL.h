@@ -44,8 +44,6 @@ DEFINE_SCALAR_MODIFIERS(EmUARTDeviceType)
 class EmHALHandler;
 
 class EmHAL {
-    using ButtonEventT = ButtonEvent;
-
    public:
     enum class Slot { none = -1, sdcard = 0, memorystick = 1 };
     constexpr static Slot MAX_SLOT = Slot::memorystick;
@@ -60,7 +58,7 @@ class EmHAL {
 
     static void CycleSlowly(Bool sleeping);
 
-    static void ButtonEvent(ButtonEventT evt);
+    static void DispatchButtonEvent(ButtonEvent evt);
     static void TurnSoundOff(void);
     static void ResetTimer(void);
     static void ResetRTC(void);
@@ -130,15 +128,13 @@ class EmHAL {
 };
 
 class EmHALHandler {
-    using ButtonEventT = ButtonEvent;
-
    public:
     EmHALHandler(void);
     virtual ~EmHALHandler(void);
 
     virtual void CycleSlowly(Bool sleeping);
 
-    virtual void ButtonEvent(ButtonEventT evt);
+    virtual void DispatchButtonEvent(ButtonEvent evt);
     virtual void TurnSoundOff(void);
     virtual void ResetTimer(void);
     virtual void ResetRTC(void);

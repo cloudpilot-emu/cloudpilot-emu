@@ -235,7 +235,7 @@ static void auto_rename(DOS_FILE *file) {
     number = 0;
     while (1) {
         char num[8];
-        sprintf(num, "%07lu", (unsigned long)number);
+        sprintf(num, "%07u", number);
         memcpy(file->dir_ent.name, "FSCK", 4);
         memcpy(file->dir_ent.name + 4, num, 7);
         for (walk = first; walk; walk = walk->next)

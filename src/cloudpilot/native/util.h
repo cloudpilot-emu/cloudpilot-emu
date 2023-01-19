@@ -1,4 +1,5 @@
 #include <memory>
+#include <optional>
 
 #include "EmCommon.h"
 #include "EmHAL.h"

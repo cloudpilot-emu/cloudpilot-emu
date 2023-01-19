@@ -24,8 +24,6 @@ EmHALHandler* EmHAL::fgRootHandler;
     else       \
         logging::printf
 
-using ButtonEventT = ButtonEvent;
-
 /***********************************************************************
  *
  * FUNCTION:	PrvHandlePortOpenErrors
@@ -152,9 +150,9 @@ void EmHAL::CycleSlowly(Bool sleeping) {
 //		� EmHAL::ButtonEvent
 // ---------------------------------------------------------------------------
 
-void EmHAL::ButtonEvent(ButtonEventT evt) {
+void EmHAL::DispatchButtonEvent(ButtonEvent evt) {
     EmAssert(EmHAL::GetRootHandler());
-    EmHAL::GetRootHandler()->ButtonEvent(evt);
+    EmHAL::GetRootHandler()->DispatchButtonEvent(evt);
 }
 
 // ---------------------------------------------------------------------------
@@ -554,9 +552,9 @@ void EmHALHandler::CycleSlowly(Bool sleeping) {
 //		� EmHALHandler::ButtonEvent
 // ---------------------------------------------------------------------------
 
-void EmHALHandler::ButtonEvent(ButtonEventT evt) {
+void EmHALHandler::DispatchButtonEvent(ButtonEvent evt) {
     EmAssert(this->GetNextHandler());
-    this->GetNextHandler()->ButtonEvent(evt);
+    this->GetNextHandler()->DispatchButtonEvent(evt);
 }
 
 // ---------------------------------------------------------------------------
@@ -567,7 +565,6 @@ void EmHALHandler::TurnSoundOff(void) {
     EmAssert(this->GetNextHandler());
     this->GetNextHandler()->TurnSoundOff();
 }
-
 // ---------------------------------------------------------------------------
 //		� EmHALHandler::ResetTimer
 // ---------------------------------------------------------------------------

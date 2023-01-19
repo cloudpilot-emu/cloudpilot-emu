@@ -25,9 +25,6 @@ class EmSPISlave;
 
 class EmRegsSZ : public EmRegs, public EmHALHandler {
    public:
-    using ButtonEventT = class ButtonEvent;
-
-   public:
     EmRegsSZ(void);
     virtual ~EmRegsSZ(void);
 
@@ -48,7 +45,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     // EmHALHandler overrides
     virtual void CycleSlowly(Bool sleeping);
 
-    virtual void ButtonEvent(ButtonEventT evt);
+    virtual void DispatchButtonEvent(ButtonEvent evt);
     virtual void TurnSoundOff(void);
     virtual void ResetTimer(void);
     virtual void ResetRTC(void);
@@ -80,7 +77,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     void HotSyncEvent(Bool buttonIsDown);
 
     virtual uint8 GetKeyBits(void);
-    virtual uint16 ButtonToBits(ButtonEventT::Button btn);
+    virtual uint16 ButtonToBits(ButtonEvent::Button btn);
     virtual EmSPISlave* GetSPISlave(void);
 
     void UpdateInterrupts(void);

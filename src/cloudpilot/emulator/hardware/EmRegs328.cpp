@@ -1074,11 +1074,11 @@ void EmRegs328::CycleSlowly(Bool sleeping) {
     EmAssert(gSession);
 
     if (gSession->HasButtonEvent()) {
-        ButtonEventT event = gSession->NextButtonEvent();
-        if (event.GetButton() == ButtonEventT::Button::cradle)
-            EmRegs328::HotSyncEvent(event.GetType() == ButtonEventT::Type::press);
+        ButtonEvent event = gSession->NextButtonEvent();
+        if (event.GetButton() == ButtonEvent::Button::cradle)
+            EmRegs328::HotSyncEvent(event.GetType() == ButtonEvent::Type::press);
         else
-            EmRegs328::ButtonEvent(event);
+            EmRegs328::DispatchButtonEvent(event);
     }
 
     // See if there's anything new ("Put the data on the bus")
@@ -2088,7 +2088,7 @@ void EmRegs328::rtcIntEnableWrite(emuptr address, int size, uint32 value) {
 // ---------------------------------------------------------------------------
 // Handles a Palm device button event by updating the appropriate registers.
 
-void EmRegs328::ButtonEvent(ButtonEventT event) {
+void EmRegs328::DispatchButtonEvent(ButtonEvent event) {
     uint16 bitNumber = this->ButtonToBits(event.GetButton());
 
     // Get the bits that should have been set with the previous set
@@ -2098,7 +2098,7 @@ void EmRegs328::ButtonEvent(ButtonEventT event) {
 
     // Update the set of keys that are currently pressed.
 
-    if (event.GetType() == ButtonEventT::Type::press) {
+    if (event.GetType() == ButtonEvent::Type::press) {
         fKeyBits |= bitNumber;  // Remember the key bit
     } else {
         fKeyBits &= ~bitNumber;  // Forget the key bit
@@ -2166,36 +2166,36 @@ uint8 EmRegs328::GetKeyBits(void) {
 //		� EmRegs328::ButtonToBits
 // ---------------------------------------------------------------------------
 
-uint16 EmRegs328::ButtonToBits(ButtonEventT::Button button) {
+uint16 EmRegs328::ButtonToBits(ButtonEvent::Button button) {
     switch (button) {
-        case ButtonEventT::Button::power:
+        case ButtonEvent::Button::power:
             return keyBitPower;
 
-        case ButtonEventT::Button::rockerUp:
+        case ButtonEvent::Button::rockerUp:
             return keyBitPageUp;
 
-        case ButtonEventT::Button::rockerDown:
+        case ButtonEvent::Button::rockerDown:
             return keyBitPageDown;
 
-        case ButtonEventT::Button::app1:
+        case ButtonEvent::Button::app1:
             return keyBitHard1;
 
-        case ButtonEventT::Button::app2:
+        case ButtonEvent::Button::app2:
             return keyBitHard2;
 
-        case ButtonEventT::Button::app3:
+        case ButtonEvent::Button::app3:
             return keyBitHard3;
 
-        case ButtonEventT::Button::app4:
+        case ButtonEvent::Button::app4:
             return keyBitHard4;
 
-        case ButtonEventT::Button::cradle:
+        case ButtonEvent::Button::cradle:
             return keyBitCradle;
 
-        case ButtonEventT::Button::antenna:
+        case ButtonEvent::Button::antenna:
             return keyBitAntenna;
 
-        case ButtonEventT::Button::contrast:
+        case ButtonEvent::Button::contrast:
             return keyBitContrast;
 
         default:

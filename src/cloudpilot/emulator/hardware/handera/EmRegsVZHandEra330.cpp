@@ -379,7 +379,7 @@ int32 EmRegsVZHandEra330::GetROMSize(void) { return (2 * 1024 * 1024); }
 //		� EmRegsVZHandEra330::ButtonToBits
 // ---------------------------------------------------------------------------
 
-uint16 EmRegsVZHandEra330::ButtonToBits(ButtonEventT::Button btn) {
+uint16 EmRegsVZHandEra330::ButtonToBits(ButtonEvent::Button btn) {
     uint16 bitNumber = 0;
 
     switch (btn) {
@@ -389,13 +389,13 @@ uint16 EmRegsVZHandEra330::ButtonToBits(ButtonEventT::Button btn) {
 
             // Borrow some skin elements from Symbol for our Thumb wheel
             // NOTE: Borrowed Palm's contrast for our aux, so above case already handles it.
-        case ButtonEventT::Button::wheelUp:
+        case ButtonEvent::Button::wheelUp:
             bitNumber = keyBitThumbUp;
             break;
-        case ButtonEventT::Button::wheelPush:
+        case ButtonEvent::Button::wheelPush:
             bitNumber = keyBitThumbPush;
             break;
-        case ButtonEventT::Button::wheelDown:
+        case ButtonEvent::Button::wheelDown:
             bitNumber = keyBitThumbDown;
             break;
     }

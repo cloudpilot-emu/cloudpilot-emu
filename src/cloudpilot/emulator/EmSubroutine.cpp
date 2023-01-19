@@ -2205,6 +2205,7 @@ Err EmSubroutineCPU68K::DoCall(uint16 trapWord) {
     Err err = errNone;
 
     uint16 code[3];
+    code[0] = code[1] = code[2] = 0;
 
     // Map in the code stub so that the emulation code can access it.
 

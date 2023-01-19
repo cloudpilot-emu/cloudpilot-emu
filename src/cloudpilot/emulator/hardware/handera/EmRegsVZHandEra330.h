@@ -114,7 +114,7 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
    protected:
     virtual EmSPISlave* GetSPI2Slave(void);
     virtual EmSPISlave* GetSPI1Slave(void);
-    virtual uint16 ButtonToBits(ButtonEventT::Button btn);
+    virtual uint16 ButtonToBits(ButtonEvent::Button btn);
 
     virtual uint32 GetBootKeyHoldTime();
 

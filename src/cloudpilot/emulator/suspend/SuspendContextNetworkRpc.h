@@ -2,6 +2,7 @@
 #define _SUSPEND_CONTEXT_NETWORK_RPC_H_
 
 #include <functional>
+#include <memory>
 
 #include "EmCommon.h"
 #include "SuspendContext.h"

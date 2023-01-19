@@ -1552,11 +1552,15 @@ int mkfs_main(int argc, char **argv) {
 
             case '?':
                 usage(argv[0], 1);
+
                 terminate();
+                return -1;
 
             default:
                 fprintf(stderr, "Internal error: getopt_long() returned unexpected value %d\n", c);
+
                 terminate();
+                return -1;
         }
 
     if (!set_dos_codepage(-1)) /* set default codepage if none was given in command line */

@@ -23,7 +23,7 @@ unsigned int FileEntry::GetModifiedTS() const {
     if (!calendarCurrent) return 0;
     memcpy(&calendar, calendarCurrent, sizeof(calendar));
 
-    calendar.tm_year = 80 + (filinfo.fdate >> 9) & 0x7f;
+    calendar.tm_year = 80 + ((filinfo.fdate >> 9) & 0x7f);
     calendar.tm_mon = ((filinfo.fdate >> 5) & 0x0f) - 1;
     calendar.tm_mday = filinfo.fdate & 0x1f;
     calendar.tm_hour = (filinfo.ftime >> 11) & 0x1f;

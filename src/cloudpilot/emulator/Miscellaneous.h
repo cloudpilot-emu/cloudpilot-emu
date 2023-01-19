@@ -7,6 +7,7 @@
 #include "EmStructs.h"
 
 enum GetDatabaseFlags : uint32 {
+    kDatabaseFlagsNone = 0x00,
     kApplicationsOnly = 0x01,
     kOnlyRamDatabases = 0x02,
     kGetExtraInfo = 0x04

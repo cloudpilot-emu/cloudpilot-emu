@@ -328,7 +328,7 @@ void EmSession::Reset(ResetType resetType) {
                 holdingBootKeys = true;
                 bootKeysType = ResetType::hard;
 
-                EmHAL::ButtonEvent(
+                EmHAL::DispatchButtonEvent(
                     ButtonEvent(ButtonEvent::Button::power, ButtonEvent::Type::press));
 
                 break;
@@ -337,7 +337,7 @@ void EmSession::Reset(ResetType resetType) {
                 holdingBootKeys = true;
                 bootKeysType = ResetType::noext;
 
-                EmHAL::ButtonEvent(
+                EmHAL::DispatchButtonEvent(
                     ButtonEvent(ButtonEvent::Button::rockerUp, ButtonEvent::Type::press));
 
                 break;
@@ -361,12 +361,13 @@ void EmSession::ReleaseBootKeys() {
 
     switch (bootKeysType) {
         case ResetType::hard:
-            EmHAL::ButtonEvent(ButtonEvent(ButtonEvent::Button::power, ButtonEvent::Type::release));
+            EmHAL::DispatchButtonEvent(
+                ButtonEvent(ButtonEvent::Button::power, ButtonEvent::Type::release));
 
             break;
 
         case ResetType::noext:
-            EmHAL::ButtonEvent(
+            EmHAL::DispatchButtonEvent(
                 ButtonEvent(ButtonEvent::Button::rockerUp, ButtonEvent::Type::release));
 
             break;

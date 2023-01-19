@@ -1,6 +1,7 @@
 #ifndef _SAVESTATE_LOADER_H_
 #define _SAVESTATE_LOADER_H_
 
+#include <cstring>
 #include <map>
 #include <memory>
 

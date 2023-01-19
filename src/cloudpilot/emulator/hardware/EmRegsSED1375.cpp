@@ -377,6 +377,8 @@ uint32 EmRegsSED1375::lookUpTableDataRead(emuptr address, int size) {
             lutColorIndex = LutColorIndex::red;
             return (entry >> 16) & 0xf0;
     }
+
+    return 0;
 }
 
 // ---------------------------------------------------------------------------

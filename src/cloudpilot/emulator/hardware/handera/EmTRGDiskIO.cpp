@@ -13,6 +13,8 @@
 
 #include "EmTRGDiskIO.h"
 
+#include <cstring>
+
 #include "EmCommon.h"
 
 /************************************************************************

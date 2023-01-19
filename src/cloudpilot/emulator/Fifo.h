@@ -1,6 +1,8 @@
 #ifndef _FIFO_H_
 #define _FIFO_H_
 
+#include <cstring>
+
 #include "EmCommon.h"
 
 template <typename T>

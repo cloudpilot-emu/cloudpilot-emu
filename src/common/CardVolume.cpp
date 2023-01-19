@@ -1,6 +1,7 @@
 #include "CardVolume.h"
 
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 
 using namespace std;

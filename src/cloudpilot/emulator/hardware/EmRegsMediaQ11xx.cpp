@@ -37,9 +37,9 @@
     #define PRINTF_BLIT logging::printf
     #define PRINTF logging::printf
 #else
-    #define PRINTF_LINE(...) ;
-    #define PRINTF_BLIT(...) ;
-    #define PRINTF(...) ;
+    #define PRINTF_LINE(...) {};
+    #define PRINTF_BLIT(...) {};
+    #define PRINTF(...) {};
 #endif
 
 namespace {

@@ -204,6 +204,9 @@ uint8 EmSPISlaveSD::DoExchange8(uint8 data) {
 
             return 0xff;
     }
+
+    EmAssert(false);
+    return 0;
 }
 
 void EmSPISlaveSD::BufferStart(uint32 count) {

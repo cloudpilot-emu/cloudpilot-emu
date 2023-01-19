@@ -18,8 +18,10 @@
     #define LOG_WRITE_ACCESS logWriteAccess
     #define LOG_READ_ACCESS logReadAccess
 #else
-    #define LOG_WRITE_ACCESS(address, size, value)
-    #define LOG_READ_ACCESS(address, size, value)
+    #define LOG_WRITE_ACCESS(address, size, value) \
+        {}
+    #define LOG_READ_ACCESS(address, size, value) \
+        {}
 #endif
 
 #define READ_REGISTER(r) DoStdRead(baseAddress + r, 2)
@@ -667,7 +669,7 @@ void EmRegsSonyDSP::DoCmdWriteBlock(uint16 cmd) {
         return;
     }
 
-    if (firstPage < 0 || firstPage > lastPage) {
+    if (firstPage > lastPage) {
         cerr << "fist page out of bounds" << endl << flush;
         return;
     }

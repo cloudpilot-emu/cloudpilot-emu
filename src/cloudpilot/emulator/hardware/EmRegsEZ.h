@@ -23,8 +23,6 @@
 class EmSPISlave;
 
 class EmRegsEZ : public EmRegs, public EmHALHandler {
-    using ButtonEventT = class ButtonEvent;
-
    public:
     EmRegsEZ(void);
     virtual ~EmRegsEZ(void);
@@ -45,7 +43,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     // EmHALHandler overrides
     virtual void CycleSlowly(Bool sleeping);
 
-    virtual void ButtonEvent(ButtonEventT evt);
+    virtual void DispatchButtonEvent(ButtonEvent evt);
     virtual void TurnSoundOff(void);
     virtual void ResetTimer(void);
     virtual void ResetRTC(void);
@@ -77,7 +75,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
 
    protected:
     virtual uint8 GetKeyBits(void);
-    virtual uint16 ButtonToBits(ButtonEventT::Button btn);
+    virtual uint16 ButtonToBits(ButtonEvent::Button btn);
     virtual EmSPISlave* GetSPISlave(void);
     virtual void MarkScreen();
     virtual void UnmarkScreen();
