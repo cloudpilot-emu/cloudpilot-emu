@@ -157,8 +157,14 @@ app.
 ## Native build
 
 There is a simple native build for debugging CloudpilotEmu outside the browser. You
-need SDL2 and a recent version of Boost in order to build. The build is accomplished
-with
+need SDL2 and a recent version of Boost in order to build. On Ubuntu the following
+will give you the necessary packages:
+
+```
+    $ apt-get install libreadline-dev libboost-all-dev libsdl2-image-dev libsdl2-dev
+```
+
+The build is accomplished with
 
 ```
     $ make -Csrc bin
