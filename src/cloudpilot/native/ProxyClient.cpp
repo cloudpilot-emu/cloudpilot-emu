@@ -1,4 +1,5 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-copy"
 
 #include "ProxyClient.h"
 
