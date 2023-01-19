@@ -9,8 +9,6 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/websocket.hpp>
-#include <boost/json.hpp>
-#include <boost/json/parser.hpp>
 #include <chrono>
 #include <condition_variable>
 #include <cstdio>
@@ -22,6 +20,7 @@
 #include <thread>
 
 #include "Logging.h"
+#include "json/ArduinoJson.h"
 
 using namespace std;
 using namespace std::chrono_literals;
@@ -32,7 +31,6 @@ namespace websocket = boost::beast::websocket;
 namespace net = boost::asio;
 namespace beast = boost::beast;
 namespace http = beast::http;
-namespace json = boost::json;
 
 namespace {
     constexpr int SERVER_VERSION = 3;
@@ -217,27 +215,23 @@ class ProxyClientImpl : public ProxyClient {
         for (auto chunk : res.body().cdata())
             body.append(net::buffer_cast<const char*>(chunk), net::buffer_size(chunk));
 
-        json::parser parser;
+        ArduinoJson::StaticJsonDocument<2048> response;
+        if (ArduinoJson::deserializeJson(response, body) != ArduinoJson::DeserializationError::Ok ||
+            !response.is<ArduinoJson::JsonObject>()) {
+            return false;
+        }
 
-        parser.write(body.c_str(), err);
-        if (err) return false;
+        if (!response.containsKey("version") || !response.containsKey("version")) return false;
 
-        json::value parsedResponse = parser.release();
-        if (!parsedResponse.is_object()) return false;
-
-        auto& responseObject = parsedResponse.as_object();
-        if (!responseObject.contains("token") || !responseObject.contains("version")) return false;
-
-        if (!responseObject["version"].is_int64() ||
-            responseObject["version"].as_int64() < SERVER_VERSION ||
-            !responseObject["compatVersion"].is_int64() ||
-            responseObject["compatVersion"].as_int64() > SERVER_VERSION) {
+        if (!response["version"].is<int>() || response["version"].as<int>() < SERVER_VERSION ||
+            !response["compatVersion"].is<int>() ||
+            response["compatVersion"].as<int>() > SERVER_VERSION) {
             logging::printf("server version mismatch");
             return false;
         }
 
-        if (!responseObject["token"].is_string()) return false;
-        token = responseObject["token"].as_string().c_str();
+        if (!response["token"].is<const char*>()) return false;
+        token = response["token"].as<const char*>();
 
         return true;
     }

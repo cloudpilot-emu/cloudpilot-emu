@@ -3,8 +3,6 @@
 
 #include "EmCommon.h"
 
-class ProxyClientImpl;
-
 class ProxyClient {
    public:
     static ProxyClient* Create(const string& host, const long port, const string& path);

@@ -45,10 +45,12 @@ The following devices are currently emulated:
 -   Palm Vx, Palm V
 -   Palm VII, Palm VII EZ, Palm VIIx
 -   Palm m500, Palm m505, Palm m515
+-   Palm m520 (an unreleased prototype of a highres 5xx)
 -   Palm m100, Palm m105, Palm m125, Palm m130
 -   Palm i705
 -   Tungsten W (silkscreen version)
 -   Handera 330
+-   Handera 330c (the lost color version of the 330c)
 -   Sony PEG-S300, PEG-S320
 -   Sony PEG-S500C series
 -   Sony PEG-T400 series
@@ -183,7 +185,9 @@ and [uri-library](https://github.com/ben-zen/uri-library).
 Stacktraces in the native build are based on Farooq Melas
 [gist](https://gist.github.com/fmela/591333). HTTP and Websocket I/O
 in the native build is done with [Boost.Beast](https://github.com/boostorg/beast).
-In addition, the native build uses Boost coroutines and uuid.
+In addition, the native build uses Boost coroutines and uuid. FAT creating,
+fsck and I/O is built on [dosfstools](https://github.com/dosfstools/dosfstools)
+and [FatFs](http://elm-chan.org/fsw/ff).
 
 # LICENSE
 
