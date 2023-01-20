@@ -7,6 +7,10 @@
 -   Support dropping files for installation and session import.
 -   Support for Palm m520 prototype.
 
+# Version 1.7.10
+
+-   Fix a heap overflow.
+
 # Version 1.7.9
 
 -   Fix status bar color in light mode on iOS.
