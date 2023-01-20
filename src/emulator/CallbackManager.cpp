@@ -24,7 +24,7 @@ void CallbackManager::Clear() {
 }
 
 emuptr CallbackManager::RegisterCallback(CallbackT callback) {
-    uint16* stub = static_cast<uint16*>(malloc(2));
+    uint16* stub = static_cast<uint16*>(malloc(4));
     EmBankMapped::MapPhysicalMemory(stub, 4);
     emuptr callbackPtr = EmBankMapped::GetEmulatedAddress(stub);
 
