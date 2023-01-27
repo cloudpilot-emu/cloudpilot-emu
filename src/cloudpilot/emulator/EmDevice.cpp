@@ -57,6 +57,7 @@
 #include "EmRegs328Pilot.h"
 #include "EmRegs330CPLD.h"
 #include "EmRegs330CPLDMirror.h"
+#include "EmRegsAcerUSBStub.h"
 #include "EmRegsEZPalmIIIc.h"
 #include "EmRegsEZPalmIIIe.h"
 #include "EmRegsEZPalmIIIx.h"
@@ -84,6 +85,7 @@
 #include "EmRegsSonyDSP.h"
 #include "EmRegsUSBPhilipsPDIUSBD12.h"
 #include "EmRegsUsbCLIE.h"
+#include "EmRegsVZAcerS1x.h"
 #include "EmRegsVZAtlantiC.h"
 #include "EmRegsVZHandEra330.h"
 #include "EmRegsVZHandEra330c.h"
@@ -164,6 +166,8 @@ enum  // DeviceType
     kDeviceYSX1230,
     kDeviceYSX1100,
     kDevicePEGS500C,
+    kDeviceAcerS11,
+    kDeviceAcerS65,
     kDeviceLast
 };
 
@@ -556,6 +560,8 @@ static const DeviceInfo kDeviceInfo[] = {
      UNSUPPORTED,
      {{'sony', 'rdwd'}}},
     {kDevicePEGS500C, "PEG-S500C series", {"PEG-S500C"}, kSupports68EZ328, 8192, 0, 0, {}},
+    {kDeviceAcerS65, "Acer S65", {"Acer-S65"}, kSupports68VZ328, 16384, 0, 0, {{'acer', 'colr'}}},
+    {kDeviceAcerS11, "Acer S11", {"Acer-S11"}, kSupports68VZ328, 16384, 0, 0, {{'acer', 'momo'}}},
 #if 0
     // ===== Handspring devices =====
     {
@@ -1325,6 +1331,27 @@ void EmDevice::CreateRegs(void) const {
             break;
         }
 
+        case kDeviceAcerS65: {
+            EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10c00000);
+            EmBankRegs::AddSubBank(new EmRegsVZPalmM505());
+
+            EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
+            EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
+            EmBankRegs::AddSubBank(framebuffer);
+
+            EmBankRegs::AddSubBank(mb86189);
+            break;
+        }
+
+        case kDeviceAcerS11: {
+            EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10c00000);
+            EmBankRegs::AddSubBank(new EmRegsVZAcerS1x());
+            EmBankRegs::AddSubBank(new EmRegsAcerUSBStub());
+
+            EmBankRegs::AddSubBank(mb86189);
+            break;
+        }
+
 #if 0
         case kDeviceVisor:
             EmBankRegs::AddSubBank(new EmRegsEZVisor);
@@ -1594,6 +1621,7 @@ void EmDevice::ConfigureMemoryRegions() {
         case kDevicePEGT600:
         case kDevicePEGN700C:
         case kDeviceYSX1230:
+        case kDeviceAcerS65:
             memoryRegionMap.AllocateRegion(MemoryRegion::framebuffer,
                                            EmRegsMediaQ11xx::FRAMEBUFFER_SIZE);
             break;
@@ -1604,7 +1632,7 @@ void EmDevice::ConfigureMemoryRegions() {
             break;
     }
 
-    if (IsClie())
+    if (IsClie() || fDeviceID == kDeviceAcerS11 || fDeviceID == kDeviceAcerS65)
         memoryRegionMap.AllocateRegion(MemoryRegion::memorystick, MemoryStick::BLOCK_MAP_SIZE);
 
     switch (fDeviceID) {
@@ -1649,6 +1677,8 @@ bool EmDevice::EmulatesDockStatus() const {
         case kDevicePalmI705:
         case kDevicePalmI710:
         case kDevicePalmPacifiC:
+        case kDeviceAcerS11:
+        case kDeviceAcerS65:
             return false;
 
         default:
@@ -1688,6 +1718,8 @@ bool EmDevice::NeedsBatteryGlobalsHack() const {
         case kDeviceYSX1230:
         case kDeviceYSX1100:
         case kDevicePEGN700C:
+        case kDeviceAcerS65:
+        case kDeviceAcerS11:
             return true;
 
         default:
@@ -1733,6 +1765,7 @@ ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
         case kDevicePEGT600:
         case kDevicePEGN700C:
         case kDeviceYSX1230:
+        case kDeviceAcerS65:
             return ScreenDimensions::screen320x320;
 
         case kDeviceHandEra330:

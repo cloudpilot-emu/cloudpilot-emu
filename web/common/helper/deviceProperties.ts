@@ -93,6 +93,7 @@ export function isColor(deviceId: DeviceId | undefined): boolean {
         case DeviceId.pegS300:
         case DeviceId.pegS320:
         case DeviceId.pegT400:
+        case DeviceId.acerS11:
             return false;
 
         default:
@@ -137,6 +138,7 @@ export function cpuClock(deviceId: DeviceId): number {
         case DeviceId.pegN600c:
         case DeviceId.pegT600c:
         case DeviceId.pegN700c:
+        case DeviceId.acerS11:
             return 33;
 
         case DeviceId.pegT650c:
@@ -246,6 +248,9 @@ export function deviceName(deviceId: DeviceId): string {
         case DeviceId.pegS500c:
             return 'Sony PEG-S500C series';
 
+        case DeviceId.acerS11:
+            return 'Acer S11/S15';
+
         default:
             throw new Error('bad device ID');
     }
@@ -278,6 +283,7 @@ export function slotType(deviceId: DeviceId) {
         case DeviceId.pegN700c:
         case DeviceId.pegT650c:
         case DeviceId.pegNR70:
+        case DeviceId.acerS11:
             return SlotType.memorystick;
 
         default:

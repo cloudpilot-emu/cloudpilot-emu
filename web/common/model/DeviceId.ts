@@ -35,4 +35,5 @@ export enum DeviceId {
     pegN700c = 'PEG-N700C/N710C',
     pegT650c = 'YSX1230',
     pegNR70 = 'NR70',
+    acerS11 = 'Acer-S11',
 }
