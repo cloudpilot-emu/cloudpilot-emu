@@ -15,6 +15,9 @@ class EmRegsVZAcerS1x : public EmRegsVZ {
 
     uint8 GetPortInternalValue(int port) override;
 
+    void Mount(EmHAL::Slot slot, CardImage& cardImage) override;
+    void Unmount(EmHAL::Slot slot) override;
+
    protected:
     EmSPISlave* GetSPI2Slave() override;
 

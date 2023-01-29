@@ -21,7 +21,7 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     void Save(SavestateProbe&) override;
     void Load(SavestateLoader&) override;
 
-    void SetGpioRead(function<uint8()> handler);
+    void SetGpioReadHandler(function<uint8()> handler);
 
     uint8* GetRealAddress(emuptr address) override;
     emuptr GetAddressStart(void) override;
@@ -34,6 +34,7 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     void Remount(EmHAL::Slot slot, CardImage& cardImage) override;
 
     bool GetIrq();
+    void NotifyGpioChanged();
 
    private:
     struct Registers {
@@ -56,7 +57,7 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
 
     void RaiseIrq(uint8 bits);
     void NegateIrq(uint8 bits);
-    void ClearIrq(uint8 bits);
+    void ClearIrqFlags(uint8 bits);
     void UpdateIrqLine();
     void TransferIrqStat();
 
@@ -106,7 +107,7 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     uint32 writeBufferSize{0};
     uint32 readBufferIndex{0};
 
-    function<uint8()> gpioRead{[]() { return 0; }};
+    function<uint8()> gpioReadHandler{[]() { return 0; }};
 
    private:
     EmRegsMB86189(const EmRegsMB86189&) = delete;

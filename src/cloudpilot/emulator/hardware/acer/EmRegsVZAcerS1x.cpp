@@ -22,8 +22,10 @@ namespace {
 
 EmRegsVZAcerS1x::EmRegsVZAcerS1x(EmRegsMB86189& mb86189) : mb86189(mb86189) {
     fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1);
-    this->mb86189.SetGpioRead(
+
+    mb86189.SetGpioReadHandler(
         []() { return gExternalStorage.IsMounted(EmHAL::Slot::memorystick) ? 0x01 : 0x00; });
+    mb86189.irqChange.AddHandler([=](bool newState) { UpdateIRQ3(newState ? 0x40 : 0x00); });
 }
 
 EmRegsVZAcerS1x::~EmRegsVZAcerS1x() { delete fSPISlaveADC; }
@@ -53,9 +55,32 @@ uint8 EmRegsVZAcerS1x::GetPortInternalValue(int port) {
 
     if (port == 'D') {
         result |= hwrVZPortDPowerFail;
+
+        if (mb86189.GetIrq()) {
+            result &= ~0x40;
+        } else
+            result |= 0x40;
     }
 
     return result;
+}
+
+void EmRegsVZAcerS1x::Mount(EmHAL::Slot slot, CardImage& cardImage) {
+    if (this->GetNextHandler()) this->GetNextHandler()->Mount(slot, cardImage);
+    if (slot != EmHAL::Slot::memorystick) return;
+
+    mb86189.NotifyGpioChanged();
+
+    UpdateIRQ3(0x40);
+}
+
+void EmRegsVZAcerS1x::Unmount(EmHAL::Slot slot) {
+    if (this->GetNextHandler()) this->GetNextHandler()->Unmount(slot);
+    if (slot != EmHAL::Slot::memorystick) return;
+
+    mb86189.NotifyGpioChanged();
+
+    UpdateIRQ3(0x40);
 }
 
 EmSPISlave* EmRegsVZAcerS1x::GetSPI2Slave() { return fSPISlaveADC; }

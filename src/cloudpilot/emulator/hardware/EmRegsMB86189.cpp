@@ -30,9 +30,9 @@ namespace {
 
     constexpr uint8 IRQ_RDY = 0x80;
     constexpr uint8 IRQ_SIF = 0x40;
+    constexpr uint8 IRQ_PIN = 0x10;
 
     constexpr uint16 MSICS_INTEN = 0x0080;
-    constexpr uint16 MSICS_RDY = 0x8000;
 
     constexpr uint16 DATA_SIZE_MASK = 0x03ff;
 }  // namespace
@@ -75,7 +75,7 @@ void EmRegsMB86189::Load(SavestateLoader& loader) {
     DoSaveLoad(helper);
 }
 
-void EmRegsMB86189::SetGpioRead(function<uint8()> handler) { gpioRead = handler; }
+void EmRegsMB86189::SetGpioReadHandler(function<uint8()> handler) { gpioReadHandler = handler; }
 
 template <typename T>
 void EmRegsMB86189::DoSave(T& savestate) {
@@ -152,6 +152,8 @@ void EmRegsMB86189::Remount(EmHAL::Slot slot, CardImage& cardImage) {
 
 bool EmRegsMB86189::GetIrq() { return (reg.mscs & MSCS_INT) != 0; }
 
+void EmRegsMB86189::NotifyGpioChanged() { RaiseIrq(IRQ_PIN); }
+
 void EmRegsMB86189::ResetHostController() {
     reg.mscmd = 0;
     reg.mscs = 0x0a05;
@@ -182,10 +184,7 @@ void EmRegsMB86189::NegateIrq(uint8 bits) {
     UpdateIrqLine();
 }
 
-void EmRegsMB86189::ClearIrq(uint8 bits) {
-    NegateIrq(bits);
-    TransferIrqStat();
-}
+void EmRegsMB86189::ClearIrqFlags(uint8 bits) { reg.msics &= ~(bits << 8); }
 
 void EmRegsMB86189::UpdateIrqLine() {
     if ((reg.msics & MSICS_INTEN) == 0) return;
@@ -201,20 +200,10 @@ void EmRegsMB86189::UpdateIrqLine() {
     }
 }
 
-void EmRegsMB86189::TransferIrqStat() {
-    reg.msics &= 0x00ff;
-    reg.msics |= (irqStat << 8);
-}
+void EmRegsMB86189::TransferIrqStat() { reg.msics |= (irqStat << 8); }
 
 void EmRegsMB86189::SetState(State state) {
-    if (state != this->state) {
-        if (state == State::idle) {
-            RaiseIrq(IRQ_RDY);
-            reg.msics |= MSICS_RDY;
-        } else {
-            reg.msics &= ~MSICS_RDY;
-        }
-    }
+    if (state != this->state && state == State::idle) RaiseIrq(IRQ_RDY);
 
     this->state = state;
 }
@@ -345,7 +334,7 @@ uint32 EmRegsMB86189::msdataRead(emuptr address, int size) {
 uint32 EmRegsMB86189::msicsRead(emuptr address, int size) {
     uint32 value = compositeRegisterRead(baseAddress + OFFSET_MSICS, address, size, reg.msics);
 
-    NegateIrq(IRQ_SIF | IRQ_RDY);
+    NegateIrq(IRQ_SIF | IRQ_RDY | IRQ_PIN);
 
 #ifdef TRACE_ACCESS
     cerr << "MSICS_" << (address - baseAddress - OFFSET_MSICS) << " -> 0x" << hex << value << dec
@@ -357,8 +346,11 @@ uint32 EmRegsMB86189::msicsRead(emuptr address, int size) {
 }
 
 uint32 EmRegsMB86189::msppcdRead(emuptr address, int size) {
-    uint32 value = compositeRegisterRead(baseAddress + OFFSET_MSPPCD, address, size,
-                                         ((reg.msppcd & ~0x3000) | ((gpioRead() & 0x03) << 12)));
+    uint32 value =
+        compositeRegisterRead(baseAddress + OFFSET_MSPPCD, address, size,
+                              ((reg.msppcd & ~0x3000) | ((gpioReadHandler() & 0x03) << 12)));
+
+    ClearIrqFlags(IRQ_PIN);
 
 #ifdef TRACE_ACCESS
     cerr << "MSPPCD_" << (address - baseAddress - OFFSET_MSPPCD) << " -> 0x" << hex << value << dec
@@ -387,7 +379,7 @@ void EmRegsMB86189::mscmdWrite(emuptr address, int size, uint32 value) {
     cerr << "MSCMD <- 0x" << hex << value << dec << endl << flush;
 #endif
 
-    ClearIrq(IRQ_SIF);
+    ClearIrqFlags(IRQ_SIF | IRQ_RDY);
 
     reg.mscmd = value;
     BeginTpc();
