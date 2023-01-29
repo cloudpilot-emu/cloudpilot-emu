@@ -249,7 +249,7 @@ export function deviceName(deviceId: DeviceId): string {
             return 'Sony PEG-S500C series';
 
         case DeviceId.acerS11:
-            return 'Acer S11/S15';
+            return 'Acer S1x series';
 
         default:
             throw new Error('bad device ID');
