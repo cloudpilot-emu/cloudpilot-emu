@@ -542,9 +542,10 @@ void EmRegsSonyDSP::DoCmdReadBootBlock(uint16 cmd) {
     if (!memoryStick.PreparePage(base + SHM_BOOT_BLOCK_BASE + 512, false)) return;
 
     if (cmd == IPC_COMMAND_MS_READ_BOOT_BLOCK_ALT) {
+        // bit 14 encodes the RW switch --- high means R/W
         WRITE_REGISTER(REG_IPC_RESULT_2, 0x4000);
     } else {
-        WRITE_REGISTER(REG_IPC_RESULT_1, (registers.oob[0] << 8) | registers.oob[1]);
+        // bit 14 of RESULT_1 encodes the RW switch --- low means R/W
         WRITE_REGISTER(REG_IPC_RESULT_2, MemoryStick::BOOT_BLOCK_BACKUP);
     }
 

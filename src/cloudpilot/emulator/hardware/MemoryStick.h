@@ -81,7 +81,7 @@ class MemoryStick {
 
    private:
     template <typename T>
-    void DoSaveLoad(T& helper);
+    void DoSaveLoad(T& helper, uint32 version);
 
     void DoCmd(uint8 commandByte);
     void DoCmdRead();
@@ -120,6 +120,7 @@ class MemoryStick {
     uint32 bufferOutSize{0};
 
     uint8 preparedPage[512];
+    bool pagePending{false};
 
     CardImage* cardImage = nullptr;
     uint8 pagesPerBlock{0};

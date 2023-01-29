@@ -1345,7 +1345,7 @@ void EmDevice::CreateRegs(void) const {
 
         case kDeviceAcerS11: {
             EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10c00000);
-            EmBankRegs::AddSubBank(new EmRegsVZAcerS1x());
+            EmBankRegs::AddSubBank(new EmRegsVZAcerS1x(*mb86189));
             EmBankRegs::AddSubBank(new EmRegsAcerUSBStub());
 
             EmBankRegs::AddSubBank(mb86189);

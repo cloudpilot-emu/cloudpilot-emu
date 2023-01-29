@@ -157,6 +157,8 @@ SOURCE_EMU = \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
 	emulator/hardware/EmSPISlaveSD.cpp \
+	emulator/hardware/EmRegsMB86189.cpp \
+	emulator/hardware/MemoryStick.cpp \
 	emulator/hardware/clie/EmRegsUsbCLIE.cpp \
 	emulator/hardware/clie/EmRegsFMSound.cpp \
 	emulator/hardware/clie/EmRegsEzPegS300.cpp \
@@ -169,9 +171,7 @@ SOURCE_EMU = \
 	emulator/hardware/clie/EmRegsSZRedwood.cpp \
 	emulator/hardware/clie/EmRegsVZPegN700C.cpp \
 	emulator/hardware/clie/EmRegsLCDCtrlT2.cpp \
-	emulator/hardware/clie/EmRegsMB86189.cpp \
 	emulator/hardware/clie/EmRegsSonyDSP.cpp \
-	emulator/hardware/clie/MemoryStick.cpp \
 	emulator/hardware/handera/EmRegs330CPLD.cpp \
 	emulator/hardware/handera/EmRegsVZHandEra330.cpp \
 	emulator/hardware/handera/EmRegsVZHandEra330c.cpp \

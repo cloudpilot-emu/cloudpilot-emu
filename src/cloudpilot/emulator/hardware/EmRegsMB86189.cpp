@@ -75,6 +75,8 @@ void EmRegsMB86189::Load(SavestateLoader& loader) {
     DoSaveLoad(helper);
 }
 
+void EmRegsMB86189::SetGpioRead(function<uint8()> handler) { gpioRead = handler; }
+
 template <typename T>
 void EmRegsMB86189::DoSave(T& savestate) {
     memoryStick.Save(savestate);
@@ -168,8 +170,6 @@ void EmRegsMB86189::ResetHostController() {
 }
 
 void EmRegsMB86189::RaiseIrq(uint8 bits) {
-    if ((reg.msics & MSICS_INTEN) == 0) return;
-
     irqStat |= bits;
 
     UpdateIrqLine();
@@ -177,21 +177,19 @@ void EmRegsMB86189::RaiseIrq(uint8 bits) {
 }
 
 void EmRegsMB86189::NegateIrq(uint8 bits) {
-    if ((reg.msics & MSICS_INTEN) == 0) return;
-
     irqStat &= ~bits;
 
     UpdateIrqLine();
 }
 
 void EmRegsMB86189::ClearIrq(uint8 bits) {
-    if ((reg.msics & MSICS_INTEN) == 0) return;
-
     NegateIrq(bits);
     TransferIrqStat();
 }
 
 void EmRegsMB86189::UpdateIrqLine() {
+    if ((reg.msics & MSICS_INTEN) == 0) return;
+
     uint16 mcsOld = reg.mscs;
 
     if (irqStat != 0) {
@@ -269,7 +267,7 @@ void EmRegsMB86189::FifoWrite(uint16 data) {
     fifo.Push(data);
 }
 
-uint16 EmRegsMB86189::GetTransferSize() {
+uint32 EmRegsMB86189::GetTransferSize() {
     const uint32 transferSize = reg.mscmd & DATA_SIZE_MASK;
     if (transferSize > 512) {
         cerr << "capping unexpected transfer size to 512 bytes" << endl << flush;
@@ -334,7 +332,7 @@ uint32 EmRegsMB86189::msdataRead(emuptr address, int size) {
             if (readBufferIndex < bufferSize) value |= buffer[readBufferIndex++];
         }
 
-        if (readBufferIndex >= bufferSize) FinishTpc();
+        if (readBufferIndex >= min(GetTransferSize(), bufferSize)) FinishTpc();
     }
 
 #ifdef TRACE_ACCESS
@@ -359,7 +357,8 @@ uint32 EmRegsMB86189::msicsRead(emuptr address, int size) {
 }
 
 uint32 EmRegsMB86189::msppcdRead(emuptr address, int size) {
-    uint32 value = compositeRegisterRead(baseAddress + OFFSET_MSPPCD, address, size, reg.msppcd);
+    uint32 value = compositeRegisterRead(baseAddress + OFFSET_MSPPCD, address, size,
+                                         ((reg.msppcd & ~0x3000) | ((gpioRead() & 0x03) << 12)));
 
 #ifdef TRACE_ACCESS
     cerr << "MSPPCD_" << (address - baseAddress - OFFSET_MSPPCD) << " -> 0x" << hex << value << dec

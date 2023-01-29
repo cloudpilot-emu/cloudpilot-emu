@@ -1,6 +1,8 @@
 #ifndef _EM_REGS_MB86189_
 #define _EM_REGS_MB86189_
 
+#include <functional>
+
 #include "EmCommon.h"
 #include "EmEvent.h"
 #include "EmHAL.h"
@@ -18,6 +20,8 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     void Save(Savestate&) override;
     void Save(SavestateProbe&) override;
     void Load(SavestateLoader&) override;
+
+    void SetGpioRead(function<uint8()> handler);
 
     uint8* GetRealAddress(emuptr address) override;
     emuptr GetAddressStart(void) override;
@@ -63,7 +67,7 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
 
     void FifoWrite(uint16 data);
 
-    uint16 GetTransferSize();
+    uint32 GetTransferSize();
 
     uint32 mscmdRead(emuptr address, int size);
     uint32 mscsRead(emuptr address, int size);
@@ -101,6 +105,8 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     uint8 writeBuffer[512];
     uint32 writeBufferSize{0};
     uint32 readBufferIndex{0};
+
+    function<uint8()> gpioRead{[]() { return 0; }};
 
    private:
     EmRegsMB86189(const EmRegsMB86189&) = delete;

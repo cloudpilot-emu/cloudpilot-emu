@@ -8,7 +8,7 @@
 #include "SavestateProbe.h"
 
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 1;
+    constexpr uint32 SAVESTATE_VERSION = 2;
 
     constexpr uint8 STATUS_COMMAND_OK = 0x80;
     constexpr uint8 STATUS_ERR = 0x40;
@@ -95,7 +95,7 @@ void MemoryStick::Load(SavestateLoader& loader) {
     }
 
     LoadChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, version);
 
     if (encodedBufferOut == 0) {
         bufferOut = nullptr;
@@ -123,14 +123,14 @@ void MemoryStick::Save(T& savestate) {
     chunk->Put32(SAVESTATE_VERSION);
 
     SaveChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
 template void MemoryStick::Save<Savestate>(Savestate&);
 template void MemoryStick::Save<SavestateProbe>(SavestateProbe&);
 
 template <typename T>
-void MemoryStick::DoSaveLoad(T& helper) {
+void MemoryStick::DoSaveLoad(T& helper, uint32 version) {
     uint8 currentOperationByte = static_cast<uint8>(currentOperation);
 
     helper.DoBuffer(&reg, sizeof(Registers))
@@ -140,6 +140,8 @@ void MemoryStick::DoSaveLoad(T& helper) {
         .DoBuffer(preparedPage, sizeof(preparedPage))
         .Do(typename T::Pack8() << pagesPerBlock << segments << currentOperationByte
                                 << encodedBufferOut);
+
+    if (version >= 2) helper.DoBool(pagePending);
 
     currentOperation = static_cast<Operation>(currentOperationByte);
 }
@@ -165,6 +167,8 @@ void MemoryStick::Reset() {
     bufferOutSize = 0;
     bufferOut = nullptr;
 
+    pagePending = false;
+
     currentOperation = Operation::none;
 }
 
@@ -173,17 +177,36 @@ void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
     if (!cardImage) return;
 
     switch (tpcId) {
+        case TPC_SET_REGS_WINDOW:
+            ClearFlags();
+
+            readWindowStart = dataIn[0];
+            readWindowSize = dataIn[1];
+            writeWindowStart = dataIn[2];
+            writeWindowSize = dataIn[3];
+
+            if (dataInCount != 4) {
+                SetFlags(STATUS_ERR);
+                return;
+            }
+
+            break;
+
         case TPC_REGS_WRITE: {
-            if (dataInCount != writeWindowSize || writeWindowStart < offsetof(Registers, cfg) ||
+            if (writeWindowStart < offsetof(Registers, cfg) ||
                 writeWindowSize + writeWindowStart > sizeof(Registers)) {
                 SetFlags(STATUS_ERR);
                 return;
             }
 
             uint8* registerFile = reinterpret_cast<uint8*>(&reg);
-            memcpy(registerFile + writeWindowStart, dataIn, writeWindowSize);
+            memcpy(registerFile + writeWindowStart, dataIn,
+                   min(static_cast<uint32>(writeWindowSize), dataInCount));
 
-            ClearFlags();
+            if (dataInCount != writeWindowSize)
+                SetFlags(STATUS_ERR);
+            else
+                ClearFlags();
             return;
         }
 
@@ -220,6 +243,7 @@ void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
                 currentOperation == Operation::readMulti) {
                 bufferOutSize = 512;
                 bufferOut = preparedPage;
+                pagePending = false;
 
                 ClearFlags();
             } else {
@@ -261,8 +285,10 @@ void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
                     return;
 
                 default:
-                    cerr << "TPC_WRITE_LONG_DATA without pending write" << endl << flush;
-                    SetFlags(STATUS_ERR);
+                    memcpy(preparedPage, dataIn, 512);
+                    pagePending = true;
+                    cerr << "buffered pending page" << endl << flush;
+                    SetFlags(STATUS_COMMAND_OK);
 
                     return;
             }
@@ -357,8 +383,7 @@ void MemoryStick::DoCmd(uint8 commandByte) {
                 }
 
                 default:
-                    cerr << "cmd_stop without running multi page operation" << endl << flush;
-                    SetFlags(STATUS_ERR);
+                    SetFlags(STATUS_COMMAND_OK);
 
                     return;
             }
@@ -381,7 +406,17 @@ void MemoryStick::DoCmd(uint8 commandByte) {
                     return;
 
                 case ACCESS_PAGE:
-                    currentOperation = Operation::programOne;
+                    if (pagePending) {
+                        currentOperation = Operation::none;
+                        pagePending = false;
+
+                        ProgramPage(preparedPage);
+
+                        cerr << "programmed pending page" << endl << flush;
+                    } else {
+                        currentOperation = Operation::programOne;
+                    }
+
                     SetFlags(STATUS_COMMAND_OK);
 
                     return;
@@ -473,7 +508,7 @@ bool MemoryStick::PreparePage(uint8* destination, bool oobOnly) {
             if (!oobOnly) memset(destination, 0xff, 512);
         } else {
             reg.oob[0] = 0xff;
-            reg.oob[1] = 0x3c;
+            reg.oob[1] = 0xff;
             reg.oob[2] = logicalBlock >> 8;
             reg.oob[3] = logicalBlock;
 
@@ -481,6 +516,7 @@ bool MemoryStick::PreparePage(uint8* destination, bool oobOnly) {
         }
     }
 
+    if (preparedPage == destination) pagePending = true;
     return true;
 }
 
@@ -490,7 +526,7 @@ uint8 MemoryStick::PagesPerBlock() const { return pagesPerBlock; }
 
 void MemoryStick::PreparePageBootBlock(uint8 page, uint8* destination, bool oobOnly) {
     reg.oob[0] = 0xff;
-    reg.oob[1] = 0x38;
+    reg.oob[1] = 0xfb;
     reg.oob[2] = reg.oob[3] = 0;
 
     if (oobOnly) return;

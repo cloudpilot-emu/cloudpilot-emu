@@ -2,6 +2,7 @@
 
 #include "EmRegsVZPrv.h"
 #include "EmSPISlaveADS784x.h"
+#include "ExternalStorage.h"
 
 namespace {
     constexpr uint8 hwrVZPortDPowerFail = 0x80;
@@ -19,7 +20,11 @@ namespace {
 
 }  // namespace
 
-EmRegsVZAcerS1x::EmRegsVZAcerS1x() { fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1); }
+EmRegsVZAcerS1x::EmRegsVZAcerS1x(EmRegsMB86189& mb86189) : mb86189(mb86189) {
+    fSPISlaveADC = new EmSPISlaveADS784x(kChannelSet1);
+    this->mb86189.SetGpioRead(
+        []() { return gExternalStorage.IsMounted(EmHAL::Slot::memorystick) ? 0x01 : 0x00; });
+}
 
 EmRegsVZAcerS1x::~EmRegsVZAcerS1x() { delete fSPISlaveADC; }
 
