@@ -287,7 +287,6 @@ void MemoryStick::ExecuteTpc(uint8 tpcId, uint32 dataInCount, uint8* dataIn) {
                 default:
                     memcpy(preparedPage, dataIn, 512);
                     pagePending = true;
-                    cerr << "buffered pending page" << endl << flush;
                     SetFlags(STATUS_COMMAND_OK);
 
                     return;
@@ -411,8 +410,6 @@ void MemoryStick::DoCmd(uint8 commandByte) {
                         pagePending = false;
 
                         ProgramPage(preparedPage);
-
-                        cerr << "programmed pending page" << endl << flush;
                     } else {
                         currentOperation = Operation::programOne;
                     }
