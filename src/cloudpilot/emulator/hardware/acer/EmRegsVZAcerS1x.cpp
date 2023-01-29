@@ -70,8 +70,6 @@ void EmRegsVZAcerS1x::Mount(EmHAL::Slot slot, CardImage& cardImage) {
     if (slot != EmHAL::Slot::memorystick) return;
 
     mb86189.NotifyGpioChanged();
-
-    UpdateIRQ3(0x40);
 }
 
 void EmRegsVZAcerS1x::Unmount(EmHAL::Slot slot) {
@@ -79,8 +77,6 @@ void EmRegsVZAcerS1x::Unmount(EmHAL::Slot slot) {
     if (slot != EmHAL::Slot::memorystick) return;
 
     mb86189.NotifyGpioChanged();
-
-    UpdateIRQ3(0x40);
 }
 
 EmSPISlave* EmRegsVZAcerS1x::GetSPI2Slave() { return fSPISlaveADC; }
