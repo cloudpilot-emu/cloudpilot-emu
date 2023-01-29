@@ -577,10 +577,10 @@ void EmRegsSonyDSP::DoCmdReadOob(uint16 cmd) {
         *(base++) = registers.oob[0];
         *(base++) = registers.oob[1];
         *(base++) = registers.oob[2];
-        *(base++) = (registers.oob[3] == 0xff && registers.oob[2] == 0xff &&
-                     cmd == IPC_COMMAND_MS_READ_BOOT_BLOCK)
-                        ? 0xfe
-                        : registers.oob[3];
+        *(base++) =
+            (registers.oob[3] == 0xff && registers.oob[2] == 0xff && cmd == IPC_COMMAND_MS_READ_OOB)
+                ? 0xfe
+                : registers.oob[3];
     }
 
     MarkRangeDirty(SHM_SPACE_START + shmBase, 4 * blocksTotal);
