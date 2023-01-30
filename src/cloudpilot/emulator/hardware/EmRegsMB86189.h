@@ -59,7 +59,7 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     void NegateIrq(uint8 bits);
     void ClearIrqFlags(uint8 bits);
     void UpdateIrqLine();
-    void TransferIrqStat();
+    void TransferIrqFlags(uint8 bits);
 
     void SetState(State state);
 

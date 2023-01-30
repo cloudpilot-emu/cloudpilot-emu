@@ -175,7 +175,7 @@ void EmRegsMB86189::RaiseIrq(uint8 bits) {
     irqStat |= bits;
 
     UpdateIrqLine();
-    TransferIrqStat();
+    TransferIrqFlags(bits);
 }
 
 void EmRegsMB86189::NegateIrq(uint8 bits) {
@@ -200,7 +200,7 @@ void EmRegsMB86189::UpdateIrqLine() {
     }
 }
 
-void EmRegsMB86189::TransferIrqStat() { reg.msics |= (irqStat << 8); }
+void EmRegsMB86189::TransferIrqFlags(uint8 bits) { reg.msics |= (bits << 8); }
 
 void EmRegsMB86189::SetState(State state) {
     if (state != this->state && state == State::idle) RaiseIrq(IRQ_RDY);
