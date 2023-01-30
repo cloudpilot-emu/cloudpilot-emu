@@ -12,11 +12,11 @@ namespace {
     const uint16 kGenericMonoMap[kNumButtonRows][kNumButtonCols] = {
         {keyBitHard1, keyBitHard2, keyBitHard3, keyBitHard4},
         {keyBitPageUp, keyBitPageDown, 0, 0},
-        {keyBitPower, keyBitContrast, keyBitHard2, 0}};
+        {keyBitPower, 0, 0, 0}};
 
-    constexpr uint8 hwrVZPortKKbdRow0 = 0x20;
-    constexpr uint8 hwrVZPortKKbdRow1 = 0x40;
-    constexpr uint8 hwrVZPortKKbdRow2 = 0x80;
+    constexpr uint8 hwrVZPortKKbdRow0 = 0x01;
+    constexpr uint8 hwrVZPortKKbdRow1 = 0x02;
+    constexpr uint8 hwrVZPortKKbdRow2 = 0x04;
 
 }  // namespace
 
@@ -42,12 +42,12 @@ void EmRegsVZAcerS1x::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Boo
 
     // Determine what row is being asked for.
 
-    UInt8 portKDir = READ_REGISTER(portKDir);
-    UInt8 portKData = READ_REGISTER(portKData);
+    UInt8 portJDir = READ_REGISTER(portJDir);
+    UInt8 portJData = READ_REGISTER(portJData);
 
-    rows[0] = (portKDir & hwrVZPortKKbdRow0) != 0 && (portKData & hwrVZPortKKbdRow0) == 0;
-    rows[1] = (portKDir & hwrVZPortKKbdRow1) != 0 && (portKData & hwrVZPortKKbdRow1) == 0;
-    rows[2] = (portKDir & hwrVZPortKKbdRow2) != 0 && (portKData & hwrVZPortKKbdRow2) == 0;
+    rows[0] = (portJDir & hwrVZPortKKbdRow0) != 0 && (portJData & hwrVZPortKKbdRow0) == 0;
+    rows[1] = (portJDir & hwrVZPortKKbdRow1) != 0 && (portJData & hwrVZPortKKbdRow1) == 0;
+    rows[2] = (portJDir & hwrVZPortKKbdRow2) != 0 && (portJData & hwrVZPortKKbdRow2) == 0;
 }
 
 uint8 EmRegsVZAcerS1x::GetPortInternalValue(int port) {
