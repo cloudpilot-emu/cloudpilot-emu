@@ -9,10 +9,12 @@ emulated:
 -   Palm Vx, Palm V
 -   Palm VII, Palm VII EZ, Palm VIIx
 -   Palm m500, Palm m505, Palm m515
+-   Palm m520 (an unreleased prototype of a highres 5xx)
 -   Palm m100, Palm m105, Palm m125, Palm m130
 -   Palm i705
 -   Tungsten W (silkscreen version)
 -   Handera 330
+-   Handera 330c (the lost color version of the 330c)
 -   Sony PEG-S300, PEG-S320
 -   Sony PEG-S500C series
 -   Sony PEG-T400 series
@@ -21,6 +23,7 @@ emulated:
 -   Sony PEG-N700C series
 -   Sony PEG-T650C series
 -   Sony PEG-NR70 series
+-   Acer S1x
 
 The correct device type is automatically determined from the ROM you load. If
 there are multiple possible devices CloudpilotEmu will let you choose when you

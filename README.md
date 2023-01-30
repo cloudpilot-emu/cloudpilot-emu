@@ -59,6 +59,7 @@ The following devices are currently emulated:
 -   Sony PEG-N700C series
 -   Sony PEG-T650C series
 -   Sony PEG-NR70 series
+-   Acer S1x
 
 ## Other versions
 
