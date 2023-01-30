@@ -183,6 +183,7 @@ SOURCE_EMU = \
 	emulator/hardware/handera/EmTRGCFMem.cpp \
 	emulator/hardware/handera/EmTRGDiskIO.cpp \
 	emulator/hardware/acer/EmRegsAcerUSBStub.cpp \
+	emulator/hardware/acer/EmRegsAcerDSPStub.cpp \
 	emulator/hardware/acer/EmRegsVZAcerS1x.cpp \
 	emulator/patch/EmPatchModule.cpp \
 	emulator/patch/EmPatchModuleSys.cpp \

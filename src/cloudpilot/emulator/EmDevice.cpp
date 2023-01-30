@@ -57,6 +57,7 @@
 #include "EmRegs328Pilot.h"
 #include "EmRegs330CPLD.h"
 #include "EmRegs330CPLDMirror.h"
+#include "EmRegsAcerDSPStub.h"
 #include "EmRegsAcerUSBStub.h"
 #include "EmRegsEZPalmIIIc.h"
 #include "EmRegsEZPalmIIIe.h"
@@ -1347,6 +1348,7 @@ void EmDevice::CreateRegs(void) const {
             EmRegsMB86189* mb86189 = new EmRegsMB86189(0x10c00000);
             EmBankRegs::AddSubBank(new EmRegsVZAcerS1x(*mb86189));
             EmBankRegs::AddSubBank(new EmRegsAcerUSBStub());
+            EmBankRegs::AddSubBank(new EmRegsAcerDSPStub());
 
             EmBankRegs::AddSubBank(mb86189);
             break;

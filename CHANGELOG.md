@@ -6,7 +6,7 @@
 -   Support for HandEra 330c (sic!).
 -   Support dropping files for installation and session import.
 -   Support for Palm m520 prototype.
--   Support for Acer S11 (buttons are currently broken).
+-   Support for Acer S11.
 
 # Version 1.7.10
 
