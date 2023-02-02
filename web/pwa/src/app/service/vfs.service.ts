@@ -1,5 +1,5 @@
+import { Attributes, FileEntry, ReaddirError, Vfs, VfsResult } from '@common/bridge/Vfs';
 import { CardOwner, StorageCardContext } from './storage-card-context';
-import { FileEntry, ReaddirError, Vfs, VfsResult } from '@common/bridge/Vfs';
 
 import { AlertService } from './alert.service';
 import { Event } from 'microevent.ts';
@@ -90,7 +90,10 @@ export class VfsService {
         return this.directoryCache.get(normalizedPath);
     }
 
-    async updateFileEntry(path: string, changes: Partial<Pick<FileEntry, 'attributes' | 'name'>>): Promise<VfsError> {
+    async updateFileEntry(
+        path: string,
+        changes: { name?: string; attributes: Partial<Attributes> }
+    ): Promise<VfsError> {
         const vfs = await this.vfs;
         path = this.normalizePath(path);
 
@@ -98,6 +101,18 @@ export class VfsService {
         if (result !== VfsResult.FR_OK) {
             await this.alertService.errorMessage(`Unable to stat ${path}.`);
             return VfsError.read;
+        }
+
+        this.directoryCache.delete(this.dirname(path));
+
+        if (changes.attributes !== undefined && !deepEqual(changes.attributes, entry.attributes)) {
+            switch (vfs.chmod(path, changes.attributes)) {
+                case VfsResult.FR_OK:
+                    break;
+
+                default:
+                    return VfsError.write;
+            }
         }
 
         if (changes.name !== undefined && changes.name !== entry.name) {
@@ -115,18 +130,6 @@ export class VfsService {
                     return VfsError.write;
             }
         }
-
-        if (changes.attributes !== undefined && !deepEqual(changes.attributes, entry.attributes)) {
-            switch (vfs.chmod(path, changes.attributes)) {
-                case VfsResult.FR_OK:
-                    break;
-
-                default:
-                    return VfsError.write;
-            }
-        }
-
-        this.directoryCache.delete(this.dirname(path));
 
         return VfsError.none;
     }

@@ -1,9 +1,10 @@
-import { ActionSheetController, Config, PopoverController } from '@ionic/angular';
+import { ActionSheetController, Config, ModalController, PopoverController } from '@ionic/angular';
 import { Component, Input, OnInit } from '@angular/core';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { ContextMenuBreadcrumbComponent } from './../context-menu-breadcrumb/context-menu-breadcrumb.component';
 import { ContextMenuDirectoryComponent } from './../context-menu-directory/context-menu-directory.component';
+import { EditFileDialogComponent } from './../edit-file-dialog/edit-file-dialog.component';
 import { FileEntry } from '@common/bridge/Vfs';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { VfsService } from '@pwa/service/vfs.service';
@@ -30,7 +31,8 @@ export class SubpageDirectoryComponent implements OnInit {
         private popoverController: PopoverController,
         private config: Config,
         private alertService: AlertService,
-        private actionSheetController: ActionSheetController
+        private actionSheetController: ActionSheetController,
+        private modalController: ModalController
     ) {
         this.breadcrumbTriggerId = `breadcrumb-trigger-${BREADCRUMB_TRIGGER_INDEX++}`;
     }
@@ -52,7 +54,8 @@ export class SubpageDirectoryComponent implements OnInit {
     }
 
     get showBreadcrumb(): boolean {
-        return !!this.path && this.path !== '/';
+        return true;
+        //return !!this.path && this.path !== '/';
     }
 
     get bytesFree(): number {
@@ -92,8 +95,17 @@ export class SubpageDirectoryComponent implements OnInit {
         }
     }
 
-    onEditEntry(entry: FileEntry): void {
-        void this.alertService.message('Not implemented', `Edit ${entry.name}: not implemented.`);
+    async onEditEntry(entry: FileEntry): Promise<void> {
+        const modal = await this.modalController.create({
+            component: EditFileDialogComponent,
+            backdropDismiss: false,
+            componentProps: {
+                entry,
+                onSave: this.updateEntries.bind(this),
+            },
+        });
+
+        await modal.present();
     }
 
     onSaveEntry(entry: FileEntry): void {
@@ -204,10 +216,10 @@ export class SubpageDirectoryComponent implements OnInit {
     }
 
     async openBreadcrumbMenu(e: MouseEvent): Promise<void> {
-        if (!this.card || !this.path || this.path === '/') return;
+        if (!this.card || !this.path) return;
 
         const entries = [
-            ...[...this.vfsService.splitPath(this.path).reverse().slice(1), this.card.name],
+            ...(this.path === '/' ? [] : [...this.vfsService.splitPath(this.path).reverse().slice(1), this.card.name]),
             'Memory cards',
         ];
 

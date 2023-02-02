@@ -32,7 +32,12 @@ export class StoragePage implements OnInit {
 
     private browseCard(card: StorageCard): void {
         this.currentlyBrowsingCard = card;
-        void this.nav?.push(SubpageDirectoryComponent, { card, path: '/', onNavigate: this.onNavigate });
+        void this.nav?.push(SubpageDirectoryComponent, {
+            card,
+            path: '/',
+            onNavigate: this.onNavigate,
+            onNavigateBreadcrumb: this.onNavigateBreadcrumb,
+        });
     }
 
     private onNavigate = (path: string): void => {

@@ -1,1 +1,42 @@
-<p>edit-file-dialog works!</p>
+<ion-header translucent>
+    <ion-toolbar>
+        <ion-title>Edit {{subjectName.toLowerCase()}}</ion-title>
+
+        <ion-buttons slot="primary">
+            <ion-button (click)="onSaveClick()" [disabled]="formGroup.invalid">Save</ion-button>
+        </ion-buttons>
+
+        <ion-buttons slot="secondary">
+            <ion-button (click)="onCancelClick()">Cancel</ion-button>
+        </ion-buttons>
+    </ion-toolbar>
+</ion-header>
+
+<ion-content fullscreen>
+    <form [formGroup]="formGroup" (keydown.enter)="onEnter()">
+        <ion-item lines="none">
+            <ion-label position="stacked">{{subjectName}} name</ion-label>
+            <ion-input placeholder="Enter {{subjectName.toLowerCase()}} name"
+                formControlName="name"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none">
+            <h2>Attributes</h2>
+        </ion-item>
+
+        <ion-item lines="none">
+            <ion-label><ion-icon name="lock-closed-outline" size="small"></ion-icon>Readonly</ion-label>
+            <ion-checkbox formControlName="attrReadonly"></ion-checkbox>
+        </ion-item>
+
+        <ion-item lines="none">
+            <ion-label><ion-icon name="eye-off-outline" size="small"></ion-icon>Hidden</ion-label>
+            <ion-checkbox formControlName="attrHidden"></ion-checkbox>
+        </ion-item>
+
+        <ion-item lines="none">
+            <ion-label><ion-icon name="cog-outline" size="small"></ion-icon>System</ion-label>
+            <ion-checkbox formControlName="attrSystem"></ion-checkbox>
+        </ion-item>
+    </form>
+</ion-content>

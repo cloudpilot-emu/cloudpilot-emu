@@ -20,8 +20,8 @@ export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
             return;
         }
 
-        this.formGroup.get('name')?.setValue(this.card.name);
-        this.formGroup.get('checkAutomatically')?.setValue(!this.card.dontFsckAutomatically);
+        this.formGroup.controls.name.setValue(this.card.name);
+        this.formGroup.controls.checkAutomatically.setValue(!this.card.dontFsckAutomatically);
     }
 
     save(): void {
