@@ -12,7 +12,7 @@ RANLIB_EMCC = emranlib
 
 EMCC_OPT ?= -O3 -flto
 
-CFLAGS_NATIVE ?= O2  -g
+CFLAGS_NATIVE ?= -O2  -g
 
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
