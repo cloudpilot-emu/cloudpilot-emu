@@ -61,6 +61,15 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
                 silkscreenHeight: 0,
             };
 
+        case DeviceId.acerS11:
+            return {
+                screenSize: ScreenSize.screen160x160,
+                width: 160,
+                height: 160,
+                silkscreenHeight: 60,
+                siklscreenShift: 8,
+            };
+
         default:
             return {
                 screenSize: ScreenSize.screen160x160,

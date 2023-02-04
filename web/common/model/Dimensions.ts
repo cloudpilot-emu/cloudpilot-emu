@@ -11,4 +11,5 @@ export interface Dimensions {
     readonly height: number;
     readonly silkscreenHeight: number;
     readonly silkscreenOvershoot?: number;
+    readonly siklscreenShift?: number;
 }

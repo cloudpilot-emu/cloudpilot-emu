@@ -513,6 +513,9 @@ export abstract class AbstractCanvasDisplayService {
 
     protected buttonsImage(): PrerenderedImage {
         switch (this.getDeviceId()) {
+            case DeviceId.acerS11:
+                return this.skin.HARD_BUTTONS_ACER_S10;
+
             case DeviceId.pegNR70:
                 return this.skin.HARD_BUTTONS_PEG_NR70;
 

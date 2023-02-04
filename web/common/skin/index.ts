@@ -23,6 +23,7 @@ export { default as HARD_BUTTONS_PEG_T415 } from './hard-buttons/clie-t415.svg';
 export { default as HARD_BUTTONS_PEG_N610 } from './hard-buttons/clie-n610.svg';
 export { default as HARD_BUTTONS_PEG_N700 } from './hard-buttons/clie-n700.svg';
 export { default as HARD_BUTTONS_PEG_NR70 } from './hard-buttons/clie-nr70.svg';
+export { default as HARD_BUTTONS_ACER_S10 } from './hard-buttons/acer-s10.svg';
 
 export { default as SILKSCREEN_IIIC } from './silkscreen/iiic.svg';
 export { default as SILKSCREEN_M100 } from './silkscreen/m100.svg';

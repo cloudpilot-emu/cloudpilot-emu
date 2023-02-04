@@ -5,6 +5,7 @@ import { deviceDimensions, isColor } from '@common/helper/deviceProperties';
 
 import { Average } from '@common/helper/Average';
 import { DeviceId } from '@common/model/DeviceId';
+import { Dimensions } from '@common/model/Dimensions';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { Event } from 'microevent.ts';
 import { Fifo } from '@common/helper/Fifo';
@@ -28,7 +29,10 @@ export abstract class AbstractEmulationService {
         if (ts - this.lastPenUpdate < PEN_MOVE_THROTTLE || !this.cloudpilotInstance) return;
 
         if (isSilkscreen) {
-            x = this.transformSilkscreenX(x);
+            const dimensions = deviceDimensions(this.deviceId);
+
+            x = this.transformSilkscreenX(x, dimensions);
+            y = this.transformSilkscreenY(y, dimensions);
         }
 
         this.cloudpilotInstance.queuePenMove(Math.floor(x), Math.floor(y));
@@ -261,14 +265,21 @@ export abstract class AbstractEmulationService {
         return timePerFrame && 1000 / timePerFrame;
     }
 
-    protected transformSilkscreenX(x: number): number {
-        const dimensions = deviceDimensions(this.deviceId);
+    protected transformSilkscreenX(x: number, dimensions: Dimensions): number {
         if (dimensions.silkscreenOvershoot === undefined) {
             return x;
         }
 
         const factor = dimensions.width / (dimensions.width + 2 * dimensions.silkscreenOvershoot);
         return (x - dimensions.width / 2) / factor + dimensions.width / 2;
+    }
+
+    protected transformSilkscreenY(y: number, dimensions: Dimensions): number {
+        if (dimensions.siklscreenShift === undefined) {
+            return y;
+        }
+
+        return y + dimensions.siklscreenShift;
     }
 
     protected setRunning(running: boolean): void {

@@ -42,6 +42,7 @@ const SKIN_IMAGE_KEYS: Array<SkinImageType> = [
     'HARD_BUTTONS_PEG_N610',
     'HARD_BUTTONS_PEG_N700',
     'HARD_BUTTONS_PEG_NR70',
+    'HARD_BUTTONS_ACER_S10',
 ];
 
 export function loadSkin(skinModule: Promise<SkinModuleType>): Skin {
