@@ -1,6 +1,23 @@
-.breadcrumb-trigger {
+.breadcrumb {
     cursor: pointer;
 }
+
+.breadcrumb-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    .ios & {
+        justify-content: center;
+    }
+}
+
+.breadcrumb-current {
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 
 .container {
     height: 100%;
@@ -27,6 +44,7 @@ ion-list {
     background: none;
     flex: 0;
 }
+
 
 .select-arrow {
     border-top: 5px solid;

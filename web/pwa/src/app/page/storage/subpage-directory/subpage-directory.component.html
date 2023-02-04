@@ -1,7 +1,9 @@
 <ion-header>
   <ion-toolbar *ngIf="mode === 'browse'">
-    <ion-title class="breadcrumb-trigger" [id]="breadcrumbTriggerId" (click)="openBreadcrumbMenu($event)">{{title}}<div class="select-arrow"
-        *ngIf="showBreadcrumb"></div></ion-title>
+    <ion-title class="breadcrumb" [id]="breadcrumbTriggerId" (click)="openBreadcrumbMenu($event)">
+      <div class="breadcrumb-container"><div class="breadcrumb-current">{{title}}</div><div class="select-arrow" *ngIf="showBreadcrumb"></div>
+      </div>
+    </ion-title>
 
     <ion-buttons slot="start">
       <ion-back-button></ion-back-button>
@@ -54,7 +56,7 @@
             {{bytesFree | fileSize}} free, {{bytesTotal | fileSize}} total
           </p>
 
-          <p  *ngIf="fileCount > 0">
+          <p *ngIf="fileCount > 0">
             {{bytesInFiles | fileSize}} in {{fileCount}} {{fileCount === 1 ? 'file' : 'files'}}
           </p>
         </ion-label>
