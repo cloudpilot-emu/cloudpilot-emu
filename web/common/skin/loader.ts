@@ -59,7 +59,11 @@ export function loadSkin(skinModule: Promise<SkinModuleType>): Skin {
         };
     }
 
-    const prepareImage = (key: SkinImageType) => prerender(loadImage(key));
+    const prepareImage = (key: SkinImageType) =>
+        prerender(
+            loadImage(key),
+            skinModule.then((m) => m[key])
+        );
     const skin: Skin = {} as any;
 
     for (const key of SKIN_IMAGE_KEYS) {
