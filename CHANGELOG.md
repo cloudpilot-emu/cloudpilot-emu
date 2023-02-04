@@ -1,3 +1,8 @@
+# Version 1.7.11
+
+-   Fix display issues in some skins in Safari and on iOS.
+
+
 # Version 1.7.10
 
 -   Fix a heap overflow.
