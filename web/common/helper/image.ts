@@ -1,7 +1,9 @@
+import { isSafari } from './browser';
+
 export type LazyLoadingImage = () => Promise<HTMLImageElement>;
 export type PrerenderedImage = (width: number, height: number) => Promise<HTMLCanvasElement>;
 
-export function prerender(image: LazyLoadingImage): PrerenderedImage {
+export function prerender(image: LazyLoadingImage, source: string | Promise<string>): PrerenderedImage {
     let cachedWidth: number;
     let cachedHeight: number;
     const canvas = document.createElement('canvas');
@@ -18,6 +20,12 @@ export function prerender(image: LazyLoadingImage): PrerenderedImage {
         if (!ctx) throw new Error('get a new browser');
 
         ctx.drawImage(await image(), 0, 0, canvas.width, canvas.height);
+
+        if (isSafari && (await source).indexOf('png') >= 0) {
+            // Safari has a bug that renders embedded PNGs only on second draw.
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            ctx.drawImage(await image(), 0, 0, canvas.width, canvas.height);
+        }
 
         cachedWidth = width;
         cachedHeight = height;
