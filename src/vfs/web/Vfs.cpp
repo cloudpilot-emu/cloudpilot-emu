@@ -91,7 +91,7 @@ void* Vfs::GetPendingImage() const { return pendingImage.get(); }
 void* Vfs::GetImage(unsigned int slot) const {
     if (slot >= FF_VOLUMES || !cardImages[slot]) return nullptr;
 
-    return cardImages[slot].get();
+    return cardImages[slot]->RawData();
 }
 
 void* Vfs::GetDirtyPages(unsigned int slot) const {

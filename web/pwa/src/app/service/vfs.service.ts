@@ -111,12 +111,16 @@ export class VfsService {
                     break;
 
                 default:
+                    await this.alertService.errorMessage(`Failed to change file attributes.`);
                     return VfsError.write;
             }
         }
 
         if (changes.name !== undefined && changes.name !== entry.name) {
-            if (changes.name.indexOf('/') >= 0) throw new Error('bad file name');
+            if (changes.name.indexOf('/') >= 0) {
+                await this.alertService.errorMessage('Invalid file name.');
+                throw new Error('bad file name');
+            }
 
             switch (vfs.rename(path, `${this.dirname(path)}/${changes.name}`)) {
                 case VfsResult.FR_OK:
@@ -127,10 +131,12 @@ export class VfsService {
                     return VfsError.read;
 
                 default:
+                    await this.alertService.errorMessage('Failed to rename file.');
                     return VfsError.write;
             }
         }
 
+        await this.sync();
         return VfsError.none;
     }
 
@@ -144,6 +150,18 @@ export class VfsService {
 
     getBytesTotal(): number {
         return this.bytesTotal;
+    }
+
+    private async sync(): Promise<void> {
+        if (!this.mountedCard) return;
+        const vfs = await this.vfs;
+
+        const data = vfs.getImageInSlot(0);
+        const dirtyPages = vfs.getDirtyPagesForSlot(0);
+
+        if (!data || !dirtyPages) return;
+
+        await this.storageService.updateCardData(this.mountedCard.id, data, dirtyPages, CardOwner.vfs);
     }
 
     readonly onReleaseCard = new Event<number>();
