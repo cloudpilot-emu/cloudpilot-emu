@@ -97,3 +97,9 @@ ion-modal {
     }
 
 }
+
+.ios ion-popover::part(content) {
+    @media (prefers-color-scheme: dark) {
+        box-shadow: 0 0 0 1px black;
+    }
+}
