@@ -1,11 +1,11 @@
 import { AlertController, ModalController } from '@ionic/angular';
+import { ChangeDetectorRef, Component, DoCheck } from '@angular/core';
 import { DragDropClient, DragDropService } from './../../service/drag-drop.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { SessionSettings, SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
-import { Component } from '@angular/core';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
 import { HelpComponent } from '@pwa/component/help/help.component';
@@ -15,6 +15,7 @@ import { Session } from '@pwa/model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
+import { changeDetector } from '@pwa/helper/changeDetect';
 import { debounce } from '@pwa/helper/debounce';
 import deepEqual from 'deep-equal';
 import { disambiguateName } from '@pwa/helper/disambiguate';
@@ -24,7 +25,7 @@ import { disambiguateName } from '@pwa/helper/disambiguate';
     templateUrl: './sessions.page.html',
     styleUrls: ['./sessions.page.scss'],
 })
-export class SessionsPage implements DragDropClient {
+export class SessionsPage implements DragDropClient, DoCheck {
     constructor(
         public sessionService: SessionService,
         private fileService: FileService,
@@ -37,8 +38,16 @@ export class SessionsPage implements DragDropClient {
         private linkApi: LinkApi,
         private router: Router,
         private cloudpilotService: CloudpilotService,
-        private dragDropService: DragDropService
-    ) {}
+        private dragDropService: DragDropService,
+        private cd: ChangeDetectorRef
+    ) {
+        this.checkSessions = changeDetector(cd, [], () => this.sessionService.getSessions());
+    }
+
+    ngDoCheck(): void {
+        this.checkSessions();
+    }
+
     ionViewDidEnter(): void {
         this.linkApi.import.requestEvent.addHandler(this.handleLinkApiImportRequest);
         this.handleLinkApiImportRequest();
@@ -96,9 +105,11 @@ export class SessionsPage implements DragDropClient {
     async launchSession(session: Session) {
         this.lastSessionTouched = session.id;
         this.currentSessionOverride = session.id;
+        this.cd.markForCheck();
 
         const launchSuccess = await this.emulationService.switchSession(session.id);
         this.currentSessionOverride = undefined;
+        this.cd.markForCheck();
 
         if (!launchSuccess) return;
 
@@ -269,4 +280,6 @@ export class SessionsPage implements DragDropClient {
 
     private currentSessionOverride: number | undefined;
     lastSessionTouched = -1;
+
+    private checkSessions: () => void;
 }

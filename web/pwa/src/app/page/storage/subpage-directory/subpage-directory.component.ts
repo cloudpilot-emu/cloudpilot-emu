@@ -85,7 +85,7 @@ export class SubpageDirectoryComponent implements DoCheck {
     }
 
     get entries(): Array<FileEntry> {
-        return this.path !== undefined ? this.entriesMemoized(this.vfsService.readdir(this.path)) : [];
+        return this.path !== undefined ? [...this.vfsService.readdir(this.path)].sort(entrySortFunction) : [];
     }
 
     trackEntryBy(index: number, entry: FileEntry) {
@@ -275,8 +275,6 @@ export class SubpageDirectoryComponent implements DoCheck {
     private fileCountMemoized = memoize(
         (entries: Array<FileEntry> | undefined): number => entries?.filter((entry) => !entry.isDirectory)?.length ?? 0
     );
-
-    private entriesMemoized = memoize((entries: Array<FileEntry>) => [...entries].sort(entrySortFunction));
 
     @Input()
     card: StorageCard | undefined;

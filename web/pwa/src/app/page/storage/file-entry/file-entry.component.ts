@@ -1,5 +1,14 @@
 import { ActionSheetController, IonItemSliding, PopoverController } from '@ionic/angular';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    Component,
+    EventEmitter,
+    Input,
+    OnChanges,
+    Output,
+    SimpleChanges,
+    ViewChild,
+} from '@angular/core';
 
 import { ContextMenuFileEntryComponent } from './../context-menu-file-entry/context-menu-file-entry.component';
 import { FileEntry } from '@common/bridge/Vfs';
@@ -8,6 +17,7 @@ import { FileEntry } from '@common/bridge/Vfs';
     selector: 'app-file-entry',
     templateUrl: './file-entry.component.html',
     styleUrls: ['./file-entry.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FileEntryComponent implements OnChanges {
     constructor(private actionSheetController: ActionSheetController, private popoverController: PopoverController) {}

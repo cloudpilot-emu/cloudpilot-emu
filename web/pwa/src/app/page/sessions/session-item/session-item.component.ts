@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { IonItemSliding, PopoverController } from '@ionic/angular';
 
 import { ContextMenuComponent } from './../context-menu/context-menu.component';
@@ -10,6 +10,7 @@ import { deviceName } from '@common/helper/deviceProperties';
     selector: 'app-session-item',
     templateUrl: './session-item.component.html',
     styleUrls: ['./session-item.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SessionItemComponent {
     constructor(private popoverController: PopoverController) {}

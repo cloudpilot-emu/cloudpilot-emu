@@ -1,6 +1,6 @@
 import { ActionSheetController, AlertController, ModalController } from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input } from '@angular/core';
 import { DragDropClient, DragDropService } from './../../../service/drag-drop.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { NewCardSize, StorageCardService } from '@pwa/service/storage-card.service';
@@ -11,6 +11,7 @@ import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { ErrorService } from '@pwa/service/error.service';
 import { NewCardDialogComponent } from '../new-card-dialog/new-card-dialog.component';
 import { StorageCard } from '@pwa/model/StorageCard';
+import { changeDetector } from '@pwa/helper/changeDetect';
 import { debounce } from '@pwa/helper/debounce';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
@@ -19,8 +20,9 @@ import { filenameFragment } from '@pwa/helper/filename';
     selector: 'app-subpage-cards',
     templateUrl: './subpage-cards.component.html',
     styleUrls: ['./subpage-cards.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SubpageCardsComponent implements DragDropClient {
+export class SubpageCardsComponent implements DragDropClient, DoCheck {
     constructor(
         private actionSheetController: ActionSheetController,
         public storageCardService: StorageCardService,
@@ -30,8 +32,15 @@ export class SubpageCardsComponent implements DragDropClient {
         private alertService: AlertService,
         private errorService: ErrorService,
         private fileService: FileService,
-        private dragDropService: DragDropService
-    ) {}
+        private dragDropService: DragDropService,
+        cd: ChangeDetectorRef
+    ) {
+        this.checkCards = changeDetector(cd, [], () => this.storageCardService.getAllCards());
+    }
+
+    ngDoCheck(): void {
+        this.checkCards();
+    }
 
     ionViewDidEnter(): void {
         this.dragDropService.registerClient(this);
@@ -219,4 +228,6 @@ export class SubpageCardsComponent implements DragDropClient {
 
     @Input()
     onMountForBrowse: (card: StorageCard) => void = () => undefined;
+
+    private checkCards: () => void;
 }

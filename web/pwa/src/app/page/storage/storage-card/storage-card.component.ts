@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { ContextMenuCardComponent } from '../context-menu-card/context-menu-card.component';
@@ -9,6 +9,7 @@ import { StorageCardService } from './../../../service/storage-card.service';
     selector: 'app-storage-card',
     templateUrl: './storage-card.component.html',
     styleUrls: ['./storage-card.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StorageCardComponent {
     constructor(private storageCardService: StorageCardService, private popoverController: PopoverController) {}
