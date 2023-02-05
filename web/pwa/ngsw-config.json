@@ -54,6 +54,8 @@
           "/svg/cut-outline.svg",
           "/svg/radio-button-off-outline.svg",
           "/svg/radio-button-on-outline.svg",
+          "/svg/checkmark-circle-outline.svg",
+          "/svg/clipboard-outline.svg",
           "/assets/**",
           "/*.(eot|svg|cur|jpg|png|webp|gif|otf|ttf|woff|woff2|ani)"
         ]
