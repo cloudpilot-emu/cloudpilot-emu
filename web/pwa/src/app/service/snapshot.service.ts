@@ -13,6 +13,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { complete, compressPage } from './storage/util';
 
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
+import { DynamicTimeout } from './../helper/dynamicTimeout';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
@@ -31,7 +32,8 @@ declare global {
     }
 }
 
-const TIMEOUT_MSEC = 6000;
+const STATIC_TIMEOUT_MSEC = 500;
+const TIMEOUT_DELTA_MSEC_PER_KB = 0.5;
 const MAX_CONSECUTIVE_ERRORS = 3;
 
 const E_TIMEOUT = new Error('transaction timeout');
@@ -164,7 +166,7 @@ export class SnapshotService {
             let timestampBlockingEnd = 0;
             let pages = 0;
 
-            const timeout = setTimeout(() => {
+            let timeout = new DynamicTimeout(STATIC_TIMEOUT_MSEC, () => {
                 isTimeout = true;
 
                 try {
@@ -172,10 +174,10 @@ export class SnapshotService {
                 } catch (e) {}
 
                 reject(E_TIMEOUT);
-            }, TIMEOUT_MSEC);
+            });
 
-            tx.oncomplete = () => {
-                clearTimeout(timeout);
+            tx.oncomplete = async () => {
+                timeout.cancel();
                 this.dirtyPages?.fill(0);
                 this.cardDirtyPages?.fill(0);
 
@@ -188,7 +190,7 @@ export class SnapshotService {
             };
 
             tx.onerror = () => {
-                clearTimeout(timeout);
+                timeout.cancel();
 
                 reject(new Error(tx.error?.message));
             };
@@ -196,16 +198,16 @@ export class SnapshotService {
             try {
                 timestampBlockingStart = performance.now();
 
-                pages = this.saveDirtyMemory(tx);
+                pages = this.saveDirtyMemory(tx, timeout);
                 if (storageCard) {
-                    pages += this.saveDirtyStorage(storageCard, tx);
+                    pages += this.saveDirtyStorage(storageCard, tx, timeout);
                 }
                 this.saveSession(tx);
 
                 timestampBlockingEnd = performance.now();
             } catch (e) {
                 if (!isTimeout) {
-                    clearTimeout(timeout);
+                    timeout.cancel();
 
                     tx.abort();
                 }
@@ -217,7 +219,7 @@ export class SnapshotService {
         this.snapshotEvent.dispatch(statistics);
     }
 
-    private saveDirtyMemory(tx: IDBTransaction): number {
+    private saveDirtyMemory(tx: IDBTransaction, timeout: DynamicTimeout): number {
         let iPage = 0;
         const objectStore = tx.objectStore(OBJECT_STORE_MEMORY);
         const objectStoreMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
@@ -266,6 +268,7 @@ export class SnapshotService {
                         objectStore.put(this.pages[iPage], [this.sessionId, iPage]);
                     }
 
+                    timeout.increase(TIMEOUT_DELTA_MSEC_PER_KB);
                     pagesSaved++;
                 }
 
@@ -276,7 +279,7 @@ export class SnapshotService {
         return pagesSaved;
     }
 
-    private saveDirtyStorage(card: StorageCard, tx: IDBTransaction): number {
+    private saveDirtyStorage(card: StorageCard, tx: IDBTransaction, timeout: DynamicTimeout): number {
         const dirtyPages = this.cloudpilot.getCardDirtyPages(card.storageId);
         const data = this.cloudpilot.getCardData(card.storageId);
 
@@ -323,6 +326,7 @@ export class SnapshotService {
                     page.set(data.subarray(iPage * 2048, (iPage + 1) * 2048));
 
                     objectStore.put(page, [card.id, iPage]);
+                    timeout.increase(8 * TIMEOUT_DELTA_MSEC_PER_KB);
                     pagesSaved++;
                 }
 

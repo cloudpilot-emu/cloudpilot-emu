@@ -186,11 +186,7 @@ export class EmulationService extends AbstractEmulationService {
 
         this.buttonService.tick(cycles / this.cloudpilotInstance.cyclesPerSecond());
 
-        if (
-            timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL &&
-            this.isUiInitialized() &&
-            !this.cloudpilotInstance.isSuspended()
-        ) {
+        if (timestamp - this.lastSnapshotAt > SNAPSHOT_INTERVAL && !this.cloudpilotInstance.isSuspended()) {
             void this.snapshotService.triggerSnapshot();
 
             this.lastSnapshotAt = timestamp;
