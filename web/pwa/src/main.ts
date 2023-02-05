@@ -21,16 +21,6 @@ if (environment.production) {
     enableProdMode();
 }
 
-// work around status bar overlapping the viewport after rotation on iOS
-
-window.addEventListener('orientationchange', () =>
-    setTimeout(() => {
-        document.body.style.height = window.innerHeight + 'px';
-    }, 100)
-);
-
-window.addEventListener('scroll', () => window.scrollTo(0, 0));
-
 platformBrowserDynamic()
     .bootstrapModule(AppModule)
     .catch((err) => console.log(err));
