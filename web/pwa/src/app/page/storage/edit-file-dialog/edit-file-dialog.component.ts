@@ -61,14 +61,13 @@ export class EditFileDialogComponent implements OnInit {
     private validateNameUnique = (control: AbstractControl<string>): ValidationErrors | null => {
         if (!this.entry) return null;
 
-        const entries = this.vfsService.readdir(this.vfsService.dirname(this.entry.path));
-        if (!entries) return null;
-
-        return entries.some(
-            (entry) =>
-                entry.name.toLocaleLowerCase() === control.value.toLocaleLowerCase() &&
-                entry.name.toLocaleLowerCase() !== this.entry?.name?.toLocaleLowerCase()
-        )
+        return this.vfsService
+            .readdir(this.vfsService.dirname(this.entry.path))
+            .some(
+                (entry) =>
+                    entry.name.toLocaleLowerCase() === control.value.toLocaleLowerCase() &&
+                    entry.name.toLocaleLowerCase() !== this.entry?.name?.toLocaleLowerCase()
+            )
             ? { name: 'already taken' }
             : null;
     };

@@ -1,5 +1,5 @@
 import { ActionSheetController, Config, ModalController, PopoverController } from '@ionic/angular';
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input } from '@angular/core';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { ContextMenuBreadcrumbComponent } from './../context-menu-breadcrumb/context-menu-breadcrumb.component';
@@ -8,6 +8,7 @@ import { EditFileDialogComponent } from './../edit-file-dialog/edit-file-dialog.
 import { FileEntry } from '@common/bridge/Vfs';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { VfsService } from '@pwa/service/vfs.service';
+import { changeDetector } from '@pwa/helper/changeDetect';
 import { debounce } from '@pwa/helper/debounce';
 import { memoize } from '@pwa/helper/memoize';
 
@@ -24,17 +25,27 @@ let BREADCRUMB_TRIGGER_INDEX = 0;
     selector: 'app-subpage-directory',
     templateUrl: './subpage-directory.component.html',
     styleUrls: ['./subpage-directory.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SubpageDirectoryComponent {
+export class SubpageDirectoryComponent implements DoCheck {
     constructor(
         private vfsService: VfsService,
         private popoverController: PopoverController,
         private config: Config,
         private alertService: AlertService,
         private actionSheetController: ActionSheetController,
-        private modalController: ModalController
+        private modalController: ModalController,
+        cd: ChangeDetectorRef
     ) {
         this.breadcrumbTriggerId = `breadcrumb-trigger-${BREADCRUMB_TRIGGER_INDEX++}`;
+
+        this.checkEntries = changeDetector(cd, undefined, () =>
+            this.path !== undefined ? vfsService.readdir(this.path) : undefined
+        );
+    }
+
+    ngDoCheck(): void {
+        this.checkEntries();
     }
 
     get title(): string {
@@ -51,11 +62,6 @@ export class SubpageDirectoryComponent {
                 return splitPath[splitPath.length - 1] ?? '';
             }
         }
-    }
-
-    get showBreadcrumb(): boolean {
-        return true;
-        //return !!this.path && this.path !== '/';
     }
 
     get bytesFree(): number {
@@ -289,4 +295,6 @@ export class SubpageDirectoryComponent {
     mode: 'browse' | 'select' = 'browse';
 
     selection = new Set<string>();
+
+    private checkEntries: () => void;
 }

@@ -86,12 +86,13 @@ export class VfsService {
         if (!this.directoryCache.has(normalizedPath)) {
             const readdirResult = this.vfsInstance.readdir(path);
 
-            if (readdirResult.error === ReaddirError.none) {
-                this.directoryCache.set(normalizedPath, readdirResult.entries);
-            }
+            this.directoryCache.set(
+                normalizedPath,
+                readdirResult.error === ReaddirError.none ? readdirResult.entries : []
+            );
         }
 
-        return this.directoryCache.get(normalizedPath)!;
+        return this.directoryCache.get(normalizedPath) || [];
     }
 
     async updateFileEntry(path: string, changes: { name?: string; attributes: Partial<Attributes> }): Promise<void> {
