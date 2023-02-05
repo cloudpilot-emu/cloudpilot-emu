@@ -1,5 +1,5 @@
 import { ActionSheetController, Config, ModalController, PopoverController } from '@ionic/angular';
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { ContextMenuBreadcrumbComponent } from './../context-menu-breadcrumb/context-menu-breadcrumb.component';
@@ -25,7 +25,7 @@ let BREADCRUMB_TRIGGER_INDEX = 0;
     templateUrl: './subpage-directory.component.html',
     styleUrls: ['./subpage-directory.component.scss'],
 })
-export class SubpageDirectoryComponent implements OnInit {
+export class SubpageDirectoryComponent {
     constructor(
         private vfsService: VfsService,
         private popoverController: PopoverController,
@@ -78,8 +78,8 @@ export class SubpageDirectoryComponent implements OnInit {
         return this.fileCountMemoized(this.entries);
     }
 
-    ngOnInit(): void {
-        this.updateEntries();
+    get entries(): Array<FileEntry> {
+        return this.path !== undefined ? this.entriesMemoized(this.vfsService.readdir(this.path)) : [];
     }
 
     trackEntryBy(index: number, entry: FileEntry) {
@@ -101,7 +101,6 @@ export class SubpageDirectoryComponent implements OnInit {
             backdropDismiss: false,
             componentProps: {
                 entry,
-                onSave: this.updateEntries.bind(this),
             },
         });
 
@@ -260,17 +259,6 @@ export class SubpageDirectoryComponent implements OnInit {
         void popover.present();
     }
 
-    private updateEntries(): void {
-        if (this.path === undefined) {
-            this.entries = [];
-            return;
-        }
-
-        void this.vfsService
-            .readdir(this.path)
-            .then((entries) => (this.entries = entries ? [...entries].sort(entrySortFunction) : []));
-    }
-
     private bytesInFilesMemoized = memoize(
         (entries: Array<FileEntry> | undefined): number =>
             entries?.reduce((acc, entry) => acc + (entry.isDirectory ? 0 : entry.size), 0) ?? 0
@@ -279,6 +267,8 @@ export class SubpageDirectoryComponent implements OnInit {
     private fileCountMemoized = memoize(
         (entries: Array<FileEntry> | undefined): number => entries?.filter((entry) => !entry.isDirectory)?.length ?? 0
     );
+
+    private entriesMemoized = memoize((entries: Array<FileEntry>) => [...entries].sort(entrySortFunction));
 
     @Input()
     card: StorageCard | undefined;
@@ -291,8 +281,6 @@ export class SubpageDirectoryComponent implements OnInit {
 
     @Input()
     onNavigateBreadcrumb: (index: number) => void = () => undefined;
-
-    entries: Array<FileEntry> | undefined;
 
     lastEntryTouched: string | undefined = undefined;
 

@@ -1,18 +1,12 @@
 import { Attributes, FileEntry, ReaddirError, Vfs, VfsResult } from '@common/bridge/Vfs';
 import { CardOwner, StorageCardContext } from './storage-card-context';
+import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { AlertService } from './alert.service';
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
-import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageService } from '@pwa/service/storage.service';
 import deepEqual from 'deep-equal';
-
-export enum VfsError {
-    none,
-    read,
-    write,
-}
 
 @Injectable({ providedIn: 'root' })
 export class VfsService {
@@ -20,7 +14,9 @@ export class VfsService {
         private storageService: StorageService,
         private storageCardContext: StorageCardContext,
         private alertService: AlertService
-    ) {}
+    ) {
+        void this.vfs.then((instance) => (this.vfsInstance = instance));
+    }
 
     normalizePath(path: string): string {
         return ('/' + path).replace(/\/{2,}/g, '/').replace(/\/*$/, '');
@@ -32,6 +28,10 @@ export class VfsService {
 
     dirname(path: string): string {
         return this.normalizePath(path).replace(/\/[^\/]*$/, '');
+    }
+
+    isFilenameValid(name: string | undefined): boolean {
+        return name === undefined ? true : !/[\/\\]/.test(name);
     }
 
     async mountCardUnchecked(id: number, readonly: boolean, data?: Uint32Array): Promise<boolean> {
@@ -77,67 +77,69 @@ export class VfsService {
         this.onReleaseCard.dispatch(id);
     }
 
-    async readdir(path: string): Promise<Array<FileEntry> | undefined> {
+    readdir(path: string): Array<FileEntry> {
+        // This cannot happen, as the FS needs to be mounted before it can be used.
+        if (!this.vfsInstance) return [];
+
         const normalizedPath = this.normalizePath(path);
 
         if (!this.directoryCache.has(normalizedPath)) {
-            const readdirResult = (await this.vfs).readdir(path);
+            const readdirResult = this.vfsInstance.readdir(path);
+
             if (readdirResult.error === ReaddirError.none) {
                 this.directoryCache.set(normalizedPath, readdirResult.entries);
             }
         }
 
-        return this.directoryCache.get(normalizedPath);
+        return this.directoryCache.get(normalizedPath)!;
     }
 
-    async updateFileEntry(
-        path: string,
-        changes: { name?: string; attributes: Partial<Attributes> }
-    ): Promise<VfsError> {
+    async updateFileEntry(path: string, changes: { name?: string; attributes: Partial<Attributes> }): Promise<void> {
         const vfs = await this.vfs;
         path = this.normalizePath(path);
 
-        const { result, entry } = vfs.stat(path);
-        if (result !== VfsResult.FR_OK) {
-            await this.alertService.errorMessage(`Unable to stat ${path}.`);
-            return VfsError.read;
+        if (!this.isFilenameValid(changes.name)) {
+            await this.error('The provided file name is invalid.');
+            return;
         }
 
-        this.directoryCache.delete(this.dirname(path));
+        const { result, entry } = vfs.stat(path);
+        if (result !== VfsResult.FR_OK) {
+            await this.error(`The path ${path} is invalid. This is a bug in Cloudpilot.`);
+            return;
+        }
 
         if (changes.attributes !== undefined && !deepEqual(changes.attributes, entry.attributes)) {
+            this.directoryCache.delete(this.dirname(path));
+
             switch (vfs.chmod(path, changes.attributes)) {
                 case VfsResult.FR_OK:
                     break;
 
                 default:
-                    await this.alertService.errorMessage(`Failed to change file attributes.`);
-                    return VfsError.write;
+                    await this.fatalError(`Unable to write the updated file attributes.`);
+                    return;
             }
         }
 
         if (changes.name !== undefined && changes.name !== entry.name) {
-            if (changes.name.indexOf('/') >= 0) {
-                await this.alertService.errorMessage('Invalid file name.');
-                throw new Error('bad file name');
-            }
+            this.directoryCache.delete(this.dirname(path));
 
             switch (vfs.rename(path, `${this.dirname(path)}/${changes.name}`)) {
                 case VfsResult.FR_OK:
                     break;
 
                 case VfsResult.FR_INVALID_NAME:
-                    await this.alertService.errorMessage('Invalid file name.');
-                    return VfsError.read;
+                    await this.error('The provided file name is invalid.');
+                    return;
 
                 default:
-                    await this.alertService.errorMessage('Failed to rename file.');
-                    return VfsError.write;
+                    await this.fatalError('Unable to write the updated file attributes.');
+                    return;
             }
         }
 
         await this.sync();
-        return VfsError.none;
     }
 
     currentCard(): StorageCard | undefined {
@@ -150,6 +152,22 @@ export class VfsService {
 
     getBytesTotal(): number {
         return this.bytesTotal;
+    }
+
+    private async error(message: string): Promise<void> {
+        await this.alertService.errorMessage(message);
+    }
+
+    private async fatalError(message: string): Promise<void> {
+        if (!this.mountedCard) return;
+
+        await this.storageService.updateStorageCardPartial(this.mountedCard.id, { status: StorageCardStatus.dirty });
+        await this.releaseCard();
+
+        void this.alertService.errorMessage(`${message}
+        <br><br>
+        No changes have been written, and the card has been unmounted to prevent damage to the file system.
+        `);
     }
 
     private async sync(): Promise<void> {
@@ -168,6 +186,7 @@ export class VfsService {
 
     private mountedCard: StorageCard | undefined;
     private vfs = Vfs.create();
+    private vfsInstance: Vfs | undefined;
 
     private directoryCache = new Map<string, Array<FileEntry>>();
     private bytesFree = 0;

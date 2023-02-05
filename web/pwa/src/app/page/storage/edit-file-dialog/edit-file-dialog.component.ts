@@ -4,6 +4,7 @@ import { Component, Input, OnInit } from '@angular/core';
 import { FileEntry } from '@common/bridge/Vfs';
 import { ModalController } from '@ionic/angular';
 import { VfsService } from './../../../service/vfs.service';
+import { debounce } from '@pwa/helper/debounce';
 
 @Component({
     selector: 'app-edit-file-dialog',
@@ -20,26 +21,24 @@ export class EditFileDialogComponent implements OnInit {
         this.formGroup.controls.attrHidden.setValue(this.entry.attributes.hidden);
         this.formGroup.controls.attrReadonly.setValue(this.entry.attributes.readonly);
         this.formGroup.controls.attrSystem.setValue(this.entry.attributes.system);
-
-        void this.vfsService
-            .readdir(this.vfsService.dirname(this.entry.path))
-            .then((entries) => entries && (this.existingNames = entries.map((e) => e.name)));
     }
 
     get subjectName(): string {
         return this.entry?.isDirectory ? 'Directory' : 'File';
     }
 
-    onSaveClick(): void {
-        void this.save();
+    @debounce()
+    async onSaveClick(): Promise<void> {
+        await this.save();
     }
 
     onCancelClick(): void {
         void this.modalController.dismiss();
     }
 
-    onEnter(): void {
-        void this.save();
+    @debounce()
+    async onEnter(): Promise<void> {
+        await this.save();
     }
 
     private async save(): Promise<void> {
@@ -60,13 +59,22 @@ export class EditFileDialogComponent implements OnInit {
     }
 
     private validateNameUnique = (control: AbstractControl<string>): ValidationErrors | null => {
-        return this.existingNames.some(
-            (name) =>
-                name.toLocaleLowerCase() === control.value.toLocaleLowerCase() &&
-                name.toLocaleLowerCase() !== this.entry?.name?.toLocaleLowerCase()
+        if (!this.entry) return null;
+
+        const entries = this.vfsService.readdir(this.vfsService.dirname(this.entry.path));
+        if (!entries) return null;
+
+        return entries.some(
+            (entry) =>
+                entry.name.toLocaleLowerCase() === control.value.toLocaleLowerCase() &&
+                entry.name.toLocaleLowerCase() !== this.entry?.name?.toLocaleLowerCase()
         )
             ? { name: 'already taken' }
             : null;
+    };
+
+    private validateNameValid = (control: AbstractControl<string>): ValidationErrors | null => {
+        return this.vfsService.isFilenameValid(control.value) ? null : { name: 'invalid file name' };
     };
 
     @Input()
@@ -74,10 +82,11 @@ export class EditFileDialogComponent implements OnInit {
 
     onSave: () => void = () => undefined;
 
-    private existingNames: Array<string> = [];
-
     formGroup = new FormGroup({
-        name: new FormControl('', { nonNullable: true, validators: [Validators.required, this.validateNameUnique] }),
+        name: new FormControl('', {
+            nonNullable: true,
+            validators: [Validators.required, this.validateNameUnique, this.validateNameValid],
+        }),
         attrReadonly: new FormControl(false, { nonNullable: true }),
         attrHidden: new FormControl(false, { nonNullable: true }),
         attrSystem: new FormControl(false, { nonNullable: true }),
