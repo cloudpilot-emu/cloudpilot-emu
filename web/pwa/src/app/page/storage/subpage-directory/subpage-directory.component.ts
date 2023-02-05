@@ -35,7 +35,7 @@ export class SubpageDirectoryComponent implements DoCheck {
         private alertService: AlertService,
         private actionSheetController: ActionSheetController,
         private modalController: ModalController,
-        cd: ChangeDetectorRef
+        private cd: ChangeDetectorRef
     ) {
         this.breadcrumbTriggerId = `breadcrumb-trigger-${BREADCRUMB_TRIGGER_INDEX++}`;
 
@@ -154,6 +154,7 @@ export class SubpageDirectoryComponent implements DoCheck {
 
         this.selection.clear();
         this.mode = 'select';
+        this.cd.markForCheck();
     }
 
     @debounce()
@@ -198,6 +199,7 @@ export class SubpageDirectoryComponent implements DoCheck {
         }
 
         this.mode = 'browse';
+        this.cd.markForCheck();
     }
 
     onSelectAll(): void {
