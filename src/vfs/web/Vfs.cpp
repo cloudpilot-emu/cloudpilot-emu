@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string_view>
 
+#include "AutocloseFile.h"
 #include "fatfs/diskio.h"
 
 using namespace std;
@@ -123,3 +124,26 @@ unsigned int Vfs::BytesTotal(unsigned int slot) {
 
     return (fs[slot].n_fatent - 2) * fs[slot].csize * 512;
 }
+
+bool Vfs::ReadFile(const char* path) {
+    currentFileSize = 0;
+    currentFileContent.release();
+
+    FILINFO filinfo;
+    if (f_stat(path, &filinfo) != FR_OK || (filinfo.fattrib & AM_DIR)) return false;
+
+    currentFileContent = make_unique<uint8_t[]>(filinfo.fsize);
+    currentFileSize = filinfo.fsize;
+
+    FIL file;
+    if (f_open(&file, path, FA_READ) != FR_OK) return false;
+    AutocloseFile autoclose(&file);
+
+    UINT bytesRead;
+    return f_read(&file, currentFileContent.get(), filinfo.fsize, &bytesRead) == FR_OK &&
+           (bytesRead == filinfo.fsize);
+}
+
+size_t Vfs::GetCurrentFileSize() const { return currentFileSize; }
+
+void* Vfs::GetCurrentFileContent() const { return currentFileContent.get(); }

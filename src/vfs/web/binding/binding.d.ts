@@ -66,6 +66,10 @@ export interface Vfs {
 
     BytesFree(slot: number): number;
     BytesTotal(slot: number): number;
+
+    ReadFile(path: string): boolean;
+    GetCurrentFileSize(): number;
+    GetCurrentFileContent(): VoidPtr;
 }
 
 export const enum ReaddirStatus {

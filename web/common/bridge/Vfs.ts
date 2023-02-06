@@ -179,5 +179,14 @@ export class Vfs {
         return this.vfsNative.BytesTotal(slot);
     }
 
+    readFile(path: string): Uint8Array | undefined {
+        if (!this.vfsNative.ReadFile(path)) return undefined;
+
+        const ptr = this.module.getPointer(this.vfsNative.GetCurrentFileContent());
+        const size = this.vfsNative.GetCurrentFileSize();
+
+        return this.module.HEAPU8.subarray(ptr, ptr + size).slice();
+    }
+
     private vfsNative: VfsNative;
 }

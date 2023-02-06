@@ -31,6 +31,10 @@ interface Vfs {
 
     long BytesFree(long slot);
     long BytesTotal(long slot);
+
+    boolean ReadFile([Const] DOMString path);
+    long GetCurrentFileSize();
+    VoidPtr GetCurrentFileContent();
 };
 
 interface ReaddirContext {

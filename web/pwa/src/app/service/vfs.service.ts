@@ -4,7 +4,9 @@ import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { AlertService } from './alert.service';
 import { Event } from 'microevent.ts';
+import { FileService } from '@pwa/service/file.service';
 import { Injectable } from '@angular/core';
+import { LoadingController } from '@ionic/angular';
 import { StorageService } from '@pwa/service/storage.service';
 import deepEqual from 'deep-equal';
 
@@ -13,7 +15,9 @@ export class VfsService {
     constructor(
         private storageService: StorageService,
         private storageCardContext: StorageCardContext,
-        private alertService: AlertService
+        private alertService: AlertService,
+        private fileService: FileService,
+        private loadingController: LoadingController
     ) {
         void this.vfs.then((instance) => (this.vfsInstance = instance));
     }
@@ -141,6 +145,25 @@ export class VfsService {
         }
 
         await this.sync();
+    }
+
+    async saveFile(entry: FileEntry): Promise<void> {
+        const loader = await this.loadingController.create();
+        await loader.present();
+
+        try {
+            const vfs = await this.vfs;
+            const content = vfs.readFile(entry.path);
+
+            if (!content) {
+                await this.alertService.errorMessage(`Could not read file '${entry.name}'.`);
+                return;
+            }
+
+            this.fileService.saveFile(entry.name, content);
+        } finally {
+            await loader.dismiss();
+        }
     }
 
     currentCard(): StorageCard | undefined {

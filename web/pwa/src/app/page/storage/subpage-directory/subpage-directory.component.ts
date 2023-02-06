@@ -114,7 +114,12 @@ export class SubpageDirectoryComponent implements DoCheck {
     }
 
     onSaveEntry(entry: FileEntry): void {
-        void this.alertService.message('Not implemented', `Save ${entry.name}: not implemented.`);
+        if (entry.isDirectory) {
+            void this.alertService.message('Not implemented', `Save ${entry.name}: not implemented.`);
+            return;
+        }
+
+        void this.vfsService.saveFile(entry);
     }
 
     onCopyEntry(entry: FileEntry): void {

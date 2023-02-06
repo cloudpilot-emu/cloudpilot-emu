@@ -35,6 +35,10 @@ class Vfs {
     unsigned int BytesFree(unsigned int slot);
     unsigned int BytesTotal(unsigned int slot);
 
+    bool ReadFile(const char* path);
+    size_t GetCurrentFileSize() const;
+    void* GetCurrentFileContent() const;
+
    private:
     std::unique_ptr<CardImage> cardImages[FF_VOLUMES];
     std::unique_ptr<CardVolume> cardVolumes[FF_VOLUMES];
@@ -43,6 +47,9 @@ class Vfs {
 
     FATFS fs[FF_VOLUMES];
     FileEntry fileEntry;
+
+    size_t currentFileSize{0};
+    std::unique_ptr<uint8_t[]> currentFileContent;
 };
 
 #endif  // _VFS_H_
