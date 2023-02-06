@@ -35,6 +35,7 @@ interface Vfs {
     boolean ReadFile([Const] DOMString path);
     long GetCurrentFileSize();
     VoidPtr GetCurrentFileContent();
+    void ReleaseCurrentFile();
 };
 
 interface ReaddirContext {

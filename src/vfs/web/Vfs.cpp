@@ -147,3 +147,8 @@ bool Vfs::ReadFile(const char* path) {
 size_t Vfs::GetCurrentFileSize() const { return currentFileSize; }
 
 void* Vfs::GetCurrentFileContent() const { return currentFileContent.get(); }
+
+void Vfs::ReleaseCurrentFile() {
+    currentFileContent.reset();
+    currentFileSize = 0;
+}

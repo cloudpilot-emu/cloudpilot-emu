@@ -38,6 +38,7 @@ class Vfs {
     bool ReadFile(const char* path);
     size_t GetCurrentFileSize() const;
     void* GetCurrentFileContent() const;
+    void ReleaseCurrentFile();
 
    private:
     std::unique_ptr<CardImage> cardImages[FF_VOLUMES];

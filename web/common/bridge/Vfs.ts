@@ -185,7 +185,10 @@ export class Vfs {
         const ptr = this.module.getPointer(this.vfsNative.GetCurrentFileContent());
         const size = this.vfsNative.GetCurrentFileSize();
 
-        return this.module.HEAPU8.subarray(ptr, ptr + size).slice();
+        const fileContent = this.module.HEAPU8.subarray(ptr, ptr + size).slice();
+        this.vfsNative.ReleaseCurrentFile();
+
+        return fileContent;
     }
 
     private vfsNative: VfsNative;

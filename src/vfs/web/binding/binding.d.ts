@@ -70,6 +70,7 @@ export interface Vfs {
     ReadFile(path: string): boolean;
     GetCurrentFileSize(): number;
     GetCurrentFileContent(): VoidPtr;
+    ReleaseCurrentFile(): void;
 }
 
 export const enum ReaddirStatus {
