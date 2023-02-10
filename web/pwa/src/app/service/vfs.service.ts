@@ -193,7 +193,7 @@ export class VfsService {
                         'Warning',
                         `The following files were not archived correctly due to errors: <br><br>${failedItems
                             .slice(0, 3)
-                            .join('<br>')}<br><br> and ${failedItems.length - 3} other items`
+                            .join('<br>')}<br><br> and ${failedItems.length - 3} other file`
                     );
                 }
             }
