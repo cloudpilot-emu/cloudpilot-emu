@@ -85,6 +85,14 @@ export const enum ReaddirError {
     unknown = 2,
 }
 
+export const enum CreateZipContextState {
+    initial = 0,
+    more = 1,
+    done = 2,
+    errorFile = -1,
+    errorDirectory = -2,
+}
+
 export interface ReaddirContext {
     Next(): number;
 
@@ -93,4 +101,17 @@ export interface ReaddirContext {
     GetStatus(): ReaddirStatus;
     GetError(): ReaddirError;
     GetErrorDescription(): string;
+}
+
+export interface CreateZipContext {
+    AddFile(path: string): CreateZipContext;
+    AddDirectory(path: string): CreateZipContext;
+
+    Continue(): CreateZipContextState;
+    GetState(): CreateZipContextState;
+
+    GetZipContent(): VoidPtr;
+    GetZipSize(): number;
+
+    GetErrorItem(): string;
 }

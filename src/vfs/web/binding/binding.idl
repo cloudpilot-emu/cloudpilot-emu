@@ -49,3 +49,18 @@ interface ReaddirContext {
     long GetError();
     [Const] DOMString GetErrorDescription();
 };
+
+interface CreateZipContext {
+    void CreateZipContext([Const] DOMString path);
+
+    [Ref] CreateZipContext AddFile([Const] DOMString path);
+    [Ref] CreateZipContext AddDirectory([Const] DOMString path);
+
+    long Continue();
+    long GetState();
+
+    VoidPtr GetZipContent();
+    long GetZipSize();
+
+    [Const] DOMString GetErrorItem();
+};

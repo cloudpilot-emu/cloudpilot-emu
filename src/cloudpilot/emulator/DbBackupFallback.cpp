@@ -1,5 +1,6 @@
 #include "DbBackupFallback.h"
 
+#include "Defer.h"
 #include "EmMemory.h"
 #include "EmSession.h"
 #include "ROMStubs.h"

@@ -1,6 +1,7 @@
 
 #include <cstddef>
 
+#include "CreateZipContext.h"
 #include "FileEntry.h"
 #include "ReaddirContext.h"
 #include "Vfs.h"

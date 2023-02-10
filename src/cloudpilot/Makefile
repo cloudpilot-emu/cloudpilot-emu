@@ -74,6 +74,7 @@ MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
 INCLUDE = \
 	-I../common \
+	-I../common/zip \
 	-I./emulator/hardware \
 	-I./emulator/hardware/clie \
 	-I./emulator/hardware/handera \
@@ -94,7 +95,6 @@ INCLUDE = \
 	-I./emulator/palm/Platform/Incs/Libraries \
 	-I./emulator/suspend \
 	-I./emulator \
-	-I./zip \
 	-I./nanopb \
 	-I./proto \
 	$(INCLUDE_EXTRA)
@@ -109,9 +109,7 @@ SOURCE_C = \
 	nanopb/pb_common.c \
 	nanopb/pb_encode.c \
 	nanopb/pb_decode.c \
-	proto/networking.pb.c \
-	zip/miniz.c \
-	zip/zip.c
+	proto/networking.pb.c
 
 SOURCE_EMU = \
 	emulator/uae/readcpu.cpp \

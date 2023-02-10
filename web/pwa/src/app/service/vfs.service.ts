@@ -166,6 +166,44 @@ export class VfsService {
         }
     }
 
+    async saveDirectory(entry: FileEntry): Promise<void> {
+        const loader = await this.loadingController.create();
+        await loader.present();
+
+        try {
+            const vfs = await this.vfs;
+
+            const { archive, failedItems } = await vfs.createZipArchive({
+                directories: [entry.path],
+                prefix: entry.path,
+            });
+
+            await loader.dismiss();
+
+            if (failedItems.length > 0) {
+                if (failedItems.length <= 3) {
+                    await this.alertService.message(
+                        'Warning',
+                        `The following files were not archived correctly due to errors: <br><br>${failedItems.join(
+                            '<br>'
+                        )}`
+                    );
+                } else {
+                    await this.alertService.message(
+                        'Warning',
+                        `The following files were not archived correctly due to errors: <br><br>${failedItems
+                            .slice(0, 3)
+                            .join('<br>')}<br><br> and ${failedItems.length - 3} other items`
+                    );
+                }
+            }
+
+            if (archive) this.fileService.saveFile(entry.name + '.zip', archive);
+        } finally {
+            await loader.dismiss();
+        }
+    }
+
     currentCard(): StorageCard | undefined {
         return this.mountedCard;
     }

@@ -1,9 +1,3 @@
-// I am not sure why the ambient import is required here --- tsc does fine without it, but
-// the webpack build is unable to resolve emscripten with a simple ES6 style import.
-//
-// tslint:disable-next-line: no-reference
-/// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
-
 import {
     FileEntry as FileEntryNative,
     ReaddirError,
@@ -14,7 +8,14 @@ import {
 } from '@native-vfs/index';
 import createModule, { Module } from '@native-vfs/index';
 
+import { CreateZipContextState } from './../../../src/vfs/web/binding/binding.d';
 import { dirtyPagesSize } from './util';
+
+// I am not sure why the ambient import is required here --- tsc does fine without it, but
+// the webpack build is unable to resolve emscripten with a simple ES6 style import.
+//
+// tslint:disable-next-line: no-reference
+/// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 
 export { ReaddirError, VfsResult } from '@native-vfs/index';
 
@@ -189,6 +190,52 @@ export class Vfs {
         this.vfsNative.ReleaseCurrentFile();
 
         return fileContent;
+    }
+
+    async createZipArchive({
+        files,
+        directories,
+        prefix,
+    }: {
+        files?: Array<string>;
+        directories?: Array<string>;
+        prefix: string;
+    }): Promise<{
+        archive: Uint8Array | undefined;
+        failedItems: Array<string>;
+    }> {
+        const context = new this.module.CreateZipContext(prefix);
+        const failingItems: Array<string> = [];
+
+        try {
+            if (files) files.forEach((file) => context.AddFile(file));
+            if (directories) directories.forEach((directory) => context.AddDirectory(directory));
+
+            while (context.GetState() !== CreateZipContextState.done) {
+                switch (context.Continue()) {
+                    case CreateZipContextState.errorDirectory:
+                    case CreateZipContextState.errorFile:
+                        failingItems.push(context.GetErrorItem());
+                        break;
+                }
+
+                if (context.GetState() !== CreateZipContextState.done) {
+                    await new Promise((resolve) => setTimeout(resolve, 0));
+                }
+            }
+
+            let archive: Uint8Array | undefined;
+            const ptr = this.module.getPointer(context.GetZipContent());
+            const size = context.GetZipSize();
+
+            if (ptr !== 0 && size !== 0) {
+                archive = this.module.HEAPU8.subarray(ptr, ptr + size).slice();
+            }
+
+            return { archive, failedItems: failingItems };
+        } finally {
+            this.module.destroy(context);
+        }
     }
 
     private vfsNative: VfsNative;

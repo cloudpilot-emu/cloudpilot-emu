@@ -66,7 +66,7 @@ MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
 MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
-INCLUDE = -I../common -I. $(INCLUDE_EXTRA)
+INCLUDE = -I../common -I../common/zip -I. $(INCLUDE_EXTRA)
 
 INCLUDE_NATIVE = -I../argparse
 
@@ -79,7 +79,8 @@ SOURCE_C = \
 SOURCE_CPP = \
 	fatfs/diskio.cpp \
 	ReaddirContext.cpp \
-	FileEntry.cpp
+	FileEntry.cpp \
+	CreateZipContext.cpp
 
 SOURCE_TEST =
 

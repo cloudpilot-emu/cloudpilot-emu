@@ -120,7 +120,9 @@
     "endian.h": "c",
     "cdefs.h": "c",
     "_endian.h": "c",
-    "unistd.h": "c"
+    "unistd.h": "c",
+    "hash_map": "cpp",
+    "source_location": "cpp"
   },
   "editor.formatOnSave": true,
   "CppHelper.SourcePattern": [

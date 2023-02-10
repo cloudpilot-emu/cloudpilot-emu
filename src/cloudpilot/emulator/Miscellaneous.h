@@ -65,20 +65,4 @@ class EmValueChanger {
     T fOrigValue;
 };
 
-class Defer {
-   public:
-    Defer(function<void()> deferCb) : deferCb(deferCb) {}
-
-    ~Defer() { deferCb(); }
-
-   private:
-    function<void()> deferCb;
-
-   private:
-    Defer(const Defer&) = delete;
-    Defer(Defer&&) = delete;
-    Defer& operator=(const Defer&) = delete;
-    Defer& operator=(Defer&&) = delete;
-};
-
 #endif

@@ -48,7 +48,9 @@ MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
 INCLUDE =
 
-SOURCE_C =
+SOURCE_C = \
+	zip/miniz.c \
+	zip/zip.c
 
 SOURCE_CPP = CardImage.cpp CardVolume.cpp
 

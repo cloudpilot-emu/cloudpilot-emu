@@ -1,4 +1,4 @@
-import { ReaddirContext } from './web/binding/binding.d';
+import { ReaddirContext, CreateZipContext } from './web/binding/binding.d';
 import { Vfs, VoidPtr } from './web/binding/binding';
 import 'emscripten';
 
@@ -11,10 +11,12 @@ export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'> {
     UTF8ToString(charPtr: number): string;
 
     Vfs: { new (): Vfs };
+    CreateZipContext: { new (prefix: string): CreateZipContext };
     ReaddirContext: { new (path: string): ReaddirContext };
 
     destroy(vfs: Vfs): void;
     destroy(context: ReaddirContext): void;
+    destroy(context: CreateZipContext): void;
 
     instantiateWasm(
         imports: WebAssembly.Imports,
