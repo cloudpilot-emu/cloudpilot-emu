@@ -47,7 +47,6 @@ class CreateZipContext {
 
     zip_t* zip{nullptr};
     DIR dir;
-    bool dirOpen{false};
 
     bool scanning{false};
     std::string currentFile;
