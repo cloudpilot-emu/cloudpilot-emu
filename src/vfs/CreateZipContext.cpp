@@ -1,7 +1,6 @@
 #include "CreateZipContext.h"
 
 #include <chrono>
-#include <iostream>
 
 #include "Defer.h"
 #include "zip.h"
@@ -10,8 +9,8 @@ using namespace std;
 
 namespace {
     constexpr int COMPRESSION_LEVEL = 1;
-    constexpr uint64_t TIMESLICE_SIZE_MSEC = 10;
-    constexpr size_t READ_BUFFER_SIZE = 32 * 1024 * 1024;
+    constexpr uint64_t TIMESLICE_SIZE_MSEC = 50;
+    constexpr size_t READ_BUFFER_SIZE = 32 * 1024;
 
     uint64_t epochMilliseconds() {
         return chrono::duration_cast<chrono::milliseconds>(
@@ -84,11 +83,11 @@ const char* CreateZipContext::GetErrorItem() const {
 }
 
 void CreateZipContext::ExecuteSlice() {
-    const uint64_t timestampInitial = epochMilliseconds();
+    timesliceStart = epochMilliseconds();
 
     if (state == State::errorFile || state == State::errorDirectory) state = State::more;
 
-    while (state == State::more && epochMilliseconds() - timestampInitial < TIMESLICE_SIZE_MSEC) {
+    while (state == State::more && epochMilliseconds() - timesliceStart < TIMESLICE_SIZE_MSEC) {
         ExecuteStep();
     }
 }
@@ -96,7 +95,9 @@ void CreateZipContext::ExecuteSlice() {
 void CreateZipContext::ExecuteStep() {
     if (state != State::more) return;
 
-    if (files.size() > 0) {
+    if (reading) {
+        IncrementalReadCurrentFile();
+    } else if (files.size() > 0) {
         AddFileToArchive(files.back());
         files.pop_back();
     } else if (scanning) {
@@ -131,36 +132,44 @@ void CreateZipContext::AddFileToArchive(const std::string& name) {
     string entryName = name;
     if (entryName.find(prefix) == 0) entryName.erase(0, prefix.length());
 
-    const int openResult = zip_entry_open(zip, entryName.c_str());
-    Defer deferCloseEntry([&]() { zip_entry_close(zip); });
-
-    if (openResult != 0) {
+    if (zip_entry_open(zip, entryName.c_str()) != 0) {
         state = State::errorFile;
         return;
     }
 
-    FIL file;
     if (f_open(&file, name.c_str(), FA_READ) != FR_OK) {
+        zip_entry_close(zip);
         state = State::errorFile;
         return;
     }
 
-    Defer deferCloseFile([&]() { f_close(&file); });
+    reading = true;
+    IncrementalReadCurrentFile();
+}
+
+void CreateZipContext::IncrementalReadCurrentFile() {
+    if (!reading) return;
 
     UINT bytesRead = 0;
     do {
         if (f_read(&file, readBuffer.get(), READ_BUFFER_SIZE, &bytesRead) != FR_OK) {
             state = State::errorFile;
-            return;
+            break;
         }
 
         if (bytesRead > 0) {
             if (zip_entry_write(zip, readBuffer.get(), bytesRead) != 0) {
                 state = State::errorFile;
-                return;
+                break;
             }
         }
-    } while (bytesRead > 0);
+    } while (bytesRead > 0 && epochMilliseconds() - timesliceStart < TIMESLICE_SIZE_MSEC);
+
+    if (bytesRead == 0 || state == State::errorFile) {
+        f_close(&file);
+        zip_entry_close(zip);
+        reading = false;
+    }
 }
 
 FRESULT CreateZipContext::OpenCurrentDir() {

@@ -33,6 +33,7 @@ class CreateZipContext {
     void ExecuteSlice();
     void ExecuteStep();
     void AddFileToArchive(const std::string& name);
+    void IncrementalReadCurrentFile();
 
     FRESULT OpenCurrentDir();
     void CloseCurrentDir();
@@ -45,10 +46,15 @@ class CreateZipContext {
     std::vector<std::string> files;
     std::vector<std::string> directories;
 
+    uint64_t timesliceStart{0};
+
     zip_t* zip{nullptr};
     DIR dir;
+    FIL file;
 
     bool scanning{false};
+    bool reading{false};
+
     std::string currentFile;
     std::string currentDirectory;
 
