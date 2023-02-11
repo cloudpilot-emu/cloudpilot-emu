@@ -9,6 +9,7 @@ import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { StorageService } from '@pwa/service/storage.service';
 import deepEqual from 'deep-equal';
+import { filenameForArchive } from '@pwa/helper/filename';
 
 @Injectable({ providedIn: 'root' })
 export class VfsService {
@@ -166,16 +167,22 @@ export class VfsService {
         }
     }
 
-    async saveDirectory(entry: FileEntry): Promise<void> {
+    async archiveFiles(entries: Array<FileEntry>, prefix: string): Promise<void> {
+        if (entries.length === 0 || !this.mountedCard) return;
+
         const loader = await this.loadingController.create();
         await loader.present();
 
         try {
             const vfs = await this.vfs;
+            const directories = entries.filter((entry) => entry.isDirectory).map((entry) => entry.path);
+            const files = entries.filter((entry) => !entry.isDirectory).map((entry) => entry.path);
+            const archiveName = entries.length === 1 ? `${entries[0].name}.zip` : filenameForArchive(this.mountedCard);
 
             const { archive, failedItems } = await vfs.createZipArchive({
-                directories: [entry.path],
-                prefix: entry.path,
+                directories,
+                files,
+                prefix,
             });
 
             await loader.dismiss();
@@ -198,7 +205,7 @@ export class VfsService {
                 }
             }
 
-            if (archive) this.fileService.saveFile(entry.name + '.zip', archive);
+            if (archive) this.fileService.saveFile(archiveName, archive);
         } finally {
             await loader.dismiss();
         }

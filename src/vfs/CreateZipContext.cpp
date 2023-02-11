@@ -28,7 +28,7 @@ CreateZipContext::CreateZipContext(const string& prefix)
 CreateZipContext::~CreateZipContext() {
     if (zip) zip_stream_close(zip);
     if (archive) free(archive);
-    f_closedir(&dir);
+    CloseCurrentDir();
 }
 
 CreateZipContext& CreateZipContext::AddFile(const string& path) {
@@ -104,12 +104,13 @@ void CreateZipContext::ExecuteStep() {
 
         if (f_readdir(&dir, &filinfo) != FR_OK) {
             scanning = false;
-            f_closedir(&dir);
+            CloseCurrentDir();
+
             state = State::errorDirectory;
         } else {
             if (filinfo.fname[0] == '\0') {
                 scanning = false;
-                f_closedir(&dir);
+                CloseCurrentDir();
             } else if (filinfo.fattrib & AM_DIR) {
                 directories.push_back(currentDirectory + "/" + filinfo.fname);
             } else {
@@ -120,9 +121,9 @@ void CreateZipContext::ExecuteStep() {
         currentDirectory = directories.back();
         directories.pop_back();
 
-        if (f_opendir(&dir, currentDirectory.c_str()) != FR_OK) {
+        if (OpenCurrentDir() != FR_OK) {
             state = State::errorDirectory;
-            f_closedir(&dir);
+            CloseCurrentDir();
         } else {
             scanning = true;
         }
@@ -168,4 +169,20 @@ void CreateZipContext::AddFileToArchive(const std::string& name) {
             }
         }
     } while (bytesRead > 0);
+}
+
+FRESULT CreateZipContext::OpenCurrentDir() {
+    if (dirOpen) return FR_INT_ERR;
+
+    FRESULT result = f_opendir(&dir, currentDirectory.c_str());
+    dirOpen = result == FR_OK;
+
+    return result;
+}
+
+void CreateZipContext::CloseCurrentDir() {
+    if (!dirOpen) return;
+    dirOpen = false;
+
+    f_closedir(&dir);
 }

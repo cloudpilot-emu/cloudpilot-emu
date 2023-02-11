@@ -114,8 +114,10 @@ export class SubpageDirectoryComponent implements DoCheck {
     }
 
     onSaveEntry(entry: FileEntry): void {
+        if (!this.path) return;
+
         if (entry.isDirectory) {
-            void this.vfsService.saveDirectory(entry);
+            void this.vfsService.archiveFiles([entry], this.path);
         } else {
             void this.vfsService.saveFile(entry);
         }
@@ -219,7 +221,18 @@ export class SubpageDirectoryComponent implements DoCheck {
     }
 
     onSaveZip(): void {
-        void this.alertService.message('Not implemented', 'Save zip: not implemented.');
+        if (!this.path) return;
+
+        const entriesByName = new Map<string, FileEntry>(
+            this.vfsService.readdir(this.path).map((entry) => [entry.name, entry])
+        );
+
+        void this.vfsService.archiveFiles(
+            Array.from(this.selection)
+                .map((name) => entriesByName.get(name))
+                .filter((entry) => !!entry) as Array<FileEntry>,
+            this.path
+        );
     }
 
     onDeleteSelection(): void {

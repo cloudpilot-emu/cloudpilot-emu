@@ -34,6 +34,9 @@ class CreateZipContext {
     void ExecuteStep();
     void AddFileToArchive(const std::string& name);
 
+    FRESULT OpenCurrentDir();
+    void CloseCurrentDir();
+
    private:
     std::string prefix;
 
@@ -44,6 +47,7 @@ class CreateZipContext {
 
     zip_t* zip{nullptr};
     DIR dir;
+    bool dirOpen{false};
 
     bool scanning{false};
     std::string currentFile;

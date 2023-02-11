@@ -1,4 +1,5 @@
 import { Session } from '@pwa/model/Session';
+import { StorageCard } from './../model/StorageCard';
 
 export function filenameFragment(prefix: string): string {
     const now = new Date();
@@ -19,6 +20,10 @@ export function filenameForSession(session: Session): string {
 
 export function filenameForBackup(session: Session, includeRomDatabases: boolean): string {
     return `backup_${filenameFragment(session.name)}${includeRomDatabases ? '_with_rom' : ''}.zip`;
+}
+
+export function filenameForArchive(card: StorageCard): string {
+    return `files_${filenameFragment(card.name)}.zip`;
 }
 
 export function concatFilenames(files: Array<string>, limit = 3): string {
