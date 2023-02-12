@@ -204,7 +204,7 @@ export class Vfs {
         archive: Uint8Array | undefined;
         failedItems: Array<string>;
     }> {
-        const context = new this.module.CreateZipContext(prefix);
+        const context = new this.module.CreateZipContext(prefix, 25);
         const failingItems: Array<string> = [];
 
         try {

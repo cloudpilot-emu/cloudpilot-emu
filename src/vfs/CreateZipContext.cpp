@@ -9,7 +9,6 @@ using namespace std;
 
 namespace {
     constexpr int COMPRESSION_LEVEL = 1;
-    constexpr uint64_t TIMESLICE_SIZE_MSEC = 50;
     constexpr size_t READ_BUFFER_SIZE = 32 * 1024;
 
     uint64_t epochMilliseconds() {
@@ -19,8 +18,10 @@ namespace {
     }
 }  // namespace
 
-CreateZipContext::CreateZipContext(const string& prefix)
-    : prefix(prefix), readBuffer(make_unique<uint8_t[]>(READ_BUFFER_SIZE)) {
+CreateZipContext::CreateZipContext(const string& prefix, uint32_t timesliceMilliseconds)
+    : prefix(prefix),
+      timesliceMilliseconds(timesliceMilliseconds),
+      readBuffer(make_unique<uint8_t[]>(READ_BUFFER_SIZE)) {
     if (prefix.size() > 0 && prefix[prefix.size() - 1] != '/') this->prefix.append("/");
 }
 
@@ -87,7 +88,7 @@ void CreateZipContext::ExecuteSlice() {
 
     if (state == State::errorFile || state == State::errorDirectory) state = State::more;
 
-    while (state == State::more && epochMilliseconds() - timesliceStart < TIMESLICE_SIZE_MSEC) {
+    while (state == State::more && epochMilliseconds() - timesliceStart < timesliceMilliseconds) {
         ExecuteStep();
     }
 }
@@ -163,7 +164,7 @@ void CreateZipContext::IncrementalReadCurrentFile() {
                 break;
             }
         }
-    } while (bytesRead > 0 && epochMilliseconds() - timesliceStart < TIMESLICE_SIZE_MSEC);
+    } while (bytesRead > 0 && epochMilliseconds() - timesliceStart < timesliceMilliseconds);
 
     if (bytesRead == 0 || state == State::errorFile) {
         f_close(&file);

@@ -11,7 +11,7 @@ export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'> {
     UTF8ToString(charPtr: number): string;
 
     Vfs: { new (): Vfs };
-    CreateZipContext: { new (prefix: string): CreateZipContext };
+    CreateZipContext: { new (prefix: string, timesliceMilliseconds: number): CreateZipContext };
     ReaddirContext: { new (path: string): ReaddirContext };
 
     destroy(vfs: Vfs): void;

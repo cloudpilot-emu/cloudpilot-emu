@@ -52,7 +52,7 @@ interface ReaddirContext {
 };
 
 interface CreateZipContext {
-    void CreateZipContext([Const] DOMString path);
+    void CreateZipContext([Const] DOMString path, long timesliceMilliseconds);
 
     [Ref] CreateZipContext AddFile([Const] DOMString path);
     [Ref] CreateZipContext AddDirectory([Const] DOMString path);

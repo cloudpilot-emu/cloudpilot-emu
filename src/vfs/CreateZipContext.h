@@ -15,7 +15,7 @@ class CreateZipContext {
     enum class State { initial = 0, more = 1, done = 2, errorFile = -1, errorDirectory = -2 };
 
    public:
-    CreateZipContext(const std::string& prefix);
+    CreateZipContext(const std::string& prefix, uint32_t timesliceMilliseconds);
     ~CreateZipContext();
 
     CreateZipContext& AddFile(const std::string& path);
@@ -42,6 +42,7 @@ class CreateZipContext {
     std::string prefix;
 
     State state{State::initial};
+    const uint32_t timesliceMilliseconds;
 
     std::vector<std::string> files;
     std::vector<std::string> directories;
