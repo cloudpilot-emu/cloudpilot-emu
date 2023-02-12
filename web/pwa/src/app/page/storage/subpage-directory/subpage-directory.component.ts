@@ -113,13 +113,14 @@ export class SubpageDirectoryComponent implements DoCheck {
         await modal.present();
     }
 
-    onSaveEntry(entry: FileEntry): void {
+    @debounce()
+    async onSaveEntry(entry: FileEntry): Promise<void> {
         if (!this.path) return;
 
         if (entry.isDirectory) {
-            void this.vfsService.archiveFiles([entry], this.path);
+            await this.vfsService.archiveFiles([entry], this.path);
         } else {
-            void this.vfsService.saveFile(entry);
+            await this.vfsService.saveFile(entry);
         }
     }
 
@@ -131,8 +132,13 @@ export class SubpageDirectoryComponent implements DoCheck {
         void this.alertService.message('Not implemented', `Cut ${entry.name}: not implemented.`);
     }
 
-    onDeleteEntry(entry: FileEntry): void {
-        void this.alertService.message('Not implemented', `Delete ${entry.name}: not implemented.`);
+    @debounce()
+    async onDeleteEntry(entry: FileEntry): Promise<void> {
+        if (entry.isDirectory) {
+            await this.alertService.message('Not implemented', `Delete ${entry.name}: not implemented.`);
+        } else {
+            await this.vfsService.unlinkEntry(entry);
+        }
     }
 
     onAddFiles(): void {
@@ -220,14 +226,15 @@ export class SubpageDirectoryComponent implements DoCheck {
         void this.alertService.message('Not implemented', 'Cut selection: not implemented.');
     }
 
-    onSaveZip(): void {
+    @debounce()
+    async onSaveZip(): Promise<void> {
         if (!this.path) return;
 
         const entriesByName = new Map<string, FileEntry>(
             this.vfsService.readdir(this.path).map((entry) => [entry.name, entry])
         );
 
-        void this.vfsService.archiveFiles(
+        await this.vfsService.archiveFiles(
             Array.from(this.selection)
                 .map((name) => entriesByName.get(name))
                 .filter((entry) => !!entry) as Array<FileEntry>,

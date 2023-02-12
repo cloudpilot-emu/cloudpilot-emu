@@ -30,10 +30,11 @@ class Vfs {
     int RenameFile(const char* from, const char* to);
     int ChmodFile(const char* path, int attr, int mask);
     int StatFile(const char* path);
-    const FileEntry& GetEntry();
+    int UnlinkFile(const char* path);
+    const FileEntry& GetEntry() const;
 
-    unsigned int BytesFree(unsigned int slot);
-    unsigned int BytesTotal(unsigned int slot);
+    unsigned int BytesFree(unsigned int slot) const;
+    unsigned int BytesTotal(unsigned int slot) const;
 
     bool ReadFile(const char* path);
     size_t GetCurrentFileSize() const;

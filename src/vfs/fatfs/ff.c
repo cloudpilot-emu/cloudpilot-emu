@@ -4988,10 +4988,6 @@ FRESULT f_unlink (
 		if (res == FR_OK) {					/* The object is accessible */
 			if (dj.fn[NSFLAG] & NS_NONAME) {
 				res = FR_INVALID_NAME;		/* Cannot remove the origin directory */
-			} else {
-				if (dj.obj.attr & AM_RDO) {
-					res = FR_DENIED;		/* Cannot remove R/O object */
-				}
 			}
 			if (res == FR_OK) {
 #if FF_FS_EXFAT

@@ -238,5 +238,9 @@ export class Vfs {
         }
     }
 
+    unlinkFile(path: string): VfsResult {
+        return this.vfsNative.UnlinkFile(path);
+    }
+
     private vfsNative: VfsNative;
 }

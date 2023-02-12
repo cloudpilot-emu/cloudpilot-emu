@@ -26,6 +26,7 @@ interface Vfs {
     long RenameFile([Const] DOMString from, [Const] DOMString to);
     long ChmodFile([Const] DOMString path, long attr, long mask);
     long StatFile([Const] DOMString path);
+    long UnlinkFile([Const] DOMString path);
 
     [Const, Ref] FileEntry GetEntry();
 

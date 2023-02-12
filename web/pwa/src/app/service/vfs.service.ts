@@ -211,6 +211,23 @@ export class VfsService {
         }
     }
 
+    async unlinkEntry(entry: FileEntry): Promise<void> {
+        if (entry.isDirectory) return;
+
+        const vfs = await this.vfs;
+        const result = vfs.unlinkFile(entry.path);
+
+        if (result !== VfsResult.FR_OK) {
+            console.error(`failed to unlink ${entry.path}: ${result}`);
+
+            await this.error(`Failed to delete: ${entry.path}`);
+            return;
+        }
+
+        this.directoryCache.delete(this.dirname(entry.path));
+        await this.sync();
+    }
+
     currentCard(): StorageCard | undefined {
         return this.mountedCard;
     }

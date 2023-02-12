@@ -61,6 +61,7 @@ export interface Vfs {
     RenameFile(from: string, to: string): VfsResult;
     ChmodFile(path: string, attr: number, mask: number): VfsResult;
     StatFile(path: string): VfsResult;
+    UnlinkFile(path: string): VfsResult;
 
     GetEntry(): FileEntry;
 

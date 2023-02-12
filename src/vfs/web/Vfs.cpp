@@ -107,9 +107,11 @@ int Vfs::ChmodFile(const char* path, int attr, int mask) { return f_chmod(path, 
 
 int Vfs::StatFile(const char* path) { return f_stat(path, fileEntry.GetFilinfo()); }
 
-const FileEntry& Vfs::GetEntry() { return fileEntry; }
+int Vfs::UnlinkFile(const char* path) { return f_unlink(path); }
 
-unsigned int Vfs::BytesFree(unsigned int slot) {
+const FileEntry& Vfs::GetEntry() const { return fileEntry; }
+
+unsigned int Vfs::BytesFree(unsigned int slot) const {
     if (slot >= FF_VOLUMES || !cardImages[slot]) return 0;
 
     DWORD clustersFree;
@@ -119,7 +121,7 @@ unsigned int Vfs::BytesFree(unsigned int slot) {
     return clustersFree * fs->csize * 512;
 }
 
-unsigned int Vfs::BytesTotal(unsigned int slot) {
+unsigned int Vfs::BytesTotal(unsigned int slot) const {
     if (slot >= FF_VOLUMES || !cardImages[slot]) return 0;
 
     return (fs[slot].n_fatent - 2) * fs[slot].csize * 512;
