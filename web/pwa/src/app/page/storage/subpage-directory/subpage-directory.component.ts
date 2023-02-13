@@ -135,7 +135,7 @@ export class SubpageDirectoryComponent implements DoCheck {
     @debounce()
     async onDeleteEntry(entry: FileEntry): Promise<void> {
         if (entry.isDirectory) {
-            await this.alertService.message('Not implemented', `Delete ${entry.name}: not implemented.`);
+            await this.vfsService.deleteRecursive([entry]);
         } else {
             await this.vfsService.unlinkEntry(entry);
         }
@@ -228,22 +228,18 @@ export class SubpageDirectoryComponent implements DoCheck {
 
     @debounce()
     async onSaveZip(): Promise<void> {
-        if (!this.path) return;
+        const selection = this.materializeSelection();
+        if (!selection || !this.path) return;
 
-        const entriesByName = new Map<string, FileEntry>(
-            this.vfsService.readdir(this.path).map((entry) => [entry.name, entry])
-        );
-
-        await this.vfsService.archiveFiles(
-            Array.from(this.selection)
-                .map((name) => entriesByName.get(name))
-                .filter((entry) => !!entry) as Array<FileEntry>,
-            this.path
-        );
+        await this.vfsService.archiveFiles(selection, this.path);
     }
 
-    onDeleteSelection(): void {
-        void this.alertService.message('Not implemented', 'Delete selection: not implemented.');
+    @debounce()
+    async onDeleteSelection(): Promise<void> {
+        const selection = this.materializeSelection();
+        if (!selection || !this.path) return;
+
+        await this.vfsService.deleteRecursive(selection);
     }
 
     async openBreadcrumbMenu(e: MouseEvent): Promise<void> {
@@ -299,6 +295,18 @@ export class SubpageDirectoryComponent implements DoCheck {
     private fileCountMemoized = memoize(
         (entries: Array<FileEntry> | undefined): number => entries?.filter((entry) => !entry.isDirectory)?.length ?? 0
     );
+
+    private materializeSelection(): Array<FileEntry> | undefined {
+        if (!this.path) return;
+
+        const entriesByName = new Map<string, FileEntry>(
+            this.vfsService.readdir(this.path).map((entry) => [entry.name, entry])
+        );
+
+        return Array.from(this.selection)
+            .map((name) => entriesByName.get(name))
+            .filter((entry) => !!entry) as Array<FileEntry>;
+    }
 
     @Input()
     card: StorageCard | undefined;

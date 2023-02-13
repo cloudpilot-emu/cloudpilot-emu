@@ -94,6 +94,13 @@ export const enum CreateZipContextState {
     errorDirectory = -2,
 }
 
+export const enum DeleteRecursiveContextState {
+    initial = 0,
+    more = 1,
+    done = 2,
+    error = -1,
+}
+
 export interface ReaddirContext {
     Next(): number;
 
@@ -115,4 +122,14 @@ export interface CreateZipContext {
     GetZipSize(): number;
 
     GetErrorItem(): string;
+}
+
+export interface DeleteRecursiveContext {
+    AddFile(path: string): DeleteRecursiveContext;
+    AddDirectory(path: string): DeleteRecursiveContext;
+
+    Continue(): DeleteRecursiveContextState;
+    GetState(): DeleteRecursiveContextState;
+
+    GetFailingPath(): string;
 }

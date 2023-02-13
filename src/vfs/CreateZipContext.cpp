@@ -3,6 +3,7 @@
 #include <chrono>
 
 #include "Defer.h"
+#include "VfsUtil.h"
 #include "zip.h"
 
 using namespace std;
@@ -10,12 +11,6 @@ using namespace std;
 namespace {
     constexpr int COMPRESSION_LEVEL = 1;
     constexpr size_t READ_BUFFER_SIZE = 32 * 1024;
-
-    uint64_t epochMilliseconds() {
-        return chrono::duration_cast<chrono::milliseconds>(
-                   chrono::system_clock::now().time_since_epoch())
-            .count();
-    }
 }  // namespace
 
 CreateZipContext::CreateZipContext(const string& prefix, uint32_t timesliceMilliseconds)
@@ -84,11 +79,12 @@ const char* CreateZipContext::GetErrorItem() const {
 }
 
 void CreateZipContext::ExecuteSlice() {
-    timesliceStart = epochMilliseconds();
+    timesliceStart = util::epochMilliseconds();
 
     if (state == State::errorFile || state == State::errorDirectory) state = State::more;
 
-    while (state == State::more && epochMilliseconds() - timesliceStart < timesliceMilliseconds) {
+    while (state == State::more &&
+           util::epochMilliseconds() - timesliceStart < timesliceMilliseconds) {
         ExecuteStep();
     }
 }
@@ -164,7 +160,7 @@ void CreateZipContext::IncrementalReadCurrentFile() {
                 break;
             }
         }
-    } while (bytesRead > 0 && epochMilliseconds() - timesliceStart < timesliceMilliseconds);
+    } while (bytesRead > 0 && util::epochMilliseconds() - timesliceStart < timesliceMilliseconds);
 
     if (bytesRead == 0 || state == State::errorFile) {
         f_close(&file);

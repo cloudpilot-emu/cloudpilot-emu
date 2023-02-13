@@ -1,3 +1,4 @@
+import { CreateZipContextState, DeleteRecursiveContextState } from './../../../src/vfs/web/binding/binding.d';
 import {
     FileEntry as FileEntryNative,
     ReaddirError,
@@ -8,7 +9,6 @@ import {
 } from '@native-vfs/index';
 import createModule, { Module } from '@native-vfs/index';
 
-import { CreateZipContextState } from './../../../src/vfs/web/binding/binding.d';
 import { dirtyPagesSize } from './util';
 
 // I am not sure why the ambient import is required here --- tsc does fine without it, but
@@ -240,6 +240,33 @@ export class Vfs {
 
     unlinkFile(path: string): VfsResult {
         return this.vfsNative.UnlinkFile(path);
+    }
+
+    async deleteRecursive({
+        files,
+        directories,
+    }: {
+        files?: Array<string>;
+        directories?: Array<string>;
+    }): Promise<{ success: true } | { success: false; failingItem: string }> {
+        const context = new this.module.DeleteRecursiveContext(25);
+
+        try {
+            if (files) files.forEach((file) => context.AddFile(file));
+            if (directories) directories.forEach((directory) => context.AddDirectory(directory));
+
+            while (context.Continue() === DeleteRecursiveContextState.more) {
+                await new Promise((resolve) => setTimeout(resolve, 0));
+            }
+
+            if (context.GetState() === DeleteRecursiveContextState.done) {
+                return { success: true };
+            } else {
+                return { success: false, failingItem: context.GetFailingPath() };
+            }
+        } finally {
+            this.module.destroy(context);
+        }
     }
 
     private vfsNative: VfsNative;

@@ -170,13 +170,15 @@ export class VfsService {
     async archiveFiles(entries: Array<FileEntry>, prefix: string): Promise<void> {
         if (entries.length === 0 || !this.mountedCard) return;
 
-        const loader = await this.loadingController.create();
+        const loader = await this.loadingController.create({ message: 'Creating archive...' });
         await loader.present();
 
         try {
             const vfs = await this.vfs;
-            const directories = entries.filter((entry) => entry.isDirectory).map((entry) => entry.path);
-            const files = entries.filter((entry) => !entry.isDirectory).map((entry) => entry.path);
+            const directories = entries
+                .filter((entry) => entry.isDirectory)
+                .map((entry) => this.normalizePath(entry.path));
+            const files = entries.filter((entry) => !entry.isDirectory).map((entry) => this.normalizePath(entry.path));
             const archiveName = entries.length === 1 ? `${entries[0].name}.zip` : filenameForArchive(this.mountedCard);
 
             const { archive, failedItems } = await vfs.createZipArchive({
@@ -226,6 +228,31 @@ export class VfsService {
 
         this.directoryCache.delete(this.dirname(entry.path));
         await this.sync();
+    }
+
+    async deleteRecursive(entries: Array<FileEntry>): Promise<void> {
+        const files = entries.filter((entry) => !entry.isDirectory).map((entry) => this.normalizePath(entry.path));
+        const directories = entries.filter((entry) => entry.isDirectory).map((entry) => this.normalizePath(entry.path));
+
+        const loader = await this.loadingController.create({ message: 'Deleting...' });
+        await loader.present();
+
+        try {
+            const vfs = await this.vfs;
+            const result = await vfs.deleteRecursive({ files, directories });
+
+            if (!result.success) {
+                await loader.dismiss();
+                await this.fatalError(`Failed to delete ${result.failingItem}`);
+
+                return;
+            }
+
+            entries.map((entry) => entry.path).forEach((path) => this.directoryCache.delete(this.dirname(path)));
+            await this.sync();
+        } finally {
+            await loader.dismiss();
+        }
     }
 
     currentCard(): StorageCard | undefined {

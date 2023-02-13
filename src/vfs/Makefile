@@ -78,9 +78,11 @@ SOURCE_C = \
 
 SOURCE_CPP = \
 	fatfs/diskio.cpp \
+	VfsUtil.cpp \
 	ReaddirContext.cpp \
 	FileEntry.cpp \
-	CreateZipContext.cpp
+	CreateZipContext.cpp \
+	DeleteRecursiveContext.cpp
 
 SOURCE_TEST =
 
