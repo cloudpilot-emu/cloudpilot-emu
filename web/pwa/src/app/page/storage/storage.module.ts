@@ -10,13 +10,13 @@ import { EditFileDialogComponent } from './edit-file-dialog/edit-file-dialog.com
 import { FileEntryComponent } from './file-entry/file-entry.component';
 import { IonicModule } from '@ionic/angular';
 import { NewCardDialogComponent } from './new-card-dialog/new-card-dialog.component';
+import { NewDirectoryDialogComponent } from './new-directory-dialog/new-directory-dialog.component';
 import { NgModule } from '@angular/core';
 import { SharedComponentModule } from '@pwa/component/shared-component.module';
 import { StorageCardComponent } from './storage-card/storage-card.component';
 import { StoragePage } from './storage.page';
 import { SubpageCardsComponent } from './subpage-cards/subpage-cards.component';
 import { SubpageDirectoryComponent } from './subpage-directory/subpage-directory.component';
-import { NewDirectoryDialogComponent } from './new-directory-dialog/new-directory-dialog.component';
 
 @NgModule({
     imports: [CommonModule, IonicModule, FormsModule, ReactiveFormsModule, SharedComponentModule],
