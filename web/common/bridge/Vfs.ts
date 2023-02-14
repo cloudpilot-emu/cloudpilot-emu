@@ -192,6 +192,14 @@ export class Vfs {
         return fileContent;
     }
 
+    unlinkFile(path: string): VfsResult {
+        return this.vfsNative.UnlinkFile(path);
+    }
+
+    mkdir(path: string): VfsResult {
+        return this.vfsNative.Mkdir(path);
+    }
+
     async createZipArchive({
         files,
         directories,
@@ -236,10 +244,6 @@ export class Vfs {
         } finally {
             this.module.destroy(context);
         }
-    }
-
-    unlinkFile(path: string): VfsResult {
-        return this.vfsNative.UnlinkFile(path);
     }
 
     async deleteRecursive({

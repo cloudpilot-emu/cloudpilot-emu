@@ -27,6 +27,7 @@ interface Vfs {
     long ChmodFile([Const] DOMString path, long attr, long mask);
     long StatFile([Const] DOMString path);
     long UnlinkFile([Const] DOMString path);
+    long Mkdir([Const] DOMString path);
 
     [Const, Ref] FileEntry GetEntry();
 

@@ -6,6 +6,7 @@ import { ContextMenuBreadcrumbComponent } from './../context-menu-breadcrumb/con
 import { ContextMenuDirectoryComponent } from './../context-menu-directory/context-menu-directory.component';
 import { EditFileDialogComponent } from './../edit-file-dialog/edit-file-dialog.component';
 import { FileEntry } from '@common/bridge/Vfs';
+import { NewDirectoryDialogComponent } from './../new-directory-dialog/new-directory-dialog.component';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { VfsService } from '@pwa/service/vfs.service';
 import { changeDetector } from '@pwa/helper/changeDetect';
@@ -145,8 +146,18 @@ export class SubpageDirectoryComponent implements DoCheck {
         void this.alertService.message('Not implemented', 'Add files: not implemented.');
     }
 
-    onCreateDirectory(): void {
-        void this.alertService.message('Not implemented', 'Create directory: not implemented.');
+    @debounce()
+    async onCreateDirectory(): Promise<void> {
+        const modal = await this.modalController.create({
+            component: NewDirectoryDialogComponent,
+            backdropDismiss: false,
+            componentProps: {
+                parentPath: this.path,
+                onCreate: (name: string) => this.vfsService.mkdir(`${this.path}/${name}`),
+            },
+        });
+
+        await modal.present();
     }
 
     onExtractZipfile(): void {

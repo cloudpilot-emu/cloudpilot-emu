@@ -31,6 +31,7 @@ class Vfs {
     int ChmodFile(const char* path, int attr, int mask);
     int StatFile(const char* path);
     int UnlinkFile(const char* path);
+    int Mkdir(const char* path);
     const FileEntry& GetEntry() const;
 
     unsigned int BytesFree(unsigned int slot) const;

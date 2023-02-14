@@ -109,6 +109,8 @@ int Vfs::StatFile(const char* path) { return f_stat(path, fileEntry.GetFilinfo()
 
 int Vfs::UnlinkFile(const char* path) { return f_unlink(path); }
 
+int Vfs::Mkdir(const char* path) { return f_mkdir(path); }
+
 const FileEntry& Vfs::GetEntry() const { return fileEntry; }
 
 unsigned int Vfs::BytesFree(unsigned int slot) const {

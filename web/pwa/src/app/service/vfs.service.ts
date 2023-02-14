@@ -255,6 +255,34 @@ export class VfsService {
         }
     }
 
+    async mkdir(path: string): Promise<void> {
+        const vfs = await this.vfs;
+
+        switch (vfs.mkdir(path)) {
+            case VfsResult.FR_INVALID_NAME:
+                await this.alertService.errorMessage('Invalid name.');
+                return;
+
+            case VfsResult.FR_DENIED:
+                await this.alertService.errorMessage('No space left on card.');
+                return;
+
+            case VfsResult.FR_EXIST:
+                await this.alertService.errorMessage('Name already taken.');
+                return;
+
+            case VfsResult.FR_OK:
+                break;
+
+            default:
+                await this.error(`Failed to create ${path}.`);
+                return;
+        }
+
+        await this.sync();
+        this.directoryCache.delete(this.dirname(path));
+    }
+
     currentCard(): StorageCard | undefined {
         return this.mountedCard;
     }

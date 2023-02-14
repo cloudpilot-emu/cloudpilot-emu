@@ -62,6 +62,7 @@ export interface Vfs {
     ChmodFile(path: string, attr: number, mask: number): VfsResult;
     StatFile(path: string): VfsResult;
     UnlinkFile(path: string): VfsResult;
+    Mkdir(path: string): VfsResult;
 
     GetEntry(): FileEntry;
 
