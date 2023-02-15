@@ -1,5 +1,5 @@
 import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 
 import { ModalController } from '@ionic/angular';
 import { VfsService } from '@pwa/service/vfs.service';
@@ -9,8 +9,12 @@ import { VfsService } from '@pwa/service/vfs.service';
     templateUrl: './new-directory-dialog.component.html',
     styleUrls: ['./new-directory-dialog.component.scss'],
 })
-export class NewDirectoryDialogComponent {
+export class NewDirectoryDialogComponent implements OnInit {
     constructor(private vfsService: VfsService, private modalController: ModalController) {}
+
+    ngOnInit(): void {
+        this.formGroup.controls.name.setValue(this.newName());
+    }
 
     onCreateClick(): void {
         this.createDir();
@@ -35,7 +39,7 @@ export class NewDirectoryDialogComponent {
         if (!this.parentPath) return null;
 
         return this.vfsService
-            .readdir(this.vfsService.dirname(this.parentPath))
+            .readdir(this.parentPath)
             .some((entry) => entry.name.toLocaleLowerCase() === control.value.toLocaleLowerCase())
             ? { name: 'already taken' }
             : null;
@@ -44,6 +48,19 @@ export class NewDirectoryDialogComponent {
     private validateNameValid = (control: AbstractControl<string>): ValidationErrors | null => {
         return this.vfsService.isFilenameValid(control.value) ? null : { name: 'invalid file name' };
     };
+
+    private newName(): string {
+        const entries = this.vfsService.readdir(this.parentPath ?? '');
+        let i = 0;
+        let name: string;
+
+        do {
+            name = i === 0 ? `New Directory` : `New Directory (${i})`;
+            i++;
+        } while (entries.some((entry) => entry.name === name));
+
+        return name;
+    }
 
     @Input()
     parentPath: string | undefined;
