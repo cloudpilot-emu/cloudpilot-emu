@@ -9,12 +9,8 @@ import { VfsService } from '@pwa/service/vfs.service';
     templateUrl: './new-directory-dialog.component.html',
     styleUrls: ['./new-directory-dialog.component.scss'],
 })
-export class NewDirectoryDialogComponent implements OnInit {
+export class NewDirectoryDialogComponent {
     constructor(private vfsService: VfsService, private modalController: ModalController) {}
-
-    ngOnInit(): void {
-        this.formGroup.controls.name.setValue(this.newName());
-    }
 
     onCreateClick(): void {
         this.createDir();
@@ -48,19 +44,6 @@ export class NewDirectoryDialogComponent implements OnInit {
     private validateNameValid = (control: AbstractControl<string>): ValidationErrors | null => {
         return this.vfsService.isFilenameValid(control.value) ? null : { name: 'invalid file name' };
     };
-
-    private newName(): string {
-        const entries = this.vfsService.readdir(this.parentPath ?? '');
-        let i = 0;
-        let name: string;
-
-        do {
-            name = i === 0 ? `New Directory` : `New Directory (${i})`;
-            i++;
-        } while (entries.some((entry) => entry.name === name));
-
-        return name;
-    }
 
     @Input()
     parentPath: string | undefined;

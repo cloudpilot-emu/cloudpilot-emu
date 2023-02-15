@@ -1,6 +1,6 @@
 <ion-header translucent>
     <ion-toolbar>
-        <ion-title>New directory</ion-title>
+        <ion-title>Create directory</ion-title>
 
         <ion-buttons slot="primary">
             <ion-button (click)="onCreateClick()" [disabled]="formGroup.invalid">Create</ion-button>
@@ -15,9 +15,8 @@
 <ion-content fullscreen>
     <form [formGroup]="formGroup" (keydown.enter)="onEnter()">
         <ion-item lines="none">
-            <ion-label position="stacked">How should we call this directory?</ion-label>
-            <ion-input placeholder="directory name"
-                formControlName="name"></ion-input>
+            <ion-label position="stacked">Directory name</ion-label>
+            <ion-input placeholder="Enter directory name" formControlName="name" autofocus></ion-input>
         </ion-item>
     </form>
 </ion-content>
