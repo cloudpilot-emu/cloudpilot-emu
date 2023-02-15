@@ -25,6 +25,11 @@
 @import "~@ionic/angular/css/text-transformation.css";
 @import "~@ionic/angular/css/flex-utils.css";
 
+html {
+    /* Work around scrolling bug in iOS */
+    height: 100%;
+}
+
 .installation-error {
     z-index: 100000 !important;
 }
