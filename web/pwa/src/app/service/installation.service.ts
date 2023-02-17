@@ -61,14 +61,14 @@ class InstallationContext {
 
     async run(): Promise<[Array<string>, Array<string>, Array<string>]> {
         for (const file of this.files) {
-            if (/\.zip/i.test(file.name) && file.content.length < ZIP_SIZE_LIMIT) {
+            if (/\.zip/i.test(file.name) && file.getContent.length < ZIP_SIZE_LIMIT) {
                 try {
                     await this.installZip(file);
                 } catch (err) {
                     this.filesFail.push(file.name);
                 }
             } else if (isInstallable(file.name)) {
-                await this.installOne(file.name, file.content);
+                await this.installOne(file.name, await file.getContent());
             } else {
                 this.filesFail.push(file.name);
             }
@@ -126,7 +126,7 @@ class InstallationContext {
     private async installZip(file: FileDescriptor): Promise<void> {
         const cloudpilot = await this.cloudpilotService.cloudpilot;
 
-        await cloudpilot.withZipfileWalker(file.content, async (walker) => {
+        await cloudpilot.withZipfileWalker(await file.getContent(), async (walker) => {
             let installed = 0;
 
             while (walker.GetState() === ZipfileWalkerState.open) {

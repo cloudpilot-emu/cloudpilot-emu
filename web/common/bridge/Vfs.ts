@@ -1,13 +1,16 @@
-import { CreateZipContextState, DeleteRecursiveContextState } from './../../../src/vfs/web/binding/binding.d';
-import {
+import createModule, {
+    CreateZipContextState,
+    DeleteRecursiveContextState,
     FileEntry as FileEntryNative,
+    Module,
     ReaddirError,
     ReaddirStatus,
     VfsAttr,
     Vfs as VfsNative,
     VfsResult,
+    VoidPtr,
+    WriteFileResult,
 } from '@native-vfs/index';
-import createModule, { Module } from '@native-vfs/index';
 
 import { dirtyPagesSize } from './util';
 
@@ -17,7 +20,7 @@ import { dirtyPagesSize } from './util';
 // tslint:disable-next-line: no-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 
-export { ReaddirError, VfsResult } from '@native-vfs/index';
+export { ReaddirError, VfsResult, WriteFileResult } from '@native-vfs/index';
 
 export interface Attributes {
     readonly: boolean;
@@ -271,6 +274,25 @@ export class Vfs {
         } finally {
             this.module.destroy(context);
         }
+    }
+
+    writeFile(path: string, data: Uint8Array): WriteFileResult {
+        const dataPtr = this.copyIn(data);
+
+        try {
+            return this.vfsNative.WriteFile(path, data.length, dataPtr);
+        } finally {
+            this.vfsNative.Free(dataPtr);
+        }
+    }
+
+    private copyIn(data: Uint8Array): VoidPtr {
+        const buffer = this.vfsNative.Malloc(data.length);
+        const bufferPtr = this.module.getPointer(buffer);
+
+        this.module.HEAPU8.subarray(bufferPtr, bufferPtr + data.length).set(data);
+
+        return buffer;
     }
 
     private vfsNative: VfsNative;

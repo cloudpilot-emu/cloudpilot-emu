@@ -38,6 +38,8 @@ interface Vfs {
     long GetCurrentFileSize();
     VoidPtr GetCurrentFileContent();
     void ReleaseCurrentFile();
+
+    long WriteFile([Const] DOMString path, long size, [Const] VoidPtr data);
 };
 
 interface ReaddirContext {

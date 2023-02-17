@@ -11,6 +11,15 @@
 
 class Vfs {
    public:
+    enum class WriteFileResult {
+        success = 0,
+        errInvalidName = 1,
+        errIsDirectory = 2,
+        errCardFull = 3,
+        errIO = 4
+    };
+
+   public:
     ~Vfs();
 
     void* Malloc(int size);
@@ -41,6 +50,8 @@ class Vfs {
     size_t GetCurrentFileSize() const;
     void* GetCurrentFileContent() const;
     void ReleaseCurrentFile();
+
+    int WriteFile(const char* path, unsigned int size, const void* data);
 
    private:
     std::unique_ptr<CardImage> cardImages[FF_VOLUMES];

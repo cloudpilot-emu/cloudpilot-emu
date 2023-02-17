@@ -6,6 +6,7 @@
 #include <string_view>
 
 #include "AutocloseFile.h"
+#include "Defer.h"
 #include "fatfs/diskio.h"
 
 using namespace std;
@@ -155,4 +156,40 @@ void* Vfs::GetCurrentFileContent() const { return currentFileContent.get(); }
 void Vfs::ReleaseCurrentFile() {
     currentFileContent.reset();
     currentFileSize = 0;
+}
+
+int Vfs::WriteFile(const char* path, unsigned int size, const void* data) {
+    FIL file;
+    switch (f_open(&file, path, FA_WRITE | FA_OPEN_EXISTING)) {
+        case FR_INVALID_NAME:
+            return static_cast<int>(WriteFileResult::errInvalidName);
+
+        case FR_DENIED:
+            return static_cast<int>(WriteFileResult::errIsDirectory);
+
+        case FR_OK:
+            break;
+
+        default:
+            return static_cast<int>(WriteFileResult::errIO);
+    }
+
+    Defer deferClose([&]() {
+        if (file.obj.fs) f_close(&file);
+    });
+
+    if (f_truncate(&file) != FR_OK) return static_cast<int>(WriteFileResult::errIO);
+
+    UINT bytesWritten = 0;
+    if (f_write(&file, data, size, &bytesWritten) != FR_OK)
+        return static_cast<int>(WriteFileResult::errIO);
+
+    if (bytesWritten != size) {
+        f_close(&file);
+        f_unlink(path);
+
+        return static_cast<int>(WriteFileResult::errCardFull);
+    }
+
+    return static_cast<int>(WriteFileResult::success);
 }

@@ -18,7 +18,7 @@ import { metadataForSession } from '@pwa/helper/metadata';
 
 export interface FileDescriptor {
     name: string;
-    content: Uint8Array;
+    getContent: () => Promise<Uint8Array>;
 }
 
 @Injectable({
@@ -49,11 +49,7 @@ export class FileService {
     openFromDrop(e: DragEvent, handler: (files: Array<FileDescriptor>) => void): void {
         if (e.type !== 'drop' || !e.dataTransfer?.files) return;
 
-        const files = Array.from(e.dataTransfer.files).map(this.readFile.bind(this));
-
-        void Promise.all(files)
-            .then((files) => files.filter((file) => !!file))
-            .then((files) => files.length > 0 && handler(files as Array<FileDescriptor>));
+        handler(Array.from(e.dataTransfer.files).map(this.readFile.bind(this)));
     }
 
     async saveSession(session: Session): Promise<void> {
@@ -153,9 +149,11 @@ export class FileService {
                 throw new Error('request failed');
             }
 
+            const contentPromise = response.arrayBuffer().then((buffer) => new Uint8Array(buffer));
+
             handler({
                 name: urlParsed.pathname.replace(/.*\//, ''),
-                content: new Uint8Array(await response.arrayBuffer()),
+                getContent: () => contentPromise,
             });
 
             return;
@@ -227,11 +225,7 @@ export class FileService {
             const target = e.target as HTMLInputElement;
 
             if (!target?.files) return;
-            const files = Array.from(target.files).map(this.readFile.bind(this));
-
-            void Promise.all(files)
-                .then((files) => files.filter((file) => !!file))
-                .then((files) => files.length > 0 && handler(files as Array<FileDescriptor>));
+            handler(Array.from(target.files).map(this.readFile.bind(this)));
         });
 
         document.body.appendChild(this.input);
@@ -239,18 +233,27 @@ export class FileService {
         this.input.click();
     }
 
-    private readFile(file: File): Promise<FileDescriptor | undefined> {
-        return new Promise<FileDescriptor | undefined>((resolve) => {
-            const reader = new FileReader();
+    private readFile(file: File): FileDescriptor {
+        let contentPromise: Promise<Uint8Array> | undefined;
+        let content = async (): Promise<Uint8Array> => {
+            if (contentPromise) return contentPromise;
 
-            reader.onload = () => resolve({ content: new Uint8Array(reader.result as ArrayBuffer), name: file.name });
-            reader.onerror = () => {
-                console.warn(reader.error);
-                resolve(undefined);
-            };
+            contentPromise = new Promise((resolve, reject) => {
+                const reader = new FileReader();
 
-            reader.readAsArrayBuffer(file);
-        });
+                reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
+                reader.onerror = () => {
+                    console.warn(reader.error);
+                    reject(reader.error);
+                };
+
+                reader.readAsArrayBuffer(file);
+            });
+
+            return contentPromise;
+        };
+
+        return { name: file.name, getContent: content };
     }
 
     private input: HTMLInputElement | undefined;

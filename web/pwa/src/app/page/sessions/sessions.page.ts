@@ -174,7 +174,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
         }
 
         const sessionImage = (await this.cloudpilotService.cloudpilot).deserializeSessionImage<SessionMetadata>(
-            file.content
+            await file.getContent()
         );
 
         if (sessionImage) {
@@ -193,7 +193,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
                 this.lastSessionTouched = session.id;
             }
         } else {
-            const romInfo = (await this.cloudpilotService.cloudpilot).getRomInfo(file.content);
+            const romInfo = (await this.cloudpilotService.cloudpilot).getRomInfo(await file.getContent());
 
             if (!romInfo) {
                 void this.alertService.errorMessage(`Not a valid session file or ROM image.`);
@@ -213,7 +213,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
 
             if (await this.editSettings(settings, romInfo.supportedDevices)) {
                 const session = await this.sessionService.addSessionFromRom(
-                    file.content,
+                    await file.getContent(),
                     settings.name,
                     settings.device,
                     settings

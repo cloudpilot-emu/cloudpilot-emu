@@ -736,7 +736,7 @@ export class Cloudpilot {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);
 
-        this.module.HEAP8.subarray(bufferPtr, bufferPtr + data.length).set(data);
+        this.module.HEAPU8.subarray(bufferPtr, bufferPtr + data.length).set(data);
 
         return buffer;
     }
@@ -745,7 +745,7 @@ export class Cloudpilot {
         const buffer = this.cloudpilot.Malloc(data.length << 2);
         const bufferPtr = this.module.getPointer(buffer);
 
-        this.module.HEAP32.subarray(bufferPtr >>> 2, (bufferPtr >>> 2) + data.length).set(data);
+        this.module.HEAPU32.subarray(bufferPtr >>> 2, (bufferPtr >>> 2) + data.length).set(data);
 
         return buffer;
     }

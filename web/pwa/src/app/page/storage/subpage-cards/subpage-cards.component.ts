@@ -180,7 +180,9 @@ export class SubpageCardsComponent implements DragDropClient, DoCheck {
 
     private handleCardImport = async (file: FileDescriptor): Promise<void> => {
         const cloudpilot = await this.cloudpilotService.cloudpilot;
-        const supportLevel = cloudpilot.getCardSupportLevel(file.content.length);
+        const content = await file.getContent();
+
+        const supportLevel = cloudpilot.getCardSupportLevel(content.length);
 
         if (supportLevel === CardSupportLevel.unsupported) {
             void this.alertService.errorMessage('This is not a supported card image.');
@@ -192,7 +194,7 @@ export class SubpageCardsComponent implements DragDropClient, DoCheck {
                 component: EditCardDialogComponent,
                 backdropDismiss: false,
                 componentProps: {
-                    card: { name: this.disambiguateName(file.name), size: file.content.length },
+                    card: { name: this.disambiguateName(file.name), size: content.length },
                     cardSupportLevel: supportLevel,
                     newCard: true,
                     onCancel: () => {
@@ -210,9 +212,9 @@ export class SubpageCardsComponent implements DragDropClient, DoCheck {
         });
 
         if (cardSettings) {
-            await this.storageCardService.createCardFromFile(
+            await this.storageCardService.createCardFromImage(
                 cardSettings.name,
-                file,
+                content,
                 !!cardSettings.dontFsckAutomatically
             );
         }

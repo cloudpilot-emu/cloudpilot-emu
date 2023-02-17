@@ -35,6 +35,14 @@ export const enum VfsAttr {
     AM_ARC = 0x20,
 }
 
+export const enum WriteFileResult {
+    success = 0,
+    errInvalidName = 1,
+    errIsDirectory = 2,
+    errCardFull = 3,
+    errIO = 4,
+}
+
 export interface FileEntry {
     GetName(): string;
     IsDirectory(): boolean;
@@ -73,6 +81,8 @@ export interface Vfs {
     GetCurrentFileSize(): number;
     GetCurrentFileContent(): VoidPtr;
     ReleaseCurrentFile(): void;
+
+    WriteFile(path: string, size: number, data: VoidPtr): WriteFileResult;
 }
 
 export const enum ReaddirStatus {

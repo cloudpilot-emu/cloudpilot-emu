@@ -6,7 +6,6 @@ import { AlertService } from './alert.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
-import { FileDescriptor } from '@pwa/service/file.service';
 import { FileService } from './file.service';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
@@ -128,15 +127,15 @@ export class StorageCardService {
         }
     }
 
-    async createCardFromFile(name: string, file: FileDescriptor, dontFsckAutomatically: boolean): Promise<void> {
+    async createCardFromImage(name: string, image: Uint8Array, dontFsckAutomatically: boolean): Promise<void> {
         const cardWithoutId: Omit<StorageCard, 'id'> = {
             storageId: newStorageId(),
             name,
-            size: file.content.length,
+            size: image.length,
             status: StorageCardStatus.clean,
             dontFsckAutomatically,
         };
-        const data32 = new Uint32Array(file.content.buffer, file.content.byteOffset, file.content.byteLength >>> 2);
+        const data32 = new Uint32Array(image.buffer, image.byteOffset, image.byteLength >>> 2);
 
         const loader = await this.loadingController.create({ message: 'Importing...' });
         try {
