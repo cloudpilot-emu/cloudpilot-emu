@@ -121,8 +121,8 @@ parserGenerateCert.add_argument(
 parserGenerateCert.add_argument("--names", help="certificate names (IPs, hostnames, domains)",
                                 default=None, dest="names")
 
-parserGenerateCert.add_argument("--compat-chrome-linux",
-                                help="Don't restrict usage as a CA cert. This is required for compatibility with Chrome on Linux.",
+parserGenerateCert.add_argument("--unrestricted-certificate",
+                                help="Don't restrict usage as a CA cert. This is required for compatibility with recent version of Chrome and with Chrome on Linux.",
                                 default=None, dest="enableCA", action="store_true")
 
 parserVersion = subparsers.add_parser(

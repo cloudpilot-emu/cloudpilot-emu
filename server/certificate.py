@@ -97,8 +97,11 @@ def generateCertificate(options):
     enableCA = False
 
     if options.enableCA == None:
-        print("""Do you want to use the certificate with Chrome on Linux?
-WARNING: This allows the generated certificate to be used as a CA certificate.""")
+        print("""Do you want to generate an unrestricted CA certificate? This is required to use
+the certificate with recent versions of Chrome and with Chrome on Linux.
+
+WARNING: An attacker that steals such a certificate could use it to compromise
+the security of encrypted network connections!""")
 
         choice = "x"
         while choice.strip() and choice.upper() != "YES" and choice.upper() != "NO":
