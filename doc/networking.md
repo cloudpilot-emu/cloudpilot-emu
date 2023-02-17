@@ -106,6 +106,31 @@ you entered when you created it. It should be in your login keychain under "cert
 
 Double click it, expand the "Trust" section and set "SSL" to "Always trust".
 
+### Chrome
+
+Recent versions of Chrome have started to be unhappy with the certificate generated
+by Cloudpilot by default. This can be circumvented by generating the certificate
+as a full CA certificate by answering "YES" to the corresponding question during
+creation (use via the `--unrestricted-certificate`).
+
+WARNING: Be aware that a CA certificate can be used to break into encrypted network
+connections originating from your computer. Make sure that nobody else has access
+to the generated `.pem` file.
+
+As an alternative, you can open the website settings in chrome and enable
+"insecure content". This will allow you to run the proxy server over HTTP
+(by using the `--insecure` command line option). Note that you have to enter
+the full URL to the server in CloudpilotEmu in this case, and that the connection
+will not be encrypted. DON'T USE BASIC AUTHENTICATION IN THIS CASE.
+
+Chrome on Linux is a special case. On Linux, Chrome manages its own
+certificate store. In order to import the generated certificate you need to open
+the settings and navigate to "Privacy and Security" -> "Security" -> "Manage
+Certificates" -> "Authorities" and click "Import". You need to set the filter to
+"all files" in order to see and import the .cer file. In the dialog that opens,
+select "Trust this certificate for identifying websites". Chrome on Linux always
+requires a full CA certificate.
+
 ### Firefox
 
 Unfortunately, Firefox uses its own certificate store and ignores the store of your
@@ -121,27 +146,6 @@ in order to add an exception.
 
 Reload the page with the exception in place. The error should be gone, and you should see
 the text "not found" instead.
-
-### Chrome on Linux
-
-Chrome on Linux is a special case, too. On Linux, Chrome manages its own
-certificate store. In order to import the generated certificate you need to open
-the settings and navigate to "Privacy and Security" -> "Security" -> "Manage
-Certificates" -> "Authorities" and click "Import". You need to set the filter to
-"all files" in order to see and import the .cer file. In the dialog that opens,
-select "Trust this certificate for identifying websites".
-
-In order for Chrome for Linux to accept the certificate, you have to answer the
-corresponding question during certificate creation with "YES" (or use the
-`--compat-chrome-linux`) command line option. Not that this will allow for
-easier abuse of the certificate as a CA certificate and should be kept off
-unless required.
-
-As an alternative, you can open the website settings in chrome and enable
-"insecure content". This will allow you to run the proxy server over HTTP
-(by using the `--insecure` command line option). Note that you have to enter
-the full URL to the server in CloudpilotEmu in this case, and that the connection
-will not be encrypted. DON'T USE BASIC AUTHENTICATION IN THIS CASE.
 
 ## Start the server
 
