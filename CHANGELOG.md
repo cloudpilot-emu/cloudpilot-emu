@@ -1,3 +1,8 @@
+# Version 1.7.12
+
+-   Add documentation to server and network docs to address recent issues
+    with Chrome.
+
 # Version 1.7.11
 
 -   Fix display issues in some skins in Safari and on iOS.
