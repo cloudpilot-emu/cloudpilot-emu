@@ -18,6 +18,7 @@ types-pyopenssl = "*"
 types-protobuf = "*"
 types-futures = "*"
 mypy = "*"
+pyreadline3 = "*"
 
 [dev-packages]
 
