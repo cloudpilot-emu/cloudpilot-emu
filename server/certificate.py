@@ -1,7 +1,6 @@
 import os
 import random
 import re
-import readline
 import sys
 from typing import List, Optional, Tuple
 
