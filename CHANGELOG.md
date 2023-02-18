@@ -1,3 +1,19 @@
+# Version 1.7.13
+
+This release changes the way `cloudpilot-server` generates its certificates. The
+new setup generates both a root and a leaf certificate and has much better
+compatibility with various browser / OS combinations. In particular, Firefox
+and recent versions of Chrome reject the self-signed certificate that was
+previously generated, but work fine with the new setup. You can continue to use your
+current certificates as long as the work, but check out the online
+[networking documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/networking.md)
+in order to generate new certificates.
+
+-   Change proxy server to generate a full certificate chain with a root and a leaf
+    certificate.
+-   At a proper index page to the proxy server.
+-   Configurable certificate lifetime.
+
 # Version 1.7.12
 
 -   Add documentation to server and network docs to address recent issues
