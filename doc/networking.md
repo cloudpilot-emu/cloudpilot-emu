@@ -106,7 +106,7 @@ you entered when you created it. It should be in your login keychain under "cert
 
 Double click it, expand the "Trust" section and set "SSL" to "Always trust".
 
-### Chrome
+### Chrome issues (may also apply)
 
 Recent versions of Chrome have started to be unhappy with the certificate generated
 by Cloudpilot by default. This can be circumvented by generating the certificate
