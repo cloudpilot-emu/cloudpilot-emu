@@ -3,7 +3,7 @@ import random
 import re
 import sys
 from typing import List, Optional, Tuple
-
+import readline
 from OpenSSL import crypto
 
 CN_DEFAULT = "cloudpilot-server"
