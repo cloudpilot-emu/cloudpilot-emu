@@ -18,6 +18,7 @@ dnspython = "*"
 types-pyopenssl = "*"
 types-protobuf = "*"
 types-futures = "*"
+mypy = "*"
 
 [dev-packages]
 

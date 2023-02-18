@@ -8,10 +8,11 @@ from typing import List, Optional, Tuple
 from OpenSSL import crypto
 
 CN_DEFAULT = "cloudpilot-server"
-VALIDITY_YEARS = 1
-BASIC_CONSTRAINTS = b'CA:TRUE,pathlen:0'
-EXTENDED_KEY_USAGE = b'serverAuth'
+BASIC_CONSTRAINTS = b'CA:FALSE'
+BASIC_CONSTRAINTS_CA = b'CA:TRUE,pathlen:0'
 KEY_USAGE = b'keyEncipherment,keyAgreement,cRLSign,digitalSignature'
+KEY_USAGE_CA = b'cRLSign,keyCertSign'
+EXTENDED_KEY_USAGE = b'serverAuth'
 
 REGEX_IP = re.compile(
     '^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
@@ -57,6 +58,33 @@ def _decomposeNames(namestring: str) -> Tuple[Optional[List[str]], Optional[List
     return (ips, names)
 
 
+def _generateCertificate(cn: str, basicConstraints: bytes, keyUsage: bytes,
+                         lifetimeDays: int) -> Tuple[crypto.X509, crypto.PKey]:
+    key = crypto.PKey()
+    key.generate_key(crypto.TYPE_RSA, 4096)
+
+    cert = crypto.X509()
+    cert.set_version(2)
+    cert.get_subject().CN = cn
+
+    basicConstraintsEx = crypto.X509Extension(
+        b"basicConstraints", True, basicConstraints)
+
+    keyUsageEx = crypto.X509Extension(
+        b'keyUsage', True, keyUsage)
+
+    cert.add_extensions((basicConstraintsEx, keyUsageEx))
+
+    cert.set_serial_number(random.randint(0, 0xffff))
+
+    cert.gmtime_adj_notBefore(0)
+    cert.gmtime_adj_notAfter(lifetimeDays * 24 * 3600)
+
+    cert.set_pubkey(key)
+
+    return (cert, key)
+
+
 def _inputNames() -> Tuple[Optional[List[str]], Optional[List[str]]]:
     print('please enter a comma separated list of IPs, hostnames or domains for which this cert will be valid:')
     return _decomposeNames(input())
@@ -73,10 +101,10 @@ def generateCertificate(options):
         cn = options.name
 
     filePem = cn + ".pem"
-    fileCer = cn + ".cer"
+    fileCaCer = cn + "-root.cer"
 
     _deleteIfRequired(filePem, options.overwrite)
-    _deleteIfRequired(fileCer, options.overwrite)
+    _deleteIfRequired(fileCaCer, options.overwrite)
 
     ips = None
     names = None
@@ -94,59 +122,30 @@ def generateCertificate(options):
     if not cn in names:
         names.append(cn)
 
-    enableCA = False
+    print("generating certificates...")
 
-    if options.enableCA == None:
-        print("""Do you want to generate an unrestricted CA certificate? This is required to use
-the certificate with recent versions of Chrome and with Chrome on Linux.
+    random.seed()
 
-WARNING: An attacker that steals such a certificate could use it to compromise
-the security of encrypted network connections!""")
+    caCert, caKey = _generateCertificate(
+        cn + '-root', BASIC_CONSTRAINTS_CA, KEY_USAGE_CA, options.lifetime)
 
-        choice = "x"
-        while choice.strip() and choice.upper() != "YES" and choice.upper() != "NO":
-            choice = input("Type YES or NO (default is NO): ")
+    caCert.set_issuer(caCert.get_subject())
+    caCert.sign(caKey, "sha256")
 
-        if choice.upper() == "YES":
-            enableCA = True
+    cert, key = _generateCertificate(
+        cn, BASIC_CONSTRAINTS, KEY_USAGE, options.lifetime)
 
-        print()
-
-    else:
-        enableCA = options.enableCA
-
-    print("generating key and certificate...")
-
-    key = crypto.PKey()
-    key.generate_key(crypto.TYPE_RSA, 4096)
-
-    cert = crypto.X509()
-    cert.set_version(2)
-    cert.get_subject().CN = cn
-
-    basicConstraints = crypto.X509Extension(
-        b"basicConstraints", True, BASIC_CONSTRAINTS)
     subjectAltName = crypto.X509Extension(b"subjectAltName", False,
                                           bytes(",".join(
                                               [f'IP:{ip}' for ip in ips] + [f'DNS:{name}' for name in names]), "utf8")
                                           )
     extendedKeyUsage = crypto.X509Extension(
         b'extendedKeyUsage', True, EXTENDED_KEY_USAGE)
-    keyUsage = crypto.X509Extension(
-        b'keyUsage', True, KEY_USAGE + (b",keyCertSign" if enableCA else b""))
 
-    cert.add_extensions((basicConstraints, keyUsage,
-                        extendedKeyUsage, subjectAltName))
+    cert.add_extensions((extendedKeyUsage, subjectAltName))
 
-    random.seed()
-    cert.set_serial_number(random.randint(0, 0xffff))
-
-    cert.gmtime_adj_notBefore(0)
-    cert.gmtime_adj_notAfter(VALIDITY_YEARS * 365 * 24 * 3600)
-
-    cert.set_issuer(cert.get_subject())
-    cert.set_pubkey(key)
-    cert.sign(key, "sha256")
+    cert.set_issuer(caCert.get_subject())
+    cert.sign(caKey, "sha256")
 
     try:
         with open(filePem, "wb") as file:
@@ -157,10 +156,10 @@ the security of encrypted network connections!""")
         exit(1)
 
     try:
-        with open(fileCer, "wb") as file:
-            file.write(crypto.dump_certificate(crypto.FILETYPE_ASN1, cert))
+        with open(fileCaCer, "wb") as file:
+            file.write(crypto.dump_certificate(crypto.FILETYPE_ASN1, caCert))
     except Exception as ex:
-        print(f'failed to write {fileCer}: {ex}')
+        print(f'failed to write {fileCaCer}: {ex}')
         exit(1)
 
     print("""...done! You can now launch the server with
@@ -168,14 +167,10 @@ the security of encrypted network connections!""")
 > {script} --cert {filePem}
 
 in order to use the generated certificate. Please check the documentation on
-how to install and trust "{fileCer}" on your devices running CloudpilotEmu.
+how to install and trust "{fileCaCer}" on your devices running CloudpilotEmu.
 
 SECURITY WARNING:
 ===============================================================================
-An attacker that gets hold of "{filePem}" could abuse it and attempt
-to mount a man-in-the-middle attack on SSL connections that originate
-from devices that have "{fileCer}" installed and trusted.
-
 "{filePem}" is sensitive information; DO NOT DISTRIBUTE IT.
 ===============================================================================
-""".format(script=sys.argv[0], filePem=filePem, fileCer=fileCer))
+""".format(script=sys.argv[0], filePem=filePem, fileCaCer=fileCaCer))

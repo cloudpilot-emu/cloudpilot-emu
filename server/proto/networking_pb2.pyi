@@ -3,113 +3,144 @@
 isort:skip_file
 """
 import builtins
+import collections.abc
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.message
-import typing
-import typing_extensions
+import sys
 
-DESCRIPTOR: google.protobuf.descriptor.FileDescriptor = ...
+if sys.version_info >= (3, 8):
+    import typing as typing_extensions
+else:
+    import typing_extensions
 
+DESCRIPTOR: google.protobuf.descriptor.FileDescriptor
+
+@typing_extensions.final
 class Address(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     IP_FIELD_NUMBER: builtins.int
     PORT_FIELD_NUMBER: builtins.int
-    ip: builtins.int = ...
-    port: builtins.int = ...
-    def __init__(self,
+    ip: builtins.int
+    port: builtins.int
+    def __init__(
+        self,
         *,
-        ip : typing.Optional[builtins.int] = ...,
-        port : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"ip",b"ip",u"port",b"port"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"ip",b"ip",u"port",b"port"]) -> None: ...
+        ip: builtins.int | None = ...,
+        port: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["ip", b"ip", "port", b"port"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["ip", b"ip", "port", b"port"]) -> None: ...
+
 global___Address = Address
 
+@typing_extensions.final
 class MsgSocketOpenRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     TYPE_FIELD_NUMBER: builtins.int
     PROTOCOL_FIELD_NUMBER: builtins.int
-    type: builtins.int = ...
-    protocol: builtins.int = ...
-    def __init__(self,
+    type: builtins.int
+    protocol: builtins.int
+    def __init__(
+        self,
         *,
-        type : typing.Optional[builtins.int] = ...,
-        protocol : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"protocol",b"protocol",u"type",b"type"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"protocol",b"protocol",u"type",b"type"]) -> None: ...
+        type: builtins.int | None = ...,
+        protocol: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["protocol", b"protocol", "type", b"type"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["protocol", b"protocol", "type", b"type"]) -> None: ...
+
 global___MsgSocketOpenRequest = MsgSocketOpenRequest
 
+@typing_extensions.final
 class MsgSocketOpenResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     ERR_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
-    err: builtins.int = ...
-    def __init__(self,
+    handle: builtins.int
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"err",b"err",u"handle",b"handle"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"err",b"err",u"handle",b"handle"]) -> None: ...
+        handle: builtins.int | None = ...,
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["err", b"err", "handle", b"handle"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["err", b"err", "handle", b"handle"]) -> None: ...
+
 global___MsgSocketOpenResponse = MsgSocketOpenResponse
 
+@typing_extensions.final
 class MsgSocketBindRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     ADDRESS_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
+    handle: builtins.int
     @property
     def address(self) -> global___Address: ...
-    timeout: builtins.int = ...
-    def __init__(self,
+    timeout: builtins.int
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        address : typing.Optional[global___Address] = ...,
-        timeout : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"address",b"address",u"handle",b"handle",u"timeout",b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"address",b"address",u"handle",b"handle",u"timeout",b"timeout"]) -> None: ...
+        handle: builtins.int | None = ...,
+        address: global___Address | None = ...,
+        timeout: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["address", b"address", "handle", b"handle", "timeout", b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["address", b"address", "handle", b"handle", "timeout", b"timeout"]) -> None: ...
+
 global___MsgSocketBindRequest = MsgSocketBindRequest
 
+@typing_extensions.final
 class MsgSocketBindResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     ERR_FIELD_NUMBER: builtins.int
-    err: builtins.int = ...
-    def __init__(self,
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"err",b"err"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"err",b"err"]) -> None: ...
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["err", b"err"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["err", b"err"]) -> None: ...
+
 global___MsgSocketBindResponse = MsgSocketBindResponse
 
+@typing_extensions.final
 class MsgSocketAddrRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     REQUESTADDRESSLOCAL_FIELD_NUMBER: builtins.int
     REQUESTADDRESSREMOTE_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
-    requestAddressLocal: builtins.bool = ...
-    requestAddressRemote: builtins.bool = ...
-    timeout: builtins.int = ...
-    def __init__(self,
+    handle: builtins.int
+    requestAddressLocal: builtins.bool
+    requestAddressRemote: builtins.bool
+    timeout: builtins.int
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        requestAddressLocal : typing.Optional[builtins.bool] = ...,
-        requestAddressRemote : typing.Optional[builtins.bool] = ...,
-        timeout : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"handle",b"handle",u"requestAddressLocal",b"requestAddressLocal",u"requestAddressRemote",b"requestAddressRemote",u"timeout",b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"handle",b"handle",u"requestAddressLocal",b"requestAddressLocal",u"requestAddressRemote",b"requestAddressRemote",u"timeout",b"timeout"]) -> None: ...
+        handle: builtins.int | None = ...,
+        requestAddressLocal: builtins.bool | None = ...,
+        requestAddressRemote: builtins.bool | None = ...,
+        timeout: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["handle", b"handle", "requestAddressLocal", b"requestAddressLocal", "requestAddressRemote", b"requestAddressRemote", "timeout", b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["handle", b"handle", "requestAddressLocal", b"requestAddressLocal", "requestAddressRemote", b"requestAddressRemote", "timeout", b"timeout"]) -> None: ...
+
 global___MsgSocketAddrRequest = MsgSocketAddrRequest
 
+@typing_extensions.final
 class MsgSocketAddrResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     ADDRESSLOCAL_FIELD_NUMBER: builtins.int
     ADDRESSREMOTE_FIELD_NUMBER: builtins.int
     ERR_FIELD_NUMBER: builtins.int
@@ -117,459 +148,563 @@ class MsgSocketAddrResponse(google.protobuf.message.Message):
     def addressLocal(self) -> global___Address: ...
     @property
     def addressRemote(self) -> global___Address: ...
-    err: builtins.int = ...
-    def __init__(self,
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        addressLocal : typing.Optional[global___Address] = ...,
-        addressRemote : typing.Optional[global___Address] = ...,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"addressLocal",b"addressLocal",u"addressRemote",b"addressRemote",u"err",b"err"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"addressLocal",b"addressLocal",u"addressRemote",b"addressRemote",u"err",b"err"]) -> None: ...
+        addressLocal: global___Address | None = ...,
+        addressRemote: global___Address | None = ...,
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["addressLocal", b"addressLocal", "addressRemote", b"addressRemote", "err", b"err"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["addressLocal", b"addressLocal", "addressRemote", b"addressRemote", "err", b"err"]) -> None: ...
+
 global___MsgSocketAddrResponse = MsgSocketAddrResponse
 
+@typing_extensions.final
 class MsgSocketSendRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     DATA_FIELD_NUMBER: builtins.int
     FLAGS_FIELD_NUMBER: builtins.int
     ADDRESS_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
-    data: builtins.bytes = ...
-    flags: builtins.int = ...
+    handle: builtins.int
+    data: builtins.bytes
+    flags: builtins.int
     @property
     def address(self) -> global___Address: ...
-    timeout: builtins.int = ...
-    def __init__(self,
+    timeout: builtins.int
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        data : typing.Optional[builtins.bytes] = ...,
-        flags : typing.Optional[builtins.int] = ...,
-        address : typing.Optional[global___Address] = ...,
-        timeout : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"address",b"address",u"data",b"data",u"flags",b"flags",u"handle",b"handle",u"timeout",b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"address",b"address",u"data",b"data",u"flags",b"flags",u"handle",b"handle",u"timeout",b"timeout"]) -> None: ...
+        handle: builtins.int | None = ...,
+        data: builtins.bytes | None = ...,
+        flags: builtins.int | None = ...,
+        address: global___Address | None = ...,
+        timeout: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["address", b"address", "data", b"data", "flags", b"flags", "handle", b"handle", "timeout", b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["address", b"address", "data", b"data", "flags", b"flags", "handle", b"handle", "timeout", b"timeout"]) -> None: ...
+
 global___MsgSocketSendRequest = MsgSocketSendRequest
 
+@typing_extensions.final
 class MsgSocketSendResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     ERR_FIELD_NUMBER: builtins.int
     BYTESSENT_FIELD_NUMBER: builtins.int
-    err: builtins.int = ...
-    bytesSent: builtins.int = ...
-    def __init__(self,
+    err: builtins.int
+    bytesSent: builtins.int
+    def __init__(
+        self,
         *,
-        err : typing.Optional[builtins.int] = ...,
-        bytesSent : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"bytesSent",b"bytesSent",u"err",b"err"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"bytesSent",b"bytesSent",u"err",b"err"]) -> None: ...
+        err: builtins.int | None = ...,
+        bytesSent: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bytesSent", b"bytesSent", "err", b"err"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bytesSent", b"bytesSent", "err", b"err"]) -> None: ...
+
 global___MsgSocketSendResponse = MsgSocketSendResponse
 
+@typing_extensions.final
 class MsgSocketReceiveRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     FLAGS_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
     MAXLEN_FIELD_NUMBER: builtins.int
     ADDRESSREQUESTED_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
-    flags: builtins.int = ...
-    timeout: builtins.int = ...
-    maxLen: builtins.int = ...
-    addressRequested: builtins.bool = ...
-    def __init__(self,
+    handle: builtins.int
+    flags: builtins.int
+    timeout: builtins.int
+    maxLen: builtins.int
+    addressRequested: builtins.bool
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        flags : typing.Optional[builtins.int] = ...,
-        timeout : typing.Optional[builtins.int] = ...,
-        maxLen : typing.Optional[builtins.int] = ...,
-        addressRequested : typing.Optional[builtins.bool] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"addressRequested",b"addressRequested",u"flags",b"flags",u"handle",b"handle",u"maxLen",b"maxLen",u"timeout",b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"addressRequested",b"addressRequested",u"flags",b"flags",u"handle",b"handle",u"maxLen",b"maxLen",u"timeout",b"timeout"]) -> None: ...
+        handle: builtins.int | None = ...,
+        flags: builtins.int | None = ...,
+        timeout: builtins.int | None = ...,
+        maxLen: builtins.int | None = ...,
+        addressRequested: builtins.bool | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["addressRequested", b"addressRequested", "flags", b"flags", "handle", b"handle", "maxLen", b"maxLen", "timeout", b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["addressRequested", b"addressRequested", "flags", b"flags", "handle", b"handle", "maxLen", b"maxLen", "timeout", b"timeout"]) -> None: ...
+
 global___MsgSocketReceiveRequest = MsgSocketReceiveRequest
 
+@typing_extensions.final
 class MsgSocketReceiveResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     ERR_FIELD_NUMBER: builtins.int
     DATA_FIELD_NUMBER: builtins.int
     ADDRESS_FIELD_NUMBER: builtins.int
-    err: builtins.int = ...
-    data: builtins.bytes = ...
+    err: builtins.int
+    data: builtins.bytes
     @property
     def address(self) -> global___Address: ...
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        err : typing.Optional[builtins.int] = ...,
-        data : typing.Optional[builtins.bytes] = ...,
-        address : typing.Optional[global___Address] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"address",b"address",u"data",b"data",u"err",b"err"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"address",b"address",u"data",b"data",u"err",b"err"]) -> None: ...
+        err: builtins.int | None = ...,
+        data: builtins.bytes | None = ...,
+        address: global___Address | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["address", b"address", "data", b"data", "err", b"err"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["address", b"address", "data", b"data", "err", b"err"]) -> None: ...
+
 global___MsgSocketReceiveResponse = MsgSocketReceiveResponse
 
+@typing_extensions.final
 class MsgSocketCloseRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
-    timeout: builtins.int = ...
-    def __init__(self,
+    handle: builtins.int
+    timeout: builtins.int
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        timeout : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"handle",b"handle",u"timeout",b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"handle",b"handle",u"timeout",b"timeout"]) -> None: ...
+        handle: builtins.int | None = ...,
+        timeout: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["handle", b"handle", "timeout", b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["handle", b"handle", "timeout", b"timeout"]) -> None: ...
+
 global___MsgSocketCloseRequest = MsgSocketCloseRequest
 
+@typing_extensions.final
 class MsgSocketCloseResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     ERR_FIELD_NUMBER: builtins.int
-    err: builtins.int = ...
-    def __init__(self,
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"err",b"err"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"err",b"err"]) -> None: ...
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["err", b"err"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["err", b"err"]) -> None: ...
+
 global___MsgSocketCloseResponse = MsgSocketCloseResponse
 
+@typing_extensions.final
 class MsgGetHostByNameRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     NAME_FIELD_NUMBER: builtins.int
-    name: typing.Text = ...
-    def __init__(self,
+    name: builtins.str
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"name",b"name"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"name",b"name"]) -> None: ...
+        name: builtins.str | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["name", b"name"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["name", b"name"]) -> None: ...
+
 global___MsgGetHostByNameRequest = MsgGetHostByNameRequest
 
+@typing_extensions.final
 class MsgGetHostByNameResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     NAME_FIELD_NUMBER: builtins.int
     ALIAS_FIELD_NUMBER: builtins.int
     ADDRESSES_FIELD_NUMBER: builtins.int
     ERR_FIELD_NUMBER: builtins.int
-    name: typing.Text = ...
-    alias: typing.Text = ...
+    name: builtins.str
+    alias: builtins.str
     @property
     def addresses(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.int]: ...
-    err: builtins.int = ...
-    def __init__(self,
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        alias : typing.Optional[typing.Text] = ...,
-        addresses : typing.Optional[typing.Iterable[builtins.int]] = ...,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"alias",b"alias",u"err",b"err",u"name",b"name"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"addresses",b"addresses",u"alias",b"alias",u"err",b"err",u"name",b"name"]) -> None: ...
+        name: builtins.str | None = ...,
+        alias: builtins.str | None = ...,
+        addresses: collections.abc.Iterable[builtins.int] | None = ...,
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["alias", b"alias", "err", b"err", "name", b"name"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["addresses", b"addresses", "alias", b"alias", "err", b"err", "name", b"name"]) -> None: ...
+
 global___MsgGetHostByNameResponse = MsgGetHostByNameResponse
 
+@typing_extensions.final
 class MsgGetServByNameRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     NAME_FIELD_NUMBER: builtins.int
     PROTOCOL_FIELD_NUMBER: builtins.int
-    name: typing.Text = ...
-    protocol: typing.Text = ...
-    def __init__(self,
+    name: builtins.str
+    protocol: builtins.str
+    def __init__(
+        self,
         *,
-        name : typing.Optional[typing.Text] = ...,
-        protocol : typing.Optional[typing.Text] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"name",b"name",u"protocol",b"protocol"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"name",b"name",u"protocol",b"protocol"]) -> None: ...
+        name: builtins.str | None = ...,
+        protocol: builtins.str | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["name", b"name", "protocol", b"protocol"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "protocol", b"protocol"]) -> None: ...
+
 global___MsgGetServByNameRequest = MsgGetServByNameRequest
 
+@typing_extensions.final
 class MsgGetServByNameResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     PORT_FIELD_NUMBER: builtins.int
     ERR_FIELD_NUMBER: builtins.int
-    port: builtins.int = ...
-    err: builtins.int = ...
-    def __init__(self,
+    port: builtins.int
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        port : typing.Optional[builtins.int] = ...,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"err",b"err",u"port",b"port"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"err",b"err",u"port",b"port"]) -> None: ...
+        port: builtins.int | None = ...,
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["err", b"err", "port", b"port"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["err", b"err", "port", b"port"]) -> None: ...
+
 global___MsgGetServByNameResponse = MsgGetServByNameResponse
 
+@typing_extensions.final
 class MsgSocketConnectRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     ADDRESS_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
+    handle: builtins.int
     @property
     def address(self) -> global___Address: ...
-    timeout: builtins.int = ...
-    def __init__(self,
+    timeout: builtins.int
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        address : typing.Optional[global___Address] = ...,
-        timeout : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"address",b"address",u"handle",b"handle",u"timeout",b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"address",b"address",u"handle",b"handle",u"timeout",b"timeout"]) -> None: ...
+        handle: builtins.int | None = ...,
+        address: global___Address | None = ...,
+        timeout: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["address", b"address", "handle", b"handle", "timeout", b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["address", b"address", "handle", b"handle", "timeout", b"timeout"]) -> None: ...
+
 global___MsgSocketConnectRequest = MsgSocketConnectRequest
 
+@typing_extensions.final
 class MsgSocketConnectResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     ERR_FIELD_NUMBER: builtins.int
-    err: builtins.int = ...
-    def __init__(self,
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"err",b"err"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"err",b"err"]) -> None: ...
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["err", b"err"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["err", b"err"]) -> None: ...
+
 global___MsgSocketConnectResponse = MsgSocketConnectResponse
 
+@typing_extensions.final
 class MsgSelectRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     WIDTH_FIELD_NUMBER: builtins.int
     READFDS_FIELD_NUMBER: builtins.int
     WRITEFDS_FIELD_NUMBER: builtins.int
     EXCEPTFDS_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    width: builtins.int = ...
-    readFDs: builtins.int = ...
-    writeFDs: builtins.int = ...
-    exceptFDs: builtins.int = ...
-    timeout: builtins.int = ...
-    def __init__(self,
+    width: builtins.int
+    readFDs: builtins.int
+    writeFDs: builtins.int
+    exceptFDs: builtins.int
+    timeout: builtins.int
+    def __init__(
+        self,
         *,
-        width : typing.Optional[builtins.int] = ...,
-        readFDs : typing.Optional[builtins.int] = ...,
-        writeFDs : typing.Optional[builtins.int] = ...,
-        exceptFDs : typing.Optional[builtins.int] = ...,
-        timeout : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"exceptFDs",b"exceptFDs",u"readFDs",b"readFDs",u"timeout",b"timeout",u"width",b"width",u"writeFDs",b"writeFDs"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"exceptFDs",b"exceptFDs",u"readFDs",b"readFDs",u"timeout",b"timeout",u"width",b"width",u"writeFDs",b"writeFDs"]) -> None: ...
+        width: builtins.int | None = ...,
+        readFDs: builtins.int | None = ...,
+        writeFDs: builtins.int | None = ...,
+        exceptFDs: builtins.int | None = ...,
+        timeout: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["exceptFDs", b"exceptFDs", "readFDs", b"readFDs", "timeout", b"timeout", "width", b"width", "writeFDs", b"writeFDs"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["exceptFDs", b"exceptFDs", "readFDs", b"readFDs", "timeout", b"timeout", "width", b"width", "writeFDs", b"writeFDs"]) -> None: ...
+
 global___MsgSelectRequest = MsgSelectRequest
 
+@typing_extensions.final
 class MsgSelectResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     READFDS_FIELD_NUMBER: builtins.int
     WRITEFDS_FIELD_NUMBER: builtins.int
     EXCEPTFDS_FIELD_NUMBER: builtins.int
     ERR_FIELD_NUMBER: builtins.int
-    readFDs: builtins.int = ...
-    writeFDs: builtins.int = ...
-    exceptFDs: builtins.int = ...
-    err: builtins.int = ...
-    def __init__(self,
+    readFDs: builtins.int
+    writeFDs: builtins.int
+    exceptFDs: builtins.int
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        readFDs : typing.Optional[builtins.int] = ...,
-        writeFDs : typing.Optional[builtins.int] = ...,
-        exceptFDs : typing.Optional[builtins.int] = ...,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"err",b"err",u"exceptFDs",b"exceptFDs",u"readFDs",b"readFDs",u"writeFDs",b"writeFDs"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"err",b"err",u"exceptFDs",b"exceptFDs",u"readFDs",b"readFDs",u"writeFDs",b"writeFDs"]) -> None: ...
+        readFDs: builtins.int | None = ...,
+        writeFDs: builtins.int | None = ...,
+        exceptFDs: builtins.int | None = ...,
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["err", b"err", "exceptFDs", b"exceptFDs", "readFDs", b"readFDs", "writeFDs", b"writeFDs"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["err", b"err", "exceptFDs", b"exceptFDs", "readFDs", b"readFDs", "writeFDs", b"writeFDs"]) -> None: ...
+
 global___MsgSelectResponse = MsgSelectResponse
 
+@typing_extensions.final
 class MsgInvalidRequestResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     TAG_FIELD_NUMBER: builtins.int
-    tag: builtins.bool = ...
-    def __init__(self,
+    tag: builtins.bool
+    def __init__(
+        self,
         *,
-        tag : typing.Optional[builtins.bool] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"tag",b"tag"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"tag",b"tag"]) -> None: ...
+        tag: builtins.bool | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["tag", b"tag"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["tag", b"tag"]) -> None: ...
+
 global___MsgInvalidRequestResponse = MsgInvalidRequestResponse
 
+@typing_extensions.final
 class MsgSettingGetRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     SETTING_FIELD_NUMBER: builtins.int
-    setting: builtins.int = ...
-    def __init__(self,
+    setting: builtins.int
+    def __init__(
+        self,
         *,
-        setting : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"setting",b"setting"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"setting",b"setting"]) -> None: ...
+        setting: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["setting", b"setting"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["setting", b"setting"]) -> None: ...
+
 global___MsgSettingGetRequest = MsgSettingGetRequest
 
+@typing_extensions.final
 class MsgSettingGetResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     UINT32VAL_FIELD_NUMBER: builtins.int
     UINT8VAL_FIELD_NUMBER: builtins.int
     STRVAL_FIELD_NUMBER: builtins.int
     ERR_FIELD_NUMBER: builtins.int
-    uint32val: builtins.int = ...
-    uint8val: builtins.int = ...
-    strval: typing.Text = ...
-    err: builtins.int = ...
-    def __init__(self,
+    uint32val: builtins.int
+    uint8val: builtins.int
+    strval: builtins.str
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        uint32val : typing.Optional[builtins.int] = ...,
-        uint8val : typing.Optional[builtins.int] = ...,
-        strval : typing.Optional[typing.Text] = ...,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"err",b"err",u"strval",b"strval",u"uint32val",b"uint32val",u"uint8val",b"uint8val",u"value",b"value"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"err",b"err",u"strval",b"strval",u"uint32val",b"uint32val",u"uint8val",b"uint8val",u"value",b"value"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal[u"value",b"value"]) -> typing.Optional[typing_extensions.Literal["uint32val","uint8val","strval"]]: ...
+        uint32val: builtins.int | None = ...,
+        uint8val: builtins.int | None = ...,
+        strval: builtins.str | None = ...,
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["err", b"err", "strval", b"strval", "uint32val", b"uint32val", "uint8val", b"uint8val", "value", b"value"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["err", b"err", "strval", b"strval", "uint32val", b"uint32val", "uint8val", b"uint8val", "value", b"value"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["value", b"value"]) -> typing_extensions.Literal["uint32val", "uint8val", "strval"] | None: ...
+
 global___MsgSettingGetResponse = MsgSettingGetResponse
 
+@typing_extensions.final
 class MsgSocketOptionSetRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     LEVEL_FIELD_NUMBER: builtins.int
     OPTION_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
     INTVAL_FIELD_NUMBER: builtins.int
     BUFVAL_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
-    level: builtins.int = ...
-    option: builtins.int = ...
-    timeout: builtins.int = ...
-    intval: builtins.int = ...
-    bufval: builtins.bytes = ...
-    def __init__(self,
+    handle: builtins.int
+    level: builtins.int
+    option: builtins.int
+    timeout: builtins.int
+    intval: builtins.int
+    bufval: builtins.bytes
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        level : typing.Optional[builtins.int] = ...,
-        option : typing.Optional[builtins.int] = ...,
-        timeout : typing.Optional[builtins.int] = ...,
-        intval : typing.Optional[builtins.int] = ...,
-        bufval : typing.Optional[builtins.bytes] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"bufval",b"bufval",u"handle",b"handle",u"intval",b"intval",u"level",b"level",u"option",b"option",u"timeout",b"timeout",u"value",b"value"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"bufval",b"bufval",u"handle",b"handle",u"intval",b"intval",u"level",b"level",u"option",b"option",u"timeout",b"timeout",u"value",b"value"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal[u"value",b"value"]) -> typing.Optional[typing_extensions.Literal["intval","bufval"]]: ...
+        handle: builtins.int | None = ...,
+        level: builtins.int | None = ...,
+        option: builtins.int | None = ...,
+        timeout: builtins.int | None = ...,
+        intval: builtins.int | None = ...,
+        bufval: builtins.bytes | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bufval", b"bufval", "handle", b"handle", "intval", b"intval", "level", b"level", "option", b"option", "timeout", b"timeout", "value", b"value"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bufval", b"bufval", "handle", b"handle", "intval", b"intval", "level", b"level", "option", b"option", "timeout", b"timeout", "value", b"value"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["value", b"value"]) -> typing_extensions.Literal["intval", "bufval"] | None: ...
+
 global___MsgSocketOptionSetRequest = MsgSocketOptionSetRequest
 
+@typing_extensions.final
 class MsgSocketOptionSetResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     ERR_FIELD_NUMBER: builtins.int
-    err: builtins.int = ...
-    def __init__(self,
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"err",b"err"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"err",b"err"]) -> None: ...
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["err", b"err"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["err", b"err"]) -> None: ...
+
 global___MsgSocketOptionSetResponse = MsgSocketOptionSetResponse
 
+@typing_extensions.final
 class MsgSocketOptionGetRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     LEVEL_FIELD_NUMBER: builtins.int
     OPTION_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
-    level: builtins.int = ...
-    option: builtins.int = ...
-    timeout: builtins.int = ...
-    def __init__(self,
+    handle: builtins.int
+    level: builtins.int
+    option: builtins.int
+    timeout: builtins.int
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        level : typing.Optional[builtins.int] = ...,
-        option : typing.Optional[builtins.int] = ...,
-        timeout : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"handle",b"handle",u"level",b"level",u"option",b"option",u"timeout",b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"handle",b"handle",u"level",b"level",u"option",b"option",u"timeout",b"timeout"]) -> None: ...
+        handle: builtins.int | None = ...,
+        level: builtins.int | None = ...,
+        option: builtins.int | None = ...,
+        timeout: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["handle", b"handle", "level", b"level", "option", b"option", "timeout", b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["handle", b"handle", "level", b"level", "option", b"option", "timeout", b"timeout"]) -> None: ...
+
 global___MsgSocketOptionGetRequest = MsgSocketOptionGetRequest
 
+@typing_extensions.final
 class MsgSocketOptionGetResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     ERR_FIELD_NUMBER: builtins.int
     INTVAL_FIELD_NUMBER: builtins.int
     BUFVAL_FIELD_NUMBER: builtins.int
-    err: builtins.int = ...
-    intval: builtins.int = ...
-    bufval: builtins.bytes = ...
-    def __init__(self,
+    err: builtins.int
+    intval: builtins.int
+    bufval: builtins.bytes
+    def __init__(
+        self,
         *,
-        err : typing.Optional[builtins.int] = ...,
-        intval : typing.Optional[builtins.int] = ...,
-        bufval : typing.Optional[builtins.bytes] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"bufval",b"bufval",u"err",b"err",u"intval",b"intval",u"value",b"value"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"bufval",b"bufval",u"err",b"err",u"intval",b"intval",u"value",b"value"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal[u"value",b"value"]) -> typing.Optional[typing_extensions.Literal["intval","bufval"]]: ...
+        err: builtins.int | None = ...,
+        intval: builtins.int | None = ...,
+        bufval: builtins.bytes | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["bufval", b"bufval", "err", b"err", "intval", b"intval", "value", b"value"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bufval", b"bufval", "err", b"err", "intval", b"intval", "value", b"value"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["value", b"value"]) -> typing_extensions.Literal["intval", "bufval"] | None: ...
+
 global___MsgSocketOptionGetResponse = MsgSocketOptionGetResponse
 
+@typing_extensions.final
 class MsgSocketListenRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     BACKLOG_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
-    backlog: builtins.int = ...
-    timeout: builtins.int = ...
-    def __init__(self,
+    handle: builtins.int
+    backlog: builtins.int
+    timeout: builtins.int
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        backlog : typing.Optional[builtins.int] = ...,
-        timeout : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"backlog",b"backlog",u"handle",b"handle",u"timeout",b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"backlog",b"backlog",u"handle",b"handle",u"timeout",b"timeout"]) -> None: ...
+        handle: builtins.int | None = ...,
+        backlog: builtins.int | None = ...,
+        timeout: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["backlog", b"backlog", "handle", b"handle", "timeout", b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["backlog", b"backlog", "handle", b"handle", "timeout", b"timeout"]) -> None: ...
+
 global___MsgSocketListenRequest = MsgSocketListenRequest
 
+@typing_extensions.final
 class MsgSocketListenResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     ERR_FIELD_NUMBER: builtins.int
-    err: builtins.int = ...
-    def __init__(self,
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"err",b"err"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"err",b"err"]) -> None: ...
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["err", b"err"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["err", b"err"]) -> None: ...
+
 global___MsgSocketListenResponse = MsgSocketListenResponse
 
+@typing_extensions.final
 class MsgSocketAcceptRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     TIMEOUT_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
-    timeout: builtins.int = ...
-    def __init__(self,
+    handle: builtins.int
+    timeout: builtins.int
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        timeout : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"handle",b"handle",u"timeout",b"timeout"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"handle",b"handle",u"timeout",b"timeout"]) -> None: ...
+        handle: builtins.int | None = ...,
+        timeout: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["handle", b"handle", "timeout", b"timeout"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["handle", b"handle", "timeout", b"timeout"]) -> None: ...
+
 global___MsgSocketAcceptRequest = MsgSocketAcceptRequest
 
+@typing_extensions.final
 class MsgSocketAcceptResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     HANDLE_FIELD_NUMBER: builtins.int
     ADDRESS_FIELD_NUMBER: builtins.int
     ERR_FIELD_NUMBER: builtins.int
-    handle: builtins.int = ...
+    handle: builtins.int
     @property
     def address(self) -> global___Address: ...
-    err: builtins.int = ...
-    def __init__(self,
+    err: builtins.int
+    def __init__(
+        self,
         *,
-        handle : typing.Optional[builtins.int] = ...,
-        address : typing.Optional[global___Address] = ...,
-        err : typing.Optional[builtins.int] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"address",b"address",u"err",b"err",u"handle",b"handle"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"address",b"address",u"err",b"err",u"handle",b"handle"]) -> None: ...
+        handle: builtins.int | None = ...,
+        address: global___Address | None = ...,
+        err: builtins.int | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["address", b"address", "err", b"err", "handle", b"handle"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["address", b"address", "err", b"err", "handle", b"handle"]) -> None: ...
+
 global___MsgSocketAcceptResponse = MsgSocketAcceptResponse
 
+@typing_extensions.final
 class MsgRequest(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     ID_FIELD_NUMBER: builtins.int
     SOCKETOPENREQUEST_FIELD_NUMBER: builtins.int
     SOCKETBINDREQUEST_FIELD_NUMBER: builtins.int
@@ -586,7 +721,7 @@ class MsgRequest(google.protobuf.message.Message):
     SOCKETLISTENREQUEST_FIELD_NUMBER: builtins.int
     SOCKETACCEPTREQUEST_FIELD_NUMBER: builtins.int
     SOCKETOPTIONGETREQUEST_FIELD_NUMBER: builtins.int
-    id: builtins.int = ...
+    id: builtins.int
     @property
     def socketOpenRequest(self) -> global___MsgSocketOpenRequest: ...
     @property
@@ -617,32 +752,36 @@ class MsgRequest(google.protobuf.message.Message):
     def socketAcceptRequest(self) -> global___MsgSocketAcceptRequest: ...
     @property
     def socketOptionGetRequest(self) -> global___MsgSocketOptionGetRequest: ...
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        id : typing.Optional[builtins.int] = ...,
-        socketOpenRequest : typing.Optional[global___MsgSocketOpenRequest] = ...,
-        socketBindRequest : typing.Optional[global___MsgSocketBindRequest] = ...,
-        socketAddrRequest : typing.Optional[global___MsgSocketAddrRequest] = ...,
-        socketSendRequest : typing.Optional[global___MsgSocketSendRequest] = ...,
-        socketReceiveRequest : typing.Optional[global___MsgSocketReceiveRequest] = ...,
-        socketCloseRequest : typing.Optional[global___MsgSocketCloseRequest] = ...,
-        getHostByNameRequest : typing.Optional[global___MsgGetHostByNameRequest] = ...,
-        getServByNameRequest : typing.Optional[global___MsgGetServByNameRequest] = ...,
-        socketConnectRequest : typing.Optional[global___MsgSocketConnectRequest] = ...,
-        selectRequest : typing.Optional[global___MsgSelectRequest] = ...,
-        settingGetRequest : typing.Optional[global___MsgSettingGetRequest] = ...,
-        socketOptionSetRequest : typing.Optional[global___MsgSocketOptionSetRequest] = ...,
-        socketListenRequest : typing.Optional[global___MsgSocketListenRequest] = ...,
-        socketAcceptRequest : typing.Optional[global___MsgSocketAcceptRequest] = ...,
-        socketOptionGetRequest : typing.Optional[global___MsgSocketOptionGetRequest] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"getHostByNameRequest",b"getHostByNameRequest",u"getServByNameRequest",b"getServByNameRequest",u"id",b"id",u"payload",b"payload",u"selectRequest",b"selectRequest",u"settingGetRequest",b"settingGetRequest",u"socketAcceptRequest",b"socketAcceptRequest",u"socketAddrRequest",b"socketAddrRequest",u"socketBindRequest",b"socketBindRequest",u"socketCloseRequest",b"socketCloseRequest",u"socketConnectRequest",b"socketConnectRequest",u"socketListenRequest",b"socketListenRequest",u"socketOpenRequest",b"socketOpenRequest",u"socketOptionGetRequest",b"socketOptionGetRequest",u"socketOptionSetRequest",b"socketOptionSetRequest",u"socketReceiveRequest",b"socketReceiveRequest",u"socketSendRequest",b"socketSendRequest"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"getHostByNameRequest",b"getHostByNameRequest",u"getServByNameRequest",b"getServByNameRequest",u"id",b"id",u"payload",b"payload",u"selectRequest",b"selectRequest",u"settingGetRequest",b"settingGetRequest",u"socketAcceptRequest",b"socketAcceptRequest",u"socketAddrRequest",b"socketAddrRequest",u"socketBindRequest",b"socketBindRequest",u"socketCloseRequest",b"socketCloseRequest",u"socketConnectRequest",b"socketConnectRequest",u"socketListenRequest",b"socketListenRequest",u"socketOpenRequest",b"socketOpenRequest",u"socketOptionGetRequest",b"socketOptionGetRequest",u"socketOptionSetRequest",b"socketOptionSetRequest",u"socketReceiveRequest",b"socketReceiveRequest",u"socketSendRequest",b"socketSendRequest"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal[u"payload",b"payload"]) -> typing.Optional[typing_extensions.Literal["socketOpenRequest","socketBindRequest","socketAddrRequest","socketSendRequest","socketReceiveRequest","socketCloseRequest","getHostByNameRequest","getServByNameRequest","socketConnectRequest","selectRequest","settingGetRequest","socketOptionSetRequest","socketListenRequest","socketAcceptRequest","socketOptionGetRequest"]]: ...
+        id: builtins.int | None = ...,
+        socketOpenRequest: global___MsgSocketOpenRequest | None = ...,
+        socketBindRequest: global___MsgSocketBindRequest | None = ...,
+        socketAddrRequest: global___MsgSocketAddrRequest | None = ...,
+        socketSendRequest: global___MsgSocketSendRequest | None = ...,
+        socketReceiveRequest: global___MsgSocketReceiveRequest | None = ...,
+        socketCloseRequest: global___MsgSocketCloseRequest | None = ...,
+        getHostByNameRequest: global___MsgGetHostByNameRequest | None = ...,
+        getServByNameRequest: global___MsgGetServByNameRequest | None = ...,
+        socketConnectRequest: global___MsgSocketConnectRequest | None = ...,
+        selectRequest: global___MsgSelectRequest | None = ...,
+        settingGetRequest: global___MsgSettingGetRequest | None = ...,
+        socketOptionSetRequest: global___MsgSocketOptionSetRequest | None = ...,
+        socketListenRequest: global___MsgSocketListenRequest | None = ...,
+        socketAcceptRequest: global___MsgSocketAcceptRequest | None = ...,
+        socketOptionGetRequest: global___MsgSocketOptionGetRequest | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["getHostByNameRequest", b"getHostByNameRequest", "getServByNameRequest", b"getServByNameRequest", "id", b"id", "payload", b"payload", "selectRequest", b"selectRequest", "settingGetRequest", b"settingGetRequest", "socketAcceptRequest", b"socketAcceptRequest", "socketAddrRequest", b"socketAddrRequest", "socketBindRequest", b"socketBindRequest", "socketCloseRequest", b"socketCloseRequest", "socketConnectRequest", b"socketConnectRequest", "socketListenRequest", b"socketListenRequest", "socketOpenRequest", b"socketOpenRequest", "socketOptionGetRequest", b"socketOptionGetRequest", "socketOptionSetRequest", b"socketOptionSetRequest", "socketReceiveRequest", b"socketReceiveRequest", "socketSendRequest", b"socketSendRequest"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["getHostByNameRequest", b"getHostByNameRequest", "getServByNameRequest", b"getServByNameRequest", "id", b"id", "payload", b"payload", "selectRequest", b"selectRequest", "settingGetRequest", b"settingGetRequest", "socketAcceptRequest", b"socketAcceptRequest", "socketAddrRequest", b"socketAddrRequest", "socketBindRequest", b"socketBindRequest", "socketCloseRequest", b"socketCloseRequest", "socketConnectRequest", b"socketConnectRequest", "socketListenRequest", b"socketListenRequest", "socketOpenRequest", b"socketOpenRequest", "socketOptionGetRequest", b"socketOptionGetRequest", "socketOptionSetRequest", b"socketOptionSetRequest", "socketReceiveRequest", b"socketReceiveRequest", "socketSendRequest", b"socketSendRequest"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["payload", b"payload"]) -> typing_extensions.Literal["socketOpenRequest", "socketBindRequest", "socketAddrRequest", "socketSendRequest", "socketReceiveRequest", "socketCloseRequest", "getHostByNameRequest", "getServByNameRequest", "socketConnectRequest", "selectRequest", "settingGetRequest", "socketOptionSetRequest", "socketListenRequest", "socketAcceptRequest", "socketOptionGetRequest"] | None: ...
+
 global___MsgRequest = MsgRequest
 
+@typing_extensions.final
 class MsgResponse(google.protobuf.message.Message):
-    DESCRIPTOR: google.protobuf.descriptor.Descriptor = ...
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
     ID_FIELD_NUMBER: builtins.int
     SOCKETOPENRESPONSE_FIELD_NUMBER: builtins.int
     SOCKETBINDRESPONSE_FIELD_NUMBER: builtins.int
@@ -660,7 +799,7 @@ class MsgResponse(google.protobuf.message.Message):
     SOCKETACCEPTRESPONSE_FIELD_NUMBER: builtins.int
     SOCKETOPTIONGETRESPONSE_FIELD_NUMBER: builtins.int
     INVALIDREQUESTRESPONSE_FIELD_NUMBER: builtins.int
-    id: builtins.int = ...
+    id: builtins.int
     @property
     def socketOpenResponse(self) -> global___MsgSocketOpenResponse: ...
     @property
@@ -693,27 +832,29 @@ class MsgResponse(google.protobuf.message.Message):
     def socketOptionGetResponse(self) -> global___MsgSocketOptionGetResponse: ...
     @property
     def invalidRequestResponse(self) -> global___MsgInvalidRequestResponse: ...
-    def __init__(self,
+    def __init__(
+        self,
         *,
-        id : typing.Optional[builtins.int] = ...,
-        socketOpenResponse : typing.Optional[global___MsgSocketOpenResponse] = ...,
-        socketBindResponse : typing.Optional[global___MsgSocketBindResponse] = ...,
-        socketAddrResponse : typing.Optional[global___MsgSocketAddrResponse] = ...,
-        socketSendResponse : typing.Optional[global___MsgSocketSendResponse] = ...,
-        socketReceiveResponse : typing.Optional[global___MsgSocketReceiveResponse] = ...,
-        socketCloseResponse : typing.Optional[global___MsgSocketCloseResponse] = ...,
-        getHostByNameResponse : typing.Optional[global___MsgGetHostByNameResponse] = ...,
-        getServByNameResponse : typing.Optional[global___MsgGetServByNameResponse] = ...,
-        socketConnectResponse : typing.Optional[global___MsgSocketConnectResponse] = ...,
-        selectResponse : typing.Optional[global___MsgSelectResponse] = ...,
-        settingGetResponse : typing.Optional[global___MsgSettingGetResponse] = ...,
-        socketOptionSetResponse : typing.Optional[global___MsgSocketOptionSetResponse] = ...,
-        socketListenResponse : typing.Optional[global___MsgSocketListenResponse] = ...,
-        socketAcceptResponse : typing.Optional[global___MsgSocketAcceptResponse] = ...,
-        socketOptionGetResponse : typing.Optional[global___MsgSocketOptionGetResponse] = ...,
-        invalidRequestResponse : typing.Optional[global___MsgInvalidRequestResponse] = ...,
-        ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal[u"getHostByNameResponse",b"getHostByNameResponse",u"getServByNameResponse",b"getServByNameResponse",u"id",b"id",u"invalidRequestResponse",b"invalidRequestResponse",u"payload",b"payload",u"selectResponse",b"selectResponse",u"settingGetResponse",b"settingGetResponse",u"socketAcceptResponse",b"socketAcceptResponse",u"socketAddrResponse",b"socketAddrResponse",u"socketBindResponse",b"socketBindResponse",u"socketCloseResponse",b"socketCloseResponse",u"socketConnectResponse",b"socketConnectResponse",u"socketListenResponse",b"socketListenResponse",u"socketOpenResponse",b"socketOpenResponse",u"socketOptionGetResponse",b"socketOptionGetResponse",u"socketOptionSetResponse",b"socketOptionSetResponse",u"socketReceiveResponse",b"socketReceiveResponse",u"socketSendResponse",b"socketSendResponse"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal[u"getHostByNameResponse",b"getHostByNameResponse",u"getServByNameResponse",b"getServByNameResponse",u"id",b"id",u"invalidRequestResponse",b"invalidRequestResponse",u"payload",b"payload",u"selectResponse",b"selectResponse",u"settingGetResponse",b"settingGetResponse",u"socketAcceptResponse",b"socketAcceptResponse",u"socketAddrResponse",b"socketAddrResponse",u"socketBindResponse",b"socketBindResponse",u"socketCloseResponse",b"socketCloseResponse",u"socketConnectResponse",b"socketConnectResponse",u"socketListenResponse",b"socketListenResponse",u"socketOpenResponse",b"socketOpenResponse",u"socketOptionGetResponse",b"socketOptionGetResponse",u"socketOptionSetResponse",b"socketOptionSetResponse",u"socketReceiveResponse",b"socketReceiveResponse",u"socketSendResponse",b"socketSendResponse"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal[u"payload",b"payload"]) -> typing.Optional[typing_extensions.Literal["socketOpenResponse","socketBindResponse","socketAddrResponse","socketSendResponse","socketReceiveResponse","socketCloseResponse","getHostByNameResponse","getServByNameResponse","socketConnectResponse","selectResponse","settingGetResponse","socketOptionSetResponse","socketListenResponse","socketAcceptResponse","socketOptionGetResponse","invalidRequestResponse"]]: ...
+        id: builtins.int | None = ...,
+        socketOpenResponse: global___MsgSocketOpenResponse | None = ...,
+        socketBindResponse: global___MsgSocketBindResponse | None = ...,
+        socketAddrResponse: global___MsgSocketAddrResponse | None = ...,
+        socketSendResponse: global___MsgSocketSendResponse | None = ...,
+        socketReceiveResponse: global___MsgSocketReceiveResponse | None = ...,
+        socketCloseResponse: global___MsgSocketCloseResponse | None = ...,
+        getHostByNameResponse: global___MsgGetHostByNameResponse | None = ...,
+        getServByNameResponse: global___MsgGetServByNameResponse | None = ...,
+        socketConnectResponse: global___MsgSocketConnectResponse | None = ...,
+        selectResponse: global___MsgSelectResponse | None = ...,
+        settingGetResponse: global___MsgSettingGetResponse | None = ...,
+        socketOptionSetResponse: global___MsgSocketOptionSetResponse | None = ...,
+        socketListenResponse: global___MsgSocketListenResponse | None = ...,
+        socketAcceptResponse: global___MsgSocketAcceptResponse | None = ...,
+        socketOptionGetResponse: global___MsgSocketOptionGetResponse | None = ...,
+        invalidRequestResponse: global___MsgInvalidRequestResponse | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["getHostByNameResponse", b"getHostByNameResponse", "getServByNameResponse", b"getServByNameResponse", "id", b"id", "invalidRequestResponse", b"invalidRequestResponse", "payload", b"payload", "selectResponse", b"selectResponse", "settingGetResponse", b"settingGetResponse", "socketAcceptResponse", b"socketAcceptResponse", "socketAddrResponse", b"socketAddrResponse", "socketBindResponse", b"socketBindResponse", "socketCloseResponse", b"socketCloseResponse", "socketConnectResponse", b"socketConnectResponse", "socketListenResponse", b"socketListenResponse", "socketOpenResponse", b"socketOpenResponse", "socketOptionGetResponse", b"socketOptionGetResponse", "socketOptionSetResponse", b"socketOptionSetResponse", "socketReceiveResponse", b"socketReceiveResponse", "socketSendResponse", b"socketSendResponse"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["getHostByNameResponse", b"getHostByNameResponse", "getServByNameResponse", b"getServByNameResponse", "id", b"id", "invalidRequestResponse", b"invalidRequestResponse", "payload", b"payload", "selectResponse", b"selectResponse", "settingGetResponse", b"settingGetResponse", "socketAcceptResponse", b"socketAcceptResponse", "socketAddrResponse", b"socketAddrResponse", "socketBindResponse", b"socketBindResponse", "socketCloseResponse", b"socketCloseResponse", "socketConnectResponse", b"socketConnectResponse", "socketListenResponse", b"socketListenResponse", "socketOpenResponse", b"socketOpenResponse", "socketOptionGetResponse", b"socketOptionGetResponse", "socketOptionSetResponse", b"socketOptionSetResponse", "socketReceiveResponse", b"socketReceiveResponse", "socketSendResponse", b"socketSendResponse"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["payload", b"payload"]) -> typing_extensions.Literal["socketOpenResponse", "socketBindResponse", "socketAddrResponse", "socketSendResponse", "socketReceiveResponse", "socketCloseResponse", "getHostByNameResponse", "getServByNameResponse", "socketConnectResponse", "selectResponse", "settingGetResponse", "socketOptionSetResponse", "socketListenResponse", "socketAcceptResponse", "socketOptionGetResponse", "invalidRequestResponse"] | None: ...
+
 global___MsgResponse = MsgResponse

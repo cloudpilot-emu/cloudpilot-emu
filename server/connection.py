@@ -8,12 +8,11 @@ from typing import Awaitable, List, Optional, Tuple, cast
 
 import dns.resolver
 import hexdump  # type: ignore
-from aiohttp import WSMsgType, web
-from aiohttp.web_ws import WebSocketResponse
-
 import net_errors as err
 import proto.networking_pb2 as networking
 import sockopt
+from aiohttp import WSMsgType, web
+from aiohttp.web_ws import WebSocketResponse
 from logger import debug, error, info, logger, warning
 from palmos_constants import *
 from socket_context import MAX_TIMEOUT, SocketContext
@@ -53,7 +52,7 @@ class BadPacketException(Exception):
 
 
 def deserializeAddress(addr: networking.Address) -> Tuple[str, int]:
-    return(
+    return (
         f'{(addr.ip >> 24) & 0xff}.{(addr.ip >> 16) & 0xff}.{(addr.ip >> 8) & 0xff}.{addr.ip & 0xff}', addr.port)
 
 

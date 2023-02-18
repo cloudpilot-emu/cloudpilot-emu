@@ -10,7 +10,6 @@ from typing import Optional
 import aiohttp_cors  # type: ignore
 from aiohttp import log, web
 from aiohttp.web_response import Response
-
 from cloudpilot_token import TOKEN_TTL, generateToken, validateToken
 from connection import Connection
 from logger import logger
@@ -18,6 +17,29 @@ from logger import logger
 VERSION = 3
 COMPAT_VERSION = 3
 
+INDEX_HTML = """
+<html>
+<head>
+    <title>CloudpilotEmu Proxy Server</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 40em;
+            margin: auto;
+            padding: 1em;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>CloudpilotEmu Proxy Server</h1>
+    <p>
+        Congratulations! You browser can access the proxy server. You can now proceed to set
+        up networking in CloudpilotEmu.
+    </p>
+</body>
+</html>
+"""
 
 def start(host: str, port: int, ssl: Optional[SSLContext], logLevel: str, logLevelFramework: str, trustedOrigins: str,
           forceBindAddress: Optional[str] = None, authentication: Optional[str] = None, nameserver: Optional[int] = None):
@@ -40,6 +62,10 @@ def start(host: str, port: int, ssl: Optional[SSLContext], logLevel: str, logLev
 
         connection = Connection(forceBindAddress, nameserver)
         await connection.handle(ws)
+
+    @routes.get("/")
+    async def indexHandler(request: web.Request):
+        return web.Response(text=INDEX_HTML, content_type="text/html")
 
     _setupLogging(logLevel, logLevelFramework)
 
