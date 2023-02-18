@@ -168,9 +168,4 @@ def generateCertificate(options):
 
 in order to use the generated certificate. Please check the documentation on
 how to install and trust "{fileCaCer}" on your devices running CloudpilotEmu.
-
-SECURITY WARNING:
-===============================================================================
-"{filePem}" is sensitive information; DO NOT DISTRIBUTE IT.
-===============================================================================
 """.format(script=sys.argv[0], filePem=filePem, fileCaCer=fileCaCer))
