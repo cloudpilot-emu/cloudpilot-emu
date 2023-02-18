@@ -41,7 +41,7 @@ In order to open an encrypted connection to CloudpilotEmu the server needs to
 present a certificate to the browser. This certificate needs to be signed by
 a trusted root certificate.
 
-both certificates can be generated directly by `cloudpilot-server` by running
+Both certificates can be generated directly by `cloudpilot-server` by running
 
 ```
     > path/to/server/cloudpilot-server generate-cert
@@ -53,8 +53,8 @@ hostnames to encode in the certificate. One of these must match with the
 host or IP that you enter in CloudpilotEmu.
 
 `cloudpilot-server` will generate a file with the suffix `.pem` and one with the
-suffix `.cer`. The file with the suffix `.pem` is the certificate and key that are used
-by the server. The file with the suffix `.cer` is the root certificate which needs
+suffix `.cer`. The file with the suffix `.pem` contains the certificate and key that are used
+by the server. The file with the suffix `.cer` is the root certificate that needs
 to be installed on the devices that access the proxy.
 
 `cloudpilot-server` will discard the private key associated with the root certificate
