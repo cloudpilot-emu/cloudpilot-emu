@@ -7,7 +7,7 @@ emscripten:
 	$(MAKE) -Csrc emscripten
 
 proto:
-	$(MAKE) -Csrc/proto
+	$(MAKE) -Csrc/cloudpilot/proto
 	$(MAKE) -Cserver/proto
 
 clean:
