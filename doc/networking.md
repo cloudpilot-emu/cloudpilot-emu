@@ -193,7 +193,7 @@ replaced with the hostname or IP of the machine running the server.
 ### Connectivity problems
 
 If the server is reachable and the certificate is configured correctly you should see the
-server respond with "not found".
+server respond with a web page.
 
 If the browser complains that it can't load the page you should check whether the server
 is running, whether both devices are on the same network and whether a firewall is
