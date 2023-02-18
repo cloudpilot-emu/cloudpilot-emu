@@ -13,7 +13,8 @@ The necessary steps to set up networking are
 
 1. Download latest server version from the
    [releases page](https://github.com/cloudpilot-emu/cloudpilot-emu/releases).
-2. Generate a certificate and install it on the device running CloudpilotEmu
+2. Generate a certificate chain and install the root certificate on the device
+   running CloudpilotEmu
 3. Start the server
 4. Enable networking in CloudpilotEmu and point it to the proxy server.
 
@@ -34,12 +35,13 @@ of quarantine before the first run; please check the release notes for details.
 If you need to run the server on another platform or use the latest version in
 git, please follow the instructions under "advanced usage" below.
 
-## Generate a certificate
+## Generate a certificate chain
 
-In order to open an encrypted connection to CloudpilotEmu the server needs a
-self-signed certificate installed on the device running Cloudpilot.
+In order to open an encrypted connection to CloudpilotEmu the server needs to
+present a certificate to the browser. This certificate needs to be signed by
+a trusted root certificate.
 
-This certificate can be generated directly by `cloudpilot-server` by running
+both certificates can be generated directly by `cloudpilot-server` by running
 
 ```
     > path/to/server/cloudpilot-server generate-cert
@@ -51,101 +53,78 @@ hostnames to encode in the certificate. One of these must match with the
 host or IP that you enter in CloudpilotEmu.
 
 `cloudpilot-server` will generate a file with the suffix `.pem` and one with the
-suffix `.cer`. The file with the suffix `.pem` includes the private key
-associated with the certificate and is used by the server. **DO NOT DISTRIBUTE IT**
-as an attacker could try to use it for attacking SSL connections
-originating from devices that have the certificate installed and trusted
-(although care has been taken to make this as hard as possible).
+suffix `.cer`. The file with the suffix `.pem` is the certificate and key that are used
+by the server. The file with the suffix `.cer` is the root certificate which needs
+to be installed on the devices that access the proxy.
 
-The `.cer` file does not contain sensitive data and is safe to distribute. It
-has to be installed on the device(s) running CloudpilotEmu.
+`cloudpilot-server` will discard the private key associated with the root certificate
+immediately aftet signing the leaf certificate. Without the key, no other certificates
+can be signed with the root, so the root certificate is safe to install.
 
 ## Install the certificate
 
-Depending on the device that runs CloudpilotEmu, different steps need to be taken to
-install the certificate.
+Depending on the device that runs CloudpilotEmu, different steps need to be
+taken to install the root certificate.
 
-**IMPORTANT:** Always use the `.cer` file for installation, the `.pem` should be considered
-sensitive data and remain with the server.
+**IMPORTANT:** Always use the `...-root.cer` file for installation.
 
 ### iOS
 
-First, copy the certificate to your iCloud drive (or send it via mail). Tap
+First, copy the root certificate to your iCloud drive (or send it via mail). Tap
 to open it and confirm that you want to prepare it for installation.
 
-Now head over to `Settings` -> `General` -> `Profiles` and confirm that you want to install
-the certificate. Finally, go to `Settings` -> `General` -> `About` -> `Certificate Trust Settings`
-and confirm that you want to trust the certificate.
+Now head over to `Settings` -> `General` -> `Profiles` and confirm that you want
+to install the certificate. Finally, go to `Settings` -> `General` -> `About` ->
+`Certificate Trust Settings` and confirm that you want to trust the certificate.
 
 ### Android
 
-Copy the certificate to your device (i.e. via USB or SD), navigate to `Settings` -> `Security` ->
-`Credential Storage` -> `Install from device storage`
-and install the certificate. When prompted select that you want to
-use the certificate for "VPN and apps". Note that the exact click path to the
-relevant setting may vary slightly depending on your particular Android version and vendor.
+Copy the root certificate to your device (i.e. via USB or SD), navigate to
+`Settings` -> `Security` -> `Credential Storage` -> `Install from device
+storage` and install the certificate. When prompted select that you want to use
+the certificate for "VPN and apps". Note that the exact click path to the
+relevant setting may vary slightly depending on your particular Android version
+and vendor.
 
-If your device refuses to accept the certificate for "VPN and apps" and offers "CA certificate",
-try that instead.
+If your device refuses to accept the certificate for "VPN and apps" and offers
+"CA certificate", try that instead.
 
 ### Windows
 
-Double click the certificate to import it. A wizard will open that guides you through the
-installation of the certificate. When asked select "Place all certificates in the following
-store" (instead of automatic selection) and select "Trusted Root Certification Authorities".
-Complete the wizard to install the certificate.
+Double click the root certificate to import it. A wizard will open that guides
+you through the installation of the certificate. When asked select "Place all
+certificates in the following store" (instead of automatic selection) and select
+"Trusted Root Certification Authorities". Complete the wizard to install the
+certificate.
 
-If you accidentally install the certificate to the wrong store (or want to remove it)
-launch "certmgr.msc" from the execute dialog in order to manage your installed certificates.
+If you accidentally install the certificate to the wrong store (or want to
+remove it) launch "certmgr.msc" from the execute dialog in order to manage your
+installed certificates.
 
 ### MacOS
 
-Double click the certificate in finder in order to install it. Now open "Keychain Access"
-(a preinstalled app on your Mac) and locate the installed certificate by the name that
-you entered when you created it. It should be in your login keychain under "certificates".
+Double click the root certificate in finder in order to install it. Now open
+"Keychain Access" (a preinstalled app on your Mac) and locate the installed
+certificate by the name that you entered when you created it. It should be in
+your login keychain under "certificates".
 
-Double click it, expand the "Trust" section and set "SSL" to "Always trust".
+Double click it, expand the "Trust" section and set the trust level to "Always
+trust".
 
-### Chrome issues (may also apply)
+### Chrome for Linux
 
-Recent versions of Chrome have started to be unhappy with the certificate generated
-by Cloudpilot by default. This can be circumvented by generating the certificate
-as a full CA certificate by answering "YES" to the corresponding question during
-creation (use via the `--unrestricted-certificate`).
-
-WARNING: Be aware that a CA certificate can be used to break into encrypted network
-connections originating from your computer. Make sure that nobody else has access
-to the generated `.pem` file.
-
-As an alternative, you can open the website settings in chrome and enable
-"insecure content". This will allow you to run the proxy server over HTTP
-(by using the `--insecure` command line option). Note that you have to enter
-the full URL to the server in CloudpilotEmu in this case, and that the connection
-will not be encrypted. DON'T USE BASIC AUTHENTICATION IN THIS CASE.
-
-Chrome on Linux is a special case. On Linux, Chrome manages its own
-certificate store. In order to import the generated certificate you need to open
-the settings and navigate to "Privacy and Security" -> "Security" -> "Manage
-Certificates" -> "Authorities" and click "Import". You need to set the filter to
-"all files" in order to see and import the .cer file. In the dialog that opens,
-select "Trust this certificate for identifying websites". Chrome on Linux always
-requires a full CA certificate.
+On Linux, Chrome manages its own certificate store. In order to import the
+generated root certificate you need to open the settings and navigate to
+"Privacy and Security" -> "Security" -> "Manage Certificates" -> "Authorities"
+and click "Import". You need to set the filter to "all files" in order to see
+and import the .cer file. In
 
 ### Firefox
 
-Unfortunately, Firefox uses its own certificate store and ignores the store of your
-operating system. Importing the certificate into Firefox' store will not work.
-If you want to use CloudpilotEmu networking on Firefox you have to add
-a security exception.
-
-The easiest way to do so is to navigate to the proxy server in your browser after starting
-it. In its default setup the server runs on port 8667, so enter `https://<host>:8667`
-in the address bar (replacing `<host>` with the host or IP of the machine running the server).
-You will be presented with a security warning. Click "Advanced" and then "Add exception"
-in order to add an exception.
-
-Reload the page with the exception in place. The error should be gone, and you should see
-the text "not found" instead.
+Firefox manages its own certificate store. In order to import the root
+certificate, go to the settings and navigate to "Security" -> "Certificates" ->
+"Show Certificates". Go to the "Certificate Authorities" tab, select "Import"
+and confirm that the certificate may be used for accessing web sites.
 
 ## Start the server
 
@@ -214,7 +193,7 @@ replaced with the hostname or IP of the machine running the server.
 ### Connectivity problems
 
 If the server is reachable and the certificate is configured correctly you should see the
-server respond with "not found".
+server respond with a web page.
 
 If the browser complains that it can't load the page you should check whether the server
 is running, whether both devices are on the same network and whether a firewall is
@@ -222,14 +201,15 @@ preventing communication between the devices.
 
 ### Certificate issues
 
-A security warning indicates that the certificate has not been set up correctly.
+A security warning indicates that the root certificate has not been set up correctly.
 
 Possible issues are:
 
--   **Installation:** The certificate is not installed correctly. Please check the
+-   **Installation:** The root certificate is not installed correctly. Please check the
     instructions above.
 -   **Wrong certificate:** Each generated certificate is unique, and the certificate
-    installed on the device must be the exact same certificate used by the server.
+    installed on the device must be the exact same that `cloudpilot-server` generated
+    for signing the leaf certificate used by the server.
 -   **Name mismatch:** The hostname or IP configured in CloudpilotEmu must match one
     of the names or IPs that were entered when the certificate was generated.
 -   **Expired:** The certificate has a lifetime of one year, and you'll have to generate

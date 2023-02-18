@@ -4,6 +4,6 @@ networking_pb2.py: ../../proto/networking.proto
 	$(PROTOC) --python_out=. --mypy_out=. -I $(dir $<) $(notdir $<)
 
 clean:
-	-rm -f networking_pb2.py
+	-rm -f networking_pb2.py networking_pb2.pyi
 
 .PHONY: clean

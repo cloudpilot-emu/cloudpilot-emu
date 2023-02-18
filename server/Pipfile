@@ -9,7 +9,6 @@ hexdump = "*"
 pyopenssl = "*"
 pyinstaller = "*"
 pywin32-ctypes = "*"
-pyreadline = "*"
 pefile = "*"
 macholib = "*"
 aiohttp = "*"
@@ -18,6 +17,8 @@ dnspython = "*"
 types-pyopenssl = "*"
 types-protobuf = "*"
 types-futures = "*"
+mypy = "*"
+pyreadline3 = "*"
 
 [dev-packages]
 

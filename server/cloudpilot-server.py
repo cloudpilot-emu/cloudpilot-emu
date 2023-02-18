@@ -12,6 +12,11 @@ from version import VERSION
 
 import server
 
+def parsePositiveInt(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("positive int required")
+    return ivalue
 
 def launchServer(options: Any):
     sslCtx = None
@@ -38,7 +43,7 @@ Please follow the documentation at
 
 https://github.com/cloudpilot-emu/cloudpilot/blob/master/doc/networking.md
 
-in order to install the certificate on your device and set up networking in
+in order to install the root certificate on your device and set up networking in
 CloudpilotEmu.
 """.format(script=sys.argv[0]))
         return
@@ -110,7 +115,7 @@ parserServe.add_argument(
     "--nameserver", help="manually specify a nameserver (IP, no hostname) for PalmOS", default=None)
 
 parserGenerateCert = subparsers.add_parser("generate-cert", help="generate certificate",
-                                           description="Generate self-signed certificate and exit")
+                                           description="Generate certificate chain and exit")
 
 parserGenerateCert.add_argument("--overwrite", help="overwrite certificate files",
                                 default=False, action="store_true", dest="overwrite")
@@ -121,9 +126,8 @@ parserGenerateCert.add_argument(
 parserGenerateCert.add_argument("--names", help="certificate names (IPs, hostnames, domains)",
                                 default=None, dest="names")
 
-parserGenerateCert.add_argument("--unrestricted-certificate",
-                                help="Don't restrict usage as a CA cert. This is required for compatibility with recent version of Chrome and with Chrome on Linux.",
-                                default=None, dest="enableCA", action="store_true")
+parserGenerateCert.add_argument("--lifetime-days", help="certificate lifetime in days (default: 365)",
+                                default=365, dest="lifetime", type=parsePositiveInt)
 
 parserVersion = subparsers.add_parser(
     "version", help="print server version", description="Print server version and exit.")
