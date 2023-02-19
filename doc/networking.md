@@ -73,9 +73,10 @@ taken to install the root certificate.
 First, copy the root certificate to your iCloud drive (or send it via mail). Tap
 to open it and confirm that you want to prepare it for installation.
 
-Now head over to `Settings` -> `General` -> `Profiles` and confirm that you want
-to install the certificate. Finally, go to `Settings` -> `General` -> `About` ->
-`Certificate Trust Settings` and confirm that you want to trust the certificate.
+Now head over to `Settings` -> `General` -> `VPN and Device Management` and
+confirm that you want to install the certificate. Finally, go to `Settings` ->
+`General` -> `About` -> `Certificate Trust Settings` and confirm that you want
+to trust the certificate.
 
 ### Android
 
