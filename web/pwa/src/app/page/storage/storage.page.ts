@@ -1,5 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 
+import { DragDropClient } from '@pwa/service/drag-drop.service';
+import { DragDropService } from './../../service/drag-drop.service';
 import { IonNav } from '@ionic/angular';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { SubpageCardsComponent } from './subpage-cards/subpage-cards.component';
@@ -12,8 +14,8 @@ import { isFirefox } from './../../../../../common/helper/browser';
     templateUrl: './storage.page.html',
     styleUrls: ['./storage.page.scss'],
 })
-export class StoragePage implements OnInit {
-    constructor(private vfsService: VfsService) {}
+export class StoragePage implements OnInit, DragDropClient {
+    constructor(private vfsService: VfsService, private dragDropService: DragDropService) {}
 
     ngOnInit(): void {
         this.vfsService.onReleaseCard.addHandler(this.onReleaseCard.bind(this));
@@ -21,14 +23,23 @@ export class StoragePage implements OnInit {
 
     ionViewDidEnter(): void {
         this.isVisible = true;
+        this.dragDropService.registerClient(this);
     }
 
     ionViewWillLeave(): void {
         this.isVisible = false;
+        this.dragDropService.unregisterClient(this);
+    }
+
+    async handleDragDropEvent(e: DragEvent): Promise<void> {
+        const currentView = await this.nav?.getActive();
+
+        await currentView?.params?.selfReference?.ref?.handleDragDropEvent?.(e);
     }
 
     readonly navRootProps = {
         onMountForBrowse: (card: StorageCard) => this.browseCard(card),
+        selfReference: {},
     };
 
     get animateNav(): boolean {
@@ -44,6 +55,7 @@ export class StoragePage implements OnInit {
                 path: '/',
                 onNavigate: this.onNavigate,
                 onNavigateBreadcrumb: this.onNavigateBreadcrumb,
+                selfReference: {},
             },
             { animated: this.animateNav }
         );
@@ -59,6 +71,7 @@ export class StoragePage implements OnInit {
                 path,
                 onNavigate: this.onNavigate,
                 onNavigateBreadcrumb: this.onNavigateBreadcrumb,
+                selfReference: {},
             },
             { animated: this.animateNav }
         );

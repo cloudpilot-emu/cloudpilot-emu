@@ -1,5 +1,5 @@
 import { ActionSheetController, Config, ModalController, PopoverController } from '@ionic/angular';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { ContextMenuBreadcrumbComponent } from './../context-menu-breadcrumb/context-menu-breadcrumb.component';
@@ -28,7 +28,7 @@ let BREADCRUMB_TRIGGER_INDEX = 0;
     styleUrls: ['./subpage-directory.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SubpageDirectoryComponent implements DoCheck {
+export class SubpageDirectoryComponent implements DoCheck, OnInit {
     constructor(
         private vfsService: VfsService,
         private popoverController: PopoverController,
@@ -43,6 +43,10 @@ export class SubpageDirectoryComponent implements DoCheck {
         this.checkEntries = changeDetector(cd, undefined, () =>
             this.path !== undefined ? vfsService.readdir(this.path) : undefined
         );
+    }
+
+    ngOnInit(): void {
+        if (this.selfReference) this.selfReference.ref = this;
     }
 
     ngDoCheck(): void {
@@ -324,6 +328,9 @@ export class SubpageDirectoryComponent implements DoCheck {
 
     @Input()
     path: string | undefined;
+
+    @Input()
+    selfReference: { ref: SubpageDirectoryComponent } | undefined;
 
     @Input()
     onNavigate: (path: string) => void = () => undefined;

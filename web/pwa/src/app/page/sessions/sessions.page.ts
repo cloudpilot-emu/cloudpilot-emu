@@ -173,8 +173,18 @@ export class SessionsPage implements DragDropClient, DoCheck {
             return;
         }
 
+        let content: Uint8Array;
+        try {
+            content = await file.getContent();
+        } catch (e) {
+            console.warn(e);
+
+            await this.alertService.errorMessage(`Unable to open "${file.name}".`);
+            return;
+        }
+
         const sessionImage = (await this.cloudpilotService.cloudpilot).deserializeSessionImage<SessionMetadata>(
-            await file.getContent()
+            content
         );
 
         if (sessionImage) {
@@ -193,7 +203,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
                 this.lastSessionTouched = session.id;
             }
         } else {
-            const romInfo = (await this.cloudpilotService.cloudpilot).getRomInfo(await file.getContent());
+            const romInfo = (await this.cloudpilotService.cloudpilot).getRomInfo(content);
 
             if (!romInfo) {
                 void this.alertService.errorMessage(`Not a valid session file or ROM image.`);
@@ -213,7 +223,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
 
             if (await this.editSettings(settings, romInfo.supportedDevices)) {
                 const session = await this.sessionService.addSessionFromRom(
-                    await file.getContent(),
+                    content,
                     settings.name,
                     settings.device,
                     settings

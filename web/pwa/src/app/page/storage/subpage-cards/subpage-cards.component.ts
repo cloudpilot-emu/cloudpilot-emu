@@ -1,7 +1,6 @@
 import { ActionSheetController, AlertController, ModalController } from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input } from '@angular/core';
-import { DragDropClient, DragDropService } from './../../../service/drag-drop.service';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { NewCardSize, StorageCardService } from '@pwa/service/storage-card.service';
 
@@ -22,7 +21,7 @@ import { filenameFragment } from '@pwa/helper/filename';
     styleUrls: ['./subpage-cards.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SubpageCardsComponent implements DragDropClient, DoCheck {
+export class SubpageCardsComponent implements DoCheck, OnInit {
     constructor(
         private actionSheetController: ActionSheetController,
         public storageCardService: StorageCardService,
@@ -32,22 +31,17 @@ export class SubpageCardsComponent implements DragDropClient, DoCheck {
         private alertService: AlertService,
         private errorService: ErrorService,
         private fileService: FileService,
-        private dragDropService: DragDropService,
         cd: ChangeDetectorRef
     ) {
         this.checkCards = changeDetector(cd, [], () => this.storageCardService.getAllCards());
     }
 
+    ngOnInit(): void {
+        if (this.selfReference) this.selfReference.ref = this;
+    }
+
     ngDoCheck(): void {
         this.checkCards();
-    }
-
-    ionViewDidEnter(): void {
-        this.dragDropService.registerClient(this);
-    }
-
-    ionViewWillLeave(): void {
-        this.dragDropService.unregisterClient(this);
     }
 
     get cards(): Array<StorageCard> {
@@ -180,8 +174,16 @@ export class SubpageCardsComponent implements DragDropClient, DoCheck {
 
     private handleCardImport = async (file: FileDescriptor): Promise<void> => {
         const cloudpilot = await this.cloudpilotService.cloudpilot;
-        const content = await file.getContent();
+        let content: Uint8Array;
 
+        try {
+            content = await file.getContent();
+        } catch (e) {
+            console.warn(e);
+
+            await this.alertService.errorMessage(`Unable to open "${file.name}".`);
+            return;
+        }
         const supportLevel = cloudpilot.getCardSupportLevel(content.length);
 
         if (supportLevel === CardSupportLevel.unsupported) {
@@ -230,6 +232,9 @@ export class SubpageCardsComponent implements DragDropClient, DoCheck {
 
     @Input()
     onMountForBrowse: (card: StorageCard) => void = () => undefined;
+
+    @Input()
+    selfReference: { ref: SubpageCardsComponent } | undefined;
 
     private checkCards: () => void;
 }

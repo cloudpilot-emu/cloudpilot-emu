@@ -61,14 +61,24 @@ class InstallationContext {
 
     async run(): Promise<[Array<string>, Array<string>, Array<string>]> {
         for (const file of this.files) {
-            if (/\.zip/i.test(file.name) && file.getContent.length < ZIP_SIZE_LIMIT) {
+            let content: Uint8Array;
+            try {
+                content = await file.getContent();
+            } catch (e) {
+                console.warn(e);
+
+                this.filesFail.push(file.name);
+                continue;
+            }
+
+            if (/\.zip/i.test(file.name) && content.length < ZIP_SIZE_LIMIT) {
                 try {
                     await this.installZip(file);
                 } catch (err) {
                     this.filesFail.push(file.name);
                 }
             } else if (isInstallable(file.name)) {
-                await this.installOne(file.name, await file.getContent());
+                await this.installOne(file.name, content);
             } else {
                 this.filesFail.push(file.name);
             }
