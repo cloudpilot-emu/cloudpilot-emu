@@ -468,6 +468,9 @@ export abstract class AbstractCanvasDisplayService {
             case DeviceId.pegT400:
                 return this.skin.SILKSCREEN_PEG_T415;
 
+            case DeviceId.acerS11:
+                return this.skin.SILKSCREEN_ACER_S10;
+
             case DeviceId.palmPilot:
             case DeviceId.pilot:
             case DeviceId.iii:
@@ -581,9 +584,11 @@ export abstract class AbstractCanvasDisplayService {
             case DeviceId.i705:
                 return this.skin.HARD_BUTTONS_I705;
 
-            case DeviceId.handera330c:
             case DeviceId.handera330:
                 return this.skin.HARD_BUTTONS_HANDERA330;
+
+            case DeviceId.handera330c:
+                return this.skin.HARD_BUTTONS_HANDERA330C;
 
             case DeviceId.palmVx:
             case DeviceId.palmV:

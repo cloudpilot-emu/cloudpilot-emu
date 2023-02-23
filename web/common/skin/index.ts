@@ -16,6 +16,7 @@ export { default as HARD_BUTTONS_TUNGSTEN_W } from './hard-buttons/tungstenw.svg
 export { default as HARD_BUTTONS_PALM_V } from './hard-buttons/v.svg';
 export { default as HARD_BUTTONS_I705 } from './hard-buttons/i705.svg';
 export { default as HARD_BUTTONS_HANDERA330 } from './hard-buttons/handera330.svg';
+export { default as HARD_BUTTONS_HANDERA330C } from './hard-buttons/handera330c.svg';
 export { default as HARD_BUTTONS_PEG_S300 } from './hard-buttons/clie-s300.svg';
 export { default as HARD_BUTTONS_PEG_S500 } from './hard-buttons/clie-s500.svg';
 export { default as HARD_BUTTONS_PEG_S320 } from './hard-buttons/clie-s320.svg';
@@ -39,3 +40,4 @@ export { default as SILKSCREEN_PEG_S500 } from './silkscreen/clie-s500.svg';
 export { default as SILKSCREEN_PEG_T415 } from './silkscreen/clie-t415.svg';
 export { default as SILKSCREEN_PEG_N610 } from './silkscreen/clie-n610.svg';
 export { default as SILKSCREEN_PEG_T600 } from './silkscreen/clie-t600.svg';
+export { default as SILKSCREEN_ACER_S10 } from './silkscreen/acer-s10.svg';
