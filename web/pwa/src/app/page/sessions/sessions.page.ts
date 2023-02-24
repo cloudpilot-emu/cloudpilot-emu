@@ -179,7 +179,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
         } catch (e) {
             console.warn(e);
 
-            await this.alertService.errorMessage(`Unable to open "${file.name}".`);
+            await this.alertService.errorMessage(`Unable to open ${file.name}.`);
             return;
         }
 

@@ -184,17 +184,14 @@ class InstallationContext {
                         },
                     },
                 ],
-                inputs:
-                    ++this.errors >= 3
-                        ? [
-                              {
-                                  type: 'checkbox',
-                                  label: 'Skip any remaining errors',
-                                  checked: false,
-                                  handler: (inpt) => (this.skipErrors = inpt.checked === true),
-                              },
-                          ]
-                        : [],
+                inputs: [
+                    {
+                        type: 'checkbox',
+                        label: 'Skip any remaining errors',
+                        checked: false,
+                        handler: (inpt) => (this.skipErrors = inpt.checked === true),
+                    },
+                ],
             });
 
             void alert.then((a) => a.present());
@@ -207,7 +204,6 @@ class InstallationContext {
 
     private sizeInstalledSinceLastsnapshot = 0;
     private skipErrors = false;
-    private errors = 0;
 
     private installedDatabases = new Map<string, string>();
 }

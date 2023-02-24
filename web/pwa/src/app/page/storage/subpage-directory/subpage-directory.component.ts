@@ -6,6 +6,7 @@ import { ContextMenuBreadcrumbComponent } from './../context-menu-breadcrumb/con
 import { ContextMenuDirectoryComponent } from './../context-menu-directory/context-menu-directory.component';
 import { EditFileDialogComponent } from './../edit-file-dialog/edit-file-dialog.component';
 import { FileEntry } from '@common/bridge/Vfs';
+import { FileService } from '@pwa/service/file.service';
 import { NewDirectoryDialogComponent } from './../new-directory-dialog/new-directory-dialog.component';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { VfsService } from '@pwa/service/vfs.service';
@@ -36,6 +37,7 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         private alertService: AlertService,
         private actionSheetController: ActionSheetController,
         private modalController: ModalController,
+        private fileService: FileService,
         private cd: ChangeDetectorRef
     ) {
         this.breadcrumbTriggerId = `breadcrumb-trigger-${BREADCRUMB_TRIGGER_INDEX++}`;
@@ -51,6 +53,10 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
 
     ngDoCheck(): void {
         this.checkEntries();
+    }
+
+    handleDragDropEvent(e: DragEvent): void | Promise<void> {
+        this.fileService.openFromDrop(e, (files) => this.vfsService.addFiles(files, this.path || ''));
     }
 
     get title(): string {
@@ -147,7 +153,7 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
     }
 
     onAddFiles(): void {
-        void this.alertService.message('Not implemented', 'Add files: not implemented.');
+        this.fileService.openFiles((files) => this.vfsService.addFiles(files, this.path || '/'));
     }
 
     @debounce()

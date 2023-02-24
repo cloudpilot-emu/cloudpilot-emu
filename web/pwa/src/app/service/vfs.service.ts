@@ -1,12 +1,12 @@
-import { Attributes, FileEntry, ReaddirError, Vfs, VfsResult } from '@common/bridge/Vfs';
+import { AlertController, LoadingController } from '@ionic/angular';
+import { Attributes, FileEntry, ReaddirError, Vfs, VfsResult, WriteFileResult } from '@common/bridge/Vfs';
 import { CardOwner, StorageCardContext } from './storage-card-context';
+import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { AlertService } from './alert.service';
 import { Event } from 'microevent.ts';
-import { FileService } from '@pwa/service/file.service';
 import { Injectable } from '@angular/core';
-import { LoadingController } from '@ionic/angular';
 import { StorageService } from '@pwa/service/storage.service';
 import deepEqual from 'deep-equal';
 import { filenameForArchive } from '@pwa/helper/filename';
@@ -18,7 +18,8 @@ export class VfsService {
         private storageCardContext: StorageCardContext,
         private alertService: AlertService,
         private fileService: FileService,
-        private loadingController: LoadingController
+        private loadingController: LoadingController,
+        private alertController: AlertController
     ) {
         void this.vfs.then((instance) => (this.vfsInstance = instance));
     }
@@ -293,6 +294,144 @@ export class VfsService {
 
     getBytesTotal(): number {
         return this.bytesTotal;
+    }
+
+    async addFiles(files: Array<FileDescriptor>, destination: string): Promise<void> {
+        if (files.length === 0) return;
+
+        const loader = await this.loadingController.create();
+        await loader.present();
+
+        try {
+            const failed = await this.addFilesUnchecked(files, destination);
+
+            await loader.dismiss();
+
+            if (failed.length === 0) {
+                await this.alertService.message(
+                    `${files.length > 1 ? 'Files' : 'File'} added to card`,
+                    `Successfully added ${files.length > 1 ? `${files.length} files` : 'one file'} to card.`
+                );
+            } else if (failed.length === files.length) {
+                await this.alertService.errorMessage(
+                    `Failed to add ${files.length > 1 ? `${files.length} files` : 'file'}`
+                );
+            } else {
+                await this.alertService.message(
+                    `${files.length > 1 ? 'Files' : 'File'} added to card`,
+                    `Successfully added ${
+                        files.length - failed.length > 1 ? `${files.length - failed.length} files` : 'one file'
+                    } to card. ${failed.length > 1 ? `${failed.length} files` : 'One file'} could not be added.
+                `
+                );
+            }
+        } finally {
+            void loader.dismiss();
+        }
+    }
+
+    private async addFilesUnchecked(files: Array<FileDescriptor>, destination: string): Promise<Array<string>> {
+        const entriesCurrent = this.readdir(destination);
+        const failed: Array<string> = [];
+        const vfs = await this.vfs;
+
+        let rememberChoice = false;
+        let overwrite = false;
+
+        iterate_files: for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const existingEntry = entriesCurrent.find((entry) => entry.name === file.name);
+
+            if (existingEntry && existingEntry.isDirectory) {
+                failed.push(file.name);
+                continue;
+            }
+
+            if (existingEntry) {
+                if (!rememberChoice) {
+                    const { overwrite: overwriteSelection, rememberChoice: rememberChoiceSelection } =
+                        await this.overwriteFileDialog(file.name);
+
+                    overwrite = overwriteSelection;
+                    rememberChoice = rememberChoiceSelection;
+                }
+
+                if (!overwrite) {
+                    failed.push(file.name);
+                    continue;
+                }
+            }
+
+            let content: Uint8Array;
+            try {
+                content = await file.getContent();
+            } catch (e) {
+                console.warn(e);
+                failed.push(file.name);
+
+                await this.alertService.errorMessage(`Unable to open ${file.name}`);
+                continue;
+            }
+
+            switch (vfs.writeFile(this.normalizePath(`${destination}/${file.name}`), content)) {
+                case WriteFileResult.errCardFull:
+                    await this.alertService.errorMessage('Card full.');
+                    failed.push(...files.slice(i).map((file) => file.name));
+
+                    break iterate_files;
+
+                case WriteFileResult.errIO:
+                    await this.fatalError('Unable to write file.');
+                    throw new Error();
+
+                case WriteFileResult.success:
+                    break;
+
+                default:
+                    failed.push(file.name);
+                    break;
+            }
+        }
+
+        await this.sync();
+        this.directoryCache.delete(this.normalizePath(destination));
+
+        return failed;
+    }
+
+    private async overwriteFileDialog(name: string): Promise<{ overwrite: boolean; rememberChoice: boolean }> {
+        let overwrite = false;
+        let rememberChoice = false;
+
+        const alert = await this.alertController.create({
+            header: 'Duplicate file',
+            backdropDismiss: false,
+            cssClass: 'alert-checkbox-no-border installation-error',
+            message: `Do you want to overwrite ${name}?`,
+            buttons: [
+                {
+                    text: 'No',
+                    role: 'cancel',
+                },
+                {
+                    text: 'Yes',
+                    handler: () => (overwrite = true),
+                },
+            ],
+            inputs: [
+                {
+                    type: 'checkbox',
+                    label: 'Remember for all files',
+                    checked: false,
+                    handler: (inpt) => (rememberChoice = inpt.checked === true),
+                },
+            ],
+        });
+
+        await alert.present();
+        await alert.onDidDismiss();
+
+        return { overwrite, rememberChoice };
     }
 
     private async error(message: string): Promise<void> {

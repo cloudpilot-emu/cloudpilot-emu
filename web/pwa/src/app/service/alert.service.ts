@@ -16,6 +16,7 @@ export class AlertService {
             backdropDismiss: false,
             message,
             buttons: [{ text: 'Close', role: 'cancel' }],
+            cssClass: 'alert-error',
         });
 
         await alert.present();
@@ -94,7 +95,7 @@ export class AlertService {
                     : []),
                 { text: 'Reload', handler: () => window.location.reload() },
             ],
-            cssClass: 'fatal-error',
+            cssClass: 'alert-error',
         });
 
         await alert.present();

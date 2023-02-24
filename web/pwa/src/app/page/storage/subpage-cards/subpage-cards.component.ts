@@ -181,7 +181,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         } catch (e) {
             console.warn(e);
 
-            await this.alertService.errorMessage(`Unable to open "${file.name}".`);
+            await this.alertService.errorMessage(`Unable to open ${file.name}".`);
             return;
         }
         const supportLevel = cloudpilot.getCardSupportLevel(content.length);

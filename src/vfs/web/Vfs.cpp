@@ -160,7 +160,7 @@ void Vfs::ReleaseCurrentFile() {
 
 int Vfs::WriteFile(const char* path, unsigned int size, const void* data) {
     FIL file;
-    switch (f_open(&file, path, FA_WRITE | FA_OPEN_EXISTING)) {
+    switch (f_open(&file, path, FA_WRITE | FA_CREATE_ALWAYS)) {
         case FR_INVALID_NAME:
             return static_cast<int>(WriteFileResult::errInvalidName);
 
@@ -177,8 +177,6 @@ int Vfs::WriteFile(const char* path, unsigned int size, const void* data) {
     Defer deferClose([&]() {
         if (file.obj.fs) f_close(&file);
     });
-
-    if (f_truncate(&file) != FR_OK) return static_cast<int>(WriteFileResult::errIO);
 
     UINT bytesWritten = 0;
     if (f_write(&file, data, size, &bytesWritten) != FR_OK)
