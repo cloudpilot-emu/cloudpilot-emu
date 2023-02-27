@@ -82,7 +82,8 @@ SOURCE_CPP = \
 	ReaddirContext.cpp \
 	FileEntry.cpp \
 	CreateZipContext.cpp \
-	DeleteRecursiveContext.cpp
+	DeleteRecursiveContext.cpp \
+	UnzipContext.cpp
 
 SOURCE_TEST =
 

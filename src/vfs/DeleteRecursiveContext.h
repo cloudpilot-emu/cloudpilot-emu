@@ -12,7 +12,7 @@ class DeleteRecursiveContext {
     enum class State { initial = 0, more = 1, done = 2, error = -1 };
 
    public:
-    DeleteRecursiveContext(uint32_t timesliceMilliseconds);
+    explicit DeleteRecursiveContext(uint32_t timesliceMilliseconds);
     ~DeleteRecursiveContext();
 
     DeleteRecursiveContext& AddFile(const std::string& path);
