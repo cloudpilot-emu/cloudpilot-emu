@@ -1,5 +1,7 @@
 #include "UnzipContext.h"
 
+#include <regex>
+
 #include "Defer.h"
 #include "VfsUtil.h"
 #include "fatfs/ff.h"
@@ -7,6 +9,8 @@
 using namespace std;
 
 namespace {
+    regex REGEX_MULTI_SLASH("/{2,}|\\\\+");
+
     struct ExtractContext {
         enum class Status { ok, cardFull, ioError };
 
@@ -33,13 +37,17 @@ namespace {
     string dirname(const std::string& path) {
         size_t pos = path.find_last_of('/');
 
-        return pos == string::npos ? "/" : path.substr(0, pos);
+        return pos == string::npos ? "/" : path.substr(0, pos + 1);
+    }
+
+    string normalize(const std::string& path) {
+        return regex_replace(path, REGEX_MULTI_SLASH, "/");
     }
 }  // namespace
 
-UnzipContext::UnzipContext(uint32_t timesliceMilliseconds, const char* destination, void* data,
+UnzipContext::UnzipContext(uint32_t timesliceMilliseconds, const char* _destination, void* data,
                            size_t size)
-    : timesliceMilliseconds(timesliceMilliseconds), destination(destination) {
+    : timesliceMilliseconds(timesliceMilliseconds), destination(_destination) {
     zip_t* zip = zip_stream_open(static_cast<const char*>(data), size, 0, 'r');
     if (!zip) {
         state = State::zipfileError;
@@ -97,6 +105,8 @@ const char* UnzipContext::GetCurrentEntry() const { return currentEntry.c_str();
 
 const char* UnzipContext::GetCollisionPath() const { return collisionPath.c_str(); }
 
+uint32_t UnzipContext::GetEntriesTotal() const { return entriesTotal; }
+
 void UnzipContext::ExecuteSlice() {
     if (state != State::more) return;
 
@@ -130,10 +140,17 @@ void UnzipContext::ExecuteSlice() {
         return;
     }
 
-    Defer([&]() { zip_entry_close(zip); });
+    Defer deferClose([&]() {
+        zip_entry_close(zip);
+        if (state != State::collision && state != State::collisionWithDirectory)
+            currentEntryIndex++;
+    });
 
-    currentEntry = zip_entry_name(zip);
-    currentPath = destination + "/" + currentEntry;
+    const char* name = zip_entry_name(zip);
+    if (!name) return;
+
+    currentEntry = name;
+    currentPath = normalize(destination + "/" + currentEntry);
 
     if (zip_entry_isdir(zip)) {
         MkdirRecursive(currentPath);
@@ -144,7 +161,6 @@ void UnzipContext::ExecuteSlice() {
     if (state != State::more) return;
 
     ExtractCurrentEntry();
-    if (state != State::collision) currentEntryIndex++;
 }
 
 void UnzipContext::RemoveConflictingFile() {
@@ -175,7 +191,7 @@ void UnzipContext::ExtractCurrentEntry() {
             collisionPath = currentPath;
             return;
 
-        case FR_EXIST:
+        case FR_NO_FILE:
             break;
 
         default:
@@ -197,7 +213,7 @@ void UnzipContext::ExtractCurrentEntry() {
             return;
     }
 
-    Defer([&]() { f_close(&file); });
+    Defer deferClose([&]() { f_close(&file); });
 
     ExtractContext context(&file);
     if (zip_entry_extract(zip, ExtractContext::OnExtract, static_cast<void*>(&context)) < 0) {
@@ -228,9 +244,9 @@ void UnzipContext::MkdirRecursive(std::string path) {
 
     do {
         pos = path.find_first_of('/');
-        next = next + (pos == string::npos ? path : path.substr(0, pos));
+        next = next + (pos == string::npos ? path : path.substr(0, pos + 1));
 
-        if (pos != string::npos) path.erase(0, pos);
+        if (pos != string::npos) path.erase(0, pos + 1);
         if (next == "/") continue;
 
         if (visitedDirectories.find(next) != visitedDirectories.end()) {
@@ -261,7 +277,7 @@ void UnzipContext::MkdirRecursive(std::string path) {
 
                 break;
 
-            case FR_EXIST:
+            case FR_NO_FILE:
                 break;
 
             default:
@@ -283,5 +299,5 @@ void UnzipContext::MkdirRecursive(std::string path) {
                 state = State::ioError;
                 return;
         }
-    } while (pos != string::npos);
+    } while (pos != string::npos && path.length() != 0);
 }

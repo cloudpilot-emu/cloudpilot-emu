@@ -31,7 +31,7 @@ CXXFLAGS_EMCC = $(CFLAGS_EMCC)  -fno-rtti -fno-exceptions
 
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt
 CXXFLAGS_TEST ?= $(CFLAGS_TEST)
-LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt -lgtest -lgmock
+LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt -lgtest -lgtest_main -lgmock
 
 WEBIDL_BINDING_DIR = web/binding
 WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
@@ -85,7 +85,10 @@ SOURCE_CPP = \
 	DeleteRecursiveContext.cpp \
 	UnzipContext.cpp
 
-SOURCE_TEST =
+SOURCE_TEST = \
+	$(SOURCE_CPP) \
+	test/UnzipContext.cpp \
+	test/FSFixture.cpp
 
 SOURCE_NATIVE = $(SOURCE_CPP) \
 	native/main.cpp \
@@ -114,7 +117,7 @@ BINARY_NATIVE = vfs
 
 BINARY_WEB_EMCC = vfs_web.js
 BINARY_WEB_WASM = vfs_web.wasm
-BINARY_TEST =
+BINARY_TEST = test/test
 
 GARBAGE = \
 	$(BUILDDIR_NATIVE) \
@@ -137,6 +140,7 @@ bin: $(BINARY_NATIVE)
 emscripten: $(BINARY_WEB_EMCC)
 
 test: $(BINARY_TEST)
+	$(BINARY_TEST)
 
 $(BINARY_NATIVE): $(OBJECTS_NATIVE)
 	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_NATIVE)
@@ -145,7 +149,7 @@ $(BINARY_WEB_EMCC): $(OBJECTS_WEB_EMCC)
 	$(LD_EMCC) -o $@ $^ $(LDFLAGS_EMCC_WEB)
 
 $(BINARY_TEST) : $(OBJECTS_TEST)
-	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_TEST)
+	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_TEST) -lgtest_main
 
 $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
