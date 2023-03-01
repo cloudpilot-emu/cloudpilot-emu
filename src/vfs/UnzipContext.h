@@ -8,6 +8,7 @@
 #include <string>
 
 #include "DeleteRecursiveContext.h"
+#include "FatfsDelegate.h"
 #include "zip.h"
 
 class UnzipContext {
@@ -24,7 +25,11 @@ class UnzipContext {
     };
 
    public:
+    UnzipContext(uint32_t timesliceMilliseconds, const char* destination, void* data, size_t size,
+                 FatfsDelegate& fatfsDelegate);
+
     UnzipContext(uint32_t timesliceMilliseconds, const char* destination, void* data, size_t size);
+
     ~UnzipContext();
 
     int GetState() const;
@@ -44,6 +49,7 @@ class UnzipContext {
     void MkdirRecursive(std::string path);
 
    private:
+    FatfsDelegate& fatfsDelegate;
     uint32_t timesliceMilliseconds;
 
     zip_t* zip{nullptr};

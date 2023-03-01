@@ -9,6 +9,7 @@
 #include <string>
 
 #include "FSFixture.h"
+#include "FatfsDelegate.h"
 
 using namespace std;
 
@@ -264,5 +265,80 @@ namespace {
 
         AssertFileExistsWithContent("/foo.txt", "world!");
         AssertFileExistsWithContent("/bar.txt", "foobar");
+    }
+
+    TEST_F(UnzipContextTest, itDoesNotCreatePreexistingPartsOfTheHierarchy) {
+        f_mkdir("/foo");
+        FSFixture::CreateFile("/foo/bar.txt", "hulpe");
+
+        AddZipEntry("/foo/bar/baz.txt", "wolpe");
+        FinishZip();
+
+        UnzipContext context(10, "/", zipData, zipSize);
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
+
+        AssertFileExistsWithContent("/foo/bar/baz.txt", "wolpe");
+        AssertFileExistsWithContent("/foo/bar.txt", "hulpe");
+    }
+
+    TEST_F(UnzipContextTest, filesWithinTheHierarchyCauseCollision) {
+        f_mkdir("/foo");
+        FSFixture::CreateFile("/foo/bar", "hulpe");
+
+        AddZipEntry("/foo/bar/baz.txt", "wolpe");
+        FinishZip();
+
+        UnzipContext context(10, "/", zipData, zipSize);
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::collision);
+    }
+
+    TEST_F(UnzipContextTest, filesWithinTheHierarchyCauseCollisionAndAreOverwrittenOnRequest) {
+        f_mkdir("/foo");
+        FSFixture::CreateFile("/foo/bar", "hulpe");
+
+        AddZipEntry("/foo/bar/baz.txt", "wolpe");
+        FinishZip();
+
+        UnzipContext context(10, "/", zipData, zipSize);
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::collision);
+
+        context.ContinueWithOverwrite();
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
+
+        AssertFileExistsWithContent("/foo/bar/baz.txt", "wolpe");
+    }
+
+    TEST_F(UnzipContextTest, anInvalidZipArchiveTerminatesWithZipfileError) {
+        unique_ptr<uint8_t[]> buffer = make_unique<uint8_t[]>(1024);
+        memset(buffer.get(), 0, 1024);
+
+        UnzipContext context(10, "/", buffer.get(), 1024);
+
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::zipfileError);
+    }
+
+    TEST_F(UnzipContextTest, entriesWithInvalidPathAreSkiped) {
+        class MockFatfsDelegate : public FatfsDelegate {
+           public:
+            virtual FRESULT f_open(FIL* fp, const TCHAR* path, BYTE mode) {
+                return string(path) == "/invalid.txt" ? FR_INVALID_NAME
+                                                      : FatfsDelegate::f_open(fp, path, mode);
+            }
+        };
+
+        AddZipEntry("/foo.txt", "Hello");
+        AddZipEntry("/invalid.txt", "world!");
+        AddZipEntry("/baz.txt", "friend");
+        FinishZip();
+
+        MockFatfsDelegate FatfsDelegate;
+        UnzipContext context(10, "/", zipData, zipSize, FatfsDelegate);
+
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::invalidEntry);
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
+
+        AssertFileExistsWithContent("/foo.txt", "Hello");
+        AssertFileExistsWithContent("/baz.txt", "friend");
+        AssertFileDoesNotExist("/invalid.txt");
     }
 }  // namespace

@@ -4,17 +4,19 @@
 
 #include "Defer.h"
 #include "VfsUtil.h"
-#include "fatfs/ff.h"
 
 using namespace std;
 
 namespace {
     regex REGEX_MULTI_SLASH("/{2,}|\\\\+");
 
+    FatfsDelegate defaultFatfsDelegate;
+
     struct ExtractContext {
         enum class Status { ok, cardFull, ioError };
 
-        ExtractContext(FIL* file) : file(file) {}
+        ExtractContext(FIL* file, FatfsDelegate& fatfsDelegate)
+            : file(file), fatfsDelegate(fatfsDelegate) {}
 
         static size_t OnExtract(void* opaque, unsigned long long offset, const void* data,
                                 size_t size) {
@@ -22,7 +24,7 @@ namespace {
             if (self->status != Status::ok) return size;
 
             UINT bytesWritten;
-            if (f_write(self->file, data, size, &bytesWritten) != FR_OK)
+            if (self->fatfsDelegate.f_write(self->file, data, size, &bytesWritten) != FR_OK)
                 self->status = Status::ioError;
 
             if (bytesWritten != size) self->status = Status::cardFull;
@@ -32,6 +34,7 @@ namespace {
 
         FIL* file;
         Status status{Status::ok};
+        FatfsDelegate& fatfsDelegate;
     };
 
     string dirname(const std::string& path) {
@@ -46,8 +49,10 @@ namespace {
 }  // namespace
 
 UnzipContext::UnzipContext(uint32_t timesliceMilliseconds, const char* _destination, void* data,
-                           size_t size)
-    : timesliceMilliseconds(timesliceMilliseconds), destination(_destination) {
+                           size_t size, FatfsDelegate& fatfsDelegate)
+    : fatfsDelegate(fatfsDelegate),
+      timesliceMilliseconds(timesliceMilliseconds),
+      destination(_destination) {
     zip_t* zip = zip_stream_open(static_cast<const char*>(data), size, 0, 'r');
     if (!zip) {
         state = State::zipfileError;
@@ -59,6 +64,10 @@ UnzipContext::UnzipContext(uint32_t timesliceMilliseconds, const char* _destinat
 
     state = entriesTotal > 0 ? State::more : State::done;
 }
+
+UnzipContext::UnzipContext(uint32_t timesliceMilliseconds, const char* destination, void* data,
+                           size_t size)
+    : UnzipContext(timesliceMilliseconds, destination, data, size, defaultFatfsDelegate) {}
 
 UnzipContext::~UnzipContext() {
     if (zip) zip_close(zip);
@@ -166,7 +175,7 @@ void UnzipContext::ExecuteSlice() {
 }
 
 void UnzipContext::RemoveConflictingFile() {
-    switch (f_unlink(collisionPath.c_str())) {
+    switch (fatfsDelegate.f_unlink(collisionPath.c_str())) {
         case FR_INVALID_NAME:
             state = State::invalidEntry;
             return;
@@ -183,7 +192,7 @@ void UnzipContext::RemoveConflictingFile() {
 
 void UnzipContext::ExtractCurrentEntry() {
     FILINFO fileInfo;
-    switch (f_stat(currentPath.c_str(), &fileInfo)) {
+    switch (fatfsDelegate.f_stat(currentPath.c_str(), &fileInfo)) {
         case FR_INVALID_NAME:
             state = State::invalidEntry;
             return;
@@ -202,7 +211,7 @@ void UnzipContext::ExtractCurrentEntry() {
     }
 
     FIL file;
-    switch (f_open(&file, currentPath.c_str(), FA_WRITE | FA_CREATE_ALWAYS)) {
+    switch (fatfsDelegate.f_open(&file, currentPath.c_str(), FA_WRITE | FA_CREATE_ALWAYS)) {
         case FR_INVALID_NAME:
             state = State::invalidEntry;
             return;
@@ -217,10 +226,10 @@ void UnzipContext::ExtractCurrentEntry() {
 
     Defer deferClose([&]() {
         f_close(&file);
-        if (state == State::cardFull) f_unlink(currentPath.c_str());
+        if (state == State::cardFull) fatfsDelegate.f_unlink(currentPath.c_str());
     });
 
-    ExtractContext context(&file);
+    ExtractContext context(&file, fatfsDelegate);
     if (zip_entry_extract(zip, ExtractContext::OnExtract, static_cast<void*>(&context)) < 0) {
         state = State::zipfileError;
         return;
@@ -264,7 +273,7 @@ void UnzipContext::MkdirRecursive(std::string path) {
         }
 
         FILINFO fileInfo;
-        switch (f_stat(next.c_str(), &fileInfo)) {
+        switch (fatfsDelegate.f_stat(next.c_str(), &fileInfo)) {
             case FR_INVALID_NAME:
                 state = State::invalidEntry;
                 visitedDirectories[next] = false;
@@ -290,7 +299,7 @@ void UnzipContext::MkdirRecursive(std::string path) {
                 return;
         }
 
-        switch (f_mkdir(next.c_str())) {
+        switch (fatfsDelegate.f_mkdir(next.c_str())) {
             case FR_INVALID_NAME:
                 state = State::invalidEntry;
                 visitedDirectories[next] = false;
