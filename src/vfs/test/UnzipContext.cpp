@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstring>
 #include <memory>
@@ -12,6 +13,7 @@
 using namespace std;
 
 #include "zip.h"
+
 namespace {
     class UnzipContextTest : public ::testing::Test {
        protected:
@@ -42,13 +44,40 @@ namespace {
             zip_entry_close(zip);
         }
 
+        void AddZipEntryZeroFilled(const string& path, size_t size) {
+            constexpr size_t BUFFER_SIZE = 1024;
+
+            unique_ptr<uint8_t[]> buffer = make_unique<uint8_t[]>(BUFFER_SIZE);
+            memset(buffer.get(), 0, BUFFER_SIZE);
+
+            zip_entry_open(zip, path.c_str());
+
+            size_t bytesWritten = 0;
+            while (bytesWritten < size) {
+                const size_t bytesToWrite = min(BUFFER_SIZE, size - bytesWritten);
+
+                zip_entry_write(zip, buffer.get(), bytesToWrite);
+                bytesWritten += bytesToWrite;
+            }
+
+            zip_entry_close(zip);
+        }
+
         void FinishZip() {
             zip_stream_copy(zip, &zipData, &zipSize);
             zip_stream_close(zip);
             zip = nullptr;
         }
 
-        void AssertFile(const string& path, const string& content) {
+        UnzipContext::State RunUntilInterruption(UnzipContext& unzipContext) {
+            do {
+                unzipContext.Continue();
+            } while (unzipContext.GetState() == static_cast<int>(UnzipContext::State::more));
+
+            return static_cast<UnzipContext::State>(unzipContext.GetState());
+        }
+
+        void AssertFileExistsWithContent(const string& path, const string& content) {
             FILINFO fileInfo;
 
             ASSERT_EQ(f_stat(path.c_str(), &fileInfo), FR_OK);
@@ -66,6 +95,27 @@ namespace {
 
             ASSERT_EQ(bytesRead, fileInfo.fsize);
             ASSERT_EQ(memcmp(data.get(), content.c_str(), content.length()), 0);
+        }
+
+        void AssertFileExistsWithSize(const string& path, size_t size) {
+            FILINFO fileInfo;
+
+            ASSERT_EQ(f_stat(path.c_str(), &fileInfo), FR_OK);
+            ASSERT_EQ(fileInfo.fattrib & AM_DIR, 0);
+            ASSERT_EQ(fileInfo.fsize, size);
+        }
+
+        void AssertFileDoesNotExist(const string& path) {
+            FILINFO fileInfo;
+
+            ASSERT_EQ(f_stat(path.c_str(), &fileInfo), FR_NO_FILE);
+        }
+
+        void AssertDirectoryExists(const string& path) {
+            FILINFO fileInfo;
+
+            ASSERT_EQ(f_stat(path.c_str(), &fileInfo), FR_OK);
+            ASSERT_EQ(fileInfo.fattrib & AM_DIR, AM_DIR);
         }
 
        protected:
@@ -87,8 +137,8 @@ namespace {
         ASSERT_EQ(context.GetState(), static_cast<int>(UnzipContext::State::done));
         ASSERT_EQ(context.GetEntriesTotal(), 2);
 
-        AssertFile("foo.txt", "Hello");
-        AssertFile("bar.txt", "world!");
+        AssertFileExistsWithContent("foo.txt", "Hello");
+        AssertFileExistsWithContent("bar.txt", "world!");
     }
 
     TEST_F(UnzipContextTest, itCreatesDirectoriesAsNecessary) {
@@ -97,29 +147,122 @@ namespace {
         FinishZip();
 
         UnzipContext context(10, "/", zipData, zipSize);
-        while (context.GetState() == static_cast<int>(UnzipContext::State::more))
-            context.Continue();
 
-        ASSERT_EQ(context.GetState(), static_cast<int>(UnzipContext::State::done));
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
         ASSERT_EQ(context.GetEntriesTotal(), 2);
 
-        AssertFile("/foo/bar.txt", "Hello");
-        AssertFile("/foo/bar/baz.txt", "world!");
+        AssertFileExistsWithContent("/foo/bar.txt", "Hello");
+        AssertFileExistsWithContent("/foo/bar/baz.txt", "world!");
+    }
+
+    TEST_F(UnzipContextTest, itUnpacksToNestedDirectories) {
+        AddZipEntry("/bom/baz.txt", "Hello world!");
+        FinishZip();
+
+        f_mkdir("/foo/bar");
+
+        UnzipContext context(10, "/foo/bar", zipData, zipSize);
+
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
+        AssertFileExistsWithContent("/foo/bar/bom/baz.txt", "Hello world!");
     }
 
     TEST_F(UnzipContextTest, itHandlesMultipleSlashesAndBackslashes) {
-        AddZipEntry("/foo///bar.txt", "Hello");
-        AddZipEntry("/foo\\bar/baz.txt", "world!");
+        AddZipEntry("\\foo///bar.txt", "Hello");
+        AddZipEntry("/foo\\\\bar/baz.txt", "world!");
         FinishZip();
 
         UnzipContext context(10, "/", zipData, zipSize);
-        while (context.GetState() == static_cast<int>(UnzipContext::State::more))
-            context.Continue();
 
-        ASSERT_EQ(context.GetState(), static_cast<int>(UnzipContext::State::done));
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
         ASSERT_EQ(context.GetEntriesTotal(), 2);
 
-        AssertFile("/foo/bar.txt", "Hello");
-        AssertFile("/foo/bar/baz.txt", "world!");
+        AssertFileExistsWithContent("/foo/bar.txt", "Hello");
+        AssertFileExistsWithContent("/foo/bar/baz.txt", "world!");
+    }
+
+    TEST_F(UnzipContextTest, itHandlesOutOfSpaceGracefully) {
+        constexpr size_t FILE_SIZE = 1024 * 1024;
+
+        AddZipEntryZeroFilled("/blob1", FILE_SIZE);
+        AddZipEntryZeroFilled("/blob2", FILE_SIZE);
+        AddZipEntryZeroFilled("/blob3", FILE_SIZE);
+        AddZipEntryZeroFilled("/blob4", FILE_SIZE);
+        FinishZip();
+
+        UnzipContext context(10, "/", zipData, zipSize);
+
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::cardFull);
+        AssertFileExistsWithSize("/blob1", FILE_SIZE);
+        AssertFileExistsWithSize("/blob2", FILE_SIZE);
+        AssertFileExistsWithSize("/blob3", FILE_SIZE);
+        AssertFileDoesNotExist("/blob4");
+    }
+
+    TEST_F(UnzipContextTest, itDoesNotOverwriteAnExistingFileIfNotRequested) {
+        FSFixture::CreateFile("/foo.txt", "Hello");
+        AddZipEntry("/foo.txt", "world!");
+        AddZipEntry("/bar.txt", "foobar");
+        FinishZip();
+
+        UnzipContext context(10, "/", zipData, zipSize);
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::collision);
+
+        context.Continue();
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
+
+        AssertFileExistsWithContent("/foo.txt", "Hello");
+        AssertFileExistsWithContent("/bar.txt", "foobar");
+    }
+
+    TEST_F(UnzipContextTest, itOverwritesAnExistingFileIfRequested) {
+        FSFixture::CreateFile("/foo.txt", "Hello");
+        AddZipEntry("/foo.txt", "world!");
+        AddZipEntry("/bar.txt", "foobar");
+        FinishZip();
+
+        UnzipContext context(10, "/", zipData, zipSize);
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::collision);
+
+        context.ContinueWithOverwrite();
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
+
+        AssertFileExistsWithContent("/foo.txt", "world!");
+        AssertFileExistsWithContent("/bar.txt", "foobar");
+    }
+
+    TEST_F(UnzipContextTest, itDoesNotOverwriteAnExistingDirectoryIfNotRequested) {
+        f_mkdir("/foo.txt");
+        AddZipEntry("/foo.txt", "world!");
+        AddZipEntry("/bar.txt", "foobar");
+        FinishZip();
+
+        UnzipContext context(10, "/", zipData, zipSize);
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::collisionWithDirectory);
+
+        context.Continue();
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
+
+        AssertDirectoryExists("/foo.txt");
+        AssertFileExistsWithContent("/bar.txt", "foobar");
+    }
+
+    TEST_F(UnzipContextTest, itOverwritesAnExistingDirectoryIfRequested) {
+        f_mkdir("/foo.txt");
+        f_mkdir("/foo.txt/bar");
+        FSFixture::CreateFile("/foo.txt/bar/hanni", "nanni");
+
+        AddZipEntry("/foo.txt", "world!");
+        AddZipEntry("/bar.txt", "foobar");
+        FinishZip();
+
+        UnzipContext context(10, "/", zipData, zipSize);
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::collisionWithDirectory);
+
+        context.ContinueWithOverwrite();
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
+
+        AssertFileExistsWithContent("/foo.txt", "world!");
+        AssertFileExistsWithContent("/bar.txt", "foobar");
     }
 }  // namespace

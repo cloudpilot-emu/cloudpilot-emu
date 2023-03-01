@@ -30,7 +30,7 @@ class UnzipContext {
     int GetState() const;
 
     int Continue();
-    int Skip();
+    int ContinueWithOverwrite();
 
     const char* GetCurrentEntry() const;
     const char* GetCollisionPath() const;

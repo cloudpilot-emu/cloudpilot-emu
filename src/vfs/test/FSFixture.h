@@ -1,9 +1,14 @@
 #ifndef _VFS_TEST_FS_FIXTURE_
 #define _VFS_TEST_FS_FIXTURE_
 
+#include <string>
+
 namespace FSFixture {
     void CreateAndMount();
+
     void UnmountAndRelease();
+
+    void CreateFile(const std::string& path, const std::string& content);
 }  // namespace FSFixture
 
 #endif  // _VFS_TEST_FS_FIXTURE_

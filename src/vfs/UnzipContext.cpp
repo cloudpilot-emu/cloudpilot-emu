@@ -74,6 +74,11 @@ int UnzipContext::Continue() {
         case State::cardFull:
             return static_cast<int>(state);
 
+        case State::collision:
+        case State::collisionWithDirectory:
+            currentEntryIndex++;
+            break;
+
         default:
             break;
     }
@@ -87,7 +92,7 @@ int UnzipContext::Continue() {
     return static_cast<int>(state);
 }
 
-int UnzipContext::Skip() {
+int UnzipContext::ContinueWithOverwrite() {
     if (state == State::collision) {
         RemoveConflictingFile();
         if (state != State::more) return static_cast<int>(state);
@@ -96,6 +101,7 @@ int UnzipContext::Skip() {
     if (state == State::collisionWithDirectory) {
         deleteRecursiveContext = make_unique<DeleteRecursiveContext>(timesliceMilliseconds);
         deleteRecursiveContext->AddDirectory(collisionPath);
+        state = State::more;
     }
 
     return Continue();
@@ -111,11 +117,7 @@ void UnzipContext::ExecuteSlice() {
     if (state != State::more) return;
 
     if (deleteRecursiveContext) {
-        if (deleteRecursiveContext->GetState() ==
-            static_cast<int>(DeleteRecursiveContext::State::more))
-            deleteRecursiveContext->Continue();
-
-        switch (deleteRecursiveContext->GetState()) {
+        switch (deleteRecursiveContext->Continue()) {
             case static_cast<int>(DeleteRecursiveContext::State::more):
                 return;
 
@@ -213,7 +215,10 @@ void UnzipContext::ExtractCurrentEntry() {
             return;
     }
 
-    Defer deferClose([&]() { f_close(&file); });
+    Defer deferClose([&]() {
+        f_close(&file);
+        if (state == State::cardFull) f_unlink(currentPath.c_str());
+    });
 
     ExtractContext context(&file);
     if (zip_entry_extract(zip, ExtractContext::OnExtract, static_cast<void*>(&context)) < 0) {

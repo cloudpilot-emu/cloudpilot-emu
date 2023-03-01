@@ -72,22 +72,29 @@ namespace {
     }
 }  // namespace
 
-namespace FSFixture {}
+void FSFixture::CreateAndMount() {
+    cardImage = make_unique<CardImage>(decompressImage().release(), IMAGE_SIZE >> 9);
+    cardVolume = make_unique<CardVolume>(*cardImage);
 
-namespace FSFixture {
-    void CreateAndMount() {
-        cardImage = make_unique<CardImage>(decompressImage().release(), IMAGE_SIZE >> 9);
-        cardVolume = make_unique<CardVolume>(*cardImage);
+    register_card_volume(0, cardVolume.get());
+    f_mount(&fs, "0:", 1);
+}
 
-        register_card_volume(0, cardVolume.get());
-        f_mount(&fs, "0:", 1);
-    }
+void FSFixture::UnmountAndRelease() {
+    f_unmount("0:");
+    unregister_card_volume(0);
 
-    void UnmountAndRelease() {
-        f_unmount("0:");
-        unregister_card_volume(0);
+    cardImage.reset();
+    cardVolume.reset();
+}
 
-        cardImage.reset();
-        cardVolume.reset();
-    }
-}  // namespace FSFixture
+void FSFixture::CreateFile(const string& path, const string& content) {
+    FIL file;
+
+    f_open(&file, path.c_str(), FA_WRITE | FA_CREATE_ALWAYS);
+
+    UINT bytesWritten;
+    f_write(&file, content.c_str(), content.length(), &bytesWritten);
+
+    f_close(&file);
+}
