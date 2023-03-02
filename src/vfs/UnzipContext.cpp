@@ -52,7 +52,7 @@ UnzipContext::UnzipContext(uint32_t timesliceMilliseconds, const char* _destinat
                            size_t size, FatfsDelegate& fatfsDelegate)
     : fatfsDelegate(fatfsDelegate),
       timesliceMilliseconds(timesliceMilliseconds),
-      destination(_destination) {
+      destination("/" + string(_destination)) {
     zip_t* zip = zip_stream_open(static_cast<const char*>(data), size, 0, 'r');
     if (!zip) {
         state = State::zipfileError;
@@ -258,10 +258,13 @@ void UnzipContext::MkdirRecursive(std::string path) {
 
     do {
         pos = path.find_first_of('/');
-        next = next + (pos == string::npos ? path : path.substr(0, pos + 1));
+        next = next + "/" + (pos == string::npos ? path : path.substr(0, pos));
 
         if (pos != string::npos) path.erase(0, pos + 1);
-        if (next == "/") continue;
+        if (next == "/") {
+            next.clear();
+            continue;
+        }
 
         if (visitedDirectories.find(next) != visitedDirectories.end()) {
             if (visitedDirectories[next]) {

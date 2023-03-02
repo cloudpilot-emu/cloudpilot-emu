@@ -208,6 +208,8 @@ namespace {
 
         UnzipContext context(10, "/", zipData, zipSize);
         ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::collision);
+        ASSERT_EQ(string(context.GetCurrentEntry()), "/foo.txt");
+        ASSERT_EQ(string(context.GetCollisionPath()), "/foo.txt");
 
         context.Continue();
         ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
@@ -240,6 +242,8 @@ namespace {
 
         UnzipContext context(10, "/", zipData, zipSize);
         ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::collisionWithDirectory);
+        ASSERT_EQ(string(context.GetCurrentEntry()), "/foo.txt");
+        ASSERT_EQ(string(context.GetCollisionPath()), "/foo.txt");
 
         context.Continue();
         ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
@@ -290,6 +294,8 @@ namespace {
 
         UnzipContext context(10, "/", zipData, zipSize);
         ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::collision);
+        ASSERT_EQ(string(context.GetCurrentEntry()), "/foo/bar/baz.txt");
+        ASSERT_EQ(string(context.GetCollisionPath()), "/foo/bar");
     }
 
     TEST_F(UnzipContextTest, filesWithinTheHierarchyCauseCollisionAndAreOverwrittenOnRequest) {
@@ -331,14 +337,36 @@ namespace {
         AddZipEntry("/baz.txt", "friend");
         FinishZip();
 
-        MockFatfsDelegate FatfsDelegate;
-        UnzipContext context(10, "/", zipData, zipSize, FatfsDelegate);
+        MockFatfsDelegate fatfsDelegate;
+        UnzipContext context(10, "/", zipData, zipSize, fatfsDelegate);
 
         ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::invalidEntry);
+        ASSERT_EQ(string(context.GetCurrentEntry()), "/invalid.txt");
+
         ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::done);
 
         AssertFileExistsWithContent("/foo.txt", "Hello");
         AssertFileExistsWithContent("/baz.txt", "friend");
         AssertFileDoesNotExist("/invalid.txt");
+    }
+
+    TEST_F(UnzipContextTest, unknownErrorsAreMappedToIoError) {
+        class MockFatfsDelegate : public FatfsDelegate {
+           public:
+            virtual FRESULT f_open(FIL* fp, const TCHAR* path, BYTE mode) {
+                return string(path) == "/invalid.txt" ? FR_DISK_ERR
+                                                      : FatfsDelegate::f_open(fp, path, mode);
+            }
+        };
+
+        AddZipEntry("/foo.txt", "Hello");
+        AddZipEntry("/invalid.txt", "world!");
+        FinishZip();
+
+        MockFatfsDelegate fatfsDelegate;
+        UnzipContext context(10, "/", zipData, zipSize, fatfsDelegate);
+
+        ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::ioError);
+        ASSERT_EQ(string(context.GetCurrentEntry()), "/invalid.txt");
     }
 }  // namespace
