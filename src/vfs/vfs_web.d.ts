@@ -1,4 +1,4 @@
-import { ReaddirContext, CreateZipContext, DeleteRecursiveContext } from './web/binding/binding.d';
+import { ReaddirContext, CreateZipContext, DeleteRecursiveContext, UnzipContext } from './web/binding/binding.d';
 import { Vfs, VoidPtr } from './web/binding/binding';
 import 'emscripten';
 
@@ -14,11 +14,15 @@ export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'> {
     CreateZipContext: { new (prefix: string, timesliceMilliseconds: number): CreateZipContext };
     DeleteRecursiveContext: { new (timesliceMilliseconds: number): DeleteRecursiveContext };
     ReaddirContext: { new (path: string): ReaddirContext };
+    UnzipContext: {
+        new (timesliceMilliseconds: number, destination: string, data: VoidPtr, size: number): UnzipContext;
+    };
 
     destroy(vfs: Vfs): void;
     destroy(context: ReaddirContext): void;
     destroy(context: CreateZipContext): void;
     destroy(context: DeleteRecursiveContext): void;
+    destroy(context: UnzipContext): void;
 
     instantiateWasm(
         imports: WebAssembly.Imports,

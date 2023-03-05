@@ -40,6 +40,7 @@ class UnzipContext {
     const char* GetCurrentEntry() const;
     const char* GetCollisionPath() const;
     uint32_t GetEntriesTotal() const;
+    uint32_t GetEntriesSuccess() const;
 
    private:
     void ExecuteSlice();
@@ -56,6 +57,7 @@ class UnzipContext {
     std::string destination;
 
     uint32_t entriesTotal{0};
+    uint32_t entriesSuccess{0};
     uint32_t currentEntryIndex{0};
 
     State state{State::more};

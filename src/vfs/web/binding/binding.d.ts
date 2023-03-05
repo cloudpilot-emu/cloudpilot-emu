@@ -43,6 +43,44 @@ export const enum WriteFileResult {
     errIO = 4,
 }
 
+export const enum ReaddirStatus {
+    more = 0,
+    done = 1,
+    error = 2,
+}
+
+export const enum ReaddirError {
+    none = 0,
+    no_such_directory = 1,
+    unknown = 2,
+}
+
+export const enum CreateZipContextState {
+    initial = 0,
+    more = 1,
+    done = 2,
+    errorFile = -1,
+    errorDirectory = -2,
+}
+
+export const enum DeleteRecursiveContextState {
+    initial = 0,
+    more = 1,
+    done = 2,
+    error = -1,
+}
+
+export const enum UnzipContextState {
+    more = 0,
+    done = 1,
+    collision = 2,
+    invalidEntry = 3,
+    collisionWithDirectory = 4,
+    ioError = -1,
+    zipfileError = -2,
+    cardFull = -3,
+}
+
 export interface FileEntry {
     GetName(): string;
     IsDirectory(): boolean;
@@ -85,33 +123,6 @@ export interface Vfs {
     WriteFile(path: string, size: number, data: VoidPtr): WriteFileResult;
 }
 
-export const enum ReaddirStatus {
-    more = 0,
-    done = 1,
-    error = 2,
-}
-
-export const enum ReaddirError {
-    none = 0,
-    no_such_directory = 1,
-    unknown = 2,
-}
-
-export const enum CreateZipContextState {
-    initial = 0,
-    more = 1,
-    done = 2,
-    errorFile = -1,
-    errorDirectory = -2,
-}
-
-export const enum DeleteRecursiveContextState {
-    initial = 0,
-    more = 1,
-    done = 2,
-    error = -1,
-}
-
 export interface ReaddirContext {
     Next(): number;
 
@@ -143,4 +154,16 @@ export interface DeleteRecursiveContext {
     GetState(): DeleteRecursiveContextState;
 
     GetFailingPath(): string;
+}
+
+interface UnzipContext {
+    GetState(): UnzipContextState;
+    Continue(): UnzipContextState;
+    ContinueWithOverwrite(): UnzipContextState;
+
+    GetCurrentEntry(): string;
+    GetCollisionPath(): string;
+
+    GetEntriesTotal(): number;
+    GetEntriesSuccess(): number;
 }

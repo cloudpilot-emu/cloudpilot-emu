@@ -5,6 +5,7 @@ import createModule, {
     Module,
     ReaddirError,
     ReaddirStatus,
+    UnzipContextState,
     VfsAttr,
     Vfs as VfsNative,
     VfsResult,
@@ -41,6 +42,15 @@ export interface FileEntry {
 export type ReaddirResult =
     | { error: ReaddirError.none; entries: Array<FileEntry> }
     | { error: ReaddirError.no_such_directory | ReaddirError.unknown; reason: string };
+
+export enum UnzipResult {
+    success,
+    zipfileError,
+    ioError,
+    cardFull,
+}
+
+const TIMESLICE_SIZE_MSEC = 25;
 
 function deserializeAttributes(attr: number): Attributes {
     return {
@@ -215,7 +225,7 @@ export class Vfs {
         archive: Uint8Array | undefined;
         failedItems: Array<string>;
     }> {
-        const context = new this.module.CreateZipContext(prefix, 25);
+        const context = new this.module.CreateZipContext(prefix, TIMESLICE_SIZE_MSEC);
         const failingItems: Array<string> = [];
 
         try {
@@ -256,7 +266,7 @@ export class Vfs {
         files?: Array<string>;
         directories?: Array<string>;
     }): Promise<{ success: true } | { success: false; failingItem: string }> {
-        const context = new this.module.DeleteRecursiveContext(25);
+        const context = new this.module.DeleteRecursiveContext(TIMESLICE_SIZE_MSEC);
 
         try {
             if (files) files.forEach((file) => context.AddFile(file));
@@ -282,6 +292,71 @@ export class Vfs {
         try {
             return this.vfsNative.WriteFile(path, data.length, dataPtr);
         } finally {
+            this.vfsNative.Free(dataPtr);
+        }
+    }
+
+    async unzipArchive(
+        destination: string,
+        data: Uint8Array,
+        handlers: {
+            onFileCollision: (collisionPath: string, entry: string) => Promise<boolean>;
+            onDirectoryCollision: (collisionPath: string, entry: string) => Promise<boolean>;
+            onInvalidEntry: (entry: string) => Promise<void>;
+        }
+    ): Promise<{ result: UnzipResult; entriesTotal: number; entriesSuccess: number }> {
+        const dataPtr = this.copyIn(data);
+        const context = new this.module.UnzipContext(TIMESLICE_SIZE_MSEC, destination, dataPtr, data.length);
+        const result = (unzipResult: UnzipResult) => ({
+            result: unzipResult,
+            entriesTotal: context.GetEntriesTotal(),
+            entriesSuccess: context.GetEntriesSuccess(),
+        });
+
+        try {
+            while (true) {
+                await new Promise((resolve) => setTimeout(resolve, 0));
+
+                switch (context.GetState()) {
+                    case UnzipContextState.done:
+                        return result(UnzipResult.success);
+
+                    case UnzipContextState.cardFull:
+                        return result(UnzipResult.cardFull);
+
+                    case UnzipContextState.ioError:
+                        return result(UnzipResult.ioError);
+
+                    case UnzipContextState.zipfileError:
+                        return result(UnzipResult.zipfileError);
+
+                    case UnzipContextState.collision:
+                        if (await handlers.onFileCollision(context.GetCollisionPath(), context.GetCurrentEntry())) {
+                            context.ContinueWithOverwrite();
+                        } else {
+                            context.Continue();
+                        }
+
+                        continue;
+
+                    case UnzipContextState.collisionWithDirectory:
+                        if (
+                            await handlers.onDirectoryCollision(context.GetCollisionPath(), context.GetCurrentEntry())
+                        ) {
+                            context.ContinueWithOverwrite();
+                        } else {
+                            context.Continue();
+                        }
+
+                        continue;
+
+                    default:
+                        context.Continue();
+                        break;
+                }
+            }
+        } finally {
+            this.module.destroy(context);
             this.vfsNative.Free(dataPtr);
         }
     }

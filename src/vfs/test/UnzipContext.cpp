@@ -137,6 +137,7 @@ namespace {
 
         ASSERT_EQ(context.GetState(), static_cast<int>(UnzipContext::State::done));
         ASSERT_EQ(context.GetEntriesTotal(), 2);
+        ASSERT_EQ(context.GetEntriesSuccess(), 2);
 
         AssertFileExistsWithContent("foo.txt", "Hello");
         AssertFileExistsWithContent("bar.txt", "world!");
@@ -194,6 +195,7 @@ namespace {
         UnzipContext context(10, "/", zipData, zipSize);
 
         ASSERT_EQ(RunUntilInterruption(context), UnzipContext::State::cardFull);
+        ASSERT_EQ(context.GetEntriesSuccess(), 3);
         AssertFileExistsWithSize("/blob1", FILE_SIZE);
         AssertFileExistsWithSize("/blob2", FILE_SIZE);
         AssertFileExistsWithSize("/blob3", FILE_SIZE);
@@ -216,6 +218,7 @@ namespace {
 
         AssertFileExistsWithContent("/foo.txt", "Hello");
         AssertFileExistsWithContent("/bar.txt", "foobar");
+        ASSERT_EQ(context.GetEntriesSuccess(), 1);
     }
 
     TEST_F(UnzipContextTest, itOverwritesAnExistingFileIfRequested) {
@@ -232,6 +235,7 @@ namespace {
 
         AssertFileExistsWithContent("/foo.txt", "world!");
         AssertFileExistsWithContent("/bar.txt", "foobar");
+        ASSERT_EQ(context.GetEntriesSuccess(), 2);
     }
 
     TEST_F(UnzipContextTest, itDoesNotOverwriteAnExistingDirectoryIfNotRequested) {
@@ -250,6 +254,7 @@ namespace {
 
         AssertDirectoryExists("/foo.txt");
         AssertFileExistsWithContent("/bar.txt", "foobar");
+        ASSERT_EQ(context.GetEntriesSuccess(), 1);
     }
 
     TEST_F(UnzipContextTest, itOverwritesAnExistingDirectoryIfRequested) {
@@ -269,6 +274,7 @@ namespace {
 
         AssertFileExistsWithContent("/foo.txt", "world!");
         AssertFileExistsWithContent("/bar.txt", "foobar");
+        ASSERT_EQ(context.GetEntriesSuccess(), 2);
     }
 
     TEST_F(UnzipContextTest, itDoesNotCreatePreexistingPartsOfTheHierarchy) {

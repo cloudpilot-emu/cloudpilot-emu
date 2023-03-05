@@ -29,7 +29,7 @@ interface Vfs {
     long UnlinkFile([Const] DOMString path);
     long Mkdir([Const] DOMString path);
 
-    [Const, Ref] FileEntry GetEntry();
+    [ Const, Ref ] FileEntry GetEntry();
 
     long BytesFree(long slot);
     long BytesTotal(long slot);
@@ -47,7 +47,7 @@ interface ReaddirContext {
 
     long Next();
 
-    [Const,Ref] FileEntry GetEntry();
+    [ Const, Ref ] FileEntry GetEntry();
 
     long GetStatus();
     long GetError();
@@ -72,7 +72,6 @@ interface CreateZipContext {
 interface DeleteRecursiveContext {
     void DeleteRecursiveContext(long timesliceMilliseconds);
 
-
     [Ref] DeleteRecursiveContext AddFile([Const] DOMString path);
     [Ref] DeleteRecursiveContext AddDirectory([Const] DOMString path);
 
@@ -80,4 +79,19 @@ interface DeleteRecursiveContext {
     long GetState();
 
     [Const] DOMString GetFailingPath();
+};
+
+interface UnzipContext {
+    void UnzipContext(long timesliceMilliseconds, [Const] DOMString destination, VoidPtr data,
+                      long size);
+
+    long GetState();
+    long Continue();
+    long ContinueWithOverwrite();
+
+    [Const] DOMString GetCurrentEntry();
+    [Const] DOMString GetCollisionPath();
+
+    long GetEntriesTotal();
+    long GetEntriesSuccess();
 };

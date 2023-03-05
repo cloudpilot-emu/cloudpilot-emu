@@ -60,9 +60,9 @@ UnzipContext::UnzipContext(uint32_t timesliceMilliseconds, const char* _destinat
     }
 
     this->zip = zip;
-    entriesTotal = zip_entries_total(zip);
 
-    state = entriesTotal > 0 ? State::more : State::done;
+    entriesTotal = zip ? zip_entries_total(zip) : 0;
+    state = zip ? (entriesTotal > 0 ? State::more : State::done) : State::zipfileError;
 }
 
 UnzipContext::UnzipContext(uint32_t timesliceMilliseconds, const char* destination, void* data,
@@ -122,6 +122,8 @@ const char* UnzipContext::GetCollisionPath() const { return collisionPath.c_str(
 
 uint32_t UnzipContext::GetEntriesTotal() const { return entriesTotal; }
 
+uint32_t UnzipContext::GetEntriesSuccess() const { return entriesSuccess; }
+
 void UnzipContext::ExecuteSlice() {
     if (state != State::more) return;
 
@@ -165,6 +167,7 @@ void UnzipContext::ExecuteSlice() {
 
     if (zip_entry_isdir(zip)) {
         MkdirRecursive(currentPath);
+        if (state == State::more) entriesSuccess++;
         return;
     }
 
@@ -172,6 +175,7 @@ void UnzipContext::ExecuteSlice() {
     if (state != State::more) return;
 
     ExtractCurrentEntry();
+    if (state == State::more) entriesSuccess++;
 }
 
 void UnzipContext::RemoveConflictingFile() {
@@ -226,7 +230,8 @@ void UnzipContext::ExtractCurrentEntry() {
 
     Defer deferClose([&]() {
         f_close(&file);
-        if (state == State::cardFull) fatfsDelegate.f_unlink(currentPath.c_str());
+        if (state == State::cardFull || state == State::zipfileError)
+            fatfsDelegate.f_unlink(currentPath.c_str());
     });
 
     ExtractContext context(&file, fatfsDelegate);

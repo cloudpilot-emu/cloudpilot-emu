@@ -122,7 +122,8 @@
     "_endian.h": "c",
     "unistd.h": "c",
     "hash_map": "cpp",
-    "source_location": "cpp"
+    "source_location": "cpp",
+    "regex": "cpp"
   },
   "editor.formatOnSave": true,
   "CppHelper.SourcePattern": [

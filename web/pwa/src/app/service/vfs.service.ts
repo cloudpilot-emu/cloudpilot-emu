@@ -1,5 +1,5 @@
 import { AlertController, LoadingController } from '@ionic/angular';
-import { Attributes, FileEntry, ReaddirError, Vfs, VfsResult, WriteFileResult } from '@common/bridge/Vfs';
+import { Attributes, FileEntry, ReaddirError, UnzipResult, Vfs, VfsResult, WriteFileResult } from '@common/bridge/Vfs';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
@@ -10,6 +10,7 @@ import { Injectable } from '@angular/core';
 import { StorageService } from '@pwa/service/storage.service';
 import deepEqual from 'deep-equal';
 import { filenameForArchive } from '@pwa/helper/filename';
+import { ucFirst } from '@pwa/helper/text';
 
 @Injectable({ providedIn: 'root' })
 export class VfsService {
@@ -296,6 +297,72 @@ export class VfsService {
         return this.bytesTotal;
     }
 
+    async unpackArchive(zip: Uint8Array, destination: string): Promise<void> {
+        const loader = await this.loadingController.create();
+        await loader.present();
+
+        try {
+            const { entriesTotal, entriesSuccess, result } = await this.unpackArchiveUnchecked(zip, destination);
+
+            await loader.dismiss();
+
+            let status: string;
+            let title: string;
+            switch (result) {
+                case UnzipResult.success:
+                    status = 'The archive was extracted successfully.';
+                    title = 'Done';
+                    break;
+
+                case UnzipResult.ioError:
+                    await this.fatalError('There was an error writing to the card.');
+                    return;
+
+                case UnzipResult.cardFull:
+                    status = 'No space left on card.';
+                    title = 'No space left';
+                    break;
+
+                case UnzipResult.zipfileError:
+                    status = 'There was an error reading from the archive.';
+                    title = 'Error reading archive';
+                    break;
+
+                default:
+                    throw new Error('unreachable');
+            }
+
+            const entriesFailed = entriesTotal - entriesSuccess;
+            const pluralize = (entries: number) => (entries > 1 ? `${entries} entries` : 'one entry');
+
+            if (entriesTotal > 0 && entriesFailed === entriesTotal) {
+                await this.alertService.message(
+                    title,
+                    `
+                    ${status}
+                    <br><br>
+                    The archive contains ${pluralize(entriesTotal)}, but none could be unpacked.
+                `
+                );
+            }
+
+            if (entriesFailed > 0 && entriesSuccess > 0) {
+                await this.alertService.message(
+                    title,
+                    `
+                    ${status}
+                    <br><br>
+                    ${ucFirst(pluralize(entriesSuccess))} unpacked succesfully, but ${pluralize(
+                        entriesSuccess
+                    )} could not be unpacked.
+                `
+                );
+            }
+        } finally {
+            void loader.dismiss();
+        }
+    }
+
     async addFiles(files: Array<FileDescriptor>, destination: string): Promise<void> {
         if (files.length === 0) return;
 
@@ -307,21 +374,21 @@ export class VfsService {
 
             await loader.dismiss();
 
+            const pluralize = (files: number) => (files > 1 ? `${files} entries` : 'one file');
+
             if (failed.length === 0) {
                 await this.alertService.message(
-                    `${files.length > 1 ? 'Files' : 'File'} added to card`,
-                    `Successfully added ${files.length > 1 ? `${files.length} files` : 'one file'} to card.`
+                    `${ucFirst(pluralize(files.length))} added to card`,
+                    `Successfully added ${pluralize(files.length)} to card.`
                 );
             } else if (failed.length === files.length) {
-                await this.alertService.errorMessage(
-                    `Failed to add ${files.length > 1 ? `${files.length} files` : 'file'}`
-                );
+                await this.alertService.errorMessage('No files were added to the card.');
             } else {
                 await this.alertService.message(
-                    `${files.length > 1 ? 'Files' : 'File'} added to card`,
-                    `Successfully added ${
-                        files.length - failed.length > 1 ? `${files.length - failed.length} files` : 'one file'
-                    } to card. ${failed.length > 1 ? `${failed.length} files` : 'One file'} could not be added.
+                    `${ucFirst(pluralize(files.length))} added to card`,
+                    `Successfully added ${pluralize(files.length - failed.length)} to card. ${ucFirst(
+                        pluralize(failed.length)
+                    )} could not be added.
                 `
                 );
             }
@@ -350,7 +417,7 @@ export class VfsService {
             if (existingEntry) {
                 if (!rememberChoice) {
                     const { overwrite: overwriteSelection, rememberChoice: rememberChoiceSelection } =
-                        await this.overwriteFileDialog(file.name);
+                        await this.overwriteFileDialog(file.name, 'file');
 
                     overwrite = overwriteSelection;
                     rememberChoice = rememberChoiceSelection;
@@ -399,15 +466,68 @@ export class VfsService {
         return failed;
     }
 
-    private async overwriteFileDialog(name: string): Promise<{ overwrite: boolean; rememberChoice: boolean }> {
+    private async unpackArchiveUnchecked(
+        zip: Uint8Array,
+        destination: string
+    ): Promise<{ result: UnzipResult; entriesTotal: number; entriesSuccess: number }> {
+        const vfs = await this.vfs;
+
+        let overwriteFile = false;
+        let rememberChoiceFiles = false;
+        let overwriteDirectory = false;
+        let rememberChoiceDirectories = false;
+
+        const result = await vfs.unzipArchive(this.normalizePath(destination), zip, {
+            onFileCollision: async (collisionPath: string) => {
+                if (rememberChoiceFiles) return overwriteFile;
+
+                const { overwrite, rememberChoice } = await this.overwriteFileDialog(collisionPath, 'file');
+                overwriteFile = overwrite;
+                rememberChoiceFiles = rememberChoice;
+
+                return overwriteFile;
+            },
+            onDirectoryCollision: async (collisionPath: string) => {
+                if (rememberChoiceDirectories) return overwriteDirectory;
+
+                const { overwrite, rememberChoice } = await this.overwriteFileDialog(collisionPath, 'directory');
+                overwriteDirectory = overwrite;
+                rememberChoiceDirectories = rememberChoice;
+
+                return overwriteDirectory;
+            },
+            onInvalidEntry: async (entry: string) => {
+                await this.alertService.message('Invalid entry', `Could not extract ${entry}`, {}, 'Continue');
+            },
+        });
+
+        if (result.result !== UnzipResult.ioError) {
+            await this.sync();
+            this.directoryCache.delete(this.normalizePath(destination));
+        }
+
+        return result;
+    }
+
+    private async overwriteFileDialog(
+        name: string,
+        type: 'file' | 'directory'
+    ): Promise<{ overwrite: boolean; rememberChoice: boolean }> {
         let overwrite = false;
         let rememberChoice = false;
 
         const alert = await this.alertController.create({
-            header: 'Duplicate file',
+            header: 'File collision',
             backdropDismiss: false,
             cssClass: 'alert-checkbox-no-border installation-error',
-            message: `Do you want to overwrite ${name}?`,
+            message:
+                type === 'file'
+                    ? `Do you want to overwrite the existing file ${name}?`
+                    : `
+                    Do you want to overwrite the existing directory ${name}?
+                    <br><br>
+                    WARNING: All files in this directory will be lost.
+                    `,
             buttons: [
                 {
                     text: 'No',
@@ -421,7 +541,7 @@ export class VfsService {
             inputs: [
                 {
                     type: 'checkbox',
-                    label: 'Remember for all files',
+                    label: `Remember for all ${type}s`,
                     checked: false,
                     handler: (inpt) => (rememberChoice = inpt.checked === true),
                 },

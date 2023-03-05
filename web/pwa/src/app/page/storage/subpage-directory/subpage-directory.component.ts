@@ -5,6 +5,7 @@ import { AlertService } from '@pwa/service/alert.service';
 import { ContextMenuBreadcrumbComponent } from './../context-menu-breadcrumb/context-menu-breadcrumb.component';
 import { ContextMenuDirectoryComponent } from './../context-menu-directory/context-menu-directory.component';
 import { EditFileDialogComponent } from './../edit-file-dialog/edit-file-dialog.component';
+import { FileDescriptor } from './../../../service/file.service';
 import { FileEntry } from '@common/bridge/Vfs';
 import { FileService } from '@pwa/service/file.service';
 import { NewDirectoryDialogComponent } from './../new-directory-dialog/new-directory-dialog.component';
@@ -171,7 +172,7 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
     }
 
     onExtractZipfile(): void {
-        void this.alertService.message('Not implemented', 'Extract zipfile: not implemented.');
+        this.fileService.openFile(this.extractZipArchive.bind(this));
     }
 
     onPaste(): void {
@@ -327,6 +328,18 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         return Array.from(this.selection)
             .map((name) => entriesByName.get(name))
             .filter((entry) => !!entry) as Array<FileEntry>;
+    }
+
+    private async extractZipArchive(file: FileDescriptor): Promise<void> {
+        if (!/\.zip$/.test(file.name)) {
+            await this.alertService.errorMessage(
+                'File does not have the correct extension. Only .zip files are supported'
+            );
+
+            return;
+        }
+
+        void this.vfsService.unpackArchive(await file.getContent(), this.path || '/');
     }
 
     @Input()

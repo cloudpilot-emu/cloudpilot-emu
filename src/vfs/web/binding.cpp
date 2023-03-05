@@ -5,6 +5,7 @@
 #include "DeleteRecursiveContext.h"
 #include "FileEntry.h"
 #include "ReaddirContext.h"
+#include "UnzipContext.h"
 #include "Vfs.h"
 
 // clang-format off
