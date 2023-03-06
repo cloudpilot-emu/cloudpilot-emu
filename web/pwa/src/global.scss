@@ -43,6 +43,9 @@ html {
     border: none !important;
 }
 
+.md .alert-checkbox.ion-focused {
+    background: inherit !important;
+}
 
 ion-label h4, p {
     margin-top: 0.75em;

@@ -188,6 +188,7 @@ class InstallationContext {
                     {
                         type: 'checkbox',
                         label: 'Skip any remaining errors',
+                        cssClass: 'alert-checkbox',
                         checked: false,
                         handler: (inpt) => (this.skipErrors = inpt.checked === true),
                     },

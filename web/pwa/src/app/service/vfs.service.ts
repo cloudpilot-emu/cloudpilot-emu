@@ -310,8 +310,8 @@ export class VfsService {
             let title: string;
             switch (result) {
                 case UnzipResult.success:
-                    status = 'The archive was extracted successfully.';
-                    title = 'Done';
+                    status = 'The archive was extracted successfully, but some entries were skipped.';
+                    title = 'Skipped entries';
                     break;
 
                 case UnzipResult.ioError:
@@ -376,16 +376,11 @@ export class VfsService {
 
             const pluralize = (files: number) => (files > 1 ? `${files} entries` : 'one file');
 
-            if (failed.length === 0) {
+            if (failed.length === files.length) {
+                await this.alertService.message('Skipped files', 'No files were added to the card.');
+            } else if (failed.length !== 0) {
                 await this.alertService.message(
-                    `${ucFirst(pluralize(files.length))} added to card`,
-                    `Successfully added ${pluralize(files.length)} to card.`
-                );
-            } else if (failed.length === files.length) {
-                await this.alertService.errorMessage('No files were added to the card.');
-            } else {
-                await this.alertService.message(
-                    `${ucFirst(pluralize(files.length))} added to card`,
+                    `Skipped files`,
                     `Successfully added ${pluralize(files.length - failed.length)} to card. ${ucFirst(
                         pluralize(failed.length)
                     )} could not be added.
@@ -544,6 +539,7 @@ export class VfsService {
                     label: `Remember for all ${type}s`,
                     checked: false,
                     handler: (inpt) => (rememberChoice = inpt.checked === true),
+                    cssClass: 'alert-checkbox',
                 },
             ],
         });
