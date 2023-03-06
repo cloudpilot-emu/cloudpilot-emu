@@ -397,28 +397,50 @@ export class VfsService {
         const failed: Array<string> = [];
         const vfs = await this.vfs;
 
-        let rememberChoice = false;
-        let overwrite = false;
+        let rememberChoiceFiles = false;
+        let overwriteFiles = false;
+        let rememberChoiceDirectories = false;
+        let overwriteDirectories = false;
 
         iterate_files: for (let i = 0; i < files.length; i++) {
             const file = files[i];
             const existingEntry = entriesCurrent.find((entry) => entry.name === file.name);
 
             if (existingEntry && existingEntry.isDirectory) {
-                failed.push(file.name);
-                continue;
+                if (!rememberChoiceDirectories) {
+                    const { overwrite: overwriteSelection, rememberChoice: rememberChoiceSelection } =
+                        await this.overwriteFileDialog(file.name, 'directory');
+
+                    overwriteDirectories = overwriteSelection;
+                    rememberChoiceDirectories = rememberChoiceSelection;
+                }
+
+                let skip = true;
+
+                if (overwriteDirectories) {
+                    const deleteRecursiveResult = await vfs.deleteRecursive({
+                        directories: [this.normalizePath(`${destination}/${file.name}`)],
+                    });
+
+                    skip = !deleteRecursiveResult.success;
+                }
+
+                if (skip) {
+                    failed.push(file.name);
+                    continue;
+                }
             }
 
-            if (existingEntry) {
-                if (!rememberChoice) {
+            if (existingEntry && !existingEntry.isDirectory) {
+                if (!rememberChoiceFiles) {
                     const { overwrite: overwriteSelection, rememberChoice: rememberChoiceSelection } =
                         await this.overwriteFileDialog(file.name, 'file');
 
-                    overwrite = overwriteSelection;
-                    rememberChoice = rememberChoiceSelection;
+                    overwriteFiles = overwriteSelection;
+                    rememberChoiceFiles = rememberChoiceSelection;
                 }
 
-                if (!overwrite) {
+                if (!overwriteFiles) {
                     failed.push(file.name);
                     continue;
                 }
@@ -467,20 +489,20 @@ export class VfsService {
     ): Promise<{ result: UnzipResult; entriesTotal: number; entriesSuccess: number }> {
         const vfs = await this.vfs;
 
-        let overwriteFile = false;
+        let overwriteFiles = false;
         let rememberChoiceFiles = false;
         let overwriteDirectory = false;
         let rememberChoiceDirectories = false;
 
         const result = await vfs.unzipArchive(this.normalizePath(destination), zip, {
             onFileCollision: async (collisionPath: string) => {
-                if (rememberChoiceFiles) return overwriteFile;
+                if (rememberChoiceFiles) return overwriteFiles;
 
                 const { overwrite, rememberChoice } = await this.overwriteFileDialog(collisionPath, 'file');
-                overwriteFile = overwrite;
+                overwriteFiles = overwrite;
                 rememberChoiceFiles = rememberChoice;
 
-                return overwriteFile;
+                return overwriteFiles;
             },
             onDirectoryCollision: async (collisionPath: string) => {
                 if (rememberChoiceDirectories) return overwriteDirectory;
@@ -536,7 +558,7 @@ export class VfsService {
             inputs: [
                 {
                     type: 'checkbox',
-                    label: `Remember for all ${type}s`,
+                    label: `Remember choice`,
                     checked: false,
                     handler: (inpt) => (rememberChoice = inpt.checked === true),
                     cssClass: 'alert-checkbox',
