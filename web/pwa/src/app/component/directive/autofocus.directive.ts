@@ -27,7 +27,7 @@ export class AutofocusDirective implements OnDestroy {
         const input = (this.el.nativeElement as HTMLElement).querySelector('input');
         if (!input) return;
 
-        input.focus();
+        setTimeout(() => input.focus(), 100);
         this.observer?.disconnect();
     }
 
