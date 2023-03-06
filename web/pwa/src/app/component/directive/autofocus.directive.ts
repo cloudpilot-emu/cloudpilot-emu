@@ -21,7 +21,6 @@ export class AutofocusDirective implements OnDestroy {
 
     ngOnDestroy(): void {
         this.observer?.disconnect();
-        console.log('destructibo');
     }
 
     private update(): void {
