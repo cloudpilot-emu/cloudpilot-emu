@@ -1,5 +1,6 @@
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
+import { AutofocusDirective } from './directive/autofocus.directive';
 import { CardSizePipe } from './pipe/card-size.pipe';
 import { CommonModule } from '@angular/common';
 import { CredentialsPromptComponent } from './credentials-prompt/credentials-prompt.component';
@@ -21,6 +22,7 @@ import { SessionSettingsComponent } from './session-settings/session-settings.co
         SessionSettingsComponent,
         CardSizePipe,
         FileSizePipe,
+        AutofocusDirective,
     ],
     imports: [CommonModule, MarkdownModule.forChild(), IonicModule, FormsModule, ReactiveFormsModule],
     exports: [
@@ -31,6 +33,7 @@ import { SessionSettingsComponent } from './session-settings/session-settings.co
         SessionSettingsComponent,
         CardSizePipe,
         FileSizePipe,
+        AutofocusDirective,
     ],
 })
 export class SharedComponentModule {}

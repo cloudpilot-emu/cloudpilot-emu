@@ -3,11 +3,11 @@
         <ion-title>Create directory</ion-title>
 
         <ion-buttons slot="primary">
-            <ion-button (click)="onCreateClick()" [disabled]="formGroup.invalid">Create</ion-button>
+            <ion-button (click)="onCreateClick()" [disabled]="formGroup.invalid" tabindex="-1">Create</ion-button>
         </ion-buttons>
 
         <ion-buttons slot="secondary">
-            <ion-button (click)="onCancelClick()">Cancel</ion-button>
+            <ion-button (click)="onCancelClick()" tabindex="-1">Cancel</ion-button>
         </ion-buttons>
     </ion-toolbar>
 </ion-header>
@@ -16,7 +16,7 @@
     <form [formGroup]="formGroup" (keydown.enter)="onEnter()">
         <ion-item lines="none">
             <ion-label position="stacked">Directory name</ion-label>
-            <ion-input placeholder="Enter directory name" formControlName="name" autofocus></ion-input>
+            <ion-input placeholder="Enter directory name" formControlName="name" appAutofocus tabindex="1"></ion-input>
         </ion-item>
     </form>
 </ion-content>
