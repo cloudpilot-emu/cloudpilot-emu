@@ -95,7 +95,7 @@ def splitResources(options):
             raise RuntimeError("unable to parse multi-segmented DB")
 
         resourceEntries: list[ResourceEntry] = []
-        for i in range(0, recordList.numRecords - 1):
+        for i in range(0, recordList.numRecords):
             resourceEntry = ResourceEntry(prcfile, offset)
             offset += resourceEntry.size()
 
