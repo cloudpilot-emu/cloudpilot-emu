@@ -84,7 +84,9 @@ SOURCE_CPP = \
 	CreateZipContext.cpp \
 	DeleteRecursiveContext.cpp \
 	UnzipContext.cpp \
-	FatfsDelegate.cpp
+	FatfsDelegate.cpp \
+	ZipfileIterator.cpp \
+	GenericCopyContext.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_CPP) \
