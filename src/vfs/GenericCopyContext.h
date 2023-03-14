@@ -65,6 +65,12 @@ class GenericCopyContext {
     std::map<std::string, bool> visitedDirectories;
 
     std::unique_ptr<DeleteRecursiveContext> deleteRecursiveContext;
+
+   private:
+    GenericCopyContext(const GenericCopyContext&) = delete;
+    GenericCopyContext(GenericCopyContext&&) = delete;
+    GenericCopyContext& operator=(const GenericCopyContext&) = delete;
+    GenericCopyContext operator=(GenericCopyContext&&) = delete;
 };
 
 #endif  // _GENERIC_COPY_CONTEXT_H_

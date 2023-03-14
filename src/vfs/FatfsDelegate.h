@@ -14,6 +14,9 @@ class FatfsDelegate {
     virtual FRESULT f_unlink(const TCHAR* path);
     virtual FRESULT f_stat(const TCHAR* path, FILINFO* fno);
     virtual FRESULT f_readdir(DIR* dp, FILINFO* fno);
+    virtual FRESULT f_closedir(DIR* dp);
+    virtual FRESULT f_read(FIL* fp, void* buff, UINT btr, UINT* br);
+    virtual FRESULT f_opendir(DIR* dp, const TCHAR* path);
 };
 
 #endif  // FATFS_DELEGATE

@@ -63,6 +63,12 @@ class CreateZipContext {
     ssize_t archiveSize{0};
 
     std::unique_ptr<uint8_t[]> readBuffer;
+
+   private:
+    CreateZipContext(const CreateZipContext&) = delete;
+    CreateZipContext(CreateZipContext&&) = delete;
+    CreateZipContext& operator=(const CreateZipContext&) = delete;
+    CreateZipContext operator=(CreateZipContext&&) = delete;
 };
 
 #endif  // _CREATE_ZIP_CONTEXT_H_

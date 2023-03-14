@@ -38,10 +38,10 @@ class ReaddirContext {
     int err{FR_NOT_READY};
 
    private:
-    ReaddirContext(const ReaddirContext&);
-    ReaddirContext(ReaddirContext&&);
-    ReaddirContext& operator=(const ReaddirContext);
-    ReaddirContext& operator=(ReaddirContext&&);
+    ReaddirContext(const ReaddirContext&) = delete;
+    ReaddirContext(ReaddirContext&&) = delete;
+    ReaddirContext& operator=(const ReaddirContext) = delete;
+    ReaddirContext& operator=(ReaddirContext&&) = delete;
 };
 
 #endif  //  _READDIR_CONTEXT_H_

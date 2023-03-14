@@ -46,6 +46,12 @@ class DeleteRecursiveContext {
 
     std::string failingPath;
     DIR dir;
+
+   private:
+    DeleteRecursiveContext(const DeleteRecursiveContext&) = delete;
+    DeleteRecursiveContext(DeleteRecursiveContext&&) = delete;
+    DeleteRecursiveContext& operator=(const DeleteRecursiveContext&) = delete;
+    DeleteRecursiveContext operator=(DeleteRecursiveContext&&) = delete;
 };
 
 #endif  // _DELETE_RECURSIVE_CONTEXT_

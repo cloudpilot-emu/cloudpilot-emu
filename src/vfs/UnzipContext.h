@@ -35,6 +35,12 @@ class UnzipContext : public GenericCopyContext {
 
    private:
     ZipfileIterator iterator;
+
+   private:
+    UnzipContext(const UnzipContext&) = delete;
+    UnzipContext(UnzipContext&&) = delete;
+    UnzipContext& operator=(const UnzipContext&) = delete;
+    UnzipContext operator=(UnzipContext&&) = delete;
 };
 
 #endif  // _UNZIP_CONTEXT_H_

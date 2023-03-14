@@ -20,6 +20,12 @@ class FileEntry {
 
    private:
     FILINFO filinfo;
+
+   private:
+    FileEntry(const FileEntry&) = delete;
+    FileEntry(FileEntry&&) = delete;
+    FileEntry& operator=(const FileEntry&) = delete;
+    FileEntry operator=(FileEntry&&) = delete;
 };
 
 #endif  // _FILE_ENTRY_H_

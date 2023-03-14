@@ -6,10 +6,6 @@
 
 class ZipfileIterator : public VfsIterator {
    public:
-    using VfsIterator::read_callback;
-    using VfsIterator::State;
-
-   public:
     ZipfileIterator(void* data, size_t size);
     ~ZipfileIterator();
 
@@ -30,6 +26,12 @@ class ZipfileIterator : public VfsIterator {
 
     State state{State::initial};
     std::string currentEntry;
+
+   private:
+    ZipfileIterator(const ZipfileIterator&) = delete;
+    ZipfileIterator(ZipfileIterator&&) = delete;
+    ZipfileIterator& operator=(const ZipfileIterator&) = delete;
+    ZipfileIterator operator=(ZipfileIterator&&) = delete;
 };
 
 #endif  // _ZIPFILE_ITERATOR_H_
