@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "RecursiveFsIterator.h"
 #include "fatfs/ff.h"
 
 class DeleteRecursiveContext {
@@ -12,40 +13,27 @@ class DeleteRecursiveContext {
     enum class State { initial = 0, more = 1, done = 2, error = -1 };
 
    public:
+    DeleteRecursiveContext(uint32_t timesliceMilliseconds, FatfsDelegate& fatfsDelegate);
     explicit DeleteRecursiveContext(uint32_t timesliceMilliseconds);
-    ~DeleteRecursiveContext();
 
     DeleteRecursiveContext& AddFile(const std::string& path);
     DeleteRecursiveContext& AddDirectory(const std::string& path);
 
     int Continue();
-    int GetState() const;
+    int GetState();
 
-    const char* GetFailingPath() const;
+    const char* GetFailingPath();
 
    private:
     void ExecuteSlice();
     void ExecuteStep();
 
-    void Unlink(const std::string& path);
-
-    FRESULT OpenDir(const std::string& path);
-    void CloseDir();
+    bool More();
 
    private:
-    State state{State::initial};
     uint32_t timesliceMilliseconds;
-
-    std::vector<std::string> files;
-    std::vector<std::string> directories;
-
-    uint32_t directoryIndex{0};
-
-    bool scanning{false};
-    bool cleanup{false};
-
-    std::string failingPath;
-    DIR dir;
+    RecursiveFsIterator iterator;
+    bool failed{false};
 
    private:
     DeleteRecursiveContext(const DeleteRecursiveContext&) = delete;

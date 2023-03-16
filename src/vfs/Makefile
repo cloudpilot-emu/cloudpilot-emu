@@ -92,7 +92,9 @@ SOURCE_CPP = \
 SOURCE_TEST = \
 	$(SOURCE_CPP) \
 	test/UnzipContext.cpp \
-	test/FSFixture.cpp
+	test/DeleteRecursiveContext.cpp \
+	test/FSFixture.cpp \
+	test/VfsTest.cpp
 
 SOURCE_NATIVE = $(SOURCE_CPP) \
 	native/main.cpp \

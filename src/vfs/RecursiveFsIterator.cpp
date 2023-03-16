@@ -66,7 +66,7 @@ RecursiveFsIterator::State RecursiveFsIterator::Next() {
                 return state;
             }
         } else if (cleanup) {
-            if (directories.size() >= 0) {
+            if (directories.size() > 0) {
                 currentEntry = util::normalizePath(directories.back());
                 directories.pop_back();
             } else {
