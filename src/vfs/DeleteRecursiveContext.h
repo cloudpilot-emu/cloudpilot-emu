@@ -35,6 +35,8 @@ class DeleteRecursiveContext {
     RecursiveFsIterator iterator;
     bool failed{false};
 
+    FatfsDelegate& fatfsDelegate;
+
    private:
     DeleteRecursiveContext(const DeleteRecursiveContext&) = delete;
     DeleteRecursiveContext(DeleteRecursiveContext&&) = delete;

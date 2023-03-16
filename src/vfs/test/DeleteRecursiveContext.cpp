@@ -50,3 +50,28 @@ TEST_F(DeleteRecursiveContextTest, itRecursivelyDeletesDirectories) {
 
     AssertFileDoesNotExist("/dir1");
 }
+
+TEST_F(DeleteRecursiveContextTest, itStopsWithErrorIfDeleteFails) {
+    class MockFatfsDelegate : public FatfsDelegate {
+       public:
+        FRESULT f_unlink(const TCHAR* path) override {
+            if (string(path) == "/file2.txt") return FR_DISK_ERR;
+
+            return FatfsDelegate::f_unlink(path);
+        }
+    };
+
+    FSFixture::CreateFile("/file1.txt", "Hello");
+    FSFixture::CreateFile("/file2.txt", "world");
+
+    MockFatfsDelegate fatfsDelegate;
+    DeleteRecursiveContext context(10, fatfsDelegate);
+    context.AddFile("/file1.txt").AddFile("/file2.txt");
+
+    while (context.GetState() == static_cast<int>(DeleteRecursiveContext::State::initial) ||
+           context.GetState() == static_cast<int>(DeleteRecursiveContext::State::more))
+        context.Continue();
+
+    ASSERT_EQ(context.GetState(), static_cast<int>(DeleteRecursiveContext::State::error));
+    ASSERT_EQ(context.GetFailingPath(), string("/file2.txt"));
+}

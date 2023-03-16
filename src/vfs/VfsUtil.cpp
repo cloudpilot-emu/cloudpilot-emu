@@ -1,13 +1,8 @@
 #include "VfsUtil.h"
 
 #include <chrono>
-#include <regex>
 
 using namespace std;
-
-namespace {
-    regex REGEX_MULTI_SLASH("/{2,}|\\\\+");
-}
 
 uint64_t util::epochMilliseconds() {
     return chrono::duration_cast<chrono::milliseconds>(
@@ -15,6 +10,22 @@ uint64_t util::epochMilliseconds() {
         .count();
 }
 
-std::string util::normalizePath(const std::string& path) {
-    return regex_replace(path, REGEX_MULTI_SLASH, "/");
+string util::normalizePath(const string& path) {
+    string normalizedPath;
+    normalizedPath.reserve(path.size() + 1);
+
+    normalizedPath.push_back('/');
+    bool slashes = true;
+
+    for (size_t i = 0; i < path.size(); i++) {
+        if (path[i] == '/' || path[i] == '\\') {
+            if (!slashes) normalizedPath.push_back('/');
+            slashes = true;
+        } else {
+            slashes = false;
+            normalizedPath.push_back(path[i]);
+        }
+    }
+
+    return normalizedPath;
 }

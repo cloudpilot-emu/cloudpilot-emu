@@ -318,7 +318,7 @@ namespace {
     TEST_F(UnzipContextTest, unknownErrorsAreMappedToIoError) {
         class MockFatfsDelegate : public FatfsDelegate {
            public:
-            virtual FRESULT f_open(FIL* fp, const TCHAR* path, BYTE mode) {
+            FRESULT f_open(FIL* fp, const TCHAR* path, BYTE mode) override {
                 return string(path) == "/invalid.txt" ? FR_DISK_ERR
                                                       : FatfsDelegate::f_open(fp, path, mode);
             }

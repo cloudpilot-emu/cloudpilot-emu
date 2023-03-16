@@ -11,7 +11,9 @@ namespace {
 
 DeleteRecursiveContext::DeleteRecursiveContext(uint32_t timesliceMilliseconds,
                                                FatfsDelegate& fatfsDelegate)
-    : timesliceMilliseconds(timesliceMilliseconds), iterator(fatfsDelegate) {}
+    : timesliceMilliseconds(timesliceMilliseconds),
+      iterator(fatfsDelegate),
+      fatfsDelegate(fatfsDelegate) {}
 
 DeleteRecursiveContext::DeleteRecursiveContext(uint32_t timesliceMilliseconds)
     : DeleteRecursiveContext(timesliceMilliseconds, defaultFatfsDelegate) {}
@@ -70,7 +72,7 @@ void DeleteRecursiveContext::ExecuteStep() {
     iterator.Next();
     if (!More()) return;
 
-    failed = f_unlink(iterator.GetCurrentEntry().c_str()) != FR_OK;
+    failed = fatfsDelegate.f_unlink(iterator.GetCurrentEntry().c_str()) != FR_OK;
 }
 
 bool DeleteRecursiveContext::More() {

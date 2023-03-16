@@ -11,21 +11,21 @@ namespace {
     constexpr size_t READ_BUFFER_SIZE = 1024;
 }
 
-RecursiveFsIterator::RecursiveFsIterator(FatfsDelegate& fatfsDelegate)
-    : fatfsDelegate(fatfsDelegate) {}
+RecursiveFsIterator::RecursiveFsIterator(FatfsDelegate& fatfsDelegate, const string& prefix)
+    : prefix(util::normalizePath(prefix)), fatfsDelegate(fatfsDelegate) {}
 
 RecursiveFsIterator::~RecursiveFsIterator() {
     if (scanning) fatfsDelegate.f_closedir(&dir);
 }
 
 RecursiveFsIterator& RecursiveFsIterator::AddFile(const std::string& path) {
-    if (state == State::initial) files.push_back(path);
+    if (state == State::initial) files.push_back(util::normalizePath(prefix + "/" + path));
 
     return *this;
 }
 
 RecursiveFsIterator& RecursiveFsIterator::AddDirectory(const std::string& path) {
-    if (state == State::initial) directories.push_back(path);
+    if (state == State::initial) directories.push_back(prefix + "/" + path);
 
     return *this;
 }
@@ -38,14 +38,14 @@ RecursiveFsIterator::State RecursiveFsIterator::Next() {
 
     while (true) {
         if (files.size() > 0) {
-            currentEntry = util::normalizePath(files.back());
+            currentEntry = AmputatePrefix(files.back());
             files.pop_back();
 
             return state;
         } else if (scanning) {
             if (fatfsDelegate.f_readdir(&dir, &filinfo) != FR_OK) {
                 state = State::error;
-                failingPath = directories[directoryIndex];
+                failingPath = AmputatePrefix(directories[directoryIndex]);
 
                 return state;
             }
@@ -60,14 +60,13 @@ RecursiveFsIterator::State RecursiveFsIterator::Next() {
 
                 continue;
             } else {
-                currentEntry =
-                    util::normalizePath(directories[directoryIndex] + "/" + filinfo.fname);
+                currentEntry = AmputatePrefix(directories[directoryIndex] + "/" + filinfo.fname);
 
                 return state;
             }
         } else if (cleanup) {
             if (directories.size() > 0) {
-                currentEntry = util::normalizePath(directories.back());
+                currentEntry = AmputatePrefix(directories.back());
                 directories.pop_back();
             } else {
                 state = State::done;
@@ -78,7 +77,7 @@ RecursiveFsIterator::State RecursiveFsIterator::Next() {
             cleanup = true;
             continue;
         } else if (OpenDir(directories[directoryIndex]) != FR_OK) {
-            failingPath = directories[directoryIndex];
+            failingPath = AmputatePrefix(directories[directoryIndex]);
             return state = State::error;
         }
     }
@@ -127,4 +126,13 @@ FRESULT RecursiveFsIterator::OpenDir(const string& path) {
     scanning = result == FR_OK;
 
     return result;
+}
+
+std::string RecursiveFsIterator::AmputatePrefix(const std::string& path) {
+    string normalizedPath = util::normalizePath(path);
+
+    size_t pos = normalizedPath.find(prefix);
+    if (pos == string::npos || pos + prefix.size() >= normalizedPath.size()) return path;
+
+    return util::normalizePath(path.substr(pos + prefix.size()));
 }

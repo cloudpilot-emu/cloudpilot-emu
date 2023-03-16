@@ -10,7 +10,7 @@
 
 class RecursiveFsIterator : public VfsIterator {
    public:
-    RecursiveFsIterator(FatfsDelegate& fatfsDelegate);
+    RecursiveFsIterator(FatfsDelegate& fatfsDelegate, const std::string& prefix = "/");
     ~RecursiveFsIterator();
 
     RecursiveFsIterator& AddFile(const std::string& path);
@@ -26,8 +26,11 @@ class RecursiveFsIterator : public VfsIterator {
     void CloseDir();
     FRESULT OpenDir(const std::string& path);
 
+    std::string AmputatePrefix(const std::string& path);
+
    private:
     State state{State::initial};
+    std::string prefix;
 
     std::vector<std::string> files;
     std::vector<std::string> directories;
