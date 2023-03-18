@@ -14,8 +14,11 @@ string util::normalizePath(const string& path) {
     string normalizedPath;
     normalizedPath.reserve(path.size() + 1);
 
-    normalizedPath.push_back('/');
-    bool slashes = true;
+    bool slashes = false;
+    if (path.size() < 2 || path[1] != ':') {
+        normalizedPath.push_back('/');
+        slashes = true;
+    }
 
     for (size_t i = 0; i < path.size(); i++) {
         if (path[i] == '/' || path[i] == '\\') {
@@ -28,4 +31,11 @@ string util::normalizePath(const string& path) {
     }
 
     return normalizedPath;
+}
+
+const char* util::drivePrefix(unsigned int slot) {
+    static char prefix[3] = {'0', ':', '\0'};
+    prefix[0] = '0' + (slot % 10);
+
+    return prefix;
 }

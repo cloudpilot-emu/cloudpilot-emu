@@ -88,6 +88,8 @@ GenericCopyContext::State GenericCopyContext::ContinueWithOverwrite() {
     return Continue();
 }
 
+void GenericCopyContext::OnAfterCopy() {}
+
 string GenericCopyContext::GetCurrentEntry() const { return currentEntry; }
 
 string GenericCopyContext::GetCollisionPath() const { return collisionPath; }
@@ -98,7 +100,6 @@ void GenericCopyContext::Initialize(VfsIterator* iterator) {
     if (this->iterator) return;
 
     this->iterator = iterator;
-    iterator->Next();
 
     state = iterator->GetState() == VfsIterator::State::error ? State::iteratorError : State::more;
 }
@@ -131,6 +132,10 @@ void GenericCopyContext::ExecuteSlice() {
             state = State::iteratorError;
             return;
 
+        case VfsIterator::State::initial:
+            iterator->Next();
+            return;
+
         default:
             break;
     }
@@ -144,15 +149,21 @@ void GenericCopyContext::ExecuteSlice() {
 
     if (iterator->IsDirectory()) {
         MkdirRecursive(currentPath);
-        if (state == State::more) entriesSuccess++;
+        if (state == State::more) {
+            OnAfterCopy();
+            entriesSuccess++;
+        }
         return;
     }
 
     MkdirRecursive(dirname(currentPath));
     if (state != State::more) return;
 
-    ExtractCurrentEntry();
-    if (state == State::more) entriesSuccess++;
+    CopyCurrentEntry();
+    if (state == State::more) {
+        OnAfterCopy();
+        entriesSuccess++;
+    }
 }
 
 void GenericCopyContext::RemoveConflictingFile() {
@@ -171,7 +182,7 @@ void GenericCopyContext::RemoveConflictingFile() {
     }
 }
 
-void GenericCopyContext::ExtractCurrentEntry() {
+void GenericCopyContext::CopyCurrentEntry() {
     FILINFO fileInfo;
     switch (fatfsDelegate.f_stat(currentPath.c_str(), &fileInfo)) {
         case FR_INVALID_NAME:

@@ -22,6 +22,8 @@ class RecursiveFsIterator : public VfsIterator {
     bool IsDirectory() override;
     void ReadCurrent(read_callback cb) override;
 
+    std::string GetFullPath();
+
    private:
     void CloseDir();
     FRESULT OpenDir(const std::string& path);
@@ -41,12 +43,19 @@ class RecursiveFsIterator : public VfsIterator {
     bool cleanup{false};
 
     std::string currentEntry;
+    std::string entryFullPath;
     std::string failingPath;
 
     DIR dir;
     FILINFO filinfo;
 
     FatfsDelegate& fatfsDelegate;
+
+   private:
+    RecursiveFsIterator(const RecursiveFsIterator&) = delete;
+    RecursiveFsIterator(RecursiveFsIterator&&) = delete;
+    RecursiveFsIterator& operator=(const RecursiveFsIterator&) = delete;
+    RecursiveFsIterator& operator=(RecursiveFsIterator&&) = delete;
 };
 
 #endif  // _RECURSIVE_FS_ITERATOR_H_

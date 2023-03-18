@@ -7,18 +7,10 @@
 
 #include "AutocloseFile.h"
 #include "Defer.h"
+#include "VfsUtil.h"
 #include "fatfs/diskio.h"
 
 using namespace std;
-
-namespace {
-    const char* drivePrefix(unsigned int slot) {
-        static char prefix[3] = {'0', ':', '\0'};
-        prefix[0] = '0' + (slot % 10);
-
-        return prefix;
-    }
-}  // namespace
 
 Vfs::~Vfs() {
     for (int i = 0; i < FF_VOLUMES; i++) UnmountImage(i);
@@ -60,7 +52,7 @@ bool Vfs::MountImage(unsigned int slot) {
     cardVolumes[slot] = std::move(volume);
     register_card_volume(slot, cardVolumes[slot].get());
 
-    FRESULT mountResult = f_mount(&fs[slot], drivePrefix(slot), 1);
+    FRESULT mountResult = f_mount(&fs[slot], util::drivePrefix(slot), 1);
     if (mountResult != FR_OK) {
         cerr << "failed to mount: fatfs error " << (int)mountResult << endl;
         UnmountImage(slot);
@@ -73,7 +65,7 @@ bool Vfs::MountImage(unsigned int slot) {
 void Vfs::UnmountImage(unsigned int slot) {
     if (slot >= FF_VOLUMES) return;
 
-    f_unmount(drivePrefix(slot));
+    f_unmount(util::drivePrefix(slot));
     unregister_card_volume(slot);
 
     cardVolumes[slot].reset();
@@ -119,7 +111,7 @@ unsigned int Vfs::BytesFree(unsigned int slot) const {
 
     DWORD clustersFree;
     FATFS* fs;
-    if (f_getfree(drivePrefix(slot), &clustersFree, &fs) != FR_OK) return 0;
+    if (f_getfree(util::drivePrefix(slot), &clustersFree, &fs) != FR_OK) return 0;
 
     return clustersFree * fs->csize * 512;
 }

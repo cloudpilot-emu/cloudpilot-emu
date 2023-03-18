@@ -40,11 +40,13 @@ class GenericCopyContext {
     State Continue();
     State ContinueWithOverwrite();
 
+    virtual void OnAfterCopy();
+
    private:
     void ExecuteSlice();
 
     void RemoveConflictingFile();
-    void ExtractCurrentEntry();
+    void CopyCurrentEntry();
     void MkdirRecursive(std::string path);
 
    private:

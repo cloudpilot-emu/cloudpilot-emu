@@ -87,14 +87,17 @@ SOURCE_CPP = \
 	FatfsDelegate.cpp \
 	ZipfileIterator.cpp \
 	GenericCopyContext.cpp \
-	RecursiveFsIterator.cpp
+	RecursiveFsIterator.cpp \
+	PasteContext.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_CPP) \
 	test/UnzipContext.cpp \
 	test/DeleteRecursiveContext.cpp \
 	test/FSFixture.cpp \
-	test/VfsTest.cpp
+	test/VfsTest.cpp \
+	test/PasteContext.cpp \
+	test/NormalizePath.cpp
 
 SOURCE_NATIVE = $(SOURCE_CPP) \
 	native/main.cpp \

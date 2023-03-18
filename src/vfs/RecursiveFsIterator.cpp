@@ -38,7 +38,8 @@ RecursiveFsIterator::State RecursiveFsIterator::Next() {
 
     while (true) {
         if (files.size() > 0) {
-            currentEntry = AmputatePrefix(files.back());
+            entryFullPath = files.back();
+            currentEntry = AmputatePrefix(entryFullPath);
             files.pop_back();
 
             return state;
@@ -60,13 +61,15 @@ RecursiveFsIterator::State RecursiveFsIterator::Next() {
 
                 continue;
             } else {
-                currentEntry = AmputatePrefix(directories[directoryIndex] + "/" + filinfo.fname);
+                entryFullPath = directories[directoryIndex] + "/" + filinfo.fname;
+                currentEntry = AmputatePrefix(entryFullPath);
 
                 return state;
             }
         } else if (cleanup) {
             if (directories.size() > 0) {
-                currentEntry = AmputatePrefix(directories.back());
+                entryFullPath = directories.back();
+                currentEntry = AmputatePrefix(entryFullPath);
                 directories.pop_back();
             } else {
                 state = State::done;
@@ -90,10 +93,15 @@ bool RecursiveFsIterator::IsDirectory() { return cleanup; }
 void RecursiveFsIterator::ReadCurrent(read_callback cb) {
     if (state != State::valid || cleanup) return;
 
+    if (!scanning && fatfsDelegate.f_stat(entryFullPath.c_str(), &filinfo) != FR_OK) {
+        state = State::error;
+        return;
+    }
+
     unique_ptr<uint8_t[]> buffer = make_unique<uint8_t[]>(READ_BUFFER_SIZE);
 
     FIL file;
-    if (fatfsDelegate.f_open(&file, currentEntry.c_str(), FA_READ) != FR_OK) {
+    if (fatfsDelegate.f_open(&file, entryFullPath.c_str(), FA_READ) != FR_OK) {
         state = State::error;
         return;
     }
@@ -101,18 +109,22 @@ void RecursiveFsIterator::ReadCurrent(read_callback cb) {
     Defer deferClose([&]() { fatfsDelegate.f_close(&file); });
 
     size_t bytesReadTotal = 0;
-    while (bytesReadTotal < filinfo.fsize) {
-        UINT bytesRead;
-        if (fatfsDelegate.f_read(&file, buffer.get(), READ_BUFFER_SIZE, &bytesRead) != FR_OK ||
-            bytesRead == 0) {
+    UINT bytesRead;
+
+    do {
+        if (fatfsDelegate.f_read(&file, buffer.get(), READ_BUFFER_SIZE, &bytesRead) != FR_OK) {
             state = State::error;
             return;
         }
 
-        cb(buffer.get(), bytesRead);
+        if (bytesRead > 0) cb(buffer.get(), bytesRead);
         bytesReadTotal += bytesRead;
-    }
+    } while (bytesRead > 0);
+
+    if (bytesReadTotal != filinfo.fsize) state = State::error;
 }
+
+std::string RecursiveFsIterator::GetFullPath() { return entryFullPath; }
 
 void RecursiveFsIterator::CloseDir() {
     if (!scanning) return;

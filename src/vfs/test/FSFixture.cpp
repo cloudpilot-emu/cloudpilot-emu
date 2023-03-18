@@ -7,6 +7,7 @@
 
 #include "CardImage.h"
 #include "CardVolume.h"
+#include "VfsUtil.h"
 #include "fatfs/diskio.h"
 #include "fatfs/ff.h"
 
@@ -37,10 +38,10 @@ namespace {
 
     constexpr size_t IMAGE_SIZE = 4 * 1024 * 1024;
 
-    unique_ptr<CardImage> cardImage;
-    unique_ptr<CardVolume> cardVolume;
+    unique_ptr<CardImage> cardImages[2];
+    unique_ptr<CardVolume> cardVolumes[2];
 
-    FATFS fs;
+    FATFS fs[2];
 
     unique_ptr<uint8_t[]> decompressImage() {
         unique_ptr<uint8_t[]> result = make_unique<uint8_t[]>(IMAGE_SIZE);
@@ -72,20 +73,20 @@ namespace {
     }
 }  // namespace
 
-void FSFixture::CreateAndMount() {
-    cardImage = make_unique<CardImage>(decompressImage().release(), IMAGE_SIZE >> 9);
-    cardVolume = make_unique<CardVolume>(*cardImage);
+void FSFixture::CreateAndMount(uint32_t slot) {
+    cardImages[slot] = make_unique<CardImage>(decompressImage().release(), IMAGE_SIZE >> 9);
+    cardVolumes[slot] = make_unique<CardVolume>(*cardImages[slot]);
 
-    register_card_volume(0, cardVolume.get());
-    f_mount(&fs, "0:", 1);
+    register_card_volume(slot, cardVolumes[slot].get());
+    f_mount(&fs[slot], util::drivePrefix(slot), 1);
 }
 
-void FSFixture::UnmountAndRelease() {
-    f_unmount("0:");
+void FSFixture::UnmountAndRelease(uint32_t slot) {
+    f_unmount(util::drivePrefix(slot));
     unregister_card_volume(0);
 
-    cardImage.reset();
-    cardVolume.reset();
+    cardImages[slot].reset();
+    cardVolumes[slot].reset();
 }
 
 void FSFixture::CreateFile(const string& path, const string& content) {
