@@ -15,16 +15,14 @@ EMCC_OPT ?= -O3 -flto
 WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
 
 CFLAGS_NATIVE ?= \
-	-O2  -g \
-	$(shell sdl2-config --cflags)
+	-O2  -g $(shell sdl2-config --cflags)
 
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
 INCLUDE_EXTRA ?=
 
 LDFLAGS_NATIVE ?=  \
-	$(shell sdl2-config --libs) -lSDL2_image \
-	-lreadline -lboost_coroutine -lboost_json
+	$(shell sdl2-config --libs) -lSDL2_image -lreadline -lboost_coroutine
 
 CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack -Wno-multichar -Wno-unknown-pragmas \
 	-DEMULATION_LEVEL=EMULATION_UNIX
