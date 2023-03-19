@@ -94,3 +94,18 @@ interface UnzipContext {
     long GetEntriesTotal();
     long GetEntriesSuccess();
 };
+
+interface PasteContext {
+    void PasteContext(long timesliceMilliseconds, [Const] DOMString destination, [Const] DOMString prefix);
+
+    [Ref] PasteContext AddFile([Const] DOMString path);
+
+    long GetState();
+    long Continue();
+    long ContinueWithOverwrite();
+
+    [Const] DOMString GetCurrentEntry();
+    [Const] DOMString GetCollisionPath();
+
+    long GetEntriesSuccess();
+};

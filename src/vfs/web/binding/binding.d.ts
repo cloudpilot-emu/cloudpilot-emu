@@ -166,3 +166,16 @@ interface UnzipContext {
     GetEntriesTotal(): number;
     GetEntriesSuccess(): number;
 }
+
+interface PasteContext {
+    AddFile(path: string): PasteContext;
+
+    GetState(): number;
+    Continue(): number;
+    ContinueWithOverwrite(): number;
+
+    GetCurrentEntry(): string;
+    GetCollisionPath(): string;
+
+    GetEntriesSuccess(): number;
+}
