@@ -20,10 +20,10 @@ INCLUDE_EXTRA ?=
 
 CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
-CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99 -D_POSIX_SOURCE
+CFLAGS_COMMON := $(CFLAGS_COMMON) -std=gnu99
 
 CFLAGS_EMCC = $(EMCC_OPT)
-CXXFLAGS_EMCC = $(CFLAGS_EMCC)  -fno-rtti -fno-exceptions
+CXXFLAGS_EMCC = $(CFLAGS_EMCC) -fno-rtti -fno-exceptions
 
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt
 CXXFLAGS_TEST ?= $(CFLAGS_TEST)
