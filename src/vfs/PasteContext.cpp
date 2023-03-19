@@ -21,8 +21,12 @@ PasteContext::PasteContext(uint32_t timesliceMilliseconds, const char* destinati
       iterator(fatfsDelegate, qualifyPath(prefix)),
       fatfsDelegate(fatfsDelegate),
       destination(qualifyPath(destination)) {
-    iterator.SetSkipDirectory(
-        [&](const string& path) { return this->destination.find(path) == 0; });
+    iterator.SetSkipDirectory([&](const string& path) {
+        if (this->destination.find(path) != 0) return false;
+
+        return (this->destination.size() == path.size() ||
+                this->destination[path.size() + 1] == '/');
+    });
     Initialize(&iterator);
 }
 

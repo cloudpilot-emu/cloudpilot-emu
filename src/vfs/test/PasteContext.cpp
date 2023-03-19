@@ -279,4 +279,23 @@ namespace {
         AssertFileDoesNotExist("/prefix/bar/bar");
     }
 
+    TEST_F(PasteContextTest, overlapDetectionCorrectlyHandlesFalseFriends) {
+        f_mkdir("/prefix");
+        f_mkdir("/prefix/bara");
+        f_mkdir("/prefix/bar");
+        FSFixture::CreateFile("/prefix/foo.txt", "Hello");
+        FSFixture::CreateFile("/prefix/bar/bazinga.txt", "bazinga");
+
+        PasteContext context(10, "/prefix/bara", "/prefix");
+        context.AddFile("foo.txt").AddFile("bar").SetDeleteAfterCopy(true);
+
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
+
+        AssertFileDoesNotExist("/prefix/foo.txt");
+        AssertFileDoesNotExist("/prefix/bar");
+        AssertFileExistsWithContent("/prefix/bara/foo.txt", "Hello");
+        AssertFileExistsWithContent("/prefix/bara/bar/bazinga.txt", "bazinga");
+    }
+
 }  // namespace
