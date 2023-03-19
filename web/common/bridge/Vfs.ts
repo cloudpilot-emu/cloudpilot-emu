@@ -259,18 +259,11 @@ export class Vfs {
         }
     }
 
-    async deleteRecursive({
-        files,
-        directories,
-    }: {
-        files?: Array<string>;
-        directories?: Array<string>;
-    }): Promise<{ success: true } | { success: false; failingItem: string }> {
+    async deleteRecursive(files: Array<string>): Promise<{ success: true } | { success: false; failingItem: string }> {
         const context = new this.module.DeleteRecursiveContext(TIMESLICE_SIZE_MSEC);
 
         try {
-            if (files) files.forEach((file) => context.AddFile(file));
-            if (directories) directories.forEach((directory) => context.AddDirectory(directory));
+            files.forEach((file) => context.AddFile(file));
 
             while (context.Continue() === DeleteRecursiveContextState.more) {
                 await new Promise((resolve) => setTimeout(resolve, 0));

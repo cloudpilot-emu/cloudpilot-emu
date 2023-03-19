@@ -233,15 +233,14 @@ export class VfsService {
     }
 
     async deleteRecursive(entries: Array<FileEntry>): Promise<void> {
-        const files = entries.filter((entry) => !entry.isDirectory).map((entry) => this.normalizePath(entry.path));
-        const directories = entries.filter((entry) => entry.isDirectory).map((entry) => this.normalizePath(entry.path));
+        const files = entries.map((entry) => this.normalizePath(entry.path));
 
         const loader = await this.loadingController.create({ message: 'Deleting...' });
         await loader.present();
 
         try {
             const vfs = await this.vfs;
-            const result = await vfs.deleteRecursive({ files, directories });
+            const result = await vfs.deleteRecursive(files);
 
             if (!result.success) {
                 await loader.dismiss();
@@ -418,9 +417,9 @@ export class VfsService {
                 let skip = true;
 
                 if (overwriteDirectories) {
-                    const deleteRecursiveResult = await vfs.deleteRecursive({
-                        directories: [this.normalizePath(`${destination}/${file.name}`)],
-                    });
+                    const deleteRecursiveResult = await vfs.deleteRecursive([
+                        this.normalizePath(`${destination}/${file.name}`),
+                    ]);
 
                     skip = !deleteRecursiveResult.success;
                 }

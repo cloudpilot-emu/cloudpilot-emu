@@ -36,11 +36,11 @@ namespace {
     }
 }  // namespace
 
-GenericCopyContext::GenericCopyContext(uint32_t timesliceMilliseconds, const char* _destination,
+GenericCopyContext::GenericCopyContext(uint32_t timesliceMilliseconds, const char* destination,
                                        FatfsDelegate& fatfsDelegate)
     : fatfsDelegate(fatfsDelegate),
       timesliceMilliseconds(timesliceMilliseconds),
-      destination("/" + string(_destination)) {}
+      destination(util::normalizePath(destination)) {}
 
 GenericCopyContext::GenericCopyContext(uint32_t timesliceMilliseconds, const char* destination)
     : GenericCopyContext(timesliceMilliseconds, destination, defaultFatfsDelegate) {}
@@ -81,7 +81,7 @@ GenericCopyContext::State GenericCopyContext::ContinueWithOverwrite() {
 
     if (state == State::collisionWithDirectory) {
         deleteRecursiveContext = make_unique<DeleteRecursiveContext>(timesliceMilliseconds);
-        deleteRecursiveContext->AddDirectory(collisionPath);
+        deleteRecursiveContext->AddFile(collisionPath);
         state = State::more;
     }
 
@@ -90,15 +90,14 @@ GenericCopyContext::State GenericCopyContext::ContinueWithOverwrite() {
 
 void GenericCopyContext::OnAfterCopy() {}
 
-string GenericCopyContext::GetCurrentEntry() const { return currentEntry; }
+const char* GenericCopyContext::GetCurrentEntry() const { return currentEntry.c_str(); }
 
-string GenericCopyContext::GetCollisionPath() const { return collisionPath; }
+const char* GenericCopyContext::GetCollisionPath() const { return collisionPath.c_str(); }
 
 uint32_t GenericCopyContext::GetEntriesSuccess() const { return entriesSuccess; }
 
 void GenericCopyContext::Initialize(VfsIterator* iterator) {
     if (this->iterator) return;
-
     this->iterator = iterator;
 
     state = iterator->GetState() == VfsIterator::State::error ? State::iteratorError : State::more;
@@ -249,18 +248,23 @@ void GenericCopyContext::CopyCurrentEntry() {
 void GenericCopyContext::MkdirRecursive(std::string path) {
     state = State::more;
 
-    string next = "";
-    size_t pos;
+    size_t firstSlash = path.find_first_of('/');
+    if (firstSlash == string::npos) {
+        state = State::invalidEntry;
+        return;
+    }
 
+    string next = path.substr(0, firstSlash);
+    path.erase(0, firstSlash + 1);
+
+    if (path.size() == 0) return;
+
+    size_t pos;
     do {
         pos = path.find_first_of('/');
-        next = next + "/" + (pos == string::npos ? path : path.substr(0, pos));
 
+        next = next + "/" + (pos == string::npos ? path : path.substr(0, pos));
         if (pos != string::npos) path.erase(0, pos + 1);
-        if (next == "/") {
-            next.clear();
-            continue;
-        }
 
         if (visitedDirectories.find(next) != visitedDirectories.end()) {
             if (visitedDirectories[next]) {

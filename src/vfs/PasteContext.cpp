@@ -1,14 +1,28 @@
 #include "PasteContext.h"
 
+#include "VfsUtil.h"
+
+using namespace std;
+
 namespace {
     FatfsDelegate defaultFatfsDelegate;
-}
+
+    string qualifyPath(const string& path) {
+        string qualifiedPath = util::normalizePath(path);
+        if (qualifiedPath.size() >= 2 && path[1] != ':') qualifiedPath = "0:" + qualifiedPath;
+
+        return qualifiedPath;
+    }
+}  // namespace
 
 PasteContext::PasteContext(uint32_t timesliceMilliseconds, const char* destination,
                            const char* prefix, FatfsDelegate& fatfsDelegate)
     : GenericCopyContext(timesliceMilliseconds, destination, fatfsDelegate),
-      iterator(fatfsDelegate, prefix),
-      fatfsDelegate(fatfsDelegate) {
+      iterator(fatfsDelegate, qualifyPath(prefix)),
+      fatfsDelegate(fatfsDelegate),
+      destination(qualifyPath(destination)) {
+    iterator.SetSkipDirectory(
+        [&](const string& path) { return this->destination.find(path) == 0; });
     Initialize(&iterator);
 }
 
@@ -18,11 +32,6 @@ PasteContext::PasteContext(uint32_t timesliceMilliseconds, const char* destinati
 
 PasteContext& PasteContext::AddFile(const std::string& path) {
     iterator.AddFile(path);
-    return *this;
-}
-
-PasteContext& PasteContext::AddDirectory(const std::string& path) {
-    iterator.AddDirectory(path);
     return *this;
 }
 
@@ -71,6 +80,9 @@ int PasteContext::ContinueWithOverwrite() {
 }
 
 void PasteContext::OnAfterCopy() {
-    if (deleteAfterCopy)
-        deleteFailed = fatfsDelegate.f_unlink(iterator.GetFullPath().c_str()) != FR_OK;
+    if (!deleteAfterCopy) return;
+
+    FRESULT result = fatfsDelegate.f_unlink(iterator.GetFullPath().c_str());
+
+    deleteFailed = result != FR_OK && result != FR_DENIED;
 }

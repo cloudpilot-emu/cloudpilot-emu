@@ -24,7 +24,6 @@ class PasteContext : public GenericCopyContext {
     PasteContext(uint32_t timesliceMilliseconds, const char* destination, const char* prefix);
 
     PasteContext& AddFile(const std::string& path);
-    PasteContext& AddDirectory(const std::string& path);
     PasteContext& SetDeleteAfterCopy(bool deleteAfterCopy);
 
     int GetState() const;
@@ -37,8 +36,10 @@ class PasteContext : public GenericCopyContext {
    private:
     RecursiveFsIterator iterator;
     FatfsDelegate& fatfsDelegate;
+
     bool deleteAfterCopy{false};
     bool deleteFailed{false};
+    std::string destination;
 
    private:
     PasteContext(const PasteContext&) = delete;

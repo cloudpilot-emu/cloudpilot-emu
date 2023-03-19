@@ -1,6 +1,7 @@
 #ifndef _RECURSIVE_FS_ITERATOR_H_
 #define _RECURSIVE_FS_ITERATOR_H_
 
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -10,11 +11,14 @@
 
 class RecursiveFsIterator : public VfsIterator {
    public:
+    using skipDirectoryCb = std::function<bool(const std::string&)>;
+
+   public:
     RecursiveFsIterator(FatfsDelegate& fatfsDelegate, const std::string& prefix = "/");
     ~RecursiveFsIterator();
 
     RecursiveFsIterator& AddFile(const std::string& path);
-    RecursiveFsIterator& AddDirectory(const std::string& path);
+    RecursiveFsIterator& SetSkipDirectory(skipDirectoryCb skipDirectory);
 
     State GetState() override;
     State Next() override;
@@ -50,6 +54,7 @@ class RecursiveFsIterator : public VfsIterator {
     FILINFO filinfo;
 
     FatfsDelegate& fatfsDelegate;
+    skipDirectoryCb skipDirectory;
 
    private:
     RecursiveFsIterator(const RecursiveFsIterator&) = delete;

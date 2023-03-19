@@ -73,7 +73,6 @@ interface DeleteRecursiveContext {
     void DeleteRecursiveContext(long timesliceMilliseconds);
 
     [Ref] DeleteRecursiveContext AddFile([Const] DOMString path);
-    [Ref] DeleteRecursiveContext AddDirectory([Const] DOMString path);
 
     long Continue();
     long GetState();

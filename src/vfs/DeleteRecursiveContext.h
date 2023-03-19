@@ -17,7 +17,6 @@ class DeleteRecursiveContext {
     explicit DeleteRecursiveContext(uint32_t timesliceMilliseconds);
 
     DeleteRecursiveContext& AddFile(const std::string& path);
-    DeleteRecursiveContext& AddDirectory(const std::string& path);
 
     int Continue();
     int GetState();

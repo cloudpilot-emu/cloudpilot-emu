@@ -23,7 +23,7 @@ namespace {
         f_mkdir("/dir2");
 
         DeleteRecursiveContext context(10);
-        context.AddFile("/file1.txt").AddFile("/file2.txt").AddDirectory("/dir1");
+        context.AddFile("/file1.txt").AddFile("/file2.txt").AddFile("/dir1");
 
         while (context.GetState() == static_cast<int>(DeleteRecursiveContext::State::initial) ||
                context.GetState() == static_cast<int>(DeleteRecursiveContext::State::more))
@@ -44,7 +44,7 @@ namespace {
         FSFixture::CreateFile("/dir1/dir2/file2", "world");
 
         DeleteRecursiveContext context(10);
-        context.AddDirectory("/dir1");
+        context.AddFile("/dir1");
 
         while (context.GetState() == static_cast<int>(DeleteRecursiveContext::State::initial) ||
                context.GetState() == static_cast<int>(DeleteRecursiveContext::State::more))

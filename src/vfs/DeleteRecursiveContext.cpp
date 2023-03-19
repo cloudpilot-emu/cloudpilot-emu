@@ -24,12 +24,6 @@ DeleteRecursiveContext& DeleteRecursiveContext::AddFile(const std::string& path)
     return *this;
 }
 
-DeleteRecursiveContext& DeleteRecursiveContext::AddDirectory(const std::string& path) {
-    iterator.AddDirectory(path);
-
-    return *this;
-}
-
 int DeleteRecursiveContext::Continue() {
     if (More()) ExecuteSlice();
 

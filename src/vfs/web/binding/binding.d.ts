@@ -148,7 +148,6 @@ export interface CreateZipContext {
 
 export interface DeleteRecursiveContext {
     AddFile(path: string): DeleteRecursiveContext;
-    AddDirectory(path: string): DeleteRecursiveContext;
 
     Continue(): DeleteRecursiveContextState;
     GetState(): DeleteRecursiveContextState;

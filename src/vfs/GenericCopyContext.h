@@ -29,8 +29,10 @@ class GenericCopyContext {
 
     GenericCopyContext(uint32_t timesliceMilliseconds, const char* destination);
 
-    std::string GetCurrentEntry() const;
-    std::string GetCollisionPath() const;
+    virtual ~GenericCopyContext() = default;
+
+    const char* GetCurrentEntry() const;
+    const char* GetCollisionPath() const;
     uint32_t GetEntriesSuccess() const;
 
    protected:

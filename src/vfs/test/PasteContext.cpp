@@ -5,6 +5,8 @@
 #include "FSFixture.h"
 #include "VfsTest.h"
 
+using namespace std;
+
 namespace {
 
     class PasteContextTest : public VfsTest {
@@ -32,7 +34,7 @@ namespace {
         f_mkdir("1:/baz");
 
         PasteContext context(10, "/", "1:/");
-        context.AddFile("foo.txt").AddFile("bar.txt").AddDirectory("baz");
+        context.AddFile("foo.txt").AddFile("bar.txt").AddFile("baz");
 
         RunUntilInterruption(context);
         ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
@@ -49,7 +51,7 @@ namespace {
         FSFixture::CreateFile("1:/prefix/bar.txt", "world");
 
         PasteContext context(10, "/hanni", "1:/prefix");
-        context.AddFile("foo.txt").AddFile("bar.txt").AddDirectory("baz");
+        context.AddFile("foo.txt").AddFile("bar.txt").AddFile("baz");
 
         RunUntilInterruption(context);
         ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
@@ -66,7 +68,7 @@ namespace {
         FSFixture::CreateFile("1:/foo/bar/world.txt", "world");
 
         PasteContext context(10, "/", "1:/");
-        context.AddDirectory("foo");
+        context.AddFile("foo");
 
         RunUntilInterruption(context);
         ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
@@ -82,8 +84,8 @@ namespace {
         FSFixture::CreateFile("1:/prefix/foo/hello.txt", "Hello");
         FSFixture::CreateFile("1:/prefix/foo/bar/world.txt", "world");
 
-        PasteContext context(10, "/destination", "1:/prefix");
-        context.AddDirectory("foo");
+        PasteContext context(10, "0:/destination", "1:/prefix");
+        context.AddFile("foo");
 
         RunUntilInterruption(context);
         ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
@@ -100,7 +102,7 @@ namespace {
         FSFixture::CreateFile("1:/prefix/foo/bar/world.txt", "world");
 
         PasteContext context(10, "/destination", "1:/prefix");
-        context.AddDirectory("foo").SetDeleteAfterCopy(true);
+        context.AddFile("foo").SetDeleteAfterCopy(true);
 
         RunUntilInterruption(context);
         ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
@@ -108,6 +110,173 @@ namespace {
         AssertFileExistsWithContent("0:/destination/foo/hello.txt", "Hello");
         AssertFileExistsWithContent("0:/destination/foo/bar/world.txt", "world");
         AssertFileDoesNotExist("1:/prefix/foo");
+    }
+
+    TEST_F(PasteContextTest, itIgnoresMissingFiles) {
+        FSFixture::CreateFile("1:/foo.txt", "Hello");
+        FSFixture::CreateFile("1:/bar.txt", "world");
+        f_mkdir("1:/baz");
+
+        PasteContext context(10, "/", "1:/");
+        context.AddFile("foo.txt").AddFile("bar.txt").AddFile("bazalla").AddFile("baz");
+
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
+
+        AssertFileExistsWithContent("0:/foo.txt", "Hello");
+        AssertFileExistsWithContent("0:/bar.txt", "world");
+        AssertDirectoryExists("0:/baz");
+    }
+
+    TEST_F(PasteContextTest, itOverwritesFilesAfterConfirmationAndRemovesTheOriginal) {
+        FSFixture::CreateFile("1:/foo.txt", "Hello");
+        FSFixture::CreateFile("1:/bar.txt", "world");
+        FSFixture::CreateFile("0:/bar.txt", "I get removed");
+
+        PasteContext context(10, "/", "1:/");
+        context.AddFile("foo.txt").AddFile("bar.txt").SetDeleteAfterCopy(true);
+
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::collision));
+        ASSERT_EQ(string(context.GetCollisionPath()), "/bar.txt");
+
+        context.ContinueWithOverwrite();
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
+
+        AssertFileExistsWithContent("0:/foo.txt", "Hello");
+        AssertFileExistsWithContent("0:/bar.txt", "world");
+        AssertFileDoesNotExist("1:/foo.txt");
+        AssertFileDoesNotExist("1:/bar.txt");
+    }
+
+    TEST_F(PasteContextTest, itOverwritesDirectoriesAfterConfirmationAndRemovesTheOriginal) {
+        FSFixture::CreateFile("1:/foo.txt", "Hello");
+        FSFixture::CreateFile("1:/bar.txt", "world");
+        f_mkdir("0:/bar.txt");
+        FSFixture::CreateFile("0:/bar.txt/foo.txt", "I get removed");
+
+        PasteContext context(10, "/", "1:/");
+        context.AddFile("foo.txt").AddFile("bar.txt").SetDeleteAfterCopy(true);
+
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(),
+                  static_cast<int>(PasteContext::State::collisionWithDirectory));
+        ASSERT_EQ(string(context.GetCollisionPath()), "/bar.txt");
+
+        context.ContinueWithOverwrite();
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
+
+        AssertFileExistsWithContent("0:/foo.txt", "Hello");
+        AssertFileExistsWithContent("0:/bar.txt", "world");
+        AssertFileDoesNotExist("1:/foo.txt");
+        AssertFileDoesNotExist("1:/bar.txt");
+    }
+
+    TEST_F(PasteContextTest, itPreservesFilesThatCouldNotBeCopied) {
+        FSFixture::CreateFile("1:/foo.txt", "Hello");
+        FSFixture::CreateFile("1:/bar.txt", "world");
+        FSFixture::CreateFile("0:/bar.txt", "I won't get removed");
+
+        PasteContext context(10, "/", "1:/");
+        context.AddFile("foo.txt").AddFile("bar.txt").SetDeleteAfterCopy(true);
+
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::collision));
+        ASSERT_EQ(string(context.GetCollisionPath()), "/bar.txt");
+
+        context.Continue();
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
+
+        AssertFileExistsWithContent("0:/foo.txt", "Hello");
+        AssertFileExistsWithContent("0:/bar.txt", "I won't get removed");
+        AssertFileDoesNotExist("1:/foo.txt");
+        AssertFileExistsWithContent("1:/bar.txt", "world");
+    }
+
+    // it preserves the hierarchy of files that could not be copied
+
+    TEST_F(PasteContextTest, itPreservesTheHierarchyOfFilesThatCouldNotBeCopied) {
+        f_mkdir("1:/dir1");
+        f_mkdir("1:/dir1/dir2");
+        FSFixture::CreateFile("1:/foo.txt", "Hello");
+        FSFixture::CreateFile("1:/dir1/bar.txt", "world");
+        FSFixture::CreateFile("1:/dir1/dir2/bar.txt", "world");
+
+        f_mkdir("0:/dir1");
+        f_mkdir("0:/dir1/dir2");
+        FSFixture::CreateFile("0:/dir1/dir2/bar.txt", "I won't get removed");
+
+        PasteContext context(10, "/", "1:/");
+        context.AddFile("foo.txt")
+            .AddFile("dir1/bar.txt")
+            .AddFile("dir1/dir2/bar.txt")
+            .SetDeleteAfterCopy(true);
+
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::collision));
+        ASSERT_EQ(string(context.GetCollisionPath()), "/dir1/dir2/bar.txt");
+
+        context.Continue();
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
+
+        AssertFileExistsWithContent("0:/foo.txt", "Hello");
+        AssertFileExistsWithContent("0:/dir1/bar.txt", "world");
+        AssertFileExistsWithContent("0:/dir1/dir2/bar.txt", "I won't get removed");
+
+        AssertFileDoesNotExist("1:/foo.txt");
+        AssertFileDoesNotExist("1:/dir1/bar.txt");
+        AssertFileExistsWithContent("1:/dir1/dir2/bar.txt", "world");
+    }
+
+    TEST_F(PasteContextTest, itDoesNotAttemptToCopyParentsToChildren) {
+        f_mkdir("/prefix");
+        f_mkdir("/prefix/foo");
+        f_mkdir("/prefix/bar");
+        f_mkdir("/prefix/bar/baz");
+        FSFixture::CreateFile("/prefix/foo.txt", "Hello");
+        FSFixture::CreateFile("/prefix/foo/bar.txt", "world");
+        FSFixture::CreateFile("/prefix/bar/bazinga.txt", "bazinga");
+
+        PasteContext context(10, "/prefix/bar", "/prefix");
+        context.AddFile("foo.txt").AddFile("foo").AddFile("bar").SetDeleteAfterCopy(true);
+
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
+
+        AssertFileDoesNotExist("/prefix/foo.txt");
+        AssertFileDoesNotExist("/prefix/foo");
+        AssertFileExistsWithContent("/prefix/bar/foo.txt", "Hello");
+        AssertFileExistsWithContent("/prefix/bar/foo/bar.txt", "world");
+        AssertFileExistsWithContent("/prefix/bar/bazinga.txt", "bazinga");
+        AssertFileDoesNotExist("/prefix/bar/bar");
+    }
+
+    TEST_F(PasteContextTest,
+           itDoesNotAttemptToCopyParentsToChildrenAndDrivePrefixIsHandledCorrectly) {
+        f_mkdir("/prefix");
+        f_mkdir("/prefix/foo");
+        f_mkdir("/prefix/bar");
+        f_mkdir("/prefix/bar/baz");
+        FSFixture::CreateFile("/prefix/foo.txt", "Hello");
+        FSFixture::CreateFile("/prefix/foo/bar.txt", "world");
+        FSFixture::CreateFile("/prefix/bar/bazinga.txt", "bazinga");
+
+        PasteContext context(10, "/prefix/bar", "0:/prefix");
+        context.AddFile("foo.txt").AddFile("foo").AddFile("bar").SetDeleteAfterCopy(true);
+
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
+
+        AssertFileDoesNotExist("/prefix/foo.txt");
+        AssertFileDoesNotExist("/prefix/foo");
+        AssertFileExistsWithContent("/prefix/bar/foo.txt", "Hello");
+        AssertFileExistsWithContent("/prefix/bar/foo/bar.txt", "world");
+        AssertFileExistsWithContent("/prefix/bar/bazinga.txt", "bazinga");
+        AssertFileDoesNotExist("/prefix/bar/bar");
     }
 
 }  // namespace

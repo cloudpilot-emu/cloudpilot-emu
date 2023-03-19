@@ -12,7 +12,9 @@ namespace {
 }
 
 RecursiveFsIterator::RecursiveFsIterator(FatfsDelegate& fatfsDelegate, const string& prefix)
-    : prefix(util::normalizePath(prefix)), fatfsDelegate(fatfsDelegate) {}
+    : prefix(util::normalizePath(prefix)),
+      fatfsDelegate(fatfsDelegate),
+      skipDirectory([](const string&) { return false; }) {}
 
 RecursiveFsIterator::~RecursiveFsIterator() {
     if (scanning) fatfsDelegate.f_closedir(&dir);
@@ -24,8 +26,8 @@ RecursiveFsIterator& RecursiveFsIterator::AddFile(const std::string& path) {
     return *this;
 }
 
-RecursiveFsIterator& RecursiveFsIterator::AddDirectory(const std::string& path) {
-    if (state == State::initial) directories.push_back(prefix + "/" + path);
+RecursiveFsIterator& RecursiveFsIterator::SetSkipDirectory(skipDirectoryCb skipDirectory) {
+    this->skipDirectory = skipDirectory;
 
     return *this;
 }
@@ -38,9 +40,30 @@ RecursiveFsIterator::State RecursiveFsIterator::Next() {
 
     while (true) {
         if (files.size() > 0) {
-            entryFullPath = files.back();
-            currentEntry = AmputatePrefix(entryFullPath);
+            string fullPath = files.back();
             files.pop_back();
+
+            switch (fatfsDelegate.f_stat(fullPath.c_str(), &filinfo)) {
+                case FR_NO_FILE:
+                    continue;
+
+                case FR_OK:
+                    break;
+
+                default:
+                    state = State::error;
+                    failingPath = AmputatePrefix(files.back());
+
+                    return state;
+            }
+
+            if (filinfo.fattrib & AM_DIR) {
+                if (!skipDirectory(fullPath)) directories.push_back(fullPath);
+                continue;
+            }
+
+            entryFullPath = fullPath;
+            currentEntry = AmputatePrefix(entryFullPath);
 
             return state;
         } else if (scanning) {
@@ -92,11 +115,6 @@ bool RecursiveFsIterator::IsDirectory() { return cleanup; }
 
 void RecursiveFsIterator::ReadCurrent(read_callback cb) {
     if (state != State::valid || cleanup) return;
-
-    if (!scanning && fatfsDelegate.f_stat(entryFullPath.c_str(), &filinfo) != FR_OK) {
-        state = State::error;
-        return;
-    }
 
     unique_ptr<uint8_t[]> buffer = make_unique<uint8_t[]>(READ_BUFFER_SIZE);
 
