@@ -5,7 +5,6 @@
 #include <iostream>
 #include <string_view>
 
-#include "AutocloseFile.h"
 #include "Defer.h"
 #include "VfsUtil.h"
 #include "fatfs/diskio.h"
@@ -134,7 +133,7 @@ bool Vfs::ReadFile(const char* path) {
 
     FIL file;
     if (f_open(&file, path, FA_READ) != FR_OK) return false;
-    AutocloseFile autoclose(&file);
+    Defer deferClose([&]() { f_close(&file); });
 
     UINT bytesRead;
     return f_read(&file, currentFileContent.get(), filinfo.fsize, &bytesRead) == FR_OK &&
