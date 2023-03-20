@@ -3,6 +3,7 @@ import createModule, {
     DeleteRecursiveContextState,
     FileEntry as FileEntryNative,
     Module,
+    PasteContextState,
     ReaddirError,
     ReaddirStatus,
     UnzipContextState,
@@ -46,6 +47,12 @@ export type ReaddirResult =
 export enum UnzipResult {
     success,
     zipfileError,
+    ioError,
+    cardFull,
+}
+
+export enum PasteResult {
+    success,
     ioError,
     cardFull,
 }
@@ -310,7 +317,8 @@ export class Vfs {
             while (true) {
                 await new Promise((resolve) => setTimeout(resolve, 0));
 
-                switch (context.GetState()) {
+                const state = context.GetState();
+                switch (state) {
                     case UnzipContextState.done:
                         return result(UnzipResult.success);
 
@@ -351,6 +359,64 @@ export class Vfs {
         } finally {
             this.module.destroy(context);
             this.vfsNative.Free(dataPtr);
+        }
+    }
+
+    async paste(
+        destination: string,
+        prefix: string,
+        items: Array<string>,
+        handlers: {
+            onFileCollision: (collisionPath: string, entry: string) => Promise<boolean>;
+            onDirectoryCollision: (collisionPath: string, entry: string) => Promise<boolean>;
+            onInvalidEntry: (entry: string) => Promise<void>;
+        }
+    ): Promise<PasteResult> {
+        const context = new this.module.PasteContest(TIMESLICE_SIZE_MSEC, destination, prefix);
+        items.forEach((item) => context.AddFile(item));
+
+        try {
+            while (true) {
+                await new Promise((resolve) => setTimeout(resolve, 0));
+
+                const state = context.GetState();
+                switch (state) {
+                    case PasteContextState.done:
+                        return PasteResult.success;
+
+                    case PasteContextState.cardFull:
+                        return PasteResult.cardFull;
+
+                    case PasteContextState.ioError:
+                        return PasteResult.ioError;
+
+                    case PasteContextState.collision:
+                        if (await handlers.onFileCollision(context.GetCollisionPath(), context.GetCurrentEntry())) {
+                            context.ContinueWithOverwrite();
+                        } else {
+                            context.Continue();
+                        }
+
+                        continue;
+
+                    case PasteContextState.collisionWithDirectory:
+                        if (
+                            await handlers.onDirectoryCollision(context.GetCollisionPath(), context.GetCurrentEntry())
+                        ) {
+                            context.ContinueWithOverwrite();
+                        } else {
+                            context.Continue();
+                        }
+
+                        continue;
+
+                    default:
+                        context.Continue();
+                        break;
+                }
+            }
+        } finally {
+            this.module.destroy(context);
         }
     }
 

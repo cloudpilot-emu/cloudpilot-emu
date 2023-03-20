@@ -137,11 +137,15 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
     }
 
     onCopyEntry(entry: FileEntry): void {
-        void this.alertService.message('Not implemented', `Copy ${entry.name}: not implemented.`);
+        if (!this.path) return;
+
+        this.vfsService.copyToClipboard(this.path, [entry.name], 'copy');
     }
 
     onCutEntry(entry: FileEntry): void {
-        void this.alertService.message('Not implemented', `Cut ${entry.name}: not implemented.`);
+        if (!this.path) return;
+
+        this.vfsService.copyToClipboard(this.path, [entry.name], 'cut');
     }
 
     @debounce()
@@ -241,11 +245,15 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
     }
 
     onCopySelection(): void {
-        void this.alertService.message('Not implemented', 'Copy selection: not implemented.');
+        if (!this.path) return;
+
+        this.vfsService.copyToClipboard(this.path, Array.from(this.selection), 'copy');
     }
 
     onCutSelection(): void {
-        void this.alertService.message('Not implemented', 'Cut selection: not implemented.');
+        if (!this.path) return;
+
+        this.vfsService.copyToClipboard(this.path, Array.from(this.selection), 'cut');
     }
 
     @debounce()

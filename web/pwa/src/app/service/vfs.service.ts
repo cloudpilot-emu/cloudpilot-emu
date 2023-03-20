@@ -1,12 +1,14 @@
 import { AlertController, LoadingController } from '@ionic/angular';
 import { Attributes, FileEntry, ReaddirError, UnzipResult, Vfs, VfsResult, WriteFileResult } from '@common/bridge/Vfs';
 import { CardOwner, StorageCardContext } from './storage-card-context';
+import { ClipboardOperation, VfsClipboard } from './../model/VfsClipboard';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { AlertService } from './alert.service';
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
+import { StorageCardService } from '@pwa/service/storage-card.service';
 import { StorageService } from '@pwa/service/storage.service';
 import deepEqual from 'deep-equal';
 import { filenameForArchive } from '@pwa/helper/filename';
@@ -17,12 +19,19 @@ export class VfsService {
     constructor(
         private storageService: StorageService,
         private storageCardContext: StorageCardContext,
-        private alertService: AlertService,
         private fileService: FileService,
         private loadingController: LoadingController,
-        private alertController: AlertController
+        private alertController: AlertController,
+        private alertService: AlertService
     ) {
         void this.vfs.then((instance) => (this.vfsInstance = instance));
+    }
+
+    setStorageCardService(storageCardService: StorageCardService): void {
+        this.storageCardService = storageCardService;
+
+        storageCardService.mountCardEvent.addHandler(this.invalidateClipboardForCard.bind(this));
+        storageCardService.deleteCardEvent.addHandler(this.invalidateClipboardForCard.bind(this));
     }
 
     normalizePath(path: string): string {
@@ -294,6 +303,36 @@ export class VfsService {
 
     getBytesTotal(): number {
         return this.bytesTotal;
+    }
+
+    idClipboardPopulated(): boolean {
+        if (!this.clipboard || !this.storageCardService) return false;
+
+        const card = this.storageCardService.getAllCards().find((c) => c.storageId === this.clipboard?.storageId);
+        if (!card) return false;
+
+        return (
+            card.status === StorageCardStatus.clean ||
+            (card.status === StorageCardStatus.dirty && !!card.dontFsckAutomatically)
+        );
+    }
+
+    invalidateClipboardForCard(card: StorageCard): void {
+        if (this.clipboard?.storageId === card.storageId) this.clipboard = undefined;
+    }
+
+    copyToClipboard(prefix: string, items: Array<string>, operation: ClipboardOperation): void {
+        if (!this.mountedCard) return;
+
+        this.clipboard = {
+            operation,
+            prefix,
+            storageId: this.mountedCard.storageId,
+            items: items.map((item) => ({
+                name: item,
+                path: this.normalizePath(`${prefix}/${item}`),
+            })),
+        };
     }
 
     async unpackArchive(zip: Uint8Array, destination: string): Promise<void> {
@@ -601,6 +640,8 @@ export class VfsService {
 
     readonly onReleaseCard = new Event<number>();
 
+    private storageCardService: StorageCardService | undefined;
+
     private mountedCard: StorageCard | undefined;
     private vfs = Vfs.create();
     private vfsInstance: Vfs | undefined;
@@ -608,4 +649,6 @@ export class VfsService {
     private directoryCache = new Map<string, Array<FileEntry>>();
     private bytesFree = 0;
     private bytesTotal = 0;
+
+    private clipboard: VfsClipboard | undefined = undefined;
 }

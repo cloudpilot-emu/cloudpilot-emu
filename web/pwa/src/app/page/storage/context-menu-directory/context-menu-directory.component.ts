@@ -1,12 +1,14 @@
 import { Component, Input } from '@angular/core';
 
+import { VfsService } from '@pwa/service/vfs.service';
+
 @Component({
     selector: 'app-context-menu-directory',
     templateUrl: './context-menu-directory.component.html',
     styleUrls: ['./context-menu-directory.component.scss'],
 })
 export class ContextMenuDirectoryComponent {
-    constructor() {}
+    constructor(public vfsService: VfsService) {}
 
     @Input()
     onStartSelection: () => void = () => undefined;

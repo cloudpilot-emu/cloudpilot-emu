@@ -6,6 +6,7 @@ import { AlertService } from './alert.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
+import { Event } from 'microevent.ts';
 import { FileService } from './file.service';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
@@ -95,6 +96,7 @@ export class StorageCardService {
         private vfsService: VfsService,
         private storageCardContext: StorageCardContext
     ) {
+        this.vfsService.setStorageCardService(this);
         void this.updateCardsFromDB().then(() => (this.loading = false));
 
         storageService.storageCardChangeEvent.addHandler(() => this.updateCardsFromDB());
@@ -308,9 +310,13 @@ export class StorageCardService {
     }
 
     async deleteCard(id: number): Promise<void> {
+        const card = this.cards.find((c) => c.id === id);
+
         await this.vfsService.releaseCard(id);
         await this.ejectCard(id);
         await this.storageService.deleteStorageCard(id);
+
+        if (card) this.deleteCardEvent.dispatch(card);
     }
 
     async saveCard(id: number, name: string): Promise<void> {
@@ -640,6 +646,8 @@ export class StorageCardService {
                 throw new Error('failed to mount card');
             }
 
+            this.mountCardEvent.dispatch(card);
+
             return card;
         } finally {
             void loader.dismiss();
@@ -658,6 +666,9 @@ export class StorageCardService {
             void loader.dismiss();
         }
     }
+
+    mountCardEvent = new Event<StorageCard>();
+    deleteCardEvent = new Event<StorageCard>();
 
     private loading = true;
 

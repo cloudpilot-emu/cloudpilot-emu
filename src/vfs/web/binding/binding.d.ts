@@ -81,6 +81,16 @@ export const enum UnzipContextState {
     cardFull = -3,
 }
 
+export const enum PasteContextState {
+    more = 0,
+    done = 1,
+    collision = 2,
+    invalidEntry = 3,
+    collisionWithDirectory = 4,
+    ioError = -1,
+    cardFull = -2,
+}
+
 export interface FileEntry {
     GetName(): string;
     IsDirectory(): boolean;
@@ -170,9 +180,9 @@ interface UnzipContext {
 interface PasteContext {
     AddFile(path: string): PasteContext;
 
-    GetState(): number;
-    Continue(): number;
-    ContinueWithOverwrite(): number;
+    GetState(): PasteContextState;
+    Continue(): PasteContextState;
+    ContinueWithOverwrite(): PasteContextState;
 
     GetCurrentEntry(): string;
     GetCollisionPath(): string;

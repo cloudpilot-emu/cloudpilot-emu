@@ -32,7 +32,7 @@ export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'> {
     destroy(context: CreateZipContext): void;
     destroy(context: DeleteRecursiveContext): void;
     destroy(context: UnzipContext): void;
-    destroy(context: PasteContext);
+    destroy(context: PasteContext): void;
 
     instantiateWasm(
         imports: WebAssembly.Imports,

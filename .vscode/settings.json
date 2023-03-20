@@ -123,7 +123,8 @@
     "unistd.h": "c",
     "hash_map": "cpp",
     "source_location": "cpp",
-    "regex": "cpp"
+    "regex": "cpp",
+    "*.inc": "cpp"
   },
   "editor.formatOnSave": true,
   "CppHelper.SourcePattern": [
