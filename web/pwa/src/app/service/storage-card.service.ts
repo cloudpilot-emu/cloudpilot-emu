@@ -442,11 +442,7 @@ export class StorageCardService {
 
                     await this.alertService.message(
                         'Uncorrectable errors',
-                        `The filesystem on this card contains uncorrectable errors. ${
-                            action === 'insert'
-                                ? 'Writing could cause further damage. Do you want to insert it nevertheless?'
-                                : 'The card will be mounted read-only in order to prevent further damage.'
-                        }`,
+                        `The filesystem on this card contains uncorrectable errors. Writing could cause further damage. Do you want to insert it nevertheless?`,
                         { 'Insert card': () => (mountNow = true) },
                         'Cancel'
                     );
