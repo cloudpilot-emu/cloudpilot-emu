@@ -278,6 +278,11 @@ export class StorageCardService {
     }
 
     async browseCard(card: StorageCard): Promise<boolean> {
+        if (this.storageCardContext.getOwner(card.id) === CardOwner.vfs) {
+            await this.vfsService.activateCard(card.id);
+            return true;
+        }
+
         const session = this.mountedInSession(card.id);
 
         if (session) {
@@ -651,8 +656,6 @@ export class StorageCardService {
     }
 
     private async mountCardForBrowsing(id: number, readonly: boolean, data?: Uint32Array): Promise<boolean> {
-        if (this.vfsService.currentCard()?.id === id) return true;
-
         const loader = await this.loadingController.create({ message: 'Mounting...' });
 
         try {

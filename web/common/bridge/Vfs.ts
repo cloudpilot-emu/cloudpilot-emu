@@ -220,6 +220,10 @@ export class Vfs {
         return this.vfsNative.Mkdir(path);
     }
 
+    switchSlot(slot: number): void {
+        this.vfsNative.SwitchSlot(slot);
+    }
+
     async createZipArchive({
         files,
         directories,

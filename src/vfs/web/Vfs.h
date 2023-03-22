@@ -29,6 +29,7 @@ class Vfs {
     void AllocateImage(unsigned int blockCount);
     bool MountImage(unsigned int slot);
     void UnmountImage(unsigned int slot);
+    void SwitchSlot(unsigned int slot);
 
     int GetPendingImageSize() const;
     int GetSize(unsigned int slot) const;

@@ -50,16 +50,36 @@ export class VfsService {
         return name === undefined ? true : !/[\/\\]/.test(name);
     }
 
+    async activateCard(id: number): Promise<void> {
+        if (this.primaryCard?.id === id) return;
+
+        if (this.secondaryCard?.id === id) {
+            this.primarySlot = this.secondarySlot;
+            await this.activatePrimaryCard();
+            console.log(`reactivating ${this.primaryCard?.storageId} in primary stlot`);
+
+            return;
+        }
+
+        throw new Error(`card ${id} not mounted in VFS`);
+    }
+
     async mountCardUnchecked(id: number, readonly: boolean, data?: Uint32Array): Promise<boolean> {
         const card = await this.storageService.getCard(id);
         if (!card) throw new Error(`no card with id ${id}`);
 
+        if (this.primaryCard?.id === id || this.secondaryCard?.id === id) {
+            throw new Error(`card ${id} already mounted in VFS`);
+        }
+
         this.storageCardContext.claim(id, CardOwner.vfs);
 
-        this.directoryCache.clear();
+        if (this.primaryCard && this.primaryCard.storageId === this.clipboard?.storageId) {
+            this.primarySlot = this.secondarySlot;
+            console.log(`keeping card ${card.storageId} mounted in secondary slot`);
+        }
 
-        if (this.mountedCard?.id === id) return true;
-        if (this.mountedCard) await this.releaseCard(this.mountedCard.id);
+        if (this.primaryCard) await this.releaseCard(this.primaryCard.id);
 
         const vfs = await this.vfs;
 
@@ -73,20 +93,25 @@ export class VfsService {
             await this.storageService.loadCardData(id, pendingImage, CardOwner.vfs);
         }
 
-        if (!vfs.mountImage(0)) return false;
+        if (!vfs.mountImage(this.primarySlot)) {
+            this.storageCardContext.release(id, CardOwner.vfs);
+            return false;
+        }
 
-        this.mountedCard = card;
-        this.bytesFree = vfs.bytesFree(0);
-        this.bytesTotal = vfs.bytesTotal(0);
+        this.primaryCard = card;
+        await this.activatePrimaryCard();
 
         return true;
     }
 
-    async releaseCard(id = this.mountedCard?.id) {
-        if (id === undefined || id !== this.mountedCard?.id) return;
+    async releaseCard(id: number): Promise<void> {
+        let slot: number;
+        if (this.primaryCard?.id === id) slot = this.primarySlot;
+        else if (this.secondaryCard?.id === id) slot = this.secondarySlot;
+        else return;
 
-        (await this.vfs).unmountImage(0);
-        this.mountedCard = undefined;
+        (await this.vfs).unmountImage(slot);
+        this.mountedCards[slot] = undefined;
 
         this.storageCardContext.release(id, CardOwner.vfs);
 
@@ -179,7 +204,7 @@ export class VfsService {
     }
 
     async archiveFiles(entries: Array<FileEntry>, prefix: string): Promise<void> {
-        if (entries.length === 0 || !this.mountedCard) return;
+        if (entries.length === 0 || !this.primaryCard) return;
 
         const loader = await this.loadingController.create({ message: 'Creating archive...' });
         await loader.present();
@@ -190,7 +215,7 @@ export class VfsService {
                 .filter((entry) => entry.isDirectory)
                 .map((entry) => this.normalizePath(entry.path));
             const files = entries.filter((entry) => !entry.isDirectory).map((entry) => this.normalizePath(entry.path));
-            const archiveName = entries.length === 1 ? `${entries[0].name}.zip` : filenameForArchive(this.mountedCard);
+            const archiveName = entries.length === 1 ? `${entries[0].name}.zip` : filenameForArchive(this.primaryCard);
 
             const { archive, failedItems } = await vfs.createZipArchive({
                 directories,
@@ -293,10 +318,6 @@ export class VfsService {
         this.directoryCache.delete(this.dirname(path));
     }
 
-    currentCard(): StorageCard | undefined {
-        return this.mountedCard;
-    }
-
     getBytesFree(): number {
         return this.bytesFree;
     }
@@ -322,12 +343,12 @@ export class VfsService {
     }
 
     copyToClipboard(prefix: string, items: Array<string>, operation: ClipboardOperation): void {
-        if (!this.mountedCard) return;
+        if (!this.primaryCard) return;
 
         this.clipboard = {
             operation,
             prefix,
-            storageId: this.mountedCard.storageId,
+            storageId: this.primaryCard.storageId,
             items: items.map((item) => ({
                 name: item,
                 path: this.normalizePath(`${prefix}/${item}`),
@@ -615,10 +636,10 @@ export class VfsService {
     }
 
     private async fatalError(message: string): Promise<void> {
-        if (!this.mountedCard) return;
+        if (!this.primaryCard) return;
 
-        await this.storageService.updateStorageCardPartial(this.mountedCard.id, { status: StorageCardStatus.dirty });
-        await this.releaseCard();
+        await this.storageService.updateStorageCardPartial(this.primaryCard.id, { status: StorageCardStatus.dirty });
+        await this.releaseCard(this.primaryCard.id);
 
         void this.alertService.errorMessage(`${message}
         <br><br>
@@ -626,23 +647,52 @@ export class VfsService {
         `);
     }
 
-    private async sync(): Promise<void> {
-        if (!this.mountedCard) return;
+    private async sync(slot = this.primarySlot): Promise<void> {
+        const card = this.mountedCards[slot];
+        if (!card) return;
         const vfs = await this.vfs;
 
-        const data = vfs.getImageInSlot(0);
-        const dirtyPages = vfs.getDirtyPagesForSlot(0);
+        const data = vfs.getImageInSlot(slot);
+        const dirtyPages = vfs.getDirtyPagesForSlot(slot);
 
         if (!data || !dirtyPages) return;
 
-        await this.storageService.updateCardData(this.mountedCard.id, data, dirtyPages, CardOwner.vfs);
+        await this.storageService.updateCardData(card.id, data, dirtyPages, CardOwner.vfs);
+    }
+
+    private async activatePrimaryCard(): Promise<void> {
+        const vfs = await this.vfs;
+
+        vfs.switchSlot(this.primarySlot);
+        this.bytesFree = vfs.bytesFree(this.primarySlot);
+        this.bytesTotal = vfs.bytesTotal(this.primarySlot);
+        this.directoryCache.clear();
+    }
+
+    private get secondarySlot(): number {
+        return 1 - this.primarySlot;
+    }
+
+    private get primaryCard(): StorageCard | undefined {
+        return this.mountedCards[this.primarySlot];
+    }
+
+    private set primaryCard(card: StorageCard | undefined) {
+        this.mountedCards[this.primarySlot] = card;
+    }
+
+    private get secondaryCard(): StorageCard | undefined {
+        return this.mountedCards[this.secondarySlot];
     }
 
     readonly onReleaseCard = new Event<number>();
 
     private storageCardService: StorageCardService | undefined;
 
-    private mountedCard: StorageCard | undefined;
+    private mountedCards = new Array<StorageCard | undefined>(2);
+
+    private primarySlot = 0;
+
     private vfs = Vfs.create();
     private vfsInstance: Vfs | undefined;
 

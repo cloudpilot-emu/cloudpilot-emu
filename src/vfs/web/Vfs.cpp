@@ -71,6 +71,12 @@ void Vfs::UnmountImage(unsigned int slot) {
     cardImages[slot].reset();
 }
 
+void Vfs::SwitchSlot(unsigned int slot) {
+    if (slot >= FF_VOLUMES) return;
+
+    f_chdrive(util::drivePrefix(slot));
+}
+
 int Vfs::GetPendingImageSize() const { return pendingImage ? pendingImageSize : -1; }
 
 int Vfs::GetSize(unsigned int slot) const {

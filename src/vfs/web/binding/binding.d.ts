@@ -107,6 +107,7 @@ export interface Vfs {
     AllocateImage(blockCount: number): void;
     MountImage(slot: number): boolean;
     UnmountImage(slot: number): void;
+    SwitchSlot(slot: number): void;
 
     GetPendingImageSize(): number;
     GetSize(slot: number): number;

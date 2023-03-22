@@ -139,7 +139,7 @@
 /  the file names to read. The maximum possible length of the read file name depends
 /  on character encoding. When LFN is not enabled, these options have no effect. */
 
-#define FF_FS_RPATH 0
+#define FF_FS_RPATH 1
 /* This option configures support for relative path.
 /
 /   0: Disable relative path and remove related functions.

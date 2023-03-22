@@ -16,6 +16,7 @@ interface Vfs {
     void AllocateImage(long blockCount);
     boolean MountImage(long slot);
     void UnmountImage(long slot);
+    void SwitchSlot(long slot);
 
     long GetPendingImageSize();
     long GetSize(long slot);
