@@ -12,6 +12,7 @@ import {
 
 import { ContextMenuFileEntryComponent } from './../context-menu-file-entry/context-menu-file-entry.component';
 import { FileEntry } from '@common/bridge/Vfs';
+import { VfsService } from '@pwa/service/vfs.service';
 
 @Component({
     selector: 'app-file-entry',
@@ -20,7 +21,11 @@ import { FileEntry } from '@common/bridge/Vfs';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FileEntryComponent implements OnChanges {
-    constructor(private actionSheetController: ActionSheetController, private popoverController: PopoverController) {}
+    constructor(
+        private actionSheetController: ActionSheetController,
+        private popoverController: PopoverController,
+        private vfsService: VfsService
+    ) {}
 
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['selecting'] && changes['selecting'].currentValue && !changes['selecting'].previousValue) {
@@ -57,6 +62,14 @@ export class FileEntryComponent implements OnChanges {
         if (this.selecting && this.selected) return 'light';
 
         return undefined;
+    }
+
+    get markedForCut(): boolean {
+        return !!this.entry && this.vfsService.isEntryInClipboard(this.entry) === 'cut';
+    }
+
+    get markedForCopy(): boolean {
+        return !!this.entry && this.vfsService.isEntryInClipboard(this.entry) === 'copy';
     }
 
     async cutOrCopyEntry(): Promise<void> {

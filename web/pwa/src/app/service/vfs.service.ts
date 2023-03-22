@@ -50,13 +50,18 @@ export class VfsService {
         return name === undefined ? true : !/[\/\\]/.test(name);
     }
 
+    isEntryInClipboard(entry: FileEntry): ClipboardOperation | undefined {
+        if (!this.clipboard || this.clipboard.storageId !== this.primaryCard?.storageId) return undefined;
+
+        return this.clipboardSet.has(entry.path) ? this.clipboard.operation : undefined;
+    }
+
     async activateCard(id: number): Promise<void> {
         if (this.primaryCard?.id === id) return;
 
         if (this.secondaryCard?.id === id) {
             this.primarySlot = this.secondarySlot;
             await this.activatePrimaryCard();
-            console.log(`reactivating ${this.primaryCard?.storageId} in primary stlot`);
 
             return;
         }
@@ -76,7 +81,6 @@ export class VfsService {
 
         if (this.primaryCard && this.primaryCard.storageId === this.clipboard?.storageId) {
             this.primarySlot = this.secondarySlot;
-            console.log(`keeping card ${card.storageId} mounted in secondary slot`);
         }
 
         if (this.primaryCard) await this.releaseCard(this.primaryCard.id);
@@ -339,7 +343,10 @@ export class VfsService {
     }
 
     invalidateClipboardForCard(card: StorageCard): void {
-        if (this.clipboard?.storageId === card.storageId) this.clipboard = undefined;
+        if (this.clipboard?.storageId === card.storageId) {
+            this.clipboard = undefined;
+            this.clipboardSet.clear();
+        }
     }
 
     copyToClipboard(prefix: string, items: Array<string>, operation: ClipboardOperation): void {
@@ -347,13 +354,17 @@ export class VfsService {
 
         this.clipboard = {
             operation,
-            prefix,
+            prefix: this.normalizePath(prefix),
             storageId: this.primaryCard.storageId,
             items: items.map((item) => ({
                 name: item,
                 path: this.normalizePath(`${prefix}/${item}`),
             })),
         };
+
+        this.clipboardSet.clear();
+        this.clipboard.items.map((item) => item.path).forEach((item) => this.clipboardSet.add(item));
+        this.directoryCache.delete(this.clipboard.prefix);
     }
 
     async unpackArchive(zip: Uint8Array, destination: string): Promise<void> {
@@ -701,4 +712,5 @@ export class VfsService {
     private bytesTotal = 0;
 
     private clipboard: VfsClipboard | undefined = undefined;
+    private clipboardSet = new Set<string>();
 }
