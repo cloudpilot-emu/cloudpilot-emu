@@ -90,6 +90,8 @@ GenericCopyContext::State GenericCopyContext::ContinueWithOverwrite() {
 
 void GenericCopyContext::OnAfterCopy() {}
 
+bool GenericCopyContext::SkipCurrentEntry() { return false; }
+
 const char* GenericCopyContext::GetCurrentEntry() const { return currentEntry.c_str(); }
 
 const char* GenericCopyContext::GetCollisionPath() const { return collisionPath.c_str(); }
@@ -145,6 +147,8 @@ void GenericCopyContext::ExecuteSlice() {
 
     currentEntry = iterator->GetCurrentEntry();
     currentPath = util::normalizePath(destination + "/" + currentEntry);
+
+    if (SkipCurrentEntry()) return;
 
     if (iterator->IsDirectory()) {
         MkdirRecursive(currentPath);

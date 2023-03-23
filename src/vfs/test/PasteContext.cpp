@@ -241,31 +241,7 @@ namespace {
         FSFixture::CreateFile("/prefix/foo/bar.txt", "world");
         FSFixture::CreateFile("/prefix/bar/bazinga.txt", "bazinga");
 
-        PasteContext context(10, "/prefix/bar", "/prefix");
-        context.AddFile("foo.txt").AddFile("foo").AddFile("bar").SetDeleteAfterCopy(true);
-
-        RunUntilInterruption(context);
-        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
-
-        AssertFileDoesNotExist("/prefix/foo.txt");
-        AssertFileDoesNotExist("/prefix/foo");
-        AssertFileExistsWithContent("/prefix/bar/foo.txt", "Hello");
-        AssertFileExistsWithContent("/prefix/bar/foo/bar.txt", "world");
-        AssertFileExistsWithContent("/prefix/bar/bazinga.txt", "bazinga");
-        AssertFileDoesNotExist("/prefix/bar/bar");
-    }
-
-    TEST_F(PasteContextTest,
-           itDoesNotAttemptToCopyParentsToChildrenAndDrivePrefixIsHandledCorrectly) {
-        f_mkdir("/prefix");
-        f_mkdir("/prefix/foo");
-        f_mkdir("/prefix/bar");
-        f_mkdir("/prefix/bar/baz");
-        FSFixture::CreateFile("/prefix/foo.txt", "Hello");
-        FSFixture::CreateFile("/prefix/foo/bar.txt", "world");
-        FSFixture::CreateFile("/prefix/bar/bazinga.txt", "bazinga");
-
-        PasteContext context(10, "/prefix/bar", "0:/prefix");
+        PasteContext context(10, "0:/prefix/bar", "0:/prefix");
         context.AddFile("foo.txt").AddFile("foo").AddFile("bar").SetDeleteAfterCopy(true);
 
         RunUntilInterruption(context);
@@ -296,6 +272,19 @@ namespace {
         AssertFileDoesNotExist("/prefix/bar");
         AssertFileExistsWithContent("/prefix/bara/foo.txt", "Hello");
         AssertFileExistsWithContent("/prefix/bara/bar/bazinga.txt", "bazinga");
+    }
+
+    TEST_F(PasteContextTest, itDoesNotTryToOverwriteTheSameFile) {
+        f_mkdir("/prefix");
+        FSFixture::CreateFile("/prefix/foo.txt", "Hello");
+
+        PasteContext context(10, "0:/prefix", "0:/prefix");
+        context.AddFile("foo.txt");
+
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
+
+        AssertFileExistsWithContent("/prefix/foo.txt", "Hello");
     }
 
 }  // namespace

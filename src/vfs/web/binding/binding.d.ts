@@ -180,6 +180,7 @@ interface UnzipContext {
 
 interface PasteContext {
     AddFile(path: string): PasteContext;
+    SetDeleteAfterCopy(deleteAfterCopy: boolean): PasteContext;
 
     GetState(): PasteContextState;
     Continue(): PasteContextState;

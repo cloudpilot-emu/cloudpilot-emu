@@ -6,21 +6,14 @@ using namespace std;
 
 namespace {
     FatfsDelegate defaultFatfsDelegate;
-
-    string qualifyPath(const string& path) {
-        string qualifiedPath = util::normalizePath(path);
-        if (qualifiedPath.size() >= 2 && path[1] != ':') qualifiedPath = "0:" + qualifiedPath;
-
-        return qualifiedPath;
-    }
 }  // namespace
 
 PasteContext::PasteContext(uint32_t timesliceMilliseconds, const char* destination,
                            const char* prefix, FatfsDelegate& fatfsDelegate)
     : GenericCopyContext(timesliceMilliseconds, destination, fatfsDelegate),
-      iterator(fatfsDelegate, qualifyPath(prefix)),
+      iterator(fatfsDelegate, util::normalizePath(prefix)),
       fatfsDelegate(fatfsDelegate),
-      destination(qualifyPath(destination)) {
+      destination(util::normalizePath(destination)) {
     iterator.SetSkipDirectory([&](const string& path) {
         if (this->destination.find(path) != 0) return false;
 
@@ -89,4 +82,8 @@ void PasteContext::OnAfterCopy() {
     FRESULT result = fatfsDelegate.f_unlink(iterator.GetFullPath().c_str());
 
     deleteFailed = result != FR_OK && result != FR_DENIED;
+}
+
+bool PasteContext::SkipCurrentEntry() {
+    return util::normalizePath(currentPath) == util::normalizePath(iterator.GetFullPath());
 }

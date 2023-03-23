@@ -179,8 +179,9 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         this.fileService.openFile(this.extractZipArchive.bind(this));
     }
 
-    onPaste(): void {
-        void this.alertService.message('Not implemented', 'Paste: not implemented.');
+    @debounce()
+    async onPaste(): Promise<void> {
+        if (this.path) await this.vfsService.paste(this.path);
     }
 
     onHelp(): void {

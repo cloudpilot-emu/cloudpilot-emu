@@ -100,6 +100,7 @@ interface PasteContext {
     void PasteContext(long timesliceMilliseconds, [Const] DOMString destination, [Const] DOMString prefix);
 
     [Ref] PasteContext AddFile([Const] DOMString path);
+    [Ref] PasteContext SetDeleteAfterCopy(boolean deleteAfterCopy);
 
     long GetState();
     long Continue();

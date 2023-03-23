@@ -15,7 +15,7 @@
     <ion-icon name="download-outline" slot="end"></ion-icon>
     Extract zip
   </ion-item>
-  <ion-item lines="full" button [detail]="false" (click)="onPaste()" [disabled]="!vfsService.idClipboardPopulated()">
+  <ion-item lines="full" button [detail]="false" (click)="onPaste()" [disabled]="!vfsService.isClipboardPopulated()">
     <ion-icon name="clipboard-outline" slot="end"></ion-icon>
     Paste
   </ion-item>

@@ -43,6 +43,7 @@ class GenericCopyContext {
     State ContinueWithOverwrite();
 
     virtual void OnAfterCopy();
+    virtual bool SkipCurrentEntry();
 
    private:
     void ExecuteSlice();
@@ -50,6 +51,11 @@ class GenericCopyContext {
     void RemoveConflictingFile();
     void CopyCurrentEntry();
     void MkdirRecursive(std::string path);
+
+   protected:
+    std::string currentEntry;
+    std::string currentPath;
+    std::string collisionPath;
 
    private:
     FatfsDelegate& fatfsDelegate;
@@ -61,10 +67,6 @@ class GenericCopyContext {
     uint32_t entriesSuccess{0};
 
     State state{State::more};
-
-    std::string currentEntry;
-    std::string currentPath;
-    std::string collisionPath;
 
     std::map<std::string, bool> visitedDirectories;
 

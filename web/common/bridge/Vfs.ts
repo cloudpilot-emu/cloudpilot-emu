@@ -370,14 +370,15 @@ export class Vfs {
         destination: string,
         prefix: string,
         items: Array<string>,
+        mode: 'cut' | 'copy',
         handlers: {
             onFileCollision: (collisionPath: string, entry: string) => Promise<boolean>;
             onDirectoryCollision: (collisionPath: string, entry: string) => Promise<boolean>;
-            onInvalidEntry: (entry: string) => Promise<void>;
         }
     ): Promise<PasteResult> {
-        const context = new this.module.PasteContest(TIMESLICE_SIZE_MSEC, destination, prefix);
+        const context = new this.module.PasteContext(TIMESLICE_SIZE_MSEC, destination, prefix);
         items.forEach((item) => context.AddFile(item));
+        context.SetDeleteAfterCopy(mode === 'cut');
 
         try {
             while (true) {

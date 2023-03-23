@@ -32,6 +32,7 @@ class PasteContext : public GenericCopyContext {
 
    protected:
     void OnAfterCopy() override;
+    bool SkipCurrentEntry() override;
 
    private:
     RecursiveFsIterator iterator;

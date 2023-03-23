@@ -23,7 +23,7 @@ export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'> {
     UnzipContext: {
         new (timesliceMilliseconds: number, destination: string, data: VoidPtr, size: number): UnzipContext;
     };
-    PasteContest: {
+    PasteContext: {
         new (timesliceMilliseconds: number, destination: string, prefix: string): PasteContext;
     };
 

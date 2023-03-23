@@ -315,13 +315,20 @@ export class StorageCardService {
     }
 
     async deleteCard(id: number): Promise<void> {
-        const card = this.cards.find((c) => c.id === id);
+        const loader = await this.loadingController.create();
+        await loader.present();
 
-        await this.vfsService.releaseCard(id);
-        await this.ejectCard(id);
-        await this.storageService.deleteStorageCard(id);
+        try {
+            const card = this.cards.find((c) => c.id === id);
 
-        if (card) this.deleteCardEvent.dispatch(card);
+            await this.vfsService.releaseCard(id);
+            await this.ejectCard(id);
+            await this.storageService.deleteStorageCard(id);
+
+            if (card) this.deleteCardEvent.dispatch(card);
+        } finally {
+            void loader.dismiss();
+        }
     }
 
     async saveCard(id: number, name: string): Promise<void> {

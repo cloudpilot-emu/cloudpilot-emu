@@ -8,6 +8,7 @@ import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 import { AlertService } from './alert.service';
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
+import { PasteResult } from './../../../../common/bridge/Vfs';
 import { StorageCardService } from '@pwa/service/storage-card.service';
 import { StorageService } from '@pwa/service/storage.service';
 import deepEqual from 'deep-equal';
@@ -266,8 +267,9 @@ export class VfsService {
             return;
         }
 
-        this.directoryCache.delete(this.dirname(entry.path));
+        await this.updateBytesFree();
         await this.sync();
+        this.directoryCache.delete(this.dirname(entry.path));
     }
 
     async deleteRecursive(entries: Array<FileEntry>): Promise<void> {
@@ -287,8 +289,9 @@ export class VfsService {
                 return;
             }
 
-            entries.map((entry) => entry.path).forEach((path) => this.directoryCache.delete(this.dirname(path)));
+            await this.updateBytesFree();
             await this.sync();
+            entries.map((entry) => entry.path).forEach((path) => this.directoryCache.delete(this.dirname(path)));
         } finally {
             await loader.dismiss();
         }
@@ -318,6 +321,7 @@ export class VfsService {
                 return;
         }
 
+        await this.updateBytesFree();
         await this.sync();
         this.directoryCache.delete(this.dirname(path));
     }
@@ -330,7 +334,7 @@ export class VfsService {
         return this.bytesTotal;
     }
 
-    idClipboardPopulated(): boolean {
+    isClipboardPopulated(): boolean {
         if (!this.clipboard || !this.storageCardService) return false;
 
         const card = this.storageCardService.getAllCards().find((c) => c.storageId === this.clipboard?.storageId);
@@ -352,6 +356,8 @@ export class VfsService {
     copyToClipboard(prefix: string, items: Array<string>, operation: ClipboardOperation): void {
         if (!this.primaryCard) return;
 
+        if (this.clipboard) this.directoryCache.delete(this.normalizePath(this.clipboard.prefix));
+
         this.clipboard = {
             operation,
             prefix: this.normalizePath(prefix),
@@ -364,7 +370,7 @@ export class VfsService {
 
         this.clipboardSet.clear();
         this.clipboard.items.map((item) => item.path).forEach((item) => this.clipboardSet.add(item));
-        this.directoryCache.delete(this.clipboard.prefix);
+        this.directoryCache.delete(this.normalizePath(this.clipboard.prefix));
     }
 
     async unpackArchive(zip: Uint8Array, destination: string): Promise<void> {
@@ -428,6 +434,35 @@ export class VfsService {
                 `
                 );
             }
+        } finally {
+            void loader.dismiss();
+        }
+    }
+
+    async paste(destination: string): Promise<void> {
+        if (!this.isClipboardPopulated()) return;
+
+        const loader = await this.loadingController.create();
+        await loader.present();
+        try {
+            const result = await this.pasteUnchecked(destination);
+
+            await loader.dismiss();
+
+            switch (result) {
+                case PasteResult.cardFull:
+                    await this.alertService.message('No space left', 'No space left on card.');
+                    break;
+
+                case PasteResult.ioError:
+                    await this.fatalError('There was an error writing to the card.');
+                    return;
+
+                default:
+                    break;
+            }
+        } catch (e: any) {
+            await this.alertService.errorMessage(e?.message || 'Unknown error.');
         } finally {
             void loader.dismiss();
         }
@@ -547,24 +582,23 @@ export class VfsService {
             }
         }
 
+        await this.updateBytesFree();
         await this.sync();
         this.directoryCache.delete(this.normalizePath(destination));
 
         return failed;
     }
 
-    private async unpackArchiveUnchecked(
-        zip: Uint8Array,
-        destination: string
-    ): Promise<{ result: UnzipResult; entriesTotal: number; entriesSuccess: number }> {
-        const vfs = await this.vfs;
-
+    private collisionHandlers(): {
+        onFileCollision: (collisionPath: string, entry: string) => Promise<boolean>;
+        onDirectoryCollision: (collisionPath: string, entry: string) => Promise<boolean>;
+    } {
         let overwriteFiles = false;
         let rememberChoiceFiles = false;
         let overwriteDirectory = false;
         let rememberChoiceDirectories = false;
 
-        const result = await vfs.unzipArchive(this.normalizePath(destination), zip, {
+        return {
             onFileCollision: async (collisionPath: string) => {
                 if (rememberChoiceFiles) return overwriteFiles;
 
@@ -583,17 +617,98 @@ export class VfsService {
 
                 return overwriteDirectory;
             },
+        };
+    }
+
+    private async unpackArchiveUnchecked(
+        zip: Uint8Array,
+        destination: string
+    ): Promise<{ result: UnzipResult; entriesTotal: number; entriesSuccess: number }> {
+        const vfs = await this.vfs;
+
+        const result = await vfs.unzipArchive(this.normalizePath(destination), zip, {
+            ...this.collisionHandlers(),
             onInvalidEntry: async (entry: string) => {
                 await this.alertService.message('Invalid entry', `Could not extract ${entry}`, {}, 'Continue');
             },
         });
 
         if (result.result !== UnzipResult.ioError) {
+            await this.updateBytesFree();
             await this.sync();
             this.directoryCache.delete(this.normalizePath(destination));
         }
 
         return result;
+    }
+
+    private async pasteUnchecked(destination: string): Promise<PasteResult> {
+        if (!this.clipboard || !this.primaryCard) {
+            throw new Error('invalid state for paste');
+        }
+
+        const sourceSlot = await this.mountClipboard();
+
+        const vfs = await this.vfs;
+        const result = await vfs.paste(
+            `${this.primarySlot}:${this.normalizePath(destination)}`,
+            `${sourceSlot}:${this.normalizePath(this.clipboard.prefix)}`,
+            this.clipboard.items.map((item) => item.name),
+            this.clipboard.operation,
+            this.collisionHandlers()
+        );
+
+        if (result === PasteResult.ioError) return result;
+
+        await this.updateBytesFree();
+        await this.sync(this.primarySlot);
+        if (sourceSlot !== this.primarySlot) await this.sync(sourceSlot);
+
+        this.directoryCache.delete(this.normalizePath(destination));
+        if (this.clipboard.storageId === this.primaryCard.storageId) {
+            this.directoryCache.delete(this.normalizePath(this.clipboard.prefix));
+        }
+
+        if (this.clipboard.operation === 'cut') {
+            this.clipboard = undefined;
+            this.clipboardSet.clear();
+        }
+
+        return result;
+    }
+
+    private async mountClipboard(): Promise<number> {
+        if (!this.clipboard || !this.primaryCard || !this.storageCardService) {
+            throw new Error('invalid state for paste');
+        }
+
+        if (this.clipboard.storageId === this.primaryCard.storageId) return this.primarySlot;
+        if (this.secondaryCard && this.clipboard.storageId === this.secondaryCard.storageId) return this.secondarySlot;
+        if (this.secondaryCard) await this.releaseCard(this.secondaryCard.id);
+
+        const card = this.storageCardService.getAllCards().find((card) => card.storageId === this.clipboard?.storageId);
+
+        if (!card) {
+            throw new Error('invalid storage card in clipboard');
+        }
+
+        const vfs = await this.vfs;
+
+        vfs.allocateImage(card.size);
+        const pendingImage = vfs.getPendingImage();
+        if (!pendingImage) throw new Error('failed to allocate image');
+
+        this.storageCardContext.claim(card.id, CardOwner.vfs);
+
+        await this.storageService.loadCardData(card.id, pendingImage, CardOwner.vfs);
+        if (!vfs.mountImage(this.secondarySlot)) {
+            this.storageCardContext.release(card.id, CardOwner.vfs);
+            throw new Error('unable to mount card');
+        }
+
+        this.secondaryCard = card;
+
+        return this.secondarySlot;
     }
 
     private async overwriteFileDialog(
@@ -669,6 +784,8 @@ export class VfsService {
         if (!data || !dirtyPages) return;
 
         await this.storageService.updateCardData(card.id, data, dirtyPages, CardOwner.vfs);
+
+        dirtyPages.fill(0);
     }
 
     private async activatePrimaryCard(): Promise<void> {
@@ -678,6 +795,10 @@ export class VfsService {
         this.bytesFree = vfs.bytesFree(this.primarySlot);
         this.bytesTotal = vfs.bytesTotal(this.primarySlot);
         this.directoryCache.clear();
+    }
+
+    private async updateBytesFree(): Promise<void> {
+        this.bytesFree = (await this.vfs).bytesFree(this.primarySlot);
     }
 
     private get secondarySlot(): number {
@@ -694,6 +815,10 @@ export class VfsService {
 
     private get secondaryCard(): StorageCard | undefined {
         return this.mountedCards[this.secondarySlot];
+    }
+
+    private set secondaryCard(card: StorageCard | undefined) {
+        this.mountedCards[this.secondarySlot] = card;
     }
 
     readonly onReleaseCard = new Event<number>();

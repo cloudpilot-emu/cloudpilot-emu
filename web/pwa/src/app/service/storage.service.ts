@@ -460,7 +460,9 @@ export class StorageService {
 
     @guard()
     async newTransaction(...stores: Array<string>): Promise<IDBTransaction> {
-        const tx = (await this.db).transaction([OBJECT_STORE_LOCK, ...stores], 'readwrite');
+        const tx = (await this.db).transaction([OBJECT_STORE_LOCK, ...stores], 'readwrite', {
+            durability: 'relaxed',
+        });
         await this.acquireLock(tx);
 
         return tx;

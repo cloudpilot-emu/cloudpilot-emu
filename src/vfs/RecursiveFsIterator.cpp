@@ -52,7 +52,7 @@ RecursiveFsIterator::State RecursiveFsIterator::Next() {
 
                 default:
                     state = State::error;
-                    failingPath = AmputatePrefix(files.back());
+                    failingPath = AmputatePrefix(fullPath);
 
                     return state;
             }
