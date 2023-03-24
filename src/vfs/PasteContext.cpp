@@ -6,6 +6,12 @@ using namespace std;
 
 namespace {
     FatfsDelegate defaultFatfsDelegate;
+
+    bool isParentOf(const string& parent, const string& child) {
+        if (child.find(parent) != 0) return false;
+
+        return child.size() == parent.size() || child[parent.size()] == '/';
+    }
 }  // namespace
 
 PasteContext::PasteContext(uint32_t timesliceMilliseconds, const char* destination,
@@ -14,12 +20,8 @@ PasteContext::PasteContext(uint32_t timesliceMilliseconds, const char* destinati
       iterator(fatfsDelegate, util::normalizePath(prefix)),
       fatfsDelegate(fatfsDelegate),
       destination(util::normalizePath(destination)) {
-    iterator.SetSkipDirectory([&](const string& path) {
-        if (this->destination.find(path) != 0) return false;
-
-        return (this->destination.size() == path.size() ||
-                this->destination[path.size() + 1] == '/');
-    });
+    iterator.SetSkipDirectory(
+        [&](const string& path) { return isParentOf(path, this->destination); });
     Initialize(&iterator);
 }
 
@@ -48,6 +50,8 @@ int PasteContext::GetState() const {
             return static_cast<int>(State::collision);
 
         case GenericCopyContext::State::collisionWithDirectory:
+            if (isParentOf(currentPath, iterator.GetFullPath()))
+                return static_cast<int>(State::more);
             return static_cast<int>(State::collisionWithDirectory);
 
         case GenericCopyContext::State::done:
@@ -71,8 +75,10 @@ int PasteContext::Continue() {
 }
 
 int PasteContext::ContinueWithOverwrite() {
-    if (!deleteFailed) GenericCopyContext::ContinueWithOverwrite();
+    if (deleteFailed) return GetState();
+    if (isParentOf(currentPath, iterator.GetFullPath())) return Continue();
 
+    GenericCopyContext::ContinueWithOverwrite();
     return GetState();
 }
 

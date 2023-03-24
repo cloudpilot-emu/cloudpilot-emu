@@ -142,7 +142,7 @@ void RecursiveFsIterator::ReadCurrent(read_callback cb) {
     if (bytesReadTotal != filinfo.fsize) state = State::error;
 }
 
-std::string RecursiveFsIterator::GetFullPath() { return entryFullPath; }
+std::string RecursiveFsIterator::GetFullPath() const { return entryFullPath; }
 
 void RecursiveFsIterator::CloseDir() {
     if (!scanning) return;

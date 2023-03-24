@@ -26,7 +26,7 @@ class RecursiveFsIterator : public VfsIterator {
     bool IsDirectory() override;
     void ReadCurrent(read_callback cb) override;
 
-    std::string GetFullPath();
+    std::string GetFullPath() const;
 
    private:
     void CloseDir();

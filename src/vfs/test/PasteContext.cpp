@@ -255,6 +255,29 @@ namespace {
         AssertFileDoesNotExist("/prefix/bar/bar");
     }
 
+    TEST_F(PasteContextTest, itDoesNotAttemptToCopyParentsToGrandChildren) {
+        f_mkdir("/prefix");
+        f_mkdir("/prefix/foo");
+        f_mkdir("/prefix/bar");
+        f_mkdir("/prefix/bar/baz");
+        FSFixture::CreateFile("/prefix/foo.txt", "Hello");
+        FSFixture::CreateFile("/prefix/foo/bar.txt", "world");
+        FSFixture::CreateFile("/prefix/bar/baz/bazinga.txt", "bazinga");
+
+        PasteContext context(10, "0:/prefix/bar/baz", "0:/prefix");
+        context.AddFile("foo.txt").AddFile("foo").AddFile("bar").SetDeleteAfterCopy(true);
+
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
+
+        AssertFileDoesNotExist("/prefix/foo.txt");
+        AssertFileDoesNotExist("/prefix/foo");
+        AssertFileExistsWithContent("/prefix/bar/baz/foo.txt", "Hello");
+        AssertFileExistsWithContent("/prefix/bar/baz/foo/bar.txt", "world");
+        AssertFileExistsWithContent("/prefix/bar/baz/bazinga.txt", "bazinga");
+        AssertFileDoesNotExist("/prefix/bar/baz/barbar");
+    }
+
     TEST_F(PasteContextTest, overlapDetectionCorrectlyHandlesFalseFriends) {
         f_mkdir("/prefix");
         f_mkdir("/prefix/bara");
@@ -287,4 +310,21 @@ namespace {
         AssertFileExistsWithContent("/prefix/foo.txt", "Hello");
     }
 
+    TEST_F(PasteContextTest, itDoesNotDeleteACollidingFilesParentDirectory) {
+        f_mkdir("/foo");
+        f_mkdir("/foo/foo");
+        f_mkdir("/foo/foo/foo");
+        FSFixture::CreateFile("/foo/foo/foo/foo", "Hello");
+        FSFixture::CreateFile("/foo/foo/foo/bar", "world");
+
+        PasteContext context(10, "/", "/foo");
+        context.AddFile("foo");
+
+        RunUntilInterruption(context);
+        ASSERT_EQ(context.GetState(), static_cast<int>(PasteContext::State::done));
+
+        AssertFileExistsWithContent("/foo/foo/foo/foo", "Hello");
+        AssertFileExistsWithContent("/foo/foo/foo/bar", "world");
+        AssertFileExistsWithContent("/foo/foo/bar", "world");
+    }
 }  // namespace

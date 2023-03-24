@@ -429,7 +429,7 @@ export class VfsService {
                     ${status}
                     <br><br>
                     ${ucFirst(pluralize(entriesSuccess))} unpacked succesfully, but ${pluralize(
-                        entriesSuccess
+                        entriesFailed
                     )} could not be unpacked.
                 `
                 );
@@ -636,7 +636,7 @@ export class VfsService {
         if (result.result !== UnzipResult.ioError) {
             await this.updateBytesFree();
             await this.sync();
-            this.directoryCache.delete(this.normalizePath(destination));
+            this.directoryCache.clear();
         }
 
         return result;
@@ -664,10 +664,7 @@ export class VfsService {
         await this.sync(this.primarySlot);
         if (sourceSlot !== this.primarySlot) await this.sync(sourceSlot);
 
-        this.directoryCache.delete(this.normalizePath(destination));
-        if (this.clipboard.storageId === this.primaryCard.storageId) {
-            this.directoryCache.delete(this.normalizePath(this.clipboard.prefix));
-        }
+        this.directoryCache.clear();
 
         if (this.clipboard.operation === 'cut') {
             this.clipboard = undefined;
