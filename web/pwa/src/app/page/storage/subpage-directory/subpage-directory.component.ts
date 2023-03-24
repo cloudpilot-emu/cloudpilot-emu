@@ -298,7 +298,7 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         void popover.present();
     }
 
-    async openContextMenu(e: MouseEvent): Promise<void> {
+    async openContextMenu(e: MouseEvent, reference: 'event' | 'trigger'): Promise<void> {
         const popover = await this.popoverController.create({
             component: ContextMenuDirectoryComponent,
             componentProps: {
@@ -313,6 +313,7 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
             event: e,
             dismissOnSelect: true,
             arrow: false,
+            reference,
         });
 
         void popover.present();

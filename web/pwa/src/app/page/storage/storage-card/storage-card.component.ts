@@ -31,6 +31,7 @@ export class StorageCardComponent {
                 onCheck: () => this.check.emit(),
                 onDelete: () => this.delete.emit(),
             },
+            reference: 'event',
         });
 
         void popover.present();

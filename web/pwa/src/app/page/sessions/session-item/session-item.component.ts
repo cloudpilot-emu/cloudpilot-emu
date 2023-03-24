@@ -36,6 +36,7 @@ export class SessionItemComponent {
                 onDelete: () => this.delete.emit(),
                 onReset: () => this.resetSession.emit(),
             },
+            reference: 'event',
         });
 
         void popover.present();

@@ -52,6 +52,7 @@ export class FileEntryComponent implements OnChanges {
                 onCut: () => this.cutEntry.emit(this.entry),
                 onDelete: () => this.deleteEntry.emit(this.entry),
             },
+            reference: 'event',
         });
 
         void popover.present();

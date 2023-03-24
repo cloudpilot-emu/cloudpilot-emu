@@ -10,7 +10,7 @@
     </ion-buttons>
 
     <ion-buttons slot="primary">
-      <ion-button (click)="openContextMenu($event)">
+      <ion-button (click)="openContextMenu($event, 'trigger')">
         <ion-icon name="ellipsis-vertical-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -33,7 +33,7 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content>
+<ion-content (contextmenu)="$event.preventDefault(); openContextMenu($event, 'event')">
 
   <div class="container">
     <div *ngIf="entries?.length === 0" class="placeholder-wrapper">
