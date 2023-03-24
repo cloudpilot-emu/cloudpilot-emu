@@ -455,7 +455,7 @@ export class VfsService {
                     break;
 
                 case PasteResult.ioError:
-                    await this.fatalError('There was an error writing to the card.');
+                    await this.fatalError('There was an error copying files to the card.');
                     return;
 
                 default:
