@@ -13,7 +13,8 @@ Palm OS looks for files in very specific locations:
 ## Working with Files
 The contextual menu provides a number of options for working with files on the virtual card:
 
-* To upload a file into the card, bring up the contextual menu (three dots), and choose 'upload file' or 'upload folder'.
+* To upload a file into the card, bring up the contextual menu (three dots), and choose 'Add file'.
+* To create a new folder, choose 'Add directory'.
 * The contextual menu also allows you to select multiple files, and to both create and unpack zip files.
 * To download a specific file from the virtual card to your host machine, right click on the file in the file explorer, and choose 'save'.
 * To delete, cut, copy and paste files, right click on a file, and choose the appropriate option.
