@@ -121,6 +121,14 @@ On iOS, muting the phone also mutes audio from the emulator. Occasionally the au
 may glitch and stay off after resuming CloudpilotEmu from the background due to browser
 bugs. You can reenable audio by turning it off and on again.
 
+# Memory cards
+
+Virtual storage cards can be attached to devices that have a SD card or a memory stick
+slot by choosing the corresponding option from the menu. Ejecting works the same way.
+
+**Important**: Ejecting a card while PalmOS is accessing it may result in file system
+corruption. The best place to eject a card is the launcher.
+
 # Session settings
 
 The "Settings" option from the menu gives you access to the session settings. The settings are

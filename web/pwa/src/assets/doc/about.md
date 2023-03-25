@@ -45,6 +45,11 @@ previously saved session snapshot.
 
 The emulation tab hosts the emulated device.
 
+### Storage cards tab
+
+The cards tab allows you to create and manage virtual storage cards that can be
+attached to many PalmOS devices as either SD cards or memory sticks.
+
 ### Settings tab
 
 The settings tab allows you to adjust the emulator settings.
@@ -66,6 +71,14 @@ CloudpilotEmu can connect the virtual PalmOS device to the network via
 a proxy server. This configuration supports network hotsync. Please check the
 [online documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/networking.md)
 for detailed instructions.
+
+# SD cards and memory sticks
+
+Many PalmOS devices support removable storage in the for of either SD
+cards or memory sticks. CloudpilotEmu allows you to create virtual
+memory cards that can be attached as eihter SD cards or memory sticks
+to devices that had the corresponding slots. Please see the help on the
+"Cards" tab for more details.
 
 # Backing up your virtual devices
 
@@ -150,9 +163,10 @@ In order to force check for an update terminate and restart the app.
 -   Tungsten W, i705, PEG-T650C and PEG-NR70 cannot enter and exit sleep correctly,
     and the corresponding functionality has been disabled.
 -   On Clié devices, audio is not emulated beyond the usual beeps.
--   External memory (CF card, SD card, memory stick) is not supported.
 -   The MQ-1168 video chip in PEG-NR70 series devices is not emulated beyond
     framebuffer support, 2D acceleration is not available.
+-   Formatting an unformatted memory stick in Clié devices that run PalmOS 3.x
+    locks up PalmOS.
 
 # CloudpilotEmu on the web
 
