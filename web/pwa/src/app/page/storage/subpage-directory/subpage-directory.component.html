@@ -14,6 +14,16 @@
         <ion-icon name="ellipsis-vertical-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
+	
+	<ion-buttons slot="secondary">
+      <ion-button (click)="showHelp()">
+        <ion-icon name="help-outline"></ion-icon>
+      </ion-button>
+
+      <app-pwa-prompt></app-pwa-prompt>
+    </ion-buttons>
+	
+	
   </ion-toolbar>
 
   <ion-toolbar *ngIf="mode === 'select'">
