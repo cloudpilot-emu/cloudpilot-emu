@@ -18,18 +18,29 @@ To upload a file into the card there are two options:
 
 **Please note**: folders are not able to be uploaded, it is recommended to instead zip a folder, upload, and then unzip the folder within the virtual card.
 
-## Working with Files
-The contextual menu provides a number of options for working with files on the virtual card. 
+## Working with Files & Folders
+The contextual menu provides a number of options for working with files on the virtual card.
 
-* To create a new folder, choose 'Add directory'.
-* The contextual menu also allows you to select multiple files, and to both create and unpack zip files.
-* To download a specific file from the virtual card to your host machine:
-    * On desktop: Right click on the file in the file explorer, and choose 'save'.
-    * On mobile: Swipe from right to left on the file, and choose the cyan 'share' button.
-* To delete, cut, copy and paste files:
-    * On desktop: right click on a file, and choose the appropriate option.
-    * On mobile: swipe from right to left on the file to reveal the copy/paste and delete buttons.
-* Likewise, to rename a file, right click on the file, and choose 'edit'.
+You can access the main contextual via the three dots in the top right corner of the card window
+
+The features available in the main contextual menu are:
+* Start selection - start selecting multiple files
+* Add files - upload file(s) to the card
+* Add directory - create a new folder on the card
+* Extract zip - extract a zip file on the card
+* Paste - paste a file or folder from the clipboard
+* Help - open this help page
+
+There are also a number of contextual options available for individual files and folders too. The individual contextual menu can be accessed in two ways:
+* On desktop: by right clicking on a file in the file explorer.
+* On mobile: by swiping on a file from left-to-right or right-to-left to see different options.
+
+The options available for individual files and folders are:
+
+* Edit - rename the file or folder's, or change its attributes (read-only, hidden, system)
+* Save - download the file to your host machine
+* Copy / Cut - copy or cut the file to the clipboard
+* Delete - delete the file or folder
 
 ## File Attributes
 
