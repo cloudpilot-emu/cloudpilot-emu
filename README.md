@@ -132,7 +132,7 @@ emscripten toolchain. CloudpilotEmu currently builds with 2.0.24.
 With the SDK properly set up you can build the source via
 
 ```
-    $ make -Csrc emscripten
+    $ make emscripten
 ```
 
 ### Javascript
@@ -154,6 +154,13 @@ offline operation. If you don't want the service worker you'll have to delete
 
 Note that you need to build the WASM binary (see above) before building the web
 app.
+
+If you want to do development on the frontend, you can launch a live build
+on `http://localhost:4200` by running
+
+```
+    $ yarn start
+```
 
 ## Native build
 
