@@ -17,7 +17,7 @@ CloudPilot supports the Sony MemoryStick standard, which was used on Palm OS dev
  
  **Importing a card**: Imported cards should be provided as a filesystem image. *Please note: Most images can be used as SD cards, but only very specific sizes are suitable for use as memory sticks (see 'MemoryStick Card Support' above).*
  
- **Creating a blank card**: If you choose to create a card, you will be asked to configure the size of the virtual card. *Please note: the size of the card currently cannot be changed after creation.*
+ **Creating a blank card**: If you choose to create a card, you will be asked to configure the size of the virtual card. *Please note: the size of the card cannot be changed after creation.*
 
 ### Exporting a card
 If you wish to export an image of a current card in CloudPilot:
@@ -38,12 +38,6 @@ To rename a card:
 * Desktop: right click on the card in the list, and then choose 'Edit'.
 * Mobile: swipe on the card name from left-to-right, and choose the blue 'Edit' icon.
 
-### Checking card filesystem
-To verify a card is not corrupted:
-
-* Desktop: right click on the card in the list, and choose 'Check'.
-* Mobile: swipe on the card name from right-to-left, and choose the purple 'Health' icon.
-
 ## Mounting & Ejecting Cards
 *Note: It is recommended to return to the Palm OS program launcher (home screen) before inserting or removing cards.*
 
@@ -58,3 +52,21 @@ To browse the contents of a virtual card, tap on the card in the list. See the h
 
 *Note: If the card is currently 'inserted' or 'mounted' in a virtual device, you will be prompted to eject this card before it can be browsed.*
 
+## Filesystem Health and Errors
+
+To maintain the integrity of your virtual cards, CloudPilot will automatically check the filesystem of any card that is imported or mounted, and if any errors are found, you will be prompted to attempt a filesystem repair.
+
+Please note: Formatting cards in PalmOS can produce file system errors in some cases!
+
+### Manually Checking card filesystem
+To manually verify a card is not corrupted:
+
+* Desktop: right click on the card in the list, and choose 'Check'.
+* Mobile: swipe on the card name from right-to-left, and choose the purple 'Health' icon.
+
+If any errors are detected, you will then be prompted to attempt a file system repair. 
+
+Please Note: this is not usually necessary, as CloudPilot will automatically check cards when they are inserted into the device. 
+
+### Cards containing filesystem errors
+Some original SD cards (and their images) contain filesystem errors, and in some cases you may not wish to perform a repair. For example, in some cases the presence of these errors is used as a crude copy protection mechanism, and the software will stop working if these errors are corrected (e.g. the DRM of Encyclopeadia Britannica). For this reason, there is an option on the card properties dialog to enable or disable automatic checking of cards. This option is enabled by default, but you can disable it if you wish to use cards with errors present. To access the card properties dialog, see the 'Renaming a card' section above. 

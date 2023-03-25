@@ -35,11 +35,13 @@ The contextual menu provides a number of options for working with files on the v
 
 Every file and folder on a virtual card has three file attributes:
 
-* Read-only Flag
-* Hidden Flag
-* System Flag
+* Read-only Flag - file cannot be modified
+* Hidden Flag - file is not visible in the file explorer on Palm OS.
+* System Flag - this file is a system file
 
 These attributes can be viewed in the main file list as icons on the right side of the file listing panel. 
+
+**Please note**: these flags are not respected in the file explorer, and it is still possible to modify or delete files with the read-only flag set.
 
 To modify these attributes, bring up the file edit panel:
 
