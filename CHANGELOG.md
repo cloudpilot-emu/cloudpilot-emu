@@ -1,6 +1,9 @@
 # Next version
 
--   Support for SD cards and memory stick.
+This is a major update that adds support for SD card and memory stick
+devices.
+
+-   Support for SD cards and memory sticks.
 -   File manager for memory cards.
 -   Minor UI rework and bug fixes.
 -   Support for HandEra 330c (sic!).

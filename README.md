@@ -80,7 +80,7 @@ Please report issues on the [Github tracker](https://github.com/cloudpilot-emu/c
     effects that rely on quickly modulating the audio signal may not be
     reproduced correctly.
 -   Savestates are not endian safe and can not be exchanged between big and
-    little endian systems. As long as there are not big endian system that run
+    little endian systems. As long as there are not big endian system that runs
     CloudpilotEmu that issue is probably academical :)
 -   On rare ocassions installing a prc or pdb can catch PalmOS on the wrong
     foot and crashes the emulator. This is particularly true if a file is installed
@@ -89,6 +89,8 @@ Please report issues on the [Github tracker](https://github.com/cloudpilot-emu/c
 -   Trying to enable mobile on Tungsten W will crash the emulated device.
 -   On Clié devices, audio is not emulated beyond the usual beeps.
 -   External memory (CF card, SD card, memory stick) is not supported
+-   Formatting an unformatted memory stick in Clié devices that run PalmOS 3.x
+    locks up PalmOS.
 
 # Source code and relationship to POSE
 
