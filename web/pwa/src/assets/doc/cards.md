@@ -1,9 +1,9 @@
-The 'Cards' tab allows you to manage your virtual storage cards.
+The 'Cards' tab allows you to manage your virtual memory cards.
 
 # Background
 
 Many Palm OS devices featured SD or MemoryStick card expansion ports. CloudPilot
-allows you to create and connect virtual storage cards to your emulated device,
+allows you to create and connect virtual memory cards to your emulated device,
 where this was supported by the original device.
 
 Adding an expansion card could be used for many purposes, such as storing
