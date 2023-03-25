@@ -2,13 +2,14 @@ import { ActionSheetController, Config, ModalController, PopoverController } fro
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
 
 import { AlertService } from '@pwa/service/alert.service';
-import { ContextMenuBreadcrumbComponent } from './../context-menu-breadcrumb/context-menu-breadcrumb.component';
-import { ContextMenuDirectoryComponent } from './../context-menu-directory/context-menu-directory.component';
-import { EditFileDialogComponent } from './../edit-file-dialog/edit-file-dialog.component';
-import { FileDescriptor } from './../../../service/file.service';
+import { ContextMenuBreadcrumbComponent } from '../context-menu-breadcrumb/context-menu-breadcrumb.component';
+import { ContextMenuDirectoryComponent } from '../context-menu-directory/context-menu-directory.component';
+import { EditFileDialogComponent } from '../edit-file-dialog/edit-file-dialog.component';
+import { FileDescriptor } from '../../../service/file.service';
 import { FileEntry } from '@common/bridge/Vfs';
 import { FileService } from '@pwa/service/file.service';
-import { NewDirectoryDialogComponent } from './../new-directory-dialog/new-directory-dialog.component';
+import { HelpComponent } from '@pwa/component/help/help.component';
+import { NewDirectoryDialogComponent } from '../new-directory-dialog/new-directory-dialog.component';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { VfsService } from '@pwa/service/vfs.service';
 import { changeDetector } from '@pwa/helper/changeDetect';
@@ -184,8 +185,15 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         if (this.path) await this.vfsService.paste(this.path);
     }
 
-    onHelp(): void {
-        void this.alertService.message('Not implemented', 'Help: not implemented.');
+    @debounce()
+    async onHelp(): Promise<void> {
+        const modal = await this.modalController.create({
+            component: HelpComponent,
+            componentProps: {
+                url: 'assets/doc/card-browser.md',
+            },
+        });
+        await modal.present();
     }
 
     onStartSelection(): void {

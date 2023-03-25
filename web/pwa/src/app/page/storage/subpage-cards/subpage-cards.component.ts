@@ -8,6 +8,7 @@ import { AlertService } from '@pwa/service/alert.service';
 import { CardSupportLevel } from '@common/bridge/Cloudpilot';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { ErrorService } from '@pwa/service/error.service';
+import { HelpComponent } from '@pwa/component/help/help.component';
 import { NewCardDialogComponent } from '../new-card-dialog/new-card-dialog.component';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { changeDetector } from '@pwa/helper/changeDetect';
@@ -72,7 +73,15 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         void sheet.present();
     }
 
-    showHelp(): void {}
+    async showHelp(): Promise<void> {
+        const modal = await this.modalController.create({
+            component: HelpComponent,
+            componentProps: {
+                url: 'assets/doc/cards.md',
+            },
+        });
+        await modal.present();
+    }
 
     @debounce()
     async selectCard(card: StorageCard) {

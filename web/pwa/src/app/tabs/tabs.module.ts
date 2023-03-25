@@ -6,7 +6,7 @@ import { IonicModule } from '@ionic/angular';
 import { NgModule } from '@angular/core';
 import { SessionsPageModule } from '@pwa/page/sessions/sessions.module';
 import { SettingsPageModule } from '@pwa/page/settings/settings.module';
-import { StoragePageModule } from './../page/storage/storage.module';
+import { StoragePageModule } from '@pwa/page/storage/storage.module';
 import { TabsPage } from './tabs.page';
 import { TabsPageRoutingModule } from './tabs-routing.module';
 

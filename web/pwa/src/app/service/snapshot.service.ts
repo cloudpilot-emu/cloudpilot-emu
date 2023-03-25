@@ -13,14 +13,14 @@ import { Injectable, NgZone } from '@angular/core';
 import { complete, compressPage } from './storage/util';
 
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
-import { DynamicTimeout } from './../helper/dynamicTimeout';
+import { DynamicTimeout } from '@pwa//helper/dynamicTimeout';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
-import { MemoryMetadata } from './../model/MemoryMetadata';
+import { MemoryMetadata } from '@pwa//model/MemoryMetadata';
 import { Session } from '@pwa/model/Session';
 import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
-import { StorageCard } from './../model/StorageCard';
+import { StorageCard } from '@pwa//model/StorageCard';
 
 declare global {
     interface IDBDatabase {

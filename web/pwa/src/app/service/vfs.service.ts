@@ -1,14 +1,14 @@
 import { AlertController, LoadingController } from '@ionic/angular';
 import { Attributes, FileEntry, ReaddirError, UnzipResult, Vfs, VfsResult, WriteFileResult } from '@common/bridge/Vfs';
 import { CardOwner, StorageCardContext } from './storage-card-context';
-import { ClipboardOperation, VfsClipboard } from './../model/VfsClipboard';
+import { ClipboardOperation, VfsClipboard } from '@pwa/model/VfsClipboard';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { AlertService } from './alert.service';
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
-import { PasteResult } from './../../../../common/bridge/Vfs';
+import { PasteResult } from '@common/bridge/Vfs';
 import { StorageCardService } from '@pwa/service/storage-card.service';
 import { StorageService } from '@pwa/service/storage.service';
 import deepEqual from 'deep-equal';

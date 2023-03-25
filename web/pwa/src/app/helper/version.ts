@@ -1,5 +1,5 @@
 import { REVISION } from '../../revision';
-import { environment } from './../../environments/environment';
+import { environment } from '../../environments/environment';
 import pkg from '../../../../package.json';
 
 export const VERSION = environment.releaseExtra

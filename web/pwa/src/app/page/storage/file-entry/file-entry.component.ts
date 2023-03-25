@@ -10,7 +10,7 @@ import {
     ViewChild,
 } from '@angular/core';
 
-import { ContextMenuFileEntryComponent } from './../context-menu-file-entry/context-menu-file-entry.component';
+import { ContextMenuFileEntryComponent } from '../context-menu-file-entry/context-menu-file-entry.component';
 import { FileEntry } from '@common/bridge/Vfs';
 import { VfsService } from '@pwa/service/vfs.service';
 

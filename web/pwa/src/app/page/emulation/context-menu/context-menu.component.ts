@@ -11,7 +11,7 @@ import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
-import { ErrorService } from './../../../service/error.service';
+import { ErrorService } from '@pwa/service/error.service';
 import { KvsService } from '@pwa/service/kvs.service';
 import { PalmButton } from '@common/bridge/Cloudpilot';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';

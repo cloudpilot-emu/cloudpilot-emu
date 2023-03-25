@@ -1,6 +1,6 @@
 import { AlertController, ModalController } from '@ionic/angular';
 import { ChangeDetectorRef, Component, DoCheck } from '@angular/core';
-import { DragDropClient, DragDropService } from './../../service/drag-drop.service';
+import { DragDropClient, DragDropService } from '@pwa//service/drag-drop.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { SessionSettings, SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
 

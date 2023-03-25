@@ -1,5 +1,5 @@
 import { Session } from '@pwa/model/Session';
-import { StorageCard } from './../model/StorageCard';
+import { StorageCard } from '@pwa/model/StorageCard';
 
 export function filenameFragment(prefix: string): string {
     const now = new Date();

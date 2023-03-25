@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, ViewChild } from '@angular/core';
 import { IonItemSliding, PopoverController } from '@ionic/angular';
 
-import { ContextMenuComponent } from './../context-menu/context-menu.component';
+import { ContextMenuComponent } from '../context-menu/context-menu.component';
 import { Session } from '@pwa/model/Session';
 import { decodeVersion } from '@pwa/model/OSVersion';
 import { deviceName } from '@common/helper/deviceProperties';

@@ -1,13 +1,13 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 
 import { DragDropClient } from '@pwa/service/drag-drop.service';
-import { DragDropService } from './../../service/drag-drop.service';
+import { DragDropService } from '@pwa//service/drag-drop.service';
 import { IonNav } from '@ionic/angular';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { SubpageCardsComponent } from './subpage-cards/subpage-cards.component';
 import { SubpageDirectoryComponent } from './subpage-directory/subpage-directory.component';
 import { VfsService } from '@pwa/service/vfs.service';
-import { isFirefox } from './../../../../../common/helper/browser';
+import { isFirefox } from '@common/helper/browser';
 
 @Component({
     selector: 'app-storage',

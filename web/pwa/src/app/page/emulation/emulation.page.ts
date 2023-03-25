@@ -1,5 +1,5 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
-import { DragDropClient, DragDropService } from './../../service/drag-drop.service';
+import { DragDropClient, DragDropService } from '@pwa/service/drag-drop.service';
 import { ModalController, PopoverController } from '@ionic/angular';
 
 import { AlertService } from '@pwa/service/alert.service';

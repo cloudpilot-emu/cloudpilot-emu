@@ -3,7 +3,7 @@ import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { ContextMenuCardComponent } from '../context-menu-card/context-menu-card.component';
 import { PopoverController } from '@ionic/angular';
-import { StorageCardService } from './../../../service/storage-card.service';
+import { StorageCardService } from '@pwa//service/storage-card.service';
 
 @Component({
     selector: 'app-storage-card',
