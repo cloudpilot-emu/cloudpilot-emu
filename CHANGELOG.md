@@ -1,7 +1,8 @@
 # Next version
 
-This is a major update that adds support for SD card and memory stick
-devices.
+This is a major update that adds support for SD card and memory sticks.
+Existing devices with a memory stick slot may require a reboot to start
+using the emulated memory stick hardware.
 
 -   Support for SD cards and memory sticks.
 -   File manager for memory cards.
