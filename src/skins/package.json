@@ -1,0 +1,10 @@
+{
+    "name": "skins",
+    "version": "0.0.1",
+    "author": "Christian Speckner <cnspeckn@googlemail.com>",
+    "license": "GPL-3.0-or-later",
+    "private": true,
+    "dependencies": {
+        "svgo": "^3.0.2"
+    }
+}

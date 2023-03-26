@@ -732,6 +732,21 @@ export class Cloudpilot {
         return this.cloudpilot.GetSupportLevel(size);
     }
 
+    @guard()
+    loadSkin(name: string): string | undefined {
+        const skinLoader = new this.module.SkinLoader(name);
+
+        try {
+            const dataPtr = this.module.getPointer(skinLoader.GetData());
+            if (dataPtr === 0) return undefined;
+
+            const decoder = new TextDecoder();
+            return decoder.decode(this.module.HEAPU8.subarray(dataPtr, dataPtr + skinLoader.GetSize()));
+        } finally {
+            this.module.destroy(skinLoader);
+        }
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);

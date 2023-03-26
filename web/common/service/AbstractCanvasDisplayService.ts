@@ -1,3 +1,4 @@
+import { SkinElement, SkinLoader } from './SkinLoader';
 import { deviceDimensions, isColor } from '@common/helper/deviceProperties';
 
 import { DeviceId } from '@common/model/DeviceId';
@@ -7,7 +8,6 @@ import { GRAYSCALE_PALETTE_HEX } from '@common/helper/palette';
 import { PalmButton } from '@common/bridge/Cloudpilot';
 import { PrerenderedImage } from '@common/helper/image';
 import { ScreenSize } from '@common/model/Dimensions';
-import { Skin } from '@common/skin/loader';
 
 export const DEFAULT_DEVICE = DeviceId.m515;
 const BACKGROUND_COLOR_SILKSCREEN = GRAYSCALE_PALETTE_HEX[2];
@@ -99,7 +99,7 @@ function calculateLayout(device: DeviceId): Layout {
 }
 
 export abstract class AbstractCanvasDisplayService {
-    constructor(protected skin: Skin) {}
+    constructor(protected skinLoader: SkinLoader) {}
 
     get width(): number {
         switch (this.getOrientation()) {
@@ -449,58 +449,62 @@ export abstract class AbstractCanvasDisplayService {
     }
 
     protected silkscreenImage(): PrerenderedImage {
+        return this.skinLoader.loadSkinElement(this.silkscreenSkinElement());
+    }
+
+    protected silkscreenSkinElement(): SkinElement {
         switch (this.getDeviceId()) {
             case DeviceId.pegT600c:
             case DeviceId.pegT650c:
-                return this.skin.SILKSCREEN_PEG_T600;
+                return SkinElement.SILKSCREEN_PEG_T600;
 
             case DeviceId.pegN700c:
             case DeviceId.pegN600c:
-                return this.skin.SILKSCREEN_PEG_N610;
+                return SkinElement.SILKSCREEN_PEG_N610;
 
             case DeviceId.pegS320:
             case DeviceId.pegS300:
-                return this.skin.SILKSCREEN_PEG_S300;
+                return SkinElement.SILKSCREEN_PEG_S300;
 
             case DeviceId.pegS500c:
-                return this.skin.SILKSCREEN_PEG_S500;
+                return SkinElement.SILKSCREEN_PEG_S500;
 
             case DeviceId.pegT400:
-                return this.skin.SILKSCREEN_PEG_T415;
+                return SkinElement.SILKSCREEN_PEG_T415;
 
             case DeviceId.acerS11:
-                return this.skin.SILKSCREEN_ACER_S10;
+                return SkinElement.SILKSCREEN_ACER_S10;
 
             case DeviceId.palmPilot:
             case DeviceId.pilot:
             case DeviceId.iii:
             case DeviceId.palmVII:
-                return this.skin.SILKSCREEN_PILOT;
+                return SkinElement.SILKSCREEN_PILOT;
 
             case DeviceId.m500:
-                return this.skin.SILKSCREEN_M500;
+                return SkinElement.SILKSCREEN_M500;
 
             case DeviceId.m505:
             case DeviceId.m515:
             case DeviceId.m520:
-                return this.skin.SILKSCREEN_M515;
+                return SkinElement.SILKSCREEN_M515;
 
             case DeviceId.iiic:
-                return this.skin.SILKSCREEN_IIIC;
+                return SkinElement.SILKSCREEN_IIIC;
 
             case DeviceId.m100:
             case DeviceId.m105:
             case DeviceId.m125:
-                return this.skin.SILKSCREEN_M100;
+                return SkinElement.SILKSCREEN_M100;
 
             case DeviceId.m130:
-                return this.skin.SILKSCREEN_M130;
+                return SkinElement.SILKSCREEN_M130;
 
             case DeviceId.i710:
-                return this.skin.SILKSCREEN_TUNGSTEN_W;
+                return SkinElement.SILKSCREEN_TUNGSTEN_W;
 
             case DeviceId.i705:
-                return this.skin.SILKSCREEN_I705;
+                return SkinElement.SILKSCREEN_I705;
 
             case DeviceId.iiic:
             case DeviceId.iiix:
@@ -510,65 +514,69 @@ export abstract class AbstractCanvasDisplayService {
             case DeviceId.palmVIIEZ:
             case DeviceId.palmVIIx:
             default:
-                return this.skin.SILKSCREEN_V;
+                return SkinElement.SILKSCREEN_V;
         }
     }
 
     protected buttonsImage(): PrerenderedImage {
+        return this.skinLoader.loadSkinElement(this.buttonsSkinElement());
+    }
+
+    protected buttonsSkinElement(): SkinElement {
         switch (this.getDeviceId()) {
             case DeviceId.acerS11:
-                return this.skin.HARD_BUTTONS_ACER_S10;
+                return SkinElement.HARD_BUTTONS_ACER_S10;
 
             case DeviceId.pegNR70:
-                return this.skin.HARD_BUTTONS_PEG_NR70;
+                return SkinElement.HARD_BUTTONS_PEG_NR70;
 
             case DeviceId.pegN700c:
-                return this.skin.HARD_BUTTONS_PEG_N700;
+                return SkinElement.HARD_BUTTONS_PEG_N700;
 
             case DeviceId.pegN600c:
-                return this.skin.HARD_BUTTONS_PEG_N610;
+                return SkinElement.HARD_BUTTONS_PEG_N610;
 
             case DeviceId.pegS300:
-                return this.skin.HARD_BUTTONS_PEG_S300;
+                return SkinElement.HARD_BUTTONS_PEG_S300;
 
             case DeviceId.pegS500c:
-                return this.skin.HARD_BUTTONS_PEG_S500;
+                return SkinElement.HARD_BUTTONS_PEG_S500;
 
             case DeviceId.pegS320:
-                return this.skin.HARD_BUTTONS_PEG_S320;
+                return SkinElement.HARD_BUTTONS_PEG_S320;
 
             case DeviceId.pegT400:
             case DeviceId.pegT600c:
             case DeviceId.pegT650c:
-                return this.skin.HARD_BUTTONS_PEG_T415;
+                return SkinElement.HARD_BUTTONS_PEG_T415;
 
             case DeviceId.pilot:
             case DeviceId.palmPilot:
-                return this.skin.HARD_BUTTONS_PILOT;
+                return SkinElement.HARD_BUTTONS_PILOT;
 
             case DeviceId.m500:
-                return this.skin.HARD_BUTTONS_M500;
+                return SkinElement.HARD_BUTTONS_M500;
 
             case DeviceId.m505:
             case DeviceId.m515:
             case DeviceId.m520:
-                return this.skin.HARD_BUTTONS_M515;
+                return SkinElement.HARD_BUTTONS_M515;
 
             case DeviceId.iiic:
-                return this.skin.HARD_BUTTONS_IIIC;
+                return SkinElement.HARD_BUTTONS_IIIC;
 
             case DeviceId.m100:
             case DeviceId.m105:
-                return this.skin.HARD_BUTTONS_M100;
+                return SkinElement.HARD_BUTTONS_M100;
 
             case DeviceId.m125:
-                return this.skin.HARD_BUTTONS_M125;
+                return SkinElement.HARD_BUTTONS_M125;
 
             case DeviceId.m130:
-                return this.skin.HARD_BUTTONS_M130;
+                return SkinElement.HARD_BUTTONS_M130;
 
             case DeviceId.i710:
-                return this.skin.HARD_BUTTONS_TUNGSTEN_W;
+                return SkinElement.HARD_BUTTONS_TUNGSTEN_W;
 
             case DeviceId.iii:
             case DeviceId.iiix:
@@ -576,24 +584,24 @@ export abstract class AbstractCanvasDisplayService {
             case DeviceId.palmVII:
             case DeviceId.palmVIIEZ:
             case DeviceId.palmVIIx:
-                return this.skin.HARD_BUTTONS_IIIX;
+                return SkinElement.HARD_BUTTONS_IIIX;
 
             case DeviceId.iiie:
-                return this.skin.HARD_BUTTONS_IIIE;
+                return SkinElement.HARD_BUTTONS_IIIE;
 
             case DeviceId.i705:
-                return this.skin.HARD_BUTTONS_I705;
+                return SkinElement.HARD_BUTTONS_I705;
 
             case DeviceId.handera330:
-                return this.skin.HARD_BUTTONS_HANDERA330;
+                return SkinElement.HARD_BUTTONS_HANDERA330;
 
             case DeviceId.handera330c:
-                return this.skin.HARD_BUTTONS_HANDERA330C;
+                return SkinElement.HARD_BUTTONS_HANDERA330C;
 
             case DeviceId.palmVx:
             case DeviceId.palmV:
             default:
-                return this.skin.HARD_BUTTONS_PALM_V;
+                return SkinElement.HARD_BUTTONS_PALM_V;
         }
     }
 

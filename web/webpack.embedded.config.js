@@ -26,13 +26,7 @@ module.exports = (env, argv) => ({
                     },
                 },
                 exclude: /node_modules/,
-            },
-            {
-                test: /.*\.svg/,
-                use: {
-                    loader: path.resolve(path.join(__dirname, 'webpack', 'svg-loader.js')),
-                },
-            },
+            }
         ],
     },
     resolve: {

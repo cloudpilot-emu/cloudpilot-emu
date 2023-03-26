@@ -247,3 +247,8 @@ export interface SessionImage {
 
     Deserialize(buffer: VoidPtr, size: number): boolean;
 }
+
+export interface SkinLoader {
+    GetData(): VoidPtr;
+    GetSize(): number;
+}

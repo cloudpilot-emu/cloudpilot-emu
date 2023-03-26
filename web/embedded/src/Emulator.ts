@@ -1,5 +1,3 @@
-import * as skin from '@common/skin';
-
 import { Cloudpilot, ZipfileWalkerState } from '@common/bridge/Cloudpilot';
 
 import { Button } from './index';
@@ -15,8 +13,8 @@ import { Event as EventImpl } from 'microevent.ts';
 import { EventTarget } from '@common/service/GenericEventHandlingService';
 import { Session } from './model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
+import { SkinLoader } from '@common/service/SkinLoader';
 import { Watcher } from './Watcher';
-import { loadSkin } from '@common/skin/loader';
 
 const DEFAULT_SESSION: Session = {
     hotsyncName: undefined,
@@ -312,7 +310,7 @@ export interface Emulator {
 export class EmulatorImpl implements Emulator {
     constructor(private cloudpilot: Cloudpilot) {
         this.emulationService = new EmbeddedEmulationService();
-        this.canvasDisplayService = new EmbeddedCanvasDisplayService(loadSkin(Promise.resolve(skin)));
+        this.canvasDisplayService = new EmbeddedCanvasDisplayService(new SkinLoader(Promise.resolve(cloudpilot)));
         this.eventHandlingService = new EmbeddedEventHandlingServie(this.emulationService, this.canvasDisplayService);
         this.audioService = new EmbeddedAudioService(this.emulationService);
 

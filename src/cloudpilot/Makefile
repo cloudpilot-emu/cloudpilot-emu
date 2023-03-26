@@ -73,6 +73,7 @@ MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 INCLUDE = \
 	-I../common \
 	-I../common/zip \
+	-I../skins \
 	-I./emulator/hardware \
 	-I./emulator/hardware/clie \
 	-I./emulator/hardware/handera \
@@ -270,6 +271,7 @@ SOURCE_WEB = \
 	web/main.cpp \
 	web/Cloudpilot.cpp \
 	web/RomInfo.cpp \
+	web/SkinLoader.cpp \
 	$(WEBIDL_BINDING_CXX)
 
 OBJECTS_TEST = \
@@ -285,7 +287,8 @@ OBJECTS_NATIVE = \
 OBJECTS_WEB_EMCC = \
 	$(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) \
 	$(SOURCE_WEB:%.cpp=$(BUILDDIR_EMCC)/%.o) \
-	../common/libcommon-wasm.a
+	../common/libcommon-wasm.a \
+	../skins/libskin-wasm.a
 
 BINARY_NATIVE = cloudpilot
 

@@ -5,6 +5,7 @@
 #include "Frame.h"
 #include "RomInfo.h"
 #include "SessionImage.h"
+#include "SkinLoader.h"
 #include "SuspendContextClipboardCopy.h"
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendContextNetworkConnect.h"

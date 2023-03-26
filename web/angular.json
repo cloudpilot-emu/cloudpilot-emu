@@ -11,12 +11,9 @@
       "schematics": {},
       "architect": {
         "build": {
-          "builder": "@angular-builders/custom-webpack:browser",
+          "builder": "@angular-devkit/build-angular:browser",
           "options": {
             "outputPath": "build-pwa",
-            "customWebpackConfig": {
-              "path": "./webpack.pwa.config.js"
-            },
             "index": "pwa/src/index.html",
             "main": "pwa/src/main.ts",
             "polyfills": "pwa/src/polyfills.ts",
@@ -126,7 +123,7 @@
           "defaultConfiguration": ""
         },
         "serve": {
-          "builder": "@angular-builders/custom-webpack:dev-server",
+          "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
             "browserTarget": "app:build"
           },

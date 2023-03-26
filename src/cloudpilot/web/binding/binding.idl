@@ -210,3 +210,10 @@ interface SessionImage {
 
     boolean Deserialize(VoidPtr buffer, long size);
 };
+
+interface SkinLoader {
+    void SkinLoader([Const] DOMString name);
+
+    VoidPtr GetData();
+    long GetSize();
+};
