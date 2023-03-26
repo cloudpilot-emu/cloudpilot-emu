@@ -33,7 +33,8 @@ for use as memory sticks (see 'MemoryStick Card Support' above). Imported cards
 are stored in the browser's IndexedDB and are loaded into RAM, so you should avoid
 importing cards larger than 128MB.
 
-*Suggestion: you can find several suitable [card images to try  on PalmDB](https://palmdb.net/search/MMC+image).*
+You can download dumps of original cards that were used to distribute PalmOS
+software on [PalmDB](https://palmdb.net/search/MMC+image).
 
 **Creating a blank card**: If you choose to create a card, you will be asked to
 configure the size of the virtual card. Please note that the size of the card
