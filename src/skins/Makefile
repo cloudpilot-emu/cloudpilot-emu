@@ -115,7 +115,7 @@ $(BUILDDIR_TEST)/%.o : %.c
 $(BUILDDIR_NATIVE)/%.o : %.cpp
 	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
-$(BUILDDIR_EMCC)/%.o : %.cpp
+$(BUILDDIR_EMCC)/%.o : %.cpp generated/skins.h
 	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_COMMON) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
 
 $(BUILDDIR_TEST)/%.o : %.cpp
