@@ -90,7 +90,7 @@ generated/skins.h: node_modules $(shell find originals -name '*.svg')
 	test -d $(SVG_GENERATED) || mkdir -p $(SVG_GENERATED)
 	$(YARN) svgo -rf $(SVG_ORIGINALS) -o $(SVG_GENERATED)
 	cd $(SVG_GENERATED) && $(ZIP) -9ro $(SVG_ZIP) $(SVG_SUBDIRS)
-	$(XXD) -n skins_zip -i $(SVG_GENERATED)/$(SVG_ZIP) | $(SED) 's/unsigned/static const/' | $(SED) 's/char/uint8_t/' > $@
+	$(XXD) -i $(SVG_GENERATED)/$(SVG_ZIP) | $(SED) 's/unsigned/static const/' | $(SED) 's/char/uint8_t/' > $@
 
 $(LIBRARY_NATIVE): $(OBJECTS_NATIVE)
 	$(AR_NATIVE) cru $@ $^

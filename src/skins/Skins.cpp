@@ -8,7 +8,8 @@ namespace {
 }
 
 uint8_t* skins::GetSkin(const char* name, size_t& len) {
-    zip_t* zip = zip_stream_open(reinterpret_cast<const char*>(skins_zip), skins_zip_len, 0, 'r');
+    zip_t* zip = zip_stream_open(reinterpret_cast<const char*>(generated_skins_zip),
+                                 generated_skins_zip_len, 0, 'r');
     if (!zip) return nullptr;
 
     Defer closeZip([&]() { zip_close(zip); });
