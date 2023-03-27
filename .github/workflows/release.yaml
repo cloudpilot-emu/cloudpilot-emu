@@ -29,11 +29,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup node
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{env.NODE_VERSION}}
-          registry-url: 'https://registry.npmjs.org'
       - name: Get version
         id: version
         run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
@@ -52,6 +47,10 @@ jobs:
           actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
       - name: Build wasm
         run: make -Csrc -j2 emscripten
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{env.NODE_VERSION}}
       - name: Install node deps
         working-directory: web
         run: yarn install
