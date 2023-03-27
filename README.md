@@ -115,6 +115,7 @@ bug fixes new features. In particular:
 -   Event injection works without generating null events.
 -   Reminders and alarms trigger propely.
 -   Clié devices use full MQ11xx video acceleration.
+-   SD card and Memory Stick emulation.
 
 # Building
 
