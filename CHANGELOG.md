@@ -1,16 +1,18 @@
-# Next version
+# Version 1.8.0
 
 This is a major update that adds support for SD card and memory sticks.
 Existing devices with a memory stick slot may require a reboot to start
 using the emulated memory stick hardware.
 
--   Support for SD cards and memory sticks.
+-   Support for SD cards and memory sticks on all devices that were
+    produced with the corresponding slots.
 -   File manager for memory cards.
--   Minor UI rework and bug fixes.
+-   Support dropping files for importing sessions, installing files,
+    and managing memory cards.
 -   Support for HandEra 330c (sic!).
--   Support dropping files for installation and session import.
 -   Support for Palm m520 prototype.
 -   Support for Acer S11.
+-   Bug fixes and UI rework.
 
 # Version 1.7.13
 
