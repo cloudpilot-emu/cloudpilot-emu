@@ -12,7 +12,7 @@ software was even distributed on SD cards. These devices generally only
 supported the FAT16 filesystem.
 
 ### MemoryStick Card Support
-CloudPilot supports the Sony MemoryStick standard, which was used on Palm OS
+CloudpilotEmu supports the Sony MemoryStick standard, which was used on Palm OS
 devices by Sony (Clié) and Acer. An important thing to note is that the
 **MemoryStick standard only supports cards with specific sizes** (labeled as  4,
 8, 16, 32, 64, or 128 MiB, but the actual usable size is slightly different). If
