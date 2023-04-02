@@ -50,6 +50,7 @@ GunzipContext::GunzipContext(const uint8_t* data, size_t size, size_t sliceSize)
 
     if (mz_inflateInit2(&zipStream, -MZ_DEFAULT_WINDOW_BITS) != MZ_OK) {
         SetError("failed to initialize deflate stream");
+        return;
     }
 
     zipStream.next_in = payload;
