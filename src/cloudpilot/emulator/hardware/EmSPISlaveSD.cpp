@@ -1,7 +1,7 @@
 #include "EmSPISlaveSD.h"
 
+#include "CPCrc.h"
 #include "ChunkHelper.h"
-#include "EmCRC.h"
 #include "ExternalStorage.h"
 #include "Savestate.h"
 #include "SavestateLoader.h"

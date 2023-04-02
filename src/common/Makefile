@@ -2,6 +2,7 @@
 
 CC_NATIVE ?= gcc
 CXX_NATIVE ?= g++
+LD_NATIVE ?= g++
 AR_NATIVE ?= ar
 RANLIB_NATIVE ?= ranlib
 
@@ -27,7 +28,7 @@ CXXFLAGS_EMCC = $(CFLAGS_EMCC) -fno-rtti -fno-exceptions
 
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt
 CXXFLAGS_TEST ?= $(CFLAGS_TEST)
-LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt -lgtest -lgmock
+LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt -lgtest -lgtest_main -lgmock
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps
@@ -46,19 +47,33 @@ MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
 MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
-INCLUDE =
+INCLUDE = $(INCLUDE_EXTRA) -I.
 
 SOURCE_C = \
 	zip/miniz.c \
 	zip/zip.c
 
-SOURCE_CPP = CardImage.cpp CardVolume.cpp
+SOURCE_CPP = \
+	CardImage.cpp \
+	CardVolume.cpp \
+	CPCrc.cpp \
+	GunzipContext.cpp
+
+SOURCE_TEST = \
+	$(SOURCE_CPP) \
+	test/Crc.cpp \
+	test/GunzipContext.cpp
 
 OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)
 
+OBJECTS_TEST = \
+	$(SOURCE_C:%.c=$(BUILDDIR_TEST)/%.o) \
+	$(SOURCE_TEST:%.cpp=$(BUILDDIR_TEST)/%.o)
+
 LIBRARY_NATIVE = libcommon.a
 LIBRARY_EMCC = libcommon-wasm.a
+BINARY_TEST = test/test
 
 GARBAGE = \
 	$(BUILDDIR_NATIVE) \
@@ -71,7 +86,8 @@ bin: $(LIBRARY_NATIVE)
 
 emscripten: $(LIBRARY_EMCC)
 
-test: $(LIBRARY_NATIVE)
+test: $(LIBRARY_NATIVE) $(BINARY_TEST)
+	$(BINARY_TEST)
 
 $(LIBRARY_NATIVE): $(OBJECTS_NATIVE)
 	$(AR_NATIVE) cru $@ $^
@@ -82,7 +98,7 @@ $(LIBRARY_EMCC): $(OBJECTS_EMCC)
 	$(RANLIB_EMCC) $@
 
 $(BINARY_TEST) : $(OBJECTS_TEST)
-	$(LD_NATIVE) $(LDFLAGS_TEST) -o $@ $^
+	$(LD_NATIVE) $(LDFLAGS_TEST) -o $@ $^ -lgtest_main
 
 $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<

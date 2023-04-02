@@ -1,2 +1,3 @@
 libcommon.a
 libcommon-wasm.a
+test/test

@@ -232,7 +232,6 @@ SOURCE_EMU = \
 	emulator/NetworkProxy.cpp \
 	emulator/ZipfileWalker.cpp \
 	emulator/ExternalStorage.cpp \
-	emulator/EmCRC.cpp \
 	emulator/MemoryRegion.cpp \
 	emulator/StackDump.cpp
 
