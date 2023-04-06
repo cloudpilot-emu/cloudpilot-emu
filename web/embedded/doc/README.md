@@ -243,6 +243,26 @@ click on a session and select "save" or swipe the session to the right and
 select the second icon. A dialog will open that allows you save a session
 snapshot.
 
+## Using SD cards and memory sticks
+
+The emulator supports attaching SD card and memory stick images into devices
+that support them. Both plain ang gzipped images are supported. SD card images
+can be of pretty much any size (as long as it is a multiple of 512 bytes),
+but memory stick images can only come in very specific sizes.
+
+Images can be created and exported in CloudpilotEmu and exported from there,
+but you can also use images taken from from actual, physical media. The relevant
+API is:
+
+ * [insertCompressedCardImage](./reference/interfaces/Emulator.html#insertCompressedCardImage)
+   insert and mount a gzipped memory card image
+ * [insertCardImage](./reference/interfaces/Emulator.html#insertCardImage)
+   insert and mount a plain memory card image
+ * [ejectCard](./reference/interfaces/Emulator.html#ejectCard)
+   eject a previously mounted card
+*  [isCardMounted](./reference/interfaces/Emulator.html#isCardMounted)
+   check whether a card is currently mounted
+
 ## Sizing and styling the canvas
 
 When applying CSS to the canvas element you must make sure not to touch

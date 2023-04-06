@@ -3,6 +3,7 @@
 
 #include "Cloudpilot.h"
 #include "Frame.h"
+#include "GunzipContext.h"
 #include "RomInfo.h"
 #include "SessionImage.h"
 #include "SkinLoader.h"

@@ -9,6 +9,8 @@ import createModule, {
     Cloudpilot as CloudpilotNative,
     DbBackup,
     DbInstallResult,
+    GunzipContext,
+    GunzipState,
     Module,
     PalmButton,
     SuspendContextClipboardCopy,
@@ -688,6 +690,38 @@ export class Cloudpilot {
     @guard()
     allocateCard(key: string, size: number): boolean {
         return this.cloudpilot.AllocateCard(key, size >>> 9);
+    }
+
+    @guard()
+    decompressCard(key: string, compressedData: Uint8Array): boolean {
+        const buffer = this.copyIn(compressedData);
+        let gunzipContext: GunzipContext | undefined = undefined;
+        try {
+            gunzipContext = new this.module.GunzipContext(buffer, compressedData.length, 512 * 1024);
+
+            while (gunzipContext.GetState() === GunzipState.more) {
+                gunzipContext.Continue();
+            }
+
+            if (gunzipContext.GetState() === GunzipState.error) {
+                console.error(`gunzip failed: ${gunzipContext.GetError()}`);
+                return false;
+            }
+
+            if (gunzipContext.GetUncompressedSize() % 512 !== 0) {
+                console.error('failed to allocate card: invalid size of decompressed image');
+                return false;
+            }
+
+            return this.cloudpilot.AdoptCard(
+                key,
+                gunzipContext.ReleaseUncompressedData(),
+                gunzipContext.GetUncompressedSize() >>> 9
+            );
+        } finally {
+            this.cloudpilot.Free(buffer);
+            if (gunzipContext) this.module.destroy(gunzipContext);
+        }
     }
 
     @guard()

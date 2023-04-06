@@ -24,6 +24,8 @@ const DEFAULT_SESSION: Session = {
     deviceId: DeviceId.m515,
 };
 
+const CARD_KEY = 'MEMORY_CARD';
+
 export interface Emulator {
     /**
      * Load a ROM and put the emulator in paused state.
@@ -39,6 +41,30 @@ export interface Emulator {
      * @param session Session image
      */
     loadSession(session: Uint8Array): this;
+
+    /**
+     * Attach and mount a gzip compressed card image.
+     *
+     * @param cardImage Gzip compressed image data
+     */
+    insertCompressedCardImage(cardImage: Uint8Array): this;
+
+    /**
+     * Attach and mount a plain card image.
+     *
+     * @param cardImage Image data
+     */
+    insertCardImage(cardImage: Uint8Array): this;
+
+    /**
+     * Eject a previously inserted card image:
+     */
+    ejectCard(): this;
+
+    /**
+     * Check whether a card is currently mounted.
+     */
+    isCardMounted(): boolean;
 
     /**
      * Configure the canvas element used for displaying the emulator.
@@ -366,6 +392,55 @@ export class EmulatorImpl implements Emulator {
         }
 
         throw new Error('failed to initialize session');
+    }
+
+    insertCompressedCardImage(cardImage: Uint8Array): this {
+        if (!this.cloudpilot.decompressCard(CARD_KEY, cardImage)) {
+            throw new Error('failed to decompress and mount card image');
+        }
+
+        if (!this.cloudpilot.mountCard(CARD_KEY)) {
+            throw new Error('failed to mount card image');
+        }
+
+        return this;
+    }
+
+    insertCardImage(cardImage: Uint8Array): this {
+        if (cardImage.length % 512 !== 0) {
+            throw new Error('card image size must be a multiple of 512');
+        }
+
+        if (!this.cloudpilot.allocateCard(CARD_KEY, cardImage.length)) {
+            throw new Error('failed to allocate card image');
+        }
+
+        const cardData = this.cloudpilot.getCardData(CARD_KEY);
+        if (!cardData) {
+            throw new Error('failed to allocate card image');
+        }
+
+        cardData.set(new Uint32Array(cardImage.buffer, cardImage.byteOffset, cardImage.byteLength >>> 2));
+
+        if (!this.cloudpilot.mountCard(CARD_KEY)) {
+            throw new Error('failed to mount card image');
+        }
+
+        return this;
+    }
+
+    ejectCard(): this {
+        if (!this.isCardMounted()) return this;
+
+        if (!this.cloudpilot.removeCard(CARD_KEY)) {
+            throw new Error('failed to eject card');
+        }
+
+        return this;
+    }
+
+    isCardMounted(): boolean {
+        return this.cloudpilot.getMountedKey() === CARD_KEY;
     }
 
     setCanvas(canvas: HTMLCanvasElement): this {

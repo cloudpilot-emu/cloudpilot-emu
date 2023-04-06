@@ -133,6 +133,7 @@ export interface Cloudpilot {
     DeviceSupportsCardSize(size: number): boolean;
     ClearExternalStorage(): void;
     AllocateCard(key: string, blockCount: number): boolean;
+    AdoptCard(key: string, data: VoidPtr, blockCount: number): boolean;
     MountCard(key: string): boolean;
     RemoveCard(key: string): boolean;
     GetCardData(key: string): VoidPtr;

@@ -283,6 +283,16 @@ bool Cloudpilot::AllocateCard(const char* key, uint32 blockCount) {
     return true;
 }
 
+bool Cloudpilot::AdoptCard(const char* key, void* data, uint32 blockCount) {
+    if (!gExternalStorage.AddImage(key, static_cast<uint8_t*>(data),
+                                   CardImage::BLOCK_SIZE * blockCount)) {
+        free(data);
+        return false;
+    }
+
+    return true;
+}
+
 bool Cloudpilot::MountCard(const char* key) { return gExternalStorage.Mount(key); }
 
 bool Cloudpilot::RemoveCard(const char* key) { return gExternalStorage.RemoveImage(key); }

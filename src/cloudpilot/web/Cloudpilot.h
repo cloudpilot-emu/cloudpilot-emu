@@ -91,6 +91,7 @@ class Cloudpilot {
     bool DeviceSupportsCardSize(uint32 size);
     void ClearExternalStorage();
     bool AllocateCard(const char* key, uint32 blockCount);
+    bool AdoptCard(const char* key, void* data, uint32 blockCount);
     bool MountCard(const char* key);
     bool RemoveCard(const char* key);
     void* GetCardData(const char* key);

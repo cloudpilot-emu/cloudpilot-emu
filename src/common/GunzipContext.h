@@ -16,14 +16,14 @@ class GunzipContext {
     enum class State { more = 0, done = 1, error = -1 };
 
    public:
-    GunzipContext(const uint8_t* data, size_t size, size_t sliceSize = DEFAULT_SLICE_SIZE);
+    GunzipContext(const void* data, size_t size, size_t sliceSize = DEFAULT_SLICE_SIZE);
     ~GunzipContext();
 
     int GetState() const;
     int Continue();
 
-    uint8_t* GetUncompressedData();
-    uint8_t* ReleaseUncompressedData();
+    void* GetUncompressedData();
+    void* ReleaseUncompressedData();
     size_t GetUncompressedSize();
 
     const char* GetError();

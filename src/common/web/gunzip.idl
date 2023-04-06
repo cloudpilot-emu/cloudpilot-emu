@@ -1,0 +1,12 @@
+interface GunzipContext {
+    void GunzipContext(VoidPtr data, long size, long slizeSize);
+
+    long GetState();
+    long Continue();
+
+    VoidPtr GetUncompressedData();
+    VoidPtr ReleaseUncompressedData();
+    long GetUncompressedSize();
+
+    [Const] DOMString GetError();
+};

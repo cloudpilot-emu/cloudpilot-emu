@@ -20,8 +20,10 @@ namespace {
     constexpr size_t DECOMPRESSED_SIZE_LIMIT = 512 * 1024 * 1024;
 }  // namespace
 
-GunzipContext::GunzipContext(const uint8_t* data, size_t size, size_t sliceSize)
-    : compressedData(data), compressedSize(size), sliceSize(sliceSize) {
+GunzipContext::GunzipContext(const void* data, size_t size, size_t sliceSize)
+    : compressedData(static_cast<const uint8_t*>(data)),
+      compressedSize(size),
+      sliceSize(sliceSize) {
     memset(&zipStream, 0, sizeof(zipStream));
     ReadHeaderFooter();
 
@@ -45,7 +47,7 @@ GunzipContext::GunzipContext(const uint8_t* data, size_t size, size_t sliceSize)
     uncompressedData = make_unique<uint8_t[]>(uncompressedSize);
     memset(uncompressedData.get(), 0, uncompressedSize);
 
-    payload = data + payloadStart;
+    payload = compressedData + payloadStart;
     payloadSize = size - payloadStart - FOOTER_SIZE;
 
     if (mz_inflateInit2(&zipStream, -MZ_DEFAULT_WINDOW_BITS) != MZ_OK) {
@@ -98,9 +100,9 @@ int GunzipContext::Continue() {
     return GetState();
 }
 
-uint8_t* GunzipContext::GetUncompressedData() { return uncompressedData.get(); }
+void* GunzipContext::GetUncompressedData() { return uncompressedData.get(); }
 
-uint8_t* GunzipContext::ReleaseUncompressedData() { return uncompressedData.release(); }
+void* GunzipContext::ReleaseUncompressedData() { return uncompressedData.release(); }
 
 size_t GunzipContext::GetUncompressedSize() { return uncompressedSize; }
 

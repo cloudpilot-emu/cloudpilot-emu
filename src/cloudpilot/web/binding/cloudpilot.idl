@@ -79,6 +79,7 @@ interface Cloudpilot {
     boolean DeviceSupportsCardSize(long size);
     void ClearExternalStorage();
     boolean AllocateCard([Const] DOMString key, long blockCount);
+    boolean AdoptCard([Const] DOMString key, VoidPtr data, long blockCount);
     boolean MountCard([Const] DOMString key);
     boolean RemoveCard([Const] DOMString key);
     VoidPtr GetCardData([Const] DOMString key);
