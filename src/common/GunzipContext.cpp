@@ -67,6 +67,13 @@ int GunzipContext::GetState() const { return static_cast<int>(state); }
 int GunzipContext::Continue() {
     if (state != State::more) return GetState();
 
+    if (zipStreamEnd) {
+        state = State::done;
+        Validate();
+
+        return GetState();
+    }
+
     const ssize_t remainingInput = payloadSize - (zipStream.next_in - payload);
     int flush;
 
@@ -88,8 +95,7 @@ int GunzipContext::Continue() {
             break;
 
         case MZ_STREAM_END:
-            state = State::done;
-            Validate();
+            zipStreamEnd = true;
             break;
 
         default:

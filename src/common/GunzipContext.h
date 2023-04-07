@@ -71,6 +71,7 @@ class GunzipContext {
     GzipHeaderFooter headerFooter;
 
     z_stream zipStream;
+    bool zipStreamEnd{false};
 };
 
 #endif  // _GUNZIP_CONTEXT_H_
