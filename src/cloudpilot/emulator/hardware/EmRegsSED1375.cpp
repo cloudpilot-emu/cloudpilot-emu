@@ -48,7 +48,7 @@
 #define kCLUTIndexBlue 0x1000
 
 namespace {
-    constexpr int SAVESTATE_VERSION = 1;
+    constexpr int SAVESTATE_VERSION = 2;
 }
 
 // ---------------------------------------------------------------------------
@@ -125,6 +125,11 @@ void EmRegsSED1375::Load(SavestateLoader& loader) {
 
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper, version);
+
+    if (version < 2) {
+        for (int i = 0; i < 256; i++)
+            fClutData[i] = 0xff000000 | (((fClutData[i] & 0x00f0f0f0) >> 4) * 0x11);
+    }
 }
 
 template <typename T>
@@ -390,7 +395,7 @@ void EmRegsSED1375::lookUpTableDataWrite(emuptr address, int size, uint32 value)
 
     if (size != 1) return;  // Error case.
 
-    value &= 0xf0;
+    value = ((value & 0xf0) >> 4) * 0x11;
 
     switch (lutColorIndex) {
         case LutColorIndex::red:
