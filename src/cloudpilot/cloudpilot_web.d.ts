@@ -9,7 +9,7 @@ export { GunzipState } from '../common/web/common';
 
 export type GunzipContext = GunzipContextImpl<VoidPtr>;
 
-export interface Module extends EmscriptenModule, ModuleWithGunzipContext<VoidPtr> {
+export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'>, ModuleWithGunzipContext<VoidPtr> {
     addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;
     UTF8ToString(charPtr: number): string;
@@ -31,6 +31,6 @@ export interface Module extends EmscriptenModule, ModuleWithGunzipContext<VoidPt
     destroy(gunzipContext: GunzipContext): void;
 }
 
-declare const createModule: EmscriptenModuleFactory<Module>;
+declare const createModule: (moduleOverrides: Partial<Module>) => Promise<Module>;
 
 export default createModule;

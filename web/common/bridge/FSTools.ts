@@ -11,6 +11,7 @@ import createModule, {
     Module,
 } from '@native-fstools/index';
 
+import { cachedInstantiate } from '@common/helper/wasm';
 import { dirtyPagesSize } from './util';
 
 export { FsckResult } from '@native-fstools/index';
@@ -24,12 +25,7 @@ export async function mkfs(size: number): Promise<Uint32Array | undefined> {
 }
 
 const WASM_BINARY = 'fstools_web.wasm';
-
-const wasmModule = WebAssembly.compileStreaming
-    ? WebAssembly.compileStreaming(fetch(WASM_BINARY))
-    : fetch(WASM_BINARY)
-          .then((response) => response.arrayBuffer())
-          .then((binary) => WebAssembly.compile(binary));
+const instantiateWasm = cachedInstantiate(WASM_BINARY);
 
 export class MkfsContext {
     private constructor(private module: Module) {
@@ -41,8 +37,7 @@ export class MkfsContext {
             await createModule({
                 print: (x: string) => console.log(x),
                 printErr: (x: string) => console.error(x),
-                instantiateWasm: async (imports, callback) =>
-                    callback(await WebAssembly.instantiate(await wasmModule, imports)),
+                instantiateWasm,
             })
         );
     }
@@ -71,8 +66,7 @@ export class FsckContext {
         const module = await createModule({
             print: (x: string) => console.log(x),
             printErr: (x: string) => console.error(x),
-            instantiateWasm: async (imports, callback) =>
-                callback(await WebAssembly.instantiate(await wasmModule, imports)),
+            instantiateWasm,
         });
 
         return new FsckContext(module, size);

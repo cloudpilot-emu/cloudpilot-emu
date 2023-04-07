@@ -24,6 +24,7 @@ import createModule, {
 
 import { DeviceId } from '../model/DeviceId';
 import { Event } from 'microevent.ts';
+import { InstantiateFunction } from '@common/helper/wasm';
 import { dirtyPagesSize } from './util';
 
 export {
@@ -149,12 +150,15 @@ export class Cloudpilot {
         );
     }
 
-    static async create(wasmModuleUrl?: string): Promise<Cloudpilot> {
+    static async create(wasmModuleUrl?: string): Promise<Cloudpilot>;
+    static async create(instantiateWasm?: InstantiateFunction): Promise<Cloudpilot>;
+    static async create(urlOrFunction?: string | InstantiateFunction): Promise<Cloudpilot> {
         return new Cloudpilot(
             await createModule({
                 print: (x: string) => console.log(x),
                 printErr: (x: string) => console.error(x),
-                ...(wasmModuleUrl !== undefined ? { locateFile: () => wasmModuleUrl } : {}),
+                ...(typeof urlOrFunction === 'string' ? { locateFile: () => urlOrFunction } : {}),
+                ...(typeof urlOrFunction === 'function' ? { instantiateWasm: urlOrFunction } : {}),
             })
         );
     }

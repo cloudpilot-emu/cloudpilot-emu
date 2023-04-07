@@ -98,6 +98,12 @@ cloudpilot.createEmulator().then(emulator => {
 Without any arguments, `createEmulator` assumes that the web assembly binary is
 hosted next to your HTML file. You can supply a different URL as an argument.
 
+If you want to create multiple instances of the emulator, you can use
+`createEmulatorFactory` (again with an optional URL) to create a factory function.
+Each time you call the factory function you'll get a promise for a new emulator
+instance. but the web assembly binary will only be downloaded and compiled
+once.
+
 All interactions with the emulator go through methods on the [emulator
 instance](./reference/interfaces/Emulator.html). Most of those methods return
 the same instance of the emulator, so calls can be chained. Errors are

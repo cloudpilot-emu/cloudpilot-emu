@@ -83,8 +83,9 @@
 
             const rom1 = await rom1Response.arrayBuffer();
             const rom2 = await rom2Response.arrayBuffer();
-            const emulator1 = await cloudpilot.createEmulator();
-            const emulator2 = await cloudpilot.createEmulator();
+            const factory = cloudpilot.createEmulatorFactory();
+            const emulator1 = await factory();
+            const emulator2 = await factory();
             const canvas1 = document.getElementById('canvas-1');
             const canvas2 = document.getElementById('canvas-2');
 
