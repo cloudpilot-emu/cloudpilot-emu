@@ -34,8 +34,9 @@ CXXFLAGS_TEST ?= $(CFLAGS_TEST)
 LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt -lgtest -lgmock
 
 WEBIDL_BINDING_DIR = web/binding
+WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/fstools.idl ../common/web/gunzip.idl
 WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
-WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/binding.idl
+WEBIDL_BINDING_IDL = $(WEBIDL_BINDING_DIR)/binding.idl
 WEBIDL_BINDING_CXX = web/binding.cpp
 
 LDFLAGS_EMCC_WEB = $(EMCC_OPT) -Wno-version-check \
@@ -135,6 +136,7 @@ GARBAGE = \
 	$(DEPDIR_TEST) \
 	$(WEBIDL_BINDING_JS) \
 	$(WEBIDL_BINDING_JS:%.js=%.cpp) \
+	$(WEBIDL_BINDING_IDL) \
 	parser.out \
 	WebIDLGrammar.pkl
 
@@ -173,8 +175,11 @@ $(BUILDDIR_TEST)/%.o : %.cpp
 
 $(BUILDDIR_EMCC)/$(WEBIDL_BINDING_CXX:%.cpp=%.o): $(WEBIDL_BINDING_JS)
 
-$(WEBIDL_BINDING_JS): $(WEBIDL_BINDING_SRC)
-	$(WEBIDL_BINDER) $(WEBIDL_BINDING_SRC) $(WEBIDL_BINDING_JS:.js=)
+$(WEBIDL_BINDING_IDL): $(WEBIDL_BINDING_SRC)
+	cat $^ > $@
+
+$(WEBIDL_BINDING_JS): $(WEBIDL_BINDING_IDL)
+	$(WEBIDL_BINDER) $(WEBIDL_BINDING_IDL) $(WEBIDL_BINDING_JS:.js=)
 
 clean:
 	-rm -fr $(GARBAGE)

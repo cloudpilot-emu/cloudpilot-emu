@@ -3,6 +3,7 @@
 
 #include "FSTools.h"
 #include "FsckContext.h"
+#include "GunzipContext.h"
 #include "MkfsContext.h"
 
 // clang-format off

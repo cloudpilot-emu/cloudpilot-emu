@@ -7,6 +7,8 @@
 import createModule, {
     FsckContext as FsckNativeContext,
     FsckResult,
+    GunzipContext as GunzipContextNative,
+    GunzipState,
     MkfsContext as MkfsNativeContext,
     Module,
 } from '@native-fstools/index';
@@ -16,6 +18,11 @@ import { dirtyPagesSize } from './util';
 
 export { FsckResult } from '@native-fstools/index';
 
+const WASM_BINARY = 'fstools_web.wasm';
+const instantiateWasm = cachedInstantiate(WASM_BINARY);
+
+const GUNZIP_SLICE_SIZE = 512 * 1024;
+
 export async function mkfs(size: number): Promise<Uint32Array | undefined> {
     const context = await MkfsContext.create();
 
@@ -24,8 +31,13 @@ export async function mkfs(size: number): Promise<Uint32Array | undefined> {
     return context.getImage();
 }
 
-const WASM_BINARY = 'fstools_web.wasm';
-const instantiateWasm = cachedInstantiate(WASM_BINARY);
+export async function gunzip(gzippedData: Uint8Array): Promise<Uint8Array | undefined> {
+    const context = await GunzipContext.create(gzippedData);
+
+    if (!(await context.gunzip())) return undefined;
+
+    return context.getDecompressedData();
+}
 
 export class MkfsContext {
     private constructor(private module: Module) {
@@ -106,4 +118,50 @@ export class FsckContext {
 
     private nativeContext: FsckNativeContext;
     private result: FsckResult = FsckResult.pending;
+}
+
+export class GunzipContext {
+    private constructor(private module: Module, gzippedData: Uint8Array) {
+        const fsTools = new module.FSTools();
+        const buffer = fsTools.Malloc(gzippedData.length);
+        const bufferPtr = module.getPointer(buffer);
+
+        module.HEAPU8.subarray(bufferPtr, bufferPtr + gzippedData.length).set(gzippedData);
+        module.destroy(fsTools);
+
+        this.nativeContext = new module.GunzipContext(buffer, gzippedData.length, GUNZIP_SLICE_SIZE);
+    }
+
+    static async create(gzippedData: Uint8Array): Promise<GunzipContext> {
+        const module = await createModule({
+            print: (x: string) => console.log(x),
+            printErr: (x: string) => console.error(x),
+            instantiateWasm,
+        });
+
+        return new GunzipContext(module, gzippedData);
+    }
+
+    async gunzip(): Promise<boolean> {
+        while (this.nativeContext.Continue() === GunzipState.more) {
+            await new Promise((r) => setTimeout(r, 0));
+        }
+
+        if (this.nativeContext.GetState() === GunzipState.error) {
+            console.error(`gunzip failed: ${this.nativeContext.GetError()}`);
+            return false;
+        }
+
+        return true;
+    }
+
+    getDecompressedData(): Uint8Array {
+        const uncompressedSize = this.nativeContext.GetUncompressedSize();
+        const buffer = this.nativeContext.GetUncompressedData();
+        const bufferPtr = this.module.getPointer(buffer);
+
+        return this.module.HEAPU8.subarray(bufferPtr, bufferPtr + uncompressedSize);
+    }
+
+    private nativeContext: GunzipContextNative;
 }

@@ -1,4 +1,4 @@
-import { ActionSheetController, AlertController, ModalController } from '@ionic/angular';
+import { ActionSheetController, AlertController, LoadingController, ModalController } from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
@@ -15,6 +15,7 @@ import { changeDetector } from '@pwa/helper/changeDetect';
 import { debounce } from '@pwa/helper/debounce';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
+import { gunzip } from '@common/bridge/FSTools';
 
 @Component({
     selector: 'app-subpage-cards',
@@ -32,6 +33,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         private alertService: AlertService,
         private errorService: ErrorService,
         private fileService: FileService,
+        private loadingController: LoadingController,
         cd: ChangeDetectorRef
     ) {
         this.checkCards = changeDetector(cd, [], () => this.storageCardService.getAllCards());
@@ -183,7 +185,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
 
     private handleCardImport = async (file: FileDescriptor): Promise<void> => {
         const cloudpilot = await this.cloudpilotService.cloudpilot;
-        let content: Uint8Array;
+        let content: Uint8Array | undefined;
 
         try {
             content = await file.getContent();
@@ -193,9 +195,21 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
             await this.alertService.errorMessage(`Unable to open ${file.name}".`);
             return;
         }
-        const supportLevel = cloudpilot.getCardSupportLevel(content.length);
 
-        if (supportLevel === CardSupportLevel.unsupported) {
+        if (/\.gz$/.test(file.name)) {
+            const loader = await this.loadingController.create({ message: 'Unpacking...' });
+            await loader.present();
+
+            try {
+                content = await gunzip(content);
+            } finally {
+                await loader.dismiss();
+            }
+        }
+
+        const supportLevel = content ? cloudpilot.getCardSupportLevel(content.length) : CardSupportLevel.unsupported;
+
+        if (content === undefined || supportLevel === CardSupportLevel.unsupported) {
             void this.alertService.errorMessage('This is not a supported card image.');
             return;
         }
@@ -205,7 +219,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
                 component: EditCardDialogComponent,
                 backdropDismiss: false,
                 componentProps: {
-                    card: { name: this.disambiguateName(file.name), size: content.length },
+                    card: { name: this.disambiguateName(file.name.replace(/\.gz$/, '')), size: content!.length },
                     cardSupportLevel: supportLevel,
                     newCard: true,
                     onCancel: () => {
