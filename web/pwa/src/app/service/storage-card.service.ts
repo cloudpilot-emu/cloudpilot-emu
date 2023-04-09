@@ -1,5 +1,5 @@
 import { CardOwner, StorageCardContext } from './storage-card-context';
-import { FsckContext, FsckResult, mkfs } from '@common/bridge/FSTools';
+import { FsckContext, FsckResult, GzipContext, mkfs } from '@common/bridge/FSTools';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { AlertService } from './alert.service';
@@ -331,35 +331,63 @@ export class StorageCardService {
         }
     }
 
-    async saveCard(id: number, name: string): Promise<void> {
+    async saveCard(id: number, name: string, gzip: boolean): Promise<void> {
         const card = await this.getCard(id);
         if (!card) throw new Error(`no card with id ${id}`);
 
         const loader = await this.loadingController.create({ message: 'Exporting...' });
-        let data: Uint32Array | undefined;
+        let cardData: Uint32Array | undefined;
+
+        let gzipContext = gzip ? await GzipContext.create(card.size) : undefined;
+        if (gzipContext) {
+            let buffer = gzipContext.getBuffer();
+            cardData = new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength >> 2);
+        }
 
         try {
             await loader.present();
 
             const session = this.mountedInSession(id);
+            let cardDataFromEmulator: Uint32Array | undefined;
 
             if (session && session.id === this.emulationStateService.getCurrentSession()?.id) {
                 await this.snapshotService.waitForPendingSnapshot();
                 await this.snapshotService.triggerSnapshot();
 
                 const cloudpilot = await this.cloudpilotService.cloudpilot;
-                data = cloudpilot.getCardData(card.storageId);
+                cardDataFromEmulator = cloudpilot.getCardData(card.storageId);
+
+                if (cardDataFromEmulator) {
+                    if (cardData) cardData.set(cardDataFromEmulator);
+                    else cardData = cardDataFromEmulator;
+                }
             }
 
-            if (!data) {
-                data = new Uint32Array(card.size >>> 2);
-                await this.storageService.loadCardData(card.id, data, this.storageCardContext.getOwner(id));
+            if (!cardDataFromEmulator) {
+                if (!cardData) cardData = new Uint32Array(card.size >>> 2);
+                await this.storageService.loadCardData(card.id, cardData, this.storageCardContext.getOwner(id));
+            }
+
+            if (gzipContext) {
+                gzipContext.setFilename(name).setMtime(Math.floor(Date.now() / 1000));
+
+                if (!(await gzipContext.gzip())) {
+                    void this.alertService.errorMessage('Failed to compress card image.');
+                    return;
+                }
+
+                name += '.gz';
             }
         } finally {
             void loader.dismiss();
         }
 
-        this.fileService.saveFile(name, new Uint8Array(data.buffer, data.byteOffset, data.length << 2));
+        this.fileService.saveFile(
+            name,
+            gzipContext
+                ? gzipContext.getGzipData()
+                : new Uint8Array(cardData!.buffer, cardData!.byteOffset, cardData!.length << 2)
+        );
     }
 
     async getCard(id: number): Promise<StorageCard | undefined> {

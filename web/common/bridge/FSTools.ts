@@ -9,6 +9,8 @@ import createModule, {
     FsckResult,
     GunzipContext as GunzipContextNative,
     GunzipState,
+    GzipContext as GzipContextNative,
+    GzipState,
     MkfsContext as MkfsNativeContext,
     Module,
 } from '@native-fstools/index';
@@ -22,6 +24,7 @@ const WASM_BINARY = 'fstools_web.wasm';
 const instantiateWasm = cachedInstantiate(WASM_BINARY);
 
 const GUNZIP_SLICE_SIZE = 512 * 1024;
+const GZIP_SLICE_SIZE = 512 * 1024;
 
 export async function mkfs(size: number): Promise<Uint32Array | undefined> {
     const context = await MkfsContext.create();
@@ -164,4 +167,71 @@ export class GunzipContext {
     }
 
     private nativeContext: GunzipContextNative;
+}
+
+export class GzipContext {
+    private constructor(private module: Module, private uncompressedDataSize: number) {
+        const fsTools = new module.FSTools();
+        const buffer = fsTools.Malloc(uncompressedDataSize);
+        this.uncompressedDataPtr = module.getPointer(buffer);
+
+        module.destroy(fsTools);
+
+        this.nativeContext = new module.GzipContext(buffer, uncompressedDataSize, GZIP_SLICE_SIZE);
+    }
+
+    static async create(uncompressedDataSize: number): Promise<GzipContext> {
+        const module = await createModule({
+            print: (x: string) => console.log(x),
+            printErr: (x: string) => console.error(x),
+            instantiateWasm,
+        });
+
+        return new GzipContext(module, uncompressedDataSize);
+    }
+
+    getBuffer(): Uint8Array {
+        return this.module.HEAPU8.subarray(
+            this.uncompressedDataPtr,
+            this.uncompressedDataPtr + this.uncompressedDataSize
+        );
+    }
+
+    setFilename(name: string): this {
+        this.nativeContext.SetFilename(name);
+
+        return this;
+    }
+
+    setMtime(mtime: number): this {
+        this.nativeContext.SetMtime(mtime);
+
+        return this;
+    }
+
+    async gzip(): Promise<boolean> {
+        this.nativeContext.Continue();
+
+        while (this.nativeContext.Continue() === GzipState.more) {
+            await new Promise((r) => setTimeout(r, 0));
+        }
+
+        if (this.nativeContext.GetState() === GzipState.error) {
+            console.error(`gzip failed: ${this.nativeContext.GetError()}`);
+            return false;
+        }
+
+        return true;
+    }
+
+    getGzipData(): Uint8Array {
+        const uncompressedSize = this.nativeContext.GetGzipSize();
+        const buffer = this.nativeContext.GetGzipData();
+        const bufferPtr = this.module.getPointer(buffer);
+
+        return this.module.HEAPU8.subarray(bufferPtr, bufferPtr + uncompressedSize);
+    }
+
+    private nativeContext: GzipContextNative;
+    private uncompressedDataPtr: number;
 }

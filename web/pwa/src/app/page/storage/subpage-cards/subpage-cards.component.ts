@@ -112,8 +112,26 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
     }
 
     @debounce()
-    saveCard(card: StorageCard): Promise<void> {
-        return this.storageCardService.saveCard(card.id, `${filenameFragment(card.name.replace(/\.img$/, ''))}.img`);
+    async saveCard(card: StorageCard): Promise<void> {
+        const filename = `${filenameFragment(card.name.replace(/\.img$/, ''))}.img`;
+
+        const sheet = await this.actionSheetController.create({
+            header: 'How do you want to save the image?',
+            buttons: [
+                {
+                    text: 'Save gzip compressed image',
+                    handler: () => this.storageCardService.saveCard(card.id, filename, true),
+                },
+                {
+                    text: 'Save uncompressed image',
+                    handler: () => this.storageCardService.saveCard(card.id, filename, false),
+                },
+
+                { text: 'Cancel' },
+            ],
+        });
+
+        await sheet.present();
     }
 
     @debounce()

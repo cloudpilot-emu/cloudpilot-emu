@@ -14,7 +14,7 @@ class GzipContext {
     static constexpr size_t DEFAULT_SLICE_SIZE = 512 * 1024;
 
    public:
-    GzipContext(size_t uncompressedSize, const void* uncompressedData,
+    GzipContext(const void* uncompressedData, size_t uncompressedSize,
                 size_t sliceSize = DEFAULT_SLICE_SIZE);
 
     ~GzipContext();
@@ -27,6 +27,8 @@ class GzipContext {
 
     uint8_t* GetGzipData();
     size_t GetGzipSize() const;
+
+    const char* GetError();
 
    private:
     void SetError(const std::string& error);

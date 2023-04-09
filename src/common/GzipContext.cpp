@@ -17,7 +17,7 @@ namespace {
     constexpr int COMPRESSION_LEVEL = 1;
 }  // namespace
 
-GzipContext::GzipContext(size_t uncompressedSize, const void* uncompressedData, size_t sliceSize)
+GzipContext::GzipContext(const void* uncompressedData, size_t uncompressedSize, size_t sliceSize)
     : sliceSize(sliceSize),
       uncompressedSize(uncompressedSize),
       uncompressedData(static_cast<const uint8_t*>(uncompressedData)),
@@ -126,6 +126,8 @@ int GzipContext::GetState() const { return static_cast<int>(state); }
 uint8_t* GzipContext::GetGzipData() { return gzipData; }
 
 size_t GzipContext::GetGzipSize() const { return gzipIndex; }
+
+const char* GzipContext::GetError() { return error.c_str(); }
 
 void GzipContext::SetError(const std::string& error) {
     if (state == State::error) return;

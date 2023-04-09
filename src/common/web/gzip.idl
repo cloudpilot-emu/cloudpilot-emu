@@ -1,0 +1,14 @@
+interface GzipContext {
+    void GzipContext(VoidPtr uncompressedData, long uncompressedSize, long sliceSize);
+
+    [Ref] GzipContext SetFilename([Const] DOMString filenma);
+    [Ref] GzipContext SetMtime(long mtime);
+
+    long Continue();
+    long GetState();
+
+    VoidPtr GetGzipData();
+    long GetGzipSize();
+
+    [Const] DOMString GetError();
+};

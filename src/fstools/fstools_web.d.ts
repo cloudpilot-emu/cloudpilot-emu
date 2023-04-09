@@ -2,14 +2,23 @@ import { FsckContext } from './web/binding/binding.d';
 import 'emscripten';
 
 import { FSTools, VoidPtr, MkfsContext } from './web/binding/binding';
-import { GunzipContext as GunzipContextImpl, ModuleWithGunzipContext } from '../common/web/common';
+import {
+    GunzipContext as GunzipContextImpl,
+    GzipContext as GzipContextImpl,
+    ModuleWithGunzipContext,
+    ModuleWithGzipContext,
+} from '../common/web/common';
 
 export * from './web/binding/binding';
-export { GunzipState } from '../common/web/common';
+export { GunzipState, GzipState } from '../common/web/common';
 
 export type GunzipContext = GunzipContextImpl<VoidPtr>;
+export type GzipContext = GzipContextImpl<VoidPtr>;
 
-export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'>, ModuleWithGunzipContext<VoidPtr> {
+export interface Module
+    extends Omit<EmscriptenModule, 'instantiateWasm'>,
+        ModuleWithGunzipContext<VoidPtr>,
+        ModuleWithGzipContext<VoidPtr> {
     ccall: typeof ccall;
     addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;
@@ -23,6 +32,7 @@ export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'>, Modul
     destroy(mkfsContext: MkfsContext): void;
     destroy(fsckContext: FsckContext): void;
     destroy(gunzipContext: GunzipContext): void;
+    destroy(gzipContext: GzipContext): void;
 
     instantiateWasm(
         imports: WebAssembly.Imports,

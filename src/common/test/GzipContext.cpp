@@ -45,7 +45,7 @@ class GzipContextTest : public ::testing::Test {
 TEST_F(GzipContextTest, itProperlyCompressesAShortString) {
     const string fixture("Hello world");
 
-    GzipContext context(fixture.length() + 1, fixture.c_str());
+    GzipContext context(fixture.c_str(), fixture.length() + 1);
 
     RunToCompletion(context);
     ASSERT_EQ(context.GetState(), static_cast<int>(GzipContext::State::done));
@@ -59,7 +59,7 @@ TEST_F(GzipContextTest, itProperlyStoresFilename) {
     const string fixture("Hello world");
     const char* filenameFixture = "funky_file.txt";
 
-    GzipContext context(fixture.length() + 1, fixture.c_str());
+    GzipContext context(fixture.c_str(), fixture.length() + 1);
     context.SetFilename(filenameFixture);
 
     RunToCompletion(context);
@@ -76,7 +76,7 @@ TEST_F(GzipContextTest, itProperlyStoresFilename) {
 TEST_F(GzipContextTest, itProperlyStoresMtime) {
     const string fixture("Hello world");
 
-    GzipContext context(fixture.length() + 1, fixture.c_str());
+    GzipContext context(fixture.c_str(), fixture.length() + 1);
     context.SetMtime(0x12345678);
 
     RunToCompletion(context);
@@ -100,7 +100,7 @@ TEST_F(GzipContextTest, itGrowsTheOutputBuffer) {
     for (size_t i = 0; i < fixtureSize >> 2; i++)
         reinterpret_cast<uint32_t*>(fixture.get())[i] = Random();
 
-    GzipContext context(fixtureSize, fixture.get(), 256 * 1024);
+    GzipContext context(fixture.get(), fixtureSize, 256 * 1024);
 
     RunToCompletion(context);
     ASSERT_EQ(context.GetState(), static_cast<int>(GzipContext::State::done));
