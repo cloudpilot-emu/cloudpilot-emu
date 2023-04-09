@@ -24,7 +24,7 @@ class GunzipContext {
 
     void* GetUncompressedData();
     void* ReleaseUncompressedData();
-    size_t GetUncompressedSize();
+    size_t GetUncompressedSize() const;
 
     const char* GetError();
 

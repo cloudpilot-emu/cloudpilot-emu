@@ -45,6 +45,11 @@ GunzipContext::GunzipContext(const void* data, size_t size, size_t sliceSize)
 
     uncompressedSize = headerFooter.uncompressedSize;
     uncompressedData = make_unique<uint8_t[]>(uncompressedSize);
+    if (!uncompressedData) {
+        SetError("failed to allocate");
+        return;
+    }
+
     memset(uncompressedData.get(), 0, uncompressedSize);
 
     payload = compressedData + payloadStart;
@@ -71,15 +76,15 @@ int GunzipContext::Continue() {
         state = State::done;
         Validate();
 
-        return GetState();
+        return static_cast<int>(state);
     }
 
     const ssize_t remainingInput = payloadSize - (zipStream.next_in - payload);
     int flush;
 
-    if (remainingInput <= 0) {
-        SetError("no more data to decompress");
-        return GetState();
+    if (remainingInput < 0) {
+        SetError("internal: invalid input stream");
+        return static_cast<int>(state);
     }
 
     if (static_cast<size_t>(remainingInput) <= sliceSize) {
@@ -103,14 +108,14 @@ int GunzipContext::Continue() {
             break;
     }
 
-    return GetState();
+    return static_cast<int>(state);
 }
 
 void* GunzipContext::GetUncompressedData() { return uncompressedData.get(); }
 
 void* GunzipContext::ReleaseUncompressedData() { return uncompressedData.release(); }
 
-size_t GunzipContext::GetUncompressedSize() { return uncompressedSize; }
+size_t GunzipContext::GetUncompressedSize() const { return uncompressedSize; }
 
 const char* GunzipContext::GetError() { return errorDescription.c_str(); }
 

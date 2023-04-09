@@ -2,17 +2,15 @@
 
 #include <gtest/gtest.h>
 
-#include <iostream>
-
 #include "GzipFixtures.h"
 
 using namespace std;
 
 class GunzipContextTest : public ::testing::Test {
    protected:
-    ~GunzipContextTest() {
+    void TearDown() override {
+        if (fixtureData) delete[] fixtureData;
         if (context) delete context;
-        if (fixtureData) delete fixtureData;
     }
 
     void SetupFixture(const uint8_t* data, size_t size) {
