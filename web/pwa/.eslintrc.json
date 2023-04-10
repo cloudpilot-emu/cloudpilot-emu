@@ -10,8 +10,7 @@
       ],
       "parserOptions": {
         "project": [
-          "pwa/tsconfig.app.json",
-          "pwa/tsconfig.spec.json"
+          "pwa/tsconfig.app.json"
         ],
         "createDefaultProgram": true
       },
