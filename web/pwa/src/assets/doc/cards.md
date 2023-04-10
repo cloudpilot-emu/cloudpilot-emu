@@ -27,11 +27,14 @@ desired content into this new virtual card.
 Tap the plus button in the top right corner to add a card. You can either create
 a blank card, or you can import an existing image file into CloudpilotEmu.
 
-**Importing a card**: Imported cards should be provided as a filesystem image.
+**Importing a card**: Imported cards should be provided as a filesystem image
+with optional gzip compression. Files with the ending `.gz` will be treated
+as gzip compressed images and decompressed.
+
 Most images can be used as SD cards, but only very specific sizes are suitable
 for use as memory sticks (see 'MemoryStick Card Support' above). Imported cards
-are stored in the browser's IndexedDB and are loaded into RAM, so you should avoid
-importing cards larger than 128MB.
+are stored in the browser's IndexedDB and are loaded into RAM, so you should
+avoid importing cards larger than 128MB.
 
 You can download dumps of original cards that were used to distribute PalmOS
 software on [PalmDB](https://palmdb.net/search/MMC+image).
@@ -47,6 +50,7 @@ If you wish to export an image of a current card in CloudpilotEmu:
 * Mobile: swipe on the card name from left-to-right, and choose th cyan
   colour'Share' icon.
 
+You can choose to either save a gzip compressed or a plain file system image.
 An image of the card will then proceed to download.
 
 ### Deleting a card
