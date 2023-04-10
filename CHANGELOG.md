@@ -1,4 +1,4 @@
-# Next version
+# Version 1.8.1
 
 -   Support memory cards in CP embedded.
 -   Better 4bit to 8bit color space transform for SED1375 based devices
