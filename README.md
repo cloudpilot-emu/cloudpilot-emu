@@ -178,7 +178,7 @@ will give you the necessary packages:
 The build is accomplished with
 
 ```
-    $ make -Csrc bin
+    $ make bin
 ```
 
 and you will up with a `src/cloudpilot` binary. The binary takes a ROM file or

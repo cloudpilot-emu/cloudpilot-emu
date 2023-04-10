@@ -23,5 +23,5 @@ CFLAGS_NATIVE = \
 # CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
 LDFLAGS_NATIVE =  \
-	$(shell sdl2-config --libs) -lSDL2_image -lreadline -lboost_coroutine \
+	$(shell sdl2-config --libs) -lSDL2_image -lreadline -lboost_coroutine -ldl -pthread \
 	-L/opt/homebrew/lib
