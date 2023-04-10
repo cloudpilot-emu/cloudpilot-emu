@@ -187,7 +187,7 @@ void GzipContext::WriteHeader() {
     Write8(0x08);                                 // CM
     Write8(filename.length() > 0 ? 0x08 : 0x00);  // FLG = FNAME
     Write32(mtime);                               // MTIME
-    Write8(0x00);                                 // XFL
+    Write8(0x04);                                 // XFL = fastest compression
     Write8(0x03);                                 // OS = UNIX
 
     if (filename.length() > 0) {

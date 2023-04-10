@@ -44,6 +44,7 @@ WEBIDL_BINDING_CXX = web/binding.cpp
 
 LDFLAGS_EMCC_WEB = $(EMCC_OPT) -Wno-version-check \
 	--post-js $(WEBIDL_BINDING_JS) \
+	-Wl,--stack-first \
 	-s NO_EXIT_RUNTIME=1 \
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME=createModule \
@@ -52,7 +53,9 @@ LDFLAGS_EMCC_WEB = $(EMCC_OPT) -Wno-version-check \
 	-s INITIAL_MEMORY=67108864 \
 	-s ALLOW_TABLE_GROWTH=1 \
 	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS=["addFunction","UTF8ToString"]
+	-s EXTRA_EXPORTED_RUNTIME_METHODS=["addFunction","UTF8ToString"] \
+	-s STACK_SIZE=1MB \
+	-s GLOBAL_BASE=0
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps
