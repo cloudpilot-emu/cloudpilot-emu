@@ -254,7 +254,10 @@ Sorry for the inconvenience.`
     }
 
     private async restoreSession(session: Session, cloudpilot: Cloudpilot): Promise<boolean> {
-        const [rom, memory, state] = await this.storageService.loadSession(session);
+        const [rom, memory, state] = await this.storageService.loadSession(
+            session,
+            this.kvsService.kvs.snapshotIntegrityCheck
+        );
         if (!rom) {
             throw new Error(`invalid ROM ${session.rom}`);
         }

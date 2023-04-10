@@ -32,6 +32,7 @@ import { Mutex } from 'async-mutex';
 import { Session } from '@pwa/model/Session';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageError } from './storage/StorageError';
+import { crc32 } from '@common/helper/crc';
 import { environment } from '../../environments/environment';
 import { isIOS } from '@common/helper/browser';
 import md5 from 'md5';
@@ -205,7 +206,8 @@ export class StorageService {
 
     @guard()
     async loadSession(
-        session: Session
+        session: Session,
+        checkCrc: boolean
     ): Promise<[Uint8Array | undefined, Uint8Array | undefined, Uint8Array | undefined]> {
         const tx = await this.newTransaction(
             OBJECT_STORE_ROM,
@@ -217,7 +219,7 @@ export class StorageService {
 
         return [
             await complete<Uint8Array>(objectStoreRom.get(session.rom)),
-            await this.loadMemory(tx, session.id),
+            await this.loadMemory(tx, session.id, checkCrc),
             await this.loadState(tx, session.id),
         ];
     }
@@ -538,13 +540,13 @@ export class StorageService {
         objectStoreMemoryMeta.delete(sessionId);
     }
 
-    private loadMemory = (tx: IDBTransaction, sessionId: number): Promise<Uint8Array | undefined> =>
+    private loadMemory = (tx: IDBTransaction, sessionId: number, checkCrc: boolean): Promise<Uint8Array | undefined> =>
         this.ngZone.runOutsideAngular(async () => {
             const objectStoreMemoryMeta = tx.objectStore(OBJECT_STORE_MEMORY_META);
             const metadata: MemoryMetadata = await complete(objectStoreMemoryMeta.get(sessionId));
             if (!metadata) return;
 
-            return new Promise(async (resolve, reject) => {
+            const memory = await new Promise<Uint8Array>(async (resolve, reject) => {
                 const objectStoreMemory = tx.objectStore(OBJECT_STORE_MEMORY);
 
                 const memory = new Uint32Array(metadata.totalSize >>> 2);
@@ -580,6 +582,14 @@ export class StorageService {
 
                 request.onerror = () => reject(new StorageError(request.error?.message));
             });
+
+            if (metadata.crc32 !== undefined && checkCrc && !environment.production) {
+                if (metadata.crc32 !== crc32(memory)) {
+                    throw new Error('snapshot CRC mismatch');
+                }
+            }
+
+            return memory;
         });
 
     @guard()

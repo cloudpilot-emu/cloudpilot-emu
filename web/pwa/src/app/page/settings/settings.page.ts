@@ -8,6 +8,7 @@ import { KvsService } from '@pwa/service/kvs.service';
 import { ModalController } from '@ionic/angular';
 import { MutexInterface } from 'async-mutex';
 import { ProxyService } from '@pwa/service/proxy.service';
+import { environment } from 'pwa/src/environments/environment';
 import { validateProxyAddress } from '@pwa/helper/proxyAddress';
 
 const enum fields {
@@ -20,6 +21,7 @@ const enum fields {
     autoLockUI = 'autoLockUI',
     enableRemoteInstall = 'enableRemoteInstall',
     audioOnStart = 'audioOnStart',
+    snapshotIntegrityCheck = 'snapshotIntegrityCheck',
 }
 @Component({
     selector: 'app-settings',
@@ -77,6 +79,7 @@ export class SettingsPage implements OnInit {
             autoLockUI: this.formGroup.get(fields.autoLockUI)?.value,
             enableRemoteInstall: this.formGroup.get(fields.enableRemoteInstall)?.value,
             enableAudioOnFirstInteraction: this.formGroup.get(fields.audioOnStart)?.value,
+            snapshotIntegrityCheck: this.formGroup.get(fields.snapshotIntegrityCheck)?.value,
         });
 
         if (this.mutexReleasePromise) {
@@ -119,6 +122,10 @@ export class SettingsPage implements OnInit {
         return !!(fieldProxyServer?.value && fieldProxyServer?.valid);
     }
 
+    get showDebugOptions(): boolean {
+        return !environment.production;
+    }
+
     private createFormGroup() {
         this.formGroup = new UntypedFormGroup({
             [fields.volume]: new UntypedFormControl(this.kvsService.kvs.volume),
@@ -132,6 +139,7 @@ export class SettingsPage implements OnInit {
             [fields.autoLockUI]: new UntypedFormControl(this.kvsService.kvs.autoLockUI),
             [fields.enableRemoteInstall]: new UntypedFormControl(this.kvsService.kvs.enableRemoteInstall),
             [fields.audioOnStart]: new UntypedFormControl(this.kvsService.kvs.enableAudioOnFirstInteraction),
+            [fields.snapshotIntegrityCheck]: new UntypedFormControl(this.kvsService.kvs.snapshotIntegrityCheck),
         });
 
         this.formGroup.get(fields.audioOnStart)?.valueChanges.subscribe(this.onAudioOnStartChange);

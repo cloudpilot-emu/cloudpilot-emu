@@ -7,5 +7,5 @@
         "declaration": true,
     },
     "include": ["common/**/*.ts", "embedded/**/*.ts"],
-    "exclude": ["node_modules"]
+    "exclude": ["node_modules", "common/test/*.ts"]
 }

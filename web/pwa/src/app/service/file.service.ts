@@ -57,7 +57,7 @@ export class FileService {
         await loader.present();
 
         try {
-            const [rom, memory, savestate] = await this.storageService.loadSession(session);
+            const [rom, memory, savestate] = await this.storageService.loadSession(session, false);
 
             if (!rom) {
                 throw new Error(`invalid ROM ${session.rom}`);

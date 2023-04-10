@@ -15,6 +15,7 @@
     "../common/**/*.d.ts",
   ],
   "exclude": [
-    "src/**/*.spec.ts"
+    "src/**/*.spec.ts",
+    "../common/test/*.ts"
   ]
 }

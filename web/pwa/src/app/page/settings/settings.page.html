@@ -79,6 +79,15 @@
         <ion-toggle formControlName="enableRemoteInstall"></ion-toggle>
       </ion-item>
 
+    <ng-container *ngIf="showDebugOptions"></ng-container>
+
+    <h1>Debug</h1>
+
+    <ion-item lines="none">
+      <ion-label>Snapshot validation (slow)</ion-label>
+      <ion-toggle formControlName="snapshotIntegrityCheck"></ion-toggle>
+    </ion-item>
+
     </form>
   </div>
 

@@ -57,6 +57,9 @@ jobs:
       - name: Lint
         working-directory: web
         run: yarn lint
+      - name: Test
+        working-directory: web
+        run: yarn test
       - name: Build Cloudpilot embedded
         working-directory: web
         run: CP_RELEASE=1 yarn dist-embedded

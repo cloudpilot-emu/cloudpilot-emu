@@ -18,4 +18,5 @@ export interface Kvs {
     autoLockUI: boolean;
     enableRemoteInstall: boolean;
     enableAudioOnFirstInteraction: boolean;
+    snapshotIntegrityCheck: boolean;
 }

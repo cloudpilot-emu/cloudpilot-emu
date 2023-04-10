@@ -17,10 +17,13 @@ import { DynamicTimeout } from '@pwa//helper/dynamicTimeout';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
+import { KvsService } from './kvs.service';
 import { MemoryMetadata } from '@pwa//model/MemoryMetadata';
 import { Session } from '@pwa/model/Session';
 import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
-import { StorageCard } from '@pwa//model/StorageCard';
+import { StorageCard } from '@pwa/model/StorageCard';
+import { crc32 } from '@common/helper/crc';
+import { environment } from 'pwa/src/environments/environment';
 
 declare global {
     interface IDBDatabase {
@@ -47,6 +50,7 @@ export class SnapshotService {
         private emulationState: EmulationStateService,
         private errorService: ErrorService,
         private storageCardContext: StorageCardContext,
+        private kvsService: KvsService,
         private ngZone: NgZone
     ) {}
 
@@ -243,6 +247,11 @@ export class SnapshotService {
             sessionId: this.sessionId,
             totalSize: memory.length << 2,
         };
+
+        if (this.kvsService.kvs.snapshotIntegrityCheck && !environment.production) {
+            metadata.crc32 = crc32(new Uint8Array(memory.buffer, memory.byteOffset, memory.byteLength));
+        }
+
         objectStoreMeta.put(metadata);
 
         for (let i = 0; i < dirtyPages.length; i++) {
