@@ -58,8 +58,6 @@ static const int kBaseAddressShift = 16;  // Shift to get base address from CSGB
     #define PRINTF(...) ;
 #endif
 
-#define SONY_ROM
-
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 1;
 
@@ -1927,14 +1925,6 @@ int32 EmRegsSZ::GetInterruptLevel(void) {
     // USB
     intLevel[0x1F] = (intLevelControl7 >> 8) & 0x000F;
 
-#ifndef SONY_ROM
-    #ifndef NDEBUG
-    for (int ii = 0; ii < 32; ++ii) {
-        EmAssert(intLevel[ii] != 0);
-        EmAssert(intLevel[ii] != 7 || ii == 0x17);
-    }
-    #endif
-#endif
     // Find the highest interrupt level.
 
     int8 result = -1;
@@ -2124,15 +2114,7 @@ Bool EmRegsSZ::GetAsleep(void) {
 // Return the GPIO values for the pins on the port.  These values are used
 // if the select pins are high.
 
-uint8 EmRegsSZ::GetPortInputValue(int port) { return this->GetPortInternalValue(port); }
-
-// ---------------------------------------------------------------------------
-//		� EmRegsSZ::GetPortInternalValue
-// ---------------------------------------------------------------------------
-// Return the dedicated values for the pins on the port.  These values are
-// used if the select pins are low.
-
-uint8 EmRegsSZ::GetPortInternalValue(int port) {
+uint8 EmRegsSZ::GetPortInputValue(int port) {
     uint8 result = 0;
 
     if (port == 'D') {
@@ -2143,6 +2125,14 @@ uint8 EmRegsSZ::GetPortInternalValue(int port) {
 
     return result;
 }
+
+// ---------------------------------------------------------------------------
+//		� EmRegsSZ::GetPortInternalValue
+// ---------------------------------------------------------------------------
+// Return the dedicated values for the pins on the port.  These values are
+// used if the select pins are low.
+
+uint8 EmRegsSZ::GetPortInternalValue(int port) { return 0; }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSZ::PortDataChanged
@@ -2177,12 +2167,6 @@ uint32 EmRegsSZ::portXDataRead(emuptr address, int) {
     uint8 input = EmHAL::GetPortInputValue(port);
     uint8 intFn = EmHAL::GetPortInternalValue(port);
 
-#ifdef SONY_ROM
-    if (port == 'D') {
-        sel |= 0x07;  // No "select" bit in low nybble, so set for IO values.
-    }
-#endif
-
     if (port == 'D') {
         if (fPortDDataCount != 0xFFFFFFFF && ++fPortDDataCount >= 20 * 2) {
             fPortDDataCount = 0xFFFFFFFF;
@@ -2198,12 +2182,6 @@ uint32 EmRegsSZ::portXDataRead(emuptr address, int) {
 
     output &= sel & dir;  // Use the output bits if the "dir" is one.
     input &= sel & ~dir;  // Use the input bits if the "dir" is zero.
-
-    // Assert that there are no overlaps.
-
-    EmAssert((output & input) == 0);
-    EmAssert((output & intFn) == 0);
-    EmAssert((input & intFn) == 0);
 
     // Mush everything together.
 
@@ -2866,7 +2844,7 @@ uint8 EmRegsSZ::GetKeyBits(void) {
         }
     }
 
-    return ~keyData;
+    return ~keyData & (0xff >> (8 - numCols));
 }
 
 // ---------------------------------------------------------------------------
