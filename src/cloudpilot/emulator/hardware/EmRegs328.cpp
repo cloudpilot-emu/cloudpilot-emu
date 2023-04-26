@@ -2706,18 +2706,19 @@ void EmRegs328::UpdateTimers() {
                        timer1TicksPerSecond;
 
         tmr1LastProcessedSystemCycles += (double)ticks / timer1TicksPerSecond * clocksPerSecond;
-        WRITE_REGISTER(tmr1Counter, READ_REGISTER(tmr1Counter) + ticks);
+
+        uint32 updatedCounter = READ_REGISTER(tmr1Counter) + ticks;
+        WRITE_REGISTER(tmr1Counter, static_cast<uint16>(updatedCounter));
 
         uint16 tcmp = READ_REGISTER(tmr1Compare);
-        uint16 tcn = READ_REGISTER(tmr1Counter);
 
-        if (tcn >= tcmp) {
+        if (updatedCounter >= tcmp) {
             // Flag the occurrence of the successful comparison.
             WRITE_REGISTER(tmr1Status, READ_REGISTER(tmr1Status) | hwr328TmrStatusCompare);
 
             // If the Free Run/Restart flag is not set, clear the counter.
             if ((READ_REGISTER(tmr1Control) & hwr328TmrControlFreeRun) == 0) {
-                WRITE_REGISTER(tmr1Counter, tcn - tcmp);
+                WRITE_REGISTER(tmr1Counter, static_cast<uint16>(updatedCounter - tcmp));
             }
 
             // If the timer interrupt is enabled, post an interrupt.
@@ -2729,7 +2730,7 @@ void EmRegs328::UpdateTimers() {
 
         if (!(READ_REGISTER(intMaskHi) & hwr328IntHiTimer1) &&
             (READ_REGISTER(tmr1Control) & hwr328TmrControlEnInterrupt)) {
-            tcn = READ_REGISTER(tmr1Counter);
+            uint16 tcn = READ_REGISTER(tmr1Counter);
             uint16 delta = tcmp - tcn;
             uint64 cycles = ceil((double)delta / timer1TicksPerSecond * clocksPerSecond);
 
