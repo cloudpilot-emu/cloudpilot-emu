@@ -5,7 +5,7 @@
 
 #include "EmCommon.h"
 
-static constexpr size_t N_MEMORY_REGIONS = 5;
+constexpr size_t N_MEMORY_REGIONS = 5;
 
 enum class MemoryRegion : uint8 {
     metadata = 0,

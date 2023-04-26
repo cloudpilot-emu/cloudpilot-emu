@@ -4,8 +4,6 @@
 #include "EmRegsVZ.h"
 #include "EmSonyXZWithSlot.h"
 
-class EmScreenUpdateInfo;
-
 class EmRegsVzPegYellowStone : public EmSonyXzWithSlot<EmRegsVZNoScreen> {
    public:
     EmRegsVzPegYellowStone(EmRegsMB86189& mb86189);
