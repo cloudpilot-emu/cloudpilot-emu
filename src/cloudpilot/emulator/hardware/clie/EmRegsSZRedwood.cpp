@@ -59,7 +59,7 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
 // ---------------------------------------------------------------------------
 
 EmRegsSzRedwood::EmRegsSzRedwood(EmRegsSonyDSP& dsp)
-    : EmRegsSZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)), dsp(dsp) {
+    : EmRegsSZNoScreen(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)), dsp(dsp) {
     dsp.irqChange.AddHandler([=](bool lineState) {
         if (lineState) {
             fPortXEdge['D' - 'D'] |= 0x08;

@@ -1636,6 +1636,28 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, emuControlMask);
     INSTALL_HANDLER(StdRead, StdWrite, emuControl);
     INSTALL_HANDLER(StdRead, StdWrite, emuStatus);
+
+    INSTALL_HANDLER(StdRead, StdWrite, lcdStartAddr);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdScreenSize);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdPageWidth);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdCursorXPos);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdCursorYPos);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdCursorSize);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdBlinkControl);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdColorCursorMapping);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdPanelControl0);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdPanelControl1);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdHorizontalConfig0);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdHorizontalConfig1);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdVerticalConfig0);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdVerticalConfig1);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdPanningOffset);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdGrayPalette);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdPWMContrastControl);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdDMAControl);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdRefreshModeControl);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdInterruptConfiguration);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdInterruptStatus);
 }
 
 // ---------------------------------------------------------------------------
@@ -3596,6 +3618,10 @@ emuptr EmRegsSZ::GetAddressFromPort(int port) {
     return (address + DragonballBase);
 }
 
+bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) { return false; }
+
+uint16 EmRegsSZ::GetLCD2bitMapping() { return 0x3210; }
+
 // ---------------------------------------------------------------------------
 //		� EmRegsSZ::adcIntControlWrite
 // ---------------------------------------------------------------------------
@@ -3806,3 +3832,9 @@ void EmRegsSZ::DispatchPwmChange() {
 
     if (freq <= 20000) EmHAL::onPwmChange.Dispatch(freq, dutyCycle);
 }
+
+bool EmRegsSZNoScreen::CopyLCDFrame(Frame& frame, bool fullRefresh) {
+    return EmHALHandler::CopyLCDFrame(frame, fullRefresh);
+}
+
+uint16 EmRegsSZNoScreen::GetLCD2bitMapping() { return EmHALHandler::GetLCD2bitMapping(); }
