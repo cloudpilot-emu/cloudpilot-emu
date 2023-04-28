@@ -16,8 +16,6 @@
 
 #include "EmRegs.h"
 
-class SessionFile;
-
 class EmRegsFrameBuffer : public EmRegs {
    public:
     EmRegsFrameBuffer(emuptr baseAddr);
