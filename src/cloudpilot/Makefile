@@ -131,6 +131,7 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsEZ.cpp \
 	emulator/hardware/EmRegsVZ.cpp \
 	emulator/hardware/EmRegsSZ.cpp \
+	emulator/hardware/EmRegsESRAM.cpp \
 	emulator/hardware/EmSPISlaveADS784x.cpp \
 	emulator/hardware/EmRegsUSBPhilipsPDIUSBD12.cpp \
 	emulator/hardware/EmRegsSED1376.cpp \
@@ -155,6 +156,7 @@ SOURCE_EMU = \
 	emulator/hardware/EmRegsEZPalmVIIx.cpp \
 	emulator/hardware/EmRegsEZPalmVII.cpp \
 	emulator/hardware/EmRegsPLDPalmVIIEZ.cpp \
+	emulator/hardware/EmRegsSZLP168.cpp \
 	emulator/hardware/EmBankROM.cpp \
 	emulator/hardware/EmUAEGlue.cpp \
 	emulator/hardware/EmSPISlaveSD.cpp \

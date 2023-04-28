@@ -79,6 +79,7 @@ class EmDevice {
     bool IsClie() const;
     bool NeedsBatteryPatch() const;
     bool NeedsBatteryGlobalsHack() const;
+    bool NeedsFullHwrBatteryBypass() const;
     bool BuggySleep() const;
     bool SupportsHardBtnCradle() const;
     int DigitizerScale() const;

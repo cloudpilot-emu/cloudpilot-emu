@@ -1164,6 +1164,8 @@ void EmRegsSZ::Dispose(void) {
     EmHAL::RemoveCycleConsumer(cycleThunk, this);
 }
 
+EmRegsESRAM& EmRegsSZ::GetESRAM() { return esram; }
+
 void EmRegsSZ::Save(Savestate& savestate) { DoSave(savestate); }
 
 void EmRegsSZ::Save(SavestateProbe& savestate) { DoSave(savestate); }
@@ -1413,7 +1415,7 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, csDGroupBase);
     INSTALL_HANDLER(StdRead, StdWrite, csEGroupBase);
     INSTALL_HANDLER(StdRead, StdWrite, csFGroupBase);
-    INSTALL_HANDLER(StdRead, StdWrite, csGGroupBase);
+    INSTALL_HANDLER(StdRead, csgRegWrite, csGGroupBase);
 
     INSTALL_HANDLER(StdRead, csControl1Write, csControl1);
     INSTALL_HANDLER(StdRead, StdWrite, csControl2);
@@ -1425,7 +1427,7 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, csDSelect);
     INSTALL_HANDLER(StdRead, csESelectWrite, csESelect);
     INSTALL_HANDLER(StdRead, StdWrite, csFSelect);
-    INSTALL_HANDLER(StdRead, StdWrite, csGSelect);
+    INSTALL_HANDLER(StdRead, csgRegWrite, csGSelect);
 
     INSTALL_HANDLER(StdRead, StdWrite, emuCS);
 
@@ -2013,7 +2015,7 @@ int32 EmRegsSZ::GetDynamicHeapSize(void) {
         long chip_select_size = (256 * 1024L) << csESIZ;
 
         // Erratum: 11 instead of 7
-        result = chip_select_size / (1 << (11 - csEUPSIZ));
+        result = chip_select_size / (1 << ((revision == Revision::rev10 ? 11 : 7) - csEUPSIZ));
     } else {
         result = (32 * 1024L) << csEUPSIZ;
     }
@@ -3808,6 +3810,21 @@ void EmRegsSZ::pwmp1Write(emuptr address, int size, uint32 value) {
     EmRegsSZ::StdWrite(address, size, value);
 
     if (pwmActive) DispatchPwmChange();
+}
+
+void EmRegsSZ::csgRegWrite(emuptr address, int size, uint32 value) {
+    EmRegsSZ::StdWrite(address, size, value);
+
+    uint16 csg = READ_REGISTER(csGSelect);
+    uint16 csggb = READ_REGISTER(csGGroupBase);
+
+    if (csg & 0x0001) {
+        esram.Enable((csggb & 0xfffc) << 16);
+    } else {
+        esram.Disable();
+    }
+
+    gSession->ScheduleResetBanks();
 }
 
 void EmRegsSZ::DispatchPwmChange() {

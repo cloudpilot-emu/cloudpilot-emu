@@ -188,13 +188,17 @@ namespace {
     CallROMType HeadpatchHwrBattery(void) {
         EmAssert(gSession);
 
+        CALLED_SETUP("Err", "UInt16 cmd, void * cmdP");
+        CALLED_GET_PARAM_VAL(UInt16, cmd);
+
+        if (gSession->GetDevice().NeedsFullHwrBatteryBypass()) {
+            PUT_RESULT_VAL(Err, errNone);
+            return kSkipROM;
+        }
+
         if (!gSession->GetDevice().NeedsBatteryPatch()) {
             return kExecuteROM;
         }
-
-        CALLED_SETUP("Err", "UInt16 cmd, void * cmdP");
-
-        CALLED_GET_PARAM_VAL(UInt16, cmd);
 
         if (cmd == 2 /* hwrBatteryCmdMainRead */) {
             CALLED_GET_PARAM_REF(HwrBatCmdReadType, cmdP, Marshal::kInOut);

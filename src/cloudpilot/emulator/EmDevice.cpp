@@ -81,6 +81,7 @@
 #include "EmRegsPLDPalmVIIEZ.h"
 #include "EmRegsSED1375.h"
 #include "EmRegsSED1376.h"
+#include "EmRegsSZLP168.h"
 #include "EmRegsSZNaples.h"
 #include "EmRegsSZRedwood.h"
 #include "EmRegsSonyDSP.h"
@@ -169,6 +170,7 @@ enum  // DeviceType
     kDevicePEGS500C,
     kDeviceAcerS11,
     kDeviceAcerS65,
+    kDeviceLP168,
     kDeviceLast
 };
 
@@ -563,6 +565,14 @@ static const DeviceInfo kDeviceInfo[] = {
     {kDevicePEGS500C, "PEG-S500C series", {"PEG-S500C"}, kSupports68EZ328, 8192, 0, 0, {}},
     {kDeviceAcerS65, "Acer S65", {"Acer-S65"}, kSupports68VZ328, 16384, 0, 0, {{'acer', 'colr'}}},
     {kDeviceAcerS11, "Acer S11", {"Acer-S11"}, kSupports68VZ328, 16384, 0, 0, {{'acer', 'momo'}}},
+    {kDeviceLP168,
+     "Legend P168",
+     {"Legend-P168"},
+     kSupports68SZ328,
+     16384,
+     0,
+     0,
+     {{'lgnd', 'p168'}}},
 #if 0
     // ===== Handspring devices =====
     {
@@ -1312,7 +1322,10 @@ void EmDevice::CreateRegs(void) const {
         case kDeviceYSX1100: {
             EmRegsSonyDSP* dsp = new EmRegsSonyDSP(0x11000000);
 
-            EmBankRegs::AddSubBank(new EmRegsSzRedwood(*dsp));
+            EmRegsSzRedwood* soc = new EmRegsSzRedwood(*dsp);
+            EmBankRegs::AddSubBank(soc);
+            EmBankRegs::AddSubBank(&soc->GetESRAM());
+
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMQLCDControlT2(
                 *framebuffer, MQ_LCDControllerT2_RegsAddr, MQ_LCDControllerT2_VideoMemStart));
@@ -1324,11 +1337,16 @@ void EmDevice::CreateRegs(void) const {
         case kDeviceYSX1230: {
             EmRegsSonyDSP* dsp = new EmRegsSonyDSP(0x11000000);
 
-            EmBankRegs::AddSubBank(new EmRegsSzNaples(*dsp));
+            EmRegsSzNaples* soc = new EmRegsSzNaples(*dsp);
+            EmBankRegs::AddSubBank(soc);
+            EmBankRegs::AddSubBank(&soc->GetESRAM());
+
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
             EmBankRegs::AddSubBank(framebuffer);
+
             EmBankRegs::AddSubBank(dsp);
+
             break;
         }
 
@@ -1351,6 +1369,14 @@ void EmDevice::CreateRegs(void) const {
             EmBankRegs::AddSubBank(new EmRegsAcerDSPStub());
 
             EmBankRegs::AddSubBank(mb86189);
+            break;
+        }
+
+        case kDeviceLP168: {
+            EmRegsSZLP168* soc = new EmRegsSZLP168();
+            EmBankRegs::AddSubBank(soc);
+            EmBankRegs::AddSubBank(&soc->GetESRAM());
+
             break;
         }
 
@@ -1645,6 +1671,10 @@ void EmDevice::ConfigureMemoryRegions() {
                                            EmRegsSonyDSP::ADDRESS_SPACE_SIZE);
             break;
     }
+
+    if (Supports68SZ328()) {
+        memoryRegionMap.AllocateRegion(MemoryRegion::eSRAM, EmRegsSZ::ESRAM_REGION_SIZE);
+    }
 }
 
 bool EmDevice::IsValid() const { return fDeviceID != kDeviceUnspecified; }
@@ -1722,12 +1752,15 @@ bool EmDevice::NeedsBatteryGlobalsHack() const {
         case kDevicePEGN700C:
         case kDeviceAcerS65:
         case kDeviceAcerS11:
+        case kDeviceLP168:
             return true;
 
         default:
             return false;
     }
 }
+
+bool EmDevice::NeedsFullHwrBatteryBypass() const { return fDeviceID == kDeviceLP168; }
 
 int EmDevice::DigitizerScale() const {
     switch (fDeviceID) {
@@ -1772,6 +1805,7 @@ ScreenDimensions::Kind EmDevice::GetScreenDimensions() const {
 
         case kDeviceHandEra330:
         case kDeviceHandEra330c:
+        case kDeviceLP168:
             return ScreenDimensions::screen240x320;
 
         case kDeviceYSX1100:
