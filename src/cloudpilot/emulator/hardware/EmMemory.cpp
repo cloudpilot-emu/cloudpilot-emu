@@ -256,8 +256,8 @@ namespace {
     array<uint8*, N_MEMORY_REGIONS> dirtyPageRegionPointers;
 
     constexpr MemoryRegion ORDERED_REGIONS[N_MEMORY_REGIONS] = {
-        MemoryRegion::ram, MemoryRegion::framebuffer, MemoryRegion::memorystick,
-        MemoryRegion::sonyDsp, MemoryRegion::metadata};
+        MemoryRegion::ram,     MemoryRegion::framebuffer, MemoryRegion::memorystick,
+        MemoryRegion::sonyDsp, MemoryRegion::eSRAM,       MemoryRegion::metadata};
 
     uint32 get32(uint8* address) {
         return address[0] | (address[1] << 8) | (address[2] << 16) | (address[3] << 24);
@@ -534,22 +534,23 @@ bool Memory::LoadMemoryV2(void* memory, size_t size) {
 }
 
 bool Memory::LoadMemoryV4(void* memory, size_t size) {
-    if (size < 1024) return false;
+    if (size < 1024 || size % 4 != 0) return false;
 
     uint8* toc = static_cast<uint8*>(memory) + size - 1024;
     uint32 offset = 0;
 
+    // this assumes that we only add new regions and never remove old ones
     for (const auto region : ORDERED_REGIONS) {
         const uint32 regionFromImage = get32(toc);
-        toc += 4;
-
-        const uint32 sizeFromImage = get32(toc);
-        toc += 4;
+        const uint32 sizeFromImage = get32(toc + 4);
 
         if ((regionFromImage != static_cast<uint8>(region) ||
              sizeFromImage != regionMap.GetRegionSize(region))) {
-            memset(dirtyPages.get() + (offset >> 13), 0xff, (GetTotalMemorySize() - offset) >> 13);
+            memset(dirtyPageRegionPointers[static_cast<uint8>(region)], 0xff,
+                   regionMap.GetRegionSize(region) >> 13);
             break;
+        } else {
+            toc += 8;
         }
 
         offset += regionMap.GetRegionSize(region);
@@ -557,6 +558,7 @@ bool Memory::LoadMemoryV4(void* memory, size_t size) {
 
     toc = static_cast<uint8*>(memory) + size - 1024;
     offset = 0;
+
     while (toc < static_cast<uint8*>(memory) + size) {
         uint32 regionType = get32(toc);
         toc += 4;
@@ -565,13 +567,6 @@ bool Memory::LoadMemoryV4(void* memory, size_t size) {
         toc += 4;
 
         if (regionType == 0xffffffff) break;
-
-        offset += regionSize;
-        if (offset > size) {
-            cerr << "invalid memory image" << endl << flush;
-            return false;
-        }
-
         if (static_cast<MemoryRegion>(regionType) == MemoryRegion::metadata) continue;
 
         if (regionType >= N_MEMORY_REGIONS) {
@@ -587,8 +582,15 @@ bool Memory::LoadMemoryV4(void* memory, size_t size) {
             continue;
         }
 
+        if (offset + regionSize > size) {
+            cerr << "invalid memory image" << endl << flush;
+            return false;
+        }
+
         memcpy(memoryRegionPointers[static_cast<uint8>(regionType)],
-               static_cast<uint8*>(memory) + offset - regionSize, regionSize);
+               static_cast<uint8*>(memory) + offset, regionSize);
+
+        offset += regionSize;
     }
 
     return true;
