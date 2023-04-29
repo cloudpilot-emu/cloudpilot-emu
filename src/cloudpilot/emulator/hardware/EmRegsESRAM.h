@@ -13,7 +13,7 @@ class EmRegsESRAM : public EmRegs {
     void Enable(emuptr baseAddr);
     void Disable();
 
-    void SetFramebuffer(bool isFramebuffer);
+    void SetFramebufferBase(emuptr framebufferBase);
 
     uint32 GetLong(emuptr address) override;
     uint32 GetWord(emuptr address) override;
@@ -30,6 +30,7 @@ class EmRegsESRAM : public EmRegs {
 
    private:
     emuptr baseAddr{0};
+    emuptr framebufferBase{0};
     bool isActive{false};
     bool isFramebuffer{false};
 };

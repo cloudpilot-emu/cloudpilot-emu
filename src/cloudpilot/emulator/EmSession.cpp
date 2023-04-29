@@ -274,6 +274,8 @@ bool EmSession::Load(size_t size, uint8* buffer) {
         return false;
     }
 
+    Memory::ResetBankHandlers();
+
     return true;
 }
 

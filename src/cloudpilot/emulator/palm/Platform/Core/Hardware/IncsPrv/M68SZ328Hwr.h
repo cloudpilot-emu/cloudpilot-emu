@@ -317,7 +317,11 @@ struct HwrM68SZ328Type
 	UInt16	lcdInterruptConfiguration;	// $00828: LCD Interrupt Configuration
 	UInt16	lcdInterruptStatus;			// $0082A: LCD Interrupt Status
 
-	UInt8									___filler38[0x1F000-0x0082C];
+	UInt8									___filler38_0[0x0a00-0x0082C];
+
+	UInt16  lcdCLUT[256];
+
+	UInt8									___filler38[0x1F000-0x00C00];
 
 	UInt8	scr;						// $10000: System Control Register
 

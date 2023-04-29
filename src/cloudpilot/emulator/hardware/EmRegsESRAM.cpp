@@ -25,6 +25,7 @@ void EmRegsESRAM::Initialize() {
     baseAddr = 0;
     isActive = false;
     isFramebuffer = false;
+    framebufferBase = 0;
 
     EmRegs::Initialize();
     memset(esram, 0, esramSize);
@@ -33,21 +34,24 @@ void EmRegsESRAM::Initialize() {
 void EmRegsESRAM::Reset(Bool hardwareReset) {
     if (hardwareReset) {
         Disable();
+        framebufferBase = 0;
     }
 }
 
 void EmRegsESRAM::Enable(emuptr baseAddr) {
-    cerr << "eSRAM enabled @ 0x" << hex << baseAddr << dec << endl << flush;
     this->baseAddr = baseAddr;
     isActive = true;
+
+    isFramebuffer = framebufferBase >= baseAddr && (framebufferBase - baseAddr) < esramSize;
 }
 
-void EmRegsESRAM::Disable() {
-    cerr << "eSRAM disabled" << endl << flush;
-    isActive = false;
-}
+void EmRegsESRAM::Disable() { isActive = false; }
 
-void EmRegsESRAM::SetFramebuffer(bool isFramebuffer) { this->isFramebuffer = isFramebuffer; }
+void EmRegsESRAM::SetFramebufferBase(emuptr framebufferBase) {
+    this->framebufferBase = framebufferBase;
+
+    isFramebuffer = framebufferBase >= baseAddr && (framebufferBase - baseAddr) < esramSize;
+}
 
 uint32 EmRegsESRAM::GetLong(emuptr address) {
     const uint32 offset = address - baseAddr;

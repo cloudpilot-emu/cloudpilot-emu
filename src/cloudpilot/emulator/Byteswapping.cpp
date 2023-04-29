@@ -561,6 +561,8 @@ void Byteswap(HwrM68SZ328Type& regs) {
     Byteswap(regs.lcdInterruptConfiguration);
     Byteswap(regs.lcdInterruptStatus);
 
+    for (size_t i = 0; i < 256; i++) Byteswap(regs.lcdCLUT[i]);
+
     Byteswap(regs.scr);
 
     Byteswap(regs.pcr);

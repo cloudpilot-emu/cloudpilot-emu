@@ -139,6 +139,12 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     void pwms1Write(emuptr address, int size, uint32 value);
     void pwmp1Write(emuptr address, int size, uint32 value);
     void csgRegWrite(emuptr address, int size, uint32 value);
+    void lcdRegisterWrite(emuptr address, int size, uint32 value);
+    void lcdStartAddrWrite(emuptr address, int size, uint32 value);
+
+    void UpdateFramebufferLocation();
+    void UpdateEsramLocation();
+    void UpdatePalette();
 
     void UpdateTimers();
     void HandleDayRollover();
@@ -182,6 +188,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     EmSPISlave* fSPISlaveADC{nullptr};
 
     EmRegsESRAM esram;
+    uint32 palette[256];
 };
 
 class EmRegsSZNoScreen : public EmRegsSZ {

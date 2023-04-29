@@ -25,6 +25,7 @@
 #include "EmSPISlave.h"  // DoExchange
 #include "EmSession.h"   // gSession
 #include "EmSystemState.h"
+#include "Frame.h"
 #include "Logging.h"        // LogAppendMsg
 #include "Miscellaneous.h"  // GetHostTime
 #include "Savestate.h"
@@ -79,6 +80,18 @@ namespace {
 
     void cycleThunk(void* context, uint64 cycles, bool sleeping) {
         ((EmRegsSZ*)context)->Cycle(cycles, sleeping);
+    }
+
+    inline uint32 decodeColor_12bit(uint16 encoded) {
+        uint8 r = (encoded >> 8) & 0x0f;
+        uint8 g = (encoded >> 4) & 0x0f;
+        uint8 b = (encoded >> 0) & 0x0f;
+
+        r |= (r << 4);
+        g |= (g << 4);
+        b |= (b << 4);
+
+        return 0xff000000 | (b << 16) | (g << 8) | r;
     }
 }  // namespace
 
@@ -540,9 +553,11 @@ static const HwrM68SZ328Type kInitial68SZ328RegisterValues = {
     0x0000,      // UInt16	lcdRefreshModeControl;		// $00826: LCD Refresh Mode Control Register
     0x0000,      // UInt16	lcdInterruptConfiguration;	// $00828: LCD Interrupt Configuration
     0x0000,      // UInt16	lcdInterruptStatus;			// $0082A: LCD Interrupt Status
+    {0},
+    {0},  // UInt32[256] lcdCLUT
 
     {0},  // UInt8
-          // ___filler38[0x1F000-0x0082C];
+          // ___filler38[0x1F000-0x00C2C];
 
     0x1C,  // UInt8	scr;						// $10000: System Control
            // Register
@@ -1205,6 +1220,9 @@ void EmRegsSZ::Load(SavestateLoader& loader) {
     systemCycles = gSession->GetSystemCycles();
     UpdateTimers();
     powerOffCached = GetAsleep();
+
+    UpdateEsramLocation();
+    UpdateFramebufferLocation();
 }
 
 template <typename T>
@@ -1639,27 +1657,28 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, emuControl);
     INSTALL_HANDLER(StdRead, StdWrite, emuStatus);
 
-    INSTALL_HANDLER(StdRead, StdWrite, lcdStartAddr);
-    INSTALL_HANDLER(StdRead, StdWrite, lcdScreenSize);
-    INSTALL_HANDLER(StdRead, StdWrite, lcdPageWidth);
+    INSTALL_HANDLER(StdRead, lcdStartAddrWrite, lcdStartAddr);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdScreenSize);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdPageWidth);
     INSTALL_HANDLER(StdRead, StdWrite, lcdCursorXPos);
     INSTALL_HANDLER(StdRead, StdWrite, lcdCursorYPos);
     INSTALL_HANDLER(StdRead, StdWrite, lcdCursorSize);
     INSTALL_HANDLER(StdRead, StdWrite, lcdBlinkControl);
     INSTALL_HANDLER(StdRead, StdWrite, lcdColorCursorMapping);
     INSTALL_HANDLER(StdRead, StdWrite, lcdPanelControl0);
-    INSTALL_HANDLER(StdRead, StdWrite, lcdPanelControl1);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdPanelControl1);
     INSTALL_HANDLER(StdRead, StdWrite, lcdHorizontalConfig0);
     INSTALL_HANDLER(StdRead, StdWrite, lcdHorizontalConfig1);
     INSTALL_HANDLER(StdRead, StdWrite, lcdVerticalConfig0);
     INSTALL_HANDLER(StdRead, StdWrite, lcdVerticalConfig1);
-    INSTALL_HANDLER(StdRead, StdWrite, lcdPanningOffset);
-    INSTALL_HANDLER(StdRead, StdWrite, lcdGrayPalette);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdPanningOffset);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdGrayPalette);
     INSTALL_HANDLER(StdRead, StdWrite, lcdPWMContrastControl);
     INSTALL_HANDLER(StdRead, StdWrite, lcdDMAControl);
     INSTALL_HANDLER(StdRead, StdWrite, lcdRefreshModeControl);
     INSTALL_HANDLER(StdRead, StdWrite, lcdInterruptConfiguration);
     INSTALL_HANDLER(StdRead, StdWrite, lcdInterruptStatus);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdCLUT);
 }
 
 // ---------------------------------------------------------------------------
@@ -2319,6 +2338,41 @@ uint32 EmRegsSZ::rtcHourMinSecRead(emuptr address, int size) {
 
     // Finish up by doing a standard read.
     return EmRegsSZ::StdRead(address, size);
+}
+
+void EmRegsSZ::UpdateFramebufferLocation() {
+    esram.SetFramebufferBase(READ_REGISTER(lcdStartAddr));
+}
+
+void EmRegsSZ::UpdateEsramLocation() {
+    uint16 csg = READ_REGISTER(csGSelect);
+    uint16 csggb = READ_REGISTER(csGGroupBase);
+
+    if (csg & 0x0001) {
+        esram.Enable((csggb & 0xfffc) << 16);
+    } else {
+        esram.Disable();
+    }
+}
+
+void EmRegsSZ::UpdatePalette() {
+    uint16_t lcdControl1 = READ_REGISTER(lcdPanelControl1);
+    bool isActiveTFT = lcdControl1 & 0x8000;
+    bool isColor = lcdControl1 & 0x4000;
+    uint8 bpp = 1 << ((lcdControl1 >> 9) & 0x07);
+
+    for (int i = 0; i < (1 << bpp); i++) {
+        switch ((static_cast<uint8>(isActiveTFT) << 16) | (static_cast<uint8>(isColor) << 8) |
+                bpp) {
+            case 0x010108: {
+                palette[i] = decodeColor_12bit(READ_REGISTER(lcdCLUT[i]));
+                break;
+            }
+
+            default:
+                palette[i] = 0;
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -3620,7 +3674,45 @@ emuptr EmRegsSZ::GetAddressFromPort(int port) {
     return (address + DragonballBase);
 }
 
-bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) { return false; }
+bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
+    emuptr startAddress = READ_REGISTER(lcdStartAddr);
+    uint16 screenWidth = (READ_REGISTER(lcdScreenSize) >> 9) * 8;
+    uint16 screenHeight = READ_REGISTER(lcdScreenSize) & 0x01ff;
+    uint16 virtualPageWidth = (READ_REGISTER(lcdPageWidth) & 0x03ff) * 2;
+    uint8 panningOffset = READ_REGISTER(lcdPanningOffset) & 0x0f;
+
+    uint16_t lcdControl1 = READ_REGISTER(lcdPanelControl1);
+    // bool isActiveTFT = lcdControl1 & 0x8000;
+    // bool isColor = lcdControl1 & 0x4000;
+    uint8 bpp = 1 << ((lcdControl1 >> 9) & 0x07);
+
+    UpdatePalette();
+
+    if (screenWidth != 240 || screenHeight != 320 || bpp != 8 || virtualPageWidth != screenWidth ||
+        panningOffset != 0)
+        return false;
+
+    frame.bpp = 24;
+    frame.lineWidth = screenWidth;
+    frame.lines = screenHeight;
+    frame.margin = 0;
+    frame.bytesPerLine = screenWidth * 4;
+    frame.hasChanges = true;
+    frame.scaleX = frame.scaleY = 1;
+    frame.firstDirtyLine = 0;
+    frame.lastDirtyLine = screenHeight - 1;
+
+    uint8* base = EmMemGetRealAddress(startAddress);
+    uint32* dest = reinterpret_cast<uint32*>(frame.GetBuffer());
+
+    for (uint32 y = 0; y < screenHeight; y++) {
+        for (uint32 x = 0; x < screenWidth; x++) {
+            dest[y * screenWidth + x] = palette[EmMemDoGet8(base + y * screenWidth + x)];
+        }
+    }
+
+    return true;
+}
 
 uint16 EmRegsSZ::GetLCD2bitMapping() { return 0x3210; }
 
@@ -3815,16 +3907,20 @@ void EmRegsSZ::pwmp1Write(emuptr address, int size, uint32 value) {
 void EmRegsSZ::csgRegWrite(emuptr address, int size, uint32 value) {
     EmRegsSZ::StdWrite(address, size, value);
 
-    uint16 csg = READ_REGISTER(csGSelect);
-    uint16 csggb = READ_REGISTER(csGGroupBase);
-
-    if (csg & 0x0001) {
-        esram.Enable((csggb & 0xfffc) << 16);
-    } else {
-        esram.Disable();
-    }
-
+    UpdateEsramLocation();
     gSession->ScheduleResetBanks();
+}
+
+void EmRegsSZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
+    EmRegsSZ::StdWrite(address, size, value);
+
+    gSystemState.ScreenRequiresFullRefresh();
+}
+
+void EmRegsSZ::lcdStartAddrWrite(emuptr address, int size, uint32 value) {
+    lcdRegisterWrite(address, size, value);
+
+    UpdateFramebufferLocation();
 }
 
 void EmRegsSZ::DispatchPwmChange() {
