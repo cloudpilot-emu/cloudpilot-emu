@@ -23,6 +23,16 @@ Bool EmRegsSZLP168::GetLCDScreenOn(void) { return true; }
 
 Bool EmRegsSZLP168::GetLCDBacklightOn(void) { return true; }
 
+uint8 EmRegsSZLP168::GetPortInputValue(int port) {
+    switch (port) {
+        case 'G':
+            return 0x34;  // jog wheel
+
+        default:
+            return EmRegsSZ::GetPortInputValue(port);
+    }
+}
+
 void EmRegsSZLP168::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) {
     *numRows = kNumButtonRows;
     *numCols = kNumButtonCols;
@@ -31,11 +41,11 @@ void EmRegsSZLP168::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool*
 
     // Determine what row is being asked for.
 
-    UInt8 portCDir = READ_REGISTER(portCDir);
-    UInt8 portCData = READ_REGISTER(portCData);
+    UInt8 portJDir = READ_REGISTER(portJDir);
+    UInt8 portJData = READ_REGISTER(portJData);
 
-    rows[0] = (portCDir & hwrPortCKbdRow0) != 0 && (portCData & hwrPortCKbdRow0) == 0;
-    rows[1] = (portCDir & hwrPortCKbdRow1) != 0 && (portCData & hwrPortCKbdRow1) == 0;
+    rows[0] = (portJDir & hwrPortCKbdRow0) != 0 && (portJData & hwrPortCKbdRow0) == 0;
+    rows[1] = (portJDir & hwrPortCKbdRow1) != 0 && (portJData & hwrPortCKbdRow1) == 0;
 }
 
 uint8 EmRegsSZLP168::GetKeyBits() { return EmRegsSZ::GetKeyBits() << 4; }
