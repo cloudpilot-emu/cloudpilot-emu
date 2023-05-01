@@ -103,6 +103,9 @@ namespace {
         if (gSession->GetDevice().HasCustomDigitizerTransform()) {
             InstallCalibrationInfo();
 
+            CALLED_SETUP("Err", "void");
+            PUT_RESULT_VAL(Err, 0);
+
             return kSkipROM;
         }
 
