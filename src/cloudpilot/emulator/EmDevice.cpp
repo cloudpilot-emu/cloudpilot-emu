@@ -1752,15 +1752,12 @@ bool EmDevice::NeedsBatteryGlobalsHack() const {
         case kDevicePEGN700C:
         case kDeviceAcerS65:
         case kDeviceAcerS11:
-        case kDeviceLP168:
             return true;
 
         default:
             return false;
     }
 }
-
-bool EmDevice::NeedsFullHwrBatteryBypass() const { return fDeviceID == kDeviceLP168; }
 
 void EmDevice::DigitizerScale(uint32& num, uint32& den) const {
     switch (fDeviceID) {

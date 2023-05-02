@@ -1109,6 +1109,8 @@ void EmRegsSZ::Initialize(void) {
     pwmActive = false;
     afterLoad = false;
 
+    padcFifoReadIndex = 0;
+
     EmHAL::AddCycleConsumer(cycleThunk, this);
 
     systemCycles = gSession->GetSystemCycles();
@@ -1158,6 +1160,8 @@ void EmRegsSZ::Reset(Bool hardwareReset) {
 
         pwmActive = false;
         powerOffCached = GetAsleep();
+
+        padcFifoReadIndex = 0;
     }
 
     UpdateTimers();
@@ -1327,11 +1331,11 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, io5BurstLength);
     INSTALL_HANDLER(StdRead, StdWrite, io5DMARequestTimeOut);
 
-    INSTALL_HANDLER(StdRead, StdWrite, adcPenSampleFifo);
-    INSTALL_HANDLER(StdRead, StdWrite, adcControl);
+    INSTALL_HANDLER(penSampleFifoRead, StdWrite, adcPenSampleFifo);
+    INSTALL_HANDLER(StdRead, adcControlWrite, adcControl);
     INSTALL_HANDLER(StdRead, StdWrite, adcPenADSampleRateControl);
-    INSTALL_HANDLER(StdRead, adcIntControlWrite, adcInterruptControl);
-    INSTALL_HANDLER(StdRead, StdWrite, adcInterruptErrorStatus);
+    INSTALL_HANDLER(StdRead, StdWrite, adcInterruptControl);
+    INSTALL_HANDLER(StdRead, NullWrite, adcInterruptErrorStatus);
     INSTALL_HANDLER(StdRead, StdWrite, adcClockDivide);
     INSTALL_HANDLER(StdRead, StdWrite, adcCompareControl);
 
@@ -2338,6 +2342,35 @@ uint32 EmRegsSZ::rtcHourMinSecRead(emuptr address, int size) {
 
     // Finish up by doing a standard read.
     return EmRegsSZ::StdRead(address, size);
+}
+
+uint32 EmRegsSZ::penSampleFifoRead(emuptr address, int size) {
+    uint32 adctrl = READ_REGISTER(adcControl);
+
+    if ((adctrl & 0x01) == 0) return 0;
+
+    uint8 tag = ((adctrl & 0x8000) >> 13) | ((adctrl >> 12) & 0x03);
+    uint8_t readIndex = padcFifoReadIndex++;
+    padcFifoReadIndex %= 12;
+
+    switch (tag) {
+        case 0x0:
+        case 0x4:
+            return 0;
+
+        case 0x1:
+        case 0x5:
+            return 0;
+
+        case 0x2:
+            return (readIndex % 3) ? 0 : GetADCValueU();
+
+        case 0x6:
+            return (readIndex % 4) ? 0 : GetADCValueU();
+
+        default:
+            return GetADCValueU();
+    }
 }
 
 void EmRegsSZ::UpdateFramebufferLocation() {
@@ -3689,8 +3722,10 @@ bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     UpdatePalette();
 
     if (screenWidth != 240 || screenHeight != 320 || bpp != 8 || virtualPageWidth != screenWidth ||
-        panningOffset != 0)
+        panningOffset != 0) {
+        cerr << "unsupported mode bpp=" << (int)bpp << endl << flush;
         return false;
+    }
 
     frame.bpp = 24;
     frame.lineWidth = screenWidth;
@@ -3716,28 +3751,7 @@ bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
 
 uint16 EmRegsSZ::GetLCD2bitMapping() { return 0x3210; }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsSZ::adcIntControlWrite
-// ---------------------------------------------------------------------------
-
-void EmRegsSZ::adcIntControlWrite(emuptr address, int size, uint32 value) {
-    // Do a standard update of the register.
-
-    EmRegsSZ::StdWrite(address, size, value);
-
-    // Get the current value.
-
-    uint32 adcInterruptControl = READ_REGISTER(adcInterruptControl);
-
-    // If hwrSZ328IntHiADC is set, trigger an interrupt.
-
-    if ((adcInterruptControl & hwrSZ328adcIntEnable) != 0) {
-        uint16 intPendingHi = READ_REGISTER(intPendingHi);
-        intPendingHi |= hwrSZ328IntHiADC;
-        WRITE_REGISTER(intPendingHi, intPendingHi);
-        this->UpdateInterrupts();
-    }
-}
+uint16 EmRegsSZ::GetADCValueU() { return 0; }
 
 uint32 EmRegsSZ::CyclesToNextInterrupt(uint64 systemCycles) {
     this->systemCycles = systemCycles;
@@ -3921,6 +3935,23 @@ void EmRegsSZ::lcdStartAddrWrite(emuptr address, int size, uint32 value) {
     lcdRegisterWrite(address, size, value);
 
     UpdateFramebufferLocation();
+}
+
+void EmRegsSZ::adcControlWrite(emuptr address, int size, uint32 value) {
+    StdWrite(address, size, value);
+
+    uint32 istatr = READ_REGISTER(adcInterruptErrorStatus);
+    uint32 adctrl = READ_REGISTER(adcControl);
+
+    if ((adctrl & 0x01) == 0) padcFifoReadIndex = 0;
+
+    istatr &= ~0x80;
+    istatr |= (adctrl & 0x01) << 7;
+
+    istatr &= ~0x01;
+    istatr |= (adctrl >> 1) & 0x01;
+
+    WRITE_REGISTER(adcInterruptErrorStatus, istatr);
 }
 
 void EmRegsSZ::DispatchPwmChange() {

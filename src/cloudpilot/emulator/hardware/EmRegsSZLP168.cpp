@@ -49,3 +49,19 @@ void EmRegsSZLP168::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool*
 }
 
 uint8 EmRegsSZLP168::GetKeyBits() { return EmRegsSZ::GetKeyBits() << 4; }
+
+uint16 EmRegsSZLP168::GetADCValueU() {
+    if (READ_REGISTER(portGData) & 0x02) {
+        return 1024 << 3;
+    }
+
+    if (READ_REGISTER(portBData) & 0x20) {
+        return 0;
+    }
+
+    if (READ_REGISTER(portKData) & 0x02) {
+        return 1024 << 3;
+    }
+
+    return 0;
+}

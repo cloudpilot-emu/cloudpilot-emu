@@ -102,6 +102,8 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
     virtual uint16 GetLCD2bitMapping();
 
+    virtual uint16 GetADCValueU();
+
    private:
     uint32 portXDataRead(emuptr address, int size);
     uint32 tmr1StatusRead(emuptr address, int size);
@@ -111,6 +113,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     uint32 uart2Read(emuptr address, int size);
     uint32 rtcHourMinSecRead(emuptr address, int size);
     uint32 rtcDayRead(emuptr address, int size);
+    uint32 penSampleFifoRead(emuptr address, int size);
 
     void portDIntReqEnWrite(emuptr address, int size, uint32 value);
     void csControl1Write(emuptr address, int size, uint32 value);
@@ -133,7 +136,6 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     void rtcIntStatusWrite(emuptr address, int size, uint32 value);
     void rtcIntEnableWrite(emuptr address, int size, uint32 value);
     void pllRegisterWrite(emuptr address, int size, uint32 value);
-    void adcIntControlWrite(emuptr address, int size, uint32 value);
     void sdramControlEWrite(emuptr address, int size, uint32 value);
     void pwmc1Write(emuptr address, int size, uint32 value);
     void pwms1Write(emuptr address, int size, uint32 value);
@@ -141,6 +143,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     void csgRegWrite(emuptr address, int size, uint32 value);
     void lcdRegisterWrite(emuptr address, int size, uint32 value);
     void lcdStartAddrWrite(emuptr address, int size, uint32 value);
+    void adcControlWrite(emuptr address, int size, uint32 value);
 
     void UpdateFramebufferLocation();
     void UpdateEsramLocation();
@@ -170,6 +173,8 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     uint16 fLastTmr2Status;
     uint8 fPortXEdge['R' - 'D' + 1];
     uint32 fPortDDataCount;
+
+    uint8 padcFifoReadIndex;
 
     EmEvent<>::HandleT onDayRolloverHandle;
 
