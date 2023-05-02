@@ -8,8 +8,8 @@ namespace {
     constexpr const int kNumButtonCols = 4;
 
     const uint16 kKeyMap[kNumButtonRows][kNumButtonCols] = {
-        {keyBitPageDown, keyBitHard1, keyBitHard2, keyBitPower},
-        {keyBitPageUp, keyBitHard3, keyBitHard4, 0}};
+        {keyBitPageUp, keyBitHard1, keyBitHard2, keyBitPower},
+        {keyBitPageDown, keyBitHard3, keyBitHard4, 0}};
 
     constexpr uint8_t hwrPortCKbdRow0 = 0x01;
     constexpr uint8_t hwrPortCKbdRow1 = 0x02;

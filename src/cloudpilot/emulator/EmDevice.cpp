@@ -1762,7 +1762,7 @@ bool EmDevice::NeedsBatteryGlobalsHack() const {
 
 bool EmDevice::NeedsFullHwrBatteryBypass() const { return fDeviceID == kDeviceLP168; }
 
-int EmDevice::DigitizerScale() const {
+void EmDevice::DigitizerScale(uint32& num, uint32& den) const {
     switch (fDeviceID) {
         case kDevicePEGT400:
         case kDevicePEGN600C:
@@ -1770,10 +1770,18 @@ int EmDevice::DigitizerScale() const {
         case kDevicePEGN700C:
         case kDeviceYSX1230:
         case kDeviceYSX1100:
-            return 2;
+            num = 1;
+            den = 2;
+            break;
+
+        case kDeviceLP168:
+            num = 2;
+            den = 3;
+            break;
 
         default:
-            return 1;
+            num = den = 1;
+            break;
     }
 }
 
@@ -1783,6 +1791,7 @@ bool EmDevice::BuggySleep() const {
         case kDevicePalmPacifiC:
         case kDevicePalmI710:
         case kDeviceYSX1230:
+        case kDeviceLP168:
             return true;
 
         default:

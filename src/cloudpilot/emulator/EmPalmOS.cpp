@@ -424,8 +424,13 @@ void EmPalmOS::InjectSystemEvent(CallROMType& callROM) {
             PointType point;
 
             if (evt.isPenDown()) {
-                point.x = evt.getX() / gSession->GetDevice().DigitizerScale();
-                point.y = evt.getY() / gSession->GetDevice().DigitizerScale();
+                uint32 scaleNum;
+                uint32 scaleDen;
+
+                gSession->GetDevice().DigitizerScale(scaleNum, scaleDen);
+
+                point.x = (evt.getX() * scaleNum) / scaleDen;
+                point.y = (evt.getY() * scaleNum) / scaleDen;
 
                 if (gSession->GetDevice().HasCustomDigitizerTransform()) {
                     PenScreenToRaw(&point);
