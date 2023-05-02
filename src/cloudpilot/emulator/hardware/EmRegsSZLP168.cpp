@@ -26,7 +26,7 @@ Bool EmRegsSZLP168::GetLCDBacklightOn(void) { return true; }
 uint8 EmRegsSZLP168::GetPortInputValue(int port) {
     switch (port) {
         case 'G':
-            return 0x34;  // jog wheel
+            return 0x3C;  // 0x34: jog wheel , 0x08: card sense
 
         default:
             return EmRegsSZ::GetPortInputValue(port);

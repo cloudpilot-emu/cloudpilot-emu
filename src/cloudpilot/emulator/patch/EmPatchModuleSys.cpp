@@ -59,8 +59,6 @@ namespace {
         return result;
     }
 
-    CallROMType HeadpatchAlmDisplayAlarm(void) { return kSkipROM; }
-
     CallROMType HeadpatchSysSemaphoreWait(void) {
         // Only do this under 1.0.	Under Palm OS 2.0 and later, EvtGetSysEvent
         // calls SysEvGroupWait instead.  See our headpatch of that function
@@ -442,7 +440,6 @@ namespace {
         {sysTrapHwrIRQ4Handler, HeadpatchHwrIRQ4Handler, TailpatchHwrIRQ4Handler},
         {sysTrapSysSleep, HeadpatchSysSleep, NULL},
         {sysTrapEvtGetEvent, HeadpatchEvtGetEvent, NULL},
-        {sysTrapAlmDisplayAlarm, HeadpatchAlmDisplayAlarm, NULL},
         {0, NULL, NULL}};
 }  // namespace
 
