@@ -112,7 +112,7 @@ void DoSaveLoad(LoadChunkHelper<T>& helper, HwrM68328Type& regs) {
 // saves > 120k of space.
 
 template <typename T>
-void DoSaveLoad(SaveChunkHelper<T>& helper, HwrM68SZ328Type& regs) {
+void DoSaveLoad(SaveChunkHelper<T>& helper, HwrM68SZ328Type& regs, bool includeClut) {
 #if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)
     HwrM68EV328Type regsCopy = regs;
     Byteswap(regsCopy);
@@ -126,15 +126,23 @@ void DoSaveLoad(SaveChunkHelper<T>& helper, HwrM68SZ328Type& regs) {
 
     helper.DoBuffer(registerFile, 0x082c)
         .DoBuffer(registerFile + 0x1f000, sizeof(HwrM68SZ328Type) - 0x1f000);
+
+    if (includeClut) {
+        helper.DoBuffer(registerFile + 0x0a00, 512);
+    }
 #endif
 }
 
 template <typename T>
-void DoSaveLoad(LoadChunkHelper<T>& helper, HwrM68SZ328Type& regs) {
+void DoSaveLoad(LoadChunkHelper<T>& helper, HwrM68SZ328Type& regs, bool includeClut) {
     uint8* registerFile = reinterpret_cast<uint8*>(&regs);
 
     helper.DoBuffer(registerFile, 0x082c)
         .DoBuffer(registerFile + 0x1f000, sizeof(HwrM68SZ328Type) - 0x1f000);
+
+    if (includeClut) {
+        helper.DoBuffer(registerFile + 0x0a00, 512);
+    }
 
 #if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)
     Byteswap(regs);

@@ -17,7 +17,6 @@ class EmRegsSZLP168 : public EmRegsSZ {
 
    protected:
     uint8 GetKeyBits() override;
-
     uint16 GetADCValueU() override;
 };
 

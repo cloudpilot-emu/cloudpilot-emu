@@ -60,7 +60,7 @@ static const int kBaseAddressShift = 16;  // Shift to get base address from CSGB
 #endif
 
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 1;
+    constexpr uint32 SAVESTATE_VERSION = 2;
 
     double TimerTicksPerSecond(uint16 tmrControl, uint16 tmrPrescaler, int32 systemClockFrequency) {
         uint8 clksource = (tmrControl >> 1) & 0x7;
@@ -1227,6 +1227,8 @@ void EmRegsSZ::Load(SavestateLoader& loader) {
 
     UpdateEsramLocation();
     UpdateFramebufferLocation();
+
+    if (version < 2) padcFifoReadIndex = 0;
 }
 
 template <typename T>
@@ -1244,7 +1246,7 @@ void EmRegsSZ::DoSave(T& savestate) {
 
 template <typename T>
 void EmRegsSZ::DoSaveLoad(T& helper, uint32 version) {
-    ::DoSaveLoad(helper, f68SZ328Regs);
+    ::DoSaveLoad(helper, f68SZ328Regs, version >= 2);
 
     helper.DoBool(fHotSyncButtonDown)
         .Do16(fKeyBits)
@@ -1259,6 +1261,8 @@ void EmRegsSZ::DoSaveLoad(T& helper, uint32 version) {
         .DoDouble(tmr2LastProcessedSystemCycles)
         .Do32(lastRtcAlarmCheck)
         .DoBool(pwmActive);
+
+    if (version >= 2) helper.Do8(padcFifoReadIndex);
 }
 
 // ---------------------------------------------------------------------------
