@@ -194,11 +194,14 @@ namespace {
         CALLED_SETUP("Err", "UInt16 cmd, void * cmdP");
         CALLED_GET_PARAM_VAL(UInt16, cmd);
 
-        if (!gSession->GetDevice().NeedsBatteryPatch()) {
-            return kExecuteROM;
+        // hwrBatteryCmdPeriodicUpdate
+        if (cmd == 17 && gSession->GetDevice().SkipBatteryPerdiodicUpdate()) {
+            PUT_RESULT_VAL(Err, errNone);
+            return kSkipROM;
         }
 
-        if (cmd == 2 /* hwrBatteryCmdMainRead */) {
+        // hwrBatteryCmdMainRead
+        if (cmd == 2 && gSession->GetDevice().NeedsBatteryPatch()) {
             CALLED_GET_PARAM_REF(HwrBatCmdReadType, cmdP, Marshal::kInOut);
 
             if (gSession->GetDevice().HardwareID() == 0x0a /*halModelIDVisorPrism*/) {
