@@ -1135,6 +1135,7 @@ void EmRegsSZ::Initialize(void) {
     lastRtcAlarmCheck = -1;
     pwmActive = false;
     afterLoad = false;
+    clutDirty = true;
 
     padcFifoReadIndex = 0;
 
@@ -1190,8 +1191,8 @@ void EmRegsSZ::Reset(Bool hardwareReset) {
 
         pwmActive = false;
         powerOffCached = GetAsleep();
-
         padcFifoReadIndex = 0;
+        clutDirty = true;
     }
 
     UpdateTimers();
@@ -1252,6 +1253,7 @@ void EmRegsSZ::Load(SavestateLoader& loader) {
 
     markScreen = true;
     afterLoad = true;
+    clutDirty = true;
 
     systemCycles = gSession->GetSystemCycles();
     UpdateTimers();
@@ -1718,7 +1720,7 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, lcdRefreshModeControl);
     INSTALL_HANDLER(StdRead, StdWrite, lcdInterruptConfiguration);
     INSTALL_HANDLER(StdRead, StdWrite, lcdInterruptStatus);
-    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdCLUT);
+    INSTALL_HANDLER(StdRead, clutWrite, lcdCLUT);
 }
 
 // ---------------------------------------------------------------------------
@@ -2425,12 +2427,10 @@ void EmRegsSZ::UpdateEsramLocation() {
 }
 
 void EmRegsSZ::UpdatePalette() {
-    const uint16_t lcdControl1 = READ_REGISTER(lcdPanelControl1);
-    const uint8 bpp = 1 << ((lcdControl1 >> 9) & 0x07);
+    if (!clutDirty) return;
+    clutDirty = false;
 
-    if (bpp > 8) return;
-
-    for (int i = 0; i < (1 << bpp); i++) palette[i] = convertColor_12bit(READ_REGISTER(lcdCLUT[i]));
+    for (int i = 0; i < 256; i++) palette[i] = convertColor_12bit(READ_REGISTER(lcdCLUT[i]));
 }
 
 // ---------------------------------------------------------------------------
@@ -4003,6 +4003,7 @@ void EmRegsSZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
     switch (address) {
         case db_addressof(lcdScreenSize):
         case db_addressof(lcdPageWidth):
+        case db_addressof(lcdStartAddr):
             UnmarkScreen();
             break;
     }
@@ -4013,12 +4014,15 @@ void EmRegsSZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
 }
 
 void EmRegsSZ::lcdStartAddrWrite(emuptr address, int size, uint32 value) {
-    UnmarkScreen();
-
     lcdRegisterWrite(address, size, value);
 
     UpdateFramebufferLocation();
-    gSystemState.MarkScreenDirty();
+}
+
+void EmRegsSZ::clutWrite(emuptr address, int size, uint32 value) {
+    EmRegsSZ::lcdRegisterWrite(address, size, value);
+
+    clutDirty = true;
 }
 
 void EmRegsSZ::adcControlWrite(emuptr address, int size, uint32 value) {

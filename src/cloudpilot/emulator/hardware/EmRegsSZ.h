@@ -146,6 +146,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     void csgRegWrite(emuptr address, int size, uint32 value);
     void lcdRegisterWrite(emuptr address, int size, uint32 value);
     void lcdStartAddrWrite(emuptr address, int size, uint32 value);
+    void clutWrite(emuptr address, int size, uint32 value);
     void adcControlWrite(emuptr address, int size, uint32 value);
 
     void UpdateFramebufferLocation();
@@ -200,6 +201,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
 
     EmRegsESRAM esram;
     uint32 palette[256];
+    bool clutDirty{true};
 };
 
 class EmRegsSZNoScreen : public EmRegsSZ {
