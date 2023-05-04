@@ -26,7 +26,7 @@ Bool EmRegsSZLP168::GetLCDBacklightOn(void) { return true; }
 uint8 EmRegsSZLP168::GetPortInputValue(int port) {
     switch (port) {
         case 'G':
-            return 0x3C;  // 0x34: jog wheel , 0x08: card sense
+            return 0x3c;  // 0x34: jog wheel , 0x08: card sense
 
         default:
             return EmRegsSZ::GetPortInputValue(port);
@@ -60,7 +60,9 @@ uint16 EmRegsSZLP168::GetADCValueU() {
     }
 
     if (READ_REGISTER(portKData) & 0x02) {
-        return 1024 << 3;
+        // setting this to 1024 seems to make the battery reading to "overshoot" the stored
+        // value in hwrBatteryLevel, causing delays in PrvAverageBattery
+        return 1020 << 3;
     }
 
     return 0;

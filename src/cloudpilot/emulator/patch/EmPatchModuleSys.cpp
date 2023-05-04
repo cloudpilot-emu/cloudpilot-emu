@@ -194,12 +194,6 @@ namespace {
         CALLED_SETUP("Err", "UInt16 cmd, void * cmdP");
         CALLED_GET_PARAM_VAL(UInt16, cmd);
 
-        // hwrBatteryCmdPeriodicUpdate
-        if (cmd == 17 && gSession->GetDevice().SkipBatteryPerdiodicUpdate()) {
-            PUT_RESULT_VAL(Err, errNone);
-            return kSkipROM;
-        }
-
         // hwrBatteryCmdMainRead
         if (cmd == 2 && gSession->GetDevice().NeedsBatteryPatch()) {
             CALLED_GET_PARAM_REF(HwrBatCmdReadType, cmdP, Marshal::kInOut);

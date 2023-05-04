@@ -79,7 +79,6 @@ class EmDevice {
     bool IsClie() const;
     bool NeedsBatteryPatch() const;
     bool NeedsBatteryGlobalsHack() const;
-    bool SkipBatteryPerdiodicUpdate() const;
     bool BuggySleep() const;
     bool SupportsHardBtnCradle() const;
     void DigitizerScale(uint32& num, uint32& den) const;
