@@ -16,14 +16,18 @@
 
 #include "ButtonEvent.h"
 #include "EmEvent.h"
-#include "EmHAL.h"             // EmHALHandler
-#include "EmRegs.h"            // EmRegs
+#include "EmHAL.h"   // EmHALHandler
+#include "EmRegs.h"  // EmRegs
+#include "EmRegsESRAM.h"
 #include "EmStructs.h"         // RGBList
 #include "EmUARTDragonball.h"  // EmUARTDragonball::State
 
 class EmSPISlave;
 
 class EmRegsSZ : public EmRegs, public EmHALHandler {
+   public:
+    static constexpr uint32 ESRAM_REGION_SIZE = 104 * 1024;
+
    public:
     EmRegsSZ(void);
     virtual ~EmRegsSZ(void);
@@ -32,6 +36,8 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     virtual void Initialize(void);
     virtual void Reset(Bool hardwareReset);
     virtual void Dispose(void);
+
+    EmRegsESRAM* GetESRAM();
 
     virtual void Save(Savestate&);
     virtual void Save(SavestateProbe&);
@@ -93,6 +99,14 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     int GetPortFromAddress(emuptr address);
     emuptr GetAddressFromPort(int port);
 
+    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
+    virtual uint16 GetLCD2bitMapping();
+
+    virtual uint16 GetADCValueU();
+
+    virtual void MarkScreen();
+    virtual void UnmarkScreen();
+
    private:
     uint32 portXDataRead(emuptr address, int size);
     uint32 tmr1StatusRead(emuptr address, int size);
@@ -102,6 +116,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     uint32 uart2Read(emuptr address, int size);
     uint32 rtcHourMinSecRead(emuptr address, int size);
     uint32 rtcDayRead(emuptr address, int size);
+    uint32 penSampleFifoRead(emuptr address, int size);
 
     void portDIntReqEnWrite(emuptr address, int size, uint32 value);
     void csControl1Write(emuptr address, int size, uint32 value);
@@ -124,11 +139,20 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     void rtcIntStatusWrite(emuptr address, int size, uint32 value);
     void rtcIntEnableWrite(emuptr address, int size, uint32 value);
     void pllRegisterWrite(emuptr address, int size, uint32 value);
-    void adcIntControlWrite(emuptr address, int size, uint32 value);
     void sdramControlEWrite(emuptr address, int size, uint32 value);
     void pwmc1Write(emuptr address, int size, uint32 value);
     void pwms1Write(emuptr address, int size, uint32 value);
     void pwmp1Write(emuptr address, int size, uint32 value);
+    void csgRegWrite(emuptr address, int size, uint32 value);
+    void lcdRegisterWrite(emuptr address, int size, uint32 value);
+    void lcdStartAddrWrite(emuptr address, int size, uint32 value);
+    void clutWrite(emuptr address, int size, uint32 value);
+    void adcControlWrite(emuptr address, int size, uint32 value);
+
+    void UpdateFramebufferLocation();
+    void UpdateEsramLocation();
+
+    void UpdatePalette();
 
     void UpdateTimers();
     void HandleDayRollover();
@@ -142,6 +166,11 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     void DoSaveLoad(T& helper, uint32 version);
 
    protected:
+    enum class Revision { rev10, rev12 };
+
+   protected:
+    Revision revision{Revision::rev10};
+
     HwrM68SZ328Type f68SZ328Regs;
     bool fHotSyncButtonDown;
     uint16 fKeyBits;
@@ -150,6 +179,10 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     uint8 fPortXEdge['R' - 'D' + 1];
     uint32 fPortDDataCount;
 
+    uint8 padcFifoReadIndex;
+
+    bool markScreen{true};
+    EmEvent<>::HandleT onMarkScreenCleanHandle;
     EmEvent<>::HandleT onDayRolloverHandle;
 
     double tmr1LastProcessedSystemCycles;
@@ -165,6 +198,23 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
 
     EmUARTDragonball* fUART[2];
     EmSPISlave* fSPISlaveADC{nullptr};
+
+    // This shouldn't be a pointer, but EmBankRegs explicitly assumes that register
+    // banks are heap allocated and takes ownership, so we have no choice.
+    EmRegsESRAM* esram;
+    uint32 palette[256];
+    bool clutDirty{true};
+};
+
+class EmRegsSZNoScreen : public EmRegsSZ {
+   public:
+    EmRegsSZNoScreen() = default;
+
+    bool CopyLCDFrame(Frame& frame, bool fullRefresh) override;
+    uint16 GetLCD2bitMapping() override;
+
+    void MarkScreen() override;
+    void UnmarkScreen() override;
 };
 
 #endif  // _EM_REGS_SZ_H_

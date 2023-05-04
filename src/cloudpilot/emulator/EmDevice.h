@@ -81,7 +81,7 @@ class EmDevice {
     bool NeedsBatteryGlobalsHack() const;
     bool BuggySleep() const;
     bool SupportsHardBtnCradle() const;
-    int DigitizerScale() const;
+    void DigitizerScale(uint32& num, uint32& den) const;
 
     ScreenDimensions::Kind GetScreenDimensions() const;
 

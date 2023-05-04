@@ -16,8 +16,6 @@
 
 #include "EmRegsEZ.h"
 
-class EmScreenUpdateInfo;
-
 class EmRegsEZPalmIIIc : public EmRegsEZ {
    public:
     EmRegsEZPalmIIIc(void);

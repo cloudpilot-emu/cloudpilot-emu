@@ -42,7 +42,7 @@
 
 // Port P Bit settings for Naples
 #define hwrSZNaplesPortPDC_IN 0x80  // PP7 : DC_IN / DC�ެ���d����������
-//#define hwrSZNaplesPortPADC_CNVST		0x40		// PP6 : ADC Conversion Start
+// #define hwrSZNaplesPortPADC_CNVST		0x40		// PP6 : ADC Conversion Start
 
 #define keyBitJogBack (0x0800)  // JogDial: Back key
 
@@ -59,7 +59,7 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
 // ---------------------------------------------------------------------------
 
 EmRegsSzNaples::EmRegsSzNaples(EmRegsSonyDSP& dsp)
-    : EmRegsSZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)), dsp(dsp) {
+    : EmRegsSZNoScreen(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)), dsp(dsp) {
     dsp.irqChange.AddHandler([=](bool lineState) {
         if (lineState) {
             fPortXEdge['D' - 'D'] |= 0x08;
@@ -107,25 +107,6 @@ Bool EmRegsSzNaples::GetSerialPortOn(int /*uartNum*/) {
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsSzNaples::GetPortInputValue(int port) {
-    uint8 result = EmRegsSZ::GetPortInputValue(port);
-
-    if (port == 'P') {
-        result |= hwrSZNaplesPortPDC_IN;
-    }
-
-    if (port == 'F') {
-        // Make sure this is always set, or HwrDisplayWake will hang
-        //		result |= hwrVZNascaPortFLCDPowered;
-    }
-
-    return result;
-}
-
-// ---------------------------------------------------------------------------
-//		� EmRegsSzNaples::GetPortInternalValue
-// ---------------------------------------------------------------------------
-
-uint8 EmRegsSzNaples::GetPortInternalValue(int port) {
     switch (port) {
         case 'D':
             return GetKeyBits() | (dsp.GetIrqLine() ? 0x08 : 0x00);
@@ -137,7 +118,21 @@ uint8 EmRegsSzNaples::GetPortInternalValue(int port) {
             return 0xff;
 
         case 'P':
-            return 0x0a;
+            return 0x0a | hwrSZNaplesPortPDC_IN;
+
+        default:
+            return 0;
+    }
+}
+
+// ---------------------------------------------------------------------------
+//		� EmRegsSzNaples::GetPortInternalValue
+// ---------------------------------------------------------------------------
+
+uint8 EmRegsSzNaples::GetPortInternalValue(int port) {
+    switch (port) {
+        case 'D':
+            return 0x80;
 
         default:
             return 0;

@@ -103,6 +103,9 @@ namespace {
         if (gSession->GetDevice().HasCustomDigitizerTransform()) {
             InstallCalibrationInfo();
 
+            CALLED_SETUP("Err", "void");
+            PUT_RESULT_VAL(Err, 0);
+
             return kSkipROM;
         }
 
@@ -188,15 +191,11 @@ namespace {
     CallROMType HeadpatchHwrBattery(void) {
         EmAssert(gSession);
 
-        if (!gSession->GetDevice().NeedsBatteryPatch()) {
-            return kExecuteROM;
-        }
-
         CALLED_SETUP("Err", "UInt16 cmd, void * cmdP");
-
         CALLED_GET_PARAM_VAL(UInt16, cmd);
 
-        if (cmd == 2 /* hwrBatteryCmdMainRead */) {
+        // hwrBatteryCmdMainRead
+        if (cmd == 2 && gSession->GetDevice().NeedsBatteryPatch()) {
             CALLED_GET_PARAM_REF(HwrBatCmdReadType, cmdP, Marshal::kInOut);
 
             if (gSession->GetDevice().HardwareID() == 0x0a /*halModelIDVisorPrism*/) {

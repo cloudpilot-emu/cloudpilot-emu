@@ -25,7 +25,7 @@
     0x80  // PD7: LOWB_IRQ (L) Power Fail Interrupt	(aka IRQ6) (level, low)
 
 // Port E Bit settings for Redwood
-//#define	hwrSZRedwoodPortEDC_IN			0x08		// PE3 : CHARGING
+// #define	hwrSZRedwoodPortEDC_IN			0x08		// PE3 : CHARGING
 
 // Port F Bit settings for Redwood
 #define hwrSZRedwoodPortFRS232Enable 0x01  // PF0: RS232C_SD Enable the RS232 Transceiver
@@ -59,7 +59,7 @@ const uint16 kButtonMap[kNumButtonRows][kNumButtonCols] = {
 // ---------------------------------------------------------------------------
 
 EmRegsSzRedwood::EmRegsSzRedwood(EmRegsSonyDSP& dsp)
-    : EmRegsSZ(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)), dsp(dsp) {
+    : EmRegsSZNoScreen(), fSPISlaveADC(new EmSPISlaveADS784x(kChannelSet2)), dsp(dsp) {
     dsp.irqChange.AddHandler([=](bool lineState) {
         if (lineState) {
             fPortXEdge['D' - 'D'] |= 0x08;
@@ -106,25 +106,6 @@ Bool EmRegsSzRedwood::GetSerialPortOn(int /*uartNum*/) {
 // ---------------------------------------------------------------------------
 
 uint8 EmRegsSzRedwood::GetPortInputValue(int port) {
-    uint8 result = EmRegsSZ::GetPortInputValue(port);
-
-    if (port == 'P') {
-        result |= hwrSZRedwoodPortPDC_IN;
-    }
-
-    if (port == 'F') {
-        // Make sure this is always set, or HwrDisplayWake will hang
-        //		result |= hwrVZNascaPortFLCDPowered;
-    }
-
-    return result;
-}
-
-// ---------------------------------------------------------------------------
-//		� EmRegsSzRedwood::GetPortInternalValue
-// ---------------------------------------------------------------------------
-
-uint8 EmRegsSzRedwood::GetPortInternalValue(int port) {
     switch (port) {
         case 'D':
             return GetKeyBits() | (dsp.GetIrqLine() ? 0x08 : 0x00);
@@ -139,7 +120,21 @@ uint8 EmRegsSzRedwood::GetPortInternalValue(int port) {
             return 0xff;
 
         case 'P':
-            return 0x0a;
+            return 0x0a | hwrSZRedwoodPortPDC_IN;
+
+        default:
+            return 0;
+    }
+}
+
+// ---------------------------------------------------------------------------
+//		� EmRegsSzRedwood::GetPortInternalValue
+// ---------------------------------------------------------------------------
+
+uint8 EmRegsSzRedwood::GetPortInternalValue(int port) {
+    switch (port) {
+        case 'D':
+            return 0x80;
 
         default:
             return 0;

@@ -113,21 +113,21 @@ struct HwrM68SZ328Type
 	UInt16	io5BurstLength;				// $00190: I/O Channel 5 Burst Length Register
 	UInt16	io5DMARequestTimeOut;		// $00192: I/O Channel 5 DMA Request Time-Out Register
 
-	UInt8									___filler07[0x200-0x194];
+	UInt8									___filler07[0x202-0x194];
 
 	UInt16	adcPenSampleFifo;			// $00200: ADC Pen Sample FIFO
 
-	UInt8									___filler08[0x210-0x202];
+	UInt8									___filler08[0x210-0x204];
 
 	UInt32	adcControl;					// $00210: ADC Control Register
 	UInt16	adcPenADSampleRateControl;	// $00214: ADC Pen A/D Sample Rate Control Register
 
 	UInt8									___filler09[0x218-0x216];
 
-	UInt16	adcInterruptControl;		// $00218: ADC Interrupt Control Register
-	UInt16	adcInterruptErrorStatus;	// $0021A: ADC Interrupt/Error Status Register
+	UInt32	adcInterruptControl;		// $00218: ADC Interrupt Control Register
+	UInt32	adcInterruptErrorStatus;	// $0021C: ADC Interrupt/Error Status Register
 
-	UInt8									___filler10[0x22C-0x21C];
+	UInt8									___filler10[0x22C-0x220];
 
 	UInt16	adcClockDivide;				// $0022C: ADC Clock Divide Register
 
@@ -317,7 +317,11 @@ struct HwrM68SZ328Type
 	UInt16	lcdInterruptConfiguration;	// $00828: LCD Interrupt Configuration
 	UInt16	lcdInterruptStatus;			// $0082A: LCD Interrupt Status
 
-	UInt8									___filler38[0x1F000-0x0082C];
+	UInt8									___filler38_0[0x0a00-0x0082C];
+
+	UInt16  lcdCLUT[256];
+
+	UInt8									___filler38[0x1F000-0x00C00];
 
 	UInt8	scr;						// $10000: System Control Register
 

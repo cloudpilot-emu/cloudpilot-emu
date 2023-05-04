@@ -4,9 +4,7 @@
 #include "EmRegsSZ.h"
 #include "EmRegsSonyDSP.h"
 
-class EmScreenUpdateInfo;
-
-class EmRegsSzNaples : public EmRegsSZ {
+class EmRegsSzNaples : public EmRegsSZNoScreen {
    public:
     EmRegsSzNaples(EmRegsSonyDSP& dsp);
     virtual ~EmRegsSzNaples(void);

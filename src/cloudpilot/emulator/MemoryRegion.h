@@ -5,14 +5,15 @@
 
 #include "EmCommon.h"
 
-static constexpr size_t N_MEMORY_REGIONS = 5;
+constexpr size_t N_MEMORY_REGIONS = 6;
 
 enum class MemoryRegion : uint8 {
     metadata = 0,
     ram = 1,
     framebuffer = 2,
     memorystick = 3,
-    sonyDsp = 4
+    sonyDsp = 4,
+    eSRAM = 5
 };
 
 class MemoryRegionMap {

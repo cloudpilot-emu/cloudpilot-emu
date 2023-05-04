@@ -117,6 +117,7 @@ export const SUPPORTED_DEVICES = [
     DeviceId.pegT650c,
     DeviceId.pegNR70,
     DeviceId.acerS11,
+    DeviceId.lp168,
 ];
 
 function guard(): any {

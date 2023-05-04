@@ -120,11 +120,10 @@ void StackDump::Dump() const {
     for (uint8 i = 0; i < frameCount; i++) {
         if (!inRom(pc)) {
             cerr << "ERROR: pc 0x" << hex << pc << dec << " not in ROM" << endl << flush;
-            break;
+        } else {
+            cerr << "frame " << (int)i << ": 0x" << hex << pc << dec << " [" << identifyFrame(pc)
+                 << "]" << endl;
         }
-
-        cerr << "frame " << (int)i << ": 0x" << hex << pc << dec << " [" << identifyFrame(pc) << "]"
-             << endl;
 
         if (dumpFrames) {
             dumpMemory(fp, EmMemGet32(fp), maxFrameSize);

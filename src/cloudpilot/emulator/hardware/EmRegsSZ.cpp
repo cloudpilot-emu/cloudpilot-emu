@@ -25,8 +25,11 @@
 #include "EmSPISlave.h"  // DoExchange
 #include "EmSession.h"   // gSession
 #include "EmSystemState.h"
-#include "Logging.h"        // LogAppendMsg
+#include "Frame.h"
+#include "Logging.h"  // LogAppendMsg
+#include "MetaMemory.h"
 #include "Miscellaneous.h"  // GetHostTime
+#include "Nibbler.h"
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
@@ -58,10 +61,8 @@ static const int kBaseAddressShift = 16;  // Shift to get base address from CSGB
     #define PRINTF(...) ;
 #endif
 
-#define SONY_ROM
-
 namespace {
-    constexpr uint32 SAVESTATE_VERSION = 1;
+    constexpr uint32 SAVESTATE_VERSION = 2;
 
     double TimerTicksPerSecond(uint16 tmrControl, uint16 tmrPrescaler, int32 systemClockFrequency) {
         uint8 clksource = (tmrControl >> 1) & 0x7;
@@ -81,6 +82,43 @@ namespace {
 
     void cycleThunk(void* context, uint64 cycles, bool sleeping) {
         ((EmRegsSZ*)context)->Cycle(cycles, sleeping);
+    }
+
+    template <class T>
+    void markScreenWith(T marker, HwrM68SZ328Type& f68SZ328Regs) {
+        const uint16 screenHeight = READ_REGISTER(lcdScreenSize) & 0x01ff;
+        const uint16 virtualPageWidth = (READ_REGISTER(lcdPageWidth) & 0x03ff) * 2;
+
+        const emuptr firstLineAddr = READ_REGISTER(lcdStartAddr) & ~1;
+        const emuptr lastLineAddr = firstLineAddr + (screenHeight + 1) * virtualPageWidth;
+
+        if (EmMemGetBankPtr(firstLineAddr) == nullptr) return;
+
+        marker(firstLineAddr, lastLineAddr);
+    }
+
+    inline uint32 convertColor_12bit(uint16 encoded) {
+        uint8 r = (encoded >> 8) & 0x0f;
+        uint8 g = (encoded >> 4) & 0x0f;
+        uint8 b = (encoded >> 0) & 0x0f;
+
+        r |= (r << 4);
+        g |= (g << 4);
+        b |= (b << 4);
+
+        return 0xff000000 | (b << 16) | (g << 8) | r;
+    }
+
+    inline uint32 convertColor_16bit(uint16 encoded) {
+        uint8 r = (encoded >> 11) & 0x1f;
+        uint8 g = (encoded >> 5) & 0x3f;
+        uint8 b = (encoded >> 0) & 0x1f;
+
+        r = (r << 3) | (r >> 2);
+        g = (g << 2) | (g >> 4);
+        b = (b << 3) | (b >> 2);
+
+        return 0xff000000 | (b << 16) | (g << 8) | r;
     }
 }  // namespace
 
@@ -542,9 +580,11 @@ static const HwrM68SZ328Type kInitial68SZ328RegisterValues = {
     0x0000,      // UInt16	lcdRefreshModeControl;		// $00826: LCD Refresh Mode Control Register
     0x0000,      // UInt16	lcdInterruptConfiguration;	// $00828: LCD Interrupt Configuration
     0x0000,      // UInt16	lcdInterruptStatus;			// $0082A: LCD Interrupt Status
+    {0},
+    {0},  // UInt32[256] lcdCLUT
 
     {0},  // UInt8
-          // ___filler38[0x1F000-0x0082C];
+          // ___filler38[0x1F000-0x00C2C];
 
     0x1C,  // UInt8	scr;						// $10000: System Control
            // Register
@@ -1070,7 +1110,8 @@ EmRegsSZ::EmRegsSZ(void)
       fKeyBits(0),
       fLastTmr1Status(0),
       fLastTmr2Status(0),
-      fPortDDataCount(0) {
+      fPortDDataCount(0),
+      esram(new EmRegsESRAM()) {
     fUART[0] = NULL;
     fUART[1] = NULL;
 
@@ -1095,6 +1136,9 @@ void EmRegsSZ::Initialize(void) {
     lastRtcAlarmCheck = -1;
     pwmActive = false;
     afterLoad = false;
+    clutDirty = true;
+
+    padcFifoReadIndex = 0;
 
     EmHAL::AddCycleConsumer(cycleThunk, this);
 
@@ -1109,6 +1153,8 @@ void EmRegsSZ::Initialize(void) {
 
     UpdateTimers();
     powerOffCached = GetAsleep();
+
+    onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
 }
 
 // ---------------------------------------------------------------------------
@@ -1117,6 +1163,7 @@ void EmRegsSZ::Initialize(void) {
 
 void EmRegsSZ::Reset(Bool hardwareReset) {
     EmRegs::Reset(hardwareReset);
+    UnmarkScreen();
 
     if (hardwareReset) {
         tmr1LastProcessedSystemCycles = systemCycles;
@@ -1145,6 +1192,8 @@ void EmRegsSZ::Reset(Bool hardwareReset) {
 
         pwmActive = false;
         powerOffCached = GetAsleep();
+        padcFifoReadIndex = 0;
+        clutDirty = true;
     }
 
     UpdateTimers();
@@ -1162,9 +1211,12 @@ void EmRegsSZ::Dispose(void) {
 
     EmRegs::Dispose();
 
+    gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
     EmHAL::onDayRollover.RemoveHandler(onDayRolloverHandle);
     EmHAL::RemoveCycleConsumer(cycleThunk, this);
 }
+
+EmRegsESRAM* EmRegsSZ::GetESRAM() { return esram; }
 
 void EmRegsSZ::Save(Savestate& savestate) { DoSave(savestate); }
 
@@ -1200,11 +1252,18 @@ void EmRegsSZ::Load(SavestateLoader& loader) {
 
     gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csESelect) & ROPMask) != 0;
 
+    markScreen = true;
     afterLoad = true;
+    clutDirty = true;
 
     systemCycles = gSession->GetSystemCycles();
     UpdateTimers();
     powerOffCached = GetAsleep();
+
+    UpdateEsramLocation();
+    UpdateFramebufferLocation();
+
+    if (version < 2) padcFifoReadIndex = 0;
 }
 
 template <typename T>
@@ -1222,7 +1281,7 @@ void EmRegsSZ::DoSave(T& savestate) {
 
 template <typename T>
 void EmRegsSZ::DoSaveLoad(T& helper, uint32 version) {
-    ::DoSaveLoad(helper, f68SZ328Regs);
+    ::DoSaveLoad(helper, f68SZ328Regs, version >= 2);
 
     helper.DoBool(fHotSyncButtonDown)
         .Do16(fKeyBits)
@@ -1237,6 +1296,8 @@ void EmRegsSZ::DoSaveLoad(T& helper, uint32 version) {
         .DoDouble(tmr2LastProcessedSystemCycles)
         .Do32(lastRtcAlarmCheck)
         .DoBool(pwmActive);
+
+    if (version >= 2) helper.Do8(padcFifoReadIndex);
 }
 
 // ---------------------------------------------------------------------------
@@ -1309,11 +1370,11 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, io5BurstLength);
     INSTALL_HANDLER(StdRead, StdWrite, io5DMARequestTimeOut);
 
-    INSTALL_HANDLER(StdRead, StdWrite, adcPenSampleFifo);
-    INSTALL_HANDLER(StdRead, StdWrite, adcControl);
+    INSTALL_HANDLER(penSampleFifoRead, StdWrite, adcPenSampleFifo);
+    INSTALL_HANDLER(StdRead, adcControlWrite, adcControl);
     INSTALL_HANDLER(StdRead, StdWrite, adcPenADSampleRateControl);
-    INSTALL_HANDLER(StdRead, adcIntControlWrite, adcInterruptControl);
-    INSTALL_HANDLER(StdRead, StdWrite, adcInterruptErrorStatus);
+    INSTALL_HANDLER(StdRead, StdWrite, adcInterruptControl);
+    INSTALL_HANDLER(StdRead, NullWrite, adcInterruptErrorStatus);
     INSTALL_HANDLER(StdRead, StdWrite, adcClockDivide);
     INSTALL_HANDLER(StdRead, StdWrite, adcCompareControl);
 
@@ -1415,7 +1476,7 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, csDGroupBase);
     INSTALL_HANDLER(StdRead, StdWrite, csEGroupBase);
     INSTALL_HANDLER(StdRead, StdWrite, csFGroupBase);
-    INSTALL_HANDLER(StdRead, StdWrite, csGGroupBase);
+    INSTALL_HANDLER(StdRead, csgRegWrite, csGGroupBase);
 
     INSTALL_HANDLER(StdRead, csControl1Write, csControl1);
     INSTALL_HANDLER(StdRead, StdWrite, csControl2);
@@ -1427,7 +1488,7 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, csDSelect);
     INSTALL_HANDLER(StdRead, csESelectWrite, csESelect);
     INSTALL_HANDLER(StdRead, StdWrite, csFSelect);
-    INSTALL_HANDLER(StdRead, StdWrite, csGSelect);
+    INSTALL_HANDLER(StdRead, csgRegWrite, csGSelect);
 
     INSTALL_HANDLER(StdRead, StdWrite, emuCS);
 
@@ -1638,6 +1699,29 @@ void EmRegsSZ::SetSubBankHandlers(void) {
     INSTALL_HANDLER(StdRead, StdWrite, emuControlMask);
     INSTALL_HANDLER(StdRead, StdWrite, emuControl);
     INSTALL_HANDLER(StdRead, StdWrite, emuStatus);
+
+    INSTALL_HANDLER(StdRead, lcdStartAddrWrite, lcdStartAddr);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdScreenSize);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdPageWidth);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdCursorXPos);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdCursorYPos);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdCursorSize);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdBlinkControl);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdColorCursorMapping);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdPanelControl0);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdPanelControl1);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdHorizontalConfig0);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdHorizontalConfig1);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdVerticalConfig0);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdVerticalConfig1);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdPanningOffset);
+    INSTALL_HANDLER(StdRead, lcdRegisterWrite, lcdGrayPalette);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdPWMContrastControl);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdDMAControl);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdRefreshModeControl);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdInterruptConfiguration);
+    INSTALL_HANDLER(StdRead, StdWrite, lcdInterruptStatus);
+    INSTALL_HANDLER(StdRead, clutWrite, lcdCLUT);
 }
 
 // ---------------------------------------------------------------------------
@@ -1927,14 +2011,6 @@ int32 EmRegsSZ::GetInterruptLevel(void) {
     // USB
     intLevel[0x1F] = (intLevelControl7 >> 8) & 0x000F;
 
-#ifndef SONY_ROM
-    #ifndef NDEBUG
-    for (int ii = 0; ii < 32; ++ii) {
-        EmAssert(intLevel[ii] != 0);
-        EmAssert(intLevel[ii] != 7 || ii == 0x17);
-    }
-    #endif
-#endif
     // Find the highest interrupt level.
 
     int8 result = -1;
@@ -2001,7 +2077,7 @@ int32 EmRegsSZ::GetDynamicHeapSize(void) {
         long chip_select_size = (256 * 1024L) << csESIZ;
 
         // Erratum: 11 instead of 7
-        result = chip_select_size / (1 << (11 - csEUPSIZ));
+        result = chip_select_size / (1 << ((revision == Revision::rev10 ? 11 : 7) - csEUPSIZ));
     } else {
         result = (32 * 1024L) << csEUPSIZ;
     }
@@ -2124,15 +2200,7 @@ Bool EmRegsSZ::GetAsleep(void) {
 // Return the GPIO values for the pins on the port.  These values are used
 // if the select pins are high.
 
-uint8 EmRegsSZ::GetPortInputValue(int port) { return this->GetPortInternalValue(port); }
-
-// ---------------------------------------------------------------------------
-//		� EmRegsSZ::GetPortInternalValue
-// ---------------------------------------------------------------------------
-// Return the dedicated values for the pins on the port.  These values are
-// used if the select pins are low.
-
-uint8 EmRegsSZ::GetPortInternalValue(int port) {
+uint8 EmRegsSZ::GetPortInputValue(int port) {
     uint8 result = 0;
 
     if (port == 'D') {
@@ -2143,6 +2211,14 @@ uint8 EmRegsSZ::GetPortInternalValue(int port) {
 
     return result;
 }
+
+// ---------------------------------------------------------------------------
+//		� EmRegsSZ::GetPortInternalValue
+// ---------------------------------------------------------------------------
+// Return the dedicated values for the pins on the port.  These values are
+// used if the select pins are low.
+
+uint8 EmRegsSZ::GetPortInternalValue(int port) { return 0; }
 
 // ---------------------------------------------------------------------------
 //		� EmRegsSZ::PortDataChanged
@@ -2177,12 +2253,6 @@ uint32 EmRegsSZ::portXDataRead(emuptr address, int) {
     uint8 input = EmHAL::GetPortInputValue(port);
     uint8 intFn = EmHAL::GetPortInternalValue(port);
 
-#ifdef SONY_ROM
-    if (port == 'D') {
-        sel |= 0x07;  // No "select" bit in low nybble, so set for IO values.
-    }
-#endif
-
     if (port == 'D') {
         if (fPortDDataCount != 0xFFFFFFFF && ++fPortDDataCount >= 20 * 2) {
             fPortDDataCount = 0xFFFFFFFF;
@@ -2198,12 +2268,6 @@ uint32 EmRegsSZ::portXDataRead(emuptr address, int) {
 
     output &= sel & dir;  // Use the output bits if the "dir" is one.
     input &= sel & ~dir;  // Use the input bits if the "dir" is zero.
-
-    // Assert that there are no overlaps.
-
-    EmAssert((output & input) == 0);
-    EmAssert((output & intFn) == 0);
-    EmAssert((input & intFn) == 0);
 
     // Mush everything together.
 
@@ -2317,6 +2381,57 @@ uint32 EmRegsSZ::rtcHourMinSecRead(emuptr address, int size) {
 
     // Finish up by doing a standard read.
     return EmRegsSZ::StdRead(address, size);
+}
+
+uint32 EmRegsSZ::penSampleFifoRead(emuptr address, int size) {
+    uint32 adctrl = READ_REGISTER(adcControl);
+
+    if ((adctrl & 0x01) == 0) return 0;
+
+    uint8 tag = ((adctrl & 0x8000) >> 13) | ((adctrl >> 12) & 0x03);
+    uint8_t readIndex = padcFifoReadIndex++;
+    padcFifoReadIndex %= 12;
+
+    switch (tag) {
+        case 0x0:
+        case 0x4:
+            return 0;
+
+        case 0x1:
+        case 0x5:
+            return 0;
+
+        case 0x2:
+            return (readIndex % 3) ? 0 : GetADCValueU();
+
+        case 0x6:
+            return (readIndex % 4) ? 0 : GetADCValueU();
+
+        default:
+            return GetADCValueU();
+    }
+}
+
+void EmRegsSZ::UpdateFramebufferLocation() {
+    esram->SetFramebufferBase(READ_REGISTER(lcdStartAddr));
+}
+
+void EmRegsSZ::UpdateEsramLocation() {
+    uint16 csg = READ_REGISTER(csGSelect);
+    uint16 csggb = READ_REGISTER(csGGroupBase);
+
+    if (csg & 0x0001) {
+        esram->Enable((csggb & 0xfffc) << 16);
+    } else {
+        esram->Disable();
+    }
+}
+
+void EmRegsSZ::UpdatePalette() {
+    if (!clutDirty) return;
+    clutDirty = false;
+
+    for (int i = 0; i < 256; i++) palette[i] = convertColor_12bit(READ_REGISTER(lcdCLUT[i]));
 }
 
 // ---------------------------------------------------------------------------
@@ -2866,7 +2981,7 @@ uint8 EmRegsSZ::GetKeyBits(void) {
         }
     }
 
-    return ~keyData;
+    return ~keyData & (0xff >> (8 - numCols));
 }
 
 // ---------------------------------------------------------------------------
@@ -3618,27 +3733,99 @@ emuptr EmRegsSZ::GetAddressFromPort(int port) {
     return (address + DragonballBase);
 }
 
-// ---------------------------------------------------------------------------
-//		� EmRegsSZ::adcIntControlWrite
-// ---------------------------------------------------------------------------
+bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
+    const emuptr startAddress = READ_REGISTER(lcdStartAddr) & ~1;
+    const uint16 screenWidth = (READ_REGISTER(lcdScreenSize) >> 9) * 8;
+    const uint16 screenHeight = READ_REGISTER(lcdScreenSize) & 0x01ff;
+    const uint16 virtualPageWidth = (READ_REGISTER(lcdPageWidth) & 0x03ff) * 2;
+    const uint8 panningOffset = READ_REGISTER(lcdPanningOffset) & 0x0f;
+    const uint16_t lcdControl1 = READ_REGISTER(lcdPanelControl1);
+    const uint8 bpp = 1 << ((lcdControl1 >> 9) & 0x07);
 
-void EmRegsSZ::adcIntControlWrite(emuptr address, int size, uint32 value) {
-    // Do a standard update of the register.
-
-    EmRegsSZ::StdWrite(address, size, value);
-
-    // Get the current value.
-
-    uint32 adcInterruptControl = READ_REGISTER(adcInterruptControl);
-
-    // If hwrSZ328IntHiADC is set, trigger an interrupt.
-
-    if ((adcInterruptControl & hwrSZ328adcIntEnable) != 0) {
-        uint16 intPendingHi = READ_REGISTER(intPendingHi);
-        intPendingHi |= hwrSZ328IntHiADC;
-        WRITE_REGISTER(intPendingHi, intPendingHi);
-        this->UpdateInterrupts();
+    if (screenWidth % 8 != 0) {
+        return false;
     }
+
+    frame.bpp = 24;
+    frame.lineWidth = screenWidth;
+    frame.lines = screenHeight;
+    frame.margin = 0;
+    frame.bytesPerLine = screenWidth * 4;
+    frame.scaleX = frame.scaleY = 1;
+    frame.lineWidth = screenWidth;
+
+    frame.UpdateDirtyLines(gSystemState, startAddress, virtualPageWidth, fullRefresh);
+    if (!frame.hasChanges) return true;
+
+    uint32* dest =
+        reinterpret_cast<uint32*>(frame.GetBuffer()) + frame.firstDirtyLine * frame.lineWidth;
+
+    switch (bpp) {
+        case 4: {
+            UpdatePalette();
+            uint8* base = EmMemGetRealAddress(startAddress);
+            Nibbler<4, true> nibbler;
+
+            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                nibbler.reset(base + y * virtualPageWidth, panningOffset);
+
+                for (uint32 x = 0; x < screenWidth; x++) {
+                    *(dest++) = palette[nibbler.nibble()];
+                }
+            }
+
+            return true;
+        }
+
+        case 8: {
+            UpdatePalette();
+            uint8* base = EmMemGetRealAddress(startAddress);
+
+            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                uint8* src = base + y * virtualPageWidth + (panningOffset >> 3);
+
+                for (uint32 x = 0; x < screenWidth; x++) {
+                    *(dest++) = palette[EmMemDoGet8(src++)];
+                }
+            }
+
+            return true;
+        }
+
+        case 16: {
+            uint16* base = reinterpret_cast<uint16*>(EmMemGetRealAddress(startAddress & ~1));
+
+            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
+                uint16* src = base + y * (virtualPageWidth >> 1) + (panningOffset >> 4);
+
+                for (uint32 x = 0; x < screenWidth; x++) {
+                    *(dest++) = convertColor_16bit(EmMemDoGet16(src++));
+                }
+            }
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+uint16 EmRegsSZ::GetLCD2bitMapping() { return 0x3210; }
+
+uint16 EmRegsSZ::GetADCValueU() { return 0; }
+
+void EmRegsSZ::MarkScreen() {
+    if (!markScreen) return;
+
+    if (!esram->IsFramebuffer()) markScreenWith(MetaMemory::MarkScreen, f68SZ328Regs);
+
+    markScreen = false;
+}
+
+void EmRegsSZ::UnmarkScreen() {
+    if (!esram->IsFramebuffer()) markScreenWith(MetaMemory::UnmarkScreen, f68SZ328Regs);
+
+    markScreen = true;
 }
 
 uint32 EmRegsSZ::CyclesToNextInterrupt(uint64 systemCycles) {
@@ -3806,6 +3993,56 @@ void EmRegsSZ::pwmp1Write(emuptr address, int size, uint32 value) {
     if (pwmActive) DispatchPwmChange();
 }
 
+void EmRegsSZ::csgRegWrite(emuptr address, int size, uint32 value) {
+    EmRegsSZ::StdWrite(address, size, value);
+
+    UpdateEsramLocation();
+    gSession->ScheduleResetBanks();
+}
+
+void EmRegsSZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
+    switch (address) {
+        case db_addressof(lcdScreenSize):
+        case db_addressof(lcdPageWidth):
+        case db_addressof(lcdStartAddr):
+            UnmarkScreen();
+            break;
+    }
+
+    EmRegsSZ::StdWrite(address, size, value);
+
+    gSystemState.MarkScreenDirty();
+}
+
+void EmRegsSZ::lcdStartAddrWrite(emuptr address, int size, uint32 value) {
+    lcdRegisterWrite(address, size, value);
+
+    UpdateFramebufferLocation();
+}
+
+void EmRegsSZ::clutWrite(emuptr address, int size, uint32 value) {
+    EmRegsSZ::lcdRegisterWrite(address, size, value);
+
+    clutDirty = true;
+}
+
+void EmRegsSZ::adcControlWrite(emuptr address, int size, uint32 value) {
+    StdWrite(address, size, value);
+
+    uint32 istatr = READ_REGISTER(adcInterruptErrorStatus);
+    uint32 adctrl = READ_REGISTER(adcControl);
+
+    if ((adctrl & 0x01) == 0) padcFifoReadIndex = 0;
+
+    istatr &= ~0x80;
+    istatr |= (adctrl & 0x01) << 7;
+
+    istatr &= ~0x01;
+    istatr |= (adctrl >> 1) & 0x01;
+
+    WRITE_REGISTER(adcInterruptErrorStatus, istatr);
+}
+
 void EmRegsSZ::DispatchPwmChange() {
     uint16 pwmc1 = READ_REGISTER(pwmControl);
     uint8 pwms1 = READ_REGISTER(pwmSampleLo);
@@ -3828,3 +4065,13 @@ void EmRegsSZ::DispatchPwmChange() {
 
     if (freq <= 20000) EmHAL::onPwmChange.Dispatch(freq, dutyCycle);
 }
+
+bool EmRegsSZNoScreen::CopyLCDFrame(Frame& frame, bool fullRefresh) {
+    return EmHALHandler::CopyLCDFrame(frame, fullRefresh);
+}
+
+uint16 EmRegsSZNoScreen::GetLCD2bitMapping() { return EmHALHandler::GetLCD2bitMapping(); }
+
+void EmRegsSZNoScreen::MarkScreen() { return; }
+
+void EmRegsSZNoScreen::UnmarkScreen() { return; }
