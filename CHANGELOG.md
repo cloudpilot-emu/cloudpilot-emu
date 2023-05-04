@@ -1,3 +1,7 @@
+# Next version
+
+-   Preliminary support for Legend P168
+
 # Version 1.8.1
 
 -   Support memory cards in CP embedded.
