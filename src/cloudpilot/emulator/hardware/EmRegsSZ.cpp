@@ -26,8 +26,10 @@
 #include "EmSession.h"   // gSession
 #include "EmSystemState.h"
 #include "Frame.h"
-#include "Logging.h"        // LogAppendMsg
+#include "Logging.h"  // LogAppendMsg
+#include "MetaMemory.h"
 #include "Miscellaneous.h"  // GetHostTime
+#include "Nibbler.h"
 #include "Savestate.h"
 #include "SavestateLoader.h"
 #include "SavestateProbe.h"
@@ -82,7 +84,20 @@ namespace {
         ((EmRegsSZ*)context)->Cycle(cycles, sleeping);
     }
 
-    inline uint32 decodeColor_12bit(uint16 encoded) {
+    template <class T>
+    void markScreenWith(T marker, HwrM68SZ328Type& f68SZ328Regs) {
+        const uint16 screenHeight = READ_REGISTER(lcdScreenSize) & 0x01ff;
+        const uint16 virtualPageWidth = (READ_REGISTER(lcdPageWidth) & 0x03ff) * 2;
+
+        const emuptr firstLineAddr = READ_REGISTER(lcdStartAddr) & ~1;
+        const emuptr lastLineAddr = firstLineAddr + (screenHeight + 1) * virtualPageWidth;
+
+        if (EmMemGetBankPtr(firstLineAddr) == nullptr) return;
+
+        marker(firstLineAddr, lastLineAddr);
+    }
+
+    inline uint32 convertColor_12bit(uint16 encoded) {
         uint8 r = (encoded >> 8) & 0x0f;
         uint8 g = (encoded >> 4) & 0x0f;
         uint8 b = (encoded >> 0) & 0x0f;
@@ -90,6 +105,18 @@ namespace {
         r |= (r << 4);
         g |= (g << 4);
         b |= (b << 4);
+
+        return 0xff000000 | (b << 16) | (g << 8) | r;
+    }
+
+    inline uint32 convertColor_16bit(uint16 encoded) {
+        uint8 r = (encoded >> 11) & 0x1f;
+        uint8 g = (encoded >> 5) & 0x3f;
+        uint8 b = (encoded >> 0) & 0x1f;
+
+        r = (r << 3) | (r >> 2);
+        g = (g << 2) | (g >> 4);
+        b = (b << 3) | (b >> 2);
 
         return 0xff000000 | (b << 16) | (g << 8) | r;
     }
@@ -1124,6 +1151,8 @@ void EmRegsSZ::Initialize(void) {
 
     UpdateTimers();
     powerOffCached = GetAsleep();
+
+    onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
 }
 
 // ---------------------------------------------------------------------------
@@ -1132,6 +1161,7 @@ void EmRegsSZ::Initialize(void) {
 
 void EmRegsSZ::Reset(Bool hardwareReset) {
     EmRegs::Reset(hardwareReset);
+    UnmarkScreen();
 
     if (hardwareReset) {
         tmr1LastProcessedSystemCycles = systemCycles;
@@ -1179,6 +1209,7 @@ void EmRegsSZ::Dispose(void) {
 
     EmRegs::Dispose();
 
+    gSystemState.onMarkScreenClean.RemoveHandler(onMarkScreenCleanHandle);
     EmHAL::onDayRollover.RemoveHandler(onDayRolloverHandle);
     EmHAL::RemoveCycleConsumer(cycleThunk, this);
 }
@@ -1219,6 +1250,7 @@ void EmRegsSZ::Load(SavestateLoader& loader) {
 
     gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csESelect) & ROPMask) != 0;
 
+    markScreen = true;
     afterLoad = true;
 
     systemCycles = gSession->GetSystemCycles();
@@ -2393,23 +2425,12 @@ void EmRegsSZ::UpdateEsramLocation() {
 }
 
 void EmRegsSZ::UpdatePalette() {
-    uint16_t lcdControl1 = READ_REGISTER(lcdPanelControl1);
-    bool isActiveTFT = lcdControl1 & 0x8000;
-    bool isColor = lcdControl1 & 0x4000;
-    uint8 bpp = 1 << ((lcdControl1 >> 9) & 0x07);
+    const uint16_t lcdControl1 = READ_REGISTER(lcdPanelControl1);
+    const uint8 bpp = 1 << ((lcdControl1 >> 9) & 0x07);
 
-    for (int i = 0; i < (1 << bpp); i++) {
-        switch ((static_cast<uint8>(isActiveTFT) << 16) | (static_cast<uint8>(isColor) << 8) |
-                bpp) {
-            case 0x010108: {
-                palette[i] = decodeColor_12bit(READ_REGISTER(lcdCLUT[i]));
-                break;
-            }
+    if (bpp > 8) return;
 
-            default:
-                palette[i] = 0;
-        }
-    }
+    for (int i = 0; i < (1 << bpp); i++) palette[i] = convertColor_12bit(READ_REGISTER(lcdCLUT[i]));
 }
 
 // ---------------------------------------------------------------------------
@@ -3712,22 +3733,15 @@ emuptr EmRegsSZ::GetAddressFromPort(int port) {
 }
 
 bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
-    emuptr startAddress = READ_REGISTER(lcdStartAddr);
-    uint16 screenWidth = (READ_REGISTER(lcdScreenSize) >> 9) * 8;
-    uint16 screenHeight = READ_REGISTER(lcdScreenSize) & 0x01ff;
-    uint16 virtualPageWidth = (READ_REGISTER(lcdPageWidth) & 0x03ff) * 2;
-    uint8 panningOffset = READ_REGISTER(lcdPanningOffset) & 0x0f;
+    const emuptr startAddress = READ_REGISTER(lcdStartAddr) & ~1;
+    const uint16 screenWidth = (READ_REGISTER(lcdScreenSize) >> 9) * 8;
+    const uint16 screenHeight = READ_REGISTER(lcdScreenSize) & 0x01ff;
+    const uint16 virtualPageWidth = (READ_REGISTER(lcdPageWidth) & 0x03ff) * 2;
+    const uint8 panningOffset = READ_REGISTER(lcdPanningOffset) & 0x0f;
+    const uint16_t lcdControl1 = READ_REGISTER(lcdPanelControl1);
+    const uint8 bpp = 1 << ((lcdControl1 >> 9) & 0x07);
 
-    uint16_t lcdControl1 = READ_REGISTER(lcdPanelControl1);
-    // bool isActiveTFT = lcdControl1 & 0x8000;
-    // bool isColor = lcdControl1 & 0x4000;
-    uint8 bpp = 1 << ((lcdControl1 >> 9) & 0x07);
-
-    UpdatePalette();
-
-    if (screenWidth != 240 || screenHeight != 320 || bpp != 8 || virtualPageWidth != screenWidth ||
-        panningOffset != 0) {
-        cerr << "unsupported mode bpp=" << (int)bpp << endl << flush;
+    if (screenWidth % 8 != 0) {
         return false;
     }
 
@@ -3740,22 +3754,78 @@ bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     frame.scaleX = frame.scaleY = 1;
     frame.firstDirtyLine = 0;
     frame.lastDirtyLine = screenHeight - 1;
+    frame.lineWidth = screenWidth;
+    frame.lines = screenHeight;
 
-    uint8* base = EmMemGetRealAddress(startAddress);
     uint32* dest = reinterpret_cast<uint32*>(frame.GetBuffer());
 
-    for (uint32 y = 0; y < screenHeight; y++) {
-        for (uint32 x = 0; x < screenWidth; x++) {
-            dest[y * screenWidth + x] = palette[EmMemDoGet8(base + y * screenWidth + x)];
+    switch (bpp) {
+        case 4: {
+            UpdatePalette();
+            uint8* base = EmMemGetRealAddress(startAddress);
+            Nibbler<4, true> nibbler;
+
+            for (uint32 y = 0; y < screenHeight; y++) {
+                nibbler.reset(base + y * virtualPageWidth, panningOffset);
+
+                for (uint32 x = 0; x < screenWidth; x++) {
+                    *(dest++) = palette[nibbler.nibble()];
+                }
+            }
+
+            return true;
+        }
+
+        case 8: {
+            UpdatePalette();
+            uint8* base = EmMemGetRealAddress(startAddress);
+
+            for (uint32 y = 0; y < screenHeight; y++) {
+                uint8* src = base + y * virtualPageWidth + (panningOffset >> 3);
+
+                for (uint32 x = 0; x < screenWidth; x++) {
+                    *(dest++) = palette[EmMemDoGet8(src++)];
+                }
+            }
+
+            return true;
+        }
+
+        case 16: {
+            uint16* base = reinterpret_cast<uint16*>(EmMemGetRealAddress(startAddress & ~1));
+
+            for (uint32 y = 0; y < screenHeight; y++) {
+                uint16* src = base + y * (virtualPageWidth >> 1) + (panningOffset >> 4);
+
+                for (uint32 x = 0; x < screenWidth; x++) {
+                    *(dest++) = convertColor_16bit(EmMemDoGet16(src++));
+                }
+            }
+
+            return true;
         }
     }
 
-    return true;
+    return false;
 }
 
 uint16 EmRegsSZ::GetLCD2bitMapping() { return 0x3210; }
 
 uint16 EmRegsSZ::GetADCValueU() { return 0; }
+
+void EmRegsSZ::MarkScreen() {
+    if (!markScreen) return;
+
+    if (!esram.IsFramebuffer()) markScreenWith(MetaMemory::MarkScreen, f68SZ328Regs);
+
+    markScreen = false;
+}
+
+void EmRegsSZ::UnmarkScreen() {
+    if (!esram.IsFramebuffer()) markScreenWith(MetaMemory::UnmarkScreen, f68SZ328Regs);
+
+    markScreen = true;
+}
 
 uint32 EmRegsSZ::CyclesToNextInterrupt(uint64 systemCycles) {
     this->systemCycles = systemCycles;
@@ -3930,15 +4000,25 @@ void EmRegsSZ::csgRegWrite(emuptr address, int size, uint32 value) {
 }
 
 void EmRegsSZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
+    switch (address) {
+        case db_addressof(lcdScreenSize):
+        case db_addressof(lcdPageWidth):
+            UnmarkScreen();
+            break;
+    }
+
     EmRegsSZ::StdWrite(address, size, value);
 
-    gSystemState.ScreenRequiresFullRefresh();
+    gSystemState.MarkScreenDirty();
 }
 
 void EmRegsSZ::lcdStartAddrWrite(emuptr address, int size, uint32 value) {
+    UnmarkScreen();
+
     lcdRegisterWrite(address, size, value);
 
     UpdateFramebufferLocation();
+    gSystemState.MarkScreenDirty();
 }
 
 void EmRegsSZ::adcControlWrite(emuptr address, int size, uint32 value) {
@@ -3986,3 +4066,7 @@ bool EmRegsSZNoScreen::CopyLCDFrame(Frame& frame, bool fullRefresh) {
 }
 
 uint16 EmRegsSZNoScreen::GetLCD2bitMapping() { return EmHALHandler::GetLCD2bitMapping(); }
+
+void EmRegsSZNoScreen::MarkScreen() { return; }
+
+void EmRegsSZNoScreen::UnmarkScreen() { return; }

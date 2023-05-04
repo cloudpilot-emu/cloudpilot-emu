@@ -14,6 +14,7 @@ class EmRegsESRAM : public EmRegs {
     void Disable();
 
     void SetFramebufferBase(emuptr framebufferBase);
+    bool IsFramebuffer() const;
 
     uint32 GetLong(emuptr address) override;
     uint32 GetWord(emuptr address) override;

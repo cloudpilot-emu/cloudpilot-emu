@@ -53,6 +53,8 @@ void EmRegsESRAM::SetFramebufferBase(emuptr framebufferBase) {
     isFramebuffer = framebufferBase >= baseAddr && (framebufferBase - baseAddr) < esramSize;
 }
 
+bool EmRegsESRAM::IsFramebuffer() const { return isActive && isFramebuffer; }
+
 uint32 EmRegsESRAM::GetLong(emuptr address) {
     const uint32 offset = address - baseAddr;
     return EmMemDoGet32(esram + offset);

@@ -104,6 +104,9 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
 
     virtual uint16 GetADCValueU();
 
+    virtual void MarkScreen();
+    virtual void UnmarkScreen();
+
    private:
     uint32 portXDataRead(emuptr address, int size);
     uint32 tmr1StatusRead(emuptr address, int size);
@@ -147,6 +150,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
 
     void UpdateFramebufferLocation();
     void UpdateEsramLocation();
+
     void UpdatePalette();
 
     void UpdateTimers();
@@ -176,6 +180,8 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
 
     uint8 padcFifoReadIndex;
 
+    bool markScreen{true};
+    EmEvent<>::HandleT onMarkScreenCleanHandle;
     EmEvent<>::HandleT onDayRolloverHandle;
 
     double tmr1LastProcessedSystemCycles;
@@ -200,8 +206,11 @@ class EmRegsSZNoScreen : public EmRegsSZ {
    public:
     EmRegsSZNoScreen() = default;
 
-    virtual bool CopyLCDFrame(Frame& frame, bool fullRefresh);
-    virtual uint16 GetLCD2bitMapping();
+    bool CopyLCDFrame(Frame& frame, bool fullRefresh) override;
+    uint16 GetLCD2bitMapping() override;
+
+    void MarkScreen() override;
+    void UnmarkScreen() override;
 };
 
 #endif  // _EM_REGS_SZ_H_
