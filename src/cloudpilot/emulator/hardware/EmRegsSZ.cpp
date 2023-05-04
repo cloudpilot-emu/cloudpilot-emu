@@ -3750,14 +3750,14 @@ bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
     frame.lines = screenHeight;
     frame.margin = 0;
     frame.bytesPerLine = screenWidth * 4;
-    frame.hasChanges = true;
     frame.scaleX = frame.scaleY = 1;
-    frame.firstDirtyLine = 0;
-    frame.lastDirtyLine = screenHeight - 1;
     frame.lineWidth = screenWidth;
-    frame.lines = screenHeight;
 
-    uint32* dest = reinterpret_cast<uint32*>(frame.GetBuffer());
+    frame.UpdateDirtyLines(gSystemState, startAddress, virtualPageWidth, fullRefresh);
+    if (!frame.hasChanges) return true;
+
+    uint32* dest =
+        reinterpret_cast<uint32*>(frame.GetBuffer()) + frame.firstDirtyLine * frame.lineWidth;
 
     switch (bpp) {
         case 4: {
@@ -3765,7 +3765,7 @@ bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
             uint8* base = EmMemGetRealAddress(startAddress);
             Nibbler<4, true> nibbler;
 
-            for (uint32 y = 0; y < screenHeight; y++) {
+            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                 nibbler.reset(base + y * virtualPageWidth, panningOffset);
 
                 for (uint32 x = 0; x < screenWidth; x++) {
@@ -3780,7 +3780,7 @@ bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
             UpdatePalette();
             uint8* base = EmMemGetRealAddress(startAddress);
 
-            for (uint32 y = 0; y < screenHeight; y++) {
+            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                 uint8* src = base + y * virtualPageWidth + (panningOffset >> 3);
 
                 for (uint32 x = 0; x < screenWidth; x++) {
@@ -3794,7 +3794,7 @@ bool EmRegsSZ::CopyLCDFrame(Frame& frame, bool fullRefresh) {
         case 16: {
             uint16* base = reinterpret_cast<uint16*>(EmMemGetRealAddress(startAddress & ~1));
 
-            for (uint32 y = 0; y < screenHeight; y++) {
+            for (uint32 y = frame.firstDirtyLine; y <= frame.lastDirtyLine; y++) {
                 uint16* src = base + y * (virtualPageWidth >> 1) + (panningOffset >> 4);
 
                 for (uint32 x = 0; x < screenWidth; x++) {
