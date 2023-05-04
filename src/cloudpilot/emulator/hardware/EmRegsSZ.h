@@ -37,7 +37,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     virtual void Reset(Bool hardwareReset);
     virtual void Dispose(void);
 
-    EmRegsESRAM& GetESRAM();
+    EmRegsESRAM* GetESRAM();
 
     virtual void Save(Savestate&);
     virtual void Save(SavestateProbe&);
@@ -199,7 +199,9 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     EmUARTDragonball* fUART[2];
     EmSPISlave* fSPISlaveADC{nullptr};
 
-    EmRegsESRAM esram;
+    // This shouldn't be a pointer, but EmBankRegs explicitly assumes that register
+    // banks are heap allocated and takes ownership, so we have no choice.
+    EmRegsESRAM* esram;
     uint32 palette[256];
     bool clutDirty{true};
 };

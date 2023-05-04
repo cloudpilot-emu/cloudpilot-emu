@@ -1324,7 +1324,7 @@ void EmDevice::CreateRegs(void) const {
 
             EmRegsSzRedwood* soc = new EmRegsSzRedwood(*dsp);
             EmBankRegs::AddSubBank(soc);
-            EmBankRegs::AddSubBank(&soc->GetESRAM());
+            EmBankRegs::AddSubBank(soc->GetESRAM());
 
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMQLCDControlT2(
@@ -1339,7 +1339,7 @@ void EmDevice::CreateRegs(void) const {
 
             EmRegsSzNaples* soc = new EmRegsSzNaples(*dsp);
             EmBankRegs::AddSubBank(soc);
-            EmBankRegs::AddSubBank(&soc->GetESRAM());
+            EmBankRegs::AddSubBank(soc->GetESRAM());
 
             EmRegsFrameBuffer* framebuffer = new EmRegsFrameBuffer(T_BASE);
             EmBankRegs::AddSubBank(new EmRegsMediaQ11xx(*framebuffer, MMIO_BASE, T_BASE));
@@ -1375,7 +1375,7 @@ void EmDevice::CreateRegs(void) const {
         case kDeviceLP168: {
             EmRegsSZLP168* soc = new EmRegsSZLP168();
             EmBankRegs::AddSubBank(soc);
-            EmBankRegs::AddSubBank(&soc->GetESRAM());
+            EmBankRegs::AddSubBank(soc->GetESRAM());
 
             break;
         }

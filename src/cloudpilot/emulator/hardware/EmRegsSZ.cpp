@@ -1110,7 +1110,8 @@ EmRegsSZ::EmRegsSZ(void)
       fKeyBits(0),
       fLastTmr1Status(0),
       fLastTmr2Status(0),
-      fPortDDataCount(0) {
+      fPortDDataCount(0),
+      esram(new EmRegsESRAM()) {
     fUART[0] = NULL;
     fUART[1] = NULL;
 
@@ -1215,7 +1216,7 @@ void EmRegsSZ::Dispose(void) {
     EmHAL::RemoveCycleConsumer(cycleThunk, this);
 }
 
-EmRegsESRAM& EmRegsSZ::GetESRAM() { return esram; }
+EmRegsESRAM* EmRegsSZ::GetESRAM() { return esram; }
 
 void EmRegsSZ::Save(Savestate& savestate) { DoSave(savestate); }
 
@@ -2412,7 +2413,7 @@ uint32 EmRegsSZ::penSampleFifoRead(emuptr address, int size) {
 }
 
 void EmRegsSZ::UpdateFramebufferLocation() {
-    esram.SetFramebufferBase(READ_REGISTER(lcdStartAddr));
+    esram->SetFramebufferBase(READ_REGISTER(lcdStartAddr));
 }
 
 void EmRegsSZ::UpdateEsramLocation() {
@@ -2420,9 +2421,9 @@ void EmRegsSZ::UpdateEsramLocation() {
     uint16 csggb = READ_REGISTER(csGGroupBase);
 
     if (csg & 0x0001) {
-        esram.Enable((csggb & 0xfffc) << 16);
+        esram->Enable((csggb & 0xfffc) << 16);
     } else {
-        esram.Disable();
+        esram->Disable();
     }
 }
 
@@ -3816,13 +3817,13 @@ uint16 EmRegsSZ::GetADCValueU() { return 0; }
 void EmRegsSZ::MarkScreen() {
     if (!markScreen) return;
 
-    if (!esram.IsFramebuffer()) markScreenWith(MetaMemory::MarkScreen, f68SZ328Regs);
+    if (!esram->IsFramebuffer()) markScreenWith(MetaMemory::MarkScreen, f68SZ328Regs);
 
     markScreen = false;
 }
 
 void EmRegsSZ::UnmarkScreen() {
-    if (!esram.IsFramebuffer()) markScreenWith(MetaMemory::UnmarkScreen, f68SZ328Regs);
+    if (!esram->IsFramebuffer()) markScreenWith(MetaMemory::UnmarkScreen, f68SZ328Regs);
 
     markScreen = true;
 }

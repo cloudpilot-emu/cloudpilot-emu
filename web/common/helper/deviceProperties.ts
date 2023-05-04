@@ -16,6 +16,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
 
         case DeviceId.handera330:
         case DeviceId.handera330c:
+        case DeviceId.lp168:
             return {
                 screenSize: ScreenSize.screen240x320,
                 width: 240,
@@ -152,6 +153,7 @@ export function cpuClock(deviceId: DeviceId): number {
 
         case DeviceId.pegT650c:
         case DeviceId.pegNR70:
+        case DeviceId.lp168:
             return 66;
     }
 }
@@ -260,13 +262,26 @@ export function deviceName(deviceId: DeviceId): string {
         case DeviceId.acerS11:
             return 'Acer S1x series';
 
+        case DeviceId.lp168:
+            return 'Legend P168';
+
         default:
             throw new Error('bad device ID');
     }
 }
 
 export function quirkNoPoweroff(deviceId: DeviceId) {
-    return [DeviceId.i705, DeviceId.i710, DeviceId.pegNR70, DeviceId.pegT650c].includes(deviceId);
+    switch (deviceId) {
+        case DeviceId.i705:
+        case DeviceId.i710:
+        case DeviceId.pegNR70:
+        case DeviceId.pegT650c:
+        case DeviceId.lp168:
+            return true;
+
+        default:
+            return false;
+    }
 }
 
 export function slotType(deviceId: DeviceId) {
