@@ -11,7 +11,7 @@ namespace {
     string Suffix(DatabaseInfo& dbInfo) {
         if (dbInfo.creator == sysFileCClipper && (dbInfo.dbAttrs & dmHdrAttrLaunchableData))
             return ".pqa";
-        if (IsExecutable(dbInfo)) return ".prc";
+        if (dbInfo.dbAttrs & dmHdrAttrResDB) return ".prc";
 
         return ".pdb";
     }
