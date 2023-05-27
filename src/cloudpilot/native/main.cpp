@@ -44,7 +44,7 @@ struct Options {
     string mountImage;
 };
 
-void handleSuspend(ProxyClient* proxyClient) {
+void handleSuspend() {
     if (!SuspendManager::IsSuspended()) return;
 
     SuspendContext& context = SuspendManager::GetContext();
@@ -136,7 +136,7 @@ void run(const Options& options) {
 
         if (Cli::Execute()) break;
 
-        handleSuspend(proxyClient);
+        handleSuspend();
         if (proxyHandler) proxyHandler->HandleSuspend();
     };
 
