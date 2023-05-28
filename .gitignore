@@ -8,6 +8,8 @@
 src/**/*.js
 src/**/*.wasm
 
+lab
+
 *.rom
 *.stamp
 .vscode/c_cpp_properties.json

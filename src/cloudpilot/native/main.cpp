@@ -32,8 +32,14 @@ using namespace std;
 
 struct ProxyConfiguration {
     string host;
-    long port;
+    unsigned int port;
     string path;
+};
+
+struct DebuggerConfiguration {
+    bool enabled{false};
+    unsigned int port{0};
+    bool waitForAttach{false};
 };
 
 struct Options {
@@ -42,6 +48,7 @@ struct Options {
     optional<ProxyConfiguration> proxyConfiguration;
     bool traceNetlib;
     string mountImage;
+    DebuggerConfiguration debuggerConfiguration;
 };
 
 void handleSuspend() {
@@ -173,14 +180,14 @@ int main(int argc, const char** argv) {
 
                 string scheme = parsed.get_scheme();
                 string host = parsed.get_host();
-                long port = parsed.get_port();
+                unsigned int port = static_cast<unsigned int>(parsed.get_port());
                 string path = parsed.get_path();
 
                 if (scheme != "http") throw runtime_error("bad URI scheme - must be http");
 
                 while (path.size() > 0 && path[path.size() - 1] == '/') path.pop_back();
 
-                return ProxyConfiguration{host, port > 0 ? port : 80, path.empty() ? "" : path};
+                return ProxyConfiguration{host, port != 0 ? port : 80, path.empty() ? "" : path};
             } catch (const invalid_argument& e) {
                 throw runtime_error("invalid proxy URI");
             }
@@ -193,12 +200,23 @@ int main(int argc, const char** argv) {
 
     program.add_argument("--mount").help("mount card image");
 
+    program.add_argument("--listen", "-l").help("listen for GDB on port").scan<'u', unsigned int>();
+    program.add_argument("--wait-for-attach")
+        .help("wait for debugger on launch")
+        .default_value(false)
+        .implicit_value(true);
+
     try {
         program.parse_args(argc, argv);
     } catch (const bad_device_id& e) {
         cerr << "bad device ID; valid IDs are:" << endl;
 
         for (auto& deviceId : util::SUPPORTED_DEVICES) cerr << "  " << deviceId << endl;
+
+        exit(1);
+    } catch (const invalid_argument& e) {
+        cerr << "invalid argument" << endl << endl;
+        cerr << program;
 
         exit(1);
     } catch (const runtime_error& e) {
@@ -219,6 +237,11 @@ int main(int argc, const char** argv) {
         options.proxyConfiguration = *proxyConfiguration;
 
     if (auto mountImage = program.present("--mount")) options.mountImage = *mountImage;
+
+    if (program.present<unsigned int>("--listen"))
+        options.debuggerConfiguration = {.enabled = true,
+                                         .port = program.get<unsigned int>("--listen"),
+                                         .waitForAttach = program.get<bool>("--wait-for-attach")};
 
     run(options);
 }
