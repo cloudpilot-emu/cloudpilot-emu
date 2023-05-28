@@ -4,7 +4,11 @@ const fs = require('fs');
 const { execSync, exec } = require('child_process');
 const traps = require('./traps.js');
 
+const RELOCATE_OPTION = '--relocate';
+
 let iAnonymousFunction = 0;
+let relocationOffset = 0;
+let binaryFile, relocationBinaryFile;
 const functions = new Map();
 
 function anonymousFunction() {
@@ -13,7 +17,8 @@ function anonymousFunction() {
 
 function disassemble(start, stop, name) {
     const lines = execSync(
-        `m68k-palmos-objdump -b binary -m m68k:68000 -D --start-address=${start} --stop-address=${stop + 2} "${file}"`
+        `m68k-palmos-objdump -b binary -m m68k:68000 -D --start-address=${start + relocationOffset} --stop-address=${stop + 2 + relocationOffset
+        } "${relocationOffset > 0 ? relocationBinaryFile : binaryFile}"`
     )
         .toString('utf-8')
         .replace(/^[\s\S]+>:/m, '')
@@ -30,7 +35,12 @@ function disassemble(start, stop, name) {
         })
         .filter((x) => !!x);
 
-    functions.set(start, { start, stop, name, lines: new Map(lines) });
+    functions.set(start + relocationOffset, {
+        start: start + relocationOffset,
+        stop: stop + relocationOffset,
+        name,
+        lines: new Map(lines),
+    });
 }
 
 function identifyCalls() {
@@ -169,12 +179,58 @@ function readFunctionName(buffer, rtsAt) {
     }
 }
 
+function usage() {
+    console.log(`usage: disassemble.js [${RELOCATE_OPTION} image] <binary>`);
+}
+
+function parseArguments() {
+    if (process.argv.length != 3 && process.argv.length != 5) return usage();
+
+    if (process.argv.length == 5 && process.argv[2] != RELOCATE_OPTION) return usage();
+
+    return process.argv.length == 3
+        ? { binaryFile: process.argv[2] }
+        : { binaryFile: process.argv[4], relocationBinaryFile: process.argv[3] };
+}
+
 let link = 0;
 let mode = 'search-link';
 
-const file = process.argv[2];
-const binary = fs.readFileSync(file);
+const parsedArguments = parseArguments();
+if (!parsedArguments) process.exit(1);
+
+binaryFile = parsedArguments.binaryFile;
+relocationBinaryFile = parsedArguments.relocationBinaryFile;
+
+const binary = fs.readFileSync(binaryFile);
 const binary16 = new Uint16Array(binary.buffer, binary.byteOffset, binary.length >>> 1);
+
+if (relocationBinaryFile) {
+    const relocationBinary = fs.readFileSync(relocationBinaryFile);
+    let relocationFound = false;
+
+    if (relocationBinary.length < binary.length) {
+        console.error('relocation binary is too small');
+        process.exit(1);
+    }
+
+    searchForStart: for (
+        relocationOffset = 0;
+        relocationOffset < relocationBinary.length - binary.length;
+        relocationOffset++
+    ) {
+        for (let i = 0; i < binary.length; i++)
+            if (binary[i] !== relocationBinary[i + relocationOffset]) continue searchForStart;
+
+        relocationFound = true;
+        break;
+    }
+
+    if (!relocationFound) {
+        console.error('unable to relocate');
+        process.exit(1);
+    }
+}
 
 for (let i = 0; i < binary16.length; i++) {
     const opcode = binary16[i];
@@ -216,7 +272,7 @@ collectLocals();
 for (const entry of Array.from(functions.keys()).sort((x, y) => x - y)) {
     const { start, stop, name, lines, parameters, locals } = functions.get(entry);
 
-    const addressWidth = Math.max(...lines.keys()).toString(16).length;
+    const addressWidth = Math.max(...lines.keys() + relocationOffset).toString(16).length;
 
     console.log(`# ${name}: 0x${start.toString(16).padStart(4, '0')} - 0x${stop.toString(16).padStart(4, '0')}`);
     console.log();
