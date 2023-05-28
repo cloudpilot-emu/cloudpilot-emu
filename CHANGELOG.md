@@ -1,6 +1,8 @@
 # Next version
 
 -   Preliminary support for Legend P168
+-   Better assignment of file endings (.prc and .pdb) to databases in
+    backups.
 
 # Version 1.8.1
 
