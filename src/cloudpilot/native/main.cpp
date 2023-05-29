@@ -16,6 +16,7 @@
 #include "EmSession.h"
 #include "ExternalStorage.h"
 #include "Feature.h"
+#include "GdbStub.h"
 #include "MainLoop.h"
 #include "ProxyClient.h"
 #include "ProxyHandler.h"
@@ -115,6 +116,17 @@ void run(const Options& options) {
 
     srand(time(nullptr));
 
+    GdbStub gdbStub;
+    if (options.debuggerConfiguration.enabled) {
+        gdbStub.Listen(options.debuggerConfiguration.port);
+
+        if (options.debuggerConfiguration.waitForAttach) {
+            cout << "waiting for debugger to attach..." << endl << flush;
+            while (gdbStub.GetConnectionState() == GdbStub::ConnectionState::listening)
+                gdbStub.Cycle(1000);
+        }
+    }
+
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     IMG_Init(IMG_INIT_PNG);
     SDL_StartTextInput();
@@ -145,6 +157,8 @@ void run(const Options& options) {
 
         handleSuspend();
         if (proxyHandler) proxyHandler->HandleSuspend();
+
+        gdbStub.Cycle(10);
     };
 
     Cli::Stop();

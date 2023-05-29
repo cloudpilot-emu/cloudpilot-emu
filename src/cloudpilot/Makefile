@@ -267,6 +267,7 @@ SOURCE_NATIVE = \
 	native/Cli.cpp \
 	native/ProxyClient.cpp \
 	native/ProxyHandler.cpp \
+	native/GdbStub.cpp \
 	emulator/assert_native.cpp \
 	emulator/stacktrace.cpp
 
