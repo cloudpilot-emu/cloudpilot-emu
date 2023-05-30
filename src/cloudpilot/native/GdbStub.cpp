@@ -102,13 +102,16 @@ void GdbStub::AcceptConnection(int timeout) {
     struct sockaddr_in sa;
     socklen_t saLen = sizeof(sa);
 
-    int result = accept(sock, reinterpret_cast<sockaddr*>(&sa), &saLen);
-    if (result == -1) {
+    int acceptSock = accept(sock, reinterpret_cast<sockaddr*>(&sa), &saLen);
+    if (acceptSock == -1) {
         if (errno != EWOULDBLOCK) std::cerr << "accept failed: " << errno << endl << flush;
 
         return;
     }
 
     std::cout << "debugger connected" << endl << flush;
+
+    close(sock);
+    sock = acceptSock;
     connectionState = ConnectionState::connected;
 }
