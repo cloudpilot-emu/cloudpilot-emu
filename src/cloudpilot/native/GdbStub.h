@@ -32,13 +32,15 @@ class GdbStub {
     void CheckForInterrupt(int timeout);
     void CheckForBreak();
     bool ReceivePacket(int timeout);
-    void HandlePacket();
+    bool HandlePacket();
 
     void SendPacket(const char* packet, bool includeAck);
     void SendBytes(const char* data, size_t len);
     void SendAck();
 
     SocketState PollSocket(int timeout);
+
+    void Disconnect();
 
     const char* StopReason() const;
 
@@ -49,7 +51,7 @@ class GdbStub {
     uint32 listenPort{0};
     int sock{0};
 
-    unique_ptr<uint8[]> pktBuf;
+    unique_ptr<char[]> pktBuf;
     size_t pktBufUsed{0};
 
     Debugger& debugger;

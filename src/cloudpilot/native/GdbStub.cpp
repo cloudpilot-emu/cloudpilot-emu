@@ -24,7 +24,7 @@ namespace {
 }  // namespace
 
 GdbStub::GdbStub(Debugger& debugger, uint32 listenPort)
-    : listenPort(listenPort), pktBuf(make_unique<uint8[]>(PKT_BUF_SIZE)), debugger(debugger) {}
+    : listenPort(listenPort), pktBuf(make_unique<char[]>(PKT_BUF_SIZE)), debugger(debugger) {}
 
 GdbStub::ConnectionState GdbStub::GetConnectionState() const { return connectionState; }
 
@@ -92,7 +92,8 @@ void GdbStub::Cycle(int timeout) {
                     return;
 
                 case RunState::stopped:
-                    if (ReceivePacket(timeout)) HandlePacket();
+                    if (ReceivePacket(timeout) && HandlePacket()) SendPacket(pktBuf.get(), true);
+
                     return;
             }
     }
@@ -208,7 +209,181 @@ bool GdbStub::ReceivePacket(int timeout) {
     return true;
 }
 
-void GdbStub::HandlePacket() { cout << "handling packet " << (char*)pktBuf.get() << endl << flush; }
+bool GdbStub::HandlePacket() {
+    cout << "handling packet " << (char*)pktBuf.get() << endl << flush;
+
+    const char* in = pktBuf.get();
+    char* out = pktBuf.get();
+
+    if (in == strstr(in, "qSupported"))
+        strcpy(out, "PacketSize=1024");
+
+    else if (in == strstr(in, "qAttached"))
+        strcpy(out, "1");
+
+    else if (!strcmp(in, "qSymbol::"))
+        strcpy(out, "OK");
+
+    else if (in == strstr(in, "qL"))
+        out[0] = 0;
+
+    else if (!strcmp(in, "qTStatus"))
+        out[0] = 0;
+
+    else if (!strcmp(in, "qfThreadInfo"))
+        out[0] = 0;
+
+    else if (in[0] == 'v')
+        out[0] = 0;
+
+    else if (!strcmp(in, "qC"))
+        out[0] = 0;
+
+    else if (!strcmp(in, "qOffsets"))
+        strcpy(out, "Text=0;Data=0;Bss=0");
+
+    else if (in[0] == 'H')
+        strcpy(out, "OK");
+
+    else if (!strcmp(in, "?"))
+        strcpy(out, StopReason());
+
+    else if (!strcmp(in, "D")) {
+        Disconnect();
+    }
+#if 0
+    else if (in[0] == 'Z' || in[0] == 'z') {
+        bool set = in[0] == 'Z';
+        char type = in[1];
+        uint32_t addr, len;
+
+        if (strlen(in) < 3) goto cmderr;
+
+        in += 2;
+        if (*in++ != ',') goto cmderr;
+        addr = gdbStubPrvHtoi(&in);
+        if (*in++ != ',') goto cmderr;
+        len = gdbStubPrvHtoi(&in);
+        if (*in) goto cmderr;
+
+        if (gdbStubPrvBpWpOp(stub, set, type, addr, len))
+            strcpy(out, "OK");
+        else
+            strcpy(out, "E05");
+    }
+#endif
+#if 0
+    else if (in[0] == 'p') {
+        uint32_t regNo;
+
+        in++;
+        regNo = gdbStubPrvHtoi(&in);
+        if (*in) goto cmderr;
+
+        out[0] = 0;
+        if (!gdbStubPrvAddRegToStr(stub, out, regNo)) goto cmderr;
+    }
+#endif
+#if 0
+    else if (!strcmp(in, "g")) {
+        uint32_t regNo;
+
+        out[0] = 0;
+        for (regNo = 0; regNo < 0x1a; regNo++) {
+            if (!gdbStubPrvAddRegToStr(stub, out, regNo)) goto cmderr;
+        }
+    }
+#endif
+#if 0
+    else if (in[0] == 'P') {
+        uint32_t regNo, val;
+
+        in++;
+        regNo = gdbStubPrvHtoi(&in);
+        if (*in++ != '=') goto cmderr;
+        val = __builtin_bswap32(gdbStubPrvHtoi(&in));
+
+        if (regNo < 15) {
+            cpuSetReg(stub->cpu, regNo, val);
+            sprintf(out, "OK");
+        } else if (regNo == 15) {  // cpuSetReg(PC, ...) does interworking. we need to be careful
+
+            cpuSetReg(
+                stub->cpu, 15,
+                (val & ~1) | ((cpuGetRegExternal(stub->cpu, ARM_REG_NUM_CPSR) & ARM_SR_T) ? 1 : 0));
+        } else if (regNo == 0x19) {
+            cpuSetReg(stub->cpu, ARM_REG_NUM_CPSR, val);
+            sprintf(out, "OK");
+        } else
+            strcpy(out, "E05");
+    }
+#endif
+#if 0
+    else if (in[0] == 'M') {
+        uint32_t addr, len, i;
+
+        in++;
+        addr = gdbStubPrvHtoi(&in);
+        if (*in++ != ',') goto cmderr;
+
+        len = gdbStubPrvHtoi(&in);
+        if (*in++ != ':') goto cmderr;
+
+        if (strlen(in) != len * 2) goto cmderr;
+
+        // convert to binary
+        for (i = 0; i < len; i++) {
+            char c[3] = {in[i * 2 + 0], in[i * 2 + 1], 0};
+            const char* p = c;
+
+            out[i] = gdbStubPrvHtoi(&p);
+            if (p != c + 2) goto cmderr;
+        }
+
+        if (len == gdbStubPrvMemWrite(stub, out, addr, len))
+            strcpy(out, "OK");
+        else
+            strcpy(out, "E0e");
+    }
+#endif
+#if 0
+    else if (in[0] == 'm') {
+        uint32_t addr, len;
+
+        in++;
+        addr = gdbStubPrvHtoi(&in);
+        if (*in++ != ',') goto cmderr;
+        len = gdbStubPrvHtoi(&in);
+        if (*in) goto cmderr;
+        out[0] = 0;
+
+        if (!gdbStubPrvMemRead(stub, out, addr, len))
+            strcpy(out, "00");  // le sigh...gdb does not handle actual read failures, so we report
+                                // all unreadable memory as zeroes...
+    }
+#endif
+    else if (!strcmp(in, "s") || in[0] == 'S') {  // single step [with signal, which we ignore]
+
+        SendAck();
+        debugger.Step();
+        return false;
+    }
+
+    else if (!strcmp(in, "c") || in[0] == 'C') {  // continue [with signal, which we ignore]
+
+        SendAck();
+        debugger.Continue();
+        return false;
+    }
+
+    else {
+        // cmderr:
+        fprintf(stderr, "how do i respond to packet <<%s>>\n", in);
+        out[0] = 0;
+    }
+
+    return true;
+}
 
 void GdbStub::SendPacket(const char* packet, bool includeAck) {
     size_t len = strlen(packet);
@@ -256,18 +431,24 @@ GdbStub::SocketState GdbStub::PollSocket(int timeout) {
     if ((pollResult & POLLIN) == POLLIN) return SocketState::data;
 
     if ((pollResult & POLLHUP) == POLLHUP) {
-        std::cout << "debugger disconnected" << endl << flush;
-        connectionState = ConnectionState::socketClosed;
-
-        runState = RunState::running;
-        debugger.Reset();
-        pktBufUsed = 0;
-        sock = 0;
-
-        Listen();
+        Disconnect();
     }
 
     return SocketState::none;
+}
+
+void GdbStub::Disconnect() {
+    std::cout << "debugger disconnected" << endl << flush;
+
+    close(sock);
+    connectionState = ConnectionState::socketClosed;
+
+    runState = RunState::running;
+    debugger.Reset();
+    pktBufUsed = 0;
+    sock = 0;
+
+    Listen();
 }
 
 const char* GdbStub::StopReason() const {
