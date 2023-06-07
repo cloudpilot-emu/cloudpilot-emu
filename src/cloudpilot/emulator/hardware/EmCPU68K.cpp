@@ -21,6 +21,7 @@
 
 #include "Byteswapping.h"  // Canonical
 #include "ChunkHelper.h"
+#include "Debugger.h"
 #include "EmBankROM.h"  // EmBankROM::GetMemoryStart
 #include "EmCommon.h"
 #include "EmHAL.h"      // EmHAL::GetInterruptLevel
@@ -399,6 +400,11 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
         // to do this for several reasons, including hitting soft breakpoints or
         // needing to execute tailpatches.
         // -----------------------------------------------------------------------
+
+#ifdef ENABLE_DEBUGGER
+        gDebugger.NotificyPc(pc);
+        if (gDebugger.GetBreakState() != Debugger::BreakState::none) break;
+#endif
 
         if (MetaMemory::IsCPUBreak(m68k_getpc())) {
             session->HandleInstructionBreak();

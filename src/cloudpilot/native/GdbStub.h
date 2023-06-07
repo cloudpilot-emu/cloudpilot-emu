@@ -1,8 +1,10 @@
 #ifndef _GDB_STUB_H_
 #define _GDB_STUB_H_
 
+#include <memory>
 #include <string>
 
+#include "Debugger.h"
 #include "EmCommon.h"
 
 class GdbStub {
@@ -11,14 +13,15 @@ class GdbStub {
 
     enum class RunState { running, stopped };
 
+    enum class SocketState { none, data, hangup };
+
    public:
-    GdbStub();
-    ~GdbStub();
+    GdbStub(Debugger& debugger, uint32 listenPort);
 
     ConnectionState GetConnectionState() const;
     RunState GetRunState() const;
 
-    void Listen(uint32 port);
+    void Listen();
     void Stop();
 
     void Cycle(int timeout);
@@ -26,18 +29,30 @@ class GdbStub {
    private:
     void AcceptConnection(int timeout);
 
-    void ReceivePacket();
+    void CheckForInterrupt(int timeout);
+    void CheckForBreak();
+    bool ReceivePacket(int timeout);
+    void HandlePacket();
+
+    void SendPacket(const char* packet, bool includeAck);
+    void SendBytes(const char* data, size_t len);
+    void SendAck();
+
+    SocketState PollSocket(int timeout);
+
+    const char* StopReason() const;
 
    private:
     ConnectionState connectionState{ConnectionState::socketClosed};
-    RunState runState{RunState::stopped};
+    RunState runState{RunState::running};
 
+    uint32 listenPort{0};
     int sock{0};
 
-    uint8* pktBuf{nullptr};
-    size_t pktBufSz, pktBufUsed{0};
+    unique_ptr<uint8[]> pktBuf;
+    size_t pktBufUsed{0};
 
-    std::string stopReason;
+    Debugger& debugger;
 
    private:
     GdbStub(const GdbStub&) = delete;

@@ -5,6 +5,7 @@
 #include "CallbackManager.h"
 #include "Chars.h"
 #include "ChunkHelper.h"
+#include "Debugger.h"
 #include "EmBankSRAM.h"
 #include "EmCPU.h"
 #include "EmHAL.h"
@@ -80,6 +81,8 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
 
     dateCheckedAt = 0;
     lastDate = CurrentDate();
+
+    gDebugger.Reset();
 
     return true;
 }

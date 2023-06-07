@@ -10,6 +10,7 @@
 #include <string>
 
 #include "Cli.h"
+#include "Debugger.h"
 #include "EmCommon.h"
 #include "EmDevice.h"
 #include "EmROMReader.h"
@@ -116,9 +117,9 @@ void run(const Options& options) {
 
     srand(time(nullptr));
 
-    GdbStub gdbStub;
+    GdbStub gdbStub(gDebugger, options.debuggerConfiguration.port);
     if (options.debuggerConfiguration.enabled) {
-        gdbStub.Listen(options.debuggerConfiguration.port);
+        gdbStub.Listen();
 
         if (options.debuggerConfiguration.waitForAttach) {
             cout << "waiting for debugger to attach..." << endl << flush;
