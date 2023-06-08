@@ -11,7 +11,9 @@
 #include <unistd.h>
 
 #include <cstring>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 
 #include "Defer.h"
 
@@ -120,6 +122,7 @@ void GdbStub::AcceptConnection(int timeout) {
     sock = acceptSock;
     connectionState = ConnectionState::connected;
 
+    debugger.Reset();
     debugger.Interrupt();
 }
 
@@ -148,7 +151,9 @@ void GdbStub::CheckForInterrupt(int timeout) {
 }
 
 void GdbStub::CheckForBreak() {
-    if (connectionState != ConnectionState::connected || runState != RunState::running) return;
+    if (connectionState != ConnectionState::connected || runState != RunState::running ||
+        debugger.GetBreakState() == Debugger::BreakState::none)
+        return;
 
     const char* stopReason = StopReason();
     if (stopReason == GDB_SIG0) return;
@@ -210,7 +215,7 @@ bool GdbStub::ReceivePacket(int timeout) {
 }
 
 bool GdbStub::HandlePacket() {
-    cout << "handling packet " << (char*)pktBuf.get() << endl << flush;
+    std::cout << "handling packet " << (char*)pktBuf.get() << endl << flush;
 
     const char* in = pktBuf.get();
     char* out = pktBuf.get();
@@ -284,16 +289,10 @@ bool GdbStub::HandlePacket() {
         if (!gdbStubPrvAddRegToStr(stub, out, regNo)) goto cmderr;
     }
 #endif
-#if 0
     else if (!strcmp(in, "g")) {
-        uint32_t regNo;
-
         out[0] = 0;
-        for (regNo = 0; regNo < 0x1a; regNo++) {
-            if (!gdbStubPrvAddRegToStr(stub, out, regNo)) goto cmderr;
-        }
+        SerializeRegisters(out);
     }
-#endif
 #if 0
     else if (in[0] == 'P') {
         uint32_t regNo, val;
@@ -366,6 +365,7 @@ bool GdbStub::HandlePacket() {
 
         SendAck();
         debugger.Step();
+        runState = RunState::running;
         return false;
     }
 
@@ -373,12 +373,13 @@ bool GdbStub::HandlePacket() {
 
         SendAck();
         debugger.Continue();
+        runState = RunState::running;
         return false;
     }
 
     else {
         // cmderr:
-        fprintf(stderr, "how do i respond to packet <<%s>>\n", in);
+        fprintf(stderr, "unhandled packet <<%s>>\n", in);
         out[0] = 0;
     }
 
@@ -419,6 +420,31 @@ void GdbStub::SendBytes(const char* data, size_t len) {
 
 void GdbStub::SendAck() { SendBytes("+", 1); }
 
+void GdbStub::SerializeRegisters(char* destination) {
+    // straight from the horse's mouth:
+    //
+    // Return the GDB type object for the "standard" data type of data in
+    // register N.  This should be int for D0-D7, SR, FPCONTROL and
+    // FPSTATUS, long double for FP0-FP7, and void pointer for all others
+    // (A0-A7, PC, FPIADDR).  Note, for registers which contain
+    // addresses return pointer to void, not pointer to char, because we
+    // don't want to attempt to print the string after printing the
+    // address.
+
+    ostringstream sstream;
+
+    auto registers = debugger.ReadRegisters();
+    for (uint32 reg : registers) sstream << hex << setfill('0') << setw(8) << reg;
+
+    // fp[0] .. fp[7] are 96bit long doubles
+    for (int i = 0; i < 12 * 8; i++) sstream << "00";
+
+    // fudge the three int32 FPU registers
+    for (int i = 0; i < 3; i++) sstream << "00000000";
+
+    strcat(destination, sstream.str().c_str());
+}
+
 GdbStub::SocketState GdbStub::PollSocket(int timeout) {
     struct pollfd fds[] = {{.fd = sock, .events = POLLIN}};
     int pollResult = poll(fds, 1, timeout);
@@ -441,8 +467,8 @@ void GdbStub::Disconnect() {
     std::cout << "debugger disconnected" << endl << flush;
 
     close(sock);
-    connectionState = ConnectionState::socketClosed;
 
+    connectionState = ConnectionState::socketClosed;
     runState = RunState::running;
     debugger.Reset();
     pktBufUsed = 0;

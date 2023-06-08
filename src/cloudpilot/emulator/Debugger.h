@@ -1,10 +1,14 @@
 #ifndef _DEBUGGER_H_
 #define _DEBUGGER_H_
 
+#include <array>
+
 #include "EmCommon.h"
 
 class Debugger {
    public:
+    static constexpr size_t REGISTER_COUNT = 18;
+
     enum class BreakState {
         none,
         breakpoint,
@@ -36,8 +40,11 @@ class Debugger {
     void Continue();
     void Step();
 
+    const array<uint32, REGISTER_COUNT>& ReadRegisters();
+
    private:
     BreakState breakState{BreakState::none};
+    array<uint32, REGISTER_COUNT> registers;
 
    private:
     Debugger(const Debugger&) = delete;

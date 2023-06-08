@@ -38,6 +38,8 @@ class GdbStub {
     void SendBytes(const char* data, size_t len);
     void SendAck();
 
+    void SerializeRegisters(char* destination);
+
     SocketState PollSocket(int timeout);
 
     void Disconnect();
