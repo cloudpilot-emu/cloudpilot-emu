@@ -49,17 +49,20 @@ void GdbStub::Listen() {
     }
 
     Defer cleanupSocket([&]() {
-        if (connectionState != ConnectionState::listening) close(sock);
+        if (connectionState != ConnectionState::listening) close(listenSock);
     });
 
-    sock = newSock;
+    listenSock = newSock;
+    int optVal = 1;
+    setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal));
+    setsockopt(listenSock, SOL_SOCKET, SO_REUSEPORT, &optVal, sizeof(optVal));
 
-    if (::bind(sock, (struct sockaddr*)&sa, sizeof(sa)) == -1) {
+    if (::bind(listenSock, (struct sockaddr*)&sa, sizeof(sa)) == -1) {
         std::cerr << "gdb socket bind failed: " << errno << endl << flush;
         return;
     }
 
-    if (listen(sock, 1) == 1) {
+    if (listen(listenSock, 1) == 1) {
         std::cerr << "gdb socket listen failed: " << errno << endl << flush;
         return;
     }
@@ -70,7 +73,8 @@ void GdbStub::Listen() {
 
 void GdbStub::Stop() {
     if (connectionState == ConnectionState::socketClosed) return;
-    close(sock);
+    close(listenSock);
+    close(connectionSock);
 
     connectionState = ConnectionState::socketClosed;
 
@@ -104,12 +108,12 @@ void GdbStub::Cycle(int timeout) {
 void GdbStub::AcceptConnection(int timeout) {
     if (connectionState != ConnectionState::listening) return;
 
-    if (PollSocket(timeout) != SocketState::data) return;
+    if (PollSocket(listenSock, timeout) != SocketState::data) return;
 
     struct sockaddr_in sa;
     socklen_t saLen = sizeof(sa);
 
-    int acceptSock = accept(sock, reinterpret_cast<sockaddr*>(&sa), &saLen);
+    int acceptSock = accept(listenSock, reinterpret_cast<sockaddr*>(&sa), &saLen);
     if (acceptSock == -1) {
         if (errno != EWOULDBLOCK) std::cerr << "accept failed: " << errno << endl << flush;
 
@@ -118,25 +122,26 @@ void GdbStub::AcceptConnection(int timeout) {
 
     std::cout << "debugger connected" << endl << flush;
 
-    close(sock);
-    sock = acceptSock;
+    connectionSock = acceptSock;
     connectionState = ConnectionState::connected;
 
     debugger.Reset();
     debugger.Interrupt();
+    runState = RunState::stopped;
 }
 
 void GdbStub::CheckForInterrupt(int timeout) {
     if (connectionState != ConnectionState::connected || runState != RunState::running) return;
 
-    if (PollSocket(timeout) != SocketState::data) return;
+    if (PollSocket(connectionSock, timeout) != SocketState::data) return;
 
     uint8 cmd;
-    ssize_t bytesRead = recv(sock, &cmd, 1, 0);
+    ssize_t bytesRead = recv(connectionSock, &cmd, 1, 0);
 
     if (bytesRead != 1) {
         std::cerr << "gdb stub: check for interrupt: failed to receive one byte: " << errno << endl
                   << flush;
+        Disconnect();
         return;
     }
 
@@ -144,6 +149,7 @@ void GdbStub::CheckForInterrupt(int timeout) {
         std::cerr << "gdb stub: check for interrup: invalid command byte " << hex << (int)cmd << dec
                   << endl
                   << flush;
+        Disconnect();
         return;
     }
 
@@ -166,7 +172,7 @@ bool GdbStub::ReceivePacket(int timeout) {
     if (connectionState != ConnectionState::connected || runState != RunState::stopped)
         return false;
 
-    if (PollSocket(timeout) != SocketState::data) return false;
+    if (PollSocket(connectionSock, timeout) != SocketState::data) return false;
 
     bool inEsc = false, first = true;
     int ret, endLeft = 0;
@@ -174,10 +180,11 @@ bool GdbStub::ReceivePacket(int timeout) {
 
     pktBufUsed = 0;
     do {
-        ret = recv(sock, &c, 1, 0);
+        ret = recv(connectionSock, &c, 1, 0);
 
         if (ret <= 0) {
             std::cerr << "gdb stub: failed to receive" << endl << flush;
+            Disconnect();
             return false;
         }
 
@@ -255,6 +262,7 @@ bool GdbStub::HandlePacket() {
 
     else if (!strcmp(in, "D")) {
         Disconnect();
+        return false;
     }
 #if 0
     else if (in[0] == 'Z' || in[0] == 'z') {
@@ -406,7 +414,7 @@ void GdbStub::SendBytes(const char* data, size_t len) {
     if (len == 0) return;
 
     do {
-        ssize_t bytesSent = send(sock, data, len, 0);
+        ssize_t bytesSent = send(connectionSock, data, len, 0);
 
         if (bytesSent <= 0) {
             std::cerr << "gdb stub: failed to send" << endl << flush;
@@ -445,8 +453,8 @@ void GdbStub::SerializeRegisters(char* destination) {
     strcat(destination, sstream.str().c_str());
 }
 
-GdbStub::SocketState GdbStub::PollSocket(int timeout) {
-    struct pollfd fds[] = {{.fd = sock, .events = POLLIN}};
+GdbStub::SocketState GdbStub::PollSocket(int socket, int timeout) {
+    struct pollfd fds[] = {{.fd = socket, .events = POLLIN}};
     int pollResult = poll(fds, 1, timeout);
 
     if (pollResult < 0) {
@@ -466,15 +474,13 @@ GdbStub::SocketState GdbStub::PollSocket(int timeout) {
 void GdbStub::Disconnect() {
     std::cout << "debugger disconnected" << endl << flush;
 
-    close(sock);
+    close(connectionSock);
 
-    connectionState = ConnectionState::socketClosed;
+    connectionState = ConnectionState::listening;
     runState = RunState::running;
     debugger.Reset();
     pktBufUsed = 0;
-    sock = 0;
-
-    Listen();
+    connectionSock = 0;
 }
 
 const char* GdbStub::StopReason() const {

@@ -40,7 +40,7 @@ class GdbStub {
 
     void SerializeRegisters(char* destination);
 
-    SocketState PollSocket(int timeout);
+    SocketState PollSocket(int socket, int timeout);
 
     void Disconnect();
 
@@ -51,7 +51,8 @@ class GdbStub {
     RunState runState{RunState::running};
 
     uint32 listenPort{0};
-    int sock{0};
+    int listenSock{0};
+    int connectionSock{0};
 
     unique_ptr<char[]> pktBuf;
     size_t pktBufUsed{0};
