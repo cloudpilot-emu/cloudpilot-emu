@@ -3,6 +3,7 @@
 #include "EmCPU68K.h"
 #include "EmMemory.h"
 #include "EmSession.h"
+#include "Miscellaneous.h"
 #include "UAE.h"
 
 Debugger gDebugger;
@@ -53,11 +54,35 @@ void Debugger::Step() {
     breakState = BreakState::none;
 }
 
-uint8 Debugger::MemoryRead(emuptr addr) {
+uint8 Debugger::MemoryRead8(emuptr addr) {
     CEnableFullAccess munge;
+    EmValueChanger<bool> trackAccess(memoryAccess, true);
 
     return EmMemGet8(addr);
 }
+
+uint16 Debugger::MemoRead16(emuptr addr) {
+    CEnableFullAccess munge;
+    EmValueChanger<bool> trackAccess(memoryAccess, true);
+
+    if (addr & 0x01)
+        return (EmMemGet8(addr) << 8) | EmMemGet8(addr + 1);
+    else
+        return EmMemGet16(addr);
+}
+
+uint32 Debugger::MemoryRead32(emuptr addr) {
+    CEnableFullAccess munge;
+    EmValueChanger<bool> trackAccess(memoryAccess, true);
+
+    if (addr & 0x01)
+        return (EmMemGet8(addr) << 24) | (EmMemGet8(addr + 1) << 16) | (EmMemGet8(addr + 2) << 8) |
+               EmMemGet8(addr + 3);
+    else
+        return EmMemGet32(addr);
+}
+
+bool Debugger::IsMemoryAccess() const { return memoryAccess; }
 
 const array<uint32, Debugger::REGISTER_COUNT>& Debugger::ReadRegisters() {
     // straight from the horse's mouth:

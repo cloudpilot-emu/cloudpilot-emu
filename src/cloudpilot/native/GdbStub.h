@@ -42,6 +42,7 @@ class GdbStub {
     void SendAck();
 
     void SerializeRegisters(char* destination);
+    void ReadMemory(emuptr address, size_t count, char* dest);
     uint32 ReadHtoi(const char** input);
 
     void Disconnect();

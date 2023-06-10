@@ -13,6 +13,7 @@
 
 #include "EmBankDummy.h"
 
+#include "Debugger.h"
 #include "EmBankDRAM.h"  // EmBankDRAM::ValidAddress
 #include "EmBankSRAM.h"  // EmBankSRAM::GetMemoryStart
 #include "EmCPU68K.h"    // gCPU68K
@@ -227,6 +228,10 @@ void EmBankDummy::AddOpcodeCycles(void) {}
 
 void EmBankDummy::InvalidAccess(emuptr address, long size, Bool forRead) {
     if (CEnableFullAccess::AccessOK()) return;
+
+#ifdef ENABLE_DEBUGGER
+    if (gDebugger.IsMemoryAccess()) return;
+#endif
 
     EmAssert(gCPU68K);
     gCPU68K->BusError(address, size, forRead);

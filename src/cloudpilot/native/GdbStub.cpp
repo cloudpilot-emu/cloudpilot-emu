@@ -21,7 +21,7 @@ class EInvalidCommand {};
 
 namespace {
     constexpr size_t PKT_BUF_SIZE = 1024;
-    constexpr size_t MAX_MEMORY_READ_SIZE = 1024 * 1024;
+    constexpr size_t MAX_MEMORY_READ_SIZE = 500;
 
     const char* GDB_SIG0 = "S00";
     const char* GDB_SIGINT = "S02";
@@ -409,19 +409,14 @@ bool GdbStub::HandlePacket() {
             if (*in++ != ',') throw EInvalidCommand();
             len = ReadHtoi(&in);
             if (*in) throw EInvalidCommand();
-            out[0] = 0;
 
             if (len > MAX_MEMORY_READ_SIZE) {
                 std::cerr << "gdb stub: requested read size too large: " << len << endl << flush;
                 throw EInvalidCommand();
             }
 
-            ostringstream sstream;
-            for (size_t i = 0; i < len; i++)
-                sstream << hex << setfill('0') << setw(2)
-                        << static_cast<uint32>(debugger.MemoryRead(addr + i));
-
-            strcpy(out, sstream.str().c_str());
+            out[0] = 0;
+            ReadMemory(addr, len, out);
         } else if (!strcmp(in, "s") ||
                    in[0] == 'S') {  // single step [with signal, which we ignore]
 
@@ -506,6 +501,38 @@ void GdbStub::SerializeRegisters(char* destination) {
     for (int i = 0; i < 3; i++) sstream << "00000000";
 
     strcat(destination, sstream.str().c_str());
+}
+
+void GdbStub::ReadMemory(emuptr address, size_t count, char* dest) {
+    ostringstream sstream;
+
+    switch (count) {
+        case 1:
+            sstream << hex << setfill('0') << setw(2)
+                    << static_cast<uint32>(debugger.MemoryRead8(address));
+            break;
+
+        case 2:
+        case 4: {
+            uint32 value =
+                count == 2 ? debugger.MemoRead16(address) : debugger.MemoryRead32(address);
+
+            for (int i = count - 1; i >= 0; i--)
+                sstream << hex << setfill('0') << setw(2)
+                        << static_cast<uint32>((value >> (i * 8)) & 0xff);
+
+            break;
+        }
+
+        default:
+            for (size_t i = 0; i < count; i++)
+                sstream << hex << setfill('0') << setw(2)
+                        << static_cast<uint32>(debugger.MemoryRead8(address + i));
+
+            break;
+    }
+
+    strcpy(dest, sstream.str().c_str());
 }
 
 uint32 GdbStub::ReadHtoi(const char** input) {
