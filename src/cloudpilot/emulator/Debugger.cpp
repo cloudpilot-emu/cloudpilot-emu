@@ -8,9 +8,22 @@ Debugger gDebugger;
 
 Debugger::BreakState Debugger::GetBreakState() const { return breakState; }
 
-void Debugger::Reset() { breakState = BreakState::none; }
+bool Debugger::IsStopped() const { return breakState != BreakState::none; }
 
-void Debugger::NotificyPc(emuptr pc) {}
+void Debugger::Reset() {
+    breakState = BreakState::none;
+    stepping = false;
+    lastPc = regs.pc;
+}
+
+void Debugger::NotificyPc(emuptr pc) {
+    EmAssert(gSession);
+    if (gSession->IsNested()) return;
+
+    if (stepping && pc != lastPc) breakState = BreakState::step;
+
+    lastPc = pc;
+}
 
 void Debugger::NotifyMemoryRead(emuptr address) {}
 
@@ -28,7 +41,10 @@ void Debugger::Interrupt() { breakState = BreakState::externalInterrupt; }
 
 void Debugger::Continue() { breakState = BreakState::none; }
 
-void Debugger::Step() {}
+void Debugger::Step() {
+    stepping = true;
+    breakState = BreakState::none;
+}
 
 const array<uint32, Debugger::REGISTER_COUNT>& Debugger::ReadRegisters() {
     // straight from the horse's mouth:

@@ -403,7 +403,7 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
 
 #ifdef ENABLE_DEBUGGER
         gDebugger.NotificyPc(pc);
-        if (gDebugger.GetBreakState() != Debugger::BreakState::none) break;
+        if (gDebugger.IsStopped()) break;
 #endif
 
         if (MetaMemory::IsCPUBreak(m68k_getpc())) {

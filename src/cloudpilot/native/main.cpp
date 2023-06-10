@@ -159,7 +159,7 @@ void run(const Options& options) {
         handleSuspend();
         if (proxyHandler) proxyHandler->HandleSuspend();
 
-        gdbStub.Cycle(10);
+        gdbStub.Cycle(gDebugger.IsStopped() ? 10 : 0);
     };
 
     Cli::Stop();

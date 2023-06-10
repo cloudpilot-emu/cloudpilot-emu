@@ -49,7 +49,7 @@ void MainLoop::Cycle() {
     const long millis = Platform::GetMilliseconds();
     const uint32 clocksPerSecond = gSession->GetClocksPerSecond();
 
-    if (gDebugger.GetBreakState() == Debugger::BreakState::none) {
+    if (!gDebugger.IsStopped()) {
         if (millis - millisOffset - static_cast<long>(clockEmu) > 500)
             clockEmu = millis - millisOffset - 10;
 
@@ -59,7 +59,8 @@ void MainLoop::Cycle() {
         if (cycles > 0) {
             long cyclesPassed = 0;
 
-            while (cyclesPassed < cycles) cyclesPassed += gSession->RunEmulation(cycles);
+            while (cyclesPassed < cycles && !gDebugger.IsStopped())
+                cyclesPassed += gSession->RunEmulation(cycles);
             clockEmu +=
                 static_cast<double>(cyclesPassed) / (static_cast<double>(clocksPerSecond) / 1000.);
         }
@@ -70,8 +71,7 @@ void MainLoop::Cycle() {
     if (gSystemState.IsScreenDirty()) {
         UpdateScreen();
         gSystemState.MarkScreenClean();
-    } else if (!SuspendManager::IsSuspended() &&
-               gDebugger.GetBreakState() == Debugger::BreakState::none)
+    } else if (!SuspendManager::IsSuspended() && !gDebugger.IsStopped())
         SDL_Delay(16);
 
     eventHandler.HandleEvents(millis);

@@ -23,6 +23,7 @@ class Debugger {
     Debugger() = default;
 
     BreakState GetBreakState() const;
+    bool IsStopped() const;
 
     void Reset();
 
@@ -44,7 +45,11 @@ class Debugger {
 
    private:
     BreakState breakState{BreakState::none};
+
     array<uint32, REGISTER_COUNT> registers;
+
+    bool stepping{false};
+    emuptr lastPc{0xffffffff};
 
    private:
     Debugger(const Debugger&) = delete;
