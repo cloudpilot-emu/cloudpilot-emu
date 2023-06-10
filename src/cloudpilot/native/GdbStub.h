@@ -27,6 +27,8 @@ class GdbStub {
     void Cycle(int timeout);
 
    private:
+    void ResetPacketParser();
+
     void AcceptConnection(int timeout);
 
     void CheckForInterrupt(int timeout);
@@ -56,6 +58,11 @@ class GdbStub {
 
     unique_ptr<char[]> pktBuf;
     size_t pktBufUsed{0};
+
+    bool packetFirstChar{true};
+    bool packetInEsc{false};
+    bool packetInProgress{false};
+    uint32 packetEndLeft{2};
 
     Debugger& debugger;
 

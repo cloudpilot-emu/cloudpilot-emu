@@ -23,6 +23,12 @@ namespace {
     const char* GDB_SIG0 = "S00";
     const char* GDB_SIGINT = "S02";
     const char* GDB_SIGTRAP = "S05";
+
+    bool setSocketNonblock(int sock) {
+        int flags = fcntl(sock, F_GETFL, 0);
+
+        return flags >= 0 && fcntl(sock, F_SETFL, flags | O_NONBLOCK) >= 0;
+    }
 }  // namespace
 
 GdbStub::GdbStub(Debugger& debugger, uint32 listenPort)
@@ -105,6 +111,14 @@ void GdbStub::Cycle(int timeout) {
     }
 }
 
+void GdbStub::ResetPacketParser() {
+    packetFirstChar = true;
+    packetInEsc = false;
+    packetInProgress = false;
+    packetEndLeft = 0;
+    pktBufUsed = 0;
+}
+
 void GdbStub::AcceptConnection(int timeout) {
     if (connectionState != ConnectionState::listening) return;
 
@@ -116,6 +130,12 @@ void GdbStub::AcceptConnection(int timeout) {
     int acceptSock = accept(listenSock, reinterpret_cast<sockaddr*>(&sa), &saLen);
     if (acceptSock == -1) {
         if (errno != EWOULDBLOCK) std::cerr << "accept failed: " << errno << endl << flush;
+        return;
+    }
+
+    if (!setSocketNonblock(acceptSock)) {
+        std::cerr << "failed to set socket nonblocking: " << errno << endl << flush;
+        close(acceptSock);
 
         return;
     }
@@ -127,6 +147,7 @@ void GdbStub::AcceptConnection(int timeout) {
 
     debugger.Reset();
     debugger.Interrupt();
+    ResetPacketParser();
     runState = RunState::stopped;
 }
 
@@ -169,55 +190,68 @@ void GdbStub::CheckForBreak() {
 }
 
 bool GdbStub::ReceivePacket(int timeout) {
-    if (connectionState != ConnectionState::connected || runState != RunState::stopped)
-        return false;
+    if (connectionState != ConnectionState::connected) return false;
 
     if (PollSocket(connectionSock, timeout) != SocketState::data) return false;
 
-    bool inEsc = false, first = true;
-    int ret, endLeft = 0;
+    if (!packetInProgress) {
+        ResetPacketParser();
+        packetInProgress = true;
+    }
+
     char c;
 
-    pktBufUsed = 0;
     do {
-        ret = recv(connectionSock, &c, 1, 0);
+        int recvResult = recv(connectionSock, &c, 1, 0);
 
-        if (ret <= 0) {
-            std::cerr << "gdb stub: failed to receive" << endl << flush;
+        if (recvResult < 0) {
+            // EAGAIN -> buffer is empty
+            if (errno != EAGAIN) {
+                std::cerr << "gdb stub: recv failed: " << errno << endl << flush;
+                Disconnect();
+            }
+
+            return false;
+        }
+
+        // socket closed
+        if (recvResult == 0) {
             Disconnect();
             return false;
         }
 
-        if (first) {
+        if (packetFirstChar) {
             if (c == 3)  // spurious interrupt - ignore it - we are already stopped
                 continue;
 
-            if (c == '$') first = false;
+            if (c == '$') packetFirstChar = false;
 
             continue;
         }
-        if (inEsc) {
+        if (packetInEsc) {
             c ^= 0x20;
-            inEsc = false;
+            packetInEsc = false;
         } else if (c == 0x7d) {
-            inEsc = true;
+            packetInEsc = true;
             continue;
         } else if (c == '#') {
-            endLeft = 2;
+            packetEndLeft = 2;
             continue;
-        } else if (endLeft) {
-            if (--endLeft) continue;
+        } else if (packetEndLeft) {
+            if (--packetEndLeft) continue;
             c = 0;
         }
 
         if (pktBufUsed == PKT_BUF_SIZE) {
             std::cerr << "gdb stub: packet buffer overlow" << endl << flush;
+            Disconnect();
             return false;
         }
 
         pktBuf.get()[pktBufUsed++] = c;
     } while (c);
 
+    packetInProgress = false;
     return true;
 }
 
