@@ -68,7 +68,7 @@ void GdbStub::Listen() {
     }
 
     Defer cleanupSocket([&]() {
-        if (connectionState != ConnectionState::listening) withRetry(close, listenSock);
+        if (connectionState != ConnectionState::listening) close(listenSock);
     });
 
     listenSock = newSock;
@@ -92,8 +92,8 @@ void GdbStub::Listen() {
 
 void GdbStub::Stop() {
     if (connectionState == ConnectionState::socketClosed) return;
-    withRetry(close, listenSock);
-    withRetry(close, connectionSock);
+    close(listenSock);
+    close(connectionSock);
 
     connectionState = ConnectionState::socketClosed;
 
@@ -551,7 +551,7 @@ GdbStub::SocketState GdbStub::PollSocket(int socket, int timeout) {
 void GdbStub::Disconnect() {
     std::cout << "debugger disconnected" << endl << flush;
 
-    withRetry(close, connectionSock);
+    close(connectionSock);
 
     connectionState = ConnectionState::listening;
     runState = RunState::running;
