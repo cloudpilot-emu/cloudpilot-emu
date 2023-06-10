@@ -17,17 +17,30 @@
 
 #include "Defer.h"
 
+class EInvalidCommand {};
+
 namespace {
     constexpr size_t PKT_BUF_SIZE = 1024;
+    constexpr size_t MAX_MEMORY_READ_SIZE = 1024 * 1024;
 
     const char* GDB_SIG0 = "S00";
     const char* GDB_SIGINT = "S02";
     const char* GDB_SIGTRAP = "S05";
 
-    bool setSocketNonblock(int sock) {
-        int flags = fcntl(sock, F_GETFL, 0);
+    template <typename F, typename... Ts>
+    int withRetry(F fn, Ts... args) {
+        int result;
+        do {
+            result = fn(args...);
+        } while (result < 0 && errno == EINTR);
 
-        return flags >= 0 && fcntl(sock, F_SETFL, flags | O_NONBLOCK) >= 0;
+        return result;
+    }
+
+    bool setSocketNonblock(int sock) {
+        int flags = withRetry(fcntl, sock, F_GETFL, 0);
+
+        return flags >= 0 && withRetry(fcntl, sock, F_SETFL, flags | O_NONBLOCK) >= 0;
     }
 }  // namespace
 
@@ -48,27 +61,27 @@ void GdbStub::Listen() {
 
     inet_aton("0.0.0.0", (struct in_addr*)&sa.sin_addr.s_addr);
 
-    int newSock = socket(PF_INET, SOCK_STREAM, 0);
+    int newSock = withRetry(socket, PF_INET, SOCK_STREAM, 0);
     if (newSock < 0) {
         std::cerr << "gdb socket creation failed: " << errno << endl << flush;
         return;
     }
 
     Defer cleanupSocket([&]() {
-        if (connectionState != ConnectionState::listening) close(listenSock);
+        if (connectionState != ConnectionState::listening) withRetry(close, listenSock);
     });
 
     listenSock = newSock;
     int optVal = 1;
-    setsockopt(listenSock, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal));
-    setsockopt(listenSock, SOL_SOCKET, SO_REUSEPORT, &optVal, sizeof(optVal));
+    withRetry(setsockopt, listenSock, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal));
+    withRetry(setsockopt, listenSock, SOL_SOCKET, SO_REUSEPORT, &optVal, sizeof(optVal));
 
-    if (::bind(listenSock, (struct sockaddr*)&sa, sizeof(sa)) == -1) {
+    if (withRetry(::bind, listenSock, (struct sockaddr*)&sa, sizeof(sa)) == -1) {
         std::cerr << "gdb socket bind failed: " << errno << endl << flush;
         return;
     }
 
-    if (listen(listenSock, 1) == 1) {
+    if (withRetry(listen, listenSock, 1) == 1) {
         std::cerr << "gdb socket listen failed: " << errno << endl << flush;
         return;
     }
@@ -79,8 +92,8 @@ void GdbStub::Listen() {
 
 void GdbStub::Stop() {
     if (connectionState == ConnectionState::socketClosed) return;
-    close(listenSock);
-    close(connectionSock);
+    withRetry(close, listenSock);
+    withRetry(close, connectionSock);
 
     connectionState = ConnectionState::socketClosed;
 
@@ -127,7 +140,7 @@ void GdbStub::AcceptConnection(int timeout) {
     struct sockaddr_in sa;
     socklen_t saLen = sizeof(sa);
 
-    int acceptSock = accept(listenSock, reinterpret_cast<sockaddr*>(&sa), &saLen);
+    int acceptSock = withRetry(accept, listenSock, reinterpret_cast<sockaddr*>(&sa), &saLen);
     if (acceptSock == -1) {
         if (errno != EWOULDBLOCK) std::cerr << "accept failed: " << errno << endl << flush;
         return;
@@ -157,7 +170,7 @@ void GdbStub::CheckForInterrupt(int timeout) {
     if (PollSocket(connectionSock, timeout) != SocketState::data) return;
 
     uint8 cmd;
-    ssize_t bytesRead = recv(connectionSock, &cmd, 1, 0);
+    ssize_t bytesRead = withRetry(recv, connectionSock, &cmd, 1, 0);
 
     if (bytesRead != 1) {
         std::cerr << "gdb stub: check for interrupt: failed to receive one byte: " << errno << endl
@@ -202,7 +215,7 @@ bool GdbStub::ReceivePacket(int timeout) {
     char c;
 
     do {
-        int recvResult = recv(connectionSock, &c, 1, 0);
+        int recvResult = withRetry(recv, connectionSock, &c, 1, 0);
 
         if (recvResult < 0) {
             // EAGAIN -> buffer is empty
@@ -261,43 +274,44 @@ bool GdbStub::HandlePacket() {
     const char* in = pktBuf.get();
     char* out = pktBuf.get();
 
-    if (in == strstr(in, "qSupported"))
-        strcpy(out, "PacketSize=1024");
+    try {
+        if (in == strstr(in, "qSupported"))
+            strcpy(out, "PacketSize=1024");
 
-    else if (in == strstr(in, "qAttached"))
-        strcpy(out, "1");
+        else if (in == strstr(in, "qAttached"))
+            strcpy(out, "1");
 
-    else if (!strcmp(in, "qSymbol::"))
-        strcpy(out, "OK");
+        else if (!strcmp(in, "qSymbol::"))
+            strcpy(out, "OK");
 
-    else if (in == strstr(in, "qL"))
-        out[0] = 0;
+        else if (in == strstr(in, "qL"))
+            out[0] = 0;
 
-    else if (!strcmp(in, "qTStatus"))
-        out[0] = 0;
+        else if (!strcmp(in, "qTStatus"))
+            out[0] = 0;
 
-    else if (!strcmp(in, "qfThreadInfo"))
-        out[0] = 0;
+        else if (!strcmp(in, "qfThreadInfo"))
+            out[0] = 0;
 
-    else if (in[0] == 'v')
-        out[0] = 0;
+        else if (in[0] == 'v')
+            out[0] = 0;
 
-    else if (!strcmp(in, "qC"))
-        out[0] = 0;
+        else if (!strcmp(in, "qC"))
+            out[0] = 0;
 
-    else if (!strcmp(in, "qOffsets"))
-        strcpy(out, "Text=0;Data=0;Bss=0");
+        else if (!strcmp(in, "qOffsets"))
+            strcpy(out, "Text=0;Data=0;Bss=0");
 
-    else if (in[0] == 'H')
-        strcpy(out, "OK");
+        else if (in[0] == 'H')
+            strcpy(out, "OK");
 
-    else if (!strcmp(in, "?"))
-        strcpy(out, StopReason());
+        else if (!strcmp(in, "?"))
+            strcpy(out, StopReason());
 
-    else if (!strcmp(in, "D")) {
-        Disconnect();
-        return false;
-    }
+        else if (!strcmp(in, "D")) {
+            Disconnect();
+            return false;
+        }
 #if 0
     else if (in[0] == 'Z' || in[0] == 'z') {
         bool set = in[0] == 'Z';
@@ -331,10 +345,10 @@ bool GdbStub::HandlePacket() {
         if (!gdbStubPrvAddRegToStr(stub, out, regNo)) goto cmderr;
     }
 #endif
-    else if (!strcmp(in, "g")) {
-        out[0] = 0;
-        SerializeRegisters(out);
-    }
+        else if (!strcmp(in, "g")) {
+            out[0] = 0;
+            SerializeRegisters(out);
+        }
 #if 0
     else if (in[0] == 'P') {
         uint32_t regNo, val;
@@ -387,44 +401,51 @@ bool GdbStub::HandlePacket() {
             strcpy(out, "E0e");
     }
 #endif
-#if 0
-    else if (in[0] == 'm') {
-        uint32_t addr, len;
+        else if (in[0] == 'm') {
+            uint32_t addr, len;
 
-        in++;
-        addr = gdbStubPrvHtoi(&in);
-        if (*in++ != ',') goto cmderr;
-        len = gdbStubPrvHtoi(&in);
-        if (*in) goto cmderr;
-        out[0] = 0;
+            in++;
+            addr = ReadHtoi(&in);
+            if (*in++ != ',') throw EInvalidCommand();
+            len = ReadHtoi(&in);
+            if (*in) throw EInvalidCommand();
+            out[0] = 0;
 
-        if (!gdbStubPrvMemRead(stub, out, addr, len))
-            strcpy(out, "00");  // le sigh...gdb does not handle actual read failures, so we report
-                                // all unreadable memory as zeroes...
-    }
-#endif
-    else if (!strcmp(in, "s") || in[0] == 'S') {  // single step [with signal, which we ignore]
+            if (len > MAX_MEMORY_READ_SIZE) {
+                std::cerr << "gdb stub: requested read size too large: " << len << endl << flush;
+                throw EInvalidCommand();
+            }
 
-        SendAck();
-        debugger.Step();
-        runState = RunState::running;
-        return false;
-    }
+            ostringstream sstream;
+            for (size_t i = 0; i < len; i++)
+                sstream << hex << setfill('0') << setw(2)
+                        << static_cast<uint32>(debugger.MemoryRead(addr + i));
 
-    else if (!strcmp(in, "c") || in[0] == 'C') {  // continue [with signal, which we ignore]
+            strcpy(out, sstream.str().c_str());
+        } else if (!strcmp(in, "s") ||
+                   in[0] == 'S') {  // single step [with signal, which we ignore]
 
-        SendAck();
-        debugger.Continue();
-        runState = RunState::running;
-        return false;
-    }
+            SendAck();
+            debugger.Step();
+            runState = RunState::running;
+            return false;
+        }
 
-    else {
-        // cmderr:
+        else if (!strcmp(in, "c") || in[0] == 'C') {  // continue [with signal, which we ignore]
+
+            SendAck();
+            debugger.Continue();
+            runState = RunState::running;
+            return false;
+        }
+
+        else {
+            throw EInvalidCommand();
+        }
+    } catch (EInvalidCommand e) {
         fprintf(stderr, "unhandled packet <<%s>>\n", in);
         out[0] = 0;
     }
-
     return true;
 }
 
@@ -448,7 +469,7 @@ void GdbStub::SendBytes(const char* data, size_t len) {
     if (len == 0) return;
 
     do {
-        ssize_t bytesSent = send(connectionSock, data, len, 0);
+        ssize_t bytesSent = withRetry(send, connectionSock, data, len, 0);
 
         if (bytesSent <= 0) {
             std::cerr << "gdb stub: failed to send" << endl << flush;
@@ -487,9 +508,31 @@ void GdbStub::SerializeRegisters(char* destination) {
     strcat(destination, sstream.str().c_str());
 }
 
+uint32 GdbStub::ReadHtoi(const char** input) {
+    const char* in = *input;
+    uint32_t i = 0;
+    char c;
+
+    while ((c = *in) != 0) {
+        if (c >= '0' && c <= '9')
+            i = (i * 16) + (c - '0');
+        else if (c >= 'a' && c <= 'f')
+            i = (i * 16) + (c + 10 - 'a');
+        else if (c >= 'A' && c <= 'F')
+            i = (i * 16) + (c + 10 - 'A');
+        else
+            break;
+        in++;
+    }
+
+    *input = in;
+
+    return i;
+}
+
 GdbStub::SocketState GdbStub::PollSocket(int socket, int timeout) {
     struct pollfd fds[] = {{.fd = socket, .events = POLLIN}};
-    int pollResult = poll(fds, 1, timeout);
+    int pollResult = withRetry(poll, fds, 1, timeout);
 
     if (pollResult < 0) {
         std::cerr << "gdb stub: poll failed: " << errno << endl << flush;
@@ -508,7 +551,7 @@ GdbStub::SocketState GdbStub::PollSocket(int socket, int timeout) {
 void GdbStub::Disconnect() {
     std::cout << "debugger disconnected" << endl << flush;
 
-    close(connectionSock);
+    withRetry(close, connectionSock);
 
     connectionState = ConnectionState::listening;
     runState = RunState::running;

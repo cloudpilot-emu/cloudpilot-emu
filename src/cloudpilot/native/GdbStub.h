@@ -30,6 +30,7 @@ class GdbStub {
     void ResetPacketParser();
 
     void AcceptConnection(int timeout);
+    SocketState PollSocket(int socket, int timeout);
 
     void CheckForInterrupt(int timeout);
     void CheckForBreak();
@@ -41,8 +42,7 @@ class GdbStub {
     void SendAck();
 
     void SerializeRegisters(char* destination);
-
-    SocketState PollSocket(int socket, int timeout);
+    uint32 ReadHtoi(const char** input);
 
     void Disconnect();
 

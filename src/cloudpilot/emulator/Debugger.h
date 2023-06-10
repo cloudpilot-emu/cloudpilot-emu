@@ -41,6 +41,8 @@ class Debugger {
     void Continue();
     void Step();
 
+    uint8 MemoryRead(emuptr addr);
+
     const array<uint32, REGISTER_COUNT>& ReadRegisters();
 
    private:
@@ -49,7 +51,7 @@ class Debugger {
     array<uint32, REGISTER_COUNT> registers;
 
     bool stepping{false};
-    emuptr lastPc{0xffffffff};
+    emuptr lastBreakAtPc{0xffffffff};
 
    private:
     Debugger(const Debugger&) = delete;

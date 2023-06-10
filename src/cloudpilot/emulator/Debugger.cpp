@@ -1,6 +1,7 @@
 #include "Debugger.h"
 
 #include "EmCPU68K.h"
+#include "EmMemory.h"
 #include "EmSession.h"
 #include "UAE.h"
 
@@ -13,16 +14,16 @@ bool Debugger::IsStopped() const { return breakState != BreakState::none; }
 void Debugger::Reset() {
     breakState = BreakState::none;
     stepping = false;
-    lastPc = regs.pc;
+    lastBreakAtPc = 0xffffffff;
 }
 
 void Debugger::NotificyPc(emuptr pc) {
     EmAssert(gSession);
-    if (gSession->IsNested()) return;
+    if (gSession->IsNested() || breakState != BreakState::none) return;
 
-    if (stepping && pc != lastPc) breakState = BreakState::step;
+    if (stepping && pc != lastBreakAtPc) breakState = BreakState::step;
 
-    lastPc = pc;
+    if (breakState != BreakState::none) lastBreakAtPc = regs.pc;
 }
 
 void Debugger::NotifyMemoryRead(emuptr address) {}
@@ -37,13 +38,25 @@ void Debugger::SetWatchpoint(emuptr address) {}
 
 void Debugger::ClearWatchpoint(emuptr address) {}
 
-void Debugger::Interrupt() { breakState = BreakState::externalInterrupt; }
+void Debugger::Interrupt() {
+    breakState = BreakState::externalInterrupt;
+    lastBreakAtPc = regs.pc;
+}
 
-void Debugger::Continue() { breakState = BreakState::none; }
+void Debugger::Continue() {
+    breakState = BreakState::none;
+    stepping = false;
+}
 
 void Debugger::Step() {
     stepping = true;
     breakState = BreakState::none;
+}
+
+uint8 Debugger::MemoryRead(emuptr addr) {
+    CEnableFullAccess munge;
+
+    return EmMemGet8(addr);
 }
 
 const array<uint32, Debugger::REGISTER_COUNT>& Debugger::ReadRegisters() {
