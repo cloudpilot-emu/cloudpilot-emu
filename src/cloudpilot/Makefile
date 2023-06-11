@@ -17,7 +17,7 @@ WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
 CFLAGS_NATIVE ?= \
 	-DENABLE_DEBUGGER -O2  -g $(shell sdl2-config --cflags)
 
-CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE) -DENABLE_DEBUGGER
+CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
 INCLUDE_EXTRA ?=
 

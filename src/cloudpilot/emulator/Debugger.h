@@ -20,6 +20,8 @@ class Debugger {
         externalInterrupt
     };
 
+    enum class WatchpointType { read, write, readwrite };
+
    public:
     Debugger() = default;
 
@@ -27,16 +29,26 @@ class Debugger {
     bool IsStopped() const;
 
     void Reset();
+    void Enable();
 
     void NotificyPc(emuptr pc);
-    void NotifyMemoryRead(emuptr address);
-    void NotifyMemoryWrite(emuptr address);
+
+    void NotifyMemoryRead8(emuptr address);
+    void NotifyMemoryRead16(emuptr address);
+    void NotifyMemoryRead32(emuptr address);
+
+    void NotifyMemoryWrite8(emuptr address);
+    void NotifyMemoryWrite16(emuptr address);
+    void NotifyMemoryWrite32(emuptr address);
 
     void SetBreakpoint(emuptr pc);
     void ClearBreakpoint(emuptr pc);
 
-    void SetWatchpoint(emuptr address);
-    void ClearWatchpoint(emuptr address);
+    void SetWatchpoint(emuptr address, WatchpointType type, size_t len);
+    void ClearWatchpoint(emuptr address, WatchpointType type, size_t len);
+
+    WatchpointType GetWatchpointType() const;
+    emuptr GetWatchpointAddress() const;
 
     void Interrupt();
     void Continue();
@@ -48,9 +60,15 @@ class Debugger {
 
     bool IsMemoryAccess() const;
 
+    void UpdateBreakState();
+
     const array<uint32, REGISTER_COUNT>& ReadRegisters();
 
    private:
+    void Break(BreakState state);
+
+   private:
+    bool enabled{false};
     BreakState breakState{BreakState::none};
 
     array<uint32, REGISTER_COUNT> registers;
@@ -61,6 +79,10 @@ class Debugger {
     bool memoryAccess{false};
 
     unordered_set<emuptr> breakpoints;
+    unordered_set<emuptr> watchpointsRead;
+    unordered_set<emuptr> watchpointsWrite;
+
+    emuptr watchpointAddress;
 
    private:
     Debugger(const Debugger&) = delete;

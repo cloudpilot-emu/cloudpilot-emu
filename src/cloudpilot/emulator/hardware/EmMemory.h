@@ -19,6 +19,7 @@
 // which doesn't pull in EmCommon.h.  So I have to explicitly
 // make sure they're included.
 
+#include "DebuggerMemoryBinding.h"
 #include "EmAssert.h"   // EmAssert
 #include "EmTypes.h"    // uint32, etc.
 #include "Switches.h"   // WORDSWAP_MEMORY, UNALIGNED_LONG_ACCESS
@@ -98,37 +99,73 @@ extern EmAddressBank** gDynEmMemBanksP;
 //		� EmMemGet32
 // ---------------------------------------------------------------------------
 
-STATIC_INLINE uint32 EmMemGet32(emuptr addr) { return EmMemCallGetFunc(lget, addr); }
+STATIC_INLINE uint32 EmMemGet32(emuptr addr) {
+#ifdef ENABLE_DEBUGGER
+    DbgNotifyRead32(addr);
+#endif
+
+    return EmMemCallGetFunc(lget, addr);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmMemGet16
 // ---------------------------------------------------------------------------
 
-STATIC_INLINE uint16 EmMemGet16(emuptr addr) { return EmMemCallGetFunc(wget, addr); }
+STATIC_INLINE uint16 EmMemGet16(emuptr addr) {
+#ifdef ENABLE_DEBUGGER
+    DbgNotifyRead16(addr);
+#endif
+
+    return EmMemCallGetFunc(wget, addr);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmMemGet8
 // ---------------------------------------------------------------------------
 
-STATIC_INLINE uint8 EmMemGet8(emuptr addr) { return EmMemCallGetFunc(bget, addr); }
+STATIC_INLINE uint8 EmMemGet8(emuptr addr) {
+#ifdef ENABLE_DEBUGGER
+    DbgNotifyRead8(addr);
+#endif
+
+    return EmMemCallGetFunc(bget, addr);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmMemPut32
 // ---------------------------------------------------------------------------
 
-STATIC_INLINE void EmMemPut32(emuptr addr, uint32 l) { EmMemCallPutFunc(lput, addr, l); }
+STATIC_INLINE void EmMemPut32(emuptr addr, uint32 l) {
+#ifdef ENABLE_DEBUGGER
+    DbgNotifyWrite32(addr);
+#endif
+
+    EmMemCallPutFunc(lput, addr, l);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmMemPut16
 // ---------------------------------------------------------------------------
 
-STATIC_INLINE void EmMemPut16(emuptr addr, uint16 w) { EmMemCallPutFunc(wput, addr, w); }
+STATIC_INLINE void EmMemPut16(emuptr addr, uint16 w) {
+#ifdef ENABLE_DEBUGGER
+    DbgNotifyWrite16(addr);
+#endif
+
+    EmMemCallPutFunc(wput, addr, w);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmMemPut8
 // ---------------------------------------------------------------------------
 
-STATIC_INLINE void EmMemPut8(emuptr addr, uint8 b) { EmMemCallPutFunc(bput, addr, b); }
+STATIC_INLINE void EmMemPut8(emuptr addr, uint8 b) {
+#ifdef ENABLE_DEBUGGER
+    DbgNotifyWrite8(addr);
+#endif
+
+    EmMemCallPutFunc(bput, addr, b);
+}
 
 // ---------------------------------------------------------------------------
 //		� EmMemGetRealAddress

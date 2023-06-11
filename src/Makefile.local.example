@@ -18,7 +18,8 @@ INCLUDE_EXTRA = -I/opt/homebrew/include
 
 CFLAGS_NATIVE = \
 	-O2 -g \
-	$(shell sdl2-config --cflags)
+	$(shell sdl2-config --cflags) \
+	-DENABLE_DEBUGGER
 
 # CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 

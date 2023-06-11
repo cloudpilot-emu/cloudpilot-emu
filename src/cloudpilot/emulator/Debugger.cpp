@@ -1,12 +1,21 @@
 #include "Debugger.h"
 
+#include "DebuggerMemoryBinding.h"
 #include "EmCPU68K.h"
 #include "EmMemory.h"
 #include "EmSession.h"
 #include "Miscellaneous.h"
 #include "UAE.h"
 
+namespace {
+    template <typename T, typename K>
+    bool setContains(const T& set, K key) {
+        return set.find(key) != set.end();
+    }
+}  // namespace
+
 Debugger gDebugger;
+void* gDebuggerPtr = &gDebugger;
 
 Debugger::BreakState Debugger::GetBreakState() const { return breakState; }
 
@@ -16,34 +25,142 @@ void Debugger::Reset() {
     breakState = BreakState::none;
     stepping = false;
     lastBreakAtPc = 0xffffffff;
+    enabled = false;
+
     breakpoints.clear();
+    watchpointsRead.clear();
+    watchpointsWrite.clear();
 }
 
+void Debugger::Enable() { enabled = true; }
+
 void Debugger::NotificyPc(emuptr pc) {
+    if (!enabled) return;
+
     EmAssert(gSession);
     if (gSession->IsNested() || breakState != BreakState::none) return;
 
-    if (stepping && pc != lastBreakAtPc) breakState = BreakState::step;
-    if (breakpoints.find(pc) != breakpoints.end()) breakState = BreakState::breakpoint;
-    if (breakState != BreakState::none) lastBreakAtPc = regs.pc;
+    if (setContains(breakpoints, pc))
+        Break(BreakState::breakpoint);
+    else if (stepping && pc != lastBreakAtPc)
+        Break(BreakState::step);
 }
 
-void Debugger::NotifyMemoryRead(emuptr address) {}
+void Debugger::NotifyMemoryRead8(emuptr address) {
+    if (!enabled || memoryAccess) return;
 
-void Debugger::NotifyMemoryWrite(emuptr address) {}
+    if (setContains(watchpointsRead, address)) {
+        Break(BreakState::trapRead);
+
+        watchpointAddress = address;
+    }
+}
+
+void Debugger::NotifyMemoryRead16(emuptr address) {
+    if (!enabled || memoryAccess) return;
+
+    if (setContains(watchpointsRead, address) || setContains(watchpointsRead, address + 1)) {
+        Break(BreakState::trapRead);
+
+        watchpointAddress = address;
+    }
+}
+
+void Debugger::NotifyMemoryRead32(emuptr address) {
+    if (!enabled || memoryAccess) return;
+
+    if (setContains(watchpointsRead, address) || setContains(watchpointsRead, address + 1) ||
+        setContains(watchpointsRead, address + 2) || setContains(watchpointsRead, address + 3)) {
+        Break(BreakState::trapRead);
+
+        watchpointAddress = address;
+    }
+}
+
+void Debugger::NotifyMemoryWrite8(emuptr address) {
+    if (!enabled || memoryAccess) return;
+
+    if (setContains(watchpointsWrite, address)) {
+        Break(BreakState::trapWrite);
+
+        watchpointAddress = address;
+    }
+}
+
+void Debugger::NotifyMemoryWrite16(emuptr address) {
+    if (!enabled || memoryAccess) return;
+
+    if (setContains(watchpointsWrite, address) || setContains(watchpointsWrite, address + 1)) {
+        Break(BreakState::trapWrite);
+
+        watchpointAddress = address;
+    }
+}
+
+void Debugger::NotifyMemoryWrite32(emuptr address) {
+    if (!enabled || memoryAccess) return;
+
+    if (setContains(watchpointsWrite, address) || setContains(watchpointsWrite, address + 1) ||
+        setContains(watchpointsWrite, address + 2) || setContains(watchpointsWrite, address + 3)) {
+        Break(BreakState::trapWrite);
+
+        watchpointAddress = address;
+    }
+}
 
 void Debugger::SetBreakpoint(emuptr pc) { breakpoints.insert(pc); }
 
 void Debugger::ClearBreakpoint(emuptr pc) { breakpoints.erase(pc); }
 
-void Debugger::SetWatchpoint(emuptr address) {}
+void Debugger::SetWatchpoint(emuptr address, WatchpointType type, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        switch (type) {
+            case WatchpointType::read:
+                watchpointsRead.insert(address + i);
+                break;
 
-void Debugger::ClearWatchpoint(emuptr address) {}
+            case WatchpointType::write:
+                watchpointsWrite.insert(address + i);
+                break;
 
-void Debugger::Interrupt() {
-    breakState = BreakState::externalInterrupt;
-    lastBreakAtPc = regs.pc;
+            case WatchpointType::readwrite:
+                watchpointsRead.insert(address + i);
+                watchpointsWrite.insert(address + i);
+                break;
+        }
+    }
 }
+
+void Debugger::ClearWatchpoint(emuptr address, WatchpointType type, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        switch (type) {
+            case WatchpointType::read:
+                watchpointsRead.erase(address + i);
+                break;
+
+            case WatchpointType::write:
+                watchpointsWrite.erase(address + i);
+                break;
+
+            case WatchpointType::readwrite:
+                watchpointsRead.erase(address + i);
+                watchpointsWrite.erase(address + i);
+                break;
+        }
+    }
+}
+
+Debugger::WatchpointType Debugger::GetWatchpointType() const {
+    if (setContains(watchpointsRead, watchpointAddress))
+        return setContains(watchpointsWrite, watchpointAddress) ? WatchpointType::readwrite
+                                                                : WatchpointType::read;
+
+    return WatchpointType::write;
+}
+
+emuptr Debugger::GetWatchpointAddress() const { return watchpointAddress; }
+
+void Debugger::Interrupt() { Break(BreakState::externalInterrupt); }
 
 void Debugger::Continue() {
     breakState = BreakState::none;
@@ -85,6 +202,8 @@ uint32 Debugger::MemoryRead32(emuptr addr) {
 
 bool Debugger::IsMemoryAccess() const { return memoryAccess; }
 
+void Debugger::UpdateBreakState() { lastBreakAtPc = regs.pc; }
+
 const array<uint32, Debugger::REGISTER_COUNT>& Debugger::ReadRegisters() {
     // straight from the horse's mouth:
     //
@@ -105,4 +224,36 @@ const array<uint32, Debugger::REGISTER_COUNT>& Debugger::ReadRegisters() {
     registers[17] = regs.pc;
 
     return registers;
+}
+
+void Debugger::Break(BreakState state) {
+    breakState = state;
+
+    if (state != BreakState::none) {
+        lastBreakAtPc = regs.pc;
+    }
+}
+
+void DbgNotifyRead8(emuptr address) {
+    reinterpret_cast<Debugger*>(gDebuggerPtr)->NotifyMemoryRead8(address);
+}
+
+void DbgNotifyRead16(emuptr address) {
+    reinterpret_cast<Debugger*>(gDebuggerPtr)->NotifyMemoryRead16(address);
+}
+
+void DbgNotifyRead32(emuptr address) {
+    reinterpret_cast<Debugger*>(gDebuggerPtr)->NotifyMemoryRead32(address);
+}
+
+void DbgNotifyWrite8(emuptr address) {
+    reinterpret_cast<Debugger*>(gDebuggerPtr)->NotifyMemoryWrite8(address);
+}
+
+void DbgNotifyWrite16(emuptr address) {
+    reinterpret_cast<Debugger*>(gDebuggerPtr)->NotifyMemoryWrite16(address);
+}
+
+void DbgNotifyWrite32(emuptr address) {
+    reinterpret_cast<Debugger*>(gDebuggerPtr)->NotifyMemoryWrite32(address);
 }

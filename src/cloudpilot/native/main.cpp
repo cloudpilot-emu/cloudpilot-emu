@@ -159,7 +159,9 @@ void run(const Options& options) {
         handleSuspend();
         if (proxyHandler) proxyHandler->HandleSuspend();
 
+#ifdef ENABLE_DEBUGGER
         gdbStub.Cycle(gDebugger.IsStopped() ? 10 : 0);
+#endif
     };
 
     Cli::Stop();
@@ -215,11 +217,13 @@ int main(int argc, const char** argv) {
 
     program.add_argument("--mount").help("mount card image");
 
+#ifdef ENABLE_DEBUGGER
     program.add_argument("--listen", "-l").help("listen for GDB on port").scan<'u', unsigned int>();
     program.add_argument("--wait-for-attach")
         .help("wait for debugger on launch")
         .default_value(false)
         .implicit_value(true);
+#endif
 
     try {
         program.parse_args(argc, argv);
@@ -253,10 +257,12 @@ int main(int argc, const char** argv) {
 
     if (auto mountImage = program.present("--mount")) options.mountImage = *mountImage;
 
+#ifdef ENABLE_DEBUGGER
     if (program.present<unsigned int>("--listen"))
         options.debuggerConfiguration = {.enabled = true,
                                          .port = program.get<unsigned int>("--listen"),
                                          .waitForAttach = program.get<bool>("--wait-for-attach")};
+#endif
 
     run(options);
 }

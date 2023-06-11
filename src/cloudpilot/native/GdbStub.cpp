@@ -42,6 +42,32 @@ namespace {
 
         return flags >= 0 && withRetry(fcntl, sock, F_SETFL, flags | O_NONBLOCK) >= 0;
     }
+
+    const char* watchpointCode(Debugger::WatchpointType type) {
+        switch (type) {
+            case Debugger::WatchpointType::read:
+                return "r";
+
+            case Debugger::WatchpointType::readwrite:
+                return "a";
+
+            default:
+                return "";
+        }
+    }
+
+    Debugger::WatchpointType decodeWatchpointType(char type) {
+        switch (type) {
+            case '2':
+                return Debugger::WatchpointType::write;
+
+            case '3':
+                return Debugger::WatchpointType::read;
+
+            default:
+                return Debugger::WatchpointType::readwrite;
+        }
+    }
 }  // namespace
 
 GdbStub::GdbStub(Debugger& debugger, uint32 listenPort)
@@ -159,7 +185,9 @@ void GdbStub::AcceptConnection(int timeout) {
     connectionState = ConnectionState::connected;
 
     debugger.Reset();
+    debugger.Enable();
     debugger.Interrupt();
+
     ResetPacketParser();
     runState = RunState::stopped;
 }
@@ -197,6 +225,8 @@ void GdbStub::CheckForBreak() {
 
     const char* stopReason = StopReason();
     if (stopReason == GDB_SIG0) return;
+
+    debugger.UpdateBreakState();
 
     runState = RunState::stopped;
     SendPacket(stopReason, false);
@@ -322,13 +352,21 @@ bool GdbStub::HandlePacket() {
             uint32 addr = ReadHtoi(&in);
 
             if (*in++ != ',') throw EInvalidCommand();
-            ReadHtoi(&in);
+            size_t len = ReadHtoi(&in);
             if (*in) throw EInvalidCommand();
 
             switch (type) {
                 case '0':
                 case '1':
                     mode == 'Z' ? debugger.SetBreakpoint(addr) : debugger.ClearBreakpoint(addr);
+                    strcpy(out, "OK");
+                    break;
+
+                case '2':
+                case '3':
+                case '4':
+                    mode == 'Z' ? debugger.SetWatchpoint(addr, decodeWatchpointType(type), len)
+                                : debugger.ClearWatchpoint(addr, decodeWatchpointType(type), len);
                     strcpy(out, "OK");
                     break;
 
@@ -427,11 +465,11 @@ bool GdbStub::HandlePacket() {
             SendAck();
             debugger.Step();
             runState = RunState::running;
+
             return false;
         }
 
         else if (!strcmp(in, "c") || in[0] == 'C') {  // continue [with signal, which we ignore]
-
             SendAck();
             debugger.Continue();
             runState = RunState::running;
@@ -592,6 +630,8 @@ void GdbStub::Disconnect() {
 }
 
 const char* GdbStub::StopReason() const {
+    static char reason[20];
+
     switch (debugger.GetBreakState()) {
         case Debugger::BreakState::breakpoint:
             return GDB_SIGINT;
@@ -603,8 +643,10 @@ const char* GdbStub::StopReason() const {
 
         case Debugger::BreakState::trapRead:
         case Debugger::BreakState::trapWrite:
-            // CSTODO
-            return GDB_SIG0;
+            snprintf(reason, 20, "T05%swatch:%08lx;", watchpointCode(debugger.GetWatchpointType()),
+                     static_cast<unsigned long>(debugger.GetWatchpointAddress()));
+
+            return reason;
 
         case Debugger::BreakState::none:
             EmAssert(false);
