@@ -16,6 +16,7 @@ void Debugger::Reset() {
     breakState = BreakState::none;
     stepping = false;
     lastBreakAtPc = 0xffffffff;
+    breakpoints.clear();
 }
 
 void Debugger::NotificyPc(emuptr pc) {
@@ -23,7 +24,7 @@ void Debugger::NotificyPc(emuptr pc) {
     if (gSession->IsNested() || breakState != BreakState::none) return;
 
     if (stepping && pc != lastBreakAtPc) breakState = BreakState::step;
-
+    if (breakpoints.find(pc) != breakpoints.end()) breakState = BreakState::breakpoint;
     if (breakState != BreakState::none) lastBreakAtPc = regs.pc;
 }
 
@@ -31,9 +32,9 @@ void Debugger::NotifyMemoryRead(emuptr address) {}
 
 void Debugger::NotifyMemoryWrite(emuptr address) {}
 
-void Debugger::SetBreakpoint(emuptr pc) {}
+void Debugger::SetBreakpoint(emuptr pc) { breakpoints.insert(pc); }
 
-void Debugger::ClearBreakpoint(emuptr pc) {}
+void Debugger::ClearBreakpoint(emuptr pc) { breakpoints.erase(pc); }
 
 void Debugger::SetWatchpoint(emuptr address) {}
 

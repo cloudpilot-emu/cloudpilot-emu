@@ -2,6 +2,7 @@
 #define _DEBUGGER_H_
 
 #include <array>
+#include <unordered_set>
 
 #include "EmCommon.h"
 
@@ -58,6 +59,8 @@ class Debugger {
     emuptr lastBreakAtPc{0xffffffff};
 
     bool memoryAccess{false};
+
+    unordered_set<emuptr> breakpoints;
 
    private:
     Debugger(const Debugger&) = delete;

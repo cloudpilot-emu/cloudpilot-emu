@@ -311,28 +311,32 @@ bool GdbStub::HandlePacket() {
         else if (!strcmp(in, "D")) {
             Disconnect();
             return false;
+        } else if (in[0] == 'Z' || in[0] == 'z') {
+            char mode = in[0];
+            char type = in[1];
+
+            if (strlen(in) < 3) throw EInvalidCommand();
+
+            in += 2;
+            if (*in++ != ',') throw EInvalidCommand();
+            uint32 addr = ReadHtoi(&in);
+
+            if (*in++ != ',') throw EInvalidCommand();
+            ReadHtoi(&in);
+            if (*in) throw EInvalidCommand();
+
+            switch (type) {
+                case '0':
+                case '1':
+                    mode == 'Z' ? debugger.SetBreakpoint(addr) : debugger.ClearBreakpoint(addr);
+                    strcpy(out, "OK");
+                    break;
+
+                default:
+                    strcpy(out, "E05");
+                    break;
+            }
         }
-#if 0
-    else if (in[0] == 'Z' || in[0] == 'z') {
-        bool set = in[0] == 'Z';
-        char type = in[1];
-        uint32_t addr, len;
-
-        if (strlen(in) < 3) goto cmderr;
-
-        in += 2;
-        if (*in++ != ',') goto cmderr;
-        addr = gdbStubPrvHtoi(&in);
-        if (*in++ != ',') goto cmderr;
-        len = gdbStubPrvHtoi(&in);
-        if (*in) goto cmderr;
-
-        if (gdbStubPrvBpWpOp(stub, set, type, addr, len))
-            strcpy(out, "OK");
-        else
-            strcpy(out, "E05");
-    }
-#endif
 #if 0
     else if (in[0] == 'p') {
         uint32_t regNo;
