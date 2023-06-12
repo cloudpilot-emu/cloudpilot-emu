@@ -63,6 +63,7 @@ class Debugger {
     void UpdateBreakState();
 
     const array<uint32, REGISTER_COUNT>& ReadRegisters();
+    void SetRegister(size_t index, uint32 value);
 
    private:
     void Break(BreakState state);

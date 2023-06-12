@@ -374,47 +374,30 @@ bool GdbStub::HandlePacket() {
                     strcpy(out, "E05");
                     break;
             }
-        }
-#if 0
-    else if (in[0] == 'p') {
-        uint32_t regNo;
+        } else if (in[0] == 'p') {
+            uint32_t regNo;
 
-        in++;
-        regNo = gdbStubPrvHtoi(&in);
-        if (*in) goto cmderr;
+            in++;
+            regNo = ReadHtoi(&in);
+            if (*in) throw EInvalidCommand();
 
-        out[0] = 0;
-        if (!gdbStubPrvAddRegToStr(stub, out, regNo)) goto cmderr;
-    }
-#endif
-        else if (!strcmp(in, "g")) {
+            out[0] = 0;
+            SerializeRegister(out, regNo);
+        } else if (!strcmp(in, "g")) {
             out[0] = 0;
             SerializeRegisters(out);
+        } else if (in[0] == 'P') {
+            uint32_t regNo, val;
+
+            in++;
+            regNo = ReadHtoi(&in);
+            if (*in++ != '=') throw EInvalidCommand();
+            val = ReadHtoi(&in);
+
+            debugger.SetRegister(regNo, val);
+
+            strcpy(out, "OK");
         }
-#if 0
-    else if (in[0] == 'P') {
-        uint32_t regNo, val;
-
-        in++;
-        regNo = gdbStubPrvHtoi(&in);
-        if (*in++ != '=') goto cmderr;
-        val = __builtin_bswap32(gdbStubPrvHtoi(&in));
-
-        if (regNo < 15) {
-            cpuSetReg(stub->cpu, regNo, val);
-            sprintf(out, "OK");
-        } else if (regNo == 15) {  // cpuSetReg(PC, ...) does interworking. we need to be careful
-
-            cpuSetReg(
-                stub->cpu, 15,
-                (val & ~1) | ((cpuGetRegExternal(stub->cpu, ARM_REG_NUM_CPSR) & ARM_SR_T) ? 1 : 0));
-        } else if (regNo == 0x19) {
-            cpuSetReg(stub->cpu, ARM_REG_NUM_CPSR, val);
-            sprintf(out, "OK");
-        } else
-            strcpy(out, "E05");
-    }
-#endif
 #if 0
     else if (in[0] == 'M') {
         uint32_t addr, len, i;
@@ -541,6 +524,22 @@ void GdbStub::SerializeRegisters(char* destination) {
 
     // fudge the three int32 FPU registers
     for (int i = 0; i < 3; i++) sstream << "00000000";
+
+    strcat(destination, sstream.str().c_str());
+}
+
+void GdbStub::SerializeRegister(char* destination, uint32 index) {
+    ostringstream sstream;
+
+    if (index < 18) {
+        auto registers = debugger.ReadRegisters();
+
+        sstream << hex << setfill('0') << setw(8) << registers[index];
+    } else if (index < 26) {
+        sstream << "000000000000000000000000";
+    } else if (index < 29) {
+        sstream << "00000000";
+    }
 
     strcat(destination, sstream.str().c_str());
 }

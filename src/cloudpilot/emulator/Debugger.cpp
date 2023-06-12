@@ -226,6 +226,20 @@ const array<uint32, Debugger::REGISTER_COUNT>& Debugger::ReadRegisters() {
     return registers;
 }
 
+void Debugger::SetRegister(size_t index, uint32 value) {
+    if (index < 8)
+        m68k_dreg(regs, index) = value;
+    else if (index < 16)
+        m68k_areg(regs, index - 8) = value;
+    else if (index == 16) {
+        regs.sr = value;
+
+        EmAssert(gCPU68K);
+        gCPU68K->UpdateRegistersFromSR();
+    } else if (index == 17)
+        regs.pc = value;
+}
+
 void Debugger::Break(BreakState state) {
     breakState = state;
 
