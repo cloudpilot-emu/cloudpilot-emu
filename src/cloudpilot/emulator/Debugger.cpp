@@ -200,6 +200,16 @@ uint32 Debugger::MemoryRead32(emuptr addr) {
         return EmMemGet32(addr);
 }
 
+void Debugger::MemoryWrite(emuptr addr, uint8* data, size_t len) {
+    if (len == 2 && (addr & 0x01) == 0)
+        EmMemPut16(addr, (data[0] << 8) | data[1]);
+    else if (len == 4 && (addr & 0x01) == 0)
+        EmMemPut32(addr, (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3]);
+    else {
+        for (size_t i = 0; i < len; i++) EmMemPut8(addr + i, data[i]);
+    }
+}
+
 bool Debugger::IsMemoryAccess() const { return memoryAccess; }
 
 void Debugger::UpdateBreakState() { lastBreakAtPc = regs.pc; }

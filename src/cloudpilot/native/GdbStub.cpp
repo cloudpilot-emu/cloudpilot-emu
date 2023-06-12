@@ -397,36 +397,30 @@ bool GdbStub::HandlePacket() {
             debugger.SetRegister(regNo, val);
 
             strcpy(out, "OK");
-        }
-#if 0
-    else if (in[0] == 'M') {
-        uint32_t addr, len, i;
+        } else if (in[0] == 'M') {
+            uint32_t addr, len, i;
 
-        in++;
-        addr = gdbStubPrvHtoi(&in);
-        if (*in++ != ',') goto cmderr;
+            in++;
+            addr = ReadHtoi(&in);
+            if (*in++ != ',') throw EInvalidCommand();
 
-        len = gdbStubPrvHtoi(&in);
-        if (*in++ != ':') goto cmderr;
+            len = ReadHtoi(&in);
+            if (*in++ != ':') throw EInvalidCommand();
 
-        if (strlen(in) != len * 2) goto cmderr;
+            if (strlen(in) != len * 2) throw EInvalidCommand();
 
-        // convert to binary
-        for (i = 0; i < len; i++) {
-            char c[3] = {in[i * 2 + 0], in[i * 2 + 1], 0};
-            const char* p = c;
+            // convert to binary
+            for (i = 0; i < len; i++) {
+                char c[3] = {in[i * 2 + 0], in[i * 2 + 1], 0};
+                const char* p = c;
 
-            out[i] = gdbStubPrvHtoi(&p);
-            if (p != c + 2) goto cmderr;
-        }
+                out[i] = ReadHtoi(&p);
+                if (p != c + 2) throw EInvalidCommand();
+            }
 
-        if (len == gdbStubPrvMemWrite(stub, out, addr, len))
+            debugger.MemoryWrite(addr, reinterpret_cast<uint8*>(out), len);
             strcpy(out, "OK");
-        else
-            strcpy(out, "E0e");
-    }
-#endif
-        else if (in[0] == 'm') {
+        } else if (in[0] == 'm') {
             uint32_t addr, len;
 
             in++;

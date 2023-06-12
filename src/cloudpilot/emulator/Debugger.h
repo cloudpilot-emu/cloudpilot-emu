@@ -58,6 +58,8 @@ class Debugger {
     uint16 MemoRead16(emuptr addr);
     uint32 MemoryRead32(emuptr addr);
 
+    void MemoryWrite(emuptr addr, uint8* data, size_t len);
+
     bool IsMemoryAccess() const;
 
     void UpdateBreakState();
