@@ -26,6 +26,8 @@ class GdbStub {
 
     void Cycle(int timeout);
 
+    bool IsDebuggerConnected();
+
    private:
     void ResetPacketParser();
 

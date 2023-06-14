@@ -22,6 +22,7 @@
 
 #include "DbBackup.h"
 #include "DbInstaller.h"
+#include "Debugger.h"
 #include "EmCommon.h"
 #include "EmErrCodes.h"
 #include "EmSession.h"
@@ -32,8 +33,8 @@
 #include "util.h"
 
 namespace {
-    using Task = function<bool()>;
-    using Cmd = function<bool(vector<string>)>;
+    using Task = function<bool(const Cli::TaskContext& context)>;
+    using Cmd = function<bool(vector<string>, const Cli::TaskContext& context)>;
 
     atomic<bool> stop(false);
     thread cliThread;
@@ -189,9 +190,9 @@ namespace {
         return true;
     }
 
-    bool CmdQuit(vector<string> args) { return true; }
+    bool CmdQuit(vector<string> args, const Cli::TaskContext& context) { return true; }
 
-    bool CmdInstallFile(vector<string> args) {
+    bool CmdInstallFile(vector<string> args, const Cli::TaskContext& context) {
         if (args.empty()) {
             cout << "usage: install <file> [file...]" << endl << flush;
             return false;
@@ -205,7 +206,7 @@ namespace {
         return false;
     }
 
-    bool CmdSaveImage(vector<string> args) {
+    bool CmdSaveImage(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() < 1 || args.size() > 2) {
             cout << "usage: save-image <image_file> [card_image_file]" << endl << flush;
             return false;
@@ -236,7 +237,7 @@ namespace {
         return false;
     }
 
-    bool CmdRandomSeed(vector<string> args) {
+    bool CmdRandomSeed(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() > 0) {
             cout << "usage: random-seed" << endl << flush;
             return false;
@@ -247,7 +248,7 @@ namespace {
         return false;
     }
 
-    bool CmdSetUserName(vector<string> args) {
+    bool CmdSetUserName(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() == 0) {
             cout << "usage: set-user-name <hotsync user name>";
             return false;
@@ -265,7 +266,7 @@ namespace {
         return false;
     }
 
-    bool CmdResetSoft(vector<string> args) {
+    bool CmdResetSoft(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() > 0) {
             cout << "usage: reset-soft" << endl << flush;
             return false;
@@ -276,7 +277,7 @@ namespace {
         return false;
     }
 
-    bool CmdResetHard(vector<string> args) {
+    bool CmdResetHard(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() > 0) {
             cout << "usage: reset-hard" << endl << flush;
             return false;
@@ -287,7 +288,7 @@ namespace {
         return false;
     }
 
-    bool CmdResetNoext(vector<string> args) {
+    bool CmdResetNoext(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() > 0) {
             cout << "usage: reset-noext" << endl << flush;
             return false;
@@ -298,12 +299,17 @@ namespace {
         return false;
     }
 
-    bool CmdInvalidCommand(vector<string> args) {
+    bool CmdInvalidCommand(vector<string> args, const Cli::TaskContext& context) {
         cout << "invalid command" << endl << flush;
         return false;
     }
 
-    bool CmdSwitchImage(vector<string> args) {
+    bool CmdSwitchImage(vector<string> args, const Cli::TaskContext& context) {
+        if (context.gdbStub.IsDebuggerConnected()) {
+            cout << "this command is not available while a debugger is connected" << endl << flush;
+            return false;
+        }
+
         if (args.size() != 1) {
             cout << "usage: switch-image <file>" << endl << flush;
             return false;
@@ -315,7 +321,7 @@ namespace {
         return false;
     }
 
-    bool CmdSaveBackup(vector<string> args) {
+    bool CmdSaveBackup(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() != 1) {
             cout << "usage: save-backup <file>" << endl << flush;
             return false;
@@ -326,7 +332,7 @@ namespace {
         return false;
     }
 
-    bool CmdSaveBackupWithRom(vector<string> args) {
+    bool CmdSaveBackupWithRom(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() != 1) {
             cout << "usage: save-backup-with-rom <file>" << endl << flush;
             return false;
@@ -337,7 +343,7 @@ namespace {
         return false;
     }
 
-    bool CmdLaunch(vector<string> args) {
+    bool CmdLaunch(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() != 1) {
             cout << "usage: launch <database>" << endl << flush;
             return false;
@@ -350,7 +356,7 @@ namespace {
         return false;
     }
 
-    bool CmdUnmount(vector<string> args) {
+    bool CmdUnmount(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() > 0) {
             cout << "usage: unmount <image>" << endl << flush;
             return false;
@@ -370,7 +376,7 @@ namespace {
         return false;
     }
 
-    bool CmdMount(vector<string> args) {
+    bool CmdMount(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() != 1) {
             cout << "usage: mount <image>" << endl << flush;
             return false;
@@ -381,7 +387,7 @@ namespace {
         return false;
     }
 
-    bool CmdSaveCard(vector<string> args) {
+    bool CmdSaveCard(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() != 1) {
             cout << "usage: save-card <image>" << endl << flush;
             return false;
@@ -483,7 +489,7 @@ namespace {
             if (!lineBuffer) {
                 cout << endl << flush;
 
-                Dispatch(bind(CmdQuit, vector<string>()));
+                Dispatch(bind(CmdQuit, vector<string>(), std::placeholders::_1));
 
                 continue;
             }
@@ -502,7 +508,7 @@ namespace {
                         break;
                     }
 
-                Dispatch(bind(cmd, args));
+                Dispatch(bind(cmd, args, std::placeholders::_1));
             }
 
             free(lineBuffer);
@@ -537,13 +543,13 @@ namespace Cli {
         task = Task();
     }
 
-    bool Execute() {
+    bool Execute(const Cli::TaskContext& context) {
         bool result = false;
 
         {
             unique_lock<mutex> lock(dispatchMutex);
 
-            if (task) result = task();
+            if (task) result = task(context);
 
             task = Task();
         }

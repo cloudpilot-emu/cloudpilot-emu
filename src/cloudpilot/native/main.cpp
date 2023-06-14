@@ -150,11 +150,12 @@ void run(const Options& options) {
     MainLoop mainLoop(window, renderer, scale);
 
     Cli::Start();
+    Cli::TaskContext taskContext = {.debugger = gDebugger, .gdbStub = gdbStub};
 
     while (mainLoop.IsRunning()) {
         mainLoop.Cycle();
 
-        if (Cli::Execute()) break;
+        if (Cli::Execute(taskContext)) break;
 
         handleSuspend();
         if (proxyHandler) proxyHandler->HandleSuspend();

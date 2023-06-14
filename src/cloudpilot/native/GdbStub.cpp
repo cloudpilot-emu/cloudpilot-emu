@@ -150,6 +150,8 @@ void GdbStub::Cycle(int timeout) {
     }
 }
 
+bool GdbStub::IsDebuggerConnected() { return connectionState == ConnectionState::connected; }
+
 void GdbStub::ResetPacketParser() {
     packetFirstChar = true;
     packetInEsc = false;
