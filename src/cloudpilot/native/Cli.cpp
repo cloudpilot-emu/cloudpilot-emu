@@ -28,6 +28,7 @@
 #include "EmSession.h"
 #include "ExternalStorage.h"
 #include "SessionImage.h"
+#include "StackDump.h"
 #include "ZipfileWalker.h"
 #include "md5.h"
 #include "util.h"
@@ -404,6 +405,30 @@ namespace {
         return false;
     }
 
+    bool CmdTrace(vector<string> args, const Cli::TaskContext& context) {
+        int frameCount{3};
+        bool includeStack{false};
+
+        try {
+            if (args.size() > 2 ||
+                (args.size() == 2 && args[1] != "stack" && args[1] != "nostack")) {
+                throw invalid_argument("bad argument list");
+            }
+
+            if (args.size() > 0) frameCount = stoi(args[0]);
+            if (frameCount <= 0) throw invalid_argument("invalid frame count");
+
+            includeStack = args.size() == 2 && args[1] == "stack";
+        } catch (exception&) {
+            cout << "usage: trace [number of frames] [stack|nostack]" << endl << flush;
+            return false;
+        }
+
+        StackDump().FrameCount(frameCount).DumpFrames(includeStack).Dump();
+
+        return false;
+    }
+
     struct Command {
         string name;
         Cmd cmd;
@@ -424,7 +449,8 @@ namespace {
                           {.name = "launch", .cmd = CmdLaunch},
                           {.name = "unmount", .cmd = CmdUnmount},
                           {.name = "mount", .cmd = CmdMount},
-                          {.name = "save-card", .cmd = CmdSaveCard}};
+                          {.name = "save-card", .cmd = CmdSaveCard},
+                          {.name = "trace", .cmd = CmdTrace}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);

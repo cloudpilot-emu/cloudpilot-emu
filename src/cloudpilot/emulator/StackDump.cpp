@@ -52,7 +52,10 @@ namespace {
     }
 
     void dumpMemory(emuptr start, emuptr stop, uint32 limit) {
-        if (start >= stop) return;
+        if (start >= stop) {
+            cerr << "[invalid stack frame]" << endl;
+            return;
+        }
 
         if (stop - start >= limit) {
             cerr << "[frame too large: 0x" << (stop - start) << "]" << endl;
