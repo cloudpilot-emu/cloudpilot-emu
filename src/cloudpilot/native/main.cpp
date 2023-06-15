@@ -49,6 +49,7 @@ struct Options {
     optional<string> deviceId;
     optional<ProxyConfiguration> proxyConfiguration;
     bool traceNetlib;
+    bool traceDebugger;
     string mountImage;
     DebuggerConfiguration debuggerConfiguration;
 };
@@ -112,6 +113,7 @@ void run(const Options& options) {
     }
 
     if (options.traceNetlib) logging::enableDomain(logging::domainNetlib);
+    if (options.traceDebugger) logging::enableDomain(logging::domainDebugger);
 
     Feature::SetClipboardIntegration(true);
 
@@ -211,7 +213,7 @@ int main(int argc, const char** argv) {
             }
         });
 
-    program.add_argument("--net-trace")
+    program.add_argument("--trace-netlib")
         .help("trace network API")
         .default_value(false)
         .implicit_value(true);
@@ -220,8 +222,14 @@ int main(int argc, const char** argv) {
 
 #ifdef ENABLE_DEBUGGER
     program.add_argument("--listen", "-l").help("listen for GDB on port").scan<'u', unsigned int>();
+
     program.add_argument("--wait-for-attach")
         .help("wait for debugger on launch")
+        .default_value(false)
+        .implicit_value(true);
+
+    program.add_argument("--trace-debugger")
+        .help("trace gdb stub")
         .default_value(false)
         .implicit_value(true);
 #endif
@@ -246,10 +254,10 @@ int main(int argc, const char** argv) {
         exit(1);
     }
 
-    Options options;
+    Options options{.traceDebugger = false};
 
     options.image = program.get("image");
-    options.traceNetlib = program.get<bool>("--net-trace");
+    options.traceNetlib = program.get<bool>("--trace-netlib");
     if (auto mountImage = program.present("--mount")) options.mountImage = *mountImage;
 
     if (auto deviceId = program.present("--device-id")) options.deviceId = *deviceId;
@@ -263,6 +271,8 @@ int main(int argc, const char** argv) {
         options.debuggerConfiguration = {.enabled = true,
                                          .port = program.get<unsigned int>("--listen"),
                                          .waitForAttach = program.get<bool>("--wait-for-attach")};
+
+    options.traceDebugger = program.get<bool>("--trace-debugger");
 #endif
 
     run(options);
