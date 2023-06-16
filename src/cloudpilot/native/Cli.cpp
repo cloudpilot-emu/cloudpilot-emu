@@ -13,6 +13,7 @@
 #include <deque>
 #include <fstream>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
 #include <mutex>
@@ -23,8 +24,10 @@
 #include "DbBackup.h"
 #include "DbInstaller.h"
 #include "Debugger.h"
+#include "EmBankSRAM.h"
 #include "EmCommon.h"
 #include "EmErrCodes.h"
+#include "EmMemory.h"
 #include "EmSession.h"
 #include "ExternalStorage.h"
 #include "SessionImage.h"
@@ -429,6 +432,47 @@ namespace {
         return false;
     }
 
+    emuptr findRegion(const uint8* region, size_t regionSize, emuptr start, size_t size) {
+        for (emuptr address = start; address < start + size; address++) {
+            for (emuptr i = 0; i < regionSize; i++)
+                if (region[i] != EmMemGet8(i + address)) goto nextAddress;
+
+            return address;
+
+        nextAddress:;
+        }
+
+        return -1;
+    }
+
+    bool CmdLocate(vector<string> args, const Cli::TaskContext& context) {
+        if (args.size() != 1) {
+            cout << "usage: locate <file>" << endl << flush;
+            return false;
+        }
+
+        unique_ptr<uint8[]> buffer;
+        size_t len;
+
+        if (!util::readFile(args[0], buffer, len)) {
+            cout << "failed to read " << args[0] << endl << flush;
+            return false;
+        }
+
+        emuptr address =
+            findRegion(buffer.get(), len, gMemoryStart, Memory::GetRegionSize(MemoryRegion::ram));
+        if (address < 0) {
+            cout << "unable to locate file content in memory" << endl << flush;
+            return false;
+        }
+
+        cout << "located file content in RAM at 0x" << hex << setfill('0') << setw(8)
+             << (address + gMemoryStart) << dec << endl
+             << flush;
+
+        return false;
+    }
+
     struct Command {
         string name;
         Cmd cmd;
@@ -450,7 +494,8 @@ namespace {
                           {.name = "unmount", .cmd = CmdUnmount},
                           {.name = "mount", .cmd = CmdMount},
                           {.name = "save-card", .cmd = CmdSaveCard},
-                          {.name = "trace", .cmd = CmdTrace}};
+                          {.name = "trace", .cmd = CmdTrace},
+                          {.name = "locate", .cmd = CmdLocate}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);
