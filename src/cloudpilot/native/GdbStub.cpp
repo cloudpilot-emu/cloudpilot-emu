@@ -631,12 +631,12 @@ const char* GdbStub::StopReason() const {
 
     switch (debugger.GetBreakState()) {
         case Debugger::BreakState::breakpoint:
-            return GDB_SIGINT;
-
-        case Debugger::BreakState::externalInterrupt:
         case Debugger::BreakState::trapInternal:
         case Debugger::BreakState::step:
             return GDB_SIGTRAP;
+
+        case Debugger::BreakState::externalInterrupt:
+            return GDB_SIGINT;
 
         case Debugger::BreakState::trapRead:
         case Debugger::BreakState::trapWrite:
