@@ -27,6 +27,7 @@
 #include "EmBankSRAM.h"
 #include "EmCommon.h"
 #include "EmErrCodes.h"
+#include "EmHAL.h"
 #include "EmMemory.h"
 #include "EmSession.h"
 #include "ExternalStorage.h"
@@ -433,7 +434,9 @@ namespace {
     }
 
     emuptr findRegion(const uint8* region, size_t regionSize, emuptr start, size_t size) {
-        for (emuptr address = start; address < start + size; address++) {
+        if (regionSize > size) return 0xffffffff;
+
+        for (emuptr address = start; address < start + size - regionSize; address++) {
             for (emuptr i = 0; i < regionSize; i++)
                 if (region[i] != EmMemGet8(i + address)) goto nextAddress;
 
@@ -442,7 +445,7 @@ namespace {
         nextAddress:;
         }
 
-        return -1;
+        return 0xffffffff;
     }
 
     bool CmdLocate(vector<string> args, const Cli::TaskContext& context) {
@@ -459,16 +462,47 @@ namespace {
             return false;
         }
 
-        emuptr address =
-            findRegion(buffer.get(), len, gMemoryStart, Memory::GetRegionSize(MemoryRegion::ram));
-        if (address < 0) {
-            cout << "unable to locate file content in memory" << endl << flush;
-            return false;
-        }
+        emuptr address = gMemoryStart;
+        const size_t ramSize = Memory::GetRegionSize(MemoryRegion::ram);
+        bool found = false;
 
-        cout << "located file content in RAM at 0x" << hex << setfill('0') << setw(8)
-             << (address + gMemoryStart) << dec << endl
-             << flush;
+        do {
+            address = findRegion(buffer.get(), len, address, ramSize + gMemoryStart - address);
+
+            if (address < 0xffffffff) {
+                cout << "located file content in RAM at 0x" << hex << setfill('0') << setw(8)
+                     << address << dec << endl
+                     << flush;
+
+                found = true;
+            } else {
+                break;
+            }
+
+            address += len;
+        } while (address >= gMemoryStart && address < gMemoryStart + ramSize);
+
+        const emuptr romStart = EmHAL::GetROMBaseAddress();
+        const size_t romSize = EmHAL::GetROMSize();
+        address = romStart;
+
+        do {
+            address = findRegion(buffer.get(), len, address, romSize + romStart - address);
+
+            if (address < 0xffffffff) {
+                cout << "located file content in ROM at 0x" << hex << setfill('0') << setw(8)
+                     << address << dec << endl
+                     << flush;
+
+                found = true;
+            } else {
+                break;
+            }
+
+            address += len;
+        } while (address >= romStart && address < romStart + romSize);
+
+        if (!found) cout << "unable to locate file" << endl << flush;
 
         return false;
     }
