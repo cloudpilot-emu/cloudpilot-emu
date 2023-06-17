@@ -144,7 +144,7 @@ void GdbStub::Cycle(int timeout) {
                     return;
 
                 case RunState::stopped:
-                    if (ReceivePacket(timeout) && HandlePacket()) SendPacket(pktBuf.get(), true);
+                    while (ReceivePacket(timeout) && HandlePacket()) SendPacket(pktBuf.get(), true);
 
                     return;
             }
