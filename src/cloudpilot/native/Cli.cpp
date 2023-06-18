@@ -23,6 +23,7 @@
 
 #include "DbBackup.h"
 #include "DbInstaller.h"
+#include "DebugSupport.h"
 #include "Debugger.h"
 #include "EmBankSRAM.h"
 #include "EmCommon.h"
@@ -193,6 +194,65 @@ namespace {
         }
 
         return true;
+    }
+
+    emuptr FindRegion(const uint8* region, size_t regionSize, emuptr start, size_t size) {
+        if (regionSize > size) return 0xffffffff;
+
+        for (emuptr address = start; address < start + size - regionSize; address++) {
+            for (emuptr i = 0; i < regionSize; i++)
+                if (region[i] != EmMemGet8(i + address)) goto nextAddress;
+
+            return address;
+
+        nextAddress:;
+        }
+
+        return 0xffffffff;
+    }
+
+    void Locate(const uint8* data, size_t size) {
+        emuptr address = gMemoryStart;
+        const size_t ramSize = Memory::GetRegionSize(MemoryRegion::ram);
+        bool found = false;
+
+        do {
+            address = FindRegion(data, size, address, ramSize + gMemoryStart - address);
+
+            if (address < 0xffffffff) {
+                cout << "located file content in RAM at 0x" << hex << setfill('0') << setw(8)
+                     << address << dec << endl
+                     << flush;
+
+                found = true;
+            } else {
+                break;
+            }
+
+            address += size;
+        } while (address >= gMemoryStart && address < gMemoryStart + ramSize);
+
+        const emuptr romStart = EmHAL::GetROMBaseAddress();
+        const size_t romSize = EmHAL::GetROMSize();
+        address = romStart;
+
+        do {
+            address = FindRegion(data, size, address, romSize + romStart - address);
+
+            if (address < 0xffffffff) {
+                cout << "located file content in ROM at 0x" << hex << setfill('0') << setw(8)
+                     << address << dec << endl
+                     << flush;
+
+                found = true;
+            } else {
+                break;
+            }
+
+            address += size;
+        } while (address >= romStart && address < romStart + romSize);
+
+        if (!found) cout << "unable to locate file" << endl << flush;
     }
 
     bool CmdQuit(vector<string> args, const Cli::TaskContext& context) { return true; }
@@ -433,21 +493,6 @@ namespace {
         return false;
     }
 
-    emuptr findRegion(const uint8* region, size_t regionSize, emuptr start, size_t size) {
-        if (regionSize > size) return 0xffffffff;
-
-        for (emuptr address = start; address < start + size - regionSize; address++) {
-            for (emuptr i = 0; i < regionSize; i++)
-                if (region[i] != EmMemGet8(i + address)) goto nextAddress;
-
-            return address;
-
-        nextAddress:;
-        }
-
-        return 0xffffffff;
-    }
-
     bool CmdLocate(vector<string> args, const Cli::TaskContext& context) {
         if (args.size() != 1) {
             cout << "usage: locate <file>" << endl << flush;
@@ -462,47 +507,26 @@ namespace {
             return false;
         }
 
-        emuptr address = gMemoryStart;
-        const size_t ramSize = Memory::GetRegionSize(MemoryRegion::ram);
-        bool found = false;
+        Locate(buffer.get(), len);
 
-        do {
-            address = findRegion(buffer.get(), len, address, ramSize + gMemoryStart - address);
+        return false;
+    }
 
-            if (address < 0xffffffff) {
-                cout << "located file content in RAM at 0x" << hex << setfill('0') << setw(8)
-                     << address << dec << endl
-                     << flush;
+    bool CmdDebugSetApp(vector<string> args, const Cli::TaskContext& context) {
+        if (args.size() != 1) {
+            cout << "usage: debug-set-app <file>" << endl << flush;
+            return false;
+        }
 
-                found = true;
-            } else {
-                break;
-            }
+        unique_ptr<uint8[]> buffer;
+        size_t len;
 
-            address += len;
-        } while (address >= gMemoryStart && address < gMemoryStart + ramSize);
+        if (!util::readFile(args[0], buffer, len)) {
+            cout << "failed to read " << args[0] << endl << flush;
+            return false;
+        }
 
-        const emuptr romStart = EmHAL::GetROMBaseAddress();
-        const size_t romSize = EmHAL::GetROMSize();
-        address = romStart;
-
-        do {
-            address = findRegion(buffer.get(), len, address, romSize + romStart - address);
-
-            if (address < 0xffffffff) {
-                cout << "located file content in ROM at 0x" << hex << setfill('0') << setw(8)
-                     << address << dec << endl
-                     << flush;
-
-                found = true;
-            } else {
-                break;
-            }
-
-            address += len;
-        } while (address >= romStart && address < romStart + romSize);
-
-        if (!found) cout << "unable to locate file" << endl << flush;
+        debug_support::SetApp(buffer.get(), len);
 
         return false;
     }
@@ -529,7 +553,8 @@ namespace {
                           {.name = "mount", .cmd = CmdMount},
                           {.name = "save-card", .cmd = CmdSaveCard},
                           {.name = "trace", .cmd = CmdTrace},
-                          {.name = "locate", .cmd = CmdLocate}};
+                          {.name = "locate", .cmd = CmdLocate},
+                          {.name = "debug-set-app", .cmd = CmdDebugSetApp}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);
