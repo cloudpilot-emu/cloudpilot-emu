@@ -269,8 +269,7 @@ int main(int argc, const char** argv) {
         exit(1);
     }
 
-    Options options;
-    options.traceDebugger = false;
+    Options options{.traceDebugger = false};
 
     options.image = program.get("image");
     options.traceNetlib = program.get<bool>("--trace-netlib");

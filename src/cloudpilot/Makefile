@@ -25,7 +25,7 @@ LDFLAGS_NATIVE ?=  \
 	$(shell sdl2-config --libs) -lSDL2_image -lreadline -lboost_coroutine -ldl -lpthread
 
 CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack -Wno-multichar -Wno-unknown-pragmas \
-	-DEMULATION_LEVEL=EMULATION_UNIX
+	-Werror=missing-field-initializers -DEMULATION_LEVEL=EMULATION_UNIX
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
 CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
 
