@@ -204,7 +204,8 @@ Stacktraces in the native build are based on Farooq Melas
 in the native build is done with [Boost.Beast](https://github.com/boostorg/beast).
 In addition, the native build uses Boost coroutines and uuid. FAT creating,
 fsck and I/O is built on [dosfstools](https://github.com/dosfstools/dosfstools)
-and [FatFs](http://elm-chan.org/fsw/ff).
+and [FatFs](http://elm-chan.org/fsw/ff). Parts of the GDB stub are taken from
+[uARM](https://github.com/uARM-Palm/uARM).
 
 # LICENSE
 
