@@ -153,6 +153,10 @@ void GdbStub::Cycle(int timeout) {
 
 bool GdbStub::IsDebuggerConnected() { return connectionState == ConnectionState::connected; }
 
+void GdbStub::SetRelocationOffset(int64 offset) { relocationOffset = offset; }
+
+void GdbStub::ClearRelocationOffset() { relocationOffset = 0; }
+
 void GdbStub::ResetPacketParser() {
     packetFirstChar = true;
     packetInEsc = false;
@@ -333,8 +337,13 @@ bool GdbStub::HandlePacket() {
         else if (!strcmp(in, "qC"))
             out[0] = 0;
 
-        else if (!strcmp(in, "qOffsets"))
-            strcpy(out, "Text=0;Data=0;Bss=0");
+        else if (!strcmp(in, "qOffsets")) {
+            ostringstream sstream;
+            sstream << hex << "Text=" << relocationOffset << ";Data=" << relocationOffset
+                    << ";Bss=" << relocationOffset;
+
+            strcpy(out, sstream.str().c_str());
+        }
 
         else if (in[0] == 'H')
             strcpy(out, "OK");

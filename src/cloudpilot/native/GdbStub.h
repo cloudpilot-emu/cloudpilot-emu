@@ -28,6 +28,9 @@ class GdbStub {
 
     bool IsDebuggerConnected();
 
+    void SetRelocationOffset(int64 offset);
+    void ClearRelocationOffset();
+
    private:
     void ResetPacketParser();
 
@@ -67,6 +70,8 @@ class GdbStub {
     bool packetInEsc{false};
     bool packetInProgress{false};
     uint32 packetEndLeft{2};
+
+    int64 relocationOffset{0};
 
     Debugger& debugger;
 

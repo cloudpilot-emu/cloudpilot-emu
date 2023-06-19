@@ -196,65 +196,6 @@ namespace {
         return true;
     }
 
-    emuptr FindRegion(const uint8* region, size_t regionSize, emuptr start, size_t size) {
-        if (regionSize > size) return 0xffffffff;
-
-        for (emuptr address = start; address < start + size - regionSize; address++) {
-            for (emuptr i = 0; i < regionSize; i++)
-                if (region[i] != EmMemGet8(i + address)) goto nextAddress;
-
-            return address;
-
-        nextAddress:;
-        }
-
-        return 0xffffffff;
-    }
-
-    void Locate(const uint8* data, size_t size) {
-        emuptr address = gMemoryStart;
-        const size_t ramSize = Memory::GetRegionSize(MemoryRegion::ram);
-        bool found = false;
-
-        do {
-            address = FindRegion(data, size, address, ramSize + gMemoryStart - address);
-
-            if (address < 0xffffffff) {
-                cout << "located file content in RAM at 0x" << hex << setfill('0') << setw(8)
-                     << address << dec << endl
-                     << flush;
-
-                found = true;
-            } else {
-                break;
-            }
-
-            address += size;
-        } while (address >= gMemoryStart && address < gMemoryStart + ramSize);
-
-        const emuptr romStart = EmHAL::GetROMBaseAddress();
-        const size_t romSize = EmHAL::GetROMSize();
-        address = romStart;
-
-        do {
-            address = FindRegion(data, size, address, romSize + romStart - address);
-
-            if (address < 0xffffffff) {
-                cout << "located file content in ROM at 0x" << hex << setfill('0') << setw(8)
-                     << address << dec << endl
-                     << flush;
-
-                found = true;
-            } else {
-                break;
-            }
-
-            address += size;
-        } while (address >= romStart && address < romStart + romSize);
-
-        if (!found) cout << "unable to locate file" << endl << flush;
-    }
-
     bool CmdQuit(vector<string> args, const Cli::TaskContext& context) { return true; }
 
     bool CmdInstallFile(vector<string> args, const Cli::TaskContext& context) {
@@ -507,7 +448,7 @@ namespace {
             return false;
         }
 
-        Locate(buffer.get(), len);
+        debug_support::Locate(buffer.get(), len);
 
         return false;
     }
@@ -526,7 +467,7 @@ namespace {
             return false;
         }
 
-        debug_support::SetApp(buffer.get(), len);
+        debug_support::SetApp(buffer.get(), len, context.gdbStub);
 
         return false;
     }

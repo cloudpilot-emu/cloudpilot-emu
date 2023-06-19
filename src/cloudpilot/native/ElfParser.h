@@ -2,6 +2,7 @@
 #define _ELF_PARSER_H_
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -44,6 +45,7 @@ class ElfParser {
     uint32_t GetEntrypoint() const;
 
     const std::vector<Section>& GetSections() const;
+    const std::optional<Section> GetSection(const std::string& name) const;
 
    private:
     uint8_t Read8(uint32_t offset);

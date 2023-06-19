@@ -73,7 +73,14 @@ uint16_t ElfParser::GetMachine() const { return machine; }
 
 uint32_t ElfParser::GetEntrypoint() const { return entrypoint; }
 
-const std::vector<ElfParser::Section>& ElfParser::GetSections() const { return sections; }
+const vector<ElfParser::Section>& ElfParser::GetSections() const { return sections; }
+
+const optional<ElfParser::Section> ElfParser::GetSection(const string& name) const {
+    for (const Section& section : sections)
+        if (section.name == name) return section;
+
+    return optional<Section>();
+}
 
 uint8_t ElfParser::Read8(uint32_t offset) {
     if (offset >= size) throw EInvalidElf("reference beyond bounds");
