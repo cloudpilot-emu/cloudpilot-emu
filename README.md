@@ -96,8 +96,8 @@ Please report issues on the [Github tracker](https://github.com/cloudpilot-emu/c
 
 CloudpilotEmu is derived from the original POSE sources. It is not a
 straightforward port, though, as the original code has been adapted and partly
-rewritten to fit well with a browser environment. In addition, it contains a few
-bug fixes new features. In particular:
+rewritten to fit well with a browser environment. In addition, it contains
+bug fixes and many new features. In particular:
 
 -   The codebase has been updated to build and run on both 32bit and 64bit
     little endian systems. Big endian systems should work, but I cannot test
@@ -116,6 +116,7 @@ bug fixes new features. In particular:
 -   Reminders and alarms trigger propely.
 -   Clié devices use full MQ11xx video acceleration.
 -   SD card and Memory Stick emulation.
+-   A GDB stub for debugging PalmOS and apps written with a suitable toolchain.
 
 # Building
 
