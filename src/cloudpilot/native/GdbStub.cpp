@@ -654,7 +654,7 @@ const char* GdbStub::StopReason() const {
 
             return reason;
 
-        case Debugger::BreakState::none:
+        default:
             EmAssert(false);
             return GDB_SIG0;
     }
