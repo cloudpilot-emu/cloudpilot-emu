@@ -2,14 +2,14 @@
 
 #include <iomanip>
 
+#include "Debugger.h"
 #include "ElfParser.h"
 #include "EmBankSRAM.h"
 #include "EmHAL.h"
 #include "EmMemory.h"
 
-void debug_support::SetApp(const uint8* elfData, size_t elfSize, GdbStub& gdbStub) {
-    gdbStub.ClearRelocationOffset();
-
+void debug_support::SetApp(const uint8* elfData, size_t elfSize, GdbStub& gdbStub,
+                           Debugger& debugger) {
     ElfParser parser;
 
     try {
@@ -37,9 +37,12 @@ void debug_support::SetApp(const uint8* elfData, size_t elfSize, GdbStub& gdbStu
     }
 
     const int64 relocation = static_cast<int64>(textBase) - sectionText->virtualAddress;
-    cout << "found .text relocated by " << relocation << " bytes" << endl << flush;
+    cout << "found .text relocated by " << relocation << " bytes" << endl;
+    cout << "set break mode to app-only" << endl << flush;
 
     gdbStub.SetRelocationOffset(relocation);
+    debugger.SetBreakMode(Debugger::BreakMode::appOnly);
+    debugger.SetAppRegion(textBase, sectionText->size);
 }
 
 emuptr debug_support::FindRegion(const uint8* region, size_t regionSize, emuptr start,

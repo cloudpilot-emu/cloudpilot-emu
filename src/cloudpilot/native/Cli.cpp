@@ -324,6 +324,8 @@ namespace {
         gExternalStorage.Clear();
         util::initializeSession(args[0]);
 
+        context.gdbStub.ClearRelocationOffset();
+
         return false;
     }
 
@@ -467,7 +469,47 @@ namespace {
             return false;
         }
 
-        debug_support::SetApp(buffer.get(), len, context.gdbStub);
+        debug_support::SetApp(buffer.get(), len, context.gdbStub, context.debugger);
+
+        return false;
+    }
+
+    bool CmdDebugInfo(vector<string> args, const Cli::TaskContext& context) {
+        switch (context.debugger.GetBreakMode()) {
+            case Debugger::BreakMode::all:
+                cout << "break mode: all" << endl;
+                break;
+
+            case Debugger::BreakMode::ramOnly:
+                cout << "break mode: ram-only" << endl;
+                break;
+
+            case Debugger::BreakMode::appOnly:
+                cout << "break mode: app-only: 0x" << hex << setw(8) << setfill('0')
+                     << context.debugger.GetAppStart() << " - 0x" << setw(8) << setfill('0')
+                     << (context.debugger.GetAppStart() + context.debugger.GetAppSize()) << endl;
+                break;
+        }
+
+        if (context.gdbStub.IsDebuggerConnected())
+            cout << "debugger connected" << endl << flush;
+        else
+            cout << "debugger disconnected" << endl << flush;
+
+        return false;
+    }
+
+    bool CmdDebugSetBreakMode(vector<string> args, const Cli::TaskContext& context) {
+        string modeStr = args.size() == 1 ? args[0] : "";
+
+        if (modeStr == "all")
+            context.debugger.SetBreakMode(Debugger::BreakMode::all);
+        else if (modeStr == "app-only")
+            context.debugger.SetBreakMode(Debugger::BreakMode::appOnly);
+        else if (modeStr == "ram-only")
+            context.debugger.SetBreakMode(Debugger::BreakMode::ramOnly);
+        else
+            cout << "usage: debug-set-break_mode <all|app-only|ram-only>" << endl << flush;
 
         return false;
     }
@@ -495,7 +537,9 @@ namespace {
                           {.name = "save-card", .cmd = CmdSaveCard},
                           {.name = "trace", .cmd = CmdTrace},
                           {.name = "locate", .cmd = CmdLocate},
-                          {.name = "debug-set-app", .cmd = CmdDebugSetApp}};
+                          {.name = "debug-set-app", .cmd = CmdDebugSetApp},
+                          {.name = "debug-info", .cmd = CmdDebugInfo},
+                          {.name = "debug-set-break-mode", .cmd = CmdDebugSetBreakMode}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);

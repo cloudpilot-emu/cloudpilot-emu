@@ -20,6 +20,8 @@ class Debugger {
         externalInterrupt
     };
 
+    enum class BreakMode { all, ramOnly, appOnly };
+
     enum class WatchpointType { read, write, readwrite };
 
    public:
@@ -30,6 +32,16 @@ class Debugger {
 
     void Reset();
     void Enable();
+
+    void ResetBreakMode();
+    void ResetAppRegion();
+
+    void SetBreakMode(BreakMode mode);
+    void SetAppRegion(emuptr start, uint32 size);
+
+    BreakMode GetBreakMode() const;
+    emuptr GetAppStart() const;
+    uint32 GetAppSize() const;
 
     void NotificyPc(emuptr pc);
 
@@ -86,6 +98,13 @@ class Debugger {
     unordered_set<emuptr> watchpointsWrite;
 
     emuptr watchpointAddress;
+
+    BreakMode breakMode{BreakMode::all};
+    emuptr appStart{0};
+    uint32 appSize{0};
+
+    emuptr romStart{0};
+    uint32 romSize{0};
 
    private:
     Debugger(const Debugger&) = delete;

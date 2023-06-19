@@ -2,6 +2,7 @@
 
 #include "DebuggerMemoryBinding.h"
 #include "EmCPU68K.h"
+#include "EmHAL.h"
 #include "EmMemory.h"
 #include "EmSession.h"
 #include "Miscellaneous.h"
@@ -32,10 +33,34 @@ void Debugger::Reset() {
     watchpointsWrite.clear();
 }
 
-void Debugger::Enable() { enabled = true; }
+void Debugger::Enable() {
+    enabled = true;
+
+    romStart = EmHAL::GetROMBaseAddress();
+    romSize = EmHAL::GetROMSize();
+}
+
+void Debugger::ResetBreakMode() { breakMode = BreakMode::all; }
+
+void Debugger::ResetAppRegion() { appStart = appSize = 0; }
+
+void Debugger::SetBreakMode(BreakMode mode) { breakMode = mode; }
+
+void Debugger::SetAppRegion(emuptr start, uint32 size) {
+    appStart = start;
+    appSize = size;
+}
+
+Debugger::BreakMode Debugger::GetBreakMode() const { return breakMode; }
+
+emuptr Debugger::GetAppStart() const { return appStart; }
+
+uint32 Debugger::GetAppSize() const { return appSize; }
 
 void Debugger::NotificyPc(emuptr pc) {
     if (!enabled) return;
+    if (breakMode == BreakMode::appOnly && (pc < appStart || pc >= appStart + appSize)) return;
+    if (breakMode == BreakMode::ramOnly && pc >= romStart && pc < romStart + romSize) return;
 
     EmAssert(gSession);
     if (gSession->IsNested() || breakState != BreakState::none) return;

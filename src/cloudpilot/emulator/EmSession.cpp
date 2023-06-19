@@ -83,6 +83,8 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     lastDate = CurrentDate();
 
     gDebugger.Reset();
+    gDebugger.ResetBreakMode();
+    gDebugger.ResetAppRegion();
 
     return true;
 }

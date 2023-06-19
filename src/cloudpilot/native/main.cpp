@@ -10,6 +10,7 @@
 #include <string>
 
 #include "Cli.h"
+#include "DebugSupport.h"
 #include "Debugger.h"
 #include "EmCommon.h"
 #include "EmDevice.h"
@@ -42,6 +43,7 @@ struct DebuggerConfiguration {
     bool enabled{false};
     unsigned int port{0};
     bool waitForAttach{false};
+    string appFile;
 };
 
 struct Options {
@@ -127,6 +129,17 @@ void run(const Options& options) {
             cout << "waiting for debugger to attach..." << endl << flush;
             while (gdbStub.GetConnectionState() == GdbStub::ConnectionState::listening)
                 gdbStub.Cycle(1000);
+        }
+
+        if (!options.debuggerConfiguration.appFile.empty()) {
+            unique_ptr<uint8[]> buffer;
+            size_t len;
+
+            if (!util::readFile(options.debuggerConfiguration.appFile, buffer, len))
+                cout << "failed to read " << options.debuggerConfiguration.appFile << endl << flush;
+
+            else
+                debug_support::SetApp(buffer.get(), len, gdbStub, gDebugger);
         }
     }
 
@@ -232,6 +245,8 @@ int main(int argc, const char** argv) {
         .help("trace gdb stub")
         .default_value(false)
         .implicit_value(true);
+
+    program.add_argument("--debug-app").help("configure debugger to debug app (ELF file)");
 #endif
 
     try {
@@ -273,6 +288,8 @@ int main(int argc, const char** argv) {
                                          .waitForAttach = program.get<bool>("--wait-for-attach")};
 
     options.traceDebugger = program.get<bool>("--trace-debugger");
+    options.debuggerConfiguration.appFile =
+        program.present("--debug-app") ? program.get("--debug-app") : "";
 #endif
 
     run(options);
