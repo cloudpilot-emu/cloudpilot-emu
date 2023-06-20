@@ -476,8 +476,8 @@ namespace {
     }
 
     bool CmdDebugSetApp(vector<string> args, const Cli::TaskContext& context) {
-        if (args.size() != 1) {
-            cout << "usage: debug-set-app <file>" << endl << flush;
+        if (args.size() != 1 && args.size() != 2) {
+            cout << "usage: debug-set-app <file> [db name]" << endl << flush;
             return false;
         }
 
@@ -489,7 +489,8 @@ namespace {
             return false;
         }
 
-        debug_support::SetApp(buffer.get(), len, context.gdbStub, context.debugger);
+        debug_support::SetApp(buffer.get(), len, args.size() == 2 ? args[1].c_str() : nullptr,
+                              context.gdbStub, context.debugger);
 
         return false;
     }

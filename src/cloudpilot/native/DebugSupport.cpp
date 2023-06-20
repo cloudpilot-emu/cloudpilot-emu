@@ -3,13 +3,65 @@
 #include <iomanip>
 
 #include "Debugger.h"
+#include "Defer.h"
 #include "ElfParser.h"
 #include "EmBankSRAM.h"
 #include "EmHAL.h"
 #include "EmMemory.h"
+#include "ROMStubs.h"
 
-void debug_support::SetApp(const uint8* elfData, size_t elfSize, GdbStub& gdbStub,
-                           Debugger& debugger) {
+namespace {
+    emuptr locateCodeResource(const char* name, uint32& size) {
+        LocalID lidDB = DmFindDatabase(0, name);
+        if (lidDB == 0) {
+            cout << "unable to find DB " << name << endl << flush;
+            return 0xffffffff;
+        }
+
+        uint16 attributes;
+        if (DmDatabaseInfo(0, lidDB, nullptr, &attributes, nullptr, nullptr, nullptr, nullptr,
+                           nullptr, nullptr, nullptr, nullptr, nullptr) != errNone) {
+            cout << "failed to get DB info" << endl << flush;
+            return 0xffffffff;
+        }
+
+        if ((attributes & dmHdrAttrResDB) == 0) {
+            cout << "not a resource DB" << endl << flush;
+            return 0xffffffff;
+        }
+
+        emuptr dbRef = DmOpenDatabase(0, lidDB, dmModeReadOnly);
+        if (dbRef == 0) {
+            cout << "unable to open DB" << endl << flush;
+            return 0xffffffff;
+        }
+
+        Defer deferCloseDB([=]() { DmCloseDatabase(dbRef); });
+
+        emuptr rscHandle = DmGet1Resource('code', 1);
+        if (rscHandle == 0) {
+            cout << "unable to locate code resource" << endl << flush;
+            return 0xffffffff;
+        }
+
+        Defer deferReleaseResource([=]() { DmReleaseResource(rscHandle); });
+
+        emuptr rscPtr = MemHandleLock(rscHandle);
+        if (rscHandle == 0) {
+            cout << "unable to lock code resource" << endl << flush;
+            return 0xffffffff;
+        }
+
+        size = MemPtrSize(rscPtr);
+
+        MemHandleUnlock(rscHandle);
+
+        return rscPtr;
+    }
+}  // namespace
+
+void debug_support::SetApp(const uint8* elfData, size_t elfSize, const char* dbName,
+                           GdbStub& gdbStub, Debugger& debugger) {
     ElfParser parser;
 
     try {
@@ -30,10 +82,21 @@ void debug_support::SetApp(const uint8* elfData, size_t elfSize, GdbStub& gdbStu
         return;
     }
 
-    const emuptr textBase = FindRegion(elfData + sectionText->offset, sectionText->size,
-                                       gMemoryStart, EmMemory::GetRegionSize(MemoryRegion::ram));
+    emuptr searchBase = gMemoryStart;
+    uint32 searchSize = EmMemory::GetRegionSize(MemoryRegion::ram);
+
+    if (dbName) {
+        searchBase = locateCodeResource(dbName, searchSize);
+        if (searchBase == 0xffffffff) return;
+    }
+
+    const emuptr textBase =
+        FindRegion(elfData + sectionText->offset, sectionText->size, searchBase, searchSize);
+
     if (textBase == 0xffffffff) {
-        cout << "unable to locate application in memory" << endl << flush;
+        cout << "unable to locate application in " << (dbName ? "database" : "memory") << endl
+             << flush;
+        return;
     }
 
     const int64 relocation = static_cast<int64>(textBase) - sectionText->virtualAddress;

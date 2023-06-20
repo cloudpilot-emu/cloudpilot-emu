@@ -139,7 +139,7 @@ void run(const Options& options) {
                 cout << "failed to read " << options.debuggerConfiguration.appFile << endl << flush;
 
             else
-                debug_support::SetApp(buffer.get(), len, gdbStub, gDebugger);
+                debug_support::SetApp(buffer.get(), len, nullptr, gdbStub, gDebugger);
         }
     }
 

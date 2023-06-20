@@ -5,7 +5,8 @@
 #include "GdbStub.h"
 
 namespace debug_support {
-    void SetApp(const uint8* elfData, size_t elfSize, GdbStub& gdbStub, Debugger& debugger);
+    void SetApp(const uint8* elfData, size_t elfSize, const char* dbName, GdbStub& gdbStub,
+                Debugger& debugger);
 
     emuptr FindRegion(const uint8* region, size_t regionSize, emuptr start, size_t size);
 
