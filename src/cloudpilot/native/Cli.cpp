@@ -134,6 +134,26 @@ namespace {
         }
     }
 
+    void DumpMemory(string file) {
+        const uint32 size = EmMemory::GetRegionSize(MemoryRegion::ram);
+        unique_ptr<uint8[]> memory = make_unique<uint8[]>(size);
+
+        for (uint32 i = 0; i < size; i++) memory[i] = EmMemGet8(gMemoryStart + i);
+
+        fstream stream(file, ios_base::out);
+
+        if (stream.fail()) {
+            cout << "failed to open " << file << endl << flush;
+            return;
+        }
+
+        stream.write(reinterpret_cast<const char*>(memory.get()), size);
+
+        if (stream.fail()) {
+            cout << "I/O error writing " << file << endl << flush;
+        }
+    }
+
     void SaveBackup(string file, bool includeRomDatabases) {
         unique_ptr<DbBackup> backup = DbBackup::create();
 
@@ -514,6 +534,17 @@ namespace {
         return false;
     }
 
+    bool CmdDumpMemory(vector<string> args, const Cli::TaskContext& context) {
+        if (args.size() != 1) {
+            cout << "usage: dump-memory <file>" << endl << flush;
+            return false;
+        }
+
+        DumpMemory(args[0]);
+
+        return false;
+    }
+
     struct Command {
         string name;
         Cmd cmd;
@@ -539,7 +570,8 @@ namespace {
                           {.name = "locate", .cmd = CmdLocate},
                           {.name = "debug-set-app", .cmd = CmdDebugSetApp},
                           {.name = "debug-info", .cmd = CmdDebugInfo},
-                          {.name = "debug-set-break-mode", .cmd = CmdDebugSetBreakMode}};
+                          {.name = "debug-set-break-mode", .cmd = CmdDebugSetBreakMode},
+                          {.name = "dump-memory", .cmd = CmdDumpMemory}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);
