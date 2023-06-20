@@ -2,8 +2,6 @@
 
 #include <SDL_image.h>
 
-#include <cmath>
-
 #include "Debugger.h"
 #include "EmHAL.h"
 #include "EmSession.h"
@@ -52,7 +50,7 @@ void MainLoop::Cycle() {
     const uint32 clocksPerSecond = gSession->GetClocksPerSecond();
 
     if (!gDebugger.IsStopped()) {
-        if (abs(millis - millisOffset - static_cast<long>(clockEmu)) > 500)
+        if (millis - millisOffset - static_cast<long>(clockEmu) > 500)
             clockEmu = millis - millisOffset - 10;
 
         const long cycles = static_cast<long>(
