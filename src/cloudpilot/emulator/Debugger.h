@@ -29,6 +29,7 @@ class Debugger {
 
     BreakState GetBreakState() const;
     bool IsStopped() const;
+    bool IsStepping() const;
 
     void Reset();
     void Enable();

@@ -22,6 +22,8 @@ Debugger::BreakState Debugger::GetBreakState() const { return breakState; }
 
 bool Debugger::IsStopped() const { return breakState != BreakState::none; }
 
+bool Debugger::IsStepping() const { return stepping; }
+
 void Debugger::Reset() {
     breakState = BreakState::none;
     stepping = false;

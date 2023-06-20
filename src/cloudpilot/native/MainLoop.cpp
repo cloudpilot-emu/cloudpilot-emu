@@ -2,6 +2,8 @@
 
 #include <SDL_image.h>
 
+#include <cmath>
+
 #include "Debugger.h"
 #include "EmHAL.h"
 #include "EmSession.h"
@@ -50,7 +52,7 @@ void MainLoop::Cycle() {
     const uint32 clocksPerSecond = gSession->GetClocksPerSecond();
 
     if (!gDebugger.IsStopped()) {
-        if (millis - millisOffset - static_cast<long>(clockEmu) > 500)
+        if (abs(millis - millisOffset - static_cast<long>(clockEmu)) > 500)
             clockEmu = millis - millisOffset - 10;
 
         const long cycles = static_cast<long>(
@@ -71,7 +73,7 @@ void MainLoop::Cycle() {
     if (gSystemState.IsScreenDirty()) {
         UpdateScreen();
         gSystemState.MarkScreenClean();
-    } else if (!SuspendManager::IsSuspended() && !gDebugger.IsStopped())
+    } else if (!SuspendManager::IsSuspended() && !gDebugger.IsStopped() && !gDebugger.IsStepping())
         SDL_Delay(16);
 
     eventHandler.HandleEvents(millis);
