@@ -1,5 +1,6 @@
 #include <SDL.h>
 #include <SDL_image.h>
+#include <signal.h>
 
 #include <cstdint>
 #include <cstdlib>
@@ -85,7 +86,10 @@ void handleSuspend() {
 }
 
 void run(const Options& options) {
+    signal(SIGPIPE, SIG_IGN);
+
     ProxyClient* proxyClient = nullptr;
+
     ProxyHandler* proxyHandler = nullptr;
 
     string imageKey;
