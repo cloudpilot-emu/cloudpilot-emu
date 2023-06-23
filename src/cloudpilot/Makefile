@@ -271,6 +271,7 @@ SOURCE_NATIVE = \
 	native/GdbStub.cpp \
 	native/ElfParser.cpp \
 	native/DebugSupport.cpp \
+	native/Pixelflut.cpp \
 	emulator/assert_native.cpp \
 	emulator/stacktrace.cpp
 

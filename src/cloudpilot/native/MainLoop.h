@@ -29,6 +29,7 @@ class MainLoop {
     SDL_Texture* lcdTexture{nullptr};
     SDL_Texture* lcdTempTexture{nullptr};
     SDL_Texture* silkscreenTexture{nullptr};
+    SDL_Texture* renderTexture{nullptr};
 
     int scale{1};
     ScreenDimensions screenDimensions;

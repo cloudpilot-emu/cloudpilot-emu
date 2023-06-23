@@ -7,6 +7,7 @@
 #include "EmSession.h"
 #include "EmSystemState.h"
 #include "Nibbler.h"
+#include "Pixelflut.h"
 #include "Silkscreen.h"
 #include "SuspendManager.h"
 
@@ -41,6 +42,13 @@ MainLoop::MainLoop(SDL_Window* window, SDL_Renderer* renderer, int scale)
     lcdTempTexture =
         SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING,
                           screenDimensions.Width(), screenDimensions.Height());
+
+    renderTexture = SDL_CreateTexture(
+        renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_TARGET,
+        screenDimensions.Width() * scale,
+        (screenDimensions.Height() + screenDimensions.SilkscreenHeight()) * scale);
+
+    SDL_SetRenderTarget(renderer, renderTexture);
 }
 
 bool MainLoop::IsRunning() const { return !eventHandler.IsQuit(); }
@@ -191,8 +199,9 @@ void MainLoop::UpdateScreen() {
                          .w = static_cast<int32>(scale * screenDimensions.Width()),
                          .h = static_cast<int32>(scale * screenDimensions.Height())};
 
-        SDL_SetRenderTarget(renderer, nullptr);
+        SDL_SetRenderTarget(renderer, renderTexture);
         SDL_RenderCopy(renderer, lcdTexture, nullptr, &dest);
+
     } else {
         SDL_SetRenderDrawColor(renderer, BACKGROUND_HUE, BACKGROUND_HUE, BACKGROUND_HUE, 0xff);
 
@@ -205,13 +214,24 @@ void MainLoop::UpdateScreen() {
     }
 
     DrawSilkscreen(renderer);
+    pixelflut::Update(renderer);
 
     const long timestamp = Platform::GetMilliseconds();
     if (timestamp - lastScreenRefreshAt < SCREEN_REFRESH_GRACE_TIME) {
         SDL_Delay(SCREEN_REFRESH_GRACE_TIME - timestamp + lastScreenRefreshAt);
     }
 
+    SDL_SetRenderTarget(renderer, nullptr);
+
+    SDL_Rect dest = {.x = 0,
+                     .y = 0,
+                     .w = static_cast<int32>(scale * screenDimensions.Width()),
+                     .h = static_cast<int32>(scale * (screenDimensions.Height() +
+                                                      screenDimensions.SilkscreenHeight()))};
+
+    SDL_RenderCopy(renderer, renderTexture, nullptr, &dest);
     SDL_RenderPresent(renderer);
+    SDL_SetRenderTarget(renderer, renderTexture);
 
     lastScreenRefreshAt = Platform::GetMilliseconds();
 }

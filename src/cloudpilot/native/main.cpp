@@ -20,6 +20,7 @@
 #include "Feature.h"
 #include "GdbStub.h"
 #include "MainLoop.h"
+#include "Pixelflut.h"
 #include "ProxyClient.h"
 #include "ProxyHandler.h"
 #include "ScreenDimensions.h"
@@ -54,6 +55,7 @@ struct Options {
     bool traceDebugger;
     string mountImage;
     DebuggerConfiguration debuggerConfiguration;
+    pixelflut::Config pixelflutConfig;
 };
 
 void handleSuspend() {
@@ -153,13 +155,16 @@ void run(const Options& options) {
     ScreenDimensions::Kind screenDimensionsKind = gSession->GetDevice().GetScreenDimensions();
     ScreenDimensions screenDimensions(screenDimensionsKind);
     int scale = screenDimensionsKind == ScreenDimensions::screen160x160 ? 3 : 2;
+    int width = screenDimensions.Width() * scale;
+    int height = (screenDimensions.Height() + screenDimensions.SilkscreenHeight()) * scale;
 
-    if (SDL_CreateWindowAndRenderer(
-            screenDimensions.Width() * scale,
-            (screenDimensions.Height() + screenDimensions.SilkscreenHeight()) * scale, 0, &window,
-            &renderer) != 0) {
+    if (SDL_CreateWindowAndRenderer(width, height, 0, &window, &renderer) != 0) {
         cerr << "unable to create SDL window: " << SDL_GetError() << endl;
         exit(1);
+    }
+
+    if (!options.pixelflutConfig.host.empty() && options.pixelflutConfig.port) {
+        pixelflut::Start(options.pixelflutConfig, width, height);
     }
 
     MainLoop mainLoop(window, renderer, scale);
@@ -181,6 +186,7 @@ void run(const Options& options) {
     };
 
     Cli::Stop();
+    pixelflut::Stop();
     if (proxyHandler) proxyHandler->Teardown();
 
     SDL_Quit();
@@ -247,6 +253,17 @@ int main(int argc, const char** argv) {
         .implicit_value(true);
 
     program.add_argument("--debug-app").help("configure debugger to debug app (ELF file)");
+
+    program.add_argument("--pixelflut-host").help("mirror display on pixelflut host");
+    program.add_argument("--pixelflut-port")
+        .help("connect to pixelflut on port")
+        .scan<'u', unsigned int>();
+    program.add_argument("--pixelflut-offset-x")
+        .help("pixelflut X offset")
+        .scan<'u', unsigned int>();
+    program.add_argument("--pixelflut-offset-y")
+        .help("pixelflut Y offset")
+        .scan<'u', unsigned int>();
 #endif
 
     try {
@@ -291,6 +308,21 @@ int main(int argc, const char** argv) {
     options.debuggerConfiguration.appFile =
         program.present("--debug-app") ? program.get("--debug-app") : "";
 #endif
+
+    if (program.present("--pixelflut-host"))
+        options.pixelflutConfig.host = program.get("--pixelflut-host");
+
+    options.pixelflutConfig.port = program.present<unsigned int>("--pixelflut-port")
+                                       ? program.get<unsigned int>("--pixelflut-port")
+                                       : 0;
+
+    options.pixelflutConfig.offsetX = program.present<unsigned int>("--pixelflut-offset-x")
+                                          ? program.get<unsigned int>("--pixelflut-offset-x")
+                                          : 0;
+
+    options.pixelflutConfig.offsetY = program.present<unsigned int>("--pixelflut-offset-y")
+                                          ? program.get<unsigned int>("--pixelflut-offset-y")
+                                          : 0;
 
     run(options);
 }
