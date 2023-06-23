@@ -28,8 +28,6 @@ namespace {
     bool isRunning{false};
     thread pixelflutThread;
 
-    uint64_t lastUpdate;
-
     pixelflut::Config cfg;
 
     void connect() {
@@ -64,6 +62,56 @@ namespace {
         sock = _sock;
     }
 
+    inline char* write_coord(unsigned int x, char* dest) {
+        if (x == 0) {
+            *(dest++) = '0';
+            return dest;
+        }
+
+        bool go = false;
+
+        for (unsigned int pow = 1000000; pow != 0; pow /= 10) {
+            unsigned char digit = (x / pow) % 10;
+            go = go || digit != 0;
+            x %= pow;
+
+            if (go) *(dest++) = '0' + digit;
+        }
+
+        return dest;
+    }
+
+    inline char* write_color(unsigned char color, char* dest) {
+        static char digits[] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                                '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
+
+        *(dest++) = digits[color >> 4];
+        *(dest++) = digits[color & 0x0f];
+
+        return dest;
+    }
+
+    const char* build_command(unsigned int x, unsigned int y, uint32_t abgr, size_t& len) {
+        static char command[64] = "PX ";
+
+        char* next = command + 3;
+
+        next = write_coord(x, next);
+        *(next++) = ' ';
+
+        next = write_coord(y, next);
+        *(next++) = ' ';
+
+        next = write_color(abgr, next);
+        next = write_color(abgr >> 8, next);
+        next = write_color(abgr >> 16, next);
+        *(next++) = '\n';
+
+        len = next - command;
+
+        return command;
+    }
+
     void threadMain() {
         unique_ptr<uint32_t[]> workingCopy = make_unique<uint32_t[]>(width * height);
 
@@ -82,19 +130,11 @@ namespace {
                 continue;
             }
 
-            constexpr size_t COMMAND_LEN = 64;
-            char command[COMMAND_LEN];
-
-            uint32_t* rgba_ptr = workingCopy.get();
+            uint32_t* abgr = workingCopy.get();
             for (unsigned int y = 0; y < height; y++) {
                 for (unsigned int x = 0; x < width; x++) {
-                    uint8_t r = *rgba_ptr;
-                    uint8_t g = *rgba_ptr >> 8;
-                    uint8_t b = *rgba_ptr >> 16;
-                    rgba_ptr++;
-
-                    size_t len = snprintf(command, sizeof(command), "PX %u %u %02x%02x%02x\n",
-                                          x + cfg.offsetX, y + cfg.offsetY, r, g, b);
+                    size_t len;
+                    const char* command = build_command(x, y, *(abgr++), len);
 
                     if (send(sock, command, len, 0) < 0) {
                         cerr << "failed to send: " << errno << endl << flush;
@@ -127,7 +167,6 @@ void pixelflut::Start(Config config, size_t width, size_t height) {
     stopRequested = false;
     isRunning = true;
     sock = -1;
-    lastUpdate = 0;
 
     pixelflutThread = thread(threadMain);
 }
@@ -142,7 +181,7 @@ void pixelflut::Stop() {
 }
 
 void pixelflut::Update(SDL_Renderer* renderer) {
-    if (!isRunning || Platform::GetMilliseconds() - lastUpdate < 1000) return;
+    if (!isRunning) return;
 
     lock_guard lock(pixelDataMutex);
 
@@ -150,6 +189,4 @@ void pixelflut::Update(SDL_Renderer* renderer) {
         SDL_Rect{.h = static_cast<int>(height), .w = static_cast<int>(width), .x = 0, .y = 0};
 
     SDL_RenderReadPixels(renderer, &rect, SDL_PIXELFORMAT_ABGR8888, pixelData.get(), 4 * width);
-
-    lastUpdate = Platform::GetMilliseconds();
 }
