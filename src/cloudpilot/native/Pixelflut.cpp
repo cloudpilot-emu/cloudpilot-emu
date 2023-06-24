@@ -149,6 +149,11 @@ namespace {
 
         loop:;
         }
+
+        if (sock > 0) {
+            shutdown(sock, SHUT_RDWR);
+            close(sock);
+        }
     }
 }  // namespace
 
