@@ -1,5 +1,7 @@
 #include "Debugger.h"
 
+#include <iomanip>
+
 #include "DebuggerMemoryBinding.h"
 #include "EmCPU68K.h"
 #include "EmHAL.h"
@@ -45,6 +47,8 @@ void Debugger::Enable() {
 void Debugger::ResetBreakMode() { breakMode = BreakMode::all; }
 
 void Debugger::ResetAppRegion() { appStart = appSize = 0; }
+
+void Debugger::ResetTraps() { syscallTraps.clear(); }
 
 void Debugger::SetBreakMode(BreakMode mode) { breakMode = mode; }
 
@@ -135,6 +139,15 @@ void Debugger::NotifyMemoryWrite32(emuptr address) {
     }
 }
 
+void Debugger::NotifyTrap(uint16 trapWord) {
+    if (!enabled) return;
+
+    if (setContains(syscallTraps, trapWord)) {
+        cout << "trap on syscall 0x" << hex << setw(4) << setfill('0') << trapWord << endl << flush;
+        Break(BreakState::trapInternal);
+    }
+}
+
 void Debugger::SetBreakpoint(emuptr pc) { breakpoints.insert(pc); }
 
 void Debugger::ClearBreakpoint(emuptr pc) { breakpoints.erase(pc); }
@@ -176,6 +189,14 @@ void Debugger::ClearWatchpoint(emuptr address, WatchpointType type, size_t len) 
         }
     }
 }
+
+void Debugger::SetSyscallTrap(uint16 trapWord) { syscallTraps.insert(trapWord); }
+
+void Debugger::ClearSyscallTrap(uint16 trapWord) { syscallTraps.erase(trapWord); }
+
+void Debugger::ClearAllSyscallTraps() { syscallTraps.clear(); }
+
+const std::unordered_set<uint16> Debugger::GetSyscallTraps() const { return syscallTraps; }
 
 Debugger::WatchpointType Debugger::GetWatchpointType() const {
     if (setContains(watchpointsRead, watchpointAddress))

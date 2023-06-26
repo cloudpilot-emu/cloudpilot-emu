@@ -36,6 +36,7 @@ class Debugger {
 
     void ResetBreakMode();
     void ResetAppRegion();
+    void ResetTraps();
 
     void SetBreakMode(BreakMode mode);
     void SetAppRegion(emuptr start, uint32 size);
@@ -54,11 +55,18 @@ class Debugger {
     void NotifyMemoryWrite16(emuptr address);
     void NotifyMemoryWrite32(emuptr address);
 
+    void NotifyTrap(uint16 trapWord);
+
     void SetBreakpoint(emuptr pc);
     void ClearBreakpoint(emuptr pc);
 
     void SetWatchpoint(emuptr address, WatchpointType type, size_t len);
     void ClearWatchpoint(emuptr address, WatchpointType type, size_t len);
+
+    void SetSyscallTrap(uint16 trapWord);
+    void ClearSyscallTrap(uint16 trapWord);
+    void ClearAllSyscallTraps();
+    const std::unordered_set<uint16> GetSyscallTraps() const;
 
     WatchpointType GetWatchpointType() const;
     emuptr GetWatchpointAddress() const;
@@ -97,6 +105,7 @@ class Debugger {
     unordered_set<emuptr> breakpoints;
     unordered_set<emuptr> watchpointsRead;
     unordered_set<emuptr> watchpointsWrite;
+    unordered_set<uint16> syscallTraps;
 
     emuptr watchpointAddress;
 

@@ -546,6 +546,85 @@ namespace {
         return false;
     }
 
+    bool CmdShowSyscallTraps(vector<string> args, const Cli::TaskContext& context) {
+        if (args.size() > 0) {
+            cout << "usage: show-syscall-traps" << endl << flush;
+            return false;
+        }
+
+        cout << "syscall traps:" << endl << flush;
+
+        for (const uint16 trapWord : gDebugger.GetSyscallTraps())
+            cout << "  0x" << hex << setw(4) << setfill('0') << trapWord << dec << endl;
+
+        cout << flush;
+
+        return false;
+    }
+
+    bool CmdSetSyscallTrap(vector<string> args, const Cli::TaskContext& context) {
+        if (args.size() != 1) {
+            cout << "usage: set-syscall-trap trap" << endl << flush;
+            return false;
+        }
+
+        uint32 trapWord;
+        istringstream sstream;
+        if (args[0].size() > 2 && args[0].substr(0, 2) == "0x") {
+            sstream = istringstream(args[0].substr(2));
+            sstream >> hex >> trapWord;
+        } else {
+            sstream = istringstream(args[0]);
+            sstream >> trapWord;
+        }
+
+        if (sstream.fail() || !sstream.eof() || trapWord > 0xffff) {
+            cout << "invalid trap word" << endl << flush;
+            return false;
+        }
+
+        gDebugger.SetSyscallTrap(trapWord);
+
+        return false;
+    }
+
+    bool CmdClearSyscallTrap(vector<string> args, const Cli::TaskContext& context) {
+        if (args.size() != 1) {
+            cout << "usage: clear-syscall-trap trap" << endl << flush;
+            return false;
+        }
+
+        uint32 trapWord;
+        istringstream sstream;
+        if (args[0].size() > 2 && args[0].substr(0, 2) == "0x") {
+            sstream = istringstream(args[0].substr(2));
+            sstream >> hex >> trapWord;
+        } else {
+            sstream = istringstream(args[0]);
+            sstream >> trapWord;
+        }
+
+        if (sstream.fail() || !sstream.eof() || trapWord > 0xffff) {
+            cout << "invalid trap word" << endl << flush;
+            return false;
+        }
+
+        gDebugger.ClearSyscallTrap(trapWord);
+
+        return false;
+    }
+
+    bool CmdClearAllSyscallTraps(vector<string> args, const Cli::TaskContext& context) {
+        if (args.size() > 0) {
+            cout << "usage: clear-all-syscall-traps" << endl << flush;
+            return false;
+        }
+
+        gDebugger.ClearAllSyscallTraps();
+
+        return false;
+    }
+
     struct Command {
         string name;
         Cmd cmd;
@@ -572,7 +651,11 @@ namespace {
                           {.name = "debug-set-app", .cmd = CmdDebugSetApp},
                           {.name = "debug-info", .cmd = CmdDebugInfo},
                           {.name = "debug-set-break-mode", .cmd = CmdDebugSetBreakMode},
-                          {.name = "dump-memory", .cmd = CmdDumpMemory}};
+                          {.name = "dump-memory", .cmd = CmdDumpMemory},
+                          {.name = "show-syscall-traps", .cmd = CmdShowSyscallTraps},
+                          {.name = "set-syscall-trap", .cmd = CmdSetSyscallTrap},
+                          {.name = "clear-syscall-trap", .cmd = CmdClearSyscallTrap},
+                          {.name = "clear-all-syscall-traps", .cmd = CmdClearAllSyscallTraps}};
 
     vector<string> Split(const char* line) {
         istringstream iss(line);

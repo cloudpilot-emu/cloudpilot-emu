@@ -14,6 +14,7 @@
 #include "EmPalmOS.h"
 
 #include "Byteswapping.h"
+#include "Debugger.h"
 #include "EmBankDRAM.h"    // EmBankDRAM::SetLong
 #include "EmBankMapped.h"  // EmBankMapped::SetLong
 #include "EmBankROM.h"     // EmBankROM::SetLong
@@ -272,6 +273,10 @@ Bool EmPalmOS::HandleSystemCall(Bool fromTrap) {
 
         EmAssert(false);
     }
+
+#ifdef ENABLE_DEBUGGER
+    gDebugger.NotifyTrap(context.fTrapWord);
+#endif
 
     CEnableFullAccess munge;
 
