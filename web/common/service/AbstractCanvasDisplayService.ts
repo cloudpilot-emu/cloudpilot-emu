@@ -598,6 +598,9 @@ export abstract class AbstractCanvasDisplayService {
             case DeviceId.handera330c:
                 return SkinElement.HARD_BUTTONS_HANDERA330C;
 
+            case DeviceId.lp168:
+                return SkinElement.HARD_BUTTONS_LEGEND_P168;
+
             case DeviceId.palmVx:
             case DeviceId.palmV:
             default:
