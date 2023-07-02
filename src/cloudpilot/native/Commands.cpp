@@ -501,10 +501,6 @@ namespace {
                 continue;
             }
 
-            if (strlen(usage) > 48) {
-                cout << endl << left << setw(40) << " ";
-            }
-
             cout << command.description << endl;
         }
 
