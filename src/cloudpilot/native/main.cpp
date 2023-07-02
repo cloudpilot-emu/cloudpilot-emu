@@ -164,13 +164,13 @@ void run(const Options& options) {
 
     MainLoop mainLoop(window, renderer, scale);
 
-    Cli::Start();
-    Cli::TaskContext taskContext = {.debugger = gDebugger, .gdbStub = gdbStub};
+    cli::Start();
+    cli::TaskContext taskContext = {.debugger = gDebugger, .gdbStub = gdbStub};
 
     while (mainLoop.IsRunning()) {
         mainLoop.Cycle();
 
-        if (Cli::Execute(taskContext)) break;
+        if (cli::Execute(taskContext)) break;
 
         handleSuspend();
         if (proxyHandler) proxyHandler->HandleSuspend();
@@ -180,7 +180,7 @@ void run(const Options& options) {
 #endif
     };
 
-    Cli::Stop();
+    cli::Stop();
     if (proxyHandler) proxyHandler->Teardown();
 
     SDL_Quit();

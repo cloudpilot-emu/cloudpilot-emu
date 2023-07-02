@@ -4,7 +4,7 @@
 #include "Debugger.h"
 #include "GdbStub.h"
 
-namespace Cli {
+namespace cli {
 
     struct TaskContext {
         Debugger& debugger;
@@ -16,6 +16,6 @@ namespace Cli {
     void Stop();
 
     bool Execute(const TaskContext& context);
-};  // namespace Cli
+};  // namespace cli
 
 #endif  // _SDL_CLI_H_
