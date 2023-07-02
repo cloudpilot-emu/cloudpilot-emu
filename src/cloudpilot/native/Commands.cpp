@@ -1,5 +1,6 @@
 #include "Commands.h"
 
+#include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -484,9 +485,35 @@ namespace {
 
         gDebugger.ClearAllSyscallTraps();
     }
+
+    void CmdHelp(vector<string> args, cli::CommandContext& context) {
+        if (args.size() > 0) return context.PrintUsage();
+
+        cout << "available commands:" << endl << endl;
+
+        for (auto& command : cli::commands) {
+            const char* usage = command.usage ? command.usage : command.name;
+
+            cout << left << setw(50) << usage;
+
+            if (!command.description) {
+                cout << endl;
+                continue;
+            }
+
+            if (strlen(usage) > 48) {
+                cout << endl << left << setw(40) << " ";
+            }
+
+            cout << command.description << endl;
+        }
+
+        cout << flush;
+    }
 }  // namespace
 
 const vector<cli::Command> cli::commands({
+    {.name = "help", .description = "Show help.", .cmd = CmdHelp},
     {.name = "quit", .description = "Quit Cloudpilot.", .cmd = CmdQuit},
     {.name = "exit", .description = "Quit Cloudpilot.", .cmd = CmdQuit},
     {
