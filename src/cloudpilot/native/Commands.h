@@ -2,6 +2,7 @@
 #define _CLI_COMMANDS_H_
 
 #include <functional>
+#include <string>
 #include <vector>
 
 #include "Debugger.h"
@@ -27,6 +28,8 @@ namespace cli {
     };
 
     extern const std::vector<Command> commands;
+
+    const Command* GetCommand(const std::string& name);
 }  // namespace cli
 
 #endif  // _CLI_COMMANDS_H_

@@ -64,7 +64,7 @@ namespace {
         static vector<string> words;
         if (state == 0) words = Split(rl_line_buffer);
 
-        if (words.size() > 1 || (words.size() == 1 && strlen(word) == 0))
+        if ((words.size() > 1 || (words.size() == 1 && strlen(word) == 0)) && words[0] != "help")
             return rl_filename_completion_function(word, state);
 
         static vector<string> suggestions;
@@ -123,13 +123,7 @@ namespace {
 
             if (!words.empty() && !stop) {
                 vector<string> args(words.begin() + 1, words.end());
-                const cli::Command* _command = nullptr;
-
-                for (const cli::Command& command : cli::commands)
-                    if (command.name == words[0]) {
-                        _command = &command;
-                        break;
-                    }
+                const cli::Command* _command = cli::GetCommand(words[0]);
 
                 if (!_command) cout << "invalid command" << endl << flush;
                 Dispatch(_command, args);

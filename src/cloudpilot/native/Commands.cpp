@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iomanip>
 #include <sstream>
+#include <unordered_map>
 
 #include "DbBackup.h"
 #include "DbInstaller.h"
@@ -487,24 +488,46 @@ namespace {
     }
 
     void CmdHelp(vector<string> args, cli::CommandContext& context) {
-        if (args.size() > 0) return context.PrintUsage();
+        if (args.size() > 1) return context.PrintUsage();
 
-        cout << "available commands:" << endl << endl;
+        cout << endl;
 
-        for (auto& command : cli::commands) {
-            const char* usage = command.usage ? command.usage : command.name;
-
-            cout << left << setw(50) << usage;
-
-            if (!command.description) {
-                cout << endl;
-                continue;
-            }
-
-            cout << command.description << endl;
+        const cli::Command* command = nullptr;
+        if (args.size() == 1) {
+            command = cli::GetCommand(args[0]);
+            if (!command) cout << "invalid command: " << args[0] << endl;
         }
 
-        cout << flush;
+        if (command) {
+            cout << "usage: " << (command->usage ? command->usage : command->name) << endl;
+
+            if (command->help) {
+                const char* help = command->help;
+                if (help[0] == '\r') help++;
+                if (help[0] == '\n') help++;
+
+                cout << endl << help << endl;
+            } else if (command->description) {
+                cout << endl << command->description << endl;
+            }
+        } else {
+            cout << "available commands:" << endl << endl;
+
+            for (auto& command : cli::commands) {
+                const char* usage = command.usage ? command.usage : command.name;
+
+                cout << left << setw(50) << usage;
+
+                if (!command.description) {
+                    cout << endl;
+                    continue;
+                }
+
+                cout << command.description << endl;
+            }
+        }
+
+        cout << endl << flush;
     }
 }  // namespace
 
@@ -609,3 +632,14 @@ to app only.)HELP",
      .cmd = CmdClearAllSyscallTraps},
 #endif
 });
+
+const cli::Command* cli::GetCommand(const string& name) {
+    static unordered_map<string, const Command&> commandMap;
+
+    if (commandMap.size() == 0) {
+        for (auto& command : cli::commands) commandMap.insert({string(command.name), command});
+    }
+
+    auto it = commandMap.find(name);
+    return (it == commandMap.end()) ? nullptr : &(it->second);
+}
