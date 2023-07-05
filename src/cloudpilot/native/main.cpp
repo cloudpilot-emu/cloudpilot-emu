@@ -43,16 +43,17 @@ struct DebuggerConfiguration {
     bool enabled{false};
     unsigned int port{0};
     bool waitForAttach{false};
-    string appFile;
+    optional<string> appFile;
 };
 
 struct Options {
     string image;
     optional<string> deviceId;
     optional<ProxyConfiguration> proxyConfiguration;
+    optional<string> scriptFile;
     bool traceNetlib;
     bool traceDebugger;
-    string mountImage;
+    optional<string> mountImage;
     DebuggerConfiguration debuggerConfiguration;
 };
 
@@ -84,7 +85,7 @@ void handleSuspend() {
 
 void setupCard(const Options& options) {
     string imageKey;
-    if (!options.mountImage.empty()) imageKey = util::registerImage(options.mountImage);
+    if (options.mountImage) imageKey = util::registerImage(*options.mountImage);
 
     if (!(options.deviceId ? util::initializeSession(options.image, *options.deviceId)
                            : util::initializeSession(options.image)))
@@ -98,7 +99,7 @@ void setupCard(const Options& options) {
     }
 
     if (!imageKey.empty() && util::mountKey(imageKey))
-        cout << options.mountImage << " mounted successfully" << endl << flush;
+        cout << *options.mountImage << " mounted successfully" << endl << flush;
 }
 
 void setupProxy(ProxyClient*& proxyClient, ProxyHandler*& proxyHandler, const Options& options) {
@@ -124,12 +125,13 @@ void setupDebugger(GdbStub& gdbStub, const Options& options) {
                 gdbStub.Cycle(1000);
         }
 
-        if (!options.debuggerConfiguration.appFile.empty()) {
+        if (options.debuggerConfiguration.appFile) {
             unique_ptr<uint8[]> buffer;
             size_t len;
 
-            if (!util::readFile(options.debuggerConfiguration.appFile, buffer, len))
-                cout << "failed to read " << options.debuggerConfiguration.appFile << endl << flush;
+            if (!util::readFile(*options.debuggerConfiguration.appFile, buffer, len))
+                cout << "failed to read " << *options.debuggerConfiguration.appFile << endl
+                     << flush;
 
             else
                 debug_support::SetApp(buffer.get(), len, nullptr, gdbStub, gDebugger);
@@ -180,7 +182,7 @@ void run(const Options& options) {
 
     MainLoop mainLoop(window, renderer, scale);
 
-    cli::Start();
+    cli::Start(options.scriptFile);
     cli::TaskContext taskContext = {.debugger = gDebugger, .gdbStub = gdbStub};
 
     while (mainLoop.IsRunning()) {
@@ -251,6 +253,10 @@ int main(int argc, const char** argv) {
 
     program.add_argument("--mount").metavar("<image file>").help("mount card image");
 
+    program.add_argument("--script", "-s")
+        .metavar("<script file>")
+        .help("execute script on startup");
+
 #ifdef ENABLE_DEBUGGER
     program.add_argument("--listen", "-l")
         .metavar("<port>")
@@ -296,23 +302,20 @@ int main(int argc, const char** argv) {
 
     options.image = program.get("image");
     options.traceNetlib = program.get<bool>("--trace-netlib");
-    if (auto mountImage = program.present("--mount")) options.mountImage = *mountImage;
-
-    if (auto deviceId = program.present("--device-id")) options.deviceId = *deviceId;
-    if (auto proxyConfiguration = program.present<ProxyConfiguration>("--net-proxy"))
-        options.proxyConfiguration = *proxyConfiguration;
-
-    if (auto mountImage = program.present("--mount")) options.mountImage = *mountImage;
+    options.mountImage = program.present("--mount");
+    options.deviceId = program.present("--device-id");
+    options.proxyConfiguration = program.present<ProxyConfiguration>("--net-proxy");
+    options.mountImage = program.present("--mount");
+    options.scriptFile = program.present("--script");
 
 #ifdef ENABLE_DEBUGGER
-    if (program.present<unsigned int>("--listen"))
+    if (auto port = program.present<unsigned int>("--listen"))
         options.debuggerConfiguration = {.enabled = true,
-                                         .port = program.get<unsigned int>("--listen"),
+                                         .port = *port,
                                          .waitForAttach = program.get<bool>("--wait-for-attach")};
 
     options.traceDebugger = program.get<bool>("--trace-debugger");
-    options.debuggerConfiguration.appFile =
-        program.present("--debug-app") ? program.get("--debug-app") : "";
+    options.debuggerConfiguration.appFile = program.present("--debug-app");
 #endif
 
     run(options);

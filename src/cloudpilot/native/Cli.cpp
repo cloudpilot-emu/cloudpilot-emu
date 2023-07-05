@@ -10,16 +10,19 @@
 #include <atomic>
 #include <condition_variable>
 #include <cstring>
+#include <deque>
 #include <functional>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <memory>
 #include <mutex>
 #include <sstream>
 #include <thread>
 #include <vector>
 
 #include "Commands.h"
+#include "util.h"
 
 namespace {
     atomic<bool> stop(false);
@@ -30,6 +33,8 @@ namespace {
 
     mutex dispatchMutex;
     condition_variable cvExecuteTask;
+
+    deque<string> script;
 
     class CommandContextImpl : public cli::CommandContext {
        public:
@@ -54,7 +59,56 @@ namespace {
         bool& quit;
     };
 
-    inline bool IsBreakChar(char token) { return token == ' ' || token == '\t'; }
+    inline bool IsBlank(char token) { return token == ' ' || token == '\t'; }
+
+    void InitScript(optional<string> scriptFile) {
+        script.clear();
+
+        if (!scriptFile) return;
+
+        unique_ptr<uint8_t[]> fileContent;
+        size_t len;
+        if (!util::readFile(*scriptFile, fileContent, len)) {
+            cout << "unable to read script " << *scriptFile << endl << flush;
+        }
+
+        enum class state { search, command, comment };
+        state currentState{state::search};
+        string currentCommand;
+
+        for (size_t i = 0; i < len; i++) {
+            char token = fileContent.get()[i];
+            if (token == '\r') continue;
+
+            switch (currentState) {
+                case state::search:
+                    if (token == '#')
+                        currentState = state::comment;
+                    else if (!IsBlank(token) && token != '\n') {
+                        currentCommand += token;
+                        currentState = state::command;
+                    }
+
+                    break;
+
+                case state::command:
+                    if (token == '\n') {
+                        script.push_back(currentCommand);
+                        currentCommand.clear();
+                        currentState = state::search;
+                    } else
+                        currentCommand += token;
+
+                    break;
+
+                case state::comment:
+                    if (token == '\n') currentState = state::search;
+                    break;
+            }
+        }
+
+        if (currentState == state::command) script.push_back(currentCommand);
+    }
 
     string Escape(const char* text) {
         string quotedText;
@@ -62,7 +116,7 @@ namespace {
         while (*text != '\0') {
             const char token = *(text++);
 
-            if (IsBreakChar(token) || token == '\\') quotedText += '\\';
+            if (IsBlank(token) || token == '\\') quotedText += '\\';
             quotedText += token;
         }
 
@@ -101,7 +155,7 @@ namespace {
 
             switch (currentMode) {
                 case mode::blank:
-                    if (IsBreakChar(token)) continue;
+                    if (IsBlank(token)) continue;
 
                     currentWord = "";
 
@@ -118,7 +172,7 @@ namespace {
                     break;
 
                 case mode::word:
-                    if ((IsBreakChar(token) && !isQuote) || (token == '"' && isQuote)) {
+                    if ((IsBlank(token) && !isQuote) || (token == '"' && isQuote)) {
                         currentMode = mode::blank;
                         words.push_back(currentWord);
                         continue;
@@ -166,7 +220,7 @@ namespace {
 
             switch (currentMode) {
                 case mode::blank:
-                    if (IsBreakChar(token)) continue;
+                    if (IsBlank(token)) continue;
 
                     if (token == '\\') {
                         currentMode = mode::escape;
@@ -179,7 +233,7 @@ namespace {
                     break;
 
                 case mode::word:
-                    if ((IsBreakChar(token) && !isQuote) || (token == '"' && isQuote)) {
+                    if ((IsBlank(token) && !isQuote) || (token == '"' && isQuote)) {
                         currentMode = mode::blank;
                         continue;
                     }
@@ -285,7 +339,15 @@ namespace {
         rl_completer_quote_characters = "\"\\";
 
         while (!stop) {
-            char* lineBuffer = readline("> ");
+            char* lineBuffer;
+
+            if (script.size() > 0) {
+                lineBuffer = strdup(script.begin()->c_str());
+                script.pop_front();
+            } else {
+                lineBuffer = readline("> ");
+            }
+
             if (!lineBuffer) {
                 lineBuffer = reinterpret_cast<char*>(malloc(5));
                 strcpy(lineBuffer, "quit");
@@ -299,7 +361,7 @@ namespace {
                 vector<string> args(words.begin() + 1, words.end());
                 const cli::Command* _command = cli::GetCommand(words[0]);
 
-                if (!_command) cout << "invalid command" << endl << flush;
+                if (!_command) cout << "invalid command " << words[0] << endl << flush;
                 Dispatch(_command, args);
             }
 
@@ -312,11 +374,13 @@ namespace {
 
 namespace cli {
 
-    void Start() {
+    void Start(optional<string> scriptFile) {
         if (cliThread.joinable()) return;
 
         stop = false;
         command = nullptr;
+
+        InitScript(scriptFile);
 
         cliThread = thread(ThreadMain);
     }
