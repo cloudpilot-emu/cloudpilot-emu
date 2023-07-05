@@ -54,18 +54,177 @@ namespace {
         bool& quit;
     };
 
-    vector<string> Split(const char* line) {
-        istringstream iss(line);
+    inline bool IsBreakChar(char token) { return token == ' ' || token == '\t'; }
 
-        return vector<string>(istream_iterator<string>(iss), istream_iterator<string>());
+    string Quote(const char* text) {
+        string quotedText;
+
+        while (*text != '\0') {
+            const char token = *(text++);
+
+            if (IsBreakChar(token) || token == '\\') quotedText += '\\';
+            quotedText += token;
+        }
+
+        return quotedText;
+    }
+
+    string Dequote(const char* text) {
+        string dequotedText;
+        bool isQuote = false;
+
+        while (*text != '\0') {
+            const char token = *(text++);
+
+            if (!isQuote && token == '\\') {
+                isQuote = true;
+                continue;
+            }
+
+            isQuote = false;
+            dequotedText += token;
+        }
+
+        return dequotedText;
+    }
+
+    const vector<string> ParseLine(const char* line, bool& quote) {
+        enum class mode { blank, word, escape };
+
+        mode currentMode{mode::blank};
+        bool isQuote{false};
+        vector<string> words;
+        string currentWord;
+
+        while (*line != '\0') {
+            const char token = *(line++);
+
+            switch (currentMode) {
+                case mode::blank:
+                    if (IsBreakChar(token)) continue;
+
+                    currentWord = "";
+
+                    if (token == '\\') {
+                        currentMode = mode::escape;
+                        isQuote = false;
+                    } else {
+                        currentMode = mode::word;
+                        isQuote = token == '"';
+
+                        if (!isQuote) currentWord += token;
+                    }
+
+                    break;
+
+                case mode::word:
+                    if ((IsBreakChar(token) && !isQuote) || (token == '"' && isQuote)) {
+                        currentMode = mode::blank;
+                        words.push_back(currentWord);
+                        continue;
+                    }
+
+                    if (token == '\\') {
+                        currentMode = mode::escape;
+                        continue;
+                    }
+
+                    currentWord += token;
+
+                    break;
+
+                case mode::escape:
+                    currentMode = mode::word;
+                    currentWord += token;
+
+                    break;
+            }
+        }
+
+        quote = false;
+        if (currentMode != mode::blank) {
+            words.push_back(currentWord);
+            quote = isQuote;
+        }
+
+        return words;
+    }
+
+    const vector<string> ParseLine(const char* line) {
+        bool quote;
+        return ParseLine(line, quote);
+    }
+
+    extern "C" int CharIsQuoted(char* line, int index) {
+        enum class mode { blank, word, escape };
+
+        mode currentMode{mode::blank};
+        bool isQuote{false};
+
+        for (int i = 0; i <= index && *line != '\n'; i++) {
+            const char token = *(line++);
+
+            switch (currentMode) {
+                case mode::blank:
+                    if (IsBreakChar(token)) continue;
+
+                    if (token == '\\') {
+                        currentMode = mode::escape;
+                        isQuote = false;
+                    } else {
+                        currentMode = mode::word;
+                        isQuote = token == '"';
+                    }
+
+                    break;
+
+                case mode::word:
+                    if ((IsBreakChar(token) && !isQuote) || (token == '"' && isQuote)) {
+                        currentMode = mode::blank;
+                        continue;
+                    }
+
+                    if (token == '\\') {
+                        currentMode = mode::escape;
+                        continue;
+                    }
+
+                    break;
+
+                case mode::escape:
+                    currentMode = mode::word;
+
+                    break;
+            }
+        }
+
+        return currentMode == mode::word;
     }
 
     extern "C" char* RlCompletionFunction(const char* word, int state) {
         static vector<string> words;
-        if (state == 0) words = Split(rl_line_buffer);
+        static bool isQuoted = true;
 
-        if ((words.size() > 1 || (words.size() == 1 && strlen(word) == 0)) && words[0] != "help")
-            return rl_filename_completion_function(word, state);
+        if (state == 0) {
+            words = ParseLine(rl_line_buffer, isQuoted);
+            if (strlen(word) == 0) words.push_back("");
+        }
+
+        if (words.size() > 1 && words[0] != "help") {
+            char* completion =
+                rl_filename_completion_function(words[words.size() - 1].c_str(), state);
+
+            if (completion == nullptr || isQuoted) return completion;
+
+            string quotedCompletionString = Quote(completion);
+            free(completion);
+
+            char* quotedCompletion =
+                reinterpret_cast<char*>(malloc(quotedCompletionString.size() + 1));
+            strcpy(quotedCompletion, quotedCompletionString.c_str());
+
+            return quotedCompletion;
+        }
 
         static vector<string> suggestions;
 
@@ -82,7 +241,7 @@ namespace {
 
         if (state >= (int)suggestions.size()) return nullptr;
 
-        char* suggestion = (char*)malloc(suggestions[state].size() + 1);
+        char* suggestion = reinterpret_cast<char*>(malloc(suggestions[state].size() + 1));
         strcpy(suggestion, suggestions[state].c_str());
 
         return suggestion;
@@ -94,6 +253,22 @@ namespace {
         }
 
         return 0;
+    }
+
+    extern "C" int FilenameStatHook(char** filename) {
+        bool isQuoted = true;
+        ParseLine(rl_line_buffer, isQuoted);
+
+        if (strcmp(*filename, ".") == 0 || isQuoted) return 0;
+
+        const string& dequotedFilename = Dequote(*filename);
+
+        free(*filename);
+        *filename = reinterpret_cast<char*>(malloc(dequotedFilename.size() + 1));
+
+        strcpy(*filename, dequotedFilename.c_str());
+
+        return 1;
     }
 
     void Dispatch(const cli::Command* _command, vector<string>& _arguments) {
@@ -109,6 +284,11 @@ namespace {
     void ThreadMain() {
         rl_event_hook = ReadlineEventHook;
         rl_completion_entry_function = RlCompletionFunction;
+        rl_char_is_quoted_p = CharIsQuoted;
+        rl_filename_stat_hook = FilenameStatHook;
+
+        rl_completer_word_break_characters = " \t";
+        rl_completer_quote_characters = "\"\\";
 
         while (!stop) {
             char* lineBuffer = readline("> ");
@@ -119,7 +299,7 @@ namespace {
 
             add_history(lineBuffer);
 
-            vector<string> words = Split(lineBuffer);
+            vector<string> words = ParseLine(lineBuffer);
 
             if (!words.empty() && !stop) {
                 vector<string> args(words.begin() + 1, words.end());
