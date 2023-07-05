@@ -219,11 +219,7 @@ namespace {
             string escapedCompletionString = Escape(completion);
             free(completion);
 
-            char* quotedCompletion =
-                reinterpret_cast<char*>(malloc(escapedCompletionString.size() + 1));
-            strcpy(quotedCompletion, escapedCompletionString.c_str());
-
-            return quotedCompletion;
+            return strdup(escapedCompletionString.c_str());
         }
 
         static vector<string> suggestions;
@@ -241,10 +237,7 @@ namespace {
 
         if (state >= (int)suggestions.size()) return nullptr;
 
-        char* suggestion = reinterpret_cast<char*>(malloc(suggestions[state].size() + 1));
-        strcpy(suggestion, suggestions[state].c_str());
-
-        return suggestion;
+        return strdup(suggestions[state].c_str());
     }
 
     extern "C" int ReadlineEventHook() {
@@ -264,9 +257,8 @@ namespace {
         const string& unescapedFilename = Unescape(*filename);
 
         free(*filename);
-        *filename = reinterpret_cast<char*>(malloc(unescapedFilename.size() + 1));
 
-        strcpy(*filename, unescapedFilename.c_str());
+        *filename = strdup(unescapedFilename.c_str());
 
         return 1;
     }
@@ -282,12 +274,14 @@ namespace {
     }
 
     void ThreadMain() {
+        char* breakCharacters = strdup(" \t");
+
         rl_event_hook = ReadlineEventHook;
         rl_completion_entry_function = RlCompletionFunction;
         rl_char_is_quoted_p = CharIsQuoted;
         rl_filename_stat_hook = FilenameStatHook;
 
-        rl_completer_word_break_characters = " \t";
+        rl_completer_word_break_characters = breakCharacters;
         rl_completer_quote_characters = "\"\\";
 
         while (!stop) {
@@ -311,6 +305,8 @@ namespace {
 
             free(lineBuffer);
         }
+
+        free(breakCharacters);
     }
 }  // namespace
 
