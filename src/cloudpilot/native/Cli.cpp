@@ -92,10 +92,10 @@ namespace {
                     break;
 
                 case state::command:
-                    if (token == '\n') {
+                    if (token == '\n' || token == '#') {
                         script.push_back(currentCommand);
                         currentCommand.clear();
-                        currentState = state::search;
+                        currentState = token == '#' ? state::comment : state::search;
                     } else
                         currentCommand += token;
 
