@@ -82,10 +82,7 @@ void handleSuspend() {
     }
 }
 
-void run(const Options& options) {
-    ProxyClient* proxyClient = nullptr;
-    ProxyHandler* proxyHandler = nullptr;
-
+void setupCard(const Options& options) {
     string imageKey;
     if (!options.mountImage.empty()) imageKey = util::registerImage(options.mountImage);
 
@@ -102,7 +99,9 @@ void run(const Options& options) {
 
     if (!imageKey.empty() && util::mountKey(imageKey))
         cout << options.mountImage << " mounted successfully" << endl << flush;
+}
 
+void setupProxy(ProxyClient*& proxyClient, ProxyHandler*& proxyHandler, const Options& options) {
     if (options.proxyConfiguration) {
         proxyClient =
             ProxyClient::Create(options.proxyConfiguration->host, options.proxyConfiguration->port,
@@ -113,15 +112,9 @@ void run(const Options& options) {
 
         Feature::SetNetworkRedirection(true);
     }
+}
 
-    if (options.traceNetlib) logging::enableDomain(logging::domainNetlib);
-    if (options.traceDebugger) logging::enableDomain(logging::domainDebugger);
-
-    Feature::SetClipboardIntegration(true);
-
-    srand(time(nullptr));
-
-    GdbStub gdbStub(gDebugger, options.debuggerConfiguration.port);
+void setupDebugger(GdbStub& gdbStub, const Options& options) {
     if (options.debuggerConfiguration.enabled) {
         gdbStub.Listen();
 
@@ -142,17 +135,16 @@ void run(const Options& options) {
                 debug_support::SetApp(buffer.get(), len, nullptr, gdbStub, gDebugger);
         }
     }
+}
 
+void initSDL(SDL_Window*& window, SDL_Renderer*& renderer, int& scale) {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS);
     IMG_Init(IMG_INIT_PNG);
     SDL_StartTextInput();
 
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-
     ScreenDimensions::Kind screenDimensionsKind = gSession->GetDevice().GetScreenDimensions();
     ScreenDimensions screenDimensions(screenDimensionsKind);
-    int scale = screenDimensionsKind == ScreenDimensions::screen160x160 ? 3 : 2;
+    scale = screenDimensionsKind == ScreenDimensions::screen160x160 ? 3 : 2;
 
     if (SDL_CreateWindowAndRenderer(
             screenDimensions.Width() * scale,
@@ -161,6 +153,30 @@ void run(const Options& options) {
         cerr << "unable to create SDL window: " << SDL_GetError() << endl;
         exit(1);
     }
+}
+
+void run(const Options& options) {
+    srand(time(nullptr));
+    signal(SIGPIPE, SIG_IGN);
+
+    setupCard(options);
+
+    ProxyClient* proxyClient = nullptr;
+    ProxyHandler* proxyHandler = nullptr;
+    setupProxy(proxyClient, proxyHandler, options);
+
+    GdbStub gdbStub(gDebugger, options.debuggerConfiguration.port);
+    setupDebugger(gdbStub, options);
+
+    if (options.traceNetlib) logging::enableDomain(logging::domainNetlib);
+    if (options.traceDebugger) logging::enableDomain(logging::domainDebugger);
+
+    Feature::SetClipboardIntegration(true);
+
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+    int scale;
+    initSDL(window, renderer, scale);
 
     MainLoop mainLoop(window, renderer, scale);
 
