@@ -56,7 +56,7 @@ namespace {
 
     inline bool IsBreakChar(char token) { return token == ' ' || token == '\t'; }
 
-    string Quote(const char* text) {
+    string Escape(const char* text) {
         string quotedText;
 
         while (*text != '\0') {
@@ -69,7 +69,7 @@ namespace {
         return quotedText;
     }
 
-    string Dequote(const char* text) {
+    string Unescape(const char* text) {
         string dequotedText;
         bool isQuote = false;
 
@@ -216,12 +216,12 @@ namespace {
 
             if (completion == nullptr || isQuoted) return completion;
 
-            string quotedCompletionString = Quote(completion);
+            string escapedCompletionString = Escape(completion);
             free(completion);
 
             char* quotedCompletion =
-                reinterpret_cast<char*>(malloc(quotedCompletionString.size() + 1));
-            strcpy(quotedCompletion, quotedCompletionString.c_str());
+                reinterpret_cast<char*>(malloc(escapedCompletionString.size() + 1));
+            strcpy(quotedCompletion, escapedCompletionString.c_str());
 
             return quotedCompletion;
         }
@@ -261,12 +261,12 @@ namespace {
 
         if (strcmp(*filename, ".") == 0 || isQuoted) return 0;
 
-        const string& dequotedFilename = Dequote(*filename);
+        const string& unescapedFilename = Unescape(*filename);
 
         free(*filename);
-        *filename = reinterpret_cast<char*>(malloc(dequotedFilename.size() + 1));
+        *filename = reinterpret_cast<char*>(malloc(unescapedFilename.size() + 1));
 
-        strcpy(*filename, dequotedFilename.c_str());
+        strcpy(*filename, unescapedFilename.c_str());
 
         return 1;
     }
