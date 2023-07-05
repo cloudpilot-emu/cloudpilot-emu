@@ -214,6 +214,7 @@ int main(int argc, const char** argv) {
 
     program.add_argument("--device-id", "-d")
         .help("specify device ID")
+        .metavar("<device>")
         .action([](const string& value) -> string {
             for (auto& deviceId : util::SUPPORTED_DEVICES)
                 if (value == deviceId) return deviceId;
@@ -223,6 +224,7 @@ int main(int argc, const char** argv) {
 
     program.add_argument("--net-proxy", "-n")
         .help("enable network redirection via specified proxy URI")
+        .metavar("<proxy URI>")
         .action([](const string& value) {
             try {
                 uri parsed(value);
@@ -247,10 +249,13 @@ int main(int argc, const char** argv) {
         .default_value(false)
         .implicit_value(true);
 
-    program.add_argument("--mount").help("mount card image");
+    program.add_argument("--mount").metavar("<image file>").help("mount card image");
 
 #ifdef ENABLE_DEBUGGER
-    program.add_argument("--listen", "-l").help("listen for GDB on port").scan<'u', unsigned int>();
+    program.add_argument("--listen", "-l")
+        .metavar("<port>")
+        .help("listen for GDB on port")
+        .scan<'u', unsigned int>();
 
     program.add_argument("--wait-for-attach")
         .help("wait for debugger on launch")
@@ -262,7 +267,9 @@ int main(int argc, const char** argv) {
         .default_value(false)
         .implicit_value(true);
 
-    program.add_argument("--debug-app").help("configure debugger to debug app (ELF file)");
+    program.add_argument("--debug-app")
+        .metavar("<elf file>")
+        .help("configure debugger to debug app (elf file)");
 #endif
 
     try {
