@@ -35,6 +35,13 @@ In order to use the emulator you need to provide a ROM file for the device you
 want to emulate. You can find a collection of ROMs
 [on PalmDB](https://palmdb.net/app/palm-roms-complete).
 
+## Networking support
+
+CloudpilotEmu supports networking by tunneling network connections over a
+custom proxy server via a websocket connection. Please check out the
+[dedicated networking documentation](doc/networking.md) for setting up
+networking with CloudpilotEmu.
+
 ## Emulated devices
 
 The following devices are currently emulated:
@@ -66,6 +73,27 @@ The following devices are currently emulated:
 A preview build of the next version of CloudpilotEmu is available
 [here](https://cloudpilot-emu.github.io/app-preview).
 
+## Native app
+
+In addition to the web version, CloudpilotEmu can be built as a native app.
+The native version targets developers and does not provide skins or audio
+support. However, it adds a GDB stub that allows for remote debugging via
+GDB. You can find more documentation on debugging with CloudpilotEmu
+[here](doc/debugging.md).
+
+The native app does not come with a gui, but is controlled with a CLI
+instead. The CLI offers commands for loading and saving images, mounting
+card images, generating traces of m68k code and much more. The CLI supports
+tab completion, and there is a `help` command that provides further
+documentation.
+
+The native app can be built and run on MacOS, Linux and on the WSL for
+Windows. Please see below for build instructions. Once built, the app can
+be started from the command line by supplying a session image or a ROM file
+as command line argument. Command line options exist for activating the
+GDN stub, mounting a card on launch and more. Run `cloudpilot --help` in
+order to get an overview of the supported options.
+
 # Reporting issues
 
 Please report issues on the [Github tracker](https://github.com/cloudpilot-emu/cloudpilot-emu/issues).
@@ -79,16 +107,15 @@ Please report issues on the [Github tracker](https://github.com/cloudpilot-emu/c
     (usually the same as the screen refresh rate of the host device). Sound
     effects that rely on quickly modulating the audio signal may not be
     reproduced correctly.
--   Savestates are not endian safe and can not be exchanged between big and
-    little endian systems. As long as there are not big endian system that runs
-    CloudpilotEmu that issue is probably academical :)
--   On rare ocassions installing a prc or pdb can catch PalmOS on the wrong
-    foot and crashes the emulator. This is particularly true if a file is installed
-    on a virtual Palm IIIc with PalmOS 3.5 while the launcher is active and the
-    category menu is open.
--   Trying to enable mobile on Tungsten W will crash the emulated device.
+-   On rare cassinos installing files or changing the hotsync name can catch
+    PalmOS on the wrong foot and crash the emulator. In particular, this happens
+    if a file is installed on a virtual Palm IIIc with PalmOS 3.5 while the
+    launcher is active and the category menu is open.
+-   Tungsten W, i705, PEG-T650C and PEG-NR70 cannot enter and exit sleep correctly,
+    and the corresponding functionality has been disabled.
 -   On Clié devices, audio is not emulated beyond the usual beeps.
--   External memory (CF card, SD card, memory stick) is not supported
+-   The MQ-1168 video chip in PEG-NR70 series devices is not emulated beyond
+    framebuffer support, 2D acceleration is not available.
 -   Formatting an unformatted memory stick in Clié devices that run PalmOS 3.x
     locks up PalmOS.
 
