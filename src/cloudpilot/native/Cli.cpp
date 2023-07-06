@@ -348,10 +348,7 @@ namespace {
                 lineBuffer = readline("> ");
             }
 
-            if (!lineBuffer) {
-                lineBuffer = reinterpret_cast<char*>(malloc(5));
-                strcpy(lineBuffer, "quit");
-            }
+            if (!lineBuffer) lineBuffer = strdup("quit");
 
             add_history(lineBuffer);
 
