@@ -81,8 +81,8 @@ support. However, it adds a GDB stub that allows for remote debugging via
 GDB. You can find more documentation on debugging with CloudpilotEmu
 [here](doc/debugging.md).
 
-The native app does not come with a gui, but is controlled with a CLI
-instead. The CLI offers commands for loading and saving images, mounting
+The native app does not come with a GUI, but is controlled with a CLI
+instead. The CLI provides commands for loading and saving images, mounting
 card images, generating traces of m68k code and much more. The CLI supports
 tab completion, and there is a `help` command that provides further
 documentation.
