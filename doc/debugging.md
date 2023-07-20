@@ -4,60 +4,62 @@
 
 ### The GDB stub
 
-While CloudpilotEmu provides support for debugging, it does not provide its
-own user interface for debugging. Instead, CloudpilotEmu implements the remote
-debugging protocol of the
-[GNU debugger](https://www.sourceware.org/gdb/)
-(GDB) this part of the emulator is called the GDB stub.
+While CloudpilotEmu provides support for debugging, it does not provide its own
+user interface for debugging. Instead, CloudpilotEmu implements the remote
+debugging protocol of the [GNU debugger](https://www.sourceware.org/gdb/) (GDB).
+This part of the emulator is called the GDB stub.
 
 If the stub is enabled, CloudpilotEmu opens a port and listens for incoming
-debugger connections. After connecting, GDB can be used to interrupt and
-step the virtual CPU, inspect registers and memory, set breakpoints and
-watchpoints, and more.
+debugger connections. After connecting, GDB can be used to interrupt and step
+the virtual CPU, inspect registers and memory, set breakpoints and watchpoints,
+and more.
 
 ### Symbolic debugging of PalmOS applications
 
 With GDB connected to CloudpilotEmu, debugging at the level of m68k assembly
-works out of the box. However, GDB can also be used for symbolic debugging
-of PalmOS applications that have been produced with a
-[modern toolchain](https://www.reddit.com/r/Palm/comments/p81m58/announce_new_gcc_or_palmos_again/).
+works out of the box. However, GDB can also be used for symbolic debugging of
+PalmOS applications that have been produced with a [modern
+toolchain](https://www.reddit.com/r/Palm/comments/p81m58/announce_new_gcc_or_palmos_again/).
 
-In order to provide symbolic debugging at the source level, GDB requires access to the
-debug symbols for the compiled app. Debug symbols are emitted by the compiler
-during compilation with `-g` and provide the information required for associating memory
-locations and instructions with actual variables and lines of source code.
+In order to provide symbolic debugging at the source level, GDB requires access
+to the debug symbols for the compiled app. Debug symbols are emitted by the
+compiler during compilation with `-g` and provide the information required for
+associating memory locations and instructions with actual variables and lines of
+source code.
 
 Debug symbols usually reference a fixed address space layout. However, on PalmOS
-applications are installed to RAM and run in place, so the relevant addresses
-depend on the exact location on the storage heap where the application is installed.
-This location differs between individual devices and may even change after
-installation if PalmOS decides to compact the heap by moving databases around.#
+applications are installed into RAM and run in place, so the relevant addresses
+depend on the exact location on the storage heap where the application is
+installed. This location differs between individual devices and may even change
+after installation if PalmOS decides to compact the heap by moving databases
+around.
 
-In order to render the symbols useful to GDB, CloudpilotEmu can track down code
-resource in memory and automatically communicate the corresponding relocation
-offset to GDB when it connects. This enables GDB to directly use the ELF file
-produced by GCC for debugging an application at the source level.
+In order to render the symbols useful to GDB, CloudpilotEmu can track down an
+applications code resource in memory and automatically communicate the
+corresponding relocation offset to GDB when it connects. This enables GDB to
+directly use the ELF file produced by GCC for debugging an application at the
+source level.
 
 ## Debugging in practice
 
 ### Building CloudpilotEmu native
 
-The GDB stub is only available in the native version of CloudpilotEmu (and not in the
-web version). Please follow the instructions in [the README](../README.md) in
-order to build it from source.
+The GDB stub is only available in the native version of CloudpilotEmu (and not
+in the web version). Please follow the instructions in [the
+README](../README.md) in order to build it from source.
 
 ### Building GDB
 
-A version of GDB build for target `m68k-none-elf` is required for debugging with
-CloudpilotEmu and needs to be built from source. Any halfway recent version of GDB
-will do (**don't use** the version included in PRC tools, it will not work). Please
-check out the GDB documentation for more details.
+A version of GDB built for the target `m68k-none-elf` is required for debugging
+with CloudpilotEmu and needs to be built from source. Any halfway recent version
+of GDB will do (**don't use** the version included in PRC tools, it will not
+work). Please check out the GDB documentation for more details.
 
 ### Launching CloudpilotEmu
 
-Launch CloudpilotEmu with `-p xxxx` in order to enable the stub and listen on port
-`xxxx` . If you want CloudpilotEmu to pause and wait for the debugger on startup,
-you can do so by adding `--wait-for-attach` to the command line.
+Launch CloudpilotEmu with `-p xxxx` in order to enable the stub and listen on
+port `xxxx` . If you want CloudpilotEmu to pause and wait for the debugger on
+startup, you can do so by adding `--wait-for-attach` to the command line.
 
 ### Connecting GDB
 
@@ -68,59 +70,60 @@ Start GDB and connect to CloudpilotEmu by doing
 ```
 
 in the debugger shell. On successful connection, CloudpilotEmu will pause
-execution and wait for further commands. Please check the GDB documentation
-for more details on debugging from there
+execution and wait for further commands. Please check the GDB documentation for
+more details on debugging from there
 
 ### Using the CLI while GDB is attached
 
-Most parts of the CloudpilotEmu CLI remain functional even when the debugger
-is attached and the emulator is paused. In particular, CLI commands can be
-used to save savestates, dump memory, generate m68k traces (using macbug-style
-function names that are embedded into most PalmOS apps and into PalmOS itself)
-and break on system traps. Check `help` on the CLI for more information.
+Most parts of the CloudpilotEmu CLI remain functional even when the debugger is
+attached and the emulator is paused. In particular, CLI commands can be used to
+save savestates, dump memory, generate m68k traces (using macbug-style function
+names that are embedded into most PalmOS apps and into PalmOS itself) and break
+on system traps. Check `help` on the CLI for more information.
 
 ### Compiling apps for symbolic debugging
 
 In order to debug an application, the app must be compiled with debug symbols
-enabled (`-g -ggdb`). Optimization should be set to `-O1` --- smaller values
-produce code that is too large to fit into a single code resource, and higher
-levels will make debugging harder.
+enabled (`-g -ggdb`). Optimization should be set to `-O1` --- `-O0` may produce
+code that is too large to fit into a single code resource, and higher levels
+will make debugging harder.
 
 ### Loading the ELF file in GDB
 
 On startup, GDB needs to be pointed to ELF file generated by GCC during
-compilation. Usually, during build, the relvant sections are copied from
-the ELF with `objcopy` and turned into resources in a .prc with pilrc.
-Make sure that your build process preserves the ELF file and pass it to
-GDB as a command line argument.
+compilation. Usually, during build, the relvant sections are copied from the ELF
+with `objcopy` and turned into resources in a .prc with `pilrc``. Make sure that
+your build process preserves the ELF file and pass it to GDB as a command line
+argument.
 
 ### Setting up relocation information
 
-In order to setup up the necessary relocation information, pass the ELF
-file to CloudpilotEmu with the `--debug-app` command line option or
-with the `debug-set-app` CLI command. CloudpilotEmu will search for the
-.text section in PalmOS memory and communicate the corresponding relocation
-offset to GDB on connection.
+In order to setup up the necessary relocation information, pass the ELF file to
+CloudpilotEmu with the `--debug-app` command line option or with the
+`debug-set-app` CLI command. CloudpilotEmu will search for the .text section in
+PalmOS memory and communicate the corresponding relocation offset to GDB on
+connection.
 
-Please not that this will only work if the app has been previously installed
-on the device. It is a good idea to prepare a savestate file with
-the app preinstalled in order to simplify debugging.
+Please not that this will only work if the app has been previously installed on
+the device. It is a good idea to prepare a savestate file with the app
+preinstalled in order to simplify debugging.
 
 ### Stepping over system calls
 
-By default, CloudpilotEmu will step all instructions, independent of whether
-they are located in RAM or ROM. However, during source-level debugging,
-stepping into a system call will throw off gdb and make break on the vector,
-even if it was instructed to step over the call.
+Without an app set up for debugging, CloudpilotEmu will stop on all
+instructions, independent of whether they are located in RAM or ROM. However,
+when stepping over a system call during source-level debugging, this will throw
+off gdb and make it break on the vector, even if it was instructed to step over
+the call.
 
-In order to avoid this issue, CloudpilotEmu can be told to step only on
+In order to avoid this issue, CloudpilotEmu can be told to stop only on
 instructions that are located in RAM (`debug-set-break-mode ram-only` on the
 CLI) or instructions located in the .text section of the ELF that is being
-debugged (`debug-set-break-mode app-only` on the CLI). The second mode
-is the default when an ELF has been loaded in CloudpilotEmu.
+debugged (`debug-set-break-mode app-only` on the CLI). The second mode is the
+default when an ELF has been loaded in CloudpilotEmu.
 
 ### Performance
 
-GDB insists on stepping each individual instruction when stepping over a
-kine, which can make stepping over large functions a bit tedious. You can
-use breakpoints to step over function calls quickly in such scenarios.
+GDB insists on stepping each individual instruction when stepping over a line,
+which can make stepping over large functions a bit tedious. You can use
+breakpoints to step over function calls quickly in such scenarios.
