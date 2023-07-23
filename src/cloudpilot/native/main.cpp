@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 
+#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <fstream>
