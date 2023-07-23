@@ -26,7 +26,7 @@ Please check out the documentation in the app.
 
 The is an embedded version of CloudpilotEmu that allows you to embed the emulator
 into your own web pages. Please check the
-(documentation)[https://cloudpilot-emu.github.io/embedded/]
+[documentation](https://cloudpilot-emu.github.io/embedded/)
 for more details.
 
 ## ROM files
