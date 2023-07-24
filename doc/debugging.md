@@ -132,7 +132,7 @@ breakpoints to step over function calls quickly in such scenarios.
 
 ### Installing the C/C++ extension
 
-VSCode can be used as a frontend for GDB, which makes debugging with Cloudpilot
+VSCode can be used as a frontend for GDB, which makes debugging with CloudpilotEmu
 a bit more convenient. In order to do so, install the [C/C++ extension for
 VSCode](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools)
 it will provide the necessary integration with GDB.
@@ -142,7 +142,7 @@ it will provide the necessary integration with GDB.
 In order to build the app to be debugged, VSCode needs to be told how
 to invoke the build system. This is done by adding a `tasks.json` file to the
 `.vscode` directory in the project root. Additonally, the build task must
-launch CloudpilotEmu Native with the correct command line options.
+launch CloudpilotEmu with the correct command line options.
 You will need to adjust the following example to match your environment and
 needs, but it should be a good starting point:
 
@@ -170,7 +170,7 @@ needs, but it should be a good starting point:
         },
         {
             "label": "CP",
-            "command": "/path/to/cloudpilotnative -l 6667 path-to-palm-session.bin -s cloudpilotStartDebug.cp",
+            "command": "/path/to/cloudpilotnative -l 6667 path-to-session.bin -s cloudpilotStartDebug.cp",
             "type": "shell",
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -204,33 +204,35 @@ needs, but it should be a good starting point:
 
 The example above is composed of several tasks that are chained together. The
 first two tasks are used to build the app. The `CP` task is used to launch
-CloudpilotEmu Native with the correct command line options, and the `Run` task
-chains all the previous tasks together and launches Cloudpilot Native.
+CloudpilotEmu with the correct command line options, and the `Run` task
+chains all the previous tasks together and run them in sequence.
 The `Elf` task is optional in the way that it can be removed if the app
 preserves the ELF file during build.
 
 As mentioned above, you will need to adjust the paths and command line options
 to your needs. In particular, you will need to adjust the path to the
-CloudpilotEmu Native executable and the path to the session image.
+CloudpilotEmu Native executable, the path to the session image, and if it's the
+case, the ELF file name as well.
 
-The session image is the file that CloudpilotEmu Native will load on startup
-and should have a previous version of the app to be debugged installed,
-allowing CloudpilotEmu to set up the relocation information for GDB. Said
-session image can be created by installing the app into CloudpilotEmu Web and
-saving the session image from the `Sessions` tab, by selecting the session and
-right clicking on it and choosing `Save`. This will download a file with the
-extension `.bin` that can be used as session image. That session image can be
-created only once and then reused for all subsequent debugging sessions,
-as we will see, the latest version of the app will be installed automatically
-into it on startup.
+The session image, which is the file CloudpilotEmu loads on startup, should
+contain a ready-to-work PalmOS state. You can create this session image by
+following these steps:
+
+1. Launch a new session on CloudpilotEmu Web.
+1. Complete the PalmOS tutorial.
+1. Save the image from the Sessions tab by selecting the session,
+   right-clicking on it, and choosing Save. This will download a file with the
+   .bin extension, which will serve as the session image.
+
+Once you have created this session image, you can reuse it for all subsequent debugging sessions. The latest version of the app will be automatically installed into it upon startup.
 
 ### Setting up CloudPilot Native CLI Script
 
 After creating the session image, you will need to create a CLI script that
-CloudpilotEmu Native will execute on startup. This script will be used to
+CloudpilotEmu will execute on startup. This script will be used to
 automatically install the latest version of the app to be debugged and to set
 up the relocation information for GDB. The script also launches the app, so
-that CloudpilotEmu Native will be in a state where it can be debugged
+that CloudpilotEmu will be in a state where it can be debugged
 immediately.
 
 The following example script assumes that the `prc` to be debugged is called
@@ -300,5 +302,6 @@ You should now be able to debug your app by, in this order:
    `Start Debugging` button in VSCode. You should now be able to debug your app
    as usual, setting breakpoints in VSCode, step through the code, and etc.
 
-Remember to always run the `Run` task before debugging in order to ensure that
-the app is on it's latest version.
+Remember to always close CloudPilot and re-run the `Run` task if you make any
+changes to your app's code, this will ensure that the latest version of the app
+is installed into the session image.
