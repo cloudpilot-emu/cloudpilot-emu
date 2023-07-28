@@ -127,3 +127,181 @@ default when an ELF has been loaded in CloudpilotEmu.
 GDB insists on stepping each individual instruction when stepping over a line,
 which can make stepping over large functions a bit tedious. You can use
 breakpoints to step over function calls quickly in such scenarios.
+
+## Debugging with VSCode
+
+### Installing the C/C++ extension
+
+VSCode can be used as a frontend for GDB, which makes debugging with CloudpilotEmu
+a bit more convenient. In order to do so, install the [C/C++ extension for
+VSCode](https://marketplace.visualstudio.com/items?itemName=ms-vscode.cpptools)
+it will provide the necessary integration with GDB.
+
+### Setting up the build task
+
+In order to build the app to be debugged, VSCode needs to be told how
+to invoke the build system. This is done by adding a `tasks.json` file to the
+`.vscode` directory in the project root. Additonally, the build task must
+launch CloudpilotEmu with the correct command line options.
+You will need to adjust the following example to match your environment and
+needs, but it should be a good starting point:
+
+```json
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Elf",
+            "command": "make code0001.68k.elf",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "hide": true
+        },
+        {
+            "label": "Prc",
+            "command": "make",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "hide": true
+        },
+        {
+            "label": "CP",
+            "command": "/path/to/cloudpilotnative -l 6667 path-to-session.bin -s cloudpilotStartDebug.cp",
+            "type": "shell",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "hide": true
+        },
+        {
+            "label": "Run",
+            "dependsOn": ["Elf", "Prc", "CP"],
+            "dependsOrder": "sequence",
+            "icon": {
+                "dark": "icon/Run.svg",
+                "light": "icon/Run.svg"
+            },
+            "problemMatcher": {
+                "owner": "cpp",
+                "fileLocation": ["relative", "${workspaceFolder}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        }
+    ]
+}
+```
+
+The example above is composed of several tasks that are chained together. The
+first two tasks are used to build the app. The `CP` task is used to launch
+CloudpilotEmu with the correct command line options, and the `Run` task
+chains all the previous tasks together and run them in sequence.
+The `Elf` task is optional in the way that it can be removed if the app
+preserves the ELF file during build.
+
+As mentioned above, you will need to adjust the paths and command line options
+to your needs. In particular, you will need to adjust the path to the
+CloudpilotEmu Native executable, the path to the session image, and if it's the
+case, the ELF file name as well.
+
+The session image, which is the file CloudpilotEmu loads on startup, should
+contain a ready-to-work PalmOS state. You can create this session image by
+following these steps:
+
+1. Launch a new session on CloudpilotEmu Web.
+1. Complete the PalmOS tutorial.
+1. Save the image from the Sessions tab by selecting the session,
+   right-clicking on it, and choosing Save. This will download a file with the
+   .bin extension, which will serve as the session image.
+
+Once you have created this session image, you can reuse it for all subsequent debugging sessions. The latest version of the app will be automatically installed into it upon startup.
+
+### Setting up CloudPilot Native CLI Script
+
+After creating the session image, you will need to create a CLI script that
+CloudpilotEmu will execute on startup. This script will be used to
+automatically install the latest version of the app to be debugged and to set
+up the relocation information for GDB. The script also launches the app, so
+that CloudpilotEmu will be in a state where it can be debugged
+immediately.
+
+The following example script assumes that the `prc` to be debugged is called
+`myapp.prc`, that the ELF file is called `code0001.68k.elf`, and that those
+files are located in the root of your project. If the location differs, please
+adjust the script accordingly to match the location of the PRC and ELF files.
+
+It is also assumed that this file is located in the root of your project. If
+the location differs, you will also need to adjust the script location in the
+`CP` task in `tasks.json` above.
+
+Create a file called `cloudpilotStartDebug.cp` in the root of your project
+with the following content:
+
+```
+   # Install the app to be debugged
+   install myapp.prc
+
+   # Set up the relocation information for GDB
+   debug-set-app code0001.68k.elf
+
+   # Launch the app
+   launch MyApp
+```
+
+### Setting up the launch configuration
+
+So far, we have set up VSCode to build the app and launch CloudpilotEmu Native
+with the correct command line options. All that is left is to tell VSCode
+how to attach to GDB and which ELF file to load. This is done by setting up a
+launch configuration. Launch configurations are stored in `launch.json` in the
+`.vscode` directory in the project root. Add the following to `launch.json`:
+
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "gdb",
+            "request": "attach",
+            "name": "Attach to CloudPilot",
+            "executable": "./code0001.68k.elf",
+            "target": ":6667",
+            "remote": true,
+            "cwd": "${workspaceRoot}",
+            "gdbpath": "m68k-none-elf-gdb",
+            "valuesFormatting": "prettyPrinters"
+        }
+    ]
+}
+```
+
+The example above assumes that the ELF file is called `code0001.68k.elf` and
+that it is located in the root of your project. If the location of this
+file differs, please adjust the `executable` field accordingly to match the
+location of the ELF file. You will also need to adjust the path to the GDB
+executable in the `gdbpath` field to match your environment.
+
+### Debugging
+
+You should now be able to debug your app by, in this order:
+
+1. Running the `Run` task, which will build the app and launch CloudpilotEmu
+   Native with the correct command line options.
+1. After CloudpilotEmu Native has started, attaching to GDB by
+   selecting the `Attach to CloudPilot` launch configuration and pressing the
+   `Start Debugging` button in VSCode. You should now be able to debug your app
+   as usual, setting breakpoints in VSCode, step through the code, and etc.
+
+Remember to always close CloudPilot and re-run the `Run` task if you make any
+changes to your app's code, this will ensure that the latest version of the app
+is installed into the session image.
