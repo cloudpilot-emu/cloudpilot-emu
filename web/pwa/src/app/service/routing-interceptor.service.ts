@@ -1,10 +1,10 @@
-import { ActivatedRouteSnapshot, CanActivate, Router } from '@angular/router';
+import { ActivatedRouteSnapshot, Router } from '@angular/router';
 
 import { Injectable } from '@angular/core';
 import { LinkApi } from './link-api.service';
 
 @Injectable({ providedIn: 'root' })
-export class RoutingInterceptor implements CanActivate {
+export class RoutingInterceptor  {
     constructor(private linkApi: LinkApi, private router: Router) {}
 
     canActivate(route: ActivatedRouteSnapshot): boolean {

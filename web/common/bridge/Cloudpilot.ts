@@ -139,15 +139,15 @@ export class Cloudpilot {
         this.cloudpilot.RegisterPwmHandler(
             module.addFunction(
                 (frequency: number, dutyCycle: number) => this.pwmUpdateEvent.dispatch({ frequency, dutyCycle }),
-                'vdd'
-            )
+                'vdd',
+            ),
         );
 
         this.cloudpilot.RegisterProxyDisconnectHandler(
             module.addFunction(
                 (sessionIdPtr: number) => this.proxyDisconnectEvent.dispatch(module.UTF8ToString(sessionIdPtr)),
-                'vi'
-            )
+                'vi',
+            ),
         );
     }
 
@@ -160,7 +160,7 @@ export class Cloudpilot {
                 printErr: (x: string) => console.error(x),
                 ...(typeof urlOrFunction === 'string' ? { locateFile: () => urlOrFunction } : {}),
                 ...(typeof urlOrFunction === 'function' ? { instantiateWasm: urlOrFunction } : {}),
-            })
+            }),
         );
     }
 
@@ -551,9 +551,9 @@ export class Cloudpilot {
                             GetCurrentEntryContent: () =>
                                 this.copyOut(walker.GetCurrentEntryContent(), walker.GetCurrentEntrySize()),
                         },
-                        walker
-                    )
-                )
+                        walker,
+                    ),
+                ),
             );
         } finally {
             this.module.destroy(walker);
@@ -578,9 +578,9 @@ export class Cloudpilot {
                             GetCurrentEntryContent: () =>
                                 this.copyOut(walker.GetCurrentEntryContent(), walker.GetCurrentEntrySize()),
                         },
-                        walker
-                    )
-                )
+                        walker,
+                    ),
+                ),
             );
         } finally {
             this.module.destroy(walker);
@@ -721,7 +721,7 @@ export class Cloudpilot {
             return this.cloudpilot.AdoptCard(
                 key,
                 gunzipContext.ReleaseUncompressedData(),
-                gunzipContext.GetUncompressedSize() >>> 9
+                gunzipContext.GetUncompressedSize() >>> 9,
             );
         } finally {
             this.cloudpilot.Free(buffer);
@@ -819,7 +819,7 @@ export class Cloudpilot {
                     return val;
                 }
 
-                return (...args: Array<any>) => this.guard(() => val.apply(target, args));
+                return (...args: Array<any>) => this.guard(() => (val as Function).apply(target, args));
             },
         });
     }
