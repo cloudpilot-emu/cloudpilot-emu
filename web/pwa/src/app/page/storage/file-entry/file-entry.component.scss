@@ -4,7 +4,7 @@ ion-item {
 
 ion-icon.attribute-icon {
     color: var(--ion-color-step-600);
-    margin-left: 0.7em;
+    margin-left: 0.7em !important;
 
     &[name="lock-closed-outline"] {
         position: relative;
