@@ -65,7 +65,10 @@ const INVITATION_IOS = `
     providedIn: 'root',
 })
 export class PwaService {
-    constructor(private kvsService: KvsService, private alertService: AlertService) {
+    constructor(
+        private kvsService: KvsService,
+        private alertService: AlertService,
+    ) {
         void this.serviceWorkerKeepalive();
     }
 

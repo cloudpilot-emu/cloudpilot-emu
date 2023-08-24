@@ -1,5 +1,8 @@
 export class DynamicTimeout {
-    constructor(private timeoutRemaining: number, private cb: () => void) {
+    constructor(
+        private timeoutRemaining: number,
+        private cb: () => void,
+    ) {
         this.handle = window.setTimeout(this.onTimeout, timeoutRemaining);
     }
 

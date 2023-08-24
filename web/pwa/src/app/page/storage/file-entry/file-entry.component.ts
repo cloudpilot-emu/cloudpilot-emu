@@ -24,7 +24,7 @@ export class FileEntryComponent implements OnChanges {
     constructor(
         private actionSheetController: ActionSheetController,
         private popoverController: PopoverController,
-        private vfsService: VfsService
+        private vfsService: VfsService,
     ) {}
 
     ngOnChanges(changes: SimpleChanges): void {

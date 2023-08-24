@@ -13,7 +13,7 @@ export class EventHandlingService extends GenericEventHandlingService {
         canvasDisplayService: CanvasDisplayService,
         private modalWatcher: ModalWatcherService,
         private ngZone: NgZone,
-        private app: ApplicationRef
+        private app: ApplicationRef,
     ) {
         super(emulationService, canvasDisplayService);
     }
@@ -30,7 +30,7 @@ export class EventHandlingService extends GenericEventHandlingService {
         elt: E,
         type: K,
         handler: EventHandler<K>,
-        caputure?: boolean
+        caputure?: boolean,
     ) {
         this.ngZone.runOutsideAngular(() => elt.addEventListener(type, handler, caputure));
     }

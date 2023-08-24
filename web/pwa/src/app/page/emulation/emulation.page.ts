@@ -46,7 +46,7 @@ export class EmulationPage implements DragDropClient {
         private linkApi: LinkApi,
         public performanceWatchdogService: PerformanceWatchdogService,
         private cloudpilotService: CloudpilotService,
-        private dragDropService: DragDropService
+        private dragDropService: DragDropService,
     ) {}
 
     get cssWidth(): string {
@@ -138,7 +138,7 @@ export class EmulationPage implements DragDropClient {
             `,
             {
                 Help: () => this.showHelp(),
-            }
+            },
         );
     }
 
@@ -153,7 +153,7 @@ export class EmulationPage implements DragDropClient {
                 Your host is too slow to run your virtual device at full speed, and the clock
                 has been throttled in order to compensate. You can avoid this by reducing the speed of your
                 virtual device in the session settings.
-        `
+        `,
         );
     }
 
@@ -211,7 +211,7 @@ export class EmulationPage implements DragDropClient {
         if (!session) return;
 
         await this.kvsService.mutex.runExclusive(
-            () => this.kvsService.kvs.autoLockUI && this.autoLockUI && this.navigation.lock()
+            () => this.kvsService.kvs.autoLockUI && this.autoLockUI && this.navigation.lock(),
         );
 
         void this.canvasDisplayService.initialize(this.canvasRef.nativeElement, session).then(() => {
@@ -261,7 +261,7 @@ export class EmulationPage implements DragDropClient {
                 'Unable to install',
                 `Installation is currently not possible.`,
                 {},
-                'Cancel'
+                'Cancel',
             );
             return;
         }
@@ -272,7 +272,7 @@ export class EmulationPage implements DragDropClient {
                 'Unable to install',
                 `Please start a session in order to install ${url} .`,
                 {},
-                'Cancel'
+                'Cancel',
             );
         } else {
             void this.alertService.message(
@@ -281,7 +281,7 @@ export class EmulationPage implements DragDropClient {
                 {
                     OK: () => this.fileService.openUrl(url, (file) => this.installlationService.installFiles([file])),
                 },
-                'Cancel'
+                'Cancel',
             );
         }
     };

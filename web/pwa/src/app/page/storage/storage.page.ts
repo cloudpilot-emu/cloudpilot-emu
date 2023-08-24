@@ -15,7 +15,10 @@ import { isFirefox } from '@common/helper/browser';
     styleUrls: ['./storage.page.scss'],
 })
 export class StoragePage implements OnInit, DragDropClient {
-    constructor(private vfsService: VfsService, private dragDropService: DragDropService) {}
+    constructor(
+        private vfsService: VfsService,
+        private dragDropService: DragDropService,
+    ) {}
 
     ngOnInit(): void {
         this.vfsService.onReleaseCard.addHandler(this.onReleaseCard.bind(this));
@@ -57,7 +60,7 @@ export class StoragePage implements OnInit, DragDropClient {
                 onNavigateBreadcrumb: this.onNavigateBreadcrumb,
                 selfReference: {},
             },
-            { animated: this.animateNav }
+            { animated: this.animateNav },
         );
     }
 
@@ -73,7 +76,7 @@ export class StoragePage implements OnInit, DragDropClient {
                 onNavigateBreadcrumb: this.onNavigateBreadcrumb,
                 selfReference: {},
             },
-            { animated: this.animateNav }
+            { animated: this.animateNav },
         );
     };
 

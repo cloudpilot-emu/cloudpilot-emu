@@ -49,7 +49,7 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
 
     async updateStatistics(
         snapshotStatistics?: SnapshotStatistics,
-        emulationStatistics?: EmulationStatistics
+        emulationStatistics?: EmulationStatistics,
     ): Promise<void> {
         await this.clearStatistics();
 
@@ -97,7 +97,7 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
             top.frameDevice,
             this.layout.screenWidth.frameDevice,
             height.frameDevice,
-            'rgba(255,255,255,0.6)'
+            'rgba(255,255,255,0.6)',
         );
 
         const screenSize = deviceDimensions(this.session?.device ?? DEFAULT_DEVICE).screenSize;
@@ -126,8 +126,8 @@ export class CanvasDisplayService extends AbstractCanvasDisplayService {
             this.ctx!.fillText(
                 line,
                 this.layout.screenLeft.frameCanvas + fontScale * this.layout.scale,
-                top.frameCanvas + fontScale * this.layout.scale * (8 + i * 6)
-            )
+                top.frameCanvas + fontScale * this.layout.scale * (8 + i * 6),
+            ),
         );
     }
 

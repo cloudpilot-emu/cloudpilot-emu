@@ -32,19 +32,19 @@ export interface EventTarget {
     addEventListener<K extends keyof HTMLElementEventMap>(
         type: K,
         handler: EventHandler<K>,
-        options?: boolean | AddEventListenerOptions
+        options?: boolean | AddEventListenerOptions,
     ): void;
     removeEventListener<K extends keyof HTMLElementEventMap>(
         type: K,
         listener: EventHandler<K>,
-        options?: boolean | EventListenerOptions
+        options?: boolean | EventListenerOptions,
     ): void;
 }
 
 export class GenericEventHandlingService {
     constructor(
         protected emulationService: AbstractEmulationService,
-        protected canvasDisplayService: AbstractCanvasDisplayService
+        protected canvasDisplayService: AbstractCanvasDisplayService,
     ) {}
 
     bind(pointerEventTarget: EventTarget, keyEventTarget: EventTarget = window): void {
@@ -122,7 +122,7 @@ export class GenericEventHandlingService {
         elt: E,
         type: K,
         handler: EventHandler<K>,
-        caputure?: boolean
+        caputure?: boolean,
     ) {
         elt.addEventListener(type, handler, caputure);
     }
@@ -131,7 +131,7 @@ export class GenericEventHandlingService {
         elt: E,
         type: K,
         handler: EventHandler<K>,
-        caputure?: boolean
+        caputure?: boolean,
     ) {
         elt.removeEventListener(type, handler, caputure);
     }

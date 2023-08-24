@@ -11,7 +11,10 @@ const E_PERMISSION_DENIED = new Error('permission denied');
     providedIn: 'root',
 })
 export class ClipboardService {
-    constructor(private alertController: AlertController, private alertService: AlertService) {}
+    constructor(
+        private alertController: AlertController,
+        private alertService: AlertService,
+    ) {}
 
     isSupported(): boolean {
         return !!navigator.clipboard?.readText && !!navigator.clipboard?.writeText;

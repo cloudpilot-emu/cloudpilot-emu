@@ -34,7 +34,7 @@ export class SettingsPage implements OnInit {
         private kvsService: KvsService,
         public clipboardService: ClipboardService,
         private alertService: AlertService,
-        private proxyService: ProxyService
+        private proxyService: ProxyService,
     ) {}
 
     ngOnInit(): void {
@@ -59,7 +59,7 @@ export class SettingsPage implements OnInit {
         if (this.formGroup.get(fields.networkRedirection)?.value && !this.formGroup.get(fields.proxyServer)?.valid) {
             void this.alertService.message(
                 'Invalid proxy server',
-                'The proxy server you specified is invalid. Network redirection will be disabled.'
+                'The proxy server you specified is invalid. Network redirection will be disabled.',
             );
 
             this.formGroup.get(fields.networkRedirection)!.setValue(false);
@@ -156,7 +156,7 @@ export class SettingsPage implements OnInit {
             Audio will automatically turn on after the first interaction with the application
             (i.e. touch, click or keyboard event). This option will only take effect the next time
             Coudpilot is restarts.
-        `
+        `,
         );
     };
 

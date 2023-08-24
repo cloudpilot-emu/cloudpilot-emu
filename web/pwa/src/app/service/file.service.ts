@@ -33,7 +33,7 @@ export class FileService {
         private modalController: ModalController,
         private alertService: AlertService,
         private fetchService: FetchService,
-        private cloudpilotService: CloudpilotService
+        private cloudpilotService: CloudpilotService,
     ) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {
@@ -199,7 +199,7 @@ export class FileService {
                             onCancel: reject,
                         },
                     })
-                    .then((modal) => modal.present())
+                    .then((modal) => modal.present()),
             );
         } catch (e) {
             return;
@@ -235,7 +235,7 @@ export class FileService {
 
     private readFile(file: File): FileDescriptor {
         let contentPromise: Promise<Uint8Array> | undefined;
-        let content = async (): Promise<Uint8Array> => {
+        const content = async (): Promise<Uint8Array> => {
             if (contentPromise) return contentPromise;
 
             contentPromise = new Promise((resolve, reject) => {

@@ -19,7 +19,7 @@ export class UpdateService {
         private emulationService: EmulationService,
         private alertService: AlertService,
         private modalController: ModalController,
-        private updates: SwUpdate
+        private updates: SwUpdate,
     ) {
         void this.mutex.runExclusive(this.checkForDowngrade.bind(this));
     }

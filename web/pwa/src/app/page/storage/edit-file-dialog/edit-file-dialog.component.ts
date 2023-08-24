@@ -12,7 +12,10 @@ import { debounce } from '@pwa/helper/debounce';
     styleUrls: ['./edit-file-dialog.component.scss'],
 })
 export class EditFileDialogComponent implements OnInit {
-    constructor(private modalController: ModalController, private vfsService: VfsService) {}
+    constructor(
+        private modalController: ModalController,
+        private vfsService: VfsService,
+    ) {}
 
     ngOnInit(): void {
         if (!this.entry) return;
@@ -66,7 +69,7 @@ export class EditFileDialogComponent implements OnInit {
             .some(
                 (entry) =>
                     entry.name.toLocaleLowerCase() === control.value.toLocaleLowerCase() &&
-                    entry.name.toLocaleLowerCase() !== this.entry?.name?.toLocaleLowerCase()
+                    entry.name.toLocaleLowerCase() !== this.entry?.name?.toLocaleLowerCase(),
             )
             ? { name: 'already taken' }
             : null;

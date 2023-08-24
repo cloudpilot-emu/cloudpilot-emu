@@ -39,6 +39,7 @@ export class KvsService {
             await this.storageService.kvsSet(data);
 
             for (const key of Object.keys(data)) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (this.rawKvs as any)[key] = data[key as keyof Kvs];
             }
 
@@ -46,6 +47,7 @@ export class KvsService {
         });
 
     private async startInitialiation(): Promise<void> {
+        // eslint-disable-next-line @typescript-eslint/no-this-alias
         const self = this;
 
         try {

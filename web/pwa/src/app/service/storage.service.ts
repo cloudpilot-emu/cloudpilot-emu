@@ -42,24 +42,26 @@ export const E_LOCK_LOST = new Error('page lock lost');
 const E_VERSION_MISMATCH = new Error('version mismatch');
 const LOCK_TOKEN = uuid();
 
-function guard(): any {
-    return (target: any, propertyKey: string, desc: PropertyDescriptor) => {
+function guard(): MethodDecorator {
+    return (target: unknown, propertyKey: string | symbol, desc: PropertyDescriptor) => {
         const oldMethod = desc.value;
 
-        desc.value = async function (this: any) {
+        desc.value = async function (this: StorageService, ...args: Array<unknown>) {
             const errorService: ErrorService = this.errorService;
 
             try {
-                return await oldMethod.apply(this, arguments);
-            } catch (e: any) {
+                return await oldMethod.apply(this, args);
+            } catch (e: unknown) {
                 if (e instanceof StorageError) {
                     errorService.fatalIDBDead();
                 } else if (e === E_VERSION_MISMATCH) {
                     errorService.fatalVersionMismatch();
                 } else if (e === E_LOCK_LOST) {
                     errorService.fatalPageLockLost();
-                } else {
+                } else if (e instanceof Error) {
                     errorService.fatalBug(e?.message);
+                } else {
+                    errorService.fatalBug('unknown reason');
                 }
 
                 throw e;
@@ -76,8 +78,8 @@ function guard(): any {
 export class StorageService {
     constructor(
         private ngZone: NgZone,
-        private errorService: ErrorService,
-        private storageCardContext: StorageCardContext
+        public errorService: ErrorService,
+        private storageCardContext: StorageCardContext,
     ) {
         this.db = this.requestPersistentStorage().then(() => ngZone.runOutsideAngular(() => this.setupDb()));
     }
@@ -95,7 +97,7 @@ export class StorageService {
             OBJECT_STORE_ROM,
             OBJECT_STORE_STATE,
             OBJECT_STORE_MEMORY,
-            OBJECT_STORE_MEMORY_META
+            OBJECT_STORE_MEMORY_META,
         );
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
@@ -144,7 +146,7 @@ export class StorageService {
             OBJECT_STORE_ROM,
             OBJECT_STORE_STATE,
             OBJECT_STORE_MEMORY,
-            OBJECT_STORE_MEMORY_META
+            OBJECT_STORE_MEMORY_META,
         );
         const objectStoreSession = tx.objectStore(OBJECT_STORE_SESSION);
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
@@ -207,13 +209,13 @@ export class StorageService {
     @guard()
     async loadSession(
         session: Session,
-        checkCrc: boolean
+        checkCrc: boolean,
     ): Promise<[Uint8Array | undefined, Uint8Array | undefined, Uint8Array | undefined]> {
         const tx = await this.newTransaction(
             OBJECT_STORE_ROM,
             OBJECT_STORE_STATE,
             OBJECT_STORE_MEMORY,
-            OBJECT_STORE_MEMORY_META
+            OBJECT_STORE_MEMORY_META,
         );
         const objectStoreRom = tx.objectStore(OBJECT_STORE_ROM);
 
@@ -552,7 +554,7 @@ export class StorageService {
                 const memory = new Uint32Array(metadata.totalSize >>> 2);
 
                 const request = objectStoreMemory.openCursor(
-                    IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true)
+                    IDBKeyRange.bound([sessionId, 0], [sessionId + 1, 0], false, true),
                 );
 
                 request.onsuccess = () => {
@@ -567,13 +569,18 @@ export class StorageService {
                         memory
                             .subarray(iPage * 256, (iPage + 1) * 256)
                             .fill(
-                                compressedPage | (compressedPage << 8) | (compressedPage << 16) | (compressedPage << 24)
+                                compressedPage |
+                                    (compressedPage << 8) |
+                                    (compressedPage << 16) |
+                                    (compressedPage << 24),
                             );
                     } else {
                         memory
                             .subarray(iPage * 256, (iPage + 1) * 256)
                             .set(
-                                compressedPage.length === 1024 ? new Uint32Array(compressedPage.buffer) : compressedPage
+                                compressedPage.length === 1024
+                                    ? new Uint32Array(compressedPage.buffer)
+                                    : compressedPage,
                             );
                     }
 
@@ -675,6 +682,7 @@ export class StorageService {
     }
 
     private async requestPersistentStorage() {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (!(navigator.storage as any)?.persist || !(navigator.storage as any)?.persisted) {
             console.log('storage manager not supported; unable to request persistent storage');
         }

@@ -13,7 +13,7 @@ export class AppComponent implements AfterViewInit {
     constructor(
         private pwaService: PwaService,
         private updateService: UpdateService,
-        private bootstrapService: BootstrapService
+        private bootstrapService: BootstrapService,
     ) {}
 
     ngAfterViewInit(): void {

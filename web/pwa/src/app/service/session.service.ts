@@ -18,7 +18,7 @@ export class SessionService {
     constructor(
         private cloudpilotService: CloudpilotService,
         private storageService: StorageService,
-        private loadingController: LoadingController
+        private loadingController: LoadingController,
     ) {
         void this.updateSessionsFromStorage().then(() => (this.loading = false));
 
@@ -32,7 +32,7 @@ export class SessionService {
     async addSessionFromImage(
         image: SessionImage<SessionMetadata>,
         name: string,
-        presets: Partial<Session> = {}
+        presets: Partial<Session> = {},
     ): Promise<Session> {
         const session: Session = {
             hotsyncName: image.metadata?.hotsyncName,
@@ -63,7 +63,7 @@ export class SessionService {
         rom: Uint8Array,
         name: string,
         device: DeviceId,
-        presets: Partial<Session> = {}
+        presets: Partial<Session> = {},
     ): Promise<Session> {
         const session: Session = {
             hotsyncName: '',
@@ -103,7 +103,7 @@ export class SessionService {
 
     private async updateSessionsFromStorage(): Promise<void> {
         this.sessions = await this.updateMutex.runExclusive(async () =>
-            (await this.storageService.getAllSessions()).sort((x, y) => x.name.localeCompare(y.name))
+            (await this.storageService.getAllSessions()).sort((x, y) => x.name.localeCompare(y.name)),
         );
     }
 

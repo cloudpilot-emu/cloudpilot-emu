@@ -17,7 +17,7 @@ export class FetchService {
     constructor(
         private loadingController: LoadingController,
         private kvsService: KvsService,
-        private modalController: ModalController
+        private modalController: ModalController,
     ) {}
 
     async fetch(input: RequestInfo, init?: ExtendedRequestInit): Promise<Response> {
@@ -102,7 +102,7 @@ export class FetchService {
                         onCancel: () => resolve(false),
                     },
                 })
-                .then((modal) => modal.present())
+                .then((modal) => modal.present()),
         );
 
         void this.modalController.dismiss();

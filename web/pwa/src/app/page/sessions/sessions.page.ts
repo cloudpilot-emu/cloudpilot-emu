@@ -39,7 +39,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
         private router: Router,
         private cloudpilotService: CloudpilotService,
         private dragDropService: DragDropService,
-        private cd: ChangeDetectorRef
+        private cd: ChangeDetectorRef,
     ) {
         this.checkSessions = changeDetector(cd, [], () => this.sessionService.getSessions());
     }
@@ -184,7 +184,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
         }
 
         const sessionImage = (await this.cloudpilotService.cloudpilot).deserializeSessionImage<SessionMetadata>(
-            content
+            content,
         );
 
         if (sessionImage) {
@@ -226,7 +226,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
                     content,
                     settings.name,
                     settings.device,
-                    settings
+                    settings,
                 );
 
                 this.lastSessionTouched = session.id;
@@ -284,7 +284,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
             {
                 OK: () => this.fileService.openUrl(url, this.processFile.bind(this)),
             },
-            'Cancel'
+            'Cancel',
         );
     };
 

@@ -11,7 +11,10 @@ const EVENTS = ['touch', 'click', 'keydown'];
 
 @Injectable({ providedIn: 'root' })
 export class AutoEnableAudioService {
-    constructor(private kvsService: KvsService, private audioService: AudioService) {
+    constructor(
+        private kvsService: KvsService,
+        private audioService: AudioService,
+    ) {
         void this.initialize();
     }
 

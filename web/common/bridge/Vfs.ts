@@ -1,3 +1,9 @@
+// I am not sure why the ambient import is required here --- tsc does fine without it, but
+// the webpack build is unable to resolve emscripten with a simple ES6 style import.
+//
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
+
 import createModule, {
     CreateZipContextState,
     DeleteRecursiveContextState,
@@ -15,12 +21,6 @@ import createModule, {
 } from '@native-vfs/index';
 
 import { dirtyPagesSize } from './util';
-
-// I am not sure why the ambient import is required here --- tsc does fine without it, but
-// the webpack build is unable to resolve emscripten with a simple ES6 style import.
-//
-// tslint:disable-next-line: no-reference
-/// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 
 export { ReaddirError, VfsResult, WriteFileResult } from '@native-vfs/index';
 
@@ -92,7 +92,7 @@ export class Vfs {
             await createModule({
                 print: (x: string) => console.log(x),
                 printErr: (x: string) => console.error(x),
-            })
+            }),
         );
     }
 
@@ -168,7 +168,7 @@ export class Vfs {
         let attr = 0;
         let mask = 0;
 
-        let processAttribute = (value: boolean | undefined, flag: number) => {
+        const processAttribute = (value: boolean | undefined, flag: number) => {
             if (value === undefined) return;
             mask |= flag;
             if (value) attr |= flag;
@@ -182,7 +182,7 @@ export class Vfs {
     }
 
     stat(
-        path: string
+        path: string,
     ):
         | { result: VfsResult.FR_OK; entry: FileEntry }
         | { result: Exclude<VfsResult, VfsResult.FR_OK>; entry: undefined } {
@@ -307,7 +307,7 @@ export class Vfs {
             onFileCollision: (collisionPath: string, entry: string) => Promise<boolean>;
             onDirectoryCollision: (collisionPath: string, entry: string) => Promise<boolean>;
             onInvalidEntry: (entry: string) => Promise<void>;
-        }
+        },
     ): Promise<{ result: UnzipResult; entriesTotal: number; entriesSuccess: number }> {
         const dataPtr = this.copyIn(data);
         const context = new this.module.UnzipContext(TIMESLICE_SIZE_MSEC, destination, dataPtr, data.length);
@@ -374,7 +374,7 @@ export class Vfs {
         handlers: {
             onFileCollision: (collisionPath: string, entry: string) => Promise<boolean>;
             onDirectoryCollision: (collisionPath: string, entry: string) => Promise<boolean>;
-        }
+        },
     ): Promise<PasteResult> {
         const context = new this.module.PasteContext(TIMESLICE_SIZE_MSEC, destination, prefix);
         items.forEach((item) => context.AddFile(item));

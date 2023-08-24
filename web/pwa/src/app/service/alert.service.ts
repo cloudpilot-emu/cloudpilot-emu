@@ -8,7 +8,10 @@ import { debounce } from '@pwa/helper/debounce';
     providedIn: 'root',
 })
 export class AlertService {
-    constructor(private alertController: AlertController, private emulationState: EmulationStateService) {}
+    constructor(
+        private alertController: AlertController,
+        private emulationState: EmulationStateService,
+    ) {}
 
     async errorMessage(message: string) {
         const alert = await this.alertController.create({
@@ -26,7 +29,7 @@ export class AlertService {
         header: string,
         message: string,
         extraButtons: Record<string, () => void> = {},
-        closeButtonLabel = 'Close'
+        closeButtonLabel = 'Close',
     ) {
         const alert = await this.alertController.create({
             header,
@@ -137,7 +140,7 @@ export class AlertService {
             'Uncorrectable errors',
             'The filesystem on this card contains uncorrectable errors.',
             {},
-            'Continue'
+            'Continue',
         );
     }
 

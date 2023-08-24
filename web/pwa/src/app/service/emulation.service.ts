@@ -47,7 +47,7 @@ export class EmulationService extends AbstractEmulationService {
         private cloudpilotService: CloudpilotService,
         private storageCardService: StorageCardService,
         private storageCardContext: StorageCardContext,
-        private app: ApplicationRef
+        private app: ApplicationRef,
     ) {
         super();
 
@@ -98,7 +98,7 @@ export class EmulationService extends AbstractEmulationService {
 
                 if (!(await this.restoreSession(session, cloudpilot))) {
                     void this.alertService.errorMessage(
-                        'Failed to launch session. This may be the result of a bad ROM file.'
+                        'Failed to launch session. This may be the result of a bad ROM file.',
                     );
                     return false;
                 }
@@ -232,7 +232,7 @@ export class EmulationService extends AbstractEmulationService {
         }
 
         this.cloudpilotInstance.setHotsyncNameManagement(
-            !this.emulationState.getCurrentSession()?.dontManageHotsyncName
+            !this.emulationState.getCurrentSession()?.dontManageHotsyncName,
         );
     }
 
@@ -247,7 +247,7 @@ export class EmulationService extends AbstractEmulationService {
 causes the database to come up empty when the app starts. If this happens to you, please force close
 the app in the app switcher and reopen it; your data will be back on the second attempt.
 <br/><br/>
-Sorry for the inconvenience.`
+Sorry for the inconvenience.`,
                 );
             }
         }
@@ -256,7 +256,7 @@ Sorry for the inconvenience.`
     private async restoreSession(session: Session, cloudpilot: Cloudpilot): Promise<boolean> {
         const [rom, memory, state] = await this.storageService.loadSession(
             session,
-            this.kvsService.kvs.snapshotIntegrityCheck
+            this.kvsService.kvs.snapshotIntegrityCheck,
         );
         if (!rom) {
             throw new Error(`invalid ROM ${session.rom}`);

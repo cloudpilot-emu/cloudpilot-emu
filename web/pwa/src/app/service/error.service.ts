@@ -8,7 +8,10 @@ import { clearStoredSession } from '@pwa/helper/storedSession';
     providedIn: 'root',
 })
 export class ErrorService {
-    constructor(private alertService: AlertService, private ngZone: NgZone) {}
+    constructor(
+        private alertService: AlertService,
+        private ngZone: NgZone,
+    ) {}
 
     hasFatalError(): boolean {
         return this.fatalErrorTriggered;
@@ -24,7 +27,7 @@ export class ErrorService {
         Database was written by a newer version of CloudpilotEmu. Please wait for a few seconds before reloading
         while the latest version downloads in the background.
     `,
-            false
+            false,
         );
 
     fatalBug = (reason: string) => this.fatalWithMessage(`You encountered a bug in CloudpilotEmu:<br/><br/>${reason}.`);

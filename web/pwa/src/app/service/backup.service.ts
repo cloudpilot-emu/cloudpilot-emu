@@ -18,7 +18,7 @@ export class BackupService {
         private fileService: FileService,
         private emulationStateService: EmulationStateService,
         private alertService: AlertService,
-        private cloudpilotService: CloudpilotService
+        private cloudpilotService: CloudpilotService,
     ) {}
 
     async saveBackup(includeRomDatabases: boolean): Promise<void> {
@@ -28,7 +28,7 @@ export class BackupService {
         const loader = await this.loadingController.create({ message: 'Backing up...' });
         await loader.present();
 
-        let failedDatabases: Array<string> = [];
+        const failedDatabases: Array<string> = [];
         let archive: Uint8Array | undefined;
 
         await this.emulationService.pause();
@@ -70,7 +70,7 @@ export class BackupService {
                     'Save Backup': () =>
                         this.fileService.saveFile(filenameForBackup(currentSession, includeRomDatabases), archive!),
                 },
-                'Cancel'
+                'Cancel',
             );
         } else {
             this.fileService.saveFile(filenameForBackup(currentSession, includeRomDatabases), archive);

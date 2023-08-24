@@ -1,7 +1,7 @@
 // I am not sure why the ambient import is required here --- tsc does fine without it, but
 // the webpack build is unable to resolve emscripten with a simple ES6 style import.
 //
-// tslint:disable-next-line: no-reference
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 
 import createModule, {
@@ -120,11 +120,11 @@ export const SUPPORTED_DEVICES = [
     DeviceId.lp168,
 ];
 
-function guard(): any {
-    return (target: any, propertyKey: string, desc: PropertyDescriptor) => {
+function guard(): MethodDecorator {
+    return (target: unknown, propertyKey: string | symbol, desc: PropertyDescriptor) => {
         const oldMethod = desc.value;
 
-        desc.value = function (this: any, p1: any, p2: any) {
+        desc.value = function (this: Cloudpilot, p1: unknown, p2: unknown) {
             return this.guard(() => oldMethod.call(this, p1, p2));
         };
 
@@ -786,6 +786,22 @@ export class Cloudpilot {
         }
     }
 
+    public guard<T>(fn: () => T) {
+        if (this.amIdead) throw new Error('cloudpilot instance is dead');
+
+        try {
+            return fn();
+        } catch (e) {
+            this.amIdead = true;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            this.cloudpilot = undefined as any;
+
+            this.fatalErrorEvent.dispatch(e instanceof Error ? e : new Error('unknown error'));
+
+            throw e;
+        }
+    }
+
     private copyIn(data: Uint8Array): VoidPtr {
         const buffer = this.cloudpilot.Malloc(data.length);
         const bufferPtr = this.module.getPointer(buffer);
@@ -819,24 +835,10 @@ export class Cloudpilot {
                     return val;
                 }
 
-                return (...args: Array<any>) => this.guard(() => (val as Function).apply(target, args));
+                // eslint-disable-next-line @typescript-eslint/ban-types
+                return (...args: Array<unknown>) => this.guard(() => (val as Function).apply(target, args));
             },
         });
-    }
-
-    private guard<T>(fn: () => T) {
-        if (this.amIdead) throw new Error('cloudpilot instance is dead');
-
-        try {
-            return fn();
-        } catch (e) {
-            this.amIdead = true;
-            this.cloudpilot = undefined as any;
-
-            this.fatalErrorEvent.dispatch(e instanceof Error ? e : new Error('unknown error'));
-
-            throw e;
-        }
     }
 
     fatalErrorEvent = new Event<Error>();

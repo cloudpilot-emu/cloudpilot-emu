@@ -2,7 +2,10 @@ import { Directive, ElementRef, NgZone, OnDestroy } from '@angular/core';
 
 @Directive({ selector: '[appAutofocus]' })
 export class AutofocusDirective implements OnDestroy {
-    constructor(private el: ElementRef, private zone: NgZone) {
+    constructor(
+        private el: ElementRef,
+        private zone: NgZone,
+    ) {
         const input = (el.nativeElement as HTMLElement).querySelector('input');
         if (input) {
             input.focus();

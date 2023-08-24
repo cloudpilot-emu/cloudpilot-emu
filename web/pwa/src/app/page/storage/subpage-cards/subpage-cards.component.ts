@@ -34,7 +34,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         private errorService: ErrorService,
         private fileService: FileService,
         private loadingController: LoadingController,
-        cd: ChangeDetectorRef
+        cd: ChangeDetectorRef,
     ) {
         this.checkCards = changeDetector(cd, [], () => this.storageCardService.getAllCards());
     }
@@ -172,7 +172,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
 
         if (files.length > 1) {
             void this.alertService.errorMessage(
-                'Drop a single file system image in order to import it as a new memory card.'
+                'Drop a single file system image in order to import it as a new memory card.',
             );
 
             return;
@@ -258,7 +258,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
             await this.storageCardService.createCardFromImage(
                 cardSettings.name,
                 content,
-                !!cardSettings.dontFsckAutomatically
+                !!cardSettings.dontFsckAutomatically,
             );
         }
     };

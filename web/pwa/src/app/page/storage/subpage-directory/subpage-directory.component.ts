@@ -40,12 +40,12 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         private actionSheetController: ActionSheetController,
         private modalController: ModalController,
         private fileService: FileService,
-        private cd: ChangeDetectorRef
+        private cd: ChangeDetectorRef,
     ) {
         this.breadcrumbTriggerId = `breadcrumb-trigger-${BREADCRUMB_TRIGGER_INDEX++}`;
 
         this.checkEntries = changeDetector(cd, undefined, () =>
-            this.path !== undefined ? vfsService.readdir(this.path) : undefined
+            this.path !== undefined ? vfsService.readdir(this.path) : undefined,
         );
     }
 
@@ -329,18 +329,18 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
 
     private bytesInFilesMemoized = memoize(
         (entries: Array<FileEntry> | undefined): number =>
-            entries?.reduce((acc, entry) => acc + (entry.isDirectory ? 0 : entry.size), 0) ?? 0
+            entries?.reduce((acc, entry) => acc + (entry.isDirectory ? 0 : entry.size), 0) ?? 0,
     );
 
     private fileCountMemoized = memoize(
-        (entries: Array<FileEntry> | undefined): number => entries?.filter((entry) => !entry.isDirectory)?.length ?? 0
+        (entries: Array<FileEntry> | undefined): number => entries?.filter((entry) => !entry.isDirectory)?.length ?? 0,
     );
 
     private materializeSelection(): Array<FileEntry> | undefined {
         if (!this.path) return;
 
         const entriesByName = new Map<string, FileEntry>(
-            this.vfsService.readdir(this.path).map((entry) => [entry.name, entry])
+            this.vfsService.readdir(this.path).map((entry) => [entry.name, entry]),
         );
 
         return Array.from(this.selection)
@@ -351,7 +351,7 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
     private async extractZipArchive(file: FileDescriptor): Promise<void> {
         if (!/\.zip$/.test(file.name)) {
             await this.alertService.errorMessage(
-                'File does not have the correct extension. Only .zip files are supported'
+                'File does not have the correct extension. Only .zip files are supported',
             );
 
             return;

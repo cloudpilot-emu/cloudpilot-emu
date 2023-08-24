@@ -4,8 +4,11 @@ import { Injectable } from '@angular/core';
 import { LinkApi } from './link-api.service';
 
 @Injectable({ providedIn: 'root' })
-export class RoutingInterceptor  {
-    constructor(private linkApi: LinkApi, private router: Router) {}
+export class RoutingInterceptor {
+    constructor(
+        private linkApi: LinkApi,
+        private router: Router,
+    ) {}
 
     canActivate(route: ActivatedRouteSnapshot): boolean {
         if (route.url[0]?.path?.startsWith('install')) {

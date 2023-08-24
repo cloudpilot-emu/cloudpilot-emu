@@ -10,12 +10,13 @@
       ],
       "parserOptions": {
         "project": [
-          "tsconfig.embedded.json"
+          "tsconfig.eslint.json"
         ],
         "createDefaultProgram": true
       },
       "extends": [
         "plugin:@angular-eslint/recommended",
+        "plugin:@typescript-eslint/recommended",
         "plugin:@angular-eslint/template/process-inline-templates",
         "plugin:prettier/recommended"
       ],

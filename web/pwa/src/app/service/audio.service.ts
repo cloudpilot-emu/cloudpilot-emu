@@ -9,7 +9,7 @@ export class AudioService extends AbstractAudioService {
     constructor(
         emulationService: EmulationService,
         private kvs: KvsService,
-        private modalWatcher: ModalWatcherService
+        private modalWatcher: ModalWatcherService,
     ) {
         super(emulationService);
 

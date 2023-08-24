@@ -7,7 +7,10 @@ const INTERVAL = 1000;
 
 @Injectable({ providedIn: 'root' })
 export class PerformanceWatchdogService implements OnDestroy {
-    constructor(private emulationService: EmulationService, private ngZone: NgZone) {
+    constructor(
+        private emulationService: EmulationService,
+        private ngZone: NgZone,
+    ) {
         this.onEmulationStateChanged(this.emulationService.isRunning());
 
         this.emulationService.emulationStateChangeEvent.addHandler(this.onEmulationStateChanged);

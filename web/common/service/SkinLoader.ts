@@ -55,12 +55,12 @@ export class SkinLoader {
             .then((svg) =>
                 svg
                     ? Promise.all([svg, loadImage(svgToUrl(svg))])
-                    : Promise.reject(new Error(`failed to load skin ${elt}`))
+                    : Promise.reject(new Error(`failed to load skin ${elt}`)),
             );
 
         const prerenderedImage = prerender(
             skin.then(([, image]) => image),
-            skin.then(([svg]) => svg)
+            skin.then(([svg]) => svg),
         );
 
         this.images.set(elt, prerenderedImage);

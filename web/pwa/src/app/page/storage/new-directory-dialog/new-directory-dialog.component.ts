@@ -10,7 +10,10 @@ import { VfsService } from '@pwa/service/vfs.service';
     styleUrls: ['./new-directory-dialog.component.scss'],
 })
 export class NewDirectoryDialogComponent {
-    constructor(private vfsService: VfsService, private modalController: ModalController) {}
+    constructor(
+        private vfsService: VfsService,
+        private modalController: ModalController,
+    ) {}
 
     onCreateClick(): void {
         this.createDir();

@@ -12,7 +12,10 @@ import { StorageCardService } from '@pwa//service/storage-card.service';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StorageCardComponent {
-    constructor(private storageCardService: StorageCardService, private popoverController: PopoverController) {}
+    constructor(
+        private storageCardService: StorageCardService,
+        private popoverController: PopoverController,
+    ) {}
 
     async onContextmenu(e: MouseEvent): Promise<void> {
         e.stopPropagation();

@@ -142,7 +142,7 @@ export abstract class AbstractEmulationService {
         rom: Uint8Array,
         device: DeviceId,
         memory?: Uint8Array,
-        state?: Uint8Array
+        state?: Uint8Array,
     ): boolean {
         let memoryLoaded = false;
 
@@ -153,7 +153,7 @@ export abstract class AbstractEmulationService {
                 console.warn(`memory size is not a multiple of 4; ignoring image`);
             } else {
                 memoryLoaded = cloudpilot.loadMemory(
-                    new Uint32Array(memory.buffer, memory.byteOffset, memory.length >>> 2)
+                    new Uint32Array(memory.buffer, memory.byteOffset, memory.length >>> 2),
                 );
 
                 if (!memoryLoaded) {
@@ -399,7 +399,7 @@ export abstract class AbstractEmulationService {
         // running at ful speed
         this.speedAverage.push(
             (virtualTimePassed / (realTimePassed > 0 ? realTimePassed : virtualTimePassed / DUMMY_SPEED)) *
-                this.emulationSpeed
+                this.emulationSpeed,
         );
 
         // Normalize the speed an apply hysteresis
@@ -548,7 +548,7 @@ export abstract class AbstractEmulationService {
                         const buffer32 = new Uint32Array(
                             frame.buffer.buffer,
                             frame.buffer.byteOffset,
-                            frame.buffer.byteLength >>> 2
+                            frame.buffer.byteLength >>> 2,
                         );
 
                         if (frame.margin === 0) {
@@ -557,8 +557,8 @@ export abstract class AbstractEmulationService {
                                 .set(
                                     buffer32.subarray(
                                         frame.firstDirtyLine * frame.lineWidth,
-                                        frame.lineWidth * (frame.lastDirtyLine + 1)
-                                    )
+                                        frame.lineWidth * (frame.lastDirtyLine + 1),
+                                    ),
                                 );
                         } else {
                             let iDest = 0;
@@ -588,7 +588,7 @@ export abstract class AbstractEmulationService {
             0,
             0,
             frame.lineWidth,
-            frame.lastDirtyLine - frame.firstDirtyLine + 1
+            frame.lastDirtyLine - frame.firstDirtyLine + 1,
         );
 
         if (scaling) {
@@ -602,7 +602,7 @@ export abstract class AbstractEmulationService {
                 0,
                 frame.firstDirtyLine * frame.scaleY,
                 frame.lineWidth * frame.scaleX,
-                (frame.lastDirtyLine - frame.firstDirtyLine + 1) * frame.scaleY
+                (frame.lastDirtyLine - frame.firstDirtyLine + 1) * frame.scaleY,
             );
         }
 

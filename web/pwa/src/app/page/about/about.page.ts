@@ -10,7 +10,10 @@ import { VERSION } from '@pwa/helper/version';
     styleUrls: ['./about.page.scss'],
 })
 export class AboutPage {
-    constructor(private modalController: ModalController, private updates: SwUpdate) {}
+    constructor(
+        private modalController: ModalController,
+        private updates: SwUpdate,
+    ) {}
 
     get version(): string {
         return VERSION;

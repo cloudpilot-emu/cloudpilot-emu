@@ -9,7 +9,7 @@ import { TabsPageModule } from '@pwa/tabs/tabs.module';
 
 @Injectable()
 class ReplaceLocationStrategy extends HashLocationStrategy {
-    override pushState(state: any, title: string, url: string, query: string): void {
+    override pushState(state: unknown, title: string, url: string, query: string): void {
         this.replaceState(state, title, url, query);
     }
 }

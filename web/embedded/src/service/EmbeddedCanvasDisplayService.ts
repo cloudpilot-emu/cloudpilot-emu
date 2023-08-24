@@ -83,7 +83,7 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
             this.layout.buttonTop.frameCanvas + this.layout.buttonHeight.frameCanvas - indicatorSize - padding,
             indicatorSize,
             indicatorSize,
-            'rgba(200, 200, 200, 0.7)'
+            'rgba(200, 200, 200, 0.7)',
         );
 
         this.ctx.drawImage(
@@ -99,7 +99,7 @@ export class EmbeddedCanvasDisplayService extends AbstractCanvasDisplayService {
                 padding +
                 iconPadding,
             iconSize,
-            iconSize
+            iconSize,
         );
     }
 

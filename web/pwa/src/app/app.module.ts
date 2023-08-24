@@ -66,7 +66,7 @@ export class AppModule {
         sessionService: SessionService,
         kvs: KvsService,
         updateService: UpdateService,
-        autoEnableAudioService: AutoEnableAudioService
+        autoEnableAudioService: AutoEnableAudioService,
     ) {}
     /* eslint-enable @typescript-eslint/no-unused-vars */
 }

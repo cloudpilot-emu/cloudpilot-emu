@@ -341,7 +341,7 @@ export class EmulatorImpl implements Emulator {
         this.audioService = new EmbeddedAudioService(this.emulationService);
 
         this.emulationService.newFrameEvent.addHandler((canvas) =>
-            this.canvasDisplayService.updateEmulationCanvas(canvas)
+            this.canvasDisplayService.updateEmulationCanvas(canvas),
         );
 
         this.timesliceEvent.addHandler(this.onTimeslice);

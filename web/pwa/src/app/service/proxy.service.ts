@@ -29,7 +29,7 @@ export class ProxyService {
         private kvsService: KvsService,
         private alertService: AlertService,
         private ngZone: NgZone,
-        private fetchService: FetchService
+        private fetchService: FetchService,
     ) {}
 
     initialize(cloudpilot: Cloudpilot) {
@@ -127,7 +127,9 @@ export class ProxyService {
             }
 
             this.socket = new WebSocket(
-                `${url.replace(/^http/, 'ws')}/network-proxy/connect?token=${encodeURIComponent(handshakeResult.token)}`
+                `${url.replace(/^http/, 'ws')}/network-proxy/connect?token=${encodeURIComponent(
+                    handshakeResult.token,
+                )}`,
             );
             this.socket.binaryType = 'arraybuffer';
 

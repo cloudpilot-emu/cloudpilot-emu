@@ -12,7 +12,7 @@ export class TabsPage {
     constructor(
         private router: Router,
         private canvasDisplayService: CanvasDisplayService,
-        private emulationStateService: EmulationStateService
+        private emulationStateService: EmulationStateService,
     ) {
         window.addEventListener('resize', this.updateUseSmallUI);
         window.addEventListener('orientationchange', this.updateUseSmallUI);
@@ -49,7 +49,7 @@ export class TabsPage {
         this.useSmallUI =
             this.canvasArea(
                 window.innerHeight - headerHeight - tabbarHeight - canvasPadding,
-                window.innerWidth - canvasPadding
+                window.innerWidth - canvasPadding,
             ) <
             this.canvasArea(window.innerHeight - headerHeight - 25 - canvasPadding, window.innerWidth - canvasPadding);
     };

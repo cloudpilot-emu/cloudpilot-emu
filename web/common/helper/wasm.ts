@@ -1,6 +1,6 @@
 export type InstantiateFunction = (
     imports: WebAssembly.Imports,
-    callback: (instance: WebAssembly.Instance) => void
+    callback: (instance: WebAssembly.Instance) => void,
 ) => void;
 
 export function cachedInstantiate(binaryUrl: string): InstantiateFunction {

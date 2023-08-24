@@ -65,7 +65,7 @@ export class ContextMenuComponent {
         private alertService: AlertService,
         private alertController: AlertController,
         private storageService: StorageService,
-        private errorService: ErrorService
+        private errorService: ErrorService,
     ) {}
 
     async reset(): Promise<void> {
@@ -253,7 +253,7 @@ export class ContextMenuComponent {
             .getAllCards()
             .filter(
                 (card) =>
-                    cloudpilot.deviceSupportsCardSize(card.size) && !this.storageCardService.mountedInSession(card.id)
+                    cloudpilot.deviceSupportsCardSize(card.size) && !this.storageCardService.mountedInSession(card.id),
             );
 
         if (eligibleCards.length === 0) {
@@ -261,7 +261,7 @@ export class ContextMenuComponent {
                 'No image available',
                 `There is no ${
                     this.hasMemorystick ? 'memory stick' : 'SD card'
-                } image available. Please go to the "Storage" tab in order to create new one.`
+                } image available. Please go to the "Storage" tab in order to create new one.`,
             );
 
             return;

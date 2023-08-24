@@ -30,7 +30,7 @@ declare global {
         transaction(
             storeNames: string | string[],
             mode?: IDBTransactionMode,
-            options?: { durability?: 'default' | 'strict' | 'relaxed' }
+            options?: { durability?: 'default' | 'strict' | 'relaxed' },
         ): IDBTransaction;
     }
 }
@@ -51,7 +51,7 @@ export class SnapshotService {
         private errorService: ErrorService,
         private storageCardContext: StorageCardContext,
         private kvsService: KvsService,
-        private ngZone: NgZone
+        private ngZone: NgZone,
     ) {}
 
     async initialize(session: Session, cloudpilot: Cloudpilot): Promise<void> {
@@ -144,7 +144,7 @@ export class SnapshotService {
             'readwrite',
             {
                 durability: 'relaxed',
-            }
+            },
         );
 
         await this.storageService.acquireLock(tx);
@@ -158,7 +158,7 @@ export class SnapshotService {
 
         if (storageId) {
             storageCard = await complete(
-                tx.objectStore(OBJECT_STORE_STORAGE_CARD).index(INDEX_CARD_STORAGE_ID).get(storageId)
+                tx.objectStore(OBJECT_STORE_STORAGE_CARD).index(INDEX_CARD_STORAGE_ID).get(storageId),
             );
         }
 
@@ -170,7 +170,7 @@ export class SnapshotService {
             let timestampBlockingEnd = 0;
             let pages = 0;
 
-            let timeout = new DynamicTimeout(STATIC_TIMEOUT_MSEC, () => {
+            const timeout = new DynamicTimeout(STATIC_TIMEOUT_MSEC, () => {
                 isTimeout = true;
 
                 try {

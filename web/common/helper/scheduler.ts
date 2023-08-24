@@ -44,7 +44,10 @@ export class AnimationFrameScheduler implements Scheduler {
 }
 
 export class TimeoutScheduler implements Scheduler {
-    constructor(private callback: (timestamp: number) => void, private fps = 60) {}
+    constructor(
+        private callback: (timestamp: number) => void,
+        private fps = 60,
+    ) {}
 
     schedule(): void {
         if (this.handle !== undefined) return;
@@ -52,10 +55,13 @@ export class TimeoutScheduler implements Scheduler {
         const now = performance.now();
         const nextTick = (Math.ceil((now / 1000) * this.fps) * 1000) / this.fps;
 
-        this.handle = setTimeout(() => {
-            this.handle = undefined;
-            this.callback(performance.now());
-        }, Math.max(nextTick - now, 0));
+        this.handle = setTimeout(
+            () => {
+                this.handle = undefined;
+                this.callback(performance.now());
+            },
+            Math.max(nextTick - now, 0),
+        );
     }
 
     cancel(): void {

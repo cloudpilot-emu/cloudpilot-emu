@@ -23,7 +23,7 @@ export class VfsService {
         private fileService: FileService,
         private loadingController: LoadingController,
         private alertController: AlertController,
-        private alertService: AlertService
+        private alertService: AlertService,
     ) {
         void this.vfs.then((instance) => (this.vfsInstance = instance));
     }
@@ -134,7 +134,7 @@ export class VfsService {
 
             this.directoryCache.set(
                 normalizedPath,
-                readdirResult.error === ReaddirError.none ? readdirResult.entries : []
+                readdirResult.error === ReaddirError.none ? readdirResult.entries : [],
             );
         }
 
@@ -235,15 +235,15 @@ export class VfsService {
                     await this.alertService.message(
                         'Warning',
                         `The following files were not archived correctly due to errors: <br><br>${failedItems.join(
-                            '<br>'
-                        )}`
+                            '<br>',
+                        )}`,
                     );
                 } else {
                     await this.alertService.message(
                         'Warning',
                         `The following files were not archived correctly due to errors: <br><br>${failedItems
                             .slice(0, 3)
-                            .join('<br>')}<br><br> and ${failedItems.length - 3} other file`
+                            .join('<br>')}<br><br> and ${failedItems.length - 3} other file`,
                     );
                 }
             }
@@ -418,7 +418,7 @@ export class VfsService {
                     ${status}
                     <br><br>
                     The archive contains ${pluralize(entriesTotal)}, but none could be unpacked.
-                `
+                `,
                 );
             }
 
@@ -429,9 +429,9 @@ export class VfsService {
                     ${status}
                     <br><br>
                     ${ucFirst(pluralize(entriesSuccess))} unpacked succesfully, but ${pluralize(
-                        entriesFailed
+                        entriesFailed,
                     )} could not be unpacked.
-                `
+                `,
                 );
             }
         } finally {
@@ -461,8 +461,8 @@ export class VfsService {
                 default:
                     break;
             }
-        } catch (e: any) {
-            await this.alertService.errorMessage(e?.message || 'Unknown error.');
+        } catch (e: unknown) {
+            await this.alertService.errorMessage(e instanceof Error ? e.message : 'Unknown error.');
         } finally {
             void loader.dismiss();
         }
@@ -487,9 +487,9 @@ export class VfsService {
                 await this.alertService.message(
                     `Skipped files`,
                     `Successfully added ${pluralize(files.length - failed.length)} to card. ${ucFirst(
-                        pluralize(failed.length)
+                        pluralize(failed.length),
                     )} could not be added.
-                `
+                `,
                 );
             }
         } finally {
@@ -622,7 +622,7 @@ export class VfsService {
 
     private async unpackArchiveUnchecked(
         zip: Uint8Array,
-        destination: string
+        destination: string,
     ): Promise<{ result: UnzipResult; entriesTotal: number; entriesSuccess: number }> {
         const vfs = await this.vfs;
 
@@ -655,7 +655,7 @@ export class VfsService {
             `${sourceSlot}:${this.normalizePath(this.clipboard.prefix)}`,
             this.clipboard.items.map((item) => item.name),
             this.clipboard.operation,
-            this.collisionHandlers()
+            this.collisionHandlers(),
         );
 
         if (result === PasteResult.ioError) return result;
@@ -710,7 +710,7 @@ export class VfsService {
 
     private async overwriteFileDialog(
         name: string,
-        type: 'file' | 'directory'
+        type: 'file' | 'directory',
     ): Promise<{ overwrite: boolean; rememberChoice: boolean }> {
         let overwrite = false;
         let rememberChoice = false;

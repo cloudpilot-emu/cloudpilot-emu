@@ -45,7 +45,7 @@ export class EmbeddedEmulationService extends AbstractEmulationService {
                 sessionImage.rom,
                 sessionImage.deviceId,
                 sessionImage.memory,
-                sessionImage.savestate
+                sessionImage.savestate,
             )
         ) {
             this.session = session;

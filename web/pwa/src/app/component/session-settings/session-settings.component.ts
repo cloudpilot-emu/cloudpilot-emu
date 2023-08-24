@@ -22,7 +22,10 @@ export interface SessionSettings {
     styleUrls: ['./session-settings.component.scss'],
 })
 export class SessionSettingsComponent implements OnInit {
-    constructor(private sessionService: SessionService, private alertService: AlertService) {}
+    constructor(
+        private sessionService: SessionService,
+        private alertService: AlertService,
+    ) {}
 
     get formControlName(): AbstractControl {
         return this.formGroup.get('name')!;
@@ -80,7 +83,7 @@ export class SessionSettingsComponent implements OnInit {
 
                 void this.alertService.message(
                     'Reset required',
-                    'Please reset the virtual device in order to make sure that the hotsync name is synced properly again.'
+                    'Please reset the virtual device in order to make sure that the hotsync name is synced properly again.',
                 );
             } else {
                 this.session.hotsyncName =
@@ -128,7 +131,7 @@ export class SessionSettingsComponent implements OnInit {
                 disabled: this.availableDevices.length === 1,
             }),
             speed: new UntypedFormControl(
-                (this.session.speed || 1) >= 1 ? (this.session.speed || 1) - 1 : 1 - 1 / this.session.speed!
+                (this.session.speed || 1) >= 1 ? (this.session.speed || 1) - 1 : 1 - 1 / this.session.speed!,
             ),
             orientation: new UntypedFormControl(this.session.deviceOrientation || DeviceOrientation.portrait),
         });

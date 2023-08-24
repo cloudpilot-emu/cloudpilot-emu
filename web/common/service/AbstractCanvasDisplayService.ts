@@ -76,7 +76,7 @@ function calculateLayout(device: DeviceId): Layout {
                 dimensions.height +
                 separatorHeight.frameDevice +
                 dimensions.silkscreenHeight +
-                buttonHeight.frameDevice
+                buttonHeight.frameDevice,
         ),
         width: dist(2 * borderWidth.frameDevice + dimensions.width),
         screenHeight: dist(dimensions.height),
@@ -93,7 +93,7 @@ function calculateLayout(device: DeviceId): Layout {
         buttonWidth: buttonHeight,
         buttonTop: coord(dimensions.height + separatorHeight.frameDevice + dimensions.silkscreenHeight),
         buttonBottom: coord(
-            dimensions.height + separatorHeight.frameDevice + dimensions.silkscreenHeight + buttonHeight.frameDevice
+            dimensions.height + separatorHeight.frameDevice + dimensions.silkscreenHeight + buttonHeight.frameDevice,
         ),
     };
 }
@@ -276,7 +276,7 @@ export abstract class AbstractCanvasDisplayService {
                 this.layout.silkscreenHeight.frameDevice +
                 this.layout.separatorHeight.frameDevice +
                 this.layout.buttonHeight.frameDevice,
-            this.backgroundColor()
+            this.backgroundColor(),
         );
 
         this.drawEmulationCanvas();
@@ -295,7 +295,7 @@ export abstract class AbstractCanvasDisplayService {
             this.layout.screenLeft.frameCanvas,
             this.layout.buttonTop.frameCanvas,
             this.layout.screenWidth.frameCanvas,
-            this.layout.buttonHeight.frameCanvas
+            this.layout.buttonHeight.frameCanvas,
         );
 
         if (activeButtons.includes(PalmButton.cal)) {
@@ -304,7 +304,7 @@ export abstract class AbstractCanvasDisplayService {
                 this.layout.buttonTop.frameDevice,
                 this.layout.buttonWidth.frameDevice,
                 this.layout.buttonHeight.frameDevice,
-                BACKGROUND_ACTIVE_BUTTON
+                BACKGROUND_ACTIVE_BUTTON,
             );
         }
         if (activeButtons.includes(PalmButton.phone)) {
@@ -313,7 +313,7 @@ export abstract class AbstractCanvasDisplayService {
                 this.layout.buttonTop.frameDevice,
                 this.layout.buttonWidth.frameDevice,
                 this.layout.buttonHeight.frameDevice,
-                BACKGROUND_ACTIVE_BUTTON
+                BACKGROUND_ACTIVE_BUTTON,
             );
         }
         if (activeButtons.includes(PalmButton.todo)) {
@@ -322,7 +322,7 @@ export abstract class AbstractCanvasDisplayService {
                 this.layout.buttonTop.frameDevice,
                 this.layout.buttonWidth.frameDevice,
                 this.layout.buttonHeight.frameDevice,
-                BACKGROUND_ACTIVE_BUTTON
+                BACKGROUND_ACTIVE_BUTTON,
             );
         }
         if (activeButtons.includes(PalmButton.notes)) {
@@ -331,7 +331,7 @@ export abstract class AbstractCanvasDisplayService {
                 this.layout.buttonTop.frameDevice,
                 this.layout.buttonWidth.frameDevice,
                 this.layout.buttonHeight.frameDevice,
-                BACKGROUND_ACTIVE_BUTTON
+                BACKGROUND_ACTIVE_BUTTON,
             );
         }
         if (activeButtons.includes(PalmButton.up)) {
@@ -340,7 +340,7 @@ export abstract class AbstractCanvasDisplayService {
                 this.layout.buttonTop.frameDevice,
                 this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
                 this.layout.buttonHeight.frameDevice / 2,
-                BACKGROUND_ACTIVE_BUTTON
+                BACKGROUND_ACTIVE_BUTTON,
             );
         }
         if (activeButtons.includes(PalmButton.down)) {
@@ -349,7 +349,7 @@ export abstract class AbstractCanvasDisplayService {
                 this.layout.buttonTop.frameDevice + this.layout.buttonHeight.frameDevice / 2,
                 this.layout.screenWidth.frameDevice - 4 * this.layout.buttonWidth.frameDevice,
                 this.layout.buttonHeight.frameDevice / 2,
-                BACKGROUND_ACTIVE_BUTTON
+                BACKGROUND_ACTIVE_BUTTON,
             );
         }
     }
@@ -396,7 +396,7 @@ export abstract class AbstractCanvasDisplayService {
             this.layout.silkscreenTop.frameDevice,
             this.layout.screenWidth.frameDevice,
             this.layout.silkscreenHeight.frameDevice,
-            BACKGROUND_COLOR_SILKSCREEN
+            BACKGROUND_COLOR_SILKSCREEN,
         );
 
         this.ctx.imageSmoothingEnabled = true;
@@ -407,7 +407,7 @@ export abstract class AbstractCanvasDisplayService {
             this.layout.borderWidth.frameCanvas,
             this.layout.silkscreenTop.frameCanvas,
             this.layout.screenWidth.frameCanvas,
-            this.layout.silkscreenHeight.frameCanvas
+            this.layout.silkscreenHeight.frameCanvas,
         );
     }
 
@@ -421,7 +421,7 @@ export abstract class AbstractCanvasDisplayService {
             this.layout.screenLeft.frameCanvas,
             this.layout.screenTop.frameCanvas,
             this.layout.screenWidth.frameCanvas,
-            this.layout.screenHeight.frameCanvas
+            this.layout.screenHeight.frameCanvas,
         );
     }
 
@@ -433,7 +433,7 @@ export abstract class AbstractCanvasDisplayService {
             this.layout.borderWidth.frameCanvas + this.layout.scale * x,
             this.layout.borderWidth.frameCanvas + this.layout.scale * y,
             this.layout.scale * width,
-            this.layout.scale * height
+            this.layout.scale * height,
         );
         this.ctx.fillStyle = style;
         this.ctx.fill();

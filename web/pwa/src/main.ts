@@ -7,6 +7,7 @@ import { hasStoredSession } from '@pwa/helper/storedSession';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 
 // Work around issue with webpack and deep-equal
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).global = window;
 
 bootstrapLinkApi();
@@ -26,7 +27,7 @@ if (environment.production) {
 window.addEventListener('orientationchange', () =>
     setTimeout(() => {
         document.body.style.height = window.innerHeight + 'px';
-    }, 100)
+    }, 100),
 );
 
 window.addEventListener('scroll', () => window.scrollTo(0, 0));

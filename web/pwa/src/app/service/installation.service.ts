@@ -56,7 +56,7 @@ class InstallationContext {
         private cloudpilotService: CloudpilotService,
         private alertController: AlertController,
         private snapshotService: SnapshotService,
-        private files: Array<FileDescriptor>
+        private files: Array<FileDescriptor>,
     ) {}
 
     async run(): Promise<[Array<string>, Array<string>, Array<string>]> {
@@ -117,7 +117,7 @@ class InstallationContext {
                 if (this.installedDatabases.has(dbName)) {
                     await this.errorDialog(
                         'Duplicate item',
-                        `${name} overwrites previously installed database ${this.installedDatabases.get(dbName)}`
+                        `${name} overwrites previously installed database ${this.installedDatabases.get(dbName)}`,
                     );
                 }
 
@@ -217,7 +217,7 @@ export class InstallationService {
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
         private alertService: AlertService,
-        private alertController: AlertController
+        private alertController: AlertController,
     ) {}
 
     async installFiles(files: Array<FileDescriptor>): Promise<void> {
@@ -238,7 +238,7 @@ export class InstallationService {
                 this.cloudpilotService,
                 this.alertController,
                 this.snapshotService,
-                files
+                files,
             );
             [filesSuccess, filesRequireReset, filesFail] = await installationContext.run();
         } finally {
@@ -267,7 +267,7 @@ export class InstallationService {
         void this.alertService.message(
             header,
             message,
-            filesRequireReset.length > 0 ? { 'Reset now': () => this.emulationService.reset() } : undefined
+            filesRequireReset.length > 0 ? { 'Reset now': () => this.emulationService.reset() } : undefined,
         );
     }
 

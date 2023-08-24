@@ -94,7 +94,7 @@ export class StorageCardService {
         private errorService: ErrorService,
         private fileService: FileService,
         private vfsService: VfsService,
-        private storageCardContext: StorageCardContext
+        private storageCardContext: StorageCardContext,
     ) {
         this.vfsService.setStorageCardService(this);
         void this.updateCardsFromDB().then(() => (this.loading = false));
@@ -225,7 +225,7 @@ export class StorageCardService {
                 'Card is attached',
                 `This card needs to be ejected from session '${session.name}' before it can be checked.`,
                 { 'Eject now': () => (forceEject = true) },
-                'Cancel'
+                'Cancel',
             );
 
             if (forceEject) {
@@ -259,7 +259,7 @@ export class StorageCardService {
                         card.dontFsckAutomatically ? '' : '  that need to be fixed before it can be used'
                     }. Do you want to fix them now?`,
                     { 'Fix now': () => (fixErrors = true) },
-                    'Cancel'
+                    'Cancel',
                 );
 
                 if (fixErrors) {
@@ -292,7 +292,7 @@ export class StorageCardService {
                 'Card is attached',
                 `This card needs to be ejected from session '${session.name}' before it can be browsed.`,
                 { 'Eject now': () => (forceEject = true) },
-                'Cancel'
+                'Cancel',
             );
 
             if (forceEject) {
@@ -338,9 +338,9 @@ export class StorageCardService {
         const loader = await this.loadingController.create({ message: 'Exporting...' });
         let cardData: Uint32Array | undefined;
 
-        let gzipContext = gzip ? await GzipContext.create(card.size) : undefined;
+        const gzipContext = gzip ? await GzipContext.create(card.size) : undefined;
         if (gzipContext) {
-            let buffer = gzipContext.getBuffer();
+            const buffer = gzipContext.getBuffer();
             cardData = new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength >> 2);
         }
 
@@ -386,7 +386,7 @@ export class StorageCardService {
             name,
             gzipContext
                 ? gzipContext.getGzipData()
-                : new Uint8Array(cardData!.buffer, cardData!.byteOffset, cardData!.length << 2)
+                : new Uint8Array(cardData!.buffer, cardData!.byteOffset, cardData!.length << 2),
         );
     }
 
@@ -404,7 +404,7 @@ export class StorageCardService {
 
     private async updateCardsFromDB(): Promise<void> {
         this.cards = await this.updateMutex.runExclusive(async () =>
-            (await this.storageService.getAllStorageCards()).sort((x, y) => x.name.localeCompare(y.name))
+            (await this.storageService.getAllStorageCards()).sort((x, y) => x.name.localeCompare(y.name)),
         );
     }
 
@@ -437,7 +437,7 @@ export class StorageCardService {
                             action === 'insert' ? 'inserted' : 'browsed'
                         }. Do you want to fix them now?`,
                         { 'Fix now': () => (mountNow = true) },
-                        'Cancel'
+                        'Cancel',
                     );
 
                     if (!mountNow) {
@@ -460,7 +460,7 @@ export class StorageCardService {
                     if (action === 'vfs') {
                         await this.alertService.message(
                             'Card unformatted',
-                            'This card is unformatted and cannot be browsed. Insert it into a device and format it.'
+                            'This card is unformatted and cannot be browsed. Insert it into a device and format it.',
                         );
 
                         return false;
@@ -471,7 +471,7 @@ export class StorageCardService {
                         'Card requires check',
                         `This card needs to be checked before it can be ${
                             action === 'insert' ? 'inserted' : 'browsed'
-                        }.`
+                        }.`,
                     );
 
                     return false;
@@ -484,7 +484,7 @@ export class StorageCardService {
                         'Uncorrectable errors',
                         `The filesystem on this card contains uncorrectable errors. Writing could cause further damage. Do you want to insert it nevertheless?`,
                         { 'Insert card': () => (mountNow = true) },
-                        'Cancel'
+                        'Cancel',
                     );
 
                     if (!mountNow) return false;
@@ -503,7 +503,7 @@ export class StorageCardService {
                 if (!(await this.mountCardForBrowsing(id, mountReadonly, fsckContext?.getImageData()))) {
                     await this.alertService.message(
                         'Failed to mount card',
-                        'The card could not be mounted for browsing.'
+                        'The card could not be mounted for browsing.',
                     );
                 }
             }
@@ -582,7 +582,7 @@ export class StorageCardService {
                 cardId,
                 context.getImageData(),
                 context.getDirtyPages(),
-                CardOwner.fstools
+                CardOwner.fstools,
             );
             await this.storageService.updateStorageCardPartial(cardId, { status: StorageCardStatus.clean });
 
@@ -594,7 +594,7 @@ export class StorageCardService {
 
     private async fsckNewCard(
         data: Uint32Array,
-        cardWithoutId: Omit<StorageCard, 'id'>
+        cardWithoutId: Omit<StorageCard, 'id'>,
     ): Promise<[Uint32Array, Omit<StorageCard, 'id'>]> {
         const loader = await this.loadingController.create({ message: 'Checking card...' });
         let fsckContext: FsckContext;
@@ -621,7 +621,7 @@ export class StorageCardService {
                     'Filesystem errors',
                     'The filesystem on this card contains errors that must be fixed before the card can be used. Do you want to fix them now?',
                     { 'Fix now': () => (fix = true) },
-                    'Skip'
+                    'Skip',
                 );
 
                 return fix

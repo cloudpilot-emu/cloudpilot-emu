@@ -1,7 +1,7 @@
 // I am not sure why the ambient import is required here --- tsc does fine without it, but
 // the webpack build is unable to resolve emscripten with a simple ES6 style import.
 //
-// tslint:disable-next-line: no-reference
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 
 import createModule, {
@@ -53,7 +53,7 @@ export class MkfsContext {
                 print: (x: string) => console.log(x),
                 printErr: (x: string) => console.error(x),
                 instantiateWasm,
-            })
+            }),
         );
     }
 
@@ -73,7 +73,10 @@ export class MkfsContext {
 }
 
 export class FsckContext {
-    private constructor(private module: Module, size: number) {
+    private constructor(
+        private module: Module,
+        size: number,
+    ) {
         this.nativeContext = new module.FsckContext(size >>> 9);
     }
 
@@ -124,7 +127,10 @@ export class FsckContext {
 }
 
 export class GunzipContext {
-    private constructor(private module: Module, gzippedData: Uint8Array) {
+    private constructor(
+        private module: Module,
+        gzippedData: Uint8Array,
+    ) {
         const fsTools = new module.FSTools();
         const buffer = fsTools.Malloc(gzippedData.length);
         const bufferPtr = module.getPointer(buffer);
@@ -170,7 +176,10 @@ export class GunzipContext {
 }
 
 export class GzipContext {
-    private constructor(private module: Module, private uncompressedDataSize: number) {
+    private constructor(
+        private module: Module,
+        private uncompressedDataSize: number,
+    ) {
         const fsTools = new module.FSTools();
         const buffer = fsTools.Malloc(uncompressedDataSize);
         this.uncompressedDataPtr = module.getPointer(buffer);
@@ -193,7 +202,7 @@ export class GzipContext {
     getBuffer(): Uint8Array {
         return this.module.HEAPU8.subarray(
             this.uncompressedDataPtr,
-            this.uncompressedDataPtr + this.uncompressedDataSize
+            this.uncompressedDataPtr + this.uncompressedDataSize,
         );
     }
 
