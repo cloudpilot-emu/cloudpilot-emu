@@ -87,6 +87,10 @@ ion-modal {
     }
 }
 
+.alert-radio-group .alert-button-inner {
+    word-break: break-word;
+}
+
 @media only screen and (min-width: 768px) and (min-height: 600px) {
     ion-modal {
         padding-left: 0;
