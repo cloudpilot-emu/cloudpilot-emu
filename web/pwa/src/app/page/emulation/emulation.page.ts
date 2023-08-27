@@ -102,6 +102,7 @@ export class EmulationPage implements DragDropClient {
                 showHelp: () => this.showHelp(),
             },
             arrow: false,
+            translucent: true,
         });
 
         void popover.present();
