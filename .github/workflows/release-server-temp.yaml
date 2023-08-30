@@ -12,7 +12,6 @@ env:
 jobs:
   build-server-linux:
     runs-on: ubuntu-22.04
-    needs: wait-for-release
     steps:
       - name: Install Python
         uses: actions/setup-python@v2
@@ -35,7 +34,6 @@ jobs:
           gh release upload ${{ env.TAG }} ${{ env.ARCHIVE_LINUX }}
   build-server-windows:
     runs-on: windows-2022
-    needs: wait-for-release
     steps:
       - name: Install Python
         uses: actions/setup-python@v2
@@ -58,7 +56,6 @@ jobs:
           gh release upload ${{ env.TAG }} ${{ env.ARCHIVE_WINDOWS }}
   build-server-macos:
     runs-on: macos-12
-    needs: wait-for-release
     steps:
       - name: Install Python
         uses: actions/setup-python@v2
