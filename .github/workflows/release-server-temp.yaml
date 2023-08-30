@@ -1,16 +1,14 @@
-name: Build and release Cloudpilot server binaries
-on:
-  push:
-    tags:
-      - "*"
+name: Build and release Cloudpilot server binaries / temporary 1.8.2
+on: workflow_dispatch
+
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   PYTHON_VERSION: 3.9
-  TAG: ${GITHUB_REF##*/}
-  SERVER_DIRECTORY: cloudpilot-server-${GITHUB_REF##*/}
-  ARCHIVE_MACOS: cloudpilot-server-${GITHUB_REF##*/}-macos-x64.zip
-  ARCHIVE_WINDOWS: cloudpilot-server-${GITHUB_REF##*/}-win-x64.zip
-  ARCHIVE_LINUX: cloudpilot-server-${GITHUB_REF##*/}-linux-x64.tar.gz
+  TAG: 1.8.2
+  SERVER_DIRECTORY: cloudpilot-server-1.8.2
+  ARCHIVE_MACOS: cloudpilot-server-1.8.2-macos-x64.zip
+  ARCHIVE_WINDOWS: cloudpilot-server-1.8.2-win-x64.zip
+  ARCHIVE_LINUX: cloudpilot-server-1.8.2-linux-x64.tar.gz
 jobs:
   wait-for-release:
     runs-on: ubuntu-22.04
