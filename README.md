@@ -67,6 +67,7 @@ The following devices are currently emulated:
 -   Sony PEG-T650C series
 -   Sony PEG-NR70 series
 -   Acer S1x
+-   Legend P168 (no support for SD card)
 
 ## Other versions
 
@@ -195,9 +196,8 @@ on `http://localhost:4200` by running
 
 ## Native build
 
-There is a simple native build for debugging CloudpilotEmu outside the browser. You
-need SDL2 and a recent version of Boost in order to build. On Ubuntu the following
-will give you the necessary packages:
+Building the native version of CloudpilotEmu requires SDL2 and a recent version
+of Boost. On Ubuntu the following will give you the necessary packages:
 
 ```
     $ apt-get install libreadline-dev libboost-all-dev libsdl2-image-dev libsdl2-dev
@@ -209,9 +209,7 @@ The build is accomplished with
     $ make bin
 ```
 
-and you will up with a `src/cloudpilot` binary. The binary takes a ROM file or
-session image as an argument. There is a rudemtary readline CLI with tab
-completion that allows you to save session images and reset the virtual device.
+and you will up with a `src/cloudpilot` binary.
 
 # Credits
 
