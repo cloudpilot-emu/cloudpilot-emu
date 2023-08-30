@@ -10,16 +10,6 @@ env:
   ARCHIVE_WINDOWS: cloudpilot-server-1.8.2-win-x64.zip
   ARCHIVE_LINUX: cloudpilot-server-1.8.2-linux-x64.tar.gz
 jobs:
-  wait-for-release:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Wait for relase to be created
-        uses: lewagon/wait-on-check-action@v1.0.0
-        with:
-          ref: ${{ github.ref }}
-          check-name: Create release
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
   build-server-linux:
     runs-on: ubuntu-22.04
     needs: wait-for-release
