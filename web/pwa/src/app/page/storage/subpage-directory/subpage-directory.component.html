@@ -33,7 +33,7 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content (contextmenu)="$event.preventDefault(); openContextMenu($event, 'event')">
+<ion-content (contextmenu)="onContextMenu($event)">
 
   <div class="container">
     <div *ngIf="entries?.length === 0" class="placeholder-wrapper">

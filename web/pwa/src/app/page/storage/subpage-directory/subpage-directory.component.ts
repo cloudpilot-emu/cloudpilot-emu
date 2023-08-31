@@ -327,6 +327,14 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         void popover.present();
     }
 
+    onContextMenu(e: MouseEvent) {
+        if (this.mode === 'select') return;
+
+        e.preventDefault();
+
+        void this.openContextMenu(e, 'event');
+    }
+
     private bytesInFilesMemoized = memoize(
         (entries: Array<FileEntry> | undefined): number =>
             entries?.reduce((acc, entry) => acc + (entry.isDirectory ? 0 : entry.size), 0) ?? 0,

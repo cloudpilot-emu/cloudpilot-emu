@@ -35,6 +35,8 @@ export class FileEntryComponent implements OnChanges {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async onContextmenu(e: MouseEvent): Promise<void> {
+        if (this.selecting) return;
+
         e.stopPropagation();
         e.preventDefault();
 
