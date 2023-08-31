@@ -1,3 +1,7 @@
+# Version 1.8.3
+
+-   Card browser: disable context menu during file selectio.
+
 # Version 1.8.2
 
 -   Preliminary support for Legend P168 (no SD card support yet).
