@@ -17,6 +17,6 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Make sure that release exists
         run: gh release create ${{ env.TAG }} -d -t "${{ env.RELEASE_TITLE }}" -n "${{ env.RELEASE_NOTES }}"
