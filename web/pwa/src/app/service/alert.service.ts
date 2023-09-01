@@ -1,4 +1,4 @@
-import { AlertController } from '@ionic/angular';
+import { AlertController, IonicSafeString } from '@ionic/angular';
 import { EmulationStateService } from './emulation-state.service';
 import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
@@ -17,7 +17,7 @@ export class AlertService {
         const alert = await this.alertController.create({
             header: 'Error',
             backdropDismiss: false,
-            message,
+            message: new IonicSafeString(message),
             buttons: [{ text: 'Close', role: 'cancel' }],
             cssClass: 'alert-error',
         });
@@ -33,7 +33,7 @@ export class AlertService {
     ) {
         const alert = await this.alertController.create({
             header,
-            message,
+            message: new IonicSafeString(message),
             backdropDismiss: false,
             buttons: [
                 ...Object.keys(extraButtons).map((text) => ({
@@ -73,7 +73,7 @@ export class AlertService {
 
         const alert = await this.alertController.create({
             header: 'Error',
-            message: `
+            message: new IonicSafeString(`
                 ${reason}
                 <br/><br/>
                 Please close or reload this window.
@@ -82,7 +82,7 @@ export class AlertService {
                         ? ' You may save an image of your current session before reloading.'
                         : ''
                 }
-            `,
+            `),
             backdropDismiss: false,
             buttons: [
                 ...(haveCurrentSession && emergencySave
@@ -109,13 +109,13 @@ export class AlertService {
     async errorInNativeCode(reason: string) {
         const alert = await this.alertController.create({
             header: 'Error',
-            message: `
+            message: new IonicSafeString(`
                 You encountered a bug in CloudpilotEmu:
                 <br/><br/>
                 ${reason}.
                 <br/><br/>
                 Please close or reload this window.
-            `,
+            `),
             backdropDismiss: false,
             buttons: [{ text: 'Reload', handler: () => window.location.reload() }],
         });

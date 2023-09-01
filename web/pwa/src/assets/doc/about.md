@@ -152,6 +152,9 @@ In order to force check for an update terminate and restart the app.
 -   iOS: changing device orientation between portrait and landscape may mess
     up the layout of the app. This is an iOS bug that can be worked around by
     rotating the device by 180° in portrait and rotating back.
+-   Safari (iOS and MacOS): A browser bug can cause lag when loaders or
+    modal dialogs are shown. This can be worked around with the setting
+    "Reduce animation".
 -   Audio timing is not perfect and processed at the refresh rate of the emulator
     (usually the same as the screen refresh rate of the host device). Sound
     effects that rely on quickly modulating the audio signal may not be

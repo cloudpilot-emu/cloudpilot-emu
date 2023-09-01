@@ -10,6 +10,7 @@ import { MutexInterface } from 'async-mutex';
 import { ProxyService } from '@pwa/service/proxy.service';
 import { environment } from 'pwa/src/environments/environment';
 import { validateProxyAddress } from '@pwa/helper/proxyAddress';
+import { getReducedAnimations, setReducedAnimations } from '@pwa/helper/reducedAnimations';
 
 const enum fields {
     volume = 'volume',
@@ -22,6 +23,7 @@ const enum fields {
     enableRemoteInstall = 'enableRemoteInstall',
     audioOnStart = 'audioOnStart',
     snapshotIntegrityCheck = 'snapshotIntegrityCheck',
+    reducedAnimations = 'reducedAnimations',
 }
 @Component({
     selector: 'app-settings',
@@ -82,6 +84,8 @@ export class SettingsPage implements OnInit {
             snapshotIntegrityCheck: this.formGroup.get(fields.snapshotIntegrityCheck)?.value,
         });
 
+        setReducedAnimations(this.formGroup.get(fields.reducedAnimations)?.value);
+
         if (this.mutexReleasePromise) {
             (await this.mutexReleasePromise)();
         }
@@ -140,9 +144,11 @@ export class SettingsPage implements OnInit {
             [fields.enableRemoteInstall]: new UntypedFormControl(this.kvsService.kvs.enableRemoteInstall),
             [fields.audioOnStart]: new UntypedFormControl(this.kvsService.kvs.enableAudioOnFirstInteraction),
             [fields.snapshotIntegrityCheck]: new UntypedFormControl(this.kvsService.kvs.snapshotIntegrityCheck),
+            [fields.reducedAnimations]: new UntypedFormControl(getReducedAnimations()),
         });
 
         this.formGroup.get(fields.audioOnStart)?.valueChanges.subscribe(this.onAudioOnStartChange);
+        this.formGroup.get(fields.reducedAnimations)?.valueChanges.subscribe(this.onReducedAnimationsChange);
     }
 
     private onAudioOnStartChange = (audioOnStart: boolean) => {
@@ -154,10 +160,36 @@ export class SettingsPage implements OnInit {
             'Enable audio on start',
             `
             Audio will automatically turn on after the first interaction with the application
-            (i.e. touch, click or keyboard event). This option will only take effect the next time
+            (i.e. touch, click or keyboard event).
+            <br>
+            This option will take effect the next time
             Coudpilot is restarts.
         `,
         );
+    };
+
+    private onReducedAnimationsChange = (reducedAnimations: boolean) => {
+        setReducedAnimations(reducedAnimations);
+
+        if (reducedAnimations) {
+            void this.alertService.message(
+                'Reduce animations',
+                `
+                Animations will be slightly reduced in order to provide a snappier UI. This
+                reduced UI lag on iOS devices with large screens.
+                <br>
+                This option will take effect the next time
+                Coudpilot is restarts.
+            `,
+            );
+        } else {
+            void this.alertService.message(
+                'Reduce animations',
+                `
+                This option will only take effect the next time Coudpilot is restarts.
+            `,
+            );
+        }
     };
 
     formGroup!: UntypedFormGroup;

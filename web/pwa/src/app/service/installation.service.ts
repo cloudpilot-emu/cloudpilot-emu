@@ -1,4 +1,4 @@
-import { AlertController, LoadingController } from '@ionic/angular';
+import { AlertController, LoadingController, IonicSafeString } from '@ionic/angular';
 import { DbInstallResult, ZipfileWalkerState } from '@common/bridge/Cloudpilot';
 
 import { AlertService } from './alert.service';
@@ -173,7 +173,7 @@ class InstallationContext {
                 header,
                 backdropDismiss: false,
                 cssClass: 'alert-checkbox-no-border installation-error',
-                message,
+                message: new IonicSafeString(message),
                 buttons: [
                     {
                         text: 'Continue',

@@ -1,6 +1,8 @@
 import { isIOS, isSafari } from '@common/helper/browser';
 import { createAnimation, Animation } from '@ionic/angular';
 
+const KEY = 'reduced-animations';
+
 const enterAnimationActionSheet = (baseEl: HTMLElement): Animation => {
     (baseEl.querySelector('ion-backdrop') as HTMLElement).style.opacity = 'var(--backdrop-opacity)';
     (baseEl.querySelector('.action-sheet-wrapper') as HTMLElement).style.transform = 'translateY(0%)';
@@ -28,12 +30,29 @@ const enterAnimationAlert = (baseEl: HTMLElement): Animation => {
     return createAnimation();
 };
 
-// Disable a few animations on Safari/MacOS to avoid slowdowns. Juck.
-export const ionicConfig =
-    isSafari && !isIOS
+export function setReducedAnimations(flag: boolean) {
+    localStorage.setItem(KEY, flag ? '1' : '0');
+}
+
+export function getReducedAnimations(): boolean {
+    const storedValue = localStorage.getItem(KEY);
+
+    if (storedValue === null) {
+        const value = isSafari && !isIOS;
+        setReducedAnimations(value);
+
+        return value;
+    }
+
+    return storedValue === '1';
+}
+
+export function ionAnimationConfig() {
+    return getReducedAnimations()
         ? {
               actionSheetEnter: enterAnimationActionSheet,
               loadingEnter: enterAnimationLoader,
               alertEnter: enterAnimationAlert,
           }
         : {};
+}

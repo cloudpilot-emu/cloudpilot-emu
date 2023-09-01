@@ -17,7 +17,7 @@ import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
 import { UpdateService } from '@pwa/service/update.service';
 import { environment } from '../environments/environment';
-import { ionicConfig } from './safari-hacks';
+import { ionAnimationConfig } from './helper/reducedAnimations';
 
 const markedOptionsFactory = (): MarkedOptions => {
     const renderer = new MarkedRenderer();
@@ -38,7 +38,7 @@ const markedOptionsFactory = (): MarkedOptions => {
     declarations: [AppComponent, DummyComponent],
     imports: [
         BrowserModule,
-        IonicModule.forRoot({ ...ionicConfig }),
+        IonicModule.forRoot({ ...ionAnimationConfig(), innerHTMLTemplatesEnabled: true }),
         AppRoutingModule,
         ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production }),
         MarkdownModule.forRoot({

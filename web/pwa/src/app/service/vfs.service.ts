@@ -1,4 +1,4 @@
-import { AlertController, LoadingController } from '@ionic/angular';
+import { AlertController, IonicSafeString, LoadingController } from '@ionic/angular';
 import { Attributes, FileEntry, ReaddirError, UnzipResult, Vfs, VfsResult, WriteFileResult } from '@common/bridge/Vfs';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { ClipboardOperation, VfsClipboard } from '@pwa/model/VfsClipboard';
@@ -719,7 +719,7 @@ export class VfsService {
             header: 'File collision',
             backdropDismiss: false,
             cssClass: 'alert-checkbox-no-border installation-error',
-            message:
+            message: new IonicSafeString(
                 type === 'file'
                     ? `Do you want to overwrite the existing file ${name}?`
                     : `
@@ -727,6 +727,7 @@ export class VfsService {
                     <br><br>
                     WARNING: All files in this directory will be lost.
                     `,
+            ),
             buttons: [
                 {
                     text: 'No',
