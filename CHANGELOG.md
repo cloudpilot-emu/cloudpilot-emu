@@ -1,6 +1,12 @@
+# Version 1.8.4
+
+-   Fixes for minor UI regressions.
+-   Add an option for reduced animations in order to work around
+    UI lag in Safari (enabled by default on Safari / MacOS).
+
 # Version 1.8.3
 
--   Card browser: disable context menu during file selectio.
+-   Card browser: disable context menu during file selection.
 
 # Version 1.8.2
 
