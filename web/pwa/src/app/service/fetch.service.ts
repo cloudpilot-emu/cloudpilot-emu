@@ -31,10 +31,12 @@ export class FetchService {
 
         while (true) {
             try {
-                if (loaderDelay !== undefined && loaderDelay >= 0 && !loader) {
-                    loader = await this.loadingController.create({ message: 'Loading...' });
+                if (!loader) loader = await this.loadingController.create({ message: 'Loading...' });
 
-                    loaderTimeout = window.setTimeout(() => loader!.present(), loaderDelay);
+                if (loaderDelay !== undefined && loaderDelay > 0 && loaderTimeout === undefined) {
+                    loaderTimeout = window.setTimeout(() => loader?.present(), loaderDelay);
+                } else {
+                    void loader.present();
                 }
 
                 const auth = this.kvsService.kvs.credentials[urlParsed.origin];
@@ -61,13 +63,12 @@ export class FetchService {
                         continue;
                     }
 
-                    if (loader) {
-                        void loader.dismiss();
-                        clearTimeout(loaderTimeout);
+                    void loader?.dismiss();
+                    clearTimeout(loaderTimeout);
 
-                        loaderDelay = 0;
-                        loader = undefined;
-                    }
+                    loaderDelay = 0;
+                    loader = undefined;
+                    loaderDelay = undefined;
 
                     authorizationRequired = true;
 
