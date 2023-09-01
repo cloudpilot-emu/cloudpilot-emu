@@ -149,7 +149,11 @@ export class FileService {
                 throw new Error('request failed');
             }
 
+            const loader = await this.loadingController.create({ message: 'Loading...' });
+            void loader.present();
+
             const contentPromise = response.arrayBuffer().then((buffer) => new Uint8Array(buffer));
+            void contentPromise.finally(() => loader.dismiss());
 
             handler({
                 name: urlParsed.pathname.replace(/.*\//, ''),
