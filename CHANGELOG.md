@@ -1,6 +1,10 @@
+# Version 1.8.5
+
+-   Properly disable debug options in stable build.
+
 # Version 1.8.4
 
--   Fixes for minor UI regressions.
+-   Fix minor UI regressions.
 -   Add an option for reduced animations in order to work around
     UI lag in Safari (enabled by default on Safari / MacOS).
 

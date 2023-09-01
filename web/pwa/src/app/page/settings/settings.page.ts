@@ -127,7 +127,7 @@ export class SettingsPage implements OnInit {
     }
 
     get showDebugOptions(): boolean {
-        return !environment.production;
+        return environment.debug;
     }
 
     private createFormGroup() {
@@ -176,7 +176,7 @@ export class SettingsPage implements OnInit {
                 'Reduce animations',
                 `
                 Animations will be slightly reduced in order to provide a snappier UI. This
-                reduced UI lag on iOS devices with large screens.
+                reduces UI lag on iOS devices with large screens.
                 <br><br>
                 This option will take effect the next time
                 Coudpilot is restarts.

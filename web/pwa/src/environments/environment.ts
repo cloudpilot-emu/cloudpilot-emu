@@ -5,4 +5,5 @@ export const environment: Environment = {
     dbName: 'cloudpilot-dev',
     releaseExtra: 'dev',
     localStorageSuffix: 'dev',
+    debug: true,
 };

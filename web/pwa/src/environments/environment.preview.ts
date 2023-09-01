@@ -5,4 +5,5 @@ export const environment: Environment = {
     dbName: 'cloudpilot-preview',
     releaseExtra: 'preview',
     localStorageSuffix: 'preview',
+    debug: true,
 };

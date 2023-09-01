@@ -590,7 +590,7 @@ export class StorageService {
                 request.onerror = () => reject(new StorageError(request.error?.message));
             });
 
-            if (metadata.crc32 !== undefined && checkCrc && !environment.production) {
+            if (metadata.crc32 !== undefined && checkCrc && environment.debug) {
                 if (metadata.crc32 !== crc32(memory)) {
                     throw new Error('snapshot CRC mismatch');
                 }

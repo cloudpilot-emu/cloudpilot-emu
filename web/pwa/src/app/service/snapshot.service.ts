@@ -248,7 +248,7 @@ export class SnapshotService {
             totalSize: memory.length << 2,
         };
 
-        if (this.kvsService.kvs.snapshotIntegrityCheck && !environment.production) {
+        if (this.kvsService.kvs.snapshotIntegrityCheck && environment.debug) {
             metadata.crc32 = crc32(new Uint8Array(memory.buffer, memory.byteOffset, memory.byteLength));
         }
 
