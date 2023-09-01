@@ -76,15 +76,21 @@ export class EmulationService extends AbstractEmulationService {
         return this.bootstrapCompletePromise;
     }
 
-    switchSession = (id: number): Promise<boolean> =>
+    switchSession = (id: number, options: { showLoader?: boolean } = {}): Promise<boolean> =>
         this.mutex.runExclusive(async () => {
             if (id === this.emulationState.getCurrentSession()?.id) return true;
 
             await this.stopUnchecked();
 
             await this.bootstrapService.hasRendered();
-            const loader = await this.loadingController.create({ message: 'Loading...' });
-            await loader.present();
+
+            let loader: HTMLIonLoadingElement | undefined;
+            const showLoader = options.showLoader ?? true;
+
+            if (showLoader) {
+                loader = await this.loadingController.create({ message: 'Loading...' });
+                await loader.present();
+            }
 
             try {
                 const session = await this.storageService.getSession(id);
@@ -107,7 +113,7 @@ export class EmulationService extends AbstractEmulationService {
 
                 setStoredSession(id);
             } finally {
-                await loader.dismiss();
+                if (loader) await loader.dismiss();
             }
 
             return true;
@@ -237,8 +243,17 @@ export class EmulationService extends AbstractEmulationService {
     }
 
     private async recoverStoredSession(session: number) {
+        // This avoids a nasty delay in Safari on load. Browser bug. Juck.
+        let loaderPromise: Promise<HTMLIonLoadingElement> | undefined;
+        const loaderTimeout = setTimeout(() => {
+            loaderPromise = this.loadingController.create({ message: 'Loading...' }).then(async (loader) => {
+                await loader.present();
+                return loader;
+            });
+        }, 100);
+
         try {
-            await this.switchSession(session);
+            await this.switchSession(session, { showLoader: false });
         } catch (e) {
             if (isIOS) {
                 void this.alertService.message(
@@ -250,6 +265,10 @@ the app in the app switcher and reopen it; your data will be back on the second 
 Sorry for the inconvenience.`,
                 );
             }
+        } finally {
+            if (loaderPromise) void loaderPromise.then((loader) => loader.dismiss());
+
+            clearTimeout(loaderTimeout);
         }
     }
 
