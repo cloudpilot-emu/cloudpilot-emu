@@ -92,8 +92,8 @@ jobs:
           zip -j ${{ env.CP_EMBEDDED_ZIP_NAME }} ${{ env.CP_EMBEDDED_ZIP_CONTENT }}
           gh release upload ${{ env.TAG }} ${{ env.CP_EMBEDDED_ZIP_NAME }}
       - name: Publish CP embedded to NPM
-        working-directory: web/npm-embedded
-        run: npm publish
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_ACCESS_TOKEN }}
+        uses: JS-DevTools/npm-publish@v2
+        with:
+          token: ${{ secrets.NPM_ACCESS_TOKEN }}
+          package: web/npm-embedded
 
