@@ -161,7 +161,7 @@ export class SettingsPage implements OnInit {
             `
             Audio will automatically turn on after the first interaction with the application
             (i.e. touch, click or keyboard event).
-            <br>
+            <br><br>
             This option will take effect the next time
             Coudpilot is restarts.
         `,
@@ -177,7 +177,7 @@ export class SettingsPage implements OnInit {
                 `
                 Animations will be slightly reduced in order to provide a snappier UI. This
                 reduced UI lag on iOS devices with large screens.
-                <br>
+                <br><br>
                 This option will take effect the next time
                 Coudpilot is restarts.
             `,
