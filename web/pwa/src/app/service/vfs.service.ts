@@ -602,7 +602,10 @@ export class VfsService {
             onFileCollision: async (collisionPath: string) => {
                 if (rememberChoiceFiles) return overwriteFiles;
 
-                const { overwrite, rememberChoice } = await this.overwriteFileDialog(collisionPath, 'file');
+                const { overwrite, rememberChoice } = await this.overwriteFileDialog(
+                    collisionPath.replace(/^\d:/, ''),
+                    'file',
+                );
                 overwriteFiles = overwrite;
                 rememberChoiceFiles = rememberChoice;
 
@@ -611,7 +614,10 @@ export class VfsService {
             onDirectoryCollision: async (collisionPath: string) => {
                 if (rememberChoiceDirectories) return overwriteDirectory;
 
-                const { overwrite, rememberChoice } = await this.overwriteFileDialog(collisionPath, 'directory');
+                const { overwrite, rememberChoice } = await this.overwriteFileDialog(
+                    collisionPath.replace(/^\d:/, ''),
+                    'directory',
+                );
                 overwriteDirectory = overwrite;
                 rememberChoiceDirectories = rememberChoice;
 
