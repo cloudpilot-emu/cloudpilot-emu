@@ -1,5 +1,24 @@
 ion-item {
     background-color: var(--ion-background-color, white);
+    position: relative;
+}
+
+ion-icon.item-detail-icon {
+    min-width: 1em;
+}
+
+.attribute-icon-container {
+    position: absolute;
+    top: 0;
+    right: 3.25em;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 100%;
+
+    .ios & {
+        right: 3.5em;
+    }
 }
 
 ion-icon.attribute-icon {
@@ -14,13 +33,5 @@ ion-icon.attribute-icon {
     .ios & {
         color: rgba(var(--ion-text-color-rgb, 0, 0, 0), 0.4);
         margin-left: 0;
-    }
-
-    &:last-of-type {
-        margin-right: 1.75em;
-
-        .is-directory & {
-            margin-right: 0.75em;
-        }
     }
 }
