@@ -1,3 +1,11 @@
+# Version 1.8.6
+
+-   Fix Safari / iOS zooming when tapping "rotate" multiple times. This
+    did not affect CloudpilotEmu installed to the homescreen.
+-   Disable translucency effects to fix occasional unreadable page and
+    dialog headers on iOS.
+-   Minor visual fixes to the memory card browser.
+
 # Version 1.8.5
 
 -   Properly disable debug options in stable build.
