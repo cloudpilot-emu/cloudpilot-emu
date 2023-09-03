@@ -25,7 +25,9 @@ export class FileEntryComponent implements OnChanges {
         private actionSheetController: ActionSheetController,
         private popoverController: PopoverController,
         private vfsService: VfsService,
-    ) {}
+    ) {
+        this.isIOS = !!document.querySelector('html.ios');
+    }
 
     ngOnChanges(changes: SimpleChanges): void {
         if (changes['selecting'] && changes['selecting'].currentValue && !changes['selecting'].previousValue) {
@@ -96,6 +98,28 @@ export class FileEntryComponent implements OnChanges {
         void sheet.present();
     }
 
+    get safetyMargin(): string {
+        let margin = 0;
+
+        if (this.entry?.attributes.readonly) margin += 1.7;
+        if (this.entry?.attributes.hidden) margin += 1.7;
+        if (this.entry?.attributes.system) margin += 1.7;
+
+        if (this.markedForCopy || this.markedForCut) margin += 1.7;
+
+        if (margin === 0) return '0';
+
+        if (this.selecting) {
+            margin += this.isIOS ? 1.25 : 1;
+        } else if (this.entry?.isDirectory) {
+            margin += 2;
+        } else {
+            margin += 3.5;
+        }
+
+        return margin + 'em';
+    }
+
     @ViewChild('slidingItem')
     slidingItem: IonItemSliding | undefined;
 
@@ -131,4 +155,6 @@ export class FileEntryComponent implements OnChanges {
 
     @Output()
     saveEntry = new EventEmitter<FileEntry>();
+
+    private isIOS: boolean;
 }

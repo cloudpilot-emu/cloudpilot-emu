@@ -35,10 +35,10 @@
             <ion-icon *ngIf="markedForCut" class="attribute-icon" name="cut-outline" size="small"></ion-icon>
         </div>
 
-        <ion-icon *ngIf="selecting && !selected" name="radio-button-off-outline" slot="end"></ion-icon>
-        <ion-icon *ngIf="selecting && selected" name="radio-button-on-outline" slot="end"></ion-icon>
+        <ion-icon *ngIf="selecting && !selected" class="selection-icon" name="radio-button-off-outline" slot="end"></ion-icon>
+        <ion-icon *ngIf="selecting && selected" class="selection-icon" name="radio-button-on-outline" slot="end"></ion-icon>
 
-        <ion-label>
+        <ion-label [style.margin-right]="safetyMargin">
             <h2>{{entry?.name}}</h2>
             <p>
                 {{entry?.lastModifiedLocalDate}}
