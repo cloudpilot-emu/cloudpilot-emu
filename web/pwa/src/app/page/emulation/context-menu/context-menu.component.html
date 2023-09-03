@@ -19,11 +19,11 @@
     <ion-label>Eject {{hasMemorystick ? 'stick' : 'SD card'}}</ion-label>
     <ion-icon name="log-out-outline" slot="end"></ion-icon>
   </ion-item>
-  <ion-item lines="full" button [detail]="false" *ngIf="isMuted && !isAudioOff" (click)="mute(false)">
+  <ion-item lines="full" button [detail]="false" *ngIf="isMuted && !isAudioOff" (click)="mute($event, false)">
     <ion-label>Enable audio</ion-label>
     <ion-icon name="volume-high-outline" slot="end"></ion-icon>
   </ion-item>
-  <ion-item lines="full" button [detail]="false" *ngIf="!isMuted && !isAudioOff" (click)="mute(true)">
+  <ion-item lines="full" button [detail]="false" *ngIf="!isMuted && !isAudioOff" (click)="mute($event, true)">
     <ion-label>Disable audio</ion-label>
     <ion-icon name="volume-mute-outline" slot="end"></ion-icon>
   </ion-item>
@@ -31,7 +31,7 @@
     <ion-label>Save backup</ion-label>
     <ion-icon name="share-outline" slot="end"></ion-icon>
   </ion-item>
-  <ion-item lines="full" button *ngIf="hasActiveSession" [detail]="false" (click)="rotate()">
+  <ion-item lines="full" button *ngIf="hasActiveSession" [detail]="false" (click)="rotate($event)">
     <ion-label>Rotate</ion-label>
     <ion-icon name="reload-outline" slot="end"></ion-icon>
   </ion-item>

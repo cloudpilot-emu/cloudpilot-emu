@@ -146,7 +146,10 @@ export class ContextMenuComponent {
         return this.kvsService.kvs.volume <= 0;
     }
 
-    mute(muted: boolean): void {
+    mute(e: MouseEvent, muted: boolean): void {
+        e.preventDefault();
+        e.stopPropagation();
+
         if (muted) {
             this.audioService.mute(true);
         } else {
@@ -228,7 +231,10 @@ export class ContextMenuComponent {
         await modal.present();
     }
 
-    async rotate(): Promise<void> {
+    async rotate(e: MouseEvent): Promise<void> {
+        e.preventDefault();
+        e.stopPropagation();
+
         const oldSession = this.emulationStateService.getCurrentSession();
         if (!oldSession) return;
 
