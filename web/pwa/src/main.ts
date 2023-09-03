@@ -10,6 +10,9 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).global = window;
 
+// Prevernt zoom-by-doubletap on iOS (and any other unwanted default interactions)
+document.body.addEventListener('click', (e) => e.preventDefault());
+
 bootstrapLinkApi();
 
 if ((hasStoredSession() && !hasInitialImportRequest()) || hasInitialInstallRequest()) {
