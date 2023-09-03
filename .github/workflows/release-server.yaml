@@ -27,7 +27,7 @@ jobs:
     needs: wait-for-release
     steps:
       - name: Install Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{env.PYTHON_VERSION}}
           architecture: x64
@@ -50,12 +50,12 @@ jobs:
     needs: wait-for-release
     steps:
       - name: Install Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{env.PYTHON_VERSION}}
           architecture: x64
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Build and upload
         shell: bash
         run: |
@@ -73,12 +73,12 @@ jobs:
     needs: wait-for-release
     steps:
       - name: Install Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{env.PYTHON_VERSION}}
           architecture: x64
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Build and upload
         shell: bash
         run: |
