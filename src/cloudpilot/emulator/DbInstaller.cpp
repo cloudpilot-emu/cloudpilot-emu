@@ -14,7 +14,7 @@ namespace {
             case 0:
                 return DbInstaller::Result::success;
 
-            case memErrNotEnoughSpace:
+            case dmErrMemError:
                 return DbInstaller::Result::failureNotEnoughMemory;
 
             case dmErrCorruptDatabase:

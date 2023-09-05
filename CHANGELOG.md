@@ -1,3 +1,8 @@
+# Version 1.8.8
+
+-   Fix out-of-memory during DB install being flagged as "unknown error" in
+    frontend.
+
 # Version 1.8.7
 
 -   Fix file open dialog not displaying in Chrome for Windows and Android.
