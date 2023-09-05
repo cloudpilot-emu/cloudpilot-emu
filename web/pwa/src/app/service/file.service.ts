@@ -215,26 +215,19 @@ export class FileService {
     }
 
     private openFilesLocal(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): void {
-        if (this.input) {
-            document.body.removeChild(this.input);
-        }
+        const input = document.createElement('input');
 
-        this.input = document.createElement('input');
+        input.multiple = multiple;
+        input.type = 'file';
 
-        this.input.style.display = 'none';
-        this.input.multiple = multiple;
-        this.input.type = 'file';
-
-        this.input.addEventListener('change', async (e) => {
+        input.addEventListener('change', async (e) => {
             const target = e.target as HTMLInputElement;
 
             if (!target?.files) return;
             handler(Array.from(target.files).map(this.readFile.bind(this)));
         });
 
-        document.body.appendChild(this.input);
-
-        this.input.click();
+        input.click();
     }
 
     private readFile(file: File): FileDescriptor {
@@ -259,6 +252,4 @@ export class FileService {
 
         return { name: file.name, getContent: content };
     }
-
-    private input: HTMLInputElement | undefined;
 }
