@@ -1,3 +1,7 @@
+# Version 1.8.7
+
+-   Fix file open dialog not displaying in Chrome for Windows and Android.
+
 # Version 1.8.6
 
 -   Fix Safari / iOS zooming when tapping "rotate" multiple times. This
