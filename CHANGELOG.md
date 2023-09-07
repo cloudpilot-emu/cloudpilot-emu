@@ -1,3 +1,9 @@
+# Version 1.8.9
+
+-   Fix a bug that could produce corrupt databases in DB backups on PalmOS < 3.
+    If you encounter bad databases exported by CloudpilotEmu < 1.8.9 you can
+    fix them with [this script](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/tools/prctool.py).
+
 # Version 1.8.8
 
 -   Fix out-of-memory during DB install being flagged as "unknown error" in
