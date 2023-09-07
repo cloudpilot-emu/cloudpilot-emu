@@ -4,7 +4,6 @@ import argparse
 from struct import calcsize, pack_into, unpack_from
 
 dmHdrAttrResDB = 0x0001
-dmRecAttrDelete = 0x80
 
 
 def transformZeroTerminatedString(str: bytes) -> str:
@@ -201,14 +200,14 @@ def fix_pdb(options):
     deleted_records = 0
 
     for i, entry in enumerate(record_entries):
-        if (entry.attributes & dmRecAttrDelete == 0):
+        if (entry.localChunkID != 0):
             continue
 
         deleted_records += 1
 
         next_offset = len(pdbfile_in)
         for e in record_entries[i+1:]:
-            if (e.attributes & dmRecAttrDelete == 0):
+            if (e.localChunkID != 0):
                 next_offset = e.localChunkID
                 break
 
