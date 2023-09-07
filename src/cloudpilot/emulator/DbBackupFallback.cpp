@@ -111,7 +111,7 @@ bool DbBackupFallback::DoSave(const DatabaseInfo& dbInfo) {
             if (DmRecordInfo(db, i, &attr, &id, &lid) != errNone) return false;
             children.push_back(lid);
 
-            if (!WriteRecordEntry(attr, id, lid != 0 ? currentOffset : 0)) return false;
+            if (!WriteRecordEntry(attr, id, currentOffset)) return false;
             if (lid != 0) currentOffset += localIdSize(dbInfo.cardNo, lid);
         }
     }
