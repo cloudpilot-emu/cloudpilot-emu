@@ -11,7 +11,7 @@ import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 (window as any).global = window;
 
 // Prevernt zoom-by-doubletap on iOS (and any other unwanted default interactions)
-document.body.addEventListener('click', (e) => e.preventDefault());
+document.body.addEventListener('dblclick', (e) => e.preventDefault());
 
 bootstrapLinkApi();
 
