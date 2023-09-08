@@ -1,3 +1,6 @@
+# Version 1.8.10
+
+-   Fix links not opening on click.
 # Version 1.8.9
 
 -   Fix a bug that could produce corrupt databases in DB backups on PalmOS < 3.
