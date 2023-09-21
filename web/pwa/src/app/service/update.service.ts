@@ -25,7 +25,8 @@ export class UpdateService {
         void this.mutex.runExclusive(this.checkForDowngrade.bind(this));
     }
 
-    public start(): void {
+    public async start(): Promise<void> {
+        await this.showPendingInfoMessages();
         void this.checkForUpgrade();
         this.startUpdateCheck();
         this.registerForUpdates();
@@ -57,11 +58,12 @@ export class UpdateService {
             await this.alertService.message('Update complete', `CloudpilotEmu was updated to version ${VERSION}.`, {
                 Changes: () => this.showChangelog(),
             });
-
-            const infoId = this.kvsService.kvs.infoId ?? 0;
-
-            this.kvsService.kvs.infoId = await this.showInfo(infoId);
         });
+
+    private async showPendingInfoMessages(): Promise<void> {
+        const infoId = this.kvsService.kvs.infoId ?? 0;
+        this.kvsService.kvs.infoId = await this.showInfo(infoId);
+    }
 
     private startUpdateCheck(): void {
         this.scheduleUpdateCheck();
@@ -122,6 +124,7 @@ export class UpdateService {
                 },
             });
 
+            await this.emulationService.bootstrapComplete();
             await modal.present();
             await modal.onDidDismiss();
         }

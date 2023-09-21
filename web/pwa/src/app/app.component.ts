@@ -20,6 +20,6 @@ export class AppComponent implements AfterViewInit {
         this.bootstrapService.notifyHasRendered();
 
         this.pwaService.invite();
-        this.updateService.start();
+        void this.updateService.start();
     }
 }

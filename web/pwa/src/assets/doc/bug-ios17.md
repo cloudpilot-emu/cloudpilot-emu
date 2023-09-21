@@ -1,3 +1,6 @@
+Please read this note on a browser but on iOS 17 (scroll to see the full
+text). You can dismiss it afterwards, and it will not show again.
+
 # The bug
 
 iOS 17 ships with a browser bug that may prevent Cloudpilot from successfully
