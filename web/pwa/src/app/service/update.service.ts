@@ -7,7 +7,6 @@ import { ModalController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { SwUpdate } from '@angular/service-worker';
 import { VERSION } from '@pwa/helper/version';
-import { isIOS } from '@common/helper/browser';
 
 const UPDATE_INTERVAL_MSEC = 15 * 60 * 1000;
 
