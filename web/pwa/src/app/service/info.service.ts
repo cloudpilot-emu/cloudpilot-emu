@@ -2,12 +2,14 @@ import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
 import { isIOS } from '@common/helper/browser';
 import { AlertService } from './alert.service';
+import { EmulationService } from './emulation.service';
 
 @Injectable({ providedIn: 'root' })
 export class InfoService {
     constructor(
         private kvsService: KvsService,
         private alertService: AlertService,
+        private emulationService: EmulationService,
     ) {}
 
     async start(): Promise<void> {
@@ -17,6 +19,8 @@ export class InfoService {
 
     private async showInfo(infoId: number): Promise<number> {
         if (infoId < 2 && infoId !== 1 && isIOS) {
+            await this.emulationService.bootstrapComplete();
+
             await this.alertService.message(
                 'Offline mode on iOS 17',
                 `
@@ -30,6 +34,8 @@ export class InfoService {
         }
 
         if (infoId === 1 && isIOS) {
+            await this.emulationService.bootstrapComplete();
+
             await this.alertService.message(
                 'Browser bug on iOS 17',
                 `

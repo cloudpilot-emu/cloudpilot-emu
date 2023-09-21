@@ -1,3 +1,7 @@
+# Version 1.8.14
+
+-   Don't display loader over info message on startup.
+
 # Version 1.8.13
 
 -   CloudpilotEmu now includes a workaround for the browser bug that prevents
