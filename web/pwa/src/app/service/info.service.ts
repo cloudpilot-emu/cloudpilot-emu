@@ -3,7 +3,6 @@ import { ModalController } from '@ionic/angular';
 import { EmulationService } from './emulation.service';
 import { KvsService } from './kvs.service';
 import { isIOS } from '@common/helper/browser';
-import { HelpComponent } from '@pwa/component/help/help.component';
 import { AlertService } from './alert.service';
 
 @Injectable({ providedIn: 'root' })
