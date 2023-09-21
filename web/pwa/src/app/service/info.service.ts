@@ -1,6 +1,4 @@
 import { Injectable } from '@angular/core';
-import { ModalController } from '@ionic/angular';
-import { EmulationService } from './emulation.service';
 import { KvsService } from './kvs.service';
 import { isIOS } from '@common/helper/browser';
 import { AlertService } from './alert.service';
@@ -9,8 +7,6 @@ import { AlertService } from './alert.service';
 export class InfoService {
     constructor(
         private kvsService: KvsService,
-        private emulationService: EmulationService,
-        private modalController: ModalController,
         private alertService: AlertService,
     ) {}
 
