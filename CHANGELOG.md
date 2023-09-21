@@ -1,3 +1,8 @@
+# Version 1.8.11
+
+-   Display a warning and workaround for a browser bug on iOS17 that may prevent
+    Cloudpilot from loading.
+
 # Version 1.8.10
 
 -   Fix links not opening on click.

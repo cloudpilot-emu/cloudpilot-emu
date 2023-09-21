@@ -7,6 +7,7 @@ import { ModalController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { SwUpdate } from '@angular/service-worker';
 import { VERSION } from '@pwa/helper/version';
+import { isIOS } from '@common/helper/browser';
 
 const UPDATE_INTERVAL_MSEC = 15 * 60 * 1000;
 
@@ -53,9 +54,13 @@ export class UpdateService {
             // wait for a possible loader to disappear
             await this.emulationService.bootstrapComplete();
 
-            void this.alertService.message('Update complete', `CloudpilotEmu was updated to version ${VERSION}.`, {
+            await this.alertService.message('Update complete', `CloudpilotEmu was updated to version ${VERSION}.`, {
                 Changes: () => this.showChangelog(),
             });
+
+            const infoId = this.kvsService.kvs.infoId ?? 0;
+
+            this.kvsService.kvs.infoId = await this.showInfo(infoId);
         });
 
     private startUpdateCheck(): void {
@@ -105,6 +110,23 @@ export class UpdateService {
             void this.updates.checkForUpdate();
             this.scheduleUpdateCheck();
         }, UPDATE_INTERVAL_MSEC);
+    }
+
+    private async showInfo(infoId: number): Promise<number> {
+        if (infoId < 1 && isIOS) {
+            const modal = await this.modalController.create({
+                component: HelpComponent,
+                componentProps: {
+                    url: 'assets/doc/bug-ios17.md',
+                    title: 'Browser bug on iOS 17',
+                },
+            });
+
+            await modal.present();
+            await modal.onDidDismiss();
+        }
+
+        return 1;
     }
 
     private mutex = new Mutex();

@@ -19,4 +19,5 @@ export interface Kvs {
     enableRemoteInstall: boolean;
     enableAudioOnFirstInteraction: boolean;
     snapshotIntegrityCheck: boolean;
+    infoId?: number;
 }
