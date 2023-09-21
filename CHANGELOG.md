@@ -1,3 +1,7 @@
+# Version 1.8.12
+
+-   Fix a UI race condition between dialogs.
+
 # Version 1.8.11
 
 -   Display a warning and workaround for a browser bug on iOS17 that may prevent

@@ -25,8 +25,7 @@ export class UpdateService {
         void this.mutex.runExclusive(this.checkForDowngrade.bind(this));
     }
 
-    public async start(): Promise<void> {
-        await this.showPendingInfoMessages();
+    public start(): void {
         void this.checkForUpgrade();
         this.startUpdateCheck();
         this.registerForUpdates();
@@ -59,11 +58,6 @@ export class UpdateService {
                 Changes: () => this.showChangelog(),
             });
         });
-
-    private async showPendingInfoMessages(): Promise<void> {
-        const infoId = this.kvsService.kvs.infoId ?? 0;
-        this.kvsService.kvs.infoId = await this.showInfo(infoId);
-    }
 
     private startUpdateCheck(): void {
         this.scheduleUpdateCheck();
@@ -112,24 +106,6 @@ export class UpdateService {
             void this.updates.checkForUpdate();
             this.scheduleUpdateCheck();
         }, UPDATE_INTERVAL_MSEC);
-    }
-
-    private async showInfo(infoId: number): Promise<number> {
-        if (infoId < 1 && isIOS) {
-            const modal = await this.modalController.create({
-                component: HelpComponent,
-                componentProps: {
-                    url: 'assets/doc/bug-ios17.md',
-                    title: 'Browser bug on iOS 17',
-                },
-            });
-
-            await this.emulationService.bootstrapComplete();
-            await modal.present();
-            await modal.onDidDismiss();
-        }
-
-        return 1;
     }
 
     private mutex = new Mutex();
