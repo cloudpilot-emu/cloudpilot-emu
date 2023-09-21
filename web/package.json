@@ -1,6 +1,6 @@
 {
   "name": "cloudpilot-emu",
-  "version": "1.8.12",
+  "version": "1.8.13",
   "author": "Christian Speckner <cnspeckn@googlemail.com>",
   "license": "GPL-3.0-or-later",
   "homepage": "https://cloudpilot-emu.github.io/",
@@ -8,6 +8,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "yarn run gen-revision && ng run app:build",
+    "fix-worker": "node script/fix-worker.js build-pwa/ngsw-worker.js",
     "build-embedded": "yarn run dts-bundle-embedded && yarn webpack --mode production -c webpack.embedded.config.js",
     "start-embedded": "yarn webpack serve --mode development -c webpack.embedded.config.js",
     "typedoc-embedded": "yarn typedoc",

@@ -4,6 +4,7 @@ import { EmulationService } from './emulation.service';
 import { KvsService } from './kvs.service';
 import { isIOS } from '@common/helper/browser';
 import { HelpComponent } from '@pwa/component/help/help.component';
+import { AlertService } from './alert.service';
 
 @Injectable({ providedIn: 'root' })
 export class InfoService {
@@ -11,6 +12,7 @@ export class InfoService {
         private kvsService: KvsService,
         private emulationService: EmulationService,
         private modalController: ModalController,
+        private alertService: AlertService,
     ) {}
 
     async start(): Promise<void> {
@@ -19,20 +21,32 @@ export class InfoService {
     }
 
     private async showInfo(infoId: number): Promise<number> {
-        if (infoId < 1 && isIOS) {
-            const modal = await this.modalController.create({
-                component: HelpComponent,
-                componentProps: {
-                    url: 'assets/doc/bug-ios17.md',
-                    title: 'Browser bug on iOS 17',
-                },
-            });
-
-            await this.emulationService.bootstrapComplete();
-            await modal.present();
-            await modal.onDidDismiss();
+        if (infoId < 2 && infoId !== 1 && isIOS) {
+            await this.alertService.message(
+                'Offline mode on iOS 17',
+                `
+                iOS 17 ships with a browser bug that breaks the caching of CloudpilotEmu
+                for offline use. As a result, the app will currently not load and
+                work reliably on iOS 17 without an internet connection.
+                <br><br>
+                This is a browser bug that can only be fixed by Apple.
+            `,
+            );
         }
 
-        return 1;
+        if (infoId === 1 && isIOS) {
+            await this.alertService.message(
+                'Browser bug on iOS 17',
+                `
+                CloudpilotEmu now includes a workaround for the browser bug that prevents
+                reliable startup. However, running without an internet conection is
+                still broken and can only be fixed if Apple resolves the underlying bug.
+                <br><br>
+                If you disabled Service Workers you can now safely reenable them.
+            `,
+            );
+        }
+
+        return 2;
     }
 }

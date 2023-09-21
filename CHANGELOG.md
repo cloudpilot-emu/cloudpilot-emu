@@ -1,3 +1,9 @@
+# Version 1.8.13
+
+-   CloudpilotEmu now includes a workaround for the browser bug that prevents
+    reliable startup. However, running without an internet conection is
+    still broken and can only be fixed if Apple resolves the underlying bug.
+
 # Version 1.8.12
 
 -   Fix a UI race condition between dialogs.
