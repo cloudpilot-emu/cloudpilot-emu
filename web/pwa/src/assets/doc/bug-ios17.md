@@ -5,7 +5,7 @@ text). You can dismiss it afterwards, and it will not show again.
 
 iOS 17 ships with a browser bug that may prevent Cloudpilot from successfully
 launching as a homescreen app. This does not happen on the first load after a
-reboot, but on every subsequent load
+reboot, but on every subsequent load.
 
 The symptom is an empty screen with may show an error message about a
 "FetchEvent". Waiting a few seconds will usually cause the page to reload
@@ -16,9 +16,12 @@ present at the top of the page after a few seconds for the same effect.
 
 As a workaround you can go to "Settings->Safari->Advanced->Feature Flags" and
 disable "Service Workers". Be aware that this impacts the ability to run
-Cloudpilot without internet access (browser caching may still allow for
-offline use, though). Other web apps will be similarily impacted, and
-push notifications from web pages will be disabled.
+Cloudpilot with patchy or missing internet access (browser caching may still
+allow for offline use, though). Other web apps will be similarily impacted,
+and push notifications from web pages will be disabled.
+
+A release of Cloudpilot with a setting for disabling the service worker in
+Cloudpilot only will follow soon.
 
 # When will it be fixed?
 
