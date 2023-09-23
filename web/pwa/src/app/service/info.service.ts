@@ -48,6 +48,21 @@ export class InfoService {
             );
         }
 
-        return 2;
+        if (infoId === 2 && isIOS) {
+            await this.emulationService.bootstrapComplete();
+
+            await this.alertService.message(
+                'iOS 17 bug resolved',
+                `
+                The browser bug that impacted startup and offline use on iOS 17
+                has been fully resolved by switching to another service worker
+                implementation that does not trigger it.
+                <br><br>
+                CloudpilotEmu now is fully functional on iOS 17 again.
+            `,
+            );
+        }
+
+        return 3;
     }
 }
