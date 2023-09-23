@@ -1,4 +1,4 @@
-# Next version
+# Version 1.8.15
 
 -   Switch to a new service worker imp,ementation that does not trigger
     the iOS 17 bug.
