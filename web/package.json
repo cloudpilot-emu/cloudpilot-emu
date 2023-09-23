@@ -7,8 +7,8 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "yarn run gen-revision && ng run app:build",
-    "fix-worker": "node script/fix-worker.js build-pwa/ngsw-worker.js",
+    "build": "yarn run gen-revision && ng run app:build:production,ci",
+    "generate-worker": "workbox generateSW ./workbox.config.js",
     "build-embedded": "yarn run dts-bundle-embedded && yarn webpack --mode production -c webpack.embedded.config.js",
     "start-embedded": "yarn webpack serve --mode development -c webpack.embedded.config.js",
     "typedoc-embedded": "yarn typedoc",
@@ -36,7 +36,8 @@
     "eslint": "^8.39.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
-    "mocha": "^10.2.0"
+    "mocha": "^10.2.0",
+    "workbox-cli": "^7.0.0"
   },
   "dependencies": {
     "@angular-devkit/build-angular": "^16.2.0",
@@ -50,7 +51,6 @@
     "@angular/platform-browser": "^16.2.2",
     "@angular/platform-browser-dynamic": "^16.2.2",
     "@angular/router": "^16.2.2",
-    "@angular/service-worker": "^16.2.2",
     "@ionic/angular": "^7.3.1",
     "@ionic/angular-toolkit": "^10.0.0",
     "@types/deep-equal": "^1.0.1",

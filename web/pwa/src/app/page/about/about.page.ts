@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { HelpComponent } from '@pwa/component/help/help.component';
 import { ModalController } from '@ionic/angular';
-import { SwUpdate } from '@angular/service-worker';
 import { VERSION } from '@pwa/helper/version';
+import { ServiceWorkerService } from '@pwa/service/service-worker.service';
 
 @Component({
     selector: 'app-about',
@@ -12,7 +12,7 @@ import { VERSION } from '@pwa/helper/version';
 export class AboutPage {
     constructor(
         private modalController: ModalController,
-        private updates: SwUpdate,
+        private serviceWorkerService: ServiceWorkerService,
     ) {}
 
     get version(): string {
@@ -32,7 +32,7 @@ export class AboutPage {
     }
 
     get serviceWorkerAvailable(): boolean {
-        return this.updates.isEnabled;
+        return this.serviceWorkerService.isRegistered();
     }
 
     loading = true;

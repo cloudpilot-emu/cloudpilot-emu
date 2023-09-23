@@ -67,8 +67,8 @@ jobs:
         working-directory: web
         run: |
           yarn run gen-revision
-          yarn ng run app:build:production,ci --base-href /app/
-          yarn fix-worker
+          yarn build --base-href /app/
+          yarn generate-worker
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.5.1
         with:

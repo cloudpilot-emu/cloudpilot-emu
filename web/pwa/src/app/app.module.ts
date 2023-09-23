@@ -12,12 +12,11 @@ import { DummyComponent } from '@pwa/component/dummy/dummy.component';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { KvsService } from '@pwa/service/kvs.service';
 import { RouteReuseStrategy } from '@angular/router';
-import { ServiceWorkerModule } from '@angular/service-worker';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
 import { UpdateService } from '@pwa/service/update.service';
-import { environment } from '../environments/environment';
 import { ionAnimationConfig } from './helper/reducedAnimations';
+import { ServiceWorkerService } from './service/service-worker.service';
 
 const markedOptionsFactory = (): MarkedOptions => {
     const renderer = new MarkedRenderer();
@@ -40,7 +39,6 @@ const markedOptionsFactory = (): MarkedOptions => {
         BrowserModule,
         IonicModule.forRoot({ ...ionAnimationConfig(), innerHTMLTemplatesEnabled: true }),
         AppRoutingModule,
-        ServiceWorkerModule.register('ngsw-worker.js', { enabled: environment.production }),
         MarkdownModule.forRoot({
             loader: HttpClient,
             markedOptions: { provide: MarkedOptions, useFactory: markedOptionsFactory },
@@ -68,6 +66,7 @@ export class AppModule {
         kvs: KvsService,
         updateService: UpdateService,
         autoEnableAudioService: AutoEnableAudioService,
+        serviceWorkerService: ServiceWorkerService,
     ) {}
     /* eslint-enable @typescript-eslint/no-unused-vars */
 }

@@ -2,6 +2,7 @@ node_modules
 .angular
 yarn-error.log
 build-pwa
+build-pwa-ng
 build-embedded
 docs-embedded
 dist-embedded

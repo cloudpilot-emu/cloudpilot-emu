@@ -5,8 +5,8 @@ import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
 import { ModalController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
-import { SwUpdate } from '@angular/service-worker';
 import { VERSION } from '@pwa/helper/version';
+import { ServiceWorkerService } from './service-worker.service';
 
 const UPDATE_INTERVAL_MSEC = 15 * 60 * 1000;
 
@@ -19,7 +19,7 @@ export class UpdateService {
         private emulationService: EmulationService,
         private alertService: AlertService,
         private modalController: ModalController,
-        private updates: SwUpdate,
+        private serviceWorkerService: ServiceWorkerService,
     ) {
         void this.mutex.runExclusive(this.checkForDowngrade.bind(this));
     }
@@ -63,7 +63,7 @@ export class UpdateService {
     }
 
     private registerForUpdates(): void {
-        this.updates.available.subscribe(async () => {
+        this.serviceWorkerService.updateAvailableEvent.addHandler(async () => {
             await this.emulationService.bootstrapComplete();
 
             void this.alertService.updateAvailable();
@@ -101,8 +101,8 @@ export class UpdateService {
     }
 
     private scheduleUpdateCheck(): void {
-        setTimeout(() => {
-            void this.updates.checkForUpdate();
+        setTimeout(async () => {
+            await this.serviceWorkerService.update();
             this.scheduleUpdateCheck();
         }, UPDATE_INTERVAL_MSEC);
     }
