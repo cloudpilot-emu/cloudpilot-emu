@@ -105,7 +105,7 @@ export class SessionSettingsComponent implements OnInit {
     }
 
     get speedValue(): number {
-        const speed = this.formControlSpeed.value || 0;
+        const speed = this.speedTransient ?? this.formControlSpeed.value ?? 0;
 
         return speed >= 0 ? 1 + speed : 1 / (1 - speed);
     }
@@ -113,10 +113,15 @@ export class SessionSettingsComponent implements OnInit {
     get speedLabel(): string {
         return (
             'Clock: ' +
-            (this.formControlSpeed.value === 0
+            ((this.speedTransient ?? this.formControlSpeed.value) === 0
                 ? 'default'
                 : `${Math.round(this.speedValue * cpuClock(this.formControlDevice.value))}MHz`)
         );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onSpeedDrag(e: any): void {
+        this.speedTransient = e.detail?.value;
     }
 
     private createFormGroup() {
@@ -157,6 +162,8 @@ export class SessionSettingsComponent implements OnInit {
     availableDevices!: Array<DeviceId>;
 
     formGroup!: UntypedFormGroup;
+
+    speedTransient: number | undefined;
 
     readonly orientations = [
         [DeviceOrientation.portrait, 'Portrait'],

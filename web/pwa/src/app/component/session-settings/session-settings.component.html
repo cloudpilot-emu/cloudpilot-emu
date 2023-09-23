@@ -41,7 +41,9 @@
 
         <ion-item lines="none">
             <ion-label class="label-speed">{{speedLabel}}</ion-label>
-            <ion-range min="-4" max="4" step="0.25" snaps="true" ticks="false" formControlName="speed">
+            <ion-range min="-4" max="4" step="0.25" snaps="true" ticks="false" formControlName="speed"
+                (ionInput)="onSpeedDrag($event)" (ionKnobMoveEnd)="speedTransient = undefined"
+            >
             </ion-range>
         </ion-item>
 
