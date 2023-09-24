@@ -18,7 +18,7 @@ export class InfoService {
     }
 
     private async showInfo(infoId: number): Promise<number> {
-        if (infoId === 2) {
+        if (infoId === 2 && isIOS) {
             await this.emulationService.bootstrapComplete();
 
             await this.alertService.message(
