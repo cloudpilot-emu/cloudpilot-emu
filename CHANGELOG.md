@@ -3,7 +3,7 @@
 -   Fix app locking up when an update is available.
 -   Fix "update available" notfications.
 
-# 1.8.16
+# Version 1.8.16
 
 -   Session settings: show clock while dragging the slider.
 -   Improved asset handling during updates.
