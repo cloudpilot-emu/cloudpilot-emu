@@ -6,13 +6,6 @@ import { LoadingController } from '@ionic/angular';
 const WORKER_URL = 'ngsw-worker.js';
 const REGISTRATION_DELAY_MILLISECONDS = 3000;
 
-const enum State {
-    failed,
-    unregistered,
-    registering,
-    registered,
-}
-
 @Injectable({ providedIn: 'root' })
 export class ServiceWorkerService {
     constructor(private loadingController: LoadingController) {
@@ -28,7 +21,7 @@ export class ServiceWorkerService {
     }
 
     async update(): Promise<void> {
-        if (this.state !== State.registered || !this.registration) return;
+        if (!this.registration) return;
 
         void this.registration.update();
     }
@@ -44,23 +37,18 @@ export class ServiceWorkerService {
 
     private async register(): Promise<void> {
         if (!(this.isEnabled() && navigator.serviceWorker)) return;
-        if (this.state > State.unregistered) return;
 
         navigator.serviceWorker.addEventListener(
             'controllerchange',
             () => this.reloadOnControllerChange && window.location.reload(),
         );
 
-        this.state = State.registering;
-
         await new Promise((r) => setTimeout(r, REGISTRATION_DELAY_MILLISECONDS));
 
         try {
             this.setupRegistration(await this.doRegister());
-            this.state = State.registered;
         } catch (e) {
             console.error(e);
-            this.state = State.failed;
         }
     }
 
@@ -102,7 +90,6 @@ export class ServiceWorkerService {
         this.updateAvailableEvent.dispatch(undefined);
     }
 
-    private state: State = State.unregistered;
     private registration: ServiceWorkerRegistration | undefined;
     private reloadOnControllerChange = false;
 
