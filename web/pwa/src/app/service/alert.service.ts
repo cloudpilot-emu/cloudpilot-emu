@@ -52,13 +52,15 @@ export class AlertService {
     }
 
     @debounce()
-    async updateAvailable() {
+    async updateAvailable(installHandler: () => void) {
         const alert = await this.alertController.create({
             header: 'Update available',
-            message:
-                'An update is available. The update will be activated the next time you close and reopen CloudpilotEmu.',
+            message: 'An update is ready for installation. Select "install" to install it and restart the app now.',
             backdropDismiss: false,
-            buttons: [{ text: 'Close', role: 'cancel' }],
+            buttons: [
+                { text: 'Install', handler: installHandler },
+                { text: 'Close', role: 'cancel' },
+            ],
         });
 
         await alert.present();

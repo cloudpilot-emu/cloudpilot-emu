@@ -1,6 +1,7 @@
 import { Event } from 'microevent.ts';
 import { environment } from '../../environments/environment';
 import { Injectable } from '@angular/core';
+import { LoadingController } from '@ionic/angular';
 
 const WORKER_URL = 'ngsw-worker.js';
 const REGISTRATION_DELAY_MILLISECONDS = 3000;
@@ -14,7 +15,7 @@ const enum State {
 
 @Injectable({ providedIn: 'root' })
 export class ServiceWorkerService {
-    constructor() {
+    constructor(private loadingController: LoadingController) {
         void this.register();
     }
 
@@ -30,6 +31,15 @@ export class ServiceWorkerService {
         if (this.state !== State.registered || !this.registration) return;
 
         void this.registration.update();
+    }
+
+    async activateUpdate(): Promise<void> {
+        if (!this.registration?.waiting) return;
+
+        const loader = await this.loadingController.create({ message: 'Updating...' });
+        await loader.present();
+
+        this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     }
 
     private async register(): Promise<void> {
@@ -50,8 +60,6 @@ export class ServiceWorkerService {
     }
 
     private async doRegister(): Promise<ServiceWorkerRegistration> {
-        if (!navigator.serviceWorker) throw new Error('service worker not supported');
-
         return navigator.serviceWorker.register(WORKER_URL, {
             scope: './',
             updateViaCache: 'none',
@@ -81,15 +89,20 @@ export class ServiceWorkerService {
         });
     }
 
-    private dispatchUpdate() {
-        if (!navigator.serviceWorker) return;
-        if (!navigator.serviceWorker.controller) return;
+    private dispatchUpdate(): void {
+        if (!(navigator.serviceWorker.controller && this.registration?.waiting)) return;
+
+        if (!this.waitingForControllerChange) {
+            navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
+        }
+        this.waitingForControllerChange = true;
 
         this.updateAvailableEvent.dispatch(undefined);
     }
 
     private state: State = State.unregistered;
     private registration: ServiceWorkerRegistration | undefined;
+    private waitingForControllerChange = false;
 
     readonly updateAvailableEvent = new Event();
 }

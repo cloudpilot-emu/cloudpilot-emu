@@ -68,7 +68,7 @@ export class UpdateService {
         this.serviceWorkerService.updateAvailableEvent.addHandler(async () => {
             await this.emulationService.bootstrapComplete();
 
-            void this.alertService.updateAvailable();
+            void this.alertService.updateAvailable(() => this.serviceWorkerService.activateUpdate());
         });
     }
 
