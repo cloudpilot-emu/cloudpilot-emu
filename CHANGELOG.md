@@ -1,4 +1,4 @@
-# Next version
+# Version 1.8.17
 
 -   Fix app locking up when an update is available.
 -   Fix "update available" notfications.
