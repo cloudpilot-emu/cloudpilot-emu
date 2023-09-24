@@ -1,3 +1,8 @@
+# Version 1.9.0
+
+-   Another small workaround for service worker issues. This should
+    stabilize offline mode and updates again for good.
+
 # Version 1.8.17
 
 -   Fix app locking up when an update is available.
