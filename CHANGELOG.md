@@ -2,6 +2,7 @@
 
 -   Session settings: show clock while dragging the slider.
 -   Improved asset handling during updates.
+-   Fix bogus info message on startup.
 
 # Version 1.8.15
 
