@@ -46,4 +46,5 @@ module.exports = {
     cacheId: 'cloudpilot-pwa',
     mode: 'production',
     clientsClaim: true,
+    inlineWorkboxRuntime: true,
 };
