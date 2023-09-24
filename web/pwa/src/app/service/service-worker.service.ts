@@ -46,6 +46,11 @@ export class ServiceWorkerService {
         if (!(this.isEnabled() && navigator.serviceWorker)) return;
         if (this.state > State.unregistered) return;
 
+        navigator.serviceWorker.addEventListener(
+            'controllerchange',
+            () => this.reloadOnControllerChange && window.location.reload(),
+        );
+
         this.state = State.registering;
 
         await new Promise((r) => setTimeout(r, REGISTRATION_DELAY_MILLISECONDS));
@@ -92,17 +97,14 @@ export class ServiceWorkerService {
     private dispatchUpdate(): void {
         if (!(navigator.serviceWorker.controller && this.registration?.waiting)) return;
 
-        if (!this.waitingForControllerChange) {
-            navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
-        }
-        this.waitingForControllerChange = true;
+        this.reloadOnControllerChange = true;
 
         this.updateAvailableEvent.dispatch(undefined);
     }
 
     private state: State = State.unregistered;
     private registration: ServiceWorkerRegistration | undefined;
-    private waitingForControllerChange = false;
+    private reloadOnControllerChange = false;
 
     readonly updateAvailableEvent = new Event();
 }
