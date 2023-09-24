@@ -24,7 +24,7 @@ export class ServiceWorkerService {
     }
 
     isRegistered(): boolean {
-        return this.state > State.registering;
+        return !!navigator.serviceWorker?.controller;
     }
 
     async update(): Promise<void> {

@@ -2,6 +2,7 @@
 
 -   Fix app locking up when an update is available.
 -   Fix "update available" notfications.
+-   Better detection of installation status on "About" page.
 
 # Version 1.8.16
 
