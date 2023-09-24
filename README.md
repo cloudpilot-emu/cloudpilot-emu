@@ -177,12 +177,13 @@ installed. Go to the `web` directory and do
 ```
     $ yarn install
     $ yarn gen-revision
-    $ yarn ng run app:build:production
+    $ yarn build
+    $ yarn generate-worker
 ```
 
-The result will be in the `www` subdir. The build includes a service worker for
-offline operation. If you don't want the service worker you'll have to delete
-`ngsw-worker.js` from the generated bundle before serving it.
+The result will be in the `build-pwa` subdir. The last step generates a service
+worker for offline operation. You can skip it if you don't require offline
+operation, the app will work fine without it.
 
 Note that you need to build the WASM binary (see above) before building the web
 app.

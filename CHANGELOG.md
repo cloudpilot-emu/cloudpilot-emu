@@ -3,6 +3,9 @@
 -   Fix app locking up when an update is available.
 -   Fix "update available" notfications.
 -   Better detection of installation status on "About" page.
+-   The instructions for building the app have changed. If you are building and
+    hosting CloudpilotEmu yurself, be sure to check the readme for updated
+    instructions.
 
 # Version 1.8.16
 
