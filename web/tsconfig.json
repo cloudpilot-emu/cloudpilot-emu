@@ -38,7 +38,13 @@
       ],
       "@embedded/*": [
         "embedded/src/*"
-      ]
+      ],
+      "@assets/*": [
+        "pwa/src/assets/*"
+      ],
+      "@root/*": [
+        "../*"
+      ],
     },
     "useDefineForClassFields": false
   },

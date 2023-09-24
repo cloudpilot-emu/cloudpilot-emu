@@ -3,6 +3,8 @@ import { HelpComponent } from '@pwa/component/help/help.component';
 import { ModalController } from '@ionic/angular';
 import { VERSION } from '@pwa/helper/version';
 import { ServiceWorkerService } from '@pwa/service/service-worker.service';
+import aboutUrl from '@assets/doc/about.md';
+import changelogUrl from '@root/CHANGELOG.md';
 
 @Component({
     selector: 'app-about',
@@ -19,11 +21,15 @@ export class AboutPage {
         return VERSION;
     }
 
+    get url(): string {
+        return aboutUrl;
+    }
+
     async showChangelog(): Promise<void> {
         const modal = await this.modalController.create({
             component: HelpComponent,
             componentProps: {
-                url: 'assets/doc/CHANGELOG.md',
+                url: changelogUrl,
                 title: 'Changelog',
             },
         });

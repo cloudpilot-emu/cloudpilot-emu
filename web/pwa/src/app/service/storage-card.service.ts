@@ -1,7 +1,6 @@
 import { CardOwner, StorageCardContext } from './storage-card-context';
-import { FsckContext, FsckResult, GzipContext, mkfs } from '@common/bridge/FSTools';
+import { FsckContext, FsckResult } from '@common/bridge/FSTools';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
-
 import { AlertService } from './alert.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
@@ -17,6 +16,7 @@ import { SnapshotService } from '@pwa/service/snapshot.service';
 import { StorageService } from '@pwa/service/storage.service';
 import { VfsService } from './vfs.service';
 import { v4 as uuid } from 'uuid';
+import { FsToolsService } from './fstools.service';
 
 export enum NewCardSize {
     mb4,
@@ -95,6 +95,7 @@ export class StorageCardService {
         private fileService: FileService,
         private vfsService: VfsService,
         private storageCardContext: StorageCardContext,
+        private fstools: FsToolsService,
     ) {
         this.vfsService.setStorageCardService(this);
         void this.updateCardsFromDB().then(() => (this.loading = false));
@@ -112,7 +113,7 @@ export class StorageCardService {
         try {
             await loader.present();
 
-            const cardImage = await mkfs(cardSizeNumeric(size));
+            const cardImage = await this.fstools.mkfs(cardSizeNumeric(size));
             if (!cardImage) throw new Error('failed to create image');
 
             const cardWithoutId: Omit<StorageCard, 'id'> = {
@@ -338,7 +339,7 @@ export class StorageCardService {
         const loader = await this.loadingController.create({ message: 'Exporting...' });
         let cardData: Uint32Array | undefined;
 
-        const gzipContext = gzip ? await GzipContext.create(card.size) : undefined;
+        const gzipContext = gzip ? await this.fstools.createGzipContext(card.size) : undefined;
         if (gzipContext) {
             const buffer = gzipContext.getBuffer();
             cardData = new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength >> 2);
@@ -530,7 +531,7 @@ export class StorageCardService {
 
             await this.vfsService.releaseCard(cardId);
             this.storageCardContext.claim(cardId, CardOwner.fstools);
-            const context = await FsckContext.create(card.size);
+            const context = await this.fstools.createFsckContext(card.size);
 
             await this.storageService.loadCardData(card.id, context.getImageData(), CardOwner.fstools);
 
@@ -603,7 +604,7 @@ export class StorageCardService {
         try {
             await loader.present();
 
-            fsckContext = await FsckContext.create(cardWithoutId.size);
+            fsckContext = await this.fstools.createFsckContext(cardWithoutId.size);
             fsckContext.getImageData().set(data);
             result = fsckContext.fsck();
         } finally {

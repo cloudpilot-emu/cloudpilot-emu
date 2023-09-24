@@ -20,6 +20,8 @@ import { debounce } from '@pwa/helper/debounce';
 import deepEqual from 'deep-equal';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 
+import helpUrl from '@assets/doc/sessions.md';
+
 @Component({
     selector: 'app-sessions',
     templateUrl: './sessions.page.html',
@@ -146,7 +148,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
         const modal = await this.modalController.create({
             component: HelpComponent,
             componentProps: {
-                url: 'assets/doc/sessions.md',
+                url: helpUrl,
             },
         });
         await modal.present();

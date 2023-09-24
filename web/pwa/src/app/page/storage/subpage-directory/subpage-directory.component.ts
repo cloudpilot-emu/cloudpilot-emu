@@ -16,6 +16,8 @@ import { changeDetector } from '@pwa/helper/changeDetect';
 import { debounce } from '@pwa/helper/debounce';
 import { memoize } from '@pwa/helper/memoize';
 
+import helpUrl from '@assets/doc/card-browser.md';
+
 function entrySortFunction(e1: FileEntry, e2: FileEntry): number {
     if (e1.isDirectory && !e2.isDirectory) return -1;
     if (!e1.isDirectory && e2.isDirectory) return 1;
@@ -190,7 +192,7 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         const modal = await this.modalController.create({
             component: HelpComponent,
             componentProps: {
-                url: 'assets/doc/card-browser.md',
+                url: helpUrl,
             },
         });
         await modal.present();

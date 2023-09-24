@@ -87,11 +87,12 @@ export class Vfs {
         this.vfsNative = new module.Vfs();
     }
 
-    static async create(): Promise<Vfs> {
+    static async create(wasmModuleUrl?: string): Promise<Vfs> {
         return new Vfs(
             await createModule({
                 print: (x: string) => console.log(x),
                 printErr: (x: string) => console.error(x),
+                ...(wasmModuleUrl === undefined ? {} : { locateFile: () => wasmModuleUrl }),
             }),
         );
     }

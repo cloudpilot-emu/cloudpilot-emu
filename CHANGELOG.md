@@ -1,6 +1,7 @@
 # Next version
 
 -   Session settings: show clock while dragging the slider.
+-   Improved asset handling during updates.
 
 # Version 1.8.15
 

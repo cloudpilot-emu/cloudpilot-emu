@@ -3,7 +3,6 @@ import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-ca
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { NewCardSize, StorageCardService } from '@pwa/service/storage-card.service';
-
 import { AlertService } from '@pwa/service/alert.service';
 import { CardSupportLevel } from '@common/bridge/Cloudpilot';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
@@ -15,7 +14,9 @@ import { changeDetector } from '@pwa/helper/changeDetect';
 import { debounce } from '@pwa/helper/debounce';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
-import { gunzip } from '@common/bridge/FSTools';
+import { FsToolsService } from '@pwa/service/fstools.service';
+
+import helpPage from '@assets/doc/cards.md';
 
 @Component({
     selector: 'app-subpage-cards',
@@ -34,6 +35,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         private errorService: ErrorService,
         private fileService: FileService,
         private loadingController: LoadingController,
+        private fstools: FsToolsService,
         cd: ChangeDetectorRef,
     ) {
         this.checkCards = changeDetector(cd, [], () => this.storageCardService.getAllCards());
@@ -79,7 +81,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         const modal = await this.modalController.create({
             component: HelpComponent,
             componentProps: {
-                url: 'assets/doc/cards.md',
+                url: helpPage,
             },
         });
         await modal.present();
@@ -219,7 +221,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
             await loader.present();
 
             try {
-                content = await gunzip(content);
+                content = await this.fstools.gunzip(content);
             } finally {
                 await loader.dismiss();
             }

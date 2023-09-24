@@ -8,6 +8,8 @@ import { Mutex } from 'async-mutex';
 import { VERSION } from '@pwa/helper/version';
 import { ServiceWorkerService } from './service-worker.service';
 
+import changelogUrl from '@root/CHANGELOG.md';
+
 const UPDATE_INTERVAL_MSEC = 15 * 60 * 1000;
 
 @Injectable({
@@ -92,7 +94,7 @@ export class UpdateService {
         const modal = await this.modalController.create({
             component: HelpComponent,
             componentProps: {
-                url: 'assets/doc/CHANGELOG.md',
+                url: changelogUrl,
                 title: 'Changelog',
             },
         });

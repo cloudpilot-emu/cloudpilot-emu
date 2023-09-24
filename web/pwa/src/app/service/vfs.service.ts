@@ -15,6 +15,8 @@ import deepEqual from 'deep-equal';
 import { filenameForArchive } from '@pwa/helper/filename';
 import { ucFirst } from '@pwa/helper/text';
 
+import wasmModule from '@native-vfs/vfs_web.wasm';
+
 @Injectable({ providedIn: 'root' })
 export class VfsService {
     constructor(
@@ -833,7 +835,7 @@ export class VfsService {
 
     private primarySlot = 0;
 
-    private vfs = Vfs.create();
+    private vfs = Vfs.create(wasmModule);
     private vfsInstance: Vfs | undefined;
 
     private directoryCache = new Map<string, Array<FileEntry>>();

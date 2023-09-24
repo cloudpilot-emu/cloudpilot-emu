@@ -12,6 +12,8 @@ import { environment } from 'pwa/src/environments/environment';
 import { validateProxyAddress } from '@pwa/helper/proxyAddress';
 import { getReducedAnimations, setReducedAnimations } from '@pwa/helper/reducedAnimations';
 
+import helpUrl from '@assets/doc/settings.md';
+
 const enum fields {
     volume = 'volume',
     showStatistics = 'showStatistics',
@@ -47,7 +49,7 @@ export class SettingsPage implements OnInit {
         const modal = await this.modalController.create({
             component: HelpComponent,
             componentProps: {
-                url: 'assets/doc/settings.md',
+                url: helpUrl,
             },
         });
         await modal.present();

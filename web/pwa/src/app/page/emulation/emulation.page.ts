@@ -22,6 +22,8 @@ import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
 import { StorageService } from '@pwa/service/storage.service';
 import { TabsPage } from '@pwa/tabs/tabs.page';
 
+import helpUrl from '@assets/doc/emulation.md';
+
 @Component({
     selector: 'app-emulation',
     templateUrl: './emulation.page.html',
@@ -122,7 +124,7 @@ export class EmulationPage implements DragDropClient {
         const modal = await this.modalController.create({
             component: HelpComponent,
             componentProps: {
-                url: 'assets/doc/emulation.md',
+                url: helpUrl,
             },
         });
         await modal.present();

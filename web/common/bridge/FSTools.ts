@@ -15,39 +15,22 @@ import createModule, {
     Module,
 } from '@native-fstools/index';
 
-import { cachedInstantiate } from '@common/helper/wasm';
+import { InstantiateFunction, cachedInstantiate } from '@common/helper/wasm';
 import { dirtyPagesSize } from './util';
 
 export { FsckResult } from '@native-fstools/index';
 
 const WASM_BINARY = 'fstools_web.wasm';
-const instantiateWasm = cachedInstantiate(WASM_BINARY);
 
 const GUNZIP_SLICE_SIZE = 512 * 1024;
 const GZIP_SLICE_SIZE = 512 * 1024;
-
-export async function mkfs(size: number): Promise<Uint32Array | undefined> {
-    const context = await MkfsContext.create();
-
-    if (!context.mkfs(size)) return undefined;
-
-    return context.getImage();
-}
-
-export async function gunzip(gzippedData: Uint8Array): Promise<Uint8Array | undefined> {
-    const context = await GunzipContext.create(gzippedData);
-
-    if (!(await context.gunzip())) return undefined;
-
-    return context.getDecompressedData();
-}
 
 export class MkfsContext {
     private constructor(private module: Module) {
         this.nativeContext = new module.MkfsContext();
     }
 
-    static async create(): Promise<MkfsContext> {
+    static async create(instantiateWasm: InstantiateFunction): Promise<MkfsContext> {
         return new MkfsContext(
             await createModule({
                 print: (x: string) => console.log(x),
@@ -80,7 +63,7 @@ export class FsckContext {
         this.nativeContext = new module.FsckContext(size >>> 9);
     }
 
-    static async create(size: number): Promise<FsckContext> {
+    static async create(size: number, instantiateWasm: InstantiateFunction): Promise<FsckContext> {
         const module = await createModule({
             print: (x: string) => console.log(x),
             printErr: (x: string) => console.error(x),
@@ -141,11 +124,11 @@ export class GunzipContext {
         this.nativeContext = new module.GunzipContext(buffer, gzippedData.length, GUNZIP_SLICE_SIZE);
     }
 
-    static async create(gzippedData: Uint8Array): Promise<GunzipContext> {
+    static async create(gzippedData: Uint8Array, instantiateWasm: InstantiateFunction): Promise<GunzipContext> {
         const module = await createModule({
             print: (x: string) => console.log(x),
             printErr: (x: string) => console.error(x),
-            instantiateWasm,
+            instantiateWasm: instantiateWasm,
         });
 
         return new GunzipContext(module, gzippedData);
@@ -189,7 +172,7 @@ export class GzipContext {
         this.nativeContext = new module.GzipContext(buffer, uncompressedDataSize, GZIP_SLICE_SIZE);
     }
 
-    static async create(uncompressedDataSize: number): Promise<GzipContext> {
+    static async create(uncompressedDataSize: number, instantiateWasm: InstantiateFunction): Promise<GzipContext> {
         const module = await createModule({
             print: (x: string) => console.log(x),
             printErr: (x: string) => console.error(x),
@@ -243,4 +226,44 @@ export class GzipContext {
 
     private nativeContext: GzipContextNative;
     private uncompressedDataPtr: number;
+}
+
+const cachedInstantiateByUrl = new Map<string, InstantiateFunction>();
+
+export class FsTools {
+    constructor(wasmModuleUrl = WASM_BINARY) {
+        let instantiate = cachedInstantiateByUrl.get(wasmModuleUrl);
+
+        if (!instantiate) {
+            instantiate = cachedInstantiate(wasmModuleUrl);
+            cachedInstantiateByUrl.set(wasmModuleUrl, instantiate);
+        }
+        this.instantiante = instantiate;
+    }
+
+    async mkfs(size: number): Promise<Uint32Array | undefined> {
+        const context = await MkfsContext.create(this.instantiante);
+
+        if (!context.mkfs(size)) return undefined;
+
+        return context.getImage();
+    }
+
+    async gunzip(gzippedData: Uint8Array): Promise<Uint8Array | undefined> {
+        const context = await GunzipContext.create(gzippedData, this.instantiante);
+
+        if (!(await context.gunzip())) return undefined;
+
+        return context.getDecompressedData();
+    }
+
+    createGzipContext(uncompressedDataSize: number): Promise<GzipContext> {
+        return GzipContext.create(uncompressedDataSize, this.instantiante);
+    }
+
+    createFsckContext(size: number): Promise<FsckContext> {
+        return FsckContext.create(size, this.instantiante);
+    }
+
+    private instantiante: InstantiateFunction;
 }
