@@ -55,12 +55,10 @@ export class AlertService {
     async updateAvailable() {
         const alert = await this.alertController.create({
             header: 'Update available',
-            message: 'An update is available. Please close CloudpilotEmu and reload in order to update.',
+            message:
+                'An update is available. The update will be activated the next time you close and reopen CloudpilotEmu.',
             backdropDismiss: false,
-            buttons: [
-                { text: 'Reload', handler: () => window.location.reload() },
-                { text: 'Close', role: 'cancel' },
-            ],
+            buttons: [{ text: 'Close', role: 'cancel' }],
         });
 
         await alert.present();

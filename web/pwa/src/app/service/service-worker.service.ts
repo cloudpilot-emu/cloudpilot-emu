@@ -36,21 +36,12 @@ export class ServiceWorkerService {
         if (!(this.isEnabled() && navigator.serviceWorker)) return;
         if (this.state > State.unregistered) return;
 
-        void navigator.serviceWorker.ready.then(() => {
-            const now = Date.now();
-
-            navigator.serviceWorker.addEventListener(
-                'controllerchange',
-                () => Date.now() - now > 500 && this.updateAvailableEvent.dispatch(undefined),
-            );
-        });
-
         this.state = State.registering;
 
         await new Promise((r) => setTimeout(r, REGISTRATION_DELAY_MILLISECONDS));
 
         try {
-            this.registration = await this.doRegister();
+            this.setupRegistration(await this.doRegister());
             this.state = State.registered;
         } catch (e) {
             console.error(e);
@@ -65,6 +56,36 @@ export class ServiceWorkerService {
             scope: './',
             updateViaCache: 'none',
         });
+    }
+
+    private setupRegistration(registration: ServiceWorkerRegistration): void {
+        this.registration = registration;
+
+        if (registration.waiting) this.dispatchUpdate();
+        if (registration.installing) this.handleInstallingWorker(registration.installing);
+
+        registration.addEventListener(
+            'updatefound',
+            () => registration.installing && this.handleInstallingWorker(registration.installing),
+        );
+    }
+
+    private handleInstallingWorker(worker: ServiceWorker) {
+        let notified = false;
+
+        worker.addEventListener('statechange', () => {
+            if (worker.state !== 'installed' || notified) return;
+
+            notified = true;
+            this.dispatchUpdate();
+        });
+    }
+
+    private dispatchUpdate() {
+        if (!navigator.serviceWorker) return;
+        if (!navigator.serviceWorker.controller) return;
+
+        this.updateAvailableEvent.dispatch(undefined);
     }
 
     private state: State = State.unregistered;

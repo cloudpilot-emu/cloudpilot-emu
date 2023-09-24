@@ -45,6 +45,5 @@ module.exports = {
     ],
     cacheId: 'cloudpilot-pwa',
     mode: 'production',
-    skipWaiting: true,
     clientsClaim: true,
 };
