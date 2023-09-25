@@ -159,7 +159,7 @@ In order to force check for an update terminate and restart the app.
     (usually the same as the screen refresh rate of the host device). Sound
     effects that rely on quickly modulating the audio signal may not be
     reproduced correctly.
--   On rare cassinos installing files or changing the hotsync name can catch
+-   On rare ocassions installing files or changing the hotsync name can catch
     PalmOS on the wrong foot and crash the emulator. In particular, this happens
     if a file is installed on a virtual Palm IIIc with PalmOS 3.5 while the
     launcher is active and the category menu is open.

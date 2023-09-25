@@ -1,6 +1,7 @@
 # Next version
 
 -   Add a few icons that were missing in offline mode.
+-   Fix a few typos.
 
 # Version 1.9.0
 
@@ -24,7 +25,7 @@
 
 # Version 1.8.15
 
--   Switch to a new service worker imp,ementation that does not trigger
+-   Switch to a new service worker implementation that does not trigger
     the iOS 17 bug.
 
 # Version 1.8.14
