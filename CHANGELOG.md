@@ -1,3 +1,7 @@
+# Next version
+
+-   Add a few icons that were missing in offline mode.
+
 # Version 1.9.0
 
 -   Another small workaround for service worker issues. This should
