@@ -1,0 +1,12 @@
+{
+  "editor.formatOnSave": true,
+  "files.associations": {
+    "util.h": "c",
+    "pxa_ic.h": "c",
+    "soc_ic.h": "c",
+    "cp15.C": "cpp",
+    "mmiodev_directnand.h": "c",
+    "pxa_dma.h": "c",
+    "pxa270_imc.h": "c"
+  }
+}
