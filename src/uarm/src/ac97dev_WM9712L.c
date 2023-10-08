@@ -8,7 +8,6 @@
 
 #include "util.h"
 
-
 enum WM9712REG {
     RESET = 0x00,
     OUT2VOL = 0x02,
@@ -431,10 +430,6 @@ struct WM9712L *wm9712LInit(struct SocAC97 *ac97, struct SocGpio *gpio, int8_t p
 }
 
 static void wm9712LprvNewAudioPlaybackSample(struct WM9712L *wm, uint32_t samp) {
-    if (samp != 0) {
-        printf("first blood\n");
-        exit(0);
-    }
     // nothing for now
 }
 
