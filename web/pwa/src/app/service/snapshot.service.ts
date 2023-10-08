@@ -57,6 +57,8 @@ export class SnapshotService {
     async initialize(session: Session, cloudpilot: Cloudpilot): Promise<void> {
         if (this.errorService.hasFatalError()) return;
 
+        await this.waitForPendingSnapshot();
+
         this.sessionId = session.id;
         this.dirtyPages = undefined;
         this.pages = undefined;
@@ -148,10 +150,8 @@ export class SnapshotService {
         );
 
         await this.storageService.acquireLock(tx);
-
         if (this.cloudpilot.isSuspended()) return;
-
-        if (this.emulationState.getCurrentSession()?.id !== this.sessionId) throw E_SESSION_MISMATCH;
+        this.assertSessionMatches();
 
         let storageCard: StorageCard | undefined;
         const storageId = this.cloudpilot.getMountedKey();
@@ -200,6 +200,8 @@ export class SnapshotService {
             };
 
             try {
+                this.assertSessionMatches();
+
                 timestampBlockingStart = performance.now();
 
                 pages = this.saveDirtyMemory(tx, timeout);
@@ -361,6 +363,10 @@ export class SnapshotService {
             console.log('save state failed');
             objectStore.delete(this.sessionId);
         }
+    }
+
+    private assertSessionMatches(): void {
+        if (this.emulationState.getCurrentSession()?.id !== this.sessionId) throw E_SESSION_MISMATCH;
     }
 
     snapshotEvent = new Event<SnapshotStatistics>();

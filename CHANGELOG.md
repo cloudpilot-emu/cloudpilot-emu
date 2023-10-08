@@ -1,3 +1,7 @@
+# Next version
+
+-   Minor improvements to snapshot reliability.
+
 # Version 1.9.1
 
 -   Add a few icons that were missing in offline mode.
