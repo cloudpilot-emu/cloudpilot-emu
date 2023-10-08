@@ -2,3 +2,10 @@
 .deps
 
 src/uarm
+Makefile.local
+
+*.bin
+*.prc
+*.pdb
+*.img
+*.zip
