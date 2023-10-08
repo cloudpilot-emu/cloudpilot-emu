@@ -18,7 +18,8 @@
 
 #define SD_SECTOR_SIZE (512ULL)
 
-static FILE* mSdCard = NULL;
+static uint8_t* sdCardData = NULL;
+static size_t sdCardSecs = 0;
 
 int socExtSerialReadChar(void) {
     struct timeval tv;
@@ -57,24 +58,62 @@ static void usage(const char* self) {
 }
 
 static bool prvSdSectorR(uint32_t secNum, void* buf) {
-    return fseeko(mSdCard, SD_SECTOR_SIZE * secNum, SEEK_SET) == 0 &&
-           fread(buf, 1, SD_SECTOR_SIZE, mSdCard) == SD_SECTOR_SIZE;
+    if (secNum >= sdCardSecs) return false;
+
+    memcpy(buf, sdCardData + SD_SECTOR_SIZE * secNum, SD_SECTOR_SIZE);
+    return true;
 }
 
 static bool prvSdSectorW(uint32_t secNum, const void* buf) {
-    return fseeko(mSdCard, SD_SECTOR_SIZE * secNum, SEEK_SET) == 0 &&
-           fwrite(buf, 1, SD_SECTOR_SIZE, mSdCard) == SD_SECTOR_SIZE;
+    if (secNum >= sdCardSecs) return false;
+
+    memcpy(sdCardData + SD_SECTOR_SIZE * secNum, buf, SD_SECTOR_SIZE);
+    return true;
+}
+
+static void readSdCArd(const char* fname) {
+    FILE* cardFile = fopen(fname, "r+b");
+
+    if (!cardFile) {
+        fprintf(stderr, "unable to open sd card image %s\n", fname);
+        exit(-4);
+    }
+
+    fseek(cardFile, 0, SEEK_END);
+    size_t sdCardSize = ftell(cardFile);
+
+    if (sdCardSize % SD_SECTOR_SIZE) {
+        fprintf(stderr, "SD card image not a multiple of %u bytes\n", (unsigned)SD_SECTOR_SIZE);
+        exit(-4);
+    }
+
+    sdCardSecs = sdCardSize / SD_SECTOR_SIZE;
+    if (sdCardSecs >> 32) {
+        fprintf(stderr, "SD card too big: %llu sectors\n", (unsigned long long)sdCardSecs);
+        exit(-5);
+    }
+
+    sdCardData = (uint8_t*)malloc(sdCardSize);
+
+    fseek(cardFile, 0, SEEK_SET);
+    size_t bytesRead = fread(sdCardData, 1, sdCardSize, cardFile);
+
+    if (bytesRead != sdCardSize) {
+        fprintf(stderr, "failed to read sd card image %lu %lu\n", bytesRead, sdCardSize);
+        exit(4);
+    }
+
+    fclose(cardFile);
 }
 
 int main(int argc, char** argv) {
-    uint32_t romLen = 0, sdSecs = 0;
+    uint32_t romLen = 0;
     const char* self = argv[0];
     bool noRomMode = false;
     FILE* nandFile = NULL;
     FILE* romFile = NULL;
     uint8_t* rom = NULL;
     int gdbPort = -1;
-    uint64_t sdSize;
     struct SoC* soc;
     int c;
 
@@ -85,23 +124,7 @@ int main(int argc, char** argv) {
                 break;
 
             case 's':  // sd card
-                if (optarg) mSdCard = fopen(optarg, "r+b");
-                if (!mSdCard) usage(self);
-
-                fseeko(mSdCard, 0, SEEK_END);
-                sdSize = ftello(mSdCard);
-                if (sdSize % SD_SECTOR_SIZE) {
-                    fprintf(stderr, "SD card image not a multiple of %u bytes\n",
-                            (unsigned)SD_SECTOR_SIZE);
-                    exit(-4);
-                }
-                sdSize /= SD_SECTOR_SIZE;
-                if (sdSize >> 32) {
-                    fprintf(stderr, "SD card too big: %llu sectors\n", (unsigned long long)sdSize);
-                    exit(-5);
-                }
-                sdSecs = sdSize;
-                fprintf(stderr, "opened %lu-sector sd card image\n", (long)sdSecs);
+                readSdCArd(optarg);
                 break;
 
             case 'r':  // ROM
@@ -143,7 +166,7 @@ int main(int argc, char** argv) {
 
     fprintf(stderr, "Read %u bytes of ROM\n", romLen);
 
-    soc = socInit((void**)&rom, &romLen, romLen ? 1 : 0, sdSecs, prvSdSectorR, prvSdSectorW,
+    soc = socInit((void**)&rom, &romLen, romLen ? 1 : 0, sdCardSecs, prvSdSectorR, prvSdSectorW,
                   nandFile, gdbPort, deviceGetSocRev());
     socRun(soc);
 
