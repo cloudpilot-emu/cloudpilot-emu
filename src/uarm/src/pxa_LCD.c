@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "SDL.h"
 #include "mem.h"
 #include "pxa_IC.h"
 #include "util.h"
@@ -36,11 +35,31 @@ struct PxaLcd {
     uint8_t enbChanged : 1;
 
     uint8_t palette[512];
+    uint32_t palette_mapped[512];
+
+    uint16_t width;
+    uint16_t height;
+
+    uint32_t *front_buffer;
+    uint32_t *back_buffer;
+
+    uint32_t i_pixel;
+    bool frame_pending;
 
     uint32_t frameNum;
-
-    bool hardGrafArea;
 };
+
+static uint32_t unpack_rgb16(uint16_t rgb16) {
+    uint8_t r = (rgb16 >> 11) & 0x1f;
+    uint8_t g = (rgb16 >> 5) & 0x3f;
+    uint8_t b = (rgb16 >> 0) & 0x1f;
+
+    r = (r << 3) | (r >> 2);
+    g = (g << 2) | (g >> 4);
+    b = (b << 3) | (b >> 2);
+
+    return 0xff000000 | (b << 16) | (g << 8) | r;
+}
 
 static void pxaLcdPrvUpdateInts(struct PxaLcd *lcd) {
     uint_fast16_t ints = lcd->lcsr & lcd->intMask;
@@ -279,57 +298,31 @@ static void pxaLcdPrvDma(struct PxaLcd *lcd, void *dest, uint32_t addr, int32_t 
     }
 }
 
-static void pxaLcdPrvScreenDataPixel(struct PxaLcd *lcd, uint8_t *buf) {
-    static SDL_Surface *mScreen = NULL;
-    static SDL_Window *mWindow = NULL;
-    uint16_t val = *(uint16_t *)buf;
-    static uint32_t pixCnt = 0;
-    static uint16_t *dst;
-    uint32_t w, h;
+static void pxaLcdUpdatePalette(struct PxaLcd *lcd, int32_t len) {
+    const uint32_t n_entries = len >> 1;
+    uint16_t *entry = (uint16_t *)lcd->palette;
+    uint32_t *entry_mapped = (uint32_t *)lcd->palette_mapped;
 
-    w = (lcd->lccr1 & 0x3ff) + 1;
-    h = (lcd->lccr2 & 0x3ff) + 1;
+    for (uint32_t i = 0; i < n_entries; i++, entry++, entry_mapped++)
+        *entry_mapped = unpack_rgb16(*entry);
+}
 
-    if (!mWindow) {
-        uint32_t winH = h;
+static void pxaLcdPrvScreenDataPixel(struct PxaLcd *lcd, uint32_t color) {
+    lcd->back_buffer[lcd->i_pixel++] = color;
 
-        if (lcd->hardGrafArea) winH += 3 * w / 8;
+    if (lcd->i_pixel == lcd->width * lcd->height) {
+        lcd->i_pixel = 0;
+        lcd->frame_pending = true;
 
-        fprintf(stderr, "SCREEN configured for %u x %u\n", (unsigned)w, (unsigned)h);
-        mWindow =
-            SDL_CreateWindow("uARM", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, winH, 0);
-        if (mWindow == NULL) {
-            printf("Couldn't create window: %s\n", SDL_GetError());
-            exit(-1);
-        }
-
-        mScreen = SDL_CreateRGBSurface(0, w, h, 16, 0xf800, 0x07e0, 0x001f, 0x0000);
-        if (mScreen == NULL) {
-            printf("Couldn't create screen surface: %s\n", SDL_GetError());
-            exit(-1);
-        }
-    }
-
-    if (!pixCnt) {
-        SDL_LockSurface(mScreen);
-        dst = (uint16_t *)mScreen->pixels;
-    }
-
-    dst[pixCnt++] = val;
-
-    if (pixCnt == w * h) {
-        pixCnt = 0;
-        SDL_UnlockSurface(mScreen);
-        dst = NULL;
-        SDL_BlitSurface(mScreen, NULL, SDL_GetWindowSurface(mWindow), NULL);
-        SDL_UpdateWindowSurface(mWindow);
+        uint32_t *front_buffer = lcd->front_buffer;
+        lcd->front_buffer = lcd->back_buffer;
+        lcd->back_buffer = front_buffer;
     }
 }
 
 static void pxaLcdPrvScreenDataDma(struct PxaLcd *lcd, uint32_t addr /*PA*/, uint32_t len) {
     uint8_t data[4];
     uint32_t i, j;
-    void *ptr;
 
     len /= 4;
     while (len--) {
@@ -340,44 +333,37 @@ static void pxaLcdPrvScreenDataDma(struct PxaLcd *lcd, uint32_t addr /*PA*/, uin
             case 0:  // 1BPP
 
                 for (i = 0; i < 4; i++) {
-                    for (j = 0; j < 8; j++) {
-                        ptr = lcd->palette + ((data[i] >> j) & 1) * 2;
-                        pxaLcdPrvScreenDataPixel(lcd, (uint8_t *)ptr);
-                    }
+                    for (j = 0; j < 8; j++)
+                        pxaLcdPrvScreenDataPixel(lcd, lcd->palette_mapped[((data[i] >> j) & 1)]);
                 }
                 break;
 
             case 1:  // 2BPP
 
                 for (i = 0; i < 4; i++) {
-                    for (j = 0; j < 8; j += 2) {
-                        ptr = lcd->palette + ((data[i] >> j) & 3) * 2;
-                        pxaLcdPrvScreenDataPixel(lcd, (uint8_t *)ptr);
-                    }
+                    for (j = 0; j < 8; j += 2)
+                        pxaLcdPrvScreenDataPixel(lcd, lcd->palette_mapped[((data[i] >> j) & 3)]);
                 }
                 break;
 
             case 2:  // 4BPP
 
                 for (i = 0; i < 4; i++) {
-                    for (j = 0; j < 8; j += 4) {
-                        ptr = lcd->palette + ((data[i] >> j) & 15) * 2;
-                        pxaLcdPrvScreenDataPixel(lcd, (uint8_t *)ptr);
-                    }
+                    for (j = 0; j < 8; j += 4)
+                        pxaLcdPrvScreenDataPixel(lcd, lcd->palette_mapped[((data[i] >> j) & 15)]);
                 }
                 break;
 
             case 3:  // 8BPP
 
-                for (i = 0; i < 4; i++) {
-                    ptr = lcd->palette + (data[i] * 2);
-                    pxaLcdPrvScreenDataPixel(lcd, (uint8_t *)ptr);
-                }
+                for (i = 0; i < 4; i++) pxaLcdPrvScreenDataPixel(lcd, lcd->palette_mapped[data[i]]);
+
                 break;
 
             case 4:  // 16BPP
 
-                for (i = 0; i < 4; i += 2) pxaLcdPrvScreenDataPixel(lcd, data + i);
+                pxaLcdPrvScreenDataPixel(lcd, unpack_rgb16(*(uint16_t *)(&data[0])));
+                pxaLcdPrvScreenDataPixel(lcd, unpack_rgb16(*(uint16_t *)(&data[2])));
                 break;
 
             default:
@@ -442,8 +428,10 @@ void pxaLcdFrame(struct PxaLcd *lcd) {
                         if (len > sizeof(lcd->palette)) len = sizeof(lcd->palette);
 
                         pxaLcdPrvDma(lcd, lcd->palette, lcd->fsadr[0], len);
+                        pxaLcdUpdatePalette(lcd, len);
                     } else {
                         lcd->frameNum++;
+
                         if (!(lcd->frameNum & 63)) pxaLcdPrvScreenDataDma(lcd, lcd->fsadr[0], len);
                     }
 
@@ -461,7 +449,14 @@ void pxaLcdFrame(struct PxaLcd *lcd) {
     pxaLcdPrvUpdateInts(lcd);
 }
 
-struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, bool hardGrafArea) {
+uint32_t *pxaLcdGetPendingFrame(struct PxaLcd *lcd) {
+    return lcd->frame_pending ? lcd->front_buffer : NULL;
+}
+
+void pxaLcdResetPendingFrame(struct PxaLcd *lcd) { lcd->frame_pending = false; }
+
+struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, uint16_t width,
+                          uint16_t height) {
     struct PxaLcd *lcd = (struct PxaLcd *)malloc(sizeof(*lcd));
 
     if (!lcd) ERR("cannot alloc LCD");
@@ -470,7 +465,11 @@ struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, bool hardGra
     lcd->ic = ic;
     lcd->mem = physMem;
     lcd->intMask = UNMASKABLE_INTS;
-    lcd->hardGrafArea = hardGrafArea;
+    lcd->width = width;
+    lcd->height = height;
+
+    lcd->front_buffer = (uint32_t *)malloc(width * height * 4);
+    lcd->back_buffer = (uint32_t *)malloc(width * height * 4);
 
     if (!memRegionAdd(physMem, PXA_LCD_BASE, PXA_LCD_SIZE, pxaLcdPrvMemAccessF, lcd))
         ERR("cannot add LCD to MEM\n");

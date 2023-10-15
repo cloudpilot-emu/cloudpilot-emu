@@ -100,6 +100,8 @@ struct SoC {
     struct VSD *vSD;
 
     struct Device *dev;
+
+    uint64_t accumulated_cycles;
 };
 
 static uint_fast16_t socUartPrvRead(void *userData) {
@@ -276,7 +278,11 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     soc->mmc = pxaMmcInit(soc->mem, soc->ic, soc->dma);
     if (!soc->mmc) ERR("Cannot init PXA's MMC");
 
-    soc->lcd = pxaLcdInit(soc->mem, soc->ic, deviceHasGrafArea());
+    struct DeviceDisplayConfiguration displayConfiguration;
+    deviceGetDisplayConfiguration(&displayConfiguration);
+
+    soc->lcd =
+        pxaLcdInit(soc->mem, soc->ic, displayConfiguration.width, displayConfiguration.height);
     if (!soc->lcd) ERR("Cannot init PXA's LCD");
 
     soc->kp = keypadInit(soc->gpio, true);
@@ -356,23 +362,24 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     return soc;
 }
 
-void socRun(struct SoC *soc) {
-    uint32_t cycles = 0;
+uint64_t socRun(struct SoC *soc, uint64_t maxCycles, int scale) {
+    uint64_t cycles = 0;
     uint_fast8_t i;
 
-    while (1) {
+    while (cycles < maxCycles) {
         cycles++;
+        soc->accumulated_cycles++;
 
-        if (!(cycles & 0x00000007UL)) pxaTimrTick(soc->tmr);
-        if (!(cycles & 0x000000FFUL)) {
+        if (!(soc->accumulated_cycles & 0x00000007UL)) pxaTimrTick(soc->tmr);
+        if (!(soc->accumulated_cycles & 0x000000FFUL)) {
             for (i = 0; i < 3; i++) {
                 if (soc->ssp[i]) socSspPeriodic(soc->ssp[i]);
             }
         }
-        if (!(cycles & 0x000000FFUL)) socDmaPeriodic(soc->dma);
-        if (!(cycles & 0x000007FFUL)) socAC97Periodic(soc->ac97);
-        if (!(cycles & 0x000007FFUL)) socI2sPeriodic(soc->i2s);
-        if (!(cycles & 0x000000FFUL)) {
+        if (!(soc->accumulated_cycles & 0x000000FFUL)) socDmaPeriodic(soc->dma);
+        if (!(soc->accumulated_cycles & 0x000007FFUL)) socAC97Periodic(soc->ac97);
+        if (!(soc->accumulated_cycles & 0x000007FFUL)) socI2sPeriodic(soc->i2s);
+        if (!(soc->accumulated_cycles & 0x000000FFUL)) {
             socUartProcess(soc->ffUart);
             if (soc->hwUart) socUartProcess(soc->hwUart);
             socUartProcess(soc->stUart);
@@ -381,10 +388,10 @@ void socRun(struct SoC *soc) {
 
         devicePeriodic(soc->dev, cycles);
 
-        if (!(cycles & 0x0001FFFUL)) pxaLcdFrame(soc->lcd);
-        if (!(cycles & 0x00FFFFFFUL)) pxaRtcUpdate(soc->rtc);
+        if (!(soc->accumulated_cycles & 0x0001FFFUL)) pxaLcdFrame(soc->lcd);
+        if (!(soc->accumulated_cycles & 0x00FFFFFFUL)) pxaRtcUpdate(soc->rtc);
 
-        if (!(cycles & 0x00FFFFUL)) {
+        if (!(soc->accumulated_cycles & 0x00FFFFUL)) {
             SDL_Event event;
 
             if (SDL_PollEvent(&event)) switch (event.type) {
@@ -395,7 +402,7 @@ void socRun(struct SoC *soc) {
                     case SDL_MOUSEBUTTONDOWN:
                         if (event.button.button != SDL_BUTTON_LEFT) break;
                         soc->mouseDown = true;
-                        deviceTouch(soc->dev, event.button.x, event.button.y);
+                        deviceTouch(soc->dev, event.button.x / scale, event.button.y / scale);
                         break;
 
                     case SDL_MOUSEBUTTONUP:
@@ -406,7 +413,7 @@ void socRun(struct SoC *soc) {
 
                     case SDL_MOUSEMOTION:
                         if (!soc->mouseDown) break;
-                        deviceTouch(soc->dev, event.motion.x, event.motion.y);
+                        deviceTouch(soc->dev, event.motion.x / scale, event.motion.y / scale);
                         break;
 
                     case SDL_KEYDOWN:
@@ -425,4 +432,10 @@ void socRun(struct SoC *soc) {
 
         cpuCycle(soc->cpu);
     }
+
+    return cycles;
 }
+
+uint32_t *socGetPendingFrame(struct SoC *soc) { return pxaLcdGetPendingFrame(soc->lcd); }
+
+void socResetPendingFrame(struct SoC *soc) { return pxaLcdResetPendingFrame(soc->lcd); }

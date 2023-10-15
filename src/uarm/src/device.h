@@ -20,6 +20,12 @@
 #include "soc_uWire.h"
 #include "vSD.h"
 
+struct DeviceDisplayConfiguration {
+    uint16_t width;
+    uint16_t height;
+    uint16_t graffitiHeight;
+};
+
 struct SocPeriphs {
     // in to deviceSetup
     struct SocAC97 *ac97;
@@ -47,7 +53,6 @@ struct SocPeriphs {
 struct Device;
 
 // simple queries
-bool deviceHasGrafArea(void);
 uint32_t deviceGetRamSize(void);
 enum RomChipType deviceGetRomMemType(void);
 uint_fast8_t deviceGetSocRev(void);
@@ -58,5 +63,7 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Keypad *kp, struct VSD 
 void deviceKey(struct Device *dev, uint32_t key, bool down);
 void devicePeriodic(struct Device *dev, uint32_t cycles);
 void deviceTouch(struct Device *dev, int x, int y);
+
+void deviceGetDisplayConfiguration(struct DeviceDisplayConfiguration *displayConfiguration);
 
 #endif

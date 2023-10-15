@@ -1,7 +1,9 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
+#include <SDL.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <math.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,6 +13,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "SoC.h"
@@ -18,8 +21,22 @@
 
 #define SD_SECTOR_SIZE (512ULL)
 
+struct MainLoopContext {
+    uint64_t cycles_per_second;
+
+    uint64_t real_time_musec;
+    double virtual_time_musec;
+};
+
 static uint8_t* sdCardData = NULL;
 static size_t sdCardSecs = 0;
+
+uint64_t timestampMusec() {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
+}
 
 int socExtSerialReadChar(void) {
     struct timeval tv;
@@ -106,6 +123,34 @@ static void readSdCArd(const char* fname) {
     fclose(cardFile);
 }
 
+static void mainLoop(struct SoC* soc, struct MainLoopContext* ctx, int scale) {
+    const uint64_t now = timestampMusec();
+    double delta = (double)now - ctx->real_time_musec;
+    ctx->real_time_musec = now;
+
+    const uint64_t cycles_emulated =
+        socRun(soc, round((delta * (double)ctx->cycles_per_second) / 1000000.), scale);
+
+    ctx->virtual_time_musec += (double)cycles_emulated * 1000000. / (double)ctx->cycles_per_second;
+}
+
+void initSdl(struct DeviceDisplayConfiguration displayConfiguration, int scale, SDL_Window** window,
+             SDL_Renderer** renderer) {
+    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+        printf("Couldn't initialize SDL: %s\n", SDL_GetError());
+        exit(1);
+    }
+    atexit(SDL_Quit);
+
+    if (SDL_CreateWindowAndRenderer(
+            displayConfiguration.width * scale,
+            (displayConfiguration.height + displayConfiguration.graffitiHeight) * scale, 0, window,
+            renderer) != 0) {
+        fprintf(stderr, "unabe to initialize window");
+        exit(1);
+    }
+}
+
 int main(int argc, char** argv) {
     uint32_t romLen = 0;
     const char* self = argv[0];
@@ -168,23 +213,61 @@ int main(int argc, char** argv) {
 
     soc = socInit((void**)&rom, &romLen, romLen ? 1 : 0, sdCardSecs, prvSdSectorR, prvSdSectorW,
                   nandFile, gdbPort, deviceGetSocRev());
-    socRun(soc);
+
+    uint64_t now = timestampMusec();
+    struct MainLoopContext ctx = {
+        .cycles_per_second = 25000000, .real_time_musec = now, .virtual_time_musec = now};
+
+    struct DeviceDisplayConfiguration displayConfiguration;
+    deviceGetDisplayConfiguration(&displayConfiguration);
+
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+    const int scale = 2;
+
+    initSdl(displayConfiguration, scale, &window, &renderer);
+
+    SDL_Texture* texture =
+        SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING,
+                          displayConfiguration.width, displayConfiguration.height);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xff);
+    SDL_RenderClear(renderer);
+
+    while (true) {
+        mainLoop(soc, &ctx, scale);
+
+        uint32_t* frame = socGetPendingFrame(soc);
+        if (frame) {
+            uint8_t* pixels;
+            int pitch;
+            SDL_LockTexture(texture, NULL, (void**)&pixels, &pitch);
+
+            if (pitch == 4 * displayConfiguration.width) {
+                memcpy(pixels, frame, 4 * displayConfiguration.width * displayConfiguration.height);
+            } else {
+                for (int y = 0; y < displayConfiguration.height; y++) {
+                    memcpy(pixels, frame, 4 * displayConfiguration.width);
+                    frame += displayConfiguration.width;
+                    pixels += pitch;
+                }
+            }
+
+            SDL_UnlockTexture(texture);
+
+            SDL_Rect src = {
+                .x = 0, .y = 0, .w = displayConfiguration.width, .h = displayConfiguration.height};
+            SDL_Rect dest = {.x = 0, .y = 0, .w = scale * src.w, .h = scale * src.h};
+
+            SDL_RenderClear(renderer);
+            SDL_RenderCopy(renderer, texture, &src, &dest);
+            SDL_RenderPresent(renderer);
+
+            socResetPendingFrame(soc);
+        } else {
+            usleep(timestampMusec() % (1000000 / 50));
+        }
+    }
 
     return 0;
 }
-
-//////// runtime things
-
-void* emu_alloc(uint32_t size) { return calloc(size, 1); }
-
-void emu_free(void* ptr) { free(ptr); }
-
-uint32_t rtcCurTime(void) {
-    struct timeval tv;
-
-    gettimeofday(&tv, NULL);
-
-    return tv.tv_sec;
-}
-
-void err_str(const char* str) { fprintf(stderr, "%s", str); }

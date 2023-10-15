@@ -103,8 +103,6 @@ struct Device {
     struct DirectNAND *nand;
 };
 
-bool deviceHasGrafArea(void) { return true; }
-
 enum RomChipType deviceGetRomMemType(void) { return RomStrataFlash16x; }
 
 uint32_t deviceGetRamSize(void) { return 16UL << 20; }
@@ -190,4 +188,10 @@ void deviceTouch(struct Device *dev, int x, int y) {
 
 void deviceKey(struct Device *dev, uint32_t key, bool down) {
     // nothing
+}
+
+void deviceGetDisplayConfiguration(struct DeviceDisplayConfiguration *displayConfiguration) {
+    displayConfiguration->width = 320;
+    displayConfiguration->height = 320;
+    displayConfiguration->graffitiHeight = 120;
 }

@@ -7,10 +7,12 @@
 #include "mem.h"
 #include "soc_IC.h"
 
-
 struct PxaLcd;
 
-struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, bool hardGrafArea);
+struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, uint16_t width, uint16_t heigh);
 void pxaLcdFrame(struct PxaLcd *lcd);
+
+uint32_t *pxaLcdGetPendingFrame(struct PxaLcd *lcd);
+void pxaLcdResetPendingFrame(struct PxaLcd *lcd);
 
 #endif
