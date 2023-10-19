@@ -5,6 +5,10 @@
 
 #include "soc_IC.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define PXA_I_CIF 33  // PXA27x
 
 #define PXA_I_RTC_ALM 31
@@ -42,5 +46,9 @@
 #define PXA_I_USBH2 2     // PXA27x
 #define PXA_I_MSL 1       // PXA27x
 #define PXA_I_SSP3 0      // PXA27x
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -20,6 +20,10 @@
 #include "soc_uWire.h"
 #include "vSD.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct DeviceDisplayConfiguration {
     uint16_t width;
     uint16_t height;
@@ -65,5 +69,9 @@ void devicePeriodic(struct Device *dev, uint32_t cycles);
 void deviceTouch(struct Device *dev, int x, int y);
 
 void deviceGetDisplayConfiguration(struct DeviceDisplayConfiguration *displayConfiguration);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

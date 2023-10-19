@@ -6,8 +6,16 @@
 #include "CPU.h"
 #include "mem.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct PxaPwrClk;
 
 struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

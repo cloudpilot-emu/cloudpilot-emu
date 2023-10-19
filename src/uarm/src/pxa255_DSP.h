@@ -6,8 +6,16 @@
 #include "CPU.h"
 #include "mem.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct Pxa255dsp;
 
 struct Pxa255dsp* pxa255dspInit(struct ArmCpu* cpu);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

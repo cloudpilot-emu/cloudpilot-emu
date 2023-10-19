@@ -10,6 +10,10 @@
 #include "nand.h"
 #include "soc_GPIO.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct DirectNAND;
 
 struct DirectNAND *directNandInit(struct ArmMem *physMem, uint32_t baseCleAddr,
@@ -18,5 +22,9 @@ struct DirectNAND *directNandInit(struct ArmMem *physMem, uint32_t baseCleAddr,
                                   const struct NandSpecs *specs, FILE *nandFile);
 
 void directNandPeriodic(struct DirectNAND *nand);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

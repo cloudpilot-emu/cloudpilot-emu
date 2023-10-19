@@ -12,6 +12,10 @@
 #include "soc_DMA.h"
 #include "soc_IC.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct SocAC97;
 
 enum Ac97Codec {
@@ -35,5 +39,9 @@ void socAC97clientAdd(struct SocAC97 *ac97, enum Ac97Codec which, Ac97CodecRegR 
                       Ac97CodecRegW regW, void *userData);
 bool socAC97clientClientWantData(struct SocAC97 *ac97, enum Ac97Codec which, uint32_t *dataPtr);
 void socAC97clientClientHaveData(struct SocAC97 *ac97, enum Ac97Codec which, uint32_t data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

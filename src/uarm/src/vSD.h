@@ -5,6 +5,10 @@
 
 #include "SoC.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct VSD;
 typedef struct VSD VSD;
 
@@ -35,5 +39,9 @@ enum SdDataReplyType vsdDataXferBlockFromCard(struct VSD *vsd, void *data, uint3
 
 // util
 uint8_t vsdCRC7(uint8_t *data, uint32_t sz);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

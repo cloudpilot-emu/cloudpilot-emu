@@ -7,6 +7,10 @@
 #include "mem.h"
 #include "soc_IC.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct SocUart;
 
 #define UART_CHAR_BREAK 0x800
@@ -23,5 +27,9 @@ void socUartProcess(struct SocUart *uart);  // write out data in TX fifo and rea
 
 void socUartSetFuncs(struct SocUart *uart, SocUartReadF readF, SocUartWriteF writeF,
                      void *userData);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

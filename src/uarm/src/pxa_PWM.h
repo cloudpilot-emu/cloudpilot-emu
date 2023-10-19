@@ -5,6 +5,10 @@
 
 #include "mem.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define PXA_PWM0_BASE 0x40B00000UL
 #define PXA_PWM1_BASE 0x40C00000UL
 // PXA27x only
@@ -14,5 +18,9 @@
 struct PxaPwm;
 
 struct PxaPwm* pxaPwmInit(struct ArmMem* physMem, uint32_t base);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -6,6 +6,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct ArmMem;
 
 typedef bool (*ArmMemAccessF)(void* userData, uint32_t pa, uint_fast8_t size, bool write,
@@ -22,5 +26,9 @@ bool memRegionAdd(struct ArmMem* mem, uint32_t pa, uint32_t sz, ArmMemAccessF af
 
 bool memAccess(struct ArmMem* mem, uint32_t addr, uint_fast8_t size, uint_fast8_t accessType,
                void* buf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -5,6 +5,10 @@
 
 #include "soc_DMA.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // common
 #define DMA_CMR_DREQ_0 0
 #define DMA_CMR_DREQ_1 1
@@ -99,5 +103,9 @@
 #define DMA_CMR_QCIF_RX_1 69
 #define DMA_CMR_QCIF_RX_2 70
 #define DMA_CMR_DREQ_2 74
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

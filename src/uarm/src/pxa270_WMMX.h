@@ -6,8 +6,16 @@
 #include "CPU.h"
 #include "mem.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct Pxa270wmmx;
 
 struct Pxa270wmmx* pxa270wmmxInit(struct ArmCpu* cpu);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

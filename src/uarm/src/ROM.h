@@ -8,6 +8,10 @@
 
 #include "mem.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum RomChipType {
     RomWriteIgnore,
     RomWriteError,
@@ -19,5 +23,9 @@ struct ArmRom;
 
 struct ArmRom *romInit(struct ArmMem *mem, uint32_t adr, void **pieces, const uint32_t *pieceSizes,
                        uint32_t numPieces, enum RomChipType chipType);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

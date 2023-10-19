@@ -7,9 +7,16 @@
 
 #include "mem.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct PxaMemCtrlr;
 
 struct PxaMemCtrlr* pxaMemCtrlrInit(struct ArmMem* physMem, uint_fast8_t socRev);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

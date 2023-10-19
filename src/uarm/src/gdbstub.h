@@ -8,11 +8,19 @@
 
 #include "CPU.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct stub;
 
 struct stub *gdbStubInit(struct ArmCpu *cpu, int port);
 void gdbStubDebugBreakRequested(struct stub *stub);
 void gdbStubReportPc(struct stub *stub, uint32_t pc, bool thumb);
 void gdbStubReportMemAccess(struct stub *stub, uint32_t addr, uint_fast8_t sz, bool write);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

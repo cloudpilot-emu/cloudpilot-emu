@@ -9,6 +9,10 @@
 #include "mem.h"
 #include "soc_GPIO.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct NAND;
 
 typedef void (*NandReadyCbk)(void *userData, bool ready);
@@ -38,5 +42,9 @@ bool nandRead(struct NAND *nand, bool cle, bool ale, uint8_t *valP);
 bool nandIsReady(struct NAND *nand);
 
 void nandPeriodic(struct NAND *nand);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

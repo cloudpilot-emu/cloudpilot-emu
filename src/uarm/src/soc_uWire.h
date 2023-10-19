@@ -9,6 +9,10 @@
 #include "soc_DMA.h"
 #include "soc_IC.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct SocUwire;
 
 // uWire is SPI with a higher-level protocol. we use ssp-like callbacks but this is not quite ssp,
@@ -23,5 +27,9 @@ struct SocUwire *socUwireInit(struct ArmMem *physMem, struct SocIc *ic, struct S
 void socUwirePeriodic(struct SocUwire *uw);
 bool socUwireAddClient(struct SocUwire *uw, uint_fast8_t cs, UWireClientProcF procF,
                        void *userData);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -7,6 +7,10 @@
 #include "mem.h"
 #include "soc_IC.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct PxaLcd;
 
 struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, uint16_t width, uint16_t heigh);
@@ -14,5 +18,9 @@ void pxaLcdFrame(struct PxaLcd *lcd);
 
 uint32_t *pxaLcdGetPendingFrame(struct PxaLcd *lcd);
 void pxaLcdResetPendingFrame(struct PxaLcd *lcd);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

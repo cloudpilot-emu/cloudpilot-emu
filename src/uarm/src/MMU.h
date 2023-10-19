@@ -8,6 +8,10 @@
 
 #include "mem.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct ArmMmu;
 
 #define MMU_DISABLED_TTP 0xFFFFFFFFUL
@@ -39,5 +43,9 @@ void mmuSetDomainCfg(struct ArmMmu *mmu, uint32_t val);
 void mmuTlbFlush(struct ArmMmu *mmu);
 
 void mmuDump(struct ArmMmu *mmu);  // for calling in GDB :)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -8,6 +8,10 @@
 #include "soc_DMA.h"
 #include "soc_IC.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct SocI2c;
 
 enum ActionI2C {  // designed so returns can be ORRed together with good results
@@ -22,5 +26,9 @@ typedef uint_fast8_t (*I2cDeviceActionF)(void *userData, enum ActionI2C stimulus
 
 struct SocI2c *socI2cInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma);
 bool socI2cDeviceAdd(struct SocI2c *i2c, I2cDeviceActionF actF, void *userData);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -7,6 +7,10 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CHAR_CTL_C -1L
 #define CHAR_NONE -2L
 
@@ -26,5 +30,9 @@ void socResetPendingFrame(struct SoC *soc);
 // externally needed
 void socExtSerialWriteChar(int ch);
 int socExtSerialReadChar(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

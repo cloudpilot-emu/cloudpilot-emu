@@ -9,6 +9,9 @@
 #include "mem.h"
 #include "soc_IC.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct PxaKpc;
 
@@ -18,5 +21,9 @@ struct PxaKpc *pxaKpcInit(struct ArmMem *physMem, struct SocIc *ic);
 void pxaKpcMatrixKeyChange(struct PxaKpc *kpc, uint_fast8_t row, uint_fast8_t col, bool isDown);
 void pxaKpcDirectKeyChange(struct PxaKpc *kpc, uint_fast8_t keyIdx, bool isDown);
 void pxaKpcJogInput(struct PxaKpc *kpc, uint_fast8_t jogIdx, bool up);  // else down
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

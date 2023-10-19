@@ -8,6 +8,10 @@
 
 #include "soc_GPIO.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct Keypad;
 
 struct Keypad *keypadInit(struct SocGpio *gpio, bool matrixHasPullUps);
@@ -17,5 +21,9 @@ bool keypadAddGpioKey(struct Keypad *kp, uint32_t sdlKey, int8_t gpioNum, bool a
 bool keypadAddMatrixKey(struct Keypad *kp, uint32_t sdlKey, unsigned row, unsigned col);
 
 void keypadSdlKeyEvt(struct Keypad *kp, uint32_t sdlKey, bool wentDown);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -10,6 +10,10 @@ struct ArmCpu;
 
 #include "mem.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ARM_SR_N 0x80000000UL
 #define ARM_SR_Z 0x40000000UL
 #define ARM_SR_C 0x20000000UL
@@ -82,5 +86,9 @@ uint32_t cpuGetPid(struct ArmCpu *cpu);
 
 uint16_t cpuGetCPAR(struct ArmCpu *cpu);
 void cpuSetCPAR(struct ArmCpu *cpu, uint16_t cpar);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
