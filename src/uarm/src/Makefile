@@ -31,13 +31,17 @@ DEPFLAGS_NATIVE = -MT $@ -MMD -MP -MF $(DEPDIR_NATIVE)/$*.d
 MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
 
 SOURCE_C = \
-	main_pc.c CPU.c MMU.c cp15.c mem.c RAM.c ROM.c icache.c gdbstub.c vSD.c keys.c palmoscalls.c \
+	CPU.c MMU.c cp15.c mem.c RAM.c ROM.c icache.c gdbstub.c vSD.c keys.c palmoscalls.c \
 	socPXA.c pxa_IC.c pxa_MMC.c pxa_TIMR.c pxa_RTC.c pxa_UART.c pxa_PwrClk.c pxa_I2S.c pxa_GPIO.c \
 	pxa_DMA.c pxa_LCD.c pxa_PWM.c pxa_AC97.c pxa_MemCtrl.c pxa_I2C.c pxa_SSP.c pxa255_UDC.c \
 	pxa270_UDC.c pxa255_DSP.c pxa270_IMC.c pxa270_KPC.c pxa270_WMMX.c \
 	devicePalmTungstenE2.c mmiodev_DirectNAND.c nand.c ac97dev_WM9712L.c
 
-OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o)
+SOURCE_CXX = main_pc.cpp
+
+OBJECTS_NATIVE_C = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o)
+OBJECTS_NATIVE_CXX = $(SOURCE_CXX:%.cpp=$(BUILDDIR_NATIVE)/%.o)
+OBJECTS_NATIVE = $(OBJECTS_NATIVE_C) $(OBJECTS_NATIVE_CXX)
 
 BINARY_NATIVE = uarm
 
@@ -52,8 +56,11 @@ bin: $(BINARY_NATIVE)
 $(BINARY_NATIVE): $(OBJECTS_NATIVE)
 	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_NATIVE)
 
-$(BUILDDIR_NATIVE)/%.o : %.c
+$(OBJECTS_NATIVE_C) : $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
+
+$(OBJECTS_NATIVE_CXX) : $(BUILDDIR_NATIVE)/%.o : %.cpp
+	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
 clean:
 	-rm -fr $(GARBAGE)
