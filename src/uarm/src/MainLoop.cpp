@@ -64,14 +64,14 @@ void MainLoop::Cycle() {
 }
 
 uint64_t MainLoop::CalculateCyclesPerSecond() {
-    uint64_t avg = (cyclesPerSecondAverage.Calculate() * SAFETY_MARGIN_PCT) / 100;
+    const uint64_t avg = (cyclesPerSecondAverage.Calculate() * SAFETY_MARGIN_PCT) / 100;
+    const uint64_t avgBinned = max((avg / BIN_SIZE) * BIN_SIZE, BIN_SIZE);
 
-    if (avg < lastCyclesPerSecond || avg < (BIN_SIZE / 2))
-        avg = (avg / BIN_SIZE) * BIN_SIZE;
-    else
-        avg = (avg - ((BIN_SIZE / 2)) / BIN_SIZE) * BIN_SIZE;
+    if (avgBinned < lastCyclesPerSecond || avg > lastCyclesPerSecond + BIN_SIZE + BIN_SIZE / 2)
+        lastCyclesPerSecond = avgBinned;
 
-    if (avg == 0) avg = BIN_SIZE;
+    if (lastCyclesPerSecond > configuredCyclesPerSecond)
+        lastCyclesPerSecond = configuredCyclesPerSecond;
 
-    return (avg < configuredCyclesPerSecond) ? avg : configuredCyclesPerSecond;
+    return lastCyclesPerSecond;
 }
