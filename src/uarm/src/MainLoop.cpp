@@ -12,7 +12,7 @@ namespace {
     constexpr int AVERAGE_TIMESLICES = 60;
     constexpr uint64_t SPEED_DUMP_INTERVAL_USEC = 1000000;
     constexpr uint64_t BIN_SIZE = 1000000;
-    constexpr uint64_t SAFETY_MARGIN_PCT = 100;
+    constexpr uint64_t SAFETY_MARGIN_PCT = 97;
     constexpr uint64_t SAFETY_MARGIN_PCT_CATCHUP = 90;
     constexpr uint64_t TIMESLICE_SIZE_USEC = 1000000 / 50;
     constexpr uint64_t LAG_THRESHOLD_CATCHUP_USEC = (3 * TIMESLICE_SIZE_USEC) / 2;
