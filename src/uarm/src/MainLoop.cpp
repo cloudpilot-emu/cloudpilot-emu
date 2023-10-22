@@ -6,10 +6,12 @@
 #include <iomanip>
 #include <iostream>
 
+#include "util.h"
+
 using namespace std;
 
 namespace {
-    constexpr int AVERAGE_TIMESLICES = 60;
+    constexpr int AVERAGE_TIMESLICES = 50;
     constexpr uint64_t SPEED_DUMP_INTERVAL_USEC = 1000000;
     constexpr uint64_t BIN_SIZE = 1000000;
     constexpr uint64_t SAFETY_MARGIN_PCT = 97;
@@ -18,18 +20,12 @@ namespace {
     constexpr uint64_t LAG_THRESHOLD_CATCHUP_USEC = (3 * TIMESLICE_SIZE_USEC) / 2;
     constexpr uint64_t LAG_THRESHOLD_SKIP_USEC = 2 * TIMESLICE_SIZE_USEC;
     constexpr int PRESERVE_TIMESLICES_FOR_CATCHUP = 3;
-
-    uint64_t timestampUsec() {
-        struct timespec ts;
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-
-        return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
-    }
 }  // namespace
 
-MainLoop::MainLoop(SoC* soc, uint64_t configuredCyclesPerSecond)
+MainLoop::MainLoop(SoC* soc, uint64_t configuredCyclesPerSecond, int scale)
     : soc(soc),
       configuredCyclesPerSecond(configuredCyclesPerSecond),
+      scale(scale),
       lastCyclesPerSecond(configuredCyclesPerSecond),
       cyclesPerSecondAverage(AVERAGE_TIMESLICES) {
     uint64_t now = timestampUsec();
@@ -58,7 +54,7 @@ void MainLoop::Cycle() {
 
     double cyclesPerSecond = CalculateCyclesPerSecond(
         deltaUsec >= LAG_THRESHOLD_CATCHUP_USEC ? SAFETY_MARGIN_PCT_CATCHUP : SAFETY_MARGIN_PCT);
-    const uint64_t cyclesEmulated = socRun(soc, round(deltaUsec * cyclesPerSecond / 1E6), 2);
+    const uint64_t cyclesEmulated = socRun(soc, round(deltaUsec * cyclesPerSecond / 1E6), scale);
 
     virtualTimeUsec += cyclesEmulated / cyclesPerSecond * 1E6;
     cyclesPerSecondAverage.Add((cyclesEmulated * 1000000) / (timestampUsec() - now));

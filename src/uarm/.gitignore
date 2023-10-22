@@ -1,7 +1,7 @@
 .build
 .deps
 
-src/uarm
+src/uarm-bin
 Makefile.local
 
 *.bin

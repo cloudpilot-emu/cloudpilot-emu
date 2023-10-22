@@ -6,7 +6,7 @@
 
 class MainLoop {
    public:
-    MainLoop(SoC* soc, uint64_t configuredCyclesPerSecond);
+    MainLoop(SoC* soc, uint64_t configuredCyclesPerSecond, int scale);
 
     void Cycle();
 
@@ -18,6 +18,7 @@ class MainLoop {
    private:
     SoC* soc{nullptr};
     uint64_t configuredCyclesPerSecond{0};
+    int scale{0};
 
     uint64_t realTimeUsec{0};
     uint64_t lastSpeedDumpAtUsec{0};

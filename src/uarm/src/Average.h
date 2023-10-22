@@ -42,6 +42,7 @@ class Average {
     std::unique_ptr<T[]> entries;
 
    private:
+    Average();
     Average(const Average<T, U>&);
     Average(Average<T, U>&&);
     Average<T, U>& operator=(const Average<T, U>&);

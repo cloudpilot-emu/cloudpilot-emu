@@ -17,4 +17,14 @@
 #define __builtin_sub_overflow_u32 __builtin_sub_overflow
 #define __builtin_sub_overflow_i32 __builtin_sub_overflow
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+uint64_t timestampUsec();
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
