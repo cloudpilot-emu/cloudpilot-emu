@@ -10,17 +10,20 @@ class MainLoop {
 
     void Cycle();
 
-   private:
-    uint64_t CalculateCyclesPerSecond();
+    uint64_t GetTimesliceSizeUsec() const;
 
    private:
-    SoC* soc;
-    uint64_t configuredCyclesPerSecond;
+    uint64_t CalculateCyclesPerSecond(uint64_t safetyMargin);
 
-    uint64_t realTimeUsec;
-    uint64_t lastSpeedDumpAtUsec;
-    uint64_t lastCyclesPerSecond;
-    double virtualTimeUsec;
+   private:
+    SoC* soc{nullptr};
+    uint64_t configuredCyclesPerSecond{0};
+
+    uint64_t realTimeUsec{0};
+    uint64_t lastSpeedDumpAtUsec{0};
+    uint64_t lastCyclesPerSecond{0};
+    double virtualTimeUsec{0};
+    double lastDeltaUsec{0};
 
     Average<uint64_t> cyclesPerSecondAverage;
 };

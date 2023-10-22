@@ -3,16 +3,21 @@
 #include <algorithm>
 #include <cmath>
 #include <ctime>
+#include <iomanip>
 #include <iostream>
 
 using namespace std;
 
 namespace {
-    constexpr double MAX_LAG_USEC = 1 / 30. * 1E6;
     constexpr int AVERAGE_TIMESLICES = 60;
     constexpr uint64_t SPEED_DUMP_INTERVAL_USEC = 1000000;
     constexpr uint64_t BIN_SIZE = 1000000;
-    constexpr uint64_t SAFETY_MARGIN_PCT = 95;
+    constexpr uint64_t SAFETY_MARGIN_PCT = 100;
+    constexpr uint64_t SAFETY_MARGIN_PCT_CATCHUP = 90;
+    constexpr uint64_t TIMESLICE_SIZE_USEC = 1000000 / 50;
+    constexpr uint64_t LAG_THRESHOLD_CATCHUP_USEC = (3 * TIMESLICE_SIZE_USEC) / 2;
+    constexpr uint64_t LAG_THRESHOLD_SKIP_USEC = 2 * TIMESLICE_SIZE_USEC;
+    constexpr int PRESERVE_TIMESLICES_FOR_CATCHUP = 3;
 
     uint64_t timestampUsec() {
         struct timespec ts;
@@ -30,41 +35,48 @@ MainLoop::MainLoop(SoC* soc, uint64_t configuredCyclesPerSecond)
     uint64_t now = timestampUsec();
 
     realTimeUsec = lastSpeedDumpAtUsec = now;
-    virtualTimeUsec = static_cast<double>(now);
+    virtualTimeUsec = now;
     cyclesPerSecondAverage.Add(configuredCyclesPerSecond);
 }
 
 void MainLoop::Cycle() {
     const uint64_t now = timestampUsec();
+    double deltaUsec = now - virtualTimeUsec;
 
-    double delta = static_cast<double>(now) - virtualTimeUsec;
-    if (delta > MAX_LAG_USEC && cyclesPerSecondAverage.GetCount() > 0) {
-        delta = MAX_LAG_USEC;
-        virtualTimeUsec = static_cast<double>(now) - MAX_LAG_USEC;
+    if (lastDeltaUsec < LAG_THRESHOLD_CATCHUP_USEC && deltaUsec >= LAG_THRESHOLD_CATCHUP_USEC) {
+        cyclesPerSecondAverage.Reset(PRESERVE_TIMESLICES_FOR_CATCHUP);
+    } else if (deltaUsec > LAG_THRESHOLD_SKIP_USEC) {
+        deltaUsec = TIMESLICE_SIZE_USEC;
+        virtualTimeUsec = now - deltaUsec;
         cyclesPerSecondAverage.Reset(1);
 
-        cerr << "time skip" << endl << flush;
+        cerr << "too much lag, skipping forward" << endl << flush;
     }
 
+    lastDeltaUsec = deltaUsec;
     realTimeUsec = now;
 
-    double cyclesPerSecond = static_cast<double>(CalculateCyclesPerSecond());
+    double cyclesPerSecond = CalculateCyclesPerSecond(
+        deltaUsec >= LAG_THRESHOLD_CATCHUP_USEC ? SAFETY_MARGIN_PCT_CATCHUP : SAFETY_MARGIN_PCT);
+    const uint64_t cyclesEmulated = socRun(soc, round(deltaUsec * cyclesPerSecond / 1E6), 2);
 
-    const uint64_t cyclesEmulated = socRun(soc, round(delta * cyclesPerSecond / 1E6), 2);
-
-    virtualTimeUsec += static_cast<double>(cyclesEmulated) / cyclesPerSecond * 1E6;
+    virtualTimeUsec += cyclesEmulated / cyclesPerSecond * 1E6;
     cyclesPerSecondAverage.Add((cyclesEmulated * 1000000) / (timestampUsec() - now));
 
     if (now - lastSpeedDumpAtUsec > SPEED_DUMP_INTERVAL_USEC) {
-        cerr << "current emulation speed " << static_cast<uint64_t>(cyclesPerSecond) << " IPS , "
+        cerr << "current emulation speed " << static_cast<uint64_t>(cyclesPerSecond) << " IPS ~"
+             << setprecision(2) << fixed
+             << (cyclesPerSecond / cyclesPerSecondAverage.Calculate() * 100.) << " max , "
              << cyclesPerSecondAverage.Calculate() << " IPS theoretical max" << endl
              << flush;
         lastSpeedDumpAtUsec = now;
     }
 }
 
-uint64_t MainLoop::CalculateCyclesPerSecond() {
-    const uint64_t avg = (cyclesPerSecondAverage.Calculate() * SAFETY_MARGIN_PCT) / 100;
+uint64_t MainLoop::GetTimesliceSizeUsec() const { return TIMESLICE_SIZE_USEC; }
+
+uint64_t MainLoop::CalculateCyclesPerSecond(uint64_t safetyMargin) {
+    const uint64_t avg = (cyclesPerSecondAverage.Calculate() * safetyMargin) / 100;
     const uint64_t avgBinned = max((avg / BIN_SIZE) * BIN_SIZE, BIN_SIZE);
 
     if (avgBinned < lastCyclesPerSecond || avg > lastCyclesPerSecond + BIN_SIZE + BIN_SIZE / 2)

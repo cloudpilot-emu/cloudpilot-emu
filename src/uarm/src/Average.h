@@ -18,7 +18,7 @@ class Average {
             count++;
     }
 
-    U Calculate() {
+    U Calculate() const {
         if (count == 0) return static_cast<U>(0);
 
         U avg = static_cast<U>(0);
@@ -32,9 +32,9 @@ class Average {
         count = keep;
     }
 
-    size_t GetSize() { return size; }
+    size_t GetSize() const { return size; }
 
-    size_t GetCount() { return count; }
+    size_t GetCount() const { return count; }
 
    private:
     const size_t size{0};
