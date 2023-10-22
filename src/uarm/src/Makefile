@@ -37,7 +37,7 @@ SOURCE_C = \
 	pxa270_UDC.c pxa255_DSP.c pxa270_IMC.c pxa270_KPC.c pxa270_WMMX.c \
 	devicePalmTungstenE2.c mmiodev_DirectNAND.c nand.c ac97dev_WM9712L.c
 
-SOURCE_CXX = main_pc.cpp
+SOURCE_CXX = main_pc.cpp MainLoop.cpp
 
 OBJECTS_NATIVE_C = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_NATIVE_CXX = $(SOURCE_CXX:%.cpp=$(BUILDDIR_NATIVE)/%.o)

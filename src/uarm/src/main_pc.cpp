@@ -11,14 +11,18 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
 
+#include "MainLoop.h"
 #include "SoC.h"
 #include "device.h"
+
+using namespace std;
 
 namespace {
     constexpr uint32_t SD_SECTOR_SIZE = 512ULL;
@@ -28,12 +32,14 @@ namespace {
 
         uint64_t real_time_musec;
         double virtual_time_musec;
+
+        Average<uint64_t> average_cycles_per_second;
     };
 
     uint8_t* sdCardData = NULL;
     size_t sdCardSecs = 0;
 
-    uint64_t timestampMusec() {
+    uint64_t timestampUsec() {
         struct timespec ts;
         clock_gettime(CLOCK_MONOTONIC, &ts);
 
@@ -95,18 +101,6 @@ namespace {
         }
 
         fclose(cardFile);
-    }
-
-    void mainLoop(SoC* soc, MainLoopContext* ctx, int scale) {
-        const uint64_t now = timestampMusec();
-        double delta = (double)now - ctx->real_time_musec;
-        ctx->real_time_musec = now;
-
-        const uint64_t cycles_emulated =
-            socRun(soc, round((delta * (double)ctx->cycles_per_second) / 1000000.), scale);
-
-        ctx->virtual_time_musec +=
-            (double)cycles_emulated * 1000000. / (double)ctx->cycles_per_second;
     }
 
     void initSdl(struct DeviceDisplayConfiguration displayConfiguration, int scale,
@@ -236,13 +230,11 @@ int main(int argc, char** argv) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xff);
     SDL_RenderClear(renderer);
 
-    uint64_t now = timestampMusec();
-    MainLoopContext ctx = {.cycles_per_second = 25000000,
-                           .real_time_musec = now,
-                           .virtual_time_musec = static_cast<double>(now)};
+    MainLoop mainLoop(soc, 100000000);
 
     while (true) {
-        mainLoop(soc, &ctx, scale);
+        uint64_t now = timestampUsec();
+        mainLoop.Cycle();
 
         uint32_t* frame = socGetPendingFrame(soc);
         if (frame) {
@@ -271,9 +263,10 @@ int main(int argc, char** argv) {
             SDL_RenderPresent(renderer);
 
             socResetPendingFrame(soc);
-        } else {
-            usleep(timestampMusec() % (1000000 / 50));
         }
+
+        int64_t timesliceRemaining = 1000000 / 50 - static_cast<int64_t>(timestampUsec() - now);
+        if (timesliceRemaining > 10) usleep(timesliceRemaining);
     }
 
     return 0;
