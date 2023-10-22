@@ -1,5 +1,22 @@
 #include "SdlRenderer.h"
 
+#include "SDL_image.h"
+#include "Silkscreen.h"
+
+namespace {
+    SDL_Texture* loadSilkscreen(SDL_Renderer* renderer) {
+        SDL_RWops* rwops = SDL_RWFromConstMem((const void*)silkscreenPng_data, silkscreenPng_len);
+        SDL_Surface* surface = IMG_LoadPNG_RW(rwops);
+        SDL_RWclose(rwops);
+
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+        SDL_FreeSurface(surface);
+
+        return texture;
+    }
+}  // namespace
+
 SdlRenderer::SdlRenderer(SDL_Window* window, SDL_Renderer* renderer, SoC* soc, int scale)
     : window(window), renderer(renderer), soc(soc), scale(scale) {
     deviceGetDisplayConfiguration(&displayConfiguration);
@@ -7,6 +24,13 @@ SdlRenderer::SdlRenderer(SDL_Window* window, SDL_Renderer* renderer, SoC* soc, i
     frameTexture =
         SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING,
                           displayConfiguration.width, displayConfiguration.height);
+
+    silkscreenTexture = loadSilkscreen(renderer);
+
+    SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
+    SDL_RenderClear(renderer);
+    DrawSilkscreen();
+    SDL_RenderPresent(renderer);
 }
 
 void SdlRenderer::Draw() {
@@ -29,13 +53,26 @@ void SdlRenderer::Draw() {
 
     SDL_UnlockTexture(frameTexture);
 
-    SDL_Rect src = {
-        .x = 0, .y = 0, .w = displayConfiguration.width, .h = displayConfiguration.height};
-    SDL_Rect dest = {.x = 0, .y = 0, .w = scale * src.w, .h = scale * src.h};
-
+    SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, frameTexture, &src, &dest);
+    DrawSilkscreen();
+
+    SDL_Rect dest = {.x = 0,
+                     .y = 0,
+                     .w = scale * displayConfiguration.width,
+                     .h = scale * displayConfiguration.height};
+    SDL_RenderCopy(renderer, frameTexture, nullptr, &dest);
+
     SDL_RenderPresent(renderer);
 
     socResetPendingFrame(soc);
+}
+
+void SdlRenderer::DrawSilkscreen() {
+    SDL_Rect dest = {.x = 0,
+                     .y = scale * displayConfiguration.height,
+                     .w = scale * displayConfiguration.width,
+                     .h = scale * displayConfiguration.graffitiHeight};
+
+    SDL_RenderCopy(renderer, silkscreenTexture, nullptr, &dest);
 }

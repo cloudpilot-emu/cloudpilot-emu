@@ -13,9 +13,15 @@ class SdlRenderer {
     void Draw();
 
    private:
+    void DrawSilkscreen();
+
+   private:
     SDL_Window* window{nullptr};
     SDL_Renderer* renderer{nullptr};
+
     SDL_Texture* frameTexture{nullptr};
+    SDL_Texture* silkscreenTexture{nullptr};
+
     SoC* soc{nullptr};
 
     const int scale;

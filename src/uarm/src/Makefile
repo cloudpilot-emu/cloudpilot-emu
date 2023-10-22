@@ -13,7 +13,7 @@ CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
 INCLUDE_EXTRA ?=
 
-LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs)
+LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image
 
 CFLAGS_COMMON := \
 	-Werror -Wextra -Wall -Wno-unused-parameter  \
@@ -73,6 +73,7 @@ SOURCE_C = 						\
 SOURCE_CXX = 					\
 	main.cpp					\
 	MainLoop.cpp				\
+	Silkscreen.cpp				\
 	SdlRenderer.cpp
 
 OBJECTS_NATIVE_C = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o)
