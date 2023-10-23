@@ -1,0 +1,48 @@
+<html lang="en">
+    <head>
+        <title>uARM</title>
+
+        <meta name="viewport" content="width=520,user-scalable=no" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta charset="UTF-8" />
+
+        <style>
+            .container {
+                display: flex;
+                flex-direction: row;
+            }
+
+            .controls {
+                margin-left: 1em;
+            }
+
+            .controls button {
+                margin-bottom: 2em;
+            }
+
+            .controls label {
+                min-width: 8em;
+                display: inline-block;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <canvas tabindex="-1" id="canvas-sdl" width="640" height="880"></canvas>
+            <div class="controls">
+                <div><label>NOR image:</label><span id="nor-image"></span></div>
+                <button id="upload-nor">Upload NOR</button>
+
+                <div><label>NAND image:</label><span id="nand-image"></span></div>
+                <button id="upload-nand">Upload NAND</button>
+
+                <div><label>SD image:</label><span id="sd-image"></span></div>
+                <button id="upload-sd">Upload SD</button>
+            </div>
+        </div>
+
+        <script src="src/uarm_web.js"></script>
+        <script src="index.js" type="module"></script>
+    </body>
+</html>

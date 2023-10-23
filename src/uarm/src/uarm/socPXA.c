@@ -353,12 +353,6 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
             document.write("</table>");
     */
 
-    if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
-        printf("Couldn't initialize SDL: %s\n", SDL_GetError());
-        exit(1);
-    }
-    atexit(SDL_Quit);
-
     return soc;
 }
 

@@ -1,6 +1,7 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
 #include <SDL.h>
+#include <SDL_image.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <signal.h>
@@ -104,11 +105,16 @@ namespace {
 
     void initSdl(struct DeviceDisplayConfiguration displayConfiguration, int scale,
                  SDL_Window** window, SDL_Renderer** renderer) {
-        if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
+        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
             printf("Couldn't initialize SDL: %s\n", SDL_GetError());
             exit(1);
         }
+
+        IMG_Init(IMG_INIT_PNG);
+
+#ifndef __EMSCRIPTEN__
         atexit(SDL_Quit);
+#endif
 
         if (SDL_CreateWindowAndRenderer(
                 displayConfiguration.width * scale,
@@ -121,7 +127,7 @@ namespace {
 
 }  // namespace
 
-extern "C" int EMSCRIPTEN_KEEPALIVE socExtSerialReadChar(void) {
+extern "C" int socExtSerialReadChar(void) {
     timeval tv;
     fd_set set;
     char c;
@@ -150,7 +156,7 @@ extern "C" void socExtSerialWriteChar(int chr) {
     fflush(stdout);
 }
 
-extern "C" uint32_t cycle() {
+extern "C" uint32_t EMSCRIPTEN_KEEPALIVE cycle() {
     const uint64_t now = timestampUsec();
 
     mainLoop->Cycle();
@@ -232,7 +238,7 @@ int main(int argc, char** argv) {
     SDL_Renderer* renderer;
 
 #ifdef __EMSCRIPTEN__
-    SDL_setenv("SDL_EMSCRIPTEN_KEYBOARD_ELEMENT", "canvas-sdl", 1);
+    SDL_setenv("SDL_EMSCRIPTEN_KEYBOARD_ELEMENT", "canvas", 1);
 #endif
 
     initSdl(displayConfiguration, SCALE, &window, &renderer);
