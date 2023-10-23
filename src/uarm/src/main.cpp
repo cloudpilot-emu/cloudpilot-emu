@@ -17,6 +17,11 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <memory>
+
+#ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+#endif
 
 #include "MainLoop.h"
 #include "SdlRenderer.h"
@@ -26,12 +31,19 @@
 
 using namespace std;
 
+#ifndef EMSCRIPTEN_KEEPALIVE
+    #define EMSCRIPTEN_KEEPALIVE
+#endif
+
 namespace {
     constexpr uint32_t SD_SECTOR_SIZE = 512ULL;
     constexpr int SCALE = 2;
 
     uint8_t* sdCardData = NULL;
     size_t sdCardSecs = 0;
+
+    unique_ptr<MainLoop> mainLoop;
+    unique_ptr<SdlRenderer> sdlRenderer;
 
     void usage(const char* self) {
         fprintf(stderr,
@@ -72,7 +84,7 @@ namespace {
         }
 
         sdCardSecs = sdCardSize / SD_SECTOR_SIZE;
-        if (sdCardSecs >> 32) {
+        if (static_cast<uint64_t>(sdCardSecs) >> 32) {
             fprintf(stderr, "SD card too big: %llu sectors\n", (unsigned long long)sdCardSecs);
             exit(-5);
         }
@@ -109,7 +121,7 @@ namespace {
 
 }  // namespace
 
-extern "C" int socExtSerialReadChar(void) {
+extern "C" int EMSCRIPTEN_KEEPALIVE socExtSerialReadChar(void) {
     timeval tv;
     fd_set set;
     char c;
@@ -136,6 +148,18 @@ extern "C" void socExtSerialWriteChar(int chr) {
         printf("<<~~ EC_0x%x ~~>>", chr);
 
     fflush(stdout);
+}
+
+extern "C" uint32_t cycle() {
+    const uint64_t now = timestampUsec();
+
+    mainLoop->Cycle();
+    sdlRenderer->Draw();
+
+    const int64_t timesliceRemaining =
+        mainLoop->GetTimesliceSizeUsec() - static_cast<int64_t>(timestampUsec() - now);
+
+    return max(timesliceRemaining, static_cast<int64_t>(0));
 }
 
 int main(int argc, char** argv) {
@@ -207,24 +231,24 @@ int main(int argc, char** argv) {
     SDL_Window* window;
     SDL_Renderer* renderer;
 
+#ifdef __EMSCRIPTEN__
+    SDL_setenv("SDL_EMSCRIPTEN_KEYBOARD_ELEMENT", "canvas-sdl", 1);
+#endif
+
     initSdl(displayConfiguration, SCALE, &window, &renderer);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xff);
     SDL_RenderClear(renderer);
 
-    MainLoop mainLoop(soc, 100000000, SCALE);
-    SdlRenderer sdlRenderer(window, renderer, soc, SCALE);
+    mainLoop = make_unique<MainLoop>(soc, 100000000, SCALE);
+    sdlRenderer = make_unique<SdlRenderer>(window, renderer, soc, SCALE);
 
+#ifndef __EMSCRIPTEN__
     while (true) {
-        const uint64_t now = timestampUsec();
-
-        mainLoop.Cycle();
-        sdlRenderer.Draw();
-
-        const int64_t timesliceRemaining =
-            mainLoop.GetTimesliceSizeUsec() - static_cast<int64_t>(timestampUsec() - now);
+        uint32_t timesliceRemaining = cycle();
         if (timesliceRemaining > 10) usleep(timesliceRemaining);
     }
+#endif
 
     return 0;
 }

@@ -12,13 +12,13 @@ using namespace std;
 
 namespace {
     constexpr int AVERAGE_TIMESLICES = 50;
-    constexpr uint64_t SPEED_DUMP_INTERVAL_USEC = 1000000;
-    constexpr uint64_t BIN_SIZE = 1000000;
-    constexpr uint64_t SAFETY_MARGIN_PCT = 97;
-    constexpr uint64_t SAFETY_MARGIN_PCT_CATCHUP = 90;
-    constexpr uint64_t TIMESLICE_SIZE_USEC = 1000000 / 50;
-    constexpr uint64_t LAG_THRESHOLD_CATCHUP_USEC = (3 * TIMESLICE_SIZE_USEC) / 2;
-    constexpr uint64_t LAG_THRESHOLD_SKIP_USEC = 2 * TIMESLICE_SIZE_USEC;
+    constexpr uint32_t SPEED_DUMP_INTERVAL_USEC = 1000000;
+    constexpr uint32_t BIN_SIZE = 1000000;
+    constexpr uint32_t SAFETY_MARGIN_PCT = 97;
+    constexpr uint32_t SAFETY_MARGIN_PCT_CATCHUP = 90;
+    constexpr uint32_t TIMESLICE_SIZE_USEC = 1000000 / 50;
+    constexpr uint32_t LAG_THRESHOLD_CATCHUP_USEC = (3 * TIMESLICE_SIZE_USEC) / 2;
+    constexpr uint32_t LAG_THRESHOLD_SKIP_USEC = 2 * TIMESLICE_SIZE_USEC;
     constexpr int PRESERVE_TIMESLICES_FOR_CATCHUP = 3;
 }  // namespace
 
@@ -73,7 +73,7 @@ uint64_t MainLoop::GetTimesliceSizeUsec() const { return TIMESLICE_SIZE_USEC; }
 
 uint64_t MainLoop::CalculateCyclesPerSecond(uint64_t safetyMargin) {
     const uint64_t avg = (cyclesPerSecondAverage.Calculate() * safetyMargin) / 100;
-    const uint64_t avgBinned = max((avg / BIN_SIZE) * BIN_SIZE, BIN_SIZE);
+    const uint64_t avgBinned = max((avg / BIN_SIZE) * BIN_SIZE, static_cast<uint64_t>(BIN_SIZE));
 
     if (avgBinned < lastCyclesPerSecond || avg > lastCyclesPerSecond + BIN_SIZE + BIN_SIZE / 2)
         lastCyclesPerSecond = avgBinned;

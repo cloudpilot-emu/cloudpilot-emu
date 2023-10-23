@@ -11,9 +11,23 @@ LD_EMCC ?= emcc
 CFLAGS_NATIVE ?= -O2  -g $(shell sdl2-config --cflags)
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
+CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions -s USE_SDL=2 -s USE_SDL_IMAGE=2
+CXXFLAGS_EMCC = $(CFLAGS_EMCC)
+
 INCLUDE_EXTRA ?=
 
 LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image
+LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno \
+	-s EXIT_RUNTIME=0 \
+	-s SDL2_IMAGE_FORMATS='["png"]' \
+	-s USE_SDL=2 \
+	-s USE_SDL_IMAGE=2 \
+	-s MODULARIZE=1 \
+	-s EXPORT_NAME=createModule \
+	-s ALLOW_MEMORY_GROWTH=1 \
+	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
+	-s EXPORTED_RUNTIME_METHODS=["FS"] \
+	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall"]
 
 CFLAGS_COMMON := \
 	-Werror -Wextra -Wall -Wno-unused-parameter \
@@ -25,10 +39,13 @@ CFLAGS_COMMON := $(CFLAGS_COMMON) -std=gnu11
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps
-
 DEPFLAGS_NATIVE = -MT $@ -MMD -MP -MF $(DEPDIR_NATIVE)/$*.d
-
 MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
+
+BUILDDIR_EMCC = .build-emcc
+DEPDIR_EMCC = .deps-emcc
+DEPFLAGS_EMCC = -MT $@ -MMD -MP -MF $(DEPDIR_EMCC)/$*.d
+MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 
 SOURCE_C = 						\
 	util.c						\
@@ -80,18 +97,34 @@ OBJECTS_NATIVE_C = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_NATIVE_CXX = $(SOURCE_CXX:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_NATIVE = $(OBJECTS_NATIVE_C) $(OBJECTS_NATIVE_CXX)
 
+OBJECTS_EMCC_C = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o)
+OBJECTS_EMCC_CXX = $(SOURCE_CXX:%.cpp=$(BUILDDIR_EMCC)/%.o)
+OBJECTS_EMCC = $(OBJECTS_EMCC_C) $(OBJECTS_EMCC_CXX)
+
 BINARY_NATIVE = uarm-bin
+BINARY_EMCC = uarm_web.js
+BINARY_WASM = uarm_web.wasm
 
 GARBAGE = \
+	$(BINARY_EMCC) \
+	$(BINARY_NATIVE) \
+	$(BINARY_WASM) \
 	$(BUILDDIR_NATIVE) \
 	$(BINARY_NATIVE) \
 	$(DEPDIR_NATIVE) \
+	$(BUILDDIR_EMCC) \
+	$(BINARY_ENCC) \
 	$(DEPDIR_EMCC)
 
 bin: $(BINARY_NATIVE)
 
+emscripten: $(BINARY_EMCC)
+
 $(BINARY_NATIVE): $(OBJECTS_NATIVE)
 	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_NATIVE)
+
+$(BINARY_EMCC): $(OBJECTS_EMCC)
+	$(LD_EMCC) -o $@ $^ $(LDFLAGS_EMCC)
 
 $(OBJECTS_NATIVE_C) : $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
@@ -99,8 +132,14 @@ $(OBJECTS_NATIVE_C) : $(BUILDDIR_NATIVE)/%.o : %.c
 $(OBJECTS_NATIVE_CXX) : $(BUILDDIR_NATIVE)/%.o : %.cpp
 	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
+$(OBJECTS_EMCC_C) : $(BUILDDIR_EMCC)/%.o : %.c
+	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(CFLAGS_COMMON) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
+
+$(OBJECTS_EMCC_CXX) : $(BUILDDIR_EMCC)/%.o : %.cpp
+	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_COMMON) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
+
 clean:
 	-rm -fr $(GARBAGE)
 
-.PHONY: clean all bin
+.PHONY: clean all bin emscripten
 .SUFFIXES:

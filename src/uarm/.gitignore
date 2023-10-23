@@ -1,7 +1,10 @@
 .build
 .deps
+.build-emcc
+.deps-emcc
 
 src/uarm-bin
+src/uarm_web*
 Makefile.local
 
 *.bin
