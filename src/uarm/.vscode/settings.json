@@ -9,6 +9,10 @@
     "pxa_dma.h": "c",
     "pxa270_imc.h": "c",
     "compare": "c",
-    "cstdint": "c"
+    "cstdint": "c",
+    "endian.h": "c",
+    "features.h": "c",
+    "byteswap.h": "c",
+    "mem.h": "c"
   }
 }

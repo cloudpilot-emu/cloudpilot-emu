@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "endian.h"
+#include "uarm_endian.h"
 #include "util.h"
 
 struct ArmRam {

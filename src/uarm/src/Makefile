@@ -16,12 +16,12 @@ INCLUDE_EXTRA ?=
 LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image
 
 CFLAGS_COMMON := \
-	-Werror -Wextra -Wall -Wno-unused-parameter  \
+	-Werror -Wextra -Wall -Wno-unused-parameter \
 	-Wno-visibility -Wno-constant-conversion -Wno-constant-logical-operand \
 	-D_FILE_OFFSET_BITS=64 -Iuarm -I.
 
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
-CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c11
+CFLAGS_COMMON := $(CFLAGS_COMMON) -std=gnu11
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps

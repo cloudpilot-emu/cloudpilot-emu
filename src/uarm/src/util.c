@@ -1,7 +1,6 @@
 #include "util.h"
 
 #include <time.h>
-#include <unistd.h>
 
 uint64_t timestampUsec() {
     struct timespec ts;

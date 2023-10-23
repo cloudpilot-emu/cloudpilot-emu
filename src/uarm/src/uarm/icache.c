@@ -6,7 +6,7 @@
 #include <string.h>
 
 #include "CPU.h"
-#include "endian.h"
+#include "uarm_endian.h"
 #include "util.h"
 
 #define ICACHE_L 5   // line size is 2^L bytes

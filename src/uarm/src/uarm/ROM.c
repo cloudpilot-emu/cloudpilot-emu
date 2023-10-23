@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "endian.h"
 #include "mem.h"
+#include "uarm_endian.h"
 #include "util.h"
 
 #define STRATAFLASH_BLOCK_SIZE 0x20000ul
