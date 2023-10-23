@@ -1,6 +1,7 @@
 #ifndef _AVERAGE_H_
 #define _AVERAGE_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 
@@ -28,6 +29,8 @@ class Average {
     }
 
     void Reset(size_t keep) {
+        keep = std::min(keep, count);
+
         first = (first + count - keep) % size;
         count = keep;
     }
