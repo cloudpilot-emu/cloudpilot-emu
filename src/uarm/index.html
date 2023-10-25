@@ -2,7 +2,7 @@
     <head>
         <title>uARM</title>
 
-        <meta name="viewport" content="width=520,user-scalable=no" />
+        <meta name="viewport" content="width=670,user-scalable=no" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta charset="UTF-8" />
 
@@ -15,6 +15,20 @@
 
             .controls {
                 margin-left: 1em;
+            }
+
+            @media screen and (max-width: 1200px) {
+                .container {
+                    flex-direction: column;
+                }
+
+                canvas {
+                    margin-bottom: 1em;
+                }
+
+                .controls {
+                    margin-left: 0;
+                }
             }
 
             .control:not(:first-child) {
