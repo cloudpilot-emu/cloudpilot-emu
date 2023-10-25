@@ -39,14 +39,15 @@ void MainLoop::Cycle() {
     const uint64_t now = timestampUsec();
     double deltaUsec = now - virtualTimeUsec;
 
-    if (lastDeltaUsec < LAG_THRESHOLD_CATCHUP_USEC && deltaUsec >= LAG_THRESHOLD_CATCHUP_USEC) {
-        cyclesPerSecondAverage.Reset(PRESERVE_TIMESLICES_FOR_CATCHUP);
-    } else if (deltaUsec > LAG_THRESHOLD_SKIP_USEC) {
+    if (deltaUsec > LAG_THRESHOLD_SKIP_USEC) {
         deltaUsec = TIMESLICE_SIZE_USEC;
         virtualTimeUsec = now - deltaUsec;
         cyclesPerSecondAverage.Reset(1);
 
         cerr << "too much lag, skipping forward" << endl << flush;
+    } else if (lastDeltaUsec < LAG_THRESHOLD_CATCHUP_USEC &&
+               deltaUsec >= LAG_THRESHOLD_CATCHUP_USEC) {
+        cyclesPerSecondAverage.Reset(PRESERVE_TIMESLICES_FOR_CATCHUP);
     }
 
     lastDeltaUsec = deltaUsec;
