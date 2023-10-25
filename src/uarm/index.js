@@ -4,6 +4,8 @@ const labelNor = document.getElementById('nor-image');
 const labelNand = document.getElementById('nand-image');
 const labelSD = document.getElementById('sd-image');
 
+const speedDisplay = document.getElementById('speed');
+
 const uploadNor = document.getElementById('upload-nor');
 const uploadNand = document.getElementById('upload-nand');
 const uploadSD = document.getElementById('upload-sd');
@@ -11,6 +13,83 @@ const uploadSD = document.getElementById('upload-sd');
 const canvas = document.getElementById('canvas-sdl');
 
 let fileNor, fileNand, fileSd;
+let emulator;
+
+class Emulator {
+    constructor(module) {
+        this.module = module;
+        this.cycle = module.cwrap('cycle', 'number', []);
+        this.currentIps = module.cwrap('currentIps', undefined, []);
+        this.currentIpsMax = module.cwrap('currentIpsMax', undefined, []);
+    }
+
+    static async create(nor, nand) {
+        let module;
+        try {
+            module = await createModule({
+                noInitialRun: true,
+                canvas,
+            });
+        } catch (e) {
+            console.error('failed to load and compile WASM module', e);
+            return;
+        }
+
+        module.FS.writeFile('/nor.bin', nor);
+        module.FS.writeFile('/nand.bin', nand);
+
+        try {
+            if (module.callMain(['-r', '/nor.bin', '-n', '/nand.bin']) !== 0) {
+                console.error('uARM terminated with error');
+                return;
+            }
+        } catch (e) {
+            console.error('uARM aborted');
+            return;
+        }
+
+        return new Emulator(module);
+    }
+
+    stop() {
+        if (this.immediateHandle) clearImmediate(this.immediateHandle);
+        if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
+
+        this.timeoutHandle = this.immediateHandle = undefined;
+        speedDisplay.innerText = '-';
+    }
+
+    start() {
+        if (this.timeoutHandle || this.immediateHandle) return;
+        this.lastSpeedUpdate = performance.now();
+
+        const schedule = () => {
+            const now = performance.now();
+
+            const delay = this.cycle() / 1000;
+            this.timeoutHandle = this.immediateHandle = undefined;
+
+            if (delay < 10) this.immediateHandle = setImmediate(schedule);
+            else this.timeoutHandle = setTimeout(schedule, delay);
+
+            if (now - this.lastSpeedUpdate > 1000) {
+                this.updateSpeedDisplay();
+                this.lastSpeedUpdate = now;
+            }
+        };
+
+        schedule();
+    }
+
+    updateSpeedDisplay() {
+        const currentIps = this.currentIps();
+        const currentIpsMax = this.currentIpsMax();
+
+        speedDisplay.innerText = `current ${(currentIps / 1e6).toFixed(2)} MIPS, limit ${(currentIpsMax / 1e6).toFixed(
+            2
+        )} MIPS -> ${((currentIps / currentIpsMax) * 100).toFixed(2)}%`;
+    }
+}
 
 function updateLabels() {
     labelNor.innerText = fileNor?.name ?? '[none]';
@@ -43,32 +122,10 @@ const openFile = () =>
 async function restart() {
     if (!(fileNor && fileNand)) return;
 
-    let module;
-    try {
-        module = await createModule({
-            noInitialRun: true,
-            canvas,
-        });
-    } catch (e) {
-        console.error('failed to load and compile WASM module', e);
-    }
+    emulator?.stop();
 
-    module.FS.writeFile('/nor.bin', fileNor.content);
-    module.FS.writeFile('/nand.bin', fileNand.content);
-
-    if (module.callMain(['-r', '/nor.bin', '-n', '/nand.bin']) !== 0) {
-        console.error('uARM terminated with error');
-        return;
-    }
-
-    const cycle = module.cwrap('cycle', 'number', []);
-    const schedule = () => {
-        const delay = cycle() / 1000;
-
-        if (delay < 10) setImmediate(schedule);
-        else setTimeout(schedule, delay);
-    };
-    schedule();
+    emulator = await Emulator.create(fileNor.content, fileNand.content);
+    emulator?.start();
 }
 
 async function main() {
@@ -78,26 +135,23 @@ async function main() {
     ctx.fillStyle = '#ddd';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    uploadNor.addEventListener('click', () =>
+    const uploadHandler = (assign) => () =>
         openFile()
             .then((file) => {
-                fileNor = file;
+                assign(file);
                 updateLabels();
 
                 restart();
             })
-            .catch((e) => console.error(e))
+            .catch((e) => console.error(e));
+
+    uploadNor.addEventListener(
+        'click',
+        uploadHandler((file) => (fileNor = file))
     );
-
-    uploadNand.addEventListener('click', () =>
-        openFile()
-            .then((file) => {
-                fileNand = file;
-                updateLabels();
-
-                restart();
-            })
-            .catch((e) => console.error(e))
+    uploadNand.addEventListener(
+        'click',
+        uploadHandler((file) => (fileNand = file))
     );
 }
 

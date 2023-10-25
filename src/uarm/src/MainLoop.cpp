@@ -12,7 +12,6 @@ using namespace std;
 
 namespace {
     constexpr int AVERAGE_TIMESLICES = 50;
-    constexpr uint32_t SPEED_DUMP_INTERVAL_USEC = 1000000;
     constexpr uint32_t BIN_SIZE = 1000000;
     constexpr uint32_t SAFETY_MARGIN_PCT = 97;
     constexpr uint32_t SAFETY_MARGIN_PCT_CATCHUP = 90;
@@ -30,13 +29,12 @@ MainLoop::MainLoop(SoC* soc, uint64_t configuredCyclesPerSecond, int scale)
       cyclesPerSecondAverage(AVERAGE_TIMESLICES) {
     uint64_t now = timestampUsec();
 
-    realTimeUsec = lastSpeedDumpAtUsec = now;
+    realTimeUsec = now;
     virtualTimeUsec = now;
     cyclesPerSecondAverage.Add(configuredCyclesPerSecond);
 }
 
-void MainLoop::Cycle() {
-    const uint64_t now = timestampUsec();
+void MainLoop::Cycle(uint64_t now) {
     double deltaUsec = now - virtualTimeUsec;
 
     if (deltaUsec > LAG_THRESHOLD_SKIP_USEC) {
@@ -55,22 +53,20 @@ void MainLoop::Cycle() {
 
     double cyclesPerSecond = CalculateCyclesPerSecond(
         deltaUsec >= LAG_THRESHOLD_CATCHUP_USEC ? SAFETY_MARGIN_PCT_CATCHUP : SAFETY_MARGIN_PCT);
-    const uint64_t cyclesEmulated = socRun(soc, round(deltaUsec * cyclesPerSecond / 1E6), scale);
+    const uint64_t cyclesEmulated = socRun(soc, deltaUsec * cyclesPerSecond / 1E6, scale);
 
     virtualTimeUsec += cyclesEmulated / cyclesPerSecond * 1E6;
     cyclesPerSecondAverage.Add((cyclesEmulated * 1000000) / (timestampUsec() - now));
 
-    if (now - lastSpeedDumpAtUsec > SPEED_DUMP_INTERVAL_USEC) {
-        cerr << "current emulation speed " << static_cast<uint64_t>(cyclesPerSecond) << " IPS ~"
-             << setprecision(2) << fixed
-             << (cyclesPerSecond / cyclesPerSecondAverage.Calculate() * 100.) << " max , "
-             << cyclesPerSecondAverage.Calculate() << " IPS theoretical max" << endl
-             << flush;
-        lastSpeedDumpAtUsec = now;
-    }
+    currentIps = cyclesPerSecond;
+    currentIpsMax = cyclesPerSecondAverage.Calculate();
 }
 
 uint64_t MainLoop::GetTimesliceSizeUsec() const { return TIMESLICE_SIZE_USEC; }
+
+uint32_t MainLoop::GetCurrentIps() const { return currentIps; }
+
+uint32_t MainLoop::GetCurrentIpsMax() const { return currentIpsMax; }
 
 uint64_t MainLoop::CalculateCyclesPerSecond(uint64_t safetyMargin) {
     const uint64_t avg = (cyclesPerSecondAverage.Calculate() * safetyMargin) / 100;

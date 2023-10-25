@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <iostream>
 #include <memory>
 
 #ifdef __EMSCRIPTEN__
@@ -35,6 +36,8 @@ using namespace std;
 #ifndef EMSCRIPTEN_KEEPALIVE
     #define EMSCRIPTEN_KEEPALIVE
 #endif
+
+using namespace std;
 
 namespace {
     constexpr uint32_t SD_SECTOR_SIZE = 512ULL;
@@ -157,15 +160,25 @@ extern "C" void socExtSerialWriteChar(int chr) {
 }
 
 extern "C" uint32_t EMSCRIPTEN_KEEPALIVE cycle() {
+    if (!mainLoop) return 0;
+
     const uint64_t now = timestampUsec();
 
-    mainLoop->Cycle();
+    mainLoop->Cycle(now);
     sdlRenderer->Draw();
 
     const int64_t timesliceRemaining =
         mainLoop->GetTimesliceSizeUsec() - static_cast<int64_t>(timestampUsec() - now);
 
     return max(timesliceRemaining, static_cast<int64_t>(0));
+}
+
+extern "C" uint32_t EMSCRIPTEN_KEEPALIVE currentIps() {
+    return mainLoop ? mainLoop->GetCurrentIps() : 0;
+}
+
+extern "C" uint32_t EMSCRIPTEN_KEEPALIVE currentIpsMax() {
+    return mainLoop ? mainLoop->GetCurrentIpsMax() : 0;
 }
 
 int main(int argc, char** argv) {
@@ -250,7 +263,20 @@ int main(int argc, char** argv) {
     sdlRenderer = make_unique<SdlRenderer>(window, renderer, soc, SCALE);
 
 #ifndef __EMSCRIPTEN__
+    uint64_t lastSpeedDump = timestampUsec();
+
     while (true) {
+        uint64_t now = timestampUsec();
+
+        if (now - lastSpeedDump > 1000000) {
+            const uint64_t currentIps = mainLoop->GetCurrentIps();
+            const uint64_t currentIpsMax = mainLoop->GetCurrentIpsMax();
+            lastSpeedDump = now;
+
+            cout << "current speed: " << currentIps << " IPS, theoretical speed: " << currentIpsMax
+                 << " IPS -> " << (100 * currentIps) / currentIpsMax << "%" << endl
+                 << flush;
+        }
         uint32_t timesliceRemaining = cycle();
         if (timesliceRemaining > 10) usleep(timesliceRemaining);
     }
