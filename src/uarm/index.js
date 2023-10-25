@@ -3,17 +3,27 @@ import 'https://unpkg.com/setimmediate@1.0.5';
 const labelNor = document.getElementById('nor-image');
 const labelNand = document.getElementById('nand-image');
 const labelSD = document.getElementById('sd-image');
-
 const speedDisplay = document.getElementById('speed');
+const logContainer = document.getElementById('log');
 
 const uploadNor = document.getElementById('upload-nor');
 const uploadNand = document.getElementById('upload-nand');
 const uploadSD = document.getElementById('upload-sd');
+const clearLog = document.getElementById('clear-log');
 
 const canvas = document.getElementById('canvas-sdl');
 
 let fileNor, fileNand, fileSd;
 let emulator;
+
+function log(message) {
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.innerText = message;
+
+    logContainer.appendChild(line);
+    logContainer.scrollTop = logContainer.scrollHeight;
+}
 
 class Emulator {
     constructor(module) {
@@ -29,6 +39,8 @@ class Emulator {
             module = await createModule({
                 noInitialRun: true,
                 canvas,
+                print: log,
+                printErr: log,
             });
         } catch (e) {
             console.error('failed to load and compile WASM module', e);
@@ -40,11 +52,11 @@ class Emulator {
 
         try {
             if (module.callMain(['-r', '/nor.bin', '-n', '/nand.bin']) !== 0) {
-                console.error('uARM terminated with error');
+                log('uARM terminated with error');
                 return;
             }
         } catch (e) {
-            console.error('uARM aborted');
+            log('uARM aborted');
             return;
         }
 
@@ -57,6 +69,8 @@ class Emulator {
 
         this.timeoutHandle = this.immediateHandle = undefined;
         speedDisplay.innerText = '-';
+
+        log('emulator stopped');
     }
 
     start() {
@@ -78,6 +92,7 @@ class Emulator {
             }
         };
 
+        log('emulator running');
         schedule();
     }
 
@@ -110,7 +125,11 @@ const openFile = () =>
 
             const reader = new FileReader();
 
-            reader.onload = () => resolve({ name: file.name, content: new Uint8Array(reader.result) });
+            reader.onload = () =>
+                resolve({
+                    name: file.name,
+                    content: new Uint8Array(reader.result),
+                });
             reader.onerror = () => reject(reader.error);
 
             reader.readAsArrayBuffer(file);
@@ -153,6 +172,12 @@ async function main() {
         'click',
         uploadHandler((file) => (fileNand = file))
     );
+
+    clearLog.addEventListener('click', () => (logContainer.innerHTML = ''));
+
+    document.addEventListener('visibilitychange', () => (document.hidden ? emulator?.stop() : emulator?.start()));
+
+    document;
 }
 
 main().catch((e) => console.error(e));
