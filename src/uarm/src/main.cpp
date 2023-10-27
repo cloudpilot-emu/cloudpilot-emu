@@ -23,11 +23,12 @@
 
 #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
+#else
+    #include "SdlEventHandler.h"
+    #include "SdlRenderer.h"
 #endif
 
 #include "MainLoop.h"
-#include "SdlEventHandler.h"
-#include "SdlRenderer.h"
 #include "SoC.h"
 #include "device.h"
 #include "util.h"
@@ -42,14 +43,12 @@ using namespace std;
 
 namespace {
     constexpr uint32_t SD_SECTOR_SIZE = 512ULL;
-    constexpr int SCALE = 2;
 
     uint8_t* sdCardData = NULL;
     size_t sdCardSecs = 0;
 
+    SoC* soc = nullptr;
     unique_ptr<MainLoop> mainLoop;
-    unique_ptr<SdlRenderer> sdlRenderer;
-    unique_ptr<SdlEventHandler> sdlEventHandler;
 
     void usage(const char* self) {
         fprintf(stderr,
@@ -108,6 +107,7 @@ namespace {
         fclose(cardFile);
     }
 
+#ifndef __EMSCRIPTEN__
     void initSdl(struct DeviceDisplayConfiguration displayConfiguration, int scale,
                  SDL_Window** window, SDL_Renderer** renderer) {
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) < 0) {
@@ -117,9 +117,7 @@ namespace {
 
         IMG_Init(IMG_INIT_PNG);
 
-#ifndef __EMSCRIPTEN__
         atexit(SDL_Quit);
-#endif
 
         if (SDL_CreateWindowAndRenderer(
                 displayConfiguration.width * scale,
@@ -129,7 +127,7 @@ namespace {
             exit(1);
         }
     }
-
+#endif
 }  // namespace
 
 extern "C" int socExtSerialReadChar(void) {
@@ -161,19 +159,28 @@ extern "C" void socExtSerialWriteChar(int chr) {
     fflush(stdout);
 }
 
-extern "C" uint32_t EMSCRIPTEN_KEEPALIVE cycle() {
-    if (!mainLoop) return 0;
+#ifdef __EMSCRIPTEN__
 
-    const uint64_t now = timestampUsec();
+extern "C" void EMSCRIPTEN_KEEPALIVE cycle(uint64_t now) {
+    if (!mainLoop) return;
 
     mainLoop->Cycle(now);
-    sdlRenderer->Draw();
-    sdlEventHandler->HandleEvents();
+}
 
-    const int64_t timesliceRemaining =
-        mainLoop->GetTimesliceSizeUsec() - static_cast<int64_t>(timestampUsec() - now);
+extern "C" void* EMSCRIPTEN_KEEPALIVE getFrame() {
+    if (!soc) return nullptr;
 
-    return max(timesliceRemaining, static_cast<int64_t>(0));
+    return socGetPendingFrame(soc);
+}
+
+extern "C" void EMSCRIPTEN_KEEPALIVE resetFrame() {
+    if (!soc) return;
+
+    socResetPendingFrame(soc);
+}
+
+extern "C" uint32_t EMSCRIPTEN_KEEPALIVE getTimesliceSizeUsec() {
+    return mainLoop ? mainLoop->GetTimesliceSizeUsec() : 0;
 }
 
 extern "C" uint32_t EMSCRIPTEN_KEEPALIVE currentIps() {
@@ -184,6 +191,8 @@ extern "C" uint32_t EMSCRIPTEN_KEEPALIVE currentIpsMax() {
     return mainLoop ? mainLoop->GetCurrentIpsMax() : 0;
 }
 
+#endif
+
 int main(int argc, char** argv) {
     uint32_t romLen = 0;
     const char* self = argv[0];
@@ -192,7 +201,6 @@ int main(int argc, char** argv) {
     FILE* romFile = NULL;
     uint8_t* rom = NULL;
     int gdbPort = -1;
-    SoC* soc;
     int c;
 
     while ((c = getopt(argc, argv, "g:s:r:n:hx")) != -1) switch (c) {
@@ -247,30 +255,32 @@ int main(int argc, char** argv) {
     soc = socInit((void**)&rom, &romLen, romLen ? 1 : 0, sdCardSecs, prvSdSectorR, prvSdSectorW,
                   nandFile, gdbPort, deviceGetSocRev());
 
+    mainLoop = make_unique<MainLoop>(soc, 100000000);
+
+#ifndef __EMSCRIPTEN__
+    constexpr int SCALE = 2;
+
     DeviceDisplayConfiguration displayConfiguration;
     deviceGetDisplayConfiguration(&displayConfiguration);
 
     SDL_Window* window;
     SDL_Renderer* renderer;
 
-#ifdef __EMSCRIPTEN__
-    SDL_setenv("SDL_EMSCRIPTEN_KEYBOARD_ELEMENT", "canvas", 1);
-#endif
-
     initSdl(displayConfiguration, SCALE, &window, &renderer);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xff);
     SDL_RenderClear(renderer);
+    SdlRenderer sdlRenderer(window, renderer, soc, SCALE);
+    SdlEventHandler sdlEventHandler(soc, SCALE);
 
-    mainLoop = make_unique<MainLoop>(soc, 100000000);
-    sdlRenderer = make_unique<SdlRenderer>(window, renderer, soc, SCALE);
-    sdlEventHandler = make_unique<SdlEventHandler>(soc, SCALE);
-
-#ifndef __EMSCRIPTEN__
     uint64_t lastSpeedDump = timestampUsec();
 
     while (true) {
         uint64_t now = timestampUsec();
+
+        mainLoop->Cycle(now);
+        sdlRenderer.Draw();
+        sdlEventHandler.HandleEvents();
 
         if (now - lastSpeedDump > 1000000) {
             const uint64_t currentIps = mainLoop->GetCurrentIps();
@@ -281,7 +291,10 @@ int main(int argc, char** argv) {
                  << " IPS -> " << (100 * currentIps) / currentIpsMax << "%" << endl
                  << flush;
         }
-        uint32_t timesliceRemaining = cycle();
+
+        const int64_t timesliceRemaining =
+            mainLoop->GetTimesliceSizeUsec() - static_cast<int64_t>(timestampUsec() - now);
+
         if (timesliceRemaining > 10) usleep(timesliceRemaining);
     }
 #endif

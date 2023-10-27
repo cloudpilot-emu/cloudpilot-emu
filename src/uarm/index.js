@@ -11,7 +11,8 @@ const uploadNand = document.getElementById('upload-nand');
 const uploadSD = document.getElementById('upload-sd');
 const clearLog = document.getElementById('clear-log');
 
-const canvas = document.getElementById('canvas-sdl');
+const canvas = document.getElementsByTagName('canvas')[0];
+const canvasCtx = canvas.getContext('2d');
 
 let fileNor, fileNand, fileSd;
 let emulator;
@@ -28,9 +29,19 @@ function log(message) {
 class Emulator {
     constructor(module) {
         this.module = module;
-        this.cycle = module.cwrap('cycle', 'number', []);
+
+        this.cycle = module.cwrap('cycle', undefined, ['number']);
+        this.getFrame = module.cwrap('getFrame', 'number', []);
+        this.resetFrame = module.cwrap('rresetFrame', undefined, []);
         this.currentIps = module.cwrap('currentIps', undefined, []);
         this.currentIpsMax = module.cwrap('currentIpsMax', undefined, []);
+        this.getTimesliceSizeUsec = module.cwrap('getTimesliceSizeUsec', 'number', []);
+
+        this.imageData = new ImageData(320, 320);
+        this.imageData32 = new Uint32Array(this.imageData.data.buffer);
+        this.canvasTmpCtx = document.createElement('canvas').getContext('2d');
+        this.canvasTmpCtx.canvas.width = 320;
+        this.canvasTmpCtx.canvas.height = 320;
     }
 
     static async create(nor, nand) {
@@ -38,7 +49,6 @@ class Emulator {
         try {
             module = await createModule({
                 noInitialRun: true,
-                canvas,
                 print: log,
                 printErr: log,
             });
@@ -80,11 +90,14 @@ class Emulator {
         const schedule = () => {
             const now = performance.now();
 
-            const delay = this.cycle() / 1000;
+            this.cycle(now * 1000);
+            this.render();
+
+            const timesliceRemainning = this.getTimesliceSizeUsec() / 1000 - performance.now() + now;
             this.timeoutHandle = this.immediateHandle = undefined;
 
-            if (delay < 10) this.immediateHandle = setImmediate(schedule);
-            else this.timeoutHandle = setTimeout(schedule, delay);
+            if (timesliceRemainning < 10) this.immediateHandle = setImmediate(schedule);
+            else this.timeoutHandle = setTimeout(schedule, timesliceRemainning);
 
             if (now - this.lastSpeedUpdate > 1000) {
                 this.updateSpeedDisplay();
@@ -94,6 +107,20 @@ class Emulator {
 
         log('emulator running');
         schedule();
+    }
+
+    render() {
+        if (!this.module) return;
+
+        const framePtr = this.getFrame() >>> 2;
+        if (!framePtr) return;
+
+        const frame = this.module.HEAPU32.subarray(framePtr, framePtr + 320 * 320);
+        this.imageData32.set(frame);
+
+        this.canvasTmpCtx.putImageData(this.imageData, 0, 0);
+        canvasCtx.imageSmoothingEnabled = false;
+        canvasCtx.drawImage(this.canvasTmpCtx.canvas, 0, 0, 320, 320, 0, 0, 640, 640);
     }
 
     updateSpeedDisplay() {
@@ -150,9 +177,8 @@ async function restart() {
 async function main() {
     updateLabels();
 
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ddd';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    canvasCtx.fillStyle = '#ddd';
+    canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
 
     const uploadHandler = (assign) => () =>
         openFile()

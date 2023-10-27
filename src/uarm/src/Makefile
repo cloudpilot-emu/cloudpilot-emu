@@ -19,9 +19,6 @@ INCLUDE_EXTRA ?=
 LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image
 LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno \
 	-s EXIT_RUNTIME=0 \
-	-s SDL2_IMAGE_FORMATS='["png"]' \
-	-s USE_SDL=2 \
-	-s USE_SDL_IMAGE=2 \
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME=createModule \
 	-s ALLOW_MEMORY_GROWTH=1 \
@@ -87,19 +84,22 @@ SOURCE_C = 						\
 	uarm/nand.c 				\
 	uarm/ac97dev_WM9712L.c
 
-SOURCE_CXX = 					\
+SOURCE_CXX_COMMON = 			\
 	main.cpp					\
-	MainLoop.cpp				\
+	MainLoop.cpp
+
+SOURCE_CXX_NATIVE = 			\
+	$(SOURCE_CXX_COMMON)		\
 	Silkscreen.cpp				\
 	SdlRenderer.cpp				\
 	SdlEventHandler.cpp
 
 OBJECTS_NATIVE_C = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o)
-OBJECTS_NATIVE_CXX = $(SOURCE_CXX:%.cpp=$(BUILDDIR_NATIVE)/%.o)
+OBJECTS_NATIVE_CXX = $(SOURCE_CXX_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_NATIVE = $(OBJECTS_NATIVE_C) $(OBJECTS_NATIVE_CXX)
 
 OBJECTS_EMCC_C = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o)
-OBJECTS_EMCC_CXX = $(SOURCE_CXX:%.cpp=$(BUILDDIR_EMCC)/%.o)
+OBJECTS_EMCC_CXX = $(SOURCE_CXX_COMMON:%.cpp=$(BUILDDIR_EMCC)/%.o)
 OBJECTS_EMCC = $(OBJECTS_EMCC_C) $(OBJECTS_EMCC_CXX)
 
 BINARY_NATIVE = uarm-bin
