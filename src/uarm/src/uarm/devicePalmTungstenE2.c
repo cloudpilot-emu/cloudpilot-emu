@@ -1,6 +1,5 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
-#include "SDL.h"
 #include "ac97dev_WM9712L.h"
 #include "device.h"
 #include "mmiodev_DirectNAND.h"
@@ -133,26 +132,26 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Keypad *kp, struct VSD 
                                sp->gpio, 79, &nandSpecs, nandFile);
     if (!dev->nand) ERR("Cannot init NAND");
 
-    if (!keypadAddGpioKey(kp, SDLK_F1, 11, false)) ERR("Cannot init hardkey1 (datebook)\n");
+    if (!keypadAddGpioKey(kp, keyIdHard1, 11, false)) ERR("Cannot init hardkey1 (datebook)\n");
 
-    if (!keypadAddGpioKey(kp, SDLK_F2, 13, false)) ERR("Cannot init hardkey2 (address)\n");
+    if (!keypadAddGpioKey(kp, keyIdHard2, 13, false)) ERR("Cannot init hardkey2 (address)\n");
 
-    if (!keypadAddGpioKey(kp, SDLK_F3, 7, false)) ERR("Cannot init hardkey3 (ToDo)\n");
+    if (!keypadAddGpioKey(kp, keyIdHard3, 7, false)) ERR("Cannot init hardkey3 (ToDo)\n");
 
-    if (!keypadAddGpioKey(kp, SDLK_F4, 5, false)) ERR("Cannot init hardkey4 (Memos)\n");
+    if (!keypadAddGpioKey(kp, keyIdHard4, 5, false)) ERR("Cannot init hardkey4 (Memos)\n");
 
-    if (!keypadAddGpioKey(kp, SDLK_DOWN, 21, false)) ERR("Cannot init down key\n");
+    if (!keypadAddGpioKey(kp, keyIdDown, 21, false)) ERR("Cannot init down key\n");
 
-    if (!keypadAddGpioKey(kp, SDLK_UP, 22, false)) ERR("Cannot init up key\n");
+    if (!keypadAddGpioKey(kp, keyIdUp, 22, false)) ERR("Cannot init up key\n");
 
-    if (!keypadAddGpioKey(kp, SDLK_LEFT, 19, false)) ERR("Cannot init left key\n");
+    if (!keypadAddGpioKey(kp, keyIdLeft, 19, false)) ERR("Cannot init left key\n");
 
-    if (!keypadAddGpioKey(kp, SDLK_RIGHT, 20, false)) ERR("Cannot init right key\n");
+    if (!keypadAddGpioKey(kp, keyIdRight, 20, false)) ERR("Cannot init right key\n");
 
-    if (!keypadAddGpioKey(kp, SDLK_RETURN, 14, false)) ERR("Cannot init select key\n");
+    if (!keypadAddGpioKey(kp, keyIdSelect, 14, false)) ERR("Cannot init select key\n");
 
-    if (!keypadAddGpioKey(kp, SDLK_ESCAPE, 2, false))  // XXX: change this to tru eot boot with
-                                                       // poewr key inverted. press ESC to release.
+    if (!keypadAddGpioKey(kp, keyIdPower, 2, false))  // XXX: change this to tru eot boot with
+                                                      // poewr key inverted. press ESC to release.
         ERR("Cannot init power key\n");
 
     socGpioSetState(sp->gpio, 1, true);  // reset button

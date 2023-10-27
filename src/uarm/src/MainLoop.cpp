@@ -21,10 +21,9 @@ namespace {
     constexpr int PRESERVE_TIMESLICES_FOR_CATCHUP = 3;
 }  // namespace
 
-MainLoop::MainLoop(SoC* soc, uint64_t configuredCyclesPerSecond, int scale)
+MainLoop::MainLoop(SoC* soc, uint64_t configuredCyclesPerSecond)
     : soc(soc),
       configuredCyclesPerSecond(configuredCyclesPerSecond),
-      scale(scale),
       lastCyclesPerSecond(configuredCyclesPerSecond),
       cyclesPerSecondAverage(AVERAGE_TIMESLICES) {
     uint64_t now = timestampUsec();
@@ -53,7 +52,7 @@ void MainLoop::Cycle(uint64_t now) {
 
     double cyclesPerSecond = CalculateCyclesPerSecond(
         deltaUsec >= LAG_THRESHOLD_CATCHUP_USEC ? SAFETY_MARGIN_PCT_CATCHUP : SAFETY_MARGIN_PCT);
-    const uint64_t cyclesEmulated = socRun(soc, deltaUsec * cyclesPerSecond / 1E6, scale);
+    const uint64_t cyclesEmulated = socRun(soc, deltaUsec * cyclesPerSecond / 1E6);
 
     virtualTimeUsec += cyclesEmulated / cyclesPerSecond * 1E6;
     cyclesPerSecondAverage.Add((cyclesEmulated * 1000000) / (timestampUsec() - now));

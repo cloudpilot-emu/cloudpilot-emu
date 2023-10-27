@@ -36,7 +36,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "SDL.h"
 #include "device.h"
 #include "keys.h"
 #include "pxa270_IMC.h"
@@ -356,7 +355,27 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     return soc;
 }
 
-uint64_t socRun(struct SoC *soc, uint64_t maxCycles, int scale) {
+void socKeyDown(struct SoC *soc, enum KeyId key) {
+    deviceKey(soc->dev, key, true);
+    keypadKeyEvt(soc->kp, key, true);
+}
+
+void socKeyUp(struct SoC *soc, enum KeyId key) {
+    deviceKey(soc->dev, key, false);
+    keypadKeyEvt(soc->kp, key, false);
+}
+
+void socPenDown(struct SoC *soc, int x, int y) {
+    soc->mouseDown = true;
+    deviceTouch(soc->dev, x, y);
+}
+
+void socPenUp(struct SoC *soc) {
+    soc->mouseDown = false;
+    deviceTouch(soc->dev, -1, -1);
+}
+
+uint64_t socRun(struct SoC *soc, uint64_t maxCycles) {
     uint64_t cycles = 0;
     uint_fast8_t i;
 
@@ -384,45 +403,6 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, int scale) {
 
         if (!(soc->accumulated_cycles & 0x0001FFFUL)) pxaLcdFrame(soc->lcd);
         if (!(soc->accumulated_cycles & 0x00FFFFFFUL)) pxaRtcUpdate(soc->rtc);
-
-        if (!(soc->accumulated_cycles & 0x00FFFFUL)) {
-            SDL_Event event;
-
-            if (SDL_PollEvent(&event)) switch (event.type) {
-                    case SDL_QUIT:
-                        exit(0);
-                        break;
-
-                    case SDL_MOUSEBUTTONDOWN:
-                        if (event.button.button != SDL_BUTTON_LEFT) break;
-                        soc->mouseDown = true;
-                        deviceTouch(soc->dev, event.button.x / scale, event.button.y / scale);
-                        break;
-
-                    case SDL_MOUSEBUTTONUP:
-                        if (event.button.button != SDL_BUTTON_LEFT) break;
-                        soc->mouseDown = false;
-                        deviceTouch(soc->dev, -1, -1);
-                        break;
-
-                    case SDL_MOUSEMOTION:
-                        if (!soc->mouseDown) break;
-                        deviceTouch(soc->dev, event.motion.x / scale, event.motion.y / scale);
-                        break;
-
-                    case SDL_KEYDOWN:
-
-                        deviceKey(soc->dev, event.key.keysym.sym, true);
-                        keypadSdlKeyEvt(soc->kp, event.key.keysym.sym, true);
-                        break;
-
-                    case SDL_KEYUP:
-
-                        deviceKey(soc->dev, event.key.keysym.sym, false);
-                        keypadSdlKeyEvt(soc->kp, event.key.keysym.sym, false);
-                        break;
-                }
-        }
 
         cpuCycle(soc->cpu);
     }

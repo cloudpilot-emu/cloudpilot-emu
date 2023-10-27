@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "keys.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -20,12 +22,17 @@ typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
 struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t romNumPieces,
                     uint32_t sdNumSectors, SdSectorR sdR, SdSectorW sdW, FILE *nandFile,
                     int gdbPort, uint_fast8_t socRev);
-uint64_t socRun(struct SoC *soc, uint64_t maxCycles, int scale);
+uint64_t socRun(struct SoC *soc, uint64_t maxCycles);
 
 void socBootload(struct SoC *soc, uint32_t method, void *param);  // soc-specific
 
 uint32_t *socGetPendingFrame(struct SoC *soc);
 void socResetPendingFrame(struct SoC *soc);
+
+void socKeyDown(struct SoC *soc, enum KeyId key);
+void socKeyUp(struct SoC *soc, enum KeyId key);
+void socPenDown(struct SoC *soc, int x, int y);
+void socPenUp(struct SoC *soc);
 
 // externally needed
 void socExtSerialWriteChar(int ch);

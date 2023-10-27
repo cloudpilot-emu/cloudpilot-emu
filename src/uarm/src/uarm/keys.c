@@ -12,13 +12,13 @@
 #define MAX_KP_COLS 8
 
 struct KeyGpio {
-    uint32_t sdlKey;  // 0 for inval
+    enum KeyId key;  // 0 for inval
     int8_t gpioNum;
     bool activeHigh;
 };
 
 struct KeyMatrix {
-    uint32_t sdlKey;  // 0 for inval
+    enum KeyId key;  // 0 for inval
     bool isDown;
 };
 
@@ -131,11 +131,11 @@ struct Keypad *keypadInit(struct SocGpio *gpio, bool matrixHasPullUps) {
     return kp;
 }
 
-void keypadSdlKeyEvt(struct Keypad *kp, uint32_t sdlKey, bool wentDown) {
+void keypadKeyEvt(struct Keypad *kp, enum KeyId key, bool wentDown) {
     int i, j;
 
     for (i = 0; i < MAX_GPIO_KEYS; i++) {
-        if (kp->gpios[i].sdlKey == sdlKey && kp->gpios[i].gpioNum >= 0) {
+        if (kp->gpios[i].key == key && kp->gpios[i].gpioNum >= 0) {
             socGpioSetState(
                 kp->gpio, kp->gpios[i].gpioNum,
                 (wentDown && kp->gpios[i].activeHigh) || (!wentDown && !kp->gpios[i].activeHigh));
@@ -148,7 +148,7 @@ void keypadSdlKeyEvt(struct Keypad *kp, uint32_t sdlKey, bool wentDown) {
         for (j = 0; j < MAX_KP_COLS; j++) {
             if (kp->kpGpioCol[j] < 0) continue;
 
-            if (kp->km[i][j].sdlKey != sdlKey) continue;
+            if (kp->km[i][j].key != key) continue;
 
             kp->km[i][j].isDown = wentDown;
         }
@@ -190,12 +190,12 @@ bool keypadDefineCol(struct Keypad *kp, unsigned colIdx, int8_t gpio) {
     return keypadDefineRowOrCol(kp, colIdx, kp->kpGpioCol, MAX_KP_COLS, gpio);
 }
 
-bool keypadAddGpioKey(struct Keypad *kp, uint32_t sdlKey, int8_t gpioNum, bool activeHigh) {
+bool keypadAddGpioKey(struct Keypad *kp, enum KeyId key, int8_t gpioNum, bool activeHigh) {
     unsigned i;
 
     for (i = 0; i < MAX_GPIO_KEYS; i++) {
-        if (!kp->gpios[i].sdlKey) {
-            kp->gpios[i].sdlKey = sdlKey;
+        if (!kp->gpios[i].key) {
+            kp->gpios[i].key = key;
             kp->gpios[i].gpioNum = gpioNum;
             kp->gpios[i].activeHigh = activeHigh;
 
@@ -207,7 +207,7 @@ bool keypadAddGpioKey(struct Keypad *kp, uint32_t sdlKey, int8_t gpioNum, bool a
     return false;
 }
 
-bool keypadAddMatrixKey(struct Keypad *kp, uint32_t sdlKey, unsigned row, unsigned col) {
+bool keypadAddMatrixKey(struct Keypad *kp, enum KeyId key, unsigned row, unsigned col) {
     // coords must be valid
     if (row >= MAX_KP_ROWS || col >= MAX_KP_COLS) return false;
 
@@ -215,9 +215,9 @@ bool keypadAddMatrixKey(struct Keypad *kp, uint32_t sdlKey, unsigned row, unsign
     if (kp->kpGpioRow[row] < 0 || kp->kpGpioCol[col] < 0) return false;
 
     // must be unused
-    if (kp->km[row][col].sdlKey) return false;
+    if (kp->km[row][col].key) return false;
 
-    kp->km[row][col].sdlKey = sdlKey;
+    kp->km[row][col].key = key;
     kp->km[row][col].isDown = false;
 
     return true;

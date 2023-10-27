@@ -26,6 +26,7 @@
 #endif
 
 #include "MainLoop.h"
+#include "SdlEventHandler.h"
 #include "SdlRenderer.h"
 #include "SoC.h"
 #include "device.h"
@@ -48,6 +49,7 @@ namespace {
 
     unique_ptr<MainLoop> mainLoop;
     unique_ptr<SdlRenderer> sdlRenderer;
+    unique_ptr<SdlEventHandler> sdlEventHandler;
 
     void usage(const char* self) {
         fprintf(stderr,
@@ -166,6 +168,7 @@ extern "C" uint32_t EMSCRIPTEN_KEEPALIVE cycle() {
 
     mainLoop->Cycle(now);
     sdlRenderer->Draw();
+    sdlEventHandler->HandleEvents();
 
     const int64_t timesliceRemaining =
         mainLoop->GetTimesliceSizeUsec() - static_cast<int64_t>(timestampUsec() - now);
@@ -259,8 +262,9 @@ int main(int argc, char** argv) {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xff);
     SDL_RenderClear(renderer);
 
-    mainLoop = make_unique<MainLoop>(soc, 100000000, SCALE);
+    mainLoop = make_unique<MainLoop>(soc, 100000000);
     sdlRenderer = make_unique<SdlRenderer>(window, renderer, soc, SCALE);
+    sdlEventHandler = make_unique<SdlEventHandler>(soc, SCALE);
 
 #ifndef __EMSCRIPTEN__
     uint64_t lastSpeedDump = timestampUsec();

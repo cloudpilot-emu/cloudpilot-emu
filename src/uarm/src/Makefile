@@ -91,7 +91,8 @@ SOURCE_CXX = 					\
 	main.cpp					\
 	MainLoop.cpp				\
 	Silkscreen.cpp				\
-	SdlRenderer.cpp
+	SdlRenderer.cpp				\
+	SdlEventHandler.cpp
 
 OBJECTS_NATIVE_C = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_NATIVE_CXX = $(SOURCE_CXX:%.cpp=$(BUILDDIR_NATIVE)/%.o)
