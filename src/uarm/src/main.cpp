@@ -161,36 +161,48 @@ extern "C" void socExtSerialWriteChar(int chr) {
 
 #ifdef __EMSCRIPTEN__
 
-extern "C" void EMSCRIPTEN_KEEPALIVE cycle(uint64_t now) {
+extern "C" {
+
+void EMSCRIPTEN_KEEPALIVE cycle(uint64_t now) {
     if (!mainLoop) return;
 
     mainLoop->Cycle(now);
 }
 
-extern "C" void* EMSCRIPTEN_KEEPALIVE getFrame() {
+void* EMSCRIPTEN_KEEPALIVE getFrame() {
     if (!soc) return nullptr;
 
     return socGetPendingFrame(soc);
 }
 
-extern "C" void EMSCRIPTEN_KEEPALIVE resetFrame() {
+void EMSCRIPTEN_KEEPALIVE resetFrame() {
     if (!soc) return;
 
     socResetPendingFrame(soc);
 }
 
-extern "C" uint32_t EMSCRIPTEN_KEEPALIVE getTimesliceSizeUsec() {
+uint32_t EMSCRIPTEN_KEEPALIVE getTimesliceSizeUsec() {
     return mainLoop ? mainLoop->GetTimesliceSizeUsec() : 0;
 }
 
-extern "C" uint32_t EMSCRIPTEN_KEEPALIVE currentIps() {
-    return mainLoop ? mainLoop->GetCurrentIps() : 0;
+void EMSCRIPTEN_KEEPALIVE penDown(int x, int y) {
+    if (!soc) return;
+
+    socPenDown(soc, x, y);
 }
 
-extern "C" uint32_t EMSCRIPTEN_KEEPALIVE currentIpsMax() {
+void EMSCRIPTEN_KEEPALIVE penUp() {
+    if (!soc) return;
+
+    socPenUp(soc);
+}
+
+uint32_t EMSCRIPTEN_KEEPALIVE currentIps() { return mainLoop ? mainLoop->GetCurrentIps() : 0; }
+
+uint32_t EMSCRIPTEN_KEEPALIVE currentIpsMax() {
     return mainLoop ? mainLoop->GetCurrentIpsMax() : 0;
 }
-
+}
 #endif
 
 int main(int argc, char** argv) {

@@ -36,15 +36,35 @@ class Emulator {
         this.currentIps = module.cwrap('currentIps', undefined, []);
         this.currentIpsMax = module.cwrap('currentIpsMax', undefined, []);
         this.getTimesliceSizeUsec = module.cwrap('getTimesliceSizeUsec', 'number', []);
+        this.penDown = module.cwrap('penDown', undefined, ['number', 'number']);
+        this.penUp = module.cwrap('penUp', undefined, []);
 
         this.imageData = new ImageData(320, 320);
         this.imageData32 = new Uint32Array(this.imageData.data.buffer);
         this.canvasTmpCtx = document.createElement('canvas').getContext('2d');
         this.canvasTmpCtx.canvas.width = 320;
         this.canvasTmpCtx.canvas.height = 320;
+
+        this.onMouseDown = (e) => {
+            if ((e.buttons & 1) === 0 || !this.module) return;
+
+            const bb = canvas.getBoundingClientRect();
+            const x = (e.clientX - bb.x) >>> 1;
+            const y = (e.clientY - bb.y) >>> 1;
+
+            if (x < 0 || x >= 320 || y < 0 || y >= 440) return;
+
+            this.penDown(x, y);
+        };
+
+        this.onMouseUp = (e) => {
+            if (e.button !== 0 || !this.module) return;
+
+            this.penUp();
+        };
     }
 
-    static async create(nor, nand) {
+    static async create(nor, nand, sd) {
         let module;
         try {
             module = await createModule({
@@ -59,9 +79,10 @@ class Emulator {
 
         module.FS.writeFile('/nor.bin', nor);
         module.FS.writeFile('/nand.bin', nand);
+        if (sd) module.FS.writeFile('/sd.img', sd);
 
         try {
-            if (module.callMain(['-r', '/nor.bin', '-n', '/nand.bin']) !== 0) {
+            if (module.callMain(['-r', '/nor.bin', '-n', '/nand.bin', ...(sd ? ['-s', '/sd.img'] : [])]) !== 0) {
                 log('uARM terminated with error');
                 return;
             }
@@ -74,6 +95,10 @@ class Emulator {
     }
 
     stop() {
+        canvas.removeEventListener('mousedown', this.onMouseDown);
+        canvas.removeEventListener('mousemove', this.onMouseDown);
+        canvas.removeEventListener('mouseup', this.onMouseUp);
+
         if (this.immediateHandle) clearImmediate(this.immediateHandle);
         if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
 
@@ -86,6 +111,10 @@ class Emulator {
     start() {
         if (this.timeoutHandle || this.immediateHandle) return;
         this.lastSpeedUpdate = performance.now();
+
+        canvas.addEventListener('mousedown', this.onMouseDown);
+        canvas.addEventListener('mousemove', this.onMouseDown);
+        canvas.addEventListener('mouseup', this.onMouseUp);
 
         const schedule = () => {
             const now = performance.now();
@@ -170,15 +199,23 @@ async function restart() {
 
     emulator?.stop();
 
-    emulator = await Emulator.create(fileNor.content, fileNand.content);
+    emulator = await Emulator.create(fileNor.content, fileNand.content, fileSd?.content);
     emulator?.start();
+}
+
+function drawSkin() {
+    const image = new Image();
+    image.src = 'skin.svg';
+
+    image.onload = () => canvasCtx.drawImage(image, 0, 640, 640, 240);
 }
 
 async function main() {
     updateLabels();
 
-    canvasCtx.fillStyle = '#ddd';
+    canvasCtx.fillStyle = '#fff';
     canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+    drawSkin();
 
     const uploadHandler = (assign) => () =>
         openFile()
@@ -197,6 +234,10 @@ async function main() {
     uploadNand.addEventListener(
         'click',
         uploadHandler((file) => (fileNand = file))
+    );
+    uploadSD.addEventListener(
+        'click',
+        uploadHandler((file) => (fileSd = file))
     );
 
     clearLog.addEventListener('click', () => (logContainer.innerHTML = ''));
