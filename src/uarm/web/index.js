@@ -1,5 +1,6 @@
 import './setimmediate/setimmediate.js';
 import { Emulator } from './emulator.js';
+import { Database } from './database.js';
 
 const labelNor = document.getElementById('nor-image');
 const labelNand = document.getElementById('nand-image');
@@ -98,21 +99,36 @@ async function restart() {
 }
 
 async function main() {
-    updateLabels();
+    const database = await Database.create();
 
+    fileNor = await database.getNor();
+    fileNand = await database.getNand();
+    fileSd = await database.getSd();
+    await restart();
+
+    updateLabels();
     clearCanvas();
 
     uploadNor.addEventListener(
         'click',
-        uploadHandler((file) => (fileNor = file))
+        uploadHandler((file) => {
+            database.putNor(file);
+            fileNor = file;
+        })
     );
     uploadNand.addEventListener(
         'click',
-        uploadHandler((file) => (fileNand = file))
+        uploadHandler((file) => {
+            database.putNand(file);
+            fileNand = file;
+        })
     );
     uploadSD.addEventListener(
         'click',
-        uploadHandler((file) => (fileSd = file))
+        uploadHandler((file) => {
+            database.putSd(file);
+            fileSd = file;
+        })
     );
 
     clearLog.addEventListener('click', () => (logContainer.innerHTML = ''));
