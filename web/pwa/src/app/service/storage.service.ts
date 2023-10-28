@@ -632,6 +632,13 @@ export class StorageService {
                 request.onsuccess = () => {
                     resolve(request.result);
                 };
+                request.onblocked = () => {
+                    reject(
+                        new StorageError(
+                            'failed to open DB: required upgrade blocked by an open instance of CloudPilotEmu',
+                        ),
+                    );
+                };
                 request.onupgradeneeded = async (e) => {
                     clearTimeout(watchdogHandle);
 
