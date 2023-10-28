@@ -1,3 +1,5 @@
+import { EventHandler } from './eventhandler.js';
+
 export class Emulator {
     constructor(module, { canvasCtx, speedDisplay, log }) {
         this.module = module;
@@ -20,6 +22,8 @@ export class Emulator {
         this.canvasTmpCtx.canvas.width = 320;
         this.canvasTmpCtx.canvas.height = 320;
 
+        this.eventHandler = new EventHandler(this, canvasCtx.canvas);
+
         this.onMouseDown = (e) => {
             if ((e.buttons & 1) === 0 || !this.module) return;
 
@@ -29,13 +33,20 @@ export class Emulator {
 
             if (x < 0 || x >= 320 || y < 0 || y >= 440) return;
 
-            this.penDown(x, y);
+            console.log(x, y);
+
+            setImmediate(() => this.penDown(x, y));
         };
 
         this.onMouseUp = (e) => {
             if (e.button !== 0 || !this.module) return;
 
-            this.penUp();
+            e.stopPropagation();
+            e.preventDefault();
+
+            console.log('penUp');
+
+            setImmediate(() => this.penUp());
         };
     }
 
@@ -72,9 +83,7 @@ export class Emulator {
     }
 
     stop() {
-        this.canvasCtx.canvas.removeEventListener('mousedown', this.onMouseDown);
-        this.canvasCtx.canvas.removeEventListener('mousemove', this.onMouseDown);
-        this.canvasCtx.canvas.removeEventListener('mouseup', this.onMouseUp);
+        this.eventHandler.stop();
 
         if (this.immediateHandle) clearImmediate(this.immediateHandle);
         if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
@@ -89,9 +98,7 @@ export class Emulator {
         if (this.timeoutHandle || this.immediateHandle) return;
         this.lastSpeedUpdate = performance.now();
 
-        this.canvasCtx.canvas.addEventListener('mousedown', this.onMouseDown);
-        this.canvasCtx.canvas.addEventListener('mousemove', this.onMouseDown);
-        this.canvasCtx.canvas.addEventListener('mouseup', this.onMouseUp);
+        this.eventHandler.start();
 
         const schedule = () => {
             const now = performance.now();
