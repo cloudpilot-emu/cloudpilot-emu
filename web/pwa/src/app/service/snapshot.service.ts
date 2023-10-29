@@ -181,7 +181,7 @@ export class SnapshotService {
                 reject(E_TIMEOUT);
             });
 
-            tx.oncomplete = async () => {
+            tx.oncomplete = () => {
                 timeout.cancel();
                 this.dirtyPages?.fill(0);
                 this.cardDirtyPages?.fill(0);
