@@ -150,8 +150,6 @@ export class SnapshotService {
         );
 
         await this.storageService.acquireLock(tx);
-        if (this.cloudpilot.isSuspended()) return;
-        this.assertSessionMatches();
 
         let storageCard: StorageCard | undefined;
         const storageId = this.cloudpilot.getMountedKey();
@@ -161,6 +159,9 @@ export class SnapshotService {
                 tx.objectStore(OBJECT_STORE_STORAGE_CARD).index(INDEX_CARD_STORAGE_ID).get(storageId),
             );
         }
+
+        if (this.cloudpilot.isSuspended()) return;
+        this.assertSessionMatches();
 
         const statistics: SnapshotStatistics = await new Promise((resolve, reject) => {
             let isTimeout = false;
