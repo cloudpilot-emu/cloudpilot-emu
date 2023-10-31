@@ -7,6 +7,7 @@
 #include "SoC.h"
 #include "cp15.h"
 #include "mem.h"
+#include "patch_dispatch.h"
 #include "soc_AC97.h"
 #include "soc_DMA.h"
 #include "soc_GPIO.h"
@@ -95,6 +96,8 @@ struct SoC {
     struct ArmRom *rom;
     struct ArmMem *mem;
     struct ArmCpu *cpu;
+    struct PatchDispatch *patchDispatch;
+
     struct Keypad *kp;
     struct VSD *vSD;
 
@@ -139,9 +142,11 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     soc->mem = memInit();
     if (!soc->mem) ERR("Cannot init physical memory manager");
 
+    soc->patchDispatch = initPatchDispatch();
+
     soc->cpu = cpuInit(ROM_BASE, soc->mem, true /* xscale */, false /* omap */, gdbPort,
                        socRev ? ((socRev == 1) ? CPUID_PXA260 : CPUID_PXA270) : CPUID_PXA255,
-                       0x0B16A16AUL);
+                       0x0B16A16AUL, soc->patchDispatch);
     if (!soc->cpu) ERR("Cannot init CPU");
 
     ramBuffer = (uint32_t *)malloc(deviceGetRamSize());

@@ -10,7 +10,6 @@
 #include "gdbstub.h"
 #include "icache.h"
 #include "mem.h"
-#include "palmoscalls.h"
 #include "util.h"
 
 #define unlikely(x) __builtin_expect((x), 0)
@@ -87,12 +86,15 @@ struct ArmCpu {
 
     uint32_t pid;  // for fcse
 
+    bool isInjectedCall;
+
     struct icache *ic;
     struct ArmMmu *mmu;
     struct ArmMem *mem;
     struct ArmCP15 *cp15;
 
     struct stub *debugStub;
+    struct PatchDispatch *patchDispatch;
 };
 
 static uint32_t cpuPrvClz(uint32_t val) {
@@ -923,7 +925,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                             bool specialPC /* for thumb*/) {
     uint32_t op1, op2, res, sr, ea, memVal32, addBefore, addAfter;
     bool specialInstr = false, ok;
-    uint_fast8_t mode, cpNo, fsr;
+    uint_fast8_t mode, cpNo, fsr, sourceReg, destReg;
     uint_fast16_t regsList;
     uint16_t memVal16;
     uint8_t memVal8;
@@ -935,10 +937,6 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
 
 #ifdef SUPPORT_Z72_PRINTF
     cpuPrvZ72sysPrintf(cpu);
-#endif
-
-#ifdef PALMOS_TRACE_OSCALLS
-    palmosInstrNotify(instr, cpu->regs[REG_NO_LR]);
 #endif
 
     switch (instr >> 28) {
@@ -1622,7 +1620,8 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
             if (mode & ARM_MODE_2_INV) goto invalid_instr;
             if (mode & ARM_MODE_2_T) privileged = false;
 
-            ea = cpuPrvGetReg(cpu, mode & ARM_MODE_2_REG, wasT, specialPC);
+            sourceReg = mode & ARM_MODE_2_REG;
+            ea = cpuPrvGetReg(cpu, sourceReg, wasT, specialPC);
             ea += addBefore;
 
             if (mode & ARM_MODE_2_LOAD) {
@@ -1632,7 +1631,19 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                         cpuPrvHandleMemErr(cpu, ea, 4, false, false, fsr);
                         goto instr_done;
                     }
-                    cpuPrvSetReg(cpu, (instr >> 12) & 0x0F, memVal32);
+
+                    destReg = (instr >> 12) & 0x0F;
+
+                    // from RePalm:
+                    //
+                    // #define CALL_OSCALL(tab,num)	"LDR R12,[R9, #-" #tab "] \nLDR PC,[R12, #"
+                    // #num "]"
+                    if (sourceReg == 9 && destReg == 12)
+                        patchDispatchOnLoadR12FromR9(cpu->patchDispatch, addBefore);
+                    if (sourceReg == 12 && destReg == REG_NO_PC)
+                        patchDispatchOnLoadPcFromR12(cpu->patchDispatch, addBefore, cpu->regs);
+
+                    cpuPrvSetReg(cpu, destReg, memVal32);
                 } else {
                     ok = cpuPrvMemOp(cpu, &memVal8, ea, 1, false, privileged, &fsr);
                     if (!ok) {
@@ -1878,6 +1889,7 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
 
     cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
     gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC], true);  // early in case it changes PC
+    patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
 
     // fetch instruction
     cpu->curInstrPC = fetchPc = pc = cpu->regs[REG_NO_PC];
@@ -2212,7 +2224,7 @@ undefined:
 }
 
 struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
-                       uint32_t cpuid, uint32_t cacheId) {
+                       uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch) {
     struct ArmCpu *cpu = (struct ArmCpu *)malloc(sizeof(*cpu));
 
     if (!cpu) ERR("cannot alloc CPU");
@@ -2238,14 +2250,30 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     cpu->cp15 = cp15Init(cpu, cpu->mmu, cpu->ic, cpuid, cacheId, xscale, omap);
     if (!cpu->mmu) ERR("Cannot init CP15");
 
+    cpu->patchDispatch = patchDispatch;
+
     return cpu;
 }
 
+struct ArmCpu *cpuPrepareInjectedCall(const struct ArmCpu *cpu, struct ArmCpu *scratchState) {
+    if (!scratchState) scratchState = (struct ArmCpu *)malloc(sizeof(*scratchState));
+
+    memcpy(scratchState, cpu, sizeof(*scratchState));
+    scratchState->isInjectedCall = true;
+
+    return scratchState;
+}
+
+void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState) {
+    cpu->waitingIrqs = scratchState->waitingIrqs;
+    cpu->waitingFiqs = scratchState->waitingFiqs;
+}
+
 void cpuCycle(struct ArmCpu *cpu) {
-    if (unlikely(cpu->waitingFiqs && !cpu->F))
+    if (unlikely(cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall))
         cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ, cpu->regs[REG_NO_PC] + 4,
                         ARM_SR_MODE_FIQ | ARM_SR_I | ARM_SR_F);
-    else if (unlikely(cpu->waitingIrqs && !cpu->I))
+    else if (unlikely(cpu->waitingIrqs && !cpu->I && !cpu->isInjectedCall))
         cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_IRQ, cpu->regs[REG_NO_PC] + 4,
                         ARM_SR_MODE_IRQ | ARM_SR_I);
 

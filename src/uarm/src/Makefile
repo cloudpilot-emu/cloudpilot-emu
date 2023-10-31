@@ -8,7 +8,7 @@ CC_EMCC ?= emcc
 CXX_EMCC ?= emcc
 LD_EMCC ?= emcc
 
-CFLAGS_NATIVE ?= -O2  -g $(shell sdl2-config --cflags)
+CFLAGS_NATIVE ?= -O2  -g $(shell sdl2-config --cflags) -flto
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
 CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions -s USE_SDL=2 -s USE_SDL_IMAGE=2
@@ -16,7 +16,7 @@ CXXFLAGS_EMCC = $(CFLAGS_EMCC)
 
 INCLUDE_EXTRA ?=
 
-LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image
+LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image -flto
 LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno \
 	-s EXIT_RUNTIME=0 \
 	-s MODULARIZE=1 \
@@ -47,6 +47,8 @@ MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 SOURCE_C = 						\
 	util.c						\
 	uarm/CPU.c 					\
+	uarm/patch_dispatch.c		\
+	uarm/syscall.c				\
 	uarm/MMU.c 					\
 	uarm/cp15.c 				\
 	uarm/mem.c 					\
@@ -56,7 +58,6 @@ SOURCE_C = 						\
 	uarm/gdbstub.c				\
 	uarm/vSD.c 					\
 	uarm/keys.c 				\
-	uarm/palmoscalls.c 			\
 	uarm/socPXA.c 				\
 	uarm/pxa_IC.c 				\
 	uarm/pxa_MMC.c 				\
@@ -144,3 +145,7 @@ clean:
 
 .PHONY: clean all bin emscripten
 .SUFFIXES:
+
+
+include $(shell test -e $(DEPDIR_NATIVE) && find $(DEPDIR_NATIVE) -type f)
+include $(shell test -e $(DEPDIR_EMCC) && find $(DEPDIR_EMCC) -type f)
