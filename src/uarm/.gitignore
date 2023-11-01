@@ -12,3 +12,6 @@ Makefile.local
 *.pdb
 *.img
 *.zip
+
+.vscode
+*.log
