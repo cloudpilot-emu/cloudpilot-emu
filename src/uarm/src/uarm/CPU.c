@@ -1889,7 +1889,6 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
 
     cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
     gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC], true);  // early in case it changes PC
-    patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
 
     // fetch instruction
     cpu->curInstrPC = fetchPc = pc = cpu->regs[REG_NO_PC];
@@ -2278,6 +2277,7 @@ void cpuCycle(struct ArmCpu *cpu) {
                         ARM_SR_MODE_IRQ | ARM_SR_I);
 
     cp15Cycle(cpu->cp15);
+    patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
 
     if (cpu->T)
         cpuPrvCycleThumb(cpu);

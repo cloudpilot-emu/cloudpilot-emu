@@ -8,6 +8,7 @@
 #include "cp15.h"
 #include "mem.h"
 #include "patch_dispatch.h"
+#include "patches.h"
 #include "soc_AC97.h"
 #include "soc_DMA.h"
 #include "soc_GPIO.h"
@@ -143,6 +144,7 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     if (!soc->mem) ERR("Cannot init physical memory manager");
 
     soc->patchDispatch = initPatchDispatch();
+    registerPatches(soc->patchDispatch);
 
     soc->cpu = cpuInit(ROM_BASE, soc->mem, true /* xscale */, false /* omap */, gdbPort,
                        socRev ? ((socRev == 1) ? CPUID_PXA260 : CPUID_PXA270) : CPUID_PXA255,

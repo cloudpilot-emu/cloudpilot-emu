@@ -21,6 +21,8 @@ struct Patch {
 
 struct PendingTailpatch {
     uint32_t registersAtInvocation[16];
+    uint32_t returnAddress;
+
     const struct Patch* patch;
 };
 
@@ -90,6 +92,7 @@ void patchDispatchOnLoadPcFromR12(struct PatchDispatch* pd, int32_t offset, uint
         struct PendingTailpatch* tailpatch = &pd->pendingTailpatches[tailpatchIdx];
 
         tailpatch->patch = patch;
+        tailpatch->returnAddress = registers[14] & ~0x01;
         memcpy(tailpatch->registersAtInvocation, registers,
                sizeof(tailpatch->registersAtInvocation));
     }
@@ -102,7 +105,7 @@ void patchOnBeforeExecute(struct PatchDispatch* pd, uint32_t* registers) {
     for (size_t i = 0; i < pd->nPendingTailpatches; i++) {
         const struct PendingTailpatch* pendingTailpatch = &pd->pendingTailpatches[i];
 
-        if (pendingTailpatch->registersAtInvocation[14] != registers[15] ||
+        if ((pendingTailpatch->returnAddress & ~0x01) != registers[15] ||
             pendingTailpatch->registersAtInvocation[13] != registers[13])
             continue;
 
@@ -120,7 +123,7 @@ void patchOnBeforeExecute(struct PatchDispatch* pd, uint32_t* registers) {
 
 void patchDispatchAddPatch(struct PatchDispatch* pd, uint32_t syscall, HeadpatchF headpatch,
                            TailpatchF tailpatch, void* ctx) {
-    const uint32_t key = (((syscall >> 12) - 1) << 10) | ((syscall & 0xfff) >> 2);
+    const uint32_t key = (((syscall >> 14) - 1) << 10) | ((syscall & 0xfff) >> 2);
     if (key >= PATCH_TABLE_SIZE) return;
 
     struct Patch* patch;

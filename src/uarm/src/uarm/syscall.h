@@ -7,6 +7,8 @@
 extern "C" {
 #endif
 
+#define SYSCALL_UI_INITIALIZE 0xc55c
+
 #define packSyscall(table, offset) ((table << 12) | offset)
 
 const char* getSyscallName(uint32_t syscall);

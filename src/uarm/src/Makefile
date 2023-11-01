@@ -48,6 +48,7 @@ SOURCE_C = 						\
 	util.c						\
 	uarm/CPU.c 					\
 	uarm/patch_dispatch.c		\
+	uarm/patches.c				\
 	uarm/syscall.c				\
 	uarm/MMU.c 					\
 	uarm/cp15.c 				\
