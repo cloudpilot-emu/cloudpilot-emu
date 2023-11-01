@@ -17,7 +17,6 @@ typedef bool (*ArmMemAccessF)(void* userData, uint32_t pa, uint_fast8_t size, bo
 
 #define MEM_ACCESS_TYPE_READ 0
 #define MEM_ACCESS_TYPE_WRITE 1
-#define MEM_ACCCESS_FLAG_NOERROR 0x80  // for debugger use
 
 struct ArmMem* memInit(void);
 void memDeinit(struct ArmMem* mem);

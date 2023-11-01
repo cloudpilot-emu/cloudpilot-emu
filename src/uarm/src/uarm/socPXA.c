@@ -17,6 +17,7 @@
 #include "soc_IC.h"
 #include "soc_SSP.h"
 #include "soc_UART.h"
+#include "syscall_dispatch.h"
 
 // all PXAs
 #include "pxa_DMA.h"
@@ -98,6 +99,7 @@ struct SoC {
     struct ArmMem *mem;
     struct ArmCpu *cpu;
     struct PatchDispatch *patchDispatch;
+    struct SyscallDispatch *syscallDispatch;
 
     struct Keypad *kp;
     struct VSD *vSD;
@@ -144,12 +146,14 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     if (!soc->mem) ERR("Cannot init physical memory manager");
 
     soc->patchDispatch = initPatchDispatch();
-    registerPatches(soc->patchDispatch);
 
     soc->cpu = cpuInit(ROM_BASE, soc->mem, true /* xscale */, false /* omap */, gdbPort,
                        socRev ? ((socRev == 1) ? CPUID_PXA260 : CPUID_PXA270) : CPUID_PXA255,
                        0x0B16A16AUL, soc->patchDispatch);
     if (!soc->cpu) ERR("Cannot init CPU");
+
+    soc->syscallDispatch = initSyscallDispatch(soc->cpu);
+    registerPatches(soc->patchDispatch, soc->syscallDispatch);
 
     ramBuffer = (uint32_t *)malloc(deviceGetRamSize());
     if (!ramBuffer) ERR("cannot alloc RAM space\n");

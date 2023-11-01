@@ -50,6 +50,7 @@ SOURCE_C = 						\
 	uarm/patch_dispatch.c		\
 	uarm/patches.c				\
 	uarm/syscall.c				\
+	uarm/syscall_dispatch.c		\
 	uarm/MMU.c 					\
 	uarm/cp15.c 				\
 	uarm/mem.c 					\

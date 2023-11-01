@@ -70,8 +70,11 @@ struct ArmCoprocessor {
 
 struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
                        uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch);
-struct ArmCpu *cpuPrepareInjectedCall(const struct ArmCpu *cpu, struct ArmCpu *scatchState);
+
+struct ArmCpu *cpuPrepareInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState);
 void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState);
+uint32_t *cpuGetRegisters(struct ArmCpu *cpu);
+void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall);
 
 void cpuCycle(struct ArmCpu *cpu);
 void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise);  // unraise when acknowledged

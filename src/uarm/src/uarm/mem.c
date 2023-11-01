@@ -64,7 +64,7 @@ bool memRegionAdd(struct ArmMem *mem, uint32_t pa, uint32_t sz, ArmMemAccessF aF
 
 bool memAccess(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, uint_fast8_t accessType,
                void *buf) {
-    bool ret = false, wantWrite = !!(accessType & ~MEM_ACCCESS_FLAG_NOERROR);
+    bool ret = false, wantWrite = !!accessType;
     uint_fast8_t i;
 
     for (i = 0; i < NUM_MEM_REGIONS; i++) {
@@ -72,13 +72,6 @@ bool memAccess(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, uint_fast8_
             ret = mem->regions[i].aF(mem->regions[i].uD, addr, size, wantWrite, buf);
             break;
         }
-    }
-
-    if (!ret && !(accessType & MEM_ACCCESS_FLAG_NOERROR)) {
-        fprintf(stderr, "Memory %s of %u bytes to PA 0x%08lx fails\n", wantWrite ? "write" : "read",
-                size, (unsigned long)addr);
-        while (1)
-            ;  // make debugging easier
     }
 
     return ret;

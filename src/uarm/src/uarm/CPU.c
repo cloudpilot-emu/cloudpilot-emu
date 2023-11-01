@@ -44,6 +44,9 @@
 #define REG_NO_LR 14
 #define REG_NO_PC 15
 
+#define INJECTED_CALL_LR_MAGIC 0xfffffffc
+#define INJECTED_CALL_MAX_CYCLES 200000000
+
 /*
 
         coprocessors:
@@ -697,8 +700,7 @@ static int32_t cpuPrvMedia_signedSaturate32(int32_t sign) {
 }
 
 static bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast8_t size,
-                          bool write, bool priviledged, uint_fast8_t *fsrP,
-                          uint_fast8_t memAccessFlags) {
+                          bool write, bool priviledged, uint_fast8_t *fsrP) {
     uint32_t pa;
 
     gdbStubReportMemAccess(cpu->debugStub, vaddr, size, write);
@@ -718,8 +720,8 @@ static bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fa
 
     if (!mmuTranslate(cpu->mmu, vaddr, priviledged, write, &pa, fsrP, NULL)) return false;
 
-    if (!memAccess(cpu->mem, pa, size,
-                   memAccessFlags | (write ? MEM_ACCESS_TYPE_WRITE : MEM_ACCESS_TYPE_READ), buf)) {
+    if (!memAccess(cpu->mem, pa, size, (write ? MEM_ACCESS_TYPE_WRITE : MEM_ACCESS_TYPE_READ),
+                   buf)) {
         if (fsrP) *fsrP = 10;  // external abort on non-linefetch
 
         return false;
@@ -731,7 +733,7 @@ static bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fa
 // for internal use
 static bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast8_t size,
                         bool write, bool priviledged, uint_fast8_t *fsrP) {
-    if (cpuPrvMemOpEx(cpu, buf, vaddr, size, write, priviledged, fsrP, 0)) return true;
+    if (cpuPrvMemOpEx(cpu, buf, vaddr, size, write, priviledged, fsrP)) return true;
 
     fprintf(stderr, "%c of %u bytes to 0x%08lx failed!\n", (int)(write ? 'W' : 'R'), (unsigned)size,
             (unsigned long)vaddr);
@@ -744,7 +746,7 @@ static bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast
 bool cpuMemOpExternal(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast8_t size,
                       bool write)  // for external use
 {
-    return cpuPrvMemOpEx(cpu, buf, vaddr, size, write, true, NULL, MEM_ACCCESS_FLAG_NOERROR);
+    return cpuPrvMemOpEx(cpu, buf, vaddr, size, write, true, NULL);
 }
 
 #ifdef SUPPORT_AXIM_PRINTF
@@ -2254,11 +2256,9 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     return cpu;
 }
 
-struct ArmCpu *cpuPrepareInjectedCall(const struct ArmCpu *cpu, struct ArmCpu *scratchState) {
+struct ArmCpu *cpuPrepareInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState) {
     if (!scratchState) scratchState = (struct ArmCpu *)malloc(sizeof(*scratchState));
-
     memcpy(scratchState, cpu, sizeof(*scratchState));
-    scratchState->isInjectedCall = true;
 
     return scratchState;
 }
@@ -2266,6 +2266,33 @@ struct ArmCpu *cpuPrepareInjectedCall(const struct ArmCpu *cpu, struct ArmCpu *s
 void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState) {
     cpu->waitingIrqs = scratchState->waitingIrqs;
     cpu->waitingFiqs = scratchState->waitingFiqs;
+}
+
+uint32_t *cpuGetRegisters(struct ArmCpu *cpu) { return cpu->regs; }
+
+void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
+    const uint8_t table = syscall >> 12;
+    uint32_t tableAddr;
+    if (!cpuPrvMemOpEx(cpu, &tableAddr, cpu->regs[9] - table, 4, false, true, NULL))
+        ERR("failed to dispatch syscall %#010x: unable to read table address\n", syscall);
+
+    const uint32_t offset = syscall & 0xfff;
+    uint32_t entryAddr;
+    if (!cpuPrvMemOpEx(cpu, &entryAddr, tableAddr + offset, 4, false, true, NULL))
+        ERR("failed to dispatch syscall %#010x: unable to read entry point\n", syscall);
+
+    cpu->regs[REG_NO_PC] = entryAddr;
+    cpu->isInjectedCall = true;
+    cpu->T = false;
+    cpu->regs[REG_NO_LR] = INJECTED_CALL_LR_MAGIC;
+
+    uint64_t cycle = 0;
+    while (cpu->regs[REG_NO_PC] != INJECTED_CALL_LR_MAGIC) {
+        cpuCycle(cpu);
+
+        if (cycle++ == INJECTED_CALL_MAX_CYCLES)
+            ERR("failed to execute syscall: cycle limit reached\n");
+    }
 }
 
 void cpuCycle(struct ArmCpu *cpu) {
