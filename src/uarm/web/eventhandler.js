@@ -24,8 +24,6 @@ export class EventHandler {
         this.onMouseUp = (e) => {
             if (e.button !== 0) return;
 
-            e.stopPropagation();
-            e.preventDefault();
             setImmediate(() => emulator.penUp());
         };
 
@@ -46,8 +44,6 @@ export class EventHandler {
         };
 
         this.onTouchEnd = (e) => {
-            e.stopPropagation();
-            e.preventDefault();
             setImmediate(() => emulator.penUp());
         };
     }

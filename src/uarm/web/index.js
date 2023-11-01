@@ -134,8 +134,6 @@ async function main() {
     clearLog.addEventListener('click', () => (logContainer.innerHTML = ''));
 
     document.addEventListener('visibilitychange', () => (document.hidden ? emulator?.stop() : emulator?.start()));
-
-    document;
 }
 
 main().catch((e) => console.error(e));
