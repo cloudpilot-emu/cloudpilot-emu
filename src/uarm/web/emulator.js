@@ -9,7 +9,7 @@ export class Emulator {
 
         this.cycle = module.cwrap('cycle', undefined, ['number']);
         this.getFrame = module.cwrap('getFrame', 'number', []);
-        this.resetFrame = module.cwrap('rresetFrame', undefined, []);
+        this.resetFrame = module.cwrap('resetFrame', undefined, []);
         this.currentIps = module.cwrap('currentIps', undefined, []);
         this.currentIpsMax = module.cwrap('currentIpsMax', undefined, []);
         this.getTimesliceSizeUsec = module.cwrap('getTimesliceSizeUsec', 'number', []);
@@ -130,6 +130,7 @@ export class Emulator {
 
         const frame = this.module.HEAPU32.subarray(framePtr, framePtr + 320 * 320);
         this.imageData32.set(frame);
+        this.resetFrame();
 
         this.canvasTmpCtx.putImageData(this.imageData, 0, 0);
         this.canvasCtx.imageSmoothingEnabled = false;
