@@ -105,7 +105,7 @@ void patchOnBeforeExecute(struct PatchDispatch* pd, uint32_t* registers) {
     for (size_t i = 0; i < pd->nPendingTailpatches; i++) {
         const struct PendingTailpatch* pendingTailpatch = &pd->pendingTailpatches[i];
 
-        if ((pendingTailpatch->returnAddress & ~0x01) != registers[15] ||
+        if (pendingTailpatch->returnAddress != registers[15] ||
             pendingTailpatch->registersAtInvocation[13] != registers[13])
             continue;
 
