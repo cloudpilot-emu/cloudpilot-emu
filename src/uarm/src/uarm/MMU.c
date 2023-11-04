@@ -8,16 +8,14 @@
 #include "mem.h"
 #include "util.h"
 
-// less sets is faster
-#define MMU_TLB_BUCKET_SIZE 2
-#define MMU_TLB_BUCKET_NUM 128
+struct TlbEntry {
+    uint32_t pa;
 
-struct ArmPrvTlb {
-    uint32_t pa, va;
-    uint32_t sz;
+    uint32_t tlbTag : 16;
     uint32_t ap : 2;
     uint32_t domain : 4;
     uint32_t c : 1;
+    uint32_t section : 1;
 };
 
 struct ArmMmu {
@@ -26,16 +24,20 @@ struct ArmMmu {
     uint8_t S : 1;
     uint8_t R : 1;
     uint8_t xscale : 1;
-    uint16_t readPos[MMU_TLB_BUCKET_NUM];
-    uint16_t replPos[MMU_TLB_BUCKET_NUM];
-    struct ArmPrvTlb tlb[MMU_TLB_BUCKET_NUM][MMU_TLB_BUCKET_SIZE];
     uint32_t domainCfg;
+
+    struct TlbEntry *tlb[256];
+    uint16_t tlbTag;
 };
 
 void mmuTlbFlush(struct ArmMmu *mmu) {
-    memset(mmu->replPos, 0, sizeof(mmu->replPos));
-    memset(mmu->replPos, 0, sizeof(mmu->replPos));
-    memset(mmu->tlb, 0, sizeof(mmu->tlb));
+    mmu->tlbTag++;
+
+    if (mmu->tlbTag == 0) {
+        mmu->tlbTag = 1;
+        for (size_t bucket = 0; bucket < 256; bucket++)
+            if (mmu->tlb[bucket]) memset(mmu->tlb[bucket], 0, 4096 * sizeof(struct TlbEntry));
+    }
 }
 
 void mmuReset(struct ArmMmu *mmu) {
@@ -58,50 +60,66 @@ struct ArmMmu *mmuInit(struct ArmMem *mem, bool xscaleMode) {
 
 bool mmuIsOn(struct ArmMmu *mmu) { return mmu->transTablPA != MMU_DISABLED_TTP; }
 
-static uint_fast16_t mmuPrvHashAddr(uint32_t addr)  // addresses are granular on 1K
-{
-    addr >>= 10;
+static inline struct TlbEntry *getTlbEntry(struct ArmMmu *mmu, uint32_t va) {
+    const uint8_t bucket = va >> 24;
 
-    addr = addr ^ (addr >> 5) ^ (addr >> 10);
+    if (!mmu->tlb[bucket]) {
+        mmu->tlb[bucket] = (struct TlbEntry *)malloc(4096 * sizeof(struct TlbEntry));
+        memset(mmu->tlb[bucket], 0, 4096 * sizeof(struct TlbEntry));
+    }
 
-    return addr % MMU_TLB_BUCKET_NUM;
+    return &mmu->tlb[bucket][(va >> 12) & 0xfff];
 }
 
-bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write, uint32_t *paP,
-                  uint_fast8_t *fsrP, uint8_t *mappingInfoP) {
+static inline bool checkPermissions(struct ArmMmu *mmu, uint_fast8_t ap, uint_fast8_t domain,
+                                    bool section, bool priviledged, bool write,
+                                    uint_fast8_t *fsrP) {
+    switch ((mmu->domainCfg >> (domain * 2)) & 3) {
+        case 0:  // NO ACCESS:
+        case 2:  // RESERVED: unpredictable	(treat as no access)
+            if (fsrP)
+                *fsrP = (section ? 0x08 : 0xB) | (domain << 4);  // section or page domain fault
+            return false;
+
+        case 1:  // CLIENT: check permissions
+            break;
+
+        case 3:  // MANAGER: allow all access
+            return true;
+    }
+
+    // check permissions
+
+    switch (ap) {
+        case 0:
+            if (write || (!mmu->R && (!priviledged || !mmu->S))) break;
+            return true;
+
+        case 1:
+            if (!priviledged) break;
+            return true;
+
+        case 2:
+            if (!priviledged && write) break;
+            return true;
+
+        case 3:
+            return true;
+    }
+
+    // perm_err:
+    if (fsrP)
+        *fsrP = (section ? 0x0D : 0x0F) | (domain << 4);  // section or subpage permission fault
+    return false;
+}
+
+static inline bool translateAndCache(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write,
+                                     uint32_t *paP, uint_fast8_t *fsrP, uint8_t *mappingInfoP) {
     bool c = false;
     bool section = false, coarse = true, pxa_tex_page = false;
     uint32_t va, pa = 0, sz, t;
-    int_fast16_t i, j, bucket;
+    int_fast16_t i;
     uint_fast8_t dom, ap = 0;
-
-    // handle the 'MMU off' case
-
-    if (mmu->transTablPA == MMU_DISABLED_TTP) {
-        va = pa = 0;
-        goto calc;
-    }
-
-    // check the TLB
-    if (MMU_TLB_BUCKET_SIZE && MMU_TLB_BUCKET_NUM) {
-        bucket = mmuPrvHashAddr(adr);
-
-        for (j = 0, i = mmu->readPos[bucket]; j < MMU_TLB_BUCKET_SIZE;
-             j++, i = (i + MMU_TLB_BUCKET_SIZE - 1) % MMU_TLB_BUCKET_SIZE) {
-            va = mmu->tlb[bucket][i].va;
-            sz = mmu->tlb[bucket][i].sz;
-
-            if (adr >= va && adr - va < sz) {
-                pa = mmu->tlb[bucket][i].pa;
-                ap = mmu->tlb[bucket][i].ap;
-                dom = mmu->tlb[bucket][i].domain;
-                c = !!mmu->tlb[bucket][i].c;
-                mmu->readPos[bucket] = i;
-
-                goto check;
-            }
-        }
-    }
 
     // read first level table
     if (mmu->transTablPA & 3) {
@@ -217,73 +235,50 @@ bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write
     }
 
 translated:
+    if (sz > 1024) {
+        for (uint32_t offset = 0; offset < sz; offset += 4096) {
+            struct TlbEntry *tlbEntry = getTlbEntry(mmu, va + offset);
 
-    // insert tlb entry
-    if (MMU_TLB_BUCKET_NUM && MMU_TLB_BUCKET_SIZE) {
-        mmu->tlb[bucket][mmu->replPos[bucket]].pa = pa;
-        mmu->tlb[bucket][mmu->replPos[bucket]].sz = sz;
-        mmu->tlb[bucket][mmu->replPos[bucket]].va = va;
-        mmu->tlb[bucket][mmu->replPos[bucket]].ap = ap;
-        mmu->tlb[bucket][mmu->replPos[bucket]].domain = dom;
-        mmu->tlb[bucket][mmu->replPos[bucket]].c = c ? 1 : 0;
-        mmu->readPos[bucket] = mmu->replPos[bucket];
-        if (++mmu->replPos[bucket] == MMU_TLB_BUCKET_SIZE) mmu->replPos[bucket] = 0;
+            tlbEntry->ap = ap;
+            tlbEntry->c = c;
+            tlbEntry->domain = dom;
+            tlbEntry->section = section;
+            tlbEntry->pa = pa + offset;
+            tlbEntry->tlbTag = mmu->tlbTag;
+        }
     }
 
-check:
+    // skip permission check on writes, PalmOS does not need this
+    if (write && !checkPermissions(mmu, ap, dom, section, priviledged, write, fsrP)) return false;
 
-    // check domain permissions
+    *paP = (adr - va) + pa;
+    if (mappingInfoP) *mappingInfoP = c ? MMU_MAPPING_CACHEABLE : 0;
 
-    switch ((mmu->domainCfg >> (dom * 2)) & 3) {
-        case 0:  // NO ACCESS:
-        case 2:  // RESERVED: unpredictable	(treat as no access)
+    return true;
+}
 
-            if (fsrP) *fsrP = (section ? 0x08 : 0xB) | (dom << 4);  // section or page domain fault
-            return false;
+bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write, uint32_t *paP,
+                  uint_fast8_t *fsrP, uint8_t *mappingInfoP) {
+    if (mmu->transTablPA == MMU_DISABLED_TTP) {
+        *paP = adr;
+        if (mappingInfoP) *mappingInfoP = 0;
 
-        case 1:  // CLIENT: check permissions
-
-            break;
-
-        case 3:  // MANAGER: allow all access
-
-            goto calc;
+        return true;
     }
 
-    // check permissions
+    struct TlbEntry *tlbEntry = getTlbEntry(mmu, adr);
 
-    switch (ap) {
-        case 0:
+    if (tlbEntry->tlbTag != mmu->tlbTag)
+        return translateAndCache(mmu, adr, priviledged, write, paP, fsrP, mappingInfoP);
 
-            if (write || (!mmu->R && (!priviledged || !mmu->S))) break;
-            goto calc;
+    // skip permission check on writes, PalmOS does not need this
+    if (write && !checkPermissions(mmu, tlbEntry->ap, tlbEntry->domain, tlbEntry->section,
+                                   priviledged, write, fsrP))
+        return false;
 
-        case 1:
+    *paP = (adr & 0xfff) + tlbEntry->pa;
+    if (mappingInfoP) *mappingInfoP = tlbEntry->c ? MMU_MAPPING_CACHEABLE : 0;
 
-            if (!priviledged) break;
-            goto calc;
-
-        case 2:
-
-            if (!priviledged && write) break;
-            goto calc;
-
-        case 3:
-
-            // all is good, allow access!
-            goto calc;
-    }
-
-    // perm_err:
-
-    if (fsrP) *fsrP = (section ? 0x0D : 0x0F) | (dom << 4);  // section or subpage permission fault
-    return false;
-
-calc:
-    if (mappingInfoP) {
-        *mappingInfoP = (c ? MMU_MAPPING_CACHEABLE : 0);
-    }
-    *paP = adr - va + pa;
     return true;
 }
 

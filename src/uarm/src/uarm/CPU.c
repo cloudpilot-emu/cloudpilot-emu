@@ -15,6 +15,8 @@
 #define unlikely(x) __builtin_expect((x), 0)
 #define likely(x) __builtin_expect((x), 1)
 
+#define USE_ICACHE
+
 #define ARM_MODE_2_REG 0x0F
 #define ARM_MODE_2_WORD 0x10
 #define ARM_MODE_2_LOAD 0x20
@@ -1898,7 +1900,11 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
     // FCSE
     if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 
+#ifdef USE_ICACHE
     ok = icacheFetch(cpu->ic, fetchPc, 4, privileged, &fsr, &instr);
+#else
+    ok = cpuPrvMemOp(cpu, &instr, fetchPc, 4, false, privileged, &fsr);
+#endif
     if (!ok)
         cpuPrvHandleMemErr(cpu, pc, 4, false, true, fsr);
     else {
@@ -1923,7 +1929,11 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
     // FCSE
     if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 
+#ifdef USE_ICACHE
     ok = icacheFetch(cpu->ic, fetchPc, 2, privileged, &fsr, &instrT);
+#else
+    ok = cpuPrvMemOp(cpu, &instrT, fetchPc, 2, false, privileged, &fsr);
+#endif
     if (!ok) {
         cpuPrvHandleMemErr(cpu, pc, 2, false, true, fsr);
         return;  // exit here so that debugger can see us execute first instr of execption handler
