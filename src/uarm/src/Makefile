@@ -8,7 +8,7 @@ CC_EMCC ?= emcc
 CXX_EMCC ?= emcc
 LD_EMCC ?= emcc
 
-CFLAGS_NATIVE ?= -O2  -g $(shell sdl2-config --cflags) -flto
+CFLAGS_NATIVE ?= -O3  -g $(shell sdl2-config --cflags) -flto
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
 CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions

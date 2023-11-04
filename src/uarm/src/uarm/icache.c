@@ -9,18 +9,6 @@
 #include "uarm_endian.h"
 #include "util.h"
 
-#define ICACHE_L 5   // line size is 2^L bytes
-#define ICACHE_S 11  // number of sets is 2^S
-#define ICACHE_A 1   // set associativity (less for speed)
-
-#define ICACHE_LINE_SZ (1 << ICACHE_L)
-#define ICACHE_BUCKET_NUM (1 << ICACHE_S)
-#define ICACHE_BUCKET_SZ (ICACHE_A)
-
-#define ICACHE_ADDR_MASK ((uint32_t)-ICACHE_LINE_SZ)
-#define ICACHE_USED_MASK 1UL
-#define ICACHE_PRIV_MASK 2UL
-
 struct icacheline {
     uint8_t data[32];
     uint32_t revision : 31;
