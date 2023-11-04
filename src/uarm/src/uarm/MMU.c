@@ -70,7 +70,7 @@ static uint_fast16_t mmuPrvHashAddr(uint32_t addr)  // addresses are granular on
 
 bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write, uint32_t *paP,
                   uint_fast8_t *fsrP, uint8_t *mappingInfoP) {
-    bool c = false, b = false, ur = false, uw = false, sr = false, sw = false;
+    bool c = false, b = false;
     bool section = false, coarse = true, pxa_tex_page = false;
     uint32_t va, pa = 0, sz, t;
     int_fast16_t i, j, bucket;
@@ -252,11 +252,6 @@ check:
 
         case 3:  // MANAGER: allow all access
 
-            ur = true;
-            uw = true;
-            sr = true;
-            sw = true;
-
             goto calc;
     }
 
@@ -265,35 +260,20 @@ check:
     switch (ap) {
         case 0:
 
-            ur = mmu->R;
-            sr = mmu->S || mmu->R;
-
             if (write || (!mmu->R && (!priviledged || !mmu->S))) break;
             goto calc;
 
         case 1:
-
-            sr = true;
-            sw = true;
 
             if (!priviledged) break;
             goto calc;
 
         case 2:
 
-            ur = true;
-            sr = true;
-            sw = true;
-
             if (!priviledged && write) break;
             goto calc;
 
         case 3:
-
-            ur = true;
-            uw = true;
-            sr = true;
-            sw = true;
 
             // all is good, allow access!
             goto calc;
@@ -306,9 +286,7 @@ check:
 
 calc:
     if (mappingInfoP) {
-        *mappingInfoP = (c ? MMU_MAPPING_CACHEABLE : 0) | (b ? MMU_MAPPING_BUFFERABLE : 0) |
-                        (ur ? MMU_MAPPING_UR : 0) | (uw ? MMU_MAPPING_UW : 0) |
-                        (sr ? MMU_MAPPING_SR : 0) | (sw ? MMU_MAPPING_SW : 0);
+        *mappingInfoP = (c ? MMU_MAPPING_CACHEABLE : 0);
     }
     *paP = adr - va + pa;
     return true;

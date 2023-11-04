@@ -17,11 +17,6 @@ struct ArmMmu;
 #define MMU_DISABLED_TTP 0xFFFFFFFFUL
 
 #define MMU_MAPPING_CACHEABLE 0x0001
-#define MMU_MAPPING_BUFFERABLE 0x0002
-#define MMU_MAPPING_UR 0x0004
-#define MMU_MAPPING_UW 0x0008
-#define MMU_MAPPING_SR 0x0010
-#define MMU_MAPPING_SW 0x0020
 
 struct ArmMmu *mmuInit(struct ArmMem *mem, bool xscaleMode);
 bool mmuTranslate(struct ArmMmu *mmu, uint32_t va, bool priviledged, bool write, uint32_t *paP,
