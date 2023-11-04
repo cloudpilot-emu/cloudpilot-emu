@@ -11,7 +11,7 @@ LD_EMCC ?= emcc
 CFLAGS_NATIVE ?= -O2  -g $(shell sdl2-config --cflags) -flto
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
-CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions -s USE_SDL=2 -s USE_SDL_IMAGE=2
+CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)
 
 INCLUDE_EXTRA ?=

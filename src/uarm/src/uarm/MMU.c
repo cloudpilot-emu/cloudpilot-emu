@@ -11,7 +11,7 @@
 struct TlbEntry {
     uint32_t pa;
 
-    uint32_t tlbTag : 16;
+    uint32_t revision : 16;
     uint32_t ap : 2;
     uint32_t domain : 4;
     uint32_t c : 1;
@@ -27,16 +27,21 @@ struct ArmMmu {
     uint32_t domainCfg;
 
     struct TlbEntry *tlb[256];
-    uint16_t tlbTag;
+    uint16_t revision;
 };
 
 void mmuTlbFlush(struct ArmMmu *mmu) {
-    mmu->tlbTag++;
+    mmu->revision++;
 
-    if (mmu->tlbTag == 0) {
-        mmu->tlbTag = 1;
-        for (size_t bucket = 0; bucket < 256; bucket++)
-            if (mmu->tlb[bucket]) memset(mmu->tlb[bucket], 0, 4096 * sizeof(struct TlbEntry));
+    if (mmu->revision == 0) {
+        mmu->revision = 1;
+
+        for (size_t bucket = 0; bucket < 256; bucket++) {
+            struct TlbEntry *entries = mmu->tlb[bucket];
+            if (!entries) continue;
+
+            for (size_t i = 0; i < 4096; i++) entries[i].revision = 0;
+        }
     }
 }
 
@@ -244,7 +249,7 @@ translated:
             tlbEntry->domain = dom;
             tlbEntry->section = section;
             tlbEntry->pa = pa + offset;
-            tlbEntry->tlbTag = mmu->tlbTag;
+            tlbEntry->revision = mmu->revision;
         }
     }
 
@@ -268,7 +273,7 @@ bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write
 
     struct TlbEntry *tlbEntry = getTlbEntry(mmu, adr);
 
-    if (tlbEntry->tlbTag != mmu->tlbTag)
+    if (tlbEntry->revision != mmu->revision)
         return translateAndCache(mmu, adr, priviledged, write, paP, fsrP, mappingInfoP);
 
     // skip permission check on writes, PalmOS does not need this

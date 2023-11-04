@@ -1,7 +1,5 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
-#include <SDL.h>
-#include <SDL_image.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <signal.h>
@@ -24,6 +22,9 @@
 #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
 #else
+    #include <SDL.h>
+    #include <SDL_image.h>
+
     #include "SdlEventHandler.h"
     #include "SdlRenderer.h"
 #endif
