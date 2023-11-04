@@ -18,7 +18,6 @@ struct ArmPrvTlb {
     uint32_t ap : 2;
     uint32_t domain : 4;
     uint32_t c : 1;
-    uint32_t b : 1;
 };
 
 struct ArmMmu {
@@ -70,7 +69,7 @@ static uint_fast16_t mmuPrvHashAddr(uint32_t addr)  // addresses are granular on
 
 bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write, uint32_t *paP,
                   uint_fast8_t *fsrP, uint8_t *mappingInfoP) {
-    bool c = false, b = false;
+    bool c = false;
     bool section = false, coarse = true, pxa_tex_page = false;
     uint32_t va, pa = 0, sz, t;
     int_fast16_t i, j, bucket;
@@ -97,7 +96,6 @@ bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write
                 ap = mmu->tlb[bucket][i].ap;
                 dom = mmu->tlb[bucket][i].domain;
                 c = !!mmu->tlb[bucket][i].c;
-                b = !!mmu->tlb[bucket][i].b;
                 mmu->readPos[bucket] = i;
 
                 goto check;
@@ -137,7 +135,6 @@ bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write
             sz = 1UL << 20;
             ap = (t >> 10) & 3;
             c = !!(t & 0x08);
-            b = !!(t & 0x04);
             section = true;
             goto translated;
 
@@ -156,7 +153,6 @@ bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write
     }
 
     c = !!(t & 0x08);
-    b = !!(t & 0x04);
 
     switch (t & 3) {
         case 0:  // fault
@@ -230,7 +226,6 @@ translated:
         mmu->tlb[bucket][mmu->replPos[bucket]].ap = ap;
         mmu->tlb[bucket][mmu->replPos[bucket]].domain = dom;
         mmu->tlb[bucket][mmu->replPos[bucket]].c = c ? 1 : 0;
-        mmu->tlb[bucket][mmu->replPos[bucket]].b = b ? 1 : 0;
         mmu->readPos[bucket] = mmu->replPos[bucket];
         if (++mmu->replPos[bucket] == MMU_TLB_BUCKET_SIZE) mmu->replPos[bucket] = 0;
     }
