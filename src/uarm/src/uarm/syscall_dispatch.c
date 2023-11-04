@@ -12,7 +12,7 @@ struct SyscallDispatch {
     struct ArmCpu* cpu;
 
     struct ArmCpu* scratchStates[MAX_NEST_LEVEL];
-    uint32_t nestLevel;
+    size_t nestLevel;
 };
 
 struct SyscallDispatch* initSyscallDispatch(struct ArmCpu* cpu) {
