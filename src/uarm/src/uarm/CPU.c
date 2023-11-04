@@ -16,6 +16,7 @@
 #define likely(x) __builtin_expect((x), 1)
 
 #define USE_ICACHE
+#define SUPPORT_FCSE
 
 #define ARM_MODE_2_REG 0x0F
 #define ARM_MODE_2_WORD 0x10
@@ -282,12 +283,14 @@ static void cpuPrvException(struct ArmCpu *cpu, uint32_t vector_pc, uint32_t lr,
 // input addr is VA not MVA
 static void cpuPrvHandleMemErr(struct ArmCpu *cpu, uint32_t addr, uint_fast8_t sz, bool write,
                                bool instrFetch, uint_fast8_t fsr) {
-    // fprintf(stderr, "access error to 0x%08x with fsr %u from 0x%08x\n", addr, fsr,
-    // cpu->regs[REG_NO_PC]);
+// fprintf(stderr, "access error to 0x%08x with fsr %u from 0x%08x\n", addr, fsr,
+// cpu->regs[REG_NO_PC]);
 
-    // FCSE
+// FCSE
+#ifdef SUPPORT_FCSE
     if (addr < 0x02000000UL)  // report addr is MVA
         addr |= cpu->pid;
+#endif
 
     cp15SetFaultStatus(cpu->cp15, addr, fsr);
 
@@ -717,8 +720,10 @@ static bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fa
         return false;
     }
 
-    // FCSE
+// FCSE
+#ifdef SUPPORT_FCSE
     if (vaddr < 0x02000000UL) vaddr |= cpu->pid;
+#endif
 
     if (!mmuTranslate(cpu->mmu, vaddr, priviledged, write, &pa, fsrP, NULL)) return false;
 
@@ -1897,11 +1902,13 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
     // fetch instruction
     cpu->curInstrPC = fetchPc = pc = cpu->regs[REG_NO_PC];
 
-    // FCSE
+// FCSE
+#ifdef SUPPORT_FCSE
     if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
+#endif
 
 #ifdef USE_ICACHE
-    ok = icacheFetch(cpu->ic, fetchPc, 4, privileged, &fsr, &instr);
+    ok = icacheFetch(cpu->ic, fetchPc, 4, &fsr, &instr);
 #else
     ok = cpuPrvMemOp(cpu, &instr, fetchPc, 4, false, privileged, &fsr);
 #endif
@@ -1926,11 +1933,13 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
 
     cpu->curInstrPC = fetchPc = pc = cpu->regs[REG_NO_PC];
 
-    // FCSE
+// FCSE
+#ifdef SUPPORT_FCSE
     if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
+#endif
 
 #ifdef USE_ICACHE
-    ok = icacheFetch(cpu->ic, fetchPc, 2, privileged, &fsr, &instrT);
+    ok = icacheFetch(cpu->ic, fetchPc, 2, &fsr, &instrT);
 #else
     ok = cpuPrvMemOp(cpu, &instrT, fetchPc, 2, false, privileged, &fsr);
 #endif

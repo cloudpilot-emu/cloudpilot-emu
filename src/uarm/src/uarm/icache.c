@@ -85,8 +85,7 @@ void icacheInvalAddr(struct icache* ic, uint32_t va) {
     lvl2[k].revision--;
 }
 
-bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, bool priviledged,
-                 uint_fast8_t* fsrP, void* buf) {
+bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* fsrP, void* buf) {
     uint32_t pa;
     size_t i, j, k;
     struct icacheline** lvl1;
