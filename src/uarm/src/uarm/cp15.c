@@ -40,7 +40,6 @@ void cp15Cycle(struct ArmCP15* cp15)  // mmu on/off lags by a cycle
     if (cp15->mmuSwitchCy) {
         if (!--cp15->mmuSwitchCy) {
             mmuSetTTP(cp15->mmu, (cp15->control & 0x00000001UL) ? cp15->ttb : MMU_DISABLED_TTP);
-            icacheInval(cp15->ic);
         }
     }
 }

@@ -11,8 +11,7 @@
 
 struct icacheline {
     uint8_t data[32];
-    uint32_t revision : 31;
-    uint32_t cacheable : 1;
+    uint32_t revision;
 };
 
 struct icache {
@@ -24,7 +23,7 @@ struct icache {
 };
 
 void icacheInval(struct icache* ic) {
-    ic->revision = (ic->revision + 1) & 0x80000000;
+    ic->revision++;
 
     if (ic->revision == 0) {
         ic->revision = 1;
@@ -80,43 +79,31 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* 
     j = (va >> 5) & 0x7fff;
 
     lvl1 = ic->cache[i];
-    if (!lvl1) goto allocate;
-
-    goto check;
-
-allocate:
-    if (!mmuTranslate(ic->mmu, va, true, false, &pa, fsrP, NULL)) return false;
-
     if (!lvl1) {
         lvl1 = ic->cache[i] = (struct icacheline*)malloc(32768 * sizeof(struct icacheline));
         memset(lvl1, 0, 32768 * sizeof(struct icacheline));
     }
 
-check:
     line = lvl1 + j;
 
     if (line->revision != ic->revision) {
-        line->revision = ic->revision;
-        line->cacheable = false;
+        if (!mmuTranslate(ic->mmu, va, true, false, &pa, fsrP, &mappingInfo)) return false;
 
-        if (!mmuTranslate(ic->mmu, va & 0xffffffe0, true, false, &pa, fsrP, &mappingInfo))
-            goto read;
-        if ((mappingInfo & MMU_MAPPING_CACHEABLE) == 0) goto read;
-        if (!memAccess(ic->mem, pa, 32, MEM_ACCESS_TYPE_READ, line->data)) goto read;
+        if ((mappingInfo & MMU_MAPPING_CACHEABLE) == 0) {
+            if (!memAccess(ic->mem, pa, sz, MEM_ACCESS_TYPE_READ, buf)) {
+                if (fsrP) *fsrP = 0x0d;  // perm error
+                return false;
+            }
 
-        line->cacheable = true;
-    }
-
-read:
-    if (!line->cacheable) {
-        if (!mmuTranslate(ic->mmu, va, true, false, &pa, fsrP, NULL)) return false;
-
-        if (!memAccess(ic->mem, pa, sz, MEM_ACCESS_TYPE_READ, buf)) {
-            if (fsrP) *fsrP = 0x0d;  // perm error
-            return false;
+            return true;
         }
 
-        return true;
+        if (!memAccess(ic->mem, pa & 0xffffffe0, 32, MEM_ACCESS_TYPE_READ, line->data)) {
+            if (fsrP) *fsrP = 0x0d;  // perm error
+            return false;
+        };
+
+        line->revision = ic->revision;
     }
 
     switch (sz) {
