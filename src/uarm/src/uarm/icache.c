@@ -9,8 +9,17 @@
 #include "uarm_endian.h"
 #include "util.h"
 
+#define CACHE_LINE_WIDTH_BITS 5
+#define CACHE_INDEX_BITS 20
+
+#define calculateIndex(va) ((va >> CACHE_LINE_WIDTH_BITS) & ~(0xffffffff << CACHE_INDEX_BITS))
+#define calculateTag(va) (va >> (CACHE_LINE_WIDTH_BITS + CACHE_INDEX_BITS))
+#define calculateLineIndex(va) (va & ~(0xffffffff << CACHE_LINE_WIDTH_BITS))
+
 struct icacheline {
-    uint8_t data[32];
+    uint8_t data[1 << CACHE_LINE_WIDTH_BITS];
+
+    uint_fast8_t tag;
     uint32_t revision;
 };
 
@@ -19,21 +28,14 @@ struct icache {
     struct ArmMmu* mmu;
 
     uint32_t revision;
-    struct icacheline* cache[4096];
+    struct icacheline cache[1 << CACHE_INDEX_BITS];
 };
 
 void icacheInval(struct icache* ic) {
     ic->revision++;
 
     if (ic->revision == 0) {
-        ic->revision = 1;
-
-        for (size_t i = 0; i < 4096; i++) {
-            struct icacheline* lvl1 = ic->cache[i];
-            if (!lvl1) continue;
-
-            for (size_t j = 0; j < 32768; j++) lvl1[j].revision = 0;
-        }
+        for (size_t i = 0; i < (1 << CACHE_INDEX_BITS); i++) ic->cache[i].revision = 0;
     }
 }
 
@@ -53,40 +55,27 @@ struct icache* icacheInit(struct ArmMem* mem, struct ArmMmu* mmu) {
 }
 
 void icacheInvalAddr(struct icache* ic, uint32_t va) {
-    const size_t i = va >> 20;
-    struct icacheline* lvl1 = ic->cache[i];
-    if (!lvl1) return;
+    struct icacheline* line = ic->cache + calculateIndex(va);
 
-    const size_t j = (va >> 5) & 0x7fff;
-    if (lvl1[j].revision != ic->revision) return;
+    if (line->revision != ic->revision || line->tag != calculateTag(va)) return;
 
-    lvl1[j].revision--;
+    line->revision = ic->revision - 1;
 }
 
 bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* fsrP, void* buf) {
-    uint32_t pa;
-    size_t i, j;
-    struct icacheline *lvl1, *line;
-    uint8_t mappingInfo;
-
     if (va & (sz - 1)) {  // alignment issue
 
         if (fsrP) *fsrP = 3;
         return false;
     }
 
-    i = va >> 20;
-    j = (va >> 5) & 0x7fff;
+    struct icacheline* line = ic->cache + calculateIndex(va);
+    const uint_fast8_t tag = calculateTag(va);
 
-    lvl1 = ic->cache[i];
-    if (!lvl1) {
-        lvl1 = ic->cache[i] = (struct icacheline*)malloc(32768 * sizeof(struct icacheline));
-        memset(lvl1, 0, 32768 * sizeof(struct icacheline));
-    }
+    if (line->revision != ic->revision || line->tag != tag) {
+        uint32_t pa;
+        uint8_t mappingInfo;
 
-    line = lvl1 + j;
-
-    if (line->revision != ic->revision) {
         if (!mmuTranslate(ic->mmu, va, true, false, &pa, fsrP, &mappingInfo)) return false;
 
         if ((mappingInfo & MMU_MAPPING_CACHEABLE) == 0) {
@@ -104,6 +93,7 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* 
         };
 
         line->revision = ic->revision;
+        line->tag = tag;
     }
 
     switch (sz) {

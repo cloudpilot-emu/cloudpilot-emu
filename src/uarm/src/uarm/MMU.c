@@ -254,8 +254,7 @@ translated:
         }
     }
 
-    // skip permission check on writes, PalmOS does not need this
-    if (write && !checkPermissions(mmu, ap, dom, section, priviledged, write, fsrP)) return false;
+    if (!checkPermissions(mmu, ap, dom, section, priviledged, write, fsrP)) return false;
 
     *paP = (adr - va) + pa;
     if (mappingInfoP) *mappingInfoP = c ? MMU_MAPPING_CACHEABLE : 0;
@@ -277,9 +276,8 @@ bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write
     if (tlbEntry->revision != mmu->revision)
         return translateAndCache(mmu, adr, priviledged, write, paP, fsrP, mappingInfoP);
 
-    // skip permission check on writes, PalmOS does not need this
-    if (write && !checkPermissions(mmu, tlbEntry->ap, tlbEntry->domain, tlbEntry->section,
-                                   priviledged, write, fsrP))
+    if (!checkPermissions(mmu, tlbEntry->ap, tlbEntry->domain, tlbEntry->section, priviledged,
+                          write, fsrP))
         return false;
 
     *paP = (adr & 0xfff) + tlbEntry->pa;
