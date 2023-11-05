@@ -16,7 +16,7 @@
 #define likely(x) __builtin_expect((x), 1)
 
 #define USE_ICACHE
-#define SUPPORT_FCSE
+#define NO_SUPPORT_FCSE
 
 #define ARM_MODE_2_REG 0x0F
 #define ARM_MODE_2_WORD 0x10
