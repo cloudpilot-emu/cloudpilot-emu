@@ -18,6 +18,9 @@
 
 struct icacheline {
     uint8_t data[1 << CACHE_LINE_WIDTH_BITS];
+    uint8_t extra[1 << CACHE_LINE_WIDTH_BITS];
+
+    uint32_t thumbDecodeStatus;
 
     uint_fast8_t tag;
     uint32_t revision;
@@ -62,7 +65,8 @@ void icacheInvalAddr(struct icache* ic, uint32_t va) {
     line->revision = ic->revision - 1;
 }
 
-bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* fsrP, void* buf) {
+bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* fsrP, void* buf,
+                 uint_fast8_t* thumbDecodeStatus) {
     if (va & (sz - 1)) {  // alignment issue
 
         if (fsrP) *fsrP = 3;
@@ -92,22 +96,43 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* 
             return false;
         };
 
+        line->thumbDecodeStatus = 0;
         line->revision = ic->revision;
         line->tag = tag;
     }
 
     switch (sz) {
         case 4:
-            *(uint32_t*)buf = *(uint32_t*)(line->data + (va & 0x1f));
+            *(uint32_t*)buf = *(uint32_t*)(line->data + calculateLineIndex(va));
             break;
 
-        case 2:
-            *(uint16_t*)buf = *(uint16_t*)(line->data + (va & 0x1f));
+        case 2: {
+            const uint_fast8_t lineIndex = calculateLineIndex(va);
+            *thumbDecodeStatus = (line->thumbDecodeStatus >> lineIndex) & 0x03;
+
+            *(uint32_t*)buf = *(uint16_t*)(line->data + lineIndex);
+            if (*thumbDecodeStatus)
+                *(uint32_t*)buf |= ((uint32_t)(*(uint16_t*)(line->extra + lineIndex)) << 16);
+
             break;
+        }
 
         default:
-            memcpy(buf, line->data + (va & 0x1f), sz);
+            memcpy(buf, line->data + calculateLineIndex(va), sz);
     }
 
     return true;
+}
+
+void icacheStoreThumbDecodedInstr(struct icache* ic, uint32_t va, uint32_t instr,
+                                  uint_fast8_t decodeStatus) {
+    struct icacheline* line = ic->cache + calculateIndex(va);
+    if (line->revision != ic->revision || line->tag != calculateTag(va) || (va & 0x01)) return;
+
+    const uint_fast8_t lineIndex = calculateLineIndex(va);
+    *(uint16_t*)(line->data + lineIndex) = instr;
+    *(uint16_t*)(line->extra + lineIndex) = instr >> 16;
+
+    line->thumbDecodeStatus &= ~((uint32_t)0x03 << lineIndex);
+    line->thumbDecodeStatus |= (uint32_t)decodeStatus << lineIndex;
 }

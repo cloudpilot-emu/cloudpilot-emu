@@ -1908,7 +1908,7 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
 #endif
 
 #ifdef USE_ICACHE
-    ok = icacheFetch(cpu->ic, fetchPc, 4, &fsr, &instr);
+    ok = icacheFetch(cpu->ic, fetchPc, 4, &fsr, &instr, NULL);
 #else
     ok = cpuPrvMemOp(cpu, &instr, fetchPc, 4, false, privileged, &fsr);
 #endif
@@ -1920,34 +1920,14 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
     }
 }
 
-static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
-    bool privileged, vB, specialPC = false, ok;
-    uint32_t t, instr = 0xE0000000UL /*most likely thing*/, pc, fetchPc;
-    uint16_t instrT, v16;
-    uint_fast8_t v8, fsr;
+static inline bool cpuExecuteThumb(struct ArmCpu *cpu, uint16_t instrT, uint32_t *instrArmP,
+                                   bool *specialPCP, bool *dontCache) {
+    bool vB, specialPC = false;
+    uint32_t t, instr = 0xE0000000UL /*most likely thing*/;
+    uint16_t v16;
+    uint_fast8_t v8;
 
-    privileged = cpu->M != ARM_SR_MODE_USR;
-
-    cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
-    gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC], true);  // early in case it changes PC
-
-    cpu->curInstrPC = fetchPc = pc = cpu->regs[REG_NO_PC];
-
-// FCSE
-#ifdef SUPPORT_FCSE
-    if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
-#endif
-
-#ifdef USE_ICACHE
-    ok = icacheFetch(cpu->ic, fetchPc, 2, &fsr, &instrT);
-#else
-    ok = cpuPrvMemOp(cpu, &instrT, fetchPc, 2, false, privileged, &fsr);
-#endif
-    if (!ok) {
-        cpuPrvHandleMemErr(cpu, pc, 2, false, true, fsr);
-        return;  // exit here so that debugger can see us execute first instr of execption handler
-    }
-    cpu->regs[REG_NO_PC] += 2;
+    *dontCache = false;
 
     switch (instrT >> 12) {
         case 0:  // LSL(1) LSR(1) ASR(1) ADD(1) SUB(1) ADD(3) SUB(3)
@@ -2016,8 +1996,7 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
                         t = cpuPrvGetReg(cpu, vD, true, false) + cpuPrvGetReg(cpu, v8, true, false);
                         if (vD == 15) t |= 1;
                         cpuPrvSetReg(cpu, vD, t);
-                        goto instr_done;
-                        break;
+                        return true;
 
                     case 1:  // CMP(3)
 
@@ -2030,7 +2009,7 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
                         t = cpuPrvGetReg(cpu, v8, true, false);
                         if (vD == 15) t |= 1;
                         cpuPrvSetReg(cpu, vD, t);
-                        goto instr_done;
+                        return true;
 
                     case 3:  // BX
 
@@ -2042,13 +2021,16 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
                         }
 
                         if (instrT & 0x80)  // BLX
+                        {
                             cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + 1;
+                            *dontCache = true;
+                        }
 
                         if (instrT == 0x4778) {  // special handing for thumb's "BX PC" as aparently
                                                  // docs are wrong on it
 
                             cpuPrvSetPC(cpu, (cpu->regs[REG_NO_PC] + 2) & ~3UL);
-                            goto instr_done;
+                            return true;
                         }
 
                         instr |= 0x012FFF10UL | ((instrT >> 3) & 0x0F);
@@ -2207,19 +2189,19 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
                         (cpu->regs[REG_NO_LR] + 2 + (((uint32_t)v16) << 1)) & ~3UL;
                     cpu->regs[REG_NO_LR] = instr | 1UL;
                     cpu->T = 0;
-                    goto instr_done;
+                    return true;
 
                 case 2:  // BLX(1)_prefix BL_prefix
                     instr = v16;
                     if (instrT & 0x0400) instr |= 0x000FF800UL;
                     cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + (instr << 12);
-                    goto instr_done;
+                    return true;
 
                 case 3:  // BL_suffix
                     instr = cpu->regs[REG_NO_PC];
                     cpu->regs[REG_NO_PC] = cpu->regs[REG_NO_LR] + 2 + (((uint32_t)v16) << 1);
                     cpu->regs[REG_NO_LR] = instr | 1UL;
-                    goto instr_done;
+                    return true;
             }
 
             if (instrT & 0x0800)
@@ -2229,18 +2211,58 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
             break;
     }
 
-instr_execute:
-    cpuPrvExecInstr(cpu, instr, true, privileged, specialPC);
-
-instr_done:
-    return;
+    *instrArmP = instr;
+    *specialPCP = specialPC;
+    return false;
 
 undefined:
 
     instr = 0xE7F000F0UL | (instrT & 0x0F) |
             ((instrT & 0xFFF0)
              << 4);  // guranteed undefined instr, inside it we store the original thumb instr :)=-)
-    goto instr_execute;
+    *instrArmP = instr;
+    *specialPCP = specialPC;
+    return false;
+}
+
+static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
+    bool privileged, specialPC = false, dontCache, ok;
+    uint32_t pc, fetchPc;
+    uint32_t instr = 0;
+    uint_fast8_t fsr, thumbDecodeStatus;
+
+    privileged = cpu->M != ARM_SR_MODE_USR;
+
+    cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
+    gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC], true);  // early in case it changes PC
+
+    cpu->curInstrPC = fetchPc = pc = cpu->regs[REG_NO_PC];
+
+// FCSE
+#ifdef SUPPORT_FCSE
+    if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
+#endif
+
+#ifdef USE_ICACHE
+    ok = icacheFetch(cpu->ic, fetchPc, 2, &fsr, &instr, &thumbDecodeStatus);
+#else
+    ok = cpuPrvMemOp(cpu, &instr, fetchPc, 2, false, privileged, &fsr);
+    thumbDecodeStatus = 0;
+#endif
+    if (!ok) {
+        cpuPrvHandleMemErr(cpu, pc, 2, false, true, fsr);
+        return;  // exit here so that debugger can see us execute first instr of execption handler
+    }
+    cpu->regs[REG_NO_PC] += 2;
+
+    if (!thumbDecodeStatus && !cpuExecuteThumb(cpu, instr, &instr, &specialPC, &dontCache)) {
+        thumbDecodeStatus = specialPC ? 0x03 : 0x01;
+#ifdef USE_ICACHE
+        if (!dontCache) icacheStoreThumbDecodedInstr(cpu->ic, fetchPc, instr, thumbDecodeStatus);
+#endif
+    }
+
+    if (thumbDecodeStatus) cpuPrvExecInstr(cpu, instr, true, privileged, thumbDecodeStatus & 0x02);
 }
 
 struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
