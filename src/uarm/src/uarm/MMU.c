@@ -36,8 +36,8 @@ void mmuTlbFlush(struct ArmMmu *mmu) {
     if (mmu->revision == 0) {
         mmu->revision = 1;
 
-        for (size_t bucket = 0; bucket < 256; bucket++) {
-            struct TlbEntry *entries = mmu->tlb[bucket];
+        for (size_t i = 0; i < 256; i++) {
+            struct TlbEntry *entries = mmu->tlb[i];
             if (!entries) continue;
 
             for (size_t i = 0; i < 4096; i++) entries[i].revision = 0;
@@ -66,14 +66,15 @@ struct ArmMmu *mmuInit(struct ArmMem *mem, bool xscaleMode) {
 bool mmuIsOn(struct ArmMmu *mmu) { return mmu->transTablPA != MMU_DISABLED_TTP; }
 
 static inline struct TlbEntry *getTlbEntry(struct ArmMmu *mmu, uint32_t va) {
-    const uint8_t bucket = va >> 24;
+    const uint8_t i = va >> 24;
+    struct TlbEntry *lvl1 = mmu->tlb[i];
 
-    if (!mmu->tlb[bucket]) {
-        mmu->tlb[bucket] = (struct TlbEntry *)malloc(4096 * sizeof(struct TlbEntry));
-        memset(mmu->tlb[bucket], 0, 4096 * sizeof(struct TlbEntry));
+    if (!lvl1) {
+        lvl1 = mmu->tlb[i] = (struct TlbEntry *)malloc(4096 * sizeof(struct TlbEntry));
+        memset(lvl1, 0, 4096 * sizeof(struct TlbEntry));
     }
 
-    return &mmu->tlb[bucket][(va >> 12) & 0xfff];
+    return lvl1 + ((va >> 12) & 0xfff);
 }
 
 static inline bool checkPermissions(struct ArmMmu *mmu, uint_fast8_t ap, uint_fast8_t domain,
