@@ -20,7 +20,7 @@ struct icache {
     struct ArmMmu* mmu;
 
     uint32_t revision;
-    struct icacheline** cache[256];
+    struct icacheline* cache[4096];
 };
 
 void icacheInval(struct icache* ic) {
@@ -29,16 +29,11 @@ void icacheInval(struct icache* ic) {
     if (ic->revision == 0) {
         ic->revision = 1;
 
-        for (size_t i = 0; i < 256; i++) {
-            struct icacheline** lvl1 = ic->cache[i];
+        for (size_t i = 0; i < 4096; i++) {
+            struct icacheline* lvl1 = ic->cache[i];
             if (!lvl1) continue;
 
-            for (size_t j = 0; j < 16; j++) {
-                struct icacheline* lvl2 = lvl1[j];
-                if (!lvl2) continue;
-
-                for (size_t k = 0; k < 32768; k++) lvl2[k].revision = 0;
-            }
+            for (size_t j = 0; j < 32768; j++) lvl1[j].revision = 0;
         }
     }
 }
@@ -59,25 +54,20 @@ struct icache* icacheInit(struct ArmMem* mem, struct ArmMmu* mmu) {
 }
 
 void icacheInvalAddr(struct icache* ic, uint32_t va) {
-    const size_t i = va >> 24;
-    struct icacheline** lvl1 = ic->cache[i];
+    const size_t i = va >> 20;
+    struct icacheline* lvl1 = ic->cache[i];
     if (!lvl1) return;
 
-    const size_t j = (va >> 20) & 0xf;
-    struct icacheline* lvl2 = lvl1[j];
-    if (lvl2) return;
+    const size_t j = (va >> 5) & 0x7fff;
+    if (lvl1[j].revision == 0) return;
 
-    const size_t k = (va >> 5) & 0x7fff;
-    if (lvl2[k].revision == 0) return;
-
-    lvl2[k].revision--;
+    lvl1[j].revision--;
 }
 
 bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* fsrP, void* buf) {
     uint32_t pa;
-    size_t i, j, k;
-    struct icacheline** lvl1;
-    struct icacheline *lvl2, *line;
+    size_t i, j;
+    struct icacheline *lvl1, *line;
     uint8_t mappingInfo;
 
     if (va & (sz - 1)) {  // alignment issue
@@ -86,15 +76,11 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* 
         return false;
     }
 
-    i = va >> 24;
-    j = (va >> 20) & 0xf;
-    k = (va >> 5) & 0x7fff;
+    i = va >> 20;
+    j = (va >> 5) & 0x7fff;
 
     lvl1 = ic->cache[i];
     if (!lvl1) goto allocate;
-
-    lvl2 = lvl1[j];
-    if (!lvl2) goto allocate;
 
     goto check;
 
@@ -102,19 +88,12 @@ allocate:
     if (!mmuTranslate(ic->mmu, va, true, false, &pa, fsrP, NULL)) return false;
 
     if (!lvl1) {
-        lvl1 = ic->cache[i] = (struct icacheline**)malloc(16 * sizeof(struct icacheline*));
-        memset(lvl1, 0, 16 * sizeof(struct icacheline*));
-
-        lvl2 = lvl1[j];
-    }
-
-    if (!lvl2) {
-        lvl2 = lvl1[j] = (struct icacheline*)malloc(32768 * sizeof(struct icacheline));
-        memset(lvl2, 0, 32768 * sizeof(struct icacheline));
+        lvl1 = ic->cache[i] = (struct icacheline*)malloc(32768 * sizeof(struct icacheline));
+        memset(lvl1, 0, 32768 * sizeof(struct icacheline));
     }
 
 check:
-    line = lvl2 + k;
+    line = lvl1 + j;
 
     if (line->revision != ic->revision) {
         line->revision = ic->revision;
