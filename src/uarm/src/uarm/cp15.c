@@ -1,9 +1,10 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
+#include "cp15.h"
+
 #include <stdlib.h>
 #include <string.h>
 
-#include "cp15.h"
 #include "util.h"
 
 struct ArmCP15 {
@@ -37,8 +38,10 @@ struct ArmCP15 {
 void cp15Cycle(struct ArmCP15* cp15)  // mmu on/off lags by a cycle
 {
     if (cp15->mmuSwitchCy) {
-        if (!--cp15->mmuSwitchCy)
+        if (!--cp15->mmuSwitchCy) {
             mmuSetTTP(cp15->mmu, (cp15->control & 0x00000001UL) ? cp15->ttb : MMU_DISABLED_TTP);
+            icacheInval(cp15->ic);
+        }
     }
 }
 

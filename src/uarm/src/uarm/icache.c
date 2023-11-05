@@ -59,7 +59,7 @@ void icacheInvalAddr(struct icache* ic, uint32_t va) {
     if (!lvl1) return;
 
     const size_t j = (va >> 5) & 0x7fff;
-    if (lvl1[j].revision == 0) return;
+    if (lvl1[j].revision != ic->revision) return;
 
     lvl1[j].revision--;
 }
