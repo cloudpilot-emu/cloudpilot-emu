@@ -16,6 +16,9 @@
 #include "thumb_table.h"
 // clang_format on
 
+#define xstr(s) str(s)
+#define str(s) #s
+
 #define unlikely(x) __builtin_expect((x), 0)
 #define likely(x) __builtin_expect((x), 1)
 
@@ -1914,7 +1917,8 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
 }
 
 static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT) {
-    uint32_t t, instr = 0xE0000000UL /*most likely thing*/;
+#define THUMB_FAIL ERR("thumb opcode should be transcoded:" __FILE__ ":" str(__LINE__));
+    uint32_t v32;
     uint16_t v16;
     uint_fast8_t v8;
 
@@ -1947,18 +1951,18 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT) {
                     case 0:  // ADD(4)
 
                         // special handling required for PC destination
-                        t = cpuPrvGetReg(cpu, vD, true) + cpuPrvGetReg(cpu, v8, true);
-                        if (vD == 15) t |= 1;
-                        cpuPrvSetReg(cpu, vD, t);
+                        v32 = cpuPrvGetReg(cpu, vD, true) + cpuPrvGetReg(cpu, v8, true);
+                        if (vD == 15) v32 |= 1;
+                        cpuPrvSetReg(cpu, vD, v32);
 
                         return;
 
                     case 2:  // MOV(3)
 
                         // special handling required for PC destination
-                        t = cpuPrvGetReg(cpu, v8, true);
-                        if (vD == 15) t |= 1;
-                        cpuPrvSetReg(cpu, vD, t);
+                        v32 = cpuPrvGetReg(cpu, v8, true);
+                        if (vD == 15) v32 |= 1;
+                        cpuPrvSetReg(cpu, vD, v32);
 
                         return;
 
@@ -1973,10 +1977,10 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT) {
                         return;
 
                     default:
-                        ERR("thumb opcode should be transcoded 1\n");
+                        THUMB_FAIL;
                 }
             } else {  // AND EOR LSL(2) LSR(2) ASR(2) ADC SBC ROR TST NEG CMP(2) CMN ORR MUL BIC MVN
-                ERR("thumb opcode should be transcoded 2\n");
+                THUMB_FAIL;
             }
 
             break;
@@ -1995,37 +1999,38 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT) {
 
             switch ((instrT >> 11) & 3) {
                 case 0:  // B(2)
-                    ERR("thumb opcode should be transcoded 3\n");
+                    THUMB_FAIL;
 
                 case 1:  // BLX(1)_suffix
-                    instr = cpu->regs[REG_NO_PC];
+                    v32 = cpu->regs[REG_NO_PC];
                     cpu->regs[REG_NO_PC] =
                         (cpu->regs[REG_NO_LR] + 2 + (((uint32_t)v16) << 1)) & ~3UL;
-                    cpu->regs[REG_NO_LR] = instr | 1UL;
+                    cpu->regs[REG_NO_LR] = v32 | 1UL;
                     cpu->T = 0;
 
                     return;
 
                 case 2:  // BLX(1)_prefix BL_prefix
-                    instr = v16;
-                    if (instrT & 0x0400) instr |= 0x000FF800UL;
-                    cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + (instr << 12);
+                    v32 = v16;
+                    if (instrT & 0x0400) v32 |= 0x000FF800UL;
+                    cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + (v32 << 12);
 
                     return;
 
                 case 3:  // BL_suffix
-                    instr = cpu->regs[REG_NO_PC];
+                    v32 = cpu->regs[REG_NO_PC];
                     cpu->regs[REG_NO_PC] = cpu->regs[REG_NO_LR] + 2 + (((uint32_t)v16) << 1);
-                    cpu->regs[REG_NO_LR] = instr | 1UL;
+                    cpu->regs[REG_NO_LR] = v32 | 1UL;
 
                     return;
 
                 default:
-                    ERR("thumb opcode should be transcoded 4\n");
+                    THUMB_FAIL;
             }
     }
 
-    ERR("thumb opcode should be transcoded 5\n");
+    THUMB_FAIL;
+#undef THUMB_FAIL
 }
 
 static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
