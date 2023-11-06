@@ -20,7 +20,7 @@ struct icacheline {
     uint8_t data[1 << CACHE_LINE_WIDTH_BITS];
     uint8_t extra[1 << CACHE_LINE_WIDTH_BITS];
 
-    uint32_t thumbDecodeStatus;
+    uint16_t thumbDecodeStatus;
 
     uint_fast8_t tag;
     uint32_t revision;
@@ -66,7 +66,7 @@ void icacheInvalAddr(struct icache* ic, uint32_t va) {
 }
 
 bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* fsrP, void* buf,
-                 uint_fast8_t* thumbDecodeStatus) {
+                 bool* transcodedThumb) {
     if (va & (sz - 1)) {  // alignment issue
 
         if (fsrP) *fsrP = 3;
@@ -108,10 +108,10 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* 
 
         case 2: {
             const uint_fast8_t lineIndex = calculateLineIndex(va);
-            *thumbDecodeStatus = (line->thumbDecodeStatus >> lineIndex) & 0x03;
+            *transcodedThumb = (line->thumbDecodeStatus >> (lineIndex >> 1)) & 0x01;
 
             *(uint32_t*)buf = *(uint16_t*)(line->data + lineIndex);
-            if (*thumbDecodeStatus)
+            if (*transcodedThumb)
                 *(uint32_t*)buf |= ((uint32_t)(*(uint16_t*)(line->extra + lineIndex)) << 16);
 
             break;
@@ -124,8 +124,7 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* 
     return true;
 }
 
-void icacheStoreThumbDecodedInstr(struct icache* ic, uint32_t va, uint32_t instr,
-                                  uint_fast8_t decodeStatus) {
+void icacheStoreThumbDecodedInstr(struct icache* ic, uint32_t va, uint32_t instr) {
     struct icacheline* line = ic->cache + calculateIndex(va);
     if (line->revision != ic->revision || line->tag != calculateTag(va) || (va & 0x01)) return;
 
@@ -133,6 +132,5 @@ void icacheStoreThumbDecodedInstr(struct icache* ic, uint32_t va, uint32_t instr
     *(uint16_t*)(line->data + lineIndex) = instr;
     *(uint16_t*)(line->extra + lineIndex) = instr >> 16;
 
-    line->thumbDecodeStatus &= ~((uint32_t)0x03 << lineIndex);
-    line->thumbDecodeStatus |= (uint32_t)decodeStatus << lineIndex;
+    line->thumbDecodeStatus |= 0x01 << (lineIndex >> 1);
 }
