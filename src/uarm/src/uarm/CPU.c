@@ -1916,7 +1916,7 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
     }
 }
 
-static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT) {
+static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT, bool privileged) {
 #define THUMB_FAIL ERR("thumb opcode should be transcoded:" __FILE__ ":" str(__LINE__));
     uint32_t v32;
     uint16_t v16;
@@ -1932,8 +1932,7 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT) {
                 uint32_t memVal32;
                 uint_fast8_t fsr;
 
-                bool ok =
-                    cpuPrvMemOp(cpu, &memVal32, addr, 4, false, cpu->M != ARM_SR_MODE_USR, &fsr);
+                bool ok = cpuPrvMemOp(cpu, &memVal32, addr, 4, false, privileged, &fsr);
                 if (!ok)
                     cpuPrvHandleMemErr(cpu, addr, 4, false, false, fsr);
                 else
@@ -2067,7 +2066,7 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
     if (instrA)
         cpuPrvExecInstr(cpu, instrA, true, privileged);
     else
-        cpuPrvExecThumb(cpu, instrT);
+        cpuPrvExecThumb(cpu, instrT, privileged);
 }
 
 struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,

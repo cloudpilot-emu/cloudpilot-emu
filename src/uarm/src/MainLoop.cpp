@@ -55,7 +55,9 @@ void MainLoop::Cycle(uint64_t now) {
     const uint64_t cyclesEmulated = socRun(soc, deltaUsec * cyclesPerSecond / 1E6);
 
     virtualTimeUsec += cyclesEmulated / cyclesPerSecond * 1E6;
-    cyclesPerSecondAverage.Add((cyclesEmulated * 1000000) / (timestampUsec() - now));
+    uint64_t now2 = timestampUsec();
+
+    if (now2 != now) cyclesPerSecondAverage.Add((cyclesEmulated * 1000000) / (now2 - now));
 
     currentIps = cyclesPerSecond;
     currentIpsMax = cyclesPerSecondAverage.Calculate();
