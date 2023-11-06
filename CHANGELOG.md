@@ -1,6 +1,8 @@
 # Next version
 
 -   Minor improvements to snapshot reliability.
+-   Extend browser support in build (although there is no guarantee that
+    old browsers will fully work).
 
 # Version 1.9.1
 
