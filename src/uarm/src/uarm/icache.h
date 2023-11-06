@@ -17,9 +17,7 @@ extern "C" {
 struct icache;
 
 struct icache* icacheInit(struct ArmMem* mem, struct ArmMmu* mmu);
-bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* fsr, void* buf,
-                 bool* transcodedThumb);
-void icacheStoreThumbDecodedInstr(struct icache* ic, uint32_t va, uint32_t instr);
+bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* fsr, void* buf);
 void icacheInval(struct icache* ic);
 void icacheInvalAddr(struct icache* ic, uint32_t addr);
 
