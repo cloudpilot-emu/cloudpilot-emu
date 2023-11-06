@@ -1909,14 +1909,11 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
     }
 }
 
-static inline bool cpuExecuteThumb(struct ArmCpu *cpu, uint16_t instrT, uint32_t *instrArmP,
-                                   bool *dontCache) {
+static inline bool cpuExecuteThumb(struct ArmCpu *cpu, uint16_t instrT, uint32_t *instrArmP) {
     bool vB;
     uint32_t t, instr = 0xE0000000UL /*most likely thing*/;
     uint16_t v16;
     uint_fast8_t v8;
-
-    *dontCache = false;
 
     switch (instrT >> 12) {
         case 0:  // LSL(1) LSR(1) ASR(1) ADD(1) SUB(1) ADD(3) SUB(3)
@@ -2013,27 +2010,16 @@ static inline bool cpuExecuteThumb(struct ArmCpu *cpu, uint16_t instrT, uint32_t
                     case 3:  // BX
 
                         // this will not handle "BLX LR"
-                        if (instrT == 0x47f0) {
-                            fprintf(stderr, "very unlikely\n");
-                            while (1)
-                                ;
-                        }
+                        if (instrT == 0x47f0) goto undefined;
 
                         if (instrT & 0x80)  // BLX
-                        {
                             cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + 1;
-                            *dontCache = true;
-                        }
 
-                        if (instrT == 0x4778) {  // special handing for thumb's "BX PC" as aparently
-                                                 // docs are wrong on it
+                        v8 = (instrT >> 3) & 0x0F;
+                        cpuPrvSetPC(cpu,
+                                    v8 == 15 ? ((cpu->regs[REG_NO_PC] + 2) & ~3UL) : cpu->regs[v8]);
 
-                            cpuPrvSetPC(cpu, (cpu->regs[REG_NO_PC] + 2) & ~3UL);
-                            return true;
-                        }
-
-                        instr |= 0x012FFF10UL | ((instrT >> 3) & 0x0F);
-                        break;
+                        return true;
 
                     default:
                         goto undefined;
@@ -2220,7 +2206,7 @@ undefined:
 }
 
 static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
-    bool privileged, dontCache, ok;
+    bool privileged, ok;
     uint32_t pc, fetchPc;
     uint32_t instr = 0;
     uint_fast8_t fsr;
@@ -2250,10 +2236,10 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
     }
     cpu->regs[REG_NO_PC] += 2;
 
-    if (!transcodedThumb && !cpuExecuteThumb(cpu, instr, &instr, &dontCache)) {
+    if (!transcodedThumb && !cpuExecuteThumb(cpu, instr, &instr)) {
         transcodedThumb = true;
 #ifdef USE_ICACHE
-        if (!dontCache) icacheStoreThumbDecodedInstr(cpu->ic, fetchPc, instr);
+        icacheStoreThumbDecodedInstr(cpu->ic, fetchPc, instr);
 #endif
     }
 
