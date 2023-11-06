@@ -577,21 +577,16 @@ static bool gdbStubPrvCheckInterrupt(struct stub *stub) {
     return true;
 }
 
-#endif
-
 void gdbStubDebugBreakRequested(struct stub *stub) {
     if (stub->sock < 0) return;
 
-#ifdef GDB_STUB_ENABLED
     strcpy(stub->stopReason, "S05");  // debug break sends "TRAP" which is 5
     stub->runState = RunStateStopped;
-#endif
 }
 
 void gdbStubReportPc(struct stub *stub, uint32_t pc, bool thumb) {
     if (stub->sock < 0) return;
 
-#ifdef GDB_STUB_ENABLED
     if (stub->runState == RunStateSingleStep) {
         strcpy(stub->stopReason, "S05");  // single step sends "TRAP" which is 5
         stub->runState = RunStateStopped;
@@ -608,7 +603,6 @@ void gdbStubReportPc(struct stub *stub, uint32_t pc, bool thumb) {
     if (stub->runState == RunStateStopped) gdbStubPrvSendPacket(stub, stub->stopReason, false);
 
     gdbStubPrvGetAndHandleCommands(stub);
-#endif
 }
 
 void gdbStubReportMemAccess(struct stub *stub, uint32_t addr, uint_fast8_t sz, bool write) {
@@ -616,7 +610,6 @@ void gdbStubReportMemAccess(struct stub *stub, uint32_t addr, uint_fast8_t sz, b
 
     if (stub->sock < 0) return;
 
-#ifdef GDB_STUB_ENABLED
     if (stub->runState != RunstateRunning) return;
 
     idx = gdbStubPrvCheckWatchpoints(stub, addr, sz, write);
@@ -639,8 +632,8 @@ void gdbStubReportMemAccess(struct stub *stub, uint32_t addr, uint_fast8_t sz, b
     stub->runState = RunStateStopped;
     gdbStubPrvSendPacket(stub, stub->stopReason, false);
     gdbStubPrvGetAndHandleCommands(stub);
-#endif
 }
+#endif
 
 struct stub *gdbStubInit(struct ArmCpu *cpu, int port) {
     struct stub *stub = (struct stub *)malloc(sizeof(*stub));
@@ -651,10 +644,10 @@ struct stub *gdbStubInit(struct ArmCpu *cpu, int port) {
     memset(stub, 0, sizeof(*stub));
     stub->cpu = cpu;
 
+#ifdef GDB_STUB_ENABLED
     if (port < 0)
         stub->sock = -1;
     else {
-#ifdef GDB_STUB_ENABLED
         struct sockaddr_in sa = {
             .sin_family = AF_INET,
             .sin_port = htons(port),
@@ -691,7 +684,7 @@ struct stub *gdbStubInit(struct ArmCpu *cpu, int port) {
 
         // start with a sanem stop reason
         strcpy(stub->stopReason, "S05");
-#endif
     }
+#endif
     return stub;
 }

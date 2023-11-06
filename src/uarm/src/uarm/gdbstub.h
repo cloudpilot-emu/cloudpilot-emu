@@ -15,9 +15,16 @@ extern "C" {
 struct stub;
 
 struct stub *gdbStubInit(struct ArmCpu *cpu, int port);
+
+#ifdef GDB_STUB_ENABLED
 void gdbStubDebugBreakRequested(struct stub *stub);
 void gdbStubReportPc(struct stub *stub, uint32_t pc, bool thumb);
 void gdbStubReportMemAccess(struct stub *stub, uint32_t addr, uint_fast8_t sz, bool write);
+#else
+    #define gdbStubDebugBreakRequested(...) ;
+    #define gdbStubReportPc(...) ;
+    #define gdbStubReportMemAccess(...) ;
+#endif
 
 #ifdef __cplusplus
 }
