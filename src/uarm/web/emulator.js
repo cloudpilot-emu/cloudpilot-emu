@@ -13,6 +13,7 @@ export class Emulator {
         this.currentIps = module.cwrap('currentIps', undefined, []);
         this.currentIpsMax = module.cwrap('currentIpsMax', undefined, []);
         this.getTimesliceSizeUsec = module.cwrap('getTimesliceSizeUsec', 'number', []);
+        this.getTimestampUsec = module.cwrap('getTimestampUsec', 'number', []);
         this.penDown = module.cwrap('penDown', undefined, ['number', 'number']);
         this.penUp = module.cwrap('penUp', undefined, []);
 
@@ -96,23 +97,24 @@ export class Emulator {
 
     start() {
         if (this.timeoutHandle || this.immediateHandle) return;
-        this.lastSpeedUpdate = performance.now();
+        this.lastSpeedUpdate = Number(this.getTimestampUsec());
 
         this.eventHandler.start();
 
         const schedule = () => {
-            const now = performance.now();
+            const now64 = this.getTimestampUsec();
+            const now = Number(now64);
 
-            this.cycle(now * 1000);
+            this.cycle(now64);
             this.render();
 
-            const timesliceRemainning = this.getTimesliceSizeUsec() / 1000 - performance.now() + now;
+            const timesliceRemainning = (this.getTimesliceSizeUsec() - Number(this.getTimestampUsec()) + now) / 1000;
             this.timeoutHandle = this.immediateHandle = undefined;
 
             if (timesliceRemainning < 10) this.immediateHandle = setImmediate(schedule);
             else this.timeoutHandle = setTimeout(schedule, timesliceRemainning);
 
-            if (now - this.lastSpeedUpdate > 1000) {
+            if (now - this.lastSpeedUpdate > 1000000) {
                 this.updateSpeedDisplay();
                 this.lastSpeedUpdate = now;
             }

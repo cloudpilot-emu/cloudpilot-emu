@@ -203,6 +203,8 @@ uint32_t EMSCRIPTEN_KEEPALIVE currentIps() { return mainLoop ? mainLoop->GetCurr
 uint32_t EMSCRIPTEN_KEEPALIVE currentIpsMax() {
     return mainLoop ? mainLoop->GetCurrentIpsMax() : 0;
 }
+
+uint64_t EMSCRIPTEN_KEEPALIVE getTimestampUsec() { return timestampUsec(); }
 }
 #endif
 

@@ -22,6 +22,7 @@ LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno \
 	-s MODULARIZE=1 \
 	-s EXPORT_NAME=createModule \
 	-s ALLOW_MEMORY_GROWTH=1 \
+	-s WASM_BIGINT=1 \
 	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
 	-s EXPORTED_RUNTIME_METHODS=["FS"] \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall"]
