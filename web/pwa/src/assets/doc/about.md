@@ -6,6 +6,7 @@ emulated:
 -   Pilot, Palm Pilot
 -   Palm III
 -   Palm IIIxe, Palm IIIx, Palm IIIe
+-   Palm IIIc
 -   Palm Vx, Palm V
 -   Palm VII, Palm VII EZ, Palm VIIx
 -   Palm m500, Palm m505, Palm m515
@@ -24,6 +25,7 @@ emulated:
 -   Sony PEG-T650C series
 -   Sony PEG-NR70 series
 -   Acer S1x
+-   Legend P168 (no support for SD card)
 
 The correct device type is automatically determined from the ROM you load. If
 there are multiple possible devices CloudpilotEmu will let you choose when you

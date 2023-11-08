@@ -49,6 +49,7 @@ The following devices are currently emulated:
 -   Pilot, Palm Pilot
 -   Palm III
 -   Palm IIIxe, Palm IIIx, Palm IIIe
+-   Palm IIIc
 -   Palm Vx, Palm V
 -   Palm VII, Palm VII EZ, Palm VIIx
 -   Palm m500, Palm m505, Palm m515
