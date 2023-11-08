@@ -23,7 +23,7 @@ export function compressPage(page: Uint32Array): Uint32Array | number {
     probe |= probe << 8;
     probe |= probe << 16;
 
-    for (let i = 1; i < 256; i++) {
+    for (let i = 0; i < 256; i++) {
         if (page[i] !== probe) return page;
     }
 
