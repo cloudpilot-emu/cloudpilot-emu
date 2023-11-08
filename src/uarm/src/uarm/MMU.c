@@ -16,6 +16,8 @@ struct TlbEntry {
     uint32_t domain : 4;
     uint32_t c : 1;
     uint32_t section : 1;
+
+    struct ArmMemRegion *region;
 };
 
 struct ArmMmu {
@@ -120,7 +122,8 @@ static inline bool checkPermissions(struct ArmMmu *mmu, uint_fast8_t ap, uint_fa
 }
 
 static inline bool translateAndCache(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write,
-                                     uint32_t *paP, uint_fast8_t *fsrP, uint8_t *mappingInfoP) {
+                                     uint32_t *paP, uint_fast8_t *fsrP, uint8_t *mappingInfoP,
+                                     struct ArmMemRegion **region) {
     bool c = false;
     bool section = false, coarse = true, pxa_tex_page = false;
     uint32_t va, pa = 0, sz, t;
@@ -251,6 +254,9 @@ translated:
             tlbEntry->section = section;
             tlbEntry->pa = pa + offset;
             tlbEntry->revision = mmu->revision;
+            tlbEntry->region = memRegionFind(mmu->mem, tlbEntry->pa, 4096);
+
+            if (adr >= tlbEntry->pa && adr - tlbEntry->pa < 4096) *region = tlbEntry->region;
         }
     }
 
@@ -263,7 +269,9 @@ translated:
 }
 
 bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write, uint32_t *paP,
-                  uint_fast8_t *fsrP, uint8_t *mappingInfoP) {
+                  uint_fast8_t *fsrP, uint8_t *mappingInfoP, struct ArmMemRegion **region) {
+    *region = NULL;
+
     if (mmu->transTablPA == MMU_DISABLED_TTP) {
         *paP = adr;
         if (mappingInfoP) *mappingInfoP = 0;
@@ -274,11 +282,13 @@ bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write
     struct TlbEntry *tlbEntry = getTlbEntry(mmu, adr);
 
     if (tlbEntry->revision != mmu->revision)
-        return translateAndCache(mmu, adr, priviledged, write, paP, fsrP, mappingInfoP);
+        return translateAndCache(mmu, adr, priviledged, write, paP, fsrP, mappingInfoP, region);
 
     if (!checkPermissions(mmu, tlbEntry->ap, tlbEntry->domain, tlbEntry->section, priviledged,
                           write, fsrP))
         return false;
+
+    *region = tlbEntry->region;
 
     *paP = (adr & 0xfff) + tlbEntry->pa;
     if (mappingInfoP) *mappingInfoP = tlbEntry->c ? MMU_MAPPING_CACHEABLE : 0;

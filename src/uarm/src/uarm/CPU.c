@@ -726,10 +726,15 @@ static bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fa
     if (vaddr < 0x02000000UL) vaddr |= cpu->pid;
 #endif
 
-    if (!mmuTranslate(cpu->mmu, vaddr, priviledged, write, &pa, fsrP, NULL)) return false;
+    struct ArmMemRegion *region;
 
-    if (!memAccess(cpu->mem, pa, size, (write ? MEM_ACCESS_TYPE_WRITE : MEM_ACCESS_TYPE_READ),
-                   buf)) {
+    if (!mmuTranslate(cpu->mmu, vaddr, priviledged, write, &pa, fsrP, NULL, &region)) return false;
+
+    bool ok = region ? region->aF(region->uD, pa, size, write, buf)
+                     : memAccess(cpu->mem, pa, size,
+                                 (write ? MEM_ACCESS_TYPE_WRITE : MEM_ACCESS_TYPE_READ), buf);
+
+    if (!ok) {
         if (fsrP) *fsrP = 10;  // external abort on non-linefetch
 
         return false;
@@ -2052,7 +2057,7 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
 #ifdef USE_ICACHE
     ok = icacheFetch(cpu->ic, fetchPc, 2, &fsr, &instrT);
 #else
-    ok = cpuPrvMemOp(cpu, &instr, fetchPc, 2, false, privileged, &fsr);
+    ok = cpuPrvMemOp(cpu, &instrT, fetchPc, 2, false, privileged, &fsr);
 #endif
     if (!ok) {
         cpuPrvHandleMemErr(cpu, pc, 2, false, true, fsr);

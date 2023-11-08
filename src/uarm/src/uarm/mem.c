@@ -9,13 +9,6 @@
 
 #define NUM_MEM_REGIONS 128
 
-struct ArmMemRegion {
-    uint32_t pa;
-    uint32_t sz;
-    ArmMemAccessF aF;
-    void *uD;
-};
-
 struct ArmMem {
     struct ArmMemRegion regions[NUM_MEM_REGIONS];
 };
@@ -75,4 +68,24 @@ bool memAccess(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, uint_fast8_
     }
 
     return ret;
+}
+
+struct ArmMemRegion *memRegionFind(struct ArmMem *mem, uint32_t start, uint32_t size) {
+    struct ArmMemRegion *regionFound = NULL;
+
+    for (size_t i = 0; i < NUM_MEM_REGIONS; i++) {
+        struct ArmMemRegion *r = mem->regions + i;
+        if (r->sz == 0) break;
+
+        if (r->pa > start || r->pa + r->sz < start + size) continue;
+
+        if (regionFound) {
+            regionFound = NULL;
+            break;
+        }
+
+        regionFound = r;
+    }
+
+    return regionFound;
 }

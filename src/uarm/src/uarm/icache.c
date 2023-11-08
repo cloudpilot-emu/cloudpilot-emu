@@ -75,11 +75,14 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* 
     if (line->revision != ic->revision || line->tag != tag) {
         uint32_t pa;
         uint8_t mappingInfo;
+        struct ArmMemRegion* region;
 
-        if (!mmuTranslate(ic->mmu, va, true, false, &pa, fsrP, &mappingInfo)) return false;
+        if (!mmuTranslate(ic->mmu, va, true, false, &pa, fsrP, &mappingInfo, &region)) return false;
 
         if ((mappingInfo & MMU_MAPPING_CACHEABLE) == 0) {
-            if (!memAccess(ic->mem, pa, sz, MEM_ACCESS_TYPE_READ, buf)) {
+            bool ok = region ? region->aF(region->uD, pa, sz, false, buf)
+                             : memAccess(ic->mem, pa, sz, MEM_ACCESS_TYPE_READ, buf);
+            if (!ok) {
                 if (fsrP) *fsrP = 0x0d;  // perm error
                 return false;
             }
