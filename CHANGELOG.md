@@ -1,8 +1,10 @@
-# Next version
+# Version 1.9.2
 
 -   Minor improvements to snapshot reliability.
 -   Extend browser support in build (although there is no guarantee that
     old browsers will fully work).
+-   Fix a rare issue that could cause corruption of device memory on
+    load.
 
 # Version 1.9.1
 
