@@ -68,6 +68,8 @@ struct SoC {
     struct SocI2c *i2c;
     struct SocIc *ic;
     bool mouseDown;
+    bool sleeping;
+    uint64_t sleepAtCycle;
 
     struct PxaMemCtrlr *memCtrl;
     struct PxaPwrClk *pwrClk;
@@ -107,6 +109,10 @@ struct SoC {
     struct Device *dev;
 
     uint64_t accumulated_cycles;
+    uint64_t timerTicks_x1e6;
+    uint64_t lcdTicks_x1e6;
+    uint64_t clock1Ticks_x1e6;
+    uint64_t clock2Ticks_x1e6;
 };
 
 static uint_fast16_t socUartPrvRead(void *userData) {
@@ -170,7 +176,7 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
         romInit(soc->mem, ROM_BASE, romPieces, romPieceSizes, romNumPieces, deviceGetRomMemType());
     if (!soc->rom) ERR("Cannot init ROM1");
 
-    soc->ic = socIcInit(soc->cpu, soc->mem, socRev);
+    soc->ic = socIcInit(soc->cpu, soc->mem, soc, socRev);
     if (!soc->ic) ERR("Cannot init PXA's IC");
 
     soc->dma = socDmaInit(soc->mem, soc->ic);
@@ -220,7 +226,7 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     soc->btUart = socUartInit(soc->mem, soc->ic, PXA_BTUART_BASE, PXA_I_BTUART);
     if (!soc->btUart) ERR("Cannot init PXA's BTUART");
 
-    soc->pwrClk = pxaPwrClkInit(soc->cpu, soc->mem);
+    soc->pwrClk = pxaPwrClkInit(soc->cpu, soc->mem, soc);
     if (!soc->pwrClk) ERR("Cannot init PXA's PWRCLKMGR");
 
     soc->i2c = socI2cInit(soc->mem, soc->ic, soc->dma);
@@ -386,36 +392,74 @@ void socPenUp(struct SoC *soc) {
     deviceTouch(soc->dev, -1, -1);
 }
 
-uint64_t socRun(struct SoC *soc, uint64_t maxCycles) {
+void socSleep(struct SoC *soc) {
+    if (soc->sleeping) return;
+
+    soc->sleeping = true;
+    soc->sleepAtCycle = soc->accumulated_cycles;
+    // printf("sleep\n");
+}
+
+void socWakeup(struct SoC *soc, uint8_t wakeupSource) {
+    if (!soc->sleeping) return;
+
+    soc->sleeping = false;
+    // printf("wakeupt after %llu cycles from %u\n", soc->accumulated_cycles - soc->sleepAtCycle,
+    //        (int)wakeupSource);
+}
+
+uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
     uint64_t cycles = 0;
     uint_fast8_t i;
+
+    uint64_t timerTicksPerCycle_x1e6 = (((uint64_t)1000000) * 3686400) / cyclesPerSecond;
+    uint64_t lcdTicksPerCycle_x1e6 = (((uint64_t)1000000) * 15000) / cyclesPerSecond;
+    uint64_t clock1TicksPerCycle_x1e6 = (((uint64_t)1000000) * 3686400) / (36 * cyclesPerSecond);
+    uint64_t clock2TicksPerCycle_x1e6 = (((uint64_t)1000000) * 3686400) / (292 * cyclesPerSecond);
 
     while (cycles < maxCycles) {
         cycles++;
         soc->accumulated_cycles++;
+        soc->timerTicks_x1e6 += timerTicksPerCycle_x1e6;
+        soc->lcdTicks_x1e6 += lcdTicksPerCycle_x1e6;
+        soc->clock1Ticks_x1e6 += clock1TicksPerCycle_x1e6;
+        soc->clock2Ticks_x1e6 += clock2TicksPerCycle_x1e6;
 
-        if (!(soc->accumulated_cycles & 0x00000007UL)) pxaTimrTick(soc->tmr);
-        if (!(soc->accumulated_cycles & 0x000000FFUL)) {
-            for (i = 0; i < 3; i++) {
-                if (soc->ssp[i]) socSspPeriodic(soc->ssp[i]);
-            }
+        while (soc->timerTicks_x1e6 >= 1000000) {
+            pxaTimrTick(soc->tmr);
+            soc->timerTicks_x1e6 -= 1000000;
         }
-        if (!(soc->accumulated_cycles & 0x000000FFUL)) socDmaPeriodic(soc->dma);
-        if (!(soc->accumulated_cycles & 0x000007FFUL)) socAC97Periodic(soc->ac97);
-        if (!(soc->accumulated_cycles & 0x000007FFUL)) socI2sPeriodic(soc->i2s);
-        if (!(soc->accumulated_cycles & 0x000000FFUL)) {
+
+        while (soc->lcdTicks_x1e6 >= 1000000) {
+            pxaLcdFrame(soc->lcd);
+            soc->lcdTicks_x1e6 -= 1000000;
+        }
+
+        while (soc->clock1Ticks_x1e6 >= 1000000) {
+            socDmaPeriodic(soc->dma);
             socUartProcess(soc->ffUart);
             if (soc->hwUart) socUartProcess(soc->hwUart);
             socUartProcess(soc->stUart);
             socUartProcess(soc->btUart);
+            for (i = 0; i < 3; i++) {
+                if (soc->ssp[i]) socSspPeriodic(soc->ssp[i]);
+            }
+            devicePeriodic(soc->dev, 0);
+
+            soc->clock1Ticks_x1e6 -= 1000000;
         }
 
-        devicePeriodic(soc->dev, cycles);
+        if (soc->clock2Ticks_x1e6 >= 1000000) {
+            socAC97Periodic(soc->ac97);
+            socI2sPeriodic(soc->i2s);
+            devicePeriodic(soc->dev, 1);
 
-        if (!(soc->accumulated_cycles & 0x0001FFFUL)) pxaLcdFrame(soc->lcd);
+            soc->clock2Ticks_x1e6 -= 1000000;
+        }
+
         if (!(soc->accumulated_cycles & 0x00FFFFFFUL)) pxaRtcUpdate(soc->rtc);
 
-        cpuCycle(soc->cpu);
+        if (!soc->sleeping) cpuCycle(soc->cpu);
     }
 
     return cycles;

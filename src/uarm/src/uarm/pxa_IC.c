@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "SoC.h"
 #include "mem.h"
 #include "util.h"
 
@@ -13,6 +14,7 @@
 
 struct SocIc {
     struct ArmCpu *cpu;
+    struct SoC *soc;
 
     uint32_t ICMR[2];  // Mask Registers
     uint32_t ICLR[2];  // Level Registers
@@ -283,7 +285,8 @@ bool pxa270icPrvCoprocAccess(struct ArmCpu *cpu, void *userData, bool two /* MCR
     return true;
 }
 
-struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, uint_fast8_t socRev) {
+struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, struct SoC *soc,
+                        uint_fast8_t socRev) {
     struct SocIc *ic = (struct SocIc *)malloc(sizeof(*ic));
     struct ArmCoprocessor cp = {
         .regXfer = pxa270icPrvCoprocAccess,
@@ -295,6 +298,7 @@ struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, uint_fast8_t
     memset(ic, 0, sizeof(*ic));
 
     ic->cpu = cpu;
+    ic->soc = soc;
     ic->gen2 = socRev == 2;
 
     if (!memRegionAdd(physMem, PXA_IC_BASE, PXA_IC_SIZE, socIcPrvMemAccessF, ic))
@@ -308,12 +312,17 @@ struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, uint_fast8_t
 void socIcInt(struct SocIc *ic, uint_fast8_t intNum,
               bool raise)  // interrupt caused by emulated hardware
 {
-    uint32_t old = ic->ICPR[intNum / 32];
+    const uint_fast8_t i = intNum / 32;
+    const uint32_t mask = (1UL << (intNum % 32));
 
-    if (raise)
-        ic->ICPR[intNum / 32] |= (1UL << (intNum % 32));
-    else
-        ic->ICPR[intNum / 32] &= ~(1UL << (intNum % 32));
+    uint32_t old = ic->ICPR[i];
+
+    if (raise) {
+        ic->ICPR[i] |= mask;
+
+        if ((ic->ICCR & 0x01) == 0 || (ic->ICMR[i] & mask)) socWakeup(ic->soc, intNum);
+    } else
+        ic->ICPR[i] &= ~mask;
 
     if (ic->ICPR[intNum / 32] != old) socIcPrvHandleChanges(ic);
 }

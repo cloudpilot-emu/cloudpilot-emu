@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include "CPU.h"
+#include "SoC_type.h"
 #include "mem.h"
 
 #ifdef __cplusplus
@@ -16,7 +17,8 @@ extern "C" {
 
 struct SocIc;
 
-struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, uint_fast8_t socRev);
+struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, struct SoC *soc,
+                        uint_fast8_t socRev);
 
 void socIcInt(struct SocIc *ic, uint_fast8_t intNum, bool raise);
 

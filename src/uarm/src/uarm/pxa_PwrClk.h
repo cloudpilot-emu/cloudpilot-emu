@@ -4,6 +4,7 @@
 #define _PXA_PWR_CLK_H_
 
 #include "CPU.h"
+#include "SoC_type.h"
 #include "mem.h"
 
 #ifdef __cplusplus
@@ -12,7 +13,7 @@ extern "C" {
 
 struct PxaPwrClk;
 
-struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem);
+struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem, struct SoC *soc);
 
 #ifdef __cplusplus
 }

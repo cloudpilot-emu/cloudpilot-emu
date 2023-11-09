@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "SoC.h"
 #include "util.h"
 
 #define PXA_CLOCK_MANAGER_BASE 0x41300000UL
@@ -15,6 +16,7 @@
 
 struct PxaPwrClk {
     struct ArmCpu *cpu;
+    struct SoC *soc;
     uint32_t CCCR, CKEN, OSCR;  // clocks manager regs
     uint32_t pwrRegs[13];       // we care so little about these, we don't even name them
     bool turbo;
@@ -60,7 +62,7 @@ static bool pxaPwrClkPrvCoproc14regXferFunc(struct ArmCpu *cpu, void *userData, 
                 if (read)
                     val = pc->turbo ? 1 : 0;
                 else if (val == 1 && op2 == 0) {
-                    // idle
+                    socSleep(pc->soc);
                 } else if (val != 0 && op2 == 0) {
                     fprintf(stderr,
                             "Someone tried to set processor power mode (cp14 reg7) to 0x%08lx\n",
@@ -152,7 +154,7 @@ static bool pxaPwrClkPrvPowerMgrMemAccessF(void *userData, uint32_t pa, uint_fas
     return true;
 }
 
-struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem) {
+struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem, struct SoC *soc) {
     struct PxaPwrClk *pc = (struct PxaPwrClk *)malloc(sizeof(*pc));
     struct ArmCoprocessor cp14 = {
         .regXfer = pxaPwrClkPrvCoproc14regXferFunc,
@@ -168,6 +170,7 @@ struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem) {
     memset(pc, 0, sizeof(*pc));
 
     pc->cpu = cpu;
+    pc->soc = soc;
     pc->CCCR = 0x00000122UL;  // set CCCR to almost default value (we use mult 32 not 27)
     pc->CKEN = 0x000179EFUL;  // set CKEN to default value
     pc->OSCR = 0x00000003UL;  // 32KHz oscillator on and stable
