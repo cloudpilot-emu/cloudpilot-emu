@@ -418,12 +418,40 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
     uint64_t clock2TicksPerCycle_x1e6 = (((uint64_t)1000000) * 3686400) / (292 * cyclesPerSecond);
 
     while (cycles < maxCycles) {
-        cycles++;
-        soc->accumulated_cycles++;
-        soc->timerTicks_x1e6 += timerTicksPerCycle_x1e6;
-        soc->lcdTicks_x1e6 += lcdTicksPerCycle_x1e6;
-        soc->clock1Ticks_x1e6 += clock1TicksPerCycle_x1e6;
-        soc->clock2Ticks_x1e6 += clock2TicksPerCycle_x1e6;
+        if (soc->sleeping) {
+            uint64_t cyclesToSkip = ~((uint64_t)0);
+            uint64_t c;
+
+            c = (1000000 - soc->timerTicks_x1e6) / timerTicksPerCycle_x1e6;
+            if (c < cyclesToSkip) cyclesToSkip = c;
+
+            c = (1000000 - soc->lcdTicks_x1e6) / lcdTicksPerCycle_x1e6;
+            if (c < cyclesToSkip) cyclesToSkip = c;
+
+            c = (1000000 - soc->clock1Ticks_x1e6) / clock1TicksPerCycle_x1e6;
+            if (c < cyclesToSkip) cyclesToSkip = c;
+
+            c = (1000000 - soc->clock2Ticks_x1e6) / clock2TicksPerCycle_x1e6;
+            if (c < cyclesToSkip) cyclesToSkip = c;
+
+            if (cyclesToSkip == 0) cyclesToSkip = 1;
+
+            cycles += cyclesToSkip;
+            soc->accumulated_cycles += cyclesToSkip;
+
+            soc->timerTicks_x1e6 += cyclesToSkip * timerTicksPerCycle_x1e6;
+            soc->lcdTicks_x1e6 += cyclesToSkip * lcdTicksPerCycle_x1e6;
+            soc->clock1Ticks_x1e6 += cyclesToSkip * clock1TicksPerCycle_x1e6;
+            soc->clock2Ticks_x1e6 += cyclesToSkip * clock2TicksPerCycle_x1e6;
+        } else {
+            cycles++;
+            soc->accumulated_cycles++;
+
+            soc->timerTicks_x1e6 += timerTicksPerCycle_x1e6;
+            soc->lcdTicks_x1e6 += lcdTicksPerCycle_x1e6;
+            soc->clock1Ticks_x1e6 += clock1TicksPerCycle_x1e6;
+            soc->clock2Ticks_x1e6 += clock2TicksPerCycle_x1e6;
+        }
 
         while (soc->timerTicks_x1e6 >= 1000000) {
             pxaTimrTick(soc->tmr);
