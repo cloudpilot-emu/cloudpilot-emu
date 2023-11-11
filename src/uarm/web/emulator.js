@@ -1,150 +1,126 @@
 import { EventHandler } from './eventhandler.js';
 
 export class Emulator {
-    constructor(module, { canvasCtx, speedDisplay, log }) {
-        this.module = module;
+    constructor(worker, { canvasCtx, speedDisplay, log }) {
+        this.worker = worker;
+
         this.canvasCtx = canvasCtx;
         this.speedDisplay = speedDisplay;
         this.log = log;
 
-        this.cycle = module.cwrap('cycle', undefined, ['number']);
-        this.getFrame = module.cwrap('getFrame', 'number', []);
-        this.resetFrame = module.cwrap('resetFrame', undefined, []);
-        this.currentIps = module.cwrap('currentIps', undefined, []);
-        this.currentIpsMax = module.cwrap('currentIpsMax', undefined, []);
-        this.getTimesliceSizeUsec = module.cwrap('getTimesliceSizeUsec', 'number', []);
-        this.getTimestampUsec = module.cwrap('getTimestampUsec', 'number', []);
-        this.penDown = module.cwrap('penDown', undefined, ['number', 'number']);
-        this.penUp = module.cwrap('penUp', undefined, []);
-
-        this.imageData = new ImageData(320, 320);
-        this.imageData32 = new Uint32Array(this.imageData.data.buffer);
         this.canvasTmpCtx = document.createElement('canvas').getContext('2d');
         this.canvasTmpCtx.canvas.width = 320;
         this.canvasTmpCtx.canvas.height = 320;
 
+        this.running = false;
+
         this.eventHandler = new EventHandler(this, canvasCtx.canvas);
 
-        this.onMouseDown = (e) => {
-            if ((e.buttons & 1) === 0 || !this.module) return;
+        this.onMessage = (e) => {
+            switch (e.data.type) {
+                case 'frame':
+                    this.render(e.data.data);
+                    break;
 
-            const bb = this.canvasCtx.canvas.getBoundingClientRect();
-            const x = (e.clientX - bb.x) >>> 1;
-            const y = (e.clientY - bb.y) >>> 1;
+                case 'speed':
+                    this.updateSpeedDisplay(e.data.text);
+                    break;
 
-            if (x < 0 || x >= 320 || y < 0 || y >= 440) return;
+                case 'log':
+                    this.log(e.data.message);
+                    break;
 
-            console.log(x, y);
+                case 'error':
+                    console.error(e.data.reason);
+                    break;
 
-            setImmediate(() => this.penDown(x, y));
+                default:
+                    console.error('unknown message from worker', e.data);
+                    break;
+            }
         };
 
-        this.onMouseUp = (e) => {
-            if (e.button !== 0 || !this.module) return;
-
-            e.stopPropagation();
-            e.preventDefault();
-
-            console.log('penUp');
-
-            setImmediate(() => this.penUp());
-        };
+        this.worker.addEventListener('message', this.onMessage);
     }
 
-    static async create(nor, nand, sd, env) {
-        const { canvasCtx, speedDisplay, log } = env;
-        let module;
+    static create(nor, nand, sd, env) {
+        const { log } = env;
+        const worker = new Worker('web/worker.js');
 
-        try {
-            module = await createModule({
-                noInitialRun: true,
-                print: log,
-                printErr: log,
-            });
-        } catch (e) {
-            console.error('failed to load and compile WASM module', e);
-            return;
-        }
+        return new Promise((resolve, reject) => {
+            const onMessage = (e) => {
+                switch (e.data.type) {
+                    case 'ready':
+                        worker.postMessage({ type: 'initialize', nor, nand, sd });
+                        break;
 
-        module.FS.writeFile('/nor.bin', nor);
-        module.FS.writeFile('/nand.bin', nand);
-        if (sd) module.FS.writeFile('/sd.img', sd);
+                    case 'initialized':
+                        worker.removeEventListener('message', onMessage);
+                        resolve(new Emulator(worker, env));
+                        break;
 
-        try {
-            if (module.callMain(['-r', '/nor.bin', '-n', '/nand.bin', ...(sd ? ['-s', '/sd.img'] : [])]) !== 0) {
-                log('uARM terminated with error');
-                return;
-            }
-        } catch (e) {
-            log('uARM aborted');
-            return;
-        }
+                    case 'error':
+                        worker.removeEventListener('message', onMessage);
+                        worker.terminate();
+                        reject(new Error(e.data.reason));
+                        break;
 
-        return new Emulator(module, env);
+                    case 'log':
+                        log(e.data.message);
+                        break;
+
+                    default:
+                        console.error('unknown message from worker', e.data);
+                        break;
+                }
+            };
+
+            worker.addEventListener('message', onMessage);
+        });
+    }
+
+    destroy() {
+        this.eventHandler.stop();
+        this.worker.removeEventListener('message', this.onMessage);
+        this.worker.terminate();
     }
 
     stop() {
         this.eventHandler.stop();
-
-        if (this.immediateHandle) clearImmediate(this.immediateHandle);
-        if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
-
-        this.timeoutHandle = this.immediateHandle = undefined;
         this.speedDisplay.innerText = '-';
-
-        this.log('emulator stopped');
+        this.running = false;
+        this.worker.postMessage({ type: 'stop' });
     }
 
     start() {
-        if (this.timeoutHandle || this.immediateHandle) return;
-        this.lastSpeedUpdate = Number(this.getTimestampUsec());
-
+        this.running = true;
         this.eventHandler.start();
-
-        const schedule = () => {
-            const now64 = this.getTimestampUsec();
-            const now = Number(now64);
-
-            this.cycle(now64);
-            this.render();
-
-            const timesliceRemainning = (this.getTimesliceSizeUsec() - Number(this.getTimestampUsec()) + now) / 1000;
-            this.timeoutHandle = this.immediateHandle = undefined;
-
-            if (timesliceRemainning < 10) this.immediateHandle = setImmediate(schedule);
-            else this.timeoutHandle = setTimeout(schedule, timesliceRemainning);
-
-            if (now - this.lastSpeedUpdate > 1000000) {
-                this.updateSpeedDisplay();
-                this.lastSpeedUpdate = now;
-            }
-        };
-
-        this.log('emulator running');
-        schedule();
+        this.worker.postMessage({ type: 'start' });
     }
 
-    render() {
-        if (!this.module) return;
+    penDown(x, y) {
+        this.worker.postMessage({ type: 'penDown', x, y });
+    }
 
-        const framePtr = this.getFrame() >>> 2;
-        if (!framePtr) return;
+    penUp() {
+        this.worker.postMessage({ type: 'penUp' });
+    }
 
-        const frame = this.module.HEAPU32.subarray(framePtr, framePtr + 320 * 320);
-        this.imageData32.set(frame);
-        this.resetFrame();
+    render(data) {
+        if (!this.running) return;
 
-        this.canvasTmpCtx.putImageData(this.imageData, 0, 0);
+        const imageData = new ImageData(new Uint8ClampedArray(data), 320, 320);
+
+        this.canvasTmpCtx.putImageData(imageData, 0, 0);
         this.canvasCtx.imageSmoothingEnabled = false;
         this.canvasCtx.drawImage(this.canvasTmpCtx.canvas, 0, 0, 320, 320, 0, 0, 640, 640);
+
+        this.worker.postMessage({ type: 'returnFrame', frame: data }, [data]);
     }
 
-    updateSpeedDisplay() {
-        const currentIps = this.currentIps();
-        const currentIpsMax = this.currentIpsMax();
+    updateSpeedDisplay(text) {
+        if (!this.running) return;
 
-        this.speedDisplay.innerText = `current ${(currentIps / 1e6).toFixed(2)} MIPS, limit ${(
-            currentIpsMax / 1e6
-        ).toFixed(2)} MIPS -> ${((currentIps / currentIpsMax) * 100).toFixed(2)}%`;
+        this.speedDisplay.innerText = text;
     }
 }

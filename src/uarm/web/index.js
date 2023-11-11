@@ -2,6 +2,12 @@ import './setimmediate/setimmediate.js';
 import { Emulator } from './emulator.js';
 import { Database } from './database.js';
 
+const isIOSSafari = !navigator.userAgent.match(/(crios)|(fxios)/i);
+const isIOS =
+    !!navigator.platform.match(/iPhone|iPad|iPod/) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isSafari = 'safari' in window || (isIOS && isIOSSafari);
+
 const labelNor = document.getElementById('nor-image');
 const labelNand = document.getElementById('nand-image');
 const labelSD = document.getElementById('sd-image');
@@ -34,12 +40,15 @@ function updateLabels() {
     labelSD.innerText = fileSd?.name ?? '[none]';
 }
 
+let fileInput;
 const openFile = () =>
     new Promise((resolve, reject) => {
-        const input = document.createElement('input');
-        input.type = 'file';
+        if (isSafari && fileInput) document.body.removeChild(fileInput);
+        fileInput = document.createElement('input');
 
-        input.addEventListener('change', (evt) => {
+        fileInput.onchange = (evt) => {
+            console.log('onchange');
+
             const target = evt.target;
             const file = target?.files?.[0];
 
@@ -55,9 +64,15 @@ const openFile = () =>
             reader.onerror = () => reject(reader.error);
 
             reader.readAsArrayBuffer(file);
-        });
+        };
 
-        input.click();
+        fileInput.type = 'file';
+        fileInput.value = '';
+        fileInput.style.display = 'none';
+
+        if (isSafari) document.body.appendChild(fileInput);
+
+        fileInput.click();
     });
 
 function drawSkin() {
@@ -87,7 +102,7 @@ const uploadHandler = (assign) => () =>
 async function restart() {
     if (!(fileNor && fileNand)) return;
 
-    emulator?.stop();
+    emulator?.destroy();
     clearCanvas();
 
     emulator = await Emulator.create(fileNor.content, fileNand.content, fileSd?.content, {
@@ -104,7 +119,13 @@ async function main() {
     fileNor = await database.getNor();
     fileNand = await database.getNand();
     fileSd = await database.getSd();
-    await restart();
+
+    if (window.location.search.indexOf('?noload') < 0) {
+        log('Reload with ?noload appended to the URL if the emulator hangs on load due to invalid NOR or NAND');
+        log('---');
+
+        await restart();
+    }
 
     updateLabels();
     clearCanvas();

@@ -18,7 +18,7 @@ export class EventHandler {
 
             e.stopPropagation();
             e.preventDefault();
-            setImmediate(() => emulator.penDown(coords.x, coords.y));
+            emulator.penDown(coords.x, coords.y);
         };
 
         this.onMouseUp = (e) => {
@@ -37,14 +37,14 @@ export class EventHandler {
 
                 e.stopPropagation();
                 e.preventDefault();
-                setImmediate(() => emulator.penDown(coords.x, coords.y));
+                emulator.penDown(coords.x, coords.y);
 
                 return;
             }
         };
 
         this.onTouchEnd = (e) => {
-            setImmediate(() => emulator.penUp());
+            emulator.penUp();
         };
     }
 
