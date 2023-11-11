@@ -33,7 +33,7 @@ class Emulator {
             noInitialRun: true,
             print: log,
             printErr: log,
-            locateFile: () => '/src/uarm_web.wasm',
+            locateFile: () => '../src/uarm_web.wasm',
         });
 
         module.FS.writeFile('/nor.bin', nor);
