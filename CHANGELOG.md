@@ -1,3 +1,7 @@
+# Next version
+
+-   Fix spurious failure to open files on Safari and iOS Safari.
+
 # Version 1.9.2
 
 -   Minor improvements to snapshot reliability.

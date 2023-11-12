@@ -13,6 +13,7 @@ import { StorageService } from './storage.service';
 import Url from 'url-parse';
 import { filenameForSession } from '@pwa/helper/filename';
 import { metadataForSession } from '@pwa/helper/metadata';
+import { isIOS, isIOSSafari, isSafari } from '@common/helper/browser';
 
 /* eslint-disable no-bitwise */
 
@@ -215,19 +216,27 @@ export class FileService {
     }
 
     private openFilesLocal(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): void {
-        const input = document.createElement('input');
+        const append = isSafari || (isIOS && isIOSSafari);
+        if (append && this.input) document.body.removeChild(this.input);
 
-        input.multiple = multiple;
-        input.type = 'file';
+        this.input = document.createElement('input');
 
-        input.addEventListener('change', async (e) => {
+        this.input.multiple = multiple;
+        this.input.type = 'file';
+
+        this.input.addEventListener('change', async (e) => {
             const target = e.target as HTMLInputElement;
 
             if (!target?.files) return;
             handler(Array.from(target.files).map(this.readFile.bind(this)));
         });
 
-        input.click();
+        if (append) {
+            this.input.style.display = 'none';
+            document.body.appendChild(this.input);
+        }
+
+        this.input.click();
     }
 
     private readFile(file: File): FileDescriptor {
@@ -252,4 +261,6 @@ export class FileService {
 
         return { name: file.name, getContent: content };
     }
+
+    private input: HTMLInputElement | undefined;
 }
