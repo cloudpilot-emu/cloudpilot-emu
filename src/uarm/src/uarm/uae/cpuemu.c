@@ -249,17 +249,6 @@ unsigned long REGPARAM2 op_79_3(uae_u32 opcode) /* OR */
 }}}}m68k_incpc(8);
 return 12;
 }
-unsigned long REGPARAM2 op_7c_3(uae_u32 opcode) /* ORSR */
-{
-{if (!regs.s) { Exception(8,0); goto endlabel18; }
-{	MakeSR();
-{	uae_s16 src = get_iword(2);
-	regs.sr |= src;
-	MakeFromSR();
-}}}m68k_incpc(4);
-endlabel18: ;
-return 4;
-}
 unsigned long REGPARAM2 op_80_3(uae_u32 opcode) /* OR */
 {
 	uae_u32 dstreg = opcode & 7;
@@ -1205,17 +1194,6 @@ unsigned long REGPARAM2 op_279_3(uae_u32 opcode) /* AND */
 	put_word(dsta,src);
 }}}}m68k_incpc(8);
 return 12;
-}
-unsigned long REGPARAM2 op_27c_3(uae_u32 opcode) /* ANDSR */
-{
-{if (!regs.s) { Exception(8,0); goto endlabel89; }
-{	MakeSR();
-{	uae_s16 src = get_iword(2);
-	regs.sr &= src;
-	MakeFromSR();
-}}}m68k_incpc(4);
-endlabel89: ;
-return 4;
 }
 unsigned long REGPARAM2 op_280_3(uae_u32 opcode) /* AND */
 {
@@ -2994,17 +2972,6 @@ unsigned long REGPARAM2 op_a79_3(uae_u32 opcode) /* EOR */
 	put_word(dsta,src);
 }}}}m68k_incpc(8);
 return 12;
-}
-unsigned long REGPARAM2 op_a7c_3(uae_u32 opcode) /* EORSR */
-{
-{if (!regs.s) { Exception(8,0); goto endlabel204; }
-{	MakeSR();
-{	uae_s16 src = get_iword(2);
-	regs.sr ^= src;
-	MakeFromSR();
-}}}m68k_incpc(4);
-endlabel204: ;
-return 4;
 }
 unsigned long REGPARAM2 op_a80_3(uae_u32 opcode) /* EOR */
 {
@@ -9816,136 +9783,6 @@ unsigned long REGPARAM2 op_46b9_3(uae_u32 opcode) /* NOT */
 }}}}m68k_incpc(6);
 return 14;
 }
-unsigned long REGPARAM2 op_46c0_3(uae_u32 opcode) /* MV2SR */
-{
-	uae_u32 srcreg = (opcode & 7);
-{if (!regs.s) { Exception(8,0); goto endlabel691; }
-{{	uae_s16 src = m68k_dreg(regs, srcreg);
-	regs.sr = src;
-	MakeFromSR();
-}}}m68k_incpc(2);
-endlabel691: ;
-return 2;
-}
-unsigned long REGPARAM2 op_46d0_3(uae_u32 opcode) /* MV2SR */
-{
-	uae_u32 srcreg = (opcode & 7);
-{if (!regs.s) { Exception(8,0); goto endlabel692; }
-{{	uaecptr srca = m68k_areg(regs, srcreg);
-{	uae_s16 src = get_word(srca);
-	regs.sr = src;
-	MakeFromSR();
-}}}}m68k_incpc(2);
-endlabel692: ;
-return 4;
-}
-unsigned long REGPARAM2 op_46d8_3(uae_u32 opcode) /* MV2SR */
-{
-	uae_u32 srcreg = (opcode & 7);
-{if (!regs.s) { Exception(8,0); goto endlabel693; }
-{{	uaecptr srca = m68k_areg(regs, srcreg);
-{	uae_s16 src = get_word(srca);
-	m68k_areg(regs, srcreg) += 2;
-	regs.sr = src;
-	MakeFromSR();
-}}}}m68k_incpc(2);
-endlabel693: ;
-return 4;
-}
-unsigned long REGPARAM2 op_46e0_3(uae_u32 opcode) /* MV2SR */
-{
-	uae_u32 srcreg = (opcode & 7);
-{if (!regs.s) { Exception(8,0); goto endlabel694; }
-{{	uaecptr srca = m68k_areg(regs, srcreg) - 2;
-{	uae_s16 src = get_word(srca);
-	m68k_areg (regs, srcreg) = srca;
-	if (srcreg == 7) CHECK_STACK_POINTER_DECREMENT ();
-	regs.sr = src;
-	MakeFromSR();
-}}}}m68k_incpc(2);
-endlabel694: ;
-return 4;
-}
-unsigned long REGPARAM2 op_46e8_3(uae_u32 opcode) /* MV2SR */
-{
-	uae_u32 srcreg = (opcode & 7);
-{if (!regs.s) { Exception(8,0); goto endlabel695; }
-{{	uaecptr srca = m68k_areg(regs, srcreg) + (uae_s32)(uae_s16)get_iword(2);
-{	uae_s16 src = get_word(srca);
-	regs.sr = src;
-	MakeFromSR();
-}}}}m68k_incpc(4);
-endlabel695: ;
-return 6;
-}
-unsigned long REGPARAM2 op_46f0_3(uae_u32 opcode) /* MV2SR */
-{
-	uae_u32 srcreg = (opcode & 7);
-{if (!regs.s) { Exception(8,0); goto endlabel696; }
-{{	uaecptr srca = get_disp_ea_000(m68k_areg(regs, srcreg), get_iword(2));
-{	uae_s16 src = get_word(srca);
-	regs.sr = src;
-	MakeFromSR();
-}}}}m68k_incpc(4);
-endlabel696: ;
-return 6;
-}
-unsigned long REGPARAM2 op_46f8_3(uae_u32 opcode) /* MV2SR */
-{
-{if (!regs.s) { Exception(8,0); goto endlabel697; }
-{{	uaecptr srca = (uae_s32)(uae_s16)get_iword(2);
-{	uae_s16 src = get_word(srca);
-	regs.sr = src;
-	MakeFromSR();
-}}}}m68k_incpc(4);
-endlabel697: ;
-return 6;
-}
-unsigned long REGPARAM2 op_46f9_3(uae_u32 opcode) /* MV2SR */
-{
-{if (!regs.s) { Exception(8,0); goto endlabel698; }
-{{	uaecptr srca = get_ilong(2);
-{	uae_s16 src = get_word(srca);
-	regs.sr = src;
-	MakeFromSR();
-}}}}m68k_incpc(6);
-endlabel698: ;
-return 8;
-}
-unsigned long REGPARAM2 op_46fa_3(uae_u32 opcode) /* MV2SR */
-{
-{if (!regs.s) { Exception(8,0); goto endlabel699; }
-{{	uaecptr srca = m68k_getpc () + 2;
-	srca += (uae_s32)(uae_s16)get_iword(2);
-{	uae_s16 src = get_word(srca);
-	regs.sr = src;
-	MakeFromSR();
-}}}}m68k_incpc(4);
-endlabel699: ;
-return 6;
-}
-unsigned long REGPARAM2 op_46fb_3(uae_u32 opcode) /* MV2SR */
-{
-{if (!regs.s) { Exception(8,0); goto endlabel700; }
-{{	uaecptr tmppc = m68k_getpc() + 2;
-	uaecptr srca = get_disp_ea_000(tmppc, get_iword(2));
-{	uae_s16 src = get_word(srca);
-	regs.sr = src;
-	MakeFromSR();
-}}}}m68k_incpc(4);
-endlabel700: ;
-return 6;
-}
-unsigned long REGPARAM2 op_46fc_3(uae_u32 opcode) /* MV2SR */
-{
-{if (!regs.s) { Exception(8,0); goto endlabel701; }
-{{	uae_s16 src = get_iword(2);
-	regs.sr = src;
-	MakeFromSR();
-}}}m68k_incpc(4);
-endlabel701: ;
-return 4;
-}
 unsigned long REGPARAM2 op_4800_3(uae_u32 opcode) /* NBCD */
 {
 	uae_u32 srcreg = (opcode & 7);
@@ -11056,20 +10893,6 @@ unsigned long REGPARAM2 op_4e71_3(uae_u32 opcode) /* NOP */
 {
 {}m68k_incpc(2);
 return 2;
-}
-unsigned long REGPARAM2 op_4e73_3(uae_u32 opcode) /* RTE */
-{
-{if (!regs.s) { Exception(8,0); goto endlabel800; }
-{{	uaecptr sra = m68k_areg(regs, 7);
-{	uae_s16 sr = get_word(sra);
-	m68k_areg(regs, 7) += 2;
-{	uaecptr pca = m68k_areg(regs, 7);
-{	uae_s32 pc = get_long(pca);
-	m68k_areg(regs, 7) += 4;
-	regs.sr = sr; m68k_do_rte(pc);
-	MakeFromSR();
-}}}}}}endlabel800: ;
-return 8;
 }
 unsigned long REGPARAM2 op_4e74_3(uae_u32 opcode) /* RTD */
 {

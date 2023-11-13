@@ -87,10 +87,12 @@ SOURCE_C = 						\
 	uarm/mmiodev_DirectNAND.c 	\
 	uarm/nand.c 				\
 	uarm/ac97dev_WM9712L.c		\
+	uarm/uae_exec.c 			\
 	uarm/uae/cpudefs.c 			\
 	uarm/uae/cpuemu.c 			\
 	uarm/uae/cpustbl.c 			\
 	uarm/uae/readcpu.c 			\
+	uarm/uae/newcpu.c
 
 SOURCE_CXX_COMMON = 			\
 	main.cpp					\
