@@ -86,7 +86,11 @@ SOURCE_C = 						\
 	uarm/devicePalmTungstenE2.c \
 	uarm/mmiodev_DirectNAND.c 	\
 	uarm/nand.c 				\
-	uarm/ac97dev_WM9712L.c
+	uarm/ac97dev_WM9712L.c		\
+	uarm/uae/cpudefs.c 			\
+	uarm/uae/cpuemu.c 			\
+	uarm/uae/cpustbl.c 			\
+	uarm/uae/readcpu.c 			\
 
 SOURCE_CXX_COMMON = 			\
 	main.cpp					\
