@@ -61,8 +61,6 @@ void MakeFromSR(void) {
     gCPU68K->UpdateRegistersFromSR();
 }
 
-void* xmalloc(size_t size) { return Platform::AllocateMemory(size); }
-
 uint32 get_disp_ea_000(uint32 base, uint32 dp) {
     int reg = (dp >> 12) & 15;
     uae_s32 regd = regs.regs[reg];

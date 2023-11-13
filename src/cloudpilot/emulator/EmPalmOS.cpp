@@ -400,7 +400,7 @@ void EmPalmOS::InjectSystemEvent(CallROMType& callROM) {
     // Set the return value (Err) to zero in case we return
     // "true" (saying that we handled the trap).
 
-    m68k_dreg(gRegs, 0) = 0;
+    m68k_dreg(regs, 0) = 0;
 
     // If the low-memory global "idle" is true, then we're being
     // called from EvtGetEvent or EvtGetPen, in which case we
@@ -413,7 +413,7 @@ void EmPalmOS::InjectSystemEvent(CallROMType& callROM) {
         // off, and HwrDoze will never return!
 
         if (gSession->IsNested()) {
-            m68k_dreg(gRegs, 0) = 4;
+            m68k_dreg(regs, 0) = 4;
             callROM = kSkipROM;
             return;
         }

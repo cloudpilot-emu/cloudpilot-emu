@@ -41,12 +41,6 @@ extern int movem_index1[256];
 extern int movem_index2[256];
 extern int movem_next[256];
 
-extern int fpp_movem_index1[256];
-extern int fpp_movem_index2[256];
-extern int fpp_movem_next[256];
-
-extern int broken_in;
-
 typedef unsigned long cpuop_func (uae_u32) REGPARAM;
 
 struct cputbl {
@@ -91,23 +85,8 @@ typedef struct regstruct
     uae_u32 prefetch;
 } regstruct;
 
-#ifndef __ECM_DYNAMIC_PATCH
-
 extern regstruct regs;
 extern regstruct lastint_regs;
-
-#define gRegs regs
-#define gLastint_regs lastint_regs
-
-#else //__ECM_DYNAMIC_PATCH
-
-extern regstruct *gDynRegsP;
-
-#define gRegs (*gDynRegsP)
-
-#endif //__ECM_DYNAMIC_PATCH
-
-
 
 #define m68k_dreg(r,num) ((r).regs[(num)])
 #define m68k_areg(r,num) (((r).regs + 8)[(num)])
@@ -116,14 +95,11 @@ extern regstruct *gDynRegsP;
 #define get_iword(o) get_word(regs.pc + (o))
 #define get_ilong(o) get_long(regs.pc + (o))
 
-
 #define m68k_incpc(o) (regs.pc += (o))
 
 STATIC_INLINE void m68k_setpc (uaecptr newpc)
 {
-	{
     regs.pc = newpc;
-	}
 }
 
 STATIC_INLINE uaecptr m68k_getpc (void)
@@ -140,10 +116,7 @@ STATIC_INLINE void m68k_setstopped (int stop)
     regs.stopped = stop;
 }
 
-extern uae_u32 get_disp_ea_020 (uae_u32 base, uae_u32 dp);
 extern uae_u32 get_disp_ea_000 (uae_u32 base, uae_u32 dp);
-
-extern uae_s32 ShowEA (int reg, amodes mode, wordsizes size, char *buf);
 
 extern void MakeSR (void);
 extern void MakeFromSR (void);
@@ -158,16 +131,8 @@ extern uaecptr last_fault_for_exception_3;
 
 #define CPU_OP_NAME(a) op ## a
 
-/* 68020 + 68881 */
-extern struct cputbl op_smalltbl_0[];
-/* 68020 */
-extern struct cputbl op_smalltbl_1[];
-/* 68010 */
-extern struct cputbl op_smalltbl_2[];
 /* 68000 */
 extern struct cputbl op_smalltbl_3[];
-/* 68000 slow but compatible.  */
-extern struct cputbl op_smalltbl_4[];
 
 #ifdef __cplusplus
 }

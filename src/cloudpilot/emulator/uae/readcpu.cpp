@@ -10,7 +10,6 @@
 #include "sysdeps.h"
 #include <ctype.h>
 
-#include "config.h"
 #include "options.h"
 #include "readcpu.h"
 
@@ -703,7 +702,7 @@ void read_table68k (void)
 {
     int i;
 
-    table68k = (struct instr *)xmalloc (65536 * sizeof (struct instr));
+    table68k = (struct instr *)malloc (65536 * sizeof (struct instr));
     for (i = 0; i < 65536; i++) {
 	table68k[i].mnemo = i_ILLG;
 	table68k[i].handler = -1;
