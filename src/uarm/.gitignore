@@ -15,3 +15,5 @@ Makefile.local
 
 .vscode
 *.log
+
+misc
