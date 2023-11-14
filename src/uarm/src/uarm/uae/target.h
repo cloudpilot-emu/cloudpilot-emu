@@ -1,4 +1,3 @@
 #define OPTIONSFILENAME .uaerc
 #define UNSUPPORTED_OPTION_p
 #define UNSUPPORTED_OPTION_I
-

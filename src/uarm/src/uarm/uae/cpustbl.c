@@ -3,6 +3,8 @@
 #pragma GCC diagnostic ignored "-Wmissing-braces"
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 
+// clang-format off
+
 struct cputbl op_smalltbl_3[] = {
 { op_0_3, 0, 0, 0, 2, 0 }, /* OR */
 { op_10_3, 0, 16, 0, 3, 1 }, /* OR */

@@ -1,11 +1,11 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  * Stuff
-  *
-  * Copyright 1995, 1996 Ed Hanway
-  * Copyright 1995-98 Bernd Schmidt
-  */
+/*
+ * UAE - The Un*x Amiga Emulator
+ *
+ * Stuff
+ *
+ * Copyright 1995, 1996 Ed Hanway
+ * Copyright 1995-98 Bernd Schmidt
+ */
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,7 +14,6 @@ extern "C" {
 #define UAEMAJOR 0
 #define UAEMINOR 8
 #define UAESUBREV 10
-
 
 /*
  * You can specify numbers from 0 to 5 here. It is possible that higher
@@ -27,4 +26,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-

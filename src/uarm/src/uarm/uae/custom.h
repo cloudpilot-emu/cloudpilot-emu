@@ -1,17 +1,17 @@
- /*
-  * UAE - The Un*x Amiga Emulator
-  *
-  * custom chip support
-  *
-  * (c) 1995 Bernd Schmidt
-  */
+/*
+ * UAE - The Un*x Amiga Emulator
+ *
+ * custom chip support
+ *
+ * (c) 1995 Bernd Schmidt
+ */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define SPCFLAG_DISK 4
-#define SPCFLAG_INT  8
+#define SPCFLAG_INT 8
 #define SPCFLAG_EXTRA_CYCLES 32
 #define SPCFLAG_TRACE 64
 #define SPCFLAG_DOTRACE 128
@@ -23,4 +23,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
