@@ -17970,6 +17970,9 @@ unsigned long REGPARAM2 op_4ee8_3(uae_u32 opcode) /* JMP */
     {
       uaecptr srca = m68k_areg(regs, srcreg) + (uae_s32)(uae_s16)get_iword(2);
       m68k_setpc(srca);
+
+      if (srca == 0xfffffff0)
+        notifiyReturn();
     }
   }
   return 4;
@@ -17981,6 +17984,9 @@ unsigned long REGPARAM2 op_4ef0_3(uae_u32 opcode) /* JMP */
     {
       uaecptr srca = get_disp_ea_000(m68k_areg(regs, srcreg), get_iword(2));
       m68k_setpc(srca);
+
+      if (srca == 0xfffffff0)
+        notifiyReturn();
     }
   }
   return 4;
@@ -17991,6 +17997,9 @@ unsigned long REGPARAM2 op_4ef8_3(uae_u32 opcode) /* JMP */
     {
       uaecptr srca = (uae_s32)(uae_s16)get_iword(2);
       m68k_setpc(srca);
+
+      if (srca == 0xfffffff0)
+        notifiyReturn();
     }
   }
   return 4;
@@ -18001,6 +18010,9 @@ unsigned long REGPARAM2 op_4ef9_3(uae_u32 opcode) /* JMP */
     {
       uaecptr srca = get_ilong(2);
       m68k_setpc(srca);
+
+      if (srca == 0xfffffff0)
+        notifiyReturn();
     }
   }
   return 6;
@@ -18012,6 +18024,9 @@ unsigned long REGPARAM2 op_4efa_3(uae_u32 opcode) /* JMP */
       uaecptr srca = m68k_getpc() + 2;
       srca += (uae_s32)(uae_s16)get_iword(2);
       m68k_setpc(srca);
+
+      if (srca == 0xfffffff0)
+        notifiyReturn();
     }
   }
   return 4;
@@ -18023,6 +18038,9 @@ unsigned long REGPARAM2 op_4efb_3(uae_u32 opcode) /* JMP */
       uaecptr tmppc = m68k_getpc() + 2;
       uaecptr srca = get_disp_ea_000(tmppc, get_iword(2));
       m68k_setpc(srca);
+
+      if (srca == 0xfffffff0)
+        notifiyReturn();
     }
   }
   return 4;
