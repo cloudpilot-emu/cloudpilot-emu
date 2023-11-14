@@ -93,13 +93,6 @@ extern void MakeSR (void);
 extern void MakeFromSR (void);
 extern void Exception (int, uaecptr);
 
-/* Opcode of faulting instruction */
-extern uae_u16 last_op_for_exception_3;
-/* PC at fault time */
-extern uaecptr last_addr_for_exception_3;
-/* Address that generated the exception */
-extern uaecptr last_fault_for_exception_3;
-
 #define CPU_OP_NAME(a) op ## a
 
 /* 68000 */

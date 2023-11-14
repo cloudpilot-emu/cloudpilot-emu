@@ -13607,26 +13607,6 @@ didnt_jump:;
 endlabel1016: ;
 return 2;
 }
-unsigned long REGPARAM2 op_60ff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(0)) goto endlabel1017;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1017;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(0)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1017;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1017: ;
-return 6;
-}
 unsigned long REGPARAM2 op_6100_3(uae_u32 opcode) /* BSR */
 {
 {{	uae_s16 src = get_iword(2);
@@ -13641,13 +13621,6 @@ unsigned long REGPARAM2 op_6101_3(uae_u32 opcode) /* BSR */
 	uae_s32 s = (uae_s32)src + 2;
 	m68k_do_bsr(m68k_getpc() + 2, s);
 }}return 2;
-}
-unsigned long REGPARAM2 op_61ff_3(uae_u32 opcode) /* BSR */
-{
-{{	uae_s32 src = get_ilong(2);
-	uae_s32 s = (uae_s32)src + 2;
-	m68k_do_bsr(m68k_getpc() + 6, s);
-}}return 6;
 }
 unsigned long REGPARAM2 op_6200_3(uae_u32 opcode) /* Bcc */
 {
@@ -13680,26 +13653,6 @@ didnt_jump:;
 endlabel1022: ;
 return 2;
 }
-unsigned long REGPARAM2 op_62ff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(2)) goto endlabel1023;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1023;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(2)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1023;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1023: ;
-return 6;
-}
 unsigned long REGPARAM2 op_6300_3(uae_u32 opcode) /* Bcc */
 {
 {{	uae_s16 src = get_iword(2);
@@ -13730,26 +13683,6 @@ didnt_jump:;
 }}m68k_incpc(2);
 endlabel1025: ;
 return 2;
-}
-unsigned long REGPARAM2 op_63ff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(3)) goto endlabel1026;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1026;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(3)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1026;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1026: ;
-return 6;
 }
 unsigned long REGPARAM2 op_6400_3(uae_u32 opcode) /* Bcc */
 {
@@ -13782,26 +13715,6 @@ didnt_jump:;
 endlabel1028: ;
 return 2;
 }
-unsigned long REGPARAM2 op_64ff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(4)) goto endlabel1029;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1029;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(4)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1029;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1029: ;
-return 6;
-}
 unsigned long REGPARAM2 op_6500_3(uae_u32 opcode) /* Bcc */
 {
 {{	uae_s16 src = get_iword(2);
@@ -13832,26 +13745,6 @@ didnt_jump:;
 }}m68k_incpc(2);
 endlabel1031: ;
 return 2;
-}
-unsigned long REGPARAM2 op_65ff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(5)) goto endlabel1032;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1032;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(5)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1032;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1032: ;
-return 6;
 }
 unsigned long REGPARAM2 op_6600_3(uae_u32 opcode) /* Bcc */
 {
@@ -13884,26 +13777,6 @@ didnt_jump:;
 endlabel1034: ;
 return 2;
 }
-unsigned long REGPARAM2 op_66ff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(6)) goto endlabel1035;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1035;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(6)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1035;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1035: ;
-return 6;
-}
 unsigned long REGPARAM2 op_6700_3(uae_u32 opcode) /* Bcc */
 {
 {{	uae_s16 src = get_iword(2);
@@ -13934,26 +13807,6 @@ didnt_jump:;
 }}m68k_incpc(2);
 endlabel1037: ;
 return 2;
-}
-unsigned long REGPARAM2 op_67ff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(7)) goto endlabel1038;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1038;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(7)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1038;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1038: ;
-return 6;
 }
 unsigned long REGPARAM2 op_6800_3(uae_u32 opcode) /* Bcc */
 {
@@ -13986,26 +13839,6 @@ didnt_jump:;
 endlabel1040: ;
 return 2;
 }
-unsigned long REGPARAM2 op_68ff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(8)) goto endlabel1041;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1041;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(8)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1041;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1041: ;
-return 6;
-}
 unsigned long REGPARAM2 op_6900_3(uae_u32 opcode) /* Bcc */
 {
 {{	uae_s16 src = get_iword(2);
@@ -14036,26 +13869,6 @@ didnt_jump:;
 }}m68k_incpc(2);
 endlabel1043: ;
 return 2;
-}
-unsigned long REGPARAM2 op_69ff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(9)) goto endlabel1044;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1044;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(9)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1044;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1044: ;
-return 6;
 }
 unsigned long REGPARAM2 op_6a00_3(uae_u32 opcode) /* Bcc */
 {
@@ -14088,26 +13901,6 @@ didnt_jump:;
 endlabel1046: ;
 return 2;
 }
-unsigned long REGPARAM2 op_6aff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(10)) goto endlabel1047;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1047;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(10)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1047;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1047: ;
-return 6;
-}
 unsigned long REGPARAM2 op_6b00_3(uae_u32 opcode) /* Bcc */
 {
 {{	uae_s16 src = get_iword(2);
@@ -14138,26 +13931,6 @@ didnt_jump:;
 }}m68k_incpc(2);
 endlabel1049: ;
 return 2;
-}
-unsigned long REGPARAM2 op_6bff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(11)) goto endlabel1050;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1050;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(11)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1050;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1050: ;
-return 6;
 }
 unsigned long REGPARAM2 op_6c00_3(uae_u32 opcode) /* Bcc */
 {
@@ -14190,26 +13963,6 @@ didnt_jump:;
 endlabel1052: ;
 return 2;
 }
-unsigned long REGPARAM2 op_6cff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(12)) goto endlabel1053;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1053;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(12)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1053;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1053: ;
-return 6;
-}
 unsigned long REGPARAM2 op_6d00_3(uae_u32 opcode) /* Bcc */
 {
 {{	uae_s16 src = get_iword(2);
@@ -14240,26 +13993,6 @@ didnt_jump:;
 }}m68k_incpc(2);
 endlabel1055: ;
 return 2;
-}
-unsigned long REGPARAM2 op_6dff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(13)) goto endlabel1056;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1056;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(13)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1056;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1056: ;
-return 6;
 }
 unsigned long REGPARAM2 op_6e00_3(uae_u32 opcode) /* Bcc */
 {
@@ -14292,26 +14025,6 @@ didnt_jump:;
 endlabel1058: ;
 return 2;
 }
-unsigned long REGPARAM2 op_6eff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(14)) goto endlabel1059;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1059;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(14)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1059;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1059: ;
-return 6;
-}
 unsigned long REGPARAM2 op_6f00_3(uae_u32 opcode) /* Bcc */
 {
 {{	uae_s16 src = get_iword(2);
@@ -14342,26 +14055,6 @@ didnt_jump:;
 }}m68k_incpc(2);
 endlabel1061: ;
 return 2;
-}
-unsigned long REGPARAM2 op_6fff_3(uae_u32 opcode) /* Bcc */
-{
-{	m68k_incpc(2);
-	if (!cctrue(15)) goto endlabel1062;
-		last_addr_for_exception_3 = m68k_getpc() + 2;
-		last_fault_for_exception_3 = m68k_getpc() + 1;
-		last_op_for_exception_3 = opcode; Exception(3,0); goto endlabel1062;
-{	uae_s32 src = get_ilong(2);
-	if (!cctrue(15)) goto didnt_jump;
-	m68k_incpc ((uae_s32)src + 2);
-#if HAS_PROFILING
-	if (gProfilingEnabled)
-		ProfileIncrementClock(2);
-#endif
-	goto endlabel1062;
-didnt_jump:;
-}}m68k_incpc(6);
-endlabel1062: ;
-return 6;
 }
 unsigned long REGPARAM2 op_7000_3(uae_u32 opcode) /* MOVE */
 {
