@@ -10,7 +10,9 @@
 extern "C" {
 #endif
 
-extern unsigned long op_unimplemented(uint32_t opcode);
+extern unsigned long op_unimplemented(uint32_t opcode) REGPARAM;
+
+extern void notifiyReturn();
 
 #define CHECK_STACK_POINTER_ASSIGNMENT()                                       \
   {}
@@ -31,6 +33,10 @@ STATIC_INLINE void m68k_do_rts(void) {
   uaecptr returnAddr = get_long(m68k_areg(regs, 7));
 
   m68k_setpc(returnAddr);
+
+  if (returnAddr == 0xfffffff0)
+    notifiyReturn();
+
   m68k_areg(regs, 7) += 4;
 }
 

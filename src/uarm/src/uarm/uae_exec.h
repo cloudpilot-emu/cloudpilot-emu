@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "MMU.h"
+#include "mem.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,14 +25,14 @@ enum uaeStatus {
     uae_memory_fault
 };
 
-void uae_init();
+void uaeInit(struct ArmMem* mem, struct ArmMmu* mmu);
 
-bool uae_loadState(uint32_t addr);
-bool uae_saveState(uint32_t addr);
+bool uaeLoad68kState(uint32_t addr);
+bool uaeSave68kState(uint32_t addr);
 
-uint8_t uae_getFsr();
+uint8_t uaeGetFsr();
 
-enum uaeStatus uae_execute();
+enum uaeStatus uaeExecute();
 
 #ifdef __cplusplus
 }

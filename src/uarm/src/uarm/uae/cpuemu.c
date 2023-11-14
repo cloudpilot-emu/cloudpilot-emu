@@ -17956,6 +17956,9 @@ unsigned long REGPARAM2 op_4ed0_3(uae_u32 opcode) /* JMP */
     {
       uaecptr srca = m68k_areg(regs, srcreg);
       m68k_setpc(srca);
+
+      if (srca == 0xfffffff0)
+        notifiyReturn();
     }
   }
   return 2;
