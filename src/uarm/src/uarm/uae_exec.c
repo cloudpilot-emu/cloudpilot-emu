@@ -34,31 +34,31 @@ static uint32_t uae_get_le(uint32_t addr, uint8_t size) {
 }
 
 uint8_t uae_get8(uint32_t addr) {
-    fsr = 0;
+    if (fsr != 0) return 0;
 
     return uae_get_le(addr, 1);
 }
 
 uint16_t uae_get16(uint32_t addr) {
-    fsr = 0;
+    if (fsr != 0) return 0;
 
     if (addr & 0x01) {
         fsr = 1;
         return 0;
     }
 
-    return be16toh(uae_get_le(addr, 2));
+    return htobe16(uae_get_le(addr, 2));
 }
 
 uint32_t uae_get32(uint32_t addr) {
-    fsr = 0;
+    if (fsr != 0) return 0;
 
-    if (addr & 0x03) {
+    if (addr & 0x01) {
         fsr = 1;
         return 0;
     }
 
-    return be32toh(uae_get_le(addr, 4));
+    return htobe32(uae_get_le(addr, 4));
 }
 
 static void uae_put_le(uint32_t value, uint32_t addr, uint8_t size) {
@@ -75,31 +75,31 @@ static void uae_put_le(uint32_t value, uint32_t addr, uint8_t size) {
 }
 
 void uae_put8(uint8_t value, uint32_t addr) {
-    fsr = 0;
+    if (fsr != 0) return;
 
     uae_put_le(value, addr, 1);
 };
 
 void uae_put16(uint16_t value, uint32_t addr) {
-    fsr = 0;
+    if (fsr != 0) return;
 
     if (addr & 0x01) {
         fsr = 1;
         return;
     }
 
-    uae_put_le(htobe16(value), addr, 2);
+    uae_put_le(be16toh(value), addr, 2);
 }
 
 void uae_put32(uint32_t value, uint32_t addr) {
-    fsr = 0;
+    if (fsr != 0) return;
 
-    if (addr & 0x03) {
+    if (addr & 0x01) {
         fsr = 1;
         return;
     }
 
-    uae_put_le(htobe32(value), addr, 4);
+    uae_put_le(be32toh(value), addr, 4);
 }
 
 void Exception(int exception, uaecptr lastPc) {
@@ -169,18 +169,13 @@ static void staticInit() {
             cpufunctbl[opcode] = op_illg;
     }
 
-    for (i = 0; tbl[i].handler != NULL; i++) {
-        if (!tbl[i].specific) {
-            cpufunctbl[tbl[i].opcode] = tbl[i].handler;
-        }
-    }
+    for (i = 0; tbl[i].handler != NULL; i++)
+        if (!tbl[i].specific) cpufunctbl[tbl[i].opcode] = tbl[i].handler;
 
     for (opcode = 0; opcode < 65536; opcode++) {
         cpuop_func* f;
 
-        if (table68k[opcode].mnemo == i_ILLG || table68k[opcode].clev > 0) {
-            continue;
-        }
+        if (table68k[opcode].mnemo == i_ILLG || table68k[opcode].clev > 0) continue;
 
         if (table68k[opcode].handler != -1) {
             f = cpufunctbl[table68k[opcode].handler];
@@ -192,14 +187,8 @@ static void staticInit() {
         }
     }
 
-    for (i = 0; tbl[i].handler != NULL; i++) {
-        if (tbl[i].specific) {
-            cpufunctbl[tbl[i].opcode] = tbl[i].handler;
-#if HAS_PROFILING
-            perftbl[tbl[i].opcode] = tbl[i].perf;
-#endif
-        }
-    }
+    for (i = 0; tbl[i].handler != NULL; i++)
+        if (tbl[i].specific) cpufunctbl[tbl[i].opcode] = tbl[i].handler;
 
 #ifdef __EMSCRIPTEN__
     cpufunctbl_base = (cpuop_func*)EM_ASM_INT(
@@ -219,6 +208,8 @@ static void staticInit() {
 
     // (hey readcpu doesn't free this guy!)
     free(table68k);
+
+    initialized = true;
 }
 
 void uaeInit(struct ArmMem* _mem, struct ArmMmu* _mmu) {
@@ -240,23 +231,19 @@ bool uaeLoad68kState(uint32_t addr) {
     for (size_t i = 0; i < 8; i++) {
         regs.regs[i] = uae_get_le(addr, 4);
         addr += 4;
-
-        if (fsr != 0) return false;
     }
 
     for (size_t i = 0; i < 8; i++) {
         regs.regs[8 + i] = uae_get_le(addr, 4);
         addr += 4;
-
-        if (fsr != 0) return false;
     }
 
     regs.pc = uae_get_le(addr, 4);
     addr += 4;
-    if (fsr != 0) return false;
 
     regs.sr = uae_get_le(addr, 4);
     MakeFromSR();
+
     return fsr == 0;
 }
 
@@ -272,23 +259,19 @@ bool uaeSave68kState(uint32_t addr) {
     for (size_t i = 0; i < 8; i++) {
         uae_put32(regs.regs[i], addr);
         addr += 4;
-
-        if (fsr != 0) return false;
     }
 
     for (size_t i = 0; i < 8; i++) {
         uae_put32(regs.regs[8 + i], addr);
         addr += 4;
-
-        if (fsr != 0) return false;
     }
 
     uae_put32(regs.pc, addr);
     addr += 4;
-    if (fsr != 0) return false;
 
     MakeSR();
     uae_put32(regs.sr, addr);
+
     return fsr == 0;
 }
 
