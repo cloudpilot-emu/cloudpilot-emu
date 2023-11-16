@@ -1,4 +1,6 @@
-#include "uae_exec.h"
+#include "pace.h"
+
+#include <stdlib.h>
 
 #include "uae/UAE.h"
 #include "uarm_endian.h"
@@ -10,8 +12,13 @@
 static struct ArmMem* mem = NULL;
 static struct ArmMmu* mmu = NULL;
 
-static uint8_t fsr = 0;
+static uint_fast8_t fsr = 0;
+static uint32_t lastAddr = 0;
+static bool wasWrite = false;
+static uint_fast8_t wasSz = 0;
+
 static uint32_t pendingStatus = 0;
+static uint32_t statePtr;
 static bool priviledged = false;
 
 #ifdef __EMSCRIPTEN__
@@ -20,7 +27,13 @@ static cpuop_func* cpufunctbl_base;
 static cpuop_func* cpufunctbl[65536];  // (normally in newcpu.c)
 #endif
 
-static uint32_t uae_get_le(uint32_t addr, uint8_t size) {
+static uint32_t pace_get_le(uint32_t addr, uint8_t size) {
+    if (fsr != 0) return 0;
+
+    lastAddr = addr;
+    wasWrite = false;
+    wasSz = size;
+
     struct ArmMemRegion* region;
     uint32_t pa;
     if (!mmuTranslate(mmu, addr, priviledged, false, &pa, &fsr, NULL, &region)) return 0;
@@ -37,35 +50,33 @@ static uint32_t uae_get_le(uint32_t addr, uint8_t size) {
     return result;
 }
 
-uint8_t uae_get8(uint32_t addr) {
-    if (fsr != 0) return 0;
-
-    return uae_get_le(addr, 1);
-}
+uint8_t uae_get8(uint32_t addr) { return pace_get_le(addr, 1); }
 
 uint16_t uae_get16(uint32_t addr) {
-    if (fsr != 0) return 0;
-
-    if (addr & 0x01) {
+    if (!fsr && addr & 0x01) {
         fsr = 1;
         return 0;
     }
 
-    return htobe16(uae_get_le(addr, 2));
+    return htobe16(pace_get_le(addr, 2));
 }
 
 uint32_t uae_get32(uint32_t addr) {
-    if (fsr != 0) return 0;
-
-    if (addr & 0x01) {
+    if (!fsr && addr & 0x01) {
         fsr = 1;
         return 0;
     }
 
-    return htobe32(uae_get_le(addr, 4));
+    return htobe32(pace_get_le(addr, 4));
 }
 
-static void uae_put_le(uint32_t value, uint32_t addr, uint8_t size) {
+static void pace_put_le(uint32_t value, uint32_t addr, uint8_t size) {
+    if (fsr != 0) return;
+
+    lastAddr = addr;
+    wasWrite = true;
+    wasSz = size;
+
     struct ArmMemRegion* region;
     uint32_t pa;
     if (!mmuTranslate(mmu, addr, priviledged, false, &pa, &fsr, NULL, &region)) return;
@@ -78,61 +89,53 @@ static void uae_put_le(uint32_t value, uint32_t addr, uint8_t size) {
     }
 }
 
-void uae_put8(uint8_t value, uint32_t addr) {
-    if (fsr != 0) return;
-
-    uae_put_le(value, addr, 1);
-};
+void uae_put8(uint8_t value, uint32_t addr) { pace_put_le(value, addr, 1); };
 
 void uae_put16(uint16_t value, uint32_t addr) {
-    if (fsr != 0) return;
-
-    if (addr & 0x01) {
+    if (!fsr && addr & 0x01) {
         fsr = 1;
         return;
     }
 
-    uae_put_le(be16toh(value), addr, 2);
+    pace_put_le(be16toh(value), addr, 2);
 }
 
 void uae_put32(uint32_t value, uint32_t addr) {
-    if (fsr != 0) return;
-
-    if (addr & 0x01) {
+    if (!fsr && addr & 0x01) {
         fsr = 1;
         return;
     }
 
-    uae_put_le(be32toh(value), addr, 4);
+    pace_put_le(be32toh(value), addr, 4);
 }
 
 void Exception(int exception, uaecptr lastPc) {
-    if (exception != uae_status_syscall) regs.pc -= 2;
+    if (exception != pace_status_syscall) regs.pc -= 2;
 
     pendingStatus = exception;
 }
 
 unsigned long op_unimplemented(uint32_t opcode) REGPARAM {
-    pendingStatus = uae_status_unimplemented_instr;
+    pendingStatus = pace_status_unimplemented_instr;
     return 0;
 }
 
 unsigned long op_illg(uint32_t opcode) REGPARAM {
-    pendingStatus = uae_status_illegal_instr;
+    pendingStatus = pace_status_illegal_instr;
     return 0;
 }
 
 unsigned long op_line1111(uint32_t opcode) REGPARAM {
-    pendingStatus = uae_status_line_1111;
+    pendingStatus = pace_status_line_1111;
     return 0;
 }
 
 unsigned long op_line1010(uint32_t opcode) REGPARAM {
-    pendingStatus = uae_status_line_1010;
+    pendingStatus = pace_status_line_1010;
     return 0;
 }
 
-void notifiyReturn() { pendingStatus = uae_status_return; }
+void notifiyReturn() { pendingStatus = pace_status_return; }
 
 static void staticInit() {
     static bool initialized = false;
@@ -216,14 +219,20 @@ static void staticInit() {
     initialized = true;
 }
 
-void uaeInit(struct ArmMem* _mem, struct ArmMmu* _mmu) {
+void paceInit(struct ArmMem* _mem, struct ArmMmu* _mmu) {
     staticInit();
 
     mem = _mem;
     mmu = _mmu;
 }
 
-bool uaeLoad68kState(uint32_t addr) {
+void paceSetStatePtr(uint32_t addr) { statePtr = addr; }
+
+uint32_t paceGetStatePtr() { return statePtr; }
+
+bool paceLoad68kState() {
+    uint32_t addr = statePtr;
+
     if (addr & 0x03) {
         fsr = 1;
         return false;
@@ -233,25 +242,27 @@ bool uaeLoad68kState(uint32_t addr) {
     fsr = 0;
 
     for (size_t i = 0; i < 8; i++) {
-        regs.regs[i] = uae_get_le(addr, 4);
+        regs.regs[i] = pace_get_le(addr, 4);
         addr += 4;
     }
 
     for (size_t i = 0; i < 8; i++) {
-        regs.regs[8 + i] = uae_get_le(addr, 4);
+        regs.regs[8 + i] = pace_get_le(addr, 4);
         addr += 4;
     }
 
-    regs.pc = uae_get_le(addr, 4);
+    regs.pc = pace_get_le(addr, 4);
     addr += 4;
 
-    regs.sr = uae_get_le(addr, 4);
+    regs.sr = pace_get_le(addr, 4);
     MakeFromSR();
 
     return fsr == 0;
 }
 
-bool uaeSave68kState(uint32_t addr) {
+bool paceSave68kState() {
+    uint32_t addr = statePtr;
+
     if (addr & 0x03) {
         fsr = 1;
         return false;
@@ -261,39 +272,45 @@ bool uaeSave68kState(uint32_t addr) {
     fsr = 0;
 
     for (size_t i = 0; i < 8; i++) {
-        uae_put32(regs.regs[i], addr);
+        pace_put_le(regs.regs[i], addr, 4);
         addr += 4;
     }
 
     for (size_t i = 0; i < 8; i++) {
-        uae_put32(regs.regs[8 + i], addr);
+        pace_put_le(regs.regs[8 + i], addr, 4);
         addr += 4;
     }
 
-    uae_put32(regs.pc, addr);
+    pace_put_le(regs.pc, addr, 4);
     addr += 4;
 
     MakeSR();
-    uae_put32(regs.sr, addr);
+    pace_put_le(regs.sr, addr, 4);
 
     return fsr == 0;
 }
 
-uint8_t uaeGetFsr() { return fsr; }
+void paceGetMemeryFault(uint32_t* _addr, bool* _wasWrite, uint_fast8_t* _wasSz,
+                        uint_fast8_t* _fsr) {
+    *_addr = lastAddr;
+    *_wasWrite = wasWrite;
+    *_fsr = fsr;
+    *_wasSz = wasSz;
+}
 
-uint16_t readTrapWord() {
+uint16_t paceReadTrapWord() {
     fsr = 0;
     return uae_get16(regs.pc);
 }
 
-void uaeSetPriviledged(bool _priviledged) { priviledged = _priviledged; }
+void paceSetPriviledged(bool _priviledged) { priviledged = _priviledged; }
 
-enum uaeStatus uaeExecute() {
+enum paceStatus paceExecute() {
     fsr = 0;
-    pendingStatus = uae_status_ok;
+    pendingStatus = pace_status_ok;
 
     uint16_t opcode = uae_get16(regs.pc);
-    if (fsr != 0) return uae_status_memory_fault;
+    if (fsr != 0) return pace_status_memory_fault;
 
 #ifdef __EMSCRIPTEN__
     ((cpuop_func*)((long)cpufunctbl_base + opcode))(opcode);
@@ -301,5 +318,5 @@ enum uaeStatus uaeExecute() {
     cpufunctbl[opcode](opcode);
 #endif
 
-    return fsr == 0 ? pendingStatus : uae_status_memory_fault;
+    return fsr == 0 ? pendingStatus : pace_status_memory_fault;
 }

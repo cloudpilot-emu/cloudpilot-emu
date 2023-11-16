@@ -88,7 +88,7 @@ SOURCE_C = 						\
 	uarm/nand.c 				\
 	uarm/ac97dev_WM9712L.c		\
 	uarm/pace_patch.c 			\
-	uarm/uae_exec.c 			\
+	uarm/pace.c 			\
 	uarm/uae/cpudefs.c 			\
 	uarm/uae/cpuemu.c 			\
 	uarm/uae/cpustbl.c 			\

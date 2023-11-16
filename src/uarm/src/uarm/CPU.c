@@ -10,7 +10,7 @@
 #include "gdbstub.h"
 #include "icache.h"
 #include "mem.h"
-#include "uae_exec.h"
+#include "pace.h"
 #include "util.h"
 
 #define xstr(s) str(s)
@@ -106,6 +106,7 @@ struct ArmCpu {
     struct ArmCP15 *cp15;
 
     struct PacePatch *pacePatch;
+    bool modePace;
 
     struct stub *debugStub;
     struct PatchDispatch *patchDispatch;
@@ -867,18 +868,73 @@ static bool cpuPrvSignedAdditionWithPossibleCarryOverflows(uint32_t a, uint32_t 
     return ((a ^ b ^ 0x80000000UL) & (a ^ sum)) >> 31;
 }
 
-static bool handlePaceEnter(struct ArmCpu *cpu) {
-    ERR("enter PACE\n");
+static void handlePaceMemoryFault(struct ArmCpu *cpu) {
+    uint32_t addr;
+    bool wasWrite;
+    uint_fast8_t sz, fsr;
 
-    return true;
+    paceGetMemeryFault(&addr, &wasWrite, &sz, &fsr);
+    cpuPrvHandleMemErr(cpu, addr, sz, wasWrite, false, fsr);
 }
 
-static bool handlePaceResume(struct ArmCpu *cpu) { ERR("resume PACE\n"); }
+static void handlePaceEnter(struct ArmCpu *cpu) {
+    bool privileged = cpu->M != ARM_SR_MODE_USR;
+    uint_fast8_t fsr = 0;
 
-static bool handlePaceReturnFromCallout(struct ArmCpu *cpu) {
+    cpu->regs[REG_NO_SP] -= 4;
+    if (!cpuPrvMemOp(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], 4, true, privileged, &fsr))
+        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, true, false, fsr);
+
+    cpu->regs[REG_NO_SP] -= 4;
+    if (!cpuPrvMemOp(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], 4, true, privileged, &fsr))
+        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, true, false, fsr);
+
+    paceSetPriviledged(privileged);
+    paceSetStatePtr(cpu->regs[0]);
+
+    if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
+
+    cpu->modePace = true;
+
+    ERR("enter PACE\n");
+
+    return;
+}
+
+static void handlePaceResume(struct ArmCpu *cpu) {
+    const bool privileged = cpu->M != ARM_SR_MODE_USR;
+
+    paceSetPriviledged(privileged);
+
+    // context switch?
+    if (paceGetStatePtr() != cpu->regs[0]) {
+        if (!paceSave68kState()) return handlePaceMemoryFault(cpu);
+
+        paceSetStatePtr(cpu->regs[0]);
+        if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
+    }
+
+    cpu->modePace = true;
+
+    ERR("resume PACE\n");
+}
+
+static void handlePaceReturnFromCallout(struct ArmCpu *cpu) {
+    bool privileged = cpu->M != ARM_SR_MODE_USR;
+    uint_fast8_t fsr = 0;
+
+    // restore r0 / state pointer from stack
+    if (!cpuPrvMemOp(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], 4, false, privileged, &fsr))
+        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, false, false, fsr);
+
+    paceSetPriviledged(privileged);
+    paceSetStatePtr(cpu->regs[0]);
+
+    if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
+
+    cpu->modePace = true;
+
     ERR("PACE return from callout\n");
-
-    return true;
 }
 
 static bool handleInvalidInstruction(struct ArmCpu *cpu, uint32_t instr) {
@@ -889,12 +945,16 @@ static bool handleInvalidInstruction(struct ArmCpu *cpu, uint32_t instr) {
     if (!mmuTranslate(cpu->mmu, cpu->curInstrPC, true, false, &pa, NULL, NULL, &region))
         return false;
 
-    if (pa == cpu->pacePatch->enterPace)
-        return handlePaceEnter(cpu);
-    else if (pa == cpu->pacePatch->resumePace)
-        return handlePaceResume(cpu);
-    else if (pa == cpu->pacePatch->returnFromCallout)
-        return handlePaceReturnFromCallout(cpu);
+    if (pa == cpu->pacePatch->enterPace) {
+        handlePaceEnter(cpu);
+        return true;
+    } else if (pa == cpu->pacePatch->resumePace) {
+        handlePaceResume(cpu);
+        return true;
+    } else if (pa == cpu->pacePatch->returnFromCallout) {
+        handlePaceReturnFromCallout(cpu);
+        return true;
+    }
 
     return false;
 }
@@ -2371,7 +2431,7 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     cpu->mmu = mmuInit(mem, xscale);
     if (!cpu->mmu) ERR("Cannot init MMU");
 
-    uaeInit(cpu->mem, cpu->mmu);
+    paceInit(cpu->mem, cpu->mmu);
 
     cpu->ic = icacheInit(mem, cpu->mmu);
     if (!cpu->ic) ERR("Cannot init icache");
