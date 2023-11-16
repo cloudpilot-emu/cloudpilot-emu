@@ -284,6 +284,7 @@ static void cpuPrvException(struct ArmCpu *cpu, uint32_t vector_pc, uint32_t lr,
     cpu->SPSR = spsr;
     cpu->regs[REG_NO_LR] = lr;
     cpu->regs[REG_NO_PC] = vector_pc;
+    cpu->modePace = false;
 }
 
 // input addr is VA not MVA
@@ -896,7 +897,7 @@ static void handlePaceEnter(struct ArmCpu *cpu) {
 
     cpu->modePace = true;
 
-    ERR("enter PACE\n");
+    fprintf(stderr, "enter PACE\n");
 
     return;
 }
@@ -2491,6 +2492,57 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
     }
 }
 
+static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
+    ERR("PACE syscall to %#06x\n", paceReadTrapWord());
+}
+
+static void cpuPrvCyclePace(struct ArmCpu *cpu) {
+    switch (paceExecute()) {
+        case pace_status_ok:
+            return;
+
+        case pace_status_division_by_zero:
+            ERR("PACE callout: division by zero\n");
+            break;
+
+        case pace_status_illegal_instr:
+            ERR("PACE callout: illegal instruction\n");
+            break;
+
+        case pace_status_line_1010:
+            ERR("PACE callout: line 1010\n");
+            break;
+
+        case pace_status_line_1111:
+            ERR("PACE callout: line 1111\n");
+            break;
+
+        case pace_status_memory_fault:
+            ERR("PACE: memory fault\n");
+            break;
+
+        case pace_status_syscall:
+            cpuPrvPaceSyscall(cpu);
+            break;
+
+        case pace_status_trap0:
+            ERR("PACE callout: trap 0\n");
+            break;
+
+        case pace_status_trap8:
+            ERR("PACE callout: trap 8\n");
+            break;
+
+        case pace_status_return:
+            ERR("PACE return\n");
+            break;
+
+        default:
+            ERR("PACE callout: invalid instruction\n");
+            break;
+    }
+}
+
 void cpuCycle(struct ArmCpu *cpu) {
     if (unlikely(cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall))
         cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ, cpu->regs[REG_NO_PC] + 4,
@@ -2502,7 +2554,9 @@ void cpuCycle(struct ArmCpu *cpu) {
     cp15Cycle(cpu->cp15);
     patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
 
-    if (cpu->T)
+    if (cpu->modePace)
+        cpuPrvCyclePace(cpu);
+    else if (cpu->T)
         cpuPrvCycleThumb(cpu);
     else
         cpuPrvCycleArm(cpu);

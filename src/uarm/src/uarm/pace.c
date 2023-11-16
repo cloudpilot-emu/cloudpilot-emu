@@ -38,7 +38,7 @@ static uint32_t pace_get_le(uint32_t addr, uint8_t size) {
     uint32_t pa;
     if (!mmuTranslate(mmu, addr, priviledged, false, &pa, &fsr, NULL, &region)) return 0;
 
-    uint8_t result;
+    uint32_t result;
     bool ok = region ? region->aF(region->uD, pa, size, false, &result)
                      : memAccess(mem, pa, size, MEM_ACCESS_TYPE_READ, &result);
 
@@ -70,16 +70,18 @@ uint32_t uae_get32(uint32_t addr) {
     return htobe32(pace_get_le(addr, 4));
 }
 
-static void pace_put_le(uint32_t value, uint32_t addr, uint8_t size) {
+static void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
     if (fsr != 0) return;
 
     lastAddr = addr;
     wasWrite = true;
     wasSz = size;
 
+    fprintf(stderr, "%u byte write %#010x to %#010x\n", (uint32_t)size, value, addr);
+
     struct ArmMemRegion* region;
     uint32_t pa;
-    if (!mmuTranslate(mmu, addr, priviledged, false, &pa, &fsr, NULL, &region)) return;
+    if (!mmuTranslate(mmu, addr, priviledged, true, &pa, &fsr, NULL, &region)) return;
 
     bool ok = region ? region->aF(region->uD, pa, size, true, &value)
                      : memAccess(mem, pa, size, MEM_ACCESS_TYPE_WRITE, &value);
@@ -89,24 +91,24 @@ static void pace_put_le(uint32_t value, uint32_t addr, uint8_t size) {
     }
 }
 
-void uae_put8(uint8_t value, uint32_t addr) { pace_put_le(value, addr, 1); };
+void uae_put8(uint32_t addr, uint8_t value) { pace_put_le(addr, value, 1); };
 
-void uae_put16(uint16_t value, uint32_t addr) {
+void uae_put16(uint32_t addr, uint16_t value) {
     if (!fsr && addr & 0x01) {
         fsr = 1;
         return;
     }
 
-    pace_put_le(be16toh(value), addr, 2);
+    pace_put_le(addr, be16toh(value), 2);
 }
 
-void uae_put32(uint32_t value, uint32_t addr) {
+void uae_put32(uint32_t addr, uint32_t value) {
     if (!fsr && addr & 0x01) {
         fsr = 1;
         return;
     }
 
-    pace_put_le(be32toh(value), addr, 4);
+    pace_put_le(addr, be32toh(value), 4);
 }
 
 void Exception(int exception, uaecptr lastPc) {
@@ -272,20 +274,20 @@ bool paceSave68kState() {
     fsr = 0;
 
     for (size_t i = 0; i < 8; i++) {
-        pace_put_le(regs.regs[i], addr, 4);
+        pace_put_le(addr, regs.regs[i], 4);
         addr += 4;
     }
 
     for (size_t i = 0; i < 8; i++) {
-        pace_put_le(regs.regs[8 + i], addr, 4);
+        pace_put_le(addr, regs.regs[8 + i], 4);
         addr += 4;
     }
 
-    pace_put_le(regs.pc, addr, 4);
+    pace_put_le(addr, regs.pc, 4);
     addr += 4;
 
     MakeSR();
-    pace_put_le(regs.sr, addr, 4);
+    pace_put_le(addr, regs.sr, 4);
 
     return fsr == 0;
 }
@@ -312,11 +314,16 @@ enum paceStatus paceExecute() {
     uint16_t opcode = uae_get16(regs.pc);
     if (fsr != 0) return pace_status_memory_fault;
 
+    fprintf(stderr, "\nexecute m68k opcode %#06x at %#010x\n", opcode, regs.pc);
+
 #ifdef __EMSCRIPTEN__
     ((cpuop_func*)((long)cpufunctbl_base + opcode))(opcode);
 #else
     cpufunctbl[opcode](opcode);
 #endif
+
+    fprintf(stderr, "a7 now %#010x, top of stack is %#010x\n", m68k_areg(regs, 7),
+            uae_get32(m68k_areg(regs, 7)));
 
     return fsr == 0 ? pendingStatus : pace_status_memory_fault;
 }

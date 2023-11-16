@@ -18,6 +18,6 @@ extern uint8_t uae_get8(uint32_t addr);
 extern uint16_t uae_get16(uint32_t addr);
 extern uint32_t uae_get32(uint32_t addr);
 
-extern void uae_put8(uint8_t value, uint32_t addr);
-extern void uae_put16(uint16_t value, uint32_t addr);
-extern void uae_put32(uint32_t value, uint32_t addr);
+extern void uae_put8(uint32_t addr, uint8_t value);
+extern void uae_put16(uint32_t addr, uint16_t value);
+extern void uae_put32(uint32_t addr, uint32_t value);
