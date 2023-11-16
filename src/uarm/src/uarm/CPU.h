@@ -9,6 +9,7 @@ struct ArmCpu;
 #include <stdint.h>
 
 #include "mem.h"
+#include "pace_patch.h"
 #include "patch_dispatch.h"
 
 #ifdef __cplusplus
@@ -69,7 +70,8 @@ struct ArmCoprocessor {
 };
 
 struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
-                       uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch);
+                       uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch,
+                       struct PacePatch *pacePatch);
 
 struct ArmCpu *cpuPrepareInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState);
 void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState);

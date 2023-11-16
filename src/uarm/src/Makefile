@@ -87,6 +87,7 @@ SOURCE_C = 						\
 	uarm/mmiodev_DirectNAND.c 	\
 	uarm/nand.c 				\
 	uarm/ac97dev_WM9712L.c		\
+	uarm/pace_patch.c 			\
 	uarm/uae_exec.c 			\
 	uarm/uae/cpudefs.c 			\
 	uarm/uae/cpuemu.c 			\

@@ -10,6 +10,7 @@
 #include "gdbstub.h"
 #include "icache.h"
 #include "mem.h"
+#include "uae_exec.h"
 #include "util.h"
 
 #define xstr(s) str(s)
@@ -103,6 +104,8 @@ struct ArmCpu {
     struct ArmMmu *mmu;
     struct ArmMem *mem;
     struct ArmCP15 *cp15;
+
+    struct PacePatch *pacePatch;
 
     struct stub *debugStub;
     struct PatchDispatch *patchDispatch;
@@ -862,6 +865,38 @@ static bool cpuPrvSignedSubtractionWithPossibleCarryOverflows(uint32_t a, uint32
 
 static bool cpuPrvSignedAdditionWithPossibleCarryOverflows(uint32_t a, uint32_t b, uint32_t sum) {
     return ((a ^ b ^ 0x80000000UL) & (a ^ sum)) >> 31;
+}
+
+static bool handlePaceEnter(struct ArmCpu *cpu) {
+    ERR("enter PACE\n");
+
+    return true;
+}
+
+static bool handlePaceResume(struct ArmCpu *cpu) { ERR("resume PACE\n"); }
+
+static bool handlePaceReturnFromCallout(struct ArmCpu *cpu) {
+    ERR("PACE return from callout\n");
+
+    return true;
+}
+
+static bool handleInvalidInstruction(struct ArmCpu *cpu, uint32_t instr) {
+    if (instr != INSTR_PACE) return false;
+
+    uint32_t pa;
+    struct ArmMemRegion *region;
+    if (!mmuTranslate(cpu->mmu, cpu->curInstrPC, true, false, &pa, NULL, NULL, &region))
+        return false;
+
+    if (pa == cpu->pacePatch->enterPace)
+        return handlePaceEnter(cpu);
+    else if (pa == cpu->pacePatch->resumePace)
+        return handlePaceResume(cpu);
+    else if (pa == cpu->pacePatch->returnFromCallout)
+        return handlePaceReturnFromCallout(cpu);
+
+    return false;
 }
 
 #ifdef SUPPORT_Z72_PRINTF
@@ -1878,11 +1913,13 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
 
 invalid_instr:
 
-    fprintf(stderr, "Invalid instr 0x%08lx seen at 0x%08lx with CPSR 0x%08lx\n",
-            (unsigned long)instr, (unsigned long)cpu->curInstrPC,
-            (unsigned long)cpuPrvMaterializeCPSR(cpu));
-    cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_UND, cpu->curInstrPC + (wasT ? 2 : 4),
-                    ARM_SR_MODE_UND | ARM_SR_I);
+    if (wasT || !handleInvalidInstruction(cpu, instr)) {
+        fprintf(stderr, "Invalid instr 0x%08lx seen at 0x%08lx with CPSR 0x%08lx\n",
+                (unsigned long)instr, (unsigned long)cpu->curInstrPC,
+                (unsigned long)cpuPrvMaterializeCPSR(cpu));
+        cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_UND,
+                        cpu->curInstrPC + (wasT ? 2 : 4), ARM_SR_MODE_UND | ARM_SR_I);
+    }
 
 instr_done:
     return;
@@ -2313,7 +2350,8 @@ undefined:
 }
 
 struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
-                       uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch) {
+                       uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch,
+                       struct PacePatch *pacePatch) {
     struct ArmCpu *cpu = (struct ArmCpu *)malloc(sizeof(*cpu));
 
     if (!cpu) ERR("cannot alloc CPU");
@@ -2333,6 +2371,8 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     cpu->mmu = mmuInit(mem, xscale);
     if (!cpu->mmu) ERR("Cannot init MMU");
 
+    uaeInit(cpu->mem, cpu->mmu);
+
     cpu->ic = icacheInit(mem, cpu->mmu);
     if (!cpu->ic) ERR("Cannot init icache");
 
@@ -2340,6 +2380,7 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     if (!cpu->mmu) ERR("Cannot init CP15");
 
     cpu->patchDispatch = patchDispatch;
+    cpu->pacePatch = pacePatch;
 
     if (!table_thumb2arm) {
         table_thumb2arm = malloc(0x10000 * sizeof(uint32_t));

@@ -3,6 +3,10 @@
 #include "uae/UAE.h"
 #include "uarm_endian.h"
 
+#ifdef __EMSCRIPTEN__
+    #include <emscripten.h>
+#endif
+
 static struct ArmMem* mem = NULL;
 static struct ArmMmu* mmu = NULL;
 

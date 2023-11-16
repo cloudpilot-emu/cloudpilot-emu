@@ -7,6 +7,7 @@
 #include "SoC.h"
 #include "cp15.h"
 #include "mem.h"
+#include "pace_patch.h"
 #include "patch_dispatch.h"
 #include "patches.h"
 #include "soc_AC97.h"
@@ -100,6 +101,7 @@ struct SoC {
     struct ArmRom *rom;
     struct ArmMem *mem;
     struct ArmCpu *cpu;
+    struct PacePatch *pacePatch;
     struct PatchDispatch *patchDispatch;
     struct SyscallDispatch *syscallDispatch;
 
@@ -148,6 +150,9 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
 
     memset(soc, 0, sizeof(*soc));
 
+    soc->pacePatch = initPacePatch(ROM_BASE, romNumPieces == 1 ? romPieces[0] : NULL,
+                                   romNumPieces == 1 ? romPieceSizes[0] : 0);
+
     soc->mem = memInit();
     if (!soc->mem) ERR("Cannot init physical memory manager");
 
@@ -155,7 +160,7 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
 
     soc->cpu = cpuInit(ROM_BASE, soc->mem, true /* xscale */, false /* omap */, gdbPort,
                        socRev ? ((socRev == 1) ? CPUID_PXA260 : CPUID_PXA270) : CPUID_PXA255,
-                       0x0B16A16AUL, soc->patchDispatch);
+                       0x0B16A16AUL, soc->patchDispatch, soc->pacePatch);
     if (!soc->cpu) ERR("Cannot init CPU");
 
     soc->syscallDispatch = initSyscallDispatch(soc->cpu);
