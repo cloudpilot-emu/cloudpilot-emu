@@ -268,7 +268,7 @@ bool paceLoad68kState() {
 bool paceSave68kState() {
     // Check for stateDirty to make sure that we don't accidentially overwrite
     // state that has been updates by a callout.
-    if (!statePtr || !stateDirty) return true;
+    if (!stateDirty) return true;
     uint32_t addr = statePtr;
 
     if (addr & 0x03) {
@@ -333,10 +333,5 @@ enum paceStatus paceExecute() {
             uae_get32(m68k_areg(regs, 7)));
 
     stateDirty = true;
-    if (pendingStatus == pace_status_return) {
-        paceSave68kState();
-        statePtr = 0;
-    }
-
     return fsr == 0 ? pendingStatus : pace_status_memory_fault;
 }
