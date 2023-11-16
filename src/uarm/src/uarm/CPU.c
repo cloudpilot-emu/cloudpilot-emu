@@ -878,9 +878,13 @@ static void handlePaceMemoryFault(struct ArmCpu *cpu) {
     cpuPrvHandleMemErr(cpu, addr, sz, wasWrite, false, fsr);
 }
 
+// PACE entrypoint was called from ARM: regular invocation
 static void handlePaceEnter(struct ArmCpu *cpu) {
     bool privileged = cpu->M != ARM_SR_MODE_USR;
     uint_fast8_t fsr = 0;
+
+    // save state if we entered PACE due to a context switch from another thread runnig PACE
+    if (paceGetStatePtr() != cpu->regs[0] && !paceSave68kState()) return handlePaceMemoryFault(cpu);
 
     cpu->regs[REG_NO_SP] -= 4;
     if (!cpuPrvMemOp(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], 4, true, privileged, &fsr))
@@ -902,15 +906,15 @@ static void handlePaceEnter(struct ArmCpu *cpu) {
     return;
 }
 
+// PACE execution was resumed from ARM: resume after interrupt / exception
 static void handlePaceResume(struct ArmCpu *cpu) {
-    const bool privileged = cpu->M != ARM_SR_MODE_USR;
-
-    paceSetPriviledged(privileged);
-
-    // context switch?
+    // context switch from another PACE thread?
     if (paceGetStatePtr() != cpu->regs[0]) {
+        // save state from previous thread
         if (!paceSave68kState()) return handlePaceMemoryFault(cpu);
 
+        // restore current state
+        paceSetPriviledged(cpu->M != ARM_SR_MODE_USR);
         paceSetStatePtr(cpu->regs[0]);
         if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
     }
@@ -920,14 +924,19 @@ static void handlePaceResume(struct ArmCpu *cpu) {
     ERR("resume PACE\n");
 }
 
+// PACE was reentered after a callout
 static void handlePaceReturnFromCallout(struct ArmCpu *cpu) {
     bool privileged = cpu->M != ARM_SR_MODE_USR;
     uint_fast8_t fsr = 0;
 
-    // restore r0 / state pointer from stack
+    // restore r0 / state pointer from stack (the callout target may have clobbered it)
     if (!cpuPrvMemOp(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], 4, false, privileged, &fsr))
         return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, false, false, fsr);
 
+    // save state if PACE was invoked with a different m68k state in the meantime
+    if (paceGetStatePtr() != cpu->regs[0] && !paceSave68kState()) return handlePaceMemoryFault(cpu);
+
+    // restore current state
     paceSetPriviledged(privileged);
     paceSetStatePtr(cpu->regs[0]);
 
