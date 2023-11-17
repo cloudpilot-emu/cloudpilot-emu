@@ -20,12 +20,14 @@ LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image -flto
 LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno \
 	-s EXIT_RUNTIME=0 \
 	-s MODULARIZE=1 \
+	-s ENVIRONMENT="web,worker" \
 	-s EXPORT_NAME=createModule \
 	-s ALLOW_MEMORY_GROWTH=1 \
 	-s WASM_BIGINT=1 \
+	-s ALLOW_TABLE_GROWTH=1 \
 	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
 	-s EXPORTED_RUNTIME_METHODS=["FS"] \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall"]
+	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall","addFunction"]
 
 CFLAGS_COMMON := \
 	-Werror -Wextra -Wall -Wno-unused-parameter \
