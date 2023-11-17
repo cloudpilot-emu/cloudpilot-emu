@@ -278,13 +278,29 @@ void cpuSetReg(struct ArmCpu *cpu, uint_fast8_t reg, uint32_t val) {
 static void cpuPrvException(struct ArmCpu *cpu, uint32_t vector_pc, uint32_t lr,
                             uint_fast8_t newLowBits)  // enters arm mode
 {
+    if (cpu->modePace) {
+        if (!paceSave68kState()) {
+            uint32_t addr;
+            bool wasWrite;
+            uint_fast8_t sz, fsr;
+
+            paceGetMemeryFault(&addr, &wasWrite, &sz, &fsr);
+
+            fprintf(stderr,
+                    "ignoreing memory fault in PACE during save68kState: %s, sz=%u, addr=%#010x, "
+                    "fsr=%#04x\n",
+                    wasWrite ? "write" : "read", (uint32_t)sz, addr, fsr);
+        }
+
+        cpu->modePace = false;
+    }
+
     uint32_t spsr = cpuPrvMaterializeCPSR(cpu);
 
     cpuPrvSetPSRlo8(cpu, newLowBits);
     cpu->SPSR = spsr;
     cpu->regs[REG_NO_LR] = lr;
     cpu->regs[REG_NO_PC] = vector_pc;
-    cpu->modePace = false;
 }
 
 // input addr is VA not MVA
@@ -883,9 +899,6 @@ static void handlePaceEnter(struct ArmCpu *cpu) {
     bool privileged = cpu->M != ARM_SR_MODE_USR;
     uint_fast8_t fsr = 0;
 
-    // save state if we entered PACE due to a context switch from another thread runnig PACE
-    if (paceGetStatePtr() != cpu->regs[0] && !paceSave68kState()) return handlePaceMemoryFault(cpu);
-
     cpu->regs[REG_NO_SP] -= 4;
     if (!cpuPrvMemOp(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], 4, true, privileged, &fsr))
         return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, true, false, fsr);
@@ -908,16 +921,10 @@ static void handlePaceEnter(struct ArmCpu *cpu) {
 
 // PACE execution was resumed from ARM: resume after interrupt / exception
 static void handlePaceResume(struct ArmCpu *cpu) {
-    // context switch from another PACE thread?
-    if (paceGetStatePtr() != cpu->regs[0]) {
-        // save state from previous thread
-        if (!paceSave68kState()) return handlePaceMemoryFault(cpu);
+    paceSetPriviledged(cpu->M != ARM_SR_MODE_USR);
+    paceSetStatePtr(cpu->regs[0]);
 
-        // restore current state
-        paceSetPriviledged(cpu->M != ARM_SR_MODE_USR);
-        paceSetStatePtr(cpu->regs[0]);
-        if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
-    }
+    if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
 
     cpu->modePace = true;
 
@@ -929,14 +936,10 @@ static void handlePaceReturnFromCallout(struct ArmCpu *cpu) {
     bool privileged = cpu->M != ARM_SR_MODE_USR;
     uint_fast8_t fsr = 0;
 
-    // restore r0 / state pointer from stack (the callout target may have clobbered it)
+    // restore r0 / state pointer from stack
     if (!cpuPrvMemOp(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], 4, false, privileged, &fsr))
         return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, false, false, fsr);
 
-    // save state if PACE was invoked with a different m68k state in the meantime
-    if (paceGetStatePtr() != cpu->regs[0] && !paceSave68kState()) return handlePaceMemoryFault(cpu);
-
-    // restore current state
     paceSetPriviledged(privileged);
     paceSetStatePtr(cpu->regs[0]);
 

@@ -19,7 +19,6 @@ static uint_fast8_t wasSz = 0;
 
 static uint32_t pendingStatus = 0;
 static uint32_t statePtr = 0;
-bool stateDirty = false;
 static bool priviledged = false;
 
 #ifdef __EMSCRIPTEN__
@@ -261,14 +260,10 @@ bool paceLoad68kState() {
     regs.sr = pace_get_le(addr, 4);
     MakeFromSR();
 
-    stateDirty = false;
     return fsr == 0;
 }
 
 bool paceSave68kState() {
-    // Check for stateDirty to make sure that we don't accidentially overwrite
-    // state that has been updates by a callout.
-    if (!stateDirty) return true;
     uint32_t addr = statePtr;
 
     if (addr & 0x03) {
@@ -295,7 +290,6 @@ bool paceSave68kState() {
     MakeSR();
     pace_put_le(addr, regs.sr, 4);
 
-    stateDirty = false;
     return fsr == 0;
 }
 
@@ -332,6 +326,5 @@ enum paceStatus paceExecute() {
     fprintf(stderr, "a7 now %#010x, top of stack is %#010x\n", m68k_areg(regs, 7),
             uae_get32(m68k_areg(regs, 7)));
 
-    stateDirty = true;
     return fsr == 0 ? pendingStatus : pace_status_memory_fault;
 }
