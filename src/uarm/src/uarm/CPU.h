@@ -78,7 +78,7 @@ void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState);
 uint32_t *cpuGetRegisters(struct ArmCpu *cpu);
 void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall);
 
-void cpuCycle(struct ArmCpu *cpu);
+uint32_t cpuCycle(struct ArmCpu *cpu);
 void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise);  // unraise when acknowledged
 
 uint32_t cpuGetRegExternal(struct ArmCpu *cpu, uint_fast8_t reg);

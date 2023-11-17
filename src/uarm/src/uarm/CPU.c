@@ -106,6 +106,7 @@ struct ArmCpu {
     struct ArmCP15 *cp15;
 
     struct PacePatch *pacePatch;
+    uint32_t paceOffset;
     bool modePace;
 
     struct stub *debugStub;
@@ -279,6 +280,9 @@ static void cpuPrvException(struct ArmCpu *cpu, uint32_t vector_pc, uint32_t lr,
                             uint_fast8_t newLowBits)  // enters arm mode
 {
     if (cpu->modePace) {
+        fprintf(stderr, "exception in PACE %#010x %#010x\n", lr,
+                cpu->paceOffset + cpu->pacePatch->enterPace);
+
         if (!paceSave68kState()) {
             uint32_t addr;
             bool wasWrite;
@@ -771,6 +775,8 @@ static bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast
 
     fprintf(stderr, "%c of %u bytes to 0x%08lx failed!\n", (int)(write ? 'W' : 'R'), (unsigned)size,
             (unsigned long)vaddr);
+
+    ERR("abc\n");
     gdbStubDebugBreakRequested(cpu->debugStub);
 
     return false;
@@ -913,8 +919,9 @@ static void handlePaceEnter(struct ArmCpu *cpu) {
     if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
 
     cpu->modePace = true;
+    cpu->paceOffset = cpu->curInstrPC - cpu->pacePatch->enterPace;
 
-    fprintf(stderr, "enter PACE\n");
+    // fprintf(stderr, "enter PACE\n");
 
     return;
 }
@@ -927,8 +934,10 @@ static void handlePaceResume(struct ArmCpu *cpu) {
     if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
 
     cpu->modePace = true;
+    cpu->paceOffset = cpu->curInstrPC - 4 - cpu->pacePatch->enterPace;
+    cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
 
-    ERR("resume PACE\n");
+    fprintf(stderr, "resume PACE\n");
 }
 
 // PACE was reentered after a callout
@@ -946,8 +955,10 @@ static void handlePaceReturnFromCallout(struct ArmCpu *cpu) {
     if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
 
     cpu->modePace = true;
+    cpu->paceOffset = cpu->curInstrPC - 8 - cpu->pacePatch->enterPace;
+    cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
 
-    ERR("PACE return from callout\n");
+    // fprintf(stderr, "PACE return from callout\n");
 }
 
 static bool handleInvalidInstruction(struct ArmCpu *cpu, uint32_t instr) {
@@ -2505,7 +2516,36 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
 }
 
 static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
-    ERR("PACE syscall to %#06x\n", paceReadTrapWord());
+    uint16_t trapWord = paceReadTrapWord();
+    if (paceGetFsr() != 0 || !paceSave68kState()) return handlePaceMemoryFault(cpu);
+
+    cpu->regs[1] = trapWord;
+    cpu->regs[REG_NO_LR] = cpu->pacePatch->returnFromCallout + cpu->paceOffset;
+    cpuPrvSetReg(cpu, REG_NO_PC, cpu->pacePatch->calloutSyscall + cpu->paceOffset);
+
+    cpu->modePace = false;
+
+    //  fprintf(stderr, "PACE syscall to %#06x\n", trapWord);
+}
+
+static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
+    bool privileged = cpu->M != ARM_SR_MODE_USR;
+    uint_fast8_t fsr = 0;
+
+    if (!paceSave68kState()) return handlePaceMemoryFault(cpu);
+
+    cpu->regs[REG_NO_SP] += 4;
+
+    if (!cpuPrvMemOp(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], 4, false, privileged, &fsr))
+        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, true, false, fsr);
+    cpu->regs[REG_NO_SP] += 4;
+
+    cpu->regs[1] = cpu->regs[0];
+    cpuPrvSetReg(cpu, REG_NO_PC, cpu->regs[REG_NO_LR]);
+
+    cpu->modePace = false;
+
+    // fprintf(stderr, "return from PACE\n");
 }
 
 static void cpuPrvCyclePace(struct ArmCpu *cpu) {
@@ -2546,7 +2586,7 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
             break;
 
         case pace_status_return:
-            ERR("PACE return\n");
+            cpuPrvPaceReturn(cpu);
             break;
 
         default:
@@ -2555,7 +2595,7 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
     }
 }
 
-void cpuCycle(struct ArmCpu *cpu) {
+uint32_t cpuCycle(struct ArmCpu *cpu) {
     if (unlikely(cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall))
         cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ, cpu->regs[REG_NO_PC] + 4,
                         ARM_SR_MODE_FIQ | ARM_SR_I | ARM_SR_F);
@@ -2566,12 +2606,16 @@ void cpuCycle(struct ArmCpu *cpu) {
     cp15Cycle(cpu->cp15);
     patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
 
-    if (cpu->modePace)
+    if (cpu->modePace) {
         cpuPrvCyclePace(cpu);
-    else if (cpu->T)
+        return 5;
+    } else if (cpu->T) {
         cpuPrvCycleThumb(cpu);
-    else
+        return 1;
+    } else {
         cpuPrvCycleArm(cpu);
+        return 1;
+    }
 }
 
 void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise) {  // unraise when acknowledged

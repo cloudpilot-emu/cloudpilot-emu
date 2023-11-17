@@ -77,7 +77,7 @@ static void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
     wasWrite = true;
     wasSz = size;
 
-    fprintf(stderr, "%u byte write %#010x to %#010x\n", (uint32_t)size, value, addr);
+    // fprintf(stderr, "%u byte write %#010x to %#010x\n", (uint32_t)size, value, addr);
 
     struct ArmMemRegion* region;
     uint32_t pa;
@@ -112,28 +112,35 @@ void uae_put32(uint32_t addr, uint32_t value) {
 }
 
 void Exception(int exception, uaecptr lastPc) {
-    if (exception != pace_status_syscall) regs.pc -= 2;
-
     pendingStatus = exception;
+    if (exception == pace_status_syscall) regs.pc += 2;
 }
 
 unsigned long op_unimplemented(uint32_t opcode) REGPARAM {
     pendingStatus = pace_status_unimplemented_instr;
+    regs.pc += 2;
+
     return 0;
 }
 
 unsigned long op_illg(uint32_t opcode) REGPARAM {
     pendingStatus = pace_status_illegal_instr;
+    regs.pc += 2;
+
     return 0;
 }
 
 unsigned long op_line1111(uint32_t opcode) REGPARAM {
     pendingStatus = pace_status_line_1111;
+    regs.pc += 2;
+
     return 0;
 }
 
 unsigned long op_line1010(uint32_t opcode) REGPARAM {
     pendingStatus = pace_status_line_1010;
+    regs.pc += 2;
+
     return 0;
 }
 
@@ -230,7 +237,7 @@ void paceInit(struct ArmMem* _mem, struct ArmMmu* _mmu) {
 
 void paceSetStatePtr(uint32_t addr) { statePtr = addr; }
 
-uint32_t paceGetStatePtr() { return statePtr; }
+uint8_t paceGetFsr() { return fsr; }
 
 bool paceLoad68kState() {
     if (!statePtr) return true;
@@ -303,7 +310,7 @@ void paceGetMemeryFault(uint32_t* _addr, bool* _wasWrite, uint_fast8_t* _wasSz,
 
 uint16_t paceReadTrapWord() {
     fsr = 0;
-    return uae_get16(regs.pc);
+    return uae_get16(regs.pc - 2);
 }
 
 void paceSetPriviledged(bool _priviledged) { priviledged = _priviledged; }
@@ -315,7 +322,7 @@ enum paceStatus paceExecute() {
     uint16_t opcode = uae_get16(regs.pc);
     if (fsr != 0) return pace_status_memory_fault;
 
-    fprintf(stderr, "\nexecute m68k opcode %#06x at %#010x\n", opcode, regs.pc);
+        // fprintf(stderr, "execute m68k opcode %#06x at %#010x\n", opcode, regs.pc);
 
 #ifdef __EMSCRIPTEN__
     ((cpuop_func*)((long)cpufunctbl_base + opcode))(opcode);
@@ -323,8 +330,8 @@ enum paceStatus paceExecute() {
     cpufunctbl[opcode](opcode);
 #endif
 
-    fprintf(stderr, "a7 now %#010x, top of stack is %#010x\n", m68k_areg(regs, 7),
-            uae_get32(m68k_areg(regs, 7)));
+    //    fprintf(stderr, "a7 now %#010x, top of stack is %#010x\n", m68k_areg(regs, 7),
+    //            uae_get32(m68k_areg(regs, 7)));
 
     return fsr == 0 ? pendingStatus : pace_status_memory_fault;
 }

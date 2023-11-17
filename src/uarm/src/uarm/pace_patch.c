@@ -43,10 +43,12 @@ struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize) {
 
     ((uint32_t*)rom)[(paceLocation >> 2)] = INSTR_PACE;
     ((uint32_t*)rom)[(paceLocation >> 2) + 1] = INSTR_PACE;
-    ((uint32_t*)rom)[(paceLocation >> 2) + 3] = INSTR_PACE;
+    ((uint32_t*)rom)[(paceLocation >> 2) + 2] = INSTR_PACE;
 
     patch->resumePace = patch->enterPace + 4;
     patch->returnFromCallout = patch->enterPace + 8;
+
+    patch->calloutSyscall = 0x2cb24 - 0x1fd28 + patch->enterPace;
 
     return patch;
 }

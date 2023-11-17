@@ -28,7 +28,8 @@ enum paceStatus {
 void paceInit(struct ArmMem* mem, struct ArmMmu* mmu);
 
 void paceSetStatePtr(uint32_t addr);
-uint32_t paceGetStatePtr();
+uint8_t paceGetFsr();
+
 void paceSetPriviledged(bool priviledged);
 
 bool paceLoad68kState();
