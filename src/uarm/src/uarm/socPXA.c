@@ -394,6 +394,8 @@ void socPenDown(struct SoC *soc, int x, int y) {
 }
 
 void socPenUp(struct SoC *soc) {
+    if (!soc->mouseDown) return;
+
     soc->mouseDown = false;
     deviceTouch(soc->dev, -1, -1);
 }
