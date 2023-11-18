@@ -23,6 +23,8 @@ class Emulator {
         this.getTimestampUsec = module.cwrap('getTimestampUsec', 'number', []);
         this.penDown = module.cwrap('penDown', undefined, ['number', 'number']);
         this.penUp = module.cwrap('penUp', undefined, []);
+
+        this.amIDead = false;
     }
 
     static async create(nor, nand, sd, env) {
@@ -48,6 +50,8 @@ class Emulator {
     }
 
     stop() {
+        if (this.amIDead) return;
+
         if (this.immediateHandle) clearImmediate(this.immediateHandle);
         if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
 
@@ -57,6 +61,8 @@ class Emulator {
     }
 
     start() {
+        if (this.amIDead) return;
+
         if (this.timeoutHandle || this.immediateHandle) return;
         this.lastSpeedUpdate = Number(this.getTimestampUsec());
 
@@ -64,7 +70,16 @@ class Emulator {
             const now64 = this.getTimestampUsec();
             const now = Number(now64);
 
-            this.cycle(now64);
+            try {
+                this.cycle(now64);
+            } catch (e) {
+                this.amIDead = true;
+                console.error(e);
+                this.log(e.message);
+
+                return;
+            }
+
             this.render();
 
             const timesliceRemainning = (this.getTimesliceSizeUsec() - Number(this.getTimestampUsec()) + now) / 1000;

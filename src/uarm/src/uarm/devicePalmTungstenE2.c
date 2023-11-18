@@ -1,5 +1,7 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
+#include <stdlib.h>
+
 #include "ac97dev_WM9712L.h"
 #include "device.h"
 #include "mmiodev_DirectNAND.h"

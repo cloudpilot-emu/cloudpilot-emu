@@ -5,12 +5,12 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 #define ERR(...)                      \
     do {                              \
         fprintf(stderr, __VA_ARGS__); \
-        abort();                      \
+        uarmAbort();                  \
+        __builtin_unreachable();      \
     } while (0)
 
 #define __builtin_add_overflow_u32 __builtin_add_overflow
@@ -23,6 +23,7 @@ extern "C" {
 #endif
 
 uint64_t timestampUsec();
+void uarmAbort();
 
 #ifdef __cplusplus
 }
