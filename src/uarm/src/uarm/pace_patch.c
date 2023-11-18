@@ -4,6 +4,29 @@
 #include <stdlib.h>
 #include <string.h>
 
+static uint32_t decodeBlBlx(void* rom, uint32_t addr) {
+    const uint32_t instruction = *(uint32_t*)(rom + addr);
+    const uint8_t prefix = instruction >> 24;
+
+    int32_t offset = instruction << 8;
+    offset >>= 6;
+    offset += 8;
+
+    switch (prefix) {
+        case 0xeb:
+            return addr + offset;
+
+        case 0xfa:
+            return addr + offset + 1;
+
+        case 0xfb:
+            return addr + offset + 3;
+
+        default:
+            return 0;
+    }
+}
+
 struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize) {
     static const uint8_t paceStartPattern[] = {
         0xF1, 0x4F, 0x2D, 0xE9, 0x00, 0x00, 0x9D, 0xE5, 0x44, 0xA0, 0x90, 0xE5, 0x48, 0x40, 0x90,
@@ -38,17 +61,27 @@ struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize) {
         return patch;
     }
 
-    patch->enterPace = romBase + paceLocation;
-    fprintf(stderr, "found PACE entry at %#010x, patching PACE\n", patch->enterPace);
+    const uint32_t enterPace = romBase + paceLocation;
+    fprintf(stderr, "found PACE entry at %#010x\n", patch->enterPace);
+
+    const uint32_t calloutSyscall = decodeBlBlx(rom, enterPace + 0x25894 - 0x1fd28);
+
+    if (!calloutSyscall) {
+        fprintf(stderr, "unable to locate callout for syscall, PACE will not be patched\n");
+        return patch;
+    }
+    fprintf(stderr, "found PACE callout for syscall at %#010x\n", calloutSyscall);
 
     ((uint32_t*)rom)[(paceLocation >> 2)] = INSTR_PACE;
     ((uint32_t*)rom)[(paceLocation >> 2) + 1] = INSTR_PACE;
     ((uint32_t*)rom)[(paceLocation >> 2) + 2] = INSTR_PACE;
 
+    patch->enterPace = enterPace;
     patch->resumePace = patch->enterPace + 4;
     patch->returnFromCallout = patch->enterPace + 8;
+    patch->calloutSyscall = calloutSyscall;
 
-    patch->calloutSyscall = 0x2cb24 - 0x1fd28 + patch->enterPace;
+    fprintf(stderr, "patching PACE\n");
 
     return patch;
 }
