@@ -62,7 +62,7 @@ struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize) {
     }
 
     const uint32_t enterPace = romBase + paceLocation;
-    fprintf(stderr, "found PACE entry at %#010x\n", patch->enterPace);
+    fprintf(stderr, "found PACE entry at %#010x\n", enterPace);
 
     const uint32_t calloutSyscall = decodeBlBlx(rom, enterPace + 0x25894 - 0x1fd28);
 

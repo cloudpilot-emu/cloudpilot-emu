@@ -21,6 +21,7 @@
 
 #define USE_ICACHE
 #define NO_SUPPORT_FCSE
+#define NO_TRACE_PACE
 
 #define ARM_MODE_2_REG 0x0F
 #define ARM_MODE_2_WORD 0x10
@@ -280,8 +281,10 @@ static void cpuPrvException(struct ArmCpu *cpu, uint32_t vector_pc, uint32_t lr,
                             uint_fast8_t newLowBits)  // enters arm mode
 {
     if (cpu->modePace) {
-        // fprintf(stderr, "exception in PACE %#010x %#010x\n", lr,
-        //         cpu->paceOffset + cpu->pacePatch->enterPace);
+#ifdef TRACE_PACE
+        fprintf(stderr, "exception in PACE %#010x %#010x\n", lr,
+                cpu->paceOffset + cpu->pacePatch->enterPace);
+#endif
 
         if (!paceSave68kState()) {
             uint32_t addr;
@@ -310,9 +313,6 @@ static void cpuPrvException(struct ArmCpu *cpu, uint32_t vector_pc, uint32_t lr,
 // input addr is VA not MVA
 static void cpuPrvHandleMemErr(struct ArmCpu *cpu, uint32_t addr, uint_fast8_t sz, bool write,
                                bool instrFetch, uint_fast8_t fsr) {
-// fprintf(stderr, "access error to 0x%08x with fsr %u from 0x%08x\n", addr, fsr,
-// cpu->regs[REG_NO_PC]);
-
 // FCSE
 #ifdef SUPPORT_FCSE
     if (addr < 0x02000000UL)  // report addr is MVA
@@ -890,7 +890,7 @@ static bool cpuPrvSignedAdditionWithPossibleCarryOverflows(uint32_t a, uint32_t 
     return ((a ^ b ^ 0x80000000UL) & (a ^ sum)) >> 31;
 }
 
-static void handlePaceMemoryFault(struct ArmCpu *cpu) {
+static void cpuPrvHandlePaceMemoryFault(struct ArmCpu *cpu) {
     uint32_t addr;
     bool wasWrite;
     uint_fast8_t sz, fsr;
@@ -900,7 +900,7 @@ static void handlePaceMemoryFault(struct ArmCpu *cpu) {
 }
 
 // PACE entrypoint was called from ARM: regular invocation
-static void handlePaceEnter(struct ArmCpu *cpu) {
+static void cpuPrvhandlePaceEnter(struct ArmCpu *cpu) {
     bool privileged = cpu->M != ARM_SR_MODE_USR;
     uint_fast8_t fsr = 0;
 
@@ -915,32 +915,36 @@ static void handlePaceEnter(struct ArmCpu *cpu) {
     paceSetPriviledged(privileged);
     paceSetStatePtr(cpu->regs[0]);
 
-    if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
+    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
 
     cpu->modePace = true;
     cpu->paceOffset = cpu->curInstrPC - cpu->pacePatch->enterPace;
 
-    // fprintf(stderr, "enter PACE\n");
+#ifdef TRACE_PACE
+    fprintf(stderr, "enter PACE\n");
+#endif
 
     return;
 }
 
 // PACE execution was resumed from ARM: resume after interrupt / exception
-static void handlePaceResume(struct ArmCpu *cpu) {
+static void cpuPrvHandlePaceResume(struct ArmCpu *cpu) {
     paceSetPriviledged(cpu->M != ARM_SR_MODE_USR);
     paceSetStatePtr(cpu->regs[0]);
 
-    if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
+    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
 
     cpu->modePace = true;
     cpu->paceOffset = cpu->curInstrPC - 4 - cpu->pacePatch->enterPace;
     cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
 
-    // fprintf(stderr, "resume PACE\n");
+#ifdef TRACE_PACE
+    fprintf(stderr, "resume PACE\n");
+#endif
 }
 
 // PACE was reentered after a callout
-static void handlePaceReturnFromCallout(struct ArmCpu *cpu) {
+static void cpuPrvHandlePaceReturnFromCallout(struct ArmCpu *cpu) {
     bool privileged = cpu->M != ARM_SR_MODE_USR;
     uint_fast8_t fsr = 0;
 
@@ -951,16 +955,18 @@ static void handlePaceReturnFromCallout(struct ArmCpu *cpu) {
     paceSetPriviledged(privileged);
     paceSetStatePtr(cpu->regs[0]);
 
-    if (!paceLoad68kState()) return handlePaceMemoryFault(cpu);
+    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
 
     cpu->modePace = true;
     cpu->paceOffset = cpu->curInstrPC - 8 - cpu->pacePatch->enterPace;
     cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
 
-    // fprintf(stderr, "PACE return from callout\n");
+#ifdef TRACE_PACE
+    fprintf(stderr, "PACE return from callout\n");
+#endif
 }
 
-static bool handleInvalidInstruction(struct ArmCpu *cpu, uint32_t instr) {
+static bool cpuPrvHandleInvalidInstruction(struct ArmCpu *cpu, uint32_t instr) {
     if (instr != INSTR_PACE) return false;
 
     uint32_t pa;
@@ -969,13 +975,13 @@ static bool handleInvalidInstruction(struct ArmCpu *cpu, uint32_t instr) {
         return false;
 
     if (pa == cpu->pacePatch->enterPace) {
-        handlePaceEnter(cpu);
+        cpuPrvhandlePaceEnter(cpu);
         return true;
     } else if (pa == cpu->pacePatch->resumePace) {
-        handlePaceResume(cpu);
+        cpuPrvHandlePaceResume(cpu);
         return true;
     } else if (pa == cpu->pacePatch->returnFromCallout) {
-        handlePaceReturnFromCallout(cpu);
+        cpuPrvHandlePaceReturnFromCallout(cpu);
         return true;
     }
 
@@ -1996,7 +2002,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
 
 invalid_instr:
 
-    if (wasT || !handleInvalidInstruction(cpu, instr)) {
+    if (wasT || !cpuPrvHandleInvalidInstruction(cpu, instr)) {
         fprintf(stderr, "Invalid instr 0x%08lx seen at 0x%08lx with CPSR 0x%08lx\n",
                 (unsigned long)instr, (unsigned long)cpu->curInstrPC,
                 (unsigned long)cpuPrvMaterializeCPSR(cpu));
@@ -2516,7 +2522,7 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
 
 static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
     uint16_t trapWord = paceReadTrapWord();
-    if (paceGetFsr() != 0 || !paceSave68kState()) return handlePaceMemoryFault(cpu);
+    if (paceGetFsr() != 0 || !paceSave68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
 
     cpu->regs[1] = trapWord;
     cpu->regs[REG_NO_LR] = cpu->pacePatch->returnFromCallout + cpu->paceOffset;
@@ -2524,14 +2530,16 @@ static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
 
     cpu->modePace = false;
 
-    //  fprintf(stderr, "PACE syscall to %#06x\n", trapWord);
+#ifdef TRACE_PACE
+    fprintf(stderr, "PACE syscall to %#06x\n", trapWord);
+#endif
 }
 
 static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
     bool privileged = cpu->M != ARM_SR_MODE_USR;
     uint_fast8_t fsr = 0;
 
-    if (!paceSave68kState()) return handlePaceMemoryFault(cpu);
+    if (!paceSave68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
 
     cpu->regs[REG_NO_SP] += 4;
 
@@ -2544,7 +2552,9 @@ static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
 
     cpu->modePace = false;
 
-    // fprintf(stderr, "return from PACE\n");
+#ifdef TRACE_PACE
+    fprintf(stderr, "return from PACE\n");
+#endif
 }
 
 static void cpuPrvCyclePace(struct ArmCpu *cpu) {
