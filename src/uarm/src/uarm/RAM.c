@@ -41,25 +41,35 @@ static bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool writ
                 *((uint32_t*)addr) = htole32(*(uint32_t*)bufP);
                 break;
 
-            case 8:
-
-                *((uint32_t*)(addr + 0)) = htole32(((uint32_t*)bufP)[0]);
-                *((uint32_t*)(addr + 4)) = htole32(((uint32_t*)bufP)[1]);
-                break;
+            case 64:
+                *((uint32_t*)(addr + 32)) = htole32(((uint32_t*)bufP)[8]);
+                *((uint32_t*)(addr + 36)) = htole32(((uint32_t*)bufP)[9]);
+                *((uint32_t*)(addr + 40)) = htole32(((uint32_t*)bufP)[10]);
+                *((uint32_t*)(addr + 44)) = htole32(((uint32_t*)bufP)[11]);
+                *((uint32_t*)(addr + 48)) = htole32(((uint32_t*)bufP)[12]);
+                *((uint32_t*)(addr + 52)) = htole32(((uint32_t*)bufP)[13]);
+                *((uint32_t*)(addr + 56)) = htole32(((uint32_t*)bufP)[14]);
+                *((uint32_t*)(addr + 60)) = htole32(((uint32_t*)bufP)[15]);
+                // fallthrough
 
             case 32:
-                *((uint32_t*)(addr + 0)) = htole32(((uint32_t*)bufP)[0]);
-                *((uint32_t*)(addr + 4)) = htole32(((uint32_t*)bufP)[1]);
-                *((uint32_t*)(addr + 8)) = htole32(((uint32_t*)bufP)[2]);
-                *((uint32_t*)(addr + 12)) = htole32(((uint32_t*)bufP)[3]);
                 *((uint32_t*)(addr + 16)) = htole32(((uint32_t*)bufP)[4]);
                 *((uint32_t*)(addr + 20)) = htole32(((uint32_t*)bufP)[5]);
                 *((uint32_t*)(addr + 24)) = htole32(((uint32_t*)bufP)[6]);
                 *((uint32_t*)(addr + 28)) = htole32(((uint32_t*)bufP)[7]);
+                // fallthrough
+
+            case 16:
+                *((uint32_t*)(addr + 8)) = htole32(((uint32_t*)bufP)[2]);
+                *((uint32_t*)(addr + 12)) = htole32(((uint32_t*)bufP)[3]);
+                // fallthrough
+
+            case 8:
+                *((uint32_t*)(addr + 0)) = htole32(((uint32_t*)bufP)[0]);
+                *((uint32_t*)(addr + 4)) = htole32(((uint32_t*)bufP)[1]);
                 break;
 
             default:
-
                 return false;
         }
     } else {

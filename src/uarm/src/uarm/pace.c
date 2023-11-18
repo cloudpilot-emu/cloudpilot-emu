@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "mem.h"
 #include "uae/UAE.h"
 #include "uarm_endian.h"
 
@@ -18,7 +19,7 @@ static bool wasWrite = false;
 static uint_fast8_t wasSz = 0;
 
 static uint32_t pendingStatus = 0;
-static uint32_t statePtr = 0;
+static uint32_t statePtr;
 static bool priviledged = false;
 
 #ifdef __EMSCRIPTEN__
@@ -235,69 +236,98 @@ void paceInit(struct ArmMem* _mem, struct ArmMmu* _mmu) {
     mmu = _mmu;
 }
 
-void paceSetStatePtr(uint32_t addr) { statePtr = addr; }
+void paceSetStatePtr(uint32_t addr) { statePtr = addr + 4; }
 
 uint8_t paceGetFsr() { return fsr; }
 
 bool paceLoad68kState() {
-    if (!statePtr) return true;
-    uint32_t addr = statePtr;
+    uint32_t statePtrPa;
+    struct ArmMemRegion* statePtrRegion;
+    static uint32_t stateScratchBuffer[18];
 
-    if (addr & 0x03) {
-        fsr = 1;
+    if (!mmuTranslate(mmu, statePtr, priviledged, false, &statePtrPa, &fsr, NULL, &statePtrRegion))
         return false;
+
+    void* state = (sizeof(struct regstruct) == sizeof(stateScratchBuffer))
+                      ? &regs
+                      : (void*)stateScratchBuffer;
+
+    lastAddr = statePtr;
+    wasSz = 64;
+    wasWrite = false;
+
+    if (statePtrRegion->aF) {
+        if (!statePtrRegion->aF(statePtrRegion->uD, statePtrPa, 64, false, state)) return false;
+
+        lastAddr = statePtr + 64;
+        wasSz = 8;
+
+        if (!statePtrRegion->aF(statePtrRegion->uD, statePtrPa + 64, 8, false, state + 64))
+            return false;
+    } else {
+        if (!memAccess(mem, statePtrPa, 64, MEM_ACCESS_TYPE_READ, state)) return false;
+
+        lastAddr = statePtr + 64;
+        wasSz = 8;
+
+        if (!memAccess(mem, statePtrPa + 64, 8, MEM_ACCESS_TYPE_READ, state + 64)) return false;
     }
 
-    addr += 4;
-    fsr = 0;
-
-    for (size_t i = 0; i < 8; i++) {
-        regs.regs[i] = pace_get_le(addr, 4);
-        addr += 4;
+    if (sizeof(struct regstruct) != sizeof(stateScratchBuffer)) {
+        for (size_t i = 0; i < 16; i++) regs.regs[i] = stateScratchBuffer[i];
+        regs.pc = stateScratchBuffer[16];
+        regs.sr = stateScratchBuffer[17];
     }
 
-    for (size_t i = 0; i < 8; i++) {
-        regs.regs[8 + i] = pace_get_le(addr, 4);
-        addr += 4;
-    }
-
-    regs.pc = pace_get_le(addr, 4);
-    addr += 4;
-
-    regs.sr = pace_get_le(addr, 4);
     MakeFromSR();
 
-    return fsr == 0;
+    return true;
 }
 
 bool paceSave68kState() {
-    uint32_t addr = statePtr;
+    uint32_t statePtrPa;
+    struct ArmMemRegion* statePtrRegion;
+    static uint32_t stateScratchBuffer[18];
 
-    if (addr & 0x03) {
-        fsr = 1;
+    if (!mmuTranslate(mmu, statePtr, priviledged, true, &statePtrPa, &fsr, NULL, &statePtrRegion))
         return false;
-    }
 
-    addr += 4;
-    fsr = 0;
-
-    for (size_t i = 0; i < 8; i++) {
-        pace_put_le(addr, regs.regs[i], 4);
-        addr += 4;
-    }
-
-    for (size_t i = 0; i < 8; i++) {
-        pace_put_le(addr, regs.regs[8 + i], 4);
-        addr += 4;
-    }
-
-    pace_put_le(addr, regs.pc, 4);
-    addr += 4;
+    void* state;
 
     MakeSR();
-    pace_put_le(addr, regs.sr, 4);
 
-    return fsr == 0;
+    if (sizeof(struct regstruct) != sizeof(stateScratchBuffer)) {
+        for (size_t i = 0; i < 16; i++) stateScratchBuffer[i] = regs.regs[i];
+        stateScratchBuffer[16] = regs.pc;
+        stateScratchBuffer[17] = regs.sr;
+
+        state = (void*)stateScratchBuffer;
+    } else {
+        state = &regs;
+    }
+
+    lastAddr = statePtr;
+    wasSz = 64;
+    wasWrite = true;
+
+    if (statePtrRegion->aF) {
+        if (!statePtrRegion->aF(statePtrRegion->uD, statePtrPa, 64, true, state)) return false;
+
+        lastAddr = statePtr + 64;
+        wasSz = 8;
+
+        if (!statePtrRegion->aF(statePtrRegion->uD, statePtrPa + 64, 8, true, state + 64))
+            return false;
+    } else {
+        if (!memAccess(mem, statePtrPa, 64, MEM_ACCESS_TYPE_WRITE, state)) return false;
+
+        lastAddr = statePtr + 64;
+        wasSz = 8;
+
+        if (!memAccess(mem, statePtrPa + 64, 8, MEM_ACCESS_TYPE_WRITE, state + 64)) return false;
+    }
+
+    return true;
 }
 
 void paceGetMemeryFault(uint32_t* _addr, bool* _wasWrite, uint_fast8_t* _wasSz,
