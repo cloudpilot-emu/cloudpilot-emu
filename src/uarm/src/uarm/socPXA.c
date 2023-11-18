@@ -401,8 +401,8 @@ void socSleep(struct SoC *soc) {
     if (soc->sleeping) return;
 
     soc->sleeping = true;
-    soc->sleepAtCycle = soc->accumulated_cycles;
-    // printf("sleep\n");
+    //  soc->sleepAtCycle = soc->accumulated_cycles;
+    //  printf("sleep\n");
 }
 
 void socWakeup(struct SoC *soc, uint8_t wakeupSource) {
@@ -449,13 +449,14 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
             soc->clock1Ticks_x1e6 += cyclesToSkip * clock1TicksPerCycle_x1e6;
             soc->clock2Ticks_x1e6 += cyclesToSkip * clock2TicksPerCycle_x1e6;
         } else {
-            cycles++;
-            soc->accumulated_cycles++;
+            uint32_t cpuCyles = cpuCycle(soc->cpu);
+            cycles += cpuCyles;
+            soc->accumulated_cycles += cpuCyles;
 
-            soc->timerTicks_x1e6 += timerTicksPerCycle_x1e6;
-            soc->lcdTicks_x1e6 += lcdTicksPerCycle_x1e6;
-            soc->clock1Ticks_x1e6 += clock1TicksPerCycle_x1e6;
-            soc->clock2Ticks_x1e6 += clock2TicksPerCycle_x1e6;
+            soc->timerTicks_x1e6 += (timerTicksPerCycle_x1e6 * cpuCyles);
+            soc->lcdTicks_x1e6 += (lcdTicksPerCycle_x1e6 * cpuCyles);
+            soc->clock1Ticks_x1e6 += (clock1TicksPerCycle_x1e6 * cpuCyles);
+            soc->clock2Ticks_x1e6 += (clock2TicksPerCycle_x1e6 * cpuCyles);
         }
 
         while (soc->timerTicks_x1e6 >= 1000000) {
@@ -491,8 +492,6 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
         }
 
         if (!(soc->accumulated_cycles & 0x00FFFFFFUL)) pxaRtcUpdate(soc->rtc);
-
-        if (!soc->sleeping) cpuCycle(soc->cpu);
     }
 
     return cycles;
