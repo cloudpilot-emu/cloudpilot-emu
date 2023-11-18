@@ -1,4 +1,4 @@
-# Next version
+# Version 1.9.3
 
 -   Fix spurious failure to open files on Safari and iOS Safari.
 
