@@ -115,6 +115,7 @@ struct SoC {
     uint64_t lcdTicks_x1e6;
     uint64_t clock1Ticks_x1e6;
     uint64_t clock2Ticks_x1e6;
+    uint64_t rtcTicks_x1e9;
 };
 
 static uint_fast16_t socUartPrvRead(void *userData) {
@@ -421,6 +422,7 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
     uint64_t lcdTicksPerCycle_x1e6 = (((uint64_t)1000000) * 15000) / cyclesPerSecond;
     uint64_t clock1TicksPerCycle_x1e6 = (((uint64_t)1000000) * 3686400) / (36 * cyclesPerSecond);
     uint64_t clock2TicksPerCycle_x1e6 = (((uint64_t)1000000) * 3686400) / (292 * cyclesPerSecond);
+    uint64_t rtcTicksPerCycle_x1e9 = (((uint64_t)1000000000) * 1) / cyclesPerSecond;
 
     while (cycles < maxCycles) {
         if (soc->sleeping) {
@@ -439,6 +441,9 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
             c = (1000000 - soc->clock2Ticks_x1e6) / clock2TicksPerCycle_x1e6;
             if (c < cyclesToSkip) cyclesToSkip = c;
 
+            c = (1000000000 - soc->rtcTicks_x1e9) / rtcTicksPerCycle_x1e9;
+            if (c < cyclesToSkip) cyclesToSkip = c;
+
             if (cyclesToSkip == 0) cyclesToSkip = 1;
 
             cycles += cyclesToSkip;
@@ -448,6 +453,7 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
             soc->lcdTicks_x1e6 += cyclesToSkip * lcdTicksPerCycle_x1e6;
             soc->clock1Ticks_x1e6 += cyclesToSkip * clock1TicksPerCycle_x1e6;
             soc->clock2Ticks_x1e6 += cyclesToSkip * clock2TicksPerCycle_x1e6;
+            soc->rtcTicks_x1e9 += cyclesToSkip * rtcTicksPerCycle_x1e9;
         } else {
             uint32_t cpuCyles = cpuCycle(soc->cpu);
             cycles += cpuCyles;
@@ -483,7 +489,7 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
             soc->clock1Ticks_x1e6 -= 1000000;
         }
 
-        if (soc->clock2Ticks_x1e6 >= 1000000) {
+        while (soc->clock2Ticks_x1e6 >= 1000000) {
             socAC97Periodic(soc->ac97);
             socI2sPeriodic(soc->i2s);
             devicePeriodic(soc->dev, 1);
@@ -491,7 +497,10 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
             soc->clock2Ticks_x1e6 -= 1000000;
         }
 
-        if (!(soc->accumulated_cycles & 0x00FFFFFFUL)) pxaRtcUpdate(soc->rtc);
+        while (soc->rtcTicks_x1e9 >= 1000000000) {
+            pxaRtcUpdate(soc->rtc);
+            soc->rtcTicks_x1e9 -= 1000000000;
+        }
     }
 
     return cycles;
