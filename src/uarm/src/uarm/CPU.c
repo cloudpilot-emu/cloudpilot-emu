@@ -280,8 +280,8 @@ static void cpuPrvException(struct ArmCpu *cpu, uint32_t vector_pc, uint32_t lr,
                             uint_fast8_t newLowBits)  // enters arm mode
 {
     if (cpu->modePace) {
-        fprintf(stderr, "exception in PACE %#010x %#010x\n", lr,
-                cpu->paceOffset + cpu->pacePatch->enterPace);
+        // fprintf(stderr, "exception in PACE %#010x %#010x\n", lr,
+        //         cpu->paceOffset + cpu->pacePatch->enterPace);
 
         if (!paceSave68kState()) {
             uint32_t addr;
@@ -776,7 +776,6 @@ static bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast
     fprintf(stderr, "%c of %u bytes to 0x%08lx failed!\n", (int)(write ? 'W' : 'R'), (unsigned)size,
             (unsigned long)vaddr);
 
-    ERR("abc\n");
     gdbStubDebugBreakRequested(cpu->debugStub);
 
     return false;
@@ -937,7 +936,7 @@ static void handlePaceResume(struct ArmCpu *cpu) {
     cpu->paceOffset = cpu->curInstrPC - 4 - cpu->pacePatch->enterPace;
     cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
 
-    fprintf(stderr, "resume PACE\n");
+    // fprintf(stderr, "resume PACE\n");
 }
 
 // PACE was reentered after a callout
@@ -2608,7 +2607,7 @@ uint32_t cpuCycle(struct ArmCpu *cpu) {
 
     if (cpu->modePace) {
         cpuPrvCyclePace(cpu);
-        return 5;
+        return 10;
     } else if (cpu->T) {
         cpuPrvCycleThumb(cpu);
         return 1;
