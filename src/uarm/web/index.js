@@ -75,18 +75,9 @@ const openFile = () =>
         fileInput.click();
     });
 
-function drawSkin() {
-    const image = new Image();
-    image.src = 'web/skin.svg';
-
-    image.onload = () => canvasCtx.drawImage(image, 0, 640, 640, 240);
-}
-
 function clearCanvas() {
     canvasCtx.fillStyle = '#fff';
     canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
-
-    drawSkin();
 }
 
 const uploadHandler = (assign) => () =>
@@ -106,7 +97,7 @@ async function restart() {
     clearCanvas();
 
     emulator = await Emulator.create(fileNor.content, fileNand.content, fileSd?.content, {
-        canvasCtx,
+        canvas: canvasCtx.canvas,
         speedDisplay,
         log,
     });
@@ -115,6 +106,7 @@ async function restart() {
 
 async function main() {
     const database = await Database.create();
+    clearCanvas();
 
     fileNor = await database.getNor();
     fileNand = await database.getNand();
@@ -128,7 +120,6 @@ async function main() {
     }
 
     updateLabels();
-    clearCanvas();
 
     uploadNor.addEventListener(
         'click',

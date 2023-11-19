@@ -1,20 +1,20 @@
+import { DisplayService } from './displayservice.js';
 import { EventHandler } from './eventhandler.js';
 
 export class Emulator {
-    constructor(worker, { canvasCtx, speedDisplay, log }) {
+    constructor(worker, displayService, { canvas, speedDisplay, log }) {
         this.worker = worker;
+        this.displayService = displayService;
 
-        this.canvasCtx = canvasCtx;
         this.speedDisplay = speedDisplay;
         this.log = log;
+        this.canvas = canvas;
 
         this.canvasTmpCtx = document.createElement('canvas').getContext('2d');
         this.canvasTmpCtx.canvas.width = 320;
         this.canvasTmpCtx.canvas.height = 320;
 
         this.running = false;
-
-        this.eventHandler = new EventHandler(this, canvasCtx.canvas);
 
         this.onMessage = (e) => {
             switch (e.data.type) {
@@ -41,11 +41,15 @@ export class Emulator {
         };
 
         this.worker.addEventListener('message', this.onMessage);
+        this.eventHandler = new EventHandler(this, this.displayService);
     }
 
-    static create(nor, nand, sd, env) {
+    static async create(nor, nand, sd, env) {
         const { log } = env;
         const worker = new Worker('web/worker.js');
+
+        const displayService = new DisplayService();
+        displayService.initWithCanvas(env.canvas);
 
         return new Promise((resolve, reject) => {
             const onMessage = (e) => {
@@ -56,7 +60,7 @@ export class Emulator {
 
                     case 'initialized':
                         worker.removeEventListener('message', onMessage);
-                        resolve(new Emulator(worker, env));
+                        resolve(new Emulator(worker, displayService, env));
                         break;
 
                     case 'error':
@@ -80,21 +84,20 @@ export class Emulator {
     }
 
     destroy() {
-        this.eventHandler.stop();
         this.worker.removeEventListener('message', this.onMessage);
         this.worker.terminate();
     }
 
     stop() {
-        this.eventHandler.stop();
         this.speedDisplay.innerText = '-';
         this.running = false;
+        this.eventHandler.release();
         this.worker.postMessage({ type: 'stop' });
     }
 
     start() {
         this.running = true;
-        this.eventHandler.start();
+        this.eventHandler.bind(this.canvas);
         this.worker.postMessage({ type: 'start' });
     }
 
@@ -112,8 +115,7 @@ export class Emulator {
         const imageData = new ImageData(new Uint8ClampedArray(data), 320, 320);
 
         this.canvasTmpCtx.putImageData(imageData, 0, 0);
-        this.canvasCtx.imageSmoothingEnabled = false;
-        this.canvasCtx.drawImage(this.canvasTmpCtx.canvas, 0, 0, 320, 320, 0, 0, 640, 640);
+        this.displayService.updateEmulationCanvas(this.canvasTmpCtx.canvas);
 
         this.worker.postMessage({ type: 'returnFrame', frame: data }, [data]);
     }
