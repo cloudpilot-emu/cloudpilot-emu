@@ -23,6 +23,8 @@ class Emulator {
         this.getTimestampUsec = module.cwrap('getTimestampUsec', 'number', []);
         this.penDown = module.cwrap('penDown', undefined, ['number', 'number']);
         this.penUp = module.cwrap('penUp', undefined, []);
+        this.keyDown = module.cwrap('keyDown', undefined, ['number']);
+        this.keyUp = module.cwrap('keyUp', undefined, ['number']);
 
         this.amIDead = false;
     }
@@ -131,6 +133,31 @@ class Emulator {
     }
 }
 
+function mapButton(name) {
+    switch (name) {
+        case 'cal':
+            return 1;
+
+        case 'phone':
+            return 2;
+
+        case 'todo':
+            return 3;
+
+        case 'notes':
+            return 4;
+
+        case 'up':
+            return 5;
+
+        case 'down':
+            return 6;
+
+        default:
+            return -1;
+    }
+}
+
 function postReady() {
     postMessage({ type: 'ready' });
 }
@@ -193,6 +220,32 @@ async function handleMessage(message) {
             assertEmulator('penUp');
             emulator.penUp();
             break;
+
+        case 'buttonDown': {
+            const button = mapButton(message.button);
+            if (button < 0) {
+                console.error(`ignoring unknown button ${message.button}`);
+                return;
+            }
+
+            assertEmulator('buttonDown');
+
+            emulator.keyDown(button);
+            break;
+        }
+
+        case 'buttonUp': {
+            const button = mapButton(message.button);
+            if (button < 0) {
+                console.error(`ignoring unknown button ${message.button}`);
+                return;
+            }
+
+            assertEmulator('buttonUp');
+
+            emulator.keyUp(button);
+            break;
+        }
 
         case 'returnFrame':
             framePool.push(message.frame);

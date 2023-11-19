@@ -109,6 +109,14 @@ export class Emulator {
         this.worker.postMessage({ type: 'penUp' });
     }
 
+    buttonDown(button) {
+        this.worker.postMessage({ type: 'buttonDown', button });
+    }
+
+    buttonUp(button) {
+        this.worker.postMessage({ type: 'buttonUp', button });
+    }
+
     render(data) {
         if (!this.running) return;
 

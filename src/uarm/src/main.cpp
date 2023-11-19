@@ -205,6 +205,18 @@ uint32_t EMSCRIPTEN_KEEPALIVE currentIpsMax() {
 }
 
 uint64_t EMSCRIPTEN_KEEPALIVE getTimestampUsec() { return timestampUsec(); }
+
+void EMSCRIPTEN_KEEPALIVE keyDown(int key) {
+    if (!soc) return;
+
+    socKeyDown(soc, (enum KeyId)key);
+}
+
+void EMSCRIPTEN_KEEPALIVE keyUp(int key) {
+    if (!soc) return;
+
+    socKeyUp(soc, (enum KeyId)key);
+}
 }
 #endif
 

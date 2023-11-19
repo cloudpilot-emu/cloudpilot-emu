@@ -275,7 +275,7 @@ export class EventHandler {
         if (this.activeButtons.has(button)) return;
 
         this.activeButtons.add(button);
-        // this.emulator.handleButtonDown(button);
+        this.emulator.buttonDown(button);
         void this.displayService.drawButtons(Array.from(this.activeButtons.values()));
     }
 
@@ -283,7 +283,7 @@ export class EventHandler {
         if (button === undefined || !this.activeButtons.has(button)) return;
 
         this.activeButtons.delete(button);
-        // this.emulator.handleButtonUp(button);
+        this.emulator.buttonUp(button);
         void this.displayService.drawButtons(Array.from(this.activeButtons.values()));
     }
 
