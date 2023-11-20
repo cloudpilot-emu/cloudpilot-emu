@@ -49,7 +49,6 @@ MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 
 SOURCE_C = 						\
 	util.c						\
-	uarm/CPU.c 					\
 	uarm/patch_dispatch.c		\
 	uarm/patches.c				\
 	uarm/syscall.c				\
@@ -99,7 +98,8 @@ SOURCE_C = 						\
 
 SOURCE_CXX_COMMON = 			\
 	main.cpp					\
-	MainLoop.cpp
+	MainLoop.cpp				\
+	uarm/CPU.cpp
 
 SOURCE_CXX_NATIVE = 			\
 	$(SOURCE_CXX_COMMON)		\

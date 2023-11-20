@@ -5,13 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../util.h"
 #include "MMU.h"
 #include "cp15.h"
 #include "gdbstub.h"
 #include "icache.h"
 #include "mem.h"
 #include "pace.h"
-#include "util.h"
 
 #define xstr(s) str(s)
 #define str(s) #s
@@ -142,13 +142,12 @@ static void cpuPrvSetPC(struct ArmCpu *cpu, uint32_t pc)  // with interworking
     if (!cpu->T && (pc & 2)) ERR("Attempt to branch to non-word-aligned ARM address");
 }
 
-static uint32_t cpuPrvGetReg(struct ArmCpu *cpu, uint_fast8_t reg, bool wasT) {
+template <bool wasT>
+static uint32_t cpuPrvGetReg(struct ArmCpu *cpu, uint_fast8_t reg) {
     uint32_t ret;
 
     ret = cpu->regs[reg];
-    if (reg == REG_NO_PC) {
-        ret += wasT ? 2 : 4;
-    }
+    if (reg == REG_NO_PC) ret += wasT ? 2 : 4;
 
     return ret;
 }
@@ -332,7 +331,8 @@ static void cpuPrvHandleMemErr(struct ArmCpu *cpu, uint32_t addr, uint_fast8_t s
     }
 }
 
-static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *carryOutP, bool wasT) {
+template <bool wasT>
+static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *carryOutP) {
     uint_fast8_t v, a;
     bool co = cpu->C;  // be default carry out = C flag
     uint32_t ret;
@@ -344,7 +344,7 @@ static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *car
         if (v) co = !!(ret & 0x80000000UL);
     } else {
         v = (instr >> 5) & 3;                         // get shift type
-        ret = cpuPrvGetReg(cpu, instr & 0x0F, wasT);  // get Rm
+        ret = cpuPrvGetReg<wasT>(cpu, instr & 0x0F);  // get Rm
 
         if (instr & 0x00000010UL) {  // reg with reg shift
 
@@ -505,7 +505,7 @@ ARM_MODE_2_T	is flag for T
 
 */
 static uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t instr, uint32_t *addBeforeP,
-                                       uint32_t *addWritebackP, bool wasT) {
+                                       uint32_t *addWritebackP) {
     uint_fast8_t reg, shift;
     uint32_t val;
 
@@ -578,7 +578,7 @@ same comments as for addr mode 2 apply
 */
 
 static uint_fast8_t cpuPrvArmAdrMode_3(struct ArmCpu *cpu, uint32_t instr, uint32_t *addBeforeP,
-                                       uint32_t *addWritebackP, bool wasT) {
+                                       uint32_t *addWritebackP) {
     uint_fast8_t reg;
     uint32_t val;
     bool S, H, L;
@@ -727,7 +727,7 @@ static bool cpuPrvSignedSubtractionOverflows(int32_t a, int32_t b, int32_t diff)
 }
 
 static int32_t cpuPrvMedia_signedSaturate32(int32_t sign) {
-    return (sign < 0) ? -0x80000000UL : 0x7ffffffful;
+    return (sign < 0) ? -0x80000000L : 0x7fffffffl;
 }
 
 static bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast8_t size,
@@ -1060,7 +1060,8 @@ static void cpuPrvZ72sysPrintf(struct ArmCpu *cpu) {
 }
 #endif
 
-static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool privileged) {
+template <bool wasT>
+static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, op2, res, sr, ea, memVal32, addBefore, addAfter;
     bool specialInstr = false, ok;
     uint_fast8_t mode, cpNo, fsr, sourceReg, destReg;
@@ -1283,8 +1284,8 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
 
                     uint32_t doubleMem[2];
 
-                    mode = cpuPrvArmAdrMode_3(cpu, instr, &addBefore, &addAfter, wasT);
-                    ea = cpuPrvGetReg(cpu, mode & ARM_MODE_3_REG, wasT);
+                    mode = cpuPrvArmAdrMode_3(cpu, instr, &addBefore, &addAfter);
+                    ea = cpuPrvGetReg<wasT>(cpu, mode & ARM_MODE_3_REG);
                     ea += addBefore;
 
                     if (mode & ARM_MODE_3_LOAD) {
@@ -1337,7 +1338,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                         switch (mode & ARM_MODE_3_TYPE) {
                             case ARM_MODE_3_H:
 
-                                memVal16 = cpuPrvGetReg(cpu, (instr >> 12) & 0x0F, wasT);
+                                memVal16 = cpuPrvGetReg<wasT>(cpu, (instr >> 12) & 0x0F);
                                 ok = cpuPrvMemOp(cpu, &memVal16, ea, 2, true, privileged, &fsr);
                                 if (!ok) {
                                     cpuPrvHandleMemErr(cpu, ea, 2, true, false, fsr);
@@ -1381,7 +1382,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
 
                             cpuPrvSetPSR(cpu, (instr >> 16) & 0x0F, privileged,
                                          !!(instr & 0x00400000UL),
-                                         cpuPrvGetReg(cpu, instr & 0x0F, wasT));
+                                         cpuPrvGetReg<wasT>(cpu, instr & 0x0F));
                         } else
                             goto invalid_instr;
                         goto instr_done;
@@ -1401,7 +1402,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                                 cpuPrvSetRegNotPC(
                                     cpu, REG_NO_LR,
                                     cpu->curInstrPC + (wasT ? 3 : 4));  // save return value for BLX
-                            cpuPrvSetPC(cpu, cpuPrvGetReg(cpu, instr & 0x0F, wasT));
+                            cpuPrvSetPC(cpu, cpuPrvGetReg<wasT>(cpu, instr & 0x0F));
                         }
                         goto instr_done;
 
@@ -1583,21 +1584,21 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
         {
             bool cOut, setFlags = !!(instr & 0x00100000UL);
 
-            op2 = cpuPrvArmAdrMode_1(cpu, instr, &cOut, wasT);
+            op2 = cpuPrvArmAdrMode_1<wasT>(cpu, instr, &cOut);
 
             switch ((instr >> 21) & 0x0F) {
                 case 0:  // AND
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 & op2;
                     break;
 
                 case 1:  // EOR
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 ^ op2;
                     break;
 
                 case 2:  // SUB
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 - op2;
                     if (setFlags) {
                         cpu->V = cpuPrvSignedSubtractionOverflows(op1, op2, res);
@@ -1606,7 +1607,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                     break;
 
                 case 3:  // RSB
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op2 - op1;
                     if (setFlags) {
                         cpu->V = cpuPrvSignedSubtractionOverflows(op2, op1, res);
@@ -1615,7 +1616,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                     break;
 
                 case 4:  // ADD
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 + op2;
                     if (setFlags) {
                         cpu->V = cpuPrvSignedAdditionOverflows(op1, op2, res);
@@ -1624,7 +1625,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                     break;
 
                 case 5:  // ADC
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = res64 = (uint64_t)op1 + op2 + (cpu->C ? 1 : 0);
                     if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
                         cOut = res64 >> 32;
@@ -1634,7 +1635,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                     break;
 
                 case 6:  // SBC
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = res64 = (uint64_t)op1 - op2 - (cpu->C ? 0 : 1);
                     if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
                         cOut = !(res64 >> 32);
@@ -1643,7 +1644,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                     break;
 
                 case 7:  // RSC
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = res64 = (uint64_t)op2 - op1 - (cpu->C ? 0 : 1);
                     if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
                         cOut = !(res64 >> 32);
@@ -1653,7 +1654,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
 
                 case 8:  // TST
                     if (!setFlags) goto invalid_instr;
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 & op2;
                     goto dp_flag_set;
 
@@ -1664,13 +1665,13 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                                      cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
                         goto instr_done;
                     }
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 ^ op2;
                     goto dp_flag_set;
 
                 case 10:  // CMP
                     if (!setFlags) goto invalid_instr;
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 - op2;
                     cpu->V = cpuPrvSignedSubtractionOverflows(op1, op2, res);
                     cOut = !__builtin_sub_overflow_u32(op1, op2, &res);
@@ -1683,14 +1684,14 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                                      cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
                         goto instr_done;
                     }
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 + op2;
                     cpu->V = cpuPrvSignedAdditionOverflows(op1, op2, res);
                     cOut = __builtin_add_overflow_u32(op1, op2, &res);
                     goto dp_flag_set;
 
                 case 12:  // ORR
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 | op2;
                     break;
 
@@ -1699,7 +1700,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                     break;
 
                 case 14:  // BIC
-                    op1 = cpuPrvGetReg(cpu, (instr >> 16) & 0x0F, wasT);
+                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 & ~op2;
                     break;
 
@@ -1748,12 +1749,12 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                 goto invalid_instr;
 
         load_store_mode_2:
-            mode = cpuPrvArmAdrMode_2(cpu, instr, &addBefore, &addAfter, wasT);
+            mode = cpuPrvArmAdrMode_2(cpu, instr, &addBefore, &addAfter);
             if (mode & ARM_MODE_2_INV) goto invalid_instr;
             if (mode & ARM_MODE_2_T) privileged = false;
 
             sourceReg = mode & ARM_MODE_2_REG;
-            ea = cpuPrvGetReg(cpu, sourceReg, wasT);
+            ea = cpuPrvGetReg<wasT>(cpu, sourceReg);
             ea += addBefore;
 
             if (mode & ARM_MODE_2_LOAD) {
@@ -1785,7 +1786,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
                     cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, memVal8);
                 }
             } else {
-                op1 = cpuPrvGetReg(cpu, (instr >> 12) & 0x0F, wasT);
+                op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 12) & 0x0F);
 
                 if (mode & ARM_MODE_2_WORD) {
                     memVal32 = op1;
@@ -1831,7 +1832,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool wasT, bool 
 
                 // if this is a store, get the value to store
                 if (!isLoad) {
-                    memVal32 = cpuPrvGetReg(cpu, regNo, wasT);
+                    memVal32 = cpuPrvGetReg<wasT>(cpu, regNo);
                     if (unlikely(userModeRegs)) {
                         if (regNo >= 8 && regNo <= 12 &&
                             (cpu->M == ARM_SR_MODE_FIQ))  // handle fiq/usr banked regs
@@ -2041,7 +2042,7 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
         cpuPrvHandleMemErr(cpu, pc, 4, false, true, fsr);
     else {
         cpu->regs[REG_NO_PC] += 4;
-        cpuPrvExecInstr(cpu, instr, false, privileged);
+        cpuPrvExecInstr<false>(cpu, instr, privileged);
     }
 }
 
@@ -2056,7 +2057,7 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT, bool pri
                  // ASR(2) ROR AND EOR ORR BIC
 
             if (instrT & 0x0800) {  // LDR(3)
-                const uint32_t pc = cpuPrvGetReg(cpu, REG_NO_PC, true) & ~0x03UL;
+                const uint32_t pc = cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL;
                 const uint32_t addr = pc + ((instrT & 0xff) << 2);
                 uint32_t memVal32;
                 uint_fast8_t fsr;
@@ -2079,7 +2080,7 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT, bool pri
                     case 0:  // ADD(4)
 
                         // special handling required for PC destination
-                        v32 = cpuPrvGetReg(cpu, vD, true) + cpuPrvGetReg(cpu, v8, true);
+                        v32 = cpuPrvGetReg<true>(cpu, vD) + cpuPrvGetReg<true>(cpu, v8);
                         if (vD == 15) v32 |= 1;
                         cpuPrvSetReg(cpu, vD, v32);
 
@@ -2088,7 +2089,7 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT, bool pri
                     case 2:  // MOV(3)
 
                         // special handling required for PC destination
-                        v32 = cpuPrvGetReg(cpu, v8, true);
+                        v32 = cpuPrvGetReg<true>(cpu, v8);
                         if (vD == 15) v32 |= 1;
                         cpuPrvSetReg(cpu, vD, v32);
 
@@ -2116,7 +2117,7 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT, bool pri
         case 10:  // ADD(5) ADD(6)	(bit11 set = add(6))
             cpuPrvSetReg(cpu, (instrT >> 8) & 0x07,
                          ((instrT & 0x0800) ? cpuPrvGetRegNotPC(cpu, REG_NO_SP)
-                                            : (cpuPrvGetReg(cpu, REG_NO_PC, true) & ~0x03UL)) +
+                                            : (cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL)) +
                              ((instrT & 0xff) << 2));
 
             return;
@@ -2193,7 +2194,7 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
 
     instrA = table_thumb2arm[instrT];
     if (instrA)
-        cpuPrvExecInstr(cpu, instrA, true, privileged);
+        cpuPrvExecInstr<true>(cpu, instrA, privileged);
     else
         cpuPrvExecThumb(cpu, instrT, privileged);
 }
@@ -2472,7 +2473,7 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     cpu->pacePatch = pacePatch;
 
     if (!table_thumb2arm) {
-        table_thumb2arm = malloc(0x10000 * sizeof(uint32_t));
+        table_thumb2arm = (uint32_t *)malloc(0x10000 * sizeof(uint32_t));
 
         for (uint32_t instr = 0; instr < 0x10000; instr++)
             table_thumb2arm[instr] = translateThumb(instr);
