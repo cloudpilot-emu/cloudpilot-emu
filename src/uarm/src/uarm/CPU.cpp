@@ -115,8 +115,25 @@ struct ArmCpu {
     struct PatchDispatch *patchDispatch;
 };
 
+enum ImmShiftType {
+    shiftTypeNoop,
+    shiftTypeLSL,
+    shiftTypeLSR,
+    shiftTypeASR,
+    shiftTypeROR,
+    shiftTypeRRX,
+};
+
+struct ImmShift {
+    ImmShiftType type;
+    uint32_t coBit;
+    uint8_t shift;
+};
+
 static uint32_t *table_thumb2arm = NULL;
 static bool table_conditions[256];
+static ImmShift table_immShiftReg[1024];
+static ImmShift table_immShiftImm[128];
 
 static uint32_t cpuPrvClz(uint32_t val) {
     if (!val) return 32;
@@ -130,10 +147,8 @@ static uint32_t cpuPrvClz(uint32_t val) {
     ERR("CLZ undefined");
 }
 
-static uint32_t cpuPrvROR(uint32_t val, uint_fast8_t ror) {
-    if (ror) val = (val >> ror) | (val << (32 - ror));
-
-    return val;
+static inline uint32_t cpuPrvROR(uint32_t val, uint_fast8_t ror) {
+    return (val >> ror) | (val << (32 - ror));
 }
 
 static void cpuPrvSetPC(struct ArmCpu *cpu, uint32_t pc)  // with interworking
@@ -331,6 +346,7 @@ static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *car
     uint_fast8_t v, a;
     bool co = cpu->flags & ARM_SR_C;  // be default carry out = C flag
     uint32_t ret;
+    struct ImmShift *shift;
 
     if (instr & 0x02000000UL) {  // immed
 
@@ -341,94 +357,44 @@ static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *car
         v = (instr >> 5) & 3;                         // get shift type
         ret = cpuPrvGetReg<wasT>(cpu, instr & 0x0F);  // get Rm
 
-        if (instr & 0x00000010UL) {  // reg with reg shift
+        if (instr & 0x00000010UL) {
+            a = cpuPrvGetRegNotPC(cpu, (instr >> 8) & 0x0F);
+            shift = table_immShiftReg + ((v << 8) | (a & 0xff));
 
-            a = cpuPrvGetRegNotPC(
-                cpu, (instr >> 8) & 0x0F);  // get the relevant part of Rs, we only care for
-                                            // lower 8 bits (note we use uint8 for this)
+        } else {
+            a = (instr >> 7) & 0x1F;
+            shift = table_immShiftImm + ((v << 5) | a);
+        }
 
-            if (a != 0) {  // else all is already good
+        switch (shift->type) {  // perform shifts
+            case shiftTypeNoop:
+                break;
+            case shiftTypeLSL:  // LSL
+                co = ret & shift->coBit;
+                ret = ret << shift->shift;
+                break;
 
-                switch (v) {  // perform shifts
+            case shiftTypeLSR:  // LSR
+                co = ret & shift->coBit;
+                ret = ret >> shift->shift;
+                break;
 
-                    case 0:  // LSL
-                        co = (ret >> (uint8_t)(32 - a)) & 1;
-                        ret = ret << a;
-                        break;
+            case shiftTypeASR:  // ASR
+                co = ret & shift->coBit;
+                ret = (int32_t)ret >> shift->shift;
+                break;
 
-                    case 1:  // LSR
-                        co = (ret >> (a - 1)) & 1;
-                        ret = ret >> a;
-                        break;
+            case shiftTypeROR:  // ROR
+                co = ret & shift->coBit;
+                ret = cpuPrvROR(ret, a & 0x1f);
+                break;
 
-                    case 2:  // ASR
-
-                        if (a < 32) {
-                            co = (ret >> (a - 1)) & 1;
-                            ret = ((int32_t)ret >> a);
-                        } else {  // >=32
-                            co = ret >> 31;
-                            ret = ((int32_t)ret >> 31);
-                        }
-                        break;
-
-                    case 3:  // ROR
-                        co = (ret >> ((a - 1) & 0x1f)) & 1;
-                        ret = cpuPrvROR(ret, a & 0x1f);
-
-                        break;
-                }
-            }
-        } else {  // reg with immed shift
-
-            a = (instr >> 7) & 0x1F;  // get imm
-
-            switch (v) {
-                case 0:  // LSL
-
-                    if (a == 0) {
-                        // nothing
-                    } else {
-                        co = (ret >> (32 - a)) & 1;
-                        ret = ret << a;
-                    }
-                    break;
-
-                case 1:  // LSR
-
-                    if (a == 0) {
-                        co = ret >> 31;
-                        ret = 0;
-                    } else {
-                        co = (ret >> (a - 1)) & 1;
-                        ret = ret >> a;
-                    }
-                    break;
-
-                case 2:  // ASR
-
-                    if (a == 0) {
-                        co = ret >> 31;
-                        ret = ((int32_t)ret >> 31);
-                    } else {
-                        co = (ret >> (a - 1)) & 1;
-                        ret = ((int32_t)ret >> a);
-                    }
-                    break;
-
-                case 3:  // ROR or RRX
-
-                    if (a == 0) {  // RRX
-                        a = co;
-                        co = ret & 1;
-                        ret = ret >> 1;
-                        if (a) ret |= 0x80000000UL;
-                    } else {
-                        co = (ret >> (a - 1)) & 1;
-                        ret = cpuPrvROR(ret, a);
-                    }
-                    break;
-            }
+            case shiftTypeRRX:
+                a = co;
+                co = ret & 1;
+                ret = ret >> 1;
+                if (a) ret |= 0x80000000UL;
+                break;
         }
     }
 
@@ -2403,6 +2369,107 @@ static bool cpuPrvConditionTableEntry(uint8_t key) {
     }
 }
 
+static ImmShift cpuPrvImmShiftRegTableEntry(uint32_t key) {
+    const uint8_t a = key;
+    const uint8_t v = (key >> 8) & 0x03;
+
+    ImmShift shift;
+    shift.type = shiftTypeNoop;
+
+    if (a == 0) return shift;
+
+    switch (v) {  // perform shifts
+
+        case 0:  // LSL
+            shift.type = shiftTypeLSL;
+            shift.coBit = 1 << (uint8_t)(32 - a);
+            shift.shift = a;
+            break;
+
+        case 1:  // LSR
+            shift.type = shiftTypeLSR;
+            shift.coBit = 1 << (a - 1);
+            shift.shift = a;
+            break;
+
+        case 2:  // ASR
+            shift.type = shiftTypeASR;
+
+            if (a < 32) {
+                shift.coBit = 1 << (a - 1);
+                shift.shift = a;
+            } else {  // >=32
+                shift.coBit = 1 << 31;
+                shift.shift = 31;
+            }
+            break;
+
+        case 3:  // ROR
+            shift.type = shiftTypeROR;
+            shift.coBit = 1 << ((a - 1) & 0x1f);
+            shift.shift = a & 0x1f;
+
+            break;
+    }
+
+    return shift;
+}
+
+static ImmShift cpuPrvImmShiftImmTableEntry(uint32_t key) {
+    const uint8_t a = key & 0x1f;
+    const uint8_t v = (key >> 5) & 0x03;
+
+    ImmShift shift;
+    shift.type = shiftTypeNoop;
+
+    switch (v) {  // perform shifts
+
+        case 0:  // LSL
+            if (a != 0) {
+                shift.type = shiftTypeLSL;
+                shift.coBit = 1 << (32 - a);
+                shift.shift = a;
+            }
+            break;
+
+        case 1:  // LSR
+            shift.type = shiftTypeLSR;
+
+            if (a == 0) {
+                shift.coBit = 1 << 31;
+                shift.shift = 32;
+            } else {
+                shift.coBit = 1 << (a - 1);
+                shift.shift = a;
+            }
+            break;
+
+        case 2:  // ASR
+            shift.type = shiftTypeASR;
+
+            if (a == 0) {
+                shift.coBit = 1 << 31;
+                shift.shift = 31;
+            } else {
+                shift.coBit = 1 << (a - 1);
+                shift.shift = a;
+            }
+            break;
+
+        case 3:  // ROR
+            if (a == 0) {
+                shift.type = shiftTypeRRX;
+            } else {
+                shift.type = shiftTypeROR;
+                shift.coBit = 1 << (a - 1);
+                shift.shift = a;
+            }
+            break;
+    }
+
+    return shift;
+}
+
 struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
                        uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch,
                        struct PacePatch *pacePatch) {
@@ -2444,6 +2511,8 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     }
 
     for (int i = 0; i < 256; i++) table_conditions[i] = !cpuPrvConditionTableEntry(i);
+    for (int i = 0; i < 1024; i++) table_immShiftReg[i] = cpuPrvImmShiftRegTableEntry(i);
+    for (int i = 0; i < 128; i++) table_immShiftImm[i] = cpuPrvImmShiftImmTableEntry(i);
 
     return cpu;
 }
