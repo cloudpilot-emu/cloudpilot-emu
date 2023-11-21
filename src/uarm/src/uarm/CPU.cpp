@@ -1087,7 +1087,18 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
             case 10:
             case 11:
-                goto b_bl_blx;
+                ea = instr << 8;
+                ea = ((int32_t)ea) >> 7;
+                ea += 4;
+                if (!wasT) ea <<= 1;
+                ea += cpu->curInstrPC;
+
+                if (instr & 0x01000000UL) ea += 2;
+                cpu->regs[REG_NO_LR] = cpu->curInstrPC + (wasT ? 2 : 4);
+                if (!cpu->T) ea |= 1UL;  // set T flag if needed
+
+                cpuPrvSetPC(cpu, ea);
+                goto instr_done;
 
             case 12:
             case 13:
@@ -1844,22 +1855,15 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
         case 10:
         case 11:  // B/BL/BLX(if cond=0b1111)
-
-        b_bl_blx:
             ea = instr << 8;
             ea = ((int32_t)ea) >> 7;
             ea += 4;
             if (!wasT) ea <<= 1;
             ea += cpu->curInstrPC;
 
-            if (specialInstr) {  // handle BLX
-                if (instr & 0x01000000UL) ea += 2;
-                cpu->regs[REG_NO_LR] = cpu->curInstrPC + (wasT ? 2 : 4);
-                if (!cpu->T) ea |= 1UL;  // set T flag if needed
-            } else {                     // not BLX -> differentiate between BL and B
-                if (instr & 0x01000000UL) cpu->regs[REG_NO_LR] = cpu->curInstrPC + (wasT ? 2 : 4);
-                if (cpu->T) ea |= 1UL;  // keep T flag as needed
-            }
+            if (instr & 0x01000000UL) cpu->regs[REG_NO_LR] = cpu->curInstrPC + (wasT ? 2 : 4);
+            if (cpu->T) ea |= 1UL;  // keep T flag as needed
+
             cpuPrvSetPC(cpu, ea);
             goto instr_done;
 
