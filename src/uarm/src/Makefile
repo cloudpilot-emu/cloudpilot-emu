@@ -27,6 +27,7 @@ LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno \
 	-s ALLOW_TABLE_GROWTH=1 \
 	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
 	-s EXPORTED_RUNTIME_METHODS=["FS"] \
+	-s BINARYEN_IGNORE_IMPLICIT_TRAPS=1 \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall","addFunction"]
 
 CFLAGS_COMMON := \
