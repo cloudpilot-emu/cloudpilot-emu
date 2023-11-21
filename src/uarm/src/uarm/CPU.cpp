@@ -155,8 +155,6 @@ static void cpuPrvSetPC(struct ArmCpu *cpu, uint32_t pc)  // with interworking
 {
     cpu->regs[REG_NO_PC] = pc & ~1UL;
     cpu->T = (pc & 1);
-
-    if (!cpu->T && (pc & 2)) ERR("Attempt to branch to non-word-aligned ARM address");
 }
 
 template <bool wasT>
