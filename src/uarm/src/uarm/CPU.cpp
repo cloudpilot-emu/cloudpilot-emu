@@ -75,7 +75,8 @@ struct ArmBankedRegs {
 struct ArmCpu {
     uint32_t regs[16];  // current active regs as per current mode
     uint32_t SPSR;
-    bool N, Z, C, V, Q, T, I, F;
+    uint32_t flags;
+    bool Q, T, I, F;
     uint8_t M;
 
     uint32_t curInstrPC;
@@ -115,6 +116,7 @@ struct ArmCpu {
 };
 
 static uint32_t *table_thumb2arm = NULL;
+static bool table_conditions[256];
 
 static uint32_t cpuPrvClz(uint32_t val) {
     if (!val) return 32;
@@ -232,20 +234,13 @@ static void cpuPrvSetPSRlo8(struct ArmCpu *cpu, uint_fast8_t val) {
 }
 
 static void cpuPrvSetPSRhi8(struct ArmCpu *cpu, uint32_t val) {
-    cpu->N = !!(val & ARM_SR_N);
-    cpu->Z = !!(val & ARM_SR_Z);
-    cpu->C = !!(val & ARM_SR_C);
-    cpu->V = !!(val & ARM_SR_V);
+    cpu->flags = val & 0xf0000000UL;
     cpu->Q = !!(val & ARM_SR_Q);
 }
 
 static uint32_t cpuPrvMaterializeCPSR(struct ArmCpu *cpu) {
-    uint32_t ret = 0;
+    uint32_t ret = cpu->flags;
 
-    if (cpu->N) ret |= ARM_SR_N;
-    if (cpu->Z) ret |= ARM_SR_Z;
-    if (cpu->C) ret |= ARM_SR_C;
-    if (cpu->V) ret |= ARM_SR_V;
     if (cpu->Q) ret |= ARM_SR_Q;
     if (cpu->T) ret |= ARM_SR_T;
     if (cpu->I) ret |= ARM_SR_I;
@@ -334,7 +329,7 @@ static void cpuPrvHandleMemErr(struct ArmCpu *cpu, uint32_t addr, uint_fast8_t s
 template <bool wasT>
 static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *carryOutP) {
     uint_fast8_t v, a;
-    bool co = cpu->C;  // be default carry out = C flag
+    bool co = cpu->flags & ARM_SR_C;  // be default carry out = C flag
     uint32_t ret;
 
     if (instr & 0x02000000UL) {  // immed
@@ -540,7 +535,7 @@ static uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t instr, uint3
                     val = cpuPrvROR(val, shift);
                 else {  // RRX
                     val = val >> 1;
-                    if (cpu->C) val |= 0x80000000UL;
+                    val |= ((cpu->flags & ARM_SR_C) << 2);
                 }
         }
     }
@@ -1078,91 +1073,32 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
     cpuPrvZ72sysPrintf(cpu);
 #endif
 
-    switch (instr >> 28) {
-        case 0:  // EQ
-            if (!cpu->Z) return;
-            break;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
-        case 1:  // NE
-            if (cpu->Z) return;
-            break;
+    if ((instr >> 28) == 0xf) {
+        specialInstr = true;
 
-        case 2:  // CS
-            if (!cpu->C) return;
-            break;
+        switch ((instr >> 24) & 0x0f) {
+            case 5:
+            case 7:
+                // PLD
+                if ((instr & 0x0D70F000UL) == 0x0550F000UL) goto instr_done;
+                goto invalid_instr;
 
-        case 3:  // CC
-            if (cpu->C) return;
-            break;
+            case 10:
+            case 11:
+                goto b_bl_blx;
 
-        case 4:  // MI
-            if (!cpu->N) return;
-            break;
+            case 12:
+            case 13:
+                goto coproc_mem_2reg;
 
-        case 5:  // PL
-            if (cpu->N) return;
-            break;
+            case 14:
+                goto coproc_dp;
 
-        case 6:  // VS
-            if (!cpu->V) return;
-            break;
-
-        case 7:  // VC
-            if (cpu->V) return;
-            break;
-
-        case 8:  // HI
-            if (!cpu->C || cpu->Z) return;
-            break;
-
-        case 9:  // LS
-            if (cpu->C && !cpu->Z) return;
-            break;
-
-        case 10:  // GE
-            if (cpu->N != cpu->V) return;
-            break;
-
-        case 11:  // LT
-            if (cpu->N == cpu->V) return;
-            break;
-
-        case 12:  // GT
-            if (cpu->Z || cpu->N != cpu->V) return;
-            break;
-
-        case 13:  // LE
-            if (!cpu->Z && cpu->N == cpu->V) return;
-            break;
-
-        case 14:  // AL
-            break;
-
-        case 15:  // NV
-            specialInstr = true;
-
-            switch ((instr >> 24) & 0x0f) {
-                case 5:
-                case 7:
-                    // PLD
-                    if ((instr & 0x0D70F000UL) == 0x0550F000UL) goto instr_done;
-                    goto invalid_instr;
-
-                case 10:
-                case 11:
-                    goto b_bl_blx;
-
-                case 12:
-                case 13:
-                    goto coproc_mem_2reg;
-
-                case 14:
-                    goto coproc_dp;
-
-                default:
-                    goto invalid_instr;
-            }
-            break;
+            default:
+                goto invalid_instr;
+        }
     }
 
     switch ((instr >> 24) & 0x0F) {
@@ -1236,8 +1172,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                                 cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res);
                                 if (instr & 0x00100000UL) {  // S
 
-                                    cpu->Z = !res;
-                                    cpu->N = res >> 31;
+                                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N);
+                                    if (!res) cpu->flags |= ARM_SR_Z;
+                                    cpu->flags |= (res & 0x80000000UL);
                                 }
                                 goto instr_done;
 
@@ -1272,8 +1209,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                                 if (instr & 0x00100000UL) {  // S
 
-                                    cpu->Z = !res64;
-                                    cpu->N = res64 >> 63;
+                                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N);
+                                    if (!res64) cpu->flags |= ARM_SR_Z;
+                                    cpu->flags |= (res64 & 0x8000000000000000ULL) >> 32;
                                 }
                                 break;
 
@@ -1601,7 +1539,8 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 - op2;
                     if (setFlags) {
-                        cpu->V = cpuPrvSignedSubtractionOverflows(op1, op2, res);
+                        cpu->flags &= ~ARM_SR_V;
+                        if (cpuPrvSignedSubtractionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
                         cOut = !__builtin_sub_overflow_u32(op1, op2, &res);
                     }
                     break;
@@ -1610,7 +1549,8 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op2 - op1;
                     if (setFlags) {
-                        cpu->V = cpuPrvSignedSubtractionOverflows(op2, op1, res);
+                        cpu->flags &= ~ARM_SR_V;
+                        if (cpuPrvSignedSubtractionOverflows(op2, op1, res)) cpu->flags |= ARM_SR_V;
                         cOut = !__builtin_sub_overflow_u32(op2, op1, &res);
                     }
                     break;
@@ -1619,36 +1559,42 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 + op2;
                     if (setFlags) {
-                        cpu->V = cpuPrvSignedAdditionOverflows(op1, op2, res);
+                        cpu->flags &= ~ARM_SR_V;
+                        if (cpuPrvSignedAdditionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
                         cOut = __builtin_add_overflow_u32(op1, op2, &res);
                     }
                     break;
 
                 case 5:  // ADC
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = res64 = (uint64_t)op1 + op2 + (cpu->C ? 1 : 0);
+                    res = res64 = (uint64_t)op1 + op2 + ((cpu->flags & ARM_SR_C) >> 29);
                     if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
                         cOut = res64 >> 32;
-                        cpu->V = cpuPrvSignedAdditionWithPossibleCarryOverflows(op1, op2, res);
-                        cpu->V = (res64 >> 31) == 1 || (res64 >> 31) == 2;
+                        cpuPrvSignedAdditionWithPossibleCarryOverflows(op1, op2, res);
+                        cpu->flags &= ~ARM_SR_V;
+                        if ((res64 >> 31) == 1 || (res64 >> 31) == 2) cpu->flags |= ARM_SR_V;
                     }
                     break;
 
                 case 6:  // SBC
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = res64 = (uint64_t)op1 - op2 - (cpu->C ? 0 : 1);
+                    res = res64 = (uint64_t)op1 - op2 - ((~cpu->flags & ARM_SR_C) >> 29);
                     if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
                         cOut = !(res64 >> 32);
-                        cpu->V = cpuPrvSignedSubtractionWithPossibleCarryOverflows(op1, op2, res);
+                        cpu->flags &= ~ARM_SR_V;
+                        if (cpuPrvSignedSubtractionWithPossibleCarryOverflows(op1, op2, res))
+                            cpu->flags |= ARM_SR_V;
                     }
                     break;
 
                 case 7:  // RSC
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = res64 = (uint64_t)op2 - op1 - (cpu->C ? 0 : 1);
+                    res = res64 = (uint64_t)op2 - op1 - ((~cpu->flags & ARM_SR_C) >> 29);
                     if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
                         cOut = !(res64 >> 32);
-                        cpu->V = cpuPrvSignedSubtractionWithPossibleCarryOverflows(op2, op1, res);
+                        cpu->flags &= ~ARM_SR_V;
+                        if (cpuPrvSignedSubtractionWithPossibleCarryOverflows(op2, op1, res))
+                            cpu->flags |= ARM_SR_V;
                     }
                     break;
 
@@ -1673,7 +1619,8 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                     if (!setFlags) goto invalid_instr;
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 - op2;
-                    cpu->V = cpuPrvSignedSubtractionOverflows(op1, op2, res);
+                    cpu->flags &= ~ARM_SR_V;
+                    if (cpuPrvSignedSubtractionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
                     cOut = !__builtin_sub_overflow_u32(op1, op2, &res);
                     goto dp_flag_set;
 
@@ -1686,7 +1633,8 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                     }
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 + op2;
-                    cpu->V = cpuPrvSignedAdditionOverflows(op1, op2, res);
+                    cpu->flags &= ~ARM_SR_V;
+                    if (cpuPrvSignedAdditionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
                     cOut = __builtin_add_overflow_u32(op1, op2, &res);
                     goto dp_flag_set;
 
@@ -1729,9 +1677,10 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                 cpuPrvSetReg(cpu, (instr >> 12) & 0x0F, res);
 
             dp_flag_set:
-                cpu->C = cOut;
-                cpu->N = res >> 31;
-                cpu->Z = !res;
+                cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
+                if (cOut) cpu->flags |= ARM_SR_C;
+                if (!res) cpu->flags |= ARM_SR_Z;
+                cpu->flags |= (res & 0x80000000UL);
             }
             goto instr_done;
         } break;
@@ -2439,6 +2388,57 @@ undefined:
             << 4);  // guranteed undefined instr, inside it we store the original thumb instr :)=-)
 }
 
+static bool cpuPrvConditionTableEntry(uint8_t key) {
+    const bool N = key & 0x80, Z = key & 0x40, C = key & 0x20, V = key & 0x10;
+
+    switch (key & 0x0f) {
+        case 0:  // EQ
+            return Z;
+
+        case 1:  // NE
+            return !Z;
+
+        case 2:  // CS
+            return C;
+
+        case 3:  // CC
+            return !C;
+
+        case 4:  // MI
+            return N;
+
+        case 5:  // PL
+            return !N;
+
+        case 6:  // VS
+            return V;
+
+        case 7:  // VC
+            return !V;
+
+        case 8:  // HI
+            return C && !Z;
+
+        case 9:  // LS
+            return !C || Z;
+
+        case 10:  // GE
+            return N == V;
+
+        case 11:  // LT
+            return N != V;
+
+        case 12:  // GT
+            return !Z && N == V;
+
+        case 13:  // LE
+            return Z || N != V;
+
+        default:
+            return true;
+    }
+}
+
 struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
                        uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch,
                        struct PacePatch *pacePatch) {
@@ -2478,6 +2478,8 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
         for (uint32_t instr = 0; instr < 0x10000; instr++)
             table_thumb2arm[instr] = translateThumb(instr);
     }
+
+    for (int i = 0; i < 256; i++) table_conditions[i] = !cpuPrvConditionTableEntry(i);
 
     return cpu;
 }
