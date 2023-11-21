@@ -352,31 +352,13 @@ static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *car
                 switch (v) {  // perform shifts
 
                     case 0:  // LSL
-
-                        if (a < 32) {
-                            co = (ret >> (32 - a)) & 1;
-                            ret = ret << a;
-                        } else if (a == 32) {
-                            co = ret & 1;
-                            ret = 0;
-                        } else {  // >32
-                            co = 0;
-                            ret = 0;
-                        }
+                        co = (ret >> (uint8_t)(32 - a)) & 1;
+                        ret = ret << a;
                         break;
 
                     case 1:  // LSR
-
-                        if (a < 32) {
-                            co = (ret >> (a - 1)) & 1;
-                            ret = ret >> a;
-                        } else if (a == 32) {
-                            co = ret >> 31;
-                            ret = 0;
-                        } else {  // >32
-                            co = 0;
-                            ret = 0;
-                        }
+                        co = (ret >> (a - 1)) & 1;
+                        ret = ret >> a;
                         break;
 
                     case 2:  // ASR
@@ -385,29 +367,15 @@ static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *car
                             co = (ret >> (a - 1)) & 1;
                             ret = ((int32_t)ret >> a);
                         } else {  // >=32
-                            if (ret & 0x80000000UL) {
-                                co = 1;
-                                ret = 0xFFFFFFFFUL;
-                            } else {
-                                co = 0;
-                                ret = 0;
-                            }
+                            co = ret >> 31;
+                            ret = ((int32_t)ret >> 31);
                         }
                         break;
 
                     case 3:  // ROR
+                        co = (ret >> ((a - 1) & 0x1f)) & 1;
+                        ret = cpuPrvROR(ret, a & 0x1f);
 
-                        if (a == 0) {
-                            // nothing...
-                        } else {
-                            a &= 0x1F;
-                            if (a == 0)
-                                co = ret >> 31;
-                            else {
-                                co = (ret >> (a - 1)) & 1;
-                                ret = cpuPrvROR(ret, a);
-                            }
-                        }
                         break;
                 }
             }
@@ -440,19 +408,11 @@ static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *car
                 case 2:  // ASR
 
                     if (a == 0) {
-                        if (ret & 0x80000000UL) {
-                            co = 1;
-                            ret = 0xFFFFFFFFUL;
-                        } else {
-                            co = 0;
-                            ret = 0;
-                        }
+                        co = ret >> 31;
+                        ret = ((int32_t)ret >> 31);
                     } else {
                         co = (ret >> (a - 1)) & 1;
-                        if (ret & 0x80000000UL)
-                            ret = (ret >> a) | (0xFFFFFFFFUL << (32 - a));
-                        else
-                            ret = ret >> a;
+                        ret = ((int32_t)ret >> a);
                     }
                     break;
 
