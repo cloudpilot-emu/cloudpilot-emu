@@ -434,9 +434,10 @@ static uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t instr, uint3
         val = instr & 0xFFFUL;
     else {  //[scaled] register
 
-        if (instr & 0x00000010UL)
-            reg |= ARM_MODE_2_INV;  // invalid instrucitons need to be
-                                    // reported
+#ifdef STRICT_CPU
+        if (instr & 0x00000010UL) reg |= ARM_MODE_2_INV;  // invalid instrucitons need to be
+// reported
+#endif
 
         val = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
         shift = (instr >> 7) & 0x1F;
@@ -450,8 +451,8 @@ static uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t instr, uint3
                 break;
 
             case 2:  // ASR
-                val = shift ? (uint32_t)((((int32_t)val) >> shift))
-                            : ((val & 0x80000000UL) ? 0xFFFFFFFFUL : 0x00000000UL);
+                if (!shift) shift = 31;
+                val = (((int32_t)val) >> shift);
                 break;
 
             case 3:  // ROR/RRX
@@ -500,7 +501,6 @@ static uint_fast8_t cpuPrvArmAdrMode_3(struct ArmCpu *cpu, uint32_t instr, uint3
                                        uint32_t *addWritebackP) {
     uint_fast8_t reg;
     uint32_t val;
-    bool S, H, L;
 
     reg = (instr >> 16) & 0x0F;
 
@@ -511,36 +511,53 @@ static uint_fast8_t cpuPrvArmAdrMode_3(struct ArmCpu *cpu, uint32_t instr, uint3
         val = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
     }
 
-    L = !!(instr & 0x00100000UL);
-    H = !!(instr & 0x00000020UL);
-    S = !!(instr & 0x00000040UL);
+    switch (((instr >> 5) & 0x3) | ((instr >> 18) & 0x04)) {
+        case 0x7:  // S && H && L
+            reg |= ARM_MODE_3_SH;
+            reg |= ARM_MODE_3_LOAD;
+            break;
 
-    if (S && H)
-        reg |= ARM_MODE_3_SH;
-    else if (S)
-        reg |= ARM_MODE_3_SB;
-    else if (H)
-        reg |= ARM_MODE_3_H;
-    else
-        reg |= ARM_MODE_3_INV;  // S == 0 && H == 0 is invalid mode 3 operation
+        case 0x3:  // S && H && !L
+            reg |= ARM_MODE_3_D;
+            break;
 
+        case 0x6:  // S && !H && L
+            reg |= ARM_MODE_3_SB;
+            reg |= ARM_MODE_3_LOAD;
+            break;
+
+        case 0x2:  // S && !H && !L
+            reg |= ARM_MODE_3_D;
+            reg |= ARM_MODE_3_LOAD;
+            break;
+
+        case 0x5:  // !S && H && L
+            reg |= ARM_MODE_3_LOAD;
+            break;
+
+        case 0x1:  // !S && H && !L
+            break;
+
+        case 0x0:  // !S && !H && !L
+            reg |= ARM_MODE_3_INV;
+            break;
+    }
+
+#ifdef STRICT_CPU
     if ((instr & 0x00000090UL) != 0x00000090UL)
         reg |= ARM_MODE_3_INV;  // bits 4 and 7 must be 1 always
+#endif
 
-    if (S && !L) {  // LDRD/STRD is encoded thusly
-
-        reg = (reg & ~ARM_MODE_3_TYPE) | ARM_MODE_3_D;
-        L = !H;
-    }
-    if (L) reg |= ARM_MODE_3_LOAD;
     if (!(instr & 0x00800000UL)) val = -val;
     if (!(instr & 0x01000000UL)) {
         *addBeforeP = 0;
         *addWritebackP = val;
 
+#ifdef STRICT_CPU
         if (instr & 0x00200000UL)
             reg |= ARM_MODE_3_INV;  // W must be 0 in this case, else unpredictable (in this case -
-                                    // invalid instr)
+// invalid instr)
+#endif
     } else if (instr & 0x00200000UL) {
         *addBeforeP = val;
         *addWritebackP = val;
@@ -1535,6 +1552,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                 case 8:  // TST
                     if (!setFlags) goto invalid_instr;
+                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 & op2;
                     goto dp_flag_set;
@@ -1546,15 +1564,16 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                                      cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
                         goto instr_done;
                     }
+                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 ^ op2;
                     goto dp_flag_set;
 
                 case 10:  // CMP
                     if (!setFlags) goto invalid_instr;
+                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C | ARM_SR_V);
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 - op2;
-                    cpu->flags &= ~ARM_SR_V;
                     if (cpuPrvSignedSubtractionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
                     cOut = !__builtin_sub_overflow_u32(op1, op2, &res);
                     goto dp_flag_set;
@@ -1566,6 +1585,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                                      cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
                         goto instr_done;
                     }
+                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C | ARM_SR_V);
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 + op2;
                     cpu->flags &= ~ARM_SR_V;
@@ -1610,9 +1630,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
             } else {                         // store and set flags
 
                 cpuPrvSetReg(cpu, (instr >> 12) & 0x0F, res);
+                cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
 
             dp_flag_set:
-                cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
                 if (cOut) cpu->flags |= ARM_SR_C;
                 if (!res) cpu->flags |= ARM_SR_Z;
                 cpu->flags |= (res & 0x80000000UL);
