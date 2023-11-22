@@ -21,6 +21,7 @@
 
 #define USE_ICACHE
 #define NO_SUPPORT_FCSE
+#define NO_STRICT_CPU
 #define NO_TRACE_PACE
 
 #define ARM_MODE_2_REG 0x0F
@@ -1111,7 +1112,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                             case 1:
 
                                 res = 0;
+#ifdef STRICT_CPU
                                 if (instr & 0x0000F000UL) goto invalid_instr;
+#endif
                                 goto mul32;
 
                             case 2:  // MLA
@@ -1285,8 +1288,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                             cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F,
                                               cpuPrvClz(cpuPrvGetRegNotPC(cpu, instr & 0xF)));
                         } else {  // BL / BLX / BXJ
-
+#ifdef STRICT_CPU
                             if ((instr & 0x0FFFFF00UL) != 0x012FFF00UL) goto invalid_instr;
+#endif
 
                             if ((instr & 0x00000030UL) == 0x00000030UL)
                                 cpuPrvSetRegNotPC(
@@ -1298,7 +1302,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                     case 5:  // enhanced DSP adds/subtracts
 
+#ifdef STRICT_CPU
                         if (instr & 0x00000F00UL) goto invalid_instr;
+#endif
                         op1 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);          // Rm
                         op2 = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);  // Rn
                         switch ((instr >> 21) & 3) {                         // what op?
@@ -1374,7 +1380,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                     case 13:
                     case 14:
                     case 15:
+#ifdef STRICT_CPU
                         if ((instr & 0x00000090UL) != 0x00000080UL) goto invalid_instr;
+#endif
                         op1 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);         // Rm
                         op2 = cpuPrvGetRegNotPC(cpu, (instr >> 8) & 0x0F);  // Rs
                         switch ((instr >> 21) & 3) {                        // what op?
@@ -1407,7 +1415,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                                 res = (((int64_t)(int32_t)op1 * (int64_t)(int16_t)op2) >> 16);
 
                                 if (instr & 0x00000020UL) {  // SMULWy
+#ifdef STRICT_CPU
                                     if (instr & 0x0000F000UL) goto invalid_instr;
+#endif
                                 } else {  // SMLAWy
 
                                     op1 = res;
@@ -1440,8 +1450,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                                 break;
 
                             case 3:  // SMULxy
-
+#ifdef STRICT_CPU
                                 if (instr & 0x0000F000UL) goto invalid_instr;
+#endif
 
                                 if (instr & 0x00000020UL)
                                     op1 >>= 16;
@@ -1551,7 +1562,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                     break;
 
                 case 8:  // TST
+#ifdef STRICT_CPU
                     if (!setFlags) goto invalid_instr;
+#endif
                     cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 & op2;
@@ -1570,7 +1583,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                     goto dp_flag_set;
 
                 case 10:  // CMP
+#ifdef STRICT_CPU
                     if (!setFlags) goto invalid_instr;
+#endif
                     cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C | ARM_SR_V);
                     op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
                     res = op1 - op2;
@@ -1648,13 +1663,16 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
         case 6:
         case 7:  // load/store reg offset
-
+#ifdef STRICT_CPU
             if (instr & 0x00000010UL)  // media and undefined instrs
                 goto invalid_instr;
+#endif
 
         load_store_mode_2:
             mode = cpuPrvArmAdrMode_2(cpu, instr, &addBefore, &addAfter);
+#ifdef STRICT_CPU
             if (mode & ARM_MODE_2_INV) goto invalid_instr;
+#endif
             if (mode & ARM_MODE_2_T) privileged = false;
 
             sourceReg = mode & ARM_MODE_2_REG;
