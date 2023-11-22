@@ -1931,7 +1931,7 @@ instr_done:
 }
 
 static void cpuPrvCycleArm(struct ArmCpu *cpu) {
-    uint32_t instr, pc, fetchPc;
+    uint32_t instr;
     bool privileged, ok;
     uint_fast8_t fsr;
 
@@ -1941,7 +1941,7 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
     gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC], true);  // early in case it changes PC
 
     // fetch instruction
-    cpu->curInstrPC = fetchPc = pc = cpu->regs[REG_NO_PC];
+    cpu->curInstrPC = cpu->regs[REG_NO_PC];
 
 // FCSE
 #ifdef SUPPORT_FCSE
@@ -1949,12 +1949,12 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
 #endif
 
 #ifdef USE_ICACHE
-    ok = icacheFetch(cpu->ic, fetchPc, 4, &fsr, &instr);
+    ok = icacheFetch(cpu->ic, cpu->curInstrPC, 4, &fsr, &instr);
 #else
-    ok = cpuPrvMemOp(cpu, &instr, fetchPc, 4, false, privileged, &fsr);
+    ok = cpuPrvMemOp(cpu, &instr, cpu->curInstrPC, 4, false, privileged, &fsr);
 #endif
     if (!ok)
-        cpuPrvHandleMemErr(cpu, pc, 4, false, true, fsr);
+        cpuPrvHandleMemErr(cpu, cpu->curInstrPC, 4, false, true, fsr);
     else {
         cpu->regs[REG_NO_PC] += 4;
         cpuPrvExecInstr<false>(cpu, instr, privileged);
@@ -2079,7 +2079,6 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT, bool pri
 
 static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
     bool privileged, ok;
-    uint32_t pc, fetchPc;
     uint16_t instrT;
     uint32_t instrA;
     uint_fast8_t fsr;
@@ -2089,7 +2088,7 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
     cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
     gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC], true);  // early in case it changes PC
 
-    cpu->curInstrPC = fetchPc = pc = cpu->regs[REG_NO_PC];
+    cpu->curInstrPC = cpu->regs[REG_NO_PC];
 
 // FCSE
 #ifdef SUPPORT_FCSE
@@ -2097,12 +2096,12 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
 #endif
 
 #ifdef USE_ICACHE
-    ok = icacheFetch(cpu->ic, fetchPc, 2, &fsr, &instrT);
+    ok = icacheFetch(cpu->ic, cpu->curInstrPC, 2, &fsr, &instrT);
 #else
-    ok = cpuPrvMemOp(cpu, &instrT, fetchPc, 2, false, privileged, &fsr);
+    ok = cpuPrvMemOp(cpu, &instrT, cpu->curInstrPC, 2, false, privileged, &fsr);
 #endif
     if (!ok) {
-        cpuPrvHandleMemErr(cpu, pc, 2, false, true, fsr);
+        cpuPrvHandleMemErr(cpu, cpu->curInstrPC, 2, false, true, fsr);
         return;  // exit here so that debugger can see us execute first instr of execption handler
     }
     cpu->regs[REG_NO_PC] += 2;
