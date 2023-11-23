@@ -92,6 +92,7 @@ struct ArmCpu {
 
     uint16_t waitingIrqs;
     uint16_t waitingFiqs;
+    uint16_t waitingEventsTotal;
     uint16_t CPAR;
 
     struct ArmCoprocessor coproc[16];  // coprocessors
@@ -667,20 +668,18 @@ static int32_t cpuPrvMedia_signedSaturate32(int32_t sign) {
     return (sign < 0) ? -0x80000000L : 0x7fffffffl;
 }
 
-static bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast8_t size,
-                          bool write, bool priviledged, uint_fast8_t *fsrP) {
+template <int size>
+static bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write,
+                          bool priviledged, uint_fast8_t *fsrP) {
     uint32_t pa;
 
     gdbStubReportMemAccess(cpu->debugStub, vaddr, size, write);
 
-    if (size & (size - 1)) {  // size is not a power of two
-        if (fsrP) *fsrP = 1;  // alignment fault;
-        return false;
-    }
-
-    if (vaddr & (size - 1)) {  // bad alignment
-        if (fsrP) *fsrP = 1;   // alignment fault;
-        return false;
+    if constexpr (size > 1) {
+        if (vaddr & (size - 1)) {
+            if (fsrP) *fsrP = 1;  // alignment fault;
+            return false;
+        }
     }
 
 // FCSE
@@ -706,9 +705,10 @@ static bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fa
 }
 
 // for internal use
-static bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast8_t size,
-                        bool write, bool priviledged, uint_fast8_t *fsrP) {
-    if (cpuPrvMemOpEx(cpu, buf, vaddr, size, write, priviledged, fsrP)) return true;
+template <int size>
+static bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write, bool priviledged,
+                        uint_fast8_t *fsrP) {
+    if (cpuPrvMemOpEx<size>(cpu, buf, vaddr, write, priviledged, fsrP)) return true;
 
     fprintf(stderr, "%c of %u bytes to 0x%08lx failed!\n", (int)(write ? 'W' : 'R'), (unsigned)size,
             (unsigned long)vaddr);
@@ -722,7 +722,22 @@ static bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast
 bool cpuMemOpExternal(struct ArmCpu *cpu, void *buf, uint32_t vaddr, uint_fast8_t size,
                       bool write)  // for external use
 {
-    return cpuPrvMemOpEx(cpu, buf, vaddr, size, write, true, NULL);
+    switch (size) {
+        case 1:
+            return cpuPrvMemOpEx<1>(cpu, buf, vaddr, write, true, NULL);
+
+        case 2:
+            return cpuPrvMemOpEx<2>(cpu, buf, vaddr, write, true, NULL);
+
+        case 4:
+            return cpuPrvMemOpEx<4>(cpu, buf, vaddr, write, true, NULL);
+
+        case 8:
+            return cpuPrvMemOpEx<8>(cpu, buf, vaddr, write, true, NULL);
+
+        default:
+            ERR("invalid size %i\n", size);
+    }
 }
 
 #ifdef SUPPORT_AXIM_PRINTF
@@ -842,11 +857,11 @@ static void cpuPrvhandlePaceEnter(struct ArmCpu *cpu) {
     uint_fast8_t fsr = 0;
 
     cpu->regs[REG_NO_SP] -= 4;
-    if (!cpuPrvMemOp(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], 4, true, privileged, &fsr))
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], true, privileged, &fsr))
         return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, true, false, fsr);
 
     cpu->regs[REG_NO_SP] -= 4;
-    if (!cpuPrvMemOp(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], 4, true, privileged, &fsr))
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], true, privileged, &fsr))
         return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, true, false, fsr);
 
     paceSetPriviledged(privileged);
@@ -886,7 +901,7 @@ static void cpuPrvHandlePaceReturnFromCallout(struct ArmCpu *cpu) {
     uint_fast8_t fsr = 0;
 
     // restore r0 / state pointer from stack
-    if (!cpuPrvMemOp(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], 4, false, privileged, &fsr))
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], false, privileged, &fsr))
         return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, false, false, fsr);
 
     paceSetPriviledged(privileged);
@@ -1068,14 +1083,14 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                             case 0:  // SWP
 
                                 ea = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);
-                                ok = cpuPrvMemOp(cpu, &memVal32, ea, 4, false, privileged, &fsr);
+                                ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, false, privileged, &fsr);
                                 if (!ok) {
                                     cpuPrvHandleMemErr(cpu, ea, 4, false, false, fsr);
                                     goto instr_done;
                                 }
                                 op1 = memVal32;
                                 memVal32 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
-                                ok = cpuPrvMemOp(cpu, &memVal32, ea, 4, true, privileged, &fsr);
+                                ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, true, privileged, &fsr);
                                 if (!ok) {
                                     cpuPrvHandleMemErr(cpu, ea, 4, true, false, fsr);
                                     goto instr_done;
@@ -1086,14 +1101,14 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                             case 4:  // SWPB
 
                                 ea = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);
-                                ok = cpuPrvMemOp(cpu, &memVal8, ea, 1, false, privileged, &fsr);
+                                ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
                                 if (!ok) {
                                     cpuPrvHandleMemErr(cpu, ea, 1, false, false, fsr);
                                     goto instr_done;
                                 }
                                 op1 = memVal8;
                                 memVal8 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
-                                ok = cpuPrvMemOp(cpu, &memVal8, ea, 1, true, privileged, &fsr);
+                                ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, true, privileged, &fsr);
                                 if (!ok) {
                                     cpuPrvHandleMemErr(cpu, ea, 1, true, false, fsr);
                                     goto instr_done;
@@ -1185,7 +1200,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                         switch (mode & ARM_MODE_3_TYPE) {
                             case ARM_MODE_3_H:
 
-                                ok = cpuPrvMemOp(cpu, &memVal16, ea, 2, false, privileged, &fsr);
+                                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, false, privileged, &fsr);
                                 if (!ok) {
                                     cpuPrvHandleMemErr(cpu, ea, 2, false, false, fsr);
                                     goto instr_done;
@@ -1195,7 +1210,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                             case ARM_MODE_3_SH:
 
-                                ok = cpuPrvMemOp(cpu, &memVal16, ea, 2, false, privileged, &fsr);
+                                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, false, privileged, &fsr);
                                 if (!ok) {
                                     cpuPrvHandleMemErr(cpu, ea, 2, false, false, fsr);
                                     goto instr_done;
@@ -1206,7 +1221,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                             case ARM_MODE_3_SB:
 
-                                ok = cpuPrvMemOp(cpu, &memVal8, ea, 1, false, privileged, &fsr);
+                                ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
                                 if (!ok) {
                                     cpuPrvHandleMemErr(cpu, ea, 1, false, false, fsr);
                                     goto instr_done;
@@ -1217,7 +1232,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                             case ARM_MODE_3_D:
 
-                                ok = cpuPrvMemOp(cpu, doubleMem, ea, 8, false, privileged, &fsr);
+                                ok = cpuPrvMemOp<8>(cpu, doubleMem, ea, false, privileged, &fsr);
                                 if (!ok) {
                                     cpuPrvHandleMemErr(cpu, ea, 8, false, false, fsr);
                                     goto instr_done;
@@ -1232,7 +1247,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                             case ARM_MODE_3_H:
 
                                 memVal16 = cpuPrvGetReg<wasT>(cpu, (instr >> 12) & 0x0F);
-                                ok = cpuPrvMemOp(cpu, &memVal16, ea, 2, true, privileged, &fsr);
+                                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, true, privileged, &fsr);
                                 if (!ok) {
                                     cpuPrvHandleMemErr(cpu, ea, 2, true, false, fsr);
                                     goto instr_done;
@@ -1247,7 +1262,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                                 doubleMem[0] = cpuPrvGetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 0);
                                 doubleMem[1] = cpuPrvGetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 1);
-                                ok = cpuPrvMemOp(cpu, doubleMem, ea, 8, true, privileged, &fsr);
+                                ok = cpuPrvMemOp<8>(cpu, doubleMem, ea, true, privileged, &fsr);
                                 if (!ok) {
                                     cpuPrvHandleMemErr(cpu, ea, 8, true, false, fsr);
                                     goto instr_done;
@@ -1681,7 +1696,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
             if (mode & ARM_MODE_2_LOAD) {
                 if (mode & ARM_MODE_2_WORD) {
-                    ok = cpuPrvMemOp(cpu, &memVal32, ea, 4, false, privileged, &fsr);
+                    ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, false, privileged, &fsr);
                     if (!ok) {
                         cpuPrvHandleMemErr(cpu, ea, 4, false, false, fsr);
                         goto instr_done;
@@ -1700,7 +1715,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                     cpuPrvSetReg(cpu, destReg, memVal32);
                 } else {
-                    ok = cpuPrvMemOp(cpu, &memVal8, ea, 1, false, privileged, &fsr);
+                    ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
                     if (!ok) {
                         cpuPrvHandleMemErr(cpu, ea, 1, false, false, fsr);
                         goto instr_done;
@@ -1712,14 +1727,14 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                 if (mode & ARM_MODE_2_WORD) {
                     memVal32 = op1;
-                    ok = cpuPrvMemOp(cpu, &memVal32, ea, 4, true, privileged, &fsr);
+                    ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, true, privileged, &fsr);
                     if (!ok) {
                         cpuPrvHandleMemErr(cpu, ea, 4, true, false, fsr);
                         goto instr_done;
                     }
                 } else {
                     memVal8 = op1;
-                    ok = cpuPrvMemOp(cpu, &memVal8, ea, 1, true, privileged, &fsr);
+                    ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, true, privileged, &fsr);
                     if (!ok) {
                         cpuPrvHandleMemErr(cpu, ea, 1, true, false, fsr);
                         goto instr_done;
@@ -1768,7 +1783,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                 // perform mem op
                 if (mode & ARM_MODE_4_BFR) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;
-                ok = cpuPrvMemOp(cpu, &memVal32, ea, 4, !isLoad, privileged, &fsr);
+                ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, !isLoad, privileged, &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, 4, !isLoad, false, fsr);
                     if (regsList &
@@ -1897,12 +1912,12 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                     uint32_t addr = cpu->regs[1];
                     uint8_t ch;
 
-                    while (cpuPrvMemOp(cpu, &ch, addr++, 1, false, true, &fsr) && ch)
+                    while (cpuPrvMemOp<1>(cpu, &ch, addr++, false, true, &fsr) && ch)
                         fprintf(stderr, "%c", ch);
                 } else if (cpu->regs[0] == 3) {
                     uint8_t ch;
 
-                    if (cpuPrvMemOp(cpu, &ch, cpu->regs[1], 1, false, true, &fsr) && ch)
+                    if (cpuPrvMemOp<1>(cpu, &ch, cpu->regs[1], false, true, &fsr) && ch)
                         fprintf(stderr, "%c", ch);
                 } else if (cpu->regs[0] == 0x132) {
                     fprintf(stderr, "debug break requested\n");
@@ -1977,7 +1992,7 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT, bool pri
                 uint32_t memVal32;
                 uint_fast8_t fsr;
 
-                bool ok = cpuPrvMemOp(cpu, &memVal32, addr, 4, false, privileged, &fsr);
+                bool ok = cpuPrvMemOp<4>(cpu, &memVal32, addr, false, privileged, &fsr);
                 if (!ok)
                     cpuPrvHandleMemErr(cpu, addr, 4, false, false, fsr);
                 else
@@ -2562,6 +2577,7 @@ struct ArmCpu *cpuPrepareInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratch
 void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState) {
     cpu->waitingIrqs = scratchState->waitingIrqs;
     cpu->waitingFiqs = scratchState->waitingFiqs;
+    cpu->waitingEventsTotal = cpu->waitingFiqs + cpu->waitingIrqs;
 }
 
 uint32_t *cpuGetRegisters(struct ArmCpu *cpu) { return cpu->regs; }
@@ -2569,12 +2585,12 @@ uint32_t *cpuGetRegisters(struct ArmCpu *cpu) { return cpu->regs; }
 void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
     const uint8_t table = syscall >> 12;
     uint32_t tableAddr;
-    if (!cpuPrvMemOpEx(cpu, &tableAddr, cpu->regs[9] - table, 4, false, true, NULL))
+    if (!cpuPrvMemOpEx<4>(cpu, &tableAddr, cpu->regs[9] - table, false, true, NULL))
         ERR("failed to dispatch syscall %#010x: unable to read table address\n", syscall);
 
     const uint32_t offset = syscall & 0xfff;
     uint32_t entryAddr;
-    if (!cpuPrvMemOpEx(cpu, &entryAddr, tableAddr + offset, 4, false, true, NULL))
+    if (!cpuPrvMemOpEx<4>(cpu, &entryAddr, tableAddr + offset, false, true, NULL))
         ERR("failed to dispatch syscall %#010x: unable to read entry point\n", syscall);
 
     cpu->regs[REG_NO_PC] = entryAddr;
@@ -2614,7 +2630,7 @@ static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
 
     cpu->regs[REG_NO_SP] += 4;
 
-    if (!cpuPrvMemOp(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], 4, false, privileged, &fsr))
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], false, privileged, &fsr))
         return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, true, false, fsr);
     cpu->regs[REG_NO_SP] += 4;
 
@@ -2676,12 +2692,14 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
 }
 
 uint32_t cpuCycle(struct ArmCpu *cpu) {
-    if (unlikely(cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall))
-        cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ, cpu->regs[REG_NO_PC] + 4,
-                        ARM_SR_MODE_FIQ | ARM_SR_I | ARM_SR_F);
-    else if (unlikely(cpu->waitingIrqs && !cpu->I && !cpu->isInjectedCall))
-        cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_IRQ, cpu->regs[REG_NO_PC] + 4,
-                        ARM_SR_MODE_IRQ | ARM_SR_I);
+    if (unlikely(cpu->waitingEventsTotal)) {
+        if (unlikely(cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall))
+            cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ, cpu->regs[REG_NO_PC] + 4,
+                            ARM_SR_MODE_FIQ | ARM_SR_I | ARM_SR_F);
+        else if (unlikely(cpu->waitingIrqs && !cpu->I && !cpu->isInjectedCall))
+            cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_IRQ, cpu->regs[REG_NO_PC] + 4,
+                            ARM_SR_MODE_IRQ | ARM_SR_I);
+    }
 
     cp15Cycle(cpu->cp15);
     patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
@@ -2717,6 +2735,8 @@ void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise) {  // unraise when acknowl
             fprintf(stderr, "Cannot unraise IRQ when none raised");
         }
     }
+
+    cpu->waitingEventsTotal = cpu->waitingFiqs + cpu->waitingIrqs;
 }
 
 void cpuCoprocessorRegister(struct ArmCpu *cpu, uint8_t cpNum, struct ArmCoprocessor *coproc) {
