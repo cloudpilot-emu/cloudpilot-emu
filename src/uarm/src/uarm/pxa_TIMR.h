@@ -4,6 +4,7 @@
 #define _PXA_TIMR_H_
 
 #include "CPU.h"
+#include "clock.h"
 #include "mem.h"
 #include "soc_IC.h"
 
@@ -13,8 +14,7 @@ extern "C" {
 
 struct PxaTimr;
 
-struct PxaTimr* pxaTimrInit(struct ArmMem* physMem, struct SocIc* ic);
-void pxaTimrTick(struct PxaTimr* timr);
+struct PxaTimr* pxaTimrInit(struct ArmMem* physMem, struct SocIc* ic, struct Clock* clock);
 
 #ifdef __cplusplus
 }

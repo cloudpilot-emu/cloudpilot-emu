@@ -5,6 +5,7 @@
 #include "RAM.h"
 #include "ROM.h"
 #include "SoC.h"
+#include "clock.h"
 #include "cp15.h"
 #include "mem.h"
 #include "pace_patch.h"
@@ -101,6 +102,7 @@ struct SoC {
     struct ArmRom *rom;
     struct ArmMem *mem;
     struct ArmCpu *cpu;
+    struct Clock *clock;
     struct PacePatch *pacePatch;
     struct PatchDispatch *patchDispatch;
     struct SyscallDispatch *syscallDispatch;
@@ -142,6 +144,9 @@ static void socUartPrvWrite(uint_fast16_t chr, void *userData) {
     socExtSerialWriteChar(chr);
 }
 
+static void socCycleBatch1(void *userData);
+static void socCycleBatch2(void *userData);
+
 struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t romNumPieces,
                     uint32_t sdNumSectors, SdSectorR sdR, SdSectorW sdW, FILE *nandFile,
                     int gdbPort, uint_fast8_t socRev) {
@@ -153,6 +158,8 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
 
     soc->pacePatch = initPacePatch(ROM_BASE, romNumPieces == 1 ? romPieces[0] : NULL,
                                    romNumPieces == 1 ? romPieceSizes[0] : 0);
+
+    soc->clock = clockInit();
 
     soc->mem = memInit();
     if (!soc->mem) ERR("Cannot init physical memory manager");
@@ -212,10 +219,10 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     soc->gpio = socGpioInit(soc->mem, soc->ic, socRev);
     if (!soc->gpio) ERR("Cannot init PXA's GPIO");
 
-    soc->tmr = pxaTimrInit(soc->mem, soc->ic);
+    soc->tmr = pxaTimrInit(soc->mem, soc->ic, soc->clock);
     if (!soc->tmr) ERR("Cannot init PXA's OSTIMER");
 
-    soc->rtc = pxaRtcInit(soc->mem, soc->ic);
+    soc->rtc = pxaRtcInit(soc->mem, soc->ic, soc->clock);
     if (!soc->rtc) ERR("Cannot init PXA's RTC");
 
     soc->ffUart = socUartInit(soc->mem, soc->ic, PXA_FFUART_BASE, PXA_I_FFUART);
@@ -303,8 +310,8 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     struct DeviceDisplayConfiguration displayConfiguration;
     deviceGetDisplayConfiguration(&displayConfiguration);
 
-    soc->lcd =
-        pxaLcdInit(soc->mem, soc->ic, displayConfiguration.width, displayConfiguration.height);
+    soc->lcd = pxaLcdInit(soc->mem, soc->ic, soc->clock, displayConfiguration.width,
+                          displayConfiguration.height);
     if (!soc->lcd) ERR("Cannot init PXA's LCD");
 
     soc->kp = keypadInit(soc->gpio, true);
@@ -331,6 +338,9 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     if (!soc->dev) ERR("Cannot init device\n");
 
     if (sp.dbgUart) socUartSetFuncs(sp.dbgUart, socUartPrvRead, socUartPrvWrite, soc->hwUart);
+
+    clockRegisterConsumer(soc->clock, (36 * 1000000000UL) / 3686400UL, socCycleBatch1, soc);
+    clockRegisterConsumer(soc->clock, (292 * 1000000000UL) / 3686400UL, socCycleBatch2, soc);
 
     /*
             var gpio = {latches: [0x30000, 0x1400001, 0x200], inputs: [0x786c06, 0x100, 0x0],
@@ -416,92 +426,45 @@ void socWakeup(struct SoC *soc, uint8_t wakeupSource) {
     //        (int)wakeupSource);
 }
 
+static void socCycleBatch1(void *userData) {
+    struct SoC *soc = userData;
+
+    socDmaPeriodic(soc->dma);
+    socUartProcess(soc->ffUart);
+    if (soc->hwUart) socUartProcess(soc->hwUart);
+    socUartProcess(soc->stUart);
+    socUartProcess(soc->btUart);
+    for (int i = 0; i < 3; i++) {
+        if (soc->ssp[i]) socSspPeriodic(soc->ssp[i]);
+    }
+    devicePeriodic(soc->dev, 0);
+}
+
+static void socCycleBatch2(void *userData) {
+    struct SoC *soc = userData;
+
+    socAC97Periodic(soc->ac97);
+    socI2sPeriodic(soc->i2s);
+    devicePeriodic(soc->dev, 1);
+
+    soc->clock2Ticks_x1e6 -= 1000000;
+}
+
 uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
     uint64_t cycles = 0;
-    uint_fast8_t i;
-
-    uint64_t timerTicksPerCycle_x1e6 = (((uint64_t)1000000) * 3686400) / cyclesPerSecond;
-    uint64_t lcdTicksPerCycle_x1e6 = (((uint64_t)1000000) * 15000) / cyclesPerSecond;
-    uint64_t clock1TicksPerCycle_x1e6 = (((uint64_t)1000000) * 3686400) / (36 * cyclesPerSecond);
-    uint64_t clock2TicksPerCycle_x1e6 = (((uint64_t)1000000) * 3686400) / (292 * cyclesPerSecond);
-    uint64_t rtcTicksPerCycle_x1e9 = (((uint64_t)1000000000) * 1) / cyclesPerSecond;
 
     while (cycles < maxCycles) {
         if (soc->sleeping) {
-            uint64_t cyclesToSkip = ~((uint64_t)0);
-            uint64_t c;
-
-            c = (1000000 - soc->timerTicks_x1e6) / timerTicksPerCycle_x1e6;
-            if (c < cyclesToSkip) cyclesToSkip = c;
-
-            c = (1000000 - soc->lcdTicks_x1e6) / lcdTicksPerCycle_x1e6;
-            if (c < cyclesToSkip) cyclesToSkip = c;
-
-            c = (1000000 - soc->clock1Ticks_x1e6) / clock1TicksPerCycle_x1e6;
-            if (c < cyclesToSkip) cyclesToSkip = c;
-
-            c = (1000000 - soc->clock2Ticks_x1e6) / clock2TicksPerCycle_x1e6;
-            if (c < cyclesToSkip) cyclesToSkip = c;
-
-            c = (1000000000 - soc->rtcTicks_x1e9) / rtcTicksPerCycle_x1e9;
-            if (c < cyclesToSkip) cyclesToSkip = c;
-
-            if (cyclesToSkip == 0) cyclesToSkip = 1;
+            uint64_t cyclesToSkip = clockForward(soc->clock, cyclesPerSecond);
 
             cycles += cyclesToSkip;
             soc->accumulated_cycles += cyclesToSkip;
-
-            soc->timerTicks_x1e6 += cyclesToSkip * timerTicksPerCycle_x1e6;
-            soc->lcdTicks_x1e6 += cyclesToSkip * lcdTicksPerCycle_x1e6;
-            soc->clock1Ticks_x1e6 += cyclesToSkip * clock1TicksPerCycle_x1e6;
-            soc->clock2Ticks_x1e6 += cyclesToSkip * clock2TicksPerCycle_x1e6;
-            soc->rtcTicks_x1e9 += cyclesToSkip * rtcTicksPerCycle_x1e9;
         } else {
             uint32_t cpuCyles = cpuCycle(soc->cpu);
             cycles += cpuCyles;
             soc->accumulated_cycles += cpuCyles;
 
-            soc->timerTicks_x1e6 += (timerTicksPerCycle_x1e6 * cpuCyles);
-            soc->lcdTicks_x1e6 += (lcdTicksPerCycle_x1e6 * cpuCyles);
-            soc->clock1Ticks_x1e6 += (clock1TicksPerCycle_x1e6 * cpuCyles);
-            soc->clock2Ticks_x1e6 += (clock2TicksPerCycle_x1e6 * cpuCyles);
-        }
-
-        while (soc->timerTicks_x1e6 >= 1000000) {
-            pxaTimrTick(soc->tmr);
-            soc->timerTicks_x1e6 -= 1000000;
-        }
-
-        while (soc->lcdTicks_x1e6 >= 1000000) {
-            pxaLcdFrame(soc->lcd);
-            soc->lcdTicks_x1e6 -= 1000000;
-        }
-
-        while (soc->clock1Ticks_x1e6 >= 1000000) {
-            socDmaPeriodic(soc->dma);
-            socUartProcess(soc->ffUart);
-            if (soc->hwUart) socUartProcess(soc->hwUart);
-            socUartProcess(soc->stUart);
-            socUartProcess(soc->btUart);
-            for (i = 0; i < 3; i++) {
-                if (soc->ssp[i]) socSspPeriodic(soc->ssp[i]);
-            }
-            devicePeriodic(soc->dev, 0);
-
-            soc->clock1Ticks_x1e6 -= 1000000;
-        }
-
-        while (soc->clock2Ticks_x1e6 >= 1000000) {
-            socAC97Periodic(soc->ac97);
-            socI2sPeriodic(soc->i2s);
-            devicePeriodic(soc->dev, 1);
-
-            soc->clock2Ticks_x1e6 -= 1000000;
-        }
-
-        while (soc->rtcTicks_x1e9 >= 1000000000) {
-            pxaRtcUpdate(soc->rtc);
-            soc->rtcTicks_x1e9 -= 1000000000;
+            clockAdvance(soc->clock, cpuCyles, cyclesPerSecond);
         }
     }
 
