@@ -23,6 +23,7 @@ struct Clock {
 
     uint32_t consumerCount;
     uint64_t accTimeNsec;
+    uint64_t nextTickNsec;
 };
 
 struct Clock* clockInit() {
@@ -47,10 +48,13 @@ void clockRegisterConsumer(struct Clock* clock, uint64_t periodNsec, clockConsum
 
     consumer->next = *next;
     *next = consumer;
+
+    clock->nextTickNsec = clock->nextConsumer->nextTickNsec;
 }
 
 void clockAdvance(struct Clock* clock, uint64_t cpuCycles, uint64_t cyclesPerSecond) {
     clock->accTimeNsec += ((cpuCycles * 1000000000ULL) / cyclesPerSecond);
+    if (clock->accTimeNsec < clock->nextTickNsec) return;
 
     struct Consumer* consumer = clock->nextConsumer;
 
@@ -69,6 +73,8 @@ void clockAdvance(struct Clock* clock, uint64_t cpuCycles, uint64_t cyclesPerSec
 
         consumer = clock->nextConsumer;
     }
+
+    clock->nextTickNsec = clock->nextConsumer->nextTickNsec;
 }
 
 uint64_t clockForward(struct Clock* clock, uint64_t cyclesPerSecond) {
