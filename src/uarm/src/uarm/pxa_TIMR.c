@@ -134,7 +134,7 @@ struct PxaTimr *pxaTimrInit(struct ArmMem *physMem, struct SocIc *ic, struct Clo
     if (!memRegionAdd(physMem, PXA_TIMR_BASE, PXA_TIMR_SIZE, pxaTimrPrvMemAccessF, timr))
         ERR("cannot add OSTIMER to MEM\n");
 
-    clockRegisterConsumer(clock, 1000000000UL / 3686400UL, pxaTimrTick, timr);
+    clockRegisterConsumer(clock, 1000000000ULL / 3686400ULL, pxaTimrTick, timr);
 
     return timr;
 }

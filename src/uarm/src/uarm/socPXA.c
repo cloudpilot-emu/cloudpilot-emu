@@ -111,13 +111,6 @@ struct SoC {
     struct VSD *vSD;
 
     struct Device *dev;
-
-    uint64_t accumulated_cycles;
-    uint64_t timerTicks_x1e6;
-    uint64_t lcdTicks_x1e6;
-    uint64_t clock1Ticks_x1e6;
-    uint64_t clock2Ticks_x1e6;
-    uint64_t rtcTicks_x1e9;
 };
 
 static uint_fast16_t socUartPrvRead(void *userData) {
@@ -339,8 +332,8 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
 
     if (sp.dbgUart) socUartSetFuncs(sp.dbgUart, socUartPrvRead, socUartPrvWrite, soc->hwUart);
 
-    clockRegisterConsumer(soc->clock, (36 * 1000000000UL) / 3686400UL, socCycleBatch1, soc);
-    clockRegisterConsumer(soc->clock, (292 * 1000000000UL) / 3686400UL, socCycleBatch2, soc);
+    clockRegisterConsumer(soc->clock, (36 * 1000000000ULL) / 3686400ULL, socCycleBatch1, soc);
+    clockRegisterConsumer(soc->clock, (292 * 1000000000ULL) / 3686400ULL, socCycleBatch2, soc);
 
     /*
             var gpio = {latches: [0x30000, 0x1400001, 0x200], inputs: [0x786c06, 0x100, 0x0],
@@ -446,8 +439,6 @@ static void socCycleBatch2(void *userData) {
     socAC97Periodic(soc->ac97);
     socI2sPeriodic(soc->i2s);
     devicePeriodic(soc->dev, 1);
-
-    soc->clock2Ticks_x1e6 -= 1000000;
 }
 
 uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
@@ -458,11 +449,10 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
             uint64_t cyclesToSkip = clockForward(soc->clock, cyclesPerSecond);
 
             cycles += cyclesToSkip;
-            soc->accumulated_cycles += cyclesToSkip;
         } else {
             uint32_t cpuCyles = cpuCycle(soc->cpu);
+
             cycles += cpuCyles;
-            soc->accumulated_cycles += cpuCyles;
 
             clockAdvance(soc->clock, cpuCyles, cyclesPerSecond);
         }

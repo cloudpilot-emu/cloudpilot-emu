@@ -50,7 +50,7 @@ void clockRegisterConsumer(struct Clock* clock, uint64_t periodNsec, clockConsum
 }
 
 void clockAdvance(struct Clock* clock, uint64_t cpuCycles, uint64_t cyclesPerSecond) {
-    clock->accTimeNsec += (cpuCycles * 1000000000UL) / cyclesPerSecond;
+    clock->accTimeNsec += ((cpuCycles * 1000000000ULL) / cyclesPerSecond);
 
     struct Consumer* consumer = clock->nextConsumer;
 
@@ -73,7 +73,8 @@ void clockAdvance(struct Clock* clock, uint64_t cpuCycles, uint64_t cyclesPerSec
 
 uint64_t clockForward(struct Clock* clock, uint64_t cyclesPerSecond) {
     const uint64_t cyclesAdvance =
-        ((clock->nextConsumer->nextTickNsec - clock->accTimeNsec) * cyclesPerSecond) / 1000000000 +
+        ((clock->nextConsumer->nextTickNsec - clock->accTimeNsec) * cyclesPerSecond) /
+            1000000000ULL +
         1;
 
     clockAdvance(clock, cyclesAdvance, cyclesPerSecond);

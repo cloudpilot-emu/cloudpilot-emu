@@ -2,6 +2,7 @@
 
 #include "pxa_RTC.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -111,7 +112,7 @@ struct PxaRtc *pxaRtcInit(struct ArmMem *physMem, struct SocIc *ic, struct Clock
     if (!memRegionAdd(physMem, PXA_RTC_BASE, PXA_RTC_SIZE, pxaRtcPrvMemAccessF, rtc))
         ERR("cannot add RTC to MEM\n");
 
-    clockRegisterConsumer(clock, 1000000000UL, pxaRtcUpdate, rtc);
+    clockRegisterConsumer(clock, 1000000000ULL, pxaRtcUpdate, rtc);
 
     return rtc;
 }
