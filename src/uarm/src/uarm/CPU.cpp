@@ -919,22 +919,18 @@ static void cpuPrvHandlePaceReturnFromCallout(struct ArmCpu *cpu) {
 }
 
 static bool cpuPrvHandleInvalidInstruction(struct ArmCpu *cpu, uint32_t instr) {
-    if (instr != INSTR_PACE) return false;
+    switch (instr) {
+        case INSTR_PACE_ENTER:
+            cpuPrvhandlePaceEnter(cpu);
+            return true;
 
-    uint32_t pa;
-    struct ArmMemRegion *region;
-    if (!mmuTranslate(cpu->mmu, cpu->curInstrPC, true, false, &pa, NULL, NULL, &region))
-        return false;
+        case INSTR_PACE_RESUME:
+            cpuPrvHandlePaceResume(cpu);
+            return true;
 
-    if (pa == cpu->pacePatch->enterPace) {
-        cpuPrvhandlePaceEnter(cpu);
-        return true;
-    } else if (pa == cpu->pacePatch->resumePace) {
-        cpuPrvHandlePaceResume(cpu);
-        return true;
-    } else if (pa == cpu->pacePatch->returnFromCallout) {
-        cpuPrvHandlePaceReturnFromCallout(cpu);
-        return true;
+        case INSTR_PACE_RETURN_FROM_CALLOUT:
+            cpuPrvHandlePaceReturnFromCallout(cpu);
+            return true;
     }
 
     return false;

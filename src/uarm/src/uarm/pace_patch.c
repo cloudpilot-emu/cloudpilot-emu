@@ -72,9 +72,9 @@ struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize) {
     }
     fprintf(stderr, "found PACE callout for syscall at %#010x\n", calloutSyscall);
 
-    ((uint32_t*)rom)[(paceLocation >> 2)] = INSTR_PACE;
-    ((uint32_t*)rom)[(paceLocation >> 2) + 1] = INSTR_PACE;
-    ((uint32_t*)rom)[(paceLocation >> 2) + 2] = INSTR_PACE;
+    ((uint32_t*)rom)[(paceLocation >> 2)] = INSTR_PACE_ENTER;
+    ((uint32_t*)rom)[(paceLocation >> 2) + 1] = INSTR_PACE_RESUME;
+    ((uint32_t*)rom)[(paceLocation >> 2) + 2] = INSTR_PACE_RETURN_FROM_CALLOUT;
 
     patch->enterPace = enterPace;
     patch->resumePace = patch->enterPace + 4;
