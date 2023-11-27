@@ -119,6 +119,7 @@ struct ArmCpu {
 
 enum ImmShiftType {
     shiftTypeNoop,
+    shiftTypeZero,
     shiftTypeLSL,
     shiftTypeLSR,
     shiftTypeASR,
@@ -369,14 +370,15 @@ static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *car
         switch (shift->type) {  // perform shifts
             case shiftTypeNoop:
                 break;
+
             case shiftTypeLSL:  // LSL
                 co = ret & shift->coBit;
-                ret = ret << shift->shift;
+                ret <<= shift->shift;
                 break;
 
             case shiftTypeLSR:  // LSR
                 co = ret & shift->coBit;
-                ret = ret >> shift->shift;
+                ret >>= shift->shift;
                 break;
 
             case shiftTypeASR:  // ASR
@@ -386,7 +388,12 @@ static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *car
 
             case shiftTypeROR:  // ROR
                 co = ret & shift->coBit;
-                ret = cpuPrvROR(ret, a & 0x1f);
+                ret = cpuPrvROR(ret, shift->shift);
+                break;
+
+            case shiftTypeZero:
+                co = ret & shift->coBit;
+                ret = 0;
                 break;
 
             case shiftTypeRRX:
@@ -2427,15 +2434,27 @@ static ImmShift cpuPrvImmShiftRegTableEntry(uint32_t key) {
     switch (v) {  // perform shifts
 
         case 0:  // LSL
-            shift.type = shiftTypeLSL;
-            shift.coBit = 1 << (uint8_t)(32 - a);
-            shift.shift = a;
+            if (a < 32) {
+                shift.type = shiftTypeLSL;
+                shift.coBit = 1 << (32 - a);
+                shift.shift = a;
+            } else {
+                shift.type = shiftTypeZero;
+                shift.coBit = a == 32 ? 1 : 0;
+                shift.shift = 0;
+            }
             break;
 
         case 1:  // LSR
-            shift.type = shiftTypeLSR;
-            shift.coBit = 1 << (a - 1);
-            shift.shift = a;
+            if (a < 32) {
+                shift.type = shiftTypeLSR;
+                shift.coBit = 1 << (a - 1);
+                shift.shift = a;
+            } else {
+                shift.type = shiftTypeZero;
+                shift.coBit = a == 32 ? 0x80000000 : 0;
+                shift.shift = 0;
+            }
             break;
 
         case 2:  // ASR
@@ -2444,8 +2463,8 @@ static ImmShift cpuPrvImmShiftRegTableEntry(uint32_t key) {
             if (a < 32) {
                 shift.coBit = 1 << (a - 1);
                 shift.shift = a;
-            } else {  // >=32
-                shift.coBit = 1 << 31;
+            } else {
+                shift.coBit = 0x80000000;
                 shift.shift = 31;
             }
             break;
@@ -2479,12 +2498,12 @@ static ImmShift cpuPrvImmShiftImmTableEntry(uint32_t key) {
             break;
 
         case 1:  // LSR
-            shift.type = shiftTypeLSR;
-
             if (a == 0) {
-                shift.coBit = 1 << 31;
+                shift.type = shiftTypeZero;
+                shift.coBit = 0x80000000;
                 shift.shift = 32;
             } else {
+                shift.type = shiftTypeLSR;
                 shift.coBit = 1 << (a - 1);
                 shift.shift = a;
             }
@@ -2508,7 +2527,7 @@ static ImmShift cpuPrvImmShiftImmTableEntry(uint32_t key) {
             } else {
                 shift.type = shiftTypeROR;
                 shift.coBit = 1 << (a - 1);
-                shift.shift = a;
+                shift.shift = a == 32 ? 0 : a;
             }
             break;
     }
