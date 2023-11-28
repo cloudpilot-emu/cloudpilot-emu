@@ -32,7 +32,10 @@ static bool pxaMemCtrlrPrvClockMgrMemAccessF(void* userData, uint32_t pa, uint_f
 
     pa = (pa - PXA_MEM_CONTROLLER_BASE) >> 2;
 
-    if (write) val = *(uint32_t*)buf;
+    if (write) {
+        val = *(uint32_t*)buf;
+        fprintf(stderr, " MEM: 0x%08x -> [0x%08x]\n", val, pa * 4 + PXA_MEM_CONTROLLER_BASE);
+    }
 
     switch (pa) {
         case 0:  // MDCNFG

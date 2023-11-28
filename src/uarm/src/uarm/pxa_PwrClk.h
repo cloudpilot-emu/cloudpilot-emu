@@ -13,7 +13,8 @@ extern "C" {
 
 struct PxaPwrClk;
 
-struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem, struct SoC *soc);
+struct PxaPwrClk* pxaPwrClkInit(struct ArmCpu* cpu, struct ArmMem* physMem, struct SoC* soc,
+                                bool isPXA270);
 
 #ifdef __cplusplus
 }

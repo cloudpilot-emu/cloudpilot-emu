@@ -60,6 +60,9 @@
 #define ROM_BASE 0x00000000UL
 #define RAM_BASE 0xA0000000UL
 
+#define PXA_I2C_BASE 0x40301680UL
+#define PXA_PWR_I2C_BASE 0x40F00180UL
+
 struct SoC {
     struct SocUart *ffUart, *hwUart, *stUart, *btUart;
     struct SocSsp *ssp[3];
@@ -75,6 +78,7 @@ struct SoC {
 
     struct PxaMemCtrlr *memCtrl;
     struct PxaPwrClk *pwrClk;
+    struct SocI2c *pwrI2c;
     struct PxaPwm *pwm[4];
     struct PxaTimr *tmr;
     struct PxaMmc *mmc;
@@ -98,7 +102,8 @@ struct SoC {
 
     struct ArmRam *sram;
     struct ArmRam *ram;
-    struct ArmRam *ramMirror;  // mirror
+    struct ArmRam *ramMirror;       // mirror for ram termination
+    struct ArmRom *ramWriteIgnore;  // write ignore for ram termination
     struct ArmRom *rom;
     struct ArmMem *mem;
     struct ArmCpu *cpu;
@@ -173,10 +178,26 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     soc->ram = ramInit(soc->mem, RAM_BASE, deviceGetRamSize(), ramBuffer);
     if (!soc->ram) ERR("Cannot init RAM");
 
-    // ram mirror for rom probe code
-    soc->ramMirror =
-        ramInit(soc->mem, RAM_BASE + deviceGetRamSize(), deviceGetRamSize(), ramBuffer);
-    if (!soc->ramMirror) ERR("Cannot init RAM mirror");
+    switch (deviceGetRamTerminationStyle()) {
+        case RamTerminationMirror:
+
+            // ram mirror for ram probe code
+            soc->ramMirror =
+                ramInit(soc->mem, RAM_BASE + deviceGetRamSize(), deviceGetRamSize(), ramBuffer);
+            if (!soc->ramMirror) ERR("Cannot init RAM mirror");
+            break;
+
+        case RamTerminationWriteIgnore:
+            ERR("termination not supported");
+            break;
+
+        case RamTerminationNone:
+            break;
+
+        default:
+            __builtin_unreachable();
+            break;
+    }
 
     soc->rom =
         romInit(soc->mem, ROM_BASE, romPieces, romPieceSizes, romNumPieces, deviceGetRomMemType());
@@ -232,10 +253,15 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     soc->btUart = socUartInit(soc->mem, soc->ic, PXA_BTUART_BASE, PXA_I_BTUART);
     if (!soc->btUart) ERR("Cannot init PXA's BTUART");
 
-    soc->pwrClk = pxaPwrClkInit(soc->cpu, soc->mem, soc);
+    soc->pwrClk = pxaPwrClkInit(soc->cpu, soc->mem, soc, socRev == 2);
     if (!soc->pwrClk) ERR("Cannot init PXA's PWRCLKMGR");
 
-    soc->i2c = socI2cInit(soc->mem, soc->ic, soc->dma);
+    if (socRev == 2) {
+        soc->pwrI2c = socI2cInit(soc->mem, soc->ic, soc->dma, PXA_PWR_I2C_BASE, PXA_I_PWR_I2C);
+        if (!soc->pwrI2c) ERR("Cannot init PXA Pwr's I2C\n");
+    }
+
+    soc->i2c = socI2cInit(soc->mem, soc->ic, soc->dma, PXA_I2C_BASE, PXA_I_I2C);
     if (!soc->i2c) ERR("Cannot init PXA's I2C");
 
     soc->memCtrl = pxaMemCtrlrInit(soc->mem, socRev);
@@ -326,6 +352,10 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     sp.ssp2 = soc->ssp[1];
     sp.ssp3 = soc->ssp[2];
     if (socRev == 2) sp.kpc = soc->kpc;
+    sp.uarts[0] = soc->ffUart;
+    sp.uarts[1] = soc->hwUart;
+    sp.uarts[2] = soc->stUart;
+    sp.uarts[3] = soc->btUart;
 
     soc->dev = deviceSetup(&sp, soc->kp, soc->vSD, nandFile);
     if (!soc->dev) ERR("Cannot init device\n");

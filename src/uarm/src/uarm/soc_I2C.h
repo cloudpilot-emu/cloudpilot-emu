@@ -24,7 +24,8 @@ enum ActionI2C {  // designed so returns can be ORRed together with good results
 typedef uint_fast8_t (*I2cDeviceActionF)(void *userData, enum ActionI2C stimulus,
                                          uint_fast8_t value);
 
-struct SocI2c *socI2cInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma);
+struct SocI2c *socI2cInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma,
+                          uint32_t base, uint32_t irqNo);
 bool socI2cDeviceAdd(struct SocI2c *i2c, I2cDeviceActionF actF, void *userData);
 
 #ifdef __cplusplus

@@ -2535,9 +2535,34 @@ static ImmShift cpuPrvImmShiftImmTableEntry(uint32_t key) {
     return shift;
 }
 
+void cpuReset(struct ArmCpu *cpu, uint32_t pc) {
+    cpu->I = true;  // start w/o interrupts in supervisor mode
+    cpu->F = true;
+    cpu->M = ARM_SR_MODE_SVC;
+
+    cpuPrvSetPC(cpu, pc);
+    mmuReset(cpu->mmu);
+}
+
+static void initStatic() {
+    static bool initialized = false;
+    if (initialized) return;
+
+    table_thumb2arm = (uint32_t *)malloc(0x10000 * sizeof(uint32_t));
+
+    for (uint32_t instr = 0; instr < 0x10000; instr++)
+        table_thumb2arm[instr] = translateThumb(instr);
+
+    for (int i = 0; i < 256; i++) table_conditions[i] = !cpuPrvConditionTableEntry(i);
+    for (int i = 0; i < 1024; i++) table_immShiftReg[i] = cpuPrvImmShiftRegTableEntry(i);
+    for (int i = 0; i < 128; i++) table_immShiftImm[i] = cpuPrvImmShiftImmTableEntry(i);
+}
+
 struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, int debugPort,
                        uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch,
                        struct PacePatch *pacePatch) {
+    initStatic();
+
     struct ArmCpu *cpu = (struct ArmCpu *)malloc(sizeof(*cpu));
 
     if (!cpu) ERR("cannot alloc CPU");
@@ -2547,12 +2572,7 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     cpu->debugStub = gdbStubInit(cpu, debugPort);
     if (!cpu->debugStub) ERR("Cannot init debug stub");
 
-    cpu->I = true;  // start w/o interrupts in supervisor mode
-    cpu->F = true;
-    cpu->M = ARM_SR_MODE_SVC;
-
     cpu->mem = mem;
-    cpuPrvSetPC(cpu, pc);
 
     cpu->mmu = mmuInit(mem, xscale);
     if (!cpu->mmu) ERR("Cannot init MMU");
@@ -2568,16 +2588,7 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     cpu->patchDispatch = patchDispatch;
     cpu->pacePatch = pacePatch;
 
-    if (!table_thumb2arm) {
-        table_thumb2arm = (uint32_t *)malloc(0x10000 * sizeof(uint32_t));
-
-        for (uint32_t instr = 0; instr < 0x10000; instr++)
-            table_thumb2arm[instr] = translateThumb(instr);
-    }
-
-    for (int i = 0; i < 256; i++) table_conditions[i] = !cpuPrvConditionTableEntry(i);
-    for (int i = 0; i < 1024; i++) table_immShiftReg[i] = cpuPrvImmShiftRegTableEntry(i);
-    for (int i = 0; i < 128; i++) table_immShiftImm[i] = cpuPrvImmShiftImmTableEntry(i);
+    cpuReset(cpu, pc);
 
     return cpu;
 }
