@@ -62,7 +62,8 @@ void icacheInvalAddr(struct icache* ic, uint32_t va) {
     line->revision = ic->revision - 1;
 }
 
-bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* fsrP, void* buf) {
+template <int sz>
+bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf) {
     if (va & (sz - 1)) {  // alignment issue
 
         if (fsrP) *fsrP = 3;
@@ -116,3 +117,6 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t sz, uint_fast8_t* 
 
     return true;
 }
+
+template bool icacheFetch<2>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf);
+template bool icacheFetch<4>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf);

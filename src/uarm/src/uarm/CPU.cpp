@@ -1967,7 +1967,7 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
 #endif
 
 #ifdef USE_ICACHE
-    ok = icacheFetch(cpu->ic, cpu->curInstrPC, 4, &fsr, &instr);
+    ok = icacheFetch<4>(cpu->ic, cpu->curInstrPC, &fsr, &instr);
 #else
     ok = cpuPrvMemOp(cpu, &instr, cpu->curInstrPC, 4, false, privileged, &fsr);
 #endif
@@ -2114,7 +2114,7 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
 #endif
 
 #ifdef USE_ICACHE
-    ok = icacheFetch(cpu->ic, cpu->curInstrPC, 2, &fsr, &instrT);
+    ok = icacheFetch<2>(cpu->ic, cpu->curInstrPC, &fsr, &instrT);
 #else
     ok = cpuPrvMemOp(cpu, &instrT, cpu->curInstrPC, 2, false, privileged, &fsr);
 #endif

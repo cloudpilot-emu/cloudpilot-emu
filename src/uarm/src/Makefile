@@ -59,7 +59,6 @@ SOURCE_C = 						\
 	uarm/mem.c 					\
 	uarm/RAM.c 					\
 	uarm/ROM.c 					\
-	uarm/icache.c 				\
 	uarm/gdbstub.c				\
 	uarm/vSD.c 					\
 	uarm/keys.c 				\
@@ -101,6 +100,7 @@ SOURCE_C = 						\
 SOURCE_CXX_COMMON = 			\
 	main.cpp					\
 	MainLoop.cpp				\
+	uarm/icache.cpp 				\
 	uarm/CPU.cpp
 
 SOURCE_CXX_NATIVE = 			\
