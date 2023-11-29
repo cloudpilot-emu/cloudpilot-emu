@@ -1016,9 +1016,108 @@ static void cpuPrvZ72sysPrintf(struct ArmCpu *cpu) {
 }
 #endif
 
-#ifndef __EMSCRIPTEN__
-static void execFnBase(struct ArmCpu *cpu, uint32_t instr, bool privileged) {}
-#endif
+static void execFn_noop(struct ArmCpu *cpu, uint32_t instr, bool privileged) {}
+
+template <bool wasT>
+static void execFn_invalid(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    if (wasT || !cpuPrvHandleInvalidInstruction(cpu, instr)) {
+        fprintf(stderr, "Invalid instr 0x%08lx seen at 0x%08lx with CPSR 0x%08lx\n",
+                (unsigned long)instr, (unsigned long)cpu->curInstrPC,
+                (unsigned long)cpuPrvMaterializeCPSR(cpu));
+        cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_UND,
+                        cpu->curInstrPC + (wasT ? 2 : 4), ARM_SR_MODE_UND | ARM_SR_I);
+    }
+}
+
+template <bool wasT>
+static void execFn_b2thumb(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint32_t ea;
+
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+
+    ea = instr << 8;
+    ea = ((int32_t)ea) >> 7;
+    ea += 4;
+    if (!wasT) ea <<= 1;
+    ea += cpu->curInstrPC;
+
+    if (instr & 0x01000000UL) ea += 2;
+    cpu->regs[REG_NO_LR] = cpu->curInstrPC + (wasT ? 2 : 4);
+    if (!cpu->T) ea |= 1UL;  // set T flag if needed
+
+    cpuPrvSetPC(cpu, ea);
+}
+
+template <bool wasT, bool two>
+static void execFn_cp_mem2reg(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint32_t addBefore, addAfter;
+    uint_fast8_t mode, cpNo;
+    uint8_t memVal8;
+
+    cpNo = (instr >> 8) & 0x0F;
+    mode = cpuPrvArmAdrMode_5(cpu, instr, &addBefore, &addAfter, &memVal8);
+
+    if (cpNo >= 14) {  // cp14 and cp15 are for priviledged users only
+        if (!privileged) goto invalid_instr;
+    } else if (!(cpu->CPAR & (1UL << cpNo)))  // others are access-controlled by CPAR
+        goto invalid_instr;
+
+    if (mode & ARM_MODE_5_RR) {  // handle MCRR, MRCC
+
+        if (!cpu->coproc[cpNo].twoRegF ||
+            !cpu->coproc[cpNo].twoRegF(cpu, cpu->coproc[cpNo].userData, !!(instr & 0x00100000UL),
+                                       (instr >> 4) & 0x0F, (instr >> 12) & 0x0F,
+                                       (instr >> 16) & 0x0F, instr & 0x0F))
+            goto invalid_instr;
+    } else {  // handle LDC/STC
+
+        if (!cpu->coproc[cpNo].memAccess ||
+            !cpu->coproc[cpNo].memAccess(cpu, cpu->coproc[cpNo].userData, two,
+                                         !!(instr & 0x00400000UL), !(instr & 0x00100000UL),
+                                         (instr >> 12) & 0x0F, mode & ARM_MODE_5_REG, addBefore,
+                                         addAfter, (mode & ARM_MODE_5_IS_OPTION) ? &memVal8 : NULL))
+            goto invalid_instr;
+    }
+
+    return;
+
+invalid_instr:
+    execFn_invalid<wasT>(cpu, instr, privileged);
+}
+
+template <bool wasT, bool two>
+static void execFn_cp_dp(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint_fast8_t cpNo;
+
+    cpNo = (instr >> 8) & 0x0F;
+
+    if (cpNo >= 14) {  // cp14 and cp15 are for priviledged users only
+        if (!privileged) goto invalid_instr;
+    } else if (!(cpu->CPAR & (1UL << cpNo)))  // others are access-controlled by CPAR
+        goto invalid_instr;
+
+    if (instr & 0x00000010UL) {  // MCR[2]/MRC[2]
+
+        if (!cpu->coproc[cpNo].regXfer ||
+            !cpu->coproc[cpNo].regXfer(cpu, cpu->coproc[cpNo].userData, two,
+                                       !!(instr & 0x00100000UL), (instr >> 21) & 0x07,
+                                       (instr >> 12) & 0x0F, (instr >> 16) & 0x0F, instr & 0x0F,
+                                       (instr >> 5) & 0x07))
+            goto invalid_instr;
+    } else {  // CDP
+
+        if (!cpu->coproc[cpNo].dataProcessing ||
+            !cpu->coproc[cpNo].dataProcessing(
+                cpu, cpu->coproc[cpNo].userData, two, (instr >> 20) & 0x0F, (instr >> 12) & 0x0F,
+                (instr >> 16) & 0x0F, instr & 0x0F, (instr >> 5) & 0x07))
+            goto invalid_instr;
+    }
+
+    return;
+
+invalid_instr:
+    execFn_invalid<wasT>(cpu, instr, privileged);
+}
 
 template <bool wasT>
 static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
@@ -1039,45 +1138,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 #endif
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
-
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
-
-    if ((instr >> 28) == 0xf) {
-        specialInstr = true;
-
-        switch ((instr >> 24) & 0x0f) {
-            case 5:
-            case 7:
-                // PLD
-                if ((instr & 0x0D70F000UL) == 0x0550F000UL) goto instr_done;
-                goto invalid_instr;
-
-            case 10:
-            case 11:
-                ea = instr << 8;
-                ea = ((int32_t)ea) >> 7;
-                ea += 4;
-                if (!wasT) ea <<= 1;
-                ea += cpu->curInstrPC;
-
-                if (instr & 0x01000000UL) ea += 2;
-                cpu->regs[REG_NO_LR] = cpu->curInstrPC + (wasT ? 2 : 4);
-                if (!cpu->T) ea |= 1UL;  // set T flag if needed
-
-                cpuPrvSetPC(cpu, ea);
-                goto instr_done;
-
-            case 12:
-            case 13:
-                goto coproc_mem_2reg;
-
-            case 14:
-                goto coproc_dp;
-
-            default:
-                goto invalid_instr;
-        }
-    }
 
     switch ((instr >> 24) & 0x0F) {
         case 0:
@@ -1856,7 +1917,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
         case 12:
         case 13:  // coprocessor load/store and double register transfers
-        coproc_mem_2reg:
+                  // coproc_mem_2reg:
             cpNo = (instr >> 8) & 0x0F;
 
             mode = cpuPrvArmAdrMode_5(cpu, instr, &addBefore, &addAfter, &memVal8);
@@ -1886,7 +1947,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
             goto instr_done;
 
         case 14:  // coprocessor data processing and register transfers
-        coproc_dp:
+                  // coproc_dp:
             cpNo = (instr >> 8) & 0x0F;
 
             if (cpNo >= 14) {  // cp14 and cp15 are for priviledged users only
@@ -1955,11 +2016,38 @@ instr_done:
     return;
 }
 
+template <bool wasT>
+static ExecFn cpuPrvArmEncoder(uint32_t instr) {
+    if ((instr >> 28) == 0x0f) {
+        switch ((instr >> 24) & 0x0f) {
+            case 5:
+            case 7:
+                return (instr & 0x0D70F000UL) == 0x0550F000UL ? execFn_noop : execFn_invalid<wasT>;
+
+            case 10:
+            case 11:
+                return execFn_b2thumb<wasT>;
+
+            case 12:
+            case 13:
+                return execFn_cp_mem2reg<wasT, true>;
+
+            case 14:
+                return execFn_cp_dp<wasT, true>;
+
+            default:
+                return execFn_invalid<wasT>;
+        }
+    }
+
+    return cpuPrvExecInstr<wasT>;
+}
+
 static uint32_t cpuPrvEncodeExecFn(ExecFn execFn) {
 #ifdef __EMSCRIPTEN__
     return (uint32_t)execFn;
 #else
-    return (int32_t)((uint8_t *)execFn - (uint8_t *)execFnBase);
+    return (int32_t)((uint8_t *)execFn - (uint8_t *)execFn_noop);
 #endif
 }
 
@@ -1967,12 +2055,12 @@ static ExecFn cpuPrvDecodeExecFn(uint32_t encoded) {
 #ifdef __EMSCRIPTEN__
     return (ExecFn)encoded;
 #else
-    return (ExecFn)((uint8_t *)execFnBase + (int32_t)encoded);
+    return (ExecFn)((uint8_t *)execFn_noop + (int32_t)encoded);
 #endif
 }
 
-static uint32_t cpuPrvDecodeArm(uint32_t inst) {
-    return cpuPrvEncodeExecFn(cpuPrvExecInstr<false>);
+static uint32_t cpuPrvDecodeArm(uint32_t instr) {
+    return cpuPrvEncodeExecFn(cpuPrvArmEncoder<false>(instr));
 }
 
 static void cpuPrvCycleArm(struct ArmCpu *cpu) {
@@ -2119,8 +2207,11 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bool pri
 #undef THUMB_FAIL
 }
 
-static uint32_t cpuPrvDecodeThumb(uint32_t inst) {
-    return cpuPrvEncodeExecFn(table_thumb2arm[inst] ? cpuPrvExecInstr<true> : cpuPrvExecThumb);
+static uint32_t cpuPrvDecodeThumb(uint32_t instr) {
+    const uint32_t translatedInstr = table_thumb2arm[instr];
+
+    return cpuPrvEncodeExecFn(translatedInstr ? cpuPrvArmEncoder<true>(translatedInstr)
+                                              : cpuPrvExecThumb);
 }
 
 static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
