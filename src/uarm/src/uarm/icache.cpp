@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../util.h"
 #include "CPU.h"
 #include "uarm_endian.h"
-#include "util.h"
 
 #define CACHE_LINE_WIDTH_BITS 5
 #define CACHE_INDEX_BITS 20
@@ -18,6 +18,7 @@
 
 struct icacheline {
     uint8_t data[1 << CACHE_LINE_WIDTH_BITS];
+    uint32_t decoded[1 << (CACHE_LINE_WIDTH_BITS - 1)];
 
     uint_fast8_t tag;
     uint32_t revision;
@@ -63,7 +64,8 @@ void icacheInvalAddr(struct icache* ic, uint32_t va) {
 }
 
 template <int sz>
-bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf) {
+bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* fsrP, void* buf,
+                 uint32_t* decoded) {
     if (va & (sz - 1)) {  // alignment issue
 
         if (fsrP) *fsrP = 3;
@@ -88,6 +90,7 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf) 
                 return false;
             }
 
+            *decoded = decode(sz == 4 ? *(uint32_t*)buf : *(uint16_t*)buf);
             return true;
         }
 
@@ -96,27 +99,61 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf) 
             return false;
         };
 
+        memset(line->decoded, 0, sizeof(line->decoded));
+
         line->revision = ic->revision;
         line->tag = tag;
     }
 
     switch (sz) {
-        case 4:
-            *(uint32_t*)buf = *(uint32_t*)(line->data + calculateLineIndex(va));
+        case 4: {
+            const size_t i = calculateLineIndex(va);
+            const uint32_t inst = *(uint32_t*)(line->data + i);
+            *(uint32_t*)buf = inst;
+
+            const size_t iInst = i >> 2;
+            if ((line->decoded[iInst] & 0x03) != 0x02) {
+                *decoded = decode(inst);
+                line->decoded[iInst] = (*decoded << 2) | 0x02;
+            } else {
+#ifdef __EMSCRIPTEN__
+                *decoded = line->decoded[iInst] >> 2;
+#else
+                *decoded = ((int32_t)line->decoded[iInst]) >> 2;
+#endif
+            }
+
             break;
+        }
 
         case 2: {
-            *(uint16_t*)buf = *(uint16_t*)(line->data + calculateLineIndex(va));
+            const size_t i = calculateLineIndex(va);
+            const uint16_t inst = *(uint16_t*)(line->data + i);
+            *(uint16_t*)buf = inst;
+
+            const size_t iInst = i >> 1;
+            if ((line->decoded[iInst] & 0x03) != 0x03) {
+                *decoded = decode(inst);
+                line->decoded[iInst] = (*decoded << 2) | 0x03;
+            } else {
+#ifdef __EMSCRIPTEN__
+                *decoded = line->decoded[iInst] >> 2;
+#else
+                *decoded = ((int32_t)line->decoded[iInst]) >> 2;
+#endif
+            }
 
             break;
         }
 
         default:
-            memcpy(buf, line->data + calculateLineIndex(va), sz);
+            __builtin_unreachable();
     }
 
     return true;
 }
 
-template bool icacheFetch<2>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf);
-template bool icacheFetch<4>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf);
+template bool icacheFetch<2>(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* fsrP,
+                             void* buf, uint32_t* decoded);
+template bool icacheFetch<4>(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* fsrP,
+                             void* buf, uint32_t* decoded);

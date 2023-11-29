@@ -16,6 +16,8 @@ extern "C" {
 
 struct icache;
 
+typedef uint32_t (*DecodeFn)(uint32_t opcode);
+
 struct icache* icacheInit(struct ArmMem* mem, struct ArmMmu* mmu);
 void icacheInval(struct icache* ic);
 void icacheInvalAddr(struct icache* ic, uint32_t addr);
@@ -24,7 +26,8 @@ void icacheInvalAddr(struct icache* ic, uint32_t addr);
 }
 
 template <int sz>
-bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsr, void* buf);
+bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* fsr, void* buf,
+                 uint32_t* decoded);
 
 #endif
 

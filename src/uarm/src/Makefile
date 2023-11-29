@@ -100,7 +100,7 @@ SOURCE_C = 						\
 SOURCE_CXX_COMMON = 			\
 	main.cpp					\
 	MainLoop.cpp				\
-	uarm/icache.cpp 				\
+	uarm/icache.cpp				\
 	uarm/CPU.cpp
 
 SOURCE_CXX_NATIVE = 			\

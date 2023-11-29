@@ -19,7 +19,6 @@
 #define unlikely(x) __builtin_expect((x), 0)
 #define likely(x) __builtin_expect((x), 1)
 
-#define USE_ICACHE
 #define NO_SUPPORT_FCSE
 #define NO_STRICT_CPU
 #define NO_TRACE_PACE
@@ -57,6 +56,8 @@
 #define INJECTED_CALL_MAX_CYCLES 200000000
 
 #define cpuPrvGetRegNotPC(cpu, reg) (cpu->regs[reg])
+
+typedef void (*ExecFn)(struct ArmCpu *cpu, uint32_t instr, bool privileged);
 
 /*
 
@@ -1015,6 +1016,10 @@ static void cpuPrvZ72sysPrintf(struct ArmCpu *cpu) {
 }
 #endif
 
+#ifndef __EMSCRIPTEN__
+static void execFnBase(struct ArmCpu *cpu, uint32_t instr, bool privileged) {}
+#endif
+
 template <bool wasT>
 static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, op2, res, sr, ea, memVal32, addBefore, addAfter;
@@ -1032,6 +1037,8 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 #ifdef SUPPORT_Z72_PRINTF
     cpuPrvZ72sysPrintf(cpu);
 #endif
+
+    if constexpr (wasT) instr = table_thumb2arm[instr];
 
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
@@ -1948,8 +1955,28 @@ instr_done:
     return;
 }
 
+static uint32_t cpuPrvEncodeExecFn(ExecFn execFn) {
+#ifdef __EMSCRIPTEN__
+    return (uint32_t)execFn;
+#else
+    return (int32_t)((uint8_t *)execFn - (uint8_t *)execFnBase);
+#endif
+}
+
+static ExecFn cpuPrvDecodeExecFn(uint32_t encoded) {
+#ifdef __EMSCRIPTEN__
+    return (ExecFn)encoded;
+#else
+    return (ExecFn)((uint8_t *)execFnBase + (int32_t)encoded);
+#endif
+}
+
+static uint32_t cpuPrvDecodeArm(uint32_t inst) {
+    return cpuPrvEncodeExecFn(cpuPrvExecInstr<false>);
+}
+
 static void cpuPrvCycleArm(struct ArmCpu *cpu) {
-    uint32_t instr;
+    uint32_t instr, decoded;
     bool privileged, ok;
     uint_fast8_t fsr;
 
@@ -1966,20 +1993,17 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
     if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-#ifdef USE_ICACHE
-    ok = icacheFetch<4>(cpu->ic, cpu->curInstrPC, &fsr, &instr);
-#else
-    ok = cpuPrvMemOp(cpu, &instr, cpu->curInstrPC, 4, false, privileged, &fsr);
-#endif
-    if (!ok)
+    ok = icacheFetch<4>(cpu->ic, cpuPrvDecodeArm, cpu->curInstrPC, &fsr, &instr, &decoded);
+    if (!ok) {
         cpuPrvHandleMemErr(cpu, cpu->curInstrPC, 4, false, true, fsr);
-    else {
-        cpu->regs[REG_NO_PC] += 4;
-        cpuPrvExecInstr<false>(cpu, instr, privileged);
+        return;
     }
+
+    cpu->regs[REG_NO_PC] += 4;
+    cpuPrvDecodeExecFn(decoded)(cpu, instr, privileged);
 }
 
-static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT, bool privileged) {
+static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bool privileged) {
 #define THUMB_FAIL ERR("thumb opcode should be transcoded:" __FILE__ ":" str(__LINE__));
     uint32_t v32;
     uint16_t v16;
@@ -2095,10 +2119,14 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint16_t instrT, bool pri
 #undef THUMB_FAIL
 }
 
+static uint32_t cpuPrvDecodeThumb(uint32_t inst) {
+    return cpuPrvEncodeExecFn(table_thumb2arm[inst] ? cpuPrvExecInstr<true> : cpuPrvExecThumb);
+}
+
 static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
     bool privileged, ok;
-    uint16_t instrT;
-    uint32_t instrA;
+    uint16_t instr;
+    uint32_t decoded;
     uint_fast8_t fsr;
 
     privileged = cpu->M != ARM_SR_MODE_USR;
@@ -2113,22 +2141,14 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
     if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-#ifdef USE_ICACHE
-    ok = icacheFetch<2>(cpu->ic, cpu->curInstrPC, &fsr, &instrT);
-#else
-    ok = cpuPrvMemOp(cpu, &instrT, cpu->curInstrPC, 2, false, privileged, &fsr);
-#endif
+    ok = icacheFetch<2>(cpu->ic, cpuPrvDecodeThumb, cpu->curInstrPC, &fsr, &instr, &decoded);
     if (!ok) {
         cpuPrvHandleMemErr(cpu, cpu->curInstrPC, 2, false, true, fsr);
         return;  // exit here so that debugger can see us execute first instr of execption handler
     }
-    cpu->regs[REG_NO_PC] += 2;
 
-    instrA = table_thumb2arm[instrT];
-    if (instrA)
-        cpuPrvExecInstr<true>(cpu, instrA, privileged);
-    else
-        cpuPrvExecThumb(cpu, instrT, privileged);
+    cpu->regs[REG_NO_PC] += 2;
+    cpuPrvDecodeExecFn(decoded)(cpu, instr, privileged);
 }
 
 static uint32_t translateThumb(uint16_t instrT) {
