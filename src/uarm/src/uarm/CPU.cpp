@@ -171,6 +171,14 @@ static uint32_t cpuPrvGetReg(struct ArmCpu *cpu, uint_fast8_t reg) {
     return ret;
 }
 
+template <bool wasT, bool pc>
+static uint32_t cpuPrvGetReg(struct ArmCpu *cpu, uint_fast8_t reg) {
+    if constexpr (pc)
+        return cpu->regs[REG_NO_PC] + (wasT ? 2 : 4);
+    else
+        return cpu->regs[reg];
+}
+
 static void cpuPrvSetRegNotPC(struct ArmCpu *cpu, uint_fast8_t reg, uint32_t val) {
     cpu->regs[reg] = val;
 }
@@ -517,9 +525,31 @@ static uint_fast8_t cpuPrvArmAdrMode_3(struct ArmCpu *cpu, uint32_t instr, uint3
     if (instr & 0x00400000UL)  // immediate
         val = ((instr >> 4) & 0xF0) | (instr & 0x0F);
     else {
-        if (instr & 0x00000F00UL) reg |= ARM_MODE_3_INV;  // bits 8-11 must be 1 always
         val = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
     }
+
+    if (!(instr & 0x00800000UL)) val = -val;
+    if (!(instr & 0x01000000UL)) {
+        *addBeforeP = 0;
+        *addWritebackP = val;
+    } else if (instr & 0x00200000UL) {
+        *addBeforeP = val;
+        *addWritebackP = val;
+    } else {
+        *addBeforeP = val;
+        *addWritebackP = 0;
+    }
+
+    return reg;
+}
+
+static uint_fast8_t cpuPrvArmAdrModeDecode_3(uint32_t instr) {
+    uint_fast8_t reg = 0;
+
+    reg = (instr >> 16) & 0x0F;
+
+    if (!(instr & 0x00400000UL) && (instr & 0x00000F00UL))
+        reg |= ARM_MODE_3_INV;  // bits 8-11 must be 1 always
 
     switch (((instr >> 5) & 0x3) | ((instr >> 18) & 0x04)) {
         case 0x7:  // S && H && L
@@ -556,26 +586,13 @@ static uint_fast8_t cpuPrvArmAdrMode_3(struct ArmCpu *cpu, uint32_t instr, uint3
 #ifdef STRICT_CPU
     if ((instr & 0x00000090UL) != 0x00000090UL)
         reg |= ARM_MODE_3_INV;  // bits 4 and 7 must be 1 always
-#endif
 
-    if (!(instr & 0x00800000UL)) val = -val;
-    if (!(instr & 0x01000000UL)) {
-        *addBeforeP = 0;
-        *addWritebackP = val;
-
-#ifdef STRICT_CPU
+    if (!(instr & 0x01000000UL) && (instr & 0x00200000UL)) {
         if (instr & 0x00200000UL)
             reg |= ARM_MODE_3_INV;  // W must be 0 in this case, else unpredictable (in this case -
-// invalid instr)
-#endif
-    } else if (instr & 0x00200000UL) {
-        *addBeforeP = val;
-        *addWritebackP = val;
-    } else {
-        *addBeforeP = val;
-        *addWritebackP = 0;
+                                    // invalid instr)
     }
-
+#endif
     return reg;
 }
 
@@ -1119,13 +1136,254 @@ invalid_instr:
     execFn_invalid<wasT>(cpu, instr, privileged);
 }
 
+template <bool wasT, int tag>
+static void execFn_swb(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint32_t op1, ea, memVal32;
+    bool ok;
+    uint_fast8_t fsr;
+    uint8_t memVal8;
+
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    switch (tag) {
+        case 0:  // SWP
+
+            ea = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);
+            ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, false, privileged, &fsr);
+            if (!ok) {
+                cpuPrvHandleMemErr(cpu, ea, 4, false, false, fsr);
+                return;
+            }
+            op1 = memVal32;
+            memVal32 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
+            ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, true, privileged, &fsr);
+            if (!ok) {
+                cpuPrvHandleMemErr(cpu, ea, 4, true, false, fsr);
+                return;
+            }
+            cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, op1);
+            break;
+
+        case 4:  // SWPB
+
+            ea = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);
+            ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
+            if (!ok) {
+                cpuPrvHandleMemErr(cpu, ea, 1, false, false, fsr);
+                return;
+            }
+            op1 = memVal8;
+            memVal8 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
+            ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, true, privileged, &fsr);
+            if (!ok) {
+                cpuPrvHandleMemErr(cpu, ea, 1, true, false, fsr);
+                return;
+            }
+            cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, op1);
+            break;
+
+        default:
+            return execFn_invalid<wasT>(cpu, instr, privileged);
+    }
+}
+
+template <bool wasT, int tag, bool flags>
+static void execFn_mult(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint32_t op1, op2, res;
+    uint64_t res64;
+
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    switch (tag) {  // multiplies
+
+        case 0:  // MUL
+        case 1:
+
+            res = 0;
+#ifdef STRICT_CPU
+            if (instr & 0x0000F000UL) goto invalid_instr;
+#endif
+            goto mul32;
+
+        case 2:  // MLA
+        case 3:
+
+            res = cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F);
+        mul32:
+            res +=
+                cpuPrvGetRegNotPC(cpu, (instr >> 8) & 0x0F) * cpuPrvGetRegNotPC(cpu, instr & 0x0F);
+            cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res);
+            if (flags) {  // S
+
+                cpu->flags &= ~(ARM_SR_Z | ARM_SR_N);
+                if (!res) cpu->flags |= ARM_SR_Z;
+                cpu->flags |= (res & 0x80000000UL);
+            }
+            return;
+
+        case 8:  // UMULL
+        case 9:
+        case 12:  // SMULL
+        case 13:
+
+            res64 = 0;
+            goto mul64;
+
+        case 10:  // UMLAL
+        case 11:
+        case 14:  // SMLAL
+        case 15:
+
+            res64 = cpuPrv64FromHalves(cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F),
+                                       cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F));
+
+        mul64:
+            op1 = cpuPrvGetRegNotPC(cpu, (instr >> 8) & 0x0F);
+            op2 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
+
+            if (instr & 0x00400000UL)
+                res64 += (int64_t)(int32_t)op1 * (int64_t)(int32_t)op2;
+            else
+                res64 += (uint64_t)(uint32_t)op1 * (uint64_t)(uint32_t)op2;
+
+            cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, res64);
+            cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res64 >> 32);
+
+            if (flags) {  // S
+
+                cpu->flags &= ~(ARM_SR_Z | ARM_SR_N);
+                if (!res64) cpu->flags |= ARM_SR_Z;
+                cpu->flags |= (res64 & 0x8000000000000000ULL) >> 32;
+            }
+            break;
+
+        default:
+            return execFn_invalid<wasT>(cpu, instr, privileged);
+    }
+}
+
+template <bool wasT, int mode, bool pc>
+static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint32_t ea, addBefore, addAfter;
+    bool ok;
+    uint_fast8_t fsr, reg;
+    uint16_t memVal16;
+    uint8_t memVal8;
+    uint32_t doubleMem[2];
+
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    reg = cpuPrvArmAdrMode_3(cpu, instr, &addBefore, &addAfter);
+    ea = cpuPrvGetReg<wasT, pc>(cpu, reg);
+    ea += addBefore;
+
+    if (mode & ARM_MODE_3_LOAD) {
+        switch (mode & ARM_MODE_3_TYPE) {
+            case ARM_MODE_3_H:
+
+                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, false, privileged, &fsr);
+                if (!ok) {
+                    cpuPrvHandleMemErr(cpu, ea, 2, false, false, fsr);
+                    return;
+                }
+                cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, memVal16);
+                break;
+
+            case ARM_MODE_3_SH:
+
+                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, false, privileged, &fsr);
+                if (!ok) {
+                    cpuPrvHandleMemErr(cpu, ea, 2, false, false, fsr);
+                    return;
+                }
+                cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, (int32_t)(int16_t)memVal16);
+                break;
+
+            case ARM_MODE_3_SB:
+
+                ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
+                if (!ok) {
+                    cpuPrvHandleMemErr(cpu, ea, 1, false, false, fsr);
+                    return;
+                }
+                cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, (int32_t)(int8_t)memVal8);
+                break;
+
+            case ARM_MODE_3_D:
+
+                ok = cpuPrvMemOp<8>(cpu, doubleMem, ea, false, privileged, &fsr);
+                if (!ok) {
+                    cpuPrvHandleMemErr(cpu, ea, 8, false, false, fsr);
+                    return;
+                }
+
+                cpuPrvSetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 0, doubleMem[0]);
+                cpuPrvSetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 1, doubleMem[1]);
+                break;
+        }
+    } else {
+        switch (mode & ARM_MODE_3_TYPE) {
+            case ARM_MODE_3_H:
+
+                memVal16 = cpuPrvGetReg<wasT>(cpu, (instr >> 12) & 0x0F);
+                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, true, privileged, &fsr);
+                if (!ok) {
+                    cpuPrvHandleMemErr(cpu, ea, 2, true, false, fsr);
+                    return;
+                }
+                break;
+
+            case ARM_MODE_3_SH:
+            case ARM_MODE_3_SB:
+                return execFn_invalid<wasT>(cpu, instr, privileged);
+
+            case ARM_MODE_3_D:
+
+                doubleMem[0] = cpuPrvGetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 0);
+                doubleMem[1] = cpuPrvGetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 1);
+                ok = cpuPrvMemOp<8>(cpu, doubleMem, ea, true, privileged, &fsr);
+                if (!ok) {
+                    cpuPrvHandleMemErr(cpu, ea, 8, true, false, fsr);
+                    return;
+                }
+                break;
+        }
+    }
+    if (addAfter) cpuPrvSetRegNotPC(cpu, reg & ARM_MODE_3_REG, ea - addBefore + addAfter);
+}
+
+template <bool wasT>
+static void execFn_clz(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, cpuPrvClz(cpuPrvGetRegNotPC(cpu, instr & 0xF)));
+}
+
+template <bool wasT, bool link>
+static void execFn_bl(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+#ifdef STRICT_CPU
+    if ((instr & 0x0FFFFF00UL) != 0x012FFF00UL) return execFn_invalid(cpu, instr, privileged);
+#endif
+
+    if (link)
+        cpuPrvSetRegNotPC(cpu, REG_NO_LR,
+                          cpu->curInstrPC + (wasT ? 3 : 4));  // save return value for BLX
+    cpuPrvSetPC(cpu, cpuPrvGetReg<wasT>(cpu, instr & 0x0F));
+}
+
 template <bool wasT>
 static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, op2, res, sr, ea, memVal32, addBefore, addAfter;
     bool specialInstr = false, ok;
     uint_fast8_t mode, cpNo, fsr, sourceReg, destReg;
     uint_fast16_t regsList;
-    uint16_t memVal16;
     uint8_t memVal8;
     uint64_t res64;
 
@@ -1144,207 +1402,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
         case 0:
         case 1:  // data processing immediate shift, register shift and misc instrs and mults
             if ((instr & 0x00000090UL) == 0x00000090) {  // multiplies, extra load/stores
-                                                         // (table 3.2)
-
-                if ((instr & 0x00000060UL) == 0x00000000) {  // swp[b], mult(acc), mult(acc) long
-
-                    if (instr & 0x01000000UL) {  // SWB/SWPB
-
-                        switch ((instr >> 20) & 0x0F) {
-                            case 0:  // SWP
-
-                                ea = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);
-                                ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, false, privileged, &fsr);
-                                if (!ok) {
-                                    cpuPrvHandleMemErr(cpu, ea, 4, false, false, fsr);
-                                    goto instr_done;
-                                }
-                                op1 = memVal32;
-                                memVal32 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
-                                ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, true, privileged, &fsr);
-                                if (!ok) {
-                                    cpuPrvHandleMemErr(cpu, ea, 4, true, false, fsr);
-                                    goto instr_done;
-                                }
-                                cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, op1);
-                                break;
-
-                            case 4:  // SWPB
-
-                                ea = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);
-                                ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
-                                if (!ok) {
-                                    cpuPrvHandleMemErr(cpu, ea, 1, false, false, fsr);
-                                    goto instr_done;
-                                }
-                                op1 = memVal8;
-                                memVal8 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
-                                ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, true, privileged, &fsr);
-                                if (!ok) {
-                                    cpuPrvHandleMemErr(cpu, ea, 1, true, false, fsr);
-                                    goto instr_done;
-                                }
-                                cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, op1);
-                                break;
-
-                            default:
-                                goto invalid_instr;
-                        }
-
-                    } else
-                        switch ((instr >> 20) & 0x0F) {  // multiplies
-
-                            case 0:  // MUL
-                            case 1:
-
-                                res = 0;
-#ifdef STRICT_CPU
-                                if (instr & 0x0000F000UL) goto invalid_instr;
-#endif
-                                goto mul32;
-
-                            case 2:  // MLA
-                            case 3:
-
-                                res = cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F);
-                            mul32:
-                                res += cpuPrvGetRegNotPC(cpu, (instr >> 8) & 0x0F) *
-                                       cpuPrvGetRegNotPC(cpu, instr & 0x0F);
-                                cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res);
-                                if (instr & 0x00100000UL) {  // S
-
-                                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N);
-                                    if (!res) cpu->flags |= ARM_SR_Z;
-                                    cpu->flags |= (res & 0x80000000UL);
-                                }
-                                goto instr_done;
-
-                            case 8:  // UMULL
-                            case 9:
-                            case 12:  // SMULL
-                            case 13:
-
-                                res64 = 0;
-                                goto mul64;
-
-                            case 10:  // UMLAL
-                            case 11:
-                            case 14:  // SMLAL
-                            case 15:
-
-                                res64 = cpuPrv64FromHalves(
-                                    cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F),
-                                    cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F));
-
-                            mul64:
-                                op1 = cpuPrvGetRegNotPC(cpu, (instr >> 8) & 0x0F);
-                                op2 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
-
-                                if (instr & 0x00400000UL)
-                                    res64 += (int64_t)(int32_t)op1 * (int64_t)(int32_t)op2;
-                                else
-                                    res64 += (uint64_t)(uint32_t)op1 * (uint64_t)(uint32_t)op2;
-
-                                cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, res64);
-                                cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res64 >> 32);
-
-                                if (instr & 0x00100000UL) {  // S
-
-                                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N);
-                                    if (!res64) cpu->flags |= ARM_SR_Z;
-                                    cpu->flags |= (res64 & 0x8000000000000000ULL) >> 32;
-                                }
-                                break;
-
-                            default:
-                                goto invalid_instr;
-                        }
-                } else {  // load/store signed/unsigned byte/halfword/two_words
-
-                    uint32_t doubleMem[2];
-
-                    mode = cpuPrvArmAdrMode_3(cpu, instr, &addBefore, &addAfter);
-                    ea = cpuPrvGetReg<wasT>(cpu, mode & ARM_MODE_3_REG);
-                    ea += addBefore;
-
-                    if (mode & ARM_MODE_3_LOAD) {
-                        switch (mode & ARM_MODE_3_TYPE) {
-                            case ARM_MODE_3_H:
-
-                                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, false, privileged, &fsr);
-                                if (!ok) {
-                                    cpuPrvHandleMemErr(cpu, ea, 2, false, false, fsr);
-                                    goto instr_done;
-                                }
-                                cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, memVal16);
-                                break;
-
-                            case ARM_MODE_3_SH:
-
-                                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, false, privileged, &fsr);
-                                if (!ok) {
-                                    cpuPrvHandleMemErr(cpu, ea, 2, false, false, fsr);
-                                    goto instr_done;
-                                }
-                                cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F,
-                                                  (int32_t)(int16_t)memVal16);
-                                break;
-
-                            case ARM_MODE_3_SB:
-
-                                ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
-                                if (!ok) {
-                                    cpuPrvHandleMemErr(cpu, ea, 1, false, false, fsr);
-                                    goto instr_done;
-                                }
-                                cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F,
-                                                  (int32_t)(int8_t)memVal8);
-                                break;
-
-                            case ARM_MODE_3_D:
-
-                                ok = cpuPrvMemOp<8>(cpu, doubleMem, ea, false, privileged, &fsr);
-                                if (!ok) {
-                                    cpuPrvHandleMemErr(cpu, ea, 8, false, false, fsr);
-                                    goto instr_done;
-                                }
-
-                                cpuPrvSetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 0, doubleMem[0]);
-                                cpuPrvSetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 1, doubleMem[1]);
-                                break;
-                        }
-                    } else {
-                        switch (mode & ARM_MODE_3_TYPE) {
-                            case ARM_MODE_3_H:
-
-                                memVal16 = cpuPrvGetReg<wasT>(cpu, (instr >> 12) & 0x0F);
-                                ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, true, privileged, &fsr);
-                                if (!ok) {
-                                    cpuPrvHandleMemErr(cpu, ea, 2, true, false, fsr);
-                                    goto instr_done;
-                                }
-                                break;
-
-                            case ARM_MODE_3_SH:
-                            case ARM_MODE_3_SB:
-                                goto invalid_instr;
-
-                            case ARM_MODE_3_D:
-
-                                doubleMem[0] = cpuPrvGetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 0);
-                                doubleMem[1] = cpuPrvGetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 1);
-                                ok = cpuPrvMemOp<8>(cpu, doubleMem, ea, true, privileged, &fsr);
-                                if (!ok) {
-                                    cpuPrvHandleMemErr(cpu, ea, 8, true, false, fsr);
-                                    goto instr_done;
-                                }
-                                break;
-                        }
-                    }
-                    if (addAfter)
-                        cpuPrvSetRegNotPC(cpu, mode & ARM_MODE_3_REG, ea - addBefore + addAfter);
-                }
-                goto instr_done;
+                __builtin_unreachable();
             } else if ((instr & 0x01900000UL) == 0x01000000UL) {  // misc instrs (table 3.3)
 
                 switch ((instr >> 4) & 0x0F) {
@@ -1368,23 +1426,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                     case 1:  // BLX/BX/BXJ or CLZ
                     case 3:
-
-                        if (instr & 0x00400000UL) {  // CLZ
-
-                            cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F,
-                                              cpuPrvClz(cpuPrvGetRegNotPC(cpu, instr & 0xF)));
-                        } else {  // BL / BLX / BXJ
-#ifdef STRICT_CPU
-                            if ((instr & 0x0FFFFF00UL) != 0x012FFF00UL) goto invalid_instr;
-#endif
-
-                            if ((instr & 0x00000030UL) == 0x00000030UL)
-                                cpuPrvSetRegNotPC(
-                                    cpu, REG_NO_LR,
-                                    cpu->curInstrPC + (wasT ? 3 : 4));  // save return value for BLX
-                            cpuPrvSetPC(cpu, cpuPrvGetReg<wasT>(cpu, instr & 0x0F));
-                        }
-                        goto instr_done;
+                        __builtin_unreachable();
 
                     case 5:  // enhanced DSP adds/subtracts
 
@@ -2040,6 +2082,129 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
         }
     }
 
+    switch ((instr >> 24) & 0x0F) {
+        case 0:
+        case 1:
+            if ((instr & 0x00000090UL) == 0x00000090) {  // multiplies, extra load/stores
+                                                         // (table 3.2)
+
+                if ((instr & 0x00000060UL) == 0x00000000) {  // swp[b], mult(acc), mult(acc) long
+
+                    if (instr & 0x01000000UL) {  // SWB/SWPB
+
+                        switch ((instr >> 20) & 0x0F) {
+                            case 0:  // SWP
+                                return execFn_swb<wasT, 0>;
+
+                            case 4:  // SWPB
+                                return execFn_swb<wasT, 4>;
+
+                            default:
+                                return execFn_invalid<wasT>;
+                        }
+
+                    } else {
+                        const bool flags = instr & 0x00100000UL;
+
+#define EXEC_MULT(tag) return flags ? execFn_mult<wasT, tag, true> : execFn_mult<wasT, tag, false>;
+
+                        switch ((instr >> 20) & 0x0F) {  // multiplies
+
+                            case 0:  // MUL
+                            case 1:
+                                EXEC_MULT(0);
+
+                            case 2:  // MLA
+                            case 3:
+                                EXEC_MULT(2);
+
+                            case 8:  // UMULL
+                            case 9:
+                            case 12:  // SMULL
+                            case 13:
+                                EXEC_MULT(8);
+
+                            case 10:  // UMLAL
+                            case 11:
+                            case 14:  // SMLAL
+                            case 15:
+                                EXEC_MULT(10);
+
+                            default:
+                                return execFn_invalid<wasT>;
+                        }
+
+#undef EXEC_MULT
+                    }
+                } else {  // load/store signed/unsigned byte/halfword/two_words
+                    uint_fast8_t mode = cpuPrvArmAdrModeDecode_3(instr);
+                    const bool pc = ((instr >> 16) & 0x0f) == REG_NO_PC;
+
+                    if (mode & ARM_MODE_2_INV) return execFn_invalid<wasT>;
+
+#define EXEC_LOAD_STORE_1(mode) \
+    return pc ? execFn_load_store_1<wasT, mode, true> : execFn_load_store_1<wasT, mode, false>;
+
+                    if (mode & ARM_MODE_3_LOAD) {
+                        switch (mode & ARM_MODE_3_TYPE) {
+                            case ARM_MODE_3_H:
+                                EXEC_LOAD_STORE_1(ARM_MODE_3_LOAD | ARM_MODE_3_H);
+
+                            case ARM_MODE_3_SH:
+                                EXEC_LOAD_STORE_1(ARM_MODE_3_LOAD | ARM_MODE_3_SH);
+
+                            case ARM_MODE_3_SB:
+                                EXEC_LOAD_STORE_1(ARM_MODE_3_LOAD | ARM_MODE_3_SB);
+
+                            case ARM_MODE_3_D:
+                                EXEC_LOAD_STORE_1(ARM_MODE_3_LOAD | ARM_MODE_3_D);
+                        }
+                    } else {
+                        switch (mode & ARM_MODE_3_TYPE) {
+                            case ARM_MODE_3_H:
+                                EXEC_LOAD_STORE_1(ARM_MODE_3_H);
+
+                            case ARM_MODE_3_SH:
+                            case ARM_MODE_3_SB:
+                                return execFn_invalid<wasT>;
+
+                            case ARM_MODE_3_D:
+                                EXEC_LOAD_STORE_1(ARM_MODE_3_D);
+                        }
+                    }
+
+#undef EXEC_LOAD_STORE_1
+                }
+            } else if ((instr & 0x01900000UL) == 0x01000000UL) {  // misc instrs (table 3.3)
+                switch ((instr >> 4) & 0x0F) {
+                    case 0:
+                    case 5:
+                    case 7:
+                    case 8:
+                    case 9:
+                    case 10:
+                    case 11:
+                    case 12:
+                    case 13:
+                    case 14:
+                    case 15:
+                        return cpuPrvExecInstr<wasT>;
+
+                    case 1:  // BLX/BX/BXJ or CLZ
+                    case 3:
+                        if (instr & 0x00400000UL) {  // CLZ
+                            return execFn_clz<wasT>;
+                        } else {
+                            return (instr & 0x00000030UL) == 0x00000030UL ? execFn_bl<wasT, true>
+                                                                          : execFn_bl<wasT, false>;
+                        }
+
+                    default:
+                        return execFn_invalid<wasT>;
+                }
+            }
+    }
+
     return cpuPrvExecInstr<wasT>;
 }
 
@@ -2098,8 +2263,8 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bool pri
     uint_fast8_t v8;
 
     switch (instrT >> 12) {
-        case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2) LSR(2)
-                 // ASR(2) ROR AND EOR ORR BIC
+        case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2)
+                 // LSR(2) ASR(2) ROR AND EOR ORR BIC
 
             if (instrT & 0x0800) {  // LDR(3)
                 const uint32_t pc = cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL;
@@ -2153,7 +2318,8 @@ static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bool pri
                     default:
                         THUMB_FAIL;
                 }
-            } else {  // AND EOR LSL(2) LSR(2) ASR(2) ADC SBC ROR TST NEG CMP(2) CMN ORR MUL BIC MVN
+            } else {  // AND EOR LSL(2) LSR(2) ASR(2) ADC SBC ROR TST NEG CMP(2) CMN ORR MUL BIC
+                      // MVN
                 THUMB_FAIL;
             }
 
@@ -2235,7 +2401,8 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
     ok = icacheFetch<2>(cpu->ic, cpuPrvDecodeThumb, cpu->curInstrPC, &fsr, &instr, &decoded);
     if (!ok) {
         cpuPrvHandleMemErr(cpu, cpu->curInstrPC, 2, false, true, fsr);
-        return;  // exit here so that debugger can see us execute first instr of execption handler
+        return;  // exit here so that debugger can see us execute first instr of execption
+                 // handler
     }
 
     cpu->regs[REG_NO_PC] += 2;
@@ -2294,8 +2461,8 @@ static uint32_t translateThumb(uint16_t instrT) {
             }
             break;
 
-        case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2) LSR(2)
-                 // ASR(2) ROR AND EOR ORR BIC
+        case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2)
+                 // LSR(2) ASR(2) ROR AND EOR ORR BIC
 
             if (instrT & 0x0800) {  // LDR(3)
                 return 0;
@@ -2324,8 +2491,8 @@ static uint32_t translateThumb(uint16_t instrT) {
                     default:
                         goto undefined;
                 }
-            } else {  // AND EOR LSL(2) LSR(2) ASR(2) ADC SBC ROR TST NEG CMP(2) CMN ORR MUL BIC MVN
-                      // (in val_tabl order)
+            } else {  // AND EOR LSL(2) LSR(2) ASR(2) ADC SBC ROR TST NEG CMP(2) CMN ORR MUL BIC
+                      // MVN (in val_tabl order)
                 static const uint32_t val_tabl[16] = {
                     0x00100000UL, 0x00300000UL, 0x01B00010UL, 0x01B00030UL,
                     0x01B00050UL, 0x00B00000UL, 0x00D00000UL, 0x01B00070UL,
@@ -2355,8 +2522,8 @@ static uint32_t translateThumb(uint16_t instrT) {
             }
             break;
 
-        case 5:  // STR(2)  STRH(2) STRB(2) LDRSB LDR(2) LDRH(2) LDRB(2) LDRSH		(in val_tbl
-                 // orver)
+        case 5:  // STR(2)  STRH(2) STRB(2) LDRSB LDR(2) LDRH(2) LDRB(2) LDRSH		(in
+                 // val_tbl orver)
         {
             static const uint32_t val_tabl[8] = {0x07800000UL, 0x018000B0UL, 0x07C00000UL,
                                                  0x019000D0UL, 0x07900000UL, 0x019000B0UL,
@@ -2478,8 +2645,8 @@ static uint32_t translateThumb(uint16_t instrT) {
 undefined:
 
     return 0xE7F000F0UL | (instrT & 0x0F) |
-           ((instrT & 0xFFF0)
-            << 4);  // guranteed undefined instr, inside it we store the original thumb instr :)=-)
+           ((instrT & 0xFFF0) << 4);  // guranteed undefined instr, inside it we store the
+                                      // original thumb instr :)=-)
 }
 
 static bool cpuPrvConditionTableEntry(uint8_t key) {
