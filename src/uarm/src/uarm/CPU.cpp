@@ -190,6 +190,14 @@ static void cpuPrvSetReg(struct ArmCpu *cpu, uint_fast8_t reg, uint32_t val) {
         cpuPrvSetRegNotPC(cpu, reg, val);
 }
 
+template <bool pc>
+static void cpuPrvSetReg(struct ArmCpu *cpu, uint_fast8_t reg, uint32_t val) {
+    if constexpr (pc)
+        cpuPrvSetPC(cpu, val);
+    else
+        cpuPrvSetRegNotPC(cpu, reg, val);
+}
+
 static struct ArmBankedRegs *cpuPrvModeToBankedRegsPtr(struct ArmCpu *cpu, uint_fast8_t mode) {
     switch (mode) {
         case ARM_SR_MODE_USR:
@@ -352,7 +360,9 @@ static void cpuPrvHandleMemErr(struct ArmCpu *cpu, uint32_t addr, uint_fast8_t s
 }
 
 template <bool wasT>
-static uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr, bool *carryOutP) {
+inline static __attribute__((always_inline)) uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu,
+                                                                         uint32_t instr,
+                                                                         bool *carryOutP) {
     uint_fast8_t v, a;
     bool co = cpu->flags & ARM_SR_C;  // be default carry out = C flag
     uint32_t ret;
@@ -1541,10 +1551,6 @@ static void execFn_dspmul(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
             break;
 
         case 3:  // SMULxy
-#ifdef STRICT_CPU
-            if (instr & 0x0000F000UL) goto invalid_instr;
-#endif
-
             if (instr & 0x00000020UL)
                 op1 >>= 16;
             else
@@ -1561,14 +1567,180 @@ static void execFn_dspmul(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     }
 }
 
+template <bool wasT, int op, bool setFlags, bool srcPc, bool destPc>
+static void execFn_dproc(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint32_t op1, op2, res, sr;
+    uint64_t res64;
+    bool cOut;
+
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    op2 = cpuPrvArmAdrMode_1<wasT>(cpu, instr, &cOut);
+
+    switch (op) {
+        case 0:  // AND
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = op1 & op2;
+            break;
+
+        case 1:  // EOR
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = op1 ^ op2;
+            break;
+
+        case 2:  // SUB
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = op1 - op2;
+            if (setFlags) {
+                cpu->flags &= ~ARM_SR_V;
+                if (cpuPrvSignedSubtractionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
+                cOut = !__builtin_sub_overflow_u32(op1, op2, &res);
+            }
+            break;
+
+        case 3:  // RSB
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = op2 - op1;
+            if (setFlags) {
+                cpu->flags &= ~ARM_SR_V;
+                if (cpuPrvSignedSubtractionOverflows(op2, op1, res)) cpu->flags |= ARM_SR_V;
+                cOut = !__builtin_sub_overflow_u32(op2, op1, &res);
+            }
+            break;
+
+        case 4:  // ADD
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = op1 + op2;
+            if (setFlags) {
+                cpu->flags &= ~ARM_SR_V;
+                if (cpuPrvSignedAdditionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
+                cOut = __builtin_add_overflow_u32(op1, op2, &res);
+            }
+            break;
+
+        case 5:  // ADC
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = res64 = (uint64_t)op1 + op2 + ((cpu->flags & ARM_SR_C) >> 29);
+            if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
+                cOut = res64 >> 32;
+                cpuPrvSignedAdditionWithPossibleCarryOverflows(op1, op2, res);
+                cpu->flags &= ~ARM_SR_V;
+                if ((res64 >> 31) == 1 || (res64 >> 31) == 2) cpu->flags |= ARM_SR_V;
+            }
+            break;
+
+        case 6:  // SBC
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = res64 = (uint64_t)op1 - op2 - ((~cpu->flags & ARM_SR_C) >> 29);
+            if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
+                cOut = !(res64 >> 32);
+                cpu->flags &= ~ARM_SR_V;
+                if (cpuPrvSignedSubtractionWithPossibleCarryOverflows(op1, op2, res))
+                    cpu->flags |= ARM_SR_V;
+            }
+            break;
+
+        case 7:  // RSC
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = res64 = (uint64_t)op2 - op1 - ((~cpu->flags & ARM_SR_C) >> 29);
+            if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
+                cOut = !(res64 >> 32);
+                cpu->flags &= ~ARM_SR_V;
+                if (cpuPrvSignedSubtractionWithPossibleCarryOverflows(op2, op1, res))
+                    cpu->flags |= ARM_SR_V;
+            }
+            break;
+
+        case 8:  // TST
+            cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = op1 & op2;
+            goto dp_flag_set;
+
+        case 9:               // TEQ
+            if (!setFlags) {  // MSR CPSR, imm
+
+                cpuPrvSetPSR<false>(cpu, (instr >> 16) & 0x0F, privileged,
+                                    cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
+                return;
+            }
+            cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = op1 ^ op2;
+            goto dp_flag_set;
+
+        case 10:  // CMP
+            cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C | ARM_SR_V);
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = op1 - op2;
+            if (cpuPrvSignedSubtractionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
+            cOut = !__builtin_sub_overflow_u32(op1, op2, &res);
+            goto dp_flag_set;
+
+        case 11:              // CMN
+            if (!setFlags) {  // MSR SPSR, imm
+
+                cpuPrvSetPSR<true>(cpu, (instr >> 16) & 0x0F, privileged,
+                                   cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
+                return;
+            }
+            cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C | ARM_SR_V);
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = op1 + op2;
+            cpu->flags &= ~ARM_SR_V;
+            if (cpuPrvSignedAdditionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
+            cOut = __builtin_add_overflow_u32(op1, op2, &res);
+            goto dp_flag_set;
+
+        case 12:  // ORR
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = op1 | op2;
+            break;
+
+        case 13:  // MOV
+            res = op2;
+            break;
+
+        case 14:  // BIC
+            op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
+            res = op1 & ~op2;
+            break;
+
+        case 15:  // MVN
+            res = ~op2;
+            break;
+    }
+
+    if (!setFlags)  // simple store
+        cpuPrvSetReg<destPc>(cpu, (instr >> 12) & 0x0F, res);
+    else if (destPc) {  // copy SPSR to CPSR. we allow in user
+                        // mode too - allowed and faster
+
+        sr = cpu->SPSR;
+        cpuPrvSetPSRlo8(cpu, sr);
+        cpuPrvSetPSRhi8(cpu, sr);
+        cpu->regs[REG_NO_PC] = res;  // do it right here - if we let it use cpuPrvSetReg, it
+                                     // will check lower bit...
+    } else {                         // store and set flags
+
+        cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, res);
+        cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
+
+    dp_flag_set:
+        if (cOut) cpu->flags |= ARM_SR_C;
+        if (!res) cpu->flags |= ARM_SR_Z;
+        cpu->flags |= (res & 0x80000000UL);
+    }
+}
+
 template <bool wasT>
 static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
-    uint32_t op1, op2, res, sr, ea, memVal32, addBefore, addAfter;
+    uint32_t op1, sr, ea, memVal32, addBefore, addAfter;
     bool specialInstr = false, ok;
     uint_fast8_t mode, cpNo, fsr, sourceReg, destReg;
     uint_fast16_t regsList;
     uint8_t memVal8;
-    uint64_t res64;
 
 #ifdef SUPPORT_AXIM_PRINTF
     cpuPrvAximSysPrintf(cpu);
@@ -1584,191 +1756,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
     switch ((instr >> 24) & 0x0F) {
         case 0:
         case 1:  // data processing immediate shift, register shift and misc instrs and mults
-            if ((instr & 0x00000090UL) == 0x00000090) {  // multiplies, extra load/stores
-                __builtin_unreachable();
-            } else if ((instr & 0x01900000UL) == 0x01000000UL) {  // misc instrs (table 3.3)
-                __builtin_unreachable();
-            }
-
-            goto data_processing;
-            break;
-
         case 2:
         case 3:  // data process immediate val, move imm to SR
-
-        data_processing:  // data processing
-        {
-            bool cOut, setFlags = !!(instr & 0x00100000UL);
-
-            op2 = cpuPrvArmAdrMode_1<wasT>(cpu, instr, &cOut);
-
-            switch ((instr >> 21) & 0x0F) {
-                case 0:  // AND
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = op1 & op2;
-                    break;
-
-                case 1:  // EOR
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = op1 ^ op2;
-                    break;
-
-                case 2:  // SUB
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = op1 - op2;
-                    if (setFlags) {
-                        cpu->flags &= ~ARM_SR_V;
-                        if (cpuPrvSignedSubtractionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
-                        cOut = !__builtin_sub_overflow_u32(op1, op2, &res);
-                    }
-                    break;
-
-                case 3:  // RSB
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = op2 - op1;
-                    if (setFlags) {
-                        cpu->flags &= ~ARM_SR_V;
-                        if (cpuPrvSignedSubtractionOverflows(op2, op1, res)) cpu->flags |= ARM_SR_V;
-                        cOut = !__builtin_sub_overflow_u32(op2, op1, &res);
-                    }
-                    break;
-
-                case 4:  // ADD
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = op1 + op2;
-                    if (setFlags) {
-                        cpu->flags &= ~ARM_SR_V;
-                        if (cpuPrvSignedAdditionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
-                        cOut = __builtin_add_overflow_u32(op1, op2, &res);
-                    }
-                    break;
-
-                case 5:  // ADC
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = res64 = (uint64_t)op1 + op2 + ((cpu->flags & ARM_SR_C) >> 29);
-                    if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
-                        cOut = res64 >> 32;
-                        cpuPrvSignedAdditionWithPossibleCarryOverflows(op1, op2, res);
-                        cpu->flags &= ~ARM_SR_V;
-                        if ((res64 >> 31) == 1 || (res64 >> 31) == 2) cpu->flags |= ARM_SR_V;
-                    }
-                    break;
-
-                case 6:  // SBC
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = res64 = (uint64_t)op1 - op2 - ((~cpu->flags & ARM_SR_C) >> 29);
-                    if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
-                        cOut = !(res64 >> 32);
-                        cpu->flags &= ~ARM_SR_V;
-                        if (cpuPrvSignedSubtractionWithPossibleCarryOverflows(op1, op2, res))
-                            cpu->flags |= ARM_SR_V;
-                    }
-                    break;
-
-                case 7:  // RSC
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = res64 = (uint64_t)op2 - op1 - ((~cpu->flags & ARM_SR_C) >> 29);
-                    if (setFlags) {  // hard to get this right in C in 32 bits so go to 64...
-                        cOut = !(res64 >> 32);
-                        cpu->flags &= ~ARM_SR_V;
-                        if (cpuPrvSignedSubtractionWithPossibleCarryOverflows(op2, op1, res))
-                            cpu->flags |= ARM_SR_V;
-                    }
-                    break;
-
-                case 8:  // TST
-#ifdef STRICT_CPU
-                    if (!setFlags) goto invalid_instr;
-#endif
-                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = op1 & op2;
-                    goto dp_flag_set;
-
-                case 9:               // TEQ
-                    if (!setFlags) {  // MSR CPSR, imm
-
-                        cpuPrvSetPSR<false>(cpu, (instr >> 16) & 0x0F, privileged,
-                                            cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
-                        goto instr_done;
-                    }
-                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = op1 ^ op2;
-                    goto dp_flag_set;
-
-                case 10:  // CMP
-#ifdef STRICT_CPU
-                    if (!setFlags) goto invalid_instr;
-#endif
-                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C | ARM_SR_V);
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = op1 - op2;
-                    if (cpuPrvSignedSubtractionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
-                    cOut = !__builtin_sub_overflow_u32(op1, op2, &res);
-                    goto dp_flag_set;
-
-                case 11:              // CMN
-                    if (!setFlags) {  // MSR SPSR, imm
-
-                        cpuPrvSetPSR<true>(cpu, (instr >> 16) & 0x0F, privileged,
-                                           cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
-                        goto instr_done;
-                    }
-                    cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C | ARM_SR_V);
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = op1 + op2;
-                    cpu->flags &= ~ARM_SR_V;
-                    if (cpuPrvSignedAdditionOverflows(op1, op2, res)) cpu->flags |= ARM_SR_V;
-                    cOut = __builtin_add_overflow_u32(op1, op2, &res);
-                    goto dp_flag_set;
-
-                case 12:  // ORR
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = op1 | op2;
-                    break;
-
-                case 13:  // MOV
-                    res = op2;
-                    break;
-
-                case 14:  // BIC
-                    op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 16) & 0x0F);
-                    res = op1 & ~op2;
-                    break;
-
-                case 15:  // MVN
-                    res = ~op2;
-                    break;
-
-                default:
-                    __builtin_unreachable();
-                    res = 0;
-                    break;
-            }
-
-            if (!setFlags)  // simple store
-                cpuPrvSetReg(cpu, (instr >> 12) & 0x0F, res);
-            else if (((instr >> 12) & 0x0F) == REG_NO_PC) {  // copy SPSR to CPSR. we allow in user
-                                                             // mode too - allowed and faster
-
-                sr = cpu->SPSR;
-                cpuPrvSetPSRlo8(cpu, sr);
-                cpuPrvSetPSRhi8(cpu, sr);
-                cpu->regs[REG_NO_PC] = res;  // do it right here - if we let it use cpuPrvSetReg, it
-                                             // will check lower bit...
-            } else {                         // store and set flags
-
-                cpuPrvSetReg(cpu, (instr >> 12) & 0x0F, res);
-                cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
-
-            dp_flag_set:
-                if (cOut) cpu->flags |= ARM_SR_C;
-                if (!res) cpu->flags |= ARM_SR_Z;
-                cpu->flags |= (res & 0x80000000UL);
-            }
-            goto instr_done;
-        } break;
+            __builtin_unreachable();
 
         case 4:
         case 5:  // load/store imm offset
@@ -2241,7 +2231,90 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                     default:
                         return execFn_invalid<wasT>;
                 }
+
+                // fall through to data processing;
             }
+
+        case 2:
+        case 3:  // data process immediate val, move imm to SR
+        {
+            const bool setFlags = !!(instr & 0x00100000UL);
+            const bool srcPc = ((instr >> 16) & 0x0F) == 0x0f;
+            const bool destPc = ((instr >> 12) & 0x0F) == 0x0f;
+
+#define EXEC_DPROC(op)                                                   \
+    if (setFlags) {                                                      \
+        if (srcPc)                                                       \
+            return destPc ? execFn_dproc<wasT, op, true, true, true>     \
+                          : execFn_dproc<wasT, op, true, true, false>;   \
+        else                                                             \
+            return destPc ? execFn_dproc<wasT, op, true, false, true>    \
+                          : execFn_dproc<wasT, op, true, false, false>;  \
+    } else {                                                             \
+        if (srcPc)                                                       \
+            return destPc ? execFn_dproc<wasT, op, false, true, true>    \
+                          : execFn_dproc<wasT, op, false, true, false>;  \
+        else                                                             \
+            return destPc ? execFn_dproc<wasT, op, false, false, true>   \
+                          : execFn_dproc<wasT, op, false, false, false>; \
+    }
+
+            switch ((instr >> 21) & 0x0F) {
+                case 0:  // AND
+                    EXEC_DPROC(0);
+
+                case 1:  // EOR
+                    EXEC_DPROC(1);
+
+                case 2:  // SUB
+                    EXEC_DPROC(2);
+
+                case 3:  // RSB
+                    EXEC_DPROC(3);
+
+                case 4:  // ADD
+                    EXEC_DPROC(4);
+
+                case 5:  // ADC
+                    EXEC_DPROC(5);
+
+                case 6:  // SBC
+                    EXEC_DPROC(6);
+
+                case 7:  // RSC
+                    EXEC_DPROC(7);
+
+                case 8:  // TST
+                    if (!setFlags) return execFn_invalid<wasT>;
+                    EXEC_DPROC(8);
+
+                case 9:  // TEQ
+                    EXEC_DPROC(9);
+
+                case 10:  // CMP
+                    if (!setFlags) return execFn_invalid<wasT>;
+                    EXEC_DPROC(10);
+
+                case 11:  // CMN
+                    EXEC_DPROC(11);
+
+                case 12:  // ORR
+                    EXEC_DPROC(12);
+
+                case 13:  // MOV
+                    EXEC_DPROC(13);
+
+                case 14:  // BIC
+                    EXEC_DPROC(14);
+
+                case 15:  // MVN
+                    EXEC_DPROC(15);
+
+                default:
+                    __builtin_unreachable();
+            }
+#undef EXEC_DPROC
+        } break;
     }
 
     return cpuPrvExecInstr<wasT>;
