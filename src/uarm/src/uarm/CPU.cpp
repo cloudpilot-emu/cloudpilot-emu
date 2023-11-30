@@ -664,10 +664,10 @@ static uint_fast8_t cpuPrvArmAdrMode_5(struct ArmCpu *cpu, uint32_t instr, uint3
     return reg;
 }
 
-static void cpuPrvSetPSR(struct ArmCpu *cpu, uint_fast8_t mask, bool privileged, bool R,
-                         uint32_t val) {
-    if (R)  // setting SPSR in sys or usr mode is no harm since they arent used, so just do it
-            // without any checks
+template <bool spsr>
+static void cpuPrvSetPSR(struct ArmCpu *cpu, uint_fast8_t mask, bool privileged, uint32_t val) {
+    if constexpr (spsr)  // setting SPSR in sys or usr mode is no harm since they arent used, so
+                         // just do it without any checks
         cpu->SPSR = val;
     else {
         if (privileged && (mask & 1)) cpuPrvSetPSRlo8(cpu, val);
@@ -1378,6 +1378,23 @@ static void execFn_bl(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     cpuPrvSetPC(cpu, cpuPrvGetReg<wasT>(cpu, instr & 0x0F));
 }
 
+template <bool wasT, bool spsr>
+static void execFn_psr2reg(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, spsr ? cpu->SPSR : cpuPrvMaterializeCPSR(cpu));
+}
+
+template <bool wasT, bool spsr, bool pc>
+static void execFn_reg2psr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    cpuPrvSetPSR<spsr>(cpu, (instr >> 16) & 0x0F, privileged,
+                       cpuPrvGetReg<wasT, pc>(cpu, instr & 0x0F));
+}
+
 template <bool wasT>
 static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, op2, res, sr, ea, memVal32, addBefore, addAfter;
@@ -1407,23 +1424,6 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
 
                 switch ((instr >> 4) & 0x0F) {
                     case 0:  // move reg to PSR or move PSR to reg
-
-                        if ((instr & 0x00BF0FFFUL) == 0x000F0000UL) {  // move PSR to reg
-
-                            // access in user and sys mode is undefined. for us that means returning
-                            // garbage that is currently in "cpu->SPSR"
-                            cpuPrvSetRegNotPC(
-                                cpu, (instr >> 12) & 0x0F,
-                                (instr & 0x00400000UL) ? cpu->SPSR : cpuPrvMaterializeCPSR(cpu));
-                        } else if ((instr & 0x00B0FFF0UL) == 0x0020F000UL) {  // move reg to PSR
-
-                            cpuPrvSetPSR(cpu, (instr >> 16) & 0x0F, privileged,
-                                         !!(instr & 0x00400000UL),
-                                         cpuPrvGetReg<wasT>(cpu, instr & 0x0F));
-                        } else
-                            goto invalid_instr;
-                        goto instr_done;
-
                     case 1:  // BLX/BX/BXJ or CLZ
                     case 3:
                         __builtin_unreachable();
@@ -1701,8 +1701,8 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                 case 9:               // TEQ
                     if (!setFlags) {  // MSR CPSR, imm
 
-                        cpuPrvSetPSR(cpu, (instr >> 16) & 0x0F, privileged, false,
-                                     cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
+                        cpuPrvSetPSR<false>(cpu, (instr >> 16) & 0x0F, privileged,
+                                            cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
                         goto instr_done;
                     }
                     cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
@@ -1724,8 +1724,8 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                 case 11:              // CMN
                     if (!setFlags) {  // MSR SPSR, imm
 
-                        cpuPrvSetPSR(cpu, (instr >> 16) & 0x0F, privileged, true,
-                                     cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
+                        cpuPrvSetPSR<true>(cpu, (instr >> 16) & 0x0F, privileged,
+                                           cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
                         goto instr_done;
                     }
                     cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C | ARM_SR_V);
@@ -2177,7 +2177,22 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                 }
             } else if ((instr & 0x01900000UL) == 0x01000000UL) {  // misc instrs (table 3.3)
                 switch ((instr >> 4) & 0x0F) {
-                    case 0:
+                    case 0:  // move reg to PSR or move PSR to reg
+
+                        if ((instr & 0x00BF0FFFUL) == 0x000F0000UL) {  // move PSR to reg
+                            return (instr & 0x00400000UL) ? execFn_psr2reg<wasT, true>
+                                                          : execFn_psr2reg<wasT, false>;
+                        } else if ((instr & 0x00B0FFF0UL) == 0x0020F000UL) {  // move reg to PSR
+                            if ((instr & 0x0f) == 0x0f)
+                                return (instr & 0x00400000UL) ? execFn_reg2psr<wasT, true, true>
+                                                              : execFn_reg2psr<wasT, false, true>;
+                            else
+                                return (instr & 0x00400000UL) ? execFn_reg2psr<wasT, true, false>
+                                                              : execFn_reg2psr<wasT, false, false>;
+
+                        } else
+                            return execFn_invalid<wasT>;
+
                     case 5:
                     case 7:
                     case 8:
