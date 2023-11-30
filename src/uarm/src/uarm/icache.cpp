@@ -78,6 +78,7 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
     if (line->revision != ic->revision || line->tag != tag) {
         uint32_t pa;
         uint8_t mappingInfo;
+        uint8_t data[sizeof(line->data)];
         struct ArmMemRegion* region;
 
         if (!mmuTranslate(ic->mmu, va, true, false, &pa, fsrP, &mappingInfo, &region)) return false;
@@ -94,12 +95,24 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
             return true;
         }
 
-        if (!memAccess(ic->mem, pa & 0xffffffe0, 32, MEM_ACCESS_TYPE_READ, line->data)) {
+        bool ok = region ? region->aF(region->uD, pa & (0xffffffff << CACHE_LINE_WIDTH_BITS),
+                                      sizeof(data), false, data)
+                         : memAccess(ic->mem, pa & ((0xffffffff << CACHE_LINE_WIDTH_BITS)),
+                                     sizeof(data), MEM_ACCESS_TYPE_READ, data);
+        if (!ok) {
             if (fsrP) *fsrP = 0x0d;  // perm error
             return false;
         };
 
-        memset(line->decoded, 0, sizeof(line->decoded));
+        for (size_t i = 0; i < sizeof(data); i += 8) {
+            if (*(uint32_t*)(data + i) != *(uint32_t*)(line->data + i))
+                line->decoded[i >> 1] = line->decoded[(i >> 1) + 1] = 0;
+
+            if (*(uint32_t*)(data + i + 4) != *(uint32_t*)(line->data + i + 4))
+                line->decoded[(i >> 1) + 2] = line->decoded[(i >> 1) + 3] = 0;
+
+            *(uint64_t*)(line->data + i) = *(uint64_t*)(data + i);
+        }
 
         line->revision = ic->revision;
         line->tag = tag;
@@ -111,8 +124,9 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
             const uint32_t inst = *(uint32_t*)(line->data + i);
             *(uint32_t*)buf = inst;
 
-            const size_t iInst = i >> 2;
+            const size_t iInst = i >> 1;
             if ((line->decoded[iInst] & 0x03) != 0x02) {
+                // fprintf(stderr, "decode cache miss ARM\n");
                 *decoded = decode(inst);
                 line->decoded[iInst] = (*decoded << 2) | 0x02;
             } else {
@@ -133,6 +147,7 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
 
             const size_t iInst = i >> 1;
             if ((line->decoded[iInst] & 0x03) != 0x03) {
+                // fprintf(stderr, "decode cache miss thumb\n");
                 *decoded = decode(inst);
                 line->decoded[iInst] = (*decoded << 2) | 0x03;
             } else {
