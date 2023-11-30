@@ -1395,6 +1395,172 @@ static void execFn_reg2psr(struct ArmCpu *cpu, uint32_t instr, bool privileged) 
                        cpuPrvGetReg<wasT, pc>(cpu, instr & 0x0F));
 }
 
+template <bool wasT, int tag>
+static void execFn_dspadd(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint32_t op1, op2, res;
+
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    op1 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);          // Rm
+    op2 = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);  // Rn
+    switch (tag) {                                       // what op?
+
+        case 0:  // QADD
+
+            res = op1 + op2;
+            if (cpuPrvSignedAdditionOverflows(op1, op2, res)) {
+                cpu->Q = 1;
+                res = cpuPrvMedia_signedSaturate32(op1);
+            }
+            break;
+
+        case 1:  // QSUB
+
+            res = op1 - op2;
+            if (cpuPrvSignedAdditionOverflows(op1, op2, res)) {
+                cpu->Q = 1;
+                res = cpuPrvMedia_signedSaturate32(op1);
+            }
+            break;
+        case 2:  // QDADD
+
+            res = op2 + op2;
+            if (cpuPrvSignedAdditionOverflows(op2, op2, res)) {
+                cpu->Q = 1;
+                res = cpuPrvMedia_signedSaturate32(op2);
+            }
+            op2 = res;
+
+            res = op1 + op2;
+            if (cpuPrvSignedAdditionOverflows(op1, op2, res)) {
+                cpu->Q = 1;
+                res = cpuPrvMedia_signedSaturate32(op1);
+            }
+            break;
+
+        case 3:  // QDSUB
+
+            res = op2 + op2;
+            if (cpuPrvSignedAdditionOverflows(op2, op2, res)) {
+                cpu->Q = 1;
+                res = cpuPrvMedia_signedSaturate32(op2);
+            }
+            op2 = res;
+
+            res = op1 - op2;
+            if (cpuPrvSignedAdditionOverflows(op1, op2, res)) {
+                cpu->Q = 1;
+                res = cpuPrvMedia_signedSaturate32(op1);
+            }
+            break;
+
+        default:
+            __builtin_unreachable();
+    }
+
+    cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, res);
+}
+
+template <bool wasT>
+static void execFn_softbreak(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_P_ABT, cpu->curInstrPC + 4,
+                    ARM_SR_MODE_ABT | ARM_SR_I);
+}
+
+template <bool wasT, int tag>
+static void execFn_dspmul(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint32_t op1, op2, res;
+    uint64_t res64;
+
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    op1 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);         // Rm
+    op2 = cpuPrvGetRegNotPC(cpu, (instr >> 8) & 0x0F);  // Rs
+    switch (tag) {                                      // what op?
+        case 0:                                         // SMLAxy
+            if (instr & 0x00000020UL)
+                op1 >>= 16;
+            else
+                op1 = (uint16_t)op1;
+
+            if (instr & 0x00000040UL)
+                op2 >>= 16;
+            else
+                op2 = (uint16_t)op2;
+
+            res = (int32_t)(int16_t)op1 * (int32_t)(int16_t)op2;
+            op1 = res;
+            op2 = cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F);  // Rn
+            res = op1 + op2;
+            if (cpuPrvSignedAdditionOverflows(op1, op2, res)) cpu->Q = 1;
+            cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res);
+            break;
+
+        case 1:  // SMLAWy/SMULWy
+
+            if (instr & 0x00000040UL)
+                op2 >>= 16;
+            else
+                op2 = (uint16_t)op2;
+
+            res = (((int64_t)(int32_t)op1 * (int64_t)(int16_t)op2) >> 16);
+
+            if ((instr & 0x00000020UL) == 0) {
+                op1 = res;
+                op2 = cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F);  // Rn
+                res = op1 + op2;
+                if (cpuPrvSignedAdditionOverflows(op1, op2, res)) cpu->Q = 1;
+            }
+
+            cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res);
+            break;
+
+        case 2:  // SMLALxy
+
+            if (instr & 0x00000020UL)
+                op1 >>= 16;
+            else
+                op1 = (uint16_t)op1;
+
+            if (instr & 0x00000040UL)
+                op2 >>= 16;
+            else
+                op2 = (uint16_t)op2;
+
+            res64 = cpuPrv64FromHalves(cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F),
+                                       cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F));
+            res64 += (int32_t)(int16_t)op1 * (int32_t)(int16_t)op2;
+
+            cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, res64);
+            cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res64 >> 32);
+            break;
+
+        case 3:  // SMULxy
+#ifdef STRICT_CPU
+            if (instr & 0x0000F000UL) goto invalid_instr;
+#endif
+
+            if (instr & 0x00000020UL)
+                op1 >>= 16;
+            else
+                op1 = (uint16_t)op1;
+
+            if (instr & 0x00000040UL)
+                op2 >>= 16;
+            else
+                op2 = (uint16_t)op2;
+
+            res = (int32_t)(int16_t)op1 * (int32_t)(int16_t)op2;
+            cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res);
+            break;
+    }
+}
+
 template <bool wasT>
 static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, op2, res, sr, ea, memVal32, addBefore, addAfter;
@@ -1421,186 +1587,7 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
             if ((instr & 0x00000090UL) == 0x00000090) {  // multiplies, extra load/stores
                 __builtin_unreachable();
             } else if ((instr & 0x01900000UL) == 0x01000000UL) {  // misc instrs (table 3.3)
-
-                switch ((instr >> 4) & 0x0F) {
-                    case 0:  // move reg to PSR or move PSR to reg
-                    case 1:  // BLX/BX/BXJ or CLZ
-                    case 3:
-                        __builtin_unreachable();
-
-                    case 5:  // enhanced DSP adds/subtracts
-
-#ifdef STRICT_CPU
-                        if (instr & 0x00000F00UL) goto invalid_instr;
-#endif
-                        op1 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);          // Rm
-                        op2 = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);  // Rn
-                        switch ((instr >> 21) & 3) {                         // what op?
-
-                            case 0:  // QADD
-
-                                res = op1 + op2;
-                                if (cpuPrvSignedAdditionOverflows(op1, op2, res)) {
-                                    cpu->Q = 1;
-                                    res = cpuPrvMedia_signedSaturate32(op1);
-                                }
-                                break;
-
-                            case 1:  // QSUB
-
-                                res = op1 - op2;
-                                if (cpuPrvSignedAdditionOverflows(op1, op2, res)) {
-                                    cpu->Q = 1;
-                                    res = cpuPrvMedia_signedSaturate32(op1);
-                                }
-                                break;
-                            case 2:  // QDADD
-
-                                res = op2 + op2;
-                                if (cpuPrvSignedAdditionOverflows(op2, op2, res)) {
-                                    cpu->Q = 1;
-                                    res = cpuPrvMedia_signedSaturate32(op2);
-                                }
-                                op2 = res;
-
-                                res = op1 + op2;
-                                if (cpuPrvSignedAdditionOverflows(op1, op2, res)) {
-                                    cpu->Q = 1;
-                                    res = cpuPrvMedia_signedSaturate32(op1);
-                                }
-                                break;
-
-                            case 3:  // QDSUB
-
-                                res = op2 + op2;
-                                if (cpuPrvSignedAdditionOverflows(op2, op2, res)) {
-                                    cpu->Q = 1;
-                                    res = cpuPrvMedia_signedSaturate32(op2);
-                                }
-                                op2 = res;
-
-                                res = op1 - op2;
-                                if (cpuPrvSignedAdditionOverflows(op1, op2, res)) {
-                                    cpu->Q = 1;
-                                    res = cpuPrvMedia_signedSaturate32(op1);
-                                }
-                                break;
-
-                            default:
-                                __builtin_unreachable();
-                                res = 0;
-                                break;
-                        }
-                        cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, res);
-                        goto instr_done;
-
-                    case 7:  // soft breakpoint
-
-                        cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_P_ABT,
-                                        cpu->curInstrPC + 4, ARM_SR_MODE_ABT | ARM_SR_I);
-                        goto instr_done;
-
-                    case 8:  // enhanced DSP multiplies
-                    case 9:
-                    case 10:
-                    case 11:
-                    case 12:
-                    case 13:
-                    case 14:
-                    case 15:
-#ifdef STRICT_CPU
-                        if ((instr & 0x00000090UL) != 0x00000080UL) goto invalid_instr;
-#endif
-                        op1 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);         // Rm
-                        op2 = cpuPrvGetRegNotPC(cpu, (instr >> 8) & 0x0F);  // Rs
-                        switch ((instr >> 21) & 3) {                        // what op?
-                            case 0:                                         // SMLAxy
-                                if (instr & 0x00000020UL)
-                                    op1 >>= 16;
-                                else
-                                    op1 = (uint16_t)op1;
-
-                                if (instr & 0x00000040UL)
-                                    op2 >>= 16;
-                                else
-                                    op2 = (uint16_t)op2;
-
-                                res = (int32_t)(int16_t)op1 * (int32_t)(int16_t)op2;
-                                op1 = res;
-                                op2 = cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F);  // Rn
-                                res = op1 + op2;
-                                if (cpuPrvSignedAdditionOverflows(op1, op2, res)) cpu->Q = 1;
-                                cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res);
-                                break;
-
-                            case 1:  // SMLAWy/SMULWy
-
-                                if (instr & 0x00000040UL)
-                                    op2 >>= 16;
-                                else
-                                    op2 = (uint16_t)op2;
-
-                                res = (((int64_t)(int32_t)op1 * (int64_t)(int16_t)op2) >> 16);
-
-                                if (instr & 0x00000020UL) {  // SMULWy
-#ifdef STRICT_CPU
-                                    if (instr & 0x0000F000UL) goto invalid_instr;
-#endif
-                                } else {  // SMLAWy
-
-                                    op1 = res;
-                                    op2 = cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F);  // Rn
-                                    res = op1 + op2;
-                                    if (cpuPrvSignedAdditionOverflows(op1, op2, res)) cpu->Q = 1;
-                                }
-                                cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res);
-                                break;
-
-                            case 2:  // SMLALxy
-
-                                if (instr & 0x00000020UL)
-                                    op1 >>= 16;
-                                else
-                                    op1 = (uint16_t)op1;
-
-                                if (instr & 0x00000040UL)
-                                    op2 >>= 16;
-                                else
-                                    op2 = (uint16_t)op2;
-
-                                res64 = cpuPrv64FromHalves(
-                                    cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F),
-                                    cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F));
-                                res64 += (int32_t)(int16_t)op1 * (int32_t)(int16_t)op2;
-
-                                cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, res64);
-                                cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res64 >> 32);
-                                break;
-
-                            case 3:  // SMULxy
-#ifdef STRICT_CPU
-                                if (instr & 0x0000F000UL) goto invalid_instr;
-#endif
-
-                                if (instr & 0x00000020UL)
-                                    op1 >>= 16;
-                                else
-                                    op1 = (uint16_t)op1;
-
-                                if (instr & 0x00000040UL)
-                                    op2 >>= 16;
-                                else
-                                    op2 = (uint16_t)op2;
-
-                                res = (int32_t)(int16_t)op1 * (int32_t)(int16_t)op2;
-                                cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res);
-                                break;
-                        }
-                        goto instr_done;
-
-                    default:
-                        goto invalid_instr;
-                }
+                __builtin_unreachable();
             }
 
             goto data_processing;
@@ -2193,8 +2180,29 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                         } else
                             return execFn_invalid<wasT>;
 
-                    case 5:
-                    case 7:
+                    case 5:  // enhanced DSP adds/subtracts
+                        if (instr & 0x00000F00UL) return execFn_invalid<wasT>;
+
+                        switch ((instr >> 21) & 3) {  // what op?
+                            case 0:                   // QADD
+                                return execFn_dspadd<wasT, 0>;
+
+                            case 1:  // QSUB
+                                return execFn_dspadd<wasT, 1>;
+
+                            case 2:  // QDADD
+                                return execFn_dspadd<wasT, 2>;
+
+                            case 3:  // QDSUB
+                                return execFn_dspadd<wasT, 3>;
+
+                            default:
+                                __builtin_unreachable();
+                        }
+
+                    case 7:  // soft breakpoint
+                        return execFn_softbreak<wasT>;
+
                     case 8:
                     case 9:
                     case 10:
@@ -2203,7 +2211,23 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                     case 13:
                     case 14:
                     case 15:
-                        return cpuPrvExecInstr<wasT>;
+                        switch ((instr >> 21) & 3) {  // what op?
+                            case 0:                   // SMLAxy
+                                return execFn_dspmul<wasT, 0>;
+
+                            case 1:  // SMLAWy/SMULWy
+                                if ((instr & 0x00000020UL) && (instr & 0x0000F000UL))
+                                    return execFn_invalid<wasT>;
+
+                                return execFn_dspmul<wasT, 1>;
+
+                            case 2:  // SMLALxy
+                                return execFn_dspmul<wasT, 2>;
+
+                            case 3:  // SMULxy
+                                if (instr & 0x0000F000UL) return execFn_invalid<wasT>;
+                                return execFn_dspmul<wasT, 3>;
+                        }
 
                     case 1:  // BLX/BX/BXJ or CLZ
                     case 3:
