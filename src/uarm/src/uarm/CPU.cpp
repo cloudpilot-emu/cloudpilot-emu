@@ -704,8 +704,9 @@ static int32_t cpuPrvMedia_signedSaturate32(int32_t sign) {
 }
 
 template <int size>
-static bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write,
-                          bool priviledged, uint_fast8_t *fsrP) {
+static inline bool __attribute__((always_inline))
+cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write, bool priviledged,
+              uint_fast8_t *fsrP) {
     uint32_t pa;
 
     gdbStubReportMemAccess(cpu->debugStub, vaddr, size, write);
@@ -741,8 +742,9 @@ static bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool wr
 
 // for internal use
 template <int size>
-static bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write, bool priviledged,
-                        uint_fast8_t *fsrP) {
+static inline bool __attribute__((always_inline))
+cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write, bool priviledged,
+            uint_fast8_t *fsrP) {
     if (cpuPrvMemOpEx<size>(cpu, buf, vaddr, write, priviledged, fsrP)) return true;
 
     fprintf(stderr, "%c of %u bytes to 0x%08lx failed!\n", (int)(write ? 'W' : 'R'), (unsigned)size,
