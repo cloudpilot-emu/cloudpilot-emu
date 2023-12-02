@@ -19,6 +19,8 @@
 #define unlikely(x) __builtin_expect((x), 0)
 #define likely(x) __builtin_expect((x), 1)
 
+#define FORCE_INLINE inline __attribute__((always_inline))
+
 #define NO_SUPPORT_FCSE
 #define NO_STRICT_CPU
 #define NO_TRACE_PACE
@@ -151,7 +153,7 @@ static uint32_t cpuPrvClz(uint32_t val) {
     ERR("CLZ undefined");
 }
 
-static inline uint32_t cpuPrvROR(uint32_t val, uint_fast8_t ror) {
+static FORCE_INLINE uint32_t cpuPrvROR(uint32_t val, uint_fast8_t ror) {
     return (val >> ror) | (val << (32 - ror));
 }
 
@@ -360,9 +362,8 @@ static void cpuPrvHandleMemErr(struct ArmCpu *cpu, uint32_t addr, uint_fast8_t s
 }
 
 template <bool wasT>
-inline static __attribute__((always_inline)) uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu,
-                                                                         uint32_t instr,
-                                                                         bool *carryOutP) {
+static FORCE_INLINE uint32_t cpuPrvArmAdrMode_1(struct ArmCpu *cpu, uint32_t instr,
+                                                bool *carryOutP) {
     uint_fast8_t v, a;
     bool co = cpu->flags & ARM_SR_C;  // be default carry out = C flag
     uint32_t ret;
@@ -493,14 +494,10 @@ static uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t instr, uint3
         }
     }
 
-    if (!(instr & 0x00400000UL)) reg |= ARM_MODE_2_WORD;
-    if (instr & 0x00100000UL) reg |= ARM_MODE_2_LOAD;
     if (!(instr & 0x00800000UL)) val = -val;
     if (!(instr & 0x01000000UL)) {
         *addBeforeP = 0;
         *addWritebackP = val;
-
-        if (instr & 0x00200000UL) reg |= ARM_MODE_2_T;
     } else if (instr & 0x00200000UL) {
         *addBeforeP = val;
         *addWritebackP = val;
@@ -510,6 +507,18 @@ static uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t instr, uint3
     }
 
     return reg;
+}
+
+static uint_fast8_t cpuPrvArmAdrModeDecode_2(uint32_t instr) {
+    uint_fast8_t mode = 0;
+
+    if (!(instr & 0x00400000UL)) mode |= ARM_MODE_2_WORD;
+    if (instr & 0x00100000UL) mode |= ARM_MODE_2_LOAD;
+    if (!(instr & 0x01000000UL)) {
+        if (instr & 0x00200000UL) mode |= ARM_MODE_2_T;
+    }
+
+    return mode;
 }
 
 /*
@@ -704,9 +713,8 @@ static int32_t cpuPrvMedia_signedSaturate32(int32_t sign) {
 }
 
 template <int size>
-static inline bool __attribute__((always_inline))
-cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write, bool priviledged,
-              uint_fast8_t *fsrP) {
+static FORCE_INLINE bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write,
+                                       bool priviledged, uint_fast8_t *fsrP) {
     uint32_t pa;
 
     gdbStubReportMemAccess(cpu->debugStub, vaddr, size, write);
@@ -742,9 +750,8 @@ cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write, bool pr
 
 // for internal use
 template <int size>
-static inline bool __attribute__((always_inline))
-cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write, bool priviledged,
-            uint_fast8_t *fsrP) {
+static FORCE_INLINE bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write,
+                                     bool priviledged, uint_fast8_t *fsrP) {
     if (cpuPrvMemOpEx<size>(cpu, buf, vaddr, write, priviledged, fsrP)) return true;
 
     fprintf(stderr, "%c of %u bytes to 0x%08lx failed!\n", (int)(write ? 'W' : 'R'), (unsigned)size,
@@ -1736,11 +1743,77 @@ static void execFn_dproc(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     }
 }
 
+template <bool wasT, int mode, bool srcPc, bool destPc>
+static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint32_t op1, ea, addBefore, addAfter, memVal32;
+    bool ok;
+    uint_fast8_t fsr, sourceReg, destReg;
+    uint8_t memVal8;
+
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    sourceReg = cpuPrvArmAdrMode_2(cpu, instr, &addBefore, &addAfter);
+    if (mode & ARM_MODE_2_T) privileged = false;
+
+    ea = cpuPrvGetReg<wasT, srcPc>(cpu, sourceReg);
+    ea += addBefore;
+
+    if (mode & ARM_MODE_2_LOAD) {
+        if (mode & ARM_MODE_2_WORD) {
+            ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, false, privileged, &fsr);
+            if (!ok) {
+                cpuPrvHandleMemErr(cpu, ea, 4, false, false, fsr);
+                return;
+            }
+
+            destReg = (instr >> 12) & 0x0F;
+
+            // from RePalm:
+            //
+            // #define CALL_OSCALL(tab,num)	"LDR R12,[R9, #-" #tab "] \nLDR PC,[R12, #"
+            // #num "]"
+            if (sourceReg == 9 && destReg == 12)
+                patchDispatchOnLoadR12FromR9(cpu->patchDispatch, addBefore);
+            if (sourceReg == 12 && destPc)
+                patchDispatchOnLoadPcFromR12(cpu->patchDispatch, addBefore, cpu->regs);
+
+            cpuPrvSetReg<destPc>(cpu, destReg, memVal32);
+        } else {
+            ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
+            if (!ok) {
+                cpuPrvHandleMemErr(cpu, ea, 1, false, false, fsr);
+                return;
+            }
+            cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, memVal8);
+        }
+    } else {
+        op1 = cpuPrvGetReg<wasT, destPc>(cpu, (instr >> 12) & 0x0F);
+
+        if (mode & ARM_MODE_2_WORD) {
+            memVal32 = op1;
+            ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, true, privileged, &fsr);
+            if (!ok) {
+                cpuPrvHandleMemErr(cpu, ea, 4, true, false, fsr);
+                return;
+            }
+        } else {
+            memVal8 = op1;
+            ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, true, privileged, &fsr);
+            if (!ok) {
+                cpuPrvHandleMemErr(cpu, ea, 1, true, false, fsr);
+                return;
+            }
+        }
+    }
+    if (addAfter) cpuPrvSetRegNotPC(cpu, sourceReg, ea - addBefore + addAfter);
+}
+
 template <bool wasT>
 static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
-    uint32_t op1, sr, ea, memVal32, addBefore, addAfter;
+    uint32_t sr, ea, memVal32, addBefore, addAfter;
     bool specialInstr = false, ok;
-    uint_fast8_t mode, cpNo, fsr, sourceReg, destReg;
+    uint_fast8_t mode, cpNo, fsr;
     uint_fast16_t regsList;
     uint8_t memVal8;
 
@@ -1760,81 +1833,11 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
         case 1:  // data processing immediate shift, register shift and misc instrs and mults
         case 2:
         case 3:  // data process immediate val, move imm to SR
-            __builtin_unreachable();
-
         case 4:
         case 5:  // load/store imm offset
-
-            goto load_store_mode_2;
-            break;
-
         case 6:
         case 7:  // load/store reg offset
-#ifdef STRICT_CPU
-            if (instr & 0x00000010UL)  // media and undefined instrs
-                goto invalid_instr;
-#endif
-
-        load_store_mode_2:
-            mode = cpuPrvArmAdrMode_2(cpu, instr, &addBefore, &addAfter);
-#ifdef STRICT_CPU
-            if (mode & ARM_MODE_2_INV) goto invalid_instr;
-#endif
-            if (mode & ARM_MODE_2_T) privileged = false;
-
-            sourceReg = mode & ARM_MODE_2_REG;
-            ea = cpuPrvGetReg<wasT>(cpu, sourceReg);
-            ea += addBefore;
-
-            if (mode & ARM_MODE_2_LOAD) {
-                if (mode & ARM_MODE_2_WORD) {
-                    ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, false, privileged, &fsr);
-                    if (!ok) {
-                        cpuPrvHandleMemErr(cpu, ea, 4, false, false, fsr);
-                        goto instr_done;
-                    }
-
-                    destReg = (instr >> 12) & 0x0F;
-
-                    // from RePalm:
-                    //
-                    // #define CALL_OSCALL(tab,num)	"LDR R12,[R9, #-" #tab "] \nLDR PC,[R12, #"
-                    // #num "]"
-                    if (sourceReg == 9 && destReg == 12)
-                        patchDispatchOnLoadR12FromR9(cpu->patchDispatch, addBefore);
-                    if (sourceReg == 12 && destReg == REG_NO_PC)
-                        patchDispatchOnLoadPcFromR12(cpu->patchDispatch, addBefore, cpu->regs);
-
-                    cpuPrvSetReg(cpu, destReg, memVal32);
-                } else {
-                    ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
-                    if (!ok) {
-                        cpuPrvHandleMemErr(cpu, ea, 1, false, false, fsr);
-                        goto instr_done;
-                    }
-                    cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, memVal8);
-                }
-            } else {
-                op1 = cpuPrvGetReg<wasT>(cpu, (instr >> 12) & 0x0F);
-
-                if (mode & ARM_MODE_2_WORD) {
-                    memVal32 = op1;
-                    ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, true, privileged, &fsr);
-                    if (!ok) {
-                        cpuPrvHandleMemErr(cpu, ea, 4, true, false, fsr);
-                        goto instr_done;
-                    }
-                } else {
-                    memVal8 = op1;
-                    ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, true, privileged, &fsr);
-                    if (!ok) {
-                        cpuPrvHandleMemErr(cpu, ea, 1, true, false, fsr);
-                        goto instr_done;
-                    }
-                }
-            }
-            if (addAfter) cpuPrvSetRegNotPC(cpu, mode & ARM_MODE_2_REG, ea - addBefore + addAfter);
-            goto instr_done;
+            __builtin_unreachable();
 
         case 8:
         case 9:  // load/store multiple
@@ -2317,6 +2320,64 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
             }
 #undef EXEC_DPROC
         } break;
+
+        case 4:
+        case 5:  // load/store imm offset
+
+            goto load_store_mode_2;
+            break;
+
+        case 6:
+        case 7:                        // load/store reg offset
+            if (instr & 0x00000010UL)  // media and undefined instrs
+                return execFn_invalid<wasT>;
+
+        load_store_mode_2: {
+            uint_fast8_t mode = cpuPrvArmAdrModeDecode_2(instr);
+            bool srcPc = ((instr >> 16) & 0x0f) == 0x0f;
+            bool destPc = ((instr >> 12) & 0x0f) == 0x0f;
+
+#define EXEC_LOAD_STORE_2(mode)                                       \
+    if (srcPc)                                                        \
+        return destPc ? execFn_load_store_2<wasT, mode, true, true>   \
+                      : execFn_load_store_2<wasT, mode, true, false>; \
+    else                                                              \
+        return destPc ? execFn_load_store_2<wasT, mode, false, true>  \
+                      : execFn_load_store_2<wasT, mode, false, false>;
+
+            if (mode & ARM_MODE_2_INV) return execFn_invalid<wasT>;
+
+            if (mode & ARM_MODE_2_LOAD) {
+                if (mode & ARM_MODE_2_WORD) {
+                    if (mode & ARM_MODE_2_T) {
+                        EXEC_LOAD_STORE_2(ARM_MODE_2_LOAD | ARM_MODE_2_WORD | ARM_MODE_2_T);
+                    } else {
+                        EXEC_LOAD_STORE_2(ARM_MODE_2_LOAD | ARM_MODE_2_WORD);
+                    }
+                } else {
+                    if (mode & ARM_MODE_2_T) {
+                        EXEC_LOAD_STORE_2(ARM_MODE_2_LOAD | ARM_MODE_2_T);
+                    } else {
+                        EXEC_LOAD_STORE_2(ARM_MODE_2_LOAD);
+                    }
+                }
+            } else {
+                if (mode & ARM_MODE_2_WORD) {
+                    if (mode & ARM_MODE_2_T) {
+                        EXEC_LOAD_STORE_2(ARM_MODE_2_WORD | ARM_MODE_2_T);
+                    } else {
+                        EXEC_LOAD_STORE_2(ARM_MODE_2_WORD);
+                    }
+                } else {
+                    if (mode & ARM_MODE_2_T) {
+                        EXEC_LOAD_STORE_2(ARM_MODE_2_T);
+                    } else {
+                        EXEC_LOAD_STORE_2(0);
+                    }
+                }
+            }
+#undef EXEC_LOAD_STORE_2
+        }
     }
 
     return cpuPrvExecInstr<wasT>;
@@ -2370,7 +2431,7 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
     cpuPrvDecodeExecFn(decoded)(cpu, instr, privileged);
 }
 
-static inline void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bool privileged) {
+static FORCE_INLINE void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bool privileged) {
 #define THUMB_FAIL ERR("thumb opcode should be transcoded:" __FILE__ ":" str(__LINE__));
     uint32_t v32;
     uint16_t v16;
