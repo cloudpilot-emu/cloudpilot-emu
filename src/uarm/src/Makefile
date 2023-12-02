@@ -9,8 +9,8 @@ CXX_EMCC ?= emcc
 LD_EMCC ?= emcc
 
 WASMOPT = wasm-opt
-WASMOPT_FLAG = --enable-bulk-memory --inlining --inlining-optimizing \
-	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -ffm -O4
+WASMOPT_FLAGS = --enable-bulk-memory --inlining --inlining-optimizing \
+	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
 
 CFLAGS_NATIVE ?= -O3  -g $(shell sdl2-config --cflags) -flto
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
@@ -144,7 +144,7 @@ $(BINARY_NATIVE): $(OBJECTS_NATIVE)
 
 $(BINARY_EMCC): $(OBJECTS_EMCC)
 	$(LD_EMCC) -o $@ $^ $(LDFLAGS_EMCC)
-	$(WASMOPT) $(WASMOPT_FLAG) -o ${@:.js=.wasm} ${@:.js=.wasm}
+	$(WASMOPT) $(WASMOPT_FLAGS) -o ${@:.js=.wasm} ${@:.js=.wasm}
 
 $(OBJECTS_NATIVE_C) : $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
