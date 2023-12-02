@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <iostream>
+
 #include "../util.h"
 #include "MMU.h"
 #include "cp15.h"
@@ -623,21 +625,14 @@ static uint_fast8_t cpuPrvArmAdrModeDecode_3(uint32_t instr) {
         #define ARM_MODE_4_S	0x80	//S bit set?
 */
 
-static uint_fast8_t cpuPrvArmAdrMode_4(struct ArmCpu *cpu, uint32_t instr, bool usesUsrRegs,
-                                       uint_fast16_t *regs) {
-    uint_fast8_t reg;
+static uint_fast8_t cpuPrvArmAdrModeDecode_4(uint32_t instr) {
+    uint_fast8_t mode = 0;
 
-    *regs = instr & 0xffff;
+    if (instr & 0x00200000UL) mode |= ARM_MODE_4_WBK;
+    if (instr & 0x00800000UL) mode |= ARM_MODE_4_INC;
+    if (instr & 0x01000000UL) mode |= ARM_MODE_4_BFR;
 
-    reg = (instr >> 16) & 0x0F;
-    if ((instr & 0x00400000UL) &&
-        !usesUsrRegs)  // real hw ignores "S" in modes that use user mode regs
-        reg |= ARM_MODE_4_S;
-    if (instr & 0x00200000UL) reg |= ARM_MODE_4_WBK;
-    if (instr & 0x00800000UL) reg |= ARM_MODE_4_INC;
-    if (instr & 0x01000000UL) reg |= ARM_MODE_4_BFR;
-
-    return reg;
+    return mode;
 }
 
 /*
@@ -1809,12 +1804,100 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privile
     if (addAfter) cpuPrvSetRegNotPC(cpu, sourceReg, ea - addBefore + addAfter);
 }
 
+template <bool wasT, int mmode, bool isLoadd>
+static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    bool userModeRegs = false, copySPSR = false, ok;
+    uint32_t loadedPc = 0xfffffffful;
+    uint_fast8_t idx, regNo, fsr;
+    uint_fast16_t regsList = instr & 0xffff;
+    uint_fast8_t reg = (instr >> 16) & 0x0f;
+    uint32_t memVal32, sr, ea;
+    uint32_t origBaseRegVal = ea = cpuPrvGetRegNotPC(cpu, reg);
+
+    bool isLoad = !!(instr & 0x00100000UL);
+    int mode = cpuPrvArmAdrModeDecode_4(instr);
+
+    if ((instr & 0x00400000UL) &&
+        !((cpu->M == ARM_SR_MODE_USR) || (cpu->M == ARM_SR_MODE_SYS))) {  // sort out what "S" means
+        if (isLoad && (regsList & (1 << REG_NO_PC)))
+            copySPSR = true;
+        else
+            userModeRegs = true;
+    }
+
+    for (idx = 0; idx < 16; idx++) {
+        regNo = (mode & ARM_MODE_4_INC) ? idx : 15 - idx;
+        if (!(regsList & (1 << regNo))) continue;
+
+        // if this is a store, get the value to store
+        if (!isLoad) {
+            memVal32 = cpuPrvGetReg<wasT>(cpu, regNo);
+            if (unlikely(userModeRegs)) {
+                if (regNo >= 8 && regNo <= 12 &&
+                    (cpu->M == ARM_SR_MODE_FIQ))  // handle fiq/usr banked regs
+                    memVal32 = cpu->extra_regs[regNo - 8];
+                else if (regNo == REG_NO_SP)
+                    memVal32 = cpu->bank_usr.R13;
+                else if (regNo == REG_NO_LR)
+                    memVal32 = cpu->bank_usr.R14;
+            }
+        }
+
+        // perform mem op
+        if (mode & ARM_MODE_4_BFR) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;
+        ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, !isLoad, privileged, &fsr);
+        if (!ok) {
+            cpuPrvHandleMemErr(cpu, ea, 4, !isLoad, false, fsr);
+            if (regsList & (1 << reg))  // restore base if we had already overwritten it
+                cpuPrvSetReg(cpu, reg, origBaseRegVal);
+
+            return;
+        }
+        if (!(mode & ARM_MODE_4_BFR)) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;
+
+        // if this is a load, store the value we just loaded
+        if (isLoad) {
+            if (unlikely(userModeRegs)) {
+                if (regNo >= 8 && regNo <= 12 &&
+                    (cpu->M == ARM_SR_MODE_FIQ)) {  // handle fiq/usr banked regs
+                    cpu->extra_regs[regNo - 8] = memVal32;
+                    continue;
+                } else if (regNo == REG_NO_SP) {
+                    cpu->bank_usr.R13 = memVal32;
+                    continue;
+                } else if (regNo == REG_NO_LR) {
+                    cpu->bank_usr.R14 = memVal32;
+                    continue;
+                }
+            }
+
+            if (unlikely(regNo == REG_NO_PC && copySPSR))
+                loadedPc = memVal32;
+            else
+                cpuPrvSetReg(cpu, regNo, memVal32);
+        }
+    }
+    if (mode & ARM_MODE_4_WBK) cpuPrvSetRegNotPC(cpu, reg, ea);
+    if (copySPSR) {
+        sr = cpu->SPSR;
+        cpuPrvSetPSRlo8(cpu, sr);
+        cpuPrvSetPSRhi8(cpu, sr);
+        cpu->regs[REG_NO_PC] = loadedPc;  // direct write - yes
+        if (cpu->T)
+            cpu->regs[REG_NO_PC] &= ~1;
+        else
+            cpu->regs[REG_NO_PC] &= ~3;
+    }
+}
+
 template <bool wasT>
 static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
-    uint32_t sr, ea, memVal32, addBefore, addAfter;
-    bool specialInstr = false, ok;
+    uint32_t ea, addBefore, addAfter;
+    bool specialInstr = false;
     uint_fast8_t mode, cpNo, fsr;
-    uint_fast16_t regsList;
     uint8_t memVal8;
 
 #ifdef SUPPORT_AXIM_PRINTF
@@ -1837,93 +1920,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
         case 5:  // load/store imm offset
         case 6:
         case 7:  // load/store reg offset
-            __builtin_unreachable();
-
         case 8:
         case 9:  // load/store multiple
-        {
-            bool userModeRegs = false, copySPSR = false, isLoad = !!(instr & 0x00100000UL);
-            uint32_t
-                loadedPc = 0xfffffffful,
-                origBaseRegVal;  // so we can restore on load failure, even if we loaded into it
-            uint_fast8_t idx, regNo;
-
-            mode = cpuPrvArmAdrMode_4(
-                cpu, instr, (cpu->M == ARM_SR_MODE_USR) || (cpu->M == ARM_SR_MODE_SYS), &regsList);
-            origBaseRegVal = ea = cpuPrvGetRegNotPC(cpu, mode & ARM_MODE_4_REG);
-            if (mode & ARM_MODE_4_S) {  // sort out what "S" means
-                if (isLoad && (regsList & (1 << REG_NO_PC)))
-                    copySPSR = true;
-                else
-                    userModeRegs = true;
-            }
-
-            for (idx = 0; idx < 16; idx++) {
-                regNo = (mode & ARM_MODE_4_INC) ? idx : 15 - idx;
-                if (!(regsList & (1 << regNo))) continue;
-
-                // if this is a store, get the value to store
-                if (!isLoad) {
-                    memVal32 = cpuPrvGetReg<wasT>(cpu, regNo);
-                    if (unlikely(userModeRegs)) {
-                        if (regNo >= 8 && regNo <= 12 &&
-                            (cpu->M == ARM_SR_MODE_FIQ))  // handle fiq/usr banked regs
-                            memVal32 = cpu->extra_regs[regNo - 8];
-                        else if (regNo == REG_NO_SP)
-                            memVal32 = cpu->bank_usr.R13;
-                        else if (regNo == REG_NO_LR)
-                            memVal32 = cpu->bank_usr.R14;
-                    }
-                }
-
-                // perform mem op
-                if (mode & ARM_MODE_4_BFR) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;
-                ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, !isLoad, privileged, &fsr);
-                if (!ok) {
-                    cpuPrvHandleMemErr(cpu, ea, 4, !isLoad, false, fsr);
-                    if (regsList &
-                        (1 << (mode &
-                               ARM_MODE_4_REG)))  // restore base if we had already overwritten it
-                        cpuPrvSetReg(cpu, mode & ARM_MODE_4_REG, origBaseRegVal);
-                    goto instr_done;
-                }
-                if (!(mode & ARM_MODE_4_BFR)) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;
-
-                // if this is a load, store the value we just loaded
-                if (isLoad) {
-                    if (unlikely(userModeRegs)) {
-                        if (regNo >= 8 && regNo <= 12 &&
-                            (cpu->M == ARM_SR_MODE_FIQ)) {  // handle fiq/usr banked regs
-                            cpu->extra_regs[regNo - 8] = memVal32;
-                            continue;
-                        } else if (regNo == REG_NO_SP) {
-                            cpu->bank_usr.R13 = memVal32;
-                            continue;
-                        } else if (regNo == REG_NO_LR) {
-                            cpu->bank_usr.R14 = memVal32;
-                            continue;
-                        }
-                    }
-
-                    if (unlikely(regNo == REG_NO_PC && copySPSR))
-                        loadedPc = memVal32;
-                    else
-                        cpuPrvSetReg(cpu, regNo, memVal32);
-                }
-            }
-            if (mode & ARM_MODE_4_WBK) cpuPrvSetRegNotPC(cpu, mode & ARM_MODE_4_REG, ea);
-            if (copySPSR) {
-                sr = cpu->SPSR;
-                cpuPrvSetPSRlo8(cpu, sr);
-                cpuPrvSetPSRhi8(cpu, sr);
-                cpu->regs[REG_NO_PC] = loadedPc;  // direct write - yes
-                if (cpu->T)
-                    cpu->regs[REG_NO_PC] &= ~1;
-                else
-                    cpu->regs[REG_NO_PC] &= ~3;
-            }
-        }
-            goto instr_done;
+            __builtin_unreachable();
 
         case 10:
         case 11:  // B/BL/BLX(if cond=0b1111)
@@ -2377,6 +2376,60 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                 }
             }
 #undef EXEC_LOAD_STORE_2
+        }
+
+        case 8:
+        case 9:  // load/store multiple
+        {
+            const uint_fast8_t mode = cpuPrvArmAdrModeDecode_4(instr);
+            const bool isLoad = !!(instr & 0x00100000UL);
+
+            if (mode & ARM_MODE_4_WBK) {
+                if (mode & ARM_MODE_4_INC) {
+                    if (mode & ARM_MODE_4_BFR)
+                        return isLoad ? execFn_load_store_multi<
+                                            wasT, ARM_MODE_4_WBK | ARM_MODE_4_INC | ARM_MODE_4_BFR,
+                                            true>
+                                      : execFn_load_store_multi<
+                                            wasT, ARM_MODE_4_WBK | ARM_MODE_4_INC | ARM_MODE_4_BFR,
+                                            false>;
+                    else
+                        return isLoad
+                                   ? execFn_load_store_multi<wasT, ARM_MODE_4_WBK | ARM_MODE_4_INC,
+                                                             true>
+                                   : execFn_load_store_multi<wasT, ARM_MODE_4_WBK | ARM_MODE_4_INC,
+                                                             false>;
+                } else {
+                    if (mode & ARM_MODE_4_BFR)
+                        return isLoad
+                                   ? execFn_load_store_multi<wasT, ARM_MODE_4_WBK | ARM_MODE_4_BFR,
+                                                             true>
+                                   : execFn_load_store_multi<wasT, ARM_MODE_4_WBK | ARM_MODE_4_BFR,
+                                                             false>;
+                    else
+                        return isLoad ? execFn_load_store_multi<wasT, ARM_MODE_4_WBK, true>
+                                      : execFn_load_store_multi<wasT, ARM_MODE_4_WBK, false>;
+                }
+            } else {
+                if (mode & ARM_MODE_4_INC) {
+                    if (mode & ARM_MODE_4_BFR)
+                        return isLoad
+                                   ? execFn_load_store_multi<wasT, ARM_MODE_4_INC | ARM_MODE_4_BFR,
+                                                             true>
+                                   : execFn_load_store_multi<wasT, ARM_MODE_4_INC | ARM_MODE_4_BFR,
+                                                             false>;
+                    else
+                        return isLoad ? execFn_load_store_multi<wasT, ARM_MODE_4_INC, true>
+                                      : execFn_load_store_multi<wasT, ARM_MODE_4_INC, false>;
+                } else {
+                    if (mode & ARM_MODE_4_BFR)
+                        return isLoad ? execFn_load_store_multi<wasT, ARM_MODE_4_BFR, true>
+                                      : execFn_load_store_multi<wasT, ARM_MODE_4_BFR, false>;
+                    else
+                        return isLoad ? execFn_load_store_multi<wasT, 0, true>
+                                      : execFn_load_store_multi<wasT, 0, false>;
+                }
+            }
         }
     }
 
