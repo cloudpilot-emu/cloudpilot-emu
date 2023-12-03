@@ -1060,7 +1060,7 @@ static void execFn_invalid(struct ArmCpu *cpu, uint32_t instr, bool privileged) 
     }
 }
 
-template <bool wasT>
+template <bool wasT, bool align2>
 static void execFn_b2thumb(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t ea;
 
@@ -1072,7 +1072,7 @@ static void execFn_b2thumb(struct ArmCpu *cpu, uint32_t instr, bool privileged) 
     if (!wasT) ea <<= 1;
     ea += cpu->curInstrPC;
 
-    if (instr & 0x01000000UL) ea += 2;
+    if (align2) ea += 2;
     cpu->regs[REG_NO_LR] = cpu->curInstrPC + (wasT ? 2 : 4);
     if (!cpu->T) ea |= 1UL;  // set T flag if needed
 
@@ -1378,13 +1378,9 @@ static void execFn_clz(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
 }
 
 template <bool wasT, bool link>
-static void execFn_bl(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_bl_reg(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
-
-#ifdef STRICT_CPU
-    if ((instr & 0x0FFFFF00UL) != 0x012FFF00UL) return execFn_invalid(cpu, instr, privileged);
-#endif
 
     if (link)
         cpuPrvSetRegNotPC(cpu, REG_NO_LR,
@@ -1893,9 +1889,28 @@ static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr, bool pri
     }
 }
 
+template <bool wasT, bool link>
+static void execFn_bl(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint32_t ea;
+
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
+    ea = instr << 8;
+    ea = ((int32_t)ea) >> 7;
+    ea += 4;
+    if (!wasT) ea <<= 1;
+    ea += cpu->curInstrPC;
+
+    if (instr & 0x01000000UL) cpu->regs[REG_NO_LR] = cpu->curInstrPC + (wasT ? 2 : 4);
+    if (cpu->T) ea |= 1UL;  // keep T flag as needed
+
+    cpuPrvSetPC(cpu, ea);
+}
+
 template <bool wasT>
 static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
-    uint32_t ea, addBefore, addAfter;
+    uint32_t addBefore, addAfter;
     bool specialInstr = false;
     uint_fast8_t mode, cpNo, fsr;
     uint8_t memVal8;
@@ -1922,21 +1937,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
         case 7:  // load/store reg offset
         case 8:
         case 9:  // load/store multiple
-            __builtin_unreachable();
-
         case 10:
         case 11:  // B/BL/BLX(if cond=0b1111)
-            ea = instr << 8;
-            ea = ((int32_t)ea) >> 7;
-            ea += 4;
-            if (!wasT) ea <<= 1;
-            ea += cpu->curInstrPC;
-
-            if (instr & 0x01000000UL) cpu->regs[REG_NO_LR] = cpu->curInstrPC + (wasT ? 2 : 4);
-            if (cpu->T) ea |= 1UL;  // keep T flag as needed
-
-            cpuPrvSetPC(cpu, ea);
-            goto instr_done;
+            __builtin_unreachable();
 
         case 12:
         case 13:  // coprocessor load/store and double register transfers
@@ -2049,7 +2052,8 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
 
             case 10:
             case 11:
-                return execFn_b2thumb<wasT>;
+                return (instr & 0x01000000UL) ? execFn_b2thumb<wasT, true>
+                                              : execFn_b2thumb<wasT, false>;
 
             case 12:
             case 13:
@@ -2228,8 +2232,11 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                         if (instr & 0x00400000UL) {  // CLZ
                             return execFn_clz<wasT>;
                         } else {
-                            return (instr & 0x00000030UL) == 0x00000030UL ? execFn_bl<wasT, true>
-                                                                          : execFn_bl<wasT, false>;
+                            if ((instr & 0x0FFFFF00UL) != 0x012FFF00UL) return execFn_invalid<wasT>;
+
+                            return (instr & 0x00000030UL) == 0x00000030UL
+                                       ? execFn_bl_reg<wasT, true>
+                                       : execFn_bl_reg<wasT, false>;
                         }
 
                     default:
@@ -2431,6 +2438,10 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                 }
             }
         }
+
+        case 10:
+        case 11:  // B/BL/BLX(if cond=0b1111)
+            return (instr & 0x01000000UL) ? execFn_bl<wasT, true> : execFn_bl<wasT, false>;
     }
 
     return cpuPrvExecInstr<wasT>;
