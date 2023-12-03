@@ -143,7 +143,7 @@ static bool table_conditions[256];
 static ImmShift table_immShiftReg[1024];
 static ImmShift table_immShiftImm[128];
 
-static uint32_t cpuPrvClz(uint32_t val) {
+static FORCE_INLINE uint32_t cpuPrvClz(uint32_t val) {
     if (!val) return 32;
 
     if (sizeof(int) == sizeof(uint32_t)) return __builtin_clz(val);
@@ -159,14 +159,14 @@ static FORCE_INLINE uint32_t cpuPrvROR(uint32_t val, uint_fast8_t ror) {
     return (val >> ror) | (val << (32 - ror));
 }
 
-static void cpuPrvSetPC(struct ArmCpu *cpu, uint32_t pc)  // with interworking
+static FORCE_INLINE void cpuPrvSetPC(struct ArmCpu *cpu, uint32_t pc)  // with interworking
 {
     cpu->regs[REG_NO_PC] = pc & ~1UL;
     cpu->T = (pc & 1);
 }
 
 template <bool wasT>
-static uint32_t cpuPrvGetReg(struct ArmCpu *cpu, uint_fast8_t reg) {
+static FORCE_INLINE uint32_t cpuPrvGetReg(struct ArmCpu *cpu, uint_fast8_t reg) {
     uint32_t ret;
 
     ret = cpu->regs[reg];
@@ -176,18 +176,18 @@ static uint32_t cpuPrvGetReg(struct ArmCpu *cpu, uint_fast8_t reg) {
 }
 
 template <bool wasT, bool pc>
-static uint32_t cpuPrvGetReg(struct ArmCpu *cpu, uint_fast8_t reg) {
+static FORCE_INLINE uint32_t cpuPrvGetReg(struct ArmCpu *cpu, uint_fast8_t reg) {
     if constexpr (pc)
         return cpu->regs[REG_NO_PC] + (wasT ? 2 : 4);
     else
         return cpu->regs[reg];
 }
 
-static void cpuPrvSetRegNotPC(struct ArmCpu *cpu, uint_fast8_t reg, uint32_t val) {
+static FORCE_INLINE void cpuPrvSetRegNotPC(struct ArmCpu *cpu, uint_fast8_t reg, uint32_t val) {
     cpu->regs[reg] = val;
 }
 
-static void cpuPrvSetReg(struct ArmCpu *cpu, uint_fast8_t reg, uint32_t val) {
+static FORCE_INLINE void cpuPrvSetReg(struct ArmCpu *cpu, uint_fast8_t reg, uint32_t val) {
     if (reg == REG_NO_PC)
         cpuPrvSetPC(cpu, val);
     else
@@ -195,14 +195,15 @@ static void cpuPrvSetReg(struct ArmCpu *cpu, uint_fast8_t reg, uint32_t val) {
 }
 
 template <bool pc>
-static void cpuPrvSetReg(struct ArmCpu *cpu, uint_fast8_t reg, uint32_t val) {
+static FORCE_INLINE void cpuPrvSetReg(struct ArmCpu *cpu, uint_fast8_t reg, uint32_t val) {
     if constexpr (pc)
         cpuPrvSetPC(cpu, val);
     else
         cpuPrvSetRegNotPC(cpu, reg, val);
 }
 
-static struct ArmBankedRegs *cpuPrvModeToBankedRegsPtr(struct ArmCpu *cpu, uint_fast8_t mode) {
+static FORCE_INLINE struct ArmBankedRegs *cpuPrvModeToBankedRegsPtr(struct ArmCpu *cpu,
+                                                                    uint_fast8_t mode) {
     switch (mode) {
         case ARM_SR_MODE_USR:
         case ARM_SR_MODE_SYS:
@@ -229,7 +230,7 @@ static struct ArmBankedRegs *cpuPrvModeToBankedRegsPtr(struct ArmCpu *cpu, uint_
     }
 }
 
-static void cpuPrvSwitchToMode(struct ArmCpu *cpu, uint_fast8_t newMode) {
+static FORCE_INLINE void cpuPrvSwitchToMode(struct ArmCpu *cpu, uint_fast8_t newMode) {
     struct ArmBankedRegs *saveTo, *getFrom;
     uint_fast8_t i, curMode;
     uint32_t tmp;
@@ -263,19 +264,19 @@ static void cpuPrvSwitchToMode(struct ArmCpu *cpu, uint_fast8_t newMode) {
     cpu->M = newMode;
 }
 
-static void cpuPrvSetPSRlo8(struct ArmCpu *cpu, uint_fast8_t val) {
+static FORCE_INLINE void cpuPrvSetPSRlo8(struct ArmCpu *cpu, uint_fast8_t val) {
     cpuPrvSwitchToMode(cpu, val & ARM_SR_M);
     cpu->T = !!(val & ARM_SR_T);
     cpu->F = !!(val & ARM_SR_F);
     cpu->I = !!(val & ARM_SR_I);
 }
 
-static void cpuPrvSetPSRhi8(struct ArmCpu *cpu, uint32_t val) {
+static FORCE_INLINE void cpuPrvSetPSRhi8(struct ArmCpu *cpu, uint32_t val) {
     cpu->flags = val & 0xf0000000UL;
     cpu->Q = !!(val & ARM_SR_Q);
 }
 
-static uint32_t cpuPrvMaterializeCPSR(struct ArmCpu *cpu) {
+static FORCE_INLINE uint32_t cpuPrvMaterializeCPSR(struct ArmCpu *cpu) {
     uint32_t ret = cpu->flags;
 
     if (cpu->Q) ret |= ARM_SR_Q;
@@ -454,8 +455,8 @@ ARM_MODE_2_T	is flag for T
 
 
 */
-static uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t instr, uint32_t *addBeforeP,
-                                       uint32_t *addWritebackP) {
+static FORCE_INLINE uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t instr,
+                                                    uint32_t *addBeforeP, uint32_t *addWritebackP) {
     uint_fast8_t reg, shift;
     uint32_t val;
 
@@ -536,8 +537,8 @@ same comments as for addr mode 2 apply
 #define ARM_MODE_3_INV	0x80
 */
 
-static uint_fast8_t cpuPrvArmAdrMode_3(struct ArmCpu *cpu, uint32_t instr, uint32_t *addBeforeP,
-                                       uint32_t *addWritebackP) {
+static FORCE_INLINE uint_fast8_t cpuPrvArmAdrMode_3(struct ArmCpu *cpu, uint32_t instr,
+                                                    uint32_t *addBeforeP, uint32_t *addWritebackP) {
     uint_fast8_t reg;
     uint32_t val;
 
@@ -640,8 +641,9 @@ static uint_fast8_t cpuPrvArmAdrModeDecode_4(uint32_t instr) {
 #define ARM_MODE_5_IS_OPTION	0x10	//is value option (as opposed to offset)
 #define ARM_MODE_5_RR		0x20	//MCRR or MRCC instrs
 */
-static uint_fast8_t cpuPrvArmAdrMode_5(struct ArmCpu *cpu, uint32_t instr, uint32_t *addBeforeP,
-                                       uint32_t *addAfterP, uint8_t *optionValP) {
+static FORCE_INLINE uint_fast8_t cpuPrvArmAdrMode_5(struct ArmCpu *cpu, uint32_t instr,
+                                                    uint32_t *addBeforeP, uint32_t *addAfterP,
+                                                    uint8_t *optionValP) {
     uint_fast8_t reg;
     uint32_t val;
 
@@ -679,7 +681,8 @@ static uint_fast8_t cpuPrvArmAdrMode_5(struct ArmCpu *cpu, uint32_t instr, uint3
 }
 
 template <bool spsr>
-static void cpuPrvSetPSR(struct ArmCpu *cpu, uint_fast8_t mask, bool privileged, uint32_t val) {
+static FORCE_INLINE void cpuPrvSetPSR(struct ArmCpu *cpu, uint_fast8_t mask, bool privileged,
+                                      uint32_t val) {
     if constexpr (spsr)  // setting SPSR in sys or usr mode is no harm since they arent used, so
                          // just do it without any checks
         cpu->SPSR = val;
@@ -690,20 +693,21 @@ static void cpuPrvSetPSR(struct ArmCpu *cpu, uint_fast8_t mask, bool privileged,
     }
 }
 
-static bool cpuPrvSignedAdditionOverflows(int32_t a, int32_t b, int32_t sum) {
+static FORCE_INLINE bool cpuPrvSignedAdditionOverflows(int32_t a, int32_t b, int32_t sum) {
     int32_t c;
 
     return __builtin_add_overflow_i32(a, b, &c);
 }
 
-static bool cpuPrvSignedSubtractionOverflows(int32_t a, int32_t b, int32_t diff)  // diff = a - b
+static FORCE_INLINE bool cpuPrvSignedSubtractionOverflows(int32_t a, int32_t b,
+                                                          int32_t diff)  // diff = a - b
 {
     int32_t c;
 
     return __builtin_sub_overflow_i32(a, b, &c);
 }
 
-static int32_t cpuPrvMedia_signedSaturate32(int32_t sign) {
+static FORCE_INLINE int32_t cpuPrvMedia_signedSaturate32(int32_t sign) {
     return (sign < 0) ? -0x80000000L : 0x7fffffffl;
 }
 
@@ -848,7 +852,7 @@ static void cpuPrvAximSysPrintf(struct ArmCpu *cpu) {
 }
 #endif
 
-static uint64_t cpuPrv64FromHalves(uint64_t hi, uint32_t lo) {
+static FORCE_INLINE uint64_t cpuPrv64FromHalves(uint64_t hi, uint32_t lo) {
     // better than shifting in almost all compilers
     union {
         struct {
@@ -871,13 +875,15 @@ static uint64_t cpuPrv64FromHalves(uint64_t hi, uint32_t lo) {
     return t.val;
 }
 
-static bool cpuPrvSignedSubtractionWithPossibleCarryOverflows(uint32_t a, uint32_t b,
-                                                              uint32_t diff)  // diff = a - b
+static FORCE_INLINE bool cpuPrvSignedSubtractionWithPossibleCarryOverflows(
+    uint32_t a, uint32_t b,
+    uint32_t diff)  // diff = a - b
 {
     return ((a ^ b) & (a ^ diff)) >> 31;
 }
 
-static bool cpuPrvSignedAdditionWithPossibleCarryOverflows(uint32_t a, uint32_t b, uint32_t sum) {
+static FORCE_INLINE bool cpuPrvSignedAdditionWithPossibleCarryOverflows(uint32_t a, uint32_t b,
+                                                                        uint32_t sum) {
     return ((a ^ b ^ 0x80000000UL) & (a ^ sum)) >> 31;
 }
 
