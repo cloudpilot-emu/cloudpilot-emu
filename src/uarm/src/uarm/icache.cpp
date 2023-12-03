@@ -22,7 +22,7 @@ struct icacheline {
 
     uint_fast8_t tag;
     uint32_t revision;
-};
+} __attribute__((aligned(8)));
 
 struct icache {
     struct ArmMem* mem;
