@@ -14,6 +14,15 @@ extern "C" {
 
 struct ArmMmu;
 
+typedef uint64_t MMUTranslateResult;
+
+#define MMU_TRANSLATE_RESULT_OK(x) (!(x & (1ull << 63)))
+#define MMU_TRANSLATE_RESULT_HAS_REGION(x) (x & (1ull << 62))
+#define MMU_TRANSLATE_RESULT_CACHEABLE(x) (x & (1ull << 61))
+#define MMU_TRANSLATE_RESULT_PA(x) (x & 0xffffffff)
+#define MMU_TRANSLATE_RESULT_FSR(x) ((uint8_t)((x >> 32) & 0xff))
+#define MMU_TRANSLATE_RESULT_REGION(x) (memRegionBase + ((x >> 40) & 0xff))
+
 #define MMU_DISABLED_TTP 0xFFFFFFFFUL
 
 #define MMU_MAPPING_CACHEABLE 0x0001
@@ -21,8 +30,7 @@ struct ArmMmu;
 struct ArmMmu *mmuInit(struct ArmMem *mem, bool xscaleMode);
 void mmuReset(struct ArmMmu *mmu);
 
-bool mmuTranslate(struct ArmMmu *mmu, uint32_t va, bool priviledged, bool write, uint32_t *paP,
-                  uint_fast8_t *fsrP, uint8_t *mappingInfoP, struct ArmMemRegion **region);
+MMUTranslateResult mmuTranslate(struct ArmMmu *mmu, uint32_t va, bool priviledged, bool write);
 
 bool mmuIsOn(struct ArmMmu *mmu);
 

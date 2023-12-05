@@ -68,7 +68,7 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
                  uint32_t* decoded) {
     if (va & (sz - 1)) {  // alignment issue
 
-        if (fsrP) *fsrP = 3;
+        *fsrP = 3;
         return false;
     }
 
@@ -76,18 +76,25 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
     const uint_fast8_t tag = calculateTag(va);
 
     if (line->revision != ic->revision || line->tag != tag) {
-        uint32_t pa;
-        uint8_t mappingInfo;
         uint8_t data[sizeof(line->data)];
-        struct ArmMemRegion* region;
 
-        if (!mmuTranslate(ic->mmu, va, true, false, &pa, fsrP, &mappingInfo, &region)) return false;
+        MMUTranslateResult translateResult = mmuTranslate(ic->mmu, va, true, false);
+        if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+            *fsrP = MMU_TRANSLATE_RESULT_FSR(translateResult);
+            return false;
+        }
 
-        if ((mappingInfo & MMU_MAPPING_CACHEABLE) == 0) {
+        struct ArmMemRegion* region = NULL;
+        uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+        if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult))
+            region = MMU_TRANSLATE_RESULT_REGION(translateResult);
+
+        if (!MMU_TRANSLATE_RESULT_CACHEABLE(translateResult)) {
             bool ok = region ? region->aF(region->uD, pa, sz, false, buf)
                              : memAccess(ic->mem, pa, sz, MEM_ACCESS_TYPE_READ, buf);
+
             if (!ok) {
-                if (fsrP) *fsrP = 0x0d;  // perm error
+                *fsrP = 0x0d;  // perm error
                 return false;
             }
 

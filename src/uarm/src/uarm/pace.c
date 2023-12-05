@@ -35,9 +35,17 @@ static uint32_t pace_get_le(uint32_t addr, uint8_t size) {
     wasWrite = false;
     wasSz = size;
 
-    struct ArmMemRegion* region;
-    uint32_t pa;
-    if (!mmuTranslate(mmu, addr, priviledged, false, &pa, &fsr, NULL, &region)) return 0;
+    MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, false);
+
+    if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+        fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
+        return 0;
+    }
+
+    struct ArmMemRegion* region = NULL;
+    uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+    if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult))
+        region = MMU_TRANSLATE_RESULT_REGION(translateResult);
 
     uint32_t result;
     bool ok = region ? region->aF(region->uD, pa, size, false, &result)
@@ -80,9 +88,17 @@ static void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
 
     // fprintf(stderr, "%u byte write %#010x to %#010x\n", (uint32_t)size, value, addr);
 
-    struct ArmMemRegion* region;
-    uint32_t pa;
-    if (!mmuTranslate(mmu, addr, priviledged, true, &pa, &fsr, NULL, &region)) return;
+    MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, true);
+
+    if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+        fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
+        return;
+    }
+
+    struct ArmMemRegion* region = NULL;
+    uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+    if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult))
+        region = MMU_TRANSLATE_RESULT_REGION(translateResult);
 
     bool ok = region ? region->aF(region->uD, pa, size, true, &value)
                      : memAccess(mem, pa, size, MEM_ACCESS_TYPE_WRITE, &value);
@@ -241,12 +257,19 @@ void paceSetStatePtr(uint32_t addr) { statePtr = addr + 4; }
 uint8_t paceGetFsr() { return fsr; }
 
 bool paceLoad68kState() {
-    uint32_t statePtrPa;
-    struct ArmMemRegion* statePtrRegion;
     static uint32_t stateScratchBuffer[18];
 
-    if (!mmuTranslate(mmu, statePtr, priviledged, false, &statePtrPa, &fsr, NULL, &statePtrRegion))
+    MMUTranslateResult translateResult = mmuTranslate(mmu, statePtr, priviledged, false);
+
+    if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+        fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
         return false;
+    }
+
+    struct ArmMemRegion* statePtrRegion = NULL;
+    uint32_t statePtrPa = MMU_TRANSLATE_RESULT_PA(translateResult);
+    if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult))
+        statePtrRegion = MMU_TRANSLATE_RESULT_REGION(translateResult);
 
     void* state = (sizeof(struct regstruct) == sizeof(stateScratchBuffer))
                       ? &regs
@@ -256,7 +279,7 @@ bool paceLoad68kState() {
     wasSz = 64;
     wasWrite = false;
 
-    if (statePtrRegion->aF) {
+    if (statePtrRegion) {
         if (!statePtrRegion->aF(statePtrRegion->uD, statePtrPa, 64, false, state)) return false;
 
         lastAddr = statePtr + 64;
@@ -285,12 +308,19 @@ bool paceLoad68kState() {
 }
 
 bool paceSave68kState() {
-    uint32_t statePtrPa;
-    struct ArmMemRegion* statePtrRegion;
     static uint32_t stateScratchBuffer[18];
 
-    if (!mmuTranslate(mmu, statePtr, priviledged, true, &statePtrPa, &fsr, NULL, &statePtrRegion))
+    MMUTranslateResult translateResult = mmuTranslate(mmu, statePtr, priviledged, false);
+
+    if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+        fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
         return false;
+    }
+
+    struct ArmMemRegion* statePtrRegion = NULL;
+    uint32_t statePtrPa = MMU_TRANSLATE_RESULT_PA(translateResult);
+    if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult))
+        statePtrRegion = MMU_TRANSLATE_RESULT_REGION(translateResult);
 
     void* state;
 
@@ -310,7 +340,7 @@ bool paceSave68kState() {
     wasSz = 64;
     wasWrite = true;
 
-    if (statePtrRegion->aF) {
+    if (statePtrRegion) {
         if (!statePtrRegion->aF(statePtrRegion->uD, statePtrPa, 64, true, state)) return false;
 
         lastAddr = statePtr + 64;

@@ -714,8 +714,6 @@ static FORCE_INLINE int32_t cpuPrvMedia_signedSaturate32(int32_t sign) {
 template <int size>
 static FORCE_INLINE bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write,
                                        bool priviledged, uint_fast8_t *fsrP) {
-    uint32_t pa;
-
     gdbStubReportMemAccess(cpu->debugStub, vaddr, size, write);
 
     if constexpr (size > 1) {
@@ -730,9 +728,18 @@ static FORCE_INLINE bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t v
     if (vaddr < 0x02000000UL) vaddr |= cpu->pid;
 #endif
 
-    struct ArmMemRegion *region;
+    MMUTranslateResult translateResult = mmuTranslate(cpu->mmu, vaddr, priviledged, write);
 
-    if (!mmuTranslate(cpu->mmu, vaddr, priviledged, write, &pa, fsrP, NULL, &region)) return false;
+    if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+        *fsrP = MMU_TRANSLATE_RESULT_FSR(translateResult);
+        return false;
+    }
+
+    struct ArmMemRegion *region = NULL;
+    uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+    if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult)) {
+        region = MMU_TRANSLATE_RESULT_REGION(translateResult);
+    }
 
     bool ok = region ? region->aF(region->uD, pa, size, write, buf)
                      : memAccess(cpu->mem, pa, size,

@@ -8,6 +8,8 @@
 #include "mem.h"
 #include "util.h"
 
+#define TRANSLATE_RESULT_FAULT(fsr) ((1ull << 63) | ((uint64_t)(fsr) << 32))
+
 struct TlbEntry {
     uint32_t pa;
 
@@ -17,7 +19,7 @@ struct TlbEntry {
     uint32_t c : 1;
     uint32_t section : 1;
 
-    struct ArmMemRegion *region;
+    uint8_t region;
 };
 
 struct ArmMmu {
@@ -79,21 +81,18 @@ static inline struct TlbEntry *getTlbEntry(struct ArmMmu *mmu, uint32_t va) {
     return lvl1 + ((va >> 12) & 0xfff);
 }
 
-static inline bool checkPermissions(struct ArmMmu *mmu, uint_fast8_t ap, uint_fast8_t domain,
-                                    bool section, bool priviledged, bool write,
-                                    uint_fast8_t *fsrP) {
+static inline uint8_t checkPermissions(struct ArmMmu *mmu, uint_fast8_t ap, uint_fast8_t domain,
+                                       bool section, bool priviledged, bool write) {
     switch ((mmu->domainCfg >> (domain * 2)) & 3) {
         case 0:  // NO ACCESS:
         case 2:  // RESERVED: unpredictable	(treat as no access)
-            if (fsrP)
-                *fsrP = (section ? 0x08 : 0xB) | (domain << 4);  // section or page domain fault
-            return false;
+            return (section ? 0x08 : 0xB) | (domain << 4);  // section or page domain fault
 
         case 1:  // CLIENT: check permissions
             break;
 
         case 3:  // MANAGER: allow all access
-            return true;
+            return 0;
     }
 
     // check permissions
@@ -101,53 +100,45 @@ static inline bool checkPermissions(struct ArmMmu *mmu, uint_fast8_t ap, uint_fa
     switch (ap) {
         case 0:
             if (write || (!mmu->R && (!priviledged || !mmu->S))) break;
-            return true;
+            return 0;
 
         case 1:
             if (!priviledged) break;
-            return true;
+            return 0;
 
         case 2:
             if (!priviledged && write) break;
-            return true;
+            return 0;
 
         case 3:
-            return true;
+            return 0;
     }
 
     // perm_err:
-    if (fsrP)
-        *fsrP = (section ? 0x0D : 0x0F) | (domain << 4);  // section or subpage permission fault
-    return false;
+    return (section ? 0x0D : 0x0F) | (domain << 4);  // section or subpage permission fault
 }
 
-static inline bool translateAndCache(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write,
-                                     uint32_t *paP, uint_fast8_t *fsrP, uint8_t *mappingInfoP,
-                                     struct ArmMemRegion **region) {
+static MMUTranslateResult translateAndCache(struct ArmMmu *mmu, uint32_t adr, bool priviledged,
+                                            bool write) {
     bool c = false;
     bool section = false, coarse = true, pxa_tex_page = false;
-    uint32_t va, pa = 0, sz, t;
+    uint32_t va, paPage = 0, sz, t, pa;
     int_fast16_t i;
     uint_fast8_t dom, ap = 0;
+    uint8_t region = 0xff, fsr;
+    MMUTranslateResult result;
 
     // read first level table
-    if (mmu->transTablPA & 3) {
-        if (fsrP) *fsrP = 0x01;  // alignment fault
-        return false;
-    }
+    if (mmu->transTablPA & 3) return TRANSLATE_RESULT_FAULT(0x01);  // alignment fault
 
     if (!memAccess(mmu->mem, mmu->transTablPA + ((adr & 0xFFF00000ul) >> 18), 4,
-                   MEM_ACCESS_TYPE_READ, &t)) {
-        if (fsrP) *fsrP = 0x0C;  // translation external abort first level
-        return false;
-    }
+                   MEM_ACCESS_TYPE_READ, &t))
+        return TRANSLATE_RESULT_FAULT(0x0C);
 
     dom = (t >> 5) & 0x0F;
     switch (t & 3) {
         case 0:  // fault
-
-            if (fsrP) *fsrP = 0x5;  // section translation fault
-            return false;
+            return TRANSLATE_RESULT_FAULT(0x05);
 
         case 1:  // coarse pagetable
 
@@ -157,7 +148,7 @@ static inline bool translateAndCache(struct ArmMmu *mmu, uint32_t adr, bool priv
 
         case 2:  // 1MB section
 
-            pa = t & 0xFFF00000UL;
+            paPage = t & 0xFFF00000UL;
             va = adr & 0xFFF00000UL;
             sz = 1UL << 20;
             ap = (t >> 10) & 3;
@@ -175,21 +166,18 @@ static inline bool translateAndCache(struct ArmMmu *mmu, uint32_t adr, bool priv
 
     // read second level table
     if (!memAccess(mmu->mem, t, 4, MEM_ACCESS_TYPE_READ, &t)) {
-        if (fsrP) *fsrP = 0x0E | (dom << 4);  // translation external abort second level
-        return false;
+        return TRANSLATE_RESULT_FAULT(0x0E | (dom << 4));
     }
 
     c = !!(t & 0x08);
 
     switch (t & 3) {
         case 0:  // fault
-
-            if (fsrP) *fsrP = 0x07 | (dom << 4);  // page translation fault
-            return false;
+            return TRANSLATE_RESULT_FAULT(0x07 | (dom << 4));
 
         case 1:  // 64K mapping
 
-            pa = t & 0xFFFF0000UL;
+            paPage = t & 0xFFFF0000UL;
             va = adr & 0xFFFF0000UL;
             sz = 65536UL;
             ap = (adr >> 14) & 3;  // in "ap" store which AP we need [of the 4]
@@ -201,7 +189,7 @@ static inline bool translateAndCache(struct ArmMmu *mmu, uint32_t adr, bool priv
             ap = (adr >> 10) & 3;  // in "ap" store which AP we need [of the 4]
 
         page_size_4k:
-            pa = t & 0xFFFFF000UL;
+            paPage = t & 0xFFFFF000UL;
             va = adr & 0xFFFFF000UL;
             sz = 4096;
             break;
@@ -215,11 +203,11 @@ static inline bool translateAndCache(struct ArmMmu *mmu, uint32_t adr, bool priv
                     goto page_size_4k;
                 } else {
                     fprintf(stderr, "invalid coarse page table entry\r\n");
-                    if (fsrP) *fsrP = 7;
+                    return TRANSLATE_RESULT_FAULT(0x07);
                 }
             }
 
-            pa = t & 0xFFFFFC00UL;
+            paPage = t & 0xFFFFFC00UL;
             va = adr & 0xFFFFFC00UL;
             ap = (t >> 4) & 3;  // in "ap" store the actual AP [and skip quarter-page resolution
                                 // later using the goto]
@@ -238,12 +226,14 @@ static inline bool translateAndCache(struct ArmMmu *mmu, uint32_t adr, bool priv
     else {  // take the quarter that is the one we need
 
         sz /= 4;
-        pa += ((uint32_t)ap) * sz;
+        paPage += ((uint32_t)ap) * sz;
         va += ((uint32_t)ap) * sz;
         ap = (t >> (4 + 2 * ap)) & 3;
     }
 
 translated:
+    pa = (adr - va) + paPage;
+
     if (sz > 1024) {
         for (uint32_t offset = 0; offset < sz; offset += 4096) {
             struct TlbEntry *tlbEntry = getTlbEntry(mmu, va + offset);
@@ -252,48 +242,52 @@ translated:
             tlbEntry->c = c;
             tlbEntry->domain = dom;
             tlbEntry->section = section;
-            tlbEntry->pa = pa + offset;
+            tlbEntry->pa = paPage + offset;
             tlbEntry->revision = mmu->revision;
             tlbEntry->region = memRegionFind(mmu->mem, tlbEntry->pa, 4096);
 
-            if (adr >= tlbEntry->pa && adr - tlbEntry->pa < 4096) *region = tlbEntry->region;
+            if (pa >= tlbEntry->pa && pa - tlbEntry->pa < 4096) {
+                region = tlbEntry->region;
+            }
         }
     }
 
-    if (!checkPermissions(mmu, ap, dom, section, priviledged, write, fsrP)) return false;
+    fsr = checkPermissions(mmu, ap, dom, section, priviledged, write);
+    if (fsr) return TRANSLATE_RESULT_FAULT(fsr);
 
-    *paP = (adr - va) + pa;
-    if (mappingInfoP) *mappingInfoP = c ? MMU_MAPPING_CACHEABLE : 0;
+    result = pa;
 
-    return true;
+    if (!(region & 0x80)) {
+        result |= 1ull << 62;
+        result |= (uint64_t)region << 40;
+    }
+
+    if (c) result |= (1ull << 61);
+
+    return result;
 }
 
-bool mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write, uint32_t *paP,
-                  uint_fast8_t *fsrP, uint8_t *mappingInfoP, struct ArmMemRegion **region) {
-    *region = NULL;
-
-    if (mmu->transTablPA == MMU_DISABLED_TTP) {
-        *paP = adr;
-        if (mappingInfoP) *mappingInfoP = 0;
-
-        return true;
-    }
+MMUTranslateResult mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write) {
+    if (mmu->transTablPA == MMU_DISABLED_TTP) return adr;
 
     struct TlbEntry *tlbEntry = getTlbEntry(mmu, adr);
 
-    if (tlbEntry->revision != mmu->revision)
-        return translateAndCache(mmu, adr, priviledged, write, paP, fsrP, mappingInfoP, region);
+    if (tlbEntry->revision != mmu->revision) return translateAndCache(mmu, adr, priviledged, write);
 
-    if (!checkPermissions(mmu, tlbEntry->ap, tlbEntry->domain, tlbEntry->section, priviledged,
-                          write, fsrP))
-        return false;
+    uint8_t fsr = checkPermissions(mmu, tlbEntry->ap, tlbEntry->domain, tlbEntry->section,
+                                   priviledged, write);
+    if (fsr) return TRANSLATE_RESULT_FAULT(fsr);
 
-    *region = tlbEntry->region;
+    uint64_t result = (adr & 0xfff) + tlbEntry->pa;
 
-    *paP = (adr & 0xfff) + tlbEntry->pa;
-    if (mappingInfoP) *mappingInfoP = tlbEntry->c ? MMU_MAPPING_CACHEABLE : 0;
+    // if (!(tlbEntry->region & 0x80)) {
+    //     result |= 1ull << 62;
+    //     result |= ((uint64_t)tlbEntry->region << 40);
+    // }
 
-    return true;
+    if (tlbEntry->c) result |= (1ull << 61);
+
+    return result;
 }
 
 uint32_t mmuGetTTP(struct ArmMmu *mmu) { return mmu->transTablPA; }
