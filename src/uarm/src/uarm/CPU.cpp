@@ -735,15 +735,10 @@ static FORCE_INLINE bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t v
         return false;
     }
 
-    struct ArmMemRegion *region = NULL;
     uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
-    if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult)) {
-        region = MMU_TRANSLATE_RESULT_REGION(translateResult);
-    }
 
-    bool ok = region ? region->aF(region->uD, pa, size, write, buf)
-                     : memAccess(cpu->mem, pa, size,
-                                 (write ? MEM_ACCESS_TYPE_WRITE : MEM_ACCESS_TYPE_READ), buf);
+    bool ok =
+        memAccess(cpu->mem, pa, size, (write ? MEM_ACCESS_TYPE_WRITE : MEM_ACCESS_TYPE_READ), buf);
 
     if (!ok) {
         if (fsrP) *fsrP = 10;  // external abort on non-linefetch

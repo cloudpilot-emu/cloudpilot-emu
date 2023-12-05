@@ -18,8 +18,6 @@ struct TlbEntry {
     uint32_t domain : 4;
     uint32_t c : 1;
     uint32_t section : 1;
-
-    uint8_t region;
 };
 
 struct ArmMmu {
@@ -125,7 +123,7 @@ static MMUTranslateResult translateAndCache(struct ArmMmu *mmu, uint32_t adr, bo
     uint32_t va, paPage = 0, sz, t, pa;
     int_fast16_t i;
     uint_fast8_t dom, ap = 0;
-    uint8_t region = 0xff, fsr;
+    uint8_t fsr;
     MMUTranslateResult result;
 
     // read first level table
@@ -244,11 +242,6 @@ translated:
             tlbEntry->section = section;
             tlbEntry->pa = paPage + offset;
             tlbEntry->revision = mmu->revision;
-            tlbEntry->region = memRegionFind(mmu->mem, tlbEntry->pa, 4096);
-
-            if (pa >= tlbEntry->pa && pa - tlbEntry->pa < 4096) {
-                region = tlbEntry->region;
-            }
         }
     }
 
@@ -256,11 +249,6 @@ translated:
     if (fsr) return TRANSLATE_RESULT_FAULT(fsr);
 
     result = pa;
-
-    if (!(region & 0x80)) {
-        result |= 1ull << 62;
-        result |= (uint64_t)region << 40;
-    }
 
     if (c) result |= (1ull << 61);
 
@@ -279,11 +267,6 @@ MMUTranslateResult mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledg
     if (fsr) return TRANSLATE_RESULT_FAULT(fsr);
 
     uint64_t result = (adr & 0xfff) + tlbEntry->pa;
-
-    // if (!(tlbEntry->region & 0x80)) {
-    //     result |= 1ull << 62;
-    //     result |= ((uint64_t)tlbEntry->region << 40);
-    // }
 
     if (tlbEntry->c) result |= (1ull << 61);
 

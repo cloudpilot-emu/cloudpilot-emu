@@ -84,14 +84,9 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
             return false;
         }
 
-        struct ArmMemRegion* region = NULL;
         uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
-        if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult))
-            region = MMU_TRANSLATE_RESULT_REGION(translateResult);
-
         if (!MMU_TRANSLATE_RESULT_CACHEABLE(translateResult)) {
-            bool ok = region ? region->aF(region->uD, pa, sz, false, buf)
-                             : memAccess(ic->mem, pa, sz, MEM_ACCESS_TYPE_READ, buf);
+            bool ok = memAccess(ic->mem, pa, sz, MEM_ACCESS_TYPE_READ, buf);
 
             if (!ok) {
                 *fsrP = 0x0d;  // perm error
@@ -102,10 +97,8 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
             return true;
         }
 
-        bool ok = region ? region->aF(region->uD, pa & (0xffffffff << CACHE_LINE_WIDTH_BITS),
-                                      sizeof(data), false, data)
-                         : memAccess(ic->mem, pa & ((0xffffffff << CACHE_LINE_WIDTH_BITS)),
-                                     sizeof(data), MEM_ACCESS_TYPE_READ, data);
+        bool ok = memAccess(ic->mem, pa & ((0xffffffff << CACHE_LINE_WIDTH_BITS)), sizeof(data),
+                            MEM_ACCESS_TYPE_READ, data);
         if (!ok) {
             if (fsrP) *fsrP = 0x0d;  // perm error
             return false;

@@ -42,14 +42,10 @@ static uint32_t pace_get_le(uint32_t addr, uint8_t size) {
         return 0;
     }
 
-    struct ArmMemRegion* region = NULL;
     uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
-    if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult))
-        region = MMU_TRANSLATE_RESULT_REGION(translateResult);
 
     uint32_t result;
-    bool ok = region ? region->aF(region->uD, pa, size, false, &result)
-                     : memAccess(mem, pa, size, MEM_ACCESS_TYPE_READ, &result);
+    bool ok = memAccess(mem, pa, size, MEM_ACCESS_TYPE_READ, &result);
 
     if (!ok) {
         fsr = 10;  // external abort on non-linefetch
@@ -95,13 +91,9 @@ static void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
         return;
     }
 
-    struct ArmMemRegion* region = NULL;
     uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
-    if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult))
-        region = MMU_TRANSLATE_RESULT_REGION(translateResult);
 
-    bool ok = region ? region->aF(region->uD, pa, size, true, &value)
-                     : memAccess(mem, pa, size, MEM_ACCESS_TYPE_WRITE, &value);
+    bool ok = memAccess(mem, pa, size, MEM_ACCESS_TYPE_WRITE, &value);
 
     if (!ok) {
         fsr = 10;  // external abort on non-linefetch
@@ -266,10 +258,7 @@ bool paceLoad68kState() {
         return false;
     }
 
-    struct ArmMemRegion* statePtrRegion = NULL;
     uint32_t statePtrPa = MMU_TRANSLATE_RESULT_PA(translateResult);
-    if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult))
-        statePtrRegion = MMU_TRANSLATE_RESULT_REGION(translateResult);
 
     void* state = (sizeof(struct regstruct) == sizeof(stateScratchBuffer))
                       ? &regs
@@ -279,22 +268,12 @@ bool paceLoad68kState() {
     wasSz = 64;
     wasWrite = false;
 
-    if (statePtrRegion) {
-        if (!statePtrRegion->aF(statePtrRegion->uD, statePtrPa, 64, false, state)) return false;
+    if (!memAccess(mem, statePtrPa, 64, MEM_ACCESS_TYPE_READ, state)) return false;
 
-        lastAddr = statePtr + 64;
-        wasSz = 8;
+    lastAddr = statePtr + 64;
+    wasSz = 8;
 
-        if (!statePtrRegion->aF(statePtrRegion->uD, statePtrPa + 64, 8, false, state + 64))
-            return false;
-    } else {
-        if (!memAccess(mem, statePtrPa, 64, MEM_ACCESS_TYPE_READ, state)) return false;
-
-        lastAddr = statePtr + 64;
-        wasSz = 8;
-
-        if (!memAccess(mem, statePtrPa + 64, 8, MEM_ACCESS_TYPE_READ, state + 64)) return false;
-    }
+    if (!memAccess(mem, statePtrPa + 64, 8, MEM_ACCESS_TYPE_READ, state + 64)) return false;
 
     if (sizeof(struct regstruct) != sizeof(stateScratchBuffer)) {
         for (size_t i = 0; i < 16; i++) regs.regs[i] = stateScratchBuffer[i];
@@ -317,10 +296,7 @@ bool paceSave68kState() {
         return false;
     }
 
-    struct ArmMemRegion* statePtrRegion = NULL;
     uint32_t statePtrPa = MMU_TRANSLATE_RESULT_PA(translateResult);
-    if (MMU_TRANSLATE_RESULT_HAS_REGION(translateResult))
-        statePtrRegion = MMU_TRANSLATE_RESULT_REGION(translateResult);
 
     void* state;
 
@@ -340,22 +316,12 @@ bool paceSave68kState() {
     wasSz = 64;
     wasWrite = true;
 
-    if (statePtrRegion) {
-        if (!statePtrRegion->aF(statePtrRegion->uD, statePtrPa, 64, true, state)) return false;
+    if (!memAccess(mem, statePtrPa, 64, MEM_ACCESS_TYPE_WRITE, state)) return false;
 
-        lastAddr = statePtr + 64;
-        wasSz = 8;
+    lastAddr = statePtr + 64;
+    wasSz = 8;
 
-        if (!statePtrRegion->aF(statePtrRegion->uD, statePtrPa + 64, 8, true, state + 64))
-            return false;
-    } else {
-        if (!memAccess(mem, statePtrPa, 64, MEM_ACCESS_TYPE_WRITE, state)) return false;
-
-        lastAddr = statePtr + 64;
-        wasSz = 8;
-
-        if (!memAccess(mem, statePtrPa + 64, 8, MEM_ACCESS_TYPE_WRITE, state + 64)) return false;
-    }
+    if (!memAccess(mem, statePtrPa + 64, 8, MEM_ACCESS_TYPE_WRITE, state + 64)) return false;
 
     return true;
 }
