@@ -105,13 +105,14 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
         };
 
         for (size_t i = 0; i < sizeof(data); i += 8) {
-            if (*(uint32_t*)(data + i) != *(uint32_t*)(line->data + i))
+            const uint64_t d = *(uint64_t*)(data + i);
+            if ((uint32_t)d != *(uint32_t*)(line->data + i))
                 line->decoded[i >> 1] = line->decoded[(i >> 1) + 1] = 0;
 
-            if (*(uint32_t*)(data + i + 4) != *(uint32_t*)(line->data + i + 4))
+            if ((d >> 32) != *(uint32_t*)(line->data + i + 4))
                 line->decoded[(i >> 1) + 2] = line->decoded[(i >> 1) + 3] = 0;
 
-            *(uint64_t*)(line->data + i) = *(uint64_t*)(data + i);
+            *(uint64_t*)(line->data + i) = d;
         }
 
         line->revision = ic->revision;

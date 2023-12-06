@@ -18,7 +18,7 @@ typedef uint64_t MMUTranslateResult;
 
 #define MMU_TRANSLATE_RESULT_OK(x) (!(x & (1ull << 63)))
 #define MMU_TRANSLATE_RESULT_CACHEABLE(x) (x & (1ull << 61))
-#define MMU_TRANSLATE_RESULT_PA(x) (x & 0xffffffff)
+#define MMU_TRANSLATE_RESULT_PA(x) ((uint32_t)x)
 #define MMU_TRANSLATE_RESULT_FSR(x) ((uint8_t)((x >> 32) & 0xff))
 
 #define MMU_DISABLED_TTP 0xFFFFFFFFUL
