@@ -16,12 +16,7 @@ struct ArmRam {
 
 static bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void* bufP) {
     struct ArmRam* ram = (struct ArmRam*)userData;
-    uint8_t* addr = (uint8_t*)ram->buf;
-
-    pa -= ram->adr;
-    if (pa >= ram->sz) return false;
-
-    addr += pa;
+    const uint8_t* addr = (uint8_t*)ram->buf + (pa - ram->adr);
 
     if (write) {
         switch (size) {
@@ -42,31 +37,23 @@ static bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool writ
                 break;
 
             case 64:
-                *((uint32_t*)(addr + 32)) = htole32(((uint32_t*)bufP)[8]);
-                *((uint32_t*)(addr + 36)) = htole32(((uint32_t*)bufP)[9]);
-                *((uint32_t*)(addr + 40)) = htole32(((uint32_t*)bufP)[10]);
-                *((uint32_t*)(addr + 44)) = htole32(((uint32_t*)bufP)[11]);
-                *((uint32_t*)(addr + 48)) = htole32(((uint32_t*)bufP)[12]);
-                *((uint32_t*)(addr + 52)) = htole32(((uint32_t*)bufP)[13]);
-                *((uint32_t*)(addr + 56)) = htole32(((uint32_t*)bufP)[14]);
-                *((uint32_t*)(addr + 60)) = htole32(((uint32_t*)bufP)[15]);
+                *((uint64_t*)(addr + 32)) = htole64(((uint64_t*)bufP)[4]);
+                *((uint64_t*)(addr + 40)) = htole64(((uint64_t*)bufP)[5]);
+                *((uint64_t*)(addr + 48)) = htole64(((uint64_t*)bufP)[6]);
+                *((uint64_t*)(addr + 56)) = htole64(((uint64_t*)bufP)[7]);
                 // fallthrough
 
             case 32:
-                *((uint32_t*)(addr + 16)) = htole32(((uint32_t*)bufP)[4]);
-                *((uint32_t*)(addr + 20)) = htole32(((uint32_t*)bufP)[5]);
-                *((uint32_t*)(addr + 24)) = htole32(((uint32_t*)bufP)[6]);
-                *((uint32_t*)(addr + 28)) = htole32(((uint32_t*)bufP)[7]);
+                *((uint64_t*)(addr + 16)) = htole64(((uint64_t*)bufP)[2]);
+                *((uint64_t*)(addr + 24)) = htole64(((uint64_t*)bufP)[3]);
                 // fallthrough
 
             case 16:
-                *((uint32_t*)(addr + 8)) = htole32(((uint32_t*)bufP)[2]);
-                *((uint32_t*)(addr + 12)) = htole32(((uint32_t*)bufP)[3]);
+                *((uint64_t*)(addr + 8)) = htole64(((uint64_t*)bufP)[1]);
                 // fallthrough
 
             case 8:
-                *((uint32_t*)(addr + 0)) = htole32(((uint32_t*)bufP)[0]);
-                *((uint32_t*)(addr + 4)) = htole32(((uint32_t*)bufP)[1]);
+                *((uint64_t*)(addr + 0)) = htole64(((uint64_t*)bufP)[0]);
                 break;
 
             default:
@@ -90,30 +77,22 @@ static bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool writ
                 break;
 
             case 64:
-                ((uint32_t*)bufP)[8] = le32toh(*((uint32_t*)(addr + 32)));
-                ((uint32_t*)bufP)[9] = le32toh(*((uint32_t*)(addr + 36)));
-                ((uint32_t*)bufP)[10] = le32toh(*((uint32_t*)(addr + 40)));
-                ((uint32_t*)bufP)[11] = le32toh(*((uint32_t*)(addr + 44)));
-                ((uint32_t*)bufP)[12] = le32toh(*((uint32_t*)(addr + 48)));
-                ((uint32_t*)bufP)[13] = le32toh(*((uint32_t*)(addr + 52)));
-                ((uint32_t*)bufP)[14] = le32toh(*((uint32_t*)(addr + 56)));
-                ((uint32_t*)bufP)[15] = le32toh(*((uint32_t*)(addr + 60)));
+                ((uint64_t*)bufP)[4] = le64toh(*((uint64_t*)(addr + 32)));
+                ((uint64_t*)bufP)[5] = le64toh(*((uint64_t*)(addr + 40)));
+                ((uint64_t*)bufP)[6] = le64toh(*((uint64_t*)(addr + 48)));
+                ((uint64_t*)bufP)[7] = le64toh(*((uint64_t*)(addr + 56)));
                 // fallthrough
             case 32:
 
-                ((uint32_t*)bufP)[4] = le32toh(*((uint32_t*)(addr + 16)));
-                ((uint32_t*)bufP)[5] = le32toh(*((uint32_t*)(addr + 20)));
-                ((uint32_t*)bufP)[6] = le32toh(*((uint32_t*)(addr + 24)));
-                ((uint32_t*)bufP)[7] = le32toh(*((uint32_t*)(addr + 28)));
+                ((uint64_t*)bufP)[2] = le64toh(*((uint64_t*)(addr + 16)));
+                ((uint64_t*)bufP)[3] = le64toh(*((uint64_t*)(addr + 24)));
                 // fallthrough
             case 16:
 
-                ((uint32_t*)bufP)[2] = le32toh(*((uint32_t*)(addr + 8)));
-                ((uint32_t*)bufP)[3] = le32toh(*((uint32_t*)(addr + 12)));
+                ((uint64_t*)bufP)[1] = le64toh(*((uint64_t*)(addr + 8)));
                 // fallthrough
             case 8:
-                ((uint32_t*)bufP)[0] = le32toh(*((uint32_t*)(addr + 0)));
-                ((uint32_t*)bufP)[1] = le32toh(*((uint32_t*)(addr + 4)));
+                ((uint64_t*)bufP)[0] = le64toh(*((uint64_t*)(addr + 0)));
                 break;
 
             default:

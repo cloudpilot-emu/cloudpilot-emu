@@ -24,13 +24,10 @@ struct ArmRom {
 };
 
 static bool romAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write, void *bufP) {
+    if (write) return false;
+
     struct ArmRomPiece *piece = (struct ArmRomPiece *)userData;
-    uint8_t *addr = (uint8_t *)piece->buf;
-
-    pa -= piece->base;
-    if (pa >= piece->size) return false;
-
-    addr += pa;
+    uint8_t *addr = (uint8_t *)piece->buf + (pa - piece->base);
 
     switch (size) {
         case 1:
@@ -49,30 +46,22 @@ static bool romAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool writ
             break;
 
         case 64:
-            ((uint32_t *)bufP)[8] = le32toh(*((uint32_t *)(addr + 32)));
-            ((uint32_t *)bufP)[9] = le32toh(*((uint32_t *)(addr + 36)));
-            ((uint32_t *)bufP)[10] = le32toh(*((uint32_t *)(addr + 40)));
-            ((uint32_t *)bufP)[11] = le32toh(*((uint32_t *)(addr + 44)));
-            ((uint32_t *)bufP)[12] = le32toh(*((uint32_t *)(addr + 48)));
-            ((uint32_t *)bufP)[13] = le32toh(*((uint32_t *)(addr + 52)));
-            ((uint32_t *)bufP)[14] = le32toh(*((uint32_t *)(addr + 56)));
-            ((uint32_t *)bufP)[15] = le32toh(*((uint32_t *)(addr + 60)));
+            ((uint64_t *)bufP)[4] = le64toh(*((uint64_t *)(addr + 32)));
+            ((uint64_t *)bufP)[5] = le64toh(*((uint64_t *)(addr + 40)));
+            ((uint64_t *)bufP)[6] = le64toh(*((uint64_t *)(addr + 48)));
+            ((uint64_t *)bufP)[7] = le64toh(*((uint64_t *)(addr + 56)));
             // fallthrough
         case 32:
 
-            ((uint32_t *)bufP)[4] = le32toh(*((uint32_t *)(addr + 16)));
-            ((uint32_t *)bufP)[5] = le32toh(*((uint32_t *)(addr + 20)));
-            ((uint32_t *)bufP)[6] = le32toh(*((uint32_t *)(addr + 24)));
-            ((uint32_t *)bufP)[7] = le32toh(*((uint32_t *)(addr + 28)));
+            ((uint64_t *)bufP)[2] = le64toh(*((uint64_t *)(addr + 16)));
+            ((uint64_t *)bufP)[3] = le64toh(*((uint64_t *)(addr + 24)));
             // fallthrough
         case 16:
 
-            ((uint32_t *)bufP)[2] = le32toh(*((uint32_t *)(addr + 8)));
-            ((uint32_t *)bufP)[3] = le32toh(*((uint32_t *)(addr + 12)));
+            ((uint64_t *)bufP)[1] = le64toh(*((uint64_t *)(addr + 8)));
             // fallthrough
         case 8:
-            ((uint32_t *)bufP)[0] = le32toh(*((uint32_t *)(addr + 0)));
-            ((uint32_t *)bufP)[1] = le32toh(*((uint32_t *)(addr + 4)));
+            ((uint64_t *)bufP)[0] = le64toh(*((uint64_t *)(addr + 0)));
             break;
 
         default:
