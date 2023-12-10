@@ -1808,7 +1808,7 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privile
     if (addAfter) cpuPrvSetRegNotPC(cpu, sourceReg, ea - addBefore + addAfter);
 }
 
-template <bool wasT, int mmode, bool isLoadd>
+template <bool wasT, int mmode, bool isLoad>
 static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
@@ -1821,7 +1821,6 @@ static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr, bool pri
     uint32_t memVal32, sr, ea;
     uint32_t origBaseRegVal = ea = cpuPrvGetRegNotPC(cpu, reg);
 
-    bool isLoad = !!(instr & 0x00100000UL);
     int mode = cpuPrvArmAdrModeDecode_4(instr);
 
     if ((instr & 0x00400000UL) &&
