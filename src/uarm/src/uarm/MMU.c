@@ -250,7 +250,7 @@ translated:
 
     result = pa;
 
-    if (c) result |= (1ull << 61);
+    if (c) result |= (1ull << 62);
 
     return result;
 }
@@ -268,7 +268,7 @@ MMUTranslateResult mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledg
 
     uint64_t result = (adr & 0xfff) + tlbEntry->pa;
 
-    if (tlbEntry->c) result |= (1ull << 61);
+    if (tlbEntry->c) result |= (1ull << 62);
 
     return result;
 }
