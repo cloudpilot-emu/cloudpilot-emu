@@ -18,6 +18,8 @@
 #define __builtin_sub_overflow_u32 __builtin_sub_overflow
 #define __builtin_sub_overflow_i32 __builtin_sub_overflow
 
+#define FORCE_INLINE inline __attribute__((always_inline))
+
 #ifdef __cplusplus
 extern "C" {
 #endif

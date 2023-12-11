@@ -21,8 +21,6 @@
 #define unlikely(x) __builtin_expect((x), 0)
 #define likely(x) __builtin_expect((x), 1)
 
-#define FORCE_INLINE inline __attribute__((always_inline))
-
 #define NO_SUPPORT_FCSE
 #define NO_STRICT_CPU
 #define NO_TRACE_PACE
@@ -33,7 +31,6 @@
 #define ARM_MODE_2_T 0x40
 #define ARM_MODE_2_INV 0x80
 
-#define ARM_MODE_3_REG 0x0F   // flag for actual reg number used
 #define ARM_MODE_3_TYPE 0x30  // flag for the below 4 types
 #define ARM_MODE_3_H 0x00
 #define ARM_MODE_3_SH 0x10
@@ -536,35 +533,6 @@ same comments as for addr mode 2 apply
 #define ARM_MODE_3_LOAD	0x40
 #define ARM_MODE_3_INV	0x80
 */
-
-static FORCE_INLINE uint_fast8_t cpuPrvArmAdrMode_3(struct ArmCpu *cpu, uint32_t instr,
-                                                    uint32_t *addBeforeP, uint32_t *addWritebackP) {
-    uint_fast8_t reg;
-    uint32_t val;
-
-    reg = (instr >> 16) & 0x0F;
-
-    if (instr & 0x00400000UL)  // immediate
-        val = ((instr >> 4) & 0xF0) | (instr & 0x0F);
-    else {
-        val = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
-    }
-
-    if (!(instr & 0x00800000UL)) val = -val;
-    if (!(instr & 0x01000000UL)) {
-        *addBeforeP = 0;
-        *addWritebackP = val;
-    } else if (instr & 0x00200000UL) {
-        *addBeforeP = val;
-        *addWritebackP = val;
-    } else {
-        *addBeforeP = val;
-        *addWritebackP = 0;
-    }
-
-    return reg;
-}
-
 static uint_fast8_t cpuPrvArmAdrModeDecode_3(uint32_t instr) {
     uint_fast8_t reg = 0;
 
@@ -757,6 +725,8 @@ static FORCE_INLINE bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vad
 
     fprintf(stderr, "%c of %u bytes to 0x%08lx failed!\n", (int)(write ? 'W' : 'R'), (unsigned)size,
             (unsigned long)vaddr);
+
+    abort();
 
     gdbStubDebugBreakRequested(cpu->debugStub);
 
@@ -1286,9 +1256,9 @@ static void execFn_mult(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     }
 }
 
-template <bool wasT, int mode, bool pc>
+template <bool wasT, int mode, bool pc, bool immediate, bool negate, bool addBefore, bool addAfter>
 static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
-    uint32_t ea, addBefore, addAfter;
+    uint32_t ea, increment;
     bool ok;
     uint_fast8_t fsr, reg;
     uint16_t memVal16;
@@ -1298,9 +1268,17 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privile
     if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
-    reg = cpuPrvArmAdrMode_3(cpu, instr, &addBefore, &addAfter);
+    reg = (instr >> 16) & 0x0F;
+
+    if constexpr (addBefore || addAfter) {
+        increment = immediate ? ((instr >> 4) & 0xF0) | (instr & 0x0F)
+                              : cpuPrvGetRegNotPC(cpu, instr & 0x0F);
+
+        if constexpr (negate) increment = -increment;
+    }
+
     ea = cpuPrvGetReg<wasT, pc>(cpu, reg);
-    ea += addBefore;
+    if constexpr (addBefore) ea += increment;
 
     if (mode & ARM_MODE_3_LOAD) {
         switch (mode & ARM_MODE_3_TYPE) {
@@ -1374,7 +1352,13 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privile
                 break;
         }
     }
-    if (addAfter) cpuPrvSetRegNotPC(cpu, reg & ARM_MODE_3_REG, ea - addBefore + addAfter);
+
+    if constexpr (addAfter) {
+        if constexpr (addBefore)
+            cpuPrvSetRegNotPC(cpu, reg, ea);
+        else
+            cpuPrvSetRegNotPC(cpu, reg, ea + increment);
+    }
 }
 
 template <bool wasT>
@@ -2131,11 +2115,31 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                 } else {  // load/store signed/unsigned byte/halfword/two_words
                     uint_fast8_t mode = cpuPrvArmAdrModeDecode_3(instr);
                     const bool pc = ((instr >> 16) & 0x0f) == REG_NO_PC;
+                    const bool addAfter = !(instr & 0x01000000UL) || (instr & 0x00200000UL);
+                    const bool addBefore = (instr & 0x01000000UL);
+                    const bool negate = !(instr & 0x00800000UL);
+                    const bool immediate = instr & 0x00400000UL;
 
                     if (mode & ARM_MODE_2_INV) return execFn_invalid<wasT>;
 
+#define EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, immediate, negate, addBefore)            \
+    (addAfter ? execFn_load_store_1<wasT, mode, pc, immediate, negate, addBefore, true> \
+              : execFn_load_store_1<wasT, mode, pc, immediate, negate, addBefore, false>)
+
+#define EXEC_LOAD_STORE_1_NEGATE(mode, pc, immediate, negate)                    \
+    (addBefore ? EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, immediate, negate, true) \
+               : EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, immediate, negate, false))
+
+#define EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, immediate)          \
+    (negate ? EXEC_LOAD_STORE_1_NEGATE(mode, pc, immediate, true) \
+            : EXEC_LOAD_STORE_1_NEGATE(mode, pc, immediate, false))
+
+#define EXEC_LOAD_STORE_1_PC(mode, pc)                       \
+    (immediate ? EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, true) \
+               : EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, false))
+
 #define EXEC_LOAD_STORE_1(mode) \
-    return pc ? execFn_load_store_1<wasT, mode, true> : execFn_load_store_1<wasT, mode, false>;
+    return (pc ? EXEC_LOAD_STORE_1_PC(mode, true) : EXEC_LOAD_STORE_1_PC(mode, false))
 
                     if (mode & ARM_MODE_3_LOAD) {
                         switch (mode & ARM_MODE_3_TYPE) {
@@ -2164,7 +2168,10 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                                 EXEC_LOAD_STORE_1(ARM_MODE_3_D);
                         }
                     }
-
+#undef EXEC_LOAD_STORE_1_ADD_BEFORE
+#undef EXEC_LOAD_STORE_1_NEGATE
+#undef EXEC_LOAD_STORE_1_IMMEDIATE
+#undef EXEC_LOAD_STORE_1_PC
 #undef EXEC_LOAD_STORE_1
                 }
             } else if ((instr & 0x01900000UL) == 0x01000000UL) {  // misc instrs (table 3.3)

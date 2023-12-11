@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "../util.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -35,9 +37,7 @@ void clockRegisterConsumer(struct Clock* clock, uint64_t periodNsec, clockConsum
 
 uint64_t clockForward(struct Clock* clock, uint64_t cyclesPerSecond);
 
-// IMPLEMENTATION
-
-inline void clockAdvance(struct Clock* clock, uint64_t cpuCycles, uint64_t cyclesPerSecond) {
+FORCE_INLINE void clockAdvance(struct Clock* clock, uint64_t cpuCycles, uint64_t cyclesPerSecond) {
     clock->accTimeNsec += ((cpuCycles * 1000000000ULL) / cyclesPerSecond);
     if (clock->accTimeNsec < clock->nextTickNsec) return;
 
