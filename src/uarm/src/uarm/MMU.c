@@ -79,8 +79,9 @@ static inline struct TlbEntry *getTlbEntry(struct ArmMmu *mmu, uint32_t va) {
     return lvl1 + ((va >> 12) & 0xfff);
 }
 
-static inline uint8_t checkPermissions(struct ArmMmu *mmu, uint_fast8_t ap, uint_fast8_t domain,
-                                       bool section, bool priviledged, bool write) {
+static inline uint8_t checkPermissionsForWrite(struct ArmMmu *mmu, uint_fast8_t ap,
+                                               uint_fast8_t domain, bool section,
+                                               bool priviledged) {
     switch ((mmu->domainCfg >> (domain * 2)) & 3) {
         case 0:  // NO ACCESS:
         case 2:  // RESERVED: unpredictable	(treat as no access)
@@ -97,15 +98,11 @@ static inline uint8_t checkPermissions(struct ArmMmu *mmu, uint_fast8_t ap, uint
 
     switch (ap) {
         case 0:
-            if (write || (!mmu->R && (!priviledged || !mmu->S))) break;
             return 0;
 
         case 1:
-            if (!priviledged) break;
-            return 0;
-
         case 2:
-            if (!priviledged && write) break;
+            if (!priviledged) break;
             return 0;
 
         case 3:
@@ -245,8 +242,10 @@ translated:
         }
     }
 
-    fsr = checkPermissions(mmu, ap, dom, section, priviledged, write);
-    if (fsr) return TRANSLATE_RESULT_FAULT(fsr);
+    if (write) {
+        fsr = checkPermissionsForWrite(mmu, ap, dom, section, priviledged);
+        if (fsr) return TRANSLATE_RESULT_FAULT(fsr);
+    }
 
     result = pa;
 
@@ -262,9 +261,11 @@ MMUTranslateResult mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledg
 
     if (tlbEntry->revision != mmu->revision) return translateAndCache(mmu, adr, priviledged, write);
 
-    uint8_t fsr = checkPermissions(mmu, tlbEntry->ap, tlbEntry->domain, tlbEntry->section,
-                                   priviledged, write);
-    if (fsr) return TRANSLATE_RESULT_FAULT(fsr);
+    if (write) {
+        uint8_t fsr = checkPermissionsForWrite(mmu, tlbEntry->ap, tlbEntry->domain,
+                                               tlbEntry->section, priviledged);
+        if (fsr) return TRANSLATE_RESULT_FAULT(fsr);
+    }
 
     uint64_t result = (adr & 0xfff) + tlbEntry->pa;
 
