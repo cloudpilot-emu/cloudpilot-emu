@@ -1256,7 +1256,7 @@ static void execFn_mult(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     }
 }
 
-template <bool wasT, int mode, bool pc, bool immediate, bool negate, bool addBefore, bool addAfter>
+template <bool wasT, int mode, bool pc, bool addBefore, bool addAfter, bool immediate, bool negate>
 static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t ea, increment;
     bool ok;
@@ -2120,21 +2120,23 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
 
                     if (mode & ARM_MODE_2_INV) return execFn_invalid<wasT>;
 
-#define EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, immediate, negate, addBefore)            \
-    (addAfter ? execFn_load_store_1<wasT, mode, pc, immediate, negate, addBefore, true> \
-              : execFn_load_store_1<wasT, mode, pc, immediate, negate, addBefore, false>)
+#define EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, immediate)           \
+    (negate ? execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, immediate, true> \
+            : execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, immediate, false>)
 
-#define EXEC_LOAD_STORE_1_NEGATE(mode, pc, immediate, negate)                    \
-    (addBefore ? EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, immediate, negate, true) \
-               : EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, immediate, negate, false))
+#define EXEC_LOAD_STORE_1_ADD_AFTER(mode, pc, addBefore, addAfter)                         \
+    ((addBefore || addAfter)                                                               \
+         ? (immediate ? EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, true)   \
+                      : EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, false)) \
+         : execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, false, false>)
 
-#define EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, immediate)          \
-    (negate ? EXEC_LOAD_STORE_1_NEGATE(mode, pc, immediate, true) \
-            : EXEC_LOAD_STORE_1_NEGATE(mode, pc, immediate, false))
+#define EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, addBefore)              \
+    (addAfter ? EXEC_LOAD_STORE_1_ADD_AFTER(mode, pc, addBefore, true) \
+              : EXEC_LOAD_STORE_1_ADD_AFTER(mode, pc, addBefore, false))
 
-#define EXEC_LOAD_STORE_1_PC(mode, pc)                       \
-    (immediate ? EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, true) \
-               : EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, false))
+#define EXEC_LOAD_STORE_1_PC(mode, pc)                        \
+    (addBefore ? EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, true) \
+               : EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, false))
 
 #define EXEC_LOAD_STORE_1(mode) \
     return (pc ? EXEC_LOAD_STORE_1_PC(mode, true) : EXEC_LOAD_STORE_1_PC(mode, false))
@@ -2167,7 +2169,7 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                         }
                     }
 #undef EXEC_LOAD_STORE_1_ADD_BEFORE
-#undef EXEC_LOAD_STORE_1_NEGATE
+#undef EXEC_LOAD_STORE_1_ADD_AFTER
 #undef EXEC_LOAD_STORE_1_IMMEDIATE
 #undef EXEC_LOAD_STORE_1_PC
 #undef EXEC_LOAD_STORE_1
