@@ -30,6 +30,7 @@
 #define ARM_MODE_2_LOAD 0x20
 #define ARM_MODE_2_T 0x40
 #define ARM_MODE_2_INV 0x80
+#define ARM_MODE_2_SYSCALL 0x01
 
 #define ARM_MODE_3_TYPE 0x30  // flag for the below 4 types
 #define ARM_MODE_3_H 0x00
@@ -452,6 +453,7 @@ ARM_MODE_2_T	is flag for T
 
 
 */
+#if 0
 static FORCE_INLINE uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t instr,
                                                     uint32_t *addBeforeP, uint32_t *addWritebackP) {
     uint_fast8_t reg, shift;
@@ -463,10 +465,10 @@ static FORCE_INLINE uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t
         val = instr & 0xFFFUL;
     else {  //[scaled] register
 
-#ifdef STRICT_CPU
+    #ifdef STRICT_CPU
         if (instr & 0x00000010UL) reg |= ARM_MODE_2_INV;  // invalid instrucitons need to be
 // reported
-#endif
+    #endif
 
         val = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
         shift = (instr >> 7) & 0x1F;
@@ -508,6 +510,7 @@ static FORCE_INLINE uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t
 
     return reg;
 }
+#endif
 
 static uint_fast8_t cpuPrvArmAdrModeDecode_2(uint32_t instr) {
     uint_fast8_t mode = 0;
@@ -1726,9 +1729,10 @@ static void execFn_dproc(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     }
 }
 
-template <bool wasT, int mode, bool srcPc, bool destPc>
+template <bool wasT, int mode, bool srcPc, bool destPc, bool addBefore, bool addAfter,
+          bool immediate, bool negate>
 static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
-    uint32_t op1, ea, addBefore, addAfter, memVal32;
+    uint32_t op1, ea, memVal32, increment;
     bool ok;
     uint_fast8_t fsr, sourceReg, destReg;
     uint8_t memVal8;
@@ -1736,11 +1740,45 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privile
     if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
-    sourceReg = cpuPrvArmAdrMode_2(cpu, instr, &addBefore, &addAfter);
-    if (mode & ARM_MODE_2_T) privileged = false;
+    sourceReg = (instr >> 16) & 0x0F;
+    if constexpr (mode & ARM_MODE_2_T) privileged = false;
+
+    if constexpr (addBefore || addAfter) {
+        if (immediate) {
+            increment = instr & 0xFFFUL;
+        } else {
+            increment = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
+            uint8_t shift = (instr >> 7) & 0x1F;
+
+            switch ((instr >> 5) & 3) {
+                case 0:  // LSL
+                    increment <<= shift;
+                    break;
+
+                case 1:  // LSR
+                    increment = shift ? (increment >> shift) : 0;
+                    break;
+
+                case 2:  // ASR
+                    if (!shift) shift = 31;
+                    increment = (((int32_t)increment) >> shift);
+                    break;
+
+                case 3:  // ROR/RRX
+                    if (shift)
+                        increment = cpuPrvROR(increment, shift);
+                    else {  // RRX
+                        increment = increment >> 1;
+                        increment |= ((cpu->flags & ARM_SR_C) << 2);
+                    }
+            }
+        }
+
+        if (negate) increment = -increment;
+    }
 
     ea = cpuPrvGetReg<wasT, srcPc>(cpu, sourceReg);
-    ea += addBefore;
+    if constexpr (addBefore) ea += increment;
 
     if (mode & ARM_MODE_2_LOAD) {
         if (mode & ARM_MODE_2_WORD) {
@@ -1756,10 +1794,14 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privile
             //
             // #define CALL_OSCALL(tab,num)	"LDR R12,[R9, #-" #tab "] \nLDR PC,[R12, #"
             // #num "]"
-            if (sourceReg == 9 && destReg == 12)
-                patchDispatchOnLoadR12FromR9(cpu->patchDispatch, addBefore);
-            if (sourceReg == 12 && destPc)
-                patchDispatchOnLoadPcFromR12(cpu->patchDispatch, addBefore, cpu->regs);
+            if constexpr (mode & ARM_MODE_2_SYSCALL) {
+                if constexpr (destPc)
+                    // syscall && destPc -> sourceReg == 9 && destReg == 12
+                    patchDispatchOnLoadPcFromR12(cpu->patchDispatch, addBefore, cpu->regs);
+                else
+                    // syscall && !destPc -> sourceReg == 12 && destReg == 15
+                    patchDispatchOnLoadR12FromR9(cpu->patchDispatch, addBefore);
+            }
 
             cpuPrvSetReg<destPc>(cpu, destReg, memVal32);
         } else {
@@ -1789,7 +1831,13 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privile
             }
         }
     }
-    if (addAfter) cpuPrvSetRegNotPC(cpu, sourceReg, ea - addBefore + addAfter);
+
+    if constexpr (addAfter) {
+        if constexpr (addBefore)
+            cpuPrvSetRegNotPC(cpu, sourceReg, ea);
+        else
+            cpuPrvSetRegNotPC(cpu, sourceReg, ea + increment);
+    }
 }
 
 template <bool wasT, int mode, bool isLoad>
@@ -2353,26 +2401,60 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                 return execFn_invalid<wasT>;
 
         load_store_mode_2: {
-            uint_fast8_t mode = cpuPrvArmAdrModeDecode_2(instr);
-            bool srcPc = ((instr >> 16) & 0x0f) == 0x0f;
-            bool destPc = ((instr >> 12) & 0x0f) == 0x0f;
+            const uint_fast8_t mode = cpuPrvArmAdrModeDecode_2(instr);
+            const uint8_t regSrc = (instr >> 16) & 0x0f;
+            const uint8_t regDst = (instr >> 12) & 0x0f;
+            const bool srcPc = regSrc == 15;
+            const bool destPc = regDst == 15;
+            const bool addAfter = !(instr & 0x01000000UL) || (instr & 0x00200000UL);
+            const bool addBefore = (instr & 0x01000000UL);
+            const bool negate = !(instr & 0x00800000UL);
+            const bool immediate = !(instr & 0x02000000UL);
+            const bool syscall = (regSrc == 9 && regDst == 12) || (regSrc == 12 && destPc);
 
-#define EXEC_LOAD_STORE_2(mode)                                       \
-    if (srcPc)                                                        \
-        return destPc ? execFn_load_store_2<wasT, mode, true, true>   \
-                      : execFn_load_store_2<wasT, mode, true, false>; \
-    else                                                              \
-        return destPc ? execFn_load_store_2<wasT, mode, false, true>  \
-                      : execFn_load_store_2<wasT, mode, false, false>;
+#define EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, immediate)        \
+    (negate                                                                                     \
+         ? execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter, immediate, true> \
+         : execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter, immediate, false>)
+
+#define EXEC_LOAD_STORE_2_ADD_AFTER(mode, srcPc, destPc, addBefore, addAfter)                   \
+    ((addBefore || addAfter)                                                                    \
+         ? (immediate                                                                           \
+                ? EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, true)   \
+                : EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, false)) \
+         : (execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter, false, false>))
+
+#define EXEC_LOAD_STORE_2_ADD_BEFORE(mode, srcPc, destPc, addBefore)              \
+    (addAfter ? EXEC_LOAD_STORE_2_ADD_AFTER(mode, srcPc, destPc, addBefore, true) \
+              : EXEC_LOAD_STORE_2_ADD_AFTER(mode, srcPc, destPc, addBefore, false))
+
+#define EXEC_LOAD_STORE_2_DEST_PC(mode, srcPc, destPc)                   \
+    (addBefore ? EXEC_LOAD_STORE_2_ADD_BEFORE(mode, srcPc, destPc, true) \
+               : EXEC_LOAD_STORE_2_ADD_BEFORE(mode, srcPc, destPc, false))
+
+#define EXEC_LOAD_STORE_2_SRC_PC(mode, srcPc)              \
+    (destPc ? EXEC_LOAD_STORE_2_DEST_PC(mode, srcPc, true) \
+            : EXEC_LOAD_STORE_2_DEST_PC(mode, srcPc, false))
+
+#define EXEC_LOAD_STORE_2(mode) \
+    return (srcPc ? EXEC_LOAD_STORE_2_SRC_PC(mode, true) : EXEC_LOAD_STORE_2_SRC_PC(mode, false))
 
             if (mode & ARM_MODE_2_INV) return execFn_invalid<wasT>;
 
             if (mode & ARM_MODE_2_LOAD) {
                 if (mode & ARM_MODE_2_WORD) {
                     if (mode & ARM_MODE_2_T) {
-                        EXEC_LOAD_STORE_2(ARM_MODE_2_LOAD | ARM_MODE_2_WORD | ARM_MODE_2_T);
+                        if (syscall)
+                            EXEC_LOAD_STORE_2(ARM_MODE_2_LOAD | ARM_MODE_2_WORD | ARM_MODE_2_T |
+                                              ARM_MODE_2_SYSCALL);
+                        else
+                            EXEC_LOAD_STORE_2(ARM_MODE_2_LOAD | ARM_MODE_2_WORD | ARM_MODE_2_T);
                     } else {
-                        EXEC_LOAD_STORE_2(ARM_MODE_2_LOAD | ARM_MODE_2_WORD);
+                        if (syscall)
+                            EXEC_LOAD_STORE_2(ARM_MODE_2_LOAD | ARM_MODE_2_WORD |
+                                              ARM_MODE_2_SYSCALL);
+                        else
+                            EXEC_LOAD_STORE_2(ARM_MODE_2_LOAD | ARM_MODE_2_WORD);
                     }
                 } else {
                     if (mode & ARM_MODE_2_T) {
@@ -2396,6 +2478,12 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                     }
                 }
             }
+#undef EXEC_LOAD_STORE_2_IMMEDIATE
+#undef EXEC_LOAD_STORE_2_SHIFT_MODE
+#undef EXEC_LOAD_STORE_2_ADD_AFTER
+#undef EXEC_LOAD_STORE_2_ADD_BEFORE
+#undef EXEC_LOAD_STORE_2_DEST_PC
+#undef EXEC_LOAD_STORE_2_SRC_PC
 #undef EXEC_LOAD_STORE_2
         }
 
