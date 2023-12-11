@@ -453,65 +453,6 @@ ARM_MODE_2_T	is flag for T
 
 
 */
-#if 0
-static FORCE_INLINE uint_fast8_t cpuPrvArmAdrMode_2(struct ArmCpu *cpu, uint32_t instr,
-                                                    uint32_t *addBeforeP, uint32_t *addWritebackP) {
-    uint_fast8_t reg, shift;
-    uint32_t val;
-
-    reg = (instr >> 16) & 0x0F;
-
-    if (!(instr & 0x02000000UL))  // immediate
-        val = instr & 0xFFFUL;
-    else {  //[scaled] register
-
-    #ifdef STRICT_CPU
-        if (instr & 0x00000010UL) reg |= ARM_MODE_2_INV;  // invalid instrucitons need to be
-// reported
-    #endif
-
-        val = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
-        shift = (instr >> 7) & 0x1F;
-        switch ((instr >> 5) & 3) {
-            case 0:  // LSL
-                val <<= shift;
-                break;
-
-            case 1:  // LSR
-                val = shift ? (val >> shift) : 0;
-                break;
-
-            case 2:  // ASR
-                if (!shift) shift = 31;
-                val = (((int32_t)val) >> shift);
-                break;
-
-            case 3:  // ROR/RRX
-                if (shift)
-                    val = cpuPrvROR(val, shift);
-                else {  // RRX
-                    val = val >> 1;
-                    val |= ((cpu->flags & ARM_SR_C) << 2);
-                }
-        }
-    }
-
-    if (!(instr & 0x00800000UL)) val = -val;
-    if (!(instr & 0x01000000UL)) {
-        *addBeforeP = 0;
-        *addWritebackP = val;
-    } else if (instr & 0x00200000UL) {
-        *addBeforeP = val;
-        *addWritebackP = val;
-    } else {
-        *addBeforeP = val;
-        *addWritebackP = 0;
-    }
-
-    return reg;
-}
-#endif
-
 static uint_fast8_t cpuPrvArmAdrModeDecode_2(uint32_t instr) {
     uint_fast8_t mode = 0;
 
@@ -724,16 +665,18 @@ static FORCE_INLINE bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t v
 template <int size>
 static FORCE_INLINE bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vaddr, bool write,
                                      bool priviledged, uint_fast8_t *fsrP) {
+#ifdef __EMSCRIPTEN__
+    return cpuPrvMemOpEx<size>(cpu, buf, vaddr, write, priviledged, fsrP);
+#else
     if (cpuPrvMemOpEx<size>(cpu, buf, vaddr, write, priviledged, fsrP)) return true;
 
     fprintf(stderr, "%c of %u bytes to 0x%08lx failed!\n", (int)(write ? 'W' : 'R'), (unsigned)size,
             (unsigned long)vaddr);
 
-    abort();
-
     gdbStubDebugBreakRequested(cpu->debugStub);
 
     return false;
+#endif
 }
 
 // for external use
