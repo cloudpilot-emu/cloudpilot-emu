@@ -63,8 +63,6 @@
 #define PXA_I2C_BASE 0x40301680UL
 #define PXA_PWR_I2C_BASE 0x40F00180UL
 
-#define CYCLE_BATCH_SIZE 10
-
 struct SoC {
     struct SocUart *ffUart, *hwUart, *stUart, *btUart;
     struct SocSsp *ssp[3];
@@ -477,18 +475,18 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
     uint64_t cycles = 0;
 
     while (cycles < maxCycles) {
-        if (soc->sleeping) {
-            uint64_t cyclesToSkip = clockForward(soc->clock, cyclesPerSecond);
+        uint64_t cyclesToAdvance = clockCyclesToNextTick(soc->clock, cyclesPerSecond);
+        if (cyclesToAdvance + cycles > maxCycles) cyclesToAdvance = maxCycles - cycles;
 
-            cycles += cyclesToSkip;
+        uint64_t cyclesAdvanced = 0;
+        if (!soc->sleeping) {
+            while (cyclesAdvanced < cyclesToAdvance) cyclesAdvanced += cpuCycle(soc->cpu);
         } else {
-            uint32_t cpuCycles = 0;
-            while (cpuCycles < CYCLE_BATCH_SIZE) cpuCycles += cpuCycle(soc->cpu);
-
-            cycles += cpuCycles;
-
-            clockAdvance(soc->clock, cpuCycles, cyclesPerSecond);
+            cyclesAdvanced = cyclesToAdvance;
         }
+
+        clockAdvance(soc->clock, cyclesAdvanced, cyclesPerSecond);
+        cycles += cyclesAdvanced;
     }
 
     return cycles;
