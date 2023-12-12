@@ -1785,7 +1785,7 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privile
     }
 }
 
-template <bool wasT, int mode, bool isLoad>
+template <bool wasT, int mode, bool isLoad, bool sBit>
 static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
@@ -1798,7 +1798,7 @@ static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr, bool pri
     uint32_t memVal32, sr, ea;
     uint32_t origBaseRegVal = ea = cpuPrvGetRegNotPC(cpu, reg);
 
-    if ((instr & 0x00400000UL) &&
+    if (sBit &&
         !((cpu->M == ARM_SR_MODE_USR) || (cpu->M == ARM_SR_MODE_SYS))) {  // sort out what "S" means
         if (isLoad && (regsList & (1 << REG_NO_PC)))
             copySPSR = true;
@@ -2450,6 +2450,10 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
 #undef EXEC_LOAD_STORE_2
         }
 
+#define EXEC_LOAD_STORE_MULTI(wasT, mode, isLoad)                               \
+    ((instr & 0x00400000UL) ? execFn_load_store_multi<wasT, mode, isLoad, true> \
+                            : execFn_load_store_multi<wasT, mode, isLoad, false>)
+
         case 8:
         case 9:  // load/store multiple
         {
@@ -2459,50 +2463,48 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
             if (mode & ARM_MODE_4_WBK) {
                 if (mode & ARM_MODE_4_INC) {
                     if (mode & ARM_MODE_4_BFR)
-                        return isLoad ? execFn_load_store_multi<
+                        return isLoad ? EXEC_LOAD_STORE_MULTI(
                                             wasT, ARM_MODE_4_WBK | ARM_MODE_4_INC | ARM_MODE_4_BFR,
-                                            true>
-                                      : execFn_load_store_multi<
+                                            true)
+                                      : EXEC_LOAD_STORE_MULTI(
                                             wasT, ARM_MODE_4_WBK | ARM_MODE_4_INC | ARM_MODE_4_BFR,
-                                            false>;
+                                            false);
                     else
-                        return isLoad
-                                   ? execFn_load_store_multi<wasT, ARM_MODE_4_WBK | ARM_MODE_4_INC,
-                                                             true>
-                                   : execFn_load_store_multi<wasT, ARM_MODE_4_WBK | ARM_MODE_4_INC,
-                                                             false>;
+                        return isLoad ? EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_WBK | ARM_MODE_4_INC,
+                                                              true)
+                                      : EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_WBK | ARM_MODE_4_INC,
+                                                              false);
                 } else {
                     if (mode & ARM_MODE_4_BFR)
-                        return isLoad
-                                   ? execFn_load_store_multi<wasT, ARM_MODE_4_WBK | ARM_MODE_4_BFR,
-                                                             true>
-                                   : execFn_load_store_multi<wasT, ARM_MODE_4_WBK | ARM_MODE_4_BFR,
-                                                             false>;
+                        return isLoad ? EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_WBK | ARM_MODE_4_BFR,
+                                                              true)
+                                      : EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_WBK | ARM_MODE_4_BFR,
+                                                              false);
                     else
-                        return isLoad ? execFn_load_store_multi<wasT, ARM_MODE_4_WBK, true>
-                                      : execFn_load_store_multi<wasT, ARM_MODE_4_WBK, false>;
+                        return isLoad ? EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_WBK, true)
+                                      : EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_WBK, false);
                 }
             } else {
                 if (mode & ARM_MODE_4_INC) {
                     if (mode & ARM_MODE_4_BFR)
-                        return isLoad
-                                   ? execFn_load_store_multi<wasT, ARM_MODE_4_INC | ARM_MODE_4_BFR,
-                                                             true>
-                                   : execFn_load_store_multi<wasT, ARM_MODE_4_INC | ARM_MODE_4_BFR,
-                                                             false>;
+                        return isLoad ? EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_INC | ARM_MODE_4_BFR,
+                                                              true)
+                                      : EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_INC | ARM_MODE_4_BFR,
+                                                              false);
                     else
-                        return isLoad ? execFn_load_store_multi<wasT, ARM_MODE_4_INC, true>
-                                      : execFn_load_store_multi<wasT, ARM_MODE_4_INC, false>;
+                        return isLoad ? EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_INC, true)
+                                      : EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_INC, false);
                 } else {
                     if (mode & ARM_MODE_4_BFR)
-                        return isLoad ? execFn_load_store_multi<wasT, ARM_MODE_4_BFR, true>
-                                      : execFn_load_store_multi<wasT, ARM_MODE_4_BFR, false>;
+                        return isLoad ? EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_BFR, true)
+                                      : EXEC_LOAD_STORE_MULTI(wasT, ARM_MODE_4_BFR, false);
                     else
-                        return isLoad ? execFn_load_store_multi<wasT, 0, true>
-                                      : execFn_load_store_multi<wasT, 0, false>;
+                        return isLoad ? EXEC_LOAD_STORE_MULTI(wasT, 0, true)
+                                      : EXEC_LOAD_STORE_MULTI(wasT, 0, false);
                 }
             }
         }
+#undef EXEC_LOAD_STORE_MULTI
 
         case 10:
         case 11:  // B/BL/BLX(if cond=0b1111)
