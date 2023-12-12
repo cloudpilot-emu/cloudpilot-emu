@@ -478,12 +478,8 @@ uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
         uint64_t cyclesToAdvance = clockCyclesToNextTick(soc->clock, cyclesPerSecond);
         if (cyclesToAdvance + cycles > maxCycles) cyclesToAdvance = maxCycles - cycles;
 
-        uint64_t cyclesAdvanced = 0;
-        if (!soc->sleeping) {
-            while (cyclesAdvanced < cyclesToAdvance) cyclesAdvanced += cpuCycle(soc->cpu);
-        } else {
-            cyclesAdvanced = cyclesToAdvance;
-        }
+        const uint64_t cyclesAdvanced =
+            soc->sleeping ? cyclesToAdvance : cpuCycle(soc->cpu, cyclesToAdvance);
 
         clockAdvance(soc->clock, cyclesAdvanced, cyclesPerSecond);
         cycles += cyclesAdvanced;

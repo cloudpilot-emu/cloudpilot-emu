@@ -3189,7 +3189,7 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
 
     uint64_t cycle = 0;
     while (cpu->regs[REG_NO_PC] != INJECTED_CALL_LR_MAGIC) {
-        cpuCycle(cpu);
+        cpuCycle(cpu, 1);
 
         if (cycle++ == INJECTED_CALL_MAX_CYCLES)
             ERR("failed to execute syscall: cycle limit reached\n");
@@ -3224,7 +3224,7 @@ static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
     cpu->regs[REG_NO_SP] += 4;
 
     cpu->regs[1] = cpu->regs[0];
-    cpuPrvSetReg(cpu, REG_NO_PC, cpu->regs[REG_NO_LR]);
+    cpuPrvSetPC(cpu, cpu->regs[REG_NO_LR]);
 
     cpu->modePace = false;
 
@@ -3280,29 +3280,35 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
     }
 }
 
-uint32_t cpuCycle(struct ArmCpu *cpu) {
-    if (unlikely(cpu->waitingEventsTotal)) {
-        if (unlikely(cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall))
-            cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ, cpu->regs[REG_NO_PC] + 4,
-                            ARM_SR_MODE_FIQ | ARM_SR_I | ARM_SR_F);
-        else if (unlikely(cpu->waitingIrqs && !cpu->I && !cpu->isInjectedCall))
-            cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_IRQ, cpu->regs[REG_NO_PC] + 4,
-                            ARM_SR_MODE_IRQ | ARM_SR_I);
+uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
+    uint32_t cycleAcc = 0;
+
+    while (cycleAcc < cycles) {
+        if (unlikely(cpu->waitingEventsTotal)) {
+            if (unlikely(cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall))
+                cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ,
+                                cpu->regs[REG_NO_PC] + 4, ARM_SR_MODE_FIQ | ARM_SR_I | ARM_SR_F);
+            else if (unlikely(cpu->waitingIrqs && !cpu->I && !cpu->isInjectedCall))
+                cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_IRQ,
+                                cpu->regs[REG_NO_PC] + 4, ARM_SR_MODE_IRQ | ARM_SR_I);
+        }
+
+        cp15Cycle(cpu->cp15);
+        patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
+
+        if (cpu->modePace) {
+            cpuPrvCyclePace(cpu);
+            cycleAcc += 10;
+        } else if (cpu->T) {
+            cpuPrvCycleThumb(cpu);
+            cycleAcc += 1;
+        } else {
+            cpuPrvCycleArm(cpu);
+            cycleAcc += 1;
+        }
     }
 
-    cp15Cycle(cpu->cp15);
-    patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
-
-    if (cpu->modePace) {
-        cpuPrvCyclePace(cpu);
-        return 10;
-    } else if (cpu->T) {
-        cpuPrvCycleThumb(cpu);
-        return 1;
-    } else {
-        cpuPrvCycleArm(cpu);
-        return 1;
-    }
+    return cycleAcc;
 }
 
 void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise) {  // unraise when acknowledged

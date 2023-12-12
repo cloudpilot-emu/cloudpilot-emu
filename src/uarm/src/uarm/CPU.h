@@ -80,7 +80,7 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall);
 
 void cpuReset(struct ArmCpu *cpu, uint32_t pc);
 
-uint32_t cpuCycle(struct ArmCpu *cpu);
+uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles);
 void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise);  // unraise when acknowledged
 
 uint32_t cpuGetRegExternal(struct ArmCpu *cpu, uint_fast8_t reg);
