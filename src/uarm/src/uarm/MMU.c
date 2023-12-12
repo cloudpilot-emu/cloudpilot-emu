@@ -126,8 +126,7 @@ static MMUTranslateResult translateAndCache(struct ArmMmu *mmu, uint32_t adr, bo
     // read first level table
     if (mmu->transTablPA & 3) return TRANSLATE_RESULT_FAULT(0x01);  // alignment fault
 
-    if (!memAccess(mmu->mem, mmu->transTablPA + ((adr & 0xFFF00000ul) >> 18), 4,
-                   MEM_ACCESS_TYPE_READ, &t))
+    if (!memAccess(mmu->mem, mmu->transTablPA + ((adr & 0xFFF00000ul) >> 18), 4, false, &t))
         return TRANSLATE_RESULT_FAULT(0x0C);
 
     dom = (t >> 5) & 0x0F;
@@ -160,7 +159,7 @@ static MMUTranslateResult translateAndCache(struct ArmMmu *mmu, uint32_t adr, bo
     }
 
     // read second level table
-    if (!memAccess(mmu->mem, t, 4, MEM_ACCESS_TYPE_READ, &t)) {
+    if (!memAccess(mmu->mem, t, 4, false, &t)) {
         return TRANSLATE_RESULT_FAULT(0x0E | (dom << 4));
     }
 
@@ -298,7 +297,7 @@ void mmuSetDomainCfg(struct ArmMmu *mmu, uint32_t val) { mmu->domainCfg = val; }
 static uint32_t mmuPrvDebugRead(struct ArmMmu *mmu, uint32_t addr) {
     uint32_t t;
 
-    if (!memAccess(mmu->mem, addr, 4, MEM_ACCESS_TYPE_READ, &t)) t = 0xFFFFFFF0UL;
+    if (!memAccess(mmu->mem, addr, 4, false, &t)) t = 0xFFFFFFF0UL;
 
     return t;
 }

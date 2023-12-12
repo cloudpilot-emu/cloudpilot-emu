@@ -62,14 +62,13 @@ bool memRegionAdd(struct ArmMem *mem, uint32_t pa, uint32_t sz, ArmMemAccessF aF
     return false;
 }
 
-bool memAccess(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, uint_fast8_t accessType,
-               void *buf) {
-    bool ret = false, wantWrite = !!accessType;
+bool memAccess(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, bool write, void *buf) {
+    bool ret = false;
     uint_fast8_t i;
 
     for (i = 0; i < NUM_MEM_REGIONS; i++) {
         if (mem->regions[i].pa <= addr && mem->regions[i].pa + mem->regions[i].sz > addr) {
-            ret = mem->regions[i].aF(mem->regions[i].uD, addr, size, wantWrite, buf);
+            ret = mem->regions[i].aF(mem->regions[i].uD, addr, size, write, buf);
             break;
         }
     }

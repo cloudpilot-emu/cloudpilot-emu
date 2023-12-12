@@ -45,7 +45,7 @@ static uint32_t pace_get_le(uint32_t addr, uint8_t size) {
     uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
     uint32_t result;
-    bool ok = memAccess(mem, pa, size, MEM_ACCESS_TYPE_READ, &result);
+    bool ok = memAccess(mem, pa, size, false, &result);
 
     if (!ok) {
         fsr = 10;  // external abort on non-linefetch
@@ -93,7 +93,7 @@ static void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
 
     uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
-    bool ok = memAccess(mem, pa, size, MEM_ACCESS_TYPE_WRITE, &value);
+    bool ok = memAccess(mem, pa, size, true, &value);
 
     if (!ok) {
         fsr = 10;  // external abort on non-linefetch
@@ -268,12 +268,12 @@ bool paceLoad68kState() {
     wasSz = 64;
     wasWrite = false;
 
-    if (!memAccess(mem, statePtrPa, 64, MEM_ACCESS_TYPE_READ, state)) return false;
+    if (!memAccess(mem, statePtrPa, 64, false, state)) return false;
 
     lastAddr = statePtr + 64;
     wasSz = 8;
 
-    if (!memAccess(mem, statePtrPa + 64, 8, MEM_ACCESS_TYPE_READ, state + 64)) return false;
+    if (!memAccess(mem, statePtrPa + 64, 8, false, state + 64)) return false;
 
     if (sizeof(struct regstruct) != sizeof(stateScratchBuffer)) {
         for (size_t i = 0; i < 16; i++) regs.regs[i] = stateScratchBuffer[i];
@@ -316,12 +316,12 @@ bool paceSave68kState() {
     wasSz = 64;
     wasWrite = true;
 
-    if (!memAccess(mem, statePtrPa, 64, MEM_ACCESS_TYPE_WRITE, state)) return false;
+    if (!memAccess(mem, statePtrPa, 64, true, state)) return false;
 
     lastAddr = statePtr + 64;
     wasSz = 8;
 
-    if (!memAccess(mem, statePtrPa + 64, 8, MEM_ACCESS_TYPE_WRITE, state + 64)) return false;
+    if (!memAccess(mem, statePtrPa + 64, 8, true, state + 64)) return false;
 
     return true;
 }

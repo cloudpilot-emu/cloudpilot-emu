@@ -86,7 +86,7 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
 
         uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
         if (!MMU_TRANSLATE_RESULT_CACHEABLE(translateResult)) {
-            bool ok = memAccess(ic->mem, pa, sz, MEM_ACCESS_TYPE_READ, buf);
+            bool ok = memAccess(ic->mem, pa, sz, false, buf);
 
             if (!ok) {
                 *fsrP = 0x0d;  // perm error
@@ -98,7 +98,7 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
         }
 
         bool ok = memAccess(ic->mem, pa & ((0xffffffff << CACHE_LINE_WIDTH_BITS)), sizeof(data),
-                            MEM_ACCESS_TYPE_READ, data);
+                            false, data);
         if (!ok) {
             if (fsrP) *fsrP = 0x0d;  // perm error
             return false;

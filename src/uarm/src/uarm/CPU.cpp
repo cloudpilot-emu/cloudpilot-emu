@@ -39,6 +39,7 @@
 #define ARM_MODE_3_D 0x30
 #define ARM_MODE_3_LOAD 0x40
 #define ARM_MODE_3_INV 0x80
+#define ARM_MDOE_3_PCREL 0x01
 
 #define ARM_MODE_4_REG 0x0F
 #define ARM_MODE_4_INC 0x10  // incr or decr
@@ -649,8 +650,7 @@ static FORCE_INLINE bool cpuPrvMemOpEx(struct ArmCpu *cpu, void *buf, uint32_t v
 
     uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
-    bool ok =
-        memAccess(cpu->mem, pa, size, (write ? MEM_ACCESS_TYPE_WRITE : MEM_ACCESS_TYPE_READ), buf);
+    bool ok = memAccess(cpu->mem, pa, size, write, buf);
 
     if (!ok) {
         if (fsrP) *fsrP = 10;  // external abort on non-linefetch
@@ -1273,8 +1273,9 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privile
     } else {
         switch (mode & ARM_MODE_3_TYPE) {
             case ARM_MODE_3_H:
-
-                memVal16 = cpuPrvGetReg<wasT>(cpu, (instr >> 12) & 0x0F);
+                memVal16 = mode & ARM_MDOE_3_PCREL
+                               ? cpuPrvGetReg<wasT, true>(cpu, (instr >> 12) & 0x0F)
+                               : cpuPrvGetRegNotPC(cpu, (instr >> 12) & 0x0F);
                 ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, true, privileged, &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, 2, true, false, fsr);
@@ -1791,7 +1792,7 @@ static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr, bool pri
 
     bool userModeRegs = false, copySPSR = false, ok;
     uint32_t loadedPc = 0xfffffffful;
-    uint_fast8_t idx, regNo, fsr;
+    uint_fast8_t fsr;
     uint_fast16_t regsList = instr & 0xffff;
     uint_fast8_t reg = (instr >> 16) & 0x0f;
     uint32_t memVal32, sr, ea;
@@ -1805,58 +1806,73 @@ static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr, bool pri
             userModeRegs = true;
     }
 
-    for (idx = 0; idx < 16; idx++) {
-        regNo = (mode & ARM_MODE_4_INC) ? idx : 15 - idx;
-        if (!(regsList & (1 << regNo))) continue;
+#define LOAD_STORE_MULTI_ITER(idx)                                              \
+    do {                                                                        \
+        constexpr uint8_t regNo = (mode & ARM_MODE_4_INC) ? idx : 15 - idx;     \
+        if (!(regsList & (1 << regNo))) continue;                               \
+                                                                                \
+        if (!isLoad) {                                                          \
+            memVal32 = cpuPrvGetReg<wasT>(cpu, regNo);                          \
+            if (unlikely(userModeRegs)) {                                       \
+                if (regNo >= 8 && regNo <= 12 && (cpu->M == ARM_SR_MODE_FIQ))   \
+                    memVal32 = cpu->extra_regs[regNo - 8];                      \
+                else if (regNo == REG_NO_SP)                                    \
+                    memVal32 = cpu->bank_usr.R13;                               \
+                else if (regNo == REG_NO_LR)                                    \
+                    memVal32 = cpu->bank_usr.R14;                               \
+            }                                                                   \
+        }                                                                       \
+                                                                                \
+        if (mode & ARM_MODE_4_BFR) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;      \
+        ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, !isLoad, privileged, &fsr);     \
+        if (!ok) {                                                              \
+            cpuPrvHandleMemErr(cpu, ea, 4, !isLoad, false, fsr);                \
+            if (regsList & (1 << reg)) cpuPrvSetReg(cpu, reg, origBaseRegVal);  \
+                                                                                \
+            return;                                                             \
+        }                                                                       \
+        if (!(mode & ARM_MODE_4_BFR)) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;   \
+                                                                                \
+        if (isLoad) {                                                           \
+            if (unlikely(userModeRegs)) {                                       \
+                if (regNo >= 8 && regNo <= 12 && (cpu->M == ARM_SR_MODE_FIQ)) { \
+                    cpu->extra_regs[regNo - 8] = memVal32;                      \
+                    continue;                                                   \
+                } else if (regNo == REG_NO_SP) {                                \
+                    cpu->bank_usr.R13 = memVal32;                               \
+                    continue;                                                   \
+                } else if (regNo == REG_NO_LR) {                                \
+                    cpu->bank_usr.R14 = memVal32;                               \
+                    continue;                                                   \
+                }                                                               \
+            }                                                                   \
+                                                                                \
+            if (unlikely(regNo == REG_NO_PC && copySPSR))                       \
+                loadedPc = memVal32;                                            \
+            else                                                                \
+                cpuPrvSetReg(cpu, regNo, memVal32);                             \
+        }                                                                       \
+    } while (0)
 
-        // if this is a store, get the value to store
-        if (!isLoad) {
-            memVal32 = cpuPrvGetReg<wasT>(cpu, regNo);
-            if (unlikely(userModeRegs)) {
-                if (regNo >= 8 && regNo <= 12 &&
-                    (cpu->M == ARM_SR_MODE_FIQ))  // handle fiq/usr banked regs
-                    memVal32 = cpu->extra_regs[regNo - 8];
-                else if (regNo == REG_NO_SP)
-                    memVal32 = cpu->bank_usr.R13;
-                else if (regNo == REG_NO_LR)
-                    memVal32 = cpu->bank_usr.R14;
-            }
-        }
+    LOAD_STORE_MULTI_ITER(0);
+    LOAD_STORE_MULTI_ITER(1);
+    LOAD_STORE_MULTI_ITER(2);
+    LOAD_STORE_MULTI_ITER(3);
+    LOAD_STORE_MULTI_ITER(4);
+    LOAD_STORE_MULTI_ITER(5);
+    LOAD_STORE_MULTI_ITER(6);
+    LOAD_STORE_MULTI_ITER(7);
+    LOAD_STORE_MULTI_ITER(8);
+    LOAD_STORE_MULTI_ITER(9);
+    LOAD_STORE_MULTI_ITER(10);
+    LOAD_STORE_MULTI_ITER(11);
+    LOAD_STORE_MULTI_ITER(12);
+    LOAD_STORE_MULTI_ITER(13);
+    LOAD_STORE_MULTI_ITER(14);
+    LOAD_STORE_MULTI_ITER(15);
 
-        // perform mem op
-        if (mode & ARM_MODE_4_BFR) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;
-        ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, !isLoad, privileged, &fsr);
-        if (!ok) {
-            cpuPrvHandleMemErr(cpu, ea, 4, !isLoad, false, fsr);
-            if (regsList & (1 << reg))  // restore base if we had already overwritten it
-                cpuPrvSetReg(cpu, reg, origBaseRegVal);
+#undef LOAD_STORE_MULTI_ITER
 
-            return;
-        }
-        if (!(mode & ARM_MODE_4_BFR)) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;
-
-        // if this is a load, store the value we just loaded
-        if (isLoad) {
-            if (unlikely(userModeRegs)) {
-                if (regNo >= 8 && regNo <= 12 &&
-                    (cpu->M == ARM_SR_MODE_FIQ)) {  // handle fiq/usr banked regs
-                    cpu->extra_regs[regNo - 8] = memVal32;
-                    continue;
-                } else if (regNo == REG_NO_SP) {
-                    cpu->bank_usr.R13 = memVal32;
-                    continue;
-                } else if (regNo == REG_NO_LR) {
-                    cpu->bank_usr.R14 = memVal32;
-                    continue;
-                }
-            }
-
-            if (unlikely(regNo == REG_NO_PC && copySPSR))
-                loadedPc = memVal32;
-            else
-                cpuPrvSetReg(cpu, regNo, memVal32);
-        }
-    }
     if (mode & ARM_MODE_4_WBK) cpuPrvSetRegNotPC(cpu, reg, ea);
     if (copySPSR) {
         sr = cpu->SPSR;
@@ -2150,7 +2166,10 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
                     } else {
                         switch (mode & ARM_MODE_3_TYPE) {
                             case ARM_MODE_3_H:
-                                EXEC_LOAD_STORE_1(ARM_MODE_3_H);
+                                if (((instr >> 12) & 0x0f) == REG_NO_PC)
+                                    EXEC_LOAD_STORE_1(ARM_MODE_3_H | ARM_MDOE_3_PCREL);
+                                else
+                                    EXEC_LOAD_STORE_1(ARM_MODE_3_H);
 
                             case ARM_MODE_3_SH:
                             case ARM_MODE_3_SB:
