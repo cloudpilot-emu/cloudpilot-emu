@@ -1740,10 +1740,11 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privile
             if constexpr (mode & ARM_MODE_2_SYSCALL) {
                 if constexpr (destPc)
                     // syscall && destPc -> sourceReg == 9 && destReg == 12
-                    patchDispatchOnLoadPcFromR12(cpu->patchDispatch, addBefore, cpu->regs);
+                    patchDispatchOnLoadPcFromR12(cpu->patchDispatch, addBefore ? increment : 0,
+                                                 cpu->regs);
                 else
                     // syscall && !destPc -> sourceReg == 12 && destReg == 15
-                    patchDispatchOnLoadR12FromR9(cpu->patchDispatch, addBefore);
+                    patchDispatchOnLoadR12FromR9(cpu->patchDispatch, addBefore ? increment : 0);
             }
 
             cpuPrvSetReg<destPc>(cpu, destReg, memVal32);
