@@ -38,6 +38,7 @@ class Emulator {
             print: log,
             printErr: log,
             locateFile: () => '../src/uarm_web.wasm',
+            wasmMemory: new WebAssembly.Memory({ initial: (300 * 1024) / 64, maximum: (300 * 1024) / 64 }),
         });
 
         module.FS.writeFile('/nor.bin', nor);
