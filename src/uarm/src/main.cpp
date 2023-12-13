@@ -132,6 +132,9 @@ namespace {
 }  // namespace
 
 extern "C" int socExtSerialReadChar(void) {
+#ifdef __EMSCRIPTEN__
+    return CHAR_NONE;
+#else
     timeval tv;
     fd_set set;
     char c;
@@ -149,6 +152,7 @@ extern "C" int socExtSerialReadChar(void) {
     }
 
     return ret;
+#endif
 }
 
 extern "C" void socExtSerialWriteChar(int chr) {
