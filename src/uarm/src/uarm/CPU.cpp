@@ -675,8 +675,6 @@ static FORCE_INLINE bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vad
 
     gdbStubDebugBreakRequested(cpu->debugStub);
 
-    abort();
-
     return false;
 #endif
 }

@@ -9,6 +9,7 @@
 #include "util.h"
 
 #define TRANSLATE_RESULT_FAULT(fsr) ((1ull << 63) | ((uint64_t)(fsr) << 32))
+#define TLB_SIZE (1 << 20)
 
 struct TlbEntry {
     uint32_t pa;
@@ -28,7 +29,7 @@ struct ArmMmu {
     uint8_t xscale : 1;
     uint32_t domainCfg;
 
-    struct TlbEntry *tlb[256];
+    struct TlbEntry tlb[TLB_SIZE];
     uint16_t revision;
 };
 
@@ -38,12 +39,7 @@ void mmuTlbFlush(struct ArmMmu *mmu) {
     if (mmu->revision == 0) {
         mmu->revision = 1;
 
-        for (size_t i = 0; i < 256; i++) {
-            struct TlbEntry *entries = mmu->tlb[i];
-            if (!entries) continue;
-
-            for (size_t i = 0; i < 4096; i++) entries[i].revision = 0;
-        }
+        for (size_t i = 0; i < TLB_SIZE; i++) mmu->tlb[i].revision = 0;
     }
 }
 
@@ -66,18 +62,6 @@ struct ArmMmu *mmuInit(struct ArmMem *mem, bool xscaleMode) {
 }
 
 bool mmuIsOn(struct ArmMmu *mmu) { return mmu->transTablPA != MMU_DISABLED_TTP; }
-
-static inline struct TlbEntry *getTlbEntry(struct ArmMmu *mmu, uint32_t va) {
-    const uint8_t i = va >> 24;
-    struct TlbEntry *lvl1 = mmu->tlb[i];
-
-    if (!lvl1) {
-        lvl1 = mmu->tlb[i] = (struct TlbEntry *)malloc(4096 * sizeof(struct TlbEntry));
-        memset(lvl1, 0, 4096 * sizeof(struct TlbEntry));
-    }
-
-    return lvl1 + ((va >> 12) & 0xfff);
-}
 
 static inline uint8_t checkPermissionsForWrite(struct ArmMmu *mmu, uint_fast8_t ap,
                                                uint_fast8_t domain, bool section,
@@ -113,8 +97,8 @@ static inline uint8_t checkPermissionsForWrite(struct ArmMmu *mmu, uint_fast8_t 
     return (section ? 0x0D : 0x0F) | (domain << 4);  // section or subpage permission fault
 }
 
-static MMUTranslateResult translateAndCache(struct ArmMmu *mmu, uint32_t adr, bool priviledged,
-                                            bool write) {
+static FORCE_INLINE MMUTranslateResult translateAndCache(struct ArmMmu *mmu, uint32_t adr,
+                                                         bool priviledged, bool write) {
     bool c = false;
     bool section = false, coarse = true, pxa_tex_page = false;
     uint32_t va, paPage = 0, sz, t, pa;
@@ -230,7 +214,7 @@ translated:
 
     if (sz > 1024) {
         for (uint32_t offset = 0; offset < sz; offset += 4096) {
-            struct TlbEntry *tlbEntry = getTlbEntry(mmu, va + offset);
+            struct TlbEntry *tlbEntry = mmu->tlb + ((va + offset) >> 12);
 
             tlbEntry->ap = ap;
             tlbEntry->c = c;
@@ -253,20 +237,34 @@ translated:
     return result;
 }
 
-MMUTranslateResult mmuTranslate(struct ArmMmu *mmu, uint32_t adr, bool priviledged, bool write) {
-    if (mmu->transTablPA == MMU_DISABLED_TTP) return adr;
+MMUTranslateResult mmuTranslate(struct ArmMmu *mmu, uint32_t addr, bool priviledged, bool write) {
+    static volatile bool never = false;
 
-    struct TlbEntry *tlbEntry = getTlbEntry(mmu, adr);
+    if (mmu->transTablPA == MMU_DISABLED_TTP) return addr;
 
-    if (tlbEntry->revision != mmu->revision) return translateAndCache(mmu, adr, priviledged, write);
+    struct TlbEntry *tlbEntry = mmu->tlb + (addr >> 12);
+
+    if (tlbEntry->revision != mmu->revision) {
+        return translateAndCache(mmu, addr, priviledged, write);
+    }
 
     if (write) {
         uint8_t fsr = checkPermissionsForWrite(mmu, tlbEntry->ap, tlbEntry->domain,
                                                tlbEntry->section, priviledged);
-        if (fsr) return TRANSLATE_RESULT_FAULT(fsr);
+
+        if (fsr) {
+            // *black magic* For some reason, the presence of this callout to JS
+            // makes Safari optimize this code path differently, leading to a
+            // considerable perfomance loss of ~10% if it is not present. It makes
+            // no difference for other browsers, so it must a bug in Safari. The
+            // previous version of the same code worked fine without the printf,
+            // that's how I found it. Gnah.
+            if (never) printf("permission fault\n");
+            return TRANSLATE_RESULT_FAULT(fsr);
+        }
     }
 
-    uint64_t result = (adr & 0xfff) + tlbEntry->pa;
+    uint64_t result = (addr & 0xfff) + tlbEntry->pa;
 
     if (tlbEntry->c) result |= (1ull << 62);
 
