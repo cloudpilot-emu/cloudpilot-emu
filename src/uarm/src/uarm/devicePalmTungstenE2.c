@@ -115,7 +115,7 @@ uint_fast8_t deviceGetSocRev(void) {
 }
 
 struct Device *deviceSetup(struct SocPeriphs *sp, struct Keypad *kp, struct VSD *vsd,
-                           FILE *nandFile) {
+                           uint8_t *nandContent, size_t nandSize) {
     static const struct NandSpecs nandSpecs = {
         .bytesPerPage = 528,
         .blocksPerDevice = 2048,
@@ -133,7 +133,7 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Keypad *kp, struct VSD 
     if (!dev->wm9712L) ERR("Cannot init WM9712L");
 
     dev->nand = directNandInit(sp->mem, 0x04000002UL, 0x04000004UL, 0x04000000UL, 0x00fffff9ul,
-                               sp->gpio, 79, &nandSpecs, nandFile);
+                               sp->gpio, 79, &nandSpecs, nandContent, nandSize);
     if (!dev->nand) ERR("Cannot init NAND");
 
     if (!keypadAddGpioKey(kp, keyIdHard1, 11, false)) ERR("Cannot init hardkey1 (datebook)\n");

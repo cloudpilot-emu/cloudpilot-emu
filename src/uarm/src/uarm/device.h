@@ -70,7 +70,7 @@ uint_fast8_t deviceGetSocRev(void);
 
 // device handling
 struct Device *deviceSetup(struct SocPeriphs *sp, struct Keypad *kp, struct VSD *vsd,
-                           FILE *nandFile);
+                           uint8_t *nandContent, size_t nandSize);
 void deviceKey(struct Device *dev, uint32_t key, bool down);
 void devicePeriodic(struct Device *dev, uint32_t cycles);
 void deviceTouch(struct Device *dev, int x, int y);

@@ -42,6 +42,8 @@ using namespace std;
 
 using namespace std;
 
+#pragma clang diagnostic ignored "-Wunused-function"
+
 namespace {
     constexpr uint32_t SD_SECTOR_SIZE = 512ULL;
 
@@ -73,7 +75,7 @@ namespace {
         return true;
     }
 
-    void readSdCArd(const char* fname) {
+    void readSdCard(const char* fname) {
         FILE* cardFile = fopen(fname, "r+b");
 
         if (!cardFile) {
@@ -224,67 +226,14 @@ void EMSCRIPTEN_KEEPALIVE keyUp(int key) {
 }
 #endif
 
-int main(int argc, char** argv) {
-    uint32_t romLen = 0;
-    const char* self = argv[0];
-    bool noRomMode = false;
-    FILE* nandFile = NULL;
-    FILE* romFile = NULL;
-    uint8_t* rom = NULL;
-    int gdbPort = -1;
-    int c;
-
-    while ((c = getopt(argc, argv, "g:s:r:n:hx")) != -1) switch (c) {
-            case 'g':  // gdb port
-                gdbPort = optarg ? atoi(optarg) : -1;
-                if (gdbPort < 1024 || gdbPort > 65535) usage(self);
-                break;
-
-            case 's':  // sd card
-                readSdCArd(optarg);
-                break;
-
-            case 'r':  // ROM
-                if (optarg) romFile = fopen(optarg, "rb");
-                break;
-
-            case 'x':  // NO_ROM mode
-                noRomMode = true;
-                break;
-
-            case 'n':  // NAND
-                if (optarg) nandFile = fopen(optarg, "r+b");
-                break;
-
-            default:
-                usage(self);
-                break;
-        }
-
-    if ((romFile && noRomMode) || (!romFile && !noRomMode)) usage(self);
-
-    if (romFile) {
-        fseek(romFile, 0, SEEK_END);
-        romLen = ftell(romFile);
-        rewind(romFile);
-
-        rom = (uint8_t*)malloc(romLen);
-        if (!rom) {
-            fprintf(stderr, "CANNOT ALLOC ROM\n");
-            exit(-2);
-        }
-
-        if (romLen != fread(rom, 1, romLen, romFile)) {
-            fprintf(stderr, "CANNOT READ ROM\n");
-            exit(-2);
-        }
-        fclose(romFile);
+void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPort) {
+    if (static_cast<uint64_t>(sdCardSecs) >> 32) {
+        fprintf(stderr, "SD card too big: %llu sectors\n", (unsigned long long)sdCardSecs);
+        exit(-5);
     }
 
-    fprintf(stderr, "Read %u bytes of ROM\n", romLen);
-
     soc = socInit((void**)&rom, &romLen, romLen ? 1 : 0, sdCardSecs, prvSdSectorR, prvSdSectorW,
-                  nandFile, gdbPort, deviceGetSocRev());
+                  nand, nandLen, gdbPort, deviceGetSocRev());
 
     mainLoop = make_unique<MainLoop>(soc, 100000000);
 
@@ -329,6 +278,121 @@ int main(int argc, char** argv) {
         if (timesliceRemaining > 10) usleep(timesliceRemaining);
     }
 #endif
-
-    return 0;
 }
+
+#ifndef __EMSCRIPTEN__
+int main(int argc, char** argv) {
+    uint32_t romLen = 0;
+    size_t nandLen = 0;
+    const char* self = argv[0];
+    bool noRomMode = false;
+    FILE* nandFile = NULL;
+    FILE* romFile = NULL;
+    uint8_t* rom = NULL;
+    uint8_t* nand = NULL;
+    int gdbPort = -1;
+    int c;
+
+    while ((c = getopt(argc, argv, "g:s:r:n:hx")) != -1) switch (c) {
+            case 'g':  // gdb port
+                gdbPort = optarg ? atoi(optarg) : -1;
+                if (gdbPort < 1024 || gdbPort > 65535) usage(self);
+                break;
+
+            case 's':  // sd card
+                readSdCard(optarg);
+                break;
+
+            case 'r':  // ROM
+                if (optarg) romFile = fopen(optarg, "rb");
+                break;
+
+            case 'x':  // NO_ROM mode
+                noRomMode = true;
+                break;
+
+            case 'n':  // NAND
+                if (optarg) nandFile = fopen(optarg, "r+b");
+                break;
+
+            default:
+                usage(self);
+                break;
+        }
+
+    if ((romFile && noRomMode) || (!romFile && !noRomMode)) usage(self);
+
+    if (romFile) {
+        fseek(romFile, 0, SEEK_END);
+        romLen = ftell(romFile);
+        rewind(romFile);
+
+        rom = (uint8_t*)malloc(romLen);
+        if (!rom) {
+            fprintf(stderr, "CANNOT ALLOC ROM\n");
+            exit(-2);
+        }
+
+        if (romLen != fread(rom, 1, romLen, romFile)) {
+            fprintf(stderr, "CANNOT READ ROM\n");
+            exit(-2);
+        }
+        fclose(romFile);
+    }
+
+    if (nandFile) {
+        fseek(nandFile, 0, SEEK_END);
+        nandLen = ftell(nandFile);
+        rewind(nandFile);
+
+        nand = (uint8_t*)malloc(nandLen);
+        if (!nand) {
+            fprintf(stderr, "CANNOT ALLOC NAND\n");
+            exit(-2);
+        }
+
+        if (nandLen != fread(nand, 1, nandLen, nandFile)) {
+            fprintf(stderr, "CANNOT READ RNANDOM\n");
+            exit(-2);
+        }
+        fclose(nandFile);
+    }
+
+    fprintf(stderr, "Read %u bytes of ROM\n", romLen);
+    fprintf(stderr, "Read %lu bytes of NAND\n", nandLen);
+
+    run(rom, romLen, nand, nandLen, gdbPort);
+}
+#endif
+
+#ifdef __EMSCRIPTEN__
+
+int main() {}
+
+extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint8_t* rom, int romLen, uint8_t* nand, int nandLen,
+                                             uint8_t* sd, int sdLen) {
+    if (sd) {
+        if (sdLen % SD_SECTOR_SIZE) {
+            fprintf(stderr, "SD card image not a multiple of %u bytes\n", (unsigned)SD_SECTOR_SIZE);
+            goto sdSetupComplete;
+        }
+
+        sdCardSecs = sdLen / SD_SECTOR_SIZE;
+        if (static_cast<uint64_t>(sdCardSecs) >> 32) {
+            fprintf(stderr, "SD card too big: %llu sectors\n", (unsigned long long)sdCardSecs);
+            goto sdSetupComplete;
+        }
+
+        fprintf(stderr, "using %u bytes of SD\n", sdLen);
+        sdCardData = sd;
+    }
+
+sdSetupComplete:
+
+    fprintf(stderr, "using %u bytes of NOR\n", romLen);
+    fprintf(stderr, "using %u bytes of NAND\n", nandLen);
+
+    run(rom, (uint32_t)romLen, nand, (size_t)nandLen, 0);
+}
+
+#endif

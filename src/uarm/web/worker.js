@@ -38,16 +38,26 @@ class Emulator {
             print: log,
             printErr: log,
             locateFile: () => '../src/uarm_web.wasm',
-            wasmMemory: new WebAssembly.Memory({ initial: (300 * 1024) / 64, maximum: (300 * 1024) / 64 }),
         });
 
-        module.FS.writeFile('/nor.bin', nor);
-        module.FS.writeFile('/nand.bin', nand);
-        if (sd) module.FS.writeFile('/sd.img', sd);
+        const malloc = module.cwrap('malloc', 'number', ['number']);
 
-        if (module.callMain(['-r', '/nor.bin', '-n', '/nand.bin', ...(sd ? ['-s', '/sd.img'] : [])]) !== 0) {
-            throw new Error('uARM terminated with error');
-        }
+        let norPtr = malloc(nor.length);
+        let nandPtr = malloc(nand.length);
+        let sdPtr = sd ? malloc(sd.length) : 0;
+
+        module.HEAPU8.subarray(norPtr, norPtr + nor.length).set(nor);
+        module.HEAPU8.subarray(nandPtr, nandPtr + nand.length).set(nand);
+        if (sd) module.HEAPU8.subarray(sdPtr, sdPtr + sd.length).set(sd);
+
+        module.callMain([]);
+
+        module.ccall(
+            'webMain',
+            undefined,
+            ['number', 'number', 'number', 'number', 'number', 'number'],
+            [norPtr, nor.length, nandPtr, nand.length, sdPtr, sd ? sd.length : 0]
+        );
 
         return new Emulator(module, env);
     }

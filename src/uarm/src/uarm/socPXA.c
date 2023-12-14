@@ -146,8 +146,8 @@ static void socCycleBatch1(void *userData);
 static void socCycleBatch2(void *userData);
 
 struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t romNumPieces,
-                    uint32_t sdNumSectors, SdSectorR sdR, SdSectorW sdW, FILE *nandFile,
-                    int gdbPort, uint_fast8_t socRev) {
+                    uint32_t sdNumSectors, SdSectorR sdR, SdSectorW sdW, uint8_t *nandContent,
+                    size_t nandSize, int gdbPort, uint_fast8_t socRev) {
     struct SoC *soc = (struct SoC *)malloc(sizeof(struct SoC));
     struct SocPeriphs sp = {};
     uint32_t *ramBuffer;
@@ -357,7 +357,7 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     sp.uarts[2] = soc->stUart;
     sp.uarts[3] = soc->btUart;
 
-    soc->dev = deviceSetup(&sp, soc->kp, soc->vSD, nandFile);
+    soc->dev = deviceSetup(&sp, soc->kp, soc->vSD, nandContent, nandSize);
     if (!soc->dev) ERR("Cannot init device\n");
 
     if (sp.dbgUart) socUartSetFuncs(sp.dbgUart, socUartPrvRead, socUartPrvWrite, soc->hwUart);

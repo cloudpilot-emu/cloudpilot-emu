@@ -25,12 +25,12 @@ LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno \
 	-s MODULARIZE=1 \
 	-s ENVIRONMENT="web,worker" \
 	-s EXPORT_NAME=createModule \
-	-s ALLOW_MEMORY_GROWTH=0 \
+	-s ALLOW_MEMORY_GROWTH=1 \
 	-s INITIAL_MEMORY=314572800 \
 	-s WASM_BIGINT=1 \
 	-s ALLOW_TABLE_GROWTH=1 \
+	-s FILESYSTEM=0 \
 	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
-	-s EXPORTED_RUNTIME_METHODS=["FS"] \
 	-s BINARYEN_IGNORE_IMPLICIT_TRAPS=1 \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall","addFunction"]
 

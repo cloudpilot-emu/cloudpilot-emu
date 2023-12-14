@@ -19,7 +19,8 @@ struct DirectNAND;
 struct DirectNAND *directNandInit(struct ArmMem *physMem, uint32_t baseCleAddr,
                                   uint32_t baseAleAddr, uint32_t baseDataAddr,
                                   uint32_t maskBitsAddr, struct SocGpio *gpio, int rdyPin,
-                                  const struct NandSpecs *specs, FILE *nandFile);
+                                  const struct NandSpecs *specs, uint8_t *nandContent,
+                                  size_t nandSize);
 
 void directNandPeriodic(struct DirectNAND *nand);
 

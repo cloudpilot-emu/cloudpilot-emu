@@ -2017,7 +2017,9 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
                     if (cpuPrvMemOp<1>(cpu, &ch, cpu->regs[1], false, true, &fsr) && ch)
                         fprintf(stderr, "%c", ch);
                 } else if (cpu->regs[0] == 0x132) {
+#ifndef __EMSCRIPTEN__
                     fprintf(stderr, "debug break requested\n");
+#endif
                     gdbStubDebugBreakRequested(cpu->debugStub);
                 }
                 goto instr_done;

@@ -120,8 +120,8 @@ static bool nandPrvPageProgram(struct NAND *nand) {
         nand->data[nand->pageNo * nand->bytesPerPage + i] &= nand->pageBuf[i];
         //	if (nand->data[nand->pageNo * NAND_PAGE_SIZE + i] != nand->pageBuf[i])
         //		fprintf(stderr, "write fail for page %u af ofst %u. wrote 0x%02x, read
-        //0x%02x\n", nand->pageNo, i, nand->pageBuf[i], nand->data[nand->pageNo * NAND_PAGE_SIZE +
-        //i]);
+        // 0x%02x\n", nand->pageNo, i, nand->pageBuf[i], nand->data[nand->pageNo * NAND_PAGE_SIZE +
+        // i]);
     }
 
     return true;
@@ -331,7 +331,7 @@ bool nandRead(struct NAND *nand, bool cle, bool ale, uint8_t *valP) {
 
                 // fprintf(stderr, "reading page %5u (block addr %4u.%2u) area %c offset %u\n",
                 //	nand->pageNo, nand->pageNo / NAND_PAGES_PER_BLOCK, nand->pageNo %
-                //NAND_PAGES_PER_BLOCK, 'A' + (unsigned)nand->area, nand->addr[0]);
+                // NAND_PAGES_PER_BLOCK, 'A' + (unsigned)nand->area, nand->addr[0]);
 
                 if (nand->pageNo >= (nand->blocksPerDevice << nand->pagesPerBlockLg2)) {
                     fprintf(stderr, "page number ouf of bounds\n");
@@ -382,8 +382,8 @@ void nandPeriodic(struct NAND *nand) {
 
 bool nandIsReady(struct NAND *nand) { return !nand->busyCt; }
 
-struct NAND *nandInit(FILE *nandFile, const struct NandSpecs *specs, NandReadyCbk readyCbk,
-                      void *readyCbkData) {
+struct NAND *nandInit(uint8_t *nandContent, size_t nandSize, const struct NandSpecs *specs,
+                      NandReadyCbk readyCbk, void *readyCbkData) {
     struct NAND *nand = (struct NAND *)malloc(sizeof(*nand));
     uint32_t nandSz, nandPages, t;
 
@@ -418,20 +418,20 @@ struct NAND *nandInit(FILE *nandFile, const struct NandSpecs *specs, NandReadyCb
     nand->pageBuf = (uint8_t *)malloc(nand->bytesPerPage);
     if (!nand->pageBuf) ERR("canont allcoate NAND page buffer\n");
 
-    nand->data = (uint8_t *)malloc(nandSz);
-    if (!nand->data) ERR("canont allcoate NAND data buffer\n");
-
-    if (nandFile) {
-        t = fread(nand->data, 1, nandSz, nandFile);
-        if (nandSz != t) {
-            fprintf(stderr, "Cannot read nand. got %lu, wanted %lu\n", (unsigned long)t,
+    if (nandContent) {
+        if (nandSize != nandSz) {
+            fprintf(stderr, "Cannot use nand. got %lu, wanted %lu\n", (unsigned long)t,
                     (unsigned long)nandSz);
             free(nand);
-            return NULL;
-        } else
-            fprintf(stderr, "read %u bytes of nand\n", (unsigned)nandSz);
-    } else if (!nandFile)
+        }
+
+        nand->data = nandContent;
+    } else {
         memset(nand->data, 0xff, nandSz);
+
+        nand->data = (uint8_t *)malloc(nandSz);
+        if (!nand->data) ERR("canont allcoate NAND data buffer\n");
+    }
 
     nandPrvBusy(nand, 1);  // we start busy for a little bit
 

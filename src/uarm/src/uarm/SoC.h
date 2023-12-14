@@ -21,8 +21,8 @@ typedef bool (*SdSectorR)(uint32_t secNum, void *buf);
 typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
 
 struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t romNumPieces,
-                    uint32_t sdNumSectors, SdSectorR sdR, SdSectorW sdW, FILE *nandFile,
-                    int gdbPort, uint_fast8_t socRev);
+                    uint32_t sdNumSectors, SdSectorR sdR, SdSectorW sdW, uint8_t *nandContent,
+                    size_t nandSize, int gdbPort, uint_fast8_t socRev);
 uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond);
 
 void socBootload(struct SoC *soc, uint32_t method, void *param);  // soc-specific

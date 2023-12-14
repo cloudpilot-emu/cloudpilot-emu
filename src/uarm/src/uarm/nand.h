@@ -31,8 +31,8 @@ struct NandSpecs {
     uint8_t devId[];
 };
 
-struct NAND *nandInit(FILE *nandFile, const struct NandSpecs *specs, NandReadyCbk readyCbk,
-                      void *readyCbkData);
+struct NAND *nandInit(uint8_t *nandContent, size_t nandSize, const struct NandSpecs *specs,
+                      NandReadyCbk readyCbk, void *readyCbkData);
 
 void nandSecondReadyCbkSet(struct NAND *nand, NandReadyCbk readyCbk, void *readyCbkData);
 

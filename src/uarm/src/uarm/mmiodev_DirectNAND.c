@@ -64,7 +64,8 @@ static bool directNandPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t si
 struct DirectNAND *directNandInit(struct ArmMem *physMem, uint32_t baseCleAddr,
                                   uint32_t baseAleAddr, uint32_t baseDataAddr,
                                   uint32_t maskBitsAddr, struct SocGpio *gpio, int rdyPin,
-                                  const struct NandSpecs *specs, FILE *nandFile) {
+                                  const struct NandSpecs *specs, uint8_t *nandContent,
+                                  size_t nandSize) {
     struct DirectNAND *directNand = (struct DirectNAND *)malloc(sizeof(*directNand));
     uint32_t minAddr = 0xfffffffful, maxAddr = 0;
 
@@ -78,7 +79,7 @@ struct DirectNAND *directNandInit(struct ArmMem *physMem, uint32_t baseCleAddr,
     directNand->gpio = gpio;
     directNand->rdyPinNo = rdyPin;
 
-    directNand->nand = nandInit(nandFile, specs, directNandPrvReady, directNand);
+    directNand->nand = nandInit(nandContent, nandSize, specs, directNandPrvReady, directNand);
     if (!directNand->nand) ERR("Cannot init underlying NAND\n");
 
     if (baseCleAddr > maxAddr) maxAddr = baseCleAddr;
