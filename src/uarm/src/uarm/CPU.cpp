@@ -675,6 +675,8 @@ static FORCE_INLINE bool cpuPrvMemOp(struct ArmCpu *cpu, void *buf, uint32_t vad
 
     gdbStubDebugBreakRequested(cpu->debugStub);
 
+    abort();
+
     return false;
 #endif
 }
@@ -979,8 +981,11 @@ static void execFn_invalid(struct ArmCpu *cpu, uint32_t instr, bool privileged) 
         fprintf(stderr, "Invalid instr 0x%08lx seen at 0x%08lx with CPSR 0x%08lx\n",
                 (unsigned long)instr, (unsigned long)cpu->curInstrPC,
                 (unsigned long)cpuPrvMaterializeCPSR(cpu));
+
         cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_UND,
                         cpu->curInstrPC + (wasT ? 2 : 4), ARM_SR_MODE_UND | ARM_SR_I);
+
+        abort();
     }
 }
 
@@ -2033,6 +2038,8 @@ invalid_instr:
                 (unsigned long)cpuPrvMaterializeCPSR(cpu));
         cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_UND,
                         cpu->curInstrPC + (wasT ? 2 : 4), ARM_SR_MODE_UND | ARM_SR_I);
+
+        abort();
     }
 
 instr_done:
