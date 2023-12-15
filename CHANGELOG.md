@@ -1,3 +1,8 @@
+# Next version
+
+-   Fix free space not being updated in card browser.
+-   Fix deleted files being displayed after recreating a deleted directory.
+
 # Version 1.9.3
 
 -   Fix spurious failure to open files on Safari and iOS Safari.
