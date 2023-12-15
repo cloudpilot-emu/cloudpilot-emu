@@ -293,7 +293,8 @@ export class VfsService {
 
             await this.updateBytesFree();
             await this.sync();
-            entries.map((entry) => entry.path).forEach((path) => this.directoryCache.delete(this.dirname(path)));
+
+            this.directoryCache.clear();
         } finally {
             await loader.dismiss();
         }
