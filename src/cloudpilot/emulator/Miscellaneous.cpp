@@ -534,8 +534,8 @@ void SetHotSyncUserName(const char* userNameP) {
     //
     //		[str ] userName
 
-    size_t bufferSize = sizeof(DlpReqHeaderType) + sizeof(DlpTinyArgWrapperType) +
-                        sizeof(DlpWriteUserInfoReqHdrType) + dlpMaxUserNameSize;
+    constexpr size_t bufferSize = sizeof(DlpReqHeaderType) + sizeof(DlpTinyArgWrapperType) +
+                                  sizeof(DlpWriteUserInfoReqHdrType) + dlpMaxUserNameSize;
 
     uint32_t bufferAligned[bufferSize / 4 + (bufferSize % 4 ? 1 : 0)];
     char* buffer = (char*)bufferAligned;

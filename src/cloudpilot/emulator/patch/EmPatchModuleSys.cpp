@@ -1,5 +1,7 @@
 #include "EmPatchModuleSys.h"
 
+#include <memory>
+
 #include "EmCommon.h"
 #include "EmLowMem.h"
 #include "EmPalmOS.h"
@@ -356,14 +358,15 @@ namespace {
             emuptr dataPtr = MemHandleLock(dataHdl);
 
             if (dataPtr) {
-                char dataCopy[length + 1];
+                unique_ptr<char[]> dataCopy = make_unique<char[]>(length + 1);
                 dataCopy[length] = 0;
 
-                EmMem_memcpy(static_cast<void*>(dataCopy), dataPtr, length);
+                EmMem_memcpy(static_cast<void*>(dataCopy.get()), dataPtr, length);
 
                 MemHandleUnlock(dataHdl);
 
-                SuspendManager::Suspend<SuspendContextClipboardCopy>(Isolatin1ToUtf8(dataCopy));
+                SuspendManager::Suspend<SuspendContextClipboardCopy>(
+                    Isolatin1ToUtf8(dataCopy.get()));
             }
         } else {
             SuspendManager::Suspend<SuspendContextClipboardCopy>("");

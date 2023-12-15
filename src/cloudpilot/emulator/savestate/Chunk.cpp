@@ -73,7 +73,7 @@ void Chunk::PutString(const string& str, size_t maxLength) {
         return;
     }
 
-    char buffer[maxLength + 1];
+    char* buffer = static_cast<char*>(alloca(maxLength + 1));
     memset(buffer, 0, maxLength + 1);
     strcpy(buffer, str.c_str());
 
@@ -119,7 +119,7 @@ double Chunk::GetDouble() {
 }
 
 string Chunk::GetString(size_t maxLength) {
-    char buffer[maxLength + 1];
+    char* buffer = static_cast<char*>(alloca(maxLength + 1));
     GetBuffer(buffer, maxLength + 1);
 
     return buffer;
