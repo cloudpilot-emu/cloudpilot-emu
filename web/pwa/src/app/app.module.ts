@@ -1,7 +1,7 @@
 import { APP_INITIALIZER, NgModule } from '@angular/core';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
-import { MarkdownModule, MarkedOptions, MarkedRenderer } from 'ngx-markdown';
+import { MARKED_OPTIONS, MarkdownModule, MarkedOptions, MarkedRenderer } from 'ngx-markdown';
 
 import { AppComponent } from './app.component';
 import { AppRoutingModule } from './app-routing.module';
@@ -28,8 +28,6 @@ const markedOptionsFactory = (): MarkedOptions => {
         gfm: true,
         breaks: false,
         pedantic: false,
-        smartLists: true,
-        smartypants: false,
     };
 };
 
@@ -41,7 +39,7 @@ const markedOptionsFactory = (): MarkedOptions => {
         AppRoutingModule,
         MarkdownModule.forRoot({
             loader: HttpClient,
-            markedOptions: { provide: MarkedOptions, useFactory: markedOptionsFactory },
+            markedOptions: { provide: MARKED_OPTIONS, useFactory: markedOptionsFactory },
         }),
         HttpClientModule,
     ],
