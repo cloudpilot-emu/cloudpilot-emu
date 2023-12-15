@@ -2,6 +2,7 @@
 
 -   Fix free space not being updated in card browser.
 -   Fix deleted files being displayed after recreating a deleted directory.
+-   Reduce size of embedded build.
 
 # Version 1.9.3
 
