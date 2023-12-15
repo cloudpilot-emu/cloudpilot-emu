@@ -49,6 +49,8 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         this.checkEntries = changeDetector(cd, undefined, () =>
             this.path !== undefined ? vfsService.readdir(this.path) : undefined,
         );
+
+        this.checkBytesFree = changeDetector(cd, undefined, () => this.vfsService.getBytesFree());
     }
 
     ngOnInit(): void {
@@ -57,6 +59,7 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
 
     ngDoCheck(): void {
         this.checkEntries();
+        this.checkBytesFree();
     }
 
     handleDragDropEvent(e: DragEvent): void | Promise<void> {
@@ -394,4 +397,5 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
     selection = new Set<string>();
 
     private checkEntries: () => void;
+    private checkBytesFree: () => void;
 }
