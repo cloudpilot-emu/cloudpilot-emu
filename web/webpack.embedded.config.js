@@ -7,7 +7,7 @@ const pkg = require('./package.json');
 function getGitRev() {
     const rev = execSync('git rev-parse --short HEAD', { encoding: 'utf-8' }).trimEnd();
 
-    if (!/^[0-9a-f]{7}$/.test(rev)) throw new Error(`unable to determine git revision; command returned ${rev}`);
+    if (!/^[0-9a-f]{7,8}$/.test(rev)) throw new Error(`unable to determine git revision; command returned ${rev}`);
 
     return rev;
 }
@@ -26,7 +26,7 @@ module.exports = (env, argv) => ({
                     },
                 },
                 exclude: /node_modules/,
-            }
+            },
         ],
     },
     resolve: {
@@ -59,8 +59,8 @@ module.exports = (env, argv) => ({
                 argv.mode === 'development'
                     ? 'dev'
                     : env['RELEASE'] || process.env['CP_RELEASE']
-                        ? pkg.version
-                        : `${pkg.version}-${getGitRev()} (preview)`,
+                      ? pkg.version
+                      : `${pkg.version}-${getGitRev()} (preview)`,
         }),
     ],
     performance: {
