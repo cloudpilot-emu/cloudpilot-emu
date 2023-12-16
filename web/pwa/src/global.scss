@@ -119,3 +119,9 @@ ion-modal {
         box-shadow: 0 0 0 1px black;
     }
 }
+
+ion-list ion-item ion-label {
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}

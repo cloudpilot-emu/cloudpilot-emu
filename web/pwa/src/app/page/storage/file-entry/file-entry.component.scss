@@ -9,6 +9,9 @@ ion-icon.item-detail-icon {
 
 ion-label {
     margin-right: 7em;
+
+    // WORKAROUND Ionic bug that causes "end" slot to overflow to next line
+    max-width: calc(min(40em, 100vw) - 14em);
 }
 
 .attribute-icon-container {

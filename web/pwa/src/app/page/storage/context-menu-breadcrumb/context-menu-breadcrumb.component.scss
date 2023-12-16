@@ -3,7 +3,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
 
-    // WORK AROUND breaking list element
+    // WORKAROUND Ionic bug that causes "end" slot to overflow to next line
     max-width: 170px;
 
     .ios & {
