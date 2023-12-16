@@ -2,4 +2,11 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    // WORK AROUND breaking list element
+    max-width: 170px;
+
+    .ios & {
+        max-width: 130px;
+    }
 }
