@@ -38,7 +38,7 @@
         <ion-icon *ngIf="selecting && !selected" class="selection-icon" name="radio-button-off-outline" slot="end"></ion-icon>
         <ion-icon *ngIf="selecting && selected" class="selection-icon" name="radio-button-on-outline" slot="end"></ion-icon>
 
-        <ion-label [style.margin-right]="safetyMargin">
+        <ion-label [style.padding-right]="safetyMargin" [class.selecting]="selecting">
             <h2>{{entry?.name}}</h2>
             <p>
                 {{entry?.lastModifiedLocalDate}}
