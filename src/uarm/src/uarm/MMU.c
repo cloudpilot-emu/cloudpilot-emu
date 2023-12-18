@@ -253,12 +253,9 @@ MMUTranslateResult mmuTranslate(struct ArmMmu *mmu, uint32_t addr, bool priviled
                                                tlbEntry->section, priviledged);
 
         if (fsr) {
-            // *black magic* For some reason, the presence of this callout to JS
-            // makes Safari optimize this code path differently, leading to a
-            // considerable perfomance loss of ~10% if it is not present. It makes
-            // no difference for other browsers, so it must a bug in Safari. The
-            // previous version of the same code worked fine without the printf,
-            // that's how I found it. Gnah.
+            // *black magic* The presence of this printf keeps wasm-opt from inlining
+            // this code path, which would blow up the WASM binary from 1.5MB to 10MB
+            // and cause a 10% performance hit.
             if (never) printf("permission fault\n");
             return TRANSLATE_RESULT_FAULT(fsr);
         }
