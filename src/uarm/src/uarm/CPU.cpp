@@ -1946,7 +1946,7 @@ static void execFn_swi(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
 }
 
 template <bool wasT>
-static ExecFn cpuPrvArmDecoder(uint32_t instr) {
+static ExecFn cpuPrvDecoderArm(uint32_t instr) {
     if ((instr >> 28) == 0x0f) {
         switch ((instr >> 24) & 0x0f) {
             case 5:
@@ -2432,54 +2432,6 @@ static ExecFn cpuPrvArmDecoder(uint32_t instr) {
     return execFn_invalid<wasT>;
 }
 
-static uint32_t cpuPrvEncodeExecFn(ExecFn execFn) {
-#ifdef __EMSCRIPTEN__
-    return (uint32_t)execFn;
-#else
-    return (int32_t)((uint8_t *)execFn - (uint8_t *)execFn_noop);
-#endif
-}
-
-static ExecFn cpuPrvDecodeExecFn(uint32_t encoded) {
-#ifdef __EMSCRIPTEN__
-    return (ExecFn)encoded;
-#else
-    return (ExecFn)((uint8_t *)execFn_noop + (int32_t)encoded);
-#endif
-}
-
-static uint32_t cpuPrvDecodeArm(uint32_t instr) {
-    return cpuPrvEncodeExecFn(cpuPrvArmDecoder<false>(instr));
-}
-
-static void cpuPrvCycleArm(struct ArmCpu *cpu) {
-    uint32_t instr, decoded;
-    bool privileged, ok;
-    uint_fast8_t fsr;
-
-    privileged = cpu->M != ARM_SR_MODE_USR;
-
-    cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
-    gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC], true);  // early in case it changes PC
-
-    // fetch instruction
-    cpu->curInstrPC = cpu->regs[REG_NO_PC];
-
-// FCSE
-#ifdef SUPPORT_FCSE
-    if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
-#endif
-
-    ok = icacheFetch<4>(cpu->ic, cpuPrvDecodeArm, cpu->curInstrPC, &fsr, &instr, &decoded);
-    if (!ok) {
-        cpuPrvHandleMemErr(cpu, cpu->curInstrPC, 4, false, true, fsr);
-        return;
-    }
-
-    cpu->regs[REG_NO_PC] += 4;
-    cpuPrvDecodeExecFn(decoded)(cpu, instr, privileged);
-}
-
 static FORCE_INLINE void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bool privileged) {
 #define THUMB_FAIL ERR("thumb opcode should be transcoded:" __FILE__ ":" str(__LINE__));
     uint32_t v32;
@@ -2491,18 +2443,7 @@ static FORCE_INLINE void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bo
                  // LSR(2) ASR(2) ROR AND EOR ORR BIC
 
             if (instrT & 0x0800) {  // LDR(3)
-                const uint32_t pc = cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL;
-                const uint32_t addr = pc + ((instrT & 0xff) << 2);
-                uint32_t memVal32;
-                uint_fast8_t fsr;
-
-                bool ok = cpuPrvMemOp<4>(cpu, &memVal32, addr, false, privileged, &fsr);
-                if (!ok)
-                    cpuPrvHandleMemErr(cpu, addr, 4, false, false, fsr);
-                else
-                    cpuPrvSetReg(cpu, (instrT >> 8) & 0x07, memVal32);
-
-                return;
+                __builtin_unreachable();
             } else if (instrT & 0x0400) {  // ADD(4) CMP(3) MOV(3) BX
 
                 uint8_t vD;
@@ -2597,11 +2538,87 @@ static FORCE_INLINE void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bo
 #undef THUMB_FAIL
 }
 
+static void execFn_thumb_4_ldr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    const uint32_t pc = cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL;
+    const uint32_t addr = pc + ((instr & 0xff) << 2);
+    uint32_t memVal32;
+    uint_fast8_t fsr;
+
+    bool ok = cpuPrvMemOp<4>(cpu, &memVal32, addr, false, privileged, &fsr);
+    if (!ok)
+        cpuPrvHandleMemErr(cpu, addr, 4, false, false, fsr);
+    else
+        cpuPrvSetRegNotPC(cpu, (instr >> 8) & 0x07, memVal32);
+}
+
+static ExecFn cpuPrvDecoderThumb(uint32_t instr) {
+    switch (instr >> 12) {
+        case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2)
+                 // LSR(2) ASR(2) ROR AND EOR ORR BIC
+
+            if (instr & 0x0800) {  // LDR(3)
+                return execFn_thumb_4_ldr;
+            }
+
+            break;
+    }
+
+    return cpuPrvExecThumb;
+}
+
+static uint32_t cpuPrvEncodeExecFn(ExecFn execFn) {
+#ifdef __EMSCRIPTEN__
+    return (uint32_t)execFn;
+#else
+    return (int32_t)((uint8_t *)execFn - (uint8_t *)execFn_noop);
+#endif
+}
+
+static ExecFn cpuPrvDecodeExecFn(uint32_t encoded) {
+#ifdef __EMSCRIPTEN__
+    return (ExecFn)encoded;
+#else
+    return (ExecFn)((uint8_t *)execFn_noop + (int32_t)encoded);
+#endif
+}
+
+static uint32_t cpuPrvDecodeArm(uint32_t instr) {
+    return cpuPrvEncodeExecFn(cpuPrvDecoderArm<false>(instr));
+}
+
 static uint32_t cpuPrvDecodeThumb(uint32_t instr) {
     const uint32_t translatedInstr = table_thumb2arm[instr];
 
-    return cpuPrvEncodeExecFn(translatedInstr ? cpuPrvArmDecoder<true>(translatedInstr)
-                                              : cpuPrvExecThumb);
+    return cpuPrvEncodeExecFn(translatedInstr ? cpuPrvDecoderArm<true>(translatedInstr)
+                                              : cpuPrvDecoderThumb(instr));
+}
+
+static void cpuPrvCycleArm(struct ArmCpu *cpu) {
+    uint32_t instr, decoded;
+    bool privileged, ok;
+    uint_fast8_t fsr;
+
+    privileged = cpu->M != ARM_SR_MODE_USR;
+
+    cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
+    gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC], true);  // early in case it changes PC
+
+    // fetch instruction
+    cpu->curInstrPC = cpu->regs[REG_NO_PC];
+
+// FCSE
+#ifdef SUPPORT_FCSE
+    if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
+#endif
+
+    ok = icacheFetch<4>(cpu->ic, cpuPrvDecodeArm, cpu->curInstrPC, &fsr, &instr, &decoded);
+    if (!ok) {
+        cpuPrvHandleMemErr(cpu, cpu->curInstrPC, 4, false, true, fsr);
+        return;
+    }
+
+    cpu->regs[REG_NO_PC] += 4;
+    cpuPrvDecodeExecFn(decoded)(cpu, instr, privileged);
 }
 
 static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
