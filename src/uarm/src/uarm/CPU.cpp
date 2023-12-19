@@ -1012,6 +1012,8 @@ static void execFn_cp_mem2reg(struct ArmCpu *cpu, uint32_t instr, bool privilege
     uint_fast8_t mode, cpNo;
     uint8_t memVal8;
 
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+
     cpNo = (instr >> 8) & 0x0F;
     mode = cpuPrvArmAdrMode_5(cpu, instr, &addBefore, &addAfter, &memVal8);
 
@@ -1046,6 +1048,8 @@ invalid_instr:
 template <bool wasT, bool two>
 static void execFn_cp_dp(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint_fast8_t cpNo;
+
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
     cpNo = (instr >> 8) & 0x0F;
 
@@ -1910,10 +1914,7 @@ static void execFn_bl(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
 
 template <bool wasT>
 static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
-    uint32_t addBefore, addAfter;
-    bool specialInstr = false;
-    uint_fast8_t mode, cpNo, fsr;
-    uint8_t memVal8;
+    uint_fast8_t fsr;
 
 #ifdef SUPPORT_AXIM_PRINTF
     cpuPrvAximSysPrintf(cpu);
@@ -1939,66 +1940,12 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
         case 9:  // load/store multiple
         case 10:
         case 11:  // B/BL/BLX(if cond=0b1111)
-            __builtin_unreachable();
-
         case 12:
         case 13:  // coprocessor load/store and double register transfers
-                  // coproc_mem_2reg:
-            cpNo = (instr >> 8) & 0x0F;
-
-            mode = cpuPrvArmAdrMode_5(cpu, instr, &addBefore, &addAfter, &memVal8);
-
-            if (cpNo >= 14) {  // cp14 and cp15 are for priviledged users only
-                if (!privileged) goto invalid_instr;
-            } else if (!(cpu->CPAR & (1UL << cpNo)))  // others are access-controlled by CPAR
-                goto invalid_instr;
-
-            if (mode & ARM_MODE_5_RR) {  // handle MCRR, MRCC
-
-                if (!cpu->coproc[cpNo].twoRegF ||
-                    !cpu->coproc[cpNo].twoRegF(cpu, cpu->coproc[cpNo].userData,
-                                               !!(instr & 0x00100000UL), (instr >> 4) & 0x0F,
-                                               (instr >> 12) & 0x0F, (instr >> 16) & 0x0F,
-                                               instr & 0x0F))
-                    goto invalid_instr;
-            } else {  // handle LDC/STC
-
-                if (!cpu->coproc[cpNo].memAccess ||
-                    !cpu->coproc[cpNo].memAccess(
-                        cpu, cpu->coproc[cpNo].userData, specialInstr, !!(instr & 0x00400000UL),
-                        !(instr & 0x00100000UL), (instr >> 12) & 0x0F, mode & ARM_MODE_5_REG,
-                        addBefore, addAfter, (mode & ARM_MODE_5_IS_OPTION) ? &memVal8 : NULL))
-                    goto invalid_instr;
-            }
-            goto instr_done;
-
         case 14:  // coprocessor data processing and register transfers
                   // coproc_dp:
-            cpNo = (instr >> 8) & 0x0F;
 
-            if (cpNo >= 14) {  // cp14 and cp15 are for priviledged users only
-                if (!privileged) goto invalid_instr;
-            } else if (!(cpu->CPAR & (1UL << cpNo)))  // others are access-controlled by CPAR
-                goto invalid_instr;
-
-            if (instr & 0x00000010UL) {  // MCR[2]/MRC[2]
-
-                if (!cpu->coproc[cpNo].regXfer ||
-                    !cpu->coproc[cpNo].regXfer(cpu, cpu->coproc[cpNo].userData, specialInstr,
-                                               !!(instr & 0x00100000UL), (instr >> 21) & 0x07,
-                                               (instr >> 12) & 0x0F, (instr >> 16) & 0x0F,
-                                               instr & 0x0F, (instr >> 5) & 0x07))
-                    goto invalid_instr;
-            } else {  // CDP
-
-                if (!cpu->coproc[cpNo].dataProcessing ||
-                    !cpu->coproc[cpNo].dataProcessing(cpu, cpu->coproc[cpNo].userData, specialInstr,
-                                                      (instr >> 20) & 0x0F, (instr >> 12) & 0x0F,
-                                                      (instr >> 16) & 0x0F, instr & 0x0F,
-                                                      (instr >> 5) & 0x07))
-                    goto invalid_instr;
-            }
-            goto instr_done;
+            __builtin_unreachable();
 
         case 15:  // SWI
 
@@ -2028,18 +1975,6 @@ static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged)
             cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_SWI,
                             cpu->curInstrPC + (wasT ? 2 : 4), ARM_SR_MODE_SVC | ARM_SR_I);
             goto instr_done;
-    }
-
-invalid_instr:
-
-    if (wasT || !cpuPrvHandleInvalidInstruction(cpu, instr)) {
-        fprintf(stderr, "Invalid instr 0x%08lx seen at 0x%08lx with CPSR 0x%08lx\n",
-                (unsigned long)instr, (unsigned long)cpu->curInstrPC,
-                (unsigned long)cpuPrvMaterializeCPSR(cpu));
-        cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_UND,
-                        cpu->curInstrPC + (wasT ? 2 : 4), ARM_SR_MODE_UND | ARM_SR_I);
-
-        abort();
     }
 
 instr_done:
@@ -2516,6 +2451,15 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
         case 10:
         case 11:  // B/BL/BLX(if cond=0b1111)
             return (instr & 0x01000000UL) ? execFn_bl<wasT, true> : execFn_bl<wasT, false>;
+
+        case 12:
+        case 13:  // coprocessor load/store and double register transfers
+                  // coproc_mem_2reg:
+            return execFn_cp_mem2reg<wasT, false>;
+
+        case 14:  // coprocessor data processing and register transfers
+            // coproc_dp:
+            return execFn_cp_dp<wasT, false>;
     }
 
     return cpuPrvExecInstr<wasT>;
