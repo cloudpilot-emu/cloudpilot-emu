@@ -1913,76 +1913,40 @@ static void execFn_bl(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
 }
 
 template <bool wasT>
-static void cpuPrvExecInstr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_swi(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint_fast8_t fsr;
-
-#ifdef SUPPORT_AXIM_PRINTF
-    cpuPrvAximSysPrintf(cpu);
-#endif
-
-#ifdef SUPPORT_Z72_PRINTF
-    cpuPrvZ72sysPrintf(cpu);
-#endif
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
     if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
 
-    switch ((instr >> 24) & 0x0F) {
-        case 0:
-        case 1:  // data processing immediate shift, register shift and misc instrs and mults
-        case 2:
-        case 3:  // data process immediate val, move imm to SR
-        case 4:
-        case 5:  // load/store imm offset
-        case 6:
-        case 7:  // load/store reg offset
-        case 8:
-        case 9:  // load/store multiple
-        case 10:
-        case 11:  // B/BL/BLX(if cond=0b1111)
-        case 12:
-        case 13:  // coprocessor load/store and double register transfers
-        case 14:  // coprocessor data processing and register transfers
-                  // coproc_dp:
+    if ((wasT && (instr & 0x00fffffful) == 0xab) ||
+        (!wasT && (instr & 0x00fffffful) == 0x123456ul)) {
+        if (cpu->regs[0] == 4) {
+            uint32_t addr = cpu->regs[1];
+            uint8_t ch;
 
-            __builtin_unreachable();
+            while (cpuPrvMemOp<1>(cpu, &ch, addr++, false, true, &fsr) && ch)
+                fprintf(stderr, "%c", ch);
+        } else if (cpu->regs[0] == 3) {
+            uint8_t ch;
 
-        case 15:  // SWI
-
-            // some semihosting support
-            if ((wasT && (instr & 0x00fffffful) == 0xab) ||
-                (!wasT && (instr & 0x00fffffful) == 0x123456ul)) {
-                if (cpu->regs[0] == 4) {
-                    uint32_t addr = cpu->regs[1];
-                    uint8_t ch;
-
-                    while (cpuPrvMemOp<1>(cpu, &ch, addr++, false, true, &fsr) && ch)
-                        fprintf(stderr, "%c", ch);
-                } else if (cpu->regs[0] == 3) {
-                    uint8_t ch;
-
-                    if (cpuPrvMemOp<1>(cpu, &ch, cpu->regs[1], false, true, &fsr) && ch)
-                        fprintf(stderr, "%c", ch);
-                } else if (cpu->regs[0] == 0x132) {
+            if (cpuPrvMemOp<1>(cpu, &ch, cpu->regs[1], false, true, &fsr) && ch)
+                fprintf(stderr, "%c", ch);
+        } else if (cpu->regs[0] == 0x132) {
 #ifndef __EMSCRIPTEN__
-                    fprintf(stderr, "debug break requested\n");
+            fprintf(stderr, "debug break requested\n");
 #endif
-                    gdbStubDebugBreakRequested(cpu->debugStub);
-                }
-                goto instr_done;
-            }
-
-            cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_SWI,
-                            cpu->curInstrPC + (wasT ? 2 : 4), ARM_SR_MODE_SVC | ARM_SR_I);
-            goto instr_done;
+            gdbStubDebugBreakRequested(cpu->debugStub);
+        }
+        return;
     }
 
-instr_done:
-    return;
+    cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_SWI, cpu->curInstrPC + (wasT ? 2 : 4),
+                    ARM_SR_MODE_SVC | ARM_SR_I);
 }
 
 template <bool wasT>
-static ExecFn cpuPrvArmEncoder(uint32_t instr) {
+static ExecFn cpuPrvArmDecoder(uint32_t instr) {
     if ((instr >> 28) == 0x0f) {
         switch ((instr >> 24) & 0x0f) {
             case 5:
@@ -2460,9 +2424,12 @@ static ExecFn cpuPrvArmEncoder(uint32_t instr) {
         case 14:  // coprocessor data processing and register transfers
             // coproc_dp:
             return execFn_cp_dp<wasT, false>;
+
+        case 15:  // SWI
+            return execFn_swi<wasT>;
     }
 
-    return cpuPrvExecInstr<wasT>;
+    return execFn_invalid<wasT>;
 }
 
 static uint32_t cpuPrvEncodeExecFn(ExecFn execFn) {
@@ -2482,7 +2449,7 @@ static ExecFn cpuPrvDecodeExecFn(uint32_t encoded) {
 }
 
 static uint32_t cpuPrvDecodeArm(uint32_t instr) {
-    return cpuPrvEncodeExecFn(cpuPrvArmEncoder<false>(instr));
+    return cpuPrvEncodeExecFn(cpuPrvArmDecoder<false>(instr));
 }
 
 static void cpuPrvCycleArm(struct ArmCpu *cpu) {
@@ -2633,7 +2600,7 @@ static FORCE_INLINE void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bo
 static uint32_t cpuPrvDecodeThumb(uint32_t instr) {
     const uint32_t translatedInstr = table_thumb2arm[instr];
 
-    return cpuPrvEncodeExecFn(translatedInstr ? cpuPrvArmEncoder<true>(translatedInstr)
+    return cpuPrvEncodeExecFn(translatedInstr ? cpuPrvArmDecoder<true>(translatedInstr)
                                               : cpuPrvExecThumb);
 }
 
