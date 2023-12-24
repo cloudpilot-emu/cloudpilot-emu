@@ -37,7 +37,6 @@ launches on startup.
 ### Reduce animations
 
 This setting disables several animations that can cause lag on Safari (iOS and MacOS).
-It is enabled by default in Safari on MacOS.
 
 ### Show Statistics
 

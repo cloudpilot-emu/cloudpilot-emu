@@ -1,4 +1,3 @@
-import { isIOS, isSafari } from '@common/helper/browser';
 import { createAnimation, Animation } from '@ionic/angular';
 
 const KEY = 'reduced-animations';
@@ -37,14 +36,7 @@ export function setReducedAnimations(flag: boolean) {
 export function getReducedAnimations(): boolean {
     const storedValue = localStorage.getItem(KEY);
 
-    if (storedValue === null) {
-        const value = isSafari && !isIOS;
-        setReducedAnimations(value);
-
-        return value;
-    }
-
-    return storedValue === '1';
+    return (storedValue ?? '0') === '1';
 }
 
 export function ionAnimationConfig() {
