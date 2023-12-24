@@ -1,8 +1,10 @@
-# Next version
+# Version 1.9.4
 
 -   Fix free space not being updated in card browser.
 -   Fix deleted files being displayed after recreating a deleted directory.
 -   Reduce size of embedded build.
+-   Animations are not reduced on MacOS Safari anymore per default.
+-   Happy holidays!
 
 # Version 1.9.3
 
