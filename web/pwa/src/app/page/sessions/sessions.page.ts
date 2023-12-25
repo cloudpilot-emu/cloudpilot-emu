@@ -22,6 +22,8 @@ import { disambiguateName } from '@pwa/helper/disambiguate';
 
 import helpUrl from '@assets/doc/sessions.md';
 
+type mode = 'default' | 'select-for-export';
+
 @Component({
     selector: 'app-sessions',
     templateUrl: './sessions.page.html',
@@ -64,6 +66,10 @@ export class SessionsPage implements DragDropClient, DoCheck {
 
     get sessions(): Array<Session> {
         return this.sessionService.getSessions().sort((a, b) => a.name.localeCompare(b.name));
+    }
+
+    get sessionCount(): number {
+        return this.sessionService.getSessions().length;
     }
 
     @debounce()
@@ -156,6 +162,24 @@ export class SessionsPage implements DragDropClient, DoCheck {
 
     handleDragDropEvent(e: DragEvent): void | Promise<void> {
         this.fileService.openFromDrop(e, this.handleDropFiles.bind(this));
+    }
+
+    startMassExport(): void {
+        this.selection.clear();
+        this.mode = 'select-for-export';
+    }
+
+    onSelectionDone(): void {
+        this.mode = 'default';
+    }
+
+    onSelectAll(): void {
+        this.sessionService.getSessions().forEach((session) => this.selection.add(session.id));
+    }
+
+    toggleSelection(session: Session): void {
+        if (this.selection.has(session.id)) this.selection.delete(session.id);
+        else this.selection.add(session.id);
     }
 
     private handleDropFiles(files: Array<FileDescriptor>): void {
@@ -290,8 +314,12 @@ export class SessionsPage implements DragDropClient, DoCheck {
         );
     };
 
-    private currentSessionOverride: number | undefined;
     lastSessionTouched = -1;
 
+    mode: mode = 'default';
+
+    selection = new Set<number>();
+
     private checkSessions: () => void;
+    private currentSessionOverride: number | undefined;
 }

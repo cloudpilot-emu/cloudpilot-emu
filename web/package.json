@@ -95,7 +95,15 @@
     "printWidth": 120,
     "tabWidth": 4,
     "singleQuote": true,
-    "parser": "typescript"
+    "parser": "typescript",
+    "overrides": [
+      {
+        "files": "*.page.html",
+        "options": {
+          "parser": "angular"
+        }
+      }
+    ]
   },
   "importSort": {
     ".js, .jsx, .ts, .tsx": {

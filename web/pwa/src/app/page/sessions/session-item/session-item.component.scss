@@ -1,3 +1,7 @@
 ion-item {
     background-color: var(--ion-background-color, white);
 }
+
+ion-label.selecting {
+    max-width: calc(min(var(--cp-page-width), 100vw) - 4.5em);
+}

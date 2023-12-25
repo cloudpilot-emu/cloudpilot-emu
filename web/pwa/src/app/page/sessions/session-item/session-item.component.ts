@@ -66,6 +66,12 @@ export class SessionItemComponent {
     @Input()
     touched = false;
 
+    @Input()
+    selecting = false;
+
+    @Input()
+    selectedForExport = false;
+
     @Output()
     delete = new EventEmitter<Session>();
 

@@ -1,4 +1,4 @@
-<ion-item-sliding #slidingItem (contextmenu)="onContextmenu($event)" (ionDrag)="interaction.emit()">
+<ion-item-sliding #slidingItem (contextmenu)="onContextmenu($event)" (ionDrag)="interaction.emit()" [disabled]="selecting">
   <ion-item-options side="start">
     <ion-item-option color="primary" icon-only (click)="slidingItem.close(); edit.emit(session)">
       <ion-icon name="create-outline"></ion-icon>
@@ -22,11 +22,14 @@
   </ion-item-options>
 
   <ion-item [color]="color" (click)="selectItem.emit()">
-    <ion-label [class.in-item-color]="selected">
+    <ion-label [class.in-item-color]="selected" [class.selecting]="selecting">
       <h2>{{session?.name}}</h2>
       <p>{{device}}, {{session?.ram}}MB RAM<span *ngIf="session?.osVersion">, OS
           {{decodeVersion(session?.osVersion)}}</span>
       </p>
     </ion-label>
+
+    <ion-icon *ngIf="selecting && !selectedForExport" class="selection-icon" name="radio-button-off-outline" slot="end"></ion-icon>
+    <ion-icon *ngIf="selecting && selectedForExport" class="selection-icon" name="radio-button-on-outline" slot="end"></ion-icon>
   </ion-item>
 </ion-item-sliding>

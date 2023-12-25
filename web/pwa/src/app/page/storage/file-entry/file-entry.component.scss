@@ -9,17 +9,17 @@ ion-icon.item-detail-icon {
 
 ion-label {
     // WORKAROUND Ionic bug that causes "end" slot to overflow to next line
-    max-width: calc(min(40em, 100vw) - 7em);
+    max-width: calc(min(var(--cp-page-width), 100vw) - 7em);
 
     &.selecting {
-        max-width: calc(min(40em, 100vw) - 8em);
+        max-width: calc(min(var(--cp-page-width), 100vw) - 8em);
     }
 
     .ios & {
-        max-width: calc(min(40em, 100vw) - 6.5em);
+        max-width: calc(min(var(--cp-page-width), 100vw) - 6.5em);
 
         &.selecting {
-            max-width: calc(min(40em, 100vw) - 7.5em);
+            max-width: calc(min(var(--cp-page-width), 100vw) - 7.5em);
         }
     }
 }
