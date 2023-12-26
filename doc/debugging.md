@@ -1,4 +1,4 @@
-# Debugging PalmOS and PalmOS apps with Cloudpilot
+# Debugging PalmOS and PalmOS apps with CloudpilotEmu
 
 ## A bit of theory
 
@@ -13,6 +13,10 @@ If the stub is enabled, CloudpilotEmu opens a port and listens for incoming
 debugger connections. After connecting, GDB can be used to interrupt and step
 the virtual CPU, inspect registers and memory, set breakpoints and watchpoints,
 and more.
+
+**IMPORTANT:** Only the native CLI build of CloudpilotEmu supports debugging,
+the web version does not contain the GDB stub! Precompiled binaries for the
+CLI build are not provided, you'll have to build it from scratch.
 
 ### Symbolic debugging of PalmOS applications
 
