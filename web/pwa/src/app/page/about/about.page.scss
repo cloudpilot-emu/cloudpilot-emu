@@ -18,7 +18,7 @@ markdown {
     display: block;
     margin-left: 0.5em;
     margin-right: 0.5em;
-    max-width: 40em;
+    max-width: var(--cp-page-width);
 }
 
 .loader {
