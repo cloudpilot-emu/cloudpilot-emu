@@ -5,7 +5,7 @@
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 
 import createModule, {
-    CreateZipContextState,
+    ExportZipContextState,
     DeleteRecursiveContextState,
     FileEntry as FileEntryNative,
     Module,
@@ -237,22 +237,22 @@ export class Vfs {
         archive: Uint8Array | undefined;
         failedItems: Array<string>;
     }> {
-        const context = new this.module.CreateZipContext(prefix, TIMESLICE_SIZE_MSEC);
+        const context = new this.module.ExportZipContext(prefix, TIMESLICE_SIZE_MSEC);
         const failingItems: Array<string> = [];
 
         try {
             if (files) files.forEach((file) => context.AddFile(file));
             if (directories) directories.forEach((directory) => context.AddDirectory(directory));
 
-            while (context.GetState() !== CreateZipContextState.done) {
+            while (context.GetState() !== ExportZipContextState.done) {
                 switch (context.Continue()) {
-                    case CreateZipContextState.errorDirectory:
-                    case CreateZipContextState.errorFile:
+                    case ExportZipContextState.errorDirectory:
+                    case ExportZipContextState.errorFile:
                         failingItems.push(context.GetErrorItem());
                         break;
                 }
 
-                if (context.GetState() !== CreateZipContextState.done) {
+                if (context.GetState() !== ExportZipContextState.done) {
                     await new Promise((resolve) => setTimeout(resolve, 0));
                 }
             }

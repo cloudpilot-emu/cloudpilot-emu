@@ -18,6 +18,10 @@ export function filenameForSession(session: Session): string {
     return `${filenameFragment(session.name)}.bin`;
 }
 
+export function filenameForSessions(): string {
+    return `${filenameFragment('sessions')}.zip`;
+}
+
 export function filenameForBackup(session: Session, includeRomDatabases: boolean): string {
     return `backup_${filenameFragment(session.name)}${includeRomDatabases ? '_with_rom' : ''}.zip`;
 }

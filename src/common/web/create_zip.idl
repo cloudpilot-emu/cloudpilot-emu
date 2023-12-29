@@ -1,0 +1,14 @@
+interface CreateZipContext {
+    void CreateZipContext();
+
+    boolean Initialize(long compressionLevel);
+
+    boolean AddEntry([Const] DOMString name);
+
+    boolean WriteData(VoidPtr data, long size);
+
+    [Const] VoidPtr GetZipData();
+    long GetZipDataSize();
+
+    [Const] DOMString GetLastError();
+};

@@ -10,16 +10,16 @@
 
 struct zip_t;
 
-class CreateZipContext {
+class ExportZipContext {
    public:
     enum class State { initial = 0, more = 1, done = 2, errorFile = -1, errorDirectory = -2 };
 
    public:
-    CreateZipContext(const std::string& prefix, uint32_t timesliceMilliseconds);
-    ~CreateZipContext();
+    ExportZipContext(const std::string& prefix, uint32_t timesliceMilliseconds);
+    ~ExportZipContext();
 
-    CreateZipContext& AddFile(const std::string& path);
-    CreateZipContext& AddDirectory(const std::string& path);
+    ExportZipContext& AddFile(const std::string& path);
+    ExportZipContext& AddDirectory(const std::string& path);
 
     int Continue();
     int GetState() const;
@@ -65,10 +65,10 @@ class CreateZipContext {
     std::unique_ptr<uint8_t[]> readBuffer;
 
    private:
-    CreateZipContext(const CreateZipContext&) = delete;
-    CreateZipContext(CreateZipContext&&) = delete;
-    CreateZipContext& operator=(const CreateZipContext&) = delete;
-    CreateZipContext operator=(CreateZipContext&&) = delete;
+    ExportZipContext(const ExportZipContext&) = delete;
+    ExportZipContext(ExportZipContext&&) = delete;
+    ExportZipContext& operator=(const ExportZipContext&) = delete;
+    ExportZipContext operator=(ExportZipContext&&) = delete;
 };
 
 #endif  // _CREATE_ZIP_CONTEXT_H_

@@ -321,7 +321,7 @@ Sorry for the inconvenience.`,
             const session = this.emulationState.getCurrentSession();
 
             if (session) {
-                void this.fileService.emergencySaveSession(session, await this.cloudpilotService.cloudpilot);
+                void this.fileService.emergencySaveSession(session);
             }
         });
 

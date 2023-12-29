@@ -58,7 +58,8 @@ SOURCE_CPP = \
 	CardVolume.cpp \
 	CPCrc.cpp \
 	GunzipContext.cpp \
-	GzipContext.cpp
+	GzipContext.cpp \
+	CreateZipContext.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_CPP) \

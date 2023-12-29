@@ -85,7 +85,7 @@ SOURCE_CPP = \
 	VfsUtil.cpp \
 	ReaddirContext.cpp \
 	FileEntry.cpp \
-	CreateZipContext.cpp \
+	ExportZipContext.cpp \
 	DeleteRecursiveContext.cpp \
 	UnzipContext.cpp \
 	FatfsDelegate.cpp \

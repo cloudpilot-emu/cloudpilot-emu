@@ -1,6 +1,6 @@
 import {
     ReaddirContext,
-    CreateZipContext,
+    ExportZipContext,
     DeleteRecursiveContext,
     UnzipContext,
     PasteContext,
@@ -17,7 +17,7 @@ export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'> {
     UTF8ToString(charPtr: number): string;
 
     Vfs: { new (): Vfs };
-    CreateZipContext: { new (prefix: string, timesliceMilliseconds: number): CreateZipContext };
+    ExportZipContext: { new (prefix: string, timesliceMilliseconds: number): ExportZipContext };
     DeleteRecursiveContext: { new (timesliceMilliseconds: number): DeleteRecursiveContext };
     ReaddirContext: { new (path: string): ReaddirContext };
     UnzipContext: {
@@ -29,7 +29,7 @@ export interface Module extends Omit<EmscriptenModule, 'instantiateWasm'> {
 
     destroy(vfs: Vfs): void;
     destroy(context: ReaddirContext): void;
-    destroy(context: CreateZipContext): void;
+    destroy(context: ExportZipContext): void;
     destroy(context: DeleteRecursiveContext): void;
     destroy(context: UnzipContext): void;
     destroy(context: PasteContext): void;

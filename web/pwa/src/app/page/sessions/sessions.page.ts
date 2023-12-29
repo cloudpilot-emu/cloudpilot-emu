@@ -169,8 +169,22 @@ export class SessionsPage implements DragDropClient, DoCheck {
         this.mode = 'select-for-export';
     }
 
-    onSelectionDone(): void {
+    @debounce()
+    async onSelectionDone(): Promise<void> {
+        const sessions = new Map(this.sessionService.getSessions().map((session) => [session.id, session]));
+        const selectedSessions = Array.from(this.selection)
+            .map((sessionId) => sessions.get(sessionId))
+            .filter((session) => session !== undefined) as Array<Session>;
+
         this.mode = 'default';
+
+        if (selectedSessions.length === 1) {
+            await this.fileService.saveSession(selectedSessions[0]);
+        }
+
+        if (selectedSessions.length > 1) {
+            await this.fileService.saveSessions(selectedSessions);
+        }
     }
 
     onSelectAll(): void {

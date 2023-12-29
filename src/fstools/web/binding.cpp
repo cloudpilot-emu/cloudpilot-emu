@@ -2,6 +2,7 @@
 
 #include <cstddef>
 
+#include "CreateZipContext.h"
 #include "FSTools.h"
 #include "FsckContext.h"
 #include "GunzipContext.h"

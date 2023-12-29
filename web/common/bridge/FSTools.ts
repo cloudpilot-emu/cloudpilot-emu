@@ -12,7 +12,9 @@ import createModule, {
     GzipContext as GzipContextNative,
     GzipState,
     MkfsContext as MkfsNativeContext,
+    CreateZipContext as CreateZipNativeContext,
     Module,
+    VoidPtr,
 } from '@native-fstools/index';
 
 import { InstantiateFunction, cachedInstantiate } from '@common/helper/wasm';
@@ -24,6 +26,66 @@ const WASM_BINARY = 'fstools_web.wasm';
 
 const GUNZIP_SLICE_SIZE = 512 * 1024;
 const GZIP_SLICE_SIZE = 512 * 1024;
+const ZIP_SLICE_SIZE = 512 * 1024;
+
+export class CreateZipContext {
+    private constructor(
+        private module: Module,
+        private compressionLevel: number,
+    ) {
+        this.nativeContext = new module.CreateZipContext();
+        if (!this.nativeContext.Initialize(compressionLevel)) {
+            throw new Error(`failed to initialize context: ${this.nativeContext.GetLastError()}`);
+        }
+
+        const fsTools = new module.FSTools();
+        this.chunkBufferPtr = fsTools.Malloc(ZIP_SLICE_SIZE);
+
+        module.destroy(fsTools);
+    }
+
+    static async create(compressionLevel: number, instantiateWasm: InstantiateFunction): Promise<CreateZipContext> {
+        return new CreateZipContext(
+            await createModule({
+                print: (x: string) => console.log(x),
+                printErr: (x: string) => console.error(x),
+                instantiateWasm,
+            }),
+            compressionLevel,
+        );
+    }
+
+    async addEntry(name: string, content: Uint8Array): Promise<void> {
+        if (!this.nativeContext.AddEntry(name)) {
+            throw new Error(`failed to add entry: ${this.nativeContext.GetLastError()}`);
+        }
+
+        const bufferPtr = this.module.getPointer(this.chunkBufferPtr);
+
+        for (let i = 0; i < content.length; i += ZIP_SLICE_SIZE) {
+            if (i > 0) await new Promise((r) => setTimeout(r, 0));
+
+            const len = Math.min(content.length - i, ZIP_SLICE_SIZE);
+            const chunkBuffer = this.module.HEAPU8.subarray(bufferPtr, bufferPtr + len);
+
+            chunkBuffer.set(content.subarray(i, i + len));
+
+            if (!this.nativeContext.WriteData(this.chunkBufferPtr, len)) {
+                throw new Error(`failed to add ${len} bytes to zip: ${this.nativeContext.GetLastError()}`);
+            }
+        }
+    }
+
+    getContent(): Uint8Array {
+        const ptr = this.module.getPointer(this.nativeContext.GetZipData());
+        if (!ptr) throw new Error(`unable to obtain zip data: ${this.nativeContext.GetLastError()}`);
+
+        return this.module.HEAPU8.subarray(ptr, ptr + this.nativeContext.GetZipDataSize());
+    }
+
+    private nativeContext: CreateZipNativeContext;
+    private chunkBufferPtr: VoidPtr;
+}
 
 export class MkfsContext {
     private constructor(private module: Module) {
@@ -263,6 +325,10 @@ export class FsTools {
 
     createFsckContext(size: number): Promise<FsckContext> {
         return FsckContext.create(size, this.instantiante);
+    }
+
+    createZipContext(compressionLevel: number): Promise<CreateZipContext> {
+        return CreateZipContext.create(compressionLevel, this.instantiante);
     }
 
     private instantiante: InstantiateFunction;

@@ -55,11 +55,11 @@ interface ReaddirContext {
     [Const] DOMString GetErrorDescription();
 };
 
-interface CreateZipContext {
-    void CreateZipContext([Const] DOMString path, long timesliceMilliseconds);
+interface ExportZipContext {
+    void ExportZipContext([Const] DOMString path, long timesliceMilliseconds);
 
-    [Ref] CreateZipContext AddFile([Const] DOMString path);
-    [Ref] CreateZipContext AddDirectory([Const] DOMString path);
+    [Ref] ExportZipContext AddFile([Const] DOMString path);
+    [Ref] ExportZipContext AddDirectory([Const] DOMString path);
 
     long Continue();
     long GetState();
@@ -97,7 +97,8 @@ interface UnzipContext {
 };
 
 interface PasteContext {
-    void PasteContext(long timesliceMilliseconds, [Const] DOMString destination, [Const] DOMString prefix);
+    void PasteContext(
+        long timesliceMilliseconds, [Const] DOMString destination, [Const] DOMString prefix);
 
     [Ref] PasteContext AddFile([Const] DOMString path);
     [Ref] PasteContext SetDeleteAfterCopy(boolean deleteAfterCopy);

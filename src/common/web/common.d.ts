@@ -35,6 +35,19 @@ interface GzipContext<VoidPtr> {
     GetError(): string;
 }
 
+interface CreateZipContext<VoidPtr> {
+    Initialize(compressionLevel: number): boolean;
+
+    AddEntry(name: string): boolean;
+
+    WriteData(data: VoidPtr, size: number): boolean;
+
+    GetZipData(): VoidPtr;
+    GetZipDataSize(): number;
+
+    GetLastError(): number;
+}
+
 interface ModuleWithGunzipContext<VoidPtr> {
     GunzipContext: {
         new (data: VoidPtr, size: number, slizeSize: number): GunzipContext<VoidPtr>;
@@ -44,5 +57,11 @@ interface ModuleWithGunzipContext<VoidPtr> {
 interface ModuleWithGzipContext<VoidPtr> {
     GzipContext: {
         new (data: VoidPtr, size: number, slizeSize: number): GzipContext<VoidPtr>;
+    };
+}
+
+interface ModuleWithCreateZipContext<VoidPtr> {
+    CreateZipContext: {
+        new (): CreateZipContext<VoidPtr>;
     };
 }

@@ -37,7 +37,8 @@ WEBIDL_BINDING_DIR = web/binding
 WEBIDL_BINDING_SRC = \
 	$(WEBIDL_BINDING_DIR)/fstools.idl \
 	../common/web/gunzip.idl  \
-	../common/web/gzip.idl
+	../common/web/gzip.idl \
+	../common/web/create_zip.idl
 WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
 WEBIDL_BINDING_IDL = $(WEBIDL_BINDING_DIR)/binding.idl
 WEBIDL_BINDING_CXX = web/binding.cpp

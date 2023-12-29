@@ -1,5 +1,5 @@
-import { ActionSheetController, LoadingController, ModalController } from '@ionic/angular';
-import { Cloudpilot, SessionImage } from '@common/bridge/Cloudpilot';
+import { ActionSheetController, AlertController, LoadingController, ModalController } from '@ionic/angular';
+import { SessionImage } from '@common/bridge/Cloudpilot';
 
 import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';
@@ -11,9 +11,10 @@ import { Session } from '@pwa/model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { StorageService } from './storage.service';
 import Url from 'url-parse';
-import { filenameForSession } from '@pwa/helper/filename';
+import { filenameForSession, filenameForSessions } from '@pwa/helper/filename';
 import { metadataForSession } from '@pwa/helper/metadata';
 import { isIOS, isIOSSafari, isSafari } from '@common/helper/browser';
+import { FsToolsService } from './fstools.service';
 
 /* eslint-disable no-bitwise */
 
@@ -35,6 +36,8 @@ export class FileService {
         private alertService: AlertService,
         private fetchService: FetchService,
         private cloudpilotService: CloudpilotService,
+        private fstoolsService: FsToolsService,
+        private alertController: AlertController,
     ) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {
@@ -58,21 +61,8 @@ export class FileService {
         await loader.present();
 
         try {
-            const [rom, memory, savestate] = await this.storageService.loadSession(session, false);
+            const image = await this.serializeSession(session);
 
-            if (!rom) {
-                throw new Error(`invalid ROM ${session.rom}`);
-            }
-
-            const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
-                deviceId: session.device,
-                metadata: metadataForSession(session),
-                rom,
-                memory,
-                savestate,
-            };
-
-            const image = (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);
             if (image) {
                 this.saveFile(filenameForSession(session), image);
             } else {
@@ -84,7 +74,54 @@ export class FileService {
         }
     }
 
-    async emergencySaveSession(session: Session, cloudpilot: Cloudpilot): Promise<void> {
+    async saveSessions(sessions: Array<Session>): Promise<void> {
+        const loader = await this.loadingController.create({ message: 'Exporting...' });
+        await loader.present();
+
+        const createZipContext = await this.fstoolsService.createZipContext(0);
+        const sessionNames = new Set<string>();
+
+        try {
+            let i = 1;
+
+            for (const session of sessions) {
+                loader.message = `Exporting ${i++}/${sessions.length}...`;
+
+                const image = await this.serializeSession(session);
+
+                if (image) {
+                    const sessionNameBase = session.name.replace(/[\/\\]/, '_').substring(0, 200);
+
+                    let sessionName = sessionNameBase;
+                    for (let i = 0; sessionNames.has(sessionName); sessionName = `${sessionNameBase} (${i})`) {}
+
+                    sessionNames.add(sessionName);
+                    await createZipContext.addEntry(sessionName + '.img', image);
+                } else {
+                    const alert = await this.alertController.create({
+                        header: 'Error',
+                        backdropDismiss: false,
+                        message: `Failed  to export session '${session.name}'.`,
+                        buttons: [{ text: 'Continue', role: 'cancel' }],
+                        cssClass: 'alert-error',
+                    });
+
+                    await alert.present();
+                    await alert.onDidDismiss();
+                }
+            }
+
+            this.saveFile(filenameForSessions(), createZipContext.getContent());
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (e: any) {
+            void this.alertService.errorMessage(`Failed to export sessions: ${e.message ?? 'unknown error'}`);
+        } finally {
+            void loader.dismiss();
+        }
+    }
+
+    async emergencySaveSession(session: Session): Promise<void> {
+        const cloudpilot = await this.cloudpilotService.cloudpilot;
         const loader = await this.loadingController.create({ message: 'Exporting...' });
 
         // This code path is usually triggered from a dialog, so make sure that the loader is on top.
@@ -165,6 +202,24 @@ export class FileService {
         } catch (e) {
             await this.alertService.errorMessage(`Download from ${url} failed.`);
         }
+    }
+
+    private async serializeSession(session: Session): Promise<Uint8Array | undefined> {
+        const [rom, memory, savestate] = await this.storageService.loadSession(session, false);
+
+        if (!rom) {
+            throw new Error(`invalid ROM ${session.rom}`);
+        }
+
+        const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
+            deviceId: session.device,
+            metadata: metadataForSession(session),
+            rom,
+            memory,
+            savestate,
+        };
+
+        return (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);
     }
 
     private async openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): Promise<void> {

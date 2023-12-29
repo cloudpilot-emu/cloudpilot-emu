@@ -1,4 +1,4 @@
-#include "CreateZipContext.h"
+#include "ExportZipContext.h"
 
 #include <chrono>
 
@@ -13,32 +13,32 @@ namespace {
     constexpr size_t READ_BUFFER_SIZE = 32 * 1024;
 }  // namespace
 
-CreateZipContext::CreateZipContext(const string& prefix, uint32_t timesliceMilliseconds)
+ExportZipContext::ExportZipContext(const string& prefix, uint32_t timesliceMilliseconds)
     : prefix(prefix),
       timesliceMilliseconds(timesliceMilliseconds),
       readBuffer(make_unique<uint8_t[]>(READ_BUFFER_SIZE)) {
     if (prefix.size() > 0 && prefix[prefix.size() - 1] != '/') this->prefix.append("/");
 }
 
-CreateZipContext::~CreateZipContext() {
+ExportZipContext::~ExportZipContext() {
     if (zip) zip_stream_close(zip);
     if (archive) free(archive);
     CloseCurrentDir();
 }
 
-CreateZipContext& CreateZipContext::AddFile(const string& path) {
+ExportZipContext& ExportZipContext::AddFile(const string& path) {
     if (state == State::initial) files.push_back(path);
 
     return *this;
 }
 
-CreateZipContext& CreateZipContext::AddDirectory(const string& path) {
+ExportZipContext& ExportZipContext::AddDirectory(const string& path) {
     if (state == State::initial) directories.push_back(path);
 
     return *this;
 }
 
-int CreateZipContext::Continue() {
+int ExportZipContext::Continue() {
     switch (state) {
         case State::initial:
             zip = zip_stream_open(nullptr, 0, COMPRESSION_LEVEL, 'w');
@@ -59,13 +59,13 @@ int CreateZipContext::Continue() {
     return static_cast<int>(state);
 }
 
-int CreateZipContext::GetState() const { return static_cast<int>(state); }
+int ExportZipContext::GetState() const { return static_cast<int>(state); }
 
-uint8_t* CreateZipContext::GetZipContent() const { return archive; }
+uint8_t* ExportZipContext::GetZipContent() const { return archive; }
 
-ssize_t CreateZipContext::GetZipSize() { return archiveSize; }
+ssize_t ExportZipContext::GetZipSize() { return archiveSize; }
 
-const char* CreateZipContext::GetErrorItem() const {
+const char* ExportZipContext::GetErrorItem() const {
     switch (state) {
         case State::errorFile:
             return currentFile.c_str();
@@ -78,7 +78,7 @@ const char* CreateZipContext::GetErrorItem() const {
     }
 }
 
-void CreateZipContext::ExecuteSlice() {
+void ExportZipContext::ExecuteSlice() {
     timesliceStart = util::epochMilliseconds();
 
     if (state == State::errorFile || state == State::errorDirectory) state = State::more;
@@ -89,7 +89,7 @@ void CreateZipContext::ExecuteSlice() {
     }
 }
 
-void CreateZipContext::ExecuteStep() {
+void ExportZipContext::ExecuteStep() {
     if (state != State::more) return;
 
     if (reading) {
@@ -123,7 +123,7 @@ void CreateZipContext::ExecuteStep() {
     }
 }
 
-void CreateZipContext::AddFileToArchive(const std::string& name) {
+void ExportZipContext::AddFileToArchive(const std::string& name) {
     currentFile = name;
 
     string entryName = name;
@@ -144,7 +144,7 @@ void CreateZipContext::AddFileToArchive(const std::string& name) {
     IncrementalReadCurrentFile();
 }
 
-void CreateZipContext::IncrementalReadCurrentFile() {
+void ExportZipContext::IncrementalReadCurrentFile() {
     if (!reading) return;
 
     UINT bytesRead = 0;
@@ -169,7 +169,7 @@ void CreateZipContext::IncrementalReadCurrentFile() {
     }
 }
 
-FRESULT CreateZipContext::OpenCurrentDir() {
+FRESULT ExportZipContext::OpenCurrentDir() {
     if (scanning) return FR_INT_ERR;
 
     FRESULT result = f_opendir(&dir, currentDirectory.c_str());
@@ -178,7 +178,7 @@ FRESULT CreateZipContext::OpenCurrentDir() {
     return result;
 }
 
-void CreateZipContext::CloseCurrentDir() {
+void ExportZipContext::CloseCurrentDir() {
     if (!scanning) return;
     scanning = false;
 

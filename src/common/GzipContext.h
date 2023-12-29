@@ -60,10 +60,10 @@ class GzipContext {
     bool zipStreamEnd{false};
 
    private:
-    GzipContext(const GzipContext&);
-    GzipContext(GzipContext&&);
-    GzipContext& operator=(const GzipContext&);
-    GzipContext& operator=(GzipContext&&);
+    GzipContext(const GzipContext&) = delete;
+    GzipContext(GzipContext&&) = delete;
+    GzipContext& operator=(const GzipContext&) = delete;
+    GzipContext& operator=(GzipContext&&) = delete;
 };
 
 #endif  // _GZIP_CONTEXT_H_

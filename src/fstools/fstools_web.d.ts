@@ -5,8 +5,10 @@ import { FSTools, VoidPtr, MkfsContext } from './web/binding/binding';
 import {
     GunzipContext as GunzipContextImpl,
     GzipContext as GzipContextImpl,
+    CreateZipContext as CreateZipContextImpl,
     ModuleWithGunzipContext,
     ModuleWithGzipContext,
+    ModuleWithCreateZipContext,
 } from '../common/web/common';
 
 export * from './web/binding/binding';
@@ -14,11 +16,13 @@ export { GunzipState, GzipState } from '../common/web/common';
 
 export type GunzipContext = GunzipContextImpl<VoidPtr>;
 export type GzipContext = GzipContextImpl<VoidPtr>;
+export type CreateZipContext = CreateZipContextImpl<VoidPtr>;
 
 export interface Module
     extends Omit<EmscriptenModule, 'instantiateWasm'>,
         ModuleWithGunzipContext<VoidPtr>,
-        ModuleWithGzipContext<VoidPtr> {
+        ModuleWithGzipContext<VoidPtr>,
+        ModuleWithCreateZipContext<VoidPtr> {
     ccall: typeof ccall;
     addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;
