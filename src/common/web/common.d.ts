@@ -11,6 +11,12 @@ export const enum GzipState {
     error = -1,
 }
 
+export const enum ZipfileWalkerState {
+    error = -1,
+    open = 0,
+    done = 1,
+}
+
 interface GunzipContext<VoidPtr> {
     GetState(): GunzipState;
     Continue(): GunzipState;
@@ -48,6 +54,15 @@ interface CreateZipContext<VoidPtr> {
     GetLastError(): number;
 }
 
+export interface ZipfileWalker<VoidPtr> {
+    GetState(): ZipfileWalkerState;
+    Next(): ZipfileWalkerState;
+
+    GetCurrentEntrySize(): number;
+    GetCurrentEntryName(): string;
+    GetCurrentEntryContent(): VoidPtr;
+}
+
 interface ModuleWithGunzipContext<VoidPtr> {
     GunzipContext: {
         new (data: VoidPtr, size: number, slizeSize: number): GunzipContext<VoidPtr>;
@@ -63,5 +78,11 @@ interface ModuleWithGzipContext<VoidPtr> {
 interface ModuleWithCreateZipContext<VoidPtr> {
     CreateZipContext: {
         new (): CreateZipContext<VoidPtr>;
+    };
+}
+
+interface ModuleWithZipfileWalker<VoidPtr> {
+    ZipfileWalker: {
+        new (bufferSize: number, buffer: VoidPtr): ZipfileWalker<VoidPtr>;
     };
 }

@@ -37,7 +37,7 @@ CXXFLAGS_TEST ?= $(CFLAGS_TEST)
 LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt -lgtest -lgmock
 
 WEBIDL_BINDING_DIR = web/binding
-WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/cloudpilot.idl ../common/web/gunzip.idl
+WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/cloudpilot.idl ../common/web/gunzip.idl ../common/web/zipfile_walker.idl
 WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
 WEBIDL_BINDING_IDL = $(WEBIDL_BINDING_DIR)/binding.idl
 WEBIDL_BINDING_CXX = web/binding.cpp
@@ -237,7 +237,6 @@ SOURCE_EMU = \
 	emulator/Feature.cpp \
 	emulator/ScreenDimensions.cpp \
 	emulator/NetworkProxy.cpp \
-	emulator/ZipfileWalker.cpp \
 	emulator/ExternalStorage.cpp \
 	emulator/MemoryRegion.cpp \
 	emulator/StackDump.cpp \

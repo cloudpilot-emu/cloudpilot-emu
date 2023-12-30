@@ -33,12 +33,6 @@ export const enum SuspendKind {
     networkConnect = 4,
 }
 
-export const enum ZipfileWalkerState {
-    error = -1,
-    open = 0,
-    done = 1,
-}
-
 export const enum CardSupportLevel {
     unsupported = 0,
     sdOnly = 1,
@@ -209,15 +203,6 @@ export interface SuspendContext {
     AsContextClipboardPaste(): SuspendContextClipboardPaste;
     AsContextNetworkConnect(): SuspendContextNetworkConnect;
     AsContextNetworkRpc(): SuspendContextNetworkRpc;
-}
-
-export interface ZipfileWalker {
-    GetState(): ZipfileWalkerState;
-    Next(): ZipfileWalkerState;
-
-    GetCurrentEntrySize(): number;
-    GetCurrentEntryName(): string;
-    GetCurrentEntryContent(): VoidPtr;
 }
 
 export interface SessionImage {

@@ -1,0 +1,10 @@
+interface ZipfileWalker {
+    void ZipfileWalker(long bufferSize, VoidPtr buffer);
+
+    long GetState();
+    long Next();
+
+    long GetCurrentEntrySize();
+    [Const] DOMString GetCurrentEntryName();
+    VoidPtr GetCurrentEntryContent();
+};

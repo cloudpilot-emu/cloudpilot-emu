@@ -1,15 +1,15 @@
 #ifndef _ZIPFILE_WALKER_H_
 #define _ZIPFILE_WALKER_H_
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
-
-#include "EmCommon.h"
 
 struct zip_t;
 
 class ZipfileWalker {
    public:
-    enum State : int8 { stateError = -1, stateOpen = 0, stateDone = 1 };
+    enum State : int8_t { stateError = -1, stateOpen = 0, stateDone = 1 };
 
    public:
     ZipfileWalker(size_t bufferSize, void* buffer);
@@ -21,16 +21,16 @@ class ZipfileWalker {
 
     size_t GetCurrentEntrySize();
     const char* GetCurrentEntryName();
-    uint8* GetCurrentEntryContent();
+    uint8_t* GetCurrentEntryContent();
 
    private:
-    unique_ptr<char[]> buffer;
+    std::unique_ptr<char[]> buffer;
     zip_t* zip{nullptr};
-    size_t iNextEntry{0};
-    ssize_t entriesTotal{0};
+    uint32_t iNextEntry{0};
+    int32_t entriesTotal{0};
     bool done{false};
 
-    uint8* currentEntryContent{nullptr};
+    uint8_t* currentEntryContent{nullptr};
 };
 
 #endif  // _ZIPFILE_WALKER_H_

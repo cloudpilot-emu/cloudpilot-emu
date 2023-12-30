@@ -59,7 +59,8 @@ SOURCE_CPP = \
 	CPCrc.cpp \
 	GunzipContext.cpp \
 	GzipContext.cpp \
-	CreateZipContext.cpp
+	CreateZipContext.cpp \
+	ZipfileWalker.cpp
 
 SOURCE_TEST = \
 	$(SOURCE_CPP) \

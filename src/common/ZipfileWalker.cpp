@@ -1,9 +1,9 @@
 #include "ZipfileWalker.h"
 
-#include "zip.h"
+#include "zip/zip.h"
 
 ZipfileWalker::ZipfileWalker(size_t bufferSize, void* buffer) {
-    this->buffer = make_unique<char[]>(bufferSize);
+    this->buffer = std::make_unique<char[]>(bufferSize);
     memcpy(this->buffer.get(), buffer, bufferSize);
 
     zip = zip_stream_open(this->buffer.get(), bufferSize, 0, 'r');
@@ -51,19 +51,17 @@ ZipfileWalker::State ZipfileWalker::Next() {
 }
 
 size_t ZipfileWalker::GetCurrentEntrySize() {
-    EmAssert(GetState() == State::stateOpen);
-
-    return zip_entry_size(zip);
+    return GetState() == State::stateOpen ? zip_entry_size(zip) : 0;
 }
 
 const char* ZipfileWalker::GetCurrentEntryName() {
-    EmAssert(GetState() == State::stateOpen);
+    if (GetState() != State::stateOpen) return "";
 
     const char* name = zip_entry_name(zip);
     return name ? name : "";
 }
 
-uint8* ZipfileWalker::GetCurrentEntryContent() {
+uint8_t* ZipfileWalker::GetCurrentEntryContent() {
     if (currentEntryContent) return currentEntryContent;
 
     size_t bufferSize;
