@@ -6,23 +6,27 @@ import {
     GunzipContext as GunzipContextImpl,
     GzipContext as GzipContextImpl,
     CreateZipContext as CreateZipContextImpl,
+    ZipfileWalker as ZipfileWalkerImpl,
     ModuleWithGunzipContext,
     ModuleWithGzipContext,
     ModuleWithCreateZipContext,
+    ModuleWithZipfileWalker,
 } from '../common/web/common';
 
 export * from './web/binding/binding';
-export { GunzipState, GzipState } from '../common/web/common';
+export { GunzipState, GzipState, ZipfileWalkerState } from '../common/web/common';
 
 export type GunzipContext = GunzipContextImpl<VoidPtr>;
 export type GzipContext = GzipContextImpl<VoidPtr>;
 export type CreateZipContext = CreateZipContextImpl<VoidPtr>;
+export type ZipfileWalker = ZipfileWalkerImpl<VoidPtr>;
 
 export interface Module
     extends Omit<EmscriptenModule, 'instantiateWasm'>,
         ModuleWithGunzipContext<VoidPtr>,
         ModuleWithGzipContext<VoidPtr>,
-        ModuleWithCreateZipContext<VoidPtr> {
+        ModuleWithCreateZipContext<VoidPtr>,
+        ModuleWithZipfileWalker<VoidPtr> {
     ccall: typeof ccall;
     addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;

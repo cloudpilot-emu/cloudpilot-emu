@@ -8,6 +8,7 @@
 #include "GunzipContext.h"
 #include "GzipContext.h"
 #include "MkfsContext.h"
+#include "ZipfileWalker.h"
 
 // clang-format off
 #include "binding/binding.cpp"

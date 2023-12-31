@@ -19,6 +19,8 @@ class ZipfileWalker {
     State GetState() const;
     State Next();
 
+    uint32_t GetTotalEntries();
+
     size_t GetCurrentEntrySize();
     const char* GetCurrentEntryName();
     uint8_t* GetCurrentEntryContent();

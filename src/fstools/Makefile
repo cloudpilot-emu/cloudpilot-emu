@@ -38,7 +38,8 @@ WEBIDL_BINDING_SRC = \
 	$(WEBIDL_BINDING_DIR)/fstools.idl \
 	../common/web/gunzip.idl  \
 	../common/web/gzip.idl \
-	../common/web/create_zip.idl
+	../common/web/create_zip.idl \
+	../common/web/zipfile_walker.idl
 WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
 WEBIDL_BINDING_IDL = $(WEBIDL_BINDING_DIR)/binding.idl
 WEBIDL_BINDING_CXX = web/binding.cpp
@@ -56,6 +57,7 @@ LDFLAGS_EMCC_WEB = $(EMCC_OPT) -Wno-version-check \
 	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
 	-s INITIAL_MEMORY=16777216 \
 	-s STACK_SIZE=1MB \
+	-s ABORT_ON_WASM_EXCEPTIONS=1 \
 	-s GLOBAL_BASE=0
 
 BUILDDIR_NATIVE = .build

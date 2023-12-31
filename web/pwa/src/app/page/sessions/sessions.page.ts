@@ -208,7 +208,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
     }
 
     private async processFile(file: FileDescriptor): Promise<void> {
-        if (!/\.(img|rom|bin)$/i.test(file.name)) {
+        if (!/\.(img|rom|bin|zip)$/i.test(file.name)) {
             void this.alertService.errorMessage('Unsupported file suffix. Supported suffixes are .bin, .img and .rom.');
             return;
         }
@@ -220,6 +220,19 @@ export class SessionsPage implements DragDropClient, DoCheck {
             console.warn(e);
 
             await this.alertService.errorMessage(`Unable to open ${file.name}.`);
+            return;
+        }
+
+        if (file.name.endsWith('.zip')) {
+            let install = false;
+            await this.alertService.message(
+                'Warning',
+                'CloudpilotEmu will attempt to import all sessions in the selected zip archive. Are you sure you want to continue?',
+                { Continue: () => (install = true) },
+                'Cancel',
+            );
+
+            if (install) await this.sessionService.addSessionsFromArchive(content);
             return;
         }
 

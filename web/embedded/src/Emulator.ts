@@ -1,4 +1,4 @@
-import { Cloudpilot, ZipfileWalkerState } from '@common/bridge/Cloudpilot';
+import { Cloudpilot } from '@common/bridge/Cloudpilot';
 
 import { Button } from './index';
 import { DeviceId } from '@common/model/DeviceId';
@@ -15,6 +15,7 @@ import { Session } from './model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { SkinLoader } from '@common/service/SkinLoader';
 import { Watcher } from './Watcher';
+import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
 
 const DEFAULT_SESSION: Session = {
     hotsyncName: undefined,

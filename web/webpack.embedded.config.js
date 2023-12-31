@@ -34,6 +34,7 @@ module.exports = (env, argv) => ({
         alias: {
             '@common': path.resolve(__dirname, './common'),
             '@native': path.resolve(__dirname, '../src/cloudpilot'),
+            '@native-common': path.resolve(__dirname, '../src/common'),
             '@pwa': path.resolve(__dirname, './pwa/src/app'),
             '@embedded': path.resolve(__dirname, './embedded/src'),
             '@native-fstools': path.resolve(__dirname, './src/fstools'),

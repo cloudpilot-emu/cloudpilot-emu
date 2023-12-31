@@ -33,6 +33,9 @@
       "@native-vfs/*": [
         "../src/vfs/*"
       ],
+      "@native-common/*": [
+        "../src/common/*"
+      ],
       "@pwa/*": [
         "pwa/src/app/*"
       ],

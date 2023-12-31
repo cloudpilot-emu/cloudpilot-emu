@@ -51,6 +51,7 @@ LDFLAGS_EMCC_WEB = $(EMCC_OPT) -Wno-version-check \
 	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
 	-s INITIAL_MEMORY=16777216 \
 	-s STACK_SIZE=1MB \
+	-s ABORT_ON_WASM_EXCEPTIONS=1 \
 	-s GLOBAL_BASE=0
 
 BUILDDIR_NATIVE = .build

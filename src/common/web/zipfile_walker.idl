@@ -4,6 +4,8 @@ interface ZipfileWalker {
     long GetState();
     long Next();
 
+    long GetTotalEntries();
+
     long GetCurrentEntrySize();
     [Const] DOMString GetCurrentEntryName();
     VoidPtr GetCurrentEntryContent();

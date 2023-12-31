@@ -19,13 +19,13 @@ import createModule, {
     SuspendContextNetworkRpc,
     SuspendKind,
     VoidPtr,
-    ZipfileWalker as ZipfileWalkerNative,
 } from '@native/index';
 
 import { DeviceId } from '../model/DeviceId';
 import { Event } from 'microevent.ts';
 import { InstantiateFunction } from '@common/helper/wasm';
 import { dirtyPagesSize } from './util';
+import { ZipfileWalker, decorateZipfileWalker } from './ZipfileWalker';
 
 export {
     PalmButton,
@@ -35,7 +35,6 @@ export {
     SuspendContextClipboardCopy,
     SuspendContextClipboardPaste,
     VoidPtr,
-    ZipfileWalkerState,
     CardSupportLevel,
 } from '@native/index';
 
@@ -76,10 +75,6 @@ export interface SessionImage<T> {
     memory?: Uint8Array;
     savestate?: Uint8Array;
     version: number;
-}
-
-export interface ZipfileWalker extends Omit<ZipfileWalkerNative, 'GetCurrentEntryContent'> {
-    GetCurrentEntryContent(): Uint8Array | undefined;
 }
 
 export const SUPPORTED_DEVICES = [
@@ -544,17 +539,7 @@ export class Cloudpilot {
         });
 
         try {
-            return await callback(
-                this.wrap(
-                    Object.setPrototypeOf(
-                        {
-                            GetCurrentEntryContent: () =>
-                                this.copyOut(walker.GetCurrentEntryContent(), walker.GetCurrentEntrySize()),
-                        },
-                        walker,
-                    ),
-                ),
-            );
+            return await callback(decorateZipfileWalker(this.wrap(walker), this.module));
         } finally {
             this.module.destroy(walker);
         }
@@ -622,7 +607,9 @@ export class Cloudpilot {
     }
 
     @guard()
-    deserializeSessionImage<T>(buffer: Uint8Array): SessionImage<T> | undefined {
+    deserializeSessionImage<T>(buffer: Uint8Array | undefined): SessionImage<T> | undefined {
+        if (!buffer) return undefined;
+
         const nativeImage = new this.module.SessionImage();
         const bufferPtr = this.copyIn(buffer);
 

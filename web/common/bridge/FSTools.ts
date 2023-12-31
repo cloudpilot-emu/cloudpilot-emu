@@ -19,6 +19,7 @@ import createModule, {
 
 import { InstantiateFunction, cachedInstantiate } from '@common/helper/wasm';
 import { dirtyPagesSize } from './util';
+import { decorateZipfileWalker, ZipfileWalker } from './ZipfileWalker';
 
 export { FsckResult } from '@native-fstools/index';
 
@@ -31,7 +32,7 @@ const ZIP_SLICE_SIZE = 512 * 1024;
 export class CreateZipContext {
     private constructor(
         private module: Module,
-        private compressionLevel: number,
+        compressionLevel: number,
     ) {
         this.nativeContext = new module.CreateZipContext();
         if (!this.nativeContext.Initialize(compressionLevel)) {
@@ -329,6 +330,24 @@ export class FsTools {
 
     createZipContext(compressionLevel: number): Promise<CreateZipContext> {
         return CreateZipContext.create(compressionLevel, this.instantiante);
+    }
+
+    async createZipfileWalker(zipfile: Uint8Array): Promise<ZipfileWalker> {
+        const module = await createModule({
+            print: (x: string) => console.log(x),
+            printErr: (x: string) => console.error(x),
+            instantiateWasm: this.instantiante,
+        });
+
+        const fstools = new module.FSTools();
+        const buffer = fstools.Malloc(zipfile.length);
+        const bufferPtr = module.getPointer(buffer);
+
+        module.HEAPU8.subarray(bufferPtr, bufferPtr + zipfile.length).set(zipfile);
+
+        module.destroy(fstools);
+
+        return decorateZipfileWalker(new module.ZipfileWalker(zipfile.length, buffer), module);
     }
 
     private instantiante: InstantiateFunction;

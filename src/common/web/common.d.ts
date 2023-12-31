@@ -17,7 +17,7 @@ export const enum ZipfileWalkerState {
     done = 1,
 }
 
-interface GunzipContext<VoidPtr> {
+export interface GunzipContext<VoidPtr> {
     GetState(): GunzipState;
     Continue(): GunzipState;
 
@@ -28,7 +28,7 @@ interface GunzipContext<VoidPtr> {
     GetError(): string;
 }
 
-interface GzipContext<VoidPtr> {
+export interface GzipContext<VoidPtr> {
     SetFilename(filename: string): GzipContext<VoidPtr>;
     SetMtime(mtime: number): GzipContext<VoidPtr>;
 
@@ -41,7 +41,7 @@ interface GzipContext<VoidPtr> {
     GetError(): string;
 }
 
-interface CreateZipContext<VoidPtr> {
+export interface CreateZipContext<VoidPtr> {
     Initialize(compressionLevel: number): boolean;
 
     AddEntry(name: string): boolean;
@@ -58,30 +58,32 @@ export interface ZipfileWalker<VoidPtr> {
     GetState(): ZipfileWalkerState;
     Next(): ZipfileWalkerState;
 
+    GetTotalEntries(): number;
+
     GetCurrentEntrySize(): number;
     GetCurrentEntryName(): string;
     GetCurrentEntryContent(): VoidPtr;
 }
 
-interface ModuleWithGunzipContext<VoidPtr> {
+export interface ModuleWithGunzipContext<VoidPtr> {
     GunzipContext: {
         new (data: VoidPtr, size: number, slizeSize: number): GunzipContext<VoidPtr>;
     };
 }
 
-interface ModuleWithGzipContext<VoidPtr> {
+export interface ModuleWithGzipContext<VoidPtr> {
     GzipContext: {
         new (data: VoidPtr, size: number, slizeSize: number): GzipContext<VoidPtr>;
     };
 }
 
-interface ModuleWithCreateZipContext<VoidPtr> {
+export interface ModuleWithCreateZipContext<VoidPtr> {
     CreateZipContext: {
         new (): CreateZipContext<VoidPtr>;
     };
 }
 
-interface ModuleWithZipfileWalker<VoidPtr> {
+export interface ModuleWithZipfileWalker<VoidPtr> {
     ZipfileWalker: {
         new (bufferSize: number, buffer: VoidPtr): ZipfileWalker<VoidPtr>;
     };

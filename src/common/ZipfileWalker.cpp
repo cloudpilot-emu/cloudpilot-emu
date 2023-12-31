@@ -50,6 +50,8 @@ ZipfileWalker::State ZipfileWalker::Next() {
     return GetState();
 }
 
+uint32_t ZipfileWalker::GetTotalEntries() { return entriesTotal; }
+
 size_t ZipfileWalker::GetCurrentEntrySize() {
     return GetState() == State::stateOpen ? zip_entry_size(zip) : 0;
 }

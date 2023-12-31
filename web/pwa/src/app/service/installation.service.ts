@@ -1,5 +1,5 @@
 import { AlertController, LoadingController, IonicSafeString } from '@ionic/angular';
-import { DbInstallResult, ZipfileWalkerState } from '@common/bridge/Cloudpilot';
+import { DbInstallResult } from '@common/bridge/Cloudpilot';
 
 import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';
@@ -8,6 +8,9 @@ import { FileDescriptor } from './file.service';
 import { Injectable } from '@angular/core';
 import { SnapshotService } from './snapshot.service';
 import { concatFilenames } from '@pwa/helper/filename';
+import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
+import { FsTools } from '@common/bridge/FSTools';
+import { FsToolsService } from './fstools.service';
 
 const ZIP_SIZE_LIMIT = 32 * 1024 * 1024;
 const SNAPSHOT_LIMIT = 4 * 1024 * 1024;
@@ -54,6 +57,7 @@ function getDatabaseName(data: Uint8Array): string {
 class InstallationContext {
     constructor(
         private cloudpilotService: CloudpilotService,
+        private fstools: FsTools,
         private alertController: AlertController,
         private snapshotService: SnapshotService,
         private files: Array<FileDescriptor>,
@@ -134,31 +138,29 @@ class InstallationContext {
     }
 
     private async installZip(file: FileDescriptor): Promise<void> {
-        const cloudpilot = await this.cloudpilotService.cloudpilot;
+        const walker = await this.fstools.createZipfileWalker(await file.getContent());
 
-        await cloudpilot.withZipfileWalker(await file.getContent(), async (walker) => {
-            let installed = 0;
+        let installed = 0;
 
-            while (walker.GetState() === ZipfileWalkerState.open) {
-                const name = walker.GetCurrentEntryName().replace(/^.*\//, '');
+        while (walker.GetState() === ZipfileWalkerState.open) {
+            const name = walker.GetCurrentEntryName().replace(/^.*\//, '');
 
-                if (!isInstallable(walker.GetCurrentEntryName())) {
-                    walker.Next();
-                    continue;
-                }
-                const content = walker.GetCurrentEntryContent();
-                if (content) {
-                    await this.installOne(name, content);
-                    installed++;
-                } else {
-                    this.filesFail.push(name);
-                }
-
+            if (!isInstallable(walker.GetCurrentEntryName())) {
                 walker.Next();
+                continue;
+            }
+            const content = walker.GetCurrentEntryContent();
+            if (content) {
+                await this.installOne(name, content);
+                installed++;
+            } else {
+                this.filesFail.push(name);
             }
 
-            if (installed === 0) throw new Error('no installable files in archive');
-        });
+            walker.Next();
+        }
+
+        if (installed === 0) throw new Error('no installable files in archive');
     }
 
     private reportError(file: string, code: DbInstallResult): Promise<void> {
@@ -218,6 +220,7 @@ export class InstallationService {
         private snapshotService: SnapshotService,
         private alertService: AlertService,
         private alertController: AlertController,
+        private fstools: FsToolsService,
     ) {}
 
     async installFiles(files: Array<FileDescriptor>): Promise<void> {
@@ -236,6 +239,7 @@ export class InstallationService {
         try {
             const installationContext = new InstallationContext(
                 this.cloudpilotService,
+                this.fstools,
                 this.alertController,
                 this.snapshotService,
                 files,

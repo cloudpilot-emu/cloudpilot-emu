@@ -15,6 +15,7 @@ import { filenameForSession, filenameForSessions } from '@pwa/helper/filename';
 import { metadataForSession } from '@pwa/helper/metadata';
 import { isIOS, isIOSSafari, isSafari } from '@common/helper/browser';
 import { FsToolsService } from './fstools.service';
+import { disambiguateName } from '@pwa/helper/disambiguate';
 
 /* eslint-disable no-bitwise */
 
@@ -90,10 +91,10 @@ export class FileService {
                 const image = await this.serializeSession(session);
 
                 if (image) {
-                    const sessionNameBase = session.name.replace(/[\/\\]/, '_').substring(0, 200);
-
-                    let sessionName = sessionNameBase;
-                    for (let i = 0; sessionNames.has(sessionName); sessionName = `${sessionNameBase} (${i})`) {}
+                    const sessionName = disambiguateName(
+                        session.name.replace(/[\/\\]/, '_').substring(0, 200),
+                        (name) => sessionNames.has(name),
+                    );
 
                     sessionNames.add(sessionName);
                     await createZipContext.addEntry(sessionName + '.img', image);

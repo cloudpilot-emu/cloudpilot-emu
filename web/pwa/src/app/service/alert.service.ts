@@ -23,6 +23,7 @@ export class AlertService {
         });
 
         await alert.present();
+        await alert.onDidDismiss();
     }
 
     async message(
