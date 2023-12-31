@@ -1,3 +1,8 @@
+# Nxet version
+
+-   Support for bulk exporting multiple sessions as a zip archive.
+-   Support bulk importing multiple sessions from a zip archive.
+
 # Version 1.9.4
 
 -   Fix free space not being updated in card browser.
