@@ -156,7 +156,7 @@ export class AlertService {
                 .replace(/\n/gm, ' ')
                 .split('<br/>')
                 .map((part) => {
-                    this.sanitizeDiv.innerText = part;
+                    this.sanitizeDiv.textContent = part;
                     return this.sanitizeDiv.innerHTML;
                 })
                 .join('<br/>'),
