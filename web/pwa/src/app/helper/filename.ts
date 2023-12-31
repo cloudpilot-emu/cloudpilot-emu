@@ -15,7 +15,7 @@ export function filenameFragment(prefix: string): string {
 }
 
 export function filenameForSession(session: Session): string {
-    return `${filenameFragment(session.name)}.bin`;
+    return `${filenameFragment(session.name)}.img`;
 }
 
 export function filenameForSessions(): string {
