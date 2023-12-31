@@ -1,4 +1,4 @@
-import { AlertController, LoadingController, IonicSafeString } from '@ionic/angular';
+import { AlertController, LoadingController } from '@ionic/angular';
 import { DbInstallResult } from '@common/bridge/Cloudpilot';
 
 import { AlertService } from './alert.service';

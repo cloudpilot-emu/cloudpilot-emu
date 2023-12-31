@@ -1,4 +1,4 @@
-import { AlertController, IonicSafeString, LoadingController } from '@ionic/angular';
+import { AlertController, LoadingController } from '@ionic/angular';
 import { Attributes, FileEntry, ReaddirError, UnzipResult, Vfs, VfsResult, WriteFileResult } from '@common/bridge/Vfs';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { ClipboardOperation, VfsClipboard } from '@pwa/model/VfsClipboard';
