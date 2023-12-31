@@ -24,6 +24,12 @@ export class StoragePage implements OnInit, DragDropClient {
         this.vfsService.onReleaseCard.addHandler(this.onReleaseCard.bind(this));
     }
 
+    async ionViewDidLeave(): Promise<void> {
+        const currentView = await this.nav?.getActive();
+
+        currentView?.params?.selfReference?.ref?.ionViewDidLeave?.();
+    }
+
     ionViewDidEnter(): void {
         this.isVisible = true;
         this.dragDropService.registerClient(this);

@@ -187,6 +187,10 @@ export class SessionsPage implements DragDropClient, DoCheck {
         }
     }
 
+    ionViewDidLeave(): void {
+        this.mode = 'default';
+    }
+
     onSelectAll(): void {
         this.sessionService.getSessions().forEach((session) => this.selection.add(session.id));
     }
@@ -200,7 +204,9 @@ export class SessionsPage implements DragDropClient, DoCheck {
         if (files.length === 0) return;
 
         if (files.length > 1) {
-            void this.alertService.errorMessage('Drop a single ROM or session image in order to create a new session.');
+            void this.alertService.errorMessage(
+                'Drop a single ROM or session image in order to create a new session, or drop a zip archive with sessions to import.',
+            );
             return;
         }
 

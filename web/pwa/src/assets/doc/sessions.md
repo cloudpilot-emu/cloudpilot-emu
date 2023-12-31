@@ -30,6 +30,17 @@ Changes to the image format are backwards compatible, which means that a newer
 version of CloudpilotEmu can always import a session image written by an older
 version.
 
+### Bulk exporting and importing sessions
+
+Select the "export" icon from the toolbar in order to start selecting sessions
+from the list for export. All selected sessions will be exported as a single
+zip archive.
+
+Similarly, a zip archive with sessions can be imported in order to add all of
+them to CloudpilotEmu. Note that you will not be prompted to change the
+session names or settings during import in this case - you'll have to make any
+adjustments afterwards.
+
 # The sessions list
 
 Selecting a session from the list will launch the session in the emulator and

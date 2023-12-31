@@ -340,6 +340,11 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         void this.openContextMenu(e, 'event');
     }
 
+    ionViewDidLeave(): void {
+        this.mode = 'browse';
+        this.cd.markForCheck();
+    }
+
     private bytesInFilesMemoized = memoize(
         (entries: Array<FileEntry> | undefined): number =>
             entries?.reduce((acc, entry) => acc + (entry.isDirectory ? 0 : entry.size), 0) ?? 0,
