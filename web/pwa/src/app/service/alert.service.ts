@@ -152,7 +152,8 @@ export class AlertService {
     sanitizeMessage(message: string): IonicSafeString {
         return new IonicSafeString(
             message
-                .replace('<br>', '<br/>')
+                .replace(/<br\s*\/?>/g, '<br/>')
+                .replace(/\n/gm, ' ')
                 .split('<br/>')
                 .map((part) => {
                     this.sanitizeDiv.innerText = part;
