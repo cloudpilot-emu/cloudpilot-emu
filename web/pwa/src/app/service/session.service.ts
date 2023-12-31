@@ -76,16 +76,10 @@ export class SessionService {
                     : undefined;
 
                 if (!sessionImage) {
-                    const alert = await this.alertController.create({
-                        header: 'Error',
-                        backdropDismiss: false,
-                        message: `${zipfileWalker.GetCurrentEntryName()} is not a valid session.`,
-                        buttons: [{ text: 'Continue', role: 'cancel' }],
-                        cssClass: 'alert-error',
-                    });
-
-                    await alert.present();
-                    await alert.onDidDismiss();
+                    await this.alertService.errorMessage(
+                        `${zipfileWalker.GetCurrentEntryName()} is not a valid session.`,
+                        'Continue',
+                    );
 
                     zipfileWalker.Next();
                     continue;

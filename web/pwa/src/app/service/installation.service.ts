@@ -59,6 +59,7 @@ class InstallationContext {
         private cloudpilotService: CloudpilotService,
         private fstools: FsTools,
         private alertController: AlertController,
+        private alertService: AlertService,
         private snapshotService: SnapshotService,
         private files: Array<FileDescriptor>,
     ) {}
@@ -175,7 +176,7 @@ class InstallationContext {
                 header,
                 backdropDismiss: false,
                 cssClass: 'alert-checkbox-no-border installation-error',
-                message: new IonicSafeString(message),
+                message: this.alertService.sanitizeMessage(message),
                 buttons: [
                     {
                         text: 'Continue',
@@ -241,6 +242,7 @@ export class InstallationService {
                 this.cloudpilotService,
                 this.fstools,
                 this.alertController,
+                this.alertService,
                 this.snapshotService,
                 files,
             );

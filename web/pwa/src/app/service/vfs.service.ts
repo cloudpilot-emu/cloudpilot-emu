@@ -728,7 +728,7 @@ export class VfsService {
             header: 'File collision',
             backdropDismiss: false,
             cssClass: 'alert-checkbox-no-border installation-error',
-            message: new IonicSafeString(
+            message: this.alertService.sanitizeMessage(
                 type === 'file'
                     ? `Do you want to overwrite the existing file ${name}?`
                     : `

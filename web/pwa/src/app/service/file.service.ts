@@ -99,16 +99,7 @@ export class FileService {
                     sessionNames.add(sessionName);
                     await createZipContext.addEntry(sessionName + '.img', image);
                 } else {
-                    const alert = await this.alertController.create({
-                        header: 'Error',
-                        backdropDismiss: false,
-                        message: `Failed  to export session '${session.name}'.`,
-                        buttons: [{ text: 'Continue', role: 'cancel' }],
-                        cssClass: 'alert-error',
-                    });
-
-                    await alert.present();
-                    await alert.onDidDismiss();
+                    await this.alertService.errorMessage(`Failed  to export session '${session.name}'.`, 'Continue');
                 }
             }
 

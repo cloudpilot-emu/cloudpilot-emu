@@ -209,7 +209,9 @@ export class SessionsPage implements DragDropClient, DoCheck {
 
     private async processFile(file: FileDescriptor): Promise<void> {
         if (!/\.(img|rom|bin|zip)$/i.test(file.name)) {
-            void this.alertService.errorMessage('Unsupported file suffix. Supported suffixes are .bin, .img and .rom.');
+            void this.alertService.errorMessage(
+                'Unsupported file suffix. Supported suffixes are .bin, .img, .rom. and .zip',
+            );
             return;
         }
 

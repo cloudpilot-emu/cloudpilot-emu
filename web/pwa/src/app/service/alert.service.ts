@@ -13,12 +13,12 @@ export class AlertService {
         private emulationState: EmulationStateService,
     ) {}
 
-    async errorMessage(message: string) {
+    async errorMessage(message: string, buttonLabel = 'Close') {
         const alert = await this.alertController.create({
             header: 'Error',
             backdropDismiss: false,
-            message: new IonicSafeString(message),
-            buttons: [{ text: 'Close', role: 'cancel' }],
+            message: this.sanitizeMessage(message),
+            buttons: [{ text: buttonLabel, role: 'cancel' }],
             cssClass: 'alert-error',
         });
 
@@ -34,7 +34,7 @@ export class AlertService {
     ) {
         const alert = await this.alertController.create({
             header,
-            message: new IonicSafeString(message),
+            message: this.sanitizeMessage(message),
             backdropDismiss: false,
             buttons: [
                 ...Object.keys(extraButtons).map((text) => ({
@@ -74,7 +74,7 @@ export class AlertService {
 
         const alert = await this.alertController.create({
             header: 'Error',
-            message: new IonicSafeString(`
+            message: this.sanitizeMessage(`
                 ${reason}
                 <br/><br/>
                 Please close or reload this window.
@@ -110,7 +110,7 @@ export class AlertService {
     async errorInNativeCode(reason: string) {
         const alert = await this.alertController.create({
             header: 'Error',
-            message: new IonicSafeString(`
+            message: this.sanitizeMessage(`
                 You encountered a bug in CloudpilotEmu:
                 <br/><br/>
                 ${reason}.
@@ -149,5 +149,20 @@ export class AlertService {
         return this.message('Card clean', 'No filesystem errors were found.', {}, 'Continue');
     }
 
+    sanitizeMessage(message: string): IonicSafeString {
+        return new IonicSafeString(
+            message
+                .replace('<br>', '<br/>')
+                .split('<br/>')
+                .map((part) => {
+                    this.sanitizeDiv.innerText = part;
+                    return this.sanitizeDiv.innerHTML;
+                })
+                .join('<br/>'),
+        );
+    }
+
     emergencySaveEvent = new Event<void>();
+
+    private sanitizeDiv = document.createElement('div');
 }
