@@ -289,7 +289,7 @@ by replacing `--cert <certificate.pem>` with `--insecure`. By default, the insec
 server runs on port 8666, and the secure server runs on 8667, but you can change
 those on the command line.
 
-## Running Cloudpilot locally or on another domain
+## Running CloudpilotEmu locally or on another domain
 
 ### CORS setup
 

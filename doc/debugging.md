@@ -230,7 +230,7 @@ following these steps:
 
 Once you have created this session image, you can reuse it for all subsequent debugging sessions. The latest version of the app will be automatically installed into it upon startup.
 
-### Setting up CloudPilot Native CLI Script
+### Setting up CloudpilotEmu Native CLI Script
 
 After creating the session image, you will need to create a CLI script that
 CloudpilotEmu will execute on startup. This script will be used to
