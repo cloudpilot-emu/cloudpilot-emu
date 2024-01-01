@@ -40,7 +40,8 @@
 <ion-content>
     <ion-header collapse="condense">
         <ion-toolbar>
-            <ion-title size="large">Sessions</ion-title>
+            <ion-title size="large" *ngIf="mode === 'default'">Sessions</ion-title>
+            <ion-title size="large" *ngIf="mode === 'select-for-export'">Select for export</ion-title>
         </ion-toolbar>
     </ion-header>
 
