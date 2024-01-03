@@ -22,7 +22,7 @@ import { disambiguateName } from '@pwa/helper/disambiguate';
 
 import helpUrl from '@assets/doc/sessions.md';
 
-type mode = 'default' | 'select-for-export';
+type mode = 'manage' | 'select-for-export';
 
 @Component({
     selector: 'app-sessions',
@@ -176,7 +176,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
             .map((sessionId) => sessions.get(sessionId))
             .filter((session) => session !== undefined) as Array<Session>;
 
-        this.mode = 'default';
+        this.mode = 'manage';
 
         if (selectedSessions.length === 1) {
             await this.fileService.saveSession(selectedSessions[0]);
@@ -188,7 +188,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
     }
 
     ionViewDidLeave(): void {
-        this.mode = 'default';
+        this.mode = 'manage';
     }
 
     onSelectAll(): void {
@@ -351,7 +351,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
 
     lastSessionTouched = -1;
 
-    mode: mode = 'default';
+    mode: mode = 'manage';
 
     selection = new Set<number>();
 

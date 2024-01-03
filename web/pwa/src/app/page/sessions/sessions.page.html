@@ -1,5 +1,5 @@
 <ion-header>
-    <ion-toolbar *ngIf="mode === 'default'">
+    <ion-toolbar *ngIf="mode === 'manage'">
         <ion-title>Sessions</ion-title>
         <ion-buttons slot="primary">
             <ion-button (click)="startMassExport()" [disabled]="sessionService.isLoading() || sessions.length === 0">
@@ -40,7 +40,7 @@
 <ion-content>
     <ion-header collapse="condense">
         <ion-toolbar>
-            <ion-title size="large" *ngIf="mode === 'default'">Sessions</ion-title>
+            <ion-title size="large" *ngIf="mode === 'manage'">Sessions</ion-title>
             <ion-title size="large" *ngIf="mode === 'select-for-export'">Select for export</ion-title>
         </ion-toolbar>
     </ion-header>
@@ -64,7 +64,7 @@
             *ngFor="let session of sessions; trackBy: trackSessionBy"
             [session]="session"
             (delete)="deleteSession(session)"
-            (selectItem)="mode === 'default' ? launchSession(session) : toggleSelection(session)"
+            (selectItem)="mode === 'manage' ? launchSession(session) : toggleSelection(session)"
             (edit)="editSession(session)"
             (save)="saveSession(session)"
             (resetSession)="resetSession(session)"
