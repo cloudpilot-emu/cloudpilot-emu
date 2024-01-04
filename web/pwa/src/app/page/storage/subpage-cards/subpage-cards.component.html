@@ -1,8 +1,12 @@
 <ion-header>
-  <ion-toolbar>
+  <ion-toolbar *ngIf="mode === 'manage'">
     <ion-title>Memory cards</ion-title>
 
     <ion-buttons slot="primary">
+      <ion-button (click)="startMassExport()" [disabled]="cards.length === 0">
+        <ion-icon name="share-outline"></ion-icon>
+    </ion-button>
+
       <ion-button (click)="addCardImage()">
         <ion-icon name="add-outline"></ion-icon>
       </ion-button>
@@ -17,6 +21,22 @@
       <app-pwa-prompt></app-pwa-prompt>
     </ion-buttons>
   </ion-toolbar>
+
+  <ion-toolbar *ngIf="mode === 'select-for-export'">
+    <ion-title>Export</ion-title>
+
+    <ion-buttons slot="primary">
+        <ion-button (click)="onSelectionDone()">{{ selection.size === 0 ? 'Cancel' : 'Export' }}</ion-button>
+    </ion-buttons>
+
+    <ion-buttons slot="secondary" *ngIf="selection.size !== cards.length">
+        <ion-button (click)="onSelectAll()">Select all</ion-button>
+    </ion-buttons>
+
+    <ion-buttons slot="secondary" *ngIf="selection.size === cards.length">
+        <ion-button (click)="selection.clear()">Clear</ion-button>
+    </ion-buttons>
+</ion-toolbar>
 </ion-header>
 
 <ion-content>
@@ -39,8 +59,9 @@
 
   <ion-list *ngIf="!storageCardService.isLoading() && cards.length > 0">
     <app-storage-card *ngFor="let card of cards;trackBy:trackCardBy" [card]="card" (delete)="deleteCard(card)"
-      (selectCard)="selectCard(card)" (edit)="editCard(card)" (check)="checkCard(card)"
-      (interaction)="lastCardTouched = card.id" (save)="saveCard(card)" [touched]="card.id === lastCardTouched">
+      (selectCard)="mode === 'manage' ? browseCard(card): toggleSelection(card)" (edit)="editCard(card)" (check)="checkCard(card)"
+      (interaction)="lastCardTouched = card.id" (save)="saveCard(card)" [touched]="card.id === lastCardTouched"
+      [selecting]="mode === 'select-for-export'" [selectedForExport]="selection.has(card.id)">
     </app-storage-card>
   </ion-list>
 

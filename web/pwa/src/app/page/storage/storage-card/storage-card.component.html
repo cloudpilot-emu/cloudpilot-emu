@@ -22,9 +22,12 @@
   </ion-item-options>
 
   <ion-item [color]="color" (click)="selectCard.emit(); interaction.emit()">
-    <ion-label>
+    <ion-label [class.selecting]="selecting">
       <h2>{{card?.name}}</h2>
       <p>{{card?.size | cardSize}}, {{status}}</p>
     </ion-label>
+
+    <ion-icon *ngIf="selecting && !selectedForExport" class="selection-icon" name="radio-button-off-outline" slot="end"></ion-icon>
+    <ion-icon *ngIf="selecting && selectedForExport" class="selection-icon" name="radio-button-on-outline" slot="end"></ion-icon>
   </ion-item>
 </ion-item-sliding>

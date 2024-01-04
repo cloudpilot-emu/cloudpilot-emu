@@ -18,6 +18,8 @@ import { FsToolsService } from '@pwa/service/fstools.service';
 
 import helpPage from '@assets/doc/cards.md';
 
+type Mode = 'manage' | 'select-for-export';
+
 @Component({
     selector: 'app-subpage-cards',
     templateUrl: './subpage-cards.component.html',
@@ -36,7 +38,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         private fileService: FileService,
         private loadingController: LoadingController,
         private fstools: FsToolsService,
-        cd: ChangeDetectorRef,
+        private cd: ChangeDetectorRef,
     ) {
         this.checkCards = changeDetector(cd, [], () => this.storageCardService.getAllCards());
     }
@@ -47,6 +49,11 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
 
     ngDoCheck(): void {
         this.checkCards();
+    }
+
+    ionViewDidLeave(): void {
+        this.mode = 'manage';
+        this.cd.markForCheck();
     }
 
     get cards(): Array<StorageCard> {
@@ -88,7 +95,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
     }
 
     @debounce()
-    async selectCard(card: StorageCard) {
+    async browseCard(card: StorageCard) {
         if (await this.storageCardService.browseCard(card)) this.onMountForBrowse(card);
     }
 
@@ -167,6 +174,24 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
 
     trackCardBy(index: number, card: StorageCard) {
         return card.id;
+    }
+
+    startMassExport(): void {
+        this.selection.clear();
+        this.mode = 'select-for-export';
+    }
+
+    onSelectionDone(): void {
+        this.mode = 'manage';
+    }
+
+    onSelectAll(): void {
+        this.cards.forEach((card) => this.selection.add(card.id));
+    }
+
+    toggleSelection(card: StorageCard): void {
+        if (this.selection.has(card.id)) this.selection.delete(card.id);
+        else this.selection.add(card.id);
     }
 
     private handleFilesFromDrop(files: Array<FileDescriptor>): void {
@@ -280,4 +305,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
     selfReference: { ref: SubpageCardsComponent } | undefined;
 
     private checkCards: () => void;
+
+    mode: Mode = 'manage';
+    selection = new Set<number>();
 }

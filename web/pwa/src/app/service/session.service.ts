@@ -4,7 +4,7 @@ import { CloudpilotService } from './cloudpilot.service';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { Injectable } from '@angular/core';
-import { AlertController, LoadingController } from '@ionic/angular';
+import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { Session } from '@pwa/model/Session';
 import { SessionImage } from '@common/bridge/Cloudpilot';
@@ -25,7 +25,6 @@ export class SessionService {
         private loadingController: LoadingController,
         private fsTools: FsToolsService,
         private alertService: AlertService,
-        private alertController: AlertController,
     ) {
         void this.updateSessionsFromStorage().then(() => (this.loading = false));
 

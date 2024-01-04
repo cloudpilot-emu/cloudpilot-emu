@@ -1,4 +1,4 @@
-import { ActionSheetController, AlertController, LoadingController, ModalController } from '@ionic/angular';
+import { ActionSheetController, LoadingController, ModalController } from '@ionic/angular';
 import { SessionImage } from '@common/bridge/Cloudpilot';
 
 import { AlertService } from './alert.service';
@@ -38,7 +38,6 @@ export class FileService {
         private fetchService: FetchService,
         private cloudpilotService: CloudpilotService,
         private fstoolsService: FsToolsService,
-        private alertController: AlertController,
     ) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {

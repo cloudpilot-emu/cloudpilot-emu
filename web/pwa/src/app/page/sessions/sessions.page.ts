@@ -22,7 +22,7 @@ import { disambiguateName } from '@pwa/helper/disambiguate';
 
 import helpUrl from '@assets/doc/sessions.md';
 
-type mode = 'manage' | 'select-for-export';
+type Mode = 'manage' | 'select-for-export';
 
 @Component({
     selector: 'app-sessions',
@@ -351,7 +351,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
 
     lastSessionTouched = -1;
 
-    mode: mode = 'manage';
+    mode: Mode = 'manage';
 
     selection = new Set<number>();
 
