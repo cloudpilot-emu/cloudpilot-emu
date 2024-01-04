@@ -11,7 +11,6 @@ import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { CloudpilotService } from './cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
-import { FileService } from './file.service';
 import { KvsService } from './kvs.service';
 import { LoadingController } from '@ionic/angular';
 import { ModalWatcherService } from './modal-watcher.service';
@@ -24,6 +23,7 @@ import { StorageCardService } from '@pwa/service/storage-card.service';
 import { StorageService } from './storage.service';
 import { hasInitialImportRequest } from './link-api.service';
 import { isIOS } from '@common/helper/browser';
+import { SessionService } from './session.service';
 
 const SNAPSHOT_INTERVAL = 1000;
 
@@ -36,7 +36,6 @@ export class EmulationService extends AbstractEmulationService {
         private emulationState: EmulationStateService,
         private snapshotService: SnapshotService,
         private errorService: ErrorService,
-        private fileService: FileService,
         private alertService: AlertService,
         private modalWatcher: ModalWatcherService,
         private clipboardService: ClipboardService,
@@ -47,6 +46,7 @@ export class EmulationService extends AbstractEmulationService {
         private cloudpilotService: CloudpilotService,
         private storageCardService: StorageCardService,
         private storageCardContext: StorageCardContext,
+        private sessionsService: SessionService,
         private app: ApplicationRef,
     ) {
         super();
@@ -321,7 +321,7 @@ Sorry for the inconvenience.`,
             const session = this.emulationState.getCurrentSession();
 
             if (session) {
-                void this.fileService.emergencySaveSession(session);
+                void this.sessionsService.emergencySaveSession(session);
             }
         });
 

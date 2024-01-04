@@ -1,4 +1,4 @@
-import {} from './file.service';
+import { FileService } from './file.service';
 
 import { CloudpilotService } from './cloudpilot.service';
 import { DeviceId } from '@common/model/DeviceId';
@@ -14,6 +14,8 @@ import { FsToolsService } from './fstools.service';
 import { ZipfileWalkerState } from '@native/cloudpilot_web';
 import { AlertService } from './alert.service';
 import { disambiguateName } from '@pwa/helper/disambiguate';
+import { metadataForSession } from '@pwa/helper/metadata';
+import { filenameForSession, filenameForSessions } from '@pwa/helper/filename';
 
 @Injectable({
     providedIn: 'root',
@@ -25,6 +27,7 @@ export class SessionService {
         private loadingController: LoadingController,
         private fsTools: FsToolsService,
         private alertService: AlertService,
+        private fileService: FileService,
     ) {
         void this.updateSessionsFromStorage().then(() => (this.loading = false));
 
@@ -142,6 +145,119 @@ export class SessionService {
 
     async updateSession(session: Session): Promise<void> {
         await this.storageService.updateSession(session);
+    }
+
+    async saveSession(session: Session): Promise<void> {
+        const loader = await this.loadingController.create({ message: 'Exporting...' });
+        await loader.present();
+
+        try {
+            const image = await this.serializeSession(session);
+
+            if (image) {
+                this.fileService.saveFile(filenameForSession(session), image);
+            } else {
+                await loader.dismiss();
+                void this.alertService.errorMessage('Failed to save session.');
+            }
+        } finally {
+            void loader.dismiss();
+        }
+    }
+
+    async saveSessions(sessions: Array<Session>): Promise<void> {
+        const loader = await this.loadingController.create({ message: 'Exporting...' });
+        await loader.present();
+
+        const createZipContext = await this.fsTools.createZipContext(0);
+        const sessionNames = new Set<string>();
+
+        try {
+            let i = 1;
+
+            for (const session of sessions) {
+                loader.message = `Exporting ${i++}/${sessions.length}...`;
+
+                const image = await this.serializeSession(session);
+
+                if (image) {
+                    const sessionName = disambiguateName(
+                        session.name.replace(/[\/\\]/, '_').substring(0, 200),
+                        (name) => sessionNames.has(name),
+                    );
+
+                    sessionNames.add(sessionName);
+                    await createZipContext.addEntry(sessionName + '.img', image);
+                } else {
+                    await this.alertService.errorMessage(`Failed  to export session '${session.name}'.`, 'Continue');
+                }
+            }
+
+            this.fileService.saveFile(filenameForSessions(), createZipContext.getContent());
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (e: any) {
+            void this.alertService.errorMessage(`Failed to export sessions: ${e.message ?? 'unknown error'}`);
+        } finally {
+            void loader.dismiss();
+        }
+    }
+
+    async emergencySaveSession(session: Session): Promise<void> {
+        const cloudpilot = await this.cloudpilotService.cloudpilot;
+        const loader = await this.loadingController.create({ message: 'Exporting...' });
+
+        // This code path is usually triggered from a dialog, so make sure that the loader is on top.
+        // This is a hack, but sufficient for this edge case.
+        loader.style.zIndex = '10000000';
+
+        await loader.present();
+
+        try {
+            const rom = cloudpilot.getRomImage().slice();
+            const memory = cloudpilot.getMemory().slice();
+            const savestate = cloudpilot.saveState() ? cloudpilot.getSavestate().slice() : undefined;
+            const framebufferSize = cloudpilot.framebufferSizeForDevice(session.device);
+
+            if (framebufferSize < 0) {
+                throw new Error(`invalid device ID ${session.device}`);
+            }
+
+            const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
+                deviceId: session.device,
+                metadata: metadataForSession(session),
+                rom,
+                memory,
+                savestate,
+            };
+
+            const image = (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);
+            if (image) {
+                this.fileService.saveFile(filenameForSession(session), image);
+            }
+            // Showing an error alert may conflict with the alert that is already visible.
+            // However, the error case is only possible if allocations fail in WASM --- an
+            // extreme edge case.
+        } finally {
+            void loader.dismiss();
+        }
+    }
+
+    private async serializeSession(session: Session): Promise<Uint8Array | undefined> {
+        const [rom, memory, savestate] = await this.storageService.loadSession(session, false);
+
+        if (!rom) {
+            throw new Error(`invalid ROM ${session.rom}`);
+        }
+
+        const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
+            deviceId: session.device,
+            metadata: metadataForSession(session),
+            rom,
+            memory,
+            savestate,
+        };
+
+        return (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);
     }
 
     private async updateSessionsFromStorage(): Promise<void> {

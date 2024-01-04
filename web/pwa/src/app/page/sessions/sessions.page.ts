@@ -102,7 +102,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
 
     @debounce()
     saveSession(session: Session): Promise<void> {
-        return this.fileService.saveSession(session);
+        return this.sessionService.saveSession(session);
     }
 
     trackSessionBy(index: number, session: Session) {
@@ -179,11 +179,11 @@ export class SessionsPage implements DragDropClient, DoCheck {
         this.mode = 'manage';
 
         if (selectedSessions.length === 1) {
-            await this.fileService.saveSession(selectedSessions[0]);
+            await this.sessionService.saveSession(selectedSessions[0]);
         }
 
         if (selectedSessions.length > 1) {
-            await this.fileService.saveSessions(selectedSessions);
+            await this.sessionService.saveSessions(selectedSessions);
         }
     }
 

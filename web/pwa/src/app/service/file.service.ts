@@ -11,11 +11,9 @@ import { Session } from '@pwa/model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { StorageService } from './storage.service';
 import Url from 'url-parse';
-import { filenameForSession, filenameForSessions } from '@pwa/helper/filename';
+import { filenameForSession } from '@pwa/helper/filename';
 import { metadataForSession } from '@pwa/helper/metadata';
 import { isIOS, isIOSSafari, isSafari } from '@common/helper/browser';
-import { FsToolsService } from './fstools.service';
-import { disambiguateName } from '@pwa/helper/disambiguate';
 
 /* eslint-disable no-bitwise */
 
@@ -37,7 +35,6 @@ export class FileService {
         private alertService: AlertService,
         private fetchService: FetchService,
         private cloudpilotService: CloudpilotService,
-        private fstoolsService: FsToolsService,
     ) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {
@@ -54,61 +51,6 @@ export class FileService {
         if (e.type !== 'drop' || !e.dataTransfer?.files) return;
 
         handler(Array.from(e.dataTransfer.files).map(this.readFile.bind(this)));
-    }
-
-    async saveSession(session: Session): Promise<void> {
-        const loader = await this.loadingController.create({ message: 'Exporting...' });
-        await loader.present();
-
-        try {
-            const image = await this.serializeSession(session);
-
-            if (image) {
-                this.saveFile(filenameForSession(session), image);
-            } else {
-                await loader.dismiss();
-                void this.alertService.errorMessage('Failed to save session.');
-            }
-        } finally {
-            void loader.dismiss();
-        }
-    }
-
-    async saveSessions(sessions: Array<Session>): Promise<void> {
-        const loader = await this.loadingController.create({ message: 'Exporting...' });
-        await loader.present();
-
-        const createZipContext = await this.fstoolsService.createZipContext(0);
-        const sessionNames = new Set<string>();
-
-        try {
-            let i = 1;
-
-            for (const session of sessions) {
-                loader.message = `Exporting ${i++}/${sessions.length}...`;
-
-                const image = await this.serializeSession(session);
-
-                if (image) {
-                    const sessionName = disambiguateName(
-                        session.name.replace(/[\/\\]/, '_').substring(0, 200),
-                        (name) => sessionNames.has(name),
-                    );
-
-                    sessionNames.add(sessionName);
-                    await createZipContext.addEntry(sessionName + '.img', image);
-                } else {
-                    await this.alertService.errorMessage(`Failed  to export session '${session.name}'.`, 'Continue');
-                }
-            }
-
-            this.saveFile(filenameForSessions(), createZipContext.getContent());
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (e: any) {
-            void this.alertService.errorMessage(`Failed to export sessions: ${e.message ?? 'unknown error'}`);
-        } finally {
-            void loader.dismiss();
-        }
     }
 
     async emergencySaveSession(session: Session): Promise<void> {
