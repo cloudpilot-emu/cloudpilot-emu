@@ -234,7 +234,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
         if (file.name.endsWith('.zip')) {
             let install = false;
             await this.alertService.message(
-                'Warning',
+                'Mass import',
                 'CloudpilotEmu will attempt to import all sessions in the selected zip archive. Are you sure you want to continue?',
                 { Continue: () => (install = true) },
                 'Cancel',
