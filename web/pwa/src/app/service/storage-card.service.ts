@@ -411,6 +411,9 @@ export class StorageCardService {
         let cardDataFromEmulator: Uint32Array | undefined;
 
         if (session && session.id === this.emulationStateService.getCurrentSession()?.id) {
+            await this.snapshotService.waitForPendingSnapshot();
+            await this.snapshotService.triggerSnapshot();
+
             const cloudpilot = await this.cloudpilotService.cloudpilot;
             cardDataFromEmulator = cloudpilot.getCardData(card.storageId);
 
