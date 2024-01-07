@@ -1,7 +1,9 @@
-# Nxet version
+# Next version
 
--   Support for bulk exporting multiple sessions as a zip archive.
--   Support bulk importing multiple sessions from a zip archive.
+-   Support for mass exporting multiple sessions as a zip archive.
+-   Support mass importing multiple sessions from a zip archive.
+-   Support for mass exporting multiple cards as a zip archive.
+-   Support mass importing multiple cards from a zip archive.
 
 # Version 1.9.4
 

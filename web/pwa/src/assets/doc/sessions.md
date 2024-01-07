@@ -30,7 +30,7 @@ Changes to the image format are backwards compatible, which means that a newer
 version of CloudpilotEmu can always import a session image written by an older
 version.
 
-### Bulk exporting and importing sessions
+### Mass exporting and importing sessions
 
 Select the "export" icon from the toolbar in order to start selecting sessions
 from the list for export. All selected sessions will be exported as a single

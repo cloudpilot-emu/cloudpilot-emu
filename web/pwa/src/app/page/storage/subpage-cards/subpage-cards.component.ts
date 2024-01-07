@@ -246,6 +246,26 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
     }
 
     private handleCardImport = async (file: FileDescriptor): Promise<void> => {
+        if (!/\.((bin|img)(|\.gz)|zip)$/i.test(file.name)) {
+            void this.alertService.errorMessage(
+                'Unsupported file suffix. Supported suffixes are .bin, .bin.gz, .img, .img.gz and .zip',
+            );
+            return;
+        }
+
+        if (file.name.endsWith('.zip')) {
+            let install = false;
+            await this.alertService.message(
+                'Mass import',
+                'CloudpilotEmu will attempt to import all card images in the selected zip archive. Are you sure you want to continue?',
+                { Continue: () => (install = true) },
+                'Cancel',
+            );
+
+            if (install) await this.storageCardService.addAllCardsFromArchive(await file.getContent());
+            return;
+        }
+
         const cloudpilot = await this.cloudpilotService.cloudpilot;
         let content: Uint8Array | undefined;
 

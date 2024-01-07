@@ -1,3 +1,4 @@
+import { CardSupportLevel } from '@common/bridge/Cloudpilot';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { FsckContext, FsckResult } from '@common/bridge/FSTools';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
@@ -19,6 +20,7 @@ import { v4 as uuid } from 'uuid';
 import { FsToolsService } from './fstools.service';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameForCards } from '@pwa/helper/filename';
+import { ZipfileWalkerState } from '@native/cloudpilot_web';
 
 export enum NewCardSize {
     mb4,
@@ -133,26 +135,11 @@ export class StorageCardService {
     }
 
     async createCardFromImage(name: string, image: Uint8Array, dontFsckAutomatically: boolean): Promise<void> {
-        const cardWithoutId: Omit<StorageCard, 'id'> = {
-            storageId: newStorageId(),
-            name,
-            size: image.length,
-            status: StorageCardStatus.clean,
-            dontFsckAutomatically,
-        };
-        const data32 = new Uint32Array(image.buffer, image.byteOffset, image.byteLength >>> 2);
-
         const loader = await this.loadingController.create({ message: 'Importing...' });
-        try {
-            if (dontFsckAutomatically) {
-                await loader.present();
-                await this.storageService.importStorageCard(cardWithoutId, data32);
-            } else {
-                const [fixedData32, checkedCardWithoutId] = await this.fsckNewCard(data32, cardWithoutId);
 
-                await loader.present();
-                await this.storageService.importStorageCard(checkedCardWithoutId, fixedData32);
-            }
+        try {
+            await loader.present();
+            await this.doCreateCardFromImage(name, image, dontFsckAutomatically);
         } finally {
             void loader.dismiss();
         }
@@ -377,7 +364,7 @@ export class StorageCardService {
                 const cardData = await this.getCardData(card, name);
                 if (!cardData) continue;
 
-                await createZipContext.addEntry(`${name}.gz`, cardData);
+                await createZipContext.addEntry(`${name}.img.gz`, cardData);
             }
         } finally {
             void loader.dismiss();
@@ -396,6 +383,97 @@ export class StorageCardService {
 
     isLoading(): boolean {
         return this.loading;
+    }
+
+    async addAllCardsFromArchive(zipData: Uint8Array): Promise<void> {
+        const SUFFIX_PATTERN = /\.(bin|img)(|\.gz)$/i;
+        const loader = await this.loadingController.create({ message: 'Importing...' });
+
+        try {
+            await loader.present();
+            const cloudpilot = await this.cloudpilotService.cloudpilot;
+
+            const walker = await this.fstools.createZipfileWalker(zipData);
+            if (walker.GetState() === ZipfileWalkerState.error) {
+                await this.alertService.errorMessage('Import failed: unable to read zip file.');
+                return;
+            }
+
+            const entriesTotal = walker.GetTotalEntries();
+            const names = new Set<string>((await this.getAllCards()).map((card) => card.name));
+            let iEntry = 1;
+
+            while (walker.GetState() === ZipfileWalkerState.open) {
+                loader.message = `Importing ${iEntry++}/${entriesTotal}...`;
+
+                let filename = walker.GetCurrentEntryName();
+                if (!SUFFIX_PATTERN.test(filename)) {
+                    await this.alertService.errorMessage(
+                        `${filename} has the wrong suffix to be considered as a card image.`,
+                    );
+
+                    walker.Next();
+                    continue;
+                }
+
+                let content = walker.GetCurrentEntryContent();
+
+                if (filename.endsWith('.gz') && content) {
+                    content = await this.fstools.gunzip(content);
+                    filename = filename.substring(0, filename.length - 3);
+                }
+
+                if (content === undefined) {
+                    await this.alertService.errorMessage(`Failed to extract ${filename}.`);
+
+                    walker.Next();
+                    continue;
+                }
+
+                if (cloudpilot.getCardSupportLevel(content.length) === CardSupportLevel.unsupported) {
+                    await this.alertService.errorMessage(`${filename} is not a valid card image.`);
+
+                    walker.Next();
+                    continue;
+                }
+
+                const name = disambiguateName(filename.replace(SUFFIX_PATTERN, ''), (n) => names.has(n));
+
+                await this.doCreateCardFromImage(name, content, false, true);
+
+                walker.Next();
+            }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (e: any) {
+            await loader.dismiss();
+            await this.alertService.errorMessage(`Failed to import card images: ${e?.message ?? 'unknown error'}`);
+        } finally {
+            void loader.dismiss();
+        }
+    }
+
+    private async doCreateCardFromImage(
+        name: string,
+        image: Uint8Array,
+        dontFsckAutomatically: boolean,
+        skipFsck = dontFsckAutomatically,
+    ): Promise<void> {
+        const cardWithoutId: Omit<StorageCard, 'id'> = {
+            storageId: newStorageId(),
+            name,
+            size: image.length,
+            status: StorageCardStatus.clean,
+            dontFsckAutomatically,
+        };
+        const data32 = new Uint32Array(image.buffer, image.byteOffset, image.byteLength >>> 2);
+
+        if (skipFsck) {
+            await this.storageService.importStorageCard(cardWithoutId, data32);
+        } else {
+            const [fixedData32, checkedCardWithoutId] = await this.fsckNewCard(data32, cardWithoutId);
+
+            await this.storageService.importStorageCard(checkedCardWithoutId, fixedData32);
+        }
     }
 
     private async getCardData(card: StorageCard, gzipFilename?: string): Promise<Uint8Array | undefined> {

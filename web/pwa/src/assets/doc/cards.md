@@ -24,6 +24,7 @@ desired content into this new virtual card.
 # Managing Cards
 
 ### Adding a card
+
 Tap the plus button in the top right corner to add a card. You can either create
 a blank card, or you can import an existing image file into CloudpilotEmu.
 
@@ -52,6 +53,17 @@ If you wish to export an image of a current card in CloudpilotEmu:
 
 You can choose to either save a gzip compressed or a plain file system image.
 An image of the card will then proceed to download.
+
+### Mass exporting and importing cards
+
+Select the "export" icon from the toolbar in order to start selecting caeds
+from the list for export. All selected cards will be exported as a single
+zip archive.
+
+Similarly, a zip archive with card images can be imported in order to add all of
+them to CloudpilotEmu. Note that you will not be prompted to change the
+card names or settings during import in this case - you'll have to make any
+adjustments afterwards.
 
 ### Deleting a card
 To delete a card:

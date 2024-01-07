@@ -73,7 +73,7 @@ export class SessionService {
             while (zipfileWalker.GetState() === ZipfileWalkerState.open) {
                 loader.message = `Importing ${iEntry++}/${entriesTotal}...`;
 
-                const sessionImage = /\.(bin|img)$/.test(zipfileWalker.GetCurrentEntryName())
+                const sessionImage = /\.(bin|img)$/i.test(zipfileWalker.GetCurrentEntryName())
                     ? cloudpilot.deserializeSessionImage<SessionMetadata>(zipfileWalker.GetCurrentEntryContent())
                     : undefined;
 
