@@ -181,8 +181,25 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         this.mode = 'select-for-export';
     }
 
-    onSelectionDone(): void {
+    @debounce()
+    async onSelectionDone(): Promise<void> {
         this.mode = 'manage';
+
+        switch (this.selection.size) {
+            case 0:
+                break;
+
+            case 1: {
+                const card = await this.storageCardService.getCard(Array.from(this.selection)[0]);
+                if (card) await this.saveCard(card);
+
+                break;
+            }
+
+            default:
+                await this.storageCardService.saveCards(Array.from(this.selection));
+                break;
+        }
     }
 
     onSelectAll(): void {

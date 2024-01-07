@@ -22,6 +22,10 @@ export function filenameForSessions(): string {
     return `${filenameFragment('sessions')}.zip`;
 }
 
+export function filenameForCards(): string {
+    return `${filenameFragment('cards')}.zip`;
+}
+
 export function filenameForBackup(session: Session, includeRomDatabases: boolean): string {
     return `backup_${filenameFragment(session.name)}${includeRomDatabases ? '_with_rom' : ''}.zip`;
 }

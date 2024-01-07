@@ -169,6 +169,10 @@ export class SessionsPage implements DragDropClient, DoCheck {
         this.mode = 'select-for-export';
     }
 
+    ionViewDidLeave(): void {
+        this.mode = 'manage';
+    }
+
     @debounce()
     async onSelectionDone(): Promise<void> {
         const sessions = new Map(this.sessionService.getSessions().map((session) => [session.id, session]));
@@ -185,10 +189,6 @@ export class SessionsPage implements DragDropClient, DoCheck {
         if (selectedSessions.length > 1) {
             await this.sessionService.saveSessions(selectedSessions);
         }
-    }
-
-    ionViewDidLeave(): void {
-        this.mode = 'manage';
     }
 
     onSelectAll(): void {
