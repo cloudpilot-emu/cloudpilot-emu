@@ -197,7 +197,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
             }
 
             default:
-                await this.storageCardService.saveCards(Array.from(this.selection));
+                await this.exportSelection(Array.from(this.selection));
                 break;
         }
     }
@@ -209,6 +209,31 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
     toggleSelection(card: StorageCard): void {
         if (this.selection.has(card.id)) this.selection.delete(card.id);
         else this.selection.add(card.id);
+    }
+
+    private async exportSelection(selection: Array<number>): Promise<void> {
+        const cards = new Map(await this.storageCardService.getAllCards().map((card) => [card.id, card]));
+
+        const size = selection.map((id) => cards.get(id)?.size).reduce((acc, x): number => acc! + (x ?? 0), 0)!;
+        if (size > 256 * 1024 * 1024) {
+            let abort = true;
+
+            await this.alertService.message(
+                'Warning',
+                `
+                    You are about to export a large amount of data. This may consume a lot of memory and can crash the browser.
+                    Are you sure you want to continue?
+                `,
+                {
+                    Continue: () => (abort = false),
+                },
+                'Cancel',
+            );
+
+            if (abort) return;
+        }
+
+        await this.storageCardService.saveCards(selection);
     }
 
     private handleFilesFromDrop(files: Array<FileDescriptor>): void {
@@ -257,7 +282,11 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
             let install = false;
             await this.alertService.message(
                 'Mass import',
-                'CloudpilotEmu will attempt to import all card images in the selected zip archive. Are you sure you want to continue?',
+                `
+                    CloudpilotEmu will attempt to import all card images in the selected zip archive.
+                    Importing large archives (several 100MB) requires a lot of memory and may crash the browser if the archive is too large.
+                    Are you sure you want to continue?
+                `,
                 { Continue: () => (install = true) },
                 'Cancel',
             );

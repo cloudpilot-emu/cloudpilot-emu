@@ -235,7 +235,11 @@ export class SessionsPage implements DragDropClient, DoCheck {
             let install = false;
             await this.alertService.message(
                 'Mass import',
-                'CloudpilotEmu will attempt to import all sessions in the selected zip archive. Are you sure you want to continue?',
+                `
+                    CloudpilotEmu will attempt to import all sessions in the selected zip archive.
+                    Importing large archives (several 100MB) requires a lot of memory and may crash the browser if the archive is too large.
+                    Are you sure you want to continue?
+                `,
                 { Continue: () => (install = true) },
                 'Cancel',
             );

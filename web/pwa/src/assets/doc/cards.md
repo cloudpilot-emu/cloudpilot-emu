@@ -63,7 +63,12 @@ zip archive.
 Similarly, a zip archive with card images can be imported in order to add all of
 them to CloudpilotEmu. Note that you will not be prompted to change the
 card names or settings during import in this case - you'll have to make any
-adjustments afterwards.
+adjustments afterwards. In addition, no file system check will be performed
+on the imported cards - they will be checked when they are used for the first
+time.
+
+**WARNING:** Mass export and import can consume a lot of memory and may
+crash the browser if the available memory is exceeded.
 
 ### Deleting a card
 To delete a card:
