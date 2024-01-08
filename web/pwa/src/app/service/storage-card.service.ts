@@ -460,18 +460,18 @@ export class StorageCardService {
         name: string,
         image: Uint8Array,
         dontFsckAutomatically: boolean,
-        skipFsck = dontFsckAutomatically,
+        skipFsck = false,
     ): Promise<void> {
         const cardWithoutId: Omit<StorageCard, 'id'> = {
             storageId: newStorageId(),
             name,
             size: image.length,
-            status: StorageCardStatus.clean,
+            status: skipFsck ? StorageCardStatus.dirty : StorageCardStatus.clean,
             dontFsckAutomatically,
         };
         const data32 = new Uint32Array(image.buffer, image.byteOffset, image.byteLength >>> 2);
 
-        if (skipFsck) {
+        if (skipFsck || dontFsckAutomatically) {
             await this.storageService.importStorageCard(cardWithoutId, data32);
         } else {
             const [fixedData32, checkedCardWithoutId] = await this.fsckNewCard(data32, cardWithoutId);

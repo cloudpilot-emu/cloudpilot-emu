@@ -46,6 +46,7 @@ export class AlertService {
                 })),
                 { text: closeButtonLabel, role: 'cancel' },
             ],
+            cssClass: 'alert-message',
         });
 
         await alert.present();
