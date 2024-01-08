@@ -224,11 +224,11 @@ export class GunzipContext {
     getDecompressedData(): Uint8Array {
         const nativeContext = this.getNativeContext();
 
-        const uncompressedSize = nativeContext.GetUncompressedSize();
+        const size = nativeContext.GetUncompressedSize();
         const buffer = nativeContext.GetUncompressedData();
         const bufferPtr = this.module.getPointer(buffer);
 
-        return this.module.HEAPU8.subarray(bufferPtr, bufferPtr + uncompressedSize);
+        return this.module.HEAPU8.subarray(bufferPtr, bufferPtr + size);
     }
 
     private getNativeContext(): GunzipContextNative {
