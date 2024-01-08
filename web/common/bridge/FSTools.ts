@@ -175,19 +175,12 @@ export class FsckContext {
 export class GunzipContext {
     private constructor(
         private module: Module,
-        gzippedData: Uint8Array,
+        gzippedData?: Uint8Array,
     ) {
-        const fsTools = new module.FSTools();
-        const buffer = fsTools.Malloc(gzippedData.length);
-        const bufferPtr = module.getPointer(buffer);
-
-        module.HEAPU8.subarray(bufferPtr, bufferPtr + gzippedData.length).set(gzippedData);
-        module.destroy(fsTools);
-
-        this.nativeContext = new module.GunzipContext(buffer, gzippedData.length, GUNZIP_SLICE_SIZE);
+        if (gzippedData) this.initialize(gzippedData);
     }
 
-    static async create(gzippedData: Uint8Array, instantiateWasm: InstantiateFunction): Promise<GunzipContext> {
+    static async create(instantiateWasm: InstantiateFunction, gzippedData?: Uint8Array): Promise<GunzipContext> {
         const module = await createModule({
             print: (x: string) => console.log(x),
             printErr: (x: string) => console.error(x),
@@ -197,13 +190,31 @@ export class GunzipContext {
         return new GunzipContext(module, gzippedData);
     }
 
+    initialize(gzippedData: Uint8Array): void {
+        if (this.nativeContext) this.module.destroy(this.nativeContext);
+
+        const fsTools = new this.module.FSTools();
+
+        if (this.bufferPtr) fsTools.Free(this.bufferPtr);
+        this.bufferPtr = fsTools.Malloc(gzippedData.length);
+
+        const buffer = this.module.getPointer(this.bufferPtr);
+
+        this.module.HEAPU8.subarray(buffer, buffer + gzippedData.length).set(gzippedData);
+        this.module.destroy(fsTools);
+
+        this.nativeContext = new this.module.GunzipContext(this.bufferPtr, gzippedData.length, GUNZIP_SLICE_SIZE);
+    }
+
     async gunzip(): Promise<boolean> {
-        while (this.nativeContext.Continue() === GunzipState.more) {
+        const nativeContext = this.getNativeContext();
+
+        while (nativeContext.Continue() === GunzipState.more) {
             await new Promise((r) => setTimeout(r, 0));
         }
 
-        if (this.nativeContext.GetState() === GunzipState.error) {
-            console.error(`gunzip failed: ${this.nativeContext.GetError()}`);
+        if (nativeContext.GetState() === GunzipState.error) {
+            console.error(`gunzip failed: ${nativeContext.GetError()}`);
             return false;
         }
 
@@ -211,31 +222,34 @@ export class GunzipContext {
     }
 
     getDecompressedData(): Uint8Array {
-        const uncompressedSize = this.nativeContext.GetUncompressedSize();
-        const buffer = this.nativeContext.GetUncompressedData();
+        const nativeContext = this.getNativeContext();
+
+        const uncompressedSize = nativeContext.GetUncompressedSize();
+        const buffer = nativeContext.GetUncompressedData();
         const bufferPtr = this.module.getPointer(buffer);
 
         return this.module.HEAPU8.subarray(bufferPtr, bufferPtr + uncompressedSize);
     }
 
-    private nativeContext: GunzipContextNative;
+    private getNativeContext(): GunzipContextNative {
+        if (!this.nativeContext) throw new Error('gunzip context not initialized');
+
+        return this.nativeContext;
+    }
+
+    private nativeContext: GunzipContextNative | undefined;
+    private bufferPtr: VoidPtr | undefined;
 }
 
 export class GzipContext {
     private constructor(
         private module: Module,
-        private uncompressedDataSize: number,
+        uncompressedDataSize?: number,
     ) {
-        const fsTools = new module.FSTools();
-        const buffer = fsTools.Malloc(uncompressedDataSize);
-        this.uncompressedDataPtr = module.getPointer(buffer);
-
-        module.destroy(fsTools);
-
-        this.nativeContext = new module.GzipContext(buffer, uncompressedDataSize, GZIP_SLICE_SIZE);
+        if (uncompressedDataSize !== undefined) this.initialize(uncompressedDataSize);
     }
 
-    static async create(uncompressedDataSize: number, instantiateWasm: InstantiateFunction): Promise<GzipContext> {
+    static async create(instantiateWasm: InstantiateFunction, uncompressedDataSize?: number): Promise<GzipContext> {
         const module = await createModule({
             print: (x: string) => console.log(x),
             printErr: (x: string) => console.error(x),
@@ -245,34 +259,50 @@ export class GzipContext {
         return new GzipContext(module, uncompressedDataSize);
     }
 
+    initialize(uncompressedDataSize: number): void {
+        if (this.nativeContext) this.module.destroy(this.nativeContext);
+
+        const fsTools = new this.module.FSTools();
+
+        if (this.bufferPtr) fsTools.Free(this.bufferPtr);
+        this.bufferPtr = fsTools.Malloc(uncompressedDataSize);
+        this.uncompressedDataSize = uncompressedDataSize;
+
+        this.module.destroy(fsTools);
+
+        this.nativeContext = new this.module.GzipContext(this.bufferPtr, uncompressedDataSize, GZIP_SLICE_SIZE);
+    }
+
     getBuffer(): Uint8Array {
-        return this.module.HEAPU8.subarray(
-            this.uncompressedDataPtr,
-            this.uncompressedDataPtr + this.uncompressedDataSize,
-        );
+        if (!this.bufferPtr || this.uncompressedDataSize === undefined) throw new Error('gzip context not initialized');
+        const ptr = this.module.getPointer(this.bufferPtr);
+
+        return this.module.HEAPU8.subarray(ptr, ptr + this.uncompressedDataSize);
     }
 
     setFilename(name: string): this {
-        this.nativeContext.SetFilename(name);
+        this.getNativeContext().SetFilename(name);
 
         return this;
     }
 
     setMtime(mtime: number): this {
-        this.nativeContext.SetMtime(mtime);
+        this.getNativeContext().SetMtime(mtime);
 
         return this;
     }
 
     async gzip(): Promise<boolean> {
-        this.nativeContext.Continue();
+        const nativeContext = this.getNativeContext();
 
-        while (this.nativeContext.Continue() === GzipState.more) {
+        nativeContext.Continue();
+
+        while (nativeContext.Continue() === GzipState.more) {
             await new Promise((r) => setTimeout(r, 0));
         }
 
-        if (this.nativeContext.GetState() === GzipState.error) {
-            console.error(`gzip failed: ${this.nativeContext.GetError()}`);
+        if (nativeContext.GetState() === GzipState.error) {
+            console.error(`gzip failed: ${nativeContext.GetError()}`);
             return false;
         }
 
@@ -280,15 +310,24 @@ export class GzipContext {
     }
 
     getGzipData(): Uint8Array {
-        const uncompressedSize = this.nativeContext.GetGzipSize();
-        const buffer = this.nativeContext.GetGzipData();
+        const nativeContext = this.getNativeContext();
+
+        const uncompressedSize = nativeContext.GetGzipSize();
+        const buffer = nativeContext.GetGzipData();
         const bufferPtr = this.module.getPointer(buffer);
 
         return this.module.HEAPU8.subarray(bufferPtr, bufferPtr + uncompressedSize);
     }
 
-    private nativeContext: GzipContextNative;
-    private uncompressedDataPtr: number;
+    private getNativeContext(): GzipContextNative {
+        if (!this.nativeContext) throw new Error('gzip context not initialized');
+
+        return this.nativeContext;
+    }
+
+    private nativeContext: GzipContextNative | undefined;
+    private uncompressedDataSize: number | undefined;
+    private bufferPtr: VoidPtr | undefined;
 }
 
 const cachedInstantiateByUrl = new Map<string, InstantiateFunction>();
@@ -313,15 +352,19 @@ export class FsTools {
     }
 
     async gunzip(gzippedData: Uint8Array): Promise<Uint8Array | undefined> {
-        const context = await GunzipContext.create(gzippedData, this.instantiante);
+        const context = await GunzipContext.create(this.instantiante, gzippedData);
 
         if (!(await context.gunzip())) return undefined;
 
         return context.getDecompressedData();
     }
 
-    createGzipContext(uncompressedDataSize: number): Promise<GzipContext> {
-        return GzipContext.create(uncompressedDataSize, this.instantiante);
+    createGunzipContext(gzippedData?: Uint8Array): Promise<GunzipContext> {
+        return GunzipContext.create(this.instantiante, gzippedData);
+    }
+
+    createGzipContext(uncompressedDataSize?: number): Promise<GzipContext> {
+        return GzipContext.create(this.instantiante, uncompressedDataSize);
     }
 
     createFsckContext(size: number): Promise<FsckContext> {

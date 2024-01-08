@@ -330,6 +330,8 @@ export class StorageService {
     @guard()
     loadCardData(id: number, target: Uint32Array, owner: CardOwner): Promise<void> {
         return this.ngZone.runOutsideAngular(async () => {
+            target.fill(0);
+
             const tx = await this.newTransaction(OBJECT_STORE_STORAGE_CARD, OBJECT_STORE_STORAGE);
             this.storageCardContext.assertOwnership(id, owner);
 

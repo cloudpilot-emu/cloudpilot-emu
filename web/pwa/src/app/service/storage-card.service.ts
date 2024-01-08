@@ -1,6 +1,6 @@
 import { CardSupportLevel } from '@common/bridge/Cloudpilot';
 import { CardOwner, StorageCardContext } from './storage-card-context';
-import { FsckContext, FsckResult } from '@common/bridge/FSTools';
+import { FsckContext, FsckResult, GzipContext } from '@common/bridge/FSTools';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 import { AlertService } from './alert.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
@@ -348,6 +348,7 @@ export class StorageCardService {
         try {
             await loader.present();
             const names = new Set<string>();
+            const gzipContext = await this.fstools.createGzipContext();
 
             let i = 0;
             for (const id of ids) {
@@ -361,7 +362,7 @@ export class StorageCardService {
                 const name = disambiguateName(card.name, (name) => names.has(name));
                 names.add(name);
 
-                const cardData = await this.getCardData(card, name);
+                const cardData = await this.getCardData(card, name, gzipContext);
                 if (!cardData) continue;
 
                 await createZipContext.addEntry(`${name}.img.gz`, cardData);
@@ -401,6 +402,7 @@ export class StorageCardService {
 
             const entriesTotal = walker.GetTotalEntries();
             const names = new Set<string>((await this.getAllCards()).map((card) => card.name));
+            const gunzipContext = await this.fstools.createGunzipContext();
             let iEntry = 1;
 
             while (walker.GetState() === ZipfileWalkerState.open) {
@@ -419,7 +421,9 @@ export class StorageCardService {
                 let content = walker.GetCurrentEntryContent();
 
                 if (filename.endsWith('.gz') && content) {
-                    content = await this.fstools.gunzip(content);
+                    gunzipContext.initialize(content);
+
+                    content = (await gunzipContext.gunzip()) ? gunzipContext.getDecompressedData() : undefined;
                     filename = filename.substring(0, filename.length - 3);
                 }
 
@@ -476,10 +480,18 @@ export class StorageCardService {
         }
     }
 
-    private async getCardData(card: StorageCard, gzipFilename?: string): Promise<Uint8Array | undefined> {
+    private async getCardData(
+        card: StorageCard,
+        gzipFilename?: string,
+        gzipContext?: GzipContext,
+    ): Promise<Uint8Array | undefined> {
         let cardData: Uint32Array | undefined;
 
-        const gzipContext = gzipFilename && (await this.fstools.createGzipContext(card.size));
+        if (gzipFilename !== undefined) {
+            gzipContext = gzipContext ?? (await this.fstools.createGzipContext());
+            gzipContext.initialize(card.size);
+        }
+
         if (gzipContext) {
             const buffer = gzipContext.getBuffer();
             cardData = new Uint32Array(buffer.buffer, buffer.byteOffset, buffer.byteLength >> 2);
