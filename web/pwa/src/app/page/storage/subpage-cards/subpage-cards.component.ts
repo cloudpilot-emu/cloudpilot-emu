@@ -1,6 +1,6 @@
 import { ActionSheetController, AlertController, LoadingController, ModalController } from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit } from '@angular/core';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { NewCardSize, StorageCardService } from '@pwa/service/storage-card.service';
 import { AlertService } from '@pwa/service/alert.service';
@@ -10,7 +10,6 @@ import { ErrorService } from '@pwa/service/error.service';
 import { HelpComponent } from '@pwa/component/help/help.component';
 import { NewCardDialogComponent } from '../new-card-dialog/new-card-dialog.component';
 import { StorageCard } from '@pwa/model/StorageCard';
-import { changeDetector } from '@pwa/helper/changeDetect';
 import { debounce } from '@pwa/helper/debounce';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
@@ -24,9 +23,8 @@ type Mode = 'manage' | 'select-for-export';
     selector: 'app-subpage-cards',
     templateUrl: './subpage-cards.component.html',
     styleUrls: ['./subpage-cards.component.scss'],
-    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SubpageCardsComponent implements DoCheck, OnInit {
+export class SubpageCardsComponent implements OnInit {
     constructor(
         private actionSheetController: ActionSheetController,
         public storageCardService: StorageCardService,
@@ -38,22 +36,14 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         private fileService: FileService,
         private loadingController: LoadingController,
         private fstools: FsToolsService,
-        private cd: ChangeDetectorRef,
-    ) {
-        this.checkCards = changeDetector(cd, [], () => this.storageCardService.getAllCards());
-    }
+    ) {}
 
     ngOnInit(): void {
         if (this.selfReference) this.selfReference.ref = this;
     }
 
-    ngDoCheck(): void {
-        this.checkCards();
-    }
-
     ionViewDidLeave(): void {
         this.mode = 'manage';
-        this.cd.markForCheck();
     }
 
     get cards(): Array<StorageCard> {
@@ -369,8 +359,6 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
 
     @Input()
     selfReference: { ref: SubpageCardsComponent } | undefined;
-
-    private checkCards: () => void;
 
     mode: Mode = 'manage';
     selection = new Set<number>();
