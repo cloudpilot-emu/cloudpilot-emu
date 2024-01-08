@@ -367,6 +367,10 @@ export class StorageCardService {
 
                 await createZipContext.addEntry(`${name}.img.gz`, cardData);
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (e: any) {
+            await loader.dismiss();
+            await this.alertService.errorMessage(`Failed to export card images: ${e?.message ?? 'unknown error'}`);
         } finally {
             void loader.dismiss();
         }
