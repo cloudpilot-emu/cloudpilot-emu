@@ -1,9 +1,8 @@
 # Next version
 
--   Support for mass exporting multiple sessions as a zip archive.
--   Support mass importing multiple sessions from a zip archive.
--   Support for mass exporting multiple cards as a zip archive.
--   Support mass importing multiple cards from a zip archive.
+-   Mass export multiple sessions or cards as a zip archive.
+-   Mass import multiple sessions or cards from a zip archive.
+-   Fixes and UI performance optimizations
 
 # Version 1.9.4
 
