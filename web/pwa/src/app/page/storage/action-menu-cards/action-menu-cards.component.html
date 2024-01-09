@@ -1,9 +1,9 @@
 <ion-list>
-    <ion-item lines="full" button [detail]="false" (click)="onExport?.()">
+    <ion-item lines="full" button [detail]="false" (click)="onExport?.()" [disabled]="cardCount === 0">
         <ion-icon name="share-outline" slot="end"></ion-icon>
         Save
     </ion-item>
-    <ion-item lines="full" button [detail]="false" (click)="onDelete?.()">
+    <ion-item lines="full" button [detail]="false" (click)="onDelete?.()" [disabled]="cardCount === 0">
         <ion-icon name="trash-outline" slot="end"></ion-icon>
         Delete
     </ion-item>

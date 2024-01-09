@@ -7,6 +7,9 @@ import { Component, Input } from '@angular/core';
 })
 export class ActionMenuCardsComponent {
     @Input()
+    cardCount = 0;
+
+    @Input()
     onExport: (() => void) | undefined;
 
     @Input()

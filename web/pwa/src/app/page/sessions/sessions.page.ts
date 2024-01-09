@@ -213,6 +213,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
             component: ActionMenuComponent,
             event: e,
             componentProps: {
+                sessionCount: this.sessionCount,
                 onExport: () => {
                     void popover.dismiss();
                     this.startMassExport();

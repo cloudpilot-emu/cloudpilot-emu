@@ -229,6 +229,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
             component: ActionMenuCardsComponent,
             event: e,
             componentProps: {
+                cardCount: this.cards.length,
                 onExport: () => {
                     void popover.dismiss();
                     this.startMassExport();

@@ -7,6 +7,9 @@ import { Component, Input } from '@angular/core';
 })
 export class ActionMenuComponent {
     @Input()
+    sessionCount = 0;
+
+    @Input()
     onExport: (() => void) | undefined;
 
     @Input()
