@@ -8,9 +8,10 @@ import { SessionItemComponent } from './session-item/session-item.component';
 import { SessionsPage } from './sessions.page';
 import { SharedComponentModule } from '@pwa/component/shared-component.module';
 import { NavWrapperComponent } from './nav-wrapper/nav-wrapper.component';
+import { ActionMenuComponent } from './action-menu/action-menu.component';
 
 @NgModule({
     imports: [CommonModule, FormsModule, IonicModule, ReactiveFormsModule, SharedComponentModule],
-    declarations: [SessionsPage, SessionItemComponent, ContextMenuComponent, NavWrapperComponent],
+    declarations: [SessionsPage, SessionItemComponent, ContextMenuComponent, NavWrapperComponent, ActionMenuComponent],
 })
 export class SessionsPageModule {}

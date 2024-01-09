@@ -1,57 +1,79 @@
 <ion-header>
-  <ion-toolbar>
-    <ion-title>{{title}}</ion-title>
+    <ion-toolbar>
+        <ion-title
+            ><div
+                class="ios-title-placeholder"
+                [style.width]="iosPlaceholderWidth"
+                *ngIf="config.get('mode') === 'ios'"
+            ></div>
+            {{ title }}</ion-title
+        >
 
-    <ion-buttons slot="end">
-      <ion-button [disabled]="installFileDisabled" (click)="installFiles()">
-        <ion-icon name="download-outline"></ion-icon>
-      </ion-button>
-      <ion-button *ngIf="!navigation.isLocked()" (click)="navigation.lock()">
-        <ion-icon name="lock-open-outline"></ion-icon>
-      </ion-button>
-      <ion-button *ngIf="navigation.isLocked()" (click)="navigation.unlock()">
-        <ion-icon name="lock-closed-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
+        <ion-buttons slot="primary">
+            <ion-button [disabled]="installFileDisabled" (click)="installFiles()">
+                <ion-icon name="download-outline"></ion-icon>
+            </ion-button>
+            <ion-button *ngIf="!navigation.isLocked()" (click)="navigation.lock()">
+                <ion-icon name="lock-open-outline"></ion-icon>
+            </ion-button>
+            <ion-button *ngIf="navigation.isLocked()" (click)="navigation.unlock()">
+                <ion-icon name="lock-closed-outline"></ion-icon>
+            </ion-button>
+        </ion-buttons>
 
-    <ion-buttons slot="start">
-      <ion-button (click)="openContextMenu($event)">
-        <ion-icon name="ellipsis-vertical-outline"></ion-icon>
-      </ion-button>
-      <ion-button *ngIf="eventHandlingService.isGameMode()" (click)="showGameModeHint()">
-        <ion-icon name="game-controller-outline"></ion-icon>
-      </ion-button>
-      <ion-button *ngIf="proxyService.isConnected()" (click)="showProxyConnectedHint()">
-        <ion-icon name="swap-vertical-outline"></ion-icon>
-      </ion-button>
-      <ion-button *ngIf="performanceWatchdogService.isSlowdownDetected()" (click)="showSlowdowndHint()">
-        <ion-icon name="speedometer-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-  </ion-toolbar>
+        <ion-buttons slot="secondary">
+            <ion-button (click)="openContextMenu($event)" *ngIf="config.get('mode') === 'ios'">
+                <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+            </ion-button>
+            <ion-button *ngIf="eventHandlingService.isGameMode()" (click)="showGameModeHint()">
+                <ion-icon name="game-controller-outline"></ion-icon>
+            </ion-button>
+            <ion-button *ngIf="proxyService.isConnected()" (click)="showProxyConnectedHint()">
+                <ion-icon name="swap-vertical-outline"></ion-icon>
+            </ion-button>
+            <ion-button *ngIf="performanceWatchdogService.isSlowdownDetected()" (click)="showSlowdowndHint()">
+                <ion-icon name="speedometer-outline"></ion-icon>
+            </ion-button>
+            <ion-button (click)="openContextMenu($event)" *ngIf="config.get('mode') !== 'ios'">
+                <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+            </ion-button>
+        </ion-buttons>
+    </ion-toolbar>
 </ion-header>
 
-<ion-content [class.locked]="navigation.isLocked()">
+<ion-content [class.locked]="navigation.isLocked()" (contextmenu)="onContextMenu($event)">
+    <div
+        class="container running-session"
+        [style.display]="
+            emulationState.getCurrentSession() && !emulationState.getCurrentSession()?.wasResetForcefully
+                ? undefined
+                : 'none'
+        "
+        (touchstart)="cancelIfEmulationActive($event)"
+        (touchmove)="cancelIfEmulationActive($event)"
+    >
+        <canvas
+            #canvas
+            [style.width]="cssWidth"
+            [style.height]="cssHeight"
+            [style.display]="emulationState.getCurrentSession() ? 'block' : 'none'"
+        ></canvas>
+    </div>
 
-  <div class="container running-session"
-    [style.display]="(emulationState.getCurrentSession() && !emulationState.getCurrentSession()?.wasResetForcefully) ? undefined : 'none'"
-    (touchstart)="cancelIfEmulationActive($event)" (touchmove)="cancelIfEmulationActive($event)">
-    <canvas #canvas [style.width]="cssWidth" [style.height]="cssHeight"
-      [style.display]="emulationState.getCurrentSession() ? 'block' : 'none'"></canvas>
-  </div>
+    <div
+        class="container no-session"
+        *ngIf="!emulationState.getCurrentSession()?.wasResetForcefully ? undefined : 'none'"
+    >
+        The device was reset forcefully. How do you want to boot?
 
-  <div class="container no-session"
-    *ngIf="!emulationState.getCurrentSession()?.wasResetForcefully ? undefined : 'none'">
+        <ion-button type="button" color="light" (click)="bootAfterForcefulReset()">Normal boot</ion-button>
+        <ion-button type="button" color="light" (click)="bootAfterForcefulResetNoExtensions()"
+            >No extensions</ion-button
+        >
+        <ion-button type="button" color="light" (click)="bootAfterForcefulResetHardReset()">Hard reset</ion-button>
+    </div>
 
-    The device was reset forcefully. How do you want to boot?
-
-    <ion-button type="button" color="light" (click)="bootAfterForcefulReset()">Normal boot</ion-button>
-    <ion-button type="button" color="light" (click)="bootAfterForcefulResetNoExtensions()">No extensions</ion-button>
-    <ion-button type="button" color="light" (click)="bootAfterForcefulResetHardReset()">Hard reset</ion-button>
-  </div>
-
-  <div class="container no-session" *ngIf="!emulationState.getCurrentSession() && boostrapComplete">
-    <div>No session selected</div>
-  </div>
-
+    <div class="container no-session" *ngIf="!emulationState.getCurrentSession() && boostrapComplete">
+        <div>No session selected</div>
+    </div>
 </ion-content>

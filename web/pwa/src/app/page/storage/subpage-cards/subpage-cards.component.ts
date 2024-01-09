@@ -1,4 +1,10 @@
-import { ActionSheetController, AlertController, LoadingController, ModalController } from '@ionic/angular';
+import {
+    ActionSheetController,
+    AlertController,
+    LoadingController,
+    ModalController,
+    PopoverController,
+} from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
@@ -18,6 +24,7 @@ import { FsToolsService } from '@pwa/service/fstools.service';
 
 import helpPage from '@assets/doc/cards.md';
 import { SessionService } from '@pwa/service/session.service';
+import { ActionMenuCardsComponent } from '../action-menu-cards/action-menu-cards.component';
 
 type Mode = 'manage' | 'select-for-export';
 
@@ -39,6 +46,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         private fileService: FileService,
         private loadingController: LoadingController,
         private fstools: FsToolsService,
+        private popoverController: PopoverController,
         sessionService: SessionService,
         private cd: ChangeDetectorRef,
     ) {
@@ -213,6 +221,38 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
     toggleSelection(card: StorageCard): void {
         if (this.selection.has(card.id)) this.selection.delete(card.id);
         else this.selection.add(card.id);
+    }
+
+    @debounce()
+    async openActionMenu(e: MouseEvent, reference: 'event' | 'trigger'): Promise<void> {
+        const popover = await this.popoverController.create({
+            component: ActionMenuCardsComponent,
+            event: e,
+            componentProps: {
+                onExport: () => {
+                    void popover.dismiss();
+                    this.startMassExport();
+                    this.cd.markForCheck();
+                },
+                onHelp: () => {
+                    void popover.dismiss();
+                    void this.showHelp();
+                },
+            },
+            arrow: false,
+            translucent: true,
+            reference,
+        });
+
+        void popover.present();
+    }
+
+    onContextMenu(e: MouseEvent): void {
+        if (this.mode !== 'manage') return;
+
+        e.preventDefault();
+
+        void this.openActionMenu(e, 'event');
     }
 
     private async exportSelection(selection: Array<number>): Promise<void> {

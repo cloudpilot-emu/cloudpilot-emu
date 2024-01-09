@@ -1,6 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { DragDropClient, DragDropService } from '@pwa/service/drag-drop.service';
-import { ModalController, PopoverController } from '@ionic/angular';
+import { Config, ModalController, PopoverController } from '@ionic/angular';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
@@ -23,6 +23,7 @@ import { StorageService } from '@pwa/service/storage.service';
 import { TabsPage } from '@pwa/tabs/tabs.page';
 
 import helpUrl from '@assets/doc/emulation.md';
+import { debounce } from '@pwa/helper/debounce';
 
 @Component({
     selector: 'app-emulation',
@@ -49,6 +50,7 @@ export class EmulationPage implements DragDropClient {
         public performanceWatchdogService: PerformanceWatchdogService,
         private cloudpilotService: CloudpilotService,
         private dragDropService: DragDropService,
+        public config: Config,
     ) {}
 
     get cssWidth(): string {
@@ -96,7 +98,8 @@ export class EmulationPage implements DragDropClient {
             this.navigation.unlock();
         });
 
-    async openContextMenu(e: MouseEvent): Promise<void> {
+    @debounce()
+    async openContextMenu(e: MouseEvent, reference: 'event' | 'trigger' = 'trigger'): Promise<void> {
         const popover = await this.popoverController.create({
             component: ContextMenuComponent,
             event: e,
@@ -105,9 +108,16 @@ export class EmulationPage implements DragDropClient {
             },
             arrow: false,
             translucent: true,
+            reference,
         });
 
         void popover.present();
+    }
+
+    onContextMenu(e: MouseEvent): void {
+        e.preventDefault();
+
+        void this.openContextMenu(e, 'event');
     }
 
     handleDragDropEvent(e: DragEvent): void | Promise<void> {
@@ -190,6 +200,16 @@ export class EmulationPage implements DragDropClient {
 
         (await this.cloudpilotService.cloudpilot).resetHard();
         await this.launchEmulator();
+    }
+
+    get iosPlaceholderWidth(): string {
+        let i = 0;
+
+        if (this.eventHandlingService.isGameMode()) i++;
+        if (this.proxyService.isConnected()) i++;
+        if (this.performanceWatchdogService.isSlowdownDetected()) i++;
+
+        return i > 1 ? `${(i - 1) * 35}px` : '0';
     }
 
     public cancelIfEmulationActive(event: TouchEvent): void {

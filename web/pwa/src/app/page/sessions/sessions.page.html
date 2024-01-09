@@ -2,18 +2,14 @@
     <ion-toolbar *ngIf="mode === 'manage'">
         <ion-title>Sessions</ion-title>
         <ion-buttons slot="primary">
-            <ion-button (click)="startMassExport()" [disabled]="sessionService.isLoading() || sessions.length === 0">
-                <ion-icon name="share-outline"></ion-icon>
-            </ion-button>
-
             <ion-button (click)="importSession()">
                 <ion-icon name="add-outline"></ion-icon>
             </ion-button>
         </ion-buttons>
 
         <ion-buttons slot="secondary">
-            <ion-button (click)="showHelp()">
-                <ion-icon name="help-outline"></ion-icon>
+            <ion-button (click)="openActionMenu($event)">
+                <ion-icon name="ellipsis-vertical-outline"></ion-icon>
             </ion-button>
 
             <app-pwa-prompt></app-pwa-prompt>
@@ -37,7 +33,7 @@
     </ion-toolbar>
 </ion-header>
 
-<ion-content>
+<ion-content (contextmenu)="onContextMenu($event)">
     <ion-header collapse="condense">
         <ion-toolbar>
             <ion-title size="large" *ngIf="mode === 'manage'">Sessions</ion-title>

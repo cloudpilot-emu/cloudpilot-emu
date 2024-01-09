@@ -1,4 +1,4 @@
-import { AlertController, ModalController } from '@ionic/angular';
+import { AlertController, ModalController, PopoverController } from '@ionic/angular';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck } from '@angular/core';
 import { DragDropClient, DragDropService } from '@pwa//service/drag-drop.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
@@ -21,6 +21,7 @@ import deepEqual from 'deep-equal';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 
 import helpUrl from '@assets/doc/sessions.md';
+import { ActionMenuComponent } from './action-menu/action-menu.component';
 
 type Mode = 'manage' | 'select-for-export';
 
@@ -44,6 +45,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
         private router: Router,
         private cloudpilotService: CloudpilotService,
         private dragDropService: DragDropService,
+        private popoverController: PopoverController,
         private cd: ChangeDetectorRef,
     ) {
         this.checkSessions = changeDetector(cd, [], () => this.sessionService.getSessions());
@@ -203,6 +205,38 @@ export class SessionsPage implements DragDropClient, DoCheck {
     toggleSelection(session: Session): void {
         if (this.selection.has(session.id)) this.selection.delete(session.id);
         else this.selection.add(session.id);
+    }
+
+    @debounce()
+    async openActionMenu(e: MouseEvent, reference: 'event' | 'trigger'): Promise<void> {
+        const popover = await this.popoverController.create({
+            component: ActionMenuComponent,
+            event: e,
+            componentProps: {
+                onExport: () => {
+                    void popover.dismiss();
+                    this.startMassExport();
+                    this.cd.markForCheck();
+                },
+                onHelp: () => {
+                    void popover.dismiss();
+                    void this.showHelp();
+                },
+            },
+            arrow: false,
+            translucent: true,
+            reference,
+        });
+
+        void popover.present();
+    }
+
+    onContextMenu(e: MouseEvent): void {
+        if (this.mode !== 'manage') return;
+
+        e.preventDefault();
+
+        void this.openActionMenu(e, 'event');
     }
 
     private handleDropFiles(files: Array<FileDescriptor>): void {
