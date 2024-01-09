@@ -1,5 +1,5 @@
 import { AlertController, ModalController } from '@ionic/angular';
-import { ChangeDetectorRef, Component, DoCheck } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck } from '@angular/core';
 import { DragDropClient, DragDropService } from '@pwa//service/drag-drop.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { SessionSettings, SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
@@ -28,6 +28,7 @@ type Mode = 'manage' | 'select-for-export';
     selector: 'app-sessions',
     templateUrl: './sessions.page.html',
     styleUrls: ['./sessions.page.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SessionsPage implements DragDropClient, DoCheck {
     constructor(
@@ -46,10 +47,14 @@ export class SessionsPage implements DragDropClient, DoCheck {
         private cd: ChangeDetectorRef,
     ) {
         this.checkSessions = changeDetector(cd, [], () => this.sessionService.getSessions());
+        this.checkCurrentSessionId = changeDetector(cd, undefined, () => this.emulationState.getCurrentSession()?.id);
+        this.checkLoading = changeDetector(cd, true, () => this.sessionService.isLoading());
     }
 
     ngDoCheck(): void {
         this.checkSessions();
+        this.checkCurrentSessionId();
+        this.checkLoading();
     }
 
     ionViewDidEnter(): void {
@@ -360,5 +365,8 @@ export class SessionsPage implements DragDropClient, DoCheck {
     selection = new Set<number>();
 
     private checkSessions: () => void;
+    private checkCurrentSessionId: () => void;
+    private checkLoading: () => void;
+
     private currentSessionOverride: number | undefined;
 }

@@ -1,20 +1,39 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    DoCheck,
+    EventEmitter,
+    Input,
+    Output,
+} from '@angular/core';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { ContextMenuCardComponent } from '../context-menu-card/context-menu-card.component';
 import { PopoverController } from '@ionic/angular';
 import { StorageCardService } from '@pwa//service/storage-card.service';
+import { changeDetector } from '@pwa/helper/changeDetect';
+import { SessionService } from '@pwa/service/session.service';
 
 @Component({
     selector: 'app-storage-card',
     templateUrl: './storage-card.component.html',
     styleUrls: ['./storage-card.component.scss'],
+    changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class StorageCardComponent {
+export class StorageCardComponent implements DoCheck {
     constructor(
         private storageCardService: StorageCardService,
         private popoverController: PopoverController,
-    ) {}
+        sessionService: SessionService,
+        private cd: ChangeDetectorRef,
+    ) {
+        this.checkSessions = changeDetector(cd, [], () => sessionService.getSessions());
+    }
+
+    ngDoCheck(): void {
+        this.checkSessions();
+    }
 
     async onContextmenu(e: MouseEvent): Promise<void> {
         e.stopPropagation();
@@ -105,4 +124,6 @@ export class StorageCardComponent {
 
     @Output()
     save = new EventEmitter<StorageCard>();
+
+    private checkSessions: () => void;
 }
