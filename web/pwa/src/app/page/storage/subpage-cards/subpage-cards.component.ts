@@ -224,7 +224,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
     }
 
     @debounce()
-    async openActionMenu(e: MouseEvent, reference: 'event' | 'trigger'): Promise<void> {
+    async openActionMenu(e: MouseEvent, reference: 'event' | 'trigger' = 'trigger'): Promise<void> {
         const popover = await this.popoverController.create({
             component: ActionMenuCardsComponent,
             event: e,

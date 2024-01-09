@@ -208,7 +208,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
     }
 
     @debounce()
-    async openActionMenu(e: MouseEvent, reference: 'event' | 'trigger'): Promise<void> {
+    async openActionMenu(e: MouseEvent, reference: 'event' | 'trigger' = 'trigger'): Promise<void> {
         const popover = await this.popoverController.create({
             component: ActionMenuComponent,
             event: e,
