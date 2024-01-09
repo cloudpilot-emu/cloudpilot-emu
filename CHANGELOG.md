@@ -70,7 +70,7 @@
 
 # Version 1.8.11
 
--   Display a warning and workaround for a browser bug on iOS17 that may prevent
+-   Display a warning and workaround for a browser bug on iOS 17 that may prevent
     Cloudpilot from loading.
 
 # Version 1.8.10
