@@ -4,7 +4,7 @@
 -   Mass import multiple sessions or cards from a zip archive.
 -   Emulation menu can now be accessed by right clicking.
 -   Fix a few instances of dialogs being hidden by a loader.
--   Other UI fixes performance optimizations
+-   Other UI fixes performance and optimizations
 
 # Version 1.9.4
 
