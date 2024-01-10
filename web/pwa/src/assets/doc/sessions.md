@@ -30,23 +30,12 @@ Changes to the image format are backwards compatible, which means that a newer
 version of CloudpilotEmu can always import a session image written by an older
 version.
 
-### Mass exporting and importing sessions
-
-Select the "export" icon from the toolbar in order to start selecting sessions
-from the list for export. All selected sessions will be exported as a single
-zip archive.
-
-Similarly, a zip archive with sessions can be imported in order to add all of
-them to CloudpilotEmu. Note that you will not be prompted to change the
-session names or settings during import in this case - you'll have to make any
-adjustments afterwards.
-
 # The sessions list
 
 Selecting a session from the list will launch the session in the emulator and
 take you to the emulation tab.
 
-Swiping a session to the left or right will reveal options to save, edit, reset
+Swiping a session to the left or right will reveal options to export, edit, reset
 and delete a session. On devices that have a mouse or trackpad you can also do a
 right click on a session in order to open a context menu with the same options.
 
@@ -78,9 +67,10 @@ In this case, the name will we read from the device as soon as it is launched.
 In case you are using network hotsync to sync the virtual device with Palm Desktop
 this setting will conflict with the desktop. Turn it off by unchecking
 "Manage hotsync name".
-### Save
 
-Saving a session exports a session snapshot.
+### Export
+
+Exports a session lets you save a snapshot to disk.
 
 ### Reset
 
@@ -88,3 +78,19 @@ While the emulation is running, CloudpilotEmu persists the device RAM and state
 every second. Resetting the session will remove the saved state but preserve the
 contents of RAM. This forces the device to reboot the next time the session is
 launched.
+
+# Mass exporting and importing sessions
+
+Open the menu by tapping the three vertical dots and select "Export" in order to
+start selecting sessions from the list for export. All selected sessions will be
+exported as a single zip archive.
+
+Similarly, a zip archive with sessions can be imported in order to add all of
+them to CloudpilotEmu. Note that you will not be prompted to change the
+session names or settings during import in this case - you'll have to make any
+adjustments afterwards.
+
+# Mass deleting sessions
+
+Open the menu by tapping the three vertical dots and select "Export" in order to
+select multiple sessions to delete.
