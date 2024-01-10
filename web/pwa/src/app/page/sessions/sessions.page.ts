@@ -77,6 +77,7 @@ export class SessionsPage implements DragDropClient, DoCheck, OnInit {
 
     ionViewDidLeave(): void {
         this.mode = 'manage';
+        this.cd.detectChanges();
     }
 
     get sessions(): Array<Session> {
