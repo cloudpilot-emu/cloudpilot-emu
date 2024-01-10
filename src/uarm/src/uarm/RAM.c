@@ -14,7 +14,7 @@ struct ArmRam {
     uint32_t* buf;
 };
 
-static bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void* bufP) {
+bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void* bufP) {
     struct ArmRam* ram = (struct ArmRam*)userData;
     const uint8_t* addr = (uint8_t*)ram->buf + (pa - ram->adr);
 

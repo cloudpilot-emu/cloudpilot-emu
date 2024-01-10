@@ -23,7 +23,7 @@ struct ArmRom {
     enum RomChipType chipType;
 };
 
-static bool romAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write, void *bufP) {
+bool romAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write, void *bufP) {
     if (write) return false;
 
     struct ArmRomPiece *piece = (struct ArmRomPiece *)userData;

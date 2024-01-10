@@ -178,6 +178,10 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     soc->ram = ramInit(soc->mem, RAM_BASE, deviceGetRamSize(), ramBuffer);
     if (!soc->ram) ERR("Cannot init RAM");
 
+    soc->rom =
+        romInit(soc->mem, ROM_BASE, romPieces, romPieceSizes, romNumPieces, deviceGetRomMemType());
+    if (!soc->rom) ERR("Cannot init ROM1");
+
     switch (deviceGetRamTerminationStyle()) {
         case RamTerminationMirror:
 
@@ -198,10 +202,6 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
             __builtin_unreachable();
             break;
     }
-
-    soc->rom =
-        romInit(soc->mem, ROM_BASE, romPieces, romPieceSizes, romNumPieces, deviceGetRomMemType());
-    if (!soc->rom) ERR("Cannot init ROM1");
 
     soc->ic = socIcInit(soc->cpu, soc->mem, soc, socRev);
     if (!soc->ic) ERR("Cannot init PXA's IC");
