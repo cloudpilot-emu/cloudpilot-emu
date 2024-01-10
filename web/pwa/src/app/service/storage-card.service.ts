@@ -305,7 +305,7 @@ export class StorageCardService {
     }
 
     async deleteCard(id: number): Promise<void> {
-        const loader = await this.loadingController.create();
+        const loader = await this.loadingController.create({ message: 'Deleting...' });
         await loader.present();
 
         try {

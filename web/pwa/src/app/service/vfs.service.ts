@@ -192,7 +192,7 @@ export class VfsService {
     }
 
     async saveFile(entry: FileEntry): Promise<void> {
-        const loader = await this.loadingController.create();
+        const loader = await this.loadingController.create({ message: 'Preparing file...' });
         await loader.present();
 
         try {
@@ -377,7 +377,7 @@ export class VfsService {
     }
 
     async unpackArchive(zip: Uint8Array, destination: string): Promise<void> {
-        const loader = await this.loadingController.create();
+        const loader = await this.loadingController.create({ message: 'Extracting...' });
         await loader.present();
 
         try {
@@ -445,7 +445,7 @@ export class VfsService {
     async paste(destination: string): Promise<void> {
         if (!this.isClipboardPopulated()) return;
 
-        const loader = await this.loadingController.create();
+        const loader = await this.loadingController.create({ message: 'Pasting files...' });
         await loader.present();
         try {
             const result = await this.pasteUnchecked(destination);
@@ -474,7 +474,7 @@ export class VfsService {
     async addFiles(files: Array<FileDescriptor>, destination: string): Promise<void> {
         if (files.length === 0) return;
 
-        const loader = await this.loadingController.create();
+        const loader = await this.loadingController.create({ message: ' Adding files' });
         await loader.present();
 
         try {
