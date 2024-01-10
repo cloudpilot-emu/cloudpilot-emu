@@ -3,7 +3,8 @@
 -   Mass export multiple sessions or cards as a zip archive.
 -   Mass import multiple sessions or cards from a zip archive.
 -   Emulation menu can now be accessed by right clicking.
--   Fixes and UI performance optimizations
+-   Fix a few instances of dialogs being hidden by a loader.
+-   Other UI fixes performance optimizations
 
 # Version 1.9.4
 
