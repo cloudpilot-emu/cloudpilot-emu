@@ -17,11 +17,14 @@
         </ion-buttons>
     </ion-toolbar>
 
-    <ion-toolbar *ngIf="mode === 'select-for-export'">
-        <ion-title>Export</ion-title>
+    <ion-toolbar *ngIf="mode !== 'manage'">
+        <ion-title *ngIf="mode === 'select-for-export'">Export</ion-title>
+        <ion-title *ngIf="mode === 'select-for-delete'">Delete</ion-title>
 
         <ion-buttons slot="primary">
-            <ion-button (click)="onSelectionDone()">{{ selection.size === 0 ? 'Cancel' : 'Export' }}</ion-button>
+            <ion-button (click)="onSelectionDone()">{{
+                selection.size === 0 ? 'Cancel' : mode === 'select-for-export' ? 'Export' : 'Delete'
+            }}</ion-button>
         </ion-buttons>
 
         <ion-buttons slot="secondary" *ngIf="selection.size !== cards.length">
@@ -39,6 +42,7 @@
         <ion-toolbar>
             <ion-title size="large" *ngIf="mode === 'manage'">Memory cards</ion-title>
             <ion-title size="large" *ngIf="mode === 'select-for-export'">Select for export</ion-title>
+            <ion-title size="large" *ngIf="mode === 'select-for-delete'">Select for delete</ion-title>
         </ion-toolbar>
     </ion-header>
 
@@ -63,7 +67,7 @@
             (interaction)="lastCardTouched = card.id"
             (save)="saveCard(card)"
             [touched]="card.id === lastCardTouched"
-            [selecting]="mode === 'select-for-export'"
+            [selecting]="mode !== 'manage'"
             [selectedForExport]="selection.has(card.id)"
         >
         </app-storage-card>

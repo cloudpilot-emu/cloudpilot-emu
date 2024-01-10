@@ -85,10 +85,10 @@ Open the menu by tapping the three vertical dots and select "Export" in order to
 start selecting sessions from the list for export. All selected sessions will be
 exported as a single zip archive.
 
-Similarly, a zip archive with sessions can be imported in order to add all of
-them to CloudpilotEmu. Note that you will not be prompted to change the
-session names or settings during import in this case - you'll have to make any
-adjustments afterwards.
+Similarly, a zip archive with sessions can be imported by adding it in order to
+add all of them to CloudpilotEmu. Note that you will not be prompted to change
+the session names or settings during import in this case - you'll have to make
+any adjustments afterwards.
 
 # Mass deleting sessions
 

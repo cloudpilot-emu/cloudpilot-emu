@@ -47,7 +47,7 @@ cannot be changed after creation.
 ### Exporting a card
 If you wish to export an image of a current card in CloudpilotEmu:
 
-* Desktop: right click on the card in the list, and choose 'Save'.
+* Desktop: right click on the card in the list, and choose 'Export'.
 * Mobile: swipe on the card name from left-to-right, and choose th cyan
   colour'Share' icon.
 
@@ -56,16 +56,16 @@ An image of the card will then proceed to download.
 
 ### Mass exporting and importing cards
 
-Select the "export" icon from the toolbar in order to start selecting caeds
-from the list for export. All selected cards will be exported as a single
-zip archive.
+Open the menu by tapping the three vertical dots and select "Export" in order to
+start start selecting cards from the list for export. All selected cards will be
+exported as a single zip archive.
 
-Similarly, a zip archive with card images can be imported in order to add all of
-them to CloudpilotEmu. Note that you will not be prompted to change the
-card names or settings during import in this case - you'll have to make any
-adjustments afterwards. In addition, no file system check will be performed
-on the imported cards - they will be checked when they are used for the first
-time.
+Similarly, a zip archive with card images can be imported ba adding it in order
+to add all of them to CloudpilotEmu. Note that you will not be prompted to
+change the card names or settings during import in this case - you'll have to
+make any adjustments afterwards. In addition, no file system check will be
+performed on the imported cards - they will be checked when they are used for
+the first time.
 
 **WARNING:** Mass export and import can consume a lot of memory and may
 crash the browser if the available memory is exceeded.

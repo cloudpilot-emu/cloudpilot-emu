@@ -1,10 +1,4 @@
-import {
-    ActionSheetController,
-    AlertController,
-    LoadingController,
-    ModalController,
-    PopoverController,
-} from '@ionic/angular';
+import * as angular from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
@@ -26,7 +20,7 @@ import helpPage from '@assets/doc/cards.md';
 import { SessionService } from '@pwa/service/session.service';
 import { ActionMenuCardsComponent } from '../action-menu-cards/action-menu-cards.component';
 
-type Mode = 'manage' | 'select-for-export';
+type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
 
 @Component({
     selector: 'app-subpage-cards',
@@ -36,17 +30,16 @@ type Mode = 'manage' | 'select-for-export';
 })
 export class SubpageCardsComponent implements DoCheck, OnInit {
     constructor(
-        private actionSheetController: ActionSheetController,
+        private actionSheetController: angular.ActionSheetController,
         public storageCardService: StorageCardService,
-        private modalController: ModalController,
-        private alertController: AlertController,
+        private modalController: angular.ModalController,
         private cloudpilotService: CloudpilotService,
         private alertService: AlertService,
         private errorService: ErrorService,
         private fileService: FileService,
-        private loadingController: LoadingController,
+        private loadingController: angular.LoadingController,
         private fstools: FsToolsService,
-        private popoverController: PopoverController,
+        private popoverController: angular.PopoverController,
         sessionService: SessionService,
         private cd: ChangeDetectorRef,
     ) {
@@ -137,14 +130,14 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         const filename = `${filenameFragment(card.name.replace(/\.img$/, ''))}.img`;
 
         const sheet = await this.actionSheetController.create({
-            header: 'How do you want to save the image?',
+            header: 'How do you want to export the image?',
             buttons: [
                 {
-                    text: 'Save gzip compressed image',
+                    text: 'Export gzip compressed image',
                     handler: () => this.storageCardService.saveCard(card.id, filename, true),
                 },
                 {
-                    text: 'Save uncompressed image',
+                    text: 'Export uncompressed image',
                     handler: () => this.storageCardService.saveCard(card.id, filename, false),
                 },
 
@@ -162,26 +155,29 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
 
     @debounce()
     async deleteCard(card: StorageCard) {
-        const alert = await this.alertController.create({
-            header: 'Warning',
-            backdropDismiss: false,
-            message: `Deleting the card '${card.name}' cannot be undone. Are you sure you want to continue?`,
-            buttons: [
-                { text: 'Cancel', role: 'cancel' },
-                {
-                    text: 'Delete',
-                    handler: async () => {
-                        try {
-                            await this.storageCardService.deleteCard(card.id);
-                        } catch (e) {
-                            this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
-                        }
-                    },
-                },
-            ],
-        });
+        let abort = true;
 
-        await alert.present();
+        await this.alertService.message(
+            'Warning',
+            `Deleting the card '${card.name}' cannot be undone. Are you sure you want to continue?`,
+            {
+                Delete: () => (abort = false),
+            },
+            'Cancel',
+        );
+
+        if (abort) return;
+
+        const loader = await this.loadingController.create({ message: 'Deleting...' });
+        await loader.present();
+
+        try {
+            await this.storageCardService.deleteCard(card.id);
+        } catch (e) {
+            this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
+        } finally {
+            void loader.dismiss();
+        }
     }
 
     trackCardBy(index: number, card: StorageCard) {
@@ -193,23 +189,23 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         this.mode = 'select-for-export';
     }
 
+    startMassDelete(): void {
+        this.selection.clear();
+        this.mode = 'select-for-delete';
+    }
+
     @debounce()
     async onSelectionDone(): Promise<void> {
+        const wasMode = this.mode;
         this.mode = 'manage';
 
-        switch (this.selection.size) {
-            case 0:
+        switch (wasMode) {
+            case 'select-for-export':
+                await this.executeMassExport(Array.from(this.selection));
                 break;
 
-            case 1: {
-                const card = await this.storageCardService.getCard(Array.from(this.selection)[0]);
-                if (card) await this.saveCard(card);
-
-                break;
-            }
-
-            default:
-                await this.exportSelection(Array.from(this.selection));
+            case 'select-for-delete':
+                await this.executeMassDelete(Array.from(this.selection));
                 break;
         }
     }
@@ -235,6 +231,11 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
                     this.startMassExport();
                     this.cd.markForCheck();
                 },
+                onDelete: () => {
+                    void popover.dismiss();
+                    this.startMassDelete();
+                    this.cd.markForCheck();
+                },
                 onHelp: () => {
                     void popover.dismiss();
                     void this.showHelp();
@@ -254,6 +255,64 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         e.preventDefault();
 
         void this.openActionMenu(e, 'event');
+    }
+
+    private async executeMassExport(selection: Array<number>): Promise<void> {
+        switch (selection.length) {
+            case 0:
+                break;
+
+            case 1: {
+                const card = await this.storageCardService.getCard(selection[0]);
+                if (card) await this.saveCard(card);
+
+                break;
+            }
+
+            default:
+                await this.exportSelection(selection);
+                break;
+        }
+    }
+
+    private async executeMassDelete(selection: Array<number>): Promise<void> {
+        switch (selection.length) {
+            case 0:
+                break;
+
+            case 1: {
+                const card = await this.storageCardService.getCard(selection[0]);
+                if (card) await this.deleteCard(card);
+
+                break;
+            }
+
+            default: {
+                let abort = true;
+
+                await this.alertService.message(
+                    'Warning',
+                    `You are about to delete ${selection.length} cards. This cannot be undone. Are you sure you want to continue?`,
+                    {
+                        Delete: () => (abort = false),
+                    },
+                    'Cancel',
+                );
+
+                if (abort) return;
+
+                const loader = await this.loadingController.create({ message: 'Deleting...' });
+                await loader.present();
+
+                try {
+                    for (const id of selection) await this.storageCardService.deleteCard(id);
+                } catch (e) {
+                    this.errorService.fatalBug(e instanceof Error ? e.message : 'delete failed');
+                } finally {
+                    void loader.dismiss();
+                }
+            }
+        }
     }
 
     private async exportSelection(selection: Array<number>): Promise<void> {
