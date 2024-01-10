@@ -1,5 +1,5 @@
 import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
 import { DragDropClient, DragDropService } from '@pwa//service/drag-drop.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { SessionSettings, SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
@@ -31,7 +31,7 @@ type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
     styleUrls: ['./sessions.page.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SessionsPage implements DragDropClient, DoCheck {
+export class SessionsPage implements DragDropClient, DoCheck, OnInit {
     constructor(
         public sessionService: SessionService,
         private fileService: FileService,
@@ -53,13 +53,17 @@ export class SessionsPage implements DragDropClient, DoCheck {
         this.checkLoading = changeDetector(cd, true, () => this.sessionService.isLoading());
     }
 
+    ngOnInit(): void {
+        if (this.selfReference) this.selfReference.ref = this;
+    }
+
     ngDoCheck(): void {
         this.checkSessions();
         this.checkCurrentSessionId();
         this.checkLoading();
     }
 
-    ionViewDidEnter(): void {
+    ionViewDidEnter_(): void {
         this.linkApi.import.requestEvent.addHandler(this.handleLinkApiImportRequest);
         this.handleLinkApiImportRequest();
 
@@ -69,6 +73,10 @@ export class SessionsPage implements DragDropClient, DoCheck {
     ionViewWillLeave(): void {
         this.dragDropService.unregisterClient(this);
         this.linkApi.import.requestEvent.removeHandler(this.handleLinkApiImportRequest);
+    }
+
+    ionViewDidLeave(): void {
+        this.mode = 'manage';
     }
 
     get sessions(): Array<Session> {
@@ -181,10 +189,6 @@ export class SessionsPage implements DragDropClient, DoCheck {
     startMassDelete(): void {
         this.selection.clear();
         this.mode = 'select-for-delete';
-    }
-
-    ionViewDidLeave(): void {
-        this.mode = 'manage';
     }
 
     @debounce()
@@ -449,6 +453,9 @@ export class SessionsPage implements DragDropClient, DoCheck {
             'Cancel',
         );
     };
+
+    @Input()
+    selfReference: { ref: SessionsPage } | undefined;
 
     lastSessionTouched = -1;
 
