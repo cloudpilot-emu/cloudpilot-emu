@@ -36,6 +36,11 @@ html {
     z-index: 100000 !important;
 }
 
+.alert-message {
+    z-index: 150000 !important;
+}
+
+
 .alert-error, .alert-message {
     z-index: 200000 !important;
 }

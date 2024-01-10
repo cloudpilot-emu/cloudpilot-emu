@@ -1,4 +1,4 @@
-import { AlertController, ModalController, PopoverController } from '@ionic/angular';
+import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck } from '@angular/core';
 import { DragDropClient, DragDropService } from '@pwa//service/drag-drop.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
@@ -23,7 +23,7 @@ import { disambiguateName } from '@pwa/helper/disambiguate';
 import helpUrl from '@assets/doc/sessions.md';
 import { ActionMenuComponent } from './action-menu/action-menu.component';
 
-type Mode = 'manage' | 'select-for-export';
+type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
 
 @Component({
     selector: 'app-sessions',
@@ -35,7 +35,6 @@ export class SessionsPage implements DragDropClient, DoCheck {
     constructor(
         public sessionService: SessionService,
         private fileService: FileService,
-        private alertController: AlertController,
         private alertService: AlertService,
         public emulationService: EmulationService,
         public emulationState: EmulationStateService,
@@ -46,6 +45,7 @@ export class SessionsPage implements DragDropClient, DoCheck {
         private cloudpilotService: CloudpilotService,
         private dragDropService: DragDropService,
         private popoverController: PopoverController,
+        private loadingController: LoadingController,
         private cd: ChangeDetectorRef,
     ) {
         this.checkSessions = changeDetector(cd, [], () => this.sessionService.getSessions());
@@ -81,17 +81,27 @@ export class SessionsPage implements DragDropClient, DoCheck {
 
     @debounce()
     async deleteSession(session: Session): Promise<void> {
-        const alert = await this.alertController.create({
-            header: 'Warning',
-            message: `Deleting the session '${session.name}' will remove all associated data. This cannot be undone. Are you sure you want to continue?`,
-            buttons: [
-                { text: 'Cancel', role: 'cancel' },
-                { text: 'Delete', handler: () => this.sessionService.deleteSession(session) },
-            ],
-            backdropDismiss: false,
-        });
+        let abort = true;
 
-        await alert.present();
+        await this.alertService.message(
+            'Warning',
+            `Deleting the session '${session.name}' will remove all associated data. This cannot be undone. Are you sure you want to continue?`,
+            {
+                Delete: () => (abort = false),
+            },
+            'Cancel',
+        );
+
+        if (abort) return;
+
+        const loader = await this.loadingController.create({ message: 'Deleting...' });
+        await loader.present();
+
+        try {
+            await this.sessionService.deleteSession(session);
+        } finally {
+            void loader.dismiss();
+        }
     }
 
     @debounce()
@@ -138,19 +148,11 @@ export class SessionsPage implements DragDropClient, DoCheck {
         if (running) await this.emulationService.stop();
 
         await this.storageService.deleteStateForSession(session);
-
         await this.storageService.updateSessionPartial(session.id, { wasResetForcefully: true });
 
         if (running) await this.emulationService.switchSession(session.id);
 
-        const alert = await this.alertController.create({
-            header: 'Done',
-            message: `Session ${session.name} has been reset.`,
-            buttons: [{ text: 'Close', role: 'cancel' }],
-            backdropDismiss: false,
-        });
-
-        await alert.present();
+        await this.alertService.message('Done', `Session ${session.name} has been reset.`);
     }
 
     get currentSessionId(): number | undefined {
@@ -176,6 +178,11 @@ export class SessionsPage implements DragDropClient, DoCheck {
         this.mode = 'select-for-export';
     }
 
+    startMassDelete(): void {
+        this.selection.clear();
+        this.mode = 'select-for-delete';
+    }
+
     ionViewDidLeave(): void {
         this.mode = 'manage';
     }
@@ -187,14 +194,17 @@ export class SessionsPage implements DragDropClient, DoCheck {
             .map((sessionId) => sessions.get(sessionId))
             .filter((session) => session !== undefined) as Array<Session>;
 
+        const wasMode = this.mode;
         this.mode = 'manage';
 
-        if (selectedSessions.length === 1) {
-            await this.sessionService.saveSession(selectedSessions[0]);
-        }
+        switch (wasMode) {
+            case 'select-for-delete':
+                await this.executeMassDelete(selectedSessions);
+                break;
 
-        if (selectedSessions.length > 1) {
-            await this.sessionService.saveSessions(selectedSessions);
+            case 'select-for-export':
+                await this.executeMassExport(selectedSessions);
+                break;
         }
     }
 
@@ -219,6 +229,11 @@ export class SessionsPage implements DragDropClient, DoCheck {
                     this.startMassExport();
                     this.cd.markForCheck();
                 },
+                onDelete: () => {
+                    void popover.dismiss();
+                    this.startMassDelete();
+                    this.cd.markForCheck();
+                },
                 onHelp: () => {
                     void popover.dismiss();
                     void this.showHelp();
@@ -238,6 +253,48 @@ export class SessionsPage implements DragDropClient, DoCheck {
         e.preventDefault();
 
         void this.openActionMenu(e, 'event');
+    }
+
+    private async executeMassExport(selectedSessions: Array<Session>): Promise<void> {
+        if (selectedSessions.length === 1) {
+            await this.sessionService.saveSession(selectedSessions[0]);
+        }
+
+        if (selectedSessions.length > 1) {
+            await this.sessionService.saveSessions(selectedSessions);
+        }
+    }
+
+    private async executeMassDelete(selectedSessions: Array<Session>): Promise<void> {
+        if (selectedSessions.length === 1) {
+            await this.deleteSession(selectedSessions[0]);
+        }
+
+        if (selectedSessions.length > 1) {
+            let abort = true;
+
+            await this.alertService.message(
+                'Warning',
+                `
+                    You are about to delete ${selectedSessions.length} sessions, which will destroy all data associated with these sessions.
+                    This cannot be undone. Are you sure you want to continue?`,
+                {
+                    Delete: () => (abort = false),
+                },
+                'Cancel',
+            );
+
+            if (abort) return;
+
+            const loader = await this.loadingController.create({ message: 'Deleting...' });
+            await loader.present();
+
+            try {
+                for (const session of selectedSessions) await this.sessionService.deleteSession(session);
+            } finally {
+                void loader.dismiss();
+            }
+        }
     }
 
     private handleDropFiles(files: Array<FileDescriptor>): void {

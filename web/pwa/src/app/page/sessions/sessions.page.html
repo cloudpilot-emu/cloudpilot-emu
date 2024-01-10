@@ -16,11 +16,14 @@
         </ion-buttons>
     </ion-toolbar>
 
-    <ion-toolbar *ngIf="mode === 'select-for-export'">
-        <ion-title>Export</ion-title>
+    <ion-toolbar *ngIf="mode !== 'manage'">
+        <ion-title *ngIf="mode === 'select-for-export'">Export</ion-title>
+        <ion-title *ngIf="mode === 'select-for-delete'">Delete</ion-title>
 
         <ion-buttons slot="primary">
-            <ion-button (click)="onSelectionDone()">{{ selection.size === 0 ? 'Cancel' : 'Export' }}</ion-button>
+            <ion-button (click)="onSelectionDone()">{{
+                selection.size === 0 ? 'Cancel' : mode === 'select-for-export' ? 'Export' : 'Delete'
+            }}</ion-button>
         </ion-buttons>
 
         <ion-buttons slot="secondary" *ngIf="selection.size !== sessionCount">
@@ -38,6 +41,7 @@
         <ion-toolbar>
             <ion-title size="large" *ngIf="mode === 'manage'">Sessions</ion-title>
             <ion-title size="large" *ngIf="mode === 'select-for-export'">Select for export</ion-title>
+            <ion-title size="large" *ngIf="mode === 'select-for-delete'">Select for export</ion-title>
         </ion-toolbar>
     </ion-header>
 
@@ -67,7 +71,7 @@
             (interaction)="lastSessionTouched = session.id"
             [selected]="currentSessionId === session.id"
             [touched]="session.id === lastSessionTouched"
-            [selecting]="mode === 'select-for-export'"
+            [selecting]="mode !== 'manage'"
             [selectedForExport]="selection.has(session.id)"
         >
         </app-session-item>

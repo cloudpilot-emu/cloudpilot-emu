@@ -82,6 +82,14 @@ export class ClipboardService {
                     backdropDismiss: false,
                     buttons: [
                         {
+                            text: 'Cancel',
+                            handler: () => {
+                                void alert.dismiss();
+
+                                resolve(false);
+                            },
+                        },
+                        {
                             text: 'Copy',
                             handler: async () => {
                                 void alert.dismiss();
@@ -93,14 +101,6 @@ export class ClipboardService {
                                 } catch (e) {
                                     reject(e);
                                 }
-                            },
-                        },
-                        {
-                            text: 'Cancel',
-                            handler: () => {
-                                void alert.dismiss();
-
-                                resolve(false);
                             },
                         },
                     ],
@@ -168,6 +168,14 @@ export class ClipboardService {
                     backdropDismiss: false,
                     buttons: [
                         {
+                            text: 'Cancel',
+                            handler: () => {
+                                void alert.dismiss();
+
+                                resolve(undefined);
+                            },
+                        },
+                        {
                             text: 'Paste',
                             handler: async () => {
                                 void alert.dismiss();
@@ -177,14 +185,6 @@ export class ClipboardService {
                                 } catch (e) {
                                     reject(e);
                                 }
-                            },
-                        },
-                        {
-                            text: 'Cancel',
-                            handler: () => {
-                                void alert.dismiss();
-
-                                resolve(undefined);
                             },
                         },
                     ],
@@ -204,6 +204,14 @@ export class ClipboardService {
             backdropDismiss: false,
             buttons: [
                 {
+                    text: 'Cancel',
+                    handler: () => {
+                        void alert.dismiss();
+
+                        ctx.Resume('');
+                    },
+                },
+                {
                     text: 'Paste',
                     handler: async () => {
                         try {
@@ -220,14 +228,6 @@ export class ClipboardService {
 
                             ctx.Resume('');
                         }
-                    },
-                },
-                {
-                    text: 'Cancel',
-                    handler: () => {
-                        void alert.dismiss();
-
-                        ctx.Resume('');
                     },
                 },
             ],

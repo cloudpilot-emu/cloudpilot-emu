@@ -37,6 +37,7 @@ export class AlertService {
             message: this.sanitizeMessage(message),
             backdropDismiss: false,
             buttons: [
+                { text: closeButtonLabel, role: 'cancel' },
                 ...Object.keys(extraButtons).map((text) => ({
                     text,
                     handler: () => {
@@ -44,7 +45,6 @@ export class AlertService {
                         void alert.dismiss();
                     },
                 })),
-                { text: closeButtonLabel, role: 'cancel' },
             ],
             cssClass: 'alert-message',
         });
