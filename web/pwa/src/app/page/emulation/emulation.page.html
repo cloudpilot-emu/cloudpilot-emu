@@ -2,7 +2,7 @@
     <ion-toolbar>
         <ion-title>
             <app-breadcrumb
-                [disabled]="!bootstrapComplete || (sessions.length <= 1 && !!currentSession)"
+                [disabled]="!bootstrapComplete || (sessions.length === 1 && !!currentSession) || sessions.length === 0"
                 (trigger)="onBreadcrumbTrigger($event)"
             >
                 <div

@@ -14,4 +14,5 @@ export interface Session {
     speed?: number;
     deviceOrientation?: DeviceOrientation;
     mountedCard?: number;
+    lastLaunch?: number;
 }

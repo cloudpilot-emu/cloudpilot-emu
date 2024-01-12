@@ -110,6 +110,7 @@ export class EmulationService extends AbstractEmulationService {
                 }
 
                 this.emulationState.setCurrentSession(session);
+                await this.sessionsService.updateSession({ ...session, lastLaunch: Date.now() });
 
                 setStoredSession(id);
             } finally {
@@ -216,7 +217,10 @@ export class EmulationService extends AbstractEmulationService {
         if (!this.emulationState.getCurrentSession()) return;
 
         this.doStop();
+
         await this.snapshotService.waitForPendingSnapshot();
+        await this.snapshotService.triggerSnapshot();
+
         this.storageCardService.onEmulatorStop();
         this.emulationState.setCurrentSession(undefined);
     }
