@@ -32,7 +32,7 @@ namespace {
     constexpr int MIN_CYCLES_BETWEEN_BUTTON_EVENTS = 400000;
 
     constexpr uint32 YIELD_MEMMGR_LIMIT = 10000000;
-    constexpr uint32 EXECUTE_SUBROUTINE_LIMIT = 50000000;
+    constexpr uint32 EXECUTE_SUBROUTINE_LIMIT = 75000000;
 
     constexpr double DEFAULT_CLOCK_FACTOR = 0.5;
 
