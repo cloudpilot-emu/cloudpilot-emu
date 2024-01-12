@@ -2,7 +2,7 @@
     <ion-toolbar>
         <ion-title>
             <app-breadcrumb
-                [disabled]="sessions.length <= 1 && !!currentSession"
+                [disabled]="!bootstrapComplete || (sessions.length <= 1 && !!currentSession)"
                 (trigger)="onBreadcrumbTrigger($event)"
             >
                 <div
@@ -78,7 +78,7 @@
         <ion-button type="button" color="light" (click)="bootAfterForcefulResetHardReset()">Hard reset</ion-button>
     </div>
 
-    <div class="container no-session" *ngIf="!emulationState.getCurrentSession() && boostrapComplete">
+    <div class="container no-session" *ngIf="!emulationState.getCurrentSession() && bootstrapComplete && !switching">
         <div>No session selected</div>
     </div>
 </ion-content>

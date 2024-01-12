@@ -66,14 +66,16 @@ export class EmulationPage implements DragDropClient {
         return this.canvasDisplayService.height / devicePixelRatio + 'px';
     }
 
+    ionViewWillEnter() {
+        this.switching = false;
+    }
+
     ionViewDidEnter = () =>
         this.mutex.runExclusive(async () => {
             await this.emulationService.bootstrapComplete();
-            this.boostrapComplete = true;
+            this.bootstrapComplete = true;
 
             const session = this.emulationState.getCurrentSession();
-
-            this.title = session?.name ?? 'No session';
 
             if (session && !session.wasResetForcefully) {
                 await this.launchEmulator();
@@ -268,6 +270,13 @@ export class EmulationPage implements DragDropClient {
         await this.storageService.updateSessionPartial(session.id, { wasResetForcefully: false });
     }
 
+    get title(): string {
+        if (!this.bootstrapComplete) return '';
+        if (this.switching) return this.lastTitle;
+
+        return this.emulationState.getCurrentSession()?.name ?? 'No session';
+    }
+
     private async launchEmulator(): Promise<void> {
         const session = this.emulationState.getCurrentSession();
         if (!session) return;
@@ -353,6 +362,9 @@ export class EmulationPage implements DragDropClient {
         await loader.present();
 
         try {
+            this.lastTitle = this.title;
+            this.switching = true;
+
             await this.emulationService.pause();
             await this.snapshotService.waitForPendingSnapshot();
             await this.snapshotService.triggerSnapshot();
@@ -363,17 +375,18 @@ export class EmulationPage implements DragDropClient {
             }
 
             if (!session.wasResetForcefully) await this.launchEmulator();
-
-            this.title = session.name;
         } finally {
             void loader.dismiss();
+            this.switching = false;
         }
     }
 
-    boostrapComplete = false;
-    @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
+    bootstrapComplete = false;
 
-    title = '';
+    switching = false;
+    lastTitle = '';
+
+    @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
 
     private autoLockUI = true;
 
