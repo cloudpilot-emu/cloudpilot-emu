@@ -1,6 +1,6 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
 import { DragDropClient, DragDropService } from '@pwa/service/drag-drop.service';
-import { Config, ModalController, PopoverController } from '@ionic/angular';
+import { Config, LoadingController, ModalController, PopoverController } from '@ionic/angular';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
@@ -54,6 +54,7 @@ export class EmulationPage implements DragDropClient {
         private cloudpilotService: CloudpilotService,
         private dragDropService: DragDropService,
         private sessionService: SessionService,
+        private loadingController: LoadingController,
         public config: Config,
     ) {}
 
@@ -71,6 +72,8 @@ export class EmulationPage implements DragDropClient {
             this.boostrapComplete = true;
 
             const session = this.emulationState.getCurrentSession();
+
+            this.title = session?.name ?? 'No session';
 
             if (session && !session.wasResetForcefully) {
                 await this.launchEmulator();
@@ -186,10 +189,6 @@ export class EmulationPage implements DragDropClient {
         );
     }
 
-    get title(): string {
-        return this.emulationState.getCurrentSession()?.name || '';
-    }
-
     @debounce()
     async bootAfterForcefulReset(): Promise<void> {
         await this.clearForcefulReset();
@@ -241,6 +240,7 @@ export class EmulationPage implements DragDropClient {
                 sessions: this.sessionService
                     .getSessions()
                     .filter((session) => session.id !== this.emulationState.getCurrentSession()?.id),
+                onSelect: (session: Session) => this.switchSession(session),
             },
             dismissOnSelect: true,
             arrow: false,
@@ -255,6 +255,10 @@ export class EmulationPage implements DragDropClient {
 
     get sessions(): Array<Session> {
         return this.sessionService.getSessions();
+    }
+
+    get currentSession(): Session | undefined {
+        return this.emulationState.getCurrentSession();
     }
 
     private async clearForcefulReset(): Promise<void> {
@@ -344,8 +348,32 @@ export class EmulationPage implements DragDropClient {
         }
     };
 
+    private async switchSession(session: Session): Promise<void> {
+        const loader = await this.loadingController.create();
+        await loader.present();
+
+        try {
+            await this.emulationService.pause();
+            await this.snapshotService.waitForPendingSnapshot();
+            await this.snapshotService.triggerSnapshot();
+
+            if (!(await this.emulationService.switchSession(session.id, { showLoader: false }))) {
+                await this.alertService.errorMessage('Failed to launch session');
+                return;
+            }
+
+            if (!session.wasResetForcefully) await this.launchEmulator();
+
+            this.title = session.name;
+        } finally {
+            void loader.dismiss();
+        }
+    }
+
     boostrapComplete = false;
     @ViewChild('canvas') private canvasRef!: ElementRef<HTMLCanvasElement>;
+
+    title = '';
 
     private autoLockUI = true;
 

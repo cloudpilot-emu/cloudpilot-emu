@@ -1,7 +1,10 @@
 <ion-header>
     <ion-toolbar>
         <ion-title>
-            <app-breadcrumb [disabled]="false" (trigger)="onBreadcrumbTrigger($event)">
+            <app-breadcrumb
+                [disabled]="sessions.length <= 1 && !!currentSession"
+                (trigger)="onBreadcrumbTrigger($event)"
+            >
                 <div
                     class="ios-title-placeholder"
                     [style.width]="iosPlaceholderWidth"
