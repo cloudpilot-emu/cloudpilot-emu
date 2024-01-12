@@ -241,8 +241,7 @@ export class EmulationPage implements DragDropClient {
             componentProps: {
                 sessions: this.sessionService
                     .getSessions()
-                    .filter((session) => session.id !== this.emulationState.getCurrentSession()?.id)
-                    .sort((s1, s2) => (s2.lastLaunch ?? 0) - (s1.lastLaunch ?? 0) || s1.name.localeCompare(s2.name)),
+                    .filter((session) => session.id !== this.emulationState.getCurrentSession()?.id),
                 onSelect: (session: Session) => this.switchSession(session),
             },
             dismissOnSelect: true,
