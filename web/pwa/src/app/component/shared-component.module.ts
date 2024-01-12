@@ -12,6 +12,7 @@ import { NgModule } from '@angular/core';
 import { PwaPromptComponent } from './pwa-prompt/pwa-prompt.component';
 import { RemoteUrlPromptComponent } from './remote-url-prompt/remote-url-prompt.component';
 import { SessionSettingsComponent } from './session-settings/session-settings.component';
+import { BreadcrumbComponent } from './breadcrumb/breadcrumb.component';
 
 @NgModule({
     declarations: [
@@ -23,6 +24,7 @@ import { SessionSettingsComponent } from './session-settings/session-settings.co
         CardSizePipe,
         FileSizePipe,
         AutofocusDirective,
+        BreadcrumbComponent,
     ],
     imports: [CommonModule, MarkdownModule.forChild(), IonicModule, FormsModule, ReactiveFormsModule],
     exports: [
@@ -34,6 +36,7 @@ import { SessionSettingsComponent } from './session-settings/session-settings.co
         CardSizePipe,
         FileSizePipe,
         AutofocusDirective,
+        BreadcrumbComponent,
     ],
 })
 export class SharedComponentModule {}

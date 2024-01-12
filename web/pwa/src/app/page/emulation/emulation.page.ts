@@ -24,6 +24,9 @@ import { TabsPage } from '@pwa/tabs/tabs.page';
 
 import helpUrl from '@assets/doc/emulation.md';
 import { debounce } from '@pwa/helper/debounce';
+import { BreadcrumbMenuComponent } from './breadcrumb-menu/breadcrumb-menu.component';
+import { SessionService } from '@pwa/service/session.service';
+import { Session } from '@pwa/model/Session';
 
 @Component({
     selector: 'app-emulation',
@@ -50,6 +53,7 @@ export class EmulationPage implements DragDropClient {
         public performanceWatchdogService: PerformanceWatchdogService,
         private cloudpilotService: CloudpilotService,
         private dragDropService: DragDropService,
+        private sessionService: SessionService,
         public config: Config,
     ) {}
 
@@ -130,6 +134,7 @@ export class EmulationPage implements DragDropClient {
         this.fileService.openFiles(this.installlationService.installFiles.bind(this.installlationService));
     }
 
+    @debounce()
     async showHelp(): Promise<void> {
         const modal = await this.modalController.create({
             component: HelpComponent,
@@ -140,6 +145,7 @@ export class EmulationPage implements DragDropClient {
         await modal.present();
     }
 
+    @debounce()
     async showGameModeHint(): Promise<void> {
         await this.alertService.message(
             'Game mode',
@@ -155,10 +161,12 @@ export class EmulationPage implements DragDropClient {
         );
     }
 
+    @debounce()
     async showProxyConnectedHint(): Promise<void> {
         await this.alertService.message('Proxy connected', 'Network proxy connected.');
     }
 
+    @debounce()
     async showSlowdowndHint(): Promise<void> {
         await this.alertService.message(
             'Speed throttled',
@@ -182,12 +190,14 @@ export class EmulationPage implements DragDropClient {
         return this.emulationState.getCurrentSession()?.name || '';
     }
 
+    @debounce()
     async bootAfterForcefulReset(): Promise<void> {
         await this.clearForcefulReset();
 
         await this.launchEmulator();
     }
 
+    @debounce()
     async bootAfterForcefulResetNoExtensions(): Promise<void> {
         await this.clearForcefulReset();
 
@@ -195,6 +205,7 @@ export class EmulationPage implements DragDropClient {
         await this.launchEmulator();
     }
 
+    @debounce()
     async bootAfterForcefulResetHardReset(): Promise<void> {
         await this.clearForcefulReset();
 
@@ -212,7 +223,7 @@ export class EmulationPage implements DragDropClient {
         return i > 1 ? `${(i - 1) * 35}px` : '0';
     }
 
-    public cancelIfEmulationActive(event: TouchEvent): void {
+    cancelIfEmulationActive(event: TouchEvent): void {
         if (
             this.emulationState.getCurrentSession() &&
             !this.emulationState.getCurrentSession()?.wasResetForcefully &&
@@ -220,6 +231,30 @@ export class EmulationPage implements DragDropClient {
         ) {
             event.preventDefault();
         }
+    }
+
+    @debounce()
+    async onBreadcrumbTrigger(trigger: string): Promise<void> {
+        const menu = await this.popoverController.create({
+            component: BreadcrumbMenuComponent,
+            componentProps: {
+                sessions: this.sessionService
+                    .getSessions()
+                    .filter((session) => session.id !== this.emulationState.getCurrentSession()?.id),
+            },
+            dismissOnSelect: true,
+            arrow: false,
+            side: 'bottom',
+            alignment: this.config.get('mode') === 'ios' ? 'center' : 'start',
+            trigger,
+            cssClass: 'cp-breadcrumb-menu',
+        });
+
+        void menu.present();
+    }
+
+    get sessions(): Array<Session> {
+        return this.sessionService.getSessions();
     }
 
     private async clearForcefulReset(): Promise<void> {

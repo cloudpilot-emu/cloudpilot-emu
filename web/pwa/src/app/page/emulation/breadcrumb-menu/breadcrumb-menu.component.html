@@ -1,0 +1,11 @@
+<ion-list *ngIf="sessions">
+    <ion-item
+        button
+        [detail]="false"
+        *ngFor="let session of sessions; index as i"
+        (click)="onSelect(session)"
+        [lines]="i === sessions.length - 1 ? 'none' : 'full'"
+    >
+        <div class="text-wrapper">{{ session.name }}</div>
+    </ion-item>
+</ion-list>

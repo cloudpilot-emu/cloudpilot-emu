@@ -25,8 +25,6 @@ function entrySortFunction(e1: FileEntry, e2: FileEntry): number {
     return e1.name.localeCompare(e2.name);
 }
 
-let BREADCRUMB_TRIGGER_INDEX = 0;
-
 @Component({
     selector: 'app-subpage-directory',
     templateUrl: './subpage-directory.component.html',
@@ -44,8 +42,6 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         private fileService: FileService,
         private cd: ChangeDetectorRef,
     ) {
-        this.breadcrumbTriggerId = `breadcrumb-trigger-${BREADCRUMB_TRIGGER_INDEX++}`;
-
         this.checkEntries = changeDetector(cd, undefined, () =>
             this.path !== undefined ? vfsService.readdir(this.path) : undefined,
         );
@@ -286,7 +282,7 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         await this.vfsService.deleteRecursive(selection);
     }
 
-    async openBreadcrumbMenu(e: MouseEvent): Promise<void> {
+    async openBreadcrumbMenu(trigger: string): Promise<void> {
         if (!this.card || !this.path) return;
 
         const entries = [
@@ -296,7 +292,6 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
 
         const popover = await this.popoverController.create({
             component: ContextMenuBreadcrumbComponent,
-            event: e,
             componentProps: {
                 entries,
                 onSelect: (index: number) => this.onNavigateBreadcrumb(entries.length - 1 - index),
@@ -305,7 +300,8 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
             arrow: false,
             side: 'bottom',
             alignment: this.config.get('mode') === 'ios' ? 'center' : 'start',
-            trigger: this.breadcrumbTriggerId,
+            trigger,
+            cssClass: 'cp-breadcrumb-menu',
         });
 
         void popover.present();
@@ -394,8 +390,6 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
     onNavigateBreadcrumb: (index: number) => void = () => undefined;
 
     lastEntryTouched: string | undefined = undefined;
-
-    readonly breadcrumbTriggerId: string;
 
     mode: 'browse' | 'select' = 'browse';
 

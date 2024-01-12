@@ -30,6 +30,7 @@ html {
     height: 100%;
 
     --cp-page-width: 40em;
+    --cp-breadcrumb-menu-width: 250px;
 }
 
 .installation-error {
@@ -53,6 +54,11 @@ html {
 .md .alert-checkbox.ion-focused {
     background: inherit !important;
 }
+
+.cp-breadcrumb-menu {
+    --width: var(--cp-breadcrumb-menu-width);
+}
+
 
 ion-label h4, p {
     margin-top: 0.75em;

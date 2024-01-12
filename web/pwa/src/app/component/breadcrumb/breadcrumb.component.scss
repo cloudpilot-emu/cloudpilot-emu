@@ -1,0 +1,35 @@
+:host {
+    cursor: pointer;
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+    .ios & {
+        justify-content: center;
+    }
+
+    &.disabled {
+        cursor: auto;
+    }
+}
+
+.breadcrumb-current {
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.select-arrow {
+    border-top: 5px solid;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    display: inline-block;
+    opacity: 0.33;
+    margin-left: 0.5em;
+    vertical-align: middle;
+
+    .md & {
+        opacity: 0.55;
+    }
+}

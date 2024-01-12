@@ -1,12 +1,14 @@
 <ion-header>
     <ion-toolbar>
-        <ion-title
-            ><div
-                class="ios-title-placeholder"
-                [style.width]="iosPlaceholderWidth"
-                *ngIf="config.get('mode') === 'ios'"
-            ></div>
-            {{ title }}</ion-title
+        <ion-title>
+            <app-breadcrumb [disabled]="false" (trigger)="onBreadcrumbTrigger($event)">
+                <div
+                    class="ios-title-placeholder"
+                    [style.width]="iosPlaceholderWidth"
+                    *ngIf="config.get('mode') === 'ios'"
+                ></div>
+                {{ title }}</app-breadcrumb
+            ></ion-title
         >
 
         <ion-buttons slot="primary">

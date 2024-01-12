@@ -1,67 +1,69 @@
 <ion-header>
-  <ion-toolbar *ngIf="mode === 'browse'">
-    <ion-title class="breadcrumb" [id]="breadcrumbTriggerId" (click)="openBreadcrumbMenu($event)">
-      <div class="breadcrumb-container"><div class="breadcrumb-current">{{title}}</div><div class="select-arrow"></div>
-      </div>
-    </ion-title>
+    <ion-toolbar *ngIf="mode === 'browse'">
+        <ion-title>
+            <app-breadcrumb (trigger)="openBreadcrumbMenu($event)">{{ title }}</app-breadcrumb>
+        </ion-title>
 
-    <ion-buttons slot="start">
-      <ion-back-button></ion-back-button>
-    </ion-buttons>
+        <ion-buttons slot="start">
+            <ion-back-button></ion-back-button>
+        </ion-buttons>
 
-    <ion-buttons slot="primary">
-      <ion-button (click)="openContextMenu($event, 'trigger')">
-        <ion-icon name="ellipsis-vertical-outline"></ion-icon>
-      </ion-button>
-    </ion-buttons>
-  </ion-toolbar>
+        <ion-buttons slot="primary">
+            <ion-button (click)="openContextMenu($event, 'trigger')">
+                <ion-icon name="ellipsis-vertical-outline"></ion-icon>
+            </ion-button>
+        </ion-buttons>
+    </ion-toolbar>
 
-  <ion-toolbar *ngIf="mode === 'select'">
-    <ion-title>Selection</ion-title>
+    <ion-toolbar *ngIf="mode === 'select'">
+        <ion-title>Selection</ion-title>
 
-    <ion-buttons slot="primary">
-      <ion-button (click)="onSelectionDone()">{{selection.size === 0 ? 'Cancel' : 'Done'}}</ion-button>
-    </ion-buttons>
+        <ion-buttons slot="primary">
+            <ion-button (click)="onSelectionDone()">{{ selection.size === 0 ? 'Cancel' : 'Done' }}</ion-button>
+        </ion-buttons>
 
-    <ion-buttons slot="secondary" *ngIf="selection.size !== entries?.length">
-      <ion-button (click)="onSelectAll()">Select all</ion-button>
-    </ion-buttons>
+        <ion-buttons slot="secondary" *ngIf="selection.size !== entries?.length">
+            <ion-button (click)="onSelectAll()">Select all</ion-button>
+        </ion-buttons>
 
-    <ion-buttons slot="secondary" *ngIf="selection.size === entries?.length">
-      <ion-button (click)="selection.clear()">Clear</ion-button>
-    </ion-buttons>
-  </ion-toolbar>
+        <ion-buttons slot="secondary" *ngIf="selection.size === entries?.length">
+            <ion-button (click)="selection.clear()">Clear</ion-button>
+        </ion-buttons>
+    </ion-toolbar>
 </ion-header>
 
 <ion-content (contextmenu)="onContextMenu($event)">
+    <div class="container">
+        <div *ngIf="entries?.length === 0" class="placeholder-wrapper">
+            <div class="placeholder">empty {{ isRoot ? 'card' : 'directory' }}</div>
+        </div>
 
-  <div class="container">
-    <div *ngIf="entries?.length === 0" class="placeholder-wrapper">
-      <div class="placeholder">
-        empty {{isRoot ? 'card' : 'directory'}}
-      </div>
+        <ion-list>
+            <app-file-entry
+                *ngFor="let entry of entries; trackBy: trackEntryBy"
+                [entry]="entry"
+                [selecting]="mode === 'select'"
+                [selected]="selection.has(entry.name)"
+                (selectEntry)="onSelect(entry)"
+                (editEntry)="onEditEntry(entry)"
+                (saveEntry)="onSaveEntry(entry)"
+                (copyEntry)="onCopyEntry(entry)"
+                (cutEntry)="onCutEntry(entry)"
+                (deleteEntry)="onDeleteEntry(entry)"
+                (interaction)="lastEntryTouched = entry.name"
+                [touched]="entry.name === lastEntryTouched"
+            >
+            </app-file-entry>
+
+            <ion-item *ngIf="isRoot || fileCount > 0" class="metadata" lines="none">
+                <ion-label>
+                    <p *ngIf="isRoot">{{ bytesFree | fileSize }} free, {{ bytesTotal | fileSize }} total</p>
+
+                    <p *ngIf="fileCount > 0">
+                        {{ bytesInFiles | fileSize }} in {{ fileCount }} {{ fileCount === 1 ? 'file' : 'files' }}
+                    </p>
+                </ion-label>
+            </ion-item>
+        </ion-list>
     </div>
-
-    <ion-list>
-      <app-file-entry *ngFor="let entry of entries;trackBy:trackEntryBy" [entry]="entry" [selecting]="mode === 'select'"
-        [selected]="selection.has(entry.name)" (selectEntry)="onSelect(entry)" (editEntry)="onEditEntry(entry)"
-        (saveEntry)="onSaveEntry(entry)" (copyEntry)="onCopyEntry(entry)" (cutEntry)="onCutEntry(entry)"
-        (deleteEntry)="onDeleteEntry(entry)" (interaction)="lastEntryTouched = entry.name"
-        [touched]="entry.name === lastEntryTouched">
-      </app-file-entry>
-
-      <ion-item *ngIf="isRoot || fileCount > 0" class="metadata" lines="none">
-        <ion-label>
-          <p *ngIf="isRoot">
-            {{bytesFree | fileSize}} free, {{bytesTotal | fileSize}} total
-          </p>
-
-          <p *ngIf="fileCount > 0">
-            {{bytesInFiles | fileSize}} in {{fileCount}} {{fileCount === 1 ? 'file' : 'files'}}
-          </p>
-        </ion-label>
-      </ion-item>
-    </ion-list>
-  </div>
-
 </ion-content>

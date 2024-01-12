@@ -1,24 +1,3 @@
-.breadcrumb {
-    cursor: pointer;
-}
-
-.breadcrumb-container {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-
-    .ios & {
-        justify-content: center;
-    }
-}
-
-.breadcrumb-current {
-    display: inline-block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-
 .container {
     height: 100%;
     width: 100%;
@@ -45,20 +24,6 @@ ion-list {
     flex: 0;
 }
 
-
-.select-arrow {
-    border-top: 5px solid;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    display: inline-block;
-    opacity: 0.33;
-    margin-left: 0.5em;
-    vertical-align: middle;
-
-    .md & {
-        opacity: 0.55;
-    }
-}
 
 ion-item.metadata {
     text-align: center;
