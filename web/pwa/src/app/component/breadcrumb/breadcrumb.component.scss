@@ -4,6 +4,8 @@
     display: inline-flex;
     flex-direction: row;
     align-items: center;
+    overflow: hidden;
+    max-width: 100%;
 
     .ios & {
         justify-content: center;
