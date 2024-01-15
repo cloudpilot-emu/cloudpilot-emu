@@ -388,7 +388,8 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
                 'Mass import',
                 `
                     CloudpilotEmu will attempt to import all card images in the selected zip archive.
-                    Importing large archives (several 100MB) requires a lot of memory and may crash the browser if the archive is too large.
+                    Importing large archives (several 100MB) requires a lot of memory and may crash the browser
+                    or cause spurious errors if memory is exhausted.
                     Are you sure you want to continue?
                 `,
                 { Continue: () => (install = true) },

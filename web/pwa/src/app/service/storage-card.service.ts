@@ -21,6 +21,7 @@ import { FsToolsService } from './fstools.service';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameForCards } from '@pwa/helper/filename';
 import { ZipfileWalkerState } from '@native/cloudpilot_web';
+import { isIOS } from '@common/helper/browser';
 
 export enum NewCardSize {
     mb4,
@@ -78,6 +79,12 @@ export function calculateNewCardSizeBytes(newCardSize: NewCardSize): number {
 
         default:
             throw new Error(`bad card size ${newCardSize}`);
+    }
+}
+
+class ImportError extends Error {
+    constructor(message: string) {
+        super(message);
     }
 }
 
@@ -392,6 +399,16 @@ export class StorageCardService {
 
     async addAllCardsFromArchive(zipData: Uint8Array): Promise<void> {
         const SUFFIX_PATTERN = /\.(bin|img)(|\.gz)$/i;
+        const SAFARI_DISCLAIMER = isIOS
+            ? `
+                This can be caused by either a corrupted image or zip file,
+                or by a Safari browser bug triggered by a low memory condition.
+                <br><br>
+                Please force close and reopen the app after a few seconds and try again. If the import
+                keeps failing, please unpack the archive and import the cards manually.
+            `
+            : '';
+
         const loader = await this.loadingController.create({ message: 'Importing...' });
 
         try {
@@ -407,54 +424,79 @@ export class StorageCardService {
             const entriesTotal = walker.GetTotalEntries();
             const names = new Set<string>((await this.getAllCards()).map((card) => card.name));
             const gunzipContext = await this.fstools.createGunzipContext();
+
             let iEntry = 1;
+            let skipErrors = false;
+            const failures: Array<string> = [];
 
             while (walker.GetState() === ZipfileWalkerState.open) {
                 loader.message = `Importing ${iEntry++}/${entriesTotal}...`;
-
                 let filename = walker.GetCurrentEntryName();
-                if (!SUFFIX_PATTERN.test(filename)) {
-                    await this.alertService.errorMessage(
-                        `${filename} has the wrong suffix to be considered as a card image.`,
-                    );
 
+                try {
+                    if (!SUFFIX_PATTERN.test(filename)) {
+                        throw new ImportError(`${filename} has the wrong suffix to be considered as a card image.`);
+                    }
+
+                    let content = walker.GetCurrentEntryContent();
+
+                    if (filename.endsWith('.gz') && content) {
+                        gunzipContext.initialize(content);
+
+                        content = (await gunzipContext.gunzip()) ? gunzipContext.getDecompressedData() : undefined;
+                        filename = filename.substring(0, filename.length - 3);
+                    }
+
+                    if (content === undefined) {
+                        throw new ImportError(`Failed to extract ${filename}. ${SAFARI_DISCLAIMER}`);
+                    }
+
+                    if (cloudpilot.getCardSupportLevel(content.length) === CardSupportLevel.unsupported) {
+                        throw new ImportError(`${filename} is not a valid card image.`);
+                    }
+
+                    const name = disambiguateName(filename.replace(SUFFIX_PATTERN, ''), (n) => names.has(n));
+
+                    await this.doCreateCardFromImage(name, content, false, true);
+                } catch (e: unknown) {
+                    if (!(e instanceof ImportError)) throw e;
+
+                    failures.push(filename);
+
+                    if (!skipErrors) {
+                        skipErrors = await this.alertService.messageWithChoice(
+                            'Error',
+                            e.message,
+                            'Skip further errors',
+                            skipErrors,
+                            {},
+                            'Continue',
+                        );
+                    }
+                } finally {
                     walker.Next();
-                    continue;
                 }
+            }
 
-                let content = walker.GetCurrentEntryContent();
-
-                if (filename.endsWith('.gz') && content) {
-                    gunzipContext.initialize(content);
-
-                    content = (await gunzipContext.gunzip()) ? gunzipContext.getDecompressedData() : undefined;
-                    filename = filename.substring(0, filename.length - 3);
-                }
-
-                if (content === undefined) {
-                    await this.alertService.errorMessage(`Failed to extract ${filename}.`);
-
-                    walker.Next();
-                    continue;
-                }
-
-                if (cloudpilot.getCardSupportLevel(content.length) === CardSupportLevel.unsupported) {
-                    await this.alertService.errorMessage(`${filename} is not a valid card image.`);
-
-                    walker.Next();
-                    continue;
-                }
-
-                const name = disambiguateName(filename.replace(SUFFIX_PATTERN, ''), (n) => names.has(n));
-
-                await this.doCreateCardFromImage(name, content, false, true);
-
-                walker.Next();
+            if (failures.length <= 3 && failures.length > 0) {
+                await this.alertService.errorMessage(
+                    `The following files could not be imported: <br><br>${failures.join('<br>')}`,
+                );
+            } else if (failures.length > 3) {
+                await this.alertService.errorMessage(
+                    `
+                        The following files could not be imported: <br><br>${failures.slice(0, 3).join('<br>')}
+                        <br><br>
+                        and ${failures.length - 3} more files.
+                    `,
+                );
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             await loader.dismiss();
-            await this.alertService.errorMessage(`Failed to import card images: ${e?.message ?? 'unknown error'}`);
+            await this.alertService.errorMessage(
+                `Failed to import card images: ${e?.message ?? 'unknown error'}<br><br>${SAFARI_DISCLAIMER}`,
+            );
         } finally {
             void loader.dismiss();
         }

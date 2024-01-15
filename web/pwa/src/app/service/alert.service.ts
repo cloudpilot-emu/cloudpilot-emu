@@ -31,7 +31,7 @@ export class AlertService {
         message: string,
         extraButtons: Record<string, () => void> = {},
         closeButtonLabel = 'Close',
-    ) {
+    ): Promise<void> {
         const alert = await this.alertController.create({
             header,
             message: this.sanitizeMessage(message),
@@ -51,6 +51,46 @@ export class AlertService {
 
         await alert.present();
         await alert.onDidDismiss();
+    }
+
+    async messageWithChoice(
+        header: string,
+        message: string,
+        choiceLabel: string,
+        choice: boolean,
+        extraButtons: Record<string, () => void> = {},
+        closeButtonLabel = 'Close',
+    ): Promise<boolean> {
+        const alert = await this.alertController.create({
+            header,
+            message: this.sanitizeMessage(message),
+            backdropDismiss: false,
+            buttons: [
+                { text: closeButtonLabel, role: 'cancel' },
+                ...Object.keys(extraButtons).map((text) => ({
+                    text,
+                    handler: () => {
+                        extraButtons[text]();
+                        void alert.dismiss();
+                    },
+                })),
+            ],
+            inputs: [
+                {
+                    type: 'checkbox',
+                    label: choiceLabel,
+                    checked: false,
+                    handler: (inpt) => (choice = inpt.checked === true),
+                    cssClass: 'alert-checkbox',
+                },
+            ],
+            cssClass: 'alert-checkbox-no-border alert-message',
+        });
+
+        await alert.present();
+        await alert.onDidDismiss();
+
+        return choice;
     }
 
     @debounce()
