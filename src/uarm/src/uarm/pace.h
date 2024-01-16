@@ -18,11 +18,12 @@ enum paceStatus {
     pace_status_trap0 = 32,
     pace_status_trap8 = 40,
     pace_status_syscall = 47,
-    pace_status_line_1111 = 0x0200,
-    pace_status_line_1010 = 0x0300,
-    pace_status_unimplemented_instr = 0x0100,
-    pace_status_memory_fault = 0x0400,
-    pace_status_return = 0x1000,
+    pace_status_line_1111 = 11,
+    pace_status_line_1010 = 10,
+    // There are reserved on 68k
+    pace_status_unimplemented_instr = 48,
+    pace_status_memory_fault = 49,
+    pace_status_return = 50,
 };
 
 void paceInit(struct ArmMem* mem, struct ArmMmu* mmu);
