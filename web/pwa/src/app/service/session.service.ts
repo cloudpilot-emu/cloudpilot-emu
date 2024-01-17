@@ -17,6 +17,12 @@ import { disambiguateName } from '@pwa/helper/disambiguate';
 import { metadataForSession } from '@pwa/helper/metadata';
 import { filenameForSession, filenameForSessions } from '@pwa/helper/filename';
 
+class ImportError extends Error {
+    constructor(message: string) {
+        super(message);
+    }
+}
+
 @Injectable({
     providedIn: 'root',
 })
@@ -69,32 +75,58 @@ export class SessionService {
             const entriesTotal = zipfileWalker.GetTotalEntries();
             const names = new Set(this.sessions.map((session) => session.name));
             let iEntry = 1;
+            let skipErrors = false;
+            const failures: Array<string> = [];
 
             while (zipfileWalker.GetState() === ZipfileWalkerState.open) {
-                loader.message = `Importing ${iEntry++}/${entriesTotal}...`;
+                try {
+                    loader.message = `Importing ${iEntry++}/${entriesTotal}...`;
 
-                const sessionImage = /\.(bin|img)$/i.test(zipfileWalker.GetCurrentEntryName())
-                    ? cloudpilot.deserializeSessionImage<SessionMetadata>(zipfileWalker.GetCurrentEntryContent())
-                    : undefined;
+                    const sessionImage = /\.(bin|img)$/i.test(zipfileWalker.GetCurrentEntryName())
+                        ? cloudpilot.deserializeSessionImage<SessionMetadata>(zipfileWalker.GetCurrentEntryContent())
+                        : undefined;
 
-                if (!sessionImage) {
-                    await this.alertService.errorMessage(
-                        `${zipfileWalker.GetCurrentEntryName()} is not a valid session.`,
-                        'Continue',
+                    if (!sessionImage) {
+                        throw new ImportError(`${zipfileWalker.GetCurrentEntryName()} is not a valid session.`);
+                    }
+
+                    const sessionName = disambiguateName(
+                        sessionImage.metadata?.name ?? zipfileWalker.GetCurrentEntryName(),
+                        (name) => names.has(name),
                     );
 
+                    await this.doAddSessionFromImage(sessionImage, sessionName, sessionImage.metadata);
+                } catch (e) {
+                    if (!(e instanceof ImportError)) throw e;
+
+                    failures.push(zipfileWalker.GetCurrentEntryName());
+                    if (!skipErrors) {
+                        skipErrors = await this.alertService.messageWithChoice(
+                            'Error',
+                            e.message,
+                            'Skip further errors',
+                            skipErrors,
+                            {},
+                            'Continue',
+                        );
+                    }
+                } finally {
                     zipfileWalker.Next();
-                    continue;
                 }
+            }
 
-                const sessionName = disambiguateName(
-                    sessionImage.metadata?.name ?? zipfileWalker.GetCurrentEntryName(),
-                    (name) => names.has(name),
+            if (failures.length <= 3 && failures.length > 0) {
+                await this.alertService.errorMessage(
+                    `The following files could not be imported: <br><br>${failures.join('<br>')}`,
                 );
-
-                await this.doAddSessionFromImage(sessionImage, sessionName, sessionImage.metadata);
-
-                zipfileWalker.Next();
+            } else if (failures.length > 3) {
+                await this.alertService.errorMessage(
+                    `
+                        The following files could not be imported: <br><br>${failures.slice(0, 3).join('<br>')}
+                        <br><br>
+                        and ${failures.length - 3} more files.
+                    `,
+                );
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
