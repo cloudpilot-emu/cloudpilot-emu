@@ -45,6 +45,11 @@ crashes the emulator. In this case you can simply resume the session and
 retry the installation. Installing while the launcher is open is generally
 safe.
 
+# Switching sessions
+
+If you have more than one session you can switch by tapping the session name
+in the page title and selecting another session.
+
 # State saves
 
 CloudpilotEmu automatically saves the emulator state every second while the
