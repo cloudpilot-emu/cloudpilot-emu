@@ -253,7 +253,7 @@ export class InstallationService {
         }
 
         const message = [
-            this.messageSucces(filesSuccess),
+            this.messageSuccess(filesSuccess),
             this.messageFailed(filesFail),
             this.messageRequireReset(filesRequireReset),
         ]
@@ -277,7 +277,7 @@ export class InstallationService {
         );
     }
 
-    private messageSucces(filesSuccess: Array<string>): string | undefined {
+    private messageSuccess(filesSuccess: Array<string>): string | undefined {
         switch (filesSuccess.length) {
             case 0:
                 return undefined;
