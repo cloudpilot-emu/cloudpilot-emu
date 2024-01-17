@@ -1,4 +1,4 @@
-import { AlertController, LoadingController } from '@ionic/angular';
+import { LoadingController } from '@ionic/angular';
 import { DbInstallResult } from '@common/bridge/Cloudpilot';
 
 import { AlertService } from './alert.service';
@@ -58,7 +58,6 @@ class InstallationContext {
     constructor(
         private cloudpilotService: CloudpilotService,
         private fstools: FsTools,
-        private alertController: AlertController,
         private alertService: AlertService,
         private snapshotService: SnapshotService,
         private files: Array<FileDescriptor>,
@@ -171,35 +170,9 @@ class InstallationContext {
     private errorDialog(header: string, message: string): Promise<void> {
         if (this.skipErrors) return Promise.resolve();
 
-        return new Promise((resolve) => {
-            const alert = this.alertController.create({
-                header,
-                backdropDismiss: false,
-                cssClass: 'alert-checkbox-no-border installation-error',
-                message: this.alertService.sanitizeMessage(message),
-                buttons: [
-                    {
-                        text: 'Continue',
-                        role: 'cancel',
-                        handler: () => {
-                            void this.alertController.dismiss();
-                            resolve();
-                        },
-                    },
-                ],
-                inputs: [
-                    {
-                        type: 'checkbox',
-                        label: 'Skip any remaining errors',
-                        cssClass: 'alert-checkbox',
-                        checked: false,
-                        handler: (inpt) => (this.skipErrors = inpt.checked === true),
-                    },
-                ],
-            });
-
-            void alert.then((a) => a.present());
-        });
+        return this.alertService
+            .messageWithChoice(header, message, 'Skip any remaining errors', false, {}, 'Continue')
+            .then((choice) => void (this.skipErrors = choice));
     }
 
     private filesSuccess: Array<string> = [];
@@ -220,7 +193,6 @@ export class InstallationService {
         private loadingController: LoadingController,
         private snapshotService: SnapshotService,
         private alertService: AlertService,
-        private alertController: AlertController,
         private fstools: FsToolsService,
     ) {}
 
@@ -241,7 +213,6 @@ export class InstallationService {
             const installationContext = new InstallationContext(
                 this.cloudpilotService,
                 this.fstools,
-                this.alertController,
                 this.alertService,
                 this.snapshotService,
                 files,

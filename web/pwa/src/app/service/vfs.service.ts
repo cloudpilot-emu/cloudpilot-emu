@@ -1,4 +1,4 @@
-import { AlertController, LoadingController } from '@ionic/angular';
+import { LoadingController } from '@ionic/angular';
 import { Attributes, FileEntry, ReaddirError, UnzipResult, Vfs, VfsResult, WriteFileResult } from '@common/bridge/Vfs';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { ClipboardOperation, VfsClipboard } from '@pwa/model/VfsClipboard';
@@ -24,7 +24,6 @@ export class VfsService {
         private storageCardContext: StorageCardContext,
         private fileService: FileService,
         private loadingController: LoadingController,
-        private alertController: AlertController,
         private alertService: AlertService,
     ) {
         void this.vfs.then((instance) => (this.vfsInstance = instance));
@@ -722,44 +721,21 @@ export class VfsService {
         type: 'file' | 'directory',
     ): Promise<{ overwrite: boolean; rememberChoice: boolean }> {
         let overwrite = false;
-        let rememberChoice = false;
 
-        const alert = await this.alertController.create({
-            header: 'File collision',
-            backdropDismiss: false,
-            cssClass: 'alert-checkbox-no-border installation-error',
-            message: this.alertService.sanitizeMessage(
-                type === 'file'
-                    ? `Do you want to overwrite the existing file ${name}?`
-                    : `
-                    Do you want to overwrite the existing directory ${name}?
-                    <br><br>
-                    WARNING: All files in this directory will be lost.
-                    `,
-            ),
-            buttons: [
-                {
-                    text: 'No',
-                    role: 'cancel',
-                },
-                {
-                    text: 'Yes',
-                    handler: () => (overwrite = true),
-                },
-            ],
-            inputs: [
-                {
-                    type: 'checkbox',
-                    label: `Remember choice`,
-                    checked: false,
-                    handler: (inpt) => (rememberChoice = inpt.checked === true),
-                    cssClass: 'alert-checkbox',
-                },
-            ],
-        });
-
-        await alert.present();
-        await alert.onDidDismiss();
+        const rememberChoice = await this.alertService.messageWithChoice(
+            'File collision',
+            type === 'file'
+                ? `Do you want to overwrite the existing file ${name}?`
+                : `
+                     Do you want to overwrite the existing directory ${name}?
+                     <br><br>
+                     WARNING: All files in this directory will be lost.
+                `,
+            'Remember choice',
+            false,
+            { Yes: () => (overwrite = true) },
+            'No',
+        );
 
         return { overwrite, rememberChoice };
     }
