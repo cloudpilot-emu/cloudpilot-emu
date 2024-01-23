@@ -466,14 +466,14 @@ uint32 EmCPU68K::Execute(uint32 maxCycles) {
 Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
     EmAssert(fSession);
 
-    if (fSession->IsNested()) {
-        return this->CheckForBreak();
-    }
+    // Return stopped, tracing, interrupts, reset when calling into PalmOS
+    if (fSession->IsNested()) return this->CheckForBreak();
 
     // Check for Reset first.  If this is set, don't do anything else.
 
     if ((regs.spcflags & SPCFLAG_END_OF_CYCLE)) {
-        if (fSession->ExecuteSpecial(true)) return true;
+        fSession->ExecuteSpecial();
+        regs.spcflags &= ~SPCFLAG_END_OF_CYCLE;
     }
 
     // Execute UAE spcflags-handling code (from do_specialties in newcpu.c).
@@ -517,13 +517,7 @@ Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
         regs.spcflags |= SPCFLAG_DOINT;
     }
 
-    if ((regs.spcflags & SPCFLAG_END_OF_CYCLE)) {
-        regs.spcflags &= ~SPCFLAG_END_OF_CYCLE;
-
-        if (fSession->ExecuteSpecial(false)) return true;
-    }
-
-    return this->CheckForBreak();
+    return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -570,9 +564,8 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
             logging::printf("WARNING: CPU failed to wake up after %u cycles",
                             cyclesToNextInterrupt);
 
-        if (this->CheckForBreak() || (fCurrentCycles >= maxCycles)) {
-            return true;
-        }
+        if (fCurrentCycles >= maxCycles) return true;
+
     } while (regs.stopped);
 
     return false;

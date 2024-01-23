@@ -74,7 +74,7 @@ class EmSession {
 
     void ReleaseBootKeys();
 
-    bool ExecuteSpecial(bool checkForResetOnly);
+    void ExecuteSpecial();
     bool CheckForBreak() const;
     void ScheduleResetBanks();
     void ScheduleReset(ResetType resetType);

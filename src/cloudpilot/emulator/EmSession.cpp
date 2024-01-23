@@ -386,7 +386,7 @@ void EmSession::ReleaseBootKeys() {
     holdingBootKeys = false;
 }
 
-bool EmSession::ExecuteSpecial(bool checkForResetOnly) {
+void EmSession::ExecuteSpecial() {
     if (resetScheduled) {
         resetScheduled = false;
         bankResetScheduled = false;
@@ -399,10 +399,6 @@ bool EmSession::ExecuteSpecial(bool checkForResetOnly) {
 
         Memory::ResetBankHandlers();
     }
-
-    if (checkForResetOnly) return false;
-
-    return false;
 }
 
 bool EmSession::CheckForBreak() const { return (IsNested() && subroutineReturn); }
@@ -481,7 +477,7 @@ void EmSession::YieldMemoryMgr() {
     uint32 cycles = 0;
 
     while (memSemaphoreID.xsmuse != 0 && !EmPatchMgr::IsExecutingPatch() &&
-           !SuspendManager::IsSuspended()) {
+           !SuspendManager::IsSuspended() && !gDebugger.IsStopped()) {
         EmAssert(cycles < YIELD_MEMMGR_LIMIT);
 
         cycles += gCPU68K->Execute(0);
