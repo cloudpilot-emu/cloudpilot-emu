@@ -1,3 +1,7 @@
+# Next version
+
+-   Minor optimizations.
+
 # Version 1.9.5
 
 -   Mass export multiple sessions or cards as a zip archive.
