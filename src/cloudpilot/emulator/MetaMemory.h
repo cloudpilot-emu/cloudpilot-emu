@@ -144,19 +144,11 @@ inline Bool MetaMemory::IsCPUBreak(emuptr opcodeLocation) {
 }
 
 // ---------------------------------------------------------------------------
-//		� MetaMemory::MarkTotalAccess
-// ---------------------------------------------------------------------------
-
-inline void MetaMemory::MarkTotalAccess(emuptr begin, emuptr end) {
-    UnmarkRange(begin, end, kAccessBitMask);
-}
-
-// ---------------------------------------------------------------------------
 //		� MetaMemory::SetAccess
 // ---------------------------------------------------------------------------
 
 inline void MetaMemory::SetAccess(emuptr begin, emuptr end, uint8 bits) {
-    MarkUnmarkRange(begin, end, ~kAccessBitMask, bits);
+    MarkUnmarkRange(begin, end, ~0, bits);
 }
 
 inline void MetaMemory::MarkScreen(emuptr begin, emuptr end) { SetAccess(begin, end, kScreenBits); }
@@ -166,7 +158,6 @@ inline void MetaMemory::MarkScreen(emuptr begin, emuptr end) { SetAccess(begin, 
 // ---------------------------------------------------------------------------
 
 inline void MetaMemory::UnmarkScreen(emuptr begin, emuptr end) {
-    MarkTotalAccess(begin, end);
     UnmarkRange(begin, end, kScreenBuffer);
 }
 

@@ -211,9 +211,7 @@ uint8* EmBankDummy::GetRealAddress(emuptr address) { return nullptr; }
 uint8* EmBankDummy::GetMetaAddress(emuptr address) {
     UNUSED_PARAM(address)
 
-    static uint8 dummyBits[4] = {0, 0, 0, 0};
-
-    return dummyBits;
+    return nullptr;
 }
 
 // ---------------------------------------------------------------------------

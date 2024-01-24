@@ -94,27 +94,17 @@ void MetaMemory::MarkRange(emuptr start, emuptr end, uint8 v) {
 // ---------------------------------------------------------------------------
 
 void MetaMemory::UnmarkRange(emuptr start, emuptr end, uint8 v) {
-    size_t ramSize = EmMemory::GetRegionSize(MemoryRegion::ram);
+    if (end <= start) return;
 
     // If there's no meta-memory (not needed for dedicated framebuffers)
     // just leave.
-
-    if (EmMemGetBank(start).xlatemetaaddr == NULL) return;
-
-    // If the beginning and end of the buffer are not in the same address
-    // space, just leave.  This can happen while initializing the Dragonball's
-    // LCD -- for a while, the LCD framebuffer range falls off the end
-    // of the dynamic heap.
-
-    if (start < 0 + ramSize && end >= 0 + ramSize) {
-        end = ramSize - 1;
-    }
-
-    if (start >= gMemoryStart && start < gMemoryStart + ramSize && end >= gMemoryStart + ramSize) {
-        end = gMemoryStart + ramSize - 1;
-    }
+    if (!EmMemGetBank(start).xlatemetaaddr || !EmMemGetBank(end - 1).xlatemetaaddr) return;
 
     uint8* startP = EmMemGetMetaAddress(start);
+    uint8* lastP = EmMemGetMetaAddress(end - 1);
+
+    if (lastP - startP != static_cast<long>(start - end + 1)) return;
+
     uint8* endP = startP + (end - start);  // EmMemGetMetaAddress (end);
     uint8* end4P = (uint8*)(((long)endP) & ~3);
     uint8* p = startP;
