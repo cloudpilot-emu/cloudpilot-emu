@@ -143,3 +143,5 @@ EmSPISlave* EmRegsEzPegS500C::GetSPISlave(void) {
 void EmRegsEzPegS500C::MarkScreen() {}
 
 void EmRegsEzPegS500C::UnmarkScreen() {}
+
+void EmRegsEzPegS500C::MarkScreenDirty() {}

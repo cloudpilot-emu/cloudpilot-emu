@@ -1025,6 +1025,8 @@ void EmRegsEZ::UnmarkScreen() {
     markScreen = true;
 }
 
+void EmRegsEZ::MarkScreenDirty() { gSystemState.MarkScreenDirty(); }
+
 double EmRegsEZ::TimerTicksPerSecond() {
     uint8 clksource = (READ_REGISTER(tmr1Control) >> 1) & 0x7;
     double prescaler = ((READ_REGISTER(tmr1Prescaler) & 0xff) + 1);
@@ -1775,7 +1777,7 @@ void EmRegsEZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
 
     EmRegsEZ::StdWrite(address, size, value);
 
-    gSystemState.MarkScreenDirty();
+    MarkScreenDirty();
 }
 
 void EmRegsEZ::pllRegisterWrite(emuptr address, int size, uint32 value) {

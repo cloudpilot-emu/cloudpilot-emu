@@ -106,6 +106,7 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
 
     virtual void MarkScreen();
     virtual void UnmarkScreen();
+    virtual void MarkScreenDirty();
 
    private:
     uint32 portXDataRead(emuptr address, int size);
@@ -215,6 +216,7 @@ class EmRegsSZNoScreen : public EmRegsSZ {
 
     void MarkScreen() override;
     void UnmarkScreen() override;
+    void MarkScreenDirty() override;
 };
 
 #endif  // _EM_REGS_SZ_H_

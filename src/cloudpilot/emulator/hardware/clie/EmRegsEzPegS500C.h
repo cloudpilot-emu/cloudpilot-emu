@@ -27,6 +27,7 @@ class EmRegsEzPegS500C : public EmSonyXzWithSlot<EmRegsEZ> {
     // memory
     void MarkScreen() override;
     void UnmarkScreen() override;
+    void MarkScreenDirty() override;
 
    private:
     EmSPISlave* fSPISlaveADC;

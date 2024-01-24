@@ -3828,6 +3828,8 @@ void EmRegsSZ::UnmarkScreen() {
     markScreen = true;
 }
 
+void EmRegsSZ::MarkScreenDirty() { gSystemState.MarkScreenDirty(); }
+
 uint32 EmRegsSZ::CyclesToNextInterrupt(uint64 systemCycles) {
     this->systemCycles = systemCycles;
 
@@ -4011,7 +4013,7 @@ void EmRegsSZ::lcdRegisterWrite(emuptr address, int size, uint32 value) {
 
     EmRegsSZ::StdWrite(address, size, value);
 
-    gSystemState.MarkScreenDirty();
+    MarkScreenDirty();
 }
 
 void EmRegsSZ::lcdStartAddrWrite(emuptr address, int size, uint32 value) {
@@ -4075,3 +4077,5 @@ uint16 EmRegsSZNoScreen::GetLCD2bitMapping() { return EmHALHandler::GetLCD2bitMa
 void EmRegsSZNoScreen::MarkScreen() { return; }
 
 void EmRegsSZNoScreen::UnmarkScreen() { return; }
+
+void EmRegsSZNoScreen::MarkScreenDirty() {}

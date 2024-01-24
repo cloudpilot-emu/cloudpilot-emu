@@ -79,6 +79,7 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     virtual EmSPISlave* GetSPISlave(void);
     virtual void MarkScreen();
     virtual void UnmarkScreen();
+    virtual void MarkScreenDirty();
 
     uint32 pllFreqSelRead(emuptr address, int size);
     uint32 portXDataRead(emuptr address, int size);

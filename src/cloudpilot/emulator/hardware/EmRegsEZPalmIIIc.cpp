@@ -178,3 +178,5 @@ EmSPISlave* EmRegsEZPalmIIIc::GetSPISlave(void) {
 void EmRegsEZPalmIIIc::MarkScreen() {}
 
 void EmRegsEZPalmIIIc::UnmarkScreen() {}
+
+void EmRegsEZPalmIIIc::MarkScreenDirty() {}

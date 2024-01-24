@@ -40,6 +40,7 @@ class EmRegsEZPalmIIIc : public EmRegsEZ {
     // memory
     virtual void MarkScreen();
     virtual void UnmarkScreen();
+    virtual void MarkScreenDirty();
 };
 
 #endif /* EmRegsEZPalmIIIc_h */
