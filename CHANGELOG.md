@@ -1,6 +1,7 @@
 # Next version
 
 -   Minor optimizations.
+-   Fix a rare crash on reset.
 
 # Version 1.9.5
 
