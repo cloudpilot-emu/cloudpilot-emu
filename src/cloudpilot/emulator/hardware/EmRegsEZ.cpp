@@ -1639,10 +1639,9 @@ void EmRegsEZ::portDIntReqEnWrite(emuptr address, int size, uint32 value) {
 
 void EmRegsEZ::tmr1StatusWrite(emuptr address, int size, uint32 value) {
     UNUSED_PARAM(address)
-    UNUSED_PARAM(size)
 
-    EmAssert(size == 2);  // This function's a hell of a lot easier to write if
-                          // we assume only full-register access.
+    EmAssert(size == 2 || size == 4);  // This function's a hell of a lot easier to write if
+                                       // we assume only full-register access.
 
     // Get the current value.
 
