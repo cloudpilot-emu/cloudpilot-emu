@@ -52,6 +52,8 @@ function guard(): MethodDecorator {
             try {
                 return await oldMethod.apply(this, args);
             } catch (e: unknown) {
+                console.error(e);
+
                 if (e instanceof StorageError) {
                     errorService.fatalIDBDead();
                 } else if (e === E_VERSION_MISMATCH) {
