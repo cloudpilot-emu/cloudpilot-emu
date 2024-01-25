@@ -636,7 +636,8 @@ void EmRegsVZ::Load(SavestateLoader& loader) {
 
     ApplySdctl();
 
-    markScreen = true;
+    markScreenScheduled = true;
+    screenMarked = false;
     afterLoad = true;
 
     systemCycles = gSession->GetSystemCycles();
@@ -1228,17 +1229,21 @@ uint16 EmRegsVZ::GetLCD2bitMapping() {
 }
 
 void EmRegsVZ::MarkScreen() {
-    if (!markScreen) return;
+    if (!markScreenScheduled) return;
 
     markScreenWith(MetaMemory::MarkScreen, f68VZ328Regs);
 
-    markScreen = false;
+    markScreenScheduled = false;
+    screenMarked = true;
 }
 
 void EmRegsVZ::UnmarkScreen() {
+    if (!screenMarked) return;
+
     markScreenWith(MetaMemory::UnmarkScreen, f68VZ328Regs);
 
-    markScreen = true;
+    markScreenScheduled = true;
+    screenMarked = false;
 }
 
 void EmRegsVZ::MarkScreenDirty() { gSystemState.MarkScreenDirty(); }

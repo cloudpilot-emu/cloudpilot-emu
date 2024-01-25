@@ -182,7 +182,8 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
 
     uint8 padcFifoReadIndex;
 
-    bool markScreen{true};
+    bool markScreenScheduled{true};
+    bool screenMarked{false};
     EmEvent<>::HandleT onMarkScreenCleanHandle;
     EmEvent<>::HandleT onDayRolloverHandle;
 

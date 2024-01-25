@@ -1252,7 +1252,8 @@ void EmRegsSZ::Load(SavestateLoader& loader) {
 
     gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csESelect) & ROPMask) != 0;
 
-    markScreen = true;
+    markScreenScheduled = true;
+    screenMarked = false;
     afterLoad = true;
     clutDirty = true;
 
@@ -3815,17 +3816,21 @@ uint16 EmRegsSZ::GetLCD2bitMapping() { return 0x3210; }
 uint16 EmRegsSZ::GetADCValueU() { return 0; }
 
 void EmRegsSZ::MarkScreen() {
-    if (!markScreen) return;
+    if (!markScreenScheduled) return;
 
     if (!esram->IsFramebuffer()) markScreenWith(MetaMemory::MarkScreen, f68SZ328Regs);
 
-    markScreen = false;
+    markScreenScheduled = false;
+    screenMarked = true;
 }
 
 void EmRegsSZ::UnmarkScreen() {
+    if (!screenMarked) return;
+
     if (!esram->IsFramebuffer()) markScreenWith(MetaMemory::UnmarkScreen, f68SZ328Regs);
 
-    markScreen = true;
+    markScreenScheduled = true;
+    screenMarked = false;
 }
 
 void EmRegsSZ::MarkScreenDirty() { gSystemState.MarkScreenDirty(); }

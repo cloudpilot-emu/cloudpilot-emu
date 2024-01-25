@@ -544,7 +544,8 @@ void EmRegsEZ::Load(SavestateLoader& savestate) {
     EmRegsEZ::UARTStateChanged(sendTxData);
 
     gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csDSelect) & 0x2000) != 0;
-    markScreen = true;
+    markScreenScheduled = true;
+    screenMarked = false;
 
     afterLoad = true;
 
@@ -1012,17 +1013,21 @@ uint16 EmRegsEZ::GetLCD2bitMapping() {
 }
 
 void EmRegsEZ::MarkScreen() {
-    if (!markScreen) return;
+    if (!markScreenScheduled) return;
 
     markScreenWith(MetaMemory::MarkScreen, f68EZ328Regs);
 
-    markScreen = false;
+    markScreenScheduled = false;
+    screenMarked = true;
 }
 
 void EmRegsEZ::UnmarkScreen() {
+    if (!screenMarked) return;
+
     markScreenWith(MetaMemory::UnmarkScreen, f68EZ328Regs);
 
-    markScreen = true;
+    markScreenScheduled = true;
+    screenMarked = false;
 }
 
 void EmRegsEZ::MarkScreenDirty() { gSystemState.MarkScreenDirty(); }

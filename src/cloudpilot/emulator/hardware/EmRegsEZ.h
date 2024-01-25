@@ -153,7 +153,8 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
 
     int32 lastRtcAlarmCheck;
 
-    bool markScreen{true};
+    bool markScreenScheduled{true};
+    bool screenMarked{false};
     EmEvent<>::HandleT onMarkScreenCleanHandle;
     EmEvent<>::HandleT onDayRolloverHandle;
 

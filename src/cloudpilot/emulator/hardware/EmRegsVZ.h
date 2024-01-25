@@ -169,7 +169,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     uint8 fPortDEdge;
     uint32 fPortDDataCount;
 
-    bool markScreen{true};
+    bool markScreenScheduled{true};
+    bool screenMarked{false};
     EmEvent<>::HandleT onMarkScreenCleanHandle;
     EmEvent<>::HandleT onDayRolloverHandle;
 

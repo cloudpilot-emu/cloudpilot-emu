@@ -777,7 +777,8 @@ void EmRegs328::Load(SavestateLoader& savestate) {
     EmRegs328::UARTStateChanged(sendTxData);
 
     gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csASelect1) & 0x0008) != 0;
-    markScreen = true;
+    markScreenScheduled = true;
+    screenMarked = false;
     systemCycles = gSession->GetSystemCycles();
     UpdateTimers();
     powerOffCached = GetAsleep();
@@ -1238,17 +1239,21 @@ uint16 EmRegs328::GetLCD2bitMapping() {
 }
 
 void EmRegs328::MarkScreen() {
-    if (!markScreen) return;
+    if (!markScreenScheduled) return;
 
     markScreenWith(MetaMemory::MarkScreen, f68328Regs);
 
-    markScreen = false;
+    markScreenScheduled = false;
+    screenMarked = true;
 }
 
 void EmRegs328::UnmarkScreen() {
+    if (!screenMarked) return;
+
     markScreenWith(MetaMemory::UnmarkScreen, f68328Regs);
 
-    markScreen = true;
+    markScreenScheduled = true;
+    screenMarked = false;
 }
 
 // ---------------------------------------------------------------------------
