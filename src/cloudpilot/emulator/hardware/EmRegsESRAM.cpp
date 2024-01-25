@@ -74,7 +74,7 @@ void EmRegsESRAM::SetLong(emuptr address, uint32 value) {
     uint32 offset = address - baseAddr;
     EmMemDoPut32(esram + offset, value);
 
-    gSystemState.MarkScreenDirty(address, address + 4);
+    if (isFramebuffer) gSystemState.MarkScreenDirty(address, address + 4);
 
     markDirty(offset);
     markDirty(offset + 2);
@@ -84,7 +84,7 @@ void EmRegsESRAM::SetWord(emuptr address, uint32 value) {
     uint32 offset = address - baseAddr;
     EmMemDoPut16(esram + offset, value);
 
-    gSystemState.MarkScreenDirty(address, address + 2);
+    if (isFramebuffer) gSystemState.MarkScreenDirty(address, address + 2);
 
     markDirty(offset);
 }
@@ -93,7 +93,7 @@ void EmRegsESRAM::SetByte(emuptr address, uint32 value) {
     uint32 offset = address - baseAddr;
     EmMemDoPut8(esram + offset, value);
 
-    gSystemState.MarkScreenDirty(address, address);
+    if (isFramebuffer) gSystemState.MarkScreenDirty(address, address);
 
     markDirty(offset);
 }
