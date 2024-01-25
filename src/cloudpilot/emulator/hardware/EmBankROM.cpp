@@ -47,18 +47,17 @@ emuptr EmBankROM::gROMMemoryStart = kDefaultROMMemoryStart;
 // These functions provide fetch and store access to the emulator's read only
 // memory.
 
-static EmAddressBank gROMAddressBank = {EmBankROM::GetLong,        EmBankROM::GetWord,
-                                        EmBankROM::GetByte,        EmBankROM::SetLong,
-                                        EmBankROM::SetWord,        EmBankROM::SetByte,
-                                        EmBankROM::GetRealAddress, EmBankROM::ValidAddress,
-                                        EmBankROM::GetMetaAddress, EmBankROM::AddOpcodeCycles};
+static EmAddressBank gROMAddressBank = {
+    EmBankROM::GetLong,        EmBankROM::GetWord,      EmBankROM::GetByte,
+    EmBankROM::SetLong,        EmBankROM::SetWord,      EmBankROM::SetByte,
+    EmBankROM::GetRealAddress, EmBankROM::ValidAddress, nullptr,
+    EmBankROM::AddOpcodeCycles};
 
 static uint32 gROMBank_Size;
 static uint32 gManagedROMSize;
 static uint32 gROMImage_Size;
 static uint32 gROMBank_Mask;
 static uint8* gROM_Memory;
-static uint8* gROM_MetaMemory;
 
 /***********************************************************************
  *
@@ -103,7 +102,7 @@ bool EmBankROM::Initialize(size_t len, const uint8* buffer) {
  *
  ***********************************************************************/
 
-void EmBankROM::Reset(Bool /*hardwareReset*/) { memset(gROM_MetaMemory, 0, gROMImage_Size); }
+void EmBankROM::Reset(Bool /*hardwareReset*/) {}
 
 /***********************************************************************
  *
@@ -119,10 +118,7 @@ void EmBankROM::Reset(Bool /*hardwareReset*/) { memset(gROM_MetaMemory, 0, gROMI
  *
  ***********************************************************************/
 
-void EmBankROM::Dispose(void) {
-    Platform::DisposeMemory(gROM_Memory);
-    Platform::DisposeMemory(gROM_MetaMemory);
-}
+void EmBankROM::Dispose(void) { Platform::DisposeMemory(gROM_Memory); }
 
 /***********************************************************************
  *
@@ -365,18 +361,6 @@ uint8* EmBankROM::GetRealAddress(emuptr address) {
 }
 
 // ---------------------------------------------------------------------------
-//		� EmBankROM::GetMetaAddress
-// ---------------------------------------------------------------------------
-
-uint8* EmBankROM::GetMetaAddress(emuptr address) {
-    // Strip the uppermost bit of the address.
-
-    address &= gROMBank_Mask;
-
-    return (uint8*)&(gROM_MetaMemory[address]);
-}
-
-// ---------------------------------------------------------------------------
 //		� EmBankROM::AddOpcodeCycles
 // ---------------------------------------------------------------------------
 
@@ -492,7 +476,6 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
     // Read in the ROM image.
 
     auto romImage = make_unique<uint8[]>(gROMImage_Size);
-    auto romMetaImage = make_unique<uint8[]>(gROMImage_Size);
 
     memcpy(romImage.get() + bufferOffset, buffer, len);
 
@@ -558,10 +541,8 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
     // require this.
 
     EmAssert(gROM_Memory == NULL);
-    EmAssert(gROM_MetaMemory == NULL);
 
     gROM_Memory = (uint8*)romImage.release();
-    gROM_MetaMemory = (uint8*)romMetaImage.release();
     gROMBank_Mask = gROMBank_Size - 1;
 
     // Guess the default ROM base address.
@@ -717,7 +698,7 @@ enum {
 static EmAddressBank gFlashAddressBank = {
     EmBankFlash::GetLong,        EmBankFlash::GetWord,      EmBankFlash::GetByte,
     EmBankFlash::SetLong,        EmBankFlash::SetWord,      EmBankFlash::SetByte,
-    EmBankFlash::GetRealAddress, EmBankFlash::ValidAddress, EmBankFlash::GetMetaAddress,
+    EmBankFlash::GetRealAddress, EmBankFlash::ValidAddress, nullptr,
     EmBankFlash::AddOpcodeCycles};
 
 #define FLASHBASE (EmBankROM::GetMemoryStart())
@@ -1089,18 +1070,6 @@ uint8* EmBankFlash::GetRealAddress(emuptr address) {
     address &= gROMBank_Mask;
 
     return (uint8*)&gROM_Memory[address];
-}
-
-// ---------------------------------------------------------------------------
-//		� EmBankFlash::GetMetaAddress
-// ---------------------------------------------------------------------------
-
-uint8* EmBankFlash::GetMetaAddress(emuptr address) {
-    // Strip the uppermost bit of the address.
-
-    address &= gROMBank_Mask;
-
-    return (uint8*)&(gROM_MetaMemory[address]);
 }
 
 // ---------------------------------------------------------------------------

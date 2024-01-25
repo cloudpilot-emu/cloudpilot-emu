@@ -35,7 +35,6 @@ class EmBankROM {
     static void SetByte(emuptr address, uint32 value);
     static int ValidAddress(emuptr address, uint32 size);
     static uint8* GetRealAddress(emuptr address);
-    static uint8* GetMetaAddress(emuptr address);
     static void AddOpcodeCycles(void);
 
     static emuptr GetMemoryStart(void) { return gROMMemoryStart; }

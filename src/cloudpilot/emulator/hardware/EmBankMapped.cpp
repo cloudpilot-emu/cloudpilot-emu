@@ -24,11 +24,11 @@
 // Dummy banks are non-existent blocks of memory.  Dummy bank accessors do
 // not do anything.
 
-static EmAddressBank gAddressBank = {EmBankMapped::GetLong,        EmBankMapped::GetWord,
-                                     EmBankMapped::GetByte,        EmBankMapped::SetLong,
-                                     EmBankMapped::SetWord,        EmBankMapped::SetByte,
-                                     EmBankMapped::GetRealAddress, EmBankMapped::ValidAddress,
-                                     EmBankMapped::GetMetaAddress, EmBankMapped::AddOpcodeCycles};
+static EmAddressBank gAddressBank = {
+    EmBankMapped::GetLong,        EmBankMapped::GetWord,      EmBankMapped::GetByte,
+    EmBankMapped::SetLong,        EmBankMapped::SetWord,      EmBankMapped::SetByte,
+    EmBankMapped::GetRealAddress, EmBankMapped::ValidAddress, nullptr,
+    EmBankMapped::AddOpcodeCycles};
 
 struct MapRange {
     Bool Contains(const void* addr) {
@@ -295,18 +295,6 @@ uint8* EmBankMapped::GetRealAddressForSize(emuptr address, uint32 size) {
     if (size > iter->size - (address - iter->mappedAddress)) return NULL;
 
     return ((uint8*)iter->realAddress) + (address - iter->mappedAddress);
-}
-
-// ---------------------------------------------------------------------------
-//		� EmBankMapped::GetMetaAddress
-// ---------------------------------------------------------------------------
-
-uint8* EmBankMapped::GetMetaAddress(emuptr address) {
-    UNUSED_PARAM(address)
-
-    static uint8 dummyBits[4] = {0, 0, 0, 0};
-
-    return dummyBits;
 }
 
 // ---------------------------------------------------------------------------

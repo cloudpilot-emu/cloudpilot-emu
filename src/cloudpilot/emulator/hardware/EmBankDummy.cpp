@@ -25,11 +25,11 @@
 namespace {
     uint32 ramSize;
 
-    EmAddressBank addressBank = {EmBankDummy::GetLong,        EmBankDummy::GetWord,
-                                 EmBankDummy::GetByte,        EmBankDummy::SetLong,
-                                 EmBankDummy::SetWord,        EmBankDummy::SetByte,
-                                 EmBankDummy::GetRealAddress, EmBankDummy::ValidAddress,
-                                 EmBankDummy::GetMetaAddress, EmBankDummy::AddOpcodeCycles};
+    EmAddressBank addressBank = {
+        EmBankDummy::GetLong,        EmBankDummy::GetWord,      EmBankDummy::GetByte,
+        EmBankDummy::SetLong,        EmBankDummy::SetWord,      EmBankDummy::SetByte,
+        EmBankDummy::GetRealAddress, EmBankDummy::ValidAddress, nullptr,
+        EmBankDummy::AddOpcodeCycles};
 
     inline Bool HackForHwrGetRAMSize(emuptr address) {
         //	if ((address & 0xFF000000) == EmBankSRAM::GetMemoryStart ())
