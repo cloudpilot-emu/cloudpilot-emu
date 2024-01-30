@@ -656,7 +656,6 @@ void EmUARTDragonball::ReceiveRxFIFO(EmTransportSerial* transport) {
 
 EmTransportSerial* EmUARTDragonball::GetTransport(void) {
     EmUARTDeviceType type = EmHAL::GetUARTDevice(fUARTNum);
-    cout << type << " " << gSession->GetSerialTransport(type) << endl;
 
     return gSession->GetSerialTransport(type);
 }
