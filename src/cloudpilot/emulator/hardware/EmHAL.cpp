@@ -14,6 +14,8 @@
 #include "EmHAL.h"
 
 #include "EmCommon.h"
+#include "EmSession.h"
+#include "EmTransportSerial.h"
 #include "Logging.h"
 
 EmHALHandler* EmHAL::fgRootHandler;
@@ -36,23 +38,6 @@ EmHALHandler* EmHAL::fgRootHandler;
  *				are tripped.
  *
  ***********************************************************************/
-#if 0  // CSTODO
-namespace {
-	void PrvHandlePortOpenErrors(ErrCode err, string errString) {
-		switch (err) {
-			// access denied, comm port, on Win32
-			case 5:
-				Errors::ReportErrCommPort(errString);
-				break;
-
-			// comm port error on Mac
-			case -97:
-				Errors::ReportErrCommPort(errString);
-				break;
-		}
-	}
-}
-#endif
 
 EmEvent<> EmHAL::onSystemClockChange{};
 EmEvent<double, double> EmHAL::onPwmChange{};
@@ -342,24 +327,14 @@ void EmHAL::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) {
 // enabled or disabled.
 
 void EmHAL::LineDriverChanged(EmUARTDeviceType type) {
-#if 0  // CSTODO
-    ErrCode err = errNone;
-    EmTransport* transport = gEmuPrefs->GetTransportForDevice(type);
+    EmTransportSerial* transport = gSession->GetSerialTransport(type);
+    if (!transport) return;
 
-    if (transport) {
-        if (EmHAL::GetLineDriverState(type)) {
-            err = transport->Open();
-        } else {
-            /* err = */ transport->Close();
-        }
-
-        if (err != errNone) {
-            string errString(transport->GetSpecificName());
-            ::PrvHandlePortOpenErrors(err, errString);
-        }
+    if (EmHAL::GetLineDriverState(type)) {
+        if (!transport->Open()) cerr << "failed to open serial transport for UART " << type << endl;
+    } else {
+        /* err = */ transport->Close();
     }
-
-#endif
 }
 
 // ---------------------------------------------------------------------------
@@ -432,17 +407,11 @@ Bool EmHAL::GetDTR(int uartNum) {
 // to this change by reflecting the setting in the host's DTR pin.
 
 void EmHAL::DTRChanged(int uartNum) {
-#if 0  // CSTODO
-    EmUARTDeviceType type = EmHAL::GetUARTDevice(uartNum);
-    EmTransport* transport = gEmuPrefs->GetTransportForDevice(type);
-    EmTransportSerial* serTransport = dynamic_cast<EmTransportSerial*>(transport);
+    EmTransportSerial* transport = gSession->GetSerialTransport(EmHAL::GetUARTDevice(uartNum));
+    if (!transport) return;
 
-    if (serTransport) {
-        Bool state = EmHAL::GetDTR(uartNum);
-        PRINTF("EmHAL::DTRChanged: DTR changed in emulated port to %d.", (int)state);
-        serTransport->SetDTR(state);
-    }
-#endif
+    Bool state = EmHAL::GetDTR(uartNum);
+    transport->SetDTR(state);
 }
 
 // ---------------------------------------------------------------------------

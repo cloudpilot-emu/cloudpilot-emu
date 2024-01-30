@@ -14,15 +14,11 @@
 #include "EmUARTDragonball.h"
 
 #include "EmCommon.h"
-#include "EmHAL.h"  // EmHAL, EmUARTDeviceType
-#include "EmTransport.h"
-#include "Logging.h"      // LogAppendMsg
-#include "Preferences.h"  // gEmuPrefs
-
-#if 0                               // CSTODO
-    #include "EmTransportSerial.h"  // EmTransportSerial
-    #include "ErrorHandling.h"      // ReportErrCommPort
-#endif
+#include "EmHAL.h"
+#include "EmSession.h"
+#include "EmTransportSerial.h"
+#include "Logging.h"
+#include "Preferences.h"
 
 /*
         This module contains the routines for handling serial I/O.  It
@@ -61,10 +57,8 @@
 
 static const int kMaxFifoSize = 64;
 
-#if 0  // CSTODO
 static Bool PrvPinBaud(EmTransportSerial::Baud& newBaud);
 static Bool PrvPinBaud(EmTransportSerial::Baud& newBaud, EmTransportSerial::Baud testBaud);
-#endif
 
 // #define LOGGING 0
 #ifdef LOGGING
@@ -107,17 +101,10 @@ EmUARTDragonball::EmUARTDragonball(UART_Type type, int uartNum)
  ***********************************************************************/
 
 EmUARTDragonball::~EmUARTDragonball(void) {
-    // All line drivers are effectively disabled, so close the transports.
-
-#if 0  // CSTODO
-    for (EmUARTDeviceType ii = kUARTBegin; ii < kUARTEnd; ++ii) {
-        EmTransport* transport = gEmuPrefs->GetTransportForDevice(ii);
-
-        if (transport) {
-            transport->Close();
-        }
+    for (auto uart : {kUARTSerial, kUARTIR}) {
+        EmTransportSerial* transport = gSession->GetSerialTransport(uart);
+        if (transport) transport->Close();
     }
-#endif
 }
 
 /***********************************************************************
@@ -138,16 +125,10 @@ void EmUARTDragonball::StateChanged(State& newState, Bool sendTxData) {
     // (Changing the configuration is the only place where we assume that
     // the transport we're using is a serial transport.)
 
-    EmTransport* transport = this->GetTransport();
+    EmTransportSerial* transport = this->GetTransport();
 
-#if 0  // CSTODO
-	EmTransportSerial::ConfigSerial config;
-    EmTransportSerial* serTransport = dynamic_cast<EmTransportSerial*>(transport);
-
-    if (serTransport) {
-        serTransport->GetConfig(config);
-    }
-#endif
+    EmTransportSerial::Config config;
+    if (transport) config = transport->GetConfig();
 
     // ========== RX_ENABLE ==========
     //
@@ -182,7 +163,6 @@ void EmUARTDragonball::StateChanged(State& newState, Bool sendTxData) {
     // parity is generated and expected. When this bit is low, even parity is generated and
     // expected. This bit has no function if PARITY EN is low.
 
-#if 0  // CSTODO
     if (newState.PARITY_EN == 0) {
         config.fParity = EmTransportSerial::kNoParity;
     } else if (newState.ODD_EVEN) {
@@ -265,16 +245,14 @@ void EmUARTDragonball::StateChanged(State& newState, Bool sendTxData) {
     //		0 = RTS pin is 1.
     //		1 = RTS pin is 0.
 
-    if (fState.RTS_CONT != newState.RTS_CONT || fState.RTS != newState.RTS) {
-        if (serTransport) {
-            if (newState.RTS_CONT) {
-                serTransport->SetRTS(EmTransportSerial::kRTSAuto);
+    if ((fState.RTS_CONT != newState.RTS_CONT || fState.RTS != newState.RTS) && transport) {
+        if (newState.RTS_CONT) {
+            transport->SetRTS(EmTransportSerial::kRTSAuto);
+        } else {
+            if (newState.RTS) {
+                transport->SetRTS(EmTransportSerial::kRTSOn);
             } else {
-                if (newState.RTS) {
-                    serTransport->SetRTS(EmTransportSerial::kRTSOn);
-                } else {
-                    serTransport->SetRTS(EmTransportSerial::kRTSOff);
-                }
+                transport->SetRTS(EmTransportSerial::kRTSOff);
             }
         }
     }
@@ -300,10 +278,8 @@ void EmUARTDragonball::StateChanged(State& newState, Bool sendTxData) {
     // and to help prevent the installation of invalid settings (which
     // could appear in the UART registers as it's being configured).
 
-    if (newState.UART_ENABLE) {
-        if (serTransport) {
-            serTransport->SetConfig(config);
-        }
+    if (newState.UART_ENABLE && transport) {
+        transport->SetConfig(config);
     }
 
     // ========== SEND_BREAK ==========
@@ -311,13 +287,9 @@ void EmUARTDragonball::StateChanged(State& newState, Bool sendTxData) {
     // This bit forces the transmitter to immediately send continuous zeros creating a break
     // character.
 
-    if (fState.SEND_BREAK != newState.SEND_BREAK) {
-        if (serTransport) {
-            serTransport->SetBreak(newState.SEND_BREAK);
-        }
+    if (fState.SEND_BREAK != newState.SEND_BREAK && transport) {
+        transport->SetBreak(newState.SEND_BREAK);
     }
-
-#endif
 
     // ========== TX_DATA ==========
     //
@@ -352,7 +324,6 @@ void EmUARTDragonball::StateChanged(State& newState, Bool sendTxData) {
                 }
             } else  // The host serial port is NOT open
             {
-#if 0  // CSTODO
                 if (config.fHwrHandshake)  // Reflects the state of the IGNORE_CTS bit.
                 {
                     // With hardware handshaking, data is sent only when CTS
@@ -369,7 +340,6 @@ void EmUARTDragonball::StateChanged(State& newState, Bool sendTxData) {
                     // With no hardware handshaking, data is sent whenever it's
                     // ready.  With nowhere to go, we can drop it on the floor.
                 }
-#endif
             }
         } else  // We're in loopback mode.
         {
@@ -405,7 +375,7 @@ void EmUARTDragonball::UpdateState(State& state, Bool refreshRxData) {
 
     // Update the RxFIFO if there's been any buffered data.
 
-    EmTransport* transport = this->GetTransport();
+    EmTransportSerial* transport = this->GetTransport();
     if (transport) {
         this->ReceiveRxFIFO(transport);
     }
@@ -413,7 +383,7 @@ void EmUARTDragonball::UpdateState(State& state, Bool refreshRxData) {
     // === RX_FIFO_FULL ===
     //
     // This read-only bit indicates that the receiver FIFO is full and may generate an overrun. This
-    // bit generates a maskable interrupt.
+    // bit generates a maskables interrupt.
     //
     // Further, from the overview section of the manual:
     //
@@ -567,7 +537,7 @@ void EmUARTDragonball::UpdateState(State& state, Bool refreshRxData) {
  *
  ***********************************************************************/
 
-void EmUARTDragonball::TransmitTxFIFO(EmTransport* transport) {
+void EmUARTDragonball::TransmitTxFIFO(EmTransportSerial* transport) {
     EmAssert(transport);
 
     if (transport->CanWrite()) {
@@ -606,7 +576,7 @@ void EmUARTDragonball::TransmitTxFIFO(EmTransport* transport) {
  *
  ***********************************************************************/
 
-void EmUARTDragonball::ReceiveRxFIFO(EmTransport* transport) {
+void EmUARTDragonball::ReceiveRxFIFO(EmTransportSerial* transport) {
     EmAssert(transport);
 
     if (transport->CanRead()) {
@@ -618,7 +588,7 @@ void EmUARTDragonball::ReceiveRxFIFO(EmTransport* transport) {
 
         // See how many bytes are waiting.
 
-        long bytesToBuffer = transport->BytesInBuffer(fRxFIFO.GetMaxSize());
+        long bytesToBuffer = transport->BytesPending();
 
         // See if we have that much room in the FIFO. If not, limit our read
         // to that many bytes.
@@ -684,15 +654,11 @@ void EmUARTDragonball::ReceiveRxFIFO(EmTransport* transport) {
  *
  ***********************************************************************/
 
-EmTransport* EmUARTDragonball::GetTransport(void) {
-#if 0  // CSTODO
+EmTransportSerial* EmUARTDragonball::GetTransport(void) {
     EmUARTDeviceType type = EmHAL::GetUARTDevice(fUARTNum);
-    EmTransport* transport = gEmuPrefs->GetTransportForDevice(type);
+    cout << type << " " << gSession->GetSerialTransport(type) << endl;
 
-    return transport;
-#endif
-
-    return nullptr;
+    return gSession->GetSerialTransport(type);
 }
 
 /***********************************************************************
@@ -784,7 +750,6 @@ int EmUARTDragonball::PrvLevelMarker(Bool forRX) {
     return level;
 }
 
-#if 0  // CSTODO
 /***********************************************************************
  *
  * FUNCTION:	PrvPinBaud
@@ -853,5 +818,3 @@ Bool PrvPinBaud(EmTransportSerial::Baud& newBaud, EmTransportSerial::Baud testBa
 
     return false;
 }
-
-#endif

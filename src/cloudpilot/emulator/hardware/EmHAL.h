@@ -27,17 +27,7 @@ struct Frame;
 
 enum { kLEDOff = 0x00, kLEDGreen = 0x01, kLEDRed = 0x02 };
 
-enum EmUARTDeviceType {
-    kUARTBegin = 0,
-
-    kUARTSerial = kUARTBegin,
-    kUARTIR,
-    kUARTBluetooth,
-    kUARTMystery,
-    kUARTNone,
-
-    kUARTEnd
-};
+enum EmUARTDeviceType { kUARTBegin = 0, kUARTSerial = kUARTBegin, kUARTIR, kUARTNone, kUARTEnd };
 
 DEFINE_SCALAR_MODIFIERS(EmUARTDeviceType)
 

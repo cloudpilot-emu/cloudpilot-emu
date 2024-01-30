@@ -272,113 +272,6 @@ void EmPatchMgr::Dispose(void) {
 
 /***********************************************************************
  *
- * FUNCTION:	EmPatchMgr::PostLoad
- *
- * DESCRIPTION:	Do some stuff that is normally taken care of during the
- *				process of resetting the device (autoloading
- *				applications, setting the device date, installing the
- *				HotSync user-name, and setting the 'gdbS' feature).
- *
- * PARAMETERS:	none
- *
- * RETURNED:	nothing
- *
- ***********************************************************************/
-
-void EmPatchMgr::PostLoad(void) {
-#if 0  // CSTODO
-    if (EmSystemState::UIInitialized()) {
-        // If we're listening on a socket, install the 'gdbS' feature.	The
-        // existance of this feature causes programs written with the prc tools
-        // to enter the debugger when they're launched.
-
-        if (Debug::ConnectedToTCPDebugger()) {
-            FtrSet('gdbS', 0, 0x12BEEF34);
-        } else {
-            FtrUnregister('gdbS', 0);
-        }
-
-        // Reconfirm the strict intl checks setting, whether on or off.
-
-        Preference<Bool> intlPref(kPrefKeyReportStrictIntlChecks);
-
-        if (EmPatchMgr::IntlMgrAvailable()) {
-            ::IntlSetStrictChecks(*intlPref);
-        }
-
-        // Reconfirm the overlay checks setting, whether on or off.
-
-        Preference<Bool> overlayPref(kPrefKeyReportOverlayErrors);
-        (void)::FtrSet(omFtrCreator, omFtrShowErrorsFlag, *overlayPref);
-
-        // Install the HotSync user-name.
-
-        // Actually, let's not do that.  From Scott Maxwell:
-        //
-        //	Would it be possible to save the HotSync user name with each session? This
-        //	would be very convenient for working on multiple projects because each
-        //	session could have a different user name.
-        //
-        // To which I said:
-        //	I think that what you're seeing is Poser (re-)establishing the user preference
-        //	from the Properties/Preferences dialog box after the session is reloaded.  I
-        //	could see this way of working as being valuable, too, so I'm not sure which way
-        //	to go: keep things the way they are or change them.
-        //
-        // To which he said:
-        //
-        //	How about having the preferences dialog grab the name from the Palm RAM?
-        //	That way you could easily maintain it per session.
-        //
-        // Sounds good to me...
-
-        //		Preference<string>	userNamePref (kPrefKeyUserName);
-        //		::SetHotSyncUserName (userNamePref->c_str ());
-
-        CEnableFullAccess munge;
-
-        if (EmLowMem::TrapExists(sysTrapDlkGetSyncInfo)) {
-            char userName[dlkUserNameBufSize];
-            Err err = ::DlkGetSyncInfo(NULL, NULL, NULL, userName, NULL, NULL);
-            if (!err) {
-                Preference<string> userNamePref(kPrefKeyUserName);
-                userNamePref = string(userName);
-            }
-        }
-
-        // Auto-load any files in the Autoload[Foo] directories.
-
-        ::PrvAutoload();
-
-        // Install the current date.
-
-        ::PrvSetCurrentDate();
-
-        // Wake up any current application so that they can respond
-        // to events we pump in at EvtGetEvent time.
-
-        ::EvtWakeup();
-    }
-
-    // Re-open any needed transports.  This could probably be done
-    // at the time the session file is loaded, but we put it here
-    // with the rest of the (deferred) post-load activities for
-    // consistancy.
-
-    for (EmUARTDeviceType ii = kUARTBegin; ii < kUARTEnd; ++ii) {
-        if (EmHAL::GetLineDriverState(ii)) {
-            EmTransport* transport = gEmuPrefs->GetTransportForDevice(ii);
-
-            if (transport) {
-                transport->Open();
-            }
-        }
-    }
-#endif
-}
-
-/***********************************************************************
- *
  * FUNCTION:	EmPatchMgr::GetLibPatchTable
  *
  * DESCRIPTION:	.
@@ -434,13 +327,6 @@ EmPatchModule* EmPatchMgr::GetLibPatchTable(uint16 refNum) {
 
 CallROMType EmPatchMgr::HandleSystemCall(const SystemCallContext& context) {
     EmAssert(gSession);
-
-#if 0  // CSTODO
-    if (gSession->GetNeedPostLoad()) {
-        gSession->SetNeedPostLoad(false);
-        EmPatchMgr::PostLoad();
-    }
-#endif
 
     HeadpatchProc hp;
     TailpatchProc tp;

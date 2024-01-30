@@ -86,8 +86,6 @@ Bool EmRegsVZPalmM500::GetLineDriverState(EmUARTDeviceType type) {
 
     if (type == kUARTIR) return (READ_REGISTER(portMData) & hwrVZPortMIR_SD) == 0;
 
-    if (type == kUARTMystery) return true;
-
     return false;
 }
 

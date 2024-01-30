@@ -10,7 +10,10 @@
 #include "EmCommon.h"
 #include "EmDevice.h"
 #include "EmEvent.h"
+#include "EmHAL.h"
 #include "EmThreadSafeQueue.h"
+#include "EmTransportSerial.h"
+#include "EmTransportSerialNull.h"
 #include "KeyboardEvent.h"
 #include "PenEvent.h"
 #include "Savestate.h"
@@ -91,6 +94,8 @@ class EmSession {
 
     void TriggerDeadMansSwitch();
 
+    EmTransportSerial* GetSerialTransport(EmUARTDeviceType);
+
    private:
     template <typename T>
     void DoSaveLoad(T& helper, uint32 version);
@@ -135,6 +140,9 @@ class EmSession {
     Savestate savestate;
 
     bool deadMansSwitch{false};
+
+    EmTransportSerialNull defaultTransportIR;
+    EmTransportSerialNull defaultTransportSerial;
 };
 
 extern EmSession* gSession;

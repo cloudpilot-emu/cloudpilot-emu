@@ -85,10 +85,6 @@ EmUARTDeviceType EmRegsVZAtlantiC::GetUARTDevice(int uartNum) {
         if (irEnabled) return kUARTIR;
     }
 
-    if (uartNum == 1) {
-        return kUARTMystery;
-    }
-
     return kUARTNone;
 }
 

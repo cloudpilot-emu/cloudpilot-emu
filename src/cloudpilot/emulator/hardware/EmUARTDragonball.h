@@ -16,7 +16,7 @@
 
 #include "EmThreadSafeQueue.h"  // EmByteQueue
 
-class EmTransport;
+class EmTransportSerial;
 
 class EmUARTDragonball {
    public:
@@ -120,10 +120,10 @@ class EmUARTDragonball {
     void StateChanged(State&, Bool sendRxData);
     void UpdateState(State&, Bool refreshRxData);
 
-    void TransmitTxFIFO(EmTransport*);
-    void ReceiveRxFIFO(EmTransport*);
+    void TransmitTxFIFO(EmTransportSerial*);
+    void ReceiveRxFIFO(EmTransportSerial*);
 
-    EmTransport* GetTransport(void);
+    EmTransportSerial* GetTransport(void);
 
    private:
     int PrvFIFOSize(Bool forRX);

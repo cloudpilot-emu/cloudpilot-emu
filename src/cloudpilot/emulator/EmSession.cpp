@@ -571,4 +571,17 @@ void EmSession::CheckDayForRollover() {
 
 void EmSession::TriggerDeadMansSwitch() { deadMansSwitch = true; }
 
+EmTransportSerial* EmSession::GetSerialTransport(EmUARTDeviceType type) {
+    switch (type) {
+        case kUARTIR:
+            return &defaultTransportIR;
+
+        case kUARTSerial:
+            return &defaultTransportSerial;
+
+        default:
+            return nullptr;
+    }
+}
+
 bool EmSession::LaunchAppByName(const string& name) { return EmPalmOS::LaunchAppByName(name); }

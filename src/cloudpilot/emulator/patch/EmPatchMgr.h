@@ -34,8 +34,6 @@ class EmPatchMgr {
 
     static void Load(SavestateLoader& loader);
 
-    static void PostLoad(void);
-
     static CallROMType HandleSystemCall(const SystemCallContext&);
 
     static void HandleInstructionBreak(void);
