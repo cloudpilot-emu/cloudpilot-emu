@@ -327,7 +327,7 @@ void EmHAL::GetKeyInfo(int* numRows, int* numCols, uint16* keyMap, Bool* rows) {
 // enabled or disabled.
 
 void EmHAL::LineDriverChanged(EmUARTDeviceType type) {
-    EmTransportSerial* transport = gSession->GetSerialTransport(type);
+    EmTransportSerial* transport = gSession->GetTransportSerial(type);
     if (!transport) return;
 
     if (EmHAL::GetLineDriverState(type)) {
@@ -407,7 +407,7 @@ Bool EmHAL::GetDTR(int uartNum) {
 // to this change by reflecting the setting in the host's DTR pin.
 
 void EmHAL::DTRChanged(int uartNum) {
-    EmTransportSerial* transport = gSession->GetSerialTransport(EmHAL::GetUARTDevice(uartNum));
+    EmTransportSerial* transport = gSession->GetTransportSerial(EmHAL::GetUARTDevice(uartNum));
     if (!transport) return;
 
     Bool state = EmHAL::GetDTR(uartNum);

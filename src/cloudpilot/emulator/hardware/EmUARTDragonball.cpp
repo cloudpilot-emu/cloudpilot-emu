@@ -102,7 +102,7 @@ EmUARTDragonball::EmUARTDragonball(UART_Type type, int uartNum)
 
 EmUARTDragonball::~EmUARTDragonball(void) {
     for (auto uart : {kUARTSerial, kUARTIR}) {
-        EmTransportSerial* transport = gSession->GetSerialTransport(uart);
+        EmTransportSerial* transport = gSession->GetTransportSerial(uart);
         if (transport) transport->Close();
     }
 }
@@ -582,7 +582,6 @@ void EmUARTDragonball::ReceiveRxFIFO(EmTransportSerial* transport) {
     if (transport->CanRead()) {
         // Buffer up any incoming bytes.
 
-        ErrCode err = errNone;
         char buffer[kMaxFifoSize];
         long spaceInRxFIFO = fRxFIFO.GetFree();
 
@@ -623,9 +622,7 @@ void EmUARTDragonball::ReceiveRxFIFO(EmTransportSerial* transport) {
             // difficult, as I'd have to stop the CPU thread, update the registers,
             // and restart the thread.
 
-            err = transport->Read(bytesToBuffer, buffer);
-
-            if (err == errNone) {
+            if (transport->Read(bytesToBuffer, buffer)) {
 #if 0  // CSTODO
        // not quite the correct phrase for IR over serial (over TCP)
                 if (LogSerialData())
@@ -657,7 +654,7 @@ void EmUARTDragonball::ReceiveRxFIFO(EmTransportSerial* transport) {
 EmTransportSerial* EmUARTDragonball::GetTransport(void) {
     EmUARTDeviceType type = EmHAL::GetUARTDevice(fUARTNum);
 
-    return gSession->GetSerialTransport(type);
+    return gSession->GetTransportSerial(type);
 }
 
 /***********************************************************************

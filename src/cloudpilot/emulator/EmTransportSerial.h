@@ -45,14 +45,18 @@ class EmTransportSerial {
     };
 
    public:
-    virtual bool Open(void) = 0;
-    virtual bool Close(void) = 0;
+    virtual ~EmTransportSerial() = default;
+
+    virtual void Reset() = 0;
+
+    virtual bool Open() = 0;
+    virtual bool Close() = 0;
 
     virtual bool Read(long&, void*) = 0;
     virtual bool Write(long&, const void*) = 0;
 
-    virtual bool CanRead(void) = 0;
-    virtual bool CanWrite(void) = 0;
+    virtual bool CanRead() = 0;
+    virtual bool CanWrite() = 0;
 
     virtual size_t BytesPending() = 0;
 
@@ -65,7 +69,6 @@ class EmTransportSerial {
 
    protected:
     EmTransportSerial() = default;
-    virtual ~EmTransportSerial(void) = default;
 
    protected:
     Config config;

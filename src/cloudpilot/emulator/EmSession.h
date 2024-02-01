@@ -67,6 +67,8 @@ class EmSession {
 
     bool LaunchAppByName(const string& name);
 
+    void SetTransportSerial(EmUARTDeviceType type, EmTransportSerial* transport);
+
     ///////////////////////////////////////////////////////////////////////////
     // Internal stuff
     ///////////////////////////////////////////////////////////////////////////
@@ -94,7 +96,7 @@ class EmSession {
 
     void TriggerDeadMansSwitch();
 
-    EmTransportSerial* GetSerialTransport(EmUARTDeviceType);
+    EmTransportSerial* GetTransportSerial(EmUARTDeviceType);
 
    private:
     template <typename T>
@@ -143,6 +145,9 @@ class EmSession {
 
     EmTransportSerialNull defaultTransportIR;
     EmTransportSerialNull defaultTransportSerial;
+
+    unique_ptr<EmTransportSerial> transportIR;
+    unique_ptr<EmTransportSerial> transportSerial;
 };
 
 extern EmSession* gSession;

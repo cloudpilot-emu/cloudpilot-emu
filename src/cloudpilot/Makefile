@@ -218,6 +218,7 @@ SOURCE_EMU = \
 	emulator/EmThreadSafeQueue.cpp \
 	emulator/EmTransportSerial.cpp \
 	emulator/EmTransportSerialNull.cpp \
+	emulator/EmTransportSerialBuffer.cpp \
 	emulator/MetaMemory.cpp \
 	emulator/Byteswapping.cpp \
 	emulator/EmSession.cpp \

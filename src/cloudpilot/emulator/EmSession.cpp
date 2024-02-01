@@ -323,6 +323,8 @@ void EmSession::Reset(ResetType resetType) {
     EmPalmOS::Reset();
     gSystemState.Reset();
 
+    for (auto uartType : {kUARTIR, kUARTSerial}) GetTransportSerial(uartType)->Reset();
+
     bankResetScheduled = false;
     resetScheduled = false;
 
@@ -571,13 +573,13 @@ void EmSession::CheckDayForRollover() {
 
 void EmSession::TriggerDeadMansSwitch() { deadMansSwitch = true; }
 
-EmTransportSerial* EmSession::GetSerialTransport(EmUARTDeviceType type) {
+EmTransportSerial* EmSession::GetTransportSerial(EmUARTDeviceType type) {
     switch (type) {
         case kUARTIR:
-            return &defaultTransportIR;
+            return transportIR ? transportIR.get() : &defaultTransportIR;
 
         case kUARTSerial:
-            return &defaultTransportSerial;
+            return transportSerial ? transportSerial.get() : &defaultTransportSerial;
 
         default:
             return nullptr;
@@ -585,3 +587,18 @@ EmTransportSerial* EmSession::GetSerialTransport(EmUARTDeviceType type) {
 }
 
 bool EmSession::LaunchAppByName(const string& name) { return EmPalmOS::LaunchAppByName(name); }
+
+void EmSession::SetTransportSerial(EmUARTDeviceType type, EmTransportSerial* transport) {
+    switch (type) {
+        case kUARTIR:
+            transportIR.reset(transport);
+            break;
+
+        case kUARTSerial:
+            transportSerial.reset(transport);
+            break;
+
+        default:
+            break;
+    }
+}

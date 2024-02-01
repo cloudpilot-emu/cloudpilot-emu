@@ -8,14 +8,16 @@ class EmTransportSerialNull : public EmTransportSerial {
    public:
     EmTransportSerialNull();
 
-    bool Open(void) override;
-    bool Close(void) override;
+    void Reset() override;
+
+    bool Open() override;
+    bool Close() override;
 
     bool Read(long&, void*) override;
     bool Write(long&, const void*) override;
 
-    bool CanRead(void) override;
-    bool CanWrite(void) override;
+    bool CanRead() override;
+    bool CanWrite() override;
 
     size_t BytesPending() override;
 

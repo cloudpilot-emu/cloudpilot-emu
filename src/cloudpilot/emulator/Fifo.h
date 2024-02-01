@@ -17,6 +17,7 @@ class Fifo {
     T Pop();
 
     uint32 Size() const;
+    uint32 Free() const;
 
     void Clear();
 
@@ -77,6 +78,11 @@ T Fifo<T>::Pop() {
 template <class T>
 uint32 Fifo<T>::Size() const {
     return size;
+}
+
+template <class T>
+uint32 Fifo<T>::Free() const {
+    return capacity - size;
 }
 
 template <class T>
