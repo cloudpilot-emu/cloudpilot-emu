@@ -28,8 +28,16 @@ const DEFAULT_SESSION: Session = {
 const CARD_KEY = 'MEMORY_CARD';
 
 export interface SerialTransport {
+    /**
+     * Transfer a chunk of data over the serial port.
+     *
+     * @param data Serial data
+     */
     send(data: Uint8Array): void;
 
+    /**
+     * Fires when data is transferred over the serial port.
+     */
     dataEvent: EventInterface<Uint8Array>;
 }
 
@@ -308,8 +316,14 @@ export interface Emulator {
      */
     getStatistics(): EmulationStatistics;
 
+    /**
+     * Get serial transport for IR transceiver.
+     */
     getTransportIR(): SerialTransport;
 
+    /**
+     * Get serial transport for serial port.
+     */
     getTransportSerial(): SerialTransport;
 
     /**

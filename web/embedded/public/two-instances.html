@@ -89,6 +89,9 @@
             const canvas1 = document.getElementById('canvas-1');
             const canvas2 = document.getElementById('canvas-2');
 
+            emulator1.getTransportIR().dataEvent.addHandler(data => emulator2.getTransportIR().send(data));
+            emulator2.getTransportIR().dataEvent.addHandler(data => emulator1.getTransportIR().send(data));
+
             emulator1
                 .loadRom(new Uint8Array(rom1))
                 .setCanvas(canvas1)
