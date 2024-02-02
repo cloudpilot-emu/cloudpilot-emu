@@ -116,8 +116,9 @@ export const SUPPORTED_DEVICES = [
     DeviceId.lp168,
 ];
 
-interface SerialTransport extends Omit<EmSerialTransport, 'Receive'> {
+interface SerialTransport extends Omit<EmSerialTransport, 'Receive' | 'Send'> {
     Receive(): Uint8Array;
+    Send(data: Uint8Array): void;
 
     dataEvent: Event<Uint8Array>;
 }
@@ -857,17 +858,27 @@ export class Cloudpilot {
     }
 
     private wrapTransport(transport: EmSerialTransport): SerialTransport {
-        return Object.setPrototypeOf(
-            {
-                Receive: (): Uint8Array | undefined => {
-                    const count = transport.RxBytesPending();
+        return this.wrap(
+            Object.setPrototypeOf(
+                {
+                    Receive: (): Uint8Array | undefined => {
+                        const count = transport.RxBytesPending();
 
-                    return this.copyOut(transport.Receive(), count);
+                        return this.copyOut(transport.Receive(), count);
+                    },
+
+                    Send: (data: Uint8Array): void => {
+                        const buffer = this.copyIn(data);
+
+                        transport.Send(data.length, buffer);
+
+                        this.cloudpilot.Free(buffer);
+                    },
+
+                    dataEvent: new Event<Uint8Array>(),
                 },
-
-                dataEvent: new Event<Uint8Array>(),
-            },
-            this.wrap(transport),
+                transport,
+            ),
         );
     }
 

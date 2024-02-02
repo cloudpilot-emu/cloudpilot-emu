@@ -28,6 +28,8 @@ const DEFAULT_SESSION: Session = {
 const CARD_KEY = 'MEMORY_CARD';
 
 export interface SerialTransport {
+    send(data: Uint8Array): void;
+
     dataEvent: EventInterface<Uint8Array>;
 }
 
@@ -676,11 +678,17 @@ export class EmulatorImpl implements Emulator {
     }
 
     getTransportIR(): SerialTransport {
-        return { dataEvent: this.cloudpilot.getTransportIR().dataEvent };
+        return {
+            dataEvent: this.cloudpilot.getTransportIR().dataEvent,
+            send: (data) => this.cloudpilot.getTransportIR().Send(data),
+        };
     }
 
     getTransportSerial(): SerialTransport {
-        return { dataEvent: this.cloudpilot.getTransportSerial().dataEvent };
+        return {
+            dataEvent: this.cloudpilot.getTransportSerial().dataEvent,
+            send: (data) => this.cloudpilot.getTransportSerial().Send(data),
+        };
     }
 
     get powerOffChangeEvent(): Event<boolean> {
