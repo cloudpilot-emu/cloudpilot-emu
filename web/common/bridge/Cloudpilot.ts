@@ -9,6 +9,7 @@ import createModule, {
     Cloudpilot as CloudpilotNative,
     DbBackup,
     DbInstallResult,
+    EmSerialTransport,
     GunzipContext,
     GunzipState,
     Module,
@@ -115,6 +116,12 @@ export const SUPPORTED_DEVICES = [
     DeviceId.lp168,
 ];
 
+interface SerialTransport extends Omit<EmSerialTransport, 'Receive'> {
+    Receive(): Uint8Array;
+
+    dataEvent: Event<Uint8Array>;
+}
+
 function guard(): MethodDecorator {
     return (target: unknown, propertyKey: string | symbol, desc: PropertyDescriptor) => {
         const oldMethod = desc.value;
@@ -144,6 +151,9 @@ export class Cloudpilot {
                 'vi',
             ),
         );
+
+        this.transportIR = this.wrapTransport(this.cloudpilot.GetTransportIR());
+        this.transportSerial = this.wrapTransport(this.cloudpilot.GetTransportSerial());
     }
 
     static async create(wasmModuleUrl?: string): Promise<Cloudpilot>;
@@ -208,7 +218,17 @@ export class Cloudpilot {
 
     @guard()
     runEmulation(cycles: number): number {
-        return this.cloudpilot.RunEmulation(cycles);
+        const actualCycles = this.cloudpilot.RunEmulation(cycles);
+
+        if (this.transportIR.dataEvent.hasHandlers && this.transportIR.RxBytesPending() > 0) {
+            this.transportIR.dataEvent.dispatch(this.transportIR.Receive());
+        }
+
+        if (this.transportSerial.dataEvent.hasHandlers && this.transportSerial.RxBytesPending() > 0) {
+            this.transportSerial.dataEvent.dispatch(this.transportSerial.Receive());
+        }
+
+        return actualCycles;
     }
 
     @guard()
@@ -773,6 +793,14 @@ export class Cloudpilot {
         }
     }
 
+    getTransportIR(): SerialTransport {
+        return this.transportIR;
+    }
+
+    getTransportSerial(): SerialTransport {
+        return this.transportSerial;
+    }
+
     public guard<T>(fn: () => T) {
         if (this.amIdead) throw new Error('cloudpilot instance is dead');
 
@@ -828,10 +856,29 @@ export class Cloudpilot {
         });
     }
 
+    private wrapTransport(transport: EmSerialTransport): SerialTransport {
+        return Object.setPrototypeOf(
+            {
+                Receive: (): Uint8Array | undefined => {
+                    const count = transport.RxBytesPending();
+
+                    return this.copyOut(transport.Receive(), count);
+                },
+
+                dataEvent: new Event<Uint8Array>(),
+            },
+            this.wrap(transport),
+        );
+    }
+
     fatalErrorEvent = new Event<Error>();
     pwmUpdateEvent = new Event<PwmUpdate>();
     proxyDisconnectEvent = new Event<string>();
 
     private cloudpilot: CloudpilotNative;
+
+    private transportIR: SerialTransport;
+    private transportSerial: SerialTransport;
+
     private amIdead = false;
 }

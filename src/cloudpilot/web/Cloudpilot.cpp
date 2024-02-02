@@ -19,6 +19,9 @@
 #include "SuspendManager.h"
 
 namespace {
+    EmTransportSerialBuffer serialTransportIR;
+    EmTransportSerialBuffer serialTransportSerial;
+
     unique_ptr<EmROMReader> createReader(void* buffer, int size) {
         auto reader = make_unique<EmROMReader>(buffer, size);
 
@@ -62,6 +65,11 @@ namespace {
         }
     }
 }  // namespace
+
+Cloudpilot::Cloudpilot() {
+    gSession->SetTransportSerial(kUARTIR, &serialTransportIR);
+    gSession->SetTransportSerial(kUARTSerial, &serialTransportSerial);
+}
 
 void* Cloudpilot::Malloc(int size) { return ::malloc(size); }
 
@@ -345,3 +353,7 @@ const char* Cloudpilot::GetMountedKey() {
 
     return key.c_str();
 }
+
+EmTransportSerialBuffer* Cloudpilot::GetTransportIR() { return &serialTransportIR; }
+
+EmTransportSerialBuffer* Cloudpilot::GetTransportSerial() { return &serialTransportSerial; }

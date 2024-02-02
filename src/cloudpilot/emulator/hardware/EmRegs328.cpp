@@ -1265,11 +1265,6 @@ EmUARTDeviceType EmRegs328::GetUARTDevice(int /*uartNum*/) {
     Bool serEnabled = this->GetLineDriverState(kUARTSerial);
     Bool irEnabled = this->GetLineDriverState(kUARTIR);
 
-    // It's probably an error to have them both enabled at the same
-    // time.  !!! TBD: make this an error message.
-
-    EmAssert(!(serEnabled && irEnabled));
-
     if (serEnabled) return kUARTSerial;
 
     if (irEnabled) return kUARTIR;

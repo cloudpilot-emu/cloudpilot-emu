@@ -39,6 +39,18 @@ export const enum CardSupportLevel {
     sdAndMs = 2,
 }
 
+export const enum Rts {
+    off = 0,
+    on = 1,
+    auto = 2,
+}
+
+export const enum Parity {
+    none = 0,
+    odd = 1,
+    even = 2,
+}
+
 export interface RomInfo {
     CardVersion(): number;
     CardName(): string;
@@ -136,6 +148,9 @@ export interface Cloudpilot {
     RemountCards(): void;
     GetSupportLevel(size: number): CardSupportLevel;
     GetMountedKey(): string;
+
+    GetTransportIR(): EmSerialTransport;
+    GetTransportSerial(): EmSerialTransport;
 }
 
 export interface Frame {
@@ -237,4 +252,23 @@ export interface SessionImage {
 export interface SkinLoader {
     GetData(): VoidPtr;
     GetSize(): number;
+}
+
+export interface EmSerialTransport {
+    RxBytesPending(): number;
+    Receive(): VoidPtr;
+    Send(count: number, data: VoidPtr): number;
+
+    IsOpen(): boolean;
+    Rts(): Rts;
+    Dtr(): boolean;
+    IsBreak(): boolean;
+
+    BufferSize(): number;
+
+    GetBaud(): number;
+    GetParity(): Parity;
+    GetStopBits(): number;
+    GetDataBits(): number;
+    GetHwrHandshake(): number;
 }

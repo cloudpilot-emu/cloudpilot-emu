@@ -77,8 +77,6 @@ EmUARTDeviceType EmRegsVZAtlantiC::GetUARTDevice(int uartNum) {
     Bool serEnabled = this->GetLineDriverState(kUARTSerial);
     Bool irEnabled = this->GetLineDriverState(kUARTIR);
 
-    EmAssert(!(serEnabled && irEnabled));
-
     if (uartNum == 0) {
         if (serEnabled) return kUARTSerial;
 

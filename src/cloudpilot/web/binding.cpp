@@ -3,6 +3,7 @@
 #include <cstddef>
 
 #include "Cloudpilot.h"
+#include "EmTransportSerialBuffer.h"
 #include "Frame.h"
 #include "GunzipContext.h"
 #include "RomInfo.h"

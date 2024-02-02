@@ -88,6 +88,9 @@ interface Cloudpilot {
     void RemountCards();
     long GetSupportLevel(long size);
     [Const] DOMString GetMountedKey();
+
+    EmTransportSerialBuffer GetTransportIR();
+    EmTransportSerialBuffer GetTransportSerial();
 };
 
 interface RomInfo {
@@ -206,4 +209,24 @@ interface SkinLoader {
 
     VoidPtr GetData();
     long GetSize();
+};
+
+interface EmTransportSerialBuffer {
+    long RxBytesPending();
+    VoidPtr Receive();
+
+    long Send(long Count, [Const] VoidPtr data);
+
+    boolean IsOpen();
+    long Rts();
+    boolean Dtr();
+    boolean IsBreak();
+
+    long BufferSize();
+
+    long GetBaud();
+    long GetParity();
+    long GetStopBits();
+    long GetDataBits();
+    long GetHwrHandshake();
 };

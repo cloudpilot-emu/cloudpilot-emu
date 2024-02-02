@@ -6,6 +6,7 @@
 
 #include "DbBackup.h"
 #include "EmDevice.h"
+#include "EmTransportSerialBuffer.h"
 #include "Frame.h"
 #include "SuspendContext.h"
 
@@ -13,6 +14,8 @@ enum class CardSupportLevel : int { unsupported = 0, sdOnly = 1, sdAndMs = 2 };
 
 class Cloudpilot {
    public:
+    Cloudpilot();
+
     void* Malloc(int size);
     void Free(void* buffer);
     void* Nullptr();
@@ -100,6 +103,9 @@ class Cloudpilot {
     void RemountCards();
     int GetSupportLevel(uint32 size);
     const char* GetMountedKey();
+
+    EmTransportSerialBuffer* GetTransportIR();
+    EmTransportSerialBuffer* GetTransportSerial();
 
    private:
     Frame frame{320 * 480 * 4};

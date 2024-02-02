@@ -9,7 +9,7 @@ import { EmbeddedEmulationService } from './service/EmbeddedEmulationService';
 import { EmbeddedEventHandlingServie } from './service/EmbeddedEventHandlingService';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { Event } from './Event';
-import { Event as EventImpl } from 'microevent.ts';
+import { Event as EventImpl, EventInterface } from 'microevent.ts';
 import { EventTarget } from '@common/service/GenericEventHandlingService';
 import { Session } from './model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
@@ -26,6 +26,10 @@ const DEFAULT_SESSION: Session = {
 };
 
 const CARD_KEY = 'MEMORY_CARD';
+
+export interface SerialTransport {
+    dataEvent: EventInterface<Uint8Array>;
+}
 
 export interface Emulator {
     /**
@@ -301,6 +305,10 @@ export interface Emulator {
      * Get performance statistics
      */
     getStatistics(): EmulationStatistics;
+
+    getTransportIR(): SerialTransport;
+
+    getTransportSerial(): SerialTransport;
 
     /**
      * Fires when the device turns on or off.
@@ -665,6 +673,14 @@ export class EmulatorImpl implements Emulator {
         this.canvasDisplayService.setGameModeIndicatorEnabled(gameModeIndicatorEnabled);
 
         return this;
+    }
+
+    getTransportIR(): SerialTransport {
+        return { dataEvent: this.cloudpilot.getTransportIR().dataEvent };
+    }
+
+    getTransportSerial(): SerialTransport {
+        return { dataEvent: this.cloudpilot.getTransportSerial().dataEvent };
     }
 
     get powerOffChangeEvent(): Event<boolean> {
