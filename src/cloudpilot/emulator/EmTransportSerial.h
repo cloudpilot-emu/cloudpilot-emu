@@ -47,8 +47,6 @@ class EmTransportSerial {
    public:
     virtual ~EmTransportSerial() = default;
 
-    virtual void Reset() = 0;
-
     virtual bool Open() = 0;
     virtual bool Close() = 0;
 

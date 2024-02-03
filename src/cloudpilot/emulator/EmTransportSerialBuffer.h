@@ -12,8 +12,6 @@ class EmTransportSerialBuffer : public EmTransportSerial {
     // default: 225 kB = one second worth of data @ 230400 baud
     EmTransportSerialBuffer(size_t bufferSize = 225 * 1024);
 
-    void Reset() override;
-
     bool Open() override;
     bool Close() override;
 

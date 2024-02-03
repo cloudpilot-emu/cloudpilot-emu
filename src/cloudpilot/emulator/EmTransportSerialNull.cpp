@@ -2,8 +2,6 @@
 
 EmTransportSerialNull::EmTransportSerialNull() {}
 
-void EmTransportSerialNull::Reset() {}
-
 bool EmTransportSerialNull::Open(void) { return true; }
 
 bool EmTransportSerialNull::Close(void) { return true; }

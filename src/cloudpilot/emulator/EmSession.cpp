@@ -323,8 +323,6 @@ void EmSession::Reset(ResetType resetType) {
     EmPalmOS::Reset();
     gSystemState.Reset();
 
-    for (auto uartType : {kUARTIR, kUARTSerial}) GetTransportSerial(uartType)->Reset();
-
     bankResetScheduled = false;
     resetScheduled = false;
 

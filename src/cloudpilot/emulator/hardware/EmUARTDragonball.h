@@ -134,6 +134,8 @@ class EmUARTDragonball {
     State fState;
     EmByteQueue fRxFIFO;
     EmByteQueue fTxFIFO;
+
+    bool receiveInProgress{false};
 };
 
 #endif /* EmUARTDragonball_h */

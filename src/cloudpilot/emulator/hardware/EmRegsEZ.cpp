@@ -1417,6 +1417,13 @@ uint32 EmRegsEZ::uartRead(emuptr address, int size) {
 
     EmRegsEZ::UpdateUARTState(refreshRxData);
 
+    if (refreshRxData) {
+        uint16 uReceive = READ_REGISTER(uReceive);
+        uReceive &= ~hwrEZ328UReceiveOldData;
+
+        WRITE_REGISTER(uReceive, uReceive);
+    }
+
     // Finish up by doing a standard read.
 
     return EmRegsEZ::StdRead(address, size);
@@ -2298,7 +2305,8 @@ void EmRegsEZ::UpdateUARTInterrupts(const EmUARTDragonball::State& state) {
     if ((state.RX_FULL_ENABLE && state.RX_FIFO_FULL) ||
         (state.RX_HALF_ENABLE && state.RX_FIFO_HALF) || (state.RX_RDY_ENABLE && state.DATA_READY) ||
         (state.TX_EMPTY_ENABLE && state.TX_FIFO_EMPTY) ||
-        (state.TX_HALF_ENABLE && state.TX_FIFO_HALF) || (state.TX_AVAIL_ENABLE && state.TX_AVAIL)) {
+        (state.TX_HALF_ENABLE && state.TX_FIFO_HALF) || (state.TX_AVAIL_ENABLE && state.TX_AVAIL) ||
+        (state.OLD_DATA && state.OLD_ENABLE)) {
         // Set the UART interrupt.
 
         WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | hwrEZ328IntLoUART);

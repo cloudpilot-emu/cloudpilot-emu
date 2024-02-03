@@ -8,8 +8,6 @@ class EmTransportSerialNull : public EmTransportSerial {
    public:
     EmTransportSerialNull();
 
-    void Reset() override;
-
     bool Open() override;
     bool Close() override;
 

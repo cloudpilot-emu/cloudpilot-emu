@@ -375,9 +375,15 @@ void EmUARTDragonball::UpdateState(State& state, Bool refreshRxData) {
 
     // Update the RxFIFO if there's been any buffered data.
 
+    bool receiveWasInProgress = receiveInProgress;
+
     EmTransportSerial* transport = this->GetTransport();
     if (transport) {
         this->ReceiveRxFIFO(transport);
+    }
+
+    if (receiveInProgress != receiveWasInProgress && !receiveInProgress) {
+        state.OLD_DATA = true;
     }
 
     // === RX_FIFO_FULL ===
@@ -580,6 +586,8 @@ void EmUARTDragonball::ReceiveRxFIFO(EmTransportSerial* transport) {
     EmAssert(transport);
 
     if (transport->CanRead()) {
+        receiveInProgress = true;
+
         // Buffer up any incoming bytes.
 
         char buffer[kMaxFifoSize];
@@ -637,6 +645,9 @@ void EmUARTDragonball::ReceiveRxFIFO(EmTransportSerial* transport) {
             }      // end no-error-from-EmTransport::Read
         }          // end BytesInBuffer-returned-non-zero
     }              // end is-serial-port-open
+    else {
+        receiveInProgress = false;
+    }
 }
 
 /***********************************************************************

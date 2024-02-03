@@ -1619,6 +1619,13 @@ uint32 EmRegsVZ::uart1Read(emuptr address, int size) {
 
     EmRegsVZ::UpdateUARTState(refreshRxData, 0);
 
+    if (refreshRxData) {
+        uint16 uReceive = READ_REGISTER(uReceive);
+        uReceive &= ~hwrEZ328UReceiveOldData;
+
+        WRITE_REGISTER(uReceive, uReceive);
+    }
+
     // Finish up by doing a standard read.
 
     return EmRegsVZ::StdRead(address, size);
@@ -1636,6 +1643,13 @@ uint32 EmRegsVZ::uart2Read(emuptr address, int size) {
     // See if there's anything new ("Put the data on the bus")
 
     EmRegsVZ::UpdateUARTState(refreshRxData, 1);
+
+    if (refreshRxData) {
+        uint16 uReceive = READ_REGISTER(u2Receive);
+        uReceive &= ~hwrEZ328UReceiveOldData;
+
+        WRITE_REGISTER(u2Receive, uReceive);
+    }
 
     // Finish up by doing a standard read.
 
@@ -2625,7 +2639,8 @@ void EmRegsVZ::UpdateUARTInterrupts(const EmUARTDragonball::State& state, int ua
     if ((state.RX_FULL_ENABLE && state.RX_FIFO_FULL) ||
         (state.RX_HALF_ENABLE && state.RX_FIFO_HALF) || (state.RX_RDY_ENABLE && state.DATA_READY) ||
         (state.TX_EMPTY_ENABLE && state.TX_FIFO_EMPTY) ||
-        (state.TX_HALF_ENABLE && state.TX_FIFO_HALF) || (state.TX_AVAIL_ENABLE && state.TX_AVAIL)) {
+        (state.TX_HALF_ENABLE && state.TX_FIFO_HALF) || (state.TX_AVAIL_ENABLE && state.TX_AVAIL) ||
+        (state.OLD_DATA && state.OLD_ENABLE)) {
         // Set the UART interrupt.
 
         WRITE_REGISTER(intPendingLo, READ_REGISTER(intPendingLo) | whichBit);

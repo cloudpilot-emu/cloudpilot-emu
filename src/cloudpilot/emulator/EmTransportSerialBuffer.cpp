@@ -4,14 +4,7 @@ EmTransportSerialBuffer::EmTransportSerialBuffer(size_t bufferSize)
     : bufferSize(bufferSize),
       rxBuffer(bufferSize),
       txBuffer(bufferSize),
-      copyOutBuffer(make_unique<uint8[]>(bufferSize)) {
-    Reset();
-}
-
-void EmTransportSerialBuffer::Reset() {
-    rxBuffer.Clear();
-    txBuffer.Clear();
-}
+      copyOutBuffer(make_unique<uint8[]>(bufferSize)) {}
 
 bool EmTransportSerialBuffer::Open() {
     isOpen = true;

@@ -109,11 +109,11 @@
             const canvas = document.getElementsByTagName('canvas')[0];
 
             emulator.getTransportSerial().dataEvent.addHandler(
-                data => console.log(terminal.write(data))
+                data => terminal.write(data)
             );
 
             terminal.onData(data => emulator.getTransportSerial().send(
-                new Uint8Array([...data.split('').map(x => x.charCodeAt(0)).map(x => x === 127 ? 0x08 : x), 0, 8, 0, 8, 0, 8])
+                new Uint8Array([...data.split('').map(x => x.charCodeAt(0)).map(x => x === 127 ? 0x08 : x)])
             ));
 
             emulator.
