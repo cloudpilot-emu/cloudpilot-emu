@@ -407,7 +407,6 @@ export abstract class AbstractEmulationService {
 
         if (isSuspended && !wasSuspended) {
             this.handleSuspend();
-            return;
         }
 
         const powerOff = this.cloudpilotInstance.isPowerOff();
@@ -424,7 +423,7 @@ export abstract class AbstractEmulationService {
             this.isDirty = true;
         }
 
-        if (uiInitialized && !powerOff && this.manageHotsyncName()) {
+        if (uiInitialized && !powerOff && this.manageHotsyncName() && !isSuspended) {
             this.checkAndUpdateHotsyncName();
         }
 
