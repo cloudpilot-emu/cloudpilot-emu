@@ -431,13 +431,16 @@ uint32 EmSession::RunEmulation(uint32 maxCycles) {
     uint64 cyclesBefore = systemCycles - extraCycles;
 
     if (SuspendManager::IsSuspended()) {
-        systemCycles += maxCycles;
-    } else {
-        uint32 cycles = cpu->Execute(maxCycles);
-        systemCycles += cycles;
+        uint32 cycles = maxCycles + extraCycles;
+        extraCycles = 0;
 
-        CheckDayForRollover();
+        return cycles;
     }
+
+    uint32 cycles = cpu->Execute(maxCycles);
+    systemCycles += cycles;
+
+    CheckDayForRollover();
 
     extraCycles = 0;
 
