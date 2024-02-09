@@ -143,18 +143,18 @@ In order to force check for an update terminate and restart the app.
 
 Early beta versions of iOS 17.4 suggest that Apple is making disruptive changes
 to the way homescreen apps are handled for users in the European Union. In the
-current state of iOS 17.4, homescreen apps will not work as standalone applications
-anymore, but tapping the icon will just open the web page in the browser.
+current state of iOS 17.4, homescreen apps will not work as standalone applications,
+but tapping the icon will just open the web page in the browser.
 All data stored by the homescreen app will be lost during the update to iOS 17.4.
 
 It is unclear whether these limitations will remain in the final release of iOS 17.4,
 but currently CloudpilotEmu cannot be used as a homescreen app on devices that
 have been updated. CloudpilotEmu works fine in Safari, but you may wish to make
-a few adjustments to improve the experience:
+a few adjustments in order to improve the experience:
 
 -   **Loss of storage**: All pages that are displayed in Safari will loose
     their stored data if they are not visited for more than seven days. This affects
-    CloudpilotEmu when it runs as an ordinary web page in Safari (true homescreen apps
+    CloudpilotEmu when it runs as an ordinary web page in Safari ("real" homescreen apps
     are exempted from this rule) and causes loss of all stored sessions and storage
     cards.
 
