@@ -20,4 +20,5 @@ export interface Kvs {
     enableAudioOnFirstInteraction: boolean;
     snapshotIntegrityCheck: boolean;
     infoId?: number;
+    ios174UpdateWarningId?: number;
 }

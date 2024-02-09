@@ -1,8 +1,10 @@
 import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
-import { isIOS } from '@common/helper/browser';
+import { isIOS, isIOS_174 } from '@common/helper/browser';
 import { AlertService } from './alert.service';
 import { EmulationService } from './emulation.service';
+import { PwaService } from './pwa.service';
+import { InstallationMode } from '@pwa/model/InstallationMode';
 
 @Injectable({ providedIn: 'root' })
 export class InfoService {
@@ -10,11 +12,18 @@ export class InfoService {
         private kvsService: KvsService,
         private alertService: AlertService,
         private emulationService: EmulationService,
+        private pwaService: PwaService,
     ) {}
 
     async start(): Promise<void> {
         const infoId = this.kvsService.kvs.infoId ?? 0;
         this.kvsService.kvs.infoId = await this.showInfo(infoId);
+
+        if (this.pwaService.getInstallationMode() === InstallationMode.pwa && isIOS && !isIOS_174) {
+            this.kvsService.kvs.ios174UpdateWarningId = await this.showIOS174UpdateWarning(
+                this.kvsService.kvs.ios174UpdateWarningId,
+            );
+        }
     }
 
     private async showInfo(infoId: number): Promise<number> {
@@ -34,5 +43,25 @@ export class InfoService {
         }
 
         return 3;
+    }
+
+    private async showIOS174UpdateWarning(warningId: number | undefined): Promise<number> {
+        if ((warningId ?? 0) < 1) {
+            await this.emulationService.bootstrapComplete();
+
+            await this.alertService.message(
+                'Update to iOS 17.4',
+                `
+            The forthcoming update to iOS 17.4 may introduce changes
+            to the handling of homescreen apps within the European Union that may destroy
+            all data stored in CloudpilotEmu during the update.
+            <br><br>
+            Please export all your sessions and card images before updating to iOS 17.4.
+            <br><br>
+            You can find more information on the "About" tab.`,
+            );
+        }
+
+        return 1;
     }
 }
