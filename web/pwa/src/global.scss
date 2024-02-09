@@ -138,3 +138,7 @@ ion-list ion-item ion-label {
     white-space: nowrap;
     text-overflow: ellipsis;
 }
+
+markdown h1:not(:first-child) {
+    margin-top: 1.5em;
+}
