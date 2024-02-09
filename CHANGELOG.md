@@ -1,3 +1,8 @@
+# Version 1.9.7
+
+-   Adjustments to warn about issues with the forthcoming update
+    to iOS 17.4.
+
 # Version 1.9.6
 
 -   Fix a rare crash on reset.

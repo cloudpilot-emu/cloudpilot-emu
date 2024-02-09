@@ -124,19 +124,7 @@ session. This allows you to break the crash loop.
 CloudpilotEmu runs on all reasonable recent browsers and can be added to the homescreen
 of Android and iOS devices as a mobile app. For iPhones and iPads this is highly
 recommended as Safari may clear the data of ordinary web sites if they are not used
-for an extended period of time.
-
-On iOS devices iOS 14 or higher is recommended. Earlier versions have bugs that
-may make it impossible to save session snapshots. The emulator runs smoothly on all
-iPhones and iPads that support iOS 14.
-
-On older Android devices performance may be an issue. The emulator requires decent
-single core performance, and this is a domain where Android devices are traditionally
-lacking. CloudpilotEmu will dynamically adjust the speed of the emulated device if
-the host device cannot sustain emulation at full speed. A score of 350 in the single
-core [geekbench benchmark](https://browser.geekbench.com/android-benchmarks) is
-enough to run CloudpilotEmu smoothly with minor slowdowns, and 500
-or more will give smooth emulation without slowdowns.
+for more than seven days.
 
 # Updates
 
@@ -151,12 +139,45 @@ In order to force check for an update terminate and restart the app.
 
 # Known issues and limitations
 
+### Homescreen app support in iOS 17.4
+
+Early beta versions of iOS 17.4 suggest that Apple is making disruptive changes
+to the way homescreen apps are handled for users in the European Union. In the
+current state of iOS 17.4, homescreen apps will not work as standalone applications,
+but tapping the icon will just open the web page in the browser.
+All data stored by the homescreen app will be lost during the update to iOS 17.4.
+
+It is unclear whether these limitations will remain in the final release of iOS 17.4,
+but currently CloudpilotEmu cannot be used as a homescreen app on devices that
+have been updated. CloudpilotEmu works fine in Safari, but you may wish to make
+a few adjustments in order to improve the experience:
+
+-   **Loss of storage**: All pages that are displayed in Safari will loose
+    their stored data if they are not visited for more than seven days. This affects
+    CloudpilotEmu when it runs as an ordinary web page in Safari ("real" homescreen apps
+    are exempted from this rule) and causes loss of all stored sessions and storage
+    cards.
+
+    This behavior can be disabled by opening the Settings app and enabling
+    "Safari" -> "Advanced" -> "Feature Flags" -> "Disable removal of non-cookie data
+    after 7 days of no user interaction (ITP)"
+
+-   **Browser UI**: Opening as an ordinary web page instead of a homescreen app
+    will display the browser tab and navigation bars. This cannot be disabled
+    by CPE, but you can tap the "aA" icon left of the URL and select
+    "Hide toolbar".
+
+### Other iOS and Safari issues
+
 -   iOS: changing device orientation between portrait and landscape may mess
     up the layout of the app. This is an iOS bug that can be worked around by
     rotating the device by 180° in portrait and rotating back.
 -   Safari (iOS and MacOS): A browser bug can cause lag when loaders or
-    modal dialogs are shown. This can be worked around with the setting
-    "Reduce animation".
+    modal dialogs are shown in older versions of Safari. This can be worked around
+    with the setting "Reduce animation".
+
+### Limited emulation
+
 -   Audio timing is not perfect and processed at the refresh rate of the emulator
     (usually the same as the screen refresh rate of the host device). Sound
     effects that rely on quickly modulating the audio signal may not be
