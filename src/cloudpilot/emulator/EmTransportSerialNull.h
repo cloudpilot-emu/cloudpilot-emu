@@ -24,6 +24,9 @@ class EmTransportSerialNull : public EmTransportSerial {
     void SetBreak(bool breakActive) override;
 
     bool RequiresSync() override;
+
+    void OnTransactionStateChange(EmUARTDragonball::TransactionState oldState,
+                                  EmUARTDragonball::TransactionState newState) override;
 };
 
 #endif  // _EM_TRANSPORT_SERIAL_NULL_H_

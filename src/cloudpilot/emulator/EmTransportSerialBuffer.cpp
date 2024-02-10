@@ -47,6 +47,13 @@ void EmTransportSerialBuffer::SetBreak(bool breakActive) { isBreak = breakActive
 
 bool EmTransportSerialBuffer::RequiresSync() { return modeSync; }
 
+void EmTransportSerialBuffer::OnTransactionStateChange(
+    EmUARTDragonball::TransactionState oldState, EmUARTDragonball::TransactionState newState) {
+    if (oldState == newState) return;
+
+    cout << "transaction state change " << (int)oldState << " -> " << (int)newState << endl;
+}
+
 int EmTransportSerialBuffer::RxBytesPending() { return rxBuffer.Size(); }
 
 void* EmTransportSerialBuffer::Receive() {

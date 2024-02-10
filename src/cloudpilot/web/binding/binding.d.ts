@@ -273,5 +273,5 @@ export interface EmSerialTransport {
     GetHwrHandshake(): number;
 
     GetModeSync(): boolean;
-    SetModeSync(sync: boolean);
+    SetModeSync(sync: boolean): void;
 }

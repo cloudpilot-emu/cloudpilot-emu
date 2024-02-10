@@ -29,6 +29,9 @@ class EmTransportSerialBuffer : public EmTransportSerial {
 
     bool RequiresSync() override;
 
+    void OnTransactionStateChange(EmUARTDragonball::TransactionState oldState,
+                                  EmUARTDragonball::TransactionState newState) override;
+
     //-------------------------------------------------------------------------
 
     int RxBytesPending();

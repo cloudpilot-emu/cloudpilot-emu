@@ -67,6 +67,11 @@ static Bool PrvPinBaud(EmTransportSerial::Baud& newBaud, EmTransportSerial::Baud
     #define PRINTF(...) ;
 #endif
 
+namespace {
+    constexpr uint64 WAITING_FOR_DATA_TIMEOUT_USEC = 1000;
+    constexpr uint64 MESSAGE_TIMEOUT_BITS = 50;
+}  // namespace
+
 /***********************************************************************
  *
  * FUNCTION:	EmUARTDragonball::EmUARTDragonball
@@ -305,6 +310,17 @@ void EmUARTDragonball::StateChanged(State& newState, Bool sendTxData) {
 
     if (sendTxData && newState.UART_ENABLE && newState.TX_ENABLE) {
         if (newState.LOOP == 0) {
+            if (sync && (transactionState == TransactionState::idle ||
+                         transactionState == TransactionState::waitingForData)) {
+                UpdateTransactionState(TransactionState::sending);
+            }
+
+            if (sync && transactionState == TransactionState::sending) {
+                transactionTimeoutCycles =
+                    systemCycles +
+                    (MESSAGE_TIMEOUT_BITS * gSession->GetSystemCycles()) / config.fBaud;
+            }
+
             if (transport && transport->CanWrite())  // The host serial port is open
             {
                 // With or without hardware handshaking, we'll put data
@@ -379,6 +395,19 @@ void EmUARTDragonball::UpdateState(State& state, Bool refreshRxData) {
 
     EmTransportSerial* transport = this->GetTransport();
     if (transport) {
+        if (sync && transport->CanRead() && transactionState == TransactionState::idle) {
+            UpdateTransactionState(TransactionState::receiving);
+        }
+
+        if (sync && !transport->CanRead() && transactionState == TransactionState::receiving) {
+            UpdateTransactionState(TransactionState::waitingForData);
+
+            transactionTimeoutCycles =
+                systemCycles + (WAITING_FOR_DATA_TIMEOUT_USEC *
+                                static_cast<uint64>(gSession->GetClocksPerSecond())) /
+                                   1000000ull;
+        }
+
         this->ReceiveRxFIFO(transport);
     }
 
@@ -668,9 +697,25 @@ EmTransportSerial* EmUARTDragonball::GetTransport(void) {
     return gSession->GetTransportSerial(type);
 }
 
-void EmUARTDragonball::Cycle(uint64 systemCycles) {}
+void EmUARTDragonball::Cycle(uint64 systemCycles) {
+    if (!sync) return;
 
-void EmUARTDragonball::SetModeSync(bool sync) { this->sync = sync; }
+    this->systemCycles = systemCycles;
+
+    if (systemCycles > transactionTimeoutCycles &&
+        (transactionState == TransactionState::sending ||
+         transactionState == TransactionState::waitingForData))
+        UpdateTransactionState(TransactionState::idle);
+    {}
+}
+
+void EmUARTDragonball::SetModeSync(bool sync) {
+    if (sync == this->sync) return;
+
+    this->sync = sync;
+    this->systemCycles = gSession->GetSystemCycles();
+    transactionState = TransactionState::idle;
+}
 
 bool EmUARTDragonball::GetModeSync() const { return sync; }
 
@@ -761,6 +806,18 @@ int EmUARTDragonball::PrvLevelMarker(Bool forRX) {
     }
 
     return level;
+}
+
+void EmUARTDragonball::UpdateTransactionState(TransactionState state) {
+    if (state == transactionState) return;
+
+    TransactionState oldState = transactionState;
+    transactionState = state;
+
+    EmTransportSerial* transport = GetTransport();
+    if (!transport) return;
+
+    transport->OnTransactionStateChange(oldState, state);
 }
 
 /***********************************************************************

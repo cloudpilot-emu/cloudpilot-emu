@@ -22,6 +22,8 @@ class EmUARTDragonball {
    public:
     enum UART_Type { kUART_Dragonball, kUART_DragonballEZ, kUART_DragonballVZ, kUART_DragonballSZ };
 
+    enum class TransactionState { idle = 0, sending = 1, receiving = 2, waitingForData = 3 };
+
     struct State {
         State(UART_Type type) { UART_TYPE = type; }
 
@@ -132,6 +134,7 @@ class EmUARTDragonball {
    private:
     int PrvFIFOSize(Bool forRX);
     int PrvLevelMarker(Bool forRX);
+    void UpdateTransactionState(TransactionState state);
 
    private:
     int fUARTNum;
@@ -141,6 +144,10 @@ class EmUARTDragonball {
 
     bool receiveInProgress{false};
     bool sync{false};
+
+    TransactionState transactionState{TransactionState::idle};
+    uint64 transactionTimeoutCycles{0};
+    uint64 systemCycles{0};
 };
 
 #endif /* EmUARTDragonball_h */

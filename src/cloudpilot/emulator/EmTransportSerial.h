@@ -18,6 +18,7 @@
 
 #include "EmCommon.h"
 #include "EmEvent.h"
+#include "EmUARTDragonball.h"
 
 class EmTransportSerial {
    public:
@@ -67,6 +68,9 @@ class EmTransportSerial {
     virtual void SetBreak(bool breakActive) = 0;
 
     virtual bool RequiresSync() = 0;
+
+    virtual void OnTransactionStateChange(EmUARTDragonball::TransactionState oldState,
+                                          EmUARTDragonball::TransactionState newState) = 0;
 
    public:
     EmEvent<> onRequiresSyncChanged;
