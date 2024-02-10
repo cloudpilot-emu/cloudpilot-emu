@@ -461,6 +461,7 @@ void EmRegsEZ::Initialize(void) {
     afterLoad = false;
 
     fUART = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballEZ, 0);
+    fUART->SetModeSync(uartModeSync);
 
     onMarkScreenCleanHandle = gSystemState.onMarkScreenClean.AddHandler([this]() { MarkScreen(); });
     onDayRolloverHandle = EmHAL::onDayRollover.AddHandler([this]() { HandleDayRollover(); });
@@ -794,6 +795,15 @@ void EmRegsEZ::Cycle(uint64 systemCycles, Bool sleeping) {
 
     this->systemCycles = systemCycles;
     if (unlikely(systemCycles >= nextTimerEventAfterCycle)) UpdateTimer();
+
+    if (uartModeSync) fUART->Cycle(systemCycles);
+}
+
+void EmRegsEZ::SetUARTSync(bool sync) {
+    uartModeSync = sync;
+    fUART->SetModeSync(sync);
+
+    EmHALHandler::SetUARTSync(sync);
 }
 
 // ---------------------------------------------------------------------------

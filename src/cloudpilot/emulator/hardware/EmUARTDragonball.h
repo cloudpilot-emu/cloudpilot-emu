@@ -125,6 +125,10 @@ class EmUARTDragonball {
 
     EmTransportSerial* GetTransport(void);
 
+    void Cycle(uint64 systemCycles);
+    void SetModeSync(bool sync);
+    bool GetModeSync() const;
+
    private:
     int PrvFIFOSize(Bool forRX);
     int PrvLevelMarker(Bool forRX);
@@ -136,6 +140,7 @@ class EmUARTDragonball {
     EmByteQueue fTxFIFO;
 
     bool receiveInProgress{false};
+    bool sync{false};
 };
 
 #endif /* EmUARTDragonball_h */

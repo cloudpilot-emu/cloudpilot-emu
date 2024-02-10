@@ -27,6 +27,8 @@ class EmTransportSerialBuffer : public EmTransportSerial {
     void SetDTR(bool dtr) override;
     void SetBreak(bool breakActive) override;
 
+    bool RequiresSync() override;
+
     //-------------------------------------------------------------------------
 
     int RxBytesPending();
@@ -47,6 +49,9 @@ class EmTransportSerialBuffer : public EmTransportSerial {
 
     int BufferSize() const;
 
+    bool GetModeSync() const;
+    void SetModeSync(bool modeSync);
+
    private:
     const size_t bufferSize;
 
@@ -59,6 +64,8 @@ class EmTransportSerialBuffer : public EmTransportSerial {
     RTSControl rts{kRTSAuto};
     bool dtr{false};
     bool isBreak{false};
+
+    bool modeSync{false};
 };
 
 #endif  //  _EM_TRANSPORT_SERIAL_BUFFER_H_

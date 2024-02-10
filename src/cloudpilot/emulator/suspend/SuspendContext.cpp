@@ -5,6 +5,7 @@
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendContextNetworkConnect.h"
 #include "SuspendContextNetworkRpc.h"
+#include "SuspendContextSerialSync.h"
 #include "SuspendManager.h"
 
 bool SuspendContext::RequiresStackAccess() { return true; }
@@ -31,6 +32,12 @@ SuspendContextNetworkConnect& SuspendContext::AsContextNetworkConnect() {
     EmAssert(GetKind() == Kind::networkConnect);
 
     return static_cast<SuspendContextNetworkConnect&>(*this);
+}
+
+SuspendContextSerialSync& SuspendContext::AsContextSerialSync() {
+    EmAssert(GetKind() == Kind::serialSync);
+
+    return static_cast<SuspendContextSerialSync&>(*this);
 }
 
 void SuspendContext::ResumeExecution() { SuspendManager::Resume(); }

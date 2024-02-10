@@ -1148,6 +1148,8 @@ void EmRegsSZ::Initialize(void) {
 
     fUART[0] = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballVZ, 0);
     fUART[1] = new EmUARTDragonball(EmUARTDragonball::kUART_DragonballVZ, 1);
+    fUART[0]->SetModeSync(uartModeSync);
+    fUART[1]->SetModeSync(uartModeSync);
 
     onDayRolloverHandle = EmHAL::onDayRollover.AddHandler([this]() { HandleDayRollover(); });
 
@@ -1765,6 +1767,19 @@ inline void EmRegsSZ::Cycle(uint64 systemCycles, Bool sleeping) {
 
     this->systemCycles = systemCycles;
     if (unlikely(systemCycles >= nextTimerEventAfterCycle)) UpdateTimers();
+
+    if (uartModeSync) {
+        fUART[0]->Cycle(systemCycles);
+        fUART[1]->Cycle(systemCycles);
+    }
+}
+
+void EmRegsSZ::SetUARTSync(bool sync) {
+    uartModeSync = sync;
+    fUART[0]->SetModeSync(sync);
+    fUART[1]->SetModeSync(sync);
+
+    EmHALHandler::SetUARTSync(sync);
 }
 
 // ---------------------------------------------------------------------------

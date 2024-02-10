@@ -17,6 +17,7 @@
 #include <string>
 
 #include "EmCommon.h"
+#include "EmEvent.h"
 
 class EmTransportSerial {
    public:
@@ -64,6 +65,11 @@ class EmTransportSerial {
     virtual void SetRTS(RTSControl ctrl) = 0;
     virtual void SetDTR(bool dtr) = 0;
     virtual void SetBreak(bool breakActive) = 0;
+
+    virtual bool RequiresSync() = 0;
+
+   public:
+    EmEvent<> onRequiresSyncChanged;
 
    protected:
     EmTransportSerial() = default;

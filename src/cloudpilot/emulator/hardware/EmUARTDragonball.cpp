@@ -668,6 +668,12 @@ EmTransportSerial* EmUARTDragonball::GetTransport(void) {
     return gSession->GetTransportSerial(type);
 }
 
+void EmUARTDragonball::Cycle(uint64 systemCycles) {}
+
+void EmUARTDragonball::SetModeSync(bool sync) { this->sync = sync; }
+
+bool EmUARTDragonball::GetModeSync() const { return sync; }
+
 /***********************************************************************
  *
  * FUNCTION:	EmUARTDragonball::PrvFIFOSize

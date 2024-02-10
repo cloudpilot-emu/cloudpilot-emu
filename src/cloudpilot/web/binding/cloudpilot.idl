@@ -229,4 +229,7 @@ interface EmTransportSerialBuffer {
     long GetStopBits();
     long GetDataBits();
     long GetHwrHandshake();
+
+    boolean GetModeSync();
+    void SetModeSync(boolean sync);
 };

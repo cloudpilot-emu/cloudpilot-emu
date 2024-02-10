@@ -271,4 +271,7 @@ export interface EmSerialTransport {
     GetStopBits(): number;
     GetDataBits(): number;
     GetHwrHandshake(): number;
+
+    GetModeSync(): boolean;
+    SetModeSync(sync: boolean);
 }

@@ -488,6 +488,10 @@ void EmHAL::Remount(Slot slot, CardImage& cardImage) {
     if (EmHAL::GetRootHandler()) return EmHAL::GetRootHandler()->Remount(slot, cardImage);
 }
 
+void EmHAL::SetUARTSync(bool sync) {
+    if (EmHAL::GetRootHandler()) return EmHAL::GetRootHandler()->SetUARTSync(sync);
+}
+
 #pragma mark -
 
 // ---------------------------------------------------------------------------
@@ -799,4 +803,10 @@ void EmHALHandler::Unmount(EmHAL::Slot slot) {
 void EmHALHandler::Remount(EmHAL::Slot slot, CardImage& cardImage) {
     if (!this->GetNextHandler()) return;
     this->GetNextHandler()->Remount(slot, cardImage);
+}
+
+void EmHALHandler::SetUARTSync(bool sync) {
+    if (!this->GetNextHandler()) return;
+
+    this->GetNextHandler()->SetUARTSync(sync);
 }

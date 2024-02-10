@@ -90,10 +90,6 @@ class EmHAL {
     static uint32 CyclesToNextInterrupt(uint64 systemCycles);
     static bool EnableRAM();
 
-    static EmEvent<> onSystemClockChange;
-    static EmEvent<double, double> onPwmChange;
-    static EmEvent<> onDayRollover;
-
     static void AddCycleConsumer(CycleHandler handler, void* context);
     static void RemoveCycleConsumer(CycleHandler handler, void* context);
     static void DispatchCycle(uint64 cycles, bool sleeping);
@@ -103,6 +99,12 @@ class EmHAL {
     static void Mount(Slot slot, CardImage& cardImage);
     static void Unmount(Slot slot);
     static void Remount(Slot slot, CardImage& cardImage);
+
+    static void SetUARTSync(bool sync);
+
+    static EmEvent<> onSystemClockChange;
+    static EmEvent<double, double> onPwmChange;
+    static EmEvent<> onDayRollover;
 
    private:
     struct CycleConsumer {
@@ -165,6 +167,8 @@ class EmHALHandler {
     virtual void Mount(EmHAL::Slot slot, CardImage& cardImage);
     virtual void Unmount(EmHAL::Slot slot);
     virtual void Remount(EmHAL::Slot slot, CardImage& cardImage);
+
+    virtual void SetUARTSync(bool sync);
 
    protected:
     EmHALHandler* GetNextHandler(void) { return fNextHandler; }

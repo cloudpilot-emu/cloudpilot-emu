@@ -205,6 +205,7 @@ SOURCE_EMU = \
 	emulator/suspend/SuspendContextClipboardCopy.cpp \
 	emulator/suspend/SuspendContextNetworkConnect.cpp \
 	emulator/suspend/SuspendContextNetworkRpc.cpp \
+	emulator/suspend/SuspendContextSerialSync.cpp \
 	emulator/EmSystemState.cpp \
 	emulator/Miscellaneous.cpp \
 	emulator/Marshall.cpp \

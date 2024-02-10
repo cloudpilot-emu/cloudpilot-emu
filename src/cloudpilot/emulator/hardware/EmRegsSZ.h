@@ -79,6 +79,8 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     virtual bool EnableRAM();
     inline void Cycle(uint64 systemCycles, Bool sleeping);
 
+    virtual void SetUARTSync(bool sync);
+
    protected:
     void HotSyncEvent(Bool buttonIsDown);
 
@@ -206,6 +208,8 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     EmRegsESRAM* esram;
     uint32 palette[256];
     bool clutDirty{true};
+
+    bool uartModeSync{false};
 };
 
 class EmRegsSZNoScreen : public EmRegsSZ {

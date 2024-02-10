@@ -22,6 +22,8 @@ class EmTransportSerialNull : public EmTransportSerial {
     void SetRTS(RTSControl ctrl) override;
     void SetDTR(bool dtr) override;
     void SetBreak(bool breakActive) override;
+
+    bool RequiresSync() override;
 };
 
 #endif  // _EM_TRANSPORT_SERIAL_NULL_H_

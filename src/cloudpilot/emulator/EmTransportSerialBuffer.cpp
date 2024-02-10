@@ -45,6 +45,8 @@ void EmTransportSerialBuffer::SetDTR(bool dtr) { this->dtr = dtr; }
 
 void EmTransportSerialBuffer::SetBreak(bool breakActive) { isBreak = breakActive; }
 
+bool EmTransportSerialBuffer::RequiresSync() { return modeSync; }
+
 int EmTransportSerialBuffer::RxBytesPending() { return rxBuffer.Size(); }
 
 void* EmTransportSerialBuffer::Receive() {
@@ -79,3 +81,10 @@ int EmTransportSerialBuffer::GetDataBits() const { return config.fDataBits; }
 int EmTransportSerialBuffer::GetHwrHandshake() const { return config.fHwrHandshake; }
 
 int EmTransportSerialBuffer::BufferSize() const { return bufferSize; }
+
+bool EmTransportSerialBuffer::GetModeSync() const { return modeSync; }
+
+void EmTransportSerialBuffer::SetModeSync(bool modeSync) {
+    this->modeSync = modeSync;
+    onRequiresSyncChanged.Dispatch();
+}

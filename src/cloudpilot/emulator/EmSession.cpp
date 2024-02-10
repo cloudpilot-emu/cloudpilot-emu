@@ -86,6 +86,8 @@ bool EmSession::Initialize(EmDevice* device, const uint8* romImage, size_t romLe
     gDebugger.ResetBreakMode();
     gDebugger.ResetAppRegion();
 
+    UpdateUARTModeSync();
+
     return true;
 }
 
@@ -572,6 +574,11 @@ void EmSession::CheckDayForRollover() {
     }
 }
 
+void EmSession::UpdateUARTModeSync() {
+    EmHAL::SetUARTSync((this->transportIR && this->transportIR->RequiresSync()) ||
+                       (this->transportSerial && this->transportSerial->RequiresSync()));
+}
+
 void EmSession::TriggerDeadMansSwitch() { deadMansSwitch = true; }
 
 EmTransportSerial* EmSession::GetTransportSerial(EmUARTDeviceType type) {
@@ -592,11 +599,28 @@ bool EmSession::LaunchAppByName(const string& name) { return EmPalmOS::LaunchApp
 void EmSession::SetTransportSerial(EmUARTDeviceType type, EmTransportSerial* transport) {
     switch (type) {
         case kUARTIR:
+            if (transportIR) {
+                transportIR->onRequiresSyncChanged.RemoveHandler(
+                    transportIrRequiresSyncChangedHandle);
+            }
+
             transportIR.reset(transport);
+            transportIrRequiresSyncChangedHandle = transportIR->onRequiresSyncChanged.AddHandler(
+                bind(&EmSession::UpdateUARTModeSync, this));
+
             break;
 
         case kUARTSerial:
+            if (transportSerial) {
+                transportSerial->onRequiresSyncChanged.RemoveHandler(
+                    transportSerialRequiresSyncChangedHandle);
+            }
+
             transportSerial.reset(transport);
+            transportSerialRequiresSyncChangedHandle =
+                transportSerial->onRequiresSyncChanged.AddHandler(
+                    bind(&EmSession::UpdateUARTModeSync, this));
+
             break;
 
         default:

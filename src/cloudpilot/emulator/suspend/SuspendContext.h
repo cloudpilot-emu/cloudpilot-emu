@@ -5,10 +5,17 @@ class SuspendContextClipboardCopy;
 class SuspendContextClipboardPaste;
 class SuspendContextNetworkRpc;
 class SuspendContextNetworkConnect;
+class SuspendContextSerialSync;
 
 class SuspendContext {
    public:
-    enum Kind : int { clipboardCopy = 1, clipboardPaste = 2, networkRpc = 3, networkConnect = 4 };
+    enum Kind : int {
+        clipboardCopy = 1,
+        clipboardPaste = 2,
+        networkRpc = 3,
+        networkConnect = 4,
+        serialSync = 5
+    };
 
    public:
     SuspendContext() = default;
@@ -25,6 +32,7 @@ class SuspendContext {
     SuspendContextClipboardPaste& AsContextClipboardPaste();
     SuspendContextNetworkRpc& AsContextNetworkRpc();
     SuspendContextNetworkConnect& AsContextNetworkConnect();
+    SuspendContextSerialSync& AsContextSerialSync();
 
    protected:
     void ResumeExecution();

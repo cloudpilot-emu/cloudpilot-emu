@@ -21,3 +21,5 @@ void EmTransportSerialNull::SetRTS(RTSControl ctrl) {}
 void EmTransportSerialNull::SetDTR(bool dtr) {}
 
 void EmTransportSerialNull::SetBreak(bool breakActive) {}
+
+bool EmTransportSerialNull::RequiresSync() { return false; }

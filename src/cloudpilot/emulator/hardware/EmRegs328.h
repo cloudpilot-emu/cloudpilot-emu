@@ -70,6 +70,8 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
     void Cycle(uint64 systemCycles, Bool sleeping);
 
+    virtual void SetUARTSync(bool sync);
+
    protected:
     virtual uint8 GetKeyBits(void);
     virtual uint16 ButtonToBits(ButtonEvent::Button btn);
@@ -164,6 +166,8 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     bool pwmActive{false};
     bool afterLoad{false};
     bool powerOffCached{false};
+
+    bool uartModeSync{false};
 };
 
 #endif /* EmRegs328_h */

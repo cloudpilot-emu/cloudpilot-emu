@@ -109,6 +109,8 @@ class EmSession {
 
     void CheckDayForRollover();
 
+    void UpdateUARTModeSync();
+
    private:
     bool bankResetScheduled{false};
     bool resetScheduled{false};
@@ -148,6 +150,8 @@ class EmSession {
 
     unique_ptr<EmTransportSerial> transportIR;
     unique_ptr<EmTransportSerial> transportSerial;
+    int transportIrRequiresSyncChangedHandle{-1};
+    int transportSerialRequiresSyncChangedHandle{-1};
 };
 
 extern EmSession* gSession;

@@ -74,6 +74,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual uint32 CyclesToNextInterrupt(uint64 systemCycles);
     inline void Cycle(uint64 systemCycles, Bool sleeping);
 
+    virtual void SetUARTSync(bool sync);
+
    protected:
     virtual uint8 GetKeyBits(void);
     virtual uint16 ButtonToBits(ButtonEvent::Button btn);
@@ -192,6 +194,8 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     int32 spi1Countdown{0};
     uint16 spi1TxWordPending{0};
     bool spi1TransferInProgress{false};
+
+    bool uartModeSync{false};
 
     EmSPISlave* fSPISlaveADC{nullptr};
 };
