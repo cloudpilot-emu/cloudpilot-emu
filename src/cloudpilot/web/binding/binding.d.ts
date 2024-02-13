@@ -257,7 +257,7 @@ export interface SkinLoader {
 export interface EmSerialTransport {
     RxBytesPending(): number;
     Receive(): VoidPtr;
-    Send(count: number, data: VoidPtr): number;
+    Send(count: number, data: VoidPtr, frameComplete: boolean): number;
 
     IsOpen(): boolean;
     Rts(): Rts;

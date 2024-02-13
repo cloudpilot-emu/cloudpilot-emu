@@ -870,7 +870,7 @@ export class Cloudpilot {
                     Send: (data: Uint8Array): void => {
                         const buffer = this.copyIn(data);
 
-                        transport.Send(data.length, buffer);
+                        transport.Send(data.length, buffer, true);
 
                         this.cloudpilot.Free(buffer);
                     },
