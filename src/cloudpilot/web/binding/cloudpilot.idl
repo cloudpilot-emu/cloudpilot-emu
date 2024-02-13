@@ -215,7 +215,7 @@ interface EmTransportSerialBuffer {
     long RxBytesPending();
     VoidPtr Receive();
 
-    long Send(long Count, [Const] VoidPtr data);
+    long Send(long Count, [Const] VoidPtr data, boolean frameComplete);
 
     boolean IsOpen();
     long Rts();
@@ -232,4 +232,7 @@ interface EmTransportSerialBuffer {
 
     boolean GetModeSync();
     void SetModeSync(boolean sync);
+
+    boolean IsFrameComplete();
+    void SetRequestTransferCallback(long cb);
 };

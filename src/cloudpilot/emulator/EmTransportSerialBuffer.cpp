@@ -1,5 +1,10 @@
 #include "EmTransportSerialBuffer.h"
 
+#include "SuspendContextSerialSync.h"
+#include "SuspendManager.h"
+
+using TransactionState = EmUARTDragonball::TransactionState;
+
 EmTransportSerialBuffer::EmTransportSerialBuffer(size_t bufferSize)
     : bufferSize(bufferSize),
       rxBuffer(bufferSize),
@@ -23,12 +28,20 @@ bool EmTransportSerialBuffer::Read(long& count, void* buffer) {
 
     count = static_cast<long>(i);
 
+    if (modeSync && txBuffer.Size() == 0 && !incomingFrameComplete)
+        SuspendManager::Suspend<SuspendContextSerialSync>();
+
     return true;
 }
 
 bool EmTransportSerialBuffer::Write(long& count, const void* buffer) {
-    for (size_t i = 0; i < static_cast<size_t>(count); i++)
+    if (count == 0) return true;
+
+    for (size_t i = 0; i < static_cast<size_t>(count); i++) {
         rxBuffer.Push(reinterpret_cast<const uint8*>(buffer)[i]);
+
+        if (modeSync && rxBuffer.Free() == 0 && requestTransferCallback) requestTransferCallback();
+    }
 
     return true;
 }
@@ -47,9 +60,21 @@ void EmTransportSerialBuffer::SetBreak(bool breakActive) { isBreak = breakActive
 
 bool EmTransportSerialBuffer::RequiresSync() { return modeSync; }
 
-void EmTransportSerialBuffer::OnTransactionStateChange(
-    EmUARTDragonball::TransactionState oldState, EmUARTDragonball::TransactionState newState) {
-    if (oldState == newState) return;
+void EmTransportSerialBuffer::OnTransactionStateChange(TransactionState oldState,
+                                                       TransactionState newState) {
+    transactionState = newState;
+
+    if (!modeSync || oldState == newState) return;
+
+    if (oldState == TransactionState::sending && newState == TransactionState::idle) {
+        SuspendManager::Suspend<SuspendContextSerialSync>();
+
+        if (requestTransferCallback) requestTransferCallback();
+    }
+
+    if (oldState == TransactionState::waitingForData && newState == TransactionState::idle &&
+        requestTransferCallback)
+        requestTransferCallback();
 
     cout << "transaction state change " << (int)oldState << " -> " << (int)newState << endl;
 }
@@ -62,9 +87,15 @@ void* EmTransportSerialBuffer::Receive() {
     return copyOutBuffer.get();
 }
 
-int EmTransportSerialBuffer::Send(int count, const void* data) {
+int EmTransportSerialBuffer::Send(int count, const void* data, bool frameComplete) {
     for (size_t i = 0; i < static_cast<size_t>(count); i++)
         txBuffer.Push(reinterpret_cast<const uint8*>(data)[i]);
+
+    incomingFrameComplete = frameComplete;
+
+    if (SuspendManager::IsSuspended() &&
+        SuspendManager::GetContext().GetKind() == SuspendContext::Kind::serialSync)
+        SuspendManager::GetContext().AsContextSerialSync().Resume();
 
     return count;
 }
@@ -92,6 +123,18 @@ int EmTransportSerialBuffer::BufferSize() const { return bufferSize; }
 bool EmTransportSerialBuffer::GetModeSync() const { return modeSync; }
 
 void EmTransportSerialBuffer::SetModeSync(bool modeSync) {
+    if (modeSync == this->modeSync) return;
+
     this->modeSync = modeSync;
+    transactionState = TransactionState::idle;
+
     onRequiresSyncChanged.Dispatch();
+}
+
+bool EmTransportSerialBuffer::IsFrameComplete() {
+    return !modeSync || transactionState != TransactionState::sending;
+}
+
+void EmTransportSerialBuffer::SetRequestTransferCallback(long cb) {
+    requestTransferCallback = (request_transfer_callback_ptr)cb;
 }

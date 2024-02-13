@@ -274,4 +274,7 @@ export interface EmSerialTransport {
 
     GetModeSync(): boolean;
     SetModeSync(sync: boolean): void;
+
+    IsPartial(): boolean;
+    SetRequestTransferCallback(cb: number): void;
 }

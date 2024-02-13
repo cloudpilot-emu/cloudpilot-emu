@@ -9,6 +9,9 @@
 
 class EmTransportSerialBuffer : public EmTransportSerial {
    public:
+    typedef void (*request_transfer_callback_ptr)();
+
+   public:
     // default: ~28kB = one second worth of data @ 230400 baud
     EmTransportSerialBuffer(size_t bufferSize = 230400 / 8 * 1024);
 
@@ -37,7 +40,7 @@ class EmTransportSerialBuffer : public EmTransportSerial {
     int RxBytesPending();
     void* Receive();
 
-    int Send(int count, const void* data);
+    int Send(int count, const void* data, bool frameComplete);
 
     bool IsOpen() const;
     int Rts() const;
@@ -55,6 +58,9 @@ class EmTransportSerialBuffer : public EmTransportSerial {
     bool GetModeSync() const;
     void SetModeSync(bool modeSync);
 
+    bool IsFrameComplete();
+    void SetRequestTransferCallback(long cb);
+
    private:
     const size_t bufferSize;
 
@@ -69,6 +75,11 @@ class EmTransportSerialBuffer : public EmTransportSerial {
     bool isBreak{false};
 
     bool modeSync{false};
+    bool incomingFrameComplete{false};
+
+    EmUARTDragonball::TransactionState transactionState{EmUARTDragonball::TransactionState::idle};
+
+    request_transfer_callback_ptr requestTransferCallback{nullptr};
 };
 
 #endif  //  _EM_TRANSPORT_SERIAL_BUFFER_H_
