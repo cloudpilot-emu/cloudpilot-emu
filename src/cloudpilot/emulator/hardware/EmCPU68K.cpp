@@ -468,6 +468,7 @@ Bool EmCPU68K::ExecuteSpecial(uint32 maxCycles) {
 
     // Return stopped, tracing, interrupts, reset when calling into PalmOS
     if (fSession->IsNested()) return this->CheckForBreak();
+    if (SuspendManager::IsSuspended()) return true;
 
     // Check for Reset first.  If this is set, don't do anything else.
 

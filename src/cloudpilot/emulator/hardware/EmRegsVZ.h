@@ -195,8 +195,6 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     uint16 spi1TxWordPending{0};
     bool spi1TransferInProgress{false};
 
-    bool uartModeSync{false};
-
     EmSPISlave* fSPISlaveADC{nullptr};
 };
 

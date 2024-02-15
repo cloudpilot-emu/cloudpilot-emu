@@ -127,7 +127,6 @@ class EmUARTDragonball {
 
     EmTransportSerial* GetTransport(void);
 
-    void Cycle(uint64 systemCycles);
     void SetModeSync(bool sync);
     bool GetModeSync() const;
 
@@ -135,6 +134,9 @@ class EmUARTDragonball {
     int PrvFIFOSize(Bool forRX);
     int PrvLevelMarker(Bool forRX);
     void UpdateTransactionState(TransactionState state);
+
+    void Cycle(uint64 systemCycles, bool isSleeping);
+    static void CycleThunk(void* ctx, uint64 systemCycles, bool isSleeping);
 
    private:
     int fUARTNum;
@@ -147,6 +149,7 @@ class EmUARTDragonball {
 
     TransactionState transactionState{TransactionState::idle};
     uint64 transactionTimeoutCycles{0};
+    uint64 suspendedAt{0};
     uint64 systemCycles{0};
 };
 

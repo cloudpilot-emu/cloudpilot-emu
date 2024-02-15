@@ -208,8 +208,6 @@ class EmRegsSZ : public EmRegs, public EmHALHandler {
     EmRegsESRAM* esram;
     uint32 palette[256];
     bool clutDirty{true};
-
-    bool uartModeSync{false};
 };
 
 class EmRegsSZNoScreen : public EmRegsSZ {

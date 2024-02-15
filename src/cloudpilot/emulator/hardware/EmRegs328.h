@@ -166,8 +166,6 @@ class EmRegs328 : public EmRegs, public EmHALHandler {
     bool pwmActive{false};
     bool afterLoad{false};
     bool powerOffCached{false};
-
-    bool uartModeSync{false};
 };
 
 #endif /* EmRegs328_h */

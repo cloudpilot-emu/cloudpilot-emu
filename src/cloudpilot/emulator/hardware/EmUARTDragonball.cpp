@@ -19,6 +19,7 @@
 #include "EmTransportSerial.h"
 #include "Logging.h"
 #include "Preferences.h"
+#include "UAE.h"
 
 /*
         This module contains the routines for handling serial I/O.  It
@@ -68,8 +69,8 @@ static Bool PrvPinBaud(EmTransportSerial::Baud& newBaud, EmTransportSerial::Baud
 #endif
 
 namespace {
-    // constexpr uint64 WAITING_FOR_DATA_TIMEOUT_USEC = 10000;
-    // constexpr uint64 MESSAGE_TIMEOUT_BITS = 500;
+    constexpr uint64 WAITING_FOR_DATA_TIMEOUT_USEC = 1000;
+    constexpr uint64 MESSAGE_TIMEOUT_BITS = 50;
 }  // namespace
 
 /***********************************************************************
@@ -316,12 +317,12 @@ void EmUARTDragonball::StateChanged(State& newState, Bool sendTxData) {
             }
 
             if (sync && transactionState == TransactionState::sending) {
-                // transactionTimeoutCycles =
-                //     systemCycles +
-                //     (MESSAGE_TIMEOUT_BITS * static_cast<uint64>(gSession->GetClocksPerSecond()))
-                //     /
-                //         config.fBaud;
-                transactionTimeoutCycles = systemCycles + 500000;
+                transactionTimeoutCycles =
+                    systemCycles +
+                    (MESSAGE_TIMEOUT_BITS * static_cast<uint64>(gSession->GetClocksPerSecond())) /
+                        config.fBaud;
+
+                suspendedAt = systemCycles;
             }
 
             if (transport && transport->CanWrite())  // The host serial port is open
@@ -405,11 +406,12 @@ void EmUARTDragonball::UpdateState(State& state, Bool refreshRxData) {
         if (sync && !transport->CanRead() && transactionState == TransactionState::receiving) {
             UpdateTransactionState(TransactionState::waitingForData);
 
-            // transactionTimeoutCycles =
-            //     systemCycles + (WAITING_FOR_DATA_TIMEOUT_USEC *
-            //                     static_cast<uint64>(gSession->GetClocksPerSecond())) /
-            //                        1000000ull;
-            transactionTimeoutCycles = systemCycles + 500000;
+            transactionTimeoutCycles =
+                systemCycles + (WAITING_FOR_DATA_TIMEOUT_USEC *
+                                static_cast<uint64>(gSession->GetClocksPerSecond())) /
+                                   1000000ull;
+
+            suspendedAt = systemCycles;
         }
 
         this->ReceiveRxFIFO(transport);
@@ -701,18 +703,25 @@ EmTransportSerial* EmUARTDragonball::GetTransport(void) {
     return gSession->GetTransportSerial(type);
 }
 
-void EmUARTDragonball::Cycle(uint64 systemCycles) {
+void EmUARTDragonball::Cycle(uint64 systemCycles, bool isSleeping) {
     if (!sync) return;
 
     this->systemCycles = systemCycles;
 
-    if (systemCycles > transactionTimeoutCycles &&
-        (transactionState == TransactionState::sending ||
-         transactionState == TransactionState::waitingForData)) {
-        cout << "transaction timeout after " << (systemCycles - transactionTimeoutCycles)
-             << " cycles" << endl;
+    const bool transactionTimeout =
+        (systemCycles > transactionTimeoutCycles) || (!isSleeping && regs.stopped);
+
+    if (transactionTimeout && (transactionState == TransactionState::sending ||
+                               transactionState == TransactionState::waitingForData)) {
+        cout << "transaction timeout after " << static_cast<int64>(systemCycles - suspendedAt)
+             << " cycles (scheduled: " << (transactionTimeoutCycles - suspendedAt) << " cycles)"
+             << endl;
         UpdateTransactionState(TransactionState::idle);
     }
+}
+
+void EmUARTDragonball::CycleThunk(void* ctx, uint64 systemCycles, bool isSleeping) {
+    reinterpret_cast<EmUARTDragonball*>(ctx)->Cycle(systemCycles, isSleeping);
 }
 
 void EmUARTDragonball::SetModeSync(bool sync) {
@@ -721,6 +730,11 @@ void EmUARTDragonball::SetModeSync(bool sync) {
     this->sync = sync;
     this->systemCycles = gSession->GetSystemCycles();
     transactionState = TransactionState::idle;
+
+    if (sync)
+        EmHAL::AddCycleConsumer(EmUARTDragonball::CycleThunk, this);
+    else
+        EmHAL::RemoveCycleConsumer(EmUARTDragonball::CycleThunk, this);
 }
 
 bool EmUARTDragonball::GetModeSync() const { return sync; }

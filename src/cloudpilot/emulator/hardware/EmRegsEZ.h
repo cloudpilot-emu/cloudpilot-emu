@@ -167,8 +167,6 @@ class EmRegsEZ : public EmRegs, public EmHALHandler {
     bool powerOffCached{false};
 
     EmSPISlave* fSPISlaveADC{nullptr};
-
-    bool uartModeSync{false};
 };
 
 #endif /* EmRegsEZ_h */
