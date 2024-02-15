@@ -28,8 +28,10 @@ bool EmTransportSerialBuffer::Read(long& count, void* buffer) {
 
     count = static_cast<long>(i);
 
-    if (modeSync && txBuffer.Size() == 0 && !incomingFrameComplete)
+    if (modeSync && txBuffer.Size() == 0 && !incomingFrameComplete) {
         SuspendManager::Suspend<SuspendContextSerialSync>();
+        cout << "received partial frame, suspending emulation" << endl;
+    }
 
     return true;
 }
@@ -40,7 +42,10 @@ bool EmTransportSerialBuffer::Write(long& count, const void* buffer) {
     for (size_t i = 0; i < static_cast<size_t>(count); i++) {
         rxBuffer.Push(reinterpret_cast<const uint8*>(buffer)[i]);
 
-        if (modeSync && rxBuffer.Free() == 0 && requestTransferCallback) requestTransferCallback();
+        if (modeSync && rxBuffer.Free() == 0 && requestTransferCallback) {
+            requestTransferCallback();
+            cout << "receive buffer overflow, sending partial frame now" << endl;
+        }
     }
 
     return true;
@@ -70,11 +75,15 @@ void EmTransportSerialBuffer::OnTransactionStateChange(TransactionState oldState
         SuspendManager::Suspend<SuspendContextSerialSync>();
 
         if (requestTransferCallback) requestTransferCallback();
+
+        cout << "frame complete; suspending emulation" << endl;
     }
 
     if (oldState == TransactionState::waitingForData && newState == TransactionState::idle &&
-        requestTransferCallback)
+        requestTransferCallback) {
         requestTransferCallback();
+        cout << "timeout waiting for response frame, sending empty frame" << endl;
+    }
 
     cout << "transaction state change " << (int)oldState << " -> " << (int)newState << endl;
 }
@@ -82,6 +91,7 @@ void EmTransportSerialBuffer::OnTransactionStateChange(TransactionState oldState
 int EmTransportSerialBuffer::RxBytesPending() { return rxBuffer.Size(); }
 
 void* EmTransportSerialBuffer::Receive() {
+    cout << "copying out " << rxBuffer.Size() << " bytes of data" << endl;
     for (size_t i = 0; rxBuffer.Size() > 0; i++) copyOutBuffer[i] = rxBuffer.Pop();
 
     return copyOutBuffer.get();
@@ -94,8 +104,13 @@ int EmTransportSerialBuffer::Send(int count, const void* data, bool frameComplet
     incomingFrameComplete = frameComplete;
 
     if (SuspendManager::IsSuspended() &&
-        SuspendManager::GetContext().GetKind() == SuspendContext::Kind::serialSync)
+        SuspendManager::GetContext().GetKind() == SuspendContext::Kind::serialSync) {
         SuspendManager::GetContext().AsContextSerialSync().Resume();
+
+        cout << "received " << count << " bytes of frame data, resuming emulation" << endl;
+    } else {
+        cout << "received " << count << " bytes of frame data" << endl;
+    }
 
     return count;
 }

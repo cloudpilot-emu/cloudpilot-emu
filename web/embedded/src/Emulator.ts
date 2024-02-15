@@ -9,13 +9,15 @@ import { EmbeddedEmulationService } from './service/EmbeddedEmulationService';
 import { EmbeddedEventHandlingServie } from './service/EmbeddedEventHandlingService';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { Event } from './Event';
-import { Event as EventImpl, EventInterface } from 'microevent.ts';
+import { Event as EventImpl } from 'microevent.ts';
 import { EventTarget } from '@common/service/GenericEventHandlingService';
 import { Session } from './model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { SkinLoader } from '@common/service/SkinLoader';
 import { Watcher } from './Watcher';
 import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
+import { SerialPort } from '@common/service/SerialPort';
+export { SerialPort } from '@common/service/SerialPort';
 
 const DEFAULT_SESSION: Session = {
     hotsyncName: undefined,
@@ -26,20 +28,6 @@ const DEFAULT_SESSION: Session = {
 };
 
 const CARD_KEY = 'MEMORY_CARD';
-
-export interface SerialTransport {
-    /**
-     * Transfer a chunk of data over the serial port.
-     *
-     * @param data Serial data
-     */
-    send(data: Uint8Array): void;
-
-    /**
-     * Fires when data is transferred over the serial port.
-     */
-    dataEvent: EventInterface<Uint8Array>;
-}
 
 export interface Emulator {
     /**
@@ -319,12 +307,12 @@ export interface Emulator {
     /**
      * Get serial transport for IR transceiver.
      */
-    getTransportIR(): SerialTransport;
+    getSerialPortIR(): SerialPort;
 
     /**
      * Get serial transport for serial port.
      */
-    getTransportSerial(): SerialTransport;
+    getSerialPortSerial(): SerialPort;
 
     /**
      * Fires when the device turns on or off.
@@ -691,18 +679,12 @@ export class EmulatorImpl implements Emulator {
         return this;
     }
 
-    getTransportIR(): SerialTransport {
-        return {
-            dataEvent: this.cloudpilot.getTransportIR().dataEvent,
-            send: (data) => this.cloudpilot.getTransportIR().Send(data),
-        };
+    getSerialPortIR(): SerialPort {
+        return this.emulationService.getSerialPortIR();
     }
 
-    getTransportSerial(): SerialTransport {
-        return {
-            dataEvent: this.cloudpilot.getTransportSerial().dataEvent,
-            send: (data) => this.cloudpilot.getTransportSerial().Send(data),
-        };
+    getSerialPortSerial(): SerialPort {
+        return this.emulationService.getSerialPortSerial();
     }
 
     get powerOffChangeEvent(): Event<boolean> {

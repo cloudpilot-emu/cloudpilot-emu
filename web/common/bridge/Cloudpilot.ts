@@ -18,15 +18,18 @@ import createModule, {
     SuspendContextClipboardPaste,
     SuspendContextNetworkConnect,
     SuspendContextNetworkRpc,
+    SuspendContextSerialSync,
     SuspendKind,
     VoidPtr,
 } from '@native/index';
 
 import { DeviceId } from '../model/DeviceId';
-import { Event } from 'microevent.ts';
+import { Event, EventInterface } from 'microevent.ts';
 import { InstantiateFunction } from '@common/helper/wasm';
 import { dirtyPagesSize } from './util';
 import { ZipfileWalker, decorateZipfileWalker } from './ZipfileWalker';
+
+let nextId = 0;
 
 export {
     PalmButton,
@@ -116,11 +119,11 @@ export const SUPPORTED_DEVICES = [
     DeviceId.lp168,
 ];
 
-interface SerialTransport extends Omit<EmSerialTransport, 'Receive' | 'Send'> {
+export interface SerialTransport extends Omit<EmSerialTransport, 'Receive' | 'Send'> {
     Receive(): Uint8Array;
-    Send(data: Uint8Array): void;
+    Send(data: Uint8Array | undefined, isFrameComplete: boolean): void;
 
-    dataEvent: Event<Uint8Array>;
+    onFrameComplete: EventInterface<void>;
 }
 
 function guard(): MethodDecorator {
@@ -160,10 +163,12 @@ export class Cloudpilot {
     static async create(wasmModuleUrl?: string): Promise<Cloudpilot>;
     static async create(instantiateWasm?: InstantiateFunction): Promise<Cloudpilot>;
     static async create(urlOrFunction?: string | InstantiateFunction): Promise<Cloudpilot> {
+        const id = nextId++;
+
         return new Cloudpilot(
             await createModule({
-                print: (x: string) => console.log(x),
-                printErr: (x: string) => console.error(x),
+                print: (x: string) => console.log(`${id}: ${x}`),
+                printErr: (x: string) => console.error(`${id}: ${x}`),
                 ...(typeof urlOrFunction === 'string' ? { locateFile: () => urlOrFunction } : {}),
                 ...(typeof urlOrFunction === 'function' ? { instantiateWasm: urlOrFunction } : {}),
             }),
@@ -219,17 +224,7 @@ export class Cloudpilot {
 
     @guard()
     runEmulation(cycles: number): number {
-        const actualCycles = this.cloudpilot.RunEmulation(cycles);
-
-        if (this.transportIR.dataEvent.hasHandlers && this.transportIR.RxBytesPending() > 0) {
-            this.transportIR.dataEvent.dispatch(this.transportIR.Receive());
-        }
-
-        if (this.transportSerial.dataEvent.hasHandlers && this.transportSerial.RxBytesPending() > 0) {
-            this.transportSerial.dataEvent.dispatch(this.transportSerial.Receive());
-        }
-
-        return actualCycles;
+        return this.cloudpilot.RunEmulation(cycles);
     }
 
     @guard()
@@ -525,6 +520,11 @@ export class Cloudpilot {
     @guard()
     getSuspendContextNetworkRpc(): SuspendContextNetworkRpc {
         return this.wrap(this.cloudpilot.GetSuspendContext().AsContextNetworkRpc());
+    }
+
+    @guard()
+    getSuspendContextSerialSync(): SuspendContextSerialSync {
+        return this.wrap(this.cloudpilot.GetSuspendContext().AsContextSerialSync());
     }
 
     @guard()
@@ -858,6 +858,9 @@ export class Cloudpilot {
     }
 
     private wrapTransport(transport: EmSerialTransport): SerialTransport {
+        const onFrameComplete = new Event<void>();
+        transport.SetRequestTransferCallback(this.module.addFunction(() => onFrameComplete.dispatch(), 'v'));
+
         return this.wrap(
             Object.setPrototypeOf(
                 {
@@ -867,15 +870,15 @@ export class Cloudpilot {
                         return this.copyOut(transport.Receive(), count);
                     },
 
-                    Send: (data: Uint8Array): void => {
-                        const buffer = this.copyIn(data);
+                    Send: (data: Uint8Array | undefined, frameComplete: boolean): void => {
+                        const buffer = data && this.copyIn(data);
 
-                        transport.Send(data.length, buffer, true);
+                        transport.Send(data?.length ?? 0, buffer ?? this.cloudpilot.Nullptr(), frameComplete);
 
-                        this.cloudpilot.Free(buffer);
+                        if (buffer) this.cloudpilot.Free(buffer);
                     },
 
-                    dataEvent: new Event<Uint8Array>(),
+                    onFrameComplete,
                 },
                 transport,
             ),

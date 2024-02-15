@@ -31,6 +31,7 @@ export const enum SuspendKind {
     clipboardPaste = 2,
     networkRpc = 3,
     networkConnect = 4,
+    serialSync = 5,
 }
 
 export const enum CardSupportLevel {
@@ -210,6 +211,11 @@ export interface SuspendContextNetworkRpc {
     ReceiveResponse(data: VoidPtr, size: number): void;
 }
 
+export interface SuspendContextSerialSync {
+    Cancel(): void;
+    Resume(): void;
+}
+
 export interface SuspendContext {
     GetKind(): SuspendKind;
     Cancel(): void;
@@ -218,6 +224,7 @@ export interface SuspendContext {
     AsContextClipboardPaste(): SuspendContextClipboardPaste;
     AsContextNetworkConnect(): SuspendContextNetworkConnect;
     AsContextNetworkRpc(): SuspendContextNetworkRpc;
+    AsContextSerialSync(): SuspendContextSerialSync;
 }
 
 export interface SessionImage {
@@ -275,6 +282,6 @@ export interface EmSerialTransport {
     GetModeSync(): boolean;
     SetModeSync(sync: boolean): void;
 
-    IsPartial(): boolean;
+    IsFrameComplete(): boolean;
     SetRequestTransferCallback(cb: number): void;
 }

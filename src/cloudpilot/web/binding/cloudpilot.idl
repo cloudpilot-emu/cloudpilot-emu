@@ -163,6 +163,11 @@ interface SuspendContextNetworkRpc {
     void ReceiveResponse(VoidPtr data, long size);
 };
 
+interface SuspendContextSerialSync {
+    void Cancel();
+    void Resume();
+};
+
 interface SuspendContext {
     long GetKind();
     void Cancel();
@@ -171,6 +176,7 @@ interface SuspendContext {
     [Ref] SuspendContextClipboardPaste AsContextClipboardPaste();
     [Ref] SuspendContextNetworkConnect AsContextNetworkConnect();
     [Ref] SuspendContextNetworkRpc AsContextNetworkRpc();
+    [Ref] SuspendContextSerialSync AsContextSerialSync();
 };
 
 interface SessionImage {

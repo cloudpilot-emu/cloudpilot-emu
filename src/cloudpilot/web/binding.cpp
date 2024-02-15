@@ -13,6 +13,7 @@
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendContextNetworkConnect.h"
 #include "SuspendContextNetworkRpc.h"
+#include "SuspendContextSerialSync.h"
 #include "ZipfileWalker.h"
 
 // clang-format off

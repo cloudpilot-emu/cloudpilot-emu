@@ -1,5 +1,6 @@
+import { ReceivePayload, SerialPort } from './SerialPort';
 import { AnimationFrameScheduler, Scheduler, SchedulerKind } from '@common/helper/scheduler';
-import { Cloudpilot, PalmButton, PwmUpdate } from '@common/bridge/Cloudpilot';
+import { Cloudpilot, PalmButton, PwmUpdate, SerialTransport, SuspendKind } from '@common/bridge/Cloudpilot';
 import { GRAYSCALE_PALETTE_HEX, GRAYSCALE_PALETTE_RGBA } from '@common/helper/palette';
 import { deviceDimensions, isColor } from '@common/helper/deviceProperties';
 
@@ -18,6 +19,55 @@ const TIME_PER_FRAME_AVERAGE_N = 60;
 const MIN_FPS = 30;
 const DUMMY_SPEED = 1000;
 const MIN_MILLISECONDS_PER_PWD_UPDATE = 10;
+const SERIAL_SYNC_TIMEOUT_MSEC = 1000;
+
+class SerialPortImpl implements SerialPort {
+    constructor() {}
+
+    bind(transport: SerialTransport): void {
+        if (this.transport === transport) return;
+
+        if (this.transport) this.transport.onFrameComplete.removeHandler(this.onFrameComplete);
+
+        transport.onFrameComplete.addHandler(this.onFrameComplete);
+        transport.SetModeSync(this.isSync);
+
+        this.transport = transport;
+    }
+
+    send(data: Uint8Array | undefined, isFrameComplete: boolean): void {
+        this.transport?.Send(data, isFrameComplete);
+    }
+
+    setModeSync(modeSync: boolean): void {
+        this.isSync = modeSync;
+        this.transport?.SetModeSync(modeSync);
+    }
+
+    getModeSync(): boolean {
+        return this.transport?.GetModeSync?.() ?? false;
+    }
+
+    dispatch(): void {
+        if (!this.transport || this.transport.RxBytesPending() === 0) return;
+
+        this.onReceive.dispatch({ data: this.transport.Receive(), isFrameComplete: this.transport.IsFrameComplete() });
+    }
+
+    private onFrameComplete = () => {
+        if (!this.transport) return;
+
+        this.onReceive.dispatch({
+            data: this.transport.Receive(),
+            isFrameComplete: this.transport.IsFrameComplete(),
+        });
+    };
+
+    onReceive = new Event<ReceivePayload>();
+
+    private transport: SerialTransport | undefined;
+    private isSync = false;
+}
 
 export abstract class AbstractEmulationService {
     handlePointerMove(x: number, y: number, isSilkscreen: boolean): void {
@@ -110,6 +160,18 @@ export abstract class AbstractEmulationService {
         return this.cloudpilotInstance ? this.cloudpilotInstance.isSuspended() : false;
     }
 
+    getSerialPortSerial(): SerialPort {
+        if (!this.serialPortSerial) throw new Error('emulator not initialized');
+
+        return this.serialPortSerial;
+    }
+
+    getSerialPortIR(): SerialPort {
+        if (!this.serialPortIR) throw new Error('emulator not initialized');
+
+        return this.serialPortIR;
+    }
+
     protected abstract getConfiguredSpeed(): number;
 
     protected abstract manageHotsyncName(): boolean;
@@ -170,6 +232,11 @@ export abstract class AbstractEmulationService {
 
         if (this.cloudpilotInstance) this.cloudpilotInstance.pwmUpdateEvent.removeHandler(this.onPwmUpdate);
         cloudpilot.pwmUpdateEvent.addHandler(this.onPwmUpdate);
+
+        if (this.cloudpilotInstance !== cloudpilot) {
+            this.serialPortIR.bind(cloudpilot.getTransportIR());
+            this.serialPortSerial.bind(cloudpilot.getTransportSerial());
+        }
 
         this.cloudpilotInstance = cloudpilot;
 
@@ -359,6 +426,14 @@ export abstract class AbstractEmulationService {
 
         if (!this.cloudpilotInstance || this.hasFatalError() || timestamp < this.clockEmulator) return;
 
+        if (
+            this.cloudpilotInstance.isSuspended() &&
+            this.cloudpilotInstance.getSuspendKind() === SuspendKind.serialSync &&
+            timestamp - this.serialSyncStartedAt > SERIAL_SYNC_TIMEOUT_MSEC
+        ) {
+            console.log('serial sync timeout, waking emulator');
+            this.cloudpilotInstance.getSuspendContextSerialSync().Cancel();
+        }
         const wasSuspended = this.cloudpilotInstance.isSuspended();
         let isSuspended = false;
 
@@ -406,7 +481,15 @@ export abstract class AbstractEmulationService {
         this.updateEmulationSpeed(this.speedAverage.calculateAverage());
 
         if (isSuspended && !wasSuspended) {
-            this.handleSuspend();
+            switch (this.cloudpilotInstance.getSuspendKind()) {
+                case SuspendKind.serialSync:
+                    this.serialSyncStartedAt = performance.now();
+                    break;
+
+                default:
+                    this.handleSuspend();
+                    break;
+            }
         }
 
         const powerOff = this.cloudpilotInstance.isPowerOff();
@@ -426,6 +509,9 @@ export abstract class AbstractEmulationService {
         if (uiInitialized && !powerOff && this.manageHotsyncName() && !isSuspended) {
             this.checkAndUpdateHotsyncName();
         }
+
+        this.serialPortIR!.dispatch();
+        this.serialPortSerial!.dispatch();
 
         this.onAfterAdvanceEmulation(timestamp, cycles);
     };
@@ -647,4 +733,9 @@ export abstract class AbstractEmulationService {
 
     protected frameCounter = 0;
     protected isDirty = false;
+
+    protected serialPortIR = new SerialPortImpl();
+    protected serialPortSerial = new SerialPortImpl();
+
+    protected serialSyncStartedAt = 0;
 }

@@ -110,12 +110,12 @@
             const emulator = await cloudpilot.createEmulator();
             const canvas = document.getElementsByTagName('canvas')[0];
 
-            emulator.getTransportSerial().dataEvent.addHandler(
-                data => terminal.write(data)
+            emulator.getSerialPortSerial().onReceive.addHandler(
+                ({data}) => terminal.write(data)
             );
 
-            terminal.onData(data => emulator.getTransportSerial().send(
-                new Uint8Array([...data.split('').map(x => x.charCodeAt(0)).map(x => x === 127 ? 0x08 : x)])
+            terminal.onData(data => emulator.getSerialPortSerial().send(
+                new Uint8Array([...data.split('').map(x => x.charCodeAt(0)).map(x => x === 127 ? 0x08 : x)]), true
             ));
 
             emulator.

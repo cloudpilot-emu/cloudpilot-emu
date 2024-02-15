@@ -89,8 +89,11 @@
             const canvas1 = document.getElementById('canvas-1');
             const canvas2 = document.getElementById('canvas-2');
 
-            emulator1.getTransportIR().dataEvent.addHandler(data => emulator2.getTransportIR().send(data));
-            emulator2.getTransportIR().dataEvent.addHandler(data => emulator1.getTransportIR().send(data));
+            emulator1.getSerialPortIR().setModeSync(true);
+            emulator2.getSerialPortIR().setModeSync(true);
+
+            emulator1.getSerialPortIR().onReceive.addHandler(({data, isFrameComplete}) => emulator2.getSerialPortIR().send(data, isFrameComplete));
+            emulator2.getSerialPortIR().onReceive.addHandler(({data, isFrameComplete}) => emulator1.getSerialPortIR().send(data, isFrameComplete));
 
             emulator1
                 .loadRom(new Uint8Array(rom1))
