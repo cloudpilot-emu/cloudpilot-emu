@@ -69,7 +69,7 @@ static Bool PrvPinBaud(EmTransportSerial::Baud& newBaud, EmTransportSerial::Baud
 #endif
 
 namespace {
-    constexpr uint64 WAITING_FOR_DATA_TIMEOUT_USEC = 1000;
+    constexpr uint64 WAITING_FOR_DATA_TIMEOUT_BITS = 100;
     constexpr uint64 MESSAGE_TIMEOUT_BITS = 50;
 }  // namespace
 
@@ -407,9 +407,9 @@ void EmUARTDragonball::UpdateState(State& state, Bool refreshRxData) {
             UpdateTransactionState(TransactionState::waitingForData);
 
             transactionTimeoutCycles =
-                systemCycles + (WAITING_FOR_DATA_TIMEOUT_USEC *
+                systemCycles + (WAITING_FOR_DATA_TIMEOUT_BITS *
                                 static_cast<uint64>(gSession->GetClocksPerSecond())) /
-                                   1000000ull;
+                                   transport->GetConfig().fBaud;
 
             suspendedAt = systemCycles;
         }
