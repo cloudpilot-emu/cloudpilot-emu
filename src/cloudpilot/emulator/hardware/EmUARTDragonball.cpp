@@ -21,6 +21,13 @@
 #include "Preferences.h"
 #include "UAE.h"
 
+using IrlapFrameState = EmUARTDragonball::IrlapFrameState;
+
+namespace {
+    constexpr uint64 WAITING_FOR_DATA_TIMEOUT_USEC = 25000;
+    constexpr uint64 MESSAGE_TIMEOUT_USEC = 750;
+}  // namespace
+
 /*
         This module contains the routines for handling serial I/O.  It
         is responsible for responding to changes in state enacted by
@@ -67,11 +74,6 @@ static Bool PrvPinBaud(EmTransportSerial::Baud& newBaud, EmTransportSerial::Baud
 #else
     #define PRINTF(...) ;
 #endif
-
-namespace {
-    constexpr uint64 WAITING_FOR_DATA_TIMEOUT_BITS = 100;
-    constexpr uint64 MESSAGE_TIMEOUT_BITS = 50;
-}  // namespace
 
 /***********************************************************************
  *
@@ -319,10 +321,18 @@ void EmUARTDragonball::StateChanged(State& newState, Bool sendTxData) {
             if (sync && transactionState == TransactionState::sending) {
                 transactionTimeoutCycles =
                     systemCycles +
-                    (MESSAGE_TIMEOUT_BITS * static_cast<uint64>(gSession->GetClocksPerSecond())) /
-                        config.fBaud;
+                    (MESSAGE_TIMEOUT_USEC * static_cast<uint64>(gSession->GetClocksPerSecond())) /
+                        1000000ull;
+                ;
 
                 suspendedAt = systemCycles;
+
+                // const IrlapFrameState oldIrlapState = irlapFrameState;
+                // irlapFrameState = irlapFrameStep(newState.TX_DATA, oldIrlapState);
+                //
+                // if (oldIrlapState != irlapFrameState && irlapFrameState == IrlapFrameState::A) {
+                //    transactionTimeoutCycles = systemCycles + 5000;
+                //}
             }
 
             if (transport && transport->CanWrite())  // The host serial port is open
@@ -407,9 +417,9 @@ void EmUARTDragonball::UpdateState(State& state, Bool refreshRxData) {
             UpdateTransactionState(TransactionState::waitingForData);
 
             transactionTimeoutCycles =
-                systemCycles + (WAITING_FOR_DATA_TIMEOUT_BITS *
+                systemCycles + (WAITING_FOR_DATA_TIMEOUT_USEC *
                                 static_cast<uint64>(gSession->GetClocksPerSecond())) /
-                                   transport->GetConfig().fBaud;
+                                   1000000ull;
 
             suspendedAt = systemCycles;
         }
@@ -731,10 +741,12 @@ void EmUARTDragonball::SetModeSync(bool sync) {
     this->systemCycles = gSession->GetSystemCycles();
     transactionState = TransactionState::idle;
 
-    if (sync)
+    if (sync) {
         EmHAL::AddCycleConsumer(EmUARTDragonball::CycleThunk, this);
-    else
+        irlapFrameState = IrlapFrameState::A;
+    } else {
         EmHAL::RemoveCycleConsumer(EmUARTDragonball::CycleThunk, this);
+    }
 }
 
 bool EmUARTDragonball::GetModeSync() const { return sync; }

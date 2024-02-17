@@ -20,6 +20,7 @@ const MIN_FPS = 30;
 const DUMMY_SPEED = 1000;
 const MIN_MILLISECONDS_PER_PWD_UPDATE = 10;
 const SERIAL_SYNC_TIMEOUT_MSEC = 1000;
+const MAX_IRDA_FRAME_BUFFER = 1024;
 
 class SerialPortImpl implements SerialPort {
     constructor() {}
@@ -37,6 +38,7 @@ class SerialPortImpl implements SerialPort {
 
     send(data: Uint8Array | undefined, isFrameComplete: boolean): void {
         this.transport?.Send(data, isFrameComplete);
+        setTimeout(() => this.dispatchEvent.dispatch(), 0);
     }
 
     setModeSync(modeSync: boolean): void {
@@ -49,7 +51,7 @@ class SerialPortImpl implements SerialPort {
     }
 
     dispatch(): void {
-        if (!this.transport || this.transport.RxBytesPending() === 0) return;
+        if (!this.transport || this.transport.RxBytesPending() < MAX_IRDA_FRAME_BUFFER) return;
 
         this.onReceive.dispatch({ data: this.transport.Receive(), isFrameComplete: this.transport.IsFrameComplete() });
     }
@@ -64,12 +66,18 @@ class SerialPortImpl implements SerialPort {
     };
 
     onReceive = new Event<ReceivePayload>();
+    dispatchEvent = new Event<void>();
 
     private transport: SerialTransport | undefined;
     private isSync = false;
 }
 
 export abstract class AbstractEmulationService {
+    constructor() {
+        this.serialPortIR.dispatchEvent.addHandler(() => this.advanceEmulation(performance.now()));
+        this.serialPortSerial.dispatchEvent.addHandler(() => this.advanceEmulation(performance.now()));
+    }
+
     handlePointerMove(x: number, y: number, isSilkscreen: boolean): void {
         if (!this.handleInput()) return;
 
@@ -423,6 +431,7 @@ export abstract class AbstractEmulationService {
 
     protected advanceEmulation = (timestamp: number): void => {
         this.isDirty = false;
+        if (!this.isRunning) return;
 
         if (!this.cloudpilotInstance || this.hasFatalError() || timestamp < this.clockEmulator) return;
 
@@ -434,6 +443,7 @@ export abstract class AbstractEmulationService {
             console.log('serial sync timeout, waking emulator');
             this.cloudpilotInstance.getSuspendContextSerialSync().Cancel();
         }
+
         const wasSuspended = this.cloudpilotInstance.isSuspended();
         let isSuspended = false;
 

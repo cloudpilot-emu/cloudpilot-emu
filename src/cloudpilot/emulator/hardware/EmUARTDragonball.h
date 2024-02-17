@@ -24,6 +24,8 @@ class EmUARTDragonball {
 
     enum class TransactionState { idle = 0, sending = 1, receiving = 2, waitingForData = 3 };
 
+    enum class IrlapFrameState { A, B, C, D };
+
     struct State {
         State(UART_Type type) { UART_TYPE = type; }
 
@@ -151,6 +153,8 @@ class EmUARTDragonball {
     uint64 transactionTimeoutCycles{0};
     uint64 suspendedAt{0};
     uint64 systemCycles{0};
+
+    IrlapFrameState irlapFrameState{IrlapFrameState::A};
 };
 
 #endif /* EmUARTDragonball_h */

@@ -76,6 +76,7 @@ class EmTransportSerialBuffer : public EmTransportSerial {
 
     bool modeSync{false};
     bool incomingFrameComplete{false};
+    bool isXIDCommandFrame{false};
 
     EmUARTDragonball::TransactionState transactionState{EmUARTDragonball::TransactionState::idle};
 

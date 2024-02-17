@@ -435,9 +435,6 @@ uint32 EmSession::RunEmulation(uint32 maxCycles) {
     if (SuspendManager::IsSuspended()) {
         uint32 cycles = maxCycles + extraCycles;
         extraCycles = 0;
-
-        cout << "suspended!" << endl;
-
         return cycles;
     }
 

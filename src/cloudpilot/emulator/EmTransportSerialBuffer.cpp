@@ -5,6 +5,43 @@
 
 using TransactionState = EmUARTDragonball::TransactionState;
 
+namespace {
+    bool isXIDSniffingCommand(const uint8* buffer, size_t size) {
+        size_t i = 0;
+
+        // scan for frame start
+        for (i = 0; i < size && buffer[i] != 0xc0; i++) {
+            if (buffer[i] == 0xff)
+                continue;
+            else
+                return false;
+        }
+        i++;
+
+        if (size - i < 3) return false;
+        if (buffer[i++] != 0xff) return false;  // addr = 0xff
+        if (buffer[i++] != 0x3f) return false;  // command XID= 0x3f
+        if (buffer[i++] != 0x01) return false;  // FI = 0x01
+
+        // skip source address
+        uint8 j = 0;
+        while (j < 4) {
+            if (i >= size) return false;
+            if (buffer[i++] == 0x7d) continue;  // skip escape byte
+
+            j++;
+        }
+
+        // check destination address (0xffffffff for sniffing)
+        if (size - i < 6) return false;
+        for (j = 0; j < 4; j++) {
+            if (buffer[i++] != 0xff) return false;
+        }
+
+        return buffer[i + 1] != 0xff;
+    }
+}  // namespace
+
 EmTransportSerialBuffer::EmTransportSerialBuffer(size_t bufferSize)
     : bufferSize(bufferSize),
       rxBuffer(bufferSize),
@@ -79,10 +116,14 @@ void EmTransportSerialBuffer::OnTransactionStateChange(TransactionState oldState
         cout << "frame complete; suspending emulation" << endl;
     }
 
-    if (oldState == TransactionState::waitingForData && newState == TransactionState::idle &&
-        requestTransferCallback) {
-        requestTransferCallback();
+    if (oldState == TransactionState::waitingForData && newState == TransactionState::idle) {
+        if (requestTransferCallback) requestTransferCallback();
         cout << "timeout waiting for response frame, sending empty frame" << endl;
+
+        if (isXIDCommandFrame) {
+            cout << "suspending while waiting for the next XID timeslot" << endl << flush;
+            SuspendManager::Suspend<SuspendContextSerialSync>();
+        }
     }
 
     cout << "transaction state change " << (int)oldState << " -> " << (int)newState << endl;
@@ -102,6 +143,11 @@ int EmTransportSerialBuffer::Send(int count, const void* data, bool frameComplet
         txBuffer.Push(reinterpret_cast<const uint8*>(data)[i]);
 
     incomingFrameComplete = frameComplete;
+    cout << (int)frameComplete << endl << flush;
+
+    isXIDCommandFrame = modeSync && frameComplete &&
+                        isXIDSniffingCommand(reinterpret_cast<const uint8*>(data), count);
+    if (isXIDCommandFrame) cout << "received XID sniffing command" << endl;
 
     if (SuspendManager::IsSuspended() &&
         SuspendManager::GetContext().GetKind() == SuspendContext::Kind::serialSync) {
@@ -142,6 +188,7 @@ void EmTransportSerialBuffer::SetModeSync(bool modeSync) {
 
     this->modeSync = modeSync;
     transactionState = TransactionState::idle;
+    isXIDCommandFrame = false;
 
     onRequiresSyncChanged.Dispatch();
 }
