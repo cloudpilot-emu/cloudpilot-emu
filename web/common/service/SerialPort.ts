@@ -11,5 +11,5 @@ export interface SerialPort {
     setModeSync(modeSync: boolean): void;
     getModeSync(): boolean;
 
-    onReceive: EventInterface<ReceivePayload>;
+    receiveEvent: EventInterface<ReceivePayload>;
 }

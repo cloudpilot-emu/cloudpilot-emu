@@ -92,20 +92,8 @@
             emulator1.getSerialPortIR().setModeSync(true);
             emulator2.getSerialPortIR().setModeSync(true);
 
-            const foo = Promise.resolve();
-            const bar = Promise.resolve();
-
-            emulator1.getSerialPortIR().onReceive.addHandler(({data, isFrameComplete}) => {
-                if (data) console.log(Array.from(data).map(x => x.toString(16).padStart(2, '0')));
-
-                emulator2.getSerialPortIR().send(data, isFrameComplete)
-                
-            });
-            emulator2.getSerialPortIR().onReceive.addHandler(({data, isFrameComplete}) => {
-                if (data) console.log(Array.from(data).map(x => x.toString(16).padStart(2, '0')));
-
-                emulator1.getSerialPortIR().send(data, isFrameComplete);
-            });
+            emulator1.getSerialPortIR().receiveEvent.addHandler(({data, isFrameComplete}) => emulator2.getSerialPortIR().send(data, isFrameComplete));
+            emulator2.getSerialPortIR().receiveEvent.addHandler(({data, isFrameComplete}) => emulator1.getSerialPortIR().send(data, isFrameComplete));
 
             emulator1
                 .loadRom(new Uint8Array(rom1))

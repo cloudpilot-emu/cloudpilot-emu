@@ -1,5 +1,6 @@
 #include "EmTransportSerialBuffer.h"
 
+#include "EmUARTDragonball.h"
 #include "SuspendContextSerialSync.h"
 #include "SuspendManager.h"
 
@@ -67,7 +68,9 @@ bool EmTransportSerialBuffer::Read(long& count, void* buffer) {
 
     if (modeSync && txBuffer.Size() == 0 && !incomingFrameComplete) {
         SuspendManager::Suspend<SuspendContextSerialSync>();
+#ifdef TRACE_UART_SYNC
         cout << "received partial frame, suspending emulation" << endl;
+#endif
     }
 
     return true;
@@ -81,7 +84,9 @@ bool EmTransportSerialBuffer::Write(long& count, const void* buffer) {
 
         if (modeSync && rxBuffer.Free() == 0 && requestTransferCallback) {
             requestTransferCallback();
+#ifdef TRACE_UART_SYNC
             cout << "receive buffer overflow, sending partial frame now" << endl;
+#endif
         }
     }
 
@@ -113,26 +118,36 @@ void EmTransportSerialBuffer::OnTransactionStateChange(TransactionState oldState
 
         if (requestTransferCallback) requestTransferCallback();
 
+#ifdef TRACE_UART_SYNC
         cout << "frame complete; suspending emulation" << endl;
+#endif
     }
 
     if (oldState == TransactionState::waitingForData && newState == TransactionState::idle) {
         if (requestTransferCallback) requestTransferCallback();
+#ifdef TRACE_UART_SYNC
         cout << "timeout waiting for response frame, sending empty frame" << endl;
+#endif
 
         if (isXIDCommandFrame) {
+#ifdef TRACE_UART_SYNC
             cout << "suspending while waiting for the next XID timeslot" << endl << flush;
+#endif
             SuspendManager::Suspend<SuspendContextSerialSync>();
         }
     }
 
+#ifdef TRACE_UART_SYNC
     cout << "transaction state change " << (int)oldState << " -> " << (int)newState << endl;
+#endif
 }
 
 int EmTransportSerialBuffer::RxBytesPending() { return rxBuffer.Size(); }
 
 void* EmTransportSerialBuffer::Receive() {
+#ifdef TRACE_UART_SYNC
     cout << "copying out " << rxBuffer.Size() << " bytes of data" << endl;
+#endif
     for (size_t i = 0; rxBuffer.Size() > 0; i++) copyOutBuffer[i] = rxBuffer.Pop();
 
     return copyOutBuffer.get();
@@ -143,19 +158,24 @@ int EmTransportSerialBuffer::Send(int count, const void* data, bool frameComplet
         txBuffer.Push(reinterpret_cast<const uint8*>(data)[i]);
 
     incomingFrameComplete = frameComplete;
-    cout << (int)frameComplete << endl << flush;
 
     isXIDCommandFrame = modeSync && frameComplete &&
                         isXIDSniffingCommand(reinterpret_cast<const uint8*>(data), count);
+#ifdef TRACE_UART_SYNC
     if (isXIDCommandFrame) cout << "received XID sniffing command" << endl;
+#endif
 
     if (SuspendManager::IsSuspended() &&
         SuspendManager::GetContext().GetKind() == SuspendContext::Kind::serialSync) {
         SuspendManager::GetContext().AsContextSerialSync().Resume();
 
+#ifdef TRACE_UART_SYNC
         cout << "received " << count << " bytes of frame data, resuming emulation" << endl;
+#endif
     } else {
+#ifdef TRACE_UART_SYNC
         cout << "received " << count << " bytes of frame data" << endl;
+#endif
     }
 
     return count;

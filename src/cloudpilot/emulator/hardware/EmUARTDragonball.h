@@ -16,6 +16,8 @@
 
 #include "EmThreadSafeQueue.h"  // EmByteQueue
 
+// #define TRACE_UART_SYNC
+
 class EmTransportSerial;
 
 class EmUARTDragonball {
@@ -151,7 +153,6 @@ class EmUARTDragonball {
 
     TransactionState transactionState{TransactionState::idle};
     uint64 transactionTimeoutCycles{0};
-    uint64 suspendedAt{0};
     uint64 systemCycles{0};
 
     IrlapFrameState irlapFrameState{IrlapFrameState::A};

@@ -123,7 +123,7 @@ export interface SerialTransport extends Omit<EmSerialTransport, 'Receive' | 'Se
     Receive(): Uint8Array;
     Send(data: Uint8Array | undefined, isFrameComplete: boolean): void;
 
-    onFrameComplete: EventInterface<void>;
+    frameCompleteEvent: EventInterface<void>;
 }
 
 function guard(): MethodDecorator {
@@ -858,8 +858,8 @@ export class Cloudpilot {
     }
 
     private wrapTransport(transport: EmSerialTransport): SerialTransport {
-        const onFrameComplete = new Event<void>();
-        transport.SetRequestTransferCallback(this.module.addFunction(() => onFrameComplete.dispatch(), 'v'));
+        const frameCompleteEvent = new Event<void>();
+        transport.SetRequestTransferCallback(this.module.addFunction(() => frameCompleteEvent.dispatch(), 'v'));
 
         return this.wrap(
             Object.setPrototypeOf(
@@ -878,7 +878,7 @@ export class Cloudpilot {
                         if (buffer) this.cloudpilot.Free(buffer);
                     },
 
-                    onFrameComplete,
+                    frameCompleteEvent,
                 },
                 transport,
             ),

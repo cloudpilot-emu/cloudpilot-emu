@@ -28,9 +28,9 @@ class SerialPortImpl implements SerialPort {
     bind(transport: SerialTransport): void {
         if (this.transport === transport) return;
 
-        if (this.transport) this.transport.onFrameComplete.removeHandler(this.onFrameComplete);
+        if (this.transport) this.transport.frameCompleteEvent.removeHandler(this.onFrameComplete);
 
-        transport.onFrameComplete.addHandler(this.onFrameComplete);
+        transport.frameCompleteEvent.addHandler(this.onFrameComplete);
         transport.SetModeSync(this.isSync);
 
         this.transport = transport;
@@ -53,19 +53,22 @@ class SerialPortImpl implements SerialPort {
     dispatch(): void {
         if (!this.transport || this.transport.RxBytesPending() < MAX_IRDA_FRAME_BUFFER) return;
 
-        this.onReceive.dispatch({ data: this.transport.Receive(), isFrameComplete: this.transport.IsFrameComplete() });
+        this.receiveEvent.dispatch({
+            data: this.transport.Receive(),
+            isFrameComplete: this.transport.IsFrameComplete(),
+        });
     }
 
     private onFrameComplete = () => {
         if (!this.transport) return;
 
-        this.onReceive.dispatch({
+        this.receiveEvent.dispatch({
             data: this.transport.Receive(),
             isFrameComplete: this.transport.IsFrameComplete(),
         });
     };
 
-    onReceive = new Event<ReceivePayload>();
+    receiveEvent = new Event<ReceivePayload>();
     dispatchEvent = new Event<void>();
 
     private transport: SerialTransport | undefined;

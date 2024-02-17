@@ -324,15 +324,6 @@ void EmUARTDragonball::StateChanged(State& newState, Bool sendTxData) {
                     (MESSAGE_TIMEOUT_USEC * static_cast<uint64>(gSession->GetClocksPerSecond())) /
                         1000000ull;
                 ;
-
-                suspendedAt = systemCycles;
-
-                // const IrlapFrameState oldIrlapState = irlapFrameState;
-                // irlapFrameState = irlapFrameStep(newState.TX_DATA, oldIrlapState);
-                //
-                // if (oldIrlapState != irlapFrameState && irlapFrameState == IrlapFrameState::A) {
-                //    transactionTimeoutCycles = systemCycles + 5000;
-                //}
             }
 
             if (transport && transport->CanWrite())  // The host serial port is open
@@ -420,8 +411,6 @@ void EmUARTDragonball::UpdateState(State& state, Bool refreshRxData) {
                 systemCycles + (WAITING_FOR_DATA_TIMEOUT_USEC *
                                 static_cast<uint64>(gSession->GetClocksPerSecond())) /
                                    1000000ull;
-
-            suspendedAt = systemCycles;
         }
 
         this->ReceiveRxFIFO(transport);
@@ -723,9 +712,9 @@ void EmUARTDragonball::Cycle(uint64 systemCycles, bool isSleeping) {
 
     if (transactionTimeout && (transactionState == TransactionState::sending ||
                                transactionState == TransactionState::waitingForData)) {
-        cout << "transaction timeout after " << static_cast<int64>(systemCycles - suspendedAt)
-             << " cycles (scheduled: " << (transactionTimeoutCycles - suspendedAt) << " cycles)"
-             << endl;
+#ifdef TRACE_UART_SYNC
+        cout << "transaction timeout" << endl;
+#endif
         UpdateTransactionState(TransactionState::idle);
     }
 }
