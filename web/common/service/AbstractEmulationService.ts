@@ -51,7 +51,11 @@ class SerialPortImpl implements SerialPort {
     }
 
     dispatch(): void {
-        if (!this.transport || this.transport.RxBytesPending() < MAX_IRDA_FRAME_BUFFER) return;
+        if (!this.transport) return;
+
+        const bytesPending = this.transport.RxBytesPending();
+        if (bytesPending === 0) return;
+        if (this.transport.GetModeSync() && bytesPending < MAX_IRDA_FRAME_BUFFER) return;
 
         this.receiveEvent.dispatch({
             data: this.transport.Receive(),

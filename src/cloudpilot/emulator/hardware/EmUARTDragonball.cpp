@@ -732,7 +732,6 @@ void EmUARTDragonball::SetModeSync(bool sync) {
 
     if (sync) {
         EmHAL::AddCycleConsumer(EmUARTDragonball::CycleThunk, this);
-        irlapFrameState = IrlapFrameState::A;
     } else {
         EmHAL::RemoveCycleConsumer(EmUARTDragonball::CycleThunk, this);
     }

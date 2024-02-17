@@ -154,8 +154,6 @@ class EmUARTDragonball {
     TransactionState transactionState{TransactionState::idle};
     uint64 transactionTimeoutCycles{0};
     uint64 systemCycles{0};
-
-    IrlapFrameState irlapFrameState{IrlapFrameState::A};
 };
 
 #endif /* EmUARTDragonball_h */
