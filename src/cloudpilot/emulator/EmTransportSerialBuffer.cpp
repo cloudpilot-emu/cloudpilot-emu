@@ -19,7 +19,7 @@ namespace {
         }
         i++;
 
-        if (size - i < 3) return false;
+        if (size < i + 3) return false;
         if (buffer[i++] != 0xff) return false;  // addr = 0xff
         if (buffer[i++] != 0x3f) return false;  // command XID= 0x3f
         if (buffer[i++] != 0x01) return false;  // FI = 0x01
@@ -34,7 +34,7 @@ namespace {
         }
 
         // check destination address (0xffffffff for sniffing)
-        if (size - i < 6) return false;
+        if (size < i + 6) return false;
         for (j = 0; j < 4; j++) {
             if (buffer[i++] != 0xff) return false;
         }
