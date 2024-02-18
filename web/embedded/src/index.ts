@@ -10,6 +10,7 @@ export { Emulator } from './Emulator';
 export { EmulationStatistics } from '@common/model/EmulationStatistics';
 export { EventTarget, EventHandler } from '@common/service/GenericEventHandlingService';
 export { Event, Handler } from './Event';
+export { SerialPort, ReceivePayload } from './SerialPort';
 
 export const VERSION = process.env.VERSION;
 

@@ -213,7 +213,6 @@ Doing so while the launcher is running should be fine. In order to be 100% safe
 from bad surprises, set up the hotsync name before the emulator is resumed ---
 this way the call always finds the emulator in the same state.
 
-
 ## Audio
 
 Audio needs to be enabled by calling
@@ -268,6 +267,26 @@ API is:
    eject a previously mounted card
 *  [isCardMounted](./reference/interfaces/Emulator.html#isCardMounted)
    check whether a card is currently mounted
+
+## Serial port and IrDA
+
+CloudpilotEmu embedded exposes the serial port of the emulated device. This
+can be used to communicate with an application running on the device via the
+serial port, or to link two emulator instances via IrDA (which enables beaming
+between those instances).
+
+Note that IrDA requires switching the serial ports
+into a special 'sync' mode which synchronizes execution between the two
+instances while the data transfer is in progress. This is done by stalling
+the emulator while it is waiting for data and allows for reliable IrDA
+communication over network connections.
+
+The [serial port example](./examples/serial.html) shows how to connect the
+serial port to [xterm.js](http://xtermjs.org) in order to communicate with
+uClinux running on the virtual device.
+The [two instance example](./examples/two-instanes.html) shows how to connect
+two instances of the emulator via IrDA. Please refer to the API documentation
+for more details.
 
 ## Sizing and styling the canvas
 

@@ -16,8 +16,7 @@ import { SessionMetadata } from '@common/model/SessionMetadata';
 import { SkinLoader } from '@common/service/SkinLoader';
 import { Watcher } from './Watcher';
 import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
-import { SerialPort } from '@common/service/SerialPort';
-export { SerialPort } from '@common/service/SerialPort';
+import { SerialPort } from './SerialPort';
 
 const DEFAULT_SESSION: Session = {
     hotsyncName: undefined,
