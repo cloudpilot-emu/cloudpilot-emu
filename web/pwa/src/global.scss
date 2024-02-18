@@ -142,3 +142,10 @@ ion-list ion-item ion-label {
 markdown h1:not(:first-child) {
     margin-top: 1.5em;
 }
+
+// Work around home indicator overlapping UI in landscape
+@media (orientation: landscape) {
+    html.ios {
+        --ion-safe-area-bottom: calc(sign(env(safe-area-inset-left)) * max(20px, env(safe-area-inset-bottom)))
+    }
+}

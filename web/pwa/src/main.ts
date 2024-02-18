@@ -6,6 +6,7 @@ import { environment } from './environments/environment';
 import { hasStoredSession } from '@pwa/helper/storedSession';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { enableDebugTools } from '@angular/platform-browser';
+import { isIOS } from '@common/helper/browser';
 
 // Work around issue with webpack and deep-equal
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,15 +27,19 @@ if (environment.production) {
     enableProdMode();
 }
 
-// work around status bar overlapping the viewport after rotation on iOS
-
-window.addEventListener('orientationchange', () =>
-    [100, 300, 500].forEach((timeout) =>
-        setTimeout(() => {
-            document.body.style.height = window.innerHeight + 'px';
-        }, timeout),
-    ),
-);
+if (isIOS) {
+    if (CSS.supports('height', '100dvh')) {
+        document.body.style.height = '100dvh';
+    } else {
+        window.addEventListener('orientationchange', () =>
+            [100, 300, 500].forEach((timeout) =>
+                setTimeout(() => {
+                    document.body.style.height = window.innerHeight + 'px';
+                }, timeout),
+            ),
+        );
+    }
+}
 
 window.addEventListener('scroll', () => window.scrollTo(0, 0));
 document.body.addEventListener('contextmenu', (e) => e.preventDefault());
