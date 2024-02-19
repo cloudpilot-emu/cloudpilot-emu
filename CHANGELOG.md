@@ -1,3 +1,10 @@
+# Version 1.9.8
+
+-   Update warning and documentation on the update to iOS 17.4
+    and redisplay it.
+-   Serial and IrDA (beaming) support in CloudpilotEmu embedded
+    (not yet for the app).
+
 # Version 1.9.7
 
 -   Adjustments to warn about issues with the forthcoming update
