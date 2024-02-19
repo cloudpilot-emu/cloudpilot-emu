@@ -46,22 +46,22 @@ export class InfoService {
     }
 
     private async showIOS174UpdateWarning(warningId: number | undefined): Promise<number> {
-        if ((warningId ?? 0) < 1) {
+        if ((warningId ?? 0) < 2) {
             await this.emulationService.bootstrapComplete();
 
             await this.alertService.message(
                 'Update to iOS 17.4',
                 `
-            The forthcoming update to iOS 17.4 may introduce changes
-            to the handling of homescreen apps within the European Union that may destroy
-            all data stored in CloudpilotEmu during the update.
+            Starting with iOS 17.4, homescreen apps will open in Safari on all iPhones in the
+            European Union. CloudpilotEmu will continue to work as a web page, but all data stored by the
+            homescreen app will be lost.
             <br><br>
             Please export all your sessions and card images before updating to iOS 17.4.
             <br><br>
-            You can find more information on the "About" tab.`,
+            You can find more information under "Known issues" on the "About" tab.`,
             );
         }
 
-        return 1;
+        return 2;
     }
 }

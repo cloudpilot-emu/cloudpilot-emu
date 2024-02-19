@@ -139,33 +139,45 @@ In order to force check for an update terminate and restart the app.
 
 # Known issues and limitations
 
-### Homescreen app support in iOS 17.4
+### Homescreen app support in the European Union
 
-Early beta versions of iOS 17.4 suggest that Apple is making disruptive changes
-to the way homescreen apps are handled for users in the European Union. In the
-current state of iOS 17.4, homescreen apps will not work as standalone applications,
-but tapping the icon will just open the web page in the browser.
-All data stored by the homescreen app will be lost during the update to iOS 17.4.
+Starting with iOS 17.4 Apple will remove support
+for homescreen apps on iPhones for all users in the European union. After the update,
+homescreen apps will open as tabs in Safari. **Please back up you sessions
+and cards by selecting "Export" from the menu on the respective tabs before
+installing the update to iOS 17.4.** 
 
-It is unclear whether these limitations will remain in the final release of iOS 17.4,
-but currently CloudpilotEmu cannot be used as a homescreen app on devices that
-have been updated. CloudpilotEmu works fine in Safari, but you may wish to make
-a few adjustments in order to improve the experience:
+After the update, CloudpilotEmu will continue to work fine as an ordinary
+app in Safari, and you can reimport your previously backed up data. However,
+there are several quirks of Safari that you should be aware of in order to
+improve your experience.
 
--   **Loss of storage**: All pages that are displayed in Safari will loose
-    their stored data if they are not visited for more than seven days. This affects
-    CloudpilotEmu when it runs as an ordinary web page in Safari ("real" homescreen apps
-    are exempted from this rule) and causes loss of all stored sessions and storage
+-   **Loss of data without regular interaction**: All pages that are displayed
+    in Safari loose their stored data if they are not opened for more than seven
+    days. The only way to prevent this reliably is to disable cross site
+    tracking protection in the Safari settings, which may be harmful to your
+    privacy. Please make sure that you open CloudpilotEmu on a regular basis
+    (for example by setting a calendar reminder with a link) in order prevent
+    data loss, and do regular backups of your data by exporting sessions and
     cards.
 
-    This behavior can be disabled by opening the Settings app and enabling
+    It is possible to decrease the risk of data loss by going to the system settings
+    and enabling
     "Safari" -> "Advanced" -> "Feature Flags" -> "Disable removal of non-cookie data
-    after 7 days of no user interaction (ITP)"
+    after 7 days...". However, this setting resets
+    and needs to be reenabled if Safari is updated, and Safari in its boundless
+    wisdom may still remove data if the app is not opened for more than 30 days.
 
 -   **Browser UI**: Opening as an ordinary web page instead of a homescreen app
     will display the browser tab and navigation bars. This cannot be disabled
-    by CPE, but you can tap the "aA" icon left of the URL and select
+    by CloudpilotEmu, but you can tap the "aA" icon left of the URL and select
     "Hide toolbar".
+
+I am sorry for the inconvenience, but Apple enforced this change (supposedly to
+accommodate the european Digital Markets Act), and there is nothing that I can
+do about it. It is possible that the introduction of alternate app stores in the
+EU (which has been forced by the DMA, too) will open the possibility of
+distributing CloudpilotEmu as an app in the future.
 
 ### Other iOS and Safari issues
 
@@ -176,7 +188,7 @@ a few adjustments in order to improve the experience:
     modal dialogs are shown in older versions of Safari. This can be worked around
     with the setting "Reduce animation".
 
-### Limited emulation
+### Emulation issues
 
 -   Audio timing is not perfect and processed at the refresh rate of the emulator
     (usually the same as the screen refresh rate of the host device). Sound
