@@ -7,6 +7,7 @@ import { hasStoredSession } from '@pwa/helper/storedSession';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { enableDebugTools } from '@angular/platform-browser';
 import { isIOS } from '@common/helper/browser';
+import { applyHomeIndicatorFix } from '@pwa/helper/homeIndicatorFix';
 
 // Work around issue with webpack and deep-equal
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,6 +40,8 @@ if (isIOS) {
             ),
         );
     }
+
+    applyHomeIndicatorFix();
 }
 
 window.addEventListener('scroll', () => window.scrollTo(0, 0));

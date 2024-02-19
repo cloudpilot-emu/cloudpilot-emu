@@ -1,99 +1,108 @@
 <ion-header>
-  <ion-toolbar>
-    <ion-title>Settings</ion-title>
+    <ion-toolbar>
+        <ion-title>Settings</ion-title>
 
-    <ion-buttons slot="secondary">
-      <ion-button (click)="showHelp()">
-        <ion-icon name="help-outline"></ion-icon>
-      </ion-button>
+        <ion-buttons slot="secondary">
+            <ion-button (click)="showHelp()">
+                <ion-icon name="help-outline"></ion-icon>
+            </ion-button>
 
-      <app-pwa-prompt></app-pwa-prompt>
-    </ion-buttons>
-  </ion-toolbar>
+            <app-pwa-prompt></app-pwa-prompt>
+        </ion-buttons>
+    </ion-toolbar>
 </ion-header>
 
 <ion-content>
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Settings</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <ion-header collapse="condense">
+        <ion-toolbar>
+            <ion-title size="large">Settings</ion-title>
+        </ion-toolbar>
+    </ion-header>
 
-  <div class="settings-container">
-    <form [formGroup]="formGroup" class="settings-form">
-      <h1>Emulation</h1>
+    <div class="settings-container">
+        <form [formGroup]="formGroup" class="settings-form">
+            <h1>Emulation</h1>
 
-      <ion-item lines="none">
-        <ion-label>Volume</ion-label>
-        <ion-range min="0" max="1" step="0.1" formControlName="volume"></ion-range>
-      </ion-item>
+            <ion-item lines="none">
+                <ion-label>Volume</ion-label>
+                <ion-range min="0" max="1" step="0.1" formControlName="volume"></ion-range>
+            </ion-item>
 
-      <ion-item lines="none">
-        <ion-label>Enable audio on start</ion-label>
-        <ion-toggle formControlName="audioOnStart"></ion-toggle>
-      </ion-item>
+            <ion-item lines="none">
+                <ion-label>Enable audio on start</ion-label>
+                <ion-toggle formControlName="audioOnStart"></ion-toggle>
+            </ion-item>
 
-      <ion-item lines="none">
-        <ion-label>Run when hidden</ion-label>
-        <ion-toggle formControlName="runHidden"></ion-toggle>
-      </ion-item>
+            <ion-item lines="none">
+                <ion-label>Run when hidden</ion-label>
+                <ion-toggle formControlName="runHidden"></ion-toggle>
+            </ion-item>
 
-      <h1>Host integration</h1>
+            <h1>Host integration</h1>
 
-      <ion-item lines="none" *ngIf="clipboardService.isSupported()">
-        <ion-label>Clipboard integration</ion-label>
-        <ion-toggle formControlName="clipboardIntegration"></ion-toggle>
-      </ion-item>
+            <ion-item lines="none" *ngIf="clipboardService.isSupported()">
+                <ion-label>Clipboard integration</ion-label>
+                <ion-toggle formControlName="clipboardIntegration"></ion-toggle>
+            </ion-item>
 
-      <ion-item lines="none">
-        <ion-label>Network redirection</ion-label>
-        <ion-toggle formControlName="networkRedirection"></ion-toggle>
-      </ion-item>
+            <ion-item lines="none">
+                <ion-label>Network redirection</ion-label>
+                <ion-toggle formControlName="networkRedirection"></ion-toggle>
+            </ion-item>
 
-      <ion-item lines="none" *ngIf="showProxyServer">
-        <ion-label position="stacked">Proxy server</ion-label>
-        <div class="server-container">
-          <ion-input placeholder="Proxy server host or URL" formControlName="proxyServer"></ion-input>
-          <ion-button [disabled]="!proxyServerValid"
-            (click)="$event.preventDefault(); $event.stopPropagation(); testProxyConnection()"
-            (touchstart)="$event.preventDefault(); $event.stopPropagation(); testProxyConnection()">
-            Test
-          </ion-button>
-        </div>
-      </ion-item>
+            <ion-item lines="none" *ngIf="showProxyServer">
+                <ion-label position="stacked">Proxy server</ion-label>
+                <div class="server-container">
+                    <ion-input placeholder="Proxy server host or URL" formControlName="proxyServer"></ion-input>
+                    <ion-button
+                        [disabled]="!proxyServerValid"
+                        (click)="$event.preventDefault(); $event.stopPropagation(); testProxyConnection()"
+                        (touchstart)="$event.preventDefault(); $event.stopPropagation(); testProxyConnection()"
+                    >
+                        Test
+                    </ion-button>
+                </div>
+            </ion-item>
 
-      <h1>UI</h1>
+            <h1>UI</h1>
 
-      <ion-item lines="none">
-        <ion-label>Auto-lock UI</ion-label>
-        <ion-toggle formControlName="autoLockUI"></ion-toggle>
-      </ion-item>
+            <ion-item lines="none">
+                <ion-label>Auto-lock UI</ion-label>
+                <ion-toggle formControlName="autoLockUI"></ion-toggle>
+            </ion-item>
 
-      <ion-item lines="none">
-        <ion-label>Reduce animations</ion-label>
-        <ion-toggle formControlName="reducedAnimations"></ion-toggle>
-      </ion-item>
+            <ion-item lines="none">
+                <ion-label>Reduce animations</ion-label>
+                <ion-toggle formControlName="reducedAnimations"></ion-toggle>
+            </ion-item>
 
-      <ion-item lines="none">
-        <ion-label>Show statistics</ion-label>
-        <ion-toggle formControlName="showStatistics"></ion-toggle>
-      </ion-item>
+            <ion-item lines="none">
+                <ion-label>Show statistics</ion-label>
+                <ion-toggle formControlName="showStatistics"></ion-toggle>
+            </ion-item>
 
-      <ion-item lines="none">
-        <ion-label>Open from remote sources</ion-label>
-        <ion-toggle formControlName="enableRemoteInstall"></ion-toggle>
-      </ion-item>
+            <ion-item lines="none">
+                <ion-label>Open from remote sources</ion-label>
+                <ion-toggle formControlName="enableRemoteInstall"></ion-toggle>
+            </ion-item>
 
-    <ng-container *ngIf="showDebugOptions">
-      <h1>Debug</h1>
+            <ion-item lines="none" *ngIf="isIndicatorFixApplicable">
+                <ion-select label="Fix iOS home indicator" formControlName="indicatorFixMode">
+                    <ion-select-option [value]="indicatorFixNone">Off</ion-select-option>
+                    <ion-select-option [value]="indicatorFixPortrait">Portrait</ion-select-option>
+                    <ion-select-option [value]="indicatorFixLandscape">Landscape</ion-select-option>
+                    <ion-select-option [value]="indicatorFixAll">Always</ion-select-option>
+                </ion-select>
+            </ion-item>
 
-      <ion-item lines="none">
-        <ion-label>Snapshot validation (slow)</ion-label>
-        <ion-toggle formControlName="snapshotIntegrityCheck"></ion-toggle>
-      </ion-item>
-    </ng-container>
+            <ng-container *ngIf="showDebugOptions">
+                <h1>Debug</h1>
 
-    </form>
-  </div>
-
+                <ion-item lines="none">
+                    <ion-label>Snapshot validation (slow)</ion-label>
+                    <ion-toggle formControlName="snapshotIntegrityCheck"></ion-toggle>
+                </ion-item>
+            </ng-container>
+        </form>
+    </div>
 </ion-content>

@@ -13,6 +13,12 @@ import { validateProxyAddress } from '@pwa/helper/proxyAddress';
 import { getReducedAnimations, setReducedAnimations } from '@pwa/helper/reducedAnimations';
 
 import helpUrl from '@assets/doc/settings.md';
+import {
+    IndicatorFixMode,
+    applyHomeIndicatorFix,
+    getIndicatorFixMode,
+    isIndicatorFixApplicable,
+} from '@pwa/helper/homeIndicatorFix';
 
 const enum fields {
     volume = 'volume',
@@ -26,6 +32,7 @@ const enum fields {
     audioOnStart = 'audioOnStart',
     snapshotIntegrityCheck = 'snapshotIntegrityCheck',
     reducedAnimations = 'reducedAnimations',
+    indicatorFixMode = 'indicatorFixMode',
 }
 @Component({
     selector: 'app-settings',
@@ -132,6 +139,10 @@ export class SettingsPage implements OnInit {
         return environment.debug;
     }
 
+    get isIndicatorFixApplicable(): boolean {
+        return isIndicatorFixApplicable();
+    }
+
     private createFormGroup() {
         this.formGroup = new UntypedFormGroup({
             [fields.volume]: new UntypedFormControl(this.kvsService.kvs.volume),
@@ -147,10 +158,12 @@ export class SettingsPage implements OnInit {
             [fields.audioOnStart]: new UntypedFormControl(this.kvsService.kvs.enableAudioOnFirstInteraction),
             [fields.snapshotIntegrityCheck]: new UntypedFormControl(this.kvsService.kvs.snapshotIntegrityCheck),
             [fields.reducedAnimations]: new UntypedFormControl(getReducedAnimations()),
+            [fields.indicatorFixMode]: new UntypedFormControl(getIndicatorFixMode()),
         });
 
         this.formGroup.get(fields.audioOnStart)?.valueChanges.subscribe(this.onAudioOnStartChange);
         this.formGroup.get(fields.reducedAnimations)?.valueChanges.subscribe(this.onReducedAnimationsChange);
+        this.formGroup.get(fields.indicatorFixMode)?.valueChanges.subscribe(this.onIndicatorFixModeChange);
     }
 
     private onAudioOnStartChange = (audioOnStart: boolean) => {
@@ -193,6 +206,13 @@ export class SettingsPage implements OnInit {
             );
         }
     };
+
+    private onIndicatorFixModeChange = (mode: IndicatorFixMode) => applyHomeIndicatorFix(mode);
+
+    readonly indicatorFixNone = IndicatorFixMode.none;
+    readonly indicatorFixPortrait = IndicatorFixMode.portrait;
+    readonly indicatorFixLandscape = IndicatorFixMode.landscape;
+    readonly indicatorFixAll = IndicatorFixMode.all;
 
     formGroup!: UntypedFormGroup;
     private connectionTestInProgress = false;
