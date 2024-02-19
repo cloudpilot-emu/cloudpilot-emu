@@ -19,7 +19,7 @@ const TIME_PER_FRAME_AVERAGE_N = 60;
 const MIN_FPS = 30;
 const DUMMY_SPEED = 1000;
 const MIN_MILLISECONDS_PER_PWD_UPDATE = 10;
-const SERIAL_SYNC_TIMEOUT_MSEC = 1000;
+const SERIAL_SYNC_TIMEOUT_MSEC = 250;
 const MAX_IRDA_FRAME_BUFFER = 1024;
 
 class SerialPortImpl implements SerialPort {
@@ -37,7 +37,14 @@ class SerialPortImpl implements SerialPort {
     }
 
     send(data: Uint8Array | undefined, isFrameComplete: boolean): void {
-        this.transport?.Send(data, isFrameComplete);
+        if (!this.transport) return;
+
+        if (!this.transport.IsOpen() && this.transport.GetModeSync()) {
+            this.receiveEvent.dispatch({ data: undefined, isFrameComplete: true });
+            return;
+        }
+
+        this.transport.Send(data, isFrameComplete);
         setTimeout(() => this.dispatchEvent.dispatch(), 0);
     }
 
