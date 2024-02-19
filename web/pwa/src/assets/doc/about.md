@@ -139,31 +139,31 @@ In order to force check for an update terminate and restart the app.
 
 # Known issues and limitations
 
-### Homescreen app support in the European Union
+### Homescreen app support on iPhones in the European Union
 
-Starting with iOS 17.4 Apple will remove support
+Starting with iOS 17.4 Apple has removed support
 for homescreen apps on iPhones for all users in the European union. After the update,
-homescreen apps will open as tabs in Safari. **Please back up you sessions
+homescreen apps will open as tabs in Safari. Please back up you sessions
 and cards by selecting "Export" from the menu on the respective tabs before
-installing the update to iOS 17.4.** 
+installing the update to iOS 17.4.
 
 After the update, CloudpilotEmu will continue to work fine as an ordinary
 app in Safari, and you can reimport your previously backed up data. However,
-there are several quirks of Safari that you should be aware of in order to
-improve your experience.
+there are several quirks that you should be aware of in order to improve your
+experience.
 
--   **Loss of data without regular interaction**: All pages that are displayed
+-   **Potential loss of data**: All pages
     in Safari loose their stored data if they are not opened for more than seven
     days. The only way to prevent this reliably is to disable cross site
-    tracking protection in the Safari settings, which may be harmful to your
+    tracking protection in Settings, which may be harmful to your
     privacy. Please make sure that you open CloudpilotEmu on a regular basis
     (for example by setting a calendar reminder with a link) in order prevent
-    data loss, and do regular backups of your data by exporting sessions and
+    data loss, and save regular backups of your data by exporting sessions and
     cards.
 
-    It is possible to decrease the risk of data loss by going to the system settings
+    It is possible to decrease the risk of data loss by going to Settings
     and enabling
-    "Safari" -> "Advanced" -> "Feature Flags" -> "Disable removal of non-cookie data
+    "Safari / Advanced / Feature Flags / Disable removal of non-cookie data
     after 7 days...". However, this setting resets
     and needs to be reenabled if Safari is updated, and Safari in its boundless
     wisdom may still remove data if the app is not opened for more than 30 days.
@@ -173,8 +173,14 @@ improve your experience.
     by CloudpilotEmu, but you can tap the "aA" icon left of the URL and select
     "Hide toolbar".
 
+    To add insult to injury, Safari has a glitch that may display the home
+    indicator (the white-ish bar at the bottom of the screen) on top of the UI
+    instead below it. Whether you are affected depends on how the toolbar is
+    configured in Settings. This is cannot be detected, but there is
+    a setting on the settings page that you can change to work around.
+
 I am sorry for the inconvenience, but Apple enforced this change (supposedly to
-accommodate the european Digital Markets Act), and there is nothing that I can
+accommodate the European Digital Markets Act), and there is nothing that I can
 do about it. It is possible that the introduction of alternate app stores in the
 EU (which has been forced by the DMA, too) will open the possibility of
 distributing CloudpilotEmu as an app in the future.

@@ -1,3 +1,8 @@
+# Next version
+
+-   Add a setting to work around the home indicator overlapping
+    the UI on Safari / iOS.
+
 # Version 1.9.8
 
 -   Update warning and documentation on the update to iOS 17.4
