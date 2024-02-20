@@ -1,4 +1,5 @@
 import { createAnimation, Animation } from '@ionic/angular';
+import { localStorageGetWithFallback, localStorageSet } from './localStorage';
 
 const KEY = 'reduced-animations';
 
@@ -30,11 +31,11 @@ const enterAnimationAlert = (baseEl: HTMLElement): Animation => {
 };
 
 export function setReducedAnimations(flag: boolean) {
-    localStorage.setItem(KEY, flag ? '1' : '0');
+    localStorageSet(KEY, flag ? '1' : '0');
 }
 
 export function getReducedAnimations(): boolean {
-    const storedValue = localStorage.getItem(KEY);
+    const storedValue = localStorageGetWithFallback(KEY);
 
     return (storedValue ?? '0') === '1';
 }

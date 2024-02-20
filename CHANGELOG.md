@@ -2,6 +2,7 @@
 
 -   Add a setting to work around the home indicator overlapping
     the UI on Safari / iOS.
+-   Minor bug fixes.
 
 # Version 1.9.8
 

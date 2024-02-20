@@ -1,4 +1,5 @@
 import { isIOS, isIOSSafari } from '@common/helper/browser';
+import { localStorageGetWithFallback, localStorageSet } from './localStorage';
 
 export const enum IndicatorFixMode {
     none = 'none',
@@ -14,7 +15,7 @@ const KEY = 'cloudpilot-indicator-fix-mode';
 let injectedStyle: HTMLStyleElement | undefined;
 
 export function getIndicatorFixMode(): IndicatorFixMode {
-    return (localStorage.getItem(KEY) as IndicatorFixMode | null) ?? IndicatorFixMode.none;
+    return (localStorageGetWithFallback(KEY) as IndicatorFixMode | null) ?? IndicatorFixMode.none;
 }
 
 export function isIndicatorFixApplicable(): boolean {
@@ -44,7 +45,7 @@ export function applyHomeIndicatorFix(mode?: IndicatorFixMode) {
     }
 
     if (mode !== undefined) {
-        localStorage.setItem(KEY, mode);
+        localStorageSet(KEY, mode);
     } else {
         mode = getIndicatorFixMode();
     }

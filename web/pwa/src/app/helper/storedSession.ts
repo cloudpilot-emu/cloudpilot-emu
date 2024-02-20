@@ -1,21 +1,21 @@
-import { environment } from '../../environments/environment';
+import { localStorageDelete, localStorageGet, localStorageSet } from './localStorage';
 
-const KEY = 'cloudpilot-session' + (environment.localStorageSuffix ? `-${environment.localStorageSuffix}` : '');
+const KEY = 'cloudpilot-session';
 
 export function hasStoredSession(): boolean {
-    return !!localStorage.getItem(KEY);
+    return !!localStorageGet(KEY);
 }
 
 export function getStoredSession(): number | undefined {
-    const storedSession = localStorage.getItem(KEY);
+    const storedSession = localStorageGet(KEY);
 
     return storedSession ? parseInt(storedSession, 10) : undefined;
 }
 
 export function setStoredSession(session: number): void {
-    localStorage.setItem(KEY, session + '');
+    localStorageSet(KEY, session + '');
 }
 
 export function clearStoredSession(): void {
-    localStorage.removeItem(KEY);
+    localStorageDelete(KEY);
 }
