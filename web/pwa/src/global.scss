@@ -142,3 +142,9 @@ ion-list ion-item ion-label {
 markdown h1:not(:first-child) {
     margin-top: 1.5em;
 }
+
+@media (prefers-color-scheme: dark) {
+    .ios ion-modal {
+        --box-shadow: 0 0 30px #0b0b0b; 
+    }
+}
