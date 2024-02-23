@@ -1,5 +1,7 @@
 # Next version
 
+-   Disable media picker when opening files on iOS.
+-   Adjust UI for native app.
 -   Add a setting to work around the home indicator overlapping
     the UI on Safari / iOS.
 -   Minor bug fixes.
