@@ -1,4 +1,4 @@
-# Next version
+# Version 1.9.9
 
 -   Remove help and about items that do not apply to the platform.
 -   "Run in background" does not work on PWAs, so remove it.
