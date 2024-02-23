@@ -3,6 +3,7 @@ import { EmulationService } from './emulation.service';
 import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
 import { ModalWatcherService } from './modal-watcher.service';
+import { FeatureService } from './feature.service';
 
 @Injectable({ providedIn: 'root' })
 export class AudioService extends AbstractAudioService {
@@ -10,6 +11,7 @@ export class AudioService extends AbstractAudioService {
         emulationService: EmulationService,
         private kvs: KvsService,
         private modalWatcher: ModalWatcherService,
+        private featureService: FeatureService,
     ) {
         super(emulationService);
 
@@ -21,7 +23,7 @@ export class AudioService extends AbstractAudioService {
     }
 
     protected runHidden(): boolean {
-        return this.kvs.kvs.runHidden;
+        return this.kvs.kvs.runHidden && this.featureService.runHidden;
     }
 
     protected override shouldRun(): boolean {

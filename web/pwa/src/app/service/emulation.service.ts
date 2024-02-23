@@ -24,6 +24,7 @@ import { StorageService } from './storage.service';
 import { hasInitialImportRequest } from './link-api.service';
 import { isIOS } from '@common/helper/browser';
 import { SessionService } from './session.service';
+import { FeatureService } from './feature.service';
 
 const SNAPSHOT_INTERVAL = 1000;
 
@@ -47,6 +48,7 @@ export class EmulationService extends AbstractEmulationService {
         private storageCardService: StorageCardService,
         private storageCardContext: StorageCardContext,
         private sessionsService: SessionService,
+        private featureService: FeatureService,
         private app: ApplicationRef,
     ) {
         super();
@@ -169,7 +171,9 @@ export class EmulationService extends AbstractEmulationService {
     }
 
     protected getConfiguredSchdedulerKind(): SchedulerKind {
-        return this.kvsService.kvs.runHidden ? SchedulerKind.timeout : SchedulerKind.animationFrame;
+        return this.kvsService.kvs.runHidden && this.featureService.runHidden
+            ? SchedulerKind.timeout
+            : SchedulerKind.animationFrame;
     }
 
     protected hasFatalError(): boolean {

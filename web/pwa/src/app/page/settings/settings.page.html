@@ -33,7 +33,7 @@
                 <ion-toggle formControlName="audioOnStart"></ion-toggle>
             </ion-item>
 
-            <ion-item lines="none">
+            <ion-item lines="none" *ngIf="featureRunHidden">
                 <ion-label>Run when hidden</ion-label>
                 <ion-toggle formControlName="runHidden"></ion-toggle>
             </ion-item>
@@ -64,7 +64,7 @@
                 </div>
             </ion-item>
 
-            <h1>UI</h1>
+            <h1>User interface</h1>
 
             <ion-item lines="none">
                 <ion-label>Auto-lock UI</ion-label>

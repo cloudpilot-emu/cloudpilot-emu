@@ -19,6 +19,7 @@ import {
     getIndicatorFixMode,
     isIndicatorFixApplicable,
 } from '@pwa/helper/homeIndicatorFix';
+import { FeatureService } from '@pwa/service/feature.service';
 
 const enum fields {
     volume = 'volume',
@@ -46,6 +47,7 @@ export class SettingsPage implements OnInit {
         public clipboardService: ClipboardService,
         private alertService: AlertService,
         private proxyService: ProxyService,
+        private featureService: FeatureService,
     ) {}
 
     ngOnInit(): void {
@@ -141,6 +143,10 @@ export class SettingsPage implements OnInit {
 
     get isIndicatorFixApplicable(): boolean {
         return isIndicatorFixApplicable();
+    }
+
+    get featureRunHidden(): boolean {
+        return this.featureService.runHidden;
     }
 
     private createFormGroup() {

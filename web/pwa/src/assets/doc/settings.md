@@ -1,27 +1,29 @@
 The "Settings" tab allows you to configure CloudpilotEmu.
 
-# Settings
+# Emulation
 
 ### Volume
 
-This setting control the volume of the emulated audio. Setting the volume to zero
-disables audio.
+This setting control the volume of the emulated audio.
 
 ### Enable audio on start
 
-Enable audio when the app starts. Browser restrictions require a user interaction
-to start audio, so a tap is still required to actually start audio.
+Enable audio when the app starts.
+:span[Note that this does not work 100% reliable on all platforms.]{.no-feature-native-app}
 
+:::div{.feature-run-hidden}
 ### Run when hidden
 
-Keep CloudpilotEmu running when its browser tab is hidden. Note that this does not
-keep CloudpilotEmu running on mobile if the browser or homescreen app is
-backgrounded.
+Keep CloudpilotEmu running when its browser tab is hidden.
+:::
 
-### Clipboard integration (supported browsers only)
+# Host integration
 
-This turns on clipboard integration. This option is only available on browsers that
-support it. Notably, this option is not available on Firefox.
+:::div{.feature-clipboard-integration}
+### Clipboard integration
+
+This turns on clipboard integration.
+:::
 
 ### Network redirection
 
@@ -33,6 +35,8 @@ for detailed instructions.
 If you enable network redirection you'll have to enter the address of the proxy
 server below. Use the "Test" button to test the connection before attempting to
 connect from within the virtual device.
+
+# User interface
 
 ### Auto-lock UI
 
@@ -54,6 +58,7 @@ from remote URLs. Please note that those will have to be served via HTTPS
 (unless you are hosting CloudpilotEmu yourself via HTTP), and the file server
 has to support CORS.
 
+:::div{.feature-indicator-fix}
 ### Fix iOS home indicator (iOS Safari only)
 
 Safari on iOS has a glitch that may display the home indicator (the white-ish bar
@@ -61,3 +66,4 @@ at the bottom of the screen) on top of the UI instead below it. Whether you are
 affected depends on how the toolbar is configured in the Safari settings. This
 is cannot be detected, but you can change this setting in order to work around
 the issue if you are affected.
+:::

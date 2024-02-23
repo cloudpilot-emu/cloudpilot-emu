@@ -17,6 +17,7 @@ import { StorageService } from '@pwa/service/storage.service';
 import { UpdateService } from '@pwa/service/update.service';
 import { ionAnimationConfig } from './helper/reducedAnimations';
 import { ServiceWorkerService } from './service/service-worker.service';
+import { createDirectives } from 'marked-directive';
 
 const markedOptionsFactory = (): MarkedOptions => {
     const renderer = new MarkedRenderer();
@@ -40,6 +41,7 @@ const markedOptionsFactory = (): MarkedOptions => {
         MarkdownModule.forRoot({
             loader: HttpClient,
             markedOptions: { provide: MARKED_OPTIONS, useFactory: markedOptionsFactory },
+            markedExtensions: [createDirectives()],
         }),
         HttpClientModule,
     ],

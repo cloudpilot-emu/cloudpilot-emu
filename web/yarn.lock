@@ -3090,6 +3090,13 @@ at-least-node@^1.0.0:
   resolved "https://registry.yarnpkg.com/at-least-node/-/at-least-node-1.0.0.tgz#602cd4b46e844ad4effc92a8011a3c46e0238dc2"
   integrity sha512-+q/t7Ekv1EDY2l6Gda6LLiX14rU9TV20Wa3ofeQmwPFZbOMo9DXrLbOjFaaclkXKWidIaopwAObQDqwWtGUjqg==
 
+attributes-parser@^2.2.2:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/attributes-parser/-/attributes-parser-2.2.2.tgz#7f3c381e7717c205d77e0942d4a0bd273b3c2299"
+  integrity sha512-fIPf8Wo+1mHhsZVTwpI8Kk4znL5+r4jelbRrcYNJ/Q0j6BpCIw1i7IwviJ0zD75mnUEyigkRgAKvwMJ4jeHf6A==
+  dependencies:
+    json-loose "^1.2.3"
+
 autoprefixer@10.4.16:
   version "10.4.16"
   resolved "https://registry.yarnpkg.com/autoprefixer/-/autoprefixer-10.4.16.tgz#fad1411024d8670880bdece3970aa72e3572feb8"
@@ -6959,6 +6966,13 @@ json-buffer@3.0.1:
   resolved "https://registry.yarnpkg.com/json-buffer/-/json-buffer-3.0.1.tgz#9338802a30d3b6605fbe0613e094008ca8c05a13"
   integrity sha512-4bV5BfR2mqfQTJm+V5tPPdf+ZpuhiIvTuAB5g8kcrXOZpTT/QwwVRWBywX1ozr6lEuPdbHxwaJlm9G6mI2sfSQ==
 
+json-loose@^1.2.3:
+  version "1.2.3"
+  resolved "https://registry.yarnpkg.com/json-loose/-/json-loose-1.2.3.tgz#200ed759bceb0e2cf6fdf30af1c566aaa87e0615"
+  integrity sha512-gnx3y7j68efE7WOAFJq4lcivbUZXjW1Udx0VWh25kGDDhsM4stK6TejLahGvqJ8lraua6+6+BbBxy6ABR0ayWA==
+  dependencies:
+    moo "^0.5.2"
+
 json-parse-better-errors@^1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/json-parse-better-errors/-/json-parse-better-errors-1.0.2.tgz#bb867cfb3450e69107c131d1c514bab3dc8bcaa9"
@@ -7384,6 +7398,13 @@ map-obj@^4.0.0:
   version "4.3.0"
   resolved "https://registry.yarnpkg.com/map-obj/-/map-obj-4.3.0.tgz#9304f906e93faae70880da102a9f1df0ea8bb05a"
   integrity sha512-hdN1wVrZbb29eBGiGjJbeP8JbKjq1urkHJ/LIP/NY48MZ1QVXUsQBV1G1zvYFHn1XE06cwjBsOI2K3Ulnj1YXQ==
+
+marked-directive@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/marked-directive/-/marked-directive-1.0.5.tgz#ccde9100821b601b6077aa1c9e8a3fefeff52bbd"
+  integrity sha512-EWVw5IBj8e+2Tws2ULd8dKzbSjM/3WlOAsuguqJ5xDIX1O3NWymaCcuhHfNgbeXCvZMoP4gjeL+Yv0E96XhImw==
+  dependencies:
+    attributes-parser "^2.2.2"
 
 marked@^4.3.0:
   version "4.3.0"
@@ -7969,6 +7990,11 @@ mocha@^10.2.0:
     yargs "16.2.0"
     yargs-parser "20.2.4"
     yargs-unparser "2.0.0"
+
+moo@^0.5.2:
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/moo/-/moo-0.5.2.tgz#f9fe82473bc7c184b0d32e2215d3f6e67278733c"
+  integrity sha512-iSAJLHYKnX41mKcJKjqvnAN9sf0LMDTXDEvFv+ffuRR9a1MIuXLjMNL6EsnDHSkKLTWNqQQ5uo61P4EbU4NU+Q==
 
 mri@^1.1.0:
   version "1.2.0"
