@@ -176,6 +176,7 @@ hardware buttons
 If unsure take a look at the buttons on the silkscreen --- their background will change
 while the corresponding button is pressed.
 
+:::div{.feature-clipboard-integration}
 # Clipboard integration
 
 On browsers that support it the clipboard can be shared with the host. This is disabled
@@ -192,6 +193,7 @@ confirmed the first time CloudpilotEmu pastes from the host clipboard. On other 
 clipboard access. This is necessary because those browsers require clipboard access to
 be the direct consequence of an user interaction. When pasting Safari will show
 an additions "Paste" widget that needs to be tapped in order to paste.
+:::
 
 # Statistics
 

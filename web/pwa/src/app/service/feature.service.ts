@@ -3,7 +3,7 @@ import { InstallationMode } from '@pwa/model/InstallationMode';
 import { PwaService } from './pwa.service';
 import { isIndicatorFixApplicable } from '@pwa/helper/homeIndicatorFix';
 import { ClipboardService } from './clipboard.service';
-import { isIOSNative } from '@common/helper/browser';
+import { isIOS, isIOSNative, isSafari } from '@common/helper/browser';
 
 @Injectable({ providedIn: 'root' })
 export class FeatureService {
@@ -32,6 +32,9 @@ export class FeatureService {
             ${this.featureStyle('indicator-fix', isIndicatorFixApplicable())}
             ${this.featureStyle('clipboard-integration', this.clipboardService.isSupported())}
             ${this.featureStyle('native-app', isIOSNative)}
+            ${this.featureStyle('ios-not-native', isIOS && !isIOSNative)}
+            ${this.featureStyle('ios-or-safari', isIOS || isSafari)}
+            ${this.featureStyle('ios', isIOS)}
         `;
 
         document.head.appendChild(styleTag);

@@ -119,12 +119,14 @@ sessions page (see the help page there for more info). This will remove the
 hardware state but preserve the RAM, resulting in a reboot when you resume your
 session. This allows you to break the crash loop.
 
+:::div{.no-feature-native-app}
 # Requirements and browser support
 
 CloudpilotEmu runs on all reasonable recent browsers and can be added to the homescreen
 of Android and iOS devices as a mobile app. For iPhones and iPads this is highly
 recommended as Safari may clear the data of ordinary web sites if they are not used
 for more than seven days.
+:::
 
 # Updates
 
@@ -139,6 +141,7 @@ In order to force check for an update terminate and restart the app.
 
 # Known issues and limitations
 
+:::div{.feature-ios-not-native}
 ### Homescreen app support on iPhones in the European Union
 
 Starting with iOS 17.4 Apple has removed support
@@ -184,15 +187,19 @@ accommodate the European Digital Markets Act), and there is nothing that I can
 do about it. It is possible that the introduction of alternate app stores in the
 EU (which has been forced by the DMA, too) will open the possibility of
 distributing CloudpilotEmu as an app in the future.
+:::
 
+:::div{.feature-ios-or-safari}
 ### Other iOS and Safari issues
 
 -   iOS: changing device orientation between portrait and landscape may mess
     up the layout of the app. This is an iOS bug that can be worked around by
     rotating the device by 180° in portrait and rotating back.
--   Safari (iOS and MacOS): A browser bug can cause lag when loaders or
+
+-   Safari, native app: A browser bug can cause lag when loaders or
     modal dialogs are shown in older versions of Safari. This can be worked around
     with the setting "Reduce animation".
+:::
 
 ### Emulation issues
 
