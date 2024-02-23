@@ -190,14 +190,14 @@ distributing CloudpilotEmu as an app in the future.
 :::
 
 :::div{.feature-ios-or-safari}
-### Other iOS and Safari issues
+### Issues related to iOS or Safari
 
 -   iOS: changing device orientation between portrait and landscape may mess
     up the layout of the app. This is an iOS bug that can be worked around by
     rotating the device by 180° in portrait and rotating back.
 
--   Safari, native app: A browser bug can cause lag when loaders or
-    modal dialogs are shown in older versions of Safari. This can be worked around
+-   Safari, iOS: A browser bug can cause lag when loaders or
+    modal dialogs are shown in older versions of iOS or Safari. This can be worked around
     with the setting "Reduce animation".
 :::
 
