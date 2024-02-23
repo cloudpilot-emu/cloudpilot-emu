@@ -15,8 +15,6 @@ import { filenameForSession } from '@pwa/helper/filename';
 import { metadataForSession } from '@pwa/helper/metadata';
 import { isIOS, isIOSSafari, isSafari } from '@common/helper/browser';
 
-/* eslint-disable no-bitwise */
-
 export interface FileDescriptor {
     name: string;
     getContent: () => Promise<Uint8Array>;
@@ -211,6 +209,7 @@ export class FileService {
 
         this.input.multiple = multiple;
         this.input.type = 'file';
+        if (isIOS) this.input.accept = 'application/octet-stream';
 
         this.input.addEventListener('change', async (e) => {
             const target = e.target as HTMLInputElement;
