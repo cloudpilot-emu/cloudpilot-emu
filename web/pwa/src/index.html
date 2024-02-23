@@ -169,6 +169,28 @@
         <link rel="manifest" href="manifest.webmanifest" />
         <script>
             window.global = window;
+
+            (function() {
+                try {
+                    new RegExp("(?<=foo)bar");
+                } catch (_) {
+                    const oldRegExp = window.RegExp;
+
+                    window.RegExp = function(pattern, flags) {
+                        try {
+                            return new oldRegExp(pattern, flags);
+                        } catch (e) {
+                            if (e && e.message && e.message.indexOf(" invalid group specifier name")) {
+                                return new oldRegExp('deadbeef');
+                            } else {
+                                throw (e);
+                            }
+                        }
+                    };
+    
+                    window.RegExp.prototype = oldRegExp.prototype;
+                }
+            })()
         </script>
         <link rel="icon" type="image/png" sizes="196x196" href="assets-pwa/favicon-196.png" />
         <link rel="apple-touch-icon" href="assets-pwa/apple-icon-180.png" />
