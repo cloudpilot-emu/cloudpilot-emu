@@ -1,8 +1,9 @@
 import { AudioService } from './audio.service';
 import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
+import { isIOS, isIOSNative } from '@common/helper/browser';
 
-const EVENTS = ['touch', 'click', 'keydown'];
+const EVENTS = ['touchstart', 'click', 'keydown'];
 
 /*
  * This really should be an initializer, but cannot as it causes a DI
@@ -21,6 +22,10 @@ export class AutoEnableAudioService {
     private async initialize() {
         await this.kvsService.initialize();
         if (!this.kvsService.kvs.enableAudioOnFirstInteraction) return;
+
+        if (isIOS && isIOSNative) {
+            void this.audioService.initialize();
+        }
 
         const handler = () => {
             EVENTS.forEach((evt) => window.removeEventListener(evt, handler, true));
