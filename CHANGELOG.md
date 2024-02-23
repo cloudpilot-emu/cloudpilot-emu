@@ -1,3 +1,7 @@
+# Version 1.9.10
+
+-   Fix compatibility with iOS 15.7.
+
 # Version 1.9.9
 
 -   Remove help and about items that do not apply to the platform.
