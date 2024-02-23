@@ -145,15 +145,15 @@ In order to force check for an update terminate and restart the app.
 ### Homescreen app support on iPhones in the European Union
 
 Starting with iOS 17.4 Apple has removed support
-for homescreen apps on iPhones for all users in the European union. After the update,
-homescreen apps will open as tabs in Safari. Please back up you sessions
+for homescreen apps on iPhones for all users in the European Union. After the update,
+homescreen apps will open as tabs in Safari. All data stored by the native app
+will be lost. Please back up you sessions
 and cards by selecting "Export" from the menu on the respective tabs before
 installing the update to iOS 17.4.
 
-After the update, CloudpilotEmu will continue to work fine as an ordinary
+After the update, CloudpilotEmu will continue to work fine as a
 app in Safari, and you can reimport your previously backed up data. However,
-there are several quirks that you should be aware of in order to improve your
-experience.
+there are several quirks that you should be aware of:
 
 -   **Potential loss of data**: All pages
     in Safari loose their stored data if they are not opened for more than seven
@@ -168,15 +168,15 @@ experience.
     and enabling
     "Safari / Advanced / Feature Flags / Disable removal of non-cookie data
     after 7 days...". However, this setting resets
-    and needs to be reenabled if Safari is updated, and Safari in its boundless
-    wisdom may still remove data if the app is not opened for more than 30 days.
+    and needs to be reenabled if Safari is updated, and Safari may still remove
+    data if the app is not opened for more than 30 days.
 
 -   **Browser UI**: Opening as an ordinary web page instead of a homescreen app
     will display the browser tab and navigation bars. This cannot be disabled
     by CloudpilotEmu, but you can tap the "aA" icon left of the URL and select
     "Hide toolbar".
 
-    To add insult to injury, Safari has a glitch that may display the home
+    To complicate things, Safari has a glitch that may display the home
     indicator (the white-ish bar at the bottom of the screen) on top of the UI
     instead below it. Whether you are affected depends on how the toolbar is
     configured in Settings. This is cannot be detected, but there is
