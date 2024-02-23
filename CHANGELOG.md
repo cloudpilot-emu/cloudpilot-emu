@@ -1,9 +1,12 @@
 # Next version
 
+-   Remove help and about items that do not apply to the platform.
+-   "Run in background" does not work on PWAs, so remove it.
 -   Disable media picker when opening files on iOS.
 -   Adjust UI for native app.
 -   Add a setting to work around the home indicator overlapping
     the UI on Safari / iOS.
+-   Styling improvements.
 -   Minor bug fixes.
 
 # Version 1.9.8
