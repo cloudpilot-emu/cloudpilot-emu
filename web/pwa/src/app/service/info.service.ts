@@ -46,7 +46,7 @@ export class InfoService {
     }
 
     private async showIOS174UpdateWarning(warningId: number | undefined): Promise<number> {
-        if ((warningId ?? 0) < 2) {
+        if ((warningId ?? 0) < 3) {
             await this.emulationService.bootstrapComplete();
 
             await this.alertService.message(
@@ -62,6 +62,6 @@ export class InfoService {
             );
         }
 
-        return 2;
+        return 3;
     }
 }
