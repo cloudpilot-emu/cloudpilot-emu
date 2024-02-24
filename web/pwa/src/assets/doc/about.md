@@ -196,8 +196,8 @@ distributing CloudpilotEmu as an app in the future.
     up the layout of the app. This is an iOS bug that can be worked around by
     rotating the device by 180° in portrait and rotating back.
 
--   iOS native app: The app may blink occasionally when it is resumed from the
-    background if "enable audio on start" is turned on.
+-   iOS native app: The app may blink shortly when it is resumed from the
+    background if audio is turned on (even if it was muted again).
 
 -   Safari, iOS: A browser bug can cause lag when loaders or
     modal dialogs are shown in older versions of iOS or Safari. This can be worked around

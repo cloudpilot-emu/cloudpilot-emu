@@ -184,7 +184,7 @@ export class SettingsPage implements OnInit {
                     <br><br>
                     Please note that
                     there is an iOS bug that may cause the app to blink shortly when it is resumed
-                    from the background and this option is enabled.
+                    from the background if audio is enabled (even if it was muted again).
                 `,
             );
 
