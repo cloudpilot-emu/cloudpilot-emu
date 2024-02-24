@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { Kvs } from '@pwa/model/Kvs';
 import { Mutex } from 'async-mutex';
 import { StorageService } from './storage.service';
+import { IosAppService } from './ios-app.service';
 
 const DEFAULTS: Kvs = {
     volume: 0.5,
@@ -22,7 +23,10 @@ const DEFAULTS: Kvs = {
     providedIn: 'root',
 })
 export class KvsService {
-    constructor(private storageService: StorageService) {
+    constructor(
+        private storageService: StorageService,
+        private iosAppService: IosAppService,
+    ) {
         this.initializationPromise = this.startInitialiation();
     }
 
@@ -52,13 +56,31 @@ export class KvsService {
 
         try {
             const kvs: Kvs = { ...DEFAULTS, ...(await this.storageService.kvsLoad()) };
+
+            if (this.iosAppService.isSupported()) {
+                try {
+                    kvs.enableAudioOnFirstInteraction = await this.iosAppService.getEnableAudioOnStart();
+                } catch (e) {
+                    console.error('failed to sync enableAudioOnStart with native code', e);
+                }
+            }
             this.rawKvs = kvs;
 
             this.kvsProxy = new Proxy(kvs, {
                 set<T extends keyof Kvs>(target: Kvs, key: T, value: Kvs[T]): boolean {
                     target[key] = value;
 
-                    void self.storageMutex.runExclusive(() => self.storageService.kvsSet({ [key]: value }));
+                    void self.storageMutex.runExclusive(async () => {
+                        await self.storageService.kvsSet({ [key]: value });
+
+                        if (key === 'enableAudioOnFirstInteraction' && self.iosAppService.isSupported()) {
+                            try {
+                                await self.iosAppService.setEnableAudioOnStart(value as boolean);
+                            } catch (e) {
+                                console.error('failed to sync enableAudioOnStart with native code', e);
+                            }
+                        }
+                    });
                     self.updateEvent.dispatch();
 
                     return true;

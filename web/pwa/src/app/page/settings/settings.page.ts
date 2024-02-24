@@ -20,6 +20,7 @@ import {
     isIndicatorFixApplicable,
 } from '@pwa/helper/homeIndicatorFix';
 import { FeatureService } from '@pwa/service/feature.service';
+import { isIOS, isIOSNative } from '@common/helper/browser';
 
 const enum fields {
     volume = 'volume',
@@ -179,12 +180,20 @@ export class SettingsPage implements OnInit {
 
         void this.alertService.message(
             'Enable audio on start',
-            `
-            Audio will automatically turn on after the first interaction with the application
-            (i.e. touch, click or keyboard event).
-            <br><br>
-            This option will take effect the next time
-            Coudpilot is restarts.
+            isIOS && isIOSNative
+                ? `
+                    This option will take effect the next time the app restarts.
+                    <br><br>
+                    Please note that
+                    there is an iOS bug that may cause the app to blink shortly when it is resumed
+                    from the background.
+                `
+                : `
+                    Audio will automatically turn on after the first interaction with the application
+                    (i.e. touch, click or keyboard event).
+                    <br><br>
+                    This option will take effect the next time
+                    CloudpilotEmu is restarts.
         `,
         );
     };
@@ -200,14 +209,14 @@ export class SettingsPage implements OnInit {
                 reduces UI lag on iOS devices with large screens.
                 <br><br>
                 This option will take effect the next time
-                Coudpilot is restarts.
+                CloudpilotEmu reloads.
             `,
             );
         } else {
             void this.alertService.message(
                 'Reduce animations',
                 `
-                This option will only take effect the next time Coudpilot is restarts.
+                This option will only take effect the next time CloudpilotEmu reloads.
             `,
             );
         }
