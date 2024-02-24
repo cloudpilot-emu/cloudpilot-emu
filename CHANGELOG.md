@@ -1,3 +1,8 @@
+# Next Version
+
+-   Show iOS 17.4 warning yet another time.
+-   Bug fixes.
+
 # Version 1.9.10
 
 -   Fix compatibility with iOS 15.7.
