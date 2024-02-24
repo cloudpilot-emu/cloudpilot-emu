@@ -176,25 +176,31 @@ export class SettingsPage implements OnInit {
     private onAudioOnStartChange = (audioOnStart: boolean) => {
         this.kvsService.kvs.enableAudioOnFirstInteraction = audioOnStart;
 
-        if (!audioOnStart) return;
-
-        void this.alertService.message(
-            'Enable audio on start',
-            isIOS && isIOSNative
-                ? `
+        if (isIOS && isIOSNative) {
+            void this.alertService.message(
+                'Enable audio on start',
+                `
                     This option will take effect the next time the app restarts.
                     <br><br>
                     Please note that
                     there is an iOS bug that may cause the app to blink shortly when it is resumed
-                    from the background.
-                `
-                : `
-                    Audio will automatically turn on after the first interaction with the application
-                    (i.e. touch, click or keyboard event).
-                    <br><br>
-                    This option will take effect the next time
-                    CloudpilotEmu is restarts.
-        `,
+                    from the background and this option is enabled.
+                `,
+            );
+
+            return;
+        }
+
+        if (!audioOnStart) return;
+
+        void this.alertService.message(
+            'Enable audio on start',
+            `
+                Audio will automatically turn on after the first interaction with the application
+                (i.e. touch, click or keyboard event).
+                <br><br>
+                This option will take effect the next time CloudpilotEmu reloads.
+            `,
         );
     };
 
