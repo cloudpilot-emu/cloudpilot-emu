@@ -181,10 +181,6 @@ export class SettingsPage implements OnInit {
                 'Enable audio on start',
                 `
                     This option will take effect the next time the app restarts.
-                    <br><br>
-                    Please note that
-                    there is an iOS bug that may cause the app to blink shortly when it is resumed
-                    from the background if audio is enabled (even if it was muted again).
                 `,
             );
 
@@ -212,7 +208,7 @@ export class SettingsPage implements OnInit {
                 'Reduce animations',
                 `
                 Animations will be slightly reduced in order to provide a snappier UI. This
-                reduces UI lag on iOS devices with large screens.
+                reduces UI lag on older iOS devices with large screens.
                 <br><br>
                 This option will take effect the next time
                 CloudpilotEmu reloads.
