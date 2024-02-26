@@ -1,4 +1,4 @@
-# Next Version
+# Version 1.9.11
 
 -   Show iOS 17.4 warning yet another time.
 -   Bug fixes.
