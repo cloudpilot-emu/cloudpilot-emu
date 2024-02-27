@@ -53,9 +53,11 @@
         <div class="placeholder">
             No sessions. Select the &bdquo;+&ldquo; icon in the upper right corner in order to import a ROM file or a
             session image.
-            <br /><br />
-            You can find a collection of compatible ROMs on
-            <a href="https://palmdb.net/app/palm-roms-complete" target="_blank" rel="external">PalmDB</a>.
+            <ng-container *ngIf="showPalmdbLink">
+                <br /><br />
+                You can find a collection of compatible ROMs on
+                <a href="https://palmdb.net/app/palm-roms-complete" target="_blank" rel="external">PalmDB</a>.
+            </ng-container>
         </div>
     </div>
 

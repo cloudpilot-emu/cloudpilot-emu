@@ -22,6 +22,7 @@ import { disambiguateName } from '@pwa/helper/disambiguate';
 
 import helpUrl from '@assets/doc/sessions.md';
 import { ActionMenuComponent } from './action-menu/action-menu.component';
+import { isIOS, isIOSNative } from '@common/helper/browser';
 
 type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
 
@@ -258,6 +259,10 @@ export class SessionsPage implements DragDropClient, DoCheck, OnInit {
         e.preventDefault();
 
         void this.openActionMenu(e, 'event');
+    }
+
+    get showPalmdbLink(): boolean {
+        return !(isIOS && isIOSNative);
     }
 
     private async executeMassExport(selectedSessions: Array<Session>): Promise<void> {

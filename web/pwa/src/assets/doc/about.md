@@ -192,10 +192,6 @@ distributing CloudpilotEmu as an app in the future.
 :::div{.feature-ios-or-safari}
 ### Issues related to iOS or Safari
 
--   iOS: changing device orientation between portrait and landscape may mess
-    up the layout of the app. This is an iOS bug that can be worked around by
-    rotating the device by 180° in portrait and rotating back.
-
 -   iOS native app: The app may blink shortly when it is resumed from the
     background if audio is turned on (even if it was muted again).
 
