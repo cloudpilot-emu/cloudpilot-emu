@@ -91,8 +91,8 @@ export class FileService {
         }
     }
 
-    saveFile(name: string, content: Uint8Array): void {
-        const file = new Blob([content], { type: 'application/octet-stream' });
+    saveFile(name: string, content: Uint8Array, type = 'application/octet-stream'): void {
+        const file = new Blob([content], { type });
         const url = URL.createObjectURL(file);
 
         const a = document.createElement('a');

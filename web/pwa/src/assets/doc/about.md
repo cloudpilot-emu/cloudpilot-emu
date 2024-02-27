@@ -158,11 +158,12 @@ there are several quirks that you should be aware of:
 -   **Potential loss of data**: All pages
     in Safari loose their stored data if they are not opened for more than seven
     days. The only way to prevent this reliably is to disable cross site
-    tracking protection in Settings, which may be harmful to your
-    privacy. Please make sure that you open CloudpilotEmu on a regular basis
-    (for example by setting a calendar reminder with a link) in order prevent
-    data loss, and save regular backups of your data by exporting sessions and
-    cards.
+    tracking protection in Settings, which may be harmful to your privacy.
+
+    Please make sure that you open CloudpilotEmu regularly and save
+    local backups of any important data by exporting
+    sessions and cards. You can click [this link](cpe://itp-reminder)
+    to set up a repeating calendar reminder to open CloudpilotEmu.
 
     It is possible to decrease the risk of data loss by going to Settings
     and enabling

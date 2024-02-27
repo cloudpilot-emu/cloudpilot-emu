@@ -1,9 +1,12 @@
 import { isAndroid, isIOS, isIOSSafari, isIOS_174 } from '@common/helper/browser';
+import { v4 as uuid } from 'uuid';
 
 import { AlertService } from './alert.service';
 import { Injectable } from '@angular/core';
 import { InstallationMode } from '@pwa/model/InstallationMode';
 import { KvsService } from './kvs.service';
+import { CpeLinkService } from './cpe-link.service';
+import { FileService } from './file.service';
 
 const SERVICE_WORKER_KEEPALIVE_INTERVAL = 15 * 60 * 1000;
 
@@ -74,8 +77,12 @@ export class PwaService {
     constructor(
         private kvsService: KvsService,
         private alertService: AlertService,
+        private fileService: FileService,
+        cpeLinkService: CpeLinkService,
     ) {
         void this.serviceWorkerKeepalive();
+
+        cpeLinkService.clickEvent.addHandler((key) => key === 'itp-reminder' && this.downloadItpReminder());
     }
 
     promptForInstall(): boolean {
@@ -138,6 +145,53 @@ export class PwaService {
 
         setTimeout(this.serviceWorkerKeepalive, SERVICE_WORKER_KEEPALIVE_INTERVAL);
     };
+
+    private downloadItpReminder(): void {
+        const stampNow = new Date().toISOString().replace(/[:\-\.]/g, '');
+        const dtStart = new Date(Date.now() + 48 * 3600 * 1000).toISOString().replace(/\-/g, '').substring(0, 8);
+        const dtEnd = new Date(Date.now() + 72 * 3600 * 1000).toISOString().replace(/\-/g, '').substring(0, 8);
+        const uuidVEvent = uuid().toUpperCase();
+        const uuidVAlarm = uuid().toUpperCase();
+        const url = location.origin + location.pathname.replace('index.html', '');
+
+        const ics = `
+BEGIN:VCALENDAR
+CALSCALE:GREGORIAN
+VERSION:2.0
+X-WR-CALNAME:Open Cloudpilot
+METHOD:PUBLISH
+PRODID:CloudpilotEmu
+BEGIN:VEVENT
+TRANSP:TRANSPARENT
+DTEND;VALUE=DATE:${dtEnd}
+UID:${uuidVEvent}
+DTSTAMP:${stampNow}
+URL;VALUE=URI:${url}
+SEQUENCE:3
+SUMMARY:Open CloudpilotEmu
+DTSTART;VALUE=DATE:${dtStart}
+LAST-MODIFIED:${stampNow}
+CREATED:${stampNow}
+RRULE:FREQ=DAILY;INTERVAL=6
+BEGIN:VALARM
+UID:${uuidVAlarm}
+X-WR-ALARMUID:${uuidVAlarm}
+DESCRIPTION:Reminder
+TRIGGER:-PT15H
+ACTION:DISPLAY
+END:VALARM
+BEGIN:VALARM
+UID:${uuidVAlarm}
+TRIGGER:-PT15H
+DESCRIPTION:Reminder
+X-WR-ALARMUID:${uuidVAlarm}
+ACTION:DISPLAY
+END:VALARM
+END:VEVENT
+END:VCALENDAR`;
+
+        this.fileService.saveFile('reminder.ics', new TextEncoder().encode(ics), 'text/calendar');
+    }
 
     private installationMode: InstallationMode = this.determineInstallationMode();
 }

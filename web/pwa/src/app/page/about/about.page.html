@@ -1,35 +1,39 @@
 <ion-header>
-  <ion-toolbar>
-    <ion-title>About</ion-title>
+    <ion-toolbar>
+        <ion-title>About</ion-title>
 
-    <ion-buttons slot="secondary">
-      <app-pwa-prompt></app-pwa-prompt>
-    </ion-buttons>
-  </ion-toolbar>
+        <ion-buttons slot="secondary">
+            <app-pwa-prompt></app-pwa-prompt>
+        </ion-buttons>
+    </ion-toolbar>
 </ion-header>
 
 <ion-content>
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">About</ion-title>
-    </ion-toolbar>
-  </ion-header>
+    <ion-header collapse="condense">
+        <ion-toolbar>
+            <ion-title size="large">About</ion-title>
+        </ion-toolbar>
+    </ion-header>
 
-  <div class="loader" *ngIf="loading">
-    <ion-spinner></ion-spinner>
-  </div>
+    <div class="loader" *ngIf="loading">
+        <ion-spinner></ion-spinner>
+    </div>
 
-  <div class="markdown-container">
-    <markdown [src]="url" (load)="loading = false"></markdown>
-  </div>
+    <div class="markdown-container">
+        <markdown
+            [src]="url"
+            [disableSanitizer]="true"
+            (load)="loading = false"
+            (click)="cpeLinkService.handleClick($event)"
+        ></markdown>
+    </div>
 
-  <div class="version">
-    CloudpilotEmu version {{version}}
-    <br />
-    <a href='javascript:' (click)="showChangelog()">Changelog</a>
-    <div *ngIf="serviceWorkerAvailable">app cached for offline use</div>
-  </div>
+    <div class="version">
+        CloudpilotEmu version {{ version }}
+        <br />
+        <a href="javascript:" (click)="showChangelog()">Changelog</a>
+        <div *ngIf="serviceWorkerAvailable">app cached for offline use</div>
+    </div>
 
-  <img class="logo" src="assets/logo.svg">
-
+    <img class="logo" src="assets/logo.svg" />
 </ion-content>

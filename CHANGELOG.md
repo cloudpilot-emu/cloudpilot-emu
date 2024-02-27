@@ -1,3 +1,8 @@
+# Next version
+
+-   Offer a calendar reminder to work around the ITP limit
+    on data retention.
+
 # Version 1.9.12
 
 -   Minor content adjustments.
