@@ -5,7 +5,7 @@ import { Event } from 'microevent.ts';
 export class CpeLinkService {
     handleClick(e: MouseEvent): void {
         const target = e.target as HTMLAnchorElement;
-        if (!target) return;
+        if (!target || target.tagName.toLowerCase() !== 'a') return;
 
         const href = target.href;
         if (!href) return;
