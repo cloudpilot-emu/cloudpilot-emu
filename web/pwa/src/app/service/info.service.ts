@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
-import { isIOS, isIOSNative, isIOS_174 } from '@common/helper/browser';
+import { iosVersion, isIOS, isIOSNative, version } from '@common/helper/browser';
 import { AlertService } from './alert.service';
 import { EmulationService } from './emulation.service';
 import { PwaService } from './pwa.service';
@@ -19,7 +19,12 @@ export class InfoService {
         const infoId = this.kvsService.kvs.infoId ?? 0;
         this.kvsService.kvs.infoId = await this.showInfo(infoId);
 
-        if (this.pwaService.getInstallationMode() === InstallationMode.pwa && isIOS && !isIOS_174 && !isIOSNative) {
+        if (
+            this.pwaService.getInstallationMode() === InstallationMode.pwa &&
+            isIOS &&
+            iosVersion >= version(17, 4, 0) &&
+            !isIOSNative
+        ) {
             this.kvsService.kvs.ios174UpdateWarningId = await this.showIOS174UpdateWarning(
                 this.kvsService.kvs.ios174UpdateWarningId,
             );

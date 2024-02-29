@@ -1,4 +1,4 @@
-import { isAndroid, isIOS, isIOSSafari, isIOS_174 } from '@common/helper/browser';
+import { iosVersion, isAndroid, isIOS, isIOSSafari, version } from '@common/helper/browser';
 import { v4 as uuid } from 'uuid';
 
 import { AlertService } from './alert.service';
@@ -109,15 +109,21 @@ export class PwaService {
     }
 
     private getInstallMessage(): string {
-        if (isIOS && isIOSSafari) return INSTRUCTIONS_SAFARI_IOS + (isIOS_174 ? WARNING_IOS_174 : '');
-        if (isIOS) return INSTRUCTIONS_IOS + (isIOS_174 ? WARNING_IOS_174 : '');
+        if (isIOS && isIOSSafari) {
+            return INSTRUCTIONS_SAFARI_IOS + (iosVersion >= version(17, 4, 0) ? WARNING_IOS_174 : '');
+        }
+
+        if (isIOS) return INSTRUCTIONS_IOS + (iosVersion >= version(17, 4, 0) ? WARNING_IOS_174 : '');
 
         return INSTRUCTIONS_ANDROID;
     }
 
     private getInviteMessage(): string {
-        if (isIOS && isIOSSafari) return INVITATION_SAFARI_IOS + (isIOS_174 ? WARNING_IOS_174 : '');
-        if (isIOS) return INVITATION_IOS + (isIOS_174 ? WARNING_IOS_174 : '');
+        if (isIOS && isIOSSafari) {
+            return INVITATION_SAFARI_IOS + (iosVersion >= version(17, 4, 0) ? WARNING_IOS_174 : '');
+        }
+
+        if (isIOS) return INVITATION_IOS + (iosVersion >= version(17, 4, 0) ? WARNING_IOS_174 : '');
 
         return INVITATION_ANDROID;
     }
