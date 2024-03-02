@@ -1,7 +1,8 @@
 # Next version
 
--   Offer a calendar reminder to work around the ITP limit
-    on data retention.
+-   Apple backpedaled on disabling homescreen apps in the European
+    Union.
+-   Minor fixes.
 
 # Version 1.9.12
 
