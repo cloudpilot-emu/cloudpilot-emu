@@ -20,12 +20,7 @@
     </div>
 
     <div class="markdown-container">
-        <markdown
-            [src]="url"
-            [disableSanitizer]="true"
-            (load)="loading = false"
-            (click)="cpeLinkService.handleClick($event)"
-        ></markdown>
+        <markdown [src]="url" [disableSanitizer]="true" (load)="loading = false"></markdown>
     </div>
 
     <div class="version">

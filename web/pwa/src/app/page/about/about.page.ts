@@ -5,7 +5,6 @@ import { VERSION } from '@pwa/helper/version';
 import { ServiceWorkerService } from '@pwa/service/service-worker.service';
 import aboutUrl from '@assets/doc/about.md';
 import changelogUrl from '@root/CHANGELOG.md';
-import { CpeLinkService } from '@pwa/service/cpe-link.service';
 
 @Component({
     selector: 'app-about',
@@ -16,7 +15,6 @@ export class AboutPage {
     constructor(
         private modalController: ModalController,
         private serviceWorkerService: ServiceWorkerService,
-        public cpeLinkService: CpeLinkService,
     ) {}
 
     get version(): string {

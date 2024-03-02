@@ -126,6 +126,9 @@ CloudpilotEmu runs on all reasonable recent browsers and can be added to the hom
 of Android and iOS devices as a mobile app. For iPhones and iPads this is highly
 recommended as Safari may clear the data of ordinary web sites if they are not used
 for more than seven days.
+
+On desktops, Chrome, Edge and Safari allow to install CloudpilotEmu as a standalone
+web app. Again, this will keep Safari from deleting data after seven days of inactivity.
 :::
 
 # Updates
@@ -141,64 +144,22 @@ In order to force check for an update terminate and restart the app.
 
 # Known issues and limitations
 
-:::div{.feature-ios-not-native}
-### Homescreen app support on iPhones in the European Union
-
-Starting with iOS 17.4 Apple has removed support
-for homescreen apps on iPhones for all users in the European Union. After the update,
-homescreen apps will open as tabs in Safari. All data stored by the native app
-will be lost. Please back up you sessions
-and cards by selecting "Export" from the menu on the respective tabs before
-installing the update to iOS 17.4.
-
-After the update, CloudpilotEmu will continue to work fine as a
-app in Safari, and you can reimport your previously backed up data. However,
-there are several quirks that you should be aware of:
-
--   **Potential loss of data**: All pages
-    in Safari loose their stored data if they are not opened for more than seven
-    days. The only way to prevent this reliably is to disable cross site
-    tracking protection in Settings, which may be harmful to your privacy.
-
-    Please make sure that you open CloudpilotEmu regularly and save
-    local backups of any important data by exporting
-    sessions and cards. You can click [this link](cpe://itp-reminder)
-    to set up a repeating calendar reminder to open CloudpilotEmu.
-
-    It is possible to decrease the risk of data loss by going to Settings
-    and enabling
-    "Safari / Advanced / Feature Flags / Disable removal of non-cookie data
-    after 7 days...". However, this setting resets
-    and needs to be reenabled if Safari is updated, and Safari may still remove
-    data if the app is not opened for more than 30 days.
-
--   **Browser UI**: Opening as an ordinary web page instead of a homescreen app
-    will display the browser tab and navigation bars. This cannot be disabled
-    by CloudpilotEmu, but you can tap the "aA" icon left of the URL and select
-    "Hide toolbar".
-
-    To complicate things, Safari has a glitch that may display the home
-    indicator (the white-ish bar at the bottom of the screen) on top of the UI
-    instead below it. Whether you are affected depends on how the toolbar is
-    configured in Settings. This is cannot be detected, but there is
-    a setting on the settings page that you can change to work around.
-
-I am sorry for the inconvenience, but Apple enforced this change (supposedly to
-accommodate the European Digital Markets Act), and there is nothing that I can
-do about it. It is possible that the introduction of alternate app stores in the
-EU (which has been forced by the DMA, too) will open the possibility of
-distributing CloudpilotEmu as an app in the future.
-:::
-
 :::div{.feature-ios-or-safari}
 ### Issues related to iOS or Safari
 
--   iOS native app: The app may blink shortly when it is resumed from the
-    background if audio is turned on (even if it was muted again).
+-   Safari on iOS: If the toolbar is minimized, The home indicator (the
+    white-ish bar at the bottom of the screen) may display on top of the UI
+    instead below it. This is cannot be detected, but there is a setting on the
+    settings page that you can change to work around.
 
 -   Safari, iOS: A browser bug can cause lag when loaders or
     modal dialogs are shown in older versions of iOS or Safari. This can be worked around
     with the setting "Reduce animation".
+
+-   Safari: Safari will delete all data stored by the app if the page is not
+    opened for more than seven days. The only way to circumvent this is to
+    install CloudpilotEmu as a homescreen app (on iOS) or to add it to the dock
+    (Safari).
 :::
 
 ### Emulation issues
