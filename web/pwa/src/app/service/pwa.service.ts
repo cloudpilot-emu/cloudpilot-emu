@@ -83,7 +83,7 @@ export class PwaService {
     }
 
     promptForInstall(): boolean {
-        return (isIOS || isAndroid || isMacOSSafari) && this.installationMode === InstallationMode.web;
+        return (isIOS || isAndroid) && this.installationMode === InstallationMode.web;
     }
 
     getInstallationMode(): InstallationMode {
@@ -95,7 +95,7 @@ export class PwaService {
     }
 
     invite(): void {
-        if (!this.promptForInstall()) return;
+        if (!((isIOS || isAndroid || isMacOSSafari) && this.installationMode === InstallationMode.web)) return;
 
         if (this.kvsService.kvs.didShowInvitation) return;
         this.kvsService.kvs.didShowInvitation = true;
