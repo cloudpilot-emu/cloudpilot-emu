@@ -3,7 +3,7 @@ import { InstallationMode } from '@pwa/model/InstallationMode';
 import { PwaService } from './pwa.service';
 import { isIndicatorFixApplicable } from '@pwa/helper/homeIndicatorFix';
 import { ClipboardService } from './clipboard.service';
-import { isIOS, isIOSNative, isSafari } from '@common/helper/browser';
+import { isIOS, isIOSNative, isMacOSSafari } from '@common/helper/browser';
 
 @Injectable({ providedIn: 'root' })
 export class FeatureService {
@@ -33,7 +33,7 @@ export class FeatureService {
             ${this.featureStyle('clipboard-integration', this.clipboardService.isSupported())}
             ${this.featureStyle('native-app', isIOSNative)}
             ${this.featureStyle('ios-not-native', isIOS && !isIOSNative)}
-            ${this.featureStyle('ios-or-safari', isIOS || isSafari)}
+            ${this.featureStyle('ios-or-safari', isIOS || isMacOSSafari)}
             ${this.featureStyle('ios', isIOS)}
         `;
 

@@ -1,4 +1,4 @@
-import { iosVersion, isAndroid, isIOS, isIOSSafari, version } from '@common/helper/browser';
+import { isAndroid, isIOS, isIOSSafari } from '@common/helper/browser';
 
 import { AlertService } from './alert.service';
 import { Injectable } from '@angular/core';
@@ -61,12 +61,6 @@ const INVITATION_IOS = `
     This removes the browser UI and gives you a native app experience.
 `;
 
-const WARNING_IOS_174 = `
-    <br/><br/>
-    WARNING: This may be currently broken within the European Union. Please check the "About"
-    for details.
-`;
-
 @Injectable({
     providedIn: 'root',
 })
@@ -102,21 +96,21 @@ export class PwaService {
     }
 
     private getInstallMessage(): string {
-        if (isIOS && isIOSSafari) {
-            return INSTRUCTIONS_SAFARI_IOS + (iosVersion >= version(17, 4, 0) ? WARNING_IOS_174 : '');
+        if (isIOSSafari) {
+            return INSTRUCTIONS_SAFARI_IOS;
         }
 
-        if (isIOS) return INSTRUCTIONS_IOS + (iosVersion >= version(17, 4, 0) ? WARNING_IOS_174 : '');
+        if (isIOS) return INSTRUCTIONS_IOS;
 
         return INSTRUCTIONS_ANDROID;
     }
 
     private getInviteMessage(): string {
-        if (isIOS && isIOSSafari) {
-            return INVITATION_SAFARI_IOS + (iosVersion >= version(17, 4, 0) ? WARNING_IOS_174 : '');
+        if (isIOSSafari) {
+            return INVITATION_SAFARI_IOS;
         }
 
-        if (isIOS) return INVITATION_IOS + (iosVersion >= version(17, 4, 0) ? WARNING_IOS_174 : '');
+        if (isIOS) return INVITATION_IOS;
 
         return INVITATION_ANDROID;
     }

@@ -13,7 +13,7 @@ import { StorageService } from './storage.service';
 import Url from 'url-parse';
 import { filenameForSession } from '@pwa/helper/filename';
 import { metadataForSession } from '@pwa/helper/metadata';
-import { isIOS, isIOSSafari, isSafari } from '@common/helper/browser';
+import { isIOS, isIOSSafari, isMacOSSafari } from '@common/helper/browser';
 
 export interface FileDescriptor {
     name: string;
@@ -202,7 +202,7 @@ export class FileService {
     }
 
     private openFilesLocal(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): void {
-        const append = isSafari || (isIOS && isIOSSafari);
+        const append = isMacOSSafari || isIOSSafari;
         if (append && this.input) document.body.removeChild(this.input);
 
         this.input = document.createElement('input');

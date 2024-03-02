@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
-import { iosVersion, isIOS, isIOSNative, version } from '@common/helper/browser';
+import { isIOS, isIOSNative } from '@common/helper/browser';
 import { AlertService } from './alert.service';
 import { EmulationService } from './emulation.service';
 import { PwaService } from './pwa.service';
@@ -19,12 +19,7 @@ export class InfoService {
         const infoId = this.kvsService.kvs.infoId ?? 0;
         this.kvsService.kvs.infoId = await this.showInfo(infoId);
 
-        if (
-            this.pwaService.getInstallationMode() === InstallationMode.pwa &&
-            isIOS &&
-            iosVersion >= version(17, 4, 0) &&
-            !isIOSNative
-        ) {
+        if (this.pwaService.getInstallationMode() === InstallationMode.pwa && isIOS && !isIOSNative) {
             this.kvsService.kvs.ios174UpdateWarningId = await this.showIOS174UpdateWarning(
                 this.kvsService.kvs.ios174UpdateWarningId,
             );
@@ -51,22 +46,19 @@ export class InfoService {
     }
 
     private async showIOS174UpdateWarning(warningId: number | undefined): Promise<number> {
-        if ((warningId ?? 0) < 3) {
+        if ((warningId ?? 0) > 0) {
             await this.emulationService.bootstrapComplete();
 
             await this.alertService.message(
                 'Update to iOS 17.4',
                 `
-            Starting with iOS 17.4, homescreen apps will open in Safari on all iPhones in the
-            European Union. CloudpilotEmu will continue to work as a web page, but all data stored by the
-            homescreen app will be lost.
-            <br><br>
-            Please export all your sessions and card images before updating to iOS 17.4.
-            <br><br>
-            You can find more information under "Known issues" on the "About" tab.`,
+                    Apple has backpedaled and will not disable homescreen apps in the European
+                    Union. The update to 17.4 is expected to be safe, and CloudpilotEmu will
+                    continue to work as before.
+                `,
             );
         }
 
-        return 3;
+        return 0;
     }
 }

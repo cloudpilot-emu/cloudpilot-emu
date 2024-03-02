@@ -147,10 +147,10 @@ In order to force check for an update terminate and restart the app.
 :::div{.feature-ios-or-safari}
 ### Issues related to iOS or Safari
 
--   Safari on iOS: If the toolbar is minimized, The home indicator (the
-    white-ish bar at the bottom of the screen) may display on top of the UI
-    instead below it. This is cannot be detected, but there is a setting on the
-    settings page that you can change to work around.
+-   Safari on iOS: the home indicator (the white-ish bar at the bottom of the
+    screen) may display on top of the UI if the toolbar is minimized. This is
+    cannot be detected, but there is a setting on the settings page that you can
+    change to work around.
 
 -   Safari, iOS: A browser bug can cause lag when loaders or
     modal dialogs are shown in older versions of iOS or Safari. This can be worked around
@@ -168,15 +168,20 @@ In order to force check for an update terminate and restart the app.
     (usually the same as the screen refresh rate of the host device). Sound
     effects that rely on quickly modulating the audio signal may not be
     reproduced correctly.
+
 -   On rare ocassions installing files or changing the hotsync name can catch
     PalmOS on the wrong foot and crash the emulator. In particular, this happens
     if a file is installed on a virtual Palm IIIc with PalmOS 3.5 while the
     launcher is active and the category menu is open.
+
 -   Tungsten W, i705, PEG-T650C and PEG-NR70 cannot enter and exit sleep correctly,
     and the corresponding functionality has been disabled.
+
 -   On Clié devices, audio is not emulated beyond the usual beeps.
+  
 -   The MQ-1168 video chip in PEG-NR70 series devices is not emulated beyond
     framebuffer support, 2D acceleration is not available.
+    
 -   Formatting an unformatted memory stick in Clié devices that run PalmOS 3.x
     locks up PalmOS.
 

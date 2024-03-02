@@ -1,4 +1,4 @@
-import { isIOS, isSafari } from './browser';
+import { isIOS, isMacOSSafari } from './browser';
 
 export type LazyLoadingImage = () => Promise<HTMLImageElement>;
 export type PrerenderedImage = (width: number, height: number) => Promise<HTMLCanvasElement>;
@@ -21,7 +21,7 @@ export function prerender(image: Promise<HTMLImageElement>, source: string | Pro
 
         ctx.drawImage(await image, 0, 0, canvas.width, canvas.height);
 
-        if ((isSafari || isIOS) && (await source).indexOf('data:image') >= 0) {
+        if ((isMacOSSafari || isIOS) && (await source).indexOf('data:image') >= 0) {
             // Safari has a bug that renders embedded PNGs only on second draw.
             await new Promise((resolve) => setTimeout(resolve, 0));
             ctx.drawImage(await image, 0, 0, canvas.width, canvas.height);

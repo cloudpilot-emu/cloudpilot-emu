@@ -1,4 +1,4 @@
-import { isIOS, isIOSSafari } from '@common/helper/browser';
+import { isIOSSafari } from '@common/helper/browser';
 import { localStorageGetWithFallback, localStorageSet } from './localStorage';
 
 export const enum IndicatorFixMode {
@@ -19,7 +19,7 @@ export function getIndicatorFixMode(): IndicatorFixMode {
 }
 
 export function isIndicatorFixApplicable(): boolean {
-    return isIOS && isIOSSafari && !navigator?.standalone;
+    return isIOSSafari && !navigator?.standalone;
 }
 
 export function applyHomeIndicatorFix(mode?: IndicatorFixMode) {
