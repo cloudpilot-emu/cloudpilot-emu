@@ -14,7 +14,7 @@ declare global {
 
 const audioContextCtor = window.AudioContext || window.webkitAudioContext;
 
-function withTimeout<T>(v: Promise<T>, timeout = 200): Promise<T> {
+function withTimeout<T>(v: Promise<T>, timeout = 100): Promise<T> {
     return new Promise((resolve, reject) => {
         setTimeout(() => reject(new Error('timeout')), timeout);
 
@@ -31,48 +31,13 @@ export abstract class AbstractAudioService {
         if (!isIOS) document.addEventListener('visibilitychange', () => this.updateState());
     }
 
-    initialize = (): Promise<void> =>
+    initialize = (): Promise<boolean> =>
         this.mutex.runExclusive(async () => {
-            if (this.initialized) return;
-
-            try {
-                this.context = new audioContextCtor();
-            } catch (e) {
-                console.error(e);
-                console.error('web audio not available');
-
-                return;
+            for (let i = 0; i < 3; i++) {
+                if (await this.initializeAudioUnguarded()) return false;
             }
 
-            try {
-                this.context.destination.channelCount = 1;
-            } catch (e) {
-                console.warn('audio driver: failed to set channel count');
-            }
-
-            try {
-                await this.start();
-            } catch (e) {
-                console.error(e);
-                console.error('failed to initialize audio context');
-
-                return;
-            }
-
-            this.context.addEventListener('statechange', () => {
-                if ((this.context?.state as string) === 'interrupted') void this.updateState();
-            });
-
-            this.gainNode = this.context.createGain();
-            this.gainNode.channelCount = 1;
-            this.gainNode.channelInterpretation = 'speakers';
-            this.gainNode.gain.value = this.gain();
-
-            this.gainNode.connect(this.context.destination);
-
-            this.applyPwmUpdate();
-
-            this.initialized = true;
+            return true;
         });
 
     isInitialized(): boolean {
@@ -139,6 +104,51 @@ export abstract class AbstractAudioService {
         if (this.gainNode) {
             this.gainNode.gain.value = this.gain();
         }
+    }
+
+    private async initializeAudioUnguarded(): Promise<boolean> {
+        if (this.initialized) return true;
+
+        try {
+            this.context = new audioContextCtor();
+        } catch (e) {
+            console.error(e);
+            console.error('web audio not available');
+
+            return false;
+        }
+
+        try {
+            this.context.destination.channelCount = 1;
+        } catch (e) {
+            console.warn('audio driver: failed to set channel count');
+        }
+
+        try {
+            await this.start();
+        } catch (e) {
+            console.error(e);
+            console.error('failed to initialize audio context');
+
+            return false;
+        }
+
+        this.context.addEventListener('statechange', () => {
+            if ((this.context?.state as string) === 'interrupted') void this.updateState();
+        });
+
+        this.gainNode = this.context.createGain();
+        this.gainNode.channelCount = 1;
+        this.gainNode.channelInterpretation = 'speakers';
+        this.gainNode.gain.value = this.gain();
+
+        this.gainNode.connect(this.context.destination);
+
+        this.applyPwmUpdate();
+
+        this.initialized = true;
+
+        return true;
     }
 
     private async start(): Promise<void> {
