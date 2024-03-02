@@ -1,4 +1,4 @@
-import { isAndroid, isIOS, isIOSSafari } from '@common/helper/browser';
+import { isAndroid, isIOS, isIOSSafari, isMacOSSafari } from '@common/helper/browser';
 
 import { AlertService } from './alert.service';
 import { Injectable } from '@angular/core';
@@ -61,6 +61,16 @@ const INVITATION_IOS = `
     This removes the browser UI and gives you a native app experience.
 `;
 
+const INVITATION_SAFARI_MACOS = `
+    Howdy! It seems that you are running CloudpilotEmu on a Mac. Safari will delete all
+    data after seven days of inactivity. However, you can click the "Share"
+    icon in the browser toolbar and select "Add to dock" to install
+    CloudpilotEmu as an app.
+    <br><br>
+    This will keep Safari from deleting your
+    data.
+`;
+
 @Injectable({
     providedIn: 'root',
 })
@@ -73,7 +83,7 @@ export class PwaService {
     }
 
     promptForInstall(): boolean {
-        return (isIOS || isAndroid) && this.installationMode === InstallationMode.web;
+        return (isIOS || isAndroid || isMacOSSafari) && this.installationMode === InstallationMode.web;
     }
 
     getInstallationMode(): InstallationMode {
@@ -111,6 +121,8 @@ export class PwaService {
         }
 
         if (isIOS) return INVITATION_IOS;
+
+        if (isMacOSSafari) return INVITATION_SAFARI_MACOS;
 
         return INVITATION_ANDROID;
     }
