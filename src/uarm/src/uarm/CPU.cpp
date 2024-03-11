@@ -2436,7 +2436,6 @@ static FORCE_INLINE void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bo
 #define THUMB_FAIL ERR("thumb opcode should be transcoded:" __FILE__ ":" str(__LINE__));
     uint32_t v32;
     uint16_t v16;
-    uint_fast8_t v8;
 
     switch (instrT >> 12) {
         case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2)
@@ -2445,40 +2444,11 @@ static FORCE_INLINE void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bo
             if (instrT & 0x0800) {  // LDR(3)
                 __builtin_unreachable();
             } else if (instrT & 0x0400) {  // ADD(4) CMP(3) MOV(3) BX
-
-                uint8_t vD;
-
-                vD = (instrT & 7) | ((instrT >> 4) & 0x08);
-                v8 = (instrT >> 3) & 0xF;
-
                 switch ((instrT >> 8) & 3) {
                     case 0:  // ADD(4)
-
-                        // special handling required for PC destination
-                        v32 = cpuPrvGetReg<true>(cpu, vD) + cpuPrvGetReg<true>(cpu, v8);
-                        if (vD == 15) v32 |= 1;
-                        cpuPrvSetReg(cpu, vD, v32);
-
-                        return;
-
-                    case 2:  // MOV(3)
-
-                        // special handling required for PC destination
-                        v32 = cpuPrvGetReg<true>(cpu, v8);
-                        if (vD == 15) v32 |= 1;
-                        cpuPrvSetReg(cpu, vD, v32);
-
-                        return;
-
-                    case 3:                 // BX
-                        if (instrT & 0x80)  // BLX
-                            cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + 1;
-
-                        v8 = (instrT >> 3) & 0x0F;
-                        cpuPrvSetPC(cpu,
-                                    v8 == 15 ? ((cpu->regs[REG_NO_PC] + 2) & ~3UL) : cpu->regs[v8]);
-
-                        return;
+                    case 2:
+                    case 3:  // BX
+                        __builtin_unreachable();
 
                     default:
                         THUMB_FAIL;
@@ -2538,7 +2508,7 @@ static FORCE_INLINE void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bo
 #undef THUMB_FAIL
 }
 
-static void execFn_thumb_4_ldr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_thumb_3_ldr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     const uint32_t pc = cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL;
     const uint32_t addr = pc + ((instr & 0xff) << 2);
     uint32_t memVal32;
@@ -2551,13 +2521,71 @@ static void execFn_thumb_4_ldr(struct ArmCpu *cpu, uint32_t instr, bool privileg
         cpuPrvSetRegNotPC(cpu, (instr >> 8) & 0x07, memVal32);
 }
 
+template <bool pcD, bool pcS>
+static void execFn_thumb_4_add(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint_fast8_t vD = (instr & 7) | ((instr >> 4) & 0x08);
+    uint_fast8_t v8 = (instr >> 3) & 0xF;
+
+    uint32_t v32 = cpuPrvGetReg<true, pcD>(cpu, vD) + cpuPrvGetReg<true, pcS>(cpu, v8);
+    if constexpr (pcD) v32 |= 1;
+
+    cpuPrvSetReg<pcD>(cpu, vD, v32);
+}
+
+template <bool pcD, bool pcS>
+static void execFn_thumb_3_mov(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint_fast8_t vD = (instr & 7) | ((instr >> 4) & 0x08);
+    uint_fast8_t v8 = (instr >> 3) & 0xF;
+
+    uint32_t v32 = cpuPrvGetReg<true, pcS>(cpu, v8);
+    if constexpr (pcD) v32 |= 1;
+
+    cpuPrvSetReg<pcD>(cpu, vD, v32);
+}
+
+template <bool blx, bool pcS>
+static void execFn_thumb_bl_x(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    if constexpr (blx) cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + 1;
+
+    if constexpr (pcS)
+        cpuPrvSetPC(cpu, (cpu->regs[REG_NO_PC] + 2) & ~3UL);
+    else
+        cpuPrvSetPC(cpu, cpu->regs[(instr >> 3) & 0xF]);
+}
+
 static ExecFn cpuPrvDecoderThumb(uint32_t instr) {
     switch (instr >> 12) {
         case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2)
                  // LSR(2) ASR(2) ROR AND EOR ORR BIC
 
             if (instr & 0x0800) {  // LDR(3)
-                return execFn_thumb_4_ldr;
+                return execFn_thumb_3_ldr;
+            }
+
+            if (instr & 0x0400) {
+                const bool pcD = ((instr & 7) | ((instr >> 4) & 0x08)) == 15;
+                const bool pcS = ((instr >> 3) & 0xF) == 15;
+                const bool blx = instr & 0x80;
+
+                switch ((instr >> 8) & 0x03) {
+                    case 0:
+                        return (pcS ? (pcD ? execFn_thumb_4_add<true, true>
+                                           : execFn_thumb_4_add<false, true>)
+                                    : (pcD ? execFn_thumb_4_add<true, false>
+                                           : execFn_thumb_4_add<false, false>));
+
+                    case 2:
+                        return (pcS ? (pcD ? execFn_thumb_3_mov<true, true>
+                                           : execFn_thumb_3_mov<false, true>)
+                                    : (pcD ? execFn_thumb_3_mov<true, false>
+                                           : execFn_thumb_3_mov<false, false>));
+
+                    case 3:
+                        return blx ? (pcS ? execFn_thumb_bl_x<true, true>
+                                          : execFn_thumb_bl_x<true, false>)
+                                   : (pcS ? execFn_thumb_bl_x<false, true>
+                                          : execFn_thumb_bl_x<false, false>);
+                }
             }
 
             break;
