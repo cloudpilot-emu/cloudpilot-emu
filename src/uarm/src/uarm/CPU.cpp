@@ -2604,7 +2604,7 @@ static ExecFn cpuPrvDecoderThumb(uint32_t instr) {
 #undef THUMB_FAIL
 }
 
-static uint32_t cpuPrvEncodeExecFn(ExecFn execFn) {
+static uint32_t cpuPrvCompressExecFn(ExecFn execFn) {
 #ifdef __EMSCRIPTEN__
     return (uint32_t)execFn;
 #else
@@ -2612,23 +2612,23 @@ static uint32_t cpuPrvEncodeExecFn(ExecFn execFn) {
 #endif
 }
 
-static ExecFn cpuPrvDecodeExecFn(uint32_t encoded) {
+static ExecFn cpuPrvDecompressExecFn(uint32_t compressed) {
 #ifdef __EMSCRIPTEN__
-    return (ExecFn)encoded;
+    return (ExecFn)compressed;
 #else
-    return (ExecFn)((uint8_t *)execFn_noop + (int32_t)encoded);
+    return (ExecFn)((uint8_t *)execFn_noop + (int32_t)compressed);
 #endif
 }
 
-static uint32_t cpuPrvDecodeArm(uint32_t instr) {
-    return cpuPrvEncodeExecFn(cpuPrvDecoderArm<false>(instr));
+uint32_t cpuDecodeArm(uint32_t instr) {
+    return cpuPrvCompressExecFn(cpuPrvDecoderArm<false>(instr));
 }
 
-static uint32_t cpuPrvDecodeThumb(uint32_t instr) {
+uint32_t cpuDecodeThumb(uint32_t instr) {
     const uint32_t translatedInstr = table_thumb2arm[instr];
 
-    return cpuPrvEncodeExecFn(translatedInstr ? cpuPrvDecoderArm<true>(translatedInstr)
-                                              : cpuPrvDecoderThumb(instr));
+    return cpuPrvCompressExecFn(translatedInstr ? cpuPrvDecoderArm<true>(translatedInstr)
+                                                : cpuPrvDecoderThumb(instr));
 }
 
 static void cpuPrvCycleArm(struct ArmCpu *cpu) {
@@ -2649,14 +2649,14 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
     if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-    ok = icacheFetch<4>(cpu->ic, cpuPrvDecodeArm, cpu->curInstrPC, &fsr, &instr, &decoded);
+    ok = icacheFetch<4>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
     if (!ok) {
         cpuPrvHandleMemErr(cpu, cpu->curInstrPC, 4, false, true, fsr);
         return;
     }
 
     cpu->regs[REG_NO_PC] += 4;
-    cpuPrvDecodeExecFn(decoded)(cpu, instr, privileged);
+    cpuPrvDecompressExecFn(decoded)(cpu, instr, privileged);
 }
 
 static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
@@ -2677,7 +2677,7 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
     if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-    ok = icacheFetch<2>(cpu->ic, cpuPrvDecodeThumb, cpu->curInstrPC, &fsr, &instr, &decoded);
+    ok = icacheFetch<2>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
     if (!ok) {
         cpuPrvHandleMemErr(cpu, cpu->curInstrPC, 2, false, true, fsr);
         return;  // exit here so that debugger can see us execute first instr of execption
@@ -2685,7 +2685,7 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
     }
 
     cpu->regs[REG_NO_PC] += 2;
-    cpuPrvDecodeExecFn(decoded)(cpu, instr, privileged);
+    cpuPrvDecompressExecFn(decoded)(cpu, instr, privileged);
 }
 
 static uint32_t translateThumb(uint16_t instrT) {

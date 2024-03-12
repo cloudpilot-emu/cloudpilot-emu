@@ -97,6 +97,9 @@ uint32_t cpuGetPid(struct ArmCpu *cpu);
 uint16_t cpuGetCPAR(struct ArmCpu *cpu);
 void cpuSetCPAR(struct ArmCpu *cpu, uint16_t cpar);
 
+uint32_t cpuDecodeArm(uint32_t instr);
+uint32_t cpuDecodeThumb(uint32_t instr);
+
 #ifdef __cplusplus
 }
 #endif

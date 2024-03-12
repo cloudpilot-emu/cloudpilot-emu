@@ -26,8 +26,7 @@ void icacheInvalAddr(struct icache* ic, uint32_t addr);
 }
 
 template <int sz>
-bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* fsr, void* buf,
-                 uint32_t* decoded);
+bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsr, void* buf, uint32_t* decoded);
 
 #endif
 

@@ -64,8 +64,7 @@ void icacheInvalAddr(struct icache* ic, uint32_t va) {
 }
 
 template <int sz>
-bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* fsrP, void* buf,
-                 uint32_t* decoded) {
+bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, uint32_t* decoded) {
     if (va & (sz - 1)) {  // alignment issue
 
         *fsrP = 3;
@@ -93,7 +92,7 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
                 return false;
             }
 
-            *decoded = decode(sz == 4 ? *(uint32_t*)buf : *(uint16_t*)buf);
+            *decoded = sz == 4 ? cpuDecodeArm(*(uint32_t*)buf) : cpuDecodeThumb(*(uint16_t*)buf);
             return true;
         }
 
@@ -128,7 +127,7 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
             const size_t iInst = i >> 1;
             if ((line->decoded[iInst] & 0x03) != 0x02) {
                 // fprintf(stderr, "decode cache miss ARM\n");
-                *decoded = decode(inst);
+                *decoded = cpuDecodeArm(inst);
                 line->decoded[iInst] = (*decoded << 2) | 0x02;
             } else {
 #ifdef __EMSCRIPTEN__
@@ -149,7 +148,7 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
             const size_t iInst = i >> 1;
             if ((line->decoded[iInst] & 0x03) != 0x03) {
                 // fprintf(stderr, "decode cache miss thumb\n");
-                *decoded = decode(inst);
+                *decoded = cpuDecodeThumb(inst);
                 line->decoded[iInst] = (*decoded << 2) | 0x03;
             } else {
 #ifdef __EMSCRIPTEN__
@@ -169,7 +168,7 @@ bool icacheFetch(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* 
     return true;
 }
 
-template bool icacheFetch<2>(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* fsrP,
-                             void* buf, uint32_t* decoded);
-template bool icacheFetch<4>(struct icache* ic, DecodeFn decode, uint32_t va, uint_fast8_t* fsrP,
-                             void* buf, uint32_t* decoded);
+template bool icacheFetch<2>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
+                             uint32_t* decoded);
+template bool icacheFetch<4>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
+                             uint32_t* decoded);
