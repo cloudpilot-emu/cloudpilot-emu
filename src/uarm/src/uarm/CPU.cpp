@@ -2461,12 +2461,7 @@ static FORCE_INLINE void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bo
             break;
 
         case 10:  // ADD(5) ADD(6)	(bit11 set = add(6))
-            cpuPrvSetReg(cpu, (instrT >> 8) & 0x07,
-                         ((instrT & 0x0800) ? cpuPrvGetRegNotPC(cpu, REG_NO_SP)
-                                            : (cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL)) +
-                             ((instrT & 0xff) << 2));
-
-            return;
+            __builtin_unreachable();
 
         case 14:  // B(2) BL BLX(1) undefined instr space
         case 15:
@@ -2553,16 +2548,24 @@ static void execFn_thumb_bl_x(struct ArmCpu *cpu, uint32_t instr, bool privilege
         cpuPrvSetPC(cpu, cpu->regs[(instr >> 3) & 0xF]);
 }
 
+template <bool sp>
+static void execFn_load_addr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    cpuPrvSetReg<false>(
+        cpu, (instr >> 8) & 0x07,
+        (sp ? cpuPrvGetRegNotPC(cpu, REG_NO_SP) : (cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL)) +
+            ((instr & 0xff) << 2));
+}
+
 static ExecFn cpuPrvDecoderThumb(uint32_t instr) {
+#define THUMB_FAIL ERR("thumb opcode should be transcoded:" __FILE__ ":" str(__LINE__));
+
     switch (instr >> 12) {
         case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2)
                  // LSR(2) ASR(2) ROR AND EOR ORR BIC
 
             if (instr & 0x0800) {  // LDR(3)
                 return execFn_thumb_3_ldr;
-            }
-
-            if (instr & 0x0400) {
+            } else if (instr & 0x0400) {
                 const bool pcD = ((instr & 7) | ((instr >> 4) & 0x08)) == 15;
                 const bool pcS = ((instr >> 3) & 0xF) == 15;
                 const bool blx = instr & 0x80;
@@ -2588,10 +2591,17 @@ static ExecFn cpuPrvDecoderThumb(uint32_t instr) {
                 }
             }
 
+            THUMB_FAIL;
+
             break;
+
+        case 10:
+            return (instr & 0x0800) ? execFn_load_addr<true> : execFn_load_addr<false>;
     }
 
     return cpuPrvExecThumb;
+
+#undef THUMB_FAIL
 }
 
 static uint32_t cpuPrvEncodeExecFn(ExecFn execFn) {
