@@ -476,7 +476,7 @@ struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, struct Clock
     if (!memRegionAdd(physMem, PXA_LCD_BASE, PXA_LCD_SIZE, pxaLcdPrvMemAccessF, lcd))
         ERR("cannot add LCD to MEM\n");
 
-    clockRegisterConsumer(clock, 1000000000ULL / 15000ULL, pxaLcdFrame, lcd);
+    clockRegisterConsumer(clock, 1000000000ULL / (64 * 3 * 60), pxaLcdFrame, lcd);
 
     return lcd;
 }
