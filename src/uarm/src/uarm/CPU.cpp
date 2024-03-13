@@ -2432,77 +2432,6 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
     return execFn_invalid<wasT>;
 }
 
-static FORCE_INLINE void cpuPrvExecThumb(struct ArmCpu *cpu, uint32_t instrT, bool privileged) {
-#define THUMB_FAIL ERR("thumb opcode should be transcoded:" __FILE__ ":" str(__LINE__));
-    uint32_t v32;
-    uint16_t v16;
-
-    switch (instrT >> 12) {
-        case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2)
-                 // LSR(2) ASR(2) ROR AND EOR ORR BIC
-
-            if (instrT & 0x0800) {  // LDR(3)
-                __builtin_unreachable();
-            } else if (instrT & 0x0400) {  // ADD(4) CMP(3) MOV(3) BX
-                switch ((instrT >> 8) & 3) {
-                    case 0:  // ADD(4)
-                    case 2:
-                    case 3:  // BX
-                        __builtin_unreachable();
-
-                    default:
-                        THUMB_FAIL;
-                }
-            } else {  // AND EOR LSL(2) LSR(2) ASR(2) ADC SBC ROR TST NEG CMP(2) CMN ORR MUL BIC
-                      // MVN
-                THUMB_FAIL;
-            }
-
-            break;
-
-        case 10:  // ADD(5) ADD(6)	(bit11 set = add(6))
-            __builtin_unreachable();
-
-        case 14:  // B(2) BL BLX(1) undefined instr space
-        case 15:
-            v16 = (instrT & 0x7FF);
-
-            switch ((instrT >> 11) & 3) {
-                case 0:  // B(2)
-                    THUMB_FAIL;
-
-                case 1:  // BLX(1)_suffix
-                    v32 = cpu->regs[REG_NO_PC];
-                    cpu->regs[REG_NO_PC] =
-                        (cpu->regs[REG_NO_LR] + 2 + (((uint32_t)v16) << 1)) & ~3UL;
-                    cpu->regs[REG_NO_LR] = v32 | 1UL;
-                    cpu->T = 0;
-
-                    return;
-
-                case 2:  // BLX(1)_prefix BL_prefix
-                    v32 = v16;
-                    if (instrT & 0x0400) v32 |= 0x000FF800UL;
-                    cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + (v32 << 12);
-
-                    return;
-
-                case 3:  // BL_suffix
-                    v32 = cpu->regs[REG_NO_PC];
-                    cpu->regs[REG_NO_PC] = cpu->regs[REG_NO_LR] + 2 + (((uint32_t)v16) << 1);
-                    cpu->regs[REG_NO_LR] = v32 | 1UL;
-
-                    return;
-
-                default:
-                    THUMB_FAIL;
-            }
-    }
-
-    THUMB_FAIL;
-#undef THUMB_FAIL
-}
-
 static void execFn_thumb_3_ldr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     const uint32_t pc = cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL;
     const uint32_t addr = pc + ((instr & 0xff) << 2);
@@ -2549,16 +2478,38 @@ static void execFn_thumb_bl_x(struct ArmCpu *cpu, uint32_t instr, bool privilege
 }
 
 template <bool sp>
-static void execFn_load_addr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_thumb_load_addr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     cpuPrvSetReg<false>(
         cpu, (instr >> 8) & 0x07,
         (sp ? cpuPrvGetRegNotPC(cpu, REG_NO_SP) : (cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL)) +
             ((instr & 0xff) << 2));
 }
 
-static ExecFn cpuPrvDecoderThumb(uint32_t instr) {
-#define THUMB_FAIL ERR("thumb opcode should be transcoded:" __FILE__ ":" str(__LINE__));
+static void execFn_thumb_bl_x_prefix(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint32_t offsetHi = instr & 0x7FF;
 
+    if (instr & 0x0400) offsetHi |= 0x000FF800UL;
+    cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + (offsetHi << 12);
+}
+
+static void execFn_thumb_bl_suffix(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    const uint32_t lr = cpu->regs[REG_NO_PC] | 1ul;
+    const uint32_t offsetLo = instr & 0x7FF;
+
+    cpu->regs[REG_NO_PC] = cpu->regs[REG_NO_LR] + 2 + (offsetLo << 1);
+    cpu->regs[REG_NO_LR] = lr;
+}
+
+static void execFn_thumb_blx_suffix(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    const uint32_t lr = cpu->regs[REG_NO_PC] | 1ul;
+    const uint32_t offsetLo = instr & 0x7FF;
+
+    cpu->regs[REG_NO_PC] = (cpu->regs[REG_NO_LR] + 2 + (offsetLo << 1)) & ~3ul;
+    cpu->regs[REG_NO_LR] = lr;
+    cpu->T = 0;
+}
+
+static ExecFn cpuPrvDecoderThumb(uint32_t instr) {
     switch (instr >> 12) {
         case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2)
                  // LSR(2) ASR(2) ROR AND EOR ORR BIC
@@ -2591,17 +2542,27 @@ static ExecFn cpuPrvDecoderThumb(uint32_t instr) {
                 }
             }
 
-            THUMB_FAIL;
-
             break;
 
         case 10:
-            return (instr & 0x0800) ? execFn_load_addr<true> : execFn_load_addr<false>;
+            return (instr & 0x0800) ? execFn_thumb_load_addr<true> : execFn_thumb_load_addr<false>;
+
+        case 14:
+        case 15:
+            switch ((instr >> 11) & 3) {
+                case 1:
+                    return execFn_thumb_blx_suffix;
+
+                case 2:
+                    return execFn_thumb_bl_x_prefix;
+
+                case 3:
+                    return execFn_thumb_bl_suffix;
+            }
     }
 
-    return cpuPrvExecThumb;
-
-#undef THUMB_FAIL
+    ERR("thumb opcode should be transcoded:" __FILE__ ":" str(__LINE__));
+    __builtin_unreachable();
 }
 
 static uint32_t cpuPrvCompressExecFn(ExecFn execFn) {
