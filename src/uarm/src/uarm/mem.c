@@ -15,6 +15,7 @@ struct ArmMemRegion {
     uint32_t pa;
     uint32_t sz;
     ArmMemAccessF aF;
+    ArmMemAccessF aFCode;
     void *uD;
 };
 
@@ -34,7 +35,12 @@ struct ArmMem *memInit(void) {
 
 void memDeinit(struct ArmMem *mem) { (void)mem; }
 
-bool memRegionAdd(struct ArmMem *mem, uint32_t pa, uint32_t sz, ArmMemAccessF aF, void *uD) {
+bool memRegionAdd(struct ArmMem *mem, uint32_t pa, uint32_t sz, ArmMemAccessF af, void *uD) {
+    return memRegionAdd2(mem, pa, sz, af, af, uD);
+}
+
+bool memRegionAdd2(struct ArmMem *mem, uint32_t pa, uint32_t sz, ArmMemAccessF aF,
+                   ArmMemAccessF aFCode, void *uD) {
     uint_fast8_t i;
 
     // check for intersection with another region
@@ -53,6 +59,7 @@ bool memRegionAdd(struct ArmMem *mem, uint32_t pa, uint32_t sz, ArmMemAccessF aF
             mem->regions[i].pa = pa;
             mem->regions[i].sz = sz;
             mem->regions[i].aF = aF;
+            mem->regions[i].aFCode = aF;
             mem->regions[i].uD = uD;
 
             return true;
@@ -77,6 +84,26 @@ bool memAccess(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, bool write,
     for (i = 2; i < NUM_MEM_REGIONS; i++) {
         if (mem->regions[i].pa <= addr && mem->regions[i].pa + mem->regions[i].sz > addr) {
             ret = mem->regions[i].aF(mem->regions[i].uD, addr, size, write, buf);
+            break;
+        }
+    }
+
+    return ret;
+}
+
+bool memAccessCode(struct ArmMem *mem, uint32_t addr, uint_fast8_t size, bool write, void *buf) {
+    if (mem->regions[0].pa <= addr && mem->regions[0].pa + mem->regions[0].sz > addr)
+        return ramAccessF(mem->regions[0].uD, addr, size, write, buf);
+
+    if (mem->regions[1].pa <= addr && mem->regions[1].pa + mem->regions[1].sz > addr)
+        return romAccessFCode(mem->regions[1].uD, addr, size, write, buf);
+
+    bool ret = false;
+    uint_fast8_t i;
+
+    for (i = 2; i < NUM_MEM_REGIONS; i++) {
+        if (mem->regions[i].pa <= addr && mem->regions[i].pa + mem->regions[i].sz > addr) {
+            ret = mem->regions[i].aFCode(mem->regions[i].uD, addr, size, write, buf);
             break;
         }
     }

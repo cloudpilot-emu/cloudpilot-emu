@@ -27,7 +27,9 @@ struct PacePatch {
     uint32_t calloutUnimplementedInstr;
 };
 
-struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize);
+struct PacePatch* createPacePatch();
+
+void pacePatchInit(struct PacePatch* patch, uint32_t romBase, void* rom, size_t romSize);
 
 #ifdef __cplusplus
 }

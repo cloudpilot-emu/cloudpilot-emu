@@ -27,7 +27,14 @@ static uint32_t decodeBlBlx(void* rom, uint32_t addr) {
     }
 }
 
-struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize) {
+struct PacePatch* createPacePatch() {
+    struct PacePatch* patch = malloc(sizeof(*patch));
+    memset(patch, 0, sizeof(*patch));
+
+    return patch;
+}
+
+void pacePatchInit(struct PacePatch* patch, uint32_t romBase, void* rom, size_t romSize) {
     static const uint8_t paceStartPattern[] = {
         0xF1, 0x4F, 0x2D, 0xE9, 0x00, 0x00, 0x9D, 0xE5, 0x44, 0xA0, 0x90, 0xE5, 0x48, 0x40, 0x90,
         0xE5, 0x04, 0x50, 0x80, 0xE2, 0x24, 0x60, 0x80, 0xE2, 0xB2, 0x70, 0xDA, 0xE0, 0x44, 0xB0,
@@ -37,10 +44,7 @@ struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize) {
         0xE2, 0x44, 0xA0, 0x80, 0xE5, 0x48, 0x40, 0x80, 0xE5, 0x00, 0x80, 0x80, 0xE5, 0x18, 0x90,
         0x9D, 0xE5, 0x00, 0x00, 0xA0, 0xE3, 0xF2, 0x4F, 0xBD, 0xE8, 0x1E, 0xFF, 0x2F, 0xE1};
 
-    struct PacePatch* patch = malloc(sizeof(*patch));
-    memset(patch, 0, sizeof(*patch));
-
-    if (!rom) return patch;
+    if (!rom) return;
 
     uint32_t paceLocation = 0;
     for (uint32_t i = 0; i < romSize - sizeof(paceStartPattern); i += 4) {
@@ -50,7 +54,7 @@ struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize) {
             fprintf(stderr,
                     "PACE signature found in both %#010x and %#010x, PACE will not be patched\n",
                     paceLocation, i);
-            return patch;
+            return;
         }
 
         paceLocation = i;
@@ -58,7 +62,7 @@ struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize) {
 
     if (!paceLocation) {
         fprintf(stderr, "unable to locate PACE, will not be patched\n");
-        return patch;
+        return;
     }
 
     const uint32_t enterPace = romBase + paceLocation;
@@ -68,7 +72,7 @@ struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize) {
 
     if (!calloutSyscall) {
         fprintf(stderr, "unable to locate callout for syscall, PACE will not be patched\n");
-        return patch;
+        return;
     }
     fprintf(stderr, "found PACE callout for syscall at %#010x\n", calloutSyscall);
 
@@ -83,5 +87,5 @@ struct PacePatch* initPacePatch(uint32_t romBase, void* rom, size_t romSize) {
 
     fprintf(stderr, "patching PACE\n");
 
-    return patch;
+    return;
 }

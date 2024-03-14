@@ -24,7 +24,11 @@ struct ArmRom;
 struct ArmRom *romInit(struct ArmMem *mem, uint32_t adr, void **pieces, const uint32_t *pieceSizes,
                        uint32_t numPieces, enum RomChipType chipType);
 
+void *romGetPeepholeBuffer(struct ArmRom *rom, uint32_t addr);
+
 bool romAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write, void *bufP);
+
+bool romAccessFCode(void *userData, uint32_t pa, uint_fast8_t size, bool write, void *bufP);
 
 #ifdef __cplusplus
 }

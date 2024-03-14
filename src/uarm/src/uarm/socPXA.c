@@ -154,8 +154,7 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
 
     memset(soc, 0, sizeof(*soc));
 
-    soc->pacePatch = initPacePatch(ROM_BASE, romNumPieces == 1 ? romPieces[0] : NULL,
-                                   romNumPieces == 1 ? romPieceSizes[0] : 0);
+    soc->pacePatch = createPacePatch();
 
     soc->clock = clockInit();
 
@@ -181,6 +180,11 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     soc->rom =
         romInit(soc->mem, ROM_BASE, romPieces, romPieceSizes, romNumPieces, deviceGetRomMemType());
     if (!soc->rom) ERR("Cannot init ROM1");
+
+    void *peepholeBuffer = romGetPeepholeBuffer(soc->rom, ROM_BASE);
+    if (!peepholeBuffer) ERR("unable to obtain peephole buffer");
+
+    pacePatchInit(soc->pacePatch, ROM_BASE, peepholeBuffer, romPieceSizes[0]);
 
     switch (deviceGetRamTerminationStyle()) {
         case RamTerminationMirror:
