@@ -43,6 +43,7 @@
 
 #include "device.h"
 #include "keys.h"
+#include "peephole.h"
 #include "pxa270_IMC.h"
 #include "pxa270_KPC.h"
 #include "pxa270_UDC.h"
@@ -185,6 +186,7 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     if (!peepholeBuffer) ERR("unable to obtain peephole buffer");
 
     pacePatchInit(soc->pacePatch, ROM_BASE, peepholeBuffer, romPieceSizes[0]);
+    peepholeOptimize((uint32_t *)peepholeBuffer, romPieceSizes[0]);
 
     switch (deviceGetRamTerminationStyle()) {
         case RamTerminationMirror:

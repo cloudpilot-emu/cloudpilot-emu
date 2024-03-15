@@ -95,6 +95,7 @@ SOURCE_C = 						\
 	uarm/pace_patch.c 			\
 	uarm/pace.c 				\
 	uarm/clock.c 				\
+	uarm/peephole.c				\
 	uarm/uae/cpudefs.c 			\
 	uarm/uae/cpuemu.c 			\
 	uarm/uae/cpustbl.c 			\

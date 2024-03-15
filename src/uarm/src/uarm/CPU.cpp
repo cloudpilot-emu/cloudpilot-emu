@@ -14,6 +14,7 @@
 #include "icache.h"
 #include "mem.h"
 #include "pace.h"
+#include "peephole.h"
 
 #define xstr(s) str(s)
 #define str(s) #s
@@ -881,6 +882,117 @@ static void cpuPrvHandlePaceReturnFromCallout(struct ArmCpu *cpu) {
 #endif
 }
 
+static void cpuPrvPeephole_ADC_udivmod(struct ArmCpu *cpu) {
+    const uint32_t num = cpuPrvGetRegNotPC(cpu, 1);
+    const uint32_t den = cpuPrvGetRegNotPC(cpu, 0);
+
+    if (den == 0) {
+        cpuPrvSetPC(cpu, cpu->curInstrPC + OFFSET_PEEPHOLE_ADS_UDIVMOD_DIVISION_BY_ZERO);
+        return;
+    }
+
+    cpuPrvSetRegNotPC(cpu, 0, num / den);
+    cpuPrvSetRegNotPC(cpu, 1, num % den);
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+}
+
+static void cpuPrvPeephole_ADC_sdivmod(struct ArmCpu *cpu) {
+    const int32_t num = cpuPrvGetRegNotPC(cpu, 1);
+    const int32_t den = cpuPrvGetRegNotPC(cpu, 0);
+
+    if (den == 0) {
+        cpuPrvSetPC(cpu, cpu->curInstrPC + OFFSET_PEEPHOLE_ADS_SDIVMOD_DIVISION_BY_ZERO);
+        return;
+    }
+
+    cpuPrvSetRegNotPC(cpu, 0, num / den);
+    cpuPrvSetRegNotPC(cpu, 1, num % den);
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+}
+
+static void cpuPrvPeephole_ADC_udiv10(struct ArmCpu *cpu) {
+    const uint32_t num = cpuPrvGetRegNotPC(cpu, 0);
+
+    cpuPrvSetRegNotPC(cpu, 0, num / 10ul);
+    cpuPrvSetRegNotPC(cpu, 1, num % 10ul);
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+}
+
+static void cpuPrvPeephole_ADC_sdiv10(struct ArmCpu *cpu) {
+    const int32_t num = cpuPrvGetRegNotPC(cpu, 0);
+
+    cpuPrvSetRegNotPC(cpu, 0, num / 10l);
+    cpuPrvSetRegNotPC(cpu, 1, num % 10l);
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+}
+
+static void cpuPrvPeephole_ADC_memcpy(struct ArmCpu *cpu) {
+    uint8_t buffer[64];
+
+    uint32_t src = cpuPrvGetRegNotPC(cpu, 1);
+    uint32_t dest = cpuPrvGetRegNotPC(cpu, 0);
+    uint32_t size = cpuPrvGetRegNotPC(cpu, 2);
+
+    bool privileged = cpu->M != ARM_SR_MODE_USR;
+
+    bool ok;
+    MMUTranslateResult translateResultSrc;
+    MMUTranslateResult translateResultDest;
+
+#define MEMCPY_STEP(chunkSize)                                                                  \
+    for (; size >= chunkSize; size -= chunkSize, src += chunkSize, dest += chunkSize) {         \
+        translateResultSrc = mmuTranslate(cpu->mmu, src, privileged, false);                    \
+        if (!MMU_TRANSLATE_RESULT_OK(translateResultSrc)) {                                     \
+            cpuPrvHandleMemErr(cpu, src, chunkSize, false, false,                               \
+                               MMU_TRANSLATE_RESULT_FSR(translateResultSrc));                   \
+            return;                                                                             \
+        }                                                                                       \
+                                                                                                \
+        translateResultDest = mmuTranslate(cpu->mmu, dest, privileged, true);                   \
+        if (!MMU_TRANSLATE_RESULT_OK(translateResultDest)) {                                    \
+            cpuPrvHandleMemErr(cpu, src, chunkSize, true, false,                                \
+                               MMU_TRANSLATE_RESULT_FSR(translateResultDest));                  \
+            return;                                                                             \
+        }                                                                                       \
+                                                                                                \
+        ok = memAccess(cpu->mem, MMU_TRANSLATE_RESULT_PA(translateResultSrc), chunkSize, false, \
+                       &buffer);                                                                \
+        if (!ok) {                                                                              \
+            cpuPrvHandleMemErr(cpu, src, chunkSize, false, false, 10);                          \
+            return;                                                                             \
+        }                                                                                       \
+                                                                                                \
+        ok = memAccess(cpu->mem, MMU_TRANSLATE_RESULT_PA(translateResultDest), chunkSize, true, \
+                       &buffer);                                                                \
+        if (!ok) {                                                                              \
+            cpuPrvHandleMemErr(cpu, src, chunkSize, true, false, 10);                           \
+            return;                                                                             \
+        }                                                                                       \
+    }
+
+    if ((src & 0x03) == 0 && (dest & 0x03) == 0) {
+        MEMCPY_STEP(64);
+        MEMCPY_STEP(32);
+        MEMCPY_STEP(16);
+        MEMCPY_STEP(8);
+        MEMCPY_STEP(4);
+    }
+
+    if ((src & 0x01) == 0 && (dest & 0x01) == 0) {
+        MEMCPY_STEP(2)
+    }
+
+    MEMCPY_STEP(1);
+
+#undef MEMCPY_STEP
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+}
+
 static bool cpuPrvHandleInvalidInstruction(struct ArmCpu *cpu, uint32_t instr) {
     switch (instr) {
         case INSTR_PACE_ENTER:
@@ -893,6 +1005,26 @@ static bool cpuPrvHandleInvalidInstruction(struct ArmCpu *cpu, uint32_t instr) {
 
         case INSTR_PACE_RETURN_FROM_CALLOUT:
             cpuPrvHandlePaceReturnFromCallout(cpu);
+            return true;
+
+        case INSTR_PEEPHOLE_ADS_UDIVMOD:
+            cpuPrvPeephole_ADC_udivmod(cpu);
+            return true;
+
+        case INSTR_PEEPHOLE_ADS_SDIVMOD:
+            cpuPrvPeephole_ADC_sdivmod(cpu);
+            return true;
+
+        case INSTR_PEEPHOLE_ADS_UDIV10:
+            cpuPrvPeephole_ADC_udiv10(cpu);
+            return true;
+
+        case INSTR_PEEPHOLE_ADS_SDIV10:
+            cpuPrvPeephole_ADC_sdiv10(cpu);
+            return true;
+
+        case INSTR_PEEPHOLE_ADS_MEMCPY:
+            cpuPrvPeephole_ADC_memcpy(cpu);
             return true;
     }
 
