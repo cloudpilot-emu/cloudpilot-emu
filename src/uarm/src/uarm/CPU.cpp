@@ -815,222 +815,6 @@ static void cpuPrvHandlePaceMemoryFault(struct ArmCpu *cpu) {
     cpuPrvHandleMemErr(cpu, addr, sz, wasWrite, false, fsr);
 }
 
-// PACE entrypoint was called from ARM: regular invocation
-static void cpuPrvhandlePaceEnter(struct ArmCpu *cpu) {
-    bool privileged = cpu->M != ARM_SR_MODE_USR;
-    uint_fast8_t fsr = 0;
-
-    cpu->regs[REG_NO_SP] -= 4;
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], true, privileged, &fsr))
-        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, true, false, fsr);
-
-    cpu->regs[REG_NO_SP] -= 4;
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], true, privileged, &fsr))
-        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, true, false, fsr);
-
-    paceSetPriviledged(privileged);
-    paceSetStatePtr(cpu->regs[0]);
-
-    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
-
-    cpu->modePace = true;
-    cpu->paceOffset = cpu->curInstrPC - cpu->pacePatch->enterPace;
-
-#ifdef TRACE_PACE
-    fprintf(stderr, "enter PACE\n");
-#endif
-
-    return;
-}
-
-// PACE execution was resumed from ARM: resume after interrupt / exception
-static void cpuPrvHandlePaceResume(struct ArmCpu *cpu) {
-    paceSetPriviledged(cpu->M != ARM_SR_MODE_USR);
-    paceSetStatePtr(cpu->regs[0]);
-
-    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
-
-    cpu->modePace = true;
-    cpu->paceOffset = cpu->curInstrPC - 4 - cpu->pacePatch->enterPace;
-    cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
-
-#ifdef TRACE_PACE
-    fprintf(stderr, "resume PACE\n");
-#endif
-}
-
-// PACE was reentered after a callout
-static void cpuPrvHandlePaceReturnFromCallout(struct ArmCpu *cpu) {
-    bool privileged = cpu->M != ARM_SR_MODE_USR;
-    uint_fast8_t fsr = 0;
-
-    // restore r0 / state pointer from stack
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], false, privileged, &fsr))
-        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, false, false, fsr);
-
-    paceSetPriviledged(privileged);
-    paceSetStatePtr(cpu->regs[0]);
-
-    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
-
-    cpu->modePace = true;
-    cpu->paceOffset = cpu->curInstrPC - 8 - cpu->pacePatch->enterPace;
-    cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
-
-#ifdef TRACE_PACE
-    fprintf(stderr, "PACE return from callout\n");
-#endif
-}
-
-static void cpuPrvPeephole_ADC_udivmod(struct ArmCpu *cpu) {
-    const uint32_t num = cpuPrvGetRegNotPC(cpu, 1);
-    const uint32_t den = cpuPrvGetRegNotPC(cpu, 0);
-
-    if (den == 0) {
-        cpuPrvSetPC(cpu, cpu->curInstrPC + OFFSET_PEEPHOLE_ADS_UDIVMOD_DIVISION_BY_ZERO);
-        return;
-    }
-
-    cpuPrvSetRegNotPC(cpu, 0, num / den);
-    cpuPrvSetRegNotPC(cpu, 1, num % den);
-
-    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
-}
-
-static void cpuPrvPeephole_ADC_sdivmod(struct ArmCpu *cpu) {
-    const int32_t num = cpuPrvGetRegNotPC(cpu, 1);
-    const int32_t den = cpuPrvGetRegNotPC(cpu, 0);
-
-    if (den == 0) {
-        cpuPrvSetPC(cpu, cpu->curInstrPC + OFFSET_PEEPHOLE_ADS_SDIVMOD_DIVISION_BY_ZERO);
-        return;
-    }
-
-    cpuPrvSetRegNotPC(cpu, 0, num / den);
-    cpuPrvSetRegNotPC(cpu, 1, num % den);
-
-    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
-}
-
-static void cpuPrvPeephole_ADC_udiv10(struct ArmCpu *cpu) {
-    const uint32_t num = cpuPrvGetRegNotPC(cpu, 0);
-
-    cpuPrvSetRegNotPC(cpu, 0, num / 10ul);
-    cpuPrvSetRegNotPC(cpu, 1, num % 10ul);
-
-    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
-}
-
-static void cpuPrvPeephole_ADC_sdiv10(struct ArmCpu *cpu) {
-    const int32_t num = cpuPrvGetRegNotPC(cpu, 0);
-
-    cpuPrvSetRegNotPC(cpu, 0, num / 10l);
-    cpuPrvSetRegNotPC(cpu, 1, num % 10l);
-
-    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
-}
-
-static void cpuPrvPeephole_ADC_memcpy(struct ArmCpu *cpu) {
-    uint8_t buffer[64];
-
-    uint32_t src = cpuPrvGetRegNotPC(cpu, 1);
-    uint32_t dest = cpuPrvGetRegNotPC(cpu, 0);
-    uint32_t size = cpuPrvGetRegNotPC(cpu, 2);
-
-    bool privileged = cpu->M != ARM_SR_MODE_USR;
-
-    bool ok;
-    MMUTranslateResult translateResultSrc;
-    MMUTranslateResult translateResultDest;
-
-#define MEMCPY_STEP(chunkSize)                                                                  \
-    for (; size >= chunkSize; size -= chunkSize, src += chunkSize, dest += chunkSize) {         \
-        translateResultSrc = mmuTranslate(cpu->mmu, src, privileged, false);                    \
-        if (!MMU_TRANSLATE_RESULT_OK(translateResultSrc)) {                                     \
-            cpuPrvHandleMemErr(cpu, src, chunkSize, false, false,                               \
-                               MMU_TRANSLATE_RESULT_FSR(translateResultSrc));                   \
-            return;                                                                             \
-        }                                                                                       \
-                                                                                                \
-        translateResultDest = mmuTranslate(cpu->mmu, dest, privileged, true);                   \
-        if (!MMU_TRANSLATE_RESULT_OK(translateResultDest)) {                                    \
-            cpuPrvHandleMemErr(cpu, src, chunkSize, true, false,                                \
-                               MMU_TRANSLATE_RESULT_FSR(translateResultDest));                  \
-            return;                                                                             \
-        }                                                                                       \
-                                                                                                \
-        ok = memAccess(cpu->mem, MMU_TRANSLATE_RESULT_PA(translateResultSrc), chunkSize, false, \
-                       &buffer);                                                                \
-        if (!ok) {                                                                              \
-            cpuPrvHandleMemErr(cpu, src, chunkSize, false, false, 10);                          \
-            return;                                                                             \
-        }                                                                                       \
-                                                                                                \
-        ok = memAccess(cpu->mem, MMU_TRANSLATE_RESULT_PA(translateResultDest), chunkSize, true, \
-                       &buffer);                                                                \
-        if (!ok) {                                                                              \
-            cpuPrvHandleMemErr(cpu, src, chunkSize, true, false, 10);                           \
-            return;                                                                             \
-        }                                                                                       \
-    }
-
-    if ((src & 0x03) == 0 && (dest & 0x03) == 0) {
-        MEMCPY_STEP(64);
-        MEMCPY_STEP(32);
-        MEMCPY_STEP(16);
-        MEMCPY_STEP(8);
-        MEMCPY_STEP(4);
-    }
-
-    if ((src & 0x01) == 0 && (dest & 0x01) == 0) {
-        MEMCPY_STEP(2)
-    }
-
-    MEMCPY_STEP(1);
-
-#undef MEMCPY_STEP
-
-    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
-}
-
-static bool cpuPrvHandleInvalidInstruction(struct ArmCpu *cpu, uint32_t instr) {
-    switch (instr) {
-        case INSTR_PACE_ENTER:
-            cpuPrvhandlePaceEnter(cpu);
-            return true;
-
-        case INSTR_PACE_RESUME:
-            cpuPrvHandlePaceResume(cpu);
-            return true;
-
-        case INSTR_PACE_RETURN_FROM_CALLOUT:
-            cpuPrvHandlePaceReturnFromCallout(cpu);
-            return true;
-
-        case INSTR_PEEPHOLE_ADS_UDIVMOD:
-            cpuPrvPeephole_ADC_udivmod(cpu);
-            return true;
-
-        case INSTR_PEEPHOLE_ADS_SDIVMOD:
-            cpuPrvPeephole_ADC_sdivmod(cpu);
-            return true;
-
-        case INSTR_PEEPHOLE_ADS_UDIV10:
-            cpuPrvPeephole_ADC_udiv10(cpu);
-            return true;
-
-        case INSTR_PEEPHOLE_ADS_SDIV10:
-            cpuPrvPeephole_ADC_sdiv10(cpu);
-            return true;
-
-        case INSTR_PEEPHOLE_ADS_MEMCPY:
-            cpuPrvPeephole_ADC_memcpy(cpu);
-            return true;
-    }
-
-    return false;
-}
-
 #ifdef SUPPORT_Z72_PRINTF
 static uint32_t cpuPrvZ72sysPrintfGetParam(struct ArmCpu *cpu, uint32_t *paramIdxP) {
     uint32_t idx = (*paramIdxP)++, val;
@@ -1103,20 +887,192 @@ static void cpuPrvZ72sysPrintf(struct ArmCpu *cpu) {
 }
 #endif
 
+// PACE entrypoint was called from ARM: regular invocation
+static void execFn_paceEnter(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint_fast8_t fsr = 0;
+
+    cpu->regs[REG_NO_SP] -= 4;
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], true, privileged, &fsr))
+        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, true, false, fsr);
+
+    cpu->regs[REG_NO_SP] -= 4;
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], true, privileged, &fsr))
+        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, true, false, fsr);
+
+    paceSetPriviledged(privileged);
+    paceSetStatePtr(cpu->regs[0]);
+
+    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
+
+    cpu->modePace = true;
+    cpu->paceOffset = cpu->curInstrPC - cpu->pacePatch->enterPace;
+
+#ifdef TRACE_PACE
+    fprintf(stderr, "enter PACE\n");
+#endif
+
+    return;
+}
+
+// PACE execution was resumed from ARM: resume after interrupt / exception
+static void execFn_paceResume(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    paceSetPriviledged(cpu->M != ARM_SR_MODE_USR);
+    paceSetStatePtr(cpu->regs[0]);
+
+    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
+
+    cpu->modePace = true;
+    cpu->paceOffset = cpu->curInstrPC - 4 - cpu->pacePatch->enterPace;
+    cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
+
+#ifdef TRACE_PACE
+    fprintf(stderr, "resume PACE\n");
+#endif
+}
+
+// PACE was reentered after a callout
+static void execFn_paceReturnFromCallout(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint_fast8_t fsr = 0;
+
+    // restore r0 / state pointer from stack
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], false, privileged, &fsr))
+        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], 4, false, false, fsr);
+
+    paceSetPriviledged(privileged);
+    paceSetStatePtr(cpu->regs[0]);
+
+    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
+
+    cpu->modePace = true;
+    cpu->paceOffset = cpu->curInstrPC - 8 - cpu->pacePatch->enterPace;
+    cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
+
+#ifdef TRACE_PACE
+    fprintf(stderr, "PACE return from callout\n");
+#endif
+}
+
+static void execFn_peephole_ADC_udivmod(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    const uint32_t num = cpuPrvGetRegNotPC(cpu, 1);
+    const uint32_t den = cpuPrvGetRegNotPC(cpu, 0);
+
+    if (den == 0) {
+        cpuPrvSetPC(cpu, cpu->curInstrPC + OFFSET_PEEPHOLE_ADS_UDIVMOD_DIVISION_BY_ZERO);
+        return;
+    }
+
+    cpuPrvSetRegNotPC(cpu, 0, num / den);
+    cpuPrvSetRegNotPC(cpu, 1, num % den);
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+}
+
+static void execFn_peephole_ADC_sdivmod(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    const int32_t num = cpuPrvGetRegNotPC(cpu, 1);
+    const int32_t den = cpuPrvGetRegNotPC(cpu, 0);
+
+    if (den == 0) {
+        cpuPrvSetPC(cpu, cpu->curInstrPC + OFFSET_PEEPHOLE_ADS_SDIVMOD_DIVISION_BY_ZERO);
+        return;
+    }
+
+    cpuPrvSetRegNotPC(cpu, 0, num / den);
+    cpuPrvSetRegNotPC(cpu, 1, num % den);
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+}
+
+static void execFn_peephole_ADC_udiv10(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    const uint32_t num = cpuPrvGetRegNotPC(cpu, 0);
+
+    cpuPrvSetRegNotPC(cpu, 0, num / 10ul);
+    cpuPrvSetRegNotPC(cpu, 1, num % 10ul);
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+}
+
+static void execFn_peephole_ADC_sdiv10(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    const int32_t num = cpuPrvGetRegNotPC(cpu, 0);
+
+    cpuPrvSetRegNotPC(cpu, 0, num / 10l);
+    cpuPrvSetRegNotPC(cpu, 1, num % 10l);
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+}
+
+static void execFn_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    uint8_t buffer[64];
+
+    uint32_t src = cpuPrvGetRegNotPC(cpu, 1);
+    uint32_t dest = cpuPrvGetRegNotPC(cpu, 0);
+    uint32_t size = cpuPrvGetRegNotPC(cpu, 2);
+
+    bool ok;
+    MMUTranslateResult translateResultSrc;
+    MMUTranslateResult translateResultDest;
+
+#define MEMCPY_STEP(chunkSize)                                                                  \
+    for (; size >= chunkSize; size -= chunkSize, src += chunkSize, dest += chunkSize) {         \
+        translateResultSrc = mmuTranslate(cpu->mmu, src, privileged, false);                    \
+        if (!MMU_TRANSLATE_RESULT_OK(translateResultSrc)) {                                     \
+            cpuPrvHandleMemErr(cpu, src, chunkSize, false, false,                               \
+                               MMU_TRANSLATE_RESULT_FSR(translateResultSrc));                   \
+            return;                                                                             \
+        }                                                                                       \
+                                                                                                \
+        translateResultDest = mmuTranslate(cpu->mmu, dest, privileged, true);                   \
+        if (!MMU_TRANSLATE_RESULT_OK(translateResultDest)) {                                    \
+            cpuPrvHandleMemErr(cpu, src, chunkSize, true, false,                                \
+                               MMU_TRANSLATE_RESULT_FSR(translateResultDest));                  \
+            return;                                                                             \
+        }                                                                                       \
+                                                                                                \
+        ok = memAccess(cpu->mem, MMU_TRANSLATE_RESULT_PA(translateResultSrc), chunkSize, false, \
+                       &buffer);                                                                \
+        if (!ok) {                                                                              \
+            cpuPrvHandleMemErr(cpu, src, chunkSize, false, false, 10);                          \
+            return;                                                                             \
+        }                                                                                       \
+                                                                                                \
+        ok = memAccess(cpu->mem, MMU_TRANSLATE_RESULT_PA(translateResultDest), chunkSize, true, \
+                       &buffer);                                                                \
+        if (!ok) {                                                                              \
+            cpuPrvHandleMemErr(cpu, src, chunkSize, true, false, 10);                           \
+            return;                                                                             \
+        }                                                                                       \
+    }
+
+    if ((src & 0x03) == 0 && (dest & 0x03) == 0) {
+        MEMCPY_STEP(64);
+        MEMCPY_STEP(32);
+        MEMCPY_STEP(16);
+        MEMCPY_STEP(8);
+        MEMCPY_STEP(4);
+    }
+
+    if ((src & 0x01) == 0 && (dest & 0x01) == 0) {
+        MEMCPY_STEP(2)
+    }
+
+    MEMCPY_STEP(1);
+
+#undef MEMCPY_STEP
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+}
+
 static void execFn_noop(struct ArmCpu *cpu, uint32_t instr, bool privileged) {}
 
 template <bool wasT>
 static void execFn_invalid(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
-    if (wasT || !cpuPrvHandleInvalidInstruction(cpu, instr)) {
-        fprintf(stderr, "Invalid instr 0x%08lx seen at 0x%08lx with CPSR 0x%08lx\n",
-                (unsigned long)instr, (unsigned long)cpu->curInstrPC,
-                (unsigned long)cpuPrvMaterializeCPSR(cpu));
+    fprintf(stderr, "Invalid instr 0x%08lx seen at 0x%08lx with CPSR 0x%08lx\n",
+            (unsigned long)instr, (unsigned long)cpu->curInstrPC,
+            (unsigned long)cpuPrvMaterializeCPSR(cpu));
 
-        cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_UND,
-                        cpu->curInstrPC + (wasT ? 2 : 4), ARM_SR_MODE_UND | ARM_SR_I);
+    cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_UND, cpu->curInstrPC + (wasT ? 2 : 4),
+                    ARM_SR_MODE_UND | ARM_SR_I);
 
-        abort();
-    }
+    abort();
 }
 
 template <bool wasT, bool align2>
@@ -2096,10 +2052,37 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
 
             case 14:
                 return execFn_cp_dp<wasT, true>;
-
-            default:
-                return execFn_invalid<wasT>;
         }
+
+        if (!wasT) {
+            switch (instr) {
+                case INSTR_PACE_ENTER:
+                    return execFn_paceEnter;
+
+                case INSTR_PACE_RESUME:
+                    return execFn_paceResume;
+
+                case INSTR_PACE_RETURN_FROM_CALLOUT:
+                    return execFn_paceReturnFromCallout;
+
+                case INSTR_PEEPHOLE_ADS_UDIVMOD:
+                    return execFn_peephole_ADC_udivmod;
+
+                case INSTR_PEEPHOLE_ADS_SDIVMOD:
+                    return execFn_peephole_ADC_sdivmod;
+
+                case INSTR_PEEPHOLE_ADS_UDIV10:
+                    return execFn_peephole_ADC_udiv10;
+
+                case INSTR_PEEPHOLE_ADS_SDIV10:
+                    return execFn_peephole_ADC_sdiv10;
+
+                case INSTR_PEEPHOLE_ADS_MEMCPY:
+                    return execFn_peephole_ADC_memcpy;
+            }
+        }
+
+        return execFn_invalid<wasT>;
     }
 
     switch ((instr >> 24) & 0x0F) {
