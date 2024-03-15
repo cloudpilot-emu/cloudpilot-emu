@@ -76,9 +76,7 @@ bool romAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write, void
     return access((uint8_t *)piece->buf + (pa - piece->base), size, bufP);
 }
 
-bool romAccessFCode(void *userData, uint32_t pa, uint_fast8_t size, bool write, void *bufP) {
-    if (write) return false;
-
+bool romInstructionFetch(void *userData, uint32_t pa, uint_fast8_t size, void *bufP) {
     struct ArmRomPiece *piece = (struct ArmRomPiece *)userData;
 
     return access((uint8_t *)piece->bufPeephole + (pa - piece->base), size, bufP);
@@ -120,7 +118,7 @@ struct ArmRom *romInit(struct ArmMem *mem, uint32_t adr, void **pieces, const ui
 
         adr += piece->size;
 
-        if (!memRegionAdd2(mem, piece->base, piece->size, romAccessF, romAccessFCode, piece))
+        if (!memRegionAdd(mem, piece->base, piece->size, romAccessF, piece))
             ERR("cannot add ROM piece at 0x%08x to MEM\n", adr);
     }
 

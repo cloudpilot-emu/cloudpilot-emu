@@ -20,12 +20,9 @@ void memDeinit(struct ArmMem* mem);
 
 bool memRegionAdd(struct ArmMem* mem, uint32_t pa, uint32_t sz, ArmMemAccessF af, void* uD);
 
-bool memRegionAdd2(struct ArmMem* mem, uint32_t pa, uint32_t sz, ArmMemAccessF af,
-                   ArmMemAccessF afCode, void* uD);
-
 bool memAccess(struct ArmMem* mem, uint32_t addr, uint_fast8_t size, bool write, void* buf);
 
-bool memAccessCode(struct ArmMem* mem, uint32_t addr, uint_fast8_t size, bool write, void* buf);
+bool memInstructionFetch(struct ArmMem* mem, uint32_t addr, uint_fast8_t size, void* buf);
 
 #ifdef __cplusplus
 }
