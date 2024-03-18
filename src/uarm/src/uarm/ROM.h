@@ -12,19 +12,11 @@
 extern "C" {
 #endif
 
-enum RomChipType {
-    RomWriteIgnore,
-    RomWriteError,
-    RomStrataFlash16x,
-    RomStrataflash16x2x,
-};
-
 struct ArmRom;
 
-struct ArmRom *romInit(struct ArmMem *mem, uint32_t adr, void **pieces, const uint32_t *pieceSizes,
-                       uint32_t numPieces, enum RomChipType chipType);
+struct ArmRom *romInit(struct ArmMem *mem, uint32_t adr, void *data, const uint32_t size);
 
-void *romGetPeepholeBuffer(struct ArmRom *rom, uint32_t addr);
+void *romGetPeepholeBuffer(struct ArmRom *rom);
 
 bool romAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write, void *bufP);
 

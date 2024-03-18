@@ -104,7 +104,7 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
     return true;
 }
 
-struct ArmRam* ramInit(struct ArmMem* mem, uint32_t adr, uint32_t sz, uint32_t* buf) {
+struct ArmRam* ramInit(struct ArmMem* mem, uint32_t adr, uint32_t sz, uint32_t* buf, bool primary) {
     struct ArmRam* ram = (struct ArmRam*)malloc(sizeof(*ram));
 
     if (!ram) ERR("cannot alloc RAM at 0x%08x", adr);
@@ -115,7 +115,10 @@ struct ArmRam* ramInit(struct ArmMem* mem, uint32_t adr, uint32_t sz, uint32_t* 
     ram->sz = sz;
     ram->buf = buf;
 
-    if (!memRegionAdd(mem, adr, sz, ramAccessF, ram)) ERR("cannot add RAM at 0x%08x to MEM\n", adr);
+    if (!(primary ? memRegionAddRam(mem, adr, sz, ramAccessF, ram)
+                  : memRegionAdd(mem, adr, sz, ramAccessF, ram))) {
+        ERR("cannot add RAM at 0x%08x to MEM\n", adr);
+    }
 
     return ram;
 }

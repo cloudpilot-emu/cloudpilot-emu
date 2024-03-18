@@ -65,7 +65,6 @@ struct Device;
 // simple queries
 uint32_t deviceGetRamSize(void);
 enum RamTermination deviceGetRamTerminationStyle(void);
-enum RomChipType deviceGetRomMemType(void);
 uint_fast8_t deviceGetSocRev(void);
 
 // device handling

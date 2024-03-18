@@ -14,7 +14,7 @@ extern "C" {
 
 struct ArmRam;
 
-struct ArmRam* ramInit(struct ArmMem* mem, uint32_t adr, uint32_t sz, uint32_t* buf);
+struct ArmRam* ramInit(struct ArmMem* mem, uint32_t adr, uint32_t sz, uint32_t* buf, bool primary);
 
 bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void* bufP);
 

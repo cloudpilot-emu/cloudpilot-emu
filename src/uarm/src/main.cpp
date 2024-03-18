@@ -232,8 +232,8 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
         exit(-5);
     }
 
-    soc = socInit((void**)&rom, &romLen, romLen ? 1 : 0, sdCardSecs, prvSdSectorR, prvSdSectorW,
-                  nand, nandLen, gdbPort, deviceGetSocRev());
+    soc = socInit(rom, romLen, sdCardSecs, prvSdSectorR, prvSdSectorW, nand, nandLen, gdbPort,
+                  deviceGetSocRev());
 
     mainLoop = make_unique<MainLoop>(soc, 100000000);
 
@@ -306,11 +306,11 @@ int main(int argc, char** argv) {
             case 'r':  // ROM
                 if (optarg) romFile = fopen(optarg, "rb");
                 break;
-
+    #if 0
             case 'x':  // NO_ROM mode
                 noRomMode = true;
                 break;
-
+    #endif
             case 'n':  // NAND
                 if (optarg) nandFile = fopen(optarg, "r+b");
                 break;

@@ -10,18 +10,10 @@
 #include "uarm_endian.h"
 #include "util.h"
 
-struct ArmRomPiece {
-    struct ArmRomPiece *next;
-    struct ArmRom *rom;
-    uint32_t base, size;
-    uint32_t *buf;
-    uint32_t *bufPeephole;
-};
-
 struct ArmRom {
-    uint32_t start, opAddr;
-    struct ArmRomPiece *pieces;
-    enum RomChipType chipType;
+    uint32_t base, size;
+    uint32_t *data;
+    uint32_t *dataPeephole;
 };
 
 static inline bool access(uint8_t *source, uint_fast8_t size, void *bufP) {
@@ -71,74 +63,36 @@ static inline bool access(uint8_t *source, uint_fast8_t size, void *bufP) {
 bool romAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write, void *bufP) {
     if (write) return false;
 
-    struct ArmRomPiece *piece = (struct ArmRomPiece *)userData;
+    struct ArmRom *rom = (struct ArmRom *)userData;
 
-    return access((uint8_t *)piece->buf + (pa - piece->base), size, bufP);
+    return access((uint8_t *)rom->data + (pa - rom->base), size, bufP);
 }
 
 bool romInstructionFetch(void *userData, uint32_t pa, uint_fast8_t size, void *bufP) {
-    struct ArmRomPiece *piece = (struct ArmRomPiece *)userData;
+    struct ArmRom *rom = (struct ArmRom *)userData;
 
-    return access((uint8_t *)piece->bufPeephole + (pa - piece->base), size, bufP);
+    return access((uint8_t *)rom->dataPeephole + (pa - rom->base), size, bufP);
 }
 
-struct ArmRom *romInit(struct ArmMem *mem, uint32_t adr, void **pieces, const uint32_t *pieceSizes,
-                       uint32_t numPieces, enum RomChipType chipType) {
+struct ArmRom *romInit(struct ArmMem *mem, uint32_t adr, void *data, const uint32_t size) {
     struct ArmRom *rom = (struct ArmRom *)malloc(sizeof(*rom));
-    struct ArmRomPiece *prev = NULL, *t, *piece = NULL;
-    uint32_t i;
-
     if (!rom) ERR("cannot alloc ROM at 0x%08x", adr);
 
     memset(rom, 0, sizeof(*rom));
 
-    if (numPieces > 1 && chipType != RomWriteIgnore && chipType != RomWriteError)
-        ERR("piecewise roms cannot be writeable\n");
+    rom->base = adr;
+    rom->data = (uint32_t *)data;
+    rom->size = size;
 
-    rom->start = adr;
+    rom->dataPeephole = malloc(size);
+    if (!rom->dataPeephole) ERR("failed to allocate shadow buffer for peephole optimizations");
 
-    for (i = 0; i < numPieces; i++) {
-        piece = (struct ArmRomPiece *)malloc(sizeof(*piece));
-        if (!piece) ERR("cannot alloc ROM piece at 0x%08x", adr);
+    memcpy(rom->dataPeephole, rom->data, rom->size);
 
-        memset(piece, 0, sizeof(*piece));
-        piece->next = prev;  // we'll reverse the list later
-
-        if (adr & 0x1f) ERR("rom piece cannot start at 0x%08x\n", adr);
-
-        piece->base = adr;
-        piece->size = *pieceSizes++;
-        piece->buf = (uint32_t *)*pieces++;
-        piece->rom = rom;
-
-        piece->bufPeephole = malloc(piece->size);
-        if (!piece->bufPeephole) ERR("failed to allocate shadow buffer for peephole optimizations");
-
-        memcpy(piece->bufPeephole, piece->buf, piece->size);
-
-        adr += piece->size;
-
-        if (!memRegionAdd(mem, piece->base, piece->size, romAccessF, piece))
-            ERR("cannot add ROM piece at 0x%08x to MEM\n", adr);
-    }
-
-    // we linked the list in reverse. fix this
-    while (piece) {
-        t = piece->next;
-        piece->next = rom->pieces;
-        rom->pieces = piece;
-        piece = t;
-    }
-
-    rom->chipType = chipType;
+    if (!memRegionAddRom(mem, adr, size, romAccessF, rom))
+        ERR("cannot add RAM at 0x%08x to MEM\n", adr);
 
     return rom;
 }
 
-void *romGetPeepholeBuffer(struct ArmRom *rom, uint32_t addr) {
-    for (struct ArmRomPiece *piece = rom->pieces; piece != NULL; piece = piece->next) {
-        if (piece->base <= addr && addr < piece->base + piece->size) return piece->bufPeephole;
-    }
-
-    return NULL;
-}
+void *romGetPeepholeBuffer(struct ArmRom *rom) { return rom->dataPeephole; }

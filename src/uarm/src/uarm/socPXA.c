@@ -146,9 +146,9 @@ static void socUartPrvWrite(uint_fast16_t chr, void *userData) {
 static void socCycleBatch1(void *userData);
 static void socCycleBatch2(void *userData);
 
-struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t romNumPieces,
-                    uint32_t sdNumSectors, SdSectorR sdR, SdSectorW sdW, uint8_t *nandContent,
-                    size_t nandSize, int gdbPort, uint_fast8_t socRev) {
+struct SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSectorR sdR,
+                    SdSectorW sdW, uint8_t *nandContent, size_t nandSize, int gdbPort,
+                    uint_fast8_t socRev) {
     struct SoC *soc = (struct SoC *)malloc(sizeof(struct SoC));
     struct SocPeriphs sp = {};
     uint32_t *ramBuffer;
@@ -175,25 +175,24 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
     ramBuffer = (uint32_t *)malloc(deviceGetRamSize());
     if (!ramBuffer) ERR("cannot alloc RAM space\n");
 
-    soc->ram = ramInit(soc->mem, RAM_BASE, deviceGetRamSize(), ramBuffer);
+    soc->ram = ramInit(soc->mem, RAM_BASE, deviceGetRamSize(), ramBuffer, true);
     if (!soc->ram) ERR("Cannot init RAM");
 
-    soc->rom =
-        romInit(soc->mem, ROM_BASE, romPieces, romPieceSizes, romNumPieces, deviceGetRomMemType());
+    soc->rom = romInit(soc->mem, ROM_BASE, romData, romSize);
     if (!soc->rom) ERR("Cannot init ROM1");
 
-    void *peepholeBuffer = romGetPeepholeBuffer(soc->rom, ROM_BASE);
+    void *peepholeBuffer = romGetPeepholeBuffer(soc->rom);
     if (!peepholeBuffer) ERR("unable to obtain peephole buffer");
 
-    pacePatchInit(soc->pacePatch, ROM_BASE, peepholeBuffer, romPieceSizes[0]);
-    peepholeOptimize((uint32_t *)peepholeBuffer, romPieceSizes[0]);
+    pacePatchInit(soc->pacePatch, ROM_BASE, peepholeBuffer, romSize);
+    peepholeOptimize((uint32_t *)peepholeBuffer, romSize);
 
     switch (deviceGetRamTerminationStyle()) {
         case RamTerminationMirror:
 
             // ram mirror for ram probe code
-            soc->ramMirror =
-                ramInit(soc->mem, RAM_BASE + deviceGetRamSize(), deviceGetRamSize(), ramBuffer);
+            soc->ramMirror = ramInit(soc->mem, RAM_BASE + deviceGetRamSize(), deviceGetRamSize(),
+                                     ramBuffer, false);
             if (!soc->ramMirror) ERR("Cannot init RAM mirror");
             break;
 
@@ -232,7 +231,7 @@ struct SoC *socInit(void **romPieces, const uint32_t *romPieceSizes, uint32_t ro
         ramBuffer = (uint32_t *)malloc(SRAM_SIZE);
         if (!ramBuffer) ERR("cannot alloc SRAM space\n");
 
-        soc->sram = ramInit(soc->mem, SRAM_BASE, SRAM_SIZE, ramBuffer);
+        soc->sram = ramInit(soc->mem, SRAM_BASE, SRAM_SIZE, ramBuffer, false);
         if (!soc->ram) ERR("Cannot init SRAM");
     }
 
