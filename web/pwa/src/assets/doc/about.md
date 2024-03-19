@@ -142,11 +142,10 @@ reloading will apply the update.
 
 In order to force check for an update terminate and restart the app.
 
-If you experience any issues with the update process (which may be caused by
-browser bugs), such as repeated update notifications without the "New
-version..." dialog on reload or the app not updating to the most recent version, go to
-the "About" tab, scroll to the bottom and select the "reset worker" link at the
-bottom of the page.
+If you experience any browser bugs related to the update process such as
+repeated update notifications without the "New version..." dialog on reload or
+the app not updating to the most recent version, go to the "About" tab, scroll
+to the bottom and select the "reset worker" link at the bottom of the page. 
 
 # Known issues and limitations
 
