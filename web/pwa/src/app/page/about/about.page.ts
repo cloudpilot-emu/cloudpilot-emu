@@ -5,6 +5,7 @@ import { VERSION } from '@pwa/helper/version';
 import { ServiceWorkerService } from '@pwa/service/service-worker.service';
 import aboutUrl from '@assets/doc/about.md';
 import changelogUrl from '@root/CHANGELOG.md';
+import { debounce } from '@pwa/helper/debounce';
 
 @Component({
     selector: 'app-about',
@@ -39,6 +40,11 @@ export class AboutPage {
 
     get serviceWorkerAvailable(): boolean {
         return this.serviceWorkerService.isRegistered();
+    }
+
+    @debounce()
+    async resetWorker(): Promise<void> {
+        await this.serviceWorkerService.reload();
     }
 
     loading = true;

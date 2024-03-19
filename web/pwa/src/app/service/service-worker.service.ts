@@ -2,13 +2,18 @@ import { Event } from 'microevent.ts';
 import { environment } from '../../environments/environment';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
+import { Mutex } from 'async-mutex';
+import { AlertService } from './alert.service';
 
 const WORKER_URL = 'ngsw-worker.js';
 const REGISTRATION_DELAY_MILLISECONDS = 3000;
 
 @Injectable({ providedIn: 'root' })
 export class ServiceWorkerService {
-    constructor(private loadingController: LoadingController) {
+    constructor(
+        private loadingController: LoadingController,
+        private alertService: AlertService,
+    ) {
         void this.register();
     }
 
@@ -18,6 +23,45 @@ export class ServiceWorkerService {
 
     isRegistered(): boolean {
         return !!navigator.serviceWorker?.controller;
+    }
+
+    async reset(): Promise<void> {
+        if (!this.registration) return;
+
+        const loader = await this.loadingController.create();
+        await loader.present();
+
+        try {
+            if (!(await this.registration.unregister())) throw new Error('failed to unregister worker');
+        } catch (e) {
+            await this.alertService.errorMessage('Failed to unregister service worker.');
+            return;
+        } finally {
+            await loader.dismiss();
+        }
+
+        await this.alertService.message(
+            'Service worker unregistered',
+            `
+            The current service worker has been unregistered. Please reload the app
+            in order to register a new worker for offline usage.
+        `,
+            {},
+            'Reload',
+        );
+
+        window.location.reload();
+    }
+
+    async reload(): Promise<void> {
+        if (!navigator.serviceWorker) return;
+
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) throw new Error('no service worker registered');
+
+        await registration.unregister();
+
+        await this.register();
     }
 
     async update(): Promise<void> {
@@ -35,22 +79,23 @@ export class ServiceWorkerService {
         this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     }
 
-    private async register(): Promise<void> {
-        if (!(this.isEnabled() && navigator.serviceWorker)) return;
+    private register = () =>
+        this.registerMutex.runExclusive(async () => {
+            if (!(this.isEnabled() && navigator.serviceWorker)) return;
 
-        navigator.serviceWorker.addEventListener(
-            'controllerchange',
-            () => this.reloadOnControllerChange && window.location.reload(),
-        );
+            navigator.serviceWorker.addEventListener(
+                'controllerchange',
+                () => this.reloadOnControllerChange && window.location.reload(),
+            );
 
-        await new Promise((r) => setTimeout(r, REGISTRATION_DELAY_MILLISECONDS));
+            await new Promise((r) => setTimeout(r, REGISTRATION_DELAY_MILLISECONDS));
 
-        try {
-            this.setupRegistration(await this.doRegister());
-        } catch (e) {
-            console.error(e);
-        }
-    }
+            try {
+                this.setupRegistration(await this.doRegister());
+            } catch (e) {
+                console.error(e);
+            }
+        });
 
     private async doRegister(): Promise<ServiceWorkerRegistration> {
         return navigator.serviceWorker.register(WORKER_URL, {
@@ -92,6 +137,7 @@ export class ServiceWorkerService {
 
     private registration: ServiceWorkerRegistration | undefined;
     private reloadOnControllerChange = false;
+    private registerMutex = new Mutex();
 
     readonly updateAvailableEvent = new Event();
 }

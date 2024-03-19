@@ -142,6 +142,12 @@ reloading will apply the update.
 
 In order to force check for an update terminate and restart the app.
 
+If you experience any issues with the update process (which may be caused by
+browser bugs), such as repeated update notifications without the "New
+version..." dialog on reload or the app not updating to the most recent version, go to
+the "About" tab, scroll to the bottom and select the "reset worker" link at the
+bottom of the page.
+
 # Known issues and limitations
 
 :::div{.feature-ios-or-safari}
@@ -160,6 +166,14 @@ In order to force check for an update terminate and restart the app.
     opened for more than seven days. The only way to circumvent this is to
     install CloudpilotEmu as a homescreen app (on iOS) or to add it to the dock
     (Safari).
+
+-   Safari: On rare occasions there have been issues with Safari handling 
+    CloudpilotEmu's service worker. Symptoms of this are either repeated
+    (bogus) update notifications without the "New version..." dialog on reload, or
+    the app not updating to the most recent version.
+
+    If you suspect this is happening to you, go to the "About" tab, scroll down
+    and select the "reset worker" link at the bottom of the page.
 :::
 
 ### Emulation issues

@@ -1,3 +1,8 @@
+# Next version
+
+-   Add a link that resets the service worker to the "About" tab
+    in order to allow working around rare browser bugs.
+
 # Version 1.10.1
 
 -   Apple backpedaled on disabling homescreen apps in the European
