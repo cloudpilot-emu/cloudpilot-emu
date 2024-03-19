@@ -51,4 +51,5 @@ module.exports = {
     mode: 'production',
     clientsClaim: true,
     inlineWorkboxRuntime: true,
+    cleanupOutdatedCaches: true,
 };
