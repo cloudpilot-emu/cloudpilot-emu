@@ -27,9 +27,8 @@
         CloudpilotEmu version {{ version }}
         <br />
         <a href="javascript:" (click)="showChangelog()">Changelog</a>
-        <div *ngIf="serviceWorkerAvailable">
-            app cached for offline use | <a (click)="resetWorker()">reset worker</a>
-        </div>
+        <div *ngIf="serviceWorkerAvailable">app cached for offline use</div>
+        <a href="javascript:" (click)="resetWorker()">reset worker</a>
     </div>
 
     <img class="logo" src="assets/logo.svg" />

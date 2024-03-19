@@ -53,17 +53,6 @@ export class ServiceWorkerService {
         window.location.reload();
     }
 
-    async reload(): Promise<void> {
-        if (!navigator.serviceWorker) return;
-
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (!registration) throw new Error('no service worker registered');
-
-        await registration.unregister();
-
-        await this.register();
-    }
-
     async update(): Promise<void> {
         if (!this.registration) return;
 

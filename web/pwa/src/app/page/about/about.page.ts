@@ -44,7 +44,7 @@ export class AboutPage {
 
     @debounce()
     async resetWorker(): Promise<void> {
-        await this.serviceWorkerService.reload();
+        await this.serviceWorkerService.reset();
     }
 
     loading = true;
