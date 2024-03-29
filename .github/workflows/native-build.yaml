@@ -12,5 +12,5 @@ jobs:
       - name: Install dependencies
         run: 'sudo apt-get update && sudo apt-get -y install build-essential libreadline-dev libboost-all-dev libsdl2-image-dev libsdl2-dev'
       - name: Build
-        run: 'echo "CFLAGS_NATIVE = -O0" > src/Makefile.local && make -j2'
+        run: 'echo "CFLAGS_NATIVE = -O0 -DENABLE_DEBUGGER $(shell sdl2-config --cflags)" > src/Makefile.local && make -j2'
     
