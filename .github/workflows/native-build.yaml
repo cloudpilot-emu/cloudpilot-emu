@@ -10,7 +10,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install dependencies
-        run: 'sudo -y apt-get install build-essential libreadline-dev libboost-all-dev libsdl2-image-dev libsdl2-dev'
+        run: 'sudo apt-get -y install build-essential libreadline-dev libboost-all-dev libsdl2-image-dev libsdl2-dev'
       - name: Build
         run: 'echo "CFLAGS_NATIVE = -O0" > src/Makefile.local && make -j2'
     
