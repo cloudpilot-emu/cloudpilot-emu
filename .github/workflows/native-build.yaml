@@ -1,0 +1,16 @@
+name: Compile native app on Linux
+on:
+  push:
+    branches:
+      - '*'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: 'apt-get install build-essential libreadline-dev libboost-all-dev libsdl2-image-dev libsdl2-dev'
+      - name: Build
+        run: 'echo "CFLAGS_NATIVE = -O0" > src/Makefile.local && make -j2'
+    
