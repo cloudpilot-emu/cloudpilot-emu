@@ -186,6 +186,7 @@ void EmPatchMgr::Save(T& savestate) {
         TailpatchType filler;
         filler.fContext.fViaJsrA1 = false;
         filler.fContext.fViaTrap = false;
+        filler.fCount = 0;
 
         for (size_t i = 0; i < MAX_INSTALLED_TAILPATCHES - gInstalledTailpatches.size(); i++)
             DoSaveLoad(helper, filler);

@@ -1,5 +1,7 @@
 #include "ZipfileWalker.h"
 
+#include <cstdlib>
+
 #include "zip/zip.h"
 
 ZipfileWalker::ZipfileWalker(size_t bufferSize, void* buffer) {
