@@ -1,6 +1,8 @@
 #ifndef _ZIPFILE_ITERATOR_H_
 #define _ZIPFILE_ITERATOR_H_
 
+#include <cstdint>
+
 #include "VfsIterator.h"
 #include "zip.h"
 
