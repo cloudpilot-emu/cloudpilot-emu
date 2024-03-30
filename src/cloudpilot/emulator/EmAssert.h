@@ -18,7 +18,7 @@
 extern "C"
 #endif
     void
-    MyAssertFailed(const char* assertion, const char* file, unsigned int line);
+    MyAssertFailed(const char* assertion, const char* file, unsigned int line) __attribute__ ((noreturn));
 
 // Use EmAssert to assert only in debug mode.
 // Use EmASSERT to assert even in release mode.

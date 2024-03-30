@@ -8,9 +8,6 @@ MemoryRegionMap::MemoryRegionMap() {
 void MemoryRegionMap::AllocateRegion(MemoryRegion region, uint32 size) {
     EmAssert(static_cast<uint8>(region) < regionMap.size());
 
-    // Work around bogus GCC warning
-    if (static_cast<uint8>(region) >= regionMap.size()) return;
-
     EmAssert(regionMap[static_cast<uint8>(region)] == 0);
     EmAssert(size % (region == MemoryRegion::metadata ? 1024 : 8192) == 0);
 
@@ -19,9 +16,6 @@ void MemoryRegionMap::AllocateRegion(MemoryRegion region, uint32 size) {
 
 uint32 MemoryRegionMap::GetRegionSize(MemoryRegion region) const {
     EmAssert(static_cast<uint8>(region) < regionMap.size());
-
-    // Work around bogus GCC warning
-    if (static_cast<uint8>(region) >= regionMap.size()) return 0;
 
     return regionMap[static_cast<uint8>(region)];
 }
