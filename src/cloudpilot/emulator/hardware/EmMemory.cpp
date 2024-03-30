@@ -539,23 +539,6 @@ bool Memory::LoadMemoryV4(void* memory, size_t size) {
     uint8* toc = static_cast<uint8*>(memory) + size - 1024;
     uint32 offset = 0;
 
-    // this assumes that we only add new regions and never remove old ones
-    for (const auto region : ORDERED_REGIONS) {
-        const uint32 regionFromImage = get32(toc);
-        const uint32 sizeFromImage = get32(toc + 4);
-
-        if ((regionFromImage != static_cast<uint8>(region) ||
-             sizeFromImage != regionMap.GetRegionSize(region))) {
-            memset(dirtyPageRegionPointers[static_cast<uint8>(region)], 0xff,
-                   regionMap.GetRegionSize(region) >> 13);
-            break;
-        } else {
-            toc += 8;
-        }
-
-        offset += regionMap.GetRegionSize(region);
-    }
-
     toc = static_cast<uint8*>(memory) + size - 1024;
     offset = 0;
 
