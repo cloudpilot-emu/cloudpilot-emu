@@ -453,6 +453,8 @@ void socSleep(SoC *soc) {
     if (soc->sleeping) return;
 
     soc->sleeping = true;
+
+    soc->clock->RescheduleClient(CLOCK_CLIENT_TIMER, pxaTimrTicksToNextInterrupt(soc->tmr));
     //  soc->sleepAtCycle = soc->accumulated_cycles;
     //  printf("sleep\n");
 }
@@ -461,6 +463,8 @@ void socWakeup(SoC *soc, uint8_t wakeupSource) {
     if (!soc->sleeping) return;
 
     soc->sleeping = false;
+
+    soc->clock->RescheduleClient(CLOCK_CLIENT_TIMER, 1);
     // printf("wakeupt after %llu cycles from %u\n", soc->accumulated_cycles - soc->sleepAtCycle,
     //        (int)wakeupSource);
 }
@@ -486,8 +490,9 @@ static void socCycleBatch2(struct SoC *soc) {
 uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
     switch (clientType) {
         case CLOCK_CLIENT_TIMER:
-            pxaTimrTick(tmr);
-            return 1;
+            pxaTimrTick(tmr, batchedTicks);
+
+            return sleeping ? pxaTimrTicksToNextInterrupt(tmr) : 1;
 
         case CLOCK_CLIENT_RTC:
             pxaRtcTick(rtc);

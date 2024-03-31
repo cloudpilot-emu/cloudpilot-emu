@@ -2,6 +2,7 @@
 
 #include "pxa_TIMR.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -29,7 +30,7 @@ static void pxaTimrPrvRaiseLowerInts(struct PxaTimr *timr) {
     socIcInt(timr->ic, PXA_I_TIMR3, (timr->OSSR & 8) != 0);
 }
 
-static void pxaTimrPrvCheckMatch(struct PxaTimr *timr, uint_fast8_t idx) {
+static void pxaTimrPrvCheckMatchSingleStep(struct PxaTimr *timr, uint_fast8_t idx) {
     uint_fast8_t v = 1UL << idx;
 
     if (timr->OSCR == timr->OSMR[idx]) {
@@ -39,10 +40,30 @@ static void pxaTimrPrvCheckMatch(struct PxaTimr *timr, uint_fast8_t idx) {
     }
 }
 
-static void pxaTimrPrvUpdate(struct PxaTimr *timr) {
+static void pxaTimrPrvCheckMatchMultiStep(struct PxaTimr *timr, uint_fast8_t idx, uint32_t oscrOld,
+                                          uint32_t batchedTicks) {
+    uint_fast8_t v = 1UL << idx;
+
+    if (batchedTicks >= (uint32_t)(timr->OSMR[idx] - oscrOld)) {
+        if (idx == 3 && timr->OWER) ERR("WDT fires\n");
+
+        if (timr->OIER & v) timr->OSSR |= v;
+    }
+}
+
+static void pxaTimrPrvUpdateSingleStep(struct PxaTimr *timr) {
     uint_fast8_t i;
 
-    for (i = 0; i < 4; i++) pxaTimrPrvCheckMatch(timr, i);
+    for (i = 0; i < 4; i++) pxaTimrPrvCheckMatchSingleStep(timr, i);
+
+    pxaTimrPrvRaiseLowerInts(timr);
+}
+
+static void pxaTimrPrvUpdateMultiStep(struct PxaTimr *timr, uint32_t oscrOld,
+                                      uint32_t batchedTicks) {
+    uint_fast8_t i;
+
+    for (i = 0; i < 4; i++) pxaTimrPrvCheckMatchMultiStep(timr, i, oscrOld, batchedTicks);
 
     pxaTimrPrvRaiseLowerInts(timr);
 }
@@ -69,7 +90,7 @@ static bool pxaTimrPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
             case 2:
             case 3:
                 timr->OSMR[pa] = val;
-                pxaTimrPrvUpdate(timr);
+                pxaTimrPrvUpdateSingleStep(timr);
                 break;
 
             case 4:
@@ -78,7 +99,7 @@ static bool pxaTimrPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
 
             case 5:
                 timr->OSSR = timr->OSSR & ~val;
-                pxaTimrPrvUpdate(timr);
+                pxaTimrPrvUpdateSingleStep(timr);
                 break;
 
             case 6:
@@ -87,7 +108,7 @@ static bool pxaTimrPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
 
             case 7:
                 timr->OIER = val;
-                pxaTimrPrvUpdate(timr);
+                pxaTimrPrvUpdateSingleStep(timr);
                 break;
         }
     } else {
@@ -135,7 +156,31 @@ struct PxaTimr *pxaTimrInit(struct ArmMem *physMem, struct SocIc *ic) {
     return timr;
 }
 
-void pxaTimrTick(struct PxaTimr *timr) {
-    timr->OSCR++;
-    pxaTimrPrvUpdate(timr);
+void pxaTimrTick(struct PxaTimr *timr, uint32_t batchedTicks) {
+    if (batchedTicks == 1) {
+        timr->OSCR++;
+        pxaTimrPrvUpdateSingleStep(timr);
+    } else {
+        const uint32_t oscrOld = timr->OSCR;
+        timr->OSCR += batchedTicks;
+
+        pxaTimrPrvUpdateMultiStep(timr, oscrOld, batchedTicks);
+    }
+}
+
+uint32_t pxaTimrTicksToNextInterrupt(struct PxaTimr *timr) {
+    uint32_t ticksToNextInterrupt = ~0;
+
+    for (uint8_t i = 0; i < 4; i++) {
+        const uint8_t v = 1UL << i;
+
+        if ((timr->OIER & v) == 0) continue;
+        if ((timr->OSSR & v) != 0) return 1;
+
+        const uint32_t delta = timr->OSMR[i] - timr->OSCR;
+
+        if (delta < ticksToNextInterrupt && delta != 0) ticksToNextInterrupt = delta;
+    }
+
+    return ticksToNextInterrupt;
 }
