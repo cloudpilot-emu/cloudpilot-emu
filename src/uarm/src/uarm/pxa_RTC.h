@@ -4,7 +4,6 @@
 #define _PXA_RTC_H_
 
 #include "CPU.h"
-#include "clock.h"
 #include "mem.h"
 #include "soc_IC.h"
 
@@ -14,7 +13,9 @@ extern "C" {
 
 struct PxaRtc;
 
-struct PxaRtc* pxaRtcInit(struct ArmMem* physMem, struct SocIc* ic, struct Clock* clock);
+struct PxaRtc* pxaRtcInit(struct ArmMem* physMem, struct SocIc* ic);
+
+void pxaRtcTick(struct PxaRtc* rtc);
 
 #ifdef __cplusplus
 }

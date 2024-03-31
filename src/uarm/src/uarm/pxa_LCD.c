@@ -373,9 +373,7 @@ static void pxaLcdPrvScreenDataDma(struct PxaLcd *lcd, uint32_t addr /*PA*/, uin
     }
 }
 
-static void pxaLcdFrame(void *userData) {
-    struct PxaLcd *lcd = userData;
-
+void pxaLcdTick(struct PxaLcd *lcd) {
     // every other call starts a frame, the others end one [this generates spacing between
     // interrupts so as to not confuse guest OS]
 
@@ -457,8 +455,8 @@ uint32_t *pxaLcdGetPendingFrame(struct PxaLcd *lcd) {
 
 void pxaLcdResetPendingFrame(struct PxaLcd *lcd) { lcd->frame_pending = false; }
 
-struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, struct Clock *clock,
-                          uint16_t width, uint16_t height) {
+struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, uint16_t width,
+                          uint16_t height) {
     struct PxaLcd *lcd = (struct PxaLcd *)malloc(sizeof(*lcd));
 
     if (!lcd) ERR("cannot alloc LCD");
@@ -476,7 +474,7 @@ struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, struct Clock
     if (!memRegionAdd(physMem, PXA_LCD_BASE, PXA_LCD_SIZE, pxaLcdPrvMemAccessF, lcd))
         ERR("cannot add LCD to MEM\n");
 
-    clockRegisterConsumer(clock, 1000000000ULL / (64 * 3 * 60), pxaLcdFrame, lcd);
+    // clockRegisterConsumer(clock, 1000000000ULL / (64 * 3 * 60), pxaLcdFrame, lcd);
 
     return lcd;
 }

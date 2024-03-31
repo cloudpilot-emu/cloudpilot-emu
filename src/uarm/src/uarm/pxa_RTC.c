@@ -98,9 +98,7 @@ static bool pxaRtcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
     return true;
 }
 
-static void pxaRtcUpdate(void *userData);
-
-struct PxaRtc *pxaRtcInit(struct ArmMem *physMem, struct SocIc *ic, struct Clock *clock) {
+struct PxaRtc *pxaRtcInit(struct ArmMem *physMem, struct SocIc *ic) {
     struct PxaRtc *rtc = (struct PxaRtc *)malloc(sizeof(*rtc));
 
     if (!rtc) ERR("cannot alloc RTC");
@@ -112,14 +110,12 @@ struct PxaRtc *pxaRtcInit(struct ArmMem *physMem, struct SocIc *ic, struct Clock
     if (!memRegionAdd(physMem, PXA_RTC_BASE, PXA_RTC_SIZE, pxaRtcPrvMemAccessF, rtc))
         ERR("cannot add RTC to MEM\n");
 
-    clockRegisterConsumer(clock, 1000000000ULL, pxaRtcUpdate, rtc);
+    // clockRegisterConsumer(clock, 1000000000ULL, pxaRtcUpdate, rtc);
 
     return rtc;
 }
 
-static void pxaRtcUpdate(void *userData) {
-    struct PxaRtc *rtc = userData;
-
+void pxaRtcTick(struct PxaRtc *rtc) {
     rtc->RCNR++;
     pxaRtcPrvUpdate(rtc);
 }

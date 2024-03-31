@@ -2,8 +2,11 @@
 .deps
 .build-emcc
 .deps-emcc
+.build-test
+.deps-test
 
 src/uarm-bin
+src/test/test
 src/uarm_web*
 Makefile.local
 

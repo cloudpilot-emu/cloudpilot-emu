@@ -41,6 +41,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../util.h"
 #include "device.h"
 #include "keys.h"
 #include "peephole.h"
@@ -48,7 +49,6 @@
 #include "pxa270_KPC.h"
 #include "pxa270_UDC.h"
 #include "pxa270_WMMX.h"
-#include "util.h"
 #include "vSD.h"
 
 #define CPUID_PXA255 0x69052D06ul  // spepping A0
@@ -65,58 +65,60 @@
 #define PXA_PWR_I2C_BASE 0x40F00180UL
 
 struct SoC {
-    struct SocUart *ffUart, *hwUart, *stUart, *btUart;
-    struct SocSsp *ssp[3];
-    struct SocGpio *gpio;
-    struct SocAC97 *ac97;
-    struct SocDma *dma;
-    struct SocI2s *i2s;
-    struct SocI2c *i2c;
-    struct SocIc *ic;
+    SocUart *ffUart, *hwUart, *stUart, *btUart;
+    SocSsp *ssp[3];
+    SocGpio *gpio;
+    SocAC97 *ac97;
+    SocDma *dma;
+    SocI2s *i2s;
+    SocI2c *i2c;
+    SocIc *ic;
     bool mouseDown;
     bool sleeping;
     uint64_t sleepAtCycle;
 
-    struct PxaMemCtrlr *memCtrl;
-    struct PxaPwrClk *pwrClk;
-    struct SocI2c *pwrI2c;
-    struct PxaPwm *pwm[4];
-    struct PxaTimr *tmr;
-    struct PxaMmc *mmc;
-    struct PxaRtc *rtc;
-    struct PxaLcd *lcd;
+    PxaMemCtrlr *memCtrl;
+    PxaPwrClk *pwrClk;
+    SocI2c *pwrI2c;
+    PxaPwm *pwm[4];
+    PxaTimr *tmr;
+    PxaMmc *mmc;
+    PxaRtc *rtc;
+    PxaLcd *lcd;
 
     union {
         // 25x/26x
         struct {
-            struct Pxa255dsp *dsp;
-            struct Pxa255Udc *udc1;
+            Pxa255dsp *dsp;
+            Pxa255Udc *udc1;
         };
         // PXA27x
         struct {
-            struct Pxa270wmmx *wmmx;
-            struct Pxa270Udc *udc2;
-            struct PxaImc *imc;
-            struct PxaKpc *kpc;
+            Pxa270wmmx *wmmx;
+            Pxa270Udc *udc2;
+            PxaImc *imc;
+            PxaKpc *kpc;
         };
     };
 
-    struct ArmRam *sram;
-    struct ArmRam *ram;
-    struct ArmRam *ramMirror;       // mirror for ram termination
-    struct ArmRom *ramWriteIgnore;  // write ignore for ram termination
-    struct ArmRom *rom;
-    struct ArmMem *mem;
-    struct ArmCpu *cpu;
-    struct Clock *clock;
-    struct PacePatch *pacePatch;
-    struct PatchDispatch *patchDispatch;
-    struct SyscallDispatch *syscallDispatch;
+    ArmRam *sram;
+    ArmRam *ram;
+    ArmRam *ramMirror;       // mirror for ram termination
+    ArmRom *ramWriteIgnore;  // write ignore for ram termination
+    ArmRom *rom;
+    ArmMem *mem;
+    ArmCpu *cpu;
+    Clock<SoC> *clock;
+    PacePatch *pacePatch;
+    PatchDispatch *patchDispatch;
+    SyscallDispatch *syscallDispatch;
 
-    struct Keypad *kp;
-    struct VSD *vSD;
+    Keypad *kp;
+    VSD *vSD;
 
-    struct Device *dev;
+    Device *dev;
+
+    uint32_t DispatchTicks(uint32_t clientType, uint32_t batchedTicks);
 };
 
 static uint_fast16_t socUartPrvRead(void *userData) {
@@ -143,13 +145,10 @@ static void socUartPrvWrite(uint_fast16_t chr, void *userData) {
     socExtSerialWriteChar(chr);
 }
 
-static void socCycleBatch1(void *userData);
-static void socCycleBatch2(void *userData);
-
-struct SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSectorR sdR,
-                    SdSectorW sdW, uint8_t *nandContent, size_t nandSize, int gdbPort,
-                    uint_fast8_t socRev) {
-    struct SoC *soc = (struct SoC *)malloc(sizeof(struct SoC));
+SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSectorR sdR,
+             SdSectorW sdW, uint8_t *nandContent, size_t nandSize, int gdbPort,
+             uint_fast8_t socRev) {
+    SoC *soc = (SoC *)malloc(sizeof(SoC));
     struct SocPeriphs sp = {};
     uint32_t *ramBuffer;
 
@@ -157,7 +156,7 @@ struct SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors
 
     soc->pacePatch = createPacePatch();
 
-    soc->clock = clockInit();
+    soc->clock = new Clock<SoC>(*soc);
 
     soc->mem = memInit();
     if (!soc->mem) ERR("Cannot init physical memory manager");
@@ -238,10 +237,10 @@ struct SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors
     soc->gpio = socGpioInit(soc->mem, soc->ic, socRev);
     if (!soc->gpio) ERR("Cannot init PXA's GPIO");
 
-    soc->tmr = pxaTimrInit(soc->mem, soc->ic, soc->clock);
+    soc->tmr = pxaTimrInit(soc->mem, soc->ic);
     if (!soc->tmr) ERR("Cannot init PXA's OSTIMER");
 
-    soc->rtc = pxaRtcInit(soc->mem, soc->ic, soc->clock);
+    soc->rtc = pxaRtcInit(soc->mem, soc->ic);
     if (!soc->rtc) ERR("Cannot init PXA's RTC");
 
     soc->ffUart = socUartInit(soc->mem, soc->ic, PXA_FFUART_BASE, PXA_I_FFUART);
@@ -331,11 +330,11 @@ struct SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors
     soc->mmc = pxaMmcInit(soc->mem, soc->ic, soc->dma);
     if (!soc->mmc) ERR("Cannot init PXA's MMC");
 
-    struct DeviceDisplayConfiguration displayConfiguration;
+    DeviceDisplayConfiguration displayConfiguration;
     deviceGetDisplayConfiguration(&displayConfiguration);
 
-    soc->lcd = pxaLcdInit(soc->mem, soc->ic, soc->clock, displayConfiguration.width,
-                          displayConfiguration.height);
+    soc->lcd =
+        pxaLcdInit(soc->mem, soc->ic, displayConfiguration.width, displayConfiguration.height);
     if (!soc->lcd) ERR("Cannot init PXA's LCD");
 
     soc->kp = keypadInit(soc->gpio, true);
@@ -367,8 +366,20 @@ struct SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors
 
     if (sp.dbgUart) socUartSetFuncs(sp.dbgUart, socUartPrvRead, socUartPrvWrite, soc->hwUart);
 
-    clockRegisterConsumer(soc->clock, (36 * 1000000000ULL) / 3686400ULL, socCycleBatch1, soc);
-    clockRegisterConsumer(soc->clock, (292 * 1000000000ULL) / 3686400ULL, socCycleBatch2, soc);
+    // Timer: 3.6864 MHz
+    soc->clock->ScheduleClient(CLOCK_CLIENT_TIMER, 1_sec / 3686400ULL, 1);
+
+    // RTC: 1 Hz
+    soc->clock->ScheduleClient(CLOCK_CLIENT_RTC, 1_sec, 1);
+
+    // LCD: one frame every 64 ticks, 3 ticks per frame, 60 FPS
+    soc->clock->ScheduleClient(CLOCK_CLIENT_LCD, 1_sec / (64 * 3 * 60), 1);
+
+    // Periodic tasks 1: every 36 timer ticks
+    soc->clock->ScheduleClient(CLOCK_CLIENT_AUX_1, 36_sec / 3686400ULL, 1);
+
+    // Periodic tasks 1: every 292 timer ticks
+    soc->clock->ScheduleClient(CLOCK_CLIENT_AUX_2, 292_sec / 3686400ULL, 1);
 
     /*
             var gpio = {latches: [0x30000, 0x1400001, 0x200], inputs: [0x786c06, 0x100, 0x0],
@@ -416,29 +427,29 @@ struct SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors
     return soc;
 }
 
-void socKeyDown(struct SoC *soc, enum KeyId key) {
+void socKeyDown(SoC *soc, enum KeyId key) {
     deviceKey(soc->dev, key, true);
     keypadKeyEvt(soc->kp, key, true);
 }
 
-void socKeyUp(struct SoC *soc, enum KeyId key) {
+void socKeyUp(SoC *soc, enum KeyId key) {
     deviceKey(soc->dev, key, false);
     keypadKeyEvt(soc->kp, key, false);
 }
 
-void socPenDown(struct SoC *soc, int x, int y) {
+void socPenDown(SoC *soc, int x, int y) {
     soc->mouseDown = true;
     deviceTouch(soc->dev, x, y);
 }
 
-void socPenUp(struct SoC *soc) {
+void socPenUp(SoC *soc) {
     if (!soc->mouseDown) return;
 
     soc->mouseDown = false;
     deviceTouch(soc->dev, -1, -1);
 }
 
-void socSleep(struct SoC *soc) {
+void socSleep(SoC *soc) {
     if (soc->sleeping) return;
 
     soc->sleeping = true;
@@ -446,7 +457,7 @@ void socSleep(struct SoC *soc) {
     //  printf("sleep\n");
 }
 
-void socWakeup(struct SoC *soc, uint8_t wakeupSource) {
+void socWakeup(SoC *soc, uint8_t wakeupSource) {
     if (!soc->sleeping) return;
 
     soc->sleeping = false;
@@ -454,9 +465,7 @@ void socWakeup(struct SoC *soc, uint8_t wakeupSource) {
     //        (int)wakeupSource);
 }
 
-static void socCycleBatch1(void *userData) {
-    struct SoC *soc = userData;
-
+static void socCycleBatch1(struct SoC *soc) {
     socDmaPeriodic(soc->dma);
     socUartProcess(soc->ffUart);
     if (soc->hwUart) socUartProcess(soc->hwUart);
@@ -468,31 +477,56 @@ static void socCycleBatch1(void *userData) {
     devicePeriodic(soc->dev, 0);
 }
 
-static void socCycleBatch2(void *userData) {
-    struct SoC *soc = userData;
-
+static void socCycleBatch2(struct SoC *soc) {
     socAC97Periodic(soc->ac97);
     socI2sPeriodic(soc->i2s);
     devicePeriodic(soc->dev, 1);
 }
 
-uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
+uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
+    switch (clientType) {
+        case CLOCK_CLIENT_TIMER:
+            pxaTimrTick(tmr);
+            return 1;
+
+        case CLOCK_CLIENT_RTC:
+            pxaRtcTick(rtc);
+            return 1;
+
+        case CLOCK_CLIENT_LCD:
+            pxaLcdTick(lcd);
+            return 1;
+
+        case CLOCK_CLIENT_AUX_1:
+            socCycleBatch1(this);
+            return 1;
+
+        case CLOCK_CLIENT_AUX_2:
+            socCycleBatch2(this);
+            return 1;
+
+        default:
+            ERR("invalid client type");
+    }
+}
+
+uint64_t socRun(SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
     uint64_t cycles = 0;
 
     while (cycles < maxCycles) {
-        uint64_t cyclesToAdvance = clockCyclesToNextTick(soc->clock, cyclesPerSecond);
+        uint64_t cyclesToAdvance = soc->clock->CyclesToNextUpdate(cyclesPerSecond);
         if (cyclesToAdvance + cycles > maxCycles) cyclesToAdvance = maxCycles - cycles;
 
         const uint64_t cyclesAdvanced =
             soc->sleeping ? cyclesToAdvance : cpuCycle(soc->cpu, cyclesToAdvance);
 
-        clockAdvance(soc->clock, cyclesAdvanced, cyclesPerSecond);
+        soc->clock->Advance(cyclesAdvanced, cyclesPerSecond);
         cycles += cyclesAdvanced;
     }
 
     return cycles;
 }
 
-uint32_t *socGetPendingFrame(struct SoC *soc) { return pxaLcdGetPendingFrame(soc->lcd); }
+uint32_t *socGetPendingFrame(SoC *soc) { return pxaLcdGetPendingFrame(soc->lcd); }
 
-void socResetPendingFrame(struct SoC *soc) { return pxaLcdResetPendingFrame(soc->lcd); }
+void socResetPendingFrame(SoC *soc) { return pxaLcdResetPendingFrame(soc->lcd); }

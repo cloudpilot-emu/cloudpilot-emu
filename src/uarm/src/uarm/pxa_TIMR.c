@@ -121,9 +121,7 @@ static bool pxaTimrPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size,
     return true;
 }
 
-static void pxaTimrTick(void *userData);
-
-struct PxaTimr *pxaTimrInit(struct ArmMem *physMem, struct SocIc *ic, struct Clock *clock) {
+struct PxaTimr *pxaTimrInit(struct ArmMem *physMem, struct SocIc *ic) {
     struct PxaTimr *timr = (struct PxaTimr *)malloc(sizeof(*timr));
 
     if (!timr) ERR("cannot alloc OSTIMER");
@@ -134,14 +132,10 @@ struct PxaTimr *pxaTimrInit(struct ArmMem *physMem, struct SocIc *ic, struct Clo
     if (!memRegionAdd(physMem, PXA_TIMR_BASE, PXA_TIMR_SIZE, pxaTimrPrvMemAccessF, timr))
         ERR("cannot add OSTIMER to MEM\n");
 
-    clockRegisterConsumer(clock, 1000000000ULL / 3686400ULL, pxaTimrTick, timr);
-
     return timr;
 }
 
-static void pxaTimrTick(void *userData) {
-    struct PxaTimr *timr = userData;
-
+void pxaTimrTick(struct PxaTimr *timr) {
     timr->OSCR++;
     pxaTimrPrvUpdate(timr);
 }

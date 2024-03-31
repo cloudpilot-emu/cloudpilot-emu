@@ -4,7 +4,6 @@
 #define _PXA_LCD_H_
 
 #include "CPU.h"
-#include "clock.h"
 #include "mem.h"
 #include "soc_IC.h"
 
@@ -14,8 +13,9 @@ extern "C" {
 
 struct PxaLcd;
 
-struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, struct Clock *clock,
-                          uint16_t width, uint16_t heigh);
+struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, uint16_t width, uint16_t heigh);
+
+void pxaLcdTick(struct PxaLcd *lcd);
 
 uint32_t *pxaLcdGetPendingFrame(struct PxaLcd *lcd);
 void pxaLcdResetPendingFrame(struct PxaLcd *lcd);

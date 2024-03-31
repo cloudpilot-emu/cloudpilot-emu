@@ -19,6 +19,10 @@ CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)
 INCLUDE_EXTRA ?=
 
+CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined
+CXXFLAGS_TEST ?= $(CFLAGS_TEST)
+LDFLAGS_TEST ?= -fsanitize=address,undefined -lgtest -lgtest_main -lgmock
+
 LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image -flto
 LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno \
 	-s EXIT_RUNTIME=0 \
@@ -52,6 +56,11 @@ DEPDIR_EMCC = .deps-emcc
 DEPFLAGS_EMCC = -MT $@ -MMD -MP -MF $(DEPDIR_EMCC)/$*.d
 MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
 
+BUILDDIR_TEST = .build-test
+DEPDIR_TEST = .deps-test
+DEPFLAGS_TEST = -MT $@ -MMD -MP -MF $(DEPDIR_TEST)/$*.d
+MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
+
 SOURCE_C = 						\
 	util.c						\
 	uarm/patch_dispatch.c		\
@@ -66,7 +75,6 @@ SOURCE_C = 						\
 	uarm/gdbstub.c				\
 	uarm/vSD.c 					\
 	uarm/keys.c 				\
-	uarm/socPXA.c 				\
 	uarm/pxa_IC.c 				\
 	uarm/pxa_MMC.c 				\
 	uarm/pxa_TIMR.c 			\
@@ -94,7 +102,6 @@ SOURCE_C = 						\
 	uarm/ac97dev_WM9712L.c		\
 	uarm/pace_patch.c 			\
 	uarm/pace.c 				\
-	uarm/clock.c 				\
 	uarm/peephole.c				\
 	uarm/uae/cpudefs.c 			\
 	uarm/uae/cpuemu.c 			\
@@ -103,6 +110,7 @@ SOURCE_C = 						\
 	uarm/uae/newcpu.c
 
 SOURCE_CXX_COMMON = 			\
+	uarm/socPXA.cpp				\
 	main.cpp					\
 	MainLoop.cpp				\
 	uarm/icache.cpp				\
@@ -114,9 +122,15 @@ SOURCE_CXX_NATIVE = 			\
 	SdlRenderer.cpp				\
 	SdlEventHandler.cpp
 
+SOURCE_TEST = \
+	test/clock.cpp
+
 OBJECTS_NATIVE_C = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_NATIVE_CXX = $(SOURCE_CXX_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_NATIVE = $(OBJECTS_NATIVE_C) $(OBJECTS_NATIVE_CXX)
+
+OBJECTS_TEST_CXX = $(SOURCE_TEST:%.cpp=$(BUILDDIR_TEST)/%.o)
+OBJECTS_TEST = $(OBJECTS_TEST_CXX)
 
 OBJECTS_EMCC_C = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o)
 OBJECTS_EMCC_CXX = $(SOURCE_CXX_COMMON:%.cpp=$(BUILDDIR_EMCC)/%.o)
@@ -125,6 +139,9 @@ OBJECTS_EMCC = $(OBJECTS_EMCC_C) $(OBJECTS_EMCC_CXX)
 BINARY_NATIVE = uarm-bin
 BINARY_EMCC = uarm_web.js
 BINARY_WASM = uarm_web.wasm
+BINARY_TEST = test/test
+
+INCLUDE = $(INCLUDE_EXTRA)
 
 GARBAGE = \
 	$(BINARY_EMCC) \
@@ -139,6 +156,9 @@ GARBAGE = \
 
 bin: $(BINARY_NATIVE)
 
+test: $(BINARY_TEST)
+	$(BINARY_TEST)
+
 emscripten: $(BINARY_EMCC)
 
 $(BINARY_NATIVE): $(OBJECTS_NATIVE)
@@ -148,11 +168,17 @@ $(BINARY_EMCC): $(OBJECTS_EMCC)
 	$(LD_EMCC) -o $@ $^ $(LDFLAGS_EMCC)
 	$(WASMOPT) $(WASMOPT_FLAGS) -o ${@:.js=.wasm} ${@:.js=.wasm}
 
+$(BINARY_TEST): $(OBJECTS_TEST)
+	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_TEST)
+
 $(OBJECTS_NATIVE_C) : $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
 
 $(OBJECTS_NATIVE_CXX) : $(BUILDDIR_NATIVE)/%.o : %.cpp
 	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
+
+$(OBJECTS_TEST_CXX) : $(BUILDDIR_TEST)/%.o : %.cpp
+	$(MKDIR_TEST) && $(CXX_NATIVE) $(DEPFLAGS_TEST) $(CXXFLAGS_COMMON) $(CXXFLAGS_TEST) $(INCLUDE) -c -o $@ $<
 
 $(OBJECTS_EMCC_C) : $(BUILDDIR_EMCC)/%.o : %.c
 	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(CFLAGS_COMMON) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
@@ -163,9 +189,10 @@ $(OBJECTS_EMCC_CXX) : $(BUILDDIR_EMCC)/%.o : %.cpp
 clean:
 	-rm -fr $(GARBAGE)
 
-.PHONY: clean all bin emscripten
+.PHONY: clean all bin emscripten test
 .SUFFIXES:
 
 
 include $(shell test -e $(DEPDIR_NATIVE) && find $(DEPDIR_NATIVE) -type f)
 include $(shell test -e $(DEPDIR_EMCC) && find $(DEPDIR_EMCC) -type f)
+include $(shell test -e $(DEPDIR_TEST) && find $(DEPDIR_TEST) -type f)
