@@ -49,6 +49,7 @@
 #include "pxa270_KPC.h"
 #include "pxa270_UDC.h"
 #include "pxa270_WMMX.h"
+#include "queue.h"
 #include "vSD.h"
 
 #define CPUID_PXA255 0x69052D06ul  // spepping A0
@@ -64,6 +65,26 @@
 #define PXA_I2C_BASE 0x40301680UL
 #define PXA_PWR_I2C_BASE 0x40F00180UL
 
+#define EVENT_QUEUE_CAPACITY 64
+
+struct PenEvent {
+    bool penDown;
+    int x, y;
+
+    static PenEvent PenDown(int x, int y) { return {.penDown = true, .x = x, .y = y}; }
+
+    static PenEvent PenUp() { return {.penDown = false, .x = -1, .y = -1}; }
+};
+
+struct KeyEvent {
+    bool keyDown;
+    enum KeyId key;
+
+    static KeyEvent KeyDown(enum KeyId key) { return {.keyDown = true, .key = key}; }
+
+    static KeyEvent KeyUp(enum KeyId key) { return {.keyDown = false, .key = key}; }
+};
+
 struct SoC {
     SocUart *ffUart, *hwUart, *stUart, *btUart;
     SocSsp *ssp[3];
@@ -73,9 +94,13 @@ struct SoC {
     SocI2s *i2s;
     SocI2c *i2c;
     SocIc *ic;
+
     bool mouseDown;
     bool sleeping;
     uint64_t sleepAtTime;
+
+    Queue<PenEvent> *penEventQueue;
+    Queue<KeyEvent> *keyEventQueue;
 
     PxaMemCtrlr *memCtrl;
     PxaPwrClk *pwrClk;
@@ -157,6 +182,9 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     soc->pacePatch = createPacePatch();
 
     soc->scheduler = new Scheduler<SoC>(*soc);
+
+    soc->penEventQueue = new Queue<PenEvent>(EVENT_QUEUE_CAPACITY);
+    soc->keyEventQueue = new Queue<KeyEvent>(EVENT_QUEUE_CAPACITY);
 
     soc->mem = memInit();
     if (!soc->mem) ERR("Cannot init physical memory manager");
@@ -381,6 +409,9 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     // Periodic tasks 1: every 292 timer ticks -> ~12.6 kHz
     soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_AUX_2, 292_sec / 3686400ULL, 1);
 
+    // Pump event queues: 25 Hz
+    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_AUX_3, 40_msec, 1);
+
     /*
             var gpio = {latches: [0x30000, 0x1400001, 0x200], inputs: [0x786c06, 0x100, 0x0],
        levels: [0x7b6c04, 0x1400101, 0x200], dirs: [0xcf878178, 0xffd1beff, 0x1ffff], riseDet:
@@ -427,26 +458,36 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     return soc;
 }
 
-void socKeyDown(SoC *soc, enum KeyId key) {
-    deviceKey(soc->dev, key, true);
-    keypadKeyEvt(soc->kp, key, true);
-}
+void socKeyDown(SoC *soc, enum KeyId key) { soc->keyEventQueue->Push(KeyEvent::KeyDown(key)); }
 
-void socKeyUp(SoC *soc, enum KeyId key) {
-    deviceKey(soc->dev, key, false);
-    keypadKeyEvt(soc->kp, key, false);
-}
+void socKeyUp(SoC *soc, enum KeyId key) { soc->keyEventQueue->Push(KeyEvent::KeyUp(key)); }
 
-void socPenDown(SoC *soc, int x, int y) {
-    soc->mouseDown = true;
-    deviceTouch(soc->dev, x, y);
-}
+void socPenDown(SoC *soc, int x, int y) { soc->penEventQueue->Push(PenEvent::PenDown(x, y)); }
 
-void socPenUp(SoC *soc) {
-    if (!soc->mouseDown) return;
+void socPenUp(SoC *soc) { soc->penEventQueue->Push(PenEvent::PenUp()); }
 
-    soc->mouseDown = false;
-    deviceTouch(soc->dev, -1, -1);
+static void socPumpEventQueues(SoC *soc) {
+    if (soc->penEventQueue->GetSize() > 0) {
+        PenEvent evt(soc->penEventQueue->Pop());
+
+        if (evt.penDown) {
+            while (soc->penEventQueue->GetSize() > 0 && soc->penEventQueue->Peek().penDown) {
+                evt = soc->penEventQueue->Pop();
+            }
+        }
+
+        if (evt.penDown || soc->mouseDown) {
+            soc->mouseDown = evt.penDown;
+            deviceTouch(soc->dev, evt.x, evt.y);
+        }
+    }
+
+    if (soc->keyEventQueue->GetSize() > 0) {
+        KeyEvent evt(soc->keyEventQueue->Pop());
+
+        deviceKey(soc->dev, evt.key, evt.keyDown);
+        keypadKeyEvt(soc->kp, evt.key, evt.keyDown);
+    }
 }
 
 void socSleep(SoC *soc) {
@@ -510,6 +551,10 @@ uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
 
         case SCHEDULER_CLIENT_AUX_2:
             socCycleBatch2(this);
+            return 1;
+
+        case SCHEDULER_CLIENT_AUX_3:
+            socPumpEventQueues(this);
             return 1;
 
         default:

@@ -317,9 +317,6 @@ void socIcInt(struct SocIc *ic, uint_fast8_t intNum,
 
     uint32_t old = ic->ICPR[i];
 
-    if (raise && (intNum == PXA_I_GPIO_all || intNum == PXA_I_GPIO_0 || intNum == PXA_I_GPIO_1))
-        fprintf(stderr, "GPIO interrupt!\n");
-
     if (raise) {
         ic->ICPR[i] |= mask;
 
