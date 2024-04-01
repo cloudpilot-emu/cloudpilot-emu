@@ -75,7 +75,7 @@ struct SoC {
     SocIc *ic;
     bool mouseDown;
     bool sleeping;
-    uint64_t sleepAtCycle;
+    uint64_t sleepAtTime;
 
     PxaMemCtrlr *memCtrl;
     PxaPwrClk *pwrClk;
@@ -455,8 +455,9 @@ void socSleep(SoC *soc) {
     soc->sleeping = true;
 
     soc->scheduler->RescheduleClient(SCHEDULER_CLIENT_TIMER, pxaTimrTicksToNextInterrupt(soc->tmr));
-    //  soc->sleepAtCycle = soc->accumulated_cycles;
-    //  printf("sleep\n");
+
+    // soc->sleepAtTime = soc->scheduler->GetTime();
+    // printf("sleep\n");
 }
 
 void socWakeup(SoC *soc, uint8_t wakeupSource) {
@@ -465,7 +466,8 @@ void socWakeup(SoC *soc, uint8_t wakeupSource) {
     soc->sleeping = false;
 
     soc->scheduler->RescheduleClient(SCHEDULER_CLIENT_TIMER, 1);
-    // printf("wakeupt after %llu cycles from %u\n", soc->accumulated_cycles - soc->sleepAtCycle,
+
+    // printf("wakeupt after %llu nsec from %u\n", soc->scheduler->GetTime() - soc->sleepAtTime,
     //        (int)wakeupSource);
 }
 

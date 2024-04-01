@@ -30,6 +30,8 @@ class Scheduler {
 
     void Advance(uint64_t cycles, uint64_t cyclesPerSecond);
 
+    uint64_t GetTime() const;
+
    private:
     static constexpr int32_t SCHEDULER_CLIENT_MAX = SCHEDULER_CLIENT_AUX_5;
     static constexpr int32_t SCHEDULER_CLIENT_NONE = 0xff;
@@ -163,6 +165,11 @@ void Scheduler<T>::Advance(uint64_t cycles, uint64_t cyclesPerSecond) {
     }
 
     UpdateNextUpdate();
+}
+
+template <typename T>
+uint64_t Scheduler<T>::GetTime() const {
+    return accTime;
 }
 
 template <typename T>
