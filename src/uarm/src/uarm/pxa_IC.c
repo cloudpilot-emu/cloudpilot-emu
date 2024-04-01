@@ -2,6 +2,7 @@
 
 #include "pxa_IC.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -22,7 +23,6 @@ struct SocIc {
     uint32_t ICCR;     // Control Register
 
     uint8_t prio[40];
-    uint8_t iccr;
 
     bool wasIrq, wasFiq, gen2;
 };
@@ -166,9 +166,9 @@ static bool socIcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, b
 
         case 0x14 / 4:
             if (write)
-                ic->iccr = val & 1;
+                ic->ICCR = val & 1;
             else
-                val = ic->iccr;
+                val = ic->ICCR;
             break;
 
         case 0x18 / 4:
@@ -316,6 +316,9 @@ void socIcInt(struct SocIc *ic, uint_fast8_t intNum,
     const uint32_t mask = (1UL << (intNum % 32));
 
     uint32_t old = ic->ICPR[i];
+
+    if (raise && (intNum == PXA_I_GPIO_all || intNum == PXA_I_GPIO_0 || intNum == PXA_I_GPIO_1))
+        fprintf(stderr, "GPIO interrupt!\n");
 
     if (raise) {
         ic->ICPR[i] |= mask;
