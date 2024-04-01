@@ -20,6 +20,9 @@
 #include "soc_uWire.h"
 #include "vSD.h"
 
+#define DEVICE_PERIODIC_TIER0 0
+#define DEVICE_PERIODIC_TIER1 1
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -71,7 +74,7 @@ uint_fast8_t deviceGetSocRev(void);
 struct Device *deviceSetup(struct SocPeriphs *sp, struct Keypad *kp, struct VSD *vsd,
                            uint8_t *nandContent, size_t nandSize);
 void deviceKey(struct Device *dev, uint32_t key, bool down);
-void devicePeriodic(struct Device *dev, uint32_t cycles);
+void devicePeriodic(struct Device *dev, uint32_t tier);
 void deviceTouch(struct Device *dev, int x, int y);
 
 void deviceGetDisplayConfiguration(struct DeviceDisplayConfiguration *displayConfiguration);

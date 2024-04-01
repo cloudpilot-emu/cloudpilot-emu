@@ -176,9 +176,9 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Keypad *kp, struct VSD 
     return dev;
 }
 
-void devicePeriodic(struct Device *dev, uint32_t cycles) {
-    if (cycles == 1) wm9712Lperiodic(dev->wm9712L);
-    if (cycles == 0) directNandPeriodic(dev->nand);
+void devicePeriodic(struct Device *dev, uint32_t tier) {
+    if (tier == DEVICE_PERIODIC_TIER0) directNandPeriodic(dev->nand);
+    if (tier == DEVICE_PERIODIC_TIER1) wm9712Lperiodic(dev->wm9712L);
 }
 
 void deviceTouch(struct Device *dev, int x, int y) {

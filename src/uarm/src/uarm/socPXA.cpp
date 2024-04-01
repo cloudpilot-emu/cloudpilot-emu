@@ -478,13 +478,13 @@ static void socCycleBatch1(struct SoC *soc) {
     for (int i = 0; i < 3; i++) {
         if (soc->ssp[i]) socSspPeriodic(soc->ssp[i]);
     }
-    devicePeriodic(soc->dev, 0);
+    devicePeriodic(soc->dev, DEVICE_PERIODIC_TIER0);
 }
 
 static void socCycleBatch2(struct SoC *soc) {
     socAC97Periodic(soc->ac97);
     socI2sPeriodic(soc->i2s);
-    devicePeriodic(soc->dev, 1);
+    devicePeriodic(soc->dev, DEVICE_PERIODIC_TIER1);
 }
 
 uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
