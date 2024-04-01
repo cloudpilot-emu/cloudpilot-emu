@@ -123,7 +123,7 @@ SOURCE_CXX_NATIVE = 			\
 	SdlEventHandler.cpp
 
 SOURCE_TEST = \
-	test/clock.cpp
+	test/scheduler.cpp
 
 OBJECTS_NATIVE_C = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_NATIVE_CXX = $(SOURCE_CXX_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)

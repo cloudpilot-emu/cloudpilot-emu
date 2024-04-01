@@ -1,16 +1,16 @@
-#ifndef _CLOCK_H_
-#define _CLOCK_H_
+#ifndef _SCHEDULER_H_
+#define _SCHEDULER_H_
 
 #include <cstdint>
 
-#define CLOCK_CLIENT_TIMER 0
-#define CLOCK_CLIENT_RTC 1
-#define CLOCK_CLIENT_LCD 2
-#define CLOCK_CLIENT_AUX_1 3
-#define CLOCK_CLIENT_AUX_2 4
-#define CLOCK_CLIENT_AUX_3 5
-#define CLOCK_CLIENT_AUX_4 6
-#define CLOCK_CLIENT_AUX_5 7
+#define SCHEDULER_CLIENT_TIMER 0
+#define SCHEDULER_CLIENT_RTC 1
+#define SCHEDULER_CLIENT_LCD 2
+#define SCHEDULER_CLIENT_AUX_1 3
+#define SCHEDULER_CLIENT_AUX_2 4
+#define SCHEDULER_CLIENT_AUX_3 5
+#define SCHEDULER_CLIENT_AUX_4 6
+#define SCHEDULER_CLIENT_AUX_5 7
 
 constexpr uint64_t operator""_sec(uint64_t seconds) { return seconds * 1000000000ull; }
 constexpr uint64_t operator""_msec(uint64_t mseconds) { return mseconds * 1000000ull; }
@@ -18,9 +18,9 @@ constexpr uint64_t operator""_usec(uint64_t useconds) { return useconds * 1000ul
 constexpr uint64_t operator""_nsec(uint64_t nseconds) { return nseconds; }
 
 template <typename T>
-class Clock {
+class Scheduler {
    public:
-    explicit Clock(T& dispatchDelegate);
+    explicit Scheduler(T& dispatchDelegate);
 
     void ScheduleClient(uint32_t clientType, uint64_t period, uint32_t batchTicks);
     inline void RescheduleClient(uint32_t clientType, uint32_t batchTicks);
@@ -31,8 +31,8 @@ class Clock {
     void Advance(uint64_t cycles, uint64_t cyclesPerSecond);
 
    private:
-    static constexpr int32_t CLOCK_CLIENT_MAX = CLOCK_CLIENT_AUX_5;
-    static constexpr int32_t CLOCK_CLIENT_NONE = 0xff;
+    static constexpr int32_t SCHEDULER_CLIENT_MAX = SCHEDULER_CLIENT_AUX_5;
+    static constexpr int32_t SCHEDULER_CLIENT_NONE = 0xff;
 
     struct Client {
         uint32_t batchedTicks{0};
@@ -48,8 +48,8 @@ class Clock {
    private:
     T& dispatchDelegate;
 
-    Client clients[CLOCK_CLIENT_MAX + 1];
-    uint32_t queueBuffer[CLOCK_CLIENT_MAX + 2];
+    Client clients[SCHEDULER_CLIENT_MAX + 1];
+    uint32_t queueBuffer[SCHEDULER_CLIENT_MAX + 2];
     uint32_t* queue{&queueBuffer[1]};
 
     uint64_t accTime{0};
@@ -61,12 +61,12 @@ class Clock {
 ///////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
-Clock<T>::Clock(T& dispatchDelegate) : dispatchDelegate(dispatchDelegate) {
-    for (int i = -1; i <= CLOCK_CLIENT_MAX; i++) queue[i] = CLOCK_CLIENT_NONE;
+Scheduler<T>::Scheduler(T& dispatchDelegate) : dispatchDelegate(dispatchDelegate) {
+    for (int i = -1; i <= SCHEDULER_CLIENT_MAX; i++) queue[i] = SCHEDULER_CLIENT_NONE;
 }
 
 template <typename T>
-void Clock<T>::ScheduleClient(uint32_t clientType, uint64_t period, uint32_t batchTicks) {
+void Scheduler<T>::ScheduleClient(uint32_t clientType, uint64_t period, uint32_t batchTicks) {
     Client& client{clients[clientType]};
 
     client.period = period;
@@ -77,7 +77,7 @@ void Clock<T>::ScheduleClient(uint32_t clientType, uint64_t period, uint32_t bat
 }
 
 template <typename T>
-void Clock<T>::RescheduleClient(uint32_t clientType, uint32_t batchTicks) {
+void Scheduler<T>::RescheduleClient(uint32_t clientType, uint32_t batchTicks) {
     if (batchTicks == 0) return UnscheduleClient(clientType);
 
     Client& client{clients[clientType]};
@@ -106,7 +106,7 @@ void Clock<T>::RescheduleClient(uint32_t clientType, uint32_t batchTicks) {
             if (inserted) break;
         }
 
-        if (!inserted && (nextClientType > CLOCK_CLIENT_MAX ||
+        if (!inserted && (nextClientType > SCHEDULER_CLIENT_MAX ||
                           clients[nextClientType].nextUpdate > nextUpdate)) {
             queue[idx] = clientType;
             queue[clientType] = nextClientType;
@@ -116,16 +116,16 @@ void Clock<T>::RescheduleClient(uint32_t clientType, uint32_t batchTicks) {
         }
 
         idx = nextClientType;
-    } while (idx <= CLOCK_CLIENT_MAX);
+    } while (idx <= SCHEDULER_CLIENT_MAX);
 
     UpdateNextUpdate();
 }
 
 template <typename T>
-void Clock<T>::UnscheduleClient(uint32_t clientType) {
+void Scheduler<T>::UnscheduleClient(uint32_t clientType) {
     clients[clientType].batchedTicks = 0;
 
-    for (int32_t idx = -1; idx <= CLOCK_CLIENT_MAX; idx = queue[idx]) {
+    for (int32_t idx = -1; idx <= SCHEDULER_CLIENT_MAX; idx = queue[idx]) {
         const uint32_t nextClientType = queue[idx];
 
         if (nextClientType == clientType) {
@@ -138,18 +138,18 @@ void Clock<T>::UnscheduleClient(uint32_t clientType) {
 }
 
 template <typename T>
-uint64_t Clock<T>::CyclesToNextUpdate(uint64_t cyclesPerSecond) {
+uint64_t Scheduler<T>::CyclesToNextUpdate(uint64_t cyclesPerSecond) {
     return ((nextUpdate - accTime) * cyclesPerSecond) / 1_sec + 1;
 }
 
 template <typename T>
-void Clock<T>::Advance(uint64_t cycles, uint64_t cyclesPerSecond) {
+void Scheduler<T>::Advance(uint64_t cycles, uint64_t cyclesPerSecond) {
     accTime += ((cycles * 1_sec) / cyclesPerSecond);
     if (accTime < nextUpdate) return;
 
     while (true) {
         const uint32_t clientType = queue[-1];
-        if (clientType > CLOCK_CLIENT_MAX) break;
+        if (clientType > SCHEDULER_CLIENT_MAX) break;
 
         Client& client{clients[clientType]};
 
@@ -166,12 +166,12 @@ void Clock<T>::Advance(uint64_t cycles, uint64_t cyclesPerSecond) {
 }
 
 template <typename T>
-void Clock<T>::UpdateNextUpdate() {
-    if (queue[-1] <= CLOCK_CLIENT_MAX) {
+void Scheduler<T>::UpdateNextUpdate() {
+    if (queue[-1] <= SCHEDULER_CLIENT_MAX) {
         nextUpdate = clients[queue[-1]].nextUpdate;
     } else {
         nextUpdate = accTime + 1_sec;
     }
 }
 
-#endif  // _CLOCK_H_
+#endif  // _SCHEDULER_H_

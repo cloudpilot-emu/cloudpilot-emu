@@ -5,12 +5,12 @@
 #include "RAM.h"
 #include "ROM.h"
 #include "SoC.h"
-#include "clock.h"
 #include "cp15.h"
 #include "mem.h"
 #include "pace_patch.h"
 #include "patch_dispatch.h"
 #include "patches.h"
+#include "scheduler.h"
 #include "soc_AC97.h"
 #include "soc_DMA.h"
 #include "soc_GPIO.h"
@@ -108,7 +108,7 @@ struct SoC {
     ArmRom *rom;
     ArmMem *mem;
     ArmCpu *cpu;
-    Clock<SoC> *clock;
+    Scheduler<SoC> *scheduler;
     PacePatch *pacePatch;
     PatchDispatch *patchDispatch;
     SyscallDispatch *syscallDispatch;
@@ -156,7 +156,7 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
 
     soc->pacePatch = createPacePatch();
 
-    soc->clock = new Clock<SoC>(*soc);
+    soc->scheduler = new Scheduler<SoC>(*soc);
 
     soc->mem = memInit();
     if (!soc->mem) ERR("Cannot init physical memory manager");
@@ -367,19 +367,19 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     if (sp.dbgUart) socUartSetFuncs(sp.dbgUart, socUartPrvRead, socUartPrvWrite, soc->hwUart);
 
     // Timer: 3.6864 MHz
-    soc->clock->ScheduleClient(CLOCK_CLIENT_TIMER, 1_sec / 3686400ULL, 1);
+    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_TIMER, 1_sec / 3686400ULL, 1);
 
     // RTC: 1 Hz
-    soc->clock->ScheduleClient(CLOCK_CLIENT_RTC, 1_sec, 1);
+    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_RTC, 1_sec, 1);
 
-    // LCD: one frame every 64 ticks, 3 ticks per frame, 60 FPS
-    soc->clock->ScheduleClient(CLOCK_CLIENT_LCD, 1_sec / (64 * 3 * 60), 1);
+    // LCD: one frame every 64 ticks, 3 ticks per frame, 60 FPS -> 11.52 kHz
+    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_LCD, 1_sec / (64 * 3 * 60), 1);
 
-    // Periodic tasks 1: every 36 timer ticks
-    soc->clock->ScheduleClient(CLOCK_CLIENT_AUX_1, 36_sec / 3686400ULL, 1);
+    // Periodic tasks 1: every 36 timer ticks -> 102.4 kHz
+    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_AUX_1, 36_sec / 3686400ULL, 1);
 
-    // Periodic tasks 1: every 292 timer ticks
-    soc->clock->ScheduleClient(CLOCK_CLIENT_AUX_2, 292_sec / 3686400ULL, 1);
+    // Periodic tasks 1: every 292 timer ticks -> ~12.6 kHz
+    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_AUX_2, 292_sec / 3686400ULL, 1);
 
     /*
             var gpio = {latches: [0x30000, 0x1400001, 0x200], inputs: [0x786c06, 0x100, 0x0],
@@ -454,7 +454,7 @@ void socSleep(SoC *soc) {
 
     soc->sleeping = true;
 
-    soc->clock->RescheduleClient(CLOCK_CLIENT_TIMER, pxaTimrTicksToNextInterrupt(soc->tmr));
+    soc->scheduler->RescheduleClient(SCHEDULER_CLIENT_TIMER, pxaTimrTicksToNextInterrupt(soc->tmr));
     //  soc->sleepAtCycle = soc->accumulated_cycles;
     //  printf("sleep\n");
 }
@@ -464,7 +464,7 @@ void socWakeup(SoC *soc, uint8_t wakeupSource) {
 
     soc->sleeping = false;
 
-    soc->clock->RescheduleClient(CLOCK_CLIENT_TIMER, 1);
+    soc->scheduler->RescheduleClient(SCHEDULER_CLIENT_TIMER, 1);
     // printf("wakeupt after %llu cycles from %u\n", soc->accumulated_cycles - soc->sleepAtCycle,
     //        (int)wakeupSource);
 }
@@ -489,24 +489,24 @@ static void socCycleBatch2(struct SoC *soc) {
 
 uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
     switch (clientType) {
-        case CLOCK_CLIENT_TIMER:
+        case SCHEDULER_CLIENT_TIMER:
             pxaTimrTick(tmr, batchedTicks);
 
             return sleeping ? pxaTimrTicksToNextInterrupt(tmr) : 1;
 
-        case CLOCK_CLIENT_RTC:
+        case SCHEDULER_CLIENT_RTC:
             pxaRtcTick(rtc);
             return 1;
 
-        case CLOCK_CLIENT_LCD:
+        case SCHEDULER_CLIENT_LCD:
             pxaLcdTick(lcd);
             return 1;
 
-        case CLOCK_CLIENT_AUX_1:
+        case SCHEDULER_CLIENT_AUX_1:
             socCycleBatch1(this);
             return 1;
 
-        case CLOCK_CLIENT_AUX_2:
+        case SCHEDULER_CLIENT_AUX_2:
             socCycleBatch2(this);
             return 1;
 
@@ -519,13 +519,13 @@ uint64_t socRun(SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
     uint64_t cycles = 0;
 
     while (cycles < maxCycles) {
-        uint64_t cyclesToAdvance = soc->clock->CyclesToNextUpdate(cyclesPerSecond);
+        uint64_t cyclesToAdvance = soc->scheduler->CyclesToNextUpdate(cyclesPerSecond);
         if (cyclesToAdvance + cycles > maxCycles) cyclesToAdvance = maxCycles - cycles;
 
         const uint64_t cyclesAdvanced =
             soc->sleeping ? cyclesToAdvance : cpuCycle(soc->cpu, cyclesToAdvance);
 
-        soc->clock->Advance(cyclesAdvanced, cyclesPerSecond);
+        soc->scheduler->Advance(cyclesAdvanced, cyclesPerSecond);
         cycles += cyclesAdvanced;
     }
 
