@@ -533,8 +533,8 @@ namespace {
 
 const vector<cli::Command> cli::commands({
     {.name = "help", .description = "Show help.", .cmd = CmdHelp},
-    {.name = "quit", .description = "Quit Cloudpilot.", .cmd = CmdQuit},
-    {.name = "exit", .description = "Quit Cloudpilot.", .cmd = CmdQuit},
+    {.name = "quit", .description = "Quit CloudpilotEmu.", .cmd = CmdQuit},
+    {.name = "exit", .description = "Quit CloudpilotEmu.", .cmd = CmdQuit},
     {
         .name = "install",
         .usage = "install <file> [file...]",
@@ -556,7 +556,7 @@ const vector<cli::Command> cli::commands({
      .help = R"HELP(
 Write a image (save state) file to disk. A file for writing an image of a
 mounted card can be specified as second argument. If save state and card
-image are written simultaneously, Cloudpilot will be able to restore the
+image are written simultaneously, CloudpilotEmu will be able to restore the
 mounted image on load (if the image is specified with --mount on launch).)HELP",
      .cmd = CmdSaveImage},
     {.name = "switch-image",

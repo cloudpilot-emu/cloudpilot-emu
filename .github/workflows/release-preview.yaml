@@ -37,7 +37,7 @@ jobs:
       - name: Test
         working-directory: web
         run: yarn test
-      - name: Build Cloudpilot embedded
+      - name: Build CloudpilotEmu embedded
         working-directory: web
         run: yarn dist-embedded
       - name: Build PWA

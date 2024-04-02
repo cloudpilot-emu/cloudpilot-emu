@@ -209,9 +209,9 @@ void run(const Options& options) {
 int main(int argc, const char** argv) {
     class bad_device_id : public exception {};
 
-    argparse::ArgumentParser program("cloudpilot");
+    argparse::ArgumentParser program("cloudpilot-emu");
 
-    program.add_description("Cloudpilot is an emulator for dragonball-based PalmOS devices.");
+    program.add_description("CloudpilotEmu is an emulator for dragonball-based PalmOS devices.");
 
     program.add_argument("image").help("image or ROM file").required();
 

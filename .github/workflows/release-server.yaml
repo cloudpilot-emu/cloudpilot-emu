@@ -1,4 +1,4 @@
-name: Build and release Cloudpilot server binaries
+name: Build and release CloudpilotEmu server binaries
 on:
   push:
     tags:

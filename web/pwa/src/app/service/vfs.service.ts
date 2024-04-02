@@ -153,7 +153,7 @@ export class VfsService {
 
         const { result, entry } = vfs.stat(path);
         if (result !== VfsResult.FR_OK) {
-            await this.error(`The path ${path} is invalid. This is a bug in Cloudpilot.`);
+            await this.error(`The path ${path} is invalid. This is a bug in CloudpilotEmu.`);
             return;
         }
 

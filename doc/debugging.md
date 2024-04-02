@@ -277,7 +277,7 @@ launch configuration. Launch configurations are stored in `launch.json` in the
         {
             "type": "gdb",
             "request": "attach",
-            "name": "Attach to CloudPilot",
+            "name": "Attach to CloudpilotEmu",
             "executable": "./code0001.68k.elf",
             "target": ":6667",
             "remote": true,
@@ -302,10 +302,10 @@ You should now be able to debug your app by, in this order:
 1. Running the `Run` task, which will build the app and launch CloudpilotEmu
    Native with the correct command line options.
 1. After CloudpilotEmu Native has started, attaching to GDB by
-   selecting the `Attach to CloudPilot` launch configuration and pressing the
+   selecting the `Attach to CloudpilotEmu` launch configuration and pressing the
    `Start Debugging` button in VSCode. You should now be able to debug your app
    as usual, setting breakpoints in VSCode, step through the code, and etc.
 
-Remember to always close CloudPilot and re-run the `Run` task if you make any
+Remember to always close CloudpilotEmu and re-run the `Run` task if you make any
 changes to your app's code, this will ensure that the latest version of the app
 is installed into the session image.

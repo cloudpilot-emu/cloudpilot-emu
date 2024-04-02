@@ -126,7 +126,7 @@
 # Version 1.8.11
 
 -   Display a warning and workaround for a browser bug on iOS 17 that may prevent
-    Cloudpilot from loading.
+    CloudpilotEmu from loading.
 
 # Version 1.8.10
 
@@ -274,7 +274,7 @@ in order to generate new certificates.
 
 # Version 1.7.0
 
--   Introduce CloudpilotEmu embedded. You can now embed cloudpilot into your own web pages.
+-   Introduce CloudpilotEmu embedded. You can now embed cloudpilot-emu into your own web pages.
     Check out the [online documentation](https://cloudpilot-emu.github.io/embedded/)
     for more details.
 -   Minor bug fixes

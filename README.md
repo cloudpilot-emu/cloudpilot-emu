@@ -93,7 +93,7 @@ The native app can be built and run on MacOS, Linux and on the WSL for
 Windows. Please see below for build instructions. Once built, the app can
 be started from the command line by supplying a session image or a ROM file
 as command line argument. Command line options exist for activating the
-GDN stub, mounting a card on launch and more. Run `cloudpilot --help` in
+GDN stub, mounting a card on launch and more. Run `cloudpilot-emu --help` in
 order to get an overview of the supported options.
 
 # Reporting issues
@@ -211,7 +211,7 @@ The build is accomplished with
     $ make bin
 ```
 
-and you will up with a `src/cloudpilot` binary.
+and you will up with a `src/cloudpilot-emu` binary.
 
 # Credits
 

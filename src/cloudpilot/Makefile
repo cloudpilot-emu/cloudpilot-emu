@@ -302,7 +302,7 @@ OBJECTS_WEB_EMCC = \
 	../common/libcommon-wasm.a \
 	../skins/libskin-wasm.a
 
-BINARY_NATIVE = cloudpilot
+BINARY_NATIVE = cloudpilot-emu
 
 BINARY_WEB_EMCC = cloudpilot_web.js
 BINARY_WEB_WASM = cloudpilot_web.wasm
