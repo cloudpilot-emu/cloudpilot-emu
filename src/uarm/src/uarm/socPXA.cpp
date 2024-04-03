@@ -202,7 +202,7 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     ramBuffer = (uint32_t *)malloc(deviceGetRamSize());
     if (!ramBuffer) ERR("cannot alloc RAM space\n");
 
-    soc->ram = ramInit(soc->mem, RAM_BASE, deviceGetRamSize(), ramBuffer, true);
+    soc->ram = ramInit(soc->mem, soc, RAM_BASE, deviceGetRamSize(), ramBuffer, true);
     if (!soc->ram) ERR("Cannot init RAM");
 
     soc->rom = romInit(soc->mem, ROM_BASE, romData, romSize);
@@ -218,8 +218,8 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
         case RamTerminationMirror:
 
             // ram mirror for ram probe code
-            soc->ramMirror = ramInit(soc->mem, RAM_BASE + deviceGetRamSize(), deviceGetRamSize(),
-                                     ramBuffer, false);
+            soc->ramMirror = ramInit(soc->mem, soc, RAM_BASE + deviceGetRamSize(),
+                                     deviceGetRamSize(), ramBuffer, false);
             if (!soc->ramMirror) ERR("Cannot init RAM mirror");
             break;
 
@@ -258,7 +258,7 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
         ramBuffer = (uint32_t *)malloc(SRAM_SIZE);
         if (!ramBuffer) ERR("cannot alloc SRAM space\n");
 
-        soc->sram = ramInit(soc->mem, SRAM_BASE, SRAM_SIZE, ramBuffer, false);
+        soc->sram = ramInit(soc->mem, soc, SRAM_BASE, SRAM_SIZE, ramBuffer, false);
         if (!soc->ram) ERR("Cannot init SRAM");
     }
 
@@ -362,7 +362,7 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     deviceGetDisplayConfiguration(&displayConfiguration);
 
     soc->lcd =
-        pxaLcdInit(soc->mem, soc->ic, displayConfiguration.width, displayConfiguration.height);
+        pxaLcdInit(soc->mem, soc, soc->ic, displayConfiguration.width, displayConfiguration.height);
     if (!soc->lcd) ERR("Cannot init PXA's LCD");
 
     soc->kp = keypadInit(soc->gpio, true);
@@ -582,3 +582,16 @@ uint64_t socRun(SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
 uint32_t *socGetPendingFrame(SoC *soc) { return pxaLcdGetPendingFrame(soc->lcd); }
 
 void socResetPendingFrame(SoC *soc) { return pxaLcdResetPendingFrame(soc->lcd); }
+
+void socSetFramebufferDirty(struct SoC *soc) { pxaLcdSetFramebufferDirty(soc->lcd); }
+
+bool socSetFramebuffer(struct SoC *soc, uint32_t start, uint32_t size) {
+    if (start < RAM_BASE || start - RAM_BASE + size > deviceGetRamSize()) {
+        fprintf(stderr, "framebuffer not in RAM\n");
+        size = 0;
+    }
+
+    ramSetFramebuffer(soc->ram, start, size);
+
+    return size != 0;
+}

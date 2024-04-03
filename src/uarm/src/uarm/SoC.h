@@ -42,6 +42,9 @@ void socWakeup(struct SoC *soc, uint8_t wakeupSource);
 void socExtSerialWriteChar(int ch);
 int socExtSerialReadChar(void);
 
+void socSetFramebufferDirty(struct SoC *soc);
+bool socSetFramebuffer(struct SoC *soc, uint32_t start, uint32_t size);
+
 #ifdef __cplusplus
 }
 #endif

@@ -2,9 +2,11 @@
 
 #include "pxa_LCD.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "SoC.h"
 #include "mem.h"
 #include "pxa_IC.h"
 #include "util.h"
@@ -21,6 +23,7 @@
 struct PxaLcd {
     struct SocIc *ic;
     struct ArmMem *mem;
+    struct SoC *soc;
 
     // registers
     uint32_t lccr0, lccr1, lccr2, lccr3, lccr4, lccr5, liicr, trgbr, tcr;
@@ -47,6 +50,12 @@ struct PxaLcd {
     bool frame_pending;
 
     uint32_t frameNum;
+
+    uint32_t framebufferBase;
+    uint32_t framebufferSize;
+    uint8_t framebufferBpp;
+    bool framebufferDirty;
+    bool framebufferTrackingActive;
 };
 
 static uint32_t unpack_rgb16(uint16_t rgb16) {
@@ -303,8 +312,16 @@ static void pxaLcdUpdatePalette(struct PxaLcd *lcd, int32_t len) {
     uint16_t *entry = (uint16_t *)lcd->palette;
     uint32_t *entry_mapped = (uint32_t *)lcd->palette_mapped;
 
-    for (uint32_t i = 0; i < n_entries; i++, entry++, entry_mapped++)
-        *entry_mapped = unpack_rgb16(*entry);
+    bool dirty = false;
+
+    for (uint32_t i = 0; i < n_entries; i++, entry++, entry_mapped++) {
+        uint32_t unpacked = unpack_rgb16(*entry);
+        dirty = dirty || (unpacked != *entry_mapped);
+
+        if (dirty) *entry_mapped = unpack_rgb16(*entry);
+    }
+
+    if (dirty) socSetFramebufferDirty(lcd->soc);
 }
 
 static void pxaLcdPrvScreenDataPixel(struct PxaLcd *lcd, uint32_t color) {
@@ -323,13 +340,39 @@ static void pxaLcdPrvScreenDataPixel(struct PxaLcd *lcd, uint32_t color) {
 static void pxaLcdPrvScreenDataDma(struct PxaLcd *lcd, uint32_t addr /*PA*/, uint32_t len) {
     uint8_t data[4];
     uint32_t i, j;
+    const uint8_t bpp = (lcd->lccr3 >> 24) & 7;
+
+    if (addr != lcd->framebufferBase || len != lcd->framebufferSize || bpp != lcd->framebufferBpp) {
+        lcd->framebufferBase = addr;
+        lcd->framebufferSize = len;
+        lcd->framebufferBpp = bpp;
+
+        if (len == ((uint32_t)(lcd->width * lcd->height) << bpp) >> 3) {
+            fprintf(stderr, "framebuffer now at 0x%08x , size %u bytes, %d bpp\n", addr, len,
+                    (int)(1 << bpp));
+
+            lcd->framebufferDirty = true;
+            lcd->framebufferTrackingActive = socSetFramebuffer(lcd->soc, addr, len);
+        } else {
+            fprintf(stderr,
+                    "framebuffer size %u bytes does not match depth %d bpp, assuming segmented "
+                    "framebuffer\n",
+                    len, (int)(1 << bpp));
+
+            socSetFramebuffer(lcd->soc, 0, 0);
+            lcd->framebufferDirty = true;
+            lcd->framebufferTrackingActive = false;
+        }
+    }
+
+    if (lcd->framebufferTrackingActive && !lcd->framebufferDirty) return;
 
     len /= 4;
     while (len--) {
         pxaLcdPrvDma(lcd, data, addr, 4);
         addr += 4;
 
-        switch ((lcd->lccr3 >> 24) & 7) {
+        switch (bpp) {
             case 0:  // 1BPP
 
                 for (i = 0; i < 4; i++) {
@@ -371,6 +414,8 @@ static void pxaLcdPrvScreenDataDma(struct PxaLcd *lcd, uint32_t addr /*PA*/, uin
                 ;  // BAD
         }
     }
+
+    lcd->framebufferDirty = false;
 }
 
 void pxaLcdTick(struct PxaLcd *lcd) {
@@ -455,7 +500,9 @@ uint32_t *pxaLcdGetPendingFrame(struct PxaLcd *lcd) {
 
 void pxaLcdResetPendingFrame(struct PxaLcd *lcd) { lcd->frame_pending = false; }
 
-struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, uint16_t width,
+void pxaLcdSetFramebufferDirty(struct PxaLcd *lcd) { lcd->framebufferDirty = true; }
+
+struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc *ic, uint16_t width,
                           uint16_t height) {
     struct PxaLcd *lcd = (struct PxaLcd *)malloc(sizeof(*lcd));
 
@@ -467,6 +514,7 @@ struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SocIc *ic, uint16_t wid
     lcd->intMask = UNMASKABLE_INTS;
     lcd->width = width;
     lcd->height = height;
+    lcd->soc = soc;
 
     lcd->front_buffer = (uint32_t *)malloc(width * height * 4);
     lcd->back_buffer = (uint32_t *)malloc(width * height * 4);

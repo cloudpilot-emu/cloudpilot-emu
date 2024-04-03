@@ -13,10 +13,14 @@ extern "C" {
 #endif
 
 struct ArmRam;
+struct SoC;
 
-struct ArmRam* ramInit(struct ArmMem* mem, uint32_t adr, uint32_t sz, uint32_t* buf, bool primary);
+struct ArmRam* ramInit(struct ArmMem* mem, struct SoC* soc, uint32_t adr, uint32_t sz,
+                       uint32_t* buf, bool primary);
 
 bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void* bufP);
+
+void ramSetFramebuffer(struct ArmRam* ram, uint32_t base, uint32_t size);
 
 #ifdef __cplusplus
 }
