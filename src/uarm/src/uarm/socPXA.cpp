@@ -395,22 +395,22 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     if (sp.dbgUart) socUartSetFuncs(sp.dbgUart, socUartPrvRead, socUartPrvWrite, soc->hwUart);
 
     // Timer: 3.6864 MHz
-    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_TIMER, 1_sec / 3686400ULL, 1);
+    soc->scheduler->ScheduleTask(SCHEDULER_TASK_TIMER, 1_sec / 3686400ULL, 1);
 
     // RTC: 1 Hz
-    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_RTC, 1_sec, 1);
+    soc->scheduler->ScheduleTask(SCHEDULER_TASK_RTC, 1_sec, 1);
 
     // LCD: one frame every 64 ticks, 3 ticks per frame, 60 FPS -> 11.52 kHz
-    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_LCD, 1_sec / (64 * 3 * 60), 1);
+    soc->scheduler->ScheduleTask(SCHEDULER_TASK_LCD, 1_sec / (64 * 3 * 60), 1);
 
     // Periodic tasks 1: every 36 timer ticks -> 102.4 kHz
-    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_AUX_1, 36_sec / 3686400ULL, 1);
+    soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_1, 36_sec / 3686400ULL, 1);
 
     // Periodic tasks 1: every 292 timer ticks -> ~12.6 kHz
-    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_AUX_2, 292_sec / 3686400ULL, 1);
+    soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 292_sec / 3686400ULL, 1);
 
     // Pump event queues: 25 Hz
-    soc->scheduler->ScheduleClient(SCHEDULER_CLIENT_AUX_3, 40_msec, 1);
+    soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_3, 40_msec, 1);
 
     /*
             var gpio = {latches: [0x30000, 0x1400001, 0x200], inputs: [0x786c06, 0x100, 0x0],
@@ -495,7 +495,7 @@ void socSleep(SoC *soc) {
 
     soc->sleeping = true;
 
-    soc->scheduler->RescheduleClient(SCHEDULER_CLIENT_TIMER, pxaTimrTicksToNextInterrupt(soc->tmr));
+    soc->scheduler->RescheduleTask(SCHEDULER_TASK_TIMER, pxaTimrTicksToNextInterrupt(soc->tmr));
 
     // soc->sleepAtTime = soc->scheduler->GetTime();
     // printf("sleep\n");
@@ -506,7 +506,7 @@ void socWakeup(SoC *soc, uint8_t wakeupSource) {
 
     soc->sleeping = false;
 
-    soc->scheduler->RescheduleClient(SCHEDULER_CLIENT_TIMER, 1);
+    soc->scheduler->RescheduleTask(SCHEDULER_TASK_TIMER, 1);
 
     // printf("wakeupt after %llu nsec from %u\n", soc->scheduler->GetTime() - soc->sleepAtTime,
     //        (int)wakeupSource);
@@ -532,28 +532,28 @@ static void socCycleBatch2(struct SoC *soc) {
 
 uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
     switch (clientType) {
-        case SCHEDULER_CLIENT_TIMER:
+        case SCHEDULER_TASK_TIMER:
             pxaTimrTick(tmr, batchedTicks);
 
             return sleeping ? pxaTimrTicksToNextInterrupt(tmr) : 1;
 
-        case SCHEDULER_CLIENT_RTC:
+        case SCHEDULER_TASK_RTC:
             pxaRtcTick(rtc);
             return 1;
 
-        case SCHEDULER_CLIENT_LCD:
+        case SCHEDULER_TASK_LCD:
             pxaLcdTick(lcd);
             return 1;
 
-        case SCHEDULER_CLIENT_AUX_1:
+        case SCHEDULER_TASK_AUX_1:
             socCycleBatch1(this);
             return 1;
 
-        case SCHEDULER_CLIENT_AUX_2:
+        case SCHEDULER_TASK_AUX_2:
             socCycleBatch2(this);
             return 1;
 
-        case SCHEDULER_CLIENT_AUX_3:
+        case SCHEDULER_TASK_AUX_3:
             socPumpEventQueues(this);
             return 1;
 
