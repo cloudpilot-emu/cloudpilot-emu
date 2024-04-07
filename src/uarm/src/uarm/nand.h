@@ -7,6 +7,7 @@
 
 #include "CPU.h"
 #include "mem.h"
+#include "reschedule.h"
 #include "soc_GPIO.h"
 
 #ifdef __cplusplus
@@ -31,8 +32,8 @@ struct NandSpecs {
     uint8_t devId[];
 };
 
-struct NAND *nandInit(uint8_t *nandContent, size_t nandSize, const struct NandSpecs *specs,
-                      NandReadyCbk readyCbk, void *readyCbkData);
+struct NAND *nandInit(uint8_t *nandContent, struct Reschedule reschedule, size_t nandSize,
+                      const struct NandSpecs *specs, NandReadyCbk readyCbk, void *readyCbkData);
 
 void nandSecondReadyCbkSet(struct NAND *nand, NandReadyCbk readyCbk, void *readyCbkData);
 
@@ -42,6 +43,8 @@ bool nandRead(struct NAND *nand, bool cle, bool ale, uint8_t *valP);
 bool nandIsReady(struct NAND *nand);
 
 void nandPeriodic(struct NAND *nand);
+
+bool nandTaskRequired(struct NAND *nand);
 
 #ifdef __cplusplus
 }

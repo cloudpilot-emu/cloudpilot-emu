@@ -50,6 +50,7 @@
 #include "pxa270_UDC.h"
 #include "pxa270_WMMX.h"
 #include "queue.h"
+#include "reschedule.h"
 #include "vSD.h"
 
 #define CPUID_PXA255 0x69052D06ul  // spepping A0
@@ -146,6 +147,7 @@ struct SoC {
     uint32_t DispatchTicks(uint32_t clientType, uint32_t batchedTicks);
 };
 
+extern "C" {
 static uint_fast16_t socUartPrvRead(void *userData) {
     uint_fast16_t v;
     int r;
@@ -163,11 +165,29 @@ static uint_fast16_t socUartPrvRead(void *userData) {
 
     return v;
 }
+}
 
+extern "C" {
 static void socUartPrvWrite(uint_fast16_t chr, void *userData) {
     if (chr == UART_CHAR_NONE) return;
 
     socExtSerialWriteChar(chr);
+}
+}
+
+extern "C" {
+static void socPrvReschedule(void *ctx, uint32_t task) {
+    struct SoC *soc = (struct SoC *)ctx;
+
+    switch (task) {
+        case RESCHEDULE_TASK_DEVICE_TIER0:
+        case RESCHEDULE_TASK_SSP:
+        case RESCHEDULE_TASK_UART:
+        case RESCHEDULE_TASK_DMA:
+            soc->scheduler->RescheduleTask(SCHEDULER_TASK_AUX_1, 1);
+            break;
+    }
+}
 }
 
 SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSectorR sdR,
@@ -176,6 +196,8 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     SoC *soc = (SoC *)malloc(sizeof(SoC));
     struct SocPeriphs sp = {};
     uint32_t *ramBuffer;
+
+    struct Reschedule rescheduleSoc = {.rescheduleCb = socPrvReschedule, .ctx = soc};
 
     memset(soc, 0, sizeof(*soc));
 
@@ -238,7 +260,7 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     soc->ic = socIcInit(soc->cpu, soc->mem, soc, socRev);
     if (!soc->ic) ERR("Cannot init PXA's IC");
 
-    soc->dma = socDmaInit(soc->mem, soc->ic);
+    soc->dma = socDmaInit(soc->mem, rescheduleSoc, soc->ic);
     if (!soc->dma) ERR("Cannot init PXA's DMA");
 
     if (socRev == 0 || socRev == 1) {
@@ -271,18 +293,18 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     soc->rtc = pxaRtcInit(soc->mem, soc->ic);
     if (!soc->rtc) ERR("Cannot init PXA's RTC");
 
-    soc->ffUart = socUartInit(soc->mem, soc->ic, PXA_FFUART_BASE, PXA_I_FFUART);
+    soc->ffUart = socUartInit(soc->mem, rescheduleSoc, soc->ic, PXA_FFUART_BASE, PXA_I_FFUART);
     if (!soc->ffUart) ERR("Cannot init PXA's FFUART");
 
     if (socRev != 2) {
-        soc->hwUart = socUartInit(soc->mem, soc->ic, PXA_HWUART_BASE, PXA_I_HWUART);
+        soc->hwUart = socUartInit(soc->mem, rescheduleSoc, soc->ic, PXA_HWUART_BASE, PXA_I_HWUART);
         if (!soc->hwUart) ERR("Cannot init PXA's HWUART");
     }
 
-    soc->stUart = socUartInit(soc->mem, soc->ic, PXA_STUART_BASE, PXA_I_STUART);
+    soc->stUart = socUartInit(soc->mem, rescheduleSoc, soc->ic, PXA_STUART_BASE, PXA_I_STUART);
     if (!soc->stUart) ERR("Cannot init PXA's STUART");
 
-    soc->btUart = socUartInit(soc->mem, soc->ic, PXA_BTUART_BASE, PXA_I_BTUART);
+    soc->btUart = socUartInit(soc->mem, rescheduleSoc, soc->ic, PXA_BTUART_BASE, PXA_I_BTUART);
     if (!soc->btUart) ERR("Cannot init PXA's BTUART");
 
     soc->pwrClk = pxaPwrClkInit(soc->cpu, soc->mem, soc, socRev == 2);
@@ -303,13 +325,14 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     if (!soc->ac97) ERR("Cannot init PXA's AC97");
 
     // SSP/SSP1
-    soc->ssp[0] = socSspInit(soc->mem, soc->ic, soc->dma, PXA_SSP1_BASE, PXA_I_SSP, DMA_CMR_SSP_RX);
+    soc->ssp[0] = socSspInit(soc->mem, rescheduleSoc, soc->ic, soc->dma, PXA_SSP1_BASE, PXA_I_SSP,
+                             DMA_CMR_SSP_RX);
     if (!soc->ssp[0]) ERR("Cannot init PXA's SSP1");
 
     if (socRev == 0 || socRev == 1) {
         // NSSP
-        soc->ssp[1] =
-            socSspInit(soc->mem, soc->ic, soc->dma, PXA_NSSP_BASE, PXA_I_NSSP, DMA_CMR_NSSP_RX);
+        soc->ssp[1] = socSspInit(soc->mem, rescheduleSoc, soc->ic, soc->dma, PXA_NSSP_BASE,
+                                 PXA_I_NSSP, DMA_CMR_NSSP_RX);
         if (!soc->ssp[1]) ERR("Cannot init PXA's NSSP");
 
         soc->udc1 = pxa255UdcInit(soc->mem, soc->ic, soc->dma);
@@ -318,20 +341,20 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
 
     if (socRev == 1) {
         // ASSP
-        soc->ssp[2] =
-            socSspInit(soc->mem, soc->ic, soc->dma, PXA_ASSP_BASE, PXA_I_ASSP, DMA_CMR_ASSP_RX);
+        soc->ssp[2] = socSspInit(soc->mem, rescheduleSoc, soc->ic, soc->dma, PXA_ASSP_BASE,
+                                 PXA_I_ASSP, DMA_CMR_ASSP_RX);
         if (!soc->ssp[2]) ERR("Cannot init PXA26x's ASSP");
     }
 
     if (socRev == 2) {
         // SSP2
-        soc->ssp[1] =
-            socSspInit(soc->mem, soc->ic, soc->dma, PXA_SSP2_BASE, PXA_I_SSP2, DMA_CMR_SSP2_RX);
+        soc->ssp[1] = socSspInit(soc->mem, rescheduleSoc, soc->ic, soc->dma, PXA_SSP2_BASE,
+                                 PXA_I_SSP2, DMA_CMR_SSP2_RX);
         if (!soc->ssp[1]) ERR("Cannot init PXA27x's SSP2");
 
         // SSP3
-        soc->ssp[2] =
-            socSspInit(soc->mem, soc->ic, soc->dma, PXA_SSP3_BASE, PXA_I_SSP3, DMA_CMR_SSP3_RX);
+        soc->ssp[2] = socSspInit(soc->mem, rescheduleSoc, soc->ic, soc->dma, PXA_SSP3_BASE,
+                                 PXA_I_SSP3, DMA_CMR_SSP3_RX);
         if (!soc->ssp[2]) ERR("Cannot init PXA27x's SSP3");
 
         soc->udc2 = pxa270UdcInit(soc->mem, soc->ic, soc->dma);
@@ -389,7 +412,7 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     sp.uarts[2] = soc->stUart;
     sp.uarts[3] = soc->btUart;
 
-    soc->dev = deviceSetup(&sp, soc->kp, soc->vSD, nandContent, nandSize);
+    soc->dev = deviceSetup(&sp, rescheduleSoc, soc->kp, soc->vSD, nandContent, nandSize);
     if (!soc->dev) ERR("Cannot init device\n");
 
     if (sp.dbgUart) socUartSetFuncs(sp.dbgUart, socUartPrvRead, socUartPrvWrite, soc->hwUart);
@@ -512,7 +535,7 @@ void socWakeup(SoC *soc, uint8_t wakeupSource) {
     //        (int)wakeupSource);
 }
 
-static void socCycleBatch1(struct SoC *soc) {
+static void socCycleBatch0(struct SoC *soc) {
     socDmaPeriodic(soc->dma);
     socUartProcess(soc->ffUart);
     if (soc->hwUart) socUartProcess(soc->hwUart);
@@ -524,10 +547,30 @@ static void socCycleBatch1(struct SoC *soc) {
     devicePeriodic(soc->dev, DEVICE_PERIODIC_TIER0);
 }
 
-static void socCycleBatch2(struct SoC *soc) {
+static void socCycleBatch1(struct SoC *soc) {
     socAC97Periodic(soc->ac97);
     socI2sPeriodic(soc->i2s);
     devicePeriodic(soc->dev, DEVICE_PERIODIC_TIER1);
+}
+
+static bool socPrvBatch0Required(struct SoC *soc) {
+    if (!soc->dev) return true;
+
+    if (socDmaTaskRequired(soc->dma)) return true;
+
+    for (int i = 0; i < 3; i++) {
+        if (soc->ssp[i] && socSspTaskRequired(soc->ssp[i])) return true;
+    }
+
+    if (deviceTaskRequired(soc->dev, DEVICE_PERIODIC_TIER0)) return true;
+
+    if (socUartTaskRequired(soc->ffUart) || socUartTaskRequired(soc->stUart) ||
+        socUartTaskRequired(soc->btUart))
+        return true;
+
+    if (soc->hwUart && socUartTaskRequired(soc->hwUart)) return true;
+
+    return false;
 }
 
 uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
@@ -546,11 +589,11 @@ uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
             return 1;
 
         case SCHEDULER_TASK_AUX_1:
-            socCycleBatch1(this);
-            return 1;
+            socCycleBatch0(this);
+            return socPrvBatch0Required(this) ? 1 : 0;
 
         case SCHEDULER_TASK_AUX_2:
-            socCycleBatch2(this);
+            socCycleBatch1(this);
             return 1;
 
         case SCHEDULER_TASK_AUX_3:

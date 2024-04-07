@@ -9,6 +9,7 @@
 
 #include "CPU.h"
 #include "mem.h"
+#include "reschedule.h"
 #include "soc_DMA.h"
 #include "soc_IC.h"
 
@@ -22,10 +23,13 @@ typedef uint_fast16_t (*SspClientProcF)(
     void* userData, uint_fast8_t nBits,
     uint_fast16_t sent);  // return result byte. 0 if nothing to say (so that replies can be ORRed)
 
-struct SocSsp* socSspInit(struct ArmMem* physMem, struct SocIc* ic, struct SocDma* dma,
-                          uint32_t base, uint_fast8_t irqNo, uint_fast8_t dmaReqNoBase);
+struct SocSsp* socSspInit(struct ArmMem* physMem, struct Reschedule reschedule, struct SocIc* ic,
+                          struct SocDma* dma, uint32_t base, uint_fast8_t irqNo,
+                          uint_fast8_t dmaReqNoBase);
 void socSspPeriodic(struct SocSsp* ssp);
 bool socSspAddClient(struct SocSsp* ssp, SspClientProcF procF, void* userData);
+
+bool socSspTaskRequired(struct SocSsp* ssp);
 
 #ifdef __cplusplus
 }

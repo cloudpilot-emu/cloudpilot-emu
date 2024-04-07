@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "CPU.h"
+#include "device.h"
 #include "mem.h"
 #include "nand.h"
 #include "util.h"
@@ -61,8 +62,8 @@ static bool directNandPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t si
     return ret;
 }
 
-struct DirectNAND *directNandInit(struct ArmMem *physMem, uint32_t baseCleAddr,
-                                  uint32_t baseAleAddr, uint32_t baseDataAddr,
+struct DirectNAND *directNandInit(struct ArmMem *physMem, struct Reschedule reschedule,
+                                  uint32_t baseCleAddr, uint32_t baseAleAddr, uint32_t baseDataAddr,
                                   uint32_t maskBitsAddr, struct SocGpio *gpio, int rdyPin,
                                   const struct NandSpecs *specs, uint8_t *nandContent,
                                   size_t nandSize) {
@@ -79,7 +80,8 @@ struct DirectNAND *directNandInit(struct ArmMem *physMem, uint32_t baseCleAddr,
     directNand->gpio = gpio;
     directNand->rdyPinNo = rdyPin;
 
-    directNand->nand = nandInit(nandContent, nandSize, specs, directNandPrvReady, directNand);
+    directNand->nand =
+        nandInit(nandContent, reschedule, nandSize, specs, directNandPrvReady, directNand);
     if (!directNand->nand) ERR("Cannot init underlying NAND\n");
 
     if (baseCleAddr > maxAddr) maxAddr = baseCleAddr;
@@ -98,3 +100,5 @@ struct DirectNAND *directNandInit(struct ArmMem *physMem, uint32_t baseCleAddr,
 }
 
 void directNandPeriodic(struct DirectNAND *directNand) { nandPeriodic(directNand->nand); }
+
+bool directNandTaskRequired(struct DirectNAND *nand) { return nandTaskRequired(nand->nand); }

@@ -53,6 +53,8 @@ struct NAND {
 
     // data
     uint8_t *data;  // stores inverted data (so 0-init is valid)
+
+    struct Reschedule reschedule;
 };
 
 void nandSecondReadyCbkSet(struct NAND *nand, NandReadyCbk readyCbk, void *readyCbkData) {
@@ -74,6 +76,8 @@ static void nandPrvBusy(struct NAND *nand, uint32_t count) {
     else {
         nand->busyCt = count;
         nandPrvCallReadyCbks(nand, false);
+
+        nand->reschedule.rescheduleCb(nand->reschedule.ctx, RESCHEDULE_TASK_NAND);
     }
 }
 
@@ -380,16 +384,20 @@ void nandPeriodic(struct NAND *nand) {
     if (nand->busyCt && !--nand->busyCt) nandPrvCallReadyCbks(nand, true);
 }
 
+bool nandTaskRequired(struct NAND *nand) { return nand->busyCt > 0; }
+
 bool nandIsReady(struct NAND *nand) { return !nand->busyCt; }
 
-struct NAND *nandInit(uint8_t *nandContent, size_t nandSize, const struct NandSpecs *specs,
-                      NandReadyCbk readyCbk, void *readyCbkData) {
+struct NAND *nandInit(uint8_t *nandContent, struct Reschedule reschedule, size_t nandSize,
+                      const struct NandSpecs *specs, NandReadyCbk readyCbk, void *readyCbkData) {
     struct NAND *nand = (struct NAND *)malloc(sizeof(*nand));
     uint32_t nandSz, nandPages, t;
 
     if (!nand) ERR("cannot alloc NAND");
 
     memset(nand, 0, sizeof(*nand));
+
+    nand->reschedule = reschedule;
     nand->readyCbk[0] = readyCbk;
     nand->readyCbkData[0] = readyCbkData;
 

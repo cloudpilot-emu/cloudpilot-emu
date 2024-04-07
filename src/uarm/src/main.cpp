@@ -134,7 +134,7 @@ namespace {
 }  // namespace
 
 extern "C" int socExtSerialReadChar(void) {
-#ifdef __EMSCRIPTEN__
+#if 1
     return CHAR_NONE;
 #else
     timeval tv;
@@ -206,7 +206,7 @@ void EMSCRIPTEN_KEEPALIVE penUp() {
 
 uint32_t EMSCRIPTEN_KEEPALIVE currentIps() { return mainLoop ? mainLoop->GetCurrentIps() : 0; }
 
-uint32_t EMSCRIPTEN_KEEPALIVE currentIpsMax() {
+uint64_t EMSCRIPTEN_KEEPALIVE currentIpsMax() {
     return mainLoop ? mainLoop->GetCurrentIpsMax() : 0;
 }
 

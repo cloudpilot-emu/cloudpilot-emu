@@ -17,6 +17,7 @@
 struct SocSsp {
     struct SocDma *dma;
     struct SocIc *ic;
+    struct Reschedule reschedule;
     uint32_t base;
     uint8_t irqNo;
     uint8_t dmaReqNoBase;
@@ -87,6 +88,8 @@ static bool socSspPrvFifoW(struct SocSsp *ssp, uint16_t val) {
     ssp->sr |= 0x10;  // busy
     ssp->txFifo[ssp->txFifoUsed++] = val;
     socSspPrvRecalcTxFifoSta(ssp);
+
+    ssp->reschedule.rescheduleCb(ssp->reschedule.ctx, RESCHEDULE_TASK_SSP);
 
     return true;
 }
@@ -172,8 +175,9 @@ void socSspPeriodic(struct SocSsp *ssp) {
     }
 }
 
-struct SocSsp *socSspInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDma *dma,
-                          uint32_t base, uint_fast8_t irqNo, uint_fast8_t dmaReqNoBase) {
+struct SocSsp *socSspInit(struct ArmMem *physMem, struct Reschedule reschedule, struct SocIc *ic,
+                          struct SocDma *dma, uint32_t base, uint_fast8_t irqNo,
+                          uint_fast8_t dmaReqNoBase) {
     struct SocSsp *ssp = (struct SocSsp *)malloc(sizeof(*ssp));
 
     if (!ssp) ERR("cannot alloc SSP");
@@ -181,6 +185,7 @@ struct SocSsp *socSspInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDm
     memset(ssp, 0, sizeof(*ssp));
 
     ssp->ic = ic;
+    ssp->reschedule = reschedule;
     ssp->dma = dma;
     ssp->base = base;
     ssp->irqNo = irqNo;
@@ -206,3 +211,5 @@ bool socSspAddClient(struct SocSsp *ssp, SspClientProcF procF, void *userData) {
 
     return false;
 }
+
+bool socSspTaskRequired(struct SocSsp *ssp) { return ssp->sr & 0x10; }

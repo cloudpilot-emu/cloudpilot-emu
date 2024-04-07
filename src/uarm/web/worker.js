@@ -18,8 +18,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             this.cycle = module.cwrap('cycle', undefined, ['number']);
             this.getFrame = module.cwrap('getFrame', 'number', []);
             this.resetFrame = module.cwrap('resetFrame', undefined, []);
-            this.currentIps = module.cwrap('currentIps', undefined, []);
-            this.currentIpsMax = module.cwrap('currentIpsMax', undefined, []);
+            this.currentIps = module.cwrap('currentIps', 'number', []);
+            this.currentIpsMax = module.cwrap('currentIpsMax', 'number', []);
             this.getTimesliceSizeUsec = module.cwrap('getTimesliceSizeUsec', 'number', []);
             this.getTimestampUsec = module.cwrap('getTimestampUsec', 'number', []);
             this.penDown = module.cwrap('penDown', undefined, ['number', 'number']);
@@ -135,7 +135,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
 
         updateSpeedDisplay() {
             const currentIps = this.currentIps();
-            const currentIpsMax = this.currentIpsMax();
+            const currentIpsMax = Number(this.currentIpsMax());
 
             this.onSpeedDisplay(
                 `current ${(currentIps / 1e6).toFixed(2)} MIPS, limit ${(currentIpsMax / 1e6).toFixed(2)} MIPS -> ${(

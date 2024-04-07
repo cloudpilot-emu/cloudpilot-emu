@@ -24,6 +24,8 @@ struct SocUart {
     struct SocIc *ic;
     uint32_t baseAddr;
 
+    struct Reschedule reschedule;
+
     SocUartReadF readF;
     SocUartWriteF writeF;
     void *accessFuncsData;
@@ -233,6 +235,7 @@ static void socUartPrvSendChar(struct SocUart *uart, uint_fast16_t v) {
 
         uart->transmitShift = v;
         uart->LSR &= ~UART_LSR_TEMT;
+        uart->reschedule.rescheduleCb(uart->reschedule.ctx, RESCHEDULE_TASK_UART);
     } else if (uart->FCR & UART_FCR_TRFIFOE) {  // put in tx fifo if in fifo mode
 
         socUartPrvFifoPut(&uart->TX, v);
@@ -431,14 +434,15 @@ void socUartSetFuncs(struct SocUart *uart, SocUartReadF readF, SocUartWriteF wri
     uart->accessFuncsData = userData;
 }
 
-struct SocUart *socUartInit(struct ArmMem *physMem, struct SocIc *ic, uint32_t baseAddr,
-                            uint8_t irq) {
+struct SocUart *socUartInit(struct ArmMem *physMem, struct Reschedule reschedule, struct SocIc *ic,
+                            uint32_t baseAddr, uint8_t irq) {
     struct SocUart *uart = (struct SocUart *)malloc(sizeof(*uart));
 
     if (!uart) ERR("cannot alloc UART at 0x%08x", baseAddr);
 
     memset(uart, 0, sizeof(*uart));
     uart->ic = ic;
+    uart->reschedule = reschedule;
     uart->irq = irq;
     uart->baseAddr = baseAddr;
     uart->IIR = UART_IIR_NOINT;
@@ -591,3 +595,5 @@ static void socUartPrvRecalc(struct SocUart *uart) {
 
     socUartPrvIrq(uart, errorSet);
 }
+
+bool socUartTaskRequired(struct SocUart *uart) { return (uart->LSR & UART_LSR_TEMT) == 0; }

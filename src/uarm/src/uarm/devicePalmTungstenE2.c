@@ -102,6 +102,8 @@
 struct Device {
     struct WM9712L *wm9712L;
     struct DirectNAND *nand;
+
+    struct Reschedule reschedule;
 };
 
 uint32_t deviceGetRamSize(void) { return 16UL << 20; }
@@ -112,8 +114,15 @@ uint_fast8_t deviceGetSocRev(void) {
     return 0;  // PXA25x
 }
 
-struct Device *deviceSetup(struct SocPeriphs *sp, struct Keypad *kp, struct VSD *vsd,
-                           uint8_t *nandContent, size_t nandSize) {
+static void devicePrvReschedule(void *ctx, uint32_t task) {
+    struct Device *dev = (struct Device *)ctx;
+
+    if (task == RESCHEDULE_TASK_NAND)
+        dev->reschedule.rescheduleCb(dev->reschedule.ctx, RESCHEDULE_TASK_DEVICE_TIER0);
+}
+
+struct Device *deviceSetup(struct SocPeriphs *sp, struct Reschedule reschedule, struct Keypad *kp,
+                           struct VSD *vsd, uint8_t *nandContent, size_t nandSize) {
     static const struct NandSpecs nandSpecs = {
         .bytesPerPage = 528,
         .blocksPerDevice = 2048,
@@ -127,11 +136,15 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Keypad *kp, struct VSD 
     dev = (struct Device *)malloc(sizeof(*dev));
     if (!dev) ERR("cannot alloc device");
 
+    struct Reschedule deviceReschedule = {.rescheduleCb = devicePrvReschedule, .ctx = dev};
+
+    dev->reschedule = reschedule;
+
     dev->wm9712L = wm9712LInit(sp->ac97, sp->gpio, 50);
     if (!dev->wm9712L) ERR("Cannot init WM9712L");
 
-    dev->nand = directNandInit(sp->mem, 0x04000002UL, 0x04000004UL, 0x04000000UL, 0x00fffff9ul,
-                               sp->gpio, 79, &nandSpecs, nandContent, nandSize);
+    dev->nand = directNandInit(sp->mem, deviceReschedule, 0x04000002UL, 0x04000004UL, 0x04000000UL,
+                               0x00fffff9ul, sp->gpio, 79, &nandSpecs, nandContent, nandSize);
     if (!dev->nand) ERR("Cannot init NAND");
 
     if (!keypadAddGpioKey(kp, keyIdHard1, 11, false)) ERR("Cannot init hardkey1 (datebook)\n");
@@ -194,4 +207,12 @@ void deviceGetDisplayConfiguration(struct DeviceDisplayConfiguration *displayCon
     displayConfiguration->width = 320;
     displayConfiguration->height = 320;
     displayConfiguration->graffitiHeight = 120;
+}
+
+bool deviceTaskRequired(struct Device *dev, uint32_t tier) {
+    if (tier == DEVICE_PERIODIC_TIER0) {
+        return directNandTaskRequired(dev->nand);
+    } else {
+        return true;
+    }
 }

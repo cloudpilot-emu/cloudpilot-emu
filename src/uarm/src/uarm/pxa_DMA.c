@@ -33,6 +33,7 @@ struct PxaDmaChannel {
 struct SocDma {
     struct SocIc* ic;
     struct ArmMem* mem;
+    struct Reschedule reschedule;
 
     uint32_t dalgn, dpcsr;
     uint32_t DINT;
@@ -246,6 +247,8 @@ static void socDmaPrvChannelMaybeStart(struct SocDma* dma, struct PxaDmaChannel*
                                        uint32_t prevCsrVal) {
     if (socDmaPrvChannelRunning(dma, ch) && !socDmaPrvChannelRunningByCsrVal(prevCsrVal)) {
         // fprintf(stderr, "channel %u started\n", (unsigned)(ch - dma->channels));
+
+        dma->reschedule.rescheduleCb(dma->reschedule.ctx, RESCHEDULE_TASK_DMA);
 
         ch->CSR &= ~0x100;
 
@@ -486,7 +489,7 @@ static bool socDmaPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, 
     return true;
 }
 
-struct SocDma* socDmaInit(struct ArmMem* physMem, struct SocIc* ic) {
+struct SocDma* socDmaInit(struct ArmMem* physMem, struct Reschedule reschedule, struct SocIc* ic) {
     struct SocDma* dma = (struct SocDma*)malloc(sizeof(*dma));
     uint_fast8_t i;
 
@@ -494,6 +497,7 @@ struct SocDma* socDmaInit(struct ArmMem* physMem, struct SocIc* ic) {
 
     memset(dma, 0, sizeof(*dma));
     dma->ic = ic;
+    dma->reschedule = reschedule;
     dma->mem = physMem;
 
     for (i = 0; i < 32; i++) dma->channels[i].CSR = 8;  // stopped or uninitialized
@@ -502,4 +506,12 @@ struct SocDma* socDmaInit(struct ArmMem* physMem, struct SocIc* ic) {
         ERR("cannot add DMA to MEM\n");
 
     return dma;
+}
+
+bool socDmaTaskRequired(struct SocDma* dma) {
+    for (int i = 0; i < 32; i++) {
+        if (socDmaPrvChannelRunning(dma, dma->channels + i)) return true;
+    }
+
+    return false;
 }

@@ -4,6 +4,7 @@
 #define _DEVICE_H_
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdio.h>
 
 #include "ROM.h"
@@ -11,6 +12,7 @@
 #include "keys.h"
 #include "mem.h"
 #include "nand.h"
+#include "reschedule.h"
 #include "soc_AC97.h"
 #include "soc_GPIO.h"
 #include "soc_I2C.h"
@@ -71,13 +73,15 @@ enum RamTermination deviceGetRamTerminationStyle(void);
 uint_fast8_t deviceGetSocRev(void);
 
 // device handling
-struct Device *deviceSetup(struct SocPeriphs *sp, struct Keypad *kp, struct VSD *vsd,
-                           uint8_t *nandContent, size_t nandSize);
+struct Device *deviceSetup(struct SocPeriphs *sp, struct Reschedule reschedule, struct Keypad *kp,
+                           struct VSD *vsd, uint8_t *nandContent, size_t nandSize);
 void deviceKey(struct Device *dev, uint32_t key, bool down);
 void devicePeriodic(struct Device *dev, uint32_t tier);
 void deviceTouch(struct Device *dev, int x, int y);
 
 void deviceGetDisplayConfiguration(struct DeviceDisplayConfiguration *displayConfiguration);
+
+bool deviceTaskRequired(struct Device *dev, uint32_t tier);
 
 #ifdef __cplusplus
 }
