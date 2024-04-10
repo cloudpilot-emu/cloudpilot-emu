@@ -29,6 +29,8 @@
 extern "C" {
 #endif
 
+struct AudioQueue;
+
 struct DeviceDisplayConfiguration {
     uint16_t width;
     uint16_t height;
@@ -82,6 +84,8 @@ void deviceTouch(struct Device *dev, int x, int y);
 void deviceGetDisplayConfiguration(struct DeviceDisplayConfiguration *displayConfiguration);
 
 bool deviceTaskRequired(struct Device *dev, uint32_t tier);
+
+void deviceSetAudioQueue(struct Device *dev, struct AudioQueue *audioQueue);
 
 #ifdef __cplusplus
 }

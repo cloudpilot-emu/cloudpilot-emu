@@ -426,11 +426,11 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     // LCD: one frame every 64 ticks, 3 ticks per frame, 60 FPS -> 11.52 kHz
     soc->scheduler->ScheduleTask(SCHEDULER_TASK_LCD, 1_sec / (64 * 3 * 60), 1);
 
-    // Periodic tasks 1: every 36 timer ticks -> 102.4 kHz
+    // Periodic tasks 0: every 36 timer ticks -> 102.4 kHz
     soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_1, 36_sec / 3686400ULL, 1);
 
-    // Periodic tasks 1: every 292 timer ticks -> ~12.6 kHz
-    soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 292_sec / 3686400ULL, 1);
+    // Periodic tasks 1: audio -> run at 44.1 kHz to match PalmOS sample rate
+    soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 44100, 1);
 
     // Pump event queues: 25 Hz
     soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_3, 40_msec, 1);
@@ -641,4 +641,8 @@ bool socSetFramebuffer(struct SoC *soc, uint32_t start, uint32_t size) {
     ramSetFramebuffer(soc->ram, start, size);
 
     return size != 0;
+}
+
+void socSetAudioQueue(struct SoC *soc, struct AudioQueue *audioQueue) {
+    deviceSetAudioQueue(soc->dev, audioQueue);
 }

@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "audio_queue.h"
 #include "util.h"
 
 enum WM9712REG {
@@ -91,6 +92,8 @@ struct WM9712L {
     bool haveUnreadPenData;
     uint8_t cooIdx, numUnreadDatas;
     uint16_t otherTwo[2];
+
+    struct AudioQueue *audioQueue;
 };
 
 static void wm9712LprvGpioRecalc(struct WM9712L *wm) {
@@ -430,7 +433,7 @@ struct WM9712L *wm9712LInit(struct SocAC97 *ac97, struct SocGpio *gpio, int8_t p
 }
 
 static void wm9712LprvNewAudioPlaybackSample(struct WM9712L *wm, uint32_t samp) {
-    // nothing for now
+    if (wm->audioQueue) audioQueuePush(wm->audioQueue, samp);
 }
 
 static bool wm9712LprvHaveAudioOutSample(struct WM9712L *wm, uint32_t *sampP) {
@@ -599,4 +602,8 @@ void wm9712LsetPen(struct WM9712L *wm, int16_t x, int16_t y,
     }
 
     wm9712LprvGpioRecalc(wm);
+}
+
+void wm9712LsetAudioQueue(struct WM9712L *wm, struct AudioQueue *audioQueue) {
+    wm->audioQueue = audioQueue;
 }

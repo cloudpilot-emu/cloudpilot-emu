@@ -114,7 +114,8 @@ SOURCE_CXX_COMMON = 			\
 	main.cpp					\
 	MainLoop.cpp				\
 	uarm/icache.cpp				\
-	uarm/CPU.cpp
+	uarm/CPU.cpp				\
+	uarm/audio_queue.cpp
 
 SOURCE_CXX_NATIVE = 			\
 	$(SOURCE_CXX_COMMON)		\

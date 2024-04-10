@@ -17,6 +17,9 @@ extern "C" {
 #define CHAR_CTL_C -1L
 #define CHAR_NONE -2L
 
+struct SoC;
+struct AudioQueue;
+
 typedef bool (*SdSectorR)(uint32_t secNum, void *buf);
 typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
 
@@ -44,6 +47,8 @@ int socExtSerialReadChar(void);
 
 void socSetFramebufferDirty(struct SoC *soc);
 bool socSetFramebuffer(struct SoC *soc, uint32_t start, uint32_t size);
+
+void socSetAudioQueue(struct SoC *soc, struct AudioQueue *audioQueue);
 
 #ifdef __cplusplus
 }

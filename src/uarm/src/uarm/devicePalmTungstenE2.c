@@ -216,3 +216,7 @@ bool deviceTaskRequired(struct Device *dev, uint32_t tier) {
         return true;
     }
 }
+
+void deviceSetAudioQueue(struct Device *dev, struct AudioQueue *audioQueue) {
+    wm9712LsetAudioQueue(dev->wm9712L, audioQueue);
+}
