@@ -15,7 +15,7 @@ namespace {
     constexpr uint32_t BIN_SIZE = 1000000;
     constexpr uint32_t SAFETY_MARGIN_PCT = 97;
     constexpr uint32_t SAFETY_MARGIN_PCT_CATCHUP = 75;
-    constexpr uint32_t TIMESLICE_SIZE_USEC = 1000000 / 50;
+    constexpr uint32_t TIMESLICE_SIZE_USEC = 1000000 / 60;
     constexpr uint32_t LAG_THRESHOLD_CATCHUP_USEC = (3 * TIMESLICE_SIZE_USEC / 2);
     constexpr uint32_t LAG_THRESHOLD_SKIP_USEC = 3 * TIMESLICE_SIZE_USEC;
     constexpr int PRESERVE_TIMESLICES_FOR_CATCHUP = 3;
