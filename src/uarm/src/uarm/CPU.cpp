@@ -117,6 +117,7 @@ struct ArmCpu {
     struct PacePatch *pacePatch;
     uint32_t paceOffset;
     bool modePace;
+    bool sleeping;
 
     struct stub *debugStub;
     struct PatchDispatch *patchDispatch;
@@ -3353,7 +3354,7 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
 uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     uint32_t cycleAcc = 0;
 
-    while (cycleAcc < cycles) {
+    while (cycleAcc < cycles && !cpu->sleeping) {
         if (unlikely(cpu->waitingEventsTotal)) {
             if (unlikely(cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall))
                 cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ,
@@ -3413,6 +3414,10 @@ void cpuSetVectorAddr(struct ArmCpu *cpu, uint32_t adr) { cpu->vectorBase = adr;
 uint16_t cpuGetCPAR(struct ArmCpu *cpu) { return cpu->CPAR; }
 
 void cpuSetCPAR(struct ArmCpu *cpu, uint16_t cpar) { cpu->CPAR = cpar; }
+
+void cpuSetSleeping(struct ArmCpu *cpu) { cpu->sleeping = true; }
+
+void cpuWakeup(struct ArmCpu *cpu) { cpu->sleeping = false; }
 
 void cpuSetPid(struct ArmCpu *cpu, uint32_t pid) { cpu->pid = pid; }
 

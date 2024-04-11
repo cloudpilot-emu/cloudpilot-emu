@@ -520,6 +520,8 @@ void socSleep(SoC *soc) {
 
     soc->scheduler->RescheduleTask(SCHEDULER_TASK_TIMER, pxaTimrTicksToNextInterrupt(soc->tmr));
 
+    cpuSetSleeping(soc->cpu);
+
     // soc->sleepAtTime = soc->scheduler->GetTime();
     // printf("sleep\n");
 }
@@ -530,6 +532,8 @@ void socWakeup(SoC *soc, uint8_t wakeupSource) {
     soc->sleeping = false;
 
     soc->scheduler->RescheduleTask(SCHEDULER_TASK_TIMER, 1);
+
+    cpuWakeup(soc->cpu);
 
     // printf("wakeupt after %llu nsec from %u\n", soc->scheduler->GetTime() - soc->sleepAtTime,
     //        (int)wakeupSource);
