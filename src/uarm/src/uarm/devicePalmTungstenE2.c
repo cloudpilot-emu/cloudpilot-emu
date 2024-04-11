@@ -191,8 +191,9 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Reschedule reschedule, 
 
 void devicePeriodic(struct Device *dev, uint32_t tier) {
     if (tier == DEVICE_PERIODIC_TIER0) directNandPeriodic(dev->nand);
-    if (tier == DEVICE_PERIODIC_TIER1) wm9712Lperiodic(dev->wm9712L);
 }
+
+void devicePcmPeriodic(struct Device *dev) { wm9712Lperiodic(dev->wm9712L); }
 
 void deviceTouch(struct Device *dev, int x, int y) {
     wm9712LsetPen(dev->wm9712L, (x >= 0 && y >= 0) ? 280 + 173 * x / 16 : -1,
@@ -220,3 +221,5 @@ bool deviceTaskRequired(struct Device *dev, uint32_t tier) {
 void deviceSetAudioQueue(struct Device *dev, struct AudioQueue *audioQueue) {
     wm9712LsetAudioQueue(dev->wm9712L, audioQueue);
 }
+
+bool deviceI2sConnected() { return false; }

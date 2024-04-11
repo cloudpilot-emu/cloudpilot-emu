@@ -20,8 +20,6 @@ struct AC97Fifo {
     uint32_t data[16];
 
     uint8_t *icr, *isr;
-
-    uint32_t lastReadSample;
 };
 
 struct Ac97CodecStruct {
@@ -99,13 +97,11 @@ static bool socAC97PrvFifoGet(struct SocAC97 *ac97, struct AC97Fifo *fifo, uint3
     bool ret = false;
 
     if (!fifo->numItems) {
-        if (valP) *valP = fifo->lastReadSample;
+        if (valP) *valP = 0;
 
         *fifo->isr |= 0x10;  // empty
     } else {
-        fifo->lastReadSample = fifo->data[fifo->readPtr];
-
-        if (valP) *valP = fifo->lastReadSample;
+        if (valP) *valP = fifo->data[fifo->readPtr];
 
         if (++fifo->readPtr == cap) fifo->readPtr = 0;
 

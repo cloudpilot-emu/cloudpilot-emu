@@ -429,11 +429,16 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     // Periodic tasks 0: every 36 timer ticks -> 102.4 kHz
     soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_1, 36_sec / 3686400ULL, 1);
 
-    // Periodic tasks 1: audio -> run at 44.1 kHz to match PalmOS sample rate
-    soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 44100, 1);
+    // PCM -> run at 44.1 kHz to match PalmOS sample rate
+    soc->scheduler->ScheduleTask(SCHEDULER_TASK_PCM, 1_sec / 44100, 1);
+
+    if (deviceI2sConnected()) {
+        // I2S -> run at 44.1 kHz
+        soc->scheduler->ScheduleTask(SCHEDULER_TASK_I2S, 1_sec / 44100, 1);
+    }
 
     // Pump event queues: 25 Hz
-    soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_3, 40_msec, 1);
+    soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 25, 1);
 
     /*
             var gpio = {latches: [0x30000, 0x1400001, 0x200], inputs: [0x786c06, 0x100, 0x0],
@@ -551,12 +556,6 @@ static void socCycleBatch0(struct SoC *soc) {
     devicePeriodic(soc->dev, DEVICE_PERIODIC_TIER0);
 }
 
-static void socCycleBatch1(struct SoC *soc) {
-    socAC97Periodic(soc->ac97);
-    socI2sPeriodic(soc->i2s);
-    devicePeriodic(soc->dev, DEVICE_PERIODIC_TIER1);
-}
-
 static bool socPrvBatch0Required(struct SoC *soc) {
     if (!soc->dev) return true;
 
@@ -592,20 +591,25 @@ uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
             pxaLcdTick(lcd);
             return 1;
 
+        case SCHEDULER_TASK_I2S:
+            socI2sPeriodic(i2s);
+            return 1;
+
+        case SCHEDULER_TASK_PCM:
+            devicePcmPeriodic(dev);
+            return 1;
+            break;
+
         case SCHEDULER_TASK_AUX_1:
             socCycleBatch0(this);
             return socPrvBatch0Required(this) ? 1 : 0;
 
         case SCHEDULER_TASK_AUX_2:
-            socCycleBatch1(this);
-            return 1;
-
-        case SCHEDULER_TASK_AUX_3:
             socPumpEventQueues(this);
             return 1;
 
         default:
-            ERR("invalid client type");
+            ERR("invalid client type\n");
     }
 }
 

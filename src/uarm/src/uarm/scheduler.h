@@ -6,11 +6,11 @@
 #define SCHEDULER_TASK_TIMER 0
 #define SCHEDULER_TASK_RTC 1
 #define SCHEDULER_TASK_LCD 2
-#define SCHEDULER_TASK_AUX_1 3
-#define SCHEDULER_TASK_AUX_2 4
-#define SCHEDULER_TASK_AUX_3 5
-#define SCHEDULER_TASK_AUX_4 6
-#define SCHEDULER_TASK_AUX_5 7
+#define SCHEDULER_TASK_I2S 3
+#define SCHEDULER_TASK_PCM 4
+#define SCHEDULER_TASK_AUX_1 5
+#define SCHEDULER_TASK_AUX_2 6
+#define SCHEDULER_TASK_AUX_3 7
 
 constexpr uint64_t operator""_sec(uint64_t seconds) { return seconds * 1000000000ull; }
 constexpr uint64_t operator""_msec(uint64_t mseconds) { return mseconds * 1000000ull; }
@@ -33,7 +33,7 @@ class Scheduler {
     uint64_t GetTime() const;
 
    private:
-    static constexpr int32_t SCHEDULER_TASK_MAX = SCHEDULER_TASK_AUX_5;
+    static constexpr int32_t SCHEDULER_TASK_MAX = SCHEDULER_TASK_AUX_3;
     static constexpr int32_t SCHEDULER_TASK_NONE = 0xff;
 
     struct Task {
