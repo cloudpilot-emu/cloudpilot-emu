@@ -49,6 +49,7 @@ void socSetFramebufferDirty(struct SoC *soc);
 bool socSetFramebuffer(struct SoC *soc, uint32_t start, uint32_t size);
 
 void socSetAudioQueue(struct SoC *soc, struct AudioQueue *audioQueue);
+void socSetPcmSuspended(struct SoC *soc, bool pcmSuspended);
 
 #ifdef __cplusplus
 }

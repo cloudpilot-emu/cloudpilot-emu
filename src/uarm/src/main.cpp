@@ -25,6 +25,8 @@
     #include <SDL.h>
     #include <SDL_image.h>
 
+    #include <atomic>
+
     #include "SdlEventHandler.h"
     #include "SdlRenderer.h"
 #endif
@@ -52,10 +54,14 @@ namespace {
     size_t sdCardSecs = 0;
 
     SoC* soc = nullptr;
+
     AudioQueue* audioQueue = nullptr;
     unique_ptr<MainLoop> mainLoop;
 
-    bool audioBuffering = true;
+#ifndef __EMSCRIPTEN__
+    std::atomic<bool> audioBuffering{true};
+    bool audioBackpressure = false;
+#endif
 
     void usage(const char* self) {
         fprintf(stderr,
@@ -114,15 +120,27 @@ namespace {
         fclose(cardFile);
     }
 
+#ifndef __EMSCRIPTEN__
     void audioCallback(void* userdata, uint8_t* stream, int len) {
         size_t samplesRemaining = len / 4;
         size_t samplesPending = audioQueuePendingSamples(audioQueue);
 
         if (audioBuffering && samplesPending > 1024) audioBuffering = false;
+
         if (!audioBuffering && samplesPending < 512) {
             audioBuffering = true;
 
-            cout << "underrun!" << endl;
+            cout << "audio underrun" << endl;
+        }
+
+        if (!audioBackpressure && samplesPending > 2560) {
+            audioBackpressure = true;
+
+            cout << "audio backpressure" << endl;
+        }
+
+        if (audioBackpressure && samplesPending < 2048) {
+            audioBackpressure = false;
         }
 
         if (!audioBuffering) {
@@ -135,7 +153,6 @@ namespace {
         }
     }
 
-#ifndef __EMSCRIPTEN__
     void initSdl(struct DeviceDisplayConfiguration displayConfiguration, int scale,
                  SDL_Window** window, SDL_Renderer** renderer) {
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO) < 0) {
@@ -279,7 +296,7 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     soc = socInit(rom, romLen, sdCardSecs, prvSdSectorR, prvSdSectorW, nand, nandLen, gdbPort,
                   deviceGetSocRev());
 
-    audioQueue = audioQueueCreate(4410);
+    audioQueue = audioQueueCreate(5000);
     socSetAudioQueue(soc, audioQueue);
 
     mainLoop = make_unique<MainLoop>(soc, 100000000);
@@ -304,6 +321,8 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
 
     while (true) {
         uint64_t now = timestampUsec();
+
+        socSetPcmSuspended(soc, audioBackpressure);
 
         mainLoop->Cycle(now);
         sdlRenderer.Draw();

@@ -97,6 +97,7 @@ struct SoC {
     SocIc *ic;
 
     bool mouseDown;
+    bool pcmSuspended;
     bool sleeping;
     uint64_t sleepAtTime;
 
@@ -600,8 +601,7 @@ uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
 
         case SCHEDULER_TASK_PCM:
             devicePcmPeriodic(dev);
-            return 1;
-            break;
+            return pcmSuspended ? 0 : 1;
 
         case SCHEDULER_TASK_AUX_1:
             socCycleBatch0(this);
@@ -652,4 +652,11 @@ bool socSetFramebuffer(struct SoC *soc, uint32_t start, uint32_t size) {
 
 void socSetAudioQueue(struct SoC *soc, struct AudioQueue *audioQueue) {
     deviceSetAudioQueue(soc->dev, audioQueue);
+}
+
+void socSetPcmSuspended(struct SoC *soc, bool pcmSuspended) {
+    if (soc->pcmSuspended == pcmSuspended) return;
+
+    soc->pcmSuspended = pcmSuspended;
+    soc->scheduler->RescheduleTask(SCHEDULER_TASK_PCM, pcmSuspended ? 0 : 1);
 }
