@@ -87,6 +87,9 @@ void Scheduler<T>::RescheduleTask(uint32_t taskType, uint32_t batchTicks) {
     if (task.batchedTicks > 0) {
         const uint64_t accumulatedTicks = (accTime - task.lastUpdate) / task.period;
         if (accumulatedTicks > batchTicks) batchTicks = accumulatedTicks;
+    } else {
+        task.lastUpdate =
+            ((accTime - task.nextUpdate) / task.period) * task.period + task.nextUpdate;
     }
 
     task.batchedTicks = batchTicks;

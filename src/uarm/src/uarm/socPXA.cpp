@@ -190,6 +190,31 @@ static void socPrvReschedule(void *ctx, uint32_t task) {
 }
 }
 
+static void setupScheduler(Scheduler<SoC> *scheduler) {
+    // Timer: 3.6864 MHz
+    scheduler->ScheduleTask(SCHEDULER_TASK_TIMER, 1_sec / 3686400ULL, 1);
+
+    // RTC: 1 Hz
+    scheduler->ScheduleTask(SCHEDULER_TASK_RTC, 1_sec, 1);
+
+    // LCD: one frame every 64 ticks, 3 ticks per frame, 60 FPS -> 11.52 kHz
+    scheduler->ScheduleTask(SCHEDULER_TASK_LCD, 1_sec / (64 * 3 * 60), 1);
+
+    // Periodic tasks 0: every 36 timer ticks -> 102.4 kHz
+    scheduler->ScheduleTask(SCHEDULER_TASK_AUX_1, 36_sec / 3686400ULL, 1);
+
+    // PCM -> run at 44.1 kHz to match PalmOS sample rate
+    scheduler->ScheduleTask(SCHEDULER_TASK_PCM, 1_sec / 44100, 1);
+
+    if (deviceI2sConnected()) {
+        // I2S -> run at 44.1 kHz
+        scheduler->ScheduleTask(SCHEDULER_TASK_I2S, 1_sec / 44100, 1);
+    }
+
+    // Pump event queues: 25 Hz
+    scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 25, 1);
+}
+
 SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSectorR sdR,
              SdSectorW sdW, uint8_t *nandContent, size_t nandSize, int gdbPort,
              uint_fast8_t socRev) {
@@ -204,6 +229,7 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     soc->pacePatch = createPacePatch();
 
     soc->scheduler = new Scheduler<SoC>(*soc);
+    setupScheduler(soc->scheduler);
 
     soc->penEventQueue = new Queue<PenEvent>(EVENT_QUEUE_CAPACITY);
     soc->keyEventQueue = new Queue<KeyEvent>(EVENT_QUEUE_CAPACITY);
@@ -416,29 +442,6 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     if (!soc->dev) ERR("Cannot init device\n");
 
     if (sp.dbgUart) socUartSetFuncs(sp.dbgUart, socUartPrvRead, socUartPrvWrite, soc->hwUart);
-
-    // Timer: 3.6864 MHz
-    soc->scheduler->ScheduleTask(SCHEDULER_TASK_TIMER, 1_sec / 3686400ULL, 1);
-
-    // RTC: 1 Hz
-    soc->scheduler->ScheduleTask(SCHEDULER_TASK_RTC, 1_sec, 1);
-
-    // LCD: one frame every 64 ticks, 3 ticks per frame, 60 FPS -> 11.52 kHz
-    soc->scheduler->ScheduleTask(SCHEDULER_TASK_LCD, 1_sec / (64 * 3 * 60), 1);
-
-    // Periodic tasks 0: every 36 timer ticks -> 102.4 kHz
-    soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_1, 36_sec / 3686400ULL, 1);
-
-    // PCM -> run at 44.1 kHz to match PalmOS sample rate
-    soc->scheduler->ScheduleTask(SCHEDULER_TASK_PCM, 1_sec / 44100, 1);
-
-    if (deviceI2sConnected()) {
-        // I2S -> run at 44.1 kHz
-        soc->scheduler->ScheduleTask(SCHEDULER_TASK_I2S, 1_sec / 44100, 1);
-    }
-
-    // Pump event queues: 25 Hz
-    soc->scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 25, 1);
 
     /*
             var gpio = {latches: [0x30000, 0x1400001, 0x200], inputs: [0x786c06, 0x100, 0x0],

@@ -364,6 +364,36 @@ namespace {
         dispatchDelegate.Reset();
     }
 
+    TEST(Scheduler, ReschedulingAnUnscheduledTaskConinuesFromTheLastTheoreticTick) {
+        DispatchDelegate dispatchDelegate;
+        Scheduler<DispatchDelegate> scheduler(dispatchDelegate);
+
+        scheduler.ScheduleTask(SCHEDULER_TASK_RTC, 50_usec, 1);
+
+        scheduler.Advance(49, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(0));
+
+        scheduler.Advance(1, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(1));
+        dispatchDelegate.ExpectInvocation(0, SCHEDULER_TASK_RTC, 1);
+        dispatchDelegate.Reset();
+
+        scheduler.UnscheduleTask(SCHEDULER_TASK_RTC);
+
+        scheduler.Advance(55, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(0));
+
+        scheduler.RescheduleTask(SCHEDULER_TASK_RTC, 1);
+
+        scheduler.Advance(44, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(0));
+
+        scheduler.Advance(1, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(1));
+        dispatchDelegate.ExpectInvocation(0, SCHEDULER_TASK_RTC, 1);
+        dispatchDelegate.Reset();
+    }
+
     TEST(Scheduler, ReschedulingDropsOverdueTicksOnBatchSizeZero) {
         DispatchDelegate dispatchDelegate;
         Scheduler<DispatchDelegate> scheduler(dispatchDelegate);
