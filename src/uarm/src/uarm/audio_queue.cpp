@@ -11,7 +11,7 @@
 
     #define AUDIO_QUEUE_LOCK std::lock_guard lock(audioQueue->mutex)
 #else
-    #define AUDIO_QUEUE_LOCK std::lock_guard lock(audioQueue->mutex)
+    #define AUDIO_QUEUE_LOCK
 #endif
 
 struct AudioQueue {
