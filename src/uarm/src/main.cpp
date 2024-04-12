@@ -133,15 +133,8 @@ namespace {
             cout << "audio underrun" << endl;
         }
 
-        if (!audioBackpressure && samplesPending > 44100 / 60 * 4) {
-            audioBackpressure = true;
-
-            cout << "audio backpressure" << endl;
-        }
-
-        if (audioBackpressure && samplesPending < 44100 / 60 * 3) {
-            audioBackpressure = false;
-        }
+        if (!audioBackpressure && samplesPending > 44100 / 60 * 4) audioBackpressure = true;
+        if (audioBackpressure && samplesPending < 44100 / 60 * 3) audioBackpressure = false;
 
         if (!audioBuffering) {
             samplesRemaining -= audioQueuePopChunk(audioQueue, reinterpret_cast<uint32_t*>(stream),
