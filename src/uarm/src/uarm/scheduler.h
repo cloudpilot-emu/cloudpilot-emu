@@ -23,7 +23,8 @@ class Scheduler {
     explicit Scheduler(T& dispatchDelegate);
 
     void ScheduleTask(uint32_t taskType, uint64_t period, uint32_t batchTicks);
-    inline void RescheduleTask(uint32_t taskType, uint32_t batchTicks);
+    void RescheduleTask(uint32_t taskType, uint32_t batchTicks);
+    void RescheduleTaskAtLeast(uint32_t taskType, uint32_t batchTicks);
     inline void UnscheduleTask(uint32_t taskType);
 
     uint64_t CyclesToNextUpdate(uint64_t cyclesPerSecond);
@@ -31,6 +32,10 @@ class Scheduler {
     void Advance(uint64_t cycles, uint64_t cyclesPerSecond);
 
     uint64_t GetTime() const;
+
+   private:
+    template <bool atLeast>
+    inline void RescheduleTaskImpl(uint32_t taskType, uint32_t batchTicks);
 
    private:
     static constexpr int32_t SCHEDULER_TASK_MAX = SCHEDULER_TASK_AUX_3;
@@ -80,14 +85,27 @@ void Scheduler<T>::ScheduleTask(uint32_t taskType, uint64_t period, uint32_t bat
 
 template <typename T>
 void Scheduler<T>::RescheduleTask(uint32_t taskType, uint32_t batchTicks) {
+    RescheduleTaskImpl<false>(taskType, batchTicks);
+}
+
+template <typename T>
+void Scheduler<T>::RescheduleTaskAtLeast(uint32_t taskType, uint32_t batchTicks) {
+    RescheduleTaskImpl<true>(taskType, batchTicks);
+}
+
+template <typename T>
+template <bool atLeast>
+void Scheduler<T>::RescheduleTaskImpl(uint32_t taskType, uint32_t batchTicks) {
     if (batchTicks == 0) return UnscheduleTask(taskType);
 
     Task& task{tasks[taskType]};
 
-    if (task.batchedTicks > 0) {
+    if constexpr (atLeast) {
         const uint64_t accumulatedTicks = (accTime - task.lastUpdate) / task.period;
         if (accumulatedTicks > batchTicks) batchTicks = accumulatedTicks;
-    } else {
+    }
+
+    if (task.batchedTicks == 0) {
         task.lastUpdate =
             ((accTime - task.nextUpdate) / task.period) * task.period + task.nextUpdate;
     }
@@ -162,9 +180,8 @@ void Scheduler<T>::Advance(uint64_t cycles, uint64_t cyclesPerSecond) {
 
         const uint32_t batchTicks = dispatchDelegate.DispatchTicks(taskType, task.batchedTicks);
         task.lastUpdate += task.batchedTicks * task.period;
-        task.batchedTicks = 0;
 
-        RescheduleTask(taskType, batchTicks);
+        RescheduleTaskImpl<false>(taskType, batchTicks);
     }
 
     UpdateNextUpdate();

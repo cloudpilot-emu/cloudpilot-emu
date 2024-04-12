@@ -221,7 +221,43 @@ namespace {
         dispatchDelegate.Reset();
     }
 
-    TEST(Scheduler, ReschedulingBatchesOverdueTicks) {
+    TEST(Scheduler, RescheduleTaskAtLeastBatchesOverdueTicks) {
+        DispatchDelegate dispatchDelegate;
+        Scheduler<DispatchDelegate> scheduler(dispatchDelegate);
+
+        scheduler.ScheduleTask(SCHEDULER_TASK_TIMER, 10_usec, 10);
+        scheduler.ScheduleTask(SCHEDULER_TASK_RTC, 55_usec, 1);
+
+        scheduler.Advance(42, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(0));
+
+        scheduler.RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER, 1);
+
+        scheduler.Advance(1, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(1));
+        dispatchDelegate.ExpectInvocation(0, SCHEDULER_TASK_TIMER, 4);
+        dispatchDelegate.Reset();
+
+        scheduler.RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER, 1);
+
+        scheduler.Advance(6, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(0));
+
+        scheduler.Advance(1, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(1));
+        dispatchDelegate.ExpectInvocation(0, SCHEDULER_TASK_TIMER, 1);
+        dispatchDelegate.Reset();
+
+        scheduler.Advance(4, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(0));
+
+        scheduler.Advance(1, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(1));
+        dispatchDelegate.ExpectInvocation(0, SCHEDULER_TASK_RTC, 1);
+        dispatchDelegate.Reset();
+    }
+
+    TEST(Scheduler, RescheduleTaskDoesNotBatchOverdueTicks) {
         DispatchDelegate dispatchDelegate;
         Scheduler<DispatchDelegate> scheduler(dispatchDelegate);
 
@@ -234,8 +270,11 @@ namespace {
         scheduler.RescheduleTask(SCHEDULER_TASK_TIMER, 1);
 
         scheduler.Advance(1, 1_mhz);
-        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(1));
-        dispatchDelegate.ExpectInvocation(0, SCHEDULER_TASK_TIMER, 4);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(4));
+        dispatchDelegate.ExpectInvocation(0, SCHEDULER_TASK_TIMER, 1);
+        dispatchDelegate.ExpectInvocation(1, SCHEDULER_TASK_TIMER, 1);
+        dispatchDelegate.ExpectInvocation(2, SCHEDULER_TASK_TIMER, 1);
+        dispatchDelegate.ExpectInvocation(3, SCHEDULER_TASK_TIMER, 1);
         dispatchDelegate.Reset();
 
         scheduler.RescheduleTask(SCHEDULER_TASK_TIMER, 1);
@@ -413,6 +452,23 @@ namespace {
         EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(1));
         dispatchDelegate.ExpectInvocation(0, SCHEDULER_TASK_RTC, 1);
         dispatchDelegate.Reset();
+    }
+
+    TEST(Scheduler, AdvanceHonorsTheBatchSizeReturnedByDelegate) {
+        DispatchDelegate dispatchDelegate;
+        Scheduler<DispatchDelegate> scheduler(dispatchDelegate);
+
+        scheduler.ScheduleTask(SCHEDULER_TASK_TIMER, 50_usec, 1);
+        scheduler.ScheduleTask(SCHEDULER_TASK_RTC, 110_usec, 1);
+        scheduler.ScheduleTask(SCHEDULER_TASK_PCM, 70_usec, 2);
+
+        scheduler.Advance(160, 1_mhz);
+        EXPECT_EQ(dispatchDelegate.GetInvocationCount(), static_cast<size_t>(5));
+        dispatchDelegate.ExpectInvocation(0, SCHEDULER_TASK_TIMER, 1);
+        dispatchDelegate.ExpectInvocation(1, SCHEDULER_TASK_TIMER, 1);
+        dispatchDelegate.ExpectInvocation(2, SCHEDULER_TASK_RTC, 1);
+        dispatchDelegate.ExpectInvocation(3, SCHEDULER_TASK_PCM, 2);
+        dispatchDelegate.ExpectInvocation(4, SCHEDULER_TASK_TIMER, 1);
     }
 
 }  // namespace
