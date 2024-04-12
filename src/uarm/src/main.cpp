@@ -125,21 +125,21 @@ namespace {
         size_t samplesRemaining = len / 4;
         size_t samplesPending = audioQueuePendingSamples(audioQueue);
 
-        if (audioBuffering && samplesPending > 1024) audioBuffering = false;
+        if (audioBuffering && samplesPending > 44100 / 60 * 2) audioBuffering = false;
 
-        if (!audioBuffering && samplesPending < 512) {
+        if (!audioBuffering && samplesPending < 44100 / 60) {
             audioBuffering = true;
 
             cout << "audio underrun" << endl;
         }
 
-        if (!audioBackpressure && samplesPending > 2560) {
+        if (!audioBackpressure && samplesPending > 44100 / 60 * 4) {
             audioBackpressure = true;
 
             cout << "audio backpressure" << endl;
         }
 
-        if (audioBackpressure && samplesPending < 2048) {
+        if (audioBackpressure && samplesPending < 44100 / 60 * 3) {
             audioBackpressure = false;
         }
 
@@ -296,7 +296,7 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     soc = socInit(rom, romLen, sdCardSecs, prvSdSectorR, prvSdSectorW, nand, nandLen, gdbPort,
                   deviceGetSocRev());
 
-    audioQueue = audioQueueCreate(5000);
+    audioQueue = audioQueueCreate(44100 / 60 * 10);
     socSetAudioQueue(soc, audioQueue);
 
     mainLoop = make_unique<MainLoop>(soc, 100000000);

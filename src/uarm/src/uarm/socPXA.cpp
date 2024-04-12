@@ -204,8 +204,9 @@ static void setupScheduler(Scheduler<SoC> *scheduler) {
     // Periodic tasks 0: every 36 timer ticks -> 102.4 kHz
     scheduler->ScheduleTask(SCHEDULER_TASK_AUX_1, 36_sec / 3686400ULL, 1);
 
-    // PCM -> run at 44.1 kHz to match PalmOS sample rate
-    scheduler->ScheduleTask(SCHEDULER_TASK_PCM, 1_sec / 44100, 1);
+    // PCM -> run at 44.3 kHz (higher than 44.1 kHz to create backpressure and
+    // avoid underruns)
+    scheduler->ScheduleTask(SCHEDULER_TASK_PCM, 1_sec / 44300, 1);
 
     if (deviceI2sConnected()) {
         // I2S -> run at 44.1 kHz
@@ -526,8 +527,8 @@ void socSleep(SoC *soc) {
     if (soc->sleeping) return;
 
     soc->sleeping = true;
-
-    soc->scheduler->RescheduleTask(SCHEDULER_TASK_TIMER, pxaTimrTicksToNextInterrupt(soc->tmr));
+    soc->scheduler->RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER,
+                                          pxaTimrTicksToNextInterrupt(soc->tmr));
 
     cpuSetSleeping(soc->cpu);
 
@@ -539,8 +540,7 @@ void socWakeup(SoC *soc, uint8_t wakeupSource) {
     if (!soc->sleeping) return;
 
     soc->sleeping = false;
-
-    soc->scheduler->RescheduleTask(SCHEDULER_TASK_TIMER, 1);
+    soc->scheduler->RescheduleTaskAtLeast(SCHEDULER_TASK_TIMER, 1);
 
     cpuWakeup(soc->cpu);
 
