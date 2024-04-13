@@ -295,6 +295,8 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     mainLoop = make_unique<MainLoop>(soc, 100000000);
 
 #ifndef __EMSCRIPTEN__
+    socSetPcmOutputEnabled(soc, true);
+
     constexpr int SCALE = 2;
 
     DeviceDisplayConfiguration displayConfiguration;

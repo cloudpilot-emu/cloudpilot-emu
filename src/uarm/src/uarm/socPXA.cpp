@@ -68,6 +68,9 @@
 
 #define EVENT_QUEUE_CAPACITY 64
 
+#define PCM_HZ_ENABLED 44300
+#define PCM_HZ_DISABLED (44100 / 4)
+
 struct PenEvent {
     bool penDown;
     int x, y;
@@ -97,6 +100,7 @@ struct SoC {
     SocIc *ic;
 
     bool mouseDown;
+    bool enablePcmOutput;
     bool pcmSuspended;
     bool sleeping;
     uint64_t sleepAtTime;
@@ -191,7 +195,7 @@ static void socPrvReschedule(void *ctx, uint32_t task) {
 }
 }
 
-static void setupScheduler(Scheduler<SoC> *scheduler) {
+static void socSetupScheduler(Scheduler<SoC> *scheduler) {
     // Timer: 3.6864 MHz
     scheduler->ScheduleTask(SCHEDULER_TASK_TIMER, 1_sec / 3686400ULL, 1);
 
@@ -206,7 +210,7 @@ static void setupScheduler(Scheduler<SoC> *scheduler) {
 
     // PCM -> run at 44.3 kHz (higher than 44.1 kHz to create backpressure and
     // avoid underruns)
-    scheduler->ScheduleTask(SCHEDULER_TASK_PCM, 1_sec / 44300, 1);
+    scheduler->ScheduleTask(SCHEDULER_TASK_PCM, 1_sec / PCM_HZ_DISABLED, 1);
 
     if (deviceI2sConnected()) {
         // I2S -> run at 44.1 kHz
@@ -231,7 +235,7 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     soc->pacePatch = createPacePatch();
 
     soc->scheduler = new Scheduler<SoC>(*soc);
-    setupScheduler(soc->scheduler);
+    socSetupScheduler(soc->scheduler);
 
     soc->penEventQueue = new Queue<PenEvent>(EVENT_QUEUE_CAPACITY);
     soc->keyEventQueue = new Queue<KeyEvent>(EVENT_QUEUE_CAPACITY);
@@ -601,7 +605,7 @@ uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
 
         case SCHEDULER_TASK_PCM:
             devicePcmPeriodic(dev);
-            return pcmSuspended ? 0 : 1;
+            return (pcmSuspended && enablePcmOutput) ? 0 : 1;
 
         case SCHEDULER_TASK_AUX_1:
             socCycleBatch0(this);
@@ -658,5 +662,15 @@ void socSetPcmSuspended(struct SoC *soc, bool pcmSuspended) {
     if (soc->pcmSuspended == pcmSuspended) return;
 
     soc->pcmSuspended = pcmSuspended;
-    soc->scheduler->RescheduleTask(SCHEDULER_TASK_PCM, pcmSuspended ? 0 : 1);
+    if (soc->enablePcmOutput)
+        soc->scheduler->RescheduleTask(SCHEDULER_TASK_PCM, pcmSuspended ? 0 : 1);
+}
+
+void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled) {
+    if (pcmOutputEnabled == soc->enablePcmOutput) return;
+
+    soc->enablePcmOutput = pcmOutputEnabled;
+    soc->scheduler->ScheduleTask(SCHEDULER_TASK_PCM,
+                                 1_sec / (pcmOutputEnabled ? PCM_HZ_ENABLED : PCM_HZ_DISABLED),
+                                 soc->pcmSuspended ? 0 : 1);
 }
