@@ -61,6 +61,8 @@ typedef bool (*ArmCoprocMemAccsF)(
 typedef bool (*ArmCoprocTwoRegF)(struct ArmCpu *cpu, void *userData, bool MRRC, uint8_t op,
                                  uint8_t Rd, uint8_t Rn, uint8_t CRm);
 
+struct PatchDispatch;
+
 struct ArmCoprocessor {
     ArmCoprocRegXferF regXfer;
     ArmCoprocDatProcF dataProcessing;

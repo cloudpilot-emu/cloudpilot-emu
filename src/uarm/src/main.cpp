@@ -168,7 +168,10 @@ namespace {
         SDL_AudioSpec audioSpecRequested = {.freq = 44100,
                                             .format = AUDIO_S16,
                                             .channels = 2,
+                                           .silence = 0,
                                             .samples = 512,
+                                           .padding = 0,
+                                           .size = 0,
                                             .callback = audioCallback,
                                             .userdata = nullptr};
 

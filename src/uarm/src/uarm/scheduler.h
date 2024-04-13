@@ -12,10 +12,10 @@
 #define SCHEDULER_TASK_AUX_2 6
 #define SCHEDULER_TASK_AUX_3 7
 
-constexpr uint64_t operator""_sec(uint64_t seconds) { return seconds * 1000000000ull; }
-constexpr uint64_t operator""_msec(uint64_t mseconds) { return mseconds * 1000000ull; }
-constexpr uint64_t operator""_usec(uint64_t useconds) { return useconds * 1000ull; }
-constexpr uint64_t operator""_nsec(uint64_t nseconds) { return nseconds; }
+constexpr uint64_t operator""_sec(unsigned long long seconds) { return seconds * 1000000000ull; }
+constexpr uint64_t operator""_msec(unsigned long long mseconds) { return mseconds * 1000000ull; }
+constexpr uint64_t operator""_usec(unsigned long long  useconds) { return useconds * 1000ull; }
+constexpr uint64_t operator""_nsec(unsigned long long  nseconds) { return nseconds; }
 
 template <typename T>
 class Scheduler {
