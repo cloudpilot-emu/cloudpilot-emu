@@ -2296,7 +2296,7 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
             }
 
         case 2:
-        case 3:  // data process immediate val, move imm to S
+        case 3:  // data process immediate val, move imm to SR
         {
             const bool setFlags = !!(instr & 0x00100000UL);
             const bool srcPc = ((instr >> 16) & 0x0F) == 0x0f;

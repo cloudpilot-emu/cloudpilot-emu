@@ -14,8 +14,8 @@
 
 constexpr uint64_t operator""_sec(unsigned long long seconds) { return seconds * 1000000000ull; }
 constexpr uint64_t operator""_msec(unsigned long long mseconds) { return mseconds * 1000000ull; }
-constexpr uint64_t operator""_usec(unsigned long long  useconds) { return useconds * 1000ull; }
-constexpr uint64_t operator""_nsec(unsigned long long  nseconds) { return nseconds; }
+constexpr uint64_t operator""_usec(unsigned long long useconds) { return useconds * 1000ull; }
+constexpr uint64_t operator""_nsec(unsigned long long nseconds) { return nseconds; }
 
 template <typename T>
 class Scheduler {
