@@ -61,8 +61,6 @@
 
 #define cpuPrvGetRegNotPC(cpu, reg) (cpu->regs[reg])
 
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-
 typedef void (*ExecFn)(struct ArmCpu *cpu, uint32_t instr, bool privileged);
 
 /*
@@ -2274,6 +2272,9 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
                             case 3:  // SMULxy
                                 if (instr & 0x0000F000UL) return execFn_invalid<wasT>;
                                 return execFn_dspmul<wasT, 3>;
+
+                            default:
+                                __builtin_unreachable();
                         }
 
                     case 1:  // BLX/BX/BXJ or CLZ
@@ -2294,6 +2295,8 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
 
                 // fall through to data processing;
             }
+
+            [[fallthrough]];
 
         case 2:
         case 3:  // data process immediate val, move imm to SR
