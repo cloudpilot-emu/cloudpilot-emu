@@ -68,7 +68,7 @@
 
 #define EVENT_QUEUE_CAPACITY 64
 
-#define PCM_HZ_ENABLED 44300
+#define PCM_HZ_ENABLED 45000
 #define PCM_HZ_DISABLED (44100 / 4)
 
 struct PenEvent {
