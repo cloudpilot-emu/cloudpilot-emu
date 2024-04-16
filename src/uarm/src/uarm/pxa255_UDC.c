@@ -64,6 +64,14 @@ static bool pxa255UdcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t siz
                 val = udc->uicr1;
             break;
 
+        // Stub those for now
+        case 0x04:  // UDCCS0
+        case 0x16:  // USIR0
+        case 0x17:  // USIR1
+        case 0x18:  // UFNRH
+            if (!write) val = 0;
+            break;
+
             // other regs, TODO
 
         default:
