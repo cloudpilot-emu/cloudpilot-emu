@@ -292,7 +292,7 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     soc = socInit(rom, romLen, sdCardSecs, prvSdSectorR, prvSdSectorW, nand, nandLen, gdbPort,
                   deviceGetSocRev());
 
-    audioQueue = audioQueueCreate(44100 / 60 * 10);
+    audioQueue = audioQueueCreate(44100 / 10);
     socSetAudioQueue(soc, audioQueue);
 
     mainLoop = make_unique<MainLoop>(soc, 100000000);
