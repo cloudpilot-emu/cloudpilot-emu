@@ -42,6 +42,7 @@
 #include <string.h>
 
 #include "../util.h"
+#include "audio_queue.h"
 #include "device.h"
 #include "keys.h"
 #include "peephole.h"
@@ -104,6 +105,8 @@ struct SoC {
     bool pcmSuspended;
     bool sleeping;
     uint64_t sleepAtTime;
+
+    struct AudioQueue *audioQueue;
 
     Queue<PenEvent> *penEventQueue;
     Queue<KeyEvent> *keyEventQueue;
@@ -656,6 +659,8 @@ bool socSetFramebuffer(struct SoC *soc, uint32_t start, uint32_t size) {
 
 void socSetAudioQueue(struct SoC *soc, struct AudioQueue *audioQueue) {
     deviceSetAudioQueue(soc->dev, audioQueue);
+
+    soc->audioQueue = audioQueue;
 }
 
 void socSetPcmSuspended(struct SoC *soc, bool pcmSuspended) {
@@ -673,4 +678,6 @@ void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled) {
     soc->scheduler->ScheduleTask(SCHEDULER_TASK_PCM,
                                  1_sec / (pcmOutputEnabled ? PCM_HZ_ENABLED : PCM_HZ_DISABLED),
                                  soc->pcmSuspended ? 0 : 1);
+
+    if (soc->audioQueue) audioQueueClear(soc->audioQueue);
 }

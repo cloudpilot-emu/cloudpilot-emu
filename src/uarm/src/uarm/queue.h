@@ -15,6 +15,8 @@ class Queue {
 
     size_t GetSize() const;
 
+    void Clear();
+
    private:
     std::vector<T> items;
 
@@ -51,9 +53,15 @@ const T& Queue<T>::Peek() const {
 
     return items[index];
 }
+
 template <typename T>
 size_t Queue<T>::GetSize() const {
     return size;
+}
+
+template <typename T>
+void Queue<T>::Clear() {
+    size = 0;
 }
 
 #endif  // _QUEUE_H_

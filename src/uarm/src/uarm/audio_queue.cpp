@@ -51,3 +51,9 @@ size_t audioQueuePendingSamples(struct AudioQueue* audioQueue) {
 
     return audioQueue->queue.GetSize();
 }
+
+void audioQueueClear(struct AudioQueue* audioQueue) {
+    AUDIO_QUEUE_LOCK;
+
+    audioQueue->queue.Clear();
+}

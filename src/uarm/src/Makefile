@@ -121,7 +121,8 @@ SOURCE_CXX_NATIVE = 			\
 	$(SOURCE_CXX_COMMON)		\
 	Silkscreen.cpp				\
 	SdlRenderer.cpp				\
-	SdlEventHandler.cpp
+	SdlEventHandler.cpp			\
+	SdlAudioHandler.cpp
 
 SOURCE_TEST = \
 	test/scheduler.cpp \

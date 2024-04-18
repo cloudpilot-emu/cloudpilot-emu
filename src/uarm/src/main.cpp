@@ -27,6 +27,7 @@
 
     #include <atomic>
 
+    #include "SdlAudioHandler.h"
     #include "SdlEventHandler.h"
     #include "SdlRenderer.h"
 #endif
@@ -56,16 +57,13 @@ namespace {
     SoC* soc = nullptr;
 
     AudioQueue* audioQueue = nullptr;
+    bool enableAudio{true};
     unique_ptr<MainLoop> mainLoop;
-
-#ifndef __EMSCRIPTEN__
-    std::atomic<bool> audioBuffering{true};
-    bool audioBackpressure = false;
-#endif
 
     void usage(const char* self) {
         fprintf(stderr,
-                "USAGE: %s {-r ROMFILE.bin | --x} [-g gdbPort] [-s SDCARD_IMG.bin] [-n NAND.bin]\n",
+                "USAGE: %s {-r ROMFILE.bin | --x} [-g gdbPort] [-s SDCARD_IMG.bin] [-n NAND.bin] "
+                "[-q]\n",
                 self);
 
         exit(-1);
@@ -121,34 +119,9 @@ namespace {
     }
 
 #ifndef __EMSCRIPTEN__
-    void audioCallback(void* userdata, uint8_t* stream, int len) {
-        size_t samplesRemaining = len / 4;
-        size_t samplesPending = audioQueuePendingSamples(audioQueue);
-
-        if (audioBuffering && samplesPending > 44100 / 60 * 2) audioBuffering = false;
-
-        if (!audioBuffering && samplesPending < 44100 / 60) {
-            audioBuffering = true;
-
-            cout << "audio underrun" << endl;
-        }
-
-        if (!audioBackpressure && samplesPending > 44100 / 60 * 4) audioBackpressure = true;
-        if (audioBackpressure && samplesPending < 44100 / 60 * 3) audioBackpressure = false;
-
-        if (!audioBuffering) {
-            samplesRemaining -= audioQueuePopChunk(audioQueue, reinterpret_cast<uint32_t*>(stream),
-                                                   samplesRemaining);
-        }
-
-        if (samplesRemaining > 0) {
-            memset(stream + (len / 4 - samplesRemaining) * 4, 0, samplesRemaining * 4);
-        }
-    }
-
     void initSdl(struct DeviceDisplayConfiguration displayConfiguration, int scale,
                  SDL_Window** window, SDL_Renderer** renderer) {
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO) < 0) {
+        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | (enableAudio ? SDL_INIT_AUDIO : 0)) < 0) {
             printf("Couldn't initialize SDL: %s\n", SDL_GetError());
             exit(1);
         }
@@ -164,28 +137,6 @@ namespace {
             fprintf(stderr, "unabe to initialize window");
             exit(1);
         }
-
-        SDL_AudioSpec audioSpecRequested = {.freq = 44100,
-                                            .format = AUDIO_S16,
-                                            .channels = 2,
-                                            .silence = 0,
-                                            .samples = 512,
-                                            .padding = 0,
-                                            .size = 0,
-                                            .callback = audioCallback,
-                                            .userdata = nullptr};
-
-        SDL_AudioSpec audioSpecActual;
-
-        SDL_AudioDeviceID audioDevice =
-            SDL_OpenAudioDevice(nullptr, 0, &audioSpecRequested, &audioSpecActual, 0);
-        if (audioDevice == 0) {
-            cout << "failed to open audio device" << endl;
-        } else {
-            cout << "audio device open" << endl;
-        }
-
-        SDL_PauseAudioDevice(audioDevice, 0);
     }
 #endif
 }  // namespace
@@ -298,8 +249,6 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     mainLoop = make_unique<MainLoop>(soc, 100000000);
 
 #ifndef __EMSCRIPTEN__
-    socSetPcmOutputEnabled(soc, true);
-
     constexpr int SCALE = 2;
 
     DeviceDisplayConfiguration displayConfiguration;
@@ -314,13 +263,19 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     SDL_RenderClear(renderer);
     SdlRenderer sdlRenderer(window, renderer, soc, SCALE);
     SdlEventHandler sdlEventHandler(soc, SCALE);
+    unique_ptr<SdlAudioHandler> audioHandler;
+
+    if (enableAudio) {
+        audioHandler = make_unique<SdlAudioHandler>(soc, audioQueue);
+        audioHandler->Start();
+    }
 
     uint64_t lastSpeedDump = timestampUsec();
 
     while (true) {
         uint64_t now = timestampUsec();
 
-        socSetPcmSuspended(soc, audioBackpressure);
+        if (audioHandler) socSetPcmSuspended(soc, audioHandler->GetAudioBackpressure());
 
         mainLoop->Cycle(now);
         sdlRenderer.Draw();
@@ -357,7 +312,7 @@ int main(int argc, char** argv) {
     int gdbPort = -1;
     int c;
 
-    while ((c = getopt(argc, argv, "g:s:r:n:hx")) != -1) switch (c) {
+    while ((c = getopt(argc, argv, "g:s:r:n:hx:hq")) != -1) switch (c) {
             case 'g':  // gdb port
                 gdbPort = optarg ? atoi(optarg) : -1;
                 if (gdbPort < 1024 || gdbPort > 65535) usage(self);
@@ -377,6 +332,10 @@ int main(int argc, char** argv) {
     #endif
             case 'n':  // NAND
                 if (optarg) nandFile = fopen(optarg, "r+b");
+                break;
+
+            case 'q':
+                enableAudio = false;
                 break;
 
             default:

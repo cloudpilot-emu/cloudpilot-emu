@@ -18,6 +18,8 @@ size_t audioQueuePopChunk(struct AudioQueue* audioQueue, uint32_t* destination, 
 
 size_t audioQueuePendingSamples(struct AudioQueue* audioQueue);
 
+void audioQueueClear(struct AudioQueue* audioQueue);
+
 #ifdef __cplusplus
 }
 #endif
