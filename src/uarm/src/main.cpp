@@ -50,6 +50,7 @@ using namespace std;
 
 namespace {
     constexpr uint32_t SD_SECTOR_SIZE = 512ULL;
+    constexpr size_t AUDIO_QUEUE_SIZE = 44100 / 10;
 
     uint8_t* sdCardData = NULL;
     size_t sdCardSecs = 0;
@@ -57,7 +58,6 @@ namespace {
     SoC* soc = nullptr;
 
     AudioQueue* audioQueue = nullptr;
-    bool enableAudio{true};
     unique_ptr<MainLoop> mainLoop;
 
     void usage(const char* self) {
@@ -120,7 +120,7 @@ namespace {
 
 #ifndef __EMSCRIPTEN__
     void initSdl(struct DeviceDisplayConfiguration displayConfiguration, int scale,
-                 SDL_Window** window, SDL_Renderer** renderer) {
+                 SDL_Window** window, SDL_Renderer** renderer, bool enableAudio) {
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | (enableAudio ? SDL_INIT_AUDIO : 0)) < 0) {
             printf("Couldn't initialize SDL: %s\n", SDL_GetError());
             exit(1);
@@ -231,10 +231,27 @@ void EMSCRIPTEN_KEEPALIVE keyUp(int key) {
 
     socKeyUp(soc, (enum KeyId)key);
 }
+
+uint32_t EMSCRIPTEN_KEEPALIVE pendingSamples() { return audioQueuePendingSamples(audioQueue); }
+
+uint32_t* EMSCRIPTEN_KEEPALIVE popQueuedSamples() {
+    static uint32_t samples[AUDIO_QUEUE_SIZE];
+
+    audioQueuePopChunk(audioQueue, samples, audioQueuePendingSamples(audioQueue));
+
+    return samples;
+}
+
+void EMSCRIPTEN_KEEPALIVE setPcmOutputEnabled(bool enabled) {
+    socSetPcmOutputEnabled(soc, enabled);
+}
+
+void EMSCRIPTEN_KEEPALIVE setPcmSuspended(bool suspended) { socSetPcmSuspended(soc, suspended); }
 }
 #endif
 
-void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPort) {
+void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPort,
+         bool enableAudio) {
     if (static_cast<uint64_t>(sdCardSecs) >> 32) {
         fprintf(stderr, "SD card too big: %llu sectors\n", (unsigned long long)sdCardSecs);
         exit(-5);
@@ -243,7 +260,7 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     soc = socInit(rom, romLen, sdCardSecs, prvSdSectorR, prvSdSectorW, nand, nandLen, gdbPort,
                   deviceGetSocRev());
 
-    audioQueue = audioQueueCreate(44100 / 10);
+    audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
     socSetAudioQueue(soc, audioQueue);
 
     mainLoop = make_unique<MainLoop>(soc, 100000000);
@@ -257,7 +274,7 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     SDL_Window* window;
     SDL_Renderer* renderer;
 
-    initSdl(displayConfiguration, SCALE, &window, &renderer);
+    initSdl(displayConfiguration, SCALE, &window, &renderer, enableAudio);
 
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xff);
     SDL_RenderClear(renderer);
@@ -310,6 +327,7 @@ int main(int argc, char** argv) {
     uint8_t* rom = NULL;
     uint8_t* nand = NULL;
     int gdbPort = -1;
+    bool enableAudio{true};
     int c;
 
     while ((c = getopt(argc, argv, "g:s:r:n:hx:hq")) != -1) switch (c) {
@@ -384,7 +402,7 @@ int main(int argc, char** argv) {
     fprintf(stderr, "Read %u bytes of ROM\n", romLen);
     fprintf(stderr, "Read %lu bytes of NAND\n", nandLen);
 
-    run(rom, romLen, nand, nandLen, gdbPort);
+    run(rom, romLen, nand, nandLen, gdbPort, enableAudio);
 }
 #endif
 
@@ -415,7 +433,7 @@ sdSetupComplete:
     fprintf(stderr, "using %u bytes of NOR\n", romLen);
     fprintf(stderr, "using %u bytes of NAND\n", nandLen);
 
-    run(rom, (uint32_t)romLen, nand, (size_t)nandLen, 0);
+    run(rom, (uint32_t)romLen, nand, (size_t)nandLen, 0, true);
 }
 
 #endif

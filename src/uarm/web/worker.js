@@ -26,8 +26,16 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             this.penUp = module.cwrap('penUp', undefined, []);
             this.keyDown = module.cwrap('keyDown', undefined, ['number']);
             this.keyUp = module.cwrap('keyUp', undefined, ['number']);
+            this.pendingSamples = module.cwrap('pendingSamples', 'number', []);
+            this.popQueuedSamples = module.cwrap('popQueuedSamples', 'number', []);
+            this.setPcmOutputEnabled = module.cwrap('setPcmOutputEnabled', undefined, ['number']);
+            this.setPcmSuspended = module.cwrap('setPcmSuspended', undefined, ['number']);
 
             this.amIDead = false;
+            this.pcmEnabled = false;
+            this.pcmPort = undefined;
+
+            this.hurry = () => undefined;
         }
 
         static async create(nor, nand, sd, env) {
@@ -70,6 +78,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
 
             this.timeoutHandle = this.immediateHandle = undefined;
+            this.hurry = () => undefined;
 
             this.log('emulator stopped');
         }
@@ -95,6 +104,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                 }
 
                 this.render();
+                this.processAudio();
 
                 const timesliceRemainning =
                     (this.getTimesliceSizeUsec() - Number(this.getTimestampUsec()) + now) / 1000;
@@ -107,6 +117,13 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                     this.updateSpeedDisplay();
                     this.lastSpeedUpdate = now;
                 }
+            };
+
+            this.hurry = () => {
+                if (this.immediateHandle) clearImmediate(this.immediateHandle);
+                if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
+
+                schedule();
             };
 
             this.log('emulator running');
@@ -133,6 +150,18 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             this.resetFrame();
         }
 
+        processAudio() {
+            if (!this.module || !this.pcmPort || !this.pcmEnabled) return;
+
+            const pendingSamples = this.pendingSamples();
+            if (pendingSamples === 0) return;
+
+            const samplesPtr = this.popQueuedSamples() >>> 2;
+            const samples = this.module.HEAPU32.subarray(samplesPtr, samplesPtr + pendingSamples).slice();
+
+            this.pcmPort.postMessage({ type: 'sample-data', samples });
+        }
+
         updateSpeedDisplay() {
             const currentIps = this.currentIps();
             const currentIpsMax = Number(this.currentIpsMax());
@@ -143,6 +172,34 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                     100
                 ).toFixed(2)}%`
             );
+        }
+
+        setupPcm(port) {
+            this.pcmPort = port;
+            this.setPcmOutputEnabled(true);
+            this.pcmEnabled = true;
+
+            this.pcmPort.onmessage = (evt) => this.handlePcmMessage(evt.data);
+        }
+
+        handlePcmMessage(message) {
+            switch (message.type) {
+                case 'suspend-pcm':
+                    this.setPcmSuspended(true);
+                    break;
+
+                case 'resume-pcm':
+                    this.setPcmSuspended(false);
+                    break;
+
+                case 'hurry':
+                    this.hurry();
+                    break;
+
+                default:
+                    console.error(`worker: invalid PCM message ${message.type}`);
+                    break;
+            }
         }
     }
 
@@ -262,6 +319,10 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
 
             case 'returnFrame':
                 framePool.push(message.frame);
+                break;
+
+            case 'setupPcm':
+                emulator.setupPcm(message.port);
                 break;
 
             default:
