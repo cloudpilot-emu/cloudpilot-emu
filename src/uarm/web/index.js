@@ -45,16 +45,29 @@ import { AudioDriver } from './audiodriver.js';
         labelSD.innerText = fileSd?.name ?? '[none]';
     }
 
-    async function startAudio() {
+    async function onAudioButtonClick() {
         if (!emulator) return;
 
         audioButton.disabled = true;
-        audioDriver = new AudioDriver(log);
 
         try {
-            await audioDriver.initialize(emulator);
-        } catch (e) {
-            console.error('failed to initialize audio driver', e);
+            if (!audioDriver) {
+                audioDriver = new AudioDriver(
+                    log,
+                    () => (audioButton.innerText = audioDriver.isRunning() ? 'Stop audio' : 'Resume audio')
+                );
+
+                try {
+                    await audioDriver.initialize(emulator);
+                } catch (e) {
+                    console.error('failed to initialize audio driver', e);
+                    audioButton.disabled = false;
+                }
+            } else {
+                if (audioDriver.isRunning()) await audioDriver.pause();
+                else await audioDriver.resume();
+            }
+        } finally {
             audioButton.disabled = false;
         }
     }
@@ -164,7 +177,7 @@ import { AudioDriver } from './audiodriver.js';
             })
         );
 
-        audioButton.addEventListener('click', () => startAudio());
+        audioButton.addEventListener('click', () => onAudioButtonClick());
 
         clearLog.addEventListener('click', () => (logContainer.innerHTML = ''));
 

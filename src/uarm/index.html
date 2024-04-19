@@ -38,6 +38,10 @@
                 margin-top: 2em;
             }
 
+            .control-audio-button {
+                margin-top: 0.5em;
+            }
+
             .controls label {
                 min-width: 8em;
                 display: inline-block;
@@ -68,6 +72,8 @@
             <div class="controls">
                 <div class="control"><label>Emulation speed:</label><span id="speed">-</span></div>
 
+                <div class="control-audio-button"><button id="audio-button" disabled>Start audio</button></div>
+
                 <div class="control"><label>NOR image:</label><span id="nor-image"></span></div>
                 <button id="upload-nor">Upload NOR</button>
 
@@ -76,8 +82,6 @@
 
                 <div class="control"><label>SD image:</label><span id="sd-image"></span></div>
                 <button id="upload-sd">Upload SD</button>
-
-                <div class="control"><button id="audio-button" disabled>Enable audio</button></div>
 
                 <h2>Log:</h2>
                 <button id="clear-log">Clear</button>

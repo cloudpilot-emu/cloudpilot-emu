@@ -328,6 +328,14 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                 emulator.setupPcm(message.port);
                 break;
 
+            case 'disablePcm':
+                emulator.setPcmOutputEnabled(false);
+                break;
+
+            case 'enablePcm':
+                emulator.setPcmOutputEnabled(true);
+                break;
+
             default:
                 console.error('unknown message from main thread', message);
         }

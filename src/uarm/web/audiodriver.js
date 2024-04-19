@@ -1,3 +1,5 @@
+const GRACE_TIME = 250;
+
 function withTimeout(timeout, fn) {
     return new Promise((resolve, reject) => {
         const handle = setTimeout(() => reject(new Error('timeout')), timeout);
@@ -9,9 +11,17 @@ function withTimeout(timeout, fn) {
 }
 
 export class AudioDriver {
-    constructor(log) {
+    constructor(log, onRunStateChange) {
         this.initialized = false;
         this.log = log;
+        this.shouldBeRunning = true;
+        this.updatingRunState = false;
+        this.onRunStateChange = onRunStateChange;
+
+        window.document.addEventListener('visibilitychange', () => {
+            console.log(document.visibilityState);
+            this.updateRunState();
+        });
     }
 
     async initialize(emulator) {
@@ -20,7 +30,10 @@ export class AudioDriver {
         if (this.initialized) return;
 
         this.context = new audioContextCtor({ sampleRate: 44100, latencyHint: 'interactive' });
-        this.context.destination.channelCount = 2;
+
+        if (this.context.destination.maxChannelCount > 0)
+            this.context.destination.channelCount = Math.min(this.context.destination.maxChannelCount, 2);
+
         this.context.destination.channelInterpretation = 'speakers';
 
         this.gainNode = this.context.createGain();
@@ -37,7 +50,7 @@ export class AudioDriver {
 
         this.workletNode.connect(this.gainNode);
 
-        await withTimeout(250, () => this.context.resume());
+        if (!(await this.updateRunState(true))) return;
 
         this.workerMessageChannel = new MessageChannel();
         this.workletNode.port.onmessage = (evt) => this.handleWorkletMessage(evt.data);
@@ -47,7 +60,67 @@ export class AudioDriver {
 
         emulator.setupAudio(this.workerMessageChannel.port2);
 
+        this.emulator = emulator;
         this.initialized = true;
+    }
+
+    async pause() {
+        if (!this.initialized) return;
+        this.shouldBeRunning = false;
+
+        await this.updateRunState();
+    }
+
+    async resume() {
+        if (!this.initialized) return;
+        this.shouldBeRunning = true;
+
+        await this.updateRunState();
+    }
+
+    isRunning() {
+        return this.context?.state === 'running';
+    }
+
+    async updateRunState(force) {
+        if (!this.initialized && !force) return true;
+
+        if (this.updatingRunState) return;
+        this.updatingRunState = true;
+
+        try {
+            if (this.shouldBeRunning && document.visibilityState === 'visible' && this.context.state !== 'running') {
+                try {
+                    await withTimeout(GRACE_TIME, () => this.context.resume());
+                    console.log('audio context resumed');
+                } catch (e) {
+                    console.log('failed to resume audio context:', GRACE_TIME);
+                    return false;
+                }
+            }
+
+            if (
+                (!this.shouldBeRunning || document.visibilityState === 'hidden') &&
+                this.context.state !== 'suspended'
+            ) {
+                try {
+                    await withTimeout(GRACE_TIME, () => this.context.suspend());
+                    console.log('audio context paused');
+                } catch (e) {
+                    console.log('failed to suspend audio context:', GRACE_TIME);
+                    return false;
+                }
+            }
+
+            return true;
+        } finally {
+            this.onRunStateChange();
+
+            if (this.context.state === 'running') this.emulator?.enablePcm();
+            else this.emulator?.disablePcm();
+
+            this.updatingRunState = false;
+        }
     }
 
     handleWorkletMessage(message) {

@@ -137,4 +137,12 @@ export class Emulator {
     setupAudio(port) {
         this.worker.postMessage({ type: 'setupPcm', port }, [port]);
     }
+
+    disablePcm() {
+        this.worker.postMessage({ type: 'disablePcm' });
+    }
+
+    enablePcm() {
+        this.worker.postMessage({ type: 'enablePcm' });
+    }
 }

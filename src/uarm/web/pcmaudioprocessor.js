@@ -97,7 +97,6 @@ class PcmProcessor extends AudioWorkletProcessor {
 
         if (!this.buffering && this.sampleQueue.length < len) {
             this.buffering = true;
-            this.port.postMessage({ type: 'log', message: 'underrun' });
         }
 
         if (this.backpressure && this.sampleQueue.length < (44100 / 60) * 7) {
