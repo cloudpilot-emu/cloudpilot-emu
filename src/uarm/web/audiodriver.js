@@ -24,7 +24,7 @@ export class AudioDriver {
         this.context.destination.channelInterpretation = 'speakers';
 
         this.gainNode = this.context.createGain();
-        this.gainNode.gain.value = 1;
+        this.gainNode.gain.value = 0.8;
         this.gainNode.connect(this.context.destination);
 
         await this.context.audioWorklet.addModule(`web/pcmaudioprocessor.js?cb=${Date.now()}}`);
