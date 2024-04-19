@@ -1,12 +1,15 @@
 importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
 
 (function () {
+    const PCM_BUFFER_SIZE = 44100 / 10;
+
     const messageQueue = [];
     let dispatchInProgress = false;
 
     let emulator;
 
     let framePool = [];
+    let pcmPool = [];
 
     class Emulator {
         constructor(module, { onSpeedDisplay, onFrame, log }) {
@@ -140,6 +143,12 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             this.resetFrame();
         }
 
+        getPcmBuffer() {
+            if (pcmPool.length > 0) return new Uint32Array(pcmPool.pop());
+
+            return new Uint32Array(PCM_BUFFER_SIZE);
+        }
+
         processAudio() {
             if (!this.module || !this.pcmPort || !this.pcmEnabled) return;
 
@@ -147,9 +156,13 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             if (pendingSamples === 0) return;
 
             const samplesPtr = this.popQueuedSamples() >>> 2;
-            const samples = this.module.HEAPU32.subarray(samplesPtr, samplesPtr + pendingSamples).slice();
+            const samples = this.getPcmBuffer();
 
-            this.pcmPort.postMessage({ type: 'sample-data', samples });
+            samples.set(this.module.HEAPU32.subarray(samplesPtr, samplesPtr + pendingSamples));
+
+            this.pcmPort.postMessage({ type: 'sample-data', count: pendingSamples, buffer: samples.buffer }, [
+                samples.buffer,
+            ]);
         }
 
         updateSpeedDisplay() {
@@ -180,6 +193,10 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
 
                 case 'resume-pcm':
                     this.setPcmSuspended(false);
+                    break;
+
+                case 'return-buffer':
+                    pcmPool.push(message.buffer);
                     break;
 
                 default:

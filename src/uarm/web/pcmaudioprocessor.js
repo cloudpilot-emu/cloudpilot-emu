@@ -67,11 +67,15 @@ class PcmProcessor extends AudioWorkletProcessor {
 
     handleWorkerMessage(message) {
         switch (message.type) {
-            case 'sample-data':
-                for (let i = 0; i < message.samples.length; i++) {
-                    this.sampleQueue.push(message.samples[i]);
-                }
+            case 'sample-data': {
+                const count = message.count;
+                const samples = new Uint32Array(message.buffer);
+
+                for (let i = 0; i < count; i++) this.sampleQueue.push(samples[i]);
+
+                this.workerPort.postMessage({ type: 'return-buffer', buffer: message.buffer }, [message.buffer]);
                 break;
+            }
 
             default:
                 console.error(`audio processor: unknown worker message ${message.type}`);
