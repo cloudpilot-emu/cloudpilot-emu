@@ -46,7 +46,7 @@ class PcmProcessor extends AudioWorkletProcessor {
     constructor() {
         super();
 
-        this.sampleQueue = new SampleQueue(44100 / 10);
+        this.sampleQueue = new SampleQueue((44100 / 60) * 10);
         this.buffering = true;
         this.backpressure = false;
 
@@ -85,24 +85,23 @@ class PcmProcessor extends AudioWorkletProcessor {
 
     process(inputs, outputs) {
         if (outputs.length !== 1 || outputs[0].length !== 2) return false;
+        const len = outputs[0][0].length;
 
-        if (this.buffering && this.sampleQueue.length > (44100 / 60) * 3) {
+        if (this.buffering && this.sampleQueue.length > (44100 / 60) * 4) {
             this.buffering = false;
         }
 
-        if (!this.buffering && this.sampleQueue.length < (44100 / 60) * 2) {
-            this.workerPort?.postMessage({ type: 'hurry' });
-        } else if (!this.buffering && this.sampleQueue.length < 44100 / 60) {
+        if (!this.buffering && this.sampleQueue.length < len) {
             this.buffering = true;
-            this.port.postMessage({ type: 'underrun' });
+            this.port.postMessage({ type: 'log', message: 'underrun' });
         }
 
-        if (this.backpressure && this.sampleQueue.length < (44100 / 60) * 4) {
+        if (this.backpressure && this.sampleQueue.length < (44100 / 60) * 7) {
             this.backpressure = false;
             this.workerPort?.postMessage({ type: 'resume-pcm' });
         }
 
-        if (!this.backpressure && this.sampleQueue.length > (44100 / 60) * 5) {
+        if (!this.backpressure && this.sampleQueue.length > (44100 / 60) * 8) {
             this.backpressure = true;
             this.workerPort?.postMessage({ type: 'suspend-pcm' });
         }

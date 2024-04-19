@@ -27,18 +27,17 @@ export class AudioDriver {
         this.gainNode.gain.value = 1;
         this.gainNode.connect(this.context.destination);
 
-        await this.context.audioWorklet.addModule('web/pcmaudioprocessor.js');
+        await this.context.audioWorklet.addModule(`web/pcmaudioprocessor.js?cb=${Date.now()}}`);
 
         this.workletNode = new AudioWorkletNode(this.context, 'pcm-processor', {
             channelCount: 2,
             numberOfOutputs: 1,
-            numberOfInputs: 1,
             outputChannelCount: [2],
         });
 
         this.workletNode.connect(this.gainNode);
 
-        await withTimeout(100, () => this.context.resume());
+        await withTimeout(250, () => this.context.resume());
 
         this.workerMessageChannel = new MessageChannel();
         this.workletNode.port.onmessage = (evt) => this.handleWorkletMessage(evt.data);
@@ -53,8 +52,8 @@ export class AudioDriver {
 
     handleWorkletMessage(message) {
         switch (message.type) {
-            case 'underrun':
-                this.log('audio underrun');
+            case 'log':
+                this.log(message.message);
                 break;
 
             default:

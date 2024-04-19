@@ -34,8 +34,6 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             this.amIDead = false;
             this.pcmEnabled = false;
             this.pcmPort = undefined;
-
-            this.hurry = () => undefined;
         }
 
         static async create(nor, nand, sd, env) {
@@ -78,7 +76,6 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
 
             this.timeoutHandle = this.immediateHandle = undefined;
-            this.hurry = () => undefined;
 
             this.log('emulator stopped');
         }
@@ -110,20 +107,13 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                     (this.getTimesliceSizeUsec() - Number(this.getTimestampUsec()) + now) / 1000;
                 this.timeoutHandle = this.immediateHandle = undefined;
 
-                if (timesliceRemainning < 10) this.immediateHandle = setImmediate(schedule);
+                if (timesliceRemainning < 5) this.immediateHandle = setImmediate(schedule);
                 else this.timeoutHandle = setTimeout(schedule, timesliceRemainning);
 
                 if (now - this.lastSpeedUpdate > 1000000) {
                     this.updateSpeedDisplay();
                     this.lastSpeedUpdate = now;
                 }
-            };
-
-            this.hurry = () => {
-                if (this.immediateHandle) clearImmediate(this.immediateHandle);
-                if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
-
-                schedule();
             };
 
             this.log('emulator running');
@@ -190,10 +180,6 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
 
                 case 'resume-pcm':
                     this.setPcmSuspended(false);
-                    break;
-
-                case 'hurry':
-                    this.hurry();
                     break;
 
                 default:

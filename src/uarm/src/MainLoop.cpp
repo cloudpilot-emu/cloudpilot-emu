@@ -11,7 +11,7 @@
 using namespace std;
 
 namespace {
-    constexpr int AVERAGE_TIMESLICES = 50;
+    constexpr int AVERAGE_TIMESLICES = 30;
     constexpr uint32_t BIN_SIZE = 1000000;
     constexpr uint32_t SAFETY_MARGIN_PCT = 97;
     constexpr uint32_t SAFETY_MARGIN_PCT_CATCHUP = 75;
