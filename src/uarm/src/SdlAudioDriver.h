@@ -1,14 +1,14 @@
-#ifndef _SDL_AUDIO_HANDLER_
-#define _SDL_AUDIO_HANDLER_
+#ifndef _SDL_AUDIO_DRIVER_
+#define _SDL_AUDIO_DRIVER_
 
 #include <atomic>
 
 struct SoC;
 struct AudioQueue;
 
-class SdlAudioHandler {
+class SdlAudioDriver {
    public:
-    SdlAudioHandler(SoC* soc, AudioQueue* audioQueue);
+    SdlAudioDriver(SoC* soc, AudioQueue* audioQueue);
 
     void Start();
     bool GetAudioBackpressure() const;
@@ -23,6 +23,11 @@ class SdlAudioHandler {
 
     std::atomic<bool> audioBuffering{true};
     bool audioBackpressure{false};
+
+    uint32_t bufferThresholdStart{0};
+    uint32_t bufferThresholdStop{0};
+    uint32_t backpressureThresholdStart{0};
+    uint32_t backpressureThresholdStop{0};
 };
 
-#endif  //_SDL_AUDIO_HANDLER_
+#endif  //_SDL_AUDIO_DRIVER_

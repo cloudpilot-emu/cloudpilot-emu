@@ -27,7 +27,7 @@
 
     #include <atomic>
 
-    #include "SdlAudioHandler.h"
+    #include "SdlAudioDriver.h"
     #include "SdlEventHandler.h"
     #include "SdlRenderer.h"
 #endif
@@ -50,7 +50,7 @@ using namespace std;
 
 namespace {
     constexpr uint32_t SD_SECTOR_SIZE = 512ULL;
-    constexpr size_t AUDIO_QUEUE_SIZE = 44100 / 60 * 10;
+    constexpr size_t AUDIO_QUEUE_SIZE = 44100 / MAIN_LOOP_FPS * 10;
 
     uint8_t* sdCardData = NULL;
     size_t sdCardSecs = 0;
@@ -280,11 +280,11 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     SDL_RenderClear(renderer);
     SdlRenderer sdlRenderer(window, renderer, soc, SCALE);
     SdlEventHandler sdlEventHandler(soc, SCALE);
-    unique_ptr<SdlAudioHandler> audioHandler;
+    unique_ptr<SdlAudioDriver> audioDriver;
 
     if (enableAudio) {
-        audioHandler = make_unique<SdlAudioHandler>(soc, audioQueue);
-        audioHandler->Start();
+        audioDriver = make_unique<SdlAudioDriver>(soc, audioQueue);
+        audioDriver->Start();
     }
 
     uint64_t lastSpeedDump = timestampUsec();
@@ -292,7 +292,7 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     while (true) {
         uint64_t now = timestampUsec();
 
-        if (audioHandler) socSetPcmSuspended(soc, audioHandler->GetAudioBackpressure());
+        if (audioDriver) socSetPcmSuspended(soc, audioDriver->GetAudioBackpressure());
 
         mainLoop->Cycle(now);
         sdlRenderer.Draw();

@@ -1,22 +1,23 @@
-#include "SdlAudioHandler.h"
+#include "SdlAudioDriver.h"
 
 #include <SDL.h>
 
 #include <iostream>
 
+#include "MainLoop.h"
 #include "SoC.h"
 #include "audio_queue.h"
 
 namespace {
     extern "C" void audioCallback(void* userData, uint8_t* stream, int len) {
-        reinterpret_cast<SdlAudioHandler*>(userData)->AudioCallback(stream, len);
+        reinterpret_cast<SdlAudioDriver*>(userData)->AudioCallback(stream, len);
     }
 }  // namespace
 
-SdlAudioHandler::SdlAudioHandler(SoC* soc, AudioQueue* audioQueue)
+SdlAudioDriver::SdlAudioDriver(SoC* soc, AudioQueue* audioQueue)
     : soc(soc), audioQueue(audioQueue) {}
 
-void SdlAudioHandler::Start() {
+void SdlAudioDriver::Start() {
     if (initialized) return;
 
     SDL_AudioSpec audioSpecRequested = {.freq = 44100,
@@ -42,25 +43,30 @@ void SdlAudioHandler::Start() {
     socSetPcmOutputEnabled(soc, true);
     SDL_PauseAudioDevice(audioDevice, 0);
 
+    bufferThresholdStart = audioSpecActual.samples;
+    bufferThresholdStop = 44100 / MAIN_LOOP_FPS * 4;
+    backpressureThresholdStart = 44100 / MAIN_LOOP_FPS * 7;
+    backpressureThresholdStop = 44100 / MAIN_LOOP_FPS * 8;
+
     initialized = true;
 }
 
-bool SdlAudioHandler::GetAudioBackpressure() const { return audioBackpressure; }
+bool SdlAudioDriver::GetAudioBackpressure() const { return audioBackpressure; }
 
-void SdlAudioHandler::AudioCallback(uint8_t* stream, int len) {
-    size_t samplesRemaining = len / 4;
+void SdlAudioDriver::AudioCallback(uint8_t* stream, int len) {
+    size_t samplesRemaining = len >> 2;
     size_t samplesPending = audioQueuePendingSamples(audioQueue);
 
-    if (audioBuffering && samplesPending > 44100 / 60 * 4) audioBuffering = false;
+    if (audioBuffering && samplesPending > bufferThresholdStop) audioBuffering = false;
 
-    if (!audioBuffering && samplesPending < static_cast<size_t>(len)) {
+    if (!audioBuffering && samplesPending < bufferThresholdStart) {
         audioBuffering = true;
 
         std::cout << "audio underrun" << std::endl;
     }
 
-    if (!audioBackpressure && samplesPending > 44100 / 60 * 7) audioBackpressure = true;
-    if (audioBackpressure && samplesPending < 44100 / 60 * 8) audioBackpressure = false;
+    if (!audioBackpressure && samplesPending > backpressureThresholdStart) audioBackpressure = true;
+    if (audioBackpressure && samplesPending < backpressureThresholdStop) audioBackpressure = false;
 
     if (!audioBuffering) {
         samplesRemaining -=

@@ -4,6 +4,8 @@
 #include "Average.h"
 #include "SoC.h"
 
+#define MAIN_LOOP_FPS 60
+
 class MainLoop {
    public:
     MainLoop(SoC* soc, uint64_t configuredCyclesPerSecond);
