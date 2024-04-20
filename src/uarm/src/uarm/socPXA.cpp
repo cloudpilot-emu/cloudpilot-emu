@@ -220,8 +220,8 @@ static void socSetupScheduler(Scheduler<SoC> *scheduler) {
         scheduler->ScheduleTask(SCHEDULER_TASK_I2S, 1_sec / 44100, 1);
     }
 
-    // Pump event queues: 25 Hz
-    scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 25, 1);
+    // Pump event queues: 30 Hz
+    scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 30, 1);
 }
 
 SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSectorR sdR,

@@ -48,7 +48,7 @@ SdlEventHandler::SdlEventHandler(struct SoC* soc, int scale) : soc(soc), scale(s
 void SdlEventHandler::HandleEvents() {
     SDL_Event event;
 
-    if (SDL_PollEvent(&event)) {
+    while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
                 exit(0);

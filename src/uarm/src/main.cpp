@@ -50,7 +50,7 @@ using namespace std;
 
 namespace {
     constexpr uint32_t SD_SECTOR_SIZE = 512ULL;
-    constexpr size_t AUDIO_QUEUE_SIZE = 44100 / 10;
+    constexpr size_t AUDIO_QUEUE_SIZE = 44100 / 60 * 10;
 
     uint8_t* sdCardData = NULL;
     size_t sdCardSecs = 0;

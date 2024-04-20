@@ -1,7 +1,7 @@
 importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
 
 (function () {
-    const PCM_BUFFER_SIZE = 44100 / 10;
+    const PCM_BUFFER_SIZE = (44100 / 60) * 10;
 
     const messageQueue = [];
     let dispatchInProgress = false;
@@ -158,7 +158,9 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             const samplesPtr = this.popQueuedSamples() >>> 2;
             const samples = this.getPcmBuffer();
 
-            samples.set(this.module.HEAPU32.subarray(samplesPtr, samplesPtr + pendingSamples));
+            samples.set(
+                this.module.HEAPU32.subarray(samplesPtr, samplesPtr + Math.min(pendingSamples, samples.length))
+            );
 
             this.pcmPort.postMessage({ type: 'sample-data', count: pendingSamples, buffer: samples.buffer }, [
                 samples.buffer,
