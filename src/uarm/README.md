@@ -3,6 +3,14 @@ This is the CloudpilotEmu fork of Dmitry Grinberg's
 the Tungsten E2. The goal is to rework and optimize uARM to the point where it
 can be integrated in CloudpilotEmu.
 
+# Try it
+
+You can try a live build of the current code
+[here](https://cloudpilot-emu.github.io/uarm-preview/). You'll need Tungsten E2
+NAND and NOR images
+(for example from [PalmDB](https://palmdb.net/app/palm-roms-complete), and you
+can mount an optional SD card image.
+
 # Building
 
 If necessary, copy `Makefile.local.example` to `Makefile.local` and adjust it to
