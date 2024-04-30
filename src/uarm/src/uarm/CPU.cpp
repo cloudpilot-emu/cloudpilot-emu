@@ -3331,7 +3331,7 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
             break;
 
         case pace_status_memory_fault:
-            ERR("PACE: memory fault\n");
+            cpuPrvHandlePaceMemoryFault(cpu);
             break;
 
         case pace_status_syscall:
