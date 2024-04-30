@@ -82,7 +82,7 @@ static inline uint8_t checkPermissionsForWrite(struct ArmMmu *mmu, uint_fast8_t 
 
     switch (ap) {
         case 0:
-            return 0;
+            break;
 
         case 1:
         case 2:

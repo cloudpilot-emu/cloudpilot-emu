@@ -2016,18 +2016,23 @@ static void execFn_swi(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
 
             while (cpuPrvMemOp<1>(cpu, &ch, addr++, false, true, &fsr) && ch)
                 fprintf(stderr, "%c", ch);
+
+            return;
         } else if (cpu->regs[0] == 3) {
             uint8_t ch;
 
             if (cpuPrvMemOp<1>(cpu, &ch, cpu->regs[1], false, true, &fsr) && ch)
                 fprintf(stderr, "%c", ch);
-        } else if (cpu->regs[0] == 0x132) {
+
+            return;
+        } else if (cpu->regs[0] == 0x132 && gdbStubEnabled(cpu->debugStub)) {
 #ifndef __EMSCRIPTEN__
             fprintf(stderr, "debug break requested\n");
 #endif
             gdbStubDebugBreakRequested(cpu->debugStub);
+
+            return;
         }
-        return;
     }
 
     cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_SWI, cpu->curInstrPC + (wasT ? 2 : 4),

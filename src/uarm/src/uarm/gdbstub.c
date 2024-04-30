@@ -633,6 +633,8 @@ void gdbStubReportMemAccess(struct stub *stub, uint32_t addr, uint_fast8_t sz, b
     gdbStubPrvSendPacket(stub, stub->stopReason, false);
     gdbStubPrvGetAndHandleCommands(stub);
 }
+
+bool gdbStubEnabled(struct stub *stub) { return stub->sock >= 0; }
 #endif
 
 struct stub *gdbStubInit(struct ArmCpu *cpu, int port) {
@@ -643,11 +645,10 @@ struct stub *gdbStubInit(struct ArmCpu *cpu, int port) {
 
     memset(stub, 0, sizeof(*stub));
     stub->cpu = cpu;
+    stub->sock = -1;
 
 #ifdef GDB_STUB_ENABLED
-    if (port < 0)
-        stub->sock = -1;
-    else {
+    if (port >= 0) {
         struct sockaddr_in sa = {
             .sin_family = AF_INET,
             .sin_port = htons(port),
