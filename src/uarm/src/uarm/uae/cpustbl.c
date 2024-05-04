@@ -802,8 +802,8 @@ struct cputbl op_smalltbl_3[] = {
 { op_4e58_3, 0, 20056, 0, 3, 0 }, /* UNLK */
 { op_unimplemented, 0, 20064, 0, 1, 0 }, /* MVR2USP */
 { op_unimplemented, 0, 20072, 0, 1, 0 }, /* MVUSP2R */
-// { op_4e70_3, 0, 20080, 128, 1, 0 }, /* RESET */
-{ op_unimplemented, 0, 20081, 0, 1, 0 }, /* NOP */
+{ op_unimplemented, 0, 20080, 128, 1, 0 }, /* RESET */
+{ op_4e71_3, 0, 20081, 0, 1, 0 }, /* NOP */
 { op_unimplemented, 0, 20082, 4, 1, 0 }, /* STOP */
 { op_unimplemented, 0, 20083, 0, 5, 0 }, /* RTE */
 { op_4e74_3, 0, 20084, 0, 3, 0 }, /* RTD */

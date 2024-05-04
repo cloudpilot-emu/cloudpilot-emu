@@ -3356,7 +3356,8 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
             break;
 
         default:
-            ERR("PACE callout: invalid instruction\n");
+            // This also encompasses CHK errors
+            ERR("PACE callout: unimplemented instruction\n");
             break;
     }
 }
