@@ -362,7 +362,7 @@ enum paceStatus paceExecute() {
         // fprintf(stderr, "execute m68k opcode %#06x at %#010x\n", opcode, regs.pc);
 
 #ifdef __EMSCRIPTEN__
-    ((cpuop_func*)((long)cpufunctbl_base + opcode))(opcode);
+    ((cpuop_func*)((long)cpufunctbl_base + lastOpcode))(lastOpcode);
 #else
     cpufunctbl[lastOpcode](lastOpcode);
 #endif
