@@ -3277,15 +3277,27 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
     }
 }
 
-static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
-    const uint16_t trapWord = paceReadTrapWord();
-    if (paceGetFsr() != 0 || !paceSave68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
+static bool cpuPrvPaceCallout(struct ArmCpu *cpu, uint32_t destination) {
+    if (!paceSave68kState()) {
+        cpuPrvHandlePaceMemoryFault(cpu);
+        return false;
+    }
 
-    cpu->regs[1] = trapWord;
     cpu->regs[REG_NO_LR] = cpu->pacePatch->returnFromCallout + cpu->paceOffset;
-    cpuPrvSetReg(cpu, REG_NO_PC, cpu->pacePatch->calloutSyscall + cpu->paceOffset);
+    cpuPrvSetReg(cpu, REG_NO_PC, destination + cpu->paceOffset);
 
     cpu->modePace = false;
+
+    return true;
+}
+
+static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
+    const uint16_t trapWord = paceReadTrapWord();
+    if (paceGetFsr() != 0) return cpuPrvHandlePaceMemoryFault(cpu);
+
+    cpu->regs[1] = trapWord;
+
+    if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutSyscall)) return;
 
 #ifdef TRACE_PACE
     fprintf(stderr, "PACE syscall to %#06x\n", trapWord);
@@ -3293,20 +3305,24 @@ static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
 }
 
 static void cpuPrvPaceDivisionByZero(struct ArmCpu *cpu) {
-    if (!paceSave68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
-
     const uint16_t lastOpcode = paceGetLastOpcode();
-    const uint32_t destination =
-        lastOpcode & 0x0100 ? cpu->pacePatch->calloutDivs : cpu->pacePatch->calloutDivu;
 
     cpu->regs[1] = (lastOpcode >> 9) & 0x07;
     cpu->regs[2] = 0;
-    cpu->regs[REG_NO_LR] = cpu->pacePatch->returnFromCallout + cpu->paceOffset;
-    cpuPrvSetReg(cpu, REG_NO_PC, destination + cpu->paceOffset);
 
-    cpu->modePace = false;
+    if (!cpuPrvPaceCallout(
+            cpu, lastOpcode & 0x0100 ? cpu->pacePatch->calloutDivs : cpu->pacePatch->calloutDivu))
+        return;
 
+#ifdef TRACE_PACE
     fprintf(stderr, "PACE division by zero\n");
+#endif
+}
+
+static void cpuPrvPaceIllegalInstruction(struct ArmCpu *cpu) {
+    if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutIllegalInstr)) return;
+
+    fprintf(stderr, "PACE invalid instruction\n");
 }
 
 static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
@@ -3341,7 +3357,7 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
             break;
 
         case pace_status_illegal_instr:
-            ERR("PACE callout: illegal instruction\n");
+            cpuPrvPaceIllegalInstruction(cpu);
             break;
 
         case pace_status_line_1010:

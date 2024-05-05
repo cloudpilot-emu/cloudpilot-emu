@@ -4,15 +4,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define findCallout(var, name, location)                                                      \
-    const uint32_t var = decodeBlBlx(rom, enterPace + location - 0x1fd28);                    \
-    if (!calloutSyscall) {                                                                    \
-        fprintf(stderr, "unable to locate callout for" #name ", PACE will not be patched\n"); \
-        return;                                                                               \
-    }                                                                                         \
-    fprintf(stderr, "found PACE callout for " #name " at %#010x\n", var);
+#define findCallout(var, name, location)                                                     \
+    const uint32_t var = decodeBBlBlx(rom, enterPace + location - 0x1fd28);                  \
+    if (!var) {                                                                              \
+        fprintf(stderr, "unable to locate callout for" name ", PACE will not be patched\n"); \
+        return;                                                                              \
+    }                                                                                        \
+    fprintf(stderr, "found PACE callout for " name " at %#010x\n", var);
 
-static uint32_t decodeBlBlx(void* rom, uint32_t addr) {
+static uint32_t decodeBBlBlx(void* rom, uint32_t addr) {
     const uint32_t instruction = *(uint32_t*)(rom + addr);
     const uint8_t prefix = instruction >> 24;
 
@@ -21,6 +21,7 @@ static uint32_t decodeBlBlx(void* rom, uint32_t addr) {
     offset += 8;
 
     switch (prefix) {
+        case 0xea:
         case 0xeb:
             return addr + offset;
 
@@ -76,9 +77,10 @@ void pacePatchInit(struct PacePatch* patch, uint32_t romBase, void* rom, size_t 
     const uint32_t enterPace = romBase + paceLocation;
     fprintf(stderr, "found PACE entry at %#010x\n", enterPace);
 
-    findCallout(calloutSyscall, syscall, 0x25894);
-    findCallout(calloutDivu, divu, 0x22ab0);
-    findCallout(calloutDivs, divs, 0x22a5c);
+    findCallout(calloutSyscall, "syscall", 0x25894);
+    findCallout(calloutDivu, "divu", 0x22ab0);
+    findCallout(calloutDivs, "divs", 0x22a5c);
+    findCallout(calloutIllegalInstr, "illegal instruction", 0x25b10);
 
     ((uint32_t*)rom)[(paceLocation >> 2)] = INSTR_PACE_ENTER;
     ((uint32_t*)rom)[(paceLocation >> 2) + 1] = INSTR_PACE_RESUME;
@@ -88,6 +90,7 @@ void pacePatchInit(struct PacePatch* patch, uint32_t romBase, void* rom, size_t 
     patch->resumePace = patch->enterPace + 4;
     patch->returnFromCallout = patch->enterPace + 8;
     patch->calloutSyscall = calloutSyscall;
+    patch->calloutIllegalInstr = calloutIllegalInstr;
     patch->calloutDivu = calloutDivu;
     patch->calloutDivs = calloutDivs;
 
