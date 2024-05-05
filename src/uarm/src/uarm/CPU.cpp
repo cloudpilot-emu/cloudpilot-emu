@@ -3322,7 +3322,49 @@ static void cpuPrvPaceDivisionByZero(struct ArmCpu *cpu) {
 static void cpuPrvPaceIllegalInstruction(struct ArmCpu *cpu) {
     if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutIllegalInstr)) return;
 
+#if TRACE_PACE
     fprintf(stderr, "PACE invalid instruction\n");
+#endif
+}
+
+static void cpuPrvPaceLine1010(struct ArmCpu *cpu) {
+    if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutLine1010)) return;
+
+#if TRACE_PACE
+    fprintf(stderr, "PACE line 1010\n");
+#endif
+}
+
+static void cpuPrvPaceLine1111(struct ArmCpu *cpu) {
+    if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutLine1111)) return;
+
+#if TRACE_PACE
+    fprintf(stderr, "PACE line 1111\n");
+#endif
+}
+
+static void cpuPrvPaceTrap0(struct ArmCpu *cpu) {
+    if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutTrap0)) return;
+
+#if TRACE_PACE
+    fprintf(stderr, "PACE trap 0\n");
+#endif
+}
+
+static void cpuPrvPaceTrap8(struct ArmCpu *cpu) {
+    if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutTrap8)) return;
+
+#if TRACE_PACE
+    fprintf(stderr, "PACE trap 8\n");
+#endif
+}
+
+static void cpuPrvPaceUnimplementedlInstruction(struct ArmCpu *cpu) {
+    if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutUnimplementedInstr)) return;
+
+#if TRACE_PACE
+    fprintf(stderr, "PACE unimplemented instruction\n");
+#endif
 }
 
 static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
@@ -3361,11 +3403,11 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
             break;
 
         case pace_status_line_1010:
-            ERR("PACE callout: line 1010\n");
+            cpuPrvPaceLine1010(cpu);
             break;
 
         case pace_status_line_1111:
-            ERR("PACE callout: line 1111\n");
+            cpuPrvPaceLine1111(cpu);
             break;
 
         case pace_status_memory_fault:
@@ -3377,11 +3419,11 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
             break;
 
         case pace_status_trap0:
-            ERR("PACE callout: trap 0\n");
+            cpuPrvPaceTrap0(cpu);
             break;
 
         case pace_status_trap8:
-            ERR("PACE callout: trap 8\n");
+            cpuPrvPaceTrap8(cpu);
             break;
 
         case pace_status_return:
@@ -3391,7 +3433,7 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
         default:
             // This also encompasses CHK errors, TRAPV and other unhandled
             // exceptions
-            ERR("PACE callout: unimplemented instruction\n");
+            cpuPrvPaceUnimplementedlInstruction(cpu);
             break;
     }
 }

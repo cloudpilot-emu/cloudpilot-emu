@@ -81,6 +81,11 @@ void pacePatchInit(struct PacePatch* patch, uint32_t romBase, void* rom, size_t 
     findCallout(calloutDivu, "divu", 0x22ab0);
     findCallout(calloutDivs, "divs", 0x22a5c);
     findCallout(calloutIllegalInstr, "illegal instruction", 0x25b10);
+    findCallout(calloutLine1010, "line 1010", 0x25a18);
+    findCallout(calloutLine1111, "line 1111", 0x25a54);
+    findCallout(calloutTrap0, "trap 0", 0x25808);
+    findCallout(calloutTrap8, "trap 8", 0x25844);
+    findCallout(calloutUnimplementedInstr, "unimplemented instruction", 0x25b30);
 
     ((uint32_t*)rom)[(paceLocation >> 2)] = INSTR_PACE_ENTER;
     ((uint32_t*)rom)[(paceLocation >> 2) + 1] = INSTR_PACE_RESUME;
@@ -93,6 +98,11 @@ void pacePatchInit(struct PacePatch* patch, uint32_t romBase, void* rom, size_t 
     patch->calloutIllegalInstr = calloutIllegalInstr;
     patch->calloutDivu = calloutDivu;
     patch->calloutDivs = calloutDivs;
+    patch->calloutLine1010 = calloutLine1010;
+    patch->calloutLine1111 = calloutLine1111;
+    patch->calloutTrap0 = calloutTrap0;
+    patch->calloutTrap8 = calloutTrap8;
+    patch->calloutUnimplementedInstr = calloutUnimplementedInstr;
 
     fprintf(stderr, "patching PACE\n");
 
