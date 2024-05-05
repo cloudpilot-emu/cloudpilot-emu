@@ -18,7 +18,8 @@ struct PacePatch {
     uint32_t returnFromCallout;
 
     uint32_t calloutIllegalInstr;
-    uint32_t calloutDivisionByZero;
+    uint32_t calloutDivu;
+    uint32_t calloutDivs;
     uint32_t calloutTrap0;
     uint32_t calloutTrap8;
     uint32_t calloutSyscall;

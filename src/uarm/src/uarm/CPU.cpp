@@ -3278,7 +3278,7 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
 }
 
 static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
-    uint16_t trapWord = paceReadTrapWord();
+    const uint16_t trapWord = paceReadTrapWord();
     if (paceGetFsr() != 0 || !paceSave68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
 
     cpu->regs[1] = trapWord;
@@ -3290,6 +3290,23 @@ static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
 #ifdef TRACE_PACE
     fprintf(stderr, "PACE syscall to %#06x\n", trapWord);
 #endif
+}
+
+static void cpuPrvPaceDivisionByZero(struct ArmCpu *cpu) {
+    if (!paceSave68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
+
+    const uint16_t lastOpcode = paceGetLastOpcode();
+    const uint32_t destination =
+        lastOpcode & 0x0100 ? cpu->pacePatch->calloutDivs : cpu->pacePatch->calloutDivu;
+
+    cpu->regs[1] = (lastOpcode >> 9) & 0x07;
+    cpu->regs[2] = 0;
+    cpu->regs[REG_NO_LR] = cpu->pacePatch->returnFromCallout + cpu->paceOffset;
+    cpuPrvSetReg(cpu, REG_NO_PC, destination + cpu->paceOffset);
+
+    cpu->modePace = false;
+
+    fprintf(stderr, "PACE division by zero\n");
 }
 
 static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
@@ -3320,7 +3337,7 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
             return;
 
         case pace_status_division_by_zero:
-            ERR("PACE callout: division by zero\n");
+            cpuPrvPaceDivisionByZero(cpu);
             break;
 
         case pace_status_illegal_instr:
@@ -3356,7 +3373,8 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
             break;
 
         default:
-            // This also encompasses CHK errors
+            // This also encompasses CHK errors, TRAPV and other unhandled
+            // exceptions
             ERR("PACE callout: unimplemented instruction\n");
             break;
     }

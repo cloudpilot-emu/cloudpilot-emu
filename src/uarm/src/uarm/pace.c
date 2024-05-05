@@ -22,6 +22,8 @@ static uint32_t pendingStatus = 0;
 static uint32_t statePtr;
 static bool priviledged = false;
 
+static uint16_t lastOpcode = 0;
+
 #ifdef __EMSCRIPTEN__
 static cpuop_func* cpufunctbl_base;
 #else
@@ -244,9 +246,11 @@ void paceInit(struct ArmMem* _mem, struct ArmMmu* _mmu) {
     mmu = _mmu;
 }
 
-void paceSetStatePtr(uint32_t addr) { statePtr = addr + 4; }
+void paceSetStatePtr(uint32_t addr) { statePtr = addr; }
 
 uint8_t paceGetFsr() { return fsr; }
+
+uint16_t paceGetLastOpcode() { return lastOpcode; }
 
 bool paceLoad68kState() {
     static uint32_t stateScratchBuffer[18];
@@ -258,19 +262,19 @@ bool paceLoad68kState() {
         return false;
     }
 
-    uint32_t statePtrPa = MMU_TRANSLATE_RESULT_PA(translateResult);
+    uint32_t statePtrPa = MMU_TRANSLATE_RESULT_PA(translateResult) + 4;
 
     void* state = (sizeof(struct regstruct) == sizeof(stateScratchBuffer))
                       ? &regs
                       : (void*)stateScratchBuffer;
 
-    lastAddr = statePtr;
+    lastAddr = statePtr + 4;
     wasSz = 64;
     wasWrite = false;
 
     if (!memAccess(mem, statePtrPa, 64, false, state)) return false;
 
-    lastAddr = statePtr + 64;
+    lastAddr = statePtr + 68;
     wasSz = 8;
 
     if (!memAccess(mem, statePtrPa + 64, 8, false, state + 64)) return false;
@@ -298,6 +302,13 @@ bool paceSave68kState() {
 
     uint32_t statePtrPa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
+    lastAddr = statePtr;
+    wasSz = 4;
+    wasWrite = true;
+
+    uint32_t lastOpcodePadded = lastOpcode;
+    if (!memAccess(mem, statePtrPa, 4, true, &lastOpcodePadded)) return false;
+
     void* state;
 
     MakeSR();
@@ -312,16 +323,16 @@ bool paceSave68kState() {
         state = &regs;
     }
 
-    lastAddr = statePtr;
+    lastAddr = statePtr + 4;
     wasSz = 64;
     wasWrite = true;
 
-    if (!memAccess(mem, statePtrPa, 64, true, state)) return false;
+    if (!memAccess(mem, statePtrPa + 4, 64, true, state)) return false;
 
-    lastAddr = statePtr + 64;
+    lastAddr = statePtr + 68;
     wasSz = 8;
 
-    if (!memAccess(mem, statePtrPa + 64, 8, true, state + 64)) return false;
+    if (!memAccess(mem, statePtrPa + 68, 8, true, state + 64)) return false;
 
     return true;
 }
@@ -345,7 +356,7 @@ enum paceStatus paceExecute() {
     fsr = 0;
     pendingStatus = pace_status_ok;
 
-    uint16_t opcode = uae_get16(regs.pc);
+    lastOpcode = uae_get16(regs.pc);
     if (fsr != 0) return pace_status_memory_fault;
 
         // fprintf(stderr, "execute m68k opcode %#06x at %#010x\n", opcode, regs.pc);
@@ -353,7 +364,7 @@ enum paceStatus paceExecute() {
 #ifdef __EMSCRIPTEN__
     ((cpuop_func*)((long)cpufunctbl_base + opcode))(opcode);
 #else
-    cpufunctbl[opcode](opcode);
+    cpufunctbl[lastOpcode](lastOpcode);
 #endif
 
     //    fprintf(stderr, "a7 now %#010x, top of stack is %#010x\n", m68k_areg(regs, 7),
