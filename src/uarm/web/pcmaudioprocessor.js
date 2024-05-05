@@ -51,6 +51,7 @@ class PcmProcessor extends AudioWorkletProcessor {
         this.backpressure = false;
 
         this.port.onmessage = (evt) => this.handleHostMessage(evt.data);
+        this.onWorkerMessage = (evt) => this.handleWorkerMessage(evt.data);
     }
 
     handleHostMessage(message) {
@@ -83,8 +84,11 @@ class PcmProcessor extends AudioWorkletProcessor {
     }
 
     setupWorkerPort(port) {
+        if (this.workerPort) this.workerPort.removeEventListener('message', this.onWorkerMessage);
+
         this.workerPort = port;
-        port.onmessage = (evt) => this.handleWorkerMessage(evt.data);
+        this.workerPort.addEventListener('message', this.onWorkerMessage);
+        this.workerPort.start();
     }
 
     process(inputs, outputs) {

@@ -52,16 +52,21 @@ export class AudioDriver {
 
         if (!(await this.updateRunState(true))) return;
 
-        this.workerMessageChannel = new MessageChannel();
         this.workletNode.port.onmessage = (evt) => this.handleWorkletMessage(evt.data);
-        this.workletNode.port.postMessage({ type: 'configure-worker-port', port: this.workerMessageChannel.port1 }, [
-            this.workerMessageChannel.port1,
+
+        this.initialized = true;
+    }
+
+    setEmulator(emulator) {
+        if (!this.initialized) return;
+
+        const workerMessageChannel = new MessageChannel();
+        this.workletNode.port.postMessage({ type: 'configure-worker-port', port: workerMessageChannel.port1 }, [
+            workerMessageChannel.port1,
         ]);
 
-        emulator.setupAudio(this.workerMessageChannel.port2);
-
+        emulator.setupAudio(workerMessageChannel.port2);
         this.emulator = emulator;
-        this.initialized = true;
     }
 
     async pause() {

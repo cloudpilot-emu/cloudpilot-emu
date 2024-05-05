@@ -59,6 +59,7 @@ import { AudioDriver } from './audiodriver.js';
 
                 try {
                     await audioDriver.initialize(emulator);
+                    audioDriver.setEmulator(emulator);
                 } catch (e) {
                     console.error('failed to initialize audio driver', e);
                     audioButton.disabled = false;
@@ -134,6 +135,8 @@ import { AudioDriver } from './audiodriver.js';
             log,
         });
         emulator?.start();
+
+        if (emulator && audioDriver) audioDriver.setEmulator(emulator);
 
         if (emulator) audioButton.disabled = false;
     }
