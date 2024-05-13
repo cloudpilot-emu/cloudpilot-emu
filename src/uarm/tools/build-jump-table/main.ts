@@ -1,6 +1,10 @@
 import binaryen from 'binaryen';
 import { readFile, writeFile } from 'fs/promises';
 
+function unmangleName(name: string): string {
+    return name.replace(/(\\[0-9a-f]{2})/gi, (code) => String.fromCharCode(parseInt(code.substring(1), 16)));
+}
+
 function getFunctionLike(module: binaryen.Module, fragment: string): Array<binaryen.FunctionRef> {
     const numFunctions = module.getNumFunctions();
     const refs: Array<binaryen.FunctionRef> = [];
@@ -66,7 +70,7 @@ function remapExecFunctions(
     execFnNameToHandleMap: Map<string, number>
 ): void {
     const fnInfo = binaryen.getFunctionInfo(fn);
-    console.log(`remapping opcodes in ${fnInfo.name}`);
+    console.log(`remapping opcodes in ${unmangleName(fnInfo.name)}`);
 
     const mapExpression = (e: binaryen.ExpressionRef): binaryen.ExpressionRef => {
         if (e === 0) return e;
@@ -151,9 +155,11 @@ function replaceDispatcher(module: binaryen.Module, name: string, implementation
 async function main(filename: string): Promise<void> {
     const content = await readFile(filename);
     const module = binaryen.readBinary(new Uint8Array(content, content.byteLength));
+
     module.setFeatures(
         binaryen.Features.MVP | binaryen.Features.BulkMemory | binaryen.Features.Multivalue | binaryen.Features.SignExt
     );
+    binaryen.setDebugInfo(true);
 
     const elementsSegment = module.getElementSegmentByIndex(0);
 
@@ -172,11 +178,11 @@ async function main(filename: string): Promise<void> {
     replaceDispatcher(module, 'cpuPrvDispatchExecFnThumb', dispatcher);
     replaceDispatcher(module, 'cpuPrvDispatchExecFnArm', dispatcher);
 
-    getFunctionLike(module, 'cpuDecodeArm').forEach((fnInfo) =>
+    getFunctionLike(module, 'cpuPrvDecoderArm').forEach((fnInfo) =>
         remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMap)
     );
 
-    getFunctionLike(module, 'cpuDecodeThumb').forEach((fnInfo) =>
+    getFunctionLike(module, 'cpuPrvDecoderThumb').forEach((fnInfo) =>
         remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMap)
     );
 

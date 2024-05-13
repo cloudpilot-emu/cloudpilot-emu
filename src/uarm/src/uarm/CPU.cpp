@@ -63,8 +63,10 @@
 
 #ifdef __EMSCRIPTEN__
     #define PREFIX_EXEC_FN(...) (ExecFn((uint32_t)__VA_ARGS__ + EXEC_FN_PREFIX_VALUE))
+    #define ATTR_EMCC_NOINLINE __attribute__((noinline))
 #else
     #define PREFIX_EXEC_FN(...) (__VA_ARGS__)
+    #define ATTR_EMCC_NOINLINE
 #endif
 
 #define cpuPrvGetRegNotPC(cpu, reg) (cpu->regs[reg])
@@ -2048,7 +2050,7 @@ static void execFn_swi(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
 }
 
 template <bool wasT>
-static ExecFn cpuPrvDecoderArm(uint32_t instr) {
+static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
     if ((instr >> 28) == 0x0f) {
         switch ((instr >> 24) & 0x0f) {
             case 5:
@@ -2657,7 +2659,7 @@ static void execFn_thumb_blx_suffix(struct ArmCpu *cpu, uint32_t instr, bool pri
     cpu->T = 0;
 }
 
-static ExecFn cpuPrvDecoderThumb(uint32_t instr) {
+static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderThumb(uint32_t instr) {
     switch (instr >> 12) {
         case 4:  // LDR(3) ADD(4) CMP(3) MOV(3) BX MVN CMP(2) CMN TST ADC SBC NEG MUL LSL(2)
                  // LSR(2) ASR(2) ROR AND EOR ORR BIC

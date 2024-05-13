@@ -9,7 +9,7 @@ CXX_EMCC ?= emcc
 LD_EMCC ?= emcc
 
 WASMOPT = wasm-opt
-WASMOPT_FLAGS = --enable-bulk-memory --inlining --inlining-optimizing \
+WASMOPT_FLAGS = --enable-bulk-memory --no-inline="mmuTranslate" --inlining-optimizing \
 	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
 
 WASMSTRIP = wasm-strip

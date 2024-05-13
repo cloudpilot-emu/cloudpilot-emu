@@ -238,8 +238,6 @@ translated:
 }
 
 MMUTranslateResult mmuTranslate(struct ArmMmu *mmu, uint32_t addr, bool priviledged, bool write) {
-    static volatile bool never = false;
-
     if (mmu->transTablPA == MMU_DISABLED_TTP) return addr;
 
     struct TlbEntry *tlbEntry = mmu->tlb + (addr >> 12);
@@ -252,13 +250,7 @@ MMUTranslateResult mmuTranslate(struct ArmMmu *mmu, uint32_t addr, bool priviled
         uint8_t fsr = checkPermissionsForWrite(mmu, tlbEntry->ap, tlbEntry->domain,
                                                tlbEntry->section, priviledged);
 
-        if (fsr) {
-            // *black magic* The presence of this printf keeps wasm-opt from inlining
-            // this code path, which would blow up the WASM binary from 1.5MB to 10MB
-            // and cause a 10% performance hit.
-            if (never) printf("permission fault\n");
-            return TRANSLATE_RESULT_FAULT(fsr);
-        }
+        if (fsr) return TRANSLATE_RESULT_FAULT(fsr);
     }
 
     uint64_t result = (addr & 0xfff) + tlbEntry->pa;
