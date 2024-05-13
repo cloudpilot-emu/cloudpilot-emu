@@ -59,6 +59,14 @@
 #define INJECTED_CALL_LR_MAGIC 0xfffffffc
 #define INJECTED_CALL_MAX_CYCLES 200000000
 
+#define EXEC_FN_PREFIX_VALUE 31400000
+
+#ifdef __EMSCRIPTEN__
+    #define PREFIX_EXEC_FN(...) (ExecFn((uint32_t)__VA_ARGS__ + EXEC_FN_PREFIX_VALUE))
+#else
+    #define PREFIX_EXEC_FN(...) (__VA_ARGS__)
+#endif
+
 #define cpuPrvGetRegNotPC(cpu, reg) (cpu->regs[reg])
 
 typedef void (*ExecFn)(struct ArmCpu *cpu, uint32_t instr, bool privileged);
@@ -2045,50 +2053,52 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
         switch ((instr >> 24) & 0x0f) {
             case 5:
             case 7:
-                return (instr & 0x0D70F000UL) == 0x0550F000UL ? execFn_noop : execFn_invalid<wasT>;
+                return (instr & 0x0D70F000UL) == 0x0550F000UL
+                           ? PREFIX_EXEC_FN(execFn_noop)
+                           : PREFIX_EXEC_FN(execFn_invalid<wasT>);
 
             case 10:
             case 11:
-                return (instr & 0x01000000UL) ? execFn_b2thumb<wasT, true>
-                                              : execFn_b2thumb<wasT, false>;
+                return (instr & 0x01000000UL) ? PREFIX_EXEC_FN(execFn_b2thumb<wasT, true>)
+                                              : PREFIX_EXEC_FN(execFn_b2thumb<wasT, false>);
 
             case 12:
             case 13:
-                return execFn_cp_mem2reg<wasT, true>;
+                return PREFIX_EXEC_FN(execFn_cp_mem2reg<wasT, true>);
 
             case 14:
-                return execFn_cp_dp<wasT, true>;
+                return PREFIX_EXEC_FN(execFn_cp_dp<wasT, true>);
         }
 
         if (!wasT) {
             switch (instr) {
                 case INSTR_PACE_ENTER:
-                    return execFn_paceEnter;
+                    return PREFIX_EXEC_FN(execFn_paceEnter);
 
                 case INSTR_PACE_RESUME:
-                    return execFn_paceResume;
+                    return PREFIX_EXEC_FN(execFn_paceResume);
 
                 case INSTR_PACE_RETURN_FROM_CALLOUT:
-                    return execFn_paceReturnFromCallout;
+                    return PREFIX_EXEC_FN(execFn_paceReturnFromCallout);
 
                 case INSTR_PEEPHOLE_ADS_UDIVMOD:
-                    return execFn_peephole_ADC_udivmod;
+                    return PREFIX_EXEC_FN(execFn_peephole_ADC_udivmod);
 
                 case INSTR_PEEPHOLE_ADS_SDIVMOD:
-                    return execFn_peephole_ADC_sdivmod;
+                    return PREFIX_EXEC_FN(execFn_peephole_ADC_sdivmod);
 
                 case INSTR_PEEPHOLE_ADS_UDIV10:
-                    return execFn_peephole_ADC_udiv10;
+                    return PREFIX_EXEC_FN(execFn_peephole_ADC_udiv10);
 
                 case INSTR_PEEPHOLE_ADS_SDIV10:
-                    return execFn_peephole_ADC_sdiv10;
+                    return PREFIX_EXEC_FN(execFn_peephole_ADC_sdiv10);
 
                 case INSTR_PEEPHOLE_ADS_MEMCPY:
-                    return execFn_peephole_ADC_memcpy;
+                    return PREFIX_EXEC_FN(execFn_peephole_ADC_memcpy);
             }
         }
 
-        return execFn_invalid<wasT>;
+        return PREFIX_EXEC_FN(execFn_invalid<wasT>);
     }
 
     switch ((instr >> 24) & 0x0F) {
@@ -2103,19 +2113,21 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
 
                         switch ((instr >> 20) & 0x0F) {
                             case 0:  // SWP
-                                return execFn_swb<wasT, 0>;
+                                return PREFIX_EXEC_FN(execFn_swb<wasT, 0>);
 
                             case 4:  // SWPB
-                                return execFn_swb<wasT, 4>;
+                                return PREFIX_EXEC_FN(execFn_swb<wasT, 4>);
 
                             default:
-                                return execFn_invalid<wasT>;
+                                return PREFIX_EXEC_FN(execFn_invalid<wasT>);
                         }
 
                     } else {
                         const bool flags = instr & 0x00100000UL;
 
-#define EXEC_MULT(tag) return flags ? execFn_mult<wasT, tag, true> : execFn_mult<wasT, tag, false>;
+#define EXEC_MULT(tag)                                          \
+    return flags ? PREFIX_EXEC_FN(execFn_mult<wasT, tag, true>) \
+                 : PREFIX_EXEC_FN(execFn_mult<wasT, tag, false>);
 
                         switch ((instr >> 20) & 0x0F) {  // multiplies
 
@@ -2140,7 +2152,7 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
                                 EXEC_MULT(10);
 
                             default:
-                                return execFn_invalid<wasT>;
+                                return PREFIX_EXEC_FN(execFn_invalid<wasT>);
                         }
 
 #undef EXEC_MULT
@@ -2153,17 +2165,19 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
                     const bool negate = !(instr & 0x00800000UL);
                     const bool immediate = instr & 0x00400000UL;
 
-                    if (mode & ARM_MODE_2_INV) return execFn_invalid<wasT>;
+                    if (mode & ARM_MODE_2_INV) return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 
-#define EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, immediate)           \
-    (negate ? execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, immediate, true> \
-            : execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, immediate, false>)
+#define EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, immediate)                \
+    (negate ? PREFIX_EXEC_FN(                                                                \
+                  execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, immediate, true>) \
+            : PREFIX_EXEC_FN(                                                                \
+                  execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, immediate, false>))
 
 #define EXEC_LOAD_STORE_1_ADD_AFTER(mode, pc, addBefore, addAfter)                         \
     ((addBefore || addAfter)                                                               \
          ? (immediate ? EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, true)   \
                       : EXEC_LOAD_STORE_1_IMMEDIATE(mode, pc, addBefore, addAfter, false)) \
-         : execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, false, false>)
+         : PREFIX_EXEC_FN(execFn_load_store_1<wasT, mode, pc, addBefore, addAfter, false, false>))
 
 #define EXEC_LOAD_STORE_1_ADD_BEFORE(mode, pc, addBefore)              \
     (addAfter ? EXEC_LOAD_STORE_1_ADD_AFTER(mode, pc, addBefore, true) \
@@ -2200,7 +2214,7 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
 
                             case ARM_MODE_3_SH:
                             case ARM_MODE_3_SB:
-                                return execFn_invalid<wasT>;
+                                return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 
                             case ARM_MODE_3_D:
                                 EXEC_LOAD_STORE_1(ARM_MODE_3_D);
@@ -2217,41 +2231,44 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
                     case 0:  // move reg to PSR or move PSR to reg
 
                         if ((instr & 0x00BF0FFFUL) == 0x000F0000UL) {  // move PSR to reg
-                            return (instr & 0x00400000UL) ? execFn_psr2reg<wasT, true>
-                                                          : execFn_psr2reg<wasT, false>;
+                            return (instr & 0x00400000UL)
+                                       ? PREFIX_EXEC_FN(execFn_psr2reg<wasT, true>)
+                                       : PREFIX_EXEC_FN(execFn_psr2reg<wasT, false>);
                         } else if ((instr & 0x00B0FFF0UL) == 0x0020F000UL) {  // move reg to PSR
                             if ((instr & 0x0f) == 0x0f)
-                                return (instr & 0x00400000UL) ? execFn_reg2psr<wasT, true, true>
-                                                              : execFn_reg2psr<wasT, false, true>;
+                                return (instr & 0x00400000UL)
+                                           ? PREFIX_EXEC_FN(execFn_reg2psr<wasT, true, true>)
+                                           : PREFIX_EXEC_FN(execFn_reg2psr<wasT, false, true>);
                             else
-                                return (instr & 0x00400000UL) ? execFn_reg2psr<wasT, true, false>
-                                                              : execFn_reg2psr<wasT, false, false>;
+                                return (instr & 0x00400000UL)
+                                           ? PREFIX_EXEC_FN(execFn_reg2psr<wasT, true, false>)
+                                           : PREFIX_EXEC_FN(execFn_reg2psr<wasT, false, false>);
 
                         } else
-                            return execFn_invalid<wasT>;
+                            return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 
                     case 5:  // enhanced DSP adds/subtracts
-                        if (instr & 0x00000F00UL) return execFn_invalid<wasT>;
+                        if (instr & 0x00000F00UL) return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 
                         switch ((instr >> 21) & 3) {  // what op?
                             case 0:                   // QADD
-                                return execFn_dspadd<wasT, 0>;
+                                return PREFIX_EXEC_FN(execFn_dspadd<wasT, 0>);
 
                             case 1:  // QSUB
-                                return execFn_dspadd<wasT, 1>;
+                                return PREFIX_EXEC_FN(execFn_dspadd<wasT, 1>);
 
                             case 2:  // QDADD
-                                return execFn_dspadd<wasT, 2>;
+                                return PREFIX_EXEC_FN(execFn_dspadd<wasT, 2>);
 
                             case 3:  // QDSUB
-                                return execFn_dspadd<wasT, 3>;
+                                return PREFIX_EXEC_FN(execFn_dspadd<wasT, 3>);
 
                             default:
                                 __builtin_unreachable();
                         }
 
                     case 7:  // soft breakpoint
-                        return execFn_softbreak<wasT>;
+                        return PREFIX_EXEC_FN(execFn_softbreak<wasT>);
 
                     case 8:
                     case 9:
@@ -2263,20 +2280,21 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
                     case 15:
                         switch ((instr >> 21) & 3) {  // what op?
                             case 0:                   // SMLAxy
-                                return execFn_dspmul<wasT, 0>;
+                                return PREFIX_EXEC_FN(execFn_dspmul<wasT, 0>);
 
                             case 1:  // SMLAWy/SMULWy
                                 if ((instr & 0x00000020UL) && (instr & 0x0000F000UL))
-                                    return execFn_invalid<wasT>;
+                                    return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 
-                                return execFn_dspmul<wasT, 1>;
+                                return PREFIX_EXEC_FN(execFn_dspmul<wasT, 1>);
 
                             case 2:  // SMLALxy
-                                return execFn_dspmul<wasT, 2>;
+                                return PREFIX_EXEC_FN(execFn_dspmul<wasT, 2>);
 
                             case 3:  // SMULxy
-                                if (instr & 0x0000F000UL) return execFn_invalid<wasT>;
-                                return execFn_dspmul<wasT, 3>;
+                                if (instr & 0x0000F000UL)
+                                    return PREFIX_EXEC_FN(execFn_invalid<wasT>);
+                                return PREFIX_EXEC_FN(execFn_dspmul<wasT, 3>);
 
                             default:
                                 __builtin_unreachable();
@@ -2285,17 +2303,18 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
                     case 1:  // BLX/BX/BXJ or CLZ
                     case 3:
                         if (instr & 0x00400000UL) {  // CLZ
-                            return execFn_clz<wasT>;
+                            return PREFIX_EXEC_FN(execFn_clz<wasT>);
                         } else {
-                            if ((instr & 0x0FFFFF00UL) != 0x012FFF00UL) return execFn_invalid<wasT>;
+                            if ((instr & 0x0FFFFF00UL) != 0x012FFF00UL)
+                                return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 
                             return (instr & 0x00000030UL) == 0x00000030UL
-                                       ? execFn_bl_reg<wasT, true>
-                                       : execFn_bl_reg<wasT, false>;
+                                       ? PREFIX_EXEC_FN(execFn_bl_reg<wasT, true>)
+                                       : PREFIX_EXEC_FN(execFn_bl_reg<wasT, false>);
                         }
 
                     default:
-                        return execFn_invalid<wasT>;
+                        return PREFIX_EXEC_FN(execFn_invalid<wasT>);
                 }
 
                 // fall through to data processing;
@@ -2310,21 +2329,21 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
             const bool srcPc = ((instr >> 16) & 0x0F) == 0x0f;
             const bool destPc = ((instr >> 12) & 0x0F) == 0x0f;
 
-#define EXEC_DPROC(op)                                                   \
-    if (setFlags) {                                                      \
-        if (srcPc)                                                       \
-            return destPc ? execFn_dproc<wasT, op, true, true, true>     \
-                          : execFn_dproc<wasT, op, true, true, false>;   \
-        else                                                             \
-            return destPc ? execFn_dproc<wasT, op, true, false, true>    \
-                          : execFn_dproc<wasT, op, true, false, false>;  \
-    } else {                                                             \
-        if (srcPc)                                                       \
-            return destPc ? execFn_dproc<wasT, op, false, true, true>    \
-                          : execFn_dproc<wasT, op, false, true, false>;  \
-        else                                                             \
-            return destPc ? execFn_dproc<wasT, op, false, false, true>   \
-                          : execFn_dproc<wasT, op, false, false, false>; \
+#define EXEC_DPROC(op)                                                                   \
+    if (setFlags) {                                                                      \
+        if (srcPc)                                                                       \
+            return destPc ? PREFIX_EXEC_FN(execFn_dproc<wasT, op, true, true, true>)     \
+                          : PREFIX_EXEC_FN(execFn_dproc<wasT, op, true, true, false>);   \
+        else                                                                             \
+            return destPc ? PREFIX_EXEC_FN(execFn_dproc<wasT, op, true, false, true>)    \
+                          : PREFIX_EXEC_FN(execFn_dproc<wasT, op, true, false, false>);  \
+    } else {                                                                             \
+        if (srcPc)                                                                       \
+            return destPc ? PREFIX_EXEC_FN(execFn_dproc<wasT, op, false, true, true>)    \
+                          : PREFIX_EXEC_FN(execFn_dproc<wasT, op, false, true, false>);  \
+        else                                                                             \
+            return destPc ? PREFIX_EXEC_FN(execFn_dproc<wasT, op, false, false, true>)   \
+                          : PREFIX_EXEC_FN(execFn_dproc<wasT, op, false, false, false>); \
     }
 
             switch ((instr >> 21) & 0x0F) {
@@ -2353,14 +2372,14 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
                     EXEC_DPROC(7);
 
                 case 8:  // TST
-                    if (!setFlags) return execFn_invalid<wasT>;
+                    if (!setFlags) return PREFIX_EXEC_FN(execFn_invalid<wasT>);
                     EXEC_DPROC(8);
 
                 case 9:  // TEQ
                     EXEC_DPROC(9);
 
                 case 10:  // CMP
-                    if (!setFlags) return execFn_invalid<wasT>;
+                    if (!setFlags) return PREFIX_EXEC_FN(execFn_invalid<wasT>);
                     EXEC_DPROC(10);
 
                 case 11:  // CMN
@@ -2393,7 +2412,7 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
         case 6:
         case 7:                        // load/store reg offset
             if (instr & 0x00000010UL)  // media and undefined instrs
-                return execFn_invalid<wasT>;
+                return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 
         load_store_mode_2: {
             const uint_fast8_t mode = cpuPrvArmAdrModeDecode_2(instr);
@@ -2407,17 +2426,19 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
             const bool immediate = !(instr & 0x02000000UL);
             const bool syscall = (regSrc == 9 && regDst == 12) || (regSrc == 12 && destPc);
 
-#define EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, immediate)        \
-    (negate                                                                                     \
-         ? execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter, immediate, true> \
-         : execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter, immediate, false>)
+#define EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, immediate)         \
+    (negate ? PREFIX_EXEC_FN(execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter, \
+                                                 immediate, true>)                               \
+            : PREFIX_EXEC_FN(execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter, \
+                                                 immediate, false>))
 
 #define EXEC_LOAD_STORE_2_ADD_AFTER(mode, srcPc, destPc, addBefore, addAfter)                   \
     ((addBefore || addAfter)                                                                    \
          ? (immediate                                                                           \
                 ? EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, true)   \
                 : EXEC_LOAD_STORE_2_IMMEDIATE(mode, srcPc, destPc, addBefore, addAfter, false)) \
-         : (execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter, false, false>))
+         : (PREFIX_EXEC_FN(execFn_load_store_2<wasT, mode, srcPc, destPc, addBefore, addAfter,  \
+                                               false, false>)))
 
 #define EXEC_LOAD_STORE_2_ADD_BEFORE(mode, srcPc, destPc, addBefore)              \
     (addAfter ? EXEC_LOAD_STORE_2_ADD_AFTER(mode, srcPc, destPc, addBefore, true) \
@@ -2434,7 +2455,7 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
 #define EXEC_LOAD_STORE_2(mode) \
     return (srcPc ? EXEC_LOAD_STORE_2_SRC_PC(mode, true) : EXEC_LOAD_STORE_2_SRC_PC(mode, false))
 
-            if (mode & ARM_MODE_2_INV) return execFn_invalid<wasT>;
+            if (mode & ARM_MODE_2_INV) return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 
             if (mode & ARM_MODE_2_LOAD) {
                 if (mode & ARM_MODE_2_WORD) {
@@ -2482,9 +2503,9 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
 #undef EXEC_LOAD_STORE_2
         }
 
-#define EXEC_LOAD_STORE_MULTI(wasT, mode, isLoad)                               \
-    ((instr & 0x00400000UL) ? execFn_load_store_multi<wasT, mode, isLoad, true> \
-                            : execFn_load_store_multi<wasT, mode, isLoad, false>)
+#define EXEC_LOAD_STORE_MULTI(wasT, mode, isLoad)                                               \
+    ((instr & 0x00400000UL) ? PREFIX_EXEC_FN(execFn_load_store_multi<wasT, mode, isLoad, true>) \
+                            : PREFIX_EXEC_FN(execFn_load_store_multi<wasT, mode, isLoad, false>))
 
         case 8:
         case 9:  // load/store multiple
@@ -2540,22 +2561,23 @@ static ExecFn cpuPrvDecoderArm(uint32_t instr) {
 
         case 10:
         case 11:  // B/BL/BLX(if cond=0b1111)
-            return (instr & 0x01000000UL) ? execFn_bl<wasT, true> : execFn_bl<wasT, false>;
+            return (instr & 0x01000000UL) ? PREFIX_EXEC_FN(execFn_bl<wasT, true>)
+                                          : PREFIX_EXEC_FN(execFn_bl<wasT, false>);
 
         case 12:
         case 13:  // coprocessor load/store and double register transfers
                   // coproc_mem_2reg:
-            return execFn_cp_mem2reg<wasT, false>;
+            return PREFIX_EXEC_FN(execFn_cp_mem2reg<wasT, false>);
 
         case 14:  // coprocessor data processing and register transfers
             // coproc_dp:
-            return execFn_cp_dp<wasT, false>;
+            return PREFIX_EXEC_FN(execFn_cp_dp<wasT, false>);
 
         case 15:  // SWI
-            return execFn_swi<wasT>;
+            return PREFIX_EXEC_FN(execFn_swi<wasT>);
     }
 
-    return execFn_invalid<wasT>;
+    return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 }
 
 static void execFn_thumb_3_ldr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
@@ -2641,7 +2663,7 @@ static ExecFn cpuPrvDecoderThumb(uint32_t instr) {
                  // LSR(2) ASR(2) ROR AND EOR ORR BIC
 
             if (instr & 0x0800) {  // LDR(3)
-                return execFn_thumb_3_ldr;
+                return PREFIX_EXEC_FN(execFn_thumb_3_ldr);
             } else if (instr & 0x0400) {
                 const bool pcD = ((instr & 7) | ((instr >> 4) & 0x08)) == 15;
                 const bool pcS = ((instr >> 3) & 0xF) == 15;
@@ -2649,41 +2671,42 @@ static ExecFn cpuPrvDecoderThumb(uint32_t instr) {
 
                 switch ((instr >> 8) & 0x03) {
                     case 0:
-                        return (pcS ? (pcD ? execFn_thumb_4_add<true, true>
-                                           : execFn_thumb_4_add<false, true>)
-                                    : (pcD ? execFn_thumb_4_add<true, false>
-                                           : execFn_thumb_4_add<false, false>));
+                        return (pcS ? (pcD ? PREFIX_EXEC_FN(execFn_thumb_4_add<true, true>)
+                                           : PREFIX_EXEC_FN(execFn_thumb_4_add<false, true>))
+                                    : (pcD ? PREFIX_EXEC_FN(execFn_thumb_4_add<true, false>)
+                                           : PREFIX_EXEC_FN(execFn_thumb_4_add<false, false>)));
 
                     case 2:
-                        return (pcS ? (pcD ? execFn_thumb_3_mov<true, true>
-                                           : execFn_thumb_3_mov<false, true>)
-                                    : (pcD ? execFn_thumb_3_mov<true, false>
-                                           : execFn_thumb_3_mov<false, false>));
+                        return (pcS ? (pcD ? PREFIX_EXEC_FN(execFn_thumb_3_mov<true, true>)
+                                           : PREFIX_EXEC_FN(execFn_thumb_3_mov<false, true>))
+                                    : (pcD ? PREFIX_EXEC_FN(execFn_thumb_3_mov<true, false>)
+                                           : PREFIX_EXEC_FN(execFn_thumb_3_mov<false, false>)));
 
                     case 3:
-                        return blx ? (pcS ? execFn_thumb_bl_x<true, true>
-                                          : execFn_thumb_bl_x<true, false>)
-                                   : (pcS ? execFn_thumb_bl_x<false, true>
-                                          : execFn_thumb_bl_x<false, false>);
+                        return blx ? (pcS ? PREFIX_EXEC_FN(execFn_thumb_bl_x<true, true>)
+                                          : PREFIX_EXEC_FN(execFn_thumb_bl_x<true, false>))
+                                   : (pcS ? PREFIX_EXEC_FN(execFn_thumb_bl_x<false, true>)
+                                          : PREFIX_EXEC_FN(execFn_thumb_bl_x<false, false>));
                 }
             }
 
             break;
 
         case 10:
-            return (instr & 0x0800) ? execFn_thumb_load_addr<true> : execFn_thumb_load_addr<false>;
+            return (instr & 0x0800) ? PREFIX_EXEC_FN(execFn_thumb_load_addr<true>)
+                                    : PREFIX_EXEC_FN(execFn_thumb_load_addr<false>);
 
         case 14:
         case 15:
             switch ((instr >> 11) & 3) {
                 case 1:
-                    return execFn_thumb_blx_suffix;
+                    return PREFIX_EXEC_FN(execFn_thumb_blx_suffix);
 
                 case 2:
-                    return execFn_thumb_bl_x_prefix;
+                    return PREFIX_EXEC_FN(execFn_thumb_bl_x_prefix);
 
                 case 3:
-                    return execFn_thumb_bl_suffix;
+                    return PREFIX_EXEC_FN(execFn_thumb_bl_suffix);
             }
     }
 
@@ -2718,6 +2741,24 @@ uint32_t cpuDecodeThumb(uint32_t instr) {
                                                 : cpuPrvDecoderThumb(instr));
 }
 
+#ifdef __EMSCRIPTEN__
+
+// The content of this function will be replaced with a jump table later. We need two of
+// them to coax wasm-opt into inlinining them.
+static void __attribute__((noinline)) cpuPrvDispatchExecFnArm(ExecFn execfn, struct ArmCpu *cpu,
+                                                              uint32_t instr, bool privileged) {
+    ((ExecFn)((uint32_t)execfn - EXEC_FN_PREFIX_VALUE))(cpu, instr, privileged);
+}
+
+// The content of this function will be replaced with a jump table later. We need two of
+// them to coax wasm-opt into inlinining them.
+static void __attribute__((noinline)) cpuPrvDispatchExecFnThumb(ExecFn execfn, struct ArmCpu *cpu,
+                                                                uint32_t instr, bool privileged) {
+    ((ExecFn)((uint32_t)execfn - EXEC_FN_PREFIX_VALUE))(cpu, instr, privileged);
+}
+
+#endif
+
 static void cpuPrvCycleArm(struct ArmCpu *cpu) {
     uint32_t instr, decoded;
     bool privileged, ok;
@@ -2743,7 +2784,12 @@ static void cpuPrvCycleArm(struct ArmCpu *cpu) {
     }
 
     cpu->regs[REG_NO_PC] += 4;
+
+#ifdef __EMSCRIPTEN__
+    cpuPrvDispatchExecFnArm(cpuPrvDecompressExecFn(decoded), cpu, instr, privileged);
+#else
     cpuPrvDecompressExecFn(decoded)(cpu, instr, privileged);
+#endif
 }
 
 static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
@@ -2772,7 +2818,12 @@ static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
     }
 
     cpu->regs[REG_NO_PC] += 2;
+
+#ifdef __EMSCRIPTEN__
+    cpuPrvDispatchExecFnThumb(cpuPrvDecompressExecFn(decoded), cpu, instr, privileged);
+#else
     cpuPrvDecompressExecFn(decoded)(cpu, instr, privileged);
+#endif
 }
 
 static uint32_t translateThumb(uint16_t instrT) {

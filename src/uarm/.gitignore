@@ -11,6 +11,7 @@ src/uarm_web*
 Makefile.local
 
 Caddyfile
+node_modules
 
 *.bin
 *.prc
@@ -18,6 +19,9 @@ Caddyfile
 *.img
 *.zip
 *.diff
+*.s
+*.wat
+*.wasm
 
 .vscode
 *.log

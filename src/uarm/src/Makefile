@@ -12,10 +12,13 @@ WASMOPT = wasm-opt
 WASMOPT_FLAGS = --enable-bulk-memory --inlining --inlining-optimizing \
 	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
 
+WASMSTRIP = wasm-strip
+YARN = yarn
+
 CFLAGS_NATIVE ?= -O3  -g $(shell sdl2-config --cflags) -flto
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
-CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions
+CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions -g
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)
 INCLUDE_EXTRA ?=
 
@@ -24,7 +27,7 @@ CXXFLAGS_TEST ?= $(CFLAGS_TEST)
 LDFLAGS_TEST ?= -fsanitize=address,undefined -lgtest -lgtest_main -lgmock
 
 LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image -flto
-LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno \
+LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno -g \
 	-s EXIT_RUNTIME=0 \
 	-s MODULARIZE=1 \
 	-s ENVIRONMENT="web,worker" \
@@ -150,6 +153,7 @@ GARBAGE = \
 	$(BINARY_EMCC) \
 	$(BINARY_NATIVE) \
 	$(BINARY_WASM) \
+	$(BINARY_WASM).s \
 	$(BINARY_TEST) \
 	$(BUILDDIR_NATIVE) \
 	$(DEPDIR_NATIVE) \
@@ -170,7 +174,9 @@ $(BINARY_NATIVE): $(OBJECTS_NATIVE)
 
 $(BINARY_EMCC): $(OBJECTS_EMCC)
 	$(LD_EMCC) -o $@ $^ $(LDFLAGS_EMCC)
+	$(YARN) --cwd ../tools/build-jump-table && $(YARN) --cwd ../tools/build-jump-table build-jump-table "$$(pwd)/${@:.js=.wasm}"
 	$(WASMOPT) $(WASMOPT_FLAGS) -o ${@:.js=.wasm} ${@:.js=.wasm}
+	$(WASMSTRIP) ${@:.js=.wasm}
 
 $(BINARY_TEST): $(OBJECTS_TEST)
 	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_TEST)

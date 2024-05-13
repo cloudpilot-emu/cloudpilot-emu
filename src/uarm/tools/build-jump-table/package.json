@@ -1,0 +1,15 @@
+{
+    "name": "build-jump-table",
+    "version": "0.0.1",
+    "license": "MIT",
+    "dependencies": {
+        "@types/node": "^20.12.11",
+        "binaryen": "^117.0.0",
+        "tsx": "^4.10.2",
+        "typescript": "^5.4.5"
+    },
+    "type": "module",
+    "scripts": {
+        "build-jump-table": "tsx main.ts"
+    }
+}
