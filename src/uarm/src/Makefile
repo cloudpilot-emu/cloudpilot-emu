@@ -9,8 +9,10 @@ CXX_EMCC ?= emcc
 LD_EMCC ?= emcc
 
 WASMOPT = wasm-opt
-WASMOPT_FLAGS = --enable-bulk-memory --no-inline="mmuTranslate" --inlining-optimizing \
+WASMOPT_FLAGS_BASE = --enable-bulk-memory --inlining-optimizing \
 	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
+WASMOPT_FLAGS_WEBKIT = --no-inline="*execFn_*"  $(WASMOPT_FLAGS_BASE) 
+WASMOPT_FLAGS_OTHER = $(WASMOPT_FLAGS_BASE)
 
 WASMSTRIP = wasm-strip
 YARN = yarn
@@ -145,6 +147,9 @@ OBJECTS_EMCC = $(OBJECTS_EMCC_C) $(OBJECTS_EMCC_CXX)
 BINARY_NATIVE = uarm-bin
 BINARY_EMCC = uarm_web.js
 BINARY_WASM = uarm_web.wasm
+OPTIMIZED_BINARIY_WASM_OTHER = uarm_web_other.wasm
+OPTIMIZED_BINARIY_WASM_WEBKIT = uarm_web_webkit.wasm
+OPTIMIZED_BINARIES_WASM = $(OPTIMIZED_BINARIY_WASM_OTHER) $(OPTIMIZED_BINARIY_WASM_WEBKIT)
 BINARY_TEST = test/test
 
 INCLUDE = $(INCLUDE_EXTRA)
@@ -154,6 +159,7 @@ GARBAGE = \
 	$(BINARY_NATIVE) \
 	$(BINARY_WASM) \
 	$(BINARY_WASM).s \
+	$(OPTIMIZED_BINARIES_WASM) \
 	$(BINARY_TEST) \
 	$(BUILDDIR_NATIVE) \
 	$(DEPDIR_NATIVE) \
@@ -167,16 +173,24 @@ bin: $(BINARY_NATIVE)
 test: $(BINARY_TEST)
 	$(BINARY_TEST)
 
-emscripten: $(BINARY_EMCC)
+emscripten: $(OPTIMIZED_BINARIES_WASM)
 
 $(BINARY_NATIVE): $(OBJECTS_NATIVE)
 	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_NATIVE)
 
 $(BINARY_EMCC): $(OBJECTS_EMCC)
 	$(LD_EMCC) -o $@ $^ $(LDFLAGS_EMCC)
-	$(YARN) --cwd ../tools/build-jump-table && $(YARN) --cwd ../tools/build-jump-table build-jump-table "$$(pwd)/${@:.js=.wasm}"
-	$(WASMOPT) $(WASMOPT_FLAGS) -o ${@:.js=.wasm} ${@:.js=.wasm}
-	$(WASMSTRIP) ${@:.js=.wasm}
+
+$(BINARY_WASM): $(BINARY_EMCC)
+	$(YARN) --cwd ../tools/build-jump-table && $(YARN) --cwd ../tools/build-jump-table build-jump-table "$$(pwd)/$@"
+
+$(OPTIMIZED_BINARIY_WASM_OTHER): $(BINARY_WASM)
+	$(WASMOPT) $(WASMOPT_FLAGS_OTHER) -o $@ $^
+	$(WASMSTRIP) $@
+
+$(OPTIMIZED_BINARIY_WASM_WEBKIT): $(BINARY_WASM)
+	$(WASMOPT) $(WASMOPT_FLAGS_WEBKIT) -o $@ $^
+	$(WASMSTRIP) $@
 
 $(BINARY_TEST): $(OBJECTS_TEST)
 	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_TEST)

@@ -40,14 +40,14 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
         }
 
         static async create(nor, nand, sd, env) {
-            const { log } = env;
+            const { log, isWebkit } = env;
             let module;
 
             module = await createModule({
                 noInitialRun: true,
                 print: log,
                 printErr: log,
-                locateFile: () => '../src/uarm_web.wasm',
+                locateFile: () => (isWebkit ? '../src/uarm_web_webkit.wasm' : '../src/uarm_web_other.wasm'),
             });
 
             const malloc = module.cwrap('malloc', 'number', ['number']);
@@ -270,6 +270,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                     onFrame: postFrame,
                     onSpeedDisplay: postSpeed,
                     log: postLog,
+                    isWebkit: message.isWebkit,
                 });
 
                 postInitialized();
