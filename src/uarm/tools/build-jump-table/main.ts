@@ -66,7 +66,7 @@ function remapExecFunctions(
     execFnNameToHandleMap: Map<string, number>
 ): void {
     const fnInfo = binaryen.getFunctionInfo(fn);
-    console.log(`processing ${fnInfo.name}`);
+    console.log(`remapping opcodes in ${fnInfo.name}`);
 
     const mapExpression = (e: binaryen.ExpressionRef): binaryen.ExpressionRef => {
         if (e === 0) return e;
@@ -138,6 +138,16 @@ function remapExecFunctions(
     module.addFunction(fnInfo.name, fnInfo.params, fnInfo.results, fnInfo.vars, mapExpression(fnInfo.body));
 }
 
+function replaceDispatcher(module: binaryen.Module, name: string, implementation: binaryen.ExportRef): void {
+    console.log(`replacing ${name}`);
+
+    const fn = getFunctionLikeOne(module, name);
+    const info = binaryen.getFunctionInfo(fn);
+
+    module.removeFunction(info.name);
+    module.addFunction(info.name, info.params, info.results, [], implementation);
+}
+
 async function main(filename: string): Promise<void> {
     const content = await readFile(filename);
     const module = binaryen.readBinary(new Uint8Array(content, content.byteLength));
@@ -153,38 +163,14 @@ async function main(filename: string): Promise<void> {
         .filter(([i, name]) => name.includes('execFn_'));
 
     const execFnTableEntryToNameMap = new Map(execFnTableEntries);
-
     const execFnHandles = execFnTableEntries.map(([i, name], handle): [string, number] => [name, handle]);
-
     const execFnNameToHandleMap = new Map(execFnHandles);
 
-    const dispatchFn = getFunctionLikeOne(module, 'cpuPrvDispatchExecFnArm');
-    const dispatchFnInfo = binaryen.getFunctionInfo(dispatchFn);
-
     console.log('building dispatcher');
+    const dispatcher = buildDispatcher(module, execFnHandles);
 
-    module.removeFunction(dispatchFnInfo.name);
-    module.addFunction(
-        dispatchFnInfo.name,
-        dispatchFnInfo.params,
-        dispatchFnInfo.results,
-        [],
-        buildDispatcher(module, execFnHandles)
-    );
-
-    const dispatchFn1 = getFunctionLikeOne(module, 'cpuPrvDispatchExecFnThumb');
-    const dispatchFnInfo1 = binaryen.getFunctionInfo(dispatchFn1);
-
-    console.log('building dispatcher');
-
-    module.removeFunction(dispatchFnInfo1.name);
-    module.addFunction(
-        dispatchFnInfo1.name,
-        dispatchFnInfo1.params,
-        dispatchFnInfo1.results,
-        [],
-        buildDispatcher(module, execFnHandles)
-    );
+    replaceDispatcher(module, 'cpuPrvDispatchExecFnThumb', dispatcher);
+    replaceDispatcher(module, 'cpuPrvDispatchExecFnArm', dispatcher);
 
     getFunctionLike(module, 'cpuDecodeArm').forEach((fnInfo) =>
         remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMap)
