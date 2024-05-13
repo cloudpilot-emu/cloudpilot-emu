@@ -1082,8 +1082,6 @@ static void execFn_invalid(struct ArmCpu *cpu, uint32_t instr, bool privileged) 
 
     cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_UND, cpu->curInstrPC + (wasT ? 2 : 4),
                     ARM_SR_MODE_UND | ARM_SR_I);
-
-    abort();
 }
 
 template <bool wasT, bool align2>
