@@ -4,11 +4,14 @@ import { Database } from './database.js';
 import { AudioDriver } from './audiodriver.js';
 
 (function () {
-    const isIOSSafari = !navigator.userAgent.match(/(crios)|(fxios)/i);
+    const isMacOSSafari = 'safari' in window;
     const isIOS =
         !!navigator.platform.match(/iPhone|iPad|iPod/) ||
         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    const isSafari = 'safari' in window || (isIOS && isIOSSafari);
+    const isWebkit =
+        isMacOSSafari || isIOS || (!!navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/));
+
+    let binary = isWebkit ? 'uarm_web_webkit.wasm' : 'uarm_web_other.wasm';
 
     const labelNor = document.getElementById('nor-image');
     const labelNand = document.getElementById('nand-image');
@@ -76,7 +79,7 @@ import { AudioDriver } from './audiodriver.js';
     let fileInput;
     const openFile = () =>
         new Promise((resolve, reject) => {
-            if (isSafari && fileInput) document.body.removeChild(fileInput);
+            if (isWebkit && fileInput) document.body.removeChild(fileInput);
             fileInput = document.createElement('input');
 
             fileInput.onchange = (evt) => {
@@ -103,7 +106,7 @@ import { AudioDriver } from './audiodriver.js';
             fileInput.value = '';
             fileInput.style.display = 'none';
 
-            if (isSafari) document.body.appendChild(fileInput);
+            if (isWebkit) document.body.appendChild(fileInput);
 
             fileInput.click();
         });
@@ -129,10 +132,13 @@ import { AudioDriver } from './audiodriver.js';
         emulator?.destroy();
         clearCanvas();
 
+        log(`loading ${binary}`);
+
         emulator = await Emulator.create(fileNor.content, fileNand.content, fileSd?.content, {
             canvas: canvasCtx.canvas,
             speedDisplay,
             log,
+            binary,
         });
         emulator?.start();
 
@@ -149,11 +155,15 @@ import { AudioDriver } from './audiodriver.js';
         fileNand = await database.getNand();
         fileSd = await database.getSd();
 
-        if (window.location.search.indexOf('?noload') < 0) {
+        const query = new URLSearchParams(location.search);
+
+        if (query.has('binary')) binary = query.get('binary');
+
+        if (!query.has('noload')) {
             log('Reload with ?noload appended to the URL if the emulator hangs on load due to invalid NOR or NAND');
             log('---');
 
-            await restart();
+            await restart(binary);
         }
 
         updateLabels();

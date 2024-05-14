@@ -1,13 +1,6 @@
 import { DisplayService } from './displayservice.js';
 import { EventHandler } from './eventhandler.js';
 
-const isMacOSSafari = 'safari' in window;
-const isIOS =
-    !!navigator.platform.match(/iPhone|iPad|iPod/) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-const isWebkit =
-    isMacOSSafari || isIOS || (!!navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/));
-
 export class Emulator {
     constructor(worker, displayService, { canvas, speedDisplay, log }) {
         this.worker = worker;
@@ -52,7 +45,7 @@ export class Emulator {
     }
 
     static async create(nor, nand, sd, env) {
-        const { log } = env;
+        const { log, binary } = env;
         const worker = new Worker('web/worker.js');
 
         const displayService = new DisplayService();
@@ -62,7 +55,13 @@ export class Emulator {
             const onMessage = (e) => {
                 switch (e.data.type) {
                     case 'ready':
-                        worker.postMessage({ type: 'initialize', nor, nand, sd, isWebkit });
+                        worker.postMessage({
+                            type: 'initialize',
+                            nor,
+                            nand,
+                            sd,
+                            binary,
+                        });
                         break;
 
                     case 'initialized':
