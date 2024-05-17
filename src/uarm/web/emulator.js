@@ -44,7 +44,7 @@ export class Emulator {
         this.eventHandler = new EventHandler(this, this.displayService);
     }
 
-    static async create(nor, nand, sd, env) {
+    static async create(nor, nand, sd, maxLoad, cyclesPerSecondLimit, env) {
         const { log, binary } = env;
         const worker = new Worker('web/worker.js');
 
@@ -60,6 +60,8 @@ export class Emulator {
                             nor,
                             nand,
                             sd,
+                            maxLoad,
+                            cyclesPerSecondLimit,
                             binary,
                         });
                         break;
@@ -105,6 +107,14 @@ export class Emulator {
         this.running = true;
         this.eventHandler.bind(this.canvas);
         this.worker.postMessage({ type: 'start' });
+    }
+
+    setMaxLoad(maxLoad) {
+        this.worker.postMessage({ type: 'setMaxLoad', maxLoad });
+    }
+
+    setCyclesPerSecondLimit(cyclesPerSecondLimit) {
+        this.worker.postMessage({ type: 'setCyclesPerSecondLimit', cyclesPerSecondLimit });
     }
 
     penDown(x, y) {

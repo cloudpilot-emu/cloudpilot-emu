@@ -12,7 +12,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
     let pcmPool = [];
 
     class Emulator {
-        constructor(module, { onSpeedDisplay, onFrame, log }) {
+        constructor(module, maxLoad, cyclesPerSecondLimit, { onSpeedDisplay, onFrame, log }) {
             this.module = module;
             this.onSpeedDisplay = onSpeedDisplay;
             this.onFrame = onFrame;
@@ -23,6 +23,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             this.resetFrame = module.cwrap('resetFrame', undefined, []);
             this.currentIps = module.cwrap('currentIps', 'number', []);
             this.currentIpsMax = module.cwrap('currentIpsMax', 'number', []);
+            this.setMaxLoad = module.cwrap('setMaxLoad', undefined, ['number']);
+            this.setCyclesPerSecondLimit = module.cwrap('setCyclesPerSecondLimit', undefined, ['number']);
             this.getTimesliceSizeUsec = module.cwrap('getTimesliceSizeUsec', 'number', []);
             this.getTimestampUsec = module.cwrap('getTimestampUsec', 'number', []);
             this.penDown = module.cwrap('penDown', undefined, ['number', 'number']);
@@ -37,9 +39,12 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             this.amIDead = false;
             this.pcmEnabled = false;
             this.pcmPort = undefined;
+
+            this.setMaxLoad(maxLoad);
+            this.setCyclesPerSecondLimit(cyclesPerSecondLimit);
         }
 
-        static async create(nor, nand, sd, env) {
+        static async create(nor, nand, sd, maxLoad, cyclesPerSecondLimit, env) {
             const { log, binary } = env;
             let module;
 
@@ -69,7 +74,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                 [norPtr, nor.length, nandPtr, nand.length, sdPtr, sd ? sd.length : 0]
             );
 
-            return new Emulator(module, env);
+            return new Emulator(module, maxLoad, cyclesPerSecondLimit, env);
         }
 
         stop() {
@@ -266,12 +271,19 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
 
         switch (message.type) {
             case 'initialize':
-                emulator = await Emulator.create(message.nor, message.nand, message.sd, {
-                    onFrame: postFrame,
-                    onSpeedDisplay: postSpeed,
-                    log: postLog,
-                    binary: message.binary,
-                });
+                emulator = await Emulator.create(
+                    message.nor,
+                    message.nand,
+                    message.sd,
+                    message.maxLoad,
+                    message.cyclesPerSecondLimit,
+                    {
+                        onFrame: postFrame,
+                        onSpeedDisplay: postSpeed,
+                        log: postLog,
+                        binary: message.binary,
+                    }
+                );
 
                 postInitialized();
 
@@ -285,6 +297,16 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             case 'stop':
                 assertEmulator('stop');
                 emulator.stop();
+                break;
+
+            case 'setMaxLoad':
+                assertEmulator('setMaxLoad');
+                emulator.setMaxLoad(message.maxLoad);
+                break;
+
+            case 'setCyclesPerSecondLimit':
+                assertEmulator('cyclesPerSecondLimit');
+                emulator.setCyclesPerSecondLimit(message.cyclesPerSecondLimit);
                 break;
 
             case 'penDown':

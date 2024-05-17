@@ -63,6 +63,10 @@
                 max-height: calc(100vh - 15px);
                 object-fit: contain;
             }
+
+            input[type='range'] {
+                width: 15em;
+            }
         </style>
     </head>
 
@@ -82,6 +86,12 @@
 
                 <div class="control"><label>SD image:</label><span id="sd-image"></span></div>
                 <button id="upload-sd">Upload SD</button>
+
+                <div class="control"><label>Max. host load:</label> <span id="max-load"></span></div>
+                <input id="max-load-slider" type="range" min="50" max="100" step="5" />
+
+                <div class="control"><label>MIPS limit:</label> <span id="mips-limit"></span></div>
+                <input id="mips-limit-slider" type="range" min="50" max="150" step="5" />
 
                 <h2>Log:</h2>
                 <button id="clear-log">Clear</button>

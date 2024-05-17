@@ -218,6 +218,14 @@ uint64_t EMSCRIPTEN_KEEPALIVE currentIpsMax() {
     return mainLoop ? mainLoop->GetCurrentIpsMax() : 0;
 }
 
+void EMSCRIPTEN_KEEPALIVE setMaxLoad(unsigned int maxLoad) {
+    if (mainLoop) mainLoop->SetMaxLoad(maxLoad);
+}
+
+void EMSCRIPTEN_KEEPALIVE setCyclesPerSecondLimit(unsigned int cyclesPerSecondLimit) {
+    if (mainLoop) mainLoop->SetCyclesPerSecondLimit(cyclesPerSecondLimit);
+}
+
 uint64_t EMSCRIPTEN_KEEPALIVE getTimestampUsec() { return timestampUsec(); }
 
 void EMSCRIPTEN_KEEPALIVE keyDown(int key) {
@@ -263,7 +271,7 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
     socSetAudioQueue(soc, audioQueue);
 
-    mainLoop = make_unique<MainLoop>(soc, 100000000);
+    mainLoop = make_unique<MainLoop>(soc);
 
 #ifndef __EMSCRIPTEN__
     constexpr int SCALE = 2;

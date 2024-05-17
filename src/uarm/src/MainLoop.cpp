@@ -13,24 +13,26 @@ using namespace std;
 namespace {
     constexpr int AVERAGE_TIMESLICES = 30;
     constexpr uint32_t BIN_SIZE = 1000000;
-    constexpr uint32_t SAFETY_MARGIN_PCT = 97;
-    constexpr uint32_t SAFETY_MARGIN_PCT_CATCHUP = 75;
+    constexpr uint32_t CYCLES_PER_SECOND_LIMIT_DEFAULT = 100000000;
+    constexpr uint32_t MAX_LOAD_MAX = 97;
+    constexpr uint32_t MAX_LOAD_CATCHUP_MARGIN = 20;
     constexpr uint32_t TIMESLICE_SIZE_USEC = 1000000 / MAIN_LOOP_FPS;
     constexpr uint32_t LAG_THRESHOLD_CATCHUP_USEC = (3 * TIMESLICE_SIZE_USEC / 2);
     constexpr uint32_t LAG_THRESHOLD_SKIP_USEC = 3 * TIMESLICE_SIZE_USEC;
     constexpr int PRESERVE_TIMESLICES_FOR_CATCHUP = 3;
 }  // namespace
 
-MainLoop::MainLoop(SoC* soc, uint64_t configuredCyclesPerSecond)
+MainLoop::MainLoop(SoC* soc)
     : soc(soc),
-      configuredCyclesPerSecond(configuredCyclesPerSecond),
-      lastCyclesPerSecond(configuredCyclesPerSecond),
-      cyclesPerSecondAverage(AVERAGE_TIMESLICES) {
+      lastCyclesPerSecond(CYCLES_PER_SECOND_LIMIT_DEFAULT),
+      cyclesPerSecondAverage(AVERAGE_TIMESLICES),
+      maxLoad(MAX_LOAD_MAX),
+      cyclesPerSecondLimit(CYCLES_PER_SECOND_LIMIT_DEFAULT) {
     uint64_t now = timestampUsec();
 
     realTimeUsec = now;
     virtualTimeUsec = now;
-    cyclesPerSecondAverage.Add(configuredCyclesPerSecond);
+    cyclesPerSecondAverage.Add(cyclesPerSecondLimit);
 }
 
 void MainLoop::Cycle(uint64_t now) {
@@ -51,7 +53,7 @@ void MainLoop::Cycle(uint64_t now) {
     realTimeUsec = now;
 
     double cyclesPerSecond = CalculateCyclesPerSecond(
-        deltaUsec >= LAG_THRESHOLD_CATCHUP_USEC ? SAFETY_MARGIN_PCT_CATCHUP : SAFETY_MARGIN_PCT);
+        deltaUsec >= LAG_THRESHOLD_CATCHUP_USEC ? (maxLoad - MAX_LOAD_CATCHUP_MARGIN) : maxLoad);
     const uint64_t cyclesEmulated =
         socRun(soc, deltaUsec * cyclesPerSecond / 1E6, round(cyclesPerSecond));
 
@@ -70,6 +72,19 @@ uint32_t MainLoop::GetCurrentIps() const { return currentIps; }
 
 uint32_t MainLoop::GetCurrentIpsMax() const { return currentIpsMax; }
 
+void MainLoop::SetMaxLoad(uint32_t maxLoad) {
+    if (maxLoad < MAX_LOAD_CATCHUP_MARGIN) maxLoad = MAX_LOAD_CATCHUP_MARGIN;
+    if (maxLoad > MAX_LOAD_MAX) maxLoad = MAX_LOAD_MAX;
+
+    this->maxLoad = maxLoad;
+}
+
+void MainLoop::SetCyclesPerSecondLimit(uint32_t cyclesPerSecondLimit) {
+    if (cyclesPerSecondLimit < 10) cyclesPerSecondLimit = 10;
+
+    this->cyclesPerSecondLimit = cyclesPerSecondLimit;
+}
+
 uint64_t MainLoop::CalculateCyclesPerSecond(uint64_t safetyMargin) {
     const uint64_t avg = (cyclesPerSecondAverage.Calculate() * safetyMargin) / 100;
     const uint64_t avgBinned = max((avg / BIN_SIZE) * BIN_SIZE, static_cast<uint64_t>(BIN_SIZE));
@@ -77,8 +92,7 @@ uint64_t MainLoop::CalculateCyclesPerSecond(uint64_t safetyMargin) {
     if (avgBinned < lastCyclesPerSecond || avg > lastCyclesPerSecond + BIN_SIZE + BIN_SIZE / 2)
         lastCyclesPerSecond = avgBinned;
 
-    if (lastCyclesPerSecond > configuredCyclesPerSecond)
-        lastCyclesPerSecond = configuredCyclesPerSecond;
+    if (lastCyclesPerSecond > cyclesPerSecondLimit) lastCyclesPerSecond = cyclesPerSecondLimit;
 
     return lastCyclesPerSecond;
 }

@@ -18,6 +18,10 @@ import { AudioDriver } from './audiodriver.js';
     const labelSD = document.getElementById('sd-image');
     const speedDisplay = document.getElementById('speed');
     const logContainer = document.getElementById('log');
+    const maxLoadLabel = document.getElementById('max-load');
+    const mipsLimitLabel = document.getElementById('mips-limit');
+    const maxLoadSlider = document.getElementById('max-load-slider');
+    const mipsLimitSlider = document.getElementById('mips-limit-slider');
 
     const uploadNor = document.getElementById('upload-nor');
     const uploadNand = document.getElementById('upload-nand');
@@ -32,6 +36,22 @@ import { AudioDriver } from './audiodriver.js';
     let fileNor, fileNand, fileSd;
     let emulator;
     let audioDriver;
+    let maxLoad = 100;
+    let mipsLimit = 100;
+
+    function updateMaxLoad() {
+        maxLoad = parseFloat(maxLoadSlider.value);
+        maxLoadLabel.innerText = `${Math.floor(maxLoad)}%`;
+
+        if (emulator) emulator.setMaxLoad(maxLoad);
+    }
+
+    function updateMipsLimit() {
+        mipsLimit = parseFloat(mipsLimitSlider.value);
+        mipsLimitLabel.innerText = `${Math.floor(mipsLimit)} MIPS`;
+
+        if (emulator) emulator.setCyclesPerSecondLimit(mipsLimit * 1000000);
+    }
 
     function log(message) {
         const line = document.createElement('div');
@@ -134,12 +154,19 @@ import { AudioDriver } from './audiodriver.js';
 
         log(`loading ${binary}`);
 
-        emulator = await Emulator.create(fileNor.content, fileNand.content, fileSd?.content, {
-            canvas: canvasCtx.canvas,
-            speedDisplay,
-            log,
-            binary,
-        });
+        emulator = await Emulator.create(
+            fileNor.content,
+            fileNand.content,
+            fileSd?.content,
+            maxLoad,
+            mipsLimit * 1000000,
+            {
+                canvas: canvasCtx.canvas,
+                speedDisplay,
+                log,
+                binary,
+            }
+        );
         emulator?.start();
 
         if (emulator && audioDriver) audioDriver.setEmulator(emulator);
@@ -189,6 +216,15 @@ import { AudioDriver } from './audiodriver.js';
                 fileSd = file;
             })
         );
+
+        maxLoadSlider.value = maxLoad;
+        mipsLimitSlider.value = mipsLimit;
+
+        maxLoadSlider.addEventListener('input', updateMaxLoad);
+        mipsLimitSlider.addEventListener('input', updateMipsLimit);
+
+        updateMaxLoad();
+        updateMipsLimit();
 
         audioButton.addEventListener('click', () => onAudioButtonClick());
 
