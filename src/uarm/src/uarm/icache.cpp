@@ -16,9 +16,23 @@
 #define calculateTag(va) (va >> (CACHE_LINE_WIDTH_BITS + CACHE_INDEX_BITS))
 #define calculateLineIndex(va) (va & ~(0xffffffff << CACHE_LINE_WIDTH_BITS))
 
+#ifdef __EMSCRIPTEN__
+    #define DECODED_INSTRUCTION_TYPE uint16_t
+    #define DECODED_BITS 0xc000
+    #define DECODED_BITS_ARM 0x4000
+    #define DECODED_BITS_THUMB 0xc000
+    #define DECODED_BITS_SHIFT 0
+#else
+    #define DECODED_INSTRUCTION_TYPE uint32_t
+    #define DECODED_BITS 0x03
+    #define DECODED_BITS_ARM 0x02
+    #define DECODED_BITS_THUMB 0x03
+    #define DECODED_BITS_SHIFT 2
+#endif
+
 struct icacheline {
     uint8_t data[1 << CACHE_LINE_WIDTH_BITS];
-    uint32_t decoded[1 << (CACHE_LINE_WIDTH_BITS - 1)];
+    DECODED_INSTRUCTION_TYPE decoded[1 << (CACHE_LINE_WIDTH_BITS - 1)];
 
     uint_fast8_t tag;
     uint32_t revision;
@@ -106,10 +120,18 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, 
         for (size_t i = 0; i < sizeof(data); i += 8) {
             const uint64_t d = *(uint64_t*)(data + i);
             if ((uint32_t)d != *(uint32_t*)(line->data + i))
-                line->decoded[i >> 1] = line->decoded[(i >> 1) + 1] = 0;
+#ifdef __EMSCRIPTEN__
+                *((uint32_t*)(line->decoded + (i >> 1))) = 0;
+#else
+                *((uint64_t*)(line->decoded + (i >> 1))) = 0;
+#endif
 
             if ((d >> 32) != *(uint32_t*)(line->data + i + 4))
-                line->decoded[(i >> 1) + 2] = line->decoded[(i >> 1) + 3] = 0;
+#ifdef __EMSCRIPTEN__
+                *((uint32_t*)(line->decoded + (i >> 1) + 2)) = 0;
+#else
+                *((uint64_t*)(line->decoded + (i >> 1) + 2)) = 0;
+#endif
 
             *(uint64_t*)(line->data + i) = d;
         }
@@ -125,15 +147,15 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, 
             *(uint32_t*)buf = inst;
 
             const size_t iInst = i >> 1;
-            if ((line->decoded[iInst] & 0x03) != 0x02) {
+            if ((line->decoded[iInst] & DECODED_BITS) != DECODED_BITS_ARM) {
                 // fprintf(stderr, "decode cache miss ARM\n");
                 *decoded = cpuDecodeArm(inst);
-                line->decoded[iInst] = (*decoded << 2) | 0x02;
+                line->decoded[iInst] = (*decoded << DECODED_BITS_SHIFT) | DECODED_BITS_ARM;
             } else {
 #ifdef __EMSCRIPTEN__
-                *decoded = line->decoded[iInst] >> 2;
+                *decoded = line->decoded[iInst] & ~DECODED_BITS;
 #else
-                *decoded = ((int32_t)line->decoded[iInst]) >> 2;
+                *decoded = ((int32_t)line->decoded[iInst]) >> DECODED_BITS_SHIFT;
 #endif
             }
 
@@ -146,15 +168,15 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, 
             *(uint16_t*)buf = inst;
 
             const size_t iInst = i >> 1;
-            if ((line->decoded[iInst] & 0x03) != 0x03) {
+            if ((line->decoded[iInst] & DECODED_BITS) != DECODED_BITS_THUMB) {
                 // fprintf(stderr, "decode cache miss thumb\n");
                 *decoded = cpuDecodeThumb(inst);
-                line->decoded[iInst] = (*decoded << 2) | 0x03;
+                line->decoded[iInst] = (*decoded << DECODED_BITS_SHIFT) | DECODED_BITS_THUMB;
             } else {
 #ifdef __EMSCRIPTEN__
-                *decoded = line->decoded[iInst] >> 2;
+                *decoded = line->decoded[iInst] & ~DECODED_BITS;
 #else
-                *decoded = ((int32_t)line->decoded[iInst]) >> 2;
+                *decoded = ((int32_t)line->decoded[iInst]) >> DECODED_BITS_SHIFT;
 #endif
             }
 
