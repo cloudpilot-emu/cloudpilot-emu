@@ -1,5 +1,5 @@
 const DB_NAME = 'cp-uarm';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 function compressCard(image) {
     const compressed = new Uint8Array(image.length + ((image.length >>> 13) + 1) * 2 + 6);
@@ -69,44 +69,110 @@ function decompressCard(compressed) {
     return image;
 }
 
-export class Database {
-    constructor(db) {
-        this.db = db;
-    }
+function generateUuid() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
 
-    static create() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME, DB_VERSION);
+    const hex = Array.from(bytes)
+        .map((i) => i.toString(16).padStart(2, '0'))
+        .join('');
 
-            request.onerror = () => reject('failed to open database');
-            request.onblocked = () => reject('necessary db update blocked by open app');
-            request.onupgradeneeded = (e) => {
-                const db = request.result;
+    return `${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(
+        16,
+        20
+    )}-${hex.substring(20, 32)}`;
+}
 
+function complete(txOrRequest) {
+    return new Promise((resolve, reject) => {
+        if (!!txOrRequest.abort) {
+            txOrRequest.oncomplete = () => resolve();
+        } else {
+            txOrRequest.onsuccess = () => resolve(txOrRequest.result);
+        }
+
+        txOrRequest.onerror = () => reject(txOrRequest.error);
+    });
+}
+
+function initdDb() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onerror = () => reject('failed to open database');
+        request.onblocked = () => reject('necessary db update blocked by open app');
+        request.onupgradeneeded = (e) => {
+            const db = request.result;
+
+            if (e.oldVersion < 1) {
                 db.createObjectStore('kvs');
-            };
-            request.onsuccess = () => resolve(new Database(request.result));
-        });
+            }
+
+            if (e.oldVersion < 2) {
+                db.createObjectStore('lock');
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+    });
+}
+
+async function acquireLock(db) {
+    const lockToken = generateUuid();
+    const tx = db.transaction(['lock'], 'readwrite');
+
+    await complete(tx.objectStore('lock').put(lockToken, 0));
+
+    return lockToken;
+}
+
+export class Database {
+    constructor(db, lockToken) {
+        this.db = db;
+        this.lockToken = lockToken;
+
+        console.log(generateUuid());
     }
 
-    kvsGet(key) {
-        return new Promise((resolve, reject) => {
-            const tx = this.db.transaction(['kvs'], 'readonly');
-            tx.onerror = () => reject(tx.error);
+    static async create() {
+        const db = await initdDb();
+        const lockToken = await acquireLock(db);
 
-            const request = tx.objectStore('kvs').get(key);
-            request.onsuccess = () => resolve(request.result);
-        });
+        return new Database(db, lockToken);
     }
 
-    kvsPut(key, value) {
-        return new Promise((resolve, reject) => {
-            const tx = this.db.transaction(['kvs'], 'readwrite');
-            tx.onerror = () => reject(tx.error);
+    async assertLock(tx) {
+        const lockToken = await complete(tx.objectStore('lock').get(0));
 
-            const request = tx.objectStore('kvs').put(value, key);
-            request.onsuccess = () => resolve();
-        });
+        if (lockToken !== this.lockToken) {
+            tx.abort();
+
+            setTimeout(() => alert('CloudpilotEmu has been opened in another tab. No more data will be persisted.'), 0);
+
+            throw new Error('page lock lost');
+        }
+    }
+
+    async tx(stores, mode) {
+        const tx = this.db.transaction([...stores, ...(mode === 'readwrite' ? ['lock'] : [])], mode);
+
+        if (mode === 'readwrite') {
+            await this.assertLock(tx);
+        }
+
+        return tx;
+    }
+
+    async kvsGet(key) {
+        const tx = await this.tx(['kvs'], 'readonly');
+
+        return await complete(tx.objectStore('kvs').get(key));
+    }
+
+    async kvsPut(key, value) {
+        const tx = await this.tx(['kvs'], 'readwrite');
+
+        return await complete(tx.objectStore('kvs').put(value, key));
     }
 
     getNor() {
