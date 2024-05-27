@@ -70,6 +70,7 @@ function remapExecFunctions(
     execFnNameToHandleMap: Map<string, number>
 ): void {
     const fnInfo = binaryen.getFunctionInfo(fn);
+
     console.log(`remapping opcodes in ${unmangleName(fnInfo.name)}`);
 
     const mapExpression = (e: binaryen.ExpressionRef): binaryen.ExpressionRef => {
@@ -93,8 +94,12 @@ function remapExecFunctions(
             case binaryen.ExpressionIds.Const: {
                 const constInfo = info as binaryen.ConstInfo;
 
-                if (typeof constInfo.value === 'number' && constInfo.value >= 31400000 && constInfo.value < 31410000) {
-                    const execFnTableEntry = constInfo.value - 31400000;
+                if (
+                    typeof constInfo.value === 'number' &&
+                    constInfo.value >>> 16 === 0x53ae &&
+                    execFnTableEntryToNameMap.has(constInfo.value & 0xffff)
+                ) {
+                    const execFnTableEntry = constInfo.value & 0xffff;
 
                     const execFnName = execFnTableEntryToNameMap.get(execFnTableEntry);
                     if (execFnName === undefined) throw new Error(`no execFn for table entry ${execFnTableEntry}`);
@@ -172,7 +177,7 @@ async function main(filename: string): Promise<void> {
     const execFnHandles = execFnTableEntries.map(([i, name], handle): [string, number] => [name, handle]);
     const execFnNameToHandleMap = new Map(execFnHandles);
 
-    console.log('building dispatcher');
+    console.log(`building dispatcher for ${execFnHandles.length} functions`);
     const dispatcher = buildDispatcher(module, execFnHandles);
 
     replaceDispatcher(module, 'cpuPrvDispatchExecFnThumb', dispatcher);

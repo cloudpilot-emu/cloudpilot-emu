@@ -59,7 +59,7 @@
 #define INJECTED_CALL_LR_MAGIC 0xfffffffc
 #define INJECTED_CALL_MAX_CYCLES 200000000
 
-#define EXEC_FN_PREFIX_VALUE 31400000
+#define EXEC_FN_PREFIX_VALUE 0x53ae0000
 
 #ifdef __EMSCRIPTEN__
     #define PREFIX_EXEC_FN(...) (ExecFn((uint32_t)__VA_ARGS__ + EXEC_FN_PREFIX_VALUE))
@@ -2745,16 +2745,16 @@ uint32_t cpuDecodeThumb(uint32_t instr) {
 
 // The content of this function will be replaced with a jump table later. We need two of
 // them to coax wasm-opt into inlinining them.
-static void __attribute__((noinline)) cpuPrvDispatchExecFnArm(ExecFn execfn, struct ArmCpu *cpu,
+static void __attribute__((noinline)) cpuPrvDispatchExecFnArm(ExecFn execFn, struct ArmCpu *cpu,
                                                               uint32_t instr, bool privileged) {
-    ((ExecFn)((uint32_t)execfn - EXEC_FN_PREFIX_VALUE))(cpu, instr, privileged);
+    ((ExecFn)((uint32_t)execFn & 0xffff))(cpu, instr, privileged);
 }
 
 // The content of this function will be replaced with a jump table later. We need two of
 // them to coax wasm-opt into inlinining them.
-static void __attribute__((noinline)) cpuPrvDispatchExecFnThumb(ExecFn execfn, struct ArmCpu *cpu,
+static void __attribute__((noinline)) cpuPrvDispatchExecFnThumb(ExecFn execFn, struct ArmCpu *cpu,
                                                                 uint32_t instr, bool privileged) {
-    ((ExecFn)((uint32_t)execfn - EXEC_FN_PREFIX_VALUE))(cpu, instr, privileged);
+    ((ExecFn)((uint32_t)execFn & 0xffff))(cpu, instr, privileged);
 }
 
 #endif
