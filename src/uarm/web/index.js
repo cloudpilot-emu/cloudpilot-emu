@@ -36,6 +36,7 @@ import { AudioDriver } from './audiodriver.js';
     let fileNor, fileNand, fileSd;
     let emulator;
     let audioDriver;
+    let database;
     let maxLoad = 100;
     let mipsLimit = 100;
 
@@ -162,6 +163,7 @@ import { AudioDriver } from './audiodriver.js';
             mipsLimit * 1000000,
             {
                 canvas: canvasCtx.canvas,
+                database,
                 speedDisplay,
                 log,
                 binary,
@@ -175,7 +177,7 @@ import { AudioDriver } from './audiodriver.js';
     }
 
     async function main() {
-        const database = await Database.create();
+        database = await Database.create();
         clearCanvas();
 
         fileNor = await database.getNor();
@@ -190,7 +192,7 @@ import { AudioDriver } from './audiodriver.js';
             log('Reload with ?noload appended to the URL if the emulator hangs on load due to invalid NOR or NAND');
             log('---');
 
-            await restart(binary);
+            await restart();
         }
 
         updateLabels();

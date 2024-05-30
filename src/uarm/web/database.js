@@ -101,7 +101,7 @@ function decompressCard(compressed) {
  * @param {Uint32Array} page
  * @returns {Uint32Array | number}
  */
-export function compressStoragePage(page) {
+export function compressNandPage(page) {
     const fst = page[0];
 
     for (let i = 1; i < 1056; i++) {
@@ -203,7 +203,7 @@ async function putNandData(data8, tx) {
     await complete(store.clear());
 
     for (let iPage = 0; iPage < pagesTotal; iPage++) {
-        const compressedPage = compressStoragePage(data32.subarray(iPage * 1056, (iPage + 1) * 1056));
+        const compressedPage = compressNandPage(data32.subarray(iPage * 1056, (iPage + 1) * 1056));
         if (compressedPage === 0xffffffff) continue;
 
         store.put(typeof compressedPage === 'number' ? compressedPage : compressedPage.slice(), iPage);
@@ -290,6 +290,7 @@ export class Database {
     constructor(db, lockToken) {
         this.db = db;
         this.lockToken = lockToken;
+        this.nandPagePool = /** @type Array<Uint32Array> */ (new Array());
     }
 
     /**
@@ -427,5 +428,34 @@ export class Database {
      */
     putSd(sd) {
         return this.kvsPut(KVS_SD_IMAGE, { name: sd.name, content: compressCard(sd.content) });
+    }
+
+    /**
+     *
+     * @param {number} nandScheduledPageCount
+     * @param {Uint32Array} nandScheduledPages
+     * @param {Uint32Array} nandPagePool
+     * @returns {Promise<void>}
+     */
+    async storeSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool) {
+        const tx = await this.tx(OBJECT_STORE_NAND);
+        const store = tx.objectStore(OBJECT_STORE_NAND);
+
+        let iPool = 0;
+        for (let iPage = 0; iPage < nandScheduledPageCount; iPage++) {
+            let compressedPage = compressNandPage(nandPagePool.subarray(iPage * 1056, (iPage + 1) * 1056));
+
+            if (typeof compressedPage !== 'number') {
+                if (this.nandPagePool.length >= iPool) this.nandPagePool.push(new Uint32Array(1056));
+                const pageBuffer = this.nandPagePool[iPool++];
+
+                pageBuffer.set(compressedPage);
+                compressedPage = pageBuffer;
+            }
+
+            store.put(compressedPage, nandScheduledPages[iPage]);
+        }
+
+        await complete(tx);
     }
 }

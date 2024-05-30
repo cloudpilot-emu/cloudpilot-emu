@@ -2,9 +2,10 @@ import { DisplayService } from './displayservice.js';
 import { EventHandler } from './eventhandler.js';
 
 export class Emulator {
-    constructor(worker, displayService, { canvas, speedDisplay, log }) {
+    constructor(worker, displayService, { canvas, speedDisplay, log, database }) {
         this.worker = worker;
         this.displayService = displayService;
+        this.database = database;
 
         this.speedDisplay = speedDisplay;
         this.log = log;
@@ -172,15 +173,23 @@ export class Emulator {
         this.worker.postMessage({ type: 'enablePcm' });
     }
 
-    handleSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool) {
+    async handleSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool) {
         const nandScheduledPages32 = new Uint32Array(nandScheduledPages);
-        const nandPagePool8 = new Uint8Array(nandPagePool);
+        const nandPagePool32 = new Uint32Array(nandPagePool);
+
         console.log(`snapshotting ${nandScheduledPageCount} pages`);
+        let success = true;
+        try {
+            await this.database.storeSnapshot(nandScheduledPageCount, nandScheduledPages32, nandPagePool32);
+        } catch (e) {
+            console.error(`snapshot failed: ${e}`);
+            success = false;
+        }
 
         this.worker.postMessage(
             {
                 type: 'snapshotDone',
-                success: true,
+                success,
                 nandScheduledPageCount,
                 nandScheduledPages,
                 nandPagePool,
