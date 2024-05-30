@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 struct DirectNAND;
-
+struct NAND;
 struct Device;
 
 struct DirectNAND *directNandInit(struct ArmMem *physMem, struct Reschedule reschedule,
@@ -28,6 +28,8 @@ struct DirectNAND *directNandInit(struct ArmMem *physMem, struct Reschedule resc
 void directNandPeriodic(struct DirectNAND *nand);
 
 bool directNandTaskRequired(struct DirectNAND *nand);
+
+struct NAND *directNandGetNand(struct DirectNAND *nand);
 
 #ifdef __cplusplus
 }

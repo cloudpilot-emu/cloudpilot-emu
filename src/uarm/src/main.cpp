@@ -255,6 +255,14 @@ void EMSCRIPTEN_KEEPALIVE setPcmOutputEnabled(bool enabled) {
 }
 
 void EMSCRIPTEN_KEEPALIVE setPcmSuspended(bool suspended) { socSetPcmSuspended(soc, suspended); }
+
+uint32_t EMSCRIPTEN_KEEPALIVE getNandDataSize() { return socGetNandData(soc).size; }
+
+void* EMSCRIPTEN_KEEPALIVE getNandData() { return socGetNandData(soc).data; }
+
+uint32_t EMSCRIPTEN_KEEPALIVE getNandDirtyPagesSize() { return socGetNandDirtyPages(soc).size; }
+
+void* EMSCRIPTEN_KEEPALIVE getNandDirtyPages() { return socGetNandDirtyPages(soc).data; }
 }
 #endif
 

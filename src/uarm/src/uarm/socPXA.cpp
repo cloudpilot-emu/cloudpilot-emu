@@ -111,6 +111,7 @@ struct SoC {
     Queue<PenEvent> *penEventQueue;
     Queue<KeyEvent> *keyEventQueue;
 
+    NAND *nand;
     PxaMemCtrlr *memCtrl;
     PxaPwrClk *pwrClk;
     SocI2c *pwrI2c;
@@ -119,7 +120,6 @@ struct SoC {
     PxaMmc *mmc;
     PxaRtc *rtc;
     PxaLcd *lcd;
-
     union {
         // 25x/26x
         struct {
@@ -450,6 +450,8 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     soc->dev = deviceSetup(&sp, rescheduleSoc, soc->kp, soc->vSD, nandContent, nandSize);
     if (!soc->dev) ERR("Cannot init device\n");
 
+    soc->nand = sp.nand;
+
     if (sp.dbgUart) socUartSetFuncs(sp.dbgUart, socUartPrvRead, socUartPrvWrite, soc->hwUart);
 
     /*
@@ -681,3 +683,7 @@ void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled) {
 
     if (soc->audioQueue) audioQueueClear(soc->audioQueue);
 }
+
+struct Buffer socGetNandData(struct SoC *soc) { return nandGetData(soc->nand); }
+
+struct Buffer socGetNandDirtyPages(struct SoC *soc) { return nandGetDirtyPages(soc->nand); }

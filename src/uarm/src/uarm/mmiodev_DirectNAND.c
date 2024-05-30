@@ -102,3 +102,5 @@ struct DirectNAND *directNandInit(struct ArmMem *physMem, struct Reschedule resc
 void directNandPeriodic(struct DirectNAND *directNand) { nandPeriodic(directNand->nand); }
 
 bool directNandTaskRequired(struct DirectNAND *nand) { return nandTaskRequired(nand->nand); }
+
+struct NAND *directNandGetNand(struct DirectNAND *nand) { return nand->nand; }

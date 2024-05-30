@@ -186,6 +186,8 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Reschedule reschedule, 
 
     sp->dbgUart = sp->uarts[1];  // HWUART
 
+    sp->nand = directNandGetNand(dev->nand);
+
     return dev;
 }
 

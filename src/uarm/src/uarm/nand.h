@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include "CPU.h"
+#include "buffer.h"
 #include "mem.h"
 #include "reschedule.h"
 #include "soc_GPIO.h"
@@ -45,6 +46,10 @@ bool nandIsReady(struct NAND *nand);
 void nandPeriodic(struct NAND *nand);
 
 bool nandTaskRequired(struct NAND *nand);
+
+struct Buffer nandGetData(struct NAND *nand);
+
+struct Buffer nandGetDirtyPages(struct NAND *nand);
 
 #ifdef __cplusplus
 }

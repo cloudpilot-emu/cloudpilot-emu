@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include "SoC_type.h"
+#include "buffer.h"
 #include "keys.h"
 
 #ifdef __cplusplus
@@ -52,6 +53,9 @@ void socSetAudioQueue(struct SoC *soc, struct AudioQueue *audioQueue);
 void socSetPcmSuspended(struct SoC *soc, bool pcmSuspended);
 
 void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled);
+
+struct Buffer socGetNandData(struct SoC *soc);
+struct Buffer socGetNandDirtyPages(struct SoC *soc);
 
 #ifdef __cplusplus
 }

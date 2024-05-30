@@ -323,7 +323,7 @@ export class Database {
     /**
      *
      * @param  {...string} stores
-     * @returns {Promise<IDBTransaction}
+     * @returns {Promise<IDBTransaction>}
      */
     async tx(...stores) {
         const tx = this.db.transaction([...stores, OBJECT_STORE_LOCK], 'readwrite', { durability: 'relaxed' });

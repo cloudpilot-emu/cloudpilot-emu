@@ -52,7 +52,11 @@ struct NAND {
     uint8_t *pageBuf;
 
     // data
+    size_t dataSize;
     uint8_t *data;  // stores inverted data (so 0-init is valid)
+
+    size_t dirtyPagesSize;
+    uint32_t *dirtyPages;
 
     struct Reschedule reschedule;
 };
@@ -111,6 +115,13 @@ static bool nandPrvBlockErase(struct NAND *nand) {
     memset(nand->data + addr * nand->bytesPerPage, 0xff,
            nand->bytesPerPage << nand->pagesPerBlockLg2);
 
+    for (size_t storagePage = (addr * nand->bytesPerPage) / 4224;
+         storagePage <=
+         (addr * nand->bytesPerPage + (nand->bytesPerPage << nand->pagesPerBlockLg2)) / 4224;
+         storagePage++) {
+        nand->dirtyPages[storagePage >> 5] |= (1 << (storagePage & 0x1f));
+    }
+
     return true;
 }
 
@@ -127,6 +138,9 @@ static bool nandPrvPageProgram(struct NAND *nand) {
         // 0x%02x\n", nand->pageNo, i, nand->pageBuf[i], nand->data[nand->pageNo * NAND_PAGE_SIZE +
         // i]);
     }
+
+    size_t storagePage = (nand->pageNo * nand->bytesPerPage) / 4224;
+    nand->dirtyPages[storagePage >> 5] |= (1 << (storagePage & 0x1f));
 
     return true;
 }
@@ -236,8 +250,7 @@ bool nandWrite(struct NAND *nand, bool cle, bool ale, uint8_t val) {
 
             default:
                 fprintf(stderr, "unknown command 0x%02x. halt.\n", val);
-                while (1)
-                    ;
+                while (1);
         }
     } else if (!cle && ale) {  // addr
 
@@ -386,10 +399,26 @@ void nandPeriodic(struct NAND *nand) {
 
 bool nandTaskRequired(struct NAND *nand) { return nand->busyCt > 0; }
 
+struct Buffer nandGetData(struct NAND *nand) {
+    struct Buffer buffer = {.size = nand->dataSize, .data = nand->data};
+
+    return buffer;
+}
+
+struct Buffer nandGetDirtyPages(struct NAND *nand) {
+    struct Buffer buffer = {.size = nand->dirtyPagesSize, .data = nand->dirtyPages};
+
+    return buffer;
+}
+
 bool nandIsReady(struct NAND *nand) { return !nand->busyCt; }
 
 struct NAND *nandInit(uint8_t *nandContent, struct Reschedule reschedule, size_t nandSize,
                       const struct NandSpecs *specs, NandReadyCbk readyCbk, void *readyCbkData) {
+    if (specs->bytesPerPage % 528) ERR("invalid NAND page size");
+    if (((specs->bytesPerPage << specs->pagesPerBlockLg2) * specs->blocksPerDevice) % 4224)
+        ERR("invalid NAND size");
+
     struct NAND *nand = (struct NAND *)malloc(sizeof(*nand));
     uint32_t nandSz, nandPages, t;
 
@@ -440,6 +469,16 @@ struct NAND *nandInit(uint8_t *nandContent, struct Reschedule reschedule, size_t
         nand->data = (uint8_t *)malloc(nandSz);
         if (!nand->data) ERR("canont allcoate NAND data buffer\n");
     }
+
+    nand->dataSize = nandSz;
+
+    size_t dirtyPagesCount = nandSz / (528 * 8 * 32);
+    if (dirtyPagesCount * 528 * 8 * 32 < nandSz) dirtyPagesCount++;
+
+    nand->dirtyPages = (uint32_t *)malloc(4 * dirtyPagesCount);
+    memset(nand->dirtyPages, 0, 4 * dirtyPagesCount);
+
+    nand->dirtyPagesSize = dirtyPagesCount * 4;
 
     nandPrvBusy(nand, 1);  // we start busy for a little bit
 

@@ -17,25 +17,35 @@ export class Emulator {
         this.running = false;
 
         this.onMessage = (e) => {
-            switch (e.data.type) {
+            const message = e.data;
+            switch (message.type) {
                 case 'frame':
                     this.render(e.data.data);
                     break;
 
                 case 'speed':
-                    this.updateSpeedDisplay(e.data.text);
+                    this.updateSpeedDisplay(message.text);
                     break;
 
                 case 'log':
-                    this.log(e.data.message);
+                    this.log(message.message);
                     break;
 
                 case 'error':
-                    console.error(e.data.reason);
+                    console.error(message.reason);
+                    break;
+
+                case 'snapshot':
+                    this.handleSnapshot(
+                        message.nandScheduledPageCount,
+                        message.nandScheduledPages,
+                        message.nandPagePool
+                    );
+
                     break;
 
                 default:
-                    console.error('unknown message from worker', e.data);
+                    console.error('unknown message from worker', message);
                     break;
             }
         };
@@ -160,5 +170,22 @@ export class Emulator {
 
     enablePcm() {
         this.worker.postMessage({ type: 'enablePcm' });
+    }
+
+    handleSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool) {
+        const nandScheduledPages32 = new Uint32Array(nandScheduledPages);
+        const nandPagePool8 = new Uint8Array(nandPagePool);
+        console.log(`snapshotting ${nandScheduledPageCount} pages`);
+
+        this.worker.postMessage(
+            {
+                type: 'snapshotDone',
+                success: true,
+                nandScheduledPageCount,
+                nandScheduledPages,
+                nandPagePool,
+            },
+            [nandScheduledPages, nandPagePool]
+        );
     }
 }

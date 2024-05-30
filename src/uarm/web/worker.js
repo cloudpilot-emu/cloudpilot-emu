@@ -2,6 +2,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
 
 (function () {
     const PCM_BUFFER_SIZE = (44100 / 60) * 10;
+    const INITIAL_NAND_PAGE_POOL_SIZE = 256; // 1MB + OOB
+    const NAND_PAGE_POOL_GROWTH_FACTOR = 1.5;
 
     const messageQueue = [];
     let dispatchInProgress = false;
@@ -12,11 +14,12 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
     let pcmPool = [];
 
     class Emulator {
-        constructor(module, maxLoad, cyclesPerSecondLimit, { onSpeedDisplay, onFrame, log }) {
+        constructor(module, maxLoad, cyclesPerSecondLimit, { onSpeedDisplay, onFrame, log, onSnapshot }) {
             this.module = module;
             this.onSpeedDisplay = onSpeedDisplay;
             this.onFrame = onFrame;
             this.log = log;
+            this.onSnapshot = onSnapshot;
 
             this.cycle = module.cwrap('cycle', undefined, ['number']);
             this.getFrame = module.cwrap('getFrame', 'number', []);
@@ -35,6 +38,10 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             this.popQueuedSamples = module.cwrap('popQueuedSamples', 'number', []);
             this.setPcmOutputEnabled = module.cwrap('setPcmOutputEnabled', undefined, ['number']);
             this.setPcmSuspended = module.cwrap('setPcmSuspended', undefined, ['number']);
+            this.getNandDataSize = module.cwrap('getNandDataSize', 'number');
+            this.getNandDataPtr = module.cwrap('getNandData', 'number');
+            this.getNandDirtyPagesSize = module.cwrap('getNandDirtyPagesSize', 'number');
+            this.getNandDirtyPagesPtr = module.cwrap('getNandDirtyPages', 'number');
 
             this.amIDead = false;
             this.pcmEnabled = false;
@@ -42,6 +49,11 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
 
             this.setMaxLoad(maxLoad);
             this.setCyclesPerSecondLimit(cyclesPerSecondLimit);
+
+            const nandSize = this.getNandDataSize();
+            this.nandScheduledPages = new Uint32Array((nandSize / 4224) | 0);
+            this.nandPagePool = new Uint8Array(4224 * INITIAL_NAND_PAGE_POOL_SIZE);
+            this.snapshotPending = false;
         }
 
         static async create(nor, nand, sd, maxLoad, cyclesPerSecondLimit, env) {
@@ -92,7 +104,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             if (this.amIDead) return;
 
             if (this.timeoutHandle || this.immediateHandle) return;
-            this.lastSpeedUpdate = Number(this.getTimestampUsec());
+            this.lastSnapshot = Number(this.getTimestampUsec());
 
             const schedule = () => {
                 const now64 = this.getTimestampUsec();
@@ -118,14 +130,116 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                 if (timesliceRemainning < 5) this.immediateHandle = setImmediate(schedule);
                 else this.timeoutHandle = setTimeout(schedule, timesliceRemainning);
 
-                if (now - this.lastSpeedUpdate > 1000000) {
+                if (now - this.lastSnapshot > 1000000) {
+                    this.snapshot();
                     this.updateSpeedDisplay();
-                    this.lastSpeedUpdate = now;
+
+                    this.lastSnapshot = now;
                 }
             };
 
             this.log('emulator running');
             schedule();
+        }
+
+        getNandData() {
+            const size = this.getNandDataSize();
+            const ptr = this.getNandDataPtr();
+
+            return this.module.HEAPU8.subarray(ptr, ptr + size);
+        }
+
+        getNandDirtyPages() {
+            const size32 = this.getNandDirtyPagesSize() >>> 2;
+            const ptr32 = this.getNandDirtyPagesPtr() >>> 2;
+
+            return this.module.HEAPU32.subarray(ptr32, ptr32 + size32);
+        }
+
+        growNandPagePool() {
+            const newPagePool = new Uint8Array(
+                Math.min(
+                    Math.ceil((this.nandPagePool.length * NAND_PAGE_POOL_GROWTH_FACTOR) / 4224) * 4224,
+                    this.nandScheduledPages.length * 4224
+                )
+            );
+
+            newPagePool.set(this.nandPagePool);
+            this.nandPagePool = newPagePool;
+        }
+
+        snapshot() {
+            if (this.snapshotPending) {
+                console.log('snapshot pending, skipping...');
+            }
+
+            const nandData = this.getNandData();
+            const nandDirtyPages = this.getNandDirtyPages();
+
+            let iPage = 0;
+            let page = 0;
+            for (let i = 0; i < nandDirtyPages.length; i++) {
+                let pageSet32 = nandDirtyPages[i];
+
+                if (pageSet32 === 0) {
+                    page += 32;
+                    continue;
+                }
+
+                for (let j = 0; j < 4; j++) {
+                    let pageSet8 = pageSet32 & 0xff;
+                    pageSet32 >>>= 8;
+
+                    if (pageSet8 === 0) {
+                        page += 8;
+                        continue;
+                    }
+
+                    for (let mask = 1; mask < 0x100; mask <<= 1) {
+                        if (!pageSet8 & mask) {
+                            page++;
+                            continue;
+                        }
+
+                        this.nandScheduledPages[iPage] = page;
+                        const pagePoolOffset = iPage * 4224;
+                        const nandDataOffset = page * 4224;
+
+                        if (pagePoolOffset >= this.nandPagePool.length) this.growNandPagePool();
+
+                        this.nandPagePool
+                            .subarray(pagePoolOffset, pagePoolOffset + 4224)
+                            .set(nandData.subarray(nandDataOffset, nandDataOffset + 4224));
+
+                        iPage++;
+                        page++;
+                    }
+                }
+            }
+
+            if (iPage > 0) {
+                nandDirtyPages.fill(0);
+                this.snapshotPending = true;
+                this.onSnapshot(iPage, this.nandScheduledPages.buffer, this.nandPagePool.buffer);
+            }
+        }
+
+        snapshotDone(success, nandScheduledPageCount, nandScheduledPages, nandPagePool) {
+            this.nandScheduledPages = new Uint32Array(nandScheduledPages);
+            this.nandPagePool = new Uint8Array(nandPagePool);
+            this.snapshotPending = false;
+
+            if (success) return;
+
+            console.log('snapshot failed');
+
+            const nandDirtyPages = this.getNandDirtyPages();
+
+            for (let i = 0; i < nandScheduledPageCount; i++) {
+                const page = this.nandScheduledPages[i];
+
+                nandDirtyPages[page >>> 5] |= 1 << (page & 0x1f);
+            }
         }
 
         render() {
@@ -262,6 +376,18 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
         postMessage({ type: 'initialized' });
     }
 
+    function postSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool) {
+        postMessage(
+            {
+                type: 'snapshot',
+                nandScheduledPageCount,
+                nandScheduledPages,
+                nandPagePool,
+            },
+            [nandScheduledPages, nandPagePool]
+        );
+    }
+
     async function handleMessage(message) {
         let assertEmulator = (context) => {
             if (!emulator) {
@@ -280,6 +406,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                     {
                         onFrame: postFrame,
                         onSpeedDisplay: postSpeed,
+                        onSnapshot: postSnapshot,
                         log: postLog,
                         binary: message.binary,
                     }
@@ -350,15 +477,32 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                 break;
 
             case 'setupPcm':
+                assertEmulator('setupPcm');
+
                 emulator.setupPcm(message.port);
                 break;
 
             case 'disablePcm':
+                assertEmulator('disablePcm');
+
                 emulator.setPcmOutputEnabled(false);
                 break;
 
             case 'enablePcm':
+                assertEmulator('enablePcm');
+
                 emulator.setPcmOutputEnabled(true);
+                break;
+
+            case 'snapshotDone':
+                assertEmulator('snapshotDone');
+
+                emulator.snapshotDone(
+                    message.success,
+                    message.nandScheduledPageCount,
+                    message.nandScheduledPages,
+                    message.nandPagePool
+                );
                 break;
 
             default:
