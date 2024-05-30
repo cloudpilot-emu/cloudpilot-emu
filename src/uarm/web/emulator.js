@@ -198,7 +198,9 @@ export class Emulator {
         let success = true;
 
         try {
+            const now = performance.now();
             await this.database.storeSnapshot(nandScheduledPageCount, nandScheduledPages32, nandPagePool32, crc);
+            console.log(`save took ${Math.round(performance.now() - now)} msec`);
 
             this.setSnapshotStatus((this.snapshotStatus = 'saving'));
 
