@@ -26,6 +26,7 @@ import { AudioDriver } from './audiodriver.js';
 
     const uploadNor = document.getElementById('upload-nor');
     const uploadNand = document.getElementById('upload-nand');
+    const downloadNand = document.getElementById('download-nand');
     const uploadSD = document.getElementById('upload-sd');
     const clearLog = document.getElementById('clear-log');
 
@@ -134,6 +135,16 @@ import { AudioDriver } from './audiodriver.js';
             fileInput.click();
         });
 
+    function saveFile(name, content, type = 'application/octet-stream') {
+        const file = new Blob([content], { type });
+        const url = URL.createObjectURL(file);
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = name;
+        a.click();
+    }
+
     function clearCanvas() {
         canvasCtx.fillStyle = '#fff';
         canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
@@ -236,6 +247,7 @@ import { AudioDriver } from './audiodriver.js';
                 fileNor = file;
             })
         );
+
         uploadNand.addEventListener(
             'click',
             uploadHandler((file) => {
@@ -243,6 +255,7 @@ import { AudioDriver } from './audiodriver.js';
                 fileNand = file;
             })
         );
+
         uploadSD.addEventListener(
             'click',
             uploadHandler((file) => {
@@ -250,6 +263,10 @@ import { AudioDriver } from './audiodriver.js';
                 fileSd = file;
             })
         );
+
+        downloadNand.addEventListener('click', () => {
+            database.getNand(false).then((nand) => saveFile('nand.bin', nand.content));
+        });
 
         maxLoadSlider.value = maxLoad;
         mipsLimitSlider.value = mipsLimit;
