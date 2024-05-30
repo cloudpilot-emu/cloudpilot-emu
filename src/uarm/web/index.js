@@ -22,6 +22,7 @@ import { AudioDriver } from './audiodriver.js';
     const mipsLimitLabel = document.getElementById('mips-limit');
     const maxLoadSlider = document.getElementById('max-load-slider');
     const mipsLimitSlider = document.getElementById('mips-limit-slider');
+    const snapshotStatus = document.getElementById('snapshot-status');
 
     const uploadNor = document.getElementById('upload-nor');
     const uploadNand = document.getElementById('upload-nand');
@@ -167,6 +168,7 @@ import { AudioDriver } from './audiodriver.js';
                 speedDisplay,
                 log,
                 binary,
+                setSnapshotStatus,
             }
         );
         emulator?.start();
@@ -176,7 +178,28 @@ import { AudioDriver } from './audiodriver.js';
         if (emulator) audioButton.disabled = false;
     }
 
+    function setSnapshotStatus(status) {
+        switch (status) {
+            case 'ok':
+                snapshotStatus.innerText = 'no pending data';
+                snapshotStatus.className = 'snapshot-ok';
+                break;
+
+            case 'saving':
+                snapshotStatus.innerText = 'saving...';
+                snapshotStatus.className = 'snapshot-saving';
+                break;
+
+            default:
+                snapshotStatus.innerText = 'failed!';
+                snapshotStatus.className = 'snapshot-failed';
+                break;
+        }
+    }
+
     async function main() {
+        setSnapshotStatus('ok');
+
         database = await Database.create();
         clearCanvas();
 

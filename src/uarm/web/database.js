@@ -290,6 +290,7 @@ export class Database {
     constructor(db, lockToken) {
         this.db = db;
         this.lockToken = lockToken;
+        this.lockLost = false;
         this.nandPagePool = /** @type Array<Uint32Array> */ (new Array());
     }
 
@@ -315,8 +316,14 @@ export class Database {
         if (lockToken !== this.lockToken) {
             tx.abort();
 
-            setTimeout(() => alert('CloudpilotEmu has been opened in another tab. No more data will be persisted.'), 0);
+            if (!this.lockLost) {
+                setTimeout(
+                    () => alert('CloudpilotEmu has been opened in another tab. No more data will be persisted.'),
+                    0
+                );
+            }
 
+            this.lockLost = true;
             throw new Error('page lock lost');
         }
     }

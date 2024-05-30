@@ -67,6 +67,25 @@
             input[type='range'] {
                 width: 15em;
             }
+
+            #snapshot-status {
+                display: inline-block;
+                min-width: 10em;
+                text-align: center;
+            }
+
+            .snapshot-ok {
+                background: lightgreen;
+            }
+
+            .snapshot-saving {
+                background: orange;
+            }
+
+            .snapshot-failed {
+                background: red;
+                color: white;
+            }
         </style>
     </head>
 
@@ -74,6 +93,11 @@
         <div class="container">
             <canvas tabindex="-1" width="640" height="880"></canvas>
             <div class="controls">
+                <div class="control">
+                    <label>Snapshot status:</label>
+                    <span id="snapshot-status"></span>
+                </div>
+
                 <div class="control"><label>Emulation speed:</label><span id="speed">-</span></div>
 
                 <div class="control-audio-button"><button id="audio-button" disabled>Start audio</button></div>

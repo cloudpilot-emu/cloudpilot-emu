@@ -2,10 +2,11 @@ import { DisplayService } from './displayservice.js';
 import { EventHandler } from './eventhandler.js';
 
 export class Emulator {
-    constructor(worker, displayService, { canvas, speedDisplay, log, database }) {
+    constructor(worker, displayService, { canvas, speedDisplay, log, database, setSnapshotStatus }) {
         this.worker = worker;
         this.displayService = displayService;
         this.database = database;
+        this.setSnapshotStatus = setSnapshotStatus;
 
         this.speedDisplay = speedDisplay;
         this.log = log;
@@ -16,6 +17,8 @@ export class Emulator {
         this.canvasTmpCtx.canvas.height = 320;
 
         this.running = false;
+        this.snapshotStatus = 'ok';
+        this.clearSnapshotStatusHandle = undefined;
 
         this.onMessage = (e) => {
             const message = e.data;
@@ -178,11 +181,27 @@ export class Emulator {
         const nandPagePool32 = new Uint32Array(nandPagePool);
 
         console.log(`snapshotting ${nandScheduledPageCount} pages`);
+
+        if (this.snapshotStatus !== 'failed') {
+            this.setSnapshotStatus((this.snapshotStatus = 'saving'));
+        }
+
+        if (!this.clearSnapshotStatusHandle !== undefined) clearTimeout(this.clearSnapshotStatusHandle);
+
         let success = true;
+
         try {
             await this.database.storeSnapshot(nandScheduledPageCount, nandScheduledPages32, nandPagePool32);
+
+            this.setSnapshotStatus((this.snapshotStatus = 'saving'));
+
+            this.clearSnapshotStatusHandle = setTimeout(
+                () => this.setSnapshotStatus((this.snapshotStatus = 'ok')),
+                1500
+            );
         } catch (e) {
             console.error(`snapshot failed: ${e}`);
+            this.setSnapshotStatus((this.snapshotStatus = 'failed'));
             success = false;
         }
 
