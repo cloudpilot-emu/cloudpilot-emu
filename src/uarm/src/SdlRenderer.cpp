@@ -33,9 +33,13 @@ SdlRenderer::SdlRenderer(SDL_Window* window, SDL_Renderer* renderer, SoC* soc, i
     SDL_RenderPresent(renderer);
 }
 
-void SdlRenderer::Draw() {
+void SdlRenderer::Draw(bool forceRedraw) {
     uint32_t* frame = socGetPendingFrame(soc);
-    if (!frame) return;
+    if (!frame && !forceRedraw) return;
+
+    if (forceRedraw) {
+        DrawSilkscreen();
+    }
 
     uint8_t* pixels;
     int pitch;

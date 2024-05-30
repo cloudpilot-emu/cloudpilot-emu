@@ -10,7 +10,7 @@ class SdlRenderer {
    public:
     SdlRenderer(SDL_Window* window, SDL_Renderer* renderer, SoC* soc, int scale);
 
-    void Draw();
+    void Draw(bool forceRedraw);
 
    private:
     void DrawSilkscreen();

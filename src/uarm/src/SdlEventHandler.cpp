@@ -85,6 +85,14 @@ void SdlEventHandler::HandleEvents() {
                 if (key) socKeyUp(soc, key);
                 break;
             }
+
+            case SDL_WINDOWEVENT_EXPOSED:
+                redrawRequested = true;
+                break;
         }
     }
 }
+
+bool SdlEventHandler::RedrawRequested() const { return redrawRequested; }
+
+void SdlEventHandler::ClearRedrawRequested() { redrawRequested = false; }

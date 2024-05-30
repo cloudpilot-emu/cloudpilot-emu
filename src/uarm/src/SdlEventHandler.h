@@ -9,11 +9,15 @@ class SdlEventHandler {
 
     void HandleEvents();
 
+    bool RedrawRequested() const;
+    void ClearRedrawRequested();
+
    private:
     struct SoC* soc;
 
     bool penDown{false};
     int scale{1};
+    bool redrawRequested{false};
 
    private:
     SdlEventHandler();

@@ -311,7 +311,10 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
         if (audioDriver) socSetPcmSuspended(soc, audioDriver->GetAudioBackpressure());
 
         mainLoop->Cycle(now);
-        sdlRenderer.Draw();
+
+        sdlRenderer.Draw(sdlEventHandler.RedrawRequested());
+        sdlEventHandler.ClearRedrawRequested();
+
         sdlEventHandler.HandleEvents();
 
         if (now - lastSpeedDump > 1000000) {
