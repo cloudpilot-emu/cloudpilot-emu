@@ -69,12 +69,15 @@ void MainLoop::Cycle() {
     }
 
     if (gSystemState.IsScreenDirty()) {
-        UpdateScreen();
+        UpdateScreen(false);
         gSystemState.MarkScreenClean();
     } else if (!SuspendManager::IsSuspended() && !gDebugger.IsStopped() && !gDebugger.IsStepping())
         SDL_Delay(16);
 
-    eventHandler.HandleEvents(millis);
+    if (eventHandler.HandleEvents(millis)) {
+        DrawSilkscreen(renderer);
+        UpdateScreen(true);
+    }
 }
 
 void MainLoop::LoadSilkscreen() {
@@ -102,11 +105,11 @@ void MainLoop::DrawSilkscreen(SDL_Renderer* renderer) {
     SDL_RenderCopy(renderer, silkscreenTexture, nullptr, &rect);
 }
 
-void MainLoop::UpdateScreen() {
+void MainLoop::UpdateScreen(bool fullRedraw) {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_RenderClear(renderer);
 
-    if (gSession->IsPowerOn() && EmHAL::CopyLCDFrame(frame)) {
+    if (gSession->IsPowerOn() && EmHAL::CopyLCDFrame(frame, fullRedraw)) {
         if (frame.hasChanges && frame.lineWidth * frame.scaleX == screenDimensions.Width() &&
             frame.lines * frame.scaleY == screenDimensions.Height()) {
             uint32* pixels;

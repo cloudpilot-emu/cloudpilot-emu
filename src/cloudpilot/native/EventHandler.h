@@ -10,7 +10,7 @@ class EventHandler {
    public:
     EventHandler(int scale);
 
-    void HandleEvents(long millis);
+    bool HandleEvents(long millis);
 
     bool IsQuit() const;
 

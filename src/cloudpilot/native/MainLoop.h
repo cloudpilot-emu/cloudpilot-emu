@@ -22,7 +22,7 @@ class MainLoop {
 
     void DrawSilkscreen(SDL_Renderer* renderer);
 
-    void UpdateScreen();
+    void UpdateScreen(bool fullRedraw);
 
    private:
     SDL_Renderer* renderer{nullptr};

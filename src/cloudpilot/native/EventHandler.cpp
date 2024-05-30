@@ -11,8 +11,9 @@ EventHandler::EventHandler(int scale) : scale(scale) {}
 
 bool EventHandler::IsQuit() const { return quit; }
 
-void EventHandler::HandleEvents(long millis) {
+bool EventHandler::HandleEvents(long millis) {
     SDL_Event event;
+    bool redraw = false;
 
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
@@ -64,8 +65,14 @@ void EventHandler::HandleEvents(long millis) {
                 if ((event.key.keysym.mod & KMOD_SHIFT) && (event.key.keysym.mod & KMOD_CTRL))
                     HandleButtonKey(event, ButtonEvent::Type::release);
                 break;
+
+            case SDL_WINDOWEVENT_EXPOSED:
+                redraw = true;
+                break;
         }
     }
+
+    return redraw;
 }
 
 bool EventHandler::UpdatePenPosition() {
