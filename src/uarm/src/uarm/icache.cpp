@@ -10,7 +10,7 @@
 #include "uarm_endian.h"
 
 #define CACHE_LINE_WIDTH_BITS 5
-#define CACHE_INDEX_BITS 20
+#define CACHE_INDEX_BITS 11
 
 #define calculateIndex(va) ((va >> CACHE_LINE_WIDTH_BITS) & ~(0xffffffff << CACHE_INDEX_BITS))
 #define calculateTag(va) (va >> (CACHE_LINE_WIDTH_BITS + CACHE_INDEX_BITS))
@@ -90,15 +90,21 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, 
 
     if (line->revision != ic->revision || line->tag != tag) {
         uint8_t data[sizeof(line->data)];
+        bool cacheable = mmuIsOn(ic->mmu);
+        uint32_t pa = va;
 
-        MMUTranslateResult translateResult = mmuTranslate(ic->mmu, va, true, false);
-        if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
-            *fsrP = MMU_TRANSLATE_RESULT_FSR(translateResult);
-            return false;
+        if (cacheable) {
+            MMUTranslateResult translateResult = mmuTranslate(ic->mmu, va, true, false);
+            if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+                *fsrP = MMU_TRANSLATE_RESULT_FSR(translateResult);
+                return false;
+            }
+
+            pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+            cacheable = MMU_TRANSLATE_RESULT_CACHEABLE(translateResult);
         }
 
-        uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
-        if (!MMU_TRANSLATE_RESULT_CACHEABLE(translateResult)) {
+        if (!cacheable) {
             bool ok = memInstructionFetch(ic->mem, pa, sz, buf);
 
             if (!ok) {
