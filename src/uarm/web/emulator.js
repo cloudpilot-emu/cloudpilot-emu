@@ -2,11 +2,12 @@ import { DisplayService } from './displayservice.js';
 import { EventHandler } from './eventhandler.js';
 
 export class Emulator {
-    constructor(worker, displayService, { canvas, speedDisplay, log, database, setSnapshotStatus }) {
+    constructor(worker, displayService, crcCheck, { canvas, speedDisplay, log, database, setSnapshotStatus }) {
         this.worker = worker;
         this.displayService = displayService;
         this.database = database;
         this.setSnapshotStatus = setSnapshotStatus;
+        this.crcCheck = crcCheck;
 
         this.speedDisplay = speedDisplay;
         this.log = log;
@@ -43,7 +44,8 @@ export class Emulator {
                     this.handleSnapshot(
                         message.nandScheduledPageCount,
                         message.nandScheduledPages,
-                        message.nandPagePool
+                        message.nandPagePool,
+                        message.crc
                     );
 
                     break;
@@ -59,7 +61,7 @@ export class Emulator {
     }
 
     static async create(nor, nand, sd, maxLoad, cyclesPerSecondLimit, env) {
-        const { log, binary } = env;
+        const { log, binary, crcCheck } = env;
         const worker = new Worker('web/worker.js');
 
         const displayService = new DisplayService();
@@ -77,12 +79,13 @@ export class Emulator {
                             maxLoad,
                             cyclesPerSecondLimit,
                             binary,
+                            crcCheck,
                         });
                         break;
 
                     case 'initialized':
                         worker.removeEventListener('message', onMessage);
-                        resolve(new Emulator(worker, displayService, env));
+                        resolve(new Emulator(worker, displayService, crcCheck, env));
                         break;
 
                     case 'error':
@@ -176,11 +179,15 @@ export class Emulator {
         this.worker.postMessage({ type: 'enablePcm' });
     }
 
-    async handleSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool) {
+    async handleSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool, crc) {
         const nandScheduledPages32 = new Uint32Array(nandScheduledPages);
         const nandPagePool32 = new Uint32Array(nandPagePool);
 
-        console.log(`snapshotting ${nandScheduledPageCount} pages`);
+        if (this.crcCheck) {
+            console.log(`snapshotting ${nandScheduledPageCount} pages, crc: ${crc ?? -1}`);
+        } else {
+            console.log(`snapshotting ${nandScheduledPageCount} pages`);
+        }
 
         if (this.snapshotStatus !== 'failed') {
             this.setSnapshotStatus((this.snapshotStatus = 'saving'));
@@ -191,7 +198,7 @@ export class Emulator {
         let success = true;
 
         try {
-            await this.database.storeSnapshot(nandScheduledPageCount, nandScheduledPages32, nandPagePool32);
+            await this.database.storeSnapshot(nandScheduledPageCount, nandScheduledPages32, nandPagePool32, crc);
 
             this.setSnapshotStatus((this.snapshotStatus = 'saving'));
 

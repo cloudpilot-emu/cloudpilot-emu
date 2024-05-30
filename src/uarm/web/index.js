@@ -40,6 +40,7 @@ import { AudioDriver } from './audiodriver.js';
     let database;
     let maxLoad = 100;
     let mipsLimit = 100;
+    let crcCheck = false;
 
     function updateMaxLoad() {
         maxLoad = parseFloat(maxLoadSlider.value);
@@ -168,6 +169,7 @@ import { AudioDriver } from './audiodriver.js';
                 speedDisplay,
                 log,
                 binary,
+                crcCheck,
                 setSnapshotStatus,
             }
         );
@@ -203,11 +205,18 @@ import { AudioDriver } from './audiodriver.js';
         database = await Database.create();
         clearCanvas();
 
-        fileNor = await database.getNor();
-        fileNand = await database.getNand();
-        fileSd = await database.getSd();
-
         const query = new URLSearchParams(location.search);
+
+        if (query.has('verify_crc')) crcCheck = true;
+        if (crcCheck) {
+            log('snapshot CRC checks enabled');
+        } else {
+            log('snapshot CRC checks disabled, reload with ?verify_crc to enable them');
+        }
+
+        fileNor = await database.getNor();
+        fileNand = await database.getNand(crcCheck);
+        fileSd = await database.getSd();
 
         if (query.has('binary')) binary = query.get('binary');
 

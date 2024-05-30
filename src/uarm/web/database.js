@@ -17,6 +17,7 @@ const KVS_ROM_NOR = 'romNor';
 const KVS_ROM_NAND = 'romNand';
 const KVS_SD_IMAGE = 'sdImage';
 const KVS_NAND_NAME = 'nandName';
+const KVS_NAND_CRC = 'nandCrc';
 
 /**
  *
@@ -392,15 +393,28 @@ export class Database {
     }
 
     /**
+     * @param {boolean} crcCheck
      * @returns {Promise<Image | undefined>}
      */
-    async getNand() {
+    async getNand(crcCheck) {
         const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_KVS);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
-        const name = /** @type string */ (await complete(tx.objectStore(OBJECT_STORE_KVS).get(KVS_NAND_NAME)));
+        const name = /** @type string */ (await complete(storeKvs.get(KVS_NAND_NAME)));
         if (!name) return;
 
         const content = await getNandData(NAND_SIZE, tx);
+
+        const crc = await complete(storeKvs.get(KVS_NAND_CRC));
+        const crc32 = /** @type any */ (window).crc32;
+
+        if (crcCheck && typeof crc === 'number') {
+            if (crc !== crc32(content)) {
+                alert(`CRC mismatch on NAND load!`);
+            } else {
+                console.log('NAND CRC OK');
+            }
+        }
 
         return { name, content };
     }
@@ -444,8 +458,8 @@ export class Database {
      * @param {Uint32Array} nandPagePool
      * @returns {Promise<void>}
      */
-    async storeSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool) {
-        const tx = await this.tx(OBJECT_STORE_NAND);
+    async storeSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool, crc) {
+        const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_KVS);
         const store = tx.objectStore(OBJECT_STORE_NAND);
 
         let iPool = 0;
@@ -462,6 +476,8 @@ export class Database {
 
             store.put(compressedPage, nandScheduledPages[iPage]);
         }
+
+        tx.objectStore(OBJECT_STORE_KVS).put(crc, KVS_NAND_CRC);
 
         await complete(tx);
     }

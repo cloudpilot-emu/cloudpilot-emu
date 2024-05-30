@@ -1,4 +1,4 @@
-importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
+importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
 (function () {
     const PCM_BUFFER_SIZE = (44100 / 60) * 10;
@@ -14,12 +14,13 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
     let pcmPool = [];
 
     class Emulator {
-        constructor(module, maxLoad, cyclesPerSecondLimit, { onSpeedDisplay, onFrame, log, onSnapshot }) {
+        constructor(module, maxLoad, cyclesPerSecondLimit, crcCheck, { onSpeedDisplay, onFrame, log, onSnapshot }) {
             this.module = module;
             this.onSpeedDisplay = onSpeedDisplay;
             this.onFrame = onFrame;
             this.log = log;
             this.onSnapshot = onSnapshot;
+            this.crcCheck = crcCheck;
 
             this.cycle = module.cwrap('cycle', undefined, ['number']);
             this.getFrame = module.cwrap('getFrame', 'number', []);
@@ -56,7 +57,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             this.snapshotPending = false;
         }
 
-        static async create(nor, nand, sd, maxLoad, cyclesPerSecondLimit, env) {
+        static async create(nor, nand, sd, maxLoad, cyclesPerSecondLimit, crcCheck, env) {
             const { log, binary } = env;
             let module;
 
@@ -86,7 +87,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                 [norPtr, nor.length, nandPtr, nand.length, sdPtr, sd ? sd.length : 0]
             );
 
-            return new Emulator(module, maxLoad, cyclesPerSecondLimit, env);
+            return new Emulator(module, maxLoad, cyclesPerSecondLimit, crcCheck, env);
         }
 
         stop() {
@@ -170,7 +171,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
 
         snapshot() {
             if (this.snapshotPending) {
-                console.log('snapshot pending, skipping...');
+                console.warn('snapshot pending, skipping...');
             }
 
             const nandData = this.getNandData();
@@ -220,7 +221,10 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
             if (iPage > 0) {
                 nandDirtyPages.fill(0);
                 this.snapshotPending = true;
-                this.onSnapshot(iPage, this.nandScheduledPages.buffer, this.nandPagePool.buffer);
+
+                const crc = this.crcCheck ? crc32(nandData) : undefined;
+
+                this.onSnapshot(iPage, this.nandScheduledPages.buffer, this.nandPagePool.buffer, crc);
             }
         }
 
@@ -376,13 +380,14 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
         postMessage({ type: 'initialized' });
     }
 
-    function postSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool) {
+    function postSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool, crc) {
         postMessage(
             {
                 type: 'snapshot',
                 nandScheduledPageCount,
                 nandScheduledPages,
                 nandPagePool,
+                crc,
             },
             [nandScheduledPages, nandPagePool]
         );
@@ -403,6 +408,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js');
                     message.sd,
                     message.maxLoad,
                     message.cyclesPerSecondLimit,
+                    message.crcCheck,
                     {
                         onFrame: postFrame,
                         onSpeedDisplay: postSpeed,
