@@ -165,6 +165,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                 )
             );
 
+            console.log(`growing NAND page pool to ${newPagePool.length} bytes`);
+
             newPagePool.set(this.nandPagePool);
             this.nandPagePool = newPagePool;
         }
