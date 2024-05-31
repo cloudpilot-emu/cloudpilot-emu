@@ -37,10 +37,6 @@ void SdlRenderer::Draw(bool forceRedraw) {
     uint32_t* frame = socGetPendingFrame(soc);
     if (!frame && !forceRedraw) return;
 
-    if (forceRedraw) {
-        DrawSilkscreen();
-    }
-
     uint8_t* pixels;
     int pitch;
     SDL_LockTexture(frameTexture, NULL, (void**)&pixels, &pitch);
