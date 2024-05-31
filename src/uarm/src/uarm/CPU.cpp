@@ -1022,6 +1022,10 @@ static void execFn_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr, bool 
     MMUTranslateResult translateResultSrc;
     MMUTranslateResult translateResultDest;
 
+    // This should not be necessary, but it works around a bug where PalmOS fails to
+    // invalidate the cache and which is conveniently triggered by a memcpy...
+    icacheInvalRange(cpu->ic, dest, size);
+
 #define MEMCPY_STEP(chunkSize)                                                                  \
     for (; size >= chunkSize; size -= chunkSize, src += chunkSize, dest += chunkSize) {         \
         translateResultSrc = mmuTranslate(cpu->mmu, src, privileged, false);                    \

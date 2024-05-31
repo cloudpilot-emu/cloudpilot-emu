@@ -10,11 +10,12 @@
 #include "uarm_endian.h"
 
 #define CACHE_LINE_WIDTH_BITS 5
-#define CACHE_INDEX_BITS 13
+#define CACHE_INDEX_BITS 20
 
 #define calculateIndex(va) ((va >> CACHE_LINE_WIDTH_BITS) & ~(0xffffffff << CACHE_INDEX_BITS))
 #define calculateTag(va) (va >> (CACHE_LINE_WIDTH_BITS + CACHE_INDEX_BITS))
 #define calculateLineIndex(va) (va & ~(0xffffffff << CACHE_LINE_WIDTH_BITS))
+#define maskLine(va) (va & (0xffffffff << CACHE_LINE_WIDTH_BITS))
 
 #ifdef __EMSCRIPTEN__
     #define DECODED_INSTRUCTION_TYPE uint16_t
@@ -34,7 +35,7 @@ struct icacheline {
     uint8_t data[1 << CACHE_LINE_WIDTH_BITS];
     DECODED_INSTRUCTION_TYPE decoded[1 << (CACHE_LINE_WIDTH_BITS - 1)];
 
-    uint16_t tag;
+    uint8_t tag;
     uint32_t revision;
 } __attribute__((aligned(8)));
 
@@ -75,6 +76,12 @@ void icacheInvalAddr(struct icache* ic, uint32_t va) {
     if (line->revision != ic->revision || line->tag != calculateTag(va)) return;
 
     line->revision = ic->revision - 1;
+}
+
+void icacheInvalRange(struct icache* ic, uint32_t addr, uint32_t size) {
+    for (uint32_t line = maskLine(addr); line < addr + size; line += (1 << CACHE_LINE_WIDTH_BITS)) {
+        icacheInvalAddr(ic, line);
+    }
 }
 
 template <int sz>
