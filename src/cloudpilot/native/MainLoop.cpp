@@ -74,10 +74,7 @@ void MainLoop::Cycle() {
     } else if (!SuspendManager::IsSuspended() && !gDebugger.IsStopped() && !gDebugger.IsStepping())
         SDL_Delay(16);
 
-    if (eventHandler.HandleEvents(millis)) {
-        DrawSilkscreen(renderer);
-        UpdateScreen(true);
-    }
+    if (eventHandler.HandleEvents(millis)) UpdateScreen(true);
 }
 
 void MainLoop::LoadSilkscreen() {
