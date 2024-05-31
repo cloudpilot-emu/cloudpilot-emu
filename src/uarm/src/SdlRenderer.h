@@ -22,6 +22,8 @@ class SdlRenderer {
     SDL_Texture* frameTexture{nullptr};
     SDL_Texture* silkscreenTexture{nullptr};
 
+    bool frameTextureValid{false};
+
     SoC* soc{nullptr};
 
     const int scale;

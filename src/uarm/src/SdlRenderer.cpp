@@ -37,31 +37,36 @@ void SdlRenderer::Draw(bool forceRedraw) {
     uint32_t* frame = socGetPendingFrame(soc);
     if (!frame && !forceRedraw) return;
 
-    uint8_t* pixels;
-    int pitch;
-    SDL_LockTexture(frameTexture, NULL, (void**)&pixels, &pitch);
+    if (frame) {
+        uint8_t* pixels;
+        int pitch;
+        SDL_LockTexture(frameTexture, NULL, (void**)&pixels, &pitch);
 
-    if (pitch == 4 * displayConfiguration.width) {
-        memcpy(pixels, frame, 4 * displayConfiguration.width * displayConfiguration.height);
-    } else {
-        for (int y = 0; y < displayConfiguration.height; y++) {
-            memcpy(pixels, frame, 4 * displayConfiguration.width);
-            frame += displayConfiguration.width;
-            pixels += pitch;
+        if (pitch == 4 * displayConfiguration.width) {
+            memcpy(pixels, frame, 4 * displayConfiguration.width * displayConfiguration.height);
+        } else {
+            for (int y = 0; y < displayConfiguration.height; y++) {
+                memcpy(pixels, frame, 4 * displayConfiguration.width);
+                frame += displayConfiguration.width;
+                pixels += pitch;
+            }
         }
-    }
 
-    SDL_UnlockTexture(frameTexture);
+        SDL_UnlockTexture(frameTexture);
+        frameTextureValid = true;
+    }
 
     SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
     SDL_RenderClear(renderer);
     DrawSilkscreen();
 
-    SDL_Rect dest = {.x = 0,
-                     .y = 0,
-                     .w = scale * displayConfiguration.width,
-                     .h = scale * displayConfiguration.height};
-    SDL_RenderCopy(renderer, frameTexture, nullptr, &dest);
+    if (frameTextureValid) {
+        SDL_Rect dest = {.x = 0,
+                         .y = 0,
+                         .w = scale * displayConfiguration.width,
+                         .h = scale * displayConfiguration.height};
+        SDL_RenderCopy(renderer, frameTexture, nullptr, &dest);
+    }
 
     SDL_RenderPresent(renderer);
 
