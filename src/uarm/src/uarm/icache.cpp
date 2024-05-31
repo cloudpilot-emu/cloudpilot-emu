@@ -10,7 +10,7 @@
 #include "uarm_endian.h"
 
 #define CACHE_LINE_WIDTH_BITS 5
-#define CACHE_INDEX_BITS 11
+#define CACHE_INDEX_BITS 13
 
 #define calculateIndex(va) ((va >> CACHE_LINE_WIDTH_BITS) & ~(0xffffffff << CACHE_INDEX_BITS))
 #define calculateTag(va) (va >> (CACHE_LINE_WIDTH_BITS + CACHE_INDEX_BITS))
@@ -34,7 +34,7 @@ struct icacheline {
     uint8_t data[1 << CACHE_LINE_WIDTH_BITS];
     DECODED_INSTRUCTION_TYPE decoded[1 << (CACHE_LINE_WIDTH_BITS - 1)];
 
-    uint_fast8_t tag;
+    uint16_t tag;
     uint32_t revision;
 } __attribute__((aligned(8)));
 
