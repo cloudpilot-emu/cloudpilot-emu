@@ -10,7 +10,13 @@
 #include "uarm_endian.h"
 
 #define CACHE_LINE_WIDTH_BITS 5
-#define CACHE_INDEX_BITS 20
+#define CACHE_INDEX_BITS 17
+
+#if (32 - CACHE_LINE_WIDTH_BITS - CACHE_INDEX_BITS <= 8)
+    #define CACHE_TAG_TYPE uint_fast8_t
+#else
+    #define CACHE_TAG_TYPE uint_fast16_t
+#endif
 
 #define calculateIndex(va) ((va >> CACHE_LINE_WIDTH_BITS) & ~(0xffffffff << CACHE_INDEX_BITS))
 #define calculateTag(va) (va >> (CACHE_LINE_WIDTH_BITS + CACHE_INDEX_BITS))
@@ -35,9 +41,9 @@ struct icacheline {
     uint8_t data[1 << CACHE_LINE_WIDTH_BITS];
     DECODED_INSTRUCTION_TYPE decoded[1 << (CACHE_LINE_WIDTH_BITS - 1)];
 
-    uint8_t tag;
+    CACHE_TAG_TYPE tag;
     uint32_t revision;
-} __attribute__((aligned(8)));
+};
 
 struct icache {
     struct ArmMem* mem;
@@ -51,6 +57,7 @@ void icacheInval(struct icache* ic) {
     ic->revision++;
 
     if (ic->revision == 0) {
+        ic->revision = 1;
         for (size_t i = 0; i < (1 << CACHE_INDEX_BITS); i++) ic->cache[i].revision = 0;
     }
 }
