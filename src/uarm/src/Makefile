@@ -120,6 +120,7 @@ SOURCE_CXX_COMMON = 			\
 	MainLoop.cpp				\
 	uarm/icache.cpp				\
 	uarm/CPU.cpp				\
+	uarm/memcpy.cpp				\
 	uarm/audio_queue.cpp
 
 SOURCE_CXX_NATIVE = 			\

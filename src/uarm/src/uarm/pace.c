@@ -16,7 +16,6 @@ static struct ArmMmu* mmu = NULL;
 static uint_fast8_t fsr = 0;
 static uint32_t lastAddr = 0;
 static bool wasWrite = false;
-static uint_fast8_t wasSz = 0;
 
 static uint32_t pendingStatus = 0;
 static uint32_t statePtr;
@@ -35,7 +34,6 @@ static uint32_t pace_get_le(uint32_t addr, uint8_t size) {
 
     lastAddr = addr;
     wasWrite = false;
-    wasSz = size;
 
     MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, false);
 
@@ -82,7 +80,6 @@ static void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
 
     lastAddr = addr;
     wasWrite = true;
-    wasSz = size;
 
     // fprintf(stderr, "%u byte write %#010x to %#010x\n", (uint32_t)size, value, addr);
 
@@ -269,13 +266,11 @@ bool paceLoad68kState() {
                       : (void*)stateScratchBuffer;
 
     lastAddr = statePtr + 4;
-    wasSz = 64;
     wasWrite = false;
 
     if (!memAccess(mem, statePtrPa, 64, false, state)) return false;
 
     lastAddr = statePtr + 68;
-    wasSz = 8;
 
     if (!memAccess(mem, statePtrPa + 64, 8, false, state + 64)) return false;
 
@@ -303,7 +298,6 @@ bool paceSave68kState() {
     uint32_t statePtrPa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
     lastAddr = statePtr;
-    wasSz = 4;
     wasWrite = true;
 
     uint32_t lastOpcodePadded = lastOpcode;
@@ -324,25 +318,21 @@ bool paceSave68kState() {
     }
 
     lastAddr = statePtr + 4;
-    wasSz = 64;
     wasWrite = true;
 
     if (!memAccess(mem, statePtrPa + 4, 64, true, state)) return false;
 
     lastAddr = statePtr + 68;
-    wasSz = 8;
 
     if (!memAccess(mem, statePtrPa + 68, 8, true, state + 64)) return false;
 
     return true;
 }
 
-void paceGetMemeryFault(uint32_t* _addr, bool* _wasWrite, uint_fast8_t* _wasSz,
-                        uint_fast8_t* _fsr) {
+void paceGetMemeryFault(uint32_t* _addr, bool* _wasWrite, uint_fast8_t* _fsr) {
     *_addr = lastAddr;
     *_wasWrite = wasWrite;
     *_fsr = fsr;
-    *_wasSz = wasSz;
 }
 
 uint16_t paceReadTrapWord() {

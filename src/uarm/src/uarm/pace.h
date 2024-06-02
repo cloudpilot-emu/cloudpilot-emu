@@ -37,7 +37,7 @@ void paceSetPriviledged(bool priviledged);
 bool paceLoad68kState();
 bool paceSave68kState();
 
-void paceGetMemeryFault(uint32_t* addr, bool* wasWrite, uint_fast8_t* wasSz, uint_fast8_t* fsr);
+void paceGetMemeryFault(uint32_t* addr, bool* wasWrite, uint_fast8_t* fsr);
 uint16_t paceReadTrapWord();
 
 enum paceStatus paceExecute();
