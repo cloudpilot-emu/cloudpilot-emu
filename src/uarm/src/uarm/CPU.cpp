@@ -133,7 +133,7 @@ struct ArmCpu {
     struct stub *debugStub;
     struct PatchDispatch *patchDispatch;
 
-    uint8_t memcpyScratch[4096];
+    uint64_t memcpyScratch[512];
 };
 
 enum ImmShiftType {
@@ -1029,12 +1029,12 @@ static void execFn_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr, bool 
     while (size > 0 && result.ok) {
         uint32_t chunkSize = size > sizeof(cpu->memcpyScratch) ? sizeof(cpu->memcpyScratch) : size;
 
-        memcpy_armToHost(cpu->memcpyScratch, src, chunkSize, privileged, cpu->mem, cpu->mmu,
-                         &result);
+        memcpy_armToHost(reinterpret_cast<uint8_t *>(cpu->memcpyScratch), src, chunkSize,
+                         privileged, cpu->mem, cpu->mmu, &result);
 
         if (result.ok)
-            memcpy_hostToArm(dest, cpu->memcpyScratch, chunkSize, privileged, cpu->mem, cpu->mmu,
-                             &result);
+            memcpy_hostToArm(dest, reinterpret_cast<uint8_t *>(cpu->memcpyScratch), chunkSize,
+                             privileged, cpu->mem, cpu->mmu, &result);
 
         size -= chunkSize;
         src += chunkSize;
