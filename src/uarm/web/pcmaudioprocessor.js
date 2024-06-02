@@ -47,7 +47,9 @@ class SampleQueue {
                     this.currentSampleLeft = this.channelLeftData[iIn];
                     this.currentSampleRight = this.channelRightData[iIn];
 
-                    const increment = (this.currentSampleIndex / this.sampleRateTo) | 0;
+                    let increment = (this.currentSampleIndex / this.sampleRateTo) | 0;
+                    if (increment > this.length) increment = this.length;
+
                     iIn = (iIn + increment) % this.capacity;
                     this.currentSampleIndex %= this.sampleRateTo;
                     this.length -= increment;
