@@ -119,7 +119,7 @@ static bool nandPrvBlockErase(struct NAND *nand) {
          storagePage <=
          (addr * nand->bytesPerPage + (nand->bytesPerPage << nand->pagesPerBlockLg2)) / 4224;
          storagePage++) {
-        nand->dirtyPages[storagePage >> 5] |= (1 << (storagePage & 0x1f));
+        nand->dirtyPages[storagePage >> 5] |= (1u << (storagePage & 0x1f));
     }
 
     return true;
@@ -140,7 +140,7 @@ static bool nandPrvPageProgram(struct NAND *nand) {
     }
 
     size_t storagePage = (nand->pageNo * nand->bytesPerPage) / 4224;
-    nand->dirtyPages[storagePage >> 5] |= (1 << (storagePage & 0x1f));
+    nand->dirtyPages[storagePage >> 5] |= (1u << (storagePage & 0x1f));
 
     return true;
 }
