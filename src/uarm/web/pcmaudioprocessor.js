@@ -1,12 +1,18 @@
 class SampleQueue {
-    constructor(capacity) {
+    constructor(capacity, sampleRateFrom, sampleRateTo) {
         this.capacity = capacity;
+        this.sampleRateFrom = sampleRateFrom;
+        this.sampleRateTo = sampleRateTo;
 
         this.channelLeftData = new Float32Array(this.capacity);
         this.channelRightData = new Float32Array(this.capacity);
 
         this.length = 0;
         this.nextSample = 0;
+
+        this.currentSampleIndex = 0;
+        this.currentSampleLeft = 0;
+        this.currentSampleRight = 0;
     }
 
     push(sample) {
@@ -26,13 +32,29 @@ class SampleQueue {
 
         let iIn = (this.nextSample - this.length + this.capacity) % this.capacity;
 
-        for (let iOut = 0; iOut < length && this.length > 0; iOut++) {
-            if (this.length > 0) {
+        if (this.sampleRateFrom === this.sampleRateTo) {
+            for (let iOut = 0; iOut < length && this.length > 0; iOut++) {
                 channelLeft[iOut] = this.channelLeftData[iIn];
                 channelRight[iOut] = this.channelRightData[iIn];
 
                 iIn = (iIn + 1) % this.capacity;
                 this.length--;
+            }
+        } else {
+            for (let iOut = 0; iOut < length && this.length > 0; iOut++) {
+                this.currentSampleIndex += this.sampleRateFrom;
+                if (this.currentSampleIndex > this.sampleRateTo) {
+                    this.currentSampleLeft = this.channelLeftData[iIn];
+                    this.currentSampleRight = this.channelRightData[iIn];
+
+                    const increment = (this.currentSampleIndex / this.sampleRateTo) | 0;
+                    iIn = (iIn + increment) % this.capacity;
+                    this.currentSampleIndex %= this.sampleRateTo;
+                    this.length -= increment;
+                }
+
+                channelLeft[iOut] = this.currentSampleLeft;
+                channelRight[iOut] = this.currentSampleRight;
             }
         }
     }
@@ -43,15 +65,22 @@ class SampleQueue {
 }
 
 class PcmProcessor extends AudioWorkletProcessor {
-    constructor() {
-        super();
+    constructor(parameters) {
+        super(parameters);
 
-        this.sampleQueue = new SampleQueue((44100 / 60) * 10);
+        const sampleRateTo = parameters.processorOptions.sampleRateTo;
+
+        this.sampleQueue = new SampleQueue((44100 / 60) * 10, 44100, sampleRateTo);
         this.buffering = true;
         this.backpressure = false;
 
         this.port.onmessage = (evt) => this.handleHostMessage(evt.data);
         this.onWorkerMessage = (evt) => this.handleWorkerMessage(evt.data);
+
+        this.port.postMessage({
+            type: 'log',
+            message: `audio thread running at ${sampleRateTo} Hz`,
+        });
     }
 
     handleHostMessage(message) {

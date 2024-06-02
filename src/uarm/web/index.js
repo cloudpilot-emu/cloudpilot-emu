@@ -42,6 +42,7 @@ import { AudioDriver } from './audiodriver.js';
     let maxLoad = 100;
     let mipsLimit = 100;
     let crcCheck = false;
+    let sampleRate;
 
     function updateMaxLoad() {
         maxLoad = parseFloat(maxLoadSlider.value);
@@ -85,7 +86,7 @@ import { AudioDriver } from './audiodriver.js';
                 );
 
                 try {
-                    await audioDriver.initialize(emulator);
+                    await audioDriver.initialize(sampleRate);
                     audioDriver.setEmulator(emulator);
                 } catch (e) {
                     console.error('failed to initialize audio driver', e);
@@ -223,6 +224,12 @@ import { AudioDriver } from './audiodriver.js';
             log('snapshot CRC checks enabled');
         } else {
             log('snapshot CRC checks disabled, reload with ?verify_crc to enable them');
+        }
+
+        sampleRate = isWebkit ? undefined : 44100;
+        if (query.has('samplerate')) {
+            sampleRate = parseInt(query.get('samplerate'));
+            if (isNaN(sampleRate)) sampleRate = undefined;
         }
 
         fileNor = await database.getNor();

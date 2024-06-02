@@ -24,12 +24,15 @@ export class AudioDriver {
         });
     }
 
-    async initialize(emulator) {
+    async initialize(sampleRate) {
         const audioContextCtor = window.AudioContext || window.webkitAudioContext;
 
         if (this.initialized) return;
 
-        this.context = new audioContextCtor({ sampleRate: 44100, latencyHint: 'interactive' });
+        this.context = new audioContextCtor({
+            latencyHint: 'interactive',
+            ...(sampleRate !== undefined ? { sampleRate } : {}),
+        });
 
         if (this.context.destination.maxChannelCount > 0)
             this.context.destination.channelCount = Math.min(this.context.destination.maxChannelCount, 2);
@@ -46,6 +49,9 @@ export class AudioDriver {
             channelCount: 2,
             numberOfOutputs: 1,
             outputChannelCount: [2],
+            processorOptions: {
+                sampleRateTo: this.context.sampleRate,
+            },
         });
 
         this.workletNode.connect(this.gainNode);
@@ -131,6 +137,7 @@ export class AudioDriver {
     handleWorkletMessage(message) {
         switch (message.type) {
             case 'log':
+                console.log(message.message);
                 this.log(message.message);
                 break;
 
