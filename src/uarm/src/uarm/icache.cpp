@@ -43,7 +43,7 @@ struct icacheline {
 
     CACHE_TAG_TYPE tag;
     uint32_t revision;
-} __attribute__((aligned(64)));
+} __attribute__((aligned(8)));
 
 struct icache {
     struct ArmMem* mem;
