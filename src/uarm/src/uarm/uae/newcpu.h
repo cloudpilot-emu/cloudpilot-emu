@@ -56,12 +56,13 @@ extern unsigned long op_illg(uae_u32) REGPARAM;
 typedef uae_u8 flagtype;
 
 typedef struct regstruct {
+  uae_u32 lastOpcode;
   uae_u32 regs[16];
 
   uae_u32 pc;
   uae_u16 sr;
   uae_u16 padding;
-} regstruct;
+} __attribute__((aligned(8))) regstruct;
 
 extern regstruct regs;
 

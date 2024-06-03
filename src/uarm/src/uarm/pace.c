@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "mem.h"
+#include "memcpy.h"
 #include "uae/UAE.h"
 #include "uarm_endian.h"
 
@@ -20,8 +21,6 @@ static bool wasWrite = false;
 static uint32_t pendingStatus = 0;
 static uint32_t statePtr;
 static bool priviledged = false;
-
-static uint16_t lastOpcode = 0;
 
 #ifdef __EMSCRIPTEN__
 static cpuop_func* cpufunctbl_base;
@@ -44,7 +43,7 @@ static uint32_t pace_get_le(uint32_t addr, uint8_t size) {
 
     uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
-    uint32_t result;
+    uint32_t result = 0;
     bool ok = memAccess(mem, pa, size, false, &result);
 
     if (!ok) {
@@ -59,7 +58,7 @@ uint8_t uae_get8(uint32_t addr) { return pace_get_le(addr, 1); }
 
 uint16_t uae_get16(uint32_t addr) {
     if (!fsr && addr & 0x01) {
-        fsr = 1;
+        fsr = 10;
         return 0;
     }
 
@@ -67,12 +66,19 @@ uint16_t uae_get16(uint32_t addr) {
 }
 
 uint32_t uae_get32(uint32_t addr) {
-    if (!fsr && addr & 0x01) {
-        fsr = 1;
-        return 0;
-    }
+    switch (__builtin_ctz(addr)) {
+        case 0:
+            fsr = 1;
+            lastAddr = addr;
+            wasWrite = false;
+            return 0;
 
-    return htobe32(pace_get_le(addr, 4));
+        case 1:
+            return htobe32(pace_get_le(addr, 2) | (pace_get_le(addr + 2, 2) << 16));
+
+        default:
+            return htobe32(pace_get_le(addr, 4));
+    }
 }
 
 static void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
@@ -111,12 +117,26 @@ void uae_put16(uint32_t addr, uint16_t value) {
 }
 
 void uae_put32(uint32_t addr, uint32_t value) {
-    if (!fsr && addr & 0x01) {
-        fsr = 1;
-        return;
-    }
+    switch (__builtin_ctz(addr)) {
+        case 0:
+            fsr = 1;
+            lastAddr = addr;
+            wasWrite = true;
+            break;
 
-    pace_put_le(addr, be32toh(value), 4);
+        case 1: {
+            uint32_t value_be = htobe32(value);
+
+            pace_put_le(addr, value_be, 2);
+            pace_put_le(addr + 2, value_be >> 16, 2);
+
+            break;
+        }
+
+        default:
+            pace_put_le(addr, be32toh(value), 4);
+            break;
+    }
 }
 
 void Exception(int exception, uaecptr lastPc) {
@@ -247,37 +267,31 @@ void paceSetStatePtr(uint32_t addr) { statePtr = addr; }
 
 uint8_t paceGetFsr() { return fsr; }
 
-uint16_t paceGetLastOpcode() { return lastOpcode; }
+uint16_t paceGetLastOpcode() { return regs.lastOpcode; }
 
 bool paceLoad68kState() {
-    static uint32_t stateScratchBuffer[18];
+    static uint32_t stateScratchBuffer[19];
 
-    MMUTranslateResult translateResult = mmuTranslate(mmu, statePtr, priviledged, false);
+    uint8_t* state = (sizeof(struct regstruct) == sizeof(stateScratchBuffer))
+                         ? (uint8_t*)&regs
+                         : (uint8_t*)stateScratchBuffer;
 
-    if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
-        fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
+    struct MemcpyResult result;
+    memcpy_armToHost(state, statePtr, sizeof(stateScratchBuffer), priviledged, mem, mmu, &result);
+
+    if (!result.ok) {
+        lastAddr = result.faultAddr;
+        fsr = result.fsr;
+        wasWrite = result.wasWrite;
+
         return false;
     }
 
-    uint32_t statePtrPa = MMU_TRANSLATE_RESULT_PA(translateResult) + 4;
-
-    void* state = (sizeof(struct regstruct) == sizeof(stateScratchBuffer))
-                      ? &regs
-                      : (void*)stateScratchBuffer;
-
-    lastAddr = statePtr + 4;
-    wasWrite = false;
-
-    if (!memAccess(mem, statePtrPa, 64, false, state)) return false;
-
-    lastAddr = statePtr + 68;
-
-    if (!memAccess(mem, statePtrPa + 64, 8, false, state + 64)) return false;
-
     if (sizeof(struct regstruct) != sizeof(stateScratchBuffer)) {
-        for (size_t i = 0; i < 16; i++) regs.regs[i] = stateScratchBuffer[i];
-        regs.pc = stateScratchBuffer[16];
-        regs.sr = stateScratchBuffer[17];
+        for (size_t i = 1; i < 17; i++) regs.regs[i - 1] = stateScratchBuffer[i];
+
+        regs.pc = stateScratchBuffer[17];
+        regs.sr = stateScratchBuffer[18];
     }
 
     MakeFromSR();
@@ -286,45 +300,34 @@ bool paceLoad68kState() {
 }
 
 bool paceSave68kState() {
-    static uint32_t stateScratchBuffer[18];
-
-    MMUTranslateResult translateResult = mmuTranslate(mmu, statePtr, priviledged, false);
-
-    if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
-        fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
-        return false;
-    }
-
-    uint32_t statePtrPa = MMU_TRANSLATE_RESULT_PA(translateResult);
-
-    lastAddr = statePtr;
-    wasWrite = true;
-
-    uint32_t lastOpcodePadded = lastOpcode;
-    if (!memAccess(mem, statePtrPa, 4, true, &lastOpcodePadded)) return false;
-
-    void* state;
+    static uint32_t stateScratchBuffer[19];
+    uint8_t* state;
 
     MakeSR();
 
     if (sizeof(struct regstruct) != sizeof(stateScratchBuffer)) {
-        for (size_t i = 0; i < 16; i++) stateScratchBuffer[i] = regs.regs[i];
-        stateScratchBuffer[16] = regs.pc;
-        stateScratchBuffer[17] = regs.sr;
+        stateScratchBuffer[0] = regs.lastOpcode;
 
-        state = (void*)stateScratchBuffer;
+        for (size_t i = 1; i < 17; i++) stateScratchBuffer[i] = regs.regs[i - 1];
+
+        stateScratchBuffer[17] = regs.pc;
+        stateScratchBuffer[18] = regs.sr;
+
+        state = (uint8_t*)stateScratchBuffer;
     } else {
-        state = &regs;
+        state = (uint8_t*)&regs;
     }
 
-    lastAddr = statePtr + 4;
-    wasWrite = true;
+    struct MemcpyResult result;
+    memcpy_hostToArm(statePtr, state, sizeof(stateScratchBuffer), priviledged, mem, mmu, &result);
 
-    if (!memAccess(mem, statePtrPa + 4, 64, true, state)) return false;
+    if (!result.ok) {
+        lastAddr = result.faultAddr;
+        fsr = result.fsr;
+        wasWrite = result.wasWrite;
 
-    lastAddr = statePtr + 68;
-
-    if (!memAccess(mem, statePtrPa + 68, 8, true, state + 64)) return false;
+        return false;
+    }
 
     return true;
 }
@@ -346,15 +349,17 @@ enum paceStatus paceExecute() {
     fsr = 0;
     pendingStatus = pace_status_ok;
 
-    lastOpcode = uae_get16(regs.pc);
+    uint16_t opcode = uae_get16(regs.pc);
+    regs.lastOpcode = opcode;
+
     if (fsr != 0) return pace_status_memory_fault;
 
         // fprintf(stderr, "execute m68k opcode %#06x at %#010x\n", opcode, regs.pc);
 
 #ifdef __EMSCRIPTEN__
-    ((cpuop_func*)((long)cpufunctbl_base + lastOpcode))(lastOpcode);
+    ((cpuop_func*)((long)cpufunctbl_base + opcode))(opcode);
 #else
-    cpufunctbl[lastOpcode](lastOpcode);
+    cpufunctbl[opcode](opcode);
 #endif
 
     //    fprintf(stderr, "a7 now %#010x, top of stack is %#010x\n", m68k_areg(regs, 7),
