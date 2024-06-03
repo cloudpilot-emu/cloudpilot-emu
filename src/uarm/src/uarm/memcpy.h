@@ -23,6 +23,9 @@ void memcpy_armToHost(uint8_t* dest, uint32_t src, uint32_t size, bool privilege
 void memcpy_hostToArm(uint32_t dest, uint8_t* src, uint32_t size, bool privileged,
                       struct ArmMem* mem, struct ArmMmu* mmu, struct MemcpyResult* result);
 
+void memcpy_armToArm(uint32_t dest, uint32_t src, uint32_t size, bool privileged,
+                     struct ArmMem* mem, struct ArmMmu* mmu, struct MemcpyResult* result);
+
 #ifdef __cplusplus
 }
 #endif

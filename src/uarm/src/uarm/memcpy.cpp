@@ -110,3 +110,25 @@ void memcpy_hostToArm(uint32_t dest, uint8_t* src, uint32_t size, bool privilege
                       struct ArmMem* mem, struct ArmMmu* mmu, MemcpyResult* result) {
     transfer(src, dest, size, true, privileged, mem, mmu, result);
 }
+
+void memcpy_armToArm(uint32_t dest, uint32_t src, uint32_t size, bool privileged,
+                     struct ArmMem* mem, struct ArmMmu* mmu, struct MemcpyResult* result) {
+    static uint64_t scratch[512];
+
+    result->ok = true;
+
+    while (size > 0 && result->ok) {
+        uint32_t chunkSize = size > sizeof(scratch) ? sizeof(scratch) : size;
+
+        memcpy_armToHost(reinterpret_cast<uint8_t*>(scratch), src, chunkSize, privileged, mem, mmu,
+                         result);
+
+        if (result->ok)
+            memcpy_hostToArm(dest, reinterpret_cast<uint8_t*>(scratch), chunkSize, privileged, mem,
+                             mmu, result);
+
+        size -= chunkSize;
+        src += chunkSize;
+        dest += chunkSize;
+    }
+}
