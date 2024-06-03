@@ -37,7 +37,7 @@ struct PxaLcd {
     uint8_t intWasPending : 1;
     uint8_t enbChanged : 1;
 
-    uint8_t palette[512];
+    uint8_t palette[512] __attribute__((aligned(2)));
     uint32_t palette_mapped[512];
 
     uint16_t width;
