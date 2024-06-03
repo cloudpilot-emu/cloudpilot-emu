@@ -41,7 +41,7 @@ static uint32_t pace_get_le(uint32_t addr, uint8_t size) {
         return 0;
     }
 
-    uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+    const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
     uint32_t result = 0;
     bool ok = memAccess(mem, pa, size, false, &result);
@@ -65,6 +65,41 @@ uint16_t uae_get16(uint32_t addr) {
     return htobe16(pace_get_le(addr, 2));
 }
 
+static uint32_t uae_get32_split(uint32_t addr) {
+    if ((addr & 0x3ff) <= (0x3ff - 4)) {
+        if (fsr != 0) return 0;
+
+        lastAddr = addr;
+        wasWrite = false;
+
+        MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, false);
+
+        if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+            fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
+            return 0;
+        }
+
+        const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+        uint32_t val_le;
+
+        if (!memAccess(mem, pa, 2, false, &val_le)) {
+            fsr = 10;
+            return 0;
+        }
+
+        lastAddr += 2;
+
+        if (!memAccess(mem, pa + 2, 2, false, (uint8_t*)(&val_le) + 2)) {
+            fsr = 10;
+            return 0;
+        }
+
+        return htobe32(val_le);
+    } else {
+        return htobe32(pace_get_le(addr, 2) | (pace_get_le(addr + 2, 2) << 16));
+    }
+}
+
 uint32_t uae_get32(uint32_t addr) {
     switch (__builtin_ctz(addr)) {
         case 0:
@@ -74,7 +109,7 @@ uint32_t uae_get32(uint32_t addr) {
             return 0;
 
         case 1:
-            return htobe32(pace_get_le(addr, 2) | (pace_get_le(addr + 2, 2) << 16));
+            return uae_get32_split(addr);
 
         default:
             return htobe32(pace_get_le(addr, 4));
@@ -116,6 +151,38 @@ void uae_put16(uint32_t addr, uint16_t value) {
     pace_put_le(addr, be16toh(value), 2);
 }
 
+static void put_get32_split(uint32_t addr, uint32_t value) {
+    value = htobe32(value);
+
+    if ((addr & 0x3ff) <= (0x3ff - 4)) {
+        if (fsr != 0) return;
+
+        lastAddr = addr;
+        wasWrite = true;
+
+        MMUTranslateResult translateResult = mmuTranslate(mmu, addr, priviledged, false);
+
+        if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+            fsr = MMU_TRANSLATE_RESULT_FSR(translateResult);
+            return;
+        }
+
+        const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+
+        if (!memAccess(mem, pa, 2, true, &value)) {
+            fsr = 10;
+            return;
+        }
+
+        lastAddr += 2;
+
+        if (!memAccess(mem, pa + 2, 2, true, (uint8_t*)(&value) + 2)) fsr = 10;
+    } else {
+        pace_put_le(addr, value, 2);
+        pace_put_le(addr + 2, value >> 16, 2);
+    }
+}
+
 void uae_put32(uint32_t addr, uint32_t value) {
     switch (__builtin_ctz(addr)) {
         case 0:
@@ -124,14 +191,9 @@ void uae_put32(uint32_t addr, uint32_t value) {
             wasWrite = true;
             break;
 
-        case 1: {
-            uint32_t value_be = htobe32(value);
-
-            pace_put_le(addr, value_be, 2);
-            pace_put_le(addr + 2, value_be >> 16, 2);
-
+        case 1:
+            put_get32_split(addr, value);
             break;
-        }
 
         default:
             pace_put_le(addr, be32toh(value), 4);
