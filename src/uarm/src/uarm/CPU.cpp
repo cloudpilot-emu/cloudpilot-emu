@@ -1017,8 +1017,8 @@ static void execFn_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr, bool 
     uint32_t dest = cpuPrvGetRegNotPC(cpu, 0);
     uint32_t size = cpuPrvGetRegNotPC(cpu, 2);
 
-    // This should not be necessary, but it works around a bug where PalmOS fails to
-    // invalidate the cache and which is conveniently triggered by a memcpy...
+    // This should not be necessary, but it works around a bug where UDMH fails to
+    // invalidate the cache...
     icacheInvalRange(cpu->ic, dest, size);
 
     MemcpyResult result;
