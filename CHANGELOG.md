@@ -1,6 +1,6 @@
 # Version 1.10.3
 
--   Minor documentations changes.
+-   Minor documentation changes.
 
 # Version 1.10.2
 
