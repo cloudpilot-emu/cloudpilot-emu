@@ -1,3 +1,7 @@
+# Version 1.10.3
+
+-   Minor documentations changes.
+
 # Version 1.10.2
 
 -   Add a link that resets the service worker to the "About" tab

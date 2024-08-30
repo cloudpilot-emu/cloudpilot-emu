@@ -175,6 +175,13 @@ to the bottom and select the "reset worker" link at the bottom of the page.
     and select the "reset worker" link at the bottom of the page.
 :::
 
+:::div{.feature-native-app}
+### Issues on iOS
+
+-   Loaders and modal dialogs may be laggy on older versions of iOS. This can be worked around
+    with the setting "Reduce animation".
+:::
+
 ### Emulation issues
 
 -   Audio timing is not perfect and processed at the refresh rate of the emulator
