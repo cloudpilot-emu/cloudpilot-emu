@@ -62,8 +62,8 @@ namespace {
 
     void usage(const char* self) {
         fprintf(stderr,
-                "USAGE: %s {-r ROMFILE.bin | --x} [-g gdbPort] [-s SDCARD_IMG.bin] [-n NAND.bin] "
-                "[-q]\n",
+                "USAGE: %s {-r ROMFILE.bin | -x} [-g gdbPort] [-s SDCARD_IMG.bin] [-n NAND.bin] "
+                "[-q] [-m mips]\n",
                 self);
 
         exit(-1);
@@ -267,7 +267,7 @@ void* EMSCRIPTEN_KEEPALIVE getNandDirtyPages() { return socGetNandDirtyPages(soc
 #endif
 
 void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPort,
-         bool enableAudio) {
+         bool enableAudio, uint32_t mips = 0) {
     if (static_cast<uint64_t>(sdCardSecs) >> 32) {
         fprintf(stderr, "SD card too big: %llu sectors\n", (unsigned long long)sdCardSecs);
         exit(-5);
@@ -280,6 +280,7 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
     socSetAudioQueue(soc, audioQueue);
 
     mainLoop = make_unique<MainLoop>(soc);
+    if (mips > 0) mainLoop->SetCyclesPerSecondLimit(mips * 1000000);
 
 #ifndef __EMSCRIPTEN__
     constexpr int SCALE = 2;
@@ -348,8 +349,9 @@ int main(int argc, char** argv) {
     int gdbPort = -1;
     bool enableAudio{true};
     int c;
+    uint32_t mips = 0;
 
-    while ((c = getopt(argc, argv, "g:s:r:n:hx:hq")) != -1) switch (c) {
+    while ((c = getopt(argc, argv, "g:s:r:n:m:xq")) != -1) switch (c) {
             case 'g':  // gdb port
                 gdbPort = optarg ? atoi(optarg) : -1;
                 if (gdbPort < 1024 || gdbPort > 65535) usage(self);
@@ -373,6 +375,15 @@ int main(int argc, char** argv) {
 
             case 'q':
                 enableAudio = false;
+                break;
+
+            case 'm':
+                mips = atoi(optarg);
+                if (mips < 50 || mips > 500) {
+                    fprintf(stderr, "mips must be between 50 and 500\n");
+                    exit(-1);
+                }
+
                 break;
 
             default:
@@ -421,7 +432,7 @@ int main(int argc, char** argv) {
     fprintf(stderr, "Read %u bytes of ROM\n", romLen);
     fprintf(stderr, "Read %lu bytes of NAND\n", nandLen);
 
-    run(rom, romLen, nand, nandLen, gdbPort, enableAudio);
+    run(rom, romLen, nand, nandLen, gdbPort, enableAudio, mips);
 }
 #endif
 
