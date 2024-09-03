@@ -68,6 +68,7 @@ MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
 SOURCE_C = 						\
 	util.c						\
+	uarm/sdcard.c 				\
 	uarm/patch_dispatch.c		\
 	uarm/patches.c				\
 	uarm/syscall.c				\

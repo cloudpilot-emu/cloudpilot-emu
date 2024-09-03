@@ -36,6 +36,7 @@
 #include "SoC.h"
 #include "audio_queue.h"
 #include "device.h"
+#include "sdcard.h"
 #include "util.h"
 
 using namespace std;
@@ -49,11 +50,7 @@ using namespace std;
 #pragma clang diagnostic ignored "-Wunused-function"
 
 namespace {
-    constexpr uint32_t SD_SECTOR_SIZE = 512ULL;
     constexpr size_t AUDIO_QUEUE_SIZE = 44100 / MAIN_LOOP_FPS * 10;
-
-    uint8_t* sdCardData = NULL;
-    size_t sdCardSecs = 0;
 
     SoC* soc = nullptr;
 
@@ -67,20 +64,6 @@ namespace {
                 self);
 
         exit(-1);
-    }
-
-    extern "C" bool prvSdSectorR(uint32_t secNum, void* buf) {
-        if (secNum >= sdCardSecs) return false;
-
-        memcpy(buf, sdCardData + SD_SECTOR_SIZE * secNum, SD_SECTOR_SIZE);
-        return true;
-    }
-
-    extern "C" bool prvSdSectorW(uint32_t secNum, const void* buf) {
-        if (secNum >= sdCardSecs) return false;
-
-        memcpy(sdCardData + SD_SECTOR_SIZE * secNum, buf, SD_SECTOR_SIZE);
-        return true;
     }
 
     void readSdCard(const char* fname) {
@@ -99,16 +82,10 @@ namespace {
             exit(-4);
         }
 
-        sdCardSecs = sdCardSize / SD_SECTOR_SIZE;
-        if (static_cast<uint64_t>(sdCardSecs) >> 32) {
-            fprintf(stderr, "SD card too big: %llu sectors\n", (unsigned long long)sdCardSecs);
-            exit(-5);
-        }
-
-        sdCardData = (uint8_t*)malloc(sdCardSize);
+        sdCardInitialize(sdCardSize / SD_SECTOR_SIZE);
 
         fseek(cardFile, 0, SEEK_SET);
-        size_t bytesRead = fread(sdCardData, 1, sdCardSize, cardFile);
+        size_t bytesRead = fread(sdCardData(), 1, sdCardSize, cardFile);
 
         if (bytesRead != sdCardSize) {
             fprintf(stderr, "failed to read sd card image %lu %lu\n", bytesRead, sdCardSize);
@@ -268,12 +245,7 @@ void* EMSCRIPTEN_KEEPALIVE getNandDirtyPages() { return socGetNandDirtyPages(soc
 
 void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPort,
          bool enableAudio, uint32_t mips = 0) {
-    if (static_cast<uint64_t>(sdCardSecs) >> 32) {
-        fprintf(stderr, "SD card too big: %llu sectors\n", (unsigned long long)sdCardSecs);
-        exit(-5);
-    }
-
-    soc = socInit(rom, romLen, sdCardSecs, prvSdSectorR, prvSdSectorW, nand, nandLen, gdbPort,
+    soc = socInit(rom, romLen, sdCardSectorCount(), sdCardRead, sdCardWrite, nand, nandLen, gdbPort,
                   deviceGetSocRev());
 
     audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
@@ -443,22 +415,9 @@ int main() {}
 extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint8_t* rom, int romLen, uint8_t* nand, int nandLen,
                                              uint8_t* sd, int sdLen) {
     if (sd) {
-        if (sdLen % SD_SECTOR_SIZE) {
-            fprintf(stderr, "SD card image not a multiple of %u bytes\n", (unsigned)SD_SECTOR_SIZE);
-            goto sdSetupComplete;
-        }
-
-        sdCardSecs = sdLen / SD_SECTOR_SIZE;
-        if (static_cast<uint64_t>(sdCardSecs) >> 32) {
-            fprintf(stderr, "SD card too big: %llu sectors\n", (unsigned long long)sdCardSecs);
-            goto sdSetupComplete;
-        }
-
         fprintf(stderr, "using %u bytes of SD\n", sdLen);
-        sdCardData = sd;
+        sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sd);
     }
-
-sdSetupComplete:
 
     fprintf(stderr, "using %u bytes of NOR\n", romLen);
     fprintf(stderr, "using %u bytes of NAND\n", nandLen);
