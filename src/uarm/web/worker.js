@@ -2,8 +2,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
 
 (function () {
     const PCM_BUFFER_SIZE = (44100 / 60) * 10;
-    const INITIAL_NAND_PAGE_POOL_SIZE = 256; // 1MB + OOB
-    const NAND_PAGE_POOL_GROWTH_FACTOR = 1.5;
+    const INITIAL_PAGE_POOL_PAGES = 256;
+    const PAGE_POOL_GROWTH_FACTOR = 1.5;
 
     const messageQueue = [];
     let dispatchInProgress = false;
@@ -13,14 +13,122 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
     let framePool = [];
     let pcmPool = [];
 
+    class DirtyPageTracker {
+        constructor({ pageSize, pageCount, getData, getDirtyPages, onSnapshot, name, crcCheck }) {
+            this.pageSize = pageSize;
+            this.pageCount = pageCount;
+
+            this.getData = getData;
+            this.getDirtyPages = getDirtyPages;
+            this.onSnapshot = onSnapshot;
+
+            this.name = name;
+            this.crcCheck = crcCheck;
+
+            this.scheduledPages = new Uint32Array(pageCount);
+            this.pagePool = new Uint8Array(INITIAL_PAGE_POOL_PAGES * pageSize);
+
+            this.snapshotPending = false;
+        }
+
+        triggerSnapshot() {
+            if (this.snapshotPending) {
+                console.warn(`${this.name} pending, skipping...`);
+            }
+
+            const data = this.getData();
+            const dirtyPages = this.getDirtyPages();
+
+            let iPage = 0;
+            let page = 0;
+            for (let i = 0; i < dirtyPages.length; i++) {
+                let pageSet32 = dirtyPages[i];
+
+                if (pageSet32 === 0) {
+                    page += 32;
+                    continue;
+                }
+
+                for (let j = 0; j < 4; j++) {
+                    let pageSet8 = pageSet32 & 0xff;
+                    pageSet32 >>>= 8;
+
+                    if (pageSet8 === 0) {
+                        page += 8;
+                        continue;
+                    }
+
+                    for (let mask = 1; mask < 0x100; mask <<= 1) {
+                        if (!pageSet8 & mask) {
+                            page++;
+                            continue;
+                        }
+
+                        this.scheduledPages[iPage] = page;
+                        const pagePoolOffset = iPage * this.pageSize;
+                        const dataOffset = page * this.pageSize;
+
+                        if (pagePoolOffset >= this.pagePool.length) this.growPagePool();
+
+                        this.pagePool
+                            .subarray(pagePoolOffset, pagePoolOffset + this.pageSize)
+                            .set(data.subarray(dataOffset, dataOffset + this.pageSize));
+
+                        iPage++;
+                        page++;
+                    }
+                }
+            }
+
+            if (iPage > 0) {
+                dirtyPages.fill(0);
+                this.snapshotPending = true;
+
+                const crc = this.crcCheck ? crc32(data) : undefined;
+
+                this.onSnapshot(iPage, this.scheduledPages.buffer, this.pagePool.buffer, crc);
+            }
+        }
+
+        onSnapshotDone(success, scheduledPageCount, scheduledPages, pagePool) {
+            this.scheduledPages = new Uint32Array(scheduledPages);
+            this.pagePool = new Uint8Array(pagePool);
+            this.snapshotPending = false;
+
+            if (success) return;
+
+            console.log(`${this.name} failed`);
+
+            const dirtyPages = this.getDirtyPages();
+
+            for (let i = 0; i < scheduledPageCount; i++) {
+                const page = this.scheduledPages[i];
+
+                dirtyPages[page >>> 5] |= 1 << (page & 0x1f);
+            }
+        }
+
+        growPagePool() {
+            const newPagePool = new Uint8Array(
+                Math.min(
+                    Math.ceil((this.pagePool.length * PAGE_POOL_GROWTH_FACTOR) / this.pageSize) * this.pageSize,
+                    this.pageCount * this.pageSize
+                )
+            );
+
+            console.log(`growing ${this.name} page pool to ${newPagePool.length} bytes`);
+
+            newPagePool.set(this.pagePool);
+            this.pagePool = newPagePool;
+        }
+    }
+
     class Emulator {
         constructor(module, maxLoad, cyclesPerSecondLimit, crcCheck, { onSpeedDisplay, onFrame, log, onSnapshot }) {
             this.module = module;
             this.onSpeedDisplay = onSpeedDisplay;
             this.onFrame = onFrame;
             this.log = log;
-            this.onSnapshot = onSnapshot;
-            this.crcCheck = crcCheck;
 
             this.cycle = module.cwrap('cycle', undefined, ['number']);
             this.getFrame = module.cwrap('getFrame', 'number', []);
@@ -52,9 +160,15 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             this.setCyclesPerSecondLimit(cyclesPerSecondLimit);
 
             const nandSize = this.getNandDataSize();
-            this.nandScheduledPages = new Uint32Array((nandSize / 4224) | 0);
-            this.nandPagePool = new Uint8Array(4224 * INITIAL_NAND_PAGE_POOL_SIZE);
-            this.snapshotPending = false;
+            this.nandTracker = new DirtyPageTracker({
+                pageSize: 4224,
+                pageCount: (nandSize / 4224) | 0,
+                name: 'NAND snapshot',
+                crcCheck,
+                getData: this.getNandData.bind(this),
+                getDirtyPages: this.getNandDirtyPages.bind(this),
+                onSnapshot,
+            });
         }
 
         static async create(nor, nand, sd, maxLoad, cyclesPerSecondLimit, crcCheck, env) {
@@ -132,7 +246,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                 else this.timeoutHandle = setTimeout(schedule, timesliceRemainning);
 
                 if (now - this.lastSnapshot > 1000000) {
-                    this.snapshot();
+                    this.nandTracker.triggerSnapshot();
                     this.updateSpeedDisplay();
 
                     this.lastSnapshot = now;
@@ -157,95 +271,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             return this.module.HEAPU32.subarray(ptr32, ptr32 + size32);
         }
 
-        growNandPagePool() {
-            const newPagePool = new Uint8Array(
-                Math.min(
-                    Math.ceil((this.nandPagePool.length * NAND_PAGE_POOL_GROWTH_FACTOR) / 4224) * 4224,
-                    this.nandScheduledPages.length * 4224
-                )
-            );
-
-            console.log(`growing NAND page pool to ${newPagePool.length} bytes`);
-
-            newPagePool.set(this.nandPagePool);
-            this.nandPagePool = newPagePool;
-        }
-
-        snapshot() {
-            if (this.snapshotPending) {
-                console.warn('snapshot pending, skipping...');
-            }
-
-            const nandData = this.getNandData();
-            const nandDirtyPages = this.getNandDirtyPages();
-
-            let iPage = 0;
-            let page = 0;
-            for (let i = 0; i < nandDirtyPages.length; i++) {
-                let pageSet32 = nandDirtyPages[i];
-
-                if (pageSet32 === 0) {
-                    page += 32;
-                    continue;
-                }
-
-                for (let j = 0; j < 4; j++) {
-                    let pageSet8 = pageSet32 & 0xff;
-                    pageSet32 >>>= 8;
-
-                    if (pageSet8 === 0) {
-                        page += 8;
-                        continue;
-                    }
-
-                    for (let mask = 1; mask < 0x100; mask <<= 1) {
-                        if (!pageSet8 & mask) {
-                            page++;
-                            continue;
-                        }
-
-                        this.nandScheduledPages[iPage] = page;
-                        const pagePoolOffset = iPage * 4224;
-                        const nandDataOffset = page * 4224;
-
-                        if (pagePoolOffset >= this.nandPagePool.length) this.growNandPagePool();
-
-                        this.nandPagePool
-                            .subarray(pagePoolOffset, pagePoolOffset + 4224)
-                            .set(nandData.subarray(nandDataOffset, nandDataOffset + 4224));
-
-                        iPage++;
-                        page++;
-                    }
-                }
-            }
-
-            if (iPage > 0) {
-                nandDirtyPages.fill(0);
-                this.snapshotPending = true;
-
-                const crc = this.crcCheck ? crc32(nandData) : undefined;
-
-                this.onSnapshot(iPage, this.nandScheduledPages.buffer, this.nandPagePool.buffer, crc);
-            }
-        }
-
-        snapshotDone(success, nandScheduledPageCount, nandScheduledPages, nandPagePool) {
-            this.nandScheduledPages = new Uint32Array(nandScheduledPages);
-            this.nandPagePool = new Uint8Array(nandPagePool);
-            this.snapshotPending = false;
-
-            if (success) return;
-
-            console.log('snapshot failed');
-
-            const nandDirtyPages = this.getNandDirtyPages();
-
-            for (let i = 0; i < nandScheduledPageCount; i++) {
-                const page = this.nandScheduledPages[i];
-
-                nandDirtyPages[page >>> 5] |= 1 << (page & 0x1f);
-            }
+        snapshotDone(success, scheduledPageCount, scheduledPages, pagePool) {
+            this.nandTracker.onSnapshotDone(success, scheduledPageCount, scheduledPages, pagePool);
         }
 
         render() {
