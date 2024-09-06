@@ -5,64 +5,28 @@
  */
 
 const DB_NAME = 'cp-uarm';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 const NAND_SIZE = 528 * 2 * 1024 * 32;
+const NAND_PAGE_SIZE = 528 * 8;
+const EMPTY_VALUE_NAND = 0xffffffff;
+
+const SD_PAGE_SIZE = 8 * 1024;
+const EMPTY_VALUE_SD = 0;
 
 const OBJECT_STORE_KVS = 'kvs';
 const OBJECT_STORE_NAND = 'nand';
+const OBJECT_STORE_SD = 'sd';
 const OBJECT_STORE_LOCK = 'lock';
 
 const KVS_ROM_NOR = 'romNor';
 const KVS_ROM_NAND = 'romNand';
 const KVS_SD_IMAGE = 'sdImage';
+const KVS_SD_NAME = 'sdName';
+const KVS_SD_SIZE = 'sdSize';
+const KVS_SD_CRC = 'sdCrc';
 const KVS_NAND_NAME = 'nandName';
 const KVS_NAND_CRC = 'nandCrc';
-
-/**
- *
- * @param {Uint8Array} image
- * @returns {Uint8Array}
- */
-function compressCard(image) {
-    const compressed = new Uint8Array(image.length + ((image.length >>> 13) + 1) * 2 + 6);
-    let pos = 0;
-
-    compressed[pos++] = image.length;
-    compressed[pos++] = image.length >>> 8;
-    compressed[pos++] = image.length >>> 16;
-    compressed[pos++] = image.length >>> 24;
-
-    for (let i = 0; i << 13 < image.length; i++) {
-        const block = image.subarray(i << 13, (i + 1) << 13);
-
-        let value = block[0];
-        for (let j = 1; j < block.length; j++) {
-            if (block[j] !== value) {
-                value = -1;
-                break;
-            }
-        }
-
-        let blockType = value === -1 ? 0 : 1;
-        if (block.length !== 0x2000) blockType |= 0x80;
-
-        compressed[pos++] = blockType;
-
-        if (blockType & 0x80) {
-            compressed[pos++] = block.length;
-            compressed[pos++] = block.length >>> 8;
-        }
-
-        if (blockType & 0x01) compressed[pos++] = value;
-        else {
-            compressed.subarray(pos, pos + block.length).set(block);
-            pos += block.length;
-        }
-    }
-
-    return compressed.subarray(0, pos);
-}
 
 /**
  *
@@ -102,10 +66,11 @@ function decompressCard(compressed) {
  * @param {Uint32Array} page
  * @returns {Uint32Array | number}
  */
-export function compressNandPage(page) {
+export function compressPage(page) {
     const fst = page[0];
+    const len = page.length;
 
-    for (let i = 1; i < 1056; i++) {
+    for (let i = 1; i < len; i++) {
         if (page[i] !== fst) return page;
     }
 
@@ -153,18 +118,22 @@ function complete(txOrRequest) {
 /**
  *
  * @param {number} size
+ * @param {number} pageSize
+ * @param {string} objectStore
+ * @param {number} emptyValue
  * @param {IDBTransaction} tx
  * @returns {Promise<Uint8Array>}
  */
-async function getNandData(size, tx) {
-    if (size % 4224) throw new Error('invalid NAND size');
+async function getPagedData(size, pageSize, objectStore, emptyValue, tx) {
+    if (size % pageSize) throw new Error('invalid size');
 
-    const pagesTotal = (size / 4224) | 0;
+    const pagesTotal = (size / pageSize) | 0;
+    const pageSize4 = pageSize >>> 2;
     const data32 = new Uint32Array(size >>> 2);
     const data8 = new Uint8Array(data32.buffer, 0, size);
-    data32.fill(0xffffffff);
+    data32.fill(emptyValue);
 
-    const store = tx.objectStore(OBJECT_STORE_NAND);
+    const store = tx.objectStore(objectStore);
 
     const cursorRequest = store.openCursor();
     return new Promise((resolve, reject) => {
@@ -176,7 +145,7 @@ async function getNandData(size, tx) {
             if (pageIndex > pagesTotal) return reject(new Error(`page index ${pageIndex} out of bounds`));
 
             try {
-                const page32 = data32.subarray(pageIndex * 1056, (pageIndex + 1) * 1056);
+                const page32 = data32.subarray(pageIndex * pageSize4, (pageIndex + 1) * pageSize4);
                 if (typeof cursor.value === 'number') page32.fill(cursor.value);
                 else page32.set(cursor.value);
             } catch (e) {
@@ -190,22 +159,26 @@ async function getNandData(size, tx) {
 
 /**
  * @param {Uint8Array} data8
+ * @param {number} pageSize
+ * @param {string} objectStore
+ * @param {number} emptyValue
  * @param {IDBTransaction} tx
  * @returns {Promise<void>}
  */
-async function putNandData(data8, tx) {
-    if (data8.length % 4224) throw new Error('invalid NAND size');
+async function putPagedData(data8, pageSize, objectStore, emptyValue, tx) {
+    if (data8.length % pageSize) throw new Error('invalid NAND size');
 
-    const pagesTotal = (data8.length / 4224) | 0;
+    const pagesTotal = (data8.length / pageSize) | 0;
+    const pageSize4 = pageSize >>> 2;
     const data32 = new Uint32Array(data8.buffer, 0, data8.length >>> 2);
 
-    const store = tx.objectStore(OBJECT_STORE_NAND);
+    const store = tx.objectStore(objectStore);
 
     await complete(store.clear());
 
     for (let iPage = 0; iPage < pagesTotal; iPage++) {
-        const compressedPage = compressNandPage(data32.subarray(iPage * 1056, (iPage + 1) * 1056));
-        if (compressedPage === 0xffffffff) continue;
+        const compressedPage = compressPage(data32.subarray(iPage * pageSize4, (iPage + 1) * pageSize4));
+        if (compressedPage === emptyValue) continue;
 
         store.put(typeof compressedPage === 'number' ? compressedPage : compressedPage.slice(), iPage);
     }
@@ -227,13 +200,41 @@ async function migrateNand(request) {
 
     storeKvs.delete(KVS_ROM_NAND);
 
-    if (nandImage.content.length % 4224 === 0) {
+    if (nandImage.content.length % NAND_PAGE_SIZE === 0) {
         storeKvs.put(nandImage.name, KVS_NAND_NAME);
-        putNandData(nandImage.content, tx);
+        putPagedData(nandImage.content, NAND_PAGE_SIZE, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
 
         console.log('migrating NAND image');
     } else {
         console.warn('removing NAND image with invalid length');
+    }
+}
+
+/**
+ *
+ * @param {IDBOpenDBRequest} request
+ * @returns {Promise<void>}
+ */
+async function migrateSd(request) {
+    const tx = request.transaction;
+    if (!tx) throw new Error('no version change transaction');
+
+    const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+
+    const sdImage = /** @type Image | undefined*/ (await complete(storeKvs.get(KVS_SD_IMAGE)));
+    if (!sdImage) return;
+
+    sdImage.content = decompressCard(sdImage.content);
+    storeKvs.delete(KVS_SD_IMAGE);
+
+    if (sdImage.content.length % SD_PAGE_SIZE === 0) {
+        storeKvs.put(sdImage.name, KVS_SD_NAME);
+        storeKvs.put(sdImage.content.length, KVS_SD_SIZE);
+        putPagedData(sdImage.content, SD_PAGE_SIZE, OBJECT_STORE_SD, EMPTY_VALUE_SD, tx);
+
+        console.log('migrating SD image');
+    } else {
+        console.warn('removing SD image with invalid length');
     }
 }
 
@@ -261,6 +262,11 @@ function initdDb() {
             if (e.oldVersion < 3) {
                 db.createObjectStore(OBJECT_STORE_NAND);
                 migrateNand(request);
+            }
+
+            if (e.oldVersion < 4) {
+                db.createObjectStore(OBJECT_STORE_SD);
+                migrateSd(request);
             }
         };
 
@@ -403,7 +409,7 @@ export class Database {
         const name = /** @type string */ (await complete(storeKvs.get(KVS_NAND_NAME)));
         if (!name) return;
 
-        const content = await getNandData(NAND_SIZE, tx);
+        const content = await getPagedData(NAND_SIZE, NAND_PAGE_SIZE, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
 
         const crc = await complete(storeKvs.get(KVS_NAND_CRC));
         const crc32 = /** @type any */ (window).crc32;
@@ -425,21 +431,44 @@ export class Database {
      */
     async putNand(nand) {
         const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_KVS);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
-        tx.objectStore(OBJECT_STORE_KVS).put(nand.name, KVS_NAND_NAME);
-        putNandData(nand.content, tx);
+        storeKvs.put(nand.name, KVS_NAND_NAME);
+        storeKvs.delete(KVS_NAND_CRC);
+
+        putPagedData(nand.content, NAND_PAGE_SIZE, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
 
         await complete(tx);
     }
 
     /**
+     * @param {boolean} crcCheck
      * @returns {Promise <Image | undefined>}
      */
-    async getSd() {
-        const sd = await this.kvsGet(KVS_SD_IMAGE);
-        if (!sd) return;
+    async getSd(crcCheck) {
+        const tx = await this.tx(OBJECT_STORE_SD, OBJECT_STORE_KVS);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
-        return { name: sd.name, content: decompressCard(sd.content) };
+        const name = /** @type string */ (await complete(storeKvs.get(KVS_SD_NAME)));
+        if (!name) return;
+
+        const size = /** @type number */ (await complete(storeKvs.get(KVS_SD_SIZE)));
+        if (size === undefined) return;
+
+        const content = await getPagedData(size, SD_PAGE_SIZE, OBJECT_STORE_SD, EMPTY_VALUE_SD, tx);
+
+        const crc = await complete(storeKvs.get(KVS_SD_CRC));
+        const crc32 = /** @type any */ (window).crc32;
+
+        if (crcCheck && typeof crc === 'number') {
+            if (crc !== crc32(content)) {
+                alert(`CRC mismatch on SD load!`);
+            } else {
+                console.log('SD CRC OK');
+            }
+        }
+
+        return { name, content };
     }
 
     /**
@@ -447,8 +476,16 @@ export class Database {
      * @param {Image} sd
      * @returns {Promise<void>}
      */
-    putSd(sd) {
-        return this.kvsPut(KVS_SD_IMAGE, { name: sd.name, content: compressCard(sd.content) });
+    async putSd(sd) {
+        const tx = await this.tx(OBJECT_STORE_SD, OBJECT_STORE_KVS);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+
+        storeKvs.put(sd.name, KVS_SD_NAME);
+        storeKvs.put(sd.content.length, KVS_SD_SIZE);
+        storeKvs.delete(KVS_SD_CRC);
+        putPagedData(sd.content, SD_PAGE_SIZE, OBJECT_STORE_SD, EMPTY_VALUE_SD, tx);
+
+        await complete(tx);
     }
 
     /**
@@ -464,7 +501,7 @@ export class Database {
 
         let iPool = 0;
         for (let iPage = 0; iPage < nandScheduledPageCount; iPage++) {
-            let compressedPage = compressNandPage(nandPagePool.subarray(iPage * 1056, (iPage + 1) * 1056));
+            let compressedPage = compressPage(nandPagePool.subarray(iPage * 1056, (iPage + 1) * 1056));
 
             if (typeof compressedPage !== 'number') {
                 if (this.nandPagePool.length >= iPool) this.nandPagePool.push(new Uint32Array(1056));

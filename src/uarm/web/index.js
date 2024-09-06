@@ -234,7 +234,7 @@ import { AudioDriver } from './audiodriver.js';
 
         fileNor = await database.getNor();
         fileNand = await database.getNand(crcCheck);
-        fileSd = await database.getSd();
+        fileSd = await database.getSd(crcCheck);
 
         if (query.has('binary')) binary = query.get('binary');
 
