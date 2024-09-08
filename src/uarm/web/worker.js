@@ -14,25 +14,50 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
     let pcmPool = [];
 
     class DirtyPageTracker {
-        constructor({ pageSize, pageCount, getData, getDirtyPages, onSnapshot, name, crcCheck }) {
+        constructor({
+            pageSize,
+            pageCount,
+            getDataPtr,
+            getDataSize,
+            getDirtyPagesPtr,
+            getDirtyPagesSize,
+            module,
+            name,
+            crcCheck,
+        }) {
             this.pageSize = pageSize;
             this.pageCount = pageCount;
 
-            this.getData = getData;
-            this.getDirtyPages = getDirtyPages;
-            this.onSnapshot = onSnapshot;
+            this.getDataPtr = getDataPtr;
+            this.getDataSize = getDataSize;
+            this.getDirtyPagesPtr = getDirtyPagesPtr;
+            this.getDirtyPagesSize = getDirtyPagesSize;
+            this.module = module;
 
             this.name = name;
             this.crcCheck = crcCheck;
 
             this.scheduledPages = new Uint32Array(pageCount);
             this.pagePool = new Uint8Array(INITIAL_PAGE_POOL_PAGES * pageSize);
-
-            this.snapshotPending = false;
+            this.scheduledPageCount = 0;
         }
 
-        triggerSnapshot() {
-            if (this.snapshotPending) {
+        getData() {
+            const size = this.getDataSize();
+            const ptr = this.getDataPtr();
+
+            return this.module.HEAPU8.subarray(ptr, ptr + size);
+        }
+
+        getDirtyPages() {
+            const size32 = this.getDirtyPagesSize() >>> 2;
+            const ptr32 = this.getDirtyPagesPtr() >>> 2;
+
+            return this.module.HEAPU32.subarray(ptr32, ptr32 + size32);
+        }
+
+        takeSnapshot() {
+            if (this.scheduledPageCount > 0) {
                 console.warn(`${this.name} pending, skipping...`);
             }
 
@@ -80,20 +105,34 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                 }
             }
 
-            if (iPage > 0) {
+            this.scheduledPageCount = iPage;
+
+            if (this.scheduledPageCount > 0) {
                 dirtyPages.fill(0);
-                this.snapshotPending = true;
 
-                const crc = this.crcCheck ? crc32(data) : undefined;
-
-                this.onSnapshot(iPage, this.scheduledPages.buffer, this.pagePool.buffer, crc);
+                return {
+                    scheduledPageCount: this.scheduledPageCount,
+                    scheduledPages: this.scheduledPages.buffer,
+                    pagePool: this.pagePool.buffer,
+                    crc: this.crcCheck ? crc32(data) : undefined,
+                };
+            } else {
+                return undefined;
             }
         }
 
-        onSnapshotDone(success, scheduledPageCount, scheduledPages, pagePool) {
-            this.scheduledPages = new Uint32Array(scheduledPages);
-            this.pagePool = new Uint8Array(pagePool);
-            this.snapshotPending = false;
+        getTransferables() {
+            return this.scheduledPageCount > 0 ? [this.scheduledPages.buffer, this.pagePool.buffer] : [];
+        }
+
+        onSnapshotDone(success, snapshot) {
+            if (this.scheduledPages === 0) return;
+
+            const scheduledPageCount = this.scheduledPageCount;
+
+            this.scheduledPages = new Uint32Array(snapshot.scheduledPages);
+            this.pagePool = new Uint8Array(snapshot.pagePool);
+            this.scheduledPageCount = 0;
 
             if (success) return;
 
@@ -124,11 +163,12 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
     }
 
     class Emulator {
-        constructor(module, maxLoad, cyclesPerSecondLimit, crcCheck, { onSpeedDisplay, onFrame, log, onSnapshot }) {
+        constructor(module, maxLoad, cyclesPerSecondLimit, crcCheck, { onSpeedDisplay, onFrame, log, postSnapshot }) {
             this.module = module;
             this.onSpeedDisplay = onSpeedDisplay;
             this.onFrame = onFrame;
             this.log = log;
+            this.postSnapshot = postSnapshot;
 
             this.cycle = module.cwrap('cycle', undefined, ['number']);
             this.getFrame = module.cwrap('getFrame', 'number', []);
@@ -148,13 +188,11 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             this.setPcmOutputEnabled = module.cwrap('setPcmOutputEnabled', undefined, ['number']);
             this.setPcmSuspended = module.cwrap('setPcmSuspended', undefined, ['number']);
             this.getNandDataSize = module.cwrap('getNandDataSize', 'number');
-            this.getNandDataPtr = module.cwrap('getNandData', 'number');
-            this.getNandDirtyPagesSize = module.cwrap('getNandDirtyPagesSize', 'number');
-            this.getNandDirtyPagesPtr = module.cwrap('getNandDirtyPages', 'number');
 
             this.amIDead = false;
             this.pcmEnabled = false;
             this.pcmPort = undefined;
+            this.snapshotPending = false;
 
             this.setMaxLoad(maxLoad);
             this.setCyclesPerSecondLimit(cyclesPerSecondLimit);
@@ -165,9 +203,11 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                 pageCount: (nandSize / 4224) | 0,
                 name: 'NAND snapshot',
                 crcCheck,
-                getData: this.getNandData.bind(this),
-                getDirtyPages: this.getNandDirtyPages.bind(this),
-                onSnapshot,
+                getDataPtr: module.cwrap('getNandData', 'number'),
+                getDataSize: this.getNandDataSize,
+                getDirtyPagesPtr: module.cwrap('getNandDirtyPages', 'number'),
+                getDirtyPagesSize: module.cwrap('getNandDirtyPagesSize', 'number'),
+                module,
             });
         }
 
@@ -246,7 +286,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                 else this.timeoutHandle = setTimeout(schedule, timesliceRemainning);
 
                 if (now - this.lastSnapshot > 1000000) {
-                    this.nandTracker.triggerSnapshot();
+                    this.triggerSnapshot();
                     this.updateSpeedDisplay();
 
                     this.lastSnapshot = now;
@@ -257,22 +297,20 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             schedule();
         }
 
-        getNandData() {
-            const size = this.getNandDataSize();
-            const ptr = this.getNandDataPtr();
+        triggerSnapshot() {
+            if (this.snapshotPending) return;
 
-            return this.module.HEAPU8.subarray(ptr, ptr + size);
+            const snapshotNand = this.nandTracker.takeSnapshot();
+            if (!snapshotNand) return;
+
+            this.postSnapshot({ nand: snapshotNand }, this.nandTracker.getTransferables());
+            this.snapshotPending = true;
         }
 
-        getNandDirtyPages() {
-            const size32 = this.getNandDirtyPagesSize() >>> 2;
-            const ptr32 = this.getNandDirtyPagesPtr() >>> 2;
+        snapshotDone(success, snapshot) {
+            this.nandTracker.onSnapshotDone(success, snapshot.nand);
 
-            return this.module.HEAPU32.subarray(ptr32, ptr32 + size32);
-        }
-
-        snapshotDone(success, scheduledPageCount, scheduledPages, pagePool) {
-            this.nandTracker.onSnapshotDone(success, scheduledPageCount, scheduledPages, pagePool);
+            this.snapshotPending = false;
         }
 
         render() {
@@ -409,16 +447,13 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
         postMessage({ type: 'initialized' });
     }
 
-    function postSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool, crc) {
+    function postSnapshot(snapshot, transferables) {
         postMessage(
             {
                 type: 'snapshot',
-                nandScheduledPageCount,
-                nandScheduledPages,
-                nandPagePool,
-                crc,
+                snapshot,
             },
-            [nandScheduledPages, nandPagePool]
+            transferables
         );
     }
 
@@ -441,7 +476,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                     {
                         onFrame: postFrame,
                         onSpeedDisplay: postSpeed,
-                        onSnapshot: postSnapshot,
+                        postSnapshot,
                         log: postLog,
                         binary: message.binary,
                     }
@@ -532,12 +567,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             case 'snapshotDone':
                 assertEmulator('snapshotDone');
 
-                emulator.snapshotDone(
-                    message.success,
-                    message.nandScheduledPageCount,
-                    message.nandScheduledPages,
-                    message.nandPagePool
-                );
+                emulator.snapshotDone(message.success, message.snapshot);
                 break;
 
             default:

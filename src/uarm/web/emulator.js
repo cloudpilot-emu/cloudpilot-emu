@@ -41,12 +41,7 @@ export class Emulator {
                     break;
 
                 case 'snapshot':
-                    this.handleSnapshot(
-                        message.nandScheduledPageCount,
-                        message.nandScheduledPages,
-                        message.nandPagePool,
-                        message.crc
-                    );
+                    this.handleSnapshot(message.snapshot);
 
                     break;
 
@@ -179,9 +174,11 @@ export class Emulator {
         this.worker.postMessage({ type: 'enablePcm' });
     }
 
-    async handleSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool, crc) {
-        const nandScheduledPages32 = new Uint32Array(nandScheduledPages);
-        const nandPagePool32 = new Uint32Array(nandPagePool);
+    async handleSnapshot(snapshot) {
+        const nandScheduledPages32 = new Uint32Array(snapshot.nand.scheduledPages);
+        const nandPagePool32 = new Uint32Array(snapshot.nand.pagePool);
+        const nandScheduledPageCount = snapshot.nand.scheduledPageCount;
+        const crc = snapshot.nand.crc;
 
         if (this.crcCheck) {
             console.log(`snapshotting ${nandScheduledPageCount} pages, crc: ${crc ?? -1}`);
@@ -218,11 +215,9 @@ export class Emulator {
             {
                 type: 'snapshotDone',
                 success,
-                nandScheduledPageCount,
-                nandScheduledPages,
-                nandPagePool,
+                snapshot,
             },
-            [nandScheduledPages, nandPagePool]
+            [nandScheduledPages32.buffer, nandPagePool32.buffer]
         );
     }
 }
