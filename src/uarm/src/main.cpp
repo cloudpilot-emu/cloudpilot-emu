@@ -240,6 +240,10 @@ void* EMSCRIPTEN_KEEPALIVE getNandData() { return socGetNandData(soc).data; }
 uint32_t EMSCRIPTEN_KEEPALIVE getNandDirtyPagesSize() { return socGetNandDirtyPages(soc).size; }
 
 void* EMSCRIPTEN_KEEPALIVE getNandDirtyPages() { return socGetNandDirtyPages(soc).data; }
+
+bool EMSCRIPTEN_KEEPALIVE isNandDirty() { return socIsNandDirty(soc); }
+
+void EMSCRIPTEN_KEEPALIVE setNandDirty(bool isDirty) { socSetNandDirty(soc, isDirty); }
 }
 #endif
 

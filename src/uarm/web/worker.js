@@ -21,6 +21,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             getDataSize,
             getDirtyPagesPtr,
             getDirtyPagesSize,
+            isDirty,
+            setDirty,
             module,
             name,
             crcCheck,
@@ -32,6 +34,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             this.getDataSize = getDataSize;
             this.getDirtyPagesPtr = getDirtyPagesPtr;
             this.getDirtyPagesSize = getDirtyPagesSize;
+            this.isDirty = isDirty;
+            this.setDirty = setDirty;
             this.module = module;
 
             this.name = name;
@@ -60,6 +64,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             if (this.scheduledPageCount > 0) {
                 console.warn(`${this.name} pending, skipping...`);
             }
+
+            if (!this.isDirty()) return undefined;
 
             const data = this.getData();
             const dirtyPages = this.getDirtyPages();
@@ -108,7 +114,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             this.scheduledPageCount = iPage;
 
             if (this.scheduledPageCount > 0) {
-                dirtyPages.fill(0);
+                this.setDirty(false);
 
                 return {
                     scheduledPageCount: this.scheduledPageCount,
@@ -145,6 +151,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
 
                 dirtyPages[page >>> 5] |= 1 << (page & 0x1f);
             }
+
+            this.setDirty(true);
         }
 
         growPagePool() {
@@ -207,6 +215,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                 getDataSize: this.getNandDataSize,
                 getDirtyPagesPtr: module.cwrap('getNandDirtyPages', 'number'),
                 getDirtyPagesSize: module.cwrap('getNandDirtyPagesSize', 'number'),
+                isDirty: module.cwrap('isNandDirty', 'number'),
+                setDirty: module.cwrap('setNandDirty', undefined, ['number']),
                 module,
             });
         }

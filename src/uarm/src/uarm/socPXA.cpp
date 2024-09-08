@@ -687,3 +687,7 @@ void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled) {
 struct Buffer socGetNandData(struct SoC *soc) { return nandGetData(soc->nand); }
 
 struct Buffer socGetNandDirtyPages(struct SoC *soc) { return nandGetDirtyPages(soc->nand); }
+
+bool socIsNandDirty(struct SoC *soc) { return nandIsDirty(soc->nand); }
+
+void socSetNandDirty(struct SoC *soc, bool isDirty) { nandSetDirty(soc->nand, isDirty); }

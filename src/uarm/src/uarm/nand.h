@@ -48,8 +48,9 @@ void nandPeriodic(struct NAND *nand);
 bool nandTaskRequired(struct NAND *nand);
 
 struct Buffer nandGetData(struct NAND *nand);
-
 struct Buffer nandGetDirtyPages(struct NAND *nand);
+bool nandIsDirty(struct NAND *nand);
+void nandSetDirty(struct NAND *nand, bool isDirty);
 
 #ifdef __cplusplus
 }

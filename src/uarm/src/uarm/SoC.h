@@ -56,6 +56,8 @@ void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled);
 
 struct Buffer socGetNandData(struct SoC *soc);
 struct Buffer socGetNandDirtyPages(struct SoC *soc);
+bool socIsNandDirty(struct SoC *soc);
+void socSetNandDirty(struct SoC *soc, bool isDirty);
 
 #ifdef __cplusplus
 }

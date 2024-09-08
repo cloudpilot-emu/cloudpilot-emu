@@ -57,6 +57,7 @@ struct NAND {
 
     size_t dirtyPagesSize;
     uint32_t *dirtyPages;
+    bool dirty;
 
     struct Reschedule reschedule;
 };
@@ -122,6 +123,7 @@ static bool nandPrvBlockErase(struct NAND *nand) {
         nand->dirtyPages[storagePage >> 5] |= (1u << (storagePage & 0x1f));
     }
 
+    nand->dirty = true;
     return true;
 }
 
@@ -141,6 +143,7 @@ static bool nandPrvPageProgram(struct NAND *nand) {
 
     size_t storagePage = (nand->pageNo * nand->bytesPerPage) / 4224;
     nand->dirtyPages[storagePage >> 5] |= (1u << (storagePage & 0x1f));
+    nand->dirty = true;
 
     return true;
 }
@@ -409,6 +412,14 @@ struct Buffer nandGetDirtyPages(struct NAND *nand) {
     struct Buffer buffer = {.size = nand->dirtyPagesSize, .data = nand->dirtyPages};
 
     return buffer;
+}
+
+bool nandIsDirty(struct NAND *nand) { return nand->dirty; }
+
+void nandSetDirty(struct NAND *nand, bool isDirty) {
+    nand->dirty = isDirty;
+
+    if (!isDirty) memset(nand->dirtyPages, 0, nand->dirtyPagesSize);
 }
 
 bool nandIsReady(struct NAND *nand) { return !nand->busyCt; }
