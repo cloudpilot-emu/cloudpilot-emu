@@ -8,6 +8,8 @@ CC_EMCC ?= emcc
 CXX_EMCC ?= emcc
 LD_EMCC ?= emcc
 
+DEVELOP = 
+
 WASMOPT = wasm-opt
 WASMOPT_FLAGS_BASE = --enable-bulk-memory --inlining-optimizing \
 	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
@@ -184,14 +186,14 @@ $(BINARY_EMCC): $(OBJECTS_EMCC)
 	$(LD_EMCC) -o $@ $^ $(LDFLAGS_EMCC)
 
 $(BINARY_WASM): $(BINARY_EMCC)
-	$(YARN) --cwd ../tools/build-jump-table && $(YARN) --cwd ../tools/build-jump-table build-jump-table "$$(pwd)/$@"
+	if test -z "$(DEVELOP)"; then $(YARN) --cwd ../tools/build-jump-table && $(YARN) --cwd ../tools/build-jump-table build-jump-table "$$(pwd)/$@"; fi
 
 $(OPTIMIZED_BINARIY_WASM_OTHER): $(BINARY_WASM)
-	$(WASMOPT) $(WASMOPT_FLAGS_OTHER) -o $@ $^
+	if test -n "$(DEVELOP)"; then cp $^ $@; else $(WASMOPT) $(WASMOPT_FLAGS_OTHER) -o $@ $^; fi
 	$(WASMSTRIP) $@
 
 $(OPTIMIZED_BINARIY_WASM_WEBKIT): $(BINARY_WASM)
-	$(WASMOPT) $(WASMOPT_FLAGS_WEBKIT) -o $@ $^
+	if test -n "$(DEVELOP)"; then cp $^ $@; else $(WASMOPT) $(WASMOPT_FLAGS_WEBKIT) -o $@ $^; fi
 	$(WASMSTRIP) $@
 
 $(BINARY_TEST): $(OBJECTS_TEST)
