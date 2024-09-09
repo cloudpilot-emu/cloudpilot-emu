@@ -1,5 +1,6 @@
 #include "sdcard.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -46,7 +47,7 @@ bool sdCardWrite(uint32_t sector, const void* buf) {
 
     memcpy(data + SD_SECTOR_SIZE * sector, buf, SD_SECTOR_SIZE);
 
-    const uint8_t page = sector >> 4;
+    const uint32_t page = sector >> 4;
     dirtyPages[page / 32] |= (1 << (page % 32));
 
     sdCardDirty = true;

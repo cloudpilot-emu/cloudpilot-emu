@@ -529,7 +529,7 @@ export class Database {
         const scheduledPageCount = snapshot.scheduledPageCount;
         const scheduledPages = new Uint32Array(snapshot.scheduledPages);
         const pagePool = new Uint32Array(snapshot.pagePool);
-        const pageSize4 = pageSize >> 2;
+        const pageSize4 = pageSize >>> 2;
 
         let iPool = 0;
         for (let iPage = 0; iPage < scheduledPageCount; iPage++) {
