@@ -85,7 +85,7 @@ namespace {
         sdCardInitialize(sdCardSize / SD_SECTOR_SIZE);
 
         fseek(cardFile, 0, SEEK_SET);
-        size_t bytesRead = fread(sdCardData(), 1, sdCardSize, cardFile);
+        size_t bytesRead = fread(sdCardData().data, 1, sdCardSize, cardFile);
 
         if (bytesRead != sdCardSize) {
             fprintf(stderr, "failed to read sd card image %lu %lu\n", bytesRead, sdCardSize);
@@ -244,6 +244,18 @@ void* EMSCRIPTEN_KEEPALIVE getNandDirtyPages() { return socGetNandDirtyPages(soc
 bool EMSCRIPTEN_KEEPALIVE isNandDirty() { return socIsNandDirty(soc); }
 
 void EMSCRIPTEN_KEEPALIVE setNandDirty(bool isDirty) { socSetNandDirty(soc, isDirty); }
+
+uint32_t EMSCRIPTEN_KEEPALIVE getSdCardDataSize() { return sdCardData().size; }
+
+void* EMSCRIPTEN_KEEPALIVE getSdCardData() { return sdCardData().data; }
+
+uint32_t EMSCRIPTEN_KEEPALIVE getSdCardDirtyPagesSize() { return sdCardDirtyPages().size; }
+
+void* EMSCRIPTEN_KEEPALIVE getSdCardDirtyPages() { return sdCardDirtyPages().data; }
+
+bool EMSCRIPTEN_KEEPALIVE isSdCardDirty() { return sdCardIsDirty(); }
+
+void EMSCRIPTEN_KEEPALIVE setSdCardDirty(bool isDirty) { return sdCardSetDirty(isDirty); }
 }
 #endif
 

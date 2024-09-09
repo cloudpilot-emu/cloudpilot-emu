@@ -175,17 +175,6 @@ export class Emulator {
     }
 
     async handleSnapshot(snapshot) {
-        const nandScheduledPages32 = new Uint32Array(snapshot.nand.scheduledPages);
-        const nandPagePool32 = new Uint32Array(snapshot.nand.pagePool);
-        const nandScheduledPageCount = snapshot.nand.scheduledPageCount;
-        const crc = snapshot.nand.crc;
-
-        if (this.crcCheck) {
-            console.log(`snapshotting ${nandScheduledPageCount} pages, crc: ${crc ?? -1}`);
-        } else {
-            console.log(`snapshotting ${nandScheduledPageCount} pages`);
-        }
-
         if (this.snapshotStatus !== 'failed') {
             this.setSnapshotStatus((this.snapshotStatus = 'saving'));
         }
@@ -195,11 +184,11 @@ export class Emulator {
         let success = true;
 
         try {
-            const now = performance.now();
-            await this.database.storeSnapshot(nandScheduledPageCount, nandScheduledPages32, nandPagePool32, crc);
-            console.log(`save took ${Math.round(performance.now() - now)} msec`);
-
             this.setSnapshotStatus((this.snapshotStatus = 'saving'));
+
+            const now = performance.now();
+            await this.database.storeSnapshot(snapshot);
+            console.log(`save took ${Math.round(performance.now() - now)} msec`);
 
             this.clearSnapshotStatusHandle = setTimeout(
                 () => this.setSnapshotStatus((this.snapshotStatus = 'ok')),
@@ -211,13 +200,14 @@ export class Emulator {
             success = false;
         }
 
+        const transferables = (snapshot) => (snapshot ? [snapshot.scheduledPages, snapshot.pagePool] : []);
         this.worker.postMessage(
             {
                 type: 'snapshotDone',
                 success,
                 snapshot,
             },
-            [nandScheduledPages32.buffer, nandPagePool32.buffer]
+            [...transferables(snapshot.nand), ...transferables(snapshot.sd)]
         );
     }
 }

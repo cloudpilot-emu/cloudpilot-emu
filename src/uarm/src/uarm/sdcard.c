@@ -4,38 +4,33 @@
 #include <string.h>
 
 static size_t sectorsTotal = 0;
+static bool sdCardDirty = false;
 
 static uint8_t* data = NULL;
 static uint32_t* dirtyPages = NULL;
 
-void sdCardInitialize(size_t sectors) {
-    if (data) free(data);
-    if (dirtyPages) free(dirtyPages);
-
-    size_t dirtyPagesSize = sectors >> 9;
-    if ((dirtyPagesSize << 9) < sectors) dirtyPagesSize++;
-
-    data = malloc(SD_SECTOR_SIZE * sectors);
-    dirtyPages = malloc(dirtyPagesSize);
-
-    memset(data, 0, SD_SECTOR_SIZE * sectors);
-    memset(dirtyPages, 0, dirtyPagesSize);
-
-    sectorsTotal = sectors;
-}
+static size_t dirtyPagesSize = 0;
 
 void sdCardInitializeWithData(size_t sectors, void* buf) {
     if (dirtyPages) free(dirtyPages);
 
-    size_t dirtyPagesSize = sectors >> 9;
-    if ((dirtyPagesSize << 9) < sectors) dirtyPagesSize++;
+    size_t dirtyPagesSize4 = sectors / (16 * 32);
+    if ((dirtyPagesSize4 * 16 * 32) < sectors) dirtyPagesSize4++;
 
     data = buf;
-    dirtyPages = malloc(dirtyPagesSize);
-
-    memset(dirtyPages, 0, dirtyPagesSize);
-
     sectorsTotal = sectors;
+    dirtyPagesSize = dirtyPagesSize4 * 4;
+    sdCardDirty = false;
+
+    dirtyPages = malloc(dirtyPagesSize);
+    memset(dirtyPages, 0, dirtyPagesSize);
+}
+
+void sdCardInitialize(size_t sectors) {
+    uint8_t* buf = malloc(sectors * SD_SECTOR_SIZE);
+    memset(buf, 0, sectors * SD_SECTOR_SIZE);
+
+    sdCardInitializeWithData(sectors, buf);
 }
 
 bool sdCardRead(uint32_t sector, void* buf) {
@@ -54,9 +49,24 @@ bool sdCardWrite(uint32_t sector, const void* buf) {
     const uint8_t page = sector >> 4;
     dirtyPages[page / 32] |= (1 << (page % 32));
 
+    sdCardDirty = true;
     return true;
 }
 
 size_t sdCardSectorCount() { return sectorsTotal; }
 
-void* sdCardData() { return data; }
+struct Buffer sdCardData() {
+    return (struct Buffer){.size = sectorsTotal * SD_SECTOR_SIZE, .data = data};
+}
+
+struct Buffer sdCardDirtyPages() {
+    return (struct Buffer){.size = dirtyPagesSize, .data = dirtyPages};
+}
+
+bool sdCardIsDirty() { return sdCardDirty; }
+
+void sdCardSetDirty(bool isDirty) {
+    sdCardDirty = isDirty;
+
+    if (!isDirty) memset(dirtyPages, 0, dirtyPagesSize);
+}

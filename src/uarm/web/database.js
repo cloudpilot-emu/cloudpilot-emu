@@ -2,16 +2,18 @@
 
 /**
  * @typedef {{name: string, content: Uint8Array}} Image
+ * @typedef {{scheduledPageCount: number, scheduledPages: ArrayBuffer, pagePool: ArrayBuffer, crc?: number}} SnapshotPages
+ * @typedef {{nand?: SnapshotPages, sd?: SnapshotPages}} Snapshot
  */
 
 const DB_NAME = 'cp-uarm';
 const DB_VERSION = 4;
 
-const NAND_SIZE = 528 * 2 * 1024 * 32;
-const NAND_PAGE_SIZE = 528 * 8;
+const SIZE_NAND = 528 * 2 * 1024 * 32;
+const PAGE_SIZE_NAND = 528 * 8;
 const EMPTY_VALUE_NAND = 0xffffffff;
 
-const SD_PAGE_SIZE = 8 * 1024;
+const PAGE_SIZE_SD = 8 * 1024;
 const EMPTY_VALUE_SD = 0;
 
 const OBJECT_STORE_KVS = 'kvs';
@@ -200,9 +202,9 @@ async function migrateNand(request) {
 
     storeKvs.delete(KVS_ROM_NAND);
 
-    if (nandImage.content.length % NAND_PAGE_SIZE === 0) {
+    if (nandImage.content.length % PAGE_SIZE_NAND === 0) {
         storeKvs.put(nandImage.name, KVS_NAND_NAME);
-        putPagedData(nandImage.content, NAND_PAGE_SIZE, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
+        putPagedData(nandImage.content, PAGE_SIZE_NAND, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
 
         console.log('migrating NAND image');
     } else {
@@ -227,10 +229,10 @@ async function migrateSd(request) {
     sdImage.content = decompressCard(sdImage.content);
     storeKvs.delete(KVS_SD_IMAGE);
 
-    if (sdImage.content.length % SD_PAGE_SIZE === 0) {
+    if (sdImage.content.length % PAGE_SIZE_SD === 0) {
         storeKvs.put(sdImage.name, KVS_SD_NAME);
         storeKvs.put(sdImage.content.length, KVS_SD_SIZE);
-        putPagedData(sdImage.content, SD_PAGE_SIZE, OBJECT_STORE_SD, EMPTY_VALUE_SD, tx);
+        putPagedData(sdImage.content, PAGE_SIZE_SD, OBJECT_STORE_SD, EMPTY_VALUE_SD, tx);
 
         console.log('migrating SD image');
     } else {
@@ -298,7 +300,8 @@ export class Database {
         this.db = db;
         this.lockToken = lockToken;
         this.lockLost = false;
-        this.nandPagePool = /** @type Array<Uint32Array> */ (new Array());
+        this.pagePoolNand = /** @type Array<Uint32Array> */ (new Array());
+        this.pagePoolSd = /** @type Array<Uint32Array> */ (new Array());
     }
 
     /**
@@ -409,7 +412,7 @@ export class Database {
         const name = /** @type string */ (await complete(storeKvs.get(KVS_NAND_NAME)));
         if (!name) return;
 
-        const content = await getPagedData(NAND_SIZE, NAND_PAGE_SIZE, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
+        const content = await getPagedData(SIZE_NAND, PAGE_SIZE_NAND, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
 
         const crc = await complete(storeKvs.get(KVS_NAND_CRC));
         const crc32 = /** @type any */ (window).crc32;
@@ -436,7 +439,7 @@ export class Database {
         storeKvs.put(nand.name, KVS_NAND_NAME);
         storeKvs.delete(KVS_NAND_CRC);
 
-        putPagedData(nand.content, NAND_PAGE_SIZE, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
+        putPagedData(nand.content, PAGE_SIZE_NAND, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
 
         await complete(tx);
     }
@@ -455,7 +458,7 @@ export class Database {
         const size = /** @type number */ (await complete(storeKvs.get(KVS_SD_SIZE)));
         if (size === undefined) return;
 
-        const content = await getPagedData(size, SD_PAGE_SIZE, OBJECT_STORE_SD, EMPTY_VALUE_SD, tx);
+        const content = await getPagedData(size, PAGE_SIZE_SD, OBJECT_STORE_SD, EMPTY_VALUE_SD, tx);
 
         const crc = await complete(storeKvs.get(KVS_SD_CRC));
         const crc32 = /** @type any */ (window).crc32;
@@ -483,39 +486,63 @@ export class Database {
         storeKvs.put(sd.name, KVS_SD_NAME);
         storeKvs.put(sd.content.length, KVS_SD_SIZE);
         storeKvs.delete(KVS_SD_CRC);
-        putPagedData(sd.content, SD_PAGE_SIZE, OBJECT_STORE_SD, EMPTY_VALUE_SD, tx);
+        putPagedData(sd.content, PAGE_SIZE_SD, OBJECT_STORE_SD, EMPTY_VALUE_SD, tx);
 
         await complete(tx);
     }
 
     /**
      *
-     * @param {number} nandScheduledPageCount
-     * @param {Uint32Array} nandScheduledPages
-     * @param {Uint32Array} nandPagePool
+     * @param {Snapshot} snapshot
      * @returns {Promise<void>}
      */
-    async storeSnapshot(nandScheduledPageCount, nandScheduledPages, nandPagePool, crc) {
-        const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_KVS);
-        const store = tx.objectStore(OBJECT_STORE_NAND);
+    async storeSnapshot(snapshot) {
+        const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_SD, OBJECT_STORE_KVS);
+
+        if (snapshot.nand) {
+            console.log(`snapshotting ${snapshot.nand.scheduledPageCount} pages of NAND`);
+            this.storeSnapshotPages(snapshot.nand, tx, PAGE_SIZE_NAND, this.pagePoolNand, OBJECT_STORE_NAND);
+        }
+
+        if (snapshot.sd) {
+            console.log(`snapshotting ${snapshot.sd.scheduledPageCount} pages of SD`);
+            this.storeSnapshotPages(snapshot.sd, tx, PAGE_SIZE_SD, this.pagePoolSd, OBJECT_STORE_SD);
+        }
+
+        await complete(tx);
+    }
+
+    /**
+     *
+     * @param {SnapshotPages} snapshot
+     * @param {IDBTransaction} tx
+     * @param {number} pageSize
+     * @param {string} objectStore
+     * @param {Array<Uint32Array>} retainedPagePool
+     * @returns {void}
+     */
+    storeSnapshotPages(snapshot, tx, pageSize, retainedPagePool, objectStore) {
+        const store = tx.objectStore(objectStore);
+        const scheduledPageCount = snapshot.scheduledPageCount;
+        const scheduledPages = new Uint32Array(snapshot.scheduledPages);
+        const pagePool = new Uint32Array(snapshot.pagePool);
+        const pageSize4 = pageSize >> 2;
 
         let iPool = 0;
-        for (let iPage = 0; iPage < nandScheduledPageCount; iPage++) {
-            let compressedPage = compressPage(nandPagePool.subarray(iPage * 1056, (iPage + 1) * 1056));
+        for (let iPage = 0; iPage < scheduledPageCount; iPage++) {
+            let compressedPage = compressPage(pagePool.subarray(iPage * pageSize4, (iPage + 1) * pageSize4));
 
             if (typeof compressedPage !== 'number') {
-                if (this.nandPagePool.length >= iPool) this.nandPagePool.push(new Uint32Array(1056));
-                const pageBuffer = this.nandPagePool[iPool++];
+                if (retainedPagePool.length >= iPool) retainedPagePool.push(new Uint32Array(pageSize4));
+                const pageBuffer = retainedPagePool[iPool++];
 
                 pageBuffer.set(compressedPage);
                 compressedPage = pageBuffer;
             }
 
-            store.put(compressedPage, nandScheduledPages[iPage]);
+            store.put(compressedPage, scheduledPages[iPage]);
         }
 
-        tx.objectStore(OBJECT_STORE_KVS).put(crc, KVS_NAND_CRC);
-
-        await complete(tx);
+        tx.objectStore(OBJECT_STORE_KVS).put(snapshot.crc, KVS_NAND_CRC);
     }
 }

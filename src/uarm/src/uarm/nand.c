@@ -471,6 +471,8 @@ struct NAND *nandInit(uint8_t *nandContent, struct Reschedule reschedule, size_t
             fprintf(stderr, "Cannot use nand. got %lu, wanted %lu\n", (unsigned long)t,
                     (unsigned long)nandSz);
             free(nand);
+
+            return NULL;
         }
 
         nand->data = nandContent;
@@ -483,13 +485,13 @@ struct NAND *nandInit(uint8_t *nandContent, struct Reschedule reschedule, size_t
 
     nand->dataSize = nandSz;
 
-    size_t dirtyPagesCount = nandSz / (528 * 8 * 32);
-    if (dirtyPagesCount * 528 * 8 * 32 < nandSz) dirtyPagesCount++;
+    size_t dirtyPagesSize4 = nandSz / (528 * 8 * 32);
+    if (dirtyPagesSize4 * 528 * 8 * 32 < nandSz) dirtyPagesSize4++;
 
-    nand->dirtyPages = (uint32_t *)malloc(4 * dirtyPagesCount);
-    memset(nand->dirtyPages, 0, 4 * dirtyPagesCount);
+    nand->dirtyPages = (uint32_t *)malloc(4 * dirtyPagesSize4);
+    memset(nand->dirtyPages, 0, 4 * dirtyPagesSize4);
 
-    nand->dirtyPagesSize = dirtyPagesCount * 4;
+    nand->dirtyPagesSize = dirtyPagesSize4 * 4;
 
     nandPrvBusy(nand, 1);  // we start busy for a little bit
 

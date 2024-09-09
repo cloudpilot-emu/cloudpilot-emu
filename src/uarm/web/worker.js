@@ -132,7 +132,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
         }
 
         onSnapshotDone(success, snapshot) {
-            if (this.scheduledPages === 0) return;
+            if (!snapshot || this.scheduledPagesCount === 0) return;
 
             const scheduledPageCount = this.scheduledPageCount;
 
@@ -196,6 +196,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             this.setPcmOutputEnabled = module.cwrap('setPcmOutputEnabled', undefined, ['number']);
             this.setPcmSuspended = module.cwrap('setPcmSuspended', undefined, ['number']);
             this.getNandDataSize = module.cwrap('getNandDataSize', 'number');
+            this.getSdCardDataSize = module.cwrap('getSdCardDataSize', 'number');
 
             this.amIDead = false;
             this.pcmEnabled = false;
@@ -217,6 +218,21 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                 getDirtyPagesSize: module.cwrap('getNandDirtyPagesSize', 'number'),
                 isDirty: module.cwrap('isNandDirty', 'number'),
                 setDirty: module.cwrap('setNandDirty', undefined, ['number']),
+                module,
+            });
+
+            const sdCardSize = this.getSdCardDataSize();
+            this.sdCardTracker = new DirtyPageTracker({
+                pageSize: 8192,
+                pageCount: (sdCardSize / 8192) | 0,
+                name: 'SD card snapshot',
+                crcCheck,
+                getDataPtr: module.cwrap('getSdCardData', 'number'),
+                getDataSize: this.getSdCardDataSize,
+                getDirtyPagesPtr: module.cwrap('getSdCardDirtyPages', 'number'),
+                getDirtyPagesSize: module.cwrap('getSdCardDirtyPagesSize', 'number'),
+                isDirty: module.cwrap('isSdCardDirty', 'number'),
+                setDirty: module.cwrap('setSdCardDirty', undefined, ['number']),
                 module,
             });
         }
@@ -311,14 +327,20 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             if (this.snapshotPending) return;
 
             const snapshotNand = this.nandTracker.takeSnapshot();
-            if (!snapshotNand) return;
+            const snapshotSd = this.sdCardTracker.takeSnapshot();
 
-            this.postSnapshot({ nand: snapshotNand }, this.nandTracker.getTransferables());
+            if (!snapshotNand && !snapshotSd) return;
+
+            this.postSnapshot({ nand: snapshotNand, sd: snapshotSd }, [
+                ...this.nandTracker.getTransferables(),
+                ...this.sdCardTracker.getTransferables(),
+            ]);
             this.snapshotPending = true;
         }
 
         snapshotDone(success, snapshot) {
             this.nandTracker.onSnapshotDone(success, snapshot.nand);
+            this.sdCardTracker.onSnapshotDone(success, snapshot.sd);
 
             this.snapshotPending = false;
         }

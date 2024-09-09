@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "buffer.h"
+
 #define SD_SECTOR_SIZE 512
 
 #ifdef __cplusplus
@@ -18,7 +20,12 @@ bool sdCardRead(uint32_t sector, void* data);
 bool sdCardWrite(uint32_t sector, const void* data);
 
 size_t sdCardSectorCount();
-void* sdCardData();
+
+struct Buffer sdCardData();
+struct Buffer sdCardDirtyPages();
+
+bool sdCardIsDirty();
+void sdCardSetDirty(bool isDirty);
 
 #ifdef __cplusplus
 }
