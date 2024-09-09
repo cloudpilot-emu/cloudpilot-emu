@@ -498,15 +498,18 @@ export class Database {
      */
     async storeSnapshot(snapshot) {
         const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_SD, OBJECT_STORE_KVS);
+        const kvs = tx.objectStore(OBJECT_STORE_KVS);
 
         if (snapshot.nand) {
             console.log(`snapshotting ${snapshot.nand.scheduledPageCount} pages of NAND`);
             this.storeSnapshotPages(snapshot.nand, tx, PAGE_SIZE_NAND, this.pagePoolNand, OBJECT_STORE_NAND);
+            kvs.put(snapshot.nand.crc, KVS_NAND_CRC);
         }
 
         if (snapshot.sd) {
             console.log(`snapshotting ${snapshot.sd.scheduledPageCount} pages of SD`);
             this.storeSnapshotPages(snapshot.sd, tx, PAGE_SIZE_SD, this.pagePoolSd, OBJECT_STORE_SD);
+            kvs.put(snapshot.sd.crc, KVS_SD_CRC);
         }
 
         await complete(tx);
@@ -542,7 +545,5 @@ export class Database {
 
             store.put(compressedPage, scheduledPages[iPage]);
         }
-
-        tx.objectStore(OBJECT_STORE_KVS).put(snapshot.crc, KVS_NAND_CRC);
     }
 }

@@ -28,6 +28,7 @@ import { AudioDriver } from './audiodriver.js';
     const uploadNand = document.getElementById('upload-nand');
     const downloadNand = document.getElementById('download-nand');
     const uploadSD = document.getElementById('upload-sd');
+    const downloadSD = document.getElementById('download-sd');
     const clearLog = document.getElementById('clear-log');
 
     const audioButton = document.getElementById('audio-button');
@@ -43,6 +44,19 @@ import { AudioDriver } from './audiodriver.js';
     let mipsLimit = 100;
     let crcCheck = false;
     let sampleRate;
+
+    function filenameFragment(prefix) {
+        const now = new Date();
+
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hour = now.getHours().toString().padStart(2, '0');
+        const minute = now.getMinutes().toString().padStart(2, '0');
+        const second = now.getSeconds().toString().padStart(2, '0');
+
+        return `${prefix}_${year}${month}${day}-${hour}${minute}${second}`;
+    }
 
     function updateMaxLoad() {
         maxLoad = parseFloat(maxLoadSlider.value);
@@ -272,7 +286,11 @@ import { AudioDriver } from './audiodriver.js';
         );
 
         downloadNand.addEventListener('click', () => {
-            database.getNand(false).then((nand) => saveFile('nand.bin', nand.content));
+            database.getNand(false).then((nand) => saveFile(`${filenameFragment('nand')}.bin`, nand.content));
+        });
+
+        downloadSD.addEventListener('click', () => {
+            database.getSd(false).then((sd) => saveFile(`${filenameFragment('sd')}.bin`, sd.content));
         });
 
         maxLoadSlider.value = maxLoad;
