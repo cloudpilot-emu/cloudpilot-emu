@@ -90,7 +90,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                     }
 
                     for (let mask = 1; mask < 0x100; mask <<= 1) {
-                        if (!pageSet8 & mask) {
+                        if (!(pageSet8 & mask)) {
                             page++;
                             continue;
                         }
