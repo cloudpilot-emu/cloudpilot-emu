@@ -190,11 +190,11 @@ $(BINARY_WASM): $(BINARY_EMCC)
 
 $(OPTIMIZED_BINARIY_WASM_OTHER): $(BINARY_WASM)
 	if test -n "$(DEVELOP)"; then cp $^ $@; else $(WASMOPT) $(WASMOPT_FLAGS_OTHER) -o $@ $^; fi
-	$(WASMSTRIP) $@
+	if test -z "$(DEVELOP)"; then $(WASMSTRIP) $@; fi
 
 $(OPTIMIZED_BINARIY_WASM_WEBKIT): $(BINARY_WASM)
 	if test -n "$(DEVELOP)"; then cp $^ $@; else $(WASMOPT) $(WASMOPT_FLAGS_WEBKIT) -o $@ $^; fi
-	$(WASMSTRIP) $@
+	if test -z "$(DEVELOP)"; then $(WASMSTRIP) $@; fi
 
 $(BINARY_TEST): $(OBJECTS_TEST)
 	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_TEST)
