@@ -78,6 +78,7 @@ SOURCE_C = 						\
 	uarm/MMU.c 					\
 	uarm/cp15.c 				\
 	uarm/mem.c 					\
+	uarm/ram_buffer.c			\
 	uarm/RAM.c 					\
 	uarm/ROM.c 					\
 	uarm/gdbstub.c				\

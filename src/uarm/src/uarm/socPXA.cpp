@@ -10,6 +10,7 @@
 #include "pace_patch.h"
 #include "patch_dispatch.h"
 #include "patches.h"
+#include "ram_buffer.h"
 #include "scheduler.h"
 #include "soc_AC97.h"
 #include "soc_DMA.h"
@@ -135,6 +136,9 @@ struct SoC {
         };
     };
 
+    RamBuffer sramBuffer;
+    RamBuffer ramBuffer;
+
     ArmRam *sram;
     ArmRam *ram;
     ArmRam *ramMirror;       // mirror for ram termination
@@ -229,7 +233,6 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
              uint_fast8_t socRev) {
     SoC *soc = (SoC *)malloc(sizeof(SoC));
     struct SocPeriphs sp = {};
-    uint32_t *ramBuffer;
 
     struct Reschedule rescheduleSoc = {.rescheduleCb = socPrvReschedule, .ctx = soc};
 
@@ -256,10 +259,9 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     soc->syscallDispatch = initSyscallDispatch(soc->cpu);
     registerPatches(soc->patchDispatch, soc->syscallDispatch);
 
-    ramBuffer = (uint32_t *)malloc(deviceGetRamSize());
-    if (!ramBuffer) ERR("cannot alloc RAM space\n");
+    ramBufferAllocate(&soc->ramBuffer, deviceGetRamSize());
 
-    soc->ram = ramInit(soc->mem, soc, RAM_BASE, deviceGetRamSize(), ramBuffer, true);
+    soc->ram = ramInit(soc->mem, soc, RAM_BASE, deviceGetRamSize(), &soc->ramBuffer, true);
     if (!soc->ram) ERR("Cannot init RAM");
 
     soc->rom = romInit(soc->mem, ROM_BASE, romData, romSize);
@@ -276,7 +278,7 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
 
             // ram mirror for ram probe code
             soc->ramMirror = ramInit(soc->mem, soc, RAM_BASE + deviceGetRamSize(),
-                                     deviceGetRamSize(), ramBuffer, false);
+                                     deviceGetRamSize(), &soc->ramBuffer, false);
             if (!soc->ramMirror) ERR("Cannot init RAM mirror");
             break;
 
@@ -312,10 +314,10 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
         if (!soc->kpc) ERR("Cannot init PXA270's KPC");
 
         // SRAM
-        ramBuffer = (uint32_t *)malloc(SRAM_SIZE);
-        if (!ramBuffer) ERR("cannot alloc SRAM space\n");
+        ramBufferAllocate(&soc->sramBuffer, SRAM_SIZE);
+        ;
 
-        soc->sram = ramInit(soc->mem, soc, SRAM_BASE, SRAM_SIZE, ramBuffer, false);
+        soc->sram = ramInit(soc->mem, soc, SRAM_BASE, SRAM_SIZE, &soc->sramBuffer, false);
         if (!soc->ram) ERR("Cannot init SRAM");
     }
 

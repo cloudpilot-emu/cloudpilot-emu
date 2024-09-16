@@ -12,7 +12,7 @@
 struct ArmRam {
     uint32_t adr;
     uint32_t sz;
-    uint32_t* buf;
+    struct RamBuffer* buf;
     struct SoC* soc;
 
     uint32_t framebufferStart;
@@ -28,9 +28,11 @@ struct ArmRam {
 bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void* bufP) {
     struct ArmRam* ram = (struct ArmRam*)userData;
     const uint32_t offset = pa - ram->adr;
-    const uint8_t* addr = (uint8_t*)ram->buf + offset;
+    const uint8_t* addr = (uint8_t*)ram->buf->buffer + offset;
 
     if (write) {
+        RAM_BUFFER_MARK_DIRTY(ram->buf, offset);
+
         switch (size) {
             case 1:
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart)
@@ -43,6 +45,8 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_2)
                     socSetFramebufferDirty(ram->soc);
 
+                if (offset & 0x01) RAM_BUFFER_MARK_DIRTY(ram->buf, offset + 0x01);
+
                 *((uint16_t*)addr) =
                     htole16(*(uint16_t*)bufP);  // our memory system is little-endian
                 break;
@@ -51,12 +55,16 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_4)
                     socSetFramebufferDirty(ram->soc);
 
+                if (offset & 0x03) RAM_BUFFER_MARK_DIRTY(ram->buf, offset + 0x03);
+
                 *((uint32_t*)addr) = htole32(*(uint32_t*)bufP);
                 break;
 
             case 64:
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_64)
                     socSetFramebufferDirty(ram->soc);
+
+                if (offset & 0x3f) RAM_BUFFER_MARK_DIRTY(ram->buf, offset + 0x3f);
 
                 *((uint64_t*)(addr + 0)) = htole64(((uint64_t*)bufP)[0]);
                 *((uint64_t*)(addr + 8)) = htole64(((uint64_t*)bufP)[1]);
@@ -72,6 +80,8 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_32)
                     socSetFramebufferDirty(ram->soc);
 
+                if (offset & 0x1f) RAM_BUFFER_MARK_DIRTY(ram->buf, offset + 0x1f);
+
                 *((uint64_t*)(addr + 0)) = htole64(((uint64_t*)bufP)[0]);
                 *((uint64_t*)(addr + 8)) = htole64(((uint64_t*)bufP)[1]);
                 *((uint64_t*)(addr + 16)) = htole64(((uint64_t*)bufP)[2]);
@@ -82,6 +92,8 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_16)
                     socSetFramebufferDirty(ram->soc);
 
+                if (offset & 0x0f) RAM_BUFFER_MARK_DIRTY(ram->buf, offset + 0x0f);
+
                 *((uint64_t*)(addr + 0)) = htole64(((uint64_t*)bufP)[0]);
                 *((uint64_t*)(addr + 8)) = htole64(((uint64_t*)bufP)[1]);
                 break;
@@ -89,6 +101,8 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
             case 8:
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_8)
                     socSetFramebufferDirty(ram->soc);
+
+                if (offset & 0x07) RAM_BUFFER_MARK_DIRTY(ram->buf, offset + 0x07);
 
                 *((uint64_t*)(addr + 0)) = htole64(((uint64_t*)bufP)[0]);
                 break;
@@ -164,7 +178,7 @@ void ramSetFramebuffer(struct ArmRam* ram, uint32_t base, uint32_t size) {
 }
 
 struct ArmRam* ramInit(struct ArmMem* mem, struct SoC* soc, uint32_t adr, uint32_t sz,
-                       uint32_t* buf, bool primary) {
+                       struct RamBuffer* buf, bool primary) {
     struct ArmRam* ram = (struct ArmRam*)malloc(sizeof(*ram));
 
     if (!ram) ERR("cannot alloc RAM at 0x%08x", adr);

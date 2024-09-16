@@ -48,7 +48,7 @@ bool sdCardWrite(uint32_t sector, const void* buf) {
     memcpy(data + SD_SECTOR_SIZE * sector, buf, SD_SECTOR_SIZE);
 
     const uint32_t page = sector >> 4;
-    dirtyPages[page / 32] |= (1 << (page % 32));
+    dirtyPages[page / 32] |= (1u << (page % 32));
 
     sdCardDirty = true;
     return true;
