@@ -693,3 +693,11 @@ struct Buffer socGetNandDirtyPages(struct SoC *soc) { return nandGetDirtyPages(s
 bool socIsNandDirty(struct SoC *soc) { return nandIsDirty(soc->nand); }
 
 void socSetNandDirty(struct SoC *soc, bool isDirty) { nandSetDirty(soc->nand, isDirty); }
+
+struct Buffer socGetRamData(struct SoC *soc) {
+    return {.size = soc->ramBuffer.size, .data = soc->ramBuffer.buffer};
+}
+
+struct Buffer socGetRamDirtyPages(struct SoC *soc) {
+    return {.size = soc->ramBuffer.dirtyPagesSize, .data = soc->ramBuffer.dirtyPages};
+}

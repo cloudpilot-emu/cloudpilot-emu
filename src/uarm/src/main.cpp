@@ -256,6 +256,19 @@ void* EMSCRIPTEN_KEEPALIVE getSdCardDirtyPages() { return sdCardDirtyPages().dat
 bool EMSCRIPTEN_KEEPALIVE isSdCardDirty() { return sdCardIsDirty(); }
 
 void EMSCRIPTEN_KEEPALIVE setSdCardDirty(bool isDirty) { return sdCardSetDirty(isDirty); }
+
+uint32_t EMSCRIPTEN_KEEPALIVE getRamDataSize() { return socGetRamData(soc).size; }
+
+void* EMSCRIPTEN_KEEPALIVE getRamData() { return socGetRamData(soc).data; }
+
+uint32_t EMSCRIPTEN_KEEPALIVE getRamDirtyPagesSize() { return socGetRamDirtyPages(soc).size; }
+
+void* EMSCRIPTEN_KEEPALIVE getRamDirtyPages() { return socGetRamDirtyPages(soc).data; }
+
+void EMSCRIPTEN_KEEPALIVE clearRamDirtyPages() {
+    Buffer buffer = socGetRamDirtyPages(soc);
+    memset(buffer.data, 0, buffer.size);
+}
 }
 #endif
 
