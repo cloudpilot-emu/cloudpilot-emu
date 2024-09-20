@@ -11,7 +11,7 @@ LD_EMCC ?= emcc
 DEVELOP = 
 
 WASMOPT = wasm-opt
-WASMOPT_FLAGS_BASE = --enable-bulk-memory --inlining-optimizing \
+WASMOPT_FLAGS_BASE = --no-inline="*mmuTranslate*" --enable-bulk-memory --inlining-optimizing \
 	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
 WASMOPT_FLAGS_WEBKIT = --no-inline="*execFn_*"  $(WASMOPT_FLAGS_BASE) 
 WASMOPT_FLAGS_OTHER = $(WASMOPT_FLAGS_BASE)
