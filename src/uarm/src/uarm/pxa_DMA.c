@@ -105,8 +105,8 @@ static void socDmaPrvChannelDescrFetch(
         socDmaPrvChannelStop(dma, ch);
     } else {
         ch->DAR = nextD;
-        ch->SAR = nextS;
-        ch->TAR = nextT;
+        ch->SAR = nextS & ~0x03;
+        ch->TAR = nextT & ~0x03;
         ch->CR = nextC;
 
         if (nextC & 0x00400000ul)  // start irq requested?
@@ -166,8 +166,7 @@ static bool socDmaPrvChannelDoBurst(
     if (!((ch->CR >> 14) & 3)) {
         fprintf(stderr, "DMA is on but WIDTH is misprogrammed\n");
         // this should never happen and is unpredictable on real HW. halt to allow debug
-        while (1)
-            ;
+        while (1);
     }
 
     // we never transfer more than there is left
@@ -178,8 +177,7 @@ static bool socDmaPrvChannelDoBurst(
         fprintf(stderr, "cannot xfer %u bytes using %u-byte piece. Halting\n", (unsigned)num,
                 (unsigned)each);
         // this should never happen and is unpredictable on real HW. halt to allow debug
-        while (1)
-            ;
+        while (1);
     }
 
     num /= each;  // convert from bytes to transfers
@@ -276,11 +274,11 @@ static bool socDmaPrvChannelRegWrite(struct SocDma* dma, uint_fast8_t channel, u
     } else if (reg == REG_SAR) {
         if (ch->CSR & 0x40000000ul) checkForStart = true;
         ch->dsAddrWriten = 1;
-        ch->SAR = val;
+        ch->SAR = val & ~0x03;
     } else if (reg == REG_TAR) {
         if (ch->CSR & 0x40000000ul) checkForStart = true;
         ch->dtAddrWriten = 1;
-        ch->TAR = val;
+        ch->TAR = val & ~0x03;
     } else if (reg == REG_CR) {
         if (ch->CSR & 0x40000000ul) checkForStart = true;
         ch->dcmdAddrWritten = 1;
