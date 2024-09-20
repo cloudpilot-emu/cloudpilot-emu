@@ -151,7 +151,7 @@ void uae_put16(uint32_t addr, uint16_t value) {
     pace_put_le(addr, be16toh(value), 2);
 }
 
-static void put_get32_split(uint32_t addr, uint32_t value) {
+static void uae_put32_split(uint32_t addr, uint32_t value) {
     value = htobe32(value);
 
     if ((addr & 0x3ff) <= (0x3ff - 4)) {
@@ -192,7 +192,7 @@ void uae_put32(uint32_t addr, uint32_t value) {
             break;
 
         case 1:
-            put_get32_split(addr, value);
+            uae_put32_split(addr, value);
             break;
 
         default:
