@@ -416,11 +416,7 @@ struct Buffer nandGetDirtyPages(struct NAND *nand) {
 
 bool nandIsDirty(struct NAND *nand) { return nand->dirty; }
 
-void nandSetDirty(struct NAND *nand, bool isDirty) {
-    nand->dirty = isDirty;
-
-    if (!isDirty) memset(nand->dirtyPages, 0, nand->dirtyPagesSize);
-}
+void nandSetDirty(struct NAND *nand, bool isDirty) { nand->dirty = isDirty; }
 
 bool nandIsReady(struct NAND *nand) { return !nand->busyCt; }
 

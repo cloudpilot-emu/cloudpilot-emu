@@ -207,7 +207,7 @@ export class Emulator {
                 success,
                 snapshot,
             },
-            [...transferables(snapshot.nand), ...transferables(snapshot.sd)]
+            [...transferables(snapshot.nand), ...transferables(snapshot.sd), ...transferables(snapshot.ram)]
         );
     }
 }

@@ -237,8 +237,6 @@ uint32_t EMSCRIPTEN_KEEPALIVE getNandDataSize() { return socGetNandData(soc).siz
 
 void* EMSCRIPTEN_KEEPALIVE getNandData() { return socGetNandData(soc).data; }
 
-uint32_t EMSCRIPTEN_KEEPALIVE getNandDirtyPagesSize() { return socGetNandDirtyPages(soc).size; }
-
 void* EMSCRIPTEN_KEEPALIVE getNandDirtyPages() { return socGetNandDirtyPages(soc).data; }
 
 bool EMSCRIPTEN_KEEPALIVE isNandDirty() { return socIsNandDirty(soc); }
@@ -248,8 +246,6 @@ void EMSCRIPTEN_KEEPALIVE setNandDirty(bool isDirty) { socSetNandDirty(soc, isDi
 uint32_t EMSCRIPTEN_KEEPALIVE getSdCardDataSize() { return sdCardData().size; }
 
 void* EMSCRIPTEN_KEEPALIVE getSdCardData() { return sdCardData().data; }
-
-uint32_t EMSCRIPTEN_KEEPALIVE getSdCardDirtyPagesSize() { return sdCardDirtyPages().size; }
 
 void* EMSCRIPTEN_KEEPALIVE getSdCardDirtyPages() { return sdCardDirtyPages().data; }
 
@@ -261,14 +257,7 @@ uint32_t EMSCRIPTEN_KEEPALIVE getRamDataSize() { return socGetRamData(soc).size;
 
 void* EMSCRIPTEN_KEEPALIVE getRamData() { return socGetRamData(soc).data; }
 
-uint32_t EMSCRIPTEN_KEEPALIVE getRamDirtyPagesSize() { return socGetRamDirtyPages(soc).size; }
-
 void* EMSCRIPTEN_KEEPALIVE getRamDirtyPages() { return socGetRamDirtyPages(soc).data; }
-
-void EMSCRIPTEN_KEEPALIVE clearRamDirtyPages() {
-    Buffer buffer = socGetRamDirtyPages(soc);
-    memset(buffer.data, 0, buffer.size);
-}
 }
 #endif
 

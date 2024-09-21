@@ -14,29 +14,19 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
     let pcmPool = [];
 
     class DirtyPageTracker {
-        constructor({
-            pageSize,
-            pageCount,
-            getDataPtr,
-            getDataSize,
-            getDirtyPagesPtr,
-            getDirtyPagesSize,
-            isDirty,
-            setDirty,
-            module,
-            name,
-            crcCheck,
-        }) {
+        constructor({ pageSize, pageCount, getDataPtr, getDirtyPagesPtr, isDirty, setDirty, module, name, crcCheck }) {
             this.pageSize = pageSize;
             this.pageCount = pageCount;
 
             this.getDataPtr = getDataPtr;
-            this.getDataSize = getDataSize;
             this.getDirtyPagesPtr = getDirtyPagesPtr;
-            this.getDirtyPagesSize = getDirtyPagesSize;
             this.isDirty = isDirty;
             this.setDirty = setDirty;
             this.module = module;
+
+            this.size = pageSize * pageCount;
+            this.dirtyPagesSize4 = (pageCount / 32) | 0;
+            if (this.dirtyPagesSize4 * 32 < pageCount) this.dirtyPagesSize4++;
 
             this.name = name;
             this.crcCheck = crcCheck;
@@ -47,17 +37,15 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
         }
 
         getData() {
-            const size = this.getDataSize();
             const ptr = this.getDataPtr();
 
-            return this.module.HEAPU8.subarray(ptr, ptr + size);
+            return this.module.HEAPU8.subarray(ptr, ptr + this.size);
         }
 
         getDirtyPages() {
-            const size32 = this.getDirtyPagesSize() >>> 2;
             const ptr32 = this.getDirtyPagesPtr() >>> 2;
 
-            return this.module.HEAPU32.subarray(ptr32, ptr32 + size32);
+            return this.module.HEAPU32.subarray(ptr32, ptr32 + this.dirtyPagesSize4);
         }
 
         takeSnapshot() {
@@ -109,6 +97,8 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                         page++;
                     }
                 }
+
+                dirtyPages[i] = 0;
             }
 
             this.scheduledPageCount = iPage;
@@ -179,24 +169,26 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             this.postSnapshot = postSnapshot;
 
             this.cycle = module.cwrap('cycle', undefined, ['number']);
-            this.getFrame = module.cwrap('getFrame', 'number', []);
-            this.resetFrame = module.cwrap('resetFrame', undefined, []);
-            this.currentIps = module.cwrap('currentIps', 'number', []);
-            this.currentIpsMax = module.cwrap('currentIpsMax', 'number', []);
+            this.getFrame = module.cwrap('getFrame', 'number');
+            this.resetFrame = module.cwrap('resetFrame');
+            this.currentIps = module.cwrap('currentIps', 'number');
+            this.currentIpsMax = module.cwrap('currentIpsMax', 'number');
             this.setMaxLoad = module.cwrap('setMaxLoad', undefined, ['number']);
             this.setCyclesPerSecondLimit = module.cwrap('setCyclesPerSecondLimit', undefined, ['number']);
-            this.getTimesliceSizeUsec = module.cwrap('getTimesliceSizeUsec', 'number', []);
-            this.getTimestampUsec = module.cwrap('getTimestampUsec', 'number', []);
+            this.getTimesliceSizeUsec = module.cwrap('getTimesliceSizeUsec', 'number');
+            this.getTimestampUsec = module.cwrap('getTimestampUsec', 'number');
             this.penDown = module.cwrap('penDown', undefined, ['number', 'number']);
-            this.penUp = module.cwrap('penUp', undefined, []);
+            this.penUp = module.cwrap('penUp');
             this.keyDown = module.cwrap('keyDown', undefined, ['number']);
             this.keyUp = module.cwrap('keyUp', undefined, ['number']);
-            this.pendingSamples = module.cwrap('pendingSamples', 'number', []);
-            this.popQueuedSamples = module.cwrap('popQueuedSamples', 'number', []);
+            this.pendingSamples = module.cwrap('pendingSamples', 'number');
+            this.popQueuedSamples = module.cwrap('popQueuedSamples', 'number');
             this.setPcmOutputEnabled = module.cwrap('setPcmOutputEnabled', undefined, ['number']);
             this.setPcmSuspended = module.cwrap('setPcmSuspended', undefined, ['number']);
             this.getNandDataSize = module.cwrap('getNandDataSize', 'number');
             this.getSdCardDataSize = module.cwrap('getSdCardDataSize', 'number');
+            this.getRamDataSize = module.cwrap('getRamDataSize', 'number');
+            this.clearRamDirtyPages = module.cwrap('clearRamDirtyPages');
 
             this.amIDead = false;
             this.pcmEnabled = false;
@@ -213,9 +205,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                 name: 'NAND snapshot',
                 crcCheck,
                 getDataPtr: module.cwrap('getNandData', 'number'),
-                getDataSize: this.getNandDataSize,
                 getDirtyPagesPtr: module.cwrap('getNandDirtyPages', 'number'),
-                getDirtyPagesSize: module.cwrap('getNandDirtyPagesSize', 'number'),
                 isDirty: module.cwrap('isNandDirty', 'number'),
                 setDirty: module.cwrap('setNandDirty', undefined, ['number']),
                 module,
@@ -228,11 +218,22 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                 name: 'SD card snapshot',
                 crcCheck,
                 getDataPtr: module.cwrap('getSdCardData', 'number'),
-                getDataSize: this.getSdCardDataSize,
                 getDirtyPagesPtr: module.cwrap('getSdCardDirtyPages', 'number'),
-                getDirtyPagesSize: module.cwrap('getSdCardDirtyPagesSize', 'number'),
                 isDirty: module.cwrap('isSdCardDirty', 'number'),
                 setDirty: module.cwrap('setSdCardDirty', undefined, ['number']),
+                module,
+            });
+
+            const ramSize = this.getRamDataSize();
+            this.ramTracker = new DirtyPageTracker({
+                pageSize: 512,
+                pageCount: (ramSize / 512) | 0,
+                name: 'RAM snapshot',
+                crcCheck,
+                getDataPtr: module.cwrap('getRamData', 'number'),
+                getDirtyPagesPtr: module.cwrap('getRamDirtyPages', 'number'),
+                isDirty: () => true,
+                setDirty: () => undefined,
                 module,
             });
         }
@@ -328,12 +329,14 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
 
             const snapshotNand = this.nandTracker.takeSnapshot();
             const snapshotSd = this.sdCardTracker.takeSnapshot();
+            const snapshotRam = this.ramTracker.takeSnapshot();
 
-            if (!snapshotNand && !snapshotSd) return;
+            if (!snapshotNand && !snapshotSd && !snapshotRam) return;
 
-            this.postSnapshot({ nand: snapshotNand, sd: snapshotSd }, [
+            this.postSnapshot({ nand: snapshotNand, sd: snapshotSd, ram: snapshotRam }, [
                 ...this.nandTracker.getTransferables(),
                 ...this.sdCardTracker.getTransferables(),
+                ...this.ramTracker.getTransferables(),
             ]);
             this.snapshotPending = true;
         }
@@ -341,6 +344,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
         snapshotDone(success, snapshot) {
             this.nandTracker.onSnapshotDone(success, snapshot.nand);
             this.sdCardTracker.onSnapshotDone(success, snapshot.sd);
+            this.ramTracker.onSnapshotDone(success, snapshot.ram);
 
             this.snapshotPending = false;
         }

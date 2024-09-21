@@ -66,8 +66,4 @@ struct Buffer sdCardDirtyPages() {
 
 bool sdCardIsDirty() { return sdCardDirty; }
 
-void sdCardSetDirty(bool isDirty) {
-    sdCardDirty = isDirty;
-
-    if (!isDirty) memset(dirtyPages, 0, dirtyPagesSize);
-}
+void sdCardSetDirty(bool isDirty) { sdCardDirty = isDirty; }
