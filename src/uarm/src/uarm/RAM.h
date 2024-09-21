@@ -17,7 +17,7 @@ struct ArmRam;
 struct SoC;
 
 struct ArmRam* ramInit(struct ArmMem* mem, struct SoC* soc, uint32_t adr, uint32_t sz,
-                       struct RamBuffer* buf, bool primary);
+                       const struct RamBuffer* buf, bool primary);
 
 bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void* bufP);
 

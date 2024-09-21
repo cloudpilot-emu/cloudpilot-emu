@@ -10,7 +10,7 @@ extern "C" {
 #endif
 
 #define RAM_BUFFER_MARK_DIRTY(buf, addr) \
-    ((buf)->dirtyPages[(addr) >> 14] |= (1u << (((addr) >> 9) & 0x1f)))
+    ((buf).dirtyPages[(addr) >> 14] |= (1u << (((addr) >> 9) & 0x1f)))
 
 struct RamBuffer {
     size_t size;

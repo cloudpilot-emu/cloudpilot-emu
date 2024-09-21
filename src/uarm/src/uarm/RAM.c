@@ -12,7 +12,7 @@
 struct ArmRam {
     uint32_t adr;
     uint32_t sz;
-    struct RamBuffer* buf;
+    struct RamBuffer buf;
     struct SoC* soc;
 
     uint32_t framebufferStart;
@@ -28,7 +28,7 @@ struct ArmRam {
 bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void* bufP) {
     struct ArmRam* ram = (struct ArmRam*)userData;
     const uint32_t offset = pa - ram->adr;
-    const uint8_t* addr = (uint8_t*)ram->buf->buffer + offset;
+    const uint8_t* addr = (uint8_t*)ram->buf.buffer + offset;
 
     if (write) {
         RAM_BUFFER_MARK_DIRTY(ram->buf, offset);
@@ -166,7 +166,7 @@ void ramSetFramebuffer(struct ArmRam* ram, uint32_t base, uint32_t size) {
 }
 
 struct ArmRam* ramInit(struct ArmMem* mem, struct SoC* soc, uint32_t adr, uint32_t sz,
-                       struct RamBuffer* buf, bool primary) {
+                       const struct RamBuffer* buf, bool primary) {
     struct ArmRam* ram = (struct ArmRam*)malloc(sizeof(*ram));
 
     if (!ram) ERR("cannot alloc RAM at 0x%08x", adr);
@@ -176,7 +176,7 @@ struct ArmRam* ramInit(struct ArmMem* mem, struct SoC* soc, uint32_t adr, uint32
     ram->soc = soc;
     ram->adr = adr;
     ram->sz = sz;
-    ram->buf = buf;
+    memcpy(&ram->buf, buf, sizeof(ram->buf));
 
     ramSetFramebuffer(ram, 0, 0);
 
