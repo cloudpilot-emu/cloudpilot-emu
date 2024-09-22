@@ -39,8 +39,8 @@
 #include "pxa255_UDC.h"
 
 // PXA27x
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #include "../util.h"
 #include "audio_queue.h"

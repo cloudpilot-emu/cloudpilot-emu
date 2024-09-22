@@ -3,11 +3,11 @@
 /**
  * @typedef {{name: string, content: Uint8Array}} Image
  * @typedef {{scheduledPageCount: number, scheduledPages: ArrayBuffer, pagePool: ArrayBuffer, crc?: number}} SnapshotPages
- * @typedef {{nand?: SnapshotPages, sd?: SnapshotPages}} Snapshot
+ * @typedef {{nand?: SnapshotPages, sd?: SnapshotPages, ram?: SnapshotPages}} Snapshot
  */
 
 const DB_NAME = 'cp-uarm';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 const SIZE_NAND = 528 * 2 * 1024 * 32;
 const PAGE_SIZE_NAND = 528 * 8;
@@ -16,9 +16,14 @@ const EMPTY_VALUE_NAND = 0xffffffff;
 const PAGE_SIZE_SD = 8 * 1024;
 const EMPTY_VALUE_SD = 0;
 
+const SIZE_RAM = 16 * 1024 * 1024;
+const PAGE_SIZE_RAM = 512;
+const EMPTY_VALUE_RAM = 0;
+
 const OBJECT_STORE_KVS = 'kvs';
 const OBJECT_STORE_NAND = 'nand';
 const OBJECT_STORE_SD = 'sd';
+const OBJECT_STORE_RAM = 'ram';
 const OBJECT_STORE_LOCK = 'lock';
 
 const KVS_ROM_NOR = 'romNor';
@@ -29,6 +34,7 @@ const KVS_SD_SIZE = 'sdSize';
 const KVS_SD_CRC = 'sdCrc';
 const KVS_NAND_NAME = 'nandName';
 const KVS_NAND_CRC = 'nandCrc';
+const KVS_RAM_CRC = 'ramCrc';
 
 /**
  *
@@ -270,6 +276,11 @@ function initdDb() {
                 db.createObjectStore(OBJECT_STORE_SD);
                 migrateSd(request);
             }
+
+            if (e.oldVersion < 5) {
+                db.createObjectStore(OBJECT_STORE_RAM);
+                migrateSd(request);
+            }
         };
 
         request.onsuccess = () => resolve(request.result);
@@ -302,6 +313,7 @@ export class Database {
         this.lockLost = false;
         this.pagePoolNand = /** @type Array<Uint32Array> */ (new Array());
         this.pagePoolSd = /** @type Array<Uint32Array> */ (new Array());
+        this.pagePoolRam = /** @type Array<Uint32Array> */ (new Array());
     }
 
     /**
@@ -364,18 +376,6 @@ export class Database {
     /**
      *
      * @param {string} key
-     * @param {any} value
-     * @returns {Promise<void>}
-     */
-    async kvsPut(key, value) {
-        const tx = await this.tx(OBJECT_STORE_KVS);
-
-        await complete(tx.objectStore(OBJECT_STORE_KVS).put(value, key));
-    }
-
-    /**
-     *
-     * @param {string} key
      * @returns {Promise<void>}
      */
     async kvsDelete(key) {
@@ -397,8 +397,40 @@ export class Database {
      * @param {Image} nor
      * @returns {Promise<void>}
      */
-    putNor(nor) {
-        return this.kvsPut(KVS_ROM_NOR, nor);
+    async putNor(nor) {
+        const tx = await this.tx(OBJECT_STORE_KVS, OBJECT_STORE_RAM);
+        const kvsStore = tx.objectStore(OBJECT_STORE_KVS);
+
+        kvsStore.put(nor, KVS_ROM_NOR);
+        kvsStore.put(undefined, KVS_RAM_CRC);
+
+        tx.objectStore(OBJECT_STORE_RAM).clear();
+
+        await complete(tx);
+    }
+
+    /**
+     * @param {boolean} crcCheck
+     * @returns {Promise<Uint8Array | undefined>}
+     */
+    async getRam(crcCheck) {
+        const tx = await this.tx(OBJECT_STORE_RAM, OBJECT_STORE_KVS);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+
+        const content = await getPagedData(SIZE_RAM, PAGE_SIZE_RAM, OBJECT_STORE_RAM, EMPTY_VALUE_RAM, tx);
+
+        const crc = await complete(storeKvs.get(KVS_RAM_CRC));
+        const crc32 = /** @type any */ (window).crc32;
+
+        if (crcCheck && typeof crc === 'number') {
+            if (crc !== crc32(content)) {
+                alert(`CRC mismatch on RAM load!`);
+            } else {
+                console.log('RAM CRC OK');
+            }
+        }
+
+        return content;
     }
 
     /**
@@ -433,13 +465,16 @@ export class Database {
      * @param {Image} nand
      */
     async putNand(nand) {
-        const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_KVS);
+        const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_KVS, OBJECT_STORE_RAM);
         const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
         storeKvs.put(nand.name, KVS_NAND_NAME);
         storeKvs.delete(KVS_NAND_CRC);
 
         putPagedData(nand.content, PAGE_SIZE_NAND, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
+
+        storeKvs.put(undefined, KVS_RAM_CRC);
+        tx.objectStore(OBJECT_STORE_RAM).clear();
 
         await complete(tx);
     }
@@ -497,7 +532,7 @@ export class Database {
      * @returns {Promise<void>}
      */
     async storeSnapshot(snapshot) {
-        const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_SD, OBJECT_STORE_KVS);
+        const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_SD, OBJECT_STORE_RAM, OBJECT_STORE_KVS);
         const kvs = tx.objectStore(OBJECT_STORE_KVS);
 
         if (snapshot.nand) {
@@ -510,6 +545,12 @@ export class Database {
             console.log(`snapshotting ${snapshot.sd.scheduledPageCount} pages of SD`);
             this.storeSnapshotPages(snapshot.sd, tx, PAGE_SIZE_SD, this.pagePoolSd, OBJECT_STORE_SD);
             kvs.put(snapshot.sd.crc, KVS_SD_CRC);
+        }
+
+        if (snapshot.ram) {
+            console.log(`snapshotting ${snapshot.ram.scheduledPageCount} pages of RAM`);
+            this.storeSnapshotPages(snapshot.ram, tx, PAGE_SIZE_RAM, this.pagePoolRam, OBJECT_STORE_RAM);
+            kvs.put(snapshot.ram.crc, KVS_RAM_CRC);
         }
 
         await complete(tx);

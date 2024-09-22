@@ -4,6 +4,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
     const PCM_BUFFER_SIZE = (44100 / 60) * 10;
     const INITIAL_PAGE_POOL_PAGES = 256;
     const PAGE_POOL_GROWTH_FACTOR = 1.5;
+    const RAM_SIZE = 16 * 1024 * 1024;
 
     const messageQueue = [];
     let dispatchInProgress = false;
@@ -238,7 +239,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             });
         }
 
-        static async create(nor, nand, sd, maxLoad, cyclesPerSecondLimit, crcCheck, env) {
+        static async create(nor, nand, sd, ram, maxLoad, cyclesPerSecondLimit, crcCheck, env) {
             const { log, binary } = env;
             let module;
 
@@ -251,9 +252,9 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
 
             const malloc = module.cwrap('malloc', 'number', ['number']);
 
-            let norPtr = malloc(nor.length);
-            let nandPtr = malloc(nand.length);
-            let sdPtr = sd ? malloc(sd.length) : 0;
+            const norPtr = malloc(nor.length);
+            const nandPtr = malloc(nand.length);
+            const sdPtr = sd ? malloc(sd.length) : 0;
 
             module.HEAPU8.subarray(norPtr, norPtr + nor.length).set(nor);
             module.HEAPU8.subarray(nandPtr, nandPtr + nand.length).set(nand);
@@ -267,6 +268,9 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                 ['number', 'number', 'number', 'number', 'number', 'number'],
                 [norPtr, nor.length, nandPtr, nand.length, sdPtr, sd ? sd.length : 0]
             );
+
+            const ramPtr = module.ccall('getRamData', 'number');
+            module.HEAPU8.subarray(ramPtr, ramPtr + RAM_SIZE).set(ram);
 
             return new Emulator(module, maxLoad, cyclesPerSecondLimit, crcCheck, env);
         }
@@ -506,6 +510,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                     message.nor,
                     message.nand,
                     message.sd,
+                    message.ram,
                     message.maxLoad,
                     message.cyclesPerSecondLimit,
                     message.crcCheck,

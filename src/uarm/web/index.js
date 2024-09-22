@@ -181,12 +181,15 @@ import { AudioDriver } from './audiodriver.js';
         emulator?.destroy();
         clearCanvas();
 
+        const ram = await database.getRam(crcCheck);
+
         log(`loading ${binary}`);
 
         emulator = await Emulator.create(
             fileNor.content,
             fileNand.content,
             fileSd?.content,
+            ram,
             maxLoad,
             mipsLimit * 1000000,
             {
