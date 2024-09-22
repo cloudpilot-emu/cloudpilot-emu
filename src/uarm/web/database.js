@@ -536,19 +536,16 @@ export class Database {
         const kvs = tx.objectStore(OBJECT_STORE_KVS);
 
         if (snapshot.nand) {
-            console.log(`snapshotting ${snapshot.nand.scheduledPageCount} pages of NAND`);
             this.storeSnapshotPages(snapshot.nand, tx, PAGE_SIZE_NAND, this.pagePoolNand, OBJECT_STORE_NAND);
             kvs.put(snapshot.nand.crc, KVS_NAND_CRC);
         }
 
         if (snapshot.sd) {
-            console.log(`snapshotting ${snapshot.sd.scheduledPageCount} pages of SD`);
             this.storeSnapshotPages(snapshot.sd, tx, PAGE_SIZE_SD, this.pagePoolSd, OBJECT_STORE_SD);
             kvs.put(snapshot.sd.crc, KVS_SD_CRC);
         }
 
         if (snapshot.ram) {
-            console.log(`snapshotting ${snapshot.ram.scheduledPageCount} pages of RAM`);
             this.storeSnapshotPages(snapshot.ram, tx, PAGE_SIZE_RAM, this.pagePoolRam, OBJECT_STORE_RAM);
             kvs.put(snapshot.ram.crc, KVS_RAM_CRC);
         }

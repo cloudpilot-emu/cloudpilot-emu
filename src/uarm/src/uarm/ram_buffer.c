@@ -4,7 +4,7 @@
 
 void ramBufferAllocate(struct RamBuffer* ramBuffer, size_t size) {
     size_t pageCount = size / 512;
-    if (size * 512 < size) pageCount++;
+    if (pageCount * 512 < size) pageCount++;
 
     ramBuffer->size = pageCount * 512;
     ramBuffer->buffer = malloc(ramBuffer->size);
