@@ -162,12 +162,19 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
     }
 
     class Emulator {
-        constructor(module, maxLoad, cyclesPerSecondLimit, crcCheck, { onSpeedDisplay, onFrame, log, postSnapshot }) {
+        constructor(
+            module,
+            maxLoad,
+            cyclesPerSecondLimit,
+            crcCheck,
+            { onSpeedDisplay, onFrame, log, postSnapshot, onStop }
+        ) {
             this.module = module;
             this.onSpeedDisplay = onSpeedDisplay;
             this.onFrame = onFrame;
             this.log = log;
             this.postSnapshot = postSnapshot;
+            this.onStop = onStop;
 
             this.cycle = module.cwrap('cycle', undefined, ['number']);
             this.getFrame = module.cwrap('getFrame', 'number');
@@ -195,6 +202,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             this.pcmEnabled = false;
             this.pcmPort = undefined;
             this.snapshotPending = false;
+            this.stopPending = false;
 
             this.setMaxLoad(maxLoad);
             this.setCyclesPerSecondLimit(cyclesPerSecondLimit);
@@ -283,6 +291,12 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
 
             this.timeoutHandle = this.immediateHandle = undefined;
 
+            if (this.snapshotPending) {
+                this.stopPending = true;
+            } else {
+                this.onStop();
+            }
+
             this.log('emulator stopped');
         }
 
@@ -351,6 +365,11 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
             this.ramTracker.onSnapshotDone(success, snapshot.ram);
 
             this.snapshotPending = false;
+
+            if (this.stopPending) {
+                this.stopPending = false;
+                this.onStop();
+            }
         }
 
         render() {
@@ -487,6 +506,10 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
         postMessage({ type: 'initialized' });
     }
 
+    function postStopped() {
+        postMessage({ type: 'stopped' });
+    }
+
     function postSnapshot(snapshot, transferables) {
         postMessage(
             {
@@ -520,6 +543,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                         postSnapshot,
                         log: postLog,
                         binary: message.binary,
+                        onStop: postStopped,
                     }
                 );
 

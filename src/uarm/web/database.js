@@ -402,7 +402,7 @@ export class Database {
         const kvsStore = tx.objectStore(OBJECT_STORE_KVS);
 
         kvsStore.put(nor, KVS_ROM_NOR);
-        kvsStore.put(undefined, KVS_RAM_CRC);
+        kvsStore.delete(KVS_RAM_CRC);
 
         tx.objectStore(OBJECT_STORE_RAM).clear();
 
@@ -431,6 +431,16 @@ export class Database {
         }
 
         return content;
+    }
+
+    async putRam(ram) {
+        const tx = await this.tx(OBJECT_STORE_KVS, OBJECT_STORE_RAM);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+
+        storeKvs.delete(KVS_RAM_CRC);
+        putPagedData(ram, PAGE_SIZE_RAM, OBJECT_STORE_RAM, EMPTY_VALUE_RAM, tx);
+
+        await complete(tx);
     }
 
     /**
@@ -473,7 +483,7 @@ export class Database {
 
         putPagedData(nand.content, PAGE_SIZE_NAND, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
 
-        storeKvs.put(undefined, KVS_RAM_CRC);
+        storeKvs.delete(KVS_RAM_CRC);
         tx.objectStore(OBJECT_STORE_RAM).clear();
 
         await complete(tx);

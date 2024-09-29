@@ -13,6 +13,7 @@ import { compressSession, decompressSession } from './session.js';
         isMacOSSafari || isIOS || (!!navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/));
 
     let binary = isWebkit ? 'uarm_web_webkit.wasm' : 'uarm_web_other.wasm';
+    let disableAutoPause = false;
 
     const labelNor = document.getElementById('nor-image');
     const labelNand = document.getElementById('nand-image');
@@ -168,15 +169,21 @@ import { compressSession, decompressSession } from './session.js';
         canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    const uploadHandler = (assign) => () =>
-        openFile()
-            .then((file) => {
-                assign(file);
-                updateLabels();
+    const uploadHandler = (assign) => async () => {
+        try {
+            const file = await openFile();
 
-                restart();
-            })
-            .catch((e) => console.error(e));
+            disableAutoPause = true;
+            await emulator?.stop();
+
+            await assign(file);
+
+            updateLabels();
+            restart();
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     async function restart() {
         if (!(fileNor && fileNand)) return;
@@ -205,7 +212,9 @@ import { compressSession, decompressSession } from './session.js';
                 setSnapshotStatus,
             }
         );
-        emulator?.start();
+
+        disableAutoPause = false;
+        if (!document.hidden) emulator?.start();
 
         if (emulator && audioDriver) audioDriver.setEmulator(emulator);
 
@@ -232,9 +241,15 @@ import { compressSession, decompressSession } from './session.js';
     }
 
     async function exportImage() {
+        disableAutoPause = true;
+        await emulator?.stop();
+
         const nor = await database.getNor();
         const ram = await database.getRam();
         const nand = await database.getNand();
+
+        disableAutoPause = false;
+        if (!document.hidden) emulator?.start();
 
         const session = compressSession({
             nor: nor.content,
@@ -297,32 +312,50 @@ import { compressSession, decompressSession } from './session.js';
 
         updateLabels();
 
+        exportImageButton.addEventListener('click', exportImage);
+
         uploadNorButton.addEventListener(
             'click',
-            uploadHandler((file) => {
-                database.putNor(file);
+            uploadHandler(async (file) => {
+                await database.putNor(file);
                 fileNor = file;
             })
         );
 
         uploadNandButton.addEventListener(
             'click',
-            uploadHandler((file) => {
-                database.putNand(file);
+            uploadHandler(async (file) => {
+                await database.putNand(file);
                 fileNand = file;
             })
         );
 
         uploadSDButton.addEventListener(
             'click',
-            uploadHandler((file) => {
-                database.putSd(file);
+            uploadHandler(async (file) => {
+                await database.putSd(file);
                 fileSd = file;
             })
         );
 
-        exportImageButton.addEventListener('click', exportImage);
-        importImageButton.addEventListener('click', importImage);
+        importImageButton.addEventListener(
+            'click',
+            uploadHandler(async (file) => {
+                try {
+                    const session = decompressSession(file.content);
+
+                    fileNor = { content: session.nor, name: session.metadata?.norName ?? 'saved ROM' };
+                    fileNand = { content: session.nand, name: session.metadata?.nandName ?? 'saved NAND' };
+
+                    await database.putNor(fileNor);
+                    await database.putNand(fileNand);
+                    await database.putRam(session.ram);
+                } catch (e) {
+                    alert(`Failed to load session: ${e.message}`);
+                    console.error(e);
+                }
+            })
+        );
 
         downloadNandButton.addEventListener('click', () => {
             database.getNand(false).then((nand) => saveFile(`${filenameFragment('nand')}.bin`, nand.content));
@@ -345,7 +378,10 @@ import { compressSession, decompressSession } from './session.js';
 
         clearLogButton.addEventListener('click', () => (logContainer.innerHTML = ''));
 
-        document.addEventListener('visibilitychange', () => (document.hidden ? emulator?.stop() : emulator?.start()));
+        document.addEventListener(
+            'visibilitychange',
+            () => !disableAutoPause && (document.hidden ? emulator?.stop() : emulator?.start())
+        );
     }
 
     main().catch((e) => console.error(e));

@@ -222,13 +222,6 @@ export function compressSession({ nor, ram, nand, metadata = {} }) {
     putBlock(compressedRam.data);
     putBlock(compressedNand.data);
 
-    console.log(
-        serializedMetadata.length,
-        compressedNor.data.length,
-        compressedRam.data.length,
-        compressedNand.data.length
-    );
-
     return image;
 }
 
@@ -265,8 +258,6 @@ export function decompressSession(sessionData) {
 
     if (sessionData.length !== HEADER_SIZE + sizeMetadata + sizeNorCompressed + sizeRamCompressed + sizeNandCompressed)
         throw new Error('image size mismatch');
-
-    console.log(sizeMetadata, sizeNorCompressed, sizeRamCompressed, sizeNandCompressed);
 
     const metadata = JSON.parse(new TextDecoder().decode(getBlock(sizeMetadata)));
     const nor = decompress(getBlock(sizeNorCompressed));

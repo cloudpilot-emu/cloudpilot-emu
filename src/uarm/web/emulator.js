@@ -3,6 +3,9 @@ import { EventHandler } from './eventhandler.js';
 
 export class Emulator {
     constructor(worker, displayService, crcCheck, { canvas, speedDisplay, log, database, setSnapshotStatus }) {
+        this.stopping = Promise.resolve();
+        this.onStopped = () => undefined;
+
         this.worker = worker;
         this.displayService = displayService;
         this.database = database;
@@ -42,7 +45,10 @@ export class Emulator {
 
                 case 'snapshot':
                     this.handleSnapshot(message.snapshot);
+                    break;
 
+                case 'stopped':
+                    this.onStopped();
                     break;
 
                 default:
@@ -109,11 +115,19 @@ export class Emulator {
         this.worker.terminate();
     }
 
-    stop() {
+    async stop() {
+        await this.stopping;
+
         this.speedDisplay.innerText = '-';
         this.running = false;
         this.eventHandler.release();
-        this.worker.postMessage({ type: 'stop' });
+
+        this.stopping = new Promise((resolve) => {
+            this.onStopped = resolve;
+            this.worker.postMessage({ type: 'stop' });
+        });
+
+        await this.stopping;
     }
 
     start() {
