@@ -41,5 +41,20 @@
         return ~crc;
     }
 
+    function crc32_start() {
+        return ~0;
+    }
+
+    function crc32_add(crc, value) {
+        return crc32Table[(crc ^ value) & 0xff] ^ (crc >>> 8);
+    }
+
+    function crc32_finish(value) {
+        return ~value;
+    }
+
     this.crc32 = crc32;
+    this.crc32_start = crc32_start;
+    this.crc32_add = crc32_add;
+    this.crc32_finish = crc32_finish;
 })();

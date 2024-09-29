@@ -2,6 +2,7 @@ import './setimmediate/setimmediate.js';
 import { Emulator } from './emulator.js';
 import { Database } from './database.js';
 import { AudioDriver } from './audiodriver.js';
+import { compressSession, decompressSession } from './session.js';
 
 (function () {
     const isMacOSSafari = 'safari' in window;
@@ -24,12 +25,14 @@ import { AudioDriver } from './audiodriver.js';
     const mipsLimitSlider = document.getElementById('mips-limit-slider');
     const snapshotStatus = document.getElementById('snapshot-status');
 
-    const uploadNor = document.getElementById('upload-nor');
-    const uploadNand = document.getElementById('upload-nand');
-    const downloadNand = document.getElementById('download-nand');
-    const uploadSD = document.getElementById('upload-sd');
-    const downloadSD = document.getElementById('download-sd');
-    const clearLog = document.getElementById('clear-log');
+    const uploadNorButton = document.getElementById('upload-nor');
+    const uploadNandButton = document.getElementById('upload-nand');
+    const downloadNandButton = document.getElementById('download-nand');
+    const uploadSDButton = document.getElementById('upload-sd');
+    const downloadSDButton = document.getElementById('download-sd');
+    const exportImageButton = document.getElementById('export-image');
+    const importImageButton = document.getElementById('import-image');
+    const clearLogButton = document.getElementById('clear-log');
 
     const audioButton = document.getElementById('audio-button');
 
@@ -228,6 +231,36 @@ import { AudioDriver } from './audiodriver.js';
         }
     }
 
+    async function exportImage() {
+        const nor = await database.getNor();
+        const ram = await database.getRam();
+        const nand = await database.getNand();
+
+        const session = compressSession({
+            nor: nor.content,
+            ram,
+            nand: nand.content,
+            metadata: {
+                norName: nor.name,
+                nandName: nand.name,
+            },
+        });
+
+        saveFile(`${filenameFragment('uarm-session')}.bin`, session);
+    }
+
+    async function importImage() {
+        const sessionFile = await openFile();
+
+        try {
+            const session = decompressSession(sessionFile.content);
+
+            console.log(session);
+        } catch (e) {
+            alert(`Failed to load session: ${e.message}`);
+        }
+    }
+
     async function main() {
         setSnapshotStatus('ok');
 
@@ -264,7 +297,7 @@ import { AudioDriver } from './audiodriver.js';
 
         updateLabels();
 
-        uploadNor.addEventListener(
+        uploadNorButton.addEventListener(
             'click',
             uploadHandler((file) => {
                 database.putNor(file);
@@ -272,7 +305,7 @@ import { AudioDriver } from './audiodriver.js';
             })
         );
 
-        uploadNand.addEventListener(
+        uploadNandButton.addEventListener(
             'click',
             uploadHandler((file) => {
                 database.putNand(file);
@@ -280,7 +313,7 @@ import { AudioDriver } from './audiodriver.js';
             })
         );
 
-        uploadSD.addEventListener(
+        uploadSDButton.addEventListener(
             'click',
             uploadHandler((file) => {
                 database.putSd(file);
@@ -288,11 +321,14 @@ import { AudioDriver } from './audiodriver.js';
             })
         );
 
-        downloadNand.addEventListener('click', () => {
+        exportImageButton.addEventListener('click', exportImage);
+        importImageButton.addEventListener('click', importImage);
+
+        downloadNandButton.addEventListener('click', () => {
             database.getNand(false).then((nand) => saveFile(`${filenameFragment('nand')}.bin`, nand.content));
         });
 
-        downloadSD.addEventListener('click', () => {
+        downloadSDButton.addEventListener('click', () => {
             database.getSd(false).then((sd) => saveFile(`${filenameFragment('sd')}.bin`, sd.content));
         });
 
@@ -307,7 +343,7 @@ import { AudioDriver } from './audiodriver.js';
 
         audioButton.addEventListener('click', () => onAudioButtonClick());
 
-        clearLog.addEventListener('click', () => (logContainer.innerHTML = ''));
+        clearLogButton.addEventListener('click', () => (logContainer.innerHTML = ''));
 
         document.addEventListener('visibilitychange', () => (document.hidden ? emulator?.stop() : emulator?.start()));
     }
