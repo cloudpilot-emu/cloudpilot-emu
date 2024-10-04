@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
-#include "util.h"
 
 #define PXA_RTC_BASE 0x40900000UL
 #define PXA_RTC_SIZE 0x00001000UL

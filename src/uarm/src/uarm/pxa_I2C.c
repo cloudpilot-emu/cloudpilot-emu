@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
 #include "soc_I2C.h"
-#include "util.h"
 
 #define PXA_I2C_SIZE 0x00000024UL
 

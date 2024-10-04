@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../util.h"
 #include "CPU.h"
+#include "cputil.h"
 #include "uarm_endian.h"
 
 #define CACHE_LINE_WIDTH_BITS 5

@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "mem.h"
-#include "util.h"
 
 #define PXA270_IMC_BASE 0x58000000ul
 #define PXA270_IMC_SIZE 0x0c

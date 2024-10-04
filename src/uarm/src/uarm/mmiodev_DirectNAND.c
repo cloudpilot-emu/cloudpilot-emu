@@ -6,10 +6,10 @@
 #include <string.h>
 
 #include "CPU.h"
+#include "cputil.h"
 #include "device.h"
 #include "mem.h"
 #include "nand.h"
-#include "util.h"
 
 struct DirectNAND {
     uint32_t baseCleAddr, baseAleAddr, baseDataAddr, maskBitsAddr;

@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "pxa_IC.h"
-#include "util.h"
 
 #define PXA270_KPC_BASE 0x41500000ul
 #define PXA270_KPC_SIZE 0x4c

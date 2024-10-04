@@ -6,7 +6,7 @@
 #include <string.h>
 
 #include "SoC.h"
-#include "util.h"
+#include "cputil.h"
 
 #define PXA_CLOCK_MANAGER_BASE 0x41300000UL
 #define PXA_CLOCK_MANAGER_SIZE 0x00001000UL

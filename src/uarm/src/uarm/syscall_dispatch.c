@@ -4,8 +4,8 @@
 #include <string.h>
 
 #include "CPU.h"
+#include "cputil.h"
 #include "syscall.h"
-#include "util.h"
 
 #define MAX_NEST_LEVEL 4
 

@@ -17,8 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "gdbstub.h"
-#include "util.h"
 
 #define MAX_BREAKPOINTS 16
 #define MAX_WATCHPOINTS 16

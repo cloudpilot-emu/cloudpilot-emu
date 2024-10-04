@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "mem.h"
-#include "util.h"
 
 #define PXA_PWM_SIZE 0x0010
 

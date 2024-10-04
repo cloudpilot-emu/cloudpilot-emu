@@ -7,7 +7,7 @@
 
 #include "RAM.h"
 #include "ROM.h"
-#include "util.h"
+#include "cputil.h"
 
 #define NUM_MEM_REGIONS 128
 

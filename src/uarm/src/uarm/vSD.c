@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "util.h"
+#include "cputil.h"
 
 // this is not and will never be a full SD card emulator, deal with it!
 

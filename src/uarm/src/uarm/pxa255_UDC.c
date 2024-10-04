@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "mem.h"
-#include "util.h"
 
 #define PXA_UDC_BASE 0x40600000UL
 #define PXA_UDC_SIZE 0x00001000UL

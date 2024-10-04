@@ -6,8 +6,8 @@
 #include <string.h>
 
 #include "SoC.h"
+#include "cputil.h"
 #include "uarm_endian.h"
-#include "util.h"
 
 struct ArmRam {
     uint32_t adr;

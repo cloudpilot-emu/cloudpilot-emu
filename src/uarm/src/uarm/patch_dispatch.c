@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "syscall.h"
-#include "util.h"
 
 #define MAX_PENDING_TAILPATCH 32
 #define MAX_PATCHES 50

@@ -1,29 +1,8 @@
-.build
-.deps
-.build-emcc
-.deps-emcc
-.build-test
-.deps-test
-
 src/uarm-bin
 src/test/test
 src/uarm_web*
-Makefile.local
 
-Caddyfile
 node_modules
-
-*.bin
-*.prc
-*.pdb
-*.img
-*.zip
-*.diff
-*.s
-*.wat
-*.wasm
-
-.vscode
 *.log
 
-misc
+uarm-bin

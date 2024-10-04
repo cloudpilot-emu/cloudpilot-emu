@@ -7,9 +7,9 @@
 #include <string.h>
 
 #include "SoC.h"
+#include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
-#include "util.h"
 
 #define PXA_LCD_BASE 0x44000000UL
 #define PXA_LCD_SIZE 0x00001000UL

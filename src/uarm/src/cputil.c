@@ -1,4 +1,4 @@
-#include "util.h"
+#include "cputil.h"
 
 #include <stdlib.h>
 #include <time.h>

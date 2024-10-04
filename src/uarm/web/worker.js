@@ -1,4 +1,4 @@
-importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
+importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
 (function () {
     const PCM_BUFFER_SIZE = (44100 / 60) * 10;
@@ -255,7 +255,7 @@ importScripts('../src/uarm_web.js', './setimmediate/setimmediate.js', './crc.js'
                 noInitialRun: true,
                 print: log,
                 printErr: log,
-                locateFile: () => `../src/${binary}`,
+                locateFile: () => `../${binary}`,
             });
 
             const malloc = module.cwrap('malloc', 'number', ['number']);

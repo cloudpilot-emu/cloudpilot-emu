@@ -42,8 +42,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "../util.h"
 #include "audio_queue.h"
+#include "cputil.h"
 #include "device.h"
 #include "keys.h"
 #include "peephole.h"

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "util.h"
+#include "cputil.h"
 
 struct Pxa255dsp {
     uint64_t acc0;

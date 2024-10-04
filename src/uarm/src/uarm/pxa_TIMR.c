@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
-#include "util.h"
 
 #define PXA_TIMR_BASE 0x40A00000UL
 #define PXA_TIMR_SIZE 0x00010000UL

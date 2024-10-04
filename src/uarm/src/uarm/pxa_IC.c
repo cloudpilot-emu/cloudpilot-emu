@@ -7,8 +7,8 @@
 #include <string.h>
 
 #include "SoC.h"
+#include "cputil.h"
 #include "mem.h"
-#include "util.h"
 
 #define PXA_IC_BASE 0x40D00000UL
 #define PXA_IC_SIZE 0x00010000UL

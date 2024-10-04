@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
 #include "soc_GPIO.h"
-#include "util.h"
 
 #define PXA_GPIO_BASE 0x40E00000UL
 #define PXA_GPIO_SIZE 0x00001000UL
@@ -36,8 +36,7 @@ static void socGpioPrvRecalcValues(struct SocGpio *gpio, uint_fast8_t which) {
 
     if (which >= 4) {
         fprintf(stderr, "gpio overflow. halt\n");
-        while (1)
-            ;
+        while (1);
     }
 
     val = gpio->dirs[which];

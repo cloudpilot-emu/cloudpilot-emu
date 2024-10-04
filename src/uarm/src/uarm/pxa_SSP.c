@@ -3,11 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "mem.h"
 #include "pxa_DMA.h"
 #include "pxa_IC.h"
 #include "soc_SSP.h"
-#include "util.h"
 
 #define PXA_SSP_SIZE 0x00010000UL
 

@@ -1,7 +1,7 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#ifndef _CPUTIL_H_
+#define _CPUTIL_H_
 
 #include <stdint.h>
 #include <stdio.h>
@@ -31,4 +31,4 @@ void uarmAbort();
 }
 #endif
 
-#endif
+#endif  // CPUTIL

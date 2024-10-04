@@ -35,9 +35,9 @@
 #include "MainLoop.h"
 #include "SoC.h"
 #include "audio_queue.h"
+#include "cputil.h"
 #include "device.h"
 #include "sdcard.h"
-#include "util.h"
 
 using namespace std;
 

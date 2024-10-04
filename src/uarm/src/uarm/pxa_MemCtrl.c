@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "util.h"
+#include "cputil.h"
 
 #define PXA_MEM_CONTROLLER_BASE 0x48000000UL
 #define PXA_MEM_CONTROLLER_SIZE 0x00004000UL

@@ -34,6 +34,9 @@ Makefile.local
 *.pem
 *.cer
 *.p12
+*.s
+*.wat
+*.wasm
 *.patch
 __pycache__
 .vscode/.ropeproject

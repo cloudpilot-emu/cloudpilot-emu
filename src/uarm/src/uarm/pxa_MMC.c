@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "mem.h"
 #include "pxa_DMA.h"
-#include "util.h"
 
 #define PXA_MMC_BASE 0x41100000UL
 #define PXA_MMC_SIZE 0x00001000UL
@@ -452,7 +452,7 @@ static bool pxaMmcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
 
         //	if (!write)
         //		fprintf(stderr, "MMC [0x%08x] -> 0x%08x\n", (unsigned)(PXA_MMC_BASE + 4 *
-        //pa), val);
+        // pa), val);
     }
 
     return ret;

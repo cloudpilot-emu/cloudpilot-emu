@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "audio_queue.h"
-#include "util.h"
+#include "cputil.h"
 
 enum WM9712REG {
     RESET = 0x00,

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "util.h"
+#include "cputil.h"
 
 #define MAX_GPIO_KEYS 64
 #define MAX_KP_ROWS 12

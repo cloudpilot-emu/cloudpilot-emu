@@ -7,9 +7,9 @@
 
 #include <iostream>
 
-#include "../util.h"
 #include "MMU.h"
 #include "cp15.h"
+#include "cputil.h"
 #include "gdbstub.h"
 #include "icache.h"
 #include "mem.h"

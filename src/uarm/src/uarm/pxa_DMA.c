@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
-#include "util.h"
 
 #define PXA_DMA_BASE 0x40000000UL
 #define PXA_DMA_SIZE 0x00002000UL

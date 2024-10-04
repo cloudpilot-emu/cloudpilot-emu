@@ -6,8 +6,8 @@
 #include <string.h>
 
 #include "CPU.h"
+#include "cputil.h"
 #include "mem.h"
-#include "util.h"
 
 enum K9nandState {
     K9nandStateReset,

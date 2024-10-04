@@ -3,10 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cputil.h"
 #include "pxa_DMA.h"
 #include "pxa_IC.h"
 #include "soc_I2S.h"
-#include "util.h"
 
 #define PXA_I2S_BASE 0x40400000UL
 #define PXA_I2S_SIZE 0x00010000UL

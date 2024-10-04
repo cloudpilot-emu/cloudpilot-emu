@@ -3,9 +3,9 @@
 #include <stdlib.h>
 
 #include "ac97dev_WM9712L.h"
+#include "cputil.h"
 #include "device.h"
 #include "mmiodev_DirectNAND.h"
-#include "util.h"
 
 // clang-format off
 /*
