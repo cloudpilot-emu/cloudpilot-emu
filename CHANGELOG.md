@@ -1,4 +1,4 @@
-# Next version
+# Version 1.10.4
 
 -   Minor documentation changes.
 -   CloudpilotEmu is now available on the iOS
