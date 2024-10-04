@@ -147,6 +147,17 @@ repeated update notifications without the "New version..." dialog on reload or
 the app not updating to the most recent version, go to the "About" tab, scroll
 to the bottom and select the "reset worker" link at the bottom of the page. 
 
+:::div{.feature-native-app}
+# Stable and preview builds
+
+CloudpilotEmu is available both as a stable and as a preview version (which eventually
+is released as the next stable version). If you are using the native iOS app you can switch
+between both versions by opening the "Settings" app, selecting "CloudpilotEmu" and
+toggling "Use preview version".
+
+The date of the two different versions is stored separately from each other.
+:::
+
 # Known issues and limitations
 
 :::div{.feature-ios-or-safari}
@@ -163,8 +174,9 @@ to the bottom and select the "reset worker" link at the bottom of the page.
 
 -   Safari: Safari will delete all data stored by the app if the page is not
     opened for more than seven days. The only way to circumvent this is to
-    install CloudpilotEmu as a homescreen app (on iOS) or to add it to the dock
-    (Safari).
+    install CloudpilotEmu from the
+    [App Store](https://apps.apple.com/de/app/cloudpilotemu/id6478502699)
+    or as a homescreen app (on iOS) or to add it to the dock (Safari on MacOS).
 
 -   Safari: On rare occasions there have been issues with Safari handling 
     CloudpilotEmu's service worker. Symptoms of this are either repeated

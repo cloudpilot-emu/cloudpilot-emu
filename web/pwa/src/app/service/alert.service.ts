@@ -4,6 +4,10 @@ import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
 import { debounce } from '@pwa/helper/debounce';
 
+class Verbatim {
+    constructor(public markup: string) {}
+}
+
 @Injectable({
     providedIn: 'root',
 })
@@ -13,7 +17,11 @@ export class AlertService {
         private emulationState: EmulationStateService,
     ) {}
 
-    async errorMessage(message: string, buttonLabel = 'Close') {
+    verbatim(markup: string): Verbatim {
+        return new Verbatim(markup);
+    }
+
+    async errorMessage(message: string | Verbatim, buttonLabel = 'Close') {
         const alert = await this.alertController.create({
             header: 'Error',
             backdropDismiss: false,
@@ -28,7 +36,7 @@ export class AlertService {
 
     async message(
         header: string,
-        message: string,
+        message: string | Verbatim,
         extraButtons: Record<string, () => void> = {},
         closeButtonLabel = 'Close',
     ): Promise<void> {
@@ -55,7 +63,7 @@ export class AlertService {
 
     async messageWithChoice(
         header: string,
-        message: string,
+        message: string | Verbatim,
         choiceLabel: string,
         choice: boolean,
         extraButtons: Record<string, () => void> = {},
@@ -190,7 +198,9 @@ export class AlertService {
         return this.message('Card clean', 'No filesystem errors were found.', {}, 'Continue');
     }
 
-    sanitizeMessage(message: string): IonicSafeString {
+    sanitizeMessage(message: string | Verbatim): IonicSafeString {
+        if (message instanceof Verbatim) return new IonicSafeString(message.markup);
+
         return new IonicSafeString(
             message
                 .replace(/<br\s*\/?>/g, '<br/>')

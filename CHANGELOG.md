@@ -1,3 +1,9 @@
+# Next version
+
+-   Minor documentation changes.
+-   CloudpilotEmu is now available on the iOS
+    [App Store](https://apps.apple.com/us/app/cloudpilotemu/id6478502699)
+
 # Version 1.10.3
 
 -   Minor documentation changes.

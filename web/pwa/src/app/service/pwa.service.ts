@@ -1,4 +1,4 @@
-import { isAndroid, isIOS, isIOSSafari, isMacOSSafari } from '@common/helper/browser';
+import { isAndroid, isIOS, isMacOSSafari } from '@common/helper/browser';
 
 import { AlertService } from './alert.service';
 import { Injectable } from '@angular/core';
@@ -13,6 +13,9 @@ declare global {
     }
 }
 
+const APPSTORE_LINK =
+    '<a href="https://apps.apple.com/us/app/cloudpilotemu/id6478502699" target="_blank">App Store</a>';
+
 const INSTRUCTIONS_ANDROID = `
     Open your browser's menu and tap "Add to Home screen" or "Install App"
     in order to install CloudpilotEmu as an app.
@@ -20,19 +23,13 @@ const INSTRUCTIONS_ANDROID = `
     This removes the browser UI and gives you a native app experience.
 `;
 
-const INSTRUCTIONS_SAFARI_IOS = `
-    Tap the "Share" icon in the browser toolbar
-    and select "Add to Home Screen" in order to install CloudpilotEmu as an app.
-    <br/><br/>
-    This removes the browser UI and makes sure that Safari never deletes your sessions.
-`;
-
 const INSTRUCTIONS_IOS = `
-    Open CloudpilotEmu in Safari, tap the "Share" icon in the browser toolbar
-    and select "Add to Home Screen" in order to install
-    CloudpilotEmu as an app.
+    You can install CloudpilotEmu as an app either from the
+    ${APPSTORE_LINK} or by selecting "Share" and "Add to Home Screen"
+    in Safari.
     <br/><br/>
-    This removes the browser UI and gives you a native app experience.
+    If you continue to run CloudpilotEmu in the browser iOS will remove your data after seven days
+    of inactivity.
 `;
 
 const INVITATION_ANDROID = `
@@ -43,22 +40,14 @@ const INVITATION_ANDROID = `
     This removes the browser UI and gives you a native app experience.
 `;
 
-const INVITATION_SAFARI_IOS = `
-    Howdy! It seems that you are using an iPhone or iPad. You can
-    install CloudpilotEmu as an app by tapping the "Share" icon
-    in the browser toolbar and selecting
-    "Add to Home Screen".
-    <br/><br/>
-    This removes the browser UI and makes sure that Safari never deletes your sessions.
-`;
-
 const INVITATION_IOS = `
     Howdy! It seems that you are using an iPhone or iPad. You can
-    install CloudpilotEmu as an app by opening it in Safari,
-    tapping the "Share" icon in the browser toolbar
-    and selecting "Add to Home Screen"
+    install CloudpilotEmu as an app either from the
+    ${APPSTORE_LINK} or by selecting "Share"
+    and "Add to Home Screen" in Safari.
     <br/><br/>
-    This removes the browser UI and gives you a native app experience.
+    If you continue to run CloudpilotEmu in the browser iOS will remove your data after seven days
+    of inactivity.
 `;
 
 const INVITATION_SAFARI_MACOS = `
@@ -91,7 +80,7 @@ export class PwaService {
     }
 
     install(): void {
-        void this.alertService.message('Install app', this.getInstallMessage());
+        void this.alertService.message('Install app', this.alertService.verbatim(this.getInstallMessage()));
     }
 
     invite(): void {
@@ -101,25 +90,17 @@ export class PwaService {
         this.kvsService.kvs.didShowInvitation = true;
 
         if (!window.hasOwnProperty('onbeforeinstallprompt')) {
-            void this.alertService.message('App available', this.getInviteMessage());
+            void this.alertService.message('App available', this.alertService.verbatim(this.getInviteMessage()));
         }
     }
 
     private getInstallMessage(): string {
-        if (isIOSSafari) {
-            return INSTRUCTIONS_SAFARI_IOS;
-        }
-
         if (isIOS) return INSTRUCTIONS_IOS;
 
         return INSTRUCTIONS_ANDROID;
     }
 
     private getInviteMessage(): string {
-        if (isIOSSafari) {
-            return INVITATION_SAFARI_IOS;
-        }
-
         if (isIOS) return INVITATION_IOS;
 
         if (isMacOSSafari) return INVITATION_SAFARI_MACOS;
