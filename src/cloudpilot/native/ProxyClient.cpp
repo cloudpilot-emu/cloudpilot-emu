@@ -61,6 +61,7 @@ namespace {
         return escaped.str();
     }
 
+    // This wrapper forces correct overload resolution for spawn. Sigh.
     template <typename T>
     void spawn_wrapper(net::io_context& ctx, T&& fn) {
         boost::asio::spawn<T, net::io_context>(ctx, std::forward<T>(fn));
