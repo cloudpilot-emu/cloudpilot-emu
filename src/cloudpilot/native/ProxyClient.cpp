@@ -60,6 +60,11 @@ namespace {
 
         return escaped.str();
     }
+
+    template <typename T>
+    void spawn_wrapper(net::io_context& ctx, T fn) {
+        boost::asio::spawn<T, net::io_context>(ctx, std::move(fn));
+    }
 }  // namespace
 
 class ProxyClientImpl : public ProxyClient {
@@ -135,12 +140,7 @@ class ProxyClientImpl : public ProxyClient {
 
    private:
     void ThreadMain() {
-        // We need to manually resolve the overload. I hate boost.
-        boost::asio::spawn<
-            std::__bind<void (ProxyClientImpl::*)(
-                            boost::asio::basic_yield_context<boost::asio::any_io_executor>),
-                        ProxyClientImpl*, const std::placeholders::__ph<1>&>,
-            net::io_context>(io_context, bind(&ProxyClientImpl::ThreadLoop, this, _1));
+        spawn_wrapper(io_context, bind(&ProxyClientImpl::ThreadLoop, this, _1));
 
         io_context.restart();
         io_context.run();
