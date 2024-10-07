@@ -7,22 +7,6 @@
 #include "SessionImage.h"
 #include "md5.h"
 
-bool util::readFile(string file, unique_ptr<uint8[]>& buffer, size_t& len) {
-    fstream stream(file, ios_base::in);
-    if (stream.fail()) return false;
-
-    stream.seekg(0, ios_base::end);
-    len = stream.tellg();
-
-    stream.seekg(0, ios_base::beg);
-    buffer = make_unique<uint8[]>(len);
-
-    stream.read((char*)buffer.get(), len);
-    if (static_cast<size_t>(stream.gcount()) != len) return false;
-
-    return true;
-}
-
 void util::analyzeRom(EmROMReader& reader) {
     cout << "ROM info" << endl;
     cout << "================================================================================"
@@ -57,7 +41,7 @@ bool util::initializeSession(string file, optional<string> deviceId) {
     unique_ptr<uint8[]> fileBuffer;
     size_t fileSize;
 
-    if (!util::readFile(file, fileBuffer, fileSize)) {
+    if (!util::ReadFile(file, fileBuffer, fileSize)) {
         cerr << "unable to open " << file << endl;
 
         return false;
@@ -131,7 +115,7 @@ string util::registerImage(const string& image) {
     unique_ptr<uint8[]> fileBuffer;
     size_t fileSize;
 
-    if (!util::readFile(image, fileBuffer, fileSize)) {
+    if (!util::ReadFile(image, fileBuffer, fileSize)) {
         cerr << "unable to open card " << image << endl;
 
         return "";

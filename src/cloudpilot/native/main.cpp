@@ -11,6 +11,7 @@
 #include <string>
 
 #include "Cli.h"
+#include "Commands.h"
 #include "DebugSupport.h"
 #include "Debugger.h"
 #include "EmCommon.h"
@@ -130,7 +131,7 @@ void setupDebugger(GdbStub& gdbStub, const Options& options) {
             unique_ptr<uint8[]> buffer;
             size_t len;
 
-            if (!util::readFile(*options.debuggerConfiguration.appFile, buffer, len))
+            if (!util::ReadFile(*options.debuggerConfiguration.appFile, buffer, len))
                 cout << "failed to read " << *options.debuggerConfiguration.appFile << endl
                      << flush;
 
@@ -183,13 +184,14 @@ void run(const Options& options) {
 
     MainLoop mainLoop(window, renderer, scale);
 
+    commands::Register();
     cli::Start(options.scriptFile);
-    cli::TaskContext taskContext = {.debugger = gDebugger, .gdbStub = gdbStub};
+    commands::Context commandContext = {.debugger = gDebugger, .gdbStub = gdbStub};
 
     while (mainLoop.IsRunning()) {
         mainLoop.Cycle();
 
-        if (cli::Execute(taskContext)) break;
+        if (cli::Execute(&commandContext)) break;
 
         handleSuspend();
         if (proxyHandler) proxyHandler->HandleSuspend();

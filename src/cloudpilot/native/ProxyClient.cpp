@@ -7,6 +7,7 @@
 #include <atomic>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
+#include <boost/asio/use_future.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/websocket.hpp>
@@ -134,7 +135,12 @@ class ProxyClientImpl : public ProxyClient {
 
    private:
     void ThreadMain() {
-        boost::asio::spawn(io_context, bind(&ProxyClientImpl::ThreadLoop, this, _1));
+        // We need to manually resolve the overload. I hate boost.
+        boost::asio::spawn<
+            std::__bind<void (ProxyClientImpl::*)(
+                            boost::asio::basic_yield_context<boost::asio::any_io_executor>),
+                        ProxyClientImpl*, const std::placeholders::__ph<1>&>,
+            net::io_context>(io_context, bind(&ProxyClientImpl::ThreadLoop, this, _1));
 
         io_context.restart();
         io_context.run();

@@ -19,15 +19,19 @@
 #include <mutex>
 #include <sstream>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
-#include "Commands.h"
-#include "util.h"
+#include "FileUtil.h"
+
+using namespace std;
 
 namespace {
     atomic<bool> stop(false);
     thread cliThread;
 
+    vector<const cli::Command> commands;
+    unordered_map<string, uint32_t> commandMap;
     const cli::Command* command = nullptr;
     vector<string> arguments;
 
@@ -36,15 +40,10 @@ namespace {
 
     deque<string> script;
 
-    class CommandContextImpl : public cli::CommandContext {
+    class CommandEnvironmentImpl : public cli::CommandEnvironment {
        public:
-        CommandContextImpl(const cli::TaskContext& taskContext, const cli::Command& command,
-                           bool&(quit))
-            : taskContext(taskContext), command(command), quit(quit) {}
-
-        Debugger& GetDebugger() const override { return taskContext.debugger; }
-
-        GdbStub& GetGdbStub() const override { return taskContext.gdbStub; }
+        CommandEnvironmentImpl(const cli::Command& command, bool&(quit))
+            : command(command), quit(quit) {}
 
         void PrintUsage() const override {
             cout << "usage: " << (command.usage ? command.usage : command.name) << endl << flush;
@@ -53,7 +52,6 @@ namespace {
         void RequestQuit() override { quit = true; }
 
        private:
-        cli::TaskContext taskContext;
         const cli::Command& command;
 
         bool& quit;
@@ -68,7 +66,7 @@ namespace {
 
         unique_ptr<uint8_t[]> fileContent;
         size_t len;
-        if (!util::readFile(*scriptFile, fileContent, len)) {
+        if (!util::ReadFile(*scriptFile, fileContent, len)) {
             cout << "unable to read script " << *scriptFile << endl << flush;
         }
 
@@ -279,10 +277,10 @@ namespace {
         static vector<string> suggestions;
 
         if (state == 0) {
-            suggestions = vector<string>(cli::commands.size());
+            suggestions = vector<string>(commands.size());
             suggestions.clear();
 
-            for (auto& command : cli::commands) {
+            for (auto& command : commands) {
                 if (strstr(command.name, word) == command.name) {
                     suggestions.push_back(command.name);
                 }
@@ -398,15 +396,29 @@ namespace cli {
         command = nullptr;
     }
 
-    bool Execute(const cli::TaskContext& taskContext) {
+    void AddCommands(const std::vector<Command> newCommands) {
+        for (const auto& command : newCommands) {
+            commands.push_back(command);
+            commandMap.insert({string(command.name), commands.size() - 1});
+        }
+    }
+
+    const Command* GetCommand(const string& name) {
+        auto it = commandMap.find(name);
+
+        return (it == commandMap.end()) ? nullptr : &commands[it->second];
+    }
+
+    std::vector<const Command> GetCommands() { return commands; }
+
+    bool Execute(void* context) {
         bool quit = false;
 
         if (command) {
             unique_lock<mutex> lock(dispatchMutex);
-            CommandContextImpl commandContext(taskContext, *command, quit);
+            CommandEnvironmentImpl commandEnvironment(*command, quit);
 
-            command->cmd(arguments, commandContext);
-
+            command->cmd(arguments, commandEnvironment, context);
             command = nullptr;
         };
 

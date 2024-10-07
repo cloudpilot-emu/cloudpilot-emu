@@ -1,5 +1,6 @@
 {
   "files.associations": {
+    "*.h": "cpp",
     "readcpu.h": "c",
     "vector": "cpp",
     "iosfwd": "cpp",
@@ -124,7 +125,12 @@
     "hash_map": "cpp",
     "source_location": "cpp",
     "regex": "cpp",
-    "*.inc": "cpp"
+    "*.inc": "cpp",
+    "__verbose_abort": "cpp",
+    "forward_list": "cpp",
+    "print": "cpp",
+    "span": "cpp",
+    "format": "cpp"
   },
   "editor.formatOnSave": true,
   "CppHelper.SourcePattern": [

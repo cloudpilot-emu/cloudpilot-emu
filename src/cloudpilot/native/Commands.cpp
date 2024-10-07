@@ -6,6 +6,7 @@
 #include <sstream>
 #include <unordered_map>
 
+#include "Cli.h"
 #include "DbBackup.h"
 #include "DbInstaller.h"
 #include "DebugSupport.h"
@@ -22,6 +23,7 @@
 #include "ZipfileWalker.h"
 #include "md5.h"
 #include "util.h"
+
 using namespace std;
 
 namespace {
@@ -63,7 +65,7 @@ namespace {
         unique_ptr<uint8[]> buffer;
         size_t len;
 
-        if (!util::readFile(path, buffer, len)) {
+        if (!util::ReadFile(path, buffer, len)) {
             cout << "failed to read " << path << endl << flush;
             return;
         }
@@ -192,14 +194,14 @@ namespace {
         return true;
     }
 
-    void CmdQuit(vector<string> args, cli::CommandContext& context) {
-        if (args.size() > 0) return context.PrintUsage();
+    void CmdQuit(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() > 0) return env.PrintUsage();
 
-        context.RequestQuit();
+        env.RequestQuit();
     }
 
-    void CmdInstallFile(vector<string> args, cli::CommandContext& context) {
-        if (args.empty()) return context.PrintUsage();
+    void CmdInstallFile(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.empty()) return env.PrintUsage();
 
         for (auto file : args) {
             cout << "installing '" << file << "'..." << endl << flush;
@@ -207,8 +209,8 @@ namespace {
         }
     }
 
-    void CmdSaveImage(vector<string> args, cli::CommandContext& context) {
-        if (args.size() < 1 || args.size() > 2) return context.PrintUsage();
+    void CmdSaveImage(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() < 1 || args.size() > 2) return env.PrintUsage();
 
         EmHAL::Slot slot = util::mountedSlot();
         if (args.size() == 2 && slot == EmHAL::Slot::none) {
@@ -235,8 +237,8 @@ namespace {
         SaveImage(args[0]);
     }
 
-    void CmdSetUserName(vector<string> args, cli::CommandContext& context) {
-        if (args.size() == 0) return context.PrintUsage();
+    void CmdSetUserName(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() == 0) return env.PrintUsage();
 
         string username;
 
@@ -248,28 +250,29 @@ namespace {
         gSession->SetHotsyncUserName(username);
     }
 
-    void CmdResetSoft(vector<string> args, cli::CommandContext& context) {
-        if (args.size() > 0) return context.PrintUsage();
+    void CmdResetSoft(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() > 0) return env.PrintUsage();
 
         gSession->Reset(EmSession::ResetType::soft);
     }
 
-    void CmdResetHard(vector<string> args, cli::CommandContext& context) {
-        if (args.size() > 0) return context.PrintUsage();
+    void CmdResetHard(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() > 0) return env.PrintUsage();
 
         gSession->Reset(EmSession::ResetType::hard);
     }
 
-    void CmdResetNoext(vector<string> args, cli::CommandContext& context) {
-        if (args.size() > 0) return context.PrintUsage();
+    void CmdResetNoext(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() > 0) return env.PrintUsage();
 
         gSession->Reset(EmSession::ResetType::noext);
     }
 
-    void CmdSwitchImage(vector<string> args, cli::CommandContext& context) {
-        if (args.size() != 1) return context.PrintUsage();
+    void CmdSwitchImage(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
+        auto ctx = reinterpret_cast<commands::Context*>(context);
 
-        if (context.GetGdbStub().IsDebuggerConnected()) {
+        if (ctx->gdbStub.IsDebuggerConnected()) {
             cout << "this command is not available while a debugger is connected" << endl << flush;
             return;
         }
@@ -277,31 +280,31 @@ namespace {
         gExternalStorage.Clear();
         util::initializeSession(args[0]);
 
-        context.GetGdbStub().ClearRelocationOffset();
+        ctx->gdbStub.ClearRelocationOffset();
     }
 
-    void CmdSaveBackup(vector<string> args, cli::CommandContext& context) {
-        if (args.size() != 1) return context.PrintUsage();
+    void CmdSaveBackup(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
 
         SaveBackup(args[0], false);
     }
 
-    void CmdSaveBackupWithRom(vector<string> args, cli::CommandContext& context) {
-        if (args.size() != 1) return context.PrintUsage();
+    void CmdSaveBackupWithRom(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
 
         SaveBackup(args[0], true);
     }
 
-    void CmdLaunch(vector<string> args, cli::CommandContext& context) {
-        if (args.size() != 1) return context.PrintUsage();
+    void CmdLaunch(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
 
         cout << (gSession->LaunchAppByName(args[0]) ? "app launched successfully" : "launch failed")
              << endl
              << flush;
     }
 
-    void CmdUnmount(vector<string> args, cli::CommandContext& context) {
-        if (args.size() > 0) return context.PrintUsage();
+    void CmdUnmount(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() > 0) return env.PrintUsage();
 
         EmHAL::Slot slot = util::mountedSlot();
         if (slot == EmHAL::Slot::none) {
@@ -315,14 +318,14 @@ namespace {
             cout << "failed to eject card" << endl << flush;
     }
 
-    void CmdMount(vector<string> args, cli::CommandContext& context) {
-        if (args.size() != 1) return context.PrintUsage();
+    void CmdMount(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
 
         if (util::mountImage(args[0])) cout << args[0] << " mounted successfully" << endl << flush;
     }
 
-    void CmdSaveCard(vector<string> args, cli::CommandContext& context) {
-        if (args.size() != 1) return context.PrintUsage();
+    void CmdSaveCard(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
 
         EmHAL::Slot slot = util::mountedSlot();
         if (!gExternalStorage.IsMounted(slot)) {
@@ -333,7 +336,7 @@ namespace {
         if (SaveCard(args[0])) cout << "successfully saved " << args[0] << endl << flush;
     }
 
-    void CmdTrace(vector<string> args, cli::CommandContext& context) {
+    void CmdTrace(vector<string> args, cli::CommandEnvironment& env, void* context) {
         int frameCount{3};
         bool includeStack{false};
 
@@ -348,19 +351,19 @@ namespace {
 
             includeStack = args.size() == 2 && args[1] == "stack";
         } catch (exception&) {
-            return context.PrintUsage();
+            return env.PrintUsage();
         }
 
         StackDump().FrameCount(frameCount).DumpFrames(includeStack).Dump();
     }
 
-    void CmdLocate(vector<string> args, cli::CommandContext& context) {
-        if (args.size() != 1) return context.PrintUsage();
+    void CmdLocate(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
 
         unique_ptr<uint8[]> buffer;
         size_t len;
 
-        if (!util::readFile(args[0], buffer, len)) {
+        if (!util::ReadFile(args[0], buffer, len)) {
             cout << "failed to read " << args[0] << endl << flush;
             return;
         }
@@ -368,25 +371,28 @@ namespace {
         debug_support::Locate(buffer.get(), len);
     }
 
-    void CmdDebugSetApp(vector<string> args, cli::CommandContext& context) {
-        if (args.size() != 1 && args.size() != 2) return context.PrintUsage();
+    void CmdDebugSetApp(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1 && args.size() != 2) return env.PrintUsage();
 
+        auto ctx = reinterpret_cast<commands::Context*>(context);
         unique_ptr<uint8[]> buffer;
         size_t len;
 
-        if (!util::readFile(args[0], buffer, len)) {
+        if (!util::ReadFile(args[0], buffer, len)) {
             cout << "failed to read " << args[0] << endl << flush;
             return;
         }
 
         debug_support::SetApp(buffer.get(), len, args.size() == 2 ? args[1].c_str() : nullptr,
-                              context.GetGdbStub(), context.GetDebugger());
+                              ctx->gdbStub, ctx->debugger);
     }
 
-    void CmdDebugInfo(vector<string> args, cli::CommandContext& context) {
-        if (args.size() > 0) return context.PrintUsage();
+    void CmdDebugInfo(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() > 0) return env.PrintUsage();
 
-        switch (context.GetDebugger().GetBreakMode()) {
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+
+        switch (ctx->debugger.GetBreakMode()) {
             case Debugger::BreakMode::all:
                 cout << "break mode: all" << endl;
                 break;
@@ -397,39 +403,39 @@ namespace {
 
             case Debugger::BreakMode::appOnly:
                 cout << "break mode: app-only: 0x" << hex << setw(8) << setfill('0')
-                     << context.GetDebugger().GetAppStart() << " - 0x" << setw(8) << setfill('0')
-                     << (context.GetDebugger().GetAppStart() + context.GetDebugger().GetAppSize())
-                     << endl;
+                     << ctx->debugger.GetAppStart() << " - 0x" << setw(8) << setfill('0')
+                     << (ctx->debugger.GetAppStart() + ctx->debugger.GetAppSize()) << endl;
                 break;
         }
 
-        if (context.GetGdbStub().IsDebuggerConnected())
+        if (ctx->gdbStub.IsDebuggerConnected())
             cout << "debugger connected" << endl << flush;
         else
             cout << "debugger disconnected" << endl << flush;
     }
 
-    void CmdDebugSetBreakMode(vector<string> args, cli::CommandContext& context) {
+    void CmdDebugSetBreakMode(vector<string> args, cli::CommandEnvironment& env, void* context) {
         string modeStr = args.size() == 1 ? args[0] : "";
+        auto ctx = reinterpret_cast<commands::Context*>(context);
 
         if (modeStr == "all")
-            context.GetDebugger().SetBreakMode(Debugger::BreakMode::all);
+            ctx->debugger.SetBreakMode(Debugger::BreakMode::all);
         else if (modeStr == "app-only")
-            context.GetDebugger().SetBreakMode(Debugger::BreakMode::appOnly);
+            ctx->debugger.SetBreakMode(Debugger::BreakMode::appOnly);
         else if (modeStr == "ram-only")
-            context.GetDebugger().SetBreakMode(Debugger::BreakMode::ramOnly);
+            ctx->debugger.SetBreakMode(Debugger::BreakMode::ramOnly);
         else
-            context.PrintUsage();
+            env.PrintUsage();
     }
 
-    void CmdDumpMemory(vector<string> args, cli::CommandContext& context) {
-        if (args.size() != 1) return context.PrintUsage();
+    void CmdDumpMemory(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
 
         DumpMemory(args[0]);
     }
 
-    void CmdShowSyscallTraps(vector<string> args, cli::CommandContext& context) {
-        if (args.size() > 0) return context.PrintUsage();
+    void CmdShowSyscallTraps(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() > 0) return env.PrintUsage();
 
         cout << "syscall traps:" << endl << flush;
 
@@ -439,8 +445,8 @@ namespace {
         cout << flush;
     }
 
-    void CmdSetSyscallTrap(vector<string> args, cli::CommandContext& context) {
-        if (args.size() != 1) return context.PrintUsage();
+    void CmdSetSyscallTrap(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
 
         uint32 trapWord;
         istringstream sstream;
@@ -460,8 +466,8 @@ namespace {
         gDebugger.SetSyscallTrap(trapWord);
     }
 
-    void CmdClearSyscallTrap(vector<string> args, cli::CommandContext& context) {
-        if (args.size() != 1) context.PrintUsage();
+    void CmdClearSyscallTrap(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) env.PrintUsage();
 
         uint32 trapWord;
         istringstream sstream;
@@ -481,14 +487,14 @@ namespace {
         gDebugger.ClearSyscallTrap(trapWord);
     }
 
-    void CmdClearAllSyscallTraps(vector<string> args, cli::CommandContext& context) {
-        if (args.size() > 0) return context.PrintUsage();
+    void CmdClearAllSyscallTraps(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() > 0) return env.PrintUsage();
 
         gDebugger.ClearAllSyscallTraps();
     }
 
-    void CmdHelp(vector<string> args, cli::CommandContext& context) {
-        if (args.size() > 1) return context.PrintUsage();
+    void CmdHelp(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() > 1) return env.PrintUsage();
 
         cout << endl;
 
@@ -513,7 +519,7 @@ namespace {
         } else {
             cout << "available commands:" << endl << endl;
 
-            for (auto& command : cli::commands) {
+            for (auto& command : cli::GetCommands()) {
                 const char* usage = command.usage ? command.usage : command.name;
 
                 cout << left << setw(50) << usage;
@@ -529,117 +535,109 @@ namespace {
 
         cout << endl << flush;
     }
-}  // namespace
 
-const vector<cli::Command> cli::commands({
-    {.name = "help", .description = "Show help.", .cmd = CmdHelp},
-    {.name = "quit", .description = "Quit CloudpilotEmu.", .cmd = CmdQuit},
-    {.name = "exit", .description = "Quit CloudpilotEmu.", .cmd = CmdQuit},
-    {
-        .name = "install",
-        .usage = "install <file> [file...]",
-        .description = "Install databases.",
-        .cmd = CmdInstallFile,
-    },
-    {.name = "set-user-name",
-     .usage = "set-user-name <hotsync user name>",
-     .description = "Set PalmOS user name.",
-     .cmd = CmdSetUserName},
-    {.name = "reset-soft", .description = "Perform a soft reset.", .cmd = CmdResetSoft},
-    {.name = "reset-hard", .description = "Perform a hard reset.", .cmd = CmdResetHard},
-    {.name = "reset-noext",
-     .description = "Perform a reset without loading extensions.",
-     .cmd = CmdResetNoext},
-    {.name = "save-image",
-     .usage = "save-image <image_file> [card_image_file]",
-     .description = "Save image file.",
-     .help = R"HELP(
+    const vector<cli::Command> commandList({
+        {.name = "help", .description = "Show help.", .cmd = CmdHelp},
+        {.name = "quit", .description = "Quit CloudpilotEmu.", .cmd = CmdQuit},
+        {.name = "exit", .description = "Quit CloudpilotEmu.", .cmd = CmdQuit},
+        {
+            .name = "install",
+            .usage = "install <file> [file...]",
+            .description = "Install databases.",
+            .cmd = CmdInstallFile,
+        },
+        {.name = "set-user-name",
+         .usage = "set-user-name <hotsync user name>",
+         .description = "Set PalmOS user name.",
+         .cmd = CmdSetUserName},
+        {.name = "reset-soft", .description = "Perform a soft reset.", .cmd = CmdResetSoft},
+        {.name = "reset-hard", .description = "Perform a hard reset.", .cmd = CmdResetHard},
+        {.name = "reset-noext",
+         .description = "Perform a reset without loading extensions.",
+         .cmd = CmdResetNoext},
+        {.name = "save-image",
+         .usage = "save-image <image_file> [card_image_file]",
+         .description = "Save image file.",
+         .help = R"HELP(
 Write a image (save state) file to disk. A file for writing an image of a
 mounted card can be specified as second argument. If save state and card
 image are written simultaneously, CloudpilotEmu will be able to restore the
 mounted image on load (if the image is specified with --mount on launch).)HELP",
-     .cmd = CmdSaveImage},
-    {.name = "switch-image",
-     .usage = "switch-image <file>",
-     .description = "Switch to another ROM or image.",
-     .help = R"HELP(
+         .cmd = CmdSaveImage},
+        {.name = "switch-image",
+         .usage = "switch-image <file>",
+         .description = "Switch to another ROM or image.",
+         .help = R"HELP(
 Switch emulator to another ROM or image file. The resolution of the new device
 must match the current device - otherwise, the image will not display.)HELP",
-     .cmd = CmdSwitchImage},
-    {.name = "save-backup",
-     .usage = "save-backup <file>",
-     .description = "Save backup (RAM databases only).",
-     .cmd = CmdSaveBackup},
-    {.name = "save-backup-with-rom",
-     .usage = "save-backup-with-rom <file>",
-     .description = "Save backup (including ROM databases).",
-     .cmd = CmdSaveBackupWithRom},
-    {.name = "launch",
-     .usage = "launch <database>",
-     .description = "Launch application.",
-     .cmd = CmdLaunch},
-    {.name = "unmount", .description = "Unmount card.", .cmd = CmdUnmount},
-    {.name = "mount",
-     .usage = "mount <image>",
-     .description = "Mount card image.",
-     .cmd = CmdMount},
-    {.name = "save-card",
-     .usage = "save-card <image>",
-     .description = "Save card image.",
-     .cmd = CmdSaveCard},
-    {.name = "trace",
-     .usage = "trace [number of frames] [stack|nostack]",
-     .description = "Print m68k stack trace.",
-     .help = "Print m68k stack trace, using macbug function names if available.",
-     .cmd = CmdTrace},
-    {.name = "locate",
-     .usage = "locate <file>",
-     .description = "Locate file contents in RAM.",
-     .cmd = CmdLocate},
+         .cmd = CmdSwitchImage},
+        {.name = "save-backup",
+         .usage = "save-backup <file>",
+         .description = "Save backup (RAM databases only).",
+         .cmd = CmdSaveBackup},
+        {.name = "save-backup-with-rom",
+         .usage = "save-backup-with-rom <file>",
+         .description = "Save backup (including ROM databases).",
+         .cmd = CmdSaveBackupWithRom},
+        {.name = "launch",
+         .usage = "launch <database>",
+         .description = "Launch application.",
+         .cmd = CmdLaunch},
+        {.name = "unmount", .description = "Unmount card.", .cmd = CmdUnmount},
+        {.name = "mount",
+         .usage = "mount <image>",
+         .description = "Mount card image.",
+         .cmd = CmdMount},
+        {.name = "save-card",
+         .usage = "save-card <image>",
+         .description = "Save card image.",
+         .cmd = CmdSaveCard},
+        {.name = "trace",
+         .usage = "trace [number of frames] [stack|nostack]",
+         .description = "Print m68k stack trace.",
+         .help = "Print m68k stack trace, using macbug function names if available.",
+         .cmd = CmdTrace},
+        {.name = "locate",
+         .usage = "locate <file>",
+         .description = "Locate file contents in RAM.",
+         .cmd = CmdLocate},
 #ifdef ENABLE_DEBUGGER
-    {.name = "debug-set-app",
-     .usage = "debug-set-app <file> [db name]",
-     .description = "Configure debugger for app.",
-     .help = R"HELP(
+        {.name = "debug-set-app",
+         .usage = "debug-set-app <file> [db name]",
+         .description = "Configure debugger for app.",
+         .help = R"HELP(
 Load an ELF file and try to locate .text in PalmOS memory. If successful, this
 information is used to configure GDB for debugging the application built from
 this ELF when GDB connects. Specifying the application database will limit
 the search to the corresponding code resource. Break mode will be configured
 to app only.)HELP",
-     .cmd = CmdDebugSetApp},
-    {.name = "debug-info", .description = "Show break mode.", .cmd = CmdDebugInfo},
-    {.name = "debug-set-break-mode",
-     .usage = "debug-set-break_mode <all|app-only|ram-only>",
-     .description = "Set break mode.",
-     .cmd = CmdDebugSetBreakMode},
-    {.name = "dump-memory",
-     .usage = "dump-memory <file>",
-     .description = "Dump PalmOS memory to disk",
-     .cmd = CmdDumpMemory},
-    {.name = "show-syscall-traps",
-     .description = "Show all registered syscall traps.",
-     .cmd = CmdShowSyscallTraps},
-    {.name = "set-syscall-trap",
-     .usage = "set-syscall-trap <trap>",
-     .description = "Set syscall trap.",
-     .cmd = CmdSetSyscallTrap},
-    {.name = "clear-syscall-trap",
-     .usage = "clear-syscall-trap <trap>",
-     .description = "Remove syscall trap.",
-     .cmd = CmdClearSyscallTrap},
-    {.name = "clear-all-syscall-traps",
-     .description = "Remove all registered syscall traps.",
-     .cmd = CmdClearAllSyscallTraps},
+         .cmd = CmdDebugSetApp},
+        {.name = "debug-info", .description = "Show break mode.", .cmd = CmdDebugInfo},
+        {.name = "debug-set-break-mode",
+         .usage = "debug-set-break_mode <all|app-only|ram-only>",
+         .description = "Set break mode.",
+         .cmd = CmdDebugSetBreakMode},
+        {.name = "dump-memory",
+         .usage = "dump-memory <file>",
+         .description = "Dump PalmOS memory to disk",
+         .cmd = CmdDumpMemory},
+        {.name = "show-syscall-traps",
+         .description = "Show all registered syscall traps.",
+         .cmd = CmdShowSyscallTraps},
+        {.name = "set-syscall-trap",
+         .usage = "set-syscall-trap <trap>",
+         .description = "Set syscall trap.",
+         .cmd = CmdSetSyscallTrap},
+        {.name = "clear-syscall-trap",
+         .usage = "clear-syscall-trap <trap>",
+         .description = "Remove syscall trap.",
+         .cmd = CmdClearSyscallTrap},
+        {.name = "clear-all-syscall-traps",
+         .description = "Remove all registered syscall traps.",
+         .cmd = CmdClearAllSyscallTraps},
 #endif
-});
+    });
 
-const cli::Command* cli::GetCommand(const string& name) {
-    static unordered_map<string, const Command&> commandMap;
+}  // namespace
 
-    if (commandMap.size() == 0) {
-        for (auto& command : cli::commands) commandMap.insert({string(command.name), command});
-    }
-
-    auto it = commandMap.find(name);
-    return (it == commandMap.end()) ? nullptr : &(it->second);
-}
+void commands::Register() { cli::AddCommands(commandList); }

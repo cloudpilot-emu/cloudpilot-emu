@@ -4,6 +4,7 @@
 #include "EmCommon.h"
 #include "EmHAL.h"
 #include "EmROMReader.h"
+#include "FileUtil.h"
 
 namespace util {
     constexpr const char* SUPPORTED_DEVICES[] = {
@@ -14,8 +15,6 @@ namespace util {
         "PEG-T400",   "PEG-N600C/N610C", "PEG-T600", "PEG-N700C/N710C", "YSX1230",   "NR70",
         "PEG-S500C",  "HandEra330c",     "PalmM520", "Acer-S65",        "Acer-S11",  "Legend-P168",
         "PalmPacifiC"};
-
-    bool readFile(string file, unique_ptr<uint8[]>& buffer, size_t& len);
 
     bool initializeSession(string file, optional<string> deviceId = optional<string>());
 

@@ -267,7 +267,6 @@ SOURCE_NATIVE = \
 	native/util.cpp \
 	native/md5.cpp \
 	native/EventHandler.cpp \
-	native/Cli.cpp \
 	native/Commands.cpp \
 	native/ProxyClient.cpp \
 	native/ProxyHandler.cpp \
