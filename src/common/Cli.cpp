@@ -30,7 +30,7 @@ namespace {
     atomic<bool> stop(false);
     thread cliThread;
 
-    vector<const cli::Command> commands;
+    vector<cli::Command> commands;
     unordered_map<string, uint32_t> commandMap;
     const cli::Command* command = nullptr;
     vector<string> arguments;
@@ -396,7 +396,7 @@ namespace cli {
         command = nullptr;
     }
 
-    void AddCommands(const std::vector<Command> newCommands) {
+    void AddCommands(const std::vector<Command>& newCommands) {
         for (const auto& command : newCommands) {
             commands.push_back(command);
             commandMap.insert({string(command.name), commands.size() - 1});
@@ -409,7 +409,7 @@ namespace cli {
         return (it == commandMap.end()) ? nullptr : &commands[it->second];
     }
 
-    std::vector<const Command> GetCommands() { return commands; }
+    const std::vector<Command>& GetCommands() { return commands; }
 
     bool Execute(void* context) {
         bool quit = false;

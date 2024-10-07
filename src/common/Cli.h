@@ -25,9 +25,9 @@ namespace cli {
         CommandCallback cmd;
     };
 
-    void AddCommands(const std::vector<Command> commands);
+    void AddCommands(const std::vector<Command>& commands);
     const Command* GetCommand(const std::string& name);
-    std::vector<const Command> GetCommands();
+    const std::vector<Command>& GetCommands();
 
     void Start(std::optional<std::string> scriptFile);
 
