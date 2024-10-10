@@ -104,7 +104,7 @@ $(LIBRARY_EMCC): $(OBJECTS_EMCC)
 	$(RANLIB_EMCC) $@
 
 $(BINARY_TEST) : $(OBJECTS_TEST)
-	$(LD_NATIVE) $(LDFLAGS_TEST) -o $@ $^ -lgtest_main
+	$(LD_NATIVE) $(LDFLAGS_TEST) -o $@ $^ -lgtest_main -lreadline
 
 $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
