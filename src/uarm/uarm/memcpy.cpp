@@ -32,12 +32,15 @@ namespace {
                 if (!transfer_loop_pa<32>(host, armPa, size, write, mem, result)) return;
                 if (!transfer_loop_pa<16>(host, armPa, size, write, mem, result)) return;
                 if (!transfer_loop_pa<8>(host, armPa, size, write, mem, result)) return;
+                [[fallthrough]];
 
             case 2:
                 if (!transfer_loop_pa<4>(host, armPa, size, write, mem, result)) return;
+                [[fallthrough]];
 
             case 1:
                 if (!transfer_loop_pa<2>(host, armPa, size, write, mem, result)) return;
+                [[fallthrough]];
 
             case 0:
                 if (!transfer_loop_pa<1>(host, armPa, size, write, mem, result)) return;
