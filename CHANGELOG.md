@@ -1,3 +1,8 @@
+# Next version
+
+-   Document potential issues starting the iOS app without internet
+    connectivity.
+
 # Version 1.10.4
 
 -   Minor documentation changes.
