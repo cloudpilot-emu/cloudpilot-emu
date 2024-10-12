@@ -1,8 +1,8 @@
 name: Build and deploy preview release (PWA, CP embedded)
 on: workflow_dispatch
 env:
-  EM_VERSION: 3.1.49
-  NODE_VERSION: 18
+  EM_VERSION: 3.1.64
+  NODE_VERSION: 22
   EM_CACHE_FOLDER: emsdk
   PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git
 jobs:
