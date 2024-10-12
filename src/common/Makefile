@@ -49,28 +49,31 @@ MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
 INCLUDE = $(INCLUDE_EXTRA) -I.
 
-SOURCE_C = \
-	zip/miniz.c \
+SOURCE_C = 					\
+	zip/miniz.c 			\
 	zip/zip.c
 
-SOURCE_CPP = \
-	CardImage.cpp \
-	CardVolume.cpp \
-	CPCrc.cpp \
-	GunzipContext.cpp \
-	GzipContext.cpp \
-	CreateZipContext.cpp \
-	ZipfileWalker.cpp \
-	FileUtil.cpp \
+SOURCE_CPP = 				\
+	CardImage.cpp 			\
+	CardVolume.cpp 			\
+	CPCrc.cpp 				\
+	GunzipContext.cpp 		\
+	GzipContext.cpp 		\
+	CreateZipContext.cpp 	\
+	ZipfileWalker.cpp 		\
+	FileUtil.cpp 
+
+SOURCE_CPP_NATIVE = 		\
+	$(SOURCE_CPP)			\
 	Cli.cpp
 
-SOURCE_TEST = \
-	$(SOURCE_CPP) \
-	test/Crc.cpp \
-	test/GunzipContext.cpp \
+SOURCE_TEST = 				\
+	$(SOURCE_CPP) 			\
+	test/Crc.cpp 			\
+	test/GunzipContext.cpp 	\
 	test/GzipContext.cpp
 
-OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_NATIVE)/%.o)
+OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)
 
 OBJECTS_TEST = \
