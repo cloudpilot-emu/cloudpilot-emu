@@ -68,74 +68,78 @@ DEPDIR_TEST = .deps-test
 DEPFLAGS_TEST = -MT $@ -MMD -MP -MF $(DEPDIR_TEST)/$*.d
 MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
-SOURCE_C = 						\
-	cputil.c					\
-	uarm/sdcard.c 				\
-	uarm/patch_dispatch.c		\
-	uarm/patches.c				\
-	uarm/syscall.c				\
-	uarm/syscall_dispatch.c		\
-	uarm/MMU.c 					\
-	uarm/cp15.c 				\
-	uarm/mem.c 					\
-	uarm/ram_buffer.c			\
-	uarm/RAM.c 					\
-	uarm/ROM.c 					\
-	uarm/gdbstub.c				\
-	uarm/vSD.c 					\
-	uarm/keys.c 				\
-	uarm/pxa_IC.c 				\
-	uarm/pxa_MMC.c 				\
-	uarm/pxa_TIMR.c 			\
-	uarm/pxa_RTC.c 				\
-	uarm/pxa_UART.c 			\
-	uarm/pxa_PwrClk.c 			\
-	uarm/pxa_I2S.c 				\
-	uarm/pxa_GPIO.c 			\
-	uarm/pxa_DMA.c 				\
-	uarm/pxa_LCD.c 				\
-	uarm/pxa_PWM.c 				\
-	uarm/pxa_AC97.c 			\
-	uarm/pxa_MemCtrl.c 			\
-	uarm/pxa_I2C.c 				\
-	uarm/pxa_SSP.c 				\
-	uarm/pxa255_UDC.c 			\
-	uarm/pxa270_UDC.c 			\
-	uarm/pxa255_DSP.c 			\
-	uarm/pxa270_IMC.c 			\
-	uarm/pxa270_KPC.c 			\
-	uarm/pxa270_WMMX.c 			\
-	uarm/devicePalmTungstenE2.c \
-	uarm/mmiodev_DirectNAND.c 	\
-	uarm/nand.c 				\
-	uarm/ac97dev_WM9712L.c		\
-	uarm/pace_patch.c 			\
-	uarm/pace.c 				\
-	uarm/peephole.c				\
-	uarm/uae/cpudefs.c 			\
-	uarm/uae/cpuemu.c 			\
-	uarm/uae/cpustbl.c 			\
-	uarm/uae/readcpu.c 			\
+SOURCE_C = 								\
+	cputil.c							\
+	uarm/sdcard.c 						\
+	uarm/patch_dispatch.c				\
+	uarm/patches.c						\
+	uarm/syscall.c						\
+	uarm/syscall_dispatch.c				\
+	uarm/MMU.c 							\
+	uarm/cp15.c 						\
+	uarm/mem.c 							\
+	uarm/ram_buffer.c					\
+	uarm/RAM.c 							\
+	uarm/ROM.c 							\
+	uarm/gdbstub.c						\
+	uarm/vSD.c 							\
+	uarm/keys.c 						\
+	uarm/pxa_IC.c 						\
+	uarm/pxa_MMC.c 						\
+	uarm/pxa_TIMR.c 					\
+	uarm/pxa_RTC.c 						\
+	uarm/pxa_UART.c 					\
+	uarm/pxa_PwrClk.c 					\
+	uarm/pxa_I2S.c 						\
+	uarm/pxa_GPIO.c 					\
+	uarm/pxa_DMA.c 						\
+	uarm/pxa_LCD.c 						\
+	uarm/pxa_PWM.c 						\
+	uarm/pxa_AC97.c 					\
+	uarm/pxa_MemCtrl.c 					\
+	uarm/pxa_I2C.c 						\
+	uarm/pxa_SSP.c 						\
+	uarm/pxa255_UDC.c 					\
+	uarm/pxa270_UDC.c 					\
+	uarm/pxa255_DSP.c 					\
+	uarm/pxa270_IMC.c 					\
+	uarm/pxa270_KPC.c 					\
+	uarm/pxa270_WMMX.c 					\
+	uarm/devicePalmTungstenE2.c 		\
+	uarm/mmiodev_DirectNAND.c 			\
+	uarm/nand.c 						\
+	uarm/ac97dev_WM9712L.c				\
+	uarm/pace_patch.c 					\
+	uarm/pace.c 						\
+	uarm/peephole.c						\
+	uarm/uae/cpudefs.c 					\
+	uarm/uae/cpuemu.c 					\
+	uarm/uae/cpustbl.c 					\
+	uarm/uae/readcpu.c 					\
 	uarm/uae/newcpu.c
 
-SOURCE_CXX_COMMON = 			\
-	uarm/socPXA.cpp				\
-	main.cpp					\
-	MainLoop.cpp				\
-	uarm/icache.cpp				\
-	uarm/CPU.cpp				\
-	uarm/memcpy.cpp				\
+SOURCE_CXX_COMMON = 					\
+	uarm/socPXA.cpp						\
+	MainLoop.cpp						\
+	uarm/icache.cpp						\
+	uarm/CPU.cpp						\
+	uarm/memcpy.cpp						\
 	uarm/audio_queue.cpp
 
-SOURCE_CXX_NATIVE = 			\
-	$(SOURCE_CXX_COMMON)		\
-	Silkscreen.cpp				\
-	SdlRenderer.cpp				\
-	SdlEventHandler.cpp			\
-	SdlAudioDriver.cpp
+SOURCE_CXX_NATIVE = 					\
+	$(SOURCE_CXX_COMMON)				\
+	native/Silkscreen.cpp				\
+	native/SdlRenderer.cpp				\
+	native/SdlEventHandler.cpp			\
+	native/SdlAudioDriver.cpp			\
+	native/main.cpp
 
-SOURCE_TEST = 					\
-	test/scheduler.cpp 			\
+SOURCE_CXX_EMCC =						\
+	$(SOURCE_CXX_COMMON)				\
+	main.cpp
+
+SOURCE_TEST = 							\
+	test/scheduler.cpp 					\
 	test/queue.cpp
 
 OBJECTS_NATIVE_C = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o)
@@ -146,7 +150,7 @@ OBJECTS_TEST_CXX = $(SOURCE_TEST:%.cpp=$(BUILDDIR_TEST)/%.o)
 OBJECTS_TEST = $(OBJECTS_TEST_CXX)
 
 OBJECTS_EMCC_C = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o)
-OBJECTS_EMCC_CXX = $(SOURCE_CXX_COMMON:%.cpp=$(BUILDDIR_EMCC)/%.o)
+OBJECTS_EMCC_CXX = $(SOURCE_CXX_EMCC:%.cpp=$(BUILDDIR_EMCC)/%.o)
 OBJECTS_EMCC = $(OBJECTS_EMCC_C) $(OBJECTS_EMCC_CXX)
 
 BINARY_NATIVE = uarm-bin
