@@ -192,8 +192,9 @@ The date of the two different versions is stored separately from each other.
 
 -   Loaders and modal dialogs may be laggy on older versions of iOS. This can be worked around
     with the setting "Reduce animation".
--   The app may refuse to load without internet connectivity. This will be fixed in
-    in the next version of the app.
+-   Version 1.0 of the app may refuse to load without internet connectivity. This is fixed
+    in version 1.1.
+-   There may be a slight delay when opening the app while on a bad internet connection.
 :::
 
 ### Emulation issues
