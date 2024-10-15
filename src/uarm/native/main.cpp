@@ -194,7 +194,7 @@ int main(int argc, const char** argv) {
 
     program.add_argument("--nand", "-n").help("NAND rom file").metavar("<nand file>");
 
-    program.add_argument("--sd", "-s").help("SD card file");
+    program.add_argument("--sd", "-s").help("SD card file").metavar("<SD card file>");
 
     program.add_argument("--no-sound", "-q")
         .help("disable audio")
@@ -230,8 +230,8 @@ int main(int argc, const char** argv) {
                        .nand = program.present("--nand"),
                        .sd = program.present("--sd"),
                        .gdbPort = program.present<unsigned int>("--gdb"),
-                       .disableAudio = program.get<bool>("--no-sound"),
-                       .mips = program.get<unsigned int>("--mips")};
+                       .mips = program.get<unsigned int>("--mips"),
+                       .disableAudio = program.get<bool>("--no-sound")};
 
     if (!run(options)) exit(1);
 }
