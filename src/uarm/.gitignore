@@ -5,5 +5,5 @@ src/uarm_web*
 node_modules
 *.log
 
-uarm-bin
+cp-uarm
 test
