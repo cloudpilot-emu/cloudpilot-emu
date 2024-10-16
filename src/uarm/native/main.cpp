@@ -9,6 +9,7 @@
 #include <optional>
 #include <sstream>
 
+#include "Cli.h"
 #include "FileUtil.h"
 #include "MainLoop.h"
 #include "SdlAudioDriver.h"
@@ -30,6 +31,7 @@ struct Options {
     optional<unsigned int> gdbPort;
     unsigned int mips;
     bool disableAudio;
+    optional<string> script;
 };
 
 extern "C" int socExtSerialReadChar(void) { return CHAR_NONE; }
@@ -145,6 +147,8 @@ namespace {
         SdlAudioDriver audioDriver(soc, audioQueue);
         if (!options.disableAudio) audioDriver.Start();
 
+        cli::Start(options.script);
+
         uint64_t lastSpeedDump = timestampUsec();
 
         while (true) {
@@ -176,6 +180,8 @@ namespace {
 
             const int64_t timesliceRemaining =
                 mainLoop.GetTimesliceSizeUsec() - static_cast<int64_t>(timestampUsec() - now);
+
+            cli::Execute(nullptr);
 
             if (timesliceRemaining > 10) usleep(timesliceRemaining);
         }
@@ -212,6 +218,8 @@ int main(int argc, const char** argv) {
         .scan<'u', unsigned int>()
         .default_value(100u);
 
+    program.add_argument("--script").help("execute script on startup").metavar("<script file>");
+
     try {
         program.parse_args(argc, argv);
     } catch (const invalid_argument& e) {
@@ -231,7 +239,8 @@ int main(int argc, const char** argv) {
                        .sd = program.present("--sd"),
                        .gdbPort = program.present<unsigned int>("--gdb"),
                        .mips = program.get<unsigned int>("--mips"),
-                       .disableAudio = program.get<bool>("--no-sound")};
+                       .disableAudio = program.get<bool>("--no-sound"),
+                       .script = program.present("--script")};
 
     if (!run(options)) exit(1);
 }

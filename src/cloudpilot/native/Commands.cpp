@@ -493,51 +493,7 @@ namespace {
         gDebugger.ClearAllSyscallTraps();
     }
 
-    void CmdHelp(vector<string> args, cli::CommandEnvironment& env, void* context) {
-        if (args.size() > 1) return env.PrintUsage();
-
-        cout << endl;
-
-        const cli::Command* command = nullptr;
-        if (args.size() == 1) {
-            command = cli::GetCommand(args[0]);
-            if (!command) cout << "invalid command: " << args[0] << endl;
-        }
-
-        if (command) {
-            cout << "usage: " << (command->usage ? command->usage : command->name) << endl;
-
-            if (command->help) {
-                const char* help = command->help;
-                if (help[0] == '\r') help++;
-                if (help[0] == '\n') help++;
-
-                cout << endl << help << endl;
-            } else if (command->description) {
-                cout << endl << command->description << endl;
-            }
-        } else {
-            cout << "available commands:" << endl << endl;
-
-            for (auto& command : cli::GetCommands()) {
-                const char* usage = command.usage ? command.usage : command.name;
-
-                cout << left << setw(50) << usage;
-
-                if (!command.description) {
-                    cout << endl;
-                    continue;
-                }
-
-                cout << command.description << endl;
-            }
-        }
-
-        cout << endl << flush;
-    }
-
     const vector<cli::Command> commandList({
-        {.name = "help", .description = "Show help.", .cmd = CmdHelp},
         {.name = "quit", .description = "Quit CloudpilotEmu.", .cmd = CmdQuit},
         {.name = "exit", .description = "Quit CloudpilotEmu.", .cmd = CmdQuit},
         {
