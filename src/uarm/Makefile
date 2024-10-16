@@ -136,7 +136,7 @@ SOURCE_CXX_NATIVE = 					\
 
 SOURCE_CXX_EMCC =						\
 	$(SOURCE_CXX_COMMON)				\
-	main.cpp
+	web/main.cpp
 
 SOURCE_TEST = 							\
 	test/scheduler.cpp 					\

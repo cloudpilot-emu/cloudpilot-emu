@@ -1,5 +1,6 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
+#include <emscripten.h>
 #include <fcntl.h>
 #include <getopt.h>
 #include <signal.h>
@@ -19,31 +20,12 @@
 #include <iostream>
 #include <memory>
 
-#ifdef __EMSCRIPTEN__
-    #include <emscripten.h>
-#else
-    #include <SDL.h>
-    #include <SDL_image.h>
-
-    #include <atomic>
-
-    #include "SdlAudioDriver.h"
-    #include "SdlEventHandler.h"
-    #include "SdlRenderer.h"
-#endif
-
 #include "MainLoop.h"
 #include "SoC.h"
 #include "audio_queue.h"
 #include "cputil.h"
 #include "device.h"
 #include "sdcard.h"
-
-using namespace std;
-
-#ifndef EMSCRIPTEN_KEEPALIVE
-    #define EMSCRIPTEN_KEEPALIVE
-#endif
 
 using namespace std;
 
@@ -94,53 +76,9 @@ namespace {
 
         fclose(cardFile);
     }
-
-#ifndef __EMSCRIPTEN__
-    void initSdl(struct DeviceDisplayConfiguration displayConfiguration, int scale,
-                 SDL_Window** window, SDL_Renderer** renderer, bool enableAudio) {
-        if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | (enableAudio ? SDL_INIT_AUDIO : 0)) < 0) {
-            printf("Couldn't initialize SDL: %s\n", SDL_GetError());
-            exit(1);
-        }
-
-        IMG_Init(IMG_INIT_PNG);
-
-        atexit(SDL_Quit);
-
-        if (SDL_CreateWindowAndRenderer(
-                displayConfiguration.width * scale,
-                (displayConfiguration.height + displayConfiguration.graffitiHeight) * scale, 0,
-                window, renderer) != 0) {
-            fprintf(stderr, "unabe to initialize window");
-            exit(1);
-        }
-    }
-#endif
 }  // namespace
 
-extern "C" int socExtSerialReadChar(void) {
-#if 1
-    return CHAR_NONE;
-#else
-    timeval tv;
-    fd_set set;
-    char c;
-    int i, ret = CHAR_NONE;
-
-    tv.tv_sec = 0;
-    tv.tv_usec = 0;
-
-    FD_ZERO(&set);
-    FD_SET(0, &set);
-
-    i = select(1, &set, NULL, NULL, &tv);
-    if (i == 1 && 1 == read(0, &c, 1)) {
-        ret = c;
-    }
-
-    return ret;
-#endif
-}
+extern "C" int socExtSerialReadChar(void) { return CHAR_NONE; }
 
 extern "C" void socExtSerialWriteChar(int chr) {
     if (!(chr & 0xFF00))
@@ -150,8 +88,6 @@ extern "C" void socExtSerialWriteChar(int chr) {
 
     fflush(stdout);
 }
-
-#ifdef __EMSCRIPTEN__
 
 extern "C" {
 
@@ -259,7 +195,6 @@ void* EMSCRIPTEN_KEEPALIVE getRamData() { return socGetRamData(soc).data; }
 
 void* EMSCRIPTEN_KEEPALIVE getRamDirtyPages() { return socGetRamDirtyPages(soc).data; }
 }
-#endif
 
 void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPort,
          bool enableAudio, uint32_t mips = 0) {
@@ -271,162 +206,7 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
 
     mainLoop = make_unique<MainLoop>(soc);
     if (mips > 0) mainLoop->SetCyclesPerSecondLimit(mips * 1000000);
-
-#ifndef __EMSCRIPTEN__
-    constexpr int SCALE = 2;
-
-    DeviceDisplayConfiguration displayConfiguration;
-    deviceGetDisplayConfiguration(&displayConfiguration);
-
-    SDL_Window* window;
-    SDL_Renderer* renderer;
-
-    initSdl(displayConfiguration, SCALE, &window, &renderer, enableAudio);
-
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xff);
-    SDL_RenderClear(renderer);
-    SdlRenderer sdlRenderer(window, renderer, soc, SCALE);
-    SdlEventHandler sdlEventHandler(soc, SCALE);
-    unique_ptr<SdlAudioDriver> audioDriver;
-
-    if (enableAudio) {
-        audioDriver = make_unique<SdlAudioDriver>(soc, audioQueue);
-        audioDriver->Start();
-    }
-
-    uint64_t lastSpeedDump = timestampUsec();
-
-    while (true) {
-        uint64_t now = timestampUsec();
-
-        if (audioDriver) socSetPcmSuspended(soc, audioDriver->GetAudioBackpressure());
-
-        mainLoop->Cycle(now);
-
-        sdlRenderer.Draw(sdlEventHandler.RedrawRequested());
-        sdlEventHandler.ClearRedrawRequested();
-
-        sdlEventHandler.HandleEvents();
-
-        if (now - lastSpeedDump > 1000000) {
-            const uint64_t currentIps = mainLoop->GetCurrentIps();
-            const uint64_t currentIpsMax = mainLoop->GetCurrentIpsMax();
-            lastSpeedDump = now;
-
-            cout << "current speed: " << currentIps << " IPS, theoretical speed: " << currentIpsMax
-                 << " IPS -> " << (100 * currentIps) / currentIpsMax << "%" << endl
-                 << flush;
-        }
-
-        const int64_t timesliceRemaining =
-            mainLoop->GetTimesliceSizeUsec() - static_cast<int64_t>(timestampUsec() - now);
-
-        if (timesliceRemaining > 10) usleep(timesliceRemaining);
-    }
-#endif
 }
-
-#ifndef __EMSCRIPTEN__
-int main(int argc, char** argv) {
-    uint32_t romLen = 0;
-    size_t nandLen = 0;
-    const char* self = argv[0];
-    bool noRomMode = false;
-    FILE* nandFile = NULL;
-    FILE* romFile = NULL;
-    uint8_t* rom = NULL;
-    uint8_t* nand = NULL;
-    int gdbPort = -1;
-    bool enableAudio{true};
-    int c;
-    uint32_t mips = 0;
-
-    while ((c = getopt(argc, argv, "g:s:r:n:m:xq")) != -1) switch (c) {
-            case 'g':  // gdb port
-                gdbPort = optarg ? atoi(optarg) : -1;
-                if (gdbPort < 1024 || gdbPort > 65535) usage(self);
-                break;
-
-            case 's':  // sd card
-                readSdCard(optarg);
-                break;
-
-            case 'r':  // ROM
-                if (optarg) romFile = fopen(optarg, "rb");
-                break;
-    #if 0
-            case 'x':  // NO_ROM mode
-                noRomMode = true;
-                break;
-    #endif
-            case 'n':  // NAND
-                if (optarg) nandFile = fopen(optarg, "r+b");
-                break;
-
-            case 'q':
-                enableAudio = false;
-                break;
-
-            case 'm':
-                mips = atoi(optarg);
-                if (mips < 50 || mips > 500) {
-                    fprintf(stderr, "mips must be between 50 and 500\n");
-                    exit(-1);
-                }
-
-                break;
-
-            default:
-                usage(self);
-                break;
-        }
-
-    if ((romFile && noRomMode) || (!romFile && !noRomMode)) usage(self);
-
-    if (romFile) {
-        fseek(romFile, 0, SEEK_END);
-        romLen = ftell(romFile);
-        rewind(romFile);
-
-        rom = (uint8_t*)malloc(romLen);
-        if (!rom) {
-            fprintf(stderr, "CANNOT ALLOC ROM\n");
-            exit(-2);
-        }
-
-        if (romLen != fread(rom, 1, romLen, romFile)) {
-            fprintf(stderr, "CANNOT READ ROM\n");
-            exit(-2);
-        }
-        fclose(romFile);
-    }
-
-    if (nandFile) {
-        fseek(nandFile, 0, SEEK_END);
-        nandLen = ftell(nandFile);
-        rewind(nandFile);
-
-        nand = (uint8_t*)malloc(nandLen);
-        if (!nand) {
-            fprintf(stderr, "CANNOT ALLOC NAND\n");
-            exit(-2);
-        }
-
-        if (nandLen != fread(nand, 1, nandLen, nandFile)) {
-            fprintf(stderr, "CANNOT READ RNANDOM\n");
-            exit(-2);
-        }
-        fclose(nandFile);
-    }
-
-    fprintf(stderr, "Read %u bytes of ROM\n", romLen);
-    fprintf(stderr, "Read %lu bytes of NAND\n", nandLen);
-
-    run(rom, romLen, nand, nandLen, gdbPort, enableAudio, mips);
-}
-#endif
-
-#ifdef __EMSCRIPTEN__
 
 int main() {}
 
@@ -442,5 +222,3 @@ extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint8_t* rom, int romLen, uint8_t* 
 
     run(rom, (uint32_t)romLen, nand, (size_t)nandLen, 0, true);
 }
-
-#endif
