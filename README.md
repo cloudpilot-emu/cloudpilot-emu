@@ -219,7 +219,7 @@ and you will up with a `src/cloudpilot/cloudpilot-emu` binary.
 
 CloudpilotEmu contains a fork of Dmitry Grinberg's brilliant
 [uARM](https://github.com/uARM-Palm/uARM). This fork
-is heavily optimized currently restricted to emulating a Tungsten E2. uARM will
+is heavily optimized and currently restricted to emulating a Tungsten E2. uARM will
 eventually be integrated into the CloudpilotEmu web app, but at the moment it
 is available as a separate prototype.
 
