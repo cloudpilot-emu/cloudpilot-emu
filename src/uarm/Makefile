@@ -30,7 +30,7 @@ CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined
 CXXFLAGS_TEST ?= $(CFLAGS_TEST)
 LDFLAGS_TEST ?= -fsanitize=address,undefined -lgtest -lgtest_main -lgmock
 
-LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image -flto
+LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image -lreadline -flto
 LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno -g \
 	-s EXIT_RUNTIME=0 \
 	-s MODULARIZE=1 \
