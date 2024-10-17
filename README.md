@@ -213,7 +213,24 @@ The build is accomplished with
     $ make bin
 ```
 
-and you will up with a `src/cloudpilot-emu` binary.
+and you will up with a `src/cloudpilot/cloudpilot-emu` binary.
+
+# OS5 emulation and uARM
+
+CloudpilotEmu contains a fork of Dmitry Grinberg's brilliant
+[uARM](https://github.com/uARM-Palm/uARM). This fork
+is heavily optimized currently restricted to emulating a Tungsten E2. uARM will
+eventually be integrated into the CloudpilotEmu web app, but at the moment it
+is available as a separate prototype.
+
+You can try a live build of the current code
+[here](https://cloudpilot-emu.github.io/uarm-preview/). You'll need Tungsten E2
+NAND and NOR images
+(for example from [PalmDB](https://palmdb.net/app/palm-roms-complete)), and you can
+mount an optional SD card image.
+
+A native build of this version of uARM is built via `make bin` (alongside
+`cloudpilot-emu`) and you can find it as `src/uarm/cp-uarm`.
 
 # Credits
 
