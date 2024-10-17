@@ -1,7 +1,5 @@
 #include "SdlAudioDriver.h"
 
-#include <SDL.h>
-
 #include <iostream>
 
 #include "MainLoop.h"
@@ -18,7 +16,12 @@ SdlAudioDriver::SdlAudioDriver(SoC* soc, AudioQueue* audioQueue)
     : soc(soc), audioQueue(audioQueue) {}
 
 void SdlAudioDriver::Start() {
-    if (initialized) return;
+    if (initialized) {
+        SDL_PauseAudioDevice(audioDevice, 0);
+        socSetPcmOutputEnabled(soc, true);
+
+        return;
+    }
 
     SDL_AudioSpec audioSpecRequested = {.freq = 44100,
                                         .format = AUDIO_S16,
@@ -32,8 +35,8 @@ void SdlAudioDriver::Start() {
 
     SDL_AudioSpec audioSpecActual;
 
-    SDL_AudioDeviceID audioDevice = SDL_OpenAudioDevice(
-        nullptr, 0, &audioSpecRequested, &audioSpecActual, SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
+    audioDevice = SDL_OpenAudioDevice(nullptr, 0, &audioSpecRequested, &audioSpecActual,
+                                      SDL_AUDIO_ALLOW_SAMPLES_CHANGE);
     if (audioDevice == 0) {
         std::cout << "failed to open audio device" << std::endl;
     } else {
@@ -49,6 +52,13 @@ void SdlAudioDriver::Start() {
     backpressureThresholdStop = 44100 / MAIN_LOOP_FPS * 8;
 
     initialized = true;
+}
+
+void SdlAudioDriver::Pause() {
+    if (!initialized) return;
+
+    socSetPcmOutputEnabled(soc, false);
+    SDL_PauseAudioDevice(audioDevice, 1);
 }
 
 bool SdlAudioDriver::GetAudioBackpressure() const { return audioBackpressure; }

@@ -327,6 +327,12 @@ namespace {
         while (command) cvExecuteTask.wait(lock);
     }
 
+    void CmdQuit(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() > 0) return env.PrintUsage();
+
+        env.RequestQuit();
+    }
+
     void CmdHelp(vector<string> args, cli::CommandEnvironment& env, void* context) {
         if (args.size() > 1) return env.PrintUsage();
 
@@ -417,7 +423,11 @@ namespace cli {
     void Start(optional<string> scriptFile) {
         if (cliThread.joinable()) return;
 
-        AddCommands({{.name = "help", .description = "Show help.", .cmd = CmdHelp}});
+        AddCommands({
+            {.name = "help", .description = "Show help.", .cmd = CmdHelp},
+            {.name = "quit", .description = "Quit program.", .cmd = CmdQuit},
+            {.name = "exit", .description = "Quit program.", .cmd = CmdQuit},
+        });
 
         stop = false;
         command = nullptr;

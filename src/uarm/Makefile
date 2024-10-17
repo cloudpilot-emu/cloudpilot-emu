@@ -132,6 +132,7 @@ SOURCE_CXX_NATIVE = 					\
 	native/SdlRenderer.cpp				\
 	native/SdlEventHandler.cpp			\
 	native/SdlAudioDriver.cpp			\
+	native/Commands.cpp					\
 	native/main.cpp
 
 SOURCE_CXX_EMCC =						\

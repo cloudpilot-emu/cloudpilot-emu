@@ -194,12 +194,6 @@ namespace {
         return true;
     }
 
-    void CmdQuit(vector<string> args, cli::CommandEnvironment& env, void* context) {
-        if (args.size() > 0) return env.PrintUsage();
-
-        env.RequestQuit();
-    }
-
     void CmdInstallFile(vector<string> args, cli::CommandEnvironment& env, void* context) {
         if (args.empty()) return env.PrintUsage();
 
@@ -494,8 +488,6 @@ namespace {
     }
 
     const vector<cli::Command> commandList({
-        {.name = "quit", .description = "Quit CloudpilotEmu.", .cmd = CmdQuit},
-        {.name = "exit", .description = "Quit CloudpilotEmu.", .cmd = CmdQuit},
         {
             .name = "install",
             .usage = "install <file> [file...]",

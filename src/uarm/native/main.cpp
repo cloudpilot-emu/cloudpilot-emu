@@ -10,6 +10,7 @@
 #include <sstream>
 
 #include "Cli.h"
+#include "Commands.h"
 #include "FileUtil.h"
 #include "MainLoop.h"
 #include "SdlAudioDriver.h"
@@ -147,7 +148,10 @@ namespace {
         SdlAudioDriver audioDriver(soc, audioQueue);
         if (!options.disableAudio) audioDriver.Start();
 
+        commands::Register();
         cli::Start(options.script);
+        commands::Context commandContext{
+            .soc = soc, .mainLoop = mainLoop, .audioDriver = audioDriver};
 
         uint64_t lastSpeedDump = timestampUsec();
 
@@ -169,7 +173,7 @@ namespace {
                 lastSpeedDump = now;
 
                 ostringstream s;
-                s << "cp-uarm running @ " << fixed << setprecision(2)
+                s << "cp-uarm @ " << fixed << setprecision(2)
                   << static_cast<float>(currentIps) / 1000000 << " MIPS, limit "
                   << static_cast<float>(currentIpsMax) / 1000000 << " IPS -> "
                   << (100 * currentIps) / currentIpsMax << "%" << endl
@@ -181,10 +185,13 @@ namespace {
             const int64_t timesliceRemaining =
                 mainLoop.GetTimesliceSizeUsec() - static_cast<int64_t>(timestampUsec() - now);
 
-            cli::Execute(nullptr);
+            if (cli::Execute(&commandContext)) break;
 
             if (timesliceRemaining > 10) usleep(timesliceRemaining);
         }
+
+        audioDriver.Pause();
+        cli::Stop();
 
         return true;
     }
@@ -203,7 +210,7 @@ int main(int argc, const char** argv) {
     program.add_argument("--sd", "-s").help("SD card file").metavar("<SD card file>");
 
     program.add_argument("--no-sound", "-q")
-        .help("disable audio")
+        .help("start with audio off")
         .default_value(false)
         .implicit_value(true);
 

@@ -1,6 +1,8 @@
 #ifndef _SDL_AUDIO_DRIVER_
 #define _SDL_AUDIO_DRIVER_
 
+#include <SDL.h>
+
 #include <atomic>
 
 struct SoC;
@@ -11,6 +13,7 @@ class SdlAudioDriver {
     SdlAudioDriver(SoC* soc, AudioQueue* audioQueue);
 
     void Start();
+    void Pause();
     bool GetAudioBackpressure() const;
 
     void AudioCallback(uint8_t* stream, int len);
@@ -18,6 +21,7 @@ class SdlAudioDriver {
    private:
     SoC* soc;
     AudioQueue* audioQueue;
+    SDL_AudioDeviceID audioDevice;
 
     bool initialized{false};
 
