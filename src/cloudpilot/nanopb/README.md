@@ -1,17 +1,19 @@
 Nanopb - Protocol Buffers for Embedded Systems
 ==============================================
 
-[![Build Status](https://travis-ci.com/nanopb/nanopb.svg?branch=master)](https://travis-ci.com/nanopb/nanopb)
+![Latest change](https://github.com/nanopb/nanopb/actions/workflows/trigger_on_code_change.yml/badge.svg)
+![Weekly build](https://github.com/nanopb/nanopb/actions/workflows/trigger_on_schedule.yml/badge.svg)
 
 Nanopb is a small code-size Protocol Buffers implementation in ansi C. It is
 especially suitable for use in microcontrollers, but fits any memory
 restricted system.
 
 * **Homepage:** https://jpa.kapsi.fi/nanopb/
+* **Git repository:** https://github.com/nanopb/nanopb/
 * **Documentation:** https://jpa.kapsi.fi/nanopb/docs/
-* **Downloads:** https://jpa.kapsi.fi/nanopb/download/
 * **Forum:** https://groups.google.com/forum/#!forum/nanopb
-* **Nightly builds:** https://jpa.kapsi.fi/jenkins/job/nanopb/
+* **Stable version downloads:** https://jpa.kapsi.fi/nanopb/download/
+* **Pre-release binary packages:** https://github.com/nanopb/nanopb/actions/workflows/binary_packages.yml
 
 
 Using the nanopb library
@@ -43,7 +45,7 @@ The binary packages for Windows, Linux and Mac OS X should contain all necessary
 dependencies, including Python, python-protobuf library and protoc. If you are
 using a git checkout or a plain source distribution, you will need to install
 Python separately. Once you have Python, you can install the other dependencies
-with `pip install protobuf grpcio-tools`.
+with `pip install --upgrade protobuf grpcio-tools`.
 
 You can further customize the header generation by creating an `.options` file.
 See [documentation](https://jpa.kapsi.fi/nanopb/docs/concepts.html#modifying-generator-behaviour) for details.
@@ -65,7 +67,7 @@ end in an error, the test cases were successful.
 
 Note: Mac OS X by default aliases 'clang' as 'gcc', while not actually
 supporting the same command line options as gcc does. To run tests on
-Mac OS X, use: `scons CC=clang CXX=clang`. Same way can be used to run
+Mac OS X, use: `scons CC=clang CXX=clang++`. Same way can be used to run
 tests with different compilers on any platform.
 
 For embedded platforms, there is currently support for running the tests
@@ -85,24 +87,14 @@ There exist build rules for several systems:
 * **Makefiles**: `extra/nanopb.mk`, see `examples/simple`
 * **CMake**: `extra/FindNanopb.cmake`, see `examples/cmake`
 * **SCons**: `tests/site_scons` (generator only)
-* **Bazel**: `BUILD` in source root
+* **Bazel**: `BUILD.bazel` in source root
 * **Conan**: `conanfile.py` in source root
 * **PlatformIO**: https://platformio.org/lib/show/431/Nanopb
 * **PyPI/pip**: https://pypi.org/project/nanopb/
+* **vcpkg**: https://vcpkg.info/port/nanopb
 
 And also integration to platform interfaces:
 
 * **Arduino**: http://platformio.org/lib/show/1385/nanopb-arduino
+* **Zephyr**: https://docs.zephyrproject.org/latest/services/serialization/nanopb.html
 
-Building nanopb - Using vcpkg
------------------------------
-
-You can download and install nanopb using the [vcpkg](https://github.com/Microsoft/vcpkg) dependency manager:
-
-    git clone https://github.com/Microsoft/vcpkg.git
-    cd vcpkg
-    ./bootstrap-vcpkg.sh
-    ./vcpkg integrate install
-    ./vcpkg install nanopb
-
-The nanopb port in vcpkg is kept up to date by Microsoft team members and community contributors. If the version is out of date, please [create an issue or pull request](https://github.com/Microsoft/vcpkg) on the vcpkg repository.
