@@ -1,0 +1,3 @@
+[submodule "src/cloudpilot/native/network-backend"]
+	path = src/cloudpilot/native/network-backend
+	url = git@github.com:cloudpilot-emu/cpe-network-backend.git
