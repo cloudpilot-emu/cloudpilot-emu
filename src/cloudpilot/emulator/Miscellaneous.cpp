@@ -1,5 +1,5 @@
 #include "Miscellaneous.h"
-
+#include <algorithm>
 #include "Byteswapping.h"
 #include "EmBankMapped.h"
 #include "EmLowMem.h"
