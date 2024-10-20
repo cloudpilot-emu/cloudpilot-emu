@@ -1,5 +1,7 @@
 #include "Miscellaneous.h"
+
 #include <algorithm>
+
 #include "Byteswapping.h"
 #include "EmBankMapped.h"
 #include "EmLowMem.h"
@@ -199,7 +201,7 @@ namespace {
                     MemHandleUnlock(appInfoH);
                 }
             }  // if (!err && appInfoID)
-        }      // Record Database.
+        }  // Record Database.
 
     Exit:
 
@@ -709,7 +711,7 @@ bool GetDatabases(DatabaseInfoList& dbList, uint32 flags) {
                 dbList.push_back(dbInfo);
             }
         }  // for (dbIndex = 0; dbIndex < numDBs; dbIndex++)
-    }      // for (cardNo = 0; cardNo < MemNumCards(); cardNo++)
+    }  // for (cardNo = 0; cardNo < MemNumCards(); cardNo++)
 
     //===========================================================================
     // Sort the list by name
