@@ -1525,7 +1525,7 @@ ssize_t zip_stream_copy(struct zip_t *zip, void **buf, ssize_t *bufsize) {
   if (bufsize != NULL) {
     *bufsize = zip->archive.m_archive_size;
   }
-  *buf = calloc(sizeof(unsigned char), zip->archive.m_archive_size);
+  *buf = calloc(zip->archive.m_archive_size, sizeof(unsigned char));
   memcpy(*buf, zip->archive.m_pState->m_pMem, zip->archive.m_archive_size);
 
   return zip->archive.m_archive_size;
