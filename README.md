@@ -201,10 +201,18 @@ on `http://localhost:4200` by running
 ## Native build
 
 Building the native version of CloudpilotEmu requires SDL2 and a recent version
-of Boost. On Ubuntu the following will give you the necessary packages:
+of Boost. 
+
+On Ubuntu the following will give you the necessary packages:
 
 ```
     $ apt-get install libreadline-dev libboost-all-dev libsdl2-image-dev libsdl2-dev
+```
+
+On Fedora
+
+```
+    $ dnf install readline-devel boost-devel SDL2_image-devel SDL2-devel 
 ```
 
 The build is accomplished with
