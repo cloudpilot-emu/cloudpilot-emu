@@ -22,7 +22,6 @@
 #include "Feature.h"
 #include "GdbStub.h"
 #include "MainLoop.h"
-#include "ProxyClient.h"
 #include "ProxyHandler.h"
 #include "ScreenDimensions.h"
 #include "SessionImage.h"
@@ -30,6 +29,8 @@
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendManager.h"
 #include "argparse.h"
+#include "proxyClientNative.h"
+#include "proxyClientWs.h"
 #include "uri/uri.h"
 #include "util.h"
 
@@ -106,11 +107,15 @@ void setupCard(const Options& options) {
 }
 
 void setupProxy(ProxyClient*& proxyClient, ProxyHandler*& proxyHandler, const Options& options) {
-    if (options.proxyConfiguration) {
-        proxyClient =
-            ProxyClient::Create(options.proxyConfiguration->host, options.proxyConfiguration->port,
-                                options.proxyConfiguration->path);
+    if (options.netNative) {
+        proxyClient = proxyClientNative::Create();
+    } else if (options.proxyConfiguration) {
+        proxyClient = proxyClientWs::Create(options.proxyConfiguration->host,
+                                            options.proxyConfiguration->port,
+                                            options.proxyConfiguration->path);
+    }
 
+    if (proxyClient) {
         proxyHandler = new ProxyHandler(*proxyClient);
         proxyHandler->Initialize();
 

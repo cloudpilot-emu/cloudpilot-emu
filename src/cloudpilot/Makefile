@@ -102,7 +102,7 @@ INCLUDE = \
 	-I./proto \
 	$(INCLUDE_EXTRA)
 
-INCLUDE_NATIVE = -I../argparse
+INCLUDE_NATIVE = -I../argparse -Inative/network-backend
 
 SOURCE_C = \
 	emulator/uae/cpudefs.c \
@@ -268,7 +268,8 @@ SOURCE_NATIVE = \
 	native/md5.cpp \
 	native/EventHandler.cpp \
 	native/Commands.cpp \
-	native/ProxyClient.cpp \
+	native/proxyClientWs.cpp \
+	native/proxyClientNative.cpp \
 	native/ProxyHandler.cpp \
 	native/GdbStub.cpp \
 	native/ElfParser.cpp \
