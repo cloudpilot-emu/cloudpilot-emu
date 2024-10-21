@@ -9,6 +9,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: 'true'
       - name: Install dependencies
         run: 'sudo apt-get update && sudo apt-get -y install build-essential libreadline-dev libboost-all-dev libsdl2-image-dev libsdl2-dev'
       - name: Build
