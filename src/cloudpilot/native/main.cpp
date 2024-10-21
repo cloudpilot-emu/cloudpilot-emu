@@ -51,6 +51,7 @@ struct DebuggerConfiguration {
 struct Options {
     string image;
     optional<string> deviceId;
+    bool netNative;
     optional<ProxyConfiguration> proxyConfiguration;
     optional<string> scriptFile;
     bool traceNetlib;
@@ -227,7 +228,12 @@ int main(int argc, const char** argv) {
             throw bad_device_id();
         });
 
-    program.add_argument("--net-proxy", "-n")
+    program.add_argument("--net-native")
+        .help("enable native network")
+        .default_value(false)
+        .implicit_value(true);
+
+    program.add_argument("--net-proxy")
         .help("enable network redirection via specified proxy URI")
         .metavar("<proxy URI>")
         .action([](const string& value) {
@@ -308,6 +314,7 @@ int main(int argc, const char** argv) {
     options.mountImage = program.present("--mount");
     options.deviceId = program.present("--device-id");
     options.proxyConfiguration = program.present<ProxyConfiguration>("--net-proxy");
+    options.netNative = program.get<bool>("--net-native");
     options.mountImage = program.present("--mount");
     options.scriptFile = program.present("--script");
 
