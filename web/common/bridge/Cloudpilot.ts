@@ -150,7 +150,7 @@ export class Cloudpilot {
         );
 
         this.cloudpilot.RegisterProxyDisconnectHandler(
-            module.addFunction(() => this.proxyDisconnectEvent.dispatch(), 'vi'),
+            module.addFunction(() => this.proxyDisconnectEvent.dispatch(), 'v'),
         );
 
         this.transportIR = this.wrapTransport(this.cloudpilot.GetTransportIR());
