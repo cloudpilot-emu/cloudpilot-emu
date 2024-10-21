@@ -24,8 +24,6 @@ void ProxyHandler::Initialize() {
 
 void ProxyHandler::Teardown() {
     client.Disconnect();
-    sessionId = "";
-
     if (onDisconnectHandle) {
         gNetworkProxy.onDisconnect.RemoveHandler(*onDisconnectHandle);
         onDisconnectHandle.reset();
@@ -53,7 +51,6 @@ void ProxyHandler::HandleSuspend() {
 
 void ProxyHandler::HandleConnect(SuspendContext& context) {
     client.Disconnect();
-    sessionId = "";
 
     if (client.Connect()) {
         context.AsContextNetworkConnect().Resume();

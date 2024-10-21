@@ -26,8 +26,6 @@ class ProxyHandler {
 
    private:
     ProxyClient& client;
-
-    string sessionId;
     optional<EmEvent<const string&>::HandleT> onDisconnectHandle;
 
    private:
