@@ -1,7 +1,8 @@
-# Next version
+# Version 1.10.5
 
 -   Document potential issues starting the iOS app without internet
     connectivity.
+-   Bug fixes related to networking.
 
 # Version 1.10.4
 
