@@ -171,7 +171,7 @@ namespace {
 NetworkProxy& gNetworkProxy{networkProxy};
 
 void NetworkProxy::Reset() {
-    if (this->openCount > 0) onDisconnect.Dispatch(sessionId.c_str());
+    if (this->openCount > 0) onDisconnect.Dispatch();
 
     openCount = 0;
 }
@@ -184,12 +184,11 @@ void NetworkProxy::Open() {
         return;
     }
 
-    SuspendManager::Suspend<SuspendContextNetworkConnect>(
-        bind(&NetworkProxy::ConnectSuccess, this, _1), bind(&NetworkProxy::ConnectAbort, this));
+    SuspendManager::Suspend<SuspendContextNetworkConnect>(bind(&NetworkProxy::ConnectSuccess, this),
+                                                          bind(&NetworkProxy::ConnectAbort, this));
 }
 
-void NetworkProxy::ConnectSuccess(const string& sessionId) {
-    this->sessionId = sessionId;
+void NetworkProxy::ConnectSuccess() {
     openCount++;
 
     CALLED_SETUP("Err", "void");
@@ -204,7 +203,7 @@ void NetworkProxy::ConnectAbort() {
 void NetworkProxy::Close() {
     if (openCount == 0) return CloseDone(netErrNotOpen);
 
-    if (--openCount == 0) this->onDisconnect.Dispatch(sessionId.c_str());
+    if (--openCount == 0) this->onDisconnect.Dispatch();
     return CloseDone(0);
 
     CloseDone(netErrStillOpen);

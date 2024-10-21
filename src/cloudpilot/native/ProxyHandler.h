@@ -22,7 +22,7 @@ class ProxyHandler {
     void HandleConnect(SuspendContext& context);
     void HandleRpc(SuspendContext& context);
 
-    void OnDisconnectHandler(const string& sessionId);
+    void OnDisconnectHandler();
 
    private:
     ProxyClient& client;

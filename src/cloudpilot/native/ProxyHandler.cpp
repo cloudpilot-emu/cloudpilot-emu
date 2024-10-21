@@ -1,8 +1,5 @@
 #include "ProxyHandler.h"
 
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
-#include <boost/uuid/uuid_io.hpp>
 #include <functional>
 #include <sstream>
 
@@ -22,7 +19,7 @@ void ProxyHandler::Initialize() {
     if (onDisconnectHandle) return;
 
     onDisconnectHandle =
-        gNetworkProxy.onDisconnect.AddHandler(bind(&ProxyHandler::OnDisconnectHandler, this, _1));
+        gNetworkProxy.onDisconnect.AddHandler(bind(&ProxyHandler::OnDisconnectHandler, this));
 }
 
 void ProxyHandler::Teardown() {
@@ -59,12 +56,7 @@ void ProxyHandler::HandleConnect(SuspendContext& context) {
     sessionId = "";
 
     if (client.Connect()) {
-        stringstream ss;
-
-        ss << boost::uuids::random_generator()();
-        sessionId = ss.str();
-
-        context.AsContextNetworkConnect().Resume(sessionId);
+        context.AsContextNetworkConnect().Resume();
 
         logging::printf("network proxy connected");
     } else {
@@ -92,9 +84,4 @@ void ProxyHandler::HandleRpc(SuspendContext& context) {
         context.Cancel();
 }
 
-void ProxyHandler::OnDisconnectHandler(const string& sessionId) {
-    if (sessionId != this->sessionId) return;
-
-    client.Disconnect();
-    this->sessionId = "";
-}
+void ProxyHandler::OnDisconnectHandler() { client.Disconnect(); }

@@ -248,7 +248,7 @@ void Cloudpilot::SetNetworkRedirection(bool toggle) { Feature::SetNetworkRedirec
 bool Cloudpilot::GetNetworkRedirection() { return Feature::GetNetworkRedirection(); }
 
 void Cloudpilot::RegisterProxyDisconnectHandler(uint32 handlerPtr) {
-    typedef void (*handler_ptr)(const char*);
+    typedef void (*handler_ptr)();
 
     gNetworkProxy.onDisconnect.AddHandler(reinterpret_cast<handler_ptr>(handlerPtr));
 }

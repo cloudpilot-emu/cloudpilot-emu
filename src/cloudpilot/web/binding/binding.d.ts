@@ -201,7 +201,7 @@ export interface SuspendContextClipboardPaste {
 
 export interface SuspendContextNetworkConnect {
     Cancel(): void;
-    Resume(sessionId: string): void;
+    Resume(): void;
 }
 
 export interface SuspendContextNetworkRpc {

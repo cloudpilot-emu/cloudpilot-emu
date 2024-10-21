@@ -150,10 +150,7 @@ export class Cloudpilot {
         );
 
         this.cloudpilot.RegisterProxyDisconnectHandler(
-            module.addFunction(
-                (sessionIdPtr: number) => this.proxyDisconnectEvent.dispatch(module.UTF8ToString(sessionIdPtr)),
-                'vi',
-            ),
+            module.addFunction(() => this.proxyDisconnectEvent.dispatch(), 'vi'),
         );
 
         this.transportIR = this.wrapTransport(this.cloudpilot.GetTransportIR());
@@ -887,7 +884,7 @@ export class Cloudpilot {
 
     fatalErrorEvent = new Event<Error>();
     pwmUpdateEvent = new Event<PwmUpdate>();
-    proxyDisconnectEvent = new Event<string>();
+    proxyDisconnectEvent = new Event<void>();
 
     private cloudpilot: CloudpilotNative;
 

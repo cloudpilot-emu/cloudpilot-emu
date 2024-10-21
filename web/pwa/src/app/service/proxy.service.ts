@@ -7,7 +7,6 @@ import { KvsService } from './kvs.service';
 import { Event as Microevent } from 'microevent.ts';
 import { Mutex } from 'async-mutex';
 import { normalizeProxyAddress } from '@pwa/helper/proxyAddress';
-import { v4 as uuid } from 'uuid';
 
 const CONNECT_TIMEOUT = 5000;
 const LOADER_GRACE_TIME = 500;
@@ -156,7 +155,6 @@ export class ProxyService {
             socket.close();
         }
 
-        this.sessionId = '';
         this.socket = undefined;
     }
 
@@ -206,8 +204,7 @@ export class ProxyService {
             return;
         }
 
-        this.sessionId = uuid();
-        this.cloudpilot.getSuspendContextNetworkConnect().Resume(this.sessionId);
+        this.cloudpilot.getSuspendContextNetworkConnect().Resume();
 
         this.resumeEvent.dispatch();
     };
@@ -260,12 +257,11 @@ export class ProxyService {
         this.unbindListeners(this.socket);
         this.cancelSuspend();
 
-        this.sessionId = '';
         this.socket = undefined;
     };
 
-    private onProxyDisconnect = (sessionId: string): void => {
-        if (sessionId !== this.sessionId || !this.socket) return;
+    private onProxyDisconnect = (): void => {
+        if (!this.socket) return;
 
         this.ngZone.run(() => this.disconnect(this.socket));
     };
@@ -281,7 +277,6 @@ export class ProxyService {
     private mutex = new Mutex();
 
     private socket: WebSocket | undefined;
-    private sessionId = '';
     private cloudpilot!: Cloudpilot;
 
     private connectTimeoutHandle: number | undefined;
