@@ -220,7 +220,7 @@ int NetworkProxy::OpenCount() { return openCount; }
 
 void NetworkProxy::SocketOpen(uint8 domain, uint8 type, uint16 protocol) {
     if (domain != netSocketAddrINET) {
-        logging::printf("raw sockets are unsupporrted");
+        logging::printf("raw sockets are unsupported");
         return SocketOpenFail(netErrParamErr);
     }
 
@@ -313,7 +313,7 @@ void NetworkProxy::SocketAddr(int16 handle, NetSocketAddrType* locAddrP, Int16* 
     request.payload.socketAddrRequest.handle = handle;
 
     if ((locAddrP && *locAddrLenP < 8) || (remAddrP && *remAddrLenP < 8)) {
-        return SocketBindFail(netErrParamErr);
+        return SocketAddrFail(netErrParamErr);
     }
 
     request.payload.socketAddrRequest.requestAddressLocal = locAddrP;
@@ -341,7 +341,7 @@ void NetworkProxy::SocketAddrSuccess(void* responseData, size_t size) {
     CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
     if ((locAddrP && *locAddrLenP < 8) || (remAddrP && *remAddrLenP < 8)) {
-        return SocketBindFail(netErrParamErr);
+        return SocketAddrFail(netErrParamErr);
     }
 
     if (locAddrP) {
@@ -868,7 +868,7 @@ void NetworkProxy::GetServByName(const string name, const string proto) {
     MsgGetServByNameRequest& request(requestMsg.payload.getServByNameRequest);
 
     if (name.length() >= sizeof(request.name) - 1 || proto.length() >= sizeof(request.protocol))
-        return GetHostByNameFail(netErrParamErr);
+        return GetServByNameFail(netErrParamErr);
 
     strcpy(request.name, name.c_str());
     strcpy(request.protocol, proto.c_str());
@@ -1432,7 +1432,7 @@ void NetworkProxy::SocketAcceptSuccess(void* responseData, size_t size) {
     CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
     if ((sockAddrP && *addrLenP < 8)) {
-        return SocketBindFail(netErrParamErr);
+        return SocketAcceptFail(netErrParamErr);
     }
 
     if (sockAddrP) {
