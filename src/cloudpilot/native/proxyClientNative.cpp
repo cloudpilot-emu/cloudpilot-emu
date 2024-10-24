@@ -12,7 +12,7 @@
 #include "networkBackend.h"
 
 namespace {
-    extern "C" void rpcResultCb(unsigned int sessiondId, const void* data, size_t len,
+    extern "C" void rpcResultCb(unsigned int sessiondId, const uint8* data, size_t len,
                                 void* context);
 
     class ProxyClientNative : public ProxyClient {
@@ -88,7 +88,7 @@ namespace {
         condition_variable receiveCv;
     };
 
-    void rpcResultCb(unsigned int sessiondId, const void* data, size_t len, void* context) {
+    void rpcResultCb(unsigned int sessiondId, const uint8* data, size_t len, void* context) {
         reinterpret_cast<ProxyClientNative*>(context)->RpcResultCb(sessiondId, data, len);
     }
 }  // namespace
