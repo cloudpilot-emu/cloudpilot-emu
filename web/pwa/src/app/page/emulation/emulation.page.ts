@@ -16,7 +16,6 @@ import { KvsService } from '@pwa/service/kvs.service';
 import { LinkApi } from '@pwa/service/link-api.service';
 import { Mutex } from 'async-mutex';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
-import { ProxyService } from '@pwa/service/proxy.service';
 import { SnapshotService } from '@pwa/service/snapshot.service';
 import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
 import { StorageService } from '@pwa/service/storage.service';
@@ -27,6 +26,7 @@ import { debounce } from '@pwa/helper/debounce';
 import { BreadcrumbMenuComponent } from './breadcrumb-menu/breadcrumb-menu.component';
 import { SessionService } from '@pwa/service/session.service';
 import { Session } from '@pwa/model/Session';
+import { NetworkService } from '@pwa/service/network.service';
 
 @Component({
     selector: 'app-emulation',
@@ -47,7 +47,7 @@ export class EmulationPage implements DragDropClient {
         private fileService: FileService,
         private snapshotService: SnapshotService,
         private installlationService: InstallationService,
-        public proxyService: ProxyService,
+        public networkService: NetworkService,
         public navigation: TabsPage,
         private linkApi: LinkApi,
         public performanceWatchdogService: PerformanceWatchdogService,
@@ -218,7 +218,7 @@ export class EmulationPage implements DragDropClient {
         let i = 0;
 
         if (this.eventHandlingService.isGameMode()) i++;
-        if (this.proxyService.isConnected()) i++;
+        if (this.networkService.isConnected()) i++;
         if (this.performanceWatchdogService.isSlowdownDetected()) i++;
 
         return i > 1 ? `${(i - 1) * 35}px` : '0';

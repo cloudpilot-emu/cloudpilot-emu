@@ -243,7 +243,10 @@ bool Cloudpilot::IsSuspended() { return SuspendManager::IsSuspended(); }
 
 SuspendContext& Cloudpilot::GetSuspendContext() { return SuspendManager::GetContext(); }
 
-void Cloudpilot::SetNetworkRedirection(bool toggle) { Feature::SetNetworkRedirection(toggle); }
+void Cloudpilot::SetNetworkRedirection(bool toggle) {
+    Feature::SetNetworkRedirection(toggle);
+    if (!toggle) gNetworkProxy.Reset();
+}
 
 bool Cloudpilot::GetNetworkRedirection() { return Feature::GetNetworkRedirection(); }
 

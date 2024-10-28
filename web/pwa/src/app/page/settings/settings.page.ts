@@ -7,7 +7,6 @@ import { HelpComponent } from '@pwa/component/help/help.component';
 import { KvsService } from '@pwa/service/kvs.service';
 import { ModalController } from '@ionic/angular';
 import { MutexInterface } from 'async-mutex';
-import { ProxyService } from '@pwa/service/proxy.service';
 import { environment } from 'pwa/src/environments/environment';
 import { validateProxyAddress } from '@pwa/helper/proxyAddress';
 import { getReducedAnimations, setReducedAnimations } from '@pwa/helper/reducedAnimations';
@@ -21,6 +20,7 @@ import {
 } from '@pwa/helper/homeIndicatorFix';
 import { FeatureService } from '@pwa/service/feature.service';
 import { isIOS, isIOSNative } from '@common/helper/browser';
+import { NetworkBackendFactory } from '@pwa/service/network-backend/network-backend-factory.service';
 
 const enum fields {
     volume = 'volume',
@@ -47,7 +47,7 @@ export class SettingsPage implements OnInit {
         private kvsService: KvsService,
         public clipboardService: ClipboardService,
         private alertService: AlertService,
-        private proxyService: ProxyService,
+        private networkBackendFactory: NetworkBackendFactory,
         private featureService: FeatureService,
     ) {}
 
@@ -109,7 +109,9 @@ export class SettingsPage implements OnInit {
         this.connectionTestInProgress = true;
 
         try {
-            const handshakeResult = await this.proxyService.handshake(this.formGroup.get(fields.proxyServer)?.value, 0);
+            const handshakeResult = await this.networkBackendFactory
+                .createBackendProxy(this.formGroup.get(fields.proxyServer)?.value)
+                .handshake(0);
 
             switch (handshakeResult.status) {
                 case 'failed':

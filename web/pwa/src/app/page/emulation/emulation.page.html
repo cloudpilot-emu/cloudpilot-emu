@@ -33,7 +33,7 @@
             <ion-button *ngIf="eventHandlingService.isGameMode()" (click)="showGameModeHint()">
                 <ion-icon name="game-controller-outline"></ion-icon>
             </ion-button>
-            <ion-button *ngIf="proxyService.isConnected()" (click)="showProxyConnectedHint()">
+            <ion-button *ngIf="networkService.isConnected()" (click)="showProxyConnectedHint()">
                 <ion-icon name="swap-vertical-outline"></ion-icon>
             </ion-button>
             <ion-button *ngIf="performanceWatchdogService.isSlowdownDetected()" (click)="showSlowdowndHint()">

@@ -21,8 +21,6 @@ export class ClipboardService {
     }
 
     handleSuspend(cloudpilot: Cloudpilot): void {
-        if (!cloudpilot.isSuspended()) return;
-
         switch (cloudpilot.getSuspendKind()) {
             case SuspendKind.clipboardCopy:
                 void this.handleCopy(cloudpilot);

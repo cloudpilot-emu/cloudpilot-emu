@@ -171,7 +171,21 @@ namespace {
 NetworkProxy& gNetworkProxy{networkProxy};
 
 void NetworkProxy::Reset() {
-    if (this->openCount > 0) onDisconnect.Dispatch();
+    if (this->openCount > 0) {
+        onDisconnect.Dispatch();
+
+        if (SuspendManager::IsSuspended()) {
+            switch (SuspendManager::GetContext().GetKind()) {
+                case SuspendContext::Kind::networkRpc:
+                case SuspendContext::Kind::networkConnect:
+                    SuspendManager::GetContext().Cancel();
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
 
     openCount = 0;
 }

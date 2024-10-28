@@ -480,8 +480,8 @@ export class Cloudpilot {
     }
 
     @guard()
-    getSuspendKind(): SuspendKind {
-        return this.cloudpilot.GetSuspendContext().GetKind();
+    getSuspendKind(): SuspendKind | undefined {
+        return this.cloudpilot.IsSuspended() ? this.cloudpilot.GetSuspendContext().GetKind() : undefined;
     }
 
     @guard()
