@@ -21,12 +21,14 @@ import {
 import { FeatureService } from '@pwa/service/feature.service';
 import { isIOS, isIOSNative } from '@common/helper/browser';
 import { NetworkBackendFactory } from '@pwa/service/network-backend/network-backend-factory.service';
+import { NetworkRedirectionMode } from '@pwa/model/Kvs';
 
 const enum fields {
     volume = 'volume',
     showStatistics = 'showStatistics',
     clipboardIntegration = 'clipboardIntegration',
     networkRedirection = 'networkRedirection',
+    networkRedirectionMode = 'networkRedirectionMode',
     proxyServer = 'proxyServer',
     runHidden = 'runHidden',
     autoLockUI = 'autoLockUI',
@@ -70,7 +72,11 @@ export class SettingsPage implements OnInit {
     }
 
     async ionViewWillLeave(): Promise<void> {
-        if (this.formGroup.get(fields.networkRedirection)?.value && !this.formGroup.get(fields.proxyServer)?.valid) {
+        if (
+            this.formGroup.get(fields.networkRedirection)?.value &&
+            this.formGroup.get(fields.networkRedirectionMode)?.value === 'proxy' &&
+            !this.formGroup.get(fields.proxyServer)?.valid
+        ) {
             void this.alertService.message(
                 'Invalid proxy server',
                 'The proxy server you specified is invalid. Network redirection will be disabled.',
@@ -88,6 +94,9 @@ export class SettingsPage implements OnInit {
             showStatistics: this.formGroup.get(fields.showStatistics)!.value,
             clipboardIntegration: this.formGroup.get(fields.clipboardIntegration)?.value,
             networkRedirection: this.formGroup.get(fields.networkRedirection)?.value,
+            networkRedirectionMode: this.featureService.nativeNetworkIntegration
+                ? this.formGroup.get(fields.networkRedirectionMode)?.value ?? 'proxy'
+                : 'proxy',
             proxyServer: this.formGroup.get(fields.proxyServer)?.value,
             runHidden: this.formGroup.get(fields.runHidden)?.value,
             autoLockUI: this.formGroup.get(fields.autoLockUI)?.value,
@@ -131,7 +140,14 @@ export class SettingsPage implements OnInit {
     }
 
     get showProxyServer(): boolean {
-        return this.formGroup.get(fields.networkRedirection)?.value;
+        return (
+            this.formGroup.get(fields.networkRedirection)?.value &&
+            this.formGroup.get(fields.networkRedirectionMode)?.value !== 'native'
+        );
+    }
+
+    get showRedirectionMode(): boolean {
+        return this.formGroup.get(fields.networkRedirection)?.value && this.featureService.nativeNetworkIntegration;
     }
 
     get proxyServerValid(): boolean {
@@ -159,6 +175,7 @@ export class SettingsPage implements OnInit {
             [fields.runHidden]: new UntypedFormControl(this.kvsService.kvs.runHidden),
             [fields.clipboardIntegration]: new UntypedFormControl(this.kvsService.kvs.clipboardIntegration),
             [fields.networkRedirection]: new UntypedFormControl(this.kvsService.kvs.networkRedirection),
+            [fields.networkRedirectionMode]: new UntypedFormControl(this.kvsService.kvs.networkRedirectionMode),
             [fields.proxyServer]: new UntypedFormControl(this.kvsService.kvs.proxyServer, {
                 validators: [validateProxyAddress],
             }),
@@ -225,6 +242,11 @@ export class SettingsPage implements OnInit {
             );
         }
     };
+
+    readonly networkRedirectionModes: Array<[NetworkRedirectionMode, string]> = [
+        ['native', 'Native'],
+        ['proxy', 'Proxy'],
+    ];
 
     private onIndicatorFixModeChange = (mode: IndicatorFixMode) => applyHomeIndicatorFix(mode);
 

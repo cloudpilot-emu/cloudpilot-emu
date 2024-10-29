@@ -50,6 +50,18 @@
                 <ion-toggle formControlName="networkRedirection"></ion-toggle>
             </ion-item>
 
+            <ion-item lines="none" *ngIf="showRedirectionMode">
+                <ion-select
+                    class="redirection-mode-select"
+                    formControlName="networkRedirectionMode"
+                    label="Redirection mode"
+                >
+                    <ion-select-option *ngFor="let mode of networkRedirectionModes" [value]="mode[0]"
+                        >{{ mode[1] }}
+                    </ion-select-option>
+                </ion-select>
+            </ion-item>
+
             <ion-item lines="none" *ngIf="showProxyServer">
                 <ion-label position="stacked">Proxy server</ion-label>
                 <div class="server-container">
