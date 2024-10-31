@@ -276,6 +276,7 @@ SOURCE_NATIVE = \
 	native/network-backend/NetworkSession.cpp \
 	native/network-backend/networkBackend.cpp \
 	native/network-backend/codes.cpp \
+	native/network-backend/sockopt.cpp \
 	native/DebugSupport.cpp \
 	emulator/assert_native.cpp \
 	emulator/stacktrace.cpp
