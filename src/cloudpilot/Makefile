@@ -275,6 +275,7 @@ SOURCE_NATIVE = \
 	native/ElfParser.cpp \
 	native/network-backend/NetworkSession.cpp \
 	native/network-backend/networkBackend.cpp \
+	native/network-backend/codes.cpp \
 	native/DebugSupport.cpp \
 	emulator/assert_native.cpp \
 	emulator/stacktrace.cpp
