@@ -211,6 +211,7 @@ typedef struct _MsgSocketAcceptResponse {
 
 typedef struct _MsgRequest {
     uint32_t id;
+    pb_callback_t cb_payload;
     pb_size_t which_payload;
     union {
         MsgSocketOpenRequest socketOpenRequest;
@@ -293,7 +294,7 @@ extern "C" {
 #define MsgSocketListenResponse_init_default     {0}
 #define MsgSocketAcceptRequest_init_default      {0, 0}
 #define MsgSocketAcceptResponse_init_default     {0, Address_init_default, 0}
-#define MsgRequest_init_default                  {0, 0, {MsgSocketOpenRequest_init_default}}
+#define MsgRequest_init_default                  {0, {{NULL}, NULL}, 0, {MsgSocketOpenRequest_init_default}}
 #define MsgResponse_init_default                 {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_default}}
 #define Address_init_zero                        {0, 0}
 #define MsgSocketOpenRequest_init_zero           {0, 0}
@@ -327,7 +328,7 @@ extern "C" {
 #define MsgSocketListenResponse_init_zero        {0}
 #define MsgSocketAcceptRequest_init_zero         {0, 0}
 #define MsgSocketAcceptResponse_init_zero        {0, Address_init_zero, 0}
-#define MsgRequest_init_zero                     {0, 0, {MsgSocketOpenRequest_init_zero}}
+#define MsgRequest_init_zero                     {0, {{NULL}, NULL}, 0, {MsgSocketOpenRequest_init_zero}}
 #define MsgResponse_init_zero                    {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_zero}}
 
 /* Field tags (for use in manual encoding/decoding) */
@@ -675,21 +676,21 @@ X(a, STATIC,   REQUIRED, INT32,    err,               3)
 
 #define MsgRequest_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, UINT32,   id,                1) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketOpenRequest,payload.socketOpenRequest),   2) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketBindRequest,payload.socketBindRequest),   3) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketAddrRequest,payload.socketAddrRequest),   4) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketSendRequest,payload.socketSendRequest),   5) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketReceiveRequest,payload.socketReceiveRequest),   6) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketCloseRequest,payload.socketCloseRequest),   7) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,getHostByNameRequest,payload.getHostByNameRequest),   8) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,getServByNameRequest,payload.getServByNameRequest),   9) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketConnectRequest,payload.socketConnectRequest),  10) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,selectRequest,payload.selectRequest),  11) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,settingGetRequest,payload.settingGetRequest),  12) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketOptionSetRequest,payload.socketOptionSetRequest),  13) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketListenRequest,payload.socketListenRequest),  14) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketAcceptRequest,payload.socketAcceptRequest),  15) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (payload,socketOptionGetRequest,payload.socketOptionGetRequest),  16)
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOpenRequest,payload.socketOpenRequest),   2) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketBindRequest,payload.socketBindRequest),   3) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketAddrRequest,payload.socketAddrRequest),   4) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketSendRequest,payload.socketSendRequest),   5) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketReceiveRequest,payload.socketReceiveRequest),   6) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketCloseRequest,payload.socketCloseRequest),   7) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,getHostByNameRequest,payload.getHostByNameRequest),   8) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,getServByNameRequest,payload.getServByNameRequest),   9) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketConnectRequest,payload.socketConnectRequest),  10) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,selectRequest,payload.selectRequest),  11) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,settingGetRequest,payload.settingGetRequest),  12) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOptionSetRequest,payload.socketOptionSetRequest),  13) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketListenRequest,payload.socketListenRequest),  14) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketAcceptRequest,payload.socketAcceptRequest),  15) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOptionGetRequest,payload.socketOptionGetRequest),  16)
 #define MsgRequest_CALLBACK NULL
 #define MsgRequest_DEFAULT NULL
 #define MsgRequest_payload_socketOpenRequest_MSGTYPE MsgSocketOpenRequest
