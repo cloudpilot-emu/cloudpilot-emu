@@ -455,7 +455,7 @@ void NetworkProxy::SocketSendFail(Err err) {
     *errP = err;
     CALLED_PUT_PARAM_REF(errP);
 
-    PUT_RESULT_VAL(Int16, -1);
+    PUT_RESULT_VAL(Int16, err == netErrSocketClosedByRemote ? 0 : -1);
 }
 
 void NetworkProxy::SocketSendPB(int16 handle, NetIOParamType* pbP, uint16 flags, int32 timeout) {
@@ -530,7 +530,7 @@ void NetworkProxy::SocketSendPBFail(Err err) {
     *errP = err;
     CALLED_PUT_PARAM_REF(errP);
 
-    PUT_RESULT_VAL(Int16, -1);
+    PUT_RESULT_VAL(Int16, err == netErrSocketClosedByRemote ? 0 : -1);
 }
 
 void NetworkProxy::SocketReceive(int16 handle, uint16 flags, uint16 bufLen, int32 timeout,
@@ -605,7 +605,7 @@ void NetworkProxy::SocketReceiveFail(Err err) {
     *errP = err;
     CALLED_PUT_PARAM_REF(errP);
 
-    PUT_RESULT_VAL(Int16, -1);
+    PUT_RESULT_VAL(Int16, err == netErrSocketClosedByRemote ? 0 : -1);
 }
 
 void NetworkProxy::SocketReceivePB(int16 handle, NetIOParamType* pbP, uint16 flags, int32 timeout) {
@@ -686,7 +686,7 @@ void NetworkProxy::SocketReceivePBFail(Err err) {
     *errP = err;
     CALLED_PUT_PARAM_REF(errP);
 
-    PUT_RESULT_VAL(Int16, -1);
+    PUT_RESULT_VAL(Int16, err == netErrSocketClosedByRemote ? 0 : -1);
 }
 
 void NetworkProxy::SocketDmReceive(int16 handle, uint16 flags, uint16 rcvlen, int32 timeout,
@@ -764,7 +764,7 @@ void NetworkProxy::SocketDmReceiveFail(Err err) {
     *errP = err;
     CALLED_PUT_PARAM_REF(errP);
 
-    PUT_RESULT_VAL(Int16, -1);
+    PUT_RESULT_VAL(Int16, err == netErrSocketClosedByRemote ? 0 : -1);
 }
 
 void NetworkProxy::SocketClose(int16 handle, int32 timeout) {
