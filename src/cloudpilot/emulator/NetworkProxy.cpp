@@ -110,8 +110,6 @@ namespace {
         ctx->data = make_unique<uint8[]>(stream->bytes_left);
 
         return pb_read(stream, ctx->data.get(), stream->bytes_left);
-
-        return true;
     }
 
     bool setupPayloadDecodeCb(pb_istream_t* stream, const pb_field_iter_t* field, void** arg) {
