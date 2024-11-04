@@ -1487,7 +1487,7 @@ bool NetworkProxy::DecodeResponse(void* responseData, size_t size, MsgResponse& 
     bool status = pb_decode(&stream, MsgResponse_fields, &response);
 
     if (!status) {
-        logging::printf("failed to decode response");
+        logging::printf("failed to decode response: %s", PB_GET_ERROR(&stream));
 
         return false;
     }
