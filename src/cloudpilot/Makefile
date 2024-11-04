@@ -22,7 +22,7 @@ CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 INCLUDE_EXTRA ?=
 
 LDFLAGS_NATIVE ?=  \
-	$(shell sdl2-config --libs) -lSDL2_image -lreadline -lboost_coroutine -ldl -lpthread
+	$(shell sdl2-config --libs) -lSDL2_image -lreadline -lboost_coroutine -ldl -lpthread -lresolv
 
 CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack -Wno-multichar -Wno-unknown-pragmas \
 	-Wno-missing-field-initializers -DEMULATION_LEVEL=EMULATION_UNIX
