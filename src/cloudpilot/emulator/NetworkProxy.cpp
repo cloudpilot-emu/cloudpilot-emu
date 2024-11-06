@@ -506,7 +506,7 @@ void NetworkProxy::SocketSendPB(int16 handle, NetIOParamType* pbP, uint16 flags,
 }
 
 void NetworkProxy::SocketSendPBSuccess(void* responseData, size_t size) {
-    PREPARE_RESPONSE(SocketSend, socketSendResponse)
+    PREPARE_RESPONSE(SocketSendPB, socketSendResponse)
 
     CALLED_SETUP("Int16",
                  "UInt16 libRefNum, NetSocketRef socket,"
@@ -632,7 +632,7 @@ void NetworkProxy::SocketReceivePB(int16 handle, NetIOParamType* pbP, uint16 fla
 }
 
 void NetworkProxy::SocketReceivePBSuccess(void* responseData, size_t size) {
-    PREPARE_RESPONSE_WITH_BUFFER(SocketReceive, socketReceiveResponse);
+    PREPARE_RESPONSE_WITH_BUFFER(SocketReceivePB, socketReceiveResponse);
 
     CALLED_SETUP("Int16",
                  "UInt16 libRefNum, NetSocketRef socket,"
