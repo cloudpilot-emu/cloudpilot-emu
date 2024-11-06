@@ -27,7 +27,7 @@ class SocketContext:
 
     def setTimeoutMsec(self, timeout: float):
         self._timeout = min(
-            MAX_TIMEOUT, timeout / 1000) if timeout != None and timeout > 0 else None
+            MAX_TIMEOUT, timeout / 1000) if timeout != None and timeout >= 0 else None
         self._timeoutBase = time.time()
 
         self.updateTimeout()
