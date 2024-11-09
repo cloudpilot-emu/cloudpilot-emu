@@ -156,6 +156,21 @@ options by copying `Makefile.local.example` to `Makefile.local` and editing it.
 
 The following instructions apply to Linux and MacOS.
 
+Please not the parts of the source code for the native build reside in a submodule
+which needs to be checked out and updated together with the main code. This
+can be done with
+
+```
+    $ git clone --recurse-submodules
+    $ git pull --recurse-submodules
+```
+
+On an existing checkout, you can pull in the submodule with
+
+```
+    $ git submodule update --recursive
+```
+
 ## Web app
 
 ### Emulator
