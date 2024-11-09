@@ -2,6 +2,8 @@
 
 -   Document potential issues starting the iOS app without internet
     connectivity.
+-   Support native network access without proxy in iOS app (available
+    once version 1.2 of the native app is released).
 
 # Version 1.10.4
 
