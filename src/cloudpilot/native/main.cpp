@@ -22,7 +22,6 @@
 #include "Feature.h"
 #include "GdbStub.h"
 #include "MainLoop.h"
-#include "ProxyClient.h"
 #include "ProxyHandler.h"
 #include "ScreenDimensions.h"
 #include "SessionImage.h"
@@ -30,6 +29,8 @@
 #include "SuspendContextClipboardPaste.h"
 #include "SuspendManager.h"
 #include "argparse.h"
+#include "proxyClientNative.h"
+#include "proxyClientWs.h"
 #include "uri/uri.h"
 #include "util.h"
 
@@ -51,6 +52,7 @@ struct DebuggerConfiguration {
 struct Options {
     string image;
     optional<string> deviceId;
+    bool netNative;
     optional<ProxyConfiguration> proxyConfiguration;
     optional<string> scriptFile;
     bool traceNetlib;
@@ -105,11 +107,15 @@ void setupCard(const Options& options) {
 }
 
 void setupProxy(ProxyClient*& proxyClient, ProxyHandler*& proxyHandler, const Options& options) {
-    if (options.proxyConfiguration) {
-        proxyClient =
-            ProxyClient::Create(options.proxyConfiguration->host, options.proxyConfiguration->port,
-                                options.proxyConfiguration->path);
+    if (options.netNative) {
+        proxyClient = proxyClientNative::Create();
+    } else if (options.proxyConfiguration) {
+        proxyClient = proxyClientWs::Create(options.proxyConfiguration->host,
+                                            options.proxyConfiguration->port,
+                                            options.proxyConfiguration->path);
+    }
 
+    if (proxyClient) {
         proxyHandler = new ProxyHandler(*proxyClient);
         proxyHandler->Initialize();
 
@@ -227,7 +233,12 @@ int main(int argc, const char** argv) {
             throw bad_device_id();
         });
 
-    program.add_argument("--net-proxy", "-n")
+    program.add_argument("--net-native")
+        .help("enable native network")
+        .default_value(false)
+        .implicit_value(true);
+
+    program.add_argument("--net-proxy")
         .help("enable network redirection via specified proxy URI")
         .metavar("<proxy URI>")
         .action([](const string& value) {
@@ -308,6 +319,7 @@ int main(int argc, const char** argv) {
     options.mountImage = program.present("--mount");
     options.deviceId = program.present("--device-id");
     options.proxyConfiguration = program.present<ProxyConfiguration>("--net-proxy");
+    options.netNative = program.get<bool>("--net-native");
     options.mountImage = program.present("--mount");
     options.scriptFile = program.present("--script");
 

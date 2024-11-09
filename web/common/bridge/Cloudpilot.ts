@@ -150,10 +150,7 @@ export class Cloudpilot {
         );
 
         this.cloudpilot.RegisterProxyDisconnectHandler(
-            module.addFunction(
-                (sessionIdPtr: number) => this.proxyDisconnectEvent.dispatch(module.UTF8ToString(sessionIdPtr)),
-                'vi',
-            ),
+            module.addFunction(() => this.proxyDisconnectEvent.dispatch(), 'v'),
         );
 
         this.transportIR = this.wrapTransport(this.cloudpilot.GetTransportIR());
@@ -181,6 +178,11 @@ export class Cloudpilot {
 
     hasFatalError(): boolean {
         return this.amIdead;
+    }
+
+    @guard()
+    enableLogging(logging: boolean): void {
+        this.cloudpilot.EnableLogging(logging);
     }
 
     @guard()
@@ -483,8 +485,8 @@ export class Cloudpilot {
     }
 
     @guard()
-    getSuspendKind(): SuspendKind {
-        return this.cloudpilot.GetSuspendContext().GetKind();
+    getSuspendKind(): SuspendKind | undefined {
+        return this.cloudpilot.IsSuspended() ? this.cloudpilot.GetSuspendContext().GetKind() : undefined;
     }
 
     @guard()
@@ -887,7 +889,7 @@ export class Cloudpilot {
 
     fatalErrorEvent = new Event<Error>();
     pwmUpdateEvent = new Event<PwmUpdate>();
-    proxyDisconnectEvent = new Event<string>();
+    proxyDisconnectEvent = new Event<void>();
 
     private cloudpilot: CloudpilotNative;
 

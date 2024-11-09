@@ -22,12 +22,10 @@ class ProxyHandler {
     void HandleConnect(SuspendContext& context);
     void HandleRpc(SuspendContext& context);
 
-    void OnDisconnectHandler(const string& sessionId);
+    void OnDisconnectHandler();
 
    private:
     ProxyClient& client;
-
-    string sessionId;
     optional<EmEvent<const string&>::HandleT> onDisconnectHandle;
 
    private:

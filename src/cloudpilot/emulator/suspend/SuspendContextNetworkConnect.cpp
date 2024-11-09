@@ -11,7 +11,7 @@ void SuspendContextNetworkConnect::Cancel() {
     ResumeExecution();
 }
 
-void SuspendContextNetworkConnect::Resume(const string& sessionId) {
-    onSuccess(sessionId);
+void SuspendContextNetworkConnect::Resume() {
+    onSuccess();
     ResumeExecution();
 }

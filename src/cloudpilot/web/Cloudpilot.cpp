@@ -14,6 +14,7 @@
 #include "EmSystemState.h"
 #include "ExternalStorage.h"
 #include "Feature.h"
+#include "Logging.h"
 #include "MemoryStick.h"
 #include "NetworkProxy.h"
 #include "SuspendManager.h"
@@ -78,6 +79,16 @@ void Cloudpilot::Free(void* buffer) {
 }
 
 void* Cloudpilot::Nullptr() { return nullptr; }
+
+void Cloudpilot::EnableLogging(bool enable) {
+    logging::enableDomain(logging::Domain::domainNetlib);
+
+    if (enable) {
+        logging::enable();
+    } else {
+        logging::disable();
+    }
+}
 
 bool Cloudpilot::InitializeSession(void* buffer, int size, const char* deviceType) {
     auto reader = createReader(buffer, size);
@@ -243,12 +254,15 @@ bool Cloudpilot::IsSuspended() { return SuspendManager::IsSuspended(); }
 
 SuspendContext& Cloudpilot::GetSuspendContext() { return SuspendManager::GetContext(); }
 
-void Cloudpilot::SetNetworkRedirection(bool toggle) { Feature::SetNetworkRedirection(toggle); }
+void Cloudpilot::SetNetworkRedirection(bool toggle) {
+    Feature::SetNetworkRedirection(toggle);
+    if (!toggle) gNetworkProxy.Reset();
+}
 
 bool Cloudpilot::GetNetworkRedirection() { return Feature::GetNetworkRedirection(); }
 
 void Cloudpilot::RegisterProxyDisconnectHandler(uint32 handlerPtr) {
-    typedef void (*handler_ptr)(const char*);
+    typedef void (*handler_ptr)();
 
     gNetworkProxy.onDisconnect.AddHandler(reinterpret_cast<handler_ptr>(handlerPtr));
 }

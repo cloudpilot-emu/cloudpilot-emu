@@ -66,6 +66,8 @@ export interface Cloudpilot {
     Free(buffer: VoidPtr): void;
     Nullptr(): VoidPtr;
 
+    EnableLogging(logging: boolean): void;
+
     InitializeSession(buffer: VoidPtr, size: number, deviceType: string): boolean;
 
     GetCyclesPerSecond(): number;
@@ -201,7 +203,7 @@ export interface SuspendContextClipboardPaste {
 
 export interface SuspendContextNetworkConnect {
     Cancel(): void;
-    Resume(sessionId: string): void;
+    Resume(): void;
 }
 
 export interface SuspendContextNetworkRpc {

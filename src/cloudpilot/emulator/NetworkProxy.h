@@ -65,10 +65,10 @@ class NetworkProxy {
     void SocketAccept(int16 handle, int32 timeout);
 
    public:
-    EmEvent<const char*> onDisconnect;
+    EmEvent<> onDisconnect;
 
    private:
-    void ConnectSuccess(const string& sessionId);
+    void ConnectSuccess();
     void ConnectAbort();
 
     void CloseDone(Err err);
@@ -138,7 +138,6 @@ class NetworkProxy {
    private:
     uint32 openCount{0};
     uint32 currentId{0xffffffff};
-    string sessionId;
 
    private:
     NetworkProxy(const NetworkProxy&) = delete;

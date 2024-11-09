@@ -20,6 +20,8 @@ class Cloudpilot {
     void Free(void* buffer);
     void* Nullptr();
 
+    void EnableLogging(bool enable);
+
     bool InitializeSession(void* buffer, int size, const char* deviceType);
 
     int GetCyclesPerSecond();

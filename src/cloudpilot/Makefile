@@ -22,7 +22,7 @@ CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 INCLUDE_EXTRA ?=
 
 LDFLAGS_NATIVE ?=  \
-	$(shell sdl2-config --libs) -lSDL2_image -lreadline -lboost_coroutine -ldl -lpthread
+	$(shell sdl2-config --libs) -lSDL2_image -lreadline -lboost_coroutine -ldl -lpthread -lresolv
 
 CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-pragma-pack -Wno-multichar -Wno-unknown-pragmas \
 	-Wno-missing-field-initializers -DEMULATION_LEVEL=EMULATION_UNIX
@@ -102,7 +102,7 @@ INCLUDE = \
 	-I./proto \
 	$(INCLUDE_EXTRA)
 
-INCLUDE_NATIVE = -I../argparse
+INCLUDE_NATIVE = -I../argparse -Inative/network-backend
 
 SOURCE_C = \
 	emulator/uae/cpudefs.c \
@@ -268,10 +268,15 @@ SOURCE_NATIVE = \
 	native/md5.cpp \
 	native/EventHandler.cpp \
 	native/Commands.cpp \
-	native/ProxyClient.cpp \
+	native/proxyClientWs.cpp \
+	native/proxyClientNative.cpp \
 	native/ProxyHandler.cpp \
 	native/GdbStub.cpp \
 	native/ElfParser.cpp \
+	native/network-backend/NetworkSession.cpp \
+	native/network-backend/networkBackend.cpp \
+	native/network-backend/codes.cpp \
+	native/network-backend/sockopt.cpp \
 	native/DebugSupport.cpp \
 	emulator/assert_native.cpp \
 	emulator/stacktrace.cpp

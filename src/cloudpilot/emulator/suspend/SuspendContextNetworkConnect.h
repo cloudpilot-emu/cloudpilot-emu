@@ -7,7 +7,7 @@
 #include "SuspendContext.h"
 
 class SuspendContextNetworkConnect : public SuspendContext {
-    using successCallbackT = function<void(const string&)>;
+    using successCallbackT = function<void()>;
     using failCallbackT = function<void()>;
 
    public:
@@ -17,7 +17,7 @@ class SuspendContextNetworkConnect : public SuspendContext {
 
     void Cancel() override;
 
-    void Resume(const string& sessionId);
+    void Resume();
 
    private:
     successCallbackT onSuccess;

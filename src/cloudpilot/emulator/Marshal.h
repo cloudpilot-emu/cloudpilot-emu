@@ -164,9 +164,9 @@ typedef UInt8* UInt8Ptr;
     emuptr result;       \
     Marshal::GetReturnVal(sub, result);
 
-#define PUT_RESULT_VAL(type, val) Marshal::PutReturnVal(sub, (type)val);
+#define PUT_RESULT_VAL(type, val) Marshal::PutReturnVal(sub, (type)(val));
 
-#define PUT_RESULT_PTR(type, val) Marshal::PutReturnVal(sub, (type)val);
+#define PUT_RESULT_PTR(type, val) Marshal::PutReturnVal(sub, (type)(val));
 
 #define RETURN_RESULT_VAL(type) \
     GET_RESULT_VAL(type);       \
@@ -215,8 +215,8 @@ class Marshal {
     //		static const int	kInOut	= kInput | kOutput;
     enum { kInput = 0x01, kOutput = 0x02, kInOut = kInput | kOutput };
 
-#define INPUT(io) (((io)&Marshal::kInput) != 0)
-#define OUTPUT(io) (((io)&Marshal::kOutput) != 0)
+#define INPUT(io) (((io) & Marshal::kInput) != 0)
+#define OUTPUT(io) (((io) & Marshal::kOutput) != 0)
 
     static void* GetBuffer(emuptr p, long len);
 #if (__GNUC__ == 2)

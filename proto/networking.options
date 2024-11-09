@@ -1,4 +1,5 @@
 MsgResponse submsg_callback:true
+MsgRequest submsg_callback:true
 
 MsgGetHostByNameRequest.name max_length:255
 

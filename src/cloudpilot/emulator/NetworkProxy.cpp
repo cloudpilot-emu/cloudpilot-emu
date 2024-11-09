@@ -110,8 +110,6 @@ namespace {
         ctx->data = make_unique<uint8[]>(stream->bytes_left);
 
         return pb_read(stream, ctx->data.get(), stream->bytes_left);
-
-        return true;
     }
 
     bool setupPayloadDecodeCb(pb_istream_t* stream, const pb_field_iter_t* field, void** arg) {
@@ -171,7 +169,21 @@ namespace {
 NetworkProxy& gNetworkProxy{networkProxy};
 
 void NetworkProxy::Reset() {
-    if (this->openCount > 0) onDisconnect.Dispatch(sessionId.c_str());
+    if (this->openCount > 0) {
+        onDisconnect.Dispatch();
+
+        if (SuspendManager::IsSuspended()) {
+            switch (SuspendManager::GetContext().GetKind()) {
+                case SuspendContext::Kind::networkRpc:
+                case SuspendContext::Kind::networkConnect:
+                    SuspendManager::GetContext().Cancel();
+                    break;
+
+                default:
+                    break;
+            }
+        }
+    }
 
     openCount = 0;
 }
@@ -184,12 +196,11 @@ void NetworkProxy::Open() {
         return;
     }
 
-    SuspendManager::Suspend<SuspendContextNetworkConnect>(
-        bind(&NetworkProxy::ConnectSuccess, this, _1), bind(&NetworkProxy::ConnectAbort, this));
+    SuspendManager::Suspend<SuspendContextNetworkConnect>(bind(&NetworkProxy::ConnectSuccess, this),
+                                                          bind(&NetworkProxy::ConnectAbort, this));
 }
 
-void NetworkProxy::ConnectSuccess(const string& sessionId) {
-    this->sessionId = sessionId;
+void NetworkProxy::ConnectSuccess() {
     openCount++;
 
     CALLED_SETUP("Err", "void");
@@ -204,7 +215,7 @@ void NetworkProxy::ConnectAbort() {
 void NetworkProxy::Close() {
     if (openCount == 0) return CloseDone(netErrNotOpen);
 
-    if (--openCount == 0) this->onDisconnect.Dispatch(sessionId.c_str());
+    if (--openCount == 0) this->onDisconnect.Dispatch();
     return CloseDone(0);
 
     CloseDone(netErrStillOpen);
@@ -444,7 +455,7 @@ void NetworkProxy::SocketSendFail(Err err) {
     *errP = err;
     CALLED_PUT_PARAM_REF(errP);
 
-    PUT_RESULT_VAL(Int16, -1);
+    PUT_RESULT_VAL(Int16, err == netErrSocketClosedByRemote ? 0 : -1);
 }
 
 void NetworkProxy::SocketSendPB(int16 handle, NetIOParamType* pbP, uint16 flags, int32 timeout) {
@@ -495,7 +506,7 @@ void NetworkProxy::SocketSendPB(int16 handle, NetIOParamType* pbP, uint16 flags,
 }
 
 void NetworkProxy::SocketSendPBSuccess(void* responseData, size_t size) {
-    PREPARE_RESPONSE(SocketSend, socketSendResponse)
+    PREPARE_RESPONSE(SocketSendPB, socketSendResponse)
 
     CALLED_SETUP("Int16",
                  "UInt16 libRefNum, NetSocketRef socket,"
@@ -519,7 +530,7 @@ void NetworkProxy::SocketSendPBFail(Err err) {
     *errP = err;
     CALLED_PUT_PARAM_REF(errP);
 
-    PUT_RESULT_VAL(Int16, -1);
+    PUT_RESULT_VAL(Int16, err == netErrSocketClosedByRemote ? 0 : -1);
 }
 
 void NetworkProxy::SocketReceive(int16 handle, uint16 flags, uint16 bufLen, int32 timeout,
@@ -594,7 +605,7 @@ void NetworkProxy::SocketReceiveFail(Err err) {
     *errP = err;
     CALLED_PUT_PARAM_REF(errP);
 
-    PUT_RESULT_VAL(Int16, -1);
+    PUT_RESULT_VAL(Int16, err == netErrSocketClosedByRemote ? 0 : -1);
 }
 
 void NetworkProxy::SocketReceivePB(int16 handle, NetIOParamType* pbP, uint16 flags, int32 timeout) {
@@ -621,7 +632,7 @@ void NetworkProxy::SocketReceivePB(int16 handle, NetIOParamType* pbP, uint16 fla
 }
 
 void NetworkProxy::SocketReceivePBSuccess(void* responseData, size_t size) {
-    PREPARE_RESPONSE_WITH_BUFFER(SocketReceive, socketReceiveResponse);
+    PREPARE_RESPONSE_WITH_BUFFER(SocketReceivePB, socketReceiveResponse);
 
     CALLED_SETUP("Int16",
                  "UInt16 libRefNum, NetSocketRef socket,"
@@ -675,7 +686,7 @@ void NetworkProxy::SocketReceivePBFail(Err err) {
     *errP = err;
     CALLED_PUT_PARAM_REF(errP);
 
-    PUT_RESULT_VAL(Int16, -1);
+    PUT_RESULT_VAL(Int16, err == netErrSocketClosedByRemote ? 0 : -1);
 }
 
 void NetworkProxy::SocketDmReceive(int16 handle, uint16 flags, uint16 rcvlen, int32 timeout,
@@ -753,7 +764,7 @@ void NetworkProxy::SocketDmReceiveFail(Err err) {
     *errP = err;
     CALLED_PUT_PARAM_REF(errP);
 
-    PUT_RESULT_VAL(Int16, -1);
+    PUT_RESULT_VAL(Int16, err == netErrSocketClosedByRemote ? 0 : -1);
 }
 
 void NetworkProxy::SocketClose(int16 handle, int32 timeout) {
@@ -1476,7 +1487,7 @@ bool NetworkProxy::DecodeResponse(void* responseData, size_t size, MsgResponse& 
     bool status = pb_decode(&stream, MsgResponse_fields, &response);
 
     if (!status) {
-        logging::printf("failed to decode response");
+        logging::printf("failed to decode response: %s", PB_GET_ERROR(&stream));
 
         return false;
     }

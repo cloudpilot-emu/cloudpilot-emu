@@ -5,6 +5,8 @@ interface Cloudpilot {
     void Free(VoidPtr buffer);
     VoidPtr Nullptr();
 
+    void EnableLogging(boolean logging);
+
     boolean InitializeSession(VoidPtr buffer, long size, [Const] DOMString deviceType);
 
     long GetCyclesPerSecond();
@@ -153,7 +155,7 @@ interface SuspendContextClipboardPaste {
 
 interface SuspendContextNetworkConnect {
     void Cancel();
-    void Resume([Const] DOMString sessionId);
+    void Resume();
 };
 
 interface SuspendContextNetworkRpc {

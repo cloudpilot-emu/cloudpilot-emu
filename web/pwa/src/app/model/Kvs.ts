@@ -3,6 +3,8 @@ export interface Credentials {
     password: string;
 }
 
+export type NetworkRedirectionMode = 'native' | 'proxy';
+
 export interface Kvs {
     version?: string;
     previousVersion?: string;
@@ -12,6 +14,7 @@ export interface Kvs {
     showStatistics: boolean;
     clipboardIntegration: boolean;
     networkRedirection: boolean;
+    networkRedirectionMode: NetworkRedirectionMode;
     proxyServer: string;
     credentials: Record<string, Credentials>;
     runHidden: boolean;

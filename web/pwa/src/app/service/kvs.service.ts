@@ -3,12 +3,14 @@ import { Injectable } from '@angular/core';
 import { Kvs } from '@pwa/model/Kvs';
 import { Mutex } from 'async-mutex';
 import { StorageService } from './storage.service';
+import { NativeAppService } from './native-app.service';
 
 const DEFAULTS: Kvs = {
     volume: 0.5,
     showStatistics: false,
     clipboardIntegration: false,
     networkRedirection: false,
+    networkRedirectionMode: NativeAppService.supportsNativeNetworkIntegration() ? 'native' : 'proxy',
     proxyServer: '',
     credentials: {},
     runHidden: false,
@@ -23,7 +25,7 @@ const DEFAULTS: Kvs = {
 })
 export class KvsService {
     constructor(private storageService: StorageService) {
-        this.initializationPromise = this.startInitialiation();
+        this.initializationPromise = this.startInitialization().then(() => this.migrate());
     }
 
     async initialize(): Promise<void> {
@@ -46,7 +48,7 @@ export class KvsService {
             this.updateEvent.dispatch();
         });
 
-    private async startInitialiation(): Promise<void> {
+    private async startInitialization(): Promise<void> {
         // eslint-disable-next-line @typescript-eslint/no-this-alias
         const self = this;
 
@@ -79,6 +81,23 @@ export class KvsService {
             console.error(e);
 
             this.kvsProxy = { ...DEFAULTS };
+        }
+    }
+
+    private async migrate(): Promise<void> {
+        switch (this.kvs.networkRedirectionMode) {
+            case 'native':
+                if (!NativeAppService.supportsNativeNetworkIntegration()) {
+                    await this.set({ networkRedirectionMode: 'proxy', networkRedirection: false });
+                }
+
+                break;
+
+            case 'proxy':
+                break;
+
+            default:
+                await this.set({ networkRedirectionMode: 'proxy' });
         }
     }
 

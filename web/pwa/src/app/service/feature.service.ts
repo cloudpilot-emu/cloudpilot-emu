@@ -4,6 +4,7 @@ import { PwaService } from './pwa.service';
 import { isIndicatorFixApplicable } from '@pwa/helper/homeIndicatorFix';
 import { ClipboardService } from './clipboard.service';
 import { isIOS, isIOSNative, isMacOSSafari } from '@common/helper/browser';
+import { NativeAppService } from './native-app.service';
 
 @Injectable({ providedIn: 'root' })
 export class FeatureService {
@@ -16,6 +17,10 @@ export class FeatureService {
 
     get runHidden(): boolean {
         return this.pwaService.getInstallationMode() !== InstallationMode.pwa;
+    }
+
+    get nativeNetworkIntegration(): boolean {
+        return NativeAppService.supportsNativeNetworkIntegration();
     }
 
     private featureStyle(feature: string, value: boolean) {

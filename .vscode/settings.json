@@ -130,7 +130,8 @@
     "forward_list": "cpp",
     "print": "cpp",
     "span": "cpp",
-    "format": "cpp"
+    "format": "cpp",
+    "text_encoding": "cpp"
   },
   "editor.formatOnSave": true,
   "CppHelper.SourcePattern": [

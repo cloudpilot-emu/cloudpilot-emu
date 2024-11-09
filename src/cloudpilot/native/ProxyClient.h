@@ -5,8 +5,6 @@
 
 class ProxyClient {
    public:
-    static ProxyClient* Create(const string& host, const long port, const string& path);
-
     virtual ~ProxyClient() = default;
 
     virtual bool Connect() = 0;
