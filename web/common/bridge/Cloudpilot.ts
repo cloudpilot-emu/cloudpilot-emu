@@ -181,6 +181,11 @@ export class Cloudpilot {
     }
 
     @guard()
+    enableLogging(logging: boolean): void {
+        this.cloudpilot.EnableLogging(logging);
+    }
+
+    @guard()
     getRomInfo(rom: Uint8Array): RomInfo | undefined {
         const buffer = this.copyIn(rom);
 

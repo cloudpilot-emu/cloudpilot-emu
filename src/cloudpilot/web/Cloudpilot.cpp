@@ -14,6 +14,7 @@
 #include "EmSystemState.h"
 #include "ExternalStorage.h"
 #include "Feature.h"
+#include "Logging.h"
 #include "MemoryStick.h"
 #include "NetworkProxy.h"
 #include "SuspendManager.h"
@@ -78,6 +79,16 @@ void Cloudpilot::Free(void* buffer) {
 }
 
 void* Cloudpilot::Nullptr() { return nullptr; }
+
+void Cloudpilot::EnableLogging(bool enable) {
+    logging::enableDomain(logging::Domain::domainNetlib);
+
+    if (enable) {
+        logging::enable();
+    } else {
+        logging::disable();
+    }
+}
 
 bool Cloudpilot::InitializeSession(void* buffer, int size, const char* deviceType) {
     auto reader = createReader(buffer, size);
