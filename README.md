@@ -162,12 +162,6 @@ can be done with
 
 ```
     $ git clone --recurse-submodules
-    $ git pull --recurse-submodules
-```
-
-On an existing checkout, you can pull in the submodule with
-
-```
     $ git submodule update --recursive
 ```
 
