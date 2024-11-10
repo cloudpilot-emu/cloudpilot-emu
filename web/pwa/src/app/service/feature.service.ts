@@ -40,6 +40,7 @@ export class FeatureService {
             ${this.featureStyle('ios-not-native', isIOS && !isIOSNative)}
             ${this.featureStyle('ios-or-safari', (isIOS && !isIOSNative) || isMacOSSafari)}
             ${this.featureStyle('ios', isIOS)}
+            ${this.featureStyle('native-network', this.nativeNetworkIntegration)}
         `;
 
         document.head.appendChild(styleTag);

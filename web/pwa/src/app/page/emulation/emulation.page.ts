@@ -168,7 +168,11 @@ export class EmulationPage implements DragDropClient {
 
     @debounce()
     async showProxyConnectedHint(): Promise<void> {
-        await this.alertService.message('Proxy connected', 'Network proxy connected.');
+        if (this.kvsService.kvs.networkRedirectionMode === 'native') {
+            await this.alertService.message('Network session', 'PalmOS has opened a network session.');
+        } else {
+            await this.alertService.message('Proxy connected', 'Network proxy connected.');
+        }
     }
 
     @debounce()

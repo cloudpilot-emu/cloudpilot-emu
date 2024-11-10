@@ -27,6 +27,24 @@ This turns on clipboard integration.
 
 ### Network redirection
 
+:::div{.feature-native-network}
+CloudpilotEmu can connect the virtual PalmOS device to the network.
+
+If you set "Redirection method" to "Native", CloudpilotEmu will connect PalmOS
+directly to your network. Please note that iOS will ask for your consent if
+you try to access the local network, i.e. if you are trying to HotSync with
+a server on your local network. This setting can be changed at any later point in
+the "Settings" app (navigate to Apps -> CloudpilotEmu).
+
+If you set "Redirection method" to "Proxy", CloudpilotEmu will connect to the
+network using a proxy server. In this mode you'll have to enter the address of the proxy
+server below. Use the "Test" button to test the connection before attempting to
+connect from within the virtual device. Please check the
+[online documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/networking.md)
+for detailed instructions on setting up the proxy.
+:::
+
+:::div{.no-feature-native-network}
 CloudpilotEmu can connect the virtual PalmOS device to the network via
 a proxy server. This configuration supports network hotsync. Please check the
 [online documentation](https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/doc/networking.md)
@@ -35,6 +53,7 @@ for detailed instructions.
 If you enable network redirection you'll have to enter the address of the proxy
 server below. Use the "Test" button to test the connection before attempting to
 connect from within the virtual device.
+:::
 
 # User interface
 
