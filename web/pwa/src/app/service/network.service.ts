@@ -41,7 +41,7 @@ export class NetworkService {
                 this.createNewSession();
 
                 if (this.session) {
-                    this.session.handleConnect();
+                    void this.session.handleConnect().then((success) => success || this.reset());
                 } else {
                     if (this.cloudpilot.getSuspendKind() === SuspendKind.networkConnect) {
                         this.cloudpilot.getSuspendContextNetworkConnect().Cancel();
@@ -52,7 +52,7 @@ export class NetworkService {
 
             case SuspendKind.networkRpc:
                 if (this.session) {
-                    this.session.handleRpc();
+                    void this.session.handleRpc();
                 } else {
                     if (this.cloudpilot.getSuspendKind() === SuspendKind.networkRpc) {
                         this.cloudpilot.getSuspendContextNetworkRpc().Cancel();
@@ -115,7 +115,7 @@ class NetworkSession {
     }
 
     handleConnect = () =>
-        void this.mutex.runExclusive(async () => {
+        this.mutex.runExclusive(async (): Promise<boolean> => {
             try {
                 const connectSuccess = await this.backend.connect();
 
@@ -124,17 +124,21 @@ class NetworkSession {
                         ? this.cloudpilot.getSuspendContextNetworkConnect().Resume()
                         : this.cloudpilot.getSuspendContextNetworkConnect().Cancel();
                 }
+
+                return connectSuccess;
             } catch (e) {
                 console.error('failed to connect to backend', e);
 
                 if (this.cloudpilot?.getSuspendKind() === SuspendKind.networkConnect) {
                     this.cloudpilot.getSuspendContextNetworkConnect().Cancel();
                 }
+
+                return false;
             }
         });
 
     handleRpc = () =>
-        void this.mutex.runExclusive(async () => {
+        this.mutex.runExclusive(async () => {
             if (this.cloudpilot?.getSuspendKind() !== SuspendKind.networkRpc) return;
 
             const ctx = this.cloudpilot.getSuspendContextNetworkRpc();
