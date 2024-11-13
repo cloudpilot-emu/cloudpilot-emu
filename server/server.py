@@ -41,6 +41,7 @@ INDEX_HTML = """
 </html>
 """
 
+
 def start(host: str, port: int, ssl: Optional[SSLContext], logLevel: str, logLevelFramework: str, trustedOrigins: str,
           forceBindAddress: Optional[str] = None, authentication: Optional[str] = None, nameserver: Optional[int] = None):
     routes = web.RouteTableDef()
@@ -62,6 +63,8 @@ def start(host: str, port: int, ssl: Optional[SSLContext], logLevel: str, logLev
 
         connection = Connection(forceBindAddress, nameserver)
         await connection.handle(ws)
+
+        return ws
 
     @routes.get("/")
     async def indexHandler(request: web.Request):

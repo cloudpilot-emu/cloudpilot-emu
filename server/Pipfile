@@ -19,6 +19,7 @@ types-protobuf = "*"
 types-futures = "*"
 mypy = "*"
 pyreadline3 = "*"
+mypy-protobuf = "*"
 
 [dev-packages]
 

@@ -57,8 +57,7 @@ class SocketContext:
         try:
             await runInThread(lambda: self.socket.shutdown(sock.SHUT_RDWR))
         except OSError as ex:
-            if ex.errno != errno.ENOTCONN:
-                raise ex
+            pass
 
         self.updateTimeout()
         await runInThread(lambda: self.socket.close())

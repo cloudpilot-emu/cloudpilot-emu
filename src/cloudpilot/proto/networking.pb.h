@@ -209,6 +209,16 @@ typedef struct _MsgSocketAcceptResponse {
     int32_t err;
 } MsgSocketAcceptResponse;
 
+typedef struct _MsgSocketShutdownRequest {
+    int32_t handle;
+    int32_t direction;
+    int32_t timeout;
+} MsgSocketShutdownRequest;
+
+typedef struct _MsgSocketShutdownResponse {
+    int32_t err;
+} MsgSocketShutdownResponse;
+
 typedef struct _MsgRequest {
     uint32_t id;
     pb_callback_t cb_payload;
@@ -229,6 +239,7 @@ typedef struct _MsgRequest {
         MsgSocketListenRequest socketListenRequest;
         MsgSocketAcceptRequest socketAcceptRequest;
         MsgSocketOptionGetRequest socketOptionGetRequest;
+        MsgSocketShutdownRequest socketShutdownRequest;
     } payload;
 } MsgRequest;
 
@@ -252,6 +263,7 @@ typedef struct _MsgResponse {
         MsgSocketListenResponse socketListenResponse;
         MsgSocketAcceptResponse socketAcceptResponse;
         MsgSocketOptionGetResponse socketOptionGetResponse;
+        MsgSocketShutdownResponse socketShutdownResponse;
         MsgInvalidRequestResponse invalidRequestResponse;
     } payload;
 } MsgResponse;
@@ -294,6 +306,8 @@ extern "C" {
 #define MsgSocketListenResponse_init_default     {0}
 #define MsgSocketAcceptRequest_init_default      {0, 0}
 #define MsgSocketAcceptResponse_init_default     {0, Address_init_default, 0}
+#define MsgSocketShutdownRequest_init_default    {0, 0, 0}
+#define MsgSocketShutdownResponse_init_default   {0}
 #define MsgRequest_init_default                  {0, {{NULL}, NULL}, 0, {MsgSocketOpenRequest_init_default}}
 #define MsgResponse_init_default                 {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_default}}
 #define Address_init_zero                        {0, 0}
@@ -328,6 +342,8 @@ extern "C" {
 #define MsgSocketListenResponse_init_zero        {0}
 #define MsgSocketAcceptRequest_init_zero         {0, 0}
 #define MsgSocketAcceptResponse_init_zero        {0, Address_init_zero, 0}
+#define MsgSocketShutdownRequest_init_zero       {0, 0, 0}
+#define MsgSocketShutdownResponse_init_zero      {0}
 #define MsgRequest_init_zero                     {0, {{NULL}, NULL}, 0, {MsgSocketOpenRequest_init_zero}}
 #define MsgResponse_init_zero                    {0, {{NULL}, NULL}, 0, {MsgSocketOpenResponse_init_zero}}
 
@@ -418,6 +434,10 @@ extern "C" {
 #define MsgSocketAcceptResponse_handle_tag       1
 #define MsgSocketAcceptResponse_address_tag      2
 #define MsgSocketAcceptResponse_err_tag          3
+#define MsgSocketShutdownRequest_handle_tag      1
+#define MsgSocketShutdownRequest_direction_tag   2
+#define MsgSocketShutdownRequest_timeout_tag     3
+#define MsgSocketShutdownResponse_err_tag        1
 #define MsgRequest_id_tag                        1
 #define MsgRequest_socketOpenRequest_tag         2
 #define MsgRequest_socketBindRequest_tag         3
@@ -434,6 +454,7 @@ extern "C" {
 #define MsgRequest_socketListenRequest_tag       14
 #define MsgRequest_socketAcceptRequest_tag       15
 #define MsgRequest_socketOptionGetRequest_tag    16
+#define MsgRequest_socketShutdownRequest_tag     17
 #define MsgResponse_id_tag                       1
 #define MsgResponse_socketOpenResponse_tag       2
 #define MsgResponse_socketBindResponse_tag       3
@@ -450,6 +471,7 @@ extern "C" {
 #define MsgResponse_socketListenResponse_tag     14
 #define MsgResponse_socketAcceptResponse_tag     15
 #define MsgResponse_socketOptionGetResponse_tag  16
+#define MsgResponse_socketShutdownResponse_tag   17
 #define MsgResponse_invalidRequestResponse_tag   255
 
 /* Struct field encoding specification for nanopb */
@@ -674,6 +696,18 @@ X(a, STATIC,   REQUIRED, INT32,    err,               3)
 #define MsgSocketAcceptResponse_DEFAULT NULL
 #define MsgSocketAcceptResponse_address_MSGTYPE Address
 
+#define MsgSocketShutdownRequest_FIELDLIST(X, a) \
+X(a, STATIC,   REQUIRED, INT32,    handle,            1) \
+X(a, STATIC,   REQUIRED, INT32,    direction,         2) \
+X(a, STATIC,   REQUIRED, INT32,    timeout,           3)
+#define MsgSocketShutdownRequest_CALLBACK NULL
+#define MsgSocketShutdownRequest_DEFAULT NULL
+
+#define MsgSocketShutdownResponse_FIELDLIST(X, a) \
+X(a, STATIC,   REQUIRED, INT32,    err,               1)
+#define MsgSocketShutdownResponse_CALLBACK NULL
+#define MsgSocketShutdownResponse_DEFAULT NULL
+
 #define MsgRequest_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, UINT32,   id,                1) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOpenRequest,payload.socketOpenRequest),   2) \
@@ -690,7 +724,8 @@ X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,settingGetRequest,payload.settingGet
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOptionSetRequest,payload.socketOptionSetRequest),  13) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketListenRequest,payload.socketListenRequest),  14) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketAcceptRequest,payload.socketAcceptRequest),  15) \
-X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOptionGetRequest,payload.socketOptionGetRequest),  16)
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOptionGetRequest,payload.socketOptionGetRequest),  16) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketShutdownRequest,payload.socketShutdownRequest),  17)
 #define MsgRequest_CALLBACK NULL
 #define MsgRequest_DEFAULT NULL
 #define MsgRequest_payload_socketOpenRequest_MSGTYPE MsgSocketOpenRequest
@@ -708,6 +743,7 @@ X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOptionGetRequest,payload.socke
 #define MsgRequest_payload_socketListenRequest_MSGTYPE MsgSocketListenRequest
 #define MsgRequest_payload_socketAcceptRequest_MSGTYPE MsgSocketAcceptRequest
 #define MsgRequest_payload_socketOptionGetRequest_MSGTYPE MsgSocketOptionGetRequest
+#define MsgRequest_payload_socketShutdownRequest_MSGTYPE MsgSocketShutdownRequest
 
 #define MsgResponse_FIELDLIST(X, a) \
 X(a, STATIC,   REQUIRED, UINT32,   id,                1) \
@@ -726,6 +762,7 @@ X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOptionSetResponse,payload.sock
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketListenResponse,payload.socketListenResponse),  14) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketAcceptResponse,payload.socketAcceptResponse),  15) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketOptionGetResponse,payload.socketOptionGetResponse),  16) \
+X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,socketShutdownResponse,payload.socketShutdownResponse),  17) \
 X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,invalidRequestResponse,payload.invalidRequestResponse), 255)
 #define MsgResponse_CALLBACK NULL
 #define MsgResponse_DEFAULT NULL
@@ -744,6 +781,7 @@ X(a, STATIC,   ONEOF,    MSG_W_CB, (payload,invalidRequestResponse,payload.inval
 #define MsgResponse_payload_socketListenResponse_MSGTYPE MsgSocketListenResponse
 #define MsgResponse_payload_socketAcceptResponse_MSGTYPE MsgSocketAcceptResponse
 #define MsgResponse_payload_socketOptionGetResponse_MSGTYPE MsgSocketOptionGetResponse
+#define MsgResponse_payload_socketShutdownResponse_MSGTYPE MsgSocketShutdownResponse
 #define MsgResponse_payload_invalidRequestResponse_MSGTYPE MsgInvalidRequestResponse
 
 extern const pb_msgdesc_t Address_msg;
@@ -778,6 +816,8 @@ extern const pb_msgdesc_t MsgSocketListenRequest_msg;
 extern const pb_msgdesc_t MsgSocketListenResponse_msg;
 extern const pb_msgdesc_t MsgSocketAcceptRequest_msg;
 extern const pb_msgdesc_t MsgSocketAcceptResponse_msg;
+extern const pb_msgdesc_t MsgSocketShutdownRequest_msg;
+extern const pb_msgdesc_t MsgSocketShutdownResponse_msg;
 extern const pb_msgdesc_t MsgRequest_msg;
 extern const pb_msgdesc_t MsgResponse_msg;
 
@@ -814,6 +854,8 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define MsgSocketListenResponse_fields &MsgSocketListenResponse_msg
 #define MsgSocketAcceptRequest_fields &MsgSocketAcceptRequest_msg
 #define MsgSocketAcceptResponse_fields &MsgSocketAcceptResponse_msg
+#define MsgSocketShutdownRequest_fields &MsgSocketShutdownRequest_msg
+#define MsgSocketShutdownResponse_fields &MsgSocketShutdownResponse_msg
 #define MsgRequest_fields &MsgRequest_msg
 #define MsgResponse_fields &MsgResponse_msg
 
@@ -852,6 +894,8 @@ extern const pb_msgdesc_t MsgResponse_msg;
 #define MsgSocketOptionSetResponse_size          11
 #define MsgSocketReceiveRequest_size             36
 #define MsgSocketSendResponse_size               22
+#define MsgSocketShutdownRequest_size            33
+#define MsgSocketShutdownResponse_size           11
 #define NETWORKING_PB_H_MAX_SIZE                 MsgGetHostByNameResponse_size
 
 #ifdef __cplusplus

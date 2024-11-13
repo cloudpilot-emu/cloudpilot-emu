@@ -64,6 +64,8 @@ class NetworkProxy {
 
     void SocketAccept(int16 handle, int32 timeout);
 
+    void SocketShutdown(int16 handle, int16 direction, int32 timeout);
+
    public:
     EmEvent<> onDisconnect;
 
@@ -126,6 +128,9 @@ class NetworkProxy {
 
     void SocketAcceptSuccess(void* responseData, size_t size);
     void SocketAcceptFail(Err err = netErrInternal);
+
+    void SocketShutdownSuccess(void* responseData, size_t size);
+    void SocketShutdownFail(Err err = netErrInternal);
 
     MsgRequest NewRequest(pb_size_t payloadTag);
     bool DecodeResponse(void* responseData, size_t size, MsgResponse& response,

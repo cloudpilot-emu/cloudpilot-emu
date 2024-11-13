@@ -189,6 +189,16 @@ message MsgSocketAcceptResponse {
     required int32 err = 3;
 }
 
+message MsgSocketShutdownRequest {
+    required int32 handle = 1;
+    required int32 direction = 2;
+    required int32 timeout = 3;
+}
+
+message MsgSocketShutdownResponse {
+    required int32 err = 1;
+}
+
 message MsgRequest {
     required uint32 id = 1;
 
@@ -208,6 +218,7 @@ message MsgRequest {
         MsgSocketListenRequest socketListenRequest = 14;
         MsgSocketAcceptRequest socketAcceptRequest = 15;
         MsgSocketOptionGetRequest socketOptionGetRequest = 16;
+        MsgSocketShutdownRequest socketShutdownRequest = 17;
     }
 }
 
@@ -230,6 +241,7 @@ message MsgResponse {
         MsgSocketListenResponse socketListenResponse = 14;
         MsgSocketAcceptResponse socketAcceptResponse = 15;
         MsgSocketOptionGetResponse socketOptionGetResponse = 16;
+        MsgSocketShutdownResponse socketShutdownResponse = 17;
         MsgInvalidRequestResponse invalidRequestResponse = 255;
     }
 }

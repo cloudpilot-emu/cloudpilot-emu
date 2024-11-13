@@ -31,3 +31,7 @@ netSettingSecondaryDNS = 2
 netSettingHostName = 6
 netSettingRTPrimaryDNS = 0x1004
 netSettingRTSecondaryDNS = 0x1005
+
+netSocketDirInput = 0
+netSocketDirOutput = 1
+netSocketDirBoth = 2

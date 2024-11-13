@@ -103,6 +103,19 @@ def translateFlags(flags: int) -> int:
     return flags
 
 
+def shutdownHow(direction: int) -> int:
+    if direction == netSocketDirOutput:
+        return socket.SHUT_WR
+
+    if direction == netSocketDirInput:
+        return socket.SHUT_RD
+
+    if direction == netSocketDirBoth:
+        return socket.SHUT_RDWR
+
+    return 0
+
+
 def formatException(ex: Exception) -> str:
     if isinstance(ex, InvalidHandleError):
         return f'invalid handle {ex.handle}'
@@ -272,6 +285,9 @@ class Connection:
 
         elif requestType == "socketAcceptRequest":
             response = await self._handleSocketAccept(request.socketAcceptRequest)
+
+        elif requestType == "socketShutdownRequest":
+            response = await self._handleSocketShutdown(request.socketShutdownRequest)
 
         else:
             response = networking.MsgResponse()
@@ -621,7 +637,7 @@ class Connection:
 
                 if self._nameserver is None:
                     for nameserver in resolver.nameservers:
-                        ip = serializeIp(nameserver)
+                        ip = serializeIp(str(nameserver))
 
                         if ip != None:
                             break
@@ -784,6 +800,29 @@ class Connection:
         except Exception as ex:
             response.err = logAndConvertException(
                 f'socketAccept failed handle={request.handle}', ex)
+
+        return responseMsg
+
+    async def _handleSocketShutdown(self, request: networking.MsgSocketShutdownRequest) -> networking.MsgResponse:
+        debug(
+            f'socketAccept handle={request.handle} timeout={request.timeout}')
+
+        responseMsg = networking.MsgResponse()
+        response = responseMsg.socketShutdownResponse
+
+        response.err = 0
+
+        try:
+            socketCtx = self._getSocketCtx(request.handle)
+            socket = socketCtx.socket
+
+            socketCtx.setTimeoutMsec(request.timeout)
+
+            await runInThread(lambda: socket.shutdown(shutdownHow(request.direction)))
+
+        except Exception as ex:
+            response.err = logAndConvertException(
+                f'socketShutdown failed handle={request.handle}', ex)
 
         return responseMsg
 

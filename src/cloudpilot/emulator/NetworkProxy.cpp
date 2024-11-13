@@ -1474,6 +1474,49 @@ void NetworkProxy::SocketAcceptFail(Err err) {
     PUT_RESULT_VAL(Int16, -1);
 }
 
+void NetworkProxy::SocketShutdown(int16 handle, int16 direction, int32 timeout) {
+    MsgRequest msgRequest = NewRequest(MsgRequest_socketShutdownRequest_tag);
+    MsgSocketShutdownRequest& request(msgRequest.payload.socketShutdownRequest);
+
+    request.handle = handle;
+    request.direction = direction;
+    request.timeout = convertTimeout(timeout);
+
+    SendAndSuspend(msgRequest, REQUEST_STATIC_SIZE,
+                   bind(&NetworkProxy::SocketShutdownSuccess, this, _1, _2),
+                   bind(&NetworkProxy::SocketShutdownFail, this, _1));
+}
+
+void NetworkProxy::SocketShutdownSuccess(void* responseData, size_t size) {
+    PREPARE_RESPONSE(SocketShutdown, socketShutdownResponse);
+
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefnum,"
+                 "NetSocketRef socket, Int16 direction,"
+                 "Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = 0;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, 0);
+}
+
+void NetworkProxy::SocketShutdownFail(Err err) {
+    CALLED_SETUP("Int16",
+                 "UInt16 libRefnum,"
+                 "NetSocketRef socket, Int16 direction,"
+                 "Int32 timeout, Err *errP");
+
+    CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
+
+    *errP = err;
+    CALLED_PUT_PARAM_REF(errP);
+
+    PUT_RESULT_VAL(Int16, -1);
+}
+
 bool NetworkProxy::DecodeResponse(void* responseData, size_t size, MsgResponse& response,
                                   pb_size_t payloadTag, BufferDecodeContext* bufferrDecodeContext) {
     response = MsgResponse_init_zero;
