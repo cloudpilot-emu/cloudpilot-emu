@@ -5,7 +5,7 @@ on:
       - "*"
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  PYTHON_VERSION: 3.9
+  PYTHON_VERSION: 3.12
   TAG: ${GITHUB_REF##*/}
   SERVER_DIRECTORY: cloudpilot-server-${GITHUB_REF##*/}
   ARCHIVE_MACOS: cloudpilot-server-${GITHUB_REF##*/}-macos-x64.zip
