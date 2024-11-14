@@ -1,4 +1,4 @@
-# Next version
+# Version 1.10.6
 
 -   Support native network access without proxy in iOS app (available
     once version 1.2 of the native app is released).
