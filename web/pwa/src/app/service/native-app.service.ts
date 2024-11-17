@@ -25,6 +25,8 @@ interface NativeMessageNetRpcResult {
 
 type NativeMessage = NativeMessageNetRpcResult;
 
+const RESUME_TIMEOUT_MSEC = 3000;
+
 declare global {
     interface Window {
         webkit: {
@@ -38,6 +40,7 @@ declare global {
         };
 
         __cpeCallFromNative?: (message: NativeMessage) => void;
+        __cpeLastResume?: number;
     }
 }
 
@@ -91,6 +94,10 @@ export class NativeAppService implements OnDestroy {
                 rpcData: Array.from(rpcData),
             })
             .then((x) => !!x);
+    }
+
+    isResumeFromBackground(): boolean {
+        return window.__cpeLastResume !== undefined && Date.now() - window.__cpeLastResume <= RESUME_TIMEOUT_MSEC;
     }
 
     netRpcResult = new Event<{ sessionId: number; rpcData: Uint8Array }>();

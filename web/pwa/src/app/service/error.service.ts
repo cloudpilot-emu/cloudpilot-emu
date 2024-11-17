@@ -3,6 +3,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { AlertService } from './alert.service';
 import { Event } from 'microevent.ts';
 import { clearStoredSession } from '@pwa/helper/storedSession';
+import { NativeAppService } from './native-app.service';
 
 @Injectable({
     providedIn: 'root',
@@ -10,6 +11,7 @@ import { clearStoredSession } from '@pwa/helper/storedSession';
 export class ErrorService {
     constructor(
         private alertService: AlertService,
+        private nativeAppService: NativeAppService,
         private ngZone: NgZone,
     ) {}
 
@@ -19,7 +21,13 @@ export class ErrorService {
 
     fatalPageLockLost = () => this.fatalWithMessage('CloudpilotEmu was opened in another tab or window.', false);
 
-    fatalIDBDead = () => this.fatalWithMessage('IndexedDB access failed. This is most likely a browser bug.', false);
+    fatalIDBDead = () => {
+        if (this.nativeAppService.isResumeFromBackground()) {
+            window.location.reload();
+        } else {
+            this.fatalWithMessage('IndexedDB access failed. This is most likely a browser bug.', false);
+        }
+    };
 
     fatalVersionMismatch = () =>
         this.fatalWithMessage(

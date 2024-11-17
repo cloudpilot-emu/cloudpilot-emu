@@ -1,3 +1,8 @@
+# Next version
+
+-   Work around occasional IndexedDB error when returning the app from
+    background.
+
 # Version 1.10.6
 
 -   Support native network access without proxy in iOS app (available
