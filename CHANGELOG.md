@@ -2,6 +2,8 @@
 
 -   Work around occasional IndexedDB error when returning the app from
     background.
+-   Improved clipboard integration on iOS app, starting with app version
+    1.2 .
 
 # Version 1.10.6
 

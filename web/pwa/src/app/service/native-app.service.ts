@@ -23,6 +23,15 @@ interface NativeMessageNetRpcResult {
     rpcData: Array<number>;
 }
 
+interface NativeMessageClipboardRead {
+    type: 'clipboardRead';
+}
+
+interface NativeMessageClipboardWrite {
+    type: 'clipboardWrite';
+    data: string;
+}
+
 type NativeMessage = NativeMessageNetRpcResult;
 
 const RESUME_TIMEOUT_MSEC = 3000;
@@ -35,6 +44,8 @@ declare global {
                     postMessage(payload: NativeCallNetOpenSession): Promise<number>;
                     postMessage(payload: NativeCallNetCloseSession): Promise<void>;
                     postMessage(payload: NativeCallNetDispatchRpc): Promise<number>;
+                    postMessage(payload: NativeMessageClipboardRead): Promise<string>;
+                    postMessage(payload: NativeMessageClipboardWrite): Promise<void>;
                 };
             };
         };
@@ -96,6 +107,23 @@ export class NativeAppService implements OnDestroy {
             .then((x) => !!x);
     }
 
+    clipboardRead(): Promise<string> {
+        this.assertNativeClipboardSupported();
+
+        return window.webkit.messageHandlers.nativeCall.postMessage({
+            type: 'clipboardRead',
+        });
+    }
+
+    clipboardWrite(data: string): Promise<void> {
+        this.assertNativeClipboardSupported();
+
+        return window.webkit.messageHandlers.nativeCall.postMessage({
+            type: 'clipboardWrite',
+            data,
+        });
+    }
+
     isResumeFromBackground(): boolean {
         return window.__cpeLastResume !== undefined && Date.now() - window.__cpeLastResume <= RESUME_TIMEOUT_MSEC;
     }
@@ -119,7 +147,17 @@ export class NativeAppService implements OnDestroy {
         }
     }
 
+    private assertNativeClipboardSupported(): void {
+        if (!NativeAppService.supportsNativeClipboard()) {
+            throw new Error('native clipboard is not supported');
+        }
+    }
+
     static supportsNativeNetworkIntegration(): boolean {
         return isIOSNative && apiVersion > 0;
+    }
+
+    static supportsNativeClipboard(): boolean {
+        return isIOSNative && apiVersion > 1;
     }
 }

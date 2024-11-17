@@ -23,6 +23,10 @@ export class FeatureService {
         return NativeAppService.supportsNativeNetworkIntegration();
     }
 
+    get nativeClipboard(): boolean {
+        return NativeAppService.supportsNativeClipboard();
+    }
+
     private featureStyle(feature: string, value: boolean) {
         return (
             (value ? '' : `.feature-${feature} { display: none }\n`) +

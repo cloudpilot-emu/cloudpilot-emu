@@ -1,8 +1,9 @@
-import { Cloudpilot, SuspendContextClipboardPaste, SuspendKind } from '@common/bridge/Cloudpilot';
+import { Cloudpilot, SuspendKind } from '@common/bridge/Cloudpilot';
 
 import { AlertController } from '@ionic/angular';
 import { AlertService } from './alert.service';
 import { Injectable } from '@angular/core';
+import { NativeAppService } from './native-app.service';
 
 const READ_CLIPBOARD_TTL = 3000;
 const E_PERMISSION_DENIED = new Error('permission denied');
@@ -14,10 +15,14 @@ export class ClipboardService {
     constructor(
         private alertController: AlertController,
         private alertService: AlertService,
+        private nativeAppService: NativeAppService,
     ) {}
 
     isSupported(): boolean {
-        return !!navigator.clipboard?.readText && !!navigator.clipboard?.writeText;
+        return (
+            (!!navigator.clipboard?.readText && !!navigator.clipboard?.writeText) ||
+            NativeAppService.supportsNativeClipboard()
+        );
     }
 
     handleSuspend(cloudpilot: Cloudpilot): void {
@@ -35,6 +40,20 @@ export class ClipboardService {
     private async handleCopy(cloudpilot: Cloudpilot): Promise<void> {
         const ctx = cloudpilot.getSuspendContextClipboardCopy();
         const clipboardContent = ctx.GetClipboardContent();
+
+        if (NativeAppService.supportsNativeClipboard()) {
+            try {
+                await this.nativeAppService.clipboardWrite(clipboardContent);
+
+                ctx.Resume();
+            } catch (e) {
+                console.error(e);
+
+                ctx.Cancel();
+            }
+
+            return;
+        }
 
         try {
             await this.tryCopyDirect(clipboardContent);
@@ -112,9 +131,20 @@ export class ClipboardService {
     }
 
     private async handlePaste(cloudpilot: Cloudpilot): Promise<void> {
-        const clipboardContent = await this.tryPaste();
-
         const ctx = cloudpilot.getSuspendContextClipboardPaste();
+
+        if (NativeAppService.supportsNativeClipboard()) {
+            try {
+                ctx.Resume(await this.nativeAppService.clipboardRead());
+            } catch (e) {
+                console.error(e);
+                ctx.Resume('');
+            }
+
+            return;
+        }
+
+        const clipboardContent = await this.tryPaste();
         ctx.Resume(clipboardContent ?? '');
 
         if (clipboardContent !== undefined) {
@@ -193,45 +223,6 @@ export class ClipboardService {
                 reject(e);
             }
         });
-    }
-
-    private async handlePasteSafari(ctx: SuspendContextClipboardPaste): Promise<void> {
-        const alert = await this.alertController.create({
-            header: 'Confirm Paste',
-            message: 'Please confirm that you want to paste from the host clipboard.',
-            backdropDismiss: false,
-            buttons: [
-                {
-                    text: 'Cancel',
-                    handler: () => {
-                        void alert.dismiss();
-
-                        ctx.Resume('');
-                    },
-                },
-                {
-                    text: 'Paste',
-                    handler: async () => {
-                        try {
-                            this.clipboardContent = await navigator.clipboard.readText();
-                            this.lastClipboardReadAt = performance.now();
-
-                            void alert.dismiss();
-
-                            ctx.Resume(this.clipboardContent);
-                        } catch (e) {
-                            void alert.dismiss();
-
-                            await this.alertService.errorMessage('Paste from host clipboard failed.');
-
-                            ctx.Resume('');
-                        }
-                    },
-                },
-            ],
-        });
-
-        await alert.present();
     }
 
     private async isPermissionDenied(name: PermissionName): Promise<boolean> {
