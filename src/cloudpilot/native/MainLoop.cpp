@@ -68,13 +68,12 @@ void MainLoop::Cycle() {
         clockEmu = millis - millisOffset;
     }
 
-    if (gSystemState.IsScreenDirty()) {
+    const bool screenUpdateRequired = eventHandler.HandleEvents(millis);
+    if (gSystemState.IsScreenDirty() || screenUpdateRequired) {
         UpdateScreen(false);
         gSystemState.MarkScreenClean();
     } else if (!SuspendManager::IsSuspended() && !gDebugger.IsStopped() && !gDebugger.IsStepping())
         SDL_Delay(16);
-
-    if (eventHandler.HandleEvents(millis)) UpdateScreen(true);
 }
 
 void MainLoop::LoadSilkscreen() {
