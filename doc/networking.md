@@ -3,6 +3,12 @@ how the virtual device is configured for Network Hotsync.
 
 # Basic Setup
 
+**NOTE:** If you are running the CloudpilotEmu iOS app you can skip this
+part and move straight on to "Setting up Network HotSync" below. The iOS
+app supports native network access for PalmOS and does not require the
+proxy. Just head to the setting, enable network redirection and set
+"Redirection mode" to "native.
+
 As a web application, CloudpilotEmu cannot access the network directly. In order
 to access the network you need to run a small proxy server locally and
 configure CloudpilotEmu to use it. As the official version of CloudpilotEmu is
