@@ -4,11 +4,15 @@
 
 #include <cstdint>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "Cli.h"
+#include "FileUtil.h"
+#include "SoC.h"
+#include "sdcard.h"
 
 using namespace std;
 
@@ -37,13 +41,58 @@ namespace {
         static_cast<commands::Context*>(context)->audioDriver.Pause();
     }
 
-    const vector<cli::Command> commandList(
-        {{.name = "set-mips",
-          .usage = "set-mips <mips>",
-          .description = "Set target MIPS.",
-          .cmd = CmdSetMips},
-         {.name = "audio-on", .description = "Enable audio.", .cmd = CmdEnableAudio},
-         {.name = "audio-off", .description = "Disable audio.", .cmd = CmdDisableAudio}});
+    void CmdUnmount(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (!sdCardInitialized()) {
+            cout << "no sd card mounted" << endl;
+            return;
+        }
+
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+
+        socSdEject(ctx->soc);
+        sdCardReset();
+    }
+
+    void CmdMount(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (sdCardInitialized()) {
+            cout << "sd card already mounted" << endl;
+            return;
+        }
+
+        if (args.size() != 1) return env.PrintUsage();
+
+        size_t len{0};
+        unique_ptr<uint8_t[]> data;
+
+        if (!util::ReadFile(args[0], data, len)) {
+            cout << "failed to read " << args[0];
+            return;
+        }
+
+        if (len % SD_SECTOR_SIZE) {
+            cout << "sd card image has bad size" << endl;
+            return;
+        }
+
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+
+        sdCardInitializeWithData(len / SD_SECTOR_SIZE, data.release());
+        socSdInsert(ctx->soc);
+    }
+
+    const vector<cli::Command> commandList({
+        {.name = "set-mips",
+         .usage = "set-mips <mips>",
+         .description = "Set target MIPS.",
+         .cmd = CmdSetMips},
+        {.name = "audio-on", .description = "Enable audio.", .cmd = CmdEnableAudio},
+        {.name = "audio-off", .description = "Disable audio.", .cmd = CmdDisableAudio},
+        {.name = "unmount", .description = "Unmount SD card.", .cmd = CmdUnmount},
+        {.name = "mount",
+         .usage = "mount <image>",
+         .description = "Unmount SD card.",
+         .cmd = CmdMount},
+    });
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }

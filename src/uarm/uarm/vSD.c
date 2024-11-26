@@ -643,14 +643,18 @@ struct VSD *vsdInit(SdSectorR sR, SdSectorW sW, uint32_t nSec) {
 
         vsd->secR = sR;
         vsd->secW = sW;
-        vsd->nSec = nSec;
 
-        vsd->hcCard = nSec > 4194304;  // >2GB cards or more are reported as SDHC
-
-        vsdCardReset(vsd);
+        vsdReset(vsd, nSec);
     }
 
     return vsd;
+}
+
+void vsdReset(struct VSD *vsd, uint32_t nSec) {
+    vsd->nSec = nSec;
+    vsd->hcCard = nSec > 4194304;
+
+    vsdCardReset(vsd);
 }
 
 uint8_t vsdCRC7(uint8_t *data, uint32_t sz) {

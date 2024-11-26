@@ -51,17 +51,6 @@ namespace {
     constexpr int SCALE = 2;
     constexpr size_t NAND_SIZE = 34603008;
 
-    bool readFile(const optional<string>& name, unique_ptr<uint8_t[]>& buffer, size_t& size) {
-        if (!name) return true;
-
-        if (!util::ReadFile(*name, buffer, size)) {
-            cerr << "unabled to read " << *name << endl;
-            return false;
-        }
-
-        return true;
-    }
-
     bool initSdl(struct DeviceDisplayConfiguration displayConfiguration, int scale,
                  SDL_Window*& window, SDL_Renderer*& renderer) {
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO) < 0) {
@@ -94,11 +83,11 @@ namespace {
 
         size_t norLen{0};
         unique_ptr<uint8_t[]> norData;
-        if (!readFile(options.nor, norData, norLen)) return false;
+        if (!util::ReadFile(options.nor, norData, norLen)) return false;
 
         size_t nandLen{0};
         unique_ptr<uint8_t[]> nandData;
-        if (!readFile(options.nand, nandData, nandLen)) return false;
+        if (!util::ReadFile(options.nand, nandData, nandLen)) return false;
 
         if (!nandData) {
             nandData = make_unique<uint8_t[]>(NAND_SIZE);
@@ -113,7 +102,7 @@ namespace {
 
         size_t sdLen{0};
         unique_ptr<uint8_t[]> sdData;
-        if (!readFile(options.sd, sdData, sdLen)) return false;
+        if (!util::ReadFile(options.sd, sdData, sdLen)) return false;
 
         if (sdData) {
             if (sdLen % SD_SECTOR_SIZE) {
@@ -121,11 +110,13 @@ namespace {
                 return false;
             }
 
-            sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sdData.get());
+            sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sdData.release());
         }
 
-        SoC* soc = socInit(norData.get(), norLen, sdCardSectorCount(), sdCardRead, sdCardWrite,
-                           nandData.get(), nandLen, options.gdbPort.value_or(0), deviceGetSocRev());
+        SoC* soc = socInit(norData.get(), norLen, nandData.get(), nandLen,
+                           options.gdbPort.value_or(0), deviceGetSocRev());
+
+        if (sdCardInitialized()) socSdInsert(soc);
 
         AudioQueue* audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
         socSetAudioQueue(soc, audioQueue);
@@ -166,6 +157,7 @@ namespace {
             sdlEventHandler.ClearRedrawRequested();
 
             sdlEventHandler.HandleEvents();
+            if (sdlEventHandler.QuitRequested()) break;
 
             if (now - lastSpeedDump > 1000000) {
                 const uint64_t currentIps = mainLoop.GetCurrentIps();

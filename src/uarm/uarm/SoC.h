@@ -24,9 +24,8 @@ struct AudioQueue;
 typedef bool (*SdSectorR)(uint32_t secNum, void *buf);
 typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
 
-struct SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSectorR sdR,
-                    SdSectorW sdW, uint8_t *nandContent, size_t nandSize, int gdbPort,
-                    uint_fast8_t socRev);
+struct SoC *socInit(void *romData, const uint32_t romSize, uint8_t *nandContent, size_t nandSize,
+                    int gdbPort, uint_fast8_t socRev);
 uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond);
 
 void socBootload(struct SoC *soc, uint32_t method, void *param);  // soc-specific
@@ -61,6 +60,9 @@ void socSetNandDirty(struct SoC *soc, bool isDirty);
 
 struct Buffer socGetRamData(struct SoC *soc);
 struct Buffer socGetRamDirtyPages(struct SoC *soc);
+
+void socSdInsert(struct SoC *soc);
+void socSdEject(struct SoC *soc);
 
 #ifdef __cplusplus
 }

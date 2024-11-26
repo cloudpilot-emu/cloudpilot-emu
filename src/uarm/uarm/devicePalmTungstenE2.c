@@ -102,6 +102,7 @@
 struct Device {
     struct WM9712L *wm9712L;
     struct DirectNAND *nand;
+    struct SocGpio *gpio;
 
     struct Reschedule reschedule;
 };
@@ -136,6 +137,8 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Reschedule reschedule, 
     dev = (struct Device *)malloc(sizeof(*dev));
     if (!dev) ERR("cannot alloc device");
 
+    dev->gpio = sp->gpio;
+
     struct Reschedule deviceReschedule = {.rescheduleCb = devicePrvReschedule, .ctx = dev};
 
     dev->reschedule = reschedule;
@@ -169,6 +172,8 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Reschedule reschedule, 
                                                       // poewr key inverted. press ESC to release.
         ERR("Cannot init power key\n");
 
+    sp->gpio = sp->gpio;
+
     socGpioSetState(sp->gpio, 1, true);  // reset button
 
     socGpioSetState(sp->gpio, 4,
@@ -182,7 +187,7 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Reschedule reschedule, 
 
     wm9712LsetAuxVoltage(dev->wm9712L, WM9712LauxPinBmon, 4200 / 3);  // main battery is 4.2V
 
-    socGpioSetState(sp->gpio, 10, !vsd);
+    deviceSetSdCardInserted(dev, false);
 
     sp->dbgUart = sp->uarts[1];  // HWUART
 
@@ -225,3 +230,7 @@ void deviceSetAudioQueue(struct Device *dev, struct AudioQueue *audioQueue) {
 }
 
 bool deviceI2sConnected() { return false; }
+
+void deviceSetSdCardInserted(struct Device *dev, bool inserted) {
+    socGpioSetState(dev->gpio, 10, !inserted);
+}

@@ -12,6 +12,7 @@
 #include "patches.h"
 #include "ram_buffer.h"
 #include "scheduler.h"
+#include "sdcard.h"
 #include "soc_AC97.h"
 #include "soc_DMA.h"
 #include "soc_GPIO.h"
@@ -228,9 +229,8 @@ static void socSetupScheduler(Scheduler<SoC> *scheduler) {
     scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 30, 1);
 }
 
-SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSectorR sdR,
-             SdSectorW sdW, uint8_t *nandContent, size_t nandSize, int gdbPort,
-             uint_fast8_t socRev) {
+SoC *socInit(void *romData, const uint32_t romSize, uint8_t *nandContent, size_t nandSize,
+             int gdbPort, uint_fast8_t socRev) {
     SoC *soc = (SoC *)malloc(sizeof(SoC));
     struct SocPeriphs sp = {};
 
@@ -428,13 +428,6 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
     soc->kp = keypadInit(soc->gpio, true);
     if (!soc->kp) ERR("Cannot init keypad controller");
 
-    if (sdNumSectors) {
-        soc->vSD = vsdInit(sdR, sdW, sdNumSectors);
-        if (!soc->vSD) ERR("Cannot init vSD");
-
-        pxaMmcInsert(soc->mmc, soc->vSD);
-    }
-
     sp.mem = soc->mem;
     sp.gpio = soc->gpio;
     sp.i2c = soc->i2c;
@@ -451,6 +444,9 @@ SoC *socInit(void *romData, const uint32_t romSize, uint32_t sdNumSectors, SdSec
 
     soc->dev = deviceSetup(&sp, rescheduleSoc, soc->kp, soc->vSD, nandContent, nandSize);
     if (!soc->dev) ERR("Cannot init device\n");
+
+    soc->vSD = vsdInit(sdCardRead, sdCardWrite, 0);
+    socSdEject(soc);
 
     soc->nand = sp.nand;
 
@@ -700,4 +696,18 @@ struct Buffer socGetRamData(struct SoC *soc) {
 
 struct Buffer socGetRamDirtyPages(struct SoC *soc) {
     return {.size = soc->ramBuffer.dirtyPagesSize, .data = soc->ramBuffer.dirtyPages};
+}
+
+void socSdInsert(struct SoC *soc) {
+    if (!sdCardInitialized()) return;
+
+    vsdReset(soc->vSD, sdCardSectorCount());
+    pxaMmcInsert(soc->mmc, soc->vSD);
+    deviceSetSdCardInserted(soc->dev, true);
+}
+
+void socSdEject(struct SoC *soc) {
+    vsdReset(soc->vSD, 0);
+    pxaMmcInsert(soc->mmc, nullptr);
+    deviceSetSdCardInserted(soc->dev, false);
 }

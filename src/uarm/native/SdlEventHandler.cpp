@@ -51,7 +51,7 @@ void SdlEventHandler::HandleEvents() {
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
-                exit(0);
+                quitRequested = true;
                 break;
 
             case SDL_MOUSEBUTTONDOWN:
@@ -94,5 +94,7 @@ void SdlEventHandler::HandleEvents() {
 }
 
 bool SdlEventHandler::RedrawRequested() const { return redrawRequested; }
+
+bool SdlEventHandler::QuitRequested() const { return quitRequested; }
 
 void SdlEventHandler::ClearRedrawRequested() { redrawRequested = false; }

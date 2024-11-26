@@ -4,8 +4,10 @@
 
 using namespace std;
 
-bool util::ReadFile(string file, unique_ptr<uint8_t[]>& buffer, size_t& len) {
-    fstream stream(file, ios_base::in);
+bool util::ReadFile(optional<string> file, unique_ptr<uint8_t[]>& buffer, size_t& len) {
+    if (!file) return false;
+
+    fstream stream(*file, ios_base::in);
     if (stream.fail()) return false;
 
     stream.seekg(0, ios_base::end);

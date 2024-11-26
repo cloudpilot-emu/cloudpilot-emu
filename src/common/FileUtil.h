@@ -4,10 +4,11 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace util {
-    bool ReadFile(std::string file, std::unique_ptr<uint8_t[]>& buffer, size_t& len);
-}
+    bool ReadFile(std::optional<std::string> file, std::unique_ptr<uint8_t[]>& buffer, size_t& len);
+}  // namespace util
 
 #endif  // _FILE_UTIL_H_

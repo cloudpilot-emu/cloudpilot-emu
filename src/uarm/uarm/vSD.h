@@ -30,6 +30,7 @@ typedef bool (*SdSectorR)(uint32_t secNum, void *buf);
 typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
 
 struct VSD *vsdInit(SdSectorR, SdSectorW, uint32_t nSec);
+void vsdReset(struct VSD *vsd, uint32_t nSec);
 
 enum SdReplyType vsdCommand(struct VSD *vsd, uint8_t command, uint32_t param,
                             void *replyOut /* should be big enough for any reply */);

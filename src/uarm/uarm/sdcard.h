@@ -16,6 +16,10 @@ extern "C" {
 void sdCardInitialize(size_t sectors);
 void sdCardInitializeWithData(size_t sectors, void* data);
 
+void sdCardReset();
+
+bool sdCardInitialized();
+
 bool sdCardRead(uint32_t sector, void* data);
 bool sdCardWrite(uint32_t sector, const void* data);
 

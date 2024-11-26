@@ -42,6 +42,20 @@ bool sdCardRead(uint32_t sector, void* buf) {
     return true;
 }
 
+void sdCardReset() {
+    if (dirtyPages) free(dirtyPages);
+    if (data) free(data);
+
+    dirtyPages = NULL;
+    data = NULL;
+
+    sectorsTotal = 0;
+    dirtyPagesSize = 0;
+    sdCardDirty = false;
+}
+
+bool sdCardInitialized() { return data != NULL; }
+
 bool sdCardWrite(uint32_t sector, const void* buf) {
     if (sector >= sectorsTotal) return false;
 

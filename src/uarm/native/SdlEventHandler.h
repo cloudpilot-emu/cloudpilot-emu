@@ -10,6 +10,7 @@ class SdlEventHandler {
     void HandleEvents();
 
     bool RedrawRequested() const;
+    bool QuitRequested() const;
     void ClearRedrawRequested();
 
    private:
@@ -18,6 +19,7 @@ class SdlEventHandler {
     bool penDown{false};
     int scale{1};
     bool redrawRequested{false};
+    bool quitRequested{false};
 
    private:
     SdlEventHandler();

@@ -90,6 +90,8 @@ void deviceSetAudioQueue(struct Device *dev, struct AudioQueue *audioQueue);
 
 bool deviceI2sConnected();
 
+void deviceSetSdCardInserted(struct Device *dev, bool inserted);
+
 #ifdef __cplusplus
 }
 #endif
