@@ -39,43 +39,6 @@ namespace {
     AudioQueue* audioQueue = nullptr;
     unique_ptr<MainLoop> mainLoop;
 
-    void usage(const char* self) {
-        fprintf(stderr,
-                "USAGE: %s {-r ROMFILE.bin | -x} [-g gdbPort] [-s SDCARD_IMG.bin] [-n NAND.bin] "
-                "[-q] [-m mips]\n",
-                self);
-
-        exit(-1);
-    }
-
-    void readSdCard(const char* fname) {
-        FILE* cardFile = fopen(fname, "r+b");
-
-        if (!cardFile) {
-            fprintf(stderr, "unable to open sd card image %s\n", fname);
-            exit(-4);
-        }
-
-        fseek(cardFile, 0, SEEK_END);
-        size_t sdCardSize = ftell(cardFile);
-
-        if (sdCardSize % SD_SECTOR_SIZE) {
-            fprintf(stderr, "SD card image not a multiple of %u bytes\n", (unsigned)SD_SECTOR_SIZE);
-            exit(-4);
-        }
-
-        sdCardInitialize(sdCardSize / SD_SECTOR_SIZE);
-
-        fseek(cardFile, 0, SEEK_SET);
-        size_t bytesRead = fread(sdCardData().data, 1, sdCardSize, cardFile);
-
-        if (bytesRead != sdCardSize) {
-            fprintf(stderr, "failed to read sd card image %lu %lu\n", bytesRead, sdCardSize);
-            exit(4);
-        }
-
-        fclose(cardFile);
-    }
 }  // namespace
 
 extern "C" int socExtSerialReadChar(void) { return CHAR_NONE; }
