@@ -498,6 +498,11 @@ SoC *socInit(void *romData, const uint32_t romSize, uint8_t *nandContent, size_t
     return soc;
 }
 
+void socReset(struct SoC *soc) {
+    cpuReset(soc->cpu, 0);
+    pxaPwrClkReset(soc->pwrClk);
+}
+
 void socKeyDown(SoC *soc, enum KeyId key) { soc->keyEventQueue->Push(KeyEvent::KeyDown(key)); }
 
 void socKeyUp(SoC *soc, enum KeyId key) { soc->keyEventQueue->Push(KeyEvent::KeyUp(key)); }

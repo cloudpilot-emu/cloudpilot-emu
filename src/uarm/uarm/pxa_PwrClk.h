@@ -16,6 +16,8 @@ struct PxaPwrClk;
 struct PxaPwrClk* pxaPwrClkInit(struct ArmCpu* cpu, struct ArmMem* physMem, struct SoC* soc,
                                 bool isPXA270);
 
+void pxaPwrClkReset(struct PxaPwrClk* pc);
+
 #ifdef __cplusplus
 }
 #endif

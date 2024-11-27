@@ -80,19 +80,25 @@ namespace {
         socSdInsert(ctx->soc);
     }
 
-    const vector<cli::Command> commandList({
-        {.name = "set-mips",
-         .usage = "set-mips <mips>",
-         .description = "Set target MIPS.",
-         .cmd = CmdSetMips},
-        {.name = "audio-on", .description = "Enable audio.", .cmd = CmdEnableAudio},
-        {.name = "audio-off", .description = "Disable audio.", .cmd = CmdDisableAudio},
-        {.name = "unmount", .description = "Unmount SD card.", .cmd = CmdUnmount},
-        {.name = "mount",
-         .usage = "mount <image>",
-         .description = "Unmount SD card.",
-         .cmd = CmdMount},
-    });
+    void CmdReset(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+
+        socReset(ctx->soc);
+    }
+
+    const vector<cli::Command> commandList(
+        {{.name = "set-mips",
+          .usage = "set-mips <mips>",
+          .description = "Set target MIPS.",
+          .cmd = CmdSetMips},
+         {.name = "audio-on", .description = "Enable audio.", .cmd = CmdEnableAudio},
+         {.name = "audio-off", .description = "Disable audio.", .cmd = CmdDisableAudio},
+         {.name = "unmount", .description = "Unmount SD card.", .cmd = CmdUnmount},
+         {.name = "mount",
+          .usage = "mount <image>",
+          .description = "Unmount SD card.",
+          .cmd = CmdMount},
+         {.name = "reset", .description = "Reset Pilot.", .cmd = CmdReset}});
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }

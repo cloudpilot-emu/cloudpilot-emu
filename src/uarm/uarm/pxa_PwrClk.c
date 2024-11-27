@@ -310,17 +310,8 @@ struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem, stru
     pc->cpu = cpu;
     pc->isPXA270 = isPXA270;
     pc->soc = soc;
-    pc->CCCR = 0x00000122UL;  // set CCCR to almost default value (we use mult 32 not 27)
-    pc->CKEN = 0x000179EFUL;  // set CKEN to default value
-    pc->OSCR = 0x00000003UL;  // 32KHz oscillator on and stable
-    pc->PSSR = 0x20;
-    pc->PWER = 0x03;
-    pc->PRER = 0x03;
-    pc->PFER = 0x03;
-    pc->PMFW = isPXA270 ? 0xcc000000 : 0x00000000;
 
-    // pretend we just power-no-resetted
-    pc->RCSR |= 1;
+    pxaPwrClkReset(pc);
 
     cpuCoprocessorRegister(cpu, 14, &cp14);
     cpuCoprocessorRegister(cpu, 7, &cp7);
@@ -334,4 +325,29 @@ struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem, stru
         ERR("cannot add PWRMGR to MEM\n");
 
     return pc;
+}
+
+void pxaPwrClkReset(struct PxaPwrClk *pc) {
+    pc->CCCR = 0x00000122UL;  // set CCCR to almost default value (we use mult 32 not 27)
+    pc->CKEN = 0x000179EFUL;  // set CKEN to default value
+    pc->OSCR = 0x00000003UL;  // 32KHz oscillator on and stable
+    pc->PMCR = 0;
+    pc->PSSR = 0x20;
+    pc->PWER = 0x03;
+    pc->PRER = 0x03;
+    pc->PFER = 0x03;
+    pc->PEDR = 0;
+    pc->PCFR = 0;
+    for (size_t i = 0; i < 4; i++) pc->PGSR[i] = 0;
+    pc->RCSR = 0;
+    pc->PMFW = pc->isPXA270 ? 0xcc000000 : 0x00000000;
+    pc->PSTR = 0;
+    pc->PVCR = 0;
+    pc->PUCR = 0;
+    pc->PKWR = 0;
+    pc->PKSR = 0;
+    for (size_t i = 0; i < 32; i++) pc->PCMD[i] = 0;
+
+    // pretend we just power-no-resetted
+    pc->RCSR |= 1;
 }
