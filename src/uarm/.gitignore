@@ -7,3 +7,5 @@ node_modules
 
 cp-uarm
 test
+
+!assets/*.js
