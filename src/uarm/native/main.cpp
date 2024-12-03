@@ -19,14 +19,16 @@
 #include "SoC.h"
 #include "argparse.h"
 #include "audio_queue.h"
+#include "buffer.h"
 #include "cputil.h"
 #include "device.h"
+#include "savestate/session_file.h"
 #include "sdcard.h"
 
 using namespace std;
 
 struct Options {
-    string nor;
+    string norOrSession;
     optional<string> nand;
     optional<string> sd;
     optional<unsigned int> gdbPort;
@@ -75,34 +77,67 @@ namespace {
         return true;
     }
 
+    bool readSession(const Options& options, Buffer& nor, Buffer& nand, Buffer& ram,
+                     Buffer& savestate) {
+        size_t norOrSessionLen{0};
+        unique_ptr<uint8_t[]> norOrSessionData;
+        if (!util::ReadFile(options.norOrSession, norOrSessionData, norOrSessionLen)) return false;
+
+        if (isSessionFile({.size = norOrSessionLen, .data = norOrSessionData.get()})) {
+            if (!sessionFile_read({.size = norOrSessionLen, .data = norOrSessionData.get()}, &nor,
+                                  &nand, &ram, &savestate))
+                return false;
+
+            if (options.nand) {
+                cerr << "separate NAND image cannot be used with session file" << endl;
+                return false;
+            }
+        } else {
+            size_t nandLen{0};
+            unique_ptr<uint8_t[]> nandData;
+
+            if (options.nand) {
+                if (!util::ReadFile(options.nand, nandData, nandLen)) return false;
+            } else {
+                nandLen = NAND_SIZE;
+                nandData = make_unique<uint8_t[]>(NAND_SIZE);
+                memset(nandData.get(), 0xff, NAND_SIZE);
+            }
+
+            nor.size = norOrSessionLen;
+            nor.data = norOrSessionData.release();
+
+            nand.size = nandLen;
+            nand.data = nandData.release();
+
+            ram.size = 0;
+            ram.data = nullptr;
+
+            savestate.size = 0;
+            savestate.data = nullptr;
+        }
+
+        return true;
+    }
+
     bool run(const Options& options) {
         if (options.mips == 0) {
             cerr << "MIPS must be finite" << endl;
             return false;
         }
 
-        size_t norLen{0};
-        unique_ptr<uint8_t[]> norData;
-        if (!util::ReadFile(options.nor, norData, norLen)) return false;
+        Buffer nor, nand, ram, savestate;
 
-        size_t nandLen{0};
-        unique_ptr<uint8_t[]> nandData;
-        if (!util::ReadFile(options.nand, nandData, nandLen)) return false;
+        if (!readSession(options, nor, nand, ram, savestate)) return false;
 
-        if (!nandData) {
-            nandData = make_unique<uint8_t[]>(NAND_SIZE);
-            memset(nandData.get(), 0xff, NAND_SIZE);
-            nandLen = NAND_SIZE;
-        }
-
-        if (nandLen != NAND_SIZE) {
+        if (nand.size != NAND_SIZE) {
             cerr << "invalid NAND size; expected " << NAND_SIZE << " bytes" << endl;
             return false;
         }
 
         size_t sdLen{0};
         unique_ptr<uint8_t[]> sdData;
-        if (!util::ReadFile(options.sd, sdData, sdLen)) return false;
+        if (options.sd && !util::ReadFile(options.sd, sdData, sdLen)) return false;
 
         if (sdData) {
             if (sdLen % SD_SECTOR_SIZE) {
@@ -113,8 +148,15 @@ namespace {
             sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sdData.release());
         }
 
-        SoC* soc = socInit(norData.get(), norLen, nandData.get(), nandLen,
+        SoC* soc = socInit(nor.data, nor.size, reinterpret_cast<uint8_t*>(nand.data), nand.size,
                            options.gdbPort.value_or(0), deviceGetSocRev());
+
+        if (ram.data && ram.size != socGetRamData(soc).size) {
+            cerr << "RAM size mismatch" << endl;
+            return false;
+        }
+
+        if (ram.data) memcpy(socGetRamData(soc).data, ram.data, ram.size);
 
         if (sdCardInitialized()) socSdInsert(soc);
 
@@ -195,7 +237,7 @@ int main(int argc, const char** argv) {
 
     program.add_description("cp-uarm emulates a Palm Tungsten E2");
 
-    program.add_argument("nor").help("NOR rom file").required();
+    program.add_argument("nor_or_session").help("NOR rom or saved session").required();
 
     program.add_argument("--nand", "-n").help("NAND rom file").metavar("<nand file>");
 
@@ -233,7 +275,7 @@ int main(int argc, const char** argv) {
         exit(1);
     }
 
-    Options options = {.nor = program.get("nor"),
+    Options options = {.norOrSession = program.get("nor_or_session"),
                        .nand = program.present("--nand"),
                        .sd = program.present("--sd"),
                        .gdbPort = program.present<unsigned int>("--gdb"),

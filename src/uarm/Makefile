@@ -124,7 +124,9 @@ SOURCE_CXX_COMMON = 					\
 	uarm/icache.cpp						\
 	uarm/CPU.cpp						\
 	uarm/memcpy.cpp						\
-	uarm/audio_queue.cpp
+	uarm/audio_queue.cpp				\
+	uarm/savestate/rle.cpp				\
+	uarm/savestate/session_file.cpp
 
 SOURCE_CXX_NATIVE = 					\
 	$(SOURCE_CXX_COMMON)				\
