@@ -1,6 +1,7 @@
 #include "rle.h"
 
 #include <cstdint>
+#include <cstring>
 #include <memory>
 
 using namespace std;
