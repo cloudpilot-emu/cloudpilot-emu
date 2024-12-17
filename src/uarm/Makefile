@@ -46,7 +46,7 @@ LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno -g \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall","addFunction"]
 
 CFLAGS_COMMON := \
-	-Werror -Wextra -Wall -Wno-unused-parameter -Wno-unknown-pragmas \
+	-Wextra -Wall -Wno-unused-parameter -Wno-unknown-pragmas \
 	-Wno-visibility -Wno-constant-conversion -Wno-constant-logical-operand \
 	-D_FILE_OFFSET_BITS=64
 

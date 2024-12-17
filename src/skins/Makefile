@@ -23,7 +23,7 @@ CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
 
 INCLUDE_EXTRA ?=
 
-CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter
+CFLAGS_COMMON := -Wextra -Wall -Wno-unused-parameter
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
 CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
 

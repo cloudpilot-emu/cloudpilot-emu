@@ -22,7 +22,7 @@ INCLUDE_EXTRA ?=
 
 LDFLAGS_NATIVE ?=
 
-CFLAGS_COMMON := -Werror -Wextra -Wall -Wno-unused-parameter -Wno-deprecated-declarations -Wno-sign-compare
+CFLAGS_COMMON := -Wextra -Wall -Wno-unused-parameter -Wno-deprecated-declarations -Wno-sign-compare
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
 CFLAGS_COMMON := $(CFLAGS_COMMON) -std=c99
 

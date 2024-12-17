@@ -17,7 +17,7 @@
 INCLUDE_EXTRA = -I/opt/homebrew/include
 
 CFLAGS_NATIVE = \
-	-O2 -g \
+	-O2 -g -Werror \
 	$(shell sdl2-config --cflags) \
 	-DENABLE_DEBUGGER
 
