@@ -17,6 +17,8 @@
 #include "pace.h"
 #include "peephole.h"
 
+#pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
+
 #define xstr(s) str(s)
 #define str(s) #s
 
