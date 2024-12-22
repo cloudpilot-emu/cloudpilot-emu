@@ -14,7 +14,7 @@
 
 # WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
 
-INCLUDE_EXTRA = -I/opt/homebrew/include
+INCLUDE_EXTRA = -I/opt/homebrew/include -I/opt/homebrew/opt/curl/include
 
 CFLAGS_NATIVE = \
 	-O2 -g -Werror \
@@ -25,4 +25,4 @@ CFLAGS_NATIVE = \
 
 LDFLAGS_NATIVE =  \
 	$(shell sdl2-config --libs) -lSDL2_image -lreadline -lboost_coroutine -ldl -pthread -lresolv \
-	-L/opt/homebrew/lib
+	-L/opt/homebrew/lib -L/opt/homebrew/opt/curl/lib
