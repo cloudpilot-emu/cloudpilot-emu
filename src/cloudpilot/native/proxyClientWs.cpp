@@ -100,16 +100,9 @@ namespace {
                     atexit(curl_global_cleanup);
                 }
 
-                if (LIBCURL_VERSION_NUM < 0x080000) {
-                    cerr << "libcurl is too old; you need at least version 8.0.0 for the proxy to "
-                            "be enabled"
-                         << endl;
-
-                    curlValid = false;
-                }
-
                 if (!curlSupportsProtocol("ws")) {
-                    cerr << "libcurl compiled without websocket support; proxy is not available"
+                    cerr << "WARNING: libcurl compiled without websocket support; proxy is not "
+                            "disabled."
                          << endl;
                     curlValid = false;
                 }
@@ -204,7 +197,6 @@ namespace {
             return true;
         }
 
-       private:
         CURL* ConnectWebsocket(const string& token) {
             bool success = false;
 
