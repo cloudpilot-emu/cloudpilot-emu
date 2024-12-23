@@ -3,10 +3,15 @@
 #include <curl/curl.h>
 
 #include <algorithm>
+#include <atomic>
+#include <condition_variable>
 #include <cstdlib>
 #include <cstring>
+#include <functional>
 #include <memory>
+#include <mutex>
 #include <sstream>
+#include <thread>
 
 #include "Defer.h"
 #include "EmCommon.h"
@@ -43,6 +48,7 @@ ProxyClient* proxyClientWs::Create(const string& host, const long port, const st
 namespace {
     constexpr long HANDSHAKE_TIMEOUT_MSEC = 5000;
     constexpr long CONNECT_TIMEOUT_MSEC = 5000;
+    constexpr long POLL_TIMEOUT_MSEC = 1000;
     constexpr int SERVER_VERSION = 3;
 
     bool curlInitialized = false;
@@ -101,7 +107,7 @@ namespace {
                 }
 
                 if (!curlSupportsProtocol("ws")) {
-                    cerr << "WARNING: libcurl compiled without websocket support; proxy is not "
+                    cerr << "WARNING: libcurl compiled without websocket support; proxy is "
                             "disabled."
                          << endl;
                     curlValid = false;
@@ -123,16 +129,61 @@ namespace {
             if (!handle) return false;
 
             cout << "connected to websocket" << endl;
-            curl_easy_cleanup(handle);
 
-            return false;
+            if (!StartWorker(handle)) {
+                curl_easy_cleanup(handle);
+                return false;
+            }
+
+            isConnected = true;
+            return true;
         }
 
-        void Disconnect() override {}
+        void Disconnect() override {
+            if (!isConnected) return;
 
-        bool Send(const uint8* message, size_t size) override { return false; }
+            disconnectRequested = true;
+            worker.join();
 
-        std::pair<uint8*, size_t> Receive() override { return {nullptr, 0}; }
+            isConnected = false;
+        }
+
+        bool Send(const uint8* message, size_t size) override {
+            if (!isConnected || size == 0) return false;
+
+            unique_lock<mutex> lock(mut);
+
+            sendMessage.resize(size);
+            memcpy(sendMessage.data(), message, size);
+            sendMessagePending = true;
+
+            curl_multi_wakeup(curlMultiHandle);
+
+            while (sendMessagePending) {
+                if (!workerRunning) return false;
+
+                cv.wait(lock);
+            }
+
+            return true;
+        }
+
+        std::pair<uint8*, size_t> Receive() override {
+            if (!isConnected) return {nullptr, 0};
+
+            unique_lock<mutex> lock(mut);
+
+            while (!receiveMessagePending) {
+                if (!workerRunning) return {nullptr, 0};
+
+                cv.wait(lock);
+            }
+
+            receiveMessageBuffer.resize(receiveMessage.size());
+            memcpy(receiveMessageBuffer.data(), receiveMessage.data(), receiveMessage.size());
+
+            return {receiveMessageBuffer.data(), receiveMessageBuffer.size()};
+        }
 
        private:
         bool Handshake(string& token) {
@@ -142,7 +193,7 @@ namespace {
                 return false;
             }
 
-            Defer closeHandle([=]() { curl_easy_cleanup(handle); });
+            Defer closeHandle([&]() { curl_easy_cleanup(handle); });
 
             stringstream s;
             s << "http://" << host << ":" << port << path << "/network-proxy/handshake";
@@ -206,7 +257,7 @@ namespace {
                 return nullptr;
             }
 
-            Defer closeHandle([=]() {
+            Defer closeHandle([&]() {
                 if (!success) curl_easy_cleanup(handle);
             });
 
@@ -242,10 +293,150 @@ namespace {
             return handle;
         }
 
+        bool StartWorker(CURL* handle) {
+            CURLM* multiHandle = curl_multi_init();
+            if (!multiHandle) {
+                cerr << "failed to allocate multi handle" << endl;
+                return false;
+            }
+
+            if (curl_multi_add_handle(multiHandle, handle) != CURLM_OK) {
+                cerr << "unable to setup multi I/O" << endl;
+
+                curl_multi_cleanup(multiHandle);
+                return false;
+            }
+
+            curlHandle = handle;
+            curlMultiHandle = multiHandle;
+
+            disconnectRequested = false;
+            workerRunning = true;
+            receiveMessagePending = false;
+            sendMessagePending = false;
+
+            worker = thread(bind(&ProxyClientWs::WorkerMain, this));
+
+            return true;
+        }
+
+        void WorkerMain() {
+            Defer cleanup([&]() {
+                curl_multi_remove_handle(curlMultiHandle, curlHandle);
+                curl_multi_cleanup(curlMultiHandle);
+                curl_easy_cleanup(curlHandle);
+
+                lock_guard<mutex> lock(mut);
+
+                workerRunning = false;
+                cv.notify_all();
+            });
+
+            size_t receivedCount = 0;
+            vector<uint8> receiveBuffer;
+            receiveBuffer.resize(1024);
+
+            size_t sentCount = 0;
+
+            while (!disconnectRequested) {
+                int numfds;
+                if (curl_multi_poll(curlMultiHandle, nullptr, 0, POLL_TIMEOUT_MSEC, &numfds) !=
+                    CURLM_OK) {
+                    cerr << "poll failed" << endl;
+                    return;
+                }
+
+                if (disconnectRequested) return;
+                if (numfds == 0) continue;
+
+                lock_guard<mutex> lock(mut);
+
+                while (true) {
+                    const curl_ws_frame* meta;
+                    size_t recvBytes;
+
+                    auto result =
+                        curl_ws_recv(curlHandle, receiveBuffer.data() + receivedCount,
+                                     receiveBuffer.size() - receivedCount, &recvBytes, &meta);
+
+                    if (result == CURLE_AGAIN) break;
+                    if (result != CURLE_OK) {
+                        cerr << "error reading from websocket; closing connection" << endl;
+                        return;
+                    }
+
+                    receivedCount += recvBytes;
+
+                    const size_t bytesTotal = receivedCount + meta->bytesleft;
+                    if (bytesTotal > receiveBuffer.size()) receiveBuffer.resize(bytesTotal);
+
+                    if (meta->bytesleft > 0 || (meta->flags & CURLWS_CONT)) continue;
+
+                    if ((meta->flags & CURLWS_BINARY) && !(meta->flags & CURLWS_PING)) {
+                        if (receiveMessagePending) {
+                            cerr << "WARNING: overwriting pending message" << endl;
+                        }
+
+                        receiveMessage.resize(receivedCount);
+
+                        memcpy(receiveMessage.data(), receiveBuffer.data(), receivedCount);
+                        receiveMessagePending = true;
+
+                        cv.notify_all();
+                    }
+
+                    if (meta->flags & CURLWS_TEXT) {
+                        cerr << "WARNING: ignoring unexpected text frame" << endl;
+                    }
+
+                    receivedCount = 0;
+                }
+
+                if (sendMessagePending) {
+                    size_t bytesSent;
+                    auto result =
+                        curl_ws_send(curlHandle, sendMessage.data() + sentCount,
+                                     sendMessage.size() - sentCount, &bytesSent, 0, CURLWS_BINARY);
+
+                    sentCount += bytesSent;
+
+                    if (result == CURLE_AGAIN) break;
+                    if (result != CURLE_OK) {
+                        cerr << "error writing to websocket; closing connection" << endl;
+                        return;
+                    }
+
+                    sentCount = 0;
+                    sendMessagePending = false;
+
+                    cv.notify_all();
+                }
+            }
+        }
+
        private:
         const string host;
         const long port;
         const string path;
+
+        bool isConnected{false};
+        CURL* curlHandle{nullptr};
+        CURLM* curlMultiHandle{nullptr};
+
+        atomic<bool> disconnectRequested{false};
+
+        atomic<bool> workerRunning{false};
+        mutex mut;
+        condition_variable cv;
+
+        vector<uint8> receiveMessage;
+        vector<uint8> receiveMessageBuffer;
+        bool receiveMessagePending{false};
+
+        vector<uint8> sendMessage;
+        bool sendMessagePending{false};
+
+        thread worker;
     };
 
 }  // namespace
