@@ -125,15 +125,7 @@ namespace {
 
             cout << "got token " << token << endl;
 
-            CURL* handle = ConnectWebsocket(token);
-            if (!handle) return false;
-
-            cout << "connected to websocket" << endl;
-
-            if (!StartWorker(handle)) {
-                curl_easy_cleanup(handle);
-                return false;
-            }
+            if (!ConnectWebsocket(token)) return false;
 
             isConnected = true;
             return true;
@@ -143,6 +135,8 @@ namespace {
             if (!isConnected) return;
 
             disconnectRequested = true;
+            curl_multi_wakeup(curlMultiHandle);
+
             worker.join();
 
             isConnected = false;
@@ -152,6 +146,8 @@ namespace {
             if (!isConnected || size == 0) return false;
 
             unique_lock<mutex> lock(mut);
+
+            cout << "send start" << endl;
 
             sendMessage.resize(size);
             memcpy(sendMessage.data(), message, size);
@@ -165,6 +161,8 @@ namespace {
                 cv.wait(lock);
             }
 
+            cout << "send end" << endl;
+
             return true;
         }
 
@@ -173,16 +171,22 @@ namespace {
 
             unique_lock<mutex> lock(mut);
 
+            cout << "receive start" << endl;
+
             while (!receiveMessagePending) {
                 if (!workerRunning) return {nullptr, 0};
 
                 cv.wait(lock);
             }
 
-            receiveMessageBuffer.resize(receiveMessage.size());
-            memcpy(receiveMessageBuffer.data(), receiveMessage.data(), receiveMessage.size());
+            auto buffer = make_unique<uint8[]>(receiveMessage.size());
+            memcpy(buffer.get(), receiveMessage.data(), receiveMessage.size());
 
-            return {receiveMessageBuffer.data(), receiveMessageBuffer.size()};
+            receiveMessagePending = false;
+
+            cout << "receive end" << endl;
+
+            return {buffer.release(), receiveMessage.size()};
         }
 
        private:
@@ -248,20 +252,30 @@ namespace {
             return true;
         }
 
-        CURL* ConnectWebsocket(const string& token) {
+        bool ConnectWebsocket(const string& token) {
             bool success = false;
 
-            CURL* handle = curl_easy_init();
-            if (!handle) {
-                cerr << "failed to init connect" << endl;
-                return nullptr;
+            curlMultiHandle = curl_multi_init();
+            if (!curlMultiHandle) {
+                cerr << "failed to allocate multi handle" << endl;
+                return false;
+            }
+
+            Defer closeMultiHandle([&]() {
+                if (!success) curl_multi_cleanup(curlMultiHandle);
+            });
+
+            curlHandle = curl_easy_init();
+            if (!curlHandle) {
+                cerr << "failed allocate websocket handle" << endl;
+                return false;
             }
 
             Defer closeHandle([&]() {
-                if (!success) curl_easy_cleanup(handle);
+                if (!success) curl_easy_cleanup(curlHandle);
             });
 
-            char* encodedToken = curl_easy_escape(handle, token.c_str(), token.size());
+            char* encodedToken = curl_easy_escape(curlHandle, token.c_str(), token.size());
             if (!encodedToken) {
                 cerr << "failed to encode token" << endl;
             }
@@ -272,43 +286,55 @@ namespace {
 
             curl_free(encodedToken);
 
-            if (curl_easy_setopt(handle, CURLOPT_URL, s.str().c_str()) != CURLE_OK) {
+            if (curl_easy_setopt(curlHandle, CURLOPT_URL, s.str().c_str()) != CURLE_OK) {
                 cerr << "bad connect URL" << endl;
-                return nullptr;
+                return false;
             }
 
-            if (curl_easy_setopt(handle, CURLOPT_CONNECT_ONLY, 2l) != CURLE_OK) {
+            if (curl_easy_setopt(curlHandle, CURLOPT_CONNECT_ONLY, 2l) != CURLE_OK) {
                 cerr << "failed to configure websocket" << endl;
-                return nullptr;
+                return false;
             }
 
-            curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, CONNECT_TIMEOUT_MSEC);
+            if (curl_multi_add_handle(curlMultiHandle, curlHandle)) {
+                cerr << "unable to register websocket handle" << endl;
+                return false;
+            }
 
-            if (curl_easy_perform(handle) != CURLE_OK) {
-                cerr << "failed to connect to proxy" << endl;
-                return nullptr;
+            Defer removeHandle([&]() {
+                if (!success) curl_multi_remove_handle(curlMultiHandle, curlHandle);
+            });
+
+            int runningHandles;
+            while (true) {
+                if (curl_multi_perform(curlMultiHandle, &runningHandles) != CURLM_OK) {
+                    cerr << "failed while connecting to proxy";
+                    return false;
+                }
+
+                if (runningHandles == 0) break;
+
+                if (curl_multi_poll(curlMultiHandle, {}, 0, CONNECT_TIMEOUT_MSEC, nullptr) !=
+                    CURLM_OK) {
+                    cerr << "failed to poll during connect";
+                    return false;
+                }
+            }
+
+            while (true) {
+                int remaining;
+                auto msg = curl_multi_info_read(curlMultiHandle, &remaining);
+
+                if (!msg) break;
+
+                if (msg->msg != CURLMSG_DONE) continue;
+                if (msg->data.result != CURLE_OK) {
+                    cerr << "proxy connection failed" << endl;
+                    return false;
+                }
             }
 
             success = true;
-            return handle;
-        }
-
-        bool StartWorker(CURL* handle) {
-            CURLM* multiHandle = curl_multi_init();
-            if (!multiHandle) {
-                cerr << "failed to allocate multi handle" << endl;
-                return false;
-            }
-
-            if (curl_multi_add_handle(multiHandle, handle) != CURLM_OK) {
-                cerr << "unable to setup multi I/O" << endl;
-
-                curl_multi_cleanup(multiHandle);
-                return false;
-            }
-
-            curlHandle = handle;
-            curlMultiHandle = multiHandle;
 
             disconnectRequested = false;
             workerRunning = true;
@@ -347,7 +373,6 @@ namespace {
                 }
 
                 if (disconnectRequested) return;
-                if (numfds == 0) continue;
 
                 lock_guard<mutex> lock(mut);
 
@@ -393,6 +418,7 @@ namespace {
                 }
 
                 if (sendMessagePending) {
+                    cout << "sending..." << endl;
                     size_t bytesSent;
                     auto result =
                         curl_ws_send(curlHandle, sendMessage.data() + sentCount,
@@ -430,7 +456,6 @@ namespace {
         condition_variable cv;
 
         vector<uint8> receiveMessage;
-        vector<uint8> receiveMessageBuffer;
         bool receiveMessagePending{false};
 
         vector<uint8> sendMessage;
