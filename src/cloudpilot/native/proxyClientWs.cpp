@@ -281,47 +281,12 @@ namespace {
                 return false;
             }
 
-            if (curl_easy_setopt(curlHandle, CURLOPT_CONNECT_ONLY, 2l) != CURLE_OK) {
-                cerr << "failed to configure websocket" << endl;
+            curl_easy_setopt(curlHandle, CURLOPT_CONNECT_ONLY, 2l);
+            curl_easy_setopt(curlHandle, CURLOPT_TIMEOUT_MS, CONNECT_TIMEOUT_MSEC);
+
+            if (curl_easy_perform(curlHandle) != CURLE_OK) {
+                cerr << "proxy connection failed" << endl;
                 return false;
-            }
-
-            if (curl_multi_add_handle(curlMultiHandle, curlHandle)) {
-                cerr << "unable to register websocket handle" << endl;
-                return false;
-            }
-
-            Defer removeHandle([&]() {
-                if (!success) curl_multi_remove_handle(curlMultiHandle, curlHandle);
-            });
-
-            int runningHandles;
-            while (true) {
-                if (curl_multi_perform(curlMultiHandle, &runningHandles) != CURLM_OK) {
-                    cerr << "failed while connecting to proxy";
-                    return false;
-                }
-
-                if (runningHandles == 0) break;
-
-                if (curl_multi_poll(curlMultiHandle, {}, 0, CONNECT_TIMEOUT_MSEC, nullptr) !=
-                    CURLM_OK) {
-                    cerr << "failed to poll during connect";
-                    return false;
-                }
-            }
-
-            while (true) {
-                int remaining;
-                auto msg = curl_multi_info_read(curlMultiHandle, &remaining);
-
-                if (!msg) break;
-
-                if (msg->msg != CURLMSG_DONE) continue;
-                if (msg->data.result != CURLE_OK) {
-                    cerr << "proxy connection failed" << endl;
-                    return false;
-                }
             }
 
             if (curl_easy_getinfo(curlHandle, CURLINFO_ACTIVESOCKET, &curlSocket) != CURLE_OK) {
