@@ -123,8 +123,6 @@ namespace {
                 return false;
             }
 
-            cout << "got token " << token << endl;
-
             if (!ConnectWebsocket(token)) return false;
 
             isConnected = true;
@@ -147,8 +145,6 @@ namespace {
 
             unique_lock<mutex> lock(mut);
 
-            cout << "send start" << endl;
-
             sendMessage.resize(size);
             memcpy(sendMessage.data(), message, size);
             sendMessagePending = true;
@@ -161,8 +157,6 @@ namespace {
                 cv.wait(lock);
             }
 
-            cout << "send end" << endl;
-
             return true;
         }
 
@@ -170,8 +164,6 @@ namespace {
             if (!isConnected) return {nullptr, 0};
 
             unique_lock<mutex> lock(mut);
-
-            cout << "receive start" << endl;
 
             while (!receiveMessagePending) {
                 if (!workerRunning) return {nullptr, 0};
@@ -183,8 +175,6 @@ namespace {
             memcpy(buffer.get(), receiveMessage.data(), receiveMessage.size());
 
             receiveMessagePending = false;
-
-            cout << "receive end" << endl;
 
             return {buffer.release(), receiveMessage.size()};
         }
@@ -232,7 +222,7 @@ namespace {
                     json, reinterpret_cast<const char*>(response.buffer.get()), response.size) !=
                     ArduinoJson::DeserializationError::Ok ||
                 !json.is<ArduinoJson::JsonObject>()) {
-                cout << "invalid handshake response from proxy" << endl;
+                cerr << "invalid handshake response from proxy" << endl;
                 return false;
             }
 
@@ -334,6 +324,11 @@ namespace {
                 }
             }
 
+            if (curl_easy_getinfo(curlHandle, CURLINFO_ACTIVESOCKET, &curlSocket) != CURLE_OK) {
+                cerr << "unable to obtain socket" << endl;
+                return false;
+            }
+
             success = true;
 
             disconnectRequested = false;
@@ -366,7 +361,18 @@ namespace {
 
             while (!disconnectRequested) {
                 int numfds;
-                if (curl_multi_poll(curlMultiHandle, nullptr, 0, POLL_TIMEOUT_MSEC, &numfds) !=
+
+                curl_waitfd waitfd;
+                {
+                    lock_guard<mutex> lock(mut);
+
+                    waitfd = {.fd = curlSocket,
+                              .events = static_cast<short>(
+                                  CURL_WAIT_POLLIN | (sendMessagePending ? CURL_WAIT_POLLOUT : 0)),
+                              .revents = 0};
+                }
+
+                if (curl_multi_poll(curlMultiHandle, &waitfd, 1, POLL_TIMEOUT_MSEC, &numfds) !=
                     CURLM_OK) {
                     cerr << "poll failed" << endl;
                     return;
@@ -385,6 +391,7 @@ namespace {
                                      receiveBuffer.size() - receivedCount, &recvBytes, &meta);
 
                     if (result == CURLE_AGAIN) break;
+
                     if (result != CURLE_OK) {
                         cerr << "error reading from websocket; closing connection" << endl;
                         return;
@@ -418,7 +425,6 @@ namespace {
                 }
 
                 if (sendMessagePending) {
-                    cout << "sending..." << endl;
                     size_t bytesSent;
                     auto result =
                         curl_ws_send(curlHandle, sendMessage.data() + sentCount,
@@ -448,6 +454,7 @@ namespace {
         bool isConnected{false};
         CURL* curlHandle{nullptr};
         CURLM* curlMultiHandle{nullptr};
+        curl_socket_t curlSocket;
 
         atomic<bool> disconnectRequested{false};
 
