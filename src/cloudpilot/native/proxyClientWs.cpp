@@ -40,7 +40,7 @@ namespace {
     };
 }  // namespace
 
-ProxyClient* proxyClientWs::Create(const string& host, const long port, const string& path) {
+ProxyClient* proxyClientWs::Create(const proxyClientWs::Config& config) {
     return new ProxyClientStub();
 }
 #else
