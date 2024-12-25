@@ -94,8 +94,8 @@ namespace {
 
     class ProxyClientWs : public ProxyClient {
        public:
-        ProxyClientWs(const string& host, const long port, const string& path)
-            : host(host), port(port), path(path) {
+        ProxyClientWs(const string& host, long port, const string& path, bool tls, bool insecure)
+            : host(host), port(port), path(path), tls(tls), insecure(insecure) {
             if (!curlInitialized) {
                 curlInitialized = true;
                 curlValid = curl_global_init(CURL_GLOBAL_ALL) == CURLE_OK;
@@ -109,6 +109,13 @@ namespace {
 
                 if (!curlSupportsProtocol("ws")) {
                     cerr << "WARNING: libcurl compiled without websocket support; proxy is "
+                            "disabled."
+                         << endl;
+                    curlValid = false;
+                }
+
+                if (tls && !curlSupportsProtocol("wss")) {
+                    cerr << "WARNING: libcurl compiled without SSL support; proxy is "
                             "disabled."
                          << endl;
                     curlValid = false;
@@ -191,7 +198,8 @@ namespace {
             Defer closeHandle([&]() { curl_easy_cleanup(handle); });
 
             stringstream s;
-            s << "http://" << host << ":" << port << path << "/network-proxy/handshake";
+            s << (tls ? "https" : "http") << "://" << host << ":" << port << path
+              << "/network-proxy/handshake";
 
             if (curl_easy_setopt(handle, CURLOPT_URL, s.str().c_str()) != CURLE_OK) {
                 cerr << "bad proxy URL " << s.str() << endl;
@@ -201,6 +209,7 @@ namespace {
             curl_easy_setopt(handle, CURLOPT_TIMEOUT_MS, HANDSHAKE_TIMEOUT_MSEC);
             curl_easy_setopt(handle, CURLOPT_POST, 1l);
             curl_easy_setopt(handle, CURLOPT_READFUNCTION, curlEmptyReadCb);
+            if (insecure) curl_easy_setopt(handle, CURLOPT_SSL_VERIFYPEER, 0l);
 
             CurlResponseBuffer response(2048);
             curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, CurlResponseBuffer::curlWriteCb);
@@ -274,7 +283,7 @@ namespace {
             }
 
             stringstream s;
-            s << "ws://" << host << ":" << port << path
+            s << (tls ? "wss" : "ws") << "://" << host << ":" << port << path
               << "/network-proxy/connect?token=" << encodedToken;
 
             curl_free(encodedToken);
@@ -286,6 +295,7 @@ namespace {
 
             curl_easy_setopt(curlHandle, CURLOPT_CONNECT_ONLY, 2l);
             curl_easy_setopt(curlHandle, CURLOPT_TIMEOUT_MS, CONNECT_TIMEOUT_MSEC);
+            if (insecure) curl_easy_setopt(curlHandle, CURLOPT_SSL_VERIFYPEER, 0l);
 
             auto connectResult = curl_easy_perform(curlHandle);
             if (connectResult != CURLE_OK) {
@@ -420,6 +430,8 @@ namespace {
         const string host;
         const long port;
         const string path;
+        const bool tls;
+        const bool insecure;
 
         bool isConnected{false};
         CURL* curlHandle{nullptr};
@@ -443,7 +455,8 @@ namespace {
 
 }  // namespace
 
-ProxyClient* proxyClientWs::Create(const string& host, const long port, const string& path) {
-    return new ProxyClientWs(host, port, path);
+ProxyClient* proxyClientWs::Create(const string& host, long port, const string& path, bool tls,
+                                   bool insecure) {
+    return new ProxyClientWs(host, port, path, tls, insecure);
 }
 #endif

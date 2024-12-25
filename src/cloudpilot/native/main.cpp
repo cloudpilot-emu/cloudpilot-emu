@@ -40,6 +40,7 @@ struct ProxyConfiguration {
     string host;
     unsigned int port;
     string path;
+    bool tls;
 };
 
 struct DebuggerConfiguration {
@@ -59,6 +60,7 @@ struct Options {
     bool traceDebugger;
     optional<string> mountImage;
     DebuggerConfiguration debuggerConfiguration;
+    bool proxyInsecure;
 };
 
 void handleSuspend() {
@@ -112,7 +114,8 @@ void setupProxy(ProxyClient*& proxyClient, ProxyHandler*& proxyHandler, const Op
     } else if (options.proxyConfiguration) {
         proxyClient = proxyClientWs::Create(options.proxyConfiguration->host,
                                             options.proxyConfiguration->port,
-                                            options.proxyConfiguration->path);
+                                            options.proxyConfiguration->path,
+                                            options.proxyConfiguration->tls, options.proxyInsecure);
     }
 
     if (proxyClient) {
@@ -252,15 +255,22 @@ int main(int argc, const char** argv) {
                 unsigned int port = static_cast<unsigned int>(parsed.get_port());
                 string path = parsed.get_path();
 
-                if (scheme != "http") throw runtime_error("bad URI scheme - must be http");
+                if (scheme != "http" && scheme != "https")
+                    throw runtime_error("bad URI scheme - must be http or https");
 
                 while (path.size() > 0 && path[path.size() - 1] == '/') path.pop_back();
 
-                return ProxyConfiguration{host, port != 0 ? port : 80, path.empty() ? "" : path};
+                return ProxyConfiguration{host, port != 0 ? port : 80, path.empty() ? "" : path,
+                                          scheme == "https"};
             } catch (const invalid_argument& e) {
                 throw runtime_error("invalid proxy URI");
             }
         });
+
+    program.add_argument("--proxy-insecure")
+        .help("do not validate server certificate when using the network proxy")
+        .default_value(false)
+        .implicit_value(true);
 
     program.add_argument("--trace-netlib")
         .help("trace network API")
@@ -324,6 +334,7 @@ int main(int argc, const char** argv) {
     options.netNative = program.get<bool>("--net-native");
     options.mountImage = program.present("--mount");
     options.scriptFile = program.present("--script");
+    options.proxyInsecure = program.get<bool>("--proxy-insecure");
 
 #ifdef ENABLE_DEBUGGER
     if (auto port = program.present<unsigned int>("--listen"))
