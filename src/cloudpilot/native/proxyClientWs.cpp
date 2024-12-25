@@ -50,6 +50,7 @@ namespace {
     constexpr long CONNECT_TIMEOUT_MSEC = 5000;
     constexpr long POLL_TIMEOUT_MSEC = 1000;
     constexpr int SERVER_VERSION = 3;
+    constexpr size_t RECEIVE_BUFFER_INITIAL_SIZE = 1024;
 
     bool curlInitialized = false;
     bool curlValid = false;
@@ -323,7 +324,7 @@ namespace {
 
             size_t receivedCount = 0;
             vector<uint8> receiveBuffer;
-            receiveBuffer.resize(1024);
+            receiveBuffer.resize(RECEIVE_BUFFER_INITIAL_SIZE);
 
             size_t sentCount = 0;
 
