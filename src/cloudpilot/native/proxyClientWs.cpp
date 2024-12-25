@@ -82,7 +82,7 @@ namespace {
 
     bool curlSupportsProtocol(const char* protocol) {
         auto versionInfo = curl_version_info(CURLVERSION_NOW);
-        const char* const* it = versionInfo->protocols;
+        auto it = versionInfo->protocols;
 
         while (*it) {
             if (strcmp(*(it++), protocol) == 0) return true;
@@ -193,7 +193,7 @@ namespace {
             s << "http://" << host << ":" << port << path << "/network-proxy/handshake";
 
             if (curl_easy_setopt(handle, CURLOPT_URL, s.str().c_str()) != CURLE_OK) {
-                cerr << "bad proxy URL" << endl;
+                cerr << "bad proxy URL " << s.str() << endl;
                 return false;
             }
 
@@ -205,8 +205,10 @@ namespace {
             curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, CurlResponseBuffer::curlWriteCb);
             curl_easy_setopt(handle, CURLOPT_WRITEDATA, &response);
 
-            if (curl_easy_perform(handle) != CURLE_OK) {
-                cerr << "failed to handshake with proxy in " << endl;
+            auto handshakeResult = curl_easy_perform(handle);
+            if (handshakeResult != CURLE_OK) {
+                cerr << "failed to handshake with proxy: " << curl_easy_strerror(handshakeResult)
+                     << endl;
                 return false;
             }
 
@@ -277,15 +279,16 @@ namespace {
             curl_free(encodedToken);
 
             if (curl_easy_setopt(curlHandle, CURLOPT_URL, s.str().c_str()) != CURLE_OK) {
-                cerr << "bad connect URL" << endl;
+                cerr << "bad connect URL " << s.str() << endl;
                 return false;
             }
 
             curl_easy_setopt(curlHandle, CURLOPT_CONNECT_ONLY, 2l);
             curl_easy_setopt(curlHandle, CURLOPT_TIMEOUT_MS, CONNECT_TIMEOUT_MSEC);
 
-            if (curl_easy_perform(curlHandle) != CURLE_OK) {
-                cerr << "proxy connection failed" << endl;
+            auto connectResult = curl_easy_perform(curlHandle);
+            if (connectResult != CURLE_OK) {
+                cerr << "proxy connection failed " << curl_easy_strerror(connectResult) << endl;
                 return false;
             }
 
@@ -326,7 +329,6 @@ namespace {
 
             while (!disconnectRequested) {
                 int numfds;
-
                 curl_waitfd waitfd;
                 {
                     lock_guard<mutex> lock(mut);
@@ -344,8 +346,6 @@ namespace {
                 }
 
                 if (disconnectRequested) return;
-
-                lock_guard<mutex> lock(mut);
 
                 while (true) {
                     const curl_ws_frame* meta;
@@ -370,6 +370,8 @@ namespace {
                     if (meta->bytesleft > 0 || (meta->flags & CURLWS_CONT)) continue;
 
                     if ((meta->flags & CURLWS_BINARY) && !(meta->flags & CURLWS_PING)) {
+                        lock_guard<mutex> lock(mut);
+
                         if (receiveMessagePending) {
                             cerr << "WARNING: overwriting pending message" << endl;
                         }
@@ -388,6 +390,8 @@ namespace {
 
                     receivedCount = 0;
                 }
+
+                lock_guard<mutex> lock(mut);
 
                 if (sendMessagePending) {
                     size_t bytesSent;
@@ -423,9 +427,9 @@ namespace {
 
         atomic<bool> disconnectRequested{false};
 
-        atomic<bool> workerRunning{false};
         mutex mut;
         condition_variable cv;
+        bool workerRunning{false};
 
         vector<uint8> receiveMessage;
         bool receiveMessagePending{false};
