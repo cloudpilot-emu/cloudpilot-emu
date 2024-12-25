@@ -36,13 +36,6 @@
 
 using namespace std;
 
-struct ProxyConfiguration {
-    string host;
-    unsigned int port;
-    string path;
-    bool tls;
-};
-
 struct DebuggerConfiguration {
     bool enabled{false};
     unsigned int port{0};
@@ -54,13 +47,14 @@ struct Options {
     string image;
     optional<string> deviceId;
     bool netNative;
-    optional<ProxyConfiguration> proxyConfiguration;
+    optional<proxyClientWs::Config> proxyConfiguration;
+    bool proxyInsecure;
+    optional<string> proxyCa;
     optional<string> scriptFile;
     bool traceNetlib;
     bool traceDebugger;
     optional<string> mountImage;
     DebuggerConfiguration debuggerConfiguration;
-    bool proxyInsecure;
 };
 
 void handleSuspend() {
@@ -112,10 +106,11 @@ void setupProxy(ProxyClient*& proxyClient, ProxyHandler*& proxyHandler, const Op
     if (options.netNative) {
         proxyClient = proxyClientNative::Create();
     } else if (options.proxyConfiguration) {
-        proxyClient = proxyClientWs::Create(options.proxyConfiguration->host,
-                                            options.proxyConfiguration->port,
-                                            options.proxyConfiguration->path,
-                                            options.proxyConfiguration->tls, options.proxyInsecure);
+        auto config = *options.proxyConfiguration;
+        config.insecure = options.proxyInsecure;
+        config.ca = options.proxyCa;
+
+        proxyClient = proxyClientWs::Create(config);
     }
 
     if (proxyClient) {
@@ -250,18 +245,25 @@ int main(int argc, const char** argv) {
             try {
                 uri parsed(value);
 
+                proxyClientWs::Config config;
+
                 string scheme = parsed.get_scheme();
-                string host = parsed.get_host();
-                unsigned int port = static_cast<unsigned int>(parsed.get_port());
-                string path = parsed.get_path();
+                config.host = parsed.get_host();
+                config.port = static_cast<long>(parsed.get_port());
+                config.path = parsed.get_path();
+
+                if (parsed.get_username().size() > 0) config.username = parsed.get_username();
+                if (parsed.get_password().size() > 0) config.password = parsed.get_password();
 
                 if (scheme != "http" && scheme != "https")
                     throw runtime_error("bad URI scheme - must be http or https");
 
-                while (path.size() > 0 && path[path.size() - 1] == '/') path.pop_back();
+                while (config.path.size() > 0 && config.path[config.path.size() - 1] == '/')
+                    config.path.pop_back();
 
-                return ProxyConfiguration{host, port != 0 ? port : 80, path.empty() ? "" : path,
-                                          scheme == "https"};
+                config.tls = scheme == "https";
+
+                return config;
             } catch (const invalid_argument& e) {
                 throw runtime_error("invalid proxy URI");
             }
@@ -271,6 +273,10 @@ int main(int argc, const char** argv) {
         .help("do not validate server certificate when using the network proxy")
         .default_value(false)
         .implicit_value(true);
+
+    program.add_argument("--proxy-ca")
+        .help("root certificate for network proxy")
+        .metavar("<certificate file>");
 
     program.add_argument("--trace-netlib")
         .help("trace network API")
@@ -330,11 +336,12 @@ int main(int argc, const char** argv) {
     options.traceNetlib = program.get<bool>("--trace-netlib");
     options.mountImage = program.present("--mount");
     options.deviceId = program.present("--device-id");
-    options.proxyConfiguration = program.present<ProxyConfiguration>("--net-proxy");
+    options.proxyConfiguration = program.present<proxyClientWs::Config>("--net-proxy");
     options.netNative = program.get<bool>("--net-native");
     options.mountImage = program.present("--mount");
     options.scriptFile = program.present("--script");
     options.proxyInsecure = program.get<bool>("--proxy-insecure");
+    options.proxyCa = program.present("--proxy-ca");
 
 #ifdef ENABLE_DEBUGGER
     if (auto port = program.present<unsigned int>("--listen"))
