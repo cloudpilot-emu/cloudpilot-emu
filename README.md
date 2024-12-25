@@ -89,6 +89,10 @@ card images, generating traces of m68k code and much more. The CLI supports
 tab completion, and there is a `help` command that provides further
 documentation.
 
+Networking is supported in the native app both natively and via the proxy.
+For proxy support, the app needs to be built against libcurl 8.0.0 or newer,
+and libcurl needs to be configured with websocket support.
+
 The native app can be built and run on MacOS, Linux and on the WSL for
 Windows. Please see below for build instructions. Once built, the app can
 be started from the command line by supplying a session image or a ROM file
@@ -209,19 +213,21 @@ on `http://localhost:4200` by running
 
 ## Native build
 
-Building the native version of CloudpilotEmu requires SDL2 and a recent version
-of Boost. 
+Building the native version of CloudpilotEmu requires SDL2, sdl2-image and libcurl. Note
+that for network support via proxy to actually work, libcurl must be at least
+version 8.0.0 and needs to be built with websocket support (which may or not be
+the case for the libcurl shipped with your system).
 
 On Ubuntu the following will give you the necessary packages:
 
 ```
-    $ apt-get install libreadline-dev libboost-all-dev libsdl2-image-dev libsdl2-dev
+    $ apt-get install libreadline-dev libcurl4-openssl-dev libsdl2-image-dev libsdl2-dev
 ```
 
 On Fedora
 
 ```
-    $ dnf install readline-devel boost-devel SDL2_image-devel SDL2-devel 
+    $ dnf install readline-devel libcurl-devel SDL2_image-devel SDL2-devel 
 ```
 
 The build is accomplished with
