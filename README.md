@@ -267,14 +267,13 @@ Zipfile I/O uses the [zip library](https://github.com/kuba--/zip).
 Protobuf (de)serialization in C++ is done using the awesome
 [NanoPB](https://github.com/nanopb/nanopb) library.
 
-The native build uses [argparse](https://github.com/p-ranav/argparse)
-and [uri-library](https://github.com/ben-zen/uri-library).
-Stacktraces in the native build are based on Farooq Melas
-[gist](https://gist.github.com/fmela/591333). HTTP and Websocket I/O
-in the native build is done with [Boost.Beast](https://github.com/boostorg/beast).
-In addition, the native build uses Boost coroutines and uuid. FAT creating,
-fsck and I/O is built on [dosfstools](https://github.com/dosfstools/dosfstools)
-and [FatFs](http://elm-chan.org/fsw/ff). Parts of the GDB stub are taken from
+The native build uses [argparse](https://github.com/p-ranav/argparse) and
+[uri-library](https://github.com/ben-zen/uri-library). Stacktraces in the native
+build are based on Farooq Melas [gist](https://gist.github.com/fmela/591333).
+HTTP and Websocket I/O in the native build use
+[libcurl](https://curl.se/libcurl/c/libcurl-ws.html). FAT support
+is built on [dosfstools](https://github.com/dosfstools/dosfstools) and
+[FatFs](http://elm-chan.org/fsw/ff). Parts of the GDB stub are taken from
 [uARM](https://github.com/uARM-Palm/uARM).
 
 # LICENSE
