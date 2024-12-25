@@ -43,8 +43,12 @@ INDEX_HTML = """
 
 
 def start(host: str, port: int, ssl: Optional[SSLContext], logLevel: str, logLevelFramework: str, trustedOrigins: str,
-          forceBindAddress: Optional[str] = None, authentication: Optional[str] = None, nameserver: Optional[int] = None):
+          forceBindAddress: Optional[str] = None, authentication: Optional[str] = None, nameserver: Optional[int] = None,
+          heartbeat: Optional[int] = None):
     routes = web.RouteTableDef()
+
+    if heartbeat is not None and heartbeat <= 0:
+        heartbeat = None
 
     async def handshakeHandler(request: web.Request) -> Response:
         if not _validateAuth(request, authentication):
@@ -58,7 +62,7 @@ def start(host: str, port: int, ssl: Optional[SSLContext], logLevel: str, logLev
         if not ("token" in request.query and validateToken(request.query["token"])):
             return web.Response(status=403, text="403: forbidden")
 
-        ws = web.WebSocketResponse()
+        ws = web.WebSocketResponse(heartbeat=heartbeat)
         await ws.prepare(request)
 
         connection = Connection(forceBindAddress, nameserver)

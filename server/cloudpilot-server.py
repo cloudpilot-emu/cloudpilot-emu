@@ -12,11 +12,13 @@ from version import VERSION
 
 import server
 
+
 def parsePositiveInt(value):
     ivalue = int(value)
     if ivalue <= 0:
         raise argparse.ArgumentTypeError("positive int required")
     return ivalue
+
 
 def launchServer(options: Any):
     sslCtx = None
@@ -74,7 +76,7 @@ with SSL enabled. Please check the documentation for more details.
     server.start(host=options.host, port=port,
                  ssl=sslCtx, logLevel=options.log, logLevelFramework=options.logLevelFramework,
                  trustedOrigins=options.trustedOrigins, forceBindAddress=options.forceBind, authentication=options.basicAuth,
-                 nameserver=nameserver)
+                 nameserver=nameserver, heartbeat=options.heartbeat)
 
 
 parser = argparse.ArgumentParser(description="Proxy server for CloudpilotEmu")
@@ -110,6 +112,9 @@ parserServe.add_argument("--force-bind", help="force bind all outgoing connectio
 
 parserServe.add_argument("--basic-auth", help="enable basic auth against the provided username:password",
                          default=None, dest="basicAuth")
+
+parserServe.add_argument(
+    "--heartbeat", help="set websocket ping interval in seconds (zero to disable ping) [default: 45]", default=45, dest="heartbeat", type=int)
 
 parserServe.add_argument(
     "--nameserver", help="manually specify a nameserver (IP, no hostname) for PalmOS", default=None)
