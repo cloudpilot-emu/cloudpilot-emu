@@ -213,10 +213,14 @@ on `http://localhost:4200` by running
 
 ## Native build
 
-Building the native version of CloudpilotEmu requires SDL2, sdl2-image and libcurl. Note
-that for network support via proxy to actually work, libcurl must be at least
-version 8.0.0 and needs to be built with websocket support (which may or not be
-the case for the libcurl shipped with your system).
+Building the native version of CloudpilotEmu requires SDL2, sdl2-image and libcurl.
+
+Note that for network support via proxy to actually work, libcurl must be at
+least version 8.0.0 and needs to be built with websocket support, which may or
+not be the case for the libcurl shipped with your system. CloudpilotEmu will
+build and run against any version of libcurl, but the proxy will be disabled.
+On MacOS you can use libcurl from homebrew (which enables websocket support), on
+Ubuntu you currently need to build libcurl yourself for websocket support. 
 
 On Ubuntu the following will give you the necessary packages:
 
