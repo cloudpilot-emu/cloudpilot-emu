@@ -163,6 +163,8 @@ void initSDL(SDL_Window*& window, SDL_Renderer*& renderer, int& scale) {
         cerr << "unable to create SDL window: " << SDL_GetError() << endl;
         exit(1);
     }
+
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 }
 
 void run(const Options& options) {
