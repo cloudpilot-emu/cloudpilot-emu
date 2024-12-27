@@ -64,12 +64,22 @@ namespace {
 
         atexit(SDL_Quit);
 
-        if (SDL_CreateWindowAndRenderer(
-                displayConfiguration.width * scale,
-                (displayConfiguration.height + displayConfiguration.graffitiHeight) * scale, 0,
-                &window, &renderer) != 0) {
+        const int windowHeight =
+            (displayConfiguration.height + displayConfiguration.graffitiHeight) * scale;
+        const int windowWidth = displayConfiguration.width * scale;
+
+        if (SDL_CreateWindowAndRenderer(windowWidth, windowHeight, SDL_WINDOW_ALLOW_HIGHDPI,
+                                        &window, &renderer) != 0) {
             cout << "unable to setup window" << endl;
             return false;
+        }
+
+        int renderHeight = windowHeight, renderWidth = windowWidth;
+        SDL_GetRendererOutputSize(renderer, &renderWidth, &renderHeight);
+
+        if (renderHeight != windowHeight && renderWidth != windowWidth) {
+            SDL_RenderSetScale(renderer, static_cast<float>(renderWidth / windowWidth),
+                               static_cast<float>(renderHeight / windowHeight));
         }
 
         SDL_SetWindowTitle(window, "cp-uarm");

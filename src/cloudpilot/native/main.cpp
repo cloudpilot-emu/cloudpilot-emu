@@ -154,15 +154,23 @@ void initSDL(SDL_Window*& window, SDL_Renderer*& renderer, int& scale) {
     ScreenDimensions screenDimensions(screenDimensionsKind);
     scale = screenDimensionsKind == ScreenDimensions::screen160x160 ? 3 : 2;
 
-    if (SDL_CreateWindowAndRenderer(
-            screenDimensions.Width() * scale,
-            (screenDimensions.Height() + screenDimensions.SilkscreenHeight()) * scale, 0, &window,
-            &renderer) != 0) {
+    const int windowWidth = screenDimensions.Width() * scale;
+    const int windowHeight =
+        (screenDimensions.Height() + screenDimensions.SilkscreenHeight()) * scale;
+
+    if (SDL_CreateWindowAndRenderer(windowWidth, windowHeight, SDL_WINDOW_ALLOW_HIGHDPI, &window,
+                                    &renderer) != 0) {
         cerr << "unable to create SDL window: " << SDL_GetError() << endl;
         exit(1);
     }
 
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+    int renderHeight = windowHeight, renderWidth = windowWidth;
+    SDL_GetRendererOutputSize(renderer, &renderWidth, &renderHeight);
+
+    if (renderHeight != windowHeight && renderWidth != windowWidth) {
+        SDL_RenderSetScale(renderer, static_cast<float>(renderWidth / windowWidth),
+                           static_cast<float>(renderHeight / windowHeight));
+    }
 }
 
 void run(const Options& options) {
