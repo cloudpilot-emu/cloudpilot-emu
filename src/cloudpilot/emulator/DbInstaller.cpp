@@ -32,7 +32,7 @@ namespace {
 DbInstaller::Result DbInstaller::Install(size_t bufferSize, uint8* buffer) {
     if (!gSystemState.IsUIInitialized()) return Result::failureInternal;
 
-    if (gSystemState.OSMajorVersion() < 3) {
+    if (gSystemState.OSMajorVersion() < 4) {
         return EmFileImport::LoadPalmFile(buffer, bufferSize, kMethodHomebrew) == kError_NoError
                    ? Result::success
                    : Result::failureUnknownReason;
