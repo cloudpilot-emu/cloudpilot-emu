@@ -1,9 +1,20 @@
 #!/usr/bin/env python3
 
 import argparse
+import datetime
 from struct import calcsize, pack_into, unpack_from
 
 dmHdrAttrResDB = 0x0001
+dmHdrAttrReadOnly = 0x0002
+dmHdrAttrAppInfoDirty = 0x0004
+dmHdrAttrBackup = 0x0008
+dmHdrAttrOKToInstallNewer = 0x0010
+dmHdrAttrResetAfterInstall = 0x0020
+dmHdrAttrCopyPrevention = 0x0040
+dmHdrAttrStream = 0x0080
+dmHdrAttrHidden = 0x0100
+dmHdrAttrLaunchableData = 0x0200
+dmHdrAttrOpen = 0x8000
 
 
 def transformZeroTerminatedString(str: bytes) -> str:
@@ -12,14 +23,58 @@ def transformZeroTerminatedString(str: bytes) -> str:
     return str[:terminator if terminator >= 0 else len(str)].decode('ascii')
 
 
-class Record:
+def formatTag(tag: bytes) -> str:
+    formatted = ''
+
+    for i in tag:
+        if i >= 0x21 and i <= 0x7e:
+            formatted += chr(i)
+
+        else:
+            formatted += f'[i]'
+
+    return formatted
+
+
+def formatDbAttribtes(attr: int) -> str:
+    mappings = {
+        "res": dmHdrAttrResDB,
+        "readonly": dmHdrAttrReadOnly,
+        "appinfoDirty": dmHdrAttrAppInfoDirty,
+        "backup": dmHdrAttrBackup,
+        "overwriteNewer": dmHdrAttrOKToInstallNewer,
+        "reset": dmHdrAttrResetAfterInstall,
+        "protect": dmHdrAttrCopyPrevention,
+        "stream": dmHdrAttrStream,
+        "hidden": dmHdrAttrHidden,
+        "launchable": dmHdrAttrLaunchableData,
+        "open": dmHdrAttrOpen
+    }
+
+    attributes: list[str] = []
+
+    for name, value in mappings.items():
+        if attr & value != 0:
+            attributes.append(name)
+
+    return ",".join(attributes)
+
+
+def formatDate(d: int) -> str:
+    date = datetime.datetime(year=1904, month=1, day=1) + \
+        datetime.timedelta(seconds=d)
+
+    return date.strftime("%m/%d/%Y, %H:%M:%S")
+
+
+class Struct:
     _format: str = ""
 
     def size(self) -> int:
         return calcsize(self._format)
 
 
-class Header(Record):
+class Header(Struct):
     name: str
     attributes: int
     version: int
@@ -43,7 +98,7 @@ class Header(Record):
          self.creationDate,
          self.modificationDate,
          self.lastBackupDate,
-         self.appInfoID,
+         self.modificationNumber,
          self.appInfoID,
          self.sortInfoID,
          self.type,
@@ -55,7 +110,7 @@ class Header(Record):
         self.name = transformZeroTerminatedString(encodedName)
 
 
-class RecordList(Record):
+class RecordList(Struct):
     nextRecordListID: int
     numRecords: int
     offset: int
@@ -69,7 +124,7 @@ class RecordList(Record):
         self.offset = offset
 
 
-class ResourceEntry(Record):
+class ResourceEntry(Struct):
     type: bytes
     id: int
     localChunkID: int
@@ -84,7 +139,7 @@ class ResourceEntry(Record):
         self.offset = offset
 
 
-class RecordEntry(Record):
+class RecordEntry(Struct):
     localChunkID: int
     attributes: int
     unique_id: int
@@ -102,6 +157,152 @@ class RecordEntry(Record):
             encoded_id[1] << 8) | (encoded_id[0] << 16)
 
         self.offset = offset
+
+
+class Database:
+    name: str
+    attributes: int
+    version: int
+    creationDate: int
+    modificationDate: int
+    lastBackupDate: int
+    modificationNumber: int
+    type: bytes
+    creator: bytes
+    uniqueIDSeed: int
+    modificationNumber: int
+
+    gapSize: int
+
+    appInfo: bytes | None
+    sortInfo: bytes | None
+
+    def __init__(self, header: Header):
+        self.name = header.name
+        self.attributes = header.attributes
+        self.version = header.version
+        self.creationDate = header.creationDate
+        self.lastBackupDate = header.lastBackupDate
+        self.modificationDate = header.modificationDate
+        self.type = header.type
+        self.creator = header.creator
+        self.uniqueIDSeed = header.uniqueIDSeed
+        self.modificationNumber = header.modificationNumber
+
+        self.gapSize = 2
+        self.appInfo = None
+        self.sortInfo = None
+
+
+class Resource:
+    type: bytes
+    id: int
+    data: bytes
+
+    def __init__(self, type: bytes, id: int, data: bytes):
+        self.type = type
+        self.id = id
+        self.data = data
+
+
+class Record:
+    attributes: int
+    unique_id: int
+    data: bytes
+
+    def __init__(self, attributes: int, unique_id: int, data: bytes):
+        self.attributes = attributes
+        self.unique_id = unique_id
+        self.data = data
+
+
+class ResourceDb(Database):
+    resources: list[Resource]
+
+    def __init__(self, header: Header):
+        super().__init__(header)
+
+        self.resources = []
+
+    def addResource(self, resource: Resource):
+        self.resources.append(resource)
+
+
+class RecordDb(Database):
+    records: list[Record]
+
+    def __init__(self, header: Header):
+        super().__init__(header)
+
+        self.records = []
+
+    def addRecord(self, record: Record):
+        self.records.append(record)
+
+
+def parseDb(data: bytes) -> Database:
+    offset = 0
+
+    header = Header(data, offset)
+    offset += header.size()
+
+    recordList = RecordList(data, offset)
+    offset += recordList.size()
+
+    if recordList.nextRecordListID != 0:
+        raise RuntimeError("unable to parse multi-segmented DB")
+
+    firstBlockStart = len(data)
+
+    db: Database
+
+    if (header.attributes & dmHdrAttrResDB != 0):
+        resourceDb = ResourceDb(header)
+
+        for i in range(0, recordList.numRecords):
+            rsc = ResourceEntry(data, offset)
+            offset += rsc.size()
+
+            if i == 0:
+                firstBlockStart = rsc.localChunkID
+
+            recordEnd = len(data) if (
+                i == recordList.numRecords - 1) else ResourceEntry(data, offset).localChunkID
+
+            resourceDb.addResource(Resource(rsc.type, rsc.id,
+                                            data[rsc.localChunkID:recordEnd]))
+
+        db = resourceDb
+
+    else:
+        recordDb = RecordDb(header)
+
+        for i in range(0, recordList.numRecords):
+            rec = RecordEntry(data, offset)
+            offset += rec.size()
+
+            if i == 0:
+                firstBlockStart = rec.localChunkID
+
+            recordEnd = len(data) if (
+                i == recordList.numRecords - 1) else RecordEntry(data, offset).localChunkID
+
+            recordDb.addRecord(
+                Record(rec.attributes, rec.unique_id, data[rec.localChunkID:recordEnd]))
+
+        db = recordDb
+
+    if header.sortInfoID > 0:
+        db.sortInfo = data[header.sortInfoID:firstBlockStart]
+        firstBlockStart = header.sortInfoID
+
+    if header.appInfoID > 0:
+        db.appInfo = data[header.appInfoID:firstBlockStart]
+        firstBlockStart = header.appInfoID
+
+    db.gapSize = firstBlockStart - offset
+
+    return db
 
 
 def splitResources(options):
@@ -160,7 +361,7 @@ def splitResources(options):
                 writer.write(prcfile[start:end])
 
 
-def fix_pdb(options):
+def fixPdb(options):
     try:
         with open(options.source, "rb") as reader:
             pdbfile_in = reader.read()
@@ -226,6 +427,39 @@ def fix_pdb(options):
     print(f"wrote fixed database to {options.destination}")
 
 
+def dbInfo(options):
+    try:
+        with open(options.source, "rb") as reader:
+            data = reader.read()
+
+    except Exception:
+        print(f'unable to read {options.source}')
+        return
+
+    try:
+        db = parseDb(data)
+
+        print(f"name: {db.name}")
+        print(
+            f"kind: {'resource' if isinstance(db, ResourceDb) else 'record'}")
+        print(f'type: {formatTag(db.type)}')
+        print(f'creator: {formatTag(db.creator)}')
+        print(f'created: {formatDate(db.creationDate)}')
+        print(f'modified: {formatDate(db.modificationDate)}')
+        print(f'last backup: {formatDate(db.lastBackupDate)}')
+        print(f'attributes: {formatDbAttribtes(db.attributes)}')
+        print(f'modification number: {db.modificationNumber}')
+        print(f'seed: {db.uniqueIDSeed}')
+        print("no appinfo" if db.appInfo ==
+              None else f'appinfo: {len(db.appInfo)} bytes')
+        print("no sortinfo" if db.sortInfo ==
+              None else f'sortinfo: {len(db.sortInfo)} bytes')
+        print(f'gap: {db.gapSize} bytes')
+
+    except Exception as ex:
+        print(f'failed to parse database: {ex}')
+
+
 parser = argparse.ArgumentParser(description="Tools for handling prc files")
 subparsers = parser.add_subparsers(help="subcommand", dest="subcommand")
 
@@ -243,13 +477,22 @@ parserFixPdb.add_argument("source", metavar="<source>",
 parserFixPdb.add_argument("destination", metavar="<destination>",
                           type=str, help="destination file")
 
+parserDbInfo = subparsers.add_parser(
+    'info', help="show DB info", description="show info and statistics on database")
+
+parserDbInfo.add_argument("source", metavar="<source>",
+                          type=str, help="source file")
+
 options = parser.parse_args()
 
 if options.subcommand == "split-resources":
     splitResources(options)
 
 elif options.subcommand == "fix-pdb":
-    fix_pdb(options)
+    fixPdb(options)
+
+elif options.subcommand == "info":
+    dbInfo(options)
 
 else:
     parser.print_help()
