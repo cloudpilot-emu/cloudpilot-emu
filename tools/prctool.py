@@ -123,6 +123,9 @@ class RecordList(Struct):
 
         self.offset = offset
 
+    def size(self) -> int:
+        return 6 if self.numRecords > 0 else 8
+
 
 class ResourceEntry(Struct):
     type: bytes
@@ -170,7 +173,6 @@ class Database:
     type: bytes
     creator: bytes
     uniqueIDSeed: int
-    modificationNumber: int
 
     gapSize: int
 
@@ -240,6 +242,16 @@ class RecordDb(Database):
         self.records.append(record)
 
 
+class BadDatabaseException(Exception):
+    reason: str
+
+    def __init__(self, reason: str):
+        self.reason = reason
+
+    def __str__(self) -> str:
+        return self.reason
+
+
 def parseDb(data: bytes) -> Database:
     offset = 0
 
@@ -254,9 +266,24 @@ def parseDb(data: bytes) -> Database:
 
     firstBlockStart = len(data)
 
+    isResourceDb = header.attributes & dmHdrAttrResDB != 0
+    watermark = offset + recordList.numRecords * (10 if isResourceDb else 8)
+
+    if header.appInfoID > 0:
+        if header.appInfoID < watermark:
+            raise BadDatabaseException("bad appinfo block")
+
+        watermark = header.appInfoID
+
+    if header.sortInfoID > 0:
+        if header.sortInfoID < watermark:
+            raise BadDatabaseException("bad sortinfo block")
+
+        watermark = header.sortInfoID
+
     db: Database
 
-    if (header.attributes & dmHdrAttrResDB != 0):
+    if isResourceDb:
         resourceDb = ResourceDb(header)
 
         for i in range(0, recordList.numRecords):
@@ -268,6 +295,11 @@ def parseDb(data: bytes) -> Database:
 
             recordEnd = len(data) if (
                 i == recordList.numRecords - 1) else ResourceEntry(data, offset).localChunkID
+
+            if recordEnd > len(data) or rsc.localChunkID < watermark:
+                raise BadDatabaseException(f'bad record {i}')
+
+            watermark = recordEnd
 
             resourceDb.addResource(Resource(rsc.type, rsc.id,
                                             data[rsc.localChunkID:recordEnd]))
@@ -286,6 +318,11 @@ def parseDb(data: bytes) -> Database:
 
             recordEnd = len(data) if (
                 i == recordList.numRecords - 1) else RecordEntry(data, offset).localChunkID
+
+            if recordEnd > len(data) or rec.localChunkID < watermark:
+                raise BadDatabaseException(f'bad record {i}')
+
+            watermark = recordEnd
 
             recordDb.addRecord(
                 Record(rec.attributes, rec.unique_id, data[rec.localChunkID:recordEnd]))
@@ -315,50 +352,26 @@ def splitResources(options):
         return
 
     try:
-        offset = 0
-
-        header = Header(prcfile, offset)
-        offset += header.size()
-
-        recordList = RecordList(prcfile, offset)
-        offset += recordList.size()
-
-        if recordList.nextRecordListID != 0:
-            raise RuntimeError("unable to parse multi-segmented DB")
-
-        resourceEntries: list[ResourceEntry] = []
-        for i in range(0, recordList.numRecords):
-            resourceEntry = ResourceEntry(prcfile, offset)
-            offset += resourceEntry.size()
-
-            resourceEntries.append(resourceEntry)
-
+        db = parseDb(prcfile)
     except Exception as ex:
-        print(f'unable to parse prc: {ex}')
+        print(f'failed to parse {options.target}: {ex}')
         return
 
-    if (header.attributes & dmHdrAttrResDB == 0):
-        print("not a resource DB")
+    if not isinstance(db, ResourceDb):
+        print(f'{options.target} is not a resource database')
         return
 
-    print(f'name: {header.name}')
-    print(f'type: {header.type.decode("ascii")}')
-    print(f'creator: {header.creator.decode("ascii")}')
-    print(f'writing {recordList.numRecords} resource entries')
+    print(f'name: {db.name}')
+    print(f'type: {formatTag(db.type)}')
+    print(f'creator: {formatTag(db.creator)}')
+    print(f'writing {len(db.resources)} resource entries')
 
-    for i, resourceEntry in enumerate(resourceEntries):
-        filename = f'{options.prefix}{resourceEntry.type.decode("ascii")}_{resourceEntry.id}'
+    for resource in db.resources:
+        filename = f'{options.prefix}{resource.type.decode('ascii')}_{resource.id}'
         print(f'writing {filename}')
 
-        start = resourceEntry.localChunkID
-        end = resourceEntries[i +
-                              1].localChunkID if i < len(resourceEntries) - 1 else len(prcfile)
-
-        if end < start or start >= len(prcfile) or end > len(prcfile):
-            print("   ...bad chunk!")
-        else:
-            with open(filename, 'bw') as writer:
-                writer.write(prcfile[start:end])
+        with open(filename, 'bw') as writer:
+            writer.write(resource.data)
 
 
 def fixPdb(options):
