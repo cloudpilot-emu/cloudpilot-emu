@@ -2,9 +2,8 @@
 
 import argparse
 import datetime
-import traceback
 from struct import calcsize, pack, pack_into, unpack_from
-from typing import Any, Callable, Self, cast
+from typing import Any, Callable, cast
 
 dmHdrAttrResDB = 0x0001
 dmHdrAttrReadOnly = 0x0002
@@ -262,8 +261,8 @@ class RecordEntry(Entry):
         return RecordEntry(attributes, id, localChunkId, offset)
 
     def serialize(self):
-        encodedId = bytes([self.id & 0xff,
-                           (self.id >> 8) & 0xff, (self.id >> 16) & 0xff])
+        encodedId = bytes([(self.id >> 16) & 0xff,
+                           (self.id >> 8) & 0xff, self.id & 0xff])
 
         return pack(self._format, self.localChunkId, self.attributes, encodedId)
 
@@ -369,7 +368,10 @@ class Database[T: Item[Entry]]:
         self.items.append(item)
 
     def serialize(self) -> bytes:
-        offset = Header.staticSize() + RecordList.staticSize() + self.gapSize
+        offset = Header.staticSize() + RecordList.staticSize()
+        offset += len(self.items) * (RecordEntry.staticSize()
+                                     if self.isRecordDb() else ResourceEntry.staticSize())
+        offset += self.gapSize
 
         appInfoId = 0
         if self.appInfo is not None:
@@ -391,15 +393,20 @@ class Database[T: Item[Entry]]:
             modificationNumber=self.modificationNumber,
             appInfoId=appInfoId,
             sortInfoId=sortInfoId,
-            type=options.type,
-            creator=options.creator,
+            type=self.type,
+            creator=self.creator,
             uniqueIdSeed=self.uniqueIdSeed
         )
 
-        recordList = RecordList(0, len(self.items))
-        gap = bytes([0 for _ in range(0, self.gapSize)])
+        serialized = header.serialize() + RecordList(0, len(self.items)).serialize()
 
-        serialized = header.serialize() + recordList.serialize() + gap
+        for item in self.items:
+            entry = item.entry(offset)
+
+            offset += len(item.data)
+            serialized += entry.serialize()
+
+        serialized += bytes([0 for _ in range(0, self.gapSize)])
 
         if self.appInfo is not None:
             serialized += self.appInfo
@@ -408,10 +415,7 @@ class Database[T: Item[Entry]]:
             serialized += self.sortInfo
 
         for item in self.items:
-            entry = item.entry(offset)
-
-            offset += entry.size()
-            serialized += entry.serialize()
+            serialized += item.data
 
         return serialized
 
@@ -434,7 +438,7 @@ class BadDatabaseException(Exception):
 
 def parseDb(data: bytes) -> Database:
     def appendRecords[T: Item, U: Entry](db: Database[T], recordList: RecordList, offset: int, watermark: int,
-                                         parse: Callable[[bytes, int], U], create: Callable[[U, bytes], T]) -> int:
+                                         parse: Callable[[bytes, int], U], create: Callable[[U, bytes], T]) -> tuple[int, int]:
         firstBlockStart = len(data)
 
         for i in range(0, recordList.numRecords):
@@ -454,7 +458,7 @@ def parseDb(data: bytes) -> Database:
 
             db.add(create(entry, data[entry.localChunkId:recordEnd]))
 
-        return firstBlockStart
+        return (offset, firstBlockStart)
 
     offset = 0
 
@@ -490,20 +494,20 @@ def parseDb(data: bytes) -> Database:
     if header.isResourceDb():
         resourceDb = Database[Resource].fromHeader(header)
 
-        appendRecords(resourceDb, recordList, offset, watermark,
-                      parse=lambda data, offset: ResourceEntry.parse(
-                          data, offset),
-                      create=lambda entry, data: Resource(entry.type, entry.id, data))
+        (offset, firstBlockStart) = appendRecords(resourceDb, recordList, offset, watermark,
+                                                  parse=lambda data, offset: ResourceEntry.parse(
+                                                      data, offset),
+                                                  create=lambda entry, data: Resource(entry.type, entry.id, data))
 
         db = cast(Database[Item], resourceDb)
 
     else:
         recordDb = Database[Record].fromHeader(header)
 
-        appendRecords(recordDb, recordList, offset, watermark,
-                      parse=lambda data, offset: RecordEntry.parse(
-                          data, offset),
-                      create=lambda entry, data: Record(entry.attributes, entry.id, data))
+        (offset, firstBlockStart) = appendRecords(recordDb, recordList, offset, watermark,
+                                                  parse=lambda data, offset: RecordEntry.parse(
+                                                      data, offset),
+                                                  create=lambda entry, data: Record(entry.attributes, entry.id, data))
 
         db = cast(Database[Item], recordDb)
 
@@ -695,6 +699,55 @@ def createDb(options: Any):
     print(f"wrote database to {options.destination}")
 
 
+def editDb(options: Any):
+    try:
+        db = parseDb(options.source)
+
+    except Exception as ex:
+        print("failed to parse database: {ex}")
+        return
+
+    if options.name is not None:
+        db.name = options.name
+
+    if options.type is not None:
+        db.type = options.type
+
+    if options.creator is not None:
+        db.creator = options.creator
+
+    if options.removeAttributes is not None:
+        db.attributes &= ~options.removeAttributes
+
+    if options.addAttributes is not None:
+        db.attributes |= options.addAttributes
+
+    if options.removeAppinfo:
+        db.appInfo = None
+
+    if options.removeSortinfo:
+        db.sortInfo = None
+
+    if options.appinfo is not None:
+        db.appInfo = options.appinfo
+
+    if options.sortinfo is not None:
+        db.sortInfo = options.sortinfo
+
+    if options.gap is not None:
+        db.gapSize = options.gap if options.gap > 0 else 0
+
+    try:
+        with open(options.destination, 'bw') as writer:
+            writer.write(db.serialize())
+
+    except Exception as ex:
+        print(f"could not write {options.destination}: {ex}")
+        return
+
+    print(f"wrote modified database to {options.destination}")
+
+
 def typeTag(x: str):
     if len(x) != 4:
         raise argparse.ArgumentTypeError(
@@ -764,8 +817,6 @@ parserDbInfo.add_argument("--sortinfo", metavar="<file>",
 
 parserCreateDb = subparsers.add_parser(
     "create", help="create new empty DB", description="create a new empty database")
-
-
 parserCreateDb.add_argument(
     "destination", metavar="<destination>", help="destination file")
 parserCreateDb.add_argument("--resource",
@@ -784,6 +835,33 @@ parserCreateDb.add_argument(
 parserCreateDb.add_argument(
     "--sortinfo", metavar="file", type=typeFile, help="sortinfo block")
 
+parserEditDb = subparsers.add_parser(
+    "edit", help="edit DB", description="edit an existing database")
+parserEditDb.add_argument("source", metavar="<source>",
+                          type=typeFile, help="source database")
+parserEditDb.add_argument("destination", metavar="<destination>",
+                          type=str, help="write modified database to file")
+parserEditDb.add_argument(
+    "--name", metavar="name", type=str, help="DB name (max 31 chars)")
+parserEditDb.add_argument(
+    "--type", metavar="type", type=typeTag, help="DB type (exactly 4 ASCII chars)")
+parserEditDb.add_argument("--creator", type=typeTag, metavar="creator",
+                          help="DB creator (exactly 4 ASCII chars)")
+parserEditDb.add_argument(
+    "--add-attributes", type=typeAttributes, help="add DB attributes", dest="addAttributes")
+parserEditDb.add_argument(
+    "--remove-attributes", type=typeAttributes, help="add DB attributes", dest="removeAttributes")
+parserEditDb.add_argument("--gap", type=int, help="gap size")
+parserEditDb.add_argument(
+    "--appinfo", metavar="file", type=typeFile, help="appinfo block")
+parserEditDb.add_argument(
+    "--sortinfo", metavar="file", type=typeFile, help="sortinfo block")
+parserEditDb.add_argument("--remove-appinfo", default=False,
+                          action="store_true", help="remove existing appinfo block", dest="removeAppinfo")
+parserEditDb.add_argument("--remove-sortinfo", default=False,
+                          action="store_true", help="remove existing sortinfo block", dest="removeSortinfo")
+
+
 options = parser.parse_args()
 
 if options.subcommand == "split-resources":
@@ -797,6 +875,9 @@ elif options.subcommand == "info":
 
 elif options.subcommand == "create":
     createDb(options)
+
+elif options.subcommand == "edit":
+    editDb(options)
 
 else:
     parser.print_help()
