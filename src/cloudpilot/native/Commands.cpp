@@ -56,7 +56,7 @@ namespace {
     }
 
     void InstallOne(size_t len, uint8* buffer) {
-        DbInstaller::Result installationResult = DbInstaller::Install(len, buffer);
+        DbInstaller::Result installationResult = DbInstaller(len, buffer).Install();
 
         cout << translateInstallResult(installationResult) << endl << flush;
     }

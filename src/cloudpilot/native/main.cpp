@@ -53,6 +53,7 @@ struct Options {
     optional<string> scriptFile;
     bool traceNetlib;
     bool traceDebugger;
+    bool traceInstaller;
     optional<string> mountImage;
     DebuggerConfiguration debuggerConfiguration;
 };
@@ -187,6 +188,7 @@ void run(const Options& options) {
     setupDebugger(gdbStub, options);
 
     if (options.traceNetlib) logging::enableDomain(logging::domainNetlib);
+    if (options.traceInstaller) logging::enableDomain(logging::domainInstaller);
     if (options.traceDebugger) logging::enableDomain(logging::domainDebugger);
 
     Feature::SetClipboardIntegration(true);
@@ -286,11 +288,6 @@ int main(int argc, const char** argv) {
         .help("root certificate for network proxy")
         .metavar("<certificate file>");
 
-    program.add_argument("--trace-netlib")
-        .help("trace network API")
-        .default_value(false)
-        .implicit_value(true);
-
     program.add_argument("--mount").metavar("<image file>").help("mount card image");
 
     program.add_argument("--script", "-s")
@@ -308,8 +305,18 @@ int main(int argc, const char** argv) {
         .default_value(false)
         .implicit_value(true);
 
+    program.add_argument("--trace-netlib")
+        .help("trace network API")
+        .default_value(false)
+        .implicit_value(true);
+
     program.add_argument("--trace-debugger")
         .help("trace gdb stub")
+        .default_value(false)
+        .implicit_value(true);
+
+    program.add_argument("--trace-installer")
+        .help("trace database installer")
         .default_value(false)
         .implicit_value(true);
 
@@ -342,6 +349,7 @@ int main(int argc, const char** argv) {
 
     options.image = program.get("image");
     options.traceNetlib = program.get<bool>("--trace-netlib");
+    options.traceInstaller = program.get<bool>("--trace-installer");
     options.mountImage = program.present("--mount");
     options.deviceId = program.present("--device-id");
     options.proxyConfiguration = program.present<proxyClientWs::Config>("--net-proxy");

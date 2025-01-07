@@ -4,7 +4,7 @@
 #include "EmCommon.h"
 
 namespace logging {
-    enum Domain : uint32 { domainNetlib = 0x1, domainDebugger = 0x2 };
+    enum Domain : uint32 { domainNetlib = 0x1, domainDebugger = 0x2, domainInstaller = 0x04 };
 
     int printf(const char* format, ...);
 

@@ -187,7 +187,7 @@ void Cloudpilot::ResetNoExtensions() { gSession->Reset(EmSession::ResetType::noe
 void Cloudpilot::ResetHard() { gSession->Reset(EmSession::ResetType::hard); }
 
 int Cloudpilot::InstallDb(void* buffer, size_t len) {
-    return static_cast<int>(DbInstaller::Install(len, static_cast<uint8*>(buffer)));
+    return static_cast<int>(DbInstaller(len, static_cast<uint8*>(buffer)).Install());
 }
 
 int Cloudpilot::GetPalette2bitMapping() { return EmHAL::GetLCD2bitMapping(); }
