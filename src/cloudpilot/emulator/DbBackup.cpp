@@ -18,7 +18,7 @@ namespace {
 }  // namespace
 
 unique_ptr<DbBackup> DbBackup::create() {
-    return gSystemState.OSMajorVersion() < 3
+    return gSystemState.OSMajorVersion() < 4
                ? static_cast<unique_ptr<DbBackup>>(make_unique<DbBackupFallback>())
                : static_cast<unique_ptr<DbBackup>>(make_unique<DbBackupNative>());
 }
