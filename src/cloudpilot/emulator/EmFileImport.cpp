@@ -495,80 +495,78 @@ void EmFileImport::HomeBrewInstallStart(void) {
         goto Error;
     }
 
-    if (!::PrvIsResources(hdr)) {
-        // If there's an appInfo block, add it.
-        if (hdr.appInfoID) {
-            UInt32 recSize;
-            emuptr newRecH;
+    // If there's an appInfo block, add it.
+    if (hdr.appInfoID) {
+        UInt32 recSize;
+        emuptr newRecH;
 
-            EmAliasRecordEntryType<LAS> recordEntry(hdr.recordList.records);
+        EmAliasRecordEntryType<LAS> recordEntry(hdr.recordList.records);
 
-            if (hdr.sortInfoID) {
-                recSize = (UInt32)hdr.sortInfoID - (UInt32)hdr.appInfoID;
-            } else if (hdr.recordList.numRecords > 0) {
-                recSize = (UInt32)recordEntry.localChunkID - (UInt32)hdr.appInfoID;
-            } else {
-                recSize = fFileBufferSize - (UInt32)hdr.appInfoID;
-            }
-
-            // Allocate the new record.
-
-            newRecH = ::DmNewHandle(fOpenID, recSize);
-            if (!newRecH) {
-                err = ::DmGetLastErr();
-                goto Error;
-            }
-
-            // Copy the data in.
-            UInt8* srcP = (UInt8*)hdr.GetPtr() + (UInt32)hdr.appInfoID;
-            emuptr dstP = ::MemHandleLock(newRecH);
-            ::DmWrite(dstP, 0, srcP, recSize);
-            ::MemHandleUnlock(newRecH);
-
-            // Store it in the header.
-
-            LocalID appInfoID = ::MemHandleToLocalID(newRecH);
-            err = ::DmSetDatabaseInfo(fCardNo, fDBID, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                      &appInfoID, NULL, NULL, NULL);
-
-            if (err) goto Error;
-        }
-
-        // If there's an sortinfo block, add it.
         if (hdr.sortInfoID) {
-            UInt32 recSize;
-            emuptr newRecH;
-
-            EmAliasRecordEntryType<LAS> recordEntry(hdr.recordList.records);
-
-            if (hdr.recordList.numRecords > 0) {
-                recSize = (UInt32)recordEntry.localChunkID - (UInt32)hdr.sortInfoID;
-            } else {
-                recSize = fFileBufferSize - (UInt32)hdr.sortInfoID;
-            }
-
-            // Allocate the new record.
-
-            newRecH = ::DmNewHandle(fOpenID, recSize);
-            if (!newRecH) {
-                err = ::DmGetLastErr();
-                goto Error;
-            }
-
-            // Copy the data in.
-            UInt8* srcP = (UInt8*)hdr.GetPtr() + (UInt32)hdr.sortInfoID;
-            emuptr dstP = ::MemHandleLock(newRecH);
-            ::DmWrite(dstP, 0, srcP, recSize);
-            ::MemHandleUnlock(newRecH);
-
-            // Store it in the header.
-
-            LocalID sortInfoId = ::MemHandleToLocalID(newRecH);
-            err = ::DmSetDatabaseInfo(fCardNo, fDBID, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-                                      NULL, &sortInfoId, NULL, NULL);
-
-            if (err) goto Error;
+            recSize = (UInt32)hdr.sortInfoID - (UInt32)hdr.appInfoID;
+        } else if (hdr.recordList.numRecords > 0) {
+            recSize = (UInt32)recordEntry.localChunkID - (UInt32)hdr.appInfoID;
+        } else {
+            recSize = fFileBufferSize - (UInt32)hdr.appInfoID;
         }
+
+        // Allocate the new record.
+
+        newRecH = ::DmNewHandle(fOpenID, recSize);
+        if (!newRecH) {
+            err = ::DmGetLastErr();
+            goto Error;
+        }
+
+        // Copy the data in.
+        UInt8* srcP = (UInt8*)hdr.GetPtr() + (UInt32)hdr.appInfoID;
+        emuptr dstP = ::MemHandleLock(newRecH);
+        ::DmWrite(dstP, 0, srcP, recSize);
+        ::MemHandleUnlock(newRecH);
+
+        // Store it in the header.
+
+        LocalID appInfoID = ::MemHandleToLocalID(newRecH);
+        err = ::DmSetDatabaseInfo(fCardNo, fDBID, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                                  &appInfoID, NULL, NULL, NULL);
+
+        if (err) goto Error;
+    }
+
+    // If there's an sortinfo block, add it.
+    if (hdr.sortInfoID) {
+        UInt32 recSize;
+        emuptr newRecH;
+
+        EmAliasRecordEntryType<LAS> recordEntry(hdr.recordList.records);
+
+        if (hdr.recordList.numRecords > 0) {
+            recSize = (UInt32)recordEntry.localChunkID - (UInt32)hdr.sortInfoID;
+        } else {
+            recSize = fFileBufferSize - (UInt32)hdr.sortInfoID;
+        }
+
+        // Allocate the new record.
+
+        newRecH = ::DmNewHandle(fOpenID, recSize);
+        if (!newRecH) {
+            err = ::DmGetLastErr();
+            goto Error;
+        }
+
+        // Copy the data in.
+        UInt8* srcP = (UInt8*)hdr.GetPtr() + (UInt32)hdr.sortInfoID;
+        emuptr dstP = ::MemHandleLock(newRecH);
+        ::DmWrite(dstP, 0, srcP, recSize);
+        ::MemHandleUnlock(newRecH);
+
+        // Store it in the header.
+
+        LocalID sortInfoId = ::MemHandleToLocalID(newRecH);
+        err = ::DmSetDatabaseInfo(fCardNo, fDBID, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+                                  &sortInfoId, NULL, NULL);
+
+        if (err) goto Error;
     }
 
     // If there are resources/records, start installing them.
