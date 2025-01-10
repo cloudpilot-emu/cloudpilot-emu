@@ -1,3 +1,12 @@
+# 1.10.8
+
+-   Work around various PalmOS bugs in database import and export.
+    
+    Prior to this version, databases imported and exported with PalmOS 3.x may
+    contain defects due to PalmOS bugs. In most cases these defects are
+    harmless, but if you rely on database backups for important data you may
+    want to save new backups to make sure your data is backed up faithfully.
+
 # 1.10.7
 
 -   Work around occasional IndexedDB error when returning the app from
