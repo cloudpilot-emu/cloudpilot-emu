@@ -1,4 +1,4 @@
-#include "DbBackupFallback.h"
+#include "DbExporter.h"
 
 #include "Defer.h"
 #include "EmMemory.h"
@@ -38,13 +38,11 @@ namespace {
     }
 }  // namespace
 
-bool DbBackupFallback::Init(bool includeRomDatabases) {
+DbExporter::DbExporter(zip_t* zip) : zip(zip) {}
+
+bool DbExporter::Export(const DatabaseInfo& dbInfo) {
     if (gSession->IsCpuStopped()) return false;
 
-    return DbBackup::Init(includeRomDatabases);
-}
-
-bool DbBackupFallback::DoSave(const DatabaseInfo& dbInfo) {
     PrcHeader hdr;
     LocalID appInfo, sortInfo;
     uint32 currentOffset = SIZEOF_HEADER + SIZEOF_CHILD_LIST + SIZEOF_ZERO;
@@ -134,9 +132,9 @@ bool DbBackupFallback::DoSave(const DatabaseInfo& dbInfo) {
     return true;
 }
 
-bool DbBackupFallback::Write8(uint8 value) { return zip_entry_write(zip, &value, 1) == 0; }
+bool DbExporter::Write8(uint8 value) { return zip_entry_write(zip, &value, 1) == 0; }
 
-bool DbBackupFallback::Write16(uint16 value) {
+bool DbExporter::Write16(uint16 value) {
     uint8 buffer[2];
 
     buffer[0] = value >> 8;
@@ -145,7 +143,7 @@ bool DbBackupFallback::Write16(uint16 value) {
     return zip_entry_write(zip, buffer, 2) == 0;
 }
 
-bool DbBackupFallback::Write32(uint32 value) {
+bool DbExporter::Write32(uint32 value) {
     uint8 buffer[4];
 
     buffer[0] = value >> 24;
@@ -156,7 +154,7 @@ bool DbBackupFallback::Write32(uint32 value) {
     return zip_entry_write(zip, buffer, 4) == 0;
 }
 
-bool DbBackupFallback::WriteHeader(const PrcHeader& hdr) {
+bool DbExporter::WriteHeader(const PrcHeader& hdr) {
     if (zip_entry_write(zip, hdr.name, dmDBNameLength) != 0) return false;
 
     return Write16(hdr.attributes) && Write16(hdr.version) && Write32(hdr.creationDate) &&
@@ -166,19 +164,17 @@ bool DbBackupFallback::WriteHeader(const PrcHeader& hdr) {
            Write32(hdr.uniqueIDSeed);
 }
 
-bool DbBackupFallback::WriteChildList(uint16 numChildren) {
-    return Write32(0) && Write16(numChildren);
-}
+bool DbExporter::WriteChildList(uint16 numChildren) { return Write32(0) && Write16(numChildren); }
 
-bool DbBackupFallback::WriteResourceEntry(uint32 type, uint16 id, uint32 offset) {
+bool DbExporter::WriteResourceEntry(uint32 type, uint16 id, uint32 offset) {
     return Write32(type) && Write16(id) && Write32(offset);
 }
 
-bool DbBackupFallback::WriteRecordEntry(uint8 attr, uint32 id, uint32 offset) {
+bool DbExporter::WriteRecordEntry(uint8 attr, uint32 id, uint32 offset) {
     return Write32(offset) && Write8(attr) && Write8(id >> 16) && Write8(id >> 8) && Write8(id);
 }
 
-bool DbBackupFallback::WriteChunk(uint16 cardNo, LocalID lid) {
+bool DbExporter::WriteChunk(uint16 cardNo, LocalID lid) {
     emuptr ptr = MemLocalIDToLockedPtr(lid, cardNo);
     if (ptr == 0) return false;
 

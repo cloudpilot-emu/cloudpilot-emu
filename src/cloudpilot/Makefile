@@ -232,8 +232,7 @@ SOURCE_EMU = \
 	emulator/Logging.cpp \
 	emulator/SessionImage.cpp \
 	emulator/DbBackup.cpp \
-	emulator/DbBackupNative.cpp \
-	emulator/DbBackupFallback.cpp \
+	emulator/DbExporter.cpp \
 	emulator/CallbackManager.cpp \
 	emulator/DbInstaller.cpp \
 	emulator/Feature.cpp \

@@ -133,7 +133,7 @@ namespace {
     }
 
     void SaveBackup(string file, bool includeRomDatabases) {
-        unique_ptr<DbBackup> backup = DbBackup::create();
+        auto backup = make_unique<DbBackup>();
 
         if (!backup->Init(includeRomDatabases)) {
             cout << "backup failed" << endl << flush;

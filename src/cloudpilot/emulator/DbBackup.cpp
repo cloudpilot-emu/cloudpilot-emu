@@ -1,7 +1,5 @@
 #include "DbBackup.h"
 
-#include "DbBackupFallback.h"
-#include "DbBackupNative.h"
 #include "EmSystemState.h"
 #include "zip.h"
 
@@ -16,12 +14,6 @@ namespace {
         return ".pdb";
     }
 }  // namespace
-
-unique_ptr<DbBackup> DbBackup::create() {
-    return gSystemState.OSMajorVersion() < 4
-               ? static_cast<unique_ptr<DbBackup>>(make_unique<DbBackupFallback>())
-               : static_cast<unique_ptr<DbBackup>>(make_unique<DbBackupNative>());
-}
 
 DbBackup::~DbBackup() {
     if (zip) zip_stream_close(zip);
@@ -41,6 +33,7 @@ bool DbBackup::Init(bool includeRomDatabases) {
     state = currentDb == databases.end() ? State::done : State::inProgress;
 
     zip = zip_stream_open(nullptr, 0, COMPRESSION_LEVEL, 'w');
+    exporter = make_unique<DbExporter>(zip);
 
     return true;
 }
@@ -65,7 +58,7 @@ bool DbBackup::Save() {
 
     zip_entry_open(zip, GetCurrentDatabase());
 
-    bool success = DoSave(*currentDb);
+    bool success = exporter->Export(*currentDb);
 
     zip_entry_close(zip);
 

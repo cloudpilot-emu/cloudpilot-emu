@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "DbExporter.h"
 #include "EmCommon.h"
 #include "Miscellaneous.h"
 
@@ -10,11 +11,10 @@ struct zip_t;
 
 class DbBackup {
    public:
-    static unique_ptr<DbBackup> create();
+    DbBackup() = default;
+    ~DbBackup();
 
-    virtual ~DbBackup();
-
-    virtual bool Init(bool includeRomDatabases);
+    bool Init(bool includeRomDatabases);
 
     bool IsInProgress() const;
     bool IsDone() const;
@@ -28,17 +28,12 @@ class DbBackup {
     uint8* GetArchivePtr();
     ssize_t GetArchiveSize();
 
-   protected:
-    virtual bool DoSave(const DatabaseInfo& dbInfo) = 0;
-
-   protected:
-    zip_t* zip{nullptr};
-
    private:
     enum class State { created, inProgress, done };
 
    private:
     State state{State::created};
+    zip_t* zip{nullptr};
 
     DatabaseInfoList databases;
 
@@ -48,6 +43,14 @@ class DbBackup {
     ssize_t archiveSize{0};
 
     string currentDatabase;
+
+    unique_ptr<DbExporter> exporter;
+
+   private:
+    DbBackup(const DbBackup&) = delete;
+    DbBackup(DbBackup&&) = delete;
+    DbBackup& operator=(const DbBackup&) = delete;
+    DbBackup& operator=(DbBackup&&) = delete;
 };
 
 #endif  //  _DB_BACKUP_H_
