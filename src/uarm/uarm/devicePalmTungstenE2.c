@@ -105,6 +105,9 @@ struct Device {
     struct SocGpio *gpio;
 
     struct Reschedule reschedule;
+
+    enum DeviceType type;
+    int penScaleX, penScaleY;
 };
 
 uint32_t deviceGetRamSize(void) { return 16UL << 20; }
@@ -122,8 +125,9 @@ static void devicePrvReschedule(void *ctx, uint32_t task) {
         dev->reschedule.rescheduleCb(dev->reschedule.ctx, RESCHEDULE_TASK_DEVICE_TIER0);
 }
 
-struct Device *deviceSetup(struct SocPeriphs *sp, struct Reschedule reschedule, struct Keypad *kp,
-                           struct VSD *vsd, uint8_t *nandContent, size_t nandSize) {
+struct Device *deviceSetup(enum DeviceType type, struct SocPeriphs *sp,
+                           struct Reschedule reschedule, struct Keypad *kp, struct VSD *vsd,
+                           uint8_t *nandContent, size_t nandSize) {
     static const struct NandSpecs nandSpecs = {
         .bytesPerPage = 528,
         .blocksPerDevice = 2048,
@@ -136,6 +140,8 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Reschedule reschedule, 
 
     dev = (struct Device *)malloc(sizeof(*dev));
     if (!dev) ERR("cannot alloc device");
+
+    dev->type = type;
 
     dev->gpio = sp->gpio;
 
@@ -193,6 +199,13 @@ struct Device *deviceSetup(struct SocPeriphs *sp, struct Reschedule reschedule, 
 
     sp->nand = directNandGetNand(dev->nand);
 
+    struct DeviceDisplayConfiguration displayConfiguration;
+    deviceGetDisplayConfiguration(type, &displayConfiguration);
+
+    dev->penScaleX = (173 * 320) / displayConfiguration.width;
+    dev->penScaleY =
+        (134 * 440) / (displayConfiguration.height + displayConfiguration.graffitiHeight);
+
     return dev;
 }
 
@@ -203,18 +216,25 @@ void devicePeriodic(struct Device *dev, uint32_t tier) {
 void devicePcmPeriodic(struct Device *dev) { wm9712Lperiodic(dev->wm9712L); }
 
 void deviceTouch(struct Device *dev, int x, int y) {
-    wm9712LsetPen(dev->wm9712L, (x >= 0 && y >= 0) ? 280 + 173 * x / 16 : -1,
-                  (x >= 0 && y >= 0) ? 210 + 134 * y / 16 : y, 1000);
+    wm9712LsetPen(dev->wm9712L, (x >= 0 && y >= 0) ? 280 + dev->penScaleX * x / 16 : -1,
+                  (x >= 0 && y >= 0) ? 210 + dev->penScaleY * y / 16 : y, 1000);
 }
 
 void deviceKey(struct Device *dev, uint32_t key, bool down) {
     // nothing
 }
 
-void deviceGetDisplayConfiguration(struct DeviceDisplayConfiguration *displayConfiguration) {
+void deviceGetDisplayConfiguration(enum DeviceType deviceType,
+                                   struct DeviceDisplayConfiguration *displayConfiguration) {
     displayConfiguration->width = 320;
-    displayConfiguration->height = 320;
-    displayConfiguration->graffitiHeight = 120;
+
+    if (deviceType == deviceTypeFrankenE2) {
+        displayConfiguration->height = 480;
+        displayConfiguration->graffitiHeight = 0;
+    } else {
+        displayConfiguration->height = 320;
+        displayConfiguration->graffitiHeight = 120;
+    }
 }
 
 bool deviceTaskRequired(struct Device *dev, uint32_t tier) {
@@ -234,3 +254,5 @@ bool deviceI2sConnected() { return false; }
 void deviceSetSdCardInserted(struct Device *dev, bool inserted) {
     socGpioSetState(dev->gpio, 10, !inserted);
 }
+
+enum DeviceType deviceGetType(struct Device *dev) { return dev->type; }

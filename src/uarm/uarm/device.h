@@ -31,6 +31,8 @@ extern "C" {
 
 struct AudioQueue;
 
+enum DeviceType { deviceTypeE2, deviceTypeFrankenE2 };
+
 struct DeviceDisplayConfiguration {
     uint16_t width;
     uint16_t height;
@@ -75,14 +77,16 @@ enum RamTermination deviceGetRamTerminationStyle(void);
 uint_fast8_t deviceGetSocRev(void);
 
 // device handling
-struct Device *deviceSetup(struct SocPeriphs *sp, struct Reschedule reschedule, struct Keypad *kp,
-                           struct VSD *vsd, uint8_t *nandContent, size_t nandSize);
+struct Device *deviceSetup(enum DeviceType type, struct SocPeriphs *sp,
+                           struct Reschedule reschedule, struct Keypad *kp, struct VSD *vsd,
+                           uint8_t *nandContent, size_t nandSize);
 void deviceKey(struct Device *dev, uint32_t key, bool down);
 void devicePeriodic(struct Device *dev, uint32_t tier);
 void devicePcmPeriodic(struct Device *dev);
 void deviceTouch(struct Device *dev, int x, int y);
 
-void deviceGetDisplayConfiguration(struct DeviceDisplayConfiguration *displayConfiguration);
+void deviceGetDisplayConfiguration(enum DeviceType deviceType,
+                                   struct DeviceDisplayConfiguration *displayConfiguration);
 
 bool deviceTaskRequired(struct Device *dev, uint32_t tier);
 
@@ -91,6 +95,8 @@ void deviceSetAudioQueue(struct Device *dev, struct AudioQueue *audioQueue);
 bool deviceI2sConnected();
 
 void deviceSetSdCardInserted(struct Device *dev, bool inserted);
+
+enum DeviceType deviceGetType(struct Device *dev);
 
 #ifdef __cplusplus
 }

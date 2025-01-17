@@ -229,8 +229,8 @@ static void socSetupScheduler(Scheduler<SoC> *scheduler) {
     scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 30, 1);
 }
 
-SoC *socInit(void *romData, const uint32_t romSize, uint8_t *nandContent, size_t nandSize,
-             int gdbPort, uint_fast8_t socRev) {
+SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
+             uint8_t *nandContent, size_t nandSize, int gdbPort, uint_fast8_t socRev) {
     SoC *soc = (SoC *)malloc(sizeof(SoC));
     struct SocPeriphs sp = {};
 
@@ -419,7 +419,7 @@ SoC *socInit(void *romData, const uint32_t romSize, uint8_t *nandContent, size_t
     if (!soc->mmc) ERR("Cannot init PXA's MMC");
 
     DeviceDisplayConfiguration displayConfiguration;
-    deviceGetDisplayConfiguration(&displayConfiguration);
+    deviceGetDisplayConfiguration(deviceType, &displayConfiguration);
 
     soc->lcd =
         pxaLcdInit(soc->mem, soc, soc->ic, displayConfiguration.width, displayConfiguration.height);
@@ -442,7 +442,8 @@ SoC *socInit(void *romData, const uint32_t romSize, uint8_t *nandContent, size_t
     sp.uarts[2] = soc->stUart;
     sp.uarts[3] = soc->btUart;
 
-    soc->dev = deviceSetup(&sp, rescheduleSoc, soc->kp, soc->vSD, nandContent, nandSize);
+    soc->dev =
+        deviceSetup(deviceType, &sp, rescheduleSoc, soc->kp, soc->vSD, nandContent, nandSize);
     if (!soc->dev) ERR("Cannot init device\n");
 
     soc->vSD = vsdInit(sdCardRead, sdCardWrite, 0);
@@ -716,3 +717,5 @@ void socSdEject(struct SoC *soc) {
     pxaMmcInsert(soc->mmc, nullptr);
     deviceSetSdCardInserted(soc->dev, false);
 }
+
+enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->dev); }

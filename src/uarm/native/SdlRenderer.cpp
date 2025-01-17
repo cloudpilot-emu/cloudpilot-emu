@@ -19,13 +19,15 @@ namespace {
 
 SdlRenderer::SdlRenderer(SDL_Window* window, SDL_Renderer* renderer, SoC* soc, int scale)
     : window(window), renderer(renderer), soc(soc), scale(scale) {
-    deviceGetDisplayConfiguration(&displayConfiguration);
+    deviceGetDisplayConfiguration(socGetDeviceType(soc), &displayConfiguration);
 
     frameTexture =
         SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING,
                           displayConfiguration.width, displayConfiguration.height);
 
-    silkscreenTexture = loadSilkscreen(renderer);
+    if (displayConfiguration.graffitiHeight > 0) {
+        silkscreenTexture = loadSilkscreen(renderer);
+    }
 
     SDL_SetRenderDrawColor(renderer, 0xff, 0xff, 0xff, 0xff);
     SDL_RenderClear(renderer);
@@ -74,6 +76,8 @@ void SdlRenderer::Draw(bool forceRedraw) {
 }
 
 void SdlRenderer::DrawSilkscreen() {
+    if (!silkscreenTexture) return;
+
     SDL_Rect dest = {.x = 0,
                      .y = scale * displayConfiguration.height,
                      .w = scale * displayConfiguration.width,

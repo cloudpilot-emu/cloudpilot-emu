@@ -140,6 +140,8 @@ namespace {
 
         if (!readSession(options, nor, nand, ram, savestate)) return false;
 
+        const DeviceType deviceType = deviceTypeE2;
+
         if (nand.size != NAND_SIZE) {
             cerr << "invalid NAND size; expected " << NAND_SIZE << " bytes" << endl;
             return false;
@@ -158,8 +160,8 @@ namespace {
             sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sdData.release());
         }
 
-        SoC* soc = socInit(nor.data, nor.size, reinterpret_cast<uint8_t*>(nand.data), nand.size,
-                           options.gdbPort.value_or(0), deviceGetSocRev());
+        SoC* soc = socInit(deviceType, nor.data, nor.size, reinterpret_cast<uint8_t*>(nand.data),
+                           nand.size, options.gdbPort.value_or(0), deviceGetSocRev());
 
         if (ram.data && ram.size != socGetRamData(soc).size) {
             cerr << "RAM size mismatch" << endl;
@@ -177,7 +179,7 @@ namespace {
         mainLoop.SetCyclesPerSecondLimit(options.mips * 1000000);
 
         DeviceDisplayConfiguration displayConfiguration;
-        deviceGetDisplayConfiguration(&displayConfiguration);
+        deviceGetDisplayConfiguration(deviceType, &displayConfiguration);
 
         SDL_Window* window;
         SDL_Renderer* renderer;

@@ -1,3 +1,4 @@
+
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
 #ifndef _SOC_H_
@@ -9,6 +10,7 @@
 
 #include "SoC_type.h"
 #include "buffer.h"
+#include "device.h"
 #include "keys.h"
 
 #ifdef __cplusplus
@@ -24,8 +26,8 @@ struct AudioQueue;
 typedef bool (*SdSectorR)(uint32_t secNum, void *buf);
 typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
 
-struct SoC *socInit(void *romData, const uint32_t romSize, uint8_t *nandContent, size_t nandSize,
-                    int gdbPort, uint_fast8_t socRev);
+struct SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
+                    uint8_t *nandContent, size_t nandSize, int gdbPort, uint_fast8_t socRev);
 
 void socReset(struct SoC *soc);
 
@@ -66,6 +68,8 @@ struct Buffer socGetRamDirtyPages(struct SoC *soc);
 
 void socSdInsert(struct SoC *soc);
 void socSdEject(struct SoC *soc);
+
+enum DeviceType socGetDeviceType(struct SoC *soc);
 
 #ifdef __cplusplus
 }
