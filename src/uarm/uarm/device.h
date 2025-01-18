@@ -9,6 +9,7 @@
 
 #include "ROM.h"
 #include "SoC.h"
+#include "deviceType.h"
 #include "keys.h"
 #include "mem.h"
 #include "nand.h"
@@ -30,8 +31,6 @@ extern "C" {
 #endif
 
 struct AudioQueue;
-
-enum DeviceType { deviceTypeE2, deviceTypeFrankenE2 };
 
 struct DeviceDisplayConfiguration {
     uint16_t width;

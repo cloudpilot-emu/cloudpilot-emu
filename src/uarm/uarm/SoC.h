@@ -10,7 +10,7 @@
 
 #include "SoC_type.h"
 #include "buffer.h"
-#include "device.h"
+#include "deviceType.h"
 #include "keys.h"
 
 #ifdef __cplusplus
