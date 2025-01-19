@@ -20,6 +20,8 @@ def decompressRAM(chunk: bytes) -> bytes:
         raise RuntimeError(
             f'bad RAM image: expected {uncompressedSize} bytes, got {len(uncompressedImage)} bytes')
 
+    print(f"got {uncompressedSize} bytes of RAM")
+
     return uncompressedImage
 
 
