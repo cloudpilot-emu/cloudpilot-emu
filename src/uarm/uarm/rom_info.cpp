@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <iostream>
 
-#pragma GCC diagnostic error "-Wmultichar"
+#pragma GCC diagnostic ignored "-Wmultichar"
 
 namespace {
     constexpr uint32_t HAL_ID_DMITRY_TUNGSTEN_E3 = 'DmGR';
