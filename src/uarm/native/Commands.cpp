@@ -17,6 +17,22 @@
 using namespace std;
 
 namespace {
+    Rotation rotate(Rotation rotation) {
+        switch (rotation) {
+            case Rotation::portrait_0:
+                return Rotation::landscape_90;
+
+            case Rotation::landscape_90:
+                return Rotation::portrait_180;
+
+            case Rotation::portrait_180:
+                return Rotation::landscape_270;
+
+            default:
+                return Rotation::portrait_0;
+        }
+    }
+
     void CmdSetMips(vector<string> args, cli::CommandEnvironment& env, void* context) {
         if (args.size() != 1) return env.PrintUsage();
 
@@ -86,6 +102,12 @@ namespace {
         socReset(ctx->soc);
     }
 
+    void CmdRotate(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+
+        ctx->rotation = rotate(ctx->rotation);
+    }
+
     const vector<cli::Command> commandList(
         {{.name = "set-mips",
           .usage = "set-mips <mips>",
@@ -98,7 +120,8 @@ namespace {
           .usage = "mount <image>",
           .description = "Unmount SD card.",
           .cmd = CmdMount},
-         {.name = "reset", .description = "Reset Pilot.", .cmd = CmdReset}});
+         {.name = "reset", .description = "Reset Pilot.", .cmd = CmdReset},
+         {.name = "rotate", .description = "Rotate 90° CCW", .cmd = CmdRotate}});
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }

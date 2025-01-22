@@ -13,6 +13,7 @@
 #include "Commands.h"
 #include "FileUtil.h"
 #include "MainLoop.h"
+#include "Rotation.h"
 #include "SdlAudioDriver.h"
 #include "SdlEventHandler.h"
 #include "SdlRenderer.h"
@@ -54,38 +55,51 @@ namespace {
     constexpr int SCALE = 2;
     constexpr size_t NAND_SIZE = 34603008;
 
-    bool initSdl(struct DeviceDisplayConfiguration displayConfiguration, int scale,
-                 SDL_Window*& window, SDL_Renderer*& renderer) {
+    int windowWidth(DeviceDisplayConfiguration& displayConfiguration, Rotation rotation) {
+        switch (rotation) {
+            case Rotation::landscape_90:
+            case Rotation::landscape_270:
+                return displayConfiguration.height + displayConfiguration.graffitiHeight;
+
+            default:
+                return displayConfiguration.width;
+        }
+    }
+
+    int windowHeight(DeviceDisplayConfiguration& displayConfiguration, Rotation rotation) {
+        switch (rotation) {
+            case Rotation::landscape_90:
+            case Rotation::landscape_270:
+                return displayConfiguration.width;
+
+            default:
+                return displayConfiguration.height + displayConfiguration.graffitiHeight;
+        }
+    }
+
+    SDL_Window* initSdl(DeviceDisplayConfiguration& displayConfiguration, int scale,
+                        Rotation rotation) {
         if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_AUDIO) < 0) {
             cerr << "could not initialize SDL: " << SDL_GetError() << endl;
-            return false;
+            return nullptr;
         }
 
         IMG_Init(IMG_INIT_PNG);
 
         atexit(SDL_Quit);
 
-        const int windowHeight =
-            (displayConfiguration.height + displayConfiguration.graffitiHeight) * scale;
-        const int windowWidth = displayConfiguration.width * scale;
+        auto window = SDL_CreateWindow("cp-uarm", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                       scale * windowWidth(displayConfiguration, rotation),
+                                       scale * windowHeight(displayConfiguration, rotation),
+                                       SDL_WINDOW_ALLOW_HIGHDPI);
 
-        if (SDL_CreateWindowAndRenderer(windowWidth, windowHeight, SDL_WINDOW_ALLOW_HIGHDPI,
-                                        &window, &renderer) != 0) {
-            cout << "unable to setup window" << endl;
-            return false;
-        }
+        return window;
+    }
 
-        int renderHeight = windowHeight, renderWidth = windowWidth;
-        SDL_GetRendererOutputSize(renderer, &renderWidth, &renderHeight);
-
-        if (renderHeight != windowHeight && renderWidth != windowWidth) {
-            SDL_RenderSetScale(renderer, static_cast<float>(renderWidth / windowWidth),
-                               static_cast<float>(renderHeight / windowHeight));
-        }
-
-        SDL_SetWindowTitle(window, "cp-uarm");
-
-        return true;
+    void sdlResizeWindow(SDL_Window* window, DeviceDisplayConfiguration& displayConfiguration,
+                         int scale, Rotation rotation) {
+        SDL_SetWindowSize(window, scale * windowWidth(displayConfiguration, rotation),
+                          scale * windowHeight(displayConfiguration, rotation));
     }
 
     bool readSession(const Options& options, Buffer& nor, Buffer& nand, Buffer& ram,
@@ -187,14 +201,16 @@ namespace {
         DeviceDisplayConfiguration displayConfiguration;
         deviceGetDisplayConfiguration(romInfo.GetDeviceType(), &displayConfiguration);
 
-        SDL_Window* window;
-        SDL_Renderer* renderer;
-        if (!initSdl(displayConfiguration, SCALE, window, renderer)) return false;
+        Rotation rotation = Rotation::portrait_0;
 
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xff);
-        SDL_RenderClear(renderer);
-        SdlRenderer sdlRenderer(window, renderer, soc, SCALE);
-        SdlEventHandler sdlEventHandler(soc, SCALE);
+        SDL_Window* window = initSdl(displayConfiguration, SCALE, rotation);
+        if (!window) {
+            cerr << "failed to init SDL" << endl;
+            return false;
+        }
+
+        auto sdlRenderer = make_unique<SdlRenderer>(window, soc, SCALE, rotation);
+        SdlEventHandler sdlEventHandler(soc, SCALE, displayConfiguration, rotation);
 
         SdlAudioDriver audioDriver(soc, audioQueue);
         if (!options.disableAudio) audioDriver.Start();
@@ -202,7 +218,7 @@ namespace {
         commands::Register();
         cli::Start(options.script);
         commands::Context commandContext{
-            .soc = soc, .mainLoop = mainLoop, .audioDriver = audioDriver};
+            .soc = soc, .mainLoop = mainLoop, .audioDriver = audioDriver, .rotation = rotation};
 
         uint64_t lastSpeedDump = timestampUsec();
 
@@ -213,7 +229,7 @@ namespace {
 
             mainLoop.Cycle(now);
 
-            sdlRenderer.Draw(sdlEventHandler.RedrawRequested());
+            sdlRenderer->Draw(sdlEventHandler.RedrawRequested());
             sdlEventHandler.ClearRedrawRequested();
 
             sdlEventHandler.HandleEvents();
@@ -227,7 +243,7 @@ namespace {
                 ostringstream s;
                 s << "cp-uarm @ " << fixed << setprecision(2)
                   << static_cast<float>(currentIps) / 1000000 << " MIPS, limit "
-                  << static_cast<float>(currentIpsMax) / 1000000 << " IPS -> "
+                  << static_cast<float>(currentIpsMax) / 1000000 << " MIPS -> "
                   << (100 * currentIps) / currentIpsMax << "%" << endl
                   << flush;
 
@@ -238,6 +254,18 @@ namespace {
                 mainLoop.GetTimesliceSizeUsec() - static_cast<int64_t>(timestampUsec() - now);
 
             if (cli::Execute(&commandContext)) break;
+
+            if (commandContext.rotation != rotation) {
+                rotation = commandContext.rotation;
+
+                sdlRenderer.reset();
+                sdlResizeWindow(window, displayConfiguration, SCALE, rotation);
+
+                sdlRenderer = make_unique<SdlRenderer>(window, soc, SCALE, rotation);
+                sdlEventHandler.SetRotation(rotation);
+
+                socSetFramebufferDirty(soc);
+            }
 
             if (timesliceRemaining > 10) usleep(timesliceRemaining);
         }

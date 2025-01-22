@@ -17,9 +17,25 @@ namespace {
     }
 }  // namespace
 
-SdlRenderer::SdlRenderer(SDL_Window* window, SDL_Renderer* renderer, SoC* soc, int scale)
-    : window(window), renderer(renderer), soc(soc), scale(scale) {
+SdlRenderer::SdlRenderer(SDL_Window* window, SoC* soc, int scale, Rotation rotation)
+    : window(window), soc(soc), scale(scale), rotation(rotation) {
     deviceGetDisplayConfiguration(socGetDeviceType(soc), &displayConfiguration);
+
+    int windowHeight, windowWidth;
+    SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+
+    renderer = SDL_CreateRenderer(window, -1, 0);
+
+    int renderHeight = windowHeight, renderWidth = windowWidth;
+    SDL_GetRendererOutputSize(renderer, &renderWidth, &renderHeight);
+
+    if (renderHeight != windowHeight && renderWidth != windowWidth) {
+        SDL_RenderSetScale(renderer, static_cast<float>(renderWidth / windowWidth),
+                           static_cast<float>(renderHeight / windowHeight));
+    }
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0xff);
+    SDL_RenderClear(renderer);
 
     frameTexture =
         SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING,
@@ -33,6 +49,12 @@ SdlRenderer::SdlRenderer(SDL_Window* window, SDL_Renderer* renderer, SoC* soc, i
     SDL_RenderClear(renderer);
     DrawSilkscreen();
     SDL_RenderPresent(renderer);
+}
+
+SdlRenderer::~SdlRenderer() {
+    SDL_DestroyTexture(frameTexture);
+    SDL_DestroyTexture(silkscreenTexture);
+    SDL_DestroyRenderer(renderer);
 }
 
 void SdlRenderer::Draw(bool forceRedraw) {
@@ -67,7 +89,36 @@ void SdlRenderer::Draw(bool forceRedraw) {
                          .y = 0,
                          .w = scale * displayConfiguration.width,
                          .h = scale * displayConfiguration.height};
-        SDL_RenderCopy(renderer, frameTexture, nullptr, &dest);
+
+        switch (rotation) {
+            case Rotation::landscape_90:
+                SDL_RenderCopyEx(renderer, frameTexture, nullptr, &dest, 270, nullptr,
+                                 SDL_FLIP_NONE);
+
+                break;
+
+            case Rotation::portrait_180:
+                dest.y = scale * displayConfiguration.graffitiHeight;
+
+                SDL_RenderCopyEx(renderer, frameTexture, nullptr, &dest, 180, nullptr,
+                                 SDL_FLIP_NONE);
+
+                break;
+
+            case Rotation::landscape_270:
+                dest.x = scale * displayConfiguration.graffitiHeight;
+
+                SDL_RenderCopyEx(renderer, frameTexture, nullptr, &dest, 90, nullptr,
+                                 SDL_FLIP_NONE);
+
+                break;
+
+            default:
+
+                SDL_RenderCopy(renderer, frameTexture, nullptr, &dest);
+
+                break;
+        }
     }
 
     SDL_RenderPresent(renderer);
@@ -79,9 +130,41 @@ void SdlRenderer::DrawSilkscreen() {
     if (!silkscreenTexture) return;
 
     SDL_Rect dest = {.x = 0,
-                     .y = scale * displayConfiguration.height,
+                     .y = 0,
                      .w = scale * displayConfiguration.width,
                      .h = scale * displayConfiguration.graffitiHeight};
 
-    SDL_RenderCopy(renderer, silkscreenTexture, nullptr, &dest);
+    SDL_Point origin;
+
+    switch (rotation) {
+        case Rotation::landscape_90:
+            dest.x = scale * displayConfiguration.height - scale * displayConfiguration.width;
+            origin = {scale * displayConfiguration.width, 0};
+
+            SDL_RenderCopyEx(renderer, silkscreenTexture, nullptr, &dest, 270, &origin,
+                             SDL_FLIP_NONE);
+
+            break;
+
+        case Rotation::portrait_180:
+            SDL_RenderCopyEx(renderer, silkscreenTexture, nullptr, &dest, 180, nullptr,
+                             SDL_FLIP_NONE);
+
+            break;
+
+        case Rotation::landscape_270:
+            dest.x = scale * displayConfiguration.graffitiHeight;
+            origin = {0, 0};
+
+            SDL_RenderCopyEx(renderer, silkscreenTexture, nullptr, &dest, 90, &origin,
+                             SDL_FLIP_NONE);
+
+            break;
+
+        default:
+            dest.y = scale * displayConfiguration.height;
+            SDL_RenderCopy(renderer, silkscreenTexture, nullptr, &dest);
+
+            break;
+    }
 }

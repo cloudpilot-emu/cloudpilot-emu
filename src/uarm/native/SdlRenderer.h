@@ -3,12 +3,14 @@
 
 #include <SDL.h>
 
+#include "Rotation.h"
 #include "SoC.h"
 #include "device.h"
 
 class SdlRenderer {
    public:
-    SdlRenderer(SDL_Window* window, SDL_Renderer* renderer, SoC* soc, int scale);
+    SdlRenderer(SDL_Window* window, SoC* soc, int scale, Rotation rotation);
+    ~SdlRenderer();
 
     void Draw(bool forceRedraw);
 
@@ -27,6 +29,7 @@ class SdlRenderer {
     SoC* soc{nullptr};
 
     const int scale;
+    Rotation rotation;
     DeviceDisplayConfiguration displayConfiguration;
 
    private:

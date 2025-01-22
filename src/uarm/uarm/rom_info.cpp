@@ -3,6 +3,8 @@
 #include <iomanip>
 #include <iostream>
 
+#pragma GCC diagnostic error "-Wmultichar"
+
 namespace {
     constexpr uint32_t HAL_ID_DMITRY_TUNGSTEN_E3 = 'DmGR';
     constexpr uint32_t HAL_ID_TUNGSTEN_E2 = 'hspr';

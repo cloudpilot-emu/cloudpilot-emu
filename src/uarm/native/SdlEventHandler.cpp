@@ -43,7 +43,13 @@ namespace {
     }
 }  // namespace
 
-SdlEventHandler::SdlEventHandler(struct SoC* soc, int scale) : soc(soc), scale(scale) {}
+SdlEventHandler::SdlEventHandler(struct SoC* soc, int scale,
+                                 DeviceDisplayConfiguration& deviceDisplayConfiguration,
+                                 Rotation rotation)
+    : soc(soc), scale(scale), rotation(rotation) {
+    width = deviceDisplayConfiguration.width;
+    height = deviceDisplayConfiguration.height + deviceDisplayConfiguration.graffitiHeight;
+}
 
 void SdlEventHandler::HandleEvents() {
     SDL_Event event;
@@ -57,7 +63,8 @@ void SdlEventHandler::HandleEvents() {
             case SDL_MOUSEBUTTONDOWN:
                 if (event.button.button != SDL_BUTTON_LEFT) break;
                 penDown = true;
-                socPenDown(soc, event.button.x / scale, event.button.y / scale);
+                socPenDown(soc, RotateX(event.button.x, event.button.y) / scale,
+                           RotateY(event.button.x, event.button.y) / scale);
 
                 break;
 
@@ -70,7 +77,9 @@ void SdlEventHandler::HandleEvents() {
 
             case SDL_MOUSEMOTION:
                 if (!penDown) break;
-                socPenDown(soc, event.motion.x / scale, event.motion.y / scale);
+
+                socPenDown(soc, RotateX(event.motion.x, event.motion.y) / scale,
+                           RotateY(event.motion.x, event.motion.y) / scale);
 
                 break;
 
@@ -98,3 +107,37 @@ bool SdlEventHandler::RedrawRequested() const { return redrawRequested; }
 bool SdlEventHandler::QuitRequested() const { return quitRequested; }
 
 void SdlEventHandler::ClearRedrawRequested() { redrawRequested = false; }
+
+void SdlEventHandler::SetRotation(Rotation rotation) { this->rotation = rotation; }
+
+int SdlEventHandler::RotateX(int x, int y) {
+    switch (rotation) {
+        case Rotation::landscape_90:
+            return scale * width - y;
+
+        case Rotation::portrait_180:
+            return scale * width - x;
+
+        case Rotation::landscape_270:
+            return y;
+
+        default:
+            return x;
+    }
+}
+
+int SdlEventHandler::RotateY(int x, int y) {
+    switch (rotation) {
+        case Rotation::landscape_90:
+            return x;
+
+        case Rotation::portrait_180:
+            return scale * height - y;
+
+        case Rotation::landscape_270:
+            return scale * height - x;
+
+        default:
+            return y;
+    }
+}

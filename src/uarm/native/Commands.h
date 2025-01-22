@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "MainLoop.h"
+#include "Rotation.h"
 #include "SdlAudioDriver.h"
 #include "SoC.h"
 
@@ -14,6 +15,7 @@ namespace commands {
         SoC* soc;
         MainLoop& mainLoop;
         SdlAudioDriver& audioDriver;
+        Rotation rotation;
     };
 
     void Register();
