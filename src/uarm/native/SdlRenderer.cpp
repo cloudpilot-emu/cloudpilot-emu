@@ -90,9 +90,13 @@ void SdlRenderer::Draw(bool forceRedraw) {
                          .w = scale * displayConfiguration.width,
                          .h = scale * displayConfiguration.height};
 
+        SDL_Point origin;
+
         switch (rotation) {
             case Rotation::landscape_90:
-                SDL_RenderCopyEx(renderer, frameTexture, nullptr, &dest, 270, nullptr,
+                dest.y = scale * displayConfiguration.width;
+                origin = {0, 0};
+                SDL_RenderCopyEx(renderer, frameTexture, nullptr, &dest, 270, &origin,
                                  SDL_FLIP_NONE);
 
                 break;
@@ -106,9 +110,13 @@ void SdlRenderer::Draw(bool forceRedraw) {
                 break;
 
             case Rotation::landscape_270:
-                dest.x = scale * displayConfiguration.graffitiHeight;
+                dest.x = scale * (displayConfiguration.height +
+                                  displayConfiguration.graffitiHeight - displayConfiguration.width);
+                dest.y = scale * displayConfiguration.width;
 
-                SDL_RenderCopyEx(renderer, frameTexture, nullptr, &dest, 90, nullptr,
+                origin = {scale * displayConfiguration.width, 0};
+
+                SDL_RenderCopyEx(renderer, frameTexture, nullptr, &dest, 90, &origin,
                                  SDL_FLIP_NONE);
 
                 break;
