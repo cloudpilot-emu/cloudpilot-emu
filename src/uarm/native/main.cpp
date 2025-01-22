@@ -22,6 +22,7 @@
 #include "buffer.h"
 #include "cputil.h"
 #include "device.h"
+#include "rom_info.h"
 #include "savestate/session_file.h"
 #include "sdcard.h"
 
@@ -140,7 +141,11 @@ namespace {
 
         if (!readSession(options, nor, nand, ram, savestate)) return false;
 
-        const DeviceType deviceType = deviceTypeE2;
+        RomInfo romInfo(reinterpret_cast<uint8_t*>(nor.data), nor.size);
+        cerr << romInfo << endl;
+
+        if (!romInfo.IsValid() || romInfo.GetDeviceType() == DeviceType::deviceTypeInvalid)
+            return false;
 
         if (nand.size != NAND_SIZE) {
             cerr << "invalid NAND size; expected " << NAND_SIZE << " bytes" << endl;
@@ -160,8 +165,9 @@ namespace {
             sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sdData.release());
         }
 
-        SoC* soc = socInit(deviceType, nor.data, nor.size, reinterpret_cast<uint8_t*>(nand.data),
-                           nand.size, options.gdbPort.value_or(0), deviceGetSocRev());
+        SoC* soc = socInit(romInfo.GetDeviceType(), nor.data, nor.size,
+                           reinterpret_cast<uint8_t*>(nand.data), nand.size,
+                           options.gdbPort.value_or(0), deviceGetSocRev());
 
         if (ram.data && ram.size != socGetRamData(soc).size) {
             cerr << "RAM size mismatch" << endl;
@@ -179,7 +185,7 @@ namespace {
         mainLoop.SetCyclesPerSecondLimit(options.mips * 1000000);
 
         DeviceDisplayConfiguration displayConfiguration;
-        deviceGetDisplayConfiguration(deviceType, &displayConfiguration);
+        deviceGetDisplayConfiguration(romInfo.GetDeviceType(), &displayConfiguration);
 
         SDL_Window* window;
         SDL_Renderer* renderer;

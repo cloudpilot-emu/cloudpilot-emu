@@ -125,6 +125,7 @@ SOURCE_CXX_COMMON = 					\
 	uarm/CPU.cpp						\
 	uarm/memcpy.cpp						\
 	uarm/audio_queue.cpp				\
+	uarm/rom_info.cpp					\
 	uarm/savestate/rle.cpp				\
 	uarm/savestate/session_file.cpp
 
