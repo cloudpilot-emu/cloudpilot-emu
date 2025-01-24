@@ -10,7 +10,6 @@ struct ArmCpu;
 
 #include "mem.h"
 #include "pace_patch.h"
-#include "patch_dispatch.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,6 +45,12 @@ extern "C" {
 // the following are for cpuGetRegExternal() and are generally used for debugging purposes
 #define ARM_REG_NUM_CPSR 16
 #define ARM_REG_NUM_SPSR 17
+
+#define SLOW_PATH_REASON_EVENTS 1
+#define SLOW_PATH_REASON_SLEEP 2
+#define SLOW_PATH_REASON_CP15 4
+#define SLOW_PATH_REASON_PATCH_PENDING 8
+#define SLOW_PATH_REASON_PACE 16
 
 typedef bool (*ArmCoprocRegXferF)(struct ArmCpu *cpu, void *userData, bool two /* MCR2/MRC2 ? */,
                                   bool MRC, uint8_t op1, uint8_t Rx, uint8_t CRn, uint8_t CRm,
@@ -104,6 +109,9 @@ void cpuWakeup(struct ArmCpu *cpu);
 
 uint32_t cpuDecodeArm(uint32_t instr);
 uint32_t cpuDecodeThumb(uint32_t instr);
+
+void cpuSetSlowPath(struct ArmCpu *cpu, uint32_t reason);
+void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason);
 
 #ifdef __cplusplus
 }

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "CPU.h"
 #include "cputil.h"
 #include "syscall.h"
 
@@ -37,6 +38,8 @@ struct PatchDispatch {
 
     struct PendingTailpatch pendingTailpatches[MAX_PENDING_TAILPATCH];
     size_t nPendingTailpatches;
+
+    struct ArmCpu* cpu;
 };
 
 struct PatchDispatch* initPatchDispatch() {
@@ -50,19 +53,29 @@ struct PatchDispatch* initPatchDispatch() {
     return pd;
 }
 
+static void updateSlowPath(struct PatchDispatch* pd) {
+    if (pd->countdown || pd->nPendingTailpatches) {
+        cpuSetSlowPath(pd->cpu, SLOW_PATH_REASON_PATCH_PENDING);
+    } else {
+        cpuClearSlowPath(pd->cpu, SLOW_PATH_REASON_PATCH_PENDING);
+    }
+}
+
 void destroyPatchDispatch(struct PatchDispatch* pd) { free(pd); }
 
 void patchDispatchOnLoadR12FromR9(struct PatchDispatch* pd, int32_t offset) {
     pd->table = -1;
     pd->countdown = 0;
 
-    if (offset >= 0) return;
+    if (offset >= 0) return updateSlowPath(pd);
     offset = -offset;
 
-    if (offset & 0x03 || offset > 12) return;
+    if (offset & 0x03 || offset > 12) return updateSlowPath(pd);
 
     pd->table = offset;
     pd->countdown = 2;
+
+    updateSlowPath(pd);
 }
 
 void patchDispatchOnLoadPcFromR12(struct PatchDispatch* pd, int32_t offset, uint32_t* registers) {
@@ -95,11 +108,17 @@ void patchDispatchOnLoadPcFromR12(struct PatchDispatch* pd, int32_t offset, uint
         tailpatch->returnAddress = registers[14] & ~0x01;
         memcpy(tailpatch->registersAtInvocation, registers,
                sizeof(tailpatch->registersAtInvocation));
+
+        updateSlowPath(pd);
     }
 }
 
 void patchOnBeforeExecute(struct PatchDispatch* pd, uint32_t* registers) {
-    if (pd->countdown != 0) pd->countdown--;
+    if (pd->countdown != 0) {
+        pd->countdown--;
+        updateSlowPath(pd);
+    }
+
     if (pd->nPendingTailpatches == 0) return;
 
     for (size_t i = 0; i < pd->nPendingTailpatches; i++) {
@@ -118,6 +137,7 @@ void patchOnBeforeExecute(struct PatchDispatch* pd, uint32_t* registers) {
             pd->pendingTailpatches[i] = pd->pendingTailpatches[pd->nPendingTailpatches];
 
         pd->nPendingTailpatches--;
+        updateSlowPath(pd);
     }
 }
 
@@ -143,3 +163,5 @@ void patchDispatchAddPatch(struct PatchDispatch* pd, uint32_t syscall, Headpatch
     patch->headpatch = headpatch;
     patch->tailpatch = tailpatch;
 }
+
+void patchDispatchSetCpu(struct PatchDispatch* pd, struct ArmCpu* cpu) { pd->cpu = cpu; }

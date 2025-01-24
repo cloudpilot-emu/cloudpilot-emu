@@ -39,9 +39,6 @@ static const uint32_t sig_adc_memcpy[] = {
     0xE8BD4010, 0xE1B0CF02, 0x24913004, 0x24803004, 0x012FFF1E, 0xE1B02F82, 0x44D12001,
     0x24D13001, 0x24D1C001, 0x44C02001, 0x24C03001, 0x24C0C001, 0xE12FFF1E};
 
-const size_t OFFSET_PEEPHOLE_ADS_UDIVMOD_DIVISION_BY_ZERO = sizeof(sig_adc_udivmod_first);
-const size_t OFFSET_PEEPHOLE_ADS_SDIVMOD_DIVISION_BY_ZERO = sizeof(sig_adc_sdivmod_first);
-
 static void optimizeAt_ADC_udivmod(uint32_t* code, size_t size) {
     if (size < sizeof(sig_adc_udivmod_first) + sizeof(sig_adc_udivmod_second) + 4) return;
 

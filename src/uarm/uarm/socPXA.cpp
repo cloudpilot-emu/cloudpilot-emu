@@ -256,6 +256,8 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
                        0x0B16A16AUL, soc->patchDispatch, soc->pacePatch);
     if (!soc->cpu) ERR("Cannot init CPU");
 
+    patchDispatchSetCpu(soc->patchDispatch, soc->cpu);
+
     soc->syscallDispatch = initSyscallDispatch(soc->cpu);
     registerPatches(soc->patchDispatch, soc->syscallDispatch);
 

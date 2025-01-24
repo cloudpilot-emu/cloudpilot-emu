@@ -15,6 +15,7 @@
 #include "mem.h"
 #include "memcpy.h"
 #include "pace.h"
+#include "patch_dispatch.h"
 #include "peephole.h"
 
 #pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
@@ -134,6 +135,8 @@ struct ArmCpu {
 
     struct stub *debugStub;
     struct PatchDispatch *patchDispatch;
+
+    uint32_t slowPath;
 };
 
 enum ImmShiftType {
@@ -244,6 +247,26 @@ static FORCE_INLINE struct ArmBankedRegs *cpuPrvModeToBankedRegsPtr(struct ArmCp
     }
 }
 
+static void cpuUpdateSlowPath(struct ArmCpu *cpu) {
+    if (cpu->waitingEventsTotal) {
+        cpuSetSlowPath(cpu, SLOW_PATH_REASON_EVENTS);
+    } else {
+        cpuClearSlowPath(cpu, SLOW_PATH_REASON_EVENTS);
+    }
+
+    if (cpu->modePace) {
+        cpuSetSlowPath(cpu, SLOW_PATH_REASON_PACE);
+    } else {
+        cpuClearSlowPath(cpu, SLOW_PATH_REASON_PACE);
+    }
+
+    if (cpu->sleeping) {
+        cpuSetSlowPath(cpu, SLOW_PATH_REASON_SLEEP);
+    } else {
+        cpuClearSlowPath(cpu, SLOW_PATH_REASON_SLEEP);
+    }
+}
+
 static FORCE_INLINE void cpuPrvSwitchToMode(struct ArmCpu *cpu, uint_fast8_t newMode) {
     struct ArmBankedRegs *saveTo, *getFrom;
     uint_fast8_t i, curMode;
@@ -346,6 +369,7 @@ static void cpuPrvException(struct ArmCpu *cpu, uint32_t vector_pc, uint32_t lr,
         }
 
         cpu->modePace = false;
+        cpuUpdateSlowPath(cpu);
     }
 
     uint32_t spsr = cpuPrvMaterializeCPSR(cpu);
@@ -921,6 +945,8 @@ static void execFn_paceEnter(struct ArmCpu *cpu, uint32_t instr, bool privileged
     cpu->modePace = true;
     cpu->paceOffset = cpu->curInstrPC - cpu->pacePatch->enterPace;
 
+    cpuUpdateSlowPath(cpu);
+
 #ifdef TRACE_PACE
     fprintf(stderr, "enter PACE\n");
 #endif
@@ -938,6 +964,8 @@ static void execFn_paceResume(struct ArmCpu *cpu, uint32_t instr, bool privilege
     cpu->modePace = true;
     cpu->paceOffset = cpu->curInstrPC - 4 - cpu->pacePatch->enterPace;
     cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
+
+    cpuUpdateSlowPath(cpu);
 
 #ifdef TRACE_PACE
     fprintf(stderr, "resume PACE\n");
@@ -961,39 +989,11 @@ static void execFn_paceReturnFromCallout(struct ArmCpu *cpu, uint32_t instr, boo
     cpu->paceOffset = cpu->curInstrPC - 8 - cpu->pacePatch->enterPace;
     cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
 
+    cpuUpdateSlowPath(cpu);
+
 #ifdef TRACE_PACE
     fprintf(stderr, "PACE return from callout\n");
 #endif
-}
-
-static void execFn_peephole_ADC_udivmod(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
-    const uint32_t num = cpuPrvGetRegNotPC(cpu, 1);
-    const uint32_t den = cpuPrvGetRegNotPC(cpu, 0);
-
-    if (den == 0) {
-        cpuPrvSetPC(cpu, cpu->curInstrPC + OFFSET_PEEPHOLE_ADS_UDIVMOD_DIVISION_BY_ZERO);
-        return;
-    }
-
-    cpuPrvSetRegNotPC(cpu, 0, num / den);
-    cpuPrvSetRegNotPC(cpu, 1, num % den);
-
-    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
-}
-
-static void execFn_peephole_ADC_sdivmod(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
-    const int32_t num = cpuPrvGetRegNotPC(cpu, 1);
-    const int32_t den = cpuPrvGetRegNotPC(cpu, 0);
-
-    if (den == 0) {
-        cpuPrvSetPC(cpu, cpu->curInstrPC + OFFSET_PEEPHOLE_ADS_SDIVMOD_DIVISION_BY_ZERO);
-        return;
-    }
-
-    cpuPrvSetRegNotPC(cpu, 0, num / den);
-    cpuPrvSetRegNotPC(cpu, 1, num % den);
-
-    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
 }
 
 static void execFn_peephole_ADC_udiv10(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
@@ -1571,7 +1571,7 @@ static void execFn_dspmul(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     }
 }
 
-template <bool wasT, int op, bool setFlags, bool srcPc, bool destPc>
+template <bool wasT, int op, bool setFlags, bool srcPc, bool destPc, int tier = 0>
 static void execFn_dproc(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, op2, res, sr;
     uint64_t res64;
@@ -2006,6 +2006,40 @@ static void execFn_swi(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
 
     cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_SWI, cpu->curInstrPC + (wasT ? 2 : 4),
                     ARM_SR_MODE_SVC | ARM_SR_I);
+}
+
+static void execFn_peephole_ADC_udivmod(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    const uint32_t num = cpuPrvGetRegNotPC(cpu, 1);
+    const uint32_t den = cpuPrvGetRegNotPC(cpu, 0);
+
+    if (den == 0) {
+        // mov r2, #0
+        execFn_dproc<false, 13, false, false, false, 1>(cpu, FIRST_INSTRUCTION_ADS_UDIVMOD,
+                                                        privileged);
+        return;
+    }
+
+    cpuPrvSetRegNotPC(cpu, 0, num / den);
+    cpuPrvSetRegNotPC(cpu, 1, num % den);
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+}
+
+static void execFn_peephole_ADC_sdivmod(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    const int32_t num = cpuPrvGetRegNotPC(cpu, 1);
+    const int32_t den = cpuPrvGetRegNotPC(cpu, 0);
+
+    if (den == 0) {
+        // ands r2, r0, #128, #8
+        execFn_dproc<false, 0, true, false, false, 1>(cpu, FIRST_INSTRUCTION_ADS_SDIVMOD,
+                                                      privileged);
+        return;
+    }
+
+    cpuPrvSetRegNotPC(cpu, 0, num / den);
+    cpuPrvSetRegNotPC(cpu, 1, num % den);
+
+    cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
 }
 
 template <bool wasT>
@@ -2704,88 +2738,13 @@ uint32_t cpuDecodeThumb(uint32_t instr) {
 
 #ifdef __EMSCRIPTEN__
 
-// The content of this function will be replaced with a jump table later. We need two of
-// them to coax wasm-opt into inlinining them.
-static void __attribute__((noinline)) cpuPrvDispatchExecFnArm(ExecFn execFn, struct ArmCpu *cpu,
-                                                              uint32_t instr, bool privileged) {
-    ((ExecFn)((uint32_t)execFn & 0xffff))(cpu, instr, privileged);
-}
-
-// The content of this function will be replaced with a jump table later. We need two of
-// them to coax wasm-opt into inlinining them.
-static void __attribute__((noinline)) cpuPrvDispatchExecFnThumb(ExecFn execFn, struct ArmCpu *cpu,
-                                                                uint32_t instr, bool privileged) {
+// The content of this function will be replaced with a jump table later.
+static void __attribute__((noinline)) cpuPrvDispatchExecFn(ExecFn execFn, struct ArmCpu *cpu,
+                                                           uint32_t instr, bool privileged) {
     ((ExecFn)((uint32_t)execFn & 0xffff))(cpu, instr, privileged);
 }
 
 #endif
-
-static void cpuPrvCycleArm(struct ArmCpu *cpu) {
-    uint32_t instr, decoded;
-    bool privileged, ok;
-    uint_fast8_t fsr;
-
-    privileged = cpu->M != ARM_SR_MODE_USR;
-
-    cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
-    gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC], true);  // early in case it changes PC
-
-    // fetch instruction
-    cpu->curInstrPC = cpu->regs[REG_NO_PC];
-
-// FCSE
-#ifdef SUPPORT_FCSE
-    if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
-#endif
-
-    ok = icacheFetch<4>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
-    if (!ok) {
-        cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
-        return;
-    }
-
-    cpu->regs[REG_NO_PC] += 4;
-
-#ifdef __EMSCRIPTEN__
-    cpuPrvDispatchExecFnArm(cpuPrvDecompressExecFn(decoded), cpu, instr, privileged);
-#else
-    cpuPrvDecompressExecFn(decoded)(cpu, instr, privileged);
-#endif
-}
-
-static void cpuPrvCycleThumb(struct ArmCpu *cpu) {
-    bool privileged, ok;
-    uint16_t instr;
-    uint32_t decoded;
-    uint_fast8_t fsr;
-
-    privileged = cpu->M != ARM_SR_MODE_USR;
-
-    cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
-    gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC], true);  // early in case it changes PC
-
-    cpu->curInstrPC = cpu->regs[REG_NO_PC];
-
-// FCSE
-#ifdef SUPPORT_FCSE
-    if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
-#endif
-
-    ok = icacheFetch<2>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
-    if (!ok) {
-        cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
-        return;  // exit here so that debugger can see us execute first instr of execption
-                 // handler
-    }
-
-    cpu->regs[REG_NO_PC] += 2;
-
-#ifdef __EMSCRIPTEN__
-    cpuPrvDispatchExecFnThumb(cpuPrvDecompressExecFn(decoded), cpu, instr, privileged);
-#else
-    cpuPrvDecompressExecFn(decoded)(cpu, instr, privileged);
-#endif
-}
 
 static uint32_t translateThumb(uint16_t instrT) {
     bool vB;
@@ -3260,6 +3219,9 @@ void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState) {
     cpu->waitingIrqs = scratchState->waitingIrqs;
     cpu->waitingFiqs = scratchState->waitingFiqs;
     cpu->waitingEventsTotal = cpu->waitingFiqs + cpu->waitingIrqs;
+
+    cpu->slowPath = scratchState->slowPath;
+    cpuUpdateSlowPath(cpu);
 }
 
 uint32_t *cpuGetRegisters(struct ArmCpu *cpu) { return cpu->regs; }
@@ -3299,6 +3261,7 @@ static bool cpuPrvPaceCallout(struct ArmCpu *cpu, uint32_t destination) {
     cpuPrvSetReg(cpu, REG_NO_PC, destination + cpu->paceOffset);
 
     cpu->modePace = false;
+    cpuUpdateSlowPath(cpu);
 
     return true;
 }
@@ -3395,6 +3358,7 @@ static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
     cpuPrvSetPC(cpu, cpu->regs[REG_NO_LR]);
 
     cpu->modePace = false;
+    cpuUpdateSlowPath(cpu);
 
 #ifdef TRACE_PACE
     fprintf(stderr, "return from PACE\n");
@@ -3453,29 +3417,77 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
 uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     uint32_t cycleAcc = 0;
 
-    while (cycleAcc < cycles && !cpu->sleeping) {
-        if (unlikely(cpu->waitingEventsTotal)) {
-            if (unlikely(cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall))
-                cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ,
-                                cpu->regs[REG_NO_PC] + 4, ARM_SR_MODE_FIQ | ARM_SR_I | ARM_SR_F);
-            else if (unlikely(cpu->waitingIrqs && !cpu->I && !cpu->isInjectedCall))
-                cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_IRQ,
-                                cpu->regs[REG_NO_PC] + 4, ARM_SR_MODE_IRQ | ARM_SR_I);
+    while (cycleAcc < cycles) {
+        if (cpu->slowPath) {
+            if (cpu->sleeping) break;
+
+            if (cpu->waitingEventsTotal) {
+                if (cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall)
+                    cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ,
+                                    cpu->regs[REG_NO_PC] + 4,
+                                    ARM_SR_MODE_FIQ | ARM_SR_I | ARM_SR_F);
+                else if (unlikely(cpu->waitingIrqs && !cpu->I && !cpu->isInjectedCall))
+                    cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_IRQ,
+                                    cpu->regs[REG_NO_PC] + 4, ARM_SR_MODE_IRQ | ARM_SR_I);
+            }
+
+            cp15Cycle(cpu->cp15);
+            patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
+
+            if (cpu->modePace) {
+                cpuPrvCyclePace(cpu);
+                cycleAcc += 10;
+
+                continue;
+            }
         }
 
-        cp15Cycle(cpu->cp15);
-        patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
+        bool privileged, ok;
+        uint32_t instr, decoded;
+        uint_fast8_t fsr;
 
-        if (cpu->modePace) {
-            cpuPrvCyclePace(cpu);
-            cycleAcc += 10;
-        } else if (cpu->T) {
-            cpuPrvCycleThumb(cpu);
-            cycleAcc += 1;
+        privileged = cpu->M != ARM_SR_MODE_USR;
+
+        cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
+        gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC],
+                        true);  // early in case it changes PC
+
+        // FCSE
+#ifdef SUPPORT_FCSE
+        if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
+#endif
+
+        if (cpu->T) {
+            uint16_t instr16;
+            ok = icacheFetch<2>(cpu->ic, cpu->curInstrPC, &fsr, &instr16, &decoded);
+
+            if (!ok) {
+                cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
+                return cycleAcc;  // exit here so that debugger can see us execute first instr
+                                  // of execption handler
+            }
+
+            instr = instr16;
+            cpu->regs[REG_NO_PC] += 2;
         } else {
-            cpuPrvCycleArm(cpu);
-            cycleAcc += 1;
+            ok = icacheFetch<4>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
+
+            if (!ok) {
+                cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
+                return cycleAcc;  // exit here so that debugger can see us execute first instr
+                                  // of execption handler
+            }
+
+            cpu->regs[REG_NO_PC] += 4;
         }
+
+#ifdef __EMSCRIPTEN__
+        cpuPrvDispatchExecFn(cpuPrvDecompressExecFn(decoded), cpu, instr, privileged);
+#else
+        cpuPrvDecompressExecFn(decoded)(cpu, instr, privileged);
+#endif
+
+        cycleAcc += 1;
     }
 
     return cycleAcc;
@@ -3502,6 +3514,7 @@ void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise) {  // unraise when acknowl
     }
 
     cpu->waitingEventsTotal = cpu->waitingFiqs + cpu->waitingIrqs;
+    cpuUpdateSlowPath(cpu);
 }
 
 void cpuCoprocessorRegister(struct ArmCpu *cpu, uint8_t cpNum, struct ArmCoprocessor *coproc) {
@@ -3514,10 +3527,20 @@ uint16_t cpuGetCPAR(struct ArmCpu *cpu) { return cpu->CPAR; }
 
 void cpuSetCPAR(struct ArmCpu *cpu, uint16_t cpar) { cpu->CPAR = cpar; }
 
-void cpuSetSleeping(struct ArmCpu *cpu) { cpu->sleeping = true; }
+void cpuSetSleeping(struct ArmCpu *cpu) {
+    cpu->sleeping = true;
+    cpuUpdateSlowPath(cpu);
+}
 
-void cpuWakeup(struct ArmCpu *cpu) { cpu->sleeping = false; }
+void cpuWakeup(struct ArmCpu *cpu) {
+    cpu->sleeping = false;
+    cpuUpdateSlowPath(cpu);
+}
 
 void cpuSetPid(struct ArmCpu *cpu, uint32_t pid) { cpu->pid = pid; }
 
 uint32_t cpuGetPid(struct ArmCpu *cpu) { return cpu->pid; }
+
+void cpuSetSlowPath(struct ArmCpu *cpu, uint32_t reason) { cpu->slowPath |= reason; }
+
+void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason) { cpu->slowPath &= ~reason; }

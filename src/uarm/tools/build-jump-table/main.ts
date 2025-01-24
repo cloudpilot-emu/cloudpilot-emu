@@ -67,7 +67,8 @@ function remapExecFunctions(
     module: binaryen.Module,
     fn: binaryen.FunctionRef,
     execFnTableEntryToNameMap: Map<number, string>,
-    execFnNameToHandleMap: Map<string, number>
+    execFnNameToHandleMap: Map<string, number>,
+    usedFunctions: Set<string>
 ): void {
     const fnInfo = binaryen.getFunctionInfo(fn);
 
@@ -106,6 +107,8 @@ function remapExecFunctions(
 
                     const execFnHandle = execFnNameToHandleMap.get(execFnName);
                     if (execFnHandle === undefined) throw new Error(`no execFn handle for ${execFnName}`);
+
+                    usedFunctions.add(execFnName);
 
                     return module.i32.const(execFnHandle);
                 }
@@ -162,7 +165,12 @@ async function main(filename: string): Promise<void> {
     const module = binaryen.readBinary(new Uint8Array(content, content.byteLength));
 
     module.setFeatures(
-        binaryen.Features.MVP | binaryen.Features.BulkMemory | binaryen.Features.Multivalue | binaryen.Features.SignExt
+        binaryen.Features.MVP |
+            binaryen.Features.BulkMemory |
+            binaryen.Features.Multivalue |
+            binaryen.Features.SignExt |
+            binaryen.Features.NontrappingFPToInt |
+            (1 << 19)
     );
     binaryen.setDebugInfo(true);
 
@@ -176,20 +184,25 @@ async function main(filename: string): Promise<void> {
     const execFnTableEntryToNameMap = new Map(execFnTableEntries);
     const execFnHandles = execFnTableEntries.map(([i, name], handle): [string, number] => [name, handle]);
     const execFnNameToHandleMap = new Map(execFnHandles);
-
-    console.log(`building dispatcher for ${execFnHandles.length} functions`);
-    const dispatcher = buildDispatcher(module, execFnHandles);
-
-    replaceDispatcher(module, 'cpuPrvDispatchExecFnThumb', dispatcher);
-    replaceDispatcher(module, 'cpuPrvDispatchExecFnArm', dispatcher);
+    const usedFunctions = new Set<string>();
 
     getFunctionLike(module, 'cpuPrvDecoderArm').forEach((fnInfo) =>
-        remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMap)
+        remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMap, usedFunctions)
     );
 
     getFunctionLike(module, 'cpuPrvDecoderThumb').forEach((fnInfo) =>
-        remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMap)
+        remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMap, usedFunctions)
     );
+
+    const usedHandles = Array.from(usedFunctions).map((name): [string, number] => [
+        name,
+        execFnNameToHandleMap.get(name)!,
+    ]);
+
+    console.log(`building dispatcher for ${usedHandles.length} functions`);
+    const dispatcher = buildDispatcher(module, usedHandles);
+
+    replaceDispatcher(module, 'cpuPrvDispatchExecFn', dispatcher);
 
     if (module.validate()) {
         await writeFile(filename, module.emitBinary());

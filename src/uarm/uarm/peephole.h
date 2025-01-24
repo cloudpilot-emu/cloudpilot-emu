@@ -14,8 +14,8 @@ extern "C" {
 #define INSTR_PEEPHOLE_ADS_SDIV10 0xfff9ee93
 #define INSTR_PEEPHOLE_ADS_MEMCPY 0xfff9ee94
 
-extern const size_t OFFSET_PEEPHOLE_ADS_UDIVMOD_DIVISION_BY_ZERO;
-extern const size_t OFFSET_PEEPHOLE_ADS_SDIVMOD_DIVISION_BY_ZERO;
+#define FIRST_INSTRUCTION_ADS_UDIVMOD 0xE3A02000
+#define FIRST_INSTRUCTION_ADS_SDIVMOD 0xE2102480
 
 void peepholeOptimize(uint32_t* code, size_t size);
 

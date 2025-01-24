@@ -161,7 +161,7 @@ void* EMSCRIPTEN_KEEPALIVE getRamDirtyPages() { return socGetRamDirtyPages(soc).
 
 void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPort,
          bool enableAudio, uint32_t mips = 0) {
-    soc = socInit(rom, romLen, nand, nandLen, gdbPort, deviceGetSocRev());
+    soc = socInit(deviceTypeE2, rom, romLen, nand, nandLen, gdbPort, deviceGetSocRev());
     if (sdCardInitialized()) {
         socSdInsert(soc);
     }

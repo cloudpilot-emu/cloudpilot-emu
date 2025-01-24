@@ -40,6 +40,8 @@ void cp15Cycle(struct ArmCP15* cp15)  // mmu on/off lags by a cycle
     if (cp15->mmuSwitchCy) {
         if (!--cp15->mmuSwitchCy) {
             mmuSetTTP(cp15->mmu, (cp15->control & 0x00000001UL) ? cp15->ttb : MMU_DISABLED_TTP);
+
+            cpuClearSlowPath(cp15->cpu, SLOW_PATH_REASON_CP15);
         }
     }
 }
@@ -113,6 +115,8 @@ static bool cp15prvCoprocRegXferFunc(struct ArmCpu* cpu, void* userData, bool tw
 
                         cp15->mmuSwitchCy = 2;
                         cp15->control ^= 0x00000001UL;
+
+                        cpuSetSlowPath(cp15->cpu, SLOW_PATH_REASON_CP15);
                     }
                 }
             } else if (CRm == 1) {

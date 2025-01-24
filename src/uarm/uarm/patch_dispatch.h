@@ -14,6 +14,7 @@ typedef void (*TailpatchF)(void* ctx, uint32_t syscall, const uint32_t* register
                            uint32_t* registers);
 
 struct PatchDispatch;
+struct ArmCpu;
 
 struct PatchDispatch* initPatchDispatch();
 void destroyPatchDispatch(struct PatchDispatch* pd);
@@ -24,6 +25,8 @@ void patchOnBeforeExecute(struct PatchDispatch* pd, uint32_t* registers);
 
 void patchDispatchAddPatch(struct PatchDispatch* pd, uint32_t syscall, HeadpatchF headpatch,
                            TailpatchF tailpatch, void* ctx);
+
+void patchDispatchSetCpu(struct PatchDispatch* pd, struct ArmCpu* cpu);
 
 #ifdef __cplusplus
 }
