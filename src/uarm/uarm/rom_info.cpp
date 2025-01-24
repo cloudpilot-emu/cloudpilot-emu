@@ -112,7 +112,7 @@ uint32_t RomInfo::Read32(size_t offset, bool& error) const {
 std::string RomInfo::ReadString(size_t offset, uint8_t maxLen, bool& error) const {
     if (error) return "";
 
-    char str[maxLen];
+    char str[256];
     bool terminated = false;
 
     for (uint8_t i = 0; i < maxLen && !terminated; i++) {
