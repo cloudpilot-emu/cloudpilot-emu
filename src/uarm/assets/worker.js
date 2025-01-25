@@ -197,12 +197,14 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.getSdCardDataSize = module.cwrap('getSdCardDataSize', 'number');
             this.getRamDataSize = module.cwrap('getRamDataSize', 'number');
             this.clearRamDirtyPages = module.cwrap('clearRamDirtyPages');
+            this.getDeviceType = module.cwrap('getDeviceType');
 
             this.amIDead = false;
             this.pcmEnabled = false;
             this.pcmPort = undefined;
             this.snapshotPending = false;
             this.stopPending = false;
+            this.deviceType = this.getDeviceType();
 
             this.setMaxLoad(maxLoad);
             this.setCyclesPerSecondLimit(cyclesPerSecondLimit);
@@ -378,7 +380,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             const framePtr = this.getFrame() >>> 2;
             if (!framePtr) return;
 
-            const frame = this.module.HEAPU32.subarray(framePtr, framePtr + 320 * 320);
+            const frame = this.module.HEAPU32.subarray(framePtr, framePtr + 320 * (this.deviceType === 1 ? 480 : 320));
 
             if (framePool.length === 0) {
                 this.onFrame(frame.slice().buffer);
@@ -502,8 +504,8 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         postMessage({ type: 'error', reason });
     }
 
-    function postInitialized() {
-        postMessage({ type: 'initialized' });
+    function postInitialized(deviceType) {
+        postMessage({ type: 'initialized', deviceType });
     }
 
     function postStopped() {
@@ -547,7 +549,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                     }
                 );
 
-                postInitialized();
+                postInitialized(emulator.getDeviceType());
 
                 break;
 

@@ -25,6 +25,7 @@
 #include "audio_queue.h"
 #include "cputil.h"
 #include "device.h"
+#include "rom_info.h"
 #include "sdcard.h"
 
 using namespace std;
@@ -39,11 +40,14 @@ namespace {
     AudioQueue* audioQueue = nullptr;
     unique_ptr<MainLoop> mainLoop;
 
+    DeviceType deviceType = deviceTypeInvalid;
 }  // namespace
 
-extern "C" int socExtSerialReadChar(void) { return CHAR_NONE; }
+extern "C" {
 
-extern "C" void socExtSerialWriteChar(int chr) {
+int socExtSerialReadChar(void) { return CHAR_NONE; }
+
+void socExtSerialWriteChar(int chr) {
     if (!(chr & 0xFF00))
         printf("%c", chr);
     else
@@ -51,8 +55,6 @@ extern "C" void socExtSerialWriteChar(int chr) {
 
     fflush(stdout);
 }
-
-extern "C" {
 
 void EMSCRIPTEN_KEEPALIVE cycle(uint64_t now) {
     if (!mainLoop) return;
@@ -157,11 +159,13 @@ uint32_t EMSCRIPTEN_KEEPALIVE getRamDataSize() { return socGetRamData(soc).size;
 void* EMSCRIPTEN_KEEPALIVE getRamData() { return socGetRamData(soc).data; }
 
 void* EMSCRIPTEN_KEEPALIVE getRamDirtyPages() { return socGetRamDirtyPages(soc).data; }
+
+uint32_t EMSCRIPTEN_KEEPALIVE getDeviceType() { return deviceType; }
 }
 
 void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPort,
          bool enableAudio, uint32_t mips = 0) {
-    soc = socInit(deviceTypeE2, rom, romLen, nand, nandLen, gdbPort, deviceGetSocRev());
+    soc = socInit(deviceType, rom, romLen, nand, nandLen, gdbPort, deviceGetSocRev());
     if (sdCardInitialized()) {
         socSdInsert(soc);
     }
@@ -184,6 +188,15 @@ extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint8_t* rom, int romLen, uint8_t* 
 
     fprintf(stderr, "using %u bytes of NOR\n", romLen);
     fprintf(stderr, "using %u bytes of NAND\n", nandLen);
+
+    RomInfo romInfo(rom, romLen);
+    if (!romInfo.IsValid()) {
+        cerr << "invalid NOR" << endl;
+        return;
+    }
+
+    cerr << romInfo << endl;
+    deviceType = romInfo.GetDeviceType();
 
     run(rom, (uint32_t)romLen, nand, (size_t)nandLen, 0, true);
 }

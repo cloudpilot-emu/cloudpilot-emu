@@ -2,7 +2,13 @@ import { DisplayService } from './displayservice.js';
 import { EventHandler } from './eventhandler.js';
 
 export class Emulator {
-    constructor(worker, displayService, crcCheck, { canvas, speedDisplay, log, database, setSnapshotStatus }) {
+    constructor(
+        worker,
+        displayService,
+        crcCheck,
+        deviceType,
+        { canvas, speedDisplay, log, database, setSnapshotStatus }
+    ) {
         this.stopping = Promise.resolve();
         this.onStopped = () => undefined;
 
@@ -16,9 +22,12 @@ export class Emulator {
         this.log = log;
         this.canvas = canvas;
 
+        this.deviceType = deviceType;
+        displayService.setDeviceType(deviceType);
+
         this.canvasTmpCtx = document.createElement('canvas').getContext('2d');
         this.canvasTmpCtx.canvas.width = 320;
-        this.canvasTmpCtx.canvas.height = 320;
+        this.canvasTmpCtx.canvas.height = deviceType === 1 ? 480 : 320;
 
         this.running = false;
         this.snapshotStatus = 'ok';
@@ -87,7 +96,7 @@ export class Emulator {
 
                     case 'initialized':
                         worker.removeEventListener('message', onMessage);
-                        resolve(new Emulator(worker, displayService, crcCheck, env));
+                        resolve(new Emulator(worker, displayService, crcCheck, e.data.deviceType, env));
                         break;
 
                     case 'error':
@@ -163,7 +172,7 @@ export class Emulator {
     render(data) {
         if (!this.running) return;
 
-        const imageData = new ImageData(new Uint8ClampedArray(data), 320, 320);
+        const imageData = new ImageData(new Uint8ClampedArray(data), 320, this.deviceType === 1 ? 480 : 320);
 
         this.canvasTmpCtx.putImageData(imageData, 0, 0);
         this.displayService.updateEmulationCanvas(this.canvasTmpCtx.canvas);

@@ -22,11 +22,11 @@ const BACKGROUND_ACTIVE_BUTTON = 'rgba(0,0,0,0.2)';
 const IMAGE_BUTTONS = prerender(loadImage('./assets/buttons.svg'));
 const IMAGE_SILKSCREEN = prerender(loadImage('./assets/silkscreen.svg'));
 
-function calculateLayout() {
+function calculateLayout(deviceType) {
     const dimensions = {
         width: 320,
-        height: 320,
-        silkscreenHeight: 120,
+        height: deviceType === 1 ? 480 : 320,
+        silkscreenHeight: deviceType === 1 ? 0 : 120,
     };
 
     const scale = 2 * devicePixelRatio;
@@ -70,7 +70,15 @@ function calculateLayout() {
 
 export class DisplayService {
     constructor() {
-        this.layout = calculateLayout();
+        this.deviceType = 0;
+        this.layout = calculateLayout(this.deviceType);
+    }
+
+    setDeviceType(deviceType) {
+        this.deviceType = deviceType;
+        this.layout = calculateLayout(deviceType);
+
+        if (this.ctx) this.initWithCanvas(this.ctx.canvas);
     }
 
     get width() {
