@@ -126,6 +126,7 @@ export abstract class AbstractCanvasDisplayService {
     }
 
     updateEmulationCanvas(canvas?: HTMLCanvasElement) {
+        this.setupTransformation();
         this.drawEmulationCanvas(canvas);
 
         this.onAfterUpdateCanvas();
@@ -363,7 +364,7 @@ export abstract class AbstractCanvasDisplayService {
     protected setupTransformation(): void {
         if (!this.ctx) return;
 
-        this.ctx?.resetTransform();
+        this.ctx.resetTransform();
 
         switch (this.getOrientation()) {
             case DeviceOrientation.portrait:

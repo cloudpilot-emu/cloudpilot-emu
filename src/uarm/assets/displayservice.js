@@ -3,12 +3,12 @@ import { loadImage, prerender } from './image.js';
 const BACKGROUND = [135, 135, 105];
 const FOREGROUND = [0x0, 0x0, 0x0];
 
-export const GRAYSCALE_PALETTE_RGBA = new Array(16)
+const GRAYSCALE_PALETTE_RGBA = new Array(16)
     .fill(0)
     .map((_, i) => FOREGROUND.map((fg, j) => Math.floor((i * fg + (15 - i) * BACKGROUND[j]) / 15)))
     .map(([r, g, b]) => 0xff000000 | (b << 16) | (g << 8) | r);
 
-export const GRAYSCALE_PALETTE_HEX = GRAYSCALE_PALETTE_RGBA.map(
+const GRAYSCALE_PALETTE_HEX = GRAYSCALE_PALETTE_RGBA.map(
     (x) => '#' + (x & 0xffffff).toString(16).padStart(6, '0').match(/(..?)/g)?.reverse().join('')
 );
 
@@ -68,10 +68,32 @@ function calculateLayout(deviceType) {
     };
 }
 
+function rotate(orientation) {
+    switch (orientation) {
+        case 90:
+            return 180;
+
+        case 180:
+            return 270;
+
+        case 270:
+            return 0;
+
+        default:
+            return 90;
+    }
+}
+
 export class DisplayService {
     constructor() {
         this.deviceType = 0;
+        this.orientation = 0;
+        this.emulationCanvas = undefined;
         this.layout = calculateLayout(this.deviceType);
+    }
+
+    rotate() {
+        this.setOrientation(rotate(this.orientation));
     }
 
     setDeviceType(deviceType) {
@@ -81,16 +103,72 @@ export class DisplayService {
         if (this.ctx) this.initWithCanvas(this.ctx.canvas);
     }
 
+    setOrientation(orientation) {
+        this.orientation = orientation;
+
+        switch (orientation) {
+            case 90:
+            case 270:
+                document.body.classList.add('landscape');
+                break;
+
+            default:
+                document.body.classList.remove('landscape');
+                break;
+        }
+
+        if (this.ctx) this.initWithCanvas(this.ctx.canvas);
+        if (this.emulationCanvas) this.drawEmulationCanvas(this.emulationCanvas);
+    }
+
     get width() {
-        return this.layout.width.frameCanvas;
+        switch (this.orientation) {
+            case 90:
+            case 270:
+                return this.layout.height.frameCanvas;
+
+            default:
+                return this.layout.width.frameCanvas;
+        }
     }
 
     get height() {
-        return this.layout.height.frameCanvas;
+        switch (this.orientation) {
+            case 90:
+            case 270:
+                return this.layout.width.frameCanvas;
+
+            default:
+                return this.layout.height.frameCanvas;
+        }
     }
 
     updateEmulationCanvas(canvas) {
+        this.emulationCanvas = canvas;
         this.drawEmulationCanvas(canvas);
+    }
+
+    setupTransformation() {
+        if (!this.ctx) return;
+
+        this.ctx.resetTransform();
+
+        switch (this.orientation) {
+            case 270:
+                this.ctx.translate(this.layout.height.frameCanvas, 0);
+                this.ctx.rotate(Math.PI / 2);
+                break;
+
+            case 90:
+                this.ctx.translate(0, this.layout.width.frameCanvas);
+                this.ctx.rotate((3 * Math.PI) / 2);
+                break;
+
+            case 180:
+                this.ctx.translate(this.layout.width.frameCanvas, this.layout.height.frameCanvas);
+                this.ctx.rotate(Math.PI);
+                break;
+        }
     }
 
     eventToPalmCoordinates(e, clip = false) {
@@ -120,6 +198,28 @@ export class DisplayService {
         // Transform coordinate to device frame
         let x = (((e.clientX - contentX) / contentWidth) * this.width) / this.layout.scale;
         let y = (((e.clientY - contentY) / contentHeight) * this.height) / this.layout.scale;
+
+        switch (this.orientation) {
+            case 90: {
+                const tmp = y;
+                y = x;
+                x = this.layout.width.frameDevice - tmp;
+                break;
+            }
+
+            case 270: {
+                const tmp = y;
+                y = this.layout.height.frameDevice - x;
+                x = tmp;
+                break;
+            }
+
+            case 180: {
+                x = this.layout.width.frameDevice - x;
+                y = this.layout.height.frameDevice - y;
+                break;
+            }
+        }
 
         // Compensate for the border
         x -= this.layout.borderWidth.frameDevice;
@@ -193,8 +293,8 @@ export class DisplayService {
         canvas.width = this.width;
         canvas.height = this.height;
 
-        canvas.style.height = `${this.layout.height.frameDevice * 2}px`;
-        canvas.style.width = `${this.layout.width.frameDevice * 2}px`;
+        canvas.style.height = `${this.height / devicePixelRatio}px`;
+        canvas.style.width = `${this.width / devicePixelRatio}px`;
 
         const ctx = canvas.getContext('2d');
         if (!ctx) {
@@ -202,6 +302,8 @@ export class DisplayService {
         }
 
         this.ctx = ctx;
+
+        this.setupTransformation();
 
         this.fillCanvasRect(0, 0, this.layout.width.frameCanvas, this.layout.height.frameCanvas, this.frameColor());
         this.fillRect(

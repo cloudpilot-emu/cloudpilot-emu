@@ -26,6 +26,7 @@ import { compressSession, decompressSession } from './session.js';
     const mipsLimitSlider = document.getElementById('mips-limit-slider');
     const snapshotStatus = document.getElementById('snapshot-status');
 
+    const rotateButton = document.getElementById('rotate');
     const uploadNorButton = document.getElementById('upload-nor');
     const uploadNandButton = document.getElementById('upload-nand');
     const downloadNandButton = document.getElementById('download-nand');
@@ -377,6 +378,8 @@ import { compressSession, decompressSession } from './session.js';
         audioButton.addEventListener('click', () => onAudioButtonClick());
 
         clearLogButton.addEventListener('click', () => (logContainer.innerHTML = ''));
+
+        rotateButton.addEventListener('click', () => emulator?.rotate());
 
         document.addEventListener(
             'visibilitychange',

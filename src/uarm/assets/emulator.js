@@ -198,6 +198,10 @@ export class Emulator {
         this.worker.postMessage({ type: 'enablePcm' });
     }
 
+    rotate() {
+        this.displayService.rotate();
+    }
+
     async handleSnapshot(snapshot) {
         const snapshotStatus = snapshot.nand || snapshot.sd ? 'saving' : 'ok';
 
