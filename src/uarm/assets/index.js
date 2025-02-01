@@ -298,17 +298,21 @@ import { compressSession, decompressSession } from './session.js';
             if (isNaN(sampleRate)) sampleRate = undefined;
         }
 
-        fileNor = await database.getNor();
-        fileNand = await database.getNand(crcCheck);
-        fileSd = await database.getSd(crcCheck);
-
         if (query.has('binary')) binary = query.get('binary');
 
-        if (!query.has('noload')) {
-            log('Reload with ?noload appended to the URL if the emulator hangs on load due to invalid NOR or NAND');
-            log('---');
+        try {
+            fileNor = await database.getNor();
+            fileNand = await database.getNand(crcCheck);
+            fileSd = await database.getSd(crcCheck);
 
-            await restart();
+            if (!query.has('noload')) {
+                log('Reload with ?noload appended to the URL if the emulator hangs on load due to invalid NOR or NAND');
+                log('---');
+
+                await restart();
+            }
+        } catch (e) {
+            console.error('failed to launch!');
         }
 
         updateLabels();
