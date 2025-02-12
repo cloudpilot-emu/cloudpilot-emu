@@ -199,7 +199,8 @@ async function main(filename: string): Promise<void> {
     console.log(`building dispatcher for ${usedHandles.length} functions`);
     const dispatcher = buildDispatcher(module, usedHandles);
 
-    replaceDispatcher(module, 'cpuPrvDispatchExecFn', dispatcher);
+    replaceDispatcher(module, 'cpuPrvDispatchExecFnArm', dispatcher);
+    replaceDispatcher(module, 'cpuPrvDispatchExecFnThumb', dispatcher);
 
     if (module.validate()) {
         await writeFile(filename, module.emitBinary());

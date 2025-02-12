@@ -504,6 +504,8 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
 void socReset(struct SoC *soc) {
     cpuReset(soc->cpu, 0);
     pxaPwrClkReset(soc->pwrClk);
+
+    socWakeup(soc, 0);
 }
 
 void socKeyDown(SoC *soc, enum KeyId key) { soc->keyEventQueue->Push(KeyEvent::KeyDown(key)); }

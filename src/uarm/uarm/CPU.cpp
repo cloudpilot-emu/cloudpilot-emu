@@ -179,8 +179,12 @@ static FORCE_INLINE uint32_t cpuPrvROR(uint32_t val, uint_fast8_t ror) {
 
 static FORCE_INLINE void cpuPrvSetPC(struct ArmCpu *cpu, uint32_t pc)  // with interworking
 {
+    const bool wasT = cpu->T;
+
     cpu->regs[REG_NO_PC] = pc & ~1UL;
     cpu->T = (pc & 1);
+
+    if (cpu->T != wasT) cpuSetSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
 }
 
 template <bool wasT>
@@ -249,16 +253,10 @@ static FORCE_INLINE struct ArmBankedRegs *cpuPrvModeToBankedRegsPtr(struct ArmCp
 }
 
 static void cpuUpdateSlowPath(struct ArmCpu *cpu) {
-    if (cpu->waitingEventsTotal) {
+    if (cpu->waitingEventsTotal && !cpu->F) {
         cpuSetSlowPath(cpu, SLOW_PATH_REASON_EVENTS);
     } else {
         cpuClearSlowPath(cpu, SLOW_PATH_REASON_EVENTS);
-    }
-
-    if (cpu->modePace) {
-        cpuSetSlowPath(cpu, SLOW_PATH_REASON_PACE);
-    } else {
-        cpuClearSlowPath(cpu, SLOW_PATH_REASON_PACE);
     }
 
     if (cpu->sleeping) {
@@ -304,10 +302,15 @@ static FORCE_INLINE void cpuPrvSwitchToMode(struct ArmCpu *cpu, uint_fast8_t new
 }
 
 static FORCE_INLINE void cpuPrvSetPSRlo8(struct ArmCpu *cpu, uint_fast8_t val) {
+    const bool wasT = cpu->T;
+
     cpuPrvSwitchToMode(cpu, val & ARM_SR_M);
     cpu->T = !!(val & ARM_SR_T);
     cpu->F = !!(val & ARM_SR_F);
     cpu->I = !!(val & ARM_SR_I);
+
+    cpuUpdateSlowPath(cpu);
+    if (cpu->T != wasT) cpuSetSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
 }
 
 static FORCE_INLINE void cpuPrvSetPSRhi8(struct ArmCpu *cpu, uint32_t val) {
@@ -371,7 +374,7 @@ static void cpuPrvException(struct ArmCpu *cpu, uint32_t vector_pc, uint32_t lr,
         }
 
         cpu->modePace = false;
-        cpuUpdateSlowPath(cpu);
+        cpuSetSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
     }
 
     uint32_t spsr = cpuPrvMaterializeCPSR(cpu);
@@ -947,7 +950,7 @@ static void execFn_paceEnter(struct ArmCpu *cpu, uint32_t instr) {
     cpu->modePace = true;
     cpu->paceOffset = cpu->curInstrPC - cpu->pacePatch->enterPace;
 
-    cpuUpdateSlowPath(cpu);
+    cpuSetSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
 
 #ifdef TRACE_PACE
     fprintf(stderr, "enter PACE\n");
@@ -967,7 +970,7 @@ static void execFn_paceResume(struct ArmCpu *cpu, uint32_t instr) {
     cpu->paceOffset = cpu->curInstrPC - 4 - cpu->pacePatch->enterPace;
     cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
 
-    cpuUpdateSlowPath(cpu);
+    cpuSetSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
 
 #ifdef TRACE_PACE
     fprintf(stderr, "resume PACE\n");
@@ -991,7 +994,7 @@ static void execFn_paceReturnFromCallout(struct ArmCpu *cpu, uint32_t instr) {
     cpu->paceOffset = cpu->curInstrPC - 8 - cpu->pacePatch->enterPace;
     cpu->regs[REG_NO_PC] = cpu->paceOffset + cpu->pacePatch->resumePace;
 
-    cpuUpdateSlowPath(cpu);
+    cpuSetSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
 
 #ifdef TRACE_PACE
     fprintf(stderr, "PACE return from callout\n");
@@ -2647,6 +2650,8 @@ static void execFn_thumb_blx_suffix(struct ArmCpu *cpu, uint32_t instr) {
     const uint32_t lr = cpu->regs[REG_NO_PC] | 1ul;
     const uint32_t offsetLo = instr & 0x7FF;
 
+    if (cpu->T) cpuSetSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
+
     cpu->regs[REG_NO_PC] = (cpu->regs[REG_NO_LR] + 2 + (offsetLo << 1)) & ~3ul;
     cpu->regs[REG_NO_LR] = lr;
     cpu->T = 0;
@@ -2739,8 +2744,14 @@ uint32_t cpuDecodeThumb(uint32_t instr) {
 #ifdef __EMSCRIPTEN__
 
 // The content of this function will be replaced with a jump table later.
-static void __attribute__((noinline)) cpuPrvDispatchExecFn(ExecFn execFn, struct ArmCpu *cpu,
-                                                           uint32_t instr) {
+static void __attribute__((noinline)) cpuPrvDispatchExecFnArm(ExecFn execFn, struct ArmCpu *cpu,
+                                                              uint32_t instr) {
+    ((ExecFn)((uint32_t)execFn & 0xffff))(cpu, instr);
+}
+
+// The content of this function will be replaced with a jump table later.
+static void __attribute__((noinline)) cpuPrvDispatchExecFnThumb(ExecFn execFn, struct ArmCpu *cpu,
+                                                                uint32_t instr) {
     ((ExecFn)((uint32_t)execFn & 0xffff))(cpu, instr);
 }
 
@@ -3158,6 +3169,8 @@ void cpuReset(struct ArmCpu *cpu, uint32_t pc) {
 
     cpuPrvSetPC(cpu, pc);
     mmuReset(cpu->mmu);
+
+    cpuUpdateSlowPath(cpu);
 }
 
 static void initStatic() {
@@ -3238,6 +3251,8 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
     if (!cpuPrvMemOpEx<4>(cpu, &entryAddr, tableAddr + offset, false, true, NULL))
         ERR("failed to dispatch syscall %#010x: unable to read entry point\n", syscall);
 
+    if (cpu->T) cpu->slowPath |= SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE;
+
     cpu->regs[REG_NO_PC] = entryAddr;
     cpu->isInjectedCall = true;
     cpu->T = false;
@@ -3262,7 +3277,7 @@ static bool cpuPrvPaceCallout(struct ArmCpu *cpu, uint32_t destination) {
     cpuPrvSetReg(cpu, REG_NO_PC, destination + cpu->paceOffset);
 
     cpu->modePace = false;
-    cpuUpdateSlowPath(cpu);
+    cpuSetSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
 
     return true;
 }
@@ -3359,14 +3374,14 @@ static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
     cpuPrvSetPC(cpu, cpu->regs[REG_NO_LR]);
 
     cpu->modePace = false;
-    cpuUpdateSlowPath(cpu);
+    cpuSetSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
 
 #ifdef TRACE_PACE
     fprintf(stderr, "return from PACE\n");
 #endif
 }
 
-static void cpuPrvCyclePace(struct ArmCpu *cpu) {
+FORCE_INLINE static void cpuPrvCyclePace(struct ArmCpu *cpu) {
     switch (paceExecute()) {
         case pace_status_ok:
             return;
@@ -3415,38 +3430,27 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
     }
 }
 
-uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
+FORCE_INLINE static uint32_t cpuCyclePace(struct ArmCpu *cpu, uint32_t cycles) {
     uint32_t cycleAcc = 0;
 
     while (cycleAcc < cycles) {
-        if (cpu->slowPath) {
-            if (cpu->sleeping) break;
+        cpuPrvCyclePace(cpu);
+        cycleAcc += 10;
 
-            if (cpu->waitingEventsTotal) {
-                if (cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall)
-                    cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ,
-                                    cpu->regs[REG_NO_PC] + 4,
-                                    ARM_SR_MODE_FIQ | ARM_SR_I | ARM_SR_F);
-                else if (unlikely(cpu->waitingIrqs && !cpu->I && !cpu->isInjectedCall))
-                    cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_IRQ,
-                                    cpu->regs[REG_NO_PC] + 4, ARM_SR_MODE_IRQ | ARM_SR_I);
-            }
+        if (cpu->slowPath) break;
+    }
 
-            cp15Cycle(cpu->cp15);
-            patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
+    return cycleAcc;
+}
 
-            if (cpu->modePace) {
-                cpuPrvCyclePace(cpu);
-                cycleAcc += 10;
+FORCE_INLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cycles) {
+    uint32_t cycleAcc = 0;
+    bool ok;
+    uint16_t instr;
+    uint32_t decoded;
+    uint_fast8_t fsr;
 
-                continue;
-            }
-        }
-
-        bool ok;
-        uint32_t instr, decoded;
-        uint_fast8_t fsr;
-
+    while (cycleAcc < cycles) {
         cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
         gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC],
                         true);  // early in case it changes PC
@@ -3456,40 +3460,93 @@ uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
         if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-        if (cpu->T) {
-            uint16_t instr16;
-            ok = icacheFetch<2>(cpu->ic, cpu->curInstrPC, &fsr, &instr16, &decoded);
+        ok = icacheFetch<2>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
 
-            if (!ok) {
-                cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
-                return cycleAcc;  // exit here so that debugger can see us execute first instr
-                                  // of execption handler
-            }
-
-            instr = instr16;
-            cpu->regs[REG_NO_PC] += 2;
-        } else {
-            ok = icacheFetch<4>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
-
-            if (!ok) {
-                cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
-                return cycleAcc;  // exit here so that debugger can see us execute first instr
-                                  // of execption handler
-            }
-
-            cpu->regs[REG_NO_PC] += 4;
+        if (!ok) {
+            cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
+            return cycleAcc;  // exit here so that debugger can see us execute first instr
+                              // of execption handler
         }
 
+        cpu->regs[REG_NO_PC] += 2;
+
 #ifdef __EMSCRIPTEN__
-        cpuPrvDispatchExecFn(cpuPrvDecompressExecFn(decoded), cpu, instr);
+        cpuPrvDispatchExecFnThumb(cpuPrvDecompressExecFn(decoded), cpu, instr);
 #else
         cpuPrvDecompressExecFn(decoded)(cpu, instr);
 #endif
 
         cycleAcc += 1;
+
+        if (cpu->slowPath) break;
     }
 
     return cycleAcc;
+}
+
+FORCE_INLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycles) {
+    uint32_t cycleAcc = 0;
+    bool ok;
+    uint32_t instr, decoded;
+    uint_fast8_t fsr;
+
+    while (cycleAcc < cycles) {
+        cpu->curInstrPC = cpu->regs[REG_NO_PC];  // needed for stub to get proper pc
+        gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC],
+                        true);  // early in case it changes PC
+
+        // FCSE
+#ifdef SUPPORT_FCSE
+        if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
+#endif
+
+        ok = icacheFetch<4>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
+
+        if (!ok) {
+            cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
+            return cycleAcc;  // exit here so that debugger can see us execute first instr
+                              // of execption handler
+        }
+
+        cpu->regs[REG_NO_PC] += 4;
+
+#ifdef __EMSCRIPTEN__
+        cpuPrvDispatchExecFnArm(cpuPrvDecompressExecFn(decoded), cpu, instr);
+#else
+        cpuPrvDecompressExecFn(decoded)(cpu, instr);
+#endif
+
+        cycleAcc += 1;
+
+        if (cpu->slowPath) break;
+    }
+
+    return cycleAcc;
+}
+
+uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
+    if (cpu->sleeping) return cycles;
+
+    if (cpu->waitingEventsTotal) {
+        if (cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall)
+            cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ, cpu->regs[REG_NO_PC] + 4,
+                            ARM_SR_MODE_FIQ | ARM_SR_I | ARM_SR_F);
+        else if (unlikely(cpu->waitingIrqs && !cpu->I && !cpu->isInjectedCall))
+            cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_IRQ, cpu->regs[REG_NO_PC] + 4,
+                            ARM_SR_MODE_IRQ | ARM_SR_I);
+    }
+
+    cp15Cycle(cpu->cp15);
+    patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
+
+    cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
+
+    if (cpu->modePace)
+        return cpuCyclePace(cpu, cycles);
+    else if (cpu->T)
+        return cpuCycleThumb(cpu, cycles);
+    else
+        return cpuCycleArm(cpu, cycles);
 }
 
 void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise) {  // unraise when acknowledged

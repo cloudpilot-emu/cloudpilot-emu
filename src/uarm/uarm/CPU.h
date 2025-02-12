@@ -50,7 +50,7 @@ extern "C" {
 #define SLOW_PATH_REASON_SLEEP 2
 #define SLOW_PATH_REASON_CP15 4
 #define SLOW_PATH_REASON_PATCH_PENDING 8
-#define SLOW_PATH_REASON_PACE 16
+#define SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE 16
 
 typedef bool (*ArmCoprocRegXferF)(struct ArmCpu *cpu, void *userData, bool two /* MCR2/MRC2 ? */,
                                   bool MRC, uint8_t op1, uint8_t Rx, uint8_t CRn, uint8_t CRm,
