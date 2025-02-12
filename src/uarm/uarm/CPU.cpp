@@ -29,6 +29,7 @@
 #define NO_SUPPORT_FCSE
 #define NO_STRICT_CPU
 #define NO_TRACE_PACE
+#define TAIL_CALL
 
 #define ARM_MODE_2_REG 0x0F
 #define ARM_MODE_2_WORD 0x10
@@ -65,17 +66,67 @@
 
 #define EXEC_FN_PREFIX_VALUE 0x53ae0000
 
+#ifdef TAIL_CALL
+    #ifdef __clang__
+        #define MUSTTAIL __attribute__((musttail))
+    #else
+        #define MUSTTAIL
+    #endif
+#else
+    #define MUSTTAIL
+#endif
+
 #ifdef __EMSCRIPTEN__
     #define PREFIX_EXEC_FN(...) (ExecFn((uint32_t)__VA_ARGS__ + EXEC_FN_PREFIX_VALUE))
     #define ATTR_EMCC_NOINLINE __attribute__((noinline))
+    #define tailDispatchInstruction(cpu, instr, privileged)                                  \
+        MUSTTAIL return cpuPrvDispatchExecFn((void *)(cpuPrvDecompressExecFn(decoded)), cpu, \
+                                             instr, privileged);
 #else
     #define PREFIX_EXEC_FN(...) (__VA_ARGS__)
     #define ATTR_EMCC_NOINLINE
+    #define tailDispatchInstruction(cpu, instr, privileged) \
+        MUSTTAIL return cpuPrvDecompressExecFn(decoded)(nullptr, cpu, instr, privileged);
+#endif
+
+#ifdef TAIL_CALL
+    #define execFnEpilogue()                                                                   \
+        cpu->cycleAcc++;                                                                       \
+                                                                                               \
+        if (cpu->cycleAcc >= cpu->cyclesTotal || cpu->slowPath) return;                        \
+                                                                                               \
+        {                                                                                      \
+            bool privileged;                                                                   \
+            uint32_t instr, decoded;                                                           \
+            uint_fast8_t fsr;                                                                  \
+                                                                                               \
+            privileged = cpu->M != ARM_SR_MODE_USR;                                            \
+                                                                                               \
+            cpu->curInstrPC = cpu->regs[REG_NO_PC];                                            \
+            gdbStubReportPc(cpu->debugStub, cpu->regs[REG_NO_PC], true);                       \
+                                                                                               \
+            if (cpu->T) {                                                                      \
+                uint16_t instr16;                                                              \
+                if (!icacheFetch<2, true>(cpu->ic, cpu->curInstrPC, &fsr, &instr16, &decoded)) \
+                    return;                                                                    \
+                                                                                               \
+                instr = instr16;                                                               \
+                cpu->regs[REG_NO_PC] += 2;                                                     \
+            } else {                                                                           \
+                if (!icacheFetch<4, true>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded))   \
+                    return;                                                                    \
+                cpu->regs[REG_NO_PC] += 4;                                                     \
+            }                                                                                  \
+                                                                                               \
+            tailDispatchInstruction(cpu, instr, privileged);                                   \
+        }
+#else
+    #define execFnEpilogue() return;
 #endif
 
 #define cpuPrvGetRegNotPC(cpu, reg) (cpu->regs[reg])
 
-typedef void (*ExecFn)(struct ArmCpu *cpu, uint32_t instr, bool privileged);
+typedef void (*ExecFn)(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged);
 
 /*
 
@@ -137,6 +188,11 @@ struct ArmCpu {
     struct PatchDispatch *patchDispatch;
 
     uint32_t slowPath;
+
+#ifdef TAIL_CALL
+    uint32_t cycleAcc;
+    uint32_t cyclesTotal;
+#endif
 };
 
 enum ImmShiftType {
@@ -853,6 +909,34 @@ static void cpuPrvHandlePaceMemoryFault(struct ArmCpu *cpu) {
     cpuPrvHandleMemErr(cpu, addr, wasWrite, false, fsr);
 }
 
+static void execFn_noop(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged);
+
+static uint32_t cpuPrvCompressExecFn(ExecFn execFn) {
+#ifdef __EMSCRIPTEN__
+    return (uint32_t)execFn;
+#else
+    return (int32_t)((uint8_t *)execFn - (uint8_t *)execFn_noop);
+#endif
+}
+
+static ExecFn cpuPrvDecompressExecFn(uint32_t compressed) {
+#ifdef __EMSCRIPTEN__
+    return (ExecFn)compressed;
+#else
+    return (ExecFn)((uint8_t *)execFn_noop + (int32_t)compressed);
+#endif
+}
+
+#ifdef __EMSCRIPTEN__
+
+// The content of this function will be replaced with a jump table later.
+static void __attribute__((noinline)) cpuPrvDispatchExecFn(void *execFn, struct ArmCpu *cpu,
+                                                           uint32_t instr, bool privileged) {
+    return ((ExecFn)((uint32_t)execFn & 0xffff))(nullptr, cpu, instr, privileged);
+}
+
+#endif
+
 #ifdef SUPPORT_Z72_PRINTF
 static uint32_t cpuPrvZ72sysPrintfGetParam(struct ArmCpu *cpu, uint32_t *paramIdxP) {
     uint32_t idx = (*paramIdxP)++, val;
@@ -926,21 +1010,28 @@ static void cpuPrvZ72sysPrintf(struct ArmCpu *cpu) {
 #endif
 
 // PACE entrypoint was called from ARM: regular invocation
-static void execFn_paceEnter(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_paceEnter(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint_fast8_t fsr = 0;
 
     cpu->regs[REG_NO_SP] -= 4;
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], true, privileged, &fsr))
-        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], true, privileged, &fsr)) {
+        cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
+        goto epilogue;
+    }
 
     cpu->regs[REG_NO_SP] -= 4;
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], true, privileged, &fsr))
-        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], true, privileged, &fsr)) {
+        cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
+        goto epilogue;
+    }
 
     paceSetPriviledged(privileged);
     paceSetStatePtr(cpu->regs[0]);
 
-    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
+    if (!paceLoad68kState()) {
+        cpuPrvHandlePaceMemoryFault(cpu);
+        goto epilogue;
+    }
 
     cpu->modePace = true;
     cpu->paceOffset = cpu->curInstrPC - cpu->pacePatch->enterPace;
@@ -951,15 +1042,19 @@ static void execFn_paceEnter(struct ArmCpu *cpu, uint32_t instr, bool privileged
     fprintf(stderr, "enter PACE\n");
 #endif
 
-    return;
+epilogue:
+    execFnEpilogue();
 }
 
 // PACE execution was resumed from ARM: resume after interrupt / exception
-static void execFn_paceResume(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_paceResume(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     paceSetPriviledged(cpu->M != ARM_SR_MODE_USR);
     paceSetStatePtr(cpu->regs[0]);
 
-    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
+    if (!paceLoad68kState()) {
+        cpuPrvHandlePaceMemoryFault(cpu);
+        goto epilogue;
+    }
 
     cpu->modePace = true;
     cpu->paceOffset = cpu->curInstrPC - 4 - cpu->pacePatch->enterPace;
@@ -970,20 +1065,29 @@ static void execFn_paceResume(struct ArmCpu *cpu, uint32_t instr, bool privilege
 #ifdef TRACE_PACE
     fprintf(stderr, "resume PACE\n");
 #endif
+
+epilogue:
+    execFnEpilogue();
 }
 
 // PACE was reentered after a callout
-static void execFn_paceReturnFromCallout(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_paceReturnFromCallout(void *bogus, struct ArmCpu *cpu, uint32_t instr,
+                                         bool privileged) {
     uint_fast8_t fsr = 0;
 
     // restore r0 / state pointer from stack
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], false, privileged, &fsr))
-        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], false, false, fsr);
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], false, privileged, &fsr)) {
+        cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], false, false, fsr);
+        goto epilogue;
+    }
 
     paceSetPriviledged(privileged);
     paceSetStatePtr(cpu->regs[0]);
 
-    if (!paceLoad68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
+    if (!paceLoad68kState()) {
+        cpuPrvHandlePaceMemoryFault(cpu);
+        goto epilogue;
+    }
 
     cpu->modePace = true;
     cpu->paceOffset = cpu->curInstrPC - 8 - cpu->pacePatch->enterPace;
@@ -994,27 +1098,37 @@ static void execFn_paceReturnFromCallout(struct ArmCpu *cpu, uint32_t instr, boo
 #ifdef TRACE_PACE
     fprintf(stderr, "PACE return from callout\n");
 #endif
+
+epilogue:
+    execFnEpilogue();
 }
 
-static void execFn_peephole_ADC_udiv10(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_peephole_ADC_udiv10(void *bogus, struct ArmCpu *cpu, uint32_t instr,
+                                       bool privileged) {
     const uint32_t num = cpuPrvGetRegNotPC(cpu, 0);
 
     cpuPrvSetRegNotPC(cpu, 0, num / 10ul);
     cpuPrvSetRegNotPC(cpu, 1, num % 10ul);
 
     cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+
+    execFnEpilogue();
 }
 
-static void execFn_peephole_ADC_sdiv10(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_peephole_ADC_sdiv10(void *bogus, struct ArmCpu *cpu, uint32_t instr,
+                                       bool privileged) {
     const int32_t num = cpuPrvGetRegNotPC(cpu, 0);
 
     cpuPrvSetRegNotPC(cpu, 0, num / 10l);
     cpuPrvSetRegNotPC(cpu, 1, num % 10l);
 
     cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+
+    execFnEpilogue();
 }
 
-static void execFn_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_peephole_ADC_memcpy(void *bogus, struct ArmCpu *cpu, uint32_t instr,
+                                       bool privileged) {
     uint32_t src = cpuPrvGetRegNotPC(cpu, 1);
     uint32_t dest = cpuPrvGetRegNotPC(cpu, 0);
     uint32_t size = cpuPrvGetRegNotPC(cpu, 2);
@@ -1031,22 +1145,28 @@ static void execFn_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr, bool 
     } else {
         cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
     }
+
+    execFnEpilogue();
 }
 
-static void execFn_noop(struct ArmCpu *cpu, uint32_t instr, bool privileged) {}
+static void execFn_noop(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+    execFnEpilogue();
+}
 
 template <bool wasT>
-static void execFn_invalid(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_invalid(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     fprintf(stderr, "Invalid instr 0x%08lx seen at 0x%08lx with CPSR 0x%08lx\n",
             (unsigned long)instr, (unsigned long)cpu->curInstrPC,
             (unsigned long)cpuPrvMaterializeCPSR(cpu));
 
     cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_UND, cpu->curInstrPC + (wasT ? 2 : 4),
                     ARM_SR_MODE_UND | ARM_SR_I);
+
+    execFnEpilogue();
 }
 
 template <bool wasT, bool align2>
-static void execFn_b2thumb(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_b2thumb(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t ea;
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
@@ -1062,15 +1182,17 @@ static void execFn_b2thumb(struct ArmCpu *cpu, uint32_t instr, bool privileged) 
     if (!cpu->T) ea |= 1UL;  // set T flag if needed
 
     cpuPrvSetPC(cpu, ea);
+
+    execFnEpilogue();
 }
 
 template <bool wasT, bool two>
-static void execFn_cp_mem2reg(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_cp_mem2reg(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t addBefore, addAfter;
     uint_fast8_t mode, cpNo;
     uint8_t memVal8;
 
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     cpNo = (instr >> 8) & 0x0F;
     mode = cpuPrvArmAdrMode_5(cpu, instr, &addBefore, &addAfter, &memVal8);
@@ -1097,17 +1219,20 @@ static void execFn_cp_mem2reg(struct ArmCpu *cpu, uint32_t instr, bool privilege
             goto invalid_instr;
     }
 
-    return;
+    goto epilogue;
+
+epilogue:
+    execFnEpilogue();
 
 invalid_instr:
-    execFn_invalid<wasT>(cpu, instr, privileged);
+    MUSTTAIL return execFn_invalid<wasT>(nullptr, cpu, instr, privileged);
 }
 
 template <bool wasT, bool two>
-static void execFn_cp_dp(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_cp_dp(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint_fast8_t cpNo;
 
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     cpNo = (instr >> 8) & 0x0F;
 
@@ -1133,21 +1258,22 @@ static void execFn_cp_dp(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
             goto invalid_instr;
     }
 
-    return;
+epilogue:
+    execFnEpilogue();
 
 invalid_instr:
-    execFn_invalid<wasT>(cpu, instr, privileged);
+    MUSTTAIL return execFn_invalid<wasT>(nullptr, cpu, instr, privileged);
 }
 
 template <bool wasT, int tag>
-static void execFn_swb(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_swb(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, ea, memVal32;
     bool ok;
     uint_fast8_t fsr;
     uint8_t memVal8;
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     switch (tag) {
         case 0:  // SWP
@@ -1156,14 +1282,14 @@ static void execFn_swb(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
             ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, false, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
-                return;
+                goto epilogue;
             }
             op1 = memVal32;
             memVal32 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
             ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, true, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
-                return;
+                goto epilogue;
             }
             cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, op1);
             break;
@@ -1174,30 +1300,33 @@ static void execFn_swb(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
             ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
-                return;
+                goto epilogue;
             }
             op1 = memVal8;
             memVal8 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);
             ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, true, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
-                return;
+                goto epilogue;
             }
             cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, op1);
             break;
 
         default:
-            return execFn_invalid<wasT>(cpu, instr, privileged);
+            MUSTTAIL return execFn_invalid<wasT>(nullptr, cpu, instr, privileged);
     }
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT, int tag, bool flags>
-static void execFn_mult(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_mult(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, op2, res;
     uint64_t res64;
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     switch (tag) {  // multiplies
 
@@ -1224,7 +1353,7 @@ static void execFn_mult(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
                 if (!res) cpu->flags |= ARM_SR_Z;
                 cpu->flags |= (res & 0x80000000UL);
             }
-            return;
+            goto epilogue;
 
         case 8:  // UMULL
         case 9:
@@ -1263,12 +1392,15 @@ static void execFn_mult(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
             break;
 
         default:
-            return execFn_invalid<wasT>(cpu, instr, privileged);
+            MUSTTAIL return execFn_invalid<wasT>(nullptr, cpu, instr, privileged);
     }
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT, int mode, bool pc, bool addBefore, bool addAfter, bool immediate, bool negate>
-static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_load_store_1(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t ea, increment;
     bool ok;
     uint_fast8_t fsr, reg;
@@ -1277,7 +1409,7 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privile
     uint32_t doubleMem[2];
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     reg = (instr >> 16) & 0x0F;
 
@@ -1298,7 +1430,7 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privile
                 ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, false, privileged, &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
-                    return;
+                    goto epilogue;
                 }
                 cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, memVal16);
                 break;
@@ -1308,7 +1440,7 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privile
                 ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, false, privileged, &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
-                    return;
+                    goto epilogue;
                 }
                 cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, (int32_t)(int16_t)memVal16);
                 break;
@@ -1318,7 +1450,7 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privile
                 ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
-                    return;
+                    goto epilogue;
                 }
                 cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, (int32_t)(int8_t)memVal8);
                 break;
@@ -1328,7 +1460,7 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privile
                 ok = cpuPrvMemOp<8>(cpu, doubleMem, ea, false, privileged, &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
-                    return;
+                    goto epilogue;
                 }
 
                 cpuPrvSetRegNotPC(cpu, ((instr >> 12) & 0x0F) + 0, doubleMem[0]);
@@ -1344,13 +1476,13 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privile
                 ok = cpuPrvMemOp<2>(cpu, &memVal16, ea, true, privileged, &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
-                    return;
+                    goto epilogue;
                 }
                 break;
 
             case ARM_MODE_3_SH:
             case ARM_MODE_3_SB:
-                return execFn_invalid<wasT>(cpu, instr, privileged);
+                MUSTTAIL return execFn_invalid<wasT>(nullptr, cpu, instr, privileged);
 
             case ARM_MODE_3_D:
 
@@ -1359,7 +1491,7 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privile
                 ok = cpuPrvMemOp<8>(cpu, doubleMem, ea, true, privileged, &fsr);
                 if (!ok) {
                     cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
-                    return;
+                    goto epilogue;
                 }
                 break;
         }
@@ -1371,50 +1503,65 @@ static void execFn_load_store_1(struct ArmCpu *cpu, uint32_t instr, bool privile
         else
             cpuPrvSetRegNotPC(cpu, reg, ea + increment);
     }
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT>
-static void execFn_clz(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_clz(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, cpuPrvClz(cpuPrvGetRegNotPC(cpu, instr & 0xF)));
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT, bool link>
-static void execFn_bl_reg(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_bl_reg(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     if (link)
         cpuPrvSetRegNotPC(cpu, REG_NO_LR,
                           cpu->curInstrPC + (wasT ? 3 : 4));  // save return value for BLX
     cpuPrvSetPC(cpu, cpuPrvGetReg<wasT>(cpu, instr & 0x0F));
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT, bool spsr>
-static void execFn_psr2reg(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_psr2reg(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, spsr ? cpu->SPSR : cpuPrvMaterializeCPSR(cpu));
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT, bool spsr, bool pc>
-static void execFn_reg2psr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_reg2psr(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     cpuPrvSetPSR<spsr>(cpu, (instr >> 16) & 0x0F, privileged,
                        cpuPrvGetReg<wasT, pc>(cpu, instr & 0x0F));
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT, int tag>
-static void execFn_dspadd(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_dspadd(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, op2, res;
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     op1 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);          // Rm
     op2 = cpuPrvGetRegNotPC(cpu, (instr >> 16) & 0x0F);  // Rn
@@ -1474,24 +1621,30 @@ static void execFn_dspadd(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     }
 
     cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, res);
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT>
-static void execFn_softbreak(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_softbreak(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_P_ABT, cpu->curInstrPC + 4,
                     ARM_SR_MODE_ABT | ARM_SR_I);
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT, int tag>
-static void execFn_dspmul(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_dspmul(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, op2, res;
     uint64_t res64;
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     op1 = cpuPrvGetRegNotPC(cpu, instr & 0x0F);         // Rm
     op2 = cpuPrvGetRegNotPC(cpu, (instr >> 8) & 0x0F);  // Rs
@@ -1569,16 +1722,19 @@ static void execFn_dspmul(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
             cpuPrvSetRegNotPC(cpu, (instr >> 16) & 0x0F, res);
             break;
     }
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT, int op, bool setFlags, bool srcPc, bool destPc, int tier = 0>
-static void execFn_dproc(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_dproc(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, op2, res, sr;
     uint64_t res64;
     bool cOut;
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     op2 = cpuPrvArmAdrMode_1<wasT>(cpu, instr, &cOut);
 
@@ -1667,7 +1823,7 @@ static void execFn_dproc(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
 
                 cpuPrvSetPSR<false>(cpu, (instr >> 16) & 0x0F, privileged,
                                     cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
-                return;
+                goto epilogue;
             }
             cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C);
             op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
@@ -1687,7 +1843,7 @@ static void execFn_dproc(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
 
                 cpuPrvSetPSR<true>(cpu, (instr >> 16) & 0x0F, privileged,
                                    cpuPrvROR(instr & 0xFF, ((instr >> 8) & 0x0F) * 2));
-                return;
+                goto epilogue;
             }
             cpu->flags &= ~(ARM_SR_Z | ARM_SR_N | ARM_SR_C | ARM_SR_V);
             op1 = cpuPrvGetReg<wasT, srcPc>(cpu, (instr >> 16) & 0x0F);
@@ -1736,18 +1892,21 @@ static void execFn_dproc(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
         if (!res) cpu->flags |= ARM_SR_Z;
         cpu->flags |= (res & 0x80000000UL);
     }
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT, int mode, bool srcPc, bool destPc, bool addBefore, bool addAfter,
           bool immediate, bool negate>
-static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_load_store_2(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t op1, ea, memVal32, increment;
     bool ok;
     uint_fast8_t fsr, sourceReg, destReg;
     uint8_t memVal8;
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     sourceReg = (instr >> 16) & 0x0F;
     if constexpr (mode & ARM_MODE_2_T) privileged = false;
@@ -1794,7 +1953,7 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privile
             ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, false, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
-                return;
+                goto epilogue;
             }
 
             destReg = (instr >> 12) & 0x0F;
@@ -1818,7 +1977,7 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privile
             ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, false, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, false, false, fsr);
-                return;
+                goto epilogue;
             }
             cpuPrvSetRegNotPC(cpu, (instr >> 12) & 0x0F, memVal8);
         }
@@ -1830,14 +1989,14 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privile
             ok = cpuPrvMemOp<4>(cpu, &memVal32, ea, true, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
-                return;
+                goto epilogue;
             }
         } else {
             memVal8 = op1;
             ok = cpuPrvMemOp<1>(cpu, &memVal8, ea, true, privileged, &fsr);
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, ea, true, false, fsr);
-                return;
+                goto epilogue;
             }
         }
     }
@@ -1848,20 +2007,28 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr, bool privile
         else
             cpuPrvSetRegNotPC(cpu, sourceReg, ea + increment);
     }
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT, int mode, bool isLoad, bool sBit>
-static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
-    if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
-
+static void execFn_load_store_multi(void *bogus, struct ArmCpu *cpu, uint32_t instr,
+                                    bool privileged) {
     bool userModeRegs = false, copySPSR = false, ok;
     uint32_t loadedPc = 0xfffffffful;
     uint_fast8_t fsr;
-    uint_fast16_t regsList = instr & 0xffff;
-    uint_fast8_t reg = (instr >> 16) & 0x0f;
+    uint_fast16_t regsList;
+    uint_fast8_t reg;
     uint32_t memVal32, sr, ea;
-    uint32_t origBaseRegVal = ea = cpuPrvGetRegNotPC(cpu, reg);
+    uint32_t origBaseRegVal;
+
+    if constexpr (wasT) instr = table_thumb2arm[instr];
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
+
+    regsList = instr & 0xffff;
+    reg = (instr >> 16) & 0x0f;
+    origBaseRegVal = ea = cpuPrvGetRegNotPC(cpu, reg);
 
     if (sBit &&
         !((cpu->M == ARM_SR_MODE_USR) || (cpu->M == ARM_SR_MODE_SYS))) {  // sort out what "S" means
@@ -1894,7 +2061,7 @@ static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr, bool pri
             cpuPrvHandleMemErr(cpu, ea, !isLoad, false, fsr);                   \
             if (regsList & (1 << reg)) cpuPrvSetReg(cpu, reg, origBaseRegVal);  \
                                                                                 \
-            return;                                                             \
+            goto epilogue;                                                      \
         }                                                                       \
         if (!(mode & ARM_MODE_4_BFR)) ea += (mode & ARM_MODE_4_INC) ? 4 : -4;   \
                                                                                 \
@@ -1949,14 +2116,17 @@ static void execFn_load_store_multi(struct ArmCpu *cpu, uint32_t instr, bool pri
         else
             cpu->regs[REG_NO_PC] &= ~3;
     }
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT, bool link>
-static void execFn_bl(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_bl(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint32_t ea;
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     ea = instr << 8;
     ea = ((int32_t)ea) >> 7;
@@ -1968,14 +2138,17 @@ static void execFn_bl(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     if (cpu->T) ea |= 1UL;  // keep T flag as needed
 
     cpuPrvSetPC(cpu, ea);
+
+epilogue:
+    execFnEpilogue();
 }
 
 template <bool wasT>
-static void execFn_swi(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_swi(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint_fast8_t fsr;
 
     if constexpr (wasT) instr = table_thumb2arm[instr];
-    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) return;
+    if (table_conditions[((cpu->flags & 0xf0000000UL) >> 24) | (instr >> 28)]) goto epilogue;
 
     if ((wasT && (instr & 0x00fffffful) == 0xab) ||
         (!wasT && (instr & 0x00fffffful) == 0x123456ul)) {
@@ -1986,60 +2159,67 @@ static void execFn_swi(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
             while (cpuPrvMemOp<1>(cpu, &ch, addr++, false, true, &fsr) && ch)
                 fprintf(stderr, "%c", ch);
 
-            return;
+            goto epilogue;
         } else if (cpu->regs[0] == 3) {
             uint8_t ch;
 
             if (cpuPrvMemOp<1>(cpu, &ch, cpu->regs[1], false, true, &fsr) && ch)
                 fprintf(stderr, "%c", ch);
 
-            return;
+            goto epilogue;
         } else if (cpu->regs[0] == 0x132 && gdbStubEnabled(cpu->debugStub)) {
 #ifndef __EMSCRIPTEN__
             fprintf(stderr, "debug break requested\n");
 #endif
             gdbStubDebugBreakRequested(cpu->debugStub);
 
-            return;
+            goto epilogue;
         }
     }
 
     cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_SWI, cpu->curInstrPC + (wasT ? 2 : 4),
                     ARM_SR_MODE_SVC | ARM_SR_I);
+
+epilogue:
+    execFnEpilogue();
 }
 
-static void execFn_peephole_ADC_udivmod(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_peephole_ADC_udivmod(void *bogus, struct ArmCpu *cpu, uint32_t instr,
+                                        bool privileged) {
     const uint32_t num = cpuPrvGetRegNotPC(cpu, 1);
     const uint32_t den = cpuPrvGetRegNotPC(cpu, 0);
 
     if (den == 0) {
         // mov r2, #0
-        execFn_dproc<false, 13, false, false, false, 1>(cpu, FIRST_INSTRUCTION_ADS_UDIVMOD,
-                                                        privileged);
-        return;
+        MUSTTAIL return execFn_dproc<false, 13, false, false, false, 1>(
+            nullptr, cpu, FIRST_INSTRUCTION_ADS_UDIVMOD, privileged);
     }
 
     cpuPrvSetRegNotPC(cpu, 0, num / den);
     cpuPrvSetRegNotPC(cpu, 1, num % den);
 
     cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+
+    execFnEpilogue();
 }
 
-static void execFn_peephole_ADC_sdivmod(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_peephole_ADC_sdivmod(void *bogus, struct ArmCpu *cpu, uint32_t instr,
+                                        bool privileged) {
     const int32_t num = cpuPrvGetRegNotPC(cpu, 1);
     const int32_t den = cpuPrvGetRegNotPC(cpu, 0);
 
     if (den == 0) {
         // ands r2, r0, #128, #8
-        execFn_dproc<false, 0, true, false, false, 1>(cpu, FIRST_INSTRUCTION_ADS_SDIVMOD,
-                                                      privileged);
-        return;
+        MUSTTAIL return execFn_dproc<false, 0, true, false, false, 1>(
+            nullptr, cpu, FIRST_INSTRUCTION_ADS_SDIVMOD, privileged);
     }
 
     cpuPrvSetRegNotPC(cpu, 0, num / den);
     cpuPrvSetRegNotPC(cpu, 1, num % den);
 
     cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
+
+    execFnEpilogue();
 }
 
 template <bool wasT>
@@ -2575,7 +2755,7 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
     return PREFIX_EXEC_FN(execFn_invalid<wasT>);
 }
 
-static void execFn_thumb_3_ldr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_thumb_3_ldr(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     const uint32_t pc = cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL;
     const uint32_t addr = pc + ((instr & 0xff) << 2);
     uint32_t memVal32;
@@ -2586,10 +2766,12 @@ static void execFn_thumb_3_ldr(struct ArmCpu *cpu, uint32_t instr, bool privileg
         cpuPrvHandleMemErr(cpu, addr, false, false, fsr);
     else
         cpuPrvSetRegNotPC(cpu, (instr >> 8) & 0x07, memVal32);
+
+    execFnEpilogue();
 }
 
 template <bool pcD, bool pcS>
-static void execFn_thumb_4_add(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_thumb_4_add(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint_fast8_t vD = (instr & 7) | ((instr >> 4) & 0x08);
     uint_fast8_t v8 = (instr >> 3) & 0xF;
 
@@ -2597,10 +2779,12 @@ static void execFn_thumb_4_add(struct ArmCpu *cpu, uint32_t instr, bool privileg
     if constexpr (pcD) v32 |= 1;
 
     cpuPrvSetReg<pcD>(cpu, vD, v32);
+
+    execFnEpilogue();
 }
 
 template <bool pcD, bool pcS>
-static void execFn_thumb_3_mov(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_thumb_3_mov(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     uint_fast8_t vD = (instr & 7) | ((instr >> 4) & 0x08);
     uint_fast8_t v8 = (instr >> 3) & 0xF;
 
@@ -2608,48 +2792,64 @@ static void execFn_thumb_3_mov(struct ArmCpu *cpu, uint32_t instr, bool privileg
     if constexpr (pcD) v32 |= 1;
 
     cpuPrvSetReg<pcD>(cpu, vD, v32);
+
+    execFnEpilogue();
 }
 
 template <bool blx, bool pcS>
-static void execFn_thumb_bl_x(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_thumb_bl_x(void *bogus, struct ArmCpu *cpu, uint32_t instr, bool privileged) {
     if constexpr (blx) cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + 1;
 
     if constexpr (pcS)
         cpuPrvSetPC(cpu, (cpu->regs[REG_NO_PC] + 2) & ~3UL);
     else
         cpuPrvSetPC(cpu, cpu->regs[(instr >> 3) & 0xF]);
+
+    execFnEpilogue();
 }
 
 template <bool sp>
-static void execFn_thumb_load_addr(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_thumb_load_addr(void *bogus, struct ArmCpu *cpu, uint32_t instr,
+                                   bool privileged) {
     cpuPrvSetReg<false>(
         cpu, (instr >> 8) & 0x07,
         (sp ? cpuPrvGetRegNotPC(cpu, REG_NO_SP) : (cpuPrvGetReg<true>(cpu, REG_NO_PC) & ~0x03UL)) +
             ((instr & 0xff) << 2));
+
+    execFnEpilogue();
 }
 
-static void execFn_thumb_bl_x_prefix(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_thumb_bl_x_prefix(void *bogus, struct ArmCpu *cpu, uint32_t instr,
+                                     bool privileged) {
     uint32_t offsetHi = instr & 0x7FF;
 
     if (instr & 0x0400) offsetHi |= 0x000FF800UL;
     cpu->regs[REG_NO_LR] = cpu->regs[REG_NO_PC] + (offsetHi << 12);
+
+    execFnEpilogue();
 }
 
-static void execFn_thumb_bl_suffix(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_thumb_bl_suffix(void *bogus, struct ArmCpu *cpu, uint32_t instr,
+                                   bool privileged) {
     const uint32_t lr = cpu->regs[REG_NO_PC] | 1ul;
     const uint32_t offsetLo = instr & 0x7FF;
 
     cpu->regs[REG_NO_PC] = cpu->regs[REG_NO_LR] + 2 + (offsetLo << 1);
     cpu->regs[REG_NO_LR] = lr;
+
+    execFnEpilogue();
 }
 
-static void execFn_thumb_blx_suffix(struct ArmCpu *cpu, uint32_t instr, bool privileged) {
+static void execFn_thumb_blx_suffix(void *bogus, struct ArmCpu *cpu, uint32_t instr,
+                                    bool privileged) {
     const uint32_t lr = cpu->regs[REG_NO_PC] | 1ul;
     const uint32_t offsetLo = instr & 0x7FF;
 
     cpu->regs[REG_NO_PC] = (cpu->regs[REG_NO_LR] + 2 + (offsetLo << 1)) & ~3ul;
     cpu->regs[REG_NO_LR] = lr;
     cpu->T = 0;
+
+    execFnEpilogue();
 }
 
 static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderThumb(uint32_t instr) {
@@ -2709,22 +2909,6 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderThumb(uint32_t instr) {
     __builtin_unreachable();
 }
 
-static uint32_t cpuPrvCompressExecFn(ExecFn execFn) {
-#ifdef __EMSCRIPTEN__
-    return (uint32_t)execFn;
-#else
-    return (int32_t)((uint8_t *)execFn - (uint8_t *)execFn_noop);
-#endif
-}
-
-static ExecFn cpuPrvDecompressExecFn(uint32_t compressed) {
-#ifdef __EMSCRIPTEN__
-    return (ExecFn)compressed;
-#else
-    return (ExecFn)((uint8_t *)execFn_noop + (int32_t)compressed);
-#endif
-}
-
 uint32_t cpuDecodeArm(uint32_t instr) {
     return cpuPrvCompressExecFn(cpuPrvDecoderArm<false>(instr));
 }
@@ -2735,16 +2919,6 @@ uint32_t cpuDecodeThumb(uint32_t instr) {
     return cpuPrvCompressExecFn(translatedInstr ? cpuPrvDecoderArm<true>(translatedInstr)
                                                 : cpuPrvDecoderThumb(instr));
 }
-
-#ifdef __EMSCRIPTEN__
-
-// The content of this function will be replaced with a jump table later.
-static void __attribute__((noinline)) cpuPrvDispatchExecFn(ExecFn execFn, struct ArmCpu *cpu,
-                                                           uint32_t instr, bool privileged) {
-    ((ExecFn)((uint32_t)execFn & 0xffff))(cpu, instr, privileged);
-}
-
-#endif
 
 static uint32_t translateThumb(uint16_t instrT) {
     bool vB;
@@ -3415,9 +3589,16 @@ static void cpuPrvCyclePace(struct ArmCpu *cpu) {
 }
 
 uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
+#ifdef TAIL_CALL
+    cpu->cycleAcc = 0;
+    cpu->cyclesTotal = cycles;
+    #define CYCLE_ACC cpu->cycleAcc
+#else
     uint32_t cycleAcc = 0;
+    #define CYCLE_ACC cycleAcc
+#endif
 
-    while (cycleAcc < cycles) {
+    while (CYCLE_ACC < cycles) {
         if (cpu->slowPath) {
             if (cpu->sleeping) break;
 
@@ -3436,7 +3617,7 @@ uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
 
             if (cpu->modePace) {
                 cpuPrvCyclePace(cpu);
-                cycleAcc += 10;
+                CYCLE_ACC += 10;
 
                 continue;
             }
@@ -3463,8 +3644,8 @@ uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
 
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
-                return cycleAcc;  // exit here so that debugger can see us execute first instr
-                                  // of execption handler
+                return CYCLE_ACC;  // exit here so that debugger can see us execute first instr
+                                   // of execption handler
             }
 
             instr = instr16;
@@ -3474,23 +3655,27 @@ uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
 
             if (!ok) {
                 cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
-                return cycleAcc;  // exit here so that debugger can see us execute first instr
-                                  // of execption handler
+                return CYCLE_ACC;  // exit here so that debugger can see us execute first instr
+                                   // of execption handler
             }
 
             cpu->regs[REG_NO_PC] += 4;
         }
 
 #ifdef __EMSCRIPTEN__
-        cpuPrvDispatchExecFn(cpuPrvDecompressExecFn(decoded), cpu, instr, privileged);
+        cpuPrvDispatchExecFn((void *)(cpuPrvDecompressExecFn(decoded)), cpu, instr, privileged);
 #else
-        cpuPrvDecompressExecFn(decoded)(cpu, instr, privileged);
+        cpuPrvDecompressExecFn(decoded)(nullptr, cpu, instr, privileged);
 #endif
 
-        cycleAcc += 1;
+#ifndef TAIL_CALL
+        cycleAcc++;
+#endif
     }
 
-    return cycleAcc;
+    return CYCLE_ACC;
+
+#undef CYCLE_ACC
 }
 
 void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise) {  // unraise when acknowledged

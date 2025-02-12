@@ -11,7 +11,7 @@ LD_EMCC ?= emcc
 DEVELOP = 
 
 WASMOPT = wasm-opt
-WASMOPT_FLAGS_BASE = --no-inline="*mmuTranslate*" --enable-bulk-memory --enable-bulk-memory-opt  --enable-sign-ext --enable-nontrapping-float-to-int  --inlining-optimizing \
+WASMOPT_FLAGS_BASE = --no-inline="*mmuTranslate*" --enable-bulk-memory --enable-bulk-memory-opt  --enable-sign-ext --enable-nontrapping-float-to-int --enable-tail-call --inlining-optimizing \
 	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
 WASMOPT_FLAGS_WEBKIT = --no-inline="*execFn_*"  $(WASMOPT_FLAGS_BASE) 
 WASMOPT_FLAGS_OTHER = $(WASMOPT_FLAGS_BASE)
@@ -22,7 +22,7 @@ YARN = yarn
 CFLAGS_NATIVE ?= -O3  -g $(shell sdl2-config --cflags) -flto
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE) 
 
-CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions -g
+CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions -g -mtail-call
 CXXFLAGS_EMCC = $(CFLAGS_EMCC)
 INCLUDE_EXTRA ?=
 

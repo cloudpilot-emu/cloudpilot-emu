@@ -45,16 +45,16 @@ function buildDispatcher(module: binaryen.Module, execFnHandles: Array<[string, 
             i < execFnHandles.length - 1 ? `op${i + 1}` : null,
             [
                 block,
-                module.call(
+                module.return_call(
                     execFnHandles[i][0],
                     [
+                        module.i32.const(0),
                         module.local.get(1, binaryen.i32),
                         module.local.get(2, binaryen.i32),
                         module.local.get(3, binaryen.i32),
                     ],
                     binaryen.none
                 ),
-                module.return(),
             ],
             undefined
         );
@@ -170,6 +170,7 @@ async function main(filename: string): Promise<void> {
             binaryen.Features.Multivalue |
             binaryen.Features.SignExt |
             binaryen.Features.NontrappingFPToInt |
+            binaryen.Features.TailCall |
             (1 << 19)
     );
     binaryen.setDebugInfo(true);

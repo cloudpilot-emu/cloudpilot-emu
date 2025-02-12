@@ -91,7 +91,7 @@ void icacheInvalRange(struct icache* ic, uint32_t addr, uint32_t size) {
     }
 }
 
-template <int sz>
+template <int sz, bool fast>
 bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, uint32_t* decoded) {
     if (va & (sz - 1)) {  // alignment issue
 
@@ -103,61 +103,66 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, 
     const uint_fast8_t tag = calculateTag(va);
 
     if (line->revision != ic->revision || line->tag != tag) {
-        uint8_t data[sizeof(line->data)];
-        bool cacheable = mmuIsOn(ic->mmu);
-        uint32_t pa = va;
-
-        if (cacheable) {
-            MMUTranslateResult translateResult = mmuTranslate(ic->mmu, va, true, false);
-            if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
-                *fsrP = MMU_TRANSLATE_RESULT_FSR(translateResult);
-                return false;
-            }
-
-            pa = MMU_TRANSLATE_RESULT_PA(translateResult);
-            cacheable = MMU_TRANSLATE_RESULT_CACHEABLE(translateResult);
-        }
-
-        if (!cacheable) {
-            bool ok = memInstructionFetch(ic->mem, pa, sz, buf);
-
-            if (!ok) {
-                *fsrP = 0x0d;  // perm error
-                return false;
-            }
-
-            *decoded = sz == 4 ? cpuDecodeArm(*(uint32_t*)buf) : cpuDecodeThumb(*(uint16_t*)buf);
-            return true;
-        }
-
-        bool ok = memInstructionFetch(ic->mem, pa & ((0xffffffff << CACHE_LINE_WIDTH_BITS)),
-                                      sizeof(data), data);
-        if (!ok) {
-            if (fsrP) *fsrP = 0x0d;  // perm error
+        if constexpr (fast) {
             return false;
-        };
+        } else {
+            uint8_t data[sizeof(line->data)];
+            bool cacheable = mmuIsOn(ic->mmu);
+            uint32_t pa = va;
 
-        for (size_t i = 0; i < sizeof(data); i += 8) {
-            const uint64_t d = *(uint64_t*)(data + i);
-            if ((uint32_t)d != *(uint32_t*)(line->data + i))
+            if (cacheable) {
+                MMUTranslateResult translateResult = mmuTranslate(ic->mmu, va, true, false);
+                if (!MMU_TRANSLATE_RESULT_OK(translateResult)) {
+                    *fsrP = MMU_TRANSLATE_RESULT_FSR(translateResult);
+                    return false;
+                }
+
+                pa = MMU_TRANSLATE_RESULT_PA(translateResult);
+                cacheable = MMU_TRANSLATE_RESULT_CACHEABLE(translateResult);
+            }
+
+            if (!cacheable) {
+                bool ok = memInstructionFetch(ic->mem, pa, sz, buf);
+
+                if (!ok) {
+                    *fsrP = 0x0d;  // perm error
+                    return false;
+                }
+
+                *decoded =
+                    sz == 4 ? cpuDecodeArm(*(uint32_t*)buf) : cpuDecodeThumb(*(uint16_t*)buf);
+                return true;
+            }
+
+            bool ok = memInstructionFetch(ic->mem, pa & ((0xffffffff << CACHE_LINE_WIDTH_BITS)),
+                                          sizeof(data), data);
+            if (!ok) {
+                if (fsrP) *fsrP = 0x0d;  // perm error
+                return false;
+            };
+
+            for (size_t i = 0; i < sizeof(data); i += 8) {
+                const uint64_t d = *(uint64_t*)(data + i);
+                if ((uint32_t)d != *(uint32_t*)(line->data + i))
 #ifdef __EMSCRIPTEN__
-                *((uint32_t*)(line->decoded + (i >> 1))) = 0;
+                    *((uint32_t*)(line->decoded + (i >> 1))) = 0;
 #else
-                *((uint64_t*)(line->decoded + (i >> 1))) = 0;
+                    *((uint64_t*)(line->decoded + (i >> 1))) = 0;
 #endif
 
-            if ((d >> 32) != *(uint32_t*)(line->data + i + 4))
+                if ((d >> 32) != *(uint32_t*)(line->data + i + 4))
 #ifdef __EMSCRIPTEN__
-                *((uint32_t*)(line->decoded + (i >> 1) + 2)) = 0;
+                    *((uint32_t*)(line->decoded + (i >> 1) + 2)) = 0;
 #else
-                *((uint64_t*)(line->decoded + (i >> 1) + 2)) = 0;
+                    *((uint64_t*)(line->decoded + (i >> 1) + 2)) = 0;
 #endif
 
-            *(uint64_t*)(line->data + i) = d;
+                *(uint64_t*)(line->data + i) = d;
+            }
+
+            line->revision = ic->revision;
+            line->tag = tag;
         }
-
-        line->revision = ic->revision;
-        line->tag = tag;
     }
 
     switch (sz) {
@@ -210,7 +215,12 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, 
     return true;
 }
 
-template bool icacheFetch<2>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
-                             uint32_t* decoded);
-template bool icacheFetch<4>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
-                             uint32_t* decoded);
+template bool icacheFetch<2, false>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
+                                    uint32_t* decoded);
+template bool icacheFetch<4, false>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
+                                    uint32_t* decoded);
+
+template bool icacheFetch<2, true>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
+                                   uint32_t* decoded);
+template bool icacheFetch<4, true>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
+                                   uint32_t* decoded);
