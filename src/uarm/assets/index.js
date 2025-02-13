@@ -3,7 +3,6 @@ import { Emulator } from './emulator.js';
 import { Database } from './database.js';
 import { AudioDriver } from './audiodriver.js';
 import { compressSession, decompressSession } from './session.js';
-import { unmuteIosAudio } from './unmute-ios-audio/index.js';
 
 (function () {
     const isMacOSSafari = 'safari' in window;
@@ -41,8 +40,6 @@ import { unmuteIosAudio } from './unmute-ios-audio/index.js';
 
     const canvas = document.getElementsByTagName('canvas')[0];
     const canvasCtx = canvas.getContext('2d');
-
-    unmuteIosAudio();
 
     let fileNor, fileNand, fileSd;
     let emulator;
