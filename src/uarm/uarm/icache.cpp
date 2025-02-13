@@ -91,7 +91,7 @@ void icacheInvalRange(struct icache* ic, uint32_t addr, uint32_t size) {
     }
 }
 
-template <int sz>
+template <int sz, int tier>
 bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, uint32_t* decoded) {
     if (va & (sz - 1)) {  // alignment issue
 
@@ -210,7 +210,11 @@ bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf, 
     return true;
 }
 
-template bool icacheFetch<2>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
-                             uint32_t* decoded);
-template bool icacheFetch<4>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
-                             uint32_t* decoded);
+template bool icacheFetch<2, 0>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
+                                uint32_t* decoded);
+template bool icacheFetch<4, 0>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
+                                uint32_t* decoded);
+template bool icacheFetch<2, 1>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
+                                uint32_t* decoded);
+template bool icacheFetch<4, 1>(struct icache* ic, uint32_t va, uint_fast8_t* fsrP, void* buf,
+                                uint32_t* decoded);

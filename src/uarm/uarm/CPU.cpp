@@ -2745,12 +2745,14 @@ uint32_t cpuDecodeThumb(uint32_t instr) {
 #ifdef __EMSCRIPTEN__
 
 // The content of this function will be replaced with a jump table later.
+template <int tier>
 static void __attribute__((noinline)) cpuPrvDispatchExecFnArm(ExecFn execFn, struct ArmCpu *cpu,
                                                               uint32_t instr) {
     ((ExecFn)((uint32_t)execFn & 0xffff))(cpu, instr);
 }
 
 // The content of this function will be replaced with a jump table later.
+template <int tier>
 static void __attribute__((noinline)) cpuPrvDispatchExecFnThumb(ExecFn execFn, struct ArmCpu *cpu,
                                                                 uint32_t instr) {
     ((ExecFn)((uint32_t)execFn & 0xffff))(cpu, instr);
@@ -3241,33 +3243,6 @@ void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState) {
 
 uint32_t *cpuGetRegisters(struct ArmCpu *cpu) { return cpu->regs; }
 
-void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
-    const uint8_t table = syscall >> 12;
-    uint32_t tableAddr;
-    if (!cpuPrvMemOpEx<4>(cpu, &tableAddr, cpu->regs[9] - table, false, true, NULL))
-        ERR("failed to dispatch syscall %#010x: unable to read table address\n", syscall);
-
-    const uint32_t offset = syscall & 0xfff;
-    uint32_t entryAddr;
-    if (!cpuPrvMemOpEx<4>(cpu, &entryAddr, tableAddr + offset, false, true, NULL))
-        ERR("failed to dispatch syscall %#010x: unable to read entry point\n", syscall);
-
-    if (cpu->T) cpu->slowPath |= SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE;
-
-    cpu->regs[REG_NO_PC] = entryAddr;
-    cpu->isInjectedCall = true;
-    cpu->T = false;
-    cpu->regs[REG_NO_LR] = INJECTED_CALL_LR_MAGIC;
-
-    uint64_t cycle = 0;
-    while (cpu->regs[REG_NO_PC] != INJECTED_CALL_LR_MAGIC) {
-        cpuCycle(cpu, 1);
-
-        if (cycle++ == INJECTED_CALL_MAX_CYCLES)
-            ERR("failed to execute syscall: cycle limit reached\n");
-    }
-}
-
 static bool cpuPrvPaceCallout(struct ArmCpu *cpu, uint32_t destination) {
     if (!paceSave68kState()) {
         cpuPrvHandlePaceMemoryFault(cpu);
@@ -3431,7 +3406,7 @@ FORCE_INLINE static void cpuPrvCyclePace(struct ArmCpu *cpu) {
     }
 }
 
-FORCE_INLINE static uint32_t cpuCyclePace(struct ArmCpu *cpu, uint32_t cycles) {
+ATTR_EMCC_NOINLINE static uint32_t cpuCyclePace(struct ArmCpu *cpu, uint32_t cycles) {
     uint32_t cycleAcc = 0;
 
     while (cycleAcc < cycles) {
@@ -3444,7 +3419,8 @@ FORCE_INLINE static uint32_t cpuCyclePace(struct ArmCpu *cpu, uint32_t cycles) {
     return cycleAcc;
 }
 
-FORCE_INLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cycles) {
+template <int tier>
+ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cycles) {
     uint32_t cycleAcc = 0;
     bool ok;
     uint16_t instr;
@@ -3461,7 +3437,7 @@ FORCE_INLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cycles) 
         if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-        ok = icacheFetch<2>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
+        ok = icacheFetch<2, tier>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
 
         if (!ok) {
             cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
@@ -3472,7 +3448,7 @@ FORCE_INLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cycles) 
         cpu->regs[REG_NO_PC] += 2;
 
 #ifdef __EMSCRIPTEN__
-        cpuPrvDispatchExecFnThumb(cpuPrvDecompressExecFn(decoded), cpu, instr);
+        cpuPrvDispatchExecFnThumb<tier>(cpuPrvDecompressExecFn(decoded), cpu, instr);
 #else
         cpuPrvDecompressExecFn(decoded)(cpu, instr);
 #endif
@@ -3485,7 +3461,8 @@ FORCE_INLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cycles) 
     return cycleAcc;
 }
 
-FORCE_INLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycles) {
+template <int tier>
+ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycles) {
     uint32_t cycleAcc = 0;
     bool ok;
     uint32_t instr, decoded;
@@ -3501,7 +3478,7 @@ FORCE_INLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycles) {
         if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-        ok = icacheFetch<4>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
+        ok = icacheFetch<4, tier>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
 
         if (!ok) {
             cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
@@ -3512,7 +3489,7 @@ FORCE_INLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycles) {
         cpu->regs[REG_NO_PC] += 4;
 
 #ifdef __EMSCRIPTEN__
-        cpuPrvDispatchExecFnArm(cpuPrvDecompressExecFn(decoded), cpu, instr);
+        cpuPrvDispatchExecFnArm<tier>(cpuPrvDecompressExecFn(decoded), cpu, instr);
 #else
         cpuPrvDecompressExecFn(decoded)(cpu, instr);
 #endif
@@ -3525,7 +3502,8 @@ FORCE_INLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycles) {
     return cycleAcc;
 }
 
-uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
+template <int tier>
+FORCE_INLINE static uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     if (cpu->sleeping) return cycles;
 
     if (cpu->waitingEventsTotal) {
@@ -3545,9 +3523,40 @@ uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     if (cpu->modePace)
         return cpuCyclePace(cpu, cycles);
     else if (cpu->T)
-        return cpuCycleThumb(cpu, cycles);
+        return cpuCycleThumb<tier>(cpu, cycles);
     else
-        return cpuCycleArm(cpu, cycles);
+        return cpuCycleArm<tier>(cpu, cycles);
+}
+
+ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
+    return cpuCycle<0>(cpu, cycles);
+}
+
+void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
+    const uint8_t table = syscall >> 12;
+    uint32_t tableAddr;
+    if (!cpuPrvMemOpEx<4>(cpu, &tableAddr, cpu->regs[9] - table, false, true, NULL))
+        ERR("failed to dispatch syscall %#010x: unable to read table address\n", syscall);
+
+    const uint32_t offset = syscall & 0xfff;
+    uint32_t entryAddr;
+    if (!cpuPrvMemOpEx<4>(cpu, &entryAddr, tableAddr + offset, false, true, NULL))
+        ERR("failed to dispatch syscall %#010x: unable to read entry point\n", syscall);
+
+    if (cpu->T) cpu->slowPath |= SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE;
+
+    cpu->regs[REG_NO_PC] = entryAddr;
+    cpu->isInjectedCall = true;
+    cpu->T = false;
+    cpu->regs[REG_NO_LR] = INJECTED_CALL_LR_MAGIC;
+
+    uint64_t cycle = 0;
+    while (cpu->regs[REG_NO_PC] != INJECTED_CALL_LR_MAGIC) {
+        cpuCycle<1>(cpu, 1);
+
+        if (cycle++ == INJECTED_CALL_MAX_CYCLES)
+            ERR("failed to execute syscall: cycle limit reached\n");
+    }
 }
 
 void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise) {  // unraise when acknowledged

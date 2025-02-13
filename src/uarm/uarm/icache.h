@@ -26,7 +26,7 @@ void icacheInvalRange(struct icache* ic, uint32_t addr, uint32_t size);
 #ifdef __cplusplus
 }
 
-template <int sz>
+template <int sz, int tier = 0>
 bool icacheFetch(struct icache* ic, uint32_t va, uint_fast8_t* fsr, void* buf, uint32_t* decoded);
 
 #endif

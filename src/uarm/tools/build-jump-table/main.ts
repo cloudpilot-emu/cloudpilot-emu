@@ -147,13 +147,14 @@ function remapExecFunctions(
 }
 
 function replaceDispatcher(module: binaryen.Module, name: string, implementation: binaryen.ExportRef): void {
-    console.log(`replacing ${name}`);
+    for (const fn of getFunctionLike(module, name)) {
+        const info = binaryen.getFunctionInfo(fn);
 
-    const fn = getFunctionLikeOne(module, name);
-    const info = binaryen.getFunctionInfo(fn);
+        console.log(`replacing ${unmangleName(info.name)}`);
 
-    module.removeFunction(info.name);
-    module.addFunction(info.name, info.params, info.results, [], implementation);
+        module.removeFunction(info.name);
+        module.addFunction(info.name, info.params, info.results, [], implementation);
+    }
 }
 
 function isThumb(name: string) {
