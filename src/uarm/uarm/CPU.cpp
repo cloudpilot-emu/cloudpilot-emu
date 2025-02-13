@@ -929,6 +929,9 @@ static void cpuPrvZ72sysPrintf(struct ArmCpu *cpu) {
 }
 #endif
 
+template <bool wasT>
+static void execFn_noop(struct ArmCpu *cpu, uint32_t instr) {}
+
 // PACE entrypoint was called from ARM: regular invocation
 static void execFn_paceEnter(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t fsr = 0;
@@ -1037,8 +1040,6 @@ static void execFn_peephole_ADC_memcpy(struct ArmCpu *cpu, uint32_t instr) {
         cpuPrvSetPC(cpu, cpuPrvGetRegNotPC(cpu, REG_NO_LR));
     }
 }
-
-static void execFn_noop(struct ArmCpu *cpu, uint32_t instr) {}
 
 template <bool wasT>
 static void execFn_invalid(struct ArmCpu *cpu, uint32_t instr) {
@@ -2052,7 +2053,7 @@ static ExecFn ATTR_EMCC_NOINLINE cpuPrvDecoderArm(uint32_t instr) {
             case 5:
             case 7:
                 return (instr & 0x0D70F000UL) == 0x0550F000UL
-                           ? PREFIX_EXEC_FN(execFn_noop)
+                           ? PREFIX_EXEC_FN(execFn_noop<wasT>)
                            : PREFIX_EXEC_FN(execFn_invalid<wasT>);
 
             case 10:
@@ -2718,7 +2719,7 @@ static uint32_t cpuPrvCompressExecFn(ExecFn execFn) {
 #ifdef __EMSCRIPTEN__
     return (uint32_t)execFn;
 #else
-    return (int32_t)((uint8_t *)execFn - (uint8_t *)execFn_noop);
+    return (int32_t)((uint8_t *)execFn - (uint8_t *)execFn_noop<true>);
 #endif
 }
 
@@ -2726,7 +2727,7 @@ static ExecFn cpuPrvDecompressExecFn(uint32_t compressed) {
 #ifdef __EMSCRIPTEN__
     return (ExecFn)compressed;
 #else
-    return (ExecFn)((uint8_t *)execFn_noop + (int32_t)compressed);
+    return (ExecFn)((uint8_t *)execFn_noop<true> + (int32_t)compressed);
 #endif
 }
 

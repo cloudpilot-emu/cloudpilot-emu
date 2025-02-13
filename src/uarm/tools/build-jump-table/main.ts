@@ -156,6 +156,15 @@ function replaceDispatcher(module: binaryen.Module, name: string, implementation
     module.addFunction(info.name, info.params, info.results, [], implementation);
 }
 
+function isThumb(name: string) {
+    name = unmangleName(name);
+
+    if (name.indexOf('_thumb_') >= 0) return true;
+    if (name.indexOf('<true') >= 0) return true;
+
+    return false;
+}
+
 async function main(filename: string): Promise<void> {
     const content = await readFile(filename);
     const module = binaryen.readBinary(new Uint8Array(content, content.byteLength));
@@ -179,8 +188,17 @@ async function main(filename: string): Promise<void> {
         .filter(([i, name]) => name.includes('execFn_'));
 
     const execFnTableEntryToNameMap = new Map(execFnTableEntries);
-    const execFnHandles = execFnTableEntries.map(([i, name], handle): [string, number] => [name, handle]);
-    const execFnNameToHandleMap = new Map(execFnHandles);
+
+    const execFnHandlesArm = execFnTableEntries
+        .filter(([, name]) => !isThumb(name))
+        .map(([i, name], handle): [string, number] => [name, handle]);
+
+    const execFnHandlesThumb = execFnTableEntries
+        .filter(([, name]) => isThumb(name))
+        .map(([i, name], handle): [string, number] => [name, handle]);
+
+    const execFnNameToHandleMap = new Map([...execFnHandlesThumb, ...execFnHandlesArm]);
+
     const usedFunctions = new Set<string>();
 
     getFunctionLike(module, 'cpuPrvDecoderArm').forEach((fnInfo) =>
@@ -191,16 +209,22 @@ async function main(filename: string): Promise<void> {
         remapExecFunctions(module, fnInfo, execFnTableEntryToNameMap, execFnNameToHandleMap, usedFunctions)
     );
 
-    const usedHandles = Array.from(usedFunctions).map((name): [string, number] => [
-        name,
-        execFnNameToHandleMap.get(name)!,
-    ]);
+    const usedHandlesArm = Array.from(usedFunctions)
+        .filter((name) => !isThumb(name))
+        .map((name): [string, number] => [name, execFnNameToHandleMap.get(name)!]);
 
-    console.log(`building dispatcher for ${usedHandles.length} functions`);
-    const dispatcher = buildDispatcher(module, usedHandles);
+    const usedHandlesThumb = Array.from(usedFunctions)
+        .filter((name) => isThumb(name))
+        .map((name): [string, number] => [name, execFnNameToHandleMap.get(name)!]);
 
-    replaceDispatcher(module, 'cpuPrvDispatchExecFnArm', dispatcher);
-    replaceDispatcher(module, 'cpuPrvDispatchExecFnThumb', dispatcher);
+    console.log(`building dispatcher for ${usedHandlesArm.length} ARM functions`);
+    const dispatcherArm = buildDispatcher(module, usedHandlesArm);
+
+    console.log(`building dispatcher for ${usedHandlesThumb.length} thumb functions`);
+    const dispatcherThumb = buildDispatcher(module, usedHandlesThumb);
+
+    replaceDispatcher(module, 'cpuPrvDispatchExecFnArm', dispatcherArm);
+    replaceDispatcher(module, 'cpuPrvDispatchExecFnThumb', dispatcherThumb);
 
     if (module.validate()) {
         await writeFile(filename, module.emitBinary());
