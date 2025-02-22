@@ -1,4 +1,8 @@
-# 1.10.8
+# Version 1.10.9
+
+-   Fix a bug in snapshot timeouts.
+
+# Version 1.10.8
 
 -   Work around various PalmOS bugs in database import and export.
     
@@ -7,7 +11,7 @@
     harmless, but if you rely on database backups for important data you may
     want to save new backups to make sure your data is backed up faithfully.
 
-# 1.10.7
+# Version 1.10.7
 
 -   Work around occasional IndexedDB error when returning the app from
     background.
