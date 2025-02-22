@@ -13,7 +13,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { complete, compressPage } from './storage/util';
 
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
-import { DynamicTimeout } from '@pwa//helper/dynamicTimeout';
+import { DynamicTimeout } from '@common/helper/dynamicTimeout';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';

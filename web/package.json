@@ -33,12 +33,14 @@
     "@angular-eslint/schematics": "17.1.1",
     "@angular-eslint/template-parser": "17.1.1",
     "@types/mocha": "^10.0.6",
+    "@types/sinon": "^17.0.3",
     "@typescript-eslint/eslint-plugin": "^6.10.0",
     "@typescript-eslint/parser": "^6.10.0",
     "eslint": "^8.53.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.0.1",
     "mocha": "^10.2.0",
+    "sinon": "^19.0.2",
     "workbox-cli": "^7.0.0"
   },
   "dependencies": {

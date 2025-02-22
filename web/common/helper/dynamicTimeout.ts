@@ -3,7 +3,7 @@ export class DynamicTimeout {
         private timeoutRemaining: number,
         private cb: () => void,
     ) {
-        this.handle = window.setTimeout(this.onTimeout, timeoutRemaining);
+        this.handle = setTimeout(this.onTimeout, timeoutRemaining);
     }
 
     increase(delta: number): void {
@@ -20,7 +20,7 @@ export class DynamicTimeout {
 
         if (this.timeoutRemaining > 0) {
             this.timeoutTimestamp = performance.now();
-            this.handle = window.setTimeout(this.onTimeout, this.timeoutRemaining);
+            this.handle = setTimeout(this.onTimeout, this.timeoutRemaining);
 
             return;
         }
@@ -29,5 +29,5 @@ export class DynamicTimeout {
     };
 
     private timeoutTimestamp = performance.now();
-    private handle: number;
+    private handle: ReturnType<typeof setTimeout>;
 }

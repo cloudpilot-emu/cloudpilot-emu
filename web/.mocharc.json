@@ -1,5 +1,4 @@
 {
     "require": "./test_setup.js",
-    "reporter": "spec",
-    "ui": "tdd"
+    "reporter": "spec"
 }
