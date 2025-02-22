@@ -39,7 +39,6 @@ const STATIC_TIMEOUT_MSEC = 500;
 const TIMEOUT_DELTA_MSEC_PER_KB = 0.5;
 const MAX_CONSECUTIVE_ERRORS = 3;
 
-const E_TIMEOUT = new Error('transaction timeout');
 const E_SESSION_MISMATCH = new Error('session does not match emulation');
 @Injectable({
     providedIn: 'root',
@@ -178,7 +177,7 @@ export class SnapshotService {
                     tx.abort();
                 } catch (e) {}
 
-                reject(E_TIMEOUT);
+                reject(new Error(`timout expired after ${performance.now() - timestampStart} milliseconds`));
             });
 
             tx.oncomplete = () => {
