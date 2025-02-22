@@ -20,7 +20,7 @@ export class DynamicTimeout {
 
         if (this.timeoutRemaining > 0) {
             this.timeoutTimestamp = performance.now();
-            this.handle = window.setTimeout(this.onTimeout, this.timeoutTimestamp);
+            this.handle = window.setTimeout(this.onTimeout, this.timeoutRemaining);
 
             return;
         }
