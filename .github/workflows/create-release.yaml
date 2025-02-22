@@ -1,22 +1,22 @@
 name: Create release
 on:
-  push:
-    tags:
-      - "*"
+    push:
+        tags:
+            - '*'
 env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  TAG: ${GITHUB_REF##*/}
-  RELEASE_NOTES: |
-    **MacOS:** Please run \`xattr -rd com.apple.quarantine cloudpilot-server-${GITHUB_REF##*/}\`
-    in order to remove the server components from quarantine before you run the server for
-    the first time. The first start may take a few seconds.
-  RELEASE_TITLE: CloudpilotEmu ${GITHUB_REF##*/}
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    TAG: ${GITHUB_REF##*/}
+    RELEASE_NOTES: |
+        **MacOS:** Please run \`xattr -rd com.apple.quarantine cloudpilot-server-${GITHUB_REF##*/}\`
+        in order to remove the server components from quarantine before you run the server for
+        the first time. The first start may take a few seconds.
+    RELEASE_TITLE: CloudpilotEmu ${GITHUB_REF##*/}
 jobs:
-  create-release:
-    name: Create release
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Make sure that release exists
-        run: gh release create ${{ env.TAG }} -d -t "${{ env.RELEASE_TITLE }}" -n "${{ env.RELEASE_NOTES }}"
+    create-release:
+        name: Create release
+        runs-on: ubuntu-22.04
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+            - name: Make sure that release exists
+              run: gh release create ${{ env.TAG }} -d -t "${{ env.RELEASE_TITLE }}" -n "${{ env.RELEASE_NOTES }}"
