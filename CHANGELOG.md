@@ -1,3 +1,8 @@
+# Next version
+
+-   Timeouts during snapshot are not fatal.
+-   Adapt snapshot timeout for slow browsers.
+
 # Version 1.10.9
 
 -   Fix a bug in snapshot timeouts.
