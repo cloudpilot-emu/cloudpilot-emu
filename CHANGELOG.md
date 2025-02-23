@@ -1,4 +1,4 @@
-# Next version
+# Version 1.10.10
 
 -   Timeouts during snapshot are not fatal.
 -   Adapt snapshot timeout for slow browsers.
