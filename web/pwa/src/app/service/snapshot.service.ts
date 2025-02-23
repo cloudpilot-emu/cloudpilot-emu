@@ -177,7 +177,7 @@ export class SnapshotService {
                     tx.abort();
                 } catch (e) {}
 
-                reject(new Error(`timout expired after ${performance.now() - timestampStart} milliseconds`));
+                reject(new Error(`timout expired after ${timeout.getAccumulatedTimeout()} milliseconds`));
             });
 
             tx.oncomplete = () => {
@@ -210,6 +210,7 @@ export class SnapshotService {
                 }
                 this.saveSession(tx);
 
+                timeout.start();
                 timestampBlockingEnd = performance.now();
             } catch (e) {
                 if (!isTimeout) {
