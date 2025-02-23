@@ -121,15 +121,16 @@ export class SnapshotService {
 
                     console.log(`snapshot timeout expired after ${e.getAccumulatedTimeout()} msec`);
 
-                    await this.alertService.snapshotTimeout();
+                    if (this.timeoutDeltaMsecPerKb > TIMEOUT_DELTA_MSEC_PER_KB_DEFAULT) {
+                        await this.alertService.snapshotTimeout();
+                        await this.showLoader();
+                    }
 
                     this.timeoutDeltaMsecPerKb *= 2;
                     this.timeoutDeltaMsecPerKbStart = Math.min(
                         2 * this.timeoutDeltaMsecPerKbStart,
                         TIMEOUT_DELTA_MSEC_PER_KB_MAX,
                     );
-
-                    await this.showLoader();
 
                     continue;
                 }
