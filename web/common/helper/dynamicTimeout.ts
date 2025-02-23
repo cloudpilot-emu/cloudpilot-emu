@@ -16,10 +16,8 @@ export class DynamicTimeout {
     constructor(
         private timeoutRemaining: number,
         private cb: () => void,
-        private document: DocumentInterface = document,
-    ) {
-        this.handle = setTimeout(this.onTimeout, timeoutRemaining);
-    }
+        private document: DocumentInterface = window.document,
+    ) {}
 
     start(): this {
         this.setState(State.running);

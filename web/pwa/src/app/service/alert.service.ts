@@ -174,6 +174,16 @@ export class AlertService {
         await alert.onDidDismiss();
     }
 
+    @debounce()
+    async snapshotTimeout() {
+        await this.message(
+            'Timeout while saving state',
+            `Your browser's IndexedDB is either slow to respond or has crashed. You can either retry or reload CloudpilotEmu.`,
+            { Reload: () => window.location.reload() },
+            'Retry',
+        );
+    }
+
     proxyVersionMismatchError() {
         return this.errorMessage(`
             Server version does not match CloudpilotEmu. Please make sure that you are using the latest

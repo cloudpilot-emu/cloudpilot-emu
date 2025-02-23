@@ -24,6 +24,8 @@ import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
 import { StorageCard } from '@pwa/model/StorageCard';
 import { crc32 } from '@common/helper/crc';
 import { environment } from 'pwa/src/environments/environment';
+import { AlertService } from './alert.service';
+import { LoadingController } from '@ionic/angular';
 
 declare global {
     interface IDBDatabase {
@@ -36,7 +38,8 @@ declare global {
 }
 
 const STATIC_TIMEOUT_MSEC = 500;
-const TIMEOUT_DELTA_MSEC_PER_KB = 0.5;
+const TIMEOUT_DELTA_MSEC_PER_KB_DEFAULT = 0.5;
+const TIMEOUT_DELTA_MSEC_PER_KB_MAX = 8 * TIMEOUT_DELTA_MSEC_PER_KB_DEFAULT;
 const MAX_CONSECUTIVE_ERRORS = 3;
 
 const E_SESSION_MISMATCH = new Error('session does not match emulation');
@@ -50,6 +53,8 @@ export class SnapshotService {
         private errorService: ErrorService,
         private storageCardContext: StorageCardContext,
         private kvsService: KvsService,
+        private alertService: AlertService,
+        private loadingController: LoadingController,
         private ngZone: NgZone,
     ) {}
 
@@ -82,12 +87,14 @@ export class SnapshotService {
             if (this.errorService.hasFatalError()) return Promise.reject();
 
             this.snapshotInProgress = true;
+            this.timeoutDeltaMsecPerKb = this.timeoutDeltaMsecPerKbStart;
 
             this.pendingSnapshotPromise = (async () => {
                 try {
                     await this.triggerSnapshotUnguarded();
                 } finally {
                     this.snapshotInProgress = false;
+                    this.hideLoader();
                 }
             })();
 
@@ -109,6 +116,24 @@ export class SnapshotService {
 
                 return;
             } catch (e) {
+                if (e instanceof DynamicTimeout) {
+                    if (e.isTainted()) continue;
+
+                    console.log(`snapshot timeout expired after ${e.getAccumulatedTimeout()} msec`);
+
+                    await this.alertService.snapshotTimeout();
+
+                    this.timeoutDeltaMsecPerKb *= 2;
+                    this.timeoutDeltaMsecPerKbStart = Math.min(
+                        2 * this.timeoutDeltaMsecPerKbStart,
+                        TIMEOUT_DELTA_MSEC_PER_KB_MAX,
+                    );
+
+                    await this.showLoader();
+
+                    continue;
+                }
+
                 console.error('snapshot error', e);
 
                 if (e === E_SESSION_MISMATCH) {
@@ -177,7 +202,7 @@ export class SnapshotService {
                     tx.abort();
                 } catch (e) {}
 
-                reject(new Error(`timout expired after ${timeout.getAccumulatedTimeout()} milliseconds`));
+                reject(timeout);
             });
 
             tx.oncomplete = () => {
@@ -280,7 +305,7 @@ export class SnapshotService {
                         objectStore.put(this.pages[iPage], [this.sessionId, iPage]);
                     }
 
-                    timeout.increase(TIMEOUT_DELTA_MSEC_PER_KB);
+                    timeout.increase(this.timeoutDeltaMsecPerKb);
                     pagesSaved++;
                 }
 
@@ -338,7 +363,7 @@ export class SnapshotService {
                     page.set(data.subarray(iPage * 2048, (iPage + 1) * 2048));
 
                     objectStore.put(page, [card.id, iPage]);
-                    timeout.increase(8 * TIMEOUT_DELTA_MSEC_PER_KB);
+                    timeout.increase(8 * this.timeoutDeltaMsecPerKb);
                     pagesSaved++;
                 }
 
@@ -370,11 +395,29 @@ export class SnapshotService {
         if (this.emulationState.getCurrentSession()?.id !== this.sessionId) throw E_SESSION_MISMATCH;
     }
 
+    private async showLoader(): Promise<void> {
+        if (this.loader) return;
+
+        this.loader = await this.loadingController.create({ message: 'Saving...' });
+        await this.loader.present();
+    }
+
+    private hideLoader(): void {
+        if (!this.loader) return;
+
+        void this.loader.dismiss();
+
+        this.loader = undefined;
+    }
+
     snapshotEvent = new Event<SnapshotStatistics>();
 
     private sessionId = -1;
     private consecutiveErrorCount = 0;
+    private timeoutDeltaMsecPerKbStart = TIMEOUT_DELTA_MSEC_PER_KB_DEFAULT;
+    private timeoutDeltaMsecPerKb = TIMEOUT_DELTA_MSEC_PER_KB_DEFAULT;
     private snapshotInProgress = false;
+    private loader: HTMLIonLoadingElement | undefined;
     private pendingSnapshotPromise = Promise.resolve<void>(undefined);
 
     private dirtyPages: Uint8Array | undefined;
