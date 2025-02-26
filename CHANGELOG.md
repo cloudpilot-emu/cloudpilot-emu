@@ -1,3 +1,9 @@
+# Next version
+
+-   Minor styling improvements.
+-   Add a note on a rare touch issue caused by a browser bug on iOS (does
+    not affect the native app).
+
 # Version 1.10.10
 
 -   Timeouts during snapshot are not fatal.

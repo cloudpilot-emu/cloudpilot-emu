@@ -195,6 +195,9 @@ The date of the two different versions is stored separately from each other.
 -   Version 1.0 of the app may refuse to load without internet connectivity. This is fixed
     in version 1.1.
 -   There may be a slight delay when opening the app while on a bad internet connection.
+-   A browser bug may cause the web app and the homescreen app to stop registering touches
+    for a few seconds. Usually this is extremely rare, but there are a few conditions
+    that can increase the likelihood. This issue is not present in the native app.
 :::
 
 ### Emulation issues
