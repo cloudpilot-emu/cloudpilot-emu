@@ -9,6 +9,9 @@ ion-tab-bar {
 
             &.md {
                 margin-top: 3px;
+                
+                position: absolute;
+                bottom: 1px;
             }
         }
 
