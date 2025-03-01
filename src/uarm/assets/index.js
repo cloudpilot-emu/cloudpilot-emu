@@ -29,6 +29,7 @@ import { compressSession, decompressSession } from './session.js';
     const rotateButton = document.getElementById('rotate');
     const uploadNorButton = document.getElementById('upload-nor');
     const uploadNandButton = document.getElementById('upload-nand');
+    const clearNandButton = document.getElementById('clear-nand');
     const downloadNandButton = document.getElementById('download-nand');
     const uploadSDButton = document.getElementById('upload-sd');
     const downloadSDButton = document.getElementById('download-sd');
@@ -178,11 +179,11 @@ import { compressSession, decompressSession } from './session.js';
             await emulator?.stop();
 
             await assign(file);
-
-            updateLabels();
-            restart();
         } catch (e) {
             console.error(e);
+        } finally {
+            updateLabels();
+            restart();
         }
     };
 
@@ -334,6 +335,16 @@ import { compressSession, decompressSession } from './session.js';
                 fileNand = file;
             })
         );
+
+        clearNandButton.addEventListener('click', async () => {
+            if (fileNand && !confirm('This will clear the NAND content and wipe RAM. Do you want to continue?')) return;
+
+            await emulator?.stop();
+
+            database.clearNand();
+
+            window.location.reload();
+        });
 
         uploadSDButton.addEventListener(
             'click',

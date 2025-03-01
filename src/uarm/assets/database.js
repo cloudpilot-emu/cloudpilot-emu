@@ -475,6 +475,10 @@ export class Database {
      * @param {Image} nand
      */
     async putNand(nand) {
+        if (nand.content.length !== SIZE_NAND) {
+            throw new Error('bad NAND size');
+        }
+
         const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_KVS, OBJECT_STORE_RAM);
         const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
@@ -483,7 +487,19 @@ export class Database {
 
         putPagedData(nand.content, PAGE_SIZE_NAND, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
 
-        storeKvs.delete(KVS_RAM_CRC);
+        tx.objectStore(OBJECT_STORE_RAM).clear();
+
+        await complete(tx);
+    }
+
+    async clearNand() {
+        const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_KVS, OBJECT_STORE_RAM);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+
+        storeKvs.put('[blank]', KVS_NAND_NAME);
+        storeKvs.delete(KVS_NAND_CRC);
+
+        tx.objectStore(OBJECT_STORE_NAND).clear();
         tx.objectStore(OBJECT_STORE_RAM).clear();
 
         await complete(tx);
