@@ -169,8 +169,8 @@ const uint8_t* SessionFile::GetSerializedSession() const { return serializedSess
 size_t SessionFile::GetSerializedSessionSize() const { return serializedSessionSize; }
 
 bool SessionFile::Deserialize(size_t size, const uint8_t* data) {
-    metadataSize = norSize = nandSize = ramSize = metadataSize = savestateSize = 0;
-    metadata = nor = nand = ram = metadata = savestate = nullptr;
+    metadataSize = norSize = nandSize = ramSize = savestateSize = 0;
+    metadata = nor = nand = ram = savestate = nullptr;
 
     serializedSession = data;
     serializedSessionSize = size;
