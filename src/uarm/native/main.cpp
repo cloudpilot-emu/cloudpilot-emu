@@ -24,7 +24,7 @@
 #include "cputil.h"
 #include "device.h"
 #include "rom_info.h"
-#include "savestate/session_file.h"
+#include "savestate/SessionFile.h"
 #include "sdcard.h"
 
 using namespace std;
@@ -104,19 +104,30 @@ namespace {
 
     bool readSession(const Options& options, Buffer& nor, Buffer& nand, Buffer& ram,
                      Buffer& savestate) {
+        static SessionFile sessionFile;
+
         size_t norOrSessionLen{0};
         unique_ptr<uint8_t[]> norOrSessionData;
         if (!util::ReadFile(options.norOrSession, norOrSessionData, norOrSessionLen)) return false;
 
-        if (isSessionFile({.size = norOrSessionLen, .data = norOrSessionData.get()})) {
-            if (!sessionFile_read({.size = norOrSessionLen, .data = norOrSessionData.get()}, &nor,
-                                  &nand, &ram, &savestate))
-                return false;
-
+        if (SessionFile::IsSessionFile(norOrSessionLen, norOrSessionData.get()) &&
+            sessionFile.Deserialize(norOrSessionLen, norOrSessionData.get())) {
             if (options.nand) {
                 cerr << "separate NAND image cannot be used with session file" << endl;
                 return false;
             }
+
+            nor.size = sessionFile.GetNorSize();
+            nor.data = (void*)(sessionFile.GetNor());
+
+            nand.size = sessionFile.GetNandSize();
+            nand.data = (void*)(sessionFile.GetNand());
+
+            ram.size = sessionFile.GetRamSize();
+            ram.data = (void*)(sessionFile.GetRam());
+
+            savestate.size = sessionFile.GetSavestateSize();
+            savestate.data = (void*)(sessionFile.GetSavestate());
         } else {
             size_t nandLen{0};
             unique_ptr<uint8_t[]> nandData;

@@ -127,7 +127,7 @@ SOURCE_CXX_COMMON = 					\
 	uarm/audio_queue.cpp				\
 	uarm/rom_info.cpp					\
 	uarm/savestate/rle.cpp				\
-	uarm/savestate/session_file.cpp
+	uarm/savestate/SessionFile.cpp
 
 SOURCE_CXX_NATIVE = 					\
 	$(SOURCE_CXX_COMMON)				\

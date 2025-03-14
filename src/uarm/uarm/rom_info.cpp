@@ -39,7 +39,9 @@ namespace {
     }
 }  // namespace
 
-RomInfo::RomInfo(uint8_t* buffer, size_t size) : buffer(buffer), size(size) { isValid = Parse(); }
+RomInfo::RomInfo(const uint8_t* buffer, size_t size) : buffer(buffer), size(size) {
+    isValid = Parse();
+}
 
 bool RomInfo::IsValid() const { return isValid; }
 

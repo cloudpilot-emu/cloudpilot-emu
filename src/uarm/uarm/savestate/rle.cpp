@@ -7,7 +7,7 @@
 using namespace std;
 
 namespace {
-    constexpr size_t MAX_BLOCK_SIZE = 128 * 1024 * 1024;
+    constexpr size_t MAX_CHUNK_SIZE = 128 * 1024 * 1024;
 
     constexpr uint8_t BLOCK_TYPE_COPY = 0;
     constexpr uint8_t BLOCK_TYPE_REPEAT = 1;
@@ -15,38 +15,34 @@ namespace {
     const char* lastError = nullptr;
 }  // namespace
 
-bool rle_decode(struct Buffer source, std::unique_ptr<uint8_t[]>& dataUncompressed,
-                size_t& lenUncompressed) {
-    if (source.size < 4) {
-        lastError = "bad block size";
+bool rle_decode_chunk(size_t sourceSize, const uint8_t* sourceData, size_t destSize,
+                      uint8_t* destBuffer) {
+    bool success = true;
+    const size_t size = rle_get_chunk_size(sourceSize, sourceData, success);
+
+    if (size > destSize) {
+        lastError = "not enough space for chunk";
         return false;
     }
 
-    auto data = reinterpret_cast<const uint8_t*>(source.data);
-    const size_t size = data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
-
-    if (size > MAX_BLOCK_SIZE) {
-        lastError = "block too large";
-        return false;
-    }
+    if (!success) return false;
 
     size_t cursor = 0;
     size_t cursorCompressed = 4;
-    auto decompressed = make_unique<uint8_t[]>(size);
 
     while (cursor < size) {
-        if (cursorCompressed >= source.size) {
+        if (cursorCompressed >= sourceSize) {
             lastError = "not enough blocks";
             return false;
         }
 
-        uint8_t blockType = data[cursorCompressed++];
+        uint8_t blockType = sourceData[cursorCompressed++];
 
         size_t blockLen = 0;
         uint8_t shift = 0;
 
         while (true) {
-            if (cursorCompressed >= source.size) {
+            if (cursorCompressed >= sourceSize) {
                 lastError = "unable to decode block size";
                 return false;
             }
@@ -56,10 +52,10 @@ bool rle_decode(struct Buffer source, std::unique_ptr<uint8_t[]>& dataUncompress
                 return false;
             }
 
-            blockLen |= ((data[cursorCompressed] & 0x7f) << shift);
+            blockLen |= ((sourceData[cursorCompressed] & 0x7f) << shift);
             shift += 7;
 
-            if ((data[cursorCompressed++] & 0x80) == 0x00) break;
+            if ((sourceData[cursorCompressed++] & 0x80) == 0x00) break;
         }
 
         if (cursor + blockLen > size) {
@@ -69,22 +65,22 @@ bool rle_decode(struct Buffer source, std::unique_ptr<uint8_t[]>& dataUncompress
 
         switch (blockType) {
             case BLOCK_TYPE_COPY:
-                if (cursorCompressed + blockLen > source.size) {
+                if (cursorCompressed + blockLen > sourceSize) {
                     lastError = "copy block cut short";
                     return false;
                 }
 
-                memcpy(decompressed.get() + cursor, data + cursorCompressed, blockLen);
+                memcpy(destBuffer + cursor, sourceData + cursorCompressed, blockLen);
                 cursorCompressed += blockLen;
                 break;
 
             case BLOCK_TYPE_REPEAT:
-                if (cursorCompressed >= source.size) {
+                if (cursorCompressed >= sourceSize) {
                     lastError = "repeat block cut short";
                     return false;
                 }
 
-                memset(decompressed.get() + cursor, data[cursorCompressed++], blockLen);
+                memset(destBuffer + cursor, sourceData[cursorCompressed++], blockLen);
 
                 break;
         }
@@ -92,10 +88,28 @@ bool rle_decode(struct Buffer source, std::unique_ptr<uint8_t[]>& dataUncompress
         cursor += blockLen;
     }
 
-    lenUncompressed = size;
-    dataUncompressed = std::move(decompressed);
-
     return true;
+}
+
+size_t rle_get_chunk_size(size_t sourceSize, const uint8_t* sourceData, bool& success) {
+    if (sourceSize < 4) {
+        lastError = "bad chunk size";
+        success = false;
+
+        return 0;
+    }
+
+    const size_t size =
+        sourceData[0] | (sourceData[1] << 8) | (sourceData[2] << 16) | (sourceData[3] << 24);
+
+    if (size > MAX_CHUNK_SIZE) {
+        lastError = "chunk too large";
+        success = false;
+
+        return 0;
+    }
+
+    return size;
 }
 
 const char* rle_getLastError() { return lastError; }

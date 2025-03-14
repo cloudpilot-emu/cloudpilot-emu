@@ -10,7 +10,7 @@
 
 class RomInfo {
    public:
-    RomInfo(uint8_t* buffer, size_t size);
+    RomInfo(const uint8_t* buffer, size_t size);
 
     bool IsValid() const;
 
@@ -31,7 +31,7 @@ class RomInfo {
     std::string ReadString(size_t offset, uint8_t maxLen, bool& error) const;
 
    private:
-    uint8_t* buffer;
+    const uint8_t* buffer;
     size_t size;
 
     bool isValid{false};
