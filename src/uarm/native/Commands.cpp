@@ -153,8 +153,8 @@ namespace {
          {.name = "reset", .description = "Reset Pilot.", .cmd = CmdReset},
          {.name = "rotate", .description = "Rotate 90° CCW", .cmd = CmdRotate},
          {.name = "save-session",
-          .description = "Save session.",
           .usage = "save-session <file>",
+          .description = "Save session.",
           .cmd = CmdSaveSession}});
 }  // namespace
 
