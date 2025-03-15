@@ -22,6 +22,10 @@ bool romAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write, void
 
 bool romInstructionFetch(void *userData, uint32_t pa, uint_fast8_t size, void *bufP);
 
+uint32_t romGetSize(struct ArmRom *rom);
+
+void *romGetData(struct ArmRom *rom);
+
 #ifdef __cplusplus
 }
 #endif

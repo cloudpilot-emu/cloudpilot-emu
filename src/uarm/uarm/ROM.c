@@ -74,6 +74,10 @@ bool romInstructionFetch(void *userData, uint32_t pa, uint_fast8_t size, void *b
     return access((uint8_t *)rom->dataPeephole + (pa - rom->base), size, bufP);
 }
 
+uint32_t romGetSize(struct ArmRom *rom) { return rom->size; }
+
+void *romGetData(struct ArmRom *rom) { return rom->data; }
+
 struct ArmRom *romInit(struct ArmMem *mem, uint32_t adr, void *data, const uint32_t size) {
     struct ArmRom *rom = (struct ArmRom *)malloc(sizeof(*rom));
     if (!rom) ERR("cannot alloc ROM at 0x%08x", adr);

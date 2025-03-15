@@ -21,3 +21,12 @@ bool util::ReadFile(optional<string> file, unique_ptr<uint8_t[]>& buffer, size_t
 
     return true;
 }
+bool util::WriteFile(std::string& file, const uint8_t* buffer, size_t len) {
+    fstream stream(file, std::ios::out);
+
+    if (stream.fail()) return false;
+
+    stream.write(reinterpret_cast<const char*>(buffer), len);
+
+    return !stream.fail();
+}

@@ -1,4 +1,3 @@
-
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
 #ifndef _SOC_H_
@@ -57,6 +56,8 @@ void socSetAudioQueue(struct SoC *soc, struct AudioQueue *audioQueue);
 void socSetPcmSuspended(struct SoC *soc, bool pcmSuspended);
 
 void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled);
+
+struct Buffer socGetRomData(struct SoC *soc);
 
 struct Buffer socGetNandData(struct SoC *soc);
 struct Buffer socGetNandDirtyPages(struct SoC *soc);

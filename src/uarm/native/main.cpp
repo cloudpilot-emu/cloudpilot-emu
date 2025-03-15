@@ -102,9 +102,23 @@ namespace {
                           scale * windowHeight(displayConfiguration, rotation));
     }
 
+    void copy(Buffer& buffer, size_t size, const void* data) {
+        if (size == 0 || data == nullptr) {
+            buffer.data = nullptr;
+            buffer.size = 0;
+
+            return;
+        }
+
+        buffer.data = malloc(size);
+        buffer.size = size;
+
+        memcpy(buffer.data, data, size);
+    }
+
     bool readSession(const Options& options, Buffer& nor, Buffer& nand, Buffer& ram,
                      Buffer& savestate) {
-        static SessionFile sessionFile;
+        SessionFile sessionFile;
 
         size_t norOrSessionLen{0};
         unique_ptr<uint8_t[]> norOrSessionData;
@@ -117,17 +131,10 @@ namespace {
                 return false;
             }
 
-            nor.size = sessionFile.GetNorSize();
-            nor.data = (void*)(sessionFile.GetNor());
-
-            nand.size = sessionFile.GetNandSize();
-            nand.data = (void*)(sessionFile.GetNand());
-
-            ram.size = sessionFile.GetRamSize();
-            ram.data = (void*)(sessionFile.GetRam());
-
-            savestate.size = sessionFile.GetSavestateSize();
-            savestate.data = (void*)(sessionFile.GetSavestate());
+            copy(nor, sessionFile.GetNorSize(), sessionFile.GetNor());
+            copy(nand, sessionFile.GetNandSize(), sessionFile.GetNand());
+            copy(ram, sessionFile.GetRamSize(), sessionFile.GetRam());
+            copy(savestate, sessionFile.GetSavestateSize(), sessionFile.GetSavestate());
         } else {
             size_t nandLen{0};
             unique_ptr<uint8_t[]> nandData;
@@ -146,11 +153,8 @@ namespace {
             nand.size = nandLen;
             nand.data = nandData.release();
 
-            ram.size = 0;
-            ram.data = nullptr;
-
-            savestate.size = 0;
-            savestate.data = nullptr;
+            ram.size = savestate.size = 0;
+            ram.data = savestate.data = nullptr;
         }
 
         return true;

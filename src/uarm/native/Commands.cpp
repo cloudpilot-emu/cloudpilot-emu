@@ -12,6 +12,7 @@
 #include "Cli.h"
 #include "FileUtil.h"
 #include "SoC.h"
+#include "savestate/SessionFile.h"
 #include "sdcard.h"
 
 using namespace std;
@@ -108,6 +109,35 @@ namespace {
         ctx->rotation = rotate(ctx->rotation);
     }
 
+    void CmdSaveSession(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
+
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+
+        SessionFile sessionFile;
+
+        const Buffer rom = socGetRomData(ctx->soc);
+        const Buffer nand = socGetNandData(ctx->soc);
+        const Buffer ram = socGetRamData(ctx->soc);
+
+        sessionFile.SetDeviceId(socGetDeviceType(ctx->soc))
+            .SetNor(rom.size, reinterpret_cast<uint8_t*>(rom.data))
+            .SetNand(nand.size, reinterpret_cast<uint8_t*>(nand.data))
+            .SetRam(ram.size, reinterpret_cast<uint8_t*>(ram.data));
+
+        if (!sessionFile.Serialize()) {
+            cout << "failed to serialize session" << endl;
+            return;
+        }
+
+        if (!util::WriteFile(args[0], sessionFile.GetSerializedSession(),
+                             sessionFile.GetSerializedSessionSize())) {
+            cout << "failed to write file " << args[0] << endl;
+        } else {
+            cout << "wrote session to " << args[0] << endl;
+        }
+    }
+
     const vector<cli::Command> commandList(
         {{.name = "set-mips",
           .usage = "set-mips <mips>",
@@ -121,7 +151,11 @@ namespace {
           .description = "Unmount SD card.",
           .cmd = CmdMount},
          {.name = "reset", .description = "Reset Pilot.", .cmd = CmdReset},
-         {.name = "rotate", .description = "Rotate 90° CCW", .cmd = CmdRotate}});
+         {.name = "rotate", .description = "Rotate 90° CCW", .cmd = CmdRotate},
+         {.name = "save-session",
+          .description = "Save session.",
+          .usage = "save-session <file>",
+          .cmd = CmdSaveSession}});
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }

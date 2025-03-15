@@ -692,6 +692,10 @@ void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled) {
     if (soc->audioQueue) audioQueueClear(soc->audioQueue);
 }
 
+struct Buffer socGetRomData(struct SoC *soc) {
+    return {.size = romGetSize(soc->rom), .data = romGetData(soc->rom)};
+}
+
 struct Buffer socGetNandData(struct SoC *soc) { return nandGetData(soc->nand); }
 
 struct Buffer socGetNandDirtyPages(struct SoC *soc) { return nandGetDirtyPages(soc->nand); }

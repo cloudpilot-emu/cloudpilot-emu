@@ -9,6 +9,8 @@
 
 namespace util {
     bool ReadFile(std::optional<std::string> file, std::unique_ptr<uint8_t[]>& buffer, size_t& len);
+
+    bool WriteFile(std::string& file, const uint8_t* buffer, size_t len);
 }  // namespace util
 
 #endif  // _FILE_UTIL_H_

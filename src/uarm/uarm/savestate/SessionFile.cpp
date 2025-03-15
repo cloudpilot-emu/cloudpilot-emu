@@ -21,8 +21,6 @@ namespace {
 
     constexpr size_t BUFFER_MAX_SIZE = 128 * 1024 * 1024;
     constexpr size_t BUFFER_MIN_SIZE = 1024;
-
-    uint32_t align(uint32_t value) { return (value >> 3) << 3; }
 }  // namespace
 
 uint32_t SessionFile::GetDeviceId() const { return deviceId; }
@@ -234,7 +232,7 @@ bool SessionFile::AppendToCompressionStream(size_t size, const uint8_t* data, mz
     if (size == 0) return true;
 
     stream.next_in = reinterpret_cast<const unsigned char*>(data);
-    stream.avail_in = bufferSize;
+    stream.avail_in = size;
 
     int deflateResult;
     do {
@@ -332,7 +330,7 @@ bool SessionFile::Deserialize_v0() {
         return false;
     }
 
-    bufferSize = align(metadataSize) + align(norSize) + align(nandSize) + align(ramSize);
+    bufferSize = metadataSize + norSize + nandSize + ramSize;
     if (bufferSize > BUFFER_MAX_SIZE) {
         cout << "v0 image: bad image size" << endl;
         return false;
@@ -343,7 +341,7 @@ bool SessionFile::Deserialize_v0() {
 
     memcpy(cursor, ccursor, metadataSize);
     metadata = cursor;
-    cursor += align(metadataSize);
+    cursor += metadataSize;
     ccursor += metadataSize;
 
     if (!rle_decode_chunk(sizeNorCompressed, ccursor, bufferSize - (cursor - buffer.get()),
@@ -353,7 +351,7 @@ bool SessionFile::Deserialize_v0() {
     }
 
     nor = cursor;
-    cursor += align(norSize);
+    cursor += norSize;
     ccursor += sizeNorCompressed;
 
     if (!rle_decode_chunk(sizeRamCompressed, ccursor, bufferSize - (cursor - buffer.get()),
@@ -363,7 +361,7 @@ bool SessionFile::Deserialize_v0() {
     }
 
     ram = cursor;
-    cursor += align(ramSize);
+    cursor += ramSize;
     ccursor += sizeRamCompressed;
 
     if (!rle_decode_chunk(sizeNandCompressed, ccursor, bufferSize - (cursor - buffer.get()),
