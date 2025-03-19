@@ -19,6 +19,16 @@ WASMOPT_FLAGS_OTHER = --no-inline="*cpuCycle" $(WASMOPT_FLAGS_BASE)
 WASMSTRIP = wasm-strip
 YARN = yarn
 
+PYTHON ?= python3
+
+WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
+
+WEBIDL_BINDING_DIR = web/binding
+WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/uarm.idl
+WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
+WEBIDL_BINDING_IDL = $(WEBIDL_BINDING_DIR)/binding.idl
+WEBIDL_BINDING_CXX = web/binding.cpp
+
 CFLAGS_NATIVE ?= -O3  -g $(shell sdl2-config --cflags) -flto
 CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE) 
 
@@ -32,12 +42,13 @@ LDFLAGS_TEST ?= -fsanitize=address,undefined -lgtest -lgtest_main -lgmock
 
 LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image -lreadline -flto
 LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno -g \
+	--post-js $(WEBIDL_BINDING_JS) \
 	-s EXIT_RUNTIME=0 \
 	-s MODULARIZE=1 \
 	-s ENVIRONMENT="web,worker" \
 	-s EXPORT_NAME=createModule \
 	-s ALLOW_MEMORY_GROWTH=1 \
-	-s INITIAL_MEMORY=314572800 \
+	-s INITIAL_MEMORY=33554432 \
 	-s WASM_BIGINT=1 \
 	-s ALLOW_TABLE_GROWTH=1 \
 	-s FILESYSTEM=0 \
@@ -52,6 +63,7 @@ CFLAGS_COMMON := \
 
 CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
 CFLAGS_COMMON := $(CFLAGS_COMMON) -std=gnu11
+
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps
@@ -140,6 +152,7 @@ SOURCE_CXX_NATIVE = 					\
 
 SOURCE_CXX_EMCC =						\
 	$(SOURCE_CXX_COMMON)				\
+	$(WEBIDL_BINDING_CXX)				\
 	web/main.cpp
 
 SOURCE_TEST = 							\
@@ -155,7 +168,7 @@ OBJECTS_TEST = $(OBJECTS_TEST_CXX)
 
 OBJECTS_EMCC_C = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o)
 OBJECTS_EMCC_CXX = $(SOURCE_CXX_EMCC:%.cpp=$(BUILDDIR_EMCC)/%.o)
-OBJECTS_EMCC = $(OBJECTS_EMCC_C) $(OBJECTS_EMCC_CXX)
+OBJECTS_EMCC = $(OBJECTS_EMCC_C) $(OBJECTS_EMCC_CXX) ../common/libcommon-wasm.a
 
 BINARY_NATIVE = cp-uarm
 BINARY_EMCC = uarm_web.js
@@ -173,19 +186,24 @@ INCLUDE = \
 
 INCLUDE_NATIVE = $(INCLUDE) -I../argparse
 
-GARBAGE = 						\
-	$(BINARY_EMCC) 				\
-	$(BINARY_NATIVE) 			\
-	$(BINARY_WASM) 				\
-	$(BINARY_WASM).s 			\
-	$(OPTIMIZED_BINARIES_WASM) 	\
-	$(BINARY_TEST) 				\
-	$(BUILDDIR_NATIVE)	 		\
-	$(DEPDIR_NATIVE) 			\
-	$(BUILDDIR_EMCC) 			\
-	$(DEPDIR_EMCC) 				\
-	$(BUILDDIR_TEST) 			\
-	$(DEPDIR_TEST)
+GARBAGE = 							\
+	$(BINARY_EMCC) 					\
+	$(BINARY_NATIVE) 				\
+	$(BINARY_WASM) 					\
+	$(BINARY_WASM).s 				\
+	$(OPTIMIZED_BINARIES_WASM) 		\
+	$(BINARY_TEST) 					\
+	$(BUILDDIR_NATIVE)	 			\
+	$(DEPDIR_NATIVE) 				\
+	$(BUILDDIR_EMCC) 				\
+	$(DEPDIR_EMCC) 					\
+	$(BUILDDIR_TEST) 				\
+	$(DEPDIR_TEST)					\
+	$(WEBIDL_BINDING_JS) 			\
+	$(WEBIDL_BINDING_JS:%.js=%.cpp) \
+	$(WEBIDL_BINDING_IDL) 			\
+	parser.out 						\
+	WebIDLGrammar.pkl
 
 bin: $(BINARY_NATIVE)
 
@@ -228,6 +246,14 @@ $(OBJECTS_EMCC_C) : $(BUILDDIR_EMCC)/%.o : %.c
 
 $(OBJECTS_EMCC_CXX) : $(BUILDDIR_EMCC)/%.o : %.cpp
 	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_COMMON) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
+
+$(BUILDDIR_EMCC)/$(WEBIDL_BINDING_CXX:%.cpp=%.o): $(WEBIDL_BINDING_JS)
+
+$(WEBIDL_BINDING_IDL): $(WEBIDL_BINDING_SRC)
+	cat $^ > $@
+
+$(WEBIDL_BINDING_JS): $(WEBIDL_BINDING_IDL)
+	$(WEBIDL_BINDER) $(WEBIDL_BINDING_IDL) $(WEBIDL_BINDING_JS:.js=)
 
 clean:
 	-rm -fr $(GARBAGE)

@@ -23,6 +23,20 @@ namespace {
     constexpr size_t BUFFER_MIN_SIZE = 1024;
 }  // namespace
 
+bool SessionFile::IsSessionFile(size_t size, const void* data) {
+    const uint8_t* data8 = reinterpret_cast<const uint8_t*>(data);
+
+    if (size < 8) return false;
+
+    const uint32_t magic = data8[0] | (data8[1] << 8) | (data8[2] << 16) | (data8[3] << 24);
+    if (magic != MAGIC) return false;
+
+    const uint32_t version = data8[4] | (data8[5] << 8) | (data8[6] << 16) | (data8[7] << 24);
+    if (version > 1) return false;
+
+    return true;
+}
+
 uint32_t SessionFile::GetDeviceId() const { return deviceId; }
 
 SessionFile& SessionFile::SetDeviceId(uint32_t deviceId) {
@@ -31,57 +45,57 @@ SessionFile& SessionFile::SetDeviceId(uint32_t deviceId) {
     return *this;
 }
 
-const uint8_t* SessionFile::GetMetadata() const { return metadata; }
+const void* SessionFile::GetMetadata() const { return metadata; }
 
 size_t SessionFile::GetMetadataSize() const { return metadataSize; }
 
-SessionFile& SessionFile::SetMetadata(size_t size, const uint8_t* data) {
+SessionFile& SessionFile::SetMetadata(size_t size, const void* data) {
     metadataSize = size;
-    metadata = data;
+    metadata = reinterpret_cast<const uint8_t*>(data);
 
     return *this;
 }
 
-const uint8_t* SessionFile::GetNor() const { return nor; }
+const void* SessionFile::GetNor() const { return nor; }
 
 size_t SessionFile::GetNorSize() const { return norSize; }
 
-SessionFile& SessionFile::SetNor(size_t size, const uint8_t* data) {
+SessionFile& SessionFile::SetNor(size_t size, const void* data) {
     norSize = size;
-    nor = data;
+    nor = reinterpret_cast<const uint8_t*>(data);
 
     return *this;
 }
 
-const uint8_t* SessionFile::GetNand() const { return nand; }
+const void* SessionFile::GetNand() const { return nand; }
 
 size_t SessionFile::GetNandSize() const { return nandSize; }
 
-SessionFile& SessionFile::SetNand(size_t size, const uint8_t* data) {
+SessionFile& SessionFile::SetNand(size_t size, const void* data) {
     nandSize = size;
-    nand = data;
+    nand = reinterpret_cast<const uint8_t*>(data);
 
     return *this;
 }
 
-const uint8_t* SessionFile::GetRam() const { return ram; }
+const void* SessionFile::GetRam() const { return ram; }
 
 size_t SessionFile::GetRamSize() const { return ramSize; }
 
-SessionFile& SessionFile::SetRam(size_t size, const uint8_t* data) {
+SessionFile& SessionFile::SetRam(size_t size, const void* data) {
     ramSize = size;
-    ram = data;
+    ram = reinterpret_cast<const uint8_t*>(data);
 
     return *this;
 }
 
-const uint8_t* SessionFile::GetSavestate() const { return savestate; }
+const void* SessionFile::GetSavestate() const { return savestate; }
 
 size_t SessionFile::GetSavestateSize() const { return savestateSize; }
 
-SessionFile& SessionFile::SetSavestate(size_t size, const uint8_t* data) {
+SessionFile& SessionFile::SetSavestate(size_t size, const void* data) {
     savestateSize = size;
-    savestate = data;
+    savestate = reinterpret_cast<const uint8_t*>(data);
 
     return *this;
 }
@@ -162,15 +176,15 @@ bool SessionFile::Serialize() {
     return true;
 }
 
-const uint8_t* SessionFile::GetSerializedSession() const { return serializedSession; }
+const void* SessionFile::GetSerializedSession() const { return serializedSession; }
 
 size_t SessionFile::GetSerializedSessionSize() const { return serializedSessionSize; }
 
-bool SessionFile::Deserialize(size_t size, const uint8_t* data) {
+bool SessionFile::Deserialize(size_t size, const void* data) {
     metadataSize = norSize = nandSize = ramSize = savestateSize = 0;
     metadata = nor = nand = ram = savestate = nullptr;
 
-    serializedSession = data;
+    serializedSession = reinterpret_cast<const uint8_t*>(data);
     serializedSessionSize = size;
 
     ccursor = serializedSession;
@@ -452,17 +466,6 @@ bool SessionFile::Deserialize_v1() {
     cursor += ramSize;
 
     savestate = cursor;
-
-    return true;
-}
-bool SessionFile::IsSessionFile(size_t size, uint8_t* data) {
-    if (size < 8) return false;
-
-    const uint32_t magic = data[0] | (data[1] << 8) | (data[2] << 16) | (data[3] << 24);
-    if (magic != MAGIC) return false;
-
-    const uint32_t version = data[4] | (data[5] << 8) | (data[6] << 16) | (data[7] << 24);
-    if (version > 1) return false;
 
     return true;
 }

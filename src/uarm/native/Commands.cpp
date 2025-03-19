@@ -130,7 +130,8 @@ namespace {
             return;
         }
 
-        if (!util::WriteFile(args[0], sessionFile.GetSerializedSession(),
+        if (!util::WriteFile(args[0],
+                             reinterpret_cast<const uint8_t*>(sessionFile.GetSerializedSession()),
                              sessionFile.GetSerializedSessionSize())) {
             cout << "failed to write file " << args[0] << endl;
         } else {

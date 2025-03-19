@@ -1,6 +1,19 @@
 import { DisplayService } from './displayservice.js';
 import { EventHandler } from './eventhandler.js';
 
+let resolveModule;
+export const module = new Promise((r) => (resolveModule = r));
+
+export function loadModule(path) {
+    const compile = WebAssembly.compileStreaming
+        ? WebAssembly.compileStreaming(fetch(path))
+        : fetch(path)
+              .then((response) => response.arrayBuffer())
+              .then((binary) => WebAssembly.compile(binary));
+
+    compile.then(resolveModule).catch((e) => console.error('failed to load and compile binary', e));
+}
+
 export class Emulator {
     constructor(
         worker,
@@ -60,6 +73,10 @@ export class Emulator {
                     this.onStopped();
                     break;
 
+                case 'session':
+                case 'getSessionFailed':
+                    break;
+
                 default:
                     console.error('unknown message from worker', message);
                     break;
@@ -71,7 +88,7 @@ export class Emulator {
     }
 
     static async create(nor, nand, sd, ram, maxLoad, cyclesPerSecondLimit, env) {
-        const { log, binary, crcCheck } = env;
+        const { log, crcCheck } = env;
         const worker = new Worker('assets/worker.js');
 
         const displayService = new DisplayService();
@@ -81,17 +98,20 @@ export class Emulator {
             const onMessage = (e) => {
                 switch (e.data.type) {
                     case 'ready':
-                        worker.postMessage({
-                            type: 'initialize',
-                            nor,
-                            nand,
-                            sd,
-                            ram,
-                            maxLoad,
-                            cyclesPerSecondLimit,
-                            binary,
-                            crcCheck,
-                        });
+                        module.then((module) =>
+                            worker.postMessage({
+                                type: 'initialize',
+                                nor,
+                                nand,
+                                sd,
+                                ram,
+                                maxLoad,
+                                cyclesPerSecondLimit,
+                                crcCheck,
+                                module,
+                            })
+                        );
+
                         break;
 
                     case 'initialized':
@@ -200,6 +220,34 @@ export class Emulator {
 
     rotate() {
         this.displayService.rotate();
+    }
+
+    getSession() {
+        this.worker.postMessage({ type: 'getSession' });
+
+        return new Promise((resolve, reject) => {
+            this.worker.addEventListener(
+                'message',
+                (e) => {
+                    const message = e.data;
+                    switch (message.type) {
+                        case 'session': {
+                            const { type, ...rest } = message;
+                            resolve(rest);
+
+                            break;
+                        }
+
+                        case 'getSessionFailed':
+                            reject(new Error('failed to get session'));
+                            break;
+
+                        default:
+                    }
+                },
+                { once: true }
+            );
+        });
     }
 
     async handleSnapshot(snapshot) {

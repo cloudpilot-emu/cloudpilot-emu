@@ -193,8 +193,12 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.popQueuedSamples = module.cwrap('popQueuedSamples', 'number');
             this.setPcmOutputEnabled = module.cwrap('setPcmOutputEnabled', undefined, ['number']);
             this.setPcmSuspended = module.cwrap('setPcmSuspended', undefined, ['number']);
+            this.getRomDataSize = module.cwrap('getRomDataSize', 'number');
+            this.getRomData = module.cwrap('getRomData', 'number');
             this.getNandDataSize = module.cwrap('getNandDataSize', 'number');
+            this.getNandData = module.cwrap('getNandData', 'number');
             this.getSdCardDataSize = module.cwrap('getSdCardDataSize', 'number');
+            this.getRamData = module.cwrap('getRamData', 'number');
             this.getRamDataSize = module.cwrap('getRamDataSize', 'number');
             this.clearRamDirtyPages = module.cwrap('clearRamDirtyPages');
             this.getDeviceType = module.cwrap('getDeviceType');
@@ -215,7 +219,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                 pageCount: (nandSize / 4224) | 0,
                 name: 'NAND snapshot',
                 crcCheck,
-                getDataPtr: module.cwrap('getNandData', 'number'),
+                getDataPtr: this.getNandData,
                 getDirtyPagesPtr: module.cwrap('getNandDirtyPages', 'number'),
                 isDirty: module.cwrap('isNandDirty', 'number'),
                 setDirty: module.cwrap('setNandDirty', undefined, ['number']),
@@ -241,7 +245,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                 pageCount: (ramSize / 512) | 0,
                 name: 'RAM snapshot',
                 crcCheck,
-                getDataPtr: module.cwrap('getRamData', 'number'),
+                getDataPtr: this.getRamData,
                 getDirtyPagesPtr: module.cwrap('getRamDirtyPages', 'number'),
                 isDirty: () => true,
                 setDirty: () => undefined,
@@ -249,15 +253,15 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             });
         }
 
-        static async create(nor, nand, sd, ram, maxLoad, cyclesPerSecondLimit, crcCheck, env) {
-            const { log, binary } = env;
+        static async create(nor, nand, sd, ram, maxLoad, cyclesPerSecondLimit, crcCheck, wasmModule, env) {
+            const { log } = env;
             let module;
 
             module = await createModule({
                 noInitialRun: true,
                 print: log,
                 printErr: log,
-                locateFile: () => `../${binary}`,
+                instantiateWasm: (imports, callback) => WebAssembly.instantiate(wasmModule, imports).then(callback),
             });
 
             const malloc = module.cwrap('malloc', 'number', ['number']);
@@ -457,6 +461,15 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                     break;
             }
         }
+
+        getSession() {
+            const deviceId = this.getDeviceType();
+            const nor = this.module.HEAPU8.subarray(this.getRomData(), this.getRomData() + this.getRomDataSize());
+            const nand = this.module.HEAPU8.subarray(this.getNandData(), this.getNandData() + this.getNandDataSize());
+            const ram = this.module.HEAPU8.subarray(this.getRamData(), this.getRamData() + this.getRamDataSize());
+
+            return { deviceId, nor, nand, ram };
+        }
     }
 
     function mapButton(name) {
@@ -539,12 +552,12 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                     message.maxLoad,
                     message.cyclesPerSecondLimit,
                     message.crcCheck,
+                    message.module,
                     {
                         onFrame: postFrame,
                         onSpeedDisplay: postSpeed,
                         postSnapshot,
                         log: postLog,
-                        binary: message.binary,
                         onStop: postStopped,
                     }
                 );
@@ -635,6 +648,18 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                 assertEmulator('snapshotDone');
 
                 emulator.snapshotDone(message.success, message.snapshot);
+                break;
+
+            case 'getSession':
+                assertEmulator('getSession');
+
+                try {
+                    postMessage({ type: 'session', ...emulator.getSession() });
+                } catch (e) {
+                    postLog(`snapshot failed: ${e}`);
+                    postMessage({ type: 'getSessionFailed' });
+                }
+
                 break;
 
             default:

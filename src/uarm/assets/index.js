@@ -1,8 +1,9 @@
 import './setimmediate/setimmediate.js';
-import { Emulator } from './emulator.js';
+import { Emulator, loadModule, module } from './emulator.js';
 import { Database } from './database.js';
 import { AudioDriver } from './audiodriver.js';
 import { compressSession, decompressSession } from './session.js';
+import { SessionFile } from './sessionfile.js';
 
 (function () {
     const isMacOSSafari = 'safari' in window;
@@ -14,6 +15,7 @@ import { compressSession, decompressSession } from './session.js';
 
     let binary = isWebkit ? 'uarm_web_webkit.wasm' : 'uarm_web_other.wasm';
     let disableAutoPause = false;
+    let sessionFile;
 
     const labelNor = document.getElementById('nor-image');
     const labelNand = document.getElementById('nand-image');
@@ -195,8 +197,6 @@ import { compressSession, decompressSession } from './session.js';
 
         const ram = await database.getRam(crcCheck);
 
-        log(`loading ${binary}`);
-
         emulator = await Emulator.create(
             fileNor.content,
             fileNand.content,
@@ -209,7 +209,6 @@ import { compressSession, decompressSession } from './session.js';
                 database,
                 speedDisplay,
                 log,
-                binary,
                 crcCheck,
                 setSnapshotStatus,
             }
@@ -243,39 +242,18 @@ import { compressSession, decompressSession } from './session.js';
     }
 
     async function exportImage() {
-        disableAutoPause = true;
-        await emulator?.stop();
+        if (!emulator) return;
 
-        const nor = await database.getNor();
-        const ram = await database.getRam();
-        const nand = await database.getNand();
+        const { deviceId, nor, nand, ram } = await emulator.getSession();
+        const metadata = {
+            norName: fileNor?.name ?? 'saved NOR',
+            nandName: fileNand?.name ?? 'saved NAND',
+        };
 
-        disableAutoPause = false;
-        if (!document.hidden) emulator?.start();
+        const serializedSession = await sessionFile.serializeSession(deviceId, metadata, nor, nand, ram);
+        if (!serializedSession) return;
 
-        const session = compressSession({
-            nor: nor.content,
-            ram,
-            nand: nand.content,
-            metadata: {
-                norName: nor.name,
-                nandName: nand.name,
-            },
-        });
-
-        saveFile(`${filenameFragment('uarm-session')}.bin`, session);
-    }
-
-    async function importImage() {
-        const sessionFile = await openFile();
-
-        try {
-            const session = decompressSession(sessionFile.content);
-
-            console.log(session);
-        } catch (e) {
-            alert(`Failed to load session: ${e.message}`);
-        }
+        saveFile(`${filenameFragment('uarm-session')}.bin`, serializedSession);
     }
 
     async function main() {
@@ -300,6 +278,10 @@ import { compressSession, decompressSession } from './session.js';
         }
 
         if (query.has('binary')) binary = query.get('binary');
+        log(`loading ${binary}`);
+        loadModule(`../${binary}`);
+
+        sessionFile = new SessionFile(module);
 
         try {
             fileNor = await database.getNor();

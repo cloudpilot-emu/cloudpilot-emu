@@ -11,36 +11,36 @@ class SessionFile {
    public:
     explicit SessionFile() = default;
 
-    static bool IsSessionFile(size_t size, uint8_t* data);
+    static bool IsSessionFile(size_t size, const void* data);
 
     uint32_t GetDeviceId() const;
     SessionFile& SetDeviceId(uint32_t deviceId);
 
-    const uint8_t* GetMetadata() const;
+    const void* GetMetadata() const;
     size_t GetMetadataSize() const;
-    SessionFile& SetMetadata(size_t size, const uint8_t* data);
+    SessionFile& SetMetadata(size_t size, const void* data);
 
-    const uint8_t* GetNor() const;
+    const void* GetNor() const;
     size_t GetNorSize() const;
-    SessionFile& SetNor(size_t size, const uint8_t* data);
+    SessionFile& SetNor(size_t size, const void* data);
 
-    const uint8_t* GetNand() const;
+    const void* GetNand() const;
     size_t GetNandSize() const;
-    SessionFile& SetNand(size_t size, const uint8_t* data);
+    SessionFile& SetNand(size_t size, const void* data);
 
-    const uint8_t* GetRam() const;
+    const void* GetRam() const;
     size_t GetRamSize() const;
-    SessionFile& SetRam(size_t size, const uint8_t* data);
+    SessionFile& SetRam(size_t size, const void* data);
 
-    const uint8_t* GetSavestate() const;
+    const void* GetSavestate() const;
     size_t GetSavestateSize() const;
-    SessionFile& SetSavestate(size_t size, const uint8_t* data);
+    SessionFile& SetSavestate(size_t size, const void* data);
 
     bool Serialize();
-    const uint8_t* GetSerializedSession() const;
+    const void* GetSerializedSession() const;
     size_t GetSerializedSessionSize() const;
 
-    bool Deserialize(size_t size, const uint8_t* data);
+    bool Deserialize(size_t size, const void* data);
 
    private:
     bool Write32(uint32_t data);

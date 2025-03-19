@@ -134,6 +134,10 @@ void EMSCRIPTEN_KEEPALIVE setPcmOutputEnabled(bool enabled) {
 
 void EMSCRIPTEN_KEEPALIVE setPcmSuspended(bool suspended) { socSetPcmSuspended(soc, suspended); }
 
+uint32_t EMSCRIPTEN_KEEPALIVE getRomDataSize() { return socGetRomData(soc).size; }
+
+void* EMSCRIPTEN_KEEPALIVE getRomData() { return socGetRomData(soc).data; }
+
 uint32_t EMSCRIPTEN_KEEPALIVE getNandDataSize() { return socGetNandData(soc).size; }
 
 void* EMSCRIPTEN_KEEPALIVE getNandData() { return socGetNandData(soc).data; }
