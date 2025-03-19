@@ -2,7 +2,6 @@ import './setimmediate/setimmediate.js';
 import { Emulator, loadModule, module } from './emulator.js';
 import { Database } from './database.js';
 import { AudioDriver } from './audiodriver.js';
-import { compressSession, decompressSession } from './session.js';
 import { SessionFile } from './sessionfile.js';
 
 (function () {
@@ -340,14 +339,14 @@ import { SessionFile } from './sessionfile.js';
             'click',
             uploadHandler(async (file) => {
                 try {
-                    const session = decompressSession(file.content);
+                    const { metadata, nor, nand, ram } = await sessionFile.deserializeSession(file.content);
 
-                    fileNor = { content: session.nor, name: session.metadata?.norName ?? 'saved ROM' };
-                    fileNand = { content: session.nand, name: session.metadata?.nandName ?? 'saved NAND' };
+                    fileNor = { content: nor, name: metadata?.norName ?? 'saved ROM' };
+                    fileNand = { content: nand, name: metadata?.nandName ?? 'saved NAND' };
 
                     await database.putNor(fileNor);
                     await database.putNand(fileNand);
-                    await database.putRam(session.ram);
+                    await database.putRam(ram);
                 } catch (e) {
                     alert(`Failed to load session: ${e.message}`);
                     console.error(e);

@@ -39,7 +39,7 @@ export class SessionFile {
 
             sessionFile
                 .SetDeviceId(deviceId)
-                .SetMetadata(metadata.length, this.module.wrapPointer(metadataPtr))
+                .SetMetadata(encodedMetadata.length, this.module.wrapPointer(metadataPtr))
                 .SetNor(nor.length, this.module.wrapPointer(norPtr))
                 .SetNand(nand.length, this.module.wrapPointer(nandPtr))
                 .SetRam(ram.length, this.module.wrapPointer(ramPtr));
@@ -59,6 +59,45 @@ export class SessionFile {
             this.free(ramPtr);
             this.free(savestatePtr);
 
+            module.destroy(sessionFile);
+        }
+    }
+
+    async deserializeSession(session) {
+        const module = await this.modulePromise;
+
+        const sessionFile = new module.SessionFile();
+        let sessionPtr = this.copyIn(session);
+
+        try {
+            if (!sessionFile.Deserialize(session.length, module.wrapPointer(sessionPtr))) return undefined;
+
+            const deviceId = sessionFile.GetDeviceId();
+            const metadataBinary = this.copyOut(
+                sessionFile.GetMetadataSize(),
+                module.getPointer(sessionFile.GetMetadata())
+            );
+            const nor = this.copyOut(sessionFile.GetNorSize(), module.getPointer(sessionFile.GetNor()));
+            const nand = this.copyOut(sessionFile.GetNandSize(), module.getPointer(sessionFile.GetNand()));
+            const ram = this.copyOut(sessionFile.GetRamSize(), module.getPointer(sessionFile.GetRam()));
+            const savestate = this.copyOut(
+                sessionFile.GetSavestateSize(),
+                module.getPointer(sessionFile.GetSavestate())
+            );
+
+            let metadata;
+            if (metadataBinary) {
+                try {
+                    const decoder = new TextDecoder();
+                    metadata = JSON.parse(decoder.decode(metadataBinary));
+                } catch (e) {
+                    console.error(`failed to parseMetadata`);
+                }
+            }
+
+            return { deviceId, metadata, nor, nand, ram, savestate };
+        } finally {
+            this.free(session);
             module.destroy(sessionFile);
         }
     }
