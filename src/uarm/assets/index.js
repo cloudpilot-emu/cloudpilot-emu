@@ -322,7 +322,7 @@ import { SessionFile } from './sessionfile.js';
 
             await emulator?.stop();
 
-            database.clearNand();
+            await database.clearNand();
 
             window.location.reload();
         });
