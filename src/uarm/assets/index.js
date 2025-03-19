@@ -278,7 +278,7 @@ import { SessionFile } from './sessionfile.js';
 
         if (query.has('binary')) binary = query.get('binary');
         log(`loading ${binary}`);
-        loadModule(`../${binary}`);
+        loadModule(binary);
 
         sessionFile = new SessionFile(module);
 
