@@ -1,12 +1,12 @@
 #include "ChunkProbe.h"
 
-void ChunkProbe::Put8(uint8 value) { size++; }
+void ChunkProbe::Put8(uint8_t value) { size++; }
 
-void ChunkProbe::Put16(uint16 value) { size++; }
+void ChunkProbe::Put16(uint16_t value) { size++; }
 
-void ChunkProbe::Put32(uint32 value) { size++; };
+void ChunkProbe::Put32(uint32_t value) { size++; };
 
-void ChunkProbe::Put64(uint64 value) { size += 2; }
+void ChunkProbe::Put64(uint64_t value) { size += 2; }
 
 void ChunkProbe::PutBool(bool value) { size++; }
 
@@ -20,6 +20,6 @@ bool ChunkProbe::HasError() const { return false; }
 
 size_t ChunkProbe::GetSize() const { return size; }
 
-void ChunkProbe::PutString(const string& str, size_t maxLength) {
+void ChunkProbe::PutString(const std::string& str, size_t maxLength) {
     PutBuffer(nullptr, maxLength + 1);
 }

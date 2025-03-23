@@ -2,6 +2,7 @@
 
 #include "EmCommon.h"
 #include "Feature.h"
+#include "LogDomain.h"
 #include "Logging.h"
 #include "Marshal.h"
 #include "NetworkProxy.h"
@@ -9,7 +10,7 @@
 #define LOGGING 1
 
 #ifdef LOGGING
-    #define PRINTF(...) logging::printf(logging::domainNetlib, __VA_ARGS__)
+    #define PRINTF(...) logPrintfDom(logging::domainNetlib, __VA_ARGS__)
 #else
     #define PRINTF(...) ;
 #endif

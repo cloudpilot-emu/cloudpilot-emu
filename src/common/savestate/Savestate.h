@@ -3,14 +3,12 @@
 
 #include <memory>
 
-#include "Byteswapping.h"
+#include "CPEndian.h"
 #include "Chunk.h"
-#include "ChunkType.h"
-#include "EmCommon.h"
 #include "Logging.h"
-#include "Platform.h"
 #include "SavestateProbe.h"
 
+template <typename ChunkType>
 class Savestate {
    public:
     using chunkMapT = std::map<ChunkType, Chunk>;
@@ -36,7 +34,7 @@ class Savestate {
     bool AllocateBuffer(T& t);
 
    private:
-    unique_ptr<uint32[]> buffer;
+    std::unique_ptr<uint32_t[]> buffer;
     size_t size{0};
 
     bool error{false};
@@ -54,8 +52,9 @@ class Savestate {
 // IMPLEMENTATION
 ///////////////////////////////////////////////////////////////////////////////
 
+template <typename ChunkType>
 template <typename T>
-bool Savestate::Save(T& target) {
+bool Savestate<ChunkType>::Save(T& target) {
     if (!buffer && !AllocateBuffer(target)) {
         error = true;
         return false;
@@ -71,37 +70,38 @@ bool Savestate::Save(T& target) {
     return !error;
 }
 
+template <typename ChunkType>
 template <typename T>
-bool Savestate::AllocateBuffer(T& target) {
-    SavestateProbe probe;
+bool Savestate<ChunkType>::AllocateBuffer(T& target) {
+    SavestateProbe<ChunkType> probe;
 
     target.Save(probe);
 
     if (probe.HasError()) {
-        logging::printf("failed to determine savestate layout");
+        logPrintf("failed to determine savestate layout");
         return false;
     }
 
-    const SavestateProbe::chunkMapT& probeMap(probe.GetChunkMap());
+    const typename SavestateProbe<ChunkType>::chunkMapT& probeMap(probe.GetChunkMap());
     size_t chunkCount = probeMap.size();
     size = 4;
 
     for (auto& [chunkType, chunk] : probeMap) size = size + chunk.GetSize() * 4 + 8;
 
-    buffer = make_unique<uint32[]>(size);
+    buffer = std::make_unique<uint32_t[]>(size);
 
-    uint32* nextTocEntry = buffer.get();
+    uint32_t* nextTocEntry = buffer.get();
     *(nextTocEntry++) = chunkCount;
 
-    uint32* nextChunk = buffer.get() + 1 + 2 * chunkCount;
+    uint32_t* nextChunk = buffer.get() + 1 + 2 * chunkCount;
 
     for (auto& [chunkType, chunk] : probeMap) {
-        *nextTocEntry = static_cast<uint32>(chunkType);
+        *nextTocEntry = static_cast<uint32_t>(chunkType);
         *(nextTocEntry + 1) = chunk.GetSize();
 
-#if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)
-        Byteswap(*nextTocEntry);
-        Byteswap(*nextTocEntry + 1);
+#if (__BYTE_ORDER == __BIG_ENDIAN)
+        *nextTocEntry = htole32(*nextTocEntry);
+        *(nextTocEntry + 1) = htole32(*(nextTocEntry + 1));
 #endif
 
         nextTocEntry += 2;
@@ -111,6 +111,39 @@ bool Savestate::AllocateBuffer(T& target) {
     }
 
     return true;
+}
+
+template <typename ChunkType>
+Chunk* Savestate<ChunkType>::GetChunk(ChunkType type) {
+    if (!buffer) {
+        logPrintf("tried to request chunk before probing layout");
+        return nullptr;
+    }
+
+    if (chunkMap.find(type) == chunkMap.end()) {
+        logPrintf("chunk type 0x%04x not in map", type);
+        return nullptr;
+    }
+
+    Chunk& chunk = chunkMap.at(type);
+
+    error = error || chunk.HasError();
+    chunk.Reset();
+
+    return &chunk;
+}
+
+template <typename ChunkType>
+void Savestate<ChunkType>::NotifyError() {
+    error = true;
+}
+
+template <typename ChunkType>
+void Savestate<ChunkType>::Reset() {
+    buffer.reset();
+    size = 0;
+    error = false;
+    chunkMap.clear();
 }
 
 #endif  // _SAVESTATE_H_

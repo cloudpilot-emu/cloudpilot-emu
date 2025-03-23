@@ -3,7 +3,9 @@
 
 #include "EmCommon.h"
 #include "EmEvent.h"
+#include "savestate/ChunkType.h"
 
+template <typename ChunkType>
 class SavestateLoader;
 
 class EmSystemState {
@@ -16,7 +18,7 @@ class EmSystemState {
     template <typename T>
     void Save(T& savestate);
 
-    void Load(SavestateLoader& loader);
+    void Load(SavestateLoader<ChunkType>& loader);
 
     void SetOSVersion(uint32 version);
     uint32 OSVersion(void) const;

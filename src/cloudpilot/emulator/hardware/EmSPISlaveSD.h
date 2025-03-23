@@ -12,9 +12,9 @@ class EmSPISlaveSD : public EmSPISlave {
 
     void Reset();
 
-    void Save(Savestate&) override;
-    void Save(SavestateProbe&) override;
-    void Load(SavestateLoader&) override;
+    void Save(Savestate<ChunkType>&) override;
+    void Save(SavestateProbe<ChunkType>&) override;
+    void Load(SavestateLoader<ChunkType>&) override;
 
     uint16 DoExchange(uint16 control, uint16 data) override;
     void Enable(void) override;

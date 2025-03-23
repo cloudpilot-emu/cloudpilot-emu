@@ -14,16 +14,16 @@
 #include "EmRegsSED1375.h"
 
 #include "Byteswapping.h"  // Canonical
-#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmRegsFrameBuffer.h"
 #include "EmSystemState.h"
 #include "Frame.h"
 #include "Miscellaneous.h"  // StWordSwapper
 #include "Nibbler.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 // Given a register (specified by its field name), return its address
 // in emulated space.
@@ -32,8 +32,8 @@
 
 // Macro to help the installation of handlers for a register.
 
-#define INSTALL_HANDLER(read, write, reg)                                                      \
-    this->SetHandler((ReadFunction)&EmRegsSED1375::read, (WriteFunction)&EmRegsSED1375::write, \
+#define INSTALL_HANDLER(read, write, reg)                                                          \
+    this->SetHandler((ReadFunction) & EmRegsSED1375::read, (WriteFunction) & EmRegsSED1375::write, \
                      addressof(reg), fRegs.reg.GetSize())
 
 #define kCLUTColorIndexMask 0xf000
@@ -102,14 +102,14 @@ void EmRegsSED1375::Reset(Bool hardwareReset) {
     }
 }
 
-void EmRegsSED1375::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsSED1375::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsSED1375::Save(SavestateProbe& savestate) { DoSave(savestate); }
+void EmRegsSED1375::Save(SavestateProbe<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsSED1375::Load(SavestateLoader& loader) {
+void EmRegsSED1375::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regsSED1375);
     if (!chunk) {
-        logging::printf("unable to restore RegsSED1375: missing savestate\n");
+        logPrintf("unable to restore RegsSED1375: missing savestate\n");
         loader.NotifyError();
 
         return;
@@ -117,7 +117,7 @@ void EmRegsSED1375::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore RegsSED1375: unsupported savestate version\n");
+        logPrintf("unable to restore RegsSED1375: unsupported savestate version\n");
         loader.NotifyError();
 
         return;

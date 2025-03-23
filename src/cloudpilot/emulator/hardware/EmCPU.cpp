@@ -41,8 +41,8 @@ EmCPU::~EmCPU(void) {
 
 void EmCPU::Reset(Bool /*hardwareReset*/) {}
 
-void EmCPU::Save(Savestate&) {}
+void EmCPU::Save(Savestate<ChunkType>&) {}
 
-void EmCPU::Save(SavestateProbe&) {}
+void EmCPU::Save(SavestateProbe<ChunkType>&) {}
 
-void EmCPU::Load(SavestateLoader&) {}
+void EmCPU::Load(SavestateLoader<ChunkType>&) {}

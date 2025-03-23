@@ -1,9 +1,9 @@
 #include "EmRegsPLDAtlantiC.h"
 
-#include "ChunkHelper.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 1;
@@ -15,14 +15,14 @@ void EmRegsPLDAtlantiC::Reset(Bool hardwareReset) {
     if (hardwareReset) memset(regs, 0, sizeof(regs));
 }
 
-void EmRegsPLDAtlantiC::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsPLDAtlantiC::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsPLDAtlantiC::Save(SavestateProbe& savestate) { DoSave(savestate); }
+void EmRegsPLDAtlantiC::Save(SavestateProbe<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsPLDAtlantiC::Load(SavestateLoader& loader) {
+void EmRegsPLDAtlantiC::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regsPLLDAtlantiC);
     if (!chunk) {
-        logging::printf("unable to restore RegsPLDAtlantiC: missing savestate\n");
+        logPrintf("unable to restore RegsPLDAtlantiC: missing savestate\n");
         loader.NotifyError();
 
         return;
@@ -30,7 +30,7 @@ void EmRegsPLDAtlantiC::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore RegsPLDAtlantiC: unsupported savestate version\n");
+        logPrintf("unable to restore RegsPLDAtlantiC: unsupported savestate version\n");
         loader.NotifyError();
 
         return;

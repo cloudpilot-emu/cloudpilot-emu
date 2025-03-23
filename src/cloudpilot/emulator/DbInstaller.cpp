@@ -7,6 +7,7 @@
 #include "EmMemory.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
+#include "LogDomain.h"
 #include "Logging.h"
 #include "Marshal.h"
 #include "ROMStubs.h"
@@ -108,7 +109,7 @@ DbInstaller::Result DbInstaller::Install() {
     if (!gSystemState.IsUIInitialized()) return Result::failureInternal;
 
     if (gSystemState.OSMajorVersion() < 3) {
-        logging::printf(logging::domainInstaller, "manually installing database");
+        logPrintfDom(logging::domainInstaller, "manually installing database");
 
         return EmFileImport::LoadPalmFile(buffer, bufferSize, kMethodHomebrew) == kError_NoError
                    ? Result::success
@@ -116,20 +117,19 @@ DbInstaller::Result DbInstaller::Install() {
     }
 
     if (gSystemState.OSMajorVersion() == 3) {
-        logging::printf(logging::domainInstaller, "attempting to install database via exgmgr");
+        logPrintfDom(logging::domainInstaller, "attempting to install database via exgmgr");
         Result result = exmgrInstall(bufferSize, buffer);
 
         // Some versions of PalmOS 3.x fail to install empty DBs
         if (result == Result::success || !isEmptyDb) return result;
 
-        logging::printf(logging::domainInstaller,
-                        "installation via exgmgr failed, retrying manually");
+        logPrintfDom(logging::domainInstaller, "installation via exgmgr failed, retrying manually");
         return EmFileImport::LoadPalmFile(buffer, bufferSize, kMethodHomebrew) == kError_NoError
                    ? Result::success
                    : Result::failureUnknownReason;
     }
 
-    logging::printf(logging::domainInstaller, "installing database via exgmgr");
+    logPrintfDom(logging::domainInstaller, "installing database via exgmgr");
     return exmgrInstall(bufferSize, buffer);
 }
 
@@ -137,15 +137,15 @@ void DbInstaller::PreprocessDb() {
     if (!gSystemState.IsUIInitialized() || gSystemState.OSMajorVersion() != 3) return;
 
     if (!InspectDb()) {
-        logging::printf(logging::domainInstaller,
-                        "database seems to be invalid, aborting analysis...");
+        logPrintfDom(logging::domainInstaller,
+                     "database seems to be invalid, aborting analysis...");
         return;
     }
 
     // PalmOS 3 cannot handle gaps != 2
     if (gap != 2 && gSystemState.OSMajorVersion() == 3) {
-        logging::printf(logging::domainInstaller,
-                        "fixing up database with nonstandard gap of %u bytes", gap);
+        logPrintfDom(logging::domainInstaller,
+                     "fixing up database with nonstandard gap of %u bytes", gap);
 
         FixupGap();
     }
@@ -155,13 +155,13 @@ bool DbInstaller::InspectDb() {
     EmAliasDatabaseHdrType<LAS> header(buffer);
 
     if (header.GetSize() > bufferSize) {
-        logging::printf(logging::domainInstaller, "suspicious DB: header does not fit buffer");
+        logPrintfDom(logging::domainInstaller, "suspicious DB: header does not fit buffer");
         return false;
     }
 
     if (strnlen(reinterpret_cast<const char*>(header.name.GetPtr()), dmDBNameLength) ==
         dmDBNameLength) {
-        logging::printf(logging::domainInstaller, "suspicious DB: name unterminated or too long");
+        logPrintfDom(logging::domainInstaller, "suspicious DB: name unterminated or too long");
         return false;
     }
 
@@ -170,8 +170,8 @@ bool DbInstaller::InspectDb() {
 
         if (c == '\0') break;
         if (c < 0x20 || c > 0x7e) {
-            logging::printf(logging::domainInstaller,
-                            "suspicious DB: name contains unprintable characters");
+            logPrintfDom(logging::domainInstaller,
+                         "suspicious DB: name contains unprintable characters");
 
             return false;
         }
@@ -185,7 +185,7 @@ bool DbInstaller::InspectDb() {
 
     if (header.appInfoID > 0) {
         if (header.appInfoID < watermark || header.appInfoID >= bufferSize) {
-            logging::printf(logging::domainInstaller, "suspicious DB: invalid appinfo");
+            logPrintfDom(logging::domainInstaller, "suspicious DB: invalid appinfo");
             return false;
         }
 
@@ -194,7 +194,7 @@ bool DbInstaller::InspectDb() {
 
     if (header.sortInfoID > 0) {
         if (header.sortInfoID < watermark || header.sortInfoID >= bufferSize) {
-            logging::printf(logging::domainInstaller, "suspicious DB: invalid appinfo");
+            logPrintfDom(logging::domainInstaller, "suspicious DB: invalid appinfo");
             return false;
         }
 
@@ -262,12 +262,12 @@ bool DbInstaller::ValidateEntries(const EmAliasDatabaseHdrType<LAS>& header, uin
         T entry(buffer + offset);
 
         if (offset + entry.GetSize() > bufferSize) {
-            logging::printf(logging::domainInstaller, "suspicious DB: entry %i exceeds bounds", i);
+            logPrintfDom(logging::domainInstaller, "suspicious DB: entry %i exceeds bounds", i);
             return false;
         }
 
         if (entry.localChunkID < watermark) {
-            logging::printf(logging::domainInstaller, "suspicious DB: invalid entry %i", i);
+            logPrintfDom(logging::domainInstaller, "suspicious DB: invalid entry %i", i);
             return false;
         }
 

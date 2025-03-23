@@ -3,13 +3,13 @@
 #include <iomanip>
 #include <sstream>
 
-#include "ChunkHelper.h"
 #include "EmCPU68K.h"
 #include "EmMemory.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
 #include "UAE.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 // #define LOG_ACCESS
 // #define LOGGING
@@ -19,16 +19,18 @@
     #define LOG_READ_ACCESS logReadAccess
 #else
     #define LOG_WRITE_ACCESS(address, size, value) \
-        {}
+        {                                          \
+        }
     #define LOG_READ_ACCESS(address, size, value) \
-        {}
+        {                                         \
+        }
 #endif
 
 #define READ_REGISTER(r) DoStdRead(baseAddress + r, 2)
 #define WRITE_REGISTER(r, v) DoStdWrite(baseAddress + r, 2, v)
 
-#define INSTALL_HANDLER(read, write, offset, size)                                       \
-    SetHandler((ReadFunction)&EmRegsSonyDSP::read, (WriteFunction)&EmRegsSonyDSP::write, \
+#define INSTALL_HANDLER(read, write, offset, size)                                           \
+    SetHandler((ReadFunction) & EmRegsSonyDSP::read, (WriteFunction) & EmRegsSonyDSP::write, \
                baseAddress + offset, size)
 
 namespace {
@@ -165,11 +167,11 @@ void EmRegsSonyDSP::Reset(Bool hardwareReset) {
     memoryStick.Reset();
 }
 
-void EmRegsSonyDSP::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsSonyDSP::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsSonyDSP::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+void EmRegsSonyDSP::Save(SavestateProbe<ChunkType>& savestateProbe) { DoSave(savestateProbe); }
 
-void EmRegsSonyDSP::Load(SavestateLoader& loader) {
+void EmRegsSonyDSP::Load(SavestateLoader<ChunkType>& loader) {
     memoryStick.Load(loader);
 
     Chunk* chunk = loader.GetChunk(ChunkType::regsSonyDsp);
@@ -177,7 +179,7 @@ void EmRegsSonyDSP::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore RegsSonyDSP: unsupported savestate version\n");
+        logPrintf("unable to restore RegsSonyDSP: unsupported savestate version\n");
         loader.NotifyError();
 
         return;

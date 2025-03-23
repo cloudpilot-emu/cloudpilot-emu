@@ -21,6 +21,7 @@
 #include "ExternalStorage.h"
 #include "Feature.h"
 #include "GdbStub.h"
+#include "LogDomain.h"
 #include "MainLoop.h"
 #include "ProxyHandler.h"
 #include "ScreenDimensions.h"
@@ -187,9 +188,9 @@ void run(const Options& options) {
     GdbStub gdbStub(gDebugger, options.debuggerConfiguration.port);
     setupDebugger(gdbStub, options);
 
-    if (options.traceNetlib) logging::enableDomain(logging::domainNetlib);
-    if (options.traceInstaller) logging::enableDomain(logging::domainInstaller);
-    if (options.traceDebugger) logging::enableDomain(logging::domainDebugger);
+    if (options.traceNetlib) logEnableDomain(logging::domainNetlib);
+    if (options.traceInstaller) logEnableDomain(logging::domainInstaller);
+    if (options.traceDebugger) logEnableDomain(logging::domainDebugger);
 
     Feature::SetClipboardIntegration(true);
 

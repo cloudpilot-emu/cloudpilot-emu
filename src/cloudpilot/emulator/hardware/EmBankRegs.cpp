@@ -18,9 +18,9 @@
 #include "EmCommon.h"
 #include "EmMemory.h"   // gMemAccessFlags, EmMemory::IsPCInRAM
 #include "EmSession.h"  // GetDevice, ScheduleDeferredError
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 /*
         When emulating memory, UAE divides up the 4GB address space into
@@ -158,10 +158,10 @@ void EmBankRegs::Save(T& savestate) {
     }
 }
 
-template void EmBankRegs::Save(Savestate& savestate);
-template void EmBankRegs::Save(SavestateProbe& savestate);
+template void EmBankRegs::Save(Savestate<ChunkType>& savestate);
+template void EmBankRegs::Save(SavestateProbe<ChunkType>& savestate);
 
-void EmBankRegs::Load(SavestateLoader& loader) {
+void EmBankRegs::Load(SavestateLoader<ChunkType>& loader) {
     EmRegsList::iterator iter = fgSubBanks.begin();
     while (iter != fgSubBanks.end()) {
         (*iter)->Load(loader);

@@ -1,0 +1,20 @@
+# This is just for testing the Linux build on MacOS, NOT for building actual binaries!!!
+
+FROM ubuntu:latest
+
+RUN \
+    apt-get update && \
+    apt-get -y install build-essential libreadline-dev libcurl4-openssl-dev libsdl2-image-dev libsdl2-dev
+
+RUN mkdir /work
+WORKDIR /work
+
+COPY src /work/src
+COPY Makefile /work
+
+ENV CORES=16
+
+RUN echo \
+    'CFLAGS_NATIVE = -Werror -O0 -DENABLE_DEBUGGER $(shell sdl2-config --cflags)' > src/Makefile.local  && \
+    make clean && \
+    make -j$CORES bin

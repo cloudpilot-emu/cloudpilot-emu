@@ -4,7 +4,6 @@
 
 #include "CallbackManager.h"
 #include "Chars.h"
-#include "ChunkHelper.h"
 #include "Debugger.h"
 #include "EmBankSRAM.h"
 #include "EmCPU.h"
@@ -19,12 +18,14 @@
 #include "MetaMemory.h"
 #include "Miscellaneous.h"
 #include "NetworkProxy.h"
+#include "Platform.h"
 #include "ROMStubs.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
 #include "SessionImage.h"
 #include "SuspendManager.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 3;
@@ -139,7 +140,7 @@ bool EmSession::SaveImage(SessionImage& image) {
         image.SetSavestate(savestate.GetBuffer(), savestate.GetSize());
     } else {
         image.SetSavestate(nullptr, 0);
-        logging::printf("failed to save savestate");
+        logPrintf("failed to save savestate");
 
         return false;
     }
@@ -150,12 +151,12 @@ bool EmSession::SaveImage(SessionImage& image) {
 bool EmSession::LoadImage(SessionImage& image) {
     EmDevice* device = new EmDevice(image.GetDeviceId());
     if (device->GetIDString() != device->GetIDString()) {
-        logging::printf("device id mismatch");
+        logPrintf("device id mismatch");
         return false;
     }
 
     if (!Initialize(device, static_cast<uint8*>(image.GetRomImage()), image.GetRomImageSize())) {
-        logging::printf("failed to initialize session");
+        logPrintf("failed to initialize session");
         return false;
     }
 
@@ -165,16 +166,16 @@ bool EmSession::LoadImage(SessionImage& image) {
 
     if (version >= 4) {
         if (!EmMemory::LoadMemoryV4(memoryImage, memorySize)) {
-            logging::printf("failed to restore memory (V4)");
+            logPrintf("failed to restore memory (V4)");
             return false;
         }
     } else if (version >= 2) {
         if (!EmMemory::LoadMemoryV2(memoryImage, memorySize)) {
-            logging::printf("failed to restore memory (V2)");
+            logPrintf("failed to restore memory (V2)");
             return false;
         }
     } else if (!EmMemory::LoadMemoryV1(memoryImage, memorySize)) {
-        logging::printf("failed to restore memory (V1)");
+        logPrintf("failed to restore memory (V1)");
         return false;
     }
 
@@ -182,7 +183,7 @@ bool EmSession::LoadImage(SessionImage& image) {
     void* savestate = image.GetSavestate();
 
     if (savestateSize > 0 && !Load(savestateSize, static_cast<uint8*>(savestate))) {
-        logging::printf("failed to restore savestate");
+        logPrintf("failed to restore savestate");
         return false;
     }
 
@@ -214,10 +215,10 @@ void EmSession::Save(T& savestate) {
     gExternalStorage.Save(savestate);
 }
 
-template void EmSession::Save(Savestate& savestate);
-template void EmSession::Save(SavestateProbe& savestate);
+template void EmSession::Save(Savestate<ChunkType>& savestate);
+template void EmSession::Save(SavestateProbe<ChunkType>& savestate);
 
-void EmSession::Load(SavestateLoader& loader) {
+void EmSession::Load(SavestateLoader<ChunkType>& loader) {
     EmAssert(device);
     EmAssert(cpu);
 
@@ -229,14 +230,14 @@ void EmSession::Load(SavestateLoader& loader) {
 
     uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore session: savestate version mismatch");
+        logPrintf("unable to restore session: savestate version mismatch");
         loader.NotifyError();
 
         return;
     }
 
     if (chunk->GetString(16) != device->GetIDString()) {
-        logging::printf("unable to restore session: device ID does not match savestate");
+        logPrintf("unable to restore session: device ID does not match savestate");
     }
 
     nestLevel = 0;
@@ -265,7 +266,7 @@ void EmSession::Load(SavestateLoader& loader) {
 
 bool EmSession::Save() {
     if (SuspendManager::IsSuspended()) {
-        logging::printf("unable to save state while the emulator is suspended");
+        logPrintf("unable to save state while the emulator is suspended");
         return false;
     }
 
@@ -273,7 +274,7 @@ bool EmSession::Save() {
 }
 
 bool EmSession::Load(size_t size, uint8* buffer) {
-    SavestateLoader loader;
+    SavestateLoader<ChunkType> loader;
 
     if (!loader.Load(buffer, size, *this)) {
         Reset(ResetType::soft);
@@ -286,7 +287,7 @@ bool EmSession::Load(size_t size, uint8* buffer) {
     return true;
 }
 
-Savestate& EmSession::GetSavestate() { return savestate; }
+Savestate<ChunkType>& EmSession::GetSavestate() { return savestate; }
 
 pair<size_t, uint8*> EmSession::GetRomImage() {
     EmAssert(romImage);
@@ -540,7 +541,7 @@ void EmSession::SetHotsyncUserName(string hotsyncUserName) {
     gSystemState.SetHotsyncUserName(hotsyncUserName);
 
     if (IsCpuStopped()) {
-        logging::printf("WARNING: attempt to set hotsync name with stopped CPU");
+        logPrintf("WARNING: attempt to set hotsync name with stopped CPU");
 
         return;
     }

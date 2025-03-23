@@ -2,16 +2,23 @@
 #include <gtest/gtest.h>
 // clang-format on
 
-#include "Savestate.h"
+#include "savestate/Savestate.h"
 
-#include "ChunkHelper.h"
-#include "SavestateLoader.h"
+#include <cstdint>
+#include <string>
+
+#include "savestate/ChunkHelper.h"
+#include "savestate/SavestateLoader.h"
+
+using namespace std;
 
 namespace {
+    enum class ChunkType { cpu68k, regsEZ };
+
     namespace SavestateDeSerialisation {
         struct MockCpu68k {
-            uint32 x{0};
-            int16 y{0};
+            uint32_t x{0};
+            int16_t y{0};
             double z{0};
             string str{"hello world"};
 
@@ -24,7 +31,7 @@ namespace {
                 DoSaveLoad(helper);
             }
 
-            void Load(SavestateLoader& loader) {
+            void Load(SavestateLoader<ChunkType>& loader) {
                 Chunk* chunk = loader.GetChunk(ChunkType::cpu68k);
                 if (!chunk) return;
 
@@ -43,9 +50,9 @@ namespace {
         };
 
         struct MockRegsEZ {
-            uint8 x{0};
-            uint8 y{0};
-            uint8 z{0};
+            uint8_t x{0};
+            uint8_t y{0};
+            uint8_t z{0};
             bool b1{false}, b2{true};
 
             template <typename T>
@@ -57,7 +64,7 @@ namespace {
                 DoSaveLoad(helper);
             }
 
-            void Load(SavestateLoader& loader) {
+            void Load(SavestateLoader<ChunkType>& loader) {
                 Chunk* chunk = loader.GetChunk(ChunkType::regsEZ);
                 if (!chunk) return;
 
@@ -87,7 +94,7 @@ namespace {
                 regsEZ.Save(savestate);
             }
 
-            void Load(SavestateLoader& loader) {
+            void Load(SavestateLoader<ChunkType>& loader) {
                 cpu68k.Load(loader);
                 regsEZ.Load(loader);
             }
@@ -98,12 +105,12 @@ namespace {
             MockCpu68k cpu68k{0x12345678, -17, 3.5};
             MockRoot root{cpu68k, regsEZ};
 
-            Savestate savestate;
+            Savestate<ChunkType> savestate;
             ASSERT_TRUE(savestate.Save(root));
             ASSERT_EQ(savestate.GetSize(), 60u);
 
             MockRoot loadRoot;
-            SavestateLoader loader;
+            SavestateLoader<ChunkType> loader;
 
             ASSERT_TRUE(loader.Load(savestate.GetBuffer(), savestate.GetSize(), loadRoot));
             ASSERT_EQ(loadRoot.cpu68k, cpu68k);
@@ -115,12 +122,12 @@ namespace {
             MockCpu68k cpu68k{0x12345678, -17, 3.5};
             MockRoot root{cpu68k, regsEZ};
 
-            Savestate savestate;
+            Savestate<ChunkType> savestate;
             ASSERT_TRUE(savestate.Save(root));
             ASSERT_EQ(savestate.GetSize(), 60u);
 
             MockRoot loadRoot;
-            SavestateLoader loader;
+            SavestateLoader<ChunkType> loader;
 
             ASSERT_TRUE(loader.Load(savestate.GetBuffer(), savestate.GetSize(), loadRoot));
             ASSERT_EQ(loadRoot.cpu68k, cpu68k);
@@ -148,7 +155,7 @@ namespace {
         };
 
         TEST(SavestateSave, RequestingAChunkTwiceDuringSaveGeneratesAnError) {
-            Savestate savestate;
+            Savestate<ChunkType> savestate;
             Mock mock;
 
             ASSERT_FALSE(savestate.Save(mock));
@@ -177,7 +184,7 @@ namespace {
         };
 
         TEST(SavestateSave, ChunkErrorsArePropagated) {
-            Savestate savestate;
+            Savestate<ChunkType> savestate;
             Mock1 mock1;
             Mock2 mock2;
 
@@ -200,7 +207,7 @@ namespace {
         };
 
         TEST(SavestateSave, NotifyErrorRaisesAnError) {
-            Savestate savestate;
+            Savestate<ChunkType> savestate;
             Mock1 mock1;
             Mock2 mock2;
 

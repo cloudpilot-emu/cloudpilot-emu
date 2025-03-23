@@ -28,7 +28,7 @@ CXXFLAGS_EMCC = $(CFLAGS_EMCC) -fno-rtti -fno-exceptions
 
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt
 CXXFLAGS_TEST ?= $(CFLAGS_TEST)
-LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt -lgtest -lgtest_main -lgmock
+LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt -lgtest -lgmock
 
 BUILDDIR_NATIVE = .build
 DEPDIR_NATIVE = .deps
@@ -49,29 +49,40 @@ MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
 
 INCLUDE = $(INCLUDE_EXTRA) -I.
 
-SOURCE_C = 					\
-	zip/miniz.c 			\
+SOURCE_C = 							\
+	zip/miniz.c 					\
 	zip/zip.c
 
-SOURCE_CPP = 				\
-	CardImage.cpp 			\
-	CardVolume.cpp 			\
-	CPCrc.cpp 				\
-	GunzipContext.cpp 		\
-	GzipContext.cpp 		\
-	CreateZipContext.cpp 	\
-	ZipfileWalker.cpp 		\
-	FileUtil.cpp 
+SOURCE_CPP = 						\
+	CardImage.cpp 					\
+	CardVolume.cpp 					\
+	CPCrc.cpp 						\
+	GunzipContext.cpp 				\
+	GzipContext.cpp 				\
+	CreateZipContext.cpp 			\
+	ZipfileWalker.cpp 				\
+	FileUtil.cpp 					\
+	Logging.cpp						\
+	savestate/Chunk.cpp				\
+	savestate/ChunkProbe.cpp
 
-SOURCE_CPP_NATIVE = 		\
-	$(SOURCE_CPP)			\
+SOURCE_CPP_NATIVE = 				\
+	$(SOURCE_CPP)					\
 	Cli.cpp
 
-SOURCE_TEST = 				\
-	$(SOURCE_CPP) 			\
-	test/Crc.cpp 			\
-	test/GunzipContext.cpp 	\
-	test/GzipContext.cpp
+SOURCE_TEST = 						\
+	$(SOURCE_CPP) 					\
+	test/Crc.cpp 					\
+	test/GunzipContext.cpp 			\
+	test/GzipContext.cpp			\
+	test/SaveChunkHelper.cpp		\
+	test/LoadChunkHelper.cpp		\
+	test/Savestate.cpp				\
+	test/SavestateChunk.cpp			\
+	test/SavestateChunkProbe.cpp	\
+	test/SavestateLoader.cpp		\
+	test/SavestateProbe.cpp			\
+	test/main.cpp
 
 OBJECTS_NATIVE = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CPP_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)
 OBJECTS_EMCC = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CPP:%.cpp=$(BUILDDIR_EMCC)/%.o)

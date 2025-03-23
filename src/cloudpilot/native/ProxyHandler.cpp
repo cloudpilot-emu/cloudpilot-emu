@@ -55,11 +55,11 @@ void ProxyHandler::HandleConnect(SuspendContext& context) {
     if (client.Connect()) {
         context.AsContextNetworkConnect().Resume();
 
-        logging::printf("network proxy connected");
+        logPrintf("network proxy connected");
     } else {
         context.Cancel();
 
-        logging::printf("ERROR: failed to connect to network proxy");
+        logPrintf("ERROR: failed to connect to network proxy");
     }
 }
 

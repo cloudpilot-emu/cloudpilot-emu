@@ -23,7 +23,7 @@ class EmRegsFrameBuffer : public EmRegs {
 
     virtual void Initialize(void);
     virtual void Reset(Bool hardwareReset);
-    virtual void Load(SavestateLoader&);
+    virtual void Load(SavestateLoader<ChunkType>&);
 
     virtual uint32 GetLong(emuptr address);
     virtual uint32 GetWord(emuptr address);

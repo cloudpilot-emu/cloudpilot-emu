@@ -1,15 +1,18 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "ChunkHelper.h"
+#include <cstddef>
+#include <cstdint>
+
+#include "savestate/ChunkHelper.h"
 
 namespace {
     class ChunkMock {
        public:
-        MOCK_METHOD(void, Put8, (uint8), ());
-        MOCK_METHOD(void, Put16, (uint16), ());
-        MOCK_METHOD(void, Put32, (uint32), ());
-        MOCK_METHOD(void, Put64, (uint64), ());
+        MOCK_METHOD(void, Put8, (uint8_t), ());
+        MOCK_METHOD(void, Put16, (uint16_t), ());
+        MOCK_METHOD(void, Put32, (uint32_t), ());
+        MOCK_METHOD(void, Put64, (uint64_t), ());
         MOCK_METHOD(void, PutDouble, (double), ());
         MOCK_METHOD(void, PutBool, (bool), ());
         MOCK_METHOD(void, PutBuffer, (void*, size_t), ());

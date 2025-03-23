@@ -13,16 +13,16 @@
 
 #include "EmRegsVZHandEra330.h"
 
-#include "ChunkHelper.h"
 #include "EmBankRegs.h"  // EmBankRegs::DisableSubBank
 #include "EmCommon.h"
 #include "EmRegs330CPLD.h"
 #include "EmRegsVZPrv.h"
 #include "EmSPISlave330Current.h"
 #include "EmSPISlaveADS784x.h"  // EmSPISlaveADS784x
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 #pragma mark -
 
@@ -85,13 +85,13 @@ EmRegsVZHandEra330::EmRegsVZHandEra330(HandEra330PortManager** fPortManager)
 
 EmRegsVZHandEra330::~EmRegsVZHandEra330(void) { delete fSPISlaveADC; }
 
-void EmRegsVZHandEra330::Load(SavestateLoader& loader) {
+void EmRegsVZHandEra330::Load(SavestateLoader<ChunkType>& loader) {
     EmRegsVZ::Load(loader);
     fSPISlaveCurrent->Load(loader);
 
     Chunk* chunk = loader.GetChunk(ChunkType::regsVZHandera330);
     if (!chunk) {
-        logging::printf("unable to restore RegsVZHandEra330: missing savestate\n");
+        logPrintf("unable to restore RegsVZHandEra330: missing savestate\n");
         loader.NotifyError();
 
         return;
@@ -99,7 +99,7 @@ void EmRegsVZHandEra330::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore RegsVZHandEra330: unsupported savestate version\n");
+        logPrintf("unable to restore RegsVZHandEra330: unsupported savestate version\n");
         loader.NotifyError();
 
         return;
@@ -109,9 +109,9 @@ void EmRegsVZHandEra330::Load(SavestateLoader& loader) {
     DoSaveLoad(helper);
 }
 
-void EmRegsVZHandEra330::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsVZHandEra330::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsVZHandEra330::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+void EmRegsVZHandEra330::Save(SavestateProbe<ChunkType>& savestateProbe) { DoSave(savestateProbe); }
 
 template <typename T>
 void EmRegsVZHandEra330::DoSave(T& savestate) {

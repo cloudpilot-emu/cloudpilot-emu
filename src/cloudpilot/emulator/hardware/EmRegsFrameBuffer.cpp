@@ -20,9 +20,9 @@
 #include "MemoryRegion.h"
 #include "Miscellaneous.h"  // StWordSwapper
 #include "Platform.h"       // Platform::AllocateMemoryClear
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 namespace {
     constexpr int SAVESTATE_VERSION = 1;
@@ -71,14 +71,14 @@ void EmRegsFrameBuffer::Initialize(void) {
 
 void EmRegsFrameBuffer::Reset(Bool hardwareReset) { EmRegs::Reset(hardwareReset); }
 
-void EmRegsFrameBuffer::Load(SavestateLoader& loader) {
+void EmRegsFrameBuffer::Load(SavestateLoader<ChunkType>& loader) {
     if (!loader.HasChunk(ChunkType::regsFrameBuffer)) return;
 
     Chunk* chunk = loader.GetChunk(ChunkType::regsFrameBuffer);
     if (!chunk) return;
 
     if (chunk->Get32() > SAVESTATE_VERSION) {
-        logging::printf("unable to restore regsFrameBuffer: unsupported savestate version\n");
+        logPrintf("unable to restore regsFrameBuffer: unsupported savestate version\n");
         loader.NotifyError();
 
         return;

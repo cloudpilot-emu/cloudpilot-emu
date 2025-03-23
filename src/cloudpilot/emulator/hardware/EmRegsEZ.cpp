@@ -16,7 +16,6 @@
 #include <cmath>
 
 #include "Byteswapping.h"  // Canonical
-#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmHAL.h"     // EmHAL
 #include "EmMemory.h"  // gMemAccessFlags, EmMem_memcpy
@@ -28,11 +27,12 @@
 #include "Logging.h"  // LogAppendMsg
 #include "MetaMemory.h"
 #include "Platform.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
-#include "SavestateStructures.h"
 #include "UAE.h"  // regs, SPCFLAG_INT
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
+#include "savestate/SavestateStructures.h"
 
 // clang-format off
 #include "PalmPack.h"
@@ -56,7 +56,7 @@
 
 // #define LOGGING 0
 #ifdef LOGGING
-    #define PRINTF logging::printf
+    #define PRINTF logPrintf
 #else
     #define PRINTF(...) ;
 #endif
@@ -512,16 +512,16 @@ void EmRegsEZ::Reset(Bool hardwareReset) {
 //		� EmRegsEZ::Save
 // ---------------------------------------------------------------------------
 
-void EmRegsEZ::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsEZ::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsEZ::Save(SavestateProbe& savestate) { DoSave(savestate); }
+void EmRegsEZ::Save(SavestateProbe<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsEZ::Load(SavestateLoader& savestate) {
+void EmRegsEZ::Load(SavestateLoader<ChunkType>& savestate) {
     if (fSPISlaveADC) fSPISlaveADC->Load(savestate);
 
     Chunk* chunk = savestate.GetChunk(ChunkType::regsEZ);
     if (!chunk) {
-        logging::printf("unable to restore RegsEZ: missing savestate\n");
+        logPrintf("unable to restore RegsEZ: missing savestate\n");
         savestate.NotifyError();
 
         return;
@@ -529,7 +529,7 @@ void EmRegsEZ::Load(SavestateLoader& savestate) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore RegsEZ: unsupported savestate version\n");
+        logPrintf("unable to restore RegsEZ: unsupported savestate version\n");
         savestate.NotifyError();
 
         return;

@@ -37,9 +37,9 @@ class EmRegsSED1376 : public EmRegs, public EmHALHandler {
     // EmRegs overrides
     virtual void Initialize(void);
     virtual void Reset(Bool hardwareReset);
-    virtual void Save(Savestate&);
-    virtual void Save(SavestateProbe&);
-    virtual void Load(SavestateLoader&);
+    virtual void Save(Savestate<ChunkType>&);
+    virtual void Save(SavestateProbe<ChunkType>&);
+    virtual void Load(SavestateLoader<ChunkType>&);
     virtual void Dispose(void);
 
     virtual void SetSubBankHandlers(void);

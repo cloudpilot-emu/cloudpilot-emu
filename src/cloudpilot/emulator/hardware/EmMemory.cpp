@@ -26,9 +26,9 @@
 #include "EmSession.h"  // gSession, GetDevice
 #include "MemoryRegion.h"
 #include "MetaMemory.h"  // MetaMemory::Initialize
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 /*
         Hitchhiker's Guide To Accessing Memory
@@ -381,10 +381,10 @@ void Memory::Save(T& savestate) {
     EmBankRegs::Save(savestate);
 }
 
-template void Memory::Save(Savestate& savestate);
-template void Memory::Save(SavestateProbe& savestate);
+template void Memory::Save(Savestate<ChunkType>& savestate);
+template void Memory::Save(SavestateProbe<ChunkType>& savestate);
 
-void Memory::Load(SavestateLoader& loader) {
+void Memory::Load(SavestateLoader<ChunkType>& loader) {
     EmBankRegs::Load(loader);
 
     Memory::ResetBankHandlers();

@@ -12,17 +12,17 @@
 \* ===================================================================== */
 #include "EmRegs330CPLD.h"
 
-#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmHAL.h"  // EmHAL::LineDriverChanged
 #include "EmHandEra330Defs.h"
 #include "EmMemory.h"
 #include "EmSystemState.h"
 #include "ExternalStorage.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
 #include "StackDump.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 1;
@@ -62,14 +62,14 @@ EmRegs330CPLD::EmRegs330CPLD(emuptr memoryStart, HandEra330PortManager* fPortMan
 
 EmRegs330CPLD::~EmRegs330CPLD(void) {}
 
-void EmRegs330CPLD::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegs330CPLD::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegs330CPLD::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+void EmRegs330CPLD::Save(SavestateProbe<ChunkType>& savestateProbe) { DoSave(savestateProbe); }
 
-void EmRegs330CPLD::Load(SavestateLoader& loader) {
+void EmRegs330CPLD::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regs330CPLD);
     if (!chunk) {
-        logging::printf("unable to restore Regs330CPLD: missing savestate\n");
+        logPrintf("unable to restore Regs330CPLD: missing savestate\n");
         loader.NotifyError();
 
         return;
@@ -77,7 +77,7 @@ void EmRegs330CPLD::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore Regs330CPLD: unsupported savestate version\n");
+        logPrintf("unable to restore Regs330CPLD: unsupported savestate version\n");
         loader.NotifyError();
 
         return;

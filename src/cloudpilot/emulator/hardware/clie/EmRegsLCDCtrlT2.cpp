@@ -1,15 +1,15 @@
 #include "EmRegsLCDCtrlT2.h"
 
-#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmRegsFrameBuffer.h"
 #include "EmSession.h"
 #include "EmSystemState.h"
 #include "Frame.h"
 #include "Nibbler.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 // Given a register (specified by its field name), return its address
 // in emulated space.
@@ -18,9 +18,9 @@
 
 // Macro to help the installation of handlers for a register.
 
-#define INSTALL_HANDLER(read, write, reg)                                         \
-    this->SetHandler((ReadFunction)&EmRegsMQLCDControlT2::read,                   \
-                     (WriteFunction)&EmRegsMQLCDControlT2::write, addressof(reg), \
+#define INSTALL_HANDLER(read, write, reg)                                           \
+    this->SetHandler((ReadFunction) & EmRegsMQLCDControlT2::read,                   \
+                     (WriteFunction) & EmRegsMQLCDControlT2::write, addressof(reg), \
                      sizeof(fRegs.reg))
 
 #define READ_REGISTER_T2(reg) this->ReadLCDRegister(fRegs.reg)
@@ -75,14 +75,14 @@ void EmRegsMQLCDControlT2::Reset(Bool hardwareReset) {
 
 void EmRegsMQLCDControlT2::Dispose(void) { EmRegs::Dispose(); }
 
-void EmRegsMQLCDControlT2::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsMQLCDControlT2::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsMQLCDControlT2::Save(SavestateProbe& savestate) { DoSave(savestate); }
+void EmRegsMQLCDControlT2::Save(SavestateProbe<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsMQLCDControlT2::Load(SavestateLoader& loader) {
+void EmRegsMQLCDControlT2::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regsMQ1168);
     if (!chunk) {
-        logging::printf("unable to restore RegsMQLCDControlT2: missing savestate\n");
+        logPrintf("unable to restore RegsMQLCDControlT2: missing savestate\n");
         loader.NotifyError();
 
         return;
@@ -90,7 +90,7 @@ void EmRegsMQLCDControlT2::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore RegsMQLCDControlT2: unsupported savestate version\n");
+        logPrintf("unable to restore RegsMQLCDControlT2: unsupported savestate version\n");
         loader.NotifyError();
 
         return;

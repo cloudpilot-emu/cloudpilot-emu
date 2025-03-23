@@ -1,17 +1,20 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include "ChunkHelper.h"
+#include <cstddef>
+#include <cstdint>
+
+#include "savestate/ChunkHelper.h"
 
 using testing::Return;
 
 namespace {
     class ChunkMock {
        public:
-        MOCK_METHOD(uint8, Get8, (), ());
-        MOCK_METHOD(uint16, Get16, (), ());
-        MOCK_METHOD(uint32, Get32, (), ());
-        MOCK_METHOD(uint64, Get64, (), ());
+        MOCK_METHOD(uint8_t, Get8, (), ());
+        MOCK_METHOD(uint16_t, Get16, (), ());
+        MOCK_METHOD(uint32_t, Get32, (), ());
+        MOCK_METHOD(uint64_t, Get64, (), ());
         MOCK_METHOD(double, GetDouble, (), ());
         MOCK_METHOD(bool, GetBool, (), ());
         MOCK_METHOD(void, GetBuffer, (void*, size_t), ());
@@ -27,7 +30,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoU8) {
         EXPECT_CALL(mock, Get8()).Times(1).WillOnce(Return(22));
-        uint8 x;
+        uint8_t x;
 
         helper.Do8(x);
 
@@ -36,7 +39,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoS8) {
         EXPECT_CALL(mock, Get8()).Times(1).WillOnce(Return(-22));
-        int8 x;
+        int8_t x;
 
         helper.Do8(x);
 
@@ -45,7 +48,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoU16) {
         EXPECT_CALL(mock, Get16()).Times(1).WillOnce(Return(0x1234));
-        uint16 x;
+        uint16_t x;
 
         helper.Do16(x);
 
@@ -54,7 +57,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoS16) {
         EXPECT_CALL(mock, Get16()).Times(1).WillOnce(Return(0xf0ff));
-        int16 x;
+        int16_t x;
 
         helper.Do16(x);
 
@@ -63,7 +66,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoU32) {
         EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x12345678));
-        uint32 x;
+        uint32_t x;
 
         helper.Do32(x);
 
@@ -72,7 +75,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoS32) {
         EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0xf0ffffff));
-        int32 x;
+        int32_t x;
 
         helper.Do32(x);
 
@@ -81,7 +84,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoU64) {
         EXPECT_CALL(mock, Get64()).Times(1).WillOnce(Return(0x1234567890abcdef));
-        uint64 x;
+        uint64_t x;
 
         helper.Do64(x);
 
@@ -90,7 +93,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoS64) {
         EXPECT_CALL(mock, Get64()).Times(1).WillOnce(Return(0xf0ffffffffffffff));
-        int64 x;
+        int64_t x;
 
         helper.Do64(x);
 
@@ -123,7 +126,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoU8Pack) {
         EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x12345678));
-        uint8 x1, x2, x3, x4;
+        uint8_t x1, x2, x3, x4;
 
         helper.Do(helperT::Pack8() << x1 << x2 << x3 << x4);
 
@@ -135,7 +138,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoS8Pack) {
         EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x12fff078));
-        int8 x1, x2, x3, x4;
+        int8_t x1, x2, x3, x4;
 
         helper.Do(helperT::Pack8() << x1 << x2 << x3 << x4);
 
@@ -147,7 +150,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoU16Pack) {
         EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x12345678));
-        uint16 x1, x2;
+        uint16_t x1, x2;
 
         helper.Do(helperT::Pack16() << x1 << x2);
 
@@ -157,7 +160,7 @@ namespace {
 
     TEST_F(LoadChunkHelperTest, DoS16Pack) {
         EXPECT_CALL(mock, Get32()).Times(1).WillOnce(Return(0x1234f0ff));
-        int16 x1, x2;
+        int16_t x1, x2;
 
         helper.Do(helperT::Pack16() << x1 << x2);
 

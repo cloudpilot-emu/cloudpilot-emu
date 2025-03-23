@@ -33,9 +33,9 @@ class EmRegsVZ : public EmRegs, public EmHALHandler {
     virtual void Reset(Bool hardwareReset);
     virtual void Dispose(void);
 
-    virtual void Save(Savestate&);
-    virtual void Save(SavestateProbe&);
-    virtual void Load(SavestateLoader&);
+    virtual void Save(Savestate<ChunkType>&);
+    virtual void Save(SavestateProbe<ChunkType>&);
+    virtual void Load(SavestateLoader<ChunkType>&);
 
     virtual void SetSubBankHandlers(void);
     virtual uint8* GetRealAddress(emuptr address);

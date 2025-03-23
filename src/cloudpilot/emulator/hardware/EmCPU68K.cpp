@@ -20,7 +20,6 @@
 #include <algorithm>  // find
 
 #include "Byteswapping.h"  // Canonical
-#include "ChunkHelper.h"
 #include "Debugger.h"
 #include "EmBankROM.h"  // EmBankROM::GetMemoryStart
 #include "EmCommon.h"
@@ -31,13 +30,14 @@
 #include "MetaMemory.h"
 #include "Miscellaneous.h"
 #include "Platform.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateStructures.h"
 #include "StringData.h"  // kExceptionNames
 #include "SuspendContext.h"
 #include "SuspendManager.h"
 #include "UAE.h"  // cpuop_func, etc.
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateStructures.h"
 
 // #define TRACE_FUNCTION_CALLS
 
@@ -298,21 +298,21 @@ void EmCPU68K::Reset(Bool hardwareReset) {
 //		� EmCPU68K::Save
 // ---------------------------------------------------------------------------
 
-void EmCPU68K::Save(Savestate& savestate) { DoSave(savestate); }
+void EmCPU68K::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmCPU68K::Save(SavestateProbe& savestate) { DoSave(savestate); }
+void EmCPU68K::Save(SavestateProbe<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmCPU68K::Load(SavestateLoader& loader) {
+void EmCPU68K::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::cpu68k);
     if (!chunk) {
-        logging::printf("error restoring cpu68k: missing savestate");
+        logPrintf("error restoring cpu68k: missing savestate");
         loader.NotifyError();
 
         return;
     }
 
     if (chunk->Get32() != SAVESTATE_VERSION) {
-        logging::printf("error restoring cpu68k: savestate version mismatch");
+        logPrintf("error restoring cpu68k: savestate version mismatch");
         loader.NotifyError();
 
         return;
@@ -562,8 +562,7 @@ Bool EmCPU68K::ExecuteStoppedLoop(uint32 maxCycles) {
         }
 
         if (regs.stopped && gSession->IsPowerOn())
-            logging::printf("WARNING: CPU failed to wake up after %u cycles",
-                            cyclesToNextInterrupt);
+            logPrintf("WARNING: CPU failed to wake up after %u cycles", cyclesToNextInterrupt);
 
         if (fCurrentCycles >= maxCycles) return true;
 

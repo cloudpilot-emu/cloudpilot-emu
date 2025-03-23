@@ -17,7 +17,6 @@
 #include <cmath>
 
 #include "Byteswapping.h"  // Canonical
-#include "ChunkHelper.h"
 #include "EmBankSRAM.h"
 #include "EmCommon.h"
 #include "EmDevice.h"
@@ -31,11 +30,13 @@
 #include "Logging.h"  // LogAppendMsg
 #include "MetaMemory.h"
 #include "Miscellaneous.h"  // GetHostTime
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
-#include "SavestateStructures.h"
+#include "Platform.h"
 #include "UAE.h"  // regs, SPCFLAG_INT
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
+#include "savestate/SavestateStructures.h"
 
 // clang-format off
 #include "PalmPack.h"
@@ -74,7 +75,7 @@ static const int kBaseAddressShift = 13;  // Shift to get base address from CSGB
 // #define DUMP_SPI_TRANSFERS
 // #define LOGGING 0
 #ifdef LOGGING
-    #define PRINTF logging::printf
+    #define PRINTF logPrintf
 #else
     #define PRINTF(...) ;
 #endif
@@ -599,17 +600,17 @@ void EmRegsVZ::Reset(Bool hardwareReset) {
     UpdateTimers();
 }
 
-void EmRegsVZ::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsVZ::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsVZ::Save(SavestateProbe& savestate) { DoSave(savestate); }
+void EmRegsVZ::Save(SavestateProbe<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsVZ::Load(SavestateLoader& loader) {
+void EmRegsVZ::Load(SavestateLoader<ChunkType>& loader) {
     if (fSPISlaveADC) fSPISlaveADC->Load(loader);
     if (GetSPI1Slave()) GetSPI1Slave()->Load(loader);
 
     Chunk* chunk = loader.GetChunk(ChunkType::regsVZ);
     if (!chunk) {
-        logging::printf("unable to restore RegsVZ: missing savestate\n");
+        logPrintf("unable to restore RegsVZ: missing savestate\n");
         loader.NotifyError();
 
         return;
@@ -617,7 +618,7 @@ void EmRegsVZ::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore RegsVZ: unsupported savestate version\n");
+        logPrintf("unable to restore RegsVZ: unsupported savestate version\n");
         loader.NotifyError();
 
         return;
@@ -1287,7 +1288,7 @@ int32 EmRegsVZ::GetDynamicHeapSize(void) {
                 chip_select_size = (8 * 1024L * 1024L) << csDSIZ;
             } else if (csDSIZ == 0x07) {
                 chip_select_size = 8 * 1024L * 1024L;
-                logging::printf(
+                logPrintf(
                     "out-of-spec combination of DSIZ=1 and SIZ=0x07 --- assuming %u "
                     "bytes DRAM memory range",
                     chip_select_size);

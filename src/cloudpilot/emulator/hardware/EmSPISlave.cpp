@@ -27,11 +27,11 @@ EmSPISlave::EmSPISlave(void) {}
 
 EmSPISlave::~EmSPISlave(void) {}
 
-void EmSPISlave::Save(Savestate&) {}
+void EmSPISlave::Save(Savestate<ChunkType>&) {}
 
-void EmSPISlave::Save(SavestateProbe&) {}
+void EmSPISlave::Save(SavestateProbe<ChunkType>&) {}
 
-void EmSPISlave::Load(SavestateLoader&) {}
+void EmSPISlave::Load(SavestateLoader<ChunkType>&) {}
 
 // ---------------------------------------------------------------------------
 //		� EmSPISlave::Enable

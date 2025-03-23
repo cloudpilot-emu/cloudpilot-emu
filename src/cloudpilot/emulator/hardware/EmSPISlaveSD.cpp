@@ -1,11 +1,11 @@
 #include "EmSPISlaveSD.h"
 
 #include "CPCrc.h"
-#include "ChunkHelper.h"
 #include "ExternalStorage.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 // #define DUMP_COMMAND_STREAM
 
@@ -46,17 +46,17 @@ void EmSPISlaveSD::Reset() {
     cmd12Countdown = 0;
 }
 
-void EmSPISlaveSD::Save(Savestate& savestate) { DoSave(savestate); }
+void EmSPISlaveSD::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmSPISlaveSD::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+void EmSPISlaveSD::Save(SavestateProbe<ChunkType>& savestateProbe) { DoSave(savestateProbe); }
 
-void EmSPISlaveSD::Load(SavestateLoader& loader) {
+void EmSPISlaveSD::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::spiSlaveSD);
     if (!chunk) return;
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore SPISlaveSD: unsupported savestate version\n");
+        logPrintf("unable to restore SPISlaveSD: unsupported savestate version\n");
         loader.NotifyError();
 
         return;

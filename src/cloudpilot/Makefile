@@ -85,7 +85,6 @@ INCLUDE = \
 	-I./emulator/uae \
 	-I./emulator/patch \
 	-I./emulator/patch/clie \
-	-I./emulator/savestate \
 	-I./emulator/palm/Device \
 	-I./emulator/palm/Platform \
 	-I./emulator/palm/Platform/Core/Hardware/IncsPrv \
@@ -194,11 +193,6 @@ SOURCE_EMU = \
 	emulator/patch/PatchModuleNetlib.cpp \
 	emulator/patch/clie/PatchModuleClieStubAll.cpp \
 	emulator/patch/EmPatchMgr.cpp \
-	emulator/savestate/Chunk.cpp \
-	emulator/savestate/ChunkProbe.cpp \
-	emulator/savestate/SavestateProbe.cpp \
-	emulator/savestate/SavestateLoader.cpp \
-	emulator/savestate/Savestate.cpp \
 	emulator/suspend/SuspendManager.cpp \
 	emulator/suspend/SuspendContext.cpp \
 	emulator/suspend/SuspendContextClipboardPaste.cpp \
@@ -229,7 +223,6 @@ SOURCE_EMU = \
 	emulator/StringData.cpp \
 	emulator/EmFileImport.cpp \
 	emulator/ROMStubs.cpp \
-	emulator/Logging.cpp \
 	emulator/SessionImage.cpp \
 	emulator/DbBackup.cpp \
 	emulator/DbExporter.cpp \

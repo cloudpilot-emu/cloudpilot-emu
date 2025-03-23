@@ -17,9 +17,9 @@ class EmRegsMB86189 : public EmRegs, public EmHALHandler {
     void Initialize() override;
     void Reset(Bool hardwareReset) override;
 
-    void Save(Savestate&) override;
-    void Save(SavestateProbe&) override;
-    void Load(SavestateLoader&) override;
+    void Save(Savestate<ChunkType>&) override;
+    void Save(SavestateProbe<ChunkType>&) override;
+    void Load(SavestateLoader<ChunkType>&) override;
 
     void SetGpioReadHandler(function<uint8()> handler);
 

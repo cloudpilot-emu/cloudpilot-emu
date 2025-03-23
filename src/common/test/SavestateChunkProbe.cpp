@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "ChunkProbe.h"
+#include <cstddef>
+
+#include "savestate/ChunkProbe.h"
 
 namespace {
 

@@ -16,9 +16,12 @@
 #include "EmTransportSerialNull.h"
 #include "KeyboardEvent.h"
 #include "PenEvent.h"
-#include "Savestate.h"
+#include "savestate/ChunkType.h"
+#include "savestate/Savestate.h"
 
+template <typename ChunkType>
 class SavestateLoader;
+
 class SessionImage;
 
 class EmSession {
@@ -33,14 +36,14 @@ class EmSession {
 
     template <typename T>
     void Save(T& savestate);
-    void Load(SavestateLoader& loader);
+    void Load(SavestateLoader<ChunkType>& loader);
 
     bool Save();
     bool Load(size_t size, uint8* buffer);
 
     void Reset(ResetType);
 
-    Savestate& GetSavestate();
+    Savestate<ChunkType>& GetSavestate();
     pair<size_t, uint8*> GetRomImage();
 
     uint32 RunEmulation(uint32 maxCycles = 10000);
@@ -141,7 +144,7 @@ class EmSession {
 
     unique_ptr<uint8[]> romImage;
     size_t romSize{0};
-    Savestate savestate;
+    Savestate<ChunkType> savestate;
 
     bool deadMansSwitch{false};
 

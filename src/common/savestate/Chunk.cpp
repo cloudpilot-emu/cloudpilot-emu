@@ -2,16 +2,18 @@
 
 #include <cstring>
 
-#include "Byteswapping.h"
+#include "CPEndian.h"
 #include "Logging.h"
 
-#if (EM_HOST_BYTE_ORDER == EM_BIG_ENDIAN)
+#if (__BYTE_ORDER == __BIG_ENDIAN)
     #define SWAP_IF_REQUIRED(x) Byteswap(x);
 #else
     #define SWAP_IF_REQUIRED(x) ;
 #endif
 
-Chunk::Chunk(size_t size, uint32* buffer) : chunkSize(size), buffer(buffer), next(buffer) {}
+using namespace std;
+
+Chunk::Chunk(size_t size, uint32_t* buffer) : chunkSize(size), buffer(buffer), next(buffer) {}
 
 void Chunk::Reset() {
     next = buffer;
@@ -26,11 +28,11 @@ bool Chunk::AssertOkForSize(size_t size) {
     return !error;
 }
 
-void Chunk::Put8(uint8 value) { Put32(value); }
+void Chunk::Put8(uint8_t value) { Put32(value); }
 
-void Chunk::Put16(uint16 value) { Put32(value); }
+void Chunk::Put16(uint16_t value) { Put32(value); }
 
-void Chunk::Put32(uint32 value) {
+void Chunk::Put32(uint32_t value) {
     if (!AssertOkForSize(1)) return;
 
     SWAP_IF_REQUIRED(value);
@@ -38,16 +40,16 @@ void Chunk::Put32(uint32 value) {
     *(next++) = value;
 }
 
-void Chunk::Put64(uint64 value) {
+void Chunk::Put64(uint64_t value) {
     Put32(value & 0xffffffff);
     Put32((value >> 32) & 0xffffffff);
 }
 
-void Chunk::PutBool(bool value) { Put32(static_cast<uint32>(value)); }
+void Chunk::PutBool(bool value) { Put32(static_cast<uint32_t>(value)); }
 
 void Chunk::PutDouble(double value) {
     union {
-        uint64 ival;
+        uint64_t ival;
         double dval;
     } loc;
 
@@ -67,7 +69,7 @@ void Chunk::PutBuffer(void* buffer, size_t size) {
 
 void Chunk::PutString(const string& str, size_t maxLength) {
     if (str.size() > maxLength) {
-        logging::printf("string %s exceeds length", str.c_str());
+        logPrintf("string %s exceeds length", str.c_str());
         error = true;
 
         return;
@@ -80,20 +82,20 @@ void Chunk::PutString(const string& str, size_t maxLength) {
     PutBuffer(buffer, maxLength + 1);
 }
 
-uint8 Chunk::Get8() { return Get32() & 0xff; }
+uint8_t Chunk::Get8() { return Get32() & 0xff; }
 
-uint16 Chunk::Get16() { return Get32() & 0xffff; }
+uint16_t Chunk::Get16() { return Get32() & 0xffff; }
 
-uint32 Chunk::Get32() {
+uint32_t Chunk::Get32() {
     if (!AssertOkForSize(1)) return 0;
 
-    uint32 value = *(next++);
+    uint32_t value = *(next++);
     SWAP_IF_REQUIRED(value);
 
     return value;
 }
 
-uint64 Chunk::Get64() { return Get32() | (static_cast<uint64>(Get32()) << 32); }
+uint64_t Chunk::Get64() { return Get32() | (static_cast<uint64_t>(Get32()) << 32); }
 
 bool Chunk::GetBool() { return Get32(); }
 
@@ -109,7 +111,7 @@ void Chunk::GetBuffer(void* buffer, size_t size) {
 
 double Chunk::GetDouble() {
     union {
-        uint64 ival;
+        uint64_t ival;
         double dval;
     } loc;
 

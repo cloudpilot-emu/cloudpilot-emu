@@ -13,19 +13,19 @@
 
 #include "EmSPISlaveADS784x.h"
 
-#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmLowMem.h"       // EmLowMem_GetGlobal
 #include "EmMemory.h"       // CEnableFullAccess
 #include "EmPalmStructs.h"  // EmAliasSysBatteryDataStruct
 #include "Logging.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 // #define LOGGING 1
 #ifdef LOGGING
-    #define PRINTF logging::printf
+    #define PRINTF logPrintf
 #else
     #define PRINTF(...) ;
 #endif
@@ -107,13 +107,13 @@ EmSPISlaveADS784x::EmSPISlaveADS784x(EmADSChannelType ch0, EmADSChannelType ch1,
 
 EmSPISlaveADS784x::~EmSPISlaveADS784x(void) {}
 
-void EmSPISlaveADS784x::Load(SavestateLoader& loader) {
+void EmSPISlaveADS784x::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::spiSlaveADS784);
     if (!chunk) return;
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore PISlaveADS784x: unsupported savestate version\n");
+        logPrintf("unable to restore PISlaveADS784x: unsupported savestate version\n");
         loader.NotifyError();
 
         return;
@@ -123,9 +123,9 @@ void EmSPISlaveADS784x::Load(SavestateLoader& loader) {
     DoSaveLoad(helper);
 }
 
-void EmSPISlaveADS784x::Save(Savestate& savestate) { DoSave(savestate); }
+void EmSPISlaveADS784x::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmSPISlaveADS784x::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+void EmSPISlaveADS784x::Save(SavestateProbe<ChunkType>& savestateProbe) { DoSave(savestateProbe); }
 
 template <typename T>
 void EmSPISlaveADS784x::DoSave(T& savestate) {

@@ -15,7 +15,6 @@
 
 #include <algorithm>  // swap
 
-#include "ChunkHelper.h"
 #include "EmCPU68K.h"  // gCPU68K
 #include "EmCommon.h"
 #include "EmRegsFrameBuffer.h"
@@ -24,18 +23,19 @@
 #include "Frame.h"
 #include "Logging.h"  // LogAppendMsg
 #include "Nibbler.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
 #include "ScreenDimensions.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 #define LogAppendMsg PRINTF
 
 // #define LOGGING 0
 #ifdef LOGGING
-    #define PRINTF_LINE logging::printf
-    #define PRINTF_BLIT logging::printf
-    #define PRINTF logging::printf
+    #define PRINTF_LINE logPrintf
+    #define PRINTF_BLIT logPrintf
+    #define PRINTF logPrintf
 #else
     #define PRINTF_LINE(...) {};
     #define PRINTF_BLIT(...) {};
@@ -687,9 +687,9 @@ namespace {
 
 // Macro to help the installation of handlers for a register.
 
-#define INSTALL_HANDLER(read, write, reg)                   \
-    this->SetHandler((ReadFunction)&EmRegsMediaQ11xx::read, \
-                     (WriteFunction)&EmRegsMediaQ11xx::write, mq_addressof(reg), 4)
+#define INSTALL_HANDLER(read, write, reg)                     \
+    this->SetHandler((ReadFunction) & EmRegsMediaQ11xx::read, \
+                     (WriteFunction) & EmRegsMediaQ11xx::write, mq_addressof(reg), 4)
 
 // Private inline function for reading a LE register.
 
@@ -1333,14 +1333,14 @@ void EmRegsMediaQ11xx::Reset(Bool hardwareReset) {
     }
 }
 
-void EmRegsMediaQ11xx::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsMediaQ11xx::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsMediaQ11xx::Save(SavestateProbe& savestate) { DoSave(savestate); }
+void EmRegsMediaQ11xx::Save(SavestateProbe<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsMediaQ11xx::Load(SavestateLoader& loader) {
+void EmRegsMediaQ11xx::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regsMQ1xx);
     if (!chunk) {
-        logging::printf("unable to restore RegsMediaQ11xx: missing savestate\n");
+        logPrintf("unable to restore RegsMediaQ11xx: missing savestate\n");
         loader.NotifyError();
 
         return;
@@ -1348,7 +1348,7 @@ void EmRegsMediaQ11xx::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore RegsMediaQ11xx: unsupported savestate version\n");
+        logPrintf("unable to restore RegsMediaQ11xx: unsupported savestate version\n");
         loader.NotifyError();
 
         return;
@@ -2764,7 +2764,7 @@ uint16 EmRegsMediaQ11xx::PrvAdjustPixel(uint16 pen, uint16 dest, uint8 rOpCode) 
             break;
 
         default:
-            logging::printf("illegal ROP");
+            logPrintf("illegal ROP");
 
             result = 0;
             break;
@@ -3285,7 +3285,7 @@ inline uint16 EmRegsMediaQ11xx::PrvGetPixel(uint16 x, uint16 y) {
             break;
 
         default:
-            logging::printf("illegal color depth");
+            logPrintf("illegal color depth");
 
             result = 0;
     }
@@ -3310,7 +3310,7 @@ inline emuptr EmRegsMediaQ11xx::PrvGetPixelLocation(uint16 x, uint16 y) {
             break;
 
         default:
-            logging::printf("illegal color depth");
+            logPrintf("illegal color depth");
 
             return this->GetFrameBufferBase();
     }
@@ -3593,7 +3593,7 @@ void EmRegsMediaQ11xx::PrvPatternPipeInit(void) {
             // The monoPattern bit MUST be programmed to 1, according to
             // the docs.  Color patterns don't appear to be supported.
 
-            logging::printf("illegal pattern setup");
+            logPrintf("illegal pattern setup");
         }
     }
 
@@ -3929,7 +3929,7 @@ void EmRegsMediaQ11xx::PrvSrcPipeFill(Bool& stalled) {
         PRINTF_BLIT("	PrvSrcPipeFill:	0:	0x%04X 0x%04X 0x%04X 0x%04X", p[0], p[1], p[2],
                     p[3]);
     } else {
-        logging::printf("illegal source pipe setup");
+        logPrintf("illegal source pipe setup");
     }
 }
 
@@ -4149,7 +4149,7 @@ uint16 EmRegsMediaQ11xx::PrvLeadingPixels(void) {
         } else if (fState.colorDepth == kColorDepth16) {
             result = fState.srcLeadingBytes / 2;
         } else {
-            logging::printf("illegal source setup");
+            logPrintf("illegal source setup");
             result = 0;
         }
     } else {
@@ -4162,13 +4162,13 @@ uint16 EmRegsMediaQ11xx::PrvLeadingPixels(void) {
         } else if (fState.colorDepth == kColorDepth16) {
             result = fState.srcByteOffset / 2;
         } else {
-            logging::printf("illegal source setup");
+            logPrintf("illegal source setup");
             result = 0;
         }
     }
 
     if (result >= 64) {
-        logging::printf("illegal amount of leading pixels");
+        logPrintf("illegal amount of leading pixels");
         result = 0;
     }
 
@@ -4192,7 +4192,7 @@ uint16 EmRegsMediaQ11xx::PrvTrailingPixels(void) {
         } else if (fState.colorDepth == kColorDepth16) {
             result = fState.srcTrailingBytes / 2;
         } else {
-            logging::printf("illegal source setup");
+            logPrintf("illegal source setup");
             result = 0;
         }
     } else {
@@ -4215,7 +4215,7 @@ uint16 EmRegsMediaQ11xx::PrvTrailingPixels(void) {
         } else if (fState.colorDepth == kColorDepth16) {
             pixelsPerLine = bytesPerLine / 2;
         } else {
-            logging::printf("illegal source setup");
+            logPrintf("illegal source setup");
             pixelsPerLine = 0;
         }
 
@@ -4223,7 +4223,7 @@ uint16 EmRegsMediaQ11xx::PrvTrailingPixels(void) {
     }
 
     if (result >= 64) {
-        logging::printf("illegal amount of leading pixels");
+        logPrintf("illegal amount of leading pixels");
         result = 0;
     }
 

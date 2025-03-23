@@ -18,9 +18,12 @@
 #include <vector>
 
 #include "EmPatchModuleTypes.h"
+#include "savestate/ChunkType.h"
 
 struct SystemCallContext;
 class EmPatchModule;
+
+template <typename ChunkType>
 class SavestateLoader;
 
 class EmPatchMgr {
@@ -32,7 +35,7 @@ class EmPatchMgr {
     template <typename T>
     static void Save(T& savestate);
 
-    static void Load(SavestateLoader& loader);
+    static void Load(SavestateLoader<ChunkType>& loader);
 
     static CallROMType HandleSystemCall(const SystemCallContext&);
 

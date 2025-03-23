@@ -2,13 +2,15 @@
 #include <gtest/gtest.h>
 // clang-format on
 
+#include "savestate/SavestateProbe.h"
+
 #include "Logging.h"
-#include "SavestateProbe.h"
 
 namespace {
+    enum class ChunkType { cpu68k, regsEZ };
 
     TEST(SavestateProbe, ItMapsTheRequestedChunkCorrectly) {
-        SavestateProbe probe;
+        SavestateProbe<ChunkType> probe;
 
         ChunkProbe* chunkCpu68K = probe.GetChunk(ChunkType::cpu68k);
         ASSERT_TRUE(chunkCpu68K);
@@ -35,7 +37,7 @@ namespace {
     }
 
     TEST(SavestateProbe, RequestingAChunkTwiceGeneratesAnError) {
-        SavestateProbe probe;
+        SavestateProbe<ChunkType> probe;
 
         ASSERT_TRUE(probe.GetChunk(ChunkType::cpu68k));
         ASSERT_FALSE(probe.HasError());
@@ -45,7 +47,7 @@ namespace {
     }
 
     TEST(SavestateProbe, NotifyErrorGeneratesAnError) {
-        SavestateProbe probe;
+        SavestateProbe<ChunkType> probe;
 
         probe.NotifyError();
 

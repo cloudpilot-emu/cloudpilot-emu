@@ -15,7 +15,9 @@
 #define EmBankRegs_h
 
 #include "EmRegs.h"  // EmRegsList
+#include "savestate/ChunkType.h"
 
+template <typename ChunkType>
 class SavestateLoader;
 
 class EmBankRegs {
@@ -25,7 +27,7 @@ class EmBankRegs {
 
     template <typename T>
     static void Save(T& savestate);
-    static void Load(SavestateLoader& loader);
+    static void Load(SavestateLoader<ChunkType>& loader);
     static void Dispose(void);
 
     static void SetBankHandlers(void);

@@ -13,16 +13,16 @@
 
 #include "EmSPISlave330Current.h"
 
-#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "Logging.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 // #define LOGGING 0
 #ifdef LOGGING
-    #define PRINTF logging::printf
+    #define PRINTF logPrintf
 #else
     #define PRINTF(...) ;
 #endif
@@ -56,13 +56,13 @@ EmSPISlave330Current::EmSPISlave330Current()
 
 EmSPISlave330Current::~EmSPISlave330Current(void) {}
 
-void EmSPISlave330Current::Load(SavestateLoader& loader) {
+void EmSPISlave330Current::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::spiSlave330Current);
     if (!chunk) return;
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore SPISlave330Current: unsupported savestate version\n");
+        logPrintf("unable to restore SPISlave330Current: unsupported savestate version\n");
         loader.NotifyError();
 
         return;
@@ -72,9 +72,11 @@ void EmSPISlave330Current::Load(SavestateLoader& loader) {
     DoSaveLoad(helper);
 }
 
-void EmSPISlave330Current::Save(Savestate& savestate) { DoSave(savestate); }
+void EmSPISlave330Current::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmSPISlave330Current::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+void EmSPISlave330Current::Save(SavestateProbe<ChunkType>& savestateProbe) {
+    DoSave(savestateProbe);
+}
 
 template <typename T>
 void EmSPISlave330Current::DoSave(T& savestate) {

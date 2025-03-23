@@ -29,9 +29,9 @@ class EmSPISlave330Current : public EmSPISlave {
     EmSPISlave330Current();
     virtual ~EmSPISlave330Current(void);
 
-    virtual void Save(Savestate&);
-    virtual void Save(SavestateProbe&);
-    virtual void Load(SavestateLoader&);
+    virtual void Save(Savestate<ChunkType>&);
+    virtual void Save(SavestateProbe<ChunkType>&);
+    virtual void Load(SavestateLoader<ChunkType>&);
 
     virtual uint16 DoExchange(uint16 control, uint16 data);
     void SetMode(Bool powerConnected) { fPowerConnected = powerConnected; }

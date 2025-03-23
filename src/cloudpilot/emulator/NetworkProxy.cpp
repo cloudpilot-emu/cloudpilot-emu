@@ -22,7 +22,7 @@ using namespace std::placeholders;
     MsgResponse msgResponse;                                                                \
                                                                                             \
     if (!DecodeResponse(responseData, size, msgResponse, MsgResponse_##submessage##_tag)) { \
-        logging::printf(#call ": bad response");                                            \
+        logPrintf(#call ": bad response");                                                  \
                                                                                             \
         return call##Fail();                                                                \
     }                                                                                       \
@@ -30,7 +30,7 @@ using namespace std::placeholders;
     const auto& response(msgResponse.payload.submessage);                                   \
                                                                                             \
     if (response.err != 0) {                                                                \
-        logging::printf(#call ": failed, err = %u", response.err);                          \
+        logPrintf(#call ": failed, err = %u", response.err);                                \
                                                                                             \
         return call##Fail(response.err);                                                    \
     }
@@ -41,7 +41,7 @@ using namespace std::placeholders;
                                                                                          \
     if (!DecodeResponse(responseData, size, msgResponse, MsgResponse_##submessage##_tag, \
                         &bufferDecodeContext)) {                                         \
-        logging::printf(#call ": bad response");                                         \
+        logPrintf(#call ": bad response");                                               \
                                                                                          \
         return call##Fail();                                                             \
     }                                                                                    \
@@ -49,7 +49,7 @@ using namespace std::placeholders;
     const auto& response(msgResponse.payload.submessage);                                \
                                                                                          \
     if (response.err != 0) {                                                             \
-        logging::printf(#call ": failed, err = %u", response.err);                       \
+        logPrintf(#call ": failed, err = %u", response.err);                             \
                                                                                          \
         return call##Fail(response.err);                                                 \
     }
@@ -231,7 +231,7 @@ int NetworkProxy::OpenCount() { return openCount; }
 
 void NetworkProxy::SocketOpen(uint8 domain, uint8 type, uint16 protocol) {
     if (domain != netSocketAddrINET) {
-        logging::printf("raw sockets are unsupported");
+        logPrintf("raw sockets are unsupported");
         return SocketOpenFail(netErrParamErr);
     }
 
@@ -401,7 +401,7 @@ void NetworkProxy::SocketSend(int16 handle, uint8* data, size_t count, uint16 fl
     sendRequest.handle = handle;
 
     if (flags & ~VALID_FLAGS) {
-        logging::printf("ERROR: SocketSend: unsupported flags 0x%08x", flags);
+        logPrintf("ERROR: SocketSend: unsupported flags 0x%08x", flags);
 
         return SocketSendFail();
     }
@@ -465,7 +465,7 @@ void NetworkProxy::SocketSendPB(int16 handle, NetIOParamType* pbP, uint16 flags,
     sendRequest.handle = handle;
 
     if (flags & ~VALID_FLAGS) {
-        logging::printf("ERROR: SocketSend: unsupported flags 0x%08x", flags);
+        logPrintf("ERROR: SocketSend: unsupported flags 0x%08x", flags);
 
         return SocketSendPBFail();
     }
@@ -538,7 +538,7 @@ void NetworkProxy::SocketReceive(int16 handle, uint16 flags, uint16 bufLen, int3
     MsgRequest request = NewRequest(MsgRequest_socketReceiveRequest_tag);
 
     if (flags & ~VALID_FLAGS) {
-        logging::printf("ERROR: SocketReceive: unsupported flags 0x%08x", flags);
+        logPrintf("ERROR: SocketReceive: unsupported flags 0x%08x", flags);
 
         return SocketReceiveFail();
     }
@@ -569,8 +569,7 @@ void NetworkProxy::SocketReceiveSuccess(void* responseData, size_t size) {
     CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
     if (bufferDecodeContext.len > bufLen) {
-        logging::printf("SocketReceive: message too long: %u vs. %u", bufferDecodeContext.len,
-                        bufLen);
+        logPrintf("SocketReceive: message too long: %u vs. %u", bufferDecodeContext.len, bufLen);
 
         return SocketReceiveFail();
     }
@@ -612,7 +611,7 @@ void NetworkProxy::SocketReceivePB(int16 handle, NetIOParamType* pbP, uint16 fla
     MsgRequest request = NewRequest(MsgRequest_socketReceiveRequest_tag);
 
     if (flags & ~VALID_FLAGS) {
-        logging::printf("ERROR: SocketReceive: unsupported flags 0x%08x", flags);
+        logPrintf("ERROR: SocketReceive: unsupported flags 0x%08x", flags);
 
         return SocketReceivePBFail();
     }
@@ -645,8 +644,7 @@ void NetworkProxy::SocketReceivePBSuccess(void* responseData, size_t size) {
     for (int i = 0; i < (*pbP).iovLen; i++) bufLen += (*pbP).iov[i].bufLen;
 
     if (bufferDecodeContext.len > bufLen) {
-        logging::printf("SocketReceivePB: message too long: %u vs. %u", bufferDecodeContext.len,
-                        bufLen);
+        logPrintf("SocketReceivePB: message too long: %u vs. %u", bufferDecodeContext.len, bufLen);
 
         return SocketReceivePBFail();
     }
@@ -694,7 +692,7 @@ void NetworkProxy::SocketDmReceive(int16 handle, uint16 flags, uint16 rcvlen, in
     MsgRequest request = NewRequest(MsgRequest_socketReceiveRequest_tag);
 
     if (flags & ~VALID_FLAGS) {
-        logging::printf("ERROR: SocketDmReceive: unsupported flags 0x%08x", flags);
+        logPrintf("ERROR: SocketDmReceive: unsupported flags 0x%08x", flags);
 
         return SocketDmReceiveFail();
     }
@@ -726,8 +724,7 @@ void NetworkProxy::SocketDmReceiveSuccess(void* responseData, size_t size) {
     CALLED_GET_PARAM_REF(Err, errP, Marshal::kOutput);
 
     if (bufferDecodeContext.len > rcvLen) {
-        logging::printf("SocketDmReceive: message too long: %u vs. %u", bufferDecodeContext.len,
-                        rcvLen);
+        logPrintf("SocketDmReceive: message too long: %u vs. %u", bufferDecodeContext.len, rcvLen);
 
         return SocketDmReceiveFail();
     }
@@ -1530,18 +1527,18 @@ bool NetworkProxy::DecodeResponse(void* responseData, size_t size, MsgResponse& 
     bool status = pb_decode(&stream, MsgResponse_fields, &response);
 
     if (!status) {
-        logging::printf("failed to decode response: %s", PB_GET_ERROR(&stream));
+        logPrintf("failed to decode response: %s", PB_GET_ERROR(&stream));
 
         return false;
     }
 
     if (response.id != currentId) {
-        logging::printf("response out of order");
+        logPrintf("response out of order");
         return false;
     }
 
     if (response.which_payload != payloadTag) {
-        logging::printf("tag mismatch");
+        logPrintf("tag mismatch");
         return false;
     }
 

@@ -1,10 +1,10 @@
 #include "EmSystemState.h"
 
-#include "ChunkHelper.h"
 #include "Logging.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 EmSystemState gSystemState;
 
@@ -39,16 +39,16 @@ void EmSystemState::Save(T& savestate) {
     DoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
-template void EmSystemState::Save(Savestate& savestate);
-template void EmSystemState::Save(SavestateProbe& savestate);
+template void EmSystemState::Save(Savestate<ChunkType>& savestate);
+template void EmSystemState::Save(SavestateProbe<ChunkType>& savestate);
 
-void EmSystemState::Load(SavestateLoader& loader) {
+void EmSystemState::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::systemState);
     if (!chunk) return;
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("error restoring SystemState: savestate version mismatch");
+        logPrintf("error restoring SystemState: savestate version mismatch");
         loader.NotifyError();
 
         return;

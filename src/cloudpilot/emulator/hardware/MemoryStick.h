@@ -4,9 +4,9 @@
 #include "CardImage.h"
 #include "EmCommon.h"
 #include "EmEvent.h"
+#include "savestate/ChunkType.h"
 
-class Savestate;
-class SavestateProbe;
+template <typename ChunkType>
 class SavestateLoader;
 
 class MemoryStick {
@@ -56,7 +56,7 @@ class MemoryStick {
 
     template <typename T>
     void Save(T& savestate);
-    void Load(SavestateLoader&);
+    void Load(SavestateLoader<ChunkType>&);
 
     void Initialize();
     void Reset();

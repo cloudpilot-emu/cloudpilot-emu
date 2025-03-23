@@ -1,35 +1,37 @@
 #ifndef _CHUNK_H_
 #define _CHUNK_H_
 
-#include "EmCommon.h"
+#include <cstddef>
+#include <cstdint>
+#include <string>
 
 class Chunk {
    public:
     static constexpr bool isProbe{false};
 
    public:
-    Chunk(size_t size, uint32* buffer);
+    Chunk(size_t size, uint32_t* buffer);
     Chunk(Chunk&&) = default;
 
     void Reset();
 
-    void Put8(uint8 value);
-    void Put16(uint16 value);
-    void Put32(uint32 value);
-    void Put64(uint64 value);
+    void Put8(uint8_t value);
+    void Put16(uint16_t value);
+    void Put32(uint32_t value);
+    void Put64(uint64_t value);
     void PutBool(bool value);
     void PutDouble(double value);
     void PutBuffer(void* buffer, size_t size);
-    void PutString(const string& str, size_t maxLength);
+    void PutString(const std::string& str, size_t maxLength);
 
-    uint8 Get8();
-    uint16 Get16();
-    uint32 Get32();
-    uint64 Get64();
+    uint8_t Get8();
+    uint16_t Get16();
+    uint32_t Get32();
+    uint64_t Get64();
     bool GetBool();
     double GetDouble();
     void GetBuffer(void* buffer, size_t size);
-    string GetString(size_t maxLength);
+    std::string GetString(size_t maxLength);
 
     bool HasError() const;
 
@@ -40,8 +42,8 @@ class Chunk {
     size_t chunkSize{0};
     bool error{false};
 
-    uint32* buffer{nullptr};
-    uint32* next{nullptr};
+    uint32_t* buffer{nullptr};
+    uint32_t* next{nullptr};
 
    private:
     Chunk() = delete;

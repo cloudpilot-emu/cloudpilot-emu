@@ -7,9 +7,15 @@
 #include "CardImage.h"
 #include "EmCommon.h"
 #include "EmHAL.h"
+#include "savestate/ChunkType.h"
 
+template <typename ChunkType>
 class Savestate;
+
+template <typename ChunkType>
 class SavestateProbe;
+
+template <typename ChunkType>
 class SavestateLoader;
 
 class ExternalStorage {
@@ -21,7 +27,7 @@ class ExternalStorage {
 
     template <typename T>
     void Save(T& savestate);
-    void Load(SavestateLoader&);
+    void Load(SavestateLoader<ChunkType>&);
 
     bool HasImage(const string& key) const;
     CardImage* GetImage(const string& key);

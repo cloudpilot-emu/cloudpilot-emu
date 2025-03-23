@@ -47,9 +47,9 @@ class EmSPISlaveADS784x : public EmSPISlave {
                       EmADSChannelType ch6, EmADSChannelType ch7);
     virtual ~EmSPISlaveADS784x(void);
 
-    virtual void Save(Savestate&);
-    virtual void Save(SavestateProbe&);
-    virtual void Load(SavestateLoader&);
+    virtual void Save(Savestate<ChunkType>&);
+    virtual void Save(SavestateProbe<ChunkType>&);
+    virtual void Load(SavestateLoader<ChunkType>&);
 
     virtual uint16 DoExchange(uint16 control, uint16 data);
 

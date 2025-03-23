@@ -17,7 +17,6 @@
 
 #include "ButtonEvent.h"
 #include "Byteswapping.h"  // Canonical
-#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmHAL.h"     // EmHAL
 #include "EmMemory.h"  // gMemAccessFlags, EmMem_memcpy
@@ -29,11 +28,12 @@
 #include "MetaMemory.h"
 #include "Miscellaneous.h"  // GetHostTime
 #include "Platform.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
-#include "SavestateStructures.h"
 #include "UAE.h"  // regs, SPCFLAG_INT
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
+#include "savestate/SavestateStructures.h"
 
 // clang-format off
 #include "PalmPack.h"
@@ -49,7 +49,7 @@
 
 // #define LOGGING 0
 #ifdef LOGGING
-    #define PRINTF logging::printf
+    #define PRINTF logPrintf
 #else
     #define PRINTF(...) ;
 #endif
@@ -745,14 +745,14 @@ void EmRegs328::Reset(Bool hardwareReset) {
 // ---------------------------------------------------------------------------
 //		� EmRegs328::Save
 // ---------------------------------------------------------------------------
-void EmRegs328::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegs328::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegs328::Save(SavestateProbe& savestate) { DoSave(savestate); }
+void EmRegs328::Save(SavestateProbe<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegs328::Load(SavestateLoader& savestate) {
+void EmRegs328::Load(SavestateLoader<ChunkType>& savestate) {
     Chunk* chunk = savestate.GetChunk(ChunkType::regs328);
     if (!chunk) {
-        logging::printf("unable to restore Regs328: missing savestate\n");
+        logPrintf("unable to restore Regs328: missing savestate\n");
         savestate.NotifyError();
 
         return;
@@ -760,7 +760,7 @@ void EmRegs328::Load(SavestateLoader& savestate) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore Regs328: unsupported savestate version\n");
+        logPrintf("unable to restore Regs328: unsupported savestate version\n");
         savestate.NotifyError();
 
         return;

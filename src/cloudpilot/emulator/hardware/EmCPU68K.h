@@ -219,9 +219,9 @@ class EmCPU68K : public EmCPU {
     //				Reset has been called first.
 
     virtual void Reset(Bool hardwareReset);
-    virtual void Save(Savestate&);
-    virtual void Save(SavestateProbe&);
-    virtual void Load(SavestateLoader&);
+    virtual void Save(Savestate<ChunkType>&);
+    virtual void Save(SavestateProbe<ChunkType>&);
+    virtual void Load(SavestateLoader<ChunkType>&);
 
     // Execute the main CPU loop until asked to stop.
 

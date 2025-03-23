@@ -2,9 +2,9 @@
 #define _SAVESTATE_STRUCTURES_H_
 
 #include "Byteswapping.h"
-#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "UAE.h"
+#include "savestate/ChunkHelper.h"
 
 template <typename T>
 void DoSaveLoad(T& helper, regstruct& regs);

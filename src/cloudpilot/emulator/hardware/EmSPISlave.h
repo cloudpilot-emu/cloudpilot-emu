@@ -15,9 +15,15 @@
 #define EmSPISlave_h
 
 #include "EmCommon.h"
+#include "savestate/ChunkType.h"
 
+template <typename ChunkType>
 class Savestate;
+
+template <typename ChunkType>
 class SavestateProbe;
+
+template <typename ChunkType>
 class SavestateLoader;
 
 class EmSPISlave {
@@ -25,9 +31,9 @@ class EmSPISlave {
     EmSPISlave(void);
     virtual ~EmSPISlave(void);
 
-    virtual void Save(Savestate&);
-    virtual void Save(SavestateProbe&);
-    virtual void Load(SavestateLoader&);
+    virtual void Save(Savestate<ChunkType>&);
+    virtual void Save(SavestateProbe<ChunkType>&);
+    virtual void Load(SavestateLoader<ChunkType>&);
 
     virtual uint16 DoExchange(uint16 control, uint16 data) = 0;
     virtual void Enable(void);

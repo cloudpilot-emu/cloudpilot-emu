@@ -40,15 +40,10 @@
 // the configure script so that it can rebuild the makefile with
 // HAVE_ENDIAN_H defined.
 
-#define __LITTLE_ENDIAN 1234
-#define __BIG_ENDIAN 4321
-#define __PDP_ENDIAN 3412
-
 // Settle on a canonical name.
 
 #define EM_LITTLE_ENDIAN __LITTLE_ENDIAN
 #define EM_BIG_ENDIAN __BIG_ENDIAN
-#define EM_PDP_ENDIAN __PDP_ENDIAN
 #define EM_HOST_BYTE_ORDER __LITTLE_ENDIAN
 
 #if (EM_HOST_BYTE_ORDER == EM_LITTLE_ENDIAN)

@@ -1,10 +1,10 @@
 #include "ExternalStorage.h"
 
-#include "ChunkHelper.h"
 #include "EmSPISlaveSD.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 ExternalStorage gExternalStorage;
 
@@ -164,16 +164,16 @@ void ExternalStorage::Save(T& savestate) {
     DoSaveLoad(helper);
 }
 
-template void ExternalStorage::Save<Savestate>(Savestate&);
-template void ExternalStorage::Save<SavestateProbe>(SavestateProbe&);
+template void ExternalStorage::Save<Savestate<ChunkType>>(Savestate<ChunkType>&);
+template void ExternalStorage::Save<SavestateProbe<ChunkType>>(SavestateProbe<ChunkType>&);
 
-void ExternalStorage::Load(SavestateLoader& loader) {
+void ExternalStorage::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::externalStorage);
     if (!chunk) return;
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore ExternalStorage: unsupported savestate version\n");
+        logPrintf("unable to restore ExternalStorage: unsupported savestate version\n");
         loader.NotifyError();
 
         return;

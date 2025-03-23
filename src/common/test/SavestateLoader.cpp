@@ -2,11 +2,15 @@
 #include <gtest/gtest.h>
 // clang-format on
 
-#include "SavestateLoader.h"
+#include "savestate/SavestateLoader.h"
 
-#include "Savestate.h"
+#include <cstdint>
+
+#include "savestate/Savestate.h"
 
 namespace {
+    enum class ChunkType { cpu68k, regsEZ };
+
     struct Mock {
         template <typename T>
         void Save(T& savestate) {
@@ -18,7 +22,7 @@ namespace {
             chunkRegsEZ->Put64(0);
         }
 
-        void Load(SavestateLoader& loader) {}
+        void Load(SavestateLoader<ChunkType>& loader) {}
     };
 
     class SavestateLoaderTest : public ::testing::Test {
@@ -27,8 +31,8 @@ namespace {
 
        protected:
         Mock mock;
-        Savestate savestate;
-        SavestateLoader loader;
+        Savestate<ChunkType> savestate;
+        SavestateLoader<ChunkType> loader;
     };
 
     TEST_F(SavestateLoaderTest, ItFailsIfBufferIsTooSmallForHeader) {
@@ -48,7 +52,7 @@ namespace {
     }
 
     TEST_F(SavestateLoaderTest, ItFailsIfBufferIsTooLarge) {
-        uint8 buffer[33];
+        uint8_t buffer[33];
         memcpy(buffer, savestate.GetBuffer(), savestate.GetSize());
 
         ASSERT_FALSE(loader.Load(buffer, 33, mock));

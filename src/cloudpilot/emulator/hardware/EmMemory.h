@@ -267,6 +267,7 @@ STATIC_INLINE void EmMemDoPut8(void* a, uint8 v) {
 #ifdef __cplusplus
 
     #include "MemoryRegion.h"
+    #include "savestate/ChunkType.h"
 
 class EmStream;
 
@@ -329,6 +330,8 @@ extern Bool gPCInRAM;
 extern Bool gPCInROM;
 
 struct EmAddressBank;
+
+template <typename ChunkType>
 class SavestateLoader;
 
 // Function prototypes.
@@ -342,7 +345,7 @@ class Memory {
 
     template <typename T>
     static void Save(T& savestate);
-    static void Load(SavestateLoader& loader);
+    static void Load(SavestateLoader<ChunkType>& loader);
 
     static void Dispose(void);
 

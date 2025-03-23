@@ -3,7 +3,7 @@
 #include "Logging.h"
 
 int EMSCRIPTEN_KEEPALIVE main() {
-    logging::disable();
+    logDisable();
 
     return 0;
 }

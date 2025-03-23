@@ -16,6 +16,7 @@
 #include <sstream>
 
 #include "Defer.h"
+#include "LogDomain.h"
 #include "Logging.h"
 
 class EInvalidCommand {};
@@ -306,8 +307,8 @@ bool GdbStub::ReceivePacket(int timeout) {
 }
 
 bool GdbStub::HandlePacket() {
-    logging::printf(logging::Domain::domainDebugger, "gdb stub: handling packet %s",
-                    (char*)pktBuf.get());
+    logPrintfDom(logging::Domain::domainDebugger, "gdb stub: handling packet %s",
+                 (char*)pktBuf.get());
 
     const char* in = pktBuf.get();
     char* out = pktBuf.get();

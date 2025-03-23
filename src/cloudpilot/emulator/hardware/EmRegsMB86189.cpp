@@ -1,14 +1,14 @@
 #include "EmRegsMB86189.h"
 
-#include "ChunkHelper.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 // #define TRACE_ACCESS
 
-#define INSTALL_HANDLER(read, write, offset, size)                                       \
-    SetHandler((ReadFunction)&EmRegsMB86189::read, (WriteFunction)&EmRegsMB86189::write, \
+#define INSTALL_HANDLER(read, write, offset, size)                                           \
+    SetHandler((ReadFunction) & EmRegsMB86189::read, (WriteFunction) & EmRegsMB86189::write, \
                baseAddress + offset, size)
 
 namespace {
@@ -53,11 +53,11 @@ void EmRegsMB86189::Reset(Bool hardwareReset) {
     memoryStick.Reset();
 }
 
-void EmRegsMB86189::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsMB86189::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsMB86189::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+void EmRegsMB86189::Save(SavestateProbe<ChunkType>& savestateProbe) { DoSave(savestateProbe); }
 
-void EmRegsMB86189::Load(SavestateLoader& loader) {
+void EmRegsMB86189::Load(SavestateLoader<ChunkType>& loader) {
     memoryStick.Load(loader);
 
     Chunk* chunk = loader.GetChunk(ChunkType::regsMB86189);
@@ -65,7 +65,7 @@ void EmRegsMB86189::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore RegsMB86189: unsupported savestate version\n");
+        logPrintf("unable to restore RegsMB86189: unsupported savestate version\n");
         loader.NotifyError();
 
         return;

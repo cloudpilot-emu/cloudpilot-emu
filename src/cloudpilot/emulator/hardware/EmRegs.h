@@ -17,9 +17,15 @@
 #include <vector>
 
 #include "EmCommon.h"
+#include "savestate/ChunkType.h"
 
+template <typename ChunkType>
 class Savestate;
+
+template <typename ChunkType>
 class SavestateProbe;
+
+template <typename ChunkType>
 class SavestateLoader;
 
 struct EmAddressBank;
@@ -31,9 +37,9 @@ class EmRegs {
 
     virtual void Initialize(void);
     virtual void Reset(Bool hardwareReset);
-    virtual void Save(Savestate&);
-    virtual void Save(SavestateProbe&);
-    virtual void Load(SavestateLoader&);
+    virtual void Save(Savestate<ChunkType>&);
+    virtual void Save(SavestateProbe<ChunkType>&);
+    virtual void Load(SavestateLoader<ChunkType>&);
     virtual void Dispose(void);
 
     void SetBankHandlers(EmAddressBank&);

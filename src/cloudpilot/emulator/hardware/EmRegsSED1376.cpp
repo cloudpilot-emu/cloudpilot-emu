@@ -13,15 +13,15 @@
 
 #include "EmRegsSED1376.h"
 
-#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmRegsFrameBuffer.h"
 #include "EmSystemState.h"
 #include "Frame.h"
 #include "Nibbler.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 // Given a register (specified by its field name), return its address
 // in emulated space.
@@ -30,8 +30,8 @@
 
 // Macro to help the installation of handlers for a register.
 
-#define INSTALL_HANDLER(read, write, reg)                                                      \
-    this->SetHandler((ReadFunction)&EmRegsSED1376::read, (WriteFunction)&EmRegsSED1376::write, \
+#define INSTALL_HANDLER(read, write, reg)                                                          \
+    this->SetHandler((ReadFunction) & EmRegsSED1376::read, (WriteFunction) & EmRegsSED1376::write, \
                      addressof(reg), fRegs.reg.GetSize())
 
 // Panel type register [10h]
@@ -126,14 +126,14 @@ void EmRegsSED1376::Reset(Bool hardwareReset) {
     }
 }
 
-void EmRegsSED1376::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsSED1376::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsSED1376::Save(SavestateProbe& savestate) { DoSave(savestate); }
+void EmRegsSED1376::Save(SavestateProbe<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsSED1376::Load(SavestateLoader& loader) {
+void EmRegsSED1376::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::regsSED1376);
     if (!chunk) {
-        logging::printf("unable to restore RegsSED1376: missing savestate\n");
+        logPrintf("unable to restore RegsSED1376: missing savestate\n");
         loader.NotifyError();
 
         return;
@@ -141,7 +141,7 @@ void EmRegsSED1376::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore RegsSED1376: unsupported savestate version\n");
+        logPrintf("unable to restore RegsSED1376: unsupported savestate version\n");
         loader.NotifyError();
 
         return;
@@ -413,9 +413,9 @@ void EmRegsSED1376VisorPrism::SetSubBankHandlers(void) {
     // Now add standard/specialized handers for the defined registers.
 
     #undef INSTALL_HANDLER
-    #define INSTALL_HANDLER(read, write, reg)                                            \
-        this->SetHandler((ReadFunction)&EmRegsSED1376VisorPrism::read,                   \
-                         (WriteFunction)&EmRegsSED1376VisorPrism::write, addressof(reg), \
+    #define INSTALL_HANDLER(read, write, reg)                                              \
+        this->SetHandler((ReadFunction) & EmRegsSED1376VisorPrism::read,                   \
+                         (WriteFunction) & EmRegsSED1376VisorPrism::write, addressof(reg), \
                          fRegs.reg.GetSize())
 
     INSTALL_HANDLER(StdReadBE, reservedWrite, reserved);

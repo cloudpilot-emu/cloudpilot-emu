@@ -14,15 +14,15 @@
 #include "EmRegsUsbCLIE.h"
 
 #include "Byteswapping.h"  // ByteswapWords
-#include "ChunkHelper.h"
-#include "EmBankROM.h"   // ROMBank::IsPCInRAM
-#include "EmBankRegs.h"  // RegsBank::GetROMSize
+#include "EmBankROM.h"     // ROMBank::IsPCInRAM
+#include "EmBankRegs.h"    // RegsBank::GetROMSize
 #include "EmCommon.h"
 #include "EmHAL.h"
 #include "EmMemory.h"  // gMemoryAccess
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 typedef uint32 (*ReadFunction)(emuptr address, int size);
 typedef void (*WriteFunction)(emuptr address, int size, uint32 value);
@@ -39,8 +39,8 @@ namespace {
 
 #define addressof(x) (this->GetAddressStart() + offsetof(HwrUsbCLIEType, x))
 
-#define INSTALL_HANDLER(read, write, reg)                                                      \
-    this->SetHandler((ReadFunction)&EmRegsUsbCLIE::read, (WriteFunction)&EmRegsUsbCLIE::write, \
+#define INSTALL_HANDLER(read, write, reg)                                                          \
+    this->SetHandler((ReadFunction) & EmRegsUsbCLIE::read, (WriteFunction) & EmRegsUsbCLIE::write, \
                      addressof(reg), sizeof(fRegs.reg))
 #pragma mark -
 
@@ -129,16 +129,16 @@ void EmRegsUsbCLIE::Reset(Bool hardwareReset) {
 
 void EmRegsUsbCLIE::Dispose(void) {}
 
-void EmRegsUsbCLIE::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsUsbCLIE::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsUsbCLIE::Save(SavestateProbe& savestateProbe) { DoSave(savestateProbe); }
+void EmRegsUsbCLIE::Save(SavestateProbe<ChunkType>& savestateProbe) { DoSave(savestateProbe); }
 
-void EmRegsUsbCLIE::Load(SavestateLoader& loader) {
+void EmRegsUsbCLIE::Load(SavestateLoader<ChunkType>& loader) {
     if (!loader.HasChunk(ChunkType::regsUsbClie)) return;
 
     Chunk* chunk = loader.GetChunk(ChunkType::regsUsbClie);
     if (!chunk) {
-        logging::printf("unable to restore EmRegsUsbCLIE: missing savestate\n");
+        logPrintf("unable to restore EmRegsUsbCLIE: missing savestate\n");
         loader.NotifyError();
 
         return;
@@ -146,7 +146,7 @@ void EmRegsUsbCLIE::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore EmRegsUsbCLIE: unsupported savestate version\n");
+        logPrintf("unable to restore EmRegsUsbCLIE: unsupported savestate version\n");
         loader.NotifyError();
 
         return;

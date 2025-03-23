@@ -120,9 +120,9 @@ class EmRegs330CPLD : public EmRegs {
                   Model model);
     virtual ~EmRegs330CPLD();
 
-    virtual void Save(Savestate&);
-    virtual void Save(SavestateProbe&);
-    virtual void Load(SavestateLoader&);
+    virtual void Save(Savestate<ChunkType>&);
+    virtual void Save(SavestateProbe<ChunkType>&);
+    virtual void Load(SavestateLoader<ChunkType>&);
 
     virtual void Reset(Bool hardwareReset);
 

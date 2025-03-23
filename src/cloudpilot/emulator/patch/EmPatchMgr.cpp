@@ -14,7 +14,6 @@
 
 #include "EmPatchMgr.h"
 
-#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmHAL.h"  // EmHAL::GetLineDriverState
 #include "EmLowMem.h"  // EmLowMem::GetEvtMgrIdle, EmLowMem::TrapExists, EmLowMem_SetGlobal, EmLowMem_GetGlobal
@@ -31,10 +30,11 @@
 #include "PatchModuleNetlib.h"
 #include "PenEvent.h"
 #include "ROMStubs.h"  // FtrSet, FtrUnregister, EvtWakeup, ...
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
-#include "UAE.h"  // gRegs, m68k_dreg, etc.
+#include "UAE.h"       // gRegs, m68k_dreg, etc.
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 // ======================================================================
 //	Private globals and constants
@@ -171,7 +171,7 @@ void EmPatchMgr::Save(T& savestate) {
     chunk->Put32(SAVESTATE_VERSION);
 
     if (gInstalledTailpatches.size() > MAX_INSTALLED_TAILPATCHES) {
-        logging::printf("failed to save session in EmPatchMgr: too many installed tailpatches");
+        logPrintf("failed to save session in EmPatchMgr: too many installed tailpatches");
 
         savestate.NotifyError();
         return;
@@ -193,15 +193,15 @@ void EmPatchMgr::Save(T& savestate) {
     }
 }
 
-template void EmPatchMgr::Save<Savestate>(Savestate& savestate);
-template void EmPatchMgr::Save<SavestateProbe>(SavestateProbe& savestate);
+template void EmPatchMgr::Save<Savestate<ChunkType>>(Savestate<ChunkType>& savestate);
+template void EmPatchMgr::Save<SavestateProbe<ChunkType>>(SavestateProbe<ChunkType>& savestate);
 
-void EmPatchMgr::Load(SavestateLoader& loader) {
+void EmPatchMgr::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::patchMgr);
     if (!chunk) return;
 
     if (chunk->Get32() != SAVESTATE_VERSION) {
-        logging::printf("error restoring PatchMgr: savestate version mismatch");
+        logPrintf("error restoring PatchMgr: savestate version mismatch");
         loader.NotifyError();
 
         return;

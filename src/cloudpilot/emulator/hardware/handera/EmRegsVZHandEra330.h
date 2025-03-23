@@ -84,9 +84,9 @@ class EmRegsVZHandEra330 : public EmRegsVZ {
     EmRegsVZHandEra330(HandEra330PortManager** fPortManager);
     virtual ~EmRegsVZHandEra330(void);
 
-    virtual void Save(Savestate&);
-    virtual void Save(SavestateProbe&);
-    virtual void Load(SavestateLoader&);
+    virtual void Save(Savestate<ChunkType>&);
+    virtual void Save(SavestateProbe<ChunkType>&);
+    virtual void Load(SavestateLoader<ChunkType>&);
 
     virtual void Initialize(void);
     virtual void Dispose(void);

@@ -150,7 +150,7 @@ ErrCode EmFileImport::LoadPalmFile(const uint8* buffer, size_t len, EmFileImport
     if (EmHAL::GetAsleep()) return kError_PowerOff;
 
     if (gSession->IsCpuStopped()) {
-        logging::printf("WARNING: attempt to install files with stopped CPU");
+        logPrintf("WARNING: attempt to install files with stopped CPU");
 
         return kError_PowerOff;
     }

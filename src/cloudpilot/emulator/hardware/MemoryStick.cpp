@@ -1,11 +1,11 @@
 #include "MemoryStick.h"
 
-#include "ChunkHelper.h"
 #include "EmMemory.h"
 #include "MemoryStickStructs.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 
 namespace {
     constexpr uint32 SAVESTATE_VERSION = 2;
@@ -82,13 +82,13 @@ MemoryStick::MemoryStick() {}
 
 MemoryStick::~MemoryStick() {}
 
-void MemoryStick::Load(SavestateLoader& loader) {
+void MemoryStick::Load(SavestateLoader<ChunkType>& loader) {
     Chunk* chunk = loader.GetChunk(ChunkType::memoryStick);
     if (!chunk) return;
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore MemoryStick: unsupported savestate version\n");
+        logPrintf("unable to restore MemoryStick: unsupported savestate version\n");
         loader.NotifyError();
 
         return;
@@ -126,8 +126,8 @@ void MemoryStick::Save(T& savestate) {
     DoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
-template void MemoryStick::Save<Savestate>(Savestate&);
-template void MemoryStick::Save<SavestateProbe>(SavestateProbe&);
+template void MemoryStick::Save<Savestate<ChunkType>>(Savestate<ChunkType>&);
+template void MemoryStick::Save<SavestateProbe<ChunkType>>(SavestateProbe<ChunkType>&);
 
 template <typename T>
 void MemoryStick::DoSaveLoad(T& helper, uint32 version) {

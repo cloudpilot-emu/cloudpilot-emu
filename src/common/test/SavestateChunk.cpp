@@ -1,11 +1,14 @@
 #include <gtest/gtest.h>
 
-#include "Chunk.h"
+#include <cstddef>
+#include <cstdint>
+
+#include "savestate/Chunk.h"
 
 namespace {
 
     TEST(SavestateChunk, DeSerializationU8) {
-        uint32 buffer[1];
+        uint32_t buffer[1];
         Chunk chunk(1, buffer);
 
         chunk.Put8(66);
@@ -13,25 +16,25 @@ namespace {
 
         chunk.Reset();
 
-        ASSERT_EQ(chunk.Get8(), static_cast<uint8>(66));
+        ASSERT_EQ(chunk.Get8(), static_cast<uint8_t>(66));
         ASSERT_FALSE(chunk.HasError());
     }
 
     TEST(SavestateChunk, DeSerializationS8) {
-        uint32 buffer[1];
+        uint32_t buffer[1];
         Chunk chunk(1, buffer);
 
-        chunk.Put8(static_cast<int8>(-66));
+        chunk.Put8(static_cast<int8_t>(-66));
         ASSERT_FALSE(chunk.HasError());
 
         chunk.Reset();
 
-        ASSERT_EQ(static_cast<int8>(chunk.Get8()), static_cast<int8>(-66));
+        ASSERT_EQ(static_cast<int8_t>(chunk.Get8()), static_cast<int8_t>(-66));
         ASSERT_FALSE(chunk.HasError());
     }
 
     TEST(SavestateChunk, DeSerializationU16) {
-        uint32 buffer[1];
+        uint32_t buffer[1];
         Chunk chunk(1, buffer);
 
         chunk.Put16(0xfa4e);
@@ -39,25 +42,25 @@ namespace {
 
         chunk.Reset();
 
-        ASSERT_EQ(chunk.Get16(), static_cast<uint16>(0xfa4e));
+        ASSERT_EQ(chunk.Get16(), static_cast<uint16_t>(0xfa4e));
         ASSERT_FALSE(chunk.HasError());
     }
 
     TEST(SavestateChunk, DeSerializationS16) {
-        uint32 buffer[1];
+        uint32_t buffer[1];
         Chunk chunk(1, buffer);
 
-        chunk.Put16(static_cast<int16>(-0x0fae));
+        chunk.Put16(static_cast<int16_t>(-0x0fae));
         ASSERT_FALSE(chunk.HasError());
 
         chunk.Reset();
 
-        ASSERT_EQ(static_cast<int16>(chunk.Get16()), static_cast<int16>(-0x0fae));
+        ASSERT_EQ(static_cast<int16_t>(chunk.Get16()), static_cast<int16_t>(-0x0fae));
         ASSERT_FALSE(chunk.HasError());
     }
 
     TEST(SavestateChunk, DeSerializationU32) {
-        uint32 buffer[1];
+        uint32_t buffer[1];
         Chunk chunk(1, buffer);
 
         chunk.Put32(0x0fab1234);
@@ -65,25 +68,25 @@ namespace {
 
         chunk.Reset();
 
-        ASSERT_EQ(chunk.Get32(), static_cast<uint32>(0x0fab1234));
+        ASSERT_EQ(chunk.Get32(), static_cast<uint32_t>(0x0fab1234));
         ASSERT_FALSE(chunk.HasError());
     }
 
     TEST(SavestateChunk, DeSerializationS32) {
-        uint32 buffer[1];
+        uint32_t buffer[1];
         Chunk chunk(1, buffer);
 
-        chunk.Put32(static_cast<int32>(-0x0fab1234));
+        chunk.Put32(static_cast<int32_t>(-0x0fab1234));
         ASSERT_FALSE(chunk.HasError());
 
         chunk.Reset();
 
-        ASSERT_EQ(static_cast<int32>(chunk.Get32()), static_cast<int32>(-0x0fab1234));
+        ASSERT_EQ(static_cast<int32_t>(chunk.Get32()), static_cast<int32_t>(-0x0fab1234));
         ASSERT_FALSE(chunk.HasError());
     }
 
     TEST(SavestateChunk, DeSerializationU64) {
-        uint32 buffer[2];
+        uint32_t buffer[2];
         Chunk chunk(2, buffer);
 
         chunk.Put64(0x0fab12340fab1234);
@@ -91,25 +94,25 @@ namespace {
 
         chunk.Reset();
 
-        ASSERT_EQ(chunk.Get64(), static_cast<uint64>(0x0fab12340fab1234));
+        ASSERT_EQ(chunk.Get64(), static_cast<uint64_t>(0x0fab12340fab1234));
         ASSERT_FALSE(chunk.HasError());
     }
 
     TEST(SavestateChunk, DeSerializationS64) {
-        uint32 buffer[2];
+        uint32_t buffer[2];
         Chunk chunk(2, buffer);
 
-        chunk.Put64(static_cast<int64>(-0x0fab12340fab1234));
+        chunk.Put64(static_cast<int64_t>(-0x0fab12340fab1234));
         ASSERT_FALSE(chunk.HasError());
 
         chunk.Reset();
 
-        ASSERT_EQ(static_cast<int64>(chunk.Get64()), static_cast<int64>(-0x0fab12340fab1234));
+        ASSERT_EQ(static_cast<int64_t>(chunk.Get64()), static_cast<int64_t>(-0x0fab12340fab1234));
         ASSERT_FALSE(chunk.HasError());
     }
 
     TEST(SavestateChunk, DeSerializationBool) {
-        uint32 buffer[2];
+        uint32_t buffer[2];
         Chunk chunk(2, buffer);
 
         chunk.PutBool(false);
@@ -122,7 +125,7 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationDouble) {
-        uint32 buffer[2];
+        uint32_t buffer[2];
         Chunk chunk(2, buffer);
 
         chunk.PutDouble(1.25);
@@ -135,7 +138,7 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationBuffer) {
-        uint32 buffer[3];
+        uint32_t buffer[3];
         Chunk chunk(3, buffer);
         const char* fixture = "12345abcde";
 
@@ -151,7 +154,7 @@ namespace {
     }
 
     TEST(SavestateChunk, ItDeSerializesMutlipleValuesCorrectly) {
-        uint32 buffer[4];
+        uint32_t buffer[4];
         Chunk chunk(4, buffer);
 
         chunk.Put8(1);
@@ -170,7 +173,7 @@ namespace {
     }
 
     TEST(SavestateChunk, DeSerializationString) {
-        uint32 buffer[4];
+        uint32_t buffer[4];
         Chunk chunk(4, buffer);
 
         chunk.PutString("Hulpe", 15);
@@ -183,7 +186,7 @@ namespace {
     }
 
     TEST(SavestateChunk, ItPadsStringToMaxLengthAndAlignment) {
-        uint32 buffer[8];
+        uint32_t buffer[8];
         memset(buffer, 0, 32);
         Chunk chunk(8, buffer);
 
@@ -198,7 +201,7 @@ namespace {
     }
 
     TEST(SavestateChunk, ItErrorsIfStringExceedsMaxLength) {
-        uint32 buffer[4];
+        uint32_t buffer[4];
         Chunk chunk(4, buffer);
 
         chunk.PutString("Hulpe", 4);
@@ -206,7 +209,7 @@ namespace {
     }
 
     TEST(SavestateChunk, ItErrorsIfTheBufferOverflows) {
-        uint32 buffer[2];
+        uint32_t buffer[2];
         Chunk chunk(2, buffer);
 
         chunk.Put8(1);
@@ -225,7 +228,7 @@ namespace {
         class AddsPaddingForBuffer : public testing::TestWithParam<Params> {};
 
         TEST_P(AddsPaddingForBuffer, AddsPaddingAndDeserializesCorrectly) {
-            uint32 buffer[5];
+            uint32_t buffer[5];
             Chunk chunk(5, buffer);
             memset(buffer, 0, 20);
 

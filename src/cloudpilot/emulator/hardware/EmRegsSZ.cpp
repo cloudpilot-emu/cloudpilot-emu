@@ -17,7 +17,6 @@
 #include <cmath>
 
 #include "Byteswapping.h"  // Canonical
-#include "ChunkHelper.h"
 #include "EmCommon.h"
 #include "EmHAL.h"     // EmHAL
 #include "EmMemory.h"  // gMemAccessFlags, EmMem_memcpy
@@ -30,12 +29,14 @@
 #include "MetaMemory.h"
 #include "Miscellaneous.h"  // GetHostTime
 #include "Nibbler.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
-#include "SavestateProbe.h"
-#include "SavestateStructures.h"
+#include "Platform.h"
 #include "StackDump.h"
 #include "UAE.h"  // regs, SPCFLAG_INT
+#include "savestate/ChunkHelper.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
+#include "savestate/SavestateStructures.h"
 
 static const uint16 ROPMask = 0x2000;    // Make to get the Read-Only-Protect bit.
 static const uint16 UPSIZMask = 0x1800;  // Mask to get the unprotected memory size from csESelect.
@@ -56,7 +57,7 @@ static const int kBaseAddressShift = 16;  // Shift to get base address from CSGB
 
 // #define LOGGING 0
 #ifdef LOGGING
-    #define PRINTF logging::printf
+    #define PRINTF logPrintf
 #else
     #define PRINTF(...) ;
 #endif
@@ -1218,16 +1219,16 @@ void EmRegsSZ::Dispose(void) {
 
 EmRegsESRAM* EmRegsSZ::GetESRAM() { return esram; }
 
-void EmRegsSZ::Save(Savestate& savestate) { DoSave(savestate); }
+void EmRegsSZ::Save(Savestate<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsSZ::Save(SavestateProbe& savestate) { DoSave(savestate); }
+void EmRegsSZ::Save(SavestateProbe<ChunkType>& savestate) { DoSave(savestate); }
 
-void EmRegsSZ::Load(SavestateLoader& loader) {
+void EmRegsSZ::Load(SavestateLoader<ChunkType>& loader) {
     if (fSPISlaveADC) fSPISlaveADC->Load(loader);
 
     Chunk* chunk = loader.GetChunk(ChunkType::regsSZ);
     if (!chunk) {
-        logging::printf("unable to restore RegsSZ: missing savestate\n");
+        logPrintf("unable to restore RegsSZ: missing savestate\n");
         loader.NotifyError();
 
         return;
@@ -1235,7 +1236,7 @@ void EmRegsSZ::Load(SavestateLoader& loader) {
 
     const uint32 version = chunk->Get32();
     if (version > SAVESTATE_VERSION) {
-        logging::printf("unable to restore RegsSZ: unsupported savestate version\n");
+        logPrintf("unable to restore RegsSZ: unsupported savestate version\n");
         loader.NotifyError();
 
         return;

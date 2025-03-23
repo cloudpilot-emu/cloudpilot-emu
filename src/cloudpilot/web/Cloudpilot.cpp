@@ -14,6 +14,7 @@
 #include "EmSystemState.h"
 #include "ExternalStorage.h"
 #include "Feature.h"
+#include "LogDomain.h"
 #include "Logging.h"
 #include "MemoryStick.h"
 #include "NetworkProxy.h"
@@ -81,12 +82,12 @@ void Cloudpilot::Free(void* buffer) {
 void* Cloudpilot::Nullptr() { return nullptr; }
 
 void Cloudpilot::EnableLogging(bool enable) {
-    logging::enableDomain(logging::Domain::domainNetlib);
+    logEnableDomain(logging::Domain::domainNetlib);
 
     if (enable) {
-        logging::enable();
+        logEnable();
     } else {
-        logging::disable();
+        logDisable();
     }
 }
 
