@@ -5,12 +5,14 @@
 #include "Fifo.h"
 // clang-format on
 
-#include "ChunkHelper.h"
-#include "ChunkType.h"
-#include "Savestate.h"
-#include "SavestateLoader.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/ChunkType.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
 
 namespace {
+    enum class ChunkType { cpu68k };
+
     TEST(FifoTest, isEmptyOnCreation) {
         Fifo<uint8> fifo(3);
 
@@ -77,7 +79,7 @@ namespace {
             fifo.DoSaveLoad(helper);
         }
 
-        void Load(SavestateLoader& loader) {
+        void Load(SavestateLoader<ChunkType>& loader) {
             auto* chunk = loader.GetChunk(ChunkType::cpu68k);
             LoadChunkHelper helper(*chunk);
 
@@ -86,7 +88,7 @@ namespace {
     };
 
     TEST(FifoTest, deSearializesCorrectly) {
-        Savestate savestate;
+        Savestate<ChunkType> savestate;
         MockRoot root;
 
         root.fifo.Push(1u);
@@ -96,7 +98,7 @@ namespace {
         savestate.Save(root);
 
         MockRoot deserializedRoot;
-        SavestateLoader loader;
+        SavestateLoader<ChunkType> loader;
 
         ASSERT_TRUE(loader.Load(savestate.GetBuffer(), savestate.GetSize(), deserializedRoot));
 

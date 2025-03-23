@@ -240,16 +240,8 @@ SOURCE_TEST = \
 	$(SOURCE_EMU) \
 	emulator/assert_native.cpp \
 	emulator/stacktrace.cpp \
-	test/SavestateChunk.cpp \
-	test/SavestateChunkProbe.cpp \
-	test/SavestateProbe.cpp \
-	test/Savestate.cpp \
-	test/SavestateLoader.cpp \
-	test/SaveChunkHelper.cpp \
-	test/LoadChunkHelper.cpp \
 	test/Fifo.cpp \
-	test/Miscellaneous.cpp \
-	test/main.cpp
+	test/Miscellaneous.cpp
 
 SOURCE_NATIVE = \
 	$(SOURCE_EMU) \
@@ -335,7 +327,7 @@ $(BINARY_WEB_EMCC): $(OBJECTS_WEB_EMCC)
 	$(LD_EMCC) -o $@ $^  $(LDFLAGS_EMCC_WEB)
 
 $(BINARY_TEST) : $(OBJECTS_TEST)
-	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_TEST)
+	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_TEST) -lgtest_main
 
 $(BUILDDIR_NATIVE)/%.o : %.c
 	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE) -c -o $@ $<
