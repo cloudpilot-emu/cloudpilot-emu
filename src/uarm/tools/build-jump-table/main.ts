@@ -166,8 +166,8 @@ function isThumb(name: string) {
     return false;
 }
 
-async function main(filename: string): Promise<void> {
-    const content = await readFile(filename);
+async function main(input: string, output: string): Promise<void> {
+    const content = await readFile(input);
     const module = binaryen.readBinary(new Uint8Array(content, content.byteLength));
 
     module.setFeatures(
@@ -228,17 +228,17 @@ async function main(filename: string): Promise<void> {
     replaceDispatcher(module, 'cpuPrvDispatchExecFnThumb', dispatcherThumb);
 
     if (module.validate()) {
-        await writeFile(filename, module.emitBinary());
-        await writeFile(`${filename}.s`, module.emitText());
+        await writeFile(output, module.emitBinary());
+        await writeFile(`${output}.s`, module.emitText());
     }
 }
 
-if (process.argv.length < 3) {
-    console.error('usage: main.ts <input.wasm>');
+if (process.argv.length < 4) {
+    console.error('usage: main.ts <input.wasm> <output.wasm>');
     process.exit(1);
 }
 
-main(process.argv[2]).catch((e) => {
+main(process.argv[2], process.argv[3]).catch((e) => {
     console.error(e);
     process.exit(1);
 });

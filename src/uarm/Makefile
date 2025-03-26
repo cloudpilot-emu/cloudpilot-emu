@@ -1,46 +1,14 @@
 -include ../Makefile.local
 
-CC_NATIVE ?= gcc
-CXX_NATIVE ?= g++
-LD_NATIVE ?= g++
+CFLAGS_COMMON := \
+	-Wextra -Wall -Wno-unused-parameter -Wno-unknown-pragmas \
+	-Wno-visibility -Wno-constant-conversion -Wno-constant-logical-operand \
+	-D_FILE_OFFSET_BITS=64
 
-CC_EMCC ?= emcc
-CXX_EMCC ?= emcc
-LD_EMCC ?= emcc
+CFLAGS_EMCC_EXTRA = -g
 
-DEVELOP = 
+LDFLAGS_TEST_EXTRA ?= -lgtest_main
 
-WASMOPT = wasm-opt
-WASMOPT_FLAGS_BASE = --no-inline="*mmuTranslate*" --enable-bulk-memory --enable-bulk-memory-opt  --enable-sign-ext --enable-nontrapping-float-to-int  --inlining-optimizing \
-	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
-WASMOPT_FLAGS_WEBKIT = --no-inline="*execFn_*" --no-inline="*cpuCycleArm*" --no-inline="*cpuCycleThumb*" $(WASMOPT_FLAGS_BASE) 
-WASMOPT_FLAGS_OTHER = --no-inline="*cpuCycle" $(WASMOPT_FLAGS_BASE)
-
-WASMSTRIP = wasm-strip
-YARN = yarn
-
-PYTHON ?= python3
-
-WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
-
-WEBIDL_BINDING_DIR = web/binding
-WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/uarm.idl
-WEBIDL_BINDING_JS = $(WEBIDL_BINDING_DIR)/binding.js
-WEBIDL_BINDING_IDL = $(WEBIDL_BINDING_DIR)/binding.idl
-WEBIDL_BINDING_CXX = web/binding.cpp
-
-CFLAGS_NATIVE ?= -O3  -g $(shell sdl2-config --cflags) -flto
-CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE) 
-
-CFLAGS_EMCC = -O3 -flto -fno-rtti -fno-exceptions -g
-CXXFLAGS_EMCC = $(CFLAGS_EMCC)
-INCLUDE_EXTRA ?=
-
-CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined
-CXXFLAGS_TEST ?= $(CFLAGS_TEST)
-LDFLAGS_TEST ?= -fsanitize=address,undefined -lgtest -lgtest_main -lgmock
-
-LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image -lreadline -flto
 LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno -g \
 	--post-js $(WEBIDL_BINDING_JS) \
 	-s EXIT_RUNTIME=0 \
@@ -56,29 +24,20 @@ LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno -g \
 	-s BINARYEN_IGNORE_IMPLICIT_TRAPS=1 \
 	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall","addFunction"]
 
-CFLAGS_COMMON := \
-	-Wextra -Wall -Wno-unused-parameter -Wno-unknown-pragmas \
-	-Wno-visibility -Wno-constant-conversion -Wno-constant-logical-operand \
-	-D_FILE_OFFSET_BITS=64
+WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/uarm.idl
 
-CXXFLAGS_COMMON := $(CFLAGS_COMMON) -std=c++17
-CFLAGS_COMMON := $(CFLAGS_COMMON) -std=gnu11
+INCLUDE = -I./uarm -I. -I../common -I../argparse
 
+STD_C ?= -std=gnu11
 
-BUILDDIR_NATIVE = .build
-DEPDIR_NATIVE = .deps
-DEPFLAGS_NATIVE = -MT $@ -MMD -MP -MF $(DEPDIR_NATIVE)/$*.d
-MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
+WASMOPT = wasm-opt
+WASMOPT_FLAGS_BASE = --no-inline="*mmuTranslate*" --enable-bulk-memory --enable-bulk-memory-opt  --enable-sign-ext --enable-nontrapping-float-to-int  --inlining-optimizing \
+	-fimfs 1000 -ifwl -pii 1000  -aimfs 10 -tnh -lmu -O4
+WASMOPT_FLAGS_WEBKIT = --no-inline="*execFn_*" --no-inline="*cpuCycleArm*" --no-inline="*cpuCycleThumb*" $(WASMOPT_FLAGS_BASE) 
+WASMOPT_FLAGS_OTHER = --no-inline="*cpuCycle" $(WASMOPT_FLAGS_BASE)
 
-BUILDDIR_EMCC = .build-emcc
-DEPDIR_EMCC = .deps-emcc
-DEPFLAGS_EMCC = -MT $@ -MMD -MP -MF $(DEPDIR_EMCC)/$*.d
-MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
-
-BUILDDIR_TEST = .build-test
-DEPDIR_TEST = .deps-test
-DEPFLAGS_TEST = -MT $@ -MMD -MP -MF $(DEPDIR_TEST)/$*.d
-MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
+WASMSTRIP = wasm-strip
+YARN = yarn
 
 SOURCE_C = 								\
 	cputil.c							\
@@ -130,7 +89,7 @@ SOURCE_C = 								\
 	uarm/uae/readcpu.c 					\
 	uarm/uae/newcpu.c
 
-SOURCE_CXX_COMMON = 					\
+SOURCE_CXX =		 					\
 	uarm/socPXA.cpp						\
 	MainLoop.cpp						\
 	uarm/icache.cpp						\
@@ -141,8 +100,9 @@ SOURCE_CXX_COMMON = 					\
 	uarm/savestate/rle.cpp				\
 	uarm/savestate/SessionFile.cpp
 
-SOURCE_CXX_NATIVE = 					\
-	$(SOURCE_CXX_COMMON)				\
+SOURCE_C_NATIVE = $(SOURCE_C)
+SOURCE_CXX_NATIVE =						\
+	$(SOURCE_CXX)						\
 	native/Silkscreen.cpp				\
 	native/SdlRenderer.cpp				\
 	native/SdlEventHandler.cpp			\
@@ -150,60 +110,36 @@ SOURCE_CXX_NATIVE = 					\
 	native/Commands.cpp					\
 	native/main.cpp
 
-SOURCE_CXX_EMCC =						\
-	$(SOURCE_CXX_COMMON)				\
-	$(WEBIDL_BINDING_CXX)				\
+SOURCE_C_EMCC = $(SOURCE_C)
+SOURCE_CXX_EMCC = 						\
+	$(SOURCE_CXX)						\
 	web/main.cpp
 
-SOURCE_TEST = 							\
+SOURCE_C_TEST = $(SOURCE_C)
+SOURCE_CXX_TEST =							\
+	$(SOURCE_CXX)						\
 	test/scheduler.cpp 					\
 	test/queue.cpp
 
-OBJECTS_NATIVE_C = $(SOURCE_C:%.c=$(BUILDDIR_NATIVE)/%.o)
-OBJECTS_NATIVE_CXX = $(SOURCE_CXX_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o)
-OBJECTS_NATIVE = $(OBJECTS_NATIVE_C) $(OBJECTS_NATIVE_CXX) ../common/libcommon.a
-
-OBJECTS_TEST_CXX = $(SOURCE_TEST:%.cpp=$(BUILDDIR_TEST)/%.o)
-OBJECTS_TEST = $(OBJECTS_TEST_CXX)
-
-OBJECTS_EMCC_C = $(SOURCE_C:%.c=$(BUILDDIR_EMCC)/%.o)
-OBJECTS_EMCC_CXX = $(SOURCE_CXX_EMCC:%.cpp=$(BUILDDIR_EMCC)/%.o)
-OBJECTS_EMCC = $(OBJECTS_EMCC_C) $(OBJECTS_EMCC_CXX) ../common/libcommon-wasm.a
+OBJECTS_EXTRA_NATIVE = ../common/libcommon.a
+OBJECTS_EXTRA_TEST = ../common/libcommon.a
+OBJECTS_EXTRA_EMCC = ../common/libcommon-wasm.a
 
 BINARY_NATIVE = cp-uarm
-BINARY_EMCC = uarm_web.js
-BINARY_WASM = uarm_web.wasm
+BINARY_EMCC = uarm_web.wasm
+BINARY_TEST = test/test
+
+PROCESSED_BINARY_WASM = uarm_web_processed.wasm
 OPTIMIZED_BINARIY_WASM_OTHER = uarm_web_other.wasm
 OPTIMIZED_BINARIY_WASM_WEBKIT = uarm_web_webkit.wasm
 OPTIMIZED_BINARIES_WASM = $(OPTIMIZED_BINARIY_WASM_OTHER) $(OPTIMIZED_BINARIY_WASM_WEBKIT)
-BINARY_TEST = test/test
 
-INCLUDE = \
-	$(INCLUDE_EXTRA)			\
-	-I./uarm 					\
-	-I.							\
-	-I../common
+GARBAGE_EXTRA = 						\
+	$(PROCESSED_BINARY_WASM)			\
+	$(PROCESSED_BINARY_WASM).s			\
+	$(OPTIMIZED_BINARIES_WASM)
 
-INCLUDE_NATIVE = $(INCLUDE) -I../argparse
-
-GARBAGE = 							\
-	$(BINARY_EMCC) 					\
-	$(BINARY_NATIVE) 				\
-	$(BINARY_WASM) 					\
-	$(BINARY_WASM).s 				\
-	$(OPTIMIZED_BINARIES_WASM) 		\
-	$(BINARY_TEST) 					\
-	$(BUILDDIR_NATIVE)	 			\
-	$(DEPDIR_NATIVE) 				\
-	$(BUILDDIR_EMCC) 				\
-	$(DEPDIR_EMCC) 					\
-	$(BUILDDIR_TEST) 				\
-	$(DEPDIR_TEST)					\
-	$(WEBIDL_BINDING_JS) 			\
-	$(WEBIDL_BINDING_JS:%.js=%.cpp) \
-	$(WEBIDL_BINDING_IDL) 			\
-	parser.out 						\
-	WebIDLGrammar.pkl
+include ../Makefile.common
 
 bin: $(BINARY_NATIVE)
 
@@ -212,56 +148,15 @@ test: $(BINARY_TEST)
 
 emscripten: $(OPTIMIZED_BINARIES_WASM)
 
-$(BINARY_NATIVE): $(OBJECTS_NATIVE)
-	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_NATIVE)
+$(PROCESSED_BINARY_WASM): $(BINARY_EMCC)
+	if test -z "$(DEVELOP)"; then $(YARN) --cwd ./tools/build-jump-table && $(YARN) --cwd ./tools/build-jump-table build-jump-table "$$(pwd)/$^" "$$(pwd)/$@"; fi
 
-$(BINARY_EMCC): $(OBJECTS_EMCC)
-	$(LD_EMCC) -o $@ $^ $(LDFLAGS_EMCC)
-
-$(BINARY_WASM): $(BINARY_EMCC)
-	if test -z "$(DEVELOP)"; then $(YARN) --cwd ./tools/build-jump-table && $(YARN) --cwd ./tools/build-jump-table build-jump-table "$$(pwd)/$@"; fi
-
-$(OPTIMIZED_BINARIY_WASM_OTHER): $(BINARY_WASM)
+$(OPTIMIZED_BINARIY_WASM_OTHER): $(PROCESSED_BINARY_WASM)
 	if test -n "$(DEVELOP)"; then cp $^ $@; else $(WASMOPT) $(WASMOPT_FLAGS_OTHER) -o $@ $^; fi
 	if test -z "$(DEVELOP)"; then $(WASMSTRIP) $@; fi
 
-$(OPTIMIZED_BINARIY_WASM_WEBKIT): $(BINARY_WASM)
+$(OPTIMIZED_BINARIY_WASM_WEBKIT): $(PROCESSED_BINARY_WASM)
 	if test -n "$(DEVELOP)"; then cp $^ $@; else $(WASMOPT) $(WASMOPT_FLAGS_WEBKIT) -o $@ $^; fi
 	if test -z "$(DEVELOP)"; then $(WASMSTRIP) $@; fi
 
-$(BINARY_TEST): $(OBJECTS_TEST)
-	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_TEST) -lgtest_main
-
-$(OBJECTS_NATIVE_C) : $(BUILDDIR_NATIVE)/%.o : %.c
-	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(INCLUDE_NATIVE) -c -o $@ $<
-
-$(OBJECTS_NATIVE_CXX) : $(BUILDDIR_NATIVE)/%.o : %.cpp
-	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(INCLUDE_NATIVE) -c -o $@ $<
-
-$(OBJECTS_TEST_CXX) : $(BUILDDIR_TEST)/%.o : %.cpp
-	$(MKDIR_TEST) && $(CXX_NATIVE) $(DEPFLAGS_TEST) $(CXXFLAGS_COMMON) $(CXXFLAGS_TEST) $(INCLUDE) -c -o $@ $<
-
-$(OBJECTS_EMCC_C) : $(BUILDDIR_EMCC)/%.o : %.c
-	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(CFLAGS_COMMON) $(CFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
-
-$(OBJECTS_EMCC_CXX) : $(BUILDDIR_EMCC)/%.o : %.cpp
-	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(CXXFLAGS_COMMON) $(CXXFLAGS_EMCC) $(INCLUDE) -c -o $@ $<
-
-$(BUILDDIR_EMCC)/$(WEBIDL_BINDING_CXX:%.cpp=%.o): $(WEBIDL_BINDING_JS)
-
-$(WEBIDL_BINDING_IDL): $(WEBIDL_BINDING_SRC)
-	cat $^ > $@
-
-$(WEBIDL_BINDING_JS): $(WEBIDL_BINDING_IDL)
-	$(WEBIDL_BINDER) $(WEBIDL_BINDING_IDL) $(WEBIDL_BINDING_JS:.js=)
-
-clean:
-	-rm -fr $(GARBAGE)
-
-.PHONY: clean all bin emscripten test
-.SUFFIXES:
-
-
-include $(shell test -e $(DEPDIR_NATIVE) && find $(DEPDIR_NATIVE) -type f)
-include $(shell test -e $(DEPDIR_EMCC) && find $(DEPDIR_EMCC) -type f)
-include $(shell test -e $(DEPDIR_TEST) && find $(DEPDIR_TEST) -type f)
+.PHONY: bin emscripten clean test

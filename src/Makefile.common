@@ -1,0 +1,198 @@
+# The variables below most likely have to be defined
+
+SOURCE_C_NATIVE ?= 
+SOURCE_CXX_NATIVE ?= 
+
+SOURCE_C_EMCC ?= 
+SOURCE_CXX_EMCC ?= 
+
+SOURCE_C_TEST ?= 
+SOURCE_CXX_TEST ?= 
+
+BINARY_NATIVE ?=
+BINARY_EMCC ?=
+BINARY_TEST ?=
+LIBRARY_EMCC ?=
+LIBRARY_NATIVE ?=
+
+INCLUDE ?=
+
+EMCC_INITIAL_MEMORY ?= 16777216
+
+# The variables below should be defined as necessary
+
+CFLAGS_COMMON ?= -Wextra -Wall
+CXXFLAGS_COMMON ?= $(CFLAGS_COMMON)
+
+STD_C ?= -std=c99
+STD_CXX ?= -std=c++17
+
+CFLAGS_NATIVE_EXTRA ?=
+CXXFLAGS_NATIVE_EXTRA ?= $(CFLAGS_NATIVE_EXTRA)
+LDFLAGS_NATIVE_EXTRA ?=
+
+CFLAGS_EMCC_EXTRA ?=
+CXXFLAGS_EMCC_EXTRA ?= $(CFLAGS_EMCC_EXTRA)
+LDFLAGS_EMCC_EXTRA ?=
+
+CFLAGS_TEST_EXTRA ?=
+CXXFLAGS_TEST_EXTRA ?= $(CFLAGS_TEST_EXTRA)
+LDFLAGS_TEST_EXTRA ?=
+
+OBJECTS_EXTRA_NATIVE ?=
+OBJECTS_EXTRA_EMCC ?=
+OBJECTS_EXTRA_TEST ?=
+
+WEBIDL_BINDING_SRC ?=
+
+GARBAGE_EXTRA ?=
+
+EXTRA_OBJECT_DEPS ?=
+
+# The stuff below can be overridden if necessary, but there shouldn't be any need
+
+EMCC_OPT = -O3 -flto
+
+CC_NATIVE ?= gcc
+CXX_NATIVE ?= g++
+LD_NATIVE ?= g++
+AR_NATIVE ?= ar
+RANLIB_NATIVE ?= ranlib
+
+CC_EMCC ?= emcc
+CXX_EMCC ?= emcc
+LD_EMCC ?= emcc
+AR_EMCC ?= emar
+RANLIB_EMCC = emranlib
+
+EMCC_OPT ?= -O3 -flto
+
+CFLAGS_NATIVE ?= -O2  -g $(shell sdl2-config --cflags)
+CXXFLAGS_NATIVE ?= $(CFLAGS_NATIVE)
+LDFLAGS_NATIVE ?=  $(shell sdl2-config --libs) -lSDL2_image -lreadline -lcurl -lpthread -lresolv
+
+CFLAGS_EMCC ?= $(EMCC_OPT)
+CXXFLAGS_EMCC ?= $(CFLAGS_EMCC) -fno-rtti -fno-exceptions
+LDFLAGS_EMCC ?= $(EMCC_OPT) -Wno-version-check \
+	--post-js $(WEBIDL_BINDING_JS) \
+	-s NO_EXIT_RUNTIME=1 \
+	-s MODULARIZE=1 \
+	-s STACK_OVERFLOW_CHECK=1 \
+	-s EXPORT_NAME=createModule \
+	-s ENVIRONMENT="web,worker" \
+	-s ALLOW_MEMORY_GROWTH=1 \
+	-s INITIAL_MEMORY=$(EMCC_INITIAL_MEMORY) \
+	-s ALLOW_TABLE_GROWTH=1 \
+	-s FILESYSTEM=0 \
+	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
+	-s EXTRA_EXPORTED_RUNTIME_METHODS=["addFunction","UTF8ToString"] \
+	-s STACK_SIZE=1MB
+
+CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt
+CXXFLAGS_TEST ?= $(CFLAGS_TEST)
+LDFLAGS_TEST ?= -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt -lgtest -lgmock
+
+PYTHON ?= python3
+
+WEBIDL_BINDER ?= $(PYTHON) $${EMSDK}/upstream/emscripten/tools/webidl_binder.py
+WEBIDL_BINDING_DIR ?= web/binding
+WEBIDL_BINDING_JS ?= $(WEBIDL_BINDING_DIR)/binding.js
+WEBIDL_BINDING_IDL ?= $(WEBIDL_BINDING_DIR)/binding.idl
+WEBIDL_BINDING_CXX ?= web/binding.cpp
+
+BUILDDIR_NATIVE ?= .build
+DEPDIR_NATIVE ?= .deps
+
+BUILDDIR_EMCC ?= .build-emcc
+DEPDIR_EMCC ?= .deps-emcc
+
+BUILDDIR_TEST ?= .build-test
+DEPDIR_TEST ?= .deps-test
+
+DEPFLAGS_NATIVE = -MT $@ -MMD -MP -MF $(DEPDIR_NATIVE)/$*.d
+DEPFLAGS_EMCC = -MT $@ -MMD -MP -MF $(DEPDIR_EMCC)/$*.d
+DEPFLAGS_TEST = -MT $@ -MMD -MP -MF $(DEPDIR_TEST)/$*.d
+
+MKDIR_NATIVE = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_NATIVE)/$(dir $<)
+MKDIR_EMCC = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_EMCC)/$(dir $<)
+MKDIR_TEST = mkdir -p $(dir $@) && mkdir -p $(DEPDIR_TEST)/$(dir $<)
+
+BINARY_JS = $(BINARY_EMCC:.wasm=.js)
+
+OBJECTS_NATIVE = $(SOURCE_C_NATIVE:%.c=$(BUILDDIR_NATIVE)/%.o) $(SOURCE_CXX_NATIVE:%.cpp=$(BUILDDIR_NATIVE)/%.o) $(OBJECTS_EXTRA_NATIVE)
+OBJECTS_EMCC = $(SOURCE_C_EMCC:%.c=$(BUILDDIR_EMCC)/%.o) $(SOURCE_CXX_EMCC:%.cpp=$(BUILDDIR_EMCC)/%.o) $(OBJECTS_EXTRA_EMCC)
+OBJECTS_EMCC_BINDING = $(WEBIDL_BINDING_CXX:%.cpp=$(BUILDDIR_EMCC)/%.o)
+OBJECTS_TEST = $(SOURCE_C_TEST:%.c=$(BUILDDIR_TEST)/%.o) $(SOURCE_CXX_TEST:%.cpp=$(BUILDDIR_TEST)/%.o) $(OBJECTS_EXTRA_TEST)
+
+GARBAGE ?= 								\
+	$(BUILDDIR_NATIVE) 					\
+	$(BUILDDIR_EMCC) 					\
+	$(BUILDDIR_TEST) 					\
+	$(BINARY_NATIVE) 					\
+	$(BINARY_EMCC) 						\
+	$(BINARY_JS) 						\
+	$(BINARY_TEST) 						\
+	$(LIBRARY_EMCC)						\
+	$(LIBRARY_NATIVE)					\
+	$(DEPDIR_NATIVE) 					\
+	$(DEPDIR_EMCC) 						\
+	$(DEPDIR_TEST) 						\
+	$(WEBIDL_BINDING_JS) 				\
+	$(WEBIDL_BINDING_IDL) 				\
+	$(WEBIDL_BINDING_JS:%.js=%.cpp) 	\
+	parser.out 							\
+	WebIDLGrammar.pkl					\
+	$(GARBAGE_EXTRA)
+
+$(BINARY_NATIVE): $(OBJECTS_NATIVE)
+	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_NATIVE) $(LDFLAGS_NATIVE_EXTRA)
+
+$(BINARY_EMCC): $(OBJECTS_EMCC) $(OBJECTS_EMCC_BINDING)
+	$(LD_EMCC) -o $(@:.wasm=.js) $^  $(LDFLAGS_EMCC) $(LDFLAGS_EMCC_EXTRA)
+
+$(BINARY_TEST) : $(OBJECTS_TEST)
+	$(LD_NATIVE) -o $@ $^ $(LDFLAGS_TEST) $(LDFLAGS_TEST_EXTRA)
+
+$(LIBRARY_NATIVE): $(OBJECTS_NATIVE)
+	$(AR_NATIVE) cru $@ $^
+	$(RANLIB_NATIVE) $@
+
+$(LIBRARY_EMCC): $(OBJECTS_EMCC)
+	$(AR_EMCC) -cru $@ $^
+	$(RANLIB_EMCC) $@
+
+$(BUILDDIR_NATIVE)/%.o : %.c $(EXTRA_OBJECT_DEPS)
+	$(MKDIR_NATIVE) && $(CC_NATIVE) $(DEPFLAGS_NATIVE) $(STD_C) $(CFLAGS_COMMON) $(CFLAGS_NATIVE) $(CFLAGS_NATIVE_EXTRA) $(INCLUDE) $(INCLUDE_EXTRA)  -c -o $@ $<
+
+$(BUILDDIR_EMCC)/%.o : %.c $(EXTRA_OBJECT_DEPS)
+	$(MKDIR_EMCC) && $(CC_EMCC) $(DEPFLAGS_EMCC) $(STD_C) $(CFLAGS_COMMON) $(CFLAGS_EMCC) $(CFLAGS_EMCC_EXTRA) $(INCLUDE) $(INCLUDE_EXTRA) -c -o $@ $<
+
+$(BUILDDIR_TEST)/%.o : %.c $(EXTRA_OBJECT_DEPS)
+	$(MKDIR_TEST) && $(CC_NATIVE) $(DEPFLAGS_TEST) $(STD_C) $(CFLAGS_COMMON) $(CFLAGS_TEST) $(CFLAGS_TEST_EXTRA) $(INCLUDE) $(INCLUDE_EXTRA) -c -o $@ $<
+
+$(BUILDDIR_NATIVE)/%.o : %.cpp $(EXTRA_OBJECT_DEPS)
+	$(MKDIR_NATIVE) && $(CXX_NATIVE) $(DEPFLAGS_NATIVE) $(STD_CXX) $(CXXFLAGS_COMMON) $(CXXFLAGS_NATIVE) $(CXXFLAGS_NATIVE_EXTRA) $(INCLUDE) $(INCLUDE_EXTRA) -c -o $@ $<
+
+$(BUILDDIR_EMCC)/%.o : %.cpp $(EXTRA_OBJECT_DEPS)
+	$(MKDIR_EMCC) && $(CXX_EMCC) $(DEPFLAGS_EMCC) $(STD_CXX) $(CXXFLAGS_COMMON) $(CXXFLAGS_EMCC) $(CXXFLAGS_EMCC_EXTRA) $(INCLUDE) $(INCLUDE_EXTRA) -c -o $@ $<
+
+$(BUILDDIR_TEST)/%.o : %.cpp $(EXTRA_OBJECT_DEPS)
+	$(MKDIR_TEST) && $(CXX_NATIVE) $(DEPFLAGS_TEST) $(STD_CXX) $(CXXFLAGS_COMMON) $(CXXFLAGS_TEST) $(CXXFLAGS_TEST_EXTRA) $(INCLUDE) $(INCLUDE_EXTRA) -c -o $@ $<
+
+$(BUILDDIR_EMCC)/$(WEBIDL_BINDING_CXX:%.cpp=%.o): $(WEBIDL_BINDING_JS)
+
+$(WEBIDL_BINDING_IDL): $(WEBIDL_BINDING_SRC)
+	cat $^ > $@
+
+$(WEBIDL_BINDING_JS): $(WEBIDL_BINDING_IDL)
+	$(WEBIDL_BINDER) $(WEBIDL_BINDING_IDL) $(WEBIDL_BINDING_JS:.js=)
+
+clean:
+	-rm -fr $(GARBAGE)
+
+.SUFFIXES:
+
+include $(shell test -e $(DEPDIR_NATIVE) && find $(DEPDIR_NATIVE) -type f)
+include $(shell test -e $(DEPDIR_EMCC) && find $(DEPDIR_EMCC) -type f)
+include $(shell test -e $(DEPDIR_TEST) && find $(DEPDIR_TEST) -type f)
+
