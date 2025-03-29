@@ -238,9 +238,6 @@ bool SessionImage::Deserialize(void* _buffer, size_t size) {
     framebufferSize = (version >= 2 && version < 4) ? get32(buffer + 16) : 0;
     savestateSize = get32(buffer + ((version >= 2 && version < 4) ? 20 : 16));
 
-    cout << deviceIdSize << " " << metadataSize << " " << romSize << " " << ramSize << " "
-         << framebufferSize << " " << savestateSize << endl;
-
     buffer += headerSize;
 
     if (size != (headerSize + deviceIdSize + metadataSize + romSize + ramSize + savestateSize) ||
