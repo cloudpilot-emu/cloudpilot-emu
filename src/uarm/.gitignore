@@ -6,6 +6,6 @@ node_modules
 *.log
 
 cp-uarm
-test
+test/test
 
 !assets/*.js

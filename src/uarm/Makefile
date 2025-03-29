@@ -115,8 +115,10 @@ SOURCE_CXX_EMCC = 						\
 	$(SOURCE_CXX)						\
 	web/main.cpp
 
-SOURCE_C_TEST = $(SOURCE_C)
-SOURCE_CXX_TEST =							\
+SOURCE_C_TEST = 						\
+	$(SOURCE_C) 						\
+	test/stub.c
+SOURCE_CXX_TEST =						\
 	$(SOURCE_CXX)						\
 	test/scheduler.cpp 					\
 	test/queue.cpp
