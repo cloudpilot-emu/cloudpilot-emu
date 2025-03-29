@@ -205,6 +205,10 @@ namespace {
 
         if (ram.data) memcpy(socGetRamData(soc).data, ram.data, ram.size);
 
+        if (!socLoad(soc, savestate.size, savestate.data)) {
+            cerr << "failed to restore savestate" << endl;
+        }
+
         if (sdCardInitialized()) socSdInsert(soc);
 
         AudioQueue* audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);

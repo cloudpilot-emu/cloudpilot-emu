@@ -81,7 +81,7 @@ bool SavestateLoader<ChunkType>::ParseSavestate(uint32_t* buffer, size_t size) {
     uint32_t* nextTocEntry = buffer;
     size_t chunkCount = *(nextTocEntry++);
 
-    if (size < 4 + chunkCount * 2) {
+    if (size < 1 + chunkCount * 2) {
         logPrintf("buffer is not a valid savestate: too small for TOC");
         return false;
     }

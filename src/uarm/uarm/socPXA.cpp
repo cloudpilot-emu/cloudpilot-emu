@@ -1,27 +1,8 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
-#include "CPU.h"
-#include "MMU.h"
-#include "RAM.h"
-#include "ROM.h"
-#include "SoC.h"
-#include "cp15.h"
-#include "mem.h"
-#include "pace_patch.h"
-#include "patch_dispatch.h"
-#include "patches.h"
-#include "ram_buffer.h"
-#include "scheduler.h"
-#include "sdcard.h"
-#include "soc_AC97.h"
-#include "soc_DMA.h"
-#include "soc_GPIO.h"
-#include "soc_I2C.h"
-#include "soc_I2S.h"
-#include "soc_IC.h"
-#include "soc_SSP.h"
-#include "soc_UART.h"
-#include "syscall_dispatch.h"
+//  stdlib
+#include <cstdlib>
+#include <cstring>
 
 // all PXAs
 #include "pxa_DMA.h"
@@ -40,21 +21,49 @@
 #include "pxa255_UDC.h"
 
 // PXA27x
-#include <cstdlib>
-#include <cstring>
-
-#include "audio_queue.h"
-#include "cputil.h"
-#include "device.h"
-#include "keys.h"
-#include "peephole.h"
 #include "pxa270_IMC.h"
 #include "pxa270_KPC.h"
 #include "pxa270_UDC.h"
 #include "pxa270_WMMX.h"
+
+// Everything else
+#include "CPU.h"
+#include "Logging.h"
+#include "MMU.h"
+#include "RAM.h"
+#include "ROM.h"
+#include "SoC.h"
+#include "audio_queue.h"
+#include "cp15.h"
+#include "cputil.h"
+#include "device.h"
+#include "keys.h"
+#include "mem.h"
+#include "pace_patch.h"
+#include "patch_dispatch.h"
+#include "patches.h"
+#include "peephole.h"
 #include "queue.h"
+#include "ram_buffer.h"
 #include "reschedule.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/ChunkTypeUarm.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "scheduler.h"
+#include "sdcard.h"
+#include "soc_AC97.h"
+#include "soc_DMA.h"
+#include "soc_GPIO.h"
+#include "soc_I2C.h"
+#include "soc_I2S.h"
+#include "soc_IC.h"
+#include "soc_SSP.h"
+#include "soc_UART.h"
+#include "syscall_dispatch.h"
 #include "vSD.h"
+
+#define SAVESTATE_VERSION 0
 
 #define CPUID_PXA255 0x69052D06ul  // spepping A0
 #define CPUID_PXA260 0x69052D06ul  // spepping B1
@@ -157,7 +166,17 @@ struct SoC {
 
     Device *dev;
 
+    Savestate<ChunkType> *savestate;
+
     uint32_t DispatchTicks(uint32_t clientType, uint32_t batchedTicks);
+
+    void Load(SavestateLoader<ChunkType> &loader);
+
+    template <typename T>
+    void Save(T &t);
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper);
 };
 
 extern "C" {
@@ -238,6 +257,8 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
     struct Reschedule rescheduleSoc = {.rescheduleCb = socPrvReschedule, .ctx = soc};
 
     memset(soc, 0, sizeof(*soc));
+
+    soc->savestate = new Savestate<ChunkType>();
 
     soc->pacePatch = createPacePatch();
 
@@ -730,4 +751,50 @@ void socSdEject(struct SoC *soc) {
     deviceSetSdCardInserted(soc->dev, false);
 }
 
+bool socSave(struct SoC *soc) { return soc->savestate->Save(*soc); }
+
+bool socLoad(struct SoC *soc, size_t savestateSize, void *savestateData) {
+    if (savestateSize == 0 || !savestateData) return true;
+
+    SavestateLoader<ChunkType> loader;
+
+    return loader.Load(savestateData, savestateSize, *soc);
+}
+
+struct Buffer socGetSavestate(struct SoC *soc) {
+    return {.size = soc->savestate->GetSize(), .data = soc->savestate->GetBuffer()};
+}
+
 enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->dev); }
+
+void SoC::Load(SavestateLoader<ChunkType> &loader) {
+    Chunk *chunk = loader.GetChunk(ChunkType::pxaSoc);
+    if (!chunk) {
+        logPrintf("failed to restore socPXA: missing savestate\n");
+        return loader.NotifyError();
+    }
+
+    if (chunk->Get32() > SAVESTATE_VERSION) {
+        logPrintf("failed to restore socPXA: unsupported savestate version\n");
+        return loader.NotifyError();
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void SoC::Save(T &savestate) {
+    typename T::chunkT *chunk = savestate.GetChunk(ChunkType::pxaSoc);
+    if (!chunk) abort();
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void SoC::DoSaveLoad(T &chunkHelper) {
+    chunkHelper.Do(typename T::BoolPack() << sleeping);
+}

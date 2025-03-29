@@ -67,6 +67,10 @@ void socSetNandDirty(struct SoC *soc, bool isDirty);
 struct Buffer socGetRamData(struct SoC *soc);
 struct Buffer socGetRamDirtyPages(struct SoC *soc);
 
+bool socSave(struct SoC *soc);
+bool socLoad(struct SoC *soc, size_t savestateSize, void *savestateData);
+struct Buffer socGetSavestate(struct SoC *soc);
+
 void socSdInsert(struct SoC *soc);
 void socSdEject(struct SoC *soc);
 

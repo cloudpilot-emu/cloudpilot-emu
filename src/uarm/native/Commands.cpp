@@ -114,16 +114,23 @@ namespace {
 
         auto ctx = reinterpret_cast<commands::Context*>(context);
 
+        if (!socSave(ctx->soc)) {
+            cout << "failed to save state" << endl;
+            return;
+        }
+
         SessionFile sessionFile;
 
         const Buffer rom = socGetRomData(ctx->soc);
         const Buffer nand = socGetNandData(ctx->soc);
         const Buffer ram = socGetRamData(ctx->soc);
+        const Buffer savestate = socGetSavestate(ctx->soc);
 
         sessionFile.SetDeviceId(socGetDeviceType(ctx->soc))
             .SetNor(rom.size, reinterpret_cast<uint8_t*>(rom.data))
             .SetNand(nand.size, reinterpret_cast<uint8_t*>(nand.data))
-            .SetRam(ram.size, reinterpret_cast<uint8_t*>(ram.data));
+            .SetRam(ram.size, reinterpret_cast<uint8_t*>(ram.data))
+            .SetSavestate(savestate.size, reinterpret_cast<uint8_t*>(savestate.data));
 
         if (!sessionFile.Serialize()) {
             cout << "failed to serialize session" << endl;
