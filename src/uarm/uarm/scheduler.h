@@ -3,6 +3,11 @@
 
 #include <cstdint>
 
+#include "Logging.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/ChunkTypeUarm.h"
+#include "savestate/SavestateLoader.h"
+
 #define SCHEDULER_TASK_TIMER 0
 #define SCHEDULER_TASK_RTC 1
 #define SCHEDULER_TASK_LCD 2
@@ -33,13 +38,22 @@ class Scheduler {
 
     uint64_t GetTime() const;
 
+    template <typename U>
+    void Save(U& savestate);
+
+    void Load(SavestateLoader<ChunkType>& loader);
+
    private:
     template <bool atLeast>
     inline void RescheduleTaskImpl(uint32_t taskType, uint32_t batchTicks);
 
+    template <typename U>
+    void DoSaveLoad(U& ChunkHelper);
+
    private:
     static constexpr int32_t SCHEDULER_TASK_MAX = SCHEDULER_TASK_AUX_3;
     static constexpr int32_t SCHEDULER_TASK_NONE = 0xff;
+    static constexpr uint32_t SAVESTATE_VERSION = 0;
 
     struct Task {
         uint32_t batchedTicks{0};
@@ -199,6 +213,53 @@ void Scheduler<T>::UpdateNextUpdate() {
     } else {
         nextUpdate = accTime + 1_sec;
     }
+}
+
+template <typename T>
+template <typename U>
+void Scheduler<T>::Save(U& savestate) {
+    typename U::chunkT* chunk = savestate.GetChunk(ChunkType::scheduler);
+    if (!chunk) abort();
+
+    chunk->Put32(SAVESTATE_VERSION);
+
+    SaveChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+}
+
+template <typename T>
+void Scheduler<T>::Load(SavestateLoader<ChunkType>& loader) {
+    Chunk* chunk = loader.GetChunk(ChunkType::scheduler);
+    if (!chunk) {
+        logPrintf("failed to restore scheduler: missing savestate\n");
+        return loader.NotifyError();
+    }
+
+    if (chunk->Get32() > SAVESTATE_VERSION) {
+        logPrintf("failed to restore scheduler: unsupported savestate version\n");
+        return loader.NotifyError();
+    }
+
+    LoadChunkHelper helper(*chunk);
+    DoSaveLoad(helper);
+
+    UpdateNextUpdate();
+}
+
+template <typename T>
+template <typename U>
+void Scheduler<T>::DoSaveLoad(U& chunkHelper) {
+    for (uint8_t i = 0; i <= SCHEDULER_TASK_MAX; i++) {
+        Task& task(tasks[i]);
+
+        chunkHelper.Do32(task.batchedTicks)
+            .Do64(task.period)
+            .Do64(task.lastUpdate)
+            .Do64(task.nextUpdate)
+            .Do32(queue[i]);
+    }
+
+    chunkHelper.Do32(queue[-1]).Do64(accTime);
 }
 
 #endif  // _SCHEDULER_H_

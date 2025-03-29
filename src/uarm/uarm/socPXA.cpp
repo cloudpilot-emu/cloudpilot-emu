@@ -249,6 +249,12 @@ static void socSetupScheduler(Scheduler<SoC> *scheduler) {
     scheduler->ScheduleTask(SCHEDULER_TASK_AUX_2, 1_sec / 30, 1);
 }
 
+static void schedulePcmTask(SoC *soc) {
+    soc->scheduler->ScheduleTask(SCHEDULER_TASK_PCM,
+                                 1_sec / (soc->enablePcmOutput ? PCM_HZ_ENABLED : PCM_HZ_DISABLED),
+                                 soc->pcmSuspended ? 0 : 1);
+}
+
 SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
              uint8_t *nandContent, size_t nandSize, int gdbPort, uint_fast8_t socRev) {
     SoC *soc = (SoC *)malloc(sizeof(SoC));
@@ -710,9 +716,7 @@ void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled) {
     if (pcmOutputEnabled == soc->enablePcmOutput) return;
 
     soc->enablePcmOutput = pcmOutputEnabled;
-    soc->scheduler->ScheduleTask(SCHEDULER_TASK_PCM,
-                                 1_sec / (pcmOutputEnabled ? PCM_HZ_ENABLED : PCM_HZ_DISABLED),
-                                 soc->pcmSuspended ? 0 : 1);
+    schedulePcmTask(soc);
 
     if (soc->audioQueue) audioQueueClear(soc->audioQueue);
 }
@@ -768,6 +772,8 @@ struct Buffer socGetSavestate(struct SoC *soc) {
 enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->dev); }
 
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
+    scheduler->Load(loader);
+
     Chunk *chunk = loader.GetChunk(ChunkType::pxaSoc);
     if (!chunk) {
         logPrintf("failed to restore socPXA: missing savestate\n");
@@ -781,10 +787,14 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
 
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper);
+
+    schedulePcmTask(this);
 }
 
 template <typename T>
 void SoC::Save(T &savestate) {
+    scheduler->Save(savestate);
+
     typename T::chunkT *chunk = savestate.GetChunk(ChunkType::pxaSoc);
     if (!chunk) abort();
 
