@@ -2,6 +2,7 @@
 #define _SAVESTATE_H_
 
 #include <memory>
+#include <unordered_map>
 
 #include "CPEndian.h"
 #include "Chunk.h"
@@ -11,7 +12,7 @@
 template <typename ChunkType>
 class Savestate {
    public:
-    using chunkMapT = std::map<ChunkType, Chunk>;
+    using chunkMapT = std::unordered_map<ChunkType, Chunk>;
     using chunkT = Chunk;
 
    public:

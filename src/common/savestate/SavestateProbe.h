@@ -1,7 +1,7 @@
 #ifndef _SAVESTATE_PROBE_H_
 #define _SAVESTATE_PROBE_H_
 
-#include <map>
+#include <unordered_map>
 
 #include "ChunkProbe.h"
 #include "Logging.h"
@@ -9,7 +9,7 @@
 template <typename ChunkType>
 class SavestateProbe {
    public:
-    using chunkMapT = std::map<ChunkType, ChunkProbe>;
+    using chunkMapT = std::unordered_map<ChunkType, ChunkProbe>;
     using chunkT = ChunkProbe;
 
    public:
