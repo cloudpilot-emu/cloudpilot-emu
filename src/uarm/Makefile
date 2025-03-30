@@ -81,7 +81,6 @@ SOURCE_C = 								\
 	uarm/nand.c 						\
 	uarm/ac97dev_WM9712L.c				\
 	uarm/pace_patch.c 					\
-	uarm/pace.c 						\
 	uarm/peephole.c						\
 	uarm/uae/cpudefs.c 					\
 	uarm/uae/cpuemu.c 					\
@@ -94,6 +93,7 @@ SOURCE_CXX =		 					\
 	MainLoop.cpp						\
 	uarm/icache.cpp						\
 	uarm/CPU.cpp						\
+	uarm/pace.cpp 						\
 	uarm/memcpy.cpp						\
 	uarm/audio_queue.cpp				\
 	uarm/rom_info.cpp					\

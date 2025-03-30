@@ -44,6 +44,12 @@ enum paceStatus paceExecute();
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void paceSave(T& savestate);
+
+template <typename T>
+void paceLoad(T& loader);
 #endif
 
 #endif  // _PACE_H_

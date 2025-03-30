@@ -4,12 +4,19 @@
 
 #include "mem.h"
 #include "memcpy.h"
+#include "savestate/ChunkHelper.h"
+#include "savestate/ChunkTypeUarm.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
+#include "savestate/SavestateProbe.h"
 #include "uae/UAE.h"
 #include "uarm_endian.h"
 
 #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
 #endif
+
+#define SAVESTATE_VERSION 0
 
 static struct ArmMem* mem = NULL;
 static struct ArmMmu* mmu = NULL;
@@ -54,17 +61,6 @@ static uint32_t pace_get_le(uint32_t addr, uint8_t size) {
     return result;
 }
 
-uint8_t uae_get8(uint32_t addr) { return pace_get_le(addr, 1); }
-
-uint16_t uae_get16(uint32_t addr) {
-    if (!fsr && addr & 0x01) {
-        fsr = 10;
-        return 0;
-    }
-
-    return htobe16(pace_get_le(addr, 2));
-}
-
 static uint32_t uae_get32_split(uint32_t addr) {
     if ((addr & 0x3ff) <= (0x3ff - 4)) {
         if (fsr != 0) return 0;
@@ -100,6 +96,19 @@ static uint32_t uae_get32_split(uint32_t addr) {
     }
 }
 
+extern "C" {
+
+uint8_t uae_get8(uint32_t addr) { return pace_get_le(addr, 1); }
+
+uint16_t uae_get16(uint32_t addr) {
+    if (!fsr && addr & 0x01) {
+        fsr = 10;
+        return 0;
+    }
+
+    return htobe16(pace_get_le(addr, 2));
+}
+
 uint32_t uae_get32(uint32_t addr) {
     switch (__builtin_ctz(addr)) {
         case 0:
@@ -114,6 +123,7 @@ uint32_t uae_get32(uint32_t addr) {
         default:
             return htobe32(pace_get_le(addr, 4));
     }
+}
 }
 
 static void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
@@ -416,7 +426,7 @@ enum paceStatus paceExecute() {
 
     if (fsr != 0) return pace_status_memory_fault;
 
-        // fprintf(stderr, "execute m68k opcode %#06x at %#010x\n", opcode, regs.pc);
+    // fprintf(stderr, "execute m68k opcode %#06x at %#010x\n", opcode, regs.pc);
 
 #ifdef __EMSCRIPTEN__
     ((cpuop_func*)((long)cpufunctbl_base + opcode))(opcode);
@@ -427,5 +437,37 @@ enum paceStatus paceExecute() {
     //    fprintf(stderr, "a7 now %#010x, top of stack is %#010x\n", m68k_areg(regs, 7),
     //            uae_get32(m68k_areg(regs, 7)));
 
-    return fsr == 0 ? pendingStatus : pace_status_memory_fault;
+    return fsr == 0 ? static_cast<enum paceStatus>(pendingStatus) : pace_status_memory_fault;
 }
+
+template <typename T>
+void paceSave(T& savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pace, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    paceDoSaveLoad(helper);
+}
+
+template <typename T>
+void paceLoad(T& loader) {
+    auto chunk = loader.GetChunk(ChunkType::pace, SAVESTATE_VERSION, "pace");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    paceDoSaveLoad(helper);
+
+    MakeFromSR();
+}
+
+template <typename T>
+void paceDoSaveLoad(T& chunkHelper) {
+    for (size_t i = 0; i < 16; i++) chunkHelper.Do32(regs.regs[i]);
+
+    chunkHelper.Do32(regs.pc).Do16(regs.sr).Do32(statePtr).Do(typename T::BoolPack()
+                                                              << priviledged);
+}
+
+template void paceSave<Savestate<ChunkType>>(Savestate<ChunkType>& savestate);
+template void paceSave<SavestateProbe<ChunkType>>(SavestateProbe<ChunkType>& savestate);
+template void paceLoad<SavestateLoader<ChunkType>>(SavestateLoader<ChunkType>& loader);
