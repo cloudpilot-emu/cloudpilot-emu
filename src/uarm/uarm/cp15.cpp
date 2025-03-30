@@ -328,6 +328,9 @@ struct ArmCP15* cp15Init(struct ArmCpu* cpu, struct ArmMmu* mmu, struct icache* 
     struct ArmCP15* cp15 = (struct ArmCP15*)malloc(sizeof(*cp15));
     struct ArmCoprocessor cp = {
         .regXfer = cp15prvCoprocRegXferFunc,
+        .dataProcessing = nullptr,
+        .memAccess = nullptr,
+        .twoRegF = nullptr,
         .userData = cp15,
     };
 

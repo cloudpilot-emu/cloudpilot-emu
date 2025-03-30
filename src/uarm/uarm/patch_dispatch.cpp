@@ -143,7 +143,7 @@ void patchOnBeforeExecute(struct PatchDispatch* pd, uint32_t* registers) {
 
     if (pd->nPendingTailpatches == 0) return;
 
-    for (size_t i = 0; i < pd->nPendingTailpatches; i++) {
+    for (uint8_t i = 0; i < pd->nPendingTailpatches; i++) {
         const struct PendingTailpatch* pendingTailpatch = &pd->pendingTailpatches[i];
 
         if (pendingTailpatch->returnAddress != registers[15] ||
@@ -246,6 +246,8 @@ void patchDispatchLoad(PatchDispatch* pd, T& loader) {
         pendingTailpatch.returnAddress = serializedTailpatch.returnAddress;
         pendingTailpatch.patch = patch;
     }
+
+    updateSlowPath(pd);
 }
 
 template <typename T>
