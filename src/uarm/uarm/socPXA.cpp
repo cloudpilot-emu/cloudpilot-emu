@@ -771,6 +771,7 @@ enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->de
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
     scheduler->Load(loader);
     cpuLoad(cpu, loader);
+    pxaTimrLoad(tmr, loader);
 
     Chunk *chunk = loader.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION, "socPXA");
     if (!chunk) return;
@@ -785,6 +786,7 @@ template <typename T>
 void SoC::Save(T &savestate) {
     scheduler->Save(savestate);
     cpuSave(cpu, savestate);
+    pxaTimrSave(tmr, savestate);
 
     auto *chunk = savestate.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION);
     if (!chunk) abort();

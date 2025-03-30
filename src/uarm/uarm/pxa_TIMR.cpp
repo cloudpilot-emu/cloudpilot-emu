@@ -9,9 +9,12 @@
 #include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_TIMR_BASE 0x40A00000UL
 #define PXA_TIMR_SIZE 0x00010000UL
+
+#define SAVESTATE_VERSION 0
 
 struct PxaTimr {
     struct SocIc *ic;
@@ -21,6 +24,9 @@ struct PxaTimr {
     uint8_t OIER;      // Interrupt Enable
     uint8_t OWER;      // Watchdog enable
     uint8_t OSSR;      // Status Register
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper);
 };
 
 static void pxaTimrPrvRaiseLowerInts(struct PxaTimr *timr) {
@@ -184,3 +190,33 @@ uint32_t pxaTimrTicksToNextInterrupt(struct PxaTimr *timr) {
 
     return ticksToNextInterrupt;
 }
+
+template <typename T>
+void pxaTimrSave(PxaTimr *timr, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaTimr, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    timr->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaTimrLoad(PxaTimr *timr, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxaTimr, SAVESTATE_VERSION, "pxaTimr");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    timr->DoSaveLoad(helper);
+}
+
+template <typename T>
+void PxaTimr::DoSaveLoad(T &chunkHelper) {
+    chunkHelper.Do32(OSMR[0]).Do32(OSMR[1]).Do32(OSMR[2]).Do32(OSMR[3]).Do32(OSCR).Do(
+        typename T::Pack8() << OIER << OWER << OSSR);
+}
+
+template void pxaTimrSave<Savestate<ChunkType>>(PxaTimr *timr, Savestate<ChunkType> &savestate);
+template void pxaTimrSave<SavestateProbe<ChunkType>>(PxaTimr *timr,
+                                                     SavestateProbe<ChunkType> &savestate);
+template void pxaTimrLoad<SavestateLoader<ChunkType>>(PxaTimr *timr,
+                                                      SavestateLoader<ChunkType> &loader);

@@ -23,6 +23,12 @@ uint32_t pxaTimrTicksToNextInterrupt(struct PxaTimr* timr);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void pxaTimrSave(struct PxaTimr* timr, T& savestate);
+
+template <typename T>
+void pxaTimrLoad(struct PxaTimr* timr, T& loader);
 #endif
 
 #endif
