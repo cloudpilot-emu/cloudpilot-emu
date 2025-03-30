@@ -218,10 +218,8 @@ void Scheduler<T>::UpdateNextUpdate() {
 template <typename T>
 template <typename U>
 void Scheduler<T>::Save(U& savestate) {
-    typename U::chunkT* chunk = savestate.GetChunk(ChunkType::scheduler);
+    auto chunk = savestate.GetChunk(ChunkType::scheduler, SAVESTATE_VERSION);
     if (!chunk) abort();
-
-    chunk->Put32(SAVESTATE_VERSION);
 
     SaveChunkHelper helper(*chunk);
     DoSaveLoad(helper);
@@ -229,16 +227,8 @@ void Scheduler<T>::Save(U& savestate) {
 
 template <typename T>
 void Scheduler<T>::Load(SavestateLoader<ChunkType>& loader) {
-    Chunk* chunk = loader.GetChunk(ChunkType::scheduler);
-    if (!chunk) {
-        logPrintf("failed to restore scheduler: missing savestate\n");
-        return loader.NotifyError();
-    }
-
-    if (chunk->Get32() > SAVESTATE_VERSION) {
-        logPrintf("failed to restore scheduler: unsupported savestate version\n");
-        return loader.NotifyError();
-    }
+    Chunk* chunk = loader.GetChunk(ChunkType::scheduler, SAVESTATE_VERSION, "scheduler");
+    if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper);

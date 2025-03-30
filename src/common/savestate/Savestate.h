@@ -22,6 +22,7 @@ class Savestate {
     bool Save(T& t);
 
     Chunk* GetChunk(ChunkType type);
+    Chunk* GetChunk(ChunkType type, uint32_t version);
 
     void NotifyError();
 
@@ -132,6 +133,19 @@ Chunk* Savestate<ChunkType>::GetChunk(ChunkType type) {
     chunk.Reset();
 
     return &chunk;
+}
+
+template <typename ChunkType>
+Chunk* Savestate<ChunkType>::GetChunk(ChunkType type, uint32_t version) {
+    Chunk* chunk = GetChunk(type);
+    if (!chunk) {
+        NotifyError();
+        return nullptr;
+    }
+
+    chunk->Put32(version);
+
+    return chunk;
 }
 
 template <typename ChunkType>

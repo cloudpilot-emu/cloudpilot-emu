@@ -16,6 +16,7 @@ class SavestateProbe {
     SavestateProbe() = default;
 
     ChunkProbe* GetChunk(ChunkType type);
+    ChunkProbe* GetChunk(ChunkType type, uint32_t version);
 
     const chunkMapT& GetChunkMap() const;
 
@@ -44,6 +45,19 @@ ChunkProbe* SavestateProbe<ChunkType>::GetChunk(ChunkType type) {
     }
 
     return &(chunkMap[type]);
+}
+
+template <typename ChunkType>
+ChunkProbe* SavestateProbe<ChunkType>::GetChunk(ChunkType type, uint32_t version) {
+    ChunkProbe* chunk = GetChunk(type);
+    if (!chunk) {
+        NotifyError();
+        return nullptr;
+    }
+
+    chunk->Put32(version);
+
+    return chunk;
 }
 
 template <typename ChunkType>

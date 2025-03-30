@@ -1,6 +1,7 @@
 #ifndef _SAVESTATE_LOADER_H_
 #define _SAVESTATE_LOADER_H_
 
+#include <cstdint>
 #include <cstring>
 #include <map>
 #include <memory>
@@ -21,6 +22,9 @@ class SavestateLoader {
     bool Load(void* buffer, size_t size, T& target);
 
     Chunk* GetChunk(ChunkType type);
+    Chunk* GetChunk(ChunkType type, uint32_t version, const char* component);
+    Chunk* GetChunk(ChunkType type, uint32_t version, const char* component, uint32_t& gotVersion);
+
     bool HasChunk(ChunkType type);
 
     void NotifyError();
@@ -131,6 +135,35 @@ Chunk* SavestateLoader<ChunkType>::GetChunk(ChunkType type) {
     chunk.Reset();
 
     return &chunk;
+}
+
+template <typename ChunkType>
+Chunk* SavestateLoader<ChunkType>::GetChunk(ChunkType type, uint32_t version,
+                                            const char* component) {
+    uint32_t gotVersion;
+    return GetChunk(type, version, component, gotVersion);
+}
+
+template <typename ChunkType>
+Chunk* SavestateLoader<ChunkType>::GetChunk(ChunkType type, uint32_t version, const char* component,
+                                            uint32_t& gotVersion) {
+    Chunk* chunk = GetChunk(type);
+    if (!chunk) {
+        logPrintf("failed to restore %s: missing savestate\n", component);
+        NotifyError();
+
+        return nullptr;
+    }
+
+    gotVersion = chunk->Get32();
+    if (gotVersion > version) {
+        logPrintf("failed to restore %s: unsupported savestate version %u\n", component, version);
+        NotifyError();
+
+        return nullptr;
+    }
+
+    return chunk;
 }
 
 template <typename ChunkType>

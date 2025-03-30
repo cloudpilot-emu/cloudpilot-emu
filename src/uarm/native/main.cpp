@@ -12,6 +12,7 @@
 #include "Cli.h"
 #include "Commands.h"
 #include "FileUtil.h"
+#include "Logging.h"
 #include "MainLoop.h"
 #include "Rotation.h"
 #include "SdlAudioDriver.h"
@@ -347,6 +348,8 @@ int main(int argc, const char** argv) {
                        .mips = program.get<unsigned int>("--mips"),
                        .disableAudio = program.get<bool>("--no-sound"),
                        .script = program.present("--script")};
+
+    logEnable();
 
     if (!run(options)) exit(1);
 }

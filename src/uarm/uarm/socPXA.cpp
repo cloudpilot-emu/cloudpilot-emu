@@ -774,16 +774,8 @@ enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->de
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
     scheduler->Load(loader);
 
-    Chunk *chunk = loader.GetChunk(ChunkType::pxaSoc);
-    if (!chunk) {
-        logPrintf("failed to restore socPXA: missing savestate\n");
-        return loader.NotifyError();
-    }
-
-    if (chunk->Get32() > SAVESTATE_VERSION) {
-        logPrintf("failed to restore socPXA: unsupported savestate version\n");
-        return loader.NotifyError();
-    }
+    Chunk *chunk = loader.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION, "socPXA");
+    if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
     DoSaveLoad(helper);
@@ -795,10 +787,8 @@ template <typename T>
 void SoC::Save(T &savestate) {
     scheduler->Save(savestate);
 
-    typename T::chunkT *chunk = savestate.GetChunk(ChunkType::pxaSoc);
+    auto *chunk = savestate.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION);
     if (!chunk) abort();
-
-    chunk->Put32(SAVESTATE_VERSION);
 
     SaveChunkHelper helper(*chunk);
     DoSaveLoad(helper);
