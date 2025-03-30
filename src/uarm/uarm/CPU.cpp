@@ -3656,6 +3656,7 @@ void ArmCpu::DoSaveLoad(U &chunkHelper) {
         .Do32(curInstrPC)
         .Do(typename U::Pack16() << waitingIrqs << waitingFiqs)
         .Do16(CPAR)
+        .Do32(vectorBase)
         .Do32(pid)
         .Do(typename U::BoolPack() << privileged << modePace << sleeping << Q << T << I << F);
 
