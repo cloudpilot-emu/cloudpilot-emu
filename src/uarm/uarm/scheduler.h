@@ -4,9 +4,7 @@
 #include <cstdint>
 
 #include "Logging.h"
-#include "savestate/ChunkHelper.h"
-#include "savestate/ChunkTypeUarm.h"
-#include "savestate/SavestateLoader.h"
+#include "savestate/savestateAll.h"
 
 #define SCHEDULER_TASK_TIMER 0
 #define SCHEDULER_TASK_RTC 1

@@ -116,6 +116,12 @@ void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void cpuSave(struct ArmCpu *cpu, T &savestate);
+
+template <typename T>
+void cpuLoad(struct ArmCpu *cpu, T &loader);
 #endif
 
 #endif

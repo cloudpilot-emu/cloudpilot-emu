@@ -4,11 +4,7 @@
 
 #include "mem.h"
 #include "memcpy.h"
-#include "savestate/ChunkHelper.h"
-#include "savestate/ChunkTypeUarm.h"
-#include "savestate/Savestate.h"
-#include "savestate/SavestateLoader.h"
-#include "savestate/SavestateProbe.h"
+#include "savestate/savestateAll.h"
 #include "uae/UAE.h"
 #include "uarm_endian.h"
 
@@ -444,6 +440,8 @@ template <typename T>
 void paceSave(T& savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pace, SAVESTATE_VERSION);
     if (!chunk) abort();
+
+    MakeSR();
 
     SaveChunkHelper helper(*chunk);
     paceDoSaveLoad(helper);

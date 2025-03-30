@@ -17,6 +17,7 @@
 #include "pace.h"
 #include "patch_dispatch.h"
 #include "peephole.h"
+#include "savestate/savestateAll.h"
 
 #pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
 
@@ -65,6 +66,8 @@
 
 #define EXEC_FN_PREFIX_VALUE 0x53ae0000
 
+#define SAVESTATE_VERSION 0
+
 #ifdef __EMSCRIPTEN__
     #define PREFIX_EXEC_FN(...) (ExecFn((uint32_t)__VA_ARGS__ + EXEC_FN_PREFIX_VALUE))
     #define ATTR_EMCC_NOINLINE __attribute__((noinline))
@@ -90,6 +93,11 @@ typedef void (*ExecFn)(struct ArmCpu *cpu, uint32_t instr);
 struct ArmBankedRegs {
     uint32_t R13, R14;
     uint32_t SPSR;  // usr mode doesn't have an SPSR
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do32(R13).Do32(R14).Do32(SPSR);
+    }
 };
 
 struct ArmCpu {
@@ -138,6 +146,9 @@ struct ArmCpu {
     struct PatchDispatch *patchDispatch;
 
     uint32_t slowPath;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper);
 };
 
 enum ImmShiftType {
@@ -3608,3 +3619,54 @@ uint32_t cpuGetPid(struct ArmCpu *cpu) { return cpu->pid; }
 void cpuSetSlowPath(struct ArmCpu *cpu, uint32_t reason) { cpu->slowPath |= reason; }
 
 void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason) { cpu->slowPath &= ~reason; }
+
+template <typename T>
+void cpuSave(ArmCpu *cpu, T &savestate) {
+    paceSave(savestate);
+
+    auto chunk = savestate.GetChunk(ChunkType::cpu, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    cpu->DoSaveLoad(helper);
+}
+
+template <typename T>
+void cpuLoad(ArmCpu *cpu, T &loader) {
+    paceLoad(loader);
+
+    auto chunk = loader.GetChunk(ChunkType::cpu, SAVESTATE_VERSION, "cpu");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    cpu->DoSaveLoad(helper);
+
+    cpu->waitingEventsTotal = cpu->waitingFiqs + cpu->waitingIrqs;
+    cpuUpdateSlowPath(cpu);
+}
+
+template <typename U>
+void ArmCpu::DoSaveLoad(U &chunkHelper) {
+    for (uint8_t i = 0; i < 16; i++) chunkHelper.Do32(regs[i]);
+    for (uint8_t i = 0; i < 5; i++) chunkHelper.Do32(extra_regs[i]);
+
+    chunkHelper.Do32(SPSR)
+        .Do32(flags)
+        .Do8(M)
+        .Do32(curInstrPC)
+        .Do(typename U::Pack16() << waitingIrqs << waitingFiqs)
+        .Do16(CPAR)
+        .Do32(pid)
+        .Do(typename U::BoolPack() << privileged << modePace << sleeping << Q << T << I << F);
+
+    bank_usr.DoSaveLoad(chunkHelper);
+    bank_svc.DoSaveLoad(chunkHelper);
+    bank_abt.DoSaveLoad(chunkHelper);
+    bank_und.DoSaveLoad(chunkHelper);
+    bank_irq.DoSaveLoad(chunkHelper);
+    bank_fiq.DoSaveLoad(chunkHelper);
+}
+
+template void cpuSave<Savestate<ChunkType>>(ArmCpu *cpu, Savestate<ChunkType> &savestate);
+template void cpuSave<SavestateProbe<ChunkType>>(ArmCpu *cpu, SavestateProbe<ChunkType> &savestate);
+template void cpuLoad<SavestateLoader<ChunkType>>(ArmCpu *cpu, SavestateLoader<ChunkType> &loader);
