@@ -11,7 +11,9 @@ enum class ChunkType : uint32_t {
 
     scheduler = 0x10000,
     cpu = 0x10010,
-    pace = 0x10020
+    pace = 0x10020,
+    mmu = 0x10030,
+    cp15 = 0x10040
 };
 
 #endif  // _CHUNK_TYPE_H_

@@ -7,9 +7,12 @@
 
 #include "cputil.h"
 #include "mem.h"
+#include "savestate/savestateAll.h"
 
 #define TRANSLATE_RESULT_FAULT(fsr) ((1ull << 63) | ((uint64_t)(fsr) << 32))
 #define TLB_SIZE (1 << 20)
+
+#define SAVESTATE_VERSION 0
 
 struct TlbEntry {
     uint32_t pa;
@@ -24,13 +27,16 @@ struct TlbEntry {
 struct ArmMmu {
     struct ArmMem *mem;
     uint32_t transTablPA;
-    uint8_t S : 1;
-    uint8_t R : 1;
-    uint8_t xscale : 1;
+    uint8_t S;
+    uint8_t R;
+    uint8_t xscale;
     uint32_t domainCfg;
 
     struct TlbEntry tlb[TLB_SIZE];
     uint16_t revision;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper);
 };
 
 void mmuTlbFlush(struct ArmMmu *mmu) {
@@ -405,3 +411,30 @@ void __attribute__((used)) mmuDump(struct ArmMmu *mmu) {
     }
     mmuPrvDumpUpdate(0, 0, 0, 0, 0, false, false, false);  // finish things off
 }
+
+template <typename T>
+void mmuSave(struct ArmMmu *mmu, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::mmu, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    mmu->DoSaveLoad(helper);
+}
+
+template <typename T>
+void mmuLoad(struct ArmMmu *mmu, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::mmu, SAVESTATE_VERSION, "mmu");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    mmu->DoSaveLoad(helper);
+}
+
+template <typename T>
+void ArmMmu::DoSaveLoad(T &chunkHelper) {
+    chunkHelper.Do32(transTablPA).Do32(domainCfg).Do(typename T::Pack8() << S << R);
+}
+
+template void mmuSave<Savestate<ChunkType>>(ArmMmu *mmu, Savestate<ChunkType> &savestate);
+template void mmuSave<SavestateProbe<ChunkType>>(ArmMmu *mmu, SavestateProbe<ChunkType> &savestate);
+template void mmuLoad<SavestateLoader<ChunkType>>(ArmMmu *mmu, SavestateLoader<ChunkType> &loader);

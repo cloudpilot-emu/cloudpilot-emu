@@ -23,6 +23,12 @@ void cp15Cycle(struct ArmCP15* cp15);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void cp15Save(struct ArmCP15* cp15, T& savestate);
+
+template <typename T>
+void cp15Load(struct ArmCP15* cp15, T& loader);
 #endif
 
 #endif

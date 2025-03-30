@@ -49,6 +49,12 @@ void mmuDump(struct ArmMmu *mmu);  // for calling in GDB :)
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void mmuSave(struct ArmMmu *mmu, T &savestate);
+
+template <typename T>
+void mmuLoad(struct ArmMmu *mmu, T &loader);
 #endif
 
 #endif

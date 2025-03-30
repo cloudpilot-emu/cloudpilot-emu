@@ -6,6 +6,9 @@
 #include <string.h>
 
 #include "cputil.h"
+#include "savestate/savestateAll.h"
+
+#define SAVESTATE_VERSION 0
 
 struct ArmCP15 {
     struct ArmCpu* cpu;
@@ -33,6 +36,9 @@ struct ArmCP15 {
     uint32_t cacheId;
 
     bool xscale, omap;
+
+    template <typename T>
+    void DoSaveLoad(T& chunkHelper);
 };
 
 void cp15Cycle(struct ArmCP15* cp15)  // mmu on/off lags by a cycle
@@ -349,3 +355,34 @@ void cp15SetFaultStatus(struct ArmCP15* cp15, uint32_t addr, uint_fast8_t faultS
     cp15->FAR = addr;
     cp15->FSR = faultStatus;
 }
+
+template <typename T>
+void cp15Save(struct ArmCP15* cp15, T& savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::cp15, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    cp15->DoSaveLoad(helper);
+}
+
+template <typename T>
+void cp15Load(struct ArmCP15* cp15, T& loader) {
+    auto chunk = loader.GetChunk(ChunkType::cp15, SAVESTATE_VERSION, "cp15");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    cp15->DoSaveLoad(helper);
+
+    if (cp15->mmuSwitchCy > 0) cpuSetSlowPath(cp15->cpu, SLOW_PATH_REASON_CP15);
+}
+
+template <typename T>
+void ArmCP15::DoSaveLoad(T& chunkHelper) {
+    chunkHelper.Do32(control).Do32(ttb).Do32(FSR).Do32(FAR).Do32(CPAR).Do32(ACP).Do32(mmuSwitchCy);
+}
+
+template void cp15Save<Savestate<ChunkType>>(ArmCP15* cp15, Savestate<ChunkType>& savestate);
+template void cp15Save<SavestateProbe<ChunkType>>(ArmCP15* cp15,
+                                                  SavestateProbe<ChunkType>& savestate);
+template void cp15Load<SavestateLoader<ChunkType>>(ArmCP15* cp15,
+                                                   SavestateLoader<ChunkType>& loader);

@@ -3623,6 +3623,8 @@ void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason) { cpu->slowPath &= ~r
 template <typename T>
 void cpuSave(ArmCpu *cpu, T &savestate) {
     paceSave(savestate);
+    mmuSave(cpu->mmu, savestate);
+    cp15Save(cpu->cp15, savestate);
 
     auto chunk = savestate.GetChunk(ChunkType::cpu, SAVESTATE_VERSION);
     if (!chunk) abort();
@@ -3634,6 +3636,8 @@ void cpuSave(ArmCpu *cpu, T &savestate) {
 template <typename T>
 void cpuLoad(ArmCpu *cpu, T &loader) {
     paceLoad(loader);
+    mmuLoad(cpu->mmu, loader);
+    cp15Load(cpu->cp15, loader);
 
     auto chunk = loader.GetChunk(ChunkType::cpu, SAVESTATE_VERSION, "cpu");
     if (!chunk) return;

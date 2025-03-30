@@ -46,8 +46,6 @@ SOURCE_C = 								\
 	uarm/patches.c						\
 	uarm/syscall.c						\
 	uarm/syscall_dispatch.c				\
-	uarm/MMU.c 							\
-	uarm/cp15.c 						\
 	uarm/mem.c 							\
 	uarm/ram_buffer.c					\
 	uarm/RAM.c 							\
@@ -94,6 +92,8 @@ SOURCE_CXX =		 					\
 	uarm/icache.cpp						\
 	uarm/CPU.cpp						\
 	uarm/pace.cpp 						\
+	uarm/MMU.cpp						\
+	uarm/cp15.cpp 						\
 	uarm/memcpy.cpp						\
 	uarm/audio_queue.cpp				\
 	uarm/rom_info.cpp					\
