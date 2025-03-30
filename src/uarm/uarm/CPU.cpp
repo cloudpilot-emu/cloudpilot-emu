@@ -3625,6 +3625,7 @@ void cpuSave(ArmCpu *cpu, T &savestate) {
     paceSave(savestate);
     mmuSave(cpu->mmu, savestate);
     cp15Save(cpu->cp15, savestate);
+    patchDispatchSave(cpu->patchDispatch, savestate);
 
     auto chunk = savestate.GetChunk(ChunkType::cpu, SAVESTATE_VERSION);
     if (!chunk) abort();
@@ -3638,6 +3639,7 @@ void cpuLoad(ArmCpu *cpu, T &loader) {
     paceLoad(loader);
     mmuLoad(cpu->mmu, loader);
     cp15Load(cpu->cp15, loader);
+    patchDispatchLoad(cpu->patchDispatch, loader);
 
     auto chunk = loader.GetChunk(ChunkType::cpu, SAVESTATE_VERSION, "cpu");
     if (!chunk) return;

@@ -30,6 +30,12 @@ void patchDispatchSetCpu(struct PatchDispatch* pd, struct ArmCpu* cpu);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void patchDispatchSave(struct PatchDispatch* pd, T& savestate);
+
+template <typename T>
+void patchDispatchLoad(struct PatchDispatch* pd, T& savestate);
 #endif
 
 #endif  // _PATCH_DISPATCH_H_

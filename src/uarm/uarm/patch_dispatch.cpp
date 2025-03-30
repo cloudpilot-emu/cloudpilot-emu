@@ -5,12 +5,16 @@
 #include <string.h>
 
 #include "CPU.h"
+#include "Logging.h"
 #include "cputil.h"
+#include "savestate/savestateAll.h"
 #include "syscall.h"
 
-#define MAX_PENDING_TAILPATCH 32
+#define MAX_PENDING_TAILPATCH 4
 #define MAX_PATCHES 50
 #define PATCH_TABLE_SIZE 0xc00  // 3 * 0x400
+
+#define SAVESTATE_VERSION 0
 
 struct Patch {
     uint32_t syscall;
@@ -27,6 +31,20 @@ struct PendingTailpatch {
     const struct Patch* patch;
 };
 
+struct SerializedTailpatch {
+    uint32_t registersAtInvocation[16];
+    uint32_t returnAddress;
+
+    uint32_t syscall;
+
+    template <typename T>
+    void DoSaveLoad(T& chunkHelper) {
+        for (uint8_t i = 0; i < 16; i++) chunkHelper.Do32(registersAtInvocation[i]);
+
+        chunkHelper.Do32(returnAddress).Do32(syscall);
+    }
+};
+
 struct PatchDispatch {
     int8_t table;
     uint8_t countdown;
@@ -34,16 +52,20 @@ struct PatchDispatch {
     uint8_t patchTable[PATCH_TABLE_SIZE];
 
     struct Patch patches[MAX_PATCHES];
-    size_t nPatches;
+    uint8_t nPatches;
 
     struct PendingTailpatch pendingTailpatches[MAX_PENDING_TAILPATCH];
-    size_t nPendingTailpatches;
+    struct SerializedTailpatch serializedTailpatches[MAX_PENDING_TAILPATCH];
+    uint8_t nPendingTailpatches;
 
     struct ArmCpu* cpu;
+
+    template <typename T>
+    void DoSaveLoad(T& chunkHelper);
 };
 
 struct PatchDispatch* initPatchDispatch() {
-    struct PatchDispatch* pd = malloc(sizeof(*pd));
+    struct PatchDispatch* pd = (struct PatchDispatch*)malloc(sizeof(*pd));
 
     memset(pd, 0, sizeof(*pd));
     memset(pd->patchTable, 0xff, 0xc00);
@@ -165,3 +187,78 @@ void patchDispatchAddPatch(struct PatchDispatch* pd, uint32_t syscall, Headpatch
 }
 
 void patchDispatchSetCpu(struct PatchDispatch* pd, struct ArmCpu* cpu) { pd->cpu = cpu; }
+
+template <typename T>
+void patchDispatchSave(PatchDispatch* pd, T& savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::patchDispatch, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    for (uint8_t i = 0; i < pd->nPendingTailpatches; i++) {
+        SerializedTailpatch& serializedTailpatch(pd->serializedTailpatches[i]);
+        PendingTailpatch& pendingTailpatch(pd->pendingTailpatches[i]);
+
+        memcpy(&serializedTailpatch.registersAtInvocation[0],
+               &pendingTailpatch.registersAtInvocation[0],
+               sizeof(serializedTailpatch.registersAtInvocation));
+
+        serializedTailpatch.returnAddress = pendingTailpatch.returnAddress;
+        serializedTailpatch.syscall = pendingTailpatch.patch->syscall;
+    }
+
+    SaveChunkHelper helper(*chunk);
+    pd->DoSaveLoad(helper);
+}
+
+template <typename T>
+void patchDispatchLoad(PatchDispatch* pd, T& loader) {
+    auto chunk = loader.GetChunk(ChunkType::patchDispatch, SAVESTATE_VERSION, "patchDispatch");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    pd->DoSaveLoad(helper);
+
+    const uint8_t loadedTalpatchesCount = pd->nPendingTailpatches;
+    pd->nPendingTailpatches = 0;
+
+    for (uint8_t i = 0; i < loadedTalpatchesCount; i++) {
+        SerializedTailpatch& serializedTailpatch(pd->serializedTailpatches[i]);
+        Patch* patch = nullptr;
+
+        for (uint8_t j = 0; j < pd->nPatches; j++) {
+            if (pd->patches[j].syscall != serializedTailpatch.syscall) continue;
+
+            patch = &pd->patches[j];
+            break;
+        }
+
+        if (!patch) {
+            logPrintf("skipping tailpatch for unpatched syscall 0x%08x\n",
+                      serializedTailpatch.syscall);
+            continue;
+        }
+
+        PendingTailpatch& pendingTailpatch(pd->pendingTailpatches[pd->nPendingTailpatches++]);
+
+        memcpy(&pendingTailpatch.registersAtInvocation[0],
+               &serializedTailpatch.registersAtInvocation[0],
+               sizeof(pendingTailpatch.registersAtInvocation));
+
+        pendingTailpatch.returnAddress = serializedTailpatch.returnAddress;
+        pendingTailpatch.patch = patch;
+    }
+}
+
+template <typename T>
+void PatchDispatch::DoSaveLoad(T& chunkHelper) {
+    for (uint8_t i = 0; i < MAX_PENDING_TAILPATCH; i++)
+        serializedTailpatches[i].DoSaveLoad(chunkHelper);
+
+    chunkHelper.Do(typename T::Pack8() << table << countdown << nPendingTailpatches);
+}
+
+template void patchDispatchSave<Savestate<ChunkType>>(PatchDispatch* pd,
+                                                      Savestate<ChunkType>& savestate);
+template void patchDispatchSave<SavestateProbe<ChunkType>>(PatchDispatch* pd,
+                                                           SavestateProbe<ChunkType>& savestate);
+template void patchDispatchLoad<SavestateLoader<ChunkType>>(PatchDispatch* pd,
+                                                            SavestateLoader<ChunkType>& loader);

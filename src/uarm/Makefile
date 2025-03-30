@@ -42,7 +42,6 @@ YARN = yarn
 SOURCE_C = 								\
 	cputil.c							\
 	uarm/sdcard.c 						\
-	uarm/patch_dispatch.c				\
 	uarm/patches.c						\
 	uarm/syscall.c						\
 	uarm/syscall_dispatch.c				\
@@ -89,6 +88,7 @@ SOURCE_C = 								\
 SOURCE_CXX =		 					\
 	uarm/socPXA.cpp						\
 	MainLoop.cpp						\
+	uarm/patch_dispatch.cpp				\
 	uarm/icache.cpp						\
 	uarm/CPU.cpp						\
 	uarm/pace.cpp 						\
