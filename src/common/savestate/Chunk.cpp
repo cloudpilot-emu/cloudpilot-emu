@@ -95,7 +95,12 @@ uint32_t Chunk::Get32() {
     return value;
 }
 
-uint64_t Chunk::Get64() { return Get32() | (static_cast<uint64_t>(Get32()) << 32); }
+uint64_t Chunk::Get64() {
+    uint64_t val = Get32();
+    val |= (static_cast<uint64_t>(Get32()) << 32);
+
+    return val;
+}
 
 bool Chunk::GetBool() { return Get32(); }
 
