@@ -795,5 +795,5 @@ void SoC::Save(T &savestate) {
 
 template <typename T>
 void SoC::DoSaveLoad(T &chunkHelper) {
-    chunkHelper.Do(typename T::BoolPack() << sleeping);
+    chunkHelper.DoBool(sleeping);
 }
