@@ -18,7 +18,7 @@ class SaveChunkHelper {
         BoolPack() = default;
 
         friend BoolPack operator<<(BoolPack pack, bool value) {
-            if (pack.size++ > 0) pack.value <<= 1;
+            pack.value <<= 1;
             pack.value = (pack.value & ~0x01) | static_cast<uint32_t>(value);
 
             return pack;
@@ -36,7 +36,7 @@ class SaveChunkHelper {
         Pack8() = default;
 
         friend Pack8 operator<<(Pack8 pack, uint8_t value) {
-            if (pack.size++ > 0) pack.value <<= 8;
+            pack.value <<= 8;
             pack.value = (pack.value & ~0xff) | value;
 
             return pack;
