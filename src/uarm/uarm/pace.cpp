@@ -92,8 +92,6 @@ static uint32_t uae_get32_split(uint32_t addr) {
     }
 }
 
-extern "C" {
-
 uint8_t uae_get8(uint32_t addr) { return pace_get_le(addr, 1); }
 
 uint16_t uae_get16(uint32_t addr) {
@@ -119,7 +117,6 @@ uint32_t uae_get32(uint32_t addr) {
         default:
             return htobe32(pace_get_le(addr, 4));
     }
-}
 }
 
 static void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
