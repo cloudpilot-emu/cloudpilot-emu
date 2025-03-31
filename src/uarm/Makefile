@@ -58,7 +58,6 @@ SOURCE_C = 								\
 	uarm/pxa_PwrClk.c 					\
 	uarm/pxa_I2S.c 						\
 	uarm/pxa_GPIO.c 					\
-	uarm/pxa_DMA.c 						\
 	uarm/pxa_PWM.c 						\
 	uarm/pxa_AC97.c 					\
 	uarm/pxa_MemCtrl.c 					\
@@ -93,6 +92,7 @@ SOURCE_CXX =		 					\
 	uarm/pxa_TIMR.cpp 					\
 	uarm/pxa_IC.cpp						\
 	uarm/pxa_LCD.cpp					\
+	uarm/pxa_DMA.cpp					\
 	uarm/cp15.cpp 						\
 	uarm/memcpy.cpp						\
 	uarm/audio_queue.cpp				\

@@ -769,6 +769,7 @@ struct Buffer socGetSavestate(struct SoC *soc) {
 enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->dev); }
 
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
+    pxaDmaLoad(dma, loader);
     pxaIcLoad(ic, loader);
     pxaTimrLoad(tmr, loader);
     pxaLcdLoad(lcd, loader);
@@ -786,6 +787,7 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
 
 template <typename T>
 void SoC::Save(T &savestate) {
+    pxaDmaSave(dma, savestate);
     pxaIcSave(ic, savestate);
     pxaTimrSave(tmr, savestate);
     pxaLcdSave(lcd, savestate);

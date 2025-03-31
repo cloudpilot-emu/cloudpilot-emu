@@ -106,6 +106,12 @@ extern "C" {
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void pxaDmaSave(struct SocDma* dma, T& savestate);
+
+template <typename T>
+void pxaDmaLoad(struct SocDma* dma, T& loader);
 #endif
 
 #endif

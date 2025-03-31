@@ -8,6 +8,7 @@
 #include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_DMA_BASE 0x40000000UL
 #define PXA_DMA_SIZE 0x00002000UL
@@ -18,6 +19,8 @@
 #define REG_CR 3   // command
 #define REG_CSR 4  // status
 
+#define SAVESTATE_VERSION 0
+
 struct PxaDmaChannel {
     uint32_t DAR;  // descriptor address register
     uint32_t SAR;  // source address register
@@ -25,9 +28,15 @@ struct PxaDmaChannel {
     uint32_t CR;   // command register
     uint32_t CSR;  // control and status register
 
-    uint8_t dsAddrWriten : 1;
-    uint8_t dtAddrWriten : 1;
-    uint8_t dcmdAddrWritten : 1;
+    bool dsAddrWriten;
+    bool dtAddrWriten;
+    bool dcmdAddrWritten;
+
+    template <typename T>
+    void DoSaveLoad(T& chunkHelper) {
+        chunkHelper.Do32(DAR).Do32(SAR).Do32(TAR).Do32(CR).Do32(CSR).Do(
+            typename T::BoolPack() << dsAddrWriten << dtAddrWriten << dcmdAddrWritten);
+    }
 };
 
 struct SocDma {
@@ -39,6 +48,13 @@ struct SocDma {
     uint32_t DINT;
     struct PxaDmaChannel channels[32];
     uint8_t CMR[75];  // channel map registers	[  we store lower 8 bits only :-)  ]
+
+    template <typename T>
+    void DoSaveLoad(T& chunkHelper) {
+        chunkHelper.Do32(dalgn).Do32(dpcsr).Do32(DINT).DoBuffer(&CMR[0], sizeof(CMR));
+
+        for (uint8_t i = 0; i < 32; i++) channels[i].DoSaveLoad(chunkHelper);
+    }
 };
 
 static void socDmaPrvChannelIrqRecalc(struct SocDma* dma, uint_fast8_t channel) {
@@ -68,9 +84,9 @@ static void socDmaPrvChannelIrqRecalc(struct SocDma* dma, uint_fast8_t channel) 
 }
 
 static void socDmaPrvChannelStop(struct SocDma* dma, struct PxaDmaChannel* ch) {
-    ch->dsAddrWriten = 0;
-    ch->dtAddrWriten = 0;
-    ch->dcmdAddrWritten = 0;
+    ch->dsAddrWriten = false;
+    ch->dtAddrWriten = false;
+    ch->dcmdAddrWritten = false;
     ch->CSR &= ~0x80000000ul;
     ch->CSR |= 0x08;
 }
@@ -273,15 +289,15 @@ static bool socDmaPrvChannelRegWrite(struct SocDma* dma, uint_fast8_t channel, u
         if (val && !(ch->CSR & 0x40000000ul)) maybeStart = true;
     } else if (reg == REG_SAR) {
         if (ch->CSR & 0x40000000ul) checkForStart = true;
-        ch->dsAddrWriten = 1;
+        ch->dsAddrWriten = true;
         ch->SAR = val & ~0x03;
     } else if (reg == REG_TAR) {
         if (ch->CSR & 0x40000000ul) checkForStart = true;
-        ch->dtAddrWriten = 1;
+        ch->dtAddrWriten = true;
         ch->TAR = val & ~0x03;
     } else if (reg == REG_CR) {
         if (ch->CSR & 0x40000000ul) checkForStart = true;
-        ch->dcmdAddrWritten = 1;
+        ch->dcmdAddrWritten = true;
         ch->CR = val;
     } else {  // CSR
 
@@ -513,3 +529,27 @@ bool socDmaTaskRequired(struct SocDma* dma) {
 
     return false;
 }
+
+template <typename T>
+void pxaDmaSave(SocDma* dma, T& savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaDma, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    dma->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaDmaLoad(SocDma* dma, T& loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxaDma, SAVESTATE_VERSION, "pxaDma");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    dma->DoSaveLoad(helper);
+}
+
+template void pxaDmaSave<Savestate<ChunkType>>(SocDma* dma, Savestate<ChunkType>& savestate);
+template void pxaDmaSave<SavestateProbe<ChunkType>>(SocDma* dma,
+                                                    SavestateProbe<ChunkType>& savestate);
+template void pxaDmaLoad<SavestateLoader<ChunkType>>(SocDma* dma,
+                                                     SavestateLoader<ChunkType>& loader);
