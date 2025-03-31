@@ -31,15 +31,11 @@ struct SocIc {
 
     template <typename T>
     void DoSaveLoad(T &chunkHelper) {
-        chunkHelper.Do32(ICMR[0])
-            .Do32(ICMR[1])
-            .Do32(ICLR[0])
-            .Do32(ICLR[1])
-            .Do32(ICPR[0])
-            .Do32(ICPR[1])
-            .Do32(ICCR)
+        chunkHelper.Do32(ICCR)
             .DoBuffer(&prio[0], sizeof(prio))
             .Do(typename T::BoolPack() << wasIrq << wasFiq);
+
+        for (uint8_t i = 0; i < 2; i++) chunkHelper.Do32(ICMR[i]).Do32(ICLR[i]).Do32(ICPR[i]);
     }
 };
 

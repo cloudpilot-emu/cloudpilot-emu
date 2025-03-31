@@ -771,6 +771,7 @@ enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->de
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaIcLoad(ic, loader);
     pxaTimrLoad(tmr, loader);
+    pxaLcdLoad(lcd, loader);
     cpuLoad(cpu, loader);
     scheduler->Load(loader);
 
@@ -787,6 +788,7 @@ template <typename T>
 void SoC::Save(T &savestate) {
     pxaIcSave(ic, savestate);
     pxaTimrSave(tmr, savestate);
+    pxaLcdSave(lcd, savestate);
     cpuSave(cpu, savestate);
     scheduler->Save(savestate);
 

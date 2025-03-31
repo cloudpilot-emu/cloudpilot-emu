@@ -10,6 +10,7 @@
 #include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_LCD_BASE 0x44000000UL
 #define PXA_LCD_SIZE 0x00001000UL
@@ -19,6 +20,8 @@
 #define LCD_STATE_DMA_0_END 2
 
 #define UNMASKABLE_INTS 0x7C8E
+
+#define SAVESTATE_VERSION 0
 
 struct PxaLcd {
     struct SocIc *ic;
@@ -33,9 +36,9 @@ struct PxaLcd {
     // for our use
     uint16_t intMask;
 
-    uint8_t state : 6;
-    uint8_t intWasPending : 1;
-    uint8_t enbChanged : 1;
+    uint8_t state;
+    uint8_t intWasPending;
+    uint8_t enbChanged;
 
     uint8_t palette[512] __attribute__((aligned(2)));
     uint32_t palette_mapped[512];
@@ -56,6 +59,30 @@ struct PxaLcd {
     uint8_t framebufferBpp;
     bool framebufferDirty;
     bool framebufferTrackingActive;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do32(lccr0)
+            .Do32(lccr1)
+            .Do32(lccr2)
+            .Do32(lccr3)
+            .Do32(lccr4)
+            .Do32(lccr5)
+            .Do32(liicr)
+            .Do32(trgbr)
+            .Do32(tcr)
+            .Do(typename T::Pack16() << lcsr << intMask)
+            .Do(typename T::Pack8() << state << intWasPending << enbChanged << framebufferBpp)
+            .DoBuffer(&palette[0], sizeof(palette))
+            .Do32(i_pixel)
+            .Do32(framebufferBase)
+            .Do32(framebufferSize)
+            .DoBool(framebufferTrackingActive);
+
+        // Only PXA255 for now.
+        for (uint8_t i = 0; i < 2; i++)
+            chunkHelper.Do32(fbr[i]).Do32(fdadr[i]).Do32(fsadr[i]).Do32(fidr[i]).Do32(ldcmd[i]);
+    }
 };
 
 static uint32_t unpack_rgb16(uint16_t rgb16) {
@@ -526,3 +553,36 @@ struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc 
 
     return lcd;
 }
+
+template <typename T>
+void pxaLcdSave(struct PxaLcd *lcd, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaLcd, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    lcd->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaLcdLoad(struct PxaLcd *lcd, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxaLcd, SAVESTATE_VERSION, "pxaLcd");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    lcd->DoSaveLoad(helper);
+
+    pxaLcdUpdatePalette(lcd, 256);
+
+    if (lcd->framebufferTrackingActive) {
+        lcd->framebufferTrackingActive =
+            socSetFramebuffer(lcd->soc, lcd->framebufferBase, lcd->framebufferSize);
+    } else {
+        socSetFramebuffer(lcd->soc, 0, 0);
+    }
+}
+
+template void pxaLcdSave<Savestate<ChunkType>>(PxaLcd *lcd, Savestate<ChunkType> &savestate);
+template void pxaLcdSave<SavestateProbe<ChunkType>>(PxaLcd *lcd,
+                                                    SavestateProbe<ChunkType> &savestate);
+template void pxaLcdLoad<SavestateLoader<ChunkType>>(PxaLcd *lcd,
+                                                     SavestateLoader<ChunkType> &loader);

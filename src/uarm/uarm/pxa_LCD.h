@@ -26,6 +26,12 @@ void pxaLcdSetFramebufferDirty(struct PxaLcd *lcd);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void pxaLcdSave(struct PxaLcd *lcd, T &savestate);
+
+template <typename T>
+void pxaLcdLoad(struct PxaLcd *lcd, T &loader);
 #endif
 
 #endif
