@@ -49,6 +49,12 @@ extern "C" {
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void pxaIcSave(struct SocIc* ic, T& savestate);
+
+template <typename T>
+void pxaIcLoad(struct SocIc* ic, T& loader);
 #endif
 
 #endif

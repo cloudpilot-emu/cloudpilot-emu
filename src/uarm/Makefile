@@ -52,7 +52,6 @@ SOURCE_C = 								\
 	uarm/gdbstub.c						\
 	uarm/vSD.c 							\
 	uarm/keys.c 						\
-	uarm/pxa_IC.c 						\
 	uarm/pxa_MMC.c 						\
 	uarm/pxa_RTC.c 						\
 	uarm/pxa_UART.c 					\
@@ -93,6 +92,7 @@ SOURCE_CXX =		 					\
 	uarm/pace.cpp 						\
 	uarm/MMU.cpp						\
 	uarm/pxa_TIMR.cpp 					\
+	uarm/pxa_IC.cpp						\
 	uarm/cp15.cpp 						\
 	uarm/memcpy.cpp						\
 	uarm/audio_queue.cpp				\

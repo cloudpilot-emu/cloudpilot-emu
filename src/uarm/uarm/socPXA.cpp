@@ -769,9 +769,10 @@ struct Buffer socGetSavestate(struct SoC *soc) {
 enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->dev); }
 
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
-    scheduler->Load(loader);
-    cpuLoad(cpu, loader);
+    pxaIcLoad(ic, loader);
     pxaTimrLoad(tmr, loader);
+    cpuLoad(cpu, loader);
+    scheduler->Load(loader);
 
     Chunk *chunk = loader.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION, "socPXA");
     if (!chunk) return;
@@ -784,9 +785,10 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
 
 template <typename T>
 void SoC::Save(T &savestate) {
-    scheduler->Save(savestate);
-    cpuSave(cpu, savestate);
+    pxaIcSave(ic, savestate);
     pxaTimrSave(tmr, savestate);
+    cpuSave(cpu, savestate);
+    scheduler->Save(savestate);
 
     auto *chunk = savestate.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION);
     if (!chunk) abort();

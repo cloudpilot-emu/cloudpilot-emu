@@ -9,9 +9,12 @@
 #include "SoC.h"
 #include "cputil.h"
 #include "mem.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_IC_BASE 0x40D00000UL
 #define PXA_IC_SIZE 0x00010000UL
+
+#define SAVESTATE_VERSION 0
 
 struct SocIc {
     struct ArmCpu *cpu;
@@ -25,6 +28,19 @@ struct SocIc {
     uint8_t prio[40];
 
     bool wasIrq, wasFiq, gen2;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do32(ICMR[0])
+            .Do32(ICMR[1])
+            .Do32(ICLR[0])
+            .Do32(ICLR[1])
+            .Do32(ICPR[0])
+            .Do32(ICPR[1])
+            .Do32(ICCR)
+            .DoBuffer(&prio[0], sizeof(prio))
+            .Do(typename T::BoolPack() << wasIrq << wasFiq);
+    }
 };
 
 static void socIcPrvHandleChanges(struct SocIc *ic) {
@@ -326,3 +342,25 @@ void socIcInt(struct SocIc *ic, uint_fast8_t intNum,
 
     if (ic->ICPR[intNum / 32] != old) socIcPrvHandleChanges(ic);
 }
+
+template <typename T>
+void pxaIcSave(SocIc *ic, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaIc, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    ic->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaIcLoad(SocIc *ic, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxaIc, SAVESTATE_VERSION, "pxaIc");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    ic->DoSaveLoad(helper);
+}
+
+template void pxaIcSave<Savestate<ChunkType>>(SocIc *ic, Savestate<ChunkType> &savestate);
+template void pxaIcSave<SavestateProbe<ChunkType>>(SocIc *ic, SavestateProbe<ChunkType> &savestate);
+template void pxaIcLoad<SavestateLoader<ChunkType>>(SocIc *ic, SavestateLoader<ChunkType> &loader);
