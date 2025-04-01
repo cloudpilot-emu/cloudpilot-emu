@@ -302,6 +302,9 @@ struct SocIc *socIcInit(struct ArmCpu *cpu, struct ArmMem *physMem, struct SoC *
     struct SocIc *ic = (struct SocIc *)malloc(sizeof(*ic));
     struct ArmCoprocessor cp = {
         .regXfer = pxa270icPrvCoprocAccess,
+        .dataProcessing = nullptr,
+        .memAccess = nullptr,
+        .twoRegF = nullptr,
         .userData = ic,
     };
 
