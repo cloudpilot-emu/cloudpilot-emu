@@ -769,6 +769,10 @@ struct Buffer socGetSavestate(struct SoC *soc) {
 enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->dev); }
 
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
+    pxaUartLoad(ffUart, loader, 0);
+    pxaUartLoad(hwUart, loader, 1);
+    pxaUartLoad(stUart, loader, 2);
+    pxaUartLoad(btUart, loader, 3);
     pxaDmaLoad(dma, loader);
     pxaIcLoad(ic, loader);
     pxaTimrLoad(tmr, loader);
@@ -787,6 +791,10 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
 
 template <typename T>
 void SoC::Save(T &savestate) {
+    pxaUartSave(ffUart, savestate, 0);
+    pxaUartSave(hwUart, savestate, 1);
+    pxaUartSave(stUart, savestate, 2);
+    pxaUartSave(btUart, savestate, 3);
     pxaDmaSave(dma, savestate);
     pxaIcSave(ic, savestate);
     pxaTimrSave(tmr, savestate);

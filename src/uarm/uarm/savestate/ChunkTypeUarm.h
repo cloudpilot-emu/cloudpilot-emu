@@ -18,7 +18,11 @@ enum class ChunkType : uint32_t {
     pace = 0x10020,
     mmu = 0x10030,
     cp15 = 0x10040,
-    patchDispatch = 0x10050
+    patchDispatch = 0x10050,
 };
+
+inline ChunkType operator+(ChunkType chunkType, uint32_t index) {
+    return static_cast<ChunkType>(static_cast<uint32_t>(chunkType) + index);
+}
 
 #endif  // _CHUNK_TYPE_H_

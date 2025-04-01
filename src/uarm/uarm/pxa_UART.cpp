@@ -7,6 +7,7 @@
 
 #include "cputil.h"
 #include "mem.h"
+#include "savestate/savestateAll.h"
 
 #define UART_FIFO_DEPTH 64
 
@@ -14,10 +15,18 @@
 
 #define UART_FIFO_EMPTY 0xFF
 
+#define SAVESTATE_VERSION 0
+
 struct UartFifo {
     uint8_t read;
     uint8_t write;
     uint16_t buf[UART_FIFO_DEPTH];
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        // not endian save!
+        chunkHelper.Do(typename T::Pack8() << read << write).DoBuffer(&buf[0], sizeof(buf));
+    }
 };
 
 struct SocUart {
@@ -37,8 +46,8 @@ struct SocUart {
 
     uint16_t receiveHolding;  // char just received
 
-    uint8_t irq : 5;
-    uint8_t cyclesSinceRecv : 3;
+    uint8_t irq;
+    uint8_t cyclesSinceRecv;
 
     uint8_t IER;  // interrupt enable register
     uint8_t IIR;  // interrupt information register
@@ -51,6 +60,19 @@ struct SocUart {
     uint8_t DLL;  // divisor latch low
     uint8_t DLH;  // divior latch high;
     uint8_t ISR;  // infrared selection register
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        TX.DoSaveLoad(chunkHelper);
+        RX.DoSaveLoad(chunkHelper);
+
+        chunkHelper.Do(typename T::Pack16() << transmitShift << transmitHolding)
+            .Do16(receiveHolding)
+            .Do(typename T::Pack8() << irq << cyclesSinceRecv << IER << IIR)
+            .Do(typename T::Pack8() << FCR << LCR << LSR << MCR)
+            .Do(typename T::Pack8() << MSR << SPR << DLL << DLH)
+            .Do8(ISR);
+    }
 };
 
 #define UART_IER_DMAE 0x80   // DMA enable
@@ -597,3 +619,30 @@ static void socUartPrvRecalc(struct SocUart *uart) {
 }
 
 bool socUartTaskRequired(struct SocUart *uart) { return (uart->LSR & UART_LSR_TEMT) == 0; }
+
+template <typename T>
+void pxaUartSave(SocUart *uart, T &savestate, uint32_t index) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaUart + index, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    uart->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaUartLoad(struct SocUart *uart, T &loader, uint32_t index) {
+    auto chunk = loader.GetChunk(ChunkType::pxaUart + index, SAVESTATE_VERSION, "uart");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    uart->DoSaveLoad(helper);
+}
+
+template void pxaUartSave<Savestate<ChunkType>>(SocUart *uart, Savestate<ChunkType> &savestate,
+                                                uint32_t index);
+template void pxaUartSave<SavestateProbe<ChunkType>>(SocUart *uart,
+                                                     SavestateProbe<ChunkType> &savestate,
+                                                     uint32_t index);
+template void pxaUartLoad<SavestateLoader<ChunkType>>(SocUart *uart,
+                                                      SavestateLoader<ChunkType> &loader,
+                                                      uint32_t index);
