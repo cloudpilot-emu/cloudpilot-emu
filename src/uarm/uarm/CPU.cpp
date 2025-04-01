@@ -3518,7 +3518,7 @@ FORCE_INLINE static uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     cp15Cycle(cpu->cp15);
     patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
 
-    cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
+    cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE | SLOW_PATH_REASON_RESCHEDULE);
 
     if (cpu->modePace)
         return cpuCyclePace(cpu, cycles);
@@ -3542,8 +3542,6 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
     uint32_t entryAddr;
     if (!cpuPrvMemOpEx<4>(cpu, &entryAddr, tableAddr + offset, false, true, NULL))
         ERR("failed to dispatch syscall %#010x: unable to read entry point\n", syscall);
-
-    if (cpu->T) cpu->slowPath |= SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE;
 
     cpu->regs[REG_NO_PC] = entryAddr;
     cpu->isInjectedCall = true;

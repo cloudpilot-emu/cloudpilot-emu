@@ -198,6 +198,7 @@ static void socPrvReschedule(void *ctx, uint32_t task) {
         case RESCHEDULE_TASK_UART:
         case RESCHEDULE_TASK_DMA:
             soc->scheduler->RescheduleTask(SCHEDULER_TASK_AUX_1, 1);
+            cpuSetSlowPath(soc->cpu, SLOW_PATH_REASON_RESCHEDULE);
             break;
     }
 }
@@ -677,8 +678,11 @@ void socSetPcmSuspended(struct SoC *soc, bool pcmSuspended) {
     if (soc->pcmSuspended == pcmSuspended) return;
 
     soc->pcmSuspended = pcmSuspended;
-    if (soc->enablePcmOutput)
+    if (soc->enablePcmOutput) {
         soc->scheduler->RescheduleTask(SCHEDULER_TASK_PCM, pcmSuspended ? 0 : 1);
+
+        if (!pcmSuspended) cpuSetSlowPath(soc->cpu, SLOW_PATH_REASON_RESCHEDULE);
+    }
 }
 
 void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled) {
