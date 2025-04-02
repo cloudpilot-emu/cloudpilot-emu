@@ -66,10 +66,11 @@ void Chunk::PutBuffer16(uint16_t* buffer, size_t size) {
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
     std::memcpy(next, buffer, size * 2);
-    next += wordSize;
 #else
-    for (size_t i = 0; i < size; i++) Put16(*(buffer++));
+    for (size_t i = 0; i < size; i++) *(reinterpret_cast<uint16_t*>(next) + i) = htole16(*buffer++);
 #endif
+
+    next += wordSize;
 }
 
 void Chunk::PutBuffer32(uint32_t* buffer, size_t size) {
@@ -149,10 +150,12 @@ void Chunk::GetBuffer16(uint16_t* buffer, size_t size) {
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
     std::memcpy(buffer, next, size * 2);
-    next += wordSize;
 #else
-    for (size_t i = 0; i < size; i++) *(buffer++) = Get16();
+    for (size_t i = 0; i < size; i++)
+        *(buffer++) = le16toh(*(reinterpret_cast<uint16_t*>(next) + i));
 #endif
+
+    next += wordSize;
 }
 
 void Chunk::GetBuffer32(uint32_t* buffer, size_t size) {
