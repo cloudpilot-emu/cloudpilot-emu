@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "CPEndian.h"
 #include "SoC.h"
 #include "cputil.h"
 #include "mem.h"
@@ -73,7 +74,7 @@ struct PxaLcd {
             .Do32(tcr)
             .Do(typename T::Pack16() << lcsr << intMask)
             .Do(typename T::Pack8() << state << intWasPending << enbChanged << framebufferBpp)
-            .DoBuffer(&palette[0], sizeof(palette))
+            .DoBuffer(palette, sizeof(palette))
             .Do32(i_pixel)
             .Do32(framebufferBase)
             .Do32(framebufferSize)
@@ -342,7 +343,7 @@ static void pxaLcdUpdatePalette(struct PxaLcd *lcd, int32_t len) {
     bool dirty = false;
 
     for (uint32_t i = 0; i < n_entries; i++, entry++, entry_mapped++) {
-        uint32_t unpacked = unpack_rgb16(*entry);
+        uint32_t unpacked = unpack_rgb16(htole16(*entry));
         dirty = dirty || (unpacked != *entry_mapped);
 
         if (dirty) *entry_mapped = unpack_rgb16(*entry);

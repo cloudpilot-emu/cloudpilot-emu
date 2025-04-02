@@ -74,6 +74,9 @@ class SaveChunkHelper {
     inline SaveChunkHelper<T>& DoBool(bool value);
     inline SaveChunkHelper<T>& DoDouble(double value);
     inline SaveChunkHelper<T>& DoBuffer(void* buffer, size_t size);
+    inline SaveChunkHelper<T>& DoBuffer16(uint16_t* buffer, size_t size);
+    inline SaveChunkHelper<T>& DoBuffer32(uint32_t* buffer, size_t size);
+    inline SaveChunkHelper<T>& DoBuffer64(uint64_t* buffer, size_t size);
     inline SaveChunkHelper<T>& DoString(const std::string& str, size_t maxLength);
     inline SaveChunkHelper<T>& Do(BoolPack pack);
     inline SaveChunkHelper<T>& Do(Pack8 pack);
@@ -161,6 +164,9 @@ class LoadChunkHelper {
     inline LoadChunkHelper& DoBool(bool& value);
     inline LoadChunkHelper& DoDouble(double& value);
     inline LoadChunkHelper& DoBuffer(void* buffer, size_t size);
+    inline LoadChunkHelper& DoBuffer16(uint16_t* buffer, size_t size);
+    inline LoadChunkHelper& DoBuffer32(uint32_t* buffer, size_t size);
+    inline LoadChunkHelper& DoBuffer64(uint64_t* buffer, size_t size);
     inline LoadChunkHelper<T>& DoString(std::string& str, size_t maxLength);
     inline LoadChunkHelper<T>& Do(BoolPack pack);
     inline LoadChunkHelper<T>& Do(Pack8 pack);
@@ -222,6 +228,27 @@ SaveChunkHelper<T>& SaveChunkHelper<T>::DoDouble(double value) {
 template <typename T>
 SaveChunkHelper<T>& SaveChunkHelper<T>::DoBuffer(void* buffer, size_t size) {
     t.PutBuffer(buffer, size);
+
+    return *this;
+}
+
+template <typename T>
+SaveChunkHelper<T>& SaveChunkHelper<T>::DoBuffer16(uint16_t* buffer, size_t size) {
+    t.PutBuffer16(buffer, size);
+
+    return *this;
+}
+
+template <typename T>
+SaveChunkHelper<T>& SaveChunkHelper<T>::DoBuffer32(uint32_t* buffer, size_t size) {
+    t.PutBuffer32(buffer, size);
+
+    return *this;
+}
+
+template <typename T>
+SaveChunkHelper<T>& SaveChunkHelper<T>::DoBuffer64(uint64_t* buffer, size_t size) {
+    t.PutBuffer64(buffer, size);
 
     return *this;
 }
@@ -334,6 +361,27 @@ LoadChunkHelper<T>& LoadChunkHelper<T>::DoDouble(double& value) {
 template <typename T>
 LoadChunkHelper<T>& LoadChunkHelper<T>::DoBuffer(void* buffer, size_t size) {
     t.GetBuffer(buffer, size);
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::DoBuffer16(uint16_t* buffer, size_t size) {
+    t.GetBuffer16(buffer, size);
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::DoBuffer32(uint32_t* buffer, size_t size) {
+    t.GetBuffer32(buffer, size);
+
+    return *this;
+}
+
+template <typename T>
+LoadChunkHelper<T>& LoadChunkHelper<T>::DoBuffer64(uint64_t* buffer, size_t size) {
+    t.GetBuffer64(buffer, size);
 
     return *this;
 }

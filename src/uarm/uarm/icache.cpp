@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "CPEndian.h"
 #include "CPU.h"
 #include "cputil.h"
-#include "uarm_endian.h"
 
 #define CACHE_LINE_WIDTH_BITS 5
 #define CACHE_INDEX_BITS 17

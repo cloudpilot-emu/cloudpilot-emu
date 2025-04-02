@@ -6,9 +6,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "CPEndian.h"
 #include "cputil.h"
 #include "mem.h"
-#include "uarm_endian.h"
 
 struct ArmRom {
     uint32_t base, size;

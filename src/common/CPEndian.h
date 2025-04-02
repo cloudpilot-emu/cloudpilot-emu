@@ -1,6 +1,9 @@
 #ifndef _CPENDIAN_H_
 #define _CPENDIAN_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #ifdef __APPLE__
 
     #include <libkern/OSByteOrder.h>

@@ -39,9 +39,9 @@ struct SerializedTailpatch {
 
     template <typename T>
     void DoSaveLoad(T& chunkHelper) {
-        for (uint8_t i = 0; i < 16; i++) chunkHelper.Do32(registersAtInvocation[i]);
-
-        chunkHelper.Do32(returnAddress).Do32(syscall);
+        chunkHelper.DoBuffer32(registersAtInvocation, sizeof(registersAtInvocation) >> 2)
+            .Do32(returnAddress)
+            .Do32(syscall);
     }
 };
 

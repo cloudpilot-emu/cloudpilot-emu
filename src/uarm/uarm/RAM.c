@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "CPEndian.h"
 #include "SoC.h"
 #include "cputil.h"
-#include "uarm_endian.h"
 
 struct ArmRam {
     uint32_t adr;

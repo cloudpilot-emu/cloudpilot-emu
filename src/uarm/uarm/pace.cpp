@@ -2,11 +2,11 @@
 
 #include <stdlib.h>
 
+#include "CPEndian.h"
 #include "mem.h"
 #include "memcpy.h"
 #include "savestate/savestateAll.h"
 #include "uae/UAE.h"
-#include "uarm_endian.h"
 
 #ifdef __EMSCRIPTEN__
     #include <emscripten.h>
@@ -47,7 +47,12 @@ static uint32_t pace_get_le(uint32_t addr, uint8_t size) {
     const uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
     uint32_t result = 0;
+
+#if __BYTE_ORDER == __BIG_ENDIAN
+    bool ok = memAccess(mem, pa, size, false, reinterpret_cast<uint8_t*>(&result) + 4 - size);
+#else
     bool ok = memAccess(mem, pa, size, false, &result);
+#endif
 
     if (!ok) {
         fsr = 10;  // external abort on non-linefetch
@@ -136,7 +141,11 @@ static void pace_put_le(uint32_t addr, uint32_t value, uint8_t size) {
 
     uint32_t pa = MMU_TRANSLATE_RESULT_PA(translateResult);
 
+#if __BYTE_ORDER == __BIG_ENDIAN
+    bool ok = memAccess(mem, pa, size, true, reinterpret_cast<uint8_t*>(&value) + 4 - size);
+#else
     bool ok = memAccess(mem, pa, size, true, &value);
+#endif
 
     if (!ok) {
         fsr = 10;  // external abort on non-linefetch
@@ -457,10 +466,11 @@ void paceLoad(T& loader) {
 
 template <typename T>
 void paceDoSaveLoad(T& chunkHelper) {
-    for (size_t i = 0; i < 16; i++) chunkHelper.Do32(regs.regs[i]);
-
-    chunkHelper.Do32(regs.pc).Do16(regs.sr).Do32(statePtr).Do(typename T::BoolPack()
-                                                              << priviledged);
+    chunkHelper.DoBuffer32(regs.regs, sizeof(regs.regs) >> 2)
+        .Do32(regs.pc)
+        .Do16(regs.sr)
+        .Do32(statePtr)
+        .Do(typename T::BoolPack() << priviledged);
 }
 
 template void paceSave<Savestate<ChunkType>>(Savestate<ChunkType>& savestate);

@@ -51,7 +51,7 @@ struct SocDma {
 
     template <typename T>
     void DoSaveLoad(T& chunkHelper) {
-        chunkHelper.Do32(dalgn).Do32(dpcsr).Do32(DINT).DoBuffer(&CMR[0], sizeof(CMR));
+        chunkHelper.Do32(dalgn).Do32(dpcsr).Do32(DINT).DoBuffer(CMR, sizeof(CMR));
 
         for (uint8_t i = 0; i < 32; i++) channels[i].DoSaveLoad(chunkHelper);
     }

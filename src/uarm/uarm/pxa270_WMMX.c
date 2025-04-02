@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "CPEndian.h"
 #include "cputil.h"
-#include "uarm_endian.h"
 
 union REG64 {
     uint64_t v64;

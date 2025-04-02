@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "CPEndian.h"
 #include "cputil.h"
 #include "mem.h"
 #include "savestate/savestateAll.h"
@@ -24,8 +25,7 @@ struct UartFifo {
 
     template <typename T>
     void DoSaveLoad(T &chunkHelper) {
-        // not endian save!
-        chunkHelper.Do(typename T::Pack8() << read << write).DoBuffer(&buf[0], sizeof(buf));
+        chunkHelper.Do(typename T::Pack8() << read << write).DoBuffer16(buf, sizeof(buf) >> 1);
     }
 };
 

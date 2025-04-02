@@ -13,8 +13,16 @@ void ChunkProbe::PutBool(bool value) { size++; }
 void ChunkProbe::PutDouble(double value) { size += 2; }
 
 void ChunkProbe::PutBuffer(void* buffer, size_t size) {
-    this->size = this->size + size / 4 + ((size % 4) ? 1 : 0);
+    this->size += size / 4 + ((size % 4) ? 1 : 0);
 }
+
+void ChunkProbe::PutBuffer16(uint16_t* buffer, size_t size) {
+    this->size += size / 2 + ((size % 2) ? 1 : 0);
+}
+
+void ChunkProbe::PutBuffer32(uint32_t* buffer, size_t size) { this->size += size; }
+
+void ChunkProbe::PutBuffer64(uint64_t* buffer, size_t size) { this->size += size * 2; }
 
 bool ChunkProbe::HasError() const { return false; }
 

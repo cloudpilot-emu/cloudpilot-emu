@@ -7,6 +7,7 @@
 
 #include <iostream>
 
+#include "CPEndian.h"
 #include "MMU.h"
 #include "cp15.h"
 #include "cputil.h"
@@ -3653,10 +3654,9 @@ void cpuLoad(ArmCpu *cpu, T &loader) {
 
 template <typename U>
 void ArmCpu::DoSaveLoad(U &chunkHelper) {
-    for (uint8_t i = 0; i < 16; i++) chunkHelper.Do32(regs[i]);
-    for (uint8_t i = 0; i < 5; i++) chunkHelper.Do32(extra_regs[i]);
-
-    chunkHelper.Do32(SPSR)
+    chunkHelper.DoBuffer32(regs, sizeof(regs) >> 2)
+        .DoBuffer32(extra_regs, sizeof(extra_regs) >> 2)
+        .Do32(SPSR)
         .Do32(flags)
         .Do8(M)
         .Do32(curInstrPC)

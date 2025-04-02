@@ -19,6 +19,9 @@ class ChunkProbe {
     void PutBool(bool value);
     void PutDouble(double value);
     void PutBuffer(void* buffer, size_t size);
+    void PutBuffer16(uint16_t* buffer, size_t size);
+    void PutBuffer32(uint32_t* buffer, size_t size);
+    void PutBuffer64(uint64_t* buffer, size_t size);
     void PutString(const std::string& str, size_t maxLength);
 
     bool HasError() const;
