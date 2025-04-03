@@ -1,15 +1,19 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
+#include "pxa_I2S.h"
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "cputil.h"
 #include "pxa_DMA.h"
 #include "pxa_IC.h"
-#include "soc_I2S.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_I2S_BASE 0x40400000UL
 #define PXA_I2S_SIZE 0x00010000UL
+
+#define SAVESTATE_VERSION 0
 
 struct SocI2s {
     struct SocDma *dma;
@@ -25,6 +29,15 @@ struct SocI2s {
     uint32_t rxFifo[16];
     uint8_t txFifoEnts;
     uint8_t rxFifoEnts;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do(typename T::Pack16() << sacr0 << sasr0)
+            .Do(typename T::Pack8() << sacr1 << sadiv << saimr << txFifoEnts)
+            .Do8(rxFifoEnts)
+            .DoBuffer32(txFifo, sizeof(txFifo) >> 2)
+            .DoBuffer32(rxFifo, sizeof(rxFifo) >> 2);
+    }
 };
 
 static void socI2sPrvIrqUpdate(struct SocI2s *i2s) {
@@ -194,3 +207,27 @@ void socI2sPeriodic(struct SocI2s *i2s) {
     socI2sPrvTxFifoRecalc(i2s);
     socI2sPrvRxFifoRecalc(i2s);
 }
+
+template <typename T>
+void pxaI2sSave(struct SocI2s *i2s, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaI2s, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    i2s->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaI2sLoad(struct SocI2s *i2s, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxaI2s, SAVESTATE_VERSION, "pxa i2s");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    i2s->DoSaveLoad(helper);
+}
+
+template void pxaI2sSave<Savestate<ChunkType>>(SocI2s *i2s, Savestate<ChunkType> &savestate);
+template void pxaI2sSave<SavestateProbe<ChunkType>>(SocI2s *i2s,
+                                                    SavestateProbe<ChunkType> &savestate);
+template void pxaI2sLoad<SavestateLoader<ChunkType>>(SocI2s *i2s,
+                                                     SavestateLoader<ChunkType> &loader);

@@ -8,6 +8,7 @@
 #include "pxa_AC97.h"
 #include "pxa_DMA.h"
 #include "pxa_GPIO.h"
+#include "pxa_I2S.h"
 #include "pxa_LCD.h"
 #include "pxa_MMC.h"
 #include "pxa_MemCtrl.h"
@@ -53,7 +54,6 @@
 #include "sdcard.h"
 #include "soc_DMA.h"
 #include "soc_I2C.h"
-#include "soc_I2S.h"
 #include "soc_IC.h"
 #include "soc_SSP.h"
 #include "soc_UART.h"
@@ -785,6 +785,7 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaGpioLoad(gpio, loader);
     pxaAC97Load(ac97, loader);
     pxaDmaLoad(dma, loader);
+    pxaI2sLoad(i2s, loader);
     pxaIcLoad(ic, loader);
     pxaTimrLoad(tmr, loader);
     pxaLcdLoad(lcd, loader);
@@ -814,6 +815,7 @@ void SoC::Save(T &savestate) {
     pxaGpioSave(gpio, savestate);
     pxaAC97Save(ac97, savestate);
     pxaDmaSave(dma, savestate);
+    pxaI2sSave(i2s, savestate);
     pxaIcSave(ic, savestate);
     pxaTimrSave(tmr, savestate);
     pxaLcdSave(lcd, savestate);
