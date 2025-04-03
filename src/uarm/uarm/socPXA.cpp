@@ -5,7 +5,9 @@
 #include <cstring>
 
 // all PXAs
+#include "pxa_AC97.h"
 #include "pxa_DMA.h"
+#include "pxa_GPIO.h"
 #include "pxa_LCD.h"
 #include "pxa_MMC.h"
 #include "pxa_MemCtrl.h"
@@ -49,9 +51,7 @@
 #include "savestate/savestateAll.h"
 #include "scheduler.h"
 #include "sdcard.h"
-#include "soc_AC97.h"
 #include "soc_DMA.h"
-#include "soc_GPIO.h"
 #include "soc_I2C.h"
 #include "soc_I2S.h"
 #include "soc_IC.h"
@@ -99,6 +99,8 @@ struct KeyEvent {
 };
 
 struct SoC {
+    uint8_t socRev;
+
     SocUart *ffUart, *hwUart, *stUart, *btUart;
     SocSsp *ssp[3];
     SocGpio *gpio;
@@ -260,6 +262,8 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
     struct Reschedule rescheduleSoc = {.rescheduleCb = socPrvReschedule, .ctx = soc};
 
     memset(soc, 0, sizeof(*soc));
+
+    soc->socRev = socRev;
 
     soc->savestate = new Savestate<ChunkType>();
 
@@ -773,6 +777,13 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaUartLoad(hwUart, loader, 1);
     pxaUartLoad(stUart, loader, 2);
     pxaUartLoad(btUart, loader, 3);
+
+    pxaSspLoad(ssp[0], loader, 0);
+    pxaSspLoad(ssp[1], loader, 1);
+    if (socRev > 0) pxaSspLoad(ssp[2], loader, 2);
+
+    pxaGpioLoad(gpio, loader);
+    pxaAC97Load(ac97, loader);
     pxaDmaLoad(dma, loader);
     pxaIcLoad(ic, loader);
     pxaTimrLoad(tmr, loader);
@@ -795,6 +806,13 @@ void SoC::Save(T &savestate) {
     pxaUartSave(hwUart, savestate, 1);
     pxaUartSave(stUart, savestate, 2);
     pxaUartSave(btUart, savestate, 3);
+
+    pxaSspSave(ssp[0], savestate, 0);
+    pxaSspSave(ssp[1], savestate, 1);
+    if (socRev > 0) pxaSspSave(ssp[2], savestate, 2);
+
+    pxaGpioSave(gpio, savestate);
+    pxaAC97Save(ac97, savestate);
     pxaDmaSave(dma, savestate);
     pxaIcSave(ic, savestate);
     pxaTimrSave(tmr, savestate);

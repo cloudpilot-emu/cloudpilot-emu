@@ -1,15 +1,19 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
+#include "pxa_GPIO.h"
+
 #include <stdlib.h>
 #include <string.h>
 
 #include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
-#include "soc_GPIO.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_GPIO_BASE 0x40E00000UL
 #define PXA_GPIO_SIZE 0x00001000UL
+
+#define SAVESTATE_VERSION 0
 
 struct SocGpio {
     struct SocIc *ic;
@@ -29,6 +33,18 @@ struct SocGpio {
 
     GpioDirsChangedF dirNotifF;
     void *dirNotifD;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.DoBuffer32(latches, sizeof(latches) >> 2)
+            .DoBuffer32(inputs, sizeof(inputs) >> 2)
+            .DoBuffer32(levels, sizeof(levels) >> 2)
+            .DoBuffer32(dirs, sizeof(dirs) >> 2)
+            .DoBuffer32(riseDet, sizeof(riseDet) >> 2)
+            .DoBuffer32(fallDet, sizeof(fallDet) >> 2)
+            .DoBuffer32(detStatus, sizeof(detStatus) >> 2)
+            .DoBuffer32(AFRs, sizeof(AFRs) >> 2);
+    }
 };
 
 static void socGpioPrvRecalcValues(struct SocGpio *gpio, uint_fast8_t which) {
@@ -376,3 +392,27 @@ void socGpioSetDirsChangedNotif(struct SocGpio *gpio, GpioDirsChangedF notifF, v
     gpio->dirNotifF = notifF;
     gpio->dirNotifD = userData;
 }
+
+template <typename T>
+void pxaGpioSave(struct SocGpio *gpio, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaGpio, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    gpio->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaGpioLoad(struct SocGpio *gpio, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxaGpio, SAVESTATE_VERSION, "pxa gpio");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    gpio->DoSaveLoad(helper);
+}
+
+template void pxaGpioSave<Savestate<ChunkType>>(SocGpio *gpio, Savestate<ChunkType> &savestate);
+template void pxaGpioSave<SavestateProbe<ChunkType>>(SocGpio *gpio,
+                                                     SavestateProbe<ChunkType> &savestate);
+template void pxaGpioLoad<SavestateLoader<ChunkType>>(SocGpio *gpio,
+                                                      SavestateLoader<ChunkType> &loader);

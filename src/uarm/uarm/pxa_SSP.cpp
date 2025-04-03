@@ -7,12 +7,15 @@
 #include "mem.h"
 #include "pxa_DMA.h"
 #include "pxa_IC.h"
+#include "savestate/savestateAll.h"
 #include "soc_SSP.h"
 
 #define PXA_SSP_SIZE 0x00010000UL
 
 #define DMA_OFST_RX 0
 #define DMA_OFST_TX 1
+
+#define SAVESTATE_VERSION 0
 
 struct SocSsp {
     struct SocDma *dma;
@@ -29,6 +32,16 @@ struct SocSsp {
 
     uint16_t rxFifo[16], txFifo[16];
     uint8_t rxFifoUsed, txFifoUsed;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do32(cr0)
+            .Do32(cr1)
+            .Do32(sr)
+            .DoBuffer16(rxFifo, sizeof(rxFifo) >> 1)
+            .DoBuffer16(txFifo, sizeof(txFifo) >> 1)
+            .Do(typename T::Pack8() << rxFifoUsed << txFifoUsed);
+    }
 };
 
 static void socSspPrvIrqsUpdate(struct SocSsp *ssp) {
@@ -213,3 +226,30 @@ bool socSspAddClient(struct SocSsp *ssp, SspClientProcF procF, void *userData) {
 }
 
 bool socSspTaskRequired(struct SocSsp *ssp) { return ssp->sr & 0x10; }
+
+template <typename T>
+void pxaSspSave(struct SocSsp *ssp, T &savestate, uint32_t index = 0) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaSsp + index, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    ssp->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaSspLoad(struct SocSsp *ssp, T &loader, uint32_t index = 0) {
+    auto chunk = loader.GetChunk(ChunkType::pxaSsp + index, SAVESTATE_VERSION, "pxa ssp");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    ssp->DoSaveLoad(helper);
+}
+
+template void pxaSspSave<Savestate<ChunkType>>(SocSsp *ssp, Savestate<ChunkType> &savestate,
+                                               uint32_t index);
+template void pxaSspSave<SavestateProbe<ChunkType>>(SocSsp *ssp,
+                                                    SavestateProbe<ChunkType> &savestate,
+                                                    uint32_t index);
+template void pxaSspLoad<SavestateLoader<ChunkType>>(SocSsp *ssp,
+                                                     SavestateLoader<ChunkType> &loader,
+                                                     uint32_t index);

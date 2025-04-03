@@ -1,5 +1,7 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
+#include "pxa_AC97.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -7,10 +9,12 @@
 #include "mem.h"
 #include "pxa_DMA.h"
 #include "pxa_IC.h"
-#include "soc_AC97.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_AC97_BASE 0x40500000UL
 #define PXA_AC97_SIZE 0x00010000UL
+
+#define SAVESTATE_VERSION 0
 
 struct AC97Fifo {
     uint8_t readPtr;
@@ -20,6 +24,12 @@ struct AC97Fifo {
     uint32_t data[16];
 
     uint8_t *icr, *isr;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do(typename T::Pack8() << readPtr << numItems)
+            .DoBuffer32(data, sizeof(data) >> 2);
+    }
 };
 
 struct Ac97CodecStruct {
@@ -33,6 +43,14 @@ struct Ac97CodecStruct {
 
     struct AC97Fifo txFifo;
     struct AC97Fifo rxFifo;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do16(prevReadVal);
+
+        txFifo.DoSaveLoad(chunkHelper);
+        rxFifo.DoSaveLoad(chunkHelper);
+    }
 };
 
 struct SocAC97 {
@@ -46,6 +64,21 @@ struct SocAC97 {
     // secondary is mic
     // primary modem is modem
     struct Ac97CodecStruct primaryAudio, secondaryAudio, primaryModem, secondaryModem;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do(typename T::Pack8() << pocr << picr << mccr << posr)
+            .Do(typename T::Pack8() << pisr << mcsr << car << mocr)
+            .Do(typename T::Pack8() << mosr << micr << misr)
+            .Do32(gcr)
+            .Do32(gsr)
+            .Do32(pcdr);
+
+        primaryAudio.DoSaveLoad(chunkHelper);
+        secondaryAudio.DoSaveLoad(chunkHelper);
+        primaryModem.DoSaveLoad(chunkHelper);
+        secondaryModem.DoSaveLoad(chunkHelper);
+    }
 };
 
 static void socAC97prvIrqUpdate(struct SocAC97 *ac97) {
@@ -414,3 +447,27 @@ void socAC97clientClientHaveData(struct SocAC97 *ac97, enum Ac97Codec which, uin
 
     (void)socAC97PrvFifoAdd(ac97, &cd->rxFifo, data);
 }
+
+template <typename T>
+void pxaAC97Save(struct SocAC97 *ac97, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaAc97, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    ac97->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaAC97Load(struct SocAC97 *ac97, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxaAc97, SAVESTATE_VERSION, "pxa ac97");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    ac97->DoSaveLoad(helper);
+}
+
+template void pxaAC97Save<Savestate<ChunkType>>(SocAC97 *ac97, Savestate<ChunkType> &savestate);
+template void pxaAC97Save<SavestateProbe<ChunkType>>(SocAC97 *ac97,
+                                                     SavestateProbe<ChunkType> &savestate);
+template void pxaAC97Load<SavestateLoader<ChunkType>>(SocAC97 *ac97,
+                                                      SavestateLoader<ChunkType> &loader);

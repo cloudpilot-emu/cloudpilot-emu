@@ -16,4 +16,12 @@
 #define PXA_SSP2_BASE 0x41700000UL
 #define PXA_SSP3_BASE 0x41900000UL
 
+#ifdef __cplusplus
+template <typename T>
+void pxaSspSave(struct SocSsp* ssp, T& savestate, uint32_t index = 0);
+
+template <typename T>
+void pxaSspLoad(struct SocSsp* ssp, T& loader, uint32_t index = 0);
+#endif
+
 #endif
