@@ -18,6 +18,9 @@ namespace {
         MOCK_METHOD(double, GetDouble, (), ());
         MOCK_METHOD(bool, GetBool, (), ());
         MOCK_METHOD(void, GetBuffer, (void*, size_t), ());
+        MOCK_METHOD(void, GetBuffer16, (uint16_t*, size_t), ());
+        MOCK_METHOD(void, GetBuffer32, (uint32_t*, size_t), ());
+        MOCK_METHOD(void, GetBuffer64, (uint64_t*, size_t), ());
     };
 
     class LoadChunkHelperTest : public ::testing::Test {
@@ -25,6 +28,9 @@ namespace {
         using helperT = LoadChunkHelper<ChunkMock>;
 
         ChunkMock mock;
+        uint16_t fixture16{0};
+        uint32_t fixture32{0};
+        uint64_t fixture64{0};
         helperT helper{mock};
     };
 
@@ -122,6 +128,24 @@ namespace {
         EXPECT_CALL(mock, GetBuffer(&mock, 666)).Times(1);
 
         helper.DoBuffer(&mock, 666);
+    }
+
+    TEST_F(LoadChunkHelperTest, DoBuffer16) {
+        EXPECT_CALL(mock, GetBuffer16(&fixture16, 666)).Times(1);
+
+        helper.DoBuffer16(&fixture16, 666);
+    }
+
+    TEST_F(LoadChunkHelperTest, DoBuffer32) {
+        EXPECT_CALL(mock, GetBuffer32(&fixture32, 666)).Times(1);
+
+        helper.DoBuffer32(&fixture32, 666);
+    }
+
+    TEST_F(LoadChunkHelperTest, DoBuffer64) {
+        EXPECT_CALL(mock, GetBuffer64(&fixture64, 666)).Times(1);
+
+        helper.DoBuffer64(&fixture64, 666);
     }
 
     TEST_F(LoadChunkHelperTest, DoU8Pack) {

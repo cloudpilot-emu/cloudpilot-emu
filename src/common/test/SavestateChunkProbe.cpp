@@ -70,6 +70,57 @@ namespace {
         ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(18));
     }
 
+    TEST(SavestateChunkProbe, Buffer16Pads) {
+        ChunkProbe chunk;
+
+        chunk.PutBuffer16(nullptr, 1);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(1));
+
+        chunk.PutBuffer16(nullptr, 2);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(2));
+
+        chunk.PutBuffer16(nullptr, 3);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(4));
+
+        chunk.PutBuffer16(nullptr, 4);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(6));
+
+        chunk.PutBuffer16(nullptr, 5);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(9));
+    }
+
+    TEST(SavestateChunkProbe, Buffer32IsFourBytes) {
+        ChunkProbe chunk;
+
+        chunk.PutBuffer32(nullptr, 1);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(1));
+
+        chunk.PutBuffer32(nullptr, 2);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(3));
+
+        chunk.PutBuffer32(nullptr, 3);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(6));
+
+        chunk.PutBuffer32(nullptr, 4);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(10));
+    }
+
+    TEST(SavestateChunkProbe, Buffer64IsEightBytes) {
+        ChunkProbe chunk;
+
+        chunk.PutBuffer64(nullptr, 1);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(2));
+
+        chunk.PutBuffer64(nullptr, 2);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(6));
+
+        chunk.PutBuffer64(nullptr, 3);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(12));
+
+        chunk.PutBuffer64(nullptr, 4);
+        ASSERT_EQ(chunk.GetSize(), static_cast<size_t>(20));
+    }
+
     TEST(SavestateChunkProbe, StringIsBufferWithMaxlengthPlusOne) {
         ChunkProbe chunk;
 

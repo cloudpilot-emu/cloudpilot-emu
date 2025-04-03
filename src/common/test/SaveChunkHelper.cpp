@@ -16,6 +16,9 @@ namespace {
         MOCK_METHOD(void, PutDouble, (double), ());
         MOCK_METHOD(void, PutBool, (bool), ());
         MOCK_METHOD(void, PutBuffer, (void*, size_t), ());
+        MOCK_METHOD(void, PutBuffer16, (uint16_t*, size_t), ());
+        MOCK_METHOD(void, PutBuffer32, (uint32_t*, size_t), ());
+        MOCK_METHOD(void, PutBuffer64, (uint64_t*, size_t), ());
     };
 
     class SaveChunkHelperTest : public ::testing::Test {
@@ -23,6 +26,9 @@ namespace {
         using helperT = SaveChunkHelper<ChunkMock>;
 
         ChunkMock mock;
+        uint16_t fixture16{0};
+        uint32_t fixture32{0};
+        uint64_t fixture64{0};
         helperT helper{mock};
     };
 
@@ -59,6 +65,21 @@ namespace {
     TEST_F(SaveChunkHelperTest, DoBuffer) {
         EXPECT_CALL(mock, PutBuffer(&mock, 66)).Times(1);
         helper.DoBuffer(&mock, 66);
+    }
+
+    TEST_F(SaveChunkHelperTest, DoBuffer16) {
+        EXPECT_CALL(mock, PutBuffer16(&fixture16, 66)).Times(1);
+        helper.DoBuffer16(&fixture16, 66);
+    }
+
+    TEST_F(SaveChunkHelperTest, DoBuffer32) {
+        EXPECT_CALL(mock, PutBuffer32(&fixture32, 66)).Times(1);
+        helper.DoBuffer32(&fixture32, 66);
+    }
+
+    TEST_F(SaveChunkHelperTest, DoBuffer64) {
+        EXPECT_CALL(mock, PutBuffer64(&fixture64, 66)).Times(1);
+        helper.DoBuffer64(&fixture64, 66);
     }
 
     TEST_F(SaveChunkHelperTest, Do8Pack) {
