@@ -177,7 +177,7 @@ void pxaTimrTick(struct PxaTimr *timr, uint32_t batchedTicks) {
 uint32_t pxaTimrTicksToNextInterrupt(struct PxaTimr *timr) {
     uint32_t ticksToNextInterrupt = ~0;
 
-    for (uint8_t i = 0; i < 4; i++) {
+    for (size_t i = 0; i < 4; i++) {
         const uint8_t v = 1UL << i;
 
         if ((timr->OIER & v) == 0) continue;

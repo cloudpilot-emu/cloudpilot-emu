@@ -117,7 +117,7 @@ std::string RomInfo::ReadString(size_t offset, uint8_t maxLen, bool& error) cons
     char str[256];
     bool terminated = false;
 
-    for (uint8_t i = 0; i < maxLen && !terminated; i++) {
+    for (size_t i = 0; i < maxLen && !terminated; i++) {
         str[i] = buffer[offset + i];
         terminated = str[i] == '\0';
     }

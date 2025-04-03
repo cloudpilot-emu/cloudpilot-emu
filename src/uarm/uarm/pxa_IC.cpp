@@ -35,7 +35,7 @@ struct SocIc {
             .DoBuffer(prio, sizeof(prio))
             .Do(typename T::BoolPack() << wasIrq << wasFiq);
 
-        for (uint8_t i = 0; i < 2; i++) chunkHelper.Do32(ICMR[i]).Do32(ICLR[i]).Do32(ICPR[i]);
+        for (size_t i = 0; i < 2; i++) chunkHelper.Do32(ICMR[i]).Do32(ICLR[i]).Do32(ICPR[i]);
     }
 };
 

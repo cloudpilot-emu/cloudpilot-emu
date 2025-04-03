@@ -237,7 +237,7 @@ void Scheduler<T>::Load(SavestateLoader<ChunkType>& loader) {
 template <typename T>
 template <typename U>
 void Scheduler<T>::DoSaveLoad(U& chunkHelper) {
-    for (uint8_t i = 0; i <= SCHEDULER_TASK_MAX; i++) {
+    for (size_t i = 0; i <= SCHEDULER_TASK_MAX; i++) {
         Task& task(tasks[i]);
 
         chunkHelper.Do32(task.batchedTicks)

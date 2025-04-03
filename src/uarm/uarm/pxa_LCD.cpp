@@ -81,7 +81,7 @@ struct PxaLcd {
             .DoBool(framebufferTrackingActive);
 
         // Only PXA255 for now.
-        for (uint8_t i = 0; i < 2; i++)
+        for (size_t i = 0; i < 2; i++)
             chunkHelper.Do32(fbr[i]).Do32(fdadr[i]).Do32(fsadr[i]).Do32(fidr[i]).Do32(ldcmd[i]);
     }
 };

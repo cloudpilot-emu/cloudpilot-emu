@@ -1,5 +1,6 @@
 #include "patch_dispatch.h"
 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -143,7 +144,7 @@ void patchOnBeforeExecute(struct PatchDispatch* pd, uint32_t* registers) {
 
     if (pd->nPendingTailpatches == 0) return;
 
-    for (uint8_t i = 0; i < pd->nPendingTailpatches; i++) {
+    for (size_t i = 0; i < pd->nPendingTailpatches; i++) {
         const struct PendingTailpatch* pendingTailpatch = &pd->pendingTailpatches[i];
 
         if (pendingTailpatch->returnAddress != registers[15] ||
@@ -155,7 +156,7 @@ void patchOnBeforeExecute(struct PatchDispatch* pd, uint32_t* registers) {
                                                pendingTailpatch->patch->syscall,
                                                pendingTailpatch->registersAtInvocation, registers);
 
-        if (i != pd->nPendingTailpatches - 1)
+        if (i != static_cast<size_t>(pd->nPendingTailpatches - 1))
             pd->pendingTailpatches[i] = pd->pendingTailpatches[pd->nPendingTailpatches];
 
         pd->nPendingTailpatches--;
@@ -193,7 +194,7 @@ void patchDispatchSave(PatchDispatch* pd, T& savestate) {
     auto chunk = savestate.GetChunk(ChunkType::patchDispatch, SAVESTATE_VERSION);
     if (!chunk) abort();
 
-    for (uint8_t i = 0; i < pd->nPendingTailpatches; i++) {
+    for (size_t i = 0; i < pd->nPendingTailpatches; i++) {
         SerializedTailpatch& serializedTailpatch(pd->serializedTailpatches[i]);
         PendingTailpatch& pendingTailpatch(pd->pendingTailpatches[i]);
 
@@ -220,11 +221,11 @@ void patchDispatchLoad(PatchDispatch* pd, T& loader) {
     const uint8_t loadedTalpatchesCount = pd->nPendingTailpatches;
     pd->nPendingTailpatches = 0;
 
-    for (uint8_t i = 0; i < loadedTalpatchesCount; i++) {
+    for (size_t i = 0; i < loadedTalpatchesCount; i++) {
         SerializedTailpatch& serializedTailpatch(pd->serializedTailpatches[i]);
         Patch* patch = nullptr;
 
-        for (uint8_t j = 0; j < pd->nPatches; j++) {
+        for (size_t j = 0; j < pd->nPatches; j++) {
             if (pd->patches[j].syscall != serializedTailpatch.syscall) continue;
 
             patch = &pd->patches[j];
@@ -252,7 +253,7 @@ void patchDispatchLoad(PatchDispatch* pd, T& loader) {
 
 template <typename T>
 void PatchDispatch::DoSaveLoad(T& chunkHelper) {
-    for (uint8_t i = 0; i < MAX_PENDING_TAILPATCH; i++)
+    for (size_t i = 0; i < MAX_PENDING_TAILPATCH; i++)
         serializedTailpatches[i].DoSaveLoad(chunkHelper);
 
     chunkHelper.Do(typename T::Pack8() << table << countdown << nPendingTailpatches);
