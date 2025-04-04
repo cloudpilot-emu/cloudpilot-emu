@@ -8,6 +8,7 @@
 #include "pxa_AC97.h"
 #include "pxa_DMA.h"
 #include "pxa_GPIO.h"
+#include "pxa_I2C.h"
 #include "pxa_I2S.h"
 #include "pxa_LCD.h"
 #include "pxa_MMC.h"
@@ -53,7 +54,6 @@
 #include "scheduler.h"
 #include "sdcard.h"
 #include "soc_DMA.h"
-#include "soc_I2C.h"
 #include "soc_IC.h"
 #include "soc_SSP.h"
 #include "soc_UART.h"
@@ -774,7 +774,7 @@ enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->de
 
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaUartLoad(ffUart, loader, 0);
-    pxaUartLoad(hwUart, loader, 1);
+    if (socRev != 2) pxaUartLoad(hwUart, loader, 1);
     pxaUartLoad(stUart, loader, 2);
     pxaUartLoad(btUart, loader, 3);
 
@@ -786,7 +786,11 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaAC97Load(ac97, loader);
     pxaDmaLoad(dma, loader);
     pxaI2sLoad(i2s, loader);
+    pxaI2cLoad(i2c, loader, 0);
     pxaIcLoad(ic, loader);
+    pxaMemCtrlrLoad(memCtrl, loader);
+    pxaPwrClkLoad(pwrClk, loader);
+    if (socRev == 2) pxaI2cLoad(pwrI2c, loader, 1);
     pxaTimrLoad(tmr, loader);
     pxaLcdLoad(lcd, loader);
     cpuLoad(cpu, loader);
@@ -804,7 +808,7 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
 template <typename T>
 void SoC::Save(T &savestate) {
     pxaUartSave(ffUart, savestate, 0);
-    pxaUartSave(hwUart, savestate, 1);
+    if (socRev != 2) pxaUartSave(hwUart, savestate, 1);
     pxaUartSave(stUart, savestate, 2);
     pxaUartSave(btUart, savestate, 3);
 
@@ -816,7 +820,11 @@ void SoC::Save(T &savestate) {
     pxaAC97Save(ac97, savestate);
     pxaDmaSave(dma, savestate);
     pxaI2sSave(i2s, savestate);
+    pxaI2cSave(i2c, savestate);
     pxaIcSave(ic, savestate);
+    pxaMemCtrlrSave(memCtrl, savestate);
+    pxaPwrClkSave(pwrClk, savestate);
+    if (socRev == 2) pxaI2cSave(pwrI2c, savestate, 1);
     pxaTimrSave(tmr, savestate);
     pxaLcdSave(lcd, savestate);
     cpuSave(cpu, savestate);

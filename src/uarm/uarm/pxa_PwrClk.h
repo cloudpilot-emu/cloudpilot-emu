@@ -20,6 +20,13 @@ void pxaPwrClkReset(struct PxaPwrClk* pc);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void pxaPwrClkSave(struct PxaPwrClk* pc, T& savestate);
+
+template <typename T>
+void pxaPwrClkLoad(struct PxaPwrClk* pc, T& loader);
+
 #endif
 
 #endif

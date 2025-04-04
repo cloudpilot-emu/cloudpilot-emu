@@ -17,6 +17,13 @@ struct PxaMemCtrlr* pxaMemCtrlrInit(struct ArmMem* physMem, uint_fast8_t socRev)
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void pxaMemCtrlrSave(struct PxaMemCtrlr* pxaMemCtrlr, T& savestate);
+
+template <typename T>
+void pxaMemCtrlrLoad(struct PxaMemCtrlr* pxaMemCtrlr, T& loader);
+
 #endif
 
 #endif

@@ -6,9 +6,12 @@
 #include <string.h>
 
 #include "cputil.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_MEM_CONTROLLER_BASE 0x48000000UL
 #define PXA_MEM_CONTROLLER_SIZE 0x00004000UL
+
+#define SAVESTATE_VERSION 0
 
 struct PxaMemCtrlr {
     uint32_t mdcnfg, mdrefr, msc[3], mecr, sxcnfg, sxmrs, mcmem[2], mcatt[2], mcio[2], mdmrs;
@@ -17,6 +20,29 @@ struct PxaMemCtrlr {
     uint16_t sa1110;
     uint8_t lcdbscntr;
     bool g2;
+
+    template <typename T>
+    void DoSaveLoad(T& chunkHelper) {
+        chunkHelper.Do32(mdcnfg)
+            .Do32(mdrefr)
+            .DoBuffer32(msc, sizeof(msc) >> 2)
+            .Do32(mecr)
+            .Do32(sxcnfg)
+            .Do32(sxmrs)
+            .Do32(mcmem[0])
+            .Do32(mcmem[1])
+            .Do32(mcatt[0])
+            .Do32(mcatt[1])
+            .Do32(mcio[0])
+            .Do32(mcio[1])
+            .Do32(mdmrs)
+            .Do32(arbCntrl)
+            .DoBuffer32(bscntr, sizeof(bscntr) >> 2)
+            .Do32(mdmrslp)
+            .Do32(reg_0x20)
+            .Do16(sa1110)
+            .Do8(lcdbscntr);
+    }
 };
 
 static bool pxaMemCtrlrPrvClockMgrMemAccessF(void* userData, uint32_t pa, uint_fast8_t size,
@@ -210,3 +236,29 @@ struct PxaMemCtrlr* pxaMemCtrlrInit(struct ArmMem* physMem, uint_fast8_t socRev)
 
     return mc;
 }
+
+template <typename T>
+void pxaMemCtrlrSave(struct PxaMemCtrlr* pxaMemCtrlr, T& savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaMemCtrlr, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    pxaMemCtrlr->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaMemCtrlrLoad(struct PxaMemCtrlr* pxaMemCtrlr, T& loader) {
+    auto chunk =
+        loader.GetChunk(ChunkType::pxaMemCtrlr, SAVESTATE_VERSION, "pxa memory controller");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    pxaMemCtrlr->DoSaveLoad(helper);
+}
+
+template void pxaMemCtrlrSave<Savestate<ChunkType>>(PxaMemCtrlr* pxaMemCtrlr,
+                                                    Savestate<ChunkType>& savestate);
+template void pxaMemCtrlrSave<SavestateProbe<ChunkType>>(PxaMemCtrlr* pxaMemCtrlr,
+                                                         SavestateProbe<ChunkType>& savestate);
+template void pxaMemCtrlrLoad<SavestateLoader<ChunkType>>(PxaMemCtrlr* pxaMemCtrlr,
+                                                          SavestateLoader<ChunkType>& loader);

@@ -7,12 +7,15 @@
 
 #include "SoC.h"
 #include "cputil.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_CLOCK_MANAGER_BASE 0x41300000UL
 #define PXA_CLOCK_MANAGER_SIZE 0x00001000UL
 
 #define PXA_POWER_MANAGER_BASE 0x40F00000UL
 #define PXA_POWER_MANAGER_SIZE 0x00000180UL
+
+#define SAVESTATE_VERSION 0
 
 struct PxaPwrClk {
     struct ArmCpu *cpu;
@@ -23,6 +26,26 @@ struct PxaPwrClk {
     // power mgr 270 only
     uint32_t PSTR, PVCR, PUCR, PKWR, PKSR, PCMD[32];
     bool turbo, isPXA270;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        // PX255 only for now
+        chunkHelper.Do32(CCCR)
+            .Do32(CKEN)
+            .Do32(OSCR)
+            .Do32(PMCR)
+            .Do32(PSSR)
+            .Do32(PSPR)
+            .Do32(PWER)
+            .Do32(PRER)
+            .Do32(PFER)
+            .Do32(PEDR)
+            .Do32(PCFR)
+            .DoBuffer32(PGSR, sizeof(PGSR) >> 2)
+            .Do32(RCSR)
+            .Do32(PMFW)
+            .DoBool(turbo);
+    }
 };
 
 static bool pxaPwrClkPrvCoproc7regXferFunc(struct ArmCpu *cpu, void *userData, bool two, bool read,
@@ -351,3 +374,27 @@ void pxaPwrClkReset(struct PxaPwrClk *pc) {
     // pretend we just power-no-resetted
     pc->RCSR |= 1;
 }
+
+template <typename T>
+void pxaPwrClkSave(struct PxaPwrClk *pc, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaPwrClk, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    pc->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaPwrClkLoad(struct PxaPwrClk *pc, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxaPwrClk, SAVESTATE_VERSION, "pxa power / clock CP");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    pc->DoSaveLoad(helper);
+}
+
+template void pxaPwrClkSave<Savestate<ChunkType>>(PxaPwrClk *pc, Savestate<ChunkType> &savestate);
+template void pxaPwrClkSave<SavestateProbe<ChunkType>>(PxaPwrClk *pc,
+                                                       SavestateProbe<ChunkType> &savestate);
+template void pxaPwrClkLoad<SavestateLoader<ChunkType>>(PxaPwrClk *pc,
+                                                        SavestateLoader<ChunkType> &loader);

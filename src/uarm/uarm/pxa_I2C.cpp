@@ -6,9 +6,12 @@
 #include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
+#include "savestate/savestateAll.h"
 #include "soc_I2C.h"
 
 #define PXA_I2C_SIZE 0x00000024UL
+
+#define SAVESTATE_VERSION 0
 
 #define REG_IDX_IBMR 0
 #define REG_IDX_IDBR 1
@@ -31,8 +34,15 @@ struct SocI2c {
         void *userData;
     } devs[8];
 
-    uint8_t waitForAddr : 1;
-    uint8_t latentBusy : 1;
+    bool waitForAddr;
+    bool latentBusy;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do(typename T::Pack16() << icr << isr)
+            .Do(typename T::Pack8() << db << isa)
+            .Do(typename T::BoolPack() << waitForAddr << latentBusy);
+    }
 };
 
 bool socI2cDeviceAdd(struct SocI2c *i2c, I2cDeviceActionF actF, void *userData) {
@@ -93,7 +103,7 @@ static void socI2cPrvCrW(struct SocI2c *i2c, uint32_t val) {
 
     if (val & diffBits & 0x01) {
         socI2cPrvAction(i2c, (i2c->isr & 4) ? i2cRestart : i2cStart, 0);
-        i2c->waitForAddr = 1;
+        i2c->waitForAddr = true;
         i2c->isr |= 0x4;
     }
     if (val & 0x08) {
@@ -102,7 +112,7 @@ static void socI2cPrvCrW(struct SocI2c *i2c, uint32_t val) {
 
             i2c->isr = (i2c->isr & ~1) | (i2c->db & 1);
             i2c->isr = (i2c->isr & ~2) | (socI2cPrvAction(i2c, i2cTx, i2c->db) ? 0 : 2);
-            i2c->waitForAddr = 0;
+            i2c->waitForAddr = false;
             i2c->isr |= 0x40;
         } else if (!(i2c->isr & 1)) {  // TXing
 
@@ -123,14 +133,14 @@ static void socI2cPrvCrW(struct SocI2c *i2c, uint32_t val) {
         if (val & 2) {
             socI2cPrvAction(i2c, i2cStop, 0);
             i2c->isr &= ~0x1;
-            i2c->latentBusy = 1;
+            i2c->latentBusy = true;
         }
         i2c->icr &= ~8;
     }
     if (val & 0x10) {
         socI2cPrvAction(i2c, i2cStop, 0);
         i2c->isr &= ~0x1;
-        i2c->latentBusy = 1;
+        i2c->latentBusy = true;
     }
 
     socI2cPrvRecalcIrq(i2c);
@@ -155,7 +165,7 @@ static bool socI2cPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
 
     if (write && i2c->latentBusy) {
         i2c->isr &= ~4;
-        i2c->latentBusy = 0;
+        i2c->latentBusy = false;
     }
 
     switch (pa) {
@@ -223,3 +233,30 @@ struct SocI2c *socI2cInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDm
 
     return i2c;
 }
+
+template <typename T>
+void pxaI2cSave(struct SocI2c *i2c, T &savestate, uint32_t index) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaI2c + index, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    i2c->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaI2cLoad(struct SocI2c *i2c, T &loader, uint32_t index) {
+    auto chunk = loader.GetChunk(ChunkType::pxaI2c + index, SAVESTATE_VERSION, "pxa i2c");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    i2c->DoSaveLoad(helper);
+}
+
+template void pxaI2cSave<Savestate<ChunkType>>(SocI2c *i2c, Savestate<ChunkType> &savestate,
+                                               uint32_t index);
+template void pxaI2cSave<SavestateProbe<ChunkType>>(SocI2c *i2c,
+                                                    SavestateProbe<ChunkType> &savestate,
+                                                    uint32_t index);
+template void pxaI2cLoad<SavestateLoader<ChunkType>>(SocI2c *i2c,
+                                                     SavestateLoader<ChunkType> &loader,
+                                                     uint32_t index);
