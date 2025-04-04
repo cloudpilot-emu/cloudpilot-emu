@@ -319,10 +319,16 @@ struct PxaPwrClk *pxaPwrClkInit(struct ArmCpu *cpu, struct ArmMem *physMem, stru
     struct PxaPwrClk *pc = (struct PxaPwrClk *)malloc(sizeof(*pc));
     struct ArmCoprocessor cp14 = {
         .regXfer = pxaPwrClkPrvCoproc14regXferFunc,
+        .dataProcessing = nullptr,
+        .memAccess = nullptr,
+        .twoRegF = nullptr,
         .userData = pc,
     };
     struct ArmCoprocessor cp7 = {
         .regXfer = pxaPwrClkPrvCoproc7regXferFunc,
+        .dataProcessing = nullptr,
+        .memAccess = nullptr,
+        .twoRegF = nullptr,
         .userData = pc,
     };
 
