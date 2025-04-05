@@ -7,13 +7,21 @@
 
 #include "cputil.h"
 #include "mem.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_PWM_SIZE 0x0010
 
+#define SAVESTATE_VERSION 0
+
 struct PxaPwm {
-    uint32_t duty : 11;
-    uint32_t per : 10;
-    uint32_t ctrl : 7;
+    uint32_t duty;
+    uint32_t per;
+    uint32_t ctrl;
+
+    template <typename T>
+    void DoSaveLoad(T& chunkHelper) {
+        chunkHelper.Do32(duty).Do32(per).Do32(ctrl);
+    }
 };
 
 static bool pxaPwmPrvMemAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write,
@@ -72,3 +80,30 @@ struct PxaPwm* pxaPwmInit(struct ArmMem* physMem, uint32_t base) {
 
     return pwm;
 }
+
+template <typename T>
+void pxaPwmSave(struct PxaPwm* pwm, T& savestate, uint32_t index) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaPwm + index, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    pwm->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaPwmLoad(struct PxaPwm* pwm, T& loader, uint32_t index) {
+    auto chunk = loader.GetChunk(ChunkType::pxaPwm, SAVESTATE_VERSION, "pxa pwm");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    pwm->DoSaveLoad(helper);
+}
+
+template void pxaPwmSave<Savestate<ChunkType>>(PxaPwm* pwm, Savestate<ChunkType>& savestate,
+                                               uint32_t index);
+template void pxaPwmSave<SavestateProbe<ChunkType>>(PxaPwm* pwm,
+                                                    SavestateProbe<ChunkType>& savestate,
+                                                    uint32_t index);
+template void pxaPwmLoad<SavestateLoader<ChunkType>>(PxaPwm* pwm,
+                                                     SavestateLoader<ChunkType>& loader,
+                                                     uint32_t index);

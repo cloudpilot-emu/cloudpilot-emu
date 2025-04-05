@@ -4,6 +4,7 @@
 #define _PXA_PWM_H_
 
 #include "mem.h"
+#include "stdint.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +22,13 @@ struct PxaPwm* pxaPwmInit(struct ArmMem* physMem, uint32_t base);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void pxaPwmSave(struct PxaPwm* pwm, T& savestate, uint32_t index);
+
+template <typename T>
+void pxaPwmLoad(struct PxaPwm* pwm, T& loader, uint32_t index);
+
 #endif
 
 #endif

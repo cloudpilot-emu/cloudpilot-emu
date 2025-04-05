@@ -791,6 +791,14 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaMemCtrlrLoad(memCtrl, loader);
     pxaPwrClkLoad(pwrClk, loader);
     if (socRev == 2) pxaI2cLoad(pwrI2c, loader, 1);
+
+    pxaPwmLoad(pwm[0], loader, 0);
+    pxaPwmLoad(pwm[1], loader, 1);
+    if (socRev == 2) {
+        pxaPwmLoad(pwm[2], loader, 2);
+        pxaPwmLoad(pwm[3], loader, 3);
+    }
+
     pxaTimrLoad(tmr, loader);
     pxaLcdLoad(lcd, loader);
     cpuLoad(cpu, loader);
@@ -825,6 +833,14 @@ void SoC::Save(T &savestate) {
     pxaMemCtrlrSave(memCtrl, savestate);
     pxaPwrClkSave(pwrClk, savestate);
     if (socRev == 2) pxaI2cSave(pwrI2c, savestate, 1);
+
+    pxaPwmSave(pwm[0], savestate, 0);
+    pxaPwmSave(pwm[1], savestate, 1);
+    if (socRev == 2) {
+        pxaPwmSave(pwm[2], savestate, 2);
+        pxaPwmSave(pwm[3], savestate, 3);
+    }
+
     pxaTimrSave(tmr, savestate);
     pxaLcdSave(lcd, savestate);
     cpuSave(cpu, savestate);

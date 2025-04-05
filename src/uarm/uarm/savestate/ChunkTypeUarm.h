@@ -17,6 +17,7 @@ enum class ChunkType : uint32_t {
     pxaI2c = 0x00c0,
     pxaMemCtrlr = 0x00d0,
     pxaPwrClk = 0x00e0,
+    pxaPwm = 0x00f0,
 
     scheduler = 0x10000,
     cpu = 0x10010,
