@@ -52,11 +52,7 @@ SOURCE_C = 								\
 	uarm/gdbstub.c						\
 	uarm/vSD.c 							\
 	uarm/keys.c 						\
-	uarm/pxa_MMC.c 						\
-	uarm/pxa_RTC.c 						\
-	uarm/pxa255_UDC.c 					\
 	uarm/pxa270_UDC.c 					\
-	uarm/pxa255_DSP.c 					\
 	uarm/pxa270_IMC.c 					\
 	uarm/pxa270_KPC.c 					\
 	uarm/pxa270_WMMX.c 					\
@@ -93,6 +89,10 @@ SOURCE_CXX =		 					\
 	uarm/pxa_MemCtrl.cpp				\
 	uarm/pxa_PwrClk.cpp 				\
 	uarm/pxa_PWM.cpp					\
+	uarm/pxa_MMC.cpp					\
+	uarm/pxa_RTC.cpp					\
+	uarm/pxa255_DSP.cpp					\
+	uarm/pxa255_UDC.cpp					\
 	uarm/cp15.cpp 						\
 	uarm/memcpy.cpp						\
 	uarm/audio_queue.cpp				\

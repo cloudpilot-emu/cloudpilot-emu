@@ -6,9 +6,17 @@
 #include <string.h>
 
 #include "cputil.h"
+#include "savestate/savestateAll.h"
+
+#define SAVESTATE_VERSION 0
 
 struct Pxa255dsp {
     uint64_t acc0;
+
+    template <typename T>
+    void DoSaveLoad(T& chunkHelper) {
+        chunkHelper.Do64(acc0);
+    }
 };
 
 bool pxa255dspPrvAccess(struct ArmCpu* cpu, void* userData, bool MRRC, uint8_t op, uint8_t RdLo,
@@ -86,3 +94,27 @@ struct Pxa255dsp* pxa255dspInit(struct ArmCpu* cpu) {
 
     return dsp;
 }
+
+template <typename T>
+void pxa255dspSave(struct Pxa255dsp* dsp, T& savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxa255dsp, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    dsp->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxa255dspLoad(struct Pxa255dsp* dsp, T& loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxa255dsp, SAVESTATE_VERSION, "pxa255 dsp");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    dsp->DoSaveLoad(helper);
+}
+
+template void pxa255dspSave<Savestate<ChunkType>>(Pxa255dsp* dsp, Savestate<ChunkType>& savestate);
+template void pxa255dspSave<SavestateProbe<ChunkType>>(Pxa255dsp* dsp,
+                                                       SavestateProbe<ChunkType>& savestate);
+template void pxa255dspLoad<SavestateLoader<ChunkType>>(Pxa255dsp* dsp,
+                                                        SavestateLoader<ChunkType>& loader);

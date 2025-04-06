@@ -19,6 +19,13 @@ void pxaRtcTick(struct PxaRtc* rtc);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void pxaRtcSave(struct PxaRtc* rtc, T& savestate);
+
+template <typename T>
+void pxaRtcLoad(struct PxaRtc* rtc, T& loader);
+
 #endif
 
 #endif

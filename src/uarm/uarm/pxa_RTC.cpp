@@ -9,9 +9,12 @@
 #include "cputil.h"
 #include "mem.h"
 #include "pxa_IC.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_RTC_BASE 0x40900000UL
 #define PXA_RTC_SIZE 0x00001000UL
+
+#define SAVESTATE_VERSION 0
 
 struct PxaRtc {
     struct SocIc *ic;
@@ -22,6 +25,11 @@ struct PxaRtc {
     uint32_t RTTR;  // RTC trim - we ignore this alltogether
 
     uint8_t RTSR;  // RTC status
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do32(lastSeenTime).Do32(RCNR).Do32(RTAR).Do32(RTTR).Do8(RTSR);
+    }
 };
 
 void pxaRtcPrvUpdate(struct PxaRtc *rtc) {
@@ -119,3 +127,27 @@ void pxaRtcTick(struct PxaRtc *rtc) {
     rtc->RCNR++;
     pxaRtcPrvUpdate(rtc);
 }
+
+template <typename T>
+void pxaRtcSave(struct PxaRtc *rtc, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaRtc, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    rtc->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaRtcLoad(struct PxaRtc *rtc, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxaRtc, SAVESTATE_VERSION, "pxa rtc");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    rtc->DoSaveLoad(helper);
+}
+
+template void pxaRtcSave<Savestate<ChunkType>>(PxaRtc *rtc, Savestate<ChunkType> &savestate);
+template void pxaRtcSave<SavestateProbe<ChunkType>>(PxaRtc *rtc,
+                                                    SavestateProbe<ChunkType> &savestate);
+template void pxaRtcLoad<SavestateLoader<ChunkType>>(PxaRtc *rtc,
+                                                     SavestateLoader<ChunkType> &loader);

@@ -7,9 +7,12 @@
 
 #include "cputil.h"
 #include "mem.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_UDC_BASE 0x40600000UL
 #define PXA_UDC_SIZE 0x00001000UL
+
+#define SAVESTATE_VERSION 0
 
 struct Pxa255Udc {
     struct SocDma *dma;
@@ -18,6 +21,11 @@ struct Pxa255Udc {
     uint32_t reg4;
 
     uint8_t ccr, uicr0, uicr1;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do32(reg4).Do(typename T::Pack8() << ccr << uicr0 << uicr1);
+    }
 };
 
 static bool pxa255UdcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, bool write,
@@ -101,3 +109,27 @@ struct Pxa255Udc *pxa255UdcInit(struct ArmMem *physMem, struct SocIc *ic, struct
 
     return udc;
 }
+
+template <typename T>
+void pxa255UdcSave(struct Pxa255Udc *udc, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxa255udc, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    udc->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxa255UdcLoad(struct Pxa255Udc *udc, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxa255udc, SAVESTATE_VERSION, "pxa255 udc");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    udc->DoSaveLoad(helper);
+}
+
+template void pxa255UdcSave<Savestate<ChunkType>>(Pxa255Udc *udc, Savestate<ChunkType> &savestate);
+template void pxa255UdcSave<SavestateProbe<ChunkType>>(Pxa255Udc *udc,
+                                                       SavestateProbe<ChunkType> &savestate);
+template void pxa255UdcLoad<SavestateLoader<ChunkType>>(Pxa255Udc *udc,
+                                                        SavestateLoader<ChunkType> &loader);

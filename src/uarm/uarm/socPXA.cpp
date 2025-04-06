@@ -800,7 +800,17 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     }
 
     pxaTimrLoad(tmr, loader);
+    pxaMmcLoad(mmc, loader);
+    pxaRtcLoad(rtc, loader);
     pxaLcdLoad(lcd, loader);
+
+    if (socRev == 2) {
+        pxa255dspLoad(dsp, loader);
+        pxa255UdcLoad(udc1, loader);
+    } else {
+        // no 27x for now
+    }
+
     cpuLoad(cpu, loader);
     scheduler->Load(loader);
 
@@ -842,7 +852,17 @@ void SoC::Save(T &savestate) {
     }
 
     pxaTimrSave(tmr, savestate);
+    pxaMmcSave(mmc, savestate);
+    pxaRtcSave(rtc, savestate);
     pxaLcdSave(lcd, savestate);
+
+    if (socRev == 2) {
+        pxa255dspSave(dsp, savestate);
+        pxa255UdcSave(udc1, savestate);
+    } else {
+        // no 27x for now
+    }
+
     cpuSave(cpu, savestate);
     scheduler->Save(savestate);
 

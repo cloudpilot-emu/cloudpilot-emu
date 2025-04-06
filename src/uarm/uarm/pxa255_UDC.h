@@ -20,6 +20,13 @@ struct Pxa255Udc *pxa255UdcInit(struct ArmMem *physMem, struct SocIc *ic, struct
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void pxa255UdcSave(struct Pxa255Udc *udc, T &savestate);
+
+template <typename T>
+void pxa255UdcLoad(struct Pxa255Udc *udc, T &loader);
+
 #endif
 
 #endif

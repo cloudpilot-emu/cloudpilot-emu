@@ -8,9 +8,12 @@
 #include "cputil.h"
 #include "mem.h"
 #include "pxa_DMA.h"
+#include "savestate/savestateAll.h"
 
 #define PXA_MMC_BASE 0x41100000UL
 #define PXA_MMC_SIZE 0x00001000UL
+
+#define SAVESTATE_VERSION 0
 
 struct PxaMmc {
     struct SocDma *dma;
@@ -27,6 +30,20 @@ struct PxaMmc {
     // fifo
     uint32_t fifoBytes, fifoOfst;
     uint8_t blockFifo[1024];
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.Do32(arg)
+            .Do(typename T::Pack16() << stat << readTo)
+            .Do(typename T::Pack16() << blkLen << numBlks)
+            .Do(typename T::Pack8() << spi << iMask << iReg << cmdat)
+            .Do(typename T::Pack8() << clockSpeed << resTo << cmdReg)
+            .DoBuffer16(respBuf, sizeof(respBuf) >> 1)
+            .Do(typename T::BoolPack() << clockOn << cmdQueued << dataXferOngoing)
+            .Do32(fifoBytes)
+            .Do32(fifoOfst)
+            .DoBuffer(blockFifo, sizeof(blockFifo));
+    }
 };
 
 static void pxaMmcPrvIrqUpdate(struct PxaMmc *mmc) {
@@ -481,3 +498,27 @@ struct PxaMmc *pxaMmcInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDm
 }
 
 void pxaMmcInsert(struct PxaMmc *mmc, struct VSD *vsd) { mmc->vsd = vsd; }
+
+template <typename T>
+void pxaMmcSave(struct PxaMmc *mmc, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::pxaMmc, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    mmc->DoSaveLoad(helper);
+}
+
+template <typename T>
+void pxaMmcLoad(struct PxaMmc *mmc, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::pxaMmc, SAVESTATE_VERSION, "pxa mmc");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    mmc->DoSaveLoad(helper);
+}
+
+template void pxaMmcSave<Savestate<ChunkType>>(PxaMmc *mmc, Savestate<ChunkType> &savestate);
+template void pxaMmcSave<SavestateProbe<ChunkType>>(PxaMmc *mmc,
+                                                    SavestateProbe<ChunkType> &savestate);
+template void pxaMmcLoad<SavestateLoader<ChunkType>>(PxaMmc *mmc,
+                                                     SavestateLoader<ChunkType> &loader);

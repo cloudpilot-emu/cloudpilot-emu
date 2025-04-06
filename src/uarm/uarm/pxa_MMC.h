@@ -21,6 +21,13 @@ void pxaMmcInsert(struct PxaMmc* mmc, struct VSD* vsd);  // NULL also acceptable
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void pxaMmcSave(struct PxaMmc* mmc, T& savestate);
+
+template <typename T>
+void pxaMmcLoad(struct PxaMmc* mmc, T& loader);
+
 #endif
 
 #endif
