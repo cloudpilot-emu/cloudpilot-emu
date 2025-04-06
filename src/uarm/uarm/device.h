@@ -99,6 +99,13 @@ enum DeviceType deviceGetType(struct Device *dev);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void deviceSave(struct Device *dev, T &savestate);
+
+template <typename T>
+void deviceLoad(struct Device *dev, T &loader);
+
 #endif
 
 #endif

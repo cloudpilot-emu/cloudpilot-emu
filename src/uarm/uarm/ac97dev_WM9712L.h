@@ -36,6 +36,13 @@ void wm9712LsetAudioQueue(struct WM9712L *wm, struct AudioQueue *audioQueue);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void wm9712Lsave(struct WM9712L *wm, T &savestate);
+
+template <typename T>
+void wm9712Lload(struct WM9712L *wm, T &loader);
+
 #endif
 
 #endif

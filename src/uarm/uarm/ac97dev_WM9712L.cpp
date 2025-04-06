@@ -8,6 +8,9 @@
 
 #include "audio_queue.h"
 #include "cputil.h"
+#include "savestate/savestateAll.h"
+
+#define SAVESTATE_VERSION 0
 
 enum WM9712REG {
     RESET = 0x00,
@@ -94,6 +97,28 @@ struct WM9712L {
     uint16_t otherTwo[2];
 
     struct AudioQueue *audioQueue;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        chunkHelper.DoBuffer16(digiRegs, sizeof(digiRegs) >> 1)
+            .Do(typename T::Pack16() << addFunc1 << vendorTest)
+            .Do(typename T::Pack16() << addFunc2 << pdown1)
+            .Do(typename T::Pack16() << pdown2 << extdCtl)
+            .Do(typename T::Pack16() << recSel << gpioCfg)
+            .Do(typename T::Pack16() << gpioPolTyp << gpioSticky)
+            .Do(typename T::Pack16() << gpioWake << gpioStatus)
+            .Do(typename T::Pack16() << gpioSharing << dacRate)
+            .Do(typename T::Pack16() << auxDacRate << adcRate)
+            .Do(typename T::Pack16() << volOut2 << volHP)
+            .Do(typename T::Pack16() << volMono << volPhone)
+            .Do(typename T::Pack16() << volMic << volOut3)
+            .Do(typename T::Pack16() << volLineIn << dacVol)
+            .Do(typename T::Pack16() << recGain << volSidetone)
+            .DoBuffer16(vAux, sizeof(vAux) >> 1)
+            .DoBool(haveUnreadPenData)
+            .Do(typename T::Pack8() << cooIdx << numUnreadDatas)
+            .Do(typename T::Pack16() << otherTwo[0] << otherTwo[1]);
+    }
 };
 
 static void wm9712LprvGpioRecalc(struct WM9712L *wm) {
@@ -607,3 +632,29 @@ void wm9712LsetPen(struct WM9712L *wm, int16_t x, int16_t y,
 void wm9712LsetAudioQueue(struct WM9712L *wm, struct AudioQueue *audioQueue) {
     wm->audioQueue = audioQueue;
 }
+
+template <typename T>
+void wm9712Lsave(struct WM9712L *wm, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::wm9712L, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    wm->DoSaveLoad(helper);
+}
+
+template <typename T>
+void wm9712Lload(struct WM9712L *wm, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::wm9712L, SAVESTATE_VERSION, "wm9712L");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    wm->DoSaveLoad(helper);
+
+    wm9712LsetPen(wm, 0, 0, -1);
+}
+
+template void wm9712Lsave<Savestate<ChunkType>>(WM9712L *wm, Savestate<ChunkType> &savestate);
+template void wm9712Lsave<SavestateProbe<ChunkType>>(WM9712L *wm,
+                                                     SavestateProbe<ChunkType> &savestate);
+template void wm9712Lload<SavestateLoader<ChunkType>>(WM9712L *wm,
+                                                      SavestateLoader<ChunkType> &loader);

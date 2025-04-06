@@ -22,6 +22,7 @@ enum class ChunkType : uint32_t {
     pxaRtc = 0x0110,
     pxa255dsp = 0x0120,
     pxa255udc = 0x0130,
+    wm9712L = 0x0140,
 
     scheduler = 0x10000,
     cpu = 0x10010,

@@ -6,6 +6,7 @@
 #include "cputil.h"
 #include "device.h"
 #include "mmiodev_DirectNAND.h"
+#include "savestate/savestateAll.h"
 
 // clang-format off
 /*
@@ -136,6 +137,7 @@ struct Device *deviceSetup(enum DeviceType type, struct SocPeriphs *sp,
         .devIdLen = 2,
         .devId = {0xec, 0x75},
     };
+
     struct Device *dev;
 
     dev = (struct Device *)malloc(sizeof(*dev));
@@ -256,3 +258,19 @@ void deviceSetSdCardInserted(struct Device *dev, bool inserted) {
 }
 
 enum DeviceType deviceGetType(struct Device *dev) { return dev->type; }
+
+template <typename T>
+void deviceSave(struct Device *dev, T &savestate) {
+    wm9712Lsave(dev->wm9712L, savestate);
+}
+
+template <typename T>
+void deviceLoad(struct Device *dev, T &loader) {
+    wm9712Lload(dev->wm9712L, loader);
+}
+
+template void deviceSave<Savestate<ChunkType>>(Device *dev, Savestate<ChunkType> &savestate);
+template void deviceSave<SavestateProbe<ChunkType>>(Device *dev,
+                                                    SavestateProbe<ChunkType> &savestate);
+template void deviceLoad<SavestateLoader<ChunkType>>(Device *dev,
+                                                     SavestateLoader<ChunkType> &loader);

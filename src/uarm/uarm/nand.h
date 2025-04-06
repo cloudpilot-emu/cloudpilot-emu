@@ -30,7 +30,7 @@ struct NandSpecs {
     uint8_t pagesPerBlockLg2;
     uint8_t flags;
     uint8_t devIdLen;
-    uint8_t devId[];
+    uint8_t devId[2];
 };
 
 struct NAND *nandInit(uint8_t *nandContent, struct Reschedule reschedule, size_t nandSize,

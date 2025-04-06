@@ -813,6 +813,7 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
 
     cpuLoad(cpu, loader);
     scheduler->Load(loader);
+    deviceLoad(dev, loader);
 
     Chunk *chunk = loader.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION, "socPXA");
     if (!chunk) return;
@@ -865,6 +866,7 @@ void SoC::Save(T &savestate) {
 
     cpuSave(cpu, savestate);
     scheduler->Save(savestate);
+    deviceSave(dev, savestate);
 
     auto *chunk = savestate.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION);
     if (!chunk) abort();
