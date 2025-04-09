@@ -362,7 +362,7 @@ void cp15SetFaultStatus(struct ArmCP15* cp15, uint32_t addr, uint_fast8_t faultS
 template <typename T>
 void cp15Save(struct ArmCP15* cp15, T& savestate) {
     auto chunk = savestate.GetChunk(ChunkType::cp15, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     cp15->DoSaveLoad(helper);

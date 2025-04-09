@@ -502,7 +502,7 @@ void pxaMmcInsert(struct PxaMmc *mmc, struct VSD *vsd) { mmc->vsd = vsd; }
 template <typename T>
 void pxaMmcSave(struct PxaMmc *mmc, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaMmc, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     mmc->DoSaveLoad(helper);

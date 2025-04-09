@@ -451,7 +451,7 @@ void socAC97clientClientHaveData(struct SocAC97 *ac97, enum Ac97Codec which, uin
 template <typename T>
 void pxaAC97Save(struct SocAC97 *ac97, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaAc97, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     ac97->DoSaveLoad(helper);

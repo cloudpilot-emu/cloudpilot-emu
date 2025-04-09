@@ -558,7 +558,7 @@ struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc 
 template <typename T>
 void pxaLcdSave(struct PxaLcd *lcd, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaLcd, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     lcd->DoSaveLoad(helper);

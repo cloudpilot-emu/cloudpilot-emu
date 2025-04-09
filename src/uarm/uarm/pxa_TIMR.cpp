@@ -194,7 +194,7 @@ uint32_t pxaTimrTicksToNextInterrupt(struct PxaTimr *timr) {
 template <typename T>
 void pxaTimrSave(PxaTimr *timr, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaTimr, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     timr->DoSaveLoad(helper);

@@ -415,7 +415,7 @@ void __attribute__((used)) mmuDump(struct ArmMmu *mmu) {
 template <typename T>
 void mmuSave(struct ArmMmu *mmu, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::mmu, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     mmu->DoSaveLoad(helper);

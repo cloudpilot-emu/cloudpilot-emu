@@ -230,7 +230,7 @@ bool socSspTaskRequired(struct SocSsp *ssp) { return ssp->sr & 0x10; }
 template <typename T>
 void pxaSspSave(struct SocSsp *ssp, T &savestate, uint32_t index = 0) {
     auto chunk = savestate.GetChunk(ChunkType::pxaSsp + index, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     ssp->DoSaveLoad(helper);

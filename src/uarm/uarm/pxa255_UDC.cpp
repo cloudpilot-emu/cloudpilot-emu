@@ -113,7 +113,7 @@ struct Pxa255Udc *pxa255UdcInit(struct ArmMem *physMem, struct SocIc *ic, struct
 template <typename T>
 void pxa255UdcSave(struct Pxa255Udc *udc, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxa255udc, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     udc->DoSaveLoad(helper);

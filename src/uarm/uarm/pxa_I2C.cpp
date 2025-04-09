@@ -237,7 +237,7 @@ struct SocI2c *socI2cInit(struct ArmMem *physMem, struct SocIc *ic, struct SocDm
 template <typename T>
 void pxaI2cSave(struct SocI2c *i2c, T &savestate, uint32_t index) {
     auto chunk = savestate.GetChunk(ChunkType::pxaI2c + index, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     i2c->DoSaveLoad(helper);

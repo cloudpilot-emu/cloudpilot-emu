@@ -384,7 +384,7 @@ void pxaPwrClkReset(struct PxaPwrClk *pc) {
 template <typename T>
 void pxaPwrClkSave(struct PxaPwrClk *pc, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaPwrClk, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     pc->DoSaveLoad(helper);

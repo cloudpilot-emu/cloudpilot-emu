@@ -211,7 +211,7 @@ void socI2sPeriodic(struct SocI2s *i2s) {
 template <typename T>
 void pxaI2sSave(struct SocI2s *i2s, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaI2s, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     i2s->DoSaveLoad(helper);

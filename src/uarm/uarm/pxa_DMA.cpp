@@ -533,7 +533,7 @@ bool socDmaTaskRequired(struct SocDma* dma) {
 template <typename T>
 void pxaDmaSave(SocDma* dma, T& savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaDma, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     dma->DoSaveLoad(helper);

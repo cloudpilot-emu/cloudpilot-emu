@@ -131,7 +131,7 @@ void pxaRtcTick(struct PxaRtc *rtc) {
 template <typename T>
 void pxaRtcSave(struct PxaRtc *rtc, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaRtc, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     rtc->DoSaveLoad(helper);

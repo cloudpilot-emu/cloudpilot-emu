@@ -3629,7 +3629,7 @@ void cpuSave(ArmCpu *cpu, T &savestate) {
     patchDispatchSave(cpu->patchDispatch, savestate);
 
     auto chunk = savestate.GetChunk(ChunkType::cpu, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     cpu->DoSaveLoad(helper);

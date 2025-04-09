@@ -84,7 +84,7 @@ struct PxaPwm* pxaPwmInit(struct ArmMem* physMem, uint32_t base) {
 template <typename T>
 void pxaPwmSave(struct PxaPwm* pwm, T& savestate, uint32_t index) {
     auto chunk = savestate.GetChunk(ChunkType::pxaPwm + index, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     pwm->DoSaveLoad(helper);

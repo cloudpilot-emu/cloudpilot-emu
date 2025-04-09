@@ -240,7 +240,7 @@ struct PxaMemCtrlr* pxaMemCtrlrInit(struct ArmMem* physMem, uint_fast8_t socRev)
 template <typename T>
 void pxaMemCtrlrSave(struct PxaMemCtrlr* pxaMemCtrlr, T& savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaMemCtrlr, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     pxaMemCtrlr->DoSaveLoad(helper);

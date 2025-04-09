@@ -345,7 +345,7 @@ void socIcInt(struct SocIc *ic, uint_fast8_t intNum,
 template <typename T>
 void pxaIcSave(SocIc *ic, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaIc, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     ic->DoSaveLoad(helper);

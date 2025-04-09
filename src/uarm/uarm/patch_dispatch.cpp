@@ -192,7 +192,7 @@ void patchDispatchSetCpu(struct PatchDispatch* pd, struct ArmCpu* cpu) { pd->cpu
 template <typename T>
 void patchDispatchSave(PatchDispatch* pd, T& savestate) {
     auto chunk = savestate.GetChunk(ChunkType::patchDispatch, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     for (size_t i = 0; i < pd->nPendingTailpatches; i++) {
         SerializedTailpatch& serializedTailpatch(pd->serializedTailpatches[i]);

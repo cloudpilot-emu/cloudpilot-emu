@@ -396,7 +396,7 @@ void socGpioSetDirsChangedNotif(struct SocGpio *gpio, GpioDirsChangedF notifF, v
 template <typename T>
 void pxaGpioSave(struct SocGpio *gpio, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxaGpio, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     gpio->DoSaveLoad(helper);

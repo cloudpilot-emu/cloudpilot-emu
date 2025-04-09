@@ -98,7 +98,7 @@ struct Pxa255dsp* pxa255dspInit(struct ArmCpu* cpu) {
 template <typename T>
 void pxa255dspSave(struct Pxa255dsp* dsp, T& savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pxa255dsp, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     dsp->DoSaveLoad(helper);

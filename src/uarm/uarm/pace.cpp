@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 #include "CPEndian.h"
+#include "cputil.h"
 #include "mem.h"
 #include "memcpy.h"
 #include "savestate/savestateAll.h"
@@ -445,7 +446,7 @@ enum paceStatus paceExecute() {
 template <typename T>
 void paceSave(T& savestate) {
     auto chunk = savestate.GetChunk(ChunkType::pace, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     MakeSR();
 

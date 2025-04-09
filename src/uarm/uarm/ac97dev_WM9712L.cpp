@@ -636,7 +636,7 @@ void wm9712LsetAudioQueue(struct WM9712L *wm, struct AudioQueue *audioQueue) {
 template <typename T>
 void wm9712Lsave(struct WM9712L *wm, T &savestate) {
     auto chunk = savestate.GetChunk(ChunkType::wm9712L, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     wm->DoSaveLoad(helper);

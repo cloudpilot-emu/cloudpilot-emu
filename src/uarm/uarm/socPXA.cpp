@@ -869,7 +869,7 @@ void SoC::Save(T &savestate) {
     deviceSave(dev, savestate);
 
     auto *chunk = savestate.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     DoSaveLoad(helper);

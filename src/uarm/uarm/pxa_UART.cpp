@@ -623,7 +623,7 @@ bool socUartTaskRequired(struct SocUart *uart) { return (uart->LSR & UART_LSR_TE
 template <typename T>
 void pxaUartSave(SocUart *uart, T &savestate, uint32_t index) {
     auto chunk = savestate.GetChunk(ChunkType::pxaUart + index, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     uart->DoSaveLoad(helper);

@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "Logging.h"
+#include "cputil.h"
 #include "savestate/savestateAll.h"
 
 #define SCHEDULER_TASK_TIMER 0
@@ -217,7 +218,7 @@ template <typename T>
 template <typename U>
 void Scheduler<T>::Save(U& savestate) {
     auto chunk = savestate.GetChunk(ChunkType::scheduler, SAVESTATE_VERSION);
-    if (!chunk) abort();
+    if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
     DoSaveLoad(helper);
