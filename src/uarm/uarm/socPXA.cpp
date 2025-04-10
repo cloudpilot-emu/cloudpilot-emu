@@ -43,12 +43,12 @@
 #include "device.h"
 #include "keys.h"
 #include "mem.h"
+#include "memory_buffer.h"
 #include "pace_patch.h"
 #include "patch_dispatch.h"
 #include "patches.h"
 #include "peephole.h"
 #include "queue.h"
-#include "ram_buffer.h"
 #include "reschedule.h"
 #include "savestate/savestateAll.h"
 #include "scheduler.h"
@@ -145,8 +145,11 @@ struct SoC {
         };
     };
 
-    RamBuffer sramBuffer;
-    RamBuffer ramBuffer;
+    MemoryBuffer bufferRam;
+    MemoryBuffer bufferNand;
+    MemoryBuffer bufferVsd;
+    MemoryBuffer bufferLcd;
+    MemoryBuffer bufferSram;
 
     ArmRam *sram;
     ArmRam *ram;
@@ -254,6 +257,33 @@ static void schedulePcmTask(SoC *soc) {
                                  soc->pcmSuspended ? 0 : 1);
 }
 
+static void socAllocateBuffers(SoC *soc) {
+    size_t memoryBufferSize = deviceGetRamSize() + 3 * MEMORY_BUFFER_GRANULARITY;
+    if (soc->socRev == 2) memoryBufferSize += SRAM_SIZE;
+
+    bool success = memoryBufferAllocate(&soc->bufferRam, memoryBufferSize);
+
+    size_t offset = deviceGetRamSize();
+
+    success = success && memoryBufferGetSubBuffer(&soc->bufferRam, &soc->bufferNand, offset,
+                                                  MEMORY_BUFFER_GRANULARITY);
+    offset += MEMORY_BUFFER_GRANULARITY;
+
+    success = success && memoryBufferGetSubBuffer(&soc->bufferRam, &soc->bufferVsd, offset,
+                                                  MEMORY_BUFFER_GRANULARITY);
+    offset += MEMORY_BUFFER_GRANULARITY;
+
+    success = success && memoryBufferGetSubBuffer(&soc->bufferRam, &soc->bufferLcd, offset,
+                                                  MEMORY_BUFFER_GRANULARITY);
+    offset += MEMORY_BUFFER_GRANULARITY;
+
+    if (soc->socRev == 2)
+        success = success &&
+                  memoryBufferGetSubBuffer(&soc->bufferRam, &soc->bufferSram, offset, SRAM_SIZE);
+
+    if (!success) ERR("failed to allocate memory buffers");
+}
+
 SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
              uint8_t *nandContent, size_t nandSize, int gdbPort, uint_fast8_t socRev) {
     SoC *soc = (SoC *)malloc(sizeof(SoC));
@@ -262,8 +292,9 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
     struct Reschedule rescheduleSoc = {.rescheduleCb = socPrvReschedule, .ctx = soc};
 
     memset(soc, 0, sizeof(*soc));
-
     soc->socRev = socRev;
+
+    socAllocateBuffers(soc);
 
     soc->savestate = new Savestate<ChunkType>();
 
@@ -290,9 +321,7 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
     soc->syscallDispatch = initSyscallDispatch(soc->cpu);
     registerPatches(soc->patchDispatch, soc->syscallDispatch);
 
-    ramBufferAllocate(&soc->ramBuffer, deviceGetRamSize());
-
-    soc->ram = ramInit(soc->mem, soc, RAM_BASE, deviceGetRamSize(), &soc->ramBuffer, true);
+    soc->ram = ramInit(soc->mem, soc, RAM_BASE, deviceGetRamSize(), &soc->bufferRam, true);
     if (!soc->ram) ERR("Cannot init RAM");
 
     soc->rom = romInit(soc->mem, ROM_BASE, romData, romSize);
@@ -309,7 +338,7 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
 
             // ram mirror for ram probe code
             soc->ramMirror = ramInit(soc->mem, soc, RAM_BASE + deviceGetRamSize(),
-                                     deviceGetRamSize(), &soc->ramBuffer, false);
+                                     deviceGetRamSize(), &soc->bufferRam, false);
             if (!soc->ramMirror) ERR("Cannot init RAM mirror");
             break;
 
@@ -344,11 +373,7 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
         soc->kpc = pxaKpcInit(soc->mem, soc->ic);
         if (!soc->kpc) ERR("Cannot init PXA270's KPC");
 
-        // SRAM
-        ramBufferAllocate(&soc->sramBuffer, SRAM_SIZE);
-        ;
-
-        soc->sram = ramInit(soc->mem, soc, SRAM_BASE, SRAM_SIZE, &soc->sramBuffer, false);
+        soc->sram = ramInit(soc->mem, soc, SRAM_BASE, SRAM_SIZE, &soc->bufferSram, false);
         if (!soc->ram) ERR("Cannot init SRAM");
     }
 
@@ -473,8 +498,8 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
     sp.uarts[2] = soc->stUart;
     sp.uarts[3] = soc->btUart;
 
-    soc->dev =
-        deviceSetup(deviceType, &sp, rescheduleSoc, soc->kp, soc->vSD, nandContent, nandSize);
+    soc->dev = deviceSetup(deviceType, &sp, rescheduleSoc, soc->kp, soc->vSD, nandContent, nandSize,
+                           &soc->bufferNand);
     if (!soc->dev) ERR("Cannot init device\n");
 
     soc->vSD = vsdInit(sdCardRead, sdCardWrite, 0);
@@ -735,11 +760,11 @@ bool socIsNandDirty(struct SoC *soc) { return nandIsDirty(soc->nand); }
 void socSetNandDirty(struct SoC *soc, bool isDirty) { nandSetDirty(soc->nand, isDirty); }
 
 struct Buffer socGetRamData(struct SoC *soc) {
-    return {.size = soc->ramBuffer.size, .data = soc->ramBuffer.buffer};
+    return {.size = soc->bufferRam.size, .data = soc->bufferRam.buffer};
 }
 
 struct Buffer socGetRamDirtyPages(struct SoC *soc) {
-    return {.size = soc->ramBuffer.dirtyPagesSize, .data = soc->ramBuffer.dirtyPages};
+    return {.size = soc->bufferRam.dirtyPagesSize, .data = soc->bufferRam.dirtyPages};
 }
 
 void socSdInsert(struct SoC *soc) {

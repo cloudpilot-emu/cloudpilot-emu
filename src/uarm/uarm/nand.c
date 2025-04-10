@@ -8,6 +8,7 @@
 #include "CPU.h"
 #include "cputil.h"
 #include "mem.h"
+#include "memory_buffer.h"
 
 enum K9nandState {
     K9nandStateReset,
@@ -49,7 +50,7 @@ struct NAND {
     uint32_t pageNo;    // read & program only
     uint32_t pageOfst;  // for read ops only
     uint32_t busyCt;
-    uint8_t *pageBuf;
+    struct MemoryBuffer pageBuf;
 
     // data
     size_t dataSize;
@@ -134,7 +135,7 @@ static bool nandPrvPageProgram(struct NAND *nand) {
     // NAND_PAGES_PER_BLOCK, nand->pageNo % NAND_PAGES_PER_BLOCK);
 
     for (i = 0; i < nand->bytesPerPage; i++) {
-        nand->data[nand->pageNo * nand->bytesPerPage + i] &= nand->pageBuf[i];
+        nand->data[nand->pageNo * nand->bytesPerPage + i] &= nand->pageBuf.buffer[i];
         //	if (nand->data[nand->pageNo * NAND_PAGE_SIZE + i] != nand->pageBuf[i])
         //		fprintf(stderr, "write fail for page %u af ofst %u. wrote 0x%02x, read
         // 0x%02x\n", nand->pageNo, i, nand->pageBuf[i], nand->data[nand->pageNo * NAND_PAGE_SIZE +
@@ -154,7 +155,8 @@ static bool nandPrvAcceptProgramData(struct NAND *nand, uint8_t val) {
         return true;
     }
 
-    nand->pageBuf[nand->pageOfst++] = val;
+    MEMORY_BUFFER_MARK_DIRTY(nand->pageBuf, nand->pageOfst);
+    nand->pageBuf.buffer[nand->pageOfst++] = val;
 
     return true;
 }
@@ -293,7 +295,8 @@ bool nandWrite(struct NAND *nand, bool cle, bool ale, uint8_t val) {
 
                 if (nand->pageNo >= (nand->blocksPerDevice << nand->pagesPerBlockLg2)) return false;
 
-                memset(nand->pageBuf, 0xff, nand->bytesPerPage);
+                memset(nand->pageBuf.buffer, 0xff, nand->bytesPerPage);
+                memoryBufferMarkRangeDirty(&nand->pageBuf, 0, nand->bytesPerPage);
 
                 switch (nand->area) {
                     case K9nandAreaA:
@@ -358,8 +361,9 @@ bool nandRead(struct NAND *nand, bool cle, bool ale, uint8_t *valP) {
                     return false;
                 }
 
-                memcpy(nand->pageBuf, &nand->data[nand->pageNo * nand->bytesPerPage],
+                memcpy(nand->pageBuf.buffer, &nand->data[nand->pageNo * nand->bytesPerPage],
                        nand->bytesPerPage);
+                memoryBufferMarkRangeDirty(&nand->pageBuf, 0, nand->bytesPerPage);
 
                 switch (nand->area) {
                     case K9nandAreaA:
@@ -384,10 +388,11 @@ bool nandRead(struct NAND *nand, bool cle, bool ale, uint8_t *valP) {
                 // fprintf(stderr, "reading page %5u (block addr %4u.%2u)\n", nand->pageNo,
                 // nand->pageNo / NAND_PAGES_PER_BLOCK, nand->pageNo % NAND_PAGES_PER_BLOCK);
 
-                memcpy(nand->pageBuf, &nand->data[nand->pageNo * nand->bytesPerPage],
+                memcpy(nand->pageBuf.buffer, &nand->data[nand->pageNo * nand->bytesPerPage],
                        nand->bytesPerPage);
+                memoryBufferMarkRangeDirty(&nand->pageBuf, 0, nand->bytesPerPage);
             }
-            *valP = nand->pageBuf[nand->pageOfst++];
+            *valP = nand->pageBuf.buffer[nand->pageOfst++];
             // fprintf(stderr, "[%3x] = 0x%02x\n", nand->pageOfst - 1, *valP);
             return true;
 
@@ -420,8 +425,9 @@ void nandSetDirty(struct NAND *nand, bool isDirty) { nand->dirty = isDirty; }
 
 bool nandIsReady(struct NAND *nand) { return !nand->busyCt; }
 
-struct NAND *nandInit(uint8_t *nandContent, struct Reschedule reschedule, size_t nandSize,
-                      const struct NandSpecs *specs, NandReadyCbk readyCbk, void *readyCbkData) {
+struct NAND *nandInit(uint8_t *nandContent, const struct MemoryBuffer *pageBuffer,
+                      struct Reschedule reschedule, size_t nandSize, const struct NandSpecs *specs,
+                      NandReadyCbk readyCbk, void *readyCbkData) {
     if (specs->bytesPerPage % 528) ERR("invalid NAND page size");
     if (((specs->bytesPerPage << specs->pagesPerBlockLg2) * specs->blocksPerDevice) % 4224)
         ERR("invalid NAND size");
@@ -459,8 +465,8 @@ struct NAND *nandInit(uint8_t *nandContent, struct Reschedule reschedule, size_t
     nand->areaSize = 1 << t;
     nand->pageAddrBytes = (31 - __builtin_clz(nandPages - 1) + 7) / 8;
 
-    nand->pageBuf = (uint8_t *)malloc(nand->bytesPerPage);
-    if (!nand->pageBuf) ERR("canont allcoate NAND page buffer\n");
+    if (nand->bytesPerPage > pageBuffer->size) ERR("not enough space for page buffer");
+    memcpy(&nand->pageBuf, pageBuffer, sizeof(*pageBuffer));
 
     if (nandContent) {
         if (nandSize != nandSz) {

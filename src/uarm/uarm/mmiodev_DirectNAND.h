@@ -18,12 +18,13 @@ extern "C" {
 struct DirectNAND;
 struct NAND;
 struct Device;
+struct MemoryBuffer;
 
 struct DirectNAND *directNandInit(struct ArmMem *physMem, struct Reschedule reschedule,
                                   uint32_t baseCleAddr, uint32_t baseAleAddr, uint32_t baseDataAddr,
                                   uint32_t maskBitsAddr, struct SocGpio *gpio, int rdyPin,
                                   const struct NandSpecs *specs, uint8_t *nandContent,
-                                  size_t nandSize);
+                                  size_t nandSize, const struct MemoryBuffer *pageBuffer);
 
 void directNandPeriodic(struct DirectNAND *nand);
 

@@ -128,7 +128,8 @@ static void devicePrvReschedule(void *ctx, uint32_t task) {
 
 struct Device *deviceSetup(enum DeviceType type, struct SocPeriphs *sp,
                            struct Reschedule reschedule, struct Keypad *kp, struct VSD *vsd,
-                           uint8_t *nandContent, size_t nandSize) {
+                           uint8_t *nandContent, size_t nandSize,
+                           const struct MemoryBuffer *pageBuffer) {
     static const struct NandSpecs nandSpecs = {
         .bytesPerPage = 528,
         .blocksPerDevice = 2048,
@@ -154,8 +155,9 @@ struct Device *deviceSetup(enum DeviceType type, struct SocPeriphs *sp,
     dev->wm9712L = wm9712LInit(sp->ac97, sp->gpio, 50);
     if (!dev->wm9712L) ERR("Cannot init WM9712L");
 
-    dev->nand = directNandInit(sp->mem, deviceReschedule, 0x04000002UL, 0x04000004UL, 0x04000000UL,
-                               0x00fffff9ul, sp->gpio, 79, &nandSpecs, nandContent, nandSize);
+    dev->nand =
+        directNandInit(sp->mem, deviceReschedule, 0x04000002UL, 0x04000004UL, 0x04000000UL,
+                       0x00fffff9ul, sp->gpio, 79, &nandSpecs, nandContent, nandSize, pageBuffer);
     if (!dev->nand) ERR("Cannot init NAND");
 
     if (!keypadAddGpioKey(kp, keyIdHard1, 11, false)) ERR("Cannot init hardkey1 (datebook)\n");

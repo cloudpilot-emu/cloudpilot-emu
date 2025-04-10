@@ -46,7 +46,7 @@ SOURCE_C = 								\
 	uarm/syscall.c						\
 	uarm/syscall_dispatch.c				\
 	uarm/mem.c 							\
-	uarm/ram_buffer.c					\
+	uarm/memory_buffer.c				\
 	uarm/RAM.c 							\
 	uarm/ROM.c 							\
 	uarm/gdbstub.c						\

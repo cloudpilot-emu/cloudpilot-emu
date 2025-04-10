@@ -16,6 +16,7 @@ extern "C" {
 #endif
 
 struct NAND;
+struct MemoryBuffer;
 
 typedef void (*NandReadyCbk)(void *userData, bool ready);
 
@@ -33,8 +34,9 @@ struct NandSpecs {
     uint8_t devId[2];
 };
 
-struct NAND *nandInit(uint8_t *nandContent, struct Reschedule reschedule, size_t nandSize,
-                      const struct NandSpecs *specs, NandReadyCbk readyCbk, void *readyCbkData);
+struct NAND *nandInit(uint8_t *nandContent, const struct MemoryBuffer *pageBuffer,
+                      struct Reschedule reschedule, size_t nandSize, const struct NandSpecs *specs,
+                      NandReadyCbk readyCbk, void *readyCbkData);
 
 void nandSecondReadyCbkSet(struct NAND *nand, NandReadyCbk readyCbk, void *readyCbkData);
 

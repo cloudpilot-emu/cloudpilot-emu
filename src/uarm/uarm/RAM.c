@@ -8,11 +8,12 @@
 #include "CPEndian.h"
 #include "SoC.h"
 #include "cputil.h"
+#include "memory_buffer.h"
 
 struct ArmRam {
     uint32_t adr;
     uint32_t sz;
-    struct RamBuffer buf;
+    struct MemoryBuffer buf;
     struct SoC* soc;
 
     uint32_t framebufferStart;
@@ -31,7 +32,7 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
     const uint8_t* addr = (uint8_t*)ram->buf.buffer + offset;
 
     if (write) {
-        RAM_BUFFER_MARK_DIRTY(ram->buf, offset);
+        MEMORY_BUFFER_MARK_DIRTY(ram->buf, offset);
 
         switch (size) {
             case 1:
@@ -60,7 +61,7 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_64)
                     socSetFramebufferDirty(ram->soc);
 
-                if (offset & 0x3f) RAM_BUFFER_MARK_DIRTY(ram->buf, offset + 0x3f);
+                if (offset & 0x3f) MEMORY_BUFFER_MARK_DIRTY(ram->buf, offset + 0x3f);
 
                 *((uint64_t*)(addr + 0)) = htole64(((uint64_t*)bufP)[0]);
                 *((uint64_t*)(addr + 8)) = htole64(((uint64_t*)bufP)[1]);
@@ -76,7 +77,7 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_32)
                     socSetFramebufferDirty(ram->soc);
 
-                if (offset & 0x1f) RAM_BUFFER_MARK_DIRTY(ram->buf, offset + 0x1f);
+                if (offset & 0x1f) MEMORY_BUFFER_MARK_DIRTY(ram->buf, offset + 0x1f);
 
                 *((uint64_t*)(addr + 0)) = htole64(((uint64_t*)bufP)[0]);
                 *((uint64_t*)(addr + 8)) = htole64(((uint64_t*)bufP)[1]);
@@ -88,7 +89,7 @@ bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void
                 if (offset < ram->framebufferEnd && offset >= ram->framebufferStart_16)
                     socSetFramebufferDirty(ram->soc);
 
-                if (offset & 0x0f) RAM_BUFFER_MARK_DIRTY(ram->buf, offset + 0x0f);
+                if (offset & 0x0f) MEMORY_BUFFER_MARK_DIRTY(ram->buf, offset + 0x0f);
 
                 *((uint64_t*)(addr + 0)) = htole64(((uint64_t*)bufP)[0]);
                 *((uint64_t*)(addr + 8)) = htole64(((uint64_t*)bufP)[1]);
@@ -172,7 +173,7 @@ void ramSetFramebuffer(struct ArmRam* ram, uint32_t base, uint32_t size) {
 }
 
 struct ArmRam* ramInit(struct ArmMem* mem, struct SoC* soc, uint32_t adr, uint32_t sz,
-                       const struct RamBuffer* buf, bool primary) {
+                       const struct MemoryBuffer* buf, bool primary) {
     struct ArmRam* ram = (struct ArmRam*)malloc(sizeof(*ram));
 
     if (!ram) ERR("cannot alloc RAM at 0x%08x", adr);

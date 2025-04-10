@@ -69,6 +69,7 @@ enum RamTermination {  // what's after ram in phys map? (some devices probe)
 };
 
 struct Device;
+struct MemoryBuffer;
 
 // simple queries
 uint32_t deviceGetRamSize(void);
@@ -78,7 +79,8 @@ uint_fast8_t deviceGetSocRev(void);
 // device handling
 struct Device *deviceSetup(enum DeviceType type, struct SocPeriphs *sp,
                            struct Reschedule reschedule, struct Keypad *kp, struct VSD *vsd,
-                           uint8_t *nandContent, size_t nandSize);
+                           uint8_t *nandContent, size_t nandSize,
+                           const struct MemoryBuffer *nandPageBuffer);
 void deviceKey(struct Device *dev, uint32_t key, bool down);
 void devicePeriodic(struct Device *dev, uint32_t tier);
 void devicePcmPeriodic(struct Device *dev);

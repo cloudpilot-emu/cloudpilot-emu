@@ -7,7 +7,6 @@
 #include <stdint.h>
 
 #include "mem.h"
-#include "ram_buffer.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,9 +14,10 @@ extern "C" {
 
 struct ArmRam;
 struct SoC;
+struct MemoryBuffer;
 
 struct ArmRam* ramInit(struct ArmMem* mem, struct SoC* soc, uint32_t adr, uint32_t sz,
-                       const struct RamBuffer* buf, bool primary);
+                       const struct MemoryBuffer* buf, bool primary);
 
 bool ramAccessF(void* userData, uint32_t pa, uint_fast8_t size, bool write, void* bufP);
 
