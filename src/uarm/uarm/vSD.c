@@ -8,6 +8,7 @@
 #include <string.h>
 
 #include "cputil.h"
+#include "memory_buffer.h"
 
 // this is not and will never be a full SD card emulator, deal with it!
 
@@ -38,9 +39,6 @@ struct VSD {
 
     uint16_t rca;
 
-    uint32_t expectedBlockSz;
-    uint8_t dataBuf[64];  // for short data in/out ops that are not SD user data
-
     uint8_t expectDataToUs : 1;
     uint8_t hcCard : 1;
     uint8_t acmdShift : 1;
@@ -49,7 +47,7 @@ struct VSD {
     uint8_t initWaitLeft;
     uint32_t prevAcmd41Param;
 
-    uint8_t curBuf[512];
+    uint8_t curBuf[8];
     uint32_t curSec;
     uint16_t curBufLen;
     bool bufIsData;
@@ -66,7 +64,6 @@ bool vsdIsCardBusy(struct VSD *vsd) {
 }
 
 static void vsdCardReset(struct VSD *vsd) {
-    vsd->expectedBlockSz = 0;
     vsd->expectDataToUs = 0;
     vsd->acmdShift = 0;
     vsd->rca = 0;

@@ -147,7 +147,6 @@ struct SoC {
 
     MemoryBuffer bufferRam;
     MemoryBuffer bufferNand;
-    MemoryBuffer bufferVsd;
     MemoryBuffer bufferLcd;
     MemoryBuffer bufferSram;
 
@@ -258,7 +257,7 @@ static void schedulePcmTask(SoC *soc) {
 }
 
 static void socAllocateBuffers(SoC *soc) {
-    size_t memoryBufferSize = deviceGetRamSize() + 3 * MEMORY_BUFFER_GRANULARITY;
+    size_t memoryBufferSize = deviceGetRamSize() + 2 * MEMORY_BUFFER_GRANULARITY;
     if (soc->socRev == 2) memoryBufferSize += SRAM_SIZE;
 
     bool success = memoryBufferAllocate(&soc->bufferRam, memoryBufferSize);
@@ -266,10 +265,6 @@ static void socAllocateBuffers(SoC *soc) {
     size_t offset = deviceGetRamSize();
 
     success = success && memoryBufferGetSubBuffer(&soc->bufferRam, &soc->bufferNand, offset,
-                                                  MEMORY_BUFFER_GRANULARITY);
-    offset += MEMORY_BUFFER_GRANULARITY;
-
-    success = success && memoryBufferGetSubBuffer(&soc->bufferRam, &soc->bufferVsd, offset,
                                                   MEMORY_BUFFER_GRANULARITY);
     offset += MEMORY_BUFFER_GRANULARITY;
 
