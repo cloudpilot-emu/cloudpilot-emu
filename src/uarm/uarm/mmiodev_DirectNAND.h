@@ -34,6 +34,13 @@ struct NAND *directNandGetNand(struct DirectNAND *nand);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void directNandSave(struct DirectNAND *nand, T &savestate);
+
+template <typename T>
+void directNandLoad(struct DirectNAND *nand, T &loader);
+
 #endif
 
 #endif

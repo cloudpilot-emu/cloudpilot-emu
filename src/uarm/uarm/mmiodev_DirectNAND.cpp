@@ -10,6 +10,7 @@
 #include "device.h"
 #include "mem.h"
 #include "nand.h"
+#include "savestate/savestateAll.h"
 
 struct DirectNAND {
     uint32_t baseCleAddr, baseAleAddr, baseDataAddr, maskBitsAddr;
@@ -104,3 +105,20 @@ void directNandPeriodic(struct DirectNAND *directNand) { nandPeriodic(directNand
 bool directNandTaskRequired(struct DirectNAND *nand) { return nandTaskRequired(nand->nand); }
 
 struct NAND *directNandGetNand(struct DirectNAND *nand) { return nand->nand; }
+
+template <typename T>
+void directNandSave(struct DirectNAND *nand, T &savestate) {
+    nandSave(nand->nand, savestate);
+}
+
+template <typename T>
+void directNandLoad(struct DirectNAND *nand, T &loader) {
+    nandLoad(nand->nand, loader);
+}
+
+template void directNandSave<Savestate<ChunkType>>(DirectNAND *nand,
+                                                   Savestate<ChunkType> &savestate);
+template void directNandSave<SavestateProbe<ChunkType>>(DirectNAND *nand,
+                                                        SavestateProbe<ChunkType> &savestate);
+template void directNandLoad<SavestateLoader<ChunkType>>(DirectNAND *nand,
+                                                         SavestateLoader<ChunkType> &loader);

@@ -30,6 +30,7 @@ enum class ChunkType : uint32_t {
     mmu = 0x10030,
     cp15 = 0x10040,
     patchDispatch = 0x10050,
+    nand = 0x10060
 };
 
 inline ChunkType operator+(ChunkType chunkType, uint32_t index) {

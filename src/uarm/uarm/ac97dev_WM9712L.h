@@ -41,7 +41,7 @@ template <typename T>
 void wm9712Lsave(struct WM9712L *wm, T &savestate);
 
 template <typename T>
-void wm9712Lload(struct WM9712L *wm, T &loader);
+void wm9712Load(struct WM9712L *wm, T &loader);
 
 #endif
 

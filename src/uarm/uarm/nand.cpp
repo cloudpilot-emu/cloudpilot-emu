@@ -2,6 +2,7 @@
 
 #include "nand.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -9,8 +10,11 @@
 #include "cputil.h"
 #include "mem.h"
 #include "memory_buffer.h"
+#include "savestate/savestateAll.h"
 
-enum K9nandState {
+#define SAVESTATE_VERSION 0
+
+enum K9nandState : uint8_t {
     K9nandStateReset,
     K9nandStateReadId,
     K9nandStateProgramAddrRxing,
@@ -20,8 +24,8 @@ enum K9nandState {
     K9nandStateStatusReading,
 };
 
-enum K9nandArea {  // K9nandAreaB, K9nandAreaC only used if
-                   // flags.NAND_FLAG_SAMSUNG_ADDRESSED_VIA_AREAS is set
+enum K9nandArea : uint8_t {  // K9nandAreaB, K9nandAreaC only used if
+                             // flags.NAND_FLAG_SAMSUNG_ADDRESSED_VIA_AREAS is set
     K9nandAreaA,
     K9nandAreaB,
     K9nandAreaC,
@@ -61,6 +65,21 @@ struct NAND {
     bool dirty;
 
     struct Reschedule reschedule;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        uint8_t state8 = static_cast<uint8_t>(state);
+        uint8_t area8 = static_cast<uint8_t>(area);
+
+        chunkHelper.Do(typename T::Pack8() << state8 << area8 << addrBytesRxed)
+            .DoBuffer(addrBytes, sizeof(addrBytes))
+            .Do32(pageNo)
+            .Do32(pageOfst)
+            .Do32(busyCt);
+
+        state = static_cast<K9nandState>(state8);
+        area = static_cast<K9nandArea>(area8);
+    }
 };
 
 void nandSecondReadyCbkSet(struct NAND *nand, NandReadyCbk readyCbk, void *readyCbkData) {
@@ -499,3 +518,25 @@ struct NAND *nandInit(uint8_t *nandContent, const struct MemoryBuffer *pageBuffe
 
     return nand;
 }
+
+template <typename T>
+void nandSave(struct NAND *nand, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::nand, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    nand->DoSaveLoad(helper);
+}
+
+template <typename T>
+void nandLoad(struct NAND *nand, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::nand, SAVESTATE_VERSION, "nand");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    nand->DoSaveLoad(helper);
+}
+
+template void nandSave<Savestate<ChunkType>>(NAND *nand, Savestate<ChunkType> &savestate);
+template void nandSave<SavestateProbe<ChunkType>>(NAND *nand, SavestateProbe<ChunkType> &savestate);
+template void nandLoad<SavestateLoader<ChunkType>>(NAND *nand, SavestateLoader<ChunkType> &loader);

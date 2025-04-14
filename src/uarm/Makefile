@@ -56,8 +56,6 @@ SOURCE_C = 								\
 	uarm/pxa270_IMC.c 					\
 	uarm/pxa270_KPC.c 					\
 	uarm/pxa270_WMMX.c 					\
-	uarm/mmiodev_DirectNAND.c 			\
-	uarm/nand.c 						\
 	uarm/pace_patch.c 					\
 	uarm/peephole.c						\
 	uarm/uae/cpudefs.c 					\
@@ -92,6 +90,8 @@ SOURCE_CXX =		 					\
 	uarm/pxa255_DSP.cpp					\
 	uarm/pxa255_UDC.cpp					\
 	uarm/ac97dev_WM9712L.cpp			\
+	uarm/nand.cpp 						\
+	uarm/mmiodev_DirectNAND.cpp			\
 	uarm/devicePalmTungstenE2.cpp 		\
 	uarm/cp15.cpp 						\
 	uarm/memcpy.cpp						\

@@ -264,11 +264,13 @@ enum DeviceType deviceGetType(struct Device *dev) { return dev->type; }
 template <typename T>
 void deviceSave(struct Device *dev, T &savestate) {
     wm9712Lsave(dev->wm9712L, savestate);
+    directNandSave(dev->nand, savestate);
 }
 
 template <typename T>
 void deviceLoad(struct Device *dev, T &loader) {
-    wm9712Lload(dev->wm9712L, loader);
+    wm9712Load(dev->wm9712L, loader);
+    directNandLoad(dev->nand, loader);
 }
 
 template void deviceSave<Savestate<ChunkType>>(Device *dev, Savestate<ChunkType> &savestate);

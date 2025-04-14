@@ -56,6 +56,13 @@ void nandSetDirty(struct NAND *nand, bool isDirty);
 
 #ifdef __cplusplus
 }
+
+template <typename T>
+void nandSave(struct NAND *nand, T &savestate);
+
+template <typename T>
+void nandLoad(struct NAND *nand, T &loader);
+
 #endif
 
 #endif

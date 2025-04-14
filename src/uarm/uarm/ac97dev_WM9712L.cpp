@@ -643,7 +643,7 @@ void wm9712Lsave(struct WM9712L *wm, T &savestate) {
 }
 
 template <typename T>
-void wm9712Lload(struct WM9712L *wm, T &loader) {
+void wm9712Load(struct WM9712L *wm, T &loader) {
     auto chunk = loader.GetChunk(ChunkType::wm9712L, SAVESTATE_VERSION, "wm9712L");
     if (!chunk) return;
 
@@ -656,5 +656,5 @@ void wm9712Lload(struct WM9712L *wm, T &loader) {
 template void wm9712Lsave<Savestate<ChunkType>>(WM9712L *wm, Savestate<ChunkType> &savestate);
 template void wm9712Lsave<SavestateProbe<ChunkType>>(WM9712L *wm,
                                                      SavestateProbe<ChunkType> &savestate);
-template void wm9712Lload<SavestateLoader<ChunkType>>(WM9712L *wm,
-                                                      SavestateLoader<ChunkType> &loader);
+template void wm9712Load<SavestateLoader<ChunkType>>(WM9712L *wm,
+                                                     SavestateLoader<ChunkType> &loader);
