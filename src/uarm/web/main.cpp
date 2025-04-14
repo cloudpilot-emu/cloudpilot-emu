@@ -158,11 +158,11 @@ bool EMSCRIPTEN_KEEPALIVE isSdCardDirty() { return sdCardIsDirty(); }
 
 void EMSCRIPTEN_KEEPALIVE setSdCardDirty(bool isDirty) { return sdCardSetDirty(isDirty); }
 
-uint32_t EMSCRIPTEN_KEEPALIVE getRamDataSize() { return socGetRamData(soc).size; }
+uint32_t EMSCRIPTEN_KEEPALIVE getRamDataSize() { return socGetMemoryData(soc).size; }
 
-void* EMSCRIPTEN_KEEPALIVE getRamData() { return socGetRamData(soc).data; }
+void* EMSCRIPTEN_KEEPALIVE getRamData() { return socGetMemoryData(soc).data; }
 
-void* EMSCRIPTEN_KEEPALIVE getRamDirtyPages() { return socGetRamDirtyPages(soc).data; }
+void* EMSCRIPTEN_KEEPALIVE getRamDirtyPages() { return socGetMemoryDirtyPages(soc).data; }
 
 uint32_t EMSCRIPTEN_KEEPALIVE getDeviceType() { return deviceType; }
 }

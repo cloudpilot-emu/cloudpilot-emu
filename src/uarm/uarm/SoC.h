@@ -64,8 +64,8 @@ struct Buffer socGetNandDirtyPages(struct SoC *soc);
 bool socIsNandDirty(struct SoC *soc);
 void socSetNandDirty(struct SoC *soc, bool isDirty);
 
-struct Buffer socGetRamData(struct SoC *soc);
-struct Buffer socGetRamDirtyPages(struct SoC *soc);
+struct Buffer socGetMemoryData(struct SoC *soc);
+struct Buffer socGetMemoryDirtyPages(struct SoC *soc);
 
 bool socSave(struct SoC *soc);
 bool socLoad(struct SoC *soc, size_t savestateSize, void *savestateData);

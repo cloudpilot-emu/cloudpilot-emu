@@ -123,13 +123,13 @@ namespace {
 
         const Buffer rom = socGetRomData(ctx->soc);
         const Buffer nand = socGetNandData(ctx->soc);
-        const Buffer ram = socGetRamData(ctx->soc);
+        const Buffer memory = socGetMemoryData(ctx->soc);
         const Buffer savestate = socGetSavestate(ctx->soc);
 
         sessionFile.SetDeviceId(socGetDeviceType(ctx->soc))
             .SetNor(rom.size, reinterpret_cast<uint8_t*>(rom.data))
             .SetNand(nand.size, reinterpret_cast<uint8_t*>(nand.data))
-            .SetRam(ram.size, reinterpret_cast<uint8_t*>(ram.data))
+            .SetMemory(memory.size, reinterpret_cast<uint8_t*>(memory.data))
             .SetSavestate(savestate.size, reinterpret_cast<uint8_t*>(savestate.data));
 
         if (!sessionFile.Serialize()) {

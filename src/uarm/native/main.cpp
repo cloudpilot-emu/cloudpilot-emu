@@ -134,7 +134,7 @@ namespace {
 
             copy(nor, sessionFile.GetNorSize(), sessionFile.GetNor());
             copy(nand, sessionFile.GetNandSize(), sessionFile.GetNand());
-            copy(ram, sessionFile.GetRamSize(), sessionFile.GetRam());
+            copy(ram, sessionFile.GetMemorySize(), sessionFile.GetMemory());
             copy(savestate, sessionFile.GetSavestateSize(), sessionFile.GetSavestate());
         } else {
             size_t nandLen{0};
@@ -167,9 +167,9 @@ namespace {
             return false;
         }
 
-        Buffer nor, nand, ram, savestate;
+        Buffer nor, nand, memory, savestate;
 
-        if (!readSession(options, nor, nand, ram, savestate)) return false;
+        if (!readSession(options, nor, nand, memory, savestate)) return false;
 
         RomInfo romInfo(reinterpret_cast<uint8_t*>(nor.data), nor.size);
         cerr << romInfo << endl;
@@ -199,12 +199,12 @@ namespace {
                            reinterpret_cast<uint8_t*>(nand.data), nand.size,
                            options.gdbPort.value_or(0), deviceGetSocRev());
 
-        if (ram.data && ram.size != socGetRamData(soc).size) {
+        if (memory.data && memory.size > socGetMemoryData(soc).size) {
             cerr << "RAM size mismatch" << endl;
             return false;
         }
 
-        if (ram.data) memcpy(socGetRamData(soc).data, ram.data, ram.size);
+        if (memory.data) memcpy(socGetMemoryData(soc).data, memory.data, memory.size);
 
         if (!socLoad(soc, savestate.size, savestate.data)) {
             cerr << "failed to restore savestate" << endl;

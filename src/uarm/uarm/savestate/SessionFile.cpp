@@ -78,13 +78,13 @@ SessionFile& SessionFile::SetNand(size_t size, const void* data) {
     return *this;
 }
 
-const void* SessionFile::GetRam() const { return ram; }
+const void* SessionFile::GetMemory() const { return memory; }
 
-size_t SessionFile::GetRamSize() const { return ramSize; }
+size_t SessionFile::GetMemorySize() const { return memorySize; }
 
-SessionFile& SessionFile::SetRam(size_t size, const void* data) {
-    ramSize = size;
-    ram = reinterpret_cast<const uint8_t*>(data);
+SessionFile& SessionFile::SetMemory(size_t size, const void* data) {
+    memorySize = size;
+    memory = reinterpret_cast<const uint8_t*>(data);
 
     return *this;
 }
@@ -104,7 +104,7 @@ bool SessionFile::Serialize() {
     serializedSessionSize = 0;
     serializedSession = nullptr;
 
-    const size_t sizeUncompressed = metadataSize + norSize + nandSize + ramSize + savestateSize;
+    const size_t sizeUncompressed = metadataSize + norSize + nandSize + memorySize + savestateSize;
 
     bufferSize =
         max(static_cast<size_t>(BUFFER_MIN_SIZE), SIZE_HEADER + SIZE_TOC + sizeUncompressed / 2);
@@ -120,7 +120,7 @@ bool SessionFile::Serialize() {
     success &= Write32(metadataSize);
     success &= Write32(norSize);
     success &= Write32(nandSize);
-    success &= Write32(ramSize);
+    success &= Write32(memorySize);
     success &= Write32(savestateSize);
 
     if (!success) {
@@ -155,8 +155,8 @@ bool SessionFile::Serialize() {
         return false;
     }
 
-    if (!AppendToCompressionStream(ramSize, ram, stream)) {
-        cerr << "failed to write RAM" << endl;
+    if (!AppendToCompressionStream(memorySize, memory, stream)) {
+        cerr << "failed to write memory" << endl;
         return false;
     }
 
@@ -181,8 +181,8 @@ const void* SessionFile::GetSerializedSession() const { return serializedSession
 size_t SessionFile::GetSerializedSessionSize() const { return serializedSessionSize; }
 
 bool SessionFile::Deserialize(size_t size, const void* data) {
-    metadataSize = norSize = nandSize = ramSize = savestateSize = 0;
-    metadata = nor = nand = ram = savestate = nullptr;
+    metadataSize = norSize = nandSize = memorySize = savestateSize = 0;
+    metadata = nor = nand = memory = savestate = nullptr;
 
     serializedSession = reinterpret_cast<const uint8_t*>(data);
     serializedSessionSize = size;
@@ -328,7 +328,7 @@ bool SessionFile::Deserialize_v0() {
         return false;
     }
 
-    ramSize = rle_get_chunk_size(remaining, cc, success);
+    memorySize = rle_get_chunk_size(remaining, cc, success);
     remaining -= sizeRamCompressed;
     cc += sizeRamCompressed;
 
@@ -344,7 +344,7 @@ bool SessionFile::Deserialize_v0() {
         return false;
     }
 
-    bufferSize = metadataSize + norSize + nandSize + ramSize;
+    bufferSize = metadataSize + norSize + nandSize + memorySize;
     if (bufferSize > BUFFER_MAX_SIZE) {
         cout << "v0 image: bad image size" << endl;
         return false;
@@ -374,8 +374,8 @@ bool SessionFile::Deserialize_v0() {
         return false;
     }
 
-    ram = cursor;
-    cursor += ramSize;
+    memory = cursor;
+    cursor += memorySize;
     ccursor += sizeRamCompressed;
 
     if (!rle_decode_chunk(sizeNandCompressed, ccursor, bufferSize - (cursor - buffer.get()),
@@ -391,7 +391,7 @@ bool SessionFile::Deserialize_v0() {
         return false;
     }
 
-    if (crc::CRC32(ram, ramSize) != crcRam) {
+    if (crc::CRC32(memory, memorySize) != crcRam) {
         cerr << "session image v0: ram crc mismatch" << endl;
         return false;
     }
@@ -420,7 +420,7 @@ bool SessionFile::Deserialize_v1() {
     metadataSize = Read32(success);
     norSize = Read32(success);
     nandSize = Read32(success);
-    ramSize = Read32(success);
+    memorySize = Read32(success);
     savestateSize = Read32(success);
 
     if (!success) {
@@ -428,7 +428,7 @@ bool SessionFile::Deserialize_v1() {
         return false;
     }
 
-    bufferSize = metadataSize + norSize + nandSize + ramSize + savestateSize;
+    bufferSize = metadataSize + norSize + nandSize + memorySize + savestateSize;
     if (bufferSize > BUFFER_MAX_SIZE) {
         cout << "v1 image: bad image size" << endl;
         return false;
@@ -462,8 +462,8 @@ bool SessionFile::Deserialize_v1() {
     nand = cursor;
     cursor += nandSize;
 
-    ram = cursor;
-    cursor += ramSize;
+    memory = cursor;
+    cursor += memorySize;
 
     savestate = cursor;
 

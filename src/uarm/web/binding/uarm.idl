@@ -18,9 +18,9 @@ interface SessionFile {
     long GetNandSize();
     [Ref] SessionFile SetNand(long size, [Const] VoidPtr data);
 
-    [Const] VoidPtr GetRam();
-    long GetRamSize();
-    [Ref] SessionFile SetRam(long size, [Const] VoidPtr data);
+    [Const] VoidPtr GetMemory();
+    long GetMemorySize();
+    [Ref] SessionFile SetMemory(long size, [Const] VoidPtr data);
 
     [Const] VoidPtr GetSavestate();
     long GetSavestateSize();

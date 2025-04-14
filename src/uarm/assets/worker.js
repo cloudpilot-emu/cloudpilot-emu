@@ -4,7 +4,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
     const PCM_BUFFER_SIZE = (44100 / 60) * 10;
     const INITIAL_PAGE_POOL_PAGES = 256;
     const PAGE_POOL_GROWTH_FACTOR = 1.5;
-    const RAM_SIZE = 16 * 1024 * 1024;
+    const RAM_SIZE = 16 * 1024 * 1024 + 32 * 1024;
 
     const messageQueue = [];
     let dispatchInProgress = false;
@@ -284,7 +284,12 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             );
 
             const ramPtr = module.ccall('getRamData', 'number');
-            module.HEAPU8.subarray(ramPtr, ramPtr + RAM_SIZE).set(ram);
+
+            if (ram.length > RAM_SIZE) {
+                console.error('ignoring invalid RAM snapshot');
+            } else {
+                module.HEAPU8.subarray(ramPtr, ramPtr + ram.length).set(ram);
+            }
 
             return new Emulator(module, maxLoad, cyclesPerSecondLimit, crcCheck, env);
         }

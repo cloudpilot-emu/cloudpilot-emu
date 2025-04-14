@@ -42,7 +42,7 @@ export class SessionFile {
                 .SetMetadata(encodedMetadata.length, this.module.wrapPointer(metadataPtr))
                 .SetNor(nor.length, this.module.wrapPointer(norPtr))
                 .SetNand(nand.length, this.module.wrapPointer(nandPtr))
-                .SetRam(ram.length, this.module.wrapPointer(ramPtr));
+                .SetMemory(ram.length, this.module.wrapPointer(ramPtr));
 
             if (savestate) sessionFile.SetSavestate(savestate.length, savestatePtr);
 
@@ -79,7 +79,7 @@ export class SessionFile {
             );
             const nor = this.copyOut(sessionFile.GetNorSize(), module.getPointer(sessionFile.GetNor()));
             const nand = this.copyOut(sessionFile.GetNandSize(), module.getPointer(sessionFile.GetNand()));
-            const ram = this.copyOut(sessionFile.GetRamSize(), module.getPointer(sessionFile.GetRam()));
+            const ram = this.copyOut(sessionFile.GetMemorySize(), module.getPointer(sessionFile.GetMemory()));
             const savestate = this.copyOut(
                 sessionFile.GetSavestateSize(),
                 module.getPointer(sessionFile.GetSavestate())

@@ -28,9 +28,9 @@ class SessionFile {
     size_t GetNandSize() const;
     SessionFile& SetNand(size_t size, const void* data);
 
-    const void* GetRam() const;
-    size_t GetRamSize() const;
-    SessionFile& SetRam(size_t size, const void* data);
+    const void* GetMemory() const;
+    size_t GetMemorySize() const;
+    SessionFile& SetMemory(size_t size, const void* data);
 
     const void* GetSavestate() const;
     size_t GetSavestateSize() const;
@@ -65,8 +65,8 @@ class SessionFile {
     size_t nandSize{0};
     const uint8_t* nand{nullptr};
 
-    size_t ramSize{0};
-    const uint8_t* ram{nullptr};
+    size_t memorySize{0};
+    const uint8_t* memory{nullptr};
 
     size_t savestateSize{0};
     const uint8_t* savestate{nullptr};

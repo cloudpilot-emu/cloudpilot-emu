@@ -10,6 +10,7 @@
 #include "SoC.h"
 #include "cputil.h"
 #include "mem.h"
+#include "memory_buffer.h"
 #include "pxa_IC.h"
 #include "savestate/savestateAll.h"
 
@@ -22,6 +23,7 @@
 
 #define UNMASKABLE_INTS 0x7C8E
 
+#define PALETTE_SIZE 512
 #define SAVESTATE_VERSION 0
 
 struct PxaLcd {
@@ -41,7 +43,7 @@ struct PxaLcd {
     uint8_t intWasPending;
     uint8_t enbChanged;
 
-    uint8_t palette[512] __attribute__((aligned(2)));
+    MemoryBuffer paletteBuffer;
     uint32_t palette_mapped[512];
 
     uint16_t width;
@@ -74,7 +76,6 @@ struct PxaLcd {
             .Do32(tcr)
             .Do(typename T::Pack16() << lcsr << intMask)
             .Do(typename T::Pack8() << state << intWasPending << enbChanged << framebufferBpp)
-            .DoBuffer(palette, sizeof(palette))
             .Do32(i_pixel)
             .Do32(framebufferBase)
             .Do32(framebufferSize)
@@ -337,7 +338,7 @@ static void pxaLcdPrvDma(struct PxaLcd *lcd, void *dest, uint32_t addr, int32_t 
 
 static void pxaLcdUpdatePalette(struct PxaLcd *lcd, int32_t len) {
     const uint32_t n_entries = len >> 1;
-    uint16_t *entry = (uint16_t *)lcd->palette;
+    uint16_t *entry = (uint16_t *)lcd->paletteBuffer.buffer;
     uint32_t *entry_mapped = (uint32_t *)lcd->palette_mapped;
 
     bool dirty = false;
@@ -498,9 +499,9 @@ void pxaLcdTick(struct PxaLcd *lcd) {
 
                     if (lcd->ldcmd[0] & 0x04000000UL) {  // pallette data
 
-                        if (len > sizeof(lcd->palette)) len = sizeof(lcd->palette);
+                        if (len > PALETTE_SIZE) len = PALETTE_SIZE;
 
-                        pxaLcdPrvDma(lcd, lcd->palette, lcd->fsadr[0], len);
+                        pxaLcdPrvDma(lcd, lcd->paletteBuffer.buffer, lcd->fsadr[0], len);
                         pxaLcdUpdatePalette(lcd, len);
                     } else {
                         lcd->frameNum++;
@@ -530,8 +531,8 @@ void pxaLcdResetPendingFrame(struct PxaLcd *lcd) { lcd->frame_pending = false; }
 
 void pxaLcdSetFramebufferDirty(struct PxaLcd *lcd) { lcd->framebufferDirty = true; }
 
-struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc *ic, uint16_t width,
-                          uint16_t height) {
+struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc *ic,
+                          struct MemoryBuffer *buffer, uint16_t width, uint16_t height) {
     struct PxaLcd *lcd = (struct PxaLcd *)malloc(sizeof(*lcd));
 
     if (!lcd) ERR("cannot alloc LCD");
@@ -546,6 +547,8 @@ struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc 
 
     lcd->front_buffer = (uint32_t *)malloc(width * height * 4);
     lcd->back_buffer = (uint32_t *)malloc(width * height * 4);
+
+    memcpy(&lcd->paletteBuffer, buffer, sizeof(*buffer));
 
     if (!memRegionAdd(physMem, PXA_LCD_BASE, PXA_LCD_SIZE, pxaLcdPrvMemAccessF, lcd))
         ERR("cannot add LCD to MEM\n");

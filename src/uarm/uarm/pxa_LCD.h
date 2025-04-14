@@ -11,11 +11,12 @@
 extern "C" {
 #endif
 
+struct MemoryBuffer;
 struct PxaLcd;
 struct SoC;
 
-struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc *ic, uint16_t width,
-                          uint16_t heigh);
+struct PxaLcd *pxaLcdInit(struct ArmMem *physMem, struct SoC *soc, struct SocIc *ic,
+                          struct MemoryBuffer *buffer, uint16_t width, uint16_t heigh);
 
 void pxaLcdTick(struct PxaLcd *lcd);
 

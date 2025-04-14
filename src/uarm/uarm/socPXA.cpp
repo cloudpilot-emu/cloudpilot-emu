@@ -145,7 +145,7 @@ struct SoC {
         };
     };
 
-    MemoryBuffer bufferRam;
+    MemoryBuffer bufferMemory;
     MemoryBuffer bufferNand;
     MemoryBuffer bufferLcd;
     MemoryBuffer bufferSram;
@@ -260,21 +260,21 @@ static void socAllocateBuffers(SoC *soc) {
     size_t memoryBufferSize = deviceGetRamSize() + 2 * MEMORY_BUFFER_GRANULARITY;
     if (soc->socRev == 2) memoryBufferSize += SRAM_SIZE;
 
-    bool success = memoryBufferAllocate(&soc->bufferRam, memoryBufferSize);
+    bool success = memoryBufferAllocate(&soc->bufferMemory, memoryBufferSize);
 
     size_t offset = deviceGetRamSize();
 
-    success = success && memoryBufferGetSubBuffer(&soc->bufferRam, &soc->bufferNand, offset,
+    success = success && memoryBufferGetSubBuffer(&soc->bufferMemory, &soc->bufferNand, offset,
                                                   MEMORY_BUFFER_GRANULARITY);
     offset += MEMORY_BUFFER_GRANULARITY;
 
-    success = success && memoryBufferGetSubBuffer(&soc->bufferRam, &soc->bufferLcd, offset,
+    success = success && memoryBufferGetSubBuffer(&soc->bufferMemory, &soc->bufferLcd, offset,
                                                   MEMORY_BUFFER_GRANULARITY);
     offset += MEMORY_BUFFER_GRANULARITY;
 
     if (soc->socRev == 2)
         success = success &&
-                  memoryBufferGetSubBuffer(&soc->bufferRam, &soc->bufferSram, offset, SRAM_SIZE);
+                  memoryBufferGetSubBuffer(&soc->bufferMemory, &soc->bufferSram, offset, SRAM_SIZE);
 
     if (!success) ERR("failed to allocate memory buffers");
 }
@@ -316,7 +316,7 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
     soc->syscallDispatch = initSyscallDispatch(soc->cpu);
     registerPatches(soc->patchDispatch, soc->syscallDispatch);
 
-    soc->ram = ramInit(soc->mem, soc, RAM_BASE, deviceGetRamSize(), &soc->bufferRam, true);
+    soc->ram = ramInit(soc->mem, soc, RAM_BASE, deviceGetRamSize(), &soc->bufferMemory, true);
     if (!soc->ram) ERR("Cannot init RAM");
 
     soc->rom = romInit(soc->mem, ROM_BASE, romData, romSize);
@@ -333,7 +333,7 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
 
             // ram mirror for ram probe code
             soc->ramMirror = ramInit(soc->mem, soc, RAM_BASE + deviceGetRamSize(),
-                                     deviceGetRamSize(), &soc->bufferRam, false);
+                                     deviceGetRamSize(), &soc->bufferMemory, false);
             if (!soc->ramMirror) ERR("Cannot init RAM mirror");
             break;
 
@@ -472,8 +472,8 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
     DeviceDisplayConfiguration displayConfiguration;
     deviceGetDisplayConfiguration(deviceType, &displayConfiguration);
 
-    soc->lcd =
-        pxaLcdInit(soc->mem, soc, soc->ic, displayConfiguration.width, displayConfiguration.height);
+    soc->lcd = pxaLcdInit(soc->mem, soc, soc->ic, &soc->bufferLcd, displayConfiguration.width,
+                          displayConfiguration.height);
     if (!soc->lcd) ERR("Cannot init PXA's LCD");
 
     soc->kp = keypadInit(soc->gpio, true);
@@ -754,12 +754,12 @@ bool socIsNandDirty(struct SoC *soc) { return nandIsDirty(soc->nand); }
 
 void socSetNandDirty(struct SoC *soc, bool isDirty) { nandSetDirty(soc->nand, isDirty); }
 
-struct Buffer socGetRamData(struct SoC *soc) {
-    return {.size = soc->bufferRam.size, .data = soc->bufferRam.buffer};
+struct Buffer socGetMemoryData(struct SoC *soc) {
+    return {.size = soc->bufferMemory.size, .data = soc->bufferMemory.buffer};
 }
 
-struct Buffer socGetRamDirtyPages(struct SoC *soc) {
-    return {.size = soc->bufferRam.dirtyPagesSize, .data = soc->bufferRam.dirtyPages};
+struct Buffer socGetMemoryDirtyPages(struct SoC *soc) {
+    return {.size = soc->bufferMemory.dirtyPagesSize, .data = soc->bufferMemory.dirtyPages};
 }
 
 void socSdInsert(struct SoC *soc) {
