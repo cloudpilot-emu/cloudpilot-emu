@@ -179,7 +179,6 @@ SOURCE_CXX_NATIVE = \
 	native/MainLoop.cpp \
 	native/Silkscreen.cpp \
 	native/util.cpp \
-	native/md5.cpp \
 	native/EventHandler.cpp \
 	native/Commands.cpp \
 	native/proxyClientWs.cpp \

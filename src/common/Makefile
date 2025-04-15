@@ -18,6 +18,7 @@ SOURCE_CXX = 						\
 	ZipfileWalker.cpp 				\
 	FileUtil.cpp 					\
 	Logging.cpp						\
+	md5.cpp							\
 	savestate/Chunk.cpp				\
 	savestate/ChunkProbe.cpp
 

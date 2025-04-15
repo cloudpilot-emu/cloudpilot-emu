@@ -9,6 +9,9 @@
 
 #include "cputil.h"
 #include "memory_buffer.h"
+#include "savestate/savestateAll.h"
+
+#define SAVESTATE_VERSION 0
 
 // this is not and will never be a full SD card emulator, deal with it!
 
@@ -18,7 +21,7 @@ enum RejectReason {
     UnknownCommand,
 };
 
-enum State {  // matches and must match SD spec (v2 spec page 67 has the table)
+enum State : uint8_t {  // matches and must match SD spec (v2 spec page 67 has the table)
     StateIdle,
     StateReady,
     StateIdent,
@@ -39,10 +42,9 @@ struct VSD {
 
     uint16_t rca;
 
-    uint8_t expectDataToUs : 1;
-    uint8_t hcCard : 1;
-    uint8_t acmdShift : 1;
-    uint8_t reportAcmdNext : 1;
+    bool hcCard;
+    bool acmdShift;
+    bool reportAcmdNext;
 
     uint8_t initWaitLeft;
     uint32_t prevAcmd41Param;
@@ -55,6 +57,24 @@ struct VSD {
 
     bool haveExpectedNumBlocks;
     uint32_t numBlocksExpected;
+
+    template <typename T>
+    void DoSaveLoad(T &chunkHelper) {
+        uint8_t state8 = static_cast<uint8_t>(state);
+
+        chunkHelper.Do32(nSec)
+            .Do(typename T::Pack8() << state8 << busyCount << initWaitLeft)
+            .Do(typename T::Pack16() << rca << curBufLen)
+            .Do(typename T::BoolPack() << hcCard << acmdShift << reportAcmdNext << bufIsData
+                                       << bufContinuous << haveExpectedNumBlocks)
+            .Do32(nSec)
+            .Do32(prevAcmd41Param)
+            .Do32(curSec)
+            .Do32(numBlocksExpected)
+            .DoBuffer(curBuf, sizeof(curBuf));
+
+        state = static_cast<State>(state8);
+    }
 };
 
 bool vsdIsCardBusy(struct VSD *vsd) {
@@ -64,10 +84,9 @@ bool vsdIsCardBusy(struct VSD *vsd) {
 }
 
 static void vsdCardReset(struct VSD *vsd) {
-    vsd->expectDataToUs = 0;
-    vsd->acmdShift = 0;
+    vsd->acmdShift = false;
     vsd->rca = 0;
-    vsd->reportAcmdNext = 0;
+    vsd->reportAcmdNext = false;
     vsd->state = StateIdle;
     vsd->prevAcmd41Param = 0;
     vsd->initWaitLeft = 20;
@@ -78,7 +97,7 @@ static uint32_t vsdCalcR1resp(struct VSD *vsd, uint32_t r1bicBits, uint32_t r1or
 
     r1 |= ((uint32_t)vsd->state) << 9;
     if (vsd->acmdShift || vsd->reportAcmdNext) r1 |= 1 << 5;
-    vsd->reportAcmdNext = 0;
+    vsd->reportAcmdNext = false;
 
     /// XXX: "ready for data" bit 8?
 
@@ -225,7 +244,7 @@ enum SdReplyType vsdCommand(struct VSD *vsd, uint8_t cmd, uint32_t param,
     uint8_t *reply = (uint8_t *)replyOut;
     enum SdReplyType replTyp;
 
-    vsd->acmdShift = 0;
+    vsd->acmdShift = false;
     reply[0] = cmd;
 
     switch (cmd) {
@@ -465,7 +484,7 @@ enum SdReplyType vsdCommand(struct VSD *vsd, uint8_t cmd, uint32_t param,
             replNeedsCrc = false;
 
             replTyp = SdReply48bits;
-            vsd->reportAcmdNext = 1;
+            vsd->reportAcmdNext = true;
             if (!(param & 0x00FFFFFFul)) {  // inquiry command
 
                 if (vsd->prevAcmd41Param) {  // inqury not first ??
@@ -536,7 +555,7 @@ enum SdReplyType vsdCommand(struct VSD *vsd, uint8_t cmd, uint32_t param,
                                        false /* there is no ACMD55 */);
                 break;
             }
-            vsd->acmdShift = 1;
+            vsd->acmdShift = true;
             replTyp = vsdPrepareR1resp(vsd, cmd, reply, 0, 0);
             break;
 
@@ -680,3 +699,25 @@ uint8_t vsdCRC7(uint8_t *data, uint32_t sz) {
 
     return crc + 1;
 }
+
+template <typename T>
+void vsdSave(struct VSD *vsd, T &savestate) {
+    auto chunk = savestate.GetChunk(ChunkType::vsd, SAVESTATE_VERSION);
+    if (!chunk) abort();
+
+    SaveChunkHelper helper(*chunk);
+    vsd->DoSaveLoad(helper);
+}
+
+template <typename T>
+void vsdLoad(struct VSD *vsd, T &loader) {
+    auto chunk = loader.GetChunk(ChunkType::vsd, SAVESTATE_VERSION, "vsd");
+    if (!chunk) return;
+
+    LoadChunkHelper helper(*chunk);
+    vsd->DoSaveLoad(helper);
+}
+
+template void vsdSave<Savestate<ChunkType>>(VSD *vsd, Savestate<ChunkType> &savestate);
+template void vsdSave<SavestateProbe<ChunkType>>(VSD *vsd, SavestateProbe<ChunkType> &savestate);
+template void vsdLoad<SavestateLoader<ChunkType>>(VSD *vsd, SavestateLoader<ChunkType> &loader);

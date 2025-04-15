@@ -50,7 +50,6 @@ SOURCE_C = 								\
 	uarm/RAM.c 							\
 	uarm/ROM.c 							\
 	uarm/gdbstub.c						\
-	uarm/vSD.c 							\
 	uarm/keys.c 						\
 	uarm/pxa270_UDC.c 					\
 	uarm/pxa270_IMC.c 					\
@@ -92,6 +91,7 @@ SOURCE_CXX =		 					\
 	uarm/ac97dev_WM9712L.cpp			\
 	uarm/nand.cpp 						\
 	uarm/mmiodev_DirectNAND.cpp			\
+	uarm/vSD.cpp						\
 	uarm/devicePalmTungstenE2.cpp 		\
 	uarm/cp15.cpp 						\
 	uarm/memcpy.cpp						\

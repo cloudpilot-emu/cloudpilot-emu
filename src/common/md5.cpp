@@ -77,7 +77,7 @@ void md5Update(MD5Context *ctx, uint8_t *input_buffer, size_t input_len) {
 
     // Copy each byte in input_buffer into the next space in our context input
     for (unsigned int i = 0; i < input_len; ++i) {
-        ctx->input[offset++] = (uint8_t) * (input_buffer + i);
+        ctx->input[offset++] = (uint8_t)*(input_buffer + i);
 
         // If we've filled our context input, copy it into our local array input
         // then reset the offset to 0 and fill in a new buffer.

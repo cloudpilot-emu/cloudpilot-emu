@@ -12,7 +12,9 @@ static uint32_t* dirtyPages = NULL;
 
 static size_t dirtyPagesSize = 0;
 
-void sdCardInitializeWithData(size_t sectors, void* buf) {
+static char cardId[SD_CARD_ID_MAX_LEN + 1];
+
+void sdCardInitializeWithData(size_t sectors, void* buf, const char* id) {
     if (dirtyPages) free(dirtyPages);
 
     size_t dirtyPagesSize4 = sectors / (16 * 32);
@@ -25,13 +27,15 @@ void sdCardInitializeWithData(size_t sectors, void* buf) {
 
     dirtyPages = malloc(dirtyPagesSize);
     memset(dirtyPages, 0, dirtyPagesSize);
+
+    sdCardRekey(id);
 }
 
-void sdCardInitialize(size_t sectors) {
+void sdCardInitialize(size_t sectors, const char* id) {
     uint8_t* buf = malloc(sectors * SD_SECTOR_SIZE);
     memset(buf, 0, sectors * SD_SECTOR_SIZE);
 
-    sdCardInitializeWithData(sectors, buf);
+    sdCardInitializeWithData(sectors, buf, id);
 }
 
 bool sdCardRead(uint32_t sector, void* buf) {
@@ -40,6 +44,13 @@ bool sdCardRead(uint32_t sector, void* buf) {
     memcpy(buf, data + SD_SECTOR_SIZE * sector, SD_SECTOR_SIZE);
 
     return true;
+}
+
+void sdCardRekey(const char* id) {
+    if (!sdCardInitialized()) return;
+
+    strncpy(cardId, id, sizeof(cardId));
+    cardId[sizeof(cardId) - 1] = '\0';
 }
 
 void sdCardReset() {
@@ -81,3 +92,5 @@ struct Buffer sdCardDirtyPages() {
 bool sdCardIsDirty() { return sdCardDirty; }
 
 void sdCardSetDirty(bool isDirty) { sdCardDirty = isDirty; }
+
+const char* sdCardGetId() { return sdCardInitialized() ? cardId : ""; }

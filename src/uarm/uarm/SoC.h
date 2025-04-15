@@ -72,7 +72,9 @@ bool socLoad(struct SoC *soc, size_t savestateSize, void *savestateData);
 struct Buffer socGetSavestate(struct SoC *soc);
 
 void socSdInsert(struct SoC *soc);
+bool socSdRemount(struct SoC *soc);
 void socSdEject(struct SoC *soc);
+bool socSdInserted(struct SoC *soc);
 
 enum DeviceType socGetDeviceType(struct SoC *soc);
 

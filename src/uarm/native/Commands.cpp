@@ -12,6 +12,7 @@
 #include "Cli.h"
 #include "FileUtil.h"
 #include "SoC.h"
+#include "md5.h"
 #include "savestate/SessionFile.h"
 #include "sdcard.h"
 
@@ -92,8 +93,9 @@ namespace {
         }
 
         auto ctx = reinterpret_cast<commands::Context*>(context);
+        string key = md5(data.get(), len);
 
-        sdCardInitializeWithData(len / SD_SECTOR_SIZE, data.release());
+        sdCardInitializeWithData(len / SD_SECTOR_SIZE, data.release(), key.c_str());
         socSdInsert(ctx->soc);
     }
 
@@ -110,9 +112,14 @@ namespace {
     }
 
     void CmdSaveSession(vector<string> args, cli::CommandEnvironment& env, void* context) {
-        if (args.size() != 1) return env.PrintUsage();
+        if (args.size() != 1 && args.size() != 2) return env.PrintUsage();
 
         auto ctx = reinterpret_cast<commands::Context*>(context);
+
+        if (sdCardInitialized()) {
+            string key = md5(reinterpret_cast<uint8_t*>(sdCardData().data), sdCardData().size);
+            sdCardRekey(key.c_str());
+        }
 
         if (!socSave(ctx->soc)) {
             cout << "failed to save state" << endl;
@@ -125,6 +132,7 @@ namespace {
         const Buffer nand = socGetNandData(ctx->soc);
         const Buffer memory = socGetMemoryData(ctx->soc);
         const Buffer savestate = socGetSavestate(ctx->soc);
+        const Buffer sd = sdCardData();
 
         sessionFile.SetDeviceId(socGetDeviceType(ctx->soc))
             .SetNor(rom.size, reinterpret_cast<uint8_t*>(rom.data))
@@ -140,9 +148,17 @@ namespace {
         if (!util::WriteFile(args[0],
                              reinterpret_cast<const uint8_t*>(sessionFile.GetSerializedSession()),
                              sessionFile.GetSerializedSessionSize())) {
-            cout << "failed to write file " << args[0] << endl;
+            cout << "failed to write session to " << args[0] << endl;
         } else {
             cout << "wrote session to " << args[0] << endl;
+        }
+
+        if (args.size() == 2 && sdCardInitialized()) {
+            if (!util::WriteFile(args[1], reinterpret_cast<uint8_t*>(sd.data), sd.size)) {
+                cout << "failed to write SD image to " << args[1] << endl;
+            } else {
+                cout << "wrote SD image to " << args[1] << endl;
+            }
         }
     }
 
@@ -161,7 +177,7 @@ namespace {
          {.name = "reset", .description = "Reset Pilot.", .cmd = CmdReset},
          {.name = "rotate", .description = "Rotate 90° CCW", .cmd = CmdRotate},
          {.name = "save-session",
-          .usage = "save-session <file>",
+          .usage = "save-session <session file> [card image]",
           .description = "Save session.",
           .cmd = CmdSaveSession}});
 }  // namespace

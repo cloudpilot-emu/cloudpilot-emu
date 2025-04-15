@@ -116,6 +116,9 @@ struct SoC {
     bool sleeping;
     uint64_t sleepAtTime;
 
+    bool cardInserted;
+    char cardId[SD_CARD_ID_MAX_LEN + 1];
+
     struct AudioQueue *audioQueue;
 
     Queue<PenEvent> *penEventQueue;
@@ -763,18 +766,39 @@ struct Buffer socGetMemoryDirtyPages(struct SoC *soc) {
 }
 
 void socSdInsert(struct SoC *soc) {
-    if (!sdCardInitialized()) return;
+    if (soc->cardInserted || !sdCardInitialized()) return;
 
     vsdReset(soc->vSD, sdCardSectorCount());
     pxaMmcInsert(soc->mmc, soc->vSD);
     deviceSetSdCardInserted(soc->dev, true);
+
+    soc->cardInserted = true;
+}
+
+bool socSdRemount(struct SoC *soc) {
+    if (!soc->cardInserted) return false;
+
+    if (!sdCardInitialized() || strncmp(soc->cardId, sdCardGetId(), SD_CARD_ID_MAX_LEN) != 0) {
+        socSdEject(soc);
+        return false;
+    } else {
+        pxaMmcInsert(soc->mmc, soc->vSD);
+    }
+
+    return true;
 }
 
 void socSdEject(struct SoC *soc) {
+    if (!soc->cardInserted) return;
+
     vsdReset(soc->vSD, 0);
     pxaMmcInsert(soc->mmc, nullptr);
     deviceSetSdCardInserted(soc->dev, false);
+
+    soc->cardInserted = false;
 }
+
+bool socSdInserted(struct SoC *soc) { return soc->cardInserted; }
 
 bool socSave(struct SoC *soc) { return soc->savestate->Save(*soc); }
 
@@ -834,6 +858,7 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     cpuLoad(cpu, loader);
     scheduler->Load(loader);
     deviceLoad(dev, loader);
+    vsdLoad(vSD, loader);
 
     Chunk *chunk = loader.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION, "socPXA");
     if (!chunk) return;
@@ -887,9 +912,13 @@ void SoC::Save(T &savestate) {
     cpuSave(cpu, savestate);
     scheduler->Save(savestate);
     deviceSave(dev, savestate);
+    vsdSave(vSD, savestate);
 
     auto *chunk = savestate.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION);
     if (!chunk) ERR("unable to allocate chunk");
+
+    strncpy(cardId, sdCardGetId(), sizeof(cardId));
+    cardId[sizeof(cardId) - 1] = '\0';
 
     SaveChunkHelper helper(*chunk);
     DoSaveLoad(helper);
@@ -897,5 +926,6 @@ void SoC::Save(T &savestate) {
 
 template <typename T>
 void SoC::DoSaveLoad(T &chunkHelper) {
-    chunkHelper.DoBool(sleeping);
+    chunkHelper.Do(typename T::BoolPack() << cardInserted << enablePcmOutput << sleeping)
+        .DoBuffer(cardId, sizeof(cardId));
 }

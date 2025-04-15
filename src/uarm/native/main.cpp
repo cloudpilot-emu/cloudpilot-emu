@@ -24,6 +24,7 @@
 #include "buffer.h"
 #include "cputil.h"
 #include "device.h"
+#include "md5.h"
 #include "rom_info.h"
 #include "savestate/SessionFile.h"
 #include "sdcard.h"
@@ -192,7 +193,8 @@ namespace {
                 return false;
             }
 
-            sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sdData.release());
+            string key = md5(sdData.get(), sdLen);
+            sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sdData.release(), key.c_str());
         }
 
         SoC* soc = socInit(romInfo.GetDeviceType(), nor.data, nor.size,
@@ -210,7 +212,14 @@ namespace {
             cerr << "failed to restore savestate" << endl;
         }
 
-        if (sdCardInitialized()) socSdInsert(soc);
+        if (socSdInserted(soc)) {
+            if (!socSdRemount(soc)) {
+                cerr << "failed to remount SD card" << endl;
+                sdCardReset();
+            }
+        } else if (sdCardInitialized()) {
+            socSdInsert(soc);
+        }
 
         AudioQueue* audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
         socSetAudioQueue(soc, audioQueue);
