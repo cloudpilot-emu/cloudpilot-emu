@@ -502,6 +502,8 @@ void pxaLcdTick(struct PxaLcd *lcd) {
                         if (len > PALETTE_SIZE) len = PALETTE_SIZE;
 
                         pxaLcdPrvDma(lcd, lcd->paletteBuffer.buffer, lcd->fsadr[0], len);
+                        memoryBufferMarkRangeDirty(&lcd->paletteBuffer, 0, len);
+
                         pxaLcdUpdatePalette(lcd, len);
                     } else {
                         lcd->frameNum++;
@@ -575,7 +577,7 @@ void pxaLcdLoad(struct PxaLcd *lcd, T &loader) {
     LoadChunkHelper helper(*chunk);
     lcd->DoSaveLoad(helper);
 
-    pxaLcdUpdatePalette(lcd, 256);
+    pxaLcdUpdatePalette(lcd, PALETTE_SIZE);
 
     if (lcd->framebufferTrackingActive) {
         lcd->framebufferTrackingActive =
