@@ -36,6 +36,8 @@ bool keypadAddMatrixKey(struct Keypad *kp, enum KeyId key, unsigned row, unsigne
 
 void keypadKeyEvt(struct Keypad *kp, enum KeyId key, bool wentDown);
 
+void keypadReset(struct Keypad *kp);
+
 #ifdef __cplusplus
 }
 #endif

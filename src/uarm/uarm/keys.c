@@ -157,6 +157,30 @@ void keypadKeyEvt(struct Keypad *kp, enum KeyId key, bool wentDown) {
     keypadPrvMatrixRecalc(kp);
 }
 
+void keypadReset(struct Keypad *kp) {
+    int i, j;
+
+    for (i = 0; i < MAX_GPIO_KEYS; i++) {
+        if (kp->gpios[i].key != 0 && kp->gpios[i].gpioNum >= 0) {
+            socGpioSetState(kp->gpio, kp->gpios[i].gpioNum, !kp->gpios[i].activeHigh);
+        }
+    }
+
+    for (i = 0; i < MAX_KP_ROWS; i++) {
+        if (kp->kpGpioRow[i] < 0) continue;
+
+        for (j = 0; j < MAX_KP_COLS; j++) {
+            if (kp->kpGpioCol[j] < 0) continue;
+
+            if (kp->km[i][j].key == 0) continue;
+
+            kp->km[i][j].isDown = false;
+        }
+    }
+
+    keypadPrvMatrixRecalc(kp);
+}
+
 static void keypadPrvGpioChanged(void *userData, uint32_t gpio, bool oldState, bool newState) {
     struct Keypad *kp = (struct Keypad *)userData;
 

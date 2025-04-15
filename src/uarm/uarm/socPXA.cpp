@@ -867,6 +867,7 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     DoSaveLoad(helper);
 
     schedulePcmTask(this);
+    keypadReset(kp);
 }
 
 template <typename T>
