@@ -162,6 +162,23 @@ namespace {
         }
     }
 
+    void CmdSaveSd(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
+
+        if (!sdCardInitialized()) {
+            cout << "no SD card mounted" << endl;
+            return;
+        }
+
+        const Buffer sd = sdCardData();
+
+        if (!util::WriteFile(args[0], reinterpret_cast<uint8_t*>(sd.data), sd.size)) {
+            cout << "failed to write SD image to " << args[0] << endl;
+        } else {
+            cout << "wrote SD image to " << args[0] << endl;
+        }
+    }
+
     const vector<cli::Command> commandList(
         {{.name = "set-mips",
           .usage = "set-mips <mips>",
@@ -179,7 +196,11 @@ namespace {
          {.name = "save-session",
           .usage = "save-session <session file> [card image]",
           .description = "Save session.",
-          .cmd = CmdSaveSession}});
+          .cmd = CmdSaveSession},
+         {.name = "save-sd",
+          .usage = "save-sd <card image>",
+          .description = "Save SD card.",
+          .cmd = CmdSaveSd}});
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }
