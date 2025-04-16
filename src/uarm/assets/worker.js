@@ -279,8 +279,8 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             module.ccall(
                 'webMain',
                 undefined,
-                ['number', 'number', 'number', 'number', 'number', 'number'],
-                [norPtr, nor.length, nandPtr, nand.length, sdPtr, sd ? sd.length : 0]
+                ['number', 'number', 'number', 'number', 'number', 'number', 'string'],
+                [norPtr, nor.length, nandPtr, nand.length, sdPtr, sd ? sd.length : 0, 'sdcard']
             );
 
             const ramPtr = module.ccall('getRamData', 'number');

@@ -184,10 +184,10 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
 int main() {}
 
 extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint8_t* rom, int romLen, uint8_t* nand, int nandLen,
-                                             uint8_t* sd, int sdLen) {
+                                             uint8_t* sd, int sdLen, const char* sdId) {
     if (sd) {
         fprintf(stderr, "using %u bytes of SD\n", sdLen);
-        sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sd);
+        sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sd, sdId);
     }
 
     fprintf(stderr, "using %u bytes of NOR\n", romLen);
