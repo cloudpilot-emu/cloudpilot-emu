@@ -1,6 +1,32 @@
 importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
 (function () {
+    class RpcClient {
+        constructor(worker) {
+            this.worker = worker;
+            this.registeredMethods = new Map();
+        }
+
+        dispatch(message) {
+            const { id, method, args } = message;
+
+            if (!this.registeredMethods.has(method)) {
+                this.worker.postMessage({ type: 'rpcError', id, error: `method not registered: ${method}` });
+            }
+
+            return this.registeredMethods
+                .get(method)(args)
+                .then((result) => this.worker.postMessage({ type: 'rpcSuccess', id, result }))
+                .catch((e) => this.worker.postMessage({ type: 'rpcError', id, error: `${e}` }));
+        }
+
+        register(method, handler) {
+            this.registeredMethods.set(method, handler);
+
+            return this;
+        }
+    }
+
     const PCM_BUFFER_SIZE = (44100 / 60) * 10;
     const INITIAL_PAGE_POOL_PAGES = 256;
     const PAGE_POOL_GROWTH_FACTOR = 1.5;
@@ -8,6 +34,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
     const messageQueue = [];
     let dispatchInProgress = false;
+    let rpcClient;
 
     let emulator;
 
@@ -162,19 +189,12 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
     }
 
     class Emulator {
-        constructor(
-            module,
-            maxLoad,
-            cyclesPerSecondLimit,
-            crcCheck,
-            { onSpeedDisplay, onFrame, log, postSnapshot, onStop }
-        ) {
+        constructor(module, maxLoad, cyclesPerSecondLimit, crcCheck, { onSpeedDisplay, onFrame, log, postSnapshot }) {
             this.module = module;
             this.onSpeedDisplay = onSpeedDisplay;
             this.onFrame = onFrame;
             this.log = log;
             this.postSnapshot = postSnapshot;
-            this.onStop = onStop;
 
             this.cycle = module.cwrap('cycle', undefined, ['number']);
             this.getFrame = module.cwrap('getFrame', 'number');
@@ -202,12 +222,15 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.getRamDataSize = module.cwrap('getRamDataSize', 'number');
             this.clearRamDirtyPages = module.cwrap('clearRamDirtyPages');
             this.getDeviceType = module.cwrap('getDeviceType');
+            this.sdCardInsert = module.cwrap('sdCardInsert', 'number', ['number', 'number', 'string']);
+            this.sdCardEject = module.cwrap('sdCardEject');
 
             this.amIDead = false;
             this.pcmEnabled = false;
             this.pcmPort = undefined;
             this.snapshotPending = false;
-            this.stopPending = false;
+            this.snapshotPromise = Promise.resolve();
+            this.resolveSnapshot = () => undefined;
             this.deviceType = this.getDeviceType();
 
             this.setMaxLoad(maxLoad);
@@ -253,7 +276,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             });
         }
 
-        static async create(nor, nand, sd, ram, maxLoad, cyclesPerSecondLimit, crcCheck, wasmModule, env) {
+        static async create(nor, nand, sd, cardId, ram, maxLoad, cyclesPerSecondLimit, crcCheck, wasmModule, env) {
             const { log } = env;
             let module;
 
@@ -279,8 +302,8 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             module.ccall(
                 'webMain',
                 undefined,
-                ['number', 'number', 'number', 'number', 'number', 'number', 'string'],
-                [norPtr, nor.length, nandPtr, nand.length, sdPtr, sd ? sd.length : 0, 'sdcard']
+                ['number', 'number', 'number', 'number', 'number', 'number', 'number', 'number', 'string'],
+                [norPtr, nor.length, nandPtr, nand.length, sdPtr, sd ? sd.length : 0, 0, 0, cardId ?? '']
             );
 
             const ramPtr = module.ccall('getRamData', 'number');
@@ -301,12 +324,6 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             if (this.timeoutHandle) clearTimeout(this.timeoutHandle);
 
             this.timeoutHandle = this.immediateHandle = undefined;
-
-            if (this.snapshotPending) {
-                this.stopPending = true;
-            } else {
-                this.onStop();
-            }
 
             this.log('emulator stopped');
         }
@@ -355,6 +372,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
         triggerSnapshot() {
             if (this.snapshotPending) return;
+            this.snapshotPromise = new Promise((resolve) => (this.resolveSnapshot = resolve));
 
             const snapshotNand = this.nandTracker.takeSnapshot();
             const snapshotSd = this.sdCardTracker.takeSnapshot();
@@ -377,10 +395,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
             this.snapshotPending = false;
 
-            if (this.stopPending) {
-                this.stopPending = false;
-                this.onStop();
-            }
+            this.resolveSnapshot();
         }
 
         render() {
@@ -522,14 +537,6 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         postMessage({ type: 'error', reason });
     }
 
-    function postInitialized(deviceType) {
-        postMessage({ type: 'initialized', deviceType });
-    }
-
-    function postStopped() {
-        postMessage({ type: 'stopped' });
-    }
-
     function postSnapshot(snapshot, transferables) {
         postMessage(
             {
@@ -540,35 +547,16 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         );
     }
 
+    function assertEmulator(context) {
+        if (!emulator) {
+            throw new Error(`${context}: emulator not running`);
+        }
+    }
+
     async function handleMessage(message) {
-        let assertEmulator = (context) => {
-            if (!emulator) {
-                throw new Error(`${context}: emulator not running`);
-            }
-        };
-
         switch (message.type) {
-            case 'initialize':
-                emulator = await Emulator.create(
-                    message.nor,
-                    message.nand,
-                    message.sd,
-                    message.ram,
-                    message.maxLoad,
-                    message.cyclesPerSecondLimit,
-                    message.crcCheck,
-                    message.module,
-                    {
-                        onFrame: postFrame,
-                        onSpeedDisplay: postSpeed,
-                        postSnapshot,
-                        log: postLog,
-                        onStop: postStopped,
-                    }
-                );
-
-                postInitialized(emulator.getDeviceType());
-
+            case 'rpcCall':
+                await rpcClient.dispatch(message);
                 break;
 
             case 'start':
@@ -655,18 +643,6 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                 emulator.snapshotDone(message.success, message.snapshot);
                 break;
 
-            case 'getSession':
-                assertEmulator('getSession');
-
-                try {
-                    postMessage({ type: 'session', ...emulator.getSession() });
-                } catch (e) {
-                    postLog(`snapshot failed: ${e}`);
-                    postMessage({ type: 'getSessionFailed' });
-                }
-
-                break;
-
             default:
                 console.error('unknown message from main thread', message);
         }
@@ -687,7 +663,38 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         dispatchInProgress = false;
     }
 
+    async function initialize({ nor, nand, sd, cardId, ram, maxLoad, cyclesPerSecondLimit, crcCheck, module }) {
+        emulator = await Emulator.create(nor, nand, sd, cardId, ram, maxLoad, cyclesPerSecondLimit, crcCheck, module, {
+            onFrame: postFrame,
+            onSpeedDisplay: postSpeed,
+            postSnapshot,
+            log: postLog,
+        });
+
+        return {
+            deviceType: emulator.getDeviceType(),
+        };
+    }
+
+    async function getSession() {
+        assertEmulator('getSession');
+
+        return emulator.getSession();
+    }
+
+    async function stop() {
+        assertEmulator('stop');
+        emulator.stop();
+
+        await emulator.snapshotPromise;
+    }
+
     async function main() {
+        rpcClient = new RpcClient(self)
+            .register('initialize', initialize)
+            .register('getSession', getSession)
+            .register('stop', stop);
+
         postReady();
 
         onmessage = (e) => {

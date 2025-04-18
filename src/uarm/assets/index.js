@@ -200,6 +200,7 @@ import { SessionFile } from './sessionfile.js';
             fileNor.content,
             fileNand.content,
             fileSd?.content,
+            fileSd?.id,
             ram,
             maxLoad,
             mipsLimit * 1000000,
@@ -294,7 +295,7 @@ import { SessionFile } from './sessionfile.js';
                 await restart();
             }
         } catch (e) {
-            console.error('failed to launch!');
+            console.error('failed to launch!', e);
         }
 
         updateLabels();
@@ -321,7 +322,6 @@ import { SessionFile } from './sessionfile.js';
             if (fileNand && !confirm('This will clear the NAND content and wipe RAM. Do you want to continue?')) return;
 
             await emulator?.stop();
-
             await database.clearNand();
 
             window.location.reload();
@@ -330,7 +330,7 @@ import { SessionFile } from './sessionfile.js';
         uploadSDButton.addEventListener(
             'click',
             uploadHandler(async (file) => {
-                await database.putSd(file);
+                await database.putSd(file, true);
                 fileSd = file;
             })
         );

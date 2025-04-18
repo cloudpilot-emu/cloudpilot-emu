@@ -2,12 +2,13 @@
 
 /**
  * @typedef {{name: string, content: Uint8Array}} Image
+ * @typedef {{name: string, id: string, mounted: boolean, content: Uint8Array}} CardImage
  * @typedef {{scheduledPageCount: number, scheduledPages: ArrayBuffer, pagePool: ArrayBuffer, crc?: number}} SnapshotPages
  * @typedef {{nand?: SnapshotPages, sd?: SnapshotPages, ram?: SnapshotPages}} Snapshot
  */
 
 const DB_NAME = 'cp-uarm';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 const SIZE_NAND = 528 * 2 * 1024 * 32;
 const PAGE_SIZE_NAND = 528 * 8;
@@ -16,7 +17,7 @@ const EMPTY_VALUE_NAND = 0xffffffff;
 const PAGE_SIZE_SD = 8 * 1024;
 const EMPTY_VALUE_SD = 0;
 
-const SIZE_RAM = 16 * 1024 * 1024;
+const SIZE_RAM = 16 * 1024 * 1024 + 32 * 1024;
 const PAGE_SIZE_RAM = 512;
 const EMPTY_VALUE_RAM = 0;
 
@@ -35,6 +36,21 @@ const KVS_SD_CRC = 'sdCrc';
 const KVS_NAND_NAME = 'nandName';
 const KVS_NAND_CRC = 'nandCrc';
 const KVS_RAM_CRC = 'ramCrc';
+const KVS_CARD_ID = 'cardId';
+const KVS_CARD_MOUNTED = 'cardMounted';
+
+/**
+ * @returns {string}
+ */
+function randomId() {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+
+    return Array.from(bytes)
+        .map((x) => x.toString(16))
+        .map((x) => x.padStart(2, '0'))
+        .join('');
+}
 
 /**
  *
@@ -248,6 +264,27 @@ async function migrateSd(request) {
 
 /**
  *
+ * @param {IDBOpenDBRequest} request
+ * @returns {Promise<void>}
+ */
+async function migrateCardIdAndMountFlag(request) {
+    const tx = request.transaction;
+
+    if (!tx) throw new Error('no version change transaction');
+
+    const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+    const name = /** @type string | undefined*/ (await complete(storeKvs.get(KVS_SD_NAME)));
+
+    if (name !== undefined) {
+        storeKvs.put(true, KVS_CARD_MOUNTED);
+        storeKvs.put(randomId(), KVS_CARD_ID);
+    } else {
+        storeKvs.put(false, KVS_CARD_MOUNTED);
+    }
+}
+
+/**
+ *
  * @returns {Promise<IDBDatabase>}
  */
 function initdDb() {
@@ -280,6 +317,10 @@ function initdDb() {
             if (e.oldVersion < 5) {
                 db.createObjectStore(OBJECT_STORE_RAM);
                 migrateSd(request);
+            }
+
+            if (e.oldVersion < 6) {
+                migrateCardIdAndMountFlag(request);
             }
         };
 
@@ -507,14 +548,17 @@ export class Database {
 
     /**
      * @param {boolean} crcCheck
-     * @returns {Promise <Image | undefined>}
+     * @returns {Promise <CardImage | undefined>}
      */
     async getSd(crcCheck) {
         const tx = await this.tx(OBJECT_STORE_SD, OBJECT_STORE_KVS);
         const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
+        const id = /** @type string */ (await complete(storeKvs.get(KVS_CARD_ID)));
+        if (!id) return;
+
         const name = /** @type string */ (await complete(storeKvs.get(KVS_SD_NAME)));
-        if (!name) return;
+        const mounted = /** @type boolean */ (await complete(storeKvs.get(KVS_CARD_MOUNTED)));
 
         const size = /** @type number */ (await complete(storeKvs.get(KVS_SD_SIZE)));
         if (size === undefined) return;
@@ -532,18 +576,21 @@ export class Database {
             }
         }
 
-        return { name, content };
+        return { name, id, mounted, content };
     }
 
     /**
      *
      * @param {Image} sd
+     * @param {boolean} mounted
      * @returns {Promise<void>}
      */
-    async putSd(sd) {
+    async putSd(sd, mounted) {
         const tx = await this.tx(OBJECT_STORE_SD, OBJECT_STORE_KVS);
         const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
+        storeKvs.put(randomId(), KVS_CARD_ID);
+        storeKvs.put(mounted, KVS_CARD_MOUNTED);
         storeKvs.put(sd.name, KVS_SD_NAME);
         storeKvs.put(sd.content.length, KVS_SD_SIZE);
         storeKvs.delete(KVS_SD_CRC);

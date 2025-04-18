@@ -15,7 +15,7 @@ static size_t dirtyPagesSize = 0;
 static char cardId[SD_CARD_ID_MAX_LEN + 1];
 
 void sdCardInitializeWithData(size_t sectors, void* buf, const char* id) {
-    if (dirtyPages) free(dirtyPages);
+    sdCardReset();
 
     size_t dirtyPagesSize4 = sectors / (16 * 32);
     if ((dirtyPagesSize4 * 16 * 32) < sectors) dirtyPagesSize4++;

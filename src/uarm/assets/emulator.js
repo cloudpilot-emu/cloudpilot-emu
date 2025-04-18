@@ -14,16 +14,68 @@ export function loadModule(path) {
     compile.then(resolveModule).catch((e) => console.error('failed to load and compile binary', e));
 }
 
+class RpcHost {
+    constructor(worker) {
+        this.worker = worker;
+        this.nextRpcId = 0;
+        this.pendingCalls = new Map();
+
+        worker.addEventListener('message', this.onMessage.bind(this));
+    }
+
+    call(method, args, transferables = undefined) {
+        return new Promise((resolve, reject) => {
+            const id = this.nextRpcId++;
+
+            this.pendingCalls.set(id, { resolve, reject });
+
+            this.worker.postMessage({ type: 'rpcCall', id, method, args }, transferables);
+        });
+    }
+
+    onMessage(e) {
+        const message = e.data;
+        switch (message.type) {
+            case 'rpcSuccess':
+                this.handleRpcSuccess(message);
+                break;
+
+            case 'rpcError':
+                this.handleRpcError(message);
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    getContext(id) {
+        const ctx = this.pendingCalls.get(id);
+        if (!ctx) throw new Error(`RPC failed: no context with ID ${id}`);
+
+        this.pendingCalls.delete(id);
+        return ctx;
+    }
+
+    handleRpcSuccess(message) {
+        this.getContext(message.id).resolve(message.result);
+    }
+
+    handleRpcError(message) {
+        this.getContext(message.id).reject(new Error(message.error));
+    }
+}
+
 export class Emulator {
     constructor(
         worker,
+        rpc,
         displayService,
         crcCheck,
         deviceType,
         { canvas, speedDisplay, log, database, setSnapshotStatus }
     ) {
-        this.stopping = Promise.resolve();
-        this.onStopped = () => undefined;
+        this.rpc = rpc;
 
         this.worker = worker;
         this.displayService = displayService;
@@ -57,24 +109,16 @@ export class Emulator {
                     this.updateSpeedDisplay(message.text);
                     break;
 
-                case 'log':
-                    this.log(message.message);
-                    break;
-
-                case 'error':
-                    console.error(message.reason);
-                    break;
-
                 case 'snapshot':
                     this.handleSnapshot(message.snapshot);
                     break;
 
-                case 'stopped':
-                    this.onStopped();
-                    break;
-
                 case 'session':
                 case 'getSessionFailed':
+                case 'rpcSuccess':
+                case 'rpcError':
+                case 'log':
+                case 'error':
                     break;
 
                 default:
@@ -87,56 +131,47 @@ export class Emulator {
         this.eventHandler = new EventHandler(this, this.displayService);
     }
 
-    static async create(nor, nand, sd, ram, maxLoad, cyclesPerSecondLimit, env) {
-        const { log, crcCheck } = env;
+    static async create(nor, nand, sd, cardId, ram, maxLoad, cyclesPerSecondLimit, env) {
+        const { crcCheck } = env;
         const worker = new Worker('assets/worker.js');
+        const rpc = new RpcHost(worker);
 
         const displayService = new DisplayService();
         displayService.initWithCanvas(env.canvas);
 
-        return new Promise((resolve, reject) => {
-            const onMessage = (e) => {
-                switch (e.data.type) {
-                    case 'ready':
-                        module.then((module) =>
-                            worker.postMessage({
-                                type: 'initialize',
-                                nor,
-                                nand,
-                                sd,
-                                ram,
-                                maxLoad,
-                                cyclesPerSecondLimit,
-                                crcCheck,
-                                module,
-                            })
-                        );
+        const onMessage = (e) => {
+            switch (e.data.type) {
+                case 'log':
+                    env.log(e.data.message);
+                    break;
 
-                        break;
+                case 'error':
+                    console.error(e.data.reason);
+                    break;
+            }
+        };
 
-                    case 'initialized':
-                        worker.removeEventListener('message', onMessage);
-                        resolve(new Emulator(worker, displayService, crcCheck, e.data.deviceType, env));
-                        break;
+        worker.addEventListener('message', onMessage);
 
-                    case 'error':
-                        worker.removeEventListener('message', onMessage);
-                        worker.terminate();
-                        reject(new Error(e.data.reason));
-                        break;
+        try {
+            const { deviceType } = await rpc.call('initialize', {
+                nor,
+                nand,
+                sd,
+                cardId,
+                ram,
+                maxLoad,
+                cyclesPerSecondLimit,
+                crcCheck,
+                module: await module,
+            });
 
-                    case 'log':
-                        log(e.data.message);
-                        break;
+            return new Emulator(worker, rpc, displayService, crcCheck, deviceType, env);
+        } catch (e) {
+            worker.terminate();
 
-                    default:
-                        console.error('unknown message from worker', e.data);
-                        break;
-                }
-            };
-
-            worker.addEventListener('message', onMessage);
-        });
+            throw e;
+        }
     }
 
     destroy() {
@@ -145,18 +180,11 @@ export class Emulator {
     }
 
     async stop() {
-        await this.stopping;
-
         this.speedDisplay.innerText = '-';
         this.running = false;
         this.eventHandler.release();
 
-        this.stopping = new Promise((resolve) => {
-            this.onStopped = resolve;
-            this.worker.postMessage({ type: 'stop' });
-        });
-
-        await this.stopping;
+        await this.rpc.call('stop');
     }
 
     start() {
@@ -223,31 +251,7 @@ export class Emulator {
     }
 
     getSession() {
-        this.worker.postMessage({ type: 'getSession' });
-
-        return new Promise((resolve, reject) => {
-            this.worker.addEventListener(
-                'message',
-                (e) => {
-                    const message = e.data;
-                    switch (message.type) {
-                        case 'session': {
-                            const { type, ...rest } = message;
-                            resolve(rest);
-
-                            break;
-                        }
-
-                        case 'getSessionFailed':
-                            reject(new Error('failed to get session'));
-                            break;
-
-                        default:
-                    }
-                },
-                { once: true }
-            );
-        });
+        return this.rpc.call('getSession');
     }
 
     async handleSnapshot(snapshot) {

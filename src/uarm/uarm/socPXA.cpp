@@ -737,12 +737,11 @@ void socSetPcmSuspended(struct SoC *soc, bool pcmSuspended) {
 }
 
 void socSetPcmOutputEnabled(struct SoC *soc, bool pcmOutputEnabled) {
+    if (soc->audioQueue && pcmOutputEnabled) audioQueueClear(soc->audioQueue);
     if (pcmOutputEnabled == soc->enablePcmOutput) return;
 
     soc->enablePcmOutput = pcmOutputEnabled;
     schedulePcmTask(soc);
-
-    if (soc->audioQueue) audioQueueClear(soc->audioQueue);
 }
 
 struct Buffer socGetRomData(struct SoC *soc) {

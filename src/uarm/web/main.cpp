@@ -165,17 +165,41 @@ void* EMSCRIPTEN_KEEPALIVE getRamData() { return socGetMemoryData(soc).data; }
 void* EMSCRIPTEN_KEEPALIVE getRamDirtyPages() { return socGetMemoryDirtyPages(soc).data; }
 
 uint32_t EMSCRIPTEN_KEEPALIVE getDeviceType() { return deviceType; }
+
+bool EMSCRIPTEN_KEEPALIVE sdCardInsert(uint8_t* data, int length, const char* id) {
+    if (socSdInserted(soc)) return false;
+
+    sdCardInitializeWithData(length / SD_SECTOR_SIZE, data, id);
+    socSdInsert(soc);
+
+    return true;
 }
 
-void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPort,
-         bool enableAudio, uint32_t mips = 0) {
-    soc = socInit(deviceType, rom, romLen, nand, nandLen, gdbPort, deviceGetSocRev());
-    if (sdCardInitialized()) {
-        socSdInsert(soc);
-    }
+void EMSCRIPTEN_KEEPALIVE sdCardEject() {
+    socSdEject(soc);
+    sdCardReset();
+}
+}
+
+void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, uint8_t* savestate,
+         size_t savestateLen, uint32_t mips = 0) {
+    soc = socInit(deviceType, rom, romLen, nand, nandLen, 0, deviceGetSocRev());
 
     audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
     socSetAudioQueue(soc, audioQueue);
+
+    if (!socLoad(soc, savestateLen, savestate)) {
+        cerr << "failed to restore savestate" << endl;
+    }
+
+    if (socSdInserted(soc)) {
+        if (!socSdRemount(soc)) {
+            cerr << "failed to remount SD card" << endl;
+            sdCardReset();
+        }
+    } else if (sdCardInitialized()) {
+        socSdInsert(soc);
+    }
 
     mainLoop = make_unique<MainLoop>(soc);
     if (mips > 0) mainLoop->SetCyclesPerSecondLimit(mips * 1000000);
@@ -184,14 +208,9 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, int gdbPo
 int main() {}
 
 extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint8_t* rom, int romLen, uint8_t* nand, int nandLen,
-                                             uint8_t* sd, int sdLen, const char* sdId) {
-    if (sd) {
-        fprintf(stderr, "using %u bytes of SD\n", sdLen);
-        sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sd, sdId);
-    }
-
-    fprintf(stderr, "using %u bytes of NOR\n", romLen);
-    fprintf(stderr, "using %u bytes of NAND\n", nandLen);
+                                             uint8_t* sd, int sdLen, uint8_t* savestate,
+                                             int savestateLen, const char* sdId) {
+    if (sd) sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sd, sdId);
 
     RomInfo romInfo(rom, romLen);
     if (!romInfo.IsValid()) {
@@ -202,5 +221,5 @@ extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint8_t* rom, int romLen, uint8_t* 
     cerr << romInfo << endl;
     deviceType = romInfo.GetDeviceType();
 
-    run(rom, (uint32_t)romLen, nand, (size_t)nandLen, 0, true);
+    run(rom, (uint32_t)romLen, nand, (size_t)nandLen, savestate, (size_t)savestateLen);
 }
