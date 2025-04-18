@@ -32,10 +32,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
     const PAGE_POOL_GROWTH_FACTOR = 1.5;
     const RAM_SIZE = 16 * 1024 * 1024 + 32 * 1024;
 
-    const messageQueue = [];
-    let dispatchInProgress = false;
     let rpcClient;
-
     let emulator;
 
     let framePool = [];
@@ -372,13 +369,14 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
         triggerSnapshot() {
             if (this.snapshotPending) return;
-            this.snapshotPromise = new Promise((resolve) => (this.resolveSnapshot = resolve));
 
             const snapshotNand = this.nandTracker.takeSnapshot();
             const snapshotSd = this.sdCardTracker.takeSnapshot();
             const snapshotRam = this.ramTracker.takeSnapshot();
 
             if (!snapshotNand && !snapshotSd && !snapshotRam) return;
+
+            this.snapshotPromise = new Promise((resolve) => (this.resolveSnapshot = resolve));
 
             this.postSnapshot({ nand: snapshotNand, sd: snapshotSd, ram: snapshotRam }, [
                 ...this.nandTracker.getTransferables(),
@@ -553,10 +551,10 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         }
     }
 
-    async function handleMessage(message) {
+    function handleMessage(message) {
         switch (message.type) {
             case 'rpcCall':
-                await rpcClient.dispatch(message);
+                rpcClient.dispatch(message);
                 break;
 
             case 'start':
@@ -648,21 +646,6 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         }
     }
 
-    async function dispatchMessages() {
-        if (dispatchInProgress || messageQueue.length === 0) return;
-        dispatchInProgress = true;
-
-        while (messageQueue.length > 0) {
-            try {
-                await handleMessage(messageQueue.shift());
-            } catch (e) {
-                postError(e);
-            }
-        }
-
-        dispatchInProgress = false;
-    }
-
     async function initialize({ nor, nand, sd, cardId, ram, maxLoad, cyclesPerSecondLimit, crcCheck, module }) {
         emulator = await Emulator.create(nor, nand, sd, cardId, ram, maxLoad, cyclesPerSecondLimit, crcCheck, module, {
             onFrame: postFrame,
@@ -695,12 +678,9 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             .register('getSession', getSession)
             .register('stop', stop);
 
-        postReady();
+        onmessage = (e) => handleMessage(e.data);
 
-        onmessage = (e) => {
-            messageQueue.push(e.data);
-            dispatchMessages();
-        };
+        postReady();
     }
 
     main().catch((e) => console.error(e));

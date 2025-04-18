@@ -180,11 +180,11 @@ export class Emulator {
     }
 
     async stop() {
+        await this.rpc.call('stop');
+
         this.speedDisplay.innerText = '-';
         this.running = false;
         this.eventHandler.release();
-
-        await this.rpc.call('stop');
     }
 
     start() {
