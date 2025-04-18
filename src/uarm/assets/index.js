@@ -1,4 +1,5 @@
 import './setimmediate/setimmediate.js';
+import { Mutex } from './async-mutex/async-mutex.js';
 import { Emulator, loadModule, module } from './emulator.js';
 import { Database } from './database.js';
 import { AudioDriver } from './audiodriver.js';
@@ -43,6 +44,8 @@ import { SessionFile } from './sessionfile.js';
     const canvas = document.getElementsByTagName('canvas')[0];
     const canvasCtx = canvas.getContext('2d');
 
+    const mutex = new Mutex();
+
     let fileNor, fileNand, fileSd;
     let emulator;
     let audioDriver;
@@ -65,19 +68,21 @@ import { SessionFile } from './sessionfile.js';
         return `${prefix}_${year}${month}${day}-${hour}${minute}${second}`;
     }
 
-    function updateMaxLoad() {
-        maxLoad = parseFloat(maxLoadSlider.value);
-        maxLoadLabel.innerText = `${Math.floor(maxLoad)}%`;
+    const updateMaxLoad = () =>
+        mutex.runExclusive(() => {
+            maxLoad = parseFloat(maxLoadSlider.value);
+            maxLoadLabel.innerText = `${Math.floor(maxLoad)}%`;
 
-        if (emulator) emulator.setMaxLoad(maxLoad);
-    }
+            if (emulator) emulator.setMaxLoad(maxLoad);
+        });
 
-    function updateMipsLimit() {
-        mipsLimit = parseFloat(mipsLimitSlider.value);
-        mipsLimitLabel.innerText = `${Math.floor(mipsLimit)} MIPS`;
+    const updateMipsLimit = () =>
+        mutex.runExclusive(() => {
+            mipsLimit = parseFloat(mipsLimitSlider.value);
+            mipsLimitLabel.innerText = `${Math.floor(mipsLimit)} MIPS`;
 
-        if (emulator) emulator.setCyclesPerSecondLimit(mipsLimit * 1000000);
-    }
+            if (emulator) emulator.setCyclesPerSecondLimit(mipsLimit * 1000000);
+        });
 
     function log(message) {
         const line = document.createElement('div');
@@ -172,23 +177,24 @@ import { SessionFile } from './sessionfile.js';
         canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    const uploadHandler = (assign) => async () => {
-        try {
-            const file = await openFile();
+    const uploadHandler = (assign) => () =>
+        mutex.runExclusive(async () => {
+            try {
+                const file = await openFile();
 
-            disableAutoPause = true;
-            await emulator?.stop();
+                disableAutoPause = true;
+                await emulator?.stop();
 
-            await assign(file);
-        } catch (e) {
-            console.error(e);
-        } finally {
-            updateLabels();
-            restart();
-        }
-    };
+                await assign(file);
+            } catch (e) {
+                console.error(e);
+            } finally {
+                updateLabels();
+                restartUnguarded();
+            }
+        });
 
-    async function restart() {
+    async function restartUnguarded() {
         if (!(fileNor && fileNand)) return;
 
         emulator?.destroy();
@@ -222,6 +228,8 @@ import { SessionFile } from './sessionfile.js';
         if (emulator) audioButton.disabled = false;
     }
 
+    const restart = () => mutex.runExclusive(restartUnguarded);
+
     function setSnapshotStatus(status) {
         switch (status) {
             case 'ok':
@@ -241,20 +249,21 @@ import { SessionFile } from './sessionfile.js';
         }
     }
 
-    async function exportImage() {
-        if (!emulator) return;
+    const exportImage = () =>
+        mutex.runExclusive(async () => {
+            if (!emulator) return;
 
-        const { deviceId, nor, nand, ram } = await emulator.getSession();
-        const metadata = {
-            norName: fileNor?.name ?? 'saved NOR',
-            nandName: fileNand?.name ?? 'saved NAND',
-        };
+            const { deviceId, nor, nand, ram } = await emulator.getSession();
+            const metadata = {
+                norName: fileNor?.name ?? 'saved NOR',
+                nandName: fileNand?.name ?? 'saved NAND',
+            };
 
-        const serializedSession = await sessionFile.serializeSession(deviceId, metadata, nor, nand, ram);
-        if (!serializedSession) return;
+            const serializedSession = await sessionFile.serializeSession(deviceId, metadata, nor, nand, ram);
+            if (!serializedSession) return;
 
-        saveFile(`${filenameFragment('uarm-session')}.bin`, serializedSession);
-    }
+            saveFile(`${filenameFragment('uarm-session')}.bin`, serializedSession);
+        });
 
     async function main() {
         setSnapshotStatus('ok');
@@ -318,14 +327,19 @@ import { SessionFile } from './sessionfile.js';
             })
         );
 
-        clearNandButton.addEventListener('click', async () => {
-            if (fileNand && !confirm('This will clear the NAND content and wipe RAM. Do you want to continue?')) return;
+        clearNandButton.addEventListener('click', () =>
+            mutex.runExclusive(async () => {
+                if (fileNand && !confirm('This will clear the NAND content and wipe RAM. Do you want to continue?'))
+                    return;
 
-            await emulator?.stop();
-            await database.clearNand();
+                await emulator?.stop();
+                await database.clearNand();
 
-            window.location.reload();
-        });
+                fileNand = await database.getNand(crcCheck);
+
+                await restartUnguarded();
+            })
+        );
 
         uploadSDButton.addEventListener(
             'click',
@@ -375,11 +389,10 @@ import { SessionFile } from './sessionfile.js';
 
         clearLogButton.addEventListener('click', () => (logContainer.innerHTML = ''));
 
-        rotateButton.addEventListener('click', () => emulator?.rotate());
+        rotateButton.addEventListener('click', () => mutex.runExclusive(() => emulator?.rotate()));
 
-        document.addEventListener(
-            'visibilitychange',
-            () => !disableAutoPause && (document.hidden ? emulator?.stop() : emulator?.start())
+        document.addEventListener('visibilitychange', () =>
+            mutex.runExclusive(() => !disableAutoPause && (document.hidden ? emulator?.stop() : emulator?.start()))
         );
     }
 
