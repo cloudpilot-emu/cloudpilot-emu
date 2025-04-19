@@ -14,7 +14,6 @@ import { SessionFile } from './sessionfile.js';
         isMacOSSafari || isIOS || (!!navigator.userAgent.match(/Safari/) && !navigator.userAgent.match(/Chrome/));
 
     let binary = isWebkit ? 'uarm_web_webkit.wasm' : 'uarm_web_other.wasm';
-    let disableAutoPause = false;
     let sessionFile;
 
     const labelNor = document.getElementById('nor-image');
@@ -190,9 +189,7 @@ import { SessionFile } from './sessionfile.js';
 
         await mutex.runExclusive(async () => {
             try {
-                disableAutoPause = true;
                 await emulator?.stop();
-
                 await assign(file);
             } catch (e) {
                 console.error(e);
@@ -211,11 +208,15 @@ import { SessionFile } from './sessionfile.js';
 
         const ram = await database.getRam(crcCheck);
 
+        if (fileNor.content.length === 0) fileNor = await database.getNor();
+        if (fileNand.content.length === 0) fileNand = await database.getNand(crcCheck);
+        if (fileSd?.content?.length === 0) fileSd = await database.getSd(crcCheck);
+
         emulator = await Emulator.create(
             fileNor.content,
             fileNand.content,
-            fileSd?.content,
-            fileSd?.id,
+            fileSd?.mounted ? fileSd?.content : undefined,
+            fileSd?.mounted ? fileSd?.id : undefined,
             ram,
             maxLoad,
             mipsLimit * 1000000,
@@ -229,12 +230,13 @@ import { SessionFile } from './sessionfile.js';
             }
         );
 
-        disableAutoPause = false;
         if (!document.hidden) emulator?.start();
 
         if (emulator && audioDriver) audioDriver.setEmulator(emulator);
 
         if (emulator) audioButton.disabled = false;
+
+        updateUi();
     }
 
     const restart = () => mutex.runExclusive(restartUnguarded);
@@ -353,14 +355,6 @@ import { SessionFile } from './sessionfile.js';
             })
         );
 
-        uploadSDButton.addEventListener(
-            'click',
-            uploadHandler(async (file) => {
-                await database.putSd(file, true);
-                fileSd = file;
-            })
-        );
-
         importImageButton.addEventListener(
             'click',
             uploadHandler(async (file) => {
@@ -380,6 +374,23 @@ import { SessionFile } from './sessionfile.js';
             })
         );
 
+        uploadSDButton.addEventListener('click', async () => {
+            if (emulator?.cardInserted) return;
+            let file = await openFile();
+
+            await mutex.runExclusive(async () => {
+                try {
+                    await emulator?.stop();
+
+                    fileSd = await database.putSd(file, true);
+                    await emulator?.insertCard(fileSd.content, fileSd.id);
+                } finally {
+                    emulator?.start();
+                    updateUi();
+                }
+            });
+        });
+
         downloadNandButton.addEventListener('click', () => {
             database.getNand(false).then((nand) => saveFile(`${filenameFragment('nand')}.bin`, nand.content));
         });
@@ -394,9 +405,11 @@ import { SessionFile } from './sessionfile.js';
 
                 if (emulator.cardInserted) {
                     await emulator.ejectCard();
+                    await database.setCardMounted(false);
                 } else {
                     fileSd = await database.getSd(crcCheck);
 
+                    await database.setCardMounted(true);
                     await emulator.insertCard(fileSd.content, fileSd.id);
                 }
 
@@ -422,7 +435,7 @@ import { SessionFile } from './sessionfile.js';
         rotateButton.addEventListener('click', () => mutex.runExclusive(() => emulator?.rotate()));
 
         document.addEventListener('visibilitychange', () =>
-            mutex.runExclusive(() => !disableAutoPause && (document.hidden ? emulator?.stop() : emulator?.start()))
+            mutex.runExclusive(() => (document.hidden ? emulator?.stop() : emulator?.start()))
         );
     }
 

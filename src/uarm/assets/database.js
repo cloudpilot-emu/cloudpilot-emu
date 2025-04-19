@@ -567,18 +567,35 @@ export class Database {
      *
      * @param {Image} sd
      * @param {boolean} mounted
-     * @returns {Promise<void>}
+     * @returns {Promise<CardImage>}
      */
     async putSd(sd, mounted) {
         const tx = await this.tx(OBJECT_STORE_SD, OBJECT_STORE_KVS);
         const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+        const id = randomId();
 
-        storeKvs.put(randomId(), KVS_CARD_ID);
+        storeKvs.put(id, KVS_CARD_ID);
         storeKvs.put(mounted, KVS_CARD_MOUNTED);
         storeKvs.put(sd.name, KVS_SD_NAME);
         storeKvs.put(sd.content.length, KVS_SD_SIZE);
         storeKvs.delete(KVS_SD_CRC);
         putPagedData(sd.content, PAGE_SIZE_SD, OBJECT_STORE_SD, EMPTY_VALUE_SD, tx);
+
+        await complete(tx);
+
+        return { ...sd, id, mounted };
+    }
+
+    /**
+     *
+     * @param {boolean} mounted
+     * @returns {Promise<void>}
+     */
+    async setCardMounted(mounted) {
+        const tx = await this.tx(OBJECT_STORE_SD, OBJECT_STORE_KVS);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+
+        storeKvs.put(mounted, KVS_CARD_MOUNTED);
 
         await complete(tx);
     }
