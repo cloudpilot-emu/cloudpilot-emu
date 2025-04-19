@@ -39,6 +39,7 @@ import { SessionFile } from './sessionfile.js';
     const importImageButton = document.getElementById('import-image');
     const clearLogButton = document.getElementById('clear-log');
     const resetButton = document.getElementById('reset');
+    const powerCycleButton = document.getElementById('power-cycle');
 
     const audioButton = document.getElementById('audio-button');
 
@@ -77,6 +78,7 @@ import { SessionFile } from './sessionfile.js';
         insertEjectSDButton.disabled = !(emulator && (fileSd || emulator.cardInserted));
         exportImageButton.disabled = !emulator;
         resetButton.disabled = !emulator;
+        powerCycleButton.disabled = !emulator;
 
         labelNor.innerText = fileNor?.name ?? '[none]';
         labelNand.innerText = fileNand?.name ?? '[none]';
@@ -421,6 +423,17 @@ import { SessionFile } from './sessionfile.js';
                 console.log('update');
 
                 updateUi();
+            })
+        );
+
+        powerCycleButton.addEventListener('click', () =>
+            mutex.runExclusive(async () => {
+                if (!emulator) return;
+
+                await emulator.stop();
+                await database.removeSavestate();
+
+                await restartUnguarded();
             })
         );
 

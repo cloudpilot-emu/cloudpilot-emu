@@ -630,6 +630,19 @@ export class Database {
 
     /**
      *
+     * @returns {Promise<void>}
+     */
+    async removeSavestate() {
+        const tx = await this.tx(OBJECT_STORE_KVS);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+
+        storeKvs.delete(KVS_SAVESTATE);
+
+        await complete(tx);
+    }
+
+    /**
+     *
      * @param {Snapshot} snapshot
      * @returns {Promise<void>}
      */
