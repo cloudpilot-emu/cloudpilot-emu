@@ -4,7 +4,7 @@
  * @typedef {{name: string, content: Uint8Array}} Image
  * @typedef {{name: string, id: string, mounted: boolean, content: Uint8Array}} CardImage
  * @typedef {{scheduledPageCount: number, scheduledPages: ArrayBuffer, pagePool: ArrayBuffer, crc?: number}} SnapshotPages
- * @typedef {{nand?: SnapshotPages, sd?: SnapshotPages, ram?: SnapshotPages}} Snapshot
+ * @typedef {{nand?: SnapshotPages, sd?: SnapshotPages, ram?: SnapshotPages, cardId? :string, savestate: ArrayBuffer}} Snapshot
  */
 
 const DB_NAME = 'cp-uarm';
@@ -38,6 +38,7 @@ const KVS_NAND_CRC = 'nandCrc';
 const KVS_RAM_CRC = 'ramCrc';
 const KVS_CARD_ID = 'cardId';
 const KVS_CARD_MOUNTED = 'cardMounted';
+const KVS_SAVESTATE = 'savestate';
 
 /**
  * @returns {string}
@@ -608,6 +609,13 @@ export class Database {
     async storeSnapshot(snapshot) {
         const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_SD, OBJECT_STORE_RAM, OBJECT_STORE_KVS);
         const kvs = tx.objectStore(OBJECT_STORE_KVS);
+
+        const cardId = /** @type string */ (await complete(kvs.get(KVS_CARD_ID)));
+        if (snapshot.sd && cardId !== snapshot.cardId) {
+            throw new Error(`snapshot aborted: card ID mismatch ${cardId} vs. ${snapshot.cardId}`);
+        }
+
+        kvs.put(new Uint8Array(snapshot.savestate), KVS_SAVESTATE);
 
         if (snapshot.nand) {
             this.storeSnapshotPages(snapshot.nand, tx, PAGE_SIZE_NAND, this.pagePoolNand, OBJECT_STORE_NAND);
