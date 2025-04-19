@@ -268,13 +268,13 @@ import { SessionFile } from './sessionfile.js';
         mutex.runExclusive(async () => {
             if (!emulator) return;
 
-            const { deviceId, nor, nand, ram } = await emulator.getSession();
+            const { deviceId, nor, nand, ram, savestate } = await emulator.getSession();
             const metadata = {
                 norName: fileNor?.name ?? 'saved NOR',
                 nandName: fileNand?.name ?? 'saved NAND',
             };
 
-            const serializedSession = await sessionFile.serializeSession(deviceId, metadata, nor, nand, ram);
+            const serializedSession = await sessionFile.serializeSession(deviceId, metadata, nor, nand, ram, savestate);
             if (!serializedSession) return;
 
             saveFile(`${filenameFragment('uarm-session')}.bin`, serializedSession);
@@ -363,7 +363,7 @@ import { SessionFile } from './sessionfile.js';
             'click',
             uploadHandler(async (file) => {
                 try {
-                    const { metadata, nor, nand, ram } = await sessionFile.deserializeSession(file.content);
+                    const { metadata, nor, nand, ram, savestate } = await sessionFile.deserializeSession(file.content);
 
                     fileNor = { content: nor, name: metadata?.norName ?? 'saved ROM' };
                     fileNand = { content: nand, name: metadata?.nandName ?? 'saved NAND' };
@@ -371,6 +371,7 @@ import { SessionFile } from './sessionfile.js';
                     await database.putNor(fileNor);
                     await database.putNand(fileNand);
                     await database.putRam(ram);
+                    await database.putSavestate(savestate);
                 } catch (e) {
                     alert(`Failed to load session: ${e.message}`);
                     console.error(e);

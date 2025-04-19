@@ -215,7 +215,7 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, uint8_t* 
             cerr << "failed to remount SD card" << endl;
             sdCardReset();
         }
-    } else if (sdCardInitialized()) {
+    } else if (!savestate && sdCardInitialized()) {
         socSdInsert(soc);
     }
 

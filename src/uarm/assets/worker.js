@@ -562,12 +562,18 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         }
 
         getSession() {
+            this.save();
+
             const deviceId = this.getDeviceType();
             const nor = this.module.HEAPU8.subarray(this.getRomData(), this.getRomData() + this.getRomDataSize());
             const nand = this.module.HEAPU8.subarray(this.getNandData(), this.getNandData() + this.getNandDataSize());
             const ram = this.module.HEAPU8.subarray(this.getRamData(), this.getRamData() + this.getRamDataSize());
+            const savestate = this.module.HEAPU8.subarray(
+                this.getSavestateData(),
+                this.getSavestateData() + this.getSavestateSize()
+            );
 
-            return { deviceId, nor, nand, ram };
+            return { deviceId, nor, nand, ram, savestate };
         }
 
         ejectCard() {

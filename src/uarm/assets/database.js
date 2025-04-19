@@ -616,6 +616,20 @@ export class Database {
 
     /**
      *
+     * @param {Uint8Array} savestate
+     * @returns {Promise<void>}
+     */
+    async putSavestate(savestate) {
+        const tx = await this.tx(OBJECT_STORE_KVS);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+
+        storeKvs.put(savestate, KVS_SAVESTATE);
+
+        await complete(tx);
+    }
+
+    /**
+     *
      * @param {Snapshot} snapshot
      * @returns {Promise<void>}
      */
