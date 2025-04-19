@@ -281,7 +281,19 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             });
         }
 
-        static async create(nor, nand, sd, cardId, ram, maxLoad, cyclesPerSecondLimit, crcCheck, wasmModule, env) {
+        static async create(
+            nor,
+            nand,
+            sd,
+            cardId,
+            ram,
+            savestate,
+            maxLoad,
+            cyclesPerSecondLimit,
+            crcCheck,
+            wasmModule,
+            env
+        ) {
             const { log } = env;
             let module;
 
@@ -293,30 +305,59 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             });
 
             const malloc = module.cwrap('malloc', 'number', ['number']);
+            const free = module.cwrap('free', undefined, ['number']);
             const norPtr = malloc(nor.length);
             const nandPtr = malloc(nand.length);
             const sdPtr = sd ? malloc(sd.length) : 0;
+            const savestatePtr = savestate ? malloc(savestate.length) : 0;
 
             module.HEAPU8.subarray(norPtr, norPtr + nor.length).set(nor);
             module.HEAPU8.subarray(nandPtr, nandPtr + nand.length).set(nand);
             if (sd) module.HEAPU8.subarray(sdPtr, sdPtr + sd.length).set(sd);
+            if (savestate) module.HEAPU8.subarray(savestatePtr, savestatePtr + savestate.length).set(savestate);
 
-            module.callMain([]);
-
-            module.ccall(
-                'webMain',
-                undefined,
-                ['number', 'number', 'number', 'number', 'number', 'number', 'number', 'number', 'string'],
-                [norPtr, nor.length, nandPtr, nand.length, sdPtr, sd ? sd.length : 0, 0, 0, cardId ?? '']
-            );
-
-            const ramPtr = module.ccall('getRamData', 'number');
-
+            let ramPtr = 0;
             if (ram.length > RAM_SIZE) {
                 console.error('ignoring invalid RAM snapshot');
             } else {
+                ramPtr = malloc(ram.length);
                 module.HEAPU8.subarray(ramPtr, ramPtr + ram.length).set(ram);
             }
+
+            module.callMain([]);
+            module.ccall(
+                'webMain',
+                undefined,
+                [
+                    'number',
+                    'number',
+                    'number',
+                    'number',
+                    'number',
+                    'number',
+                    'number',
+                    'number',
+                    'number',
+                    'number',
+                    'string',
+                ],
+                [
+                    norPtr,
+                    nor.length,
+                    nandPtr,
+                    nand.length,
+                    ramPtr,
+                    ramPtr ? ram.length : 0,
+                    sdPtr,
+                    sd?.length ?? 0,
+                    savestatePtr,
+                    savestate?.length ?? 0,
+                    cardId ?? '',
+                ]
+            );
+
+            if (savestatePtr) free(savestatePtr);
+            if (ramPtr) free(ramPtr);
 
             return new Emulator(module, maxLoad, cyclesPerSecondLimit, crcCheck, cardId, env);
         }
@@ -703,13 +744,36 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         }
     }
 
-    async function initialize({ nor, nand, sd, cardId, ram, maxLoad, cyclesPerSecondLimit, crcCheck, module }) {
-        emulator = await Emulator.create(nor, nand, sd, cardId, ram, maxLoad, cyclesPerSecondLimit, crcCheck, module, {
-            onFrame: postFrame,
-            onSpeedDisplay: postSpeed,
-            postSnapshot,
-            log: postLog,
-        });
+    async function initialize({
+        nor,
+        nand,
+        sd,
+        cardId,
+        ram,
+        savestate,
+        maxLoad,
+        cyclesPerSecondLimit,
+        crcCheck,
+        module,
+    }) {
+        emulator = await Emulator.create(
+            nor,
+            nand,
+            sd,
+            cardId,
+            ram,
+            savestate,
+            maxLoad,
+            cyclesPerSecondLimit,
+            crcCheck,
+            module,
+            {
+                onFrame: postFrame,
+                onSpeedDisplay: postSpeed,
+                postSnapshot,
+                log: postLog,
+            }
+        );
 
         return {
             deviceType: emulator.getDeviceType(),

@@ -431,6 +431,7 @@ export class Database {
         kvsStore.delete(KVS_RAM_CRC);
 
         tx.objectStore(OBJECT_STORE_RAM).clear();
+        kvsStore.delete(KVS_SAVESTATE);
 
         await complete(tx);
     }
@@ -514,6 +515,7 @@ export class Database {
         putPagedData(nand.content, PAGE_SIZE_NAND, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
 
         tx.objectStore(OBJECT_STORE_RAM).clear();
+        storeKvs.delete(KVS_SAVESTATE);
 
         await complete(tx);
     }
@@ -527,6 +529,7 @@ export class Database {
 
         tx.objectStore(OBJECT_STORE_NAND).clear();
         tx.objectStore(OBJECT_STORE_RAM).clear();
+        storeKvs.delete(KVS_SAVESTATE);
 
         await complete(tx);
     }
@@ -593,12 +596,22 @@ export class Database {
      * @returns {Promise<void>}
      */
     async setCardMounted(mounted) {
-        const tx = await this.tx(OBJECT_STORE_SD, OBJECT_STORE_KVS);
+        const tx = await this.tx(OBJECT_STORE_KVS);
         const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
         storeKvs.put(mounted, KVS_CARD_MOUNTED);
 
         await complete(tx);
+    }
+
+    /**
+     * @returns {Promise<Uint8Array | undefined>}
+     */
+    async getSavestate() {
+        const tx = await this.tx(OBJECT_STORE_KVS);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+
+        return /** @type {Promise<Uint8Array | undefined>} */ complete(storeKvs.get(KVS_SAVESTATE));
     }
 
     /**

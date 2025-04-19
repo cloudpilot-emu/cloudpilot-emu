@@ -206,11 +206,16 @@ namespace {
             return false;
         }
 
-        if (memory.data) memcpy(socGetMemoryData(soc).data, memory.data, memory.size);
+        if (memory.data) {
+            memcpy(socGetMemoryData(soc).data, memory.data, memory.size);
+            free(memory.data);
+        }
 
         if (!socLoad(soc, savestate.size, savestate.data)) {
             cerr << "failed to restore savestate" << endl;
         }
+
+        if (savestate.data) free(savestate.data);
 
         if (socSdInserted(soc)) {
             if (!socSdRemount(soc)) {

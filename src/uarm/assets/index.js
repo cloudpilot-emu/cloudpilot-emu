@@ -213,6 +213,7 @@ import { SessionFile } from './sessionfile.js';
         if (fileNor.content.length === 0) fileNor = await database.getNor();
         if (fileNand.content.length === 0) fileNand = await database.getNand(crcCheck);
         if (fileSd?.content?.length === 0) fileSd = await database.getSd(crcCheck);
+        const savestate = await database.getSavestate();
 
         emulator = await Emulator.create(
             fileNor.content,
@@ -220,6 +221,7 @@ import { SessionFile } from './sessionfile.js';
             fileSd?.mounted ? fileSd?.content : undefined,
             fileSd?.mounted ? fileSd?.id : undefined,
             ram,
+            savestate,
             maxLoad,
             mipsLimit * 1000000,
             {

@@ -191,14 +191,22 @@ void* EMSCRIPTEN_KEEPALIVE getSavestateData() { return socGetSavestate(soc).data
 bool EMSCRIPTEN_KEEPALIVE isSdInserted() { return socSdInserted(soc); }
 }
 
-void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, uint8_t* savestate,
-         size_t savestateLen, uint32_t mips = 0) {
+void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, uint8_t* ram, size_t ramLen,
+         uint8_t* savestate, size_t savestateLen, uint32_t mips = 0) {
     soc = socInit(deviceType, rom, romLen, nand, nandLen, 0, deviceGetSocRev());
 
     audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
     socSetAudioQueue(soc, audioQueue);
 
-    if (!socLoad(soc, savestateLen, savestate)) {
+    Buffer memory = socGetMemoryData(soc);
+    if (ramLen > memory.size) {
+        cerr << "ignoring invalid RAM snapshot" << endl;
+        ram = nullptr;
+    }
+
+    if (ram) memcpy(memory.data, ram, ramLen);
+
+    if (ram && !socLoad(soc, savestateLen, savestate)) {
         cerr << "failed to restore savestate" << endl;
     }
 
@@ -218,8 +226,9 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, uint8_t* 
 int main() {}
 
 extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint8_t* rom, int romLen, uint8_t* nand, int nandLen,
-                                             uint8_t* sd, int sdLen, uint8_t* savestate,
-                                             int savestateLen, const char* sdId) {
+                                             uint8_t* ram, int ramLen, uint8_t* sd, int sdLen,
+                                             uint8_t* savestate, int savestateLen,
+                                             const char* sdId) {
     if (sd) sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sd, sdId);
 
     RomInfo romInfo(rom, romLen);
@@ -231,5 +240,6 @@ extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint8_t* rom, int romLen, uint8_t* 
     cerr << romInfo << endl;
     deviceType = romInfo.GetDeviceType();
 
-    run(rom, (uint32_t)romLen, nand, (size_t)nandLen, savestate, (size_t)savestateLen);
+    run(rom, (uint32_t)romLen, nand, (size_t)nandLen, ram, (size_t)ramLen, savestate,
+        (size_t)savestateLen);
 }
