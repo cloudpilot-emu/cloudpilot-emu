@@ -1,7 +1,7 @@
 import './setimmediate/setimmediate.js';
 import { Mutex } from './async-mutex/async-mutex.js';
 import { Emulator, loadModule, module } from './emulator.js';
-import { Database } from './database.js';
+import { Database, KVS_MAX_LOAD, KVS_MIPS } from './database.js';
 import { AudioDriver } from './audiodriver.js';
 import { SessionFile } from './sessionfile.js';
 
@@ -90,6 +90,7 @@ import { SessionFile } from './sessionfile.js';
             maxLoad = parseFloat(maxLoadSlider.value);
             maxLoadLabel.innerText = `${Math.floor(maxLoad)}%`;
 
+            database.kvsPut(KVS_MAX_LOAD, maxLoad);
             if (emulator) emulator.setMaxLoad(maxLoad);
         });
 
@@ -98,6 +99,7 @@ import { SessionFile } from './sessionfile.js';
             mipsLimit = parseFloat(mipsLimitSlider.value);
             mipsLimitLabel.innerText = `${Math.floor(mipsLimit)} MIPS`;
 
+            database.kvsPut(KVS_MIPS, mipsLimit);
             if (emulator) emulator.setCyclesPerSecondLimit(mipsLimit * 1000000);
         });
 
@@ -310,6 +312,13 @@ import { SessionFile } from './sessionfile.js';
 
         sessionFile = new SessionFile(module);
 
+        maxLoad = (await database.kvsGet(KVS_MAX_LOAD)) ?? maxLoad;
+        mipsLimit = (await database.kvsGet(KVS_MIPS)) ?? mipsLimit;
+        maxLoadSlider.value = maxLoad;
+        mipsLimitSlider.value = mipsLimit;
+        updateMaxLoad();
+        updateMipsLimit();
+
         try {
             fileNor = await database.getNor();
             fileNand = await database.getNand(crcCheck);
@@ -437,14 +446,8 @@ import { SessionFile } from './sessionfile.js';
             })
         );
 
-        maxLoadSlider.value = maxLoad;
-        mipsLimitSlider.value = mipsLimit;
-
         maxLoadSlider.addEventListener('input', updateMaxLoad);
         mipsLimitSlider.addEventListener('input', updateMipsLimit);
-
-        updateMaxLoad();
-        updateMipsLimit();
 
         audioButton.addEventListener('click', () => onAudioButtonClick());
 

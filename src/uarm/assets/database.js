@@ -39,6 +39,8 @@ const KVS_RAM_CRC = 'ramCrc';
 const KVS_CARD_ID = 'cardId';
 const KVS_CARD_MOUNTED = 'cardMounted';
 const KVS_SAVESTATE = 'savestate';
+export const KVS_MIPS = 'mips';
+export const KVS_MAX_LOAD = 'maxLoad';
 
 /**
  * @returns {string}
@@ -402,6 +404,19 @@ export class Database {
     /**
      *
      * @param {string} key
+     * @param {any} value
+     */
+    async kvsPut(key, value) {
+        const tx = await this.tx(OBJECT_STORE_KVS);
+
+        tx.objectStore(OBJECT_STORE_KVS).put(value, key);
+
+        await complete(tx);
+    }
+
+    /**
+     *
+     * @param {string} key
      * @returns {Promise<void>}
      */
     async kvsDelete(key) {
@@ -607,11 +622,8 @@ export class Database {
     /**
      * @returns {Promise<Uint8Array | undefined>}
      */
-    async getSavestate() {
-        const tx = await this.tx(OBJECT_STORE_KVS);
-        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
-
-        return /** @type {Promise<Uint8Array | undefined>} */ complete(storeKvs.get(KVS_SAVESTATE));
+    getSavestate() {
+        return this.kvsGet(KVS_SAVESTATE);
     }
 
     /**
@@ -620,12 +632,7 @@ export class Database {
      * @returns {Promise<void>}
      */
     async putSavestate(savestate) {
-        const tx = await this.tx(OBJECT_STORE_KVS);
-        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
-
-        storeKvs.put(savestate, KVS_SAVESTATE);
-
-        await complete(tx);
+        await this.kvsPut(KVS_SAVESTATE, savestate);
     }
 
     /**
@@ -633,12 +640,7 @@ export class Database {
      * @returns {Promise<void>}
      */
     async removeSavestate() {
-        const tx = await this.tx(OBJECT_STORE_KVS);
-        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
-
-        storeKvs.delete(KVS_SAVESTATE);
-
-        await complete(tx);
+        await this.kvsDelete(KVS_SAVESTATE);
     }
 
     /**
