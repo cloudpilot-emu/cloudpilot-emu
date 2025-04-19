@@ -41,7 +41,7 @@ namespace {
         }
 
        protected:
-        std::vector<const Invocation> invocations;
+        std::vector<Invocation> invocations;
     };
 
     TEST(Scheduler, TasksAreScheduledInAppropiateOrder) {
