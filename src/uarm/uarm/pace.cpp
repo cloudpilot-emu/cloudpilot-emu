@@ -13,7 +13,7 @@
     #include <emscripten.h>
 #endif
 
-#define SAVESTATE_VERSION 0
+#define SAVESTATE_VERSION 1
 
 static struct ArmMem* mem = NULL;
 static struct ArmMmu* mmu = NULL;
@@ -451,27 +451,30 @@ void paceSave(T& savestate) {
     MakeSR();
 
     SaveChunkHelper helper(*chunk);
-    paceDoSaveLoad(helper);
+    paceDoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
 template <typename T>
 void paceLoad(T& loader) {
-    auto chunk = loader.GetChunk(ChunkType::pace, SAVESTATE_VERSION, "pace");
+    uint32_t version;
+    auto chunk = loader.GetChunk(ChunkType::pace, SAVESTATE_VERSION, "pace", version);
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
-    paceDoSaveLoad(helper);
+    paceDoSaveLoad(helper, version);
 
     MakeFromSR();
 }
 
 template <typename T>
-void paceDoSaveLoad(T& chunkHelper) {
+void paceDoSaveLoad(T& chunkHelper, uint32_t version) {
     chunkHelper.DoBuffer32(regs.regs, sizeof(regs.regs) >> 2)
         .Do32(regs.pc)
         .Do16(regs.sr)
         .Do32(statePtr)
         .Do(typename T::BoolPack() << priviledged);
+
+    if (version > 0) chunkHelper.Do32(regs.lastOpcode);
 }
 
 template void paceSave<Savestate<ChunkType>>(Savestate<ChunkType>& savestate);

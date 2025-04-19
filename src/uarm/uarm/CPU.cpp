@@ -67,7 +67,7 @@
 
 #define EXEC_FN_PREFIX_VALUE 0x53ae0000
 
-#define SAVESTATE_VERSION 0
+#define SAVESTATE_VERSION 1
 
 #ifdef __EMSCRIPTEN__
     #define PREFIX_EXEC_FN(...) (ExecFn((uint32_t)__VA_ARGS__ + EXEC_FN_PREFIX_VALUE))
@@ -149,7 +149,7 @@ struct ArmCpu {
     uint32_t slowPath;
 
     template <typename T>
-    void DoSaveLoad(T &chunkHelper);
+    void DoSaveLoad(T &chunkHelper, uint32_t version);
 };
 
 enum ImmShiftType {
@@ -3632,7 +3632,7 @@ void cpuSave(ArmCpu *cpu, T &savestate) {
     if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
-    cpu->DoSaveLoad(helper);
+    cpu->DoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
 template <typename T>
@@ -3642,18 +3642,19 @@ void cpuLoad(ArmCpu *cpu, T &loader) {
     cp15Load(cpu->cp15, loader);
     patchDispatchLoad(cpu->patchDispatch, loader);
 
-    auto chunk = loader.GetChunk(ChunkType::cpu, SAVESTATE_VERSION, "cpu");
+    uint32_t version;
+    auto chunk = loader.GetChunk(ChunkType::cpu, SAVESTATE_VERSION, "cpu", version);
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
-    cpu->DoSaveLoad(helper);
+    cpu->DoSaveLoad(helper, version);
 
     cpu->waitingEventsTotal = cpu->waitingFiqs + cpu->waitingIrqs;
     cpuUpdateSlowPath(cpu);
 }
 
 template <typename U>
-void ArmCpu::DoSaveLoad(U &chunkHelper) {
+void ArmCpu::DoSaveLoad(U &chunkHelper, uint32_t version) {
     chunkHelper.DoBuffer32(regs, sizeof(regs) >> 2)
         .DoBuffer32(extra_regs, sizeof(extra_regs) >> 2)
         .Do32(SPSR)
@@ -3665,6 +3666,8 @@ void ArmCpu::DoSaveLoad(U &chunkHelper) {
         .Do32(vectorBase)
         .Do32(pid)
         .Do(typename U::BoolPack() << privileged << modePace << sleeping << Q << T << I << F);
+
+    if (version > 0) chunkHelper.Do32(paceOffset);
 
     bank_usr.DoSaveLoad(chunkHelper);
     bank_svc.DoSaveLoad(chunkHelper);
