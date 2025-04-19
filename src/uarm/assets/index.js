@@ -38,6 +38,7 @@ import { SessionFile } from './sessionfile.js';
     const exportImageButton = document.getElementById('export-image');
     const importImageButton = document.getElementById('import-image');
     const clearLogButton = document.getElementById('clear-log');
+    const resetButton = document.getElementById('reset');
 
     const audioButton = document.getElementById('audio-button');
 
@@ -75,6 +76,7 @@ import { SessionFile } from './sessionfile.js';
         insertEjectSDButton.innerText = emulator?.cardInserted ? 'Eject SD' : 'Insert SD';
         insertEjectSDButton.disabled = !(emulator && (fileSd || emulator.cardInserted));
         exportImageButton.disabled = !emulator;
+        resetButton.disabled = !emulator;
 
         labelNor.innerText = fileNor?.name ?? '[none]';
         labelNand.innerText = fileNand?.name ?? '[none]';
@@ -433,6 +435,8 @@ import { SessionFile } from './sessionfile.js';
         clearLogButton.addEventListener('click', () => (logContainer.innerHTML = ''));
 
         rotateButton.addEventListener('click', () => mutex.runExclusive(() => emulator?.rotate()));
+
+        resetButton.addEventListener('click', () => mutex.runExclusive(() => emulator?.reset()));
 
         document.addEventListener('visibilitychange', () =>
             mutex.runExclusive(() => (document.hidden ? emulator?.stop() : emulator?.start()))

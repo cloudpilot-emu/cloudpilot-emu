@@ -226,6 +226,8 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.sdCardInsert = module.cwrap('sdCardInsert', 'number', ['number', 'number', 'string']);
             this.sdCardEject = module.cwrap('sdCardEject');
             this.isSdInserted = module.cwrap('isSdInserted');
+            this.reset = module.cwrap('reset');
+            this.save = module.cwrap('save');
 
             this.amIDead = false;
             this.pcmEnabled = false;
@@ -374,6 +376,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         triggerSnapshot() {
             if (this.snapshotPending) return;
 
+            this.save();
             const snapshotNand = this.nandTracker.takeSnapshot();
             const snapshotSd = this.sdCardTracker.takeSnapshot();
             const snapshotRam = this.ramTracker.takeSnapshot();
@@ -703,13 +706,19 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         emulator.insertCard(data, cardId);
     }
 
+    function reset() {
+        assertEmulator('reset');
+        emulator.reset();
+    }
+
     async function main() {
         rpcClient = new RpcClient(self)
             .register('initialize', initialize)
             .register('getSession', getSession)
             .register('stop', stop)
             .register('ejectCard', ejectCard)
-            .register('insertCard', insertCard);
+            .register('insertCard', insertCard)
+            .register('reset', reset);
 
         onmessage = (e) => handleMessage(e.data);
 

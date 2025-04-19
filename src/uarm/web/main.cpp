@@ -180,6 +180,14 @@ void EMSCRIPTEN_KEEPALIVE sdCardEject() {
     sdCardReset();
 }
 
+void EMSCRIPTEN_KEEPALIVE reset() { socReset(soc); }
+
+void EMSCRIPTEN_KEEPALIVE save() { socSave(soc); }
+
+uint32_t EMSCRIPTEN_KEEPALIVE getSavestateSize() { return socGetSavestate(soc).size; }
+
+void* EMSCRIPTEN_KEEPALIVE getSavestateData() { return socGetSavestate(soc).data; }
+
 bool EMSCRIPTEN_KEEPALIVE isSdInserted() { return socSdInserted(soc); }
 }
 

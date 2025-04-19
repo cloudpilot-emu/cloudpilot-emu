@@ -274,6 +274,10 @@ export class Emulator {
         this.cardInserted = true;
     }
 
+    async reset() {
+        await this.rpc.call('reset');
+    }
+
     async handleSnapshot(snapshot) {
         const snapshotStatus = snapshot.nand || snapshot.sd ? 'saving' : 'ok';
 
