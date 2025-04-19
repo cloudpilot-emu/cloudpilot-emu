@@ -7,17 +7,19 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.registeredMethods = new Map();
         }
 
-        dispatch(message) {
+        async dispatch(message) {
             const { id, method, args } = message;
 
             if (!this.registeredMethods.has(method)) {
                 this.worker.postMessage({ type: 'rpcError', id, error: `method not registered: ${method}` });
             }
 
-            return this.registeredMethods
-                .get(method)(args)
-                .then((result) => this.worker.postMessage({ type: 'rpcSuccess', id, result }))
-                .catch((e) => this.worker.postMessage({ type: 'rpcError', id, error: `${e}` }));
+            try {
+                const result = await this.registeredMethods.get(method)(args);
+                this.worker.postMessage({ type: 'rpcSuccess', id, result });
+            } catch (e) {
+                this.worker.postMessage({ type: 'rpcError', id, error: `${e}` });
+            }
         }
 
         register(method, handler) {
@@ -193,6 +195,8 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.log = log;
             this.postSnapshot = postSnapshot;
 
+            this.malloc = module.cwrap('malloc', 'number', ['number']);
+            this.free = module.cwrap('free', undefined, ['number']);
             this.cycle = module.cwrap('cycle', undefined, ['number']);
             this.getFrame = module.cwrap('getFrame', 'number');
             this.resetFrame = module.cwrap('resetFrame');
@@ -221,6 +225,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.getDeviceType = module.cwrap('getDeviceType');
             this.sdCardInsert = module.cwrap('sdCardInsert', 'number', ['number', 'number', 'string']);
             this.sdCardEject = module.cwrap('sdCardEject');
+            this.isSdInserted = module.cwrap('isSdInserted');
 
             this.amIDead = false;
             this.pcmEnabled = false;
@@ -285,7 +290,6 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             });
 
             const malloc = module.cwrap('malloc', 'number', ['number']);
-
             const norPtr = malloc(nor.length);
             const nandPtr = malloc(nand.length);
             const sdPtr = sd ? malloc(sd.length) : 0;
@@ -488,6 +492,22 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
             return { deviceId, nor, nand, ram };
         }
+
+        ejectCard() {
+            this.sdCardEject();
+        }
+
+        insertCard(data, cardId) {
+            if (this.isSdInserted()) throw new Error('SD card already inserted');
+
+            const ptr = this.malloc(data.length);
+            this.module.HEAPU8.subarray(ptr, ptr + data.length).set(data);
+
+            if (!this.sdCardInsert(ptr, data.length, cardId)) {
+                this.free(ptr);
+                throw new Error('failed to insert SD card');
+            }
+        }
     }
 
     function mapButton(name) {
@@ -656,10 +676,11 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
         return {
             deviceType: emulator.getDeviceType(),
+            cardInserted: emulator.isSdInserted(),
         };
     }
 
-    async function getSession() {
+    function getSession() {
         assertEmulator('getSession');
 
         return emulator.getSession();
@@ -672,11 +693,23 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         await emulator.snapshotPromise;
     }
 
+    function ejectCard() {
+        assertEmulator('ejectSd');
+        emulator.ejectCard();
+    }
+
+    function insertCard({ data, cardId }) {
+        assertEmulator('insertCard');
+        emulator.insertCard(data, cardId);
+    }
+
     async function main() {
         rpcClient = new RpcClient(self)
             .register('initialize', initialize)
             .register('getSession', getSession)
-            .register('stop', stop);
+            .register('stop', stop)
+            .register('ejectCard', ejectCard)
+            .register('insertCard', insertCard);
 
         onmessage = (e) => handleMessage(e.data);
 

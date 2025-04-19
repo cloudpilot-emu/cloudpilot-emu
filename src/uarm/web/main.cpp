@@ -179,6 +179,8 @@ void EMSCRIPTEN_KEEPALIVE sdCardEject() {
     socSdEject(soc);
     sdCardReset();
 }
+
+bool EMSCRIPTEN_KEEPALIVE isSdInserted() { return socSdInserted(soc); }
 }
 
 void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, uint8_t* savestate,

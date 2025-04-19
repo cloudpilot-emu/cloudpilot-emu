@@ -35,6 +35,7 @@ import { SessionFile } from './sessionfile.js';
     const downloadNandButton = document.getElementById('download-nand');
     const uploadSDButton = document.getElementById('upload-sd');
     const downloadSDButton = document.getElementById('download-sd');
+    const insertEjectSDButton = document.getElementById('insert-eject-sd');
     const exportImageButton = document.getElementById('export-image');
     const importImageButton = document.getElementById('import-image');
     const clearLogButton = document.getElementById('clear-log');
@@ -68,6 +69,19 @@ import { SessionFile } from './sessionfile.js';
         return `${prefix}_${year}${month}${day}-${hour}${minute}${second}`;
     }
 
+    function updateUi() {
+        downloadNandButton.disabled = !fileNand;
+        downloadSDButton.disabled = !fileSd;
+        uploadSDButton.disabled = !!emulator?.cardInserted;
+        insertEjectSDButton.innerText = emulator?.cardInserted ? 'Eject SD' : 'Insert SD';
+        insertEjectSDButton.disabled = !(emulator && (fileSd || emulator.cardInserted));
+        exportImageButton.disabled = !emulator;
+
+        labelNor.innerText = fileNor?.name ?? '[none]';
+        labelNand.innerText = fileNand?.name ?? '[none]';
+        labelSD.innerText = fileSd?.name ?? '[none]';
+    }
+
     const updateMaxLoad = () =>
         mutex.runExclusive(() => {
             maxLoad = parseFloat(maxLoadSlider.value);
@@ -91,12 +105,6 @@ import { SessionFile } from './sessionfile.js';
 
         logContainer.appendChild(line);
         logContainer.scrollTop = logContainer.scrollHeight;
-    }
-
-    function updateLabels() {
-        labelNor.innerText = fileNor?.name ?? '[none]';
-        labelNand.innerText = fileNand?.name ?? '[none]';
-        labelSD.innerText = fileSd?.name ?? '[none]';
     }
 
     async function onAudioButtonClick() {
@@ -177,11 +185,11 @@ import { SessionFile } from './sessionfile.js';
         canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    const uploadHandler = (assign) => () =>
-        mutex.runExclusive(async () => {
-            try {
-                const file = await openFile();
+    const uploadHandler = (assign) => async () => {
+        const file = await openFile();
 
+        await mutex.runExclusive(async () => {
+            try {
                 disableAutoPause = true;
                 await emulator?.stop();
 
@@ -189,10 +197,11 @@ import { SessionFile } from './sessionfile.js';
             } catch (e) {
                 console.error(e);
             } finally {
-                updateLabels();
+                updateUi();
                 restartUnguarded();
             }
         });
+    };
 
     async function restartUnguarded() {
         if (!(fileNor && fileNand)) return;
@@ -267,6 +276,7 @@ import { SessionFile } from './sessionfile.js';
 
     async function main() {
         setSnapshotStatus('ok');
+        updateUi();
 
         database = await Database.create();
         clearCanvas();
@@ -297,6 +307,8 @@ import { SessionFile } from './sessionfile.js';
             fileNand = await database.getNand(crcCheck);
             fileSd = await database.getSd(crcCheck);
 
+            updateUi();
+
             if (!query.has('noload')) {
                 log('Reload with ?noload appended to the URL if the emulator hangs on load due to invalid NOR or NAND');
                 log('---');
@@ -307,7 +319,7 @@ import { SessionFile } from './sessionfile.js';
             console.error('failed to launch!', e);
         }
 
-        updateLabels();
+        updateUi();
 
         exportImageButton.addEventListener('click', exportImage);
 
@@ -375,6 +387,24 @@ import { SessionFile } from './sessionfile.js';
         downloadSDButton.addEventListener('click', () => {
             database.getSd(false).then((sd) => saveFile(`${filenameFragment('sd')}.bin`, sd.content));
         });
+
+        insertEjectSDButton.addEventListener('click', () =>
+            mutex.runExclusive(async () => {
+                if (!emulator) return;
+
+                if (emulator.cardInserted) {
+                    await emulator.ejectCard();
+                } else {
+                    fileSd = await database.getSd(crcCheck);
+
+                    await emulator.insertCard(fileSd.content, fileSd.id);
+                }
+
+                console.log('update');
+
+                updateUi();
+            })
+        );
 
         maxLoadSlider.value = maxLoad;
         mipsLimitSlider.value = mipsLimit;

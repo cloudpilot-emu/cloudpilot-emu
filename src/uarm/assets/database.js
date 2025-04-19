@@ -102,24 +102,6 @@ export function compressPage(page) {
 }
 
 /**
- *
- * @returns {string}
- */
-function generateUuid() {
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-
-    const hex = Array.from(bytes)
-        .map((i) => i.toString(16).padStart(2, '0'))
-        .join('');
-
-    return `${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(
-        16,
-        20
-    )}-${hex.substring(20, 32)}`;
-}
-
-/**
  * @template T
  * @param {IDBRequest<T> | IDBTransaction} txOrRequest
  * @returns {Promise<T>}
@@ -334,7 +316,7 @@ function initdDb() {
  * @returns {Promise<string>}
  */
 async function acquireLock(db) {
-    const lockToken = generateUuid();
+    const lockToken = randomId();
     const tx = db.transaction([OBJECT_STORE_LOCK], 'readwrite');
 
     await complete(tx.objectStore(OBJECT_STORE_LOCK).put(lockToken, 0));
@@ -384,6 +366,8 @@ export class Database {
                     () => alert('CloudpilotEmu has been opened in another tab. No more data will be persisted.'),
                     0
                 );
+
+                this.db.close();
             }
 
             this.lockLost = true;

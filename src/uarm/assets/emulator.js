@@ -73,6 +73,7 @@ export class Emulator {
         displayService,
         crcCheck,
         deviceType,
+        cardInserted,
         { canvas, speedDisplay, log, database, setSnapshotStatus }
     ) {
         this.rpc = rpc;
@@ -96,6 +97,7 @@ export class Emulator {
 
         this.running = false;
         this.snapshotStatus = 'ok';
+        this.cardInserted = cardInserted;
         this.clearSnapshotStatusHandle = undefined;
 
         this.onMessage = (e) => {
@@ -154,19 +156,23 @@ export class Emulator {
         worker.addEventListener('message', onMessage);
 
         try {
-            const { deviceType } = await rpc.call('initialize', {
-                nor,
-                nand,
-                sd,
-                cardId,
-                ram,
-                maxLoad,
-                cyclesPerSecondLimit,
-                crcCheck,
-                module: await module,
-            });
+            const { deviceType, cardInserted } = await rpc.call(
+                'initialize',
+                {
+                    nor,
+                    nand,
+                    sd,
+                    cardId,
+                    ram,
+                    maxLoad,
+                    cyclesPerSecondLimit,
+                    crcCheck,
+                    module: await module,
+                },
+                [nor.buffer, nand.buffer, ...(sd ? [sd.buffer] : [])]
+            );
 
-            return new Emulator(worker, rpc, displayService, crcCheck, deviceType, env);
+            return new Emulator(worker, rpc, displayService, crcCheck, deviceType, cardInserted, env);
         } catch (e) {
             worker.terminate();
 
@@ -252,6 +258,20 @@ export class Emulator {
 
     getSession() {
         return this.rpc.call('getSession');
+    }
+
+    async ejectCard() {
+        if (!this.cardInserted) throw new Error('no card inserted');
+
+        await this.rpc.call('ejectCard');
+        this.cardInserted = false;
+    }
+
+    async insertCard(data, cardId) {
+        if (this.cardInserted) throw new Error('card already inserted');
+
+        await this.rpc.call('insertCard', { data, cardId }, [data.buffer]);
+        this.cardInserted = true;
     }
 
     async handleSnapshot(snapshot) {
