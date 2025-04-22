@@ -67,6 +67,8 @@ typedef bool (*ArmCoprocMemAccsF)(
 typedef bool (*ArmCoprocTwoRegF)(struct ArmCpu *cpu, void *userData, bool MRRC, uint8_t op,
                                  uint8_t Rd, uint8_t Rn, uint8_t CRm);
 
+struct ArmMmu;
+
 struct PatchDispatch;
 
 struct ArmCoprocessor {
@@ -113,6 +115,8 @@ uint32_t cpuDecodeThumb(uint32_t instr);
 
 void cpuSetSlowPath(struct ArmCpu *cpu, uint32_t reason);
 void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason);
+
+struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu);
 
 #ifdef __cplusplus
 }

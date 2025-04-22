@@ -815,6 +815,8 @@ struct Buffer socGetSavestate(struct SoC *soc) {
 
 enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->dev); }
 
+void socDumpMMU(struct SoC *soc) { mmuDump(cpuGetMMU(soc->cpu)); }
+
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaUartLoad(ffUart, loader, 0);
     if (socRev != 2) pxaUartLoad(hwUart, loader, 1);

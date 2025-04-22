@@ -315,7 +315,7 @@ static void mmuPrvDumpUpdate(uint32_t va, uint32_t pa, uint32_t len, uint8_t dom
         expectPa != pa) {  // not a continuation of what we've been at...
 
         if (wasValid)
-            fprintf(stderr, "0x%08lx - 0x%08lx -> 0x%08lx - 0x%08lx don%u ap%u %c %c\n",
+            fprintf(stderr, "0x%08lx - 0x%08lx -> 0x%08lx - 0x%08lx dom%u ap%u %c %c\n",
                     (unsigned long)startVa, (unsigned long)va_end, (unsigned long)startPa,
                     (unsigned long)(startPa + (va_end - startVa)), wasDom, wasAp,
                     (char)(wasC ? 'c' : ' '), (char)(wasB ? 'b' : ' '));
@@ -335,7 +335,7 @@ static void mmuPrvDumpUpdate(uint32_t va, uint32_t pa, uint32_t len, uint8_t dom
         expectPa += len;
 }
 
-void __attribute__((used)) mmuDump(struct ArmMmu *mmu) {
+void mmuDump(struct ArmMmu *mmu) {
     uint32_t i, j, t, sla, va, psz;
     bool coarse = false;
     uint_fast8_t dom;

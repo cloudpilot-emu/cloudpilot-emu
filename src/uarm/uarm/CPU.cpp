@@ -3621,6 +3621,8 @@ void cpuSetSlowPath(struct ArmCpu *cpu, uint32_t reason) { cpu->slowPath |= reas
 
 void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason) { cpu->slowPath &= ~reason; }
 
+struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu) { return cpu->mmu; }
+
 template <typename T>
 void cpuSave(ArmCpu *cpu, T &savestate) {
     paceSave(savestate);

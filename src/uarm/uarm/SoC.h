@@ -76,6 +76,8 @@ bool socSdRemount(struct SoC *soc);
 void socSdEject(struct SoC *soc);
 bool socSdInserted(struct SoC *soc);
 
+void socDumpMMU(struct SoC *soc);
+
 enum DeviceType socGetDeviceType(struct SoC *soc);
 
 #ifdef __cplusplus

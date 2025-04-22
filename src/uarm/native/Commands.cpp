@@ -179,6 +179,14 @@ namespace {
         }
     }
 
+    void CmdDumpMMU(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 0) return env.PrintUsage();
+
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+
+        socDumpMMU(ctx->soc);
+    }
+
     const vector<cli::Command> commandList(
         {{.name = "set-mips",
           .usage = "set-mips <mips>",
@@ -200,7 +208,8 @@ namespace {
          {.name = "save-sd",
           .usage = "save-sd <card image>",
           .description = "Save SD card.",
-          .cmd = CmdSaveSd}});
+          .cmd = CmdSaveSd},
+         {.name = "dump-mmu", .description = "Dump MMU mappings.", .cmd = CmdDumpMMU}});
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }
