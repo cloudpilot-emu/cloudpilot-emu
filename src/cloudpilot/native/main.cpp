@@ -306,13 +306,18 @@ int main(int argc, const char** argv) {
         .default_value(false)
         .implicit_value(true);
 
-    program.add_argument("--trace-netlib")
-        .help("trace network API")
-        .default_value(false)
-        .implicit_value(true);
+    program.add_argument("--debug-app")
+        .metavar("<elf file>")
+        .help("configure debugger to debug app (elf file)");
 
     program.add_argument("--trace-debugger")
         .help("trace gdb stub")
+        .default_value(false)
+        .implicit_value(true);
+#endif
+
+    program.add_argument("--trace-netlib")
+        .help("trace network API")
         .default_value(false)
         .implicit_value(true);
 
@@ -320,11 +325,6 @@ int main(int argc, const char** argv) {
         .help("trace database installer")
         .default_value(false)
         .implicit_value(true);
-
-    program.add_argument("--debug-app")
-        .metavar("<elf file>")
-        .help("configure debugger to debug app (elf file)");
-#endif
 
     try {
         program.parse_args(argc, argv);
