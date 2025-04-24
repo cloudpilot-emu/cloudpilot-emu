@@ -147,6 +147,7 @@ struct ArmCpu {
     struct PatchDispatch *patchDispatch;
 
     uint32_t slowPath;
+    uint16_t breakPaceSyscall;
 
     template <typename T>
     void DoSaveLoad(T &chunkHelper, uint32_t version);
@@ -3274,6 +3275,13 @@ static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
     const uint16_t trapWord = paceReadTrapWord();
     if (paceGetFsr() != 0) return cpuPrvHandlePaceMemoryFault(cpu);
 
+    if (cpu->breakPaceSyscall && cpu->breakPaceSyscall == trapWord) {
+        paceSetPC(paceGetPC() - 4);
+        cpuSetSlowPath(cpu, SLOW_PATH_REASON_PACE_SYSCALL_BREAK);
+
+        return;
+    }
+
     cpu->regs[1] = trapWord;
 
     if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutSyscall)) return;
@@ -3529,7 +3537,8 @@ ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     cp15Cycle(cpu->cp15);
     patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
 
-    cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE | SLOW_PATH_REASON_RESCHEDULE);
+    cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE | SLOW_PATH_REASON_RESCHEDULE |
+                              SLOW_PATH_REASON_PACE_SYSCALL_BREAK);
 
     if (cpu->modePace)
         return cpuCyclePace(cpu, cycles);
@@ -3627,6 +3636,12 @@ uint32_t cpuGetPid(struct ArmCpu *cpu) { return cpu->pid; }
 void cpuSetSlowPath(struct ArmCpu *cpu, uint32_t reason) { cpu->slowPath |= reason; }
 
 void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason) { cpu->slowPath &= ~reason; }
+
+uint32_t cpuGetSlowPathReason(struct ArmCpu *cpu) { return cpu->slowPath; }
+
+void cpuSetBreakPaceSyscall(struct ArmCpu *cpu, uint16_t syscall) {
+    cpu->breakPaceSyscall = syscall;
+}
 
 struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu) { return cpu->mmu; }
 

@@ -60,7 +60,7 @@
 #include "syscall_dispatch.h"
 #include "vSD.h"
 
-#define SAVESTATE_VERSION 0
+#define SAVESTATE_VERSION 1
 
 #define CPUID_PXA255 0x69052D06ul  // spepping A0
 #define CPUID_PXA260 0x69052D06ul  // spepping B1
@@ -115,6 +115,10 @@ struct SoC {
     bool pcmSuspended;
     bool sleeping;
     uint64_t sleepAtTime;
+
+    uint64_t cyclesTotal;
+    uint64_t paceSyscallAtCycle;
+    uint16_t paceBreakSyscall;
 
     bool cardInserted;
     char cardId[SD_CARD_ID_MAX_LEN + 1];
@@ -180,7 +184,7 @@ struct SoC {
     void Save(T &t);
 
     template <typename T>
-    void DoSaveLoad(T &chunkHelper);
+    void DoSaveLoad(T &chunkHelper, uint32_t version);
 };
 
 extern "C" {
@@ -685,7 +689,8 @@ uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
     }
 }
 
-uint64_t socRun(SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
+template <int breakReason>
+static FORCE_INLINE uint64_t socRunUntil(SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
     uint64_t cycles = 0;
 
     while (cycles < maxCycles) {
@@ -697,9 +702,37 @@ uint64_t socRun(SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
 
         soc->scheduler->Advance(cyclesAdvanced, cyclesPerSecond);
         cycles += cyclesAdvanced;
+
+        if constexpr (breakReason > 0) {
+            if (cpuGetSlowPathReason(soc->cpu) & breakReason) break;
+        }
     }
 
+    soc->cyclesTotal += cycles;
+
     return cycles;
+}
+
+uint64_t socRun(SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
+    return socRunUntil<0>(soc, maxCycles, cyclesPerSecond);
+}
+
+bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
+                         uint64_t cyclesPerSecond) {
+    if (syscall == soc->paceBreakSyscall && soc->paceSyscallAtCycle == soc->cyclesTotal)
+        return true;
+
+    soc->paceBreakSyscall = syscall;
+    soc->paceSyscallAtCycle = soc->paceSyscallAtCycle - 1;
+
+    cpuSetBreakPaceSyscall(soc->cpu, syscall);
+    socRunUntil<SLOW_PATH_REASON_PACE_SYSCALL_BREAK>(soc, maxCycles, cyclesPerSecond);
+    cpuSetBreakPaceSyscall(soc->cpu, 0);
+
+    if ((cpuGetSlowPathReason(soc->cpu) & SLOW_PATH_REASON_PACE_SYSCALL_BREAK) == 0) return false;
+
+    soc->paceSyscallAtCycle = soc->cyclesTotal;
+    return true;
 }
 
 uint32_t *socGetPendingFrame(SoC *soc) { return pxaLcdGetPendingFrame(soc->lcd); }
@@ -861,11 +894,12 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
     deviceLoad(dev, loader);
     vsdLoad(vSD, loader);
 
-    Chunk *chunk = loader.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION, "socPXA");
+    uint32_t version;
+    Chunk *chunk = loader.GetChunk(ChunkType::pxaSoc, SAVESTATE_VERSION, "socPXA", version);
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, version);
 
     schedulePcmTask(this);
     keypadReset(kp);
@@ -923,11 +957,13 @@ void SoC::Save(T &savestate) {
     cardId[sizeof(cardId) - 1] = '\0';
 
     SaveChunkHelper helper(*chunk);
-    DoSaveLoad(helper);
+    DoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
 template <typename T>
-void SoC::DoSaveLoad(T &chunkHelper) {
+void SoC::DoSaveLoad(T &chunkHelper, uint32_t version) {
     chunkHelper.Do(typename T::BoolPack() << cardInserted << enablePcmOutput << sleeping)
         .DoBuffer(cardId, sizeof(cardId));
+
+    if (version > 0) chunkHelper.Do64(cyclesTotal);
 }

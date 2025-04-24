@@ -42,6 +42,9 @@ bool paceSave68kState();
 void paceGetMemeryFault(uint32_t* addr, bool* wasWrite, uint_fast8_t* fsr);
 uint16_t paceReadTrapWord();
 
+uint32_t paceGetPC();
+void paceSetPC(uint32_t pc);
+
 enum paceStatus paceExecute();
 
 struct PaceScratchState* pacePrepareInjectedCall(struct PaceScratchState* scratchState);

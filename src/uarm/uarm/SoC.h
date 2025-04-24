@@ -31,6 +31,8 @@ struct SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t ro
 void socReset(struct SoC *soc);
 
 uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond);
+bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
+                         uint64_t cyclesPerSecond);
 
 void socBootload(struct SoC *soc, uint32_t method, void *param);  // soc-specific
 

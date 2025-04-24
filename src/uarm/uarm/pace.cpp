@@ -425,6 +425,10 @@ uint16_t paceReadTrapWord() {
     return uae_get16(regs.pc - 2);
 }
 
+uint32_t paceGetPC() { return regs.pc; }
+
+void paceSetPC(uint32_t pc) { regs.pc = pc; }
+
 void paceSetPriviledged(bool _priviledged) { priviledged = _priviledged; }
 
 enum paceStatus paceExecute() {

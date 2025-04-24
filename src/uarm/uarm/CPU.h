@@ -52,6 +52,7 @@ extern "C" {
 #define SLOW_PATH_REASON_PATCH_PENDING 0x08
 #define SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE 0x10
 #define SLOW_PATH_REASON_RESCHEDULE 0x20
+#define SLOW_PATH_REASON_PACE_SYSCALL_BREAK 0x40
 
 typedef bool (*ArmCoprocRegXferF)(struct ArmCpu *cpu, void *userData, bool two /* MCR2/MRC2 ? */,
                                   bool MRC, uint8_t op1, uint8_t Rx, uint8_t CRn, uint8_t CRm,
@@ -115,6 +116,9 @@ uint32_t cpuDecodeThumb(uint32_t instr);
 
 void cpuSetSlowPath(struct ArmCpu *cpu, uint32_t reason);
 void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason);
+uint32_t cpuGetSlowPathReason(struct ArmCpu *cpu);
+
+void cpuSetBreakPaceSyscall(struct ArmCpu *cpu, uint16_t syscall);
 
 struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu);
 
