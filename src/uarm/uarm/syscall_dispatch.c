@@ -5,6 +5,7 @@
 
 #include "CPU.h"
 #include "cputil.h"
+#include "pace.h"
 #include "syscall.h"
 
 #define MAX_NEST_LEVEL 4
@@ -13,6 +14,7 @@ struct SyscallDispatch {
     struct ArmCpu* cpu;
 
     struct ArmCpu* scratchStates[MAX_NEST_LEVEL];
+    struct PaceScratchState* scratchStatesPace[MAX_NEST_LEVEL];
     size_t nestLevel;
 };
 
@@ -25,25 +27,29 @@ struct SyscallDispatch* initSyscallDispatch(struct ArmCpu* cpu) {
     return sd;
 }
 
-static struct ArmCpu* allocateScratchState(struct SyscallDispatch* sd) {
+static size_t allocateScratchState(struct SyscallDispatch* sd) {
     if (sd->nestLevel >= MAX_NEST_LEVEL)
         ERR("unable to dispatch syscall: max nest level reached\n");
 
     const uint32_t nestLevel = sd->nestLevel++;
-    return sd->scratchStates[nestLevel] =
-               cpuPrepareInjectedCall(sd->cpu, sd->scratchStates[nestLevel]);
+
+    sd->scratchStates[nestLevel] = cpuPrepareInjectedCall(sd->cpu, sd->scratchStates[nestLevel]);
+    sd->scratchStatesPace[nestLevel] = pacePrepareInjectedCall(sd->scratchStatesPace[nestLevel]);
+
+    return nestLevel;
 }
 
 uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t timeout) {
-    struct ArmCpu* scratchState = allocateScratchState(sd);
-    uint32_t* registers = cpuGetRegisters(scratchState);
+    const size_t nestLevel = allocateScratchState(sd);
+    uint32_t* registers = cpuGetRegisters(sd->scratchStates[nestLevel]);
 
     registers[0] = timeout;
-    cpuExecuteInjectedCall(scratchState, SYSCALL_SYS_SET_AUTO_OFF_TIME);
+    cpuExecuteInjectedCall(sd->scratchStates[nestLevel], SYSCALL_SYS_SET_AUTO_OFF_TIME);
 
     uint16_t err = registers[0];
 
-    cpuFinishInjectedCall(sd->cpu, scratchState);
+    cpuFinishInjectedCall(sd->cpu, sd->scratchStates[nestLevel]);
+    paceFinishInjectedCall(sd->scratchStatesPace[nestLevel]);
     sd->nestLevel--;
 
     return err;

@@ -11,6 +11,8 @@
 extern "C" {
 #endif
 
+struct PaceScratchState;
+
 enum paceStatus {
     pace_status_ok = 0,
     pace_status_illegal_instr = 4,
@@ -41,6 +43,9 @@ void paceGetMemeryFault(uint32_t* addr, bool* wasWrite, uint_fast8_t* fsr);
 uint16_t paceReadTrapWord();
 
 enum paceStatus paceExecute();
+
+struct PaceScratchState* pacePrepareInjectedCall(struct PaceScratchState* scratchState);
+void paceFinishInjectedCall(struct PaceScratchState* scratchState);
 
 #ifdef __cplusplus
 }

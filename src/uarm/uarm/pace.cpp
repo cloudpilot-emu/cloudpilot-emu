@@ -26,6 +26,13 @@ static uint32_t pendingStatus = 0;
 static uint32_t statePtr;
 static bool priviledged = false;
 
+struct PaceScratchState {
+    struct regstruct regs;
+
+    bool privileged;
+    uint32_t statePtr;
+};
+
 #ifdef __EMSCRIPTEN__
 static cpuop_func* cpufunctbl_base;
 #else
@@ -441,6 +448,26 @@ enum paceStatus paceExecute() {
     //            uae_get32(m68k_areg(regs, 7)));
 
     return fsr == 0 ? static_cast<enum paceStatus>(pendingStatus) : pace_status_memory_fault;
+}
+
+struct PaceScratchState* pacePrepareInjectedCall(struct PaceScratchState* scratchState) {
+    if (!scratchState) scratchState = (struct PaceScratchState*)malloc(sizeof(*scratchState));
+
+    MakeSR();
+
+    memcpy(&scratchState->regs, &regs, sizeof(scratchState->regs));
+    scratchState->privileged = priviledged;
+    scratchState->statePtr = statePtr;
+
+    return scratchState;
+}
+
+void paceFinishInjectedCall(struct PaceScratchState* scratchState) {
+    memcpy(&regs, &scratchState->regs, sizeof(regs));
+    priviledged = scratchState->privileged;
+    statePtr = scratchState->statePtr;
+
+    MakeFromSR();
 }
 
 template <typename T>
