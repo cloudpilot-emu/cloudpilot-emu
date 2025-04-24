@@ -3514,8 +3514,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
     return cycleAcc;
 }
 
-template <int tier>
-FORCE_INLINE static uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
+ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     if (cpu->sleeping) return cycles;
 
     if (cpu->waitingEventsTotal) {
@@ -3535,13 +3534,21 @@ FORCE_INLINE static uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     if (cpu->modePace)
         return cpuCyclePace(cpu, cycles);
     else if (cpu->T)
-        return cpuCycleThumb<tier>(cpu, cycles);
+        return cpuCycleThumb<0>(cpu, cycles);
     else
-        return cpuCycleArm<tier>(cpu, cycles);
+        return cpuCycleArm<0>(cpu, cycles);
 }
 
-ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
-    return cpuCycle<0>(cpu, cycles);
+FORCE_INLINE static uint32_t cpuCycleInjected(struct ArmCpu *cpu) {
+    cp15Cycle(cpu->cp15);
+    patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
+
+    if (cpu->modePace)
+        return cpuCyclePace(cpu, 1);
+    else if (cpu->T)
+        return cpuCycleThumb<1>(cpu, 1);
+    else
+        return cpuCycleArm<1>(cpu, 1);
 }
 
 void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
@@ -3562,7 +3569,7 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
 
     uint64_t cycle = 0;
     while (cpu->regs[REG_NO_PC] != INJECTED_CALL_LR_MAGIC) {
-        cpuCycle<1>(cpu, 1);
+        cpuCycleInjected(cpu);
 
         if (cycle++ == INJECTED_CALL_MAX_CYCLES)
             ERR("failed to execute syscall: cycle limit reached\n");
