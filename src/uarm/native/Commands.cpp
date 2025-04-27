@@ -214,7 +214,7 @@ namespace {
         version[sizeof(version) - 1] = '\0';
 
         if (syscall68k_MemPtrFree(sd, ptr) != 0) {
-            cout << "very bad: failed to release m68k pointrer" << endl;
+            cout << "very bad: failed to release m68k pointer" << endl;
             return;
         }
 
