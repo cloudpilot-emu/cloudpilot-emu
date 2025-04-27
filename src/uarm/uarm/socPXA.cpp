@@ -320,7 +320,7 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
 
     patchDispatchSetCpu(soc->patchDispatch, soc->cpu);
 
-    soc->syscallDispatch = initSyscallDispatch(soc->cpu);
+    soc->syscallDispatch = initSyscallDispatch(soc);
     registerPatches(soc->patchDispatch, soc->syscallDispatch);
 
     soc->ram = ramInit(soc->mem, soc, RAM_BASE, deviceGetRamSize(), &soc->bufferMemory, true);
@@ -849,6 +849,12 @@ struct Buffer socGetSavestate(struct SoC *soc) {
 enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->dev); }
 
 void socDumpMMU(struct SoC *soc) { mmuDump(cpuGetMMU(soc->cpu)); }
+
+struct ArmCpu *socGetCpu(struct SoC *soc) { return soc->cpu; }
+
+struct SyscallDispatch *socGetSyscallDispatch(struct SoC *soc) { return soc->syscallDispatch; }
+
+bool socIsPacePatched(struct SoC *soc) { return soc->pacePatch->enterPace; }
 
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaUartLoad(ffUart, loader, 0);

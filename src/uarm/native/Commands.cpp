@@ -15,6 +15,7 @@
 #include "md5.h"
 #include "savestate/SessionFile.h"
 #include "sdcard.h"
+#include "syscall_dispatch.h"
 
 using namespace std;
 
@@ -181,35 +182,70 @@ namespace {
 
     void CmdDumpMMU(vector<string> args, cli::CommandEnvironment& env, void* context) {
         if (args.size() != 0) return env.PrintUsage();
-
         auto ctx = reinterpret_cast<commands::Context*>(context);
 
         socDumpMMU(ctx->soc);
     }
 
-    const vector<cli::Command> commandList(
-        {{.name = "set-mips",
-          .usage = "set-mips <mips>",
-          .description = "Set target MIPS.",
-          .cmd = CmdSetMips},
-         {.name = "audio-on", .description = "Enable audio.", .cmd = CmdEnableAudio},
-         {.name = "audio-off", .description = "Disable audio.", .cmd = CmdDisableAudio},
-         {.name = "unmount", .description = "Unmount SD card.", .cmd = CmdUnmount},
-         {.name = "mount",
-          .usage = "mount <image>",
-          .description = "Unmount SD card.",
-          .cmd = CmdMount},
-         {.name = "reset", .description = "Reset Pilot.", .cmd = CmdReset},
-         {.name = "rotate", .description = "Rotate 90° CCW", .cmd = CmdRotate},
-         {.name = "save-session",
-          .usage = "save-session <session file> [card image]",
-          .description = "Save session.",
-          .cmd = CmdSaveSession},
-         {.name = "save-sd",
-          .usage = "save-sd <card image>",
-          .description = "Save SD card.",
-          .cmd = CmdSaveSd},
-         {.name = "dump-mmu", .description = "Dump MMU mappings.", .cmd = CmdDumpMMU}});
+    void CmdOsVersion(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 0) return env.PrintUsage();
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+        SyscallDispatch* sd = socGetSyscallDispatch(ctx->soc);
+
+        if (!syscallDispatchM68kSupport(sd)) {
+            cout << "m68k syscalls not supported" << endl;
+            return;
+        }
+
+        if (!syscallDispatchPrepare(sd)) {
+            cout << "unable to prepare save environment for syscalls" << endl;
+            return;
+        }
+
+        char version[32];
+        const uint32_t ptr = syscall68k_SysGetOsVersionString(sd);
+
+        if (!ptr) {
+            cout << "failed to retrieve OS version string" << endl;
+            return;
+        }
+
+        syscallDispatch_strncpy_toHost(sd, version, ptr, sizeof(version));
+        version[sizeof(version) - 1] = '\0';
+
+        if (syscall68k_MemPtrFree(sd, ptr) != 0) {
+            cout << "very bad: failed to release m68k pointrer" << endl;
+            return;
+        }
+
+        cout << version << endl;
+    }
+
+    const vector<cli::Command> commandList({
+        {.name = "set-mips",
+         .usage = "set-mips <mips>",
+         .description = "Set target MIPS.",
+         .cmd = CmdSetMips},
+        {.name = "audio-on", .description = "Enable audio.", .cmd = CmdEnableAudio},
+        {.name = "audio-off", .description = "Disable audio.", .cmd = CmdDisableAudio},
+        {.name = "unmount", .description = "Unmount SD card.", .cmd = CmdUnmount},
+        {.name = "mount",
+         .usage = "mount <image>",
+         .description = "Unmount SD card.",
+         .cmd = CmdMount},
+        {.name = "reset", .description = "Reset Pilot.", .cmd = CmdReset},
+        {.name = "rotate", .description = "Rotate 90° CCW", .cmd = CmdRotate},
+        {.name = "save-session",
+         .usage = "save-session <session file> [card image]",
+         .description = "Save session.",
+         .cmd = CmdSaveSession},
+        {.name = "save-sd",
+         .usage = "save-sd <card image>",
+         .description = "Save SD card.",
+         .cmd = CmdSaveSd},
+        {.name = "dump-mmu", .description = "Dump MMU mappings.", .cmd = CmdDumpMMU},
+        {.name = "os-version", .description = "Retrieve OS version. ", .cmd = CmdOsVersion},
+    });
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }

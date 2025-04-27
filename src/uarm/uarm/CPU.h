@@ -119,6 +119,7 @@ void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason);
 uint32_t cpuGetSlowPathReason(struct ArmCpu *cpu);
 
 void cpuSetBreakPaceSyscall(struct ArmCpu *cpu, uint16_t syscall);
+void cpuExecuteSyscall68k(struct ArmCpu *cpu, uint16_t syscall);
 
 struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu);
 

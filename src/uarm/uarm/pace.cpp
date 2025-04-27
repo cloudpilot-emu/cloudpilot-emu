@@ -347,9 +347,38 @@ void paceInit(struct ArmMem* _mem, struct ArmMmu* _mmu) {
 
 void paceSetStatePtr(uint32_t addr) { statePtr = addr; }
 
+void paceResetFsr() { fsr = 0; }
+
 uint8_t paceGetFsr() { return fsr; }
 
 uint16_t paceGetLastOpcode() { return regs.lastOpcode; }
+
+uint8_t paceGet8(uint32_t addr) { return uae_get8(addr); }
+
+uint16_t paceGet16(uint32_t addr) { return uae_get16(addr); }
+
+uint32_t paceGet32(uint32_t addr) { return uae_get32(addr); }
+
+void paceSet8(uint32_t addr, uint8_t value) { uae_put8(addr, value); }
+
+void paceSet16(uint32_t addr, uint16_t value) { uae_put16(addr, value); }
+
+void paceSet32(uint32_t addr, uint32_t value) { uae_put32(addr, value); }
+
+void pacePush8(uint8_t value) {
+    m68k_areg(regs, 7) -= 1;
+    uae_put8(m68k_areg(regs, 7), value);
+}
+
+void pacePush16(uint16_t value) {
+    m68k_areg(regs, 7) -= 2;
+    uae_put16(m68k_areg(regs, 7), value);
+}
+
+void pacePush32(uint32_t value) {
+    m68k_areg(regs, 7) -= 4;
+    uae_put32(m68k_areg(regs, 7), value);
+}
 
 bool paceLoad68kState() {
     static uint32_t stateScratchBuffer[19];
@@ -428,6 +457,14 @@ uint16_t paceReadTrapWord() {
 uint32_t paceGetPC() { return regs.pc; }
 
 void paceSetPC(uint32_t pc) { regs.pc = pc; }
+
+uint32_t paceGetDreg(uint8_t index) { return m68k_dreg(regs, index); }
+
+void paceSetDreg(uint8_t index, uint32_t value) { m68k_dreg(regs, index) = value; }
+
+uint32_t paceGetAreg(uint8_t index) { return m68k_areg(regs, index); }
+
+void paceSetAreg(uint8_t index, uint32_t value) { m68k_areg(regs, index) = value; }
 
 void paceSetPriviledged(bool _priviledged) { priviledged = _priviledged; }
 

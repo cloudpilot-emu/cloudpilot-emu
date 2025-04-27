@@ -31,8 +31,21 @@ enum paceStatus {
 void paceInit(struct ArmMem* mem, struct ArmMmu* mmu);
 
 void paceSetStatePtr(uint32_t addr);
+void paceResetFsr();
 uint8_t paceGetFsr();
 uint16_t paceGetLastOpcode();
+
+uint8_t paceGet8(uint32_t addr);
+uint16_t paceGet16(uint32_t addr);
+uint32_t paceGet32(uint32_t addr);
+
+void paceSet8(uint32_t addr, uint8_t value);
+void paceSet16(uint32_t addr, uint16_t value);
+void paceSet32(uint32_t addr, uint32_t value);
+
+void pacePush8(uint8_t value);
+void pacePush16(uint16_t value);
+void pacePush32(uint32_t value);
 
 void paceSetPriviledged(bool priviledged);
 
@@ -44,6 +57,12 @@ uint16_t paceReadTrapWord();
 
 uint32_t paceGetPC();
 void paceSetPC(uint32_t pc);
+
+uint32_t paceGetDreg(uint8_t index);
+void paceSetDreg(uint8_t index, uint32_t value);
+
+uint32_t paceGetAreg(uint8_t index);
+void paceSetAreg(uint8_t index, uint32_t value);
 
 enum paceStatus paceExecute();
 

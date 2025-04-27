@@ -7,24 +7,49 @@
 #include "cputil.h"
 #include "pace.h"
 #include "syscall.h"
+#include "syscall_68k.h"
 
 #define MAX_NEST_LEVEL 4
 
 struct SyscallDispatch {
-    struct ArmCpu* cpu;
+    struct SoC* soc;
 
     struct ArmCpu* scratchStates[MAX_NEST_LEVEL];
     struct PaceScratchState* scratchStatesPace[MAX_NEST_LEVEL];
     size_t nestLevel;
 };
 
-struct SyscallDispatch* initSyscallDispatch(struct ArmCpu* cpu) {
+struct SyscallDispatch* initSyscallDispatch(struct SoC* soc) {
     struct SyscallDispatch* sd = malloc(sizeof(*sd));
     memset(sd, 0, sizeof(*sd));
 
-    sd->cpu = cpu;
+    sd->soc = soc;
 
     return sd;
+}
+
+bool syscallDispatchM68kSupport(struct SyscallDispatch* sd) { return socIsPacePatched(sd->soc); }
+
+bool syscallDispatchPrepare(struct SyscallDispatch* sd) {
+    if (!syscallDispatchM68kSupport(sd)) return false;
+
+    return socRunToPaceSyscall(sd->soc, syscall68kEvtGetEvent, 50000000, 50000000);
+}
+
+bool syscallDispatch_strncpy_toHost(struct SyscallDispatch* sd, void* dest, uint32_t src,
+                                    size_t maxLen) {
+    struct ArmCpu* cpu = socGetCpu(sd->soc);
+    memset(dest, 0, maxLen);
+
+    for (size_t i = 0; i < maxLen; i++) {
+        if (!cpuMemOpExternal(cpu, dest, src, 1, false)) return false;
+        if (*(const char*)(dest) == '\0') break;
+
+        dest = (char*)dest + 1;
+        src++;
+    }
+
+    return true;
 }
 
 static size_t allocateScratchState(struct SyscallDispatch* sd) {
@@ -33,10 +58,19 @@ static size_t allocateScratchState(struct SyscallDispatch* sd) {
 
     const uint32_t nestLevel = sd->nestLevel++;
 
-    sd->scratchStates[nestLevel] = cpuPrepareInjectedCall(sd->cpu, sd->scratchStates[nestLevel]);
+    sd->scratchStates[nestLevel] =
+        cpuPrepareInjectedCall(socGetCpu(sd->soc), sd->scratchStates[nestLevel]);
     sd->scratchStatesPace[nestLevel] = pacePrepareInjectedCall(sd->scratchStatesPace[nestLevel]);
 
     return nestLevel;
+}
+
+static void disposeScratchState(struct SyscallDispatch* sd, size_t nestLevel) {
+    if (sd->nestLevel != nestLevel + 1) ERR("bad nest level");
+
+    cpuFinishInjectedCall(socGetCpu(sd->soc), sd->scratchStates[nestLevel]);
+    paceFinishInjectedCall(sd->scratchStatesPace[nestLevel]);
+    sd->nestLevel--;
 }
 
 uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t timeout) {
@@ -48,9 +82,33 @@ uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t timeout)
 
     uint16_t err = registers[0];
 
-    cpuFinishInjectedCall(sd->cpu, sd->scratchStates[nestLevel]);
-    paceFinishInjectedCall(sd->scratchStatesPace[nestLevel]);
-    sd->nestLevel--;
+    disposeScratchState(sd, nestLevel);
 
     return err;
+}
+
+uint32_t syscall68k_SysGetOsVersionString(struct SyscallDispatch* sd) {
+    const size_t nestLevel = allocateScratchState(sd);
+
+    cpuExecuteSyscall68k(sd->scratchStates[nestLevel], syscall68kSysGetOSVersionString);
+    const uint32_t result = paceGetAreg(0);
+
+    disposeScratchState(sd, nestLevel);
+
+    return result;
+}
+
+uint16_t syscall68k_MemPtrFree(struct SyscallDispatch* sd, uint32_t memPtr) {
+    const size_t nestLevel = allocateScratchState(sd);
+
+    paceResetFsr();
+    pacePush32(memPtr);
+    if (paceGetFsr() > 0) ERR("memory fault during injected PACE call");
+
+    cpuExecuteSyscall68k(sd->scratchStates[nestLevel], syscall68kMemChunkFree);
+    const uint16_t result = paceGetDreg(0);
+
+    disposeScratchState(sd, nestLevel);
+
+    return result;
 }

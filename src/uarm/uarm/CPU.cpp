@@ -131,8 +131,6 @@ struct ArmCpu {
 
     uint32_t pid;  // for fcse
 
-    bool isInjectedCall;
-
     struct icache *ic;
     struct ArmMmu *mmu;
     struct ArmMem *mem;
@@ -3271,6 +3269,12 @@ static bool cpuPrvPaceCallout(struct ArmCpu *cpu, uint32_t destination) {
     return true;
 }
 
+static void cpuPrvPaceSyscall(struct ArmCpu *cpu, uint16_t trapWord) {
+    cpu->regs[1] = trapWord;
+
+    if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutSyscall)) return;
+}
+
 static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
     const uint16_t trapWord = paceReadTrapWord();
     if (paceGetFsr() != 0) return cpuPrvHandlePaceMemoryFault(cpu);
@@ -3282,9 +3286,7 @@ static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
         return;
     }
 
-    cpu->regs[1] = trapWord;
-
-    if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutSyscall)) return;
+    cpuPrvPaceSyscall(cpu, trapWord);
 
 #ifdef TRACE_PACE
     fprintf(stderr, "PACE syscall to %#06x\n", trapWord);
@@ -3309,7 +3311,7 @@ static void cpuPrvPaceDivisionByZero(struct ArmCpu *cpu) {
 static void cpuPrvPaceIllegalInstruction(struct ArmCpu *cpu) {
     if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutIllegalInstr)) return;
 
-#if TRACE_PACE
+#ifdef TRACE_PACE
     fprintf(stderr, "PACE invalid instruction\n");
 #endif
 }
@@ -3317,7 +3319,7 @@ static void cpuPrvPaceIllegalInstruction(struct ArmCpu *cpu) {
 static void cpuPrvPaceLine1010(struct ArmCpu *cpu) {
     if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutLine1010)) return;
 
-#if TRACE_PACE
+#ifdef TRACE_PACE
     fprintf(stderr, "PACE line 1010\n");
 #endif
 }
@@ -3325,7 +3327,7 @@ static void cpuPrvPaceLine1010(struct ArmCpu *cpu) {
 static void cpuPrvPaceLine1111(struct ArmCpu *cpu) {
     if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutLine1111)) return;
 
-#if TRACE_PACE
+#ifdef TRACE_PACE
     fprintf(stderr, "PACE line 1111\n");
 #endif
 }
@@ -3333,7 +3335,7 @@ static void cpuPrvPaceLine1111(struct ArmCpu *cpu) {
 static void cpuPrvPaceTrap0(struct ArmCpu *cpu) {
     if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutTrap0)) return;
 
-#if TRACE_PACE
+#ifdef TRACE_PACE
     fprintf(stderr, "PACE trap 0\n");
 #endif
 }
@@ -3341,7 +3343,7 @@ static void cpuPrvPaceTrap0(struct ArmCpu *cpu) {
 static void cpuPrvPaceTrap8(struct ArmCpu *cpu) {
     if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutTrap8)) return;
 
-#if TRACE_PACE
+#ifdef TRACE_PACE
     fprintf(stderr, "PACE trap 8\n");
 #endif
 }
@@ -3349,7 +3351,7 @@ static void cpuPrvPaceTrap8(struct ArmCpu *cpu) {
 static void cpuPrvPaceUnimplementedlInstruction(struct ArmCpu *cpu) {
     if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutUnimplementedInstr)) return;
 
-#if TRACE_PACE
+#ifdef TRACE_PACE
     fprintf(stderr, "PACE unimplemented instruction\n");
 #endif
 }
@@ -3526,10 +3528,10 @@ ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     if (cpu->sleeping) return cycles;
 
     if (cpu->waitingEventsTotal) {
-        if (cpu->waitingFiqs && !cpu->F && !cpu->isInjectedCall)
+        if (cpu->waitingFiqs && !cpu->F)
             cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ, cpu->regs[REG_NO_PC] + 4,
                             ARM_SR_MODE_FIQ | ARM_SR_I | ARM_SR_F);
-        else if (unlikely(cpu->waitingIrqs && !cpu->I && !cpu->isInjectedCall))
+        else if (unlikely(cpu->waitingIrqs && !cpu->I))
             cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_IRQ, cpu->regs[REG_NO_PC] + 4,
                             ARM_SR_MODE_IRQ | ARM_SR_I);
     }
@@ -3560,6 +3562,18 @@ FORCE_INLINE static uint32_t cpuCycleInjected(struct ArmCpu *cpu) {
         return cpuCycleArm<1>(cpu, 1);
 }
 
+static void cpuExecuteInjectedCall(struct ArmCpu *cpu) {
+    cpu->regs[REG_NO_LR] = INJECTED_CALL_LR_MAGIC;
+
+    uint64_t cycle = 0;
+    while (cpu->regs[REG_NO_PC] != INJECTED_CALL_LR_MAGIC) {
+        cpuCycleInjected(cpu);
+
+        if (cycle++ == INJECTED_CALL_MAX_CYCLES)
+            ERR("failed to execute syscall: cycle limit reached\n");
+    }
+}
+
 void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
     const uint8_t table = syscall >> 12;
     uint32_t tableAddr;
@@ -3572,17 +3586,25 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
         ERR("failed to dispatch syscall %#010x: unable to read entry point\n", syscall);
 
     cpu->regs[REG_NO_PC] = entryAddr;
-    cpu->isInjectedCall = true;
     cpu->T = false;
-    cpu->regs[REG_NO_LR] = INJECTED_CALL_LR_MAGIC;
 
-    uint64_t cycle = 0;
-    while (cpu->regs[REG_NO_PC] != INJECTED_CALL_LR_MAGIC) {
-        cpuCycleInjected(cpu);
+    cpuExecuteInjectedCall(cpu);
+}
 
-        if (cycle++ == INJECTED_CALL_MAX_CYCLES)
-            ERR("failed to execute syscall: cycle limit reached\n");
-    }
+void cpuExecuteSyscall68k(struct ArmCpu *cpu, uint16_t syscall) {
+    cpuPrvPaceSyscall(cpu, syscall);
+    cpuExecuteInjectedCall(cpu);
+
+    uint_fast8_t fsr = 0;
+
+    // restore r0 / state pointer from stack
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], false, cpu->privileged, &fsr))
+        ERR("failed to restore r0 after injected PACE trap");
+
+    paceSetPriviledged(cpu->privileged);
+    paceSetStatePtr(cpu->regs[0]);
+
+    if (!paceLoad68kState()) ERR("failed to reload m68k state after injected PACE trap");
 }
 
 void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise) {  // unraise when acknowledged

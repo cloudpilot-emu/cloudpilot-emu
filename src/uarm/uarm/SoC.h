@@ -21,6 +21,8 @@ extern "C" {
 
 struct SoC;
 struct AudioQueue;
+struct ArmCpu;
+struct SyscallDispatch;
 
 typedef bool (*SdSectorR)(uint32_t secNum, void *buf);
 typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
@@ -81,6 +83,10 @@ bool socSdInserted(struct SoC *soc);
 void socDumpMMU(struct SoC *soc);
 
 enum DeviceType socGetDeviceType(struct SoC *soc);
+
+struct ArmCpu *socGetCpu(struct SoC *soc);
+struct SyscallDispatch *socGetSyscallDispatch(struct SoC *soc);
+bool socIsPacePatched(struct SoC *soc);
 
 #ifdef __cplusplus
 }
