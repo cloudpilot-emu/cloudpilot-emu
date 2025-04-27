@@ -1,1227 +1,1229 @@
 // Taken from CoreTraps.h
 
-#define syscall68kMemInit 0xA000
-#define syscall68kMemInitHeapTable 0xA001
-#define syscall68kMemStoreInit 0xA002
-#define syscall68kMemCardFormat 0xA003
-#define syscall68kMemCardInfo 0xA004
-#define syscall68kMemStoreInfo 0xA005
-#define syscall68kMemStoreSetInfo 0xA006
-#define syscall68kMemNumHeaps 0xA007
-#define syscall68kMemNumRAMHeaps 0xA008
-#define syscall68kMemHeapID 0xA009
-#define syscall68kMemHeapPtr 0xA00A
-#define syscall68kMemHeapFreeBytes 0xA00B
-#define syscall68kMemHeapSize 0xA00C
-#define syscall68kMemHeapFlags 0xA00D
-#define syscall68kMemHeapCompact 0xA00E
-#define syscall68kMemHeapInit 0xA00F
-#define syscall68kMemHeapFreeByOwnerID 0xA010
-#define syscall68kMemChunkNew 0xA011
-#define syscall68kMemChunkFree 0xA012
-#define syscall68kMemPtrNew 0xA013
-#define syscall68kMemPtrRecoverHandle 0xA014
-#define syscall68kMemPtrFlags 0xA015
-#define syscall68kMemPtrSize 0xA016
-#define syscall68kMemPtrOwner 0xA017
-#define syscall68kMemPtrHeapID 0xA018
-#define syscall68kMemPtrCardNo 0xA019
-#define syscall68kMemPtrToLocalID 0xA01A
-#define syscall68kMemPtrSetOwner 0xA01B
-#define syscall68kMemPtrResize 0xA01C
-#define syscall68kMemPtrResetLock 0xA01D
-#define syscall68kMemHandleNew 0xA01E
-#define syscall68kMemHandleLockCount 0xA01F
-#define syscall68kMemHandleToLocalID 0xA020
-#define syscall68kMemHandleLock 0xA021
-#define syscall68kMemHandleUnlock 0xA022
-#define syscall68kMemLocalIDToGlobal 0xA023
-#define syscall68kMemLocalIDKind 0xA024
-#define syscall68kMemLocalIDToPtr 0xA025
-#define syscall68kMemMove 0xA026
-#define syscall68kMemSet 0xA027
-#define syscall68kMemStoreSearch 0xA028
-#define syscall68kSysReserved10Trap1 \
-    0xA029 /* "Reserved" trap in Palm OS 1.0 and later (was syscall68kMemPtrDataStorage) */
+#define SYSCALL_68K_MEM_INIT 0xA000
+#define SYSCALL_68K_MEM_INIT_HEAP_TABLE 0xA001
+#define SYSCALL_68K_MEM_STORE_INIT 0xA002
+#define SYSCALL_68K_MEM_CARD_FORMAT 0xA003
+#define SYSCALL_68K_MEM_CARD_INFO 0xA004
+#define SYSCALL_68K_MEM_STORE_INFO 0xA005
+#define SYSCALL_68K_MEM_STORE_SET_INFO 0xA006
+#define SYSCALL_68K_MEM_NUM_HEAPS 0xA007
+#define SYSCALL_68K_MEM_NUM_RAM_HEAPS 0xA008
+#define SYSCALL_68K_MEM_HEAP_ID 0xA009
+#define SYSCALL_68K_MEM_HEAP_PTR 0xA00A
+#define SYSCALL_68K_MEM_HEAP_FREE_BYTES 0xA00B
+#define SYSCALL_68K_MEM_HEAP_SIZE 0xA00C
+#define SYSCALL_68K_MEM_HEAP_FLAGS 0xA00D
+#define SYSCALL_68K_MEM_HEAP_COMPACT 0xA00E
+#define SYSCALL_68K_MEM_HEAP_INIT 0xA00F
+#define SYSCALL_68K_MEM_HEAP_FREE_BY_OWNER_ID 0xA010
+#define SYSCALL_68K_MEM_CHUNK_NEW 0xA011
+#define SYSCALL_68K_MEM_CHUNK_FREE 0xA012
+#define SYSCALL_68K_MEM_PTR_NEW 0xA013
+#define SYSCALL_68K_MEM_PTR_RECOVER_HANDLE 0xA014
+#define SYSCALL_68K_MEM_PTR_FLAGS 0xA015
+#define SYSCALL_68K_MEM_PTR_SIZE 0xA016
+#define SYSCALL_68K_MEM_PTR_OWNER 0xA017
+#define SYSCALL_68K_MEM_PTR_HEAP_ID 0xA018
+#define SYSCALL_68K_MEM_PTR_CARD_NO 0xA019
+#define SYSCALL_68K_MEM_PTR_TO_LOCAL_ID 0xA01A
+#define SYSCALL_68K_MEM_PTR_SET_OWNER 0xA01B
+#define SYSCALL_68K_MEM_PTR_RESIZE 0xA01C
+#define SYSCALL_68K_MEM_PTR_RESET_LOCK 0xA01D
+#define SYSCALL_68K_MEM_HANDLE_NEW 0xA01E
+#define SYSCALL_68K_MEM_HANDLE_LOCK_COUNT 0xA01F
+#define SYSCALL_68K_MEM_HANDLE_TO_LOCAL_ID 0xA020
+#define SYSCALL_68K_MEM_HANDLE_LOCK 0xA021
+#define SYSCALL_68K_MEM_HANDLE_UNLOCK 0xA022
+#define SYSCALL_68K_MEM_LOCAL_ID_TO_GLOBAL 0xA023
+#define SYSCALL_68K_MEM_LOCAL_ID_KIND 0xA024
+#define SYSCALL_68K_MEM_LOCAL_ID_TO_PTR 0xA025
+#define SYSCALL_68K_MEM_MOVE 0xA026
+#define SYSCALL_68K_MEM_SET 0xA027
+#define SYSCALL_68K_MEM_STORE_SEARCH 0xA028
+#define SYSCALL_68K_SYS_RESERVED10_TRAP1 \
+    0xA029 /* "Reserved" trap in Palm OS 1.0 and later (was SYSCALL_68K_MEM_PTR_DATA_STORAGE) */
 
-#define syscall68kMemKernelInit 0xA02A
-#define syscall68kMemHandleFree 0xA02B
-#define syscall68kMemHandleFlags 0xA02C
-#define syscall68kMemHandleSize 0xA02D
-#define syscall68kMemHandleOwner 0xA02E
-#define syscall68kMemHandleHeapID 0xA02F
-#define syscall68kMemHandleDataStorage 0xA030
-#define syscall68kMemHandleCardNo 0xA031
-#define syscall68kMemHandleSetOwner 0xA032
-#define syscall68kMemHandleResize 0xA033
-#define syscall68kMemHandleResetLock 0xA034
-#define syscall68kMemPtrUnlock 0xA035
-#define syscall68kMemLocalIDToLockedPtr 0xA036
-#define syscall68kMemSetDebugMode 0xA037
-#define syscall68kMemHeapScramble 0xA038
-#define syscall68kMemHeapCheck 0xA039
-#define syscall68kMemNumCards 0xA03A
-#define syscall68kMemDebugMode 0xA03B
-#define syscall68kMemSemaphoreReserve 0xA03C
-#define syscall68kMemSemaphoreRelease 0xA03D
-#define syscall68kMemHeapDynamic 0xA03E
-#define syscall68kMemNVParams 0xA03F
+#define SYSCALL_68K_MEM_KERNEL_INIT 0xA02A
+#define SYSCALL_68K_MEM_HANDLE_FREE 0xA02B
+#define SYSCALL_68K_MEM_HANDLE_FLAGS 0xA02C
+#define SYSCALL_68K_MEM_HANDLE_SIZE 0xA02D
+#define SYSCALL_68K_MEM_HANDLE_OWNER 0xA02E
+#define SYSCALL_68K_MEM_HANDLE_HEAP_ID 0xA02F
+#define SYSCALL_68K_MEM_HANDLE_DATA_STORAGE 0xA030
+#define SYSCALL_68K_MEM_HANDLE_CARD_NO 0xA031
+#define SYSCALL_68K_MEM_HANDLE_SET_OWNER 0xA032
+#define SYSCALL_68K_MEM_HANDLE_RESIZE 0xA033
+#define SYSCALL_68K_MEM_HANDLE_RESET_LOCK 0xA034
+#define SYSCALL_68K_MEM_PTR_UNLOCK 0xA035
+#define SYSCALL_68K_MEM_LOCAL_ID_TO_LOCKED_PTR 0xA036
+#define SYSCALL_68K_MEM_SET_DEBUG_MODE 0xA037
+#define SYSCALL_68K_MEM_HEAP_SCRAMBLE 0xA038
+#define SYSCALL_68K_MEM_HEAP_CHECK 0xA039
+#define SYSCALL_68K_MEM_NUM_CARDS 0xA03A
+#define SYSCALL_68K_MEM_DEBUG_MODE 0xA03B
+#define SYSCALL_68K_MEM_SEMAPHORE_RESERVE 0xA03C
+#define SYSCALL_68K_MEM_SEMAPHORE_RELEASE 0xA03D
+#define SYSCALL_68K_MEM_HEAP_DYNAMIC 0xA03E
+#define SYSCALL_68K_MEM_NV_PARAMS 0xA03F
 
-#define syscall68kDmInit 0xA040
-#define syscall68kDmCreateDatabase 0xA041
-#define syscall68kDmDeleteDatabase 0xA042
-#define syscall68kDmNumDatabases 0xA043
-#define syscall68kDmGetDatabase 0xA044
-#define syscall68kDmFindDatabase 0xA045
-#define syscall68kDmDatabaseInfo 0xA046
-#define syscall68kDmSetDatabaseInfo 0xA047
-#define syscall68kDmDatabaseSize 0xA048
-#define syscall68kDmOpenDatabase 0xA049
-#define syscall68kDmCloseDatabase 0xA04A
-#define syscall68kDmNextOpenDatabase 0xA04B
-#define syscall68kDmOpenDatabaseInfo 0xA04C
-#define syscall68kDmResetRecordStates 0xA04D
-#define syscall68kDmGetLastErr 0xA04E
-#define syscall68kDmNumRecords 0xA04F
-#define syscall68kDmRecordInfo 0xA050
-#define syscall68kDmSetRecordInfo 0xA051
-#define syscall68kDmAttachRecord 0xA052
-#define syscall68kDmDetachRecord 0xA053
-#define syscall68kDmMoveRecord 0xA054
-#define syscall68kDmNewRecord 0xA055
-#define syscall68kDmRemoveRecord 0xA056
-#define syscall68kDmDeleteRecord 0xA057
-#define syscall68kDmArchiveRecord 0xA058
-#define syscall68kDmNewHandle 0xA059
-#define syscall68kDmRemoveSecretRecords 0xA05A
-#define syscall68kDmQueryRecord 0xA05B
-#define syscall68kDmGetRecord 0xA05C
-#define syscall68kDmResizeRecord 0xA05D
-#define syscall68kDmReleaseRecord 0xA05E
-#define syscall68kDmGetResource 0xA05F
-#define syscall68kDmGet1Resource 0xA060
-#define syscall68kDmReleaseResource 0xA061
-#define syscall68kDmResizeResource 0xA062
-#define syscall68kDmNextOpenResDatabase 0xA063
-#define syscall68kDmFindResourceType 0xA064
-#define syscall68kDmFindResource 0xA065
-#define syscall68kDmSearchResource 0xA066
-#define syscall68kDmNumResources 0xA067
-#define syscall68kDmResourceInfo 0xA068
-#define syscall68kDmSetResourceInfo 0xA069
-#define syscall68kDmAttachResource 0xA06A
-#define syscall68kDmDetachResource 0xA06B
-#define syscall68kDmNewResource 0xA06C
-#define syscall68kDmRemoveResource 0xA06D
-#define syscall68kDmGetResourceIndex 0xA06E
-#define syscall68kDmQuickSort 0xA06F
-#define syscall68kDmQueryNextInCategory 0xA070
-#define syscall68kDmNumRecordsInCategory 0xA071
-#define syscall68kDmPositionInCategory 0xA072
-#define syscall68kDmSeekRecordInCategory 0xA073
-#define syscall68kDmMoveCategory 0xA074
-#define syscall68kDmOpenDatabaseByTypeCreator 0xA075
-#define syscall68kDmWrite 0xA076
-#define syscall68kDmStrCopy 0xA077
-#define syscall68kDmGetNextDatabaseByTypeCreator 0xA078
-#define syscall68kDmWriteCheck 0xA079
-#define syscall68kDmMoveOpenDBContext 0xA07A
-#define syscall68kDmFindRecordByID 0xA07B
-#define syscall68kDmGetAppInfoID 0xA07C
-#define syscall68kDmFindSortPositionV10 0xA07D
-#define syscall68kDmSet 0xA07E
-#define syscall68kDmCreateDatabaseFromImage 0xA07F
+#define SYSCALL_68K_DM_INIT 0xA040
+#define SYSCALL_68K_DM_CREATE_DATABASE 0xA041
+#define SYSCALL_68K_DM_DELETE_DATABASE 0xA042
+#define SYSCALL_68K_DM_NUM_DATABASES 0xA043
+#define SYSCALL_68K_DM_GET_DATABASE 0xA044
+#define SYSCALL_68K_DM_FIND_DATABASE 0xA045
+#define SYSCALL_68K_DM_DATABASE_INFO 0xA046
+#define SYSCALL_68K_DM_SET_DATABASE_INFO 0xA047
+#define SYSCALL_68K_DM_DATABASE_SIZE 0xA048
+#define SYSCALL_68K_DM_OPEN_DATABASE 0xA049
+#define SYSCALL_68K_DM_CLOSE_DATABASE 0xA04A
+#define SYSCALL_68K_DM_NEXT_OPEN_DATABASE 0xA04B
+#define SYSCALL_68K_DM_OPEN_DATABASE_INFO 0xA04C
+#define SYSCALL_68K_DM_RESET_RECORD_STATES 0xA04D
+#define SYSCALL_68K_DM_GET_LAST_ERR 0xA04E
+#define SYSCALL_68K_DM_NUM_RECORDS 0xA04F
+#define SYSCALL_68K_DM_RECORD_INFO 0xA050
+#define SYSCALL_68K_DM_SET_RECORD_INFO 0xA051
+#define SYSCALL_68K_DM_ATTACH_RECORD 0xA052
+#define SYSCALL_68K_DM_DETACH_RECORD 0xA053
+#define SYSCALL_68K_DM_MOVE_RECORD 0xA054
+#define SYSCALL_68K_DM_NEW_RECORD 0xA055
+#define SYSCALL_68K_DM_REMOVE_RECORD 0xA056
+#define SYSCALL_68K_DM_DELETE_RECORD 0xA057
+#define SYSCALL_68K_DM_ARCHIVE_RECORD 0xA058
+#define SYSCALL_68K_DM_NEW_HANDLE 0xA059
+#define SYSCALL_68K_DM_REMOVE_SECRET_RECORDS 0xA05A
+#define SYSCALL_68K_DM_QUERY_RECORD 0xA05B
+#define SYSCALL_68K_DM_GET_RECORD 0xA05C
+#define SYSCALL_68K_DM_RESIZE_RECORD 0xA05D
+#define SYSCALL_68K_DM_RELEASE_RECORD 0xA05E
+#define SYSCALL_68K_DM_GET_RESOURCE 0xA05F
+#define SYSCALL_68K_DM_GET1_RESOURCE 0xA060
+#define SYSCALL_68K_DM_RELEASE_RESOURCE 0xA061
+#define SYSCALL_68K_DM_RESIZE_RESOURCE 0xA062
+#define SYSCALL_68K_DM_NEXT_OPEN_RES_DATABASE 0xA063
+#define SYSCALL_68K_DM_FIND_RESOURCE_TYPE 0xA064
+#define SYSCALL_68K_DM_FIND_RESOURCE 0xA065
+#define SYSCALL_68K_DM_SEARCH_RESOURCE 0xA066
+#define SYSCALL_68K_DM_NUM_RESOURCES 0xA067
+#define SYSCALL_68K_DM_RESOURCE_INFO 0xA068
+#define SYSCALL_68K_DM_SET_RESOURCE_INFO 0xA069
+#define SYSCALL_68K_DM_ATTACH_RESOURCE 0xA06A
+#define SYSCALL_68K_DM_DETACH_RESOURCE 0xA06B
+#define SYSCALL_68K_DM_NEW_RESOURCE 0xA06C
+#define SYSCALL_68K_DM_REMOVE_RESOURCE 0xA06D
+#define SYSCALL_68K_DM_GET_RESOURCE_INDEX 0xA06E
+#define SYSCALL_68K_DM_QUICK_SORT 0xA06F
+#define SYSCALL_68K_DM_QUERY_NEXT_IN_CATEGORY 0xA070
+#define SYSCALL_68K_DM_NUM_RECORDS_IN_CATEGORY 0xA071
+#define SYSCALL_68K_DM_POSITION_IN_CATEGORY 0xA072
+#define SYSCALL_68K_DM_SEEK_RECORD_IN_CATEGORY 0xA073
+#define SYSCALL_68K_DM_MOVE_CATEGORY 0xA074
+#define SYSCALL_68K_DM_OPEN_DATABASE_BY_TYPE_CREATOR 0xA075
+#define SYSCALL_68K_DM_WRITE 0xA076
+#define SYSCALL_68K_DM_STR_COPY 0xA077
+#define SYSCALL_68K_DM_GET_NEXT_DATABASE_BY_TYPE_CREATOR 0xA078
+#define SYSCALL_68K_DM_WRITE_CHECK 0xA079
+#define SYSCALL_68K_DM_MOVE_OPEN_DB_CONTEXT 0xA07A
+#define SYSCALL_68K_DM_FIND_RECORD_BY_ID 0xA07B
+#define SYSCALL_68K_DM_GET_APP_INFO_ID 0xA07C
+#define SYSCALL_68K_DM_FIND_SORT_POSITION_V10 0xA07D
+#define SYSCALL_68K_DM_SET 0xA07E
+#define SYSCALL_68K_DM_CREATE_DATABASE_FROM_IMAGE 0xA07F
 
-#define syscall68kDbgSrcMessage 0xA080
-#define syscall68kDbgMessage 0xA081
-#define syscall68kDbgGetMessage 0xA082
-#define syscall68kDbgCommSettings 0xA083
+#define SYSCALL_68K_DBG_SRC_MESSAGE 0xA080
+#define SYSCALL_68K_DBG_MESSAGE 0xA081
+#define SYSCALL_68K_DBG_GET_MESSAGE 0xA082
+#define SYSCALL_68K_DBG_COMM_SETTINGS 0xA083
 
-#define syscall68kErrDisplayFileLineMsg 0xA084
-#define syscall68kErrSetJump 0xA085
-#define syscall68kErrLongJump 0xA086
-#define syscall68kErrThrow 0xA087
-#define syscall68kErrExceptionList 0xA088
+#define SYSCALL_68K_ERR_DISPLAY_FILE_LINE_MSG 0xA084
+#define SYSCALL_68K_ERR_SET_JUMP 0xA085
+#define SYSCALL_68K_ERR_LONG_JUMP 0xA086
+#define SYSCALL_68K_ERR_THROW 0xA087
+#define SYSCALL_68K_ERR_EXCEPTION_LIST 0xA088
 
-#define syscall68kSysBroadcastActionCode 0xA089
-#define syscall68kSysUnimplemented 0xA08A
-#define syscall68kSysColdBoot 0xA08B
-#define syscall68kSysReset 0xA08C
-#define syscall68kSysDoze 0xA08D
-#define syscall68kSysAppLaunch 0xA08E
-#define syscall68kSysAppStartup 0xA08F
-#define syscall68kSysAppExit 0xA090
-#define syscall68kSysSetA5 0xA091
-#define syscall68kSysSetTrapAddress 0xA092
-#define syscall68kSysGetTrapAddress 0xA093
-#define syscall68kSysTranslateKernelErr 0xA094
-#define syscall68kSysSemaphoreCreate 0xA095
-#define syscall68kSysSemaphoreDelete 0xA096
-#define syscall68kSysSemaphoreWait 0xA097
-#define syscall68kSysSemaphoreSignal 0xA098
-#define syscall68kSysTimerCreate 0xA099
-#define syscall68kSysTimerWrite 0xA09A
-#define syscall68kSysTaskCreate 0xA09B
-#define syscall68kSysTaskDelete 0xA09C
-#define syscall68kSysTaskTrigger 0xA09D
-#define syscall68kSysTaskID 0xA09E
-#define syscall68kSysTaskUserInfoPtr 0xA09F
-#define syscall68kSysTaskDelay 0xA0A0
-#define syscall68kSysTaskSetTermProc 0xA0A1
-#define syscall68kSysUILaunch 0xA0A2
-#define syscall68kSysNewOwnerID 0xA0A3
-#define syscall68kSysSemaphoreSet 0xA0A4
-#define syscall68kSysDisableInts 0xA0A5
-#define syscall68kSysRestoreStatus 0xA0A6
-#define syscall68kSysUIAppSwitch 0xA0A7
-#define syscall68kSysCurAppInfoPV20 0xA0A8
-#define syscall68kSysHandleEvent 0xA0A9
-#define syscall68kSysInit 0xA0AA
-#define syscall68kSysQSort 0xA0AB
-#define syscall68kSysCurAppDatabase 0xA0AC
-#define syscall68kSysFatalAlert 0xA0AD
-#define syscall68kSysResSemaphoreCreate 0xA0AE
-#define syscall68kSysResSemaphoreDelete 0xA0AF
-#define syscall68kSysResSemaphoreReserve 0xA0B0
-#define syscall68kSysResSemaphoreRelease 0xA0B1
-#define syscall68kSysSleep 0xA0B2
-#define syscall68kSysKeyboardDialogV10 0xA0B3
-#define syscall68kSysAppLauncherDialog 0xA0B4
-#define syscall68kSysSetPerformance 0xA0B5
-#define syscall68kSysBatteryInfoV20 0xA0B6
-#define syscall68kSysLibInstall 0xA0B7
-#define syscall68kSysLibRemove 0xA0B8
-#define syscall68kSysLibTblEntry 0xA0B9
-#define syscall68kSysLibFind 0xA0BA
-#define syscall68kSysBatteryDialog 0xA0BB
-#define syscall68kSysCopyStringResource 0xA0BC
-#define syscall68kSysKernelInfo 0xA0BD
-#define syscall68kSysLaunchConsole 0xA0BE
-#define syscall68kSysTimerDelete 0xA0BF
-#define syscall68kSysSetAutoOffTime 0xA0C0
-#define syscall68kSysFormPointerArrayToStrings 0xA0C1
-#define syscall68kSysRandom 0xA0C2
-#define syscall68kSysTaskSwitching 0xA0C3
-#define syscall68kSysTimerRead 0xA0C4
+#define SYSCALL_68K_SYS_BROADCAST_ACTION_CODE 0xA089
+#define SYSCALL_68K_SYS_UNIMPLEMENTED 0xA08A
+#define SYSCALL_68K_SYS_COLD_BOOT 0xA08B
+#define SYSCALL_68K_SYS_RESET 0xA08C
+#define SYSCALL_68K_SYS_DOZE 0xA08D
+#define SYSCALL_68K_SYS_APP_LAUNCH 0xA08E
+#define SYSCALL_68K_SYS_APP_STARTUP 0xA08F
+#define SYSCALL_68K_SYS_APP_EXIT 0xA090
+#define SYSCALL_68K_SYS_SET_A5 0xA091
+#define SYSCALL_68K_SYS_SET_TRAP_ADDRESS 0xA092
+#define SYSCALL_68K_SYS_GET_TRAP_ADDRESS 0xA093
+#define SYSCALL_68K_SYS_TRANSLATE_KERNEL_ERR 0xA094
+#define SYSCALL_68K_SYS_SEMAPHORE_CREATE 0xA095
+#define SYSCALL_68K_SYS_SEMAPHORE_DELETE 0xA096
+#define SYSCALL_68K_SYS_SEMAPHORE_WAIT 0xA097
+#define SYSCALL_68K_SYS_SEMAPHORE_SIGNAL 0xA098
+#define SYSCALL_68K_SYS_TIMER_CREATE 0xA099
+#define SYSCALL_68K_SYS_TIMER_WRITE 0xA09A
+#define SYSCALL_68K_SYS_TASK_CREATE 0xA09B
+#define SYSCALL_68K_SYS_TASK_DELETE 0xA09C
+#define SYSCALL_68K_SYS_TASK_TRIGGER 0xA09D
+#define SYSCALL_68K_SYS_TASK_ID 0xA09E
+#define SYSCALL_68K_SYS_TASK_USER_INFO_PTR 0xA09F
+#define SYSCALL_68K_SYS_TASK_DELAY 0xA0A0
+#define SYSCALL_68K_SYS_TASK_SET_TERM_PROC 0xA0A1
+#define SYSCALL_68K_SYS_UI_LAUNCH 0xA0A2
+#define SYSCALL_68K_SYS_NEW_OWNER_ID 0xA0A3
+#define SYSCALL_68K_SYS_SEMAPHORE_SET 0xA0A4
+#define SYSCALL_68K_SYS_DISABLE_INTS 0xA0A5
+#define SYSCALL_68K_SYS_RESTORE_STATUS 0xA0A6
+#define SYSCALL_68K_SYS_UI_APP_SWITCH 0xA0A7
+#define SYSCALL_68K_SYS_CUR_APP_INFO_PV20 0xA0A8
+#define SYSCALL_68K_SYS_HANDLE_EVENT 0xA0A9
+#define SYSCALL_68K_SYS_INIT 0xA0AA
+#define SYSCALL_68K_SYS_Q_SORT 0xA0AB
+#define SYSCALL_68K_SYS_CUR_APP_DATABASE 0xA0AC
+#define SYSCALL_68K_SYS_FATAL_ALERT 0xA0AD
+#define SYSCALL_68K_SYS_RES_SEMAPHORE_CREATE 0xA0AE
+#define SYSCALL_68K_SYS_RES_SEMAPHORE_DELETE 0xA0AF
+#define SYSCALL_68K_SYS_RES_SEMAPHORE_RESERVE 0xA0B0
+#define SYSCALL_68K_SYS_RES_SEMAPHORE_RELEASE 0xA0B1
+#define SYSCALL_68K_SYS_SLEEP 0xA0B2
+#define SYSCALL_68K_SYS_KEYBOARD_DIALOG_V10 0xA0B3
+#define SYSCALL_68K_SYS_APP_LAUNCHER_DIALOG 0xA0B4
+#define SYSCALL_68K_SYS_SET_PERFORMANCE 0xA0B5
+#define SYSCALL_68K_SYS_BATTERY_INFO_V20 0xA0B6
+#define SYSCALL_68K_SYS_LIB_INSTALL 0xA0B7
+#define SYSCALL_68K_SYS_LIB_REMOVE 0xA0B8
+#define SYSCALL_68K_SYS_LIB_TBL_ENTRY 0xA0B9
+#define SYSCALL_68K_SYS_LIB_FIND 0xA0BA
+#define SYSCALL_68K_SYS_BATTERY_DIALOG 0xA0BB
+#define SYSCALL_68K_SYS_COPY_STRING_RESOURCE 0xA0BC
+#define SYSCALL_68K_SYS_KERNEL_INFO 0xA0BD
+#define SYSCALL_68K_SYS_LAUNCH_CONSOLE 0xA0BE
+#define SYSCALL_68K_SYS_TIMER_DELETE 0xA0BF
+#define SYSCALL_68K_SYS_SET_AUTO_OFF_TIME 0xA0C0
+#define SYSCALL_68K_SYS_FORM_POINTER_ARRAY_TO_STRINGS 0xA0C1
+#define SYSCALL_68K_SYS_RANDOM 0xA0C2
+#define SYSCALL_68K_SYS_TASK_SWITCHING 0xA0C3
+#define SYSCALL_68K_SYS_TIMER_READ 0xA0C4
 
-#define syscall68kStrCopy 0xA0C5
-#define syscall68kStrCat 0xA0C6
-#define syscall68kStrLen 0xA0C7
-#define syscall68kStrCompare 0xA0C8
-#define syscall68kStrIToA 0xA0C9
-#define syscall68kStrCaselessCompare 0xA0CA
-#define syscall68kStrIToH 0xA0CB
-#define syscall68kStrChr 0xA0CC
-#define syscall68kStrStr 0xA0CD
-#define syscall68kStrAToI 0xA0CE
-#define syscall68kStrToLower 0xA0CF
+#define SYSCALL_68K_STR_COPY 0xA0C5
+#define SYSCALL_68K_STR_CAT 0xA0C6
+#define SYSCALL_68K_STR_LEN 0xA0C7
+#define SYSCALL_68K_STR_COMPARE 0xA0C8
+#define SYSCALL_68K_STR_I_TO_A 0xA0C9
+#define SYSCALL_68K_STR_CASELESS_COMPARE 0xA0CA
+#define SYSCALL_68K_STR_I_TO_H 0xA0CB
+#define SYSCALL_68K_STR_CHR 0xA0CC
+#define SYSCALL_68K_STR_STR 0xA0CD
+#define SYSCALL_68K_STR_A_TO_I 0xA0CE
+#define SYSCALL_68K_STR_TO_LOWER 0xA0CF
 
-#define syscall68kSerReceiveISP 0xA0D0
+#define SYSCALL_68K_SER_RECEIVE_ISP 0xA0D0
 
-#define syscall68kSlkOpen 0xA0D1
-#define syscall68kSlkClose 0xA0D2
-#define syscall68kSlkOpenSocket 0xA0D3
-#define syscall68kSlkCloseSocket 0xA0D4
-#define syscall68kSlkSocketRefNum 0xA0D5
-#define syscall68kSlkSocketSetTimeout 0xA0D6
-#define syscall68kSlkFlushSocket 0xA0D7
-#define syscall68kSlkSetSocketListener 0xA0D8
-#define syscall68kSlkSendPacket 0xA0D9
-#define syscall68kSlkReceivePacket 0xA0DA
-#define syscall68kSlkSysPktDefaultResponse 0xA0DB
-#define syscall68kSlkProcessRPC 0xA0DC
+#define SYSCALL_68K_SLK_OPEN 0xA0D1
+#define SYSCALL_68K_SLK_CLOSE 0xA0D2
+#define SYSCALL_68K_SLK_OPEN_SOCKET 0xA0D3
+#define SYSCALL_68K_SLK_CLOSE_SOCKET 0xA0D4
+#define SYSCALL_68K_SLK_SOCKET_REF_NUM 0xA0D5
+#define SYSCALL_68K_SLK_SOCKET_SET_TIMEOUT 0xA0D6
+#define SYSCALL_68K_SLK_FLUSH_SOCKET 0xA0D7
+#define SYSCALL_68K_SLK_SET_SOCKET_LISTENER 0xA0D8
+#define SYSCALL_68K_SLK_SEND_PACKET 0xA0D9
+#define SYSCALL_68K_SLK_RECEIVE_PACKET 0xA0DA
+#define SYSCALL_68K_SLK_SYS_PKT_DEFAULT_RESPONSE 0xA0DB
+#define SYSCALL_68K_SLK_PROCESS_RPC 0xA0DC
 
-#define syscall68kConPutS 0xA0DD
-#define syscall68kConGetS 0xA0DE
+#define SYSCALL_68K_CON_PUT_S 0xA0DD
+#define SYSCALL_68K_CON_GET_S 0xA0DE
 
-#define syscall68kFplInit 0xA0DF         /* Obsolete, here for compatibilty only! */
-#define syscall68kFplFree 0xA0E0         /* Obsolete, here for compatibilty only! */
-#define syscall68kFplFToA 0xA0E1         /* Obsolete, here for compatibilty only! */
-#define syscall68kFplAToF 0xA0E2         /* Obsolete, here for compatibilty only! */
-#define syscall68kFplBase10Info 0xA0E3   /* Obsolete, here for compatibilty only! */
-#define syscall68kFplLongToFloat 0xA0E4  /* Obsolete, here for compatibilty only! */
-#define syscall68kFplFloatToLong 0xA0E5  /* Obsolete, here for compatibilty only! */
-#define syscall68kFplFloatToULong 0xA0E6 /* Obsolete, here for compatibilty only! */
-#define syscall68kFplMul 0xA0E7          /* Obsolete, here for compatibilty only! */
-#define syscall68kFplAdd 0xA0E8          /* Obsolete, here for compatibilty only! */
-#define syscall68kFplSub 0xA0E9          /* Obsolete, here for compatibilty only! */
-#define syscall68kFplDiv 0xA0EA          /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_INIT 0xA0DF            /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_FREE 0xA0E0            /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_F_TO_A 0xA0E1          /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_A_TO_F 0xA0E2          /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_BASE10_INFO 0xA0E3     /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_LONG_TO_FLOAT 0xA0E4   /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_FLOAT_TO_LONG 0xA0E5   /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_FLOAT_TO_U_LONG 0xA0E6 /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_MUL 0xA0E7             /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_ADD 0xA0E8             /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_SUB 0xA0E9             /* Obsolete, here for compatibilty only! */
+#define SYSCALL_68K_FPL_DIV 0xA0EA             /* Obsolete, here for compatibilty only! */
 
-#define syscall68kWinScreenInit 0xA0EB /* was syscall68kScrInit */
-#define syscall68kScrCopyRectangle 0xA0EC
-#define syscall68kScrDrawChars 0xA0ED
-#define syscall68kScrLineRoutine 0xA0EE
-#define syscall68kScrRectangleRoutine 0xA0EF
-#define syscall68kScrScreenInfo 0xA0F0
-#define syscall68kScrDrawNotify 0xA0F1
-#define syscall68kScrSendUpdateArea 0xA0F2
-#define syscall68kScrCompressScanLine 0xA0F3
-#define syscall68kScrDeCompressScanLine 0xA0F4
+#define SYSCALL_68K_WIN_SCREEN_INIT 0xA0EB /* was SYSCALL_68K_SCR_INIT */
+#define SYSCALL_68K_SCR_COPY_RECTANGLE 0xA0EC
+#define SYSCALL_68K_SCR_DRAW_CHARS 0xA0ED
+#define SYSCALL_68K_SCR_LINE_ROUTINE 0xA0EE
+#define SYSCALL_68K_SCR_RECTANGLE_ROUTINE 0xA0EF
+#define SYSCALL_68K_SCR_SCREEN_INFO 0xA0F0
+#define SYSCALL_68K_SCR_DRAW_NOTIFY 0xA0F1
+#define SYSCALL_68K_SCR_SEND_UPDATE_AREA 0xA0F2
+#define SYSCALL_68K_SCR_COMPRESS_SCAN_LINE 0xA0F3
+#define SYSCALL_68K_SCR_DE_COMPRESS_SCAN_LINE 0xA0F4
 
-#define syscall68kTimGetSeconds 0xA0F5
-#define syscall68kTimSetSeconds 0xA0F6
-#define syscall68kTimGetTicks 0xA0F7
-#define syscall68kTimInit 0xA0F8
-#define syscall68kTimSetAlarm 0xA0F9
-#define syscall68kTimGetAlarm 0xA0FA
-#define syscall68kTimHandleInterrupt 0xA0FB
-#define syscall68kTimSecondsToDateTime 0xA0FC
-#define syscall68kTimDateTimeToSeconds 0xA0FD
-#define syscall68kTimAdjust 0xA0FE
-#define syscall68kTimSleep 0xA0FF
-#define syscall68kTimWake 0xA100
+#define SYSCALL_68K_TIM_GET_SECONDS 0xA0F5
+#define SYSCALL_68K_TIM_SET_SECONDS 0xA0F6
+#define SYSCALL_68K_TIM_GET_TICKS 0xA0F7
+#define SYSCALL_68K_TIM_INIT 0xA0F8
+#define SYSCALL_68K_TIM_SET_ALARM 0xA0F9
+#define SYSCALL_68K_TIM_GET_ALARM 0xA0FA
+#define SYSCALL_68K_TIM_HANDLE_INTERRUPT 0xA0FB
+#define SYSCALL_68K_TIM_SECONDS_TO_DATE_TIME 0xA0FC
+#define SYSCALL_68K_TIM_DATE_TIME_TO_SECONDS 0xA0FD
+#define SYSCALL_68K_TIM_ADJUST 0xA0FE
+#define SYSCALL_68K_TIM_SLEEP 0xA0FF
+#define SYSCALL_68K_TIM_WAKE 0xA100
 
-#define syscall68kCategoryCreateListV10 0xA101
-#define syscall68kCategoryFreeListV10 0xA102
-#define syscall68kCategoryFind 0xA103
-#define syscall68kCategoryGetName 0xA104
-#define syscall68kCategoryEditV10 0xA105
-#define syscall68kCategorySelectV10 0xA106
-#define syscall68kCategoryGetNext 0xA107
-#define syscall68kCategorySetTriggerLabel 0xA108
-#define syscall68kCategoryTruncateName 0xA109
+#define SYSCALL_68K_CATEGORY_CREATE_LIST_V10 0xA101
+#define SYSCALL_68K_CATEGORY_FREE_LIST_V10 0xA102
+#define SYSCALL_68K_CATEGORY_FIND 0xA103
+#define SYSCALL_68K_CATEGORY_GET_NAME 0xA104
+#define SYSCALL_68K_CATEGORY_EDIT_V10 0xA105
+#define SYSCALL_68K_CATEGORY_SELECT_V10 0xA106
+#define SYSCALL_68K_CATEGORY_GET_NEXT 0xA107
+#define SYSCALL_68K_CATEGORY_SET_TRIGGER_LABEL 0xA108
+#define SYSCALL_68K_CATEGORY_TRUNCATE_NAME 0xA109
 
-#define syscall68kClipboardAddItem 0xA10A
-#define syscall68kClipboardCheckIfItemExist 0xA10B
-#define syscall68kClipboardGetItem 0xA10C
+#define SYSCALL_68K_CLIPBOARD_ADD_ITEM 0xA10A
+#define SYSCALL_68K_CLIPBOARD_CHECK_IF_ITEM_EXIST 0xA10B
+#define SYSCALL_68K_CLIPBOARD_GET_ITEM 0xA10C
 
-#define syscall68kCtlDrawControl 0xA10D
-#define syscall68kCtlEraseControl 0xA10E
-#define syscall68kCtlHideControl 0xA10F
-#define syscall68kCtlShowControl 0xA110
-#define syscall68kCtlGetValue 0xA111
-#define syscall68kCtlSetValue 0xA112
-#define syscall68kCtlGetLabel 0xA113
-#define syscall68kCtlSetLabel 0xA114
-#define syscall68kCtlHandleEvent 0xA115
-#define syscall68kCtlHitControl 0xA116
-#define syscall68kCtlSetEnabled 0xA117
-#define syscall68kCtlSetUsable 0xA118
-#define syscall68kCtlEnabled 0xA119
+#define SYSCALL_68K_CTL_DRAW_CONTROL 0xA10D
+#define SYSCALL_68K_CTL_ERASE_CONTROL 0xA10E
+#define SYSCALL_68K_CTL_HIDE_CONTROL 0xA10F
+#define SYSCALL_68K_CTL_SHOW_CONTROL 0xA110
+#define SYSCALL_68K_CTL_GET_VALUE 0xA111
+#define SYSCALL_68K_CTL_SET_VALUE 0xA112
+#define SYSCALL_68K_CTL_GET_LABEL 0xA113
+#define SYSCALL_68K_CTL_SET_LABEL 0xA114
+#define SYSCALL_68K_CTL_HANDLE_EVENT 0xA115
+#define SYSCALL_68K_CTL_HIT_CONTROL 0xA116
+#define SYSCALL_68K_CTL_SET_ENABLED 0xA117
+#define SYSCALL_68K_CTL_SET_USABLE 0xA118
+#define SYSCALL_68K_CTL_ENABLED 0xA119
 
-#define syscall68kEvtInitialize 0xA11A
-#define syscall68kEvtAddEventToQueue 0xA11B
-#define syscall68kEvtCopyEvent 0xA11C
-#define syscall68kEvtGetEvent 0xA11D
-#define syscall68kEvtGetPen 0xA11E
-#define syscall68kEvtSysInit 0xA11F
-#define syscall68kEvtGetSysEvent 0xA120
-#define syscall68kEvtProcessSoftKeyStroke 0xA121
-#define syscall68kEvtGetPenBtnList 0xA122
-#define syscall68kEvtSetPenQueuePtr 0xA123
-#define syscall68kEvtPenQueueSize 0xA124
-#define syscall68kEvtFlushPenQueue 0xA125
-#define syscall68kEvtEnqueuePenPoint 0xA126
-#define syscall68kEvtDequeuePenStrokeInfo 0xA127
-#define syscall68kEvtDequeuePenPoint 0xA128
-#define syscall68kEvtFlushNextPenStroke 0xA129
-#define syscall68kEvtSetKeyQueuePtr 0xA12A
-#define syscall68kEvtKeyQueueSize 0xA12B
-#define syscall68kEvtFlushKeyQueue 0xA12C
-#define syscall68kEvtEnqueueKey 0xA12D
-#define syscall68kEvtDequeueKeyEvent 0xA12E
-#define syscall68kEvtWakeup 0xA12F
-#define syscall68kEvtResetAutoOffTimer 0xA130
-#define syscall68kEvtKeyQueueEmpty 0xA131
-#define syscall68kEvtEnableGraffiti 0xA132
+#define SYSCALL_68K_EVT_INITIALIZE 0xA11A
+#define SYSCALL_68K_EVT_ADD_EVENT_TO_QUEUE 0xA11B
+#define SYSCALL_68K_EVT_COPY_EVENT 0xA11C
+#define SYSCALL_68K_EVT_GET_EVENT 0xA11D
+#define SYSCALL_68K_EVT_GET_PEN 0xA11E
+#define SYSCALL_68K_EVT_SYS_INIT 0xA11F
+#define SYSCALL_68K_EVT_GET_SYS_EVENT 0xA120
+#define SYSCALL_68K_EVT_PROCESS_SOFT_KEY_STROKE 0xA121
+#define SYSCALL_68K_EVT_GET_PEN_BTN_LIST 0xA122
+#define SYSCALL_68K_EVT_SET_PEN_QUEUE_PTR 0xA123
+#define SYSCALL_68K_EVT_PEN_QUEUE_SIZE 0xA124
+#define SYSCALL_68K_EVT_FLUSH_PEN_QUEUE 0xA125
+#define SYSCALL_68K_EVT_ENQUEUE_PEN_POINT 0xA126
+#define SYSCALL_68K_EVT_DEQUEUE_PEN_STROKE_INFO 0xA127
+#define SYSCALL_68K_EVT_DEQUEUE_PEN_POINT 0xA128
+#define SYSCALL_68K_EVT_FLUSH_NEXT_PEN_STROKE 0xA129
+#define SYSCALL_68K_EVT_SET_KEY_QUEUE_PTR 0xA12A
+#define SYSCALL_68K_EVT_KEY_QUEUE_SIZE 0xA12B
+#define SYSCALL_68K_EVT_FLUSH_KEY_QUEUE 0xA12C
+#define SYSCALL_68K_EVT_ENQUEUE_KEY 0xA12D
+#define SYSCALL_68K_EVT_DEQUEUE_KEY_EVENT 0xA12E
+#define SYSCALL_68K_EVT_WAKEUP 0xA12F
+#define SYSCALL_68K_EVT_RESET_AUTO_OFF_TIMER 0xA130
+#define SYSCALL_68K_EVT_KEY_QUEUE_EMPTY 0xA131
+#define SYSCALL_68K_EVT_ENABLE_GRAFFITI 0xA132
 
-#define syscall68kFldCopy 0xA133
-#define syscall68kFldCut 0xA134
-#define syscall68kFldDrawField 0xA135
-#define syscall68kFldEraseField 0xA136
-#define syscall68kFldFreeMemory 0xA137
-#define syscall68kFldGetBounds 0xA138
-#define syscall68kFldGetTextPtr 0xA139
-#define syscall68kFldGetSelection 0xA13A
-#define syscall68kFldHandleEvent 0xA13B
-#define syscall68kFldPaste 0xA13C
-#define syscall68kFldRecalculateField 0xA13D
-#define syscall68kFldSetBounds 0xA13E
-#define syscall68kFldSetText 0xA13F
-#define syscall68kFldGetFont 0xA140
-#define syscall68kFldSetFont 0xA141
-#define syscall68kFldSetSelection 0xA142
-#define syscall68kFldGrabFocus 0xA143
-#define syscall68kFldReleaseFocus 0xA144
-#define syscall68kFldGetInsPtPosition 0xA145
-#define syscall68kFldSetInsPtPosition 0xA146
-#define syscall68kFldSetScrollPosition 0xA147
-#define syscall68kFldGetScrollPosition 0xA148
-#define syscall68kFldGetTextHeight 0xA149
-#define syscall68kFldGetTextAllocatedSize 0xA14A
-#define syscall68kFldGetTextLength 0xA14B
-#define syscall68kFldScrollField 0xA14C
-#define syscall68kFldScrollable 0xA14D
-#define syscall68kFldGetVisibleLines 0xA14E
-#define syscall68kFldGetAttributes 0xA14F
-#define syscall68kFldSetAttributes 0xA150
-#define syscall68kFldSendChangeNotification 0xA151
-#define syscall68kFldCalcFieldHeight 0xA152
-#define syscall68kFldGetTextHandle 0xA153
-#define syscall68kFldCompactText 0xA154
-#define syscall68kFldDirty 0xA155
-#define syscall68kFldWordWrap 0xA156
-#define syscall68kFldSetTextAllocatedSize 0xA157
-#define syscall68kFldSetTextHandle 0xA158
-#define syscall68kFldSetTextPtr 0xA159
-#define syscall68kFldGetMaxChars 0xA15A
-#define syscall68kFldSetMaxChars 0xA15B
-#define syscall68kFldSetUsable 0xA15C
-#define syscall68kFldInsert 0xA15D
-#define syscall68kFldDelete 0xA15E
-#define syscall68kFldUndo 0xA15F
-#define syscall68kFldSetDirty 0xA160
-#define syscall68kFldSendHeightChangeNotification 0xA161
-#define syscall68kFldMakeFullyVisible 0xA162
+#define SYSCALL_68K_FLD_COPY 0xA133
+#define SYSCALL_68K_FLD_CUT 0xA134
+#define SYSCALL_68K_FLD_DRAW_FIELD 0xA135
+#define SYSCALL_68K_FLD_ERASE_FIELD 0xA136
+#define SYSCALL_68K_FLD_FREE_MEMORY 0xA137
+#define SYSCALL_68K_FLD_GET_BOUNDS 0xA138
+#define SYSCALL_68K_FLD_GET_TEXT_PTR 0xA139
+#define SYSCALL_68K_FLD_GET_SELECTION 0xA13A
+#define SYSCALL_68K_FLD_HANDLE_EVENT 0xA13B
+#define SYSCALL_68K_FLD_PASTE 0xA13C
+#define SYSCALL_68K_FLD_RECALCULATE_FIELD 0xA13D
+#define SYSCALL_68K_FLD_SET_BOUNDS 0xA13E
+#define SYSCALL_68K_FLD_SET_TEXT 0xA13F
+#define SYSCALL_68K_FLD_GET_FONT 0xA140
+#define SYSCALL_68K_FLD_SET_FONT 0xA141
+#define SYSCALL_68K_FLD_SET_SELECTION 0xA142
+#define SYSCALL_68K_FLD_GRAB_FOCUS 0xA143
+#define SYSCALL_68K_FLD_RELEASE_FOCUS 0xA144
+#define SYSCALL_68K_FLD_GET_INS_PT_POSITION 0xA145
+#define SYSCALL_68K_FLD_SET_INS_PT_POSITION 0xA146
+#define SYSCALL_68K_FLD_SET_SCROLL_POSITION 0xA147
+#define SYSCALL_68K_FLD_GET_SCROLL_POSITION 0xA148
+#define SYSCALL_68K_FLD_GET_TEXT_HEIGHT 0xA149
+#define SYSCALL_68K_FLD_GET_TEXT_ALLOCATED_SIZE 0xA14A
+#define SYSCALL_68K_FLD_GET_TEXT_LENGTH 0xA14B
+#define SYSCALL_68K_FLD_SCROLL_FIELD 0xA14C
+#define SYSCALL_68K_FLD_SCROLLABLE 0xA14D
+#define SYSCALL_68K_FLD_GET_VISIBLE_LINES 0xA14E
+#define SYSCALL_68K_FLD_GET_ATTRIBUTES 0xA14F
+#define SYSCALL_68K_FLD_SET_ATTRIBUTES 0xA150
+#define SYSCALL_68K_FLD_SEND_CHANGE_NOTIFICATION 0xA151
+#define SYSCALL_68K_FLD_CALC_FIELD_HEIGHT 0xA152
+#define SYSCALL_68K_FLD_GET_TEXT_HANDLE 0xA153
+#define SYSCALL_68K_FLD_COMPACT_TEXT 0xA154
+#define SYSCALL_68K_FLD_DIRTY 0xA155
+#define SYSCALL_68K_FLD_WORD_WRAP 0xA156
+#define SYSCALL_68K_FLD_SET_TEXT_ALLOCATED_SIZE 0xA157
+#define SYSCALL_68K_FLD_SET_TEXT_HANDLE 0xA158
+#define SYSCALL_68K_FLD_SET_TEXT_PTR 0xA159
+#define SYSCALL_68K_FLD_GET_MAX_CHARS 0xA15A
+#define SYSCALL_68K_FLD_SET_MAX_CHARS 0xA15B
+#define SYSCALL_68K_FLD_SET_USABLE 0xA15C
+#define SYSCALL_68K_FLD_INSERT 0xA15D
+#define SYSCALL_68K_FLD_DELETE 0xA15E
+#define SYSCALL_68K_FLD_UNDO 0xA15F
+#define SYSCALL_68K_FLD_SET_DIRTY 0xA160
+#define SYSCALL_68K_FLD_SEND_HEIGHT_CHANGE_NOTIFICATION 0xA161
+#define SYSCALL_68K_FLD_MAKE_FULLY_VISIBLE 0xA162
 
-#define syscall68kFntGetFont 0xA163
-#define syscall68kFntSetFont 0xA164
-#define syscall68kFntGetFontPtr 0xA165
-#define syscall68kFntBaseLine 0xA166
-#define syscall68kFntCharHeight 0xA167
-#define syscall68kFntLineHeight 0xA168
-#define syscall68kFntAverageCharWidth 0xA169
-#define syscall68kFntCharWidth 0xA16A
-#define syscall68kFntCharsWidth 0xA16B
-#define syscall68kFntDescenderHeight 0xA16C
-#define syscall68kFntCharsInWidth 0xA16D
-#define syscall68kFntLineWidth 0xA16E
+#define SYSCALL_68K_FNT_GET_FONT 0xA163
+#define SYSCALL_68K_FNT_SET_FONT 0xA164
+#define SYSCALL_68K_FNT_GET_FONT_PTR 0xA165
+#define SYSCALL_68K_FNT_BASE_LINE 0xA166
+#define SYSCALL_68K_FNT_CHAR_HEIGHT 0xA167
+#define SYSCALL_68K_FNT_LINE_HEIGHT 0xA168
+#define SYSCALL_68K_FNT_AVERAGE_CHAR_WIDTH 0xA169
+#define SYSCALL_68K_FNT_CHAR_WIDTH 0xA16A
+#define SYSCALL_68K_FNT_CHARS_WIDTH 0xA16B
+#define SYSCALL_68K_FNT_DESCENDER_HEIGHT 0xA16C
+#define SYSCALL_68K_FNT_CHARS_IN_WIDTH 0xA16D
+#define SYSCALL_68K_FNT_LINE_WIDTH 0xA16E
 
-#define syscall68kFrmInitForm 0xA16F
-#define syscall68kFrmDeleteForm 0xA170
-#define syscall68kFrmDrawForm 0xA171
-#define syscall68kFrmEraseForm 0xA172
-#define syscall68kFrmGetActiveForm 0xA173
-#define syscall68kFrmSetActiveForm 0xA174
-#define syscall68kFrmGetActiveFormID 0xA175
-#define syscall68kFrmGetUserModifiedState 0xA176
-#define syscall68kFrmSetNotUserModified 0xA177
-#define syscall68kFrmGetFocus 0xA178
-#define syscall68kFrmSetFocus 0xA179
-#define syscall68kFrmHandleEvent 0xA17A
-#define syscall68kFrmGetFormBounds 0xA17B
-#define syscall68kFrmGetWindowHandle 0xA17C
-#define syscall68kFrmGetFormId 0xA17D
-#define syscall68kFrmGetFormPtr 0xA17E
-#define syscall68kFrmGetNumberOfObjects 0xA17F
-#define syscall68kFrmGetObjectIndex 0xA180
-#define syscall68kFrmGetObjectId 0xA181
-#define syscall68kFrmGetObjectType 0xA182
-#define syscall68kFrmGetObjectPtr 0xA183
-#define syscall68kFrmHideObject 0xA184
-#define syscall68kFrmShowObject 0xA185
-#define syscall68kFrmGetObjectPosition 0xA186
-#define syscall68kFrmSetObjectPosition 0xA187
-#define syscall68kFrmGetControlValue 0xA188
-#define syscall68kFrmSetControlValue 0xA189
-#define syscall68kFrmGetControlGroupSelection 0xA18A
-#define syscall68kFrmSetControlGroupSelection 0xA18B
-#define syscall68kFrmCopyLabel 0xA18C
-#define syscall68kFrmSetLabel 0xA18D
-#define syscall68kFrmGetLabel 0xA18E
-#define syscall68kFrmSetCategoryLabel 0xA18F
-#define syscall68kFrmGetTitle 0xA190
-#define syscall68kFrmSetTitle 0xA191
-#define syscall68kFrmAlert 0xA192
-#define syscall68kFrmDoDialog 0xA193
-#define syscall68kFrmCustomAlert 0xA194
-#define syscall68kFrmHelp 0xA195
-#define syscall68kFrmUpdateScrollers 0xA196
-#define syscall68kFrmGetFirstForm 0xA197
-#define syscall68kFrmVisible 0xA198
-#define syscall68kFrmGetObjectBounds 0xA199
-#define syscall68kFrmCopyTitle 0xA19A
-#define syscall68kFrmGotoForm 0xA19B
-#define syscall68kFrmPopupForm 0xA19C
-#define syscall68kFrmUpdateForm 0xA19D
-#define syscall68kFrmReturnToForm 0xA19E
-#define syscall68kFrmSetEventHandler 0xA19F
-#define syscall68kFrmDispatchEvent 0xA1A0
-#define syscall68kFrmCloseAllForms 0xA1A1
-#define syscall68kFrmSaveAllForms 0xA1A2
-#define syscall68kFrmGetGadgetData 0xA1A3
-#define syscall68kFrmSetGadgetData 0xA1A4
-#define syscall68kFrmSetCategoryTrigger 0xA1A5
+#define SYSCALL_68K_FRM_INIT_FORM 0xA16F
+#define SYSCALL_68K_FRM_DELETE_FORM 0xA170
+#define SYSCALL_68K_FRM_DRAW_FORM 0xA171
+#define SYSCALL_68K_FRM_ERASE_FORM 0xA172
+#define SYSCALL_68K_FRM_GET_ACTIVE_FORM 0xA173
+#define SYSCALL_68K_FRM_SET_ACTIVE_FORM 0xA174
+#define SYSCALL_68K_FRM_GET_ACTIVE_FORM_ID 0xA175
+#define SYSCALL_68K_FRM_GET_USER_MODIFIED_STATE 0xA176
+#define SYSCALL_68K_FRM_SET_NOT_USER_MODIFIED 0xA177
+#define SYSCALL_68K_FRM_GET_FOCUS 0xA178
+#define SYSCALL_68K_FRM_SET_FOCUS 0xA179
+#define SYSCALL_68K_FRM_HANDLE_EVENT 0xA17A
+#define SYSCALL_68K_FRM_GET_FORM_BOUNDS 0xA17B
+#define SYSCALL_68K_FRM_GET_WINDOW_HANDLE 0xA17C
+#define SYSCALL_68K_FRM_GET_FORM_ID 0xA17D
+#define SYSCALL_68K_FRM_GET_FORM_PTR 0xA17E
+#define SYSCALL_68K_FRM_GET_NUMBER_OF_OBJECTS 0xA17F
+#define SYSCALL_68K_FRM_GET_OBJECT_INDEX 0xA180
+#define SYSCALL_68K_FRM_GET_OBJECT_ID 0xA181
+#define SYSCALL_68K_FRM_GET_OBJECT_TYPE 0xA182
+#define SYSCALL_68K_FRM_GET_OBJECT_PTR 0xA183
+#define SYSCALL_68K_FRM_HIDE_OBJECT 0xA184
+#define SYSCALL_68K_FRM_SHOW_OBJECT 0xA185
+#define SYSCALL_68K_FRM_GET_OBJECT_POSITION 0xA186
+#define SYSCALL_68K_FRM_SET_OBJECT_POSITION 0xA187
+#define SYSCALL_68K_FRM_GET_CONTROL_VALUE 0xA188
+#define SYSCALL_68K_FRM_SET_CONTROL_VALUE 0xA189
+#define SYSCALL_68K_FRM_GET_CONTROL_GROUP_SELECTION 0xA18A
+#define SYSCALL_68K_FRM_SET_CONTROL_GROUP_SELECTION 0xA18B
+#define SYSCALL_68K_FRM_COPY_LABEL 0xA18C
+#define SYSCALL_68K_FRM_SET_LABEL 0xA18D
+#define SYSCALL_68K_FRM_GET_LABEL 0xA18E
+#define SYSCALL_68K_FRM_SET_CATEGORY_LABEL 0xA18F
+#define SYSCALL_68K_FRM_GET_TITLE 0xA190
+#define SYSCALL_68K_FRM_SET_TITLE 0xA191
+#define SYSCALL_68K_FRM_ALERT 0xA192
+#define SYSCALL_68K_FRM_DO_DIALOG 0xA193
+#define SYSCALL_68K_FRM_CUSTOM_ALERT 0xA194
+#define SYSCALL_68K_FRM_HELP 0xA195
+#define SYSCALL_68K_FRM_UPDATE_SCROLLERS 0xA196
+#define SYSCALL_68K_FRM_GET_FIRST_FORM 0xA197
+#define SYSCALL_68K_FRM_VISIBLE 0xA198
+#define SYSCALL_68K_FRM_GET_OBJECT_BOUNDS 0xA199
+#define SYSCALL_68K_FRM_COPY_TITLE 0xA19A
+#define SYSCALL_68K_FRM_GOTO_FORM 0xA19B
+#define SYSCALL_68K_FRM_POPUP_FORM 0xA19C
+#define SYSCALL_68K_FRM_UPDATE_FORM 0xA19D
+#define SYSCALL_68K_FRM_RETURN_TO_FORM 0xA19E
+#define SYSCALL_68K_FRM_SET_EVENT_HANDLER 0xA19F
+#define SYSCALL_68K_FRM_DISPATCH_EVENT 0xA1A0
+#define SYSCALL_68K_FRM_CLOSE_ALL_FORMS 0xA1A1
+#define SYSCALL_68K_FRM_SAVE_ALL_FORMS 0xA1A2
+#define SYSCALL_68K_FRM_GET_GADGET_DATA 0xA1A3
+#define SYSCALL_68K_FRM_SET_GADGET_DATA 0xA1A4
+#define SYSCALL_68K_FRM_SET_CATEGORY_TRIGGER 0xA1A5
 
-#define syscall68kUIInitialize 0xA1A6
-#define syscall68kUIReset 0xA1A7
+#define SYSCALL_68K_UI_INITIALIZE 0xA1A6
+#define SYSCALL_68K_UI_RESET 0xA1A7
 
-#define syscall68kInsPtInitialize 0xA1A8
-#define syscall68kInsPtSetLocation 0xA1A9
-#define syscall68kInsPtGetLocation 0xA1AA
-#define syscall68kInsPtEnable 0xA1AB
-#define syscall68kInsPtEnabled 0xA1AC
-#define syscall68kInsPtSetHeight 0xA1AD
-#define syscall68kInsPtGetHeight 0xA1AE
-#define syscall68kInsPtCheckBlink 0xA1AF
+#define SYSCALL_68K_INS_PT_INITIALIZE 0xA1A8
+#define SYSCALL_68K_INS_PT_SET_LOCATION 0xA1A9
+#define SYSCALL_68K_INS_PT_GET_LOCATION 0xA1AA
+#define SYSCALL_68K_INS_PT_ENABLE 0xA1AB
+#define SYSCALL_68K_INS_PT_ENABLED 0xA1AC
+#define SYSCALL_68K_INS_PT_SET_HEIGHT 0xA1AD
+#define SYSCALL_68K_INS_PT_GET_HEIGHT 0xA1AE
+#define SYSCALL_68K_INS_PT_CHECK_BLINK 0xA1AF
 
-#define syscall68kLstSetDrawFunction 0xA1B0
-#define syscall68kLstDrawList 0xA1B1
-#define syscall68kLstEraseList 0xA1B2
-#define syscall68kLstGetSelection 0xA1B3
-#define syscall68kLstGetSelectionText 0xA1B4
-#define syscall68kLstHandleEvent 0xA1B5
-#define syscall68kLstSetHeight 0xA1B6
-#define syscall68kLstSetSelection 0xA1B7
-#define syscall68kLstSetListChoices 0xA1B8
-#define syscall68kLstMakeItemVisible 0xA1B9
-#define syscall68kLstGetNumberOfItems 0xA1BA
-#define syscall68kLstPopupList 0xA1BB
-#define syscall68kLstSetPosition 0xA1BC
+#define SYSCALL_68K_LST_SET_DRAW_FUNCTION 0xA1B0
+#define SYSCALL_68K_LST_DRAW_LIST 0xA1B1
+#define SYSCALL_68K_LST_ERASE_LIST 0xA1B2
+#define SYSCALL_68K_LST_GET_SELECTION 0xA1B3
+#define SYSCALL_68K_LST_GET_SELECTION_TEXT 0xA1B4
+#define SYSCALL_68K_LST_HANDLE_EVENT 0xA1B5
+#define SYSCALL_68K_LST_SET_HEIGHT 0xA1B6
+#define SYSCALL_68K_LST_SET_SELECTION 0xA1B7
+#define SYSCALL_68K_LST_SET_LIST_CHOICES 0xA1B8
+#define SYSCALL_68K_LST_MAKE_ITEM_VISIBLE 0xA1B9
+#define SYSCALL_68K_LST_GET_NUMBER_OF_ITEMS 0xA1BA
+#define SYSCALL_68K_LST_POPUP_LIST 0xA1BB
+#define SYSCALL_68K_LST_SET_POSITION 0xA1BC
 
-#define syscall68kMenuInit 0xA1BD
-#define syscall68kMenuDispose 0xA1BE
-#define syscall68kMenuHandleEvent 0xA1BF
-#define syscall68kMenuDrawMenu 0xA1C0
-#define syscall68kMenuEraseStatus 0xA1C1
-#define syscall68kMenuGetActiveMenu 0xA1C2
-#define syscall68kMenuSetActiveMenu 0xA1C3
+#define SYSCALL_68K_MENU_INIT 0xA1BD
+#define SYSCALL_68K_MENU_DISPOSE 0xA1BE
+#define SYSCALL_68K_MENU_HANDLE_EVENT 0xA1BF
+#define SYSCALL_68K_MENU_DRAW_MENU 0xA1C0
+#define SYSCALL_68K_MENU_ERASE_STATUS 0xA1C1
+#define SYSCALL_68K_MENU_GET_ACTIVE_MENU 0xA1C2
+#define SYSCALL_68K_MENU_SET_ACTIVE_MENU 0xA1C3
 
-#define syscall68kRctSetRectangle 0xA1C4
-#define syscall68kRctCopyRectangle 0xA1C5
-#define syscall68kRctInsetRectangle 0xA1C6
-#define syscall68kRctOffsetRectangle 0xA1C7
-#define syscall68kRctPtInRectangle 0xA1C8
-#define syscall68kRctGetIntersection 0xA1C9
+#define SYSCALL_68K_RCT_SET_RECTANGLE 0xA1C4
+#define SYSCALL_68K_RCT_COPY_RECTANGLE 0xA1C5
+#define SYSCALL_68K_RCT_INSET_RECTANGLE 0xA1C6
+#define SYSCALL_68K_RCT_OFFSET_RECTANGLE 0xA1C7
+#define SYSCALL_68K_RCT_PT_IN_RECTANGLE 0xA1C8
+#define SYSCALL_68K_RCT_GET_INTERSECTION 0xA1C9
 
-#define syscall68kTblDrawTable 0xA1CA
-#define syscall68kTblEraseTable 0xA1CB
-#define syscall68kTblHandleEvent 0xA1CC
-#define syscall68kTblGetItemBounds 0xA1CD
-#define syscall68kTblSelectItem 0xA1CE
-#define syscall68kTblGetItemInt 0xA1CF
-#define syscall68kTblSetItemInt 0xA1D0
-#define syscall68kTblSetItemStyle 0xA1D1
-#define syscall68kTblUnhighlightSelection 0xA1D2
-#define syscall68kTblSetRowUsable 0xA1D3
-#define syscall68kTblGetNumberOfRows 0xA1D4
-#define syscall68kTblSetCustomDrawProcedure 0xA1D5
-#define syscall68kTblSetRowSelectable 0xA1D6
-#define syscall68kTblRowSelectable 0xA1D7
-#define syscall68kTblSetLoadDataProcedure 0xA1D8
-#define syscall68kTblSetSaveDataProcedure 0xA1D9
-#define syscall68kTblGetBounds 0xA1DA
-#define syscall68kTblSetRowHeight 0xA1DB
-#define syscall68kTblGetColumnWidth 0xA1DC
-#define syscall68kTblGetRowID 0xA1DD
-#define syscall68kTblSetRowID 0xA1DE
-#define syscall68kTblMarkRowInvalid 0xA1DF
-#define syscall68kTblMarkTableInvalid 0xA1E0
-#define syscall68kTblGetSelection 0xA1E1
-#define syscall68kTblInsertRow 0xA1E2
-#define syscall68kTblRemoveRow 0xA1E3
-#define syscall68kTblRowInvalid 0xA1E4
-#define syscall68kTblRedrawTable 0xA1E5
-#define syscall68kTblRowUsable 0xA1E6
-#define syscall68kTblReleaseFocus 0xA1E7
-#define syscall68kTblEditing 0xA1E8
-#define syscall68kTblGetCurrentField 0xA1E9
-#define syscall68kTblSetColumnUsable 0xA1EA
-#define syscall68kTblGetRowHeight 0xA1EB
-#define syscall68kTblSetColumnWidth 0xA1EC
-#define syscall68kTblGrabFocus 0xA1ED
-#define syscall68kTblSetItemPtr 0xA1EE
-#define syscall68kTblFindRowID 0xA1EF
-#define syscall68kTblGetLastUsableRow 0xA1F0
-#define syscall68kTblGetColumnSpacing 0xA1F1
-#define syscall68kTblFindRowData 0xA1F2
-#define syscall68kTblGetRowData 0xA1F3
-#define syscall68kTblSetRowData 0xA1F4
-#define syscall68kTblSetColumnSpacing 0xA1F5
+#define SYSCALL_68K_TBL_DRAW_TABLE 0xA1CA
+#define SYSCALL_68K_TBL_ERASE_TABLE 0xA1CB
+#define SYSCALL_68K_TBL_HANDLE_EVENT 0xA1CC
+#define SYSCALL_68K_TBL_GET_ITEM_BOUNDS 0xA1CD
+#define SYSCALL_68K_TBL_SELECT_ITEM 0xA1CE
+#define SYSCALL_68K_TBL_GET_ITEM_INT 0xA1CF
+#define SYSCALL_68K_TBL_SET_ITEM_INT 0xA1D0
+#define SYSCALL_68K_TBL_SET_ITEM_STYLE 0xA1D1
+#define SYSCALL_68K_TBL_UNHIGHLIGHT_SELECTION 0xA1D2
+#define SYSCALL_68K_TBL_SET_ROW_USABLE 0xA1D3
+#define SYSCALL_68K_TBL_GET_NUMBER_OF_ROWS 0xA1D4
+#define SYSCALL_68K_TBL_SET_CUSTOM_DRAW_PROCEDURE 0xA1D5
+#define SYSCALL_68K_TBL_SET_ROW_SELECTABLE 0xA1D6
+#define SYSCALL_68K_TBL_ROW_SELECTABLE 0xA1D7
+#define SYSCALL_68K_TBL_SET_LOAD_DATA_PROCEDURE 0xA1D8
+#define SYSCALL_68K_TBL_SET_SAVE_DATA_PROCEDURE 0xA1D9
+#define SYSCALL_68K_TBL_GET_BOUNDS 0xA1DA
+#define SYSCALL_68K_TBL_SET_ROW_HEIGHT 0xA1DB
+#define SYSCALL_68K_TBL_GET_COLUMN_WIDTH 0xA1DC
+#define SYSCALL_68K_TBL_GET_ROW_ID 0xA1DD
+#define SYSCALL_68K_TBL_SET_ROW_ID 0xA1DE
+#define SYSCALL_68K_TBL_MARK_ROW_INVALID 0xA1DF
+#define SYSCALL_68K_TBL_MARK_TABLE_INVALID 0xA1E0
+#define SYSCALL_68K_TBL_GET_SELECTION 0xA1E1
+#define SYSCALL_68K_TBL_INSERT_ROW 0xA1E2
+#define SYSCALL_68K_TBL_REMOVE_ROW 0xA1E3
+#define SYSCALL_68K_TBL_ROW_INVALID 0xA1E4
+#define SYSCALL_68K_TBL_REDRAW_TABLE 0xA1E5
+#define SYSCALL_68K_TBL_ROW_USABLE 0xA1E6
+#define SYSCALL_68K_TBL_RELEASE_FOCUS 0xA1E7
+#define SYSCALL_68K_TBL_EDITING 0xA1E8
+#define SYSCALL_68K_TBL_GET_CURRENT_FIELD 0xA1E9
+#define SYSCALL_68K_TBL_SET_COLUMN_USABLE 0xA1EA
+#define SYSCALL_68K_TBL_GET_ROW_HEIGHT 0xA1EB
+#define SYSCALL_68K_TBL_SET_COLUMN_WIDTH 0xA1EC
+#define SYSCALL_68K_TBL_GRAB_FOCUS 0xA1ED
+#define SYSCALL_68K_TBL_SET_ITEM_PTR 0xA1EE
+#define SYSCALL_68K_TBL_FIND_ROW_ID 0xA1EF
+#define SYSCALL_68K_TBL_GET_LAST_USABLE_ROW 0xA1F0
+#define SYSCALL_68K_TBL_GET_COLUMN_SPACING 0xA1F1
+#define SYSCALL_68K_TBL_FIND_ROW_DATA 0xA1F2
+#define SYSCALL_68K_TBL_GET_ROW_DATA 0xA1F3
+#define SYSCALL_68K_TBL_SET_ROW_DATA 0xA1F4
+#define SYSCALL_68K_TBL_SET_COLUMN_SPACING 0xA1F5
 
-#define syscall68kWinCreateWindow 0xA1F6
-#define syscall68kWinCreateOffscreenWindow 0xA1F7
-#define syscall68kWinDeleteWindow 0xA1F8
-#define syscall68kWinInitializeWindow 0xA1F9
-#define syscall68kWinAddWindow 0xA1FA
-#define syscall68kWinRemoveWindow 0xA1FB
-#define syscall68kWinSetActiveWindow 0xA1FC
-#define syscall68kWinSetDrawWindow 0xA1FD
-#define syscall68kWinGetDrawWindow 0xA1FE
-#define syscall68kWinGetActiveWindow 0xA1FF
-#define syscall68kWinGetDisplayWindow 0xA200
-#define syscall68kWinGetFirstWindow 0xA201
-#define syscall68kWinEnableWindow 0xA202
-#define syscall68kWinDisableWindow 0xA203
-#define syscall68kWinGetWindowFrameRect 0xA204
-#define syscall68kWinDrawWindowFrame 0xA205
-#define syscall68kWinEraseWindow 0xA206
-#define syscall68kWinSaveBits 0xA207
-#define syscall68kWinRestoreBits 0xA208
-#define syscall68kWinCopyRectangle 0xA209
-#define syscall68kWinScrollRectangle 0xA20A
-#define syscall68kWinGetDisplayExtent 0xA20B
-#define syscall68kWinGetWindowExtent 0xA20C
-#define syscall68kWinDisplayToWindowPt 0xA20D
-#define syscall68kWinWindowToDisplayPt 0xA20E
-#define syscall68kWinGetClip 0xA20F
-#define syscall68kWinSetClip 0xA210
-#define syscall68kWinResetClip 0xA211
-#define syscall68kWinClipRectangle 0xA212
-#define syscall68kWinDrawLine 0xA213
-#define syscall68kWinDrawGrayLine 0xA214
-#define syscall68kWinEraseLine 0xA215
-#define syscall68kWinInvertLine 0xA216
-#define syscall68kWinFillLine 0xA217
-#define syscall68kWinDrawRectangle 0xA218
-#define syscall68kWinEraseRectangle 0xA219
-#define syscall68kWinInvertRectangle 0xA21A
-#define syscall68kWinDrawRectangleFrame 0xA21B
-#define syscall68kWinDrawGrayRectangleFrame 0xA21C
-#define syscall68kWinEraseRectangleFrame 0xA21D
-#define syscall68kWinInvertRectangleFrame 0xA21E
-#define syscall68kWinGetFramesRectangle 0xA21F
-#define syscall68kWinDrawChars 0xA220
-#define syscall68kWinEraseChars 0xA221
-#define syscall68kWinInvertChars 0xA222
-#define syscall68kWinGetPattern 0xA223
-#define syscall68kWinSetPattern 0xA224
-#define syscall68kWinSetUnderlineMode 0xA225
-#define syscall68kWinDrawBitmap 0xA226
-#define syscall68kWinModal 0xA227
-#define syscall68kWinGetDrawWindowBounds 0xA228
-#define syscall68kWinFillRectangle 0xA229
-#define syscall68kWinDrawInvertedChars 0xA22A
+#define SYSCALL_68K_WIN_CREATE_WINDOW 0xA1F6
+#define SYSCALL_68K_WIN_CREATE_OFFSCREEN_WINDOW 0xA1F7
+#define SYSCALL_68K_WIN_DELETE_WINDOW 0xA1F8
+#define SYSCALL_68K_WIN_INITIALIZE_WINDOW 0xA1F9
+#define SYSCALL_68K_WIN_ADD_WINDOW 0xA1FA
+#define SYSCALL_68K_WIN_REMOVE_WINDOW 0xA1FB
+#define SYSCALL_68K_WIN_SET_ACTIVE_WINDOW 0xA1FC
+#define SYSCALL_68K_WIN_SET_DRAW_WINDOW 0xA1FD
+#define SYSCALL_68K_WIN_GET_DRAW_WINDOW 0xA1FE
+#define SYSCALL_68K_WIN_GET_ACTIVE_WINDOW 0xA1FF
+#define SYSCALL_68K_WIN_GET_DISPLAY_WINDOW 0xA200
+#define SYSCALL_68K_WIN_GET_FIRST_WINDOW 0xA201
+#define SYSCALL_68K_WIN_ENABLE_WINDOW 0xA202
+#define SYSCALL_68K_WIN_DISABLE_WINDOW 0xA203
+#define SYSCALL_68K_WIN_GET_WINDOW_FRAME_RECT 0xA204
+#define SYSCALL_68K_WIN_DRAW_WINDOW_FRAME 0xA205
+#define SYSCALL_68K_WIN_ERASE_WINDOW 0xA206
+#define SYSCALL_68K_WIN_SAVE_BITS 0xA207
+#define SYSCALL_68K_WIN_RESTORE_BITS 0xA208
+#define SYSCALL_68K_WIN_COPY_RECTANGLE 0xA209
+#define SYSCALL_68K_WIN_SCROLL_RECTANGLE 0xA20A
+#define SYSCALL_68K_WIN_GET_DISPLAY_EXTENT 0xA20B
+#define SYSCALL_68K_WIN_GET_WINDOW_EXTENT 0xA20C
+#define SYSCALL_68K_WIN_DISPLAY_TO_WINDOW_PT 0xA20D
+#define SYSCALL_68K_WIN_WINDOW_TO_DISPLAY_PT 0xA20E
+#define SYSCALL_68K_WIN_GET_CLIP 0xA20F
+#define SYSCALL_68K_WIN_SET_CLIP 0xA210
+#define SYSCALL_68K_WIN_RESET_CLIP 0xA211
+#define SYSCALL_68K_WIN_CLIP_RECTANGLE 0xA212
+#define SYSCALL_68K_WIN_DRAW_LINE 0xA213
+#define SYSCALL_68K_WIN_DRAW_GRAY_LINE 0xA214
+#define SYSCALL_68K_WIN_ERASE_LINE 0xA215
+#define SYSCALL_68K_WIN_INVERT_LINE 0xA216
+#define SYSCALL_68K_WIN_FILL_LINE 0xA217
+#define SYSCALL_68K_WIN_DRAW_RECTANGLE 0xA218
+#define SYSCALL_68K_WIN_ERASE_RECTANGLE 0xA219
+#define SYSCALL_68K_WIN_INVERT_RECTANGLE 0xA21A
+#define SYSCALL_68K_WIN_DRAW_RECTANGLE_FRAME 0xA21B
+#define SYSCALL_68K_WIN_DRAW_GRAY_RECTANGLE_FRAME 0xA21C
+#define SYSCALL_68K_WIN_ERASE_RECTANGLE_FRAME 0xA21D
+#define SYSCALL_68K_WIN_INVERT_RECTANGLE_FRAME 0xA21E
+#define SYSCALL_68K_WIN_GET_FRAMES_RECTANGLE 0xA21F
+#define SYSCALL_68K_WIN_DRAW_CHARS 0xA220
+#define SYSCALL_68K_WIN_ERASE_CHARS 0xA221
+#define SYSCALL_68K_WIN_INVERT_CHARS 0xA222
+#define SYSCALL_68K_WIN_GET_PATTERN 0xA223
+#define SYSCALL_68K_WIN_SET_PATTERN 0xA224
+#define SYSCALL_68K_WIN_SET_UNDERLINE_MODE 0xA225
+#define SYSCALL_68K_WIN_DRAW_BITMAP 0xA226
+#define SYSCALL_68K_WIN_MODAL 0xA227
+#define SYSCALL_68K_WIN_GET_DRAW_WINDOW_BOUNDS 0xA228
+#define SYSCALL_68K_WIN_FILL_RECTANGLE 0xA229
+#define SYSCALL_68K_WIN_DRAW_INVERTED_CHARS 0xA22A
 
-#define syscall68kPrefOpenPreferenceDBV10 0xA22B
-#define syscall68kPrefGetPreferences 0xA22C
-#define syscall68kPrefSetPreferences 0xA22D
-#define syscall68kPrefGetAppPreferencesV10 0xA22E
-#define syscall68kPrefSetAppPreferencesV10 0xA22F
+#define SYSCALL_68K_PREF_OPEN_PREFERENCE_DBV10 0xA22B
+#define SYSCALL_68K_PREF_GET_PREFERENCES 0xA22C
+#define SYSCALL_68K_PREF_SET_PREFERENCES 0xA22D
+#define SYSCALL_68K_PREF_GET_APP_PREFERENCES_V10 0xA22E
+#define SYSCALL_68K_PREF_SET_APP_PREFERENCES_V10 0xA22F
 
-#define syscall68kSndInit 0xA230
-#define syscall68kSndSetDefaultVolume 0xA231
-#define syscall68kSndGetDefaultVolume 0xA232
-#define syscall68kSndDoCmd 0xA233
-#define syscall68kSndPlaySystemSound 0xA234
+#define SYSCALL_68K_SND_INIT 0xA230
+#define SYSCALL_68K_SND_SET_DEFAULT_VOLUME 0xA231
+#define SYSCALL_68K_SND_GET_DEFAULT_VOLUME 0xA232
+#define SYSCALL_68K_SND_DO_CMD 0xA233
+#define SYSCALL_68K_SND_PLAY_SYSTEM_SOUND 0xA234
 
-#define syscall68kAlmInit 0xA235
-#define syscall68kAlmCancelAll 0xA236
-#define syscall68kAlmAlarmCallback 0xA237
-#define syscall68kAlmSetAlarm 0xA238
-#define syscall68kAlmGetAlarm 0xA239
-#define syscall68kAlmDisplayAlarm 0xA23A
-#define syscall68kAlmEnableNotification 0xA23B
+#define SYSCALL_68K_ALM_INIT 0xA235
+#define SYSCALL_68K_ALM_CANCEL_ALL 0xA236
+#define SYSCALL_68K_ALM_ALARM_CALLBACK 0xA237
+#define SYSCALL_68K_ALM_SET_ALARM 0xA238
+#define SYSCALL_68K_ALM_GET_ALARM 0xA239
+#define SYSCALL_68K_ALM_DISPLAY_ALARM 0xA23A
+#define SYSCALL_68K_ALM_ENABLE_NOTIFICATION 0xA23B
 
-#define syscall68kHwrGetRAMMapping 0xA23C
-#define syscall68kHwrMemWritable 0xA23D
-#define syscall68kHwrMemReadable 0xA23E
-#define syscall68kHwrDoze 0xA23F
-#define syscall68kHwrSleep 0xA240
-#define syscall68kHwrWake 0xA241
-#define syscall68kHwrSetSystemClock 0xA242
-#define syscall68kHwrSetCPUDutyCycle 0xA243
-#define syscall68kHwrDisplayInit 0xA244 /* Before OS 3.5, this trap a.k.a. syscall68kHwrLCDInit */
-#define syscall68kHwrDisplaySleep \
-    0xA245 /* Before OS 3.5, this trap a.k.a. syscall68kHwrLCDSleep, */
-#define syscall68kHwrTimerInit 0xA246
-#define syscall68kHwrCursorV33 0xA247 /* This trap obsoleted for OS 3.5 and later */
-#define syscall68kHwrBatteryLevel 0xA248
-#define syscall68kHwrDelay 0xA249
-#define syscall68kHwrEnableDataWrites 0xA24A
-#define syscall68kHwrDisableDataWrites 0xA24B
-#define syscall68kHwrLCDBaseAddrV33 0xA24C /* This trap obsoleted for OS 3.5 and later */
-#define syscall68kHwrDisplayDrawBootScreen \
-    0xA24D /* Before OS 3.5, this trap a.k.a. syscall68kHwrLCDDrawBitmap */
-#define syscall68kHwrTimerSleep 0xA24E
-#define syscall68kHwrTimerWake 0xA24F
-#define syscall68kHwrDisplayWake 0xA250 /* Before OS 3.5, this trap a.k.a. syscall68kHwrLCDWake */
-#define syscall68kHwrIRQ1Handler 0xA251
-#define syscall68kHwrIRQ2Handler 0xA252
-#define syscall68kHwrIRQ3Handler 0xA253
-#define syscall68kHwrIRQ4Handler 0xA254
-#define syscall68kHwrIRQ5Handler 0xA255
-#define syscall68kHwrIRQ6Handler 0xA256
-#define syscall68kHwrDockSignals 0xA257
-#define syscall68kHwrPluggedIn 0xA258
+#define SYSCALL_68K_HWR_GET_RAM_MAPPING 0xA23C
+#define SYSCALL_68K_HWR_MEM_WRITABLE 0xA23D
+#define SYSCALL_68K_HWR_MEM_READABLE 0xA23E
+#define SYSCALL_68K_HWR_DOZE 0xA23F
+#define SYSCALL_68K_HWR_SLEEP 0xA240
+#define SYSCALL_68K_HWR_WAKE 0xA241
+#define SYSCALL_68K_HWR_SET_SYSTEM_CLOCK 0xA242
+#define SYSCALL_68K_HWR_SET_CPU_DUTY_CYCLE 0xA243
+#define SYSCALL_68K_HWR_DISPLAY_INIT \
+    0xA244 /* Before OS 3.5, this trap a.k.a. SYSCALL_68K_HWR_LCD_INIT */
+#define SYSCALL_68K_HWR_DISPLAY_SLEEP \
+    0xA245 /* Before OS 3.5, this trap a.k.a. SYSCALL_68K_HWR_LCD_SLEEP, */
+#define SYSCALL_68K_HWR_TIMER_INIT 0xA246
+#define SYSCALL_68K_HWR_CURSOR_V33 0xA247 /* This trap obsoleted for OS 3.5 and later */
+#define SYSCALL_68K_HWR_BATTERY_LEVEL 0xA248
+#define SYSCALL_68K_HWR_DELAY 0xA249
+#define SYSCALL_68K_HWR_ENABLE_DATA_WRITES 0xA24A
+#define SYSCALL_68K_HWR_DISABLE_DATA_WRITES 0xA24B
+#define SYSCALL_68K_HWR_LCD_BASE_ADDR_V33 0xA24C /* This trap obsoleted for OS 3.5 and later */
+#define SYSCALL_68K_HWR_DISPLAY_DRAW_BOOT_SCREEN \
+    0xA24D /* Before OS 3.5, this trap a.k.a. SYSCALL_68K_HWR_LCD_DRAW_BITMAP */
+#define SYSCALL_68K_HWR_TIMER_SLEEP 0xA24E
+#define SYSCALL_68K_HWR_TIMER_WAKE 0xA24F
+#define SYSCALL_68K_HWR_DISPLAY_WAKE \
+    0xA250 /* Before OS 3.5, this trap a.k.a. SYSCALL_68K_HWR_LCD_WAKE */
+#define SYSCALL_68K_HWR_IRQ1_HANDLER 0xA251
+#define SYSCALL_68K_HWR_IRQ2_HANDLER 0xA252
+#define SYSCALL_68K_HWR_IRQ3_HANDLER 0xA253
+#define SYSCALL_68K_HWR_IRQ4_HANDLER 0xA254
+#define SYSCALL_68K_HWR_IRQ5_HANDLER 0xA255
+#define SYSCALL_68K_HWR_IRQ6_HANDLER 0xA256
+#define SYSCALL_68K_HWR_DOCK_SIGNALS 0xA257
+#define SYSCALL_68K_HWR_PLUGGED_IN 0xA258
 
-#define syscall68kCrc16CalcBlock 0xA259
+#define SYSCALL_68K_CRC16_CALC_BLOCK 0xA259
 
-#define syscall68kSelectDayV10 0xA25A
-#define syscall68kSelectTimeV33 0xA25B
+#define SYSCALL_68K_SELECT_DAY_V10 0xA25A
+#define SYSCALL_68K_SELECT_TIME_V33 0xA25B
 
-#define syscall68kDayDrawDaySelector 0xA25C
-#define syscall68kDayHandleEvent 0xA25D
-#define syscall68kDayDrawDays 0xA25E
-#define syscall68kDayOfWeek 0xA25F
-#define syscall68kDaysInMonth 0xA260
-#define syscall68kDayOfMonth 0xA261
+#define SYSCALL_68K_DAY_DRAW_DAY_SELECTOR 0xA25C
+#define SYSCALL_68K_DAY_HANDLE_EVENT 0xA25D
+#define SYSCALL_68K_DAY_DRAW_DAYS 0xA25E
+#define SYSCALL_68K_DAY_OF_WEEK 0xA25F
+#define SYSCALL_68K_DAYS_IN_MONTH 0xA260
+#define SYSCALL_68K_DAY_OF_MONTH 0xA261
 
-#define syscall68kDateDaysToDate 0xA262
-#define syscall68kDateToDays 0xA263
-#define syscall68kDateAdjust 0xA264
-#define syscall68kDateSecondsToDate 0xA265
-#define syscall68kDateToAscii 0xA266
-#define syscall68kDateToDOWDMFormat 0xA267
-#define syscall68kTimeToAscii 0xA268
+#define SYSCALL_68K_DATE_DAYS_TO_DATE 0xA262
+#define SYSCALL_68K_DATE_TO_DAYS 0xA263
+#define SYSCALL_68K_DATE_ADJUST 0xA264
+#define SYSCALL_68K_DATE_SECONDS_TO_DATE 0xA265
+#define SYSCALL_68K_DATE_TO_ASCII 0xA266
+#define SYSCALL_68K_DATE_TO_DOWDM_FORMAT 0xA267
+#define SYSCALL_68K_TIME_TO_ASCII 0xA268
 
-#define syscall68kFind 0xA269
-#define syscall68kFindStrInStr 0xA26A
-#define syscall68kFindSaveMatch 0xA26B
-#define syscall68kFindGetLineBounds 0xA26C
-#define syscall68kFindDrawHeader 0xA26D
+#define SYSCALL_68K_FIND 0xA269
+#define SYSCALL_68K_FIND_STR_IN_STR 0xA26A
+#define SYSCALL_68K_FIND_SAVE_MATCH 0xA26B
+#define SYSCALL_68K_FIND_GET_LINE_BOUNDS 0xA26C
+#define SYSCALL_68K_FIND_DRAW_HEADER 0xA26D
 
-#define syscall68kPenOpen 0xA26E
-#define syscall68kPenClose 0xA26F
-#define syscall68kPenGetRawPen 0xA270
-#define syscall68kPenCalibrate 0xA271
-#define syscall68kPenRawToScreen 0xA272
-#define syscall68kPenScreenToRaw 0xA273
-#define syscall68kPenResetCalibration 0xA274
-#define syscall68kPenSleep 0xA275
-#define syscall68kPenWake 0xA276
+#define SYSCALL_68K_PEN_OPEN 0xA26E
+#define SYSCALL_68K_PEN_CLOSE 0xA26F
+#define SYSCALL_68K_PEN_GET_RAW_PEN 0xA270
+#define SYSCALL_68K_PEN_CALIBRATE 0xA271
+#define SYSCALL_68K_PEN_RAW_TO_SCREEN 0xA272
+#define SYSCALL_68K_PEN_SCREEN_TO_RAW 0xA273
+#define SYSCALL_68K_PEN_RESET_CALIBRATION 0xA274
+#define SYSCALL_68K_PEN_SLEEP 0xA275
+#define SYSCALL_68K_PEN_WAKE 0xA276
 
-#define syscall68kResLoadForm 0xA277
-#define syscall68kResLoadMenu 0xA278
+#define SYSCALL_68K_RES_LOAD_FORM 0xA277
+#define SYSCALL_68K_RES_LOAD_MENU 0xA278
 
-#define syscall68kFtrInit 0xA279
-#define syscall68kFtrUnregister 0xA27A
-#define syscall68kFtrGet 0xA27B
-#define syscall68kFtrSet 0xA27C
-#define syscall68kFtrGetByIndex 0xA27D
+#define SYSCALL_68K_FTR_INIT 0xA279
+#define SYSCALL_68K_FTR_UNREGISTER 0xA27A
+#define SYSCALL_68K_FTR_GET 0xA27B
+#define SYSCALL_68K_FTR_SET 0xA27C
+#define SYSCALL_68K_FTR_GET_BY_INDEX 0xA27D
 
-#define syscall68kGrfInit 0xA27E
-#define syscall68kGrfFree 0xA27F
-#define syscall68kGrfGetState 0xA280
-#define syscall68kGrfSetState 0xA281
-#define syscall68kGrfFlushPoints 0xA282
-#define syscall68kGrfAddPoint 0xA283
-#define syscall68kGrfInitState 0xA284
-#define syscall68kGrfCleanState 0xA285
-#define syscall68kGrfMatch 0xA286
-#define syscall68kGrfGetMacro 0xA287
-#define syscall68kGrfFilterPoints 0xA288
-#define syscall68kGrfGetNumPoints 0xA289
-#define syscall68kGrfGetPoint 0xA28A
-#define syscall68kGrfFindBranch 0xA28B
-#define syscall68kGrfMatchGlyph 0xA28C
-#define syscall68kGrfGetGlyphMapping 0xA28D
-#define syscall68kGrfGetMacroName 0xA28E
-#define syscall68kGrfDeleteMacro 0xA28F
-#define syscall68kGrfAddMacro 0xA290
-#define syscall68kGrfGetAndExpandMacro 0xA291
-#define syscall68kGrfProcessStroke 0xA292
-#define syscall68kGrfFieldChange 0xA293
+#define SYSCALL_68K_GRF_INIT 0xA27E
+#define SYSCALL_68K_GRF_FREE 0xA27F
+#define SYSCALL_68K_GRF_GET_STATE 0xA280
+#define SYSCALL_68K_GRF_SET_STATE 0xA281
+#define SYSCALL_68K_GRF_FLUSH_POINTS 0xA282
+#define SYSCALL_68K_GRF_ADD_POINT 0xA283
+#define SYSCALL_68K_GRF_INIT_STATE 0xA284
+#define SYSCALL_68K_GRF_CLEAN_STATE 0xA285
+#define SYSCALL_68K_GRF_MATCH 0xA286
+#define SYSCALL_68K_GRF_GET_MACRO 0xA287
+#define SYSCALL_68K_GRF_FILTER_POINTS 0xA288
+#define SYSCALL_68K_GRF_GET_NUM_POINTS 0xA289
+#define SYSCALL_68K_GRF_GET_POINT 0xA28A
+#define SYSCALL_68K_GRF_FIND_BRANCH 0xA28B
+#define SYSCALL_68K_GRF_MATCH_GLYPH 0xA28C
+#define SYSCALL_68K_GRF_GET_GLYPH_MAPPING 0xA28D
+#define SYSCALL_68K_GRF_GET_MACRO_NAME 0xA28E
+#define SYSCALL_68K_GRF_DELETE_MACRO 0xA28F
+#define SYSCALL_68K_GRF_ADD_MACRO 0xA290
+#define SYSCALL_68K_GRF_GET_AND_EXPAND_MACRO 0xA291
+#define SYSCALL_68K_GRF_PROCESS_STROKE 0xA292
+#define SYSCALL_68K_GRF_FIELD_CHANGE 0xA293
 
-#define syscall68kGetCharSortValue 0xA294
-#define syscall68kGetCharAttr 0xA295
-#define syscall68kGetCharCaselessValue 0xA296
+#define SYSCALL_68K_GET_CHAR_SORT_VALUE 0xA294
+#define SYSCALL_68K_GET_CHAR_ATTR 0xA295
+#define SYSCALL_68K_GET_CHAR_CASELESS_VALUE 0xA296
 
-#define syscall68kPwdExists 0xA297
-#define syscall68kPwdVerify 0xA298
-#define syscall68kPwdSet 0xA299
-#define syscall68kPwdRemove 0xA29A
+#define SYSCALL_68K_PWD_EXISTS 0xA297
+#define SYSCALL_68K_PWD_VERIFY 0xA298
+#define SYSCALL_68K_PWD_SET 0xA299
+#define SYSCALL_68K_PWD_REMOVE 0xA29A
 
-#define syscall68kGsiInitialize 0xA29B
-#define syscall68kGsiSetLocation 0xA29C
-#define syscall68kGsiEnable 0xA29D
-#define syscall68kGsiEnabled 0xA29E
-#define syscall68kGsiSetShiftState 0xA29F
+#define SYSCALL_68K_GSI_INITIALIZE 0xA29B
+#define SYSCALL_68K_GSI_SET_LOCATION 0xA29C
+#define SYSCALL_68K_GSI_ENABLE 0xA29D
+#define SYSCALL_68K_GSI_ENABLED 0xA29E
+#define SYSCALL_68K_GSI_SET_SHIFT_STATE 0xA29F
 
-#define syscall68kKeyInit 0xA2A0
-#define syscall68kKeyHandleInterrupt 0xA2A1
-#define syscall68kKeyCurrentState 0xA2A2
-#define syscall68kKeyResetDoubleTap 0xA2A3
-#define syscall68kKeyRates 0xA2A4
-#define syscall68kKeySleep 0xA2A5
-#define syscall68kKeyWake 0xA2A6
+#define SYSCALL_68K_KEY_INIT 0xA2A0
+#define SYSCALL_68K_KEY_HANDLE_INTERRUPT 0xA2A1
+#define SYSCALL_68K_KEY_CURRENT_STATE 0xA2A2
+#define SYSCALL_68K_KEY_RESET_DOUBLE_TAP 0xA2A3
+#define SYSCALL_68K_KEY_RATES 0xA2A4
+#define SYSCALL_68K_KEY_SLEEP 0xA2A5
+#define SYSCALL_68K_KEY_WAKE 0xA2A6
 
-#define syscall68kDlkControl 0xA2A7 /* was syscall68kCmBroadcast */
+#define SYSCALL_68K_DLK_CONTROL 0xA2A7 /* was SYSCALL_68K_CM_BROADCAST */
 
-#define syscall68kDlkStartServer 0xA2A8
-#define syscall68kDlkGetSyncInfo 0xA2A9
-#define syscall68kDlkSetLogEntry 0xA2AA
+#define SYSCALL_68K_DLK_START_SERVER 0xA2A8
+#define SYSCALL_68K_DLK_GET_SYNC_INFO 0xA2A9
+#define SYSCALL_68K_DLK_SET_LOG_ENTRY 0xA2AA
 
-#define syscall68kIntlDispatch                                              \
-    0xA2AB /* REUSED IN v3.1 (was syscall68kPsrInit in 1.0, removed in 2.0) \
+#define SYSCALL_68K_INTL_DISPATCH                                              \
+    0xA2AB /* REUSED IN v3.1 (was SYSCALL_68K_PSR_INIT in 1.0, removed in 2.0) \
             */
-#define syscall68kSysLibLoad 0xA2AC /* REUSED IN v2.0 (was syscall68kPsrClose) */
-#define syscall68kSndPlaySmf \
-    0xA2AD /* REUSED IN v3.0 (was syscall68kPsrGetCommand in 1.0, removed in 2.0) */
-#define syscall68kSndCreateMidiList \
-    0xA2AE /* REUSED IN v3.0 (was syscall68kPsrSendReply in 1.0, removed in 2.0) */
+#define SYSCALL_68K_SYS_LIB_LOAD 0xA2AC /* REUSED IN v2.0 (was SYSCALL_68K_PSR_CLOSE) */
+#define SYSCALL_68K_SND_PLAY_SMF \
+    0xA2AD /* REUSED IN v3.0 (was SYSCALL_68K_PSR_GET_COMMAND in 1.0, removed in 2.0) */
+#define SYSCALL_68K_SND_CREATE_MIDI_LIST \
+    0xA2AE /* REUSED IN v3.0 (was SYSCALL_68K_PSR_SEND_REPLY in 1.0, removed in 2.0) */
 
-#define syscall68kAbtShowAbout 0xA2AF
+#define SYSCALL_68K_ABT_SHOW_ABOUT 0xA2AF
 
-#define syscall68kMdmDial 0xA2B0
-#define syscall68kMdmHangUp 0xA2B1
+#define SYSCALL_68K_MDM_DIAL 0xA2B0
+#define SYSCALL_68K_MDM_HANG_UP 0xA2B1
 
-#define syscall68kDmSearchRecord 0xA2B2
+#define SYSCALL_68K_DM_SEARCH_RECORD 0xA2B2
 
-#define syscall68kSysInsertionSort 0xA2B3
-#define syscall68kDmInsertionSort 0xA2B4
+#define SYSCALL_68K_SYS_INSERTION_SORT 0xA2B3
+#define SYSCALL_68K_DM_INSERTION_SORT 0xA2B4
 
-#define syscall68kLstSetTopItem 0xA2B5
+#define SYSCALL_68K_LST_SET_TOP_ITEM 0xA2B5
 
 // Palm OS 2.X traps					Palm Pilot and 2.0 Upgrade Card
 
-#define syscall68kSclSetScrollBar 0xA2B6
-#define syscall68kSclDrawScrollBar 0xA2B7
-#define syscall68kSclHandleEvent 0xA2B8
+#define SYSCALL_68K_SCL_SET_SCROLL_BAR 0xA2B6
+#define SYSCALL_68K_SCL_DRAW_SCROLL_BAR 0xA2B7
+#define SYSCALL_68K_SCL_HANDLE_EVENT 0xA2B8
 
-#define syscall68kSysMailboxCreate 0xA2B9
-#define syscall68kSysMailboxDelete 0xA2BA
-#define syscall68kSysMailboxFlush 0xA2BB
-#define syscall68kSysMailboxSend 0xA2BC
-#define syscall68kSysMailboxWait 0xA2BD
+#define SYSCALL_68K_SYS_MAILBOX_CREATE 0xA2B9
+#define SYSCALL_68K_SYS_MAILBOX_DELETE 0xA2BA
+#define SYSCALL_68K_SYS_MAILBOX_FLUSH 0xA2BB
+#define SYSCALL_68K_SYS_MAILBOX_SEND 0xA2BC
+#define SYSCALL_68K_SYS_MAILBOX_WAIT 0xA2BD
 
-#define syscall68kSysTaskWait 0xA2BE
-#define syscall68kSysTaskWake 0xA2BF
-#define syscall68kSysTaskWaitClr 0xA2C0
-#define syscall68kSysTaskSuspend 0xA2C1
-#define syscall68kSysTaskResume 0xA2C2
+#define SYSCALL_68K_SYS_TASK_WAIT 0xA2BE
+#define SYSCALL_68K_SYS_TASK_WAKE 0xA2BF
+#define SYSCALL_68K_SYS_TASK_WAIT_CLR 0xA2C0
+#define SYSCALL_68K_SYS_TASK_SUSPEND 0xA2C1
+#define SYSCALL_68K_SYS_TASK_RESUME 0xA2C2
 
-#define syscall68kCategoryCreateList 0xA2C3
-#define syscall68kCategoryFreeList 0xA2C4
-#define syscall68kCategoryEditV20 0xA2C5
-#define syscall68kCategorySelect 0xA2C6
+#define SYSCALL_68K_CATEGORY_CREATE_LIST 0xA2C3
+#define SYSCALL_68K_CATEGORY_FREE_LIST 0xA2C4
+#define SYSCALL_68K_CATEGORY_EDIT_V20 0xA2C5
+#define SYSCALL_68K_CATEGORY_SELECT 0xA2C6
 
-#define syscall68kDmDeleteCategory 0xA2C7
+#define SYSCALL_68K_DM_DELETE_CATEGORY 0xA2C7
 
-#define syscall68kSysEvGroupCreate 0xA2C8
-#define syscall68kSysEvGroupSignal 0xA2C9
-#define syscall68kSysEvGroupRead 0xA2CA
-#define syscall68kSysEvGroupWait 0xA2CB
+#define SYSCALL_68K_SYS_EV_GROUP_CREATE 0xA2C8
+#define SYSCALL_68K_SYS_EV_GROUP_SIGNAL 0xA2C9
+#define SYSCALL_68K_SYS_EV_GROUP_READ 0xA2CA
+#define SYSCALL_68K_SYS_EV_GROUP_WAIT 0xA2CB
 
-#define syscall68kEvtEventAvail 0xA2CC
-#define syscall68kEvtSysEventAvail 0xA2CD
-#define syscall68kStrNCopy 0xA2CE
+#define SYSCALL_68K_EVT_EVENT_AVAIL 0xA2CC
+#define SYSCALL_68K_EVT_SYS_EVENT_AVAIL 0xA2CD
+#define SYSCALL_68K_STR_N_COPY 0xA2CE
 
-#define syscall68kKeySetMask 0xA2CF
+#define SYSCALL_68K_KEY_SET_MASK 0xA2CF
 
-#define syscall68kSelectDay 0xA2D0
+#define SYSCALL_68K_SELECT_DAY 0xA2D0
 
-#define syscall68kPrefGetPreference 0xA2D1
-#define syscall68kPrefSetPreference 0xA2D2
-#define syscall68kPrefGetAppPreferences 0xA2D3
-#define syscall68kPrefSetAppPreferences 0xA2D4
+#define SYSCALL_68K_PREF_GET_PREFERENCE 0xA2D1
+#define SYSCALL_68K_PREF_SET_PREFERENCE 0xA2D2
+#define SYSCALL_68K_PREF_GET_APP_PREFERENCES 0xA2D3
+#define SYSCALL_68K_PREF_SET_APP_PREFERENCES 0xA2D4
 
-#define syscall68kFrmPointInTitle 0xA2D5
+#define SYSCALL_68K_FRM_POINT_IN_TITLE 0xA2D5
 
-#define syscall68kStrNCat 0xA2D6
+#define SYSCALL_68K_STR_N_CAT 0xA2D6
 
-#define syscall68kMemCmp 0xA2D7
+#define SYSCALL_68K_MEM_CMP 0xA2D7
 
-#define syscall68kTblSetColumnEditIndicator 0xA2D8
+#define SYSCALL_68K_TBL_SET_COLUMN_EDIT_INDICATOR 0xA2D8
 
-#define syscall68kFntWordWrap 0xA2D9
+#define SYSCALL_68K_FNT_WORD_WRAP 0xA2D9
 
-#define syscall68kFldGetScrollValues 0xA2DA
+#define SYSCALL_68K_FLD_GET_SCROLL_VALUES 0xA2DA
 
-#define syscall68kSysCreateDataBaseList 0xA2DB
-#define syscall68kSysCreatePanelList 0xA2DC
+#define SYSCALL_68K_SYS_CREATE_DATA_BASE_LIST 0xA2DB
+#define SYSCALL_68K_SYS_CREATE_PANEL_LIST 0xA2DC
 
-#define syscall68kDlkDispatchRequest 0xA2DD
+#define SYSCALL_68K_DLK_DISPATCH_REQUEST 0xA2DD
 
-#define syscall68kStrPrintF 0xA2DE
-#define syscall68kStrVPrintF 0xA2DF
+#define SYSCALL_68K_STR_PRINT_F 0xA2DE
+#define SYSCALL_68K_STR_V_PRINT_F 0xA2DF
 
-#define syscall68kPrefOpenPreferenceDB 0xA2E0
+#define SYSCALL_68K_PREF_OPEN_PREFERENCE_DB 0xA2E0
 
-#define syscall68kSysGraffitiReferenceDialog 0xA2E1
+#define SYSCALL_68K_SYS_GRAFFITI_REFERENCE_DIALOG 0xA2E1
 
-#define syscall68kSysKeyboardDialog 0xA2E2
+#define SYSCALL_68K_SYS_KEYBOARD_DIALOG 0xA2E2
 
-#define syscall68kFntWordWrapReverseNLines 0xA2E3
-#define syscall68kFntGetScrollValues 0xA2E4
+#define SYSCALL_68K_FNT_WORD_WRAP_REVERSE_N_LINES 0xA2E3
+#define SYSCALL_68K_FNT_GET_SCROLL_VALUES 0xA2E4
 
-#define syscall68kTblSetRowStaticHeight 0xA2E5
-#define syscall68kTblHasScrollBar 0xA2E6
+#define SYSCALL_68K_TBL_SET_ROW_STATIC_HEIGHT 0xA2E5
+#define SYSCALL_68K_TBL_HAS_SCROLL_BAR 0xA2E6
 
-#define syscall68kSclGetScrollBar 0xA2E7
+#define SYSCALL_68K_SCL_GET_SCROLL_BAR 0xA2E7
 
-#define syscall68kFldGetNumberOfBlankLines 0xA2E8
+#define SYSCALL_68K_FLD_GET_NUMBER_OF_BLANK_LINES 0xA2E8
 
-#define syscall68kSysTicksPerSecond 0xA2E9
-#define syscall68kHwrBacklightV33 0xA2EA /* This trap obsoleted for OS 3.5 and later */
-#define syscall68kDmDatabaseProtect 0xA2EB
+#define SYSCALL_68K_SYS_TICKS_PER_SECOND 0xA2E9
+#define SYSCALL_68K_HWR_BACKLIGHT_V33 0xA2EA /* This trap obsoleted for OS 3.5 and later */
+#define SYSCALL_68K_DM_DATABASE_PROTECT 0xA2EB
 
-#define syscall68kTblSetBounds 0xA2EC
+#define SYSCALL_68K_TBL_SET_BOUNDS 0xA2EC
 
-#define syscall68kStrNCompare 0xA2ED
-#define syscall68kStrNCaselessCompare 0xA2EE
+#define SYSCALL_68K_STR_N_COMPARE 0xA2ED
+#define SYSCALL_68K_STR_N_CASELESS_COMPARE 0xA2EE
 
-#define syscall68kPhoneNumberLookup 0xA2EF
+#define SYSCALL_68K_PHONE_NUMBER_LOOKUP 0xA2EF
 
-#define syscall68kFrmSetMenu 0xA2F0
+#define SYSCALL_68K_FRM_SET_MENU 0xA2F0
 
-#define syscall68kEncDigestMD5 0xA2F1
+#define SYSCALL_68K_ENC_DIGEST_MD5 0xA2F1
 
-#define syscall68kDmFindSortPosition 0xA2F2
+#define SYSCALL_68K_DM_FIND_SORT_POSITION 0xA2F2
 
-#define syscall68kSysBinarySearch 0xA2F3
-#define syscall68kSysErrString 0xA2F4
-#define syscall68kSysStringByIndex 0xA2F5
+#define SYSCALL_68K_SYS_BINARY_SEARCH 0xA2F3
+#define SYSCALL_68K_SYS_ERR_STRING 0xA2F4
+#define SYSCALL_68K_SYS_STRING_BY_INDEX 0xA2F5
 
-#define syscall68kEvtAddUniqueEventToQueue 0xA2F6
+#define SYSCALL_68K_EVT_ADD_UNIQUE_EVENT_TO_QUEUE 0xA2F6
 
-#define syscall68kStrLocalizeNumber 0xA2F7
-#define syscall68kStrDelocalizeNumber 0xA2F8
-#define syscall68kLocGetNumberSeparators 0xA2F9
+#define SYSCALL_68K_STR_LOCALIZE_NUMBER 0xA2F7
+#define SYSCALL_68K_STR_DELOCALIZE_NUMBER 0xA2F8
+#define SYSCALL_68K_LOC_GET_NUMBER_SEPARATORS 0xA2F9
 
-#define syscall68kMenuSetActiveMenuRscID 0xA2FA
+#define SYSCALL_68K_MENU_SET_ACTIVE_MENU_RSC_ID 0xA2FA
 
-#define syscall68kLstScrollList 0xA2FB
+#define SYSCALL_68K_LST_SCROLL_LIST 0xA2FB
 
-#define syscall68kCategoryInitialize 0xA2FC
+#define SYSCALL_68K_CATEGORY_INITIALIZE 0xA2FC
 
-#define syscall68kEncDigestMD4 0xA2FD
-#define syscall68kEncDES 0xA2FE
+#define SYSCALL_68K_ENC_DIGEST_MD4 0xA2FD
+#define SYSCALL_68K_ENC_DES 0xA2FE
 
-#define syscall68kLstGetVisibleItems 0xA2FF
+#define SYSCALL_68K_LST_GET_VISIBLE_ITEMS 0xA2FF
 
-#define syscall68kWinSetBounds 0xA300
+#define SYSCALL_68K_WIN_SET_BOUNDS 0xA300
 
-#define syscall68kCategorySetName 0xA301
+#define SYSCALL_68K_CATEGORY_SET_NAME 0xA301
 
-#define syscall68kFldSetInsertionPoint 0xA302
+#define SYSCALL_68K_FLD_SET_INSERTION_POINT 0xA302
 
-#define syscall68kFrmSetObjectBounds 0xA303
+#define SYSCALL_68K_FRM_SET_OBJECT_BOUNDS 0xA303
 
-#define syscall68kWinSetColors 0xA304
+#define SYSCALL_68K_WIN_SET_COLORS 0xA304
 
-#define syscall68kFlpDispatch 0xA305
-#define syscall68kFlpEmDispatch 0xA306
+#define SYSCALL_68K_FLP_DISPATCH 0xA305
+#define SYSCALL_68K_FLP_EM_DISPATCH 0xA306
 
 // Palm OS 3.0 traps					Palm III and 3.0 Upgrade Card
 
-#define syscall68kExgInit 0xA307
-#define syscall68kExgConnect 0xA308
-#define syscall68kExgPut 0xA309
-#define syscall68kExgGet 0xA30A
-#define syscall68kExgAccept 0xA30B
-#define syscall68kExgDisconnect 0xA30C
-#define syscall68kExgSend 0xA30D
-#define syscall68kExgReceive 0xA30E
-#define syscall68kExgRegisterData 0xA30F
-#define syscall68kExgNotifyReceiveV35 0xA310
-#define syscall68kSysReserved30Trap2 \
-    0xA311 /* "Reserved" trap in Palm OS 3.0 and later (was syscall68kExgControl) */
+#define SYSCALL_68K_EXG_INIT 0xA307
+#define SYSCALL_68K_EXG_CONNECT 0xA308
+#define SYSCALL_68K_EXG_PUT 0xA309
+#define SYSCALL_68K_EXG_GET 0xA30A
+#define SYSCALL_68K_EXG_ACCEPT 0xA30B
+#define SYSCALL_68K_EXG_DISCONNECT 0xA30C
+#define SYSCALL_68K_EXG_SEND 0xA30D
+#define SYSCALL_68K_EXG_RECEIVE 0xA30E
+#define SYSCALL_68K_EXG_REGISTER_DATA 0xA30F
+#define SYSCALL_68K_EXG_NOTIFY_RECEIVE_V35 0xA310
+#define SYSCALL_68K_SYS_RESERVED30_TRAP2 \
+    0xA311 /* "Reserved" trap in Palm OS 3.0 and later (was SYSCALL_68K_EXG_CONTROL) */
 
-#define syscall68kPrgStartDialogV31 0xA312 /* Updated in v3.2 */
-#define syscall68kPrgStopDialog 0xA313
-#define syscall68kPrgUpdateDialog 0xA314
-#define syscall68kPrgHandleEvent 0xA315
+#define SYSCALL_68K_PRG_START_DIALOG_V31 0xA312 /* Updated in v3.2 */
+#define SYSCALL_68K_PRG_STOP_DIALOG 0xA313
+#define SYSCALL_68K_PRG_UPDATE_DIALOG 0xA314
+#define SYSCALL_68K_PRG_HANDLE_EVENT 0xA315
 
-#define syscall68kImcReadFieldNoSemicolon 0xA316
-#define syscall68kImcReadFieldQuotablePrintable 0xA317
-#define syscall68kImcReadPropertyParameter 0xA318
-#define syscall68kImcSkipAllPropertyParameters 0xA319
-#define syscall68kImcReadWhiteSpace 0xA31A
-#define syscall68kImcWriteQuotedPrintable 0xA31B
-#define syscall68kImcWriteNoSemicolon 0xA31C
-#define syscall68kImcStringIsAscii 0xA31D
+#define SYSCALL_68K_IMC_READ_FIELD_NO_SEMICOLON 0xA316
+#define SYSCALL_68K_IMC_READ_FIELD_QUOTABLE_PRINTABLE 0xA317
+#define SYSCALL_68K_IMC_READ_PROPERTY_PARAMETER 0xA318
+#define SYSCALL_68K_IMC_SKIP_ALL_PROPERTY_PARAMETERS 0xA319
+#define SYSCALL_68K_IMC_READ_WHITE_SPACE 0xA31A
+#define SYSCALL_68K_IMC_WRITE_QUOTED_PRINTABLE 0xA31B
+#define SYSCALL_68K_IMC_WRITE_NO_SEMICOLON 0xA31C
+#define SYSCALL_68K_IMC_STRING_IS_ASCII 0xA31D
 
-#define syscall68kTblGetItemFont 0xA31E
-#define syscall68kTblSetItemFont 0xA31F
+#define SYSCALL_68K_TBL_GET_ITEM_FONT 0xA31E
+#define SYSCALL_68K_TBL_SET_ITEM_FONT 0xA31F
 
-#define syscall68kFontSelect 0xA320
-#define syscall68kFntDefineFont 0xA321
+#define SYSCALL_68K_FONT_SELECT 0xA320
+#define SYSCALL_68K_FNT_DEFINE_FONT 0xA321
 
-#define syscall68kCategoryEdit 0xA322
+#define SYSCALL_68K_CATEGORY_EDIT 0xA322
 
-#define syscall68kSysGetOSVersionString 0xA323
-#define syscall68kSysBatteryInfo 0xA324
-#define syscall68kSysUIBusy 0xA325
+#define SYSCALL_68K_SYS_GET_OS_VERSION_STRING 0xA323
+#define SYSCALL_68K_SYS_BATTERY_INFO 0xA324
+#define SYSCALL_68K_SYS_UI_BUSY 0xA325
 
-#define syscall68kWinValidateHandle 0xA326
-#define syscall68kFrmValidatePtr 0xA327
-#define syscall68kCtlValidatePointer 0xA328
-#define syscall68kWinMoveWindowAddr 0xA329
-#define syscall68kFrmAddSpaceForObject 0xA32A
-#define syscall68kFrmNewForm 0xA32B
-#define syscall68kCtlNewControl 0xA32C
-#define syscall68kFldNewField 0xA32D
-#define syscall68kLstNewList 0xA32E
-#define syscall68kFrmNewLabel 0xA32F
-#define syscall68kFrmNewBitmap 0xA330
-#define syscall68kFrmNewGadget 0xA331
+#define SYSCALL_68K_WIN_VALIDATE_HANDLE 0xA326
+#define SYSCALL_68K_FRM_VALIDATE_PTR 0xA327
+#define SYSCALL_68K_CTL_VALIDATE_POINTER 0xA328
+#define SYSCALL_68K_WIN_MOVE_WINDOW_ADDR 0xA329
+#define SYSCALL_68K_FRM_ADD_SPACE_FOR_OBJECT 0xA32A
+#define SYSCALL_68K_FRM_NEW_FORM 0xA32B
+#define SYSCALL_68K_CTL_NEW_CONTROL 0xA32C
+#define SYSCALL_68K_FLD_NEW_FIELD 0xA32D
+#define SYSCALL_68K_LST_NEW_LIST 0xA32E
+#define SYSCALL_68K_FRM_NEW_LABEL 0xA32F
+#define SYSCALL_68K_FRM_NEW_BITMAP 0xA330
+#define SYSCALL_68K_FRM_NEW_GADGET 0xA331
 
-#define syscall68kFileOpen 0xA332
-#define syscall68kFileClose 0xA333
-#define syscall68kFileDelete 0xA334
-#define syscall68kFileReadLow 0xA335
-#define syscall68kFileWrite 0xA336
-#define syscall68kFileSeek 0xA337
-#define syscall68kFileTell 0xA338
-#define syscall68kFileTruncate 0xA339
-#define syscall68kFileControl 0xA33A
+#define SYSCALL_68K_FILE_OPEN 0xA332
+#define SYSCALL_68K_FILE_CLOSE 0xA333
+#define SYSCALL_68K_FILE_DELETE 0xA334
+#define SYSCALL_68K_FILE_READ_LOW 0xA335
+#define SYSCALL_68K_FILE_WRITE 0xA336
+#define SYSCALL_68K_FILE_SEEK 0xA337
+#define SYSCALL_68K_FILE_TELL 0xA338
+#define SYSCALL_68K_FILE_TRUNCATE 0xA339
+#define SYSCALL_68K_FILE_CONTROL 0xA33A
 
-#define syscall68kFrmActiveState 0xA33B
+#define SYSCALL_68K_FRM_ACTIVE_STATE 0xA33B
 
-#define syscall68kSysGetAppInfo 0xA33C
-#define syscall68kSysGetStackInfo 0xA33D
+#define SYSCALL_68K_SYS_GET_APP_INFO 0xA33C
+#define SYSCALL_68K_SYS_GET_STACK_INFO 0xA33D
 
-#define syscall68kWinScreenMode 0xA33E     /* was syscall68kScrDisplayMode */
-#define syscall68kHwrLCDGetDepthV33 0xA33F /* This trap obsoleted for OS 3.5 and later */
-#define syscall68kHwrGetROMToken 0xA340
+#define SYSCALL_68K_WIN_SCREEN_MODE 0xA33E       /* was SYSCALL_68K_SCR_DISPLAY_MODE */
+#define SYSCALL_68K_HWR_LCD_GET_DEPTH_V33 0xA33F /* This trap obsoleted for OS 3.5 and later */
+#define SYSCALL_68K_HWR_GET_ROM_TOKEN 0xA340
 
-#define syscall68kDbgControl 0xA341
+#define SYSCALL_68K_DBG_CONTROL 0xA341
 
-#define syscall68kExgDBRead 0xA342
-#define syscall68kExgDBWrite 0xA343
+#define SYSCALL_68K_EXG_DB_READ 0xA342
+#define SYSCALL_68K_EXG_DB_WRITE 0xA343
 
-#define syscall68kHostControl \
-    0xA344 /* Renamed from syscall68kSysGremlins, functionality generalized */
-#define syscall68kFrmRemoveObject 0xA345
+#define SYSCALL_68K_HOST_CONTROL \
+    0xA344 /* Renamed from SYSCALL_68K_SYS_GREMLINS, functionality generalized */
+#define SYSCALL_68K_FRM_REMOVE_OBJECT 0xA345
 
-#define syscall68kSysReserved30Trap1 \
-    0xA346 /* "Reserved" trap in Palm OS 3.0 and later (was syscall68kSysReserved1) */
+#define SYSCALL_68K_SYS_RESERVED30_TRAP1 \
+    0xA346 /* "Reserved" trap in Palm OS 3.0 and later (was SYSCALL_68K_SYS_RESERVED1) */
 
 // NOTE: The following two traps are reserved for future mgrs
 // that may or may not be present on any particular device.
 // They are NOT present by default; code must check first!
-#define syscall68kExpansionDispatch \
-    0xA347 /* Reserved for ExpansionMgr (was syscall68kSysReserved2) */
-#define syscall68kFileSystemDispatch                                  \
-    0xA348 /* Reserved for FileSystemMgr (was syscall68kSysReserved3) \
+#define SYSCALL_68K_EXPANSION_DISPATCH \
+    0xA347 /* Reserved for ExpansionMgr (was SYSCALL_68K_SYS_RESERVED2) */
+#define SYSCALL_68K_FILE_SYSTEM_DISPATCH                                 \
+    0xA348 /* Reserved for FileSystemMgr (was SYSCALL_68K_SYS_RESERVED3) \
             */
 
-#define syscall68kOEMDispatch \
-    0xA349 /* OEM trap in Palm OS 3.0 and later trap table (formerly syscall68kSysReserved4) */
+#define SYSCALL_68K_OEM_DISPATCH \
+    0xA349 /* OEM trap in Palm OS 3.0 and later trap table (formerly SYSCALL_68K_SYS_RESERVED4) */
 
 // Palm OS 3.1 traps					Palm IIIx and Palm V
 
-#define syscall68kHwrLCDContrastV33 0xA34A /* This trap obsoleted for OS 3.5 and later */
-#define syscall68kSysLCDContrast 0xA34B
-#define syscall68kUIContrastAdjust 0xA34C /* Renamed from syscall68kContrastAdjust */
-#define syscall68kHwrDockStatus 0xA34D
+#define SYSCALL_68K_HWR_LCD_CONTRAST_V33 0xA34A /* This trap obsoleted for OS 3.5 and later */
+#define SYSCALL_68K_SYS_LCD_CONTRAST 0xA34B
+#define SYSCALL_68K_UI_CONTRAST_ADJUST 0xA34C /* Renamed from SYSCALL_68K_CONTRAST_ADJUST */
+#define SYSCALL_68K_HWR_DOCK_STATUS 0xA34D
 
-#define syscall68kFntWidthToOffset 0xA34E
-#define syscall68kSelectOneTime 0xA34F
-#define syscall68kWinDrawChar 0xA350
-#define syscall68kWinDrawTruncChars 0xA351
+#define SYSCALL_68K_FNT_WIDTH_TO_OFFSET 0xA34E
+#define SYSCALL_68K_SELECT_ONE_TIME 0xA34F
+#define SYSCALL_68K_WIN_DRAW_CHAR 0xA350
+#define SYSCALL_68K_WIN_DRAW_TRUNC_CHARS 0xA351
 
-#define syscall68kSysNotifyInit 0xA352 /* Notification Manager traps */
-#define syscall68kSysNotifyRegister 0xA353
-#define syscall68kSysNotifyUnregister 0xA354
-#define syscall68kSysNotifyBroadcast 0xA355
-#define syscall68kSysNotifyBroadcastDeferred 0xA356
-#define syscall68kSysNotifyDatabaseAdded 0xA357
-#define syscall68kSysNotifyDatabaseRemoved 0xA358
+#define SYSCALL_68K_SYS_NOTIFY_INIT 0xA352 /* Notification Manager traps */
+#define SYSCALL_68K_SYS_NOTIFY_REGISTER 0xA353
+#define SYSCALL_68K_SYS_NOTIFY_UNREGISTER 0xA354
+#define SYSCALL_68K_SYS_NOTIFY_BROADCAST 0xA355
+#define SYSCALL_68K_SYS_NOTIFY_BROADCAST_DEFERRED 0xA356
+#define SYSCALL_68K_SYS_NOTIFY_DATABASE_ADDED 0xA357
+#define SYSCALL_68K_SYS_NOTIFY_DATABASE_REMOVED 0xA358
 
-#define syscall68kSysWantEvent 0xA359
+#define SYSCALL_68K_SYS_WANT_EVENT 0xA359
 
-#define syscall68kFtrPtrNew 0xA35A
-#define syscall68kFtrPtrFree 0xA35B
-#define syscall68kFtrPtrResize 0xA35C
+#define SYSCALL_68K_FTR_PTR_NEW 0xA35A
+#define SYSCALL_68K_FTR_PTR_FREE 0xA35B
+#define SYSCALL_68K_FTR_PTR_RESIZE 0xA35C
 
-#define syscall68kSysReserved31Trap1 \
-    0xA35D /* "Reserved" trap in Palm OS 3.1 and later (was syscall68kSysReserved5) */
+#define SYSCALL_68K_SYS_RESERVED31_TRAP1 \
+    0xA35D /* "Reserved" trap in Palm OS 3.1 and later (was SYSCALL_68K_SYS_RESERVED5) */
 
 // Palm OS 3.2 & 3.3 traps		Palm VII (3.2) and Fall '99 Palm OS Flash Update (3.3)
 
-#define syscall68kHwrNVPrefSet 0xA35E /* mapped to FlashParmsWrite */
-#define syscall68kHwrNVPrefGet 0xA35F /* mapped to FlashParmsRead */
-#define syscall68kFlashInit 0xA360
-#define syscall68kFlashCompress 0xA361
-#define syscall68kFlashErase 0xA362
-#define syscall68kFlashProgram 0xA363
+#define SYSCALL_68K_HWR_NV_PREF_SET 0xA35E /* mapped to FlashParmsWrite */
+#define SYSCALL_68K_HWR_NV_PREF_GET 0xA35F /* mapped to FlashParmsRead */
+#define SYSCALL_68K_FLASH_INIT 0xA360
+#define SYSCALL_68K_FLASH_COMPRESS 0xA361
+#define SYSCALL_68K_FLASH_ERASE 0xA362
+#define SYSCALL_68K_FLASH_PROGRAM 0xA363
 
-#define syscall68kAlmTimeChange 0xA364
-#define syscall68kErrAlertCustom 0xA365
-#define syscall68kPrgStartDialog 0xA366 /* New version of syscall68kPrgStartDialogV31 */
+#define SYSCALL_68K_ALM_TIME_CHANGE 0xA364
+#define SYSCALL_68K_ERR_ALERT_CUSTOM 0xA365
+#define SYSCALL_68K_PRG_START_DIALOG 0xA366 /* New version of SYSCALL_68K_PRG_START_DIALOG_V31 */
 
-#define syscall68kSerialDispatch 0xA367
-#define syscall68kHwrBattery 0xA368
-#define syscall68kDmGetDatabaseLockState 0xA369
+#define SYSCALL_68K_SERIAL_DISPATCH 0xA367
+#define SYSCALL_68K_HWR_BATTERY 0xA368
+#define SYSCALL_68K_DM_GET_DATABASE_LOCK_STATE 0xA369
 
-#define syscall68kCncGetProfileList 0xA36A
-#define syscall68kCncGetProfileInfo 0xA36B
-#define syscall68kCncAddProfile 0xA36C
-#define syscall68kCncDeleteProfile 0xA36D
+#define SYSCALL_68K_CNC_GET_PROFILE_LIST 0xA36A
+#define SYSCALL_68K_CNC_GET_PROFILE_INFO 0xA36B
+#define SYSCALL_68K_CNC_ADD_PROFILE 0xA36C
+#define SYSCALL_68K_CNC_DELETE_PROFILE 0xA36D
 
-#define syscall68kSndPlaySmfResource 0xA36E
+#define SYSCALL_68K_SND_PLAY_SMF_RESOURCE 0xA36E
 
-#define syscall68kMemPtrDataStorage 0xA36F /* Never actually installed until now. */
+#define SYSCALL_68K_MEM_PTR_DATA_STORAGE 0xA36F /* Never actually installed until now. */
 
-#define syscall68kClipboardAppendItem 0xA370
+#define SYSCALL_68K_CLIPBOARD_APPEND_ITEM 0xA370
 
-#define syscall68kWiCmdV32 0xA371 /* Code moved to INetLib; trap obsolete */
+#define SYSCALL_68K_WI_CMD_V32 0xA371 /* Code moved to INetLib; trap obsolete */
 
 // Palm OS 3.5 traps				Palm IIIc and other products
 
 // HAL Display-layer new traps
-#define syscall68kHwrDisplayAttributes 0xA372
-#define syscall68kHwrDisplayDoze 0xA373
-#define syscall68kHwrDisplayPalette 0xA374
+#define SYSCALL_68K_HWR_DISPLAY_ATTRIBUTES 0xA372
+#define SYSCALL_68K_HWR_DISPLAY_DOZE 0xA373
+#define SYSCALL_68K_HWR_DISPLAY_PALETTE 0xA374
 
 // Screen driver new traps
-#define syscall68kBltFindIndexes 0xA375
-#define syscall68kBmpGetBits 0xA376 /* was BltGetBitsAddr */
-#define syscall68kBltCopyRectangle 0xA377
-#define syscall68kBltDrawChars 0xA378
-#define syscall68kBltLineRoutine 0xA379
-#define syscall68kBltRectangleRoutine 0xA37A
+#define SYSCALL_68K_BLT_FIND_INDEXES 0xA375
+#define SYSCALL_68K_BMP_GET_BITS 0xA376 /* was BltGetBitsAddr */
+#define SYSCALL_68K_BLT_COPY_RECTANGLE 0xA377
+#define SYSCALL_68K_BLT_DRAW_CHARS 0xA378
+#define SYSCALL_68K_BLT_LINE_ROUTINE 0xA379
+#define SYSCALL_68K_BLT_RECTANGLE_ROUTINE 0xA37A
 
 // ScrUtils new traps
-#define syscall68kScrCompress 0xA37B
-#define syscall68kScrDecompress 0xA37C
+#define SYSCALL_68K_SCR_COMPRESS 0xA37B
+#define SYSCALL_68K_SCR_DECOMPRESS 0xA37C
 
 // System Manager new traps
-#define syscall68kSysLCDBrightness 0xA37D
+#define SYSCALL_68K_SYS_LCD_BRIGHTNESS 0xA37D
 
 // WindowColor new traps
-#define syscall68kWinPaintChar 0xA37E
-#define syscall68kWinPaintChars 0xA37F
-#define syscall68kWinPaintBitmap 0xA380
-#define syscall68kWinGetPixel 0xA381
-#define syscall68kWinPaintPixel 0xA382
-#define syscall68kWinDrawPixel 0xA383
-#define syscall68kWinErasePixel 0xA384
-#define syscall68kWinInvertPixel 0xA385
-#define syscall68kWinPaintPixels 0xA386
-#define syscall68kWinPaintLines 0xA387
-#define syscall68kWinPaintLine 0xA388
-#define syscall68kWinPaintRectangle 0xA389
-#define syscall68kWinPaintRectangleFrame 0xA38A
-#define syscall68kWinPaintPolygon 0xA38B
-#define syscall68kWinDrawPolygon 0xA38C
-#define syscall68kWinErasePolygon 0xA38D
-#define syscall68kWinInvertPolygon 0xA38E
-#define syscall68kWinFillPolygon 0xA38F
-#define syscall68kWinPaintArc 0xA390
-#define syscall68kWinDrawArc 0xA391
-#define syscall68kWinEraseArc 0xA392
-#define syscall68kWinInvertArc 0xA393
-#define syscall68kWinFillArc 0xA394
-#define syscall68kWinPushDrawState 0xA395
-#define syscall68kWinPopDrawState 0xA396
-#define syscall68kWinSetDrawMode 0xA397
-#define syscall68kWinSetForeColor 0xA398
-#define syscall68kWinSetBackColor 0xA399
-#define syscall68kWinSetTextColor 0xA39A
-#define syscall68kWinGetPatternType 0xA39B
-#define syscall68kWinSetPatternType 0xA39C
-#define syscall68kWinPalette 0xA39D
-#define syscall68kWinRGBToIndex 0xA39E
-#define syscall68kWinIndexToRGB 0xA39F
-#define syscall68kWinScreenLock 0xA3A0
-#define syscall68kWinScreenUnlock 0xA3A1
-#define syscall68kWinGetBitmap 0xA3A2
+#define SYSCALL_68K_WIN_PAINT_CHAR 0xA37E
+#define SYSCALL_68K_WIN_PAINT_CHARS 0xA37F
+#define SYSCALL_68K_WIN_PAINT_BITMAP 0xA380
+#define SYSCALL_68K_WIN_GET_PIXEL 0xA381
+#define SYSCALL_68K_WIN_PAINT_PIXEL 0xA382
+#define SYSCALL_68K_WIN_DRAW_PIXEL 0xA383
+#define SYSCALL_68K_WIN_ERASE_PIXEL 0xA384
+#define SYSCALL_68K_WIN_INVERT_PIXEL 0xA385
+#define SYSCALL_68K_WIN_PAINT_PIXELS 0xA386
+#define SYSCALL_68K_WIN_PAINT_LINES 0xA387
+#define SYSCALL_68K_WIN_PAINT_LINE 0xA388
+#define SYSCALL_68K_WIN_PAINT_RECTANGLE 0xA389
+#define SYSCALL_68K_WIN_PAINT_RECTANGLE_FRAME 0xA38A
+#define SYSCALL_68K_WIN_PAINT_POLYGON 0xA38B
+#define SYSCALL_68K_WIN_DRAW_POLYGON 0xA38C
+#define SYSCALL_68K_WIN_ERASE_POLYGON 0xA38D
+#define SYSCALL_68K_WIN_INVERT_POLYGON 0xA38E
+#define SYSCALL_68K_WIN_FILL_POLYGON 0xA38F
+#define SYSCALL_68K_WIN_PAINT_ARC 0xA390
+#define SYSCALL_68K_WIN_DRAW_ARC 0xA391
+#define SYSCALL_68K_WIN_ERASE_ARC 0xA392
+#define SYSCALL_68K_WIN_INVERT_ARC 0xA393
+#define SYSCALL_68K_WIN_FILL_ARC 0xA394
+#define SYSCALL_68K_WIN_PUSH_DRAW_STATE 0xA395
+#define SYSCALL_68K_WIN_POP_DRAW_STATE 0xA396
+#define SYSCALL_68K_WIN_SET_DRAW_MODE 0xA397
+#define SYSCALL_68K_WIN_SET_FORE_COLOR 0xA398
+#define SYSCALL_68K_WIN_SET_BACK_COLOR 0xA399
+#define SYSCALL_68K_WIN_SET_TEXT_COLOR 0xA39A
+#define SYSCALL_68K_WIN_GET_PATTERN_TYPE 0xA39B
+#define SYSCALL_68K_WIN_SET_PATTERN_TYPE 0xA39C
+#define SYSCALL_68K_WIN_PALETTE 0xA39D
+#define SYSCALL_68K_WIN_RGB_TO_INDEX 0xA39E
+#define SYSCALL_68K_WIN_INDEX_TO_RGB 0xA39F
+#define SYSCALL_68K_WIN_SCREEN_LOCK 0xA3A0
+#define SYSCALL_68K_WIN_SCREEN_UNLOCK 0xA3A1
+#define SYSCALL_68K_WIN_GET_BITMAP 0xA3A2
 
 // UIColor new traps
-#define syscall68kUIColorInit 0xA3A3
-#define syscall68kUIColorGetTableEntryIndex 0xA3A4
-#define syscall68kUIColorGetTableEntryRGB 0xA3A5
-#define syscall68kUIColorSetTableEntry 0xA3A6
-#define syscall68kUIColorPushTable 0xA3A7
-#define syscall68kUIColorPopTable 0xA3A8
+#define SYSCALL_68K_UI_COLOR_INIT 0xA3A3
+#define SYSCALL_68K_UI_COLOR_GET_TABLE_ENTRY_INDEX 0xA3A4
+#define SYSCALL_68K_UI_COLOR_GET_TABLE_ENTRY_RGB 0xA3A5
+#define SYSCALL_68K_UI_COLOR_SET_TABLE_ENTRY 0xA3A6
+#define SYSCALL_68K_UI_COLOR_PUSH_TABLE 0xA3A7
+#define SYSCALL_68K_UI_COLOR_POP_TABLE 0xA3A8
 
 // misc cleanup and API additions
 
-#define syscall68kCtlNewGraphicControl 0xA3A9
+#define SYSCALL_68K_CTL_NEW_GRAPHIC_CONTROL 0xA3A9
 
-#define syscall68kTblGetItemPtr 0xA3AA
+#define SYSCALL_68K_TBL_GET_ITEM_PTR 0xA3AA
 
-#define syscall68kUIBrightnessAdjust 0xA3AB
-#define syscall68kUIPickColor 0xA3AC
+#define SYSCALL_68K_UI_BRIGHTNESS_ADJUST 0xA3AB
+#define SYSCALL_68K_UI_PICK_COLOR 0xA3AC
 
-#define syscall68kEvtSetAutoOffTimer 0xA3AD
+#define SYSCALL_68K_EVT_SET_AUTO_OFF_TIMER 0xA3AD
 
 // Misc int'l/overlay support.
-#define syscall68kTsmDispatch 0xA3AE
-#define syscall68kOmDispatch 0xA3AF
-#define syscall68kDmOpenDBNoOverlay 0xA3B0
-#define syscall68kDmOpenDBWithLocale 0xA3B1
-#define syscall68kResLoadConstant 0xA3B2
+#define SYSCALL_68K_TSM_DISPATCH 0xA3AE
+#define SYSCALL_68K_OM_DISPATCH 0xA3AF
+#define SYSCALL_68K_DM_OPEN_DB_NO_OVERLAY 0xA3B0
+#define SYSCALL_68K_DM_OPEN_DB_WITH_LOCALE 0xA3B1
+#define SYSCALL_68K_RES_LOAD_CONSTANT 0xA3B2
 
 // new boot-time SmallROM HAL additions
-#define syscall68kHwrPreDebugInit 0xA3B3
-#define syscall68kHwrResetNMI 0xA3B4
-#define syscall68kHwrResetPWM 0xA3B5
+#define SYSCALL_68K_HWR_PRE_DEBUG_INIT 0xA3B3
+#define SYSCALL_68K_HWR_RESET_NMI 0xA3B4
+#define SYSCALL_68K_HWR_RESET_PWM 0xA3B5
 
-#define syscall68kKeyBootKeys 0xA3B6
+#define SYSCALL_68K_KEY_BOOT_KEYS 0xA3B6
 
-#define syscall68kDbgSerDrvOpen 0xA3B7
-#define syscall68kDbgSerDrvClose 0xA3B8
-#define syscall68kDbgSerDrvControl 0xA3B9
-#define syscall68kDbgSerDrvStatus 0xA3BA
-#define syscall68kDbgSerDrvWriteChar 0xA3BB
-#define syscall68kDbgSerDrvReadChar 0xA3BC
+#define SYSCALL_68K_DBG_SER_DRV_OPEN 0xA3B7
+#define SYSCALL_68K_DBG_SER_DRV_CLOSE 0xA3B8
+#define SYSCALL_68K_DBG_SER_DRV_CONTROL 0xA3B9
+#define SYSCALL_68K_DBG_SER_DRV_STATUS 0xA3BA
+#define SYSCALL_68K_DBG_SER_DRV_WRITE_CHAR 0xA3BB
+#define SYSCALL_68K_DBG_SER_DRV_READ_CHAR 0xA3BC
 
 // new boot-time BigROM HAL additions
-#define syscall68kHwrPostDebugInit 0xA3BD
-#define syscall68kHwrIdentifyFeatures 0xA3BE
-#define syscall68kHwrModelSpecificInit 0xA3BF
-#define syscall68kHwrModelInitStage2 0xA3C0
-#define syscall68kHwrInterruptsInit 0xA3C1
+#define SYSCALL_68K_HWR_POST_DEBUG_INIT 0xA3BD
+#define SYSCALL_68K_HWR_IDENTIFY_FEATURES 0xA3BE
+#define SYSCALL_68K_HWR_MODEL_SPECIFIC_INIT 0xA3BF
+#define SYSCALL_68K_HWR_MODEL_INIT_STAGE2 0xA3C0
+#define SYSCALL_68K_HWR_INTERRUPTS_INIT 0xA3C1
 
-#define syscall68kHwrSoundOn 0xA3C2
-#define syscall68kHwrSoundOff 0xA3C3
+#define SYSCALL_68K_HWR_SOUND_ON 0xA3C2
+#define SYSCALL_68K_HWR_SOUND_OFF 0xA3C3
 
 // Kernel clock tick routine
-#define syscall68kSysKernelClockTick 0xA3C4
+#define SYSCALL_68K_SYS_KERNEL_CLOCK_TICK 0xA3C4
 
 // MenuEraseMenu is exposed as of PalmOS 3.5, but there are
 // no public interfaces for it yet.	 Perhaps in a later release.
-#define syscall68kMenuEraseMenu 0xA3C5
+#define SYSCALL_68K_MENU_ERASE_MENU 0xA3C5
 
-#define syscall68kSelectTime 0xA3C6
+#define SYSCALL_68K_SELECT_TIME 0xA3C6
 
 // Menu Command Bar traps
-#define syscall68kMenuCmdBarAddButton 0xA3C7
-#define syscall68kMenuCmdBarGetButtonData 0xA3C8
-#define syscall68kMenuCmdBarDisplay 0xA3C9
+#define SYSCALL_68K_MENU_CMD_BAR_ADD_BUTTON 0xA3C7
+#define SYSCALL_68K_MENU_CMD_BAR_GET_BUTTON_DATA 0xA3C8
+#define SYSCALL_68K_MENU_CMD_BAR_DISPLAY 0xA3C9
 
 // Silkscreen info
-#define syscall68kHwrGetSilkscreenID 0xA3CA
-#define syscall68kEvtGetSilkscreenAreaList 0xA3CB
+#define SYSCALL_68K_HWR_GET_SILKSCREEN_ID 0xA3CA
+#define SYSCALL_68K_EVT_GET_SILKSCREEN_AREA_LIST 0xA3CB
 
-#define syscall68kSysFatalAlertInit 0xA3CC
-#define syscall68kDateTemplateToAscii 0xA3CD
+#define SYSCALL_68K_SYS_FATAL_ALERT_INIT 0xA3CC
+#define SYSCALL_68K_DATE_TEMPLATE_TO_ASCII 0xA3CD
 
 // New traps dealing with masking private records
-#define syscall68kSecVerifyPW 0xA3CE
-#define syscall68kSecSelectViewStatus 0xA3CF
-#define syscall68kTblSetColumnMasked 0xA3D0
-#define syscall68kTblSetRowMasked 0xA3D1
-#define syscall68kTblRowMasked 0xA3D2
+#define SYSCALL_68K_SEC_VERIFY_PW 0xA3CE
+#define SYSCALL_68K_SEC_SELECT_VIEW_STATUS 0xA3CF
+#define SYSCALL_68K_TBL_SET_COLUMN_MASKED 0xA3D0
+#define SYSCALL_68K_TBL_SET_ROW_MASKED 0xA3D1
+#define SYSCALL_68K_TBL_ROW_MASKED 0xA3D2
 
 // New form trap for dialogs with text entry field
-#define syscall68kFrmCustomResponseAlert 0xA3D3
-#define syscall68kFrmNewGsi 0xA3D4
+#define SYSCALL_68K_FRM_CUSTOM_RESPONSE_ALERT 0xA3D3
+#define SYSCALL_68K_FRM_NEW_GSI 0xA3D4
 
 // New dynamic menu functions
-#define syscall68kMenuShowItem 0xA3D5
-#define syscall68kMenuHideItem 0xA3D6
-#define syscall68kMenuAddItem 0xA3D7
+#define SYSCALL_68K_MENU_SHOW_ITEM 0xA3D5
+#define SYSCALL_68K_MENU_HIDE_ITEM 0xA3D6
+#define SYSCALL_68K_MENU_ADD_ITEM 0xA3D7
 
 // New form traps for "smart gadgets"
-#define syscall68kFrmSetGadgetHandler 0xA3D8
+#define SYSCALL_68K_FRM_SET_GADGET_HANDLER 0xA3D8
 
 // More new control functions
-#define syscall68kCtlSetGraphics 0xA3D9
-#define syscall68kCtlGetSliderValues 0xA3DA
-#define syscall68kCtlSetSliderValues 0xA3DB
-#define syscall68kCtlNewSliderControl 0xA3DC
+#define SYSCALL_68K_CTL_SET_GRAPHICS 0xA3D9
+#define SYSCALL_68K_CTL_GET_SLIDER_VALUES 0xA3DA
+#define SYSCALL_68K_CTL_SET_SLIDER_VALUES 0xA3DB
+#define SYSCALL_68K_CTL_NEW_SLIDER_CONTROL 0xA3DC
 
 // Bitmap manager functions
-#define syscall68kBmpCreate 0xA3DD
-#define syscall68kBmpDelete 0xA3DE
-#define syscall68kBmpCompress 0xA3DF
-// syscall68kBmpGetBits defined in Screen driver traps
-#define syscall68kBmpGetColortable 0xA3E0
-#define syscall68kBmpSize 0xA3E1
-#define syscall68kBmpBitsSize 0xA3E2
-#define syscall68kBmpColortableSize 0xA3E3
+#define SYSCALL_68K_BMP_CREATE 0xA3DD
+#define SYSCALL_68K_BMP_DELETE 0xA3DE
+#define SYSCALL_68K_BMP_COMPRESS 0xA3DF
+// SYSCALL_68K_BMP_GET_BITS defined in Screen driver traps
+#define SYSCALL_68K_BMP_GET_COLORTABLE 0xA3E0
+#define SYSCALL_68K_BMP_SIZE 0xA3E1
+#define SYSCALL_68K_BMP_BITS_SIZE 0xA3E2
+#define SYSCALL_68K_BMP_COLORTABLE_SIZE 0xA3E3
 // extra window namager
-#define syscall68kWinCreateBitmapWindow 0xA3E4
+#define SYSCALL_68K_WIN_CREATE_BITMAP_WINDOW 0xA3E4
 // Ask for a null event sooner (replaces a macro which Poser hated)
-#define syscall68kEvtSetNullEventTick 0xA3E5
+#define SYSCALL_68K_EVT_SET_NULL_EVENT_TICK 0xA3E5
 
 // Exchange manager call to allow apps to select destination categories
-#define syscall68kExgDoDialog 0xA3E6
+#define SYSCALL_68K_EXG_DO_DIALOG 0xA3E6
 
 // this call will remove temporary UI like popup lists
-#define syscall68kSysUICleanup 0xA3E7
+#define SYSCALL_68K_SYS_UI_CLEANUP 0xA3E7
 
 // The following 4 traps were "Reserved" traps, present only in SOME post-release builds of Palm
 // OS 3.5
-#define syscall68kWinSetForeColorRGB 0xA3E8
-#define syscall68kWinSetBackColorRGB 0xA3E9
-#define syscall68kWinSetTextColorRGB 0xA3EA
-#define syscall68kWinGetPixelRGB 0xA3EB
+#define SYSCALL_68K_WIN_SET_FORE_COLOR_RGB 0xA3E8
+#define SYSCALL_68K_WIN_SET_BACK_COLOR_RGB 0xA3E9
+#define SYSCALL_68K_WIN_SET_TEXT_COLOR_RGB 0xA3EA
+#define SYSCALL_68K_WIN_GET_PIXEL_RGB 0xA3EB
 
 // TRAPS ABOVE THIS POINT CAN NOT CHANGE BECAUSE THEY HAVE
 // BEEN RELEASED TO CUSTOMERS IN SHIPPING ROMS AND SDKS.
@@ -1231,10 +1233,10 @@
 // with MAIN sources, new traps that are added for products that precede
 // 4.0 MUST insert their traps BEFORE this section.
 
-#define syscall68kSysReserved40Trap1 0xA3EC
-#define syscall68kSysReserved40Trap2 0xA3ED
-#define syscall68kSysReserved40Trap3 0xA3EE
-#define syscall68kSysReserved40Trap4 0xA3EF
+#define SYSCALL_68K_SYS_RESERVED40_TRAP1 0xA3EC
+#define SYSCALL_68K_SYS_RESERVED40_TRAP2 0xA3ED
+#define SYSCALL_68K_SYS_RESERVED40_TRAP3 0xA3EE
+#define SYSCALL_68K_SYS_RESERVED40_TRAP4 0xA3EF
 
 // DO NOT CHANGE TRAPS ABOVE THIS LINE
 // THESE TRAPS HAVE BEEN RELEASED IN THE 3.5 SDK
@@ -1242,167 +1244,167 @@
 // THE ORDER IS NOT IMPORTANT AND CAN BE CHANGED.
 
 // New Trap selector added for New Connection Mgr API
-#define syscall68kCncMgrDispatch 0xA3F0
+#define SYSCALL_68K_CNC_MGR_DISPATCH 0xA3F0
 
 // new trap for notify from interrupt, implemented in SysEvtMgr.c
-#define syscall68kSysNotifyBroadcastFromInterrupt 0xA3F1
+#define SYSCALL_68K_SYS_NOTIFY_BROADCAST_FROM_INTERRUPT 0xA3F1
 
 // new trap for waking the UI without generating a null event
-#define syscall68kEvtWakeupWithoutNilEvent 0xA3F2
+#define SYSCALL_68K_EVT_WAKEUP_WITHOUT_NIL_EVENT 0xA3F2
 
 // new trap for doing stable, fast, 7-bit string compare
-#define syscall68kStrCompareAscii 0xA3F3
+#define SYSCALL_68K_STR_COMPARE_ASCII 0xA3F3
 
 // New trap for accessors available thru PalmOS glue
-#define syscall68kAccessorDispatch 0xA3F4
+#define SYSCALL_68K_ACCESSOR_DISPATCH 0xA3F4
 
-#define syscall68kBltGetPixel 0xA3F5
-#define syscall68kBltPaintPixel 0xA3F6
-#define syscall68kScrScreenInit 0xA3F7
-#define syscall68kScrUpdateScreenBitmap 0xA3F8
-#define syscall68kScrPalette 0xA3F9
-#define syscall68kScrGetColortable 0xA3FA
-#define syscall68kScrGetGrayPat 0xA3FB
-#define syscall68kScrScreenLock 0xA3FC
-#define syscall68kScrScreenUnlock 0xA3FD
-#define syscall68kFntPrvGetFontList 0xA3FE
+#define SYSCALL_68K_BLT_GET_PIXEL 0xA3F5
+#define SYSCALL_68K_BLT_PAINT_PIXEL 0xA3F6
+#define SYSCALL_68K_SCR_SCREEN_INIT 0xA3F7
+#define SYSCALL_68K_SCR_UPDATE_SCREEN_BITMAP 0xA3F8
+#define SYSCALL_68K_SCR_PALETTE 0xA3F9
+#define SYSCALL_68K_SCR_GET_COLORTABLE 0xA3FA
+#define SYSCALL_68K_SCR_GET_GRAY_PAT 0xA3FB
+#define SYSCALL_68K_SCR_SCREEN_LOCK 0xA3FC
+#define SYSCALL_68K_SCR_SCREEN_UNLOCK 0xA3FD
+#define SYSCALL_68K_FNT_PRV_GET_FONT_LIST 0xA3FE
 
 // Exchange manager functions
-#define syscall68kExgRegisterDatatype 0xA3FF
-#define syscall68kExgNotifyReceive 0xA400
-#define syscall68kExgNotifyGoto 0xA401
-#define syscall68kExgRequest 0xA402
-#define syscall68kExgSetDefaultApplication 0xA403
-#define syscall68kExgGetDefaultApplication 0xA404
-#define syscall68kExgGetTargetApplication 0xA405
-#define syscall68kExgGetRegisteredApplications 0xA406
-#define syscall68kExgGetRegisteredTypes 0xA407
-#define syscall68kExgNotifyPreview 0xA408
-#define syscall68kExgControl 0xA409
+#define SYSCALL_68K_EXG_REGISTER_DATATYPE 0xA3FF
+#define SYSCALL_68K_EXG_NOTIFY_RECEIVE 0xA400
+#define SYSCALL_68K_EXG_NOTIFY_GOTO 0xA401
+#define SYSCALL_68K_EXG_REQUEST 0xA402
+#define SYSCALL_68K_EXG_SET_DEFAULT_APPLICATION 0xA403
+#define SYSCALL_68K_EXG_GET_DEFAULT_APPLICATION 0xA404
+#define SYSCALL_68K_EXG_GET_TARGET_APPLICATION 0xA405
+#define SYSCALL_68K_EXG_GET_REGISTERED_APPLICATIONS 0xA406
+#define SYSCALL_68K_EXG_GET_REGISTERED_TYPES 0xA407
+#define SYSCALL_68K_EXG_NOTIFY_PREVIEW 0xA408
+#define SYSCALL_68K_EXG_CONTROL 0xA409
 
 // 04/30/00	CS - New Locale Manager handles access to region-specific info like date formats
-#define syscall68kLmDispatch 0xA40A
+#define SYSCALL_68K_LM_DISPATCH 0xA40A
 
 // 05/10/00 kwk - New Memory Manager trap for retrieving ROM NVParam values (sys use only)
-#define syscall68kMemGetRomNVParams 0xA40B
+#define SYSCALL_68K_MEM_GET_ROM_NV_PARAMS 0xA40B
 
 // 05/12/00 kwk - Safe character width Font Mgr call
-#define syscall68kFntWCharWidth 0xA40C
+#define SYSCALL_68K_FNT_W_CHAR_WIDTH 0xA40C
 
 // 05/17/00 kwk - Faster DmFindDatabase
-#define syscall68kDmFindDatabaseWithTypeCreator 0xA40D
+#define SYSCALL_68K_DM_FIND_DATABASE_WITH_TYPE_CREATOR 0xA40D
 
 // New Trap selectors added for time zone picker API
-#define syscall68kSelectTimeZone 0xA40E
-#define syscall68kTimeZoneToAscii 0xA40F
+#define SYSCALL_68K_SELECT_TIME_ZONE 0xA40E
+#define SYSCALL_68K_TIME_ZONE_TO_ASCII 0xA40F
 
 // 08/18/00 kwk - trap for doing stable, fast, 7-bit string compare.
-// 08/21/00 kwk - moved here in place of syscall68kSelectDaylightSavingAdjustment.
-#define syscall68kStrNCompareAscii 0xA410
+// 08/21/00 kwk - moved here in place of SYSCALL_68K_SELECT_DAYLIGHT_SAVING_ADJUSTMENT.
+#define SYSCALL_68K_STR_N_COMPARE_ASCII 0xA410
 
 // New Trap selectors added for time zone conversion API
-#define syscall68kTimTimeZoneToUTC 0xA411
-#define syscall68kTimUTCToTimeZone 0xA412
+#define SYSCALL_68K_TIM_TIME_ZONE_TO_UTC 0xA411
+#define SYSCALL_68K_TIM_UTC_TO_TIME_ZONE 0xA412
 
 // New trap implemented in PhoneLookup.c
-#define syscall68kPhoneNumberLookupCustom 0xA413
+#define SYSCALL_68K_PHONE_NUMBER_LOOKUP_CUSTOM 0xA413
 
 // new trap for selecting debugger path.
-#define syscall68kHwrDebugSelect 0xA414
+#define SYSCALL_68K_HWR_DEBUG_SELECT 0xA414
 
-#define syscall68kBltRoundedRectangle 0xA415
-#define syscall68kBltRoundedRectangleFill 0xA416
-#define syscall68kWinPrvInitCanvas 0xA417
+#define SYSCALL_68K_BLT_ROUNDED_RECTANGLE 0xA415
+#define SYSCALL_68K_BLT_ROUNDED_RECTANGLE_FILL 0xA416
+#define SYSCALL_68K_WIN_PRV_INIT_CANVAS 0xA417
 
-#define syscall68kHwrCalcDynamicHeapSize 0xA418
-#define syscall68kHwrDebuggerEnter 0xA419
-#define syscall68kHwrDebuggerExit 0xA41A
+#define SYSCALL_68K_HWR_CALC_DYNAMIC_HEAP_SIZE 0xA418
+#define SYSCALL_68K_HWR_DEBUGGER_ENTER 0xA419
+#define SYSCALL_68K_HWR_DEBUGGER_EXIT 0xA41A
 
-#define syscall68kLstGetTopItem 0xA41B
+#define SYSCALL_68K_LST_GET_TOP_ITEM 0xA41B
 
-#define syscall68kHwrModelInitStage3 0xA41C
+#define SYSCALL_68K_HWR_MODEL_INIT_STAGE3 0xA41C
 
 // 06/21/00 peter - New Attention Manager
-#define syscall68kAttnIndicatorAllow 0xA41D
-#define syscall68kAttnIndicatorAllowed 0xA41E
-#define syscall68kAttnIndicatorEnable 0xA41F
-#define syscall68kAttnIndicatorEnabled 0xA420
-#define syscall68kAttnIndicatorSetBlinkPattern 0xA421
-#define syscall68kAttnIndicatorGetBlinkPattern 0xA422
-#define syscall68kAttnIndicatorTicksTillNextBlink 0xA423
-#define syscall68kAttnIndicatorCheckBlink 0xA424
-#define syscall68kAttnInitialize 0xA425
-#define syscall68kAttnGetAttention 0xA426
-#define syscall68kAttnUpdate 0xA427
-#define syscall68kAttnForgetIt 0xA428
-#define syscall68kAttnGetCounts 0xA429
-#define syscall68kAttnListOpen 0xA42A
-#define syscall68kAttnHandleEvent 0xA42B
-#define syscall68kAttnEffectOfEvent 0xA42C
-#define syscall68kAttnIterate 0xA42D
-#define syscall68kAttnDoSpecialEffects 0xA42E
-#define syscall68kAttnDoEmergencySpecialEffects 0xA42F
-#define syscall68kAttnAllowClose 0xA430
-#define syscall68kAttnReopen 0xA431
-#define syscall68kAttnEnableNotification 0xA432
-#define syscall68kHwrLEDAttributes 0xA433
-#define syscall68kHwrVibrateAttributes 0xA434
+#define SYSCALL_68K_ATTN_INDICATOR_ALLOW 0xA41D
+#define SYSCALL_68K_ATTN_INDICATOR_ALLOWED 0xA41E
+#define SYSCALL_68K_ATTN_INDICATOR_ENABLE 0xA41F
+#define SYSCALL_68K_ATTN_INDICATOR_ENABLED 0xA420
+#define SYSCALL_68K_ATTN_INDICATOR_SET_BLINK_PATTERN 0xA421
+#define SYSCALL_68K_ATTN_INDICATOR_GET_BLINK_PATTERN 0xA422
+#define SYSCALL_68K_ATTN_INDICATOR_TICKS_TILL_NEXT_BLINK 0xA423
+#define SYSCALL_68K_ATTN_INDICATOR_CHECK_BLINK 0xA424
+#define SYSCALL_68K_ATTN_INITIALIZE 0xA425
+#define SYSCALL_68K_ATTN_GET_ATTENTION 0xA426
+#define SYSCALL_68K_ATTN_UPDATE 0xA427
+#define SYSCALL_68K_ATTN_FORGET_IT 0xA428
+#define SYSCALL_68K_ATTN_GET_COUNTS 0xA429
+#define SYSCALL_68K_ATTN_LIST_OPEN 0xA42A
+#define SYSCALL_68K_ATTN_HANDLE_EVENT 0xA42B
+#define SYSCALL_68K_ATTN_EFFECT_OF_EVENT 0xA42C
+#define SYSCALL_68K_ATTN_ITERATE 0xA42D
+#define SYSCALL_68K_ATTN_DO_SPECIAL_EFFECTS 0xA42E
+#define SYSCALL_68K_ATTN_DO_EMERGENCY_SPECIAL_EFFECTS 0xA42F
+#define SYSCALL_68K_ATTN_ALLOW_CLOSE 0xA430
+#define SYSCALL_68K_ATTN_REOPEN 0xA431
+#define SYSCALL_68K_ATTN_ENABLE_NOTIFICATION 0xA432
+#define SYSCALL_68K_HWR_LED_ATTRIBUTES 0xA433
+#define SYSCALL_68K_HWR_VIBRATE_ATTRIBUTES 0xA434
 
 // Trap for getting and setting the device password hint.
-#define syscall68kSecGetPwdHint 0xA435
-#define syscall68kSecSetPwdHint 0xA436
+#define SYSCALL_68K_SEC_GET_PWD_HINT 0xA435
+#define SYSCALL_68K_SEC_SET_PWD_HINT 0xA436
 
-#define syscall68kHwrFlashWrite 0xA437
+#define SYSCALL_68K_HWR_FLASH_WRITE 0xA437
 
-#define syscall68kKeyboardStatusNew 0xA438
-#define syscall68kKeyboardStatusFree 0xA439
-#define syscall68kKbdSetLayout 0xA43A
-#define syscall68kKbdGetLayout 0xA43B
-#define syscall68kKbdSetPosition 0xA43C
-#define syscall68kKbdGetPosition 0xA43D
-#define syscall68kKbdSetShiftState 0xA43E
-#define syscall68kKbdGetShiftState 0xA43F
-#define syscall68kKbdDraw 0xA440
-#define syscall68kKbdErase 0xA441
-#define syscall68kKbdHandleEvent 0xA442
+#define SYSCALL_68K_KEYBOARD_STATUS_NEW 0xA438
+#define SYSCALL_68K_KEYBOARD_STATUS_FREE 0xA439
+#define SYSCALL_68K_KBD_SET_LAYOUT 0xA43A
+#define SYSCALL_68K_KBD_GET_LAYOUT 0xA43B
+#define SYSCALL_68K_KBD_SET_POSITION 0xA43C
+#define SYSCALL_68K_KBD_GET_POSITION 0xA43D
+#define SYSCALL_68K_KBD_SET_SHIFT_STATE 0xA43E
+#define SYSCALL_68K_KBD_GET_SHIFT_STATE 0xA43F
+#define SYSCALL_68K_KBD_DRAW 0xA440
+#define SYSCALL_68K_KBD_ERASE 0xA441
+#define SYSCALL_68K_KBD_HANDLE_EVENT 0xA442
 
-#define syscall68kOEMDispatch2 0xA443
-#define syscall68kHwrCustom 0xA444
+#define SYSCALL_68K_OEM_DISPATCH2 0xA443
+#define SYSCALL_68K_HWR_CUSTOM 0xA444
 
 // 08/28/00 kwk - Trap for getting form's active field.
-#define syscall68kFrmGetActiveField 0xA445
+#define SYSCALL_68K_FRM_GET_ACTIVE_FIELD 0xA445
 
 // 9/18/00 rkr - Added for playing sounds regardless of interruptible flag
-#define syscall68kSndPlaySmfIrregardless 0xA446
-#define syscall68kSndPlaySmfResourceIrregardless 0xA447
-#define syscall68kSndInterruptSmfIrregardless 0xA448
+#define SYSCALL_68K_SND_PLAY_SMF_IRREGARDLESS 0xA446
+#define SYSCALL_68K_SND_PLAY_SMF_RESOURCE_IRREGARDLESS 0xA447
+#define SYSCALL_68K_SND_INTERRUPT_SMF_IRREGARDLESS 0xA448
 
 // 10/14/00 ABa: UDA manager
-#define syscall68kUdaMgrDispatch 0xA449
+#define SYSCALL_68K_UDA_MGR_DISPATCH 0xA449
 
 // WK: private traps for PalmOS
-#define syscall68kPalmPrivate1 0xA44A
-#define syscall68kPalmPrivate2 0xA44B
-#define syscall68kPalmPrivate3 0xA44C
-#define syscall68kPalmPrivate4 0xA44D
+#define SYSCALL_68K_PALM_PRIVATE1 0xA44A
+#define SYSCALL_68K_PALM_PRIVATE2 0xA44B
+#define SYSCALL_68K_PALM_PRIVATE3 0xA44C
+#define SYSCALL_68K_PALM_PRIVATE4 0xA44D
 
 // 11/07/00 tlw: Added accessors
-#define syscall68kBmpGetDimensions 0xA44E
-#define syscall68kBmpGetBitDepth 0xA44F
-#define syscall68kBmpGetNextBitmap 0xA450
-#define syscall68kTblGetNumberOfColumns 0xA451
-#define syscall68kTblGetTopRow 0xA452
-#define syscall68kTblSetSelection 0xA453
-#define syscall68kFrmGetObjectIndexFromPtr 0xA454
+#define SYSCALL_68K_BMP_GET_DIMENSIONS 0xA44E
+#define SYSCALL_68K_BMP_GET_BIT_DEPTH 0xA44F
+#define SYSCALL_68K_BMP_GET_NEXT_BITMAP 0xA450
+#define SYSCALL_68K_TBL_GET_NUMBER_OF_COLUMNS 0xA451
+#define SYSCALL_68K_TBL_GET_TOP_ROW 0xA452
+#define SYSCALL_68K_TBL_SET_SELECTION 0xA453
+#define SYSCALL_68K_FRM_GET_OBJECT_INDEX_FROM_PTR 0xA454
 
 // 11/10/00 acs
-#define syscall68kBmpGetSizes 0xA455
-#define syscall68kWinGetBounds 0xA456
+#define SYSCALL_68K_BMP_GET_SIZES 0xA455
+#define SYSCALL_68K_WIN_GET_BOUNDS 0xA456
 
-#define syscall68kBltPaintPixels 0xA457
+#define SYSCALL_68K_BLT_PAINT_PIXELS 0xA457
 
 // 11/22/00 bob
-#define syscall68kFldSetMaxVisibleLines 0xA458
+#define SYSCALL_68K_FLD_SET_MAX_VISIBLE_LINES 0xA458
 
 // 01/09/01 acs
-#define syscall68kScrDefaultPaletteState 0xA459
+#define SYSCALL_68K_SCR_DEFAULT_PALETTE_STATE 0xA459

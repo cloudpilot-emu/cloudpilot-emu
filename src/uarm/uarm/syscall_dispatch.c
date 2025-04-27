@@ -33,7 +33,7 @@ bool syscallDispatchM68kSupport(struct SyscallDispatch* sd) { return socIsPacePa
 bool syscallDispatchPrepare(struct SyscallDispatch* sd) {
     if (!syscallDispatchM68kSupport(sd)) return false;
 
-    return socRunToPaceSyscall(sd->soc, syscall68kEvtGetEvent, 50000000, 50000000);
+    return socRunToPaceSyscall(sd->soc, SYSCALL_68K_EVT_GET_EVENT, 50000000, 50000000);
 }
 
 bool syscallDispatch_strncpy_toHost(struct SyscallDispatch* sd, void* dest, uint32_t src,
@@ -90,7 +90,7 @@ uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t timeout)
 uint32_t syscall68k_SysGetOsVersionString(struct SyscallDispatch* sd) {
     const size_t nestLevel = allocateScratchState(sd);
 
-    cpuExecuteSyscall68k(sd->scratchStates[nestLevel], syscall68kSysGetOSVersionString);
+    cpuExecuteSyscall68k(sd->scratchStates[nestLevel], SYSCALL_68K_SYS_GET_OS_VERSION_STRING);
     const uint32_t result = paceGetAreg(0);
 
     disposeScratchState(sd, nestLevel);
@@ -105,7 +105,7 @@ uint16_t syscall68k_MemPtrFree(struct SyscallDispatch* sd, uint32_t memPtr) {
     pacePush32(memPtr);
     if (paceGetFsr() > 0) ERR("memory fault during injected PACE call");
 
-    cpuExecuteSyscall68k(sd->scratchStates[nestLevel], syscall68kMemChunkFree);
+    cpuExecuteSyscall68k(sd->scratchStates[nestLevel], SYSCALL_68K_MEM_CHUNK_FREE);
     const uint16_t result = paceGetDreg(0);
 
     disposeScratchState(sd, nestLevel);
