@@ -10,6 +10,11 @@
 #include "syscall_68k.h"
 
 #define MAX_NEST_LEVEL 4
+#define INJECTED_CALL_MIPS 1000000000ull
+#define INJECTED_CALL_TIMEOUT_SEC 5
+
+#define PREPARE_INJECTED_CALL_MIPS 50000000ull
+#define PREPARE_INJECTED_CALL_TIMEOUT_SEC 1
 
 struct SyscallDispatch {
     struct SoC* soc;
@@ -33,7 +38,9 @@ bool syscallDispatchM68kSupport(struct SyscallDispatch* sd) { return socIsPacePa
 bool syscallDispatchPrepare(struct SyscallDispatch* sd) {
     if (!syscallDispatchM68kSupport(sd)) return false;
 
-    return socRunToPaceSyscall(sd->soc, SYSCALL_68K_EVT_GET_EVENT, 50000000, 50000000);
+    return socRunToPaceSyscall(sd->soc, SYSCALL_68K_EVT_GET_EVENT,
+                               PREPARE_INJECTED_CALL_TIMEOUT_SEC * PREPARE_INJECTED_CALL_MIPS,
+                               PREPARE_INJECTED_CALL_MIPS);
 }
 
 bool syscallDispatch_strncpy_toHost(struct SyscallDispatch* sd, void* dest, uint32_t src,
@@ -85,7 +92,8 @@ static void executeInjectedSyscall68k(struct SyscallDispatch* sd, uint16_t sysca
                                       size_t nestLevel) {
     cpuStartInjectedSyscall68k(sd->scratchStates[nestLevel], syscall);
 
-    if (!socExecuteInjected(sd->soc, sd->scratchStates[nestLevel], 5 * 1000000000ull, 1000000000)) {
+    if (!socExecuteInjected(sd->soc, sd->scratchStates[nestLevel],
+                            INJECTED_CALL_TIMEOUT_SEC * INJECTED_CALL_MIPS, INJECTED_CALL_MIPS)) {
         ERR("failed to execute injected call within time limit");
     }
 

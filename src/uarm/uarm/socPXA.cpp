@@ -729,9 +729,11 @@ bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
     soc->paceSyscallAtCycle = soc->paceSyscallAtCycle - 1;
 
     cpuSetBreakPaceSyscall(soc->cpu, syscall);
-    socRunUntil<SLOW_PATH_REASON_PACE_SYSCALL_BREAK, false>(soc, soc->cpu, maxCycles,
-                                                            cyclesPerSecond);
+    const uint64_t cycles = socRunUntil<SLOW_PATH_REASON_PACE_SYSCALL_BREAK, false>(
+        soc, soc->cpu, maxCycles, cyclesPerSecond);
     cpuSetBreakPaceSyscall(soc->cpu, 0);
+
+    soc->injectedTimeNsec += (cycles * 1000000) / (cyclesPerSecond / 1000);
 
     if ((cpuGetSlowPathReason(soc->cpu) & SLOW_PATH_REASON_PACE_SYSCALL_BREAK) == 0) return false;
 

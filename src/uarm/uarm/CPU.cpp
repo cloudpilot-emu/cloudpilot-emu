@@ -3482,7 +3482,6 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cy
                 cpuSetSlowPath(cpu, SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE);
         }
 
-        if constexpr (injected) cpuClearSlowPath(cpu, SLOW_PATH_REASON_SLEEP);
         if (cpu->slowPath) break;
     }
 
@@ -3529,7 +3528,6 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
                 cpuSetSlowPath(cpu, SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE);
         }
 
-        if constexpr (injected) cpuClearSlowPath(cpu, SLOW_PATH_REASON_SLEEP);
         if (cpu->slowPath) break;
     }
 
@@ -3538,9 +3536,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
 
 template <bool injected>
 ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
-    if constexpr (!injected) {
-        if (cpu->sleeping) return cycles;
-    }
+    if (cpu->sleeping) return cycles;
 
     if (cpu->waitingEventsTotal) {
         if (cpu->waitingFiqs && !cpu->F)
