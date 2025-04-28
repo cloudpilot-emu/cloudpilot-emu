@@ -36,7 +36,7 @@ MainLoop::MainLoop(SoC* soc)
 }
 
 void MainLoop::Cycle(uint64_t now) {
-    virtualTimeUsec += static_cast<double>(socGetInjectedTimeNsec(soc)) / 1000;
+    // virtualTimeUsec += static_cast<double>(socGetInjectedTimeNsec(soc)) / 1000;
     socResetInjectedTimeNsec(soc);
 
     double deltaUsec = now - virtualTimeUsec;
