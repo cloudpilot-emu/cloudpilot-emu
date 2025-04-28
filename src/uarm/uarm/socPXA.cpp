@@ -3,6 +3,7 @@
 //  stdlib
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 
 // all PXAs
 #include "pxa_AC97.h"
@@ -118,6 +119,7 @@ struct SoC {
 
     uint64_t cyclesTotal;
     uint64_t paceSyscallAtCycle;
+    uint64_t injectedTimeNsec;
     uint16_t paceBreakSyscall;
 
     bool cardInserted;
@@ -689,22 +691,23 @@ uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
     }
 }
 
-template <int breakReason>
-static FORCE_INLINE uint64_t socRunUntil(SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
+template <int breakReason, bool injected>
+static FORCE_INLINE uint64_t socRunUntil(SoC *soc, struct ArmCpu *cpu, uint64_t maxCycles,
+                                         uint64_t cyclesPerSecond) {
     uint64_t cycles = 0;
 
     while (cycles < maxCycles) {
         uint64_t cyclesToAdvance = soc->scheduler->CyclesToNextUpdate(cyclesPerSecond);
         if (cyclesToAdvance + cycles > maxCycles) cyclesToAdvance = maxCycles - cycles;
 
-        const uint64_t cyclesAdvanced =
-            soc->sleeping ? cyclesToAdvance : cpuCycle(soc->cpu, cyclesToAdvance);
+        uint64_t cyclesAdvanced =
+            soc->sleeping ? cyclesToAdvance : cpuCycle<injected>(cpu, cyclesToAdvance);
 
         soc->scheduler->Advance(cyclesAdvanced, cyclesPerSecond);
         cycles += cyclesAdvanced;
 
         if constexpr (breakReason > 0) {
-            if (cpuGetSlowPathReason(soc->cpu) & breakReason) break;
+            if (cpuGetSlowPathReason(cpu) & breakReason) break;
         }
     }
 
@@ -714,7 +717,7 @@ static FORCE_INLINE uint64_t socRunUntil(SoC *soc, uint64_t maxCycles, uint64_t 
 }
 
 uint64_t socRun(SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
-    return socRunUntil<0>(soc, maxCycles, cyclesPerSecond);
+    return socRunUntil<0, false>(soc, soc->cpu, maxCycles, cyclesPerSecond);
 }
 
 bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
@@ -726,7 +729,8 @@ bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
     soc->paceSyscallAtCycle = soc->paceSyscallAtCycle - 1;
 
     cpuSetBreakPaceSyscall(soc->cpu, syscall);
-    socRunUntil<SLOW_PATH_REASON_PACE_SYSCALL_BREAK>(soc, maxCycles, cyclesPerSecond);
+    socRunUntil<SLOW_PATH_REASON_PACE_SYSCALL_BREAK, false>(soc, soc->cpu, maxCycles,
+                                                            cyclesPerSecond);
     cpuSetBreakPaceSyscall(soc->cpu, 0);
 
     if ((cpuGetSlowPathReason(soc->cpu) & SLOW_PATH_REASON_PACE_SYSCALL_BREAK) == 0) return false;
@@ -734,6 +738,20 @@ bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
     soc->paceSyscallAtCycle = soc->cyclesTotal;
     return true;
 }
+
+bool socExecuteInjected(struct SoC *soc, struct ArmCpu *cpu, uint64_t maxCycles,
+                        uint64_t cyclesPerSecond) {
+    const uint64_t cycles = socRunUntil<SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE, true>(
+        soc, cpu, maxCycles, cyclesPerSecond);
+
+    soc->injectedTimeNsec += (cycles * 1000000) / (cyclesPerSecond / 1000);
+
+    return cpuGetSlowPathReason(cpu) & SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE;
+}
+
+uint64_t socGetInjectedTimeNsec(struct SoC *soc) { return soc->injectedTimeNsec; }
+
+void socResetInjectedTimeNsec(struct SoC *soc) { soc->injectedTimeNsec = 0; }
 
 uint32_t *socGetPendingFrame(SoC *soc) { return pxaLcdGetPendingFrame(soc->lcd); }
 

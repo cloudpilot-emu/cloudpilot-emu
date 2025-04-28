@@ -35,8 +35,10 @@ void socReset(struct SoC *soc);
 uint64_t socRun(struct SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond);
 bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
                          uint64_t cyclesPerSecond);
-
-void socBootload(struct SoC *soc, uint32_t method, void *param);  // soc-specific
+bool socExecuteInjected(struct SoC *soc, struct ArmCpu *cpu, uint64_t maxCycles,
+                        uint64_t cyclesPerSecond);
+uint64_t socGetInjectedTimeNsec(struct SoC *soc);
+void socResetInjectedTimeNsec(struct SoC *soc);
 
 uint32_t *socGetPendingFrame(struct SoC *soc);
 void socResetPendingFrame(struct SoC *soc);

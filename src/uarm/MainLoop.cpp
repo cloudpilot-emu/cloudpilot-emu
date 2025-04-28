@@ -36,7 +36,11 @@ MainLoop::MainLoop(SoC* soc)
 }
 
 void MainLoop::Cycle(uint64_t now) {
+    virtualTimeUsec += static_cast<double>(socGetInjectedTimeNsec(soc)) / 1000;
+    socResetInjectedTimeNsec(soc);
+
     double deltaUsec = now - virtualTimeUsec;
+    if (deltaUsec < 0) return;
 
     if (deltaUsec > LAG_THRESHOLD_SKIP_USEC) {
         deltaUsec = TIMESLICE_SIZE_USEC;

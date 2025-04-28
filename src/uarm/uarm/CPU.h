@@ -53,6 +53,7 @@ extern "C" {
 #define SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE 0x10
 #define SLOW_PATH_REASON_RESCHEDULE 0x20
 #define SLOW_PATH_REASON_PACE_SYSCALL_BREAK 0x40
+#define SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE 0x80
 
 typedef bool (*ArmCoprocRegXferF)(struct ArmCpu *cpu, void *userData, bool two /* MCR2/MRC2 ? */,
                                   bool MRC, uint8_t op1, uint8_t Rx, uint8_t CRn, uint8_t CRm,
@@ -87,11 +88,14 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
 struct ArmCpu *cpuPrepareInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState);
 void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState);
 uint32_t *cpuGetRegisters(struct ArmCpu *cpu);
-void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall);
+
+void cpuStartInjectedSyscall(struct ArmCpu *cpu, uint32_t syscall);
+
+void cpuStartInjectedSyscall68k(struct ArmCpu *cpu, uint16_t syscall);
+void cpuFinishInjectedSyscall68k(struct ArmCpu *cpu);
 
 void cpuReset(struct ArmCpu *cpu, uint32_t pc);
 
-uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles);
 void cpuIrq(struct ArmCpu *cpu, bool fiq, bool raise);  // unraise when acknowledged
 
 uint32_t cpuGetRegExternal(struct ArmCpu *cpu, uint_fast8_t reg);
@@ -119,12 +123,14 @@ void cpuClearSlowPath(struct ArmCpu *cpu, uint32_t reason);
 uint32_t cpuGetSlowPathReason(struct ArmCpu *cpu);
 
 void cpuSetBreakPaceSyscall(struct ArmCpu *cpu, uint16_t syscall);
-void cpuExecuteSyscall68k(struct ArmCpu *cpu, uint16_t syscall);
 
 struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu);
 
 #ifdef __cplusplus
 }
+
+template <bool monitorPC>
+uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles);
 
 template <typename T>
 void cpuSave(struct ArmCpu *cpu, T &savestate);

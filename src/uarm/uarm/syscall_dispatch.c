@@ -73,12 +73,31 @@ static void disposeScratchState(struct SyscallDispatch* sd, size_t nestLevel) {
     sd->nestLevel--;
 }
 
+static void executeInjectedSyscall(struct SyscallDispatch* sd, uint16_t syscall, size_t nestLevel) {
+    cpuStartInjectedSyscall(sd->scratchStates[nestLevel], syscall);
+
+    if (!socExecuteInjected(sd->soc, sd->scratchStates[nestLevel], 5 * 1000000000ull, 1000000000)) {
+        ERR("failed to execute injected call within time limit");
+    }
+}
+
+static void executeInjectedSyscall68k(struct SyscallDispatch* sd, uint16_t syscall,
+                                      size_t nestLevel) {
+    cpuStartInjectedSyscall68k(sd->scratchStates[nestLevel], syscall);
+
+    if (!socExecuteInjected(sd->soc, sd->scratchStates[nestLevel], 5 * 1000000000ull, 1000000000)) {
+        ERR("failed to execute injected call within time limit");
+    }
+
+    cpuFinishInjectedSyscall68k(sd->scratchStates[nestLevel]);
+}
+
 uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t timeout) {
     const size_t nestLevel = allocateScratchState(sd);
     uint32_t* registers = cpuGetRegisters(sd->scratchStates[nestLevel]);
 
     registers[0] = timeout;
-    cpuExecuteInjectedCall(sd->scratchStates[nestLevel], SYSCALL_SYS_SET_AUTO_OFF_TIME);
+    executeInjectedSyscall(sd, SYSCALL_SYS_SET_AUTO_OFF_TIME, nestLevel);
 
     uint16_t err = registers[0];
 
@@ -90,7 +109,7 @@ uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t timeout)
 uint32_t syscall68k_SysGetOsVersionString(struct SyscallDispatch* sd) {
     const size_t nestLevel = allocateScratchState(sd);
 
-    cpuExecuteSyscall68k(sd->scratchStates[nestLevel], SYSCALL_68K_SYS_GET_OS_VERSION_STRING);
+    executeInjectedSyscall68k(sd, SYSCALL_68K_SYS_GET_OS_VERSION_STRING, nestLevel);
     const uint32_t result = paceGetAreg(0);
 
     disposeScratchState(sd, nestLevel);
@@ -105,7 +124,7 @@ uint16_t syscall68k_MemPtrFree(struct SyscallDispatch* sd, uint32_t memPtr) {
     pacePush32(memPtr);
     if (paceGetFsr() > 0) ERR("memory fault during injected PACE call");
 
-    cpuExecuteSyscall68k(sd->scratchStates[nestLevel], SYSCALL_68K_MEM_CHUNK_FREE);
+    executeInjectedSyscall68k(sd, SYSCALL_68K_MEM_CHUNK_FREE, nestLevel);
     const uint16_t result = paceGetDreg(0);
 
     disposeScratchState(sd, nestLevel);

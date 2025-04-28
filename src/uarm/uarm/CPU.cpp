@@ -63,7 +63,6 @@
 #define REG_NO_PC 15
 
 #define INJECTED_CALL_LR_MAGIC 0xfffffffc
-#define INJECTED_CALL_MAX_CYCLES 200000000
 
 #define EXEC_FN_PREFIX_VALUE 0x53ae0000
 
@@ -3244,6 +3243,7 @@ struct ArmCpu *cpuPrepareInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratch
 }
 
 void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState) {
+    cpu->sleeping = scratchState->sleeping;
     cpu->waitingIrqs = scratchState->waitingIrqs;
     cpu->waitingFiqs = scratchState->waitingFiqs;
     cpu->waitingEventsTotal = cpu->waitingFiqs + cpu->waitingIrqs;
@@ -3441,7 +3441,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCyclePace(struct ArmCpu *cpu, uint32_t cyc
     return cycleAcc;
 }
 
-template <int tier>
+template <bool injected>
 ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cycles) {
     uint32_t cycleAcc = 0;
     bool ok;
@@ -3459,7 +3459,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cy
         if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-        ok = icacheFetch<2, tier>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
+        ok = icacheFetch<2, injected>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
 
         if (!ok) {
             cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
@@ -3470,20 +3470,26 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cy
         cpu->regs[REG_NO_PC] += 2;
 
 #ifdef __EMSCRIPTEN__
-        cpuPrvDispatchExecFnThumb<tier>(cpuPrvDecompressExecFn(decoded), cpu, instr);
+        cpuPrvDispatchExecFnThumb<injected>(cpuPrvDecompressExecFn(decoded), cpu, instr);
 #else
         cpuPrvDecompressExecFn(decoded)(cpu, instr);
 #endif
 
         cycleAcc += 1;
 
+        if constexpr (injected) {
+            if (cpu->regs[REG_NO_PC] == INJECTED_CALL_LR_MAGIC)
+                cpuSetSlowPath(cpu, SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE);
+        }
+
+        if constexpr (injected) cpuClearSlowPath(cpu, SLOW_PATH_REASON_SLEEP);
         if (cpu->slowPath) break;
     }
 
     return cycleAcc;
 }
 
-template <int tier>
+template <bool injected>
 ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycles) {
     uint32_t cycleAcc = 0;
     bool ok;
@@ -3500,7 +3506,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
         if (fetchPc < 0x02000000UL) fetchPc |= cpu->pid;
 #endif
 
-        ok = icacheFetch<4, tier>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
+        ok = icacheFetch<4, injected>(cpu->ic, cpu->curInstrPC, &fsr, &instr, &decoded);
 
         if (!ok) {
             cpuPrvHandleMemErr(cpu, cpu->curInstrPC, false, true, fsr);
@@ -3511,21 +3517,30 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
         cpu->regs[REG_NO_PC] += 4;
 
 #ifdef __EMSCRIPTEN__
-        cpuPrvDispatchExecFnArm<tier>(cpuPrvDecompressExecFn(decoded), cpu, instr);
+        cpuPrvDispatchExecFnArm<injected>(cpuPrvDecompressExecFn(decoded), cpu, instr);
 #else
         cpuPrvDecompressExecFn(decoded)(cpu, instr);
 #endif
 
         cycleAcc += 1;
 
+        if constexpr (injected) {
+            if (cpu->regs[REG_NO_PC] == INJECTED_CALL_LR_MAGIC)
+                cpuSetSlowPath(cpu, SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE);
+        }
+
+        if constexpr (injected) cpuClearSlowPath(cpu, SLOW_PATH_REASON_SLEEP);
         if (cpu->slowPath) break;
     }
 
     return cycleAcc;
 }
 
+template <bool injected>
 ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
-    if (cpu->sleeping) return cycles;
+    if constexpr (!injected) {
+        if (cpu->sleeping) return cycles;
+    }
 
     if (cpu->waitingEventsTotal) {
         if (cpu->waitingFiqs && !cpu->F)
@@ -3540,41 +3555,21 @@ ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
     patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
 
     cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE | SLOW_PATH_REASON_RESCHEDULE |
-                              SLOW_PATH_REASON_PACE_SYSCALL_BREAK);
+                              SLOW_PATH_REASON_PACE_SYSCALL_BREAK |
+                              SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE);
 
     if (cpu->modePace)
         return cpuCyclePace(cpu, cycles);
     else if (cpu->T)
-        return cpuCycleThumb<0>(cpu, cycles);
+        return cpuCycleThumb<injected>(cpu, cycles);
     else
-        return cpuCycleArm<0>(cpu, cycles);
+        return cpuCycleArm<injected>(cpu, cycles);
 }
 
-FORCE_INLINE static uint32_t cpuCycleInjected(struct ArmCpu *cpu) {
-    cp15Cycle(cpu->cp15);
-    patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
+template uint32_t cpuCycle<true>(struct ArmCpu *cpu, uint32_t cycles);
+template uint32_t cpuCycle<false>(struct ArmCpu *cpu, uint32_t cycles);
 
-    if (cpu->modePace)
-        return cpuCyclePace(cpu, 1);
-    else if (cpu->T)
-        return cpuCycleThumb<1>(cpu, 1);
-    else
-        return cpuCycleArm<1>(cpu, 1);
-}
-
-static void cpuExecuteInjectedCall(struct ArmCpu *cpu) {
-    cpu->regs[REG_NO_LR] = INJECTED_CALL_LR_MAGIC;
-
-    uint64_t cycle = 0;
-    while (cpu->regs[REG_NO_PC] != INJECTED_CALL_LR_MAGIC) {
-        cpuCycleInjected(cpu);
-
-        if (cycle++ == INJECTED_CALL_MAX_CYCLES)
-            ERR("failed to execute syscall: cycle limit reached\n");
-    }
-}
-
-void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
+void cpuStartInjectedSyscall(struct ArmCpu *cpu, uint32_t syscall) {
     const uint8_t table = syscall >> 12;
     uint32_t tableAddr;
     if (!cpuPrvMemOpEx<4>(cpu, &tableAddr, cpu->regs[9] - table, false, true, NULL))
@@ -3588,13 +3583,15 @@ void cpuExecuteInjectedCall(struct ArmCpu *cpu, uint32_t syscall) {
     cpu->regs[REG_NO_PC] = entryAddr;
     cpu->T = false;
 
-    cpuExecuteInjectedCall(cpu);
+    cpu->regs[REG_NO_LR] = INJECTED_CALL_LR_MAGIC;
 }
 
-void cpuExecuteSyscall68k(struct ArmCpu *cpu, uint16_t syscall) {
+void cpuStartInjectedSyscall68k(struct ArmCpu *cpu, uint16_t syscall) {
     cpuPrvPaceSyscall(cpu, syscall);
-    cpuExecuteInjectedCall(cpu);
+    cpu->regs[REG_NO_LR] = INJECTED_CALL_LR_MAGIC;
+}
 
+void cpuFinishInjectedSyscall68k(struct ArmCpu *cpu) {
     uint_fast8_t fsr = 0;
 
     // restore r0 / state pointer from stack
