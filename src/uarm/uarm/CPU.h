@@ -12,6 +12,9 @@ struct ArmCpu;
 #include "pace_patch.h"
 
 #ifdef __cplusplus
+
+    #include <functional>
+
 extern "C" {
 #endif
 
@@ -70,7 +73,7 @@ typedef bool (*ArmCoprocTwoRegF)(struct ArmCpu *cpu, void *userData, bool MRRC, 
                                  uint8_t Rd, uint8_t Rn, uint8_t CRm);
 
 struct ArmMmu;
-
+struct ArmMem;
 struct PatchDispatch;
 
 struct ArmCoprocessor {
@@ -125,12 +128,17 @@ uint32_t cpuGetSlowPathReason(struct ArmCpu *cpu);
 void cpuSetBreakPaceSyscall(struct ArmCpu *cpu, uint16_t syscall);
 
 struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu);
+struct ArmMem *cpuGetMem(struct ArmCpu *cpu);
 
 #ifdef __cplusplus
 }
 
 template <bool monitorPC>
 uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles);
+
+using M68kTrapHandler = std::function<bool(struct ArmCpu *, uint32_t address)>;
+void cpuAddM68kTrap0Handler(struct ArmCpu *cpu, uint32_t address, M68kTrapHandler handler);
+void cpuRemoveM68kTrap0Handler(struct ArmCpu *cpu, uint32_t address);
 
 template <typename T>
 void cpuSave(struct ArmCpu *cpu, T &savestate);

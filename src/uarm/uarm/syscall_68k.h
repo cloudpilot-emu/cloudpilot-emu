@@ -1,3 +1,6 @@
+#ifndef _SYSCALL_68K_H_
+#define _SYSCALL_68K_H_
+
 // Taken from CoreTraps.h
 
 #define SYSCALL_68K_MEM_INIT 0xA000
@@ -1408,3 +1411,5 @@
 
 // 01/09/01 acs
 #define SYSCALL_68K_SCR_DEFAULT_PALETTE_STATE 0xA459
+
+#endif  // _SYSCALL_68K_H_

@@ -51,11 +51,6 @@ namespace {
                 return;
             }
 
-            UInt16 attributes;
-
-            DmDatabaseInfo(cardNo, dbID, NULL, &attributes, NULL, NULL, NULL, NULL, NULL, NULL,
-                           NULL, NULL, NULL);
-
             if (DmDeleteDatabase(cardNo, dbID) == 0) {
                 PUT_RESULT_VAL(Boolean, 1);
             } else {

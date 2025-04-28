@@ -44,7 +44,6 @@ SOURCE_C = 								\
 	uarm/sdcard.c 						\
 	uarm/patches.c						\
 	uarm/syscall.c						\
-	uarm/syscall_dispatch.c				\
 	uarm/mem.c 							\
 	uarm/memory_buffer.c				\
 	uarm/RAM.c 							\
@@ -95,6 +94,8 @@ SOURCE_CXX =		 					\
 	uarm/devicePalmTungstenE2.cpp 		\
 	uarm/cp15.cpp 						\
 	uarm/memcpy.cpp						\
+	uarm/syscall_dispatch.cpp			\
+	uarm/db_installer.cpp				\
 	uarm/audio_queue.cpp				\
 	uarm/rom_info.cpp					\
 	uarm/savestate/rle.cpp				\

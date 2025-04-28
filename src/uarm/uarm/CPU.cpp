@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include <iostream>
+#include <unordered_map>
 
 #include "CPEndian.h"
 #include "MMU.h"
@@ -100,6 +101,8 @@ struct ArmBankedRegs {
     }
 };
 
+using M68kTrapHandlerMap = std::unordered_map<uint32_t, M68kTrapHandler>;
+
 struct ArmCpu {
     uint32_t regs[16];  // current active regs as per current mode
     uint32_t SPSR;
@@ -145,6 +148,8 @@ struct ArmCpu {
 
     uint32_t slowPath;
     uint16_t breakPaceSyscall;
+
+    M68kTrapHandlerMap *m68kTrap0Handlers;
 
     template <typename T>
     void DoSaveLoad(T &chunkHelper, uint32_t version);
@@ -3230,6 +3235,8 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     cpu->patchDispatch = patchDispatch;
     cpu->pacePatch = pacePatch;
 
+    cpu->m68kTrap0Handlers = new M68kTrapHandlerMap();
+
     cpuReset(cpu, pc);
 
     return cpu;
@@ -3333,6 +3340,11 @@ static void cpuPrvPaceLine1111(struct ArmCpu *cpu) {
 }
 
 static void cpuPrvPaceTrap0(struct ArmCpu *cpu) {
+    const uint32_t location = paceGetPC() - 2;
+    auto itHandler = cpu->m68kTrap0Handlers->find(location);
+
+    if (itHandler != cpu->m68kTrap0Handlers->end() && itHandler->second(cpu, location)) return;
+
     if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutTrap0)) return;
 
 #ifdef TRACE_PACE
@@ -3659,6 +3671,16 @@ void cpuSetBreakPaceSyscall(struct ArmCpu *cpu, uint16_t syscall) {
 }
 
 struct ArmMmu *cpuGetMMU(struct ArmCpu *cpu) { return cpu->mmu; }
+
+struct ArmMem *cpuGetMem(struct ArmCpu *cpu) { return cpu->mem; }
+
+void cpuAddM68kTrap0Handler(struct ArmCpu *cpu, uint32_t address, M68kTrapHandler handler) {
+    (*cpu->m68kTrap0Handlers)[address] = handler;
+}
+
+void cpuRemoveM68kTrap0Handler(struct ArmCpu *cpu, uint32_t address) {
+    cpu->m68kTrap0Handlers->erase(address);
+}
 
 template <typename T>
 void cpuSave(ArmCpu *cpu, T &savestate) {
