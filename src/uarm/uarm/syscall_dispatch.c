@@ -33,6 +33,8 @@ struct SyscallDispatch* initSyscallDispatch(struct SoC* soc) {
     return sd;
 }
 
+bool syscallDispatchInProgress(struct SyscallDispatch* sd) { return sd->nestLevel > 0; }
+
 bool syscallDispatchM68kSupport(struct SyscallDispatch* sd) { return socIsPacePatched(sd->soc); }
 
 bool syscallDispatchPrepare(struct SyscallDispatch* sd) {

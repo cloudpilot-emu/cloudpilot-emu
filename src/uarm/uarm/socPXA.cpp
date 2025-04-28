@@ -675,7 +675,7 @@ uint32_t SoC::DispatchTicks(uint32_t clientType, uint32_t batchedTicks) {
             return 1;
 
         case SCHEDULER_TASK_PCM:
-            devicePcmPeriodic(dev);
+            if (!syscallDispatchInProgress(syscallDispatch)) devicePcmPeriodic(dev);
             return (pcmSuspended && enablePcmOutput) ? 0 : 1;
 
         case SCHEDULER_TASK_AUX_1:

@@ -13,6 +13,8 @@ struct SyscallDispatch;
 
 struct SyscallDispatch* initSyscallDispatch(struct SoC* cpu);
 
+bool syscallDispatchInProgress(struct SyscallDispatch* sd);
+
 bool syscallDispatchM68kSupport(struct SyscallDispatch* sd);
 bool syscallDispatchPrepare(struct SyscallDispatch* sd);
 
