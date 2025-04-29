@@ -61,7 +61,7 @@
 #include "syscall_dispatch.h"
 #include "vSD.h"
 
-#define SAVESTATE_VERSION 1
+#define SAVESTATE_VERSION 2
 
 #define CPUID_PXA255 0x69052D06ul  // spepping A0
 #define CPUID_PXA260 0x69052D06ul  // spepping B1
@@ -117,8 +117,6 @@ struct SoC {
     bool sleeping;
     uint64_t sleepAtTime;
 
-    uint64_t cyclesTotal;
-    uint64_t paceSyscallAtCycle;
     uint64_t injectedTimeNsec;
     uint16_t paceBreakSyscall;
 
@@ -698,7 +696,9 @@ static FORCE_INLINE uint64_t socRunUntil(SoC *soc, struct ArmCpu *cpu, uint64_t 
 
     while (cycles < maxCycles) {
         uint64_t cyclesToAdvance = soc->scheduler->CyclesToNextUpdate(cyclesPerSecond);
+
         if (cyclesToAdvance + cycles > maxCycles) cyclesToAdvance = maxCycles - cycles;
+        if constexpr (injected) cyclesToAdvance = cyclesToAdvance > 0 ? 1 : 0;
 
         uint64_t cyclesAdvanced =
             soc->sleeping ? cyclesToAdvance : cpuCycle<injected>(cpu, cyclesToAdvance);
@@ -711,22 +711,18 @@ static FORCE_INLINE uint64_t socRunUntil(SoC *soc, struct ArmCpu *cpu, uint64_t 
         }
     }
 
-    soc->cyclesTotal += cycles;
-
     return cycles;
 }
 
 uint64_t socRun(SoC *soc, uint64_t maxCycles, uint64_t cyclesPerSecond) {
+    soc->paceBreakSyscall = 0;
+
     return socRunUntil<0, false>(soc, soc->cpu, maxCycles, cyclesPerSecond);
 }
 
 bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
                          uint64_t cyclesPerSecond) {
-    if (syscall == soc->paceBreakSyscall && soc->paceSyscallAtCycle == soc->cyclesTotal)
-        return true;
-
-    soc->paceBreakSyscall = syscall;
-    soc->paceSyscallAtCycle = soc->paceSyscallAtCycle - 1;
+    if (syscall == soc->paceBreakSyscall) return true;
 
     cpuSetBreakPaceSyscall(soc->cpu, syscall);
     const uint64_t cycles = socRunUntil<SLOW_PATH_REASON_PACE_SYSCALL_BREAK, false>(
@@ -737,7 +733,8 @@ bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
 
     if ((cpuGetSlowPathReason(soc->cpu) & SLOW_PATH_REASON_PACE_SYSCALL_BREAK) == 0) return false;
 
-    soc->paceSyscallAtCycle = soc->cyclesTotal;
+    soc->paceBreakSyscall = syscall;
+
     return true;
 }
 
@@ -991,5 +988,6 @@ void SoC::DoSaveLoad(T &chunkHelper, uint32_t version) {
     chunkHelper.Do(typename T::BoolPack() << cardInserted << enablePcmOutput << sleeping)
         .DoBuffer(cardId, sizeof(cardId));
 
-    if (version > 0) chunkHelper.Do64(cyclesTotal);
+    uint64_t cyclesTotal = 0;
+    if (version == 1) chunkHelper.Do64(cyclesTotal);
 }

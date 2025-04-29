@@ -15,7 +15,7 @@
 #define MAX_PATCHES 50
 #define PATCH_TABLE_SIZE 0xc00  // 3 * 0x400
 
-#define SAVESTATE_VERSION 0
+#define SAVESTATE_VERSION 1
 
 struct Patch {
     uint32_t syscall;
@@ -48,7 +48,8 @@ struct SerializedTailpatch {
 
 struct PatchDispatch {
     int8_t table;
-    uint8_t countdown;
+    uint32_t loadedR12;
+    uint32_t loadR12PC;
 
     uint8_t patchTable[PATCH_TABLE_SIZE];
 
@@ -62,7 +63,7 @@ struct PatchDispatch {
     struct ArmCpu* cpu;
 
     template <typename T>
-    void DoSaveLoad(T& chunkHelper);
+    void DoSaveLoad(T& chunkHelper, uint32_t version);
 };
 
 struct PatchDispatch* initPatchDispatch() {
@@ -77,7 +78,7 @@ struct PatchDispatch* initPatchDispatch() {
 }
 
 static void updateSlowPath(struct PatchDispatch* pd) {
-    if (pd->countdown || pd->nPendingTailpatches) {
+    if (pd->nPendingTailpatches) {
         cpuSetSlowPath(pd->cpu, SLOW_PATH_REASON_PATCH_PENDING);
     } else {
         cpuClearSlowPath(pd->cpu, SLOW_PATH_REASON_PATCH_PENDING);
@@ -88,7 +89,6 @@ void destroyPatchDispatch(struct PatchDispatch* pd) { free(pd); }
 
 void patchDispatchOnLoadR12FromR9(struct PatchDispatch* pd, int32_t offset) {
     pd->table = -1;
-    pd->countdown = 0;
 
     if (offset >= 0) return updateSlowPath(pd);
     offset = -offset;
@@ -96,13 +96,17 @@ void patchDispatchOnLoadR12FromR9(struct PatchDispatch* pd, int32_t offset) {
     if (offset & 0x03 || offset > 12) return updateSlowPath(pd);
 
     pd->table = offset;
-    pd->countdown = 2;
+    pd->loadedR12 = cpuGetRegExternal(pd->cpu, 12);
+    pd->loadR12PC = cpuGetRegExternal(pd->cpu, 15) - 4;
 
     updateSlowPath(pd);
 }
 
 void patchDispatchOnLoadPcFromR12(struct PatchDispatch* pd, int32_t offset, uint32_t* registers) {
-    if (pd->countdown != 1 || offset < 0 || offset & 0x03 || offset > 0xfff) return;
+    if (pd->table < 0 || pd->loadR12PC != cpuGetRegExternal(pd->cpu, 15) - 8 ||
+        pd->loadedR12 != cpuGetRegExternal(pd->cpu, 12) || offset < 0 || offset & 0x03 ||
+        offset > 0xfff)
+        return;
 
 #ifdef TRACE_SYSCALLS
     const char* syscallName = getSyscallName(packSyscall(pd->table, offset));
@@ -137,11 +141,6 @@ void patchDispatchOnLoadPcFromR12(struct PatchDispatch* pd, int32_t offset, uint
 }
 
 void patchOnBeforeExecute(struct PatchDispatch* pd, uint32_t* registers) {
-    if (pd->countdown != 0) {
-        pd->countdown--;
-        updateSlowPath(pd);
-    }
-
     if (pd->nPendingTailpatches == 0) return;
 
     for (size_t i = 0; i < pd->nPendingTailpatches; i++) {
@@ -207,16 +206,18 @@ void patchDispatchSave(PatchDispatch* pd, T& savestate) {
     }
 
     SaveChunkHelper helper(*chunk);
-    pd->DoSaveLoad(helper);
+    pd->DoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
 template <typename T>
 void patchDispatchLoad(PatchDispatch* pd, T& loader) {
-    auto chunk = loader.GetChunk(ChunkType::patchDispatch, SAVESTATE_VERSION, "patchDispatch");
+    uint32_t version;
+    auto chunk =
+        loader.GetChunk(ChunkType::patchDispatch, SAVESTATE_VERSION, "patchDispatch", version);
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
-    pd->DoSaveLoad(helper);
+    pd->DoSaveLoad(helper, version);
 
     const uint8_t loadedTalpatchesCount = pd->nPendingTailpatches;
     pd->nPendingTailpatches = 0;
@@ -252,11 +253,18 @@ void patchDispatchLoad(PatchDispatch* pd, T& loader) {
 }
 
 template <typename T>
-void PatchDispatch::DoSaveLoad(T& chunkHelper) {
+void PatchDispatch::DoSaveLoad(T& chunkHelper, uint32_t version) {
     for (size_t i = 0; i < MAX_PENDING_TAILPATCH; i++)
         serializedTailpatches[i].DoSaveLoad(chunkHelper);
 
-    chunkHelper.Do(typename T::Pack8() << table << countdown << nPendingTailpatches);
+    if (version == 0) {
+        uint8_t countdown = 0;
+        chunkHelper.Do(typename T::Pack8() << table << countdown << nPendingTailpatches);
+    } else {
+        chunkHelper.Do(typename T::Pack8() << table << nPendingTailpatches)
+            .Do32(loadedR12)
+            .Do32(loadR12PC);
+    }
 }
 
 template void patchDispatchSave<Savestate<ChunkType>>(PatchDispatch* pd,
