@@ -15,7 +15,7 @@ int32_t db_installer_install(struct SyscallDispatch* sd, size_t len, void* data)
     if (!syscallDispatchM68kSupport(sd)) return DB_INSTALL_RESULT_ERR_NOT_SUPPORTED;
     if (!syscallDispatchPrepare(sd)) return DB_INSTALL_RESULT_ERR_NOT_CURRENTLY_POSSIBLE;
 
-    const uint32_t scratch = syscall68k_MemPtrNew(sd, 5);
+    const uint32_t scratch = syscall68k_MemPtrNew(sd, SC_EXECUTE_PURE, 5);
     if (!scratch) return DB_INSTALL_RESULT_ERR_UNKNOWN;
 
     const uint32_t deleteProcP = scratch;
@@ -35,7 +35,7 @@ int32_t db_installer_install(struct SyscallDispatch* sd, size_t len, void* data)
 
             if (paceGetFsr() > 0) ERR("failed reading parameters in deleteProcP");
 
-            const uint16_t err = syscall68k_DmDeleteDatabase(sd, cardNo, dbID);
+            const uint16_t err = syscall68k_DmDeleteDatabase(sd, SC_EXECUTE_FULL, cardNo, dbID);
             couldNotOverwrite = couldNotOverwrite || err;
 
             paceSetDreg(0, !err);
@@ -75,13 +75,15 @@ int32_t db_installer_install(struct SyscallDispatch* sd, size_t len, void* data)
         syscallDispatchUnregisterM68Stub(sd, deleteProcP);
     });
 
-    uint16_t err = syscall68k_ExgDBRead(sd, readProcP, deleteProcP, 0, 0, 0, needsResetP, true);
+    uint16_t err = syscall68k_ExgDBRead(sd, SC_EXECUTE_FULL, readProcP, deleteProcP, 0, 0, 0,
+                                        needsResetP, true);
 
     paceResetFsr();
     bool needsReset = paceGet8(needsResetP);
     if (paceGetFsr() > 0) ERR("failed to read needsReset");
 
-    if (syscall68k_MemPtrFree(sd, scratch) != 0) ERR("failed to release scratch memory");
+    if (syscall68k_MemPtrFree(sd, SC_EXECUTE_PURE, scratch) != 0)
+        ERR("failed to release scratch memory");
 
     if (couldNotOverwrite) return DB_INSTALL_RESULT_ERR_COULD_NOT_OVERWRITE;
 

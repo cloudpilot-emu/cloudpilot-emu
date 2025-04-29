@@ -740,12 +740,12 @@ bool socRunToPaceSyscall(struct SoC *soc, uint16_t syscall, uint64_t maxCycles,
 
 bool socExecuteInjected(struct SoC *soc, struct ArmCpu *cpu, uint64_t maxCycles,
                         uint64_t cyclesPerSecond) {
-    const uint64_t cycles = socRunUntil<SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE, true>(
+    const uint64_t cycles = socRunUntil<SLOW_PATH_REASON_INJECTED_CALL_DONE, true>(
         soc, cpu, maxCycles, cyclesPerSecond);
 
     soc->injectedTimeNsec += (cycles * 1000000) / (cyclesPerSecond / 1000);
 
-    return cpuGetSlowPathReason(cpu) & SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE;
+    return cpuGetSlowPathReason(cpu) & SLOW_PATH_REASON_INJECTED_CALL_DONE;
 }
 
 uint64_t socGetInjectedTimeNsec(struct SoC *soc) { return soc->injectedTimeNsec; }

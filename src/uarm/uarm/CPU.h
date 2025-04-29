@@ -56,7 +56,7 @@ extern "C" {
 #define SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE 0x10
 #define SLOW_PATH_REASON_RESCHEDULE 0x20
 #define SLOW_PATH_REASON_PACE_SYSCALL_BREAK 0x40
-#define SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE 0x80
+#define SLOW_PATH_REASON_INJECTED_CALL_DONE 0x80
 
 typedef bool (*ArmCoprocRegXferF)(struct ArmCpu *cpu, void *userData, bool two /* MCR2/MRC2 ? */,
                                   bool MRC, uint8_t op1, uint8_t Rx, uint8_t CRn, uint8_t CRm,
@@ -135,6 +135,8 @@ struct ArmMem *cpuGetMem(struct ArmCpu *cpu);
 
 template <bool monitorPC>
 uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles);
+
+uint32_t cpuCyclePure(struct ArmCpu *cpu);
 
 using M68kTrapHandler = std::function<bool(struct ArmCpu *, uint32_t address)>;
 void cpuAddM68kTrap0Handler(struct ArmCpu *cpu, uint32_t address, M68kTrapHandler handler);

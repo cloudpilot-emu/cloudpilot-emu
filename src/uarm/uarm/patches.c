@@ -5,7 +5,7 @@
 #include "syscall.h"
 
 static void headpatch_SysSetAutoOffTime(void* ctx, uint32_t syscall, uint32_t* registers) {
-    fprintf(stderr, "overriding auto off time\n");
+    fprintf(stderr, "overriding auto off %u -> 0\n", registers[0]);
 
     registers[0] = 0;
 }

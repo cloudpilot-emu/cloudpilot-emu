@@ -3247,19 +3247,37 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
 }
 
 struct ArmCpu *cpuPrepareInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState) {
-    if (!scratchState) scratchState = (struct ArmCpu *)malloc(sizeof(*scratchState));
+    if (!scratchState) {
+        scratchState = (struct ArmCpu *)malloc(sizeof(*scratchState));
+        scratchState->patchDispatch = clonePatchDispatch(cpu->patchDispatch);
+    }
+
+    auto pd = scratchState->patchDispatch;
     memcpy(scratchState, cpu, sizeof(*scratchState));
+    cpu->patchDispatch = pd;
+
+    patchDispatchReset(cpu->patchDispatch);
 
     return scratchState;
 }
 
 void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState) {
-    cpu->sleeping = scratchState->sleeping;
-    cpu->waitingIrqs = scratchState->waitingIrqs;
-    cpu->waitingFiqs = scratchState->waitingFiqs;
+    auto sleeping = cpu->sleeping;
+    auto waitingIrqs = cpu->waitingIrqs;
+    auto waitingFiqs = cpu->waitingFiqs;
+    auto slowPath = cpu->slowPath;
+    auto pd = cpu->patchDispatch;
+
+    memcpy(cpu, scratchState, sizeof(*cpu));
+
+    scratchState->patchDispatch = pd;
+    cpu->sleeping = sleeping;
+    cpu->waitingIrqs = waitingIrqs;
+    cpu->waitingFiqs = waitingFiqs;
+    cpu->slowPath = slowPath;
+
     cpu->waitingEventsTotal = cpu->waitingFiqs + cpu->waitingIrqs;
 
-    cpu->slowPath = scratchState->slowPath;
     cpuUpdateSlowPath(cpu);
 }
 
@@ -3495,7 +3513,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleThumb(struct ArmCpu *cpu, uint32_t cy
 
         if constexpr (injected) {
             if (cpu->regs[REG_NO_PC] == INJECTED_CALL_LR_MAGIC)
-                cpuSetSlowPath(cpu, SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE);
+                cpuSetSlowPath(cpu, SLOW_PATH_REASON_INJECTED_CALL_DONE);
         }
 
         if (cpu->slowPath) break;
@@ -3541,7 +3559,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
 
         if constexpr (injected) {
             if (cpu->regs[REG_NO_PC] == INJECTED_CALL_LR_MAGIC)
-                cpuSetSlowPath(cpu, SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE);
+                cpuSetSlowPath(cpu, SLOW_PATH_REASON_INJECTED_CALL_DONE);
         }
 
         if (cpu->slowPath) break;
@@ -3568,7 +3586,7 @@ ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
 
     cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE | SLOW_PATH_REASON_RESCHEDULE |
                               SLOW_PATH_REASON_PACE_SYSCALL_BREAK |
-                              SLOW_PATH_REASON_PACE_INJECTED_CALL_DONE);
+                              SLOW_PATH_REASON_INJECTED_CALL_DONE);
 
     if (cpu->modePace)
         return cpuCyclePace(cpu, cycles);
@@ -3581,6 +3599,23 @@ ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
 template uint32_t cpuCycle<true>(struct ArmCpu *cpu, uint32_t cycles);
 template uint32_t cpuCycle<false>(struct ArmCpu *cpu, uint32_t cycles);
 
+uint32_t cpuCyclePure(struct ArmCpu *cpu) {
+    if (cpu->sleeping) return 1;
+
+    cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE | SLOW_PATH_REASON_RESCHEDULE |
+                              SLOW_PATH_REASON_PACE_SYSCALL_BREAK |
+                              SLOW_PATH_REASON_INJECTED_CALL_DONE);
+
+    patchOnBeforeExecute(cpu->patchDispatch, cpu->regs);
+
+    if (cpu->modePace)
+        return cpuCyclePace(cpu, 1);
+    else if (cpu->T)
+        return cpuCycleThumb<true>(cpu, 1);
+    else
+        return cpuCycleArm<true>(cpu, 1);
+}
+
 void cpuStartInjectedSyscall(struct ArmCpu *cpu, uint32_t syscall) {
     const uint8_t table = syscall >> 12;
     uint32_t tableAddr;
@@ -3592,8 +3627,8 @@ void cpuStartInjectedSyscall(struct ArmCpu *cpu, uint32_t syscall) {
     if (!cpuPrvMemOpEx<4>(cpu, &entryAddr, tableAddr + offset, false, true, NULL))
         ERR("failed to dispatch syscall %#010x: unable to read entry point\n", syscall);
 
-    cpu->regs[REG_NO_PC] = entryAddr;
-    cpu->T = false;
+    cpu->modePace = false;
+    cpuPrvSetReg(cpu, REG_NO_PC, entryAddr);
 
     cpu->regs[REG_NO_LR] = INJECTED_CALL_LR_MAGIC;
 }

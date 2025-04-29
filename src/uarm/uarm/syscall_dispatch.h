@@ -12,6 +12,9 @@
 extern "C" {
 #endif
 
+#define SC_EXECUTE_PURE 0
+#define SC_EXECUTE_FULL 1
+
 struct SyscallDispatch;
 struct ArmCpu;
 
@@ -27,15 +30,16 @@ bool syscallDispatch_strncpy_toHost(struct SyscallDispatch* sd, void* dest, uint
 bool syscallDispatch_memcpy_fromHost(struct SyscallDispatch* sd, uint32_t dest, void* src,
                                      size_t size);
 
-uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t timeout);
+uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t flags, uint32_t timeout);
 
-uint32_t syscall68k_SysGetOsVersionString(struct SyscallDispatch* sd);
-uint32_t syscall68k_MemPtrNew(struct SyscallDispatch* sd, uint32_t size);
-uint16_t syscall68k_MemPtrFree(struct SyscallDispatch* sd, uint32_t memPtr);
-uint16_t syscall68k_ExgDBRead(struct SyscallDispatch* sd, uint32_t readProcP, uint32_t deleteProcP,
-                              uint32_t userDataP, uint32_t dbIDP, uint16_t cardNo,
-                              uint32_t needsResetP, bool keepDates);
-uint16_t syscall68k_DmDeleteDatabase(struct SyscallDispatch* sd, uint16_t cardNo, uint32_t dbID);
+uint32_t syscall68k_SysGetOsVersionString(struct SyscallDispatch* sd, uint32_t flags);
+uint32_t syscall68k_MemPtrNew(struct SyscallDispatch* sd, uint32_t flags, uint32_t size);
+uint16_t syscall68k_MemPtrFree(struct SyscallDispatch* sd, uint32_t flags, uint32_t memPtr);
+uint16_t syscall68k_ExgDBRead(struct SyscallDispatch* sd, uint32_t flags, uint32_t readProcP,
+                              uint32_t deleteProcP, uint32_t userDataP, uint32_t dbIDP,
+                              uint16_t cardNo, uint32_t needsResetP, bool keepDates);
+uint16_t syscall68k_DmDeleteDatabase(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
+                                     uint32_t dbID);
 
 #ifdef __cplusplus
 }

@@ -203,7 +203,7 @@ namespace {
         }
 
         char version[32];
-        const uint32_t ptr = syscall68k_SysGetOsVersionString(sd);
+        const uint32_t ptr = syscall68k_SysGetOsVersionString(sd, SC_EXECUTE_FULL);
 
         if (!ptr) {
             cout << "failed to retrieve OS version string" << endl;
@@ -213,7 +213,7 @@ namespace {
         syscallDispatch_strncpy_toHost(sd, version, ptr, sizeof(version));
         version[sizeof(version) - 1] = '\0';
 
-        if (syscall68k_MemPtrFree(sd, ptr) != 0) {
+        if (syscall68k_MemPtrFree(sd, SC_EXECUTE_PURE, ptr) != 0) {
             cout << "very bad: failed to release m68k pointer" << endl;
             return;
         }
@@ -221,31 +221,59 @@ namespace {
         cout << version << endl;
     }
 
-    const vector<cli::Command> commandList({
-        {.name = "set-mips",
-         .usage = "set-mips <mips>",
-         .description = "Set target MIPS.",
-         .cmd = CmdSetMips},
-        {.name = "audio-on", .description = "Enable audio.", .cmd = CmdEnableAudio},
-        {.name = "audio-off", .description = "Disable audio.", .cmd = CmdDisableAudio},
-        {.name = "unmount", .description = "Unmount SD card.", .cmd = CmdUnmount},
-        {.name = "mount",
-         .usage = "mount <image>",
-         .description = "Unmount SD card.",
-         .cmd = CmdMount},
-        {.name = "reset", .description = "Reset Pilot.", .cmd = CmdReset},
-        {.name = "rotate", .description = "Rotate 90° CCW", .cmd = CmdRotate},
-        {.name = "save-session",
-         .usage = "save-session <session file> [card image]",
-         .description = "Save session.",
-         .cmd = CmdSaveSession},
-        {.name = "save-sd",
-         .usage = "save-sd <card image>",
-         .description = "Save SD card.",
-         .cmd = CmdSaveSd},
-        {.name = "dump-mmu", .description = "Dump MMU mappings.", .cmd = CmdDumpMMU},
-        {.name = "os-version", .description = "Retrieve OS version. ", .cmd = CmdOsVersion},
-    });
+    void CmdSetAutoOff(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
+
+        uint32_t timeout;
+        if (!(istringstream(args[0]) >> timeout)) {
+            cout << "invalid timeout" << endl;
+            return env.PrintUsage();
+        }
+
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+        SyscallDispatch* sd = socGetSyscallDispatch(ctx->soc);
+
+        if (!syscallDispatchM68kSupport(sd)) {
+            cout << "m68k syscalls not supported" << endl;
+            return;
+        }
+
+        if (!syscallDispatchPrepare(sd)) {
+            cout << "unable to prepare save environment for syscalls" << endl;
+            return;
+        }
+
+        syscall_SysSetAutoOffTime(sd, SC_EXECUTE_PURE, timeout);
+    }
+
+    const vector<cli::Command> commandList(
+        {{.name = "set-mips",
+          .usage = "set-mips <mips>",
+          .description = "Set target MIPS.",
+          .cmd = CmdSetMips},
+         {.name = "audio-on", .description = "Enable audio.", .cmd = CmdEnableAudio},
+         {.name = "audio-off", .description = "Disable audio.", .cmd = CmdDisableAudio},
+         {.name = "unmount", .description = "Unmount SD card.", .cmd = CmdUnmount},
+         {.name = "mount",
+          .usage = "mount <image>",
+          .description = "Unmount SD card.",
+          .cmd = CmdMount},
+         {.name = "reset", .description = "Reset Pilot.", .cmd = CmdReset},
+         {.name = "rotate", .description = "Rotate 90° CCW", .cmd = CmdRotate},
+         {.name = "save-session",
+          .usage = "save-session <session file> [card image]",
+          .description = "Save session.",
+          .cmd = CmdSaveSession},
+         {.name = "save-sd",
+          .usage = "save-sd <card image>",
+          .description = "Save SD card.",
+          .cmd = CmdSaveSd},
+         {.name = "dump-mmu", .description = "Dump MMU mappings.", .cmd = CmdDumpMMU},
+         {.name = "os-version", .description = "Retrieve OS version. ", .cmd = CmdOsVersion},
+         {.name = "set-auto-off",
+          .usage = "set-auto-off",
+          .description = "Set auto off timeout (warning: wakeup will currently fail). ",
+          .cmd = CmdSetAutoOff}});
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }

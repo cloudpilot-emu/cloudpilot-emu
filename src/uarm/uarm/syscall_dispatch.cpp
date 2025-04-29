@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <iostream>
+
 #include "CPU.h"
 #include "cputil.h"
 #include "memcpy.h"
@@ -43,6 +45,7 @@ bool syscallDispatchM68kSupport(struct SyscallDispatch* sd) { return socIsPacePa
 
 bool syscallDispatchPrepare(struct SyscallDispatch* sd) {
     if (!syscallDispatchM68kSupport(sd)) return false;
+    if (sd->nestLevel > 0) ERR("syscallDispatchPrepare is only allowed on top level");
 
     return socRunToPaceSyscall(sd->soc, SYSCALL_68K_EVT_GET_EVENT,
                                PREPARE_INJECTED_CALL_TIMEOUT_SEC * PREPARE_INJECTED_CALL_MIPS,
@@ -75,7 +78,7 @@ bool syscallDispatch_memcpy_fromHost(struct SyscallDispatch* sd, uint32_t dest, 
     return memcpyResult.ok;
 }
 
-static size_t allocateScratchState(struct SyscallDispatch* sd) {
+static size_t pushState(struct SyscallDispatch* sd) {
     if (sd->nestLevel >= MAX_NEST_LEVEL)
         ERR("unable to dispatch syscall: max nest level reached\n");
 
@@ -88,7 +91,7 @@ static size_t allocateScratchState(struct SyscallDispatch* sd) {
     return nestLevel;
 }
 
-static void disposeScratchState(struct SyscallDispatch* sd, size_t nestLevel) {
+static void popState(struct SyscallDispatch* sd, size_t nestLevel) {
     if (sd->nestLevel != nestLevel + 1) ERR("bad nest level");
 
     cpuFinishInjectedCall(socGetCpu(sd->soc), sd->scratchStates[nestLevel]);
@@ -126,86 +129,101 @@ void syscallDispatchUnregisterM68Stub(struct SyscallDispatch* sd, uint32_t tramp
     cpuRemoveM68kTrap0Handler(socGetCpu(sd->soc), trampoline);
 }
 
-static void executeInjectedSyscall(struct SyscallDispatch* sd, uint16_t syscall, size_t nestLevel) {
-    cpuStartInjectedSyscall(sd->scratchStates[nestLevel], syscall);
+static bool executeInjectedCall(struct SoC* soc, uint32_t flags) {
+    struct ArmCpu* cpu = socGetCpu(soc);
 
-    if (!socExecuteInjected(sd->soc, sd->scratchStates[nestLevel],
-                            INJECTED_CALL_TIMEOUT_SEC * INJECTED_CALL_MIPS, INJECTED_CALL_MIPS)) {
+    if (flags & SC_EXECUTE_FULL) {
+        if (socExecuteInjected(soc, cpu, INJECTED_CALL_TIMEOUT_SEC * INJECTED_CALL_MIPS,
+                               INJECTED_CALL_MIPS)) {
+            return true;
+        }
+    } else {
+        uint64_t cycles = 0;
+
+        do {
+            cycles += cpuCyclePure(cpu);
+            if (cpuGetSlowPathReason(cpu) & SLOW_PATH_REASON_INJECTED_CALL_DONE) return true;
+        } while (cycles < INJECTED_CALL_TIMEOUT_SEC * INJECTED_CALL_MIPS);
+    }
+
+    return false;
+}
+
+static void executeInjectedSyscall(struct SyscallDispatch* sd, uint32_t flags, uint16_t syscall) {
+    cpuStartInjectedSyscall(socGetCpu(sd->soc), syscall);
+
+    if (!executeInjectedCall(sd->soc, flags)) {
         ERR("failed to execute injected call within time limit");
     }
 }
 
-static void executeInjectedSyscall68k(struct SyscallDispatch* sd, uint16_t syscall,
-                                      size_t nestLevel) {
+static void executeInjectedSyscall68k(struct SyscallDispatch* sd, uint32_t flags,
+                                      uint16_t syscall) {
+    struct ArmCpu* cpu = socGetCpu(sd->soc);
     bool deadMansSwitchSaved = sd->deadMansSwitch;
 
-    cpuStartInjectedSyscall68k(sd->scratchStates[nestLevel], syscall);
+    cpuStartInjectedSyscall68k(cpu, syscall);
 
     while (true) {
         sd->deadMansSwitch = false;
 
-        if (socExecuteInjected(sd->soc, sd->scratchStates[nestLevel],
-                               INJECTED_CALL_TIMEOUT_SEC * INJECTED_CALL_MIPS,
-                               INJECTED_CALL_MIPS)) {
-            break;
-        }
-
+        if (executeInjectedCall(sd->soc, flags)) break;
         if (sd->deadMansSwitch) continue;
 
         ERR("failed to execute injected call within time limit");
     }
 
-    cpuFinishInjectedSyscall68k(sd->scratchStates[nestLevel]);
+    cpuFinishInjectedSyscall68k(cpu);
 
     sd->deadMansSwitch = deadMansSwitchSaved;
 }
 
-uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t timeout) {
-    const size_t nestLevel = allocateScratchState(sd);
-    uint32_t* registers = cpuGetRegisters(sd->scratchStates[nestLevel]);
+uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t flags, uint32_t timeout) {
+    const size_t nestLevel = pushState(sd);
+    uint32_t* registers = cpuGetRegisters(socGetCpu(sd->soc));
 
     registers[0] = timeout;
-    executeInjectedSyscall(sd, SYSCALL_SYS_SET_AUTO_OFF_TIME, nestLevel);
+    executeInjectedSyscall(sd, flags, SYSCALL_SYS_SET_AUTO_OFF_TIME);
 
     uint16_t err = registers[0];
 
-    disposeScratchState(sd, nestLevel);
+    popState(sd, nestLevel);
 
     return err;
 }
 
-static uint32_t syscall68k(struct SyscallDispatch* sd, uint16_t syscall, bool returnPtr,
-                           std::function<void()> setupStack) {
-    const size_t nestLevel = allocateScratchState(sd);
+static uint32_t syscall68k(struct SyscallDispatch* sd, uint32_t flags, uint16_t syscall,
+                           bool returnPtr, std::function<void()> setupStack) {
+    const size_t nestLevel = pushState(sd);
 
     paceResetFsr();
     setupStack();
     if (paceGetFsr() > 0) ERR("memory fault during injected syscall 0x%04x", syscall);
 
-    executeInjectedSyscall68k(sd, syscall, nestLevel);
+    executeInjectedSyscall68k(sd, flags, syscall);
     const uint32_t result = returnPtr ? paceGetAreg(0) : paceGetDreg(0);
 
-    disposeScratchState(sd, nestLevel);
+    popState(sd, nestLevel);
 
     return result;
 }
 
-uint32_t syscall68k_SysGetOsVersionString(struct SyscallDispatch* sd) {
-    return syscall68k(sd, SYSCALL_68K_SYS_GET_OS_VERSION_STRING, true, []() {});
+uint32_t syscall68k_SysGetOsVersionString(struct SyscallDispatch* sd, uint32_t flags) {
+    return syscall68k(sd, flags, SYSCALL_68K_SYS_GET_OS_VERSION_STRING, true, []() {});
 }
 
-uint32_t syscall68k_MemPtrNew(struct SyscallDispatch* sd, uint32_t size) {
-    return syscall68k(sd, SYSCALL_68K_MEM_PTR_NEW, true, [=]() { pacePush32(size); });
+uint32_t syscall68k_MemPtrNew(struct SyscallDispatch* sd, uint32_t flags, uint32_t size) {
+    return syscall68k(sd, flags, SYSCALL_68K_MEM_PTR_NEW, true, [=]() { pacePush32(size); });
 }
 
-uint16_t syscall68k_MemPtrFree(struct SyscallDispatch* sd, uint32_t memPtr) {
-    return syscall68k(sd, SYSCALL_68K_MEM_CHUNK_FREE, false, [=]() { pacePush32(memPtr); });
+uint16_t syscall68k_MemPtrFree(struct SyscallDispatch* sd, uint32_t flags, uint32_t memPtr) {
+    return syscall68k(sd, flags, SYSCALL_68K_MEM_CHUNK_FREE, false, [=]() { pacePush32(memPtr); });
 }
 
-uint16_t syscall68k_ExgDBRead(struct SyscallDispatch* sd, uint32_t readProcP, uint32_t deleteProcP,
-                              uint32_t userDataP, uint32_t dbIDP, uint16_t cardNo,
-                              uint32_t needsResetP, bool keepDates) {
-    return syscall68k(sd, SYSCALL_68K_EXG_DB_READ, false, [=]() {
+uint16_t syscall68k_ExgDBRead(struct SyscallDispatch* sd, uint32_t flags, uint32_t readProcP,
+                              uint32_t deleteProcP, uint32_t userDataP, uint32_t dbIDP,
+                              uint16_t cardNo, uint32_t needsResetP, bool keepDates) {
+    return syscall68k(sd, flags, SYSCALL_68K_EXG_DB_READ, false, [=]() {
         pacePush8(keepDates);
         pacePush32(needsResetP);
         pacePush16(cardNo);
@@ -216,8 +234,9 @@ uint16_t syscall68k_ExgDBRead(struct SyscallDispatch* sd, uint32_t readProcP, ui
     });
 }
 
-uint16_t syscall68k_DmDeleteDatabase(struct SyscallDispatch* sd, uint16_t cardNo, uint32_t dbID) {
-    return syscall68k(sd, SYSCALL_68K_DM_DELETE_DATABASE, false, [=]() {
+uint16_t syscall68k_DmDeleteDatabase(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
+                                     uint32_t dbID) {
+    return syscall68k(sd, flags, SYSCALL_68K_DM_DELETE_DATABASE, false, [=]() {
         pacePush32(dbID);
         pacePush16(cardNo);
     });

@@ -17,7 +17,10 @@ struct PatchDispatch;
 struct ArmCpu;
 
 struct PatchDispatch* initPatchDispatch();
+struct PatchDispatch* clonePatchDispatch(struct PatchDispatch* pd);
+
 void destroyPatchDispatch(struct PatchDispatch* pd);
+void patchDispatchReset(struct PatchDispatch* pd);
 
 void patchDispatchOnLoadR12FromR9(struct PatchDispatch* pd, int32_t offset);
 void patchDispatchOnLoadPcFromR12(struct PatchDispatch* pd, int32_t offset, uint32_t* registers);
