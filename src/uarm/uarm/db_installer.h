@@ -25,7 +25,7 @@ extern "C" {
 
 struct SyscallDispatch;
 
-int32_t db_installer_install(struct SyscallDispatch* sd, size_t len, void* data);
+int32_t dbInstallerInstall(struct SyscallDispatch* sd, size_t len, void* data);
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,6 @@
 #include "db_installer.h"
 
+#include <cstdio>
 #include <iostream>
 
 #include "CPU.h"
@@ -11,12 +12,14 @@
 
 using namespace std;
 
-int32_t db_installer_install(struct SyscallDispatch* sd, size_t len, void* data) {
+int32_t dbInstallerInstall(struct SyscallDispatch* sd, size_t len, void* data) {
     if (!syscallDispatchM68kSupport(sd)) return DB_INSTALL_RESULT_ERR_NOT_SUPPORTED;
     if (!syscallDispatchPrepare(sd)) return DB_INSTALL_RESULT_ERR_NOT_CURRENTLY_POSSIBLE;
 
     const uint32_t scratch = syscall68k_MemPtrNew(sd, SC_EXECUTE_PURE, 5);
     if (!scratch) return DB_INSTALL_RESULT_ERR_UNKNOWN;
+
+    cout << "allocated scratch" << endl;
 
     const uint32_t deleteProcP = scratch;
     const uint32_t readProcP = scratch + 2;
@@ -27,6 +30,8 @@ int32_t db_installer_install(struct SyscallDispatch* sd, size_t len, void* data)
     syscallDispatchRegisterM68Stub(
         sd, deleteProcP,
         [&](struct ArmCpu*, uint32_t parameterBase, std::function<void()> deadMansSwitch) {
+            cout << "deleteProc" << endl;
+
             paceSetDreg(0, 0);
             paceResetFsr();
 

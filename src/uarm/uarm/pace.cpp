@@ -361,6 +361,9 @@ void paceSet32(uint32_t addr, uint32_t value) { uae_put32(addr, value); }
 void pacePush8(uint8_t value) {
     m68k_areg(regs, 7) -= 1;
     uae_put8(m68k_areg(regs, 7), value);
+
+    m68k_areg(regs, 7) -= 1;
+    uae_put8(m68k_areg(regs, 7), 0);
 }
 
 void pacePush16(uint16_t value) {

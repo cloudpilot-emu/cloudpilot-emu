@@ -11,6 +11,8 @@
 extern "C" {
 #endif
 
+#define PACE_RETURN_MAGIC_PC 0xfffffff0
+
 enum paceStatus {
     pace_status_ok = 0,
     pace_status_illegal_instr = 4,

@@ -3191,6 +3191,7 @@ void cpuReset(struct ArmCpu *cpu, uint32_t pc) {
 
     cpuPrvSetPC(cpu, pc);
     mmuReset(cpu->mmu);
+    icacheInval(cpu->ic);
 
     cpuUpdateSlowPath(cpu);
 }
@@ -3287,6 +3288,29 @@ static void cpuPrvPaceSyscall(struct ArmCpu *cpu) {
 #endif
 }
 
+static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
+    uint_fast8_t fsr = 0;
+
+    if (!paceSave68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
+
+    cpu->regs[REG_NO_SP] += 4;
+
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], false, cpu->privileged,
+                        &fsr))
+        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
+    cpu->regs[REG_NO_SP] += 4;
+
+    cpu->regs[1] = cpu->regs[0];
+    cpuPrvSetPC(cpu, cpu->regs[REG_NO_LR]);
+
+    cpu->modePace = false;
+    cpuSetSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
+
+#ifdef TRACE_PACE
+    fprintf(stderr, "return from PACE\n");
+#endif
+}
+
 static void cpuPrvPaceDivisionByZero(struct ArmCpu *cpu) {
     const uint16_t lastOpcode = paceGetLastOpcode();
 
@@ -3330,7 +3354,10 @@ static void cpuPrvPaceTrap0(struct ArmCpu *cpu) {
     const uint32_t location = paceGetPC() - 2;
     auto itHandler = cpu->m68kTrap0Handlers->find(location);
 
-    if (itHandler != cpu->m68kTrap0Handlers->end() && itHandler->second(cpu, location)) return;
+    if (itHandler != cpu->m68kTrap0Handlers->end() && itHandler->second(cpu, location)) {
+        if (paceGetPC() == PACE_RETURN_MAGIC_PC) cpuPrvPaceReturn(cpu);
+        return;
+    }
 
     if (!cpuPrvPaceCallout(cpu, cpu->pacePatch->calloutTrap0)) return;
 
@@ -3352,29 +3379,6 @@ static void cpuPrvPaceUnimplementedlInstruction(struct ArmCpu *cpu) {
 
 #ifdef TRACE_PACE
     fprintf(stderr, "PACE unimplemented instruction\n");
-#endif
-}
-
-static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
-    uint_fast8_t fsr = 0;
-
-    if (!paceSave68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
-
-    cpu->regs[REG_NO_SP] += 4;
-
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], false, cpu->privileged,
-                        &fsr))
-        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
-    cpu->regs[REG_NO_SP] += 4;
-
-    cpu->regs[1] = cpu->regs[0];
-    cpuPrvSetPC(cpu, cpu->regs[REG_NO_LR]);
-
-    cpu->modePace = false;
-    cpuSetSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE);
-
-#ifdef TRACE_PACE
-    fprintf(stderr, "return from PACE\n");
 #endif
 }
 

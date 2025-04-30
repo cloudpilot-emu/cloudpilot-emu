@@ -64,7 +64,7 @@ bool syscallDispatchM68kSupport(struct SyscallDispatch* sd) { return socIsPacePa
 
 bool syscallDispatchPrepare(struct SyscallDispatch* sd) {
     if (!syscallDispatchM68kSupport(sd)) return false;
-    if (sd->nestLevel > 0) ERR("syscallDispatchPrepare is only allowed on top level");
+    if (sd->nestLevel > 0) ERR("syscallDispatchPrepare is only allowed on top level\n");
 
     return socRunToPaceSyscall(sd->soc, SYSCALL_68K_EVT_GET_EVENT,
                                PREPARE_INJECTED_CALL_TIMEOUT_SEC * PREPARE_INJECTED_CALL_MIPS,
@@ -108,7 +108,7 @@ static size_t pushState(struct SyscallDispatch* sd) {
 }
 
 static void popState(struct SyscallDispatch* sd, size_t nestLevel) {
-    if (sd->nestLevel != nestLevel + 1) ERR("bad nest level");
+    if (sd->nestLevel != nestLevel + 1) ERR("bad nest level\n");
 
     sd->scratchStates[nestLevel].Restore();
     sd->nestLevel--;
@@ -122,7 +122,7 @@ void syscallDispatchRegisterM68Stub(struct SyscallDispatch* sd, uint32_t trampol
         paceResetFsr();
         const uint32_t returnAddress = paceGet32(sp);
         if (paceGetFsr() > 0) {
-            ERR("memory fault in m68k stub: failed reading return address from stack");
+            ERR("memory fault in m68k stub: failed reading return address from stack\n");
         }
 
         stub(cpu, sp + 4, [=]() { sd->deadMansSwitch = true; });
@@ -135,7 +135,7 @@ void syscallDispatchRegisterM68Stub(struct SyscallDispatch* sd, uint32_t trampol
 
     paceResetFsr();
     paceSet16(trampoline, INSTRUCTION_M68K_TRAP0);
-    if (paceGetFsr() > 0) ERR("memory fault registering m68k stub: failed to write trampoline");
+    if (paceGetFsr() > 0) ERR("memory fault registering m68k stub: failed to write trampoline\n");
 
     cpuAddM68kTrap0Handler(socGetCpu(sd->soc), trampoline, trapHandler);
 }
@@ -168,7 +168,7 @@ static void executeInjectedSyscall(struct SyscallDispatch* sd, uint32_t flags, u
     cpuStartInjectedSyscall(socGetCpu(sd->soc), syscall);
 
     if (!executeInjectedCall(sd->soc, flags)) {
-        ERR("failed to execute injected call within time limit");
+        ERR("failed to execute injected call within time limit\n");
     }
 }
 
@@ -185,7 +185,7 @@ static void executeInjectedSyscall68k(struct SyscallDispatch* sd, uint32_t flags
         if (executeInjectedCall(sd->soc, flags)) break;
         if (sd->deadMansSwitch) continue;
 
-        ERR("failed to execute injected call within time limit");
+        ERR("failed to execute injected call within time limit\n");
     }
 
     cpuFinishInjectedSyscall68k(cpu);
@@ -213,7 +213,7 @@ static uint32_t syscall68k(struct SyscallDispatch* sd, uint32_t flags, uint16_t 
 
     paceResetFsr();
     setupStack();
-    if (paceGetFsr() > 0) ERR("memory fault during injected syscall 0x%04x", syscall);
+    if (paceGetFsr() > 0) ERR("memory fault during injected syscall 0x%04x\n", syscall);
 
     executeInjectedSyscall68k(sd, flags, syscall);
     const uint32_t result = returnPtr ? paceGetAreg(0) : paceGetDreg(0);

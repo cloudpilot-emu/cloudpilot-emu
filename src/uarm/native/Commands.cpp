@@ -12,6 +12,7 @@
 #include "Cli.h"
 #include "FileUtil.h"
 #include "SoC.h"
+#include "db_installer.h"
 #include "md5.h"
 #include "savestate/SessionFile.h"
 #include "sdcard.h"
@@ -246,6 +247,59 @@ namespace {
         syscall_SysSetAutoOffTime(sd, SC_EXECUTE_PURE, timeout);
     }
 
+    void CmdInstall(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 1) return env.PrintUsage();
+
+        size_t len;
+        unique_ptr<uint8_t[]> data;
+        if (!util::ReadFile(args[0], data, len)) {
+            cout << "unable to read " << args[0] << endl;
+            return;
+        }
+
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+
+        const auto result = dbInstallerInstall(socGetSyscallDispatch(ctx->soc), len, data.get());
+
+        switch (result) {
+            case DB_INSTALL_RESULT_NEEDS_RESET:
+                cout << "installation successful, needs reset" << endl;
+                break;
+
+            case DB_INSTALL_RESULT_OK:
+                cout << "installation successful" << endl;
+                break;
+
+            case DB_INSTALL_RESULT_ERR_CORRUPT:
+                cout << "database corrupt" << endl;
+                break;
+
+            case DB_INSTALL_RESULT_ERR_OOM:
+                cout << "out of memory" << endl;
+                break;
+
+            case DB_INSTALL_RESULT_ERR_IS_OPEN:
+                cout << "db cannot is open and cannot be deleted" << endl;
+                break;
+
+            case DB_INSTALL_RESULT_ERR_COULD_NOT_OVERWRITE:
+                cout << "unable to overwrite db" << endl;
+                break;
+
+            case DB_INSTALL_RESULT_ERR_NOT_SUPPORTED:
+                cout << "db installation not supported on this ROM" << endl;
+                break;
+
+            case DB_INSTALL_RESULT_ERR_NOT_CURRENTLY_POSSIBLE:
+                cout << "db installation not currently possible" << endl;
+                break;
+
+            case DB_INSTALL_RESULT_ERR_UNKNOWN:
+                cout << "unknown error during installation" << endl;
+                break;
+        }
+    }
+
     const vector<cli::Command> commandList(
         {{.name = "set-mips",
           .usage = "set-mips <mips>",
@@ -273,7 +327,11 @@ namespace {
          {.name = "set-auto-off",
           .usage = "set-auto-off",
           .description = "Set auto off timeout (warning: wakeup will currently fail). ",
-          .cmd = CmdSetAutoOff}});
+          .cmd = CmdSetAutoOff},
+         {.name = "install",
+          .usage = "install <database>",
+          .description = "Install database.",
+          .cmd = CmdInstall}});
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }
