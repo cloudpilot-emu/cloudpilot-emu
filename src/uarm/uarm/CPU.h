@@ -88,8 +88,6 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
                        uint32_t cpuid, uint32_t cacheId, struct PatchDispatch *patchDispatch,
                        struct PacePatch *pacePatch);
 
-struct ArmCpu *cpuPrepareInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState);
-void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState);
 uint32_t *cpuGetRegisters(struct ArmCpu *cpu);
 
 void cpuStartInjectedSyscall(struct ArmCpu *cpu, uint32_t syscall);
@@ -147,6 +145,12 @@ void cpuSave(struct ArmCpu *cpu, T &savestate);
 
 template <typename T>
 void cpuLoad(struct ArmCpu *cpu, T &loader);
+
+template <typename T>
+void cpuPrepareInjectedCall(struct ArmCpu *cpu, T &savestate);
+
+template <typename T>
+void cpuFinishInjectedCall(struct ArmCpu *cpu, T &loader);
 #endif
 
 #endif

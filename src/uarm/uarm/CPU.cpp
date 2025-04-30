@@ -67,7 +67,7 @@
 
 #define EXEC_FN_PREFIX_VALUE 0x53ae0000
 
-#define SAVESTATE_VERSION 1
+#define SAVESTATE_VERSION 2
 
 #ifdef __EMSCRIPTEN__
     #define PREFIX_EXEC_FN(...) (ExecFn((uint32_t)__VA_ARGS__ + EXEC_FN_PREFIX_VALUE))
@@ -3246,41 +3246,6 @@ struct ArmCpu *cpuInit(uint32_t pc, struct ArmMem *mem, bool xscale, bool omap, 
     return cpu;
 }
 
-struct ArmCpu *cpuPrepareInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState) {
-    if (!scratchState) {
-        scratchState = (struct ArmCpu *)malloc(sizeof(*scratchState));
-        scratchState->patchDispatch = clonePatchDispatch(cpu->patchDispatch);
-    }
-
-    auto pd = scratchState->patchDispatch;
-    memcpy(scratchState, cpu, sizeof(*scratchState));
-    cpu->patchDispatch = pd;
-
-    patchDispatchReset(cpu->patchDispatch);
-
-    return scratchState;
-}
-
-void cpuFinishInjectedCall(struct ArmCpu *cpu, struct ArmCpu *scratchState) {
-    auto sleeping = cpu->sleeping;
-    auto waitingIrqs = cpu->waitingIrqs;
-    auto waitingFiqs = cpu->waitingFiqs;
-    auto slowPath = cpu->slowPath;
-    auto pd = cpu->patchDispatch;
-
-    memcpy(cpu, scratchState, sizeof(*cpu));
-
-    scratchState->patchDispatch = pd;
-    cpu->sleeping = sleeping;
-    cpu->waitingIrqs = waitingIrqs;
-    cpu->waitingFiqs = waitingFiqs;
-    cpu->slowPath = slowPath;
-
-    cpu->waitingEventsTotal = cpu->waitingFiqs + cpu->waitingIrqs;
-
-    cpuUpdateSlowPath(cpu);
-}
-
 uint32_t *cpuGetRegisters(struct ArmCpu *cpu) { return cpu->regs; }
 
 static bool cpuPrvPaceCallout(struct ArmCpu *cpu, uint32_t destination) {
@@ -3737,6 +3702,9 @@ void cpuSave(ArmCpu *cpu, T &savestate) {
 
 template <typename T>
 void cpuLoad(ArmCpu *cpu, T &loader) {
+    mmuTlbFlush(cpu->mmu);
+    icacheInval(cpu->ic);
+
     paceLoad(loader);
     mmuLoad(cpu->mmu, loader);
     cp15Load(cpu->cp15, loader);
@@ -3768,6 +3736,7 @@ void ArmCpu::DoSaveLoad(U &chunkHelper, uint32_t version) {
         .Do(typename U::BoolPack() << privileged << modePace << sleeping << Q << T << I << F);
 
     if (version > 0) chunkHelper.Do32(paceOffset);
+    if (version > 1) chunkHelper.Do32(slowPath);
 
     bank_usr.DoSaveLoad(chunkHelper);
     bank_svc.DoSaveLoad(chunkHelper);
@@ -3777,6 +3746,36 @@ void ArmCpu::DoSaveLoad(U &chunkHelper, uint32_t version) {
     bank_fiq.DoSaveLoad(chunkHelper);
 }
 
+template <typename T>
+void cpuPrepareInjectedCall(struct ArmCpu *cpu, T &savestate) {
+    cpuSave(cpu, savestate);
+
+    patchDispatchReset(cpu->patchDispatch);
+}
+
+template <typename T>
+void cpuFinishInjectedCall(struct ArmCpu *cpu, T &loader) {
+    auto sleeping = cpu->sleeping;
+    auto waitingIrqs = cpu->waitingIrqs;
+    auto waitingFiqs = cpu->waitingFiqs;
+
+    cpuLoad(cpu, loader);
+
+    cpu->sleeping = sleeping;
+    cpu->waitingIrqs = waitingIrqs;
+    cpu->waitingFiqs = waitingFiqs;
+    cpu->waitingEventsTotal = cpu->waitingFiqs + cpu->waitingIrqs;
+
+    cpuUpdateSlowPath(cpu);
+}
+
 template void cpuSave<Savestate<ChunkType>>(ArmCpu *cpu, Savestate<ChunkType> &savestate);
 template void cpuSave<SavestateProbe<ChunkType>>(ArmCpu *cpu, SavestateProbe<ChunkType> &savestate);
 template void cpuLoad<SavestateLoader<ChunkType>>(ArmCpu *cpu, SavestateLoader<ChunkType> &loader);
+
+template void cpuPrepareInjectedCall<Savestate<ChunkType>>(ArmCpu *cpu,
+                                                           Savestate<ChunkType> &savestate);
+template void cpuPrepareInjectedCall<SavestateProbe<ChunkType>>(
+    ArmCpu *cpu, SavestateProbe<ChunkType> &savestate);
+template void cpuFinishInjectedCall<SavestateLoader<ChunkType>>(ArmCpu *cpu,
+                                                                SavestateLoader<ChunkType> &loader);

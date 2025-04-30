@@ -3,8 +3,8 @@
 
 #include <cstdint>
 #include <cstring>
-#include <map>
 #include <memory>
+#include <unordered_map>
 
 #include "CPEndian.h"
 #include "Chunk.h"
@@ -13,7 +13,7 @@
 template <typename ChunkType>
 class SavestateLoader {
    public:
-    using chunkMapT = std::map<ChunkType, Chunk>;
+    using chunkMapT = std::unordered_map<ChunkType, Chunk>;
 
    public:
     SavestateLoader() = default;
@@ -51,10 +51,16 @@ class SavestateLoader {
 template <typename ChunkType>
 template <typename T>
 bool SavestateLoader<ChunkType>::Load(void* buffer, size_t size, T& target) {
-    auto alignedBuffer = std::make_unique<uint32_t[]>(size / 4 + ((size % 4) ? 1 : 0));
-    memcpy(alignedBuffer.get(), buffer, size);
+    std::unique_ptr<uint32_t[]> alignedBuffer;
 
-    if (!ParseSavestate(alignedBuffer.get(), size)) return false;
+    if (reinterpret_cast<uintptr_t>(buffer) & 0x03) {
+        alignedBuffer = std::make_unique<uint32_t[]>(size / 4 + ((size % 4) ? 1 : 0));
+        memcpy(alignedBuffer.get(), buffer, size);
+
+        buffer = alignedBuffer.get();
+    }
+
+    if (!ParseSavestate(reinterpret_cast<uint32_t*>(buffer), size)) return false;
 
     error = false;
     for (auto& [chunkType, chunk] : chunkMap) chunk.Reset();

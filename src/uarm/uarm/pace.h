@@ -11,8 +11,6 @@
 extern "C" {
 #endif
 
-struct PaceScratchState;
-
 enum paceStatus {
     pace_status_ok = 0,
     pace_status_illegal_instr = 4,
@@ -65,9 +63,6 @@ uint32_t paceGetAreg(uint8_t index);
 void paceSetAreg(uint8_t index, uint32_t value);
 
 enum paceStatus paceExecute();
-
-struct PaceScratchState* pacePrepareInjectedCall(struct PaceScratchState* scratchState);
-void paceFinishInjectedCall(struct PaceScratchState* scratchState);
 
 #ifdef __cplusplus
 }

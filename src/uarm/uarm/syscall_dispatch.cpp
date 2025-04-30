@@ -9,6 +9,9 @@
 #include "cputil.h"
 #include "memcpy.h"
 #include "pace.h"
+#include "savestate/ChunkTypeUarm.h"
+#include "savestate/Savestate.h"
+#include "savestate/SavestateLoader.h"
 #include "syscall.h"
 #include "syscall_68k.h"
 
@@ -21,20 +24,36 @@
 
 #define INSTRUCTION_M68K_TRAP0 0x4E40
 
+struct ScratchState {
+    void Load(SavestateLoader<ChunkType>& loader) { cpuFinishInjectedCall(cpu, loader); }
+
+    template <typename T>
+    void Save(T& savestate) {
+        cpuPrepareInjectedCall(cpu, savestate);
+    }
+
+    void Save() { savestate.Save(*this); }
+
+    void Restore() { loader.Load(savestate.GetBuffer(), savestate.GetSize(), *this); }
+
+    Savestate<ChunkType> savestate;
+    SavestateLoader<ChunkType> loader;
+    ArmCpu* cpu;
+};
+
 struct SyscallDispatch {
     struct SoC* soc;
 
-    struct ArmCpu* scratchStates[MAX_NEST_LEVEL];
-    struct PaceScratchState* scratchStatesPace[MAX_NEST_LEVEL];
-    size_t nestLevel;
-    bool deadMansSwitch;
+    ScratchState scratchStates[MAX_NEST_LEVEL];
+    size_t nestLevel{0};
+    bool deadMansSwitch{false};
 };
 
 struct SyscallDispatch* initSyscallDispatch(struct SoC* soc) {
-    struct SyscallDispatch* sd = reinterpret_cast<SyscallDispatch*>(malloc(sizeof(*sd)));
-    memset(sd, 0, sizeof(*sd));
+    struct SyscallDispatch* sd = new SyscallDispatch();
 
     sd->soc = soc;
+    for (auto& scratchState : sd->scratchStates) scratchState.cpu = socGetCpu(soc);
 
     return sd;
 }
@@ -83,10 +102,7 @@ static size_t pushState(struct SyscallDispatch* sd) {
         ERR("unable to dispatch syscall: max nest level reached\n");
 
     const uint32_t nestLevel = sd->nestLevel++;
-
-    sd->scratchStates[nestLevel] =
-        cpuPrepareInjectedCall(socGetCpu(sd->soc), sd->scratchStates[nestLevel]);
-    sd->scratchStatesPace[nestLevel] = pacePrepareInjectedCall(sd->scratchStatesPace[nestLevel]);
+    sd->scratchStates[nestLevel].Save();
 
     return nestLevel;
 }
@@ -94,8 +110,7 @@ static size_t pushState(struct SyscallDispatch* sd) {
 static void popState(struct SyscallDispatch* sd, size_t nestLevel) {
     if (sd->nestLevel != nestLevel + 1) ERR("bad nest level");
 
-    cpuFinishInjectedCall(socGetCpu(sd->soc), sd->scratchStates[nestLevel]);
-    paceFinishInjectedCall(sd->scratchStatesPace[nestLevel]);
+    sd->scratchStates[nestLevel].Restore();
     sd->nestLevel--;
 }
 

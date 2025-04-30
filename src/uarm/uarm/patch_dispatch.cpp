@@ -77,13 +77,6 @@ struct PatchDispatch* initPatchDispatch() {
     return pd;
 }
 
-struct PatchDispatch* clonePatchDispatch(struct PatchDispatch* pd) {
-    struct PatchDispatch* clone = (struct PatchDispatch*)malloc(sizeof(*pd));
-    memcpy(clone, pd, sizeof(*clone));
-
-    return clone;
-}
-
 static void updateSlowPath(struct PatchDispatch* pd) {
     if (pd->nPendingTailpatches) {
         cpuSetSlowPath(pd->cpu, SLOW_PATH_REASON_PATCH_PENDING);

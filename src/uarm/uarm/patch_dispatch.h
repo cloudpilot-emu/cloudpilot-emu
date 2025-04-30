@@ -17,7 +17,6 @@ struct PatchDispatch;
 struct ArmCpu;
 
 struct PatchDispatch* initPatchDispatch();
-struct PatchDispatch* clonePatchDispatch(struct PatchDispatch* pd);
 
 void destroyPatchDispatch(struct PatchDispatch* pd);
 void patchDispatchReset(struct PatchDispatch* pd);

@@ -376,7 +376,10 @@ void cp15Load(struct ArmCP15* cp15, T& loader) {
     LoadChunkHelper helper(*chunk);
     cp15->DoSaveLoad(helper);
 
-    if (cp15->mmuSwitchCy > 0) cpuSetSlowPath(cp15->cpu, SLOW_PATH_REASON_CP15);
+    if (cp15->mmuSwitchCy > 0)
+        cpuSetSlowPath(cp15->cpu, SLOW_PATH_REASON_CP15);
+    else
+        cpuClearSlowPath(cp15->cpu, SLOW_PATH_REASON_CP15);
 }
 
 template <typename T>
