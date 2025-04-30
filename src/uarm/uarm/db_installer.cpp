@@ -19,8 +19,6 @@ int32_t dbInstallerInstall(struct SyscallDispatch* sd, size_t len, void* data) {
     const uint32_t scratch = syscall68k_MemPtrNew(sd, SC_EXECUTE_PURE, 5);
     if (!scratch) return DB_INSTALL_RESULT_ERR_UNKNOWN;
 
-    cout << "allocated scratch" << endl;
-
     const uint32_t deleteProcP = scratch;
     const uint32_t readProcP = scratch + 2;
     const uint32_t needsResetP = scratch + 4;
@@ -30,8 +28,6 @@ int32_t dbInstallerInstall(struct SyscallDispatch* sd, size_t len, void* data) {
     syscallDispatchRegisterM68Stub(
         sd, deleteProcP,
         [&](struct ArmCpu*, uint32_t parameterBase, std::function<void()> deadMansSwitch) {
-            cout << "deleteProc" << endl;
-
             paceSetDreg(0, 0);
             paceResetFsr();
 
