@@ -698,10 +698,15 @@ static FORCE_INLINE uint64_t socRunUntil(SoC *soc, struct ArmCpu *cpu, uint64_t 
         uint64_t cyclesToAdvance = soc->scheduler->CyclesToNextUpdate(cyclesPerSecond);
 
         if (cyclesToAdvance + cycles > maxCycles) cyclesToAdvance = maxCycles - cycles;
-        if constexpr (injected) cyclesToAdvance = cyclesToAdvance > 0 ? 1 : 0;
 
-        uint64_t cyclesAdvanced =
-            soc->sleeping ? cyclesToAdvance : cpuCycle<injected>(cpu, cyclesToAdvance);
+        uint64_t cyclesAdvanced;
+
+        if constexpr (injected) {
+            cyclesAdvanced = soc->sleeping ? cyclesToAdvance : cpuCycle<injected>(cpu, 1);
+        } else {
+            cyclesAdvanced =
+                soc->sleeping ? cyclesToAdvance : cpuCycle<injected>(cpu, cyclesToAdvance);
+        }
 
         soc->scheduler->Advance(cyclesAdvanced, cyclesPerSecond);
         cycles += cyclesAdvanced;
