@@ -16,10 +16,10 @@
 #include "syscall_68k.h"
 
 #define MAX_NEST_LEVEL 4
-#define INJECTED_CALL_MIPS 1000000000ull
-#define INJECTED_CALL_TIMEOUT_SEC 1
+#define INJECTED_CALL_IPS 100000000ull
+#define INJECTED_CALL_TIMEOUT_SEC 2
 
-#define PREPARE_INJECTED_CALL_MIPS 50000000ull
+#define PREPARE_INJECTED_CALL_IPS 50000000ull
 #define PREPARE_INJECTED_CALL_TIMEOUT_SEC 1
 
 #define INSTRUCTION_M68K_TRAP0 0x4E40
@@ -67,8 +67,8 @@ bool syscallDispatchPrepare(struct SyscallDispatch* sd) {
     if (sd->nestLevel > 0) ERR("syscallDispatchPrepare is only allowed on top level\n");
 
     return socRunToPaceSyscall(sd->soc, SYSCALL_68K_EVT_GET_EVENT,
-                               PREPARE_INJECTED_CALL_TIMEOUT_SEC * PREPARE_INJECTED_CALL_MIPS,
-                               PREPARE_INJECTED_CALL_MIPS);
+                               PREPARE_INJECTED_CALL_TIMEOUT_SEC * PREPARE_INJECTED_CALL_IPS,
+                               PREPARE_INJECTED_CALL_IPS);
 }
 
 bool syscallDispatch_strncpy_toHost(struct SyscallDispatch* sd, void* dest, uint32_t src,
@@ -148,8 +148,8 @@ static bool executeInjectedCall(struct SoC* soc, uint32_t flags) {
     struct ArmCpu* cpu = socGetCpu(soc);
 
     if (flags & SC_EXECUTE_FULL) {
-        if (socExecuteInjected(soc, cpu, INJECTED_CALL_TIMEOUT_SEC * INJECTED_CALL_MIPS,
-                               INJECTED_CALL_MIPS)) {
+        if (socExecuteInjected(soc, cpu, INJECTED_CALL_TIMEOUT_SEC * INJECTED_CALL_IPS,
+                               INJECTED_CALL_IPS)) {
             return true;
         }
     } else {
@@ -158,7 +158,7 @@ static bool executeInjectedCall(struct SoC* soc, uint32_t flags) {
         do {
             cycles += cpuCyclePure(cpu);
             if (cpuGetSlowPathReason(cpu) & SLOW_PATH_REASON_INJECTED_CALL_DONE) return true;
-        } while (cycles < INJECTED_CALL_TIMEOUT_SEC * INJECTED_CALL_MIPS);
+        } while (cycles < INJECTED_CALL_TIMEOUT_SEC * INJECTED_CALL_IPS);
     }
 
     return false;
