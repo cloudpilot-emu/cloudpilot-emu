@@ -117,6 +117,8 @@ struct SoC {
     bool sleeping;
     uint64_t sleepAtTime;
 
+    uint32_t ramSize;
+
     uint64_t injectedTimeNsec;
     uint16_t paceBreakSyscall;
 
@@ -264,12 +266,12 @@ static void schedulePcmTask(SoC *soc) {
 }
 
 static void socAllocateBuffers(SoC *soc) {
-    size_t memoryBufferSize = deviceGetRamSize() + 2 * MEMORY_BUFFER_GRANULARITY;
+    size_t memoryBufferSize = soc->ramSize + 2 * MEMORY_BUFFER_GRANULARITY;
     if (soc->socRev == 2) memoryBufferSize += SRAM_SIZE;
 
     bool success = memoryBufferAllocate(&soc->bufferMemory, memoryBufferSize);
 
-    size_t offset = deviceGetRamSize();
+    size_t offset = soc->ramSize;
 
     success = success && memoryBufferGetSubBuffer(&soc->bufferMemory, &soc->bufferNand, offset,
                                                   MEMORY_BUFFER_GRANULARITY);
@@ -286,7 +288,7 @@ static void socAllocateBuffers(SoC *soc) {
     if (!success) ERR("failed to allocate memory buffers");
 }
 
-SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
+SoC *socInit(enum DeviceType deviceType, uint32_t ramSize, void *romData, const uint32_t romSize,
              uint8_t *nandContent, size_t nandSize, int gdbPort, uint_fast8_t socRev) {
     SoC *soc = (SoC *)malloc(sizeof(SoC));
     struct SocPeriphs sp = {};
@@ -295,6 +297,10 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
 
     memset(soc, 0, sizeof(*soc));
     soc->socRev = socRev;
+
+    if (ramSize == 0) ramSize = deviceGetDefaultRamSize();
+    if (!deviceSupportsRamSize(ramSize)) ERR("unsupported RAM size %u\n", ramSize);
+    soc->ramSize = ramSize;
 
     socAllocateBuffers(soc);
 
@@ -323,7 +329,7 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
     soc->syscallDispatch = initSyscallDispatch(soc);
     registerPatches(soc->patchDispatch, soc->syscallDispatch);
 
-    soc->ram = ramInit(soc->mem, soc, RAM_BASE, deviceGetRamSize(), &soc->bufferMemory, true);
+    soc->ram = ramInit(soc->mem, soc, RAM_BASE, ramSize, &soc->bufferMemory, true);
     if (!soc->ram) ERR("Cannot init RAM");
 
     soc->rom = romInit(soc->mem, ROM_BASE, romData, romSize);
@@ -339,8 +345,8 @@ SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
         case RamTerminationMirror:
 
             // ram mirror for ram probe code
-            soc->ramMirror = ramInit(soc->mem, soc, RAM_BASE + deviceGetRamSize(),
-                                     deviceGetRamSize(), &soc->bufferMemory, false);
+            soc->ramMirror =
+                ramInit(soc->mem, soc, RAM_BASE + ramSize, ramSize, &soc->bufferMemory, false);
             if (!soc->ramMirror) ERR("Cannot init RAM mirror");
             break;
 
@@ -764,7 +770,7 @@ void socResetPendingFrame(SoC *soc) { return pxaLcdResetPendingFrame(soc->lcd); 
 void socSetFramebufferDirty(struct SoC *soc) { pxaLcdSetFramebufferDirty(soc->lcd); }
 
 bool socSetFramebuffer(struct SoC *soc, uint32_t start, uint32_t size) {
-    if (start < RAM_BASE || start - RAM_BASE + size > deviceGetRamSize()) {
+    if (start < RAM_BASE || start - RAM_BASE + size > soc->ramSize) {
         fprintf(stderr, "framebuffer not in RAM\n");
         size = 0;
     }
@@ -887,6 +893,8 @@ struct ArmCpu *socGetCpu(struct SoC *soc) { return soc->cpu; }
 struct SyscallDispatch *socGetSyscallDispatch(struct SoC *soc) { return soc->syscallDispatch; }
 
 bool socIsPacePatched(struct SoC *soc) { return soc->pacePatch->enterPace; }
+
+uint32_t socGetRamSize(struct SoC *soc) { return soc->ramSize; }
 
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaUartLoad(ffUart, loader, 0);

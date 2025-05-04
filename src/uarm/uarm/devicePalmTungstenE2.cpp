@@ -111,7 +111,9 @@ struct Device {
     int penScaleX, penScaleY;
 };
 
-uint32_t deviceGetRamSize(void) { return 16UL << 20; }
+uint32_t deviceGetDefaultRamSize(void) { return 16UL << 20; }
+
+bool deviceSupportsRamSize(uint32_t size) { return size == (16ul << 20) || size == (32ul << 20); }
 
 enum RamTermination deviceGetRamTerminationStyle(void) { return RamTerminationMirror; }
 

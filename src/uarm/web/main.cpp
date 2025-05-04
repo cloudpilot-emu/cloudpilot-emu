@@ -189,24 +189,27 @@ uint32_t EMSCRIPTEN_KEEPALIVE getSavestateSize() { return socGetSavestate(soc).s
 void* EMSCRIPTEN_KEEPALIVE getSavestateData() { return socGetSavestate(soc).data; }
 
 bool EMSCRIPTEN_KEEPALIVE isSdInserted() { return socSdInserted(soc); }
+
+uint32_t EMSCRIPTEN_KEEPALIVE getRamSize() { return socGetRamSize(soc); }
 }
 
-void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, uint8_t* ram, size_t ramLen,
-         uint8_t* savestate, size_t savestateLen, uint32_t mips = 0) {
-    soc = socInit(deviceType, rom, romLen, nand, nandLen, 0, deviceGetSocRev());
+void run(uint32_t ramSize, uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen,
+         uint8_t* savedMemory, size_t savedMemoryLen, uint8_t* savestate, size_t savestateLen,
+         uint32_t mips = 0) {
+    soc = socInit(deviceType, ramSize, rom, romLen, nand, nandLen, 0, deviceGetSocRev());
 
     audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
     socSetAudioQueue(soc, audioQueue);
 
     Buffer memory = socGetMemoryData(soc);
-    if (ramLen > memory.size) {
+    if (savedMemoryLen > memory.size) {
         cerr << "ignoring invalid RAM snapshot" << endl;
-        ram = nullptr;
+        savedMemory = nullptr;
     }
 
-    if (ram) memcpy(memory.data, ram, ramLen);
+    if (savedMemory) memcpy(memory.data, savedMemory, savedMemoryLen);
 
-    if (ram && !socLoad(soc, savestateLen, savestate)) {
+    if (savedMemory && !socLoad(soc, savestateLen, savestate)) {
         cerr << "failed to restore savestate" << endl;
     }
 
@@ -225,8 +228,9 @@ void run(uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen, uint8_t* 
 
 int main() {}
 
-extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint8_t* rom, int romLen, uint8_t* nand, int nandLen,
-                                             uint8_t* ram, int ramLen, uint8_t* sd, int sdLen,
+extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint32_t ramSize, uint8_t* rom, int romLen,
+                                             uint8_t* nand, int nandLen, uint8_t* memory,
+                                             int memoryLen, uint8_t* sd, int sdLen,
                                              uint8_t* savestate, int savestateLen,
                                              const char* sdId) {
     if (sd) sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sd, sdId);
@@ -237,9 +241,26 @@ extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint8_t* rom, int romLen, uint8_t* 
         return;
     }
 
+    if (ramSize == 0)
+        ramSize = (romInfo.GetCardName() == "PalmCard" && romInfo.GetHalId() == 'hspr')
+                      ? (16ul << 20)
+                      : (32ul << 20);
+
     cerr << romInfo << endl;
+    cerr << "using " << ramSize << " bytes of RAM" << endl;
+
     deviceType = romInfo.GetDeviceType();
 
-    run(rom, (uint32_t)romLen, nand, (size_t)nandLen, ram, (size_t)ramLen, savestate,
+    if (ramSize == 0)
+        ramSize = (romInfo.GetCardName() == "PalmCard" && romInfo.GetHalId() == 'hspr')
+                      ? (16ul << 20)
+                      : (32ul << 20);
+
+    if (!deviceSupportsRamSize(ramSize)) {
+        cerr << "unsupported RAM size: " << ramSize << " bytes" << endl;
+        return;
+    }
+
+    run(ramSize, rom, (uint32_t)romLen, nand, (size_t)nandLen, memory, (size_t)memoryLen, savestate,
         (size_t)savestateLen);
 }

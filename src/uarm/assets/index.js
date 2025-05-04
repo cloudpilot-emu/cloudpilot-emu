@@ -212,7 +212,8 @@ import { SessionFile } from './sessionfile.js';
         emulator?.destroy();
         clearCanvas();
 
-        const ram = await database.getRam(crcCheck);
+        const ramSize = await database.getRamSize();
+        const ram = await database.getRam(crcCheck, ramSize);
 
         if (fileNor.content.length === 0) fileNor = await database.getNor();
         if (fileNand.content.length === 0) fileNand = await database.getNand(crcCheck);
@@ -220,6 +221,7 @@ import { SessionFile } from './sessionfile.js';
         const savestate = await database.getSavestate();
 
         emulator = await Emulator.create(
+            ramSize,
             fileNor.content,
             fileNand.content,
             fileSd?.mounted ? fileSd?.content : undefined,
@@ -272,13 +274,21 @@ import { SessionFile } from './sessionfile.js';
         mutex.runExclusive(async () => {
             if (!emulator) return;
 
-            const { deviceId, nor, nand, ram, savestate } = await emulator.getSession();
+            const { deviceId, nor, nand, ram, savestate, ramSize } = await emulator.getSession();
             const metadata = {
                 norName: fileNor?.name ?? 'saved NOR',
                 nandName: fileNand?.name ?? 'saved NAND',
             };
 
-            const serializedSession = await sessionFile.serializeSession(deviceId, metadata, nor, nand, ram, savestate);
+            const serializedSession = await sessionFile.serializeSession(
+                ramSize,
+                deviceId,
+                metadata,
+                nor,
+                nand,
+                ram,
+                savestate
+            );
             if (!serializedSession) return;
 
             saveFile(`${filenameFragment('uarm-session')}.bin`, serializedSession);
@@ -374,13 +384,16 @@ import { SessionFile } from './sessionfile.js';
             'click',
             uploadHandler(async (file) => {
                 try {
-                    const { metadata, nor, nand, ram, savestate } = await sessionFile.deserializeSession(file.content);
+                    const { metadata, nor, nand, ram, savestate, ramSize } = await sessionFile.deserializeSession(
+                        file.content
+                    );
 
                     fileNor = { content: nor, name: metadata?.norName ?? 'saved ROM' };
                     fileNand = { content: nand, name: metadata?.nandName ?? 'saved NAND' };
 
                     await database.putNor(fileNor);
                     await database.putNand(fileNand);
+                    await database.putRamSize(ramSize);
                     await database.putRam(ram);
                     await database.putSavestate(savestate);
                 } catch (e) {

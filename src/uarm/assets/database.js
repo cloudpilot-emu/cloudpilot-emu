@@ -4,7 +4,7 @@
  * @typedef {{name: string, content: Uint8Array}} Image
  * @typedef {{name: string, id: string, mounted: boolean, content: Uint8Array}} CardImage
  * @typedef {{scheduledPageCount: number, scheduledPages: ArrayBuffer, pagePool: ArrayBuffer, crc?: number}} SnapshotPages
- * @typedef {{nand?: SnapshotPages, sd?: SnapshotPages, ram?: SnapshotPages, cardId? :string, savestate: ArrayBuffer}} Snapshot
+ * @typedef {{nand?: SnapshotPages, sd?: SnapshotPages, ram?: SnapshotPages, cardId? :string, savestate: ArrayBuffer, ramSize: number}} Snapshot
  */
 
 const DB_NAME = 'cp-uarm';
@@ -17,7 +17,6 @@ const EMPTY_VALUE_NAND = 0xffffffff;
 const PAGE_SIZE_SD = 8 * 1024;
 const EMPTY_VALUE_SD = 0;
 
-const SIZE_RAM = 16 * 1024 * 1024 + 32 * 1024;
 const PAGE_SIZE_RAM = 512;
 const EMPTY_VALUE_RAM = 0;
 
@@ -39,6 +38,7 @@ const KVS_RAM_CRC = 'ramCrc';
 const KVS_CARD_ID = 'cardId';
 const KVS_CARD_MOUNTED = 'cardMounted';
 const KVS_SAVESTATE = 'savestate';
+const KVS_RAM_SIZE = 'ramSize';
 export const KVS_MIPS = 'mips';
 export const KVS_MAX_LOAD = 'maxLoad';
 
@@ -427,6 +427,18 @@ export class Database {
 
     /**
      *
+     * @param {IDBTransaction} tx
+     */
+    resetSession(tx) {
+        const kvsStore = tx.objectStore(OBJECT_STORE_KVS);
+
+        tx.objectStore(OBJECT_STORE_RAM).clear();
+        kvsStore.delete(KVS_SAVESTATE);
+        kvsStore.delete(KVS_RAM_SIZE);
+    }
+
+    /**
+     *
      * @returns {Promise<Image>}
      */
     getNor() {
@@ -445,21 +457,23 @@ export class Database {
         kvsStore.put(nor, KVS_ROM_NOR);
         kvsStore.delete(KVS_RAM_CRC);
 
-        tx.objectStore(OBJECT_STORE_RAM).clear();
-        kvsStore.delete(KVS_SAVESTATE);
+        this.resetSession(tx);
 
         await complete(tx);
     }
 
     /**
      * @param {boolean} crcCheck
+     * @param {number} size
      * @returns {Promise<Uint8Array | undefined>}
      */
-    async getRam(crcCheck) {
+    async getRam(crcCheck, size) {
+        if (size === 0) return undefined;
+
         const tx = await this.tx(OBJECT_STORE_RAM, OBJECT_STORE_KVS);
         const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
-        const content = await getPagedData(SIZE_RAM, PAGE_SIZE_RAM, OBJECT_STORE_RAM, EMPTY_VALUE_RAM, tx);
+        const content = await getPagedData(size + 32 * 1024, PAGE_SIZE_RAM, OBJECT_STORE_RAM, EMPTY_VALUE_RAM, tx);
 
         const crc = await complete(storeKvs.get(KVS_RAM_CRC));
         const crc32 = /** @type any */ (window).crc32;
@@ -529,8 +543,7 @@ export class Database {
 
         putPagedData(nand.content, PAGE_SIZE_NAND, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
 
-        tx.objectStore(OBJECT_STORE_RAM).clear();
-        storeKvs.delete(KVS_SAVESTATE);
+        this.resetSession(tx);
 
         await complete(tx);
     }
@@ -543,8 +556,7 @@ export class Database {
         storeKvs.delete(KVS_NAND_CRC);
 
         tx.objectStore(OBJECT_STORE_NAND).clear();
-        tx.objectStore(OBJECT_STORE_RAM).clear();
-        storeKvs.delete(KVS_SAVESTATE);
+        this.resetSession(tx);
 
         await complete(tx);
     }
@@ -644,6 +656,26 @@ export class Database {
     }
 
     /**
+     * @returns {Promise<number>}
+     */
+    async getRamSize() {
+        const ramSize = await this.kvsGet(KVS_RAM_SIZE);
+        if (ramSize !== undefined) return ramSize;
+
+        if ((await this.kvsGet(KVS_SAVESTATE)) !== undefined) return 16 * 1024 * 1024;
+
+        return 0;
+    }
+
+    /**
+     *
+     * @param {Promise<number>} size
+     */
+    putRamSize(size) {
+        return this.kvsPut(KVS_RAM_SIZE, size);
+    }
+
+    /**
      *
      * @param {Snapshot} snapshot
      * @returns {Promise<void>}
@@ -657,6 +689,7 @@ export class Database {
             throw new Error(`snapshot aborted: card ID mismatch ${cardId} vs. ${snapshot.cardId}`);
         }
 
+        kvs.put(snapshot.ramSize, KVS_RAM_SIZE);
         kvs.put(new Uint8Array(snapshot.savestate), KVS_SAVESTATE);
 
         if (snapshot.nand) {

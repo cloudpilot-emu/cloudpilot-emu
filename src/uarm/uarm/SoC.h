@@ -27,8 +27,9 @@ struct SyscallDispatch;
 typedef bool (*SdSectorR)(uint32_t secNum, void *buf);
 typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
 
-struct SoC *socInit(enum DeviceType deviceType, void *romData, const uint32_t romSize,
-                    uint8_t *nandContent, size_t nandSize, int gdbPort, uint_fast8_t socRev);
+struct SoC *socInit(enum DeviceType deviceType, uint32_t ramSize, void *romData,
+                    const uint32_t romSize, uint8_t *nandContent, size_t nandSize, int gdbPort,
+                    uint_fast8_t socRev);
 
 void socReset(struct SoC *soc);
 
@@ -89,6 +90,8 @@ enum DeviceType socGetDeviceType(struct SoC *soc);
 struct ArmCpu *socGetCpu(struct SoC *soc);
 struct SyscallDispatch *socGetSyscallDispatch(struct SoC *soc);
 bool socIsPacePatched(struct SoC *soc);
+
+uint32_t socGetRamSize(struct SoC *soc);
 
 #ifdef __cplusplus
 }

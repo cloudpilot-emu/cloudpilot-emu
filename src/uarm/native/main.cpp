@@ -39,6 +39,7 @@ struct Options {
     unsigned int mips;
     bool disableAudio;
     optional<string> script;
+    optional<unsigned int> ramSize;
 };
 
 extern "C" int socExtSerialReadChar(void) { return CHAR_NONE; }
@@ -119,7 +120,7 @@ namespace {
     }
 
     bool readSession(const Options& options, Buffer& nor, Buffer& nand, Buffer& ram,
-                     Buffer& savestate) {
+                     Buffer& savestate, uint32_t& ramSize) {
         SessionFile sessionFile;
 
         size_t norOrSessionLen{0};
@@ -133,6 +134,7 @@ namespace {
                 return false;
             }
 
+            ramSize = sessionFile.GetRamSize();
             copy(nor, sessionFile.GetNorSize(), sessionFile.GetNor());
             copy(nand, sessionFile.GetNandSize(), sessionFile.GetNand());
             copy(ram, sessionFile.GetMemorySize(), sessionFile.GetMemory());
@@ -148,6 +150,8 @@ namespace {
                 nandData = make_unique<uint8_t[]>(NAND_SIZE);
                 memset(nandData.get(), 0xff, NAND_SIZE);
             }
+
+            ramSize = 0;
 
             nor.size = norOrSessionLen;
             nor.data = norOrSessionData.release();
@@ -169,14 +173,36 @@ namespace {
         }
 
         Buffer nor, nand, memory, savestate;
+        uint32_t ramSize;
 
-        if (!readSession(options, nor, nand, memory, savestate)) return false;
+        if (!readSession(options, nor, nand, memory, savestate, ramSize)) return false;
 
         RomInfo romInfo(reinterpret_cast<uint8_t*>(nor.data), nor.size);
-        cerr << romInfo << endl;
+        cerr << romInfo;
 
         if (!romInfo.IsValid() || romInfo.GetDeviceType() == DeviceType::deviceTypeInvalid)
             return false;
+
+        if (options.ramSize) {
+            if (ramSize == 0) {
+                ramSize = *options.ramSize << 20;
+            } else {
+                cerr << "cannot specify RAM size for an existing session" << endl;
+                return false;
+            }
+        }
+
+        if (ramSize == 0)
+            ramSize = (romInfo.GetCardName() == "PalmCard" && romInfo.GetHalId() == 'hspr')
+                          ? (16ul << 20)
+                          : (32ul << 20);
+
+        if (!deviceSupportsRamSize(ramSize)) {
+            cerr << "unsupported RAM size: " << ramSize << " bytes" << endl;
+            return false;
+        }
+
+        cerr << "using RAM size: " << ramSize << " bytes" << endl << endl;
 
         if (nand.size != NAND_SIZE) {
             cerr << "invalid NAND size; expected " << NAND_SIZE << " bytes" << endl;
@@ -197,7 +223,7 @@ namespace {
             sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sdData.release(), key.c_str());
         }
 
-        SoC* soc = socInit(romInfo.GetDeviceType(), nor.data, nor.size,
+        SoC* soc = socInit(romInfo.GetDeviceType(), ramSize, nor.data, nor.size,
                            reinterpret_cast<uint8_t*>(nand.data), nand.size,
                            options.gdbPort.value_or(0), deviceGetSocRev());
 
@@ -323,6 +349,12 @@ int main(int argc, const char** argv) {
 
     program.add_argument("--sd", "-s").help("SD card file").metavar("<SD card file>");
 
+    program.add_argument("--ram-size")
+        .help("RAM size in MB (16 or 32)")
+        .metavar("<size>")
+        .scan<'u', unsigned int>();
+    ;
+
     program.add_argument("--no-sound", "-q")
         .help("start with audio off")
         .default_value(false)
@@ -361,7 +393,8 @@ int main(int argc, const char** argv) {
                        .gdbPort = program.present<unsigned int>("--gdb"),
                        .mips = program.get<unsigned int>("--mips"),
                        .disableAudio = program.get<bool>("--no-sound"),
-                       .script = program.present("--script")};
+                       .script = program.present("--script"),
+                       .ramSize = program.present<unsigned int>("--ram-size")};
 
     logEnable();
 

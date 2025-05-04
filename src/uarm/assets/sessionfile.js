@@ -17,7 +17,7 @@ export class SessionFile {
             });
     }
 
-    async serializeSession(deviceId, metadata, nor, nand, ram, savestate) {
+    async serializeSession(ramSize, deviceId, metadata, nor, nand, ram, savestate) {
         const module = await this.modulePromise;
 
         const encoder = new TextEncoder();
@@ -42,7 +42,8 @@ export class SessionFile {
                 .SetMetadata(encodedMetadata.length, this.module.wrapPointer(metadataPtr))
                 .SetNor(nor.length, this.module.wrapPointer(norPtr))
                 .SetNand(nand.length, this.module.wrapPointer(nandPtr))
-                .SetMemory(ram.length, this.module.wrapPointer(ramPtr));
+                .SetMemory(ram.length, this.module.wrapPointer(ramPtr))
+                .SetRamSize(ramSize);
 
             if (savestate) sessionFile.SetSavestate(savestate.length, savestatePtr);
 
@@ -73,6 +74,7 @@ export class SessionFile {
             if (!sessionFile.Deserialize(session.length, module.wrapPointer(sessionPtr))) return undefined;
 
             const deviceId = sessionFile.GetDeviceId();
+            const ramSize = sessionFile.GetRamSize();
             const metadataBinary = this.copyOut(
                 sessionFile.GetMetadataSize(),
                 module.getPointer(sessionFile.GetMetadata())
@@ -95,7 +97,7 @@ export class SessionFile {
                 }
             }
 
-            return { deviceId, metadata, nor, nand, ram, savestate };
+            return { deviceId, metadata, nor, nand, ram, savestate, ramSize };
         } finally {
             this.free(session);
             module.destroy(sessionFile);

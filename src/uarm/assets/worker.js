@@ -32,7 +32,6 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
     const PCM_BUFFER_SIZE = (44100 / 60) * 10;
     const INITIAL_PAGE_POOL_PAGES = 256;
     const PAGE_POOL_GROWTH_FACTOR = 1.5;
-    const RAM_SIZE = 16 * 1024 * 1024 + 32 * 1024;
 
     let rpcClient;
     let emulator;
@@ -239,6 +238,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.save = module.cwrap('save');
             this.getSavestateSize = module.cwrap('getSavestateSize', 'number');
             this.getSavestateData = module.cwrap('getSavestateData', 'number');
+            this.getRamSize = module.cwrap('getRamSize', 'number');
 
             this.amIDead = false;
             this.pcmEnabled = false;
@@ -282,6 +282,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         }
 
         static async create(
+            ramSize,
             nor,
             nand,
             sd,
@@ -310,19 +311,13 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             const nandPtr = malloc(nand.length);
             const sdPtr = sd ? malloc(sd.length) : 0;
             const savestatePtr = savestate ? malloc(savestate.length) : 0;
+            const ramPtr = ram ? malloc(ram.length) : 0;
 
             module.HEAPU8.subarray(norPtr, norPtr + nor.length).set(nor);
             module.HEAPU8.subarray(nandPtr, nandPtr + nand.length).set(nand);
             if (sd) module.HEAPU8.subarray(sdPtr, sdPtr + sd.length).set(sd);
             if (savestate) module.HEAPU8.subarray(savestatePtr, savestatePtr + savestate.length).set(savestate);
-
-            let ramPtr = 0;
-            if (ram.length > RAM_SIZE) {
-                console.error('ignoring invalid RAM snapshot');
-            } else {
-                ramPtr = malloc(ram.length);
-                module.HEAPU8.subarray(ramPtr, ramPtr + ram.length).set(ram);
-            }
+            if (ram) module.HEAPU8.subarray(ramPtr, ramPtr + ram.length).set(ram);
 
             module.callMain([]);
             module.ccall(
@@ -339,9 +334,11 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                     'number',
                     'number',
                     'number',
+                    'number',
                     'string',
                 ],
                 [
+                    ramSize,
                     norPtr,
                     nor.length,
                     nandPtr,
@@ -455,6 +452,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                     ram: snapshotRam,
                     cardId: this.cardId,
                     savestate: this.savestate.buffer,
+                    ramSize: this.getRamSize(),
                 },
                 [
                     ...this.nandTracker.getTransferables(),
@@ -572,8 +570,9 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                 this.getSavestateData(),
                 this.getSavestateData() + this.getSavestateSize()
             );
+            const ramSize = this.getRamSize();
 
-            return { deviceId, nor, nand, ram, savestate };
+            return { deviceId, nor, nand, ram, savestate, ramSize };
         }
 
         ejectCard() {
@@ -751,6 +750,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
     }
 
     async function initialize({
+        ramSize,
         nor,
         nand,
         sd,
@@ -763,6 +763,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         module,
     }) {
         emulator = await Emulator.create(
+            ramSize,
             nor,
             nand,
             sd,

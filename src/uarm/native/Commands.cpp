@@ -137,6 +137,7 @@ namespace {
         const Buffer sd = sdCardData();
 
         sessionFile.SetDeviceId(socGetDeviceType(ctx->soc))
+            .SetRamSize(socGetRamSize(ctx->soc))
             .SetNor(rom.size, reinterpret_cast<uint8_t*>(rom.data))
             .SetNand(nand.size, reinterpret_cast<uint8_t*>(nand.data))
             .SetMemory(memory.size, reinterpret_cast<uint8_t*>(memory.data))

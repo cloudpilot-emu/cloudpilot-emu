@@ -36,6 +36,9 @@ class SessionFile {
     size_t GetSavestateSize() const;
     SessionFile& SetSavestate(size_t size, const void* data);
 
+    size_t GetRamSize();
+    SessionFile& SetRamSize(uint32_t size);
+
     bool Serialize();
     const void* GetSerializedSession() const;
     size_t GetSerializedSessionSize() const;
@@ -51,7 +54,7 @@ class SessionFile {
     bool Flush(mz_stream_s& stream);
 
     bool Deserialize_v0();
-    bool Deserialize_v1();
+    bool Deserialize_v1_v2(uint32_t version);
 
    private:
     uint32_t deviceId{0};
@@ -76,6 +79,8 @@ class SessionFile {
 
     size_t bufferSize{0};
     std::unique_ptr<uint8_t[]> buffer;
+
+    uint32_t ramSize{0};
 
     uint8_t* cursor;
     const uint8_t* ccursor;

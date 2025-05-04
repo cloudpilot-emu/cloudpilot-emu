@@ -26,6 +26,9 @@ interface SessionFile {
     long GetSavestateSize();
     [Ref] SessionFile SetSavestate(long size, [Const] VoidPtr data);
 
+    long GetRamSize();
+    [Ref] SessionFile SetRamSize(long size);
+
     boolean Serialize();
     [Const] VoidPtr GetSerializedSession();
     long GetSerializedSessionSize();

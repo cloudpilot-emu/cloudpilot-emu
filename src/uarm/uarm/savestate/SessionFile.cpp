@@ -14,7 +14,7 @@ using namespace std;
 
 namespace {
     constexpr uint32_t MAGIC = 0x19800819;
-    constexpr uint32_t CURRENT_VERSION = 1;
+    constexpr uint32_t CURRENT_VERSION = 2;
 
     constexpr size_t SIZE_HEADER = 12;  // 4 byte magic + 4 byte version + 4 byte device ID
     constexpr size_t SIZE_TOC = 5 * 4;
@@ -32,7 +32,7 @@ bool SessionFile::IsSessionFile(size_t size, const void* data) {
     if (magic != MAGIC) return false;
 
     const uint32_t version = data8[4] | (data8[5] << 8) | (data8[6] << 16) | (data8[7] << 24);
-    if (version > 1) return false;
+    if (version > 2) return false;
 
     return true;
 }
@@ -100,6 +100,14 @@ SessionFile& SessionFile::SetSavestate(size_t size, const void* data) {
     return *this;
 }
 
+size_t SessionFile::GetRamSize() { return ramSize; }
+
+SessionFile& SessionFile::SetRamSize(uint32_t size) {
+    ramSize = size;
+
+    return *this;
+}
+
 bool SessionFile::Serialize() {
     serializedSessionSize = 0;
     serializedSession = nullptr;
@@ -116,6 +124,7 @@ bool SessionFile::Serialize() {
     success &= Write32(MAGIC);
     success &= Write32(CURRENT_VERSION);
     success &= Write32(deviceId);
+    success &= Write32(ramSize);
 
     success &= Write32(metadataSize);
     success &= Write32(norSize);
@@ -208,7 +217,8 @@ bool SessionFile::Deserialize(size_t size, const void* data) {
             return Deserialize_v0();
 
         case 1:
-            return Deserialize_v1();
+        case 2:
+            return Deserialize_v1_v2(version);
 
         default:
             cerr << "unsupported session version " << version << endl;
@@ -412,10 +422,11 @@ bool SessionFile::Deserialize_v0() {
     return true;
 }
 
-bool SessionFile::Deserialize_v1() {
+bool SessionFile::Deserialize_v1_v2(uint32_t version) {
     bool success = true;
 
     deviceId = Read32(success);
+    ramSize = version > 1 ? Read32(success) : (16ul << 20);
 
     metadataSize = Read32(success);
     norSize = Read32(success);

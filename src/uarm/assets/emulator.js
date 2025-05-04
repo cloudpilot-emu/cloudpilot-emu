@@ -133,7 +133,7 @@ export class Emulator {
         this.eventHandler = new EventHandler(this, this.displayService);
     }
 
-    static async create(nor, nand, sd, cardId, ram, savestate, maxLoad, cyclesPerSecondLimit, env) {
+    static async create(ramSize, nor, nand, sd, cardId, ram, savestate, maxLoad, cyclesPerSecondLimit, env) {
         const { crcCheck } = env;
         const worker = new Worker('assets/worker.js');
         const rpc = new RpcHost(worker);
@@ -159,6 +159,7 @@ export class Emulator {
             const { deviceType, cardInserted } = await rpc.call(
                 'initialize',
                 {
+                    ramSize,
                     nor,
                     nand,
                     sd,
