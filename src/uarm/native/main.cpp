@@ -1,3 +1,5 @@
+#pragma GCC diagnostic ignored "-Wmultichar"
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <unistd.h>
