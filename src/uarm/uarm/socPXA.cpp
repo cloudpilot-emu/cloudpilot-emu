@@ -859,9 +859,19 @@ bool socSave(struct SoC *soc) { return soc->savestate->Save(*soc); }
 bool socLoad(struct SoC *soc, size_t savestateSize, void *savestateData) {
     if (savestateSize == 0 || !savestateData) return true;
 
+    Savestate<ChunkType> savestate;
     SavestateLoader<ChunkType> loader;
 
-    return loader.Load(savestateData, savestateSize, *soc);
+    savestate.Save(*soc);
+
+    if (!loader.Load(savestateData, savestateSize, *soc)) {
+        if (!loader.Load(savestate.GetBuffer(), savestate.GetSize(), *soc))
+            ERR("failed to restore initial state after load failure");
+
+        return false;
+    }
+
+    return true;
 }
 
 struct Buffer socGetSavestate(struct SoC *soc) {
