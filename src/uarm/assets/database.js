@@ -167,23 +167,24 @@ async function getPagedData(size, pageSize, objectStore, emptyValue, tx) {
 }
 
 /**
- * @param {Uint8Array} data8
+ * @param {Uint8Array | undefined} data8
  * @param {number} pageSize
  * @param {string} objectStore
  * @param {number} emptyValue
  * @param {IDBTransaction} tx
- * @returns {Promise<void>}
+ * @returns {void}
  */
-async function putPagedData(data8, pageSize, objectStore, emptyValue, tx) {
-    if (data8.length % pageSize) throw new Error('invalid NAND size');
+function putPagedData(data8, pageSize, objectStore, emptyValue, tx) {
+    if (data8 && data8.length % pageSize) throw new Error('invalid paged data size');
+
+    const store = tx.objectStore(objectStore);
+    store.clear();
+
+    if (!data8) return;
 
     const pagesTotal = (data8.length / pageSize) | 0;
     const pageSize4 = pageSize >>> 2;
     const data32 = new Uint32Array(data8.buffer, 0, data8.length >>> 2);
-
-    const store = tx.objectStore(objectStore);
-
-    await complete(store.clear());
 
     for (let iPage = 0; iPage < pagesTotal; iPage++) {
         const compressedPage = compressPage(data32.subarray(iPage * pageSize4, (iPage + 1) * pageSize4));
@@ -435,6 +436,7 @@ export class Database {
         tx.objectStore(OBJECT_STORE_RAM).clear();
         kvsStore.delete(KVS_SAVESTATE);
         kvsStore.delete(KVS_RAM_SIZE);
+        kvsStore.delete(KVS_RAM_CRC);
     }
 
     /**
@@ -452,14 +454,20 @@ export class Database {
      */
     async putNor(nor) {
         const tx = await this.tx(OBJECT_STORE_KVS, OBJECT_STORE_RAM);
-        const kvsStore = tx.objectStore(OBJECT_STORE_KVS);
 
-        kvsStore.put(nor, KVS_ROM_NOR);
-        kvsStore.delete(KVS_RAM_CRC);
-
+        this.putNorTx(tx, nor);
         this.resetSession(tx);
 
         await complete(tx);
+    }
+
+    /**
+     *
+     * @param {IDBTransaction} tx
+     * @param {Image} nor
+     */
+    putNorTx(tx, nor) {
+        tx.objectStore(OBJECT_STORE_KVS).put(nor, KVS_ROM_NOR);
     }
 
     /**
@@ -489,14 +497,16 @@ export class Database {
         return content;
     }
 
-    async putRam(ram) {
-        const tx = await this.tx(OBJECT_STORE_KVS, OBJECT_STORE_RAM);
+    /**
+     *
+     * @param {IDBTransaction} tx
+     * @param {Uint8Array | undefined} ram
+     */
+    putRamTx(tx, ram) {
         const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
         storeKvs.delete(KVS_RAM_CRC);
         putPagedData(ram, PAGE_SIZE_RAM, OBJECT_STORE_RAM, EMPTY_VALUE_RAM, tx);
-
-        await complete(tx);
     }
 
     /**
@@ -531,21 +541,30 @@ export class Database {
      * @param {Image} nand
      */
     async putNand(nand) {
+        const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_KVS, OBJECT_STORE_RAM);
+
+        this.putNandTx(tx, nand);
+        this.resetSession(tx);
+
+        await complete(tx);
+    }
+
+    /**
+     *
+     * @param {IDBTransaction} tx
+     * @param {Image} nand
+     */
+    putNandTx(tx, nand) {
         if (nand.content.length !== SIZE_NAND) {
             throw new Error('bad NAND size');
         }
 
-        const tx = await this.tx(OBJECT_STORE_NAND, OBJECT_STORE_KVS, OBJECT_STORE_RAM);
         const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
 
         storeKvs.put(nand.name, KVS_NAND_NAME);
         storeKvs.delete(KVS_NAND_CRC);
 
         putPagedData(nand.content, PAGE_SIZE_NAND, OBJECT_STORE_NAND, EMPTY_VALUE_NAND, tx);
-
-        this.resetSession(tx);
-
-        await complete(tx);
     }
 
     async clearNand() {
@@ -640,15 +659,6 @@ export class Database {
 
     /**
      *
-     * @param {Uint8Array} savestate
-     * @returns {Promise<void>}
-     */
-    async putSavestate(savestate) {
-        await this.kvsPut(KVS_SAVESTATE, savestate);
-    }
-
-    /**
-     *
      * @returns {Promise<void>}
      */
     async removeSavestate() {
@@ -669,10 +679,27 @@ export class Database {
 
     /**
      *
-     * @param {Promise<number>} size
+     * @param {number} ramSize
+     * @param {Image} nor
+     * @param {Image} nand
+     * @param {Uint8Array | undefined} ram
+     * @param {Uint8Array | undefined} savestate
+     *
+     * @returns {Promise<void>}
      */
-    putRamSize(size) {
-        return this.kvsPut(KVS_RAM_SIZE, size);
+    async importSession(ramSize, nor, nand, ram, savestate) {
+        const tx = await this.tx(OBJECT_STORE_KVS, OBJECT_STORE_NAND, OBJECT_STORE_RAM);
+        const storeKvs = tx.objectStore(OBJECT_STORE_KVS);
+
+        this.resetSession(tx);
+
+        this.putNorTx(tx, nor);
+        this.putNandTx(tx, nand);
+        this.putRamTx(tx, ram);
+        storeKvs.put(savestate, KVS_SAVESTATE);
+        storeKvs.put(ramSize, KVS_RAM_SIZE);
+
+        await complete(tx);
     }
 
     /**

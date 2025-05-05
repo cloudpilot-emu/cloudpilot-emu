@@ -391,11 +391,7 @@ import { SessionFile } from './sessionfile.js';
                     fileNor = { content: nor, name: metadata?.norName ?? 'saved ROM' };
                     fileNand = { content: nand, name: metadata?.nandName ?? 'saved NAND' };
 
-                    await database.putNor(fileNor);
-                    await database.putNand(fileNand);
-                    await database.putRamSize(ramSize);
-                    await database.putRam(ram);
-                    await database.putSavestate(savestate);
+                    await database.importSession(ramSize, fileNor, fileNand, ram, savestate);
                 } catch (e) {
                     alert(`Failed to load session: ${e.message}`);
                     console.error(e);
