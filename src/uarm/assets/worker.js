@@ -39,6 +39,37 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
     let framePool = [];
     let pcmPool = [];
 
+    function installResult(result, name) {
+        switch (result) {
+            case 1:
+                return `${name} installed successfully, reset advised`;
+
+            case 0:
+                return `${name} installed successfully`;
+
+            case -2:
+                return `${name} failed to install: corrupt file`;
+
+            case -3:
+                return `${name} failed to install: out of memory`;
+
+            case -4:
+                return `${name} failed to install: db is open`;
+
+            case -5:
+                return `${name} failed to install: db cannot be overwritten`;
+
+            case -6:
+                return `${name} failed to install: installing databases not supported on ROM`;
+
+            case -7:
+                return `${name} failed to install: db is currently not possible`;
+
+            default:
+                return `${name} failed to install: unknown error`;
+        }
+    }
+
     class DirtyPageTracker {
         constructor({ pageSize, pageCount, getDataPtr, getDirtyPagesPtr, isDirty, setDirty, module, name, crcCheck }) {
             this.pageSize = pageSize;
@@ -239,6 +270,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.getSavestateSize = module.cwrap('getSavestateSize', 'number');
             this.getSavestateData = module.cwrap('getSavestateData', 'number');
             this.getRamSize = module.cwrap('getRamSize', 'number');
+            this.installDatabase = module.cwrap('installDatabase', 'number', ['number', 'number']);
 
             this.amIDead = false;
             this.pcmEnabled = false;
@@ -595,6 +627,37 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.cardId = cardId;
             this.setupSdCardTracker();
         }
+
+        async install(files) {
+            const running = !!this.timeoutHandle;
+            if (running) this.stop();
+
+            await this.snapshotPromise;
+            this.triggerSnapshot();
+            await this.snapshotPromise;
+
+            for (const file of files) {
+                try {
+                    const filePtr = this.malloc(file.content.length);
+                    if (!filePtr) throw new Error('unable to allocate memory');
+
+                    this.module.HEAPU8.subarray(filePtr, filePtr + file.content.length).set(file.content);
+                    const result = this.installDatabase(file.content.length, filePtr);
+                    this.free(filePtr);
+
+                    this.log(installResult(result, file.name));
+                } catch (e) {
+                    this.log(`fatal error during installation: ${e}`);
+
+                    return file.name;
+                }
+            }
+
+            this.triggerSnapshot();
+            if (running) this.start();
+
+            return undefined;
+        }
     }
 
     function mapButton(name) {
@@ -816,6 +879,11 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         emulator.reset();
     }
 
+    function install(files) {
+        assertEmulator('install');
+        return emulator.install(files);
+    }
+
     async function main() {
         rpcClient = new RpcClient(self)
             .register('initialize', initialize)
@@ -823,7 +891,8 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             .register('stop', stop)
             .register('ejectCard', ejectCard)
             .register('insertCard', insertCard)
-            .register('reset', reset);
+            .register('reset', reset)
+            .register('install', install);
 
         onmessage = (e) => handleMessage(e.data);
 

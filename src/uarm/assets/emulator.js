@@ -286,6 +286,16 @@ export class Emulator {
         await this.rpc.call('reset');
     }
 
+    install(files) {
+        files = files.filter((file) => /\.(prc|pdb)$/i.test(file.name));
+
+        return this.rpc.call(
+            'install',
+            files,
+            files.map((file) => file.content.buffer)
+        );
+    }
+
     async handleSnapshot(snapshot) {
         const snapshotStatus = snapshot.nand || snapshot.sd ? 'saving' : 'ok';
 

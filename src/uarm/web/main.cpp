@@ -24,6 +24,7 @@
 #include "SoC.h"
 #include "audio_queue.h"
 #include "cputil.h"
+#include "db_installer.h"
 #include "device.h"
 #include "rom_info.h"
 #include "sdcard.h"
@@ -191,6 +192,10 @@ void* EMSCRIPTEN_KEEPALIVE getSavestateData() { return socGetSavestate(soc).data
 bool EMSCRIPTEN_KEEPALIVE isSdInserted() { return socSdInserted(soc); }
 
 uint32_t EMSCRIPTEN_KEEPALIVE getRamSize() { return socGetRamSize(soc); }
+
+uint32_t EMSCRIPTEN_KEEPALIVE installDatabase(uint32_t len, void* data) {
+    return dbInstallerInstall(socGetSyscallDispatch(soc), len, data);
+}
 }
 
 void run(uint32_t ramSize, uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen,

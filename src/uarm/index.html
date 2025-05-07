@@ -107,10 +107,46 @@
                 background: red;
                 color: white;
             }
+
+            #loading-mask {
+                position: absolute;
+                display: none;
+                justify-content: center;
+                align-items: center;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: rgba(0.6, 0.6, 0.6, 0.3);
+            }
+
+            .loader {
+                width: 48px;
+                height: 48px;
+                border: 5px solid #444;
+                border-bottom-color: transparent;
+                border-radius: 50%;
+                display: inline-block;
+                box-sizing: border-box;
+                animation: loader-rotation 1s linear infinite;
+            }
+
+            @keyframes loader-rotation {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
         </style>
     </head>
 
     <body>
+        <div id="loading-mask">
+            <span class="loader"></span>
+        </div>
+
         <div class="container">
             <canvas tabindex="-1" width="640" height="880"></canvas>
             <div class="controls">
@@ -121,7 +157,7 @@
 
                 <div class="control">
                     <button id="rotate">Rotate</button><button id="reset">Reset</button
-                    ><button id="power-cycle">Power cycle</button>
+                    ><button id="power-cycle">Power cycle</button><button id="install">Install</button>
                 </div>
 
                 <div class="control"><label>Emulation speed:</label><span id="speed">-</span></div>

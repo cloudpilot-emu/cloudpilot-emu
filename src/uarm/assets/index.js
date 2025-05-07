@@ -40,6 +40,8 @@ import { SessionFile } from './sessionfile.js';
     const clearLogButton = document.getElementById('clear-log');
     const resetButton = document.getElementById('reset');
     const powerCycleButton = document.getElementById('power-cycle');
+    const installButton = document.getElementById('install');
+    const loader = document.getElementById('loading-mask');
 
     const audioButton = document.getElementById('audio-button');
 
@@ -56,6 +58,14 @@ import { SessionFile } from './sessionfile.js';
     let mipsLimit = 100;
     let crcCheck = false;
     let sampleRate;
+
+    function showLoader() {
+        loader.style.display = 'flex';
+    }
+
+    function hideLoader() {
+        loader.style.display = 'none';
+    }
 
     function filenameFragment(prefix) {
         const now = new Date();
@@ -79,6 +89,7 @@ import { SessionFile } from './sessionfile.js';
         exportImageButton.disabled = !emulator;
         resetButton.disabled = !emulator;
         powerCycleButton.disabled = !emulator;
+        installButton.disabled = !emulator;
 
         labelNor.innerText = fileNor?.name ?? '[none]';
         labelNand.innerText = fileNand?.name ?? '[none]';
@@ -141,33 +152,37 @@ import { SessionFile } from './sessionfile.js';
     }
 
     let fileInput;
-    const openFile = () =>
+    const openFile = (multi = false) =>
         new Promise((resolve, reject) => {
             if (isWebkit && fileInput) document.body.removeChild(fileInput);
             fileInput = document.createElement('input');
 
-            fileInput.onchange = (evt) => {
-                console.log('onchange');
-
-                const target = evt.target;
-                const file = target?.files?.[0];
-
-                if (!file) reject(new Error('no files selected'));
-
+            const readFile = (file) => {
                 const reader = new FileReader();
 
-                reader.onload = () =>
-                    resolve({
-                        name: file.name,
-                        content: new Uint8Array(reader.result),
-                    });
-                reader.onerror = () => reject(reader.error);
+                return new Promise((_resolve, _reject) => {
+                    reader.onerror = () => _reject(reader.error);
+                    reader.onload = () => _resolve({ name: file.name, content: new Uint8Array(reader.result) });
 
-                reader.readAsArrayBuffer(file);
+                    reader.readAsArrayBuffer(file);
+                });
+            };
+
+            fileInput.onchange = (evt) => {
+                const target = evt.target;
+
+                if (multi) {
+                    Promise.all(Array.from(target?.files ?? []).map(readFile))
+                        .then(resolve)
+                        .catch(reject);
+                } else {
+                    readFile(target?.files?.[0]).then(resolve).catch(reject);
+                }
             };
 
             fileInput.type = 'file';
             fileInput.value = '';
+            fileInput.multiple = multi;
             fileInput.style.display = 'none';
 
             if (isWebkit) document.body.appendChild(fileInput);
@@ -465,6 +480,26 @@ import { SessionFile } from './sessionfile.js';
         rotateButton.addEventListener('click', () => mutex.runExclusive(() => emulator?.rotate()));
 
         resetButton.addEventListener('click', () => mutex.runExclusive(() => emulator?.reset()));
+
+        installButton.addEventListener('click', async () => {
+            if (!emulator) return;
+
+            const files = await openFile(true);
+            showLoader();
+
+            try {
+                const failingFile = await emulator.install(files);
+                if (failingFile === undefined) return;
+
+                alert(
+                    `There was a fatal error installing ${failingFile} . There is a known PalmOS bug that may cause installation of large files with several MB to cause crashes on NVFS based (all official E2) ROMs. In this case, please copy such files to SD instead, or use a ROM without NVFS.`
+                );
+
+                window.location.reload();
+            } finally {
+                hideLoader();
+            }
+        });
 
         document.addEventListener('visibilitychange', () =>
             mutex.runExclusive(() => (document.hidden ? emulator?.stop() : emulator?.start()))
