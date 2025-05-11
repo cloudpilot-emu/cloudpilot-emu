@@ -3436,7 +3436,7 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCyclePace(struct ArmCpu *cpu, uint32_t cyc
 
     while (cycleAcc < cycles) {
         cpuPrvCyclePace(cpu);
-        cycleAcc += 10;
+        cycleAcc += 20;
 
         if (cpu->slowPath) break;
     }
