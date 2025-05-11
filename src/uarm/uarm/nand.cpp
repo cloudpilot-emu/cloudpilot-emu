@@ -64,6 +64,8 @@ struct NAND {
     uint32_t *dirtyPages;
     bool dirty;
 
+    uint32_t writeCnt;
+
     struct Reschedule reschedule;
 
     template <typename T>
@@ -144,6 +146,7 @@ static bool nandPrvBlockErase(struct NAND *nand) {
     }
 
     nand->dirty = true;
+    nand->writeCnt++;
     return true;
 }
 
@@ -164,6 +167,7 @@ static bool nandPrvPageProgram(struct NAND *nand) {
     size_t storagePage = (nand->pageNo * nand->bytesPerPage) / 4224;
     nand->dirtyPages[storagePage >> 5] |= (1u << (storagePage & 0x1f));
     nand->dirty = true;
+    nand->writeCnt++;
 
     return true;
 }
@@ -441,6 +445,8 @@ struct Buffer nandGetDirtyPages(struct NAND *nand) {
 bool nandIsDirty(struct NAND *nand) { return nand->dirty; }
 
 void nandSetDirty(struct NAND *nand, bool isDirty) { nand->dirty = isDirty; }
+
+uint32_t nandGetWriteCnt(struct NAND *nand) { return nand->writeCnt; }
 
 bool nandIsReady(struct NAND *nand) { return !nand->busyCt; }
 

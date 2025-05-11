@@ -708,7 +708,7 @@ static FORCE_INLINE uint64_t socRunUntil(SoC *soc, struct ArmCpu *cpu, uint64_t 
         uint64_t cyclesAdvanced;
 
         if constexpr (injected) {
-            cyclesAdvanced = soc->sleeping ? cyclesToAdvance : cpuCycle<injected>(cpu, 1);
+            cyclesAdvanced = cpuCycle<injected>(cpu, cyclesToAdvance);
         } else {
             cyclesAdvanced =
                 soc->sleeping ? cyclesToAdvance : cpuCycle<injected>(cpu, cyclesToAdvance);
@@ -896,6 +896,8 @@ bool socIsPacePatched(struct SoC *soc) { return soc->pacePatch->enterPace; }
 
 uint32_t socGetRamSize(struct SoC *soc) { return soc->ramSize; }
 
+struct NAND *socGetNand(struct SoC *soc) { return soc->nand; }
+
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaUartLoad(ffUart, loader, 0);
     if (socRev != 2) pxaUartLoad(hwUart, loader, 1);
@@ -949,6 +951,7 @@ void SoC::Load(SavestateLoader<ChunkType> &loader) {
 
     schedulePcmTask(this);
     keypadReset(kp);
+    socSetFramebufferDirty(this);
 }
 
 template <typename T>

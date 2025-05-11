@@ -3539,8 +3539,6 @@ ATTR_EMCC_NOINLINE static uint32_t cpuCycleArm(struct ArmCpu *cpu, uint32_t cycl
 
 template <bool injected>
 ATTR_EMCC_NOINLINE uint32_t cpuCycle(struct ArmCpu *cpu, uint32_t cycles) {
-    if (cpu->sleeping) return cycles;
-
     if (cpu->waitingEventsTotal) {
         if (cpu->waitingFiqs && !cpu->F)
             cpuPrvException(cpu, cpu->vectorBase + ARM_VECTOR_OFFT_FIQ, cpu->regs[REG_NO_PC] + 4,
@@ -3569,8 +3567,6 @@ template uint32_t cpuCycle<true>(struct ArmCpu *cpu, uint32_t cycles);
 template uint32_t cpuCycle<false>(struct ArmCpu *cpu, uint32_t cycles);
 
 uint32_t cpuCyclePure(struct ArmCpu *cpu) {
-    if (cpu->sleeping) return 1;
-
     cpuClearSlowPath(cpu, SLOW_PATH_REASON_INSTRUCTION_SET_CHANGE | SLOW_PATH_REASON_RESCHEDULE |
                               SLOW_PATH_REASON_PACE_SYSCALL_BREAK |
                               SLOW_PATH_REASON_INJECTED_CALL_DONE);

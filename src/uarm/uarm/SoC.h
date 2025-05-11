@@ -23,6 +23,7 @@ struct SoC;
 struct AudioQueue;
 struct ArmCpu;
 struct SyscallDispatch;
+struct NAND;
 
 typedef bool (*SdSectorR)(uint32_t secNum, void *buf);
 typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
@@ -92,6 +93,8 @@ struct SyscallDispatch *socGetSyscallDispatch(struct SoC *soc);
 bool socIsPacePatched(struct SoC *soc);
 
 uint32_t socGetRamSize(struct SoC *soc);
+
+struct NAND *socGetNand(struct SoC *soc);
 
 #ifdef __cplusplus
 }

@@ -8,6 +8,7 @@
 #include "CPU.h"
 #include "cputil.h"
 #include "memcpy.h"
+#include "nand.h"
 #include "pace.h"
 #include "savestate/ChunkTypeUarm.h"
 #include "savestate/Savestate.h"
@@ -17,7 +18,7 @@
 
 #define MAX_NEST_LEVEL 4
 #define INJECTED_CALL_IPS 100000000ull
-#define INJECTED_CALL_TIMEOUT_SEC 2
+#define INJECTED_CALL_TIMEOUT_SEC 4
 
 #define PREPARE_INJECTED_CALL_IPS 50000000ull
 #define PREPARE_INJECTED_CALL_TIMEOUT_SEC 1
@@ -175,15 +176,17 @@ static void executeInjectedSyscall(struct SyscallDispatch* sd, uint32_t flags, u
 static void executeInjectedSyscall68k(struct SyscallDispatch* sd, uint32_t flags,
                                       uint16_t syscall) {
     struct ArmCpu* cpu = socGetCpu(sd->soc);
+    struct NAND* nand = socGetNand(sd->soc);
     bool deadMansSwitchSaved = sd->deadMansSwitch;
 
     cpuStartInjectedSyscall68k(cpu, syscall);
 
     while (true) {
+        const uint32_t nandWriteCnt = nandGetWriteCnt(nand);
         sd->deadMansSwitch = false;
 
         if (executeInjectedCall(sd->soc, flags)) break;
-        if (sd->deadMansSwitch) continue;
+        if (sd->deadMansSwitch || nandGetWriteCnt(nand) != nandWriteCnt) continue;
 
         ERR("failed to execute injected call within time limit\n");
     }
