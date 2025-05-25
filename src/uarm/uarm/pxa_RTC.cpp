@@ -10,40 +10,52 @@
 #include "mem.h"
 #include "pxa_IC.h"
 #include "savestate/savestateAll.h"
+#include "timeutil.h"
 
 #define PXA_RTC_BASE 0x40900000UL
 #define PXA_RTC_SIZE 0x00001000UL
 
-#define SAVESTATE_VERSION 0
+#define SAVESTATE_VERSION 1
 
 struct PxaRtc {
     struct SocIc *ic;
 
-    uint32_t lastSeenTime;
-    uint32_t RCNR;  // RTC counter offset from our local time
+    uint64_t lastAlarmCheck;
+
     uint32_t RTAR;  // RTC alarm
     uint32_t RTTR;  // RTC trim - we ignore this alltogether
-
-    uint8_t RTSR;  // RTC status
+    uint8_t RTSR;   // RTC status
 
     template <typename T>
-    void DoSaveLoad(T &chunkHelper) {
-        chunkHelper.Do32(lastSeenTime).Do32(RCNR).Do32(RTAR).Do32(RTTR).Do8(RTSR);
+    void DoSaveLoad(T &chunkHelper, uint32_t version) {
+        if (version == 0) {
+            uint32_t lastSeenTime = 0, RCNR = 0;
+            chunkHelper.Do32(lastSeenTime).Do32(RCNR).Do32(RTAR).Do32(RTTR).Do8(RTSR);
+        } else {
+            chunkHelper.Do32(RTAR).Do32(RTTR).Do8(RTSR).Do64(lastAlarmCheck);
+        }
     }
 };
 
-void pxaRtcPrvUpdate(struct PxaRtc *rtc) {
-    if (rtc->lastSeenTime != rtc->RCNR) {  // do not triger alarm more than once per second please
-
-        if (rtc->RTSR & 0x4)  // check alarm
-            rtc->RTSR |= 1;
-
-        if (rtc->RTSR & 0x8)  // send HZ interrupt
-            rtc->RTSR |= 2;
-
-        rtc->lastSeenTime = rtc->RCNR;
-    }
+static void pxaRtcPrvUpdateInterrupts(struct PxaRtc *rtc) {
     socIcInt(rtc->ic, PXA_I_RTC_ALM, !!(rtc->RTSR & 1));
+    socIcInt(rtc->ic, PXA_I_RTC_HZ, !!(rtc->RTSR & 2));
+}
+
+static void pxaRtcPrvUpdateAlarm(struct PxaRtc *rtc) {
+    const uint64_t now = palmEpochSeconds();
+
+    if ((rtc->RTSR & 0x04) && rtc->lastAlarmCheck < rtc->RTAR && now >= rtc->RTAR) rtc->RTSR |= 1;
+
+    rtc->lastAlarmCheck = now;
+
+    socIcInt(rtc->ic, PXA_I_RTC_ALM, !!(rtc->RTSR & 1));
+}
+
+static void pxaRtcTickHz(struct PxaRtc *rtc) {
+    if (rtc->RTSR & 0x8)  // send HZ interrupt
+        rtc->RTSR |= 2;
+
     socIcInt(rtc->ic, PXA_I_RTC_HZ, !!(rtc->RTSR & 2));
 }
 
@@ -65,17 +77,19 @@ static bool pxaRtcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
 
         switch (pa) {
             case 0:
-                rtc->RCNR = val;
                 break;
 
             case 1:
                 rtc->RTAR = val;
-                pxaRtcPrvUpdate(rtc);
+                rtc->lastAlarmCheck = palmEpochSeconds() - 1;
+                pxaRtcPrvUpdateAlarm(rtc);
+
                 break;
 
             case 2:
                 rtc->RTSR = (val & ~3UL) | ((rtc->RTSR & ~val) & 3UL);
-                pxaRtcPrvUpdate(rtc);
+                pxaRtcPrvUpdateInterrupts(rtc);
+
                 break;
 
             case 3:
@@ -85,7 +99,7 @@ static bool pxaRtcPrvMemAccessF(void *userData, uint32_t pa, uint_fast8_t size, 
     } else {
         switch (pa) {
             case 0:
-                val = rtc->RCNR;
+                val = palmEpochSeconds();
                 break;
 
             case 1:
@@ -118,14 +132,12 @@ struct PxaRtc *pxaRtcInit(struct ArmMem *physMem, struct SocIc *ic) {
     if (!memRegionAdd(physMem, PXA_RTC_BASE, PXA_RTC_SIZE, pxaRtcPrvMemAccessF, rtc))
         ERR("cannot add RTC to MEM\n");
 
-    // clockRegisterConsumer(clock, 1000000000ULL, pxaRtcUpdate, rtc);
-
     return rtc;
 }
 
 void pxaRtcTick(struct PxaRtc *rtc) {
-    rtc->RCNR++;
-    pxaRtcPrvUpdate(rtc);
+    pxaRtcPrvUpdateAlarm(rtc);
+    pxaRtcTickHz(rtc);
 }
 
 template <typename T>
@@ -134,16 +146,19 @@ void pxaRtcSave(struct PxaRtc *rtc, T &savestate) {
     if (!chunk) ERR("unable to allocate chunk");
 
     SaveChunkHelper helper(*chunk);
-    rtc->DoSaveLoad(helper);
+    rtc->DoSaveLoad(helper, SAVESTATE_VERSION);
 }
 
 template <typename T>
 void pxaRtcLoad(struct PxaRtc *rtc, T &loader) {
-    auto chunk = loader.GetChunk(ChunkType::pxaRtc, SAVESTATE_VERSION, "pxa rtc");
+    uint32_t gotVersion;
+    auto chunk = loader.GetChunk(ChunkType::pxaRtc, SAVESTATE_VERSION, "pxa rtc", gotVersion);
     if (!chunk) return;
 
     LoadChunkHelper helper(*chunk);
-    rtc->DoSaveLoad(helper);
+    rtc->DoSaveLoad(helper, gotVersion);
+
+    if (gotVersion == 0) rtc->lastAlarmCheck = palmEpochSeconds();
 }
 
 template void pxaRtcSave<Savestate<ChunkType>>(PxaRtc *rtc, Savestate<ChunkType> &savestate);
