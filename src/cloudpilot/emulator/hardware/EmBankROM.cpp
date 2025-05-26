@@ -401,6 +401,7 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
 
     // Read the card header.
 
+#if 0
     EmProxyCardHeaderType cardHeader;
     memcpy(cardHeader.GetPtr(), buffer, cardHeader.GetSize());
 
@@ -466,10 +467,14 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
 
         bufferOffset = 0;
     }
-
+#endif
     // The ROM size is now the size of the file plus any offset for
     // any small ROM that we have to add and dummy up.
 
+    const uint32 bufferOffset = 32 * 1024;
+    const uint32 bigROMOffset = 32 * 1024;
+
+    // gROMImage_Size = len + bufferOffset;
     gROMImage_Size = len + bufferOffset;
     gROMBank_Size = ::NextPowerOf2(gROMImage_Size);
 
@@ -481,7 +486,7 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
 
     // See if the big ROM checksum looks OK.
 
-    Card::CheckChecksum(romImage.get() + bigROMOffset, gROMImage_Size - bigROMOffset);
+    //    Card::CheckChecksum(romImage.get() + bigROMOffset, gROMImage_Size - bigROMOffset);
 
     // If we only had a Big ROM, dummy up the Small ROM.  All we really
     // need to do here is copy the Big ROM's card header to the Small
@@ -491,7 +496,7 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
 
     if (bufferOffset) {
         memset(romImage.get(), 0xFF, bigROMOffset);
-        memcpy(romImage.get(), romImage.get() + bigROMOffset, EmProxyCardHeaderType::GetSize());
+        memcpy(romImage.get(), romImage.get() + bigROMOffset, 32);
     } else {
         // See if the small ROM checksum looks OK.
         // Note that checksumBytes is invalid for v1 card headers,
@@ -503,6 +508,7 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
     }
 
     // Check that the ROM we just loaded can be run on this device.
+#if 0
 
     EmAliasCardHeaderType<LAS> cardHdr(romImage.get());
 
@@ -529,7 +535,7 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
             return false;
         }
     }
-
+#endif
     // Byteswap all the words in the ROM (if necessary). Most accesses
     // are 16-bit accesses, so we optimize for that case.
 
@@ -553,7 +559,7 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
     // it can find signatures there.  If we map the ROM to zero,
     // then we'll get bus errors when those accesses are made.)
 
-    gROMMemoryStart = cardHeader.resetVector & 0xFFF00000;
+    gROMMemoryStart = 0x10c00000;
 
     return true;
 }

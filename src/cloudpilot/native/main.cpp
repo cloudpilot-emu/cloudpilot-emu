@@ -18,6 +18,7 @@
 #include "EmDevice.h"
 #include "EmROMReader.h"
 #include "EmSession.h"
+#include "EmTransportSerialBuffer.h"
 #include "ExternalStorage.h"
 #include "Feature.h"
 #include "GdbStub.h"
@@ -201,6 +202,9 @@ void run(const Options& options) {
 
     MainLoop mainLoop(window, renderer, scale);
 
+    EmTransportSerialBuffer* serialTransportSerial = new EmTransportSerialBuffer();
+    gSession->SetTransportSerial(kUARTSerial, serialTransportSerial);
+
     commands::Register();
     cli::Start(options.scriptFile);
     commands::Context commandContext = {.debugger = gDebugger, .gdbStub = gdbStub};
@@ -209,6 +213,12 @@ void run(const Options& options) {
         mainLoop.Cycle();
 
         if (cli::Execute(&commandContext)) break;
+
+        if (serialTransportSerial->RxBytesPending() > 0) {
+            const size_t count = serialTransportSerial->RxBytesPending();
+
+            cout.write((const char*)serialTransportSerial->Receive(), count).flush();
+        }
 
         handleSuspend();
         if (proxyHandler) proxyHandler->HandleSuspend();

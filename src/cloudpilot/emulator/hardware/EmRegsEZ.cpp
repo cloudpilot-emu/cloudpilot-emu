@@ -1493,6 +1493,7 @@ void EmRegsEZ::csDSelectWrite(emuptr address, int size, uint32 value) {
     // Check its new state and update our ram-protect flag.
 
     gMemAccessFlags.fProtect_SRAMSet = (READ_REGISTER(csDSelect) & 0x2000) != 0;
+    // gMemAccessFlags.fProtect_SRAMSet = false;
 
     // Check to see if the unprotected memory range changed.
 

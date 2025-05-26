@@ -676,9 +676,9 @@ void EmUARTDragonball::ReceiveRxFIFO(EmTransportSerial* transport) {
                 for (long ii = 0; ii < bytesToBuffer; ++ii) {
                     fRxFIFO.Put(buffer[ii]);
                 }  // end loop that puts bytes into FIFO
-            }      // end no-error-from-EmTransport::Read
-        }          // end BytesInBuffer-returned-non-zero
-    }              // end is-serial-port-open
+            }  // end no-error-from-EmTransport::Read
+        }  // end BytesInBuffer-returned-non-zero
+    }  // end is-serial-port-open
     else {
         receiveInProgress = false;
     }

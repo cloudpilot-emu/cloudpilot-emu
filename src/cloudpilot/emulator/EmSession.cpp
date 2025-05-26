@@ -442,7 +442,7 @@ uint32 EmSession::RunEmulation(uint32 maxCycles) {
     uint32 cycles = cpu->Execute(maxCycles);
     systemCycles += cycles;
 
-    CheckDayForRollover();
+    // CheckDayForRollover();
 
     extraCycles = 0;
 

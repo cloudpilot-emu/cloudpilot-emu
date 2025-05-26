@@ -219,7 +219,7 @@ MemAccessFlags gMemAccessFlags = {
     //	MASTER_RUNTIME_PREVENT_SWITCH,
     //	MASTER_RUNTIME_PREVENT_SWITCH,
     false,  // SRAM-get
-    true,   // SRAM-set
+    false,  // SRAM-set
     false,  // ROM-get
     true,   // ROM-set (HACK: We really want it to be true!)
     MASTER_RUNTIME_PREVENT_SWITCH, MASTER_RUNTIME_PREVENT_SWITCH,

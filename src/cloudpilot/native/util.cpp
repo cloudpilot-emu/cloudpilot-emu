@@ -66,7 +66,7 @@ bool util::initializeSession(string file, optional<string> deviceId) {
 
         return true;
     }
-
+#if 0
     EmROMReader reader(fileBuffer.get(), fileSize);
 
     if (!reader.Read()) {
@@ -97,6 +97,10 @@ bool util::initializeSession(string file, optional<string> deviceId) {
 
         return false;
     }
+
+#endif
+
+    EmDevice* device = new EmDevice(*deviceId);
 
     cout << "using device: " << device->GetIDString() << endl;
 
