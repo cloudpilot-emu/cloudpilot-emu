@@ -43,11 +43,13 @@ static void pxaRtcPrvUpdateInterrupts(struct PxaRtc *rtc) {
 }
 
 static void pxaRtcPrvUpdateAlarm(struct PxaRtc *rtc) {
-    const uint64_t now = palmEpochSeconds();
+    if (rtc->lastAlarmCheck < rtc->RTAR) {
+        const uint64_t now = palmEpochSeconds();
 
-    if ((rtc->RTSR & 0x04) && rtc->lastAlarmCheck < rtc->RTAR && now >= rtc->RTAR) rtc->RTSR |= 1;
+        if ((rtc->RTSR & 0x04) && now >= rtc->RTAR) rtc->RTSR |= 1;
 
-    rtc->lastAlarmCheck = now;
+        rtc->lastAlarmCheck = now;
+    }
 
     socIcInt(rtc->ic, PXA_I_RTC_ALM, !!(rtc->RTSR & 1));
 }

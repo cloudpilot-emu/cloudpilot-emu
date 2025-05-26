@@ -377,16 +377,16 @@ static void pxaLcdPrvScreenDataDma(struct PxaLcd *lcd, uint32_t addr /*PA*/, uin
         lcd->framebufferBpp = bpp;
 
         if (len == ((uint32_t)(lcd->width * lcd->height) << bpp) >> 3) {
-            fprintf(stderr, "framebuffer now at 0x%08x , size %u bytes, %d bpp\n", addr, len,
-                    (int)(1 << bpp));
+            // fprintf(stderr, "framebuffer now at 0x%08x , size %u bytes, %d bpp\n", addr, len,
+            //         (int)(1 << bpp));
 
             lcd->framebufferDirty = true;
             lcd->framebufferTrackingActive = socSetFramebuffer(lcd->soc, addr, len);
         } else {
-            fprintf(stderr,
-                    "framebuffer size %u bytes does not match depth %d bpp, assuming segmented "
-                    "framebuffer\n",
-                    len, (int)(1 << bpp));
+            // fprintf(stderr,
+            //         "framebuffer size %u bytes does not match depth %d bpp, assuming segmented "
+            //         "framebuffer\n",
+            //         len, (int)(1 << bpp));
 
             socSetFramebuffer(lcd->soc, 0, 0);
             lcd->framebufferDirty = true;
