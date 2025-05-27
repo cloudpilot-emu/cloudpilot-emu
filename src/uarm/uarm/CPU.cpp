@@ -67,7 +67,7 @@
 
 #define EXEC_FN_PREFIX_VALUE 0x53ae0000
 
-#define SAVESTATE_VERSION 2
+#define SAVESTATE_VERSION 3
 
 #ifdef __EMSCRIPTEN__
     #define PREFIX_EXEC_FN(...) (ExecFn((uint32_t)__VA_ARGS__ + EXEC_FN_PREFIX_VALUE))
@@ -951,14 +951,13 @@ static void execFn_noop(struct ArmCpu *cpu, uint32_t instr) {}
 static void execFn_paceEnter(struct ArmCpu *cpu, uint32_t instr) {
     uint_fast8_t fsr = 0;
 
-    cpu->regs[REG_NO_SP] -= 4;
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], true, cpu->privileged,
-                        &fsr))
-        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
+    for (uint8_t reg : {REG_NO_LR, 11, 10, 9, 8, 7, 6, 5, 4, 0}) {
+        cpu->regs[REG_NO_SP] -= 4;
 
-    cpu->regs[REG_NO_SP] -= 4;
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], true, cpu->privileged, &fsr))
-        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
+        if (!cpuPrvMemOp<4>(cpu, &cpu->regs[reg], cpu->regs[REG_NO_SP], true, cpu->privileged,
+                            &fsr))
+            return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
+    }
 
     paceSetPriviledged(cpu->privileged);
     paceSetStatePtr(cpu->regs[0]);
@@ -1002,6 +1001,11 @@ static void execFn_paceReturnFromCallout(struct ArmCpu *cpu, uint32_t instr) {
     // restore r0 / state pointer from stack
     if (!cpuPrvMemOp<4>(cpu, &cpu->regs[0], cpu->regs[REG_NO_SP], false, cpu->privileged, &fsr))
         return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], false, false, fsr);
+
+    // restore r9 / dispatch table pointer from stack
+    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[9], cpu->regs[REG_NO_SP] + 24, false, cpu->privileged,
+                        &fsr))
+        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP] + 24, false, false, fsr);
 
     paceSetPriviledged(cpu->privileged);
     paceSetStatePtr(cpu->regs[0]);
@@ -3293,14 +3297,15 @@ static void cpuPrvPaceReturn(struct ArmCpu *cpu) {
 
     if (!paceSave68kState()) return cpuPrvHandlePaceMemoryFault(cpu);
 
-    cpu->regs[REG_NO_SP] += 4;
+    for (uint_fast8_t reg : {1, 4, 5, 6, 7, 8, 9, 10, 11, REG_NO_LR}) {
+        if (!cpuPrvMemOp<4>(cpu, &cpu->regs[reg], cpu->regs[REG_NO_SP], false, cpu->privileged,
+                            &fsr))
+            return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
 
-    if (!cpuPrvMemOp<4>(cpu, &cpu->regs[REG_NO_LR], cpu->regs[REG_NO_SP], false, cpu->privileged,
-                        &fsr))
-        return cpuPrvHandleMemErr(cpu, cpu->regs[REG_NO_SP], true, false, fsr);
-    cpu->regs[REG_NO_SP] += 4;
+        cpu->regs[REG_NO_SP] += 4;
+    }
 
-    cpu->regs[1] = cpu->regs[0];
+    cpu->regs[0] = 0;
     cpuPrvSetPC(cpu, cpu->regs[REG_NO_LR]);
 
     cpu->modePace = false;
@@ -3713,6 +3718,12 @@ void cpuLoad(ArmCpu *cpu, T &loader) {
     uint32_t version;
     auto chunk = loader.GetChunk(ChunkType::cpu, SAVESTATE_VERSION, "cpu", version);
     if (!chunk) return;
+
+    if (version < 3) {
+        std::cerr << "not restoring incompatible CPU savestate version " << version << std::endl;
+        loader.NotifyError();
+        return;
+    }
 
     LoadChunkHelper helper(*chunk);
     cpu->DoSaveLoad(helper, version);
