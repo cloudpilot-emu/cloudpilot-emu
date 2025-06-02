@@ -31,11 +31,32 @@ static bool headpatch_PenRawToScreen(void* ctx, uint32_t syscall, uint32_t* regi
     return false;
 }
 
+static bool headpatch_PenScreenToRaw(void* ctx, uint32_t syscall, uint32_t* registers) {
+    struct ArmCpu* cpu = ctx;
+
+    const uint32_t pointP = registers[0];
+    int16_t x, y;
+
+    cpuMemOpExternal(cpu, &x, pointP, 2, false);
+    cpuMemOpExternal(cpu, &y, pointP + 2, 2, false);
+
+    if (x != 0x3fff) x = 280 + x * 10;
+    if (y != 0x3fff) y = 210 + y * 7;
+
+    cpuMemOpExternal(cpu, &x, pointP, 2, true);
+    cpuMemOpExternal(cpu, &y, pointP + 2, 2, true);
+
+    return false;
+}
+
 void registerPatches(struct PatchDispatch* patchDispatch, struct SyscallDispatch* syscallDispatch,
                      struct ArmCpu* cpu) {
     patchDispatchAddPatch(patchDispatch, SYSCALL_SYS_SET_AUTO_OFF_TIME, headpatch_SysSetAutoOffTime,
                           NULL, NULL);
 
     patchDispatchAddPatch(patchDispatch, SYSCALL_HAL_PEN_RAW_TO_SCREEN, headpatch_PenRawToScreen,
+                          NULL, cpu);
+
+    patchDispatchAddPatch(patchDispatch, SYSCALL_HAL_PEN_SCREEN_TO_RAW, headpatch_PenScreenToRaw,
                           NULL, cpu);
 }
