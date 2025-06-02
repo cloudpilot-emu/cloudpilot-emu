@@ -620,8 +620,8 @@ void wm9712LsetPen(struct WM9712L *wm, int16_t x, int16_t y,
         wm->penZ = press;
         wm->penDown = true;
     } else {
-        wm->penX = 0xfff;
-        wm->penY = 0xfff;
+        wm->penX = 0x3fff;
+        wm->penY = 0x3fff;
         wm->penZ = 0;
         wm->penDown = false;
     }

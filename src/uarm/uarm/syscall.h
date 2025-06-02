@@ -9,6 +9,7 @@ extern "C" {
 
 #define SYSCALL_UI_INITIALIZE 0xc55c
 #define SYSCALL_SYS_SET_AUTO_OFF_TIME 0x88c8
+#define SYSCALL_HAL_PEN_RAW_TO_SCREEN 0x415c
 
 #define packSyscall(table, offset) ((table << 12) | offset)
 

@@ -108,7 +108,6 @@ struct Device {
     struct Reschedule reschedule;
 
     enum DeviceType type;
-    int penScaleX, penScaleY;
 };
 
 uint32_t deviceGetDefaultRamSize(void) { return 16UL << 20; }
@@ -208,10 +207,6 @@ struct Device *deviceSetup(enum DeviceType type, struct SocPeriphs *sp,
     struct DeviceDisplayConfiguration displayConfiguration;
     deviceGetDisplayConfiguration(type, &displayConfiguration);
 
-    dev->penScaleX = (173 * 320) / displayConfiguration.width;
-    dev->penScaleY =
-        (134 * 440) / (displayConfiguration.height + displayConfiguration.graffitiHeight);
-
     return dev;
 }
 
@@ -222,8 +217,8 @@ void devicePeriodic(struct Device *dev, uint32_t tier) {
 void devicePcmPeriodic(struct Device *dev) { wm9712Lperiodic(dev->wm9712L); }
 
 void deviceTouch(struct Device *dev, int x, int y) {
-    wm9712LsetPen(dev->wm9712L, (x >= 0 && y >= 0) ? 280 + dev->penScaleX * x / 16 : -1,
-                  (x >= 0 && y >= 0) ? 210 + dev->penScaleY * y / 16 : y, 1000);
+    wm9712LsetPen(dev->wm9712L, (x >= 0 && y >= 0) ? 280 + 10 * x : -1,
+                  (x >= 0 && y >= 0) ? 210 + 7 * y : -1, 1000);
 }
 
 void deviceKey(struct Device *dev, uint32_t key, bool down) {

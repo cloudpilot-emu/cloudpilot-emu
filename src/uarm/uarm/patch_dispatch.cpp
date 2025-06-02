@@ -110,6 +110,7 @@ void patchDispatchOnLoadR12FromR9(struct PatchDispatch* pd, int32_t offset) {
 }
 
 void patchDispatchOnLoadPcFromR12(struct PatchDispatch* pd, int32_t offset, uint32_t* registers) {
+    // cpuGetRegExternal returns PC of the current instruction!
     if (pd->table < 0 || pd->loadR12PC != cpuGetRegExternal(pd->cpu, 15) - 8 ||
         pd->loadedR12 != cpuGetRegExternal(pd->cpu, 12) || offset < 0 || offset & 0x03 ||
         offset > 0xfff)
@@ -127,7 +128,15 @@ void patchDispatchOnLoadPcFromR12(struct PatchDispatch* pd, int32_t offset, uint
 
     const struct Patch* patch = &pd->patches[patchIdx];
 
-    if (patch->headpatch) patch->headpatch(patch->ctx, patch->syscall, registers);
+    if (patch->headpatch) {
+        const bool continueSyscall = patch->headpatch(patch->ctx, patch->syscall, registers);
+
+        if (!continueSyscall) {
+            cpuSetReg(pd->cpu, 15, cpuGetRegExternal(pd->cpu, 14));
+            return;
+        }
+    }
+
     if (patch->tailpatch) {
         if (pd->nPendingTailpatches == MAX_PENDING_TAILPATCH) {
             fprintf(stderr, "too many pending tailpatches, skipping tailpatch for %#10x\n",

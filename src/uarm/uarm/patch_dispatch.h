@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-typedef void (*HeadpatchF)(void* ctx, uint32_t syscall, uint32_t* registers);
+typedef bool (*HeadpatchF)(void* ctx, uint32_t syscall, uint32_t* registers);
 typedef void (*TailpatchF)(void* ctx, uint32_t syscall, const uint32_t* registersAtinvocation,
                            uint32_t* registers);
 

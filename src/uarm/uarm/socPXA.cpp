@@ -1,6 +1,7 @@
 //(c) uARM project    https://github.com/uARM-Palm/uARM    uARM@dmitry.gr
 
 //  stdlib
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -327,7 +328,7 @@ SoC *socInit(enum DeviceType deviceType, uint32_t ramSize, void *romData, const 
     patchDispatchSetCpu(soc->patchDispatch, soc->cpu);
 
     soc->syscallDispatch = initSyscallDispatch(soc);
-    registerPatches(soc->patchDispatch, soc->syscallDispatch);
+    registerPatches(soc->patchDispatch, soc->syscallDispatch, soc->cpu);
 
     soc->ram = ramInit(soc->mem, soc, RAM_BASE, ramSize, &soc->bufferMemory, true);
     if (!soc->ram) ERR("Cannot init RAM");
@@ -574,7 +575,10 @@ void socKeyDown(SoC *soc, enum KeyId key) { soc->keyEventQueue->Push(KeyEvent::K
 
 void socKeyUp(SoC *soc, enum KeyId key) { soc->keyEventQueue->Push(KeyEvent::KeyUp(key)); }
 
-void socPenDown(SoC *soc, int x, int y) { soc->penEventQueue->Push(PenEvent::PenDown(x, y)); }
+void socPenDown(SoC *soc, int x, int y) {
+    soc->penEventQueue->Push(PenEvent::PenDown(std::min<int>(std::max<int>(x, 0), 320),
+                                               std::min<int>(std::max<int>(y, 0), 480)));
+}
 
 void socPenUp(SoC *soc) { soc->penEventQueue->Push(PenEvent::PenUp()); }
 

@@ -8,7 +8,10 @@
 extern "C" {
 #endif
 
-void registerPatches(struct PatchDispatch* patchDispatch, struct SyscallDispatch* syscallDispatch);
+struct ArmCpu;
+
+void registerPatches(struct PatchDispatch* patchDispatch, struct SyscallDispatch* syscallDispatch,
+                     struct ArmCpu* cpu);
 
 #ifdef __cplusplus
 }

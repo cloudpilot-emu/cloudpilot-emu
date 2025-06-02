@@ -1832,9 +1832,9 @@ static void execFn_load_store_2(struct ArmCpu *cpu, uint32_t instr) {
                 if constexpr (destPc)
                 // syscall && destPc -> sourceReg == 9 && destReg == 12
                 {
+                    cpuPrvSetReg<destPc>(cpu, destReg, memVal32);
                     patchDispatchOnLoadPcFromR12(cpu->patchDispatch, addBefore ? increment : 0,
                                                  cpu->regs);
-                    cpuPrvSetReg<destPc>(cpu, destReg, memVal32);
                 } else {
                     // syscall && !destPc -> sourceReg == 12 && destReg == 15
                     cpuPrvSetReg<destPc>(cpu, destReg, memVal32);
