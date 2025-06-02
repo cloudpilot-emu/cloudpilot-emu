@@ -16,7 +16,7 @@ static bool headpatch_SysSetAutoOffTime(void* ctx, uint32_t syscall, uint32_t* r
 static bool headpatch_PenRawToScreen(void* ctx, uint32_t syscall, uint32_t* registers) {
     struct ArmCpu* cpu = ctx;
 
-    uint32_t pointP = registers[0];
+    const uint32_t pointP = registers[0];
     int16_t x, y;
 
     cpuMemOpExternal(cpu, &x, pointP, 2, false);
