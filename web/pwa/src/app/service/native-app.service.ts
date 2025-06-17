@@ -23,13 +23,26 @@ interface NativeMessageNetRpcResult {
     rpcData: Array<number>;
 }
 
-interface NativeMessageClipboardRead {
+interface NativeCallClipboardRead {
     type: 'clipboardRead';
 }
 
-interface NativeMessageClipboardWrite {
+interface NativeCallClipboardWrite {
     type: 'clipboardWrite';
     data: string;
+}
+
+interface NativeCallSetWorkerRegistered {
+    type: 'setWorkerRegistered';
+    workerRegistered: boolean;
+}
+
+interface NativeCallGetWorkerFailed {
+    type: 'getWorkerFailed';
+}
+
+interface NativeCallClearWorkerFailed {
+    type: 'clearWorkerFailed';
 }
 
 type NativeMessage = NativeMessageNetRpcResult;
@@ -44,8 +57,11 @@ declare global {
                     postMessage(payload: NativeCallNetOpenSession): Promise<number>;
                     postMessage(payload: NativeCallNetCloseSession): Promise<void>;
                     postMessage(payload: NativeCallNetDispatchRpc): Promise<number>;
-                    postMessage(payload: NativeMessageClipboardRead): Promise<string>;
-                    postMessage(payload: NativeMessageClipboardWrite): Promise<void>;
+                    postMessage(payload: NativeCallClipboardRead): Promise<string>;
+                    postMessage(payload: NativeCallClipboardWrite): Promise<void>;
+                    postMessage(payload: NativeCallSetWorkerRegistered): Promise<void>;
+                    postMessage(payload: NativeCallGetWorkerFailed): Promise<number>;
+                    postMessage(payload: NativeCallClearWorkerFailed): Promise<void>;
                 };
             };
         };
@@ -126,6 +142,27 @@ export class NativeAppService implements OnDestroy {
 
     isResumeFromBackground(): boolean {
         return window.__cpeLastResume !== undefined && Date.now() - window.__cpeLastResume <= RESUME_TIMEOUT_MSEC;
+    }
+
+    async setWorkerRegistered(workerRegistered: boolean): Promise<void> {
+        if (apiVersion > 2) {
+            await window.webkit.messageHandlers.nativeCall.postMessage({
+                type: 'setWorkerRegistered',
+                workerRegistered,
+            });
+        }
+    }
+
+    async getWorkerFailed(): Promise<boolean> {
+        if (apiVersion < 3) {
+            return false;
+        }
+
+        return !!(await window.webkit.messageHandlers.nativeCall.postMessage({ type: 'getWorkerFailed' }));
+    }
+
+    clearWorkerFailed(): void {
+        if (apiVersion > 2) void window.webkit.messageHandlers.nativeCall.postMessage({ type: 'clearWorkerFailed' });
     }
 
     netRpcResult = new Event<{ sessionId: number; rpcData: Uint8Array }>();

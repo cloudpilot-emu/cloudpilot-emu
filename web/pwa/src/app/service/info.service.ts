@@ -5,6 +5,8 @@ import { AlertService } from './alert.service';
 import { EmulationService } from './emulation.service';
 import { PwaService } from './pwa.service';
 import { InstallationMode } from '@pwa/model/InstallationMode';
+import { NativeAppService } from './native-app.service';
+import { ServiceWorkerService } from './service-worker.service';
 
 @Injectable({ providedIn: 'root' })
 export class InfoService {
@@ -13,9 +15,13 @@ export class InfoService {
         private alertService: AlertService,
         private emulationService: EmulationService,
         private pwaService: PwaService,
+        private nativeAppService: NativeAppService,
+        private serviceWorkerService: ServiceWorkerService,
     ) {}
 
     async start(): Promise<void> {
+        await this.handleiOSNativeAppServiceWorkerBug();
+
         const infoId = this.kvsService.kvs.infoId ?? 0;
         this.kvsService.kvs.infoId = await this.showInfo(infoId);
 
@@ -23,6 +29,33 @@ export class InfoService {
             this.kvsService.kvs.ios174UpdateWarningId = await this.showIOS174UpdateWarning(
                 this.kvsService.kvs.ios174UpdateWarningId,
             );
+        }
+    }
+
+    private async handleiOSNativeAppServiceWorkerBug(): Promise<void> {
+        if (!this.serviceWorkerService.isEnabled()) return;
+
+        const workerFailed = await this.nativeAppService.getWorkerFailed();
+        if (!workerFailed) return;
+
+        let resetWorker = false;
+
+        await this.alertService.message(
+            'App failed to load offline',
+            `
+            It seems the app failed to load without internet. This is caused by an iOS bug.
+            <br><br>
+            You can fix by resetting the service worker now or by tapping
+            "reset worker" at the bottom of the "About" tab later.
+            `,
+            { 'Fix now': () => (resetWorker = true) },
+            'Close',
+        );
+
+        if (resetWorker) {
+            await this.serviceWorkerService.reset();
+        } else {
+            this.nativeAppService.clearWorkerFailed();
         }
     }
 

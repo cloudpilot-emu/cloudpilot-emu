@@ -4,6 +4,7 @@ import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { AlertService } from './alert.service';
+import { NativeAppService } from './native-app.service';
 
 const WORKER_URL = 'ngsw-worker.js';
 const REGISTRATION_DELAY_MILLISECONDS = 3000;
@@ -13,8 +14,11 @@ export class ServiceWorkerService {
     constructor(
         private loadingController: LoadingController,
         private alertService: AlertService,
+        private nativeAppService: NativeAppService,
     ) {
         void this.register();
+
+        if (this.isEnabled()) void this.updateNativeAppRegistrationStatus(this.isRegistered());
     }
 
     isEnabled(): boolean {
@@ -33,6 +37,8 @@ export class ServiceWorkerService {
 
         try {
             if (!(await this.registration.unregister())) throw new Error('failed to unregister worker');
+
+            await this.updateNativeAppRegistrationStatus(false);
         } catch (e) {
             await this.alertService.errorMessage('Failed to unregister service worker.');
             return;
@@ -67,6 +73,11 @@ export class ServiceWorkerService {
 
         this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     }
+
+    private updateNativeAppRegistrationStatus = (workerRegistered: boolean) =>
+        this.updateNativeAppRegistrationStatusMutex.runExclusive(() =>
+            this.nativeAppService.setWorkerRegistered(workerRegistered),
+        );
 
     private register = () =>
         this.registerMutex.runExclusive(async () => {
@@ -127,6 +138,7 @@ export class ServiceWorkerService {
     private registration: ServiceWorkerRegistration | undefined;
     private reloadOnControllerChange = false;
     private registerMutex = new Mutex();
+    private updateNativeAppRegistrationStatusMutex = new Mutex();
 
     readonly updateAvailableEvent = new Event();
 }

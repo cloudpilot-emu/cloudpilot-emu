@@ -3,6 +3,9 @@
 -   Minor styling improvements.
 -   Add a note on a rare touch issue caused by a browser bug on iOS (does
     not affect the native app).
+-   Automatically detect and offer a workaround for an iOS bug that may
+    stop the native app from working without an internet connection (starting
+    with native app version 1.4)
 
 # Version 1.10.10
 
