@@ -22,7 +22,7 @@ LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno -g \
 	-s FILESYSTEM=0 \
 	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
 	-s BINARYEN_IGNORE_IMPLICIT_TRAPS=1 \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall","addFunction"]
+	-s EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall","addFunction","HEAPU8","HEAPU32"]
 
 WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/uarm.idl
 

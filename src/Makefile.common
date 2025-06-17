@@ -85,7 +85,7 @@ LDFLAGS_EMCC ?= $(EMCC_OPT) -Wno-version-check \
 	-s ALLOW_TABLE_GROWTH=1 \
 	-s FILESYSTEM=0 \
 	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
-	-s EXTRA_EXPORTED_RUNTIME_METHODS=["addFunction","UTF8ToString"] \
+	-s EXPORTED_RUNTIME_METHODS=["addFunction","UTF8ToString","HEAPU8","HEAPU32"] \
 	-s STACK_SIZE=1MB
 
 CFLAGS_TEST ?= -O0 -g -fsanitize=address,undefined -fsanitize-blacklist=clang_blacklist.txt
