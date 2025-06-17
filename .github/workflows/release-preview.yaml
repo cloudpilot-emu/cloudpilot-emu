@@ -15,12 +15,12 @@ jobs:
                   submodules: 'true'
             - name: Setup cache
               id: cache-system-libraries
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: ${{env.EM_CACHE_FOLDER}}
                   key: ${{env.EM_VERSION}}-${{ runner.os }}
             - name: Setup emscripten
-              uses: DirtyHairy/setup-emsdk@master
+              uses: agriyakhetarpal/setup-emsdk@update-to-cache-v4
               with:
                   version: ${{env.EM_VERSION}}
                   actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
