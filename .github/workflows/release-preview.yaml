@@ -1,4 +1,4 @@
-name: Build and deploy preview release (PWA, CP embedded)
+name: Build and deploy preview release (PWA + CP embedded)
 on: workflow_dispatch
 env:
     EM_VERSION: 4.0.10
