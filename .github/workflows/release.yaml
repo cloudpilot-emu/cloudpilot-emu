@@ -14,7 +14,7 @@ env:
   CP_EMBEDDED_ZIP_NAME: cloudpilot-emu-embedded-${GITHUB_REF##*/}.zip
 jobs:
   wait-for-release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - name: Wait for relase to be created
         uses: lewagon/wait-on-check-action@v1.3.1
@@ -24,7 +24,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
   build_and_release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs: wait-for-release
     steps:
       - name: Checkout
