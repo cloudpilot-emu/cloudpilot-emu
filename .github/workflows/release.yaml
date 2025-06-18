@@ -1,11 +1,11 @@
-name: Build and deploy release (PWA, CP embedded)
+name: Build and deploy release (PWA + CP embedded)
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - "[0-9]+.[0-9]+.[0-9]+"
 env:
-  EM_VERSION: 3.1.71
-  NODE_VERSION: 22
+  EM_VERSION: 4.0.10
+  NODE_VERSION: 24
   EM_CACHE_FOLDER: emsdk-cache
   PAGES_REPO_URL: git@github.com:cloudpilot-emu/cloudpilot-emu.github.io.git
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -30,7 +30,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          submodules: 'true'
+          submodules: "true"
       - name: Get version
         id: version
         run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
@@ -38,12 +38,12 @@ jobs:
         run: echo 'if (require("./web/package.json").version !== "${{steps.version.outputs.VERSION}}") process.exit(1)' | node
       - name: Setup cache
         id: cache-system-libraries
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{env.EM_CACHE_FOLDER}}
           key: ${{env.EM_VERSION}}-${{ runner.os }}
       - name: Setup emscripten
-        uses: DirtyHairy/setup-emsdk@master
+        uses: agriyakhetarpal/setup-emsdk@update-to-cache-v4
         with:
           version: ${{env.EM_VERSION}}
           actions-cache-folder: ${{env.EM_CACHE_FOLDER}}
@@ -74,7 +74,7 @@ jobs:
       - name: Setup SSH agent
         uses: webfactory/ssh-agent@v0.5.1
         with:
-            ssh-private-key: ${{ secrets.SSH_DEPLOY_KEY }}
+          ssh-private-key: ${{ secrets.SSH_DEPLOY_KEY }}
       - name: Checkout pages source
         run: git clone --depth 1 ${{env.PAGES_REPO_URL}}
       - name: Copy and deploy
@@ -99,4 +99,3 @@ jobs:
         with:
           token: ${{ secrets.NPM_ACCESS_TOKEN }}
           package: web/npm-embedded
-
