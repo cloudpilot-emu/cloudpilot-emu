@@ -1,4 +1,4 @@
-# Next version
+# Version 1.10.11
 
 -   Minor styling improvements.
 -   Add a note on a rare touch issue caused by a browser bug on iOS (does
