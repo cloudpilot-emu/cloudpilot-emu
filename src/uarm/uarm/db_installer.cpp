@@ -25,16 +25,13 @@ int32_t dbInstallerInstall(struct SyscallDispatch* sd, size_t len, void* data) {
     size_t bytesRead = 0;
     bool couldNotOverwrite = false;
 
-    syscallDispatchRegisterM68Stub(
+    syscallDispatchRegisterM68kStub(
         sd, deleteProcP,
         [&](struct ArmCpu*, uint32_t parameterBase, std::function<void()> deadMansSwitch) {
             paceSetDreg(0, 0);
-            paceResetFsr();
 
             const uint16_t cardNo = paceGet16(parameterBase + 6);
             const uint32_t dbID = paceGet32(parameterBase + 8);
-
-            if (paceGetFsr() > 0) ERR("failed reading parameters in deleteProcP");
 
             const uint16_t err = syscall68k_DmDeleteDatabase(sd, SC_EXECUTE_FULL, cardNo, dbID);
             couldNotOverwrite = couldNotOverwrite || err;
@@ -42,19 +39,16 @@ int32_t dbInstallerInstall(struct SyscallDispatch* sd, size_t len, void* data) {
             paceSetDreg(0, !err);
         });
 
-    syscallDispatchRegisterM68Stub(
+    syscallDispatchRegisterM68kStub(
         sd, readProcP,
         [&](struct ArmCpu* cpu, uint32_t parameterBase, std::function<void()> deadMansSwitch) {
             deadMansSwitch();
 
             paceSetDreg(0, -1);
-            paceResetFsr();
 
             const uint32_t dataP = paceGet32(parameterBase);
             const uint32_t sizeP = paceGet32(parameterBase + 4);
             uint32_t size = paceGet32(sizeP);
-
-            if (paceGetFsr() > 0) ERR("failed reading parameters in readProcP");
 
             if (size > len - bytesRead) size = len - bytesRead;
 
@@ -63,25 +57,20 @@ int32_t dbInstallerInstall(struct SyscallDispatch* sd, size_t len, void* data) {
                 ERR("memory error copying DB data");
             }
 
-            paceResetFsr();
             paceSet32(sizeP, size);
-            if (paceGetFsr() > 0) ERR("failed to write back size in readProcP");
 
             bytesRead += size;
             paceSetDreg(0, 0);
         });
 
     Defer unregisterStubs([=]() {
-        syscallDispatchUnregisterM68Stub(sd, readProcP);
-        syscallDispatchUnregisterM68Stub(sd, deleteProcP);
+        syscallDispatchUnregisterM68kStub(sd, readProcP);
+        syscallDispatchUnregisterM68kStub(sd, deleteProcP);
     });
 
     uint16_t err = syscall68k_ExgDBRead(sd, SC_EXECUTE_FULL, readProcP, deleteProcP, 0, 0, 0,
                                         needsResetP, true);
-
-    paceResetFsr();
     bool needsReset = paceGet8(needsResetP);
-    if (paceGetFsr() > 0) ERR("failed to read needsReset");
 
     if (syscall68k_MemPtrFree(sd, SC_EXECUTE_PURE, scratch) != 0)
         ERR("failed to release scratch memory");

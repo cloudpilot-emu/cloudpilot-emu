@@ -346,34 +346,73 @@ uint8_t paceGetFsr() { return fsr; }
 
 uint16_t paceGetLastOpcode() { return regs.lastOpcode; }
 
-uint8_t paceGet8(uint32_t addr) { return uae_get8(addr); }
+uint8_t paceGet8(uint32_t addr) {
+    fsr = 0;
+    uint8_t result = uae_get8(addr);
 
-uint16_t paceGet16(uint32_t addr) { return uae_get16(addr); }
+    if (fsr != 0) ERR("m68k read8 failed");
+    return result;
+}
 
-uint32_t paceGet32(uint32_t addr) { return uae_get32(addr); }
+uint16_t paceGet16(uint32_t addr) {
+    fsr = 0;
+    uint16_t result = uae_get16(addr);
 
-void paceSet8(uint32_t addr, uint8_t value) { uae_put8(addr, value); }
+    if (fsr != 0) ERR("m68k read16 failed");
+    return result;
+}
 
-void paceSet16(uint32_t addr, uint16_t value) { uae_put16(addr, value); }
+uint32_t paceGet32(uint32_t addr) {
+    fsr = 0;
+    uint32_t result = uae_get32(addr);
 
-void paceSet32(uint32_t addr, uint32_t value) { uae_put32(addr, value); }
+    if (fsr != 0) ERR("m68k read32 failed");
+    return result;
+}
+
+void paceSet8(uint32_t addr, uint8_t value) {
+    fsr = 0;
+    uae_put8(addr, value);
+
+    if (fsr != 0) ERR("m68k write8 failed");
+}
+
+void paceSet16(uint32_t addr, uint16_t value) {
+    fsr = 0;
+    uae_put16(addr, value);
+
+    if (fsr != 0) ERR("m68k write16 failed");
+}
+
+void paceSet32(uint32_t addr, uint32_t value) {
+    fsr = 0;
+    uae_put32(addr, value);
+
+    if (fsr != 0) ERR("m68k write32 failed");
+}
 
 void pacePush8(uint8_t value) {
-    m68k_areg(regs, 7) -= 1;
+    fsr = 0;
+    m68k_areg(regs, 7) -= 2;
     uae_put8(m68k_areg(regs, 7), value);
 
-    m68k_areg(regs, 7) -= 1;
-    uae_put8(m68k_areg(regs, 7), 0);
+    if (fsr != 0) ERR("m68k push8 failed");
 }
 
 void pacePush16(uint16_t value) {
+    fsr = 0;
     m68k_areg(regs, 7) -= 2;
     uae_put16(m68k_areg(regs, 7), value);
+
+    if (fsr != 0) ERR("m68k push16 failed");
 }
 
 void pacePush32(uint32_t value) {
+    fsr = 0;
     m68k_areg(regs, 7) -= 4;
     uae_put32(m68k_areg(regs, 7), value);
+
+    if (fsr != 0) ERR("m68k push32 failed");
 }
 
 bool paceLoad68kState() {

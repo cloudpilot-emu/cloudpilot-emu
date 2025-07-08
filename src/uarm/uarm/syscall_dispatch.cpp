@@ -115,16 +115,11 @@ static void popState(struct SyscallDispatch* sd, size_t nestLevel) {
     sd->nestLevel--;
 }
 
-void syscallDispatchRegisterM68Stub(struct SyscallDispatch* sd, uint32_t trampoline,
-                                    M68kStub stub) {
+void syscallDispatchRegisterM68kStub(struct SyscallDispatch* sd, uint32_t trampoline,
+                                     M68kStub stub) {
     M68kTrapHandler trapHandler = [=](struct ArmCpu* cpu, uint32_t address) -> bool {
         const uint32_t sp = paceGetAreg(7);
-
-        paceResetFsr();
         const uint32_t returnAddress = paceGet32(sp);
-        if (paceGetFsr() > 0) {
-            ERR("memory fault in m68k stub: failed reading return address from stack\n");
-        }
 
         stub(cpu, sp + 4, [=]() { sd->deadMansSwitch = true; });
 
@@ -134,14 +129,11 @@ void syscallDispatchRegisterM68Stub(struct SyscallDispatch* sd, uint32_t trampol
         return true;
     };
 
-    paceResetFsr();
     paceSet16(trampoline, INSTRUCTION_M68K_TRAP0);
-    if (paceGetFsr() > 0) ERR("memory fault registering m68k stub: failed to write trampoline\n");
-
     cpuAddM68kTrap0Handler(socGetCpu(sd->soc), trampoline, trapHandler);
 }
 
-void syscallDispatchUnregisterM68Stub(struct SyscallDispatch* sd, uint32_t trampoline) {
+void syscallDispatchUnregisterM68kStub(struct SyscallDispatch* sd, uint32_t trampoline) {
     cpuRemoveM68kTrap0Handler(socGetCpu(sd->soc), trampoline);
 }
 
@@ -214,10 +206,7 @@ static uint32_t syscall68k(struct SyscallDispatch* sd, uint32_t flags, uint16_t 
                            bool returnPtr, std::function<void()> setupStack) {
     const size_t nestLevel = pushState(sd);
 
-    paceResetFsr();
     setupStack();
-    if (paceGetFsr() > 0) ERR("memory fault during injected syscall 0x%04x\n", syscall);
-
     executeInjectedSyscall68k(sd, flags, syscall);
     const uint32_t result = returnPtr ? paceGetAreg(0) : paceGetDreg(0);
 
@@ -238,6 +227,10 @@ uint16_t syscall68k_MemPtrFree(struct SyscallDispatch* sd, uint32_t flags, uint3
     return syscall68k(sd, flags, SYSCALL_68K_MEM_CHUNK_FREE, false, [=]() { pacePush32(memPtr); });
 }
 
+uint16_t syscall68k_MemNumCards(struct SyscallDispatch* sd, uint32_t flags) {
+    return syscall68k(sd, flags, SYSCALL_68K_MEM_NUM_CARDS, false, []() {});
+}
+
 uint16_t syscall68k_ExgDBRead(struct SyscallDispatch* sd, uint32_t flags, uint32_t readProcP,
                               uint32_t deleteProcP, uint32_t userDataP, uint32_t dbIDP,
                               uint16_t cardNo, uint32_t needsResetP, bool keepDates) {
@@ -249,6 +242,50 @@ uint16_t syscall68k_ExgDBRead(struct SyscallDispatch* sd, uint32_t flags, uint32
         pacePush32(userDataP);
         pacePush32(deleteProcP);
         pacePush32(readProcP);
+    });
+}
+
+uint16_t syscall68k_DmNumDatabases(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo) {
+    return syscall68k(sd, flags, SYSCALL_68K_DM_NUM_DATABASES, false,
+                      [=]() { pacePush16(cardNo); });
+}
+
+uint32_t syscall68k_DmGetDatabase(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
+                                  uint16_t index) {
+    return syscall68k(sd, flags, SYSCALL_68K_DM_GET_DATABASE, false, [=]() {
+        pacePush16(index);
+        pacePush16(cardNo);
+    });
+}
+
+uint16_t syscall68k_DmDatabaseInfo(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
+                                   uint32_t dbId, uint32_t nameP, uint32_t attributesP,
+                                   uint32_t versionP, uint32_t crDateP, uint32_t modDateP,
+                                   uint32_t bcpUpDateP, uint32_t modNumP, uint32_t appInfoIDP,
+                                   uint32_t sortInfoIDP, uint32_t typeP, uint32_t creatorP) {
+    return syscall68k(sd, flags, SYSCALL_68K_DM_DATABASE_INFO, false, [=]() {
+        pacePush32(creatorP);
+        pacePush32(typeP);
+        pacePush32(sortInfoIDP);
+        pacePush32(appInfoIDP);
+        pacePush32(modNumP);
+        pacePush32(bcpUpDateP);
+        pacePush32(modDateP);
+        pacePush32(crDateP);
+        pacePush32(versionP);
+        pacePush32(attributesP);
+        pacePush32(nameP);
+        pacePush32(dbId);
+        pacePush16(cardNo);
+    });
+}
+
+uint16_t syscall68k_DmDatabaseProtect(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
+                                      uint32_t dbID, uint8_t protect) {
+    return syscall68k(sd, flags, SYSCALL_68K_DM_DATABASE_PROTECT, false, [=]() {
+        pacePush8(protect);
+        pacePush32(dbID);
+        pacePush16(cardNo);
     });
 }
 

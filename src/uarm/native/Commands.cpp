@@ -9,11 +9,14 @@
 #include <string>
 #include <vector>
 
+#include "CPEndian.h"
 #include "Cli.h"
 #include "FileUtil.h"
 #include "SoC.h"
 #include "db_installer.h"
 #include "md5.h"
+#include "pace.h"
+#include "palmos_errors.h"
 #include "savestate/SessionFile.h"
 #include "sdcard.h"
 #include "syscall_dispatch.h"
@@ -301,6 +304,91 @@ namespace {
         }
     }
 
+    void CmdDbList(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        if (args.size() != 0) return env.PrintUsage();
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+        SyscallDispatch* sd = socGetSyscallDispatch(ctx->soc);
+
+        if (!syscallDispatchM68kSupport(sd)) {
+            cout << "m68k syscalls not supported" << endl;
+            return;
+        }
+
+        if (!syscallDispatchPrepare(sd)) {
+            cout << "unable to prepare save environment for syscalls" << endl;
+            return;
+        }
+
+        const uint16_t numCards = syscall68k_MemNumCards(sd, SC_EXECUTE_PURE);
+        cout << "found " << numCards << " cards" << endl << "===" << endl;
+
+        const uint32_t scratch = syscall68k_MemPtrNew(sd, SC_EXECUTE_PURE, 40);
+        if (!scratch) {
+            cout << "failed to allocate scratch space" << endl;
+            return;
+        }
+
+        const uint32_t typeP = scratch;
+        const uint32_t creatorP = scratch + 4;
+        const uint32_t nameP = scratch + 8;
+
+        for (uint16_t cardNo = 0; cardNo < numCards; cardNo++) {
+            const uint16_t numDatabases = syscall68k_DmNumDatabases(sd, SC_EXECUTE_FULL, cardNo);
+            cout << endl
+                 << numDatabases << " databases on card " << cardNo << endl
+                 << "===" << endl;
+
+            for (uint16_t dbNum = 0; dbNum < numDatabases; dbNum++) {
+                const uint32_t dbID = syscall68k_DmGetDatabase(sd, SC_EXECUTE_FULL, cardNo, dbNum);
+                if (dbID == 0) {
+                    cout << "FAILED to get DB " << dbNum << endl;
+                    continue;
+                }
+
+                const uint16_t protectResult =
+                    syscall68k_DmDatabaseProtect(sd, SC_EXECUTE_FULL, cardNo, dbID, true);
+
+                if (protectResult && protectResult != dmErrROMBased) {
+                    cout << "FAILED to determine whether DB is ROM based" << endl;
+                    continue;
+                }
+
+                const bool isROM = protectResult == dmErrROMBased;
+
+                if (!isROM) syscall68k_DmDatabaseProtect(sd, SC_EXECUTE_FULL, cardNo, dbID, false);
+
+                uint32_t err = syscall68k_DmDatabaseInfo(sd, SC_EXECUTE_FULL, cardNo, dbID, nameP,
+                                                         0, 0, 0, 0, 0, 0, 0, 0, typeP, creatorP);
+                if (err != 0) {
+                    cout << "FAILED to get info " << dbNum << endl;
+                    continue;
+                }
+
+                char name[33];
+                if (!syscallDispatch_strncpy_toHost(sd, name, nameP, sizeof(name))) {
+                    cout << "FAILED to copy name " << dbNum << endl;
+                    continue;
+                }
+
+                char tagType[5];
+                char tagCreator[5];
+
+                memset(tagType, 0, sizeof(tagType));
+                memset(tagCreator, 0, sizeof(tagCreator));
+
+                *(reinterpret_cast<uint32_t*>(tagType)) = be32toh(paceGet32(typeP));
+                *(reinterpret_cast<uint32_t*>(tagCreator)) = be32toh(paceGet32(creatorP));
+
+                if (isROM != ((dbID & 0x80000000) == 0)) cout << "ANOMALOUS DB HANDLE" << endl;
+
+                printf("0x%x08 (%s): %s %s %s\n", dbID, isROM ? "ROM" : "RAM", tagCreator, tagType,
+                       name);
+            }
+        }
+
+        syscall68k_MemPtrFree(sd, SC_EXECUTE_PURE, scratch);
+    }
+
     const vector<cli::Command> commandList(
         {{.name = "set-mips",
           .usage = "set-mips <mips>",
@@ -332,7 +420,8 @@ namespace {
          {.name = "install",
           .usage = "install <database>",
           .description = "Install database.",
-          .cmd = CmdInstall}});
+          .cmd = CmdInstall},
+         {.name = "dblist", .description = "List databases.", .cmd = CmdDbList}});
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }

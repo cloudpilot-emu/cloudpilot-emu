@@ -35,9 +35,20 @@ uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t flags, u
 uint32_t syscall68k_SysGetOsVersionString(struct SyscallDispatch* sd, uint32_t flags);
 uint32_t syscall68k_MemPtrNew(struct SyscallDispatch* sd, uint32_t flags, uint32_t size);
 uint16_t syscall68k_MemPtrFree(struct SyscallDispatch* sd, uint32_t flags, uint32_t memPtr);
+uint16_t syscall68k_MemNumCards(struct SyscallDispatch* sd, uint32_t flags);
 uint16_t syscall68k_ExgDBRead(struct SyscallDispatch* sd, uint32_t flags, uint32_t readProcP,
                               uint32_t deleteProcP, uint32_t userDataP, uint32_t dbIDP,
                               uint16_t cardNo, uint32_t needsResetP, bool keepDates);
+uint16_t syscall68k_DmNumDatabases(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo);
+uint32_t syscall68k_DmGetDatabase(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
+                                  uint16_t index);
+uint16_t syscall68k_DmDatabaseInfo(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
+                                   uint32_t dbId, uint32_t nameP, uint32_t attributesP,
+                                   uint32_t versionP, uint32_t crDateP, uint32_t modDateP,
+                                   uint32_t bcpUpDateP, uint32_t modNumP, uint32_t appInfoIDP,
+                                   uint32_t sortInfoIDP, uint32_t typeP, uint32_t creatorP);
+uint16_t syscall68k_DmDatabaseProtect(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
+                                      uint32_t dbID, uint8_t protect);
 uint16_t syscall68k_DmDeleteDatabase(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
                                      uint32_t dbID);
 
@@ -46,8 +57,9 @@ uint16_t syscall68k_DmDeleteDatabase(struct SyscallDispatch* sd, uint32_t flags,
 
 using M68kStub = std::function<void(struct ArmCpu*, uint32_t parameterBase,
                                     std::function<void()> deadMansSwitch)>;
-void syscallDispatchRegisterM68Stub(struct SyscallDispatch* sd, uint32_t trampoline, M68kStub stub);
-void syscallDispatchUnregisterM68Stub(struct SyscallDispatch* sd, uint32_t trampoline);
+void syscallDispatchRegisterM68kStub(struct SyscallDispatch* sd, uint32_t trampoline,
+                                     M68kStub stub);
+void syscallDispatchUnregisterM68kStub(struct SyscallDispatch* sd, uint32_t trampoline);
 
 #endif
 
