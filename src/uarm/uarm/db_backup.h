@@ -1,6 +1,8 @@
 #ifndef _DB_BACKUP_H_
 #define _DB_BACKUP_H_
 
+#include <sys/types.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <memory>
