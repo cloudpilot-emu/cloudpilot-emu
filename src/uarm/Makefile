@@ -26,7 +26,7 @@ LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno -g \
 
 WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/uarm.idl
 
-INCLUDE = -I./uarm -I. -I../common -I../argparse
+INCLUDE = -I./uarm -I. -I../common -I../common/zip -I../argparse
 
 STD_C ?= -std=gnu11
 
@@ -99,6 +99,8 @@ SOURCE_CXX =		 					\
 	uarm/db_installer.cpp				\
 	uarm/audio_queue.cpp				\
 	uarm/rom_info.cpp					\
+	uarm/db_list.cpp					\
+	uarm/db_backup.cpp					\
 	uarm/savestate/rle.cpp				\
 	uarm/savestate/SessionFile.cpp
 

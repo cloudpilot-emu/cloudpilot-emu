@@ -13,10 +13,10 @@
 #include "Cli.h"
 #include "FileUtil.h"
 #include "SoC.h"
+#include "db_backup.h"
 #include "db_installer.h"
+#include "db_list.h"
 #include "md5.h"
-#include "pace.h"
-#include "palmos_errors.h"
 #include "savestate/SessionFile.h"
 #include "sdcard.h"
 #include "syscall_dispatch.h"
@@ -309,84 +309,71 @@ namespace {
         auto ctx = reinterpret_cast<commands::Context*>(context);
         SyscallDispatch* sd = socGetSyscallDispatch(ctx->soc);
 
-        if (!syscallDispatchM68kSupport(sd)) {
-            cout << "m68k syscalls not supported" << endl;
+        DbMetadataList metadataList;
+        if (!dbListGet(sd, metadataList)) return;
+
+        for (const auto& meta : metadataList) {
+            union {
+                uint32_t numeric;
+                char text[5];
+            } type, creator;
+
+            type.text[4] = creator.text[4] = '\0';
+            type.numeric = be32toh(meta.type);
+            creator.numeric = be32toh(meta.creator);
+
+            printf("ID 0x%08x cardNo %u index %u %s %s %s %s\n", meta.localID, meta.cardNo,
+                   meta.index, meta.isRom ? "ROM" : "ram", type.text, creator.text, meta.name);
+        }
+    }
+
+    void DbExport(vector<string> args, cli::CommandEnvironment& env, void* context,
+                  DbBackup::BackupType type) {
+        if (args.size() != 1) return env.PrintUsage();
+
+        auto ctx = reinterpret_cast<commands::Context*>(context);
+        SyscallDispatch* sd = socGetSyscallDispatch(ctx->soc);
+
+        DbBackup backup(sd, type);
+
+        if (!backup.Init()) {
+            cout << "failed to initialize export" << endl;
             return;
         }
 
-        if (!syscallDispatchPrepare(sd)) {
-            cout << "unable to prepare save environment for syscalls" << endl;
-            return;
-        }
-
-        const uint16_t numCards = syscall68k_MemNumCards(sd, SC_EXECUTE_PURE);
-        cout << "found " << numCards << " cards" << endl << "===" << endl;
-
-        const uint32_t scratch = syscall68k_MemPtrNew(sd, SC_EXECUTE_PURE, 40);
-        if (!scratch) {
-            cout << "failed to allocate scratch space" << endl;
-            return;
-        }
-
-        const uint32_t typeP = scratch;
-        const uint32_t creatorP = scratch + 4;
-        const uint32_t nameP = scratch + 8;
-
-        for (uint16_t cardNo = 0; cardNo < numCards; cardNo++) {
-            const uint16_t numDatabases = syscall68k_DmNumDatabases(sd, SC_EXECUTE_FULL, cardNo);
-            cout << endl
-                 << numDatabases << " databases on card " << cardNo << endl
-                 << "===" << endl;
-
-            for (uint16_t dbNum = 0; dbNum < numDatabases; dbNum++) {
-                const uint32_t dbID = syscall68k_DmGetDatabase(sd, SC_EXECUTE_FULL, cardNo, dbNum);
-                if (dbID == 0) {
-                    cout << "FAILED to get DB " << dbNum << endl;
-                    continue;
-                }
-
-                const uint16_t protectResult =
-                    syscall68k_DmDatabaseProtect(sd, SC_EXECUTE_FULL, cardNo, dbID, true);
-
-                if (protectResult && protectResult != dmErrROMBased) {
-                    cout << "FAILED to determine whether DB is ROM based" << endl;
-                    continue;
-                }
-
-                const bool isROM = protectResult == dmErrROMBased;
-
-                if (!isROM) syscall68k_DmDatabaseProtect(sd, SC_EXECUTE_FULL, cardNo, dbID, false);
-
-                uint32_t err = syscall68k_DmDatabaseInfo(sd, SC_EXECUTE_FULL, cardNo, dbID, nameP,
-                                                         0, 0, 0, 0, 0, 0, 0, 0, typeP, creatorP);
-                if (err != 0) {
-                    cout << "FAILED to get info " << dbNum << endl;
-                    continue;
-                }
-
-                char name[33];
-                if (!syscallDispatch_strncpy_toHost(sd, name, nameP, sizeof(name))) {
-                    cout << "FAILED to copy name " << dbNum << endl;
-                    continue;
-                }
-
-                char tagType[5];
-                char tagCreator[5];
-
-                memset(tagType, 0, sizeof(tagType));
-                memset(tagCreator, 0, sizeof(tagCreator));
-
-                *(reinterpret_cast<uint32_t*>(tagType)) = be32toh(paceGet32(typeP));
-                *(reinterpret_cast<uint32_t*>(tagCreator)) = be32toh(paceGet32(creatorP));
-
-                if (isROM != ((dbID & 0x80000000) == 0)) cout << "ANOMALOUS DB HANDLE" << endl;
-
-                printf("0x%x08 (%s): %s %s %s\n", dbID, isROM ? "ROM" : "RAM", tagCreator, tagType,
-                       name);
+        while (backup.GetState() == DbBackup::State::inProgress) {
+            if (backup.Continue()) {
+                cout << "OK " << backup.GetLastProcessedDb() << endl;
+            } else {
+                cout << "FAILED " << backup.GetLastProcessedDb() << endl;
             }
         }
 
-        syscall68k_MemPtrFree(sd, SC_EXECUTE_PURE, scratch);
+        cout << endl;
+
+        if (backup.GetState() != DbBackup::State::done) {
+            cout << "export FAILED" << endl;
+            return;
+        }
+
+        if (util::WriteFile(args[0], reinterpret_cast<const uint8_t*>(backup.GetArchiveData()),
+                            backup.GetArchiveSize())) {
+            cout << "export written to " << args[0] << endl;
+        } else {
+            cout << "failed to write export to " << args[0] << endl;
+        }
+    }
+
+    void DbExportAll(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        DbExport(args, env, context, DbBackup::BackupType::everything);
+    }
+
+    void DbExportRamRom(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        DbExport(args, env, context, DbBackup::BackupType::ramRom);
+    }
+
+    void DbExportRam(vector<string> args, cli::CommandEnvironment& env, void* context) {
+        DbExport(args, env, context, DbBackup::BackupType::ram);
     }
 
     const vector<cli::Command> commandList(
@@ -421,7 +408,19 @@ namespace {
           .usage = "install <database>",
           .description = "Install database.",
           .cmd = CmdInstall},
-         {.name = "dblist", .description = "List databases.", .cmd = CmdDbList}});
+         {.name = "db-list", .description = "List databases.", .cmd = CmdDbList},
+         {.name = "db-export-all",
+          .usage = "db-export-all <file>",
+          .description = "Export all databases.",
+          .cmd = DbExportAll},
+         {.name = "db-export-rom",
+          .usage = "db-export-rom <file>",
+          .description = "Export RAM and ROM databases (excluding PACE cache).",
+          .cmd = DbExportRamRom},
+         {.name = "db-export",
+          .usage = "db-export <file>",
+          .description = "Export all RAM databases (excluding PACE cache).",
+          .cmd = DbExportRam}});
 }  // namespace
 
 void commands::Register() { cli::AddCommands(commandList); }

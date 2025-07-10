@@ -29,6 +29,8 @@ bool syscallDispatch_strncpy_toHost(struct SyscallDispatch* sd, void* dest, uint
                                     size_t maxlen);
 bool syscallDispatch_memcpy_fromHost(struct SyscallDispatch* sd, uint32_t dest, void* src,
                                      size_t size);
+bool syscallDispatch_memcpy_toHost(struct SyscallDispatch* sd, void* dest, uint32_t src,
+                                   size_t size);
 
 uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t flags, uint32_t timeout);
 
@@ -39,6 +41,8 @@ uint16_t syscall68k_MemNumCards(struct SyscallDispatch* sd, uint32_t flags);
 uint16_t syscall68k_ExgDBRead(struct SyscallDispatch* sd, uint32_t flags, uint32_t readProcP,
                               uint32_t deleteProcP, uint32_t userDataP, uint32_t dbIDP,
                               uint16_t cardNo, uint32_t needsResetP, bool keepDates);
+uint16_t syscall68k_ExgDBWrite(struct SyscallDispatch* sd, uint32_t flags, uint32_t writeProcP,
+                               uint32_t userDataP, uint32_t nameP, uint32_t dbID, uint16_t cardNo);
 uint16_t syscall68k_DmNumDatabases(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo);
 uint32_t syscall68k_DmGetDatabase(struct SyscallDispatch* sd, uint32_t flags, uint16_t cardNo,
                                   uint16_t index);

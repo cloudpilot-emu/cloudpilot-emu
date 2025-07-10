@@ -98,6 +98,16 @@ bool syscallDispatch_memcpy_fromHost(struct SyscallDispatch* sd, uint32_t dest, 
     return memcpyResult.ok;
 }
 
+bool syscallDispatch_memcpy_toHost(struct SyscallDispatch* sd, void* dest, uint32_t src,
+                                   size_t size) {
+    struct ArmCpu* cpu = socGetCpu(sd->soc);
+    MemcpyResult memcpyResult;
+    memcpy_armToHost(reinterpret_cast<uint8_t*>(dest), src, size, true, cpuGetMem(cpu),
+                     cpuGetMMU(cpu), &memcpyResult);
+
+    return memcpyResult.ok;
+}
+
 static size_t pushState(struct SyscallDispatch* sd) {
     if (sd->nestLevel >= MAX_NEST_LEVEL)
         ERR("unable to dispatch syscall: max nest level reached\n");
@@ -242,6 +252,17 @@ uint16_t syscall68k_ExgDBRead(struct SyscallDispatch* sd, uint32_t flags, uint32
         pacePush32(userDataP);
         pacePush32(deleteProcP);
         pacePush32(readProcP);
+    });
+}
+
+uint16_t syscall68k_ExgDBWrite(struct SyscallDispatch* sd, uint32_t flags, uint32_t writeProcP,
+                               uint32_t userDataP, uint32_t nameP, uint32_t dbID, uint16_t cardNo) {
+    return syscall68k(sd, flags, SYSCALL_68K_EXG_DB_WRITE, false, [=]() {
+        pacePush16(cardNo);
+        pacePush32(dbID);
+        pacePush32(nameP);
+        pacePush32(userDataP);
+        pacePush32(writeProcP);
     });
 }
 
