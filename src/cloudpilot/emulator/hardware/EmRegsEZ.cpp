@@ -1265,7 +1265,7 @@ uint8 EmRegsEZ::GetPortInternalValue(int port) {
         else {
             // Get the INT bits that need to be set.
 
-            result = this->GetKeyBits();
+            result = ~this->GetKeyBits();
         }
     }
 

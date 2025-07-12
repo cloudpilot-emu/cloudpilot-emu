@@ -106,6 +106,8 @@ void MainLoop::UpdateScreen(bool fullRedraw) {
     SDL_RenderClear(renderer);
 
     if (gSession->IsPowerOn() && EmHAL::CopyLCDFrame(frame, fullRedraw)) {
+        if (frame.lines > 160) frame.lines = 160;
+
         if (frame.hasChanges && frame.lineWidth * frame.scaleX == screenDimensions.Width() &&
             frame.lines * frame.scaleY == screenDimensions.Height()) {
             uint32* pixels;

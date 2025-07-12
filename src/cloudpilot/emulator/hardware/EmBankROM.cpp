@@ -471,8 +471,8 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
     // The ROM size is now the size of the file plus any offset for
     // any small ROM that we have to add and dummy up.
 
-    const uint32 bufferOffset = 32 * 1024;
-    const uint32 bigROMOffset = 32 * 1024;
+    const uint32 bufferOffset = 0;
+    const uint32 bigROMOffset = 0;
 
     // gROMImage_Size = len + bufferOffset;
     gROMImage_Size = len + bufferOffset;
@@ -501,11 +501,13 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
         // See if the small ROM checksum looks OK.
         // Note that checksumBytes is invalid for v1 card headers,
         // but in those cases, it's not really used anyway.
-
-        EmAliasCardHeaderType<LAS> cardHdr(romImage.get());
-        uint32 smallROMSize = cardHdr.checksumBytes;
-        Card::CheckChecksum(romImage.get(), smallROMSize);
+        //
+        // EmAliasCardHeaderType<LAS> cardHdr(romImage.get());
+        // uint32 smallROMSize = cardHdr.checksumBytes;
+        // Card::CheckChecksum(romImage.get(), smallROMSize);
     }
+
+    romImage.get()[4] = 0x1c;
 
     // Check that the ROM we just loaded can be run on this device.
 #if 0
@@ -559,7 +561,7 @@ bool EmBankROM::LoadROM(size_t len, const uint8* buffer) {
     // it can find signatures there.  If we map the ROM to zero,
     // then we'll get bus errors when those accesses are made.)
 
-    gROMMemoryStart = 0x10c00000;
+    gROMMemoryStart = 0x1c000000;
 
     return true;
 }
@@ -782,7 +784,7 @@ void EmBankFlash::Dispose(void) {}
  ***********************************************************************/
 
 void EmBankFlash::SetBankHandlers(void) {
-    gManagedROMSize = EmHAL::GetROMSize();
+    gManagedROMSize = EmHAL::GetROMSize() * 2;
 
     // Memory banks gROMMemoryStart to <mumble> are managed by the functions
     // in EmBankROM.	<mumble> is based on the amount of ROM being emulated.
