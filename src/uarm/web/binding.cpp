@@ -2,6 +2,7 @@
 
 #include <cstddef>
 
+#include "db_backup.h"
 #include "savestate/SessionFile.h"
 
 // clang-format off

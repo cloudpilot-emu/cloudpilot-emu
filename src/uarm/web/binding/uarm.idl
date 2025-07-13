@@ -35,3 +35,15 @@ interface SessionFile {
 
     boolean Deserialize(long Size, [Const] VoidPtr data);
 };
+
+interface DbBackup {
+    boolean Init();
+
+    long GetState();
+    boolean Continue();
+    boolean HasLastProcessedDb();
+    [Const] DOMString GetLastProcessedDb();
+
+    [Const] VoidPtr GetArchiveData();
+    long GetArchiveSize();
+};

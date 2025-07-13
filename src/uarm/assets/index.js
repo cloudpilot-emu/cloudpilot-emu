@@ -16,6 +16,10 @@ import { SessionFile } from './sessionfile.js';
     let binary = isWebkit ? 'uarm_web_webkit.wasm' : 'uarm_web_other.wasm';
     let sessionFile;
 
+    const BACKUP_TYPE_RAM = 0;
+    const BACKUP_TYPE_RAM_ROM = 1;
+    const BACKUP_TYPE_EVERYTHING = 2;
+
     const labelNor = document.getElementById('nor-image');
     const labelNand = document.getElementById('nand-image');
     const labelSD = document.getElementById('sd-image');
@@ -37,6 +41,8 @@ import { SessionFile } from './sessionfile.js';
     const insertEjectSDButton = document.getElementById('insert-eject-sd');
     const exportImageButton = document.getElementById('export-image');
     const importImageButton = document.getElementById('import-image');
+    const backupRamButton = document.getElementById('backup-ram');
+    const backupAllButton = document.getElementById('backup-all');
     const clearLogButton = document.getElementById('clear-log');
     const resetButton = document.getElementById('reset');
     const powerCycleButton = document.getElementById('power-cycle');
@@ -90,6 +96,8 @@ import { SessionFile } from './sessionfile.js';
         resetButton.disabled = !emulator;
         powerCycleButton.disabled = !emulator;
         installButton.disabled = !emulator;
+        backupAllButton.disabled = !emulator;
+        backupRamButton.disabled = !emulator;
 
         labelNor.innerText = fileNor?.name ?? '[none]';
         labelNand.innerText = fileNand?.name ?? '[none]';
@@ -309,6 +317,22 @@ import { SessionFile } from './sessionfile.js';
             saveFile(`${filenameFragment('uarm-session')}.bin`, serializedSession);
         });
 
+    const backup = (type) =>
+        mutex.runExclusive(async () => {
+            if (!emulator) return;
+
+            const backup = await emulator.backup(type);
+
+            if (backup) {
+                saveFile(
+                    `${filenameFragment(type === BACKUP_TYPE_RAM ? 'uarm-backup-ram' : 'uarm-backup-all')}.zip`,
+                    backup
+                );
+            } else {
+                log('backup failed');
+            }
+        });
+
     async function main() {
         setSnapshotStatus('ok');
         updateUi();
@@ -364,6 +388,9 @@ import { SessionFile } from './sessionfile.js';
         updateUi();
 
         exportImageButton.addEventListener('click', exportImage);
+
+        backupRamButton.addEventListener('click', () => backup(BACKUP_TYPE_RAM));
+        backupAllButton.addEventListener('click', () => backup(BACKUP_TYPE_EVERYTHING));
 
         uploadNorButton.addEventListener(
             'click',

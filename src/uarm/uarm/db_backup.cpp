@@ -47,7 +47,7 @@ namespace {
     }
 }  // namespace
 
-DbBackup::DbBackup(SyscallDispatch* syscallDispatch, BackupType backupType)
+DbBackup::DbBackup(SyscallDispatch* syscallDispatch, int backupType)
     : sd(syscallDispatch), backupType(backupType) {
     memset(lastProcessedDb, 0, sizeof(lastProcessedDb));
 }
@@ -58,35 +58,36 @@ DbBackup::~DbBackup() {
 }
 
 bool DbBackup::Init() {
-    if (state != State::created) ERR("DB backup: already initialized");
+    if (state != STATE_CREATED) ERR("DB backup: already initialized");
 
     if (!dbListGet(sd, dbList)) {
-        state = State::error;
+        state = STATE_ERROR;
         return false;
     }
 
     dbIterator = dbList.begin();
     if (dbIterator == dbList.end()) {
-        state = State::error;
+        state = STATE_ERROR;
         cout << "DB backup: empty DB list" << endl;
         return false;
     }
 
     zip = zip_stream_open(nullptr, 0, COMPRESSION_LEVEL, 'w');
     chunkBuffer = make_unique<uint8_t[]>(MAX_CHUNK_SIZE);
-    state = State::inProgress;
+    state = STATE_IN_PROGRESS;
 
     return true;
 }
 
-DbBackup::State DbBackup::GetState() const { return state; }
+int DbBackup::GetState() const { return state; }
 
 bool DbBackup::Continue() {
-    if (state != State::inProgress) ERR("DB backup: not in progress");
+    lastProcessedDb[0] = '\0';
+    if (state != STATE_IN_PROGRESS) ERR("DB backup: not in progress");
 
     while (dbIterator != dbList.end() && !Include(*dbIterator)) dbIterator++;
     if (dbIterator == dbList.end()) {
-        state = State::done;
+        state = STATE_DONE;
         return true;
     }
 
@@ -94,13 +95,13 @@ bool DbBackup::Continue() {
 
     if (!syscallDispatchM68kSupport(sd)) {
         cerr << "DB backup: m68k syscalls not supported";
-        state = State::error;
+        state = STATE_ERROR;
         return false;
     }
 
     if (!syscallDispatchPrepare(sd)) {
         cerr << "DB backup: failed to prepare safe environment for syscalls";
-        state = State::error;
+        state = STATE_ERROR;
         return false;
     }
 
@@ -152,12 +153,14 @@ bool DbBackup::Continue() {
     const uint16_t dbWriteResult = syscall68k_ExgDBWrite(sd, SC_EXECUTE_FULL, writeProcP, 0, nameP,
                                                          dbIterator->localID, dbIterator->cardNo);
 
-    state = ++dbIterator == dbList.end() ? State::done : State::inProgress;
+    state = ++dbIterator == dbList.end() ? STATE_DONE : STATE_IN_PROGRESS;
 
     return dbWriteResult == 0;
 }
 
-const char* DbBackup::GetLastProcessedDb() { return lastProcessedDb; }
+bool DbBackup::HasLastProcessedDb() const { return lastProcessedDb[0] != '\0'; }
+
+const char* DbBackup::GetLastProcessedDb() const { return lastProcessedDb; }
 
 const void* DbBackup::GetArchiveData() {
     CopyArchiveData();
@@ -171,10 +174,10 @@ size_t DbBackup::GetArchiveSize() {
 
 bool DbBackup::Include(DbMetadata& db) {
     switch (backupType) {
-        case BackupType::ram:
+        case BACKUP_TYPE_RAM:
             return !db.isRom && db.creator != DB_CREATOR_A68K;
 
-        case BackupType::ramRom:
+        case BACKUP_TYPE_RAM_ROM:
             return db.creator != DB_CREATOR_A68K;
 
         default:
@@ -183,7 +186,7 @@ bool DbBackup::Include(DbMetadata& db) {
 }
 
 void DbBackup::CopyArchiveData() {
-    if (state != State::done) return;
+    if (state != STATE_DONE) return;
 
     if (!archiveData) {
         zip_stream_copy(zip, &archiveData, &archiveSize);

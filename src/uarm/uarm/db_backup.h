@@ -14,17 +14,24 @@ struct zip_t;
 
 class DbBackup {
    public:
-    enum class BackupType { ram = 0, ramRom = 1, everything = 2 };
-    enum class State { created = 0, inProgress = 1, done = 2, error = -1 };
+    static constexpr int BACKUP_TYPE_RAM = 0;
+    static constexpr int BACKUP_TYPE_RAM_ROM = 1;
+    static constexpr int BACKUP_TYPE_EVERYTHING = 2;
+
+    static constexpr int STATE_CREATED = 0;
+    static constexpr int STATE_IN_PROGRESS = 1;
+    static constexpr int STATE_DONE = 2;
+    static constexpr int STATE_ERROR = -1;
 
    public:
-    DbBackup(SyscallDispatch* syscallDispatch, BackupType backupType);
+    DbBackup(SyscallDispatch* syscallDispatch, int backupType);
     ~DbBackup();
 
     bool Init();
-    State GetState() const;
+    int GetState() const;
     bool Continue();
-    const char* GetLastProcessedDb();
+    bool HasLastProcessedDb() const;
+    const char* GetLastProcessedDb() const;
 
     const void* GetArchiveData();
     size_t GetArchiveSize();
@@ -37,8 +44,8 @@ class DbBackup {
    private:
     SyscallDispatch* sd{nullptr};
 
-    BackupType backupType{BackupType::ram};
-    State state{State::created};
+    int backupType{BACKUP_TYPE_RAM};
+    int state{STATE_CREATED};
 
     zip_t* zip{nullptr};
     void* archiveData{nullptr};

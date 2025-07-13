@@ -24,6 +24,7 @@
 #include "SoC.h"
 #include "audio_queue.h"
 #include "cputil.h"
+#include "db_backup.h"
 #include "db_installer.h"
 #include "device.h"
 #include "rom_info.h"
@@ -195,6 +196,10 @@ uint32_t EMSCRIPTEN_KEEPALIVE getRamSize() { return socGetRamSize(soc); }
 
 uint32_t EMSCRIPTEN_KEEPALIVE installDatabase(uint32_t len, void* data) {
     return dbInstallerInstall(socGetSyscallDispatch(soc), len, data);
+}
+
+DbBackup* EMSCRIPTEN_KEEPALIVE newDbBackup(int type) {
+    return new DbBackup(socGetSyscallDispatch(soc), type);
 }
 }
 

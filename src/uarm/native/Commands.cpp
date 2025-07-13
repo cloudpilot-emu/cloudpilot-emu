@@ -327,8 +327,7 @@ namespace {
         }
     }
 
-    void DbExport(vector<string> args, cli::CommandEnvironment& env, void* context,
-                  DbBackup::BackupType type) {
+    void DbExport(vector<string> args, cli::CommandEnvironment& env, void* context, int type) {
         if (args.size() != 1) return env.PrintUsage();
 
         auto ctx = reinterpret_cast<commands::Context*>(context);
@@ -341,9 +340,11 @@ namespace {
             return;
         }
 
-        while (backup.GetState() == DbBackup::State::inProgress) {
+        while (backup.GetState() == DbBackup::STATE_IN_PROGRESS) {
             if (backup.Continue()) {
-                cout << "OK " << backup.GetLastProcessedDb() << endl;
+                if (backup.HasLastProcessedDb()) {
+                    cout << "OK " << backup.GetLastProcessedDb() << endl;
+                }
             } else {
                 cout << "FAILED " << backup.GetLastProcessedDb() << endl;
             }
@@ -351,7 +352,7 @@ namespace {
 
         cout << endl;
 
-        if (backup.GetState() != DbBackup::State::done) {
+        if (backup.GetState() != DbBackup::STATE_DONE) {
             cout << "export FAILED" << endl;
             return;
         }
@@ -365,15 +366,15 @@ namespace {
     }
 
     void DbExportAll(vector<string> args, cli::CommandEnvironment& env, void* context) {
-        DbExport(args, env, context, DbBackup::BackupType::everything);
+        DbExport(args, env, context, DbBackup::BACKUP_TYPE_EVERYTHING);
     }
 
     void DbExportRamRom(vector<string> args, cli::CommandEnvironment& env, void* context) {
-        DbExport(args, env, context, DbBackup::BackupType::ramRom);
+        DbExport(args, env, context, DbBackup::BACKUP_TYPE_RAM_ROM);
     }
 
     void DbExportRam(vector<string> args, cli::CommandEnvironment& env, void* context) {
-        DbExport(args, env, context, DbBackup::BackupType::ram);
+        DbExport(args, env, context, DbBackup::BACKUP_TYPE_RAM);
     }
 
     const vector<cli::Command> commandList(

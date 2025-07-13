@@ -296,6 +296,10 @@ export class Emulator {
         );
     }
 
+    backup(type) {
+        return this.rpc.call('backup', { type });
+    }
+
     async handleSnapshot(snapshot) {
         const snapshotStatus = snapshot.nand || snapshot.sd ? 'saving' : 'ok';
 

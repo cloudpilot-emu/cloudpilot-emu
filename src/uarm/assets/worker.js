@@ -14,11 +14,21 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                 this.worker.postMessage({ type: 'rpcError', id, error: `method not registered: ${method}` });
             }
 
+            let onRpcSuccess, onRpcError;
+            const rpcComplete = new Promise((resolve, reject) => {
+                onRpcSuccess = resolve;
+                onRpcError = reject;
+            });
+
             try {
-                const result = await this.registeredMethods.get(method)(args);
+                const result = await this.registeredMethods.get(method)(args, rpcComplete);
                 this.worker.postMessage({ type: 'rpcSuccess', id, result });
+
+                onRpcSuccess();
             } catch (e) {
                 this.worker.postMessage({ type: 'rpcError', id, error: `${e}` });
+
+                onRpcError(e);
             }
         }
 
@@ -32,6 +42,11 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
     const PCM_BUFFER_SIZE = (44100 / 60) * 10;
     const INITIAL_PAGE_POOL_PAGES = 256;
     const PAGE_POOL_GROWTH_FACTOR = 1.5;
+
+    const BACKUP_STATE_CREATED = 0;
+    const BACKUP_STATE_IN_PROGRESS = 1;
+    const BACKUP_STATE_DONE = 2;
+    const BACKUP_STATE_ERROR = -1;
 
     let rpcClient;
     let emulator;
@@ -271,6 +286,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.getSavestateData = module.cwrap('getSavestateData', 'number');
             this.getRamSize = module.cwrap('getRamSize', 'number');
             this.installDatabase = module.cwrap('installDatabase', 'number', ['number', 'number']);
+            this.newDbBackup = module.cwrap('newDbBackup', 'number', ['number']);
 
             this.amIDead = false;
             this.pcmEnabled = false;
@@ -658,6 +674,42 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
             return undefined;
         }
+
+        async backup(type, transactionComplete) {
+            if (!!this.timeoutHandle) {
+                this.stop();
+                transactionComplete.finally(() => this.start());
+            }
+
+            await this.snapshotPromise;
+            this.triggerSnapshot();
+            await this.snapshotPromise;
+
+            const backup = this.module.wrapPointer(this.newDbBackup(type), this.module.DbBackup);
+            transactionComplete.finally(() => this.module.destroy(backup));
+
+            if (!backup.Init()) throw new Error('backup failed to initialise');
+
+            while (backup.GetState() === BACKUP_STATE_IN_PROGRESS) {
+                if (backup.Continue()) {
+                    if (backup.HasLastProcessedDb()) this.log(`OK ${backup.GetLastProcessedDb()}`);
+                } else {
+                    this.log(`FAILED ${backup.GetLastProcessedDb()}`);
+                }
+            }
+
+            const backupPtr = backup.GetArchiveData();
+            const backupSize = backup.GetArchiveSize();
+
+            if (!backupPtr) {
+                this.log('backup failed');
+                return;
+            }
+
+            const backupPtrRaw = this.module.getPointer(backupPtr);
+
+            return this.module.HEAPU8.subarray(backupPtrRaw, backupPtrRaw + backupSize);
+        }
     }
 
     function mapButton(name) {
@@ -884,6 +936,11 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         return emulator.install(files);
     }
 
+    function backup({ type }, rpcComplete) {
+        assertEmulator('backup');
+        return emulator.backup(type, rpcComplete);
+    }
+
     async function main() {
         rpcClient = new RpcClient(self)
             .register('initialize', initialize)
@@ -892,7 +949,8 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             .register('ejectCard', ejectCard)
             .register('insertCard', insertCard)
             .register('reset', reset)
-            .register('install', install);
+            .register('install', install)
+            .register('backup', backup);
 
         onmessage = (e) => handleMessage(e.data);
 
