@@ -140,6 +140,9 @@ using M68kTrapHandler = std::function<bool(struct ArmCpu *, uint32_t address)>;
 void cpuAddM68kTrap0Handler(struct ArmCpu *cpu, uint32_t address, M68kTrapHandler handler);
 void cpuRemoveM68kTrap0Handler(struct ArmCpu *cpu, uint32_t address);
 
+bool cpuIsModePace(struct ArmCpu *cpu);
+void cpuSetModePace(struct ArmCpu *cpu, bool modePace);
+
 template <typename T>
 void cpuSave(struct ArmCpu *cpu, T &savestate);
 

@@ -26,16 +26,42 @@
 #define INSTRUCTION_M68K_TRAP0 0x4E40
 
 struct ScratchState {
-    void Load(SavestateLoader<ChunkType>& loader) { cpuFinishInjectedCall(cpu, loader); }
+    enum class Type { full, pace };
+
+    void Load(SavestateLoader<ChunkType>& loader) {
+        if (type == Type::full) {
+            cpuFinishInjectedCall(cpu, loader);
+        } else {
+            paceLoad(loader);
+
+            cpuSetReg(cpu, 14, lr);
+            cpuSetReg(cpu, 15, pc);
+            cpuSetModePace(cpu, modePace);
+        }
+    }
 
     template <typename T>
     void Save(T& savestate) {
         cpuPrepareInjectedCall(cpu, savestate);
     }
 
-    void Save() { savestate.Save(*this); }
+    void Save(Type type) {
+        this->type = type;
+
+        savestate.Save(*this);
+
+        if (type == Type::pace) {
+            lr = cpuGetRegExternal(cpu, 14);
+            pc = cpuGetRegExternal(cpu, 15);
+            modePace = cpuIsModePace(cpu);
+        }
+    }
 
     void Restore() { loader.Load(savestate.GetBuffer(), savestate.GetSize(), *this); }
+
+    Type type{Type::full};
+    uint32_t lr, pc;
+    bool modePace;
 
     Savestate<ChunkType> savestate;
     SavestateLoader<ChunkType> loader;
@@ -108,12 +134,12 @@ bool syscallDispatch_memcpy_toHost(struct SyscallDispatch* sd, void* dest, uint3
     return memcpyResult.ok;
 }
 
-static size_t pushState(struct SyscallDispatch* sd) {
+static size_t pushState(struct SyscallDispatch* sd, ScratchState::Type type) {
     if (sd->nestLevel >= MAX_NEST_LEVEL)
         ERR("unable to dispatch syscall: max nest level reached\n");
 
     const uint32_t nestLevel = sd->nestLevel++;
-    sd->scratchStates[nestLevel].Save();
+    sd->scratchStates[nestLevel].Save(type);
 
     return nestLevel;
 }
@@ -199,7 +225,7 @@ static void executeInjectedSyscall68k(struct SyscallDispatch* sd, uint32_t flags
 }
 
 uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t flags, uint32_t timeout) {
-    const size_t nestLevel = pushState(sd);
+    const size_t nestLevel = pushState(sd, ScratchState::Type::full);
     uint32_t* registers = cpuGetRegisters(socGetCpu(sd->soc));
 
     registers[0] = timeout;
@@ -214,7 +240,8 @@ uint16_t syscall_SysSetAutoOffTime(struct SyscallDispatch* sd, uint32_t flags, u
 
 static uint32_t syscall68k(struct SyscallDispatch* sd, uint32_t flags, uint16_t syscall,
                            bool returnPtr, std::function<void()> setupStack) {
-    const size_t nestLevel = pushState(sd);
+    const size_t nestLevel = pushState(
+        sd, (flags & SC_EXECUTE_FULL) ? ScratchState::Type::pace : ScratchState::Type::full);
 
     setupStack();
     executeInjectedSyscall68k(sd, flags, syscall);

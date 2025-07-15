@@ -3691,6 +3691,10 @@ void cpuRemoveM68kTrap0Handler(struct ArmCpu *cpu, uint32_t address) {
     cpu->m68kTrap0Handlers->erase(address);
 }
 
+bool cpuIsModePace(struct ArmCpu *cpu) { return cpu->modePace; }
+
+void cpuSetModePace(struct ArmCpu *cpu, bool modePace) { cpu->modePace = modePace; }
+
 template <typename T>
 void cpuSave(ArmCpu *cpu, T &savestate) {
     paceSave(savestate);
