@@ -36,6 +36,8 @@ struct ScratchState {
 
             cpuSetReg(cpu, 14, lr);
             cpuSetReg(cpu, 15, pc);
+            cpuClearSlowPath(cpu, SLOW_PATH_REASON_INJECTED_CALL_DONE);
+            cpuSetSlowPath(cpu, slowPathInjectedCallDone);
             cpuSetModePace(cpu, modePace);
         }
     }
@@ -53,6 +55,8 @@ struct ScratchState {
         if (type == Type::pace) {
             lr = cpuGetRegExternal(cpu, 14);
             pc = cpuGetRegExternal(cpu, 15);
+            slowPathInjectedCallDone =
+                cpuGetSlowPathReason(cpu) & SLOW_PATH_REASON_INJECTED_CALL_DONE;
             modePace = cpuIsModePace(cpu);
         }
     }
@@ -61,6 +65,7 @@ struct ScratchState {
 
     Type type{Type::full};
     uint32_t lr, pc;
+    uint32_t slowPathInjectedCallDone;
     bool modePace;
 
     Savestate<ChunkType> savestate;
