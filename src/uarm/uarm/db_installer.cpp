@@ -28,12 +28,15 @@ int32_t dbInstallerInstall(struct SyscallDispatch* sd, size_t len, void* data) {
     syscallDispatchRegisterM68kStub(
         sd, deleteProcP,
         [&](struct ArmCpu*, uint32_t parameterBase, std::function<void()> deadMansSwitch) {
+            deadMansSwitch();
             paceSetDreg(0, 0);
 
             const uint16_t cardNo = paceGet16(parameterBase + 6);
             const uint32_t dbID = paceGet32(parameterBase + 8);
 
             const uint16_t err = syscall68k_DmDeleteDatabase(sd, SC_EXECUTE_FULL, cardNo, dbID);
+            deadMansSwitch();
+
             couldNotOverwrite = couldNotOverwrite || err;
 
             paceSetDreg(0, !err);

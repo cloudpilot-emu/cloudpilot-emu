@@ -25,14 +25,14 @@ struct PxaTimr {
     uint8_t OWER;      // Watchdog enable
     uint8_t OSSR;      // Status Register
 
-    bool interruptsSuspended = false;
+    uint32_t interruptsSuspendCount;
 
     template <typename T>
     void DoSaveLoad(T &chunkHelper);
 };
 
 static void pxaTimrPrvRaiseLowerInts(struct PxaTimr *timr) {
-    if (timr->interruptsSuspended) {
+    if (timr->interruptsSuspendCount > 0) {
         socIcInt(timr->ic, PXA_I_TIMR0, false);
         socIcInt(timr->ic, PXA_I_TIMR1, false);
         socIcInt(timr->ic, PXA_I_TIMR2, false);
@@ -201,7 +201,11 @@ uint32_t pxaTimrTicksToNextInterrupt(struct PxaTimr *timr) {
 }
 
 void pxaTimrSuspendInterrupts(struct PxaTimr *timr, bool suspendInterrupts) {
-    timr->interruptsSuspended = suspendInterrupts;
+    if (suspendInterrupts) {
+        timr->interruptsSuspendCount++;
+    } else if (timr->interruptsSuspendCount > 0) {
+        timr->interruptsSuspendCount--;
+    }
 
     pxaTimrPrvRaiseLowerInts(timr);
 }
