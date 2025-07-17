@@ -518,9 +518,7 @@ import { SessionFile } from './sessionfile.js';
                 const failingFile = await emulator.install(files);
                 if (failingFile === undefined) return;
 
-                alert(
-                    `There was a fatal error installing ${failingFile} . There is a known PalmOS bug that may cause installation of large files with several MB to cause crashes on NVFS based (all official E2) ROMs. In this case, please copy such files to SD instead, or use a ROM without NVFS.`
-                );
+                alert(`There was a fatal error installing ${failingFile} .`);
 
                 window.location.reload();
             } finally {
