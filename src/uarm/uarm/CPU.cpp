@@ -3695,6 +3695,12 @@ bool cpuIsModePace(struct ArmCpu *cpu) { return cpu->modePace; }
 
 void cpuSetModePace(struct ArmCpu *cpu, bool modePace) { cpu->modePace = modePace; }
 
+bool cpuIsThumb(struct ArmCpu *cpu) { return cpu->T; }
+
+void cpuSetCurInstrPC(struct ArmCpu *cpu, uint32_t curInstrPC) { cpu->curInstrPC = curInstrPC; }
+
+uint32_t cpuGetCurInstrPC(struct ArmCpu *cpu) { return cpu->curInstrPC; }
+
 template <typename T>
 void cpuSave(ArmCpu *cpu, T &savestate) {
     paceSave(savestate);

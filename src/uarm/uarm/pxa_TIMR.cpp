@@ -25,15 +25,24 @@ struct PxaTimr {
     uint8_t OWER;      // Watchdog enable
     uint8_t OSSR;      // Status Register
 
+    bool interruptsSuspended = false;
+
     template <typename T>
     void DoSaveLoad(T &chunkHelper);
 };
 
 static void pxaTimrPrvRaiseLowerInts(struct PxaTimr *timr) {
-    socIcInt(timr->ic, PXA_I_TIMR0, (timr->OSSR & 1) != 0);
-    socIcInt(timr->ic, PXA_I_TIMR1, (timr->OSSR & 2) != 0);
-    socIcInt(timr->ic, PXA_I_TIMR2, (timr->OSSR & 4) != 0);
-    socIcInt(timr->ic, PXA_I_TIMR3, (timr->OSSR & 8) != 0);
+    if (timr->interruptsSuspended) {
+        socIcInt(timr->ic, PXA_I_TIMR0, false);
+        socIcInt(timr->ic, PXA_I_TIMR1, false);
+        socIcInt(timr->ic, PXA_I_TIMR2, false);
+        socIcInt(timr->ic, PXA_I_TIMR3, false);
+    } else {
+        socIcInt(timr->ic, PXA_I_TIMR0, (timr->OSSR & 1) != 0);
+        socIcInt(timr->ic, PXA_I_TIMR1, (timr->OSSR & 2) != 0);
+        socIcInt(timr->ic, PXA_I_TIMR2, (timr->OSSR & 4) != 0);
+        socIcInt(timr->ic, PXA_I_TIMR3, (timr->OSSR & 8) != 0);
+    }
 }
 
 static void pxaTimrPrvCheckMatchSingleStep(struct PxaTimr *timr, uint_fast8_t idx) {
@@ -189,6 +198,12 @@ uint32_t pxaTimrTicksToNextInterrupt(struct PxaTimr *timr) {
     }
 
     return ticksToNextInterrupt;
+}
+
+void pxaTimrSuspendInterrupts(struct PxaTimr *timr, bool suspendInterrupts) {
+    timr->interruptsSuspended = suspendInterrupts;
+
+    pxaTimrPrvRaiseLowerInts(timr);
 }
 
 template <typename T>

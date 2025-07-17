@@ -96,6 +96,8 @@ uint32_t socGetRamSize(struct SoC *soc);
 
 struct NAND *socGetNand(struct SoC *soc);
 
+void socSuspendTimerInterrupts(struct SoC *soc, bool suspendInterrupts);
+
 #ifdef __cplusplus
 }
 #endif

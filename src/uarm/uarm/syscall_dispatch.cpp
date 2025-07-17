@@ -39,6 +39,7 @@ struct ScratchState {
             cpuClearSlowPath(cpu, SLOW_PATH_REASON_INJECTED_CALL_DONE);
             cpuSetSlowPath(cpu, slowPathInjectedCallDone);
             cpuSetModePace(cpu, modePace);
+            cpuSetCurInstrPC(cpu, curInstrPC);
         }
     }
 
@@ -53,11 +54,15 @@ struct ScratchState {
         savestate.Save(*this);
 
         if (type == Type::pace) {
-            lr = cpuGetRegExternal(cpu, 14);
-            pc = cpuGetRegExternal(cpu, 15);
+            const uint32_t* registers = cpuGetRegisters(cpu);
+            lr = registers[14];
+            pc = registers[15] + (cpuIsThumb(cpu) ? 1 : 0);
+
             slowPathInjectedCallDone =
                 cpuGetSlowPathReason(cpu) & SLOW_PATH_REASON_INJECTED_CALL_DONE;
+
             modePace = cpuIsModePace(cpu);
+            curInstrPC = cpuGetCurInstrPC(cpu);
         }
     }
 
@@ -65,6 +70,7 @@ struct ScratchState {
 
     Type type{Type::full};
     uint32_t lr, pc;
+    uint32_t curInstrPC;
     uint32_t slowPathInjectedCallDone;
     bool modePace;
 
@@ -248,9 +254,13 @@ static uint32_t syscall68k(struct SyscallDispatch* sd, uint32_t flags, uint16_t 
     const size_t nestLevel = pushState(
         sd, (flags & SC_EXECUTE_FULL) ? ScratchState::Type::pace : ScratchState::Type::full);
 
+    if (flags & SC_EXECUTE_FULL) socSuspendTimerInterrupts(sd->soc, true);
+
     setupStack();
     executeInjectedSyscall68k(sd, flags, syscall);
     const uint32_t result = returnPtr ? paceGetAreg(0) : paceGetDreg(0);
+
+    if (flags & SC_EXECUTE_FULL) socSuspendTimerInterrupts(sd->soc, false);
 
     popState(sd, nestLevel);
 

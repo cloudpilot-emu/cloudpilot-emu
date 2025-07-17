@@ -902,6 +902,10 @@ uint32_t socGetRamSize(struct SoC *soc) { return soc->ramSize; }
 
 struct NAND *socGetNand(struct SoC *soc) { return soc->nand; }
 
+void socSuspendTimerInterrupts(struct SoC *soc, bool suspendInterrupts) {
+    pxaTimrSuspendInterrupts(soc->tmr, suspendInterrupts);
+}
+
 void SoC::Load(SavestateLoader<ChunkType> &loader) {
     pxaUartLoad(ffUart, loader, 0);
     if (socRev != 2) pxaUartLoad(hwUart, loader, 1);

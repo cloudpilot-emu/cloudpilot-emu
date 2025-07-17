@@ -21,6 +21,8 @@ void pxaTimrTick(struct PxaTimr* timr, uint32_t batchedClocks);
 
 uint32_t pxaTimrTicksToNextInterrupt(struct PxaTimr* timr);
 
+void pxaTimrSuspendInterrupts(struct PxaTimr* timr, bool suspendInterrupts);
+
 #ifdef __cplusplus
 }
 

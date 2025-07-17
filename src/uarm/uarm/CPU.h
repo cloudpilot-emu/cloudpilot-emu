@@ -143,6 +143,11 @@ void cpuRemoveM68kTrap0Handler(struct ArmCpu *cpu, uint32_t address);
 bool cpuIsModePace(struct ArmCpu *cpu);
 void cpuSetModePace(struct ArmCpu *cpu, bool modePace);
 
+bool cpuIsThumb(struct ArmCpu *cpu);
+
+uint32_t cpuGetCurInstrPC(struct ArmCpu *cpu);
+void cpuSetCurInstrPC(struct ArmCpu *cpu, uint32_t curInstrPC);
+
 template <typename T>
 void cpuSave(struct ArmCpu *cpu, T &savestate);
 
