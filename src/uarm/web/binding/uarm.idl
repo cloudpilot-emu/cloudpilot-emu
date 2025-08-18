@@ -1,3 +1,16 @@
+interface Uarm {
+    void Uarm();
+
+    [Ref] Uarm SetRamSize(long size);
+    [Ref] Uarm SetNand(long size, VoidPtr data);
+    [Ref] Uarm SetMemory(long size, VoidPtr data);
+    [Ref] Uarm SetSavestate(long size, VoidPtr data);
+    [Ref] Uarm SetSd(long size, VoidPtr data, [Const] DOMString id);
+    [Ref] Uarm SetDefaultMips(long defaultMips);
+
+    boolean Launch(long romSize, VoidPtr romData);
+};
+
 interface SessionFile {
     void SessionFile();
 

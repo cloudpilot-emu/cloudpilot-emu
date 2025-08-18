@@ -117,7 +117,8 @@ SOURCE_CXX_NATIVE =						\
 SOURCE_C_EMCC = $(SOURCE_C)
 SOURCE_CXX_EMCC = 						\
 	$(SOURCE_CXX)						\
-	web/main.cpp
+	web/main.cpp						\
+	web/uarm.cpp
 
 SOURCE_C_TEST = 						\
 	$(SOURCE_C) 						\
