@@ -6,6 +6,9 @@
 #include "SoC.h"
 #include "audio_queue.h"
 #include "buffer.h"
+#include "cputil.h"
+#include "db_backup.h"
+#include "db_installer.h"
 #include "device.h"
 #include "rom_info.h"
 #include "sdcard.h"
@@ -89,8 +92,8 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
                       ? (16ul << 20)
                       : (32ul << 20);
 
-    soc = socInit(romInfo.GetDeviceType(), ramSize, romData, romSize, nandData, nandSize, 0,
-                  deviceGetSocRev());
+    deviceType = romInfo.GetDeviceType();
+    soc = socInit(deviceType, ramSize, romData, romSize, nandData, nandSize, 0, deviceGetSocRev());
 
     audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
     socSetAudioQueue(soc, audioQueue);
@@ -124,3 +127,106 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
 
     return true;
 }
+
+void Uarm::Cycle(uint64_t now) { mainLoop->Cycle(now); }
+
+void* Uarm::GetFrame() { return socGetPendingFrame(soc); }
+
+void Uarm::ResetFrame() { socResetPendingFrame(soc); }
+
+uint32_t Uarm::GetTimesliceSizeUsec() { return mainLoop->GetTimesliceSizeUsec(); }
+
+void Uarm::PenDown(int x, int y) { socPenDown(soc, x, y); }
+
+void Uarm::PenUp() { socPenUp(soc); }
+
+uint32_t Uarm::CurrentIps() { return mainLoop->GetCurrentIps(); }
+
+uint64_t Uarm::CurrentIpsMax() { return mainLoop->GetCurrentIpsMax(); }
+
+void Uarm::SetMaxLoad(unsigned int maxLoad) { mainLoop->SetMaxLoad(maxLoad); }
+
+void Uarm::SetCyclesPerSecondLimit(unsigned int cyclesPerSecondLimit) {
+    mainLoop->SetCyclesPerSecondLimit(cyclesPerSecondLimit);
+}
+
+uint64_t Uarm::GetTimestampUsec() { return timestampUsec(); }
+
+void Uarm::KeyDown(int key) { socKeyDown(soc, (enum KeyId)key); }
+
+void Uarm::KeyUp(int key) { socKeyUp(soc, (enum KeyId)key); }
+
+uint32_t Uarm::PendingSamples() { return audioQueuePendingSamples(audioQueue); }
+
+uint32_t* Uarm::PopQueuedSamples() {
+    static uint32_t samples[AUDIO_QUEUE_SIZE];
+    audioQueuePopChunk(audioQueue, samples, audioQueuePendingSamples(audioQueue));
+
+    return samples;
+}
+
+void Uarm::SetPcmOutputEnabled(bool enabled) { socSetPcmOutputEnabled(soc, enabled); }
+
+void Uarm::SetPcmSuspended(bool suspended) { socSetPcmSuspended(soc, suspended); }
+
+uint32_t Uarm::GetRomDataSize() { return socGetRomData(soc).size; }
+
+void* Uarm::GetRomData() { return socGetRomData(soc).data; }
+
+uint32_t Uarm::GetNandDataSize() { return socGetNandData(soc).size; }
+
+void* Uarm::GetNandData() { return socGetNandData(soc).data; }
+
+void* Uarm::GetNandDirtyPages() { return socGetNandDirtyPages(soc).data; }
+
+bool Uarm::IsNandDirty() { return socIsNandDirty(soc); }
+
+void Uarm::SetNandDirty(bool isDirty) { socSetNandDirty(soc, isDirty); }
+
+uint32_t Uarm::GetSdCardDataSize() { return sdCardData().size; }
+
+void* Uarm::GetSdCardData() { return sdCardData().data; }
+
+void* Uarm::GetSdCardDirtyPages() { return sdCardDirtyPages().data; }
+
+bool Uarm::IsSdCardDirty() { return sdCardIsDirty(); }
+
+void Uarm::SetSdCardDirty(bool isDirty) { sdCardSetDirty(isDirty); }
+
+uint32_t Uarm::GetRamDataSize() { return socGetMemoryData(soc).size; }
+
+void* Uarm::GetRamData() { return socGetMemoryData(soc).data; }
+
+void* Uarm::GetRamDirtyPages() { return socGetMemoryDirtyPages(soc).data; }
+uint32_t Uarm::GetDeviceType() { return static_cast<uint32_t>(deviceType); }
+bool Uarm::SdCardInsert(void* data, int length, const char* id) {
+    if (socSdInserted(soc)) return false;
+
+    sdCardInitializeWithData(length / SD_SECTOR_SIZE, data, id);
+    socSdInsert(soc);
+
+    return true;
+}
+
+void Uarm::SdCardEject() {
+    socSdEject(soc);
+    sdCardReset();
+}
+
+void Uarm::Reset() { socReset(soc); }
+
+void Uarm::Save() { socSave(soc); }
+
+uint32_t Uarm::GetSavestateSize() { return socGetSavestate(soc).size; }
+
+void* Uarm::GetSavestateData() { return socGetSavestate(soc).data; }
+
+bool Uarm::IsSdInserted() { return socSdInserted(soc); }
+
+uint32_t Uarm::GetRamSize() { return socGetRamSize(soc); }
+
+uint32_t Uarm::InstallDatabase(uint32_t len, void* data) {
+    return dbInstallerInstall(socGetSyscallDispatch(soc), len, data);
+}
+
+DbBackup* Uarm::NewDbBackup(int type) { return new DbBackup(socGetSyscallDispatch(soc), type); }

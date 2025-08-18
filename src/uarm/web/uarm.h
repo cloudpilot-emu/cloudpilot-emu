@@ -7,9 +7,11 @@
 #include <string>
 
 #include "MainLoop.h"
+#include "device.h"
 
 struct SoC;
 struct AudioQueue;
+class DbBackup;
 
 class Uarm {
    public:
@@ -23,6 +25,67 @@ class Uarm {
     Uarm& SetDefaultMips(unsigned int defaultMips);
 
     bool Launch(unsigned int romSize, void* romData);
+
+    void Cycle(uint64_t now);
+
+    void* GetFrame();
+    void ResetFrame();
+
+    uint32_t GetTimesliceSizeUsec();
+
+    void PenDown(int x, int y);
+    void PenUp();
+
+    uint32_t CurrentIps();
+    uint64_t CurrentIpsMax();
+    void SetMaxLoad(unsigned int maxLoad);
+    void SetCyclesPerSecondLimit(unsigned int cyclesPerSecondLimit);
+
+    uint64_t GetTimestampUsec();
+
+    void KeyDown(int key);
+    void KeyUp(int key);
+
+    uint32_t PendingSamples();
+    uint32_t* PopQueuedSamples();
+    void SetPcmOutputEnabled(bool enabled);
+    void SetPcmSuspended(bool suspended);
+
+    uint32_t GetRomDataSize();
+    void* GetRomData();
+
+    uint32_t GetNandDataSize();
+    void* GetNandData();
+    void* GetNandDirtyPages();
+    bool IsNandDirty();
+    void SetNandDirty(bool isDirty);
+
+    uint32_t GetSdCardDataSize();
+    void* GetSdCardData();
+    void* GetSdCardDirtyPages();
+    bool IsSdCardDirty();
+    void SetSdCardDirty(bool isDirty);
+
+    uint32_t GetRamDataSize();
+    void* GetRamData();
+    void* GetRamDirtyPages();
+
+    uint32_t GetDeviceType();
+
+    bool SdCardInsert(void* data, int length, const char* id);
+    void SdCardEject();
+    void Reset();
+
+    void Save();
+    uint32_t GetSavestateSize();
+    void* GetSavestateData();
+    bool IsSdInserted();
+
+    uint32_t GetRamSize();
+
+    uint32_t InstallDatabase(uint32_t len, void* data);
+
+    DbBackup* NewDbBackup(int type);
 
    private:
     size_t ramSize{16 << 20};
@@ -41,6 +104,7 @@ class Uarm {
     std::string sdId;
 
     uint32_t defaultMips{0};
+    DeviceType deviceType{deviceTypeInvalid};
 
     SoC* soc{nullptr};
     AudioQueue* audioQueue{nullptr};

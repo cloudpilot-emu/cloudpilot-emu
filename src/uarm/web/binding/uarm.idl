@@ -9,6 +9,67 @@ interface Uarm {
     [Ref] Uarm SetDefaultMips(long defaultMips);
 
     boolean Launch(long romSize, VoidPtr romData);
+
+    void Cycle(unsigned long long now);
+
+    VoidPtr GetFrame();
+    void ResetFrame();
+
+    unsigned long GetTimesliceSizeUsec();
+
+    void PenDown(long x, long y);
+    void PenUp();
+
+    unsigned long CurrentIps();
+    unsigned long long CurrentIpsMax();
+    void SetMaxLoad(unsigned long maxLoad);
+    void SetCyclesPerSecondLimit(unsigned long cyclesPerSecondLimit);
+
+    unsigned long long GetTimestampUsec();
+
+    void KeyDown(long key);
+    void KeyUp(long key);
+
+    unsigned long PendingSamples();
+    VoidPtr PopQueuedSamples();
+    void SetPcmOutputEnabled(boolean enabled);
+    void SetPcmSuspended(boolean suspended);
+
+    unsigned long GetRomDataSize();
+    VoidPtr GetRomData();
+
+    unsigned long GetNandDataSize();
+    VoidPtr GetNandData();
+    VoidPtr GetNandDirtyPages();
+    boolean IsNandDirty();
+    void SetNandDirty(boolean isDirty);
+
+    unsigned long GetSdCardDataSize();
+    VoidPtr GetSdCardData();
+    VoidPtr GetSdCardDirtyPages();
+    boolean IsSdCardDirty();
+    void SetSdCardDirty(boolean isDirty);
+
+    unsigned long GetRamDataSize();
+    VoidPtr GetRamData();
+    VoidPtr GetRamDirtyPages();
+
+    unsigned long GetDeviceType();
+
+    boolean SdCardInsert(VoidPtr data, long length, [Const] DOMString id);
+    void SdCardEject();
+    void Reset();
+
+    void Save();
+    unsigned long GetSavestateSize();
+    VoidPtr GetSavestateData();
+    boolean IsSdInserted();
+
+    unsigned long GetRamSize();
+
+    unsigned long InstallDatabase(unsigned long len, VoidPtr data);
+
+    DbBackup NewDbBackup(long type);
 };
 
 interface SessionFile {
