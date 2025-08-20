@@ -26,6 +26,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
                 onRpcSuccess();
             } catch (e) {
+                console.error(e);
                 this.worker.postMessage({ type: 'rpcError', id, error: `${e}` });
 
                 onRpcError(e);
@@ -234,6 +235,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
     class Emulator {
         constructor(
+            uarm,
             module,
             maxLoad,
             cyclesPerSecondLimit,
@@ -241,6 +243,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             cardId,
             { onSpeedDisplay, onFrame, log, postSnapshot }
         ) {
+            this.uarm = uarm;
             this.module = module;
             this.onSpeedDisplay = onSpeedDisplay;
             this.onFrame = onFrame;
@@ -251,14 +254,8 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
             this.malloc = module.cwrap('malloc', 'number', ['number']);
             this.free = module.cwrap('free', undefined, ['number']);
-            this.cycle = module.cwrap('cycle', undefined, ['number']);
             this.getFrame = module.cwrap('getFrame', 'number');
             this.resetFrame = module.cwrap('resetFrame');
-            this.currentIps = module.cwrap('currentIps', 'number');
-            this.currentIpsMax = module.cwrap('currentIpsMax', 'number');
-            this.setMaxLoad = module.cwrap('setMaxLoad', undefined, ['number']);
-            this.setCyclesPerSecondLimit = module.cwrap('setCyclesPerSecondLimit', undefined, ['number']);
-            this.getTimesliceSizeUsec = module.cwrap('getTimesliceSizeUsec', 'number');
             this.getTimestampUsec = module.cwrap('getTimestampUsec', 'number');
             this.penDown = module.cwrap('penDown', undefined, ['number', 'number']);
             this.penUp = module.cwrap('penUp');
@@ -297,8 +294,8 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             this.deviceType = this.getDeviceType();
             this.savestate = undefined;
 
-            this.setMaxLoad(maxLoad);
-            this.setCyclesPerSecondLimit(cyclesPerSecondLimit);
+            this.uarm.SetMaxLoad(maxLoad);
+            this.uarm.SetCyclesPerSecondLimit(cyclesPerSecondLimit);
 
             const nandSize = this.getNandDataSize();
             this.nandTracker = new DirtyPageTracker({
@@ -368,43 +365,24 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             if (ram) module.HEAPU8.subarray(ramPtr, ramPtr + ram.length).set(ram);
 
             module.callMain([]);
+
+            const uarm = new module.Uarm();
+
+            uarm.SetRamSize(ramSize).SetNand(nand.length, nandPtr);
+
+            if (ram) uarm.SetMemory(ram.length, ramPtr);
+            if (savestate) uarm.SetSavestate(savestate.length, savestatePtr);
+            if (sd) uarm.SetSd(sd.length, sdPtr, cardId ?? '');
+
+            uarm.Launch(nor.length, norPtr);
             module.ccall(
                 'webMain',
                 undefined,
-                [
-                    'number',
-                    'number',
-                    'number',
-                    'number',
-                    'number',
-                    'number',
-                    'number',
-                    'number',
-                    'number',
-                    'number',
-                    'number',
-                    'string',
-                ],
-                [
-                    ramSize,
-                    norPtr,
-                    nor.length,
-                    nandPtr,
-                    nand.length,
-                    ramPtr,
-                    ramPtr ? ram.length : 0,
-                    sdPtr,
-                    sd?.length ?? 0,
-                    savestatePtr,
-                    savestate?.length ?? 0,
-                    cardId ?? '',
-                ]
+                ['number'],
+                [module.getPointer(uarm.GetSoC()), module.getPointer(uarm.GetAudioQueue()), uarm.GetDeviceType()]
             );
 
-            if (savestatePtr) free(savestatePtr);
-            if (ramPtr) free(ramPtr);
-
-            return new Emulator(module, maxLoad, cyclesPerSecondLimit, crcCheck, cardId, env);
+            return new Emulator(uarm, module, maxLoad, cyclesPerSecondLimit, crcCheck, cardId, env);
         }
 
         setupSdCardTracker() {
@@ -444,7 +422,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                 const now = Number(now64);
 
                 try {
-                    this.cycle(now64);
+                    this.uarm.Cycle(now64);
                 } catch (e) {
                     this.amIDead = true;
                     console.error(e);
@@ -457,7 +435,7 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                 this.processAudio();
 
                 const timesliceRemainning =
-                    (this.getTimesliceSizeUsec() - Number(this.getTimestampUsec()) + now) / 1000;
+                    (this.uarm.GetTimesliceSizeUsec() - Number(this.getTimestampUsec()) + now) / 1000;
                 this.timeoutHandle = this.immediateHandle = undefined;
 
                 if (timesliceRemainning < 5) this.immediateHandle = setImmediate(schedule);
@@ -568,8 +546,8 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         }
 
         updateSpeedDisplay() {
-            const currentIps = this.currentIps();
-            const currentIpsMax = Number(this.currentIpsMax());
+            const currentIps = this.uarm.CurrentIps();
+            const currentIpsMax = Number(this.uarm.CurrentIpsMax());
 
             this.onSpeedDisplay(
                 `current ${(currentIps / 1e6).toFixed(2)} MIPS, limit ${(currentIpsMax / 1e6).toFixed(2)} MIPS -> ${(

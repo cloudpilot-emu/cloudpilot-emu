@@ -40,7 +40,6 @@ namespace {
     SoC* soc = nullptr;
 
     AudioQueue* audioQueue = nullptr;
-    unique_ptr<MainLoop> mainLoop;
 
     DeviceType deviceType = deviceTypeInvalid;
 }  // namespace
@@ -58,12 +57,6 @@ void socExtSerialWriteChar(int chr) {
     fflush(stdout);
 }
 
-void EMSCRIPTEN_KEEPALIVE cycle(uint64_t now) {
-    if (!mainLoop) return;
-
-    mainLoop->Cycle(now);
-}
-
 void* EMSCRIPTEN_KEEPALIVE getFrame() {
     if (!soc) return nullptr;
 
@@ -76,10 +69,6 @@ void EMSCRIPTEN_KEEPALIVE resetFrame() {
     socResetPendingFrame(soc);
 }
 
-uint32_t EMSCRIPTEN_KEEPALIVE getTimesliceSizeUsec() {
-    return mainLoop ? mainLoop->GetTimesliceSizeUsec() : 0;
-}
-
 void EMSCRIPTEN_KEEPALIVE penDown(int x, int y) {
     if (!soc) return;
 
@@ -90,20 +79,6 @@ void EMSCRIPTEN_KEEPALIVE penUp() {
     if (!soc) return;
 
     socPenUp(soc);
-}
-
-uint32_t EMSCRIPTEN_KEEPALIVE currentIps() { return mainLoop ? mainLoop->GetCurrentIps() : 0; }
-
-uint64_t EMSCRIPTEN_KEEPALIVE currentIpsMax() {
-    return mainLoop ? mainLoop->GetCurrentIpsMax() : 0;
-}
-
-void EMSCRIPTEN_KEEPALIVE setMaxLoad(unsigned int maxLoad) {
-    if (mainLoop) mainLoop->SetMaxLoad(maxLoad);
-}
-
-void EMSCRIPTEN_KEEPALIVE setCyclesPerSecondLimit(unsigned int cyclesPerSecondLimit) {
-    if (mainLoop) mainLoop->SetCyclesPerSecondLimit(cyclesPerSecondLimit);
 }
 
 uint64_t EMSCRIPTEN_KEEPALIVE getTimestampUsec() { return timestampUsec(); }
@@ -203,74 +178,11 @@ DbBackup* EMSCRIPTEN_KEEPALIVE newDbBackup(int type) {
 }
 }
 
-void run(uint32_t ramSize, uint8_t* rom, uint32_t romLen, uint8_t* nand, size_t nandLen,
-         uint8_t* savedMemory, size_t savedMemoryLen, uint8_t* savestate, size_t savestateLen,
-         uint32_t mips = 0) {
-    soc = socInit(deviceType, ramSize, rom, romLen, nand, nandLen, 0, deviceGetSocRev());
-
-    audioQueue = audioQueueCreate(AUDIO_QUEUE_SIZE);
-    socSetAudioQueue(soc, audioQueue);
-
-    Buffer memory = socGetMemoryData(soc);
-    if (savedMemoryLen > memory.size) {
-        cerr << "ignoring invalid RAM snapshot" << endl;
-        savedMemory = nullptr;
-    }
-
-    if (savedMemory) memcpy(memory.data, savedMemory, savedMemoryLen);
-
-    if (savedMemory && !socLoad(soc, savestateLen, savestate)) {
-        cerr << "failed to restore savestate" << endl;
-    }
-
-    if (socSdInserted(soc)) {
-        if (!socSdRemount(soc)) {
-            cerr << "failed to remount SD card" << endl;
-            sdCardReset();
-        }
-    } else if (!savestate && sdCardInitialized()) {
-        socSdInsert(soc);
-    }
-
-    mainLoop = make_unique<MainLoop>(soc);
-    if (mips > 0) mainLoop->SetCyclesPerSecondLimit(mips * 1000000);
-}
-
 int main() {}
 
-extern "C" EMSCRIPTEN_KEEPALIVE void webMain(uint32_t ramSize, uint8_t* rom, int romLen,
-                                             uint8_t* nand, int nandLen, uint8_t* memory,
-                                             int memoryLen, uint8_t* sd, int sdLen,
-                                             uint8_t* savestate, int savestateLen,
-                                             const char* sdId) {
-    if (sd) sdCardInitializeWithData(sdLen / SD_SECTOR_SIZE, sd, sdId);
-
-    RomInfo romInfo(rom, romLen);
-    if (!romInfo.IsValid()) {
-        cerr << "invalid NOR" << endl;
-        return;
-    }
-
-    if (ramSize == 0)
-        ramSize = (romInfo.GetCardName() == "PalmCard" && romInfo.GetHalId() == 'hspr')
-                      ? (16ul << 20)
-                      : (32ul << 20);
-
-    cerr << romInfo << endl;
-    cerr << "using " << ramSize << " bytes of RAM" << endl;
-
-    deviceType = romInfo.GetDeviceType();
-
-    if (ramSize == 0)
-        ramSize = (romInfo.GetCardName() == "PalmCard" && romInfo.GetHalId() == 'hspr')
-                      ? (16ul << 20)
-                      : (32ul << 20);
-
-    if (!deviceSupportsRamSize(ramSize)) {
-        cerr << "unsupported RAM size: " << ramSize << " bytes" << endl;
-        return;
-    }
-
-    run(ramSize, rom, (uint32_t)romLen, nand, (size_t)nandLen, memory, (size_t)memoryLen, savestate,
-        (size_t)savestateLen);
+extern "C" EMSCRIPTEN_KEEPALIVE void webMain(void* socPtr, void* audioQueuePtr,
+                                             int deviceTypeValue) {
+    soc = static_cast<SoC*>(socPtr);
+    audioQueue = static_cast<AudioQueue*>(audioQueuePtr);
+    deviceType = static_cast<DeviceType>(deviceTypeValue);
 }
