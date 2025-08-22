@@ -70,9 +70,6 @@ interface Uarm {
     unsigned long InstallDatabase(unsigned long len, VoidPtr data);
 
     DbBackup NewDbBackup(long type);
-
-    VoidPtr GetSoC();
-    VoidPtr GetAudioQueue();
 };
 
 interface SessionFile {

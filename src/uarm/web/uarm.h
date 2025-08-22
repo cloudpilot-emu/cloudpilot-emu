@@ -87,9 +87,6 @@ class Uarm {
 
     DbBackup* NewDbBackup(int type);
 
-    void* GetSoC();
-    void* GetAudioQueue();
-
    private:
     size_t ramSize{16 << 20};
 

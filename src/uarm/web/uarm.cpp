@@ -230,7 +230,3 @@ uint32_t Uarm::InstallDatabase(uint32_t len, void* data) {
 }
 
 DbBackup* Uarm::NewDbBackup(int type) { return new DbBackup(socGetSyscallDispatch(soc), type); }
-
-void* Uarm::GetSoC() { return soc; }
-
-void* Uarm::GetAudioQueue() { return audioQueue; }
