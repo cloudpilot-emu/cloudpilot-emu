@@ -4,6 +4,7 @@ import { Component, Input } from '@angular/core';
     selector: 'app-context-menu-file-entry',
     templateUrl: './context-menu-file-entry.component.html',
     styleUrls: ['./context-menu-file-entry.component.scss'],
+    standalone: false
 })
 export class ContextMenuFileEntryComponent {
     constructor() {}

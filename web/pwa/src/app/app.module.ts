@@ -1,5 +1,5 @@
-import { APP_INITIALIZER, NgModule } from '@angular/core';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { NgModule, inject, provideAppInitializer } from '@angular/core';
+import { HttpClient, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
 import { MARKED_OPTIONS, MarkdownModule, MarkedOptions, MarkedRenderer } from 'ngx-markdown';
 
@@ -32,30 +32,22 @@ const markedOptionsFactory = (): MarkedOptions => {
     };
 };
 
-@NgModule({
-    declarations: [AppComponent, DummyComponent],
-    imports: [
-        BrowserModule,
+@NgModule({ declarations: [AppComponent, DummyComponent],
+    bootstrap: [AppComponent], imports: [BrowserModule,
         IonicModule.forRoot({ ...ionAnimationConfig(), innerHTMLTemplatesEnabled: true }),
         AppRoutingModule,
         MarkdownModule.forRoot({
             loader: HttpClient,
             markedOptions: { provide: MARKED_OPTIONS, useFactory: markedOptionsFactory },
             markedExtensions: [createDirectives()],
-        }),
-        HttpClientModule,
-    ],
-    providers: [
+        })], providers: [
         { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
-        {
-            provide: APP_INITIALIZER,
-            multi: true,
-            useFactory: (kvsService: KvsService) => kvsService.initialize.bind(kvsService),
-            deps: [KvsService],
-        },
-    ],
-    bootstrap: [AppComponent],
-})
+        provideAppInitializer(() => {
+        const initializerFn = ((kvsService: KvsService) => kvsService.initialize.bind(kvsService))(inject(KvsService));
+        return initializerFn();
+      }),
+        provideHttpClient(withInterceptorsFromDi()),
+    ] })
 export class AppModule {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     constructor(

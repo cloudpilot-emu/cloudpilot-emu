@@ -9,6 +9,7 @@ import { InfoService } from './service/info.service';
     selector: 'app-root',
     templateUrl: 'app.component.html',
     styleUrls: ['app.component.scss'],
+    standalone: false
 })
 export class AppComponent implements AfterViewInit {
     constructor(

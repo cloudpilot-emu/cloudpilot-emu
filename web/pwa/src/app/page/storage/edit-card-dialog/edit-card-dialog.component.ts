@@ -11,6 +11,7 @@ export type CardSettings = Pick<StorageCard, 'name' | 'size' | 'dontFsckAutomati
     selector: 'app-edit-card-dialog',
     templateUrl: './edit-card-dialog.component.html',
     styleUrls: ['./edit-card-dialog.component.scss'],
+    standalone: false
 })
 export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
     constructor(private storageCardService: StorageCardService) {}

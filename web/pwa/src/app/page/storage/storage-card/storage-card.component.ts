@@ -20,6 +20,7 @@ import { SessionService } from '@pwa/service/session.service';
     templateUrl: './storage-card.component.html',
     styleUrls: ['./storage-card.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class StorageCardComponent implements DoCheck {
     constructor(

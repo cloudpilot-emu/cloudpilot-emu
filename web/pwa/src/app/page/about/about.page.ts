@@ -11,6 +11,7 @@ import { debounce } from '@pwa/helper/debounce';
     selector: 'app-about',
     templateUrl: './about.page.html',
     styleUrls: ['./about.page.scss'],
+    standalone: false
 })
 export class AboutPage {
     constructor(

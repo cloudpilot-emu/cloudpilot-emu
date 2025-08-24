@@ -9,6 +9,7 @@ import { IonNav } from '@ionic/angular';
 @Component({
     selector: 'app-sessions-wrapper',
     templateUrl: './nav-wrapper.component.html',
+    standalone: false
 })
 export class NavWrapperComponent {
     async ionViewDidLeave(): Promise<void> {

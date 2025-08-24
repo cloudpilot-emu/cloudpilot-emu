@@ -32,6 +32,7 @@ function validateUrl(control: AbstractControl): ValidationErrors | null {
     selector: 'app-remote-url-prompt',
     templateUrl: './remote-url-prompt.component.html',
     styleUrls: ['./remote-url-prompt.component.scss'],
+    standalone: false
 })
 export class RemoteUrlPromptComponent implements OnInit {
     constructor() {}

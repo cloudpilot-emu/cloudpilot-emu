@@ -7,6 +7,7 @@ import { PwaService } from '@pwa/service/pwa.service';
     selector: 'app-pwa-prompt',
     templateUrl: './pwa-prompt.component.html',
     styleUrls: ['./pwa-prompt.component.scss'],
+    standalone: false
 })
 export class PwaPromptComponent {
     constructor(private pwaService: PwaService) {}

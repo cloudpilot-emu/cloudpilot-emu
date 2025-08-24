@@ -7,6 +7,7 @@ import { KvsService } from '@pwa/service/kvs.service';
     selector: 'app-credentials-prompt',
     templateUrl: './credentials-prompt.component.html',
     styleUrls: ['./credentials-prompt.component.scss'],
+    standalone: false
 })
 export class CredentialsPromptComponent implements OnInit {
     constructor(private kvs: KvsService) {}
