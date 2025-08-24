@@ -4,6 +4,7 @@ import { Component, Input } from '@angular/core';
     selector: 'app-sessions-action-menu',
     templateUrl: './action-menu.component.html',
     styleUrl: './action-menu.component.scss',
+    standalone: false
 })
 export class ActionMenuComponent {
     @Input()

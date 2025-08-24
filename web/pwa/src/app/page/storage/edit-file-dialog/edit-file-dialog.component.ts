@@ -10,6 +10,7 @@ import { debounce } from '@pwa/helper/debounce';
     selector: 'app-edit-file-dialog',
     templateUrl: './edit-file-dialog.component.html',
     styleUrls: ['./edit-file-dialog.component.scss'],
+    standalone: false
 })
 export class EditFileDialogComponent implements OnInit {
     constructor(

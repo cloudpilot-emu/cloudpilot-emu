@@ -11,6 +11,7 @@ import { deviceName } from '@common/helper/deviceProperties';
     templateUrl: './session-item.component.html',
     styleUrls: ['./session-item.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class SessionItemComponent {
     constructor(private popoverController: PopoverController) {}

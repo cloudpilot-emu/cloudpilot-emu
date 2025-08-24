@@ -32,6 +32,7 @@ import { NetworkService } from '@pwa/service/network.service';
     selector: 'app-emulation',
     templateUrl: './emulation.page.html',
     styleUrls: ['./emulation.page.scss'],
+    standalone: false
 })
 export class EmulationPage implements DragDropClient {
     constructor(

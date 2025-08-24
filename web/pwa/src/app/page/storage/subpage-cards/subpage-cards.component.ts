@@ -27,6 +27,7 @@ type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
     templateUrl: './subpage-cards.component.html',
     styleUrls: ['./subpage-cards.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class SubpageCardsComponent implements DoCheck, OnInit {
     constructor(

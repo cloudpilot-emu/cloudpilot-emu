@@ -4,6 +4,7 @@ import { Component, Input } from '@angular/core';
     selector: 'app-storage-action-menu-cards',
     templateUrl: './action-menu-cards.component.html',
     styleUrl: './action-menu-cards.component.scss',
+    standalone: false
 })
 export class ActionMenuCardsComponent {
     @Input()

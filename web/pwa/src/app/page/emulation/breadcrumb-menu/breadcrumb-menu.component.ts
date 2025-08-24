@@ -5,6 +5,7 @@ import { Session } from '@pwa/model/Session';
     selector: 'app-emulation-breadcrumb-menu',
     templateUrl: './breadcrumb-menu.component.html',
     styleUrl: './breadcrumb-menu.component.scss',
+    standalone: false
 })
 export class BreadcrumbMenuComponent {
     @Input()

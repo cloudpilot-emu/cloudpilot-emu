@@ -31,6 +31,7 @@ type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
     templateUrl: './sessions.page.html',
     styleUrls: ['./sessions.page.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class SessionsPage implements DragDropClient, DoCheck, OnInit {
     constructor(

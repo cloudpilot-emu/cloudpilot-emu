@@ -13,6 +13,7 @@ import { isFirefox } from '@common/helper/browser';
     selector: 'app-storage',
     templateUrl: './storage.page.html',
     styleUrls: ['./storage.page.scss'],
+    standalone: false
 })
 export class StoragePage implements OnInit, DragDropClient {
     constructor(

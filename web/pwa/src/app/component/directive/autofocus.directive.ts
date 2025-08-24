@@ -1,6 +1,9 @@
 import { Directive, ElementRef, NgZone, OnDestroy } from '@angular/core';
 
-@Directive({ selector: '[appAutofocus]' })
+@Directive({
+    selector: '[appAutofocus]',
+    standalone: false
+})
 export class AutofocusDirective implements OnDestroy {
     constructor(
         private el: ElementRef,

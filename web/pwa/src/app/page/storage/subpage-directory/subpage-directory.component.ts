@@ -30,6 +30,7 @@ function entrySortFunction(e1: FileEntry, e2: FileEntry): number {
     templateUrl: './subpage-directory.component.html',
     styleUrls: ['./subpage-directory.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
+    standalone: false
 })
 export class SubpageDirectoryComponent implements DoCheck, OnInit {
     constructor(
