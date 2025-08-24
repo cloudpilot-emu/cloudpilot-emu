@@ -83,7 +83,7 @@
     "ts-node": "^10.9.2",
     "tslib": "^2.8.1",
     "typedoc": "^0.28.10",
-    "typescript": "^5.8.3",
+    "typescript": "~5.8.3",
     "url-parse": "^1.5.4",
     "uuid": "^9.0.1",
     "webpack-cli": "^6.0.1",
