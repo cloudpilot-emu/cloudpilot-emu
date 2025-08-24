@@ -17,7 +17,6 @@ import { StorageService } from '@pwa/service/storage.service';
 import { UpdateService } from '@pwa/service/update.service';
 import { ionAnimationConfig } from './helper/reducedAnimations';
 import { ServiceWorkerService } from './service/service-worker.service';
-import { createDirectives } from 'marked-directive';
 
 const markedOptionsFactory = (): MarkedOptions => {
     const renderer = new MarkedRenderer();
@@ -32,22 +31,29 @@ const markedOptionsFactory = (): MarkedOptions => {
     };
 };
 
-@NgModule({ declarations: [AppComponent, DummyComponent],
-    bootstrap: [AppComponent], imports: [BrowserModule,
+@NgModule({
+    declarations: [AppComponent, DummyComponent],
+    bootstrap: [AppComponent],
+    imports: [
+        BrowserModule,
         IonicModule.forRoot({ ...ionAnimationConfig(), innerHTMLTemplatesEnabled: true }),
         AppRoutingModule,
         MarkdownModule.forRoot({
             loader: HttpClient,
             markedOptions: { provide: MARKED_OPTIONS, useFactory: markedOptionsFactory },
-            markedExtensions: [createDirectives()],
-        })], providers: [
+        }),
+    ],
+    providers: [
         { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
         provideAppInitializer(() => {
-        const initializerFn = ((kvsService: KvsService) => kvsService.initialize.bind(kvsService))(inject(KvsService));
-        return initializerFn();
-      }),
+            const initializerFn = ((kvsService: KvsService) => kvsService.initialize.bind(kvsService))(
+                inject(KvsService),
+            );
+            return initializerFn();
+        }),
         provideHttpClient(withInterceptorsFromDi()),
-    ] })
+    ],
+})
 export class AppModule {
     /* eslint-disable @typescript-eslint/no-unused-vars */
     constructor(
