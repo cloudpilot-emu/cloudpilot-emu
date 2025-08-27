@@ -6,6 +6,7 @@ import { AlertService } from '@pwa/service/alert.service';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { SessionService } from '@pwa/service/session.service';
+import { memoize } from '@pwa/helper/memoize';
 
 export interface SessionSettings {
     name: string;
@@ -64,8 +65,12 @@ export class SessionSettingsComponent implements OnInit {
             : 'Enter hotsync name';
     }
 
+    private memoizedDevicelist = memoize<Array<DeviceId>, Array<[DeviceId, string]>>((x) =>
+        x.map((device) => [device, deviceName(device)]),
+    );
+
     get deviceList(): Array<[DeviceId, string]> {
-        return this.availableDevices.map((device) => [device, deviceName(device)]);
+        return this.memoizedDevicelist(this.availableDevices);
     }
 
     ngOnInit() {

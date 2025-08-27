@@ -23,6 +23,7 @@ import { disambiguateName } from '@pwa/helper/disambiguate';
 import helpUrl from '@assets/doc/sessions.md';
 import { ActionMenuComponent } from './action-menu/action-menu.component';
 import { isIOS, isIOSNative } from '@common/helper/browser';
+import { memoize } from '@pwa/helper/memoize';
 
 type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
 
@@ -82,8 +83,12 @@ export class SessionsPage implements DragDropClient, DoCheck, OnInit {
         this.cd.detectChanges();
     }
 
+    private memoizedSessions = memoize((sessions: Array<Session>) =>
+        [...sessions].sort((a, b) => a.name.localeCompare(b.name)),
+    );
+
     get sessions(): Array<Session> {
-        return this.sessionService.getSessions().sort((a, b) => a.name.localeCompare(b.name));
+        return this.memoizedSessions(this.sessionService.getSessions());
     }
 
     get sessionCount(): number {
