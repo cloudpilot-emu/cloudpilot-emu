@@ -17,11 +17,14 @@ import { StorageService } from '@pwa/service/storage.service';
 import { UpdateService } from '@pwa/service/update.service';
 import { ionAnimationConfig } from './helper/reducedAnimations';
 import { ServiceWorkerService } from './service/service-worker.service';
+import { Tokens } from 'marked';
 
 const markedOptionsFactory = (): MarkedOptions => {
     const renderer = new MarkedRenderer();
 
-    renderer.link = (href, title, text) => `<a href="${href}" target="_blank" rel="external">${text || href}</a>`;
+    renderer.link = function ({ href, title, tokens }) {
+        return `<a href="${href}" target="_blank" rel="external">${this.parser.parseInline(tokens) || href}</a>`;
+    };
 
     return {
         renderer,
