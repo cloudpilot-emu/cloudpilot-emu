@@ -273,6 +273,8 @@ the app in the app switcher and reopen it; your data will be back on the second 
 Sorry for the inconvenience.`,
                 );
             }
+
+            console.error(e);
         } finally {
             if (loaderPromise) void loaderPromise.then((loader) => loader.dismiss());
 

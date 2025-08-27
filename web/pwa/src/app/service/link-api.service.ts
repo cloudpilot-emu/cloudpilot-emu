@@ -20,6 +20,7 @@ function boostrapOperation(fragment: string): string | undefined {
         if (name === 'url' && value) {
             try {
                 return decodeURIComponent(value);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (e) {
                 continue;
             }
@@ -49,7 +50,7 @@ class Operation {
         try {
             url = new Url(url).toString();
         } catch (e) {
-            console.error(`invalid URL: ${url}`);
+            console.error(`invalid URL: ${url}`, e);
             return;
         }
 

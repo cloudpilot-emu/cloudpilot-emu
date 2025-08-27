@@ -132,6 +132,7 @@ export class NetworkBackendProxy implements NetworkBackend {
             }
 
             return { status: 'success', token: handshakeResponse.token };
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
             return { status: 'failed' };
         }

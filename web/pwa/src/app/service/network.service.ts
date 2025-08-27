@@ -120,9 +120,11 @@ class NetworkSession {
                 const connectSuccess = await this.backend.connect();
 
                 if (this.cloudpilot?.getSuspendKind() === SuspendKind.networkConnect) {
-                    connectSuccess
-                        ? this.cloudpilot.getSuspendContextNetworkConnect().Resume()
-                        : this.cloudpilot.getSuspendContextNetworkConnect().Cancel();
+                    if (connectSuccess) {
+                        this.cloudpilot.getSuspendContextNetworkConnect().Resume();
+                    } else {
+                        this.cloudpilot.getSuspendContextNetworkConnect().Cancel();
+                    }
                 }
 
                 return connectSuccess;

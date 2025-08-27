@@ -853,7 +853,7 @@ export class Cloudpilot {
                     return val;
                 }
 
-                // eslint-disable-next-line @typescript-eslint/ban-types
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
                 return (...args: Array<unknown>) => this.guard(() => (val as Function).apply(target, args));
             },
         });

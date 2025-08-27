@@ -19,6 +19,7 @@ export function normalizeProxyAddress(address: string | undefined): string | und
         if (url.protocol === 'https:' || url.protocol === 'http:') {
             return url.toString().replace(/\/+$/, '');
         }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {}
 
     return undefined;
