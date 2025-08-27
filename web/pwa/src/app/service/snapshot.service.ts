@@ -201,6 +201,7 @@ export class SnapshotService {
 
                 try {
                     tx.abort();
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
                 } catch (e) {}
 
                 reject(timeout);

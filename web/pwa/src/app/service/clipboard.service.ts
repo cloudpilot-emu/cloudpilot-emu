@@ -73,6 +73,7 @@ export class ClipboardService {
             await this.tryCopyWithInteraction(clipboardContent);
 
             ctx.Resume();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
             await this.msgCopyFailed();
 
@@ -170,6 +171,7 @@ export class ClipboardService {
 
         try {
             return await this.tryPasteWithInteraction();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
             await this.msgPasteFailed();
 
@@ -231,6 +233,7 @@ export class ClipboardService {
                 const status = await navigator.permissions.query({ name });
 
                 return status?.state === 'denied';
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (e) {
                 return false;
             }

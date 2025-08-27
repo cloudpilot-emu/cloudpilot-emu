@@ -105,6 +105,7 @@ export class FileService {
         let urlParsed!: Url<unknown>;
         try {
             urlParsed = new Url(url);
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
             await this.alertService.errorMessage(`Invalid URL: ${url}`);
 
@@ -130,6 +131,7 @@ export class FileService {
             });
 
             return;
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
             await this.alertService.errorMessage(`Download from ${url} failed.`);
         }
@@ -192,6 +194,7 @@ export class FileService {
                     })
                     .then((modal) => modal.present()),
             );
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
             return;
         } finally {

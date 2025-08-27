@@ -40,6 +40,7 @@ export class ServiceWorkerService {
 
             await this.updateNativeAppRegistrationStatus(false);
         } catch (e) {
+            console.error(e);
             await this.alertService.errorMessage('Failed to unregister service worker.');
             return;
         } finally {

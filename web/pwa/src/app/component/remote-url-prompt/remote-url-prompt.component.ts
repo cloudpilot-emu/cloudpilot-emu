@@ -13,6 +13,7 @@ function validateUrl(control: AbstractControl): ValidationErrors | null {
     let urlParsed: Url<unknown>;
     try {
         urlParsed = new Url(control.value);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
         return {
             url: 'URL invalid',
@@ -57,6 +58,7 @@ export class RemoteUrlPromptComponent implements OnInit {
             const urlParsed = new Url(url);
 
             return location.protocol === 'https:' && urlParsed.protocol !== 'https:';
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {}
 
         return false;

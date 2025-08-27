@@ -78,7 +78,8 @@ class InstallationContext {
             if (/\.zip/i.test(file.name) && content.length < ZIP_SIZE_LIMIT) {
                 try {
                     await this.installZip(file);
-                } catch (err) {
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                } catch (e) {
                     this.filesFail.push(file.name);
                 }
             } else if (isInstallable(file.name)) {
@@ -126,6 +127,7 @@ class InstallationContext {
                 }
 
                 this.installedDatabases.set(dbName, name);
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (e) {}
         }
 

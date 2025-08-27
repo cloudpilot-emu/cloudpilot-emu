@@ -85,7 +85,7 @@ export abstract class AbstractAudioService {
 
                     console.log('resume audio context');
                 } catch (e) {
-                    console.error(`failed to resume audio from state ${oldState}`);
+                    console.error(`failed to resume audio from state ${oldState}`, e);
                 }
             } else {
                 try {
@@ -93,7 +93,7 @@ export abstract class AbstractAudioService {
 
                     console.log('suspend audio context');
                 } catch (e) {
-                    console.error(`failed to suspend audio from state ${oldState}`);
+                    console.error(`failed to suspend audio from state ${oldState}`, e);
                 }
             }
 
@@ -112,8 +112,7 @@ export abstract class AbstractAudioService {
         try {
             this.context = new audioContextCtor();
         } catch (e) {
-            console.error(e);
-            console.error('web audio not available');
+            console.error('web audio not available', e);
 
             return false;
         }
@@ -121,14 +120,13 @@ export abstract class AbstractAudioService {
         try {
             this.context.destination.channelCount = 1;
         } catch (e) {
-            console.warn('audio driver: failed to set channel count');
+            console.warn('audio driver: failed to set channel count', e);
         }
 
         try {
             await this.start();
         } catch (e) {
-            console.error(e);
-            console.error('failed to initialize audio context');
+            console.error('failed to initialize audio context', e);
 
             return false;
         }

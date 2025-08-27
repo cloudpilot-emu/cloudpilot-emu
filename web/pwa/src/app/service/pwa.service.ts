@@ -126,6 +126,7 @@ export class PwaService {
                 if (registration?.active?.postMessage) {
                     registration.active.postMessage({});
                 }
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (e) {}
         }
 
