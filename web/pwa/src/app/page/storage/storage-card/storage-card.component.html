@@ -1,33 +1,41 @@
 <ion-item-sliding #slidingItem (contextmenu)="onContextmenu($event)" (ionDrag)="interaction.emit(card)">
-  <ion-item-options side="start">
-    <ion-item-option color="primary" icon-only (click)="slidingItem.close(); edit.emit(card)">
-      <ion-icon name="create-outline"></ion-icon>
-    </ion-item-option>
+    <ion-item-options side="start">
+        <ion-item-option color="primary" icon-only (click)="slidingItem.close(); edit.emit(card)">
+            <ion-icon name="create-outline"></ion-icon>
+        </ion-item-option>
 
-    <ion-item-option color="secondary" icon-only (click)="slidingItem.close(); save.emit(card)">
-      <ion-icon name="share-outline"></ion-icon>
-    </ion-item-option>
+        <ion-item-option color="secondary" icon-only (click)="slidingItem.close(); save.emit(card)">
+            <ion-icon name="share-outline"></ion-icon>
+        </ion-item-option>
+    </ion-item-options>
 
-  </ion-item-options>
+    <ion-item-options side="end">
+        <ion-item-option color="tertiary" icon-only (click)="slidingItem.close(); check.emit(card)">
+            <ion-icon name="medkit-outline"></ion-icon>
+        </ion-item-option>
 
-  <ion-item-options side="end">
-    <ion-item-option color="tertiary" icon-only (click)="slidingItem.close(); check.emit(card)">
-      <ion-icon name="medkit-outline"></ion-icon>
-    </ion-item-option>
+        <ion-item-option color="danger" icon-only (click)="slidingItem.close(); delete.emit(card)">
+            <ion-icon name="trash-outline"></ion-icon>
+        </ion-item-option>
+    </ion-item-options>
 
-    <ion-item-option color="danger" icon-only (click)="slidingItem.close(); delete.emit(card)">
-      <ion-icon name="trash-outline"></ion-icon>
-    </ion-item-option>
+    <ion-item [color]="color" (click)="selectCard.emit(); interaction.emit()">
+        <ion-label [class.selecting]="selecting">
+            <h2>{{ card?.name }}</h2>
+            <p>{{ card?.size | cardSize }}, {{ status }}</p>
+        </ion-label>
 
-  </ion-item-options>
-
-  <ion-item [color]="color" (click)="selectCard.emit(); interaction.emit()">
-    <ion-label [class.selecting]="selecting">
-      <h2>{{card?.name}}</h2>
-      <p>{{card?.size | cardSize}}, {{status}}</p>
-    </ion-label>
-
-    <ion-icon *ngIf="selecting && !selectedForExport" class="selection-icon" name="radio-button-off-outline" slot="end"></ion-icon>
-    <ion-icon *ngIf="selecting && selectedForExport" class="selection-icon" name="radio-button-on-outline" slot="end"></ion-icon>
-  </ion-item>
+        <ion-icon
+            *ngIf="selecting && !selectedForExport"
+            class="selection-icon"
+            name="radio-button-off-outline"
+            slot="end"
+        ></ion-icon>
+        <ion-icon
+            *ngIf="selecting && selectedForExport"
+            class="selection-icon"
+            name="radio-button-on-outline"
+            slot="end"
+        ></ion-icon>
+    </ion-item>
 </ion-item-sliding>

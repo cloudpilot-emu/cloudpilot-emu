@@ -6,7 +6,7 @@ let TRIGGER_INDEX = 0;
     selector: 'app-breadcrumb',
     templateUrl: './breadcrumb.component.html',
     styleUrl: './breadcrumb.component.scss',
-    standalone: false
+    standalone: false,
 })
 export class BreadcrumbComponent {
     @HostListener('click', ['$event'])

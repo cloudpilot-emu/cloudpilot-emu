@@ -6,7 +6,7 @@ import { VfsService } from '@pwa/service/vfs.service';
     selector: 'app-context-menu-directory',
     templateUrl: './context-menu-directory.component.html',
     styleUrls: ['./context-menu-directory.component.scss'],
-    standalone: false
+    standalone: false,
 })
 export class ContextMenuDirectoryComponent {
     constructor(public vfsService: VfsService) {}

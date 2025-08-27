@@ -1,5 +1,9 @@
-<ion-item-sliding #slidingItem (contextmenu)="onContextmenu($event)" (ionDrag)="interaction.emit(entry)"
-    [disabled]="selecting">
+<ion-item-sliding
+    #slidingItem
+    (contextmenu)="onContextmenu($event)"
+    (ionDrag)="interaction.emit(entry)"
+    [disabled]="selecting"
+>
     <ion-item-options side="start">
         <ion-item-option color="primary" icon-only (click)="slidingItem.close(); editEntry.emit(entry)">
             <ion-icon name="create-outline"></ion-icon>
@@ -8,7 +12,6 @@
         <ion-item-option color="secondary" icon-only (click)="slidingItem.close(); saveEntry.emit(entry)">
             <ion-icon name="share-outline"></ion-icon>
         </ion-item-option>
-
     </ion-item-options>
 
     <ion-item-options side="end">
@@ -19,32 +22,61 @@
         <ion-item-option color="danger" icon-only (click)="slidingItem.close(); deleteEntry.emit(entry)">
             <ion-icon name="trash-outline"></ion-icon>
         </ion-item-option>
-
     </ion-item-options>
 
-    <ion-item [color]="color" (click)="selectEntry.emit(); interaction.emit()"
-        [detail]="entry?.isDirectory && !selecting" [class.is-directory]="entry?.isDirectory" [style.opacity]="touched ? 1 : 0.99999">
+    <ion-item
+        [color]="color"
+        (click)="selectEntry.emit(); interaction.emit()"
+        [detail]="entry?.isDirectory && !selecting"
+        [class.is-directory]="entry?.isDirectory"
+        [style.opacity]="touched ? 1 : 0.99999"
+    >
         <ion-icon *ngIf="entry?.isDirectory" name="folder-outline" slot="start"></ion-icon>
         <ion-icon *ngIf="!entry?.isDirectory" name="document-outline" slot="start"></ion-icon>
 
         <div slot="end" class="attribute-icon-container">
-            <ion-icon *ngIf="entry?.attributes?.readonly" class="attribute-icon" name="lock-closed-outline" size="small"></ion-icon>
-            <ion-icon *ngIf="entry?.attributes?.hidden" class="attribute-icon" name="eye-off-outline" size="small"></ion-icon>
-            <ion-icon *ngIf="entry?.attributes?.system" class="attribute-icon" name="cog-outline" size="small"></ion-icon>
+            <ion-icon
+                *ngIf="entry?.attributes?.readonly"
+                class="attribute-icon"
+                name="lock-closed-outline"
+                size="small"
+            ></ion-icon>
+            <ion-icon
+                *ngIf="entry?.attributes?.hidden"
+                class="attribute-icon"
+                name="eye-off-outline"
+                size="small"
+            ></ion-icon>
+            <ion-icon
+                *ngIf="entry?.attributes?.system"
+                class="attribute-icon"
+                name="cog-outline"
+                size="small"
+            ></ion-icon>
             <ion-icon *ngIf="markedForCopy" class="attribute-icon" name="clipboard-outline" size="small"></ion-icon>
             <ion-icon *ngIf="markedForCut" class="attribute-icon" name="cut-outline" size="small"></ion-icon>
         </div>
 
-        <ion-icon *ngIf="selecting && !selected" class="selection-icon" name="radio-button-off-outline" slot="end"></ion-icon>
-        <ion-icon *ngIf="selecting && selected" class="selection-icon" name="radio-button-on-outline" slot="end"></ion-icon>
+        <ion-icon
+            *ngIf="selecting && !selected"
+            class="selection-icon"
+            name="radio-button-off-outline"
+            slot="end"
+        ></ion-icon>
+        <ion-icon
+            *ngIf="selecting && selected"
+            class="selection-icon"
+            name="radio-button-on-outline"
+            slot="end"
+        ></ion-icon>
 
         <ion-label [style.padding-right]="safetyMargin" [class.selecting]="selecting">
-            <h2>{{entry?.name}}</h2>
+            <h2>{{ entry?.name }}</h2>
             <p>
-                {{entry?.lastModifiedLocalDate}}
+                {{ entry?.lastModifiedLocalDate }}
                 <ng-container *ngIf="!entry?.isDirectory">
                     -
-                    {{entry?.size | fileSize}}
+                    {{ entry?.size | fileSize }}
                 </ng-container>
             </p>
         </ion-label>

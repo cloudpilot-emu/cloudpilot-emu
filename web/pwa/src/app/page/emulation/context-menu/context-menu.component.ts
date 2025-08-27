@@ -45,7 +45,7 @@ function rotate(oldOrientation: DeviceOrientation | undefined): DeviceOrientatio
     selector: 'app-emulation-context-menu',
     templateUrl: './context-menu.component.html',
     styleUrls: ['./context-menu.component.scss'],
-    standalone: false
+    standalone: false,
 })
 export class ContextMenuComponent {
     constructor(

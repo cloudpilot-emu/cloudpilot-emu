@@ -4,7 +4,7 @@ import { Component, Input } from '@angular/core';
     selector: 'app-storage-context-menu-card',
     templateUrl: './context-menu-card.component.html',
     styleUrls: ['./context-menu-card.component.scss'],
-    standalone: false
+    standalone: false,
 })
 export class ContextMenuCardComponent {
     constructor() {}

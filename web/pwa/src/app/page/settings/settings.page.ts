@@ -42,7 +42,7 @@ const enum fields {
     selector: 'app-settings',
     templateUrl: './settings.page.html',
     styleUrls: ['./settings.page.scss'],
-    standalone: false
+    standalone: false,
 })
 export class SettingsPage implements OnInit {
     constructor(
@@ -96,7 +96,7 @@ export class SettingsPage implements OnInit {
             clipboardIntegration: this.formGroup.get(fields.clipboardIntegration)?.value,
             networkRedirection: this.formGroup.get(fields.networkRedirection)?.value,
             networkRedirectionMode: this.featureService.nativeNetworkIntegration
-                ? this.formGroup.get(fields.networkRedirectionMode)?.value ?? 'proxy'
+                ? (this.formGroup.get(fields.networkRedirectionMode)?.value ?? 'proxy')
                 : 'proxy',
             proxyServer: this.formGroup.get(fields.proxyServer)?.value,
             runHidden: this.formGroup.get(fields.runHidden)?.value,

@@ -4,7 +4,7 @@ import { Component, Input } from '@angular/core';
     selector: 'app-session-context-menu',
     templateUrl: './context-menu.component.html',
     styleUrls: ['./context-menu.component.scss'],
-    standalone: false
+    standalone: false,
 })
 export class ContextMenuComponent {
     constructor() {}

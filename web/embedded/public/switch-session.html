@@ -1,125 +1,117 @@
 <html>
+    <head>
+        <script src="cloudpilot-emu.js"></script>
 
-<head>
-    <script src="cloudpilot-emu.js"></script>
+        <style>
+            body {
+                background-color: #eee;
+            }
 
-    <style>
-        body {
-            background-color: #eee;
-        }
+            .container {
+                width: 100vw;
+                overflow: hidden;
+                height: calc(100vh - 8em);
+                margin-bottom: 1em;
 
-        .container {
-            width: 100vw;
-            overflow: hidden;
-            height: calc(100vh - 8em);
-            margin-bottom: 1em;
+                display: flex;
+                flex-direction: row;
+            }
 
-            display: flex;
-            flex-direction: row;
-        }
+            #canvas-wrapper {
+                flex-grow: 1;
+                max-width: 60em;
+            }
 
-        #canvas-wrapper {
-            flex-grow: 1;
-            max-width: 60em;
-        }
+            canvas {
+                width: 100%;
+                height: 100%;
+                visibility: hidden;
+            }
 
-        canvas {
-            width: 100%;
-            height: 100%;
-            visibility: hidden;
-        }
+            canvas:focus {
+                border: none;
+                outline: none;
+            }
 
-        canvas:focus {
-            border: none;
-            outline: none;
-        }
+            #control-container {
+                flex-grow: 0;
+                flex-shrink: 0;
+                flex-basis: 30em;
+                text-align: left;
+                margin-left: 0.5em;
+            }
 
-        #control-container {
-            flex-grow: 0;
-            flex-shrink: 0;
-            flex-basis: 30em;
-            text-align: left;
-            margin-left: 0.5em;
-        }
+            body {
+                text-align: center;
+            }
 
-        body {
-            text-align: center;
-        }
+            button {
+                min-width: 10em;
+                margin: 0.5em;
+                margin-left: 0;
+            }
 
-        button {
-            min-width: 10em;
-            margin: 0.5em;
-            margin-left: 0;
-        }
+            a {
+                margin: 0 0.5em;
+            }
+        </style>
+    </head>
 
-        a {
-            margin: 0 0.5em;
-        }
-
-    </style>
-</head>
-
-<body>
-    <h1>Switch sessions</h1>
-    <div class="container">
-        <div id="canvas-wrapper"><canvas tabindex="1"></canvas></div>
-        <div id="control-container" class="hidden">
-            <div><button type="button" id="launch-rom-button" disabled>Load ROM</button>
-                <div><button type="button" id="load-session-button" disabled>Load session</button></div>
+    <body>
+        <h1>Switch sessions</h1>
+        <div class="container">
+            <div id="canvas-wrapper"><canvas tabindex="1"></canvas></div>
+            <div id="control-container" class="hidden">
+                <div>
+                    <button type="button" id="launch-rom-button" disabled>Load ROM</button>
+                    <div><button type="button" id="load-session-button" disabled>Load session</button></div>
+                </div>
             </div>
         </div>
-    </div>
 
-    <a href="index.html">...back to index</a>
-    |
-    <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/switch-session.html">
-        source on github
-    </a>
+        <a href="index.html">...back to index</a>
+        |
+        <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/switch-session.html">
+            source on github
+        </a>
 
-    <script>
-        (async function () {
-            const imageResponse = await fetch('session.img');
-            if (!imageResponse.ok) {
-                throw new Error('could not download session image');
-            }
+        <script>
+            (async function () {
+                const imageResponse = await fetch('session.img');
+                if (!imageResponse.ok) {
+                    throw new Error('could not download session image');
+                }
 
-            const romResponse = await fetch('palmiii.rom');
-            if (!romResponse.ok) {
-                throw new Error('could not download ROM image');
-            }
+                const romResponse = await fetch('palmiii.rom');
+                if (!romResponse.ok) {
+                    throw new Error('could not download ROM image');
+                }
 
-            const image = await imageResponse.arrayBuffer();
-            const rom = await romResponse.arrayBuffer();
-            const emulator = await cloudpilot.createEmulator();
-            const canvas = document.getElementsByTagName('canvas')[0];
+                const image = await imageResponse.arrayBuffer();
+                const rom = await romResponse.arrayBuffer();
+                const emulator = await cloudpilot.createEmulator();
+                const canvas = document.getElementsByTagName('canvas')[0];
 
-            const launchRomButton = document.getElementById('launch-rom-button');
-            const loadSessionButton = document.getElementById('load-session-button');
+                const launchRomButton = document.getElementById('launch-rom-button');
+                const loadSessionButton = document.getElementById('load-session-button');
 
-            emulator
-                .setCanvas(canvas)
-                .bindInput(canvas);
+                emulator.setCanvas(canvas).bindInput(canvas);
 
-            launchRomButton.disabled = false;
-            loadSessionButton.disabled = false;
+                launchRomButton.disabled = false;
+                loadSessionButton.disabled = false;
 
-            launchRomButton.addEventListener('click', () => {
-                emulator
-                    .loadRom(new Uint8Array(rom))
-                    .resume();
+                launchRomButton.addEventListener('click', () => {
+                    emulator.loadRom(new Uint8Array(rom)).resume();
 
-                canvas.style.visibility = 'visible';
-            });
+                    canvas.style.visibility = 'visible';
+                });
 
-            loadSessionButton.addEventListener('click', () => {
-                emulator
-                    .loadSession(new Uint8Array(image))
-                    .resume();
+                loadSessionButton.addEventListener('click', () => {
+                    emulator.loadSession(new Uint8Array(image)).resume();
 
-                canvas.style.visibility = 'visible';
-            });
-        })().catch(e => console.error(e));
-    </script>
-</body>
-
+                    canvas.style.visibility = 'visible';
+                });
+            })().catch((e) => console.error(e));
+        </script>
+    </body>
 </html>

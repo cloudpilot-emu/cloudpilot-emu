@@ -1,37 +1,31 @@
 <html>
+    <head>
+        <script src="cloudpilot-emu.js"></script>
+        <link rel="stylesheet" href="sample.css" />
+    </head>
 
-<head>
-    <script src="cloudpilot-emu.js"></script>
-    <link rel="stylesheet" href="sample.css">
-</head>
+    <body>
+        <h1>Load session file</h1>
+        <canvas tabindex="1"></canvas>
+        <a href="index.html">...back to index</a>
+        |
+        <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/session.html">
+            source on github
+        </a>
 
-<body>
-    <h1>Load session file</h1>
-    <canvas tabindex="1"></canvas>
-    <a href="index.html">...back to index</a>
-    |
-    <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/session.html">
-        source on github
-    </a>
+        <script>
+            (async function () {
+                const imageResponse = await fetch('session.img');
+                if (!imageResponse.ok) {
+                    throw new Error('could not download session image');
+                }
 
-    <script>
-        (async function () {
-            const imageResponse = await fetch('session.img');
-            if (!imageResponse.ok) {
-                throw new Error('could not download session image');
-            }
+                const image = await imageResponse.arrayBuffer();
+                const emulator = await cloudpilot.createEmulator();
+                const canvas = document.getElementsByTagName('canvas')[0];
 
-            const image = await imageResponse.arrayBuffer();
-            const emulator = await cloudpilot.createEmulator();
-            const canvas = document.getElementsByTagName('canvas')[0];
-
-            emulator.
-                loadSession(new Uint8Array(image))
-                .setCanvas(canvas)
-                .bindInput(canvas)
-                .resume();
-        })().catch(e => console.error(e));
-    </script>
-</body>
-
+                emulator.loadSession(new Uint8Array(image)).setCanvas(canvas).bindInput(canvas).resume();
+            })().catch((e) => console.error(e));
+        </script>
+    </body>
 </html>
