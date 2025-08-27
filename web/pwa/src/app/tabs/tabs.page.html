@@ -1,33 +1,30 @@
 <ion-tabs>
+    <div class="overflow-wrapper">
+        <ion-tab-bar [class.small-ui]="smallUI" slot="bottom" [class.disabled]="isLocked()">
+            <ion-tab-button tab="emulation">
+                <ion-icon name="phone-portrait-outline"></ion-icon>
+                <ion-label>Emulator</ion-label>
+            </ion-tab-button>
 
-  <div class="overflow-wrapper">
-    <ion-tab-bar [class.small-ui]="smallUI" slot="bottom" [class.disabled]="isLocked()">
+            <ion-tab-button tab="sessions">
+                <ion-icon name="albums-outline"></ion-icon>
+                <ion-label>Sessions</ion-label>
+            </ion-tab-button>
 
-      <ion-tab-button tab="emulation">
-        <ion-icon name="phone-portrait-outline"></ion-icon>
-        <ion-label>Emulator</ion-label>
-      </ion-tab-button>
+            <ion-tab-button tab="storage">
+                <ion-icon name="folder-outline"></ion-icon>
+                <ion-label>Cards</ion-label>
+            </ion-tab-button>
 
-      <ion-tab-button tab="sessions">
-        <ion-icon name="albums-outline"></ion-icon>
-        <ion-label>Sessions</ion-label>
-      </ion-tab-button>
+            <ion-tab-button tab="settings">
+                <ion-icon name="cog-outline"></ion-icon>
+                <ion-label>Settings</ion-label>
+            </ion-tab-button>
 
-      <ion-tab-button tab="storage">
-        <ion-icon name="folder-outline"></ion-icon>
-        <ion-label>Cards</ion-label>
-      </ion-tab-button>
-
-      <ion-tab-button tab="settings">
-        <ion-icon name="cog-outline"></ion-icon>
-        <ion-label>Settings</ion-label>
-      </ion-tab-button>
-
-      <ion-tab-button tab="about">
-        <ion-icon name="help-outline"></ion-icon>
-        <ion-label>About</ion-label>
-      </ion-tab-button>
-    </ion-tab-bar>
-  </div>
-
+            <ion-tab-button tab="about">
+                <ion-icon name="help-outline"></ion-icon>
+                <ion-label>About</ion-label>
+            </ion-tab-button>
+        </ion-tab-bar>
+    </div>
 </ion-tabs>

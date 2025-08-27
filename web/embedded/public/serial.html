@@ -1,130 +1,132 @@
 <html>
+    <head>
+        <meta
+            name="viewport"
+            content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
 
-<head>
-    <meta name="viewport"
-        content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <script src="cloudpilot-emu.js"></script>
 
-    <script src="cloudpilot-emu.js"></script>
+        <link rel="stylesheet" href="xterm/xterm.css" />
+        <script src="xterm/xterm.js"></script>
 
-    <link rel="stylesheet" href="xterm/xterm.css" />
-    <script src="xterm/xterm.js"></script>
+        <style>
+            body {
+                text-align: center;
+                background-color: #eee;
+            }
 
-    <style>
-        body {
-            text-align: center;
-            background-color: #eee;
-        }
+            canvas:focus {
+                border: none;
+                outline: none;
+            }
 
-        canvas:focus {
-            border: none;
-            outline: none;
-        }
+            a {
+                margin: 0 0.5em;
+            }
 
-        a {
-            margin: 0 0.5em;
-        }
-
-        #container {
-            display: flex;
-            flex-direction: row;
-            gap: 0.5em;
-            align-items: stretch;
-            height: calc(100vh - 8em);
-            width: 90%;
-            margin: 0 auto 1em auto;
-        }
-
-        @media screen and (max-width: 600px) {
             #container {
-                display: block;
+                display: flex;
+                flex-direction: row;
+                gap: 0.5em;
+                align-items: stretch;
+                height: calc(100vh - 8em);
                 width: 90%;
-                margin: auto;
-                height: auto;
+                margin: 0 auto 1em auto;
+            }
+
+            @media screen and (max-width: 600px) {
+                #container {
+                    display: block;
+                    width: 90%;
+                    margin: auto;
+                    height: auto;
+                }
+
+                .canvas-wrapper {
+                    width: 100%;
+                    height: 100vh;
+                    margin-bottom: 0.5em;
+                }
+            }
+
+            #terminal {
+                text-align: initial;
+                overflow-y: hidden;
+                flex-grow: 1;
             }
 
             .canvas-wrapper {
+                flex-grow: 1;
+                overflow: hidden;
+            }
+
+            canvas {
                 width: 100%;
-                height: 100vh;
-                margin-bottom: 0.5em;
-            }
-        }
-
-        #terminal {
-            text-align: initial;
-            overflow-y: hidden;
-            flex-grow: 1;
-        }
-
-        .canvas-wrapper {
-            flex-grow: 1;
-            overflow: hidden;
-        }
-
-        canvas {
-            width: 100%;
-            height: 100%;
-        }
-
-        canvas:focus {
-            border: none;
-            outline: none;
-        }
-    </style>
-</head>
-
-<body>
-    <h1>Serial port support</h1>
-
-    <div id="container">
-        <div class="canvas-wrapper"><canvas tabindex="1"></canvas></div>
-        <div id="terminal"></div>
-    </div>
-
-    <a href="index.html">...back to index</a>
-    |
-    <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/session.html">
-        source on github
-    </a>
-    |
-    <a href="http://xtermjs.org">xterm.js</a>
-
-    <script>
-        (async function () {
-            const terminalElt = document.getElementById('terminal');
-            const terminal = new Terminal();
-
-            terminal.open(terminalElt);
-
-            const resizeTerminal = () =>
-                terminal.resize(Math.floor(window.innerWidth / 16), Math.floor((window.innerHeight - 150) / 18));
-
-            window.addEventListener('resize', resizeTerminal);
-            resizeTerminal();
-
-            const imageResponse = await fetch('uclinux.img');
-            if (!imageResponse.ok) {
-                throw new Error('could not download session image');
+                height: 100%;
             }
 
-            const image = await imageResponse.arrayBuffer();
-            const emulator = await cloudpilot.createEmulator();
-            const canvas = document.getElementsByTagName('canvas')[0];
+            canvas:focus {
+                border: none;
+                outline: none;
+            }
+        </style>
+    </head>
 
-            emulator.getSerialPortSerial().receiveEvent.addHandler(
-                ({data}) => terminal.write(data)
-            );
+    <body>
+        <h1>Serial port support</h1>
 
-            terminal.onData(data => emulator.getSerialPortSerial().send(
-                new Uint8Array([...data.split('').map(x => x.charCodeAt(0)).map(x => x === 127 ? 0x08 : x)]), true
-            ));
+        <div id="container">
+            <div class="canvas-wrapper"><canvas tabindex="1"></canvas></div>
+            <div id="terminal"></div>
+        </div>
 
-            emulator.
-                loadSession(new Uint8Array(image))
-                .setCanvas(canvas)
-                .bindInput(canvas)
-                .resume();
-        })().catch(e => console.error(e));
-    </script>
-</body>
+        <a href="index.html">...back to index</a>
+        |
+        <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/session.html">
+            source on github
+        </a>
+        |
+        <a href="http://xtermjs.org">xterm.js</a>
 
+        <script>
+            (async function () {
+                const terminalElt = document.getElementById('terminal');
+                const terminal = new Terminal();
+
+                terminal.open(terminalElt);
+
+                const resizeTerminal = () =>
+                    terminal.resize(Math.floor(window.innerWidth / 16), Math.floor((window.innerHeight - 150) / 18));
+
+                window.addEventListener('resize', resizeTerminal);
+                resizeTerminal();
+
+                const imageResponse = await fetch('uclinux.img');
+                if (!imageResponse.ok) {
+                    throw new Error('could not download session image');
+                }
+
+                const image = await imageResponse.arrayBuffer();
+                const emulator = await cloudpilot.createEmulator();
+                const canvas = document.getElementsByTagName('canvas')[0];
+
+                emulator.getSerialPortSerial().receiveEvent.addHandler(({ data }) => terminal.write(data));
+
+                terminal.onData((data) =>
+                    emulator.getSerialPortSerial().send(
+                        new Uint8Array([
+                            ...data
+                                .split('')
+                                .map((x) => x.charCodeAt(0))
+                                .map((x) => (x === 127 ? 0x08 : x)),
+                        ]),
+                        true,
+                    ),
+                );
+
+                emulator.loadSession(new Uint8Array(image)).setCanvas(canvas).bindInput(canvas).resume();
+            })().catch((e) => console.error(e));
+        </script>
+    </body>
 </html>

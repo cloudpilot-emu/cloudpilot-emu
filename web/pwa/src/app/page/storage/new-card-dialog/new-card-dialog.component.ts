@@ -17,7 +17,7 @@ const SIZES = [
     selector: 'app-new-card-dialog',
     templateUrl: './new-card-dialog.component.html',
     styleUrls: ['./new-card-dialog.component.scss'],
-    standalone: false
+    standalone: false,
 })
 export class NewCardDialogComponent {
     constructor(private storageCardService: StorageCardService) {}

@@ -8,7 +8,7 @@ import { VfsService } from '@pwa/service/vfs.service';
     selector: 'app-new-directory-dialog',
     templateUrl: './new-directory-dialog.component.html',
     styleUrls: ['./new-directory-dialog.component.scss'],
-    standalone: false
+    standalone: false,
 })
 export class NewDirectoryDialogComponent {
     constructor(

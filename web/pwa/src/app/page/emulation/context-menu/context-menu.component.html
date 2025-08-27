@@ -1,46 +1,80 @@
 <ion-list>
-  <ion-item lines="full" button [detail]="false" (click)="power()" [disabled]="!emulationService.isRunning()" *ngIf="hasActiveSession && !powerDisabled">
-    <ion-label>Power</ion-label>
-    <ion-icon name="power-outline" slot="end"></ion-icon>
-  </ion-item>
-  <ion-item lines="full" button *ngIf="hasActiveSession" [detail]="false" (click)="hotsync()" [disabled]="!emulationService.isRunning()">
-    <ion-label>Hotsync</ion-label>
-    <ion-icon name="sync-outline" slot="end"></ion-icon>
-  </ion-item>
-  <ion-item lines="full" button *ngIf="hasActiveSession" [detail]="false" (click)="reset()" [disabled]="!emulationService.isRunning()">
-    <ion-label>Reset</ion-label>
-    <ion-icon name="refresh-outline" slot="end"></ion-icon>
-  </ion-item>
-  <ion-item lines="full" button *ngIf="supportsStorageCard && !hasMountedCard" [detail]="false" (click)="insertCard()">
-    <ion-label>Insert {{hasMemorystick ? 'stick' : 'SD card'}}</ion-label>
-    <ion-icon name="log-in-outline" slot="end"></ion-icon>
-  </ion-item>
-  <ion-item lines="full" button *ngIf="supportsStorageCard && hasMountedCard" [detail]="false" (click)="ejectCard()">
-    <ion-label>Eject {{hasMemorystick ? 'stick' : 'SD card'}}</ion-label>
-    <ion-icon name="log-out-outline" slot="end"></ion-icon>
-  </ion-item>
-  <ion-item lines="full" button [detail]="false" *ngIf="isMuted && !isAudioOff" (click)="mute(false)">
-    <ion-label>Enable audio</ion-label>
-    <ion-icon name="volume-high-outline" slot="end"></ion-icon>
-  </ion-item>
-  <ion-item lines="full" button [detail]="false" *ngIf="!isMuted && !isAudioOff" (click)="mute(true)">
-    <ion-label>Disable audio</ion-label>
-    <ion-icon name="volume-mute-outline" slot="end"></ion-icon>
-  </ion-item>
-  <ion-item lines="full" button *ngIf="hasActiveSession" [detail]="false" (click)="backup()" [disabled]="backupDisabled">
-    <ion-label>Save backup</ion-label>
-    <ion-icon name="share-outline" slot="end"></ion-icon>
-  </ion-item>
-  <ion-item lines="full" button *ngIf="hasActiveSession" [detail]="false" (click)="rotate()">
-    <ion-label>Rotate</ion-label>
-    <ion-icon name="reload-outline" slot="end"></ion-icon>
-  </ion-item>
-  <ion-item lines="full" button *ngIf="hasActiveSession" [detail]="false" (click)="editSettings()">
-    <ion-label>Settings</ion-label>
-    <ion-icon name="cog-outline" slot="end"></ion-icon>
-  </ion-item>
-  <ion-item lines="none" button [detail]="false" (click)="help()">
-    <ion-label>Help</ion-label>
-    <ion-icon name="help-outline" slot="end"></ion-icon>
-  </ion-item>
+    <ion-item
+        lines="full"
+        button
+        [detail]="false"
+        (click)="power()"
+        [disabled]="!emulationService.isRunning()"
+        *ngIf="hasActiveSession && !powerDisabled"
+    >
+        <ion-label>Power</ion-label>
+        <ion-icon name="power-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item
+        lines="full"
+        button
+        *ngIf="hasActiveSession"
+        [detail]="false"
+        (click)="hotsync()"
+        [disabled]="!emulationService.isRunning()"
+    >
+        <ion-label>Hotsync</ion-label>
+        <ion-icon name="sync-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item
+        lines="full"
+        button
+        *ngIf="hasActiveSession"
+        [detail]="false"
+        (click)="reset()"
+        [disabled]="!emulationService.isRunning()"
+    >
+        <ion-label>Reset</ion-label>
+        <ion-icon name="refresh-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item
+        lines="full"
+        button
+        *ngIf="supportsStorageCard && !hasMountedCard"
+        [detail]="false"
+        (click)="insertCard()"
+    >
+        <ion-label>Insert {{ hasMemorystick ? 'stick' : 'SD card' }}</ion-label>
+        <ion-icon name="log-in-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item lines="full" button *ngIf="supportsStorageCard && hasMountedCard" [detail]="false" (click)="ejectCard()">
+        <ion-label>Eject {{ hasMemorystick ? 'stick' : 'SD card' }}</ion-label>
+        <ion-icon name="log-out-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item lines="full" button [detail]="false" *ngIf="isMuted && !isAudioOff" (click)="mute(false)">
+        <ion-label>Enable audio</ion-label>
+        <ion-icon name="volume-high-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item lines="full" button [detail]="false" *ngIf="!isMuted && !isAudioOff" (click)="mute(true)">
+        <ion-label>Disable audio</ion-label>
+        <ion-icon name="volume-mute-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item
+        lines="full"
+        button
+        *ngIf="hasActiveSession"
+        [detail]="false"
+        (click)="backup()"
+        [disabled]="backupDisabled"
+    >
+        <ion-label>Save backup</ion-label>
+        <ion-icon name="share-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item lines="full" button *ngIf="hasActiveSession" [detail]="false" (click)="rotate()">
+        <ion-label>Rotate</ion-label>
+        <ion-icon name="reload-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item lines="full" button *ngIf="hasActiveSession" [detail]="false" (click)="editSettings()">
+        <ion-label>Settings</ion-label>
+        <ion-icon name="cog-outline" slot="end"></ion-icon>
+    </ion-item>
+    <ion-item lines="none" button [detail]="false" (click)="help()">
+        <ion-label>Help</ion-label>
+        <ion-icon name="help-outline" slot="end"></ion-icon>
+    </ion-item>
 </ion-list>

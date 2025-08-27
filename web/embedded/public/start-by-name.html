@@ -1,39 +1,37 @@
 <html>
+    <head>
+        <script src="cloudpilot-emu.js"></script>
+        <link rel="stylesheet" href="sample.css" />
+    </head>
 
-<head>
-    <script src="cloudpilot-emu.js"></script>
-    <link rel="stylesheet" href="sample.css">
-</head>
+    <body>
+        <h1>Start app by name</h1>
+        <canvas tabindex="1"></canvas>
+        <a href="index.html">...back to index</a>
+        |
+        <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/start-by-name.html">
+            source on github
+        </a>
 
-<body>
-    <h1>Start app by name</h1>
-    <canvas tabindex="1"></canvas>
-    <a href="index.html">...back to index</a>
-    |
-    <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/start-by-name.html">
-        source on github
-    </a>
+        <script>
+            (async function () {
+                const romResponse = await fetch('session.img');
+                if (!romResponse.ok) {
+                    throw new Error('could not download session file');
+                }
 
-    <script>
-        (async function () {
-            const romResponse = await fetch('session.img');
-            if (!romResponse.ok) {
-                throw new Error('could not download session file');
-            }
+                const rom = await romResponse.arrayBuffer();
 
-            const rom = await romResponse.arrayBuffer();
+                const emulator = await cloudpilot.createEmulator();
+                const canvas = document.getElementsByTagName('canvas')[0];
 
-            const emulator = await cloudpilot.createEmulator();
-            const canvas = document.getElementsByTagName('canvas')[0];
-
-            emulator
-                .loadSession(new Uint8Array(rom))
-                .launchByName('Calculator')
-                .setCanvas(canvas)
-                .bindInput(canvas)
-                .resume();
-        })().catch(e => console.error(e));
-    </script>
-</body>
-
+                emulator
+                    .loadSession(new Uint8Array(rom))
+                    .launchByName('Calculator')
+                    .setCanvas(canvas)
+                    .bindInput(canvas)
+                    .resume();
+            })().catch((e) => console.error(e));
+        </script>
+    </body>
 </html>

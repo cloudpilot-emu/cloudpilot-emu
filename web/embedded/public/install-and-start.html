@@ -1,48 +1,46 @@
 <html>
+    <head>
+        <script src="cloudpilot-emu.js"></script>
+        <link rel="stylesheet" href="sample.css" />
+    </head>
 
-<head>
-    <script src="cloudpilot-emu.js"></script>
-    <link rel="stylesheet" href="sample.css">
+    <body>
+        <h1>Install and start a .prc</h1>
+        <canvas tabindex="1"></canvas>
+        <a href="index.html">...back to index</a>
+        |
+        <a
+            href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/install-and-start.html"
+        >
+            source on github
+        </a>
 
-    </style>
-</head>
+        <script>
+            (async function () {
+                const sessionResponse = await fetch('session.img');
+                if (!sessionResponse.ok) {
+                    throw new Error('could not download session file');
+                }
 
-<body>
-    <h1>Install and start a .prc</h1>
-    <canvas tabindex="1"></canvas>
-    <a href="index.html">...back to index</a>
-    |
-    <a href="https://github.com/cloudpilot-emu/cloudpilot-emu/blob/master/web/embedded/public/install-and-start.html">
-        source on github
-    </a>
+                const session = await sessionResponse.arrayBuffer();
 
-    <script>
-        (async function () {
-            const sessionResponse = await fetch('session.img');
-            if (!sessionResponse.ok) {
-                throw new Error('could not download session file');
-            }
+                const prcResponse = await fetch('pilotmines.prc');
+                if (!prcResponse.ok) {
+                    throw new Error('could not download prc file');
+                }
 
-            const session = await sessionResponse.arrayBuffer();
+                const prc = await prcResponse.arrayBuffer();
 
-            const prcResponse = await fetch('pilotmines.prc');
-            if (!prcResponse.ok) {
-                throw new Error('could not download prc file');
-            }
+                const emulator = await cloudpilot.createEmulator();
+                const canvas = document.getElementsByTagName('canvas')[0];
 
-            const prc = await prcResponse.arrayBuffer();
-
-            const emulator = await cloudpilot.createEmulator();
-            const canvas = document.getElementsByTagName('canvas')[0];
-
-            emulator
-                .loadSession(new Uint8Array(session))
-                .installAndLaunchDatabase(new Uint8Array(prc))
-                .setCanvas(canvas)
-                .bindInput(canvas)
-                .resume();
-        })().catch(e => console.error(e));
-    </script>
-</body>
-
+                emulator
+                    .loadSession(new Uint8Array(session))
+                    .installAndLaunchDatabase(new Uint8Array(prc))
+                    .setCanvas(canvas)
+                    .bindInput(canvas)
+                    .resume();
+            })().catch((e) => console.error(e));
+        </script>
+    </body>
 </html>

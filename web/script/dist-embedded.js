@@ -26,7 +26,7 @@ const README = path.normalize(path.join(__dirname, '..', 'embedded', 'doc', 'REA
 
 const NPM_PACKAGE_DIR = path.normalize(path.join(__dirname, '..', 'npm-embedded'));
 const NPM_DIST = ['cloudpilot-emu.js', 'cloudpilot-emu.d.ts', 'cloudpilot-emu.js.map', 'cloudpilot_web.wasm'].map((x) =>
-    path.normalize(path.join(BUILD_SRC, x))
+    path.normalize(path.join(BUILD_SRC, x)),
 );
 const NPM_DIST_TARGET = path.normalize(path.join(NPM_PACKAGE_DIR, 'dist'));
 
@@ -50,5 +50,5 @@ shelljs.cp(README_NPM_SOURCE, README_NPM_DEST);
 shelljs.cp(LICENSE, NPM_PACKAGE_DIR);
 fs.writeFileSync(
     PACKAGE_JSON_DEST,
-    JSON.stringify({ ...PACKAGE_JSON_TEMPLATE, version: packageJson.version }, undefined, '  ')
+    JSON.stringify({ ...PACKAGE_JSON_TEMPLATE, version: packageJson.version }, undefined, '  '),
 );

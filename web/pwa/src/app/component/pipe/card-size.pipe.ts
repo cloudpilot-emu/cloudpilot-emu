@@ -2,7 +2,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 
 @Pipe({
     name: 'cardSize',
-    standalone: false
+    standalone: false,
 })
 export class CardSizePipe implements PipeTransform {
     transform(value: number | undefined) {

@@ -1,10 +1,16 @@
 <ion-list *ngIf="entries">
-    <ion-item  button [detail]="false" *ngFor="let entry of entries; index as i" (click)="onSelect(i)" [lines]="(i === entries.length - 1) ? 'none' : 'full'">
+    <ion-item
+        button
+        [detail]="false"
+        *ngFor="let entry of entries; index as i"
+        (click)="onSelect(i)"
+        [lines]="i === entries.length - 1 ? 'none' : 'full'"
+    >
         <ng-container [ngSwitch]="entries.length">
             <ion-icon name="list-outline" slot="end" *ngSwitchCase="i + 1"></ion-icon>
             <ion-icon name="file-tray-outline" slot="end" *ngSwitchCase="i + 2"></ion-icon>
             <ion-icon name="folder-outline" slot="end" *ngSwitchDefault></ion-icon>
         </ng-container>
-        <div class="text-wrapper">{{entry}}</div>
+        <div class="text-wrapper">{{ entry }}</div>
     </ion-item>
 </ion-list>

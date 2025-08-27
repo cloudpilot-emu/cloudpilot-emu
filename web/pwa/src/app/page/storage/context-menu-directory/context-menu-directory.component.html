@@ -1,26 +1,26 @@
 <ion-list>
-  <ion-item lines="full" button [detail]="false" (click)="onStartSelection()" [disabled]="emptyDirectory">
-    <ion-icon name="checkmark-circle-outline" slot="end"></ion-icon>
-    Start selection
-  </ion-item>
-  <ion-item lines="full" button [detail]="false" (click)="onAddFiles()">
-    <ion-icon name="document-outline" slot="end"></ion-icon>
-    Add files
-  </ion-item>
-  <ion-item lines="full" button [detail]="false" (click)="onCreateDirectry()">
-    <ion-icon name="folder-outline" slot="end"></ion-icon>
-    Add directory
-  </ion-item>
-  <ion-item lines="full" button [detail]="false" (click)="onExtractZipfile()">
-    <ion-icon name="download-outline" slot="end"></ion-icon>
-    Extract zip
-  </ion-item>
-  <ion-item lines="full" button [detail]="false" (click)="onPaste()" [disabled]="!vfsService.isClipboardPopulated()">
-    <ion-icon name="clipboard-outline" slot="end"></ion-icon>
-    Paste
-  </ion-item>
-  <ion-item lines="none" button [detail]="false" (click)="onHelp()">
-    <ion-icon name="help-outline" slot="end"></ion-icon>
-    Help
-  </ion-item>
+    <ion-item lines="full" button [detail]="false" (click)="onStartSelection()" [disabled]="emptyDirectory">
+        <ion-icon name="checkmark-circle-outline" slot="end"></ion-icon>
+        Start selection
+    </ion-item>
+    <ion-item lines="full" button [detail]="false" (click)="onAddFiles()">
+        <ion-icon name="document-outline" slot="end"></ion-icon>
+        Add files
+    </ion-item>
+    <ion-item lines="full" button [detail]="false" (click)="onCreateDirectry()">
+        <ion-icon name="folder-outline" slot="end"></ion-icon>
+        Add directory
+    </ion-item>
+    <ion-item lines="full" button [detail]="false" (click)="onExtractZipfile()">
+        <ion-icon name="download-outline" slot="end"></ion-icon>
+        Extract zip
+    </ion-item>
+    <ion-item lines="full" button [detail]="false" (click)="onPaste()" [disabled]="!vfsService.isClipboardPopulated()">
+        <ion-icon name="clipboard-outline" slot="end"></ion-icon>
+        Paste
+    </ion-item>
+    <ion-item lines="none" button [detail]="false" (click)="onHelp()">
+        <ion-icon name="help-outline" slot="end"></ion-icon>
+        Help
+    </ion-item>
 </ion-list>

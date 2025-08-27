@@ -19,7 +19,7 @@ import { VfsService } from '@pwa/service/vfs.service';
     templateUrl: './file-entry.component.html',
     styleUrls: ['./file-entry.component.scss'],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    standalone: false
+    standalone: false,
 })
 export class FileEntryComponent implements OnChanges {
     constructor(
