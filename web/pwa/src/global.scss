@@ -139,6 +139,12 @@ ion-list ion-item ion-label {
     text-overflow: ellipsis;
 }
 
+[labelPlacement="fixed"]::part(label) {
+    flex-basis: auto;
+    max-width: none;
+    width: auto;
+}
+
 markdown h1:not(:first-child) {
     margin-top: 1.5em;
 }

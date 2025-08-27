@@ -15,8 +15,14 @@
 <ion-content fullscreen>
     <form [formGroup]="formGroup" (keydown.enter)="onEnter()">
         <ion-item lines="none">
-            <ion-label position="stacked">Directory name</ion-label>
-            <ion-input placeholder="Enter directory name" formControlName="name" appAutofocus tabindex="1"></ion-input>
+            <ion-input
+                label="Directory name"
+                labelPlacement="stacked"
+                placeholder="Enter directory name"
+                formControlName="name"
+                appAutofocus
+                tabindex="1"
+            ></ion-input>
         </ion-item>
     </form>
 </ion-content>
