@@ -1,36 +1,41 @@
 <ion-header>
-  <ion-toolbar>
-      <ion-title>{{newCard ? 'New memory card' : 'Edit memory card'}}</ion-title>
+    <ion-toolbar>
+        <ion-title>{{ newCard ? 'New memory card' : 'Edit memory card' }}</ion-title>
 
-      <ion-buttons slot="primary">
-          <ion-button (click)="save()" [disabled]="formGroup.invalid">Save</ion-button>
-      </ion-buttons>
+        <ion-buttons slot="primary">
+            <ion-button (click)="save()" [disabled]="formGroup.invalid">Save</ion-button>
+        </ion-buttons>
 
-      <ion-buttons slot="secondary">
-          <ion-button (click)="onCancel()">Cancel</ion-button>
-      </ion-buttons>
-  </ion-toolbar>
+        <ion-buttons slot="secondary">
+            <ion-button (click)="onCancel()">Cancel</ion-button>
+        </ion-buttons>
+    </ion-toolbar>
 </ion-header>
 
 <ion-content fullscreen>
-  <form [formGroup]="formGroup" (keydown.enter)="onEnter()">
-      <ion-item lines="none">
-          <ion-label position="stacked">Card name</ion-label>
-          <ion-input placeholder="Enter card name" formControlName="name"></ion-input>
-      </ion-item>
+    <form [formGroup]="formGroup" (keydown.enter)="onEnter()">
+        <ion-item lines="none">
+            <ion-input
+                label="Card name"
+                labelPlacement="stacked"
+                placeholder="Enter card name"
+                formControlName="name"
+            ></ion-input>
+        </ion-item>
 
-      <ion-item lines="none">
-          <ion-label position="stacked">Card size</ion-label>
-          <ion-select formControlName="size">
-              <ion-select-option  value="dummy">{{card?.size | cardSize}}
-              </ion-select-option>
-          </ion-select>
-      </ion-item>
+        <ion-item lines="none">
+            <ion-select label="Card size" labelPlacement="stacked" formControlName="size">
+                <ion-select-option value="dummy">{{ card?.size | cardSize }} </ion-select-option>
+            </ion-select>
+        </ion-item>
 
-      <ion-item lines="none">
-        <ion-label>Check for errors automatically</ion-label>
-        <ion-toggle formControlName="checkAutomatically"></ion-toggle>
-      </ion-item>
-  </form>
-  <div class="sd-only-warning" *ngIf="!memoryStickSupported"><b>WARNING:</b> This image cannot be used as a memory stick image.</div>
+        <ion-item lines="none">
+            <ion-toggle labelPlacement="fixed" formControlName="checkAutomatically"
+                >Check for errors automatically</ion-toggle
+            >
+        </ion-item>
+    </form>
+    <div class="sd-only-warning" *ngIf="!memoryStickSupported">
+        <b>WARNING:</b> This image cannot be used as a memory stick image.
+    </div>
 </ion-content>

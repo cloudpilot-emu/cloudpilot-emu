@@ -17,32 +17,45 @@
         <h1>Session</h1>
 
         <ion-item lines="none">
-            <ion-label position="stacked">Session name</ion-label>
-            <ion-input placeholder="Enter session name" formControlName="name"></ion-input>
+            <ion-input
+                label="Session name"
+                labelPlacement="stacked"
+                placeholder="Enter session name"
+                formControlName="name"
+            ></ion-input>
         </ion-item>
 
         <h1>Device</h1>
 
         <ion-item lines="none">
-            <ion-label position="stacked">Device type</ion-label>
-            <ion-select formControlName="device">
-                <ion-select-option *ngFor="let device of deviceList" [value]="device[0]">{{device[1]}}
+            <ion-select label="Device type" labelPlacement="stacked" formControlName="device">
+                <ion-select-option *ngFor="let device of deviceList" [value]="device[0]"
+                    >{{ device[1] }}
                 </ion-select-option>
             </ion-select>
         </ion-item>
 
         <ion-item lines="none">
-            <ion-label position="stacked">Orientation</ion-label>
-            <ion-select formControlName="orientation">
-                <ion-select-option *ngFor="let orientation of orientations" [value]="orientation[0]">{{orientation[1]}}
+            <ion-select label="Orientation" labelPlacement="stacked" formControlName="orientation">
+                <ion-select-option *ngFor="let orientation of orientations" [value]="orientation[0]"
+                    >{{ orientation[1] }}
                 </ion-select-option>
             </ion-select>
         </ion-item>
 
         <ion-item lines="none">
-            <ion-label class="label-speed">{{speedLabel}}</ion-label>
-            <ion-range min="-4" max="4" step="0.25" snaps="true" ticks="false" formControlName="speed"
-                (ionInput)="onSpeedDrag($event)" (ionKnobMoveEnd)="speedTransient = undefined"
+            <ion-range
+                label="{{ speedLabel }}"
+                labelPlacement="fixed"
+                class="label-speed"
+                min="-4"
+                max="4"
+                step="0.25"
+                snaps="true"
+                ticks="false"
+                formControlName="speed"
+                (ionInput)="onSpeedDrag($event)"
+                (ionKnobMoveEnd)="speedTransient = undefined"
             >
             </ion-range>
         </ion-item>
@@ -50,13 +63,17 @@
         <h1>Hotsync</h1>
 
         <ion-item lines="none">
-            <ion-label>Manage hotsync name</ion-label>
-            <ion-toggle formControlName="manageHotsyncName"></ion-toggle>
+            <ion-toggle labelPlacement="fixed" formControlName="manageHotsyncName">Manage hotsync name</ion-toggle>
         </ion-item>
 
         <ion-item lines="none" *ngIf="showHotsyncNameInput">
-            <ion-label position="stacked">Hotsync name</ion-label>
-            <ion-input [placeholder]="placeholder" formControlName="hotsyncName" maxlength="40"></ion-input>
+            <ion-input
+                label="Hotsync name"
+                labelPlacement="stacked"
+                [placeholder]="placeholder"
+                formControlName="hotsyncName"
+                maxlength="40"
+            ></ion-input>
         </ion-item>
     </form>
 </ion-content>
