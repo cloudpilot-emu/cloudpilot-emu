@@ -18,6 +18,8 @@ import { memoize } from '@pwa/helper/memoize';
 
 import helpUrl from '@assets/doc/card-browser.md';
 
+const NO_ENTRIES: Array<FileEntry> = [];
+
 function entrySortFunction(e1: FileEntry, e2: FileEntry): number {
     if (e1.isDirectory && !e2.isDirectory) return -1;
     if (!e1.isDirectory && e2.isDirectory) return 1;
@@ -99,8 +101,10 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         return this.fileCountMemoized(this.entries);
     }
 
+    private memoizedEntries = memoize((entries: Array<FileEntry>) => [...entries].sort(entrySortFunction));
+
     get entries(): Array<FileEntry> {
-        return this.path !== undefined ? [...this.vfsService.readdir(this.path)].sort(entrySortFunction) : [];
+        return this.path !== undefined ? this.memoizedEntries(this.vfsService.readdir(this.path)) : NO_ENTRIES;
     }
 
     trackEntryBy(index: number, entry: FileEntry) {
