@@ -251,7 +251,7 @@ export class ContextMenuComponent {
 
         const cloudpilot = await this.cloudpilotService.cloudpilot;
         const eligibleCards = this.storageCardService
-            .getAllCards()
+            .cards()
             .filter(
                 (card) =>
                     cloudpilot.deviceSupportsCardSize(card.size) && !this.storageCardService.mountedInSession(card.id),

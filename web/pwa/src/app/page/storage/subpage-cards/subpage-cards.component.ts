@@ -1,6 +1,6 @@
 import * as angular from '@ionic/angular';
 import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { NewCardSize, StorageCardService } from '@pwa/service/storage-card.service';
 import { AlertService } from '@pwa/service/alert.service';
@@ -10,14 +10,12 @@ import { ErrorService } from '@pwa/service/error.service';
 import { HelpComponent } from '@pwa/component/help/help.component';
 import { NewCardDialogComponent } from '../new-card-dialog/new-card-dialog.component';
 import { StorageCard } from '@pwa/model/StorageCard';
-import { changeDetector } from '@pwa/helper/changeDetect';
 import { debounce } from '@pwa/helper/debounce';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
 import { FsToolsService } from '@pwa/service/fstools.service';
 
 import helpPage from '@assets/doc/cards.md';
-import { SessionService } from '@pwa/service/session.service';
 import { ActionMenuCardsComponent } from '../action-menu-cards/action-menu-cards.component';
 
 type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
@@ -29,7 +27,7 @@ type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false,
 })
-export class SubpageCardsComponent implements DoCheck, OnInit {
+export class SubpageCardsComponent implements OnInit {
     constructor(
         private actionSheetController: angular.ActionSheetController,
         public storageCardService: StorageCardService,
@@ -41,20 +39,11 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         private loadingController: angular.LoadingController,
         private fstools: FsToolsService,
         private popoverController: angular.PopoverController,
-        sessionService: SessionService,
         private cd: ChangeDetectorRef,
-    ) {
-        this.checkCards = changeDetector(cd, [], () => this.storageCardService.getAllCards());
-        this.checkSessions = changeDetector(cd, undefined, () => sessionService.sessions());
-    }
+    ) {}
 
     ngOnInit(): void {
         if (this.selfReference) this.selfReference.ref = this;
-    }
-
-    ngDoCheck(): void {
-        this.checkCards();
-        this.checkSessions();
     }
 
     ionViewDidLeave(): void {
@@ -63,7 +52,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
     }
 
     get cards(): Array<StorageCard> {
-        return this.storageCardService.getAllCards();
+        return this.storageCardService.cards();
     }
 
     handleDragDropEvent(e: DragEvent): void | Promise<void> {
@@ -317,7 +306,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
     }
 
     private async exportSelection(selection: Array<number>): Promise<void> {
-        const cards = new Map(await this.storageCardService.getAllCards().map((card) => [card.id, card]));
+        const cards = new Map(await this.storageCardService.cards().map((card) => [card.id, card]));
 
         const size = selection.map((id) => cards.get(id)?.size).reduce((acc, x): number => acc! + (x ?? 0), 0)!;
         if (size > 256 * 1024 * 1024) {
@@ -463,7 +452,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
     };
 
     private disambiguateName(name: string): string {
-        const cards = this.storageCardService.getAllCards();
+        const cards = this.storageCardService.cards();
 
         return disambiguateName(name, (x) => cards.some((card) => card.name === x));
     }
@@ -475,9 +464,6 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
 
     @Input()
     selfReference: { ref: SubpageCardsComponent } | undefined;
-
-    private checkCards: () => void;
-    private checkSessions: () => void;
 
     mode: Mode = 'manage';
     selection = new Set<number>();

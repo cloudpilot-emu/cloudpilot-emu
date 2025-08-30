@@ -46,7 +46,7 @@ export class EditCardDialogComponent<T extends CardSettings> implements OnInit {
 
     private validateNameUnique = (control: AbstractControl<string>): ValidationErrors | null => {
         return this.storageCardService
-            .getAllCards()
+            .cards()
             .some((card) => card.name === control.value && card.name !== this.card?.name)
             ? { name: 'already taken' }
             : null;
