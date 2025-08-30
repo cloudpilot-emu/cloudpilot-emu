@@ -1,5 +1,14 @@
 import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
+import {
+    ChangeDetectionStrategy,
+    ChangeDetectorRef,
+    Component,
+    computed,
+    Input,
+    OnInit,
+    Signal,
+    signal,
+} from '@angular/core';
 import { DragDropClient, DragDropService } from '@pwa//service/drag-drop.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { SessionSettings, SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
@@ -49,7 +58,11 @@ export class SessionsPage implements DragDropClient, OnInit {
         private popoverController: PopoverController,
         private loadingController: LoadingController,
         private cd: ChangeDetectorRef,
-    ) {}
+    ) {
+        this.currentSessionId = computed(
+            () => this.currentSessionOverride() ?? this.emulationState.currentSession()?.id,
+        );
+    }
 
     ngOnInit(): void {
         if (this.selfReference) this.selfReference.ref = this;
@@ -134,12 +147,10 @@ export class SessionsPage implements DragDropClient, OnInit {
     @debounce()
     async launchSession(session: Session) {
         this.lastSessionTouched = session.id;
-        this.currentSessionOverride = session.id;
-        this.cd.markForCheck();
+        this.currentSessionOverride.set(session.id);
 
         const launchSuccess = await this.emulationService.switchSession(session.id);
-        this.currentSessionOverride = undefined;
-        this.cd.markForCheck();
+        this.currentSessionOverride.set(undefined);
 
         if (!launchSuccess) return;
 
@@ -158,10 +169,6 @@ export class SessionsPage implements DragDropClient, OnInit {
         if (running) await this.emulationService.switchSession(session.id);
 
         await this.alertService.message('Done', `Session ${session.name} has been reset.`);
-    }
-
-    get currentSessionId(): number | undefined {
-        return this.currentSessionOverride ?? this.emulationState.currentSession()?.id;
     }
 
     async showHelp(): Promise<void> {
@@ -464,5 +471,7 @@ export class SessionsPage implements DragDropClient, OnInit {
 
     selection = new Set<number>();
 
-    private currentSessionOverride: number | undefined;
+    currentSessionId: Signal<number | undefined>;
+
+    private currentSessionOverride = signal<number | undefined>(undefined);
 }

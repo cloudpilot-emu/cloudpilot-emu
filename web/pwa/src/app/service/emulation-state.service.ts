@@ -1,4 +1,4 @@
-import { Injectable, Signal, signal, WritableSignal } from '@angular/core';
+import { Injectable, Signal, signal } from '@angular/core';
 import { Session } from '@pwa/model/Session';
 
 @Injectable({
@@ -15,5 +15,5 @@ export class EmulationStateService {
         this._currentSession.set(session);
     }
 
-    private _currentSession: WritableSignal<Session | undefined> = signal(undefined);
+    private _currentSession = signal<Session | undefined>(undefined);
 }
