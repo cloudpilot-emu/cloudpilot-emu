@@ -175,7 +175,7 @@ can be done with
 
 The emulator is written in C++ and compiled to Web Assembly using emscripten. In
 order to build the WASM binary you need to install a recent version of the
-emscripten toolchain. CloudpilotEmu currently builds with 2.0.24.
+emscripten toolchain. CloudpilotEmu currently builds with 4.0.10.
 
 With the SDK properly set up you can build the source via
 
