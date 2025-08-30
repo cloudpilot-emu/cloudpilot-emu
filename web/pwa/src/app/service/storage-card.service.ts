@@ -153,7 +153,7 @@ export class StorageCardService {
     }
 
     onEmulatorStop(): void {
-        const mountedCard = this.emulationStateService.getCurrentSession()?.mountedCard;
+        const mountedCard = this.emulationStateService.currentSession()?.mountedCard;
         if (mountedCard !== undefined) this.storageCardContext.release(mountedCard, CardOwner.cloudpilot);
     }
 
@@ -188,7 +188,7 @@ export class StorageCardService {
     }
 
     async ejectCurrentCard(): Promise<void> {
-        const session = this.emulationStateService.getCurrentSession();
+        const session = this.emulationStateService.currentSession();
         if (!session) throw new Error('no running session');
 
         const cardId = session?.mountedCard;
@@ -390,7 +390,7 @@ export class StorageCardService {
     }
 
     mountedInSession(cardId: number): Session | undefined {
-        return this.sessionService.getSessions().find((session) => session.mountedCard === cardId);
+        return this.sessionService.sessions().find((session) => session.mountedCard === cardId);
     }
 
     isLoading(): boolean {
@@ -546,7 +546,7 @@ export class StorageCardService {
         const session = this.mountedInSession(card.id);
         let cardDataFromEmulator: Uint32Array | undefined;
 
-        if (session && session.id === this.emulationStateService.getCurrentSession()?.id) {
+        if (session && session.id === this.emulationStateService.currentSession()?.id) {
             await this.snapshotService.waitForPendingSnapshot();
             await this.snapshotService.triggerSnapshot();
 
@@ -825,7 +825,7 @@ export class StorageCardService {
         const card = await this.storageService.getCard(id);
         if (!session || !card) return;
 
-        if (session.id === this.emulationStateService.getCurrentSession()?.id) {
+        if (session.id === this.emulationStateService.currentSession()?.id) {
             await this.ejectCurrentCard();
         } else {
             await this.storageService.updateSessionPartial(session.id, { mountedCard: undefined });
@@ -842,7 +842,7 @@ export class StorageCardService {
             await loader.present();
             await this.vfsService.releaseCard(cardId);
 
-            const session = this.emulationStateService.getCurrentSession();
+            const session = this.emulationStateService.currentSession();
             if (!session) throw new Error('no current session');
             if (session.mountedCard !== undefined) throw new Error('session already has a mounted card');
 

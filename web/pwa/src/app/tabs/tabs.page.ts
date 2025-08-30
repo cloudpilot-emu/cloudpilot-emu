@@ -25,7 +25,7 @@ export class TabsPage {
         return (
             this.router.url === '/tab/emulation' &&
             this.useSmallUI &&
-            this.emulationStateService.getCurrentSession() !== undefined
+            this.emulationStateService.currentSession() !== undefined
         );
     }
 

@@ -80,7 +80,7 @@ export class EmulationService extends AbstractEmulationService {
 
     switchSession = (id: number, options: { showLoader?: boolean } = {}): Promise<boolean> =>
         this.mutex.runExclusive(async () => {
-            if (id === this.emulationState.getCurrentSession()?.id) return true;
+            if (id === this.emulationState.currentSession()?.id) return true;
 
             await this.stopUnchecked();
 
@@ -125,7 +125,7 @@ export class EmulationService extends AbstractEmulationService {
     resume = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
             if (
-                !this.emulationState.getCurrentSession() ||
+                !this.emulationState.currentSession() ||
                 this.running ||
                 this.errorService.hasFatalError() ||
                 !this.cloudpilotInstance
@@ -143,7 +143,7 @@ export class EmulationService extends AbstractEmulationService {
         this.mutex.runExclusive(async () => {
             this.doPause();
 
-            if (!this.errorService.hasFatalError() && this.emulationState.getCurrentSession()) {
+            if (!this.errorService.hasFatalError() && this.emulationState.currentSession()) {
                 await this.snapshotService.waitForPendingSnapshot();
                 await this.snapshotService.triggerSnapshot();
             }
@@ -152,19 +152,19 @@ export class EmulationService extends AbstractEmulationService {
     stop = (): Promise<void> => this.mutex.runExclusive(() => this.stopUnchecked());
 
     protected getConfiguredSpeed(): number {
-        return this.emulationState.getCurrentSession()?.speed || 1;
+        return this.emulationState.currentSession()?.speed || 1;
     }
 
     protected manageHotsyncName(): boolean {
-        return !this.emulationState.getCurrentSession()?.dontManageHotsyncName;
+        return !this.emulationState.currentSession()?.dontManageHotsyncName;
     }
 
     protected getConfiguredHotsyncName(): string | undefined {
-        return this.emulationState.getCurrentSession()?.hotsyncName;
+        return this.emulationState.currentSession()?.hotsyncName;
     }
 
     protected updateConfiguredHotsyncName(hotsyncName: string): void {
-        const session = this.emulationState.getCurrentSession();
+        const session = this.emulationState.currentSession();
         if (!session) return;
 
         void this.storageService.updateSessionPartial(session.id, { hotsyncName });
@@ -187,7 +187,7 @@ export class EmulationService extends AbstractEmulationService {
     protected override onAfterAdvanceEmulation(timestamp: number, cycles: number): void {
         if (!this.cloudpilotInstance) return;
 
-        const session = this.emulationState.getCurrentSession();
+        const session = this.emulationState.currentSession();
 
         if (this.uiInitialized && session && session.osVersion === undefined) {
             void this.storageService.updateSessionPartial(session.id, {
@@ -218,7 +218,7 @@ export class EmulationService extends AbstractEmulationService {
     }
 
     private async stopUnchecked(): Promise<void> {
-        if (!this.emulationState.getCurrentSession()) return;
+        if (!this.emulationState.currentSession()) return;
 
         this.doStop();
 
@@ -245,9 +245,7 @@ export class EmulationService extends AbstractEmulationService {
             this.networkService.reset();
         }
 
-        this.cloudpilotInstance.setHotsyncNameManagement(
-            !this.emulationState.getCurrentSession()?.dontManageHotsyncName,
-        );
+        this.cloudpilotInstance.setHotsyncNameManagement(!this.emulationState.currentSession()?.dontManageHotsyncName);
     }
 
     private async recoverStoredSession(session: number) {
@@ -311,7 +309,7 @@ Sorry for the inconvenience.`,
 
     private onSessionChange = ([sessionId, session]: [number, Session | undefined]): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            const currentSession = this.emulationState.getCurrentSession();
+            const currentSession = this.emulationState.currentSession();
             if (sessionId !== currentSession?.id) return;
 
             if (currentSession.mountedCard !== undefined && session === undefined) {
@@ -319,7 +317,7 @@ Sorry for the inconvenience.`,
             }
 
             this.emulationState.setCurrentSession(session);
-            if (!this.emulationState.getCurrentSession()) {
+            if (!this.emulationState.currentSession()) {
                 clearStoredSession();
 
                 this.stopLoop();
@@ -328,7 +326,7 @@ Sorry for the inconvenience.`,
 
     private onEmergencySave = (): Promise<void> =>
         this.mutex.runExclusive(async () => {
-            const session = this.emulationState.getCurrentSession();
+            const session = this.emulationState.currentSession();
 
             if (session) {
                 void this.sessionsService.emergencySaveSession(session);

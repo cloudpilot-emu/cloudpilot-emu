@@ -22,7 +22,7 @@ export class BackupService {
     ) {}
 
     async saveBackup(includeRomDatabases: boolean): Promise<void> {
-        const currentSession = this.emulationStateService.getCurrentSession();
+        const currentSession = this.emulationStateService.currentSession();
         if (!currentSession) return;
 
         const loader = await this.loadingController.create({ message: 'Backing up...' });
