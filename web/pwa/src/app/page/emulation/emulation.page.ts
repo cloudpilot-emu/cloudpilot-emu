@@ -76,7 +76,7 @@ export class EmulationPage implements DragDropClient {
             await this.emulationService.bootstrapComplete();
             this.bootstrapComplete = true;
 
-            const session = this.emulationState.getCurrentSession();
+            const session = this.emulationState.currentSession();
 
             if (session && !session.wasResetForcefully) {
                 await this.launchEmulator();
@@ -231,8 +231,8 @@ export class EmulationPage implements DragDropClient {
 
     cancelIfEmulationActive(event: TouchEvent): void {
         if (
-            this.emulationState.getCurrentSession() &&
-            !this.emulationState.getCurrentSession()?.wasResetForcefully &&
+            this.emulationState.currentSession() &&
+            !this.emulationState.currentSession()?.wasResetForcefully &&
             event.cancelable
         ) {
             event.preventDefault();
@@ -245,8 +245,8 @@ export class EmulationPage implements DragDropClient {
             component: BreadcrumbMenuComponent,
             componentProps: {
                 sessions: this.sessionService
-                    .getSessions()
-                    .filter((session) => session.id !== this.emulationState.getCurrentSession()?.id),
+                    .sessions()
+                    .filter((session) => session.id !== this.emulationState.currentSession()?.id),
                 onSelect: (session: Session) => this.switchSession(session),
             },
             dismissOnSelect: true,
@@ -261,15 +261,11 @@ export class EmulationPage implements DragDropClient {
     }
 
     get sessions(): Array<Session> {
-        return this.sessionService.getSessions();
-    }
-
-    get currentSession(): Session | undefined {
-        return this.emulationState.getCurrentSession();
+        return this.sessionService.sessions();
     }
 
     private async clearForcefulReset(): Promise<void> {
-        const session = this.emulationState.getCurrentSession();
+        const session = this.emulationState.currentSession();
         if (!session) return;
 
         await this.storageService.updateSessionPartial(session.id, { wasResetForcefully: false });
@@ -279,11 +275,11 @@ export class EmulationPage implements DragDropClient {
         if (!this.bootstrapComplete) return '';
         if (this.switching) return this.lastTitle;
 
-        return this.emulationState.getCurrentSession()?.name ?? 'No session';
+        return this.emulationState.currentSession()?.name ?? 'No session';
     }
 
     private async launchEmulator(): Promise<void> {
-        const session = this.emulationState.getCurrentSession();
+        const session = this.emulationState.currentSession();
         if (!session) return;
 
         await this.kvsService.mutex.runExclusive(
@@ -342,7 +338,7 @@ export class EmulationPage implements DragDropClient {
             return;
         }
 
-        const currentSession = this.emulationState.getCurrentSession();
+        const currentSession = this.emulationState.currentSession();
         if (!currentSession || !this.emulationService.isRunning()) {
             void this.alertService.message(
                 'Unable to install',

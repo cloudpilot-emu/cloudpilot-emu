@@ -45,11 +45,11 @@
         </ion-toolbar>
     </ion-header>
 
-    <div class="loader" *ngIf="sessionService.isLoading()">
+    <div class="loader" *ngIf="sessionService.loading()">
         <ion-spinner></ion-spinner>
     </div>
 
-    <div *ngIf="!sessionService.isLoading() && sessionCount === 0" class="placeholder-container">
+    <div *ngIf="!sessionService.loading() && sessionCount === 0" class="placeholder-container">
         <div class="placeholder">
             No sessions. Select the &bdquo;+&ldquo; icon in the upper right corner in order to import a ROM file or a
             session image.
@@ -61,7 +61,7 @@
         </div>
     </div>
 
-    <ion-list *ngIf="!sessionService.isLoading() && sessionCount > 0">
+    <ion-list *ngIf="!sessionService.loading() && sessionCount > 0">
         <app-session-item
             *ngFor="let session of sessions; trackBy: trackSessionBy"
             [session]="session"

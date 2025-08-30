@@ -119,7 +119,7 @@ export class AlertService {
 
     @debounce()
     async fatalError(reason: string, emergencySave = true) {
-        const haveCurrentSession = !!this.emulationState.getCurrentSession();
+        const haveCurrentSession = !!this.emulationState.currentSession();
 
         const alert = await this.alertController.create({
             header: 'Error',

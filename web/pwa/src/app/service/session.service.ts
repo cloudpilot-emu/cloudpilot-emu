@@ -3,7 +3,7 @@ import { FileService } from './file.service';
 import { CloudpilotService } from './cloudpilot.service';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
-import { Injectable } from '@angular/core';
+import { Injectable, signal, Signal, WritableSignal } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { Session } from '@pwa/model/Session';
@@ -35,13 +35,13 @@ export class SessionService {
         private alertService: AlertService,
         private fileService: FileService,
     ) {
-        void this.updateSessionsFromStorage().then(() => (this.loading = false));
+        void this.updateSessionsFromStorage().then(() => this._loading.set(false));
 
         this.storageService.sessionChangeEvent.addHandler(this.updateSessionsFromStorage.bind(this));
     }
 
-    isLoading(): boolean {
-        return this.loading;
+    get loading(): Signal<boolean> {
+        return this._loading;
     }
 
     async addSessionFromImage(
@@ -73,7 +73,7 @@ export class SessionService {
             }
 
             const entriesTotal = zipfileWalker.GetTotalEntries();
-            const names = new Set(this.sessions.map((session) => session.name));
+            const names = new Set(this._sessions().map((session) => session.name));
             let iEntry = 1;
             let skipErrors = false;
             const failures: Array<string> = [];
@@ -167,8 +167,8 @@ export class SessionService {
         return savedSession;
     }
 
-    getSessions(): Array<Session> {
-        return this.sessions;
+    get sessions(): Signal<Array<Session>> {
+        return this._sessions;
     }
 
     async deleteSession(session: Session): Promise<void> {
@@ -293,8 +293,10 @@ export class SessionService {
     }
 
     private async updateSessionsFromStorage(): Promise<void> {
-        this.sessions = await this.updateMutex.runExclusive(async () =>
-            (await this.storageService.getAllSessions()).sort((x, y) => x.name.localeCompare(y.name)),
+        this._sessions.set(
+            await this.updateMutex.runExclusive(async () =>
+                (await this.storageService.getAllSessions()).sort((x, y) => x.name.localeCompare(y.name)),
+            ),
         );
     }
 
@@ -324,7 +326,8 @@ export class SessionService {
         return savedSession;
     }
 
-    private sessions: Array<Session> = [];
-    private loading = true;
+    readonly _sessions: WritableSignal<Array<Session>> = signal([]);
+
+    private _loading = signal(true);
     private updateMutex = new Mutex();
 }

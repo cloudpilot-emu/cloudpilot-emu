@@ -394,7 +394,7 @@ export class SnapshotService {
     }
 
     private assertSessionMatches(): void {
-        if (this.emulationState.getCurrentSession()?.id !== this.sessionId) throw E_SESSION_MISMATCH;
+        if (this.emulationState.currentSession()?.id !== this.sessionId) throw E_SESSION_MISMATCH;
     }
 
     private async showLoader(): Promise<void> {

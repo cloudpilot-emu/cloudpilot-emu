@@ -150,7 +150,7 @@ export class SessionSettingsComponent implements OnInit {
 
     private validateNameUnique = (control: AbstractControl): ValidationErrors | null => {
         return control.value !== this.session.name &&
-            this.sessionService.getSessions().some((s) => s.name === control.value)
+            this.sessionService.sessions().some((s) => s.name === control.value)
             ? { name: 'already taken' }
             : null;
     };

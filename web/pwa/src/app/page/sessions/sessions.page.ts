@@ -1,5 +1,5 @@
 import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
 import { DragDropClient, DragDropService } from '@pwa//service/drag-drop.service';
 import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { SessionSettings, SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
@@ -15,7 +15,6 @@ import { Session } from '@pwa/model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
-import { changeDetector } from '@pwa/helper/changeDetect';
 import { debounce } from '@pwa/helper/debounce';
 import deepEqual from 'deep-equal';
 import { disambiguateName } from '@pwa/helper/disambiguate';
@@ -34,7 +33,7 @@ type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false,
 })
-export class SessionsPage implements DragDropClient, DoCheck, OnInit {
+export class SessionsPage implements DragDropClient, OnInit {
     constructor(
         public sessionService: SessionService,
         private fileService: FileService,
@@ -50,20 +49,10 @@ export class SessionsPage implements DragDropClient, DoCheck, OnInit {
         private popoverController: PopoverController,
         private loadingController: LoadingController,
         private cd: ChangeDetectorRef,
-    ) {
-        this.checkSessions = changeDetector(cd, [], () => this.sessionService.getSessions());
-        this.checkCurrentSessionId = changeDetector(cd, undefined, () => this.emulationState.getCurrentSession()?.id);
-        this.checkLoading = changeDetector(cd, true, () => this.sessionService.isLoading());
-    }
+    ) {}
 
     ngOnInit(): void {
         if (this.selfReference) this.selfReference.ref = this;
-    }
-
-    ngDoCheck(): void {
-        this.checkSessions();
-        this.checkCurrentSessionId();
-        this.checkLoading();
     }
 
     ionViewDidEnter_(): void {
@@ -88,11 +77,11 @@ export class SessionsPage implements DragDropClient, DoCheck, OnInit {
     );
 
     get sessions(): Array<Session> {
-        return this.memoizedSessions(this.sessionService.getSessions());
+        return this.memoizedSessions(this.sessionService.sessions());
     }
 
     get sessionCount(): number {
-        return this.sessionService.getSessions().length;
+        return this.sessionService.sessions().length;
     }
 
     @debounce()
@@ -159,7 +148,7 @@ export class SessionsPage implements DragDropClient, DoCheck, OnInit {
 
     @debounce()
     async resetSession(session: Session) {
-        const running = session.id === this.emulationState.getCurrentSession()?.id;
+        const running = session.id === this.emulationState.currentSession()?.id;
 
         if (running) await this.emulationService.stop();
 
@@ -172,7 +161,7 @@ export class SessionsPage implements DragDropClient, DoCheck, OnInit {
     }
 
     get currentSessionId(): number | undefined {
-        return this.currentSessionOverride ?? this.emulationState.getCurrentSession()?.id;
+        return this.currentSessionOverride ?? this.emulationState.currentSession()?.id;
     }
 
     async showHelp(): Promise<void> {
@@ -201,7 +190,7 @@ export class SessionsPage implements DragDropClient, DoCheck, OnInit {
 
     @debounce()
     async onSelectionDone(): Promise<void> {
-        const sessions = new Map(this.sessionService.getSessions().map((session) => [session.id, session]));
+        const sessions = new Map(this.sessionService.sessions().map((session) => [session.id, session]));
         const selectedSessions = Array.from(this.selection)
             .map((sessionId) => sessions.get(sessionId))
             .filter((session) => session !== undefined) as Array<Session>;
@@ -221,7 +210,7 @@ export class SessionsPage implements DragDropClient, DoCheck, OnInit {
     }
 
     onSelectAll(): void {
-        this.sessionService.getSessions().forEach((session) => this.selection.add(session.id));
+        this.sessionService.sessions().forEach((session) => this.selection.add(session.id));
     }
 
     toggleSelection(session: Session): void {
@@ -441,7 +430,7 @@ export class SessionsPage implements DragDropClient, DoCheck, OnInit {
     }
 
     private disambiguateSessionName(originalName: string) {
-        const sessions = this.sessionService.getSessions();
+        const sessions = this.sessionService.sessions();
 
         return disambiguateName(originalName, (x) => sessions.some((session) => session.name === x));
     }
@@ -474,10 +463,6 @@ export class SessionsPage implements DragDropClient, DoCheck, OnInit {
     mode: Mode = 'manage';
 
     selection = new Set<number>();
-
-    private checkSessions: () => void;
-    private checkCurrentSessionId: () => void;
-    private checkLoading: () => void;
 
     private currentSessionOverride: number | undefined;
 }

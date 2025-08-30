@@ -45,7 +45,7 @@ export class SubpageCardsComponent implements DoCheck, OnInit {
         private cd: ChangeDetectorRef,
     ) {
         this.checkCards = changeDetector(cd, [], () => this.storageCardService.getAllCards());
-        this.checkSessions = changeDetector(cd, undefined, () => sessionService.getSessions());
+        this.checkSessions = changeDetector(cd, undefined, () => sessionService.sessions());
     }
 
     ngOnInit(): void {

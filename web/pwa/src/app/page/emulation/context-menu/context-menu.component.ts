@@ -168,35 +168,35 @@ export class ContextMenuComponent {
     }
 
     get powerDisabled(): boolean {
-        const currentSession = this.emulationStateService.getCurrentSession();
+        const currentSession = this.emulationStateService.currentSession();
 
         return currentSession ? quirkNoPoweroff(currentSession.device) : false;
     }
 
     get hasActiveSession(): boolean {
-        return !!this.emulationStateService.getCurrentSession();
+        return !!this.emulationStateService.currentSession();
     }
 
     get supportsStorageCard(): boolean {
-        const currentSession = this.emulationStateService.getCurrentSession();
+        const currentSession = this.emulationStateService.currentSession();
         if (!currentSession) return false;
 
         return slotType(currentSession.device) !== SlotType.none;
     }
 
     get hasMemorystick(): boolean {
-        const currentSession = this.emulationStateService.getCurrentSession();
+        const currentSession = this.emulationStateService.currentSession();
         if (!currentSession) return false;
 
         return slotType(currentSession.device) === SlotType.memorystick;
     }
 
     get hasMountedCard(): boolean {
-        return this.emulationStateService.getCurrentSession()?.mountedCard !== undefined;
+        return this.emulationStateService.currentSession()?.mountedCard !== undefined;
     }
 
     async editSettings(): Promise<void> {
-        const session = this.emulationStateService.getCurrentSession();
+        const session = this.emulationStateService.currentSession();
         if (!session) {
             return;
         }
@@ -230,14 +230,14 @@ export class ContextMenuComponent {
     }
 
     async rotate(): Promise<void> {
-        const oldSession = this.emulationStateService.getCurrentSession();
+        const oldSession = this.emulationStateService.currentSession();
         if (!oldSession) return;
 
         await this.storageService.updateSessionPartial(oldSession.id, {
             deviceOrientation: rotate(oldSession.deviceOrientation),
         });
 
-        const session = this.emulationStateService.getCurrentSession();
+        const session = this.emulationStateService.currentSession();
 
         await this.canvasDisplayService.initialize(undefined, session);
         this.canvasDisplayService.updateEmulationCanvas();
@@ -246,7 +246,7 @@ export class ContextMenuComponent {
     async insertCard(): Promise<void> {
         void this.popoverController.dismiss();
 
-        const deviceId = this.emulationStateService.getCurrentSession()?.device;
+        const deviceId = this.emulationStateService.currentSession()?.device;
         if (deviceId === undefined) return;
 
         const cloudpilot = await this.cloudpilotService.cloudpilot;

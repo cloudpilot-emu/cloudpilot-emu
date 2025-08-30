@@ -29,7 +29,7 @@ export class StorageCardComponent implements DoCheck {
         sessionService: SessionService,
         private cd: ChangeDetectorRef,
     ) {
-        this.checkSessions = changeDetector(cd, [], () => sessionService.getSessions());
+        this.checkSessions = changeDetector(cd, [], () => sessionService.sessions());
     }
 
     ngDoCheck(): void {

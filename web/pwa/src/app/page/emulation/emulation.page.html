@@ -2,7 +2,11 @@
     <ion-toolbar>
         <ion-title>
             <app-breadcrumb
-                [disabled]="!bootstrapComplete || (sessions.length === 1 && !!currentSession) || sessions.length === 0"
+                [disabled]="
+                    !bootstrapComplete ||
+                    (sessions.length === 1 && !!emulationState.currentSession()) ||
+                    sessions.length === 0
+                "
                 (trigger)="onBreadcrumbTrigger($event)"
             >
                 <div
@@ -50,9 +54,7 @@
     <div
         class="container running-session"
         [style.display]="
-            emulationState.getCurrentSession() && !emulationState.getCurrentSession()?.wasResetForcefully
-                ? undefined
-                : 'none'
+            emulationState.currentSession() && !emulationState.currentSession()?.wasResetForcefully ? undefined : 'none'
         "
         (touchstart)="cancelIfEmulationActive($event)"
         (touchmove)="cancelIfEmulationActive($event)"
@@ -61,14 +63,11 @@
             #canvas
             [style.width]="cssWidth"
             [style.height]="cssHeight"
-            [style.display]="emulationState.getCurrentSession() ? 'block' : 'none'"
+            [style.display]="emulationState.currentSession() ? 'block' : 'none'"
         ></canvas>
     </div>
 
-    <div
-        class="container no-session"
-        *ngIf="!emulationState.getCurrentSession()?.wasResetForcefully ? undefined : 'none'"
-    >
+    <div class="container no-session" *ngIf="!emulationState.currentSession()?.wasResetForcefully ? undefined : 'none'">
         The device was reset forcefully. How do you want to boot?
 
         <ion-button type="button" color="light" (click)="bootAfterForcefulReset()">Normal boot</ion-button>
@@ -78,7 +77,7 @@
         <ion-button type="button" color="light" (click)="bootAfterForcefulResetHardReset()">Hard reset</ion-button>
     </div>
 
-    <div class="container no-session" *ngIf="!emulationState.getCurrentSession() && bootstrapComplete && !switching">
+    <div class="container no-session" *ngIf="!emulationState.currentSession() && bootstrapComplete && !switching">
         <div>No session selected</div>
     </div>
 </ion-content>
