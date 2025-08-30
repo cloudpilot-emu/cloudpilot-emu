@@ -71,7 +71,7 @@
             (save)="saveSession(session)"
             (resetSession)="resetSession(session)"
             (interaction)="lastSessionTouched = session.id"
-            [selected]="currentSessionId === session.id"
+            [selected]="currentSessionId() === session.id"
             [touched]="session.id === lastSessionTouched"
             [selecting]="mode !== 'manage'"
             [selectedForExport]="selection.has(session.id)"

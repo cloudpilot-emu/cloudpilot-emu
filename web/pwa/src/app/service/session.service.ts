@@ -3,7 +3,7 @@ import { FileService } from './file.service';
 import { CloudpilotService } from './cloudpilot.service';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
-import { Injectable, signal, Signal, WritableSignal } from '@angular/core';
+import { Injectable, signal, Signal } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { Session } from '@pwa/model/Session';
@@ -326,7 +326,7 @@ export class SessionService {
         return savedSession;
     }
 
-    readonly _sessions: WritableSignal<Array<Session>> = signal([]);
+    readonly _sessions = signal<Array<Session>>([]);
 
     private _loading = signal(true);
     private updateMutex = new Mutex();

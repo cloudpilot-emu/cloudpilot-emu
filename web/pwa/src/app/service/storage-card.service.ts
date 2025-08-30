@@ -8,7 +8,7 @@ import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { FileService } from './file.service';
-import { Injectable, Signal, signal, WritableSignal } from '@angular/core';
+import { Injectable, Signal, signal } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { Session } from '@pwa/model/Session';
@@ -884,6 +884,6 @@ export class StorageCardService {
 
     private loading = true;
 
-    private _cards: WritableSignal<Array<StorageCard>> = signal([]);
+    private _cards = signal<Array<StorageCard>>([]);
     private updateMutex = new Mutex();
 }
