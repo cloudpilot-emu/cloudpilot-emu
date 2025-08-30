@@ -57,7 +57,7 @@
 
             <ion-item *ngIf="isRoot || fileCount > 0" class="metadata" lines="none">
                 <ion-label>
-                    <p *ngIf="isRoot">{{ bytesFree | fileSize }} free, {{ bytesTotal | fileSize }} total</p>
+                    <p *ngIf="isRoot">{{ bytesFree() | fileSize }} free, {{ bytesTotal | fileSize }} total</p>
 
                     <p *ngIf="fileCount > 0">
                         {{ bytesInFiles | fileSize }} in {{ fileCount }} {{ fileCount === 1 ? 'file' : 'files' }}

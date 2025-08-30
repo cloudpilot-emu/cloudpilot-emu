@@ -8,7 +8,7 @@ import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
 import { Event } from 'microevent.ts';
 import { FileService } from './file.service';
-import { Injectable } from '@angular/core';
+import { Injectable, Signal, signal, WritableSignal } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 import { Session } from '@pwa/model/Session';
@@ -114,8 +114,8 @@ export class StorageCardService {
         storageService.storageCardChangeEvent.addHandler(() => this.updateCardsFromDB());
     }
 
-    getAllCards(): Array<StorageCard> {
-        return this.cards;
+    get cards(): Signal<Array<StorageCard>> {
+        return this._cards;
     }
 
     async createEmptyCard(name: string, size: NewCardSize, dontFsckAutomatically: boolean): Promise<StorageCard> {
@@ -316,7 +316,7 @@ export class StorageCardService {
         await loader.present();
 
         try {
-            const card = this.cards.find((c) => c.id === id);
+            const card = this._cards().find((c) => c.id === id);
 
             await this.vfsService.releaseCard(id);
             await this.ejectCard(id);
@@ -422,7 +422,7 @@ export class StorageCardService {
             }
 
             const entriesTotal = walker.GetTotalEntries();
-            const names = new Set<string>((await this.getAllCards()).map((card) => card.name));
+            const names = new Set<string>(this.cards().map((card) => card.name));
             const gunzipContext = await this.fstools.createGunzipContext();
 
             let iEntry = 1;
@@ -579,8 +579,10 @@ export class StorageCardService {
     }
 
     private async updateCardsFromDB(): Promise<void> {
-        this.cards = await this.updateMutex.runExclusive(async () =>
-            (await this.storageService.getAllStorageCards()).sort((x, y) => x.name.localeCompare(y.name)),
+        this._cards.set(
+            await this.updateMutex.runExclusive(async () =>
+                (await this.storageService.getAllStorageCards()).sort((x, y) => x.name.localeCompare(y.name)),
+            ),
         );
     }
 
@@ -882,6 +884,6 @@ export class StorageCardService {
 
     private loading = true;
 
-    private cards: Array<StorageCard> = [];
+    private _cards: WritableSignal<Array<StorageCard>> = signal([]);
     private updateMutex = new Mutex();
 }

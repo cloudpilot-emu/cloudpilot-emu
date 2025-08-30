@@ -7,7 +7,7 @@ import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
 
 import { AlertService } from './alert.service';
 import { Event } from 'microevent.ts';
-import { Injectable } from '@angular/core';
+import { EventEmitter, Injectable, Signal, signal } from '@angular/core';
 import { PasteResult } from '@common/bridge/Vfs';
 import { StorageCardService } from '@pwa/service/storage-card.service';
 import { StorageService } from '@pwa/service/storage.service';
@@ -16,6 +16,7 @@ import { filenameForArchive } from '@pwa/helper/filename';
 import { ucFirst } from '@pwa/helper/text';
 
 import wasmModule from '@native-vfs/vfs_web.wasm';
+import { Observable } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class VfsService {
@@ -157,37 +158,41 @@ export class VfsService {
             return;
         }
 
-        if (changes.attributes !== undefined && !deepEqual(changes.attributes, entry.attributes)) {
-            this.directoryCache.delete(this.dirname(path));
+        try {
+            if (changes.attributes !== undefined && !deepEqual(changes.attributes, entry.attributes)) {
+                this.directoryCache.delete(this.dirname(path));
 
-            switch (vfs.chmod(path, changes.attributes)) {
-                case VfsResult.FR_OK:
-                    break;
+                switch (vfs.chmod(path, changes.attributes)) {
+                    case VfsResult.FR_OK:
+                        break;
 
-                default:
-                    await this.fatalError(`Unable to write the updated file attributes.`);
-                    return;
+                    default:
+                        await this.fatalError(`Unable to write the updated file attributes.`);
+                        return;
+                }
             }
-        }
 
-        if (changes.name !== undefined && changes.name !== entry.name) {
-            this.directoryCache.delete(this.dirname(path));
+            if (changes.name !== undefined && changes.name !== entry.name) {
+                this.directoryCache.delete(this.dirname(path));
 
-            switch (vfs.rename(path, `${this.dirname(path)}/${changes.name}`)) {
-                case VfsResult.FR_OK:
-                    break;
+                switch (vfs.rename(path, `${this.dirname(path)}/${changes.name}`)) {
+                    case VfsResult.FR_OK:
+                        break;
 
-                case VfsResult.FR_INVALID_NAME:
-                    await this.error('The provided file name is invalid.');
-                    return;
+                    case VfsResult.FR_INVALID_NAME:
+                        await this.error('The provided file name is invalid.');
+                        return;
 
-                default:
-                    await this.fatalError('Unable to write the updated file attributes.');
-                    return;
+                    default:
+                        await this.fatalError('Unable to write the updated file attributes.');
+                        return;
+                }
             }
-        }
 
-        await this.sync();
+            await this.sync();
+        } finally {
+            this._change.emit();
+        }
     }
 
     async saveFile(entry: FileEntry): Promise<void> {
@@ -206,6 +211,8 @@ export class VfsService {
             this.fileService.saveFile(entry.name, content);
         } finally {
             await loader.dismiss();
+
+            this._change.emit();
         }
     }
 
@@ -271,6 +278,8 @@ export class VfsService {
         await this.updateBytesFree();
         await this.sync();
         this.directoryCache.delete(this.dirname(entry.path));
+
+        this._change.emit();
     }
 
     async deleteRecursive(entries: Array<FileEntry>): Promise<void> {
@@ -296,6 +305,8 @@ export class VfsService {
             this.directoryCache.clear();
         } finally {
             await loader.dismiss();
+
+            this._change.emit();
         }
     }
 
@@ -326,10 +337,12 @@ export class VfsService {
         await this.updateBytesFree();
         await this.sync();
         this.directoryCache.delete(this.dirname(path));
+
+        this._change.emit();
     }
 
-    getBytesFree(): number {
-        return this.bytesFree;
+    get bytesFree(): Signal<number> {
+        return this._bytesFree;
     }
 
     getBytesTotal(): number {
@@ -339,7 +352,7 @@ export class VfsService {
     isClipboardPopulated(): boolean {
         if (!this.clipboard || !this.storageCardService) return false;
 
-        const card = this.storageCardService.getAllCards().find((c) => c.storageId === this.clipboard?.storageId);
+        const card = this.storageCardService.cards().find((c) => c.storageId === this.clipboard?.storageId);
         if (!card) return false;
 
         return (
@@ -373,6 +386,8 @@ export class VfsService {
         this.clipboardSet.clear();
         this.clipboard.items.map((item) => item.path).forEach((item) => this.clipboardSet.add(item));
         this.directoryCache.delete(this.normalizePath(this.clipboard.prefix));
+
+        this._change.emit();
     }
 
     async unpackArchive(zip: Uint8Array, destination: string): Promise<void> {
@@ -438,6 +453,8 @@ export class VfsService {
             }
         } finally {
             void loader.dismiss();
+
+            this._change.emit();
         }
     }
 
@@ -467,6 +484,8 @@ export class VfsService {
             await this.alertService.errorMessage(e instanceof Error ? e.message : 'Unknown error.');
         } finally {
             void loader.dismiss();
+
+            this._change.emit();
         }
     }
 
@@ -496,7 +515,13 @@ export class VfsService {
             }
         } finally {
             void loader.dismiss();
+
+            this._change.emit();
         }
+    }
+
+    get change(): Observable<void> {
+        return this._change;
     }
 
     private async addFilesUnchecked(files: Array<FileDescriptor>, destination: string): Promise<Array<string>> {
@@ -691,7 +716,7 @@ export class VfsService {
         if (this.secondaryCard && this.clipboard.storageId === this.secondaryCard.storageId) return this.secondarySlot;
         if (this.secondaryCard) await this.releaseCard(this.secondaryCard.id);
 
-        const card = this.storageCardService.getAllCards().find((card) => card.storageId === this.clipboard?.storageId);
+        const card = this.storageCardService.cards().find((card) => card.storageId === this.clipboard?.storageId);
 
         if (!card) {
             throw new Error('invalid storage card in clipboard');
@@ -775,13 +800,13 @@ export class VfsService {
         const vfs = await this.vfs;
 
         vfs.switchSlot(this.primarySlot);
-        this.bytesFree = vfs.bytesFree(this.primarySlot);
+        this._bytesFree.set(vfs.bytesFree(this.primarySlot));
         this.bytesTotal = vfs.bytesTotal(this.primarySlot);
         this.directoryCache.clear();
     }
 
     private async updateBytesFree(): Promise<void> {
-        this.bytesFree = (await this.vfs).bytesFree(this.primarySlot);
+        this._bytesFree.set((await this.vfs).bytesFree(this.primarySlot));
     }
 
     private get secondarySlot(): number {
@@ -816,9 +841,11 @@ export class VfsService {
     private vfsInstance: Vfs | undefined;
 
     private directoryCache = new Map<string, Array<FileEntry>>();
-    private bytesFree = 0;
+    private _bytesFree = signal(0);
     private bytesTotal = 0;
 
     private clipboard: VfsClipboard | undefined = undefined;
     private clipboardSet = new Set<string>();
+
+    private _change = new EventEmitter<undefined>();
 }

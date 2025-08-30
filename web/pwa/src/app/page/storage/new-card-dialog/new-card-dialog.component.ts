@@ -47,7 +47,7 @@ export class NewCardDialogComponent {
     }
 
     private validateNameUnique = (control: AbstractControl<string>): ValidationErrors | null => {
-        return this.storageCardService.getAllCards().some((card) => card.name === control.value)
+        return this.storageCardService.cards().some((card) => card.name === control.value)
             ? { name: 'already taken' }
             : null;
     };

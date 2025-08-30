@@ -1,5 +1,5 @@
 import { ActionSheetController, Config, ModalController, PopoverController } from '@ionic/angular';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, DoCheck, Input, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit, Signal } from '@angular/core';
 
 import { AlertService } from '@pwa/service/alert.service';
 import { ContextMenuBreadcrumbComponent } from '../context-menu-breadcrumb/context-menu-breadcrumb.component';
@@ -17,6 +17,7 @@ import { debounce } from '@pwa/helper/debounce';
 import { memoize } from '@pwa/helper/memoize';
 
 import helpUrl from '@assets/doc/card-browser.md';
+import { Subscription } from 'rxjs';
 
 const NO_ENTRIES: Array<FileEntry> = [];
 
@@ -34,7 +35,7 @@ function entrySortFunction(e1: FileEntry, e2: FileEntry): number {
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false,
 })
-export class SubpageDirectoryComponent implements DoCheck, OnInit {
+export class SubpageDirectoryComponent implements OnDestroy, OnInit {
     constructor(
         private vfsService: VfsService,
         private popoverController: PopoverController,
@@ -45,20 +46,17 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         private fileService: FileService,
         private cd: ChangeDetectorRef,
     ) {
-        this.checkEntries = changeDetector(cd, undefined, () =>
-            this.path !== undefined ? vfsService.readdir(this.path) : undefined,
+        vfsService.change.subscribe(
+            changeDetector(cd, undefined, () => (this.path !== undefined ? vfsService.readdir(this.path) : undefined)),
         );
-
-        this.checkBytesFree = changeDetector(cd, undefined, () => this.vfsService.getBytesFree());
     }
 
     ngOnInit(): void {
         if (this.selfReference) this.selfReference.ref = this;
     }
 
-    ngDoCheck(): void {
-        this.checkEntries();
-        this.checkBytesFree();
+    ngOnDestroy(): void {
+        this.subscriptions.forEach((subscription) => subscription.unsubscribe());
     }
 
     handleDragDropEvent(e: DragEvent): void | Promise<void> {
@@ -81,8 +79,8 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
         }
     }
 
-    get bytesFree(): number {
-        return this.vfsService.getBytesFree();
+    get bytesFree(): Signal<number> {
+        return this.vfsService.bytesFree;
     }
 
     get bytesTotal(): number {
@@ -400,6 +398,5 @@ export class SubpageDirectoryComponent implements DoCheck, OnInit {
 
     selection = new Set<string>();
 
-    private checkEntries: () => void;
-    private checkBytesFree: () => void;
+    private subscriptions: Array<Subscription> = [];
 }
