@@ -184,7 +184,7 @@ export class VfsService {
                         return;
 
                     default:
-                        await this.fatalError('Unable to write the updated file attributes.');
+                        await this.fatalError('Unable to rename file.');
                         return;
                 }
             }
