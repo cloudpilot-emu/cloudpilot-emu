@@ -37,12 +37,12 @@ html {
     z-index: 100000 !important;
 }
 
-.alert-message {
+.cpe-alert-message {
     z-index: 150000 !important;
 }
 
 
-.alert-error, .alert-message {
+.alert-error, .cpe-alert-message {
     z-index: 200000 !important;
 }
 
