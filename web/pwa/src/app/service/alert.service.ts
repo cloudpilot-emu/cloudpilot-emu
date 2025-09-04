@@ -54,7 +54,7 @@ export class AlertService {
                     },
                 })),
             ],
-            cssClass: 'alert-message',
+            cssClass: 'cpe-alert-message',
         });
 
         await alert.present();
@@ -92,7 +92,7 @@ export class AlertService {
                     cssClass: 'alert-checkbox',
                 },
             ],
-            cssClass: 'alert-checkbox-no-border alert-message',
+            cssClass: 'alert-checkbox-no-border cpe-alert-message',
         });
 
         await alert.present();
