@@ -14,7 +14,6 @@ import {
     isIndicatorFixApplicable,
 } from '@pwa/helper/homeIndicatorFix';
 import { validateProxyAddress } from '@pwa/helper/proxyAddress';
-import { getReducedAnimations, setReducedAnimations } from '@pwa/helper/reducedAnimations';
 import { NetworkRedirectionMode } from '@pwa/model/Kvs';
 import { AlertService } from '@pwa/service/alert.service';
 import { ClipboardService } from '@pwa/service/clipboard.service';
@@ -34,7 +33,6 @@ const enum fields {
     enableRemoteInstall = 'enableRemoteInstall',
     audioOnStart = 'audioOnStart',
     snapshotIntegrityCheck = 'snapshotIntegrityCheck',
-    reducedAnimations = 'reducedAnimations',
     indicatorFixMode = 'indicatorFixMode',
 }
 @Component({
@@ -104,8 +102,6 @@ export class SettingsPage implements OnInit {
             enableAudioOnFirstInteraction: this.formGroup.get(fields.audioOnStart)?.value,
             snapshotIntegrityCheck: this.formGroup.get(fields.snapshotIntegrityCheck)?.value,
         });
-
-        setReducedAnimations(this.formGroup.get(fields.reducedAnimations)?.value);
 
         if (this.mutexReleasePromise) {
             (await this.mutexReleasePromise)();
@@ -183,12 +179,10 @@ export class SettingsPage implements OnInit {
             [fields.enableRemoteInstall]: new UntypedFormControl(this.kvsService.kvs.enableRemoteInstall),
             [fields.audioOnStart]: new UntypedFormControl(this.kvsService.kvs.enableAudioOnFirstInteraction),
             [fields.snapshotIntegrityCheck]: new UntypedFormControl(this.kvsService.kvs.snapshotIntegrityCheck),
-            [fields.reducedAnimations]: new UntypedFormControl(getReducedAnimations()),
             [fields.indicatorFixMode]: new UntypedFormControl(getIndicatorFixMode()),
         });
 
         this.formGroup.get(fields.audioOnStart)?.valueChanges.subscribe(this.onAudioOnStartChange);
-        this.formGroup.get(fields.reducedAnimations)?.valueChanges.subscribe(this.onReducedAnimationsChange);
         this.formGroup.get(fields.indicatorFixMode)?.valueChanges.subscribe(this.onIndicatorFixModeChange);
     }
 
@@ -217,30 +211,6 @@ export class SettingsPage implements OnInit {
                 This option will take effect the next time CloudpilotEmu reloads.
             `,
         );
-    };
-
-    private onReducedAnimationsChange = (reducedAnimations: boolean) => {
-        setReducedAnimations(reducedAnimations);
-
-        if (reducedAnimations) {
-            void this.alertService.message(
-                'Reduce animations',
-                `
-                Animations will be slightly reduced in order to provide a snappier UI. This
-                reduces UI lag on older iOS devices with large screens.
-                <br><br>
-                This option will take effect the next time
-                CloudpilotEmu reloads.
-            `,
-            );
-        } else {
-            void this.alertService.message(
-                'Reduce animations',
-                `
-                This option will only take effect the next time CloudpilotEmu reloads.
-            `,
-            );
-        }
     };
 
     readonly networkRedirectionModes: Array<[NetworkRedirectionMode, string]> = [
