@@ -420,6 +420,7 @@ export class SubpageCardsComponent implements OnInit {
             return;
         }
 
+        // eslint-disable-next-line no-async-promise-executor
         const cardSettings: CardSettings | undefined = await new Promise(async (resolve) => {
             const modal = await this.modalController.create({
                 component: EditCardDialogComponent,

@@ -92,6 +92,7 @@ export class ClipboardService {
     }
 
     private tryCopyWithInteraction(clipboardText: string): Promise<boolean> {
+        // eslint-disable-next-line no-async-promise-executor
         return new Promise(async (resolve, reject) => {
             try {
                 const alert = await this.alertController.create({
@@ -190,6 +191,7 @@ export class ClipboardService {
     }
 
     private tryPasteWithInteraction(): Promise<string | undefined> {
+        // eslint-disable-next-line no-async-promise-executor
         return new Promise(async (resolve, reject) => {
             try {
                 const alert = await this.alertController.create({

@@ -1,8 +1,8 @@
 import { AbstractControl, ValidationErrors } from '@angular/forms';
 
 const DEFAULT_PORT = window.location.protocol === 'https:' ? 8667 : 8666;
-const REGEX_HOST = /^[\da-z\-\.]+$/i;
-const REGEXT_HOST_PORT = /^[\da-z\-\.]+:\d+$/i;
+const REGEX_HOST = /^[\da-z\-.]+$/i;
+const REGEXT_HOST_PORT = /^[\da-z\-.]+:\d+$/i;
 
 export function normalizeProxyAddress(address: string | undefined): string | undefined {
     if (!address) return undefined;
@@ -20,7 +20,9 @@ export function normalizeProxyAddress(address: string | undefined): string | und
             return url.toString().replace(/\/+$/, '');
         }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (e) {}
+    } catch (e) {
+        // bad URL: normalizes to undefined
+    }
 
     return undefined;
 }

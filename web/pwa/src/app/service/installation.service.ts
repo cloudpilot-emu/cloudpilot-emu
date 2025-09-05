@@ -128,7 +128,9 @@ class InstallationContext {
 
                 this.installedDatabases.set(dbName, name);
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            } catch (e) {}
+            } catch (e) {
+                // ignore stuff that is not a database
+            }
         }
 
         if (this.sizeInstalledSinceLastsnapshot > SNAPSHOT_LIMIT) {

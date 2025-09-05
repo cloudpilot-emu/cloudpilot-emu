@@ -59,7 +59,9 @@ export class RemoteUrlPromptComponent implements OnInit {
 
             return location.protocol === 'https:' && urlParsed.protocol !== 'https:';
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (e) {}
+        } catch (e) {
+            // bad URL: definitely not mixed content
+        }
 
         return false;
     }

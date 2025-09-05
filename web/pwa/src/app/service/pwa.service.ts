@@ -89,7 +89,7 @@ export class PwaService {
         if (this.kvsService.kvs.didShowInvitation) return;
         this.kvsService.kvs.didShowInvitation = true;
 
-        if (!window.hasOwnProperty('onbeforeinstallprompt')) {
+        if (!Object.prototype.hasOwnProperty.call(window, 'onbeforeinstallprompt')) {
             void this.alertService.message('App available', this.alertService.verbatim(this.getInviteMessage()));
         }
     }
@@ -126,8 +126,9 @@ export class PwaService {
                 if (registration?.active?.postMessage) {
                     registration.active.postMessage({});
                 }
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            } catch (e) {}
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         setTimeout(this.serviceWorkerKeepalive, SERVICE_WORKER_KEEPALIVE_INTERVAL);

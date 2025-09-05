@@ -339,6 +339,7 @@ export class StorageService {
 
             const objectStore = tx.objectStore(OBJECT_STORE_STORAGE);
 
+            // eslint-disable-next-line no-async-promise-executor
             await new Promise<void>(async (resolve, reject) => {
                 const request = objectStore.openCursor(IDBKeyRange.bound([id, 0], [id + 1, 0], false, true));
 
@@ -552,6 +553,7 @@ export class StorageService {
             const metadata: MemoryMetadata = await complete(objectStoreMemoryMeta.get(sessionId));
             if (!metadata) return;
 
+            // eslint-disable-next-line no-async-promise-executor
             const memory = await new Promise<Uint8Array>(async (resolve, reject) => {
                 const objectStoreMemory = tx.objectStore(OBJECT_STORE_MEMORY);
 

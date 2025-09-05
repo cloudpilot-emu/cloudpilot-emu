@@ -202,7 +202,9 @@ export class SnapshotService {
                 try {
                     tx.abort();
                     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                } catch (e) {}
+                } catch (e) {
+                    // this most likely means the transaction is already aborted, so never mind
+                }
 
                 reject(timeout);
             });
