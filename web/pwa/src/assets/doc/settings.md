@@ -62,9 +62,11 @@ connect from within the virtual device.
 This setting causes the navigation to automatically hide when the emulated devices
 launches on startup.
 
-### Reduce animations
+:::div{.feature-dynamic-font-size}
+### Fixed font size
 
-This setting disables several animations that can cause lag on Safari (iOS and MacOS).
+Enable this to ignore the font size configured in your mobile device settings.
+:::
 
 ### Show Statistics
 

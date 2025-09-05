@@ -91,6 +91,10 @@
                 <ion-toggle labelPlacement="fixed" formControlName="autoLockUI">Auto-lock UI</ion-toggle>
             </ion-item>
 
+            <ion-item *ngIf="dynmicFontsSupprted" lines="none">
+                <ion-toggle labelPlacement="fixed" formControlName="fixedFontSize">Fixed font size</ion-toggle>
+            </ion-item>
+
             <ion-item lines="none">
                 <ion-toggle labelPlacement="fixed" formControlName="showStatistics">Show statistics</ion-toggle>
             </ion-item>

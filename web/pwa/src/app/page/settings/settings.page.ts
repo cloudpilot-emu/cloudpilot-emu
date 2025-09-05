@@ -7,6 +7,7 @@ import { MutexInterface } from 'async-mutex';
 import { environment } from 'pwa/src/environments/environment';
 
 import { HelpComponent } from '@pwa/component/help/help.component';
+import { dynamicFontsEnabled, dynamicFontsSupport, setDynamicFontsEnabled } from '@pwa/helper/dynamicFonts';
 import {
     IndicatorFixMode,
     applyHomeIndicatorFix,
@@ -34,6 +35,7 @@ const enum fields {
     audioOnStart = 'audioOnStart',
     snapshotIntegrityCheck = 'snapshotIntegrityCheck',
     indicatorFixMode = 'indicatorFixMode',
+    fixedFontSize = 'fixedFontSize',
 }
 @Component({
     selector: 'app-settings',
@@ -160,6 +162,10 @@ export class SettingsPage implements OnInit {
         return isIndicatorFixApplicable();
     }
 
+    get dynmicFontsSupprted(): boolean {
+        return dynamicFontsSupport();
+    }
+
     get featureRunHidden(): boolean {
         return this.featureService.runHidden;
     }
@@ -180,10 +186,12 @@ export class SettingsPage implements OnInit {
             [fields.audioOnStart]: new UntypedFormControl(this.kvsService.kvs.enableAudioOnFirstInteraction),
             [fields.snapshotIntegrityCheck]: new UntypedFormControl(this.kvsService.kvs.snapshotIntegrityCheck),
             [fields.indicatorFixMode]: new UntypedFormControl(getIndicatorFixMode()),
+            [fields.fixedFontSize]: new UntypedFormControl(!dynamicFontsEnabled()),
         });
 
         this.formGroup.get(fields.audioOnStart)?.valueChanges.subscribe(this.onAudioOnStartChange);
         this.formGroup.get(fields.indicatorFixMode)?.valueChanges.subscribe(this.onIndicatorFixModeChange);
+        this.formGroup.get(fields.fixedFontSize)?.valueChanges.subscribe(this.onFixedFontSizeChange);
     }
 
     private onAudioOnStartChange = (audioOnStart: boolean) => {
@@ -219,6 +227,7 @@ export class SettingsPage implements OnInit {
     ];
 
     private onIndicatorFixModeChange = (mode: IndicatorFixMode) => applyHomeIndicatorFix(mode);
+    private onFixedFontSizeChange = (enabled: boolean) => setDynamicFontsEnabled(!enabled);
 
     readonly indicatorFixNone = IndicatorFixMode.none;
     readonly indicatorFixPortrait = IndicatorFixMode.portrait;
