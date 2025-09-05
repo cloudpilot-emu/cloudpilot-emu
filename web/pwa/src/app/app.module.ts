@@ -17,7 +17,6 @@ import { UpdateService } from '@pwa/service/update.service';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { ionAnimationConfig } from './helper/reducedAnimations';
 import { ServiceWorkerService } from './service/service-worker.service';
 
 const markedOptionsFactory = (): MarkedOptions => {
@@ -40,7 +39,7 @@ const markedOptionsFactory = (): MarkedOptions => {
     bootstrap: [AppComponent],
     imports: [
         BrowserModule,
-        IonicModule.forRoot({ ...ionAnimationConfig(), innerHTMLTemplatesEnabled: true }),
+        IonicModule.forRoot({ innerHTMLTemplatesEnabled: true }),
         AppRoutingModule,
         MarkdownModule.forRoot({
             loader: HttpClient,
