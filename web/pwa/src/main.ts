@@ -3,6 +3,7 @@ import { enableDebugTools } from '@angular/platform-browser';
 import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
 import { isIOS } from '@common/helper/browser';
 
+import { initializeDynamicFOnts as initializeDynamicFonts } from '@pwa/helper/dynamicFonts';
 import { applyHomeIndicatorFix } from '@pwa/helper/homeIndicatorFix';
 import { hasStoredSession } from '@pwa/helper/storedSession';
 import { bootstrapLinkApi, hasInitialImportRequest, hasInitialInstallRequest } from '@pwa/service/link-api.service';
@@ -16,6 +17,8 @@ import { environment } from './environments/environment';
 
 // Prevernt zoom-by-doubletap on iOS (and any other unwanted default interactions)
 document.body.addEventListener('dblclick', (e) => e.preventDefault());
+
+initializeDynamicFonts();
 
 bootstrapLinkApi();
 

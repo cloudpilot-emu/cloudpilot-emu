@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { isIOS, isIOSNative, isMacOSSafari } from '@common/helper/browser';
 
+import { dynamicFontsSupport } from '@pwa/helper/dynamicFonts';
 import { isIndicatorFixApplicable } from '@pwa/helper/homeIndicatorFix';
 import { InstallationMode } from '@pwa/model/InstallationMode';
 
@@ -47,6 +48,7 @@ export class FeatureService {
             ${this.featureStyle('ios-or-safari', (isIOS && !isIOSNative) || isMacOSSafari)}
             ${this.featureStyle('ios', isIOS)}
             ${this.featureStyle('native-network', this.nativeNetworkIntegration)}
+            ${this.featureStyle('dynamic-font-size', dynamicFontsSupport())}
         `;
 
         document.head.appendChild(styleTag);
