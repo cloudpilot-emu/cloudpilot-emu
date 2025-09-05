@@ -1,5 +1,6 @@
-import { Session } from '@pwa/model/Session';
 import { SessionMetadata } from '@common/model/SessionMetadata';
+
+import { Session } from '@pwa/model/Session';
 
 export function metadataForSession(session: Session): SessionMetadata {
     const { name, hotsyncName, osVersion, dontManageHotsyncName, speed, deviceOrientation } = session;

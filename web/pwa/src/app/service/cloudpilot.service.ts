@@ -1,5 +1,5 @@
-import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { Injectable } from '@angular/core';
+import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import wasmModule from '@native/cloudpilot_web.wasm';
 
 declare global {

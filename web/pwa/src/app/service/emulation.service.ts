@@ -1,30 +1,31 @@
 import { ApplicationRef, Injectable, NgZone } from '@angular/core';
-import { CardOwner, StorageCardContext } from './storage-card-context';
-import { clearStoredSession, getStoredSession, setStoredSession } from '@pwa/helper/storedSession';
-
+import { Cloudpilot } from '@common/bridge/Cloudpilot';
+import { isIOS } from '@common/helper/browser';
+import { SchedulerKind } from '@common/helper/scheduler';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
+import { LoadingController } from '@ionic/angular';
+import { Mutex } from 'async-mutex';
+
+import { clearStoredSession, getStoredSession, setStoredSession } from '@pwa/helper/storedSession';
+import { Session } from '@pwa/model/Session';
+import { StorageCardService } from '@pwa/service/storage-card.service';
+
 import { AlertService } from './alert.service';
 import { BootstrapService } from './bootstrap-service';
 import { ButtonService } from './button.service';
 import { ClipboardService } from './clipboard.service';
-import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { CloudpilotService } from './cloudpilot.service';
 import { EmulationStateService } from './emulation-state.service';
 import { ErrorService } from './error.service';
-import { KvsService } from './kvs.service';
-import { LoadingController } from '@ionic/angular';
-import { ModalWatcherService } from './modal-watcher.service';
-import { Mutex } from 'async-mutex';
-import { SchedulerKind } from '@common/helper/scheduler';
-import { Session } from '@pwa/model/Session';
-import { SnapshotService } from './snapshot.service';
-import { StorageCardService } from '@pwa/service/storage-card.service';
-import { StorageService } from './storage.service';
-import { hasInitialImportRequest } from './link-api.service';
-import { isIOS } from '@common/helper/browser';
-import { SessionService } from './session.service';
 import { FeatureService } from './feature.service';
+import { KvsService } from './kvs.service';
+import { hasInitialImportRequest } from './link-api.service';
+import { ModalWatcherService } from './modal-watcher.service';
 import { NetworkService } from './network.service';
+import { SessionService } from './session.service';
+import { SnapshotService } from './snapshot.service';
+import { CardOwner, StorageCardContext } from './storage-card-context';
+import { StorageService } from './storage.service';
 
 const SNAPSHOT_INTERVAL = 1000;
 

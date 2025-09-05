@@ -1,11 +1,12 @@
 import { Component } from '@angular/core';
-import { HelpComponent } from '@pwa/component/help/help.component';
+import aboutUrl from '@assets/doc/about.md';
 import { ModalController } from '@ionic/angular';
+import changelogUrl from '@root/CHANGELOG.md';
+
+import { HelpComponent } from '@pwa/component/help/help.component';
+import { debounce } from '@pwa/helper/debounce';
 import { VERSION } from '@pwa/helper/version';
 import { ServiceWorkerService } from '@pwa/service/service-worker.service';
-import aboutUrl from '@assets/doc/about.md';
-import changelogUrl from '@root/CHANGELOG.md';
-import { debounce } from '@pwa/helper/debounce';
 
 @Component({
     selector: 'app-about',

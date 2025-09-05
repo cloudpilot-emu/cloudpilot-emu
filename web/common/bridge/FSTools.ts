@@ -3,8 +3,9 @@
 //
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
-
+import { InstantiateFunction, cachedInstantiate } from '@common/helper/wasm';
 import createModule, {
+    CreateZipContext as CreateZipNativeContext,
     FsckContext as FsckNativeContext,
     FsckResult,
     GunzipContext as GunzipContextNative,
@@ -12,14 +13,12 @@ import createModule, {
     GzipContext as GzipContextNative,
     GzipState,
     MkfsContext as MkfsNativeContext,
-    CreateZipContext as CreateZipNativeContext,
     Module,
     VoidPtr,
 } from '@native-fstools/index';
 
-import { InstantiateFunction, cachedInstantiate } from '@common/helper/wasm';
+import { ZipfileWalker, decorateZipfileWalker } from './ZipfileWalker';
 import { dirtyPagesSize } from './util';
-import { decorateZipfileWalker, ZipfileWalker } from './ZipfileWalker';
 
 export { FsckResult } from '@native-fstools/index';
 

@@ -1,15 +1,15 @@
+import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 
 import { AboutPage } from '@pwa/page/about/about.page';
 import { EmulationPage } from '@pwa/page/emulation/emulation.page';
-import { NgModule } from '@angular/core';
-import { SettingsPage } from '@pwa/page/settings/settings.page';
-import { StoragePage } from '@pwa/page/storage/storage.page';
-import { TabsPage } from './tabs.page';
-
 // We want to use onPush change detection for the sessions page, and this does not work
 // if the actual page is top level.
 import { NavWrapperComponent as SessionsPage } from '@pwa/page/sessions/nav-wrapper/nav-wrapper.component';
+import { SettingsPage } from '@pwa/page/settings/settings.page';
+import { StoragePage } from '@pwa/page/storage/storage.page';
+
+import { TabsPage } from './tabs.page';
 
 const routes: Routes = [
     {

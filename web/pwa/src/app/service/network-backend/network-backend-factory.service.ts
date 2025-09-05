@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
-import { KvsService } from '../kvs.service';
+
 import { AlertService } from '../alert.service';
 import { FetchService } from '../fetch.service';
-import { NetworkBackend } from './network-backend';
-import { NetworkBackendProxy } from './network-backend-proxy';
-import { NativeBackendNative } from './network-backend-native';
+import { KvsService } from '../kvs.service';
 import { NativeAppService } from '../native-app.service';
+import { NetworkBackend } from './network-backend';
+import { NativeBackendNative } from './network-backend-native';
+import { NetworkBackendProxy } from './network-backend-proxy';
 
 @Injectable({ providedIn: 'root' })
 export class NetworkBackendFactory {

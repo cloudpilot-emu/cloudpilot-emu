@@ -1,4 +1,5 @@
-import { createAnimation, Animation } from '@ionic/angular';
+import { Animation, createAnimation } from '@ionic/angular';
+
 import { localStorageGetWithFallback, localStorageSet } from './localStorage';
 
 const KEY = 'reduced-animations';

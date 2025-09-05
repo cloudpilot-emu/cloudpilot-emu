@@ -1,8 +1,10 @@
-import { AlertController, IonicSafeString } from '@ionic/angular';
-import { EmulationStateService } from './emulation-state.service';
-import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
+import { AlertController, IonicSafeString } from '@ionic/angular';
+import { Event } from 'microevent.ts';
+
 import { debounce } from '@pwa/helper/debounce';
+
+import { EmulationStateService } from './emulation-state.service';
 
 class Verbatim {
     constructor(public markup: string) {}

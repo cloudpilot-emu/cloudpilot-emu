@@ -1,8 +1,9 @@
+import { Injectable } from '@angular/core';
 import { isAndroid, isIOS, isMacOSSafari } from '@common/helper/browser';
 
-import { AlertService } from './alert.service';
-import { Injectable } from '@angular/core';
 import { InstallationMode } from '@pwa/model/InstallationMode';
+
+import { AlertService } from './alert.service';
 import { KvsService } from './kvs.service';
 
 const SERVICE_WORKER_KEEPALIVE_INTERVAL = 15 * 60 * 1000;

@@ -1,7 +1,7 @@
-import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input } from '@angular/core';
-
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { ModalController } from '@ionic/angular';
+
 import { VfsService } from '@pwa/service/vfs.service';
 
 @Component({

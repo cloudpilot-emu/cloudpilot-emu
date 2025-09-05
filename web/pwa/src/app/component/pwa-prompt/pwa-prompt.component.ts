@@ -1,6 +1,6 @@
+import { Component } from '@angular/core';
 import { isAndroid, isIOS } from '@common/helper/browser';
 
-import { Component } from '@angular/core';
 import { PwaService } from '@pwa/service/pwa.service';
 
 @Component({

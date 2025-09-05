@@ -1,7 +1,7 @@
-import { Emulator, EmulatorImpl } from './Emulator';
-
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { cachedInstantiate } from '@common/helper/wasm';
+
+import { Emulator, EmulatorImpl } from './Emulator';
 
 export { DeviceId } from '@common/model/DeviceId';
 export { Button } from './button';

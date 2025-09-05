@@ -1,13 +1,14 @@
+import { ApplicationRef, enableProdMode } from '@angular/core';
+import { enableDebugTools } from '@angular/platform-browser';
+import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
+import { isIOS } from '@common/helper/browser';
+
+import { applyHomeIndicatorFix } from '@pwa/helper/homeIndicatorFix';
+import { hasStoredSession } from '@pwa/helper/storedSession';
 import { bootstrapLinkApi, hasInitialImportRequest, hasInitialInstallRequest } from '@pwa/service/link-api.service';
 
 import { AppModule } from './app/app.module';
-import { ApplicationRef, enableProdMode } from '@angular/core';
 import { environment } from './environments/environment';
-import { hasStoredSession } from '@pwa/helper/storedSession';
-import { platformBrowserDynamic } from '@angular/platform-browser-dynamic';
-import { enableDebugTools } from '@angular/platform-browser';
-import { isIOS } from '@common/helper/browser';
-import { applyHomeIndicatorFix } from '@pwa/helper/homeIndicatorFix';
 
 // Work around issue with webpack and deep-equal
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

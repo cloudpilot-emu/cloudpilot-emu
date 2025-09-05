@@ -3,10 +3,9 @@
 //
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
-
 import createModule, {
-    ExportZipContextState,
     DeleteRecursiveContextState,
+    ExportZipContextState,
     FileEntry as FileEntryNative,
     Module,
     PasteContextState,

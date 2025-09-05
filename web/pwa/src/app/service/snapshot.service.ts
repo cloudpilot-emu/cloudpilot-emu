@@ -1,3 +1,20 @@
+import { Injectable, NgZone } from '@angular/core';
+import { Cloudpilot } from '@common/bridge/Cloudpilot';
+import { crc32 } from '@common/helper/crc';
+import { DynamicTimeout } from '@common/helper/dynamicTimeout';
+import { LoadingController } from '@ionic/angular';
+import { Event } from 'microevent.ts';
+import { environment } from 'pwa/src/environments/environment';
+
+import { MemoryMetadata } from '@pwa//model/MemoryMetadata';
+import { Session } from '@pwa/model/Session';
+import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
+import { StorageCard } from '@pwa/model/StorageCard';
+
+import { AlertService } from './alert.service';
+import { EmulationStateService } from './emulation-state.service';
+import { ErrorService } from './error.service';
+import { KvsService } from './kvs.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
 import { E_LOCK_LOST, StorageService } from './storage.service';
 import {
@@ -9,23 +26,7 @@ import {
     OBJECT_STORE_STORAGE,
     OBJECT_STORE_STORAGE_CARD,
 } from './storage/constants';
-import { Injectable, NgZone } from '@angular/core';
 import { complete, compressPage } from './storage/util';
-
-import { Cloudpilot } from '@common/bridge/Cloudpilot';
-import { DynamicTimeout } from '@common/helper/dynamicTimeout';
-import { EmulationStateService } from './emulation-state.service';
-import { ErrorService } from './error.service';
-import { Event } from 'microevent.ts';
-import { KvsService } from './kvs.service';
-import { MemoryMetadata } from '@pwa//model/MemoryMetadata';
-import { Session } from '@pwa/model/Session';
-import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
-import { StorageCard } from '@pwa/model/StorageCard';
-import { crc32 } from '@common/helper/crc';
-import { environment } from 'pwa/src/environments/environment';
-import { AlertService } from './alert.service';
-import { LoadingController } from '@ionic/angular';
 
 declare global {
     interface IDBDatabase {

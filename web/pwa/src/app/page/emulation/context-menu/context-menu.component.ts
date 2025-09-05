@@ -1,23 +1,23 @@
-import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
 import { Component, Input } from '@angular/core';
+import { PalmButton } from '@common/bridge/Cloudpilot';
 import { quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
+import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { SlotType } from '@common/model/SlotType';
+import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
 
+import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
 import { AlertService } from '@pwa/service/alert.service';
 import { AudioService } from '@pwa/service/audio.service';
 import { BackupService } from '@pwa/service/backup.service';
 import { ButtonService } from '@pwa/service/button.service';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
-import { DeviceOrientation } from '@common/model/DeviceOrientation';
-import { EmulationService } from '@pwa/service/emulation.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
+import { EmulationService } from '@pwa/service/emulation.service';
 import { ErrorService } from '@pwa/service/error.service';
 import { KvsService } from '@pwa/service/kvs.service';
-import { PalmButton } from '@common/bridge/Cloudpilot';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
 import { SessionService } from '@pwa/service/session.service';
-import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
-import { SlotType } from '@common/model/SlotType';
 import { StorageCardService } from '@pwa/service/storage-card.service';
 import { StorageService } from '@pwa/service/storage.service';
 

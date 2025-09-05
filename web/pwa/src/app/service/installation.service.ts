@@ -1,16 +1,17 @@
-import { LoadingController } from '@ionic/angular';
+import { Injectable } from '@angular/core';
 import { DbInstallResult } from '@common/bridge/Cloudpilot';
+import { FsTools } from '@common/bridge/FSTools';
+import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
+import { LoadingController } from '@ionic/angular';
+
+import { concatFilenames } from '@pwa/helper/filename';
 
 import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';
 import { EmulationService } from './emulation.service';
 import { FileDescriptor } from './file.service';
-import { Injectable } from '@angular/core';
-import { SnapshotService } from './snapshot.service';
-import { concatFilenames } from '@pwa/helper/filename';
-import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
-import { FsTools } from '@common/bridge/FSTools';
 import { FsToolsService } from './fstools.service';
+import { SnapshotService } from './snapshot.service';
 
 const ZIP_SIZE_LIMIT = 32 * 1024 * 1024;
 const SNAPSHOT_LIMIT = 4 * 1024 * 1024;

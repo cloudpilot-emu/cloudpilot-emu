@@ -1,4 +1,3 @@
-import { ActionSheetController, IonItemSliding, PopoverController } from '@ionic/angular';
 import {
     ChangeDetectionStrategy,
     Component,
@@ -9,10 +8,12 @@ import {
     SimpleChanges,
     ViewChild,
 } from '@angular/core';
+import { FileEntry } from '@common/bridge/Vfs';
+import { ActionSheetController, IonItemSliding, PopoverController } from '@ionic/angular';
+
+import { VfsService } from '@pwa/service/vfs.service';
 
 import { ContextMenuFileEntryComponent } from '../context-menu-file-entry/context-menu-file-entry.component';
-import { FileEntry } from '@common/bridge/Vfs';
-import { VfsService } from '@pwa/service/vfs.service';
 
 @Component({
     selector: 'app-file-entry',

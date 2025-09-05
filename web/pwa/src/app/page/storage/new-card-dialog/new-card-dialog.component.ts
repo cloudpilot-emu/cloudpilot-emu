@@ -1,7 +1,7 @@
-import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input } from '@angular/core';
-import { StorageCardService, calculateNewCardSizeBytes } from '@pwa//service/storage-card.service';
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 
+import { StorageCardService, calculateNewCardSizeBytes } from '@pwa//service/storage-card.service';
 import { NewCardSize } from '@pwa/service/storage-card.service';
 
 const SIZES = [

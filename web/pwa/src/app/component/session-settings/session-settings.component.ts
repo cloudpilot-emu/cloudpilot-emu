@@ -1,12 +1,12 @@
-import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
+import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { cpuClock, deviceName } from '@common/helper/deviceProperties';
-
-import { AlertService } from '@pwa/service/alert.service';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
-import { SessionService } from '@pwa/service/session.service';
+
 import { memoize } from '@pwa/helper/memoize';
+import { AlertService } from '@pwa/service/alert.service';
+import { SessionService } from '@pwa/service/session.service';
 
 export interface SessionSettings {
     name: string;

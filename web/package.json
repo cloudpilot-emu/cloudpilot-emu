@@ -42,6 +42,7 @@
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-prettier": "^5.5.4",
         "mocha": "^11.7.1",
+        "prettier": "^3.1.1",
         "sinon": "^21.0.0",
         "typescript-eslint": "^8.42.0",
         "workbox-cli": "^7.0.0"
@@ -60,6 +61,7 @@
         "@angular/router": "^20.2.2",
         "@ionic/angular": "^8.7.3",
         "@ionic/angular-toolkit": "^12.3.0",
+        "@trivago/prettier-plugin-sort-imports": "^5.2.2",
         "@types/deep-equal": "^1.0.4",
         "@types/emscripten": "^1.39.10",
         "@types/md5": "^2.3.5",
@@ -70,14 +72,11 @@
         "copy-webpack-plugin": "^13.0.1",
         "deep-equal": "^2.2.3",
         "dts-bundle-generator": "^9.5.1",
-        "import-sort-style-eslint": "^6.0.0",
         "marked": "^16.2.1",
         "marked-directive": "^1.0.5",
         "md5": "^2.3.0",
         "microevent.ts": "^0.2.1",
         "ngx-markdown": "^20.0.0",
-        "prettier": "^3.1.1",
-        "prettier-plugin-import-sort": "^0.0.7",
         "pwa-asset-generator": "^8.1.1",
         "raw-loader": "^4.0.2",
         "rxjs": "~7.8.1",
@@ -102,6 +101,21 @@
         "tabWidth": 4,
         "singleQuote": true,
         "parser": "typescript",
+        "importOrder": [
+            "^(?!@pwa)[^.]",
+            "^@pwa/",
+            "^.*$"
+        ],
+        "importOrderSeparation": true,
+        "importOrderSortSpecifiers": true,
+        "importOrderParserPlugins": [
+            "typescript",
+            "classProperties",
+            "decorators-legacy"
+        ],
+        "plugins": [
+            "@trivago/prettier-plugin-sort-imports"
+        ],
         "overrides": [
             {
                 "files": "*.page.html",
@@ -113,6 +127,12 @@
                 "files": "*.component.html",
                 "options": {
                     "parser": "angular"
+                }
+            },
+            {
+                "files": "*.json",
+                "options": {
+                    "parser": "jsonc"
                 }
             }
         ]

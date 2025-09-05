@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { PopoverController } from '@ionic/angular';
+
+import { StorageCardService } from '@pwa//service/storage-card.service';
 import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
+import { SessionService } from '@pwa/service/session.service';
 
 import { ContextMenuCardComponent } from '../context-menu-card/context-menu-card.component';
-import { PopoverController } from '@ionic/angular';
-import { StorageCardService } from '@pwa//service/storage-card.service';
-import { SessionService } from '@pwa/service/session.service';
 
 @Component({
     selector: 'app-storage-card',

@@ -1,9 +1,10 @@
+import { Injectable } from '@angular/core';
 import { LoadingController, ModalController } from '@ionic/angular';
+import Url from 'url-parse';
 
 import { CredentialsPromptComponent } from '@pwa/component/credentials-prompt/credentials-prompt.component';
-import { Injectable } from '@angular/core';
+
 import { KvsService } from './kvs.service';
-import Url from 'url-parse';
 
 const DEFAULT_TIMEOUT = 5000;
 

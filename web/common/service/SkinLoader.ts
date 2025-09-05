@@ -1,6 +1,6 @@
+import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { PrerenderedImage, loadImage, prerender } from '@common/helper/image';
 
-import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { svgToUrl } from './../helper/image';
 
 export const enum SkinElement {

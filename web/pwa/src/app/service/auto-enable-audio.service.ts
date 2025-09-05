@@ -1,7 +1,8 @@
-import { AudioService } from './audio.service';
 import { Injectable } from '@angular/core';
-import { KvsService } from './kvs.service';
 import { isIOS, isIOSNative } from '@common/helper/browser';
+
+import { AudioService } from './audio.service';
+import { KvsService } from './kvs.service';
 
 const EVENTS = ['touchstart', 'click', 'keydown'];
 

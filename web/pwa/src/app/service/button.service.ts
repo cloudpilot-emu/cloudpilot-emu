@@ -1,6 +1,5 @@
-import { Cloudpilot, PalmButton } from '@common/bridge/Cloudpilot';
-
 import { Injectable } from '@angular/core';
+import { Cloudpilot, PalmButton } from '@common/bridge/Cloudpilot';
 
 interface ButtonContext {
     button: PalmButton;

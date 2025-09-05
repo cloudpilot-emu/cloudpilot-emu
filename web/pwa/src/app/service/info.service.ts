@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
-import { KvsService } from './kvs.service';
 import { isIOS, isIOSNative } from '@common/helper/browser';
+
+import { InstallationMode } from '@pwa/model/InstallationMode';
+
 import { AlertService } from './alert.service';
 import { EmulationService } from './emulation.service';
-import { PwaService } from './pwa.service';
-import { InstallationMode } from '@pwa/model/InstallationMode';
+import { KvsService } from './kvs.service';
 import { NativeAppService } from './native-app.service';
+import { PwaService } from './pwa.service';
 import { ServiceWorkerService } from './service-worker.service';
 
 @Injectable({ providedIn: 'root' })

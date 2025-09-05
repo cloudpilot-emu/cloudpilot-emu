@@ -1,14 +1,15 @@
+import { Injectable } from '@angular/core';
+import { ModalController } from '@ionic/angular';
+import changelogUrl from '@root/CHANGELOG.md';
+import { Mutex } from 'async-mutex';
+
+import { HelpComponent } from '@pwa/component/help/help.component';
+import { VERSION } from '@pwa/helper/version';
+
 import { AlertService } from './alert.service';
 import { EmulationService } from './emulation.service';
-import { HelpComponent } from '@pwa/component/help/help.component';
-import { Injectable } from '@angular/core';
 import { KvsService } from './kvs.service';
-import { ModalController } from '@ionic/angular';
-import { Mutex } from 'async-mutex';
-import { VERSION } from '@pwa/helper/version';
 import { ServiceWorkerService } from './service-worker.service';
-
-import changelogUrl from '@root/CHANGELOG.md';
 
 const UPDATE_INTERVAL_MSEC = 15 * 60 * 1000;
 

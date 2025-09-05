@@ -2,6 +2,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { Cloudpilot, SuspendKind, VoidPtr } from '@common/bridge/Cloudpilot';
 import { Mutex } from 'async-mutex';
 import { Event } from 'microevent.ts';
+
 import { NetworkBackend } from './network-backend/network-backend';
 import { NetworkBackendFactory } from './network-backend/network-backend-factory.service';
 

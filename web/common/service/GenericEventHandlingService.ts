@@ -1,6 +1,6 @@
+import { PalmButton } from '@common/bridge/Cloudpilot';
 import { AbstractCanvasDisplayService } from '@common/service/AbstractCanvasDisplayService';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
-import { PalmButton } from '@common/bridge/Cloudpilot';
 
 const enum Area {
     screen,

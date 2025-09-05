@@ -3,7 +3,7 @@
 //
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
-
+import { InstantiateFunction } from '@common/helper/wasm';
 import createModule, {
     CardSupportLevel,
     Cloudpilot as CloudpilotNative,
@@ -22,12 +22,11 @@ import createModule, {
     SuspendKind,
     VoidPtr,
 } from '@native/index';
+import { Event, EventInterface } from 'microevent.ts';
 
 import { DeviceId } from '../model/DeviceId';
-import { Event, EventInterface } from 'microevent.ts';
-import { InstantiateFunction } from '@common/helper/wasm';
-import { dirtyPagesSize } from './util';
 import { ZipfileWalker, decorateZipfileWalker } from './ZipfileWalker';
+import { dirtyPagesSize } from './util';
 
 let nextId = 0;
 

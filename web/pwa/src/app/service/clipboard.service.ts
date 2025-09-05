@@ -1,8 +1,8 @@
-import { Cloudpilot, SuspendKind } from '@common/bridge/Cloudpilot';
-
-import { AlertController } from '@ionic/angular';
-import { AlertService } from './alert.service';
 import { Injectable } from '@angular/core';
+import { Cloudpilot, SuspendKind } from '@common/bridge/Cloudpilot';
+import { AlertController } from '@ionic/angular';
+
+import { AlertService } from './alert.service';
 import { NativeAppService } from './native-app.service';
 
 const READ_CLIPBOARD_TTL = 3000;

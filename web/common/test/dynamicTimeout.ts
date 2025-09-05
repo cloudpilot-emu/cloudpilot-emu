@@ -1,6 +1,7 @@
-import sinon from 'sinon';
 import assert from 'assert';
 import { Event } from 'microevent.ts';
+import sinon from 'sinon';
+
 import { DynamicTimeout } from '../helper/dynamicTimeout';
 
 class DocumentMock {

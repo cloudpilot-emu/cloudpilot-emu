@@ -1,16 +1,16 @@
-import { ReceivePayload, SerialPort } from './SerialPort';
-import { AnimationFrameScheduler, Scheduler, SchedulerKind } from '@common/helper/scheduler';
 import { Cloudpilot, PalmButton, PwmUpdate, SerialTransport, SuspendKind } from '@common/bridge/Cloudpilot';
-import { GRAYSCALE_PALETTE_HEX, GRAYSCALE_PALETTE_RGBA } from '@common/helper/palette';
-import { deviceDimensions, isColor } from '@common/helper/deviceProperties';
-
 import { Average } from '@common/helper/Average';
+import { Fifo } from '@common/helper/Fifo';
+import { deviceDimensions, isColor } from '@common/helper/deviceProperties';
+import { GRAYSCALE_PALETTE_HEX, GRAYSCALE_PALETTE_RGBA } from '@common/helper/palette';
+import { AnimationFrameScheduler, Scheduler, SchedulerKind } from '@common/helper/scheduler';
+import { TimeoutScheduler } from '@common/helper/scheduler';
 import { DeviceId } from '@common/model/DeviceId';
 import { Dimensions } from '@common/model/Dimensions';
 import { EmulationStatistics } from '@common/model/EmulationStatistics';
 import { Event } from 'microevent.ts';
-import { Fifo } from '@common/helper/Fifo';
-import { TimeoutScheduler } from '@common/helper/scheduler';
+
+import { ReceivePayload, SerialPort } from './SerialPort';
 
 const PEN_MOVE_THROTTLE = 25;
 const PWM_FIFO_SIZE = 10;

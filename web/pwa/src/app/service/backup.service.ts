@@ -1,12 +1,13 @@
+import { Injectable } from '@angular/core';
+import { LoadingController } from '@ionic/angular';
+
 import { concatFilenames, filenameForBackup } from '@pwa/helper/filename';
 
 import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';
-import { EmulationService } from './emulation.service';
 import { EmulationStateService } from './emulation-state.service';
+import { EmulationService } from './emulation.service';
 import { FileService } from './file.service';
-import { Injectable } from '@angular/core';
-import { LoadingController } from '@ionic/angular';
 import { SnapshotService } from './snapshot.service';
 
 @Injectable({ providedIn: 'root' })

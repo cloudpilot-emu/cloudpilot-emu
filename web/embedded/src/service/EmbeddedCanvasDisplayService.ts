@@ -1,9 +1,9 @@
 import { loadImage, prerender } from '@common/helper/image';
-
-import { AbstractCanvasDisplayService } from '@common/service/AbstractCanvasDisplayService';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { AbstractCanvasDisplayService } from '@common/service/AbstractCanvasDisplayService';
 import { PalmButton } from '@native/cloudpilot_web';
+
 import { svgToUrl } from './../../../common/helper/image';
 
 const GAME_ICON_SVG =
