@@ -213,9 +213,8 @@ export class SessionService {
                 const image = await this.serializeSession(session);
 
                 if (image) {
-                    const sessionName = disambiguateName(
-                        session.name.replace(/[\/\\]/, '_').substring(0, 200),
-                        (name) => sessionNames.has(name),
+                    const sessionName = disambiguateName(session.name.replace(/[/\\]/, '_').substring(0, 200), (name) =>
+                        sessionNames.has(name),
                     );
 
                     sessionNames.add(sessionName);

@@ -644,6 +644,8 @@ export class StorageCardService {
                         return false;
                     }
 
+                    break;
+
                 case StorageCardStatus.dirty:
                     await this.alertService.message(
                         'Card requires check',

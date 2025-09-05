@@ -46,11 +46,11 @@ export class VfsService {
     }
 
     dirname(path: string): string {
-        return this.normalizePath(path).replace(/\/[^\/]*$/, '');
+        return this.normalizePath(path).replace(/\/[^/]*$/, '');
     }
 
     isFilenameValid(name: string | undefined): boolean {
-        return name === undefined ? true : !/[\/\\]/.test(name);
+        return name === undefined ? true : !/[/\\]/.test(name);
     }
 
     isEntryInClipboard(entry: FileEntry): ClipboardOperation | undefined {
