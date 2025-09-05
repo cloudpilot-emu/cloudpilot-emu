@@ -1,15 +1,15 @@
-import { AbstractCanvasDisplayService, DEFAULT_DEVICE } from '@common/service/AbstractCanvasDisplayService';
-
-import { CloudpilotService } from '@pwa/service/cloudpilot.service';
+import { Injectable } from '@angular/core';
+import { deviceDimensions } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
-import { EmulationStatistics } from '@common/model/EmulationStatistics';
-import { Injectable } from '@angular/core';
 import { ScreenSize } from '@common/model/Dimensions';
-import { Session } from '@pwa/model/Session';
+import { EmulationStatistics } from '@common/model/EmulationStatistics';
+import { AbstractCanvasDisplayService, DEFAULT_DEVICE } from '@common/service/AbstractCanvasDisplayService';
 import { SkinLoader } from '@common/service/SkinLoader';
+
+import { Session } from '@pwa/model/Session';
 import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
-import { deviceDimensions } from '@common/helper/deviceProperties';
+import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 
 function fontScaleForScreenSize(screenSize: ScreenSize) {
     switch (screenSize) {

@@ -1,23 +1,23 @@
-import { ActionSheetController, Config, ModalController, PopoverController } from '@ionic/angular';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnDestroy, OnInit, Signal } from '@angular/core';
-
-import { AlertService } from '@pwa/service/alert.service';
-import { ContextMenuBreadcrumbComponent } from '../context-menu-breadcrumb/context-menu-breadcrumb.component';
-import { ContextMenuDirectoryComponent } from '../context-menu-directory/context-menu-directory.component';
-import { EditFileDialogComponent } from '../edit-file-dialog/edit-file-dialog.component';
-import { FileDescriptor } from '../../../service/file.service';
+import helpUrl from '@assets/doc/card-browser.md';
 import { FileEntry } from '@common/bridge/Vfs';
-import { FileService } from '@pwa/service/file.service';
+import { ActionSheetController, Config, ModalController, PopoverController } from '@ionic/angular';
+import { Subscription } from 'rxjs';
+
 import { HelpComponent } from '@pwa/component/help/help.component';
-import { NewDirectoryDialogComponent } from '../new-directory-dialog/new-directory-dialog.component';
-import { StorageCard } from '@pwa/model/StorageCard';
-import { VfsService } from '@pwa/service/vfs.service';
 import { changeDetector } from '@pwa/helper/changeDetect';
 import { debounce } from '@pwa/helper/debounce';
 import { memoize } from '@pwa/helper/memoize';
+import { StorageCard } from '@pwa/model/StorageCard';
+import { AlertService } from '@pwa/service/alert.service';
+import { FileService } from '@pwa/service/file.service';
+import { VfsService } from '@pwa/service/vfs.service';
 
-import helpUrl from '@assets/doc/card-browser.md';
-import { Subscription } from 'rxjs';
+import { FileDescriptor } from '../../../service/file.service';
+import { ContextMenuBreadcrumbComponent } from '../context-menu-breadcrumb/context-menu-breadcrumb.component';
+import { ContextMenuDirectoryComponent } from '../context-menu-directory/context-menu-directory.component';
+import { EditFileDialogComponent } from '../edit-file-dialog/edit-file-dialog.component';
+import { NewDirectoryDialogComponent } from '../new-directory-dialog/new-directory-dialog.component';
 
 const NO_ENTRIES: Array<FileEntry> = [];
 

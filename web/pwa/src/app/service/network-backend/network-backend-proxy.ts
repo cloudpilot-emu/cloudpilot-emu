@@ -1,8 +1,10 @@
-import { normalizeProxyAddress } from '@pwa/helper/proxyAddress';
-import { NetworkBackend } from './network-backend';
 import { Event as Microevent } from 'microevent.ts';
+
+import { normalizeProxyAddress } from '@pwa/helper/proxyAddress';
+
 import { AlertService } from '../alert.service';
 import { FetchService } from '../fetch.service';
+import { NetworkBackend } from './network-backend';
 
 const CONNECT_TIMEOUT = 5000;
 const LOADER_GRACE_TIME = 500;

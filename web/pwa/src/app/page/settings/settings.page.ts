@@ -1,27 +1,26 @@
 import { Component, OnInit } from '@angular/core';
 import { UntypedFormControl, UntypedFormGroup } from '@angular/forms';
-
-import { AlertService } from '@pwa/service/alert.service';
-import { ClipboardService } from '@pwa/service/clipboard.service';
-import { HelpComponent } from '@pwa/component/help/help.component';
-import { KvsService } from '@pwa/service/kvs.service';
+import helpUrl from '@assets/doc/settings.md';
+import { isIOS, isIOSNative } from '@common/helper/browser';
 import { ModalController } from '@ionic/angular';
 import { MutexInterface } from 'async-mutex';
 import { environment } from 'pwa/src/environments/environment';
-import { validateProxyAddress } from '@pwa/helper/proxyAddress';
-import { getReducedAnimations, setReducedAnimations } from '@pwa/helper/reducedAnimations';
 
-import helpUrl from '@assets/doc/settings.md';
+import { HelpComponent } from '@pwa/component/help/help.component';
 import {
     IndicatorFixMode,
     applyHomeIndicatorFix,
     getIndicatorFixMode,
     isIndicatorFixApplicable,
 } from '@pwa/helper/homeIndicatorFix';
-import { FeatureService } from '@pwa/service/feature.service';
-import { isIOS, isIOSNative } from '@common/helper/browser';
-import { NetworkBackendFactory } from '@pwa/service/network-backend/network-backend-factory.service';
+import { validateProxyAddress } from '@pwa/helper/proxyAddress';
+import { getReducedAnimations, setReducedAnimations } from '@pwa/helper/reducedAnimations';
 import { NetworkRedirectionMode } from '@pwa/model/Kvs';
+import { AlertService } from '@pwa/service/alert.service';
+import { ClipboardService } from '@pwa/service/clipboard.service';
+import { FeatureService } from '@pwa/service/feature.service';
+import { KvsService } from '@pwa/service/kvs.service';
+import { NetworkBackendFactory } from '@pwa/service/network-backend/network-backend-factory.service';
 
 const enum fields {
     volume = 'volume',

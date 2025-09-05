@@ -1,13 +1,13 @@
-import { SkinElement, SkinLoader } from './SkinLoader';
+import { PalmButton } from '@common/bridge/Cloudpilot';
 import { deviceDimensions, isColor } from '@common/helper/deviceProperties';
-
+import { PrerenderedImage } from '@common/helper/image';
+import { GRAYSCALE_PALETTE_HEX } from '@common/helper/palette';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
-import { Event } from 'microevent.ts';
-import { GRAYSCALE_PALETTE_HEX } from '@common/helper/palette';
-import { PalmButton } from '@common/bridge/Cloudpilot';
-import { PrerenderedImage } from '@common/helper/image';
 import { ScreenSize } from '@common/model/Dimensions';
+import { Event } from 'microevent.ts';
+
+import { SkinElement, SkinLoader } from './SkinLoader';
 
 export const DEFAULT_DEVICE = DeviceId.m515;
 const BACKGROUND_COLOR_SILKSCREEN = GRAYSCALE_PALETTE_HEX[2];

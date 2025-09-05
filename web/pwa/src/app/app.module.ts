@@ -1,20 +1,22 @@
-import { NgModule, inject, provideAppInitializer } from '@angular/core';
 import { HttpClient, provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { NgModule, inject, provideAppInitializer } from '@angular/core';
+import { BrowserModule } from '@angular/platform-browser';
+import { RouteReuseStrategy } from '@angular/router';
 import { IonicModule, IonicRouteStrategy } from '@ionic/angular';
-import { MARKED_OPTIONS, MarkdownModule, MarkedOptions, MarkedRenderer } from 'ngx-markdown';
+import { createDirectives } from 'marked-directive';
+import { MARKED_EXTENSIONS, MARKED_OPTIONS, MarkdownModule, MarkedOptions, MarkedRenderer } from 'ngx-markdown';
 
-import { AppComponent } from './app.component';
-import { AppRoutingModule } from './app-routing.module';
+import { DummyComponent } from '@pwa/component/dummy/dummy.component';
 import { AudioService } from '@pwa/service/audio.service';
 import { AutoEnableAudioService } from '@pwa/service/auto-enable-audio.service';
-import { BrowserModule } from '@angular/platform-browser';
-import { DummyComponent } from '@pwa/component/dummy/dummy.component';
 import { EmulationService } from '@pwa/service/emulation.service';
 import { KvsService } from '@pwa/service/kvs.service';
-import { RouteReuseStrategy } from '@angular/router';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
 import { UpdateService } from '@pwa/service/update.service';
+
+import { AppRoutingModule } from './app-routing.module';
+import { AppComponent } from './app.component';
 import { ionAnimationConfig } from './helper/reducedAnimations';
 import { ServiceWorkerService } from './service/service-worker.service';
 
@@ -43,6 +45,13 @@ const markedOptionsFactory = (): MarkedOptions => {
         MarkdownModule.forRoot({
             loader: HttpClient,
             markedOptions: { provide: MARKED_OPTIONS, useFactory: markedOptionsFactory },
+            markedExtensions: [
+                {
+                    provide: MARKED_EXTENSIONS,
+                    useFactory: createDirectives,
+                    multi: true,
+                },
+            ],
         }),
     ],
     providers: [

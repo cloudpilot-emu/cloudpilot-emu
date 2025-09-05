@@ -1,8 +1,9 @@
-import { Event } from 'microevent.ts';
-import { environment } from '../../environments/environment';
 import { Injectable } from '@angular/core';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
+import { Event } from 'microevent.ts';
+
+import { environment } from '../../environments/environment';
 import { AlertService } from './alert.service';
 import { NativeAppService } from './native-app.service';
 

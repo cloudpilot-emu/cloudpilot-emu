@@ -1,22 +1,23 @@
-import * as angular from '@ionic/angular';
-import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
-import { FileDescriptor, FileService } from '@pwa/service/file.service';
-import { NewCardSize, StorageCardService } from '@pwa/service/storage-card.service';
-import { AlertService } from '@pwa/service/alert.service';
+import helpPage from '@assets/doc/cards.md';
 import { CardSupportLevel } from '@common/bridge/Cloudpilot';
-import { CloudpilotService } from '@pwa/service/cloudpilot.service';
-import { ErrorService } from '@pwa/service/error.service';
+import * as angular from '@ionic/angular';
+
 import { HelpComponent } from '@pwa/component/help/help.component';
-import { NewCardDialogComponent } from '../new-card-dialog/new-card-dialog.component';
-import { StorageCard } from '@pwa/model/StorageCard';
 import { debounce } from '@pwa/helper/debounce';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameFragment } from '@pwa/helper/filename';
+import { StorageCard } from '@pwa/model/StorageCard';
+import { CardSettings, EditCardDialogComponent } from '@pwa/page/storage/edit-card-dialog/edit-card-dialog.component';
+import { AlertService } from '@pwa/service/alert.service';
+import { CloudpilotService } from '@pwa/service/cloudpilot.service';
+import { ErrorService } from '@pwa/service/error.service';
+import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { FsToolsService } from '@pwa/service/fstools.service';
+import { NewCardSize, StorageCardService } from '@pwa/service/storage-card.service';
 
-import helpPage from '@assets/doc/cards.md';
 import { ActionMenuCardsComponent } from '../action-menu-cards/action-menu-cards.component';
+import { NewCardDialogComponent } from '../new-card-dialog/new-card-dialog.component';
 
 type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
 

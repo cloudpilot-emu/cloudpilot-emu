@@ -1,8 +1,9 @@
 import { Injectable, NgZone } from '@angular/core';
+import { Event } from 'microevent.ts';
+
+import { clearStoredSession } from '@pwa/helper/storedSession';
 
 import { AlertService } from './alert.service';
-import { Event } from 'microevent.ts';
-import { clearStoredSession } from '@pwa/helper/storedSession';
 import { NativeAppService } from './native-app.service';
 
 @Injectable({

@@ -1,4 +1,5 @@
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+
 export interface SessionMetadata {
     name?: string;
     hotsyncName?: string;

@@ -4,8 +4,8 @@ import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 
 import { DummyComponent } from '@pwa/component/dummy/dummy.component';
 import { RoutingInterceptor } from '@pwa/service/routing-interceptor.service';
-import { TabsPage } from '@pwa/tabs/tabs.page';
 import { TabsPageModule } from '@pwa/tabs/tabs.module';
+import { TabsPage } from '@pwa/tabs/tabs.page';
 
 @Injectable()
 class ReplaceLocationStrategy extends HashLocationStrategy {

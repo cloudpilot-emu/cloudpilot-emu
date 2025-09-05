@@ -1,7 +1,8 @@
-import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { Component } from '@angular/core';
-import { EmulationStateService } from '@pwa/service/emulation-state.service';
 import { Router } from '@angular/router';
+
+import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
+import { EmulationStateService } from '@pwa/service/emulation-state.service';
 
 @Component({
     selector: 'app-tabs',

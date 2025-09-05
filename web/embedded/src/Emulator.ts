@@ -1,22 +1,22 @@
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
-
-import { Button } from './index';
+import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { EmulationStatistics } from '@common/model/EmulationStatistics';
+import { SessionMetadata } from '@common/model/SessionMetadata';
+import { EventTarget } from '@common/service/GenericEventHandlingService';
+import { SkinLoader } from '@common/service/SkinLoader';
+import { Event as EventImpl } from 'microevent.ts';
+
+import { Event } from './Event';
+import { SerialPort } from './SerialPort';
+import { Watcher } from './Watcher';
+import { Button } from './index';
+import { Session } from './model/Session';
 import { EmbeddedAudioService } from './service/EmbeddedAudioService';
 import { EmbeddedCanvasDisplayService } from './service/EmbeddedCanvasDisplayService';
 import { EmbeddedEmulationService } from './service/EmbeddedEmulationService';
 import { EmbeddedEventHandlingServie } from './service/EmbeddedEventHandlingService';
-import { EmulationStatistics } from '@common/model/EmulationStatistics';
-import { Event } from './Event';
-import { Event as EventImpl } from 'microevent.ts';
-import { EventTarget } from '@common/service/GenericEventHandlingService';
-import { Session } from './model/Session';
-import { SessionMetadata } from '@common/model/SessionMetadata';
-import { SkinLoader } from '@common/service/SkinLoader';
-import { Watcher } from './Watcher';
-import { ZipfileWalkerState } from '@common/bridge/ZipfileWalker';
-import { SerialPort } from './SerialPort';
 
 const DEFAULT_SESSION: Session = {
     hotsyncName: undefined,

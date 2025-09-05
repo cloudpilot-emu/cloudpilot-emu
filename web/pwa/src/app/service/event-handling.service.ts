@@ -1,9 +1,9 @@
 import { ApplicationRef, Injectable, NgZone } from '@angular/core';
 import { EventTarget, GenericEventHandlingService } from '@common/service/GenericEventHandlingService';
+import { EventHandler } from '@common/service/GenericEventHandlingService';
 
 import { CanvasDisplayService } from './canvas-display.service';
 import { EmulationService } from './emulation.service';
-import { EventHandler } from '@common/service/GenericEventHandlingService';
 import { ModalWatcherService } from './modal-watcher.service';
 
 @Injectable({ providedIn: 'root' })

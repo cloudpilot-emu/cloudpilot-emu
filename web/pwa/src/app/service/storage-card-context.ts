@@ -1,5 +1,6 @@
-import { ErrorService } from '@pwa/service/error.service';
 import { Injectable } from '@angular/core';
+
+import { ErrorService } from '@pwa/service/error.service';
 
 export enum CardOwner {
     cloudpilot = 'cloudpilot',

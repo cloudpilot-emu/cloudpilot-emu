@@ -1,37 +1,37 @@
-import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
 import {
     ChangeDetectionStrategy,
     ChangeDetectorRef,
     Component,
-    computed,
     Input,
     OnInit,
     Signal,
+    computed,
     signal,
 } from '@angular/core';
-import { DragDropClient, DragDropService } from '@pwa//service/drag-drop.service';
-import { FileDescriptor, FileService } from '@pwa/service/file.service';
-import { SessionSettings, SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
+import { Router } from '@angular/router';
+import helpUrl from '@assets/doc/sessions.md';
+import { isIOS, isIOSNative } from '@common/helper/browser';
+import { SessionMetadata } from '@common/model/SessionMetadata';
+import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
+import deepEqual from 'deep-equal';
 
+import { DragDropClient, DragDropService } from '@pwa//service/drag-drop.service';
+import { HelpComponent } from '@pwa/component/help/help.component';
+import { SessionSettings, SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
+import { debounce } from '@pwa/helper/debounce';
+import { disambiguateName } from '@pwa/helper/disambiguate';
+import { memoize } from '@pwa/helper/memoize';
+import { Session } from '@pwa/model/Session';
 import { AlertService } from '@pwa/service/alert.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
-import { EmulationService } from '@pwa/service/emulation.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
-import { HelpComponent } from '@pwa/component/help/help.component';
+import { EmulationService } from '@pwa/service/emulation.service';
+import { FileDescriptor, FileService } from '@pwa/service/file.service';
 import { LinkApi } from '@pwa/service/link-api.service';
-import { Router } from '@angular/router';
-import { Session } from '@pwa/model/Session';
-import { SessionMetadata } from '@common/model/SessionMetadata';
 import { SessionService } from '@pwa/service/session.service';
 import { StorageService } from '@pwa/service/storage.service';
-import { debounce } from '@pwa/helper/debounce';
-import deepEqual from 'deep-equal';
-import { disambiguateName } from '@pwa/helper/disambiguate';
 
-import helpUrl from '@assets/doc/sessions.md';
 import { ActionMenuComponent } from './action-menu/action-menu.component';
-import { isIOS, isIOSNative } from '@common/helper/browser';
-import { memoize } from '@pwa/helper/memoize';
 
 type Mode = 'manage' | 'select-for-export' | 'select-for-delete';
 

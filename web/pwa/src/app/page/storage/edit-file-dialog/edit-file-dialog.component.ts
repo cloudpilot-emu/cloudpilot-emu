@@ -1,8 +1,8 @@
-import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
-
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { FileEntry } from '@common/bridge/Vfs';
 import { ModalController } from '@ionic/angular';
+
 import { VfsService } from '@pwa//service/vfs.service';
 import { debounce } from '@pwa/helper/debounce';
 

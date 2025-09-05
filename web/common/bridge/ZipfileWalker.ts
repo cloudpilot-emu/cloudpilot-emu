@@ -1,5 +1,6 @@
-export { ZipfileWalkerState } from '@native-common/index';
 import { ZipfileWalker as ZipfileWalkerNative } from '@native-common/index';
+
+export { ZipfileWalkerState } from '@native-common/index';
 
 export interface ZipfileWalker extends Omit<ZipfileWalkerNative<unknown>, 'GetCurrentEntryContent'> {
     GetCurrentEntryContent(): Uint8Array | undefined;

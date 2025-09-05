@@ -1,6 +1,5 @@
-import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidationErrors } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
-
+import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidationErrors } from '@angular/forms';
 import Url from 'url-parse';
 
 function validateUrl(control: AbstractControl): ValidationErrors | null {

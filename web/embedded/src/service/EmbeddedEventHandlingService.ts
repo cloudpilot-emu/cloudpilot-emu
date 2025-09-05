@@ -1,7 +1,8 @@
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
-import { EmbeddedCanvasDisplayService } from './EmbeddedCanvasDisplayService';
-import { Event } from 'microevent.ts';
 import { GenericEventHandlingService } from '@common/service/GenericEventHandlingService';
+import { Event } from 'microevent.ts';
+
+import { EmbeddedCanvasDisplayService } from './EmbeddedCanvasDisplayService';
 
 export class EmbeddedEventHandlingServie extends GenericEventHandlingService {
     constructor(emulationService: AbstractEmulationService, canvasDisplayService: EmbeddedCanvasDisplayService) {

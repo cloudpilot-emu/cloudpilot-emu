@@ -1,7 +1,7 @@
-import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Component, Input, OnInit } from '@angular/core';
-
+import { AbstractControl, FormControl, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { CardSupportLevel } from '@native/cloudpilot_web';
+
 import { StorageCard } from '@pwa/model/StorageCard';
 import { StorageCardService } from '@pwa/service/storage-card.service';
 

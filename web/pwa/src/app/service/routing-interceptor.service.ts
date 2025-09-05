@@ -1,6 +1,6 @@
+import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, Router } from '@angular/router';
 
-import { Injectable } from '@angular/core';
 import { LinkApi } from './link-api.service';
 
 @Injectable({ providedIn: 'root' })

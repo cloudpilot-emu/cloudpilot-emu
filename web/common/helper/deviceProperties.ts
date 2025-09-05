@@ -1,6 +1,6 @@
+import { DeviceId } from '@common/model/DeviceId';
 import { Dimensions, ScreenSize } from '@common/model/Dimensions';
 
-import { DeviceId } from '@common/model/DeviceId';
 import { SlotType } from '../model/SlotType';
 
 export function deviceDimensions(deviceId: DeviceId): Dimensions {

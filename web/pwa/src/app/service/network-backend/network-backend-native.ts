@@ -1,6 +1,7 @@
 import { Event } from 'microevent.ts';
-import { NetworkBackend } from './network-backend';
+
 import { NativeAppService } from '../native-app.service';
+import { NetworkBackend } from './network-backend';
 
 export class NativeBackendNative implements NetworkBackend {
     constructor(private nativeAppService: NativeAppService) {}

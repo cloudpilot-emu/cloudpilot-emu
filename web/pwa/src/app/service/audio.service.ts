@@ -1,9 +1,10 @@
-import { AbstractAudioService } from '@common/service/AbstractAudioService';
-import { EmulationService } from './emulation.service';
 import { Injectable } from '@angular/core';
+import { AbstractAudioService } from '@common/service/AbstractAudioService';
+
+import { EmulationService } from './emulation.service';
+import { FeatureService } from './feature.service';
 import { KvsService } from './kvs.service';
 import { ModalWatcherService } from './modal-watcher.service';
-import { FeatureService } from './feature.service';
 
 @Injectable({ providedIn: 'root' })
 export class AudioService extends AbstractAudioService {

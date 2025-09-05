@@ -1,4 +1,20 @@
+import { Injectable, NgZone } from '@angular/core';
+import { isIOS } from '@common/helper/browser';
+import { crc32 } from '@common/helper/crc';
+import { Mutex } from 'async-mutex';
+import md5 from 'md5';
+import { Event } from 'microevent.ts';
+import { v4 as uuid } from 'uuid';
+
+import { Kvs } from '@pwa/model/Kvs';
+import { MemoryMetadata } from '@pwa/model/MemoryMetadata';
+import { Session } from '@pwa/model/Session';
+import { StorageCard } from '@pwa/model/StorageCard';
+
+import { environment } from '../../environments/environment';
+import { ErrorService } from './error.service';
 import { CardOwner, StorageCardContext } from './storage-card-context';
+import { StorageError } from './storage/StorageError';
 import {
     DB_VERSION,
     OBJECT_STORE_KVS,
@@ -11,8 +27,6 @@ import {
     OBJECT_STORE_STORAGE,
     OBJECT_STORE_STORAGE_CARD,
 } from './storage/constants';
-import { Injectable, NgZone } from '@angular/core';
-import { complete, compressPage, compressStoragePage } from './storage/util';
 import {
     migrate0to1,
     migrate1to2,
@@ -23,20 +37,7 @@ import {
     migrate7to8,
     migrate8to9,
 } from './storage/migrations';
-
-import { ErrorService } from './error.service';
-import { Event } from 'microevent.ts';
-import { Kvs } from '@pwa/model/Kvs';
-import { MemoryMetadata } from '@pwa/model/MemoryMetadata';
-import { Mutex } from 'async-mutex';
-import { Session } from '@pwa/model/Session';
-import { StorageCard } from '@pwa/model/StorageCard';
-import { StorageError } from './storage/StorageError';
-import { crc32 } from '@common/helper/crc';
-import { environment } from '../../environments/environment';
-import { isIOS } from '@common/helper/browser';
-import md5 from 'md5';
-import { v4 as uuid } from 'uuid';
+import { complete, compressPage, compressStoragePage } from './storage/util';
 
 export const E_LOCK_LOST = new Error('page lock lost');
 const E_VERSION_MISMATCH = new Error('version mismatch');

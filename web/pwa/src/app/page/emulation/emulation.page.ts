@@ -1,32 +1,32 @@
 import { Component, ElementRef, ViewChild } from '@angular/core';
-import { DragDropClient, DragDropService } from '@pwa/service/drag-drop.service';
+import helpUrl from '@assets/doc/emulation.md';
 import { Config, LoadingController, ModalController, PopoverController } from '@ionic/angular';
+import { Mutex } from 'async-mutex';
 
+import { HelpComponent } from '@pwa/component/help/help.component';
+import { debounce } from '@pwa/helper/debounce';
+import { Session } from '@pwa/model/Session';
+import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
 import { AlertService } from '@pwa/service/alert.service';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
-import { ContextMenuComponent } from './context-menu/context-menu.component';
-import { EmulationService } from '@pwa/service/emulation.service';
+import { DragDropClient, DragDropService } from '@pwa/service/drag-drop.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
+import { EmulationService } from '@pwa/service/emulation.service';
 import { EventHandlingService } from '@pwa/service/event-handling.service';
 import { FileService } from '@pwa/service/file.service';
-import { HelpComponent } from '@pwa/component/help/help.component';
 import { InstallationService } from '@pwa/service/installation.service';
 import { KvsService } from '@pwa/service/kvs.service';
 import { LinkApi } from '@pwa/service/link-api.service';
-import { Mutex } from 'async-mutex';
+import { NetworkService } from '@pwa/service/network.service';
 import { PerformanceWatchdogService } from '@pwa/service/performance-watchdog.service';
+import { SessionService } from '@pwa/service/session.service';
 import { SnapshotService } from '@pwa/service/snapshot.service';
-import { SnapshotStatistics } from '@pwa/model/SnapshotStatistics';
 import { StorageService } from '@pwa/service/storage.service';
 import { TabsPage } from '@pwa/tabs/tabs.page';
 
-import helpUrl from '@assets/doc/emulation.md';
-import { debounce } from '@pwa/helper/debounce';
 import { BreadcrumbMenuComponent } from './breadcrumb-menu/breadcrumb-menu.component';
-import { SessionService } from '@pwa/service/session.service';
-import { Session } from '@pwa/model/Session';
-import { NetworkService } from '@pwa/service/network.service';
+import { ContextMenuComponent } from './context-menu/context-menu.component';
 
 @Component({
     selector: 'app-emulation',

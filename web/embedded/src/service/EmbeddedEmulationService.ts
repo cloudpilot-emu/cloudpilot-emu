@@ -1,10 +1,9 @@
 import { Cloudpilot, SessionImage } from '@common/bridge/Cloudpilot';
-
-import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
-import { DeviceId } from '@common/model/DeviceId';
-import { Event } from 'microevent.ts';
 import { SchedulerKind } from '@common/helper/scheduler';
+import { DeviceId } from '@common/model/DeviceId';
+import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { Session } from '@embedded/model/Session';
+import { Event } from 'microevent.ts';
 
 export class EmbeddedEmulationService extends AbstractEmulationService {
     pause(): void {

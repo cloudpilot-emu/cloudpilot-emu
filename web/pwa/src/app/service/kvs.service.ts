@@ -1,9 +1,11 @@
-import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
-import { Kvs } from '@pwa/model/Kvs';
 import { Mutex } from 'async-mutex';
-import { StorageService } from './storage.service';
+import { Event } from 'microevent.ts';
+
+import { Kvs } from '@pwa/model/Kvs';
+
 import { NativeAppService } from './native-app.service';
+import { StorageService } from './storage.service';
 
 const DEFAULTS: Kvs = {
     volume: 0.5,

@@ -1,27 +1,29 @@
-import { CardSupportLevel } from '@common/bridge/Cloudpilot';
-import { CardOwner, StorageCardContext } from './storage-card-context';
-import { FsckContext, FsckResult, GzipContext } from '@common/bridge/FSTools';
-import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
-import { AlertService } from './alert.service';
-import { CloudpilotService } from '@pwa/service/cloudpilot.service';
-import { EmulationStateService } from './emulation-state.service';
-import { ErrorService } from './error.service';
-import { Event } from 'microevent.ts';
-import { FileService } from './file.service';
 import { Injectable, Signal, signal } from '@angular/core';
+import { CardSupportLevel } from '@common/bridge/Cloudpilot';
+import { FsckContext, FsckResult, GzipContext } from '@common/bridge/FSTools';
+import { isIOS } from '@common/helper/browser';
 import { LoadingController } from '@ionic/angular';
+import { ZipfileWalkerState } from '@native/cloudpilot_web';
 import { Mutex } from 'async-mutex';
+import { Event } from 'microevent.ts';
+import { v4 as uuid } from 'uuid';
+
+import { disambiguateName } from '@pwa/helper/disambiguate';
+import { filenameForCards } from '@pwa/helper/filename';
 import { Session } from '@pwa/model/Session';
+import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
+import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { SessionService } from '@pwa/service/session.service';
 import { SnapshotService } from '@pwa/service/snapshot.service';
 import { StorageService } from '@pwa/service/storage.service';
-import { VfsService } from './vfs.service';
-import { v4 as uuid } from 'uuid';
+
+import { AlertService } from './alert.service';
+import { EmulationStateService } from './emulation-state.service';
+import { ErrorService } from './error.service';
+import { FileService } from './file.service';
 import { FsToolsService } from './fstools.service';
-import { disambiguateName } from '@pwa/helper/disambiguate';
-import { filenameForCards } from '@pwa/helper/filename';
-import { ZipfileWalkerState } from '@native/cloudpilot_web';
-import { isIOS } from '@common/helper/browser';
+import { CardOwner, StorageCardContext } from './storage-card-context';
+import { VfsService } from './vfs.service';
 
 export enum NewCardSize {
     mb4,

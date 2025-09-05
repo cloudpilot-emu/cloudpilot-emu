@@ -1,22 +1,22 @@
-import { LoadingController } from '@ionic/angular';
-import { Attributes, FileEntry, ReaddirError, UnzipResult, Vfs, VfsResult, WriteFileResult } from '@common/bridge/Vfs';
-import { CardOwner, StorageCardContext } from './storage-card-context';
-import { ClipboardOperation, VfsClipboard } from '@pwa/model/VfsClipboard';
-import { FileDescriptor, FileService } from '@pwa/service/file.service';
-import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
-
-import { AlertService } from './alert.service';
-import { Event } from 'microevent.ts';
 import { EventEmitter, Injectable, Signal, signal } from '@angular/core';
+import { Attributes, FileEntry, ReaddirError, UnzipResult, Vfs, VfsResult, WriteFileResult } from '@common/bridge/Vfs';
 import { PasteResult } from '@common/bridge/Vfs';
-import { StorageCardService } from '@pwa/service/storage-card.service';
-import { StorageService } from '@pwa/service/storage.service';
+import { LoadingController } from '@ionic/angular';
+import wasmModule from '@native-vfs/vfs_web.wasm';
 import deepEqual from 'deep-equal';
+import { Event } from 'microevent.ts';
+import { Observable } from 'rxjs';
+
 import { filenameForArchive } from '@pwa/helper/filename';
 import { ucFirst } from '@pwa/helper/text';
+import { StorageCard, StorageCardStatus } from '@pwa/model/StorageCard';
+import { ClipboardOperation, VfsClipboard } from '@pwa/model/VfsClipboard';
+import { FileDescriptor, FileService } from '@pwa/service/file.service';
+import { StorageCardService } from '@pwa/service/storage-card.service';
+import { StorageService } from '@pwa/service/storage.service';
 
-import wasmModule from '@native-vfs/vfs_web.wasm';
-import { Observable } from 'rxjs';
+import { AlertService } from './alert.service';
+import { CardOwner, StorageCardContext } from './storage-card-context';
 
 @Injectable({ providedIn: 'root' })
 export class VfsService {

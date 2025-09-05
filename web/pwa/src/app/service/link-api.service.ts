@@ -1,5 +1,5 @@
-import { Event } from 'microevent.ts';
 import { Injectable } from '@angular/core';
+import { Event } from 'microevent.ts';
 import Url from 'url-parse';
 
 let initialInstallationUrl: string | undefined;

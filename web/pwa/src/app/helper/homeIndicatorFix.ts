@@ -1,4 +1,5 @@
 import { isIOSSafari } from '@common/helper/browser';
+
 import { localStorageGetWithFallback, localStorageSet } from './localStorage';
 
 export const enum IndicatorFixMode {
