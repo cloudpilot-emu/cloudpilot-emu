@@ -1,4 +1,4 @@
-import { isAndroid, isIOS } from '@common/helper/browser';
+import { isIOS } from '@common/helper/browser';
 
 import { localStorageGet, localStorageSet } from './localStorage';
 
