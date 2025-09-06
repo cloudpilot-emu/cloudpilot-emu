@@ -1,4 +1,4 @@
-<ion-header>
+<ion-header [translucent]="true">
     <ion-toolbar *ngIf="mode === 'browse'">
         <ion-title>
             <app-breadcrumb (trigger)="openBreadcrumbMenu($event)">{{ title }}</app-breadcrumb>
@@ -32,7 +32,7 @@
     </ion-toolbar>
 </ion-header>
 
-<ion-content (contextmenu)="onContextMenu($event)">
+<ion-content (contextmenu)="onContextMenu($event)" [fullscreen]="true">
     <div class="container">
         <div *ngIf="entries?.length === 0" class="placeholder-wrapper">
             <div class="placeholder">empty {{ isRoot ? 'card' : 'directory' }}</div>
