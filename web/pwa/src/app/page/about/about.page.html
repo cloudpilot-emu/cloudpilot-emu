@@ -15,27 +15,23 @@
         </ion-toolbar>
     </ion-header>
 
-    <div class="wrapper-outer">
-        <div class="wrapper-inner">
-            <div class="loader" *ngIf="loading">
-                <ion-spinner></ion-spinner>
-            </div>
-
-            <div class="markdown-container" style="position: relative">
-                <markdown [src]="url" [disableSanitizer]="true" (load)="loading = false"></markdown>
-            </div>
-
-            <div class="version">
-                CloudpilotEmu version {{ version }}
-                <br />
-                <a href="javascript:" (click)="showChangelog()">Changelog</a>
-                @if (serviceWorkerAvailable) {
-                    <div>app cached for offline use</div>
-                    <a href="javascript:" (click)="resetWorker()">reset worker</a>
-                }
-            </div>
-
-            <img class="logo" src="assets/logo.svg" />
-        </div>
+    <div class="loader" *ngIf="loading">
+        <ion-spinner></ion-spinner>
     </div>
+
+    <div class="markdown-container">
+        <markdown [src]="url" [disableSanitizer]="true" (load)="loading = false"></markdown>
+    </div>
+
+    <div class="version">
+        CloudpilotEmu version {{ version }}
+        <br />
+        <a href="javascript:" (click)="showChangelog()">Changelog</a>
+        @if (serviceWorkerAvailable) {
+            <div>app cached for offline use</div>
+            <a href="javascript:" (click)="resetWorker()">reset worker</a>
+        }
+    </div>
+
+    <img class="logo" src="assets/logo.svg" />
 </ion-content>

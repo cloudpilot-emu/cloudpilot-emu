@@ -16,8 +16,8 @@
 
 markdown {
     display: block;
-    margin-left: 1em;
-    margin-right: 1em;
+    margin-left: 0.5em;
+    margin-right: 0.5em;
     max-width: var(--cp-page-width);
 }
 
@@ -39,19 +39,5 @@ markdown {
 @media (prefers-color-scheme: dark) {
     .logo {
         filter: invert(100%);
-    }
-}
-
-.wrapper-outer {
-    position: relative;
-}
-
-.wrapper-inner {
-    position: absolute;
-    padding-bottom: 50px;
-    z-index: 0;
-
-    .ios & {
-        padding-bottom: 90px;
     }
 }
