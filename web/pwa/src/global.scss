@@ -154,3 +154,7 @@ markdown h1:not(:first-child) {
         --box-shadow: 0 0 100px  #111; 
     }
 }
+
+.alert-wrapper:focus-visible {
+    outline: 0px;
+}
