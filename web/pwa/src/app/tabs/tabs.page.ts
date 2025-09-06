@@ -4,6 +4,18 @@ import { Router } from '@angular/router';
 import { CanvasDisplayService } from '@pwa/service/canvas-display.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
 
+function getHeight(selector: string): number | undefined {
+    const elts = document.querySelectorAll(selector);
+
+    for (let i = 0; i < elts.length; i++) {
+        const bb = elts[i].getBoundingClientRect();
+
+        if (bb.height > 0) return bb.height;
+    }
+
+    return 0;
+}
+
 @Component({
     selector: 'app-tabs',
     templateUrl: 'tabs.page.html',
@@ -44,16 +56,20 @@ export class TabsPage {
 
     private updateUseSmallUI = (): void => {
         const isMD = !!document.querySelector('html.md');
-        const headerHeight = isMD ? 56 : 44;
-        const tabbarHeight = isMD ? 57 : 51;
+        const headerHeight = getHeight('ion-header');
+        const tabbarHeight = isMD ? 56 : 50;
         const canvasPadding = 6;
 
         this.useSmallUI =
+            headerHeight !== undefined &&
             this.canvasArea(
                 window.innerHeight - headerHeight - tabbarHeight - canvasPadding,
                 window.innerWidth - canvasPadding,
             ) <
-            this.canvasArea(window.innerHeight - headerHeight - 25 - canvasPadding, window.innerWidth - canvasPadding);
+                this.canvasArea(
+                    window.innerHeight - headerHeight - 25 - canvasPadding,
+                    window.innerWidth - canvasPadding,
+                );
     };
 
     private canvasArea(availableHeight: number, availableWidth: number): number {
