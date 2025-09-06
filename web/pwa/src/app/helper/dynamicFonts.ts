@@ -24,7 +24,7 @@ export function setDynamicFontsEnabled(enabled: boolean): void {
 }
 
 export function dynamicFontsSupport(): boolean {
-    return isIOS || isAndroid;
+    return isIOS;
 }
 
 function updateDynamicFontSupport(): void {
