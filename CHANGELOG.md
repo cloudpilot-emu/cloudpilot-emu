@@ -1,3 +1,15 @@
+# Next Version
+
+-   Update all JavaScript dependencies. Please open an
+    [issue on Github](https://github.com/cloudpilot-emu/cloudpilot-emu/issues)
+    if you encounter any regressions.
+-   The app now supports dynamic font scaling on iOS and Android (if enabled).
+    This can be deactivated in the settings (which will revert the app to the
+    old, fixed font size).
+-   The "Reduce animations" setting as been removed. Please open an
+    [issue on Github](https://github.com/cloudpilot-emu/cloudpilot-emu/issues)
+    if you find you still need it.
+
 # Version 1.10.11
 
 -   Minor styling improvements.
