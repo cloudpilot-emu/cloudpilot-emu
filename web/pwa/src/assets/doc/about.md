@@ -168,10 +168,6 @@ The date of the two different versions is stored separately from each other.
     cannot be detected, but there is a setting on the settings page that you can
     change to work around.
 
--   Safari, iOS: A browser bug can cause lag when loaders or
-    modal dialogs are shown in older versions of iOS or Safari. This can be worked around
-    with the setting "Reduce animation".
-
 -   Safari: Safari will delete all data stored by the app if the page is not
     opened for more than seven days. The only way to circumvent this is to
     install CloudpilotEmu from the
@@ -190,8 +186,6 @@ The date of the two different versions is stored separately from each other.
 :::div{.feature-native-app}
 ### Issues on iOS
 
--   Loaders and modal dialogs may be laggy on older versions of iOS. This can be worked around
-    with the setting "Reduce animation".
 -   Version 1.0 of the app may refuse to load without internet connectivity. This is fixed
     in version 1.1.
 -   There may be a slight delay when opening the app while on a bad internet connection.
