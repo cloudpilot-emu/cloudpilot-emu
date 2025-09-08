@@ -8,6 +8,7 @@
 -   The "Reduce animations" setting as been removed. Please open an
     [issue on Github](https://github.com/cloudpilot-emu/cloudpilot-emu/issues)
     if you find you still need it.
+-   Minor bugfixes and styling changes.
 
 # Version 1.10.11
 
