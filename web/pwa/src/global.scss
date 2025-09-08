@@ -31,6 +31,16 @@ html {
 
     --cp-page-width: 40em;
     --cp-breadcrumb-menu-width: 250px;
+
+    user-select: none;
+}
+
+markdown {
+    user-select: text;
+}
+
+ion-title, ion-alert, p {
+    cursor: default;
 }
 
 .installation-error {

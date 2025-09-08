@@ -14,6 +14,7 @@
 }
 
 .placeholder {
+    cursor: default;
     text-align: center;
     max-width: 30em;
     padding: 0 2em;
@@ -27,4 +28,8 @@ ion-list {
 
 ion-item.metadata {
     text-align: center;
+}
+
+.directory-stats {
+    cursor: default;
 }

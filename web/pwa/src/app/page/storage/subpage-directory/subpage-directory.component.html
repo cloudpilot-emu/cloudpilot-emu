@@ -56,7 +56,7 @@
             </app-file-entry>
 
             <ion-item *ngIf="isRoot || fileCount > 0" class="metadata" lines="none">
-                <ion-label>
+                <ion-label class="directory-stats">
                     <p *ngIf="isRoot">{{ bytesFree() | fileSize }} free, {{ bytesTotal | fileSize }} total</p>
 
                     <p *ngIf="fileCount > 0">
