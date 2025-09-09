@@ -37,6 +37,10 @@ html {
 
 markdown {
     user-select: text;
+
+    p {
+        cursor: auto;
+    }
 }
 
 ion-title, ion-alert, p {
