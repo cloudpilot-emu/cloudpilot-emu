@@ -22,6 +22,10 @@ https://cloudpilot-emu.github.io/app
 The emulator can be added as an app to the homescreen of iOS and Android devices.
 Please check out the documentation in the app.
 
+In addition, starting with version 1.10.12, the release files on
+[https://github.com/cloudpilot-emu/cloudpilot-emu/releases](Github)
+include the prebuilt web app for self hosting.
+
 ## Embedded emulator
 
 The is an embedded version of CloudpilotEmu that allows you to embed the emulator
