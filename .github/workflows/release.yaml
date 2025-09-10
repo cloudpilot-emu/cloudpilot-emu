@@ -12,6 +12,7 @@ env:
   TAG: ${GITHUB_REF##*/}
   CP_EMBEDDED_ZIP_CONTENT: npm-embedded/dist/*
   CP_EMBEDDED_ZIP_NAME: cloudpilot-emu-embedded-${GITHUB_REF##*/}.zip
+  CP_WEB_ZIP_NAME: cloudpilot-emu-page-${GITHUB_REF##*/}.zip
 jobs:
   wait-for-release:
     runs-on: ubuntu-22.04
@@ -89,6 +90,18 @@ jobs:
           git config --global user.name "The Golem"
           git commit -m "Bump."
           git push
+      - name: Build release archive for web page
+        working-directory: web
+        run: |
+          rm -fr build-pwa
+          yarn build --base-href .
+          yarn generate-worker
+          mv build-pwa cloudpilot-emu
+      - name: Upload CP embedded release files
+        working-directory: web
+        run: |
+          zip -r ${{ env.CP_WEB_ZIP_NAME }} cloudpilot-emu
+          gh release upload ${{ env.TAG }} ${{ env.CP_WEB_ZIP_NAME }}
       - name: Upload CP embedded release files
         working-directory: web
         run: |
