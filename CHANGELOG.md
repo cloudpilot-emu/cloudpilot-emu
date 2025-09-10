@@ -1,4 +1,4 @@
-# Next Version
+# Version 1.10.12
 
 -   Update all JavaScript dependencies. Please open an
     [issue on Github](https://github.com/cloudpilot-emu/cloudpilot-emu/issues)
