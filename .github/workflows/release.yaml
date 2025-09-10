@@ -97,7 +97,7 @@ jobs:
           yarn build --base-href .
           yarn generate-worker
           mv build-pwa cloudpilot-emu
-      - name: Upload CP embedded release files
+      - name: Upload app release for self hosting
         working-directory: web
         run: |
           zip -r ${{ env.CP_WEB_ZIP_NAME }} cloudpilot-emu
