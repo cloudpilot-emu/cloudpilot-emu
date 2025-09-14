@@ -2,6 +2,7 @@
 
 #include <cstddef>
 
+#include "bridge.h"
 #include "db_backup.h"
 #include "savestate/SessionFile.h"
 #include "uarm.h"

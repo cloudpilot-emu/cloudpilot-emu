@@ -1,6 +1,25 @@
 importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
 (function () {
+    function copyIn(module, data) {
+        if (!data) return undefined;
+
+        const bridge = new module.Bridge();
+
+        try {
+            const ptr = bridge.Malloc(data.length);
+            if (ptr === 0) return undefined;
+
+            const ptrRaw = module.getPointer(ptr);
+
+            module.HEAPU8.subarray(ptrRaw, ptrRaw + data.length).set(data);
+
+            return ptr;
+        } finally {
+            module.destroy(bridge);
+        }
+    }
+
     class RpcClient {
         constructor(worker) {
             this.worker = worker;
@@ -245,15 +264,13 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
         ) {
             this.uarm = uarm;
             this.module = module;
+            this.bridge = new module.Bridge();
             this.onSpeedDisplay = onSpeedDisplay;
             this.onFrame = onFrame;
             this.log = log;
             this.postSnapshot = postSnapshot;
             this.cardId = cardId;
             this.crcCheck = crcCheck;
-
-            this.malloc = module.cwrap('malloc', 'number', ['number']);
-            this.free = module.cwrap('free', undefined, ['number']);
 
             this.amIDead = false;
             this.pcmEnabled = false;
@@ -296,6 +313,16 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
             });
         }
 
+        free(ptr) {
+            if (!ptr) return;
+
+            this.bridge.Free(ptr);
+        }
+
+        copyIn(data) {
+            return copyIn(this.module, data);
+        }
+
         static async create(
             ramSize,
             nor,
@@ -320,18 +347,11 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
                 instantiateWasm: (imports, callback) => WebAssembly.instantiate(wasmModule, imports).then(callback),
             });
 
-            const malloc = module.cwrap('malloc', 'number', ['number']);
-            const norPtr = malloc(nor.length);
-            const nandPtr = malloc(nand.length);
-            const sdPtr = sd ? malloc(sd.length) : 0;
-            const savestatePtr = savestate ? malloc(savestate.length) : 0;
-            const ramPtr = ram ? malloc(ram.length) : 0;
-
-            module.HEAPU8.subarray(norPtr, norPtr + nor.length).set(nor);
-            module.HEAPU8.subarray(nandPtr, nandPtr + nand.length).set(nand);
-            if (sd) module.HEAPU8.subarray(sdPtr, sdPtr + sd.length).set(sd);
-            if (savestate) module.HEAPU8.subarray(savestatePtr, savestatePtr + savestate.length).set(savestate);
-            if (ram) module.HEAPU8.subarray(ramPtr, ramPtr + ram.length).set(ram);
+            const norPtr = copyIn(module, nor);
+            const nandPtr = copyIn(module, nand);
+            const sdPtr = copyIn(module, sd);
+            const savestatePtr = copyIn(module, savestate);
+            const ramPtr = copyIn(module, ram);
 
             module.callMain([]);
 
@@ -575,10 +595,9 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
             if (this.uarm.IsSdInserted()) throw new Error('SD card already inserted');
 
-            const ptr = this.malloc(data.length);
-            this.module.HEAPU8.subarray(ptr, ptr + data.length).set(data);
+            const ptr = this.copyIn(data);
 
-            if (!this.uarm.SdCardInsert(this.module.wrapPointer(ptr), data.length, cardId)) {
+            if (!this.uarm.SdCardInsert(ptr, data.length, cardId)) {
                 this.free(ptr);
                 throw new Error('failed to insert SD card');
             }
@@ -597,11 +616,10 @@ importScripts('../uarm_web.js', './setimmediate/setimmediate.js', './crc.js');
 
             for (const file of files) {
                 try {
-                    const filePtr = this.malloc(file.content.length);
+                    const filePtr = this.copyIn(file.content);
                     if (!filePtr) throw new Error('unable to allocate memory');
 
-                    this.module.HEAPU8.subarray(filePtr, filePtr + file.content.length).set(file.content);
-                    const result = this.uarm.InstallDatabase(file.content.length, this.module.wrapPointer(filePtr));
+                    const result = this.uarm.InstallDatabase(file.content.length, filePtr);
                     this.free(filePtr);
 
                     this.log(installResult(result, file.name));

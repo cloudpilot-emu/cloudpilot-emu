@@ -121,3 +121,10 @@ interface DbBackup {
     [Const] VoidPtr GetArchiveData();
     long GetArchiveSize();
 };
+
+interface Bridge {
+    void Bridge();
+    
+    VoidPtr Malloc(unsigned long size);
+    void Free(VoidPtr ptr);
+};

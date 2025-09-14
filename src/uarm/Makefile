@@ -20,9 +20,8 @@ LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno -g \
 	-s WASM_BIGINT=1 \
 	-s ALLOW_TABLE_GROWTH=1 \
 	-s FILESYSTEM=0 \
-	-s EXPORTED_FUNCTIONS=["_malloc","_free","_main"] \
 	-s BINARYEN_IGNORE_IMPLICIT_TRAPS=1 \
-	-s EXPORTED_RUNTIME_METHODS=["callMain","cwrap","ccall","addFunction","HEAPU8","HEAPU32"]
+	-s EXPORTED_RUNTIME_METHODS=["wasmTable","callMain","HEAPU8","HEAPU32"]
 
 WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/uarm.idl
 
@@ -118,7 +117,8 @@ SOURCE_C_EMCC = $(SOURCE_C)
 SOURCE_CXX_EMCC = 						\
 	$(SOURCE_CXX)						\
 	web/main.cpp						\
-	web/uarm.cpp
+	web/uarm.cpp						\
+	web/bridge.cpp
 
 SOURCE_C_TEST = 						\
 	$(SOURCE_C) 						\

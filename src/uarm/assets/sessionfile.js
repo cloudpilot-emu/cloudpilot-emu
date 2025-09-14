@@ -10,8 +10,7 @@ export class SessionFile {
             )
             .then((module) => {
                 this.module = module;
-                this._malloc = module.cwrap('malloc', 'number', ['number']);
-                this._free = module.cwrap('free', undefined, ['number']);
+                this.bridge = new module.Bridge();
 
                 return module;
             });
@@ -39,20 +38,17 @@ export class SessionFile {
 
             sessionFile
                 .SetDeviceId(deviceId)
-                .SetMetadata(encodedMetadata.length, this.module.wrapPointer(metadataPtr))
-                .SetNor(nor.length, this.module.wrapPointer(norPtr))
-                .SetNand(nand.length, this.module.wrapPointer(nandPtr))
-                .SetMemory(ram.length, this.module.wrapPointer(ramPtr))
+                .SetMetadata(encodedMetadata.length, metadataPtr)
+                .SetNor(nor.length, norPtr)
+                .SetNand(nand.length, nandPtr)
+                .SetMemory(ram.length, ramPtr)
                 .SetRamSize(ramSize);
 
             if (savestate) sessionFile.SetSavestate(savestate.length, savestatePtr);
 
             if (!sessionFile.Serialize()) return undefined;
 
-            return this.copyOut(
-                sessionFile.GetSerializedSessionSize(),
-                this.module.getPointer(sessionFile.GetSerializedSession())
-            );
+            return this.copyOut(sessionFile.GetSerializedSessionSize(), sessionFile.GetSerializedSession());
         } finally {
             this.free(metadataPtr);
             this.free(norPtr);
@@ -71,21 +67,15 @@ export class SessionFile {
         let sessionPtr = this.copyIn(session);
 
         try {
-            if (!sessionFile.Deserialize(session.length, module.wrapPointer(sessionPtr))) return undefined;
+            if (!sessionFile.Deserialize(session.length, sessionPtr)) return undefined;
 
             const deviceId = sessionFile.GetDeviceId();
             const ramSize = sessionFile.GetRamSize();
-            const metadataBinary = this.copyOut(
-                sessionFile.GetMetadataSize(),
-                module.getPointer(sessionFile.GetMetadata())
-            );
-            const nor = this.copyOut(sessionFile.GetNorSize(), module.getPointer(sessionFile.GetNor()));
-            const nand = this.copyOut(sessionFile.GetNandSize(), module.getPointer(sessionFile.GetNand()));
-            const ram = this.copyOut(sessionFile.GetMemorySize(), module.getPointer(sessionFile.GetMemory()));
-            const savestate = this.copyOut(
-                sessionFile.GetSavestateSize(),
-                module.getPointer(sessionFile.GetSavestate())
-            );
+            const metadataBinary = this.copyOut(sessionFile.GetMetadataSize(), sessionFile.GetMetadata());
+            const nor = this.copyOut(sessionFile.GetNorSize(), sessionFile.GetNor());
+            const nand = this.copyOut(sessionFile.GetNandSize(), sessionFile.GetNand());
+            const ram = this.copyOut(sessionFile.GetMemorySize(), sessionFile.GetMemory());
+            const savestate = this.copyOut(sessionFile.GetSavestateSize(), sessionFile.GetSavestate());
 
             let metadata;
             if (metadataBinary) {
@@ -108,25 +98,28 @@ export class SessionFile {
         if (!buffer) return 0;
 
         const ptr = this.malloc(buffer.length);
-        this.module.HEAPU8.subarray(ptr, ptr + buffer.length).set(buffer);
+        const ptrNaked = this.module.getPointer(ptr);
+
+        this.module.HEAPU8.subarray(ptrNaked, ptrNaked + buffer.length).set(buffer);
 
         return ptr;
     }
 
     copyOut(size, ptr) {
         if (!ptr) return undefined;
+        const ptrNaked = this.module.getPointer(ptr);
 
         const buffer = new Uint8Array(size);
-        buffer.set(this.module.HEAPU8.subarray(ptr, ptr + size));
+        buffer.set(this.module.HEAPU8.subarray(ptrNaked, ptrNaked + size));
 
         return buffer;
     }
 
     free(ptr) {
-        if (ptr) this._free(ptr);
+        if (ptr) this.bridge.Free(ptr);
     }
 
     malloc(size) {
-        return this._malloc(size);
+        return this.bridge.Malloc(size);
     }
 }
