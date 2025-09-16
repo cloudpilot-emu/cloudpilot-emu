@@ -42,22 +42,17 @@ export class AlertService {
         extraButtons: Record<string, () => void> = {},
         closeButtonLabel = 'Close',
     ): Promise<void> {
-        let onDismiss: () => void = () => undefined;
-        const dismissed = new Promise<void>((resolve) => {
-            onDismiss = resolve;
-        });
-
         const alert = await this.alertController.create({
             header,
             message: this.sanitizeMessage(message),
             backdropDismiss: false,
             buttons: [
-                { text: closeButtonLabel, role: 'cancel', handler: onDismiss },
+                { text: closeButtonLabel, role: 'cancel' },
                 ...Object.keys(extraButtons).map((text) => ({
                     text,
                     handler: () => {
                         extraButtons[text]();
-                        onDismiss();
+                        void alert.dismiss();
                     },
                 })),
             ],
@@ -66,7 +61,6 @@ export class AlertService {
 
         await alert.present();
         await alert.onDidDismiss();
-        await dismissed;
     }
 
     async messageWithChoice(
@@ -77,22 +71,17 @@ export class AlertService {
         extraButtons: Record<string, () => void> = {},
         closeButtonLabel = 'Close',
     ): Promise<boolean> {
-        let onDismiss: () => void = () => undefined;
-        const dismissed = new Promise<void>((resolve) => {
-            onDismiss = resolve;
-        });
-
         const alert = await this.alertController.create({
             header,
             message: this.sanitizeMessage(message),
             backdropDismiss: false,
             buttons: [
-                { text: closeButtonLabel, role: 'cancel', handler: onDismiss },
+                { text: closeButtonLabel, role: 'cancel' },
                 ...Object.keys(extraButtons).map((text) => ({
                     text,
                     handler: () => {
                         extraButtons[text]();
-                        onDismiss();
+                        void alert.dismiss();
                     },
                 })),
             ],
@@ -110,7 +99,6 @@ export class AlertService {
 
         await alert.present();
         await alert.onDidDismiss();
-        await dismissed;
 
         return choice;
     }
