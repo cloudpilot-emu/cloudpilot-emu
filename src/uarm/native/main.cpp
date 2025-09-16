@@ -28,8 +28,8 @@
 #include "device.h"
 #include "md5.h"
 #include "rom_info5.h"
-#include "savestate/session_file5.h"
 #include "sdcard.h"
+#include "session/session_file5.h"
 
 using namespace std;
 

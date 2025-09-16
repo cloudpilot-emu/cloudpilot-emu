@@ -17,6 +17,12 @@ export const enum ZipfileWalkerState {
     done = 1,
 }
 
+export const enum DeviceType5 {
+    deviceTypeE2 = 0,
+    deviceTypeFrankenE2 = 1,
+    deviceTypeInvalid = -1,
+}
+
 export interface GunzipContext<VoidPtr> {
     GetState(): GunzipState;
     Continue(): GunzipState;
@@ -65,6 +71,42 @@ export interface ZipfileWalker<VoidPtr> {
     GetCurrentEntryContent(): VoidPtr;
 }
 
+export interface SessionFile5Impl<VoidPtr> {
+    IsSessionFile(size: number, data: VoidPtr): boolean;
+
+    GetDeviceId(): DeviceType5;
+    SetDeviceId(deviceId: DeviceType5): SessionFile5Impl<VoidPtr>;
+
+    GetMetadata(): VoidPtr;
+    GetMetadataSize(): number;
+    SetMetadata(size: number, data: VoidPtr): SessionFile5Impl<VoidPtr>;
+
+    GetNor(): VoidPtr;
+    GetNorSize(): number;
+    SetNor(size: number, data: VoidPtr): SessionFile5Impl<VoidPtr>;
+
+    GetNand(): VoidPtr;
+    GetNandSize(): number;
+    SetNand(size: number, data: VoidPtr): SessionFile5Impl<VoidPtr>;
+
+    GetMemory(): VoidPtr;
+    GetMemorySize(): number;
+    SetMemory(size: number, data: VoidPtr): SessionFile5Impl<VoidPtr>;
+
+    GetSavestate(): VoidPtr;
+    GetSavestateSize(): number;
+    SetSavestate(size: number, data: VoidPtr): SessionFile5Impl<VoidPtr>;
+
+    GetRamSize(): number;
+    SetRamSize(size: number): SessionFile5Impl<VoidPtr>;
+
+    Serialize(): boolean;
+    GetSerializedSession(): VoidPtr;
+    GetSerializedSessionSize(): number;
+
+    Deserialize(size: number, data: VoidPtr): boolean;
+}
+
 export interface ModuleWithGunzipContext<VoidPtr> {
     GunzipContext: {
         new (data: VoidPtr, size: number, slizeSize: number): GunzipContext<VoidPtr>;
@@ -86,5 +128,11 @@ export interface ModuleWithCreateZipContext<VoidPtr> {
 export interface ModuleWithZipfileWalker<VoidPtr> {
     ZipfileWalker: {
         new (bufferSize: number, buffer: VoidPtr): ZipfileWalker<VoidPtr>;
+    };
+}
+
+export interface ModuleWithSessionFile5Impl<VoidPtr> {
+    SessionFile5: {
+        new (): SessionFile5Impl<VoidPtr>;
     };
 }

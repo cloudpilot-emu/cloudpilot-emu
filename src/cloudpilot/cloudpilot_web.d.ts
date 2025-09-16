@@ -7,6 +7,8 @@ import {
     ZipfileWalker as ZipfileWalkerImpl,
     ModuleWithGunzipContext,
     ModuleWithZipfileWalker,
+    SessionFile5Impl,
+    ModuleWithSessionFile5Impl,
 } from '../common/web/common';
 
 export * from './web/binding/binding';
@@ -14,11 +16,13 @@ export { GunzipState, ZipfileWalkerState } from '../common/web/common';
 
 export type GunzipContext = GunzipContextImpl<VoidPtr>;
 export type ZipfileWalker = ZipfileWalkerImpl<VoidPtr>;
+export type SessionFile5 = SessionFile5Impl<VoidPtr>;
 
 export interface Module
     extends Omit<EmscriptenModule, 'instantiateWasm'>,
         ModuleWithGunzipContext<VoidPtr>,
-        ModuleWithZipfileWalker<VoidPtr> {
+        ModuleWithZipfileWalker<VoidPtr>,
+        ModuleWithSessionFile5Impl<VoidPtr> {
     addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;
     UTF8ToString(charPtr: number): string;
@@ -35,6 +39,7 @@ export interface Module
     destroy(sessionImage: SessionImage): void;
     destroy(skinLoader: SkinLoader): void;
     destroy(gunzipContext: GunzipContext): void;
+    destroy(session_file5: SessionFile5): void;
 }
 
 declare const createModule: (moduleOverrides: Partial<Module>) => Promise<Module>;

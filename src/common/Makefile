@@ -20,6 +20,8 @@ SOURCE_CXX = 						\
 	Logging.cpp						\
 	md5.cpp							\
 	rom_info5.cpp					\
+	session/rle.cpp					\
+	session/session_file5.cpp		\
 	savestate/Chunk.cpp				\
 	savestate/ChunkProbe.cpp
 

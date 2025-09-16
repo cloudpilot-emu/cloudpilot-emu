@@ -9,7 +9,11 @@ LDFLAGS_TEST_EXTRA ?= -lgtest_main
 
 EMCC_INITIAL_MEMORY = 67108864
 
-WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/cloudpilot.idl ../common/web/gunzip.idl ../common/web/zipfile_walker.idl
+WEBIDL_BINDING_SRC = \
+	$(WEBIDL_BINDING_DIR)/cloudpilot.idl \
+	../common/web/gunzip.idl \
+	../common/web/zipfile_walker.idl \
+	../common/web/session_file5.idl
 
 INCLUDE = \
 	-I../common \

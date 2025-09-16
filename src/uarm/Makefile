@@ -23,7 +23,7 @@ LDFLAGS_EMCC = -O3 -Wno-version-check -flto -Wl,-u,fileno -g \
 	-s BINARYEN_IGNORE_IMPLICIT_TRAPS=1 \
 	-s EXPORTED_RUNTIME_METHODS=["wasmTable","callMain","HEAPU8","HEAPU32"]
 
-WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/uarm.idl
+WEBIDL_BINDING_SRC = $(WEBIDL_BINDING_DIR)/uarm.idl ../common/web/session_file5.idl
 
 INCLUDE = -I./uarm -I. -I../common -I../common/zip -I../argparse
 
@@ -98,9 +98,7 @@ SOURCE_CXX =		 					\
 	uarm/db_installer.cpp				\
 	uarm/audio_queue.cpp				\
 	uarm/db_list.cpp					\
-	uarm/db_backup.cpp					\
-	uarm/savestate/rle.cpp				\
-	uarm/savestate/session_file5.cpp
+	uarm/db_backup.cpp
 
 SOURCE_C_NATIVE = $(SOURCE_C)
 SOURCE_CXX_NATIVE =						\
