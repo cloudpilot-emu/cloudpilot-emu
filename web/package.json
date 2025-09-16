@@ -1,6 +1,6 @@
 {
     "name": "cloudpilot-emu",
-    "version": "1.10.12",
+    "version": "1.10.13",
     "author": "Christian Speckner <cnspeckn@googlemail.com>",
     "license": "GPL-3.0-or-later",
     "homepage": "https://cloudpilot-emu.github.io/",
@@ -23,7 +23,7 @@
         "pwa-icons": "pwa-asset-generator --opaque false --favicon --scrape --icon-only -m pwa/src/manifest.webmanifest -i pwa/src/index.html pwa/assets-pwa-src/icon.html pwa/src/assets-pwa",
         "pwa-splash": "pwa-asset-generator --scrape --splash-only -m pwa/src/manifest.webmanifest -i pwa/src/index.html pwa/assets-pwa-src/splashscreen.html pwa/src/assets-pwa",
         "pwa-splash-dark": "pwa-asset-generator --scrape --splash-only --dark-mode -m pwa/src/manifest.webmanifest -i pwa/src/index.html pwa/assets-pwa-src/splashscreen.html pwa/src/assets-pwa",
-        "pwa-assets": "yarn pwa-icons && yarn pwa-splash && yarn pwa-splash-dark && prettier -w --parser html pwa/src/index.html"
+        "pwa-assets": "yarn pwa-icons && yarn pwa-splash && yarn pwa-splash-dark && prettier -w --parser html pwa/src/index.html",
     },
     "private": true,
     "devDependencies": {
@@ -45,7 +45,7 @@
         "prettier": "^3.1.1",
         "sinon": "^21.0.0",
         "typescript-eslint": "^8.42.0",
-        "workbox-cli": "^7.0.0"
+        "workbox-cli": "^7.0.0",
     },
     "dependencies": {
         "@angular-devkit/build-angular": "^20.3.0",
@@ -93,7 +93,7 @@
         "whatwg-fetch": "^3.6.20",
         "worker-timers": "^8.0.24",
         "yet-another-abortcontroller-polyfill": "^0.0.4",
-        "zone.js": "~0.15.1"
+        "zone.js": "~0.15.1",
     },
     "description": "CloudpilotEmu PWA",
     "prettier": {
@@ -101,46 +101,36 @@
         "tabWidth": 4,
         "singleQuote": true,
         "parser": "typescript",
-        "importOrder": [
-            "^(?!@pwa)[^.]",
-            "^@pwa/",
-            "^.*$"
-        ],
+        "importOrder": ["^(?!@pwa)[^.]", "^@pwa/", "^.*$"],
         "importOrderSeparation": true,
         "importOrderSortSpecifiers": true,
-        "importOrderParserPlugins": [
-            "typescript",
-            "classProperties",
-            "decorators-legacy"
-        ],
-        "plugins": [
-            "@trivago/prettier-plugin-sort-imports"
-        ],
+        "importOrderParserPlugins": ["typescript", "classProperties", "decorators-legacy"],
+        "plugins": ["@trivago/prettier-plugin-sort-imports"],
         "overrides": [
             {
                 "files": "*.page.html",
                 "options": {
-                    "parser": "angular"
-                }
+                    "parser": "angular",
+                },
             },
             {
                 "files": "*.component.html",
                 "options": {
-                    "parser": "angular"
-                }
+                    "parser": "angular",
+                },
             },
             {
                 "files": "*.json",
                 "options": {
-                    "parser": "jsonc"
-                }
-            }
-        ]
+                    "parser": "jsonc",
+                },
+            },
+        ],
     },
     "importSort": {
         ".js, .jsx, .ts, .tsx": {
             "style": "eslint",
-            "parser": "typescript"
-        }
-    }
+            "parser": "typescript",
+        },
+    },
 }

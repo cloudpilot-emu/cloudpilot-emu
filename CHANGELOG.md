@@ -1,3 +1,8 @@
+# Version 1.10.13
+
+-   Fix a regression that would cause the choice in some dialogs to be
+    ignored.
+
 # Version 1.10.12
 
 -   Update all JavaScript dependencies. Please open an
