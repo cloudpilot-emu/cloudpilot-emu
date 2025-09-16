@@ -1,3 +1,9 @@
+# Version 1.10.14
+
+-   Sometimes, the workaround introduced in 1.10.11 for load errors in the native
+    app caused by an iOS bug did not work correctly and required a manual service
+    worker reset. Fixed.
+
 # Version 1.10.13
 
 -   Fix a regression that would cause the choice in some dialogs to be
