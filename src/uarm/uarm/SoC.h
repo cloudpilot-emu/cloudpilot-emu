@@ -9,7 +9,7 @@
 
 #include "SoC_type.h"
 #include "buffer.h"
-#include "deviceType.h"
+#include "device_type5.h"
 #include "keys.h"
 
 #ifdef __cplusplus
@@ -28,7 +28,7 @@ struct NAND;
 typedef bool (*SdSectorR)(uint32_t secNum, void *buf);
 typedef bool (*SdSectorW)(uint32_t secNum, const void *buf);
 
-struct SoC *socInit(enum DeviceType deviceType, uint32_t ramSize, void *romData,
+struct SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData,
                     const uint32_t romSize, uint8_t *nandContent, size_t nandSize, int gdbPort,
                     uint_fast8_t socRev);
 
@@ -86,7 +86,7 @@ bool socSdInserted(struct SoC *soc);
 
 void socDumpMMU(struct SoC *soc);
 
-enum DeviceType socGetDeviceType(struct SoC *soc);
+enum DeviceType5 socGetDeviceType(struct SoC *soc);
 
 struct ArmCpu *socGetCpu(struct SoC *soc);
 struct SyscallDispatch *socGetSyscallDispatch(struct SoC *soc);

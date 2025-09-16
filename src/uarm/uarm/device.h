@@ -9,7 +9,7 @@
 
 #include "ROM.h"
 #include "SoC.h"
-#include "deviceType.h"
+#include "device_type5.h"
 #include "keys.h"
 #include "mem.h"
 #include "nand.h"
@@ -78,7 +78,7 @@ enum RamTermination deviceGetRamTerminationStyle(void);
 uint_fast8_t deviceGetSocRev(void);
 
 // device handling
-struct Device *deviceSetup(enum DeviceType type, struct SocPeriphs *sp,
+struct Device *deviceSetup(enum DeviceType5 type, struct SocPeriphs *sp,
                            struct Reschedule reschedule, struct Keypad *kp, struct VSD *vsd,
                            uint8_t *nandContent, size_t nandSize,
                            const struct MemoryBuffer *nandPageBuffer);
@@ -87,7 +87,7 @@ void devicePeriodic(struct Device *dev, uint32_t tier);
 void devicePcmPeriodic(struct Device *dev);
 void deviceTouch(struct Device *dev, int x, int y);
 
-void deviceGetDisplayConfiguration(enum DeviceType deviceType,
+void deviceGetDisplayConfiguration(enum DeviceType5 deviceType,
                                    struct DeviceDisplayConfiguration *displayConfiguration);
 
 bool deviceTaskRequired(struct Device *dev, uint32_t tier);
@@ -98,7 +98,7 @@ bool deviceI2sConnected();
 
 void deviceSetSdCardInserted(struct Device *dev, bool inserted);
 
-enum DeviceType deviceGetType(struct Device *dev);
+enum DeviceType5 deviceGetType(struct Device *dev);
 
 #ifdef __cplusplus
 }

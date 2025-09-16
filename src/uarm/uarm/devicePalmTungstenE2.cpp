@@ -107,7 +107,7 @@ struct Device {
 
     struct Reschedule reschedule;
 
-    enum DeviceType type;
+    enum DeviceType5 type;
 };
 
 uint32_t deviceGetDefaultRamSize(void) { return 16UL << 20; }
@@ -127,7 +127,7 @@ static void devicePrvReschedule(void *ctx, uint32_t task) {
         dev->reschedule.rescheduleCb(dev->reschedule.ctx, RESCHEDULE_TASK_DEVICE_TIER0);
 }
 
-struct Device *deviceSetup(enum DeviceType type, struct SocPeriphs *sp,
+struct Device *deviceSetup(enum DeviceType5 type, struct SocPeriphs *sp,
                            struct Reschedule reschedule, struct Keypad *kp, struct VSD *vsd,
                            uint8_t *nandContent, size_t nandSize,
                            const struct MemoryBuffer *pageBuffer) {
@@ -225,7 +225,7 @@ void deviceKey(struct Device *dev, uint32_t key, bool down) {
     // nothing
 }
 
-void deviceGetDisplayConfiguration(enum DeviceType deviceType,
+void deviceGetDisplayConfiguration(enum DeviceType5 deviceType,
                                    struct DeviceDisplayConfiguration *displayConfiguration) {
     displayConfiguration->width = 320;
 
@@ -256,7 +256,7 @@ void deviceSetSdCardInserted(struct Device *dev, bool inserted) {
     socGpioSetState(dev->gpio, 10, !inserted);
 }
 
-enum DeviceType deviceGetType(struct Device *dev) { return dev->type; }
+enum DeviceType5 deviceGetType(struct Device *dev) { return dev->type; }
 
 template <typename T>
 void deviceSave(struct Device *dev, T &savestate) {

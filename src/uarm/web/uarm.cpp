@@ -10,7 +10,7 @@
 #include "db_backup.h"
 #include "db_installer.h"
 #include "device.h"
-#include "rom_info.h"
+#include "rom_info5.h"
 #include "sdcard.h"
 
 using namespace std;
@@ -66,7 +66,7 @@ bool Uarm::Launch(unsigned int romSize, void* romData) {
         if (savestateData) free(savestateData);
     });
 
-    RomInfo romInfo(static_cast<uint8_t*>(romData), romSize);
+    RomInfo5 romInfo(static_cast<uint8_t*>(romData), romSize);
     if (!romInfo.IsValid()) {
         cerr << "invalid NOR" << endl;
         return false;

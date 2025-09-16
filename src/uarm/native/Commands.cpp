@@ -17,7 +17,7 @@
 #include "db_installer.h"
 #include "db_list.h"
 #include "md5.h"
-#include "savestate/SessionFile.h"
+#include "savestate/session_file5.h"
 #include "sdcard.h"
 #include "syscall_dispatch.h"
 
@@ -131,7 +131,7 @@ namespace {
             return;
         }
 
-        SessionFile sessionFile;
+        SessionFile5 sessionFile;
 
         const Buffer rom = socGetRomData(ctx->soc);
         const Buffer nand = socGetNandData(ctx->soc);

@@ -104,7 +104,7 @@ class Uarm {
     std::string sdId;
 
     uint32_t defaultMips{0};
-    DeviceType deviceType{deviceTypeInvalid};
+    DeviceType5 deviceType{deviceTypeInvalid};
 
     SoC* soc{nullptr};
     AudioQueue* audioQueue{nullptr};

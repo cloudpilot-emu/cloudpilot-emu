@@ -1,4 +1,4 @@
-#include "SessionFile.h"
+#include "session_file5.h"
 
 #include <algorithm>
 #include <cstring>
@@ -7,7 +7,7 @@
 #include "CPCrc.h"
 #include "Defer.h"
 #include "rle.h"
-#include "rom_info.h"
+#include "rom_info5.h"
 #include "zip/miniz.h"
 
 using namespace std;
@@ -23,7 +23,7 @@ namespace {
     constexpr size_t BUFFER_MIN_SIZE = 1024;
 }  // namespace
 
-bool SessionFile::IsSessionFile(size_t size, const void* data) {
+bool SessionFile5::IsSessionFile(size_t size, const void* data) {
     const uint8_t* data8 = reinterpret_cast<const uint8_t*>(data);
 
     if (size < 8) return false;
@@ -37,78 +37,78 @@ bool SessionFile::IsSessionFile(size_t size, const void* data) {
     return true;
 }
 
-uint32_t SessionFile::GetDeviceId() const { return deviceId; }
+uint32_t SessionFile5::GetDeviceId() const { return deviceId; }
 
-SessionFile& SessionFile::SetDeviceId(uint32_t deviceId) {
+SessionFile5& SessionFile5::SetDeviceId(uint32_t deviceId) {
     this->deviceId = deviceId;
 
     return *this;
 }
 
-const void* SessionFile::GetMetadata() const { return metadata; }
+const void* SessionFile5::GetMetadata() const { return metadata; }
 
-size_t SessionFile::GetMetadataSize() const { return metadataSize; }
+size_t SessionFile5::GetMetadataSize() const { return metadataSize; }
 
-SessionFile& SessionFile::SetMetadata(size_t size, const void* data) {
+SessionFile5& SessionFile5::SetMetadata(size_t size, const void* data) {
     metadataSize = size;
     metadata = reinterpret_cast<const uint8_t*>(data);
 
     return *this;
 }
 
-const void* SessionFile::GetNor() const { return nor; }
+const void* SessionFile5::GetNor() const { return nor; }
 
-size_t SessionFile::GetNorSize() const { return norSize; }
+size_t SessionFile5::GetNorSize() const { return norSize; }
 
-SessionFile& SessionFile::SetNor(size_t size, const void* data) {
+SessionFile5& SessionFile5::SetNor(size_t size, const void* data) {
     norSize = size;
     nor = reinterpret_cast<const uint8_t*>(data);
 
     return *this;
 }
 
-const void* SessionFile::GetNand() const { return nand; }
+const void* SessionFile5::GetNand() const { return nand; }
 
-size_t SessionFile::GetNandSize() const { return nandSize; }
+size_t SessionFile5::GetNandSize() const { return nandSize; }
 
-SessionFile& SessionFile::SetNand(size_t size, const void* data) {
+SessionFile5& SessionFile5::SetNand(size_t size, const void* data) {
     nandSize = size;
     nand = reinterpret_cast<const uint8_t*>(data);
 
     return *this;
 }
 
-const void* SessionFile::GetMemory() const { return memory; }
+const void* SessionFile5::GetMemory() const { return memory; }
 
-size_t SessionFile::GetMemorySize() const { return memorySize; }
+size_t SessionFile5::GetMemorySize() const { return memorySize; }
 
-SessionFile& SessionFile::SetMemory(size_t size, const void* data) {
+SessionFile5& SessionFile5::SetMemory(size_t size, const void* data) {
     memorySize = size;
     memory = reinterpret_cast<const uint8_t*>(data);
 
     return *this;
 }
 
-const void* SessionFile::GetSavestate() const { return savestate; }
+const void* SessionFile5::GetSavestate() const { return savestate; }
 
-size_t SessionFile::GetSavestateSize() const { return savestateSize; }
+size_t SessionFile5::GetSavestateSize() const { return savestateSize; }
 
-SessionFile& SessionFile::SetSavestate(size_t size, const void* data) {
+SessionFile5& SessionFile5::SetSavestate(size_t size, const void* data) {
     savestateSize = size;
     savestate = reinterpret_cast<const uint8_t*>(data);
 
     return *this;
 }
 
-size_t SessionFile::GetRamSize() { return ramSize; }
+size_t SessionFile5::GetRamSize() { return ramSize; }
 
-SessionFile& SessionFile::SetRamSize(uint32_t size) {
+SessionFile5& SessionFile5::SetRamSize(uint32_t size) {
     ramSize = size;
 
     return *this;
 }
 
-bool SessionFile::Serialize() {
+bool SessionFile5::Serialize() {
     serializedSessionSize = 0;
     serializedSession = nullptr;
 
@@ -185,11 +185,11 @@ bool SessionFile::Serialize() {
     return true;
 }
 
-const void* SessionFile::GetSerializedSession() const { return serializedSession; }
+const void* SessionFile5::GetSerializedSession() const { return serializedSession; }
 
-size_t SessionFile::GetSerializedSessionSize() const { return serializedSessionSize; }
+size_t SessionFile5::GetSerializedSessionSize() const { return serializedSessionSize; }
 
-bool SessionFile::Deserialize(size_t size, const void* data) {
+bool SessionFile5::Deserialize(size_t size, const void* data) {
     metadataSize = norSize = nandSize = memorySize = savestateSize = 0;
     metadata = nor = nand = memory = savestate = nullptr;
 
@@ -226,7 +226,7 @@ bool SessionFile::Deserialize(size_t size, const void* data) {
     }
 }
 
-bool SessionFile::Write32(uint32_t data) {
+bool SessionFile5::Write32(uint32_t data) {
     if (!buffer || cursor - buffer.get() + 4 > static_cast<ssize_t>(bufferSize)) return false;
 
     *(cursor++) = data;
@@ -237,7 +237,7 @@ bool SessionFile::Write32(uint32_t data) {
     return true;
 }
 
-uint32_t SessionFile::Read32(bool& success) {
+uint32_t SessionFile5::Read32(bool& success) {
     if (!serializedSession ||
         ccursor - serializedSession + 4 > static_cast<ssize_t>(serializedSessionSize)) {
         success = false;
@@ -252,7 +252,7 @@ uint32_t SessionFile::Read32(bool& success) {
     return result;
 }
 
-bool SessionFile::AppendToCompressionStream(size_t size, const uint8_t* data, mz_stream& stream) {
+bool SessionFile5::AppendToCompressionStream(size_t size, const uint8_t* data, mz_stream& stream) {
     if (size == 0) return true;
 
     stream.next_in = reinterpret_cast<const unsigned char*>(data);
@@ -270,7 +270,7 @@ bool SessionFile::AppendToCompressionStream(size_t size, const uint8_t* data, mz
     return deflateResult == Z_OK;
 }
 
-bool SessionFile::GrowBuffer(mz_stream& stream) {
+bool SessionFile5::GrowBuffer(mz_stream& stream) {
     if (bufferSize == BUFFER_MAX_SIZE) return false;
 
     size_t newBufferSize = min((bufferSize * 3) / 2, BUFFER_MAX_SIZE);
@@ -288,7 +288,7 @@ bool SessionFile::GrowBuffer(mz_stream& stream) {
     return true;
 }
 
-bool SessionFile::Flush(mz_stream& stream) {
+bool SessionFile5::Flush(mz_stream& stream) {
     int deflateResult;
 
     do {
@@ -300,7 +300,7 @@ bool SessionFile::Flush(mz_stream& stream) {
     return deflateResult == Z_STREAM_END;
 }
 
-bool SessionFile::Deserialize_v0() {
+bool SessionFile5::Deserialize_v0() {
     bool success = true;
 
     metadataSize = Read32(success);
@@ -411,7 +411,7 @@ bool SessionFile::Deserialize_v0() {
         return false;
     }
 
-    RomInfo info(nor, norSize);
+    RomInfo5 info(nor, norSize);
     if (!info.IsValid()) {
         cerr << "session image v0: unable to determine device type" << endl;
         return false;
@@ -422,7 +422,7 @@ bool SessionFile::Deserialize_v0() {
     return true;
 }
 
-bool SessionFile::Deserialize_v1_v2(uint32_t version) {
+bool SessionFile5::Deserialize_v1_v2(uint32_t version) {
     bool success = true;
 
     deviceId = Read32(success);
