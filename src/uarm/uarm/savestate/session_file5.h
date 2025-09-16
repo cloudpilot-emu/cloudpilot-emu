@@ -1,5 +1,5 @@
-#ifndef _SESSION_FILE_H_
-#define _SESSION_FILE_H_
+#ifndef _SESSION_FILE5_H_
+#define _SESSION_FILE5_H_
 
 #include <cstddef>
 #include <cstdint>
@@ -7,37 +7,37 @@
 
 struct mz_stream_s;
 
-class SessionFile {
+class SessionFile5 {
    public:
-    explicit SessionFile() = default;
+    explicit SessionFile5() = default;
 
     static bool IsSessionFile(size_t size, const void* data);
 
     uint32_t GetDeviceId() const;
-    SessionFile& SetDeviceId(uint32_t deviceId);
+    SessionFile5& SetDeviceId(uint32_t deviceId);
 
     const void* GetMetadata() const;
     size_t GetMetadataSize() const;
-    SessionFile& SetMetadata(size_t size, const void* data);
+    SessionFile5& SetMetadata(size_t size, const void* data);
 
     const void* GetNor() const;
     size_t GetNorSize() const;
-    SessionFile& SetNor(size_t size, const void* data);
+    SessionFile5& SetNor(size_t size, const void* data);
 
     const void* GetNand() const;
     size_t GetNandSize() const;
-    SessionFile& SetNand(size_t size, const void* data);
+    SessionFile5& SetNand(size_t size, const void* data);
 
     const void* GetMemory() const;
     size_t GetMemorySize() const;
-    SessionFile& SetMemory(size_t size, const void* data);
+    SessionFile5& SetMemory(size_t size, const void* data);
 
     const void* GetSavestate() const;
     size_t GetSavestateSize() const;
-    SessionFile& SetSavestate(size_t size, const void* data);
+    SessionFile5& SetSavestate(size_t size, const void* data);
 
     size_t GetRamSize();
-    SessionFile& SetRamSize(uint32_t size);
+    SessionFile5& SetRamSize(uint32_t size);
 
     bool Serialize();
     const void* GetSerializedSession() const;
@@ -86,10 +86,10 @@ class SessionFile {
     const uint8_t* ccursor;
 
    private:
-    SessionFile(const SessionFile&) = delete;
-    SessionFile(SessionFile&&) = delete;
-    SessionFile& operator=(const SessionFile&) = delete;
-    SessionFile& operator=(SessionFile&&) = delete;
+    SessionFile5(const SessionFile5&) = delete;
+    SessionFile5(SessionFile5&&) = delete;
+    SessionFile5& operator=(const SessionFile5&) = delete;
+    SessionFile5& operator=(SessionFile5&&) = delete;
 };
 
-#endif  // _SESSION_FILE_H_
+#endif  // _SESSION_FILE5_H_

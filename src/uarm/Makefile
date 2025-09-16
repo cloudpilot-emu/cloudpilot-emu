@@ -97,11 +97,10 @@ SOURCE_CXX =		 					\
 	uarm/syscall_dispatch.cpp			\
 	uarm/db_installer.cpp				\
 	uarm/audio_queue.cpp				\
-	uarm/rom_info.cpp					\
 	uarm/db_list.cpp					\
 	uarm/db_backup.cpp					\
 	uarm/savestate/rle.cpp				\
-	uarm/savestate/SessionFile.cpp
+	uarm/savestate/session_file5.cpp
 
 SOURCE_C_NATIVE = $(SOURCE_C)
 SOURCE_CXX_NATIVE =						\

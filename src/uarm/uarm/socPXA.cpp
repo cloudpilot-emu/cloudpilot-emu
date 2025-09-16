@@ -289,7 +289,7 @@ static void socAllocateBuffers(SoC *soc) {
     if (!success) ERR("failed to allocate memory buffers");
 }
 
-SoC *socInit(enum DeviceType deviceType, uint32_t ramSize, void *romData, const uint32_t romSize,
+SoC *socInit(enum DeviceType5 deviceType, uint32_t ramSize, void *romData, const uint32_t romSize,
              uint8_t *nandContent, size_t nandSize, int gdbPort, uint_fast8_t socRev) {
     SoC *soc = (SoC *)malloc(sizeof(SoC));
     struct SocPeriphs sp = {};
@@ -888,7 +888,7 @@ struct Buffer socGetSavestate(struct SoC *soc) {
     return {.size = soc->savestate->GetSize(), .data = soc->savestate->GetBuffer()};
 }
 
-enum DeviceType socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->dev); }
+enum DeviceType5 socGetDeviceType(struct SoC *soc) { return deviceGetType(soc->dev); }
 
 void socDumpMMU(struct SoC *soc) { mmuDump(cpuGetMMU(soc->cpu)); }
 

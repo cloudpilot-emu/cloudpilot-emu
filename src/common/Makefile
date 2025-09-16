@@ -19,6 +19,7 @@ SOURCE_CXX = 						\
 	FileUtil.cpp 					\
 	Logging.cpp						\
 	md5.cpp							\
+	rom_info5.cpp					\
 	savestate/Chunk.cpp				\
 	savestate/ChunkProbe.cpp
 

@@ -21,7 +21,7 @@ export class SessionFile {
 
         const encoder = new TextEncoder();
         const encodedMetadata = encoder.encode(JSON.stringify(metadata));
-        const sessionFile = new module.SessionFile();
+        const sessionFile = new module.SessionFile5();
 
         let metadataPtr;
         let norPtr;
@@ -63,7 +63,7 @@ export class SessionFile {
     async deserializeSession(session) {
         const module = await this.modulePromise;
 
-        const sessionFile = new module.SessionFile();
+        const sessionFile = new module.SessionFile5();
         let sessionPtr = this.copyIn(session);
 
         try {

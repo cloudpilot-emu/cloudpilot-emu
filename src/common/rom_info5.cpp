@@ -1,4 +1,4 @@
-#include "rom_info.h"
+#include "rom_info5.h"
 
 #include <iomanip>
 #include <iostream>
@@ -25,7 +25,7 @@ namespace {
         return str;
     }
 
-    const char* describeDeviceType(DeviceType deviceType) {
+    const char* describeDeviceType(DeviceType5 deviceType) {
         switch (deviceType) {
             case deviceTypeE2:
                 return "Tungsten E2";
@@ -39,23 +39,23 @@ namespace {
     }
 }  // namespace
 
-RomInfo::RomInfo(const uint8_t* buffer, size_t size) : buffer(buffer), size(size) {
+RomInfo5::RomInfo5(const uint8_t* buffer, size_t size) : buffer(buffer), size(size) {
     isValid = Parse();
 }
 
-bool RomInfo::IsValid() const { return isValid; }
+bool RomInfo5::IsValid() const { return isValid; }
 
-const std::string& RomInfo::GetCardName() const { return cardName; }
+const std::string& RomInfo5::GetCardName() const { return cardName; }
 
-const std::string& RomInfo::GetManufacturer() const { return manufacturer; }
+const std::string& RomInfo5::GetManufacturer() const { return manufacturer; }
 
-const std::string& RomInfo::GetRomName() const { return romName; }
+const std::string& RomInfo5::GetRomName() const { return romName; }
 
-uint32_t RomInfo::GetCompanyId() const { return companyId; }
+uint32_t RomInfo5::GetCompanyId() const { return companyId; }
 
-uint32_t RomInfo::GetHalId() const { return halId; }
+uint32_t RomInfo5::GetHalId() const { return halId; }
 
-DeviceType RomInfo::GetDeviceType() const {
+DeviceType5 RomInfo5::GetDeviceType() const {
     if (!isValid) return deviceTypeInvalid;
 
     if (companyId == COMPANY_ID_PALM && halId == HAL_ID_TUNGSTEN_E2) {
@@ -69,7 +69,7 @@ DeviceType RomInfo::GetDeviceType() const {
     return deviceTypeInvalid;
 }
 
-bool RomInfo::Parse() {
+bool RomInfo5::Parse() {
     size_t offset = 0;
     bool signatureFound = false;
     bool error = false;
@@ -86,7 +86,7 @@ bool RomInfo::Parse() {
     return false;
 }
 
-bool RomInfo::ParseAt(size_t offset) {
+bool RomInfo5::ParseAt(size_t offset) {
     bool error = false;
 
     cardName = ReadString(offset + 0x10, 32, error);
@@ -99,7 +99,7 @@ bool RomInfo::ParseAt(size_t offset) {
     return !error;
 }
 
-uint32_t RomInfo::Read32(size_t offset, bool& error) const {
+uint32_t RomInfo5::Read32(size_t offset, bool& error) const {
     if (error) return 0;
 
     if (offset + 4 > size) {
@@ -111,7 +111,7 @@ uint32_t RomInfo::Read32(size_t offset, bool& error) const {
            (buffer[offset + 3] << 24);
 }
 
-std::string RomInfo::ReadString(size_t offset, uint8_t maxLen, bool& error) const {
+std::string RomInfo5::ReadString(size_t offset, uint8_t maxLen, bool& error) const {
     if (error) return "";
 
     char str[256];
@@ -130,7 +130,7 @@ std::string RomInfo::ReadString(size_t offset, uint8_t maxLen, bool& error) cons
     return str;
 }
 
-std::ostream& operator<<(std::ostream& stream, RomInfo& info) {
+std::ostream& operator<<(std::ostream& stream, RomInfo5& info) {
     if (!info.IsValid()) {
         stream << "invalid ROM" << std::endl;
         return stream;

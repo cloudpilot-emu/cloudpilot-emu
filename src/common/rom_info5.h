@@ -1,16 +1,16 @@
-#ifndef _ROM_INFO_H_
-#define _ROM_INFO_H_
+#ifndef _ROM_INFO5_H_
+#define _ROM_INFO5_H_
 
 #include <cstddef>
 #include <cstdint>
 #include <ostream>
 #include <string>
 
-#include "deviceType.h"
+#include "device_type5.h"
 
-class RomInfo {
+class RomInfo5 {
    public:
-    RomInfo(const uint8_t* buffer, size_t size);
+    RomInfo5(const uint8_t* buffer, size_t size);
 
     bool IsValid() const;
 
@@ -21,7 +21,7 @@ class RomInfo {
     uint32_t GetCompanyId() const;
     uint32_t GetHalId() const;
 
-    DeviceType GetDeviceType() const;
+    DeviceType5 GetDeviceType() const;
 
    private:
     bool Parse();
@@ -44,6 +44,6 @@ class RomInfo {
     uint32_t halId{0};
 };
 
-std::ostream& operator<<(std::ostream& stream, RomInfo& romInfo);
+std::ostream& operator<<(std::ostream& stream, RomInfo5& romInfo);
 
-#endif  // _ROM_INFO_H_
+#endif  // _ROM_INFO5_H_

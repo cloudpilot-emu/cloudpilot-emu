@@ -27,8 +27,8 @@
 #include "cputil.h"
 #include "device.h"
 #include "md5.h"
-#include "rom_info.h"
-#include "savestate/SessionFile.h"
+#include "rom_info5.h"
+#include "savestate/session_file5.h"
 #include "sdcard.h"
 
 using namespace std;
@@ -123,13 +123,13 @@ namespace {
 
     bool readSession(const Options& options, Buffer& nor, Buffer& nand, Buffer& ram,
                      Buffer& savestate, uint32_t& ramSize) {
-        SessionFile sessionFile;
+        SessionFile5 sessionFile;
 
         size_t norOrSessionLen{0};
         unique_ptr<uint8_t[]> norOrSessionData;
         if (!util::ReadFile(options.norOrSession, norOrSessionData, norOrSessionLen)) return false;
 
-        if (SessionFile::IsSessionFile(norOrSessionLen, norOrSessionData.get()) &&
+        if (SessionFile5::IsSessionFile(norOrSessionLen, norOrSessionData.get()) &&
             sessionFile.Deserialize(norOrSessionLen, norOrSessionData.get())) {
             if (options.nand) {
                 cerr << "separate NAND image cannot be used with session file" << endl;
@@ -179,10 +179,10 @@ namespace {
 
         if (!readSession(options, nor, nand, memory, savestate, ramSize)) return false;
 
-        RomInfo romInfo(reinterpret_cast<uint8_t*>(nor.data), nor.size);
+        RomInfo5 romInfo(reinterpret_cast<uint8_t*>(nor.data), nor.size);
         cerr << romInfo;
 
-        if (!romInfo.IsValid() || romInfo.GetDeviceType() == DeviceType::deviceTypeInvalid)
+        if (!romInfo.IsValid() || romInfo.GetDeviceType() == DeviceType5::deviceTypeInvalid)
             return false;
 
         if (options.ramSize) {
