@@ -31,13 +31,13 @@ export class ServiceWorkerService {
     }
 
     async reset(): Promise<void> {
-        if (!this.registration) return;
-
         const loader = await this.loadingController.create();
         await loader.present();
 
         try {
-            if (!(await this.registration.unregister())) throw new Error('failed to unregister worker');
+            const registration = await navigator.serviceWorker.getRegistration();
+
+            if (!(await registration?.unregister())) throw new Error('failed to unregister worker');
 
             await this.updateNativeAppRegistrationStatus(false);
         } catch (e) {
