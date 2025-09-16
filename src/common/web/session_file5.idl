@@ -1,0 +1,37 @@
+interface SessionFile5 {
+    void SessionFile5();
+
+    boolean IsSessionFile(long size, [Const] VoidPtr data);
+
+    long GetDeviceId();
+    [Ref] SessionFile5 SetDeviceId(long deviceId);
+
+    [Const] VoidPtr GetMetadata();
+    long GetMetadataSize();
+    [Ref] SessionFile5 SetMetadata(long size, [Const] VoidPtr data);
+
+    [Const] VoidPtr GetNor();
+    long GetNorSize();
+    [Ref] SessionFile5 SetNor(long size, [Const] VoidPtr data);
+
+    [Const] VoidPtr GetNand();
+    long GetNandSize();
+    [Ref] SessionFile5 SetNand(long size, [Const] VoidPtr data);
+
+    [Const] VoidPtr GetMemory();
+    long GetMemorySize();
+    [Ref] SessionFile5 SetMemory(long size, [Const] VoidPtr data);
+
+    [Const] VoidPtr GetSavestate();
+    long GetSavestateSize();
+    [Ref] SessionFile5 SetSavestate(long size, [Const] VoidPtr data);
+
+    long GetRamSize();
+    [Ref] SessionFile5 SetRamSize(long size);
+
+    boolean Serialize();
+    [Const] VoidPtr GetSerializedSession();
+    long GetSerializedSessionSize();
+
+    boolean Deserialize(long Size, [Const] VoidPtr data);
+};

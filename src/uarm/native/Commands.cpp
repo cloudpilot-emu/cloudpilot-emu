@@ -17,8 +17,8 @@
 #include "db_installer.h"
 #include "db_list.h"
 #include "md5.h"
-#include "savestate/session_file5.h"
 #include "sdcard.h"
+#include "session/session_file5.h"
 #include "syscall_dispatch.h"
 
 using namespace std;

@@ -15,6 +15,7 @@
 #include "SuspendContextNetworkRpc.h"
 #include "SuspendContextSerialSync.h"
 #include "ZipfileWalker.h"
+#include "session/session_file5.h"
 
 // clang-format off
 #include "binding/binding.cpp"
