@@ -1,0 +1,12 @@
+interface RomInfo5 {
+    void RomInfo5([Const] VoidPtr data, long size);
+
+    [Const] DOMString GetCardName();
+    [Const] DOMString GetManufacturer();
+    [Const] DOMString GetRomName();
+
+    long GetCompanyId();
+    long GetHalId();
+
+    long GetDeviceType();
+};
