@@ -10,6 +10,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <string>
 
 #include "Cli.h"
 #include "Commands.h"
@@ -195,7 +196,7 @@ namespace {
         }
 
         if (ramSize == 0)
-            ramSize = (romInfo.GetCardName() == "PalmCard" && romInfo.GetHalId() == 'hspr')
+            ramSize = (romInfo.GetCardName() == string("PalmCard") && romInfo.GetHalId() == 'hspr')
                           ? (16ul << 20)
                           : (32ul << 20);
 

@@ -5,10 +5,12 @@ import { Cloudpilot, RomInfo, VoidPtr } from './web/binding/binding';
 import {
     GunzipContext as GunzipContextImpl,
     ZipfileWalker as ZipfileWalkerImpl,
+    SessionFile5 as SessionFile5Impl,
+    RomInfo5 as RomInfo5Impl,
     ModuleWithGunzipContext,
     ModuleWithZipfileWalker,
-    SessionFile5Impl,
-    ModuleWithSessionFile5Impl,
+    ModuleWithSessionFile5,
+    ModuleWithRomInfo5,
 } from '../common/web/common';
 
 export * from './web/binding/binding';
@@ -17,12 +19,14 @@ export { GunzipState, ZipfileWalkerState } from '../common/web/common';
 export type GunzipContext = GunzipContextImpl<VoidPtr>;
 export type ZipfileWalker = ZipfileWalkerImpl<VoidPtr>;
 export type SessionFile5 = SessionFile5Impl<VoidPtr>;
+export type RomInfo5 = RomInfo5Impl<VoidPtr>;
 
 export interface Module
     extends Omit<EmscriptenModule, 'instantiateWasm'>,
         ModuleWithGunzipContext<VoidPtr>,
         ModuleWithZipfileWalker<VoidPtr>,
-        ModuleWithSessionFile5Impl<VoidPtr> {
+        ModuleWithSessionFile5<VoidPtr>,
+        ModuleWithRomInfo5<VoidPtr> {
     addFunction: typeof addFunction;
     getPointer(ptr: VoidPtr): number;
     UTF8ToString(charPtr: number): string;
@@ -39,7 +43,8 @@ export interface Module
     destroy(sessionImage: SessionImage): void;
     destroy(skinLoader: SkinLoader): void;
     destroy(gunzipContext: GunzipContext): void;
-    destroy(session_file5: SessionFile5): void;
+    destroy(sessionFile5: SessionFile5): void;
+    destroy(romInfo5: RomInfo5): void;
 }
 
 declare const createModule: (moduleOverrides: Partial<Module>) => Promise<Module>;

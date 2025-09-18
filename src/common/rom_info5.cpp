@@ -39,17 +39,18 @@ namespace {
     }
 }  // namespace
 
-RomInfo5::RomInfo5(const uint8_t* buffer, size_t size) : buffer(buffer), size(size) {
+RomInfo5::RomInfo5(const void* buffer, size_t size)
+    : buffer(static_cast<const uint8_t*>(buffer)), size(size) {
     isValid = Parse();
 }
 
 bool RomInfo5::IsValid() const { return isValid; }
 
-const std::string& RomInfo5::GetCardName() const { return cardName; }
+const char* RomInfo5::GetCardName() const { return cardName.c_str(); }
 
-const std::string& RomInfo5::GetManufacturer() const { return manufacturer; }
+const char* RomInfo5::GetManufacturer() const { return manufacturer.c_str(); }
 
-const std::string& RomInfo5::GetRomName() const { return romName; }
+const char* RomInfo5::GetRomName() const { return romName.c_str(); }
 
 uint32_t RomInfo5::GetCompanyId() const { return companyId; }
 

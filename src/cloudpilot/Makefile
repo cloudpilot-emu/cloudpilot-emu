@@ -13,7 +13,8 @@ WEBIDL_BINDING_SRC = \
 	$(WEBIDL_BINDING_DIR)/cloudpilot.idl \
 	../common/web/gunzip.idl \
 	../common/web/zipfile_walker.idl \
-	../common/web/session_file5.idl
+	../common/web/session_file5.idl \
+	../common/web/rom_info5.idl
 
 INCLUDE = \
 	-I../common \

@@ -71,40 +71,51 @@ export interface ZipfileWalker<VoidPtr> {
     GetCurrentEntryContent(): VoidPtr;
 }
 
-export interface SessionFile5Impl<VoidPtr> {
+export interface SessionFile5<VoidPtr> {
     IsSessionFile(size: number, data: VoidPtr): boolean;
 
     GetDeviceId(): DeviceType5;
-    SetDeviceId(deviceId: DeviceType5): SessionFile5Impl<VoidPtr>;
+    SetDeviceId(deviceId: DeviceType5): SessionFile5<VoidPtr>;
 
     GetMetadata(): VoidPtr;
     GetMetadataSize(): number;
-    SetMetadata(size: number, data: VoidPtr): SessionFile5Impl<VoidPtr>;
+    SetMetadata(size: number, data: VoidPtr): SessionFile5<VoidPtr>;
 
     GetNor(): VoidPtr;
     GetNorSize(): number;
-    SetNor(size: number, data: VoidPtr): SessionFile5Impl<VoidPtr>;
+    SetNor(size: number, data: VoidPtr): SessionFile5<VoidPtr>;
 
     GetNand(): VoidPtr;
     GetNandSize(): number;
-    SetNand(size: number, data: VoidPtr): SessionFile5Impl<VoidPtr>;
+    SetNand(size: number, data: VoidPtr): SessionFile5<VoidPtr>;
 
     GetMemory(): VoidPtr;
     GetMemorySize(): number;
-    SetMemory(size: number, data: VoidPtr): SessionFile5Impl<VoidPtr>;
+    SetMemory(size: number, data: VoidPtr): SessionFile5<VoidPtr>;
 
     GetSavestate(): VoidPtr;
     GetSavestateSize(): number;
-    SetSavestate(size: number, data: VoidPtr): SessionFile5Impl<VoidPtr>;
+    SetSavestate(size: number, data: VoidPtr): SessionFile5<VoidPtr>;
 
     GetRamSize(): number;
-    SetRamSize(size: number): SessionFile5Impl<VoidPtr>;
+    SetRamSize(size: number): SessionFile5<VoidPtr>;
 
     Serialize(): boolean;
     GetSerializedSession(): VoidPtr;
     GetSerializedSessionSize(): number;
 
     Deserialize(size: number, data: VoidPtr): boolean;
+}
+
+export interface RomInfo5<VoidPtr> {
+    GetCardName(): string;
+    GetManufacturer(): string;
+    GetRomName(): string;
+
+    GetCompanyId(): number;
+    GetHalId(): number;
+
+    GetDeviceType(): DeviceType5;
 }
 
 export interface ModuleWithGunzipContext<VoidPtr> {
@@ -131,8 +142,14 @@ export interface ModuleWithZipfileWalker<VoidPtr> {
     };
 }
 
-export interface ModuleWithSessionFile5Impl<VoidPtr> {
+export interface ModuleWithSessionFile5<VoidPtr> {
     SessionFile5: {
-        new (): SessionFile5Impl<VoidPtr>;
+        new (): SessionFile5<VoidPtr>;
+    };
+}
+
+export interface ModuleWithRomInfo5<VoidPtr> {
+    RomInfo5: {
+        new (buffer: VoidPtr, size: number): RomInfo5<VoidPtr>;
     };
 }

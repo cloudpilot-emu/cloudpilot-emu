@@ -10,13 +10,13 @@
 
 class RomInfo5 {
    public:
-    RomInfo5(const uint8_t* buffer, size_t size);
+    RomInfo5(const void* buffer, size_t size);
 
     bool IsValid() const;
 
-    const std::string& GetCardName() const;
-    const std::string& GetManufacturer() const;
-    const std::string& GetRomName() const;
+    const char* GetCardName() const;
+    const char* GetManufacturer() const;
+    const char* GetRomName() const;
 
     uint32_t GetCompanyId() const;
     uint32_t GetHalId() const;
