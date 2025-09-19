@@ -1,7 +1,9 @@
 import { Injectable, Signal, signal } from '@angular/core';
 import { SessionImage } from '@common/bridge/Cloudpilot';
+import { engine } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { Engine } from '@common/model/Engine';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { LoadingController } from '@ionic/angular';
 import { ZipfileWalkerState } from '@native/cloudpilot_web';
@@ -255,6 +257,7 @@ export class SessionService {
             }
 
             const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
+                engine: engine(session.device),
                 deviceId: session.device,
                 metadata: metadataForSession(session),
                 rom,
@@ -282,6 +285,7 @@ export class SessionService {
         }
 
         const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
+            engine: engine(session.device),
             deviceId: session.device,
             metadata: metadataForSession(session),
             rom,
