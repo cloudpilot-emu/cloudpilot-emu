@@ -8,11 +8,18 @@ export interface Session {
     device: DeviceId;
     ram: number;
     osVersion?: number;
-    hotsyncName?: string;
-    dontManageHotsyncName?: boolean;
     wasResetForcefully?: boolean;
-    speed?: number;
     deviceOrientation?: DeviceOrientation;
     mountedCard?: number;
     lastLaunch?: number;
+
+    // only OS4
+    hotsyncName?: string;
+    dontManageHotsyncName?: boolean;
+    speed?: number;
+
+    // only uarm
+    nand?: number;
+    targetMips?: number;
+    warnMips?: number;
 }

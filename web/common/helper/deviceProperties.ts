@@ -1,5 +1,6 @@
 import { DeviceId } from '@common/model/DeviceId';
 import { Dimensions, ScreenSize } from '@common/model/Dimensions';
+import { Engine } from '@common/model/Engine';
 
 import { SlotType } from '../model/SlotType';
 
@@ -7,6 +8,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
     switch (deviceId) {
         case DeviceId.i710:
         case DeviceId.m520:
+        case DeviceId.te2:
             return {
                 screenSize: ScreenSize.screen320x320,
                 width: 320,
@@ -55,6 +57,7 @@ export function deviceDimensions(deviceId: DeviceId): Dimensions {
             };
 
         case DeviceId.pegNR70:
+        case DeviceId.frankene2:
             return {
                 screenSize: ScreenSize.screen320x480,
                 width: 320,
@@ -155,6 +158,10 @@ export function cpuClock(deviceId: DeviceId): number {
         case DeviceId.pegNR70:
         case DeviceId.lp168:
             return 66;
+
+        case DeviceId.te2:
+        case DeviceId.frankene2:
+            return 100;
     }
 }
 
@@ -265,6 +272,12 @@ export function deviceName(deviceId: DeviceId): string {
         case DeviceId.lp168:
             return 'Legend P168';
 
+        case DeviceId.te2:
+            return 'Tungsten E2';
+
+        case DeviceId.frankene2:
+            return 'Tungsten E3';
+
         default:
             throw new Error('bad device ID');
     }
@@ -296,6 +309,8 @@ export function slotType(deviceId: DeviceId) {
         case DeviceId.i710:
         case DeviceId.handera330:
         case DeviceId.handera330c:
+        case DeviceId.te2:
+        case DeviceId.frankene2:
             return SlotType.sdcard;
 
         case DeviceId.pegS300:
@@ -313,4 +328,19 @@ export function slotType(deviceId: DeviceId) {
         default:
             return SlotType.none;
     }
+}
+
+export function engine(deviceId: DeviceId): Engine {
+    switch (deviceId) {
+        case DeviceId.te2:
+        case DeviceId.frankene2:
+            return Engine.uarm;
+
+        default:
+            return Engine.cloudpilot;
+    }
+}
+
+export function hasNand(deviceId: DeviceId): boolean {
+    return engine(deviceId) === Engine.uarm;
 }
