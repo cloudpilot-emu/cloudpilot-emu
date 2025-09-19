@@ -52,46 +52,6 @@ export class FileService {
         handler(Array.from(e.dataTransfer.files).map(this.readFile.bind(this)));
     }
 
-    async emergencySaveSession(session: Session): Promise<void> {
-        const cloudpilot = await this.cloudpilotService.cloudpilot;
-        const loader = await this.loadingController.create({ message: 'Exporting...' });
-
-        // This code path is usually triggered from a dialog, so make sure that the loader is on top.
-        // This is a hack, but sufficient for this edge case.
-        loader.style.zIndex = '10000000';
-
-        await loader.present();
-
-        try {
-            const rom = cloudpilot.getRomImage().slice();
-            const memory = cloudpilot.getMemory().slice();
-            const savestate = cloudpilot.saveState() ? cloudpilot.getSavestate().slice() : undefined;
-            const framebufferSize = cloudpilot.framebufferSizeForDevice(session.device);
-
-            if (framebufferSize < 0) {
-                throw new Error(`invalid device ID ${session.device}`);
-            }
-
-            const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
-                deviceId: session.device,
-                metadata: metadataForSession(session),
-                rom,
-                memory,
-                savestate,
-            };
-
-            const image = (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);
-            if (image) {
-                this.saveFile(filenameForSession(session), image);
-            }
-            // Showing an error alert may conflict with the alert that is already visible.
-            // However, the error case is only possible if allocations fail in WASM --- an
-            // extreme edge case.
-        } finally {
-            void loader.dismiss();
-        }
-    }
-
     saveFile(name: string, content: Uint8Array, type = 'application/octet-stream'): void {
         const file = new Blob([content], { type });
         const url = URL.createObjectURL(file);
@@ -136,24 +96,6 @@ export class FileService {
         } catch (e) {
             await this.alertService.errorMessage(`Download from ${url} failed.`);
         }
-    }
-
-    private async serializeSession(session: Session): Promise<Uint8Array | undefined> {
-        const [rom, memory, savestate] = await this.storageService.loadSession(session, false);
-
-        if (!rom) {
-            throw new Error(`invalid ROM ${session.rom}`);
-        }
-
-        const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
-            deviceId: session.device,
-            metadata: metadataForSession(session),
-            rom,
-            memory,
-            savestate,
-        };
-
-        return (await this.cloudpilotService.cloudpilot).serializeSessionImage(sessionImage);
     }
 
     private async openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): Promise<void> {
