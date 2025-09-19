@@ -37,4 +37,6 @@ export enum DeviceId {
     pegNR70 = 'NR70',
     acerS11 = 'Acer-S11',
     lp168 = 'Legend-P168',
+    te2 = 'Tungsten-E2',
+    frankene2 = 'Franken-E2',
 }

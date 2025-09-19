@@ -4,6 +4,7 @@
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
 import { InstantiateFunction } from '@common/helper/wasm';
+import { Engine } from '@common/model/Engine';
 import createModule, {
     CardSupportLevel,
     Cloudpilot as CloudpilotNative,
@@ -72,11 +73,13 @@ export interface PwmUpdate {
 }
 
 export interface SessionImage<T> {
+    engine: Engine;
     metadata?: T;
     deviceId: DeviceId;
     rom: Uint8Array;
     memory?: Uint8Array;
     savestate?: Uint8Array;
+    nand?: Uint8Array;
     version: number;
 }
 
@@ -660,6 +663,7 @@ export class Cloudpilot {
             }
 
             return {
+                engine: Engine.cloudpilot,
                 deviceId,
                 rom,
                 memory,
