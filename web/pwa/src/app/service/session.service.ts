@@ -2,7 +2,6 @@ import { Injectable, Signal, signal } from '@angular/core';
 import { SessionImage } from '@common/bridge/Cloudpilot';
 import { engine } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
-import { DeviceOrientation } from '@common/model/DeviceOrientation';
 import { Engine } from '@common/model/Engine';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { LoadingController } from '@ionic/angular';
@@ -12,7 +11,7 @@ import { Mutex } from 'async-mutex';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { filenameForSession, filenameForSessions } from '@pwa/helper/filename';
 import { metadataForSession } from '@pwa/helper/metadata';
-import { Session } from '@pwa/model/Session';
+import { Session, SessionCloudpilot, SessionSettings, settingsFromMetadata } from '@pwa/model/Session';
 
 import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';
@@ -47,16 +46,12 @@ export class SessionService {
         return this._loading;
     }
 
-    async addSessionFromImage(
-        image: SessionImage<SessionMetadata>,
-        name: string,
-        presets: Partial<Session> = {},
-    ): Promise<Session> {
+    async addSessionFromImage(image: SessionImage<SessionMetadata>, settings: SessionSettings): Promise<Session> {
         const loader = await this.loadingController.create({ message: 'Importing...' });
         await loader.present();
 
         try {
-            return this.doAddSessionFromImage(image, name, presets);
+            return this.doAddSessionFromImage(image, settings);
         } finally {
             await loader.dismiss();
         }
@@ -98,7 +93,10 @@ export class SessionService {
                         (name) => names.has(name),
                     );
 
-                    await this.doAddSessionFromImage(sessionImage, sessionName, sessionImage.metadata);
+                    await this.doAddSessionFromImage(sessionImage, {
+                        ...settingsFromMetadata(sessionImage.engine, sessionImage.metadata),
+                        name: sessionName,
+                    });
                 } catch (e) {
                     if (!(e instanceof ImportError)) throw e;
 
@@ -140,23 +138,19 @@ export class SessionService {
         }
     }
 
-    async addSessionFromRom(
-        rom: Uint8Array,
-        name: string,
-        device: DeviceId,
-        presets: Partial<Session> = {},
-    ): Promise<Session> {
-        const session: Session = {
-            hotsyncName: '',
-            dontManageHotsyncName: false,
-            speed: 1,
-            deviceOrientation: DeviceOrientation.portrait,
-            ...presets,
+    async addSessionFromRom(rom: Uint8Array, device: DeviceId, settings: SessionSettings): Promise<Session> {
+        const eng = engine(device);
+        if (eng !== Engine.cloudpilot) throw new Error(`FIXME: unsupported engine ${eng}`);
+        if (eng !== settings.engine) throw new Error('settings do not match engine');
+
+        const session: SessionCloudpilot = {
+            ...settings,
+            engine: eng,
             id: -1,
-            name,
             device,
             ram: (await this.cloudpilotService.cloudpilot).minRamForDevice(device) / 1024 / 1024,
             rom: '',
+            wasResetForcefully: false,
         };
 
         const loader = await this.loadingController.create({ message: 'Importing...' });
@@ -257,7 +251,7 @@ export class SessionService {
             }
 
             const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
-                engine: engine(session.device),
+                engine: session.engine,
                 deviceId: session.device,
                 metadata: metadataForSession(session),
                 rom,
@@ -285,7 +279,7 @@ export class SessionService {
         }
 
         const sessionImage: Omit<SessionImage<SessionMetadata>, 'version'> = {
-            engine: engine(session.device),
+            engine: session.engine,
             deviceId: session.device,
             metadata: metadataForSession(session),
             rom,
@@ -306,21 +300,20 @@ export class SessionService {
 
     private async doAddSessionFromImage(
         image: SessionImage<SessionMetadata>,
-        name: string,
-        presets: Partial<Session> = {},
+        settings: SessionSettings,
     ): Promise<Session> {
+        if (image.engine !== Engine.cloudpilot) throw new Error(`FIXME: unsupported engine ${image.engine}`);
+        if (settings.engine !== image.engine) throw new Error('settings do not match session type');
+
         const session: Session = {
-            hotsyncName: image.metadata?.hotsyncName,
-            dontManageHotsyncName: false,
-            speed: 1,
-            deviceOrientation: DeviceOrientation.portrait,
-            ...presets,
+            ...settings,
+            engine: image.engine,
             id: -1,
-            name,
             device: image.deviceId,
             ram: (await this.cloudpilotService.cloudpilot).minRamForDevice(image.deviceId) / 1024 / 1024,
             rom: '',
             osVersion: image?.metadata?.osVersion,
+            wasResetForcefully: false,
         };
 
         const savedSession = await this.storageService.addSession(session, image.rom, image.memory, image.savestate);

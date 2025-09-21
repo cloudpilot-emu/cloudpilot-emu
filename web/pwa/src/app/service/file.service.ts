@@ -1,14 +1,9 @@
 import { Injectable } from '@angular/core';
-import { SessionImage } from '@common/bridge/Cloudpilot';
 import { isIOS, isIOSSafari, isMacOSSafari } from '@common/helper/browser';
-import { SessionMetadata } from '@common/model/SessionMetadata';
 import { ActionSheetController, LoadingController, ModalController } from '@ionic/angular';
 import Url from 'url-parse';
 
 import { RemoteUrlPromptComponent } from '@pwa/component/remote-url-prompt/remote-url-prompt.component';
-import { filenameForSession } from '@pwa/helper/filename';
-import { metadataForSession } from '@pwa/helper/metadata';
-import { Session } from '@pwa/model/Session';
 
 import { AlertService } from './alert.service';
 import { CloudpilotService } from './cloudpilot.service';

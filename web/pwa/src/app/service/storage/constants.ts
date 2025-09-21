@@ -1,4 +1,4 @@
-export const DB_VERSION = 9;
+export const DB_VERSION = 10;
 
 export const OBJECT_STORE_SESSION = 'session';
 export const OBJECT_STORE_ROM = 'rom';

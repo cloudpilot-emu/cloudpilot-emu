@@ -12,7 +12,7 @@
     </ion-toolbar>
 </ion-header>
 
-<ion-content fullscreen>
+<ion-content fullscreen [class.engine-uarm]="isUarm" [class.engine-cloudpilot]="isCloudpilot">
     <form [formGroup]="formGroup" (keydown.enter)="onEnter()">
         <h1>Session</h1>
 
@@ -43,35 +43,101 @@
             </ion-select>
         </ion-item>
 
-        <ion-item lines="none">
-            <ion-range
-                label="{{ speedLabel }}"
-                labelPlacement="fixed"
-                min="-4"
-                max="4"
-                step="0.25"
-                snaps="true"
-                ticks="false"
-                formControlName="speed"
-                (ionInput)="onSpeedDrag($event)"
-                (ionKnobMoveEnd)="speedTransient = undefined"
-            >
-            </ion-range>
-        </ion-item>
+        @if (isUarm) {
+            <h1>Performance</h1>
 
-        <h1>Hotsync</h1>
-        <ion-item lines="none">
-            <ion-toggle labelPlacement="fixed" formControlName="manageHotsyncName">Manage hotsync name</ion-toggle>
-        </ion-item>
+            <ion-item lines="none">
+                <ion-toggle labelPlacement="fixed" formControlName="disableAudioEmulation"
+                    >Disable audio emulation</ion-toggle
+                >
+            </ion-item>
 
-        <ion-item lines="none" *ngIf="showHotsyncNameInput">
-            <ion-input
-                label="Hotsync name"
-                labelPlacement="stacked"
-                [placeholder]="placeholder"
-                formControlName="hotsyncName"
-                maxlength="40"
-            ></ion-input>
-        </ion-item>
+            <ion-item lines="none">
+                <ion-range
+                    label="{{ targetMipsLabel }}"
+                    labelPlacement="fixed"
+                    class="label-speed"
+                    min="20"
+                    max="200"
+                    step="1"
+                    snaps="true"
+                    ticks="false"
+                    formControlName="targetMips"
+                    (ionInput)="onTargetMipsDrag($event)"
+                    (ionKnobMoveEnd)="targetMipsTransient = undefined"
+                >
+                </ion-range>
+            </ion-item>
+
+            <ion-item lines="none">
+                <ion-range
+                    label="{{ warnSlowdownThresholdLabel }}"
+                    labelPlacement="fixed"
+                    class="label-speed"
+                    min="0"
+                    max="100"
+                    step="1"
+                    snaps="true"
+                    ticks="false"
+                    formControlName="warnSlowdownThreshold"
+                    (ionInput)="onWarnSlowdownThresholdDrag($event)"
+                    (ionKnobMoveEnd)="warnSlowdownThresholdTransient = undefined"
+                >
+                </ion-range>
+            </ion-item>
+
+            <ion-item lines="none">
+                <ion-range
+                    label="{{ maxHostLoadLabel }}"
+                    labelPlacement="fixed"
+                    class="label-speed"
+                    min="10"
+                    max="100"
+                    step="1"
+                    snaps="true"
+                    ticks="false"
+                    formControlName="maxHostLoad"
+                    (ionInput)="onMaxHostLoadDrag($event)"
+                    (ionKnobMoveEnd)="maxHostLoadTransient = undefined"
+                >
+                </ion-range>
+            </ion-item>
+        }
+
+        @if (isCloudpilot) {
+            <ion-item lines="none">
+                <ion-range
+                    label="{{ speedLabel }}"
+                    labelPlacement="fixed"
+                    class="label-speed"
+                    min="-4"
+                    max="4"
+                    step="0.25"
+                    snaps="true"
+                    ticks="false"
+                    formControlName="speed"
+                    (ionInput)="onSpeedDrag($event)"
+                    (ionKnobMoveEnd)="speedTransient = undefined"
+                >
+                </ion-range>
+            </ion-item>
+        }
+
+        @if (isCloudpilot) {
+            <h1>Hotsync</h1>
+            <ion-item lines="none">
+                <ion-toggle labelPlacement="fixed" formControlName="manageHotsyncName">Manage hotsync name</ion-toggle>
+            </ion-item>
+
+            <ion-item lines="none" *ngIf="showHotsyncNameInput">
+                <ion-input
+                    label="Hotsync name"
+                    labelPlacement="stacked"
+                    placeholder="Enter hotsync name"
+                    formControlName="hotsyncName"
+                    maxlength="40"
+                ></ion-input>
+            </ion-item>
+        }
     </form>
 </ion-content>

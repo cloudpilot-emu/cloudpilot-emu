@@ -6,7 +6,7 @@ const MAGIC_UARM = 0x19800819;
 export function identifySessionEngine(data: Uint8Array): Engine | undefined {
     if (data.length < 4) return undefined;
 
-    const view = new DataView(data.buffer);
+    const view = new DataView(data.buffer, data.byteOffset);
     const magic = view.getUint32(0, true);
 
     switch (magic) {

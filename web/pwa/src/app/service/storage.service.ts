@@ -1,6 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import { isIOS } from '@common/helper/browser';
 import { crc32 } from '@common/helper/crc';
+import { Engine } from '@common/model/Engine';
 import { Mutex } from 'async-mutex';
 import md5 from 'md5';
 import { Event } from 'microevent.ts';
@@ -8,7 +9,7 @@ import { v4 as uuid } from 'uuid';
 
 import { Kvs } from '@pwa/model/Kvs';
 import { MemoryMetadata } from '@pwa/model/MemoryMetadata';
-import { Session } from '@pwa/model/Session';
+import { Session, fixmeAssertSessionHasEngine } from '@pwa/model/Session';
 import { StorageCard } from '@pwa/model/StorageCard';
 
 import { environment } from '../../environments/environment';
@@ -36,6 +37,7 @@ import {
     migrate6to7,
     migrate7to8,
     migrate8to9,
+    migrate9to10,
 } from './storage/migrations';
 import { complete, compressPage, compressStoragePage } from './storage/util';
 
@@ -93,6 +95,8 @@ export class StorageService {
 
     @guard()
     async addSession(session: Session, rom: Uint8Array, memory?: Uint8Array, state?: Uint8Array): Promise<Session> {
+        fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
+
         const hash = md5(rom);
 
         const tx = await this.newTransaction(
@@ -144,6 +148,8 @@ export class StorageService {
 
     @guard()
     async deleteSession(session: Session): Promise<void> {
+        fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
+
         const tx = await this.newTransaction(
             OBJECT_STORE_SESSION,
             OBJECT_STORE_ROM,
@@ -174,7 +180,7 @@ export class StorageService {
     @guard()
     updateSessionPartial(id: number, update: Partial<Session>): Promise<void> {
         return this.sessionUpdateMutex.runExclusive(async () => {
-            const { id: _id, rom, ram, device, ...rest } = update;
+            const { id: _id, rom, ram, device, engine, ...rest } = update;
             const [objectStore, tx] = await this.prepareObjectStore(OBJECT_STORE_SESSION);
 
             const session = await complete<Session>(objectStore.get(id));
@@ -197,6 +203,7 @@ export class StorageService {
             const persistentSession = await complete<Session>(objectStore.get(session.id));
 
             if (!persistentSession) throw new Error(`no session with id ${session.id}`);
+            if (persistentSession.engine !== session.engine) throw new Error('attempt to change session engine');
             if (persistentSession.rom !== session.rom) throw new Error('attempt to change ROM reference');
             if (persistentSession.ram !== session.ram) throw new Error('attempt to change RAM size');
             if (persistentSession.device !== session.device) throw new Error('attempt to change device type');
@@ -214,6 +221,8 @@ export class StorageService {
         session: Session,
         checkCrc: boolean,
     ): Promise<[Uint8Array | undefined, Uint8Array | undefined, Uint8Array | undefined]> {
+        fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
+
         const tx = await this.newTransaction(
             OBJECT_STORE_ROM,
             OBJECT_STORE_STATE,
@@ -683,6 +692,10 @@ export class StorageService {
 
                     if (e.oldVersion < 9) {
                         await migrate8to9(request.result, request.transaction);
+                    }
+
+                    if (e.oldVersion < 10) {
+                        await migrate9to10(request.result, request.transaction);
                     }
                 };
             });

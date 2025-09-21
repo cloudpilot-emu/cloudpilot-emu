@@ -3,6 +3,7 @@
 //
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
+import { engine } from '@common/helper/deviceProperties';
 import { identifySessionEngine } from '@common/helper/sessionfile';
 import { InstantiateFunction } from '@common/helper/wasm';
 import { Engine } from '@common/model/Engine';
@@ -622,6 +623,8 @@ export class Cloudpilot {
 
     @guard()
     serializeSessionImage<T>(sessionImage: Omit<SessionImage<T>, 'version'>): Uint8Array | undefined {
+        if (sessionImage.engine !== Engine.cloudpilot) throw new Error(`FIXME: unsupported engine ${engine}`);
+
         const nativeImage = new this.module.SessionImage();
         const nullptr = this.cloudpilot.Nullptr();
 
@@ -888,7 +891,10 @@ export class Cloudpilot {
 
             if (serializedMetadata) {
                 try {
-                    metadata = JSON.parse(new TextDecoder().decode(serializedMetadata));
+                    metadata = {
+                        engine: Engine.cloudpilot,
+                        ...JSON.parse(new TextDecoder().decode(serializedMetadata)),
+                    };
                 } catch (e) {
                     console.warn('ignoring invalid metadata', e);
                 }
@@ -931,7 +937,7 @@ export class Cloudpilot {
             let metadata: T | undefined;
             if (serializedMetadata) {
                 try {
-                    metadata = JSON.parse(new TextDecoder().decode(serializedMetadata));
+                    metadata = { engine: Engine.uarm, ...JSON.parse(new TextDecoder().decode(serializedMetadata)) };
                 } catch (e) {
                     console.warn('invalid metadata', e);
                 }

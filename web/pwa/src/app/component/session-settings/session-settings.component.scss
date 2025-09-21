@@ -3,10 +3,13 @@ ion-item {
     --background: none;
 }
 
-ion-range::part(label) {
+.engine-cloudpilot ion-range::part(label) {
     min-width: 7.5rem;
 }
 
+.engine-uarm ion-range::part(label) {
+    min-width: 10rem;
+}
 
 h1 {
     margin-left: 1rem;

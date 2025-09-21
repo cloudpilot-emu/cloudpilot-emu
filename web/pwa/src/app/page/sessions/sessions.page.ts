@@ -11,9 +11,9 @@ import {
 import { Router } from '@angular/router';
 import helpUrl from '@assets/doc/sessions.md';
 import { isIOS, isIOSNative } from '@common/helper/browser';
+import { DeviceId } from '@common/model/DeviceId';
 import { SessionMetadata } from '@common/model/SessionMetadata';
 import { LoadingController, ModalController, PopoverController } from '@ionic/angular';
-import deepEqual from 'deep-equal';
 
 import { DragDropClient, DragDropService } from '@pwa//service/drag-drop.service';
 import { HelpComponent } from '@pwa/component/help/help.component';
@@ -21,7 +21,7 @@ import { SessionSettings, SessionSettingsComponent } from '@pwa/component/sessio
 import { debounce } from '@pwa/helper/debounce';
 import { disambiguateName } from '@pwa/helper/disambiguate';
 import { memoize } from '@pwa/helper/memoize';
-import { Session } from '@pwa/model/Session';
+import { Session, buildSettings, mergeSettings, settingsFromMetadata, settingsFromSession } from '@pwa/model/Session';
 import { AlertService } from '@pwa/service/alert.service';
 import { CloudpilotService } from '@pwa/service/cloudpilot.service';
 import { EmulationStateService } from '@pwa/service/emulation-state.service';
@@ -124,10 +124,10 @@ export class SessionsPage implements DragDropClient, OnInit {
 
     @debounce()
     async editSession(session: Session): Promise<void> {
-        const oldSession = { ...session };
+        const settings = settingsFromSession(session);
 
-        if ((await this.editSettings(session)) && !deepEqual(session, oldSession)) {
-            await this.sessionService.updateSession(session);
+        if ((await this.editSettings(settings, session.device)) !== undefined) {
+            await this.sessionService.updateSession(mergeSettings(session, settings));
         }
     }
 
@@ -362,17 +362,13 @@ export class SessionsPage implements DragDropClient, OnInit {
         );
 
         if (sessionImage) {
-            const settings: SessionSettings = {
+            const settings = {
+                ...settingsFromMetadata(sessionImage.engine, sessionImage.metadata),
                 name: this.disambiguateSessionName(sessionImage.metadata?.name ?? file.name),
-                hotsyncName: sessionImage.metadata?.hotsyncName,
-                device: sessionImage.deviceId,
-                dontManageHotsyncName: sessionImage.metadata?.dontManageHotsyncName,
-                speed: sessionImage.metadata?.speed,
-                deviceOrientation: sessionImage.metadata?.deviceOrientation,
             };
 
-            if (await this.editSettings(settings)) {
-                const session = await this.sessionService.addSessionFromImage(sessionImage, settings.name, settings);
+            if ((await this.editSettings(settings, sessionImage.deviceId)) !== undefined) {
+                const session = await this.sessionService.addSessionFromImage(sessionImage, settings);
 
                 this.lastSessionTouched = session.id;
             }
@@ -389,26 +385,25 @@ export class SessionsPage implements DragDropClient, OnInit {
                 return;
             }
 
-            const settings: SessionSettings = {
+            const settings = {
+                ...buildSettings({ engine: romInfo.engine, name: this.disambiguateSessionName(file.name) }),
                 name: this.disambiguateSessionName(file.name),
-                hotsyncName: '',
-                device: romInfo.supportedDevices[0],
             };
 
-            if (await this.editSettings(settings, romInfo.supportedDevices)) {
-                const session = await this.sessionService.addSessionFromRom(
-                    content,
-                    settings.name,
-                    settings.device,
-                    settings,
-                );
+            const device = await this.editSettings(settings, romInfo.supportedDevices[0], romInfo.supportedDevices);
+            if (device !== undefined) {
+                const session = await this.sessionService.addSessionFromRom(content, device, settings);
 
                 this.lastSessionTouched = session.id;
             }
         }
     }
 
-    private editSettings(session: SessionSettings, availableDevices = [session.device]): Promise<boolean> {
+    private editSettings(
+        settings: SessionSettings,
+        device: DeviceId,
+        availableDevices = [device],
+    ): Promise<DeviceId | undefined> {
         return new Promise((resolve) => {
             let modal: HTMLIonModalElement;
 
@@ -417,15 +412,16 @@ export class SessionsPage implements DragDropClient, OnInit {
                     component: SessionSettingsComponent,
                     backdropDismiss: false,
                     componentProps: {
-                        session,
+                        settings,
                         availableDevices,
-                        onSave: () => {
+                        device,
+                        onSave: (device: DeviceId) => {
                             void modal.dismiss();
-                            resolve(true);
+                            resolve(device);
                         },
                         onCancel: () => {
                             void modal.dismiss();
-                            resolve(false);
+                            resolve(undefined);
                         },
                     },
                 })

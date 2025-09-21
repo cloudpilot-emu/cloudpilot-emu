@@ -8,6 +8,7 @@ const OBJECT_STORE_STORAGE = 'storage';
 const OBJECT_STORE_STORAGE_META = 'storage-meta';
 const OBJECT_STORE_STORAGE_CARD = 'storage-card';
 const OBJECT_STORE_LOCK = 'lock';
+const OBJECT_STORE_NAND = 'nand';
 
 const INDEX_CARD_STORAGE_ID = 'storageId';
 
@@ -168,4 +169,38 @@ export async function migrate8to9(db: IDBDatabase, tx: IDBTransaction | null): P
     if (!tx) throw new Error('no version change transaction!');
 
     db.createObjectStore(OBJECT_STORE_LOCK);
+}
+
+export async function migrate9to10(db: IDBDatabase, tx: IDBTransaction | null): Promise<void> {
+    db.createObjectStore(OBJECT_STORE_NAND);
+
+    if (!tx) throw new Error('no version change transaction!');
+
+    const sessionStore = tx.objectStore(OBJECT_STORE_SESSION);
+    const cursorRequest = sessionStore.openCursor();
+
+    return new Promise((resolve, reject) => {
+        cursorRequest.onsuccess = () => {
+            const cursor = cursorRequest.result;
+            if (!cursor) {
+                resolve();
+                return;
+            }
+
+            const session: object = {
+                engine: 'cloudpilot',
+                wasResetForcefully: false,
+                deviceOrientation: 'portrait',
+                hotsyncName: '',
+                dontManageHotsyncName: false,
+                speed: 1,
+                ...cursor.value,
+            };
+
+            cursor.update(session);
+            cursor.continue();
+        };
+
+        cursorRequest.onerror = (e) => reject(e);
+    });
 }

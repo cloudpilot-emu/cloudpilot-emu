@@ -2,12 +2,13 @@ import { ApplicationRef, Injectable, NgZone } from '@angular/core';
 import { Cloudpilot } from '@common/bridge/Cloudpilot';
 import { isIOS } from '@common/helper/browser';
 import { SchedulerKind } from '@common/helper/scheduler';
+import { Engine } from '@common/model/Engine';
 import { AbstractEmulationService } from '@common/service/AbstractEmulationService';
 import { LoadingController } from '@ionic/angular';
 import { Mutex } from 'async-mutex';
 
 import { clearStoredSession, getStoredSession, setStoredSession } from '@pwa/helper/storedSession';
-import { Session } from '@pwa/model/Session';
+import { Session, fixmeAssertSessionHasEngine } from '@pwa/model/Session';
 import { StorageCardService } from '@pwa/service/storage-card.service';
 
 import { AlertService } from './alert.service';
@@ -101,6 +102,8 @@ export class EmulationService extends AbstractEmulationService {
                     throw new Error(`invalid session ${id}`);
                 }
 
+                fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
+
                 this.emulationState.setCurrentSession(undefined);
 
                 const cloudpilot = await this.cloudpilotService.cloudpilot;
@@ -153,15 +156,24 @@ export class EmulationService extends AbstractEmulationService {
     stop = (): Promise<void> => this.mutex.runExclusive(() => this.stopUnchecked());
 
     protected getConfiguredSpeed(): number {
-        return this.emulationState.currentSession()?.speed || 1;
+        const session = this.emulationState.currentSession();
+        fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
+
+        return session?.speed || 1;
     }
 
     protected manageHotsyncName(): boolean {
-        return !this.emulationState.currentSession()?.dontManageHotsyncName;
+        const session = this.emulationState.currentSession();
+        fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
+
+        return !session?.dontManageHotsyncName;
     }
 
     protected getConfiguredHotsyncName(): string | undefined {
-        return this.emulationState.currentSession()?.hotsyncName;
+        const session = this.emulationState.currentSession();
+        fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
+
+        return session?.hotsyncName;
     }
 
     protected updateConfiguredHotsyncName(hotsyncName: string): void {
@@ -231,6 +243,9 @@ export class EmulationService extends AbstractEmulationService {
     }
 
     private updateFeatures(): void {
+        const session = this.emulationState.currentSession();
+        fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
+
         if (!this.cloudpilotInstance) return;
 
         const clipboardIntegrationEnabled =
@@ -246,7 +261,7 @@ export class EmulationService extends AbstractEmulationService {
             this.networkService.reset();
         }
 
-        this.cloudpilotInstance.setHotsyncNameManagement(!this.emulationState.currentSession()?.dontManageHotsyncName);
+        this.cloudpilotInstance.setHotsyncNameManagement(!session?.dontManageHotsyncName);
     }
 
     private async recoverStoredSession(session: number) {

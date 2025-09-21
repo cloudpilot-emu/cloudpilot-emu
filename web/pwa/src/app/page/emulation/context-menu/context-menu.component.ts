@@ -2,10 +2,12 @@ import { Component, Input } from '@angular/core';
 import { PalmButton } from '@common/bridge/Cloudpilot';
 import { quirkNoPoweroff, slotType } from '@common/helper/deviceProperties';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { Engine } from '@common/model/Engine';
 import { SlotType } from '@common/model/SlotType';
 import { ActionSheetController, AlertController, ModalController, PopoverController } from '@ionic/angular';
 
 import { SessionSettingsComponent } from '@pwa/component/session-settings/session-settings.component';
+import { fixmeAssertSessionHasEngine, mergeSettings, settingsFromSession } from '@pwa/model/Session';
 import { AlertService } from '@pwa/service/alert.service';
 import { AudioService } from '@pwa/service/audio.service';
 import { BackupService } from '@pwa/service/backup.service';
@@ -21,7 +23,7 @@ import { SessionService } from '@pwa/service/session.service';
 import { StorageCardService } from '@pwa/service/storage-card.service';
 import { StorageService } from '@pwa/service/storage.service';
 
-function rotate(oldOrientation: DeviceOrientation | undefined): DeviceOrientation {
+function rotate(oldOrientation: DeviceOrientation): DeviceOrientation {
     switch (oldOrientation) {
         case DeviceOrientation.portrait:
         case undefined:
@@ -197,27 +199,33 @@ export class ContextMenuComponent {
 
     async editSettings(): Promise<void> {
         const session = this.emulationStateService.currentSession();
+        fixmeAssertSessionHasEngine(session, Engine.cloudpilot);
         if (!session) {
             return;
         }
 
-        const oldSpeed = session.speed;
-        const oldOrientation = session.deviceOrientation;
+        const settings = settingsFromSession(session);
+
+        const oldSpeed = settings.speed;
+        const oldOrientation = settings.deviceOrientation;
 
         const modal = await this.modalController.create({
             component: SessionSettingsComponent,
             backdropDismiss: false,
             componentProps: {
-                session,
+                settings,
                 availableDevices: [session.device],
+                device: session.device,
                 onSave: async () => {
-                    if (oldSpeed !== session.speed) this.performanceWatchdogService.reset();
-                    if (oldOrientation !== session.deviceOrientation) {
-                        void this.canvasDisplayService.initialize(undefined, session);
+                    const updatedSession = mergeSettings(session, settings);
+
+                    if (oldSpeed !== settings.speed) this.performanceWatchdogService.reset();
+                    if (oldOrientation !== settings.deviceOrientation) {
+                        void this.canvasDisplayService.initialize(undefined, updatedSession);
                         this.canvasDisplayService.updateEmulationCanvas();
                     }
 
-                    await this.sessionService.updateSession(session);
+                    await this.sessionService.updateSession(updatedSession);
 
                     void modal.dismiss();
                 },

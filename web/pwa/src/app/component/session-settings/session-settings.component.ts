@@ -3,19 +3,17 @@ import { AbstractControl, UntypedFormControl, UntypedFormGroup, ValidationErrors
 import { cpuClock, deviceName } from '@common/helper/deviceProperties';
 import { DeviceId } from '@common/model/DeviceId';
 import { DeviceOrientation } from '@common/model/DeviceOrientation';
+import { Engine } from '@common/model/Engine';
 
 import { memoize } from '@pwa/helper/memoize';
+import {
+    MAX_HOST_LOAD_DEFAULT,
+    SessionSettings,
+    TARGET_MIPS_DEFAULT,
+    WARN_SLOWDOWN_THRESHOLD_DEFAULT,
+} from '@pwa/model/Session';
 import { AlertService } from '@pwa/service/alert.service';
 import { SessionService } from '@pwa/service/session.service';
-
-export interface SessionSettings {
-    name: string;
-    device: DeviceId;
-    hotsyncName?: string;
-    dontManageHotsyncName?: boolean;
-    speed?: number;
-    deviceOrientation?: DeviceOrientation;
-}
 
 @Component({
     selector: 'app-session-settings',
@@ -53,16 +51,32 @@ export class SessionSettingsComponent implements OnInit {
         return this.formGroup.get('orientation')!;
     }
 
+    get formControlTargetMips(): AbstractControl {
+        return this.formGroup.get('targetMips')!;
+    }
+
+    get formControlWarnSlowdownThreshold(): AbstractControl {
+        return this.formGroup.get('warnSlowdownThreshold')!;
+    }
+
+    get formControlMaxHostLoad(): AbstractControl {
+        return this.formGroup.get('maxHostLoad')!;
+    }
+
+    get formControlDisableAudioEmulation(): AbstractControl {
+        return this.formGroup.get('disableAudioEmulation')!;
+    }
+
     get showHotsyncNameInput(): boolean {
         return this.formControlManageHotsyncName.value;
     }
 
-    get placeholder(): string {
-        if (this.formControlHotsyncName.value) return this.formControlName.value;
+    get isCloudpilot(): boolean {
+        return this.settings.engine === Engine.cloudpilot;
+    }
 
-        return this.session.hotsyncName === undefined && !this.session.dontManageHotsyncName
-            ? 'use setting from device'
-            : 'Enter hotsync name';
+    get isUarm(): boolean {
+        return this.settings.engine === Engine.uarm;
     }
 
     private memoizedDevicelist = memoize<Array<DeviceId>, Array<[DeviceId, string]>>((x) =>
@@ -80,30 +94,13 @@ export class SessionSettingsComponent implements OnInit {
     save(): void {
         if (this.formGroup.invalid) return;
 
-        this.session.name = this.formControlName.value;
+        this.settings.name = this.formControlName.value;
+        this.settings.deviceOrientation = this.formControlOrientation.value;
 
-        if (this.formControlManageHotsyncName.value) {
-            if (this.session.dontManageHotsyncName) {
-                this.session.dontManageHotsyncName = false;
-                this.session.hotsyncName = this.formControlHotsyncName.value || '';
+        this.saveCloudpilot();
+        this.saveUarm();
 
-                void this.alertService.message(
-                    'Reset required',
-                    'Please reset the virtual device in order to make sure that the hotsync name is synced properly again.',
-                );
-            } else {
-                this.session.hotsyncName =
-                    this.formControlHotsyncName.value || (this.session.hotsyncName === undefined ? undefined : '');
-            }
-        } else {
-            this.session.dontManageHotsyncName = true;
-        }
-
-        this.session.device = this.formControlDevice.value;
-        this.session.speed = this.speedValue;
-        this.session.deviceOrientation = this.formControlOrientation.value;
-
-        this.onSave();
+        this.onSave(this.formControlDevice.value);
     }
 
     onEnter(): void {
@@ -125,51 +122,149 @@ export class SessionSettingsComponent implements OnInit {
         );
     }
 
+    get targetMipsValue(): number {
+        return this.targetMipsTransient ?? this.formControlTargetMips.value ?? TARGET_MIPS_DEFAULT;
+    }
+
+    get targetMipsLabel(): string {
+        return `Target speed: (${this.targetMipsValue} MIPS)`;
+    }
+
+    get warnSlowdownThresholdValue(): number {
+        return (
+            this.warnSlowdownThresholdTransient ??
+            this.formControlWarnSlowdownThreshold.value ??
+            WARN_SLOWDOWN_THRESHOLD_DEFAULT * 100
+        );
+    }
+
+    get warnSlowdownThresholdLabel(): string {
+        return `Slowdown threshold: (${this.warnSlowdownThresholdValue}%)`;
+    }
+
+    get maxHostLoadValue(): number {
+        return this.maxHostLoadTransient ?? this.formControlMaxHostLoad.value ?? MAX_HOST_LOAD_DEFAULT * 100;
+    }
+
+    get maxHostLoadLabel(): string {
+        return `Load limit: (${this.maxHostLoadValue}%)`;
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onSpeedDrag(e: any): void {
         this.speedTransient = e.detail?.value;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onTargetMipsDrag(e: any): void {
+        this.targetMipsTransient = e.detail?.value;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onWarnSlowdownThresholdDrag(e: any): void {
+        this.warnSlowdownThresholdTransient = e.detail?.value;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onMaxHostLoadDrag(e: any): void {
+        this.maxHostLoadTransient = e.detail?.value;
+    }
+
     private createFormGroup() {
         this.formGroup = new UntypedFormGroup({
-            name: new UntypedFormControl(this.session.name, {
+            name: new UntypedFormControl(this.settings.name, {
                 validators: [Validators.required, this.validateNameUnique],
             }),
-            manageHotsyncName: new UntypedFormControl(!this.session.dontManageHotsyncName),
-            hotsyncName: new UntypedFormControl(this.session.hotsyncName || ''),
             device: new UntypedFormControl({
-                value: this.session.device,
+                value: this.device,
                 disabled: this.availableDevices.length === 1,
             }),
-            speed: new UntypedFormControl(
-                (this.session.speed || 1) >= 1 ? (this.session.speed || 1) - 1 : 1 - 1 / this.session.speed!,
+            orientation: new UntypedFormControl(this.settings.deviceOrientation),
+            manageHotsyncName: new UntypedFormControl(
+                this.settings.engine === Engine.cloudpilot ? !this.settings.dontManageHotsyncName : false,
             ),
-            orientation: new UntypedFormControl(this.session.deviceOrientation || DeviceOrientation.portrait),
+            hotsyncName: new UntypedFormControl(
+                this.settings.engine === Engine.cloudpilot ? this.settings.hotsyncName : '',
+            ),
+            speed: new UntypedFormControl(
+                this.settings.engine === Engine.cloudpilot
+                    ? this.settings.speed >= 1
+                        ? this.settings.speed - 1
+                        : 1 - 1 / this.settings.speed
+                    : 0,
+            ),
+            targetMips: new UntypedFormControl(this.settings.engine === Engine.uarm ? this.settings.targetMips : 0),
+            warnSlowdownThreshold: new UntypedFormControl(
+                this.settings.engine === Engine.uarm ? this.settings.warnSlowdownThreshold : 0,
+            ),
+            maxHostLoad: new UntypedFormControl(
+                this.settings.engine === Engine.uarm ? Math.round(100 * this.settings.maxHostLoad) : 0,
+            ),
+            disableAudioEmulation: new UntypedFormControl(
+                this.settings.engine === Engine.uarm ? this.settings.disableAudio : false,
+            ),
         });
     }
 
     private validateNameUnique = (control: AbstractControl): ValidationErrors | null => {
-        return control.value !== this.session.name &&
+        return control.value !== this.settings.name &&
             this.sessionService.sessions().some((s) => s.name === control.value)
             ? { name: 'already taken' }
             : null;
     };
 
+    private saveCloudpilot(): void {
+        if (this.settings.engine !== Engine.cloudpilot) return;
+
+        if (this.formControlManageHotsyncName.value) {
+            if (this.settings.dontManageHotsyncName) {
+                this.settings.dontManageHotsyncName = false;
+                this.settings.hotsyncName = this.formControlHotsyncName.value || '';
+
+                void this.alertService.message(
+                    'Reset required',
+                    'Please reset the virtual device in order to make sure that the hotsync name is synced properly again.',
+                );
+            } else {
+                this.settings.hotsyncName = this.formControlHotsyncName.value || this.settings.hotsyncName;
+            }
+        } else {
+            this.settings.dontManageHotsyncName = true;
+        }
+
+        this.settings.speed = this.speedValue;
+    }
+
+    private saveUarm(): void {
+        if (this.settings.engine !== Engine.uarm) return;
+
+        this.settings.targetMips = this.targetMipsValue;
+        this.settings.warnSlowdownThreshold = this.warnSlowdownThresholdValue / 100;
+        this.settings.maxHostLoad = this.maxHostLoadValue;
+        this.settings.disableAudio = this.formControlDisableAudioEmulation.value;
+    }
+
     @Input()
-    onSave: () => void = () => undefined;
+    onSave: (device: DeviceId) => void = () => undefined;
 
     @Input()
     onCancel: () => void = () => undefined;
 
     @Input()
-    session!: SessionSettings;
+    settings!: SessionSettings;
 
     @Input()
     availableDevices!: Array<DeviceId>;
 
+    @Input()
+    device!: DeviceId;
+
     formGroup!: UntypedFormGroup;
 
     speedTransient: number | undefined;
+    targetMipsTransient: number | undefined;
+    warnSlowdownThresholdTransient: number | undefined;
+    maxHostLoadTransient: number | undefined;
 
     readonly orientations = [
         [DeviceOrientation.portrait, 'Portrait'],
@@ -178,3 +273,4 @@ export class SessionSettingsComponent implements OnInit {
         [DeviceOrientation.portrait180, 'Upside down'],
     ];
 }
+export { SessionSettings };
