@@ -189,6 +189,8 @@ const void* SessionFile5::GetSerializedSession() const { return serializedSessio
 
 size_t SessionFile5::GetSerializedSessionSize() const { return serializedSessionSize; }
 
+uint32_t SessionFile5::GetVersion() const { return version; }
+
 bool SessionFile5::Deserialize(size_t size, const void* data) {
     metadataSize = norSize = nandSize = memorySize = savestateSize = 0;
     metadata = nor = nand = memory = savestate = nullptr;
@@ -201,7 +203,7 @@ bool SessionFile5::Deserialize(size_t size, const void* data) {
     bool success = true;
 
     const uint32_t magic = Read32(success);
-    const uint32_t version = Read32(success);
+    version = Read32(success);
 
     if (!success) {
         cerr << "unable to read header" << endl;
@@ -422,11 +424,11 @@ bool SessionFile5::Deserialize_v0() {
     return true;
 }
 
-bool SessionFile5::Deserialize_v1_v2(uint32_t version) {
+bool SessionFile5::Deserialize_v1_v2(uint32_t sessionVersion) {
     bool success = true;
 
     deviceId = Read32(success);
-    ramSize = version > 1 ? Read32(success) : (16ul << 20);
+    ramSize = sessionVersion > 1 ? Read32(success) : (16ul << 20);
 
     metadataSize = Read32(success);
     norSize = Read32(success);

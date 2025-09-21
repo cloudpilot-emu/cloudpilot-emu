@@ -3,8 +3,10 @@
 //
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="../../node_modules/@types/emscripten/index.d.ts"/>
+import { identifySessionEngine } from '@common/helper/sessionfile';
 import { InstantiateFunction } from '@common/helper/wasm';
 import { Engine } from '@common/model/Engine';
+import { DeviceType5 } from '@native-common/index';
 import createModule, {
     CardSupportLevel,
     Cloudpilot as CloudpilotNative,
@@ -42,13 +44,31 @@ export {
     CardSupportLevel,
 } from '@native/index';
 
-export interface RomInfo {
+export interface RomInfoCloudpilot {
+    engine: Engine.cloudpilot;
     cardVersion: number;
     cardName: string;
     romVersion: number;
     romVersionString: string;
+
     supportedDevices: Array<DeviceId>;
 }
+
+export interface RomInfoUarm {
+    engine: Engine.uarm;
+    cardName: string;
+    romName: string;
+    manufacturer: string;
+
+    companyId: number;
+    halId: number;
+
+    deviceType: DeviceType5;
+
+    supportedDevices: Array<DeviceId>;
+}
+
+export type RomInfo = RomInfoCloudpilot | RomInfoUarm;
 
 export interface Frame {
     bpp: number;
@@ -83,7 +103,7 @@ export interface SessionImage<T> {
     version: number;
 }
 
-export const SUPPORTED_DEVICES = [
+const SUPPORTED_DEVICES_CLOUDPILOT = [
     DeviceId.palmPilot,
     DeviceId.pilot,
     DeviceId.iii,
@@ -140,6 +160,18 @@ function guard(): MethodDecorator {
     };
 }
 
+function deviceTypeUarmToDeviceId(deviceType: DeviceType5): DeviceId | undefined {
+    switch (deviceType) {
+        case DeviceType5.deviceTypeE2:
+            return DeviceId.te2;
+
+        case DeviceType5.deviceTypeFrankenE2:
+            return DeviceId.frankene2;
+
+        default:
+            return undefined;
+    }
+}
 export class Cloudpilot {
     private constructor(private module: Module) {
         this.cloudpilot = new module.Cloudpilot();
@@ -191,23 +223,14 @@ export class Cloudpilot {
     getRomInfo(rom: Uint8Array): RomInfo | undefined {
         const buffer = this.copyIn(rom);
 
-        const romInfoNative = new this.module.RomInfo(buffer, rom.length);
-        let romInfo: RomInfo | undefined;
+        try {
+            const romInfoCloudpilot = this.getRomInfoCloudpilot(buffer, rom.length);
+            if (romInfoCloudpilot) return romInfoCloudpilot;
 
-        if (romInfoNative.IsValid()) {
-            romInfo = {
-                cardVersion: romInfoNative.CardVersion(),
-                cardName: romInfoNative.CardName(),
-                romVersion: romInfoNative.RomVersion(),
-                romVersionString: romInfoNative.RomVersionString(),
-                supportedDevices: SUPPORTED_DEVICES.filter(romInfoNative.Supports.bind(romInfoNative)),
-            };
+            return this.getRomInfoUarm(buffer, rom.length);
+        } finally {
+            this.cloudpilot.Free(buffer);
         }
-
-        this.cloudpilot.Free(buffer);
-        this.module.destroy(romInfoNative);
-
-        return romInfo;
     }
 
     @guard()
@@ -635,48 +658,24 @@ export class Cloudpilot {
     deserializeSessionImage<T>(buffer: Uint8Array | undefined): SessionImage<T> | undefined {
         if (!buffer) return undefined;
 
-        const nativeImage = new this.module.SessionImage();
+        const engine = identifySessionEngine(buffer);
+        if (engine === undefined) return;
+
         const bufferPtr = this.copyIn(buffer);
+        try {
+            switch (engine) {
+                case Engine.cloudpilot:
+                    return this.deserializeSessionImageCloudpilot(bufferPtr, buffer.length);
 
-        const result = ((): SessionImage<T> | undefined => {
-            if (!nativeImage.Deserialize(bufferPtr, buffer.length)) return undefined;
+                case Engine.uarm:
+                    return this.deserializeSessionImageUarm(bufferPtr, buffer.length);
 
-            const rom = this.copyOut(nativeImage.GetRomImage(), nativeImage.GetRomImageSize())!;
-            const memory = this.copyOut(nativeImage.GetMemoryImage(), nativeImage.GetMemoryImageSize())!;
-            const savestate = this.copyOut(nativeImage.GetSavestate(), nativeImage.GetSavestateSize());
-
-            const deviceId = nativeImage.GetDeviceId() as DeviceId;
-            if (!SUPPORTED_DEVICES.includes(deviceId)) {
-                console.warn(`unsupported device ${deviceId}`);
-                return undefined;
+                default:
+                    return undefined;
             }
-
-            let metadata: T | undefined;
-            const serializedMetadata = this.copyOut(nativeImage.GetMetadata(), nativeImage.GetMetadataSize());
-
-            if (serializedMetadata) {
-                try {
-                    metadata = JSON.parse(new TextDecoder().decode(serializedMetadata));
-                } catch (e) {
-                    console.warn('invalid metadata', e);
-                }
-            }
-
-            return {
-                engine: Engine.cloudpilot,
-                deviceId,
-                rom,
-                memory,
-                savestate,
-                metadata,
-                version: nativeImage.GetVersion(),
-            };
-        })();
-
-        this.module.destroy(nativeImage);
-        this.cloudpilot.Free(bufferPtr);
-
-        return result;
+        } finally {
+            this.cloudpilot.Free(bufferPtr);
+        }
     }
 
     @guard()
@@ -807,7 +806,7 @@ export class Cloudpilot {
         return this.transportSerial;
     }
 
-    public guard<T>(fn: () => T) {
+    guard<T>(fn: () => T) {
         if (this.amIdead) throw new Error('cloudpilot instance is dead');
 
         try {
@@ -820,6 +819,136 @@ export class Cloudpilot {
             this.fatalErrorEvent.dispatch(e instanceof Error ? e : new Error('unknown error'));
 
             throw e;
+        }
+    }
+
+    private getRomInfoCloudpilot(data: VoidPtr, length: number): RomInfoCloudpilot | undefined {
+        const romInfoNative = new this.module.RomInfo(data, length);
+
+        try {
+            return romInfoNative.IsValid()
+                ? {
+                      engine: Engine.cloudpilot,
+                      cardVersion: romInfoNative.CardVersion(),
+                      cardName: romInfoNative.CardName(),
+                      romVersion: romInfoNative.RomVersion(),
+                      romVersionString: romInfoNative.RomVersionString(),
+                      supportedDevices: SUPPORTED_DEVICES_CLOUDPILOT.filter(romInfoNative.Supports.bind(romInfoNative)),
+                  }
+                : undefined;
+        } finally {
+            this.module.destroy(romInfoNative);
+        }
+    }
+
+    private getRomInfoUarm(data: VoidPtr, length: number): RomInfoUarm | undefined {
+        const romInfoNative = new this.module.RomInfo5(data, length);
+
+        if (!romInfoNative.IsValid()) return undefined;
+
+        const deviceType = romInfoNative.GetDeviceType();
+        const deviceId = deviceTypeUarmToDeviceId(deviceType);
+        if (deviceId === undefined) return undefined;
+
+        try {
+            return romInfoNative.IsValid()
+                ? {
+                      engine: Engine.uarm,
+                      romName: romInfoNative.GetRomName(),
+                      cardName: romInfoNative.GetCardName(),
+                      manufacturer: romInfoNative.GetManufacturer(),
+                      companyId: romInfoNative.GetCompanyId(),
+                      halId: romInfoNative.GetHalId(),
+                      deviceType,
+                      supportedDevices: [deviceId],
+                  }
+                : undefined;
+        } finally {
+            this.module.destroy(romInfoNative);
+        }
+    }
+
+    private deserializeSessionImageCloudpilot<T>(data: VoidPtr, length: number): SessionImage<T> | undefined {
+        const nativeImage = new this.module.SessionImage();
+
+        try {
+            if (!nativeImage.Deserialize(data, length)) return undefined;
+
+            const deviceId = nativeImage.GetDeviceId() as DeviceId;
+            if (!SUPPORTED_DEVICES_CLOUDPILOT.includes(deviceId)) throw new Error(`unsupported device ${deviceId}`);
+
+            const rom = this.copyOut(nativeImage.GetRomImage(), nativeImage.GetRomImageSize());
+            const memory = this.copyOut(nativeImage.GetMemoryImage(), nativeImage.GetMemoryImageSize());
+            const savestate = this.copyOut(nativeImage.GetSavestate(), nativeImage.GetSavestateSize());
+
+            if (!rom || !memory) throw new Error(`invalid session image: no ROM or memory`);
+
+            let metadata: T | undefined;
+            const serializedMetadata = this.copyOut(nativeImage.GetMetadata(), nativeImage.GetMetadataSize());
+
+            if (serializedMetadata) {
+                try {
+                    metadata = JSON.parse(new TextDecoder().decode(serializedMetadata));
+                } catch (e) {
+                    console.warn('ignoring invalid metadata', e);
+                }
+            }
+
+            return {
+                engine: Engine.cloudpilot,
+                deviceId,
+                rom,
+                memory,
+                savestate,
+                metadata,
+                version: nativeImage.GetVersion(),
+            };
+        } catch (e) {
+            console.error(e);
+        } finally {
+            this.module.destroy(nativeImage);
+        }
+    }
+
+    private deserializeSessionImageUarm<T>(data: VoidPtr, length: number): SessionImage<T> | undefined {
+        const nativeSession = new this.module.SessionFile5();
+
+        try {
+            if (!nativeSession.Deserialize(length, data)) return undefined;
+
+            const deviceId = deviceTypeUarmToDeviceId(nativeSession.GetDeviceId());
+            if (deviceId === undefined) throw new Error(`unsupported uARM device ${deviceId}`);
+
+            const rom = this.copyOut(nativeSession.GetNor(), nativeSession.GetNorSize());
+            const memory = this.copyOut(nativeSession.GetMemory(), nativeSession.GetMemorySize());
+            const nand = this.copyOut(nativeSession.GetNand(), nativeSession.GetNandSize());
+            const savestate = this.copyOut(nativeSession.GetSavestate(), nativeSession.GetSavestateSize());
+
+            if (!rom || !memory) throw new Error(`invalid session image: no ROM or memory`);
+
+            const serializedMetadata = this.copyOut(nativeSession.GetMetadata(), nativeSession.GetMetadataSize());
+
+            let metadata: T | undefined;
+            if (serializedMetadata) {
+                try {
+                    metadata = JSON.parse(new TextDecoder().decode(serializedMetadata));
+                } catch (e) {
+                    console.warn('invalid metadata', e);
+                }
+            }
+
+            return {
+                engine: Engine.uarm,
+                deviceId,
+                rom,
+                memory,
+                nand,
+                savestate,
+                metadata,
+                version: nativeSession.GetVersion(),
+            };
+        } finally {
+            this.module.destroy(nativeSession);
         }
     }
 

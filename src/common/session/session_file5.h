@@ -43,6 +43,8 @@ class SessionFile5 {
     const void* GetSerializedSession() const;
     size_t GetSerializedSessionSize() const;
 
+    uint32_t GetVersion() const;
+
     bool Deserialize(size_t size, const void* data);
 
    private:
@@ -84,6 +86,8 @@ class SessionFile5 {
 
     uint8_t* cursor;
     const uint8_t* ccursor;
+
+    uint32_t version{0};
 
    private:
     SessionFile5(const SessionFile5&) = delete;

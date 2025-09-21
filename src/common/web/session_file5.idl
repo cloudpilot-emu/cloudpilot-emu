@@ -33,5 +33,7 @@ interface SessionFile5 {
     [Const] VoidPtr GetSerializedSession();
     long GetSerializedSessionSize();
 
+    long GetVersion();
+
     boolean Deserialize(long Size, [Const] VoidPtr data);
 };

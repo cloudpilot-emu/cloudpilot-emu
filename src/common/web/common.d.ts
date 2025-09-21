@@ -104,10 +104,14 @@ export interface SessionFile5<VoidPtr> {
     GetSerializedSession(): VoidPtr;
     GetSerializedSessionSize(): number;
 
+    GetVersion(): number;
+
     Deserialize(size: number, data: VoidPtr): boolean;
 }
 
 export interface RomInfo5<VoidPtr> {
+    IsValid(): boolean;
+
     GetCardName(): string;
     GetManufacturer(): string;
     GetRomName(): string;

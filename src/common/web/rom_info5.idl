@@ -1,6 +1,8 @@
 interface RomInfo5 {
     void RomInfo5([Const] VoidPtr data, long size);
 
+    boolean IsValid();
+
     [Const] DOMString GetCardName();
     [Const] DOMString GetManufacturer();
     [Const] DOMString GetRomName();
