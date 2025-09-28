@@ -3,7 +3,7 @@ ion-item {
     --background: none;
 }
 
-.label-speed {
+ion-range::part(label) {
     min-width: 7.5rem;
 }
 

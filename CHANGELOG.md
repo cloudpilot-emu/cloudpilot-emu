@@ -1,3 +1,7 @@
+# Version 1.10.15
+
+-   Minor styling fixes.
+
 # Version 1.10.14
 
 -   Sometimes, the workaround introduced in 1.10.11 for load errors in the native
