@@ -1,12 +1,11 @@
 import { Injectable } from '@angular/core';
 import { isIOS, isIOSSafari, isMacOSSafari } from '@common/helper/browser';
-import { ActionSheetController, LoadingController, ModalController } from '@ionic/angular';
+import { ActionSheetController, ModalController } from '@ionic/angular';
 import Url from 'url-parse';
 
 import { RemoteUrlPromptComponent } from '@pwa/component/remote-url-prompt/remote-url-prompt.component';
 
 import { AlertService } from './alert.service';
-import { CloudpilotService } from './cloudpilot.service';
 import { FetchService } from './fetch.service';
 import { KvsService } from './kvs.service';
 
@@ -20,13 +19,11 @@ export interface FileDescriptor {
 })
 export class FileService {
     constructor(
-        private loadingController: LoadingController,
         private actionSheetController: ActionSheetController,
         private kvsService: KvsService,
         private modalController: ModalController,
         private alertService: AlertService,
         private fetchService: FetchService,
-        private cloudpilotService: CloudpilotService,
     ) {}
 
     openFile(handler: (file: FileDescriptor) => void): void {
@@ -66,29 +63,29 @@ export class FileService {
             return;
         }
 
+        let response: Response;
+
         try {
-            const response = await this.fetchService.fetch(url);
+            response = await this.fetchService.fetch(url, { loaderDelay: -1 });
 
             if (!response.ok) {
                 throw new Error('request failed');
             }
-
-            const loader = await this.loadingController.create({ message: 'Loading...' });
-            void loader.present();
-
-            const contentPromise = response.arrayBuffer().then((buffer) => new Uint8Array(buffer));
-            void contentPromise.finally(() => loader.dismiss());
-
-            handler({
-                name: urlParsed.pathname.replace(/.*\//, ''),
-                getContent: () => contentPromise,
-            });
+        } catch (e) {
+            console.log(e);
+            await this.alertService.errorMessage(`Download from ${url} failed.`);
 
             return;
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (e) {
-            await this.alertService.errorMessage(`Download from ${url} failed.`);
         }
+
+        const contentPromise = response.arrayBuffer().then((buffer) => new Uint8Array(buffer));
+
+        handler({
+            name: urlParsed.pathname.replace(/.*\//, ''),
+            getContent: () => contentPromise,
+        });
+
+        return;
     }
 
     private async openFilesImpl(multiple: boolean, handler: (files: Array<FileDescriptor>) => void): Promise<void> {
